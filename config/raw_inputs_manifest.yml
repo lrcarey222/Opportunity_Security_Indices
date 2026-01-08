@@ -2,10 +2,6 @@
 - path: allied_comtrade_energy_data.csv
   optional: yes
 - path: imf_dip.csv
-- path: OneDrive - RMI/New Energy Industrial Strategy - Documents/Research/Data/scatter_index.csv
-  optional: yes
-- path: OneDrive - RMI/New Energy Industrial Strategy - Documents/NEIS Center Asia
-    Trips/Research/Benchmark_Indices.xlsx
 - path: ei_stat_review_world_energy.csv
 - path: 2024-10-29 - New Energy Outlook 2024.csv
 - path: iea_criticalminerals_25.csv
