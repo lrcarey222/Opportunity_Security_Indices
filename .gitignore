@@ -4,4 +4,6 @@ outputs/
 .env
 config/config.yml
 config/weights.yml
+!data/.gitkeep
+!outputs/.gitkeep
 !R/outputs/.gitkeep
