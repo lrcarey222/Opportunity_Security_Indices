@@ -1,1 +1,23 @@
+raw_data_dir: data/raw
+cache_dir: data/cache
+outputs_dir: outputs
+years:
+  start: 2007
+  end: 2024
+technologies:
+  - Electric Vehicles
+  - Nuclear
+  - Coal
+  - Batteries
+  - Green Hydrogen
+  - Wind
+  - Oil
+  - Solar
+  - Gas
+  - Geothermal
+  - Electric Grid
+supply_chain_stages:
+  - Upstream
+  - Midstream
+  - Downstream
 # Example configuration (placeholder).
