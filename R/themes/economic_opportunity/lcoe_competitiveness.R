@@ -13,4 +13,8 @@ lcoe_competitiveness <- function() {
     explanation = character(),
     stringsAsFactors = FALSE
   )
+# lcoe_competitiveness (placeholder).
+# TODO: implement.
+lcoe_competitiveness_stub <- function() {
+  NULL
 }

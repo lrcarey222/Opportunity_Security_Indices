@@ -51,3 +51,4 @@ PSI blends three components, each normalized with the same S-curve, using a weig
 3. **Build indices** → aggregate themes into ES/EO and compute PSI inputs.
 4. **Write outputs** → standardized tables and sheets.
 5. **Build charts** → publication-ready visuals.
+Placeholder documentation.

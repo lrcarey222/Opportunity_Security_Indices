@@ -89,4 +89,4 @@ energy_access_consumption <- function(ei, base_year = 2019, target_year = 2024, 
     )
 
   dplyr::bind_rows(ec_target, ec_growth)
-}
+

@@ -13,4 +13,8 @@ investment_momentum <- function() {
     explanation = character(),
     stringsAsFactors = FALSE
   )
+# investment_momentum (placeholder).
+# TODO: implement.
+investment_momentum_stub <- function() {
+  NULL
 }

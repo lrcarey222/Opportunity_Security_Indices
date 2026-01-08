@@ -13,4 +13,8 @@ critical_minerals_trade <- function() {
     explanation = character(),
     stringsAsFactors = FALSE
   )
+# critical_minerals_trade (placeholder).
+# TODO: implement.
+critical_minerals_trade_stub <- function() {
+  NULL
 }

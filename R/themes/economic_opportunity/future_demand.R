@@ -13,4 +13,8 @@ future_demand <- function() {
     explanation = character(),
     stringsAsFactors = FALSE
   )
+# future_demand (placeholder).
+# TODO: implement.
+future_demand_stub <- function() {
+  NULL
 }

@@ -47,4 +47,8 @@ validate_schema <- function(tbl) {
   }
 
   invisible(tbl)
+# schema (placeholder).
+# TODO: implement.
+schema_stub <- function() {
+  NULL
 }

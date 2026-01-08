@@ -40,3 +40,8 @@ options(
   opportunity_security.config = config,
   opportunity_security.weights = weights
 )
+# setup (placeholder).
+# TODO: implement.
+setup_stub <- function() {
+  NULL
+}
