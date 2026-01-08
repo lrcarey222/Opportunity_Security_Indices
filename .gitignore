@@ -1,0 +1,7 @@
+data/
+outputs/
+.Renviron
+.env
+config/config.yml
+config/weights.yml
+!R/outputs/.gitkeep
