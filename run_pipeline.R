@@ -1,5 +1,19 @@
 # Pipeline runner: execute scripts in order.
-source("scripts/10_build_themes.R")
-source("scripts/20_build_indices.R")
-source("scripts/80_write_outputs.R")
-source("scripts/90_build_charts.R")
+# Resolve paths relative to this script so Rscript can run from any working directory.
+args <- commandArgs(trailingOnly = FALSE)
+file_arg <- grep("^--file=", args, value = TRUE)
+script_path <- if (length(file_arg) > 0) {
+  sub("^--file=", "", file_arg[1])
+} else if (!is.null(sys.frame(1)$ofile)) {
+  sys.frame(1)$ofile
+} else {
+  ""
+}
+repo_root <- dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
+
+source(file.path(repo_root, "scripts", "00_setup.R"))
+source(file.path(repo_root, "scripts", "05_ingest_sources.R"))
+source(file.path(repo_root, "scripts", "10_build_themes.R"))
+source(file.path(repo_root, "scripts", "20_build_indices.R"))
+source(file.path(repo_root, "scripts", "80_write_outputs.R"))
+source(file.path(repo_root, "scripts", "90_build_charts.R"))

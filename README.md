@@ -1,53 +1,73 @@
-# Opportunity & Security Indices (R)
+# Opportunity Security Indices
 
-This repository builds a reproducible set of composite indices that score energy-related technologies and trade partners across three pillars:
+This repository contains the scaffold for the Opportunity Security Indices pipeline, which produces three related pillars:
 
-- **Energy Security (ES):** exposure to supply shocks, import dependence, and resource scarcity by technology and supply-chain stage.  
-- **Economic Opportunity (EO):** where U.S. firms can most profitably and feasibly expand production, exports, or investment.  
-- **Partnership Strength (PSI):** which bilateral relationships deliver the best mix of reduced risk, commercial upside, and executability.
+- **Energy Security**: measures resilience and security across energy supply chains.
+- **Economic Opportunity**: measures the opportunity for growth and competitiveness in energy-related markets.
+- **Partnership Strength (PSI)**: blends friendshoring, opportunity, and development potential into a single partnership index.
 
-The analytical unit is **Country × Technology × Supply-chain stage (Up/Mid/Down)** for ES and EO, and **Country** (aggregated across technologies) for PSI.
+## Unit of analysis and data model
 
-## Method overview
+The pipeline is organized around **country × technology × supply chain stage** observations. Theme outputs are stored in a tidy format with common columns such as `Country`, `tech`, `supply_chain`, `Pillar`, `category`, `variable`, `data_type` (`raw` vs `index`), and `value`.
 
-### Normalization (raw → 0–1 index)
-Each raw metric is converted to a comparable 0–1 score using a percentile-based S-curve (“median_scurve”, γ=0.5). Metrics are tracked in two forms:
-- `raw`: original units (e.g., EJ, kt, $, %)
-- `index`: S-curved percentile score used for aggregation
+## Normalization: `median_scurve`
 
-### Aggregation
-- Within a category (e.g., Reserves): simple mean of subindices
-- Across categories into a pillar: weighted mean using domain-specific weights
-- Separate scoring for Upstream / Midstream / Downstream segments
+Raw metrics are converted to indices using a median-centered S-curve. The function converts raw values to a percentile rank, then applies:
 
-### Partnership Strength (PSI)
-PSI combines three components (Safer/Friendshore, Prosperous/Opportunity, Stronger/Development) and blends them:
-`PSI = 0.4 × Friendshore + 0.4 × Opportunity + 0.2 × (1 − Development Environment)` (see `docs/methodology.md`).
+```
+idx = r^gamma / (r^gamma + (1 - r)^gamma)
+```
 
-## Repository layout (high-level)
-- `R/` contains **pure functions** (no file IO). Functions return tidy tables or ggplot objects.
-- `scripts/` contains orchestration and **all file IO** (reading raw sources, writing outputs, saving charts).
-- `run_pipeline.R` is the one entrypoint for a full run.
-- `docs/` contains methodology and data documentation intended to meet academic/publication scrutiny.
-- `legacy/` contains the original scripts retained for reference.
+with `gamma = 0.5` by default. This compresses values around the median while preserving separation in the tails, producing index values on a 0–1 scale. See the legacy pipeline for the reference implementation.
+
+## Aggregation rules
+
+**Energy Security** and **Economic Opportunity** are weighted means of category indices, calculated within each country/technology/supply-chain group.
+
+- Energy Security uses category weights (e.g., Foreign Dependency, Energy Imports, Reserves, Production, Consumption) to compute an overall index.
+- Economic Opportunity uses category weights (e.g., Trade, Production, Technology Demand, Energy Prices, Investment) to compute an overall index.
+
+Weights are configurable and surfaced in the pipeline to keep methodology transparent.
+
+## Partnership Strength Index (PSI)
+
+PSI is a weighted blend of three components:
+
+- **Friendshore index** (0.4)
+- **Opportunity index** (0.4)
+- **Development potential index** (0.2)
+
+These components are normalized with the same median S-curve and combined via a weighted mean.
+
+## Repository layout
+
+```
+R/                    # Pure functions (no IO)
+  utils/              # Reusable helpers
+  themes/             # Theme-level calculations
+  indices/            # Pillar indices
+  outputs/            # Output builders (no file IO)
+  charts/             # Chart builders (no file IO)
+
+scripts/              # Orchestration + IO
+config/               # Example configs (copy to config.yml)
+docs/                 # Methodology + data dictionary
+run_pipeline.R        # Pipeline entry point
+```
 
 ## Quick start
 
-### 1) Prerequisites
-- R (>= 4.2 recommended)
-- RStudio (optional)
+1. Copy the example configs and update them for your environment:
 
-### 2) Configure
-Copy example config files and edit paths for your environment:
+   ```bash
+   cp config/config.example.yml config/config.yml
+   cp config/weights.example.yml config/weights.yml
+   ```
 
-- `config/config.example.yml` → `config/config.yml`
-- `config/weights.example.yml` → `config/weights.yml`
+2. Provide secrets (e.g., API keys) via environment variables using `.Renviron` or `.env`.
 
-If any APIs are used (e.g., Comtrade), set keys via environment variables (do not commit secrets):
-- `COMTRADE_PRIMARY_KEY=...`
+3. Run the pipeline from any directory:
 
-### 3) Run the pipeline
-From the repo root:
-
-```r
-source("run_pipeline.R")
+   ```bash
+   Rscript /path/to/Opportunity_Security_Indices/run_pipeline.R
+   ```
