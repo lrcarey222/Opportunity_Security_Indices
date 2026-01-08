@@ -16,6 +16,7 @@ resolve_repo_root <- function() {
   } else {
     ""
   }
+  dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
   
   d <- if (nzchar(start)) {
     dirname(normalizePath(start, winslash = "/", mustWork = FALSE))

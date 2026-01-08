@@ -1,4 +1,12 @@
 # Ingest raw sources from SharePoint into a snapshot folder.
+if (!requireNamespace("yaml", quietly = TRUE)) {
+  stop("Package 'yaml' is required to load the manifest.")
+}
+
+repo_root <- getOption("opportunity_security.repo_root")
+if (is.null(repo_root) || !nzchar(repo_root)) {
+  stop("Repo root not set. Run scripts/00_setup.R first.")
+}
 resolve_repo_root <- function() {
   args <- commandArgs(trailingOnly = FALSE)
   file_arg <- grep("^--file=", args, value = TRUE)
