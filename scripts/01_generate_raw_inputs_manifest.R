@@ -1,5 +1,8 @@
 # Generate raw inputs manifest from legacy scripts.
 resolve_repo_root <- function() {
+  args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- grep("^--file=", args, value = TRUE)
+  script_path <- if (length(file_arg) > 0) {
   # Prefer rprojroot if available (most robust)
   if (requireNamespace("rprojroot", quietly = TRUE)) {
     return(rprojroot::find_root(rprojroot::is_git_root))
