@@ -32,3 +32,4 @@ The pipeline draws from multiple datasets. The legacy implementation references 
 - **GHG emissions by fuel** (`ghg_ems_fossil_combustion_fuel.csv`).
 
 Sources enter the pipeline during ingestion (`scripts/05_ingest_sources.R`), then flow into theme and index construction.
+Placeholder documentation.
