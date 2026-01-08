@@ -32,3 +32,15 @@ The pipeline draws from multiple datasets. The legacy implementation references 
 - **GHG emissions by fuel** (`ghg_ems_fossil_combustion_fuel.csv`).
 
 Sources enter the pipeline during ingestion (`scripts/05_ingest_sources.R`), then flow into theme and index construction.
+
+## Manifest-driven ingestion
+
+Raw inputs are allowlisted in `config/raw_inputs_manifest.yml`. The ingestion step copies only the files listed in that manifest from the SharePoint/OneDrive staging area (`sharepoint_raw_dir` in `config/config.yml`) into the snapshot folder at `data/raw/<snapshot_date>/`, preserving subfolder structure. Optional entries in the manifest (for legacy-generated caches like `allied_comtrade_energy_data.csv` and `scatter_index.csv`) do not fail ingestion when missing.
+
+When legacy scripts change, regenerate the manifest by running:
+
+```
+Rscript scripts/01_generate_raw_inputs_manifest.R
+```
+
+Commit the updated `config/raw_inputs_manifest.yml` alongside the script changes so ingestion stays in sync with the legacy raw-input references.
