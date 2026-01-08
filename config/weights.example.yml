@@ -1,0 +1,26 @@
+energy_security:
+  Foreign Dependency: 6
+  Energy Imports: 4
+  Reserves: 4
+  Resource availability: 3
+  Trade: 4
+  critmin_trade: 4
+  Production: 6
+  Energy Access: 4
+  Consumption: 5
+
+economic_opportunity:
+  Trade: 3
+  Production: 3
+  Technology Demand: 4
+  Energy Prices: 3
+  Investment: 3
+  Energy Access: 3
+  Foreign Dependency: 3
+  Cost Competitiveness: 3
+  Consumption: 3
+
+psi:
+  friendshore: 0.4
+  opportunity: 0.4
+  development: 0.2

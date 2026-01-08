@@ -1,5 +1,5 @@
-# Critical Minerals Trade theme (placeholder).
-critical_minerals_trade <- function() {
+# Technology Demand theme (placeholder).
+future_demand <- function() {
   data.frame(
     Country = character(),
     tech = character(),

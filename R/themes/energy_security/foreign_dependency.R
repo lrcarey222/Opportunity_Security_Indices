@@ -1,5 +1,5 @@
-# Critical Minerals Trade theme (placeholder).
-critical_minerals_trade <- function() {
+# Foreign Dependency theme (placeholder).
+foreign_dependency <- function() {
   data.frame(
     Country = character(),
     tech = character(),

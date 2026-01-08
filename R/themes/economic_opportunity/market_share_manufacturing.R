@@ -1,5 +1,5 @@
-# Critical Minerals Trade theme (placeholder).
-critical_minerals_trade <- function() {
+# Market Share theme (placeholder).
+market_share_manufacturing <- function() {
   data.frame(
     Country = character(),
     tech = character(),

@@ -1,5 +1,5 @@
-# Critical Minerals Trade theme (placeholder).
-critical_minerals_trade <- function() {
+# Cost Competitiveness theme (placeholder).
+lcoe_competitiveness <- function() {
   data.frame(
     Country = character(),
     tech = character(),

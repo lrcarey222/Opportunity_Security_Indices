@@ -1,5 +1,5 @@
-# Critical Minerals Trade theme (placeholder).
-critical_minerals_trade <- function() {
+# Trade Concentration theme (placeholder).
+trade_concentration <- function() {
   data.frame(
     Country = character(),
     tech = character(),
