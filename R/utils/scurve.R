@@ -14,8 +14,5 @@ median_scurve <- function(x, gamma = 0.5) {
     r <- (ranks - 1) / (n - 1)
   }
   (r^gamma) / (r^gamma + (1 - r)^gamma)
-# scurve (placeholder).
-# TODO: implement.
-scurve_stub <- function() {
-  NULL
+
 }

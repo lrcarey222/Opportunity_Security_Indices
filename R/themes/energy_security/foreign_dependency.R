@@ -1,5 +1,16 @@
-# foreign_dependency (placeholder).
-# TODO: implement.
-foreign_dependency_stub <- function() {
-  NULL
+# Foreign Dependency theme (placeholder).
+foreign_dependency <- function() {
+  data.frame(
+    Country = character(),
+    tech = character(),
+    supply_chain = character(),
+    category = character(),
+    variable = character(),
+    data_type = character(),
+    value = numeric(),
+    Year = integer(),
+    source = character(),
+    explanation = character(),
+    stringsAsFactors = FALSE
+  )
 }
