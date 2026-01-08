@@ -7,6 +7,24 @@ repo_root <- getOption("opportunity_security.repo_root")
 if (is.null(repo_root) || !nzchar(repo_root)) {
   stop("Repo root not set. Run scripts/00_setup.R first.")
 }
+resolve_repo_root <- function() {
+  args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- grep("^--file=", args, value = TRUE)
+  script_path <- if (length(file_arg) > 0) {
+    sub("^--file=", "", file_arg[1])
+  } else if (!is.null(sys.frame(1)$ofile)) {
+    sys.frame(1)$ofile
+  } else {
+    ""
+  }
+  dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
+}
+
+if (!requireNamespace("yaml", quietly = TRUE)) {
+  stop("Package 'yaml' is required to load the manifest.")
+}
+
+repo_root <- resolve_repo_root()
 config <- getOption("opportunity_security.config")
 if (is.null(config)) {
   stop("Config not loaded. Run scripts/00_setup.R first.")
