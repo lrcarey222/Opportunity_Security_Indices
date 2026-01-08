@@ -1,8 +1,5 @@
 # Generate raw inputs manifest from legacy scripts.
 resolve_repo_root <- function() {
-  args <- commandArgs(trailingOnly = FALSE)
-  file_arg <- grep("^--file=", args, value = TRUE)
-  script_path <- if (length(file_arg) > 0) {
   # Prefer rprojroot if available (most robust)
   if (requireNamespace("rprojroot", quietly = TRUE)) {
     return(rprojroot::find_root(rprojroot::is_git_root))
@@ -19,7 +16,6 @@ resolve_repo_root <- function() {
   } else {
     ""
   }
-  dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
   
   d <- if (nzchar(start)) {
     dirname(normalizePath(start, winslash = "/", mustWork = FALSE))
@@ -38,6 +34,7 @@ resolve_repo_root <- function() {
   
   d
 }
+
 
 if (!requireNamespace("yaml", quietly = TRUE)) {
   stop("Package 'yaml' is required to write the manifest.")
@@ -80,8 +77,10 @@ normalize_relative_path <- function(path) {
 }
 
 is_file_like <- function(path) {
-  !grepl("/$", path) && grepl("\\.[A-Za-z0-9]+$", path)
+  path <- trimws(path)
+  nzchar(path) & !grepl("/$", path) & grepl("\\.[A-Za-z0-9]+$", path)
 }
+
 
 pattern_paste0 <- "paste0\\(\\s*raw_data\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)"
 pattern_file_path <- "file\\.path\\(\\s*raw_data\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)"
