@@ -1,5 +1,5 @@
-# Critical Minerals Trade theme (placeholder).
-critical_minerals_trade <- function() {
+# Overcapacity theme (placeholder).
+overcapacity_premium <- function() {
   data.frame(
     Country = character(),
     tech = character(),

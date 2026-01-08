@@ -1,5 +1,5 @@
-# Critical Minerals Trade theme (placeholder).
-critical_minerals_trade <- function() {
+# Trade theme (placeholder).
+export_feasibility <- function() {
   data.frame(
     Country = character(),
     tech = character(),

@@ -1,5 +1,5 @@
-# Critical Minerals Trade theme (placeholder).
-critical_minerals_trade <- function() {
+# Production theme (placeholder).
+production_depth_momentum <- function() {
   data.frame(
     Country = character(),
     tech = character(),
