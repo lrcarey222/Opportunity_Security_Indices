@@ -13,4 +13,8 @@ overcapacity_premium <- function() {
     explanation = character(),
     stringsAsFactors = FALSE
   )
+# overcapacity_premium (placeholder).
+# TODO: implement.
+overcapacity_premium_stub <- function() {
+  NULL
 }
