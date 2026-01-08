@@ -36,9 +36,14 @@ if (length(missing_env) > 0) {
   stop("Missing required env vars: ", paste(missing_env, collapse = ", "))
 }
 
+if (is.null(config$raw_data_dir)) {
+  stop("Config is missing raw_data_dir.")
+}
+
 options(
   opportunity_security.config = config,
-  opportunity_security.weights = weights
+  opportunity_security.weights = weights,
+  opportunity_security.repo_root = repo_root
 )
 # setup (placeholder).
 # TODO: implement.

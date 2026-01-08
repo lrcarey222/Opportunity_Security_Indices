@@ -1,4 +1,4 @@
-raw_data_dir: data/raw
+raw_data_dir: "data/raw"
 cache_dir: data/cache
 outputs_dir: outputs
 sharepoint_raw_dir: "/path/to/sharepoint/raw"
