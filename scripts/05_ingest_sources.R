@@ -5,6 +5,22 @@ if (!requireNamespace("yaml", quietly = TRUE)) {
 
 repo_root <- getOption("opportunity_security.repo_root")
 if (is.null(repo_root) || !nzchar(repo_root)) {
+  if (!requireNamespace("rprojroot", quietly = TRUE)) {
+    stop("Repo root not set. Run from the repo or set OPSI_CONFIG and OPSI_WEIGHTS.")
+  }
+  repo_root <- rprojroot::find_root(rprojroot::is_git_root, path = getwd())
+}
+if (is.null(repo_root) || !nzchar(repo_root)) {
+  stop("Repo root not set. Run from the repo or set OPSI_CONFIG and OPSI_WEIGHTS.")
+}
+
+config <- getOption("opportunity_security.config")
+if (is.null(config)) {
+  config_path <- Sys.getenv("OPSI_CONFIG", file.path(repo_root, "config", "config.yml"))
+  if (!file.exists(config_path)) {
+    stop("Config file not found: ", config_path)
+  }
+  config <- yaml::read_yaml(config_path)
   stop("Repo root not set. Run scripts/00_setup.R first.")
 }
 resolve_repo_root <- function() {
