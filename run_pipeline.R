@@ -9,7 +9,11 @@ script_path <- if (length(file_arg) > 0) {
 } else {
   ""
 }
-repo_root <- dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
+if (script_path == "") {
+  stop("Unable to determine run_pipeline.R path for repo-root anchoring.")
+}
+# Anchor sources to the repo root (this script's directory) so getwd() doesn't matter.
+repo_root <- normalizePath(dirname(script_path), winslash = "/", mustWork = TRUE)
 
 source(file.path(repo_root, "scripts", "00_setup.R"))
 source(file.path(repo_root, "scripts", "05_ingest_sources.R"))
