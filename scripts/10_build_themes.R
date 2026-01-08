@@ -11,17 +11,18 @@ if (is.null(config)) {
   stop("Config not loaded; run scripts/00_setup.R first.")
 }
 
-raw_data_dir <- config$raw_data_dir
-if (is.null(raw_data_dir)) {
-  stop("Config missing raw_data_dir.")
+processed_dir <- config$processed_dir
+if (is.null(processed_dir)) {
+  stop("Config missing processed_dir.")
 }
 
-ei_path <- file.path(raw_data_dir, "ei_stat_review_world_energy.csv")
-if (!file.exists(ei_path)) {
-  stop("Energy Institute data not found: ", ei_path)
+processed_path <- file.path(repo_root, processed_dir, "ei_stat_review_world_energy.csv")
+if (!file.exists(processed_path)) {
+  expected_list <- paste0("- ", processed_path)
+  stop("Missing required processed data. Expected processed files:\n", expected_list)
 }
 
-ei <- read.csv(ei_path)
+ei <- read.csv(processed_path)
 
 energy_access_tbl <- energy_access_consumption(ei)
 
