@@ -9,3 +9,4 @@ config/weights.yml
 !data/processed/.gitkeep
 !outputs/.gitkeep
 !R/outputs/.gitkeep
+.Rproj.user
