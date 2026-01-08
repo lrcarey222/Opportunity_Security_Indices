@@ -1,3 +1,18 @@
+# Production theme (placeholder).
+production_depth_momentum <- function() {
+  data.frame(
+    Country = character(),
+    tech = character(),
+    supply_chain = character(),
+    category = character(),
+    variable = character(),
+    data_type = character(),
+    value = numeric(),
+    Year = integer(),
+    source = character(),
+    explanation = character(),
+    stringsAsFactors = FALSE
+  )
 # production_depth_momentum (placeholder).
 # TODO: implement.
 production_depth_momentum_stub <- function() {
