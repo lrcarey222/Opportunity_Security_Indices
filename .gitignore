@@ -1,10 +1,12 @@
-data/
+data/raw/
+data/processed/
 outputs/
 .Renviron
 .env
 config/config.yml
 config/weights.yml
-!data/.gitkeep
+!data/raw/.gitkeep
+!data/processed/.gitkeep
 !outputs/.gitkeep
 !R/outputs/.gitkeep
 .Rproj.user
