@@ -1,6 +1,9 @@
 raw_data_dir: data/raw
 cache_dir: data/cache
 outputs_dir: outputs
+sharepoint_raw_dir: "/path/to/sharepoint/raw"
+cache_raw_snapshot_dir: data/raw
+processed_dir: data/processed
 years:
   start: 2007
   end: 2024
