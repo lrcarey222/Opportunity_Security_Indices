@@ -78,7 +78,8 @@ foreign_dependency_build_mineral_supply <- function(critical,
         dplyr::filter(!is.na(tech)) %>%
         dplyr::ungroup() %>%
         dplyr::select(Mineral, tech, share_24, share_35),
-      by = c("mineral" = "Mineral")
+      by = c("mineral" = "Mineral"),
+      relationship = "many-to-many"
     ) %>%
     dplyr::mutate(
       supply_24 = share_24 * X2024,
@@ -127,6 +128,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
       category = "Foreign Dependency",
       variable = "Mineral Supply",
       data_type = "index",
+      Year = as.character(year),
       Year = year,
       source = "IEA Critical Minerals Database",
       explanation = dplyr::case_when(
@@ -279,6 +281,11 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
       Country = dplyr::if_else(Country == "Vietnam", "Viet Nam", Country),
       country2 = dplyr::if_else(EU == 1, "EU", Country),
       country2 = dplyr::if_else(country2 == "US", "United States", country2)
+    ) %>%
+    dplyr::left_join(
+      cleantech_final,
+      by = c("country2" = "Country"),
+      relationship = "many-to-many"
     ) %>%
     dplyr::left_join(cleantech_final, by = c("country2" = "Country")) %>%
     dplyr::filter(!is.na(tech)) %>%
