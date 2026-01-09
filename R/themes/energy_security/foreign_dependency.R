@@ -129,6 +129,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
       variable = "Mineral Supply",
       data_type = "index",
       Year = as.character(year),
+      Year = year,
       source = "IEA Critical Minerals Database",
       explanation = dplyr::case_when(
         data_type == "index" ~ stringr::str_glue(
@@ -286,6 +287,7 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
       by = c("country2" = "Country"),
       relationship = "many-to-many"
     ) %>%
+    dplyr::left_join(cleantech_final, by = c("country2" = "Country")) %>%
     dplyr::filter(!is.na(tech)) %>%
     dplyr::select(-country2, -EU) %>%
     dplyr::mutate(Country = dplyr::if_else(Country == "US", "United States", Country))
