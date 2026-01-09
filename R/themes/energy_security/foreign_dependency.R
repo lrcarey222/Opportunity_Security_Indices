@@ -397,7 +397,7 @@ foreign_dependency <- function(critical,
                                ei,
                                cleantech_midstream,
                                ev_midstream,
-                               year = list(minerals = 2024, cleantech = 2035, ev = 2024),
+                               year = list(minerals = "2024", cleantech = "2035", ev = "2024"),
                                gamma = 0.5) {
   # Reference country list and run each foreign dependency sub-theme builder.
   country_reference <- foreign_dependency_build_country_reference(ei, year = year$minerals)
@@ -423,6 +423,12 @@ foreign_dependency <- function(critical,
     year = year$ev,
     gamma = gamma
   )
+  standardize_year <- function(df) dplyr::mutate(df, Year = as.integer(Year))
+  
+  dplyr::bind_rows(
+    standardize_year(mineral_supply),
+    standardize_year(cleantech),
+    standardize_year(ev_midstream_tbl)
+  )
 
-  dplyr::bind_rows(mineral_supply, cleantech, ev_midstream_tbl)
 }
