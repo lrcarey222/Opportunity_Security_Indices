@@ -44,34 +44,9 @@ if (!requireNamespace("yaml", quietly = TRUE)) {
   stop("Package 'yaml' is required to load config files.")
 }
 
-required_packages <- c(
-  "circlize",
-  "comtradr",
-  "countrycode",
-  "dplyr",
-  "glue",
-  "htmlwidgets",
-  "httr",
-  "janitor",
-  "jsonlite",
-  "plotly",
-  "progress",
-  "purrr",
-  "RColorBrewer",
-  "readr",
-  "scales",
-  "stringr",
-  "tidyr",
-  "WDI",
-  "writexl"
-)
-missing_packages <- required_packages[
-  !vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)
-]
-if (length(missing_packages) > 0) {
-  stop("Missing required packages: ", paste(missing_packages, collapse = ", "))
+if (Sys.which("Rscript") == "") {
+  stop("Rscript not found on PATH. Install R to enable testing.")
 }
-invisible(lapply(required_packages, library, character.only = TRUE))
 
 if (!file.exists(config_path)) {
   stop("Config file not found: ", config_path)
