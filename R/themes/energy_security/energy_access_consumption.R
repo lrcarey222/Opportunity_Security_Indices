@@ -50,7 +50,7 @@ energy_access_build_indices <- function(ec_per_capita, year, gamma = 0.5) {
       variable = "Energy consumption per capita",
       data_type,
       value,
-      Year = year,
+      Year = as.character(year),
       source = "EI Statistical Review of World Energy (2024)",
       explanation = dplyr::case_when(
         data_type == "raw" ~ stringr::str_glue("Per-capita {tech} consumption = {tech}cons_ej / pop"),
