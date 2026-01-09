@@ -1,57 +1,44 @@
 # Ingest raw sources from SharePoint into a snapshot folder.
-if (!requireNamespace("yaml", quietly = TRUE)) {
-  stop("Package 'yaml' is required to load the manifest.")
-}
-
-repo_root <- getOption("opportunity_security.repo_root")
-if (is.null(repo_root) || !nzchar(repo_root)) {
-  if (!requireNamespace("rprojroot", quietly = TRUE)) {
-    stop("Repo root not set. Run from the repo or set OPSI_CONFIG and OPSI_WEIGHTS.")
-  }
-  repo_root <- rprojroot::find_root(rprojroot::is_git_root, path = getwd())
-}
-if (is.null(repo_root) || !nzchar(repo_root)) {
-  stop("Repo root not set. Run from the repo or set OPSI_CONFIG and OPSI_WEIGHTS.")
-}
-
-config <- getOption("opportunity_security.config")
-if (is.null(config)) {
-  config_path <- Sys.getenv("OPSI_CONFIG", file.path(repo_root, "config", "config.yml"))
-  if (!file.exists(config_path)) {
-    stop("Config file not found: ", config_path)
-  }
-  config <- yaml::read_yaml(config_path)
-  stop("Repo root not set. Run scripts/00_setup.R first.")
-}
 resolve_repo_root <- function() {
+  # Prefer rprojroot if available (most robust)
+  if (requireNamespace("rprojroot", quietly = TRUE)) {
+    return(rprojroot::find_root(rprojroot::is_git_root))
+  }
+  
+  # Fallback: start from script path if we have it, otherwise from getwd()
   args <- commandArgs(trailingOnly = FALSE)
   file_arg <- grep("^--file=", args, value = TRUE)
-  script_path <- if (length(file_arg) > 0) {
+  
+  start <- if (length(file_arg) > 0) {
     sub("^--file=", "", file_arg[1])
   } else if (!is.null(sys.frame(1)$ofile)) {
     sys.frame(1)$ofile
   } else {
     ""
   }
-  dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
+  
+  d <- if (nzchar(start)) {
+    dirname(normalizePath(start, winslash = "/", mustWork = FALSE))
+  } else {
+    normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+  }
+  
+  # Walk up until we find a .git directory
+  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
+    d <- dirname(d)
+  }
+  
+  if (!file.exists(file.path(d, ".git"))) {
+    stop("Could not locate repo root (no .git found). Run from the repo directory or set OPSI_CONFIG/OPSI_WEIGHTS.")
+  }
+  
+  d
 }
 
-if (!requireNamespace("yaml", quietly = TRUE)) {
-  stop("Package 'yaml' is required to load the manifest.")
-}
 
 repo_root <- resolve_repo_root()
-config <- getOption("opportunity_security.config")
-if (is.null(config)) {
-  stop("Config not loaded. Run scripts/00_setup.R first.")
-}
-
-if (is.null(config$sharepoint_raw_dir)) {
-  stop("Config is missing sharepoint_raw_dir.")
-}
-if (is.null(config$raw_data_dir)) {
-  stop("Config is missing raw_data_dir.")
-}
+config_path <- Sys.getenv("OPSI_CONFIG", file.path(repo_root, "config", "config.yml"))
+weights_path <- Sys.getenv("OPSI_WEIGHTS", file.path(repo_root, "config", "weights.yml"))
 
 sharepoint_raw_dir <- config$sharepoint_raw_dir
 raw_data_dir <- file.path(repo_root, config$raw_data_dir)
