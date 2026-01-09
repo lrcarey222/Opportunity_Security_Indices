@@ -93,3 +93,81 @@ if (length(missing) > 0) {
 }
 
 message("Raw inputs snapshot created at: ", snapshot_dir)
+
+# --- Supplemental API pulls (WDI + UN Comtrade) ---
+# These API pulls are kept in the ingest stage so downstream steps only read
+# local snapshot files. This keeps theme builders focused on transformations.
+
+if (!requireNamespace("WDI", quietly = TRUE)) {
+  stop("Package 'WDI' is required to ingest World Bank GDP and country data.")
+}
+
+wdi_gdp_path <- file.path(snapshot_dir, "wdi_gdp.csv")
+wdi_country_path <- file.path(snapshot_dir, "wdi_country_info.csv")
+
+wdi_gdp <- WDI::WDI(indicator = "NY.GDP.MKTP.CD", start = 2007, end = 2024)
+write.csv(wdi_gdp, wdi_gdp_path, row.names = FALSE)
+
+wdi_country_info <- WDI::WDI_data$country
+write.csv(wdi_country_info, wdi_country_path, row.names = FALSE)
+
+if (!requireNamespace("comtradr", quietly = TRUE)) {
+  stop("Package 'comtradr' is required to ingest critical minerals trade data.")
+}
+
+comtrade_key <- Sys.getenv("COMTRADE_API_KEY")
+if (comtrade_key == "") {
+  stop("COMTRADE_API_KEY environment variable must be set to ingest critical minerals trade data.")
+}
+comtradr::set_primary_comtrade_key(comtrade_key)
+
+critical_minerals_path <- file.path(snapshot_dir, "iea_criticalminerals_25.csv")
+critical_minerals_hs_path <- file.path(
+  snapshot_dir,
+  "Columbia University Critical Minerals Dashboard",
+  "unique_comtrade.csv"
+)
+
+if (!file.exists(critical_minerals_path)) {
+  stop("Critical minerals dataset missing from snapshot: ", critical_minerals_path)
+}
+if (!file.exists(critical_minerals_hs_path)) {
+  stop("Critical minerals HS dataset missing from snapshot: ", critical_minerals_hs_path)
+}
+
+source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_trade.R"))
+source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
+
+critical <- read.csv(critical_minerals_path)
+mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
+crit_hs <- read.csv(critical_minerals_hs_path)
+crit_hs_filtered <- critical_minerals_trade_filter_hs(crit_hs, mineral_demand_clean)
+
+critmin_import <- comtradr::ct_get_data(
+  reporter = wdi_country_info$iso3c,
+  partner = "World",
+  commodity_code = crit_hs_filtered$hscode,
+  start_date = 2024,
+  end_date = 2024,
+  flow_direction = "import"
+)
+critmin_export <- comtradr::ct_get_data(
+  reporter = wdi_country_info$iso3c,
+  partner = "World",
+  commodity_code = crit_hs_filtered$hscode,
+  start_date = 2024,
+  end_date = 2024,
+  flow_direction = "export"
+)
+total_export <- comtradr::ct_get_data(
+  reporter = wdi_country_info$iso3c,
+  partner = "World",
+  commodity_code = "TOTAL",
+  start_date = 2024,
+  end_date = 2024,
+  flow_direction = "export"
+)
+
+write.csv(critmin_import, file.path(snapshot_dir, "critmin_import_2024.csv"), row.names = FALSE)
+write.csv(critmin_export, file.path(snapshot_dir, "critmin_export_2024.csv"), row.names = FALSE)
+write.csv(total_export, file.path(snapshot_dir, "critmin_total_export_2024.csv"), row.names = FALSE)
