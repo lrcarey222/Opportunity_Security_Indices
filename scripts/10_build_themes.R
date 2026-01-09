@@ -16,11 +16,6 @@ if (is.null(raw_data_dir)) {
   stop("Config missing raw_data_dir.")
 }
 
-raw_base_dir <- file.path(repo_root, raw_data_dir)
-if (!dir.exists(raw_base_dir)) {
-  stop("Raw data directory not found: ", raw_base_dir)
-}
-
 snapshot_dirs <- list.dirs(raw_base_dir, recursive = FALSE, full.names = TRUE)
 if (length(snapshot_dirs) == 0) {
   stop("No raw data snapshots found in: ", raw_base_dir)
