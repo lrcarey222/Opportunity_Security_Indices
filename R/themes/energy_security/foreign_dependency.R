@@ -1,5 +1,6 @@
 # Foreign Dependency theme builder functions.
 foreign_dependency_build_country_reference <- function(ei, year = 2024) {
+  # Use EI as the authoritative country reference and harmonize legacy naming tweaks.
   ei %>%
     dplyr::filter(
       Year == year,
@@ -28,6 +29,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
                                                     country_reference,
                                                     year = 2024,
                                                     gamma = 0.5) {
+  # Identify minerals in the IEA critical minerals dataset.
   minerals <- critical %>%
     dplyr::filter(
       grepl("Total supply", Pillar),
@@ -38,6 +40,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
     tidyr::separate(Mineral, into = c("mineral", "supply_chain_raw"), sep = " - ", extra = "merge") %>%
     dplyr::distinct(mineral)
 
+  # Keep only country entries that appear in the EI-derived reference list.
   countries <- critical %>%
     dplyr::distinct(`Sector.Country`) %>%
     dplyr::inner_join(
@@ -45,6 +48,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
       by = c("Sector.Country" = "country")
     )
 
+  # Compute market shares, HHI, and the composite supply security index.
   mineral_supply <- critical %>%
     dplyr::filter(
       grepl("Total supply", Pillar),
@@ -106,6 +110,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
     dplyr::group_by(supply_chain) %>%
     dplyr::arrange(dplyr::desc(security_index))
 
+  # Aggregate into the canonical schema with completed country coverage.
   mineral_supply %>%
     dplyr::group_by(country, tech, supply_chain) %>%
     dplyr::summarize(
@@ -154,6 +159,7 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
                                                          cleantech_midstream,
                                                          year = 2035,
                                                          gamma = 0.5) {
+  # Reshape IEA clean tech midstream data into a long form with year tags.
   cleantech_long <- cleantech_midstream %>%
     dplyr::rename(Country = X) %>%
     tidyr::pivot_longer(
@@ -166,6 +172,7 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
       Year = dplyr::if_else(Status == "Current", "2024", "2035")
     )
 
+  # Map EU member countries into a shared "EU" entity to match legacy logic.
   country_map <- ei %>%
     dplyr::distinct(Country, EU) %>%
     dplyr::mutate(
@@ -175,6 +182,7 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
     dplyr::select(country2) %>%
     dplyr::distinct()
 
+  # Compute global market shares per technology for the target year.
   ct_ms <- country_map %>%
     dplyr::left_join(cleantech_long, by = c("country2" = "Country")) %>%
     dplyr::filter(Year == as.character(year)) %>%
@@ -185,6 +193,7 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
     dplyr::ungroup() %>%
     dplyr::select(Country = country2, Technology, market_share)
 
+  # Convert market shares into percentile-based indices.
   ct_idx <- ct_ms %>%
     dplyr::group_by(Technology) %>%
     dplyr::mutate(
@@ -192,6 +201,7 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
     ) %>%
     dplyr::ungroup()
 
+  # Emit tech-level raw and indexed market shares in canonical form.
   cleantech_clean <- ct_idx %>%
     tidyr::pivot_longer(
       cols = c(market_share, market_share_index),
@@ -228,6 +238,7 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
       explanation
     )
 
+  # Build the composite clean-tech midstream index across technologies.
   comp_ct <- ct_idx %>%
     dplyr::group_by(Country) %>%
     dplyr::summarize(
@@ -258,6 +269,7 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
       explanation
     )
 
+  # Expand the EU rollup back to individual countries via EI mapping.
   cleantech_final <- dplyr::bind_rows(cleantech_clean, comp_ct) %>%
     dplyr::mutate(Country = dplyr::if_else(Country == "US", "United States", Country))
 
@@ -278,6 +290,7 @@ foreign_dependency_build_ev_midstream <- function(ei,
                                                   ev_midstream,
                                                   year = 2024,
                                                   gamma = 0.5) {
+  # Recreate the legacy regional expansion logic for EV midstream data.
   ev_midstream %>%
     dplyr::filter(Year == as.character(year)) %>%
     dplyr::mutate(EU = dplyr::if_else(Region == "European Union", 1, 2)) %>%
@@ -330,6 +343,7 @@ foreign_dependency_build_ev_midstream <- function(ei,
         )
       )
     ) %>%
+    # Convert raw metrics into median_scurve indices.
     dplyr::mutate(
       production_index = median_scurve(Domestic.Production, gamma = gamma),
       sales_index = median_scurve(Domestic.sales, gamma = gamma),
@@ -344,6 +358,7 @@ foreign_dependency_build_ev_midstream <- function(ei,
       names_to = "variable",
       values_to = "value"
     ) %>%
+    # Standardize variables into raw/index pairs in the canonical schema.
     dplyr::mutate(
       tech = "Electric Vehicles",
       supply_chain = "Midstream",
@@ -377,6 +392,7 @@ foreign_dependency <- function(critical,
                                ev_midstream,
                                year = list(minerals = 2024, cleantech = 2035, ev = 2024),
                                gamma = 0.5) {
+  # Reference country list and run each foreign dependency sub-theme builder.
   country_reference <- foreign_dependency_build_country_reference(ei, year = year$minerals)
 
   mineral_supply <- foreign_dependency_build_mineral_supply(
