@@ -1,5 +1,6 @@
 # Foreign Dependency theme builder functions.
 foreign_dependency_build_country_reference <- function(ei, year = 2024) {
+  # Use EI data as the authoritative country reference and apply legacy naming.
   # Use EI as the authoritative country reference and harmonize legacy naming tweaks.
   ei %>%
     dplyr::filter(
@@ -287,7 +288,6 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
       by = c("country2" = "Country"),
       relationship = "many-to-many"
     ) %>%
-    dplyr::left_join(cleantech_final, by = c("country2" = "Country")) %>%
     dplyr::filter(!is.na(tech)) %>%
     dplyr::select(-country2, -EU) %>%
     dplyr::mutate(Country = dplyr::if_else(Country == "US", "United States", Country))
