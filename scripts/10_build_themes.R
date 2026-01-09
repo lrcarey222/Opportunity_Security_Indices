@@ -49,12 +49,14 @@ if (is.null(latest_snapshot)) {
   return()
 }
 
+# Assemble required raw file paths for theme builders.
 raw_path <- file.path(latest_snapshot, "ei_stat_review_world_energy.csv")
 reserves_excel_path <- file.path(latest_snapshot, "ei_stat_review_world_energy_wide.xlsx")
 critical_minerals_path <- file.path(latest_snapshot, "iea_criticalminerals_25.csv")
 cleantech_midstream_path <- file.path(latest_snapshot, "iea_cleantech_Midstream.csv")
 ev_midstream_path <- file.path(latest_snapshot, "ev_Midstream_capacity.csv")
 
+# Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
   raw_path,
   reserves_excel_path,
@@ -76,8 +78,10 @@ if (length(missing_files) > 0) {
 
 ei <- read.csv(raw_path)
 
+# Theme: Energy access and consumption (EI data).
 energy_access_tbl <- energy_access_consumption(ei)
 
+# Theme: Foreign dependency inputs (critical minerals + IEA datasets).
 critical <- read.csv(critical_minerals_path)
 mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
 
@@ -97,6 +101,7 @@ foreign_dependency_tbl <- foreign_dependency(
   ev_midstream = ev_midstream
 )
 
+# Collect all theme outputs in a named list for downstream consumers.
 theme_outputs <- list(
   energy_access_consumption = energy_access_tbl,
   foreign_dependency = foreign_dependency_tbl,
