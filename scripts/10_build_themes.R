@@ -5,6 +5,7 @@ if (!exists("repo_root")) {
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "energy_access_consumption.R"))
+source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) {
@@ -48,13 +49,19 @@ if (is.null(latest_snapshot)) {
 }
 
 raw_path <- file.path(latest_snapshot, "ei_stat_review_world_energy.csv")
-if (!file.exists(raw_path)) {
+reserves_excel_path <- file.path(latest_snapshot, "ei_stat_review_world_energy_wide.xlsx")
+critical_minerals_path <- file.path(latest_snapshot, "iea_criticalminerals_25.csv")
+
+missing_files <- c(raw_path, reserves_excel_path, critical_minerals_path)
+missing_files <- missing_files[!file.exists(missing_files)]
+
+if (length(missing_files) > 0) {
   if (skip_data_downloads) {
-    message("Skipping raw data lookup; missing file: ", raw_path)
+    message("Skipping raw data lookup; missing file(s): ", paste(missing_files, collapse = ", "))
     invisible(list())
     return()
   }
-  expected_list <- paste0("- ", raw_path)
+  expected_list <- paste0("- ", missing_files)
   stop("Missing required raw data. Expected raw files:\n", expected_list)
 }
 
@@ -62,8 +69,19 @@ ei <- read.csv(raw_path)
 
 energy_access_tbl <- energy_access_consumption(ei)
 
+critical <- read.csv(critical_minerals_path)
+mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
+
+reserve_inputs <- lapply(reserves_specs(), function(spec) {
+  spec$data <- readxl::read_excel(reserves_excel_path, sheet = spec$sheet, skip = spec$skip)
+  spec
+})
+
+reserves_tbl <- reserves(ei, reserve_inputs, mineral_demand_clean)
+
 theme_outputs <- list(
-  energy_access_consumption = energy_access_tbl
+  energy_access_consumption = energy_access_tbl,
+  reserves = reserves_tbl
 )
 
 invisible(theme_outputs)
