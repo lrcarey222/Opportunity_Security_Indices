@@ -5,6 +5,7 @@ if (!exists("repo_root")) {
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "energy_access_consumption.R"))
+source(file.path(repo_root, "R", "themes", "energy_security", "foreign_dependency.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
 
 config <- getOption("opportunity_security.config")
@@ -48,11 +49,21 @@ if (is.null(latest_snapshot)) {
   return()
 }
 
+# Assemble required raw file paths for theme builders.
 raw_path <- file.path(latest_snapshot, "ei_stat_review_world_energy.csv")
 reserves_excel_path <- file.path(latest_snapshot, "ei_stat_review_world_energy_wide.xlsx")
 critical_minerals_path <- file.path(latest_snapshot, "iea_criticalminerals_25.csv")
+cleantech_midstream_path <- file.path(latest_snapshot, "iea_cleantech_Midstream.csv")
+ev_midstream_path <- file.path(latest_snapshot, "ev_Midstream_capacity.csv")
 
-missing_files <- c(raw_path, reserves_excel_path, critical_minerals_path)
+# Fail fast (or skip) if required raw inputs are missing.
+missing_files <- c(
+  raw_path,
+  reserves_excel_path,
+  critical_minerals_path,
+  cleantech_midstream_path,
+  ev_midstream_path
+)
 missing_files <- missing_files[!file.exists(missing_files)]
 
 if (length(missing_files) > 0) {
@@ -67,8 +78,10 @@ if (length(missing_files) > 0) {
 
 ei <- read.csv(raw_path)
 
+# Theme: Energy access and consumption (EI data).
 energy_access_tbl <- energy_access_consumption(ei)
 
+# Theme: Foreign dependency inputs (critical minerals + IEA datasets).
 critical <- read.csv(critical_minerals_path)
 mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
 
@@ -78,9 +91,20 @@ reserve_inputs <- lapply(reserves_specs(), function(spec) {
 })
 
 reserves_tbl <- reserves(ei, reserve_inputs, mineral_demand_clean)
+cleantech_midstream <- read.csv(cleantech_midstream_path)
+ev_midstream <- read.csv(ev_midstream_path)
+foreign_dependency_tbl <- foreign_dependency(
+  critical = critical,
+  mineral_demand_clean = mineral_demand_clean,
+  ei = ei,
+  cleantech_midstream = cleantech_midstream,
+  ev_midstream = ev_midstream
+)
 
+# Collect all theme outputs in a named list for downstream consumers.
 theme_outputs <- list(
   energy_access_consumption = energy_access_tbl,
+  foreign_dependency = foreign_dependency_tbl,
   reserves = reserves_tbl
 )
 
