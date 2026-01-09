@@ -6,6 +6,7 @@ if (!exists("repo_root")) {
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "energy_access_consumption.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "foreign_dependency.R"))
+source(file.path(repo_root, "R", "themes", "energy_security", "import_dependence.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
 
 config <- getOption("opportunity_security.config")
@@ -81,6 +82,9 @@ ei <- read.csv(raw_path)
 # Theme: Energy access and consumption (EI data).
 energy_access_tbl <- energy_access_consumption(ei)
 
+# Theme: Import dependence (EI data).
+import_dependence_tbl <- import_dependence(ei)
+
 # Theme: Foreign dependency inputs (critical minerals + IEA datasets).
 critical <- read.csv(critical_minerals_path)
 mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
@@ -105,6 +109,7 @@ foreign_dependency_tbl <- foreign_dependency(
 theme_outputs <- list(
   energy_access_consumption = energy_access_tbl,
   foreign_dependency = foreign_dependency_tbl,
+  import_dependence = import_dependence_tbl,
   reserves = reserves_tbl
 )
 
