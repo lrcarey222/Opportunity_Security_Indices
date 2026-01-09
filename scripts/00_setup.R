@@ -44,6 +44,10 @@ if (!requireNamespace("yaml", quietly = TRUE)) {
   stop("Package 'yaml' is required to load config files.")
 }
 
+if (Sys.which("Rscript") == "") {
+  stop("Rscript not found on PATH. Install R to enable testing.")
+}
+
 if (!file.exists(config_path)) {
   stop("Config file not found: ", config_path)
 }
