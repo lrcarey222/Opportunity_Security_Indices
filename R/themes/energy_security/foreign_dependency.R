@@ -1,6 +1,7 @@
 # Foreign Dependency theme builder functions.
 foreign_dependency_build_country_reference <- function(ei, year = 2024) {
   # Use EI data as the authoritative country reference and apply legacy naming.
+  # Use EI as the authoritative country reference and harmonize legacy naming tweaks.
   ei %>%
     dplyr::filter(
       Year == year,
@@ -29,7 +30,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
                                                     country_reference,
                                                     year = 2024,
                                                     gamma = 0.5) {
-  # Identify minerals present in the IEA critical minerals dataset.
+  # Identify minerals in the IEA critical minerals dataset.
   minerals <- critical %>%
     dplyr::filter(
       grepl("Total supply", Pillar),
@@ -40,7 +41,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
     tidyr::separate(Mineral, into = c("mineral", "supply_chain_raw"), sep = " - ", extra = "merge") %>%
     dplyr::distinct(mineral)
 
-  # Keep only countries aligned with the EI-derived reference list.
+  # Keep only country entries that appear in the EI-derived reference list.
   countries <- critical %>%
     dplyr::distinct(`Sector.Country`) %>%
     dplyr::inner_join(
@@ -48,7 +49,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
       by = c("Sector.Country" = "country")
     )
 
-  # Compute market shares, HHI, and security indices for mineral supply.
+  # Compute market shares, HHI, and the composite supply security index.
   mineral_supply <- critical %>%
     dplyr::filter(
       grepl("Total supply", Pillar),
@@ -129,6 +130,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
       variable = "Mineral Supply",
       data_type = "index",
       Year = as.character(year),
+      Year = year,
       source = "IEA Critical Minerals Database",
       explanation = dplyr::case_when(
         data_type == "index" ~ stringr::str_glue(
