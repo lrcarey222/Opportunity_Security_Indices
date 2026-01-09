@@ -8,6 +8,7 @@ source(file.path(repo_root, "R", "themes", "energy_security", "energy_access_con
 source(file.path(repo_root, "R", "themes", "energy_security", "foreign_dependency.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "import_dependence.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
+source(file.path(repo_root, "R", "themes", "energy_security", "trade_concentration.R"))
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) {
@@ -56,6 +57,9 @@ reserves_excel_path <- file.path(latest_snapshot, "ei_stat_review_world_energy_w
 critical_minerals_path <- file.path(latest_snapshot, "iea_criticalminerals_25.csv")
 cleantech_midstream_path <- file.path(latest_snapshot, "iea_cleantech_Midstream.csv")
 ev_midstream_path <- file.path(latest_snapshot, "ev_Midstream_capacity.csv")
+trade_codes_path <- file.path(latest_snapshot, "hts_codes_categories_bolstered_final.csv")
+trade_hs4_path <- file.path(latest_snapshot, "hs92_country_product_year_4.csv")
+trade_hs6_path <- file.path(latest_snapshot, "hs92_country_product_year_6.csv")
 
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
@@ -63,7 +67,10 @@ missing_files <- c(
   reserves_excel_path,
   critical_minerals_path,
   cleantech_midstream_path,
-  ev_midstream_path
+  ev_midstream_path,
+  trade_codes_path,
+  trade_hs4_path,
+  trade_hs6_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
 
@@ -105,12 +112,32 @@ foreign_dependency_tbl <- foreign_dependency(
   ev_midstream = ev_midstream
 )
 
+# Theme: Trade concentration (Atlas data + WDI country reference).
+if (!requireNamespace("WDI", quietly = TRUE)) {
+  stop("Package 'WDI' is required to build trade concentration.")
+}
+gdp_data <- WDI::WDI(indicator = "NY.GDP.MKTP.CD", start = 2007, end = 2024)
+country_info <- WDI::WDI_data$country
+
+subcat <- read.csv(trade_codes_path)
+aec_4_data <- read.csv(trade_hs4_path)
+aec_6_data <- read.csv(trade_hs6_path)
+
+trade_concentration_tbl <- trade_concentration(
+  subcat = subcat,
+  aec_4_data = aec_4_data,
+  aec_6_data = aec_6_data,
+  country_info = country_info,
+  gdp_data = gdp_data
+)
+
 # Collect all theme outputs in a named list for downstream consumers.
 theme_outputs <- list(
   energy_access_consumption = energy_access_tbl,
   foreign_dependency = foreign_dependency_tbl,
   import_dependence = import_dependence_tbl,
-  reserves = reserves_tbl
+  reserves = reserves_tbl,
+  trade_concentration = trade_concentration_tbl
 )
 
 invisible(theme_outputs)
