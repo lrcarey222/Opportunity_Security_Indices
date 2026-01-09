@@ -16,7 +16,15 @@ if (is.null(raw_data_dir)) {
   stop("Config missing raw_data_dir.")
 }
 
-raw_path <- file.path(repo_root, raw_data_dir, "ei_stat_review_world_energy.csv")
+snapshot_dirs <- list.dirs(raw_base_dir, recursive = FALSE, full.names = TRUE)
+if (length(snapshot_dirs) == 0) {
+  stop("No raw data snapshots found in: ", raw_base_dir)
+}
+
+snapshot_info <- file.info(snapshot_dirs)
+latest_snapshot <- snapshot_dirs[order(snapshot_info$mtime, decreasing = TRUE)][1]
+
+raw_path <- file.path(latest_snapshot, "ei_stat_review_world_energy.csv")
 if (!file.exists(raw_path)) {
   expected_list <- paste0("- ", raw_path)
   stop("Missing required raw data. Expected raw files:\n", expected_list)
