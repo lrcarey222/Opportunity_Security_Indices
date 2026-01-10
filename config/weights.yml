@@ -2,9 +2,7 @@ energy_security:
   Foreign Dependency: 6
   Energy Imports: 4
   Reserves: 4
-  Resource availability: 3
   Trade: 4
-  critmin_trade: 4
   Production: 6
   Energy Access: 4
   Consumption: 5
