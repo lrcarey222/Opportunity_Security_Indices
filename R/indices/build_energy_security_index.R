@@ -69,10 +69,29 @@ build_energy_security_index <- function(theme_tables,
     dplyr::filter(lengths(missing_categories) > 0)
 
   if (nrow(group_missing_categories) > 0) {
+    missing_preview <- group_missing_categories %>%
+      dplyr::mutate(
+        missing_categories = vapply(
+          missing_categories,
+          function(items) paste(items, collapse = ", "),
+          character(1)
+        )
+      ) %>%
+      dplyr::mutate(
+        group_key = paste(Country, tech, supply_chain, Year, sep = " | ")
+      ) %>%
+      dplyr::select(group_key, missing_categories) %>%
+      head(10)
+
     missing_message <- paste(
       "Category scores missing for",
       nrow(group_missing_categories),
-      "group(s)."
+      "group(s).",
+      "Examples (Country | tech | supply_chain | Year -> missing categories):",
+      paste(
+        paste0(missing_preview$group_key, " -> ", missing_preview$missing_categories),
+        collapse = "; "
+      )
     )
 
     if (isTRUE(allow_partial_categories)) {
