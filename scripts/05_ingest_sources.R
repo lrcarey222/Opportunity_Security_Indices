@@ -213,8 +213,24 @@ if (needs_comtrade) {
     crit_hs_filtered <- critical_minerals_trade_filter_hs(crit_hs, mineral_demand_clean)
     wdi_country_info <- read.csv(wdi_country_path)
 
+    reporter_candidates <- wdi_country_info$iso3c
+    reporter_candidates <- reporter_candidates[!is.na(reporter_candidates) & nzchar(reporter_candidates)]
+    reporter_candidates <- unique(reporter_candidates)
+
+    reporter_ref <- comtradr::ct_get_ref_data("reporter")
+    reporter_iso_col <- intersect(c("iso3", "iso3_code", "iso3c"), names(reporter_ref))
+    if (length(reporter_iso_col) == 0) {
+      stop("Unable to locate ISO3 reporter codes in comtradr reporter reference data.")
+    }
+    valid_reporters <- reporter_ref[[reporter_iso_col[1]]]
+    valid_reporters <- unique(valid_reporters[!is.na(valid_reporters) & nzchar(valid_reporters)])
+    reporter_candidates <- intersect(reporter_candidates, valid_reporters)
+    if (length(reporter_candidates) == 0) {
+      stop("No valid reporter codes remain after filtering against comtradr reference data.")
+    }
+
     critmin_import <- comtradr::ct_get_data(
-      reporter = wdi_country_info$iso3c,
+      reporter = reporter_candidates,
       partner = "World",
       commodity_code = crit_hs_filtered$hscode,
       start_date = 2024,
@@ -222,7 +238,7 @@ if (needs_comtrade) {
       flow_direction = "import"
     )
     critmin_export <- comtradr::ct_get_data(
-      reporter = wdi_country_info$iso3c,
+      reporter = reporter_candidates,
       partner = "World",
       commodity_code = crit_hs_filtered$hscode,
       start_date = 2024,
@@ -230,7 +246,7 @@ if (needs_comtrade) {
       flow_direction = "export"
     )
     total_export <- comtradr::ct_get_data(
-      reporter = wdi_country_info$iso3c,
+      reporter = reporter_candidates,
       partner = "World",
       commodity_code = "TOTAL",
       start_date = 2024,
