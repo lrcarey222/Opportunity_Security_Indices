@@ -88,7 +88,13 @@ critical_minerals_trade_build_tech <- function(critmin_hhi, mineral_demand_clean
     ) %>%
     dplyr::left_join(
       mineral_demand_clean %>%
-        dplyr::mutate(Mineral = dplyr::if_else(stringr::str_detect(Mineral, "graphite", ignore_case = TRUE), "Graphite", Mineral)) %>%
+        dplyr::mutate(
+          Mineral = dplyr::if_else(
+            stringr::str_detect(Mineral, stringr::regex("graphite", ignore_case = TRUE)),
+            "Graphite",
+            Mineral
+          )
+        ) %>%
         dplyr::ungroup() %>%
         dplyr::select(Mineral, tech, share_24),
       by = c("mineral" = "Mineral")
