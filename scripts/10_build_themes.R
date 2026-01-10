@@ -9,6 +9,7 @@ source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals
 source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_trade.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "energy_access_consumption.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "energy_consumption.R"))
+source(file.path(repo_root, "R", "themes", "energy_security", "energy_prices.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "foreign_dependency.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "import_dependence.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
@@ -70,6 +71,7 @@ wdi_country_path <- file.path(latest_snapshot, "wdi_country_info.csv")
 critmin_import_path <- file.path(latest_snapshot, "critmin_import_2024.csv")
 critmin_export_path <- file.path(latest_snapshot, "critmin_export_2024.csv")
 critmin_total_export_path <- file.path(latest_snapshot, "critmin_total_export_2024.csv")
+energy_prices_lcoe_path <- file.path(latest_snapshot, "2025-03-24 - 2025 LCOE Data Viewer Tool.csv")
 
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
@@ -86,7 +88,8 @@ missing_files <- c(
   wdi_country_path,
   critmin_import_path,
   critmin_export_path,
-  critmin_total_export_path
+  critmin_total_export_path,
+  energy_prices_lcoe_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
 
@@ -172,6 +175,17 @@ energy_consumption_tbl <- energy_consumption(
   country_info = country_info
 )
 
+# Theme: Energy prices (EI + BNEF data).
+gas_price_sheet <- readxl::read_excel(reserves_excel_path, sheet = 40, skip = 3)
+coal_price_sheet <- readxl::read_excel(reserves_excel_path, sheet = 50, skip = 3)
+lcoe_bnef <- read.csv(energy_prices_lcoe_path, skip = 8)
+energy_prices_tbl <- energy_prices(
+  ei = ei,
+  gas_price_sheet = gas_price_sheet,
+  coal_price_sheet = coal_price_sheet,
+  lcoe_bnef = lcoe_bnef
+)
+
 # Theme: Trade concentration (Atlas data + WDI country reference).
 subcat <- read.csv(trade_codes_path)
 aec_4_data <- read.csv(trade_hs4_path)
@@ -192,6 +206,7 @@ theme_outputs <- list(
   critical_minerals_trade = critical_minerals_trade_tbl,
   energy_access_consumption = energy_access_tbl,
   energy_consumption = energy_consumption_tbl,
+  energy_prices = energy_prices_tbl,
   foreign_dependency = foreign_dependency_tbl,
   import_dependence = import_dependence_tbl,
   reserves = reserves_tbl,
