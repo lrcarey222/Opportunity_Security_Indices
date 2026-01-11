@@ -429,6 +429,6 @@ foreign_dependency <- function(critical,
     standardize_year(mineral_supply),
     standardize_year(cleantech),
     standardize_year(ev_midstream_tbl)
-  )
-
+  ) %>%
+    energy_security_add_overall_index()
 }
