@@ -4,6 +4,20 @@ energy_security_add_overall_index <- function(tbl) {
     return(tbl)
   }
 
+  tbl <- tbl %>%
+    dplyr::mutate(
+      Country = as.character(Country),
+      tech = as.character(tech),
+      supply_chain = as.character(supply_chain),
+      category = as.character(category),
+      variable = as.character(variable),
+      data_type = as.character(data_type),
+      Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$"))),
+      value = suppressWarnings(as.numeric(value)),
+      source = as.character(source),
+      explanation = as.character(explanation)
+    )
+
   existing_overall_categories <- tbl %>%
     dplyr::filter(data_type == "index", grepl("Overall", variable)) %>%
     dplyr::distinct(category) %>%
