@@ -21,6 +21,7 @@ standardize_energy_security_inputs <- function(theme_tables) {
 build_energy_security_index <- function(theme_tables,
                                         weights,
                                         allow_partial_categories = FALSE) {
+  message("Building energy security index: standardizing theme inputs.")
   if (is.null(weights) || length(weights) == 0) {
     stop("Energy security weights are missing or empty.")
   }
@@ -28,11 +29,16 @@ build_energy_security_index <- function(theme_tables,
   energy_security_data <- standardize_energy_security_inputs(theme_tables) %>%
     dplyr::filter(data_type == "index")
 
+  message("Filtering energy security data to Overall variables only.")
+  energy_security_data <- energy_security_data %>%
+    dplyr::filter(grepl("Overall", variable))
+
   weights_tbl <- tibble::tibble(
     category = names(weights),
     weight = as.numeric(unlist(weights, use.names = FALSE))
   )
 
+  message("Computing category-level scores.")
   category_scores <- energy_security_data %>%
     dplyr::group_by(Country, tech, supply_chain, Year, category) %>%
     dplyr::summarize(category_score = mean(value, na.rm = TRUE), .groups = "drop")
@@ -104,6 +110,7 @@ build_energy_security_index <- function(theme_tables,
     }
   }
 
+  message("Computing overall energy security index from weighted categories.")
   energy_security_index <- category_scores %>%
     dplyr::inner_join(weights_tbl, by = "category") %>%
     dplyr::group_by(Country, tech, supply_chain, Year) %>%
