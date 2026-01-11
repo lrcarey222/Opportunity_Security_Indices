@@ -120,7 +120,9 @@ import_dependence_build_tidy <- function(imports_indexed, year = 2024) {
 }
 
 import_dependence <- function(ei, year = 2024) {
-  import_dependence_clean_raw(ei, year = year) %>%
-    import_dependence_build_imports() %>%
-    import_dependence_build_tidy(year = year)
+  energy_security_add_overall_index(
+    import_dependence_clean_raw(ei, year = year) %>%
+      import_dependence_build_imports() %>%
+      import_dependence_build_tidy(year = year)
+  )
 }
