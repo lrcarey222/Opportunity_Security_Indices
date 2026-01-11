@@ -1,4 +1,8 @@
 sharepoint_raw_dir: "C:/Users/LCarey/OneDrive - RMI/Documents - US Program/6_Projects/Clean Regional Economic Development/ACRE/Data/Raw Data"
 raw_data_dir: "data/raw"
 processed_dir: "data/processed"
+<<<<<<< HEAD
 allow_partial_categories: true
+=======
+allow_partial_categories: true
+>>>>>>> c613c9bf9847b841fe05e76ea86915f7dc6e49ac
