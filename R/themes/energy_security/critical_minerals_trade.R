@@ -189,5 +189,6 @@ critical_minerals_trade <- function(critmin_import,
   critical_minerals_trade_build_tidy(
     critmin_trade_tech = critmin_trade_tech,
     year = year
-  )
+  ) %>%
+    energy_security_add_overall_index()
 }

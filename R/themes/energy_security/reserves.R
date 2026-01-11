@@ -347,5 +347,6 @@ reserves <- function(ei, reserve_inputs, mineral_demand_clean, year = 2024, gamm
   reserves_build_clean_table(
     reserve_tables = c(list(critical_min_reserves), energy_reserves),
     country_reference = country_reference
-  )
+  ) %>%
+    energy_security_add_overall_index()
 }
