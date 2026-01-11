@@ -2,12 +2,11 @@ energy_security:
   Foreign Dependency: 6
   Energy Imports: 4
   Reserves: 4
-  Resource availability: 3
   Trade: 4
-  critmin_trade: 4
   Production: 6
   Energy Access: 4
   Consumption: 5
+  Energy Prices: 0
 
 economic_opportunity:
   Trade: 3
@@ -24,4 +23,3 @@ psi:
   friendshore: 0.4
   opportunity: 0.4
   development: 0.2
-# Example weights (placeholder).
