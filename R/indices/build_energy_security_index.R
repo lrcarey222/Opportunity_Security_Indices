@@ -20,14 +20,27 @@ standardize_energy_security_inputs <- function(theme_tables) {
 
 build_energy_security_index <- function(theme_tables,
                                         weights,
-                                        allow_partial_categories = FALSE) {
+                                        allow_partial_categories = FALSE,
+                                        techs = c(
+                                          "Electric Vehicles",
+                                          "Nuclear",
+                                          "Coal",
+                                          "Batteries",
+                                          "Green Hydrogen",
+                                          "Wind",
+                                          "Oil",
+                                          "Solar",
+                                          "Gas",
+                                          "Geothermal",
+                                          "Electric Grid"
+                                        )) {
   message("Building energy security index: standardizing theme inputs.")
   if (is.null(weights) || length(weights) == 0) {
     stop("Energy security weights are missing or empty.")
   }
 
   energy_security_data <- standardize_energy_security_inputs(theme_tables) %>%
-    dplyr::filter(data_type == "index")
+    dplyr::filter(data_type == "index", tech %in% techs)
 
   message("Filtering energy security data to Overall variables only.")
   energy_security_data <- energy_security_data %>%
