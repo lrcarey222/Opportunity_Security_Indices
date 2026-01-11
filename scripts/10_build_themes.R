@@ -4,6 +4,7 @@ if (!exists("repo_root")) {
 }
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "themes", "energy_security", "overall_index.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_processing.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_production.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_trade.R"))
@@ -14,6 +15,26 @@ source(file.path(repo_root, "R", "themes", "energy_security", "foreign_dependenc
 source(file.path(repo_root, "R", "themes", "energy_security", "import_dependence.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "trade_concentration.R"))
+
+standardize_theme_types <- function(tbl) {
+  if (is.null(tbl)) {
+    return(tbl)
+  }
+
+  tbl %>%
+    dplyr::mutate(
+      Country = as.character(Country),
+      tech = as.character(tech),
+      supply_chain = as.character(supply_chain),
+      category = as.character(category),
+      variable = as.character(variable),
+      data_type = as.character(data_type),
+      Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$"))),
+      value = suppressWarnings(as.numeric(value)),
+      source = as.character(source),
+      explanation = as.character(explanation)
+    )
+}
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) {
@@ -107,9 +128,11 @@ ei <- read.csv(raw_path)
 
 # Theme: Energy access and consumption (EI data).
 energy_access_tbl <- energy_access_consumption(ei)
+energy_access_tbl <- standardize_theme_types(energy_access_tbl)
 
 # Theme: Import dependence (EI data).
 import_dependence_tbl <- import_dependence(ei)
+import_dependence_tbl <- standardize_theme_types(import_dependence_tbl)
 
 # Theme: Foreign dependency inputs (critical minerals + IEA datasets).
 critical <- read.csv(critical_minerals_path)
@@ -121,6 +144,7 @@ reserve_inputs <- lapply(reserves_specs(), function(spec) {
 })
 
 reserves_tbl <- reserves(ei, reserve_inputs, mineral_demand_clean)
+reserves_tbl <- standardize_theme_types(reserves_tbl)
 cleantech_midstream <- read.csv(cleantech_midstream_path)
 ev_midstream <- read.csv(ev_midstream_path)
 foreign_dependency_tbl <- foreign_dependency(
@@ -130,6 +154,7 @@ foreign_dependency_tbl <- foreign_dependency(
   cleantech_midstream = cleantech_midstream,
   ev_midstream = ev_midstream
 )
+foreign_dependency_tbl <- standardize_theme_types(foreign_dependency_tbl)
 
 # Shared WDI country reference for multiple themes.
 gdp_data <- read.csv(wdi_gdp_path)
@@ -143,6 +168,7 @@ critical_minerals_processing_tbl <- critical_minerals_processing(
   country_info = country_info,
   country_reference = country_reference
 )
+critical_minerals_processing_tbl <- standardize_theme_types(critical_minerals_processing_tbl)
 
 # Theme: Critical minerals production (EI data).
 critical_minerals_production_inputs <- lapply(critical_minerals_production_specs(), function(spec) {
@@ -154,6 +180,7 @@ critical_minerals_production_tbl <- critical_minerals_production(
   mineral_demand_clean = mineral_demand_clean,
   country_reference = country_reference
 )
+critical_minerals_production_tbl <- standardize_theme_types(critical_minerals_production_tbl)
 
 # Theme: Critical minerals trade (UN Comtrade).
 critmin_import <- read.csv(critmin_import_path)
@@ -166,6 +193,7 @@ critical_minerals_trade_tbl <- critical_minerals_trade(
   mineral_demand_clean = mineral_demand_clean,
   country_info = country_info
 )
+critical_minerals_trade_tbl <- standardize_theme_types(critical_minerals_trade_tbl)
 
 # Theme: Energy consumption (EI + BNEF data).
 bnef_neo <- read.csv(bnef_neo_path, skip = 2)
@@ -174,6 +202,7 @@ energy_consumption_tbl <- energy_consumption(
   bnef_neo = bnef_neo,
   country_info = country_info
 )
+energy_consumption_tbl <- standardize_theme_types(energy_consumption_tbl)
 
 # Theme: Energy prices (EI + BNEF data).
 gas_price_sheet <- readxl::read_excel(reserves_excel_path, sheet = 40, skip = 3)
@@ -185,6 +214,7 @@ energy_prices_tbl <- energy_prices(
   coal_price_sheet = coal_price_sheet,
   lcoe_bnef = lcoe_bnef
 )
+energy_prices_tbl <- standardize_theme_types(energy_prices_tbl)
 
 # Theme: Trade concentration (Atlas data + WDI country reference).
 subcat <- read.csv(trade_codes_path)
@@ -198,6 +228,7 @@ trade_concentration_tbl <- trade_concentration(
   country_info = country_info,
   gdp_data = gdp_data
 )
+trade_concentration_tbl <- standardize_theme_types(trade_concentration_tbl)
 
 # Collect all theme outputs in a named list for downstream consumers.
 theme_outputs <- list(
