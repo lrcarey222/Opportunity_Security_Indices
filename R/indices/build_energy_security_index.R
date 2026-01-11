@@ -113,7 +113,7 @@ build_energy_security_index <- function(theme_tables,
   message("Computing overall energy security index from weighted categories.")
   energy_security_index <- category_scores %>%
     dplyr::inner_join(weights_tbl, by = "category") %>%
-    dplyr::group_by(Country, tech, supply_chain, Year) %>%
+    dplyr::group_by(Country, tech, supply_chain) %>%
     dplyr::summarize(
       energy_security_index = stats::weighted.mean(category_score, weight, na.rm = TRUE),
       .groups = "drop"
@@ -123,6 +123,6 @@ build_energy_security_index <- function(theme_tables,
     category_scores = category_scores %>%
       dplyr::select(Country, tech, supply_chain, Year, category, category_score),
     index = energy_security_index %>%
-      dplyr::select(Country, tech, supply_chain, Year, energy_security_index)
+      dplyr::select(Country, tech, supply_chain, energy_security_index)
   )
 }
