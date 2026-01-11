@@ -217,8 +217,8 @@ if (needs_comtrade) {
     reporter_candidates <- reporter_candidates[!is.na(reporter_candidates) & nzchar(reporter_candidates)]
     reporter_candidates <- unique(reporter_candidates)
 
-    reporter_ref <- comtradr::ct_get_ref_data("reporter")
-    reporter_iso_col <- intersect(c("iso3", "iso3_code", "iso3c"), names(reporter_ref))
+    reporter_ref <- comtradr::ct_get_ref_table("reporter")
+    reporter_iso_col <- intersect(c("iso_3", "iso3_code", "iso3c"), names(reporter_ref))
     if (length(reporter_iso_col) == 0) {
       stop("Unable to locate ISO3 reporter codes in comtradr reporter reference data.")
     }
