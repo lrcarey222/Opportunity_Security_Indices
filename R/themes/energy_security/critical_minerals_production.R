@@ -183,5 +183,6 @@ critical_minerals_production <- function(production_inputs,
     mineral_demand_clean = mineral_demand_clean,
     country_reference = country_reference,
     gamma = gamma
-  )
+  ) %>%
+    energy_security_add_overall_index()
 }
