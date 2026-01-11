@@ -212,5 +212,7 @@ energy_prices <- function(ei,
     gamma = gamma
   )
 
-  dplyr::bind_rows(ei_prices_tbl, lcoe_tbl)
+  energy_security_add_overall_index(
+    dplyr::bind_rows(ei_prices_tbl, lcoe_tbl)
+  )
 }
