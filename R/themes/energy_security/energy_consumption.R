@@ -286,11 +286,8 @@ energy_consumption <- function(ei,
 
   pop_tbl <- energy_consumption_build_bnef_population(bnef_neo)
   bnef_metrics <- energy_consumption_build_bnef_metrics(bnef_neo, pop_tbl, techs, country_info)
-  standardize_year <- function(df) dplyr::mutate(df, Year = as.integer(Year))
-  
-  dplyr::bind_rows(
-    standardize_year(ei_target),
-    standardize_year(ei_growth),
-    standardize_year(bnef_metrics)
+
+  energy_security_add_overall_index(
+    dplyr::bind_rows(ei_target, ei_growth, bnef_metrics)
   )
 }

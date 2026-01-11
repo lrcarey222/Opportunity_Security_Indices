@@ -241,5 +241,6 @@ trade_concentration <- function(subcat,
     indices$trade_indices,
     indices$trade_indices_hhi,
     year = year_6
-  )
+  ) %>%
+    energy_security_add_overall_index()
 }

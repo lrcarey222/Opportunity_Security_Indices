@@ -4,6 +4,7 @@ if (!exists("repo_root")) {
 }
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "themes", "energy_security", "overall_index.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_processing.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_production.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_trade.R"))
