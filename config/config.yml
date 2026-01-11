@@ -2,4 +2,4 @@ sharepoint_raw_dir: "C:/Users/LCarey/OneDrive - RMI/Documents - US Program/6_Pro
 raw_data_dir: "data/raw"
 processed_dir: "data/processed"
 
-allow_partial_categories=T
+allow_partial_categories: true
