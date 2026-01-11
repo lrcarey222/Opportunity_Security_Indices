@@ -30,7 +30,14 @@ energy_security_add_overall_index <- function(tbl) {
     return(tbl)
   }
 
+  current_year <- as.integer(format(Sys.Date(), "%Y"))
+  latest_year <- overall_candidates %>%
+    dplyr::filter(!is.na(Year), Year <= current_year) %>%
+    dplyr::summarize(latest_year = max(Year, na.rm = TRUE)) %>%
+    dplyr::pull(latest_year)
+
   overall_indices <- overall_candidates %>%
+    dplyr::filter(Year == latest_year) %>%
     dplyr::group_by(Country, tech, supply_chain, Year, category) %>%
     dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
     dplyr::filter(!category %in% existing_overall_categories) %>%
