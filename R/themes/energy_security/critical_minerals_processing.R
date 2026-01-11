@@ -158,5 +158,6 @@ critical_minerals_processing <- function(critical,
     mineral_supply = mineral_supply,
     country_reference = country_reference,
     year = year
-  )
+  ) %>%
+    energy_security_add_overall_index()
 }
