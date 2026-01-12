@@ -211,7 +211,13 @@ build_energy_security_index <- function(theme_tables,
     dplyr::summarize(
       energy_security_index = sum(category_score * weight, na.rm = TRUE) / sum(weight, na.rm = TRUE),
       .groups = "drop"
-    )
+    ) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::filter(Year == max(Year, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(energy_security_index = median_scurve(energy_security_index)) %>%
+    dplyr::ungroup()
 
   list(
     category_scores = category_scores_latest %>%
