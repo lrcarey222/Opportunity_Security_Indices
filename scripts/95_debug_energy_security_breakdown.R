@@ -155,7 +155,8 @@ run_energy_security_breakdown <- function(country,
       dplyr::filter(
         Country == country,
         .data$tech == tech,
-        .data$supply_chain == supply_chain
+        .data$supply_chain == supply_chain,
+        Year == latest_year
       )
 
     if (nrow(energy_index_row) == 0) {
@@ -243,7 +244,7 @@ run_energy_security_breakdown <- function(country,
 
   list(
     energy_security_index = energy_security_index %>%
-      dplyr::filter(Country == country),
+      dplyr::filter(Country == country, Year == latest_year),
     category_breakdown = country_summary
   )
 }
