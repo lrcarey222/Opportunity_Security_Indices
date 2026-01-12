@@ -130,17 +130,14 @@ trade_concentration_build_country_rca <- function(aec_4_all,
     dplyr::group_by(industry) %>%
     dplyr::mutate(
       market_share_index = median_scurve(market_share),
-      rca_index = median_scurve(export_rca)
+      rca_index = median_scurve(export_rca),
+      deficit_gdp_index = median_scurve(deficit_gdp)
     ) %>%
     dplyr::group_by(country_iso3_code) %>%
     dplyr::mutate(
       export_size_index = median_scurve(exports),
       feas_index = median_scurve(feasibility)
-    ) %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(overall_trade_index = mean(dplyr::c_across(dplyr::ends_with("_index")), na.rm = TRUE)) %>%
-    dplyr::group_by(industry) %>%
-    dplyr::mutate(overall_trade_index = median_scurve(overall_trade_index))
+    )
 }
 
 # ---- Trade indices and HHI concentration ----
@@ -148,7 +145,6 @@ trade_concentration_build_indices <- function(country_rca, country_info) {
   trade_indices <- country_info %>%
     dplyr::select(country, iso3c) %>%
     dplyr::left_join(country_rca, by = c("iso3c" = "country_iso3_code")) %>%
-    dplyr::arrange(dplyr::desc(overall_trade_index)) %>%
     tidyr::separate(
       col = industry,
       into = c("tech", "supply_chain"),
@@ -167,18 +163,45 @@ trade_concentration_build_indices <- function(country_rca, country_info) {
     dplyr::mutate(HHI_index = median_scurve(-HHI)) %>%
     dplyr::distinct(tech, supply_chain, HHI, HHI_index)
 
+  trade_indices <- trade_indices %>%
+    dplyr::left_join(trade_indices_hhi, by = c("tech", "supply_chain")) %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(
+      overall_trade_index = mean(dplyr::c_across(dplyr::ends_with("_index")), na.rm = TRUE),
+      overall_trade_risk_index = mean(c(HHI_index, market_share_index, deficit_gdp_index), na.rm = TRUE)
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(dplyr::desc(overall_trade_index))
+
   list(trade_indices = trade_indices, trade_indices_hhi = trade_indices_hhi)
 }
 
 # ---- Canonical tidy output ----
 # Pivot raw values and indices into the shared schema used across themes.
-trade_concentration_build_tidy <- function(trade_indices, trade_indices_hhi, year = 2023) {
+trade_concentration_build_tidy <- function(trade_indices, year = 2023) {
   trade_indices %>%
     dplyr::rename(Country = country) %>%
     dplyr::mutate(tech = dplyr::if_else(tech == "Natural Gas", "Gas", tech)) %>%
-    dplyr::left_join(trade_indices_hhi, by = c("tech", "supply_chain")) %>%
     tidyr::pivot_longer(
-      cols = exports:HHI_index,
+      cols = dplyr::any_of(c(
+        "exports",
+        "imports",
+        "export_rca",
+        "feasibility",
+        "market_share",
+        "deficit",
+        "gdp",
+        "deficit_gdp",
+        "market_share_index",
+        "rca_index",
+        "export_size_index",
+        "feas_index",
+        "deficit_gdp_index",
+        "HHI",
+        "HHI_index",
+        "overall_trade_index",
+        "overall_trade_risk_index"
+      )),
       names_to = "variable",
       values_to = "value"
     ) %>%
@@ -190,7 +213,11 @@ trade_concentration_build_tidy <- function(trade_indices, trade_indices_hhi, yea
       category = "Trade",
       Year = year,
       source = "Harvard Atlas of Economic Complexity",
-      variable = dplyr::if_else(variable == "overall_trade", "Overall Trade Index", variable),
+      variable = dplyr::case_when(
+        variable == "overall_trade" ~ "Overall Trade Index",
+        variable == "overall_trade_risk" ~ "Overall Trade Risk Index",
+        TRUE ~ variable
+      ),
       explanation = dplyr::case_when(
         data_type == "raw" ~ stringr::str_glue("{variable}: raw value from Atlas"),
         data_type == "index" ~ stringr::str_glue("{variable}: percent-rank or HHI index"),
@@ -239,7 +266,6 @@ trade_concentration <- function(subcat,
 
   trade_concentration_build_tidy(
     indices$trade_indices,
-    indices$trade_indices_hhi,
     year = year_6
   ) %>%
     energy_security_add_overall_index()
