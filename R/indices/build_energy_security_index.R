@@ -90,14 +90,28 @@ build_energy_security_index <- function(theme_tables,
   weights_tbl <- weights_tbl %>%
     dplyr::filter(category %in% categories_in_data)
 
-  expected_categories <- weights_tbl$category
+  available_categories <- category_scores_latest %>%
+    dplyr::distinct(tech, supply_chain, Year, category)
+
+  available_by_group <- available_categories %>%
+    dplyr::group_by(tech, supply_chain, Year) %>%
+    dplyr::summarize(
+      available_categories = list(unique(category)),
+      .groups = "drop"
+    )
+
   group_missing_categories <- category_scores_latest %>%
     dplyr::group_by(Country, tech, supply_chain, Year) %>%
     dplyr::summarize(
-      missing_categories = list(setdiff(expected_categories, unique(category))),
+      present_categories = list(unique(category)),
       .groups = "drop"
     ) %>%
-    dplyr::filter(lengths(missing_categories) > 0)
+    dplyr::left_join(available_by_group, by = c("tech", "supply_chain", "Year")) %>%
+    dplyr::mutate(
+      missing_categories = Map(setdiff, available_categories, present_categories)
+    ) %>%
+    dplyr::filter(lengths(missing_categories) > 0) %>%
+    dplyr::select(-present_categories, -available_categories)
 
   if (nrow(group_missing_categories) > 0) {
     missing_preview <- group_missing_categories %>%
@@ -133,9 +147,15 @@ build_energy_security_index <- function(theme_tables,
     dplyr::summarize(global_avg = mean(category_score, na.rm = TRUE), .groups = "drop")
 
   category_scores_latest <- category_scores_latest %>%
-    dplyr::group_by(Country, tech, supply_chain, Year) %>%
-    tidyr::complete(category = expected_categories) %>%
-    dplyr::ungroup() %>%
+    dplyr::distinct(Country, tech, supply_chain, Year) %>%
+    dplyr::left_join(
+      available_categories,
+      by = c("tech", "supply_chain", "Year")
+    ) %>%
+    dplyr::left_join(
+      category_scores_latest,
+      by = c("Country", "tech", "supply_chain", "Year", "category")
+    ) %>%
     dplyr::left_join(
       global_category_averages,
       by = c("tech", "supply_chain", "Year", "category")
