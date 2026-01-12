@@ -106,21 +106,7 @@ reserves_build_country_reference <- function(ei, year = 2024) {
       Year == year,
       !grepl("World|Other|Total|OECD|OPEC", Country)
     ) %>%
-    dplyr::mutate(
-      Country = dplyr::recode(
-        Country,
-        "Vietnam" = "Viet Nam",
-        "Iran, Islamic Rep." = "Iran",
-        "Turkey" = "Turkiye",
-        "United kingdom" = "United Kingdom",
-        "Curacao" = "Cura�ao",
-        "Saudi arabia" = "Saudi Arabia",
-        "Russian Federation" = "Russia",
-        "Czechia" = "Czech Republic",
-        "Yemen, Rep." = "Yemen",
-        "Venezuela, RB" = "Venezuela"
-      )
-    ) %>%
+    dplyr::mutate(Country = standardize_country_names(Country)) %>%
     dplyr::distinct(ISO3166_alpha3, Country)
 }
 

@@ -7,21 +7,7 @@ foreign_dependency_build_country_reference <- function(ei, year = 2024) {
       Year == year,
       !grepl("World|Other|Total|OECD|OPEC", Country)
     ) %>%
-    dplyr::mutate(
-      Country = dplyr::recode(
-        Country,
-        "Vietnam" = "Viet Nam",
-        "Iran, Islamic Rep." = "Iran",
-        "Turkey" = "Turkiye",
-        "United kingdom" = "United Kingdom",
-        "Curacao" = "Cura�ao",
-        "Saudi arabia" = "Saudi Arabia",
-        "Russian Federation" = "Russia",
-        "Czechia" = "Czech Republic",
-        "Yemen, Rep." = "Yemen",
-        "Venezuela, RB" = "Venezuela"
-      )
-    ) %>%
+    dplyr::mutate(Country = standardize_country_names(Country)) %>%
     dplyr::distinct(Country)
 }
 
@@ -30,6 +16,9 @@ foreign_dependency_build_mineral_supply <- function(critical,
                                                     country_reference,
                                                     year = 2024,
                                                     gamma = 0.5) {
+  critical <- critical %>%
+    dplyr::mutate(`Sector.Country` = standardize_country_names(`Sector.Country`))
+
   # Identify minerals in the IEA critical minerals dataset.
   minerals <- critical %>%
     dplyr::filter(
