@@ -114,26 +114,34 @@ build_energy_security_index <- function(theme_tables,
       dplyr::select(group_key, missing_categories) %>%
       head(10)
 
-    missing_message <- paste(
-      "Category scores missing for",
-      nrow(group_missing_categories),
-      "group(s).",
-      "Examples (Country | tech | supply_chain | Year -> missing categories):",
+    warning(
       paste(
-        paste0(missing_preview$group_key, " -> ", missing_preview$missing_categories),
-        collapse = "; "
+        "Category scores missing for",
+        nrow(group_missing_categories),
+        "group(s); filling with global category averages.",
+        "Examples (Country | tech | supply_chain | Year -> missing categories):",
+        paste(
+          paste0(missing_preview$group_key, " -> ", missing_preview$missing_categories),
+          collapse = "; "
+        )
       )
     )
-
-    if (isTRUE(allow_partial_categories)) {
-      warning(missing_message)
-    } else {
-      stop(
-        missing_message,
-        " Set allow_partial_categories: true in config to permit partial weighting."
-      )
-    }
   }
+
+  global_category_averages <- category_scores_latest %>%
+    dplyr::group_by(tech, supply_chain, Year, category) %>%
+    dplyr::summarize(global_avg = mean(category_score, na.rm = TRUE), .groups = "drop")
+
+  category_scores_latest <- category_scores_latest %>%
+    dplyr::group_by(Country, tech, supply_chain, Year) %>%
+    tidyr::complete(category = expected_categories) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(
+      global_category_averages,
+      by = c("tech", "supply_chain", "Year", "category")
+    ) %>%
+    dplyr::mutate(category_score = dplyr::coalesce(category_score, global_avg)) %>%
+    dplyr::select(-global_avg)
 
   message("Computing overall energy security index from weighted categories.")
   category_contributions <- category_scores_latest %>%

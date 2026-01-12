@@ -131,7 +131,10 @@ trade_concentration_build_country_rca <- function(aec_4_all,
     dplyr::mutate(
       market_share_index = median_scurve(market_share),
       rca_index = median_scurve(export_rca),
-      deficit_gdp_index = median_scurve(deficit_gdp),
+      deficit_gdp_index = median_scurve(deficit_gdp)
+    ) %>%
+    dplyr::group_by(country_iso3_code) %>%
+    dplyr::mutate(
       export_size_index = median_scurve(exports),
       feas_index = median_scurve(feasibility)
     )
