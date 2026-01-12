@@ -44,7 +44,8 @@ build_energy_security_index <- function(theme_tables,
 
   message("Filtering energy security data to Overall variables only.")
   energy_security_overall <- energy_security_data %>%
-    dplyr::filter(grepl("Overall", variable))
+    dplyr::filter(grepl("Overall", variable)) %>%
+    dplyr::filter(!(category == "Trade" & variable != "Overall Trade Risk Index"))
 
   weights_tbl <- tibble::tibble(
     category = names(weights),
@@ -89,14 +90,28 @@ build_energy_security_index <- function(theme_tables,
   weights_tbl <- weights_tbl %>%
     dplyr::filter(category %in% categories_in_data)
 
-  expected_categories <- weights_tbl$category
+  available_categories <- category_scores %>%
+    dplyr::distinct(tech, supply_chain, category)
+
+  available_by_group <- available_categories %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::summarize(
+      available_categories = list(unique(category)),
+      .groups = "drop"
+    )
+
   group_missing_categories <- category_scores_latest %>%
     dplyr::group_by(Country, tech, supply_chain, Year) %>%
     dplyr::summarize(
-      missing_categories = list(setdiff(expected_categories, unique(category))),
+      present_categories = list(unique(category)),
       .groups = "drop"
     ) %>%
-    dplyr::filter(lengths(missing_categories) > 0)
+    dplyr::left_join(available_by_group, by = c("tech", "supply_chain")) %>%
+    dplyr::mutate(
+      missing_categories = Map(setdiff, available_categories, present_categories)
+    ) %>%
+    dplyr::filter(lengths(missing_categories) > 0) %>%
+    dplyr::select(-present_categories, -available_categories)
 
   if (nrow(group_missing_categories) > 0) {
     missing_preview <- group_missing_categories %>%
@@ -113,26 +128,40 @@ build_energy_security_index <- function(theme_tables,
       dplyr::select(group_key, missing_categories) %>%
       head(10)
 
-    missing_message <- paste(
-      "Category scores missing for",
-      nrow(group_missing_categories),
-      "group(s).",
-      "Examples (Country | tech | supply_chain | Year -> missing categories):",
+    warning(
       paste(
-        paste0(missing_preview$group_key, " -> ", missing_preview$missing_categories),
-        collapse = "; "
+        "Category scores missing for",
+        nrow(group_missing_categories),
+        "group(s); filling with global category averages.",
+        "Examples (Country | tech | supply_chain | Year -> missing categories):",
+        paste(
+          paste0(missing_preview$group_key, " -> ", missing_preview$missing_categories),
+          collapse = "; "
+        )
       )
     )
-
-    if (isTRUE(allow_partial_categories)) {
-      warning(missing_message)
-    } else {
-      stop(
-        missing_message,
-        " Set allow_partial_categories: true in config to permit partial weighting."
-      )
-    }
   }
+
+  global_category_averages <- category_scores %>%
+    dplyr::group_by(tech, supply_chain, category) %>%
+    dplyr::summarize(global_avg = mean(category_score, na.rm = TRUE), .groups = "drop")
+
+  category_scores_latest <- category_scores_latest %>%
+    dplyr::distinct(Country, tech, supply_chain, Year) %>%
+    dplyr::left_join(
+      available_categories,
+      by = c("tech", "supply_chain")
+    ) %>%
+    dplyr::left_join(
+      category_scores_latest,
+      by = c("Country", "tech", "supply_chain", "Year", "category")
+    ) %>%
+    dplyr::left_join(
+      global_category_averages,
+      by = c("tech", "supply_chain", "category")
+    ) %>%
+    dplyr::mutate(category_score = dplyr::coalesce(category_score, global_avg)) %>%
+    dplyr::select(-global_avg)
 
   message("Computing overall energy security index from weighted categories.")
   category_contributions <- category_scores_latest %>%
@@ -182,7 +211,13 @@ build_energy_security_index <- function(theme_tables,
     dplyr::summarize(
       energy_security_index = sum(category_score * weight, na.rm = TRUE) / sum(weight, na.rm = TRUE),
       .groups = "drop"
-    )
+    ) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::filter(Year == max(Year, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(energy_security_index = median_scurve(energy_security_index)) %>%
+    dplyr::ungroup()
 
   list(
     category_scores = category_scores_latest %>%
