@@ -43,7 +43,7 @@ build_energy_security_index <- function(theme_tables,
     dplyr::filter(data_type == "index", tech %in% techs)
 
   message("Filtering energy security data to Overall variables only.")
-  energy_security_data <- energy_security_data %>%
+  energy_security_overall <- energy_security_data %>%
     dplyr::filter(grepl("Overall", variable))
 
   weights_tbl <- tibble::tibble(
@@ -52,7 +52,7 @@ build_energy_security_index <- function(theme_tables,
   )
 
   message("Computing category-level scores.")
-  category_scores <- energy_security_data %>%
+  category_scores <- energy_security_overall %>%
     dplyr::group_by(Country, tech, supply_chain, Year, category) %>%
     dplyr::summarize(category_score = mean(value, na.rm = TRUE), .groups = "drop")
 
@@ -124,6 +124,45 @@ build_energy_security_index <- function(theme_tables,
   }
 
   message("Computing overall energy security index from weighted categories.")
+  weights_sum <- weights_tbl %>%
+    dplyr::summarize(weight_sum = sum(weight, na.rm = TRUE)) %>%
+    dplyr::pull(weight_sum)
+
+  category_contributions <- category_scores %>%
+    dplyr::left_join(weights_tbl, by = "category") %>%
+    dplyr::mutate(weighted_contribution = category_score * weight / weights_sum)
+
+  variable_contributions <- energy_security_data %>%
+    dplyr::filter(!grepl("Overall", variable)) %>%
+    dplyr::inner_join(
+      category_scores %>%
+        dplyr::select(Country, tech, supply_chain, Year, category, category_score),
+      by = c("Country", "tech", "supply_chain", "Year", "category")
+    ) %>%
+    dplyr::group_by(Country, tech, supply_chain, Year, category) %>%
+    dplyr::mutate(variable_count = dplyr::n()) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(weights_tbl, by = "category") %>%
+    dplyr::mutate(
+      category_weight = weight / weights_sum,
+      variable_weight = category_weight / variable_count,
+      weighted_contribution = value * variable_weight
+    ) %>%
+    dplyr::select(
+      Country,
+      tech,
+      supply_chain,
+      Year,
+      category,
+      variable,
+      value,
+      category_score,
+      variable_count,
+      category_weight,
+      variable_weight,
+      weighted_contribution
+    )
+
   energy_security_index <- category_scores %>%
     dplyr::inner_join(weights_tbl, by = "category") %>%
     dplyr::group_by(Country, tech, supply_chain) %>%
@@ -135,6 +174,8 @@ build_energy_security_index <- function(theme_tables,
   list(
     category_scores = category_scores %>%
       dplyr::select(Country, tech, supply_chain, Year, category, category_score),
+    category_contributions = category_contributions,
+    variable_contributions = variable_contributions,
     index = energy_security_index %>%
       dplyr::select(Country, tech, supply_chain, energy_security_index)
   )
