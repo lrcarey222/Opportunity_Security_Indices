@@ -56,7 +56,18 @@ build_energy_security_index <- function(theme_tables,
     dplyr::group_by(Country, tech, supply_chain, Year, category) %>%
     dplyr::summarize(category_score = mean(value, na.rm = TRUE), .groups = "drop")
 
-  categories_in_data <- sort(unique(category_scores$category))
+  latest_years <- category_scores %>%
+    dplyr::filter(!is.na(Year)) %>%
+    dplyr::group_by(Country, tech, supply_chain) %>%
+    dplyr::summarize(Year = max(Year, na.rm = TRUE), .groups = "drop")
+
+  category_scores_latest <- category_scores %>%
+    dplyr::inner_join(
+      latest_years,
+      by = c("Country", "tech", "supply_chain", "Year")
+    )
+
+  categories_in_data <- sort(unique(category_scores_latest$category))
   categories_in_weights <- sort(unique(weights_tbl$category))
 
   extra_config_categories <- setdiff(categories_in_weights, categories_in_data)
@@ -79,7 +90,7 @@ build_energy_security_index <- function(theme_tables,
     dplyr::filter(category %in% categories_in_data)
 
   expected_categories <- weights_tbl$category
-  group_missing_categories <- category_scores %>%
+  group_missing_categories <- category_scores_latest %>%
     dplyr::group_by(Country, tech, supply_chain, Year) %>%
     dplyr::summarize(
       missing_categories = list(setdiff(expected_categories, unique(category))),
@@ -124,18 +135,17 @@ build_energy_security_index <- function(theme_tables,
   }
 
   message("Computing overall energy security index from weighted categories.")
-  weights_sum <- weights_tbl %>%
-    dplyr::summarize(weight_sum = sum(weight, na.rm = TRUE)) %>%
-    dplyr::pull(weight_sum)
-
-  category_contributions <- category_scores %>%
+  category_contributions <- category_scores_latest %>%
     dplyr::left_join(weights_tbl, by = "category") %>%
-    dplyr::mutate(weighted_contribution = category_score * weight / weights_sum)
+    dplyr::group_by(Country, tech, supply_chain, Year) %>%
+    dplyr::mutate(weight_sum = sum(weight, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(weighted_contribution = category_score * weight / weight_sum)
 
   variable_contributions <- energy_security_data %>%
     dplyr::filter(!grepl("Overall", variable)) %>%
     dplyr::inner_join(
-      category_scores %>%
+      category_scores_latest %>%
         dplyr::select(Country, tech, supply_chain, Year, category, category_score),
       by = c("Country", "tech", "supply_chain", "Year", "category")
     ) %>%
@@ -143,8 +153,11 @@ build_energy_security_index <- function(theme_tables,
     dplyr::mutate(variable_count = dplyr::n()) %>%
     dplyr::ungroup() %>%
     dplyr::left_join(weights_tbl, by = "category") %>%
+    dplyr::group_by(Country, tech, supply_chain, Year) %>%
+    dplyr::mutate(weight_sum = sum(weight, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
     dplyr::mutate(
-      category_weight = weight / weights_sum,
+      category_weight = weight / weight_sum,
       variable_weight = category_weight / variable_count,
       weighted_contribution = value * variable_weight
     ) %>%
@@ -163,20 +176,20 @@ build_energy_security_index <- function(theme_tables,
       weighted_contribution
     )
 
-  energy_security_index <- category_scores %>%
+  energy_security_index <- category_scores_latest %>%
     dplyr::inner_join(weights_tbl, by = "category") %>%
-    dplyr::group_by(Country, tech, supply_chain) %>%
+    dplyr::group_by(Country, tech, supply_chain, Year) %>%
     dplyr::summarize(
-      energy_security_index = stats::weighted.mean(category_score, weight, na.rm = TRUE),
+      energy_security_index = sum(category_score * weight, na.rm = TRUE) / sum(weight, na.rm = TRUE),
       .groups = "drop"
     )
 
   list(
-    category_scores = category_scores %>%
+    category_scores = category_scores_latest %>%
       dplyr::select(Country, tech, supply_chain, Year, category, category_score),
     category_contributions = category_contributions,
     variable_contributions = variable_contributions,
     index = energy_security_index %>%
-      dplyr::select(Country, tech, supply_chain, energy_security_index)
+      dplyr::select(Country, tech, supply_chain, Year, energy_security_index)
   )
 }
