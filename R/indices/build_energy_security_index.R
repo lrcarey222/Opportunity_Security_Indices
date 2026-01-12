@@ -90,11 +90,11 @@ build_energy_security_index <- function(theme_tables,
   weights_tbl <- weights_tbl %>%
     dplyr::filter(category %in% categories_in_data)
 
-  available_categories <- category_scores_latest %>%
-    dplyr::distinct(tech, supply_chain, Year, category)
+  available_categories <- category_scores %>%
+    dplyr::distinct(tech, supply_chain, category)
 
   available_by_group <- available_categories %>%
-    dplyr::group_by(tech, supply_chain, Year) %>%
+    dplyr::group_by(tech, supply_chain) %>%
     dplyr::summarize(
       available_categories = list(unique(category)),
       .groups = "drop"
@@ -106,7 +106,7 @@ build_energy_security_index <- function(theme_tables,
       present_categories = list(unique(category)),
       .groups = "drop"
     ) %>%
-    dplyr::left_join(available_by_group, by = c("tech", "supply_chain", "Year")) %>%
+    dplyr::left_join(available_by_group, by = c("tech", "supply_chain")) %>%
     dplyr::mutate(
       missing_categories = Map(setdiff, available_categories, present_categories)
     ) %>%
@@ -142,15 +142,15 @@ build_energy_security_index <- function(theme_tables,
     )
   }
 
-  global_category_averages <- category_scores_latest %>%
-    dplyr::group_by(tech, supply_chain, Year, category) %>%
+  global_category_averages <- category_scores %>%
+    dplyr::group_by(tech, supply_chain, category) %>%
     dplyr::summarize(global_avg = mean(category_score, na.rm = TRUE), .groups = "drop")
 
   category_scores_latest <- category_scores_latest %>%
     dplyr::distinct(Country, tech, supply_chain, Year) %>%
     dplyr::left_join(
       available_categories,
-      by = c("tech", "supply_chain", "Year")
+      by = c("tech", "supply_chain")
     ) %>%
     dplyr::left_join(
       category_scores_latest,
@@ -158,7 +158,7 @@ build_energy_security_index <- function(theme_tables,
     ) %>%
     dplyr::left_join(
       global_category_averages,
-      by = c("tech", "supply_chain", "Year", "category")
+      by = c("tech", "supply_chain", "category")
     ) %>%
     dplyr::mutate(category_score = dplyr::coalesce(category_score, global_avg)) %>%
     dplyr::select(-global_avg)
