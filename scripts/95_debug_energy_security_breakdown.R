@@ -21,22 +21,26 @@
 #     --mode="country" \
 #     --output-dir="output/debug"
 
-resolve_script_root <- function() {
-  args <- commandArgs(trailingOnly = FALSE)
-  file_arg <- grep("^--file=", args, value = TRUE)
-  script_path <- if (length(file_arg) > 0) {
-    sub("^--file=", "", file_arg[1])
-  } else if (!is.null(sys.frame(1)$ofile)) {
-    sys.frame(1)$ofile
-  } else {
-    ""
+resolve_repo_root_local <- function() {
+  repo_root <- getOption("opportunity_security.repo_root")
+  if (!is.null(repo_root) && nzchar(repo_root)) {
+    return(repo_root)
   }
 
-  if (script_path == "") {
-    stop("Unable to determine script path for repo root.")
+  if (requireNamespace("rprojroot", quietly = TRUE)) {
+    return(rprojroot::find_root(rprojroot::is_git_root))
   }
 
-  dirname(normalizePath(script_path, winslash = "/", mustWork = TRUE))
+  d <- normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
+    d <- dirname(d)
+  }
+
+  if (!file.exists(file.path(d, ".git"))) {
+    stop("Unable to determine repo root; set working directory to the repo.")
+  }
+
+  d
 }
 
 parse_args <- function(args) {
@@ -81,7 +85,7 @@ run_energy_security_breakdown <- function(country,
     stop("tech and supply_chain are required when mode = \"single\".")
   }
 
-  repo_root <- dirname(resolve_script_root())
+  repo_root <- resolve_repo_root_local()
 
   source(file.path(repo_root, "scripts", "00_setup.R"))
 
