@@ -11,6 +11,9 @@ critical_minerals_processing_build_supply <- function(critical,
                                                       mineral_demand_clean,
                                                       country_info,
                                                       gamma = 0.5) {
+  critical <- critical %>%
+    dplyr::mutate(`Sector.Country` = standardize_country_names(`Sector.Country`))
+
   minerals <- critical %>%
     dplyr::filter(
       grepl("Total supply", Pillar),
