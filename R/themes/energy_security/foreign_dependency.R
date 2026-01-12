@@ -51,7 +51,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
     dplyr::mutate(
       supply_chain = dplyr::if_else(
         stringr::str_detect(supply_chain_raw, stringr::regex("Refining|Chemical", ignore_case = TRUE)),
-        "Midstream",
+        "Upstream",
         "Upstream"
       )
     ) %>%
@@ -59,7 +59,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
     dplyr::select(mineral, country, supply_chain, X2024, X2035) %>%
     tidyr::complete(
       mineral = minerals$mineral,
-      supply_chain = c("Upstream", "Midstream"),
+      supply_chain = c("Upstream"),
       country = countries$`Sector.Country`,
       fill = list(X2024 = 0, X2035 = 0)
     ) %>%
