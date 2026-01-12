@@ -33,4 +33,28 @@ energy_security_outputs <- build_energy_security_index(
 )
 
 energy_security_category_scores <- energy_security_outputs$category_scores
+energy_security_category_contributions <- energy_security_outputs$category_contributions
+energy_security_variable_contributions <- energy_security_outputs$variable_contributions
 energy_security_index <- energy_security_outputs$index
+
+outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
+  file.path(repo_root, config$outputs_dir)
+} else {
+  file.path(repo_root, config$processed_dir, "outputs")
+}
+
+if (!dir.exists(outputs_dir)) {
+  dir.create(outputs_dir, recursive = TRUE)
+}
+
+utils::write.csv(
+  energy_security_category_contributions,
+  file = file.path(outputs_dir, "energy_security_category_contributions.csv"),
+  row.names = FALSE
+)
+
+utils::write.csv(
+  energy_security_variable_contributions,
+  file = file.path(outputs_dir, "energy_security_variable_contributions.csv"),
+  row.names = FALSE
+)
