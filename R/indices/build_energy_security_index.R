@@ -44,7 +44,8 @@ build_energy_security_index <- function(theme_tables,
 
   message("Filtering energy security data to Overall variables only.")
   energy_security_overall <- energy_security_data %>%
-    dplyr::filter(grepl("Overall", variable))
+    dplyr::filter(grepl("Overall", variable)) %>%
+    dplyr::filter(!(category == "Trade" & variable != "Overall Trade Risk Index"))
 
   weights_tbl <- tibble::tibble(
     category = names(weights),
