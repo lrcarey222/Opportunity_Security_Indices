@@ -20,7 +20,7 @@ standardize_energy_security_inputs <- function(theme_tables) {
 
 build_energy_security_index <- function(theme_tables,
                                         weights,
-                                        allow_partial_categories = FALSE,
+                                        allow_partial_categories = T,
                                         techs = c(
                                           "Electric Vehicles",
                                           "Nuclear",
