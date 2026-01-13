@@ -10,29 +10,31 @@ source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
 
 config <- getOption("opportunity_security.config")
 weights <- getOption("opportunity_security.weights")
-if (is.null(config) || is.null(weights)) {
-  stop("Config or weights not loaded; run scripts/00_setup.R first.")
+missing_data <- getOption("opportunity_security.missing_data")
+if (is.null(config) || is.null(weights) || is.null(missing_data)) {
+  stop("Config, weights, or missing data config not loaded; run scripts/00_setup.R first.")
 }
 
 allow_partial_categories <- isTRUE(config$allow_partial_categories)
 include_sub_sector <- isTRUE(config$energy_security_include_sub_sector)
 
 energy_security_inputs <- list(
-  energy_access_tbl = energy_access_tbl,
-  import_dependence_tbl = import_dependence_tbl,
-  reserves_tbl = reserves_tbl,
-  foreign_dependency_tbl = foreign_dependency_tbl,
-  critical_minerals_processing_tbl = critical_minerals_processing_tbl,
-  critical_minerals_production_tbl = critical_minerals_production_tbl,
-  critical_minerals_trade_tbl = critical_minerals_trade_tbl,
-  energy_consumption_tbl = energy_consumption_tbl,
-  trade_concentration_tbl = trade_concentration_tbl,
-  energy_prices_tbl = energy_prices_tbl
+  energy_access_consumption = energy_access_tbl,
+  import_dependence = import_dependence_tbl,
+  reserves = reserves_tbl,
+  foreign_dependency = foreign_dependency_tbl,
+  critical_minerals_processing = critical_minerals_processing_tbl,
+  critical_minerals_production = critical_minerals_production_tbl,
+  critical_minerals_trade = critical_minerals_trade_tbl,
+  energy_consumption = energy_consumption_tbl,
+  trade_concentration = trade_concentration_tbl,
+  energy_prices = energy_prices_tbl
 )
 
 energy_security_outputs <- build_energy_security_index(
   theme_tables = energy_security_inputs,
   weights = weights$energy_security,
+  missing_data = missing_data$energy_security,
   allow_partial_categories = allow_partial_categories,
   include_sub_sector = include_sub_sector
 )

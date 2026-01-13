@@ -39,6 +39,10 @@ resolve_repo_root <- function() {
 repo_root <- resolve_repo_root()
 config_path <- Sys.getenv("OPSI_CONFIG", file.path(repo_root, "config", "config.yml"))
 weights_path <- Sys.getenv("OPSI_WEIGHTS", file.path(repo_root, "config", "weights.yml"))
+missing_data_path <- Sys.getenv(
+  "OPSI_MISSING_DATA",
+  file.path(repo_root, "config", "missing_data.yml")
+)
 
 if (!requireNamespace("yaml", quietly = TRUE)) {
   stop("Package 'yaml' is required to load config files.")
@@ -54,9 +58,13 @@ if (!file.exists(config_path)) {
 if (!file.exists(weights_path)) {
   stop("Weights file not found: ", weights_path)
 }
+if (!file.exists(missing_data_path)) {
+  stop("Missing data config file not found: ", missing_data_path)
+}
 
 config <- yaml::read_yaml(config_path)
 weights <- yaml::read_yaml(weights_path)
+missing_data <- yaml::read_yaml(missing_data_path)
 
 required_env_vars <- c()
 missing_env <- required_env_vars[Sys.getenv(required_env_vars) == ""]
@@ -71,6 +79,7 @@ if (is.null(config$raw_data_dir)) {
 options(
   opportunity_security.config = config,
   opportunity_security.weights = weights,
+  opportunity_security.missing_data = missing_data,
   opportunity_security.repo_root = repo_root
 )
 # setup (placeholder).
