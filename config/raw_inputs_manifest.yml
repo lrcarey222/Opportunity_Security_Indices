@@ -1,4 +1,8 @@
-- path: hts_codes_categories_bolstered_final.csv
+- path: consolidated_hs6_energy_tech_long.csv
+- path: comtrade_energy_trade.csv
+  optional: yes
+- path: comtrade_total_export.csv
+  optional: yes
 - path: allied_comtrade_energy_data.csv
   optional: yes
 - path: imf_dip.csv
