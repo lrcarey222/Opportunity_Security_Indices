@@ -36,6 +36,10 @@ with `gamma = 0.5` as the default. This compresses the middle of the distributio
 
 Theme-level indices are aggregated into pillar indices using weighted means across categories. Weights are defined by category and applied within each country/technology/supply-chain group. The ES and EO pillars are computed from their respective categories (e.g., Foreign Dependency, Trade, Production, Consumption, Technology Demand, Investment, etc.).
 
+## Supply-chain coupling (HHI-weighted shrinkage)
+
+To align stage-level pillar scores with a technology-wide supply-chain signal, each pillar stage score is shrunk toward a chain score computed as the geometric mean across upstream, midstream, and downstream stages (using an epsilon to avoid log-zero). The shrinkage strength is determined by a tech-level HHI concentration measure: upstream and midstream HHI values are averaged (latest available HHI year) and normalized to [0, 1]. A bounded logistic ramp maps normalized HHI to a lambda in [0.15, 0.65], and the coupled score is `(1 - lambda) * stage_score + lambda * chain_score`. Coupling is applied to pillar scores only, leaving category scores unchanged.
+
 ## Partnership Strength Index (PSI)
 
 PSI blends three components, each normalized with the same S-curve, using a weighted mean:
