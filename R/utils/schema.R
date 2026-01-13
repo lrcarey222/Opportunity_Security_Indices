@@ -42,11 +42,71 @@ validate_schema <- function(tbl) {
     stop("Column 'value' must be numeric.")
   }
 
-  if (!(is.numeric(tbl$Year) || is.integer(tbl$Year))) {
-    stop("Column 'Year' must be numeric or integer.")
+  if (!is.integer(tbl$Year)) {
+    stop("Column 'Year' must be integer.")
+  }
+
+  if (!all(tbl$data_type %in% c("raw", "index"))) {
+    stop("Column 'data_type' must be either 'raw' or 'index'.")
   }
 
   invisible(tbl)
+}
+
+require_columns <- function(tbl, columns, label = "table") {
+  if (!inherits(tbl, "data.frame")) {
+    stop("require_columns() expects a data.frame for ", label, ".")
+  }
+
+  missing_cols <- setdiff(columns, names(tbl))
+  if (length(missing_cols) > 0) {
+    stop(
+      "Missing required columns in ",
+      label,
+      ": ",
+      paste(missing_cols, collapse = ", ")
+    )
+  }
+
+  invisible(tbl)
+}
+
+assert_unique_keys <- function(tbl, keys, label = "table") {
+  require_columns(tbl, keys, label = label)
+  key_counts <- tbl %>%
+    dplyr::count(dplyr::across(dplyr::all_of(keys)), name = "n") %>%
+    dplyr::filter(n > 1)
+
+  if (nrow(key_counts) > 0) {
+    stop("Duplicate key(s) detected in ", label, " for: ", paste(keys, collapse = ", "))
+  }
+
+  invisible(tbl)
+}
+
+standardize_theme_table <- function(tbl) {
+  if (is.null(tbl)) {
+    return(tbl)
+  }
+
+  if (!inherits(tbl, "data.frame")) {
+    stop("standardize_theme_table() expects a data.frame.")
+  }
+
+  tbl %>%
+    dplyr::mutate(
+      Country = as.character(Country),
+      tech = as.character(tech),
+      supply_chain = as.character(supply_chain),
+      category = as.character(category),
+      variable = as.character(variable),
+      data_type = as.character(data_type),
+      Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$"))),
+      value = suppressWarnings(as.numeric(value)),
+      source = as.character(source),
+      explanation = as.character(explanation)
+    )
+}
 # schema (placeholder).
 # TODO: implement.
 schema_stub <- function() {
