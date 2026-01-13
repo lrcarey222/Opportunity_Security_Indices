@@ -1,6 +1,11 @@
 # Build Energy Security index outputs (category scores + overall index).
 standardize_energy_security_inputs <- function(theme_tables, include_sub_sector = FALSE) {
-  standardized <- lapply(theme_tables, function(tbl) {
+  theme_names <- names(theme_tables)
+  if (is.null(theme_names)) {
+    theme_names <- rep("unknown_theme", length(theme_tables))
+  }
+
+  standardized <- Map(function(theme_name, tbl) {
     if (is.null(tbl)) {
       return(NULL)
     }
@@ -14,16 +19,18 @@ standardize_energy_security_inputs <- function(theme_tables, include_sub_sector 
         supply_chain = as.character(supply_chain),
         sub_sector = if ("sub_sector" %in% names(tbl)) as.character(sub_sector) else "All",
         category = as.character(category),
+        theme = as.character(theme_name),
         Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$"))),
         value = suppressWarnings(as.numeric(value))
       )
-  })
+  }, theme_names, theme_tables)
 
   dplyr::bind_rows(standardized)
 }
 
 build_energy_security_index <- function(theme_tables,
                                         weights,
+                                        missing_data = NULL,
                                         allow_partial_categories = T,
                                         include_sub_sector = FALSE,
                                         techs = c(
@@ -60,16 +67,91 @@ build_energy_security_index <- function(theme_tables,
     weight = as.numeric(unlist(weights, use.names = FALSE))
   )
 
+  missing_data_tbl <- tibble::tibble(
+    theme = names(missing_data),
+    method = as.character(unlist(missing_data, use.names = FALSE))
+  )
+
   message("Computing category-level scores.")
   group_cols <- c("Country", "tech", "supply_chain")
   if (include_sub_sector) {
     group_cols <- c(group_cols, "sub_sector")
   }
   category_group_cols <- c(group_cols, "Year", "category")
+  theme_group_cols <- c(group_cols[-1], "Year", "category", "theme")
 
-  category_scores <- energy_security_overall %>%
+  missing_data_tbl <- energy_security_overall %>%
+    dplyr::distinct(theme) %>%
+    dplyr::left_join(missing_data_tbl, by = "theme") %>%
+    dplyr::mutate(method = dplyr::coalesce(method, "global_average"))
+
+  invalid_methods <- missing_data_tbl %>%
+    dplyr::filter(!method %in% c("zero", "global_average"))
+  if (nrow(invalid_methods) > 0) {
+    stop(
+      "Unknown missing data methods: ",
+      paste(unique(invalid_methods$method), collapse = ", ")
+    )
+  }
+
+  theme_groups <- energy_security_overall %>%
+    dplyr::distinct(dplyr::across(dplyr::all_of(theme_group_cols)))
+
+  country_groups <- energy_security_overall %>%
+    dplyr::distinct(dplyr::across(dplyr::all_of(c(group_cols, "Year"))))
+
+  theme_country_grid <- theme_groups %>%
+    dplyr::left_join(
+      country_groups,
+      by = c(group_cols[-1], "Year")
+    )
+
+  theme_global_averages <- energy_security_overall %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(theme_group_cols))) %>%
+    dplyr::summarize(global_avg = mean(value, na.rm = TRUE), .groups = "drop")
+
+  theme_overall_completed <- theme_country_grid %>%
+    dplyr::left_join(
+      energy_security_overall %>%
+        dplyr::select(dplyr::all_of(c(theme_group_cols, "Country", "value"))),
+      by = c(theme_group_cols, "Country")
+    ) %>%
+    dplyr::left_join(
+      theme_global_averages,
+      by = theme_group_cols
+    ) %>%
+    dplyr::left_join(missing_data_tbl, by = "theme") %>%
+    dplyr::mutate(
+      category_score = dplyr::case_when(
+        !is.na(value) ~ value,
+        method == "zero" ~ 0,
+        method == "global_average" ~ global_avg,
+        TRUE ~ global_avg
+      )
+    )
+
+  missing_summary <- theme_overall_completed %>%
+    dplyr::filter(is.na(value)) %>%
+    dplyr::count(theme, method, category)
+
+  if (nrow(missing_summary) > 0) {
+    missing_preview <- missing_summary %>%
+      dplyr::mutate(summary = paste(theme, category, method, sep = " | ")) %>%
+      dplyr::pull(summary) %>%
+      head(10)
+
+    warning(
+      paste(
+        "Missing theme scores detected; imputing using configured methods.",
+        "Examples (theme | category | method):",
+        paste(missing_preview, collapse = "; ")
+      )
+    )
+  }
+
+  category_scores <- theme_overall_completed %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(category_group_cols))) %>%
-    dplyr::summarize(category_score = mean(value, na.rm = TRUE), .groups = "drop")
+    dplyr::summarize(category_score = mean(category_score, na.rm = TRUE), .groups = "drop")
 
   latest_years <- category_scores %>%
     dplyr::filter(!is.na(Year)) %>%
@@ -103,83 +185,6 @@ build_energy_security_index <- function(theme_tables,
 
   weights_tbl <- weights_tbl %>%
     dplyr::filter(category %in% categories_in_data)
-
-  available_categories <- category_scores %>%
-    dplyr::distinct(dplyr::across(dplyr::all_of(c(group_cols[-1], "category"))))
-
-  available_by_group <- available_categories %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols[-1]))) %>%
-    dplyr::summarize(
-      available_categories = list(unique(category)),
-      .groups = "drop"
-    )
-
-  group_missing_categories <- category_scores_latest %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(c(group_cols, "Year")))) %>%
-    dplyr::summarize(
-      present_categories = list(unique(category)),
-      .groups = "drop"
-    ) %>%
-    dplyr::left_join(available_by_group, by = group_cols[-1]) %>%
-    dplyr::mutate(
-      missing_categories = Map(setdiff, available_categories, present_categories)
-    ) %>%
-    dplyr::filter(lengths(missing_categories) > 0) %>%
-    dplyr::select(-present_categories, -available_categories)
-
-  if (nrow(group_missing_categories) > 0) {
-    missing_preview <- group_missing_categories %>%
-      dplyr::mutate(
-        missing_categories = vapply(
-          missing_categories,
-          function(items) paste(items, collapse = ", "),
-          character(1)
-        )
-      ) %>%
-    dplyr::mutate(
-      group_key = if (include_sub_sector) {
-        paste(Country, tech, supply_chain, sub_sector, Year, sep = " | ")
-      } else {
-        paste(Country, tech, supply_chain, Year, sep = " | ")
-      }
-    ) %>%
-    dplyr::select(group_key, missing_categories) %>%
-    head(10)
-
-    warning(
-      paste(
-        "Category scores missing for",
-        nrow(group_missing_categories),
-        "group(s); filling with global category averages.",
-        "Examples (Country | tech | supply_chain | Year -> missing categories):",
-        paste(
-          paste0(missing_preview$group_key, " -> ", missing_preview$missing_categories),
-          collapse = "; "
-        )
-      )
-    )
-  }
-
-  global_category_averages <- category_scores %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(c(group_cols[-1], "category")))) %>%
-    dplyr::summarize(global_avg = mean(category_score, na.rm = TRUE), .groups = "drop")
-
-  category_scores_latest <- category_scores_latest %>%
-    dplyr::distinct(dplyr::across(dplyr::all_of(c(group_cols, "Year")))) %>%
-    dplyr::left_join(
-      available_categories,
-      by = group_cols[-1]
-    ) %>%
-    dplyr::left_join(
-      category_scores_latest,
-      by = c(group_cols, "Year", "category")
-    ) %>%
-    dplyr::left_join(
-      global_category_averages,
-      by = c(group_cols[-1], "category")
-    ) %>%
-    dplyr::mutate(category_score = dplyr::coalesce(category_score, global_avg)) %>%
-    dplyr::select(-global_avg)
 
   message("Computing overall energy security index from weighted categories.")
   category_contributions <- category_scores_latest %>%
