@@ -1,0 +1,10 @@
+energy_security:
+  critical_minerals_processing: zero
+  critical_minerals_trade: zero
+  critical_minerals_production: zero
+  energy_access_consumption: global_average
+  energy_consumption: global_average
+  energy_prices: global_average
+  foreign_dependency: global_average
+  import_dependence: global_average
+  trade_concentration: global_average
