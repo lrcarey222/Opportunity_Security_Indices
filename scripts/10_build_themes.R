@@ -5,6 +5,7 @@ if (!exists("repo_root")) {
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
+source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "overall_index.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_processing.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_production.R"))
@@ -16,6 +17,7 @@ source(file.path(repo_root, "R", "themes", "energy_security", "foreign_dependenc
 source(file.path(repo_root, "R", "themes", "energy_security", "import_dependence.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "trade_concentration.R"))
+source(file.path(repo_root, "R", "themes", "economic_opportunity", "future_demand.R"))
 
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
@@ -96,6 +98,9 @@ critmin_import_path <- file.path(latest_snapshot, "critmin_import_2024.csv")
 critmin_export_path <- file.path(latest_snapshot, "critmin_export_2024.csv")
 critmin_total_export_path <- file.path(latest_snapshot, "critmin_total_export_2024.csv")
 energy_prices_lcoe_path <- file.path(latest_snapshot, "2025-03-24 - 2025 LCOE Data Viewer Tool.csv")
+iea_weo_path <- file.path(latest_snapshot, "WEO2024_AnnexA_Free_Dataset_World.csv")
+iea_ev_path <- file.path(latest_snapshot, "IEA_EVDataExplorer2025.xlsx")
+bcg_future_demand_path <- file.path(latest_snapshot, "Market Size for Technology and Supply Chain.xlsx")
 
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
@@ -113,7 +118,10 @@ missing_files <- c(
   critmin_import_path,
   critmin_export_path,
   critmin_total_export_path,
-  energy_prices_lcoe_path
+  energy_prices_lcoe_path,
+  iea_weo_path,
+  iea_ev_path,
+  bcg_future_demand_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
 
@@ -243,6 +251,21 @@ trade_concentration_tbl <- trade_concentration(
 )
 trade_concentration_tbl <- standardize_theme_types(trade_concentration_tbl, country_info = country_info)
 
+# Theme: Future demand (IEA + BNEF + EV + BCG data).
+iea_weo <- read.csv(iea_weo_path)
+iea_ev <- readxl::read_excel(iea_ev_path, sheet = 1)
+bcg <- readxl::read_excel(bcg_future_demand_path, sheet = 1)
+
+future_demand_tbl <- future_demand(
+  iea_weo = iea_weo,
+  bnef_neo = bnef_neo,
+  iea_ev = iea_ev,
+  bcg = bcg,
+  country_info = country_info,
+  country_reference = country_reference
+)
+future_demand_tbl <- standardize_theme_types(future_demand_tbl, country_info = country_info)
+
 # Collect all theme outputs in a named list for downstream consumers.
 theme_outputs <- list(
   critical_minerals_processing = critical_minerals_processing_tbl,
@@ -254,7 +277,8 @@ theme_outputs <- list(
   foreign_dependency = foreign_dependency_tbl,
   import_dependence = import_dependence_tbl,
   reserves = reserves_tbl,
-  trade_concentration = trade_concentration_tbl
+  trade_concentration = trade_concentration_tbl,
+  future_demand = future_demand_tbl
 )
 
 invisible(theme_outputs)

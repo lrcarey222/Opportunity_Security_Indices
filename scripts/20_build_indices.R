@@ -3,7 +3,9 @@ if (!exists("repo_root")) {
   repo_root <- resolve_repo_root()
 }
 
+source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index.R"))
+source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index.R"))
 source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
 
 config <- getOption("opportunity_security.config")
@@ -37,6 +39,21 @@ energy_security_category_scores <- energy_security_outputs$category_scores
 energy_security_category_contributions <- energy_security_outputs$category_contributions
 energy_security_variable_contributions <- energy_security_outputs$variable_contributions
 energy_security_index <- energy_security_outputs$index
+
+economic_opportunity_inputs <- list(
+  future_demand_tbl = future_demand_tbl
+)
+
+economic_opportunity_outputs <- build_economic_opportunity_index(
+  theme_tables = economic_opportunity_inputs,
+  weights = weights$economic_opportunity,
+  allow_partial_categories = allow_partial_categories
+)
+
+economic_opportunity_category_scores <- economic_opportunity_outputs$category_scores
+economic_opportunity_category_contributions <- economic_opportunity_outputs$category_contributions
+economic_opportunity_variable_contributions <- economic_opportunity_outputs$variable_contributions
+economic_opportunity_index <- economic_opportunity_outputs$index
 
 hhi_tbl <- trade_concentration_tbl %>%
   dplyr::filter(variable == "HHI", data_type == "index") %>%
