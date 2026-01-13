@@ -1,0 +1,43 @@
+"Country","tech","supply_chain","Year","category","category_score","weight","weighted_contribution"
+"United States","Solar","Upstream",2024,"Foreign Dependency",0.712774634020854,6,0.129595388003792
+"United States","Electric Grid","Upstream",2024,"Foreign Dependency",0.71211425160626,6,0.129475318473866
+"United States","Coal","Upstream",2024,"Reserves",1,4,0.121212121212121
+"United States","Green Hydrogen","Upstream",2024,"Production",0.643210827674669,6,0.116947423213576
+"United States","Wind","Upstream",2024,"Foreign Dependency",0.629287111081386,6,0.114415838378434
+"United States","Green Hydrogen","Upstream",2024,"Trade",0.919335084409935,4,0.111434555686053
+"United States","Wind","Upstream",2024,"Production",0.6,6,0.109090909090909
+"United States","Electric Vehicles","Upstream",2024,"Trade",0.892550500907141,4,0.108187939503896
+"United States","Electric Grid","Upstream",2024,"Trade",0.888500980395926,4,0.10769708853284
+"United States","Batteries","Upstream",2024,"Trade",0.874042604278947,4,0.105944558094418
+"United States","Solar","Downstream",2024,"Energy Access",0.868034419704735,4,0.105216293297544
+"United States","Solar","Upstream",2024,"Production",0.56949912595694,6,0.103545295628534
+"United States","Solar","Upstream",2024,"Trade",0.849823259615764,4,0.103008879953426
+"United States","Wind","Upstream",2024,"Trade",0.811963885491403,4,0.0984198649080488
+"United States","Gas","Upstream",2024,"Reserves",0.798310407112775,4,0.0967648978318515
+"United States","Batteries","Upstream",2024,"Foreign Dependency",0.52993783980035,6,0.0963523345091545
+"United States","Coal","Upstream",2024,"Energy Imports",0.772270000803559,4,0.0936084849458859
+"United States","Green Hydrogen","Midstream",2024,"Foreign Dependency",0.510000261208751,6,0.0927273202197729
+"United States","Wind","Midstream",2024,"Foreign Dependency",0.49320425109285,6,0.0896735001987
+"United States","Electric Vehicles","Upstream",2024,"Foreign Dependency",0.489585975044267,6,0.0890156318262304
+"United States","Electric Vehicles","Midstream",2024,"Foreign Dependency",0.481878825700883,6,0.0876143319456151
+"United States","Batteries","Upstream",2024,"Production",0.48074069840786,6,0.08740739971052
+"United States","Solar","Midstream",2024,"Foreign Dependency",0.477966004477543,6,0.0869029099050079
+"United States","Wind","Downstream",2024,"Energy Access",0.707676582733127,4,0.0857789797252275
+"United States","Oil","Upstream",2024,"Reserves",0.707615460408899,4,0.0857715709586545
+"United States","Electric Grid","Midstream",2024,"Foreign Dependency",0.466113072556127,6,0.0847478313738412
+"United States","Green Hydrogen","Upstream",2024,"Reserves",0.683569027417467,4,0.0828568518081779
+"United States","Gas","Upstream",2024,"Energy Imports",0.666666666666667,4,0.0808080808080808
+"United States","Batteries","Midstream",2024,"Foreign Dependency",0.430399493710382,6,0.0782544534018877
+"United States","Gas","Downstream",2024,"Energy Access",0.637391983920891,4,0.0772596344146534
+"United States","Oil","Upstream",2024,"Energy Imports",0.630032296530189,4,0.0763675510945684
+"United States","Green Hydrogen","Upstream",2024,"Foreign Dependency",0.41146733156405,6,0.0748122421025546
+"United States","Batteries","Upstream",2024,"Reserves",0.6,4,0.0727272727272727
+"United States","Oil","Downstream",2024,"Energy Access",0.592779291096325,4,0.071852035284403
+"United States","Solar","Upstream",2024,"Reserves",0.56949912595694,4,0.0690301970856896
+"United States","Electric Grid","Upstream",2024,"Production",0.366025403784439,6,0.0665500734153525
+"United States","Electric Vehicles","Upstream",2024,"Production",0.353889367864523,6,0.0643435214299133
+"United States","Nuclear","Downstream",2024,"Energy Access",0.528803521979146,4,0.0640973966035329
+"United States","Wind","Upstream",2024,"Reserves",0.51925930159214,4,0.0629405214051078
+"United States","Electric Vehicles","Upstream",2024,"Reserves",0.461308144666282,4,0.0559161387474282
+"United States","Electric Grid","Upstream",2024,"Reserves",0.414213562373095,4,0.0502077045300721
+"United States","Coal","Downstream",2024,"Energy Access",0.346305311021192,4,0.0419764013359021
