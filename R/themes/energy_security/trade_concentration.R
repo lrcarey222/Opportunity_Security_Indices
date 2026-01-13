@@ -8,12 +8,29 @@
 # The HS6 code categories are cleaned into a compact lookup table so that
 # Comtrade (HS6) and Atlas (HS92) trade files can be matched to energy industries.
 trade_concentration_build_energy_codes <- function(subcat) {
+  pick_col <- function(tbl, candidates, label) {
+    match <- intersect(candidates, names(tbl))
+    if (length(match) == 0) {
+      stop("Missing ", label, " column in trade codes file.")
+    }
+    match[[1]]
+  }
+
+  tech_col <- pick_col(subcat, c("tech", "Technology", "technology"), "tech")
+  supply_chain_col <- pick_col(
+    subcat,
+    c("supply_chain", "Value.Chain", "value_chain", "Supply.Chain", "supply chain"),
+    "supply_chain"
+  )
+  sub_sector_col <- pick_col(subcat, c("sub_sector", "Sub.Sector", "subsector"), "sub_sector")
+  hs6_col <- pick_col(subcat, c("HS6", "hs6", "HS_6"), "HS6")
+
   subcat %>%
     dplyr::transmute(
-      tech = as.character(tech),
-      supply_chain = as.character(supply_chain),
-      sub_sector = as.character(sub_sector),
-      code6 = stringr::str_pad(as.character(HS6), width = 6, side = "left", pad = "0"),
+      tech = as.character(.data[[tech_col]]),
+      supply_chain = as.character(.data[[supply_chain_col]]),
+      sub_sector = as.character(.data[[sub_sector_col]]),
+      code6 = stringr::str_pad(as.character(.data[[hs6_col]]), width = 6, side = "left", pad = "0"),
       code4 = substr(code6, 1, 4)
     ) %>%
     dplyr::filter(!is.na(code6), nzchar(code6)) %>%
