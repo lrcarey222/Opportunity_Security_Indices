@@ -40,6 +40,7 @@ critical_minerals_production_build_table <- function(sheet_data,
       raw_value = dplyr::all_of(val_col)
     ) %>%
     dplyr::mutate(
+      Country = standardize_country_names(Country),
       Country = dplyr::case_when(
         Country %in% c("Rest of World", "Rest of world", "Rest of World^") ~ "Rest of World",
         Country == "US" ~ "United States",
