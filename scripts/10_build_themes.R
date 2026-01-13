@@ -27,6 +27,7 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
       Country = as.character(Country),
       tech = as.character(tech),
       supply_chain = as.character(supply_chain),
+      sub_sector = if ("sub_sector" %in% names(tbl)) as.character(sub_sector) else NULL,
       category = as.character(category),
       variable = as.character(variable),
       data_type = as.character(data_type),
@@ -86,9 +87,11 @@ reserves_excel_path <- file.path(latest_snapshot, "ei_stat_review_world_energy_w
 critical_minerals_path <- file.path(latest_snapshot, "iea_criticalminerals_25.csv")
 cleantech_midstream_path <- file.path(latest_snapshot, "iea_cleantech_Midstream.csv")
 ev_midstream_path <- file.path(latest_snapshot, "ev_Midstream_capacity.csv")
-trade_codes_path <- file.path(latest_snapshot, "hts_codes_categories_bolstered_final.csv")
+trade_codes_path <- file.path(latest_snapshot, "consolidated_hs6_energy_tech_long.csv")
 trade_hs4_path <- file.path(latest_snapshot, "hs92_country_product_year_4.csv")
 trade_hs6_path <- file.path(latest_snapshot, "hs92_country_product_year_6.csv")
+comtrade_energy_trade_path <- file.path(latest_snapshot, "comtrade_energy_trade.csv")
+comtrade_total_export_path <- file.path(latest_snapshot, "comtrade_total_export.csv")
 bnef_neo_path <- file.path(latest_snapshot, "2024-10-29 - New Energy Outlook 2024.csv")
 wdi_gdp_path <- file.path(latest_snapshot, "wdi_gdp.csv")
 wdi_country_path <- file.path(latest_snapshot, "wdi_country_info.csv")
@@ -107,6 +110,8 @@ missing_files <- c(
   trade_codes_path,
   trade_hs4_path,
   trade_hs6_path,
+  comtrade_energy_trade_path,
+  comtrade_total_export_path,
   bnef_neo_path,
   wdi_gdp_path,
   wdi_country_path,
@@ -233,13 +238,19 @@ energy_prices_tbl <- standardize_theme_types(energy_prices_tbl, country_info = c
 subcat <- read.csv(trade_codes_path)
 aec_4_data <- read.csv(trade_hs4_path)
 aec_6_data <- read.csv(trade_hs6_path)
+comtrade_energy_trade <- read.csv(comtrade_energy_trade_path)
+comtrade_total_export <- read.csv(comtrade_total_export_path)
+include_sub_sector <- isTRUE(config$energy_security_include_sub_sector)
 
 trade_concentration_tbl <- trade_concentration(
   subcat = subcat,
   aec_4_data = aec_4_data,
   aec_6_data = aec_6_data,
+  comtrade_trade = comtrade_energy_trade,
+  comtrade_total_export = comtrade_total_export,
   country_info = country_info,
-  gdp_data = gdp_data
+  gdp_data = gdp_data,
+  include_sub_sector = include_sub_sector
 )
 trade_concentration_tbl <- standardize_theme_types(trade_concentration_tbl, country_info = country_info)
 

@@ -26,3 +26,5 @@ supply_chain_stages:
   - Upstream
   - Midstream
   - Downstream
+
+energy_security_include_sub_sector: false
