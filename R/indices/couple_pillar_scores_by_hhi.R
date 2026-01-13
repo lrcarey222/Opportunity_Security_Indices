@@ -101,12 +101,9 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
   max_hhi <- max(hhi_values$hhi_value, na.rm = TRUE)
   hhi_values <- hhi_values %>%
     dplyr::mutate(
-      hhi_norm = dplyr::if_else(
-        is.finite(max_hhi) & max_hhi > 1.5,
-        pmin(pmax(hhi_value / 10000, 0), 1),
-        pmin(pmax(hhi_value, 0), 1)
+      hhi_norm = pmin(pmax(hhi_value, 0), 1)
       )
-    )
+    
 
   hhi_by_tech <- hhi_values %>%
     dplyr::group_by(tech) %>%

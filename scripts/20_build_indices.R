@@ -39,7 +39,7 @@ energy_security_variable_contributions <- energy_security_outputs$variable_contr
 energy_security_index <- energy_security_outputs$index
 
 hhi_tbl <- trade_concentration_tbl %>%
-  dplyr::filter(variable == "HHI", data_type == "raw") %>%
+  dplyr::filter(variable == "HHI", data_type == "index") %>%
   dplyr::select(tech, supply_chain, Year, HHI = value) %>%
   dplyr::distinct()
 
