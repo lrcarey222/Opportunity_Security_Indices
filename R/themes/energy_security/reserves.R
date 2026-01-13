@@ -209,7 +209,9 @@ reserves_build_reserve_table <- function(sheet_data,
 
   dummy_zero <- tibble::tibble(ISO3166_alpha3 = "_ZERO_", raw_value = 0)
 
-  dplyr::bind_rows(raw, dummy_zero) %>%
+  dplyr::bind_rows(
+    lapply(list(raw, dummy_zero), standardize_bind_rows_inputs)
+  ) %>%
     dplyr::mutate(index_value = median_scurve(raw_value, gamma = gamma)) %>%
     dplyr::filter(ISO3166_alpha3 != "_ZERO_") %>%
     tidyr::complete(
@@ -258,7 +260,9 @@ reserves_build_critical_mineral_reserves <- function(mineral_reserves,
     dplyr::filter(!is.na(ISO3166_alpha3), nzchar(ISO3166_alpha3)) %>%
     dplyr::distinct(ISO3166_alpha3, Country)
 
-  critical_min_reserves <- dplyr::bind_rows(mineral_reserves) %>%
+  critical_min_reserves <- dplyr::bind_rows(
+    lapply(mineral_reserves, standardize_bind_rows_inputs)
+  ) %>%
     dplyr::rename(Mineral = "tech") %>%
     dplyr::select(-Country) %>%
     dplyr::inner_join(
@@ -291,23 +295,28 @@ reserves_build_critical_mineral_reserves <- function(mineral_reserves,
     dplyr::filter(value > 0) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(value = median_scurve(value)) %>%
-    dplyr::bind_rows(
-      critical_min_reserves %>%
-        dplyr::select(-tech) %>%
-        dplyr::rename(tech = "Mineral") %>%
-        dplyr::distinct(
-          ISO3166_alpha3,
-          tech,
-          supply_chain,
-          category,
-          data_type,
-          variable,
-          value,
-          Year,
-          source,
-          explanation
+    {
+      dplyr::bind_rows(
+        standardize_bind_rows_inputs(.),
+        standardize_bind_rows_inputs(
+          critical_min_reserves %>%
+            dplyr::select(-tech) %>%
+            dplyr::rename(tech = "Mineral") %>%
+            dplyr::distinct(
+              ISO3166_alpha3,
+              tech,
+              supply_chain,
+              category,
+              data_type,
+              variable,
+              value,
+              Year,
+              source,
+              explanation
+            )
         )
-    ) %>%
+      )
+    } %>%
     dplyr::group_by(tech, supply_chain, category, data_type, source, variable, explanation, Year) %>%
     tidyr::complete(ISO3166_alpha3 = country_reference$ISO3166_alpha3) %>%
     dplyr::left_join(country_reference, by = "ISO3166_alpha3")
@@ -318,7 +327,9 @@ reserves_build_clean_table <- function(reserve_tables, country_reference) {
     dplyr::filter(!is.na(ISO3166_alpha3), nzchar(ISO3166_alpha3)) %>%
     dplyr::distinct(ISO3166_alpha3, Country)
 
-  dplyr::bind_rows(reserve_tables) %>%
+  dplyr::bind_rows(
+    lapply(reserve_tables, standardize_bind_rows_inputs)
+  ) %>%
     dplyr::select(-Country) %>%
     dplyr::group_by(tech, supply_chain, category, data_type, source, variable, explanation, Year) %>%
     tidyr::complete(ISO3166_alpha3 = country_reference$ISO3166_alpha3) %>%

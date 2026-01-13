@@ -40,6 +40,17 @@ build_economic_opportunity_index <- function(theme_tables,
   economic_opportunity_overall <- economic_opportunity_data %>%
     dplyr::filter(grepl("Overall", variable))
 
+  require_columns(
+    economic_opportunity_overall,
+    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "value"),
+    label = "economic_opportunity_overall"
+  )
+  assert_unique_keys(
+    economic_opportunity_overall,
+    c("Country", "tech", "supply_chain", "category", "variable", "Year"),
+    label = "economic_opportunity_overall"
+  )
+
   weights_tbl <- tibble::tibble(
     category = names(weights),
     weight = as.numeric(unlist(weights, use.names = FALSE))

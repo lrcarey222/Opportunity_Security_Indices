@@ -18,6 +18,7 @@ source(file.path(repo_root, "R", "themes", "energy_security", "import_dependence
 source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "trade_concentration.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "future_demand.R"))
+source(file.path(repo_root, "R", "themes", "economic_opportunity", "lcoe_competitiveness.R"))
 
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
@@ -242,6 +243,13 @@ energy_prices_tbl <- energy_prices(
 )
 energy_prices_tbl <- standardize_theme_types(energy_prices_tbl, country_info = country_info)
 
+# Theme: LCOE competitiveness (BNEF data).
+lcoe_competitiveness_tbl <- lcoe_competitiveness(lcoe_bnef = lcoe_bnef)
+lcoe_competitiveness_tbl <- standardize_theme_types(
+  lcoe_competitiveness_tbl,
+  country_info = country_info
+)
+
 # Theme: Trade concentration (Atlas data + WDI country reference).
 subcat <- read.csv(trade_codes_path)
 aec_4_data <- read.csv(trade_hs4_path)
@@ -289,7 +297,8 @@ theme_outputs <- list(
   import_dependence = import_dependence_tbl,
   reserves = reserves_tbl,
   trade_concentration = trade_concentration_tbl,
-  future_demand = future_demand_tbl
+  future_demand = future_demand_tbl,
+  lcoe_competitiveness = lcoe_competitiveness_tbl
 )
 
 invisible(theme_outputs)
