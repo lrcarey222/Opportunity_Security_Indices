@@ -15,6 +15,7 @@ if (is.null(config) || is.null(weights)) {
 }
 
 allow_partial_categories <- isTRUE(config$allow_partial_categories)
+include_sub_sector <- isTRUE(config$energy_security_include_sub_sector)
 
 energy_security_inputs <- list(
   energy_access_tbl = energy_access_tbl,
@@ -32,7 +33,8 @@ energy_security_inputs <- list(
 energy_security_outputs <- build_energy_security_index(
   theme_tables = energy_security_inputs,
   weights = weights$energy_security,
-  allow_partial_categories = allow_partial_categories
+  allow_partial_categories = allow_partial_categories,
+  include_sub_sector = include_sub_sector
 )
 
 energy_security_category_scores <- energy_security_outputs$category_scores
@@ -57,20 +59,22 @@ economic_opportunity_index <- economic_opportunity_outputs$index
 
 hhi_tbl <- trade_concentration_tbl %>%
   dplyr::filter(variable == "HHI", data_type == "index") %>%
-  dplyr::select(tech, supply_chain, Year, HHI = value) %>%
+  dplyr::select(tech, supply_chain, sub_sector, Year, HHI = value) %>%
   dplyr::distinct()
 
 energy_security_index_coupled <- couple_pillar_scores_by_hhi(
   pillar_tbl = energy_security_index,
   hhi_tbl = hhi_tbl,
-  score_col = energy_security_index
+  score_col = energy_security_index,
+  include_sub_sector = include_sub_sector
 )
 
 if (exists("economic_opportunity_index")) {
   economic_opportunity_index_coupled <- couple_pillar_scores_by_hhi(
     pillar_tbl = economic_opportunity_index,
     hhi_tbl = hhi_tbl,
-    score_col = economic_opportunity_index
+    score_col = economic_opportunity_index,
+    include_sub_sector = include_sub_sector
   )
 } else {
   economic_opportunity_index_coupled <- NULL
