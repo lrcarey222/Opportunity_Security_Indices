@@ -3,6 +3,7 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
                                         hhi_tbl,
                                         score_col,
                                         hhi_col = NULL,
+                                        include_sub_sector = FALSE,
                                         lambda_min = 0.15,
                                         lambda_max = 0.65,
                                         h0 = 0.25,
@@ -46,9 +47,14 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
     stop("Score column must be numeric: ", score_col_name)
   }
 
+  group_cols <- c("Country", "tech", "Year")
+  if (include_sub_sector && "sub_sector" %in% names(pillar_tbl)) {
+    group_cols <- c("Country", "tech", "sub_sector", "Year")
+  }
+
   expected_stages <- c("Upstream", "Midstream", "Downstream")
   stage_counts <- pillar_tbl %>%
-    dplyr::group_by(Country, tech, Year) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
     dplyr::summarize(
       stage_count = dplyr::n_distinct(supply_chain),
       missing_stages = list(setdiff(expected_stages, unique(supply_chain))),
@@ -64,7 +70,11 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
           function(items) paste(items, collapse = ", "),
           character(1)
         ),
-        group_key = paste(Country, tech, Year, sep = " | ")
+        group_key = if (include_sub_sector && "sub_sector" %in% names(stage_counts)) {
+          paste(Country, tech, sub_sector, Year, sep = " | ")
+        } else {
+          paste(Country, tech, Year, sep = " | ")
+        }
       ) %>%
       dplyr::select(group_key, missing_stages) %>%
       head(10)
@@ -105,8 +115,13 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
       )
     
 
+  hhi_group_cols <- c("tech")
+  if (include_sub_sector && "sub_sector" %in% names(hhi_values)) {
+    hhi_group_cols <- c("tech", "sub_sector")
+  }
+
   hhi_by_tech <- hhi_values %>%
-    dplyr::group_by(tech) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(hhi_group_cols))) %>%
     dplyr::summarize(
       hhi_tech = mean(hhi_norm, na.rm = TRUE),
       non_missing = sum(!is.na(hhi_norm)),
@@ -122,7 +137,7 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
     )
 
   chain_scores <- pillar_tbl %>%
-    dplyr::group_by(Country, tech, Year) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
     dplyr::summarize(
       chain_score = {
         scores <- pmax(!!score_col_quo, eps)
@@ -138,8 +153,8 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
   score_coupled_col <- paste0(score_col_name, "_coupled")
 
   coupled <- pillar_tbl %>%
-    dplyr::left_join(hhi_by_tech, by = "tech") %>%
-    dplyr::left_join(chain_scores, by = c("Country", "tech", "Year"))
+    dplyr::left_join(hhi_by_tech, by = hhi_group_cols) %>%
+    dplyr::left_join(chain_scores, by = group_cols)
 
   missing_lambda <- coupled %>%
     dplyr::filter(is.na(lambda)) %>%

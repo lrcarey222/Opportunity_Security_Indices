@@ -5,166 +5,217 @@
 # transformations so that IO stays in scripts/ only.
 
 # ---- Build energy trade code mapping ----
-# The raw HS code categories are cleaned into a compact lookup table so that
-# 4-digit and 6-digit trade files can be matched to energy industries.
+# The HS6 code categories are cleaned into a compact lookup table so that
+# Comtrade (HS6) and Atlas (HS92) trade files can be matched to energy industries.
 trade_concentration_build_energy_codes <- function(subcat) {
+  pick_col <- function(tbl, candidates, label) {
+    match <- intersect(candidates, names(tbl))
+    if (length(match) == 0) {
+      stop("Missing ", label, " column in trade codes file.")
+    }
+    match[[1]]
+  }
+
+  tech_col <- pick_col(subcat, c("tech", "Technology", "technology"), "tech")
+  supply_chain_col <- pick_col(
+    subcat,
+    c("supply_chain", "Value.Chain", "value_chain", "Supply.Chain", "supply chain"),
+    "supply_chain"
+  )
+  sub_sector_col <- pick_col(subcat, c("sub_sector", "Sub.Sector", "subsector"), "sub_sector")
+  hs6_col <- pick_col(subcat, c("HS6", "hs6", "HS_6"), "HS6")
+
   subcat %>%
-    dplyr::mutate(
-      industry = paste(Technology, `Value.Chain`),
-      code = substr(HS6, 1, 4),
-      code6 = stringr::str_extract(HS6, "^\\d{6}")
+    dplyr::transmute(
+      tech = as.character(.data[[tech_col]]),
+      supply_chain = as.character(.data[[supply_chain_col]]),
+      sub_sector = as.character(.data[[sub_sector_col]]),
+      code6 = stringr::str_pad(as.character(.data[[hs6_col]]), width = 6, side = "left", pad = "0"),
+      code4 = substr(code6, 1, 4)
     ) %>%
-    dplyr::select(industry, HS6, code, code6)
+    dplyr::filter(!is.na(code6), nzchar(code6)) %>%
+    dplyr::distinct()
 }
 
-# ---- 4-digit trade aggregation ----
-# Aggregate 4-digit HS trade flows to the industry level and compute market
-# shares, RCA, and feasibility from the Atlas data.
-trade_concentration_build_aec_4 <- function(aec_4_data, energy_codes, year = 2022) {
-  aec_4_data %>%
-    dplyr::filter(year == as.character(year)) %>%
-    dplyr::inner_join(energy_codes, by = c("product_hs92_code" = "code")) %>%
-    dplyr::distinct(
-      country_iso3_code,
-      industry,
-      product_hs92_code,
-      export_value,
-      import_value,
-      export_rca,
-      distance
-    ) %>%
-    dplyr::group_by(country_iso3_code, industry) %>%
-    dplyr::summarize(
-      exports = sum(export_value, na.rm = TRUE),
-      imports = sum(import_value, na.rm = TRUE),
-      export_rca = stats::weighted.mean(export_rca, w = export_value, na.rm = TRUE),
-      feasibility = 1 - mean(distance, na.rm = TRUE),
-      .groups = "drop"
-    ) %>%
-    dplyr::group_by(industry) %>%
-    dplyr::mutate(market_share = exports / sum(exports) * 100)
+trade_concentration_detect_year_column <- function(tbl, label = "trade data") {
+  year_col <- intersect(c("period", "ref_year", "year", "Year"), names(tbl))
+  if (length(year_col) == 0) {
+    stop("Unable to locate year column in ", label, ".")
+  }
+  year_col[[1]]
 }
 
-# ---- 6-digit trade aggregation ----
-# Normalize 6-digit HS data to the same industry taxonomy and compute
-# market-share-derived RCA metrics at the country level.
-trade_concentration_build_aec_6 <- function(aec_6_data, energy_codes, year = 2023) {
+trade_concentration_filter_year <- function(tbl, year, label = "trade data") {
+  year_col <- trade_concentration_detect_year_column(tbl, label = label)
+  tbl %>%
+    dplyr::filter(as.character(.data[[year_col]]) == as.character(year))
+}
+
+# ---- Atlas market share (6-digit) ----
+# Use the Atlas data only for market share values.
+trade_concentration_build_aec_market_share <- function(aec_6_data, energy_codes, year = 2023) {
   aec_6_data %>%
     dplyr::filter(year == as.character(year)) %>%
     dplyr::left_join(energy_codes, by = c("product_hs92_code" = "code6")) %>%
-    dplyr::distinct(
-      country_iso3_code,
-      industry,
-      product_hs92_code,
-      export_value,
-      import_value,
-      global_market_share
-    ) %>%
-    dplyr::mutate(
-      industry = stringr::str_replace_all(industry, " NA", " Downstream"),
-      industry = stringr::str_replace_all(industry, "Battery", "Batteries")
+    dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
+    dplyr::group_by(country_iso3_code, tech, supply_chain, sub_sector) %>%
+    dplyr::summarize(
+      market_share = stats::weighted.mean(global_market_share, w = export_value, na.rm = TRUE),
+      .groups = "drop"
     )
 }
 
-# ---- Global trade shares (6-digit) ----
-trade_concentration_build_aec_6_world <- function(aec_6_data, energy_codes, year = 2023) {
-  trade_concentration_build_aec_6(aec_6_data, energy_codes, year = year) %>%
-    dplyr::group_by(industry) %>%
+# ---- Atlas feasibility (4-digit) ----
+# Use the Atlas data only for feasibility values derived from distance.
+trade_concentration_build_aec_feasibility <- function(aec_4_data, energy_codes, year = 2022) {
+  aec_4_data %>%
+    dplyr::filter(year == as.character(year)) %>%
+    dplyr::left_join(energy_codes, by = c("product_hs92_code" = "code4")) %>%
+    dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
+    dplyr::group_by(country_iso3_code, tech, supply_chain, sub_sector) %>%
     dplyr::summarize(
-      exports = sum(export_value, na.rm = TRUE),
-      imports = sum(import_value, na.rm = TRUE),
+      feasibility = 1 - mean(distance, na.rm = TRUE),
       .groups = "drop"
-    ) %>%
-    dplyr::mutate(world_share = exports / sum(exports) * 100)
+    )
 }
 
-# ---- Country-level trade RCA (6-digit + 4-digit backfill) ----
-# Merge 6-digit RCA with 4-digit industries that are not covered in the
-# 6-digit file, and compute overall trade indices.
-trade_concentration_build_country_rca <- function(aec_4_all,
-                                                  aec_6_data,
-                                                  energy_codes,
-                                                  gdp_data,
-                                                  year = 2023) {
-  aec_6_world <- trade_concentration_build_aec_6_world(aec_6_data, energy_codes, year = year)
+# ---- Comtrade trade aggregation ----
+# Aggregate Comtrade exports/imports to the technology level.
+trade_concentration_build_comtrade_trade <- function(comtrade_data,
+                                                     energy_codes,
+                                                     year = 2024) {
+  comtrade_data <- trade_concentration_filter_year(
+    comtrade_data,
+    year = year,
+    label = "Comtrade energy trade data"
+  )
 
-  aec_6_all <- trade_concentration_build_aec_6(aec_6_data, energy_codes, year = year) %>%
-    dplyr::group_by(country_iso3_code, industry) %>%
-    dplyr::summarize(
-      exports = sum(export_value, na.rm = TRUE),
-      imports = sum(import_value, na.rm = TRUE),
-      .groups = "drop"
-    ) %>%
-    dplyr::group_by(country_iso3_code) %>%
-    dplyr::mutate(country_share = exports / sum(exports) * 100) %>%
-    dplyr::group_by(industry) %>%
-    dplyr::mutate(market_share = exports / sum(exports) * 100) %>%
-    dplyr::left_join(
-      aec_6_world %>% dplyr::select(industry, world_share),
-      by = "industry"
-    ) %>%
-    dplyr::mutate(rca = country_share / world_share)
+  if ("partner_desc" %in% names(comtrade_data)) {
+    comtrade_data <- comtrade_data %>%
+      dplyr::filter(partner_desc == "World")
+  } else if ("partner_iso" %in% names(comtrade_data)) {
+    comtrade_data <- comtrade_data %>%
+      dplyr::filter(partner_iso == "World")
+  }
 
-  aec_6_all %>%
-    dplyr::select(-country_share, -world_share) %>%
-    dplyr::rename(export_rca = rca) %>%
-    dplyr::bind_rows(
-      aec_4_all %>%
-        dplyr::filter(!industry %in% aec_6_all$industry) %>%
-        dplyr::select(-feasibility)
+  comtrade_data %>%
+    dplyr::mutate(
+      cmd_code = stringr::str_pad(as.character(cmd_code), width = 6, side = "left", pad = "0"),
+      flow_direction = stringr::str_to_lower(flow_direction)
+    ) %>%
+    dplyr::filter(flow_direction %in% c("export", "import")) %>%
+    dplyr::left_join(energy_codes, by = c("cmd_code" = "code6")) %>%
+    dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
+    dplyr::group_by(reporter_iso, tech, supply_chain, sub_sector, flow_direction) %>%
+    dplyr::summarize(value = sum(primary_value, na.rm = TRUE), .groups = "drop") %>%
+    tidyr::pivot_wider(
+      names_from = flow_direction,
+      values_from = value,
+      values_fill = 0
+    ) %>%
+    dplyr::rename(exports = export, imports = import)
+}
+
+# ---- Comtrade RCA ----
+trade_concentration_build_comtrade_rca <- function(comtrade_trade,
+                                                   comtrade_total_export,
+                                                   year = 2024) {
+  total_export <- trade_concentration_filter_year(
+    comtrade_total_export,
+    year = year,
+    label = "Comtrade total export data"
+  )
+
+  total_export <- total_export %>%
+    dplyr::group_by(reporter_iso) %>%
+    dplyr::summarize(total_exports = sum(primary_value, na.rm = TRUE), .groups = "drop")
+
+  total_world <- total_export %>%
+    dplyr::summarize(total_world_exports = sum(total_exports, na.rm = TRUE)) %>%
+    dplyr::pull(total_world_exports)
+
+  world_exports <- comtrade_trade %>%
+    dplyr::group_by(tech, supply_chain, sub_sector) %>%
+    dplyr::summarize(world_exports = sum(exports, na.rm = TRUE), .groups = "drop")
+
+  comtrade_trade %>%
+    dplyr::left_join(total_export, by = "reporter_iso") %>%
+    dplyr::left_join(world_exports, by = c("tech", "supply_chain", "sub_sector")) %>%
+    dplyr::mutate(
+      share = exports / total_exports,
+      world_share = world_exports / total_world,
+      rca = share / world_share
+    ) %>%
+    dplyr::rename(export_rca = rca)
+}
+
+# ---- Comtrade HHI concentration ----
+trade_concentration_build_comtrade_hhi <- function(comtrade_trade) {
+  comtrade_trade %>%
+    dplyr::group_by(tech, supply_chain, sub_sector) %>%
+    dplyr::mutate(share_frac = exports / sum(exports, na.rm = TRUE)) %>%
+    dplyr::summarize(HHI = sum(share_frac^2, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::mutate(HHI_index = median_scurve(-HHI))
+}
+
+# ---- Country-level trade aggregates ----
+trade_concentration_build_country_trade <- function(comtrade_trade,
+                                                    comtrade_total_export,
+                                                    market_share,
+                                                    feasibility,
+                                                    gdp_data,
+                                                    year = 2024) {
+  comtrade_rca <- trade_concentration_build_comtrade_rca(
+    comtrade_trade = comtrade_trade,
+    comtrade_total_export = comtrade_total_export,
+    year = year
+  )
+
+  comtrade_rca %>%
+    dplyr::mutate(
+      exports = dplyr::coalesce(exports, 0),
+      imports = dplyr::coalesce(imports, 0)
     ) %>%
     dplyr::left_join(
-      aec_4_all %>% dplyr::select(country_iso3_code, industry, feasibility),
-      by = c("country_iso3_code", "industry")
+      market_share,
+      by = c("reporter_iso" = "country_iso3_code", "tech", "supply_chain", "sub_sector")
+    ) %>%
+    dplyr::left_join(
+      feasibility,
+      by = c("reporter_iso" = "country_iso3_code", "tech", "supply_chain", "sub_sector")
     ) %>%
     dplyr::mutate(deficit = exports - imports) %>%
-    dplyr::filter(!is.na(industry)) %>%
     dplyr::left_join(
       gdp_data %>%
         dplyr::filter(year == "2024") %>%
         dplyr::rename(gdp = NY.GDP.MKTP.CD) %>%
         dplyr::select(iso3c, gdp),
-      by = c("country_iso3_code" = "iso3c")
+      by = c("reporter_iso" = "iso3c")
     ) %>%
     dplyr::mutate(deficit_gdp = deficit / gdp) %>%
-    dplyr::group_by(industry) %>%
+    dplyr::group_by(tech, supply_chain, sub_sector) %>%
     dplyr::mutate(
       market_share_index = median_scurve(market_share),
       rca_index = median_scurve(export_rca),
       deficit_gdp_index = median_scurve(deficit_gdp)
     ) %>%
-    dplyr::group_by(country_iso3_code) %>%
+    dplyr::group_by(reporter_iso) %>%
     dplyr::mutate(
       export_size_index = median_scurve(exports),
       feas_index = median_scurve(feasibility)
-    )
+    ) %>%
+    dplyr::ungroup()
 }
 
 # ---- Trade indices and HHI concentration ----
-trade_concentration_build_indices <- function(country_rca, country_info) {
+trade_concentration_build_indices <- function(country_trade, hhi_tbl, country_info) {
   trade_indices <- country_info %>%
     dplyr::select(country, iso3c) %>%
-    dplyr::left_join(country_rca, by = c("iso3c" = "country_iso3_code")) %>%
-    tidyr::separate(
-      col = industry,
-      into = c("tech", "supply_chain"),
-      sep = " (?=Downstream|Midstream|Upstream$)"
-    ) %>%
+    dplyr::left_join(country_trade, by = c("iso3c" = "reporter_iso")) %>%
     dplyr::distinct()
 
-  trade_indices_hhi <- trade_indices %>%
-    dplyr::group_by(tech, supply_chain) %>%
-    dplyr::mutate(
-      share_frac = market_share / 100,
-      HHI = sum(share_frac^2, na.rm = TRUE)
-    ) %>%
-    dplyr::select(-share_frac) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(HHI_index = median_scurve(-HHI)) %>%
-    dplyr::distinct(tech, supply_chain, HHI, HHI_index)
-
   trade_indices <- trade_indices %>%
-    dplyr::left_join(trade_indices_hhi, by = c("tech", "supply_chain")) %>%
+    dplyr::left_join(hhi_tbl, by = c("tech", "supply_chain", "sub_sector")) %>%
     dplyr::rowwise() %>%
     dplyr::mutate(
       overall_trade_index = mean(dplyr::c_across(dplyr::ends_with("_index")), na.rm = TRUE),
@@ -173,7 +224,7 @@ trade_concentration_build_indices <- function(country_rca, country_info) {
     dplyr::ungroup() %>%
     dplyr::arrange(dplyr::desc(overall_trade_index))
 
-  list(trade_indices = trade_indices, trade_indices_hhi = trade_indices_hhi)
+  list(trade_indices = trade_indices, trade_indices_hhi = hhi_tbl)
 }
 
 # ---- Canonical tidy output ----
@@ -212,14 +263,25 @@ trade_concentration_build_tidy <- function(trade_indices, year = 2023) {
     dplyr::mutate(
       category = "Trade",
       Year = year,
-      source = "Harvard Atlas of Economic Complexity",
+      source = dplyr::case_when(
+        variable %in% c("market_share", "feasibility", "market_share_index", "feas_index") ~
+          "Harvard Atlas of Economic Complexity",
+        variable %in% c("gdp", "deficit_gdp", "deficit_gdp_index") ~
+          "World Bank WDI; UN Comtrade",
+        variable %in% c("overall_trade", "overall_trade_risk") ~ "Author calculation",
+        TRUE ~ "UN Comtrade"
+      ),
       variable = dplyr::case_when(
         variable == "overall_trade" ~ "Overall Trade Index",
         variable == "overall_trade_risk" ~ "Overall Trade Risk Index",
         TRUE ~ variable
       ),
       explanation = dplyr::case_when(
-        data_type == "raw" ~ stringr::str_glue("{variable}: raw value from Atlas"),
+        variable %in% c("Overall Trade Index", "Overall Trade Risk Index") ~
+          "Author calculation across trade indices",
+        variable %in% c("market_share", "feasibility") ~
+          "Atlas of Economic Complexity market share or feasibility value",
+        data_type == "raw" ~ stringr::str_glue("{variable}: raw value from Comtrade or WDI"),
         data_type == "index" ~ stringr::str_glue("{variable}: percent-rank or HHI index"),
         TRUE ~ NA_character_
       )
@@ -228,6 +290,7 @@ trade_concentration_build_tidy <- function(trade_indices, year = 2023) {
       Country,
       tech,
       supply_chain,
+      sub_sector,
       category,
       variable,
       data_type,
@@ -242,31 +305,50 @@ trade_concentration_build_tidy <- function(trade_indices, year = 2023) {
 trade_concentration <- function(subcat,
                                 aec_4_data,
                                 aec_6_data,
+                                comtrade_trade,
+                                comtrade_total_export,
                                 country_info,
                                 gdp_data,
                                 year_4 = 2022,
-                                year_6 = 2023) {
+                                year_6 = 2023,
+                                year_comtrade = 2024,
+                                include_sub_sector = FALSE) {
   energy_codes <- trade_concentration_build_energy_codes(subcat)
 
-  aec_4_all <- trade_concentration_build_aec_4(
+  market_share <- trade_concentration_build_aec_market_share(
+    aec_6_data,
+    energy_codes,
+    year = year_6
+  )
+
+  feasibility <- trade_concentration_build_aec_feasibility(
     aec_4_data,
     energy_codes,
     year = year_4
   )
 
-  country_rca <- trade_concentration_build_country_rca(
-    aec_4_all,
-    aec_6_data,
+  comtrade_trade <- trade_concentration_build_comtrade_trade(
+    comtrade_trade,
     energy_codes,
-    gdp_data,
-    year = year_6
+    year = year_comtrade
   )
 
-  indices <- trade_concentration_build_indices(country_rca, country_info)
+  country_trade <- trade_concentration_build_country_trade(
+    comtrade_trade = comtrade_trade,
+    comtrade_total_export = comtrade_total_export,
+    market_share = market_share,
+    feasibility = feasibility,
+    gdp_data = gdp_data,
+    year = year_comtrade
+  )
+
+  hhi_tbl <- trade_concentration_build_comtrade_hhi(comtrade_trade)
+
+  indices <- trade_concentration_build_indices(country_trade, hhi_tbl, country_info)
 
   trade_concentration_build_tidy(
     indices$trade_indices,
-    year = year_6
+    year = year_comtrade
   ) %>%
-    energy_security_add_overall_index()
+    energy_security_add_overall_index(include_sub_sector = include_sub_sector)
 }
