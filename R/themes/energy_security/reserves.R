@@ -160,37 +160,62 @@ reserves_build_reserve_table <- function(sheet_data,
                                          country_reference,
                                          year = 2024,
                                          gamma = 0.5) {
-  country_names <- reserves_country_names(country_reference)
-  raw <- sheet_data %>%
+  country_reference <- country_reference %>%
+    dplyr::filter(!is.na(ISO3166_alpha3), nzchar(ISO3166_alpha3)) %>%
+    dplyr::distinct(ISO3166_alpha3, Country)
+
+  raw_inputs <- sheet_data %>%
     dplyr::rename(
       Country = dplyr::all_of(nm_col),
       raw_value = dplyr::all_of(val_col)
     ) %>%
     dplyr::mutate(
+      Country = standardize_country_names(Country),
       Country = dplyr::case_when(
         Country %in% c("Rest of World", "Rest of world", "Rest of World^") ~ "Rest of World",
         Country == "US" ~ "United States",
         Country == "DR Congo" ~ "Democratic Republic of Congo",
         Country == "Russia Federation" ~ "Russia",
         TRUE ~ Country
-      )
+      ),
+      raw_value = as.numeric(raw_value)
     ) %>%
-    dplyr::filter(
-      Country %in% country_names,
-      !is.na(Country),
-      !grepl("Total World|Other|OECD|OPEC|Orinoco", Country)
-    ) %>%
-    dplyr::mutate(raw_value = as.numeric(raw_value) %>% tidyr::replace_na(0))
+    dplyr::filter(!is.na(Country))
 
-  dummy_zero <- tibble::tibble(Country = "_ZERO_", raw_value = 0)
+  unmapped <- raw_inputs %>%
+    dplyr::filter(
+      !grepl("Total World|Other|OECD|OPEC|Orinoco", Country),
+      Country != "Rest of World"
+    ) %>%
+    dplyr::distinct(Country) %>%
+    dplyr::anti_join(country_reference, by = "Country")
+
+  if (nrow(unmapped) > 0) {
+    warning(
+      "Reserves sheet ",
+      sheet_id,
+      " contains countries without ISO3 mappings after standardization: ",
+      paste(sort(unmapped$Country), collapse = ", ")
+    )
+  }
+
+  raw <- raw_inputs %>%
+    dplyr::filter(
+      !grepl("Total World|Other|OECD|OPEC|Orinoco", Country),
+      Country != "Rest of World"
+    ) %>%
+    dplyr::inner_join(country_reference, by = "Country") %>%
+    dplyr::select(ISO3166_alpha3, raw_value)
+
+  dummy_zero <- tibble::tibble(ISO3166_alpha3 = "_ZERO_", raw_value = 0)
 
   dplyr::bind_rows(raw, dummy_zero) %>%
     dplyr::mutate(index_value = median_scurve(raw_value, gamma = gamma)) %>%
-    dplyr::filter(Country != "_ZERO_") %>%
+    dplyr::filter(ISO3166_alpha3 != "_ZERO_") %>%
     tidyr::complete(
-      Country = country_names,
-      fill = list(raw_value = 0, index_value = 0)
+      ISO3166_alpha3 = country_reference$ISO3166_alpha3
     ) %>%
+    dplyr::left_join(country_reference, by = "ISO3166_alpha3") %>%
     tidyr::pivot_longer(
       c(raw_value, index_value),
       names_to = "data_type",
@@ -212,6 +237,7 @@ reserves_build_reserve_table <- function(sheet_data,
     ) %>%
     dplyr::select(
       Country,
+      ISO3166_alpha3,
       tech,
       supply_chain,
       category,
@@ -228,10 +254,13 @@ reserves_build_critical_mineral_reserves <- function(mineral_reserves,
                                                      mineral_demand_clean,
                                                      country_reference,
                                                      year = 2024) {
-  country_names <- reserves_country_names(country_reference)
+  country_reference <- country_reference %>%
+    dplyr::filter(!is.na(ISO3166_alpha3), nzchar(ISO3166_alpha3)) %>%
+    dplyr::distinct(ISO3166_alpha3, Country)
 
   critical_min_reserves <- dplyr::bind_rows(mineral_reserves) %>%
     dplyr::rename(Mineral = "tech") %>%
+    dplyr::select(-Country) %>%
     dplyr::inner_join(
       mineral_demand_clean %>%
         dplyr::ungroup() %>%
@@ -246,13 +275,13 @@ reserves_build_critical_mineral_reserves <- function(mineral_reserves,
       by = c("Mineral")
     ) %>%
     dplyr::filter(!is.na(tech)) %>%
-    dplyr::group_by(Country, tech, data_type) %>%
+    dplyr::group_by(ISO3166_alpha3, tech, data_type) %>%
     dplyr::mutate(share_24 = share_24 / sum(share_24)) %>%
     dplyr::ungroup()
 
   critical_min_reserves %>%
     dplyr::filter(data_type == "index") %>%
-    dplyr::group_by(Country, tech, supply_chain, category, data_type, source) %>%
+    dplyr::group_by(ISO3166_alpha3, tech, supply_chain, category, data_type, source) %>%
     dplyr::summarize(value = stats::weighted.mean(value, w = share_24, na.rm = TRUE)) %>%
     dplyr::mutate(
       variable = stringr::str_glue("{tech} Reserves"),
@@ -267,7 +296,7 @@ reserves_build_critical_mineral_reserves <- function(mineral_reserves,
         dplyr::select(-tech) %>%
         dplyr::rename(tech = "Mineral") %>%
         dplyr::distinct(
-          Country,
+          ISO3166_alpha3,
           tech,
           supply_chain,
           category,
@@ -280,17 +309,22 @@ reserves_build_critical_mineral_reserves <- function(mineral_reserves,
         )
     ) %>%
     dplyr::group_by(tech, supply_chain, category, data_type, source, variable, explanation, Year) %>%
-    tidyr::complete(Country = country_names, fill = list(value = 0))
+    tidyr::complete(ISO3166_alpha3 = country_reference$ISO3166_alpha3) %>%
+    dplyr::left_join(country_reference, by = "ISO3166_alpha3")
 }
 
 reserves_build_clean_table <- function(reserve_tables, country_reference) {
-  country_names <- reserves_country_names(country_reference)
+  country_reference <- country_reference %>%
+    dplyr::filter(!is.na(ISO3166_alpha3), nzchar(ISO3166_alpha3)) %>%
+    dplyr::distinct(ISO3166_alpha3, Country)
 
   dplyr::bind_rows(reserve_tables) %>%
-    dplyr::mutate(Country = dplyr::if_else(Country == "US", "United States", Country)) %>%
+    dplyr::select(-Country) %>%
     dplyr::group_by(tech, supply_chain, category, data_type, source, variable, explanation, Year) %>%
-    tidyr::complete(Country = country_names, fill = list(value = 0)) %>%
-    dplyr::ungroup()
+    tidyr::complete(ISO3166_alpha3 = country_reference$ISO3166_alpha3) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(country_reference, by = "ISO3166_alpha3") %>%
+    dplyr::select(Country, ISO3166_alpha3, dplyr::everything())
 }
 
 reserves <- function(ei, reserve_inputs, mineral_demand_clean, year = 2024, gamma = 0.5) {
