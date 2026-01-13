@@ -4,15 +4,9 @@ standardize_energy_security_inputs <- function(theme_tables) {
     if (is.null(tbl)) {
       return(NULL)
     }
-    tbl %>%
-      dplyr::mutate(
-        Country = as.character(Country),
-        tech = as.character(tech),
-        supply_chain = as.character(supply_chain),
-        category = as.character(category),
-        Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$"))),
-        value = suppressWarnings(as.numeric(value))
-      )
+    standardized_tbl <- standardize_theme_table(tbl)
+    validate_schema(standardized_tbl)
+    standardized_tbl
   })
 
   dplyr::bind_rows(standardized)
