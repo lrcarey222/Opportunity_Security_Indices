@@ -58,7 +58,9 @@ critical_minerals_production_build_table <- function(sheet_data,
 
   dummy_zero <- tibble::tibble(Country = "_ZERO_", raw_value = 0)
 
-  dplyr::bind_rows(raw, dummy_zero) %>%
+  dplyr::bind_rows(
+    lapply(list(raw, dummy_zero), standardize_bind_rows_inputs)
+  ) %>%
     dplyr::mutate(index_value = median_scurve(raw_value, gamma = gamma)) %>%
     dplyr::filter(Country != "_ZERO_") %>%
     tidyr::complete(
@@ -131,23 +133,28 @@ critical_minerals_production_build_weighted <- function(critical_min_production,
     dplyr::filter(value > 0) %>%
     dplyr::group_by(tech) %>%
     dplyr::mutate(value = median_scurve(value, gamma = gamma)) %>%
-    dplyr::bind_rows(
-      weighted_inputs %>%
-        dplyr::select(-tech) %>%
-        dplyr::rename(tech = Mineral) %>%
-        dplyr::distinct(
-          Country,
-          tech,
-          supply_chain,
-          category,
-          data_type,
-          variable,
-          value,
-          Year,
-          source,
-          explanation
+    {
+      dplyr::bind_rows(
+        standardize_bind_rows_inputs(.),
+        standardize_bind_rows_inputs(
+          weighted_inputs %>%
+            dplyr::select(-tech) %>%
+            dplyr::rename(tech = Mineral) %>%
+            dplyr::distinct(
+              Country,
+              tech,
+              supply_chain,
+              category,
+              data_type,
+              variable,
+              value,
+              Year,
+              source,
+              explanation
+            )
         )
-    ) %>%
+      )
+    } %>%
     dplyr::group_by(tech, supply_chain, category, data_type, source, variable, explanation, Year) %>%
     tidyr::complete(
       Country = country_reference$Country,
@@ -177,7 +184,9 @@ critical_minerals_production <- function(production_inputs,
     )
   })
 
-  critical_min_production <- dplyr::bind_rows(production_tables)
+  critical_min_production <- dplyr::bind_rows(
+    lapply(production_tables, standardize_bind_rows_inputs)
+  )
 
   critical_minerals_production_build_weighted(
     critical_min_production = critical_min_production,

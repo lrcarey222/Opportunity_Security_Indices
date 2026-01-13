@@ -76,5 +76,8 @@ energy_security_add_overall_index <- function(tbl, include_sub_sector = FALSE) {
   overall_indices <- overall_indices %>%
     dplyr::select(dplyr::all_of(select_cols))
 
-  dplyr::bind_rows(tbl, overall_indices)
+  dplyr::bind_rows(
+    standardize_bind_rows_inputs(tbl),
+    standardize_bind_rows_inputs(overall_indices)
+  )
 }

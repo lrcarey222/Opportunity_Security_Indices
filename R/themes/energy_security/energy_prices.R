@@ -212,7 +212,12 @@ energy_prices <- function(ei,
     gamma = gamma
   )
 
+  standardized <- lapply(
+    list(ei_prices_tbl, lcoe_tbl),
+    standardize_bind_rows_inputs
+  )
+
   energy_security_add_overall_index(
-    dplyr::bind_rows(ei_prices_tbl, lcoe_tbl)
+    dplyr::bind_rows(standardized)
   )
 }

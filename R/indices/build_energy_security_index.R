@@ -9,19 +9,22 @@ standardize_energy_security_inputs <- function(theme_tables, include_sub_sector 
     if (is.null(tbl)) {
       return(NULL)
     }
-    if (include_sub_sector && !"sub_sector" %in% names(tbl)) {
-      tbl$sub_sector <- "All"
+
+    standardized_tbl <- standardize_theme_table(tbl)
+    validate_schema(standardized_tbl)
+
+    if (include_sub_sector && !"sub_sector" %in% names(standardized_tbl)) {
+      standardized_tbl$sub_sector <- "All"
     }
-    tbl %>%
+
+    standardized_tbl %>%
       dplyr::mutate(
         Country = as.character(Country),
         tech = as.character(tech),
         supply_chain = as.character(supply_chain),
-        sub_sector = if ("sub_sector" %in% names(tbl)) as.character(sub_sector) else "All",
+        sub_sector = if ("sub_sector" %in% names(standardized_tbl)) as.character(sub_sector) else "All",
         category = as.character(category),
-        theme = as.character(theme_name),
-        Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$"))),
-        value = suppressWarnings(as.numeric(value))
+        theme = as.character(theme_name)
       )
   }, theme_names, theme_tables)
 
@@ -79,6 +82,17 @@ build_energy_security_index <- function(theme_tables,
   }
   category_group_cols <- c(group_cols, "Year", "category")
   theme_group_cols <- c(group_cols[-1], "Year", "category", "theme")
+
+  require_columns(
+    energy_security_overall,
+    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "theme", "value"),
+    label = "energy_security_overall"
+  )
+  assert_unique_keys(
+    energy_security_overall,
+    c(theme_group_cols, "Country"),
+    label = "energy_security_overall"
+  )
 
   missing_data_tbl <- energy_security_overall %>%
     dplyr::distinct(theme) %>%

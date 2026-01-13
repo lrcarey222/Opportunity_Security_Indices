@@ -262,7 +262,9 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
     )
 
   # Expand the EU rollup back to individual countries via EI mapping.
-  cleantech_final <- dplyr::bind_rows(cleantech_clean, comp_ct) %>%
+  cleantech_final <- dplyr::bind_rows(
+    lapply(list(cleantech_clean, comp_ct), standardize_bind_rows_inputs)
+  ) %>%
     dplyr::mutate(Country = dplyr::if_else(Country == "US", "United States", Country))
 
   ei %>%
@@ -412,12 +414,11 @@ foreign_dependency <- function(critical,
     year = year$ev,
     gamma = gamma
   )
-  standardize_year <- function(df) dplyr::mutate(df, Year = as.integer(Year))
-  
-  dplyr::bind_rows(
-    standardize_year(mineral_supply),
-    standardize_year(cleantech),
-    standardize_year(ev_midstream_tbl)
-  ) %>%
+  standardized <- lapply(
+    list(mineral_supply, cleantech, ev_midstream_tbl),
+    standardize_bind_rows_inputs
+  )
+
+  dplyr::bind_rows(standardized) %>%
     energy_security_add_overall_index()
 }
