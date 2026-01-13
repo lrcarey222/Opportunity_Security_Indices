@@ -158,6 +158,7 @@ critical_minerals_hs_path <- file.path(
   "Columbia University Critical Minerals Dashboard",
   "unique_comtrade.csv"
 )
+energy_trade_codes_path <- file.path(snapshot_dir, "consolidated_hs6_energy_tech_long.csv")
 
 # --- Source: UN Comtrade (critical minerals trade) ---
 critmin_import_path <- file.path(snapshot_dir, "critmin_import_2024.csv")
@@ -257,5 +258,139 @@ if (needs_comtrade) {
     write.csv(critmin_import, critmin_import_path, row.names = FALSE)
     write.csv(critmin_export, critmin_export_path, row.names = FALSE)
     write.csv(total_export, critmin_total_export_path, row.names = FALSE)
+  }
+}
+
+# --- Source: UN Comtrade (energy trade) ---
+comtrade_energy_trade_path <- file.path(snapshot_dir, "comtrade_energy_trade.csv")
+comtrade_total_export_path <- file.path(snapshot_dir, "comtrade_total_export.csv")
+
+comtrade_target_year <- as.integer(format(Sys.Date(), "%Y")) - 1
+
+comtrade_has_year <- function(path, year) {
+  if (!file.exists(path)) {
+    return(FALSE)
+  }
+  data <- read.csv(path)
+  year_col <- intersect(c("period", "ref_year", "year", "Year"), names(data))
+  if (length(year_col) == 0) {
+    return(FALSE)
+  }
+  max_year <- suppressWarnings(max(as.integer(data[[year_col[[1]]]]), na.rm = TRUE))
+  !is.na(max_year) && max_year >= year
+}
+
+needs_energy_comtrade <- !(
+  comtrade_has_year(comtrade_energy_trade_path, comtrade_target_year) &&
+    comtrade_has_year(comtrade_total_export_path, comtrade_target_year)
+)
+
+if (needs_energy_comtrade) {
+  if (skip_data_downloads) {
+    message("Skipping comtrade download; missing energy trade outputs in snapshot.")
+  } else {
+    if (!requireNamespace("comtradr", quietly = TRUE)) {
+      stop("Package 'comtradr' is required to ingest energy trade data.")
+    }
+
+    comtrade_key <- Sys.getenv("COMTRADE_API_KEY")
+    if (comtrade_key == "") {
+      stop("COMTRADE_API_KEY environment variable must be set to ingest energy trade data.")
+    }
+    comtradr::set_primary_comtrade_key(comtrade_key)
+
+    if (!file.exists(energy_trade_codes_path)) {
+      stop("Energy trade HS6 codes missing from snapshot: ", energy_trade_codes_path)
+    }
+    if (!file.exists(wdi_country_path)) {
+      stop("WDI country data missing from snapshot: ", wdi_country_path)
+    }
+
+    energy_trade_codes <- read.csv(energy_trade_codes_path)
+    energy_codes <- energy_trade_codes$HS6 %>%
+      as.character() %>%
+      stringr::str_replace_all("\\D", "") %>%
+      stringr::str_pad(width = 6, side = "left", pad = "0") %>%
+      stats::na.omit() %>%
+      unique()
+
+    split_by_nchar <- function(x, max_chars = 2500) {
+      chunks <- list()
+      cur <- character()
+      cur_len <- 0
+      for (code in x) {
+        add_len <- nchar(code) + ifelse(length(cur) == 0, 0, 1)
+        if (cur_len + add_len > max_chars) {
+          chunks[[length(chunks) + 1]] <- cur
+          cur <- code
+          cur_len <- nchar(code)
+        } else {
+          cur <- c(cur, code)
+          cur_len <- cur_len + add_len
+        }
+      }
+      if (length(cur)) {
+        chunks[[length(chunks) + 1]] <- cur
+      }
+      chunks
+    }
+
+    code_chunks <- split_by_nchar(energy_codes, max_chars = 2500)
+
+    wdi_country_info <- read.csv(wdi_country_path)
+    reporter_candidates <- wdi_country_info$iso3c
+    reporter_candidates <- reporter_candidates[!is.na(reporter_candidates) & nzchar(reporter_candidates)]
+    reporter_candidates <- unique(reporter_candidates)
+
+    reporter_ref <- comtradr::ct_get_ref_table("reporter")
+    reporter_iso_col <- intersect(c("iso_3", "iso3_code", "iso3c"), names(reporter_ref))
+    if (length(reporter_iso_col) == 0) {
+      stop("Unable to locate ISO3 reporter codes in comtradr reporter reference data.")
+    }
+    valid_reporters <- reporter_ref[[reporter_iso_col[1]]]
+    valid_reporters <- unique(valid_reporters[!is.na(valid_reporters) & nzchar(valid_reporters)])
+    reporter_candidates <- intersect(reporter_candidates, valid_reporters)
+    if (length(reporter_candidates) == 0) {
+      stop("No valid reporter codes remain after filtering against comtradr reference data.")
+    }
+
+    safe_ct <- purrr::possibly(comtradr::ct_get_data, otherwise = NULL)
+    trade_flows <- c("export", "import")
+
+    energy_trade_list <- list()
+    idx <- 1
+    for (flow in trade_flows) {
+      for (chunk in code_chunks) {
+        data_chunk <- safe_ct(
+          reporter = reporter_candidates,
+          partner = "World",
+          commodity_code = chunk,
+          start_date = comtrade_target_year,
+          end_date = comtrade_target_year,
+          flow_direction = flow
+        )
+        if (!is.null(data_chunk)) {
+          if (!"flow_direction" %in% names(data_chunk)) {
+            data_chunk <- dplyr::mutate(data_chunk, flow_direction = flow)
+          }
+          energy_trade_list[[idx]] <- data_chunk
+          idx <- idx + 1
+        }
+      }
+    }
+
+    energy_trade <- dplyr::bind_rows(energy_trade_list) %>% dplyr::distinct()
+
+    total_export <- comtradr::ct_get_data(
+      reporter = reporter_candidates,
+      partner = "World",
+      commodity_code = "TOTAL",
+      start_date = comtrade_target_year,
+      end_date = comtrade_target_year,
+      flow_direction = "export"
+    )
+
+    write.csv(energy_trade, comtrade_energy_trade_path, row.names = FALSE)
+    write.csv(total_export, comtrade_total_export_path, row.names = FALSE)
   }
 }
