@@ -269,13 +269,6 @@ energy_consumption <- function(ei,
                                "Electric Grid"
                                ),
                                gamma = 0.5) {
-  normalize_energy_security_year <- function(tbl) {
-    tbl %>%
-      dplyr::mutate(
-        Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$")))
-      )
-  }
-
   ei_base <- energy_consumption_build_ei_indices(
     energy_consumption_clean_ei(ei, base_year),
     base_year,
@@ -297,11 +290,12 @@ energy_consumption <- function(ei,
   pop_tbl <- energy_consumption_build_bnef_population(bnef_neo)
   bnef_metrics <- energy_consumption_build_bnef_metrics(bnef_neo, pop_tbl, techs, country_info)
 
+  standardized <- lapply(
+    list(ei_target, ei_growth, bnef_metrics),
+    standardize_bind_rows_inputs
+  )
+
   energy_security_add_overall_index(
-    dplyr::bind_rows(
-      normalize_energy_security_year(ei_target),
-      normalize_energy_security_year(ei_growth),
-      normalize_energy_security_year(bnef_metrics)
-    )
+    dplyr::bind_rows(standardized)
   )
 }

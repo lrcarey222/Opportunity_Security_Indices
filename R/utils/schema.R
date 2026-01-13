@@ -46,8 +46,16 @@ validate_schema <- function(tbl) {
     stop("Column 'Year' must be integer.")
   }
 
+  if (any(is.na(tbl$Year))) {
+    stop("Column 'Year' must not contain missing values.")
+  }
+
   if (!all(tbl$data_type %in% c("raw", "index"))) {
     stop("Column 'data_type' must be either 'raw' or 'index'.")
+  }
+
+  if (any(is.na(tbl$data_type))) {
+    stop("Column 'data_type' must not contain missing values.")
   }
 
   invisible(tbl)
@@ -106,6 +114,26 @@ standardize_theme_table <- function(tbl) {
       source = as.character(source),
       explanation = as.character(explanation)
     )
+}
+
+standardize_bind_rows_inputs <- function(tbl) {
+  if (is.null(tbl)) {
+    return(tbl)
+  }
+
+  if (!inherits(tbl, "data.frame")) {
+    stop("standardize_bind_rows_inputs() expects a data.frame.")
+  }
+
+  if ("Year" %in% names(tbl)) {
+    tbl$Year <- suppressWarnings(as.integer(stringr::str_extract(as.character(tbl$Year), "\\d{4}$")))
+  }
+
+  if ("value" %in% names(tbl)) {
+    tbl$value <- suppressWarnings(as.numeric(tbl$value))
+  }
+
+  tbl
 }
 # schema (placeholder).
 # TODO: implement.

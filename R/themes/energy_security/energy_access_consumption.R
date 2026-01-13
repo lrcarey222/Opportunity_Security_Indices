@@ -113,7 +113,12 @@ energy_access_consumption <- function(ei, base_year = 2019, target_year = 2024, 
 
   ec_growth <- energy_access_build_growth(ec_base, ec_target, base_year, target_year, gamma = gamma)
 
+  standardized <- lapply(
+    list(ec_target, ec_growth),
+    standardize_bind_rows_inputs
+  )
+
   energy_security_add_overall_index(
-    dplyr::bind_rows(ec_target, ec_growth)
+    dplyr::bind_rows(standardized)
   )
 }
