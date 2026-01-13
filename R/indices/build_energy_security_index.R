@@ -4,9 +4,6 @@ standardize_energy_security_inputs <- function(theme_tables, include_sub_sector 
     if (is.null(tbl)) {
       return(NULL)
     }
-    standardized_tbl <- standardize_theme_table(tbl)
-    validate_schema(standardized_tbl)
-    standardized_tbl
     if (include_sub_sector && !"sub_sector" %in% names(tbl)) {
       tbl$sub_sector <- "All"
     }
