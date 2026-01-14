@@ -56,6 +56,7 @@ build_economic_opportunity_index <- function(theme_tables,
     category = names(weights),
     weight = as.numeric(unlist(weights, use.names = FALSE))
   )
+  assert_unique_keys(weights_tbl, "category", label = "economic_opportunity_weights")
 
   message("Computing category-level scores.")
   category_scores <- economic_opportunity_overall %>%
@@ -65,6 +66,11 @@ build_economic_opportunity_index <- function(theme_tables,
   latest_years <- economic_opportunity_overall %>%
     dplyr::group_by(Country, tech, supply_chain) %>%
     dplyr::summarize(Year = max(Year, na.rm = TRUE), .groups = "drop")
+  assert_unique_keys(
+    latest_years,
+    c("Country", "tech", "supply_chain"),
+    label = "economic_opportunity_latest_years"
+  )
 
   categories_in_data <- sort(unique(category_scores$category))
   categories_in_weights <- sort(unique(weights_tbl$category))

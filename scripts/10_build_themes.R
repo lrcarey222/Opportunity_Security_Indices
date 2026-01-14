@@ -20,6 +20,7 @@ source(file.path(repo_root, "R", "themes", "energy_security", "trade_concentrati
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "future_demand.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "export_feasibility.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "lcoe_competitiveness.R"))
+source(file.path(repo_root, "R", "themes", "economic_opportunity", "market_share_manufacturing.R"))
 
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
@@ -176,6 +177,17 @@ foreign_dependency_tbl <- foreign_dependency(
 )
 foreign_dependency_tbl <- standardize_theme_types(foreign_dependency_tbl, country_info = country_info)
 
+# Theme: Market share manufacturing (IEA midstream data).
+market_share_manufacturing_tbl <- market_share_manufacturing(
+  ei = ei,
+  cleantech_midstream = cleantech_midstream,
+  ev_midstream = ev_midstream
+)
+market_share_manufacturing_tbl <- standardize_theme_types(
+  market_share_manufacturing_tbl,
+  country_info = country_info
+)
+
 # Shared WDI country reference for multiple themes.
 gdp_data <- read.csv(wdi_gdp_path)
 country_reference <- foreign_dependency_build_country_reference(ei, year = 2024)
@@ -310,7 +322,8 @@ theme_outputs <- list(
   trade_concentration = trade_concentration_tbl,
   export_feasibility = export_feasibility_tbl,
   future_demand = future_demand_tbl,
-  lcoe_competitiveness = lcoe_competitiveness_tbl
+  lcoe_competitiveness = lcoe_competitiveness_tbl,
+  market_share_manufacturing = market_share_manufacturing_tbl
 )
 
 invisible(theme_outputs)
