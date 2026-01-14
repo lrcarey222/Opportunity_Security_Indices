@@ -5,6 +5,7 @@ standardize_economic_opportunity_inputs <- function(theme_tables) {
       return(NULL)
     }
     standardized_tbl <- standardize_theme_table(tbl)
+    standardized_tbl <- standardize_bind_rows_inputs(standardized_tbl)
     validate_schema(standardized_tbl)
     standardized_tbl
   })
