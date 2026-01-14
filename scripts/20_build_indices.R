@@ -47,7 +47,8 @@ energy_security_index <- energy_security_outputs$index
 economic_opportunity_inputs <- list(
   export_feasibility = export_feasibility_tbl,
   future_demand = future_demand_tbl,
-  lcoe_competitiveness = lcoe_competitiveness_tbl
+  lcoe_competitiveness = lcoe_competitiveness_tbl,
+  market_share_manufacturing = market_share_manufacturing_tbl
 )
 
 economic_opportunity_outputs <- build_economic_opportunity_index(
