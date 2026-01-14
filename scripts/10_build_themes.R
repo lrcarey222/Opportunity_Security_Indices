@@ -18,6 +18,7 @@ source(file.path(repo_root, "R", "themes", "energy_security", "import_dependence
 source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
 source(file.path(repo_root, "R", "themes", "energy_security", "trade_concentration.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "future_demand.R"))
+source(file.path(repo_root, "R", "themes", "economic_opportunity", "export_feasibility.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "lcoe_competitiveness.R"))
 
 standardize_theme_types <- function(tbl, country_info = NULL) {
@@ -270,6 +271,16 @@ trade_concentration_tbl <- trade_concentration(
 )
 trade_concentration_tbl <- standardize_theme_types(trade_concentration_tbl, country_info = country_info)
 
+# Theme: Export feasibility (Atlas/Comtrade trade data).
+export_feasibility_tbl <- export_feasibility(
+  aec_4_data = aec_4_data,
+  aec_6_data = aec_6_data,
+  subcat = subcat,
+  country_info = country_info,
+  gdp_data = gdp_data
+)
+export_feasibility_tbl <- standardize_theme_types(export_feasibility_tbl, country_info = country_info)
+
 # Theme: Future demand (IEA + BNEF + EV + BCG data).
 iea_weo <- read.csv(iea_weo_path)
 iea_ev <- readxl::read_excel(iea_ev_path, sheet = 1)
@@ -297,6 +308,7 @@ theme_outputs <- list(
   import_dependence = import_dependence_tbl,
   reserves = reserves_tbl,
   trade_concentration = trade_concentration_tbl,
+  export_feasibility = export_feasibility_tbl,
   future_demand = future_demand_tbl,
   lcoe_competitiveness = lcoe_competitiveness_tbl
 )
