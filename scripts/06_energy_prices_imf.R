@@ -276,6 +276,24 @@ imf_pcps_match_commodities <- function(commodity_df, patterns) {
   do.call(rbind, matches)
 }
 
+imf_pcps_select_indicators <- function(commodity_df, indicators) {
+  if (nrow(commodity_df) == 0 || length(indicators) == 0) {
+    return(data.frame(tech = character(), commodity_code = character(), commodity_label = character()))
+  }
+  normalized_labels <- tolower(trimws(commodity_df$label))
+  normalized_targets <- tolower(trimws(indicators))
+  idx <- normalized_labels %in% normalized_targets
+  if (!any(idx)) {
+    return(data.frame(tech = character(), commodity_code = character(), commodity_label = character()))
+  }
+  data.frame(
+    tech = commodity_df$label[idx],
+    commodity_code = commodity_df$code[idx],
+    commodity_label = commodity_df$label[idx],
+    stringsAsFactors = FALSE
+  )
+}
+
 imf_pcps_prices_from_data <- function(data, commodity_map) {
   if (nrow(data) == 0 || nrow(commodity_map) == 0) {
     return(data.frame())
@@ -348,23 +366,30 @@ imf_pcps_energy_prices <- function(start_year, end_year) {
       series_vol = imf_pcps_empty_series_vol()
     ))
   }
-  target_patterns <- list(
-    Coal = "coal",
-    Oil = "crude oil|petroleum|oil",
-    Gas = "natural gas|gas|lng",
-    Cobalt = "cobalt",
-    Lithium = "lithium",
-    Graphite = "graphite",
-    `Rare Earths` = "rare earth",
-    Copper = "copper",
-    Manganese = "manganese",
-    Nickel = "nickel",
-    Zinc = "zinc",
-    PGMs = "platinum|palladium|pgm"
+  target_indicators <- c(
+    "Aluminum, US dollars per metric tonne, Unit prices",
+    "APSP crude oil($/bbl), US dollars per barrel,Unit prices, 2016=100",
+    "Brent Crude, US dollars per barrel, Unit prices",
+    "Chromium, 99.2%, Coarse particle, Unit prices",
+    "Coal, Australia, US dollars per metric tonne, Unit prices",
+    "Cobalt, US dollars per pound, Unit prices",
+    "Copper, US dollars per metric tonne, Unit prices",
+    "Lithium, 99%, Battery Grade, Unit prices",
+    "LNG, Asia, US dollars per million metric British thermal units of gas, Unit prices",
+    "Manganese, US dollars per metric tonne, Unit prices",
+    "Natural gas index, Commodity price index, Index, 2016=100",
+    "Natural gas, EU, US dollars per million metric British thermal units of gas, Unit prices",
+    "Natural Gas, US Henry Hub Gas, US dollars per million metric British thermal units of gas, Unit prices",
+    "Nickel, US dollars per metric tonne, Unit prices",
+    "Rare Earth Elements, Rare earth carbonate REO 42-45 Dom, Unit prices",
+    "Silicon, US dollars per metric tonne, Unit prices",
+    "Uranium, US dollars per pound, Unit prices",
+    "WTI Crude, US dollars per barrel, Unit prices",
+    "Zinc, US dollars per metric tonne, Unit prices"
   )
-  commodity_map <- imf_pcps_match_commodities(commodity_df, target_patterns)
+  commodity_map <- imf_pcps_select_indicators(commodity_df, target_indicators)
   if (is.null(commodity_map) || nrow(commodity_map) == 0) {
-    stop("No IMF PCPS commodities matched for coal, oil, gas, or critical minerals.")
+    stop("No IMF PCPS commodities matched requested indicator series.")
   }
 
   data <- imf_pcps_load_pcps_data()
