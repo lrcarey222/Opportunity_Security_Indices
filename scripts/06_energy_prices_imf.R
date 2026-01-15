@@ -313,6 +313,7 @@ imf_pcps_compute_volatility <- function(price_df) {
 }
 
 imf_pcps_energy_prices <- function(start_year, end_year) {
+  opts <- imf_pcps_fetch_options()
   commodity_df <- imf_pcps_get_commodity_codes()
   if (nrow(commodity_df) == 0 && imf_pcps_soft_fail_enabled()) {
     warning("IMF PCPS commodity list empty; returning empty energy price results.", call. = FALSE)
