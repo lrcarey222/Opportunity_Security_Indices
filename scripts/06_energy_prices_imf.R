@@ -95,10 +95,15 @@ imf_pcps_find_column <- function(df, candidates) {
   NULL
 }
 
-imf_pcps_date_columns <- function(col_names) {
+imf_pcps_date_columns <- function(col_names, monthly_only = TRUE) {
   normalized <- gsub("^X", "", col_names)
-  pattern <- "^\\d{4}([_-]?m\\d{1,2}|[_-]?q\\d{1}|[_-]?\\d{1,2})?$"
-  idx <- grepl(pattern, tolower(normalized))
+  normalized_lower <- tolower(normalized)
+  pattern <- if (monthly_only) {
+    "^\\d{4}[-_]?m\\d{1,2}$"
+  } else {
+    "^\\d{4}([_-]?m\\d{1,2}|[_-]?q\\d{1}|[_-]?\\d{1,2})?$"
+  }
+  idx <- grepl(pattern, normalized_lower)
   list(original = col_names[idx], normalized = normalized[idx])
 }
 
@@ -129,7 +134,7 @@ imf_pcps_select_sheet <- function(path) {
     }
     time_col <- imf_pcps_find_column(df, c("time_period", "time", "date", "period"))
     value_col <- imf_pcps_find_column(df, c("obs_value", "value", "price", "index"))
-    date_cols <- imf_pcps_date_columns(names(df))
+    date_cols <- imf_pcps_date_columns(names(df), monthly_only = TRUE)
     score <- length(date_cols$original)
     if (!is.null(time_col) && !is.null(value_col)) {
       score <- score + 100
@@ -168,7 +173,7 @@ imf_pcps_long_from_excel <- function(raw_df) {
     ))
   }
 
-  date_info <- imf_pcps_date_columns(names(raw_df))
+  date_info <- imf_pcps_date_columns(names(raw_df), monthly_only = TRUE)
   if (length(date_info$original) == 0) {
     stop("Unable to locate time columns in IMF_PCPS_all.xlsx.")
   }
@@ -352,6 +357,7 @@ imf_pcps_energy_prices <- function(start_year, end_year) {
     ))
   }
 
+  data <- data[grepl("-M\\d{1,2}$", toupper(data$date)), , drop = FALSE]
   data_years <- imf_pcps_extract_year(data$date)
   if (!is.null(start_year) && !is.null(end_year)) {
     data <- data[data_years >= start_year & data_years <= end_year, , drop = FALSE]
