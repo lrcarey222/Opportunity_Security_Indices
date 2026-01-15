@@ -366,31 +366,38 @@ imf_pcps_energy_prices <- function(start_year, end_year) {
       series_vol = imf_pcps_empty_series_vol()
     ))
   }
-  target_indicators <- c(
-    "Aluminum, US dollars per metric tonne, Unit prices",
-    "APSP crude oil($/bbl), US dollars per barrel,Unit prices, 2016=100",
-    "Brent Crude, US dollars per barrel, Unit prices",
-    "Chromium, 99.2%, Coarse particle, Unit prices",
-    "Coal, Australia, US dollars per metric tonne, Unit prices",
-    "Cobalt, US dollars per pound, Unit prices",
-    "Copper, US dollars per metric tonne, Unit prices",
-    "Lithium, 99%, Battery Grade, Unit prices",
-    "LNG, Asia, US dollars per million metric British thermal units of gas, Unit prices",
-    "Manganese, US dollars per metric tonne, Unit prices",
-    "Natural gas index, Commodity price index, Index, 2016=100",
-    "Natural gas, EU, US dollars per million metric British thermal units of gas, Unit prices",
-    "Natural Gas, US Henry Hub Gas, US dollars per million metric British thermal units of gas, Unit prices",
-    "Nickel, US dollars per metric tonne, Unit prices",
-    "Rare Earth Elements, Rare earth carbonate REO 42-45 Dom, Unit prices",
-    "Silicon, US dollars per metric tonne, Unit prices",
-    "Uranium, US dollars per pound, Unit prices",
-    "WTI Crude, US dollars per barrel, Unit prices",
-    "Zinc, US dollars per metric tonne, Unit prices"
+  patterns <- list(
+    Aluminum = "aluminum.*(unit prices|us dollars|usd)",
+    Oil_APSP = "apsp.*crude oil|crude oil.*apsp",
+    Oil_Brent = "brent.*crude|brent.*oil",
+    Oil_WTI = "wti.*crude|wti.*oil",
+    Chromium = "chromium",
+    Coal = "coal",
+    Cobalt = "cobalt",
+    Copper = "copper",
+    Lithium = "lithium",
+    LNG = "lng|liquefied natural gas",
+    Manganese = "manganese",
+    Natural_Gas_Index = "natural gas index|commodity price index.*natural gas",
+    Natural_Gas_EU = "natural gas.*eu",
+    Natural_Gas_Henry_Hub = "henry hub|us henry hub",
+    Nickel = "nickel",
+    Rare_Earths = "rare earth",
+    Silicon = "silicon",
+    Uranium = "uranium",
+    Zinc = "zinc"
   )
-  commodity_map <- imf_pcps_select_indicators(commodity_df, target_indicators)
+  commodity_map <- imf_pcps_match_commodities(commodity_df, patterns)
   if (is.null(commodity_map) || nrow(commodity_map) == 0) {
-    stop("No IMF PCPS commodities matched requested indicator series.")
+    sample_labels <- utils::head(commodity_df$label, 12)
+    stop(
+      "No IMF PCPS commodities matched requested patterns. ",
+      "Check labels such as: ",
+      paste(sample_labels, collapse = " | ")
+    )
   }
+  price_priority <- grepl("unit prices|us dollars|usd", tolower(commodity_map$commodity_label))
+  commodity_map <- commodity_map[order(commodity_map$tech, !price_priority), , drop = FALSE]
 
   data <- imf_pcps_load_pcps_data()
   if (is.null(data)) {
