@@ -69,6 +69,9 @@ standardize_energy_security_inputs_v2 <- function(theme_tables, include_sub_sect
 
   if (!isTRUE(include_sub_sector) && nrow(standardized) > 0) {
     standardized <- standardized %>%
+      dplyr::mutate(sub_sector = "All")
+
+    standardized <- standardized %>%
       dplyr::group_by(
         Country,
         tech,
@@ -179,7 +182,6 @@ apply_missing_policy <- function(tbl, rules_tbl) {
     dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
     dplyr::summarize(
       global_avg = mean(value, na.rm = TRUE),
-      Year_used = if (all(is.na(Year))) NA_integer_ else max(Year, na.rm = TRUE),
       .groups = "drop"
     ) %>%
     dplyr::mutate(global_avg = dplyr::if_else(is.nan(global_avg), NA_real_, global_avg))
@@ -195,8 +197,7 @@ apply_missing_policy <- function(tbl, rules_tbl) {
         TRUE ~ value_raw
       ),
       imputed = is.na(value_raw) & !is.na(missing_method) & !is.na(value),
-      missing_rule_applied = dplyr::if_else(imputed, missing_method, NA_character_),
-      Year_used = dplyr::if_else(is.na(Year), Year_used, Year)
+      missing_rule_applied = dplyr::if_else(imputed, missing_method, NA_character_)
     ) %>%
     dplyr::select(-global_avg, -value_raw)
 }
@@ -268,7 +269,6 @@ compute_overall_scores <- function(tbl, index_definition, include_sub_sector = F
       dplyr::group_by(dplyr::across(dplyr::all_of(c(group_cols, "variable")))) %>%
       dplyr::summarize(
         value = mean(value, na.rm = TRUE),
-        Year_used = if (all(is.na(Year_used))) NA_integer_ else max(Year_used, na.rm = TRUE),
         imputed = any(isTRUE(imputed)),
         missing_rule_applied = paste(sort(unique(stats::na.omit(missing_rule_applied))), collapse = "; "),
         .groups = "drop"
@@ -279,7 +279,6 @@ compute_overall_scores <- function(tbl, index_definition, include_sub_sector = F
       dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
       dplyr::summarize(
         component_count = dplyr::n(),
-        Year_used_overall = if (all(is.na(Year_used))) NA_integer_ else max(Year_used, na.rm = TRUE),
         .groups = "drop"
       )
 
@@ -297,14 +296,12 @@ compute_overall_scores <- function(tbl, index_definition, include_sub_sector = F
         category = def$category,
         theme = "overall_definition",
         data_type = "index",
-        missing_rule_applied = dplyr::na_if(missing_rule_applied, ""),
-        Year_used = Year_used_overall
+        missing_rule_applied = dplyr::na_if(missing_rule_applied, "")
       ) %>%
-      dplyr::mutate(value = dplyr::if_else(is.nan(value), NA_real_, value)) %>%
-      dplyr::select(-Year_used_overall)
+      dplyr::mutate(value = dplyr::if_else(is.nan(value), NA_real_, value))
 
     component_tbl <- component_tbl %>%
-      dplyr::left_join(component_counts %>% dplyr::select(-Year_used_overall), by = group_cols) %>%
+      dplyr::left_join(component_counts, by = group_cols) %>%
       dplyr::mutate(
         component_weight_within_overall = 1 / component_count,
         value = dplyr::if_else(is.nan(value), NA_real_, value)
@@ -326,7 +323,6 @@ compute_category_scores <- function(score_values_tbl, score_variables_tbl) {
     dplyr::group_by(Country, tech, supply_chain, sub_sector, category) %>%
     dplyr::summarize(
       category_score = mean(value, na.rm = TRUE),
-      Year_used = if (all(is.na(Year_used))) NA_integer_ else max(Year_used, na.rm = TRUE),
       imputed = any(isTRUE(imputed)),
       missing_rule_applied = paste(sort(unique(stats::na.omit(missing_rule_applied))), collapse = "; "),
       .groups = "drop"
@@ -417,7 +413,6 @@ compute_index_and_contributions <- function(category_scores,
       component_weight_within_overall,
       category_weight,
       weighted_variable_contribution,
-      Year_used,
       missing_rule_applied,
       imputed
     )
@@ -445,7 +440,6 @@ compute_index_and_contributions <- function(category_scores,
         NA_real_,
         sum(weighted_category_contribution, na.rm = TRUE)
       ),
-      Year_used = if (all(is.na(Year_used))) NA_integer_ else max(Year_used, na.rm = TRUE),
       .groups = "drop"
     )
 
@@ -481,6 +475,9 @@ build_energy_security_index_v2 <- function(theme_tables,
     theme_tables,
     include_sub_sector = include_sub_sector
   ) %>%
+    dplyr::mutate(
+      sub_sector = if (!isTRUE(include_sub_sector)) "All" else sub_sector
+    ) %>%
     dplyr::mutate(
       Year_raw = Year,
       Year = normalize_year(Year),
@@ -527,8 +524,14 @@ build_energy_security_index_v2 <- function(theme_tables,
   latest_tbl <- latest_by_group(
     energy_security_data,
     group_cols = c("Country", "tech", "supply_chain", "sub_sector", "category", "variable", "theme")
-  ) %>%
-    dplyr::mutate(Year_used = Year)
+  )
+
+  year_provenance <- latest_tbl %>%
+    dplyr::select(Country, tech, supply_chain, sub_sector, category, variable, theme, Year) %>%
+    dplyr::rename(Year_selected = Year)
+
+  latest_tbl <- latest_tbl %>%
+    dplyr::select(-Year)
 
   if (nrow(latest_tbl) == 0) {
     year_samples <- unique(energy_security_data$Year)
@@ -603,7 +606,6 @@ build_energy_security_index_v2 <- function(theme_tables,
     dplyr::group_by(Country, tech, supply_chain, sub_sector, category, variable) %>%
     dplyr::summarize(
       component_value = mean(value, na.rm = TRUE),
-      Year_used = if (all(is.na(Year_used))) NA_integer_ else max(Year_used, na.rm = TRUE),
       imputed = any(isTRUE(imputed)),
       missing_rule_applied = paste(sort(unique(stats::na.omit(missing_rule_applied))), collapse = "; "),
       .groups = "drop"
@@ -625,7 +627,6 @@ build_energy_security_index_v2 <- function(theme_tables,
       variable,
       component_value,
       component_weight_within_overall,
-      Year_used,
       missing_rule_applied,
       imputed
     )
@@ -650,7 +651,8 @@ build_energy_security_index_v2 <- function(theme_tables,
   diagnostics <- list(
     categories_configured = score_variables_tbl$category,
     categories_in_data = sort(unique(category_scores$category)),
-    imputed_share = mean(category_scores$imputed, na.rm = TRUE)
+    imputed_share = mean(category_scores$imputed, na.rm = TRUE),
+    year_provenance = year_provenance
   )
 
   energy_security_index <- index_outputs$energy_security_index %>%
