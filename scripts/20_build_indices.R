@@ -50,6 +50,7 @@ economic_opportunity_inputs <- list(
   lcoe_competitiveness = lcoe_competitiveness_tbl,
   market_share_manufacturing = market_share_manufacturing_tbl,
   production_depth_momentum = production_depth_momentum_tbl
+  overcapacity_premium = overcapacity_premium_tbl
 )
 
 economic_opportunity_outputs <- build_economic_opportunity_index(
