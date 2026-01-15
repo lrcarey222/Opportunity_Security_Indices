@@ -13,13 +13,36 @@ export_feasibility_build_energy_codes <- function(subcat) {
     dplyr::select(code6, code, tech, supply_chain, industry) %>%
     dplyr::distinct()
 
+  duplicate_code6 <- energy_codes %>%
+    dplyr::count(code6, name = "n") %>%
+    dplyr::filter(n > 1)
+  if (nrow(duplicate_code6) > 0) {
+    warning(
+      "Energy trade code mapping has multiple industries for HS6 codes; ",
+      "using the first industry per code6."
+    )
+    energy_codes <- energy_codes %>%
+      dplyr::arrange(code6, tech, supply_chain) %>%
+      dplyr::group_by(code6) %>%
+      dplyr::slice_head(n = 1) %>%
+      dplyr::ungroup()
+  }
+
   assert_unique_keys(energy_codes, "code6", label = "energy_codes")
 
   duplicate_codes <- energy_codes %>%
     dplyr::count(code, name = "n") %>%
     dplyr::filter(n > 1)
   if (nrow(duplicate_codes) > 0) {
-    stop("Energy trade code mapping has multiple industries for 4-digit codes; review subcat.")
+    warning(
+      "Energy trade code mapping has multiple industries for 4-digit codes; ",
+      "using the first industry per code."
+    )
+    energy_codes <- energy_codes %>%
+      dplyr::arrange(code, tech, supply_chain) %>%
+      dplyr::group_by(code) %>%
+      dplyr::slice_head(n = 1) %>%
+      dplyr::ungroup()
   }
 
   energy_codes
