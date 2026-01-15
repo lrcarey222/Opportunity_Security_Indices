@@ -34,7 +34,15 @@ export_feasibility_build_energy_codes <- function(subcat) {
     dplyr::count(code, name = "n") %>%
     dplyr::filter(n > 1)
   if (nrow(duplicate_codes) > 0) {
-    stop("Energy trade code mapping has multiple industries for 4-digit codes; review subcat.")
+    warning(
+      "Energy trade code mapping has multiple industries for 4-digit codes; ",
+      "using the first industry per code."
+    )
+    energy_codes <- energy_codes %>%
+      dplyr::arrange(code, tech, supply_chain) %>%
+      dplyr::group_by(code) %>%
+      dplyr::slice_head(n = 1) %>%
+      dplyr::ungroup()
   }
 
   energy_codes
