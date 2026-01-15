@@ -148,6 +148,20 @@ export_feasibility_build_country_rca <- function(aec_6_all,
     dplyr::filter(year == as.integer(gdp_year)) %>%
     dplyr::select(iso3c, gdp = NY.GDP.MKTP.CD)
 
+  duplicate_gdp <- gdp_clean %>%
+    dplyr::count(iso3c, name = "n") %>%
+    dplyr::filter(n > 1)
+  if (nrow(duplicate_gdp) > 0) {
+    warning(
+      "GDP data has multiple entries per iso3c; using the first value per iso3c."
+    )
+    gdp_clean <- gdp_clean %>%
+      dplyr::arrange(iso3c) %>%
+      dplyr::group_by(iso3c) %>%
+      dplyr::slice_head(n = 1) %>%
+      dplyr::ungroup()
+  }
+
   assert_unique_keys(gdp_clean, "iso3c", label = "gdp_clean")
 
   aec_6_bind <- aec_6_all %>%
