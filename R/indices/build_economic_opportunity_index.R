@@ -37,6 +37,17 @@ build_economic_opportunity_index <- function(theme_tables,
   economic_opportunity_data <- standardize_economic_opportunity_inputs(theme_tables) %>%
     dplyr::filter(data_type == "index", tech %in% techs)
 
+  require_columns(
+    economic_opportunity_data,
+    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "value"),
+    label = "economic_opportunity_data"
+  )
+  assert_unique_keys(
+    economic_opportunity_data,
+    c("Country", "tech", "supply_chain", "category", "variable", "Year"),
+    label = "economic_opportunity_data"
+  )
+
   message("Filtering economic opportunity data to Overall variables only.")
   economic_opportunity_overall <- economic_opportunity_data %>%
     dplyr::filter(grepl("Overall", variable))
