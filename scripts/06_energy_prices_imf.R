@@ -85,11 +85,20 @@ imf_pcps_empty_series_vol <- function() {
 ## Excel ingestion helpers ----
 imf_pcps_find_column <- function(df, candidates) {
   col_names <- names(df)
-  lower_names <- tolower(col_names)
-  for (candidate in candidates) {
-    idx <- match(candidate, lower_names)
+  normalize_name <- function(x) {
+    cleaned <- gsub("[^a-z0-9]+", "_", tolower(x))
+    gsub("^_+|_+$", "", cleaned)
+  }
+  normalized_names <- normalize_name(col_names)
+  normalized_candidates <- normalize_name(candidates)
+  for (candidate in normalized_candidates) {
+    idx <- match(candidate, normalized_names)
     if (!is.na(idx)) {
       return(col_names[[idx]])
+    }
+    partial_idx <- which(grepl(candidate, normalized_names, fixed = TRUE))
+    if (length(partial_idx) > 0) {
+      return(col_names[[partial_idx[1]]])
     }
   }
   NULL
@@ -128,7 +137,7 @@ imf_pcps_select_sheet <- function(path) {
   best <- NULL
   best_score <- -Inf
   for (sheet in sheets) {
-    df <- readxl::read_excel(path, sheet = sheet)
+    df <- readxl::read_excel(path, sheet = sheet, guess_max = 50000)
     if (nrow(df) == 0) {
       next
     }
@@ -156,11 +165,10 @@ imf_pcps_long_from_excel <- function(raw_df) {
   code_col <- imf_pcps_find_column(raw_df, c("commodity_code", "commodity", "item", "product", "series", "code"))
   label_col <- imf_pcps_find_column(raw_df, c("commodity_label", "commodity_name", "commodity_description", "description", "label", "name"))
 
-  if (is.null(code_col)) {
-    stop("Unable to identify commodity column in IMF_PCPS_all.xlsx.")
-  }
-
   if (!is.null(time_col) && !is.null(value_col)) {
+    if (is.null(code_col)) {
+      stop("Unable to identify commodity column in IMF_PCPS_all.xlsx.")
+    }
     if (is.null(label_col)) {
       label_col <- code_col
     }
@@ -178,12 +186,24 @@ imf_pcps_long_from_excel <- function(raw_df) {
     stop("Unable to locate time columns in IMF_PCPS_all.xlsx.")
   }
   metadata_cols <- setdiff(names(raw_df), date_info$original)
+  if (is.null(code_col)) {
+    if (length(metadata_cols) > 0) {
+      code_col <- metadata_cols[1]
+    } else {
+      stop("Unable to identify commodity column in IMF_PCPS_all.xlsx.")
+    }
+  }
   if (is.null(label_col)) {
-    label_col <- code_col
+    label_col <- if (length(metadata_cols) >= 2) {
+      metadata_cols[2]
+    } else {
+      code_col
+    }
   }
 
   stacked <- stack(raw_df[date_info$original])
-  metadata_rep <- raw_df[metadata_cols][rep(seq_len(nrow(raw_df)), times = length(date_info$original)), , drop = FALSE]
+  meta_keep <- unique(c(code_col, label_col))
+  metadata_rep <- raw_df[meta_keep][rep(seq_len(nrow(raw_df)), times = length(date_info$original)), , drop = FALSE]
   normalized_dates <- imf_pcps_normalize_date_label(date_info$normalized)
   date_labels <- normalized_dates[match(stacked$ind, date_info$original)]
 
