@@ -476,6 +476,9 @@ build_energy_security_index_v2 <- function(theme_tables,
     include_sub_sector = include_sub_sector
   ) %>%
     dplyr::mutate(
+      sub_sector = if (!isTRUE(include_sub_sector)) "All" else sub_sector
+    ) %>%
+    dplyr::mutate(
       Year_raw = Year,
       Year = normalize_year(Year),
       value = suppressWarnings(as.numeric(value))
