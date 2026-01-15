@@ -76,6 +76,29 @@ build_energy_security_index <- function(theme_tables,
       include_sub_sector = include_sub_sector
     )
 
+  energy_security_data <- energy_security_data %>%
+    dplyr::mutate(
+      Year = dplyr::case_when(
+        inherits(Year, "Date") ~ as.integer(format(Year, "%Y")),
+        inherits(Year, "POSIXct") ~ as.integer(format(Year, "%Y")),
+        inherits(Year, "POSIXt") ~ as.integer(format(Year, "%Y")),
+        TRUE ~ suppressWarnings(as.integer(Year))
+      )
+    )
+
+  dropped_years <- sum(is.na(energy_security_data$Year))
+  if (dropped_years > 0) {
+    warning(
+      paste(
+        "Dropping", dropped_years,
+        "energy security rows with invalid Year values after coercion."
+      )
+    )
+  }
+
+  energy_security_data <- energy_security_data %>%
+    dplyr::filter(!is.na(Year))
+
   validate_variable_levels(
     energy_security_data,
     index_definition = index_definition,
@@ -228,6 +251,17 @@ build_energy_security_index <- function(theme_tables,
       by = c(group_cols, "Year")
     )
 
+  if (nrow(category_scores_latest) == 0) {
+    year_samples <- unique(category_scores$Year)
+    year_samples <- year_samples[seq_len(min(5, length(year_samples)))]
+    year_sample_text <- if (length(year_samples) == 0) "none" else paste(year_samples, collapse = ", ")
+    stop(
+      "Latest-year filter returned 0 rows; check Year type/coercion. ",
+      "Year classes: ", paste(class(category_scores$Year), collapse = ", "),
+      ". Sample Year values: ", year_sample_text, "."
+    )
+  }
+
   categories_in_data <- sort(unique(category_scores_latest$category))
   categories_in_weights <- sort(unique(weights_tbl$category))
 
@@ -255,7 +289,7 @@ build_energy_security_index <- function(theme_tables,
   weights_tbl <- weights_tbl %>%
     dplyr::filter(category %in% categories_in_data)
 
-  if (nrow(weights_tbl) == 0 || nrow(category_scores_latest) == 0) {
+  if (nrow(weights_tbl) == 0) {
     stop("No energy security categories remain after filtering to available data and weights.")
   }
 
