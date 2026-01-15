@@ -62,10 +62,15 @@ build_economic_opportunity_index <- function(theme_tables,
   category_scores <- economic_opportunity_overall %>%
     dplyr::group_by(Country, tech, supply_chain, category) %>%
     dplyr::summarize(category_score = mean(value, na.rm = TRUE), .groups = "drop")
+  assert_unique_keys(
+    category_scores,
+    c("Country", "tech", "supply_chain", "category"),
+    label = "economic_opportunity_category_scores"
+  )
 
   latest_years <- economic_opportunity_overall %>%
     dplyr::group_by(Country, tech, supply_chain) %>%
-    dplyr::summarize(Year = max(Year, na.rm = TRUE), .groups = "drop")
+    dplyr::summarize(Year = as.integer(max(Year, na.rm = TRUE)), .groups = "drop")
   assert_unique_keys(
     latest_years,
     c("Country", "tech", "supply_chain"),
@@ -101,6 +106,11 @@ build_economic_opportunity_index <- function(theme_tables,
 
   available_categories <- category_scores %>%
     dplyr::distinct(tech, supply_chain, category)
+  assert_unique_keys(
+    available_categories,
+    c("tech", "supply_chain", "category"),
+    label = "economic_opportunity_available_categories"
+  )
 
   available_by_group <- available_categories %>%
     dplyr::group_by(tech, supply_chain) %>%
@@ -172,6 +182,12 @@ build_economic_opportunity_index <- function(theme_tables,
     dplyr::left_join(latest_years, by = c("Country", "tech", "supply_chain"))
 
   message("Computing overall economic opportunity index from weighted categories.")
+  assert_unique_keys(
+    category_scores_complete,
+    c("Country", "tech", "supply_chain", "category"),
+    label = "economic_opportunity_category_scores_complete"
+  )
+
   category_contributions <- category_scores_complete %>%
     dplyr::left_join(weights_tbl, by = "category") %>%
     dplyr::group_by(Country, tech, supply_chain) %>%
@@ -221,7 +237,8 @@ build_economic_opportunity_index <- function(theme_tables,
       economic_opportunity_index = sum(category_score * weight, na.rm = TRUE) / sum(weight, na.rm = TRUE),
       .groups = "drop"
     ) %>%
-    dplyr::left_join(latest_years, by = c("Country", "tech", "supply_chain"))
+    dplyr::left_join(latest_years, by = c("Country", "tech", "supply_chain")) %>%
+    dplyr::mutate(Year = as.integer(Year))
 
   list(
     category_scores = category_scores_complete,
