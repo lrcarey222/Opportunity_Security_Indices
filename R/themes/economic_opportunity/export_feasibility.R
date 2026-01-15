@@ -13,13 +13,36 @@ export_feasibility_build_energy_codes <- function(subcat) {
     dplyr::select(code6, code, tech, supply_chain, industry) %>%
     dplyr::distinct()
 
+  duplicate_code6 <- energy_codes %>%
+    dplyr::count(code6, name = "n") %>%
+    dplyr::filter(n > 1)
+  if (nrow(duplicate_code6) > 0) {
+    warning(
+      "Energy trade code mapping has multiple industries for HS6 codes; ",
+      "using the first industry per code6."
+    )
+    energy_codes <- energy_codes %>%
+      dplyr::arrange(code6, tech, supply_chain) %>%
+      dplyr::group_by(code6) %>%
+      dplyr::slice_head(n = 1) %>%
+      dplyr::ungroup()
+  }
+
   assert_unique_keys(energy_codes, "code6", label = "energy_codes")
 
   duplicate_codes <- energy_codes %>%
     dplyr::count(code, name = "n") %>%
     dplyr::filter(n > 1)
   if (nrow(duplicate_codes) > 0) {
-    stop("Energy trade code mapping has multiple industries for 4-digit codes; review subcat.")
+    warning(
+      "Energy trade code mapping has multiple industries for 4-digit codes; ",
+      "using the first industry per code."
+    )
+    energy_codes <- energy_codes %>%
+      dplyr::arrange(code, tech, supply_chain) %>%
+      dplyr::group_by(code) %>%
+      dplyr::slice_head(n = 1) %>%
+      dplyr::ungroup()
   }
 
   energy_codes
@@ -124,6 +147,20 @@ export_feasibility_build_country_rca <- function(aec_6_all,
     dplyr::mutate(year = as.integer(year)) %>%
     dplyr::filter(year == as.integer(gdp_year)) %>%
     dplyr::select(iso3c, gdp = NY.GDP.MKTP.CD)
+
+  duplicate_gdp <- gdp_clean %>%
+    dplyr::count(iso3c, name = "n") %>%
+    dplyr::filter(n > 1)
+  if (nrow(duplicate_gdp) > 0) {
+    warning(
+      "GDP data has multiple entries per iso3c; using the first value per iso3c."
+    )
+    gdp_clean <- gdp_clean %>%
+      dplyr::arrange(iso3c) %>%
+      dplyr::group_by(iso3c) %>%
+      dplyr::slice_head(n = 1) %>%
+      dplyr::ungroup()
+  }
 
   assert_unique_keys(gdp_clean, "iso3c", label = "gdp_clean")
 
