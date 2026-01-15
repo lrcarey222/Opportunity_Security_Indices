@@ -21,6 +21,7 @@ source(file.path(repo_root, "R", "themes", "economic_opportunity", "future_deman
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "export_feasibility.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "lcoe_competitiveness.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "market_share_manufacturing.R"))
+source(file.path(repo_root, "R", "themes", "economic_opportunity", "overcapacity_premium.R"))
 
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
@@ -107,6 +108,7 @@ energy_prices_lcoe_path <- file.path(latest_snapshot, "2025-03-24 - 2025 LCOE Da
 iea_weo_path <- file.path(latest_snapshot, "WEO2024_AnnexA_Free_Dataset_World.csv")
 iea_ev_path <- file.path(latest_snapshot, "IEA_EVDataExplorer2025.xlsx")
 bcg_future_demand_path <- file.path(latest_snapshot, "Market Size for Technology and Supply Chain.xlsx")
+bnef_supply_chain_path <- file.path(latest_snapshot, "BNEF_Energy Transition Supply Chains 2025.xlsx")
 
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
@@ -129,7 +131,8 @@ missing_files <- c(
   energy_prices_lcoe_path,
   iea_weo_path,
   iea_ev_path,
-  bcg_future_demand_path
+  bcg_future_demand_path,
+  bnef_supply_chain_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
 
@@ -293,6 +296,17 @@ export_feasibility_tbl <- export_feasibility(
 )
 export_feasibility_tbl <- standardize_theme_types(export_feasibility_tbl, country_info = country_info)
 
+# Theme: Overcapacity premium (BNEF supply chains data + trade reference).
+overcapacity_bnef <- readxl::read_excel(bnef_supply_chain_path, sheet = 3, skip = 9)
+overcapacity_premium_tbl <- overcapacity_premium(
+  overcapacity_raw = overcapacity_bnef,
+  trade_tidy = export_feasibility_tbl
+)
+overcapacity_premium_tbl <- standardize_theme_types(
+  overcapacity_premium_tbl,
+  country_info = country_info
+)
+
 # Theme: Future demand (IEA + BNEF + EV + BCG data).
 iea_weo <- read.csv(iea_weo_path)
 iea_ev <- readxl::read_excel(iea_ev_path, sheet = 1)
@@ -321,6 +335,7 @@ theme_outputs <- list(
   reserves = reserves_tbl,
   trade_concentration = trade_concentration_tbl,
   export_feasibility = export_feasibility_tbl,
+  overcapacity_premium = overcapacity_premium_tbl,
   future_demand = future_demand_tbl,
   lcoe_competitiveness = lcoe_competitiveness_tbl,
   market_share_manufacturing = market_share_manufacturing_tbl
