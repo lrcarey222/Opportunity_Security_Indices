@@ -1,6 +1,11 @@
 # Build Economic Opportunity index outputs (category scores + overall index).
 standardize_economic_opportunity_inputs <- function(theme_tables, include_sub_sector = FALSE) {
-  standardized <- lapply(theme_tables, function(tbl) {
+  theme_names <- names(theme_tables)
+  if (is.null(theme_names)) {
+    theme_names <- rep("unknown_theme", length(theme_tables))
+  }
+
+  standardized <- Map(function(theme_name, tbl) {
     if (is.null(tbl)) {
       return(NULL)
     }
@@ -12,7 +17,8 @@ standardize_economic_opportunity_inputs <- function(theme_tables, include_sub_se
         Country = as.character(Country),
         tech = as.character(tech),
         supply_chain = as.character(supply_chain),
-        category = as.character(category)
+        category = as.character(category),
+        theme = as.character(theme_name)
       )
     if (!"sub_sector" %in% names(standardized_tbl)) {
       standardized_tbl$sub_sector <- NA_character_
@@ -34,6 +40,7 @@ standardize_economic_opportunity_inputs <- function(theme_tables, include_sub_se
           supply_chain,
           sub_sector,
           category,
+          theme,
           variable,
           data_type,
           Year,
@@ -43,7 +50,7 @@ standardize_economic_opportunity_inputs <- function(theme_tables, include_sub_se
         dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
     }
     standardized_tbl
-  })
+  }, theme_names, theme_tables)
 
   dplyr::bind_rows(standardized)
 }
@@ -164,6 +171,30 @@ build_economic_opportunity_index <- function(theme_tables,
       index_definition = index_definition,
       include_sub_sector = include_sub_sector
     )
+  economic_opportunity_data <- economic_opportunity_data %>%
+    dplyr::group_by(
+      Country,
+      tech,
+      supply_chain,
+      sub_sector,
+      category,
+      variable,
+      data_type,
+      Year,
+      theme
+    ) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
+
+  if (nrow(economic_opportunity_data) == 0) {
+    stop(
+      "Economic opportunity inputs are empty after Year normalization.",
+      " Year class: ", paste(class(economic_opportunity_data$Year), collapse = ", ")
+    )
+  }
+
+  validation_tbl <- economic_opportunity_data %>%
+    dplyr::group_by(Country, tech, supply_chain, sub_sector, category, variable, data_type, Year, theme) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
 
   if (nrow(economic_opportunity_data) == 0) {
     stop(
@@ -184,17 +215,12 @@ build_economic_opportunity_index <- function(theme_tables,
 
   require_columns(
     economic_opportunity_data,
-    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "value"),
+    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "theme", "value"),
     label = "economic_opportunity_data"
   )
   group_cols <- append_sub_sector(c("Country", "tech", "supply_chain"), include_sub_sector)
-  assert_unique_keys(
-    economic_opportunity_data,
-    c(group_cols, "category", "variable", "Year"),
-    label = "economic_opportunity_data"
-  )
 
-  latest_group_cols <- c(group_cols, "category", "variable")
+  latest_group_cols <- c(group_cols, "category", "variable", "theme")
   economic_opportunity_data <- latest_by_group(
     economic_opportunity_data,
     group_cols = latest_group_cols
@@ -244,12 +270,7 @@ build_economic_opportunity_index <- function(theme_tables,
 
   require_columns(
     economic_opportunity_overall,
-    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "value"),
-    label = "economic_opportunity_overall"
-  )
-  assert_unique_keys(
-    economic_opportunity_overall,
-    c(group_cols, "category", "variable", "Year"),
+    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "theme", "value"),
     label = "economic_opportunity_overall"
   )
 
