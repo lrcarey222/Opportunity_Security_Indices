@@ -196,6 +196,17 @@ build_economic_opportunity_index <- function(theme_tables,
     dplyr::group_by(Country, tech, supply_chain, sub_sector, category, variable, data_type, Year, theme) %>%
     dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
 
+  if (nrow(economic_opportunity_data) == 0) {
+    stop(
+      "Economic opportunity inputs are empty after Year normalization.",
+      " Year class: ", paste(class(economic_opportunity_data$Year), collapse = ", ")
+    )
+  }
+
+  validation_tbl <- economic_opportunity_data %>%
+    dplyr::group_by(Country, tech, supply_chain, sub_sector, category, variable, data_type, Year) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
+
   validate_variable_levels(
     validation_tbl,
     index_definition = index_definition,

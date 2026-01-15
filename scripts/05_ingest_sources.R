@@ -396,6 +396,23 @@ if (needs_energy_comtrade) {
 }
 
 # --- Source: IMF Primary Commodity Price System (PCPS) ---
+imf_pcps_excel_path <- file.path(snapshot_dir, "IMF_PCPS_all.xlsx")
+if (!file.exists(imf_pcps_excel_path)) {
+  imf_pcps_candidates <- c(
+    file.path(sharepoint_raw_dir, "IMF_PCPS_all.xlsx"),
+    file.path(raw_data_dir, "IMF_PCPS_all.xlsx")
+  )
+  for (candidate in imf_pcps_candidates) {
+    if (file.exists(candidate)) {
+      copy_snapshot_file(candidate, imf_pcps_excel_path)
+      break
+    }
+  }
+}
+if (!file.exists(imf_pcps_excel_path)) {
+  stop("IMF PCPS Excel snapshot missing: ", imf_pcps_excel_path)
+}
+
 imf_pcps_prices_path <- file.path(snapshot_dir, "imf_pcps_prices.csv")
 imf_pcps_volatility_path <- file.path(snapshot_dir, "imf_pcps_price_volatility.csv")
 imf_pcps_series_volatility_path <- file.path(snapshot_dir, "imf_pcps_price_volatility_series.csv")
@@ -407,16 +424,21 @@ needs_imf_pcps <- !(
 )
 
 if (needs_imf_pcps) {
-  if (skip_data_downloads) {
-    message("Skipping IMF PCPS download; missing energy price volatility outputs in snapshot.")
-  } else {
-    source(file.path(repo_root, "scripts", "06_energy_prices_imf.R"))
-    end_year <- as.integer(format(Sys.Date(), "%Y"))
-    start_year <- end_year - 9
-    imf_pcps_data <- imf_pcps_energy_prices(start_year = start_year, end_year = end_year)
+  old_snapshot_option <- getOption("opportunity_security.raw_snapshot_dir")
+  options(opportunity_security.raw_snapshot_dir = snapshot_dir)
 
-    write.csv(imf_pcps_data$prices, imf_pcps_prices_path, row.names = FALSE)
-    write.csv(imf_pcps_data$tech_vol, imf_pcps_volatility_path, row.names = FALSE)
-    write.csv(imf_pcps_data$series_vol, imf_pcps_series_volatility_path, row.names = FALSE)
+  source(file.path(repo_root, "scripts", "06_energy_prices_imf.R"))
+  end_year <- as.integer(format(Sys.Date(), "%Y"))
+  start_year <- end_year - 9
+  imf_pcps_data <- imf_pcps_energy_prices(start_year = start_year, end_year = end_year)
+
+  write.csv(imf_pcps_data$prices, imf_pcps_prices_path, row.names = FALSE)
+  write.csv(imf_pcps_data$tech_vol, imf_pcps_volatility_path, row.names = FALSE)
+  write.csv(imf_pcps_data$series_vol, imf_pcps_series_volatility_path, row.names = FALSE)
+
+  if (is.null(old_snapshot_option)) {
+    options(opportunity_security.raw_snapshot_dir = NULL)
+  } else {
+    options(opportunity_security.raw_snapshot_dir = old_snapshot_option)
   }
 }
