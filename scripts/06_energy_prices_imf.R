@@ -2,11 +2,168 @@
 
 imf_pcps_base_url <- "https://dataservices.imf.org/REST/SDMX_JSON.svc"
 
-imf_pcps_fetch_json <- function(endpoint) {
+# IMF PCPS caching keeps DataStructure metadata local for resilience.
+# Override behavior via options:
+# - opportunity_security.imf_pcps_timeout (seconds)
+# - opportunity_security.imf_pcps_retries (integer)
+# - opportunity_security.imf_pcps_backoff (numeric vector, seconds)
+# - opportunity_security.imf_pcps_use_cache (logical)
+# - opportunity_security.imf_pcps_soft_fail (logical)
+# - opportunity_security.processed_dir (cache root when set)
+
+## Cache helpers ----
+imf_pcps_cache_dir <- function() {
+  processed_dir <- getOption("opportunity_security.processed_dir")
+  if (!is.null(processed_dir) && nzchar(processed_dir)) {
+    return(file.path(processed_dir, "cache", "imf_pcps"))
+  }
+  file.path(tempdir(), "imf_pcps_cache")
+}
+
+imf_pcps_cache_file <- function(endpoint) {
+  safe_name <- gsub("[^A-Za-z0-9]+", "_", endpoint)
+  file.path(imf_pcps_cache_dir(), paste0(safe_name, ".json"))
+}
+
+## Fetch configuration helpers ----
+imf_pcps_fetch_options <- function() {
+  list(
+    timeout_sec = getOption("opportunity_security.imf_pcps_timeout", 300),
+    retries = getOption("opportunity_security.imf_pcps_retries", 4),
+    backoff = getOption("opportunity_security.imf_pcps_backoff", c(1, 2, 4, 8)),
+    use_cache = getOption("opportunity_security.imf_pcps_use_cache", TRUE),
+    soft_fail = getOption("opportunity_security.imf_pcps_soft_fail", FALSE)
+  )
+}
+
+## Empty result helpers ----
+imf_pcps_empty_prices <- function() {
+  data.frame(
+    date = as.Date(character()),
+    value = numeric(),
+    tech = character(),
+    commodity_code = character(),
+    commodity_label = character(),
+    stringsAsFactors = FALSE
+  )
+}
+
+imf_pcps_empty_tech_vol <- function() {
+  data.frame(
+    tech = character(),
+    volatility_10y = numeric(),
+    volatility_index = numeric(),
+    start_year = integer(),
+    end_year = integer(),
+    stringsAsFactors = FALSE
+  )
+}
+
+imf_pcps_empty_series_vol <- function() {
+  data.frame(
+    tech = character(),
+    commodity_code = character(),
+    commodity_label = character(),
+    volatility_10y = numeric(),
+    start_year = integer(),
+    end_year = integer(),
+    stringsAsFactors = FALSE
+  )
+}
+
+imf_pcps_fetch_json <- function(endpoint,
+                                timeout_sec = 300,
+                                retries = 4,
+                                backoff = c(1, 2, 4, 8),
+                                cache_path = NULL,
+                                use_cache = TRUE,
+                                soft_fail = FALSE) {
   if (!requireNamespace("jsonlite", quietly = TRUE)) {
     stop("Package 'jsonlite' is required to ingest IMF PCPS data.")
   }
-  jsonlite::fromJSON(paste0(imf_pcps_base_url, "/", endpoint))
+  url <- paste0(imf_pcps_base_url, "/", endpoint)
+  retry_status <- c(429, 500, 502, 503, 504)
+  max_attempts <- retries + 1
+  last_error <- NULL
+
+  if (is.null(cache_path) && use_cache && identical(endpoint, "DataStructure/IMF/PCPS")) {
+    cache_path <- imf_pcps_cache_file(endpoint)
+  }
+
+  if (requireNamespace("curl", quietly = TRUE)) {
+    for (attempt in seq_len(max_attempts)) {
+      handle <- curl::new_handle()
+      curl::handle_setopt(handle, timeout = timeout_sec, useragent = "OpportunitySecurityIndices/IMF-PCPS")
+      result <- tryCatch(
+        curl::curl_fetch_memory(url, handle = handle),
+        error = function(err) err
+      )
+      if (inherits(result, "error")) {
+        last_error <- result$message
+      } else if (!is.null(result$status_code) && result$status_code %in% retry_status) {
+        last_error <- sprintf("HTTP %s from IMF PCPS.", result$status_code)
+      } else if (!is.null(result$status_code) && result$status_code >= 400) {
+        stop(sprintf("IMF PCPS request failed for %s (HTTP %s).", endpoint, result$status_code))
+      } else {
+        content_text <- rawToChar(result$content)
+        if (use_cache && !is.null(cache_path)) {
+          cache_dir <- dirname(cache_path)
+          if (!dir.exists(cache_dir)) {
+            dir.create(cache_dir, recursive = TRUE)
+          }
+          try(writeLines(content_text, cache_path), silent = TRUE)
+        }
+        return(jsonlite::fromJSON(content_text, simplifyVector = TRUE))
+      }
+
+      if (attempt < max_attempts) {
+        delay <- backoff[min(attempt, length(backoff))]
+        Sys.sleep(delay)
+      }
+    }
+  } else {
+    old_timeout <- getOption("timeout")
+    on.exit(options(timeout = old_timeout), add = TRUE)
+    for (attempt in seq_len(max_attempts)) {
+      options(timeout = timeout_sec)
+      result <- tryCatch(readLines(url, warn = FALSE), error = function(err) err)
+      if (!inherits(result, "error")) {
+        content_text <- paste(result, collapse = "\n")
+        if (use_cache && !is.null(cache_path)) {
+          cache_dir <- dirname(cache_path)
+          if (!dir.exists(cache_dir)) {
+            dir.create(cache_dir, recursive = TRUE)
+          }
+          try(writeLines(content_text, cache_path), silent = TRUE)
+        }
+        return(jsonlite::fromJSON(content_text, simplifyVector = TRUE))
+      }
+      last_error <- result$message
+      if (attempt < max_attempts) {
+        delay <- backoff[min(attempt, length(backoff))]
+        Sys.sleep(delay)
+      }
+    }
+  }
+
+  if (use_cache && !is.null(cache_path) && file.exists(cache_path)) {
+    cached_text <- tryCatch(readLines(cache_path, warn = FALSE), error = function(err) err)
+    if (!inherits(cached_text, "error")) {
+      return(jsonlite::fromJSON(paste(cached_text, collapse = "\n"), simplifyVector = TRUE))
+    }
+  }
+
+  if (soft_fail) {
+    warning("IMF PCPS fetch failed; returning empty result.", call. = FALSE)
+    return(NULL)
+  }
+
+  stop(sprintf(
+    "IMF PCPS fetch failed for %s after %s attempts: %s",
+    endpoint,
+    max_attempts,
+    ifelse(is.null(last_error), "unknown error", last_error)
+  ))
 }
 
 imf_pcps_dimensions_df <- function(dimensions) {
@@ -57,7 +214,20 @@ imf_pcps_codelist_df <- function(codelist) {
 }
 
 imf_pcps_get_commodity_codes <- function() {
-  dsd <- imf_pcps_fetch_json("DataStructure/IMF/PCPS")
+  opts <- imf_pcps_fetch_options()
+  dsd <- imf_pcps_fetch_json(
+    "DataStructure/IMF/PCPS",
+    timeout_sec = opts$timeout_sec,
+    retries = opts$retries,
+    backoff = opts$backoff,
+    cache_path = imf_pcps_cache_file("DataStructure/IMF/PCPS"),
+    use_cache = opts$use_cache,
+    soft_fail = opts$soft_fail
+  )
+  if (is.null(dsd)) {
+    warning("IMF PCPS metadata unavailable; returning empty commodity list.", call. = FALSE)
+    return(data.frame(code = character(), label = character(), stringsAsFactors = FALSE))
+  }
   dimensions <- dsd$Structure$KeyFamilies$KeyFamily$Components$Dimension
   dims_df <- imf_pcps_dimensions_df(dimensions)
 
@@ -148,7 +318,18 @@ imf_pcps_fetch_series <- function(series_key, start_period, end_period) {
     start_period,
     end_period
   )
-  data <- imf_pcps_fetch_json(endpoint)
+  opts <- imf_pcps_fetch_options()
+  data <- imf_pcps_fetch_json(
+    endpoint,
+    timeout_sec = opts$timeout_sec,
+    retries = opts$retries,
+    backoff = opts$backoff,
+    use_cache = FALSE,
+    soft_fail = opts$soft_fail
+  )
+  if (is.null(data)) {
+    return(list())
+  }
   series <- data$CompactData$DataSet$Series
   if (is.null(series)) {
     return(list())
@@ -230,7 +411,16 @@ imf_pcps_compute_volatility <- function(price_df) {
 }
 
 imf_pcps_energy_prices <- function(start_year, end_year) {
+  opts <- imf_pcps_fetch_options()
   commodity_df <- imf_pcps_get_commodity_codes()
+  if (nrow(commodity_df) == 0 && opts$soft_fail) {
+    warning("IMF PCPS commodity list empty; returning empty energy price results.", call. = FALSE)
+    return(list(
+      prices = imf_pcps_empty_prices(),
+      tech_vol = imf_pcps_empty_tech_vol(),
+      series_vol = imf_pcps_empty_series_vol()
+    ))
+  }
   target_patterns <- list(
     Coal = "coal",
     Oil = "crude oil|petroleum|oil",
@@ -250,7 +440,23 @@ imf_pcps_energy_prices <- function(start_year, end_year) {
     stop("No IMF PCPS commodities matched for coal, oil, gas, or critical minerals.")
   }
 
-  dsd <- imf_pcps_fetch_json("DataStructure/IMF/PCPS")
+  dsd <- imf_pcps_fetch_json(
+    "DataStructure/IMF/PCPS",
+    timeout_sec = opts$timeout_sec,
+    retries = opts$retries,
+    backoff = opts$backoff,
+    cache_path = imf_pcps_cache_file("DataStructure/IMF/PCPS"),
+    use_cache = opts$use_cache,
+    soft_fail = opts$soft_fail
+  )
+  if (is.null(dsd)) {
+    warning("IMF PCPS metadata unavailable; returning empty energy price results.", call. = FALSE)
+    return(list(
+      prices = imf_pcps_empty_prices(),
+      tech_vol = imf_pcps_empty_tech_vol(),
+      series_vol = imf_pcps_empty_series_vol()
+    ))
+  }
   dimensions <- dsd$Structure$KeyFamilies$KeyFamily$Components$Dimension
 
   price_tbls <- lapply(seq_len(nrow(commodity_map)), function(i) {
