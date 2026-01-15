@@ -36,6 +36,23 @@ with `gamma = 0.5` as the default. This compresses the middle of the distributio
 
 Theme-level indices are aggregated into pillar indices using weighted means across categories. Weights are defined by category and applied within each country/technology/supply-chain group. The ES and EO pillars are computed from their respective categories (e.g., Foreign Dependency, Trade, Production, Consumption, Technology Demand, Investment, etc.).
 
+## Index definition configuration
+
+Category score selection and Overall-variable composition are defined in `config/index_definition.yml`. The file specifies:
+
+- Which categories feed each pillar, and the **score variable** used to represent each category (e.g., ES Trade uses `Overall Trade Risk Index`, EO Trade uses `Overall Trade Index`).
+- How each **Overall ... Index** is constructed from component index variables (e.g., a mean across configured components).
+- Variable-level metadata used to validate grouping expectations.
+
+This config-driven approach keeps category scoring and overall formulas explicit and avoids hard-coded assumptions.
+
+## Sub-sector behavior
+
+Some trade and supply-chain metrics include an optional `sub_sector` level. The global `include_sub_sector` config flag controls this behavior:
+
+- When enabled, outputs retain `sub_sector` and uniqueness checks include it.
+- When disabled, outputs collapse to `sub_sector = \"All\"` so keys remain unique and consistent.
+
 ## Supply-chain coupling (HHI-weighted shrinkage)
 
 To align stage-level pillar scores with a technology-wide supply-chain signal, each pillar stage score is shrunk toward a chain score computed as the geometric mean across upstream, midstream, and downstream stages (using an epsilon to avoid log-zero). The shrinkage strength is determined by a tech-level HHI concentration measure: upstream and midstream HHI values are averaged (latest available HHI year) and normalized to [0, 1]. A bounded logistic ramp maps normalized HHI to a lambda in [0.15, 0.65], and the coupled score is `(1 - lambda) * stage_score + lambda * chain_score`. Coupling is applied to pillar scores only, leaving category scores unchanged.
