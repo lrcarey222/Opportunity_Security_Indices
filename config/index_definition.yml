@@ -1,0 +1,134 @@
+pillars:
+  energy_security:
+    categories:
+      Foreign Dependency:
+        score_variable: "Overall Foreign Dependency Index"
+      Energy Imports:
+        score_variable: "Overall Energy Imports Index"
+      Reserves:
+        score_variable: "Overall Reserves Index"
+      Trade:
+        score_variable: "Overall Trade Risk Index"
+      Minerals Trade:
+        score_variable: "Overall Minerals Trade Index"
+      Production:
+        score_variable: "Overall Production Index"
+      Energy Access:
+        score_variable: "Overall Energy Access Index"
+      Consumption:
+        score_variable: "Overall Consumption Index"
+      Energy Prices:
+        score_variable: "Overall Energy Prices Index"
+  economic_opportunity:
+    categories:
+      Trade:
+        score_variable: "Overall Trade Index"
+      Production:
+        score_variable: "Overall Production Index"
+      Technology Demand:
+        score_variable: "Overall Technology Demand Index"
+      Energy Prices:
+        score_variable: "Overall Energy Prices Index"
+      Investment:
+        score_variable: "Overall Investment Index"
+      Energy Access:
+        score_variable: "Overall Energy Access Index"
+      Foreign Dependency:
+        score_variable: "Overall Foreign Dependency Index"
+      Cost Competitiveness:
+        score_variable: "Overall Cost Competitiveness Index"
+      Consumption:
+        score_variable: "Overall Consumption Index"
+
+overall_variables:
+  Overall Trade Index:
+    category: "Trade"
+    components:
+      - market_share
+      - rca
+      - export_size
+      - feas
+      - deficit_gdp
+      - HHI
+    aggregation: mean
+    source: "Author calculation"
+    explanation: "Author calculation across trade indices"
+  Overall Trade Risk Index:
+    category: "Trade"
+    components:
+      - HHI
+      - market_share
+      - deficit_gdp
+    aggregation: mean
+    source: "Author calculation"
+    explanation: "Author calculation across trade risk indices"
+  Overall Minerals Trade Index:
+    category: "Minerals Trade"
+    components:
+      - "*"
+    aggregation: mean
+  Overall Foreign Dependency Index:
+    category: "Foreign Dependency"
+    components:
+      - "*"
+    aggregation: mean
+  Overall Energy Imports Index:
+    category: "Energy Imports"
+    components:
+      - "*"
+    aggregation: mean
+  Overall Reserves Index:
+    category: "Reserves"
+    components:
+      - "*"
+    aggregation: mean
+  Overall Production Index:
+    category: "Production"
+    components:
+      - "*"
+    aggregation: mean
+  Overall Energy Access Index:
+    category: "Energy Access"
+    components:
+      - "*"
+    aggregation: mean
+  Overall Consumption Index:
+    category: "Consumption"
+    components:
+      - "*"
+    aggregation: mean
+  Overall Energy Prices Index:
+    category: "Energy Prices"
+    components:
+      - "*"
+    aggregation: mean
+  Overall Technology Demand Index:
+    category: "Technology Demand"
+    components:
+      - "*"
+    aggregation: mean
+  Overall Investment Index:
+    category: "Investment"
+    components:
+      - "*"
+    aggregation: mean
+  Overall Cost Competitiveness Index:
+    category: "Cost Competitiveness"
+    components:
+      - "*"
+    aggregation: mean
+
+variable_levels:
+  Overall Trade Index: "country_tech_supply_chain_sub_sector"
+  Overall Trade Risk Index: "country_tech_supply_chain_sub_sector"
+  Overall Minerals Trade Index: "country_tech_supply_chain"
+  Overall Foreign Dependency Index: "country_tech_supply_chain"
+  Overall Energy Imports Index: "country_tech_supply_chain"
+  Overall Reserves Index: "country_tech_supply_chain"
+  Overall Production Index: "country_tech_supply_chain"
+  Overall Energy Access Index: "country_tech_supply_chain"
+  Overall Consumption Index: "country_tech_supply_chain"
+  Overall Energy Prices Index: "country_tech_supply_chain"
+  Overall Technology Demand Index: "country_tech_supply_chain"
+  Overall Investment Index: "country_tech_supply_chain"
+  Overall Cost Competitiveness Index: "country_tech_supply_chain"

@@ -27,7 +27,7 @@ with `gamma = 0.5` by default. This compresses values around the median while pr
 - Energy Security uses category weights (e.g., Foreign Dependency, Energy Imports, Reserves, Production, Consumption) to compute an overall index.
 - Economic Opportunity uses category weights (e.g., Trade, Production, Technology Demand, Energy Prices, Investment) to compute an overall index.
 
-Weights are configurable and surfaced in the pipeline to keep methodology transparent.
+Weights are configurable and surfaced in the pipeline to keep methodology transparent. Category score selection and Overall-variable formulas are defined in `config/index_definition.yml`.
 
 ## Partnership Strength Index (PSI)
 
@@ -44,7 +44,7 @@ These components are normalized with the same median S-curve and combined via a 
 ```
 R/                    # Pure functions (no IO)
   utils/              # Reusable helpers
-  themes/             # Theme-level calculations
+  categories/         # Category-level calculations
   indices/            # Pillar indices
   outputs/            # Output builders (no file IO)
   charts/             # Chart builders (no file IO)
@@ -63,7 +63,7 @@ run_pipeline.R        # Pipeline entry point
    cp config/config.example.yml config/config.yml
    ```
 
-   The repo ships with `config/weights.yml` and `config/missing_data.yml`. Edit them as needed.
+   The repo ships with `config/weights.yml`, `config/missing_data.yml`, and `config/index_definition.yml`. Edit them as needed.
 
 2. (Optional) To run without local raw data snapshots, set `SKIP_DATA_DOWNLOADS=1` so
    `scripts/10_build_themes.R` can exit cleanly when inputs are missing.

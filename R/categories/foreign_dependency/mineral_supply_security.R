@@ -13,6 +13,8 @@ mineral_supply_security <- function() {
     explanation = character(),
     stringsAsFactors = FALSE
   )
+}
+
 # mineral_supply_security (placeholder).
 # TODO: implement.
 mineral_supply_security_stub <- function() {
