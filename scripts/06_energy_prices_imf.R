@@ -11,6 +11,7 @@ imf_pcps_base_url <- "https://dataservices.imf.org/REST/SDMX_JSON.svc"
 # - opportunity_security.imf_pcps_soft_fail (logical)
 # - opportunity_security.processed_dir (cache root when set)
 
+## Cache helpers ----
 imf_pcps_cache_dir <- function() {
   processed_dir <- getOption("opportunity_security.processed_dir")
   if (!is.null(processed_dir) && nzchar(processed_dir)) {
@@ -24,6 +25,7 @@ imf_pcps_cache_file <- function(endpoint) {
   file.path(imf_pcps_cache_dir(), paste0(safe_name, ".json"))
 }
 
+## Fetch configuration helpers ----
 imf_pcps_fetch_options <- function() {
   list(
     timeout_sec = getOption("opportunity_security.imf_pcps_timeout", 300),
@@ -31,6 +33,41 @@ imf_pcps_fetch_options <- function() {
     backoff = getOption("opportunity_security.imf_pcps_backoff", c(1, 2, 4, 8)),
     use_cache = getOption("opportunity_security.imf_pcps_use_cache", TRUE),
     soft_fail = getOption("opportunity_security.imf_pcps_soft_fail", FALSE)
+  )
+}
+
+## Empty result helpers ----
+imf_pcps_empty_prices <- function() {
+  data.frame(
+    date = as.Date(character()),
+    value = numeric(),
+    tech = character(),
+    commodity_code = character(),
+    commodity_label = character(),
+    stringsAsFactors = FALSE
+  )
+}
+
+imf_pcps_empty_tech_vol <- function() {
+  data.frame(
+    tech = character(),
+    volatility_10y = numeric(),
+    volatility_index = numeric(),
+    start_year = integer(),
+    end_year = integer(),
+    stringsAsFactors = FALSE
+  )
+}
+
+imf_pcps_empty_series_vol <- function() {
+  data.frame(
+    tech = character(),
+    commodity_code = character(),
+    commodity_label = character(),
+    volatility_10y = numeric(),
+    start_year = integer(),
+    end_year = integer(),
+    stringsAsFactors = FALSE
   )
 }
 
@@ -379,31 +416,9 @@ imf_pcps_energy_prices <- function(start_year, end_year) {
   if (nrow(commodity_df) == 0 && opts$soft_fail) {
     warning("IMF PCPS commodity list empty; returning empty energy price results.", call. = FALSE)
     return(list(
-      prices = data.frame(
-        date = as.Date(character()),
-        value = numeric(),
-        tech = character(),
-        commodity_code = character(),
-        commodity_label = character(),
-        stringsAsFactors = FALSE
-      ),
-      tech_vol = data.frame(
-        tech = character(),
-        volatility_10y = numeric(),
-        volatility_index = numeric(),
-        start_year = integer(),
-        end_year = integer(),
-        stringsAsFactors = FALSE
-      ),
-      series_vol = data.frame(
-        tech = character(),
-        commodity_code = character(),
-        commodity_label = character(),
-        volatility_10y = numeric(),
-        start_year = integer(),
-        end_year = integer(),
-        stringsAsFactors = FALSE
-      )
+      prices = imf_pcps_empty_prices(),
+      tech_vol = imf_pcps_empty_tech_vol(),
+      series_vol = imf_pcps_empty_series_vol()
     ))
   }
   target_patterns <- list(
@@ -437,31 +452,9 @@ imf_pcps_energy_prices <- function(start_year, end_year) {
   if (is.null(dsd)) {
     warning("IMF PCPS metadata unavailable; returning empty energy price results.", call. = FALSE)
     return(list(
-      prices = data.frame(
-        date = as.Date(character()),
-        value = numeric(),
-        tech = character(),
-        commodity_code = character(),
-        commodity_label = character(),
-        stringsAsFactors = FALSE
-      ),
-      tech_vol = data.frame(
-        tech = character(),
-        volatility_10y = numeric(),
-        volatility_index = numeric(),
-        start_year = integer(),
-        end_year = integer(),
-        stringsAsFactors = FALSE
-      ),
-      series_vol = data.frame(
-        tech = character(),
-        commodity_code = character(),
-        commodity_label = character(),
-        volatility_10y = numeric(),
-        start_year = integer(),
-        end_year = integer(),
-        stringsAsFactors = FALSE
-      )
+      prices = imf_pcps_empty_prices(),
+      tech_vol = imf_pcps_empty_tech_vol(),
+      series_vol = imf_pcps_empty_series_vol()
     ))
   }
   dimensions <- dsd$Structure$KeyFamilies$KeyFamily$Components$Dimension
