@@ -231,7 +231,8 @@ build_energy_security_index <- function(theme_tables,
   theme_country_grid <- theme_groups %>%
     dplyr::left_join(
       country_groups,
-      by = c(group_cols[-1], "Year")
+      by = c(group_cols[-1], "Year"),
+      relationship = "many-to-many"
     )
 
   theme_global_averages <- energy_security_overall %>%
@@ -404,5 +405,21 @@ build_energy_security_index <- function(theme_tables,
     variable_contributions = variable_contributions,
     index = energy_security_index %>%
       dplyr::select(dplyr::all_of(c(group_cols, "Year", "energy_security_index")))
+  )
+}
+
+build_energy_security_index_v2 <- function(theme_tables,
+                                           weights,
+                                           missing_data = NULL,
+                                           allow_partial_categories = T,
+                                           include_sub_sector = FALSE,
+                                           techs = NULL) {
+  build_energy_security_index(
+    theme_tables = theme_tables,
+    weights = weights,
+    missing_data = missing_data,
+    allow_partial_categories = allow_partial_categories,
+    include_sub_sector = include_sub_sector,
+    techs = techs
   )
 }
