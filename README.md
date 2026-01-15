@@ -57,16 +57,26 @@ run_pipeline.R        # Pipeline entry point
 
 ## Quick start
 
-1. Copy the example configs and update them for your environment:
+1. Copy the example config and update it for your environment:
 
    ```bash
    cp config/config.example.yml config/config.yml
-   cp config/weights.example.yml config/weights.yml
    ```
 
-2. Provide secrets (e.g., API keys) via environment variables using `.Renviron` or `.env`.
+   The repo ships with `config/weights.yml` and `config/missing_data.yml`. Edit them as needed.
 
-3. Run the pipeline from any directory:
+2. (Optional) To run without local raw data snapshots, set `SKIP_DATA_DOWNLOADS=1` so
+   `scripts/10_build_themes.R` can exit cleanly when inputs are missing.
+
+3. Run the pipeline scripts in order from any directory:
+
+   ```bash
+   Rscript /path/to/Opportunity_Security_Indices/scripts/00_setup.R
+   Rscript /path/to/Opportunity_Security_Indices/scripts/10_build_themes.R
+   Rscript /path/to/Opportunity_Security_Indices/scripts/20_build_indices.R
+   ```
+
+   For a full end-to-end run (including ingestion, processing, and outputs), use:
 
    ```bash
    Rscript /path/to/Opportunity_Security_Indices/run_pipeline.R
