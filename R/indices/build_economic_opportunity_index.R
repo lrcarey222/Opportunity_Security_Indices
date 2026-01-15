@@ -2,7 +2,11 @@
 standardize_economic_opportunity_inputs <- function(theme_tables, include_sub_sector = FALSE) {
   theme_names <- names(theme_tables)
   if (is.null(theme_names)) {
+    warning("Economic opportunity inputs missing theme names; assigning 'unknown_theme'.")
     theme_names <- rep("unknown_theme", length(theme_tables))
+  } else if (any(!nzchar(theme_names))) {
+    warning("Economic opportunity inputs include blank theme names; assigning 'unknown_theme'.")
+    theme_names <- ifelse(nzchar(theme_names), theme_names, "unknown_theme")
   }
 
   standardized <- Map(function(theme_name, tbl) {
@@ -132,6 +136,11 @@ build_economic_opportunity_index <- function(theme_tables,
     category = names(score_variables),
     score_variable = vapply(score_variables, function(x) x$score_variable, character(1))
   )
+  assert_unique_keys(
+    score_variables_tbl,
+    c("category", "score_variable"),
+    label = "economic_opportunity_score_variables"
+  )
 
   economic_opportunity_data <- standardize_economic_opportunity_inputs(
     theme_tables,
@@ -184,6 +193,11 @@ build_economic_opportunity_index <- function(theme_tables,
       theme
     ) %>%
     dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
+  assert_unique_keys(
+    economic_opportunity_data,
+    c("Country", "tech", "supply_chain", "sub_sector", "category", "variable", "data_type", "Year", "theme"),
+    label = "economic_opportunity_inputs"
+  )
 
   if (nrow(economic_opportunity_data) == 0) {
     stop(
@@ -212,6 +226,17 @@ build_economic_opportunity_index <- function(theme_tables,
     index_definition = index_definition,
     include_sub_sector = include_sub_sector
   )
+
+  unexpected_categories <- setdiff(
+    unique(economic_opportunity_data$category),
+    score_variables_tbl$category
+  )
+  if (length(unexpected_categories) > 0) {
+    warning(
+      "Economic opportunity inputs include categories not in index_definition: ",
+      paste(sort(unexpected_categories), collapse = ", ")
+    )
+  }
 
   require_columns(
     economic_opportunity_data,
