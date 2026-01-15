@@ -66,13 +66,13 @@ run_pipeline.R        # Pipeline entry point
    The repo ships with `config/weights.yml`, `config/missing_data.yml`, and `config/index_definition.yml`. Edit them as needed.
 
 2. (Optional) To run without local raw data snapshots, set `SKIP_DATA_DOWNLOADS=1` so
-   `scripts/10_build_themes.R` can exit cleanly when inputs are missing.
+   `scripts/10_build_categories.R` can exit cleanly when inputs are missing.
 
 3. Run the pipeline scripts in order from any directory:
 
    ```bash
    Rscript /path/to/Opportunity_Security_Indices/scripts/00_setup.R
-   Rscript /path/to/Opportunity_Security_Indices/scripts/10_build_themes.R
+   Rscript /path/to/Opportunity_Security_Indices/scripts/10_build_categories.R
    Rscript /path/to/Opportunity_Security_Indices/scripts/20_build_indices.R
    ```
 
