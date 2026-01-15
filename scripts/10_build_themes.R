@@ -6,23 +6,25 @@ if (!exists("repo_root")) {
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "overall_index.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_processing.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_production.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_trade.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "energy_access_consumption.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "energy_consumption.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "energy_prices.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "foreign_dependency.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "import_dependence.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
-source(file.path(repo_root, "R", "themes", "energy_security", "trade_concentration.R"))
-source(file.path(repo_root, "R", "themes", "economic_opportunity", "future_demand.R"))
-source(file.path(repo_root, "R", "themes", "economic_opportunity", "export_feasibility.R"))
-source(file.path(repo_root, "R", "themes", "economic_opportunity", "lcoe_competitiveness.R"))
-source(file.path(repo_root, "R", "themes", "economic_opportunity", "market_share_manufacturing.R"))
-source(file.path(repo_root, "R", "themes", "economic_opportunity", "production_depth_momentum.R"))
-source(file.path(repo_root, "R", "themes", "economic_opportunity", "overcapacity_premium.R"))
+source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
+source(file.path(repo_root, "R", "categories", "trade", "trade_core.R"))
+source(file.path(repo_root, "R", "categories", "foreign_dependency", "critical_minerals_processing.R"))
+source(file.path(repo_root, "R", "categories", "production", "critical_minerals_production.R"))
+source(file.path(repo_root, "R", "categories", "minerals_trade", "critical_minerals_trade.R"))
+source(file.path(repo_root, "R", "categories", "energy_access", "energy_access_consumption.R"))
+source(file.path(repo_root, "R", "categories", "consumption", "energy_consumption.R"))
+source(file.path(repo_root, "R", "categories", "energy_prices", "energy_prices.R"))
+source(file.path(repo_root, "R", "categories", "foreign_dependency", "foreign_dependency.R"))
+source(file.path(repo_root, "R", "categories", "energy_imports", "import_dependence.R"))
+source(file.path(repo_root, "R", "categories", "reserves", "reserves.R"))
+source(file.path(repo_root, "R", "categories", "trade", "trade_concentration.R"))
+source(file.path(repo_root, "R", "categories", "technology_demand", "future_demand.R"))
+source(file.path(repo_root, "R", "categories", "trade", "export_feasibility.R"))
+source(file.path(repo_root, "R", "categories", "energy_prices", "lcoe_competitiveness.R"))
+source(file.path(repo_root, "R", "categories", "foreign_dependency", "market_share_manufacturing.R"))
+source(file.path(repo_root, "R", "categories", "production", "production_depth_momentum.R"))
+source(file.path(repo_root, "R", "categories", "technology_demand", "overcapacity_premium.R"))
 
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
@@ -273,7 +275,11 @@ aec_4_data <- read.csv(trade_hs4_path)
 aec_6_data <- read.csv(trade_hs6_path)
 comtrade_energy_trade <- read.csv(comtrade_energy_trade_path)
 comtrade_total_export <- read.csv(comtrade_total_export_path)
-include_sub_sector <- isTRUE(config$energy_security_include_sub_sector)
+include_sub_sector <- isTRUE(if (!is.null(config$include_sub_sector)) {
+  config$include_sub_sector
+} else {
+  config$energy_security_include_sub_sector
+})
 
 trade_concentration_tbl <- trade_concentration(
   subcat = subcat,
@@ -293,7 +299,10 @@ export_feasibility_tbl <- export_feasibility(
   aec_6_data = aec_6_data,
   subcat = subcat,
   country_info = country_info,
-  gdp_data = gdp_data
+  gdp_data = gdp_data,
+  comtrade_trade = comtrade_energy_trade,
+  comtrade_total_export = comtrade_total_export,
+  include_sub_sector = include_sub_sector
 )
 export_feasibility_tbl <- standardize_theme_types(export_feasibility_tbl, country_info = country_info)
 
