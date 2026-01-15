@@ -66,10 +66,14 @@ energy_security_index <- if (!is.null(energy_security_outputs$index)) {
 }
 
 economic_opportunity_inputs <- list(
+  energy_access_consumption = energy_access_tbl,
+  energy_consumption = energy_consumption_tbl,
+  energy_prices = energy_prices_tbl,
   export_feasibility = export_feasibility_tbl,
+  foreign_dependency = foreign_dependency_tbl,
   future_demand = future_demand_tbl,
-  lcoe_competitiveness = lcoe_competitiveness_tbl,
   market_share_manufacturing = market_share_manufacturing_tbl,
+  cost_competitiveness = cost_competitiveness_tbl,
   production_depth_momentum = production_depth_momentum_tbl,
   overcapacity_premium = overcapacity_premium_tbl
 )
