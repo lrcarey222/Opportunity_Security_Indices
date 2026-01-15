@@ -6,6 +6,7 @@ if (!exists("repo_root")) {
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index.R"))
+source(file.path(repo_root, "R", "indices", "build_energy_security_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index.R"))
 source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
 
@@ -22,6 +23,7 @@ include_sub_sector <- isTRUE(if (!is.null(config$include_sub_sector)) {
 } else {
   config$energy_security_include_sub_sector
 })
+use_energy_security_v2 <- isTRUE(config$use_energy_security_v2)
 
 energy_security_inputs <- list(
   energy_access_consumption = energy_access_tbl,
@@ -36,18 +38,32 @@ energy_security_inputs <- list(
   energy_prices = energy_prices_tbl
 )
 
-energy_security_outputs <- build_energy_security_index(
-  theme_tables = energy_security_inputs,
-  weights = weights$energy_security,
-  missing_data = missing_data$energy_security,
-  allow_partial_categories = allow_partial_categories,
-  include_sub_sector = include_sub_sector
-)
+energy_security_outputs <- if (isTRUE(use_energy_security_v2)) {
+  build_energy_security_index_v2(
+    theme_tables = energy_security_inputs,
+    weights = weights$energy_security,
+    missing_data = missing_data$energy_security,
+    allow_partial_categories = allow_partial_categories,
+    include_sub_sector = include_sub_sector
+  )
+} else {
+  build_energy_security_index(
+    theme_tables = energy_security_inputs,
+    weights = weights$energy_security,
+    missing_data = missing_data$energy_security,
+    allow_partial_categories = allow_partial_categories,
+    include_sub_sector = include_sub_sector
+  )
+}
 
 energy_security_category_scores <- energy_security_outputs$category_scores
 energy_security_category_contributions <- energy_security_outputs$category_contributions
 energy_security_variable_contributions <- energy_security_outputs$variable_contributions
-energy_security_index <- energy_security_outputs$index
+energy_security_index <- if (!is.null(energy_security_outputs$index)) {
+  energy_security_outputs$index
+} else {
+  energy_security_outputs$energy_security_index
+}
 
 economic_opportunity_inputs <- list(
   export_feasibility = export_feasibility_tbl,
