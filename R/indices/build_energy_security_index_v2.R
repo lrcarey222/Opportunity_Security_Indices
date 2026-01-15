@@ -69,6 +69,9 @@ standardize_energy_security_inputs_v2 <- function(theme_tables, include_sub_sect
 
   if (!isTRUE(include_sub_sector) && nrow(standardized) > 0) {
     standardized <- standardized %>%
+      dplyr::mutate(sub_sector = "All")
+
+    standardized <- standardized %>%
       dplyr::group_by(
         Country,
         tech,
