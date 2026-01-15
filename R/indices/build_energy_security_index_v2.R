@@ -43,11 +43,11 @@ standardize_energy_security_inputs_v2 <- function(theme_tables, include_sub_sect
     }
 
     standardized_tbl <- standardize_theme_table(tbl)
+    standardized_tbl <- standardize_bind_rows_inputs(standardized_tbl)
     if ("Year" %in% names(standardized_tbl)) {
       standardized_tbl <- standardized_tbl %>%
         dplyr::mutate(Year = dplyr::if_else(is.na(Year), 0L, Year))
     }
-    standardized_tbl <- standardize_bind_rows_inputs(standardized_tbl)
     validate_schema(standardized_tbl)
 
     standardized_tbl %>%
