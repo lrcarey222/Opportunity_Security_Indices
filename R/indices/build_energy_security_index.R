@@ -10,7 +10,8 @@ standardize_energy_security_inputs <- function(theme_tables, include_sub_sector 
       return(NULL)
     }
 
-    standardized_tbl <- standardize_theme_table(tbl)
+    standardized_tbl <- standardize_theme_table(tbl) %>%
+      dplyr::mutate(Year = 0L)
     validate_schema(standardized_tbl)
 
     standardized_tbl %>%
