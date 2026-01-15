@@ -1,6 +1,11 @@
 # Build Economic Opportunity index outputs (category scores + overall index).
 standardize_economic_opportunity_inputs <- function(theme_tables, include_sub_sector = FALSE) {
-  standardized <- lapply(theme_tables, function(tbl) {
+  theme_names <- names(theme_tables)
+  if (is.null(theme_names)) {
+    theme_names <- rep("unknown_theme", length(theme_tables))
+  }
+
+  standardized <- Map(function(theme_name, tbl) {
     if (is.null(tbl)) {
       return(NULL)
     }
@@ -9,16 +14,90 @@ standardize_economic_opportunity_inputs <- function(theme_tables, include_sub_se
     validate_schema(standardized_tbl)
     standardized_tbl <- standardized_tbl %>%
       dplyr::mutate(
-        sub_sector = if (isTRUE(include_sub_sector) && "sub_sector" %in% names(standardized_tbl)) {
-          as.character(sub_sector)
-        } else {
+        Country = as.character(Country),
+        tech = as.character(tech),
+        supply_chain = as.character(supply_chain),
+        category = as.character(category),
+        theme = as.character(theme_name)
+      )
+    if (!"sub_sector" %in% names(standardized_tbl)) {
+      standardized_tbl$sub_sector <- NA_character_
+    }
+    standardized_tbl <- standardized_tbl %>%
+      dplyr::mutate(
+        sub_sector = as.character(sub_sector),
+        sub_sector = if (!isTRUE(include_sub_sector)) {
           "All"
+        } else {
+          dplyr::if_else(is.na(sub_sector) | sub_sector == "", "All", sub_sector)
         }
       )
+    if (!isTRUE(include_sub_sector) && nrow(standardized_tbl) > 0) {
+      standardized_tbl <- standardized_tbl %>%
+        dplyr::group_by(
+          Country,
+          tech,
+          supply_chain,
+          sub_sector,
+          category,
+          theme,
+          variable,
+          data_type,
+          Year,
+          source,
+          explanation
+        ) %>%
+        dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
+    }
     standardized_tbl
-  })
+  }, theme_names, theme_tables)
 
   dplyr::bind_rows(standardized)
+}
+
+if (!exists("normalize_year", mode = "function")) {
+  normalize_year <- function(x) {
+    if (inherits(x, "Date") || inherits(x, "POSIXt")) {
+      return(as.POSIXlt(x)$year + 1900L)
+    }
+
+    if (inherits(x, "labelled")) {
+      x <- as.numeric(x)
+    }
+
+    if (is.numeric(x)) {
+      return(as.integer(x))
+    }
+
+    values <- as.character(x)
+    match_pos <- regexpr("\\d{4}", values)
+    year_text <- ifelse(match_pos > 0, regmatches(values, match_pos), NA_character_)
+    suppressWarnings(as.integer(year_text))
+  }
+}
+
+if (!exists("latest_by_group", mode = "function")) {
+  latest_by_group <- function(tbl, group_cols) {
+    latest_years <- tbl %>%
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
+      dplyr::summarize(
+        Year = if (all(is.na(Year))) NA_integer_ else max(Year, na.rm = TRUE),
+        .groups = "drop"
+      )
+
+    tbl %>%
+      dplyr::inner_join(latest_years, by = c(group_cols, "Year"))
+  }
+}
+
+if (!exists("append_sub_sector", mode = "function")) {
+  append_sub_sector <- function(base_cols, include_sub_sector) {
+    if (isTRUE(include_sub_sector)) {
+      c(base_cols, "sub_sector")
+    } else {
+      base_cols
+    }
+  }
 }
 
 build_economic_opportunity_index <- function(theme_tables,
@@ -57,46 +136,130 @@ build_economic_opportunity_index <- function(theme_tables,
   economic_opportunity_data <- standardize_economic_opportunity_inputs(
     theme_tables,
     include_sub_sector = include_sub_sector
-  ) %>%
-    dplyr::filter(data_type == "index", tech %in% techs) %>%
+  )
+
+  economic_opportunity_data <- economic_opportunity_data %>%
+    dplyr::mutate(
+      Year_raw = Year,
+      Year = normalize_year(Year),
+      value = suppressWarnings(as.numeric(value))
+    )
+
+  economic_opportunity_data <- economic_opportunity_data %>%
+    dplyr::mutate(Year = dplyr::if_else(is.na(Year), 0L, Year))
+
+  economic_opportunity_data <- economic_opportunity_data %>%
+    dplyr::filter(data_type == "index")
+
+  if (!isTRUE(include_sub_sector)) {
+    if ("sub_sector" %in% names(economic_opportunity_data)) {
+      unique_sub_sectors <- unique(economic_opportunity_data$sub_sector)
+      if (length(unique_sub_sectors) != 1 || !identical(unique_sub_sectors, "All")) {
+        stop("Expected sub_sector to be 'All' when include_sub_sector is FALSE.")
+      }
+    }
+  }
+
+  if (!missing(techs) && !is.null(techs)) {
+    economic_opportunity_data <- economic_opportunity_data %>%
+      dplyr::filter(tech %in% techs)
+  }
+
+  economic_opportunity_data <- economic_opportunity_data %>%
+    dplyr::select(-Year_raw) %>%
     apply_overall_definitions(
       index_definition = index_definition,
       include_sub_sector = include_sub_sector
     )
+  economic_opportunity_data <- economic_opportunity_data %>%
+    dplyr::group_by(
+      Country,
+      tech,
+      supply_chain,
+      sub_sector,
+      category,
+      variable,
+      data_type,
+      Year,
+      theme
+    ) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
+
+  if (nrow(economic_opportunity_data) == 0) {
+    stop(
+      "Economic opportunity inputs are empty after Year normalization.",
+      " Year class: ", paste(class(economic_opportunity_data$Year), collapse = ", ")
+    )
+  }
+
+  validation_tbl <- economic_opportunity_data %>%
+    dplyr::group_by(Country, tech, supply_chain, sub_sector, category, variable, data_type, Year, theme) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
 
   validate_variable_levels(
-    economic_opportunity_data,
+    validation_tbl,
     index_definition = index_definition,
     include_sub_sector = include_sub_sector
   )
 
   require_columns(
     economic_opportunity_data,
-    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "value"),
+    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "theme", "value"),
     label = "economic_opportunity_data"
   )
-  group_cols <- c("Country", "tech", "supply_chain")
-  if (isTRUE(include_sub_sector)) {
-    group_cols <- c(group_cols, "sub_sector")
-  }
-  assert_unique_keys(
+  group_cols <- append_sub_sector(c("Country", "tech", "supply_chain"), include_sub_sector)
+
+  latest_group_cols <- c(group_cols, "category", "variable", "theme")
+  economic_opportunity_data <- latest_by_group(
     economic_opportunity_data,
-    c(group_cols, "category", "variable", "Year"),
-    label = "economic_opportunity_data"
+    group_cols = latest_group_cols
   )
 
+  if (nrow(economic_opportunity_data) == 0) {
+    year_samples <- unique(economic_opportunity_data$Year)
+    year_samples <- year_samples[seq_len(min(5, length(year_samples)))]
+    year_sample_text <- if (length(year_samples) == 0) "none" else paste(year_samples, collapse = ", ")
+    stop(
+      "Latest-year filter returned 0 rows; check Year type/coercion. ",
+      "Year classes: ", paste(class(economic_opportunity_data$Year), collapse = ", "),
+      ". Sample Year values: ", year_sample_text, "."
+    )
+  }
+
   message("Filtering economic opportunity data to configured score variables only.")
+  available_pairs <- economic_opportunity_data %>%
+    dplyr::distinct(category, variable)
+  missing_pairs <- score_variables_tbl %>%
+    dplyr::left_join(available_pairs, by = c("category" = "category", "score_variable" = "variable")) %>%
+    dplyr::filter(is.na(variable))
+  if (nrow(missing_pairs) > 0) {
+    available_summary <- economic_opportunity_data %>%
+      dplyr::distinct(category, variable) %>%
+      dplyr::group_by(category) %>%
+      dplyr::summarize(
+        variables = paste(sort(unique(variable)), collapse = ", "),
+        .groups = "drop"
+      ) %>%
+      dplyr::mutate(summary = paste0(category, ": ", variables)) %>%
+      dplyr::pull(summary) %>%
+      head(10)
+    available_text <- if (length(available_summary) == 0) {
+      "none"
+    } else {
+      paste(available_summary, collapse = "; ")
+    }
+    stop(
+      "Score-variable filter returned missing category/variable pairs; check index_definition score_variable names ",
+      "vs available variables. Available variables per category: ",
+      available_text
+    )
+  }
   economic_opportunity_overall <- economic_opportunity_data %>%
     dplyr::inner_join(score_variables_tbl, by = c("category", "variable" = "score_variable"))
 
   require_columns(
     economic_opportunity_overall,
-    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "value"),
-    label = "economic_opportunity_overall"
-  )
-  assert_unique_keys(
-    economic_opportunity_overall,
-    c(group_cols, "category", "variable", "Year"),
+    c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "theme", "value"),
     label = "economic_opportunity_overall"
   )
 
@@ -109,7 +272,8 @@ build_economic_opportunity_index <- function(theme_tables,
   message("Computing category-level scores.")
   category_scores <- economic_opportunity_overall %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(c(group_cols, "category")))) %>%
-    dplyr::summarize(category_score = mean(value, na.rm = TRUE), .groups = "drop")
+    dplyr::summarize(category_score = mean(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::mutate(category_score = dplyr::if_else(is.nan(category_score), NA_real_, category_score))
   assert_unique_keys(
     category_scores,
     c(group_cols, "category"),
@@ -152,85 +316,22 @@ build_economic_opportunity_index <- function(theme_tables,
   weights_tbl <- weights_tbl %>%
     dplyr::filter(category %in% categories_in_data)
 
-  available_categories <- category_scores %>%
-    dplyr::distinct(dplyr::across(dplyr::all_of(c(group_cols[-1], "category"))))
-  assert_unique_keys(
-    available_categories,
-    c(group_cols[-1], "category"),
-    label = "economic_opportunity_available_categories"
-  )
+  if (nrow(weights_tbl) == 0) {
+    stop("No economic opportunity categories remain after filtering to available data and weights.")
+  }
 
-  available_by_group <- available_categories %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols[-1]))) %>%
-    dplyr::summarize(
-      available_categories = list(unique(category)),
-      .groups = "drop"
-    )
-
-  group_missing_categories <- category_scores %>%
+  expected_categories <- sort(unique(weights_tbl$category))
+  category_completeness <- category_scores %>%
+    dplyr::distinct(dplyr::across(dplyr::all_of(c(group_cols, "category")))) %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
     dplyr::summarize(
       present_categories = list(unique(category)),
+      present_count = dplyr::n_distinct(category),
       .groups = "drop"
     ) %>%
-    dplyr::left_join(available_by_group, by = group_cols[-1]) %>%
-    dplyr::mutate(
-      missing_categories = Map(setdiff, available_categories, present_categories)
-    ) %>%
-    dplyr::filter(lengths(missing_categories) > 0) %>%
-    dplyr::select(-present_categories, -available_categories)
-
-  if (nrow(group_missing_categories) > 0) {
-    missing_preview <- group_missing_categories %>%
-      dplyr::mutate(
-        missing_categories = vapply(
-          missing_categories,
-          function(items) paste(items, collapse = ", "),
-          character(1)
-        ),
-        group_key = apply(
-          dplyr::select(., dplyr::all_of(group_cols)),
-          1,
-          function(row) paste(row, collapse = " | ")
-        )
-      ) %>%
-      dplyr::select(group_key, missing_categories) %>%
-      head(10)
-
-    warning(
-      paste(
-        "Category scores missing for",
-        nrow(group_missing_categories),
-        "group(s); filling with global category averages.",
-        "Examples (Country | tech | supply_chain -> missing categories):",
-        paste(
-          paste0(missing_preview$group_key, " -> ", missing_preview$missing_categories),
-          collapse = "; "
-        )
-      )
-    )
-  }
-
-  global_category_averages <- category_scores %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(c(group_cols[-1], "category")))) %>%
-    dplyr::summarize(global_avg = mean(category_score, na.rm = TRUE), .groups = "drop")
+    dplyr::mutate(complete_categories = present_count == length(expected_categories))
 
   category_scores_complete <- category_scores %>%
-    dplyr::distinct(dplyr::across(dplyr::all_of(group_cols))) %>%
-    dplyr::left_join(
-      available_categories,
-      by = group_cols[-1]
-    ) %>%
-    dplyr::left_join(
-      category_scores,
-      by = c(group_cols, "category")
-    ) %>%
-    dplyr::left_join(
-      global_category_averages,
-      by = c(group_cols[-1], "category")
-    ) %>%
-    dplyr::mutate(category_score = dplyr::coalesce(category_score, global_avg)) %>%
-    dplyr::select(-global_avg) %>%
     dplyr::left_join(latest_years, by = group_cols)
 
   message("Computing overall economic opportunity index from weighted categories.")
@@ -242,10 +343,15 @@ build_economic_opportunity_index <- function(theme_tables,
 
   category_contributions <- category_scores_complete %>%
     dplyr::left_join(weights_tbl, by = "category") %>%
+    dplyr::left_join(category_completeness, by = group_cols) %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
-    dplyr::mutate(weight_sum = sum(weight, na.rm = TRUE)) %>%
+    dplyr::mutate(
+      weight_sum = sum(weight, na.rm = TRUE),
+      category_weight = weight / weight_sum
+    ) %>%
     dplyr::ungroup() %>%
-    dplyr::mutate(weighted_contribution = category_score * weight / weight_sum)
+    dplyr::mutate(weighted_contribution = category_score * category_weight) %>%
+    dplyr::select(-present_categories, -present_count)
 
   overall_variables <- names(index_definition$overall_variables)
   variable_contributions <- economic_opportunity_data %>%
@@ -267,6 +373,7 @@ build_economic_opportunity_index <- function(theme_tables,
       variable_weight = category_weight / variable_count,
       weighted_contribution = value * variable_weight
     ) %>%
+    dplyr::left_join(category_completeness, by = group_cols) %>%
     dplyr::left_join(latest_years, by = group_cols) %>%
     dplyr::select(
       dplyr::all_of(group_cols),
@@ -278,14 +385,33 @@ build_economic_opportunity_index <- function(theme_tables,
       variable_count,
       category_weight,
       variable_weight,
-      weighted_contribution
+      weighted_contribution,
+      complete_categories
     )
 
-  economic_opportunity_index <- category_scores_complete %>%
-    dplyr::inner_join(weights_tbl, by = "category") %>%
+  if (!isTRUE(allow_partial_categories)) {
+    category_contributions <- category_contributions %>%
+      dplyr::mutate(
+        category_weight = dplyr::if_else(complete_categories, category_weight, NA_real_),
+        weighted_contribution = dplyr::if_else(complete_categories, weighted_contribution, NA_real_)
+      )
+
+    variable_contributions <- variable_contributions %>%
+      dplyr::mutate(
+        category_weight = dplyr::if_else(complete_categories, category_weight, NA_real_),
+        weighted_contribution = dplyr::if_else(complete_categories, weighted_contribution, NA_real_)
+      )
+  }
+
+  economic_opportunity_index <- category_contributions %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
     dplyr::summarize(
-      economic_opportunity_index = sum(category_score * weight, na.rm = TRUE) / sum(weight, na.rm = TRUE),
+      complete_categories = all(complete_categories),
+      economic_opportunity_index = dplyr::if_else(
+        !isTRUE(allow_partial_categories) & !complete_categories,
+        NA_real_,
+        sum(weighted_contribution, na.rm = TRUE)
+      ),
       .groups = "drop"
     ) %>%
     dplyr::left_join(latest_years, by = group_cols) %>%
