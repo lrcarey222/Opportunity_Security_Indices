@@ -43,6 +43,10 @@ standardize_energy_security_inputs_v2 <- function(theme_tables, include_sub_sect
     }
 
     standardized_tbl <- standardize_theme_table(tbl)
+    if ("Year" %in% names(standardized_tbl)) {
+      standardized_tbl <- standardized_tbl %>%
+        dplyr::mutate(Year = dplyr::if_else(is.na(Year), 0L, Year))
+    }
     standardized_tbl <- standardize_bind_rows_inputs(standardized_tbl)
     validate_schema(standardized_tbl)
 
@@ -484,6 +488,9 @@ build_energy_security_index_v2 <- function(theme_tables,
     )
 
   energy_security_data <- energy_security_data %>%
+    dplyr::mutate(Year = dplyr::if_else(is.na(Year), 0L, Year))
+
+  energy_security_data <- energy_security_data %>%
     dplyr::filter(data_type == "index")
 
   if (!missing(techs) && !is.null(techs)) {
@@ -491,29 +498,7 @@ build_energy_security_index_v2 <- function(theme_tables,
       dplyr::filter(tech %in% techs)
   }
 
-  dropped_years <- sum(is.na(energy_security_data$Year))
-  if (dropped_years > 0) {
-    sample_values <- energy_security_data %>%
-      dplyr::filter(is.na(Year)) %>%
-      dplyr::pull(Year_raw) %>%
-      unique() %>%
-      head(5)
-    sample_text <- if (length(sample_values) == 0) {
-      "none"
-    } else {
-      paste(sample_values, collapse = ", ")
-    }
-    warning(
-      paste(
-        "Dropping", dropped_years,
-        "energy security rows with invalid Year values after coercion.",
-        "Sample Year values:", sample_text
-      )
-    )
-  }
-
   energy_security_data <- energy_security_data %>%
-    dplyr::filter(!is.na(Year)) %>%
     dplyr::select(-Year_raw)
 
   if (nrow(energy_security_data) == 0) {
