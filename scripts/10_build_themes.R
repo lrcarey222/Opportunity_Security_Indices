@@ -22,6 +22,7 @@ source(file.path(repo_root, "R", "themes", "economic_opportunity", "export_feasi
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "lcoe_competitiveness.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "market_share_manufacturing.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "production_depth_momentum.R"))
+source(file.path(repo_root, "R", "themes", "economic_opportunity", "overcapacity_premium.R"))
 
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
