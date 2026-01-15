@@ -1,39 +1,50 @@
 # IMF Primary Commodity Price System (PCPS) energy price volatility helper.
+# Uses the local IMF_PCPS_all.xlsx snapshot instead of live API calls.
 
-imf_pcps_base_url <- "https://dataservices.imf.org/REST/SDMX_JSON.svc"
+## Configuration helpers ----
+imf_pcps_soft_fail_enabled <- function() {
+  isTRUE(getOption("opportunity_security.imf_pcps_soft_fail", FALSE))
+}
 
-# IMF PCPS caching keeps DataStructure metadata local for resilience.
-# Override behavior via options:
-# - opportunity_security.imf_pcps_timeout (seconds)
-# - opportunity_security.imf_pcps_retries (integer)
-# - opportunity_security.imf_pcps_backoff (numeric vector, seconds)
-# - opportunity_security.imf_pcps_use_cache (logical)
-# - opportunity_security.imf_pcps_soft_fail (logical)
-# - opportunity_security.processed_dir (cache root when set)
-
-## Cache helpers ----
-imf_pcps_cache_dir <- function() {
-  processed_dir <- getOption("opportunity_security.processed_dir")
-  if (!is.null(processed_dir) && nzchar(processed_dir)) {
-    return(file.path(processed_dir, "cache", "imf_pcps"))
+imf_pcps_resolve_repo_root <- function() {
+  if (requireNamespace("rprojroot", quietly = TRUE)) {
+    return(rprojroot::find_root(rprojroot::is_git_root))
   }
-  file.path(tempdir(), "imf_pcps_cache")
+  start_dir <- normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+  d <- start_dir
+  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
+    d <- dirname(d)
+  }
+  if (!file.exists(file.path(d, ".git"))) {
+    return(start_dir)
+  }
+  d
 }
 
-imf_pcps_cache_file <- function(endpoint) {
-  safe_name <- gsub("[^A-Za-z0-9]+", "_", endpoint)
-  file.path(imf_pcps_cache_dir(), paste0(safe_name, ".json"))
+imf_pcps_resolve_snapshot_dir <- function() {
+  snapshot_dir <- getOption("opportunity_security.raw_snapshot_dir")
+  if (!is.null(snapshot_dir) && nzchar(snapshot_dir)) {
+    return(snapshot_dir)
+  }
+  config <- getOption("opportunity_security.config")
+  if (!is.null(config) && !is.null(config$raw_data_dir)) {
+    repo_root <- imf_pcps_resolve_repo_root()
+    raw_base_dir <- file.path(repo_root, config$raw_data_dir)
+    snapshot_dirs <- list.dirs(raw_base_dir, recursive = FALSE, full.names = TRUE)
+    if (length(snapshot_dirs) > 0) {
+      snapshot_info <- file.info(snapshot_dirs)
+      return(snapshot_dirs[order(snapshot_info$mtime, decreasing = TRUE)][1])
+    }
+  }
+  NULL
 }
 
-## Fetch configuration helpers ----
-imf_pcps_fetch_options <- function() {
-  list(
-    timeout_sec = getOption("opportunity_security.imf_pcps_timeout", 300),
-    retries = getOption("opportunity_security.imf_pcps_retries", 4),
-    backoff = getOption("opportunity_security.imf_pcps_backoff", c(1, 2, 4, 8)),
-    use_cache = getOption("opportunity_security.imf_pcps_use_cache", TRUE),
-    soft_fail = getOption("opportunity_security.imf_pcps_soft_fail", FALSE)
-  )
+imf_pcps_excel_path <- function() {
+  snapshot_dir <- imf_pcps_resolve_snapshot_dir()
+  if (is.null(snapshot_dir) || !nzchar(snapshot_dir)) {
+    return(NULL)
+  }
+  file.path(snapshot_dir, "IMF_PCPS_all.xlsx")
 }
 
 ## Empty result helpers ----
@@ -71,186 +82,153 @@ imf_pcps_empty_series_vol <- function() {
   )
 }
 
-imf_pcps_fetch_json <- function(endpoint,
-                                timeout_sec = 300,
-                                retries = 4,
-                                backoff = c(1, 2, 4, 8),
-                                cache_path = NULL,
-                                use_cache = TRUE,
-                                soft_fail = FALSE) {
-  if (!requireNamespace("jsonlite", quietly = TRUE)) {
-    stop("Package 'jsonlite' is required to ingest IMF PCPS data.")
-  }
-  url <- paste0(imf_pcps_base_url, "/", endpoint)
-  retry_status <- c(429, 500, 502, 503, 504)
-  max_attempts <- retries + 1
-  last_error <- NULL
-
-  if (is.null(cache_path) && use_cache && identical(endpoint, "DataStructure/IMF/PCPS")) {
-    cache_path <- imf_pcps_cache_file(endpoint)
-  }
-
-  if (requireNamespace("curl", quietly = TRUE)) {
-    for (attempt in seq_len(max_attempts)) {
-      handle <- curl::new_handle()
-      curl::handle_setopt(handle, timeout = timeout_sec, useragent = "OpportunitySecurityIndices/IMF-PCPS")
-      result <- tryCatch(
-        curl::curl_fetch_memory(url, handle = handle),
-        error = function(err) err
-      )
-      if (inherits(result, "error")) {
-        last_error <- result$message
-      } else if (!is.null(result$status_code) && result$status_code %in% retry_status) {
-        last_error <- sprintf("HTTP %s from IMF PCPS.", result$status_code)
-      } else if (!is.null(result$status_code) && result$status_code >= 400) {
-        stop(sprintf("IMF PCPS request failed for %s (HTTP %s).", endpoint, result$status_code))
-      } else {
-        content_text <- rawToChar(result$content)
-        if (use_cache && !is.null(cache_path)) {
-          cache_dir <- dirname(cache_path)
-          if (!dir.exists(cache_dir)) {
-            dir.create(cache_dir, recursive = TRUE)
-          }
-          try(writeLines(content_text, cache_path), silent = TRUE)
-        }
-        return(jsonlite::fromJSON(content_text, simplifyVector = TRUE))
-      }
-
-      if (attempt < max_attempts) {
-        delay <- backoff[min(attempt, length(backoff))]
-        Sys.sleep(delay)
-      }
-    }
-  } else {
-    old_timeout <- getOption("timeout")
-    on.exit(options(timeout = old_timeout), add = TRUE)
-    for (attempt in seq_len(max_attempts)) {
-      options(timeout = timeout_sec)
-      result <- tryCatch(readLines(url, warn = FALSE), error = function(err) err)
-      if (!inherits(result, "error")) {
-        content_text <- paste(result, collapse = "\n")
-        if (use_cache && !is.null(cache_path)) {
-          cache_dir <- dirname(cache_path)
-          if (!dir.exists(cache_dir)) {
-            dir.create(cache_dir, recursive = TRUE)
-          }
-          try(writeLines(content_text, cache_path), silent = TRUE)
-        }
-        return(jsonlite::fromJSON(content_text, simplifyVector = TRUE))
-      }
-      last_error <- result$message
-      if (attempt < max_attempts) {
-        delay <- backoff[min(attempt, length(backoff))]
-        Sys.sleep(delay)
-      }
+## Excel ingestion helpers ----
+imf_pcps_find_column <- function(df, candidates) {
+  col_names <- names(df)
+  lower_names <- tolower(col_names)
+  for (candidate in candidates) {
+    idx <- match(candidate, lower_names)
+    if (!is.na(idx)) {
+      return(col_names[[idx]])
     }
   }
-
-  if (use_cache && !is.null(cache_path) && file.exists(cache_path)) {
-    cached_text <- tryCatch(readLines(cache_path, warn = FALSE), error = function(err) err)
-    if (!inherits(cached_text, "error")) {
-      return(jsonlite::fromJSON(paste(cached_text, collapse = "\n"), simplifyVector = TRUE))
-    }
-  }
-
-  if (soft_fail) {
-    warning("IMF PCPS fetch failed; returning empty result.", call. = FALSE)
-    return(NULL)
-  }
-
-  stop(sprintf(
-    "IMF PCPS fetch failed for %s after %s attempts: %s",
-    endpoint,
-    max_attempts,
-    ifelse(is.null(last_error), "unknown error", last_error)
-  ))
+  NULL
 }
 
-imf_pcps_dimensions_df <- function(dimensions) {
-  if (is.data.frame(dimensions)) {
-    return(dimensions)
+imf_pcps_date_columns <- function(col_names, monthly_only = TRUE) {
+  normalized <- gsub("^X", "", col_names)
+  normalized_lower <- tolower(normalized)
+  pattern <- if (monthly_only) {
+    "^\\d{4}[-_]?m\\d{1,2}$"
+  } else {
+    "^\\d{4}([_-]?m\\d{1,2}|[_-]?q\\d{1}|[_-]?\\d{1,2})?$"
   }
-  if (!is.list(dimensions)) {
-    stop("Unexpected IMF PCPS dimensions format.")
-  }
-  dims <- lapply(dimensions, function(dim) {
-    as.data.frame(dim, stringsAsFactors = FALSE)
-  })
-  do.call(rbind, dims)
+  idx <- grepl(pattern, normalized_lower)
+  list(original = col_names[idx], normalized = normalized[idx])
 }
 
-imf_pcps_codelist_df <- function(codelist) {
-  code <- codelist$Code
-  if (is.null(code)) {
-    return(data.frame(code = character(), label = character(), stringsAsFactors = FALSE))
+imf_pcps_normalize_date_label <- function(label) {
+  out <- gsub("^X", "", label)
+  out <- gsub("_", "-", out)
+  out <- sub("^(\\d{4})M(\\d{1,2})$", "\\1-\\2", out, ignore.case = TRUE)
+  out
+}
+
+imf_pcps_extract_year <- function(date_vals) {
+  if (inherits(date_vals, "Date")) {
+    return(as.integer(format(date_vals, "%Y")))
   }
-  if (is.data.frame(code)) {
-    code_df <- code
-  } else if (is.list(code)) {
-    code_df <- do.call(
-      rbind,
-      lapply(code, function(item) as.data.frame(item, stringsAsFactors = FALSE))
-    )
-  } else {
-    return(data.frame(code = character(), label = character(), stringsAsFactors = FALSE))
+  date_str <- as.character(date_vals)
+  year_str <- sub("^(\\d{4}).*", "\\1", date_str)
+  suppressWarnings(as.integer(year_str))
+}
+
+imf_pcps_select_sheet <- function(path) {
+  sheets <- readxl::excel_sheets(path)
+  best <- NULL
+  best_score <- -Inf
+  for (sheet in sheets) {
+    df <- readxl::read_excel(path, sheet = sheet)
+    if (nrow(df) == 0) {
+      next
+    }
+    time_col <- imf_pcps_find_column(df, c("time_period", "time", "date", "period"))
+    value_col <- imf_pcps_find_column(df, c("obs_value", "value", "price", "index"))
+    date_cols <- imf_pcps_date_columns(names(df), monthly_only = TRUE)
+    score <- length(date_cols$original)
+    if (!is.null(time_col) && !is.null(value_col)) {
+      score <- score + 100
+    }
+    if (score > best_score) {
+      best_score <- score
+      best <- df
+    }
   }
-  label <- character(nrow(code_df))
-  if ("Description" %in% names(code_df)) {
-    label <- vapply(code_df$Description, function(desc) {
-      if (is.list(desc) && "#text" %in% names(desc)) {
-        desc[["#text"]]
-      } else if (is.character(desc)) {
-        desc
-      } else {
-        NA_character_
-      }
-    }, character(1))
+  if (is.null(best) || best_score <= 0) {
+    stop("Unable to locate IMF PCPS data in IMF_PCPS_all.xlsx.")
   }
+  best
+}
+
+imf_pcps_long_from_excel <- function(raw_df) {
+  time_col <- imf_pcps_find_column(raw_df, c("time_period", "time", "date", "period"))
+  value_col <- imf_pcps_find_column(raw_df, c("obs_value", "value", "price", "index"))
+  code_col <- imf_pcps_find_column(raw_df, c("commodity_code", "commodity", "item", "product", "series", "code"))
+  label_col <- imf_pcps_find_column(raw_df, c("commodity_label", "commodity_name", "commodity_description", "description", "label", "name"))
+
+  if (is.null(code_col)) {
+    stop("Unable to identify commodity column in IMF_PCPS_all.xlsx.")
+  }
+
+  if (!is.null(time_col) && !is.null(value_col)) {
+    if (is.null(label_col)) {
+      label_col <- code_col
+    }
+    return(data.frame(
+      date = as.character(raw_df[[time_col]]),
+      value = as.numeric(raw_df[[value_col]]),
+      commodity_code = as.character(raw_df[[code_col]]),
+      commodity_label = as.character(raw_df[[label_col]]),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  date_info <- imf_pcps_date_columns(names(raw_df), monthly_only = TRUE)
+  if (length(date_info$original) == 0) {
+    stop("Unable to locate time columns in IMF_PCPS_all.xlsx.")
+  }
+  metadata_cols <- setdiff(names(raw_df), date_info$original)
+  if (is.null(label_col)) {
+    label_col <- code_col
+  }
+
+  stacked <- stack(raw_df[date_info$original])
+  metadata_rep <- raw_df[metadata_cols][rep(seq_len(nrow(raw_df)), times = length(date_info$original)), , drop = FALSE]
+  normalized_dates <- imf_pcps_normalize_date_label(date_info$normalized)
+  date_labels <- normalized_dates[match(stacked$ind, date_info$original)]
+
   data.frame(
-    code = code_df[["@value"]],
-    label = label,
+    date = as.character(date_labels),
+    value = as.numeric(stacked$values),
+    commodity_code = as.character(metadata_rep[[code_col]]),
+    commodity_label = as.character(metadata_rep[[label_col]]),
     stringsAsFactors = FALSE
   )
 }
 
+imf_pcps_data_env <- new.env(parent = emptyenv())
+
+imf_pcps_load_pcps_data <- function() {
+  if (exists("data", envir = imf_pcps_data_env, inherits = FALSE)) {
+    return(get("data", envir = imf_pcps_data_env))
+  }
+  if (!requireNamespace("readxl", quietly = TRUE)) {
+    stop("Package 'readxl' is required to ingest IMF PCPS data.")
+  }
+  excel_path <- imf_pcps_excel_path()
+  if (is.null(excel_path) || !file.exists(excel_path)) {
+    if (imf_pcps_soft_fail_enabled()) {
+      warning("IMF PCPS Excel snapshot not found; returning empty result.", call. = FALSE)
+      return(NULL)
+    }
+    stop("IMF PCPS Excel snapshot not found: ", excel_path)
+  }
+  raw_df <- imf_pcps_select_sheet(excel_path)
+  data <- imf_pcps_long_from_excel(raw_df)
+  data <- data[!is.na(data$value), , drop = FALSE]
+  assign("data", data, envir = imf_pcps_data_env)
+  data
+}
+
 imf_pcps_get_commodity_codes <- function() {
-  opts <- imf_pcps_fetch_options()
-  dsd <- imf_pcps_fetch_json(
-    "DataStructure/IMF/PCPS",
-    timeout_sec = opts$timeout_sec,
-    retries = opts$retries,
-    backoff = opts$backoff,
-    cache_path = imf_pcps_cache_file("DataStructure/IMF/PCPS"),
-    use_cache = opts$use_cache,
-    soft_fail = opts$soft_fail
-  )
-  if (is.null(dsd)) {
-    warning("IMF PCPS metadata unavailable; returning empty commodity list.", call. = FALSE)
+  data <- imf_pcps_load_pcps_data()
+  if (is.null(data)) {
+    warning("IMF PCPS data unavailable; returning empty commodity list.", call. = FALSE)
     return(data.frame(code = character(), label = character(), stringsAsFactors = FALSE))
   }
-  dimensions <- dsd$Structure$KeyFamilies$KeyFamily$Components$Dimension
-  dims_df <- imf_pcps_dimensions_df(dimensions)
-
-  concept_cols <- c("@conceptRef", "@id")
-  concept_vals <- dims_df[, concept_cols[concept_cols %in% names(dims_df)], drop = FALSE]
-  concept_vals <- apply(concept_vals, 1, function(row) paste(row, collapse = " "))
-  commodity_idx <- grepl("COMMODITY|ITEM|PRODUCT", toupper(concept_vals))
-  if (!any(commodity_idx)) {
-    stop("Unable to locate commodity dimension in IMF PCPS dataset.")
-  }
-  commodity_dim <- dims_df[commodity_idx, , drop = FALSE]
-  codelist_id <- commodity_dim[["@codelist"]][1]
-  codelists <- dsd$Structure$CodeLists$CodeList
-  if (is.data.frame(codelists)) {
-    codelist <- codelists[codelists[["@id"]] == codelist_id, , drop = FALSE]
-  } else {
-    idx <- which(vapply(codelists, function(cl) cl[["@id"]], character(1)) == codelist_id)
-    if (length(idx) == 0) {
-      stop("Unable to locate IMF PCPS commodity code list.")
-    }
-    codelist <- codelists[[idx[1]]]
-  }
-  imf_pcps_codelist_df(codelist)
+  commodity_df <- unique(data[, c("commodity_code", "commodity_label")])
+  names(commodity_df) <- c("code", "label")
+  commodity_df
 }
 
 imf_pcps_match_commodities <- function(commodity_df, patterns) {
@@ -278,89 +256,18 @@ imf_pcps_match_commodities <- function(commodity_df, patterns) {
   do.call(rbind, matches)
 }
 
-imf_pcps_build_series_key <- function(dimensions, commodity_code, freq_value = "M") {
-  dims_df <- imf_pcps_dimensions_df(dimensions)
-  dim_ids <- dims_df[["@id"]]
-  dim_ids_upper <- toupper(dim_ids)
-  values <- rep(".", length(dim_ids))
-  freq_idx <- which(dim_ids_upper == "FREQ")
-  if (length(freq_idx) == 1) {
-    values[freq_idx] <- freq_value
-  }
-  concept_vals <- dims_df[, c("@conceptRef", "@id")[c("@conceptRef", "@id") %in% names(dims_df)], drop = FALSE]
-  concept_vals <- apply(concept_vals, 1, function(row) paste(row, collapse = " "))
-  commodity_idx <- which(grepl("COMMODITY|ITEM|PRODUCT", toupper(concept_vals)))
-  if (length(commodity_idx) == 0) {
-    stop("Unable to locate commodity dimension for IMF PCPS series key.")
-  }
-  values[commodity_idx[1]] <- commodity_code
-  paste(values, collapse = ".")
-}
-
-imf_pcps_obs_to_df <- function(obs) {
-  if (is.null(obs)) {
-    return(data.frame(date = as.Date(character()), value = numeric()))
-  }
-  obs_df <- as.data.frame(obs, stringsAsFactors = FALSE)
-  time_col <- if ("@TIME_PERIOD" %in% names(obs_df)) "@TIME_PERIOD" else "TIME_PERIOD"
-  value_col <- if ("@OBS_VALUE" %in% names(obs_df)) "@OBS_VALUE" else "OBS_VALUE"
-  data.frame(
-    date = obs_df[[time_col]],
-    value = as.numeric(obs_df[[value_col]]),
-    stringsAsFactors = FALSE
-  )
-}
-
-imf_pcps_fetch_series <- function(series_key, start_period, end_period) {
-  endpoint <- sprintf(
-    "CompactData/IMF/PCPS/%s?startPeriod=%s&endPeriod=%s",
-    series_key,
-    start_period,
-    end_period
-  )
-  opts <- imf_pcps_fetch_options()
-  data <- imf_pcps_fetch_json(
-    endpoint,
-    timeout_sec = opts$timeout_sec,
-    retries = opts$retries,
-    backoff = opts$backoff,
-    use_cache = FALSE,
-    soft_fail = opts$soft_fail
-  )
-  if (is.null(data)) {
-    return(list())
-  }
-  series <- data$CompactData$DataSet$Series
-  if (is.null(series)) {
-    return(list())
-  }
-  if (is.data.frame(series)) {
-    series <- list(series)
-  } else if (is.list(series) && "Obs" %in% names(series)) {
-    series <- list(series)
-  }
-  series
-}
-
-imf_pcps_prices_from_series <- function(series_list, tech, commodity_code, commodity_label) {
-  if (length(series_list) == 0) {
+imf_pcps_prices_from_data <- function(data, commodity_map) {
+  if (nrow(data) == 0 || nrow(commodity_map) == 0) {
     return(data.frame())
   }
-  obs_tbls <- lapply(series_list, function(series) {
-    obs_df <- imf_pcps_obs_to_df(series$Obs)
-    if (nrow(obs_df) == 0) {
-      return(NULL)
-    }
-    obs_df$tech <- tech
-    obs_df$commodity_code <- commodity_code
-    obs_df$commodity_label <- commodity_label
-    obs_df
-  })
-  obs_tbls <- obs_tbls[!vapply(obs_tbls, is.null, logical(1))]
-  if (length(obs_tbls) == 0) {
-    return(data.frame())
-  }
-  do.call(rbind, obs_tbls)
+  merged <- merge(
+    data,
+    commodity_map,
+    by = c("commodity_code", "commodity_label"),
+    all.x = TRUE
+  )
+  merged <- merged[!is.na(merged$tech), , drop = FALSE]
+  merged[, c("date", "value", "tech", "commodity_code", "commodity_label"), drop = FALSE]
 }
 
 imf_pcps_compute_volatility <- function(price_df) {
@@ -413,7 +320,7 @@ imf_pcps_compute_volatility <- function(price_df) {
 imf_pcps_energy_prices <- function(start_year, end_year) {
   opts <- imf_pcps_fetch_options()
   commodity_df <- imf_pcps_get_commodity_codes()
-  if (nrow(commodity_df) == 0 && opts$soft_fail) {
+  if (nrow(commodity_df) == 0 && imf_pcps_soft_fail_enabled()) {
     warning("IMF PCPS commodity list empty; returning empty energy price results.", call. = FALSE)
     return(list(
       prices = imf_pcps_empty_prices(),
@@ -440,34 +347,23 @@ imf_pcps_energy_prices <- function(start_year, end_year) {
     stop("No IMF PCPS commodities matched for coal, oil, gas, or critical minerals.")
   }
 
-  dsd <- imf_pcps_fetch_json(
-    "DataStructure/IMF/PCPS",
-    timeout_sec = opts$timeout_sec,
-    retries = opts$retries,
-    backoff = opts$backoff,
-    cache_path = imf_pcps_cache_file("DataStructure/IMF/PCPS"),
-    use_cache = opts$use_cache,
-    soft_fail = opts$soft_fail
-  )
-  if (is.null(dsd)) {
-    warning("IMF PCPS metadata unavailable; returning empty energy price results.", call. = FALSE)
+  data <- imf_pcps_load_pcps_data()
+  if (is.null(data)) {
+    warning("IMF PCPS data unavailable; returning empty energy price results.", call. = FALSE)
     return(list(
       prices = imf_pcps_empty_prices(),
       tech_vol = imf_pcps_empty_tech_vol(),
       series_vol = imf_pcps_empty_series_vol()
     ))
   }
-  dimensions <- dsd$Structure$KeyFamilies$KeyFamily$Components$Dimension
 
-  price_tbls <- lapply(seq_len(nrow(commodity_map)), function(i) {
-    tech <- commodity_map$tech[i]
-    commodity_code <- commodity_map$commodity_code[i]
-    commodity_label <- commodity_map$commodity_label[i]
-    series_key <- imf_pcps_build_series_key(dimensions, commodity_code)
-    series_list <- imf_pcps_fetch_series(series_key, start_year, end_year)
-    imf_pcps_prices_from_series(series_list, tech, commodity_code, commodity_label)
-  })
-  prices <- do.call(rbind, price_tbls)
+  data <- data[grepl("-M\\d{1,2}$", toupper(data$date)), , drop = FALSE]
+  data_years <- imf_pcps_extract_year(data$date)
+  if (!is.null(start_year) && !is.null(end_year)) {
+    data <- data[data_years >= start_year & data_years <= end_year, , drop = FALSE]
+  }
+
+  prices <- imf_pcps_prices_from_data(data, commodity_map)
   if (is.null(prices) || nrow(prices) == 0) {
     stop("IMF PCPS returned no price observations for requested commodities.")
   }
