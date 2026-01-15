@@ -276,6 +276,24 @@ imf_pcps_match_commodities <- function(commodity_df, patterns) {
   do.call(rbind, matches)
 }
 
+imf_pcps_select_indicators <- function(commodity_df, indicators) {
+  if (nrow(commodity_df) == 0 || length(indicators) == 0) {
+    return(data.frame(tech = character(), commodity_code = character(), commodity_label = character()))
+  }
+  normalized_labels <- tolower(trimws(commodity_df$label))
+  normalized_targets <- tolower(trimws(indicators))
+  idx <- normalized_labels %in% normalized_targets
+  if (!any(idx)) {
+    return(data.frame(tech = character(), commodity_code = character(), commodity_label = character()))
+  }
+  data.frame(
+    tech = commodity_df$label[idx],
+    commodity_code = commodity_df$code[idx],
+    commodity_label = commodity_df$label[idx],
+    stringsAsFactors = FALSE
+  )
+}
+
 imf_pcps_prices_from_data <- function(data, commodity_map) {
   if (nrow(data) == 0 || nrow(commodity_map) == 0) {
     return(data.frame())
