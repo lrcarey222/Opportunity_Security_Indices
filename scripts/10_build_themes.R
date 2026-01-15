@@ -21,7 +21,7 @@ source(file.path(repo_root, "R", "themes", "economic_opportunity", "future_deman
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "export_feasibility.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "lcoe_competitiveness.R"))
 source(file.path(repo_root, "R", "themes", "economic_opportunity", "market_share_manufacturing.R"))
-source(file.path(repo_root, "R", "themes", "economic_opportunity", "overcapacity_premium.R"))
+source(file.path(repo_root, "R", "themes", "economic_opportunity", "production_depth_momentum.R"))
 
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
@@ -322,6 +322,18 @@ future_demand_tbl <- future_demand(
 )
 future_demand_tbl <- standardize_theme_types(future_demand_tbl, country_info = country_info)
 
+# Theme: Production depth + momentum (EI + IEA critical minerals).
+production_depth_momentum_tbl <- production_depth_momentum(
+  ei = ei,
+  critical = critical,
+  mineral_demand_clean = mineral_demand_clean,
+  country_info = country_info
+)
+production_depth_momentum_tbl <- standardize_theme_types(
+  production_depth_momentum_tbl,
+  country_info = country_info
+)
+
 # Collect all theme outputs in a named list for downstream consumers.
 theme_outputs <- list(
   critical_minerals_processing = critical_minerals_processing_tbl,
@@ -338,7 +350,8 @@ theme_outputs <- list(
   overcapacity_premium = overcapacity_premium_tbl,
   future_demand = future_demand_tbl,
   lcoe_competitiveness = lcoe_competitiveness_tbl,
-  market_share_manufacturing = market_share_manufacturing_tbl
+  market_share_manufacturing = market_share_manufacturing_tbl,
+  production_depth_momentum = production_depth_momentum_tbl
 )
 
 invisible(theme_outputs)
