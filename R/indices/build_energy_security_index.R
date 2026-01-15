@@ -32,24 +32,23 @@ standardize_energy_security_inputs <- function(theme_tables, include_sub_sector 
   dplyr::bind_rows(standardized)
 }
 
+parse_energy_security_years <- function(x) {
+  if (inherits(x, "Date") || inherits(x, "POSIXt")) {
+    return(as.POSIXlt(x)$year + 1900L)
+  }
+
+  values <- as.character(x)
+  match_pos <- regexpr("\\d{4}", values)
+  year_text <- ifelse(match_pos > 0, regmatches(values, match_pos), NA_character_)
+  suppressWarnings(as.integer(year_text))
+}
+
 build_energy_security_index <- function(theme_tables,
                                         weights,
                                         missing_data = NULL,
                                         allow_partial_categories = T,
                                         include_sub_sector = FALSE,
-                                        techs = c(
-                                          "Electric Vehicles",
-                                          "Nuclear",
-                                          "Coal",
-                                          "Batteries",
-                                          "Green Hydrogen",
-                                          "Wind",
-                                          "Oil",
-                                          "Solar",
-                                          "Gas",
-                                          "Geothermal",
-                                          "Electric Grid"
-                                        )) {
+                                        techs = NULL) {
   message("Building energy security index: standardizing theme inputs.")
   if (is.null(weights) || length(weights) == 0) {
     stop("Energy security weights are missing or empty.")
@@ -70,34 +69,60 @@ build_energy_security_index <- function(theme_tables,
     theme_tables,
     include_sub_sector = include_sub_sector
   ) %>%
-    dplyr::filter(data_type == "index", tech %in% techs) %>%
     apply_overall_definitions(
       index_definition = index_definition,
       include_sub_sector = include_sub_sector
     )
 
   energy_security_data <- energy_security_data %>%
-    dplyr::mutate(
-      Year = dplyr::case_when(
-        inherits(Year, "Date") ~ as.integer(format(Year, "%Y")),
-        inherits(Year, "POSIXct") ~ as.integer(format(Year, "%Y")),
-        inherits(Year, "POSIXt") ~ as.integer(format(Year, "%Y")),
-        TRUE ~ suppressWarnings(as.integer(Year))
+    dplyr::filter(data_type == "index")
+
+  if (!missing(techs) && !is.null(techs)) {
+    pre_filter_count <- nrow(energy_security_data)
+    energy_security_data <- energy_security_data %>%
+      dplyr::filter(tech %in% techs)
+    dropped_count <- pre_filter_count - nrow(energy_security_data)
+    if (pre_filter_count > 0 && dropped_count > 0) {
+      dropped_pct <- round(100 * dropped_count / pre_filter_count, 1)
+      warning(
+        paste0(
+          "Tech filtering removed ", dropped_count, " rows (",
+          dropped_pct, "%) from energy security inputs."
+        )
       )
+    }
+  }
+
+  energy_security_data <- energy_security_data %>%
+    dplyr::mutate(
+      Year_raw = Year,
+      Year = parse_energy_security_years(Year_raw)
     )
 
   dropped_years <- sum(is.na(energy_security_data$Year))
   if (dropped_years > 0) {
+    sample_values <- energy_security_data %>%
+      dplyr::filter(is.na(Year)) %>%
+      dplyr::pull(Year_raw) %>%
+      unique() %>%
+      head(5)
+    sample_text <- if (length(sample_values) == 0) {
+      "none"
+    } else {
+      paste(sample_values, collapse = ", ")
+    }
     warning(
       paste(
         "Dropping", dropped_years,
-        "energy security rows with invalid Year values after coercion."
+        "energy security rows with invalid Year values after coercion.",
+        "Sample Year values:", sample_text
       )
     )
   }
 
   energy_security_data <- energy_security_data %>%
-    dplyr::filter(!is.na(Year))
+    dplyr::filter(!is.na(Year)) %>%
+    dplyr::select(-Year_raw)
 
   validate_variable_levels(
     energy_security_data,
@@ -131,6 +156,28 @@ build_energy_security_index <- function(theme_tables,
   }
   energy_security_overall <- energy_security_data %>%
     dplyr::inner_join(score_variables_tbl, by = c("category", "variable" = "score_variable"))
+  if (nrow(energy_security_overall) == 0) {
+    available_summary <- energy_security_data %>%
+      dplyr::distinct(category, variable) %>%
+      dplyr::group_by(category) %>%
+      dplyr::summarize(
+        variables = paste(sort(unique(variable)), collapse = ", "),
+        .groups = "drop"
+      ) %>%
+      dplyr::mutate(summary = paste0(category, ": ", variables)) %>%
+      dplyr::pull(summary) %>%
+      head(10)
+    available_text <- if (length(available_summary) == 0) {
+      "none"
+    } else {
+      paste(available_summary, collapse = "; ")
+    }
+    stop(
+      "Score-variable filter returned 0 rows; check index_definition score_variable names ",
+      "vs available variables. Available variables per category: ",
+      available_text
+    )
+  }
 
   weights_tbl <- tibble::tibble(
     category = names(weights),
@@ -184,7 +231,8 @@ build_energy_security_index <- function(theme_tables,
   theme_country_grid <- theme_groups %>%
     dplyr::left_join(
       country_groups,
-      by = c(group_cols[-1], "Year")
+      by = c(group_cols[-1], "Year"),
+      relationship = "many-to-many"
     )
 
   theme_global_averages <- energy_security_overall %>%
@@ -357,5 +405,21 @@ build_energy_security_index <- function(theme_tables,
     variable_contributions = variable_contributions,
     index = energy_security_index %>%
       dplyr::select(dplyr::all_of(c(group_cols, "Year", "energy_security_index")))
+  )
+}
+
+build_energy_security_index_v2 <- function(theme_tables,
+                                           weights,
+                                           missing_data = NULL,
+                                           allow_partial_categories = T,
+                                           include_sub_sector = FALSE,
+                                           techs = NULL) {
+  build_energy_security_index(
+    theme_tables = theme_tables,
+    weights = weights,
+    missing_data = missing_data,
+    allow_partial_categories = allow_partial_categories,
+    include_sub_sector = include_sub_sector,
+    techs = techs
   )
 }
