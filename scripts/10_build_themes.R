@@ -25,6 +25,7 @@ source(file.path(repo_root, "R", "categories", "energy_prices", "lcoe_competitiv
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "market_share_manufacturing.R"))
 source(file.path(repo_root, "R", "categories", "production", "production_depth_momentum.R"))
 source(file.path(repo_root, "R", "categories", "technology_demand", "overcapacity_premium.R"))
+source(file.path(repo_root, "R", "categories", "economic opportunity", "cost_competitiveness.R"))
 
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
@@ -112,6 +113,9 @@ iea_weo_path <- file.path(latest_snapshot, "WEO2024_AnnexA_Free_Dataset_World.cs
 iea_ev_path <- file.path(latest_snapshot, "IEA_EVDataExplorer2025.xlsx")
 bcg_future_demand_path <- file.path(latest_snapshot, "Market Size for Technology and Supply Chain.xlsx")
 bnef_supply_chain_path <- file.path(latest_snapshot, "BNEF_Energy Transition Supply Chains 2025.xlsx")
+relative_costs_iea_path <- file.path(latest_snapshot, "Relative_Costs_IEA.csv")
+imf_lending_rates_path <- file.path(latest_snapshot, "imf_lending_rates.csv")
+imf_ppi_path <- file.path(latest_snapshot, "imf_ppi.csv")
 
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
@@ -135,7 +139,10 @@ missing_files <- c(
   iea_weo_path,
   iea_ev_path,
   bcg_future_demand_path,
-  bnef_supply_chain_path
+  bnef_supply_chain_path,
+  relative_costs_iea_path,
+  imf_lending_rates_path,
+  imf_ppi_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
 
@@ -344,6 +351,25 @@ production_depth_momentum_tbl <- standardize_theme_types(
   country_info = country_info
 )
 
+# Theme: Cost competitiveness (IEA relative costs).
+iea_relative_costs <- read.csv(relative_costs_iea_path)
+ilo_url <- "https://rplumber.ilo.org/data/indicator/?id=EAR_4MTH_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat&title=average-monthly-earnings-of-employees-by-sex-and-economic-activity-annual"
+ilo_raw <- read.csv(ilo_url)
+imf_lending_rates <- read.csv(imf_lending_rates_path)
+imf_ppi <- read.csv(imf_ppi_path)
+cost_competitiveness_tbl <- cost_competitiveness(
+  iea_cost_raw = iea_relative_costs,
+  ei = ei,
+  country_info = country_info,
+  ilo_raw = ilo_raw,
+  imf_lending_rates = imf_lending_rates,
+  imf_ppi = imf_ppi
+)
+cost_competitiveness_tbl <- standardize_theme_types(
+  cost_competitiveness_tbl,
+  country_info = country_info
+)
+
 # Collect all theme outputs in a named list for downstream consumers.
 theme_outputs <- list(
   critical_minerals_processing = critical_minerals_processing_tbl,
@@ -361,7 +387,8 @@ theme_outputs <- list(
   future_demand = future_demand_tbl,
   lcoe_competitiveness = lcoe_competitiveness_tbl,
   market_share_manufacturing = market_share_manufacturing_tbl,
-  production_depth_momentum = production_depth_momentum_tbl
+  production_depth_momentum = production_depth_momentum_tbl,
+  cost_competitiveness = cost_competitiveness_tbl
 )
 
 invisible(theme_outputs)
