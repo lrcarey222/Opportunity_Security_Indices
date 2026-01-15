@@ -5,4 +5,4 @@ outputs_dir: "outputs"
 allow_partial_categories: true
 energy_security_include_sub_sector: false
 include_sub_sector: false
-use_energy_security_v2: false
+use_energy_security_v2: true
