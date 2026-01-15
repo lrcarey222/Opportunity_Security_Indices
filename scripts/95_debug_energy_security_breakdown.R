@@ -97,7 +97,7 @@ run_energy_security_breakdown <- function(country,
     source(file.path(repo_root, "scripts", "07_process_data.R"))
   }
 
-  source(file.path(repo_root, "scripts", "10_build_themes.R"))
+  source(file.path(repo_root, "scripts", "10_build_categories.R"))
   source(file.path(repo_root, "scripts", "20_build_indices.R"))
 
   weights <- getOption("opportunity_security.weights")

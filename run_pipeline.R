@@ -18,7 +18,7 @@ repo_root <- normalizePath(dirname(script_path), winslash = "/", mustWork = TRUE
 source(file.path(repo_root, "scripts", "00_setup.R"))
 source(file.path(repo_root, "scripts", "05_ingest_sources.R"))
 source(file.path(repo_root, "scripts", "07_process_data.R"))
-source(file.path(repo_root, "scripts", "10_build_themes.R"))
+source(file.path(repo_root, "scripts", "10_build_categories.R"))
 source(file.path(repo_root, "scripts", "20_build_indices.R"))
 source(file.path(repo_root, "scripts", "80_write_outputs.R"))
 source(file.path(repo_root, "scripts", "90_build_charts.R"))
