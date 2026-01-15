@@ -83,6 +83,29 @@ build_energy_security_index <- function(theme_tables,
   )
 
   message("Filtering energy security data to configured score variables.")
+  expected_pairs <- score_variables_tbl %>%
+    dplyr::distinct(category, score_variable)
+  available_pairs <- energy_security_data %>%
+    dplyr::distinct(category, variable)
+  missing_pairs <- expected_pairs %>%
+    dplyr::left_join(
+      available_pairs,
+      by = c("category" = "category", "score_variable" = "variable")
+    ) %>%
+    dplyr::filter(is.na(variable))
+  if (nrow(missing_pairs) > 0) {
+    missing_preview <- missing_pairs %>%
+      dplyr::mutate(summary = paste(category, score_variable, sep = " | ")) %>%
+      dplyr::pull(summary) %>%
+      head(10)
+    warning(
+      paste(
+        "Missing expected category/variable pairs in energy security inputs.",
+        "Examples (category | score_variable):",
+        paste(missing_preview, collapse = "; ")
+      )
+    )
+  }
   energy_security_overall <- energy_security_data %>%
     dplyr::inner_join(score_variables_tbl, by = c("category", "variable" = "score_variable"))
 
@@ -143,7 +166,8 @@ build_energy_security_index <- function(theme_tables,
 
   theme_global_averages <- energy_security_overall %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(theme_group_cols))) %>%
-    dplyr::summarize(global_avg = mean(value, na.rm = TRUE), .groups = "drop")
+    dplyr::summarize(global_avg = mean(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::mutate(global_avg = dplyr::if_else(is.nan(global_avg), NA_real_, global_avg))
 
   theme_overall_completed <- theme_country_grid %>%
     dplyr::left_join(
@@ -175,13 +199,16 @@ build_energy_security_index <- function(theme_tables,
       dplyr::pull(summary) %>%
       head(10)
 
-    warning(
-      paste(
-        "Missing theme scores detected; imputing using configured methods.",
-        "Examples (theme | category | method):",
-        paste(missing_preview, collapse = "; ")
-      )
+    missing_message <- paste(
+      "Missing theme scores detected; imputing using configured methods.",
+      "Examples (theme | category | method):",
+      paste(missing_preview, collapse = "; ")
     )
+    if (isTRUE(allow_partial_categories)) {
+      warning(missing_message)
+    } else {
+      stop(missing_message)
+    }
   }
 
   category_scores <- theme_overall_completed %>%
@@ -189,13 +216,15 @@ build_energy_security_index <- function(theme_tables,
     dplyr::summarize(category_score = mean(category_score, na.rm = TRUE), .groups = "drop")
 
   latest_years <- category_scores %>%
-    dplyr::filter(!is.na(Year)) %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
-    dplyr::summarize(Year = max(Year, na.rm = TRUE), .groups = "drop")
+    dplyr::summarize(
+      Year = if (all(is.na(Year))) NA_integer_ else max(Year, na.rm = TRUE),
+      .groups = "drop"
+    )
 
   category_scores_latest <- category_scores %>%
     dplyr::inner_join(
-      latest_years,
+      latest_years %>% dplyr::filter(!is.na(Year)),
       by = c(group_cols, "Year")
     )
 
@@ -212,14 +241,23 @@ build_energy_security_index <- function(theme_tables,
 
   missing_weight_categories <- setdiff(categories_in_data, categories_in_weights)
   if (length(missing_weight_categories) > 0) {
-    warning(
-      "Theme categories are missing weights and will be excluded: ",
+    missing_message <- paste(
+      "Theme categories are missing weights and will be excluded:",
       paste(missing_weight_categories, collapse = ", ")
     )
+    if (isTRUE(allow_partial_categories)) {
+      warning(missing_message)
+    } else {
+      stop(missing_message)
+    }
   }
 
   weights_tbl <- weights_tbl %>%
     dplyr::filter(category %in% categories_in_data)
+
+  if (nrow(weights_tbl) == 0 || nrow(category_scores_latest) == 0) {
+    stop("No energy security categories remain after filtering to available data and weights.")
+  }
 
   message("Computing overall energy security index from weighted categories.")
   category_contributions <- category_scores_latest %>%
