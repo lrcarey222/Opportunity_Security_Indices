@@ -508,8 +508,12 @@ build_energy_security_index_v2 <- function(theme_tables,
     )
   }
 
+  validation_tbl <- energy_security_data %>%
+    dplyr::group_by(Country, tech, supply_chain, sub_sector, category, variable, data_type, Year) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
+
   validate_variable_levels(
-    energy_security_data,
+    validation_tbl,
     index_definition = index_definition,
     include_sub_sector = include_sub_sector
   )
