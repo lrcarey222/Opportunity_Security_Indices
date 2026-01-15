@@ -13,16 +13,16 @@ standardize_energy_security_inputs <- function(theme_tables, include_sub_sector 
     standardized_tbl <- standardize_theme_table(tbl)
     validate_schema(standardized_tbl)
 
-    if (include_sub_sector && !"sub_sector" %in% names(standardized_tbl)) {
-      standardized_tbl$sub_sector <- "All"
-    }
-
     standardized_tbl %>%
       dplyr::mutate(
         Country = as.character(Country),
         tech = as.character(tech),
         supply_chain = as.character(supply_chain),
-        sub_sector = if ("sub_sector" %in% names(standardized_tbl)) as.character(sub_sector) else "All",
+        sub_sector = if (isTRUE(include_sub_sector) && "sub_sector" %in% names(standardized_tbl)) {
+          as.character(sub_sector)
+        } else {
+          "All"
+        },
         category = as.character(category),
         theme = as.character(theme_name)
       )
@@ -54,16 +54,36 @@ build_energy_security_index <- function(theme_tables,
     stop("Energy security weights are missing or empty.")
   }
 
+  index_definition <- resolve_index_definition()
+  score_variables <- index_definition$pillars$energy_security$categories
+  if (is.null(score_variables) || length(score_variables) == 0) {
+    stop("Index definition missing energy security category definitions.")
+  }
+
+  score_variables_tbl <- tibble::tibble(
+    category = names(score_variables),
+    score_variable = vapply(score_variables, function(x) x$score_variable, character(1))
+  )
+
   energy_security_data <- standardize_energy_security_inputs(
     theme_tables,
     include_sub_sector = include_sub_sector
   ) %>%
-    dplyr::filter(data_type == "index", tech %in% techs)
+    dplyr::filter(data_type == "index", tech %in% techs) %>%
+    apply_overall_definitions(
+      index_definition = index_definition,
+      include_sub_sector = include_sub_sector
+    )
 
-  message("Filtering energy security data to Overall variables only.")
+  validate_variable_levels(
+    energy_security_data,
+    index_definition = index_definition,
+    include_sub_sector = include_sub_sector
+  )
+
+  message("Filtering energy security data to configured score variables.")
   energy_security_overall <- energy_security_data %>%
-    dplyr::filter(grepl("Overall", variable)) %>%
-    dplyr::filter(!(category == "Trade" & variable != "Overall Trade Risk Index"))
+    dplyr::inner_join(score_variables_tbl, by = c("category", "variable" = "score_variable"))
 
   weights_tbl <- tibble::tibble(
     category = names(weights),
@@ -208,8 +228,9 @@ build_energy_security_index <- function(theme_tables,
     dplyr::ungroup() %>%
     dplyr::mutate(weighted_contribution = category_score * weight / weight_sum)
 
+  overall_variables <- names(index_definition$overall_variables)
   variable_contributions <- energy_security_data %>%
-    dplyr::filter(!grepl("Overall", variable)) %>%
+    dplyr::filter(!variable %in% overall_variables) %>%
     dplyr::inner_join(
       category_scores_latest %>%
         dplyr::select(dplyr::all_of(c(group_cols, "Year", "category", "category_score"))),

@@ -205,8 +205,8 @@ if (needs_comtrade) {
       stop("WDI country data missing from snapshot: ", wdi_country_path)
     }
 
-    source(file.path(repo_root, "R", "themes", "energy_security", "critical_minerals_trade.R"))
-    source(file.path(repo_root, "R", "themes", "energy_security", "reserves.R"))
+    source(file.path(repo_root, "R", "categories", "minerals_trade", "critical_minerals_trade.R"))
+    source(file.path(repo_root, "R", "categories", "reserves", "reserves.R"))
 
     critical <- read.csv(critical_minerals_path)
     mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
