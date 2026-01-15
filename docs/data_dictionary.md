@@ -7,6 +7,7 @@ The pipeline standardizes outputs to a tidy schema with the following columns:
 | `Country` | Country name for the observation. |
 | `tech` | Technology (e.g., Solar, Gas, Electric Vehicles). |
 | `supply_chain` | Supply-chain stage (`Upstream`, `Midstream`, `Downstream`). |
+| `sub_sector` | Optional sub-sector label for themes that further split supply-chain stages. |
 | `category` | Thematic category (e.g., Trade, Production, Consumption). |
 | `variable` | Specific metric name within a category. |
 | `data_type` | `raw` or `index`, indicating pre- or post-normalization. |

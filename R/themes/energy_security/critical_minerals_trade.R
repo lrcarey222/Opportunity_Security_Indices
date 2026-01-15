@@ -135,7 +135,7 @@ critical_minerals_trade_build_tidy <- function(critmin_trade_tech, year = 2024) 
       values_to = "value"
     ) %>%
     dplyr::mutate(
-      category = "Trade",
+      category = "Minerals Trade",
       data_type = dplyr::if_else(stringr::str_detect(variable, "_index$"), "index", "raw"),
       variable = stringr::str_remove(variable, "_index$"),
       Year = year,
