@@ -96,7 +96,7 @@ overcapacity_premium <- function(overcapacity_raw, trade_tidy, year = 2025L) {
     dplyr::left_join(
       overcapacity_indices,
       by = c("tech", "supply_chain"),
-      relationship = "many-to-one"
+      relationship = "many-to-many"
     ) %>%
     dplyr::filter(!is.na(variable))
 
