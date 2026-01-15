@@ -31,6 +31,14 @@ latest_by_group <- function(tbl, group_cols) {
     dplyr::inner_join(latest_years, by = c(group_cols, "Year"))
 }
 
+append_sub_sector <- function(base_cols, include_sub_sector) {
+  if (isTRUE(include_sub_sector)) {
+    c(base_cols, "sub_sector")
+  } else {
+    base_cols
+  }
+}
+
 standardize_energy_security_inputs_v2 <- function(theme_tables, include_sub_sector = FALSE) {
   theme_names <- names(theme_tables)
   if (is.null(theme_names)) {
@@ -55,11 +63,6 @@ standardize_energy_security_inputs_v2 <- function(theme_tables, include_sub_sect
         Country = as.character(Country),
         tech = as.character(tech),
         supply_chain = as.character(supply_chain),
-        sub_sector = if (isTRUE(include_sub_sector) && "sub_sector" %in% names(standardized_tbl)) {
-          as.character(sub_sector)
-        } else {
-          "All"
-        },
         category = as.character(category),
         theme = as.character(theme_name)
       )
@@ -67,10 +70,21 @@ standardize_energy_security_inputs_v2 <- function(theme_tables, include_sub_sect
 
   standardized <- dplyr::bind_rows(standardized)
 
-  if (!isTRUE(include_sub_sector) && nrow(standardized) > 0) {
-    standardized <- standardized %>%
-      dplyr::mutate(sub_sector = "All")
+  if (!"sub_sector" %in% names(standardized)) {
+    standardized$sub_sector <- NA_character_
+  }
 
+  standardized <- standardized %>%
+    dplyr::mutate(
+      sub_sector = as.character(sub_sector),
+      sub_sector = if (!isTRUE(include_sub_sector)) {
+        "All"
+      } else {
+        dplyr::if_else(is.na(sub_sector) | sub_sector == "", "All", sub_sector)
+      }
+    )
+
+  if (!isTRUE(include_sub_sector) && nrow(standardized) > 0) {
     standardized <- standardized %>%
       dplyr::group_by(
         Country,
@@ -136,17 +150,23 @@ parse_missing_policy <- function(missing_data, data_tbl) {
   rules_tbl
 }
 
-apply_missing_policy <- function(tbl, rules_tbl) {
-  group_cols <- c("tech", "supply_chain", "sub_sector", "category", "variable", "theme")
+apply_missing_policy <- function(tbl, rules_tbl, include_sub_sector = FALSE) {
+  group_cols <- append_sub_sector(c("tech", "supply_chain"), include_sub_sector)
+  group_cols <- c(group_cols, "category", "variable", "theme")
 
   country_groups <- tbl %>%
-    dplyr::distinct(Country, tech, supply_chain, sub_sector)
+    dplyr::distinct(dplyr::across(dplyr::all_of(
+      append_sub_sector(c("Country", "tech", "supply_chain"), include_sub_sector)
+    )))
 
   variable_groups <- tbl %>%
     dplyr::distinct(dplyr::across(dplyr::all_of(group_cols)))
 
   grid <- variable_groups %>%
-    dplyr::left_join(country_groups, by = c("tech", "supply_chain", "sub_sector"))
+    dplyr::left_join(
+      country_groups,
+      by = append_sub_sector(c("tech", "supply_chain"), include_sub_sector)
+    )
 
   completed <- grid %>%
     dplyr::left_join(tbl, by = c("Country", group_cols))
@@ -317,10 +337,14 @@ compute_overall_scores <- function(tbl, index_definition, include_sub_sector = F
   )
 }
 
-compute_category_scores <- function(score_values_tbl, score_variables_tbl) {
+compute_category_scores <- function(score_values_tbl,
+                                    score_variables_tbl,
+                                    include_sub_sector = FALSE) {
+  group_cols <- append_sub_sector(c("Country", "tech", "supply_chain"), include_sub_sector)
+
   score_values_tbl %>%
     dplyr::inner_join(score_variables_tbl, by = c("category", "variable" = "score_variable")) %>%
-    dplyr::group_by(Country, tech, supply_chain, sub_sector, category) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(c(group_cols, "category")))) %>%
     dplyr::summarize(
       category_score = mean(value, na.rm = TRUE),
       imputed = any(isTRUE(imputed)),
@@ -329,14 +353,18 @@ compute_category_scores <- function(score_values_tbl, score_variables_tbl) {
     ) %>%
     dplyr::mutate(
       category_score = dplyr::if_else(is.nan(category_score), NA_real_, category_score),
-      missing_rule_applied = dplyr::na_if(missing_rule_applied, "")
+      missing_rule_applied = dplyr::na_if(missing_rule_applied, ""),
+      sub_sector = if (!isTRUE(include_sub_sector)) "All" else sub_sector
     )
 }
 
 compute_index_and_contributions <- function(category_scores,
                                             variable_contributions,
                                             weights_tbl,
-                                            allow_partial_categories = TRUE) {
+                                            allow_partial_categories = TRUE,
+                                            include_sub_sector = FALSE) {
+  key_cols <- append_sub_sector(c("Country", "tech", "supply_chain"), include_sub_sector)
+
   categories_in_data <- sort(unique(category_scores$category))
   categories_in_weights <- sort(unique(weights_tbl$category))
 
@@ -371,8 +399,8 @@ compute_index_and_contributions <- function(category_scores,
   expected_categories <- sort(unique(weights_tbl$category))
 
   category_completeness <- category_scores %>%
-    dplyr::distinct(Country, tech, supply_chain, sub_sector, category) %>%
-    dplyr::group_by(Country, tech, supply_chain, sub_sector) %>%
+    dplyr::distinct(dplyr::across(dplyr::all_of(c(key_cols, "category")))) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(key_cols))) %>%
     dplyr::summarize(
       present_categories = list(unique(category)),
       present_count = dplyr::n_distinct(category),
@@ -382,8 +410,8 @@ compute_index_and_contributions <- function(category_scores,
 
   category_contributions <- category_scores %>%
     dplyr::left_join(weights_tbl, by = "category") %>%
-    dplyr::left_join(category_completeness, by = c("Country", "tech", "supply_chain", "sub_sector")) %>%
-    dplyr::group_by(Country, tech, supply_chain, sub_sector) %>%
+    dplyr::left_join(category_completeness, by = key_cols) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(key_cols))) %>%
     dplyr::mutate(
       weight_sum = sum(weight, na.rm = TRUE),
       category_weight = weight / weight_sum
@@ -394,8 +422,8 @@ compute_index_and_contributions <- function(category_scores,
 
   variable_contributions <- variable_contributions %>%
     dplyr::left_join(weights_tbl, by = "category") %>%
-    dplyr::left_join(category_completeness, by = c("Country", "tech", "supply_chain", "sub_sector")) %>%
-    dplyr::group_by(Country, tech, supply_chain, sub_sector) %>%
+    dplyr::left_join(category_completeness, by = key_cols) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(key_cols))) %>%
     dplyr::mutate(
       weight_sum = sum(weight, na.rm = TRUE),
       category_weight = weight / weight_sum,
@@ -403,10 +431,7 @@ compute_index_and_contributions <- function(category_scores,
     ) %>%
     dplyr::ungroup() %>%
     dplyr::select(
-      Country,
-      tech,
-      supply_chain,
-      sub_sector,
+      dplyr::all_of(key_cols),
       category,
       variable,
       component_value,
@@ -432,7 +457,7 @@ compute_index_and_contributions <- function(category_scores,
   }
 
   energy_security_index <- category_contributions %>%
-    dplyr::group_by(Country, tech, supply_chain, sub_sector) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(key_cols))) %>%
     dplyr::summarize(
       complete_categories = all(complete_categories),
       Energy_Security_Index = dplyr::if_else(
@@ -476,9 +501,6 @@ build_energy_security_index_v2 <- function(theme_tables,
     include_sub_sector = include_sub_sector
   ) %>%
     dplyr::mutate(
-      sub_sector = if (!isTRUE(include_sub_sector)) "All" else sub_sector
-    ) %>%
-    dplyr::mutate(
       Year_raw = Year,
       Year = normalize_year(Year),
       value = suppressWarnings(as.numeric(value))
@@ -489,6 +511,15 @@ build_energy_security_index_v2 <- function(theme_tables,
 
   energy_security_data <- energy_security_data %>%
     dplyr::filter(data_type == "index")
+
+  if (!isTRUE(include_sub_sector)) {
+    if ("sub_sector" %in% names(energy_security_data)) {
+      unique_sub_sectors <- unique(energy_security_data$sub_sector)
+      if (length(unique_sub_sectors) != 1 || !identical(unique_sub_sectors, "All")) {
+        stop("Expected sub_sector to be 'All' when include_sub_sector is FALSE.")
+      }
+    }
+  }
 
   if (!missing(techs) && !is.null(techs)) {
     energy_security_data <- energy_security_data %>%
@@ -521,13 +552,13 @@ build_energy_security_index_v2 <- function(theme_tables,
     label = "energy_security_data"
   )
 
-  latest_tbl <- latest_by_group(
-    energy_security_data,
-    group_cols = c("Country", "tech", "supply_chain", "sub_sector", "category", "variable", "theme")
-  )
+  group_cols <- append_sub_sector(c("Country", "tech", "supply_chain"), include_sub_sector)
+  group_cols <- c(group_cols, "category", "variable", "theme")
+
+  latest_tbl <- latest_by_group(energy_security_data, group_cols = group_cols)
 
   year_provenance <- latest_tbl %>%
-    dplyr::select(Country, tech, supply_chain, sub_sector, category, variable, theme, Year) %>%
+    dplyr::select(dplyr::all_of(c(group_cols, "Year"))) %>%
     dplyr::rename(Year_selected = Year)
 
   latest_tbl <- latest_tbl %>%
@@ -546,7 +577,11 @@ build_energy_security_index_v2 <- function(theme_tables,
 
   rules_tbl <- parse_missing_policy(missing_data, latest_tbl)
 
-  imputed_tbl <- apply_missing_policy(latest_tbl, rules_tbl)
+  imputed_tbl <- apply_missing_policy(
+    latest_tbl,
+    rules_tbl,
+    include_sub_sector = include_sub_sector
+  )
 
   overall_outputs <- compute_overall_scores(
     imputed_tbl,
@@ -592,7 +627,11 @@ build_energy_security_index_v2 <- function(theme_tables,
     )
   }
 
-  category_scores <- compute_category_scores(scored_data, score_variables_tbl)
+  category_scores <- compute_category_scores(
+    scored_data,
+    score_variables_tbl,
+    include_sub_sector = include_sub_sector
+  )
 
   if (nrow(category_scores) == 0) {
     stop("Energy security category scores are empty after filtering to score variables.")
@@ -645,7 +684,8 @@ build_energy_security_index_v2 <- function(theme_tables,
     category_scores,
     variable_contributions,
     weights_tbl,
-    allow_partial_categories = allow_partial_categories
+    allow_partial_categories = allow_partial_categories,
+    include_sub_sector = include_sub_sector
   )
 
   diagnostics <- list(
