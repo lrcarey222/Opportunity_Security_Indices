@@ -8,3 +8,14 @@ energy_security:
   foreign_dependency: global_average
   import_dependence: global_average
   trade_concentration: global_average
+economic_opportunity:
+  energy_access_consumption: global_average
+  energy_consumption: global_average
+  energy_prices: global_average
+  export_feasibility: global_average
+  foreign_dependency: global_average
+  future_demand: global_average
+  market_share_manufacturing: zero
+  cost_competitiveness: global_average
+  production_depth_momentum: global_average
+  overcapacity_premium: global_average
