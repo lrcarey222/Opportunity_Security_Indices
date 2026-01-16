@@ -185,9 +185,23 @@ imf_pcps_select_sheet <- function(path) {
 
 imf_pcps_long_from_excel <- function(raw_df) {
   parse_numeric <- function(x) {
-    cleaned <- trimws(as.character(x))
-    cleaned[cleaned == ""] <- NA_character_
-    suppressWarnings(as.numeric(gsub(",", "", cleaned)))
+    s <- trimws(as.character(x))
+    s[s == ""] <- NA_character_
+    
+    # common IMF "no data" tokens
+    s[grepl("^(na|n/a|nd|\\.\\.|\\.|-|-|-)$", tolower(s))] <- NA_character_
+    
+    # normalize unicode minus/dashes to "-"
+    s <- chartr("\u2212\u2013\u2014", "---", s)
+    
+    # remove thousands separators and spaces
+    s <- gsub(",", "", s, fixed = TRUE)
+    s <- gsub("\\s+", "", s)
+    
+    # keep digits, decimal point, leading minus; strip footnotes/suffixes
+    s <- gsub("([^0-9\\.-]).*$", "", s)
+    
+    suppressWarnings(as.numeric(s))
   }
   select_metadata_column <- function(df, columns, prefer_pattern = NULL) {
     if (length(columns) == 0) {
