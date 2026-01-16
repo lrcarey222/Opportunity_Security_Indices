@@ -115,7 +115,8 @@ overall_variables:
   Overall Input Cost Index:
     category: "Cost Competitiveness"
     components:
-      - "*"
+      - "Input Cost Index"
+      - "IEA Cost index"
     aggregation: mean
 
 variable_levels:
