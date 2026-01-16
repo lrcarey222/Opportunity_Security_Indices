@@ -159,7 +159,7 @@ build_economic_opportunity_index <- function(theme_tables,
     )
 
   economic_opportunity_data <- economic_opportunity_data %>%
-    dplyr::mutate(Year = dplyr::if_else(is.na(Year), 0L, Year))
+    dplyr::mutate(Year = 0L)
 
   economic_opportunity_data <- economic_opportunity_data %>%
     dplyr::filter(data_type == "index")
