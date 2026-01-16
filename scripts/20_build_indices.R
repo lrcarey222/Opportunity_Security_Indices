@@ -8,6 +8,7 @@ source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index.R"))
+source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
 
 config <- getOption("opportunity_security.config")
@@ -24,6 +25,7 @@ include_sub_sector <- isTRUE(if (!is.null(config$include_sub_sector)) {
   config$energy_security_include_sub_sector
 })
 use_energy_security_v2 <- isTRUE(config$use_energy_security_v2)
+use_economic_opportunity_v2 <- isTRUE(config$use_economic_opportunity_v2)
 
 energy_security_inputs <- list(
   energy_access_consumption = energy_access_tbl,
@@ -82,7 +84,9 @@ economic_opportunity_outputs <- build_economic_opportunity_index(
   theme_tables = economic_opportunity_inputs,
   weights = weights$economic_opportunity,
   allow_partial_categories = allow_partial_categories,
-  include_sub_sector = include_sub_sector
+  include_sub_sector = include_sub_sector,
+  missing_data = missing_data$economic_opportunity,
+  use_economic_opportunity_v2 = use_economic_opportunity_v2
 )
 
 economic_opportunity_category_scores <- economic_opportunity_outputs$category_scores
