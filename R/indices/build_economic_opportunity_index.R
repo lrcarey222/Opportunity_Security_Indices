@@ -271,7 +271,7 @@ build_economic_opportunity_index <- function(theme_tables,
     dplyr::distinct(category, variable)
   missing_pairs <- score_variables_tbl %>%
     dplyr::left_join(available_pairs, by = c("category" = "category", "score_variable" = "variable")) %>%
-    dplyr::filter(is.na(variable))
+    dplyr::filter(is.na(score_variable))
   if (nrow(missing_pairs) > 0) {
     available_summary <- economic_opportunity_data %>%
       dplyr::distinct(category, variable) %>%
