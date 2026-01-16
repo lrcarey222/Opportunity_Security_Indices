@@ -65,57 +65,132 @@ overall_variables:
   Overall Minerals Trade Index:
     category: "Minerals Trade"
     components:
-      - "*"
+      - "critmin_trade"
     aggregation: mean
   Overall Foreign Dependency Index:
     category: "Foreign Dependency"
     components:
-      - "*"
+      - "Mineral Supply"
+      - "Market Share"
+      - "Overall Market Share"
+      - "production"
+      - "sales"
+      - "import"
+      - "market_share"
+      - "Overall Production"
     aggregation: mean
   Overall Energy Imports Index:
     category: "Energy Imports"
     components:
-      - "*"
+      - "Production surplus/deficit"
     aggregation: mean
   Overall Reserves Index:
     category: "Reserves"
     components:
-      - "*"
+      - "Oil Reserves"
+      - "Gas Reserves"
+      - "Coal Reserves"
+      - "Cobalt Reserves"
+      - "Lithium Reserves"
+      - "Graphite Reserves"
+      - "Rare Earths Reserves"
+      - "Copper Reserves"
+      - "Manganese Reserves"
+      - "Nickel Reserves"
+      - "Zinc Reserves"
+      - "PGMs Reserves"
+      - "Solar Reserves"
+      - "Wind Reserves"
+      - "Electric Vehicles Reserves"
+      - "Batteries Reserves"
+      - "Electric Grid Reserves"
+      - "Green Hydrogen Reserves"
+      - "Heat Pumps Reserves"
+      - "Nuclear Reserves"
+      - "Hydroelectric Power Reserves"
+      - "Geothermal Reserves"
     aggregation: mean
   Overall Production Index:
     category: "Production"
     components:
-      - "*"
+      - "size"
+      - "growth_abs"
+      - "Overall Production"
+      - "Cobalt Production"
+      - "Lithium Production"
+      - "Graphite Production"
+      - "Rare Earths Production"
+      - "Copper Production"
+      - "Manganese Production"
+      - "Nickel Production"
+      - "Zinc Production"
+      - "PGMs Production"
+      - "Solar Production"
+      - "Wind Production"
+      - "Electric Vehicles Production"
+      - "Batteries Production"
+      - "Electric Grid Production"
+      - "Green Hydrogen Production"
+      - "Heat Pumps Production"
+      - "Coal Production"
+      - "Nuclear Production"
+      - "Oil Production"
+      - "Gas Production"
+      - "Hydroelectric Power Production"
+      - "Geothermal Production"
     aggregation: mean
   Overall Energy Access Index:
     category: "Energy Access"
     components:
-      - "*"
+      - "Energy consumption per capita"
+      - "Energy consumption per capita growth"
     aggregation: mean
   Overall Consumption Index:
     category: "Consumption"
     components:
-      - "*"
+      - "Energy consumption per capita"
+      - "Energy consumption per capita growth"
+      - "installed_cap_index"
+      - "elec_growth_index"
     aggregation: mean
   Overall Energy Prices Index:
     category: "Energy Prices"
     components:
-      - "*"
+      - "lcoe_24"
+      - "lcoe_50"
+      - "Overall input cost index"
     aggregation: mean
   Overall Technology Demand Index:
     category: "Technology Demand"
     components:
-      - "*"
+      - "demand_size"
+      - "demand_growth"
+      - "Overall Global Demand"
+      - "Overall Demand"
+      - "sales_growth"
+      - "sales_size"
+      - "sales_forecast_growth"
+      - "sales_forecast_size"
+      - "stock_growth"
+      - "stock_size"
+      - "stock_forecast_growth"
+      - "stock_forecast_size"
+      - "share_growth"
+      - "share_size"
+      - "share_forecast_growth"
+      - "share_forecast_size"
+      - "Overall Addressable Market"
+      - "Overall Overcapacity"
     aggregation: mean
   Overall Investment Index:
     category: "Investment"
-    components:
-      - "*"
+    components: []
     aggregation: mean
   Overall Input Cost Index:
     category: "Cost Competitiveness"
     components:
-      - "*"
+      - "Input Cost Index"
+      - "IEA Cost index"
     aggregation: mean
 
 variable_levels:
