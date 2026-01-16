@@ -267,11 +267,7 @@ cost_competitiveness_build_labor_table <- function(ilo_sc,
       explanation = dplyr::case_when(
         variable == "labor_share" ~ "Estimated Labor Share of Costs",
         variable == "labor_index" ~ "Estimated weekly earnings by economic activity, indexed (median_scurve)",
-<<<<<<< HEAD
         variable == "labor_index_weighted" ~ "Labor index x labor share (contribution, not an index)",
-=======
-        variable == "labor_index_weighted" ~ "Labor index × labor share (contribution, not an index)",
->>>>>>> 70de42177b774e1511ef65daa7b93e8ab5f5c740
         TRUE ~ variable
       )
     )
