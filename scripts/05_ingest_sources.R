@@ -53,7 +53,10 @@ if (is.null(config)) {
 
 sharepoint_raw_dir <- config$sharepoint_raw_dir
 raw_data_dir <- file.path(repo_root, config$raw_data_dir)
-skip_data_downloads <- Sys.getenv("SKIP_DATA_DOWNLOADS") == "1"
+is_skip_data_downloads <- function() {
+  tolower(Sys.getenv("SKIP_DATA_DOWNLOADS")) %in% c("1", "true", "yes")
+}
+skip_data_downloads <- is_skip_data_downloads()
 
 manifest_path <- file.path(repo_root, "config", "raw_inputs_manifest.yml")
 if (!file.exists(manifest_path)) {
