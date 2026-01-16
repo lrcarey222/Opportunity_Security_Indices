@@ -159,7 +159,7 @@ build_economic_opportunity_index <- function(theme_tables,
     )
 
   economic_opportunity_data <- economic_opportunity_data %>%
-    dplyr::mutate(Year = dplyr::if_else(is.na(Year), 0L, Year))
+    dplyr::mutate(Year = 0L)
 
   economic_opportunity_data <- economic_opportunity_data %>%
     dplyr::filter(data_type == "index")
@@ -256,6 +256,8 @@ build_economic_opportunity_index <- function(theme_tables,
       index_definition = index_definition,
       include_sub_sector = include_sub_sector
     )
+  economic_opportunity_data <- economic_opportunity_data %>%
+    dplyr::mutate(Year = 0L)
 
   if (nrow(economic_opportunity_data) == 0) {
     year_samples <- unique(economic_opportunity_data$Year)
@@ -323,8 +325,8 @@ build_economic_opportunity_index <- function(theme_tables,
   )
 
   latest_years <- economic_opportunity_overall %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
-    dplyr::summarize(Year = as.integer(max(Year, na.rm = TRUE)), .groups = "drop")
+    dplyr::distinct(dplyr::across(dplyr::all_of(group_cols))) %>%
+    dplyr::mutate(Year = 0L)
   assert_unique_keys(
     latest_years,
     group_cols,
