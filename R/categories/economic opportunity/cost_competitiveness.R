@@ -562,7 +562,7 @@ cost_competitiveness_build_capital_table <- function(cap_cost_base,
       explanation = dplyr::case_when(
         variable == "cap_share" ~ "Estimated Capital Share of Costs",
         variable == "ppi_index" ~ "Producer Price Index, indexed (median_scurve)",
-        variable == "cap_index_weighted" ~ "Capital cost score × capital share (contribution, not an index)",
+        variable == "cap_index_weighted" ~ "Capital cost score * capital share (contribution, not an index)",
         variable == "nominal_rate" ~ "Lending rate, %",
         variable == "rate_index" ~ "Lending rate, index (NOT median_scurve as currently implemented)",
         variable == "ppi" ~ "Producer Price Index, 2010=100",
