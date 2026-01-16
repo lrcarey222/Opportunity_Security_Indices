@@ -549,9 +549,7 @@ cost_competitiveness_build_capital_table <- function(cap_cost_base,
       category = "Cost Competitiveness",
       variable,
       data_type = dplyr::case_when(
-        variable %in% c("ppi_index") ~ "index",              # median_scurve output
-        variable %in% c("rate_index") ~ "index",  
-        variable %in% c("cap_index_weighted") ~ "index",  
+        variable %in% c("ppi_index", "rate_index", "cap_cost_index") ~ "index",
         variable %in% c("cap_share") ~ "weight",
         stringr::str_ends(variable, "_weighted") ~ "contribution",
         TRUE ~ "raw"
@@ -698,6 +696,58 @@ cost_competitiveness_build_iea_table <- function(cost_indices,
     )
 }
 
+cost_competitiveness_validate_data_types <- function(tbl) {
+  require_columns(tbl, c("variable", "data_type"), label = "cost_competitiveness_tbl")
+
+  data_types <- unique(tbl$data_type)
+  if (length(data_types) == 1 && data_types == "index") {
+    stop("All cost competitiveness rows are labeled data_type == 'index'; this indicates a stamping bug.")
+  }
+
+  required_types <- c("raw", "weight", "contribution", "index")
+  missing_types <- setdiff(required_types, data_types)
+  if (length(missing_types) > 0) {
+    stop(
+      "Cost competitiveness output is missing expected data_type(s): ",
+      paste(missing_types, collapse = ", ")
+    )
+  }
+
+  must_not_index <- c("cap_share", "labor_share", "ppi", "nominal_rate")
+  invalid_index <- tbl %>%
+    dplyr::filter(variable %in% must_not_index, data_type == "index") %>%
+    dplyr::distinct(variable)
+  if (nrow(invalid_index) > 0) {
+    stop(
+      "Cost competitiveness data_type stamping detected; these variables must not be 'index': ",
+      paste(invalid_index$variable, collapse = ", ")
+    )
+  }
+
+  must_index <- c("ppi_index", "rate_index", "cap_cost_index", "labor_index", "Input Cost Index", "IEA Cost index")
+  invalid_type <- tbl %>%
+    dplyr::filter(variable %in% must_index, data_type != "index") %>%
+    dplyr::distinct(variable, data_type)
+  if (nrow(invalid_type) > 0) {
+    stop(
+      "Cost competitiveness index variables must be labeled 'index'; mismatches found for: ",
+      paste(invalid_type$variable, collapse = ", ")
+    )
+  }
+
+  weighted_mismatch <- tbl %>%
+    dplyr::filter(stringr::str_ends(variable, "_weighted"), data_type != "contribution") %>%
+    dplyr::distinct(variable, data_type)
+  if (nrow(weighted_mismatch) > 0) {
+    stop(
+      "Weighted contribution variables must be labeled 'contribution'; mismatches found for: ",
+      paste(weighted_mismatch$variable, collapse = ", ")
+    )
+  }
+
+  invisible(tbl)
+}
+
 cost_competitiveness <- function(iea_cost_raw,
                                  ei,
                                  country_info,
@@ -763,6 +813,7 @@ cost_competitiveness <- function(iea_cost_raw,
   )
 
   output <- standardize_theme_table(output)
+  cost_competitiveness_validate_data_types(output)
   validate_schema(output)
   output
 }
