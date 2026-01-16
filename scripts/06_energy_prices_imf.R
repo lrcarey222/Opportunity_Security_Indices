@@ -135,9 +135,16 @@ imf_pcps_extract_year <- function(date_vals) {
 imf_pcps_select_sheet <- function(path) {
   sheets <- readxl::excel_sheets(path)
   best <- NULL
+  best_sheet <- NULL
   best_score <- -Inf
   for (sheet in sheets) {
-    df <- readxl::read_excel(path, sheet = sheet, guess_max = 50000)
+    df <- readxl::read_excel(
+      path,
+      sheet = sheet,
+      n_max = 200,
+      col_types = "text",
+      guess_max = 50000
+    )
     if (nrow(df) == 0) {
       next
     }
@@ -145,21 +152,83 @@ imf_pcps_select_sheet <- function(path) {
     value_col <- imf_pcps_find_column(df, c("obs_value", "value", "price", "index"))
     date_cols <- imf_pcps_date_columns(names(df), monthly_only = TRUE)
     score <- length(date_cols$original)
+    numeric_like_count <- 0
+    if (length(date_cols$original) > 0) {
+      month_values <- unlist(df[date_cols$original], use.names = FALSE)
+      month_values <- trimws(as.character(month_values))
+      month_values <- month_values[nzchar(month_values)]
+      if (length(month_values) > 0) {
+        numeric_like <- suppressWarnings(as.numeric(gsub(",", "", month_values)))
+        numeric_like_count <- sum(!is.na(numeric_like))
+      }
+    }
+    score <- score + numeric_like_count
     if (!is.null(time_col) && !is.null(value_col)) {
       score <- score + 100
     }
     if (score > best_score) {
       best_score <- score
-      best <- df
+      best_sheet <- sheet
     }
   }
-  if (is.null(best) || best_score <= 0) {
+  if (is.null(best_sheet) || best_score <= 0) {
     stop("Unable to locate IMF PCPS data in IMF_PCPS_all.xlsx.")
   }
-  best
+  best <- readxl::read_excel(
+    path,
+    sheet = best_sheet,
+    col_types = "text",
+    guess_max = 50000
+  )
+  list(sheet = best_sheet, data = best)
 }
 
 imf_pcps_long_from_excel <- function(raw_df) {
+  parse_numeric <- function(x) {
+    cleaned <- trimws(as.character(x))
+    cleaned[cleaned == ""] <- NA_character_
+    suppressWarnings(as.numeric(gsub(",", "", cleaned)))
+  }
+  select_metadata_column <- function(df, columns, prefer_pattern = NULL) {
+    if (length(columns) == 0) {
+      return(NULL)
+    }
+    column_stats <- lapply(columns, function(col) {
+      values <- trimws(as.character(df[[col]]))
+      values <- values[nzchar(values)]
+      numeric_vals <- suppressWarnings(as.numeric(gsub(",", "", values)))
+      numeric_share <- if (length(values) == 0) {
+        1
+      } else {
+        mean(!is.na(numeric_vals))
+      }
+      list(
+        col = col,
+        distinct = length(unique(values)),
+        numeric_share = numeric_share
+      )
+    })
+    stats_df <- data.frame(
+      col = vapply(column_stats, function(x) x$col, character(1)),
+      distinct = vapply(column_stats, function(x) x$distinct, integer(1)),
+      numeric_share = vapply(column_stats, function(x) x$numeric_share, numeric(1)),
+      stringsAsFactors = FALSE
+    )
+    candidates <- stats_df$col[stats_df$numeric_share < 0.5]
+    if (!is.null(prefer_pattern)) {
+      preferred <- candidates[grepl(prefer_pattern, candidates, ignore.case = TRUE)]
+      if (length(preferred) > 0) {
+        candidates <- preferred
+      }
+    }
+    if (length(candidates) == 0) {
+      candidates <- stats_df$col
+    }
+    stats_df <- stats_df[match(candidates, stats_df$col), , drop = FALSE]
+    stats_df <- stats_df[order(-stats_df$distinct), , drop = FALSE]
+    stats_df$col[1]
+  }
+
   time_col <- imf_pcps_find_column(raw_df, c("time_period", "time", "date", "period"))
   value_col <- imf_pcps_find_column(raw_df, c("obs_value", "value", "price", "index"))
   code_col <- imf_pcps_find_column(raw_df, c("commodity_code", "commodity", "item", "product", "series", "code"))
@@ -174,30 +243,33 @@ imf_pcps_long_from_excel <- function(raw_df) {
     }
     return(data.frame(
       date = as.character(raw_df[[time_col]]),
-      value = as.numeric(raw_df[[value_col]]),
+      value = parse_numeric(raw_df[[value_col]]),
       commodity_code = as.character(raw_df[[code_col]]),
       commodity_label = as.character(raw_df[[label_col]]),
       stringsAsFactors = FALSE
     ))
   }
 
+  date_all <- imf_pcps_date_columns(names(raw_df), monthly_only = FALSE)
   date_info <- imf_pcps_date_columns(names(raw_df), monthly_only = TRUE)
   if (length(date_info$original) == 0) {
     stop("Unable to locate time columns in IMF_PCPS_all.xlsx.")
   }
-  metadata_cols <- setdiff(names(raw_df), date_info$original)
+  metadata_cols <- setdiff(names(raw_df), date_all$original)
   if (is.null(code_col)) {
-    if (length(metadata_cols) > 0) {
-      code_col <- metadata_cols[1]
-    } else {
-      stop("Unable to identify commodity column in IMF_PCPS_all.xlsx.")
-    }
+    code_col <- select_metadata_column(raw_df, metadata_cols)
+  }
+  if (is.null(code_col)) {
+    stop("Unable to identify commodity column in IMF_PCPS_all.xlsx.")
   }
   if (is.null(label_col)) {
-    label_col <- if (length(metadata_cols) >= 2) {
-      metadata_cols[2]
-    } else {
-      code_col
+    label_col <- select_metadata_column(
+      raw_df,
+      metadata_cols,
+      prefer_pattern = "name|label|description|commodity|item|product"
+    )
+    if (is.null(label_col)) {
+      label_col <- code_col
     }
   }
 
@@ -209,7 +281,7 @@ imf_pcps_long_from_excel <- function(raw_df) {
 
   data.frame(
     date = as.character(date_labels),
-    value = as.numeric(stacked$values),
+    value = parse_numeric(stacked$values),
     commodity_code = as.character(metadata_rep[[code_col]]),
     commodity_label = as.character(metadata_rep[[label_col]]),
     stringsAsFactors = FALSE
@@ -233,9 +305,21 @@ imf_pcps_load_pcps_data <- function() {
     }
     stop("IMF PCPS Excel snapshot not found: ", excel_path)
   }
-  raw_df <- imf_pcps_select_sheet(excel_path)
+  selection <- imf_pcps_select_sheet(excel_path)
+  raw_df <- selection$data
   data <- imf_pcps_long_from_excel(raw_df)
+  data_before <- data
   data <- data[!is.na(data$value), , drop = FALSE]
+  if (nrow(data) == 0) {
+    monthly_cols <- imf_pcps_date_columns(names(raw_df), monthly_only = TRUE)
+    stop(
+      "IMF PCPS ingestion yielded no usable values. ",
+      "Sheet: ", selection$sheet, ". ",
+      "Columns: ", paste(utils::head(names(raw_df), 20), collapse = ", "), ". ",
+      "Monthly columns detected: ", length(monthly_cols$original), ". ",
+      "Example stacked values: ", paste(utils::head(data_before$value, 10), collapse = ", ")
+    )
+  }
   assign("data", data, envir = imf_pcps_data_env)
   data
 }
