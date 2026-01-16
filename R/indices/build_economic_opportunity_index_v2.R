@@ -1,10 +1,10 @@
-# Build Energy Security index outputs (category scores + overall index) - v2.
+# Build Economic Opportunity index outputs (category scores + overall index) - v2.
 
 if (!exists("normalize_year", mode = "function")) {
   source(file.path(dirname(sys.frame(1)$ofile), "index_builder_core.R"))
 }
 
-standardize_energy_security_inputs_v2 <- function(theme_tables, include_sub_sector = FALSE) {
+standardize_economic_opportunity_inputs_v2 <- function(theme_tables, include_sub_sector = FALSE) {
   theme_names <- names(theme_tables)
   if (is.null(theme_names)) {
     theme_names <- rep("unknown_theme", length(theme_tables))
@@ -70,21 +70,67 @@ standardize_energy_security_inputs_v2 <- function(theme_tables, include_sub_sect
   standardized
 }
 
+validate_score_bounds <- function(scored_data, score_variables_tbl, include_sub_sector = FALSE) {
+  score_values <- scored_data %>%
+    dplyr::inner_join(score_variables_tbl, by = c("category", "variable" = "score_variable"))
 
-build_energy_security_index_v2 <- function(theme_tables,
-                                           weights,
-                                           missing_data = NULL,
-                                           allow_partial_categories = TRUE,
-                                           include_sub_sector = FALSE,
-                                           techs = NULL) {
-  if (is.null(weights) || length(weights) == 0) {
-    stop("Energy security weights are missing or empty.")
+  if (nrow(score_values) == 0) {
+    return(invisible(NULL))
   }
 
-  index_definition <- resolve_index_definition()
-  score_variables <- index_definition$pillars$energy_security$categories
+  bounds_summary <- score_values %>%
+    dplyr::group_by(category, variable) %>%
+    dplyr::summarize(
+      min = min(value, na.rm = TRUE),
+      max = max(value, na.rm = TRUE),
+      n_non_na = sum(!is.na(value)),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(
+      min = dplyr::if_else(is.infinite(min), NA_real_, min),
+      max = dplyr::if_else(is.infinite(max), NA_real_, max)
+    )
+
+  out_of_bounds <- bounds_summary %>%
+    dplyr::filter((!is.na(min) & min < 0) | (!is.na(max) & max > 1))
+
+  if (nrow(out_of_bounds) == 0) {
+    return(invisible(NULL))
+  }
+
+  example_rows <- score_values %>%
+    dplyr::filter(
+      (!is.na(value) & value < 0) | (!is.na(value) & value > 1)
+    ) %>%
+    dplyr::mutate(sub_sector = if (!"sub_sector" %in% names(score_values)) "All" else sub_sector) %>%
+    dplyr::select(Country, tech, supply_chain, sub_sector, value) %>%
+    dplyr::distinct() %>%
+    dplyr::slice_head(n = 8)
+
+  summary_text <- paste(capture.output(print(out_of_bounds)), collapse = "\n")
+  example_text <- paste(capture.output(print(example_rows)), collapse = "\n")
+
+  stop(
+    "Economic opportunity score variables must be bounded in [0, 1].\n",
+    "Summary:\n", summary_text, "\n",
+    "Examples:\n", example_text,
+    call. = FALSE
+  )
+}
+
+build_economic_opportunity_index_v2 <- function(theme_tables,
+                                                weights,
+                                                missing_data = NULL,
+                                                allow_partial_categories = TRUE,
+                                                include_sub_sector = FALSE,
+                                                index_definition = resolve_index_definition()) {
+  if (is.null(weights) || length(weights) == 0) {
+    stop("Economic opportunity weights are missing or empty.")
+  }
+
+  score_variables <- index_definition$pillars$economic_opportunity$categories
   if (is.null(score_variables) || length(score_variables) == 0) {
-    stop("Index definition missing energy security category definitions.")
+    stop("Index definition missing economic opportunity category definitions.")
   }
 
   score_variables_tbl <- tibble::tibble(
@@ -92,7 +138,7 @@ build_energy_security_index_v2 <- function(theme_tables,
     score_variable = vapply(score_variables, function(x) x$score_variable, character(1))
   )
 
-  energy_security_data <- standardize_energy_security_inputs_v2(
+  economic_opportunity_data <- standardize_economic_opportunity_inputs_v2(
     theme_tables,
     include_sub_sector = include_sub_sector
   ) %>%
@@ -102,37 +148,32 @@ build_energy_security_index_v2 <- function(theme_tables,
       value = suppressWarnings(as.numeric(value))
     )
 
-  energy_security_data <- energy_security_data %>%
+  economic_opportunity_data <- economic_opportunity_data %>%
     dplyr::mutate(Year = dplyr::if_else(is.na(Year), 0L, Year))
 
-  energy_security_data <- energy_security_data %>%
+  economic_opportunity_data <- economic_opportunity_data %>%
     dplyr::filter(data_type == "index")
 
   if (!isTRUE(include_sub_sector)) {
-    if ("sub_sector" %in% names(energy_security_data)) {
-      unique_sub_sectors <- unique(energy_security_data$sub_sector)
+    if ("sub_sector" %in% names(economic_opportunity_data)) {
+      unique_sub_sectors <- unique(economic_opportunity_data$sub_sector)
       if (length(unique_sub_sectors) != 1 || !identical(unique_sub_sectors, "All")) {
         stop("Expected sub_sector to be 'All' when include_sub_sector is FALSE.")
       }
     }
   }
 
-  if (!missing(techs) && !is.null(techs)) {
-    energy_security_data <- energy_security_data %>%
-      dplyr::filter(tech %in% techs)
-  }
-
-  energy_security_data <- energy_security_data %>%
+  economic_opportunity_data <- economic_opportunity_data %>%
     dplyr::select(-Year_raw)
 
-  if (nrow(energy_security_data) == 0) {
+  if (nrow(economic_opportunity_data) == 0) {
     stop(
-      "Energy security inputs are empty after Year normalization.",
-      " Year class: ", paste(class(energy_security_data$Year), collapse = ", ")
+      "Economic opportunity inputs are empty after Year normalization.",
+      " Year class: ", paste(class(economic_opportunity_data$Year), collapse = ", ")
     )
   }
 
-  validation_tbl <- energy_security_data %>%
+  validation_tbl <- economic_opportunity_data %>%
     dplyr::group_by(Country, tech, supply_chain, sub_sector, category, variable, data_type, Year) %>%
     dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
 
@@ -143,15 +184,15 @@ build_energy_security_index_v2 <- function(theme_tables,
   )
 
   require_columns(
-    energy_security_data,
+    economic_opportunity_data,
     c("Country", "tech", "supply_chain", "category", "variable", "data_type", "Year", "theme", "value"),
-    label = "energy_security_data"
+    label = "economic_opportunity_data"
   )
 
   group_cols <- normalize_sub_sector_or_keys(c("Country", "tech", "supply_chain"), include_sub_sector)
   group_cols <- c(group_cols, "category", "variable", "theme")
 
-  latest_tbl <- latest_by_group(energy_security_data, group_cols = group_cols)
+  latest_tbl <- latest_by_group(economic_opportunity_data, group_cols = group_cols)
 
   year_provenance <- latest_tbl %>%
     dplyr::select(dplyr::all_of(c(group_cols, "Year"))) %>%
@@ -161,12 +202,12 @@ build_energy_security_index_v2 <- function(theme_tables,
     dplyr::select(-Year)
 
   if (nrow(latest_tbl) == 0) {
-    year_samples <- unique(energy_security_data$Year)
+    year_samples <- unique(economic_opportunity_data$Year)
     year_samples <- year_samples[seq_len(min(5, length(year_samples)))]
     year_sample_text <- if (length(year_samples) == 0) "none" else paste(year_samples, collapse = ", ")
     stop(
       "Latest-year filter returned 0 rows; check Year type/coercion. ",
-      "Year classes: ", paste(class(energy_security_data$Year), collapse = ", "),
+      "Year classes: ", paste(class(economic_opportunity_data$Year), collapse = ", "),
       ". Sample Year values: ", year_sample_text, "."
     )
   }
@@ -223,6 +264,8 @@ build_energy_security_index_v2 <- function(theme_tables,
     )
   }
 
+  validate_score_bounds(scored_data, score_variables_tbl, include_sub_sector = include_sub_sector)
+
   category_scores <- compute_category_scores(
     scored_data,
     score_variables_tbl,
@@ -230,7 +273,7 @@ build_energy_security_index_v2 <- function(theme_tables,
   )
 
   if (nrow(category_scores) == 0) {
-    stop("Energy security category scores are empty after filtering to score variables.")
+    stop("Economic opportunity category scores are empty after filtering to score variables.")
   }
 
   direct_score_variables <- score_variables_tbl %>%
@@ -282,26 +325,86 @@ build_energy_security_index_v2 <- function(theme_tables,
     weights_tbl,
     allow_partial_categories = allow_partial_categories,
     include_sub_sector = include_sub_sector,
-    pillar_label = "Energy security",
-    index_col = "Energy_Security_Index"
+    pillar_label = "Economic opportunity",
+    index_col = "Economic_Opportunity_Index"
   )
 
   diagnostics <- list(
     categories_configured = score_variables_tbl$category,
     categories_in_data = sort(unique(category_scores$category)),
-    imputed_share = mean(category_scores$imputed, na.rm = TRUE),
+    imputed_share_by_category = category_scores %>%
+      dplyr::group_by(category) %>%
+      dplyr::summarize(
+        imputed_share = mean(imputed, na.rm = TRUE),
+        n = dplyr::n(),
+        .groups = "drop"
+      ),
     year_provenance = year_provenance
   )
 
-  energy_security_index <- index_outputs$index_tbl %>%
+  economic_opportunity_index <- index_outputs$index_tbl %>%
     dplyr::select(-complete_categories)
 
   list(
-    energy_security_index = energy_security_index,
+    economic_opportunity_index = economic_opportunity_index,
     category_contributions = index_outputs$category_contributions,
     variable_contributions = index_outputs$variable_contributions,
     diagnostics = diagnostics,
     category_scores = category_scores,
-    index = energy_security_index
+    index = economic_opportunity_index
+  )
+}
+
+if (!exists("build_economic_opportunity_index_legacy", mode = "function") &&
+  exists("build_economic_opportunity_index", mode = "function")) {
+  build_economic_opportunity_index_legacy <- build_economic_opportunity_index
+}
+
+build_economic_opportunity_index <- function(theme_tables,
+                                             weights,
+                                             missing_data = NULL,
+                                             allow_partial_categories = TRUE,
+                                             include_sub_sector = FALSE,
+                                             techs = c(
+                                               "Electric Vehicles",
+                                               "Nuclear",
+                                               "Coal",
+                                               "Batteries",
+                                               "Green Hydrogen",
+                                               "Wind",
+                                               "Oil",
+                                               "Solar",
+                                               "Gas",
+                                               "Geothermal",
+                                               "Electric Grid"
+                                             ),
+                                             index_definition = resolve_index_definition(),
+                                             use_economic_opportunity_v2 = NULL) {
+  if (is.null(use_economic_opportunity_v2)) {
+    config <- getOption("opportunity_security.config")
+    use_economic_opportunity_v2 <- isTRUE(config$use_economic_opportunity_v2)
+  }
+
+  if (isTRUE(use_economic_opportunity_v2)) {
+    return(build_economic_opportunity_index_v2(
+      theme_tables = theme_tables,
+      weights = weights,
+      missing_data = missing_data,
+      allow_partial_categories = allow_partial_categories,
+      include_sub_sector = include_sub_sector,
+      index_definition = index_definition
+    ))
+  }
+
+  if (!exists("build_economic_opportunity_index_legacy", mode = "function")) {
+    stop("Legacy economic opportunity builder is not available.")
+  }
+
+  build_economic_opportunity_index_legacy(
+    theme_tables = theme_tables,
+    weights = weights,
+    allow_partial_categories = allow_partial_categories,
+    include_sub_sector = include_sub_sector,
+    techs = techs
   )
 }
