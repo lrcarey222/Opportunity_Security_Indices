@@ -15,6 +15,10 @@ standardize_economic_opportunity_inputs <- function(theme_tables, include_sub_se
     }
     standardized_tbl <- standardize_theme_table(tbl)
     standardized_tbl <- standardize_bind_rows_inputs(standardized_tbl)
+    if ("Year" %in% names(standardized_tbl)) {
+      standardized_tbl <- standardized_tbl %>%
+        dplyr::mutate(Year = dplyr::if_else(is.na(Year), 0L, Year))
+    }
     validate_schema(standardized_tbl)
     standardized_tbl <- standardized_tbl %>%
       dplyr::mutate(
