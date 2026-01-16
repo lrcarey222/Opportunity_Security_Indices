@@ -5,5 +5,17 @@ pillars:
         score_variable: Overall Energy Access Index
       Reliability:
         score_variable: Reliability Score
-overall_variables: {}
+  economic_opportunity:
+    categories:
+      Investment:
+        score_variable: Overall Investment Index
+      Innovation:
+        score_variable: Innovation Score
+overall_variables:
+  Overall Investment Index:
+    category: Investment
+    components:
+      - Capital Availability
+      - Policy Support
+    aggregation: mean
 variable_levels: {}
