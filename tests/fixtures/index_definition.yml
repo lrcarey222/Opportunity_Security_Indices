@@ -1,0 +1,9 @@
+pillars:
+  energy_security:
+    categories:
+      Energy Access:
+        score_variable: Overall Energy Access Index
+      Reliability:
+        score_variable: Reliability Score
+overall_variables: {}
+variable_levels: {}

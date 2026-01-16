@@ -55,7 +55,10 @@ if (is.null(config)) {
   stop("Config not loaded; run scripts/00_setup.R first.")
 }
 
-skip_data_downloads <- Sys.getenv("SKIP_DATA_DOWNLOADS") == "1"
+is_skip_data_downloads <- function() {
+  tolower(Sys.getenv("SKIP_DATA_DOWNLOADS")) %in% c("1", "true", "yes")
+}
+skip_data_downloads <- is_skip_data_downloads()
 
 raw_data_dir <- config$raw_data_dir
 if (is.null(raw_data_dir)) {
