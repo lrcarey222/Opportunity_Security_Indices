@@ -179,11 +179,7 @@ build_economic_opportunity_index <- function(theme_tables,
   }
 
   economic_opportunity_data <- economic_opportunity_data %>%
-    dplyr::select(-Year_raw) %>%
-    apply_overall_definitions(
-      index_definition = index_definition,
-      include_sub_sector = include_sub_sector
-    )
+    dplyr::select(-Year_raw)
   economic_opportunity_data <- economic_opportunity_data %>%
     dplyr::group_by(
       Country,
@@ -254,6 +250,12 @@ build_economic_opportunity_index <- function(theme_tables,
     economic_opportunity_data,
     group_cols = latest_group_cols
   )
+
+  economic_opportunity_data <- economic_opportunity_data %>%
+    apply_overall_definitions(
+      index_definition = index_definition,
+      include_sub_sector = include_sub_sector
+    )
 
   if (nrow(economic_opportunity_data) == 0) {
     year_samples <- unique(economic_opportunity_data$Year)
