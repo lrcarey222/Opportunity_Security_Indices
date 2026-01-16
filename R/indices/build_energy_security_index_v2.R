@@ -1,6 +1,6 @@
 # Build Energy Security index outputs (category scores + overall index) - v2.
 
-if (!exists("normalize_year", mode = "function")) {
+if (!exists("normalize_sub_sector_or_keys", mode = "function")) {
   source(file.path(dirname(sys.frame(1)$ofile), "index_builder_core.R"))
 }
 
