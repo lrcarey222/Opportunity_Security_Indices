@@ -255,14 +255,19 @@ cost_competitiveness_build_labor_table <- function(ilo_sc,
       supply_chain,
       category = "Cost Competitiveness",
       variable,
-      data_type = "index",
+      data_type = dplyr::case_when(
+        variable == "labor_index" ~ "index",                 # median_scurve output
+        variable == "labor_share" ~ "weight",
+        variable == "labor_index_weighted" ~ "contribution",
+        TRUE ~ "raw"
+      ),
       value,
       Year = as.integer(year),
       source = "International Labor Organization",
       explanation = dplyr::case_when(
         variable == "labor_share" ~ "Estimated Labor Share of Costs",
-        variable == "labor_index" ~ "Estimated weekly earnings by economic activity, indexed",
-        variable == "labor_index_weighted" ~ "Weighted labor costs index by labor share of costs",
+        variable == "labor_index" ~ "Estimated weekly earnings by economic activity, indexed (median_scurve)",
+        variable == "labor_index_weighted" ~ "Labor index × labor share (contribution, not an index)",
         TRUE ~ variable
       )
     )
@@ -543,17 +548,23 @@ cost_competitiveness_build_capital_table <- function(cap_cost_base,
       supply_chain,
       category = "Cost Competitiveness",
       variable,
-      data_type = "index",
+      data_type = dplyr::case_when(
+        variable %in% c("ppi_index") ~ "index",              # median_scurve output
+        variable %in% c("rate_index") ~ "index",  
+        variable %in% c("cap_index_weighted") ~ "index",  
+        variable %in% c("cap_share") ~ "weight",
+        stringr::str_ends(variable, "_weighted") ~ "contribution",
+        TRUE ~ "raw"
+      ),
       value,
       Year = as.integer(year),
       source = "International Monetary Fund",
       explanation = dplyr::case_when(
         variable == "cap_share" ~ "Estimated Capital Share of Costs",
-        variable == "cap_cost_index" ~ "Estimated capital costs across lending and producer prices, indexed",
-        variable == "cap_index_weighted" ~ "Weighted capital costs index by capital share of costs",
+        variable == "ppi_index" ~ "Producer Price Index, indexed (median_scurve)",
+        variable == "cap_index_weighted" ~ "Capital cost score × capital share (contribution, not an index)",
         variable == "nominal_rate" ~ "Lending rate, %",
-        variable == "rate_index" ~ "Lending rate, index",
-        variable == "ppi_index" ~ "Producer Price Index, index",
+        variable == "rate_index" ~ "Lending rate, index (NOT median_scurve as currently implemented)",
         variable == "ppi" ~ "Producer Price Index, 2010=100",
         TRUE ~ variable
       )
