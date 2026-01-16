@@ -188,21 +188,23 @@ imf_pcps_long_from_excel <- function(raw_df) {
     s <- trimws(as.character(x))
     s[s == ""] <- NA_character_
     
-    # common IMF "no data" tokens
+    # common "no data" tokens
     s[grepl("^(na|n/a|nd|\\.\\.|\\.|-|-|-)$", tolower(s))] <- NA_character_
     
-    # normalize unicode minus/dashes to "-"
-    s <- chartr("\u2212\u2013\u2014", "---", s)
+    # normalize unicode dashes/minus
+    s <- gsub("[\u2212\u2013\u2014]", "-", s)
     
     # remove thousands separators and spaces
     s <- gsub(",", "", s, fixed = TRUE)
     s <- gsub("\\s+", "", s)
     
-    # keep digits, decimal point, leading minus; strip footnotes/suffixes
-    s <- gsub("([^0-9\\.-]).*$", "", s)
+    # strip trailing footnotes/suffixes but keep leading numeric portion
+    # e.g. "123.4*" -> "123.4", "-56.7(est)" -> "-56.7"
+    s <- sub("^(-?[0-9]*\\.?[0-9]+).*$", "\\1", s)
     
     suppressWarnings(as.numeric(s))
   }
+  
   select_metadata_column <- function(df, columns, prefer_pattern = NULL) {
     if (length(columns) == 0) {
       return(NULL)
