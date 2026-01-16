@@ -36,7 +36,7 @@ pillars:
       Foreign Dependency:
         score_variable: "Overall Foreign Dependency Index"
       Cost Competitiveness:
-        score_variable: "Overall Cost Competitiveness Index"
+        score_variable: "Overall Input Cost Index"
       Consumption:
         score_variable: "Overall Consumption Index"
 
@@ -112,7 +112,7 @@ overall_variables:
     components:
       - "*"
     aggregation: mean
-  Overall Cost Competitiveness Index:
+  Overall Input Cost Index:
     category: "Cost Competitiveness"
     components:
       - "*"
