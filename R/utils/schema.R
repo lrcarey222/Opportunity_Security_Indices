@@ -50,8 +50,8 @@ validate_schema <- function(tbl) {
     stop("Column 'Year' must not contain missing values.")
   }
 
-  if (!all(tbl$data_type %in% c("raw", "index"))) {
-    stop("Column 'data_type' must be either 'raw' or 'index'.")
+  if (!all(tbl$data_type %in% c("raw", "index", "weight", "contribution"))) {
+    stop("Column 'data_type' must be one of: raw, index, weight, contribution.")
   }
 
   if (any(is.na(tbl$data_type))) {
