@@ -413,7 +413,11 @@ if (!file.exists(imf_pcps_excel_path)) {
   }
 }
 if (!file.exists(imf_pcps_excel_path)) {
-  stop("IMF PCPS Excel snapshot missing: ", imf_pcps_excel_path)
+  if (skip_data_downloads) {
+    message("Skipping IMF PCPS snapshot lookup; missing file: ", imf_pcps_excel_path)
+  } else {
+    stop("IMF PCPS Excel snapshot missing: ", imf_pcps_excel_path)
+  }
 }
 
 imf_pcps_prices_path <- file.path(snapshot_dir, "imf_pcps_prices.csv")
@@ -425,6 +429,13 @@ needs_imf_pcps <- !(
     file.exists(imf_pcps_volatility_path) &&
     file.exists(imf_pcps_series_volatility_path)
 )
+
+if (needs_imf_pcps) {
+  if (skip_data_downloads) {
+    message("Skipping IMF PCPS processing because SKIP_DATA_DOWNLOADS is enabled.")
+    needs_imf_pcps <- FALSE
+  }
+}
 
 if (needs_imf_pcps) {
   old_snapshot_option <- getOption("opportunity_security.raw_snapshot_dir")
