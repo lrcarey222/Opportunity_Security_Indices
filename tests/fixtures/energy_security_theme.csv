@@ -1,0 +1,8 @@
+Country,tech,supply_chain,sub_sector,category,variable,value,Year,data_type,source,explanation
+A,Solar,Upstream,Manufacturing,Energy Access,Overall Energy Access Index,0.2,2022,index,Test,Example
+A,Solar,Upstream,Processing,Energy Access,Overall Energy Access Index,0.4,2022,index,Test,Example
+B,Solar,Upstream,Manufacturing,Energy Access,Overall Energy Access Index,,2022,index,Test,Example
+B,Solar,Upstream,Processing,Energy Access,Overall Energy Access Index,0.8,2022,index,Test,Example
+A,Solar,Upstream,Manufacturing,Energy Access,Other Metric,0.9,2022,index,Test,Example
+A,Solar,Upstream,Manufacturing,Reliability,Reliability Score,0.5,2022,index,Test,Example
+B,Solar,Upstream,Manufacturing,Reliability,Reliability Score,0.6,2022,index,Test,Example
