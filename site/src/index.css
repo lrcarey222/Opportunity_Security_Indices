@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "./theme.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.panel-heading {
+  @apply text-sm uppercase tracking-[0.2em] text-muted;
+}
+
+.panel-card {
+  @apply rounded-xl border border-border bg-panel p-4 shadow-glow;
+}

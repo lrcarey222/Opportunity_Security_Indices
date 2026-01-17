@@ -1,0 +1,26 @@
+{
+  "countries": [
+    {
+      "id": "usa",
+      "name": "United States",
+      "opportunity_index": 78.3,
+      "components": {
+        "civic_space": 82,
+        "economic_access": 74,
+        "security": 69,
+        "governance": 88
+      }
+    },
+    {
+      "id": "ken",
+      "name": "Kenya",
+      "opportunity_index": 63.9,
+      "components": {
+        "civic_space": 59,
+        "economic_access": 61,
+        "security": 58,
+        "governance": 72
+      }
+    }
+  ]
+}
