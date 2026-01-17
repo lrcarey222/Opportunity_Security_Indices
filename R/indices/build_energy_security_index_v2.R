@@ -102,8 +102,21 @@ build_energy_security_index_v2 <- function(theme_tables,
       value = suppressWarnings(as.numeric(value))
     )
 
+  invalid_years <- energy_security_data %>%
+    dplyr::filter(is.na(Year) & !is.na(Year_raw))
+  if (nrow(invalid_years) > 0) {
+    examples <- invalid_years %>%
+      dplyr::select(Year_raw) %>%
+      dplyr::distinct() %>%
+      dplyr::slice_head(n = 5)
+    stop(
+      "Energy security Year normalization failed for some inputs. Examples:\n",
+      paste(capture.output(print(examples)), collapse = "\n")
+    )
+  }
+
   energy_security_data <- energy_security_data %>%
-    dplyr::mutate(Year = dplyr::if_else(is.na(Year), 0L, Year))
+    dplyr::mutate(Year = dplyr::if_else(is.na(Year), 0L, as.integer(Year)))
 
   energy_security_data <- energy_security_data %>%
     dplyr::filter(data_type == "index")
@@ -135,6 +148,14 @@ build_energy_security_index_v2 <- function(theme_tables,
   validation_tbl <- energy_security_data %>%
     dplyr::group_by(Country, tech, supply_chain, sub_sector, category, variable, data_type, Year) %>%
     dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
+
+  extra_categories <- setdiff(unique(energy_security_data$category), score_variables_tbl$category)
+  if (length(extra_categories) > 0) {
+    stop(
+      "Energy security inputs include unexpected categories: ",
+      paste(extra_categories, collapse = ", ")
+    )
+  }
 
   validate_variable_levels(
     validation_tbl,
