@@ -106,13 +106,26 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
                                                          outbound_edges,
                                                          tech_ghg,
                                                          policy,
-                                                         country_info) {
+                                                         country_info,
+                                                         component_weights = NULL) {
+  default_weights <- list(
+    imp_trade_index = 1,
+    econ_opp_raw = 1,
+    es_need = 2,
+    eo_partner = 1.5,
+    outbound_index = 1.5
+  )
+  component_weights <- partnership_strength_resolve_weights(
+    component_weights,
+    default_weights,
+    "Friendshore component"
+  )
   es_iso <- energy_security_index %>%
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
-      iso3c = partnership_strength_country_to_iso(Country, country_info),
-      value=Energy_Security_Index
+      iso3c = partnership_strength_country_to_iso(Country, country_info)
     ) %>%
+    dplyr::filter(grepl("Overall\\s*Energy\\s*Security", variable, ignore.case = TRUE)) %>%
     dplyr::transmute(reporter_iso = iso3c, tech, supply_chain, es_need = 1 - value)
 
   eo_partner_iso <- econ_opp_index %>%
@@ -158,12 +171,23 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       gh_entry = dplyr::coalesce(ghg_index, default_ghg),
       outbound_index = dplyr::coalesce(outbound_index, 0)
     ) %>%
+    dplyr::rowwise() %>%
     dplyr::mutate(
-      fsi_raw = imp_trade_index + econ_opp_raw + 2 * es_need + 1.5 * eo_partner + 1.5 * outbound_index,
+      fsi_raw = partnership_strength_weighted_mean(
+        c(imp_trade_index, econ_opp_raw, es_need, eo_partner, outbound_index),
+        c(
+          component_weights$imp_trade_index,
+          component_weights$econ_opp_raw,
+          component_weights$es_need,
+          component_weights$eo_partner,
+          component_weights$outbound_index
+        )
+      ),
       penalty_r = (1 - gh_entry) * cpi_r * 0.10,
       penalty_p = (1 - gh_entry) * cpi_p * 0.10,
       fsi_adj = pmax(0, fsi_raw - (penalty_r + penalty_p))
     ) %>%
+    dplyr::ungroup() %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(friendshore_index = partnership_strength_safe_scurve(fsi_adj)) %>%
     dplyr::group_by(reporter_iso) %>%
@@ -250,6 +274,7 @@ safer_friendshore <- function(comtrade_dyads,
                               fdi_raw,
                               country_info,
                               gdp_data,
+                              component_weights = NULL,
                               years = 2020:2024,
                               top_n = 3,
                               gdp_year = 2023) {
@@ -271,7 +296,8 @@ safer_friendshore <- function(comtrade_dyads,
     outbound_edges,
     tech_ghg,
     policy,
-    country_info
+    country_info,
+    component_weights = component_weights
   )
 
   friendshore_country <- partnership_strength_build_friendshore_country(

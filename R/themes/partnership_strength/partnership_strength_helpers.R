@@ -36,6 +36,42 @@ partnership_strength_standardize_bind_rows <- function(tbl) {
   standardize_bind_rows_inputs(tbl)
 }
 
+partnership_strength_weighted_mean <- function(values, weights) {
+  if (length(values) != length(weights)) {
+    stop("Weights must align with values for weighted mean.")
+  }
+  if (length(values) == 0) {
+    return(NA_real_)
+  }
+  valid <- !is.na(values)
+  if (!any(valid)) {
+    return(NA_real_)
+  }
+  sum(values[valid] * weights[valid]) / sum(weights[valid])
+}
+
+partnership_strength_resolve_weights <- function(weights, defaults, label) {
+  if (is.null(weights) || length(weights) == 0) {
+    return(defaults)
+  }
+
+  if (is.null(names(weights)) || any(names(weights) == "")) {
+    stop(label, " weights must be a named list.")
+  }
+
+  expected <- names(defaults)
+  missing <- setdiff(expected, names(weights))
+  extra <- setdiff(names(weights), expected)
+  if (length(missing) > 0) {
+    stop(label, " weights missing: ", paste(missing, collapse = ", "))
+  }
+  if (length(extra) > 0) {
+    stop(label, " weights include unexpected entries: ", paste(extra, collapse = ", "))
+  }
+
+  weights
+}
+
 partnership_strength_validate_schema <- function(tbl, label = "partnership theme") {
   validate_schema(tbl)
 

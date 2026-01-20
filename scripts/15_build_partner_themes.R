@@ -13,8 +13,12 @@ source(file.path(repo_root, "R", "themes", "partnership_strength", "safer_friend
 source(file.path(repo_root, "R", "themes", "partnership_strength", "stronger_development.R"))
 
 config <- getOption("opportunity_security.config")
+weights <- getOption("opportunity_security.weights")
 if (is.null(config)) {
   stop("Config not loaded; run scripts/00_setup.R first.")
+}
+if (is.null(weights)) {
+  stop("Weights not loaded; run scripts/00_setup.R first.")
 }
 
 is_skip_data_downloads <- function() {
@@ -117,7 +121,8 @@ friendshore_outputs <- safer_friendshore(
   policy = policy_tbl,
   fdi_raw = fdi_raw,
   country_info = country_info,
-  gdp_data = country_gdp
+  gdp_data = country_gdp,
+  component_weights = weights$partnership_friendshore_components
 )
 
 partner_friendshore_tbl <- friendshore_outputs$dyads
@@ -130,7 +135,8 @@ opportunity_outputs <- prosperous_opportunity(
   energy_security_index = energy_security_index,
   tech_ghg = tech_ghg,
   policy = policy_tbl,
-  country_info = country_info
+  country_info = country_info,
+  component_weights = weights$partnership_opportunity_components
 )
 
 partner_opportunity_tbl <- opportunity_outputs$dyads

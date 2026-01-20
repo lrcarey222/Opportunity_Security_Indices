@@ -85,7 +85,18 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
                                                          energy_security_index,
                                                          tech_ghg,
                                                          policy,
-                                                         country_info) {
+                                                         country_info,
+                                                         component_weights = NULL) {
+  default_weights <- list(
+    trade_index = 2,
+    econ_opp_index = 2,
+    energy_security_index = 1
+  )
+  component_weights <- partnership_strength_resolve_weights(
+    component_weights,
+    default_weights,
+    "Opportunity component"
+  )
   econ_opp_iso <- econ_opp_index %>%
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
@@ -129,13 +140,20 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       climate_policy_index = dplyr::coalesce(climate_policy_index, default_policy)
     ) %>%
     dplyr::ungroup() %>%
+    dplyr::rowwise() %>%
     dplyr::mutate(
-      o_num = 2 * trade_index + 2 * econ_opp_index + energy_security_index,
-      o_den = 2 * (!is.na(trade_index)) + 2 * (!is.na(econ_opp_index)) + 1 * (!is.na(energy_security_index)),
-      opportunity_raw = dplyr::if_else(o_den > 0, o_num / o_den, NA_real_),
+      opportunity_raw = partnership_strength_weighted_mean(
+        c(trade_index, econ_opp_index, energy_security_index),
+        c(
+          component_weights$trade_index,
+          component_weights$econ_opp_index,
+          component_weights$energy_security_index
+        )
+      ),
       penalty = (1 - ghg_index) * climate_policy_index * 0.20,
       opportunity_index_raw = pmax(0, opportunity_raw - penalty)
     ) %>%
+    dplyr::ungroup() %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(opportunity_index = partnership_strength_safe_scurve(opportunity_index_raw)) %>%
     dplyr::group_by(reporter_iso) %>%
@@ -219,6 +237,7 @@ prosperous_opportunity <- function(comtrade_dyads,
                                    tech_ghg,
                                    policy,
                                    country_info,
+                                   component_weights = NULL,
                                    years = 2020:2024,
                                    top_n = 3) {
   res_tech <- partnership_strength_clean_trade_data(comtrade_dyads, subcat, years = years)
@@ -230,7 +249,8 @@ prosperous_opportunity <- function(comtrade_dyads,
     energy_security_index,
     tech_ghg,
     policy,
-    country_info
+    country_info,
+    component_weights = component_weights
   )
 
   opportunity_country <- partnership_strength_build_opportunity_country(
