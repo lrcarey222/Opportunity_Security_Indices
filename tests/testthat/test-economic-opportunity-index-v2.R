@@ -89,7 +89,7 @@ test_that("economic opportunity v2 fails when score variables exceed bounds", {
       allow_partial_categories = TRUE,
       include_sub_sector = FALSE
     ),
-    "bounded in \[0, 1\]"
+    "bounded in \\[0, 1\\]"
   )
 })
 
