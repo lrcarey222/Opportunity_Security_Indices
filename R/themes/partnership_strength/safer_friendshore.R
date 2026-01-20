@@ -152,7 +152,9 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       Country = partnership_strength_standardize_countries(Country),
       iso3c = partnership_strength_country_to_iso(Country, country_info)
     ) %>%
-    dplyr::transmute(iso3c, climate_policy_index)
+    dplyr::transmute(iso3c, climate_policy_index) %>%
+    dplyr::group_by(iso3c) %>%
+    dplyr::summarize(climate_policy_index = mean(climate_policy_index, na.rm = TRUE), .groups = "drop")
 
   default_ghg <- if (nrow(ghg_iso)) median(ghg_iso$ghg_index, na.rm = TRUE) else 0.5
   default_policy <- if (nrow(policy_iso)) median(policy_iso$climate_policy_index, na.rm = TRUE) else 0.5
@@ -260,7 +262,8 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
     dplyr::group_by(partner_iso, tech, supply_chain) %>%
     dplyr::slice_max(order_by = friendshore_index, n = top_n, with_ties = FALSE) %>%
     dplyr::ungroup() %>%
-    dplyr::select(partner_iso, reporter_iso, tech, supply_chain)
+    dplyr::select(partner_iso, reporter_iso, tech, supply_chain) %>%
+    dplyr::distinct()
 
   if (nrow(top_dyads) == 0) {
     return(tibble::tibble(
@@ -272,6 +275,7 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
       data_type = character(),
       value = numeric(),
       component_weight = numeric(),
+      component_weight_share = numeric(),
       weighted_component = numeric(),
       Year = integer(),
       source = character(),
@@ -280,6 +284,18 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
   }
 
   friendshore_all %>%
+    dplyr::distinct(
+      partner_iso,
+      reporter_iso,
+      tech,
+      supply_chain,
+      imp_trade_index,
+      econ_opp_raw,
+      es_need,
+      eo_partner,
+      outbound_index,
+      .keep_all = TRUE
+    ) %>%
     dplyr::inner_join(top_dyads, by = c("partner_iso", "reporter_iso", "tech", "supply_chain")) %>%
     dplyr::mutate(Country = partnership_strength_iso_to_country(partner_iso, country_info)) %>%
     dplyr::select(

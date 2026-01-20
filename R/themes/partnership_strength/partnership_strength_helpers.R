@@ -133,7 +133,9 @@ partnership_strength_country_to_iso <- function(country, country_info) {
           "Czech Republic" = "CZE"
         )
       ))
-      mapped$iso3c[is.na(mapped$iso3c)] <- fallback
+      fallback_map <- stats::setNames(fallback, non_aggregate)
+      update_idx <- which(is.na(mapped$iso3c) & !mapped$country %in% aggregates)
+      mapped$iso3c[update_idx] <- fallback_map[mapped$country[update_idx]]
     }
   }
 
