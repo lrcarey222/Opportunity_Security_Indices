@@ -17,7 +17,9 @@ if (is.null(config) || is.null(weights)) {
   stop("Config or weights not loaded; run scripts/00_setup.R first.")
 }
 
-if (!exists("partner_friendshore_tbl") || !exists("partner_opportunity_tbl") || !exists("partner_development_tbl")) {
+if (!exists("partner_friendshore_country_tbl") ||
+    !exists("partner_opportunity_country_tbl") ||
+    !exists("partner_development_country_tbl")) {
   stop("Partner theme tables not found; run scripts/15_build_partner_themes.R first.")
 }
 
@@ -29,9 +31,9 @@ partner_economic_opportunity_tbl <- aggregate_economic_opportunity_index(economi
 
 partnership_strength_outputs <- build_partnership_strength_index(
   theme_tables = list(
-    friendshore = partner_friendshore_tbl,
-    opportunity = partner_opportunity_tbl,
-    development = partner_development_tbl
+    friendshore = partner_friendshore_country_tbl,
+    opportunity = partner_opportunity_country_tbl,
+    development = partner_development_country_tbl
   ),
   weights = weights$psi,
   allow_partial_categories = TRUE

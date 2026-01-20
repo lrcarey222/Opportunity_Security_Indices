@@ -214,6 +214,33 @@ partnership_strength_build_friendshore_country <- function(friendshore_all,
     )
 }
 
+partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
+                                                               country_info,
+                                                               year = 2024L) {
+  friendshore_all %>%
+    dplyr::mutate(
+      Reporter = partnership_strength_iso_to_country(reporter_iso, country_info),
+      Partner = partnership_strength_iso_to_country(partner_iso, country_info),
+      Country = Partner
+    ) %>%
+    dplyr::transmute(
+      Country,
+      Reporter,
+      Partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category = "friendshore",
+      variable = "Friendshore Index",
+      data_type = "index",
+      value = friendshore_index,
+      Year = as.integer(year),
+      source = "Author calculation",
+      explanation = "Friendshore index per reporter-partner dyad."
+    )
+}
+
 safer_friendshore <- function(comtrade_dyads,
                               subcat,
                               econ_opp_index,
@@ -254,7 +281,20 @@ safer_friendshore <- function(comtrade_dyads,
     year = max(years)
   )
 
-  standardized <- partnership_strength_standardize_bind_rows(friendshore_country)
-  partnership_strength_validate_schema(standardized, label = "safer_friendshore")
-  standardized
+  friendshore_dyads <- partnership_strength_build_friendshore_dyads_table(
+    friendshore_all,
+    country_info,
+    year = max(years)
+  )
+
+  standardized_dyads <- partnership_strength_standardize_bind_rows(friendshore_dyads)
+  partnership_strength_validate_schema(standardized_dyads, label = "safer_friendshore_dyads")
+
+  standardized_country <- partnership_strength_standardize_bind_rows(friendshore_country)
+  partnership_strength_validate_schema(standardized_country, label = "safer_friendshore_country")
+
+  list(
+    dyads = standardized_dyads,
+    country = standardized_country
+  )
 }
