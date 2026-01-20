@@ -185,6 +185,33 @@ partnership_strength_build_opportunity_country <- function(opportunity_all,
     )
 }
 
+partnership_strength_build_opportunity_dyads_table <- function(opportunity_all,
+                                                               country_info,
+                                                               year = 2024L) {
+  opportunity_all %>%
+    dplyr::mutate(
+      Reporter = partnership_strength_iso_to_country(reporter_iso, country_info),
+      Partner = partnership_strength_iso_to_country(partner_iso, country_info),
+      Country = Partner
+    ) %>%
+    dplyr::transmute(
+      Country,
+      Reporter,
+      Partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category = "opportunity",
+      variable = "Opportunity Index",
+      data_type = "index",
+      value = opportunity_index,
+      Year = as.integer(year),
+      source = "Author calculation",
+      explanation = "Opportunity index per reporter-partner dyad."
+    )
+}
+
 prosperous_opportunity <- function(comtrade_dyads,
                                    subcat,
                                    econ_opp_index,
@@ -213,7 +240,20 @@ prosperous_opportunity <- function(comtrade_dyads,
     year = max(years)
   )
 
-  standardized <- partnership_strength_standardize_bind_rows(opportunity_country)
-  partnership_strength_validate_schema(standardized, label = "prosperous_opportunity")
-  standardized
+  opportunity_dyads <- partnership_strength_build_opportunity_dyads_table(
+    opportunity_all,
+    country_info,
+    year = max(years)
+  )
+
+  standardized_dyads <- partnership_strength_standardize_bind_rows(opportunity_dyads)
+  partnership_strength_validate_schema(standardized_dyads, label = "prosperous_opportunity_dyads")
+
+  standardized_country <- partnership_strength_standardize_bind_rows(opportunity_country)
+  partnership_strength_validate_schema(standardized_country, label = "prosperous_opportunity_country")
+
+  list(
+    dyads = standardized_dyads,
+    country = standardized_country
+  )
 }

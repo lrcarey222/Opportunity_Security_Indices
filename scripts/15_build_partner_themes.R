@@ -108,7 +108,7 @@ energy_security_index <- aggregate_energy_security_index(energy_security_outputs
 tech_ghg <- partnership_strength_clean_ghg(tech_ghg_raw)
 policy_tbl <- partnership_strength_clean_policy(cat_raw)
 
-partner_friendshore_tbl <- safer_friendshore(
+friendshore_outputs <- safer_friendshore(
   comtrade_dyads = comtrade_dyads,
   subcat = subcat,
   econ_opp_index = econ_opp_index,
@@ -120,7 +120,10 @@ partner_friendshore_tbl <- safer_friendshore(
   gdp_data = country_gdp
 )
 
-partner_opportunity_tbl <- prosperous_opportunity(
+partner_friendshore_tbl <- friendshore_outputs$dyads
+partner_friendshore_country_tbl <- friendshore_outputs$country
+
+opportunity_outputs <- prosperous_opportunity(
   comtrade_dyads = comtrade_dyads,
   subcat = subcat,
   econ_opp_index = econ_opp_index,
@@ -130,10 +133,16 @@ partner_opportunity_tbl <- prosperous_opportunity(
   country_info = country_info
 )
 
-partner_development_tbl <- stronger_development(
+partner_opportunity_tbl <- opportunity_outputs$dyads
+partner_opportunity_country_tbl <- opportunity_outputs$country
+
+development_outputs <- stronger_development(
   comtrade_dyads = comtrade_dyads,
   subcat = subcat,
   fdi_raw = fdi_raw,
   country_info = country_info,
   gdp_data = country_gdp
 )
+
+partner_development_tbl <- development_outputs$dyads
+partner_development_country_tbl <- development_outputs$country

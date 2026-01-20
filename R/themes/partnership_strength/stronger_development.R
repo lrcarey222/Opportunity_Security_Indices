@@ -29,6 +29,35 @@ partnership_strength_build_development_country <- function(outbound_edges,
     )
 }
 
+partnership_strength_build_development_dyads_table <- function(outbound_edges,
+                                                               trade_pairs,
+                                                               country_info,
+                                                               year = 2024L) {
+  outbound_edges %>%
+    tidyr::crossing(trade_pairs) %>%
+    dplyr::mutate(
+      Reporter = partnership_strength_iso_to_country(reporter_iso, country_info),
+      Partner = partnership_strength_iso_to_country(partner_iso, country_info),
+      Country = Partner
+    ) %>%
+    dplyr::transmute(
+      Country,
+      Reporter,
+      Partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category = "development",
+      variable = "Outbound Investment Index",
+      data_type = "index",
+      value = outbound_index,
+      Year = as.integer(year),
+      source = "Author calculation",
+      explanation = "Outbound investment ties per reporter-partner dyad."
+    )
+}
+
 stronger_development <- function(comtrade_dyads,
                                  subcat,
                                  fdi_raw,
@@ -56,7 +85,21 @@ stronger_development <- function(comtrade_dyads,
     year = max(years)
   )
 
-  standardized <- partnership_strength_standardize_bind_rows(development_country)
-  partnership_strength_validate_schema(standardized, label = "stronger_development")
-  standardized
+  development_dyads <- partnership_strength_build_development_dyads_table(
+    outbound_edges,
+    trade_pairs,
+    country_info,
+    year = max(years)
+  )
+
+  standardized_dyads <- partnership_strength_standardize_bind_rows(development_dyads)
+  partnership_strength_validate_schema(standardized_dyads, label = "stronger_development_dyads")
+
+  standardized_country <- partnership_strength_standardize_bind_rows(development_country)
+  partnership_strength_validate_schema(standardized_country, label = "stronger_development_country")
+
+  list(
+    dyads = standardized_dyads,
+    country = standardized_country
+  )
 }
