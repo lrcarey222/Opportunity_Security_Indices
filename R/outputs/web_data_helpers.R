@@ -197,6 +197,9 @@ filter_geojson_features <- function(geojson, iso3_values) {
     function(feature) {
       props <- feature$properties
       iso3 <- if (!is.null(props$iso3)) props$iso3 else props$ISO_A3
+      if (is.null(iso3) || length(iso3) == 0) {
+        return(FALSE)
+      }
       iso3 %in% iso3_values
     }
   )
