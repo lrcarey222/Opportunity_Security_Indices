@@ -40,6 +40,18 @@ pillars:
       Consumption:
         score_variable: "Overall Consumption Index"
 
+partnership_strength:
+  opportunity_components:
+    - trade_index
+    - econ_opp_index
+    - energy_security_index
+  friendshore_components:
+    - imp_trade_index
+    - econ_opp_raw
+    - es_need
+    - eo_partner
+    - outbound_index
+
 overall_variables:
   Overall Trade Index:
     category: "Trade"
