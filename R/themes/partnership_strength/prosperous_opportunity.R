@@ -205,14 +205,24 @@ partnership_strength_build_opportunity_country <- function(opportunity_all,
 
 partnership_strength_build_opportunity_dyads_table <- function(opportunity_all,
                                                                country_info,
+                                                               component_weights,
                                                                year = 2024L) {
+  component_weights_tbl <- tibble::tibble(
+    component_key = c("trade_index", "econ_opp_index", "energy_security_index"),
+    component_weight = c(
+      component_weights$trade_index,
+      component_weights$econ_opp_index,
+      component_weights$energy_security_index
+    )
+  )
+
   opportunity_all %>%
     dplyr::mutate(
       Reporter = partnership_strength_iso_to_country(reporter_iso, country_info),
       Partner = partnership_strength_iso_to_country(partner_iso, country_info),
       Country = Partner
     ) %>%
-    dplyr::transmute(
+    dplyr::select(
       Country,
       Reporter,
       Partner,
@@ -220,13 +230,51 @@ partnership_strength_build_opportunity_dyads_table <- function(opportunity_all,
       partner_iso,
       tech,
       supply_chain,
+      trade_index,
+      econ_opp_index,
+      energy_security_index,
+      opportunity_index
+    ) %>%
+    tidyr::pivot_longer(
+      cols = c(trade_index, econ_opp_index, energy_security_index, opportunity_index),
+      names_to = "component_key",
+      values_to = "value"
+    ) %>%
+    dplyr::left_join(component_weights_tbl, by = "component_key") %>%
+    dplyr::mutate(
+      variable = dplyr::if_else(component_key == "opportunity_index", "Opportunity Index", component_key),
       category = "opportunity",
-      variable = "Opportunity Index",
       data_type = "index",
-      value = opportunity_index,
+      weighted_component = dplyr::if_else(
+        !is.na(component_weight),
+        value * component_weight,
+        NA_real_
+      ),
       Year = as.integer(year),
       source = "Author calculation",
-      explanation = "Opportunity index per reporter-partner dyad."
+      explanation = dplyr::if_else(
+        component_key == "opportunity_index",
+        "Opportunity index per reporter-partner dyad.",
+        "Component of the opportunity index per reporter-partner dyad."
+      )
+    ) %>%
+    dplyr::select(
+      Country,
+      Reporter,
+      Partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      component_weight,
+      weighted_component,
+      Year,
+      source,
+      explanation
     )
 }
 
@@ -263,6 +311,7 @@ prosperous_opportunity <- function(comtrade_dyads,
   opportunity_dyads <- partnership_strength_build_opportunity_dyads_table(
     opportunity_all,
     country_info,
+    component_weights = component_weights,
     year = max(years)
   )
 

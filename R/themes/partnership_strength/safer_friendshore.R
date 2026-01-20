@@ -240,14 +240,26 @@ partnership_strength_build_friendshore_country <- function(friendshore_all,
 
 partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
                                                                country_info,
+                                                               component_weights,
                                                                year = 2024L) {
+  component_weights_tbl <- tibble::tibble(
+    component_key = c("imp_trade_index", "econ_opp_raw", "es_need", "eo_partner", "outbound_index"),
+    component_weight = c(
+      component_weights$imp_trade_index,
+      component_weights$econ_opp_raw,
+      component_weights$es_need,
+      component_weights$eo_partner,
+      component_weights$outbound_index
+    )
+  )
+
   friendshore_all %>%
     dplyr::mutate(
       Reporter = partnership_strength_iso_to_country(reporter_iso, country_info),
       Partner = partnership_strength_iso_to_country(partner_iso, country_info),
       Country = Partner
     ) %>%
-    dplyr::transmute(
+    dplyr::select(
       Country,
       Reporter,
       Partner,
@@ -255,13 +267,53 @@ partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
       partner_iso,
       tech,
       supply_chain,
+      imp_trade_index,
+      econ_opp_raw,
+      es_need,
+      eo_partner,
+      outbound_index,
+      friendshore_index
+    ) %>%
+    tidyr::pivot_longer(
+      cols = c(imp_trade_index, econ_opp_raw, es_need, eo_partner, outbound_index, friendshore_index),
+      names_to = "component_key",
+      values_to = "value"
+    ) %>%
+    dplyr::left_join(component_weights_tbl, by = "component_key") %>%
+    dplyr::mutate(
+      variable = dplyr::if_else(component_key == "friendshore_index", "Friendshore Index", component_key),
       category = "friendshore",
-      variable = "Friendshore Index",
       data_type = "index",
-      value = friendshore_index,
+      weighted_component = dplyr::if_else(
+        !is.na(component_weight),
+        value * component_weight,
+        NA_real_
+      ),
       Year = as.integer(year),
       source = "Author calculation",
-      explanation = "Friendshore index per reporter-partner dyad."
+      explanation = dplyr::if_else(
+        component_key == "friendshore_index",
+        "Friendshore index per reporter-partner dyad.",
+        "Component of the friendshore index per reporter-partner dyad."
+      )
+    ) %>%
+    dplyr::select(
+      Country,
+      Reporter,
+      Partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      component_weight,
+      weighted_component,
+      Year,
+      source,
+      explanation
     )
 }
 
@@ -310,6 +362,7 @@ safer_friendshore <- function(comtrade_dyads,
   friendshore_dyads <- partnership_strength_build_friendshore_dyads_table(
     friendshore_all,
     country_info,
+    component_weights = component_weights,
     year = max(years)
   )
 
