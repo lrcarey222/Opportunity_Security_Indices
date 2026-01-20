@@ -1,0 +1,17 @@
+:root {
+  color-scheme: dark;
+  --color-base: #0b0f17;
+  --color-surface: #111826;
+  --color-panel: #151f31;
+  --color-text: #f4f6fb;
+  --color-muted: #9fb0c7;
+  --color-accent: #40c2ff;
+  --color-accent-strong: #7bdcff;
+  --color-border: #24344f;
+}
+
+body {
+  background: var(--color-base);
+  color: var(--color-text);
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
