@@ -96,6 +96,17 @@ apply_missing_policy <- function(tbl, rules_tbl, include_sub_sector = FALSE) {
   variable_groups <- tbl %>%
     dplyr::distinct(dplyr::across(dplyr::all_of(group_cols)))
 
+  assert_unique_keys(
+    country_groups,
+    normalize_sub_sector_or_keys(c("Country", "tech", "supply_chain"), include_sub_sector),
+    label = "missing policy country groups"
+  )
+  assert_unique_keys(
+    variable_groups,
+    group_cols,
+    label = "missing policy variable groups"
+  )
+
   grid <- variable_groups %>%
     dplyr::left_join(
       country_groups,
@@ -183,6 +194,16 @@ compute_overall_scores <- function(tbl, index_definition, include_sub_sector = F
       level <- variable_levels[[overall_name]]
     }
     group_cols <- variable_level_columns(level, include_sub_sector = include_sub_sector)
+    required_group_cols <- setdiff(group_cols, "Year")
+    missing_group_cols <- setdiff(required_group_cols, names(tbl))
+    if (length(missing_group_cols) > 0) {
+      stop(
+        "Missing required grouping columns for overall variable '",
+        overall_name,
+        "': ",
+        paste(missing_group_cols, collapse = ", ")
+      )
+    }
     group_cols <- group_cols[group_cols %in% names(tbl)]
     group_cols <- setdiff(group_cols, "Year")
 
