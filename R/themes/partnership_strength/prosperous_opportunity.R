@@ -235,6 +235,7 @@ partnership_strength_build_opportunity_inputs_country <- function(opportunity_al
       data_type = character(),
       value = numeric(),
       component_weight = numeric(),
+      component_weight_share = numeric(),
       weighted_component = numeric(),
       Year = integer(),
       source = character(),
@@ -243,6 +244,16 @@ partnership_strength_build_opportunity_inputs_country <- function(opportunity_al
   }
 
   opportunity_all %>%
+    dplyr::distinct(
+      partner_iso,
+      reporter_iso,
+      tech,
+      supply_chain,
+      trade_index,
+      econ_opp_index,
+      energy_security_index,
+      .keep_all = TRUE
+    ) %>%
     dplyr::inner_join(top_dyads, by = c("partner_iso", "reporter_iso", "tech", "supply_chain")) %>%
     dplyr::mutate(Country = partnership_strength_iso_to_country(partner_iso, country_info)) %>%
     dplyr::select(
