@@ -238,6 +238,81 @@ partnership_strength_build_friendshore_country <- function(friendshore_all,
     )
 }
 
+partnership_strength_build_friendshore_inputs_country <- function(friendshore_all,
+                                                                  country_info,
+                                                                  component_weights,
+                                                                  top_n = 3,
+                                                                  year = 2024L) {
+  component_weights_tbl <- tibble::tibble(
+    component_key = c("imp_trade_index", "econ_opp_raw", "es_need", "eo_partner", "outbound_index"),
+    component_weight = c(
+      component_weights$imp_trade_index,
+      component_weights$econ_opp_raw,
+      component_weights$es_need,
+      component_weights$eo_partner,
+      component_weights$outbound_index
+    )
+  )
+
+  top_dyads <- friendshore_all %>%
+    dplyr::filter(!is.na(friendshore_index)) %>%
+    dplyr::group_by(partner_iso, tech, supply_chain) %>%
+    dplyr::slice_max(order_by = friendshore_index, n = top_n, with_ties = FALSE) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(partner_iso, reporter_iso, tech, supply_chain)
+
+  friendshore_all %>%
+    dplyr::inner_join(top_dyads, by = c("partner_iso", "reporter_iso", "tech", "supply_chain")) %>%
+    dplyr::mutate(Country = partnership_strength_iso_to_country(partner_iso, country_info)) %>%
+    dplyr::select(
+      Country,
+      partner_iso,
+      reporter_iso,
+      tech,
+      supply_chain,
+      imp_trade_index,
+      econ_opp_raw,
+      es_need,
+      eo_partner,
+      outbound_index
+    ) %>%
+    tidyr::pivot_longer(
+      cols = c(imp_trade_index, econ_opp_raw, es_need, eo_partner, outbound_index),
+      names_to = "component_key",
+      values_to = "value"
+    ) %>%
+    dplyr::left_join(component_weights_tbl, by = "component_key") %>%
+    dplyr::mutate(weighted_component = value * component_weight) %>%
+    dplyr::group_by(Country, tech, supply_chain, component_key, component_weight) %>%
+    dplyr::summarize(
+      value = mean(value, na.rm = TRUE),
+      weighted_component = mean(weighted_component, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(
+      category = "friendshore",
+      variable = component_key,
+      data_type = "index",
+      Year = as.integer(year),
+      source = "Author calculation",
+      explanation = "Average component contribution across top friendshore dyads."
+    ) %>%
+    dplyr::select(
+      Country,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      component_weight,
+      weighted_component,
+      Year,
+      source,
+      explanation
+    )
+}
+
 partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
                                                                country_info,
                                                                component_weights,
@@ -359,6 +434,14 @@ safer_friendshore <- function(comtrade_dyads,
     year = max(years)
   )
 
+  friendshore_inputs_country <- partnership_strength_build_friendshore_inputs_country(
+    friendshore_all,
+    country_info,
+    component_weights = component_weights,
+    top_n = top_n,
+    year = max(years)
+  )
+
   friendshore_dyads <- partnership_strength_build_friendshore_dyads_table(
     friendshore_all,
     country_info,
@@ -372,8 +455,12 @@ safer_friendshore <- function(comtrade_dyads,
   standardized_country <- partnership_strength_standardize_bind_rows(friendshore_country)
   partnership_strength_validate_schema(standardized_country, label = "safer_friendshore_country")
 
+  standardized_inputs_country <- partnership_strength_standardize_bind_rows(friendshore_inputs_country)
+  partnership_strength_validate_schema(standardized_inputs_country, label = "safer_friendshore_inputs_country")
+
   list(
     dyads = standardized_dyads,
-    country = standardized_country
+    country = standardized_country,
+    inputs_country = standardized_inputs_country
   )
 }
