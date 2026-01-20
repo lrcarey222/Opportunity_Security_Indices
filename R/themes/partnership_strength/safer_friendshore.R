@@ -252,7 +252,8 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
       component_weights$eo_partner,
       component_weights$outbound_index
     )
-  )
+  ) %>%
+    dplyr::mutate(component_weight_share = component_weight / sum(component_weight))
 
   top_dyads <- friendshore_all %>%
     dplyr::filter(!is.na(friendshore_index)) %>%
@@ -260,6 +261,23 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
     dplyr::slice_max(order_by = friendshore_index, n = top_n, with_ties = FALSE) %>%
     dplyr::ungroup() %>%
     dplyr::select(partner_iso, reporter_iso, tech, supply_chain)
+
+  if (nrow(top_dyads) == 0) {
+    return(tibble::tibble(
+      Country = character(),
+      tech = character(),
+      supply_chain = character(),
+      category = character(),
+      variable = character(),
+      data_type = character(),
+      value = numeric(),
+      component_weight = numeric(),
+      weighted_component = numeric(),
+      Year = integer(),
+      source = character(),
+      explanation = character()
+    ))
+  }
 
   friendshore_all %>%
     dplyr::inner_join(top_dyads, by = c("partner_iso", "reporter_iso", "tech", "supply_chain")) %>%
@@ -282,7 +300,7 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
       values_to = "value"
     ) %>%
     dplyr::left_join(component_weights_tbl, by = "component_key") %>%
-    dplyr::mutate(weighted_component = value * component_weight) %>%
+    dplyr::mutate(weighted_component = value * component_weight_share) %>%
     dplyr::group_by(Country, tech, supply_chain, component_key, component_weight) %>%
     dplyr::summarize(
       value = mean(value, na.rm = TRUE),
@@ -306,6 +324,7 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
       data_type,
       value,
       component_weight,
+      component_weight_share,
       weighted_component,
       Year,
       source,
@@ -326,7 +345,8 @@ partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
       component_weights$eo_partner,
       component_weights$outbound_index
     )
-  )
+  ) %>%
+    dplyr::mutate(component_weight_share = component_weight / sum(component_weight))
 
   friendshore_all %>%
     dplyr::mutate(
@@ -360,8 +380,8 @@ partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
       category = "friendshore",
       data_type = "index",
       weighted_component = dplyr::if_else(
-        !is.na(component_weight),
-        value * component_weight,
+        !is.na(component_weight_share),
+        value * component_weight_share,
         NA_real_
       ),
       Year = as.integer(year),
@@ -385,6 +405,7 @@ partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
       data_type,
       value,
       component_weight,
+      component_weight_share,
       weighted_component,
       Year,
       source,
