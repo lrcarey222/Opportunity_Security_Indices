@@ -123,3 +123,33 @@ utils::write.csv(
   file = file.path(outputs_dir, "energy_security_variable_contributions.csv"),
   row.names = FALSE
 )
+
+outputs_rds_path <- Sys.getenv("OPSI_OUTPUTS_RDS", "")
+if (!nzchar(outputs_rds_path)) {
+  outputs_rds_path <- if (!is.null(config$outputs_rds) && nzchar(config$outputs_rds)) {
+    file.path(repo_root, config$outputs_rds)
+  } else {
+    file.path(outputs_dir, "index_outputs.rds")
+  }
+}
+
+outputs_rds_dir <- dirname(outputs_rds_path)
+if (!dir.exists(outputs_rds_dir)) {
+  dir.create(outputs_rds_dir, recursive = TRUE)
+}
+
+saveRDS(
+  list(
+    energy_security_outputs = energy_security_outputs,
+    economic_opportunity_outputs = economic_opportunity_outputs,
+    energy_security_category_scores = energy_security_category_scores,
+    energy_security_category_contributions = energy_security_category_contributions,
+    energy_security_variable_contributions = energy_security_variable_contributions,
+    energy_security_index = energy_security_index,
+    economic_opportunity_category_scores = economic_opportunity_category_scores,
+    economic_opportunity_category_contributions = economic_opportunity_category_contributions,
+    economic_opportunity_variable_contributions = economic_opportunity_variable_contributions,
+    economic_opportunity_index = economic_opportunity_index
+  ),
+  outputs_rds_path
+)
