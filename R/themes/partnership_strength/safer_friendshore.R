@@ -110,25 +110,25 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
   es_iso <- energy_security_index %>%
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
-      iso3c = partnership_strength_country_to_iso(Country, country_info)
+      iso3c = partnership_strength_country_to_iso(Country, country_info),
+      value=Energy_Security_Index
     ) %>%
-    dplyr::filter(grepl("Overall\\s*Energy\\s*Security", variable, ignore.case = TRUE)) %>%
     dplyr::transmute(reporter_iso = iso3c, tech, supply_chain, es_need = 1 - value)
 
   eo_partner_iso <- econ_opp_index %>%
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
-      iso3c = partnership_strength_country_to_iso(Country, country_info)
+      iso3c = partnership_strength_country_to_iso(Country, country_info),
+      value=Economic_Opportunity_Index
     ) %>%
-    dplyr::filter(grepl("Overall\\s*Economic\\s*Opportunity", variable, ignore.case = TRUE)) %>%
     dplyr::transmute(partner_iso = iso3c, tech, supply_chain, eo_partner = value)
 
   econ_opp_iso <- econ_opp_index %>%
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
-      exporter_iso = partnership_strength_country_to_iso(Country, country_info)
+      exporter_iso = partnership_strength_country_to_iso(Country, country_info),
+      value=Economic_Opportunity_Index
     ) %>%
-    dplyr::filter(grepl("Overall\\s*Economic\\s*Opportunity", variable, ignore.case = TRUE)) %>%
     dplyr::transmute(exporter_iso, tech, supply_chain, econ_opp_raw = value)
 
   ghg_iso <- tech_ghg %>%
