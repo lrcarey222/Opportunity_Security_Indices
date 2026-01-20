@@ -203,6 +203,77 @@ partnership_strength_build_opportunity_country <- function(opportunity_all,
     )
 }
 
+partnership_strength_build_opportunity_inputs_country <- function(opportunity_all,
+                                                                  country_info,
+                                                                  component_weights,
+                                                                  top_n = 3,
+                                                                  year = 2024L) {
+  component_weights_tbl <- tibble::tibble(
+    component_key = c("trade_index", "econ_opp_index", "energy_security_index"),
+    component_weight = c(
+      component_weights$trade_index,
+      component_weights$econ_opp_index,
+      component_weights$energy_security_index
+    )
+  )
+
+  top_dyads <- opportunity_all %>%
+    dplyr::filter(!is.na(opportunity_index)) %>%
+    dplyr::group_by(partner_iso, tech, supply_chain) %>%
+    dplyr::slice_max(order_by = opportunity_index, n = top_n, with_ties = FALSE) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(partner_iso, reporter_iso, tech, supply_chain)
+
+  opportunity_all %>%
+    dplyr::inner_join(top_dyads, by = c("partner_iso", "reporter_iso", "tech", "supply_chain")) %>%
+    dplyr::mutate(Country = partnership_strength_iso_to_country(partner_iso, country_info)) %>%
+    dplyr::select(
+      Country,
+      partner_iso,
+      reporter_iso,
+      tech,
+      supply_chain,
+      trade_index,
+      econ_opp_index,
+      energy_security_index
+    ) %>%
+    tidyr::pivot_longer(
+      cols = c(trade_index, econ_opp_index, energy_security_index),
+      names_to = "component_key",
+      values_to = "value"
+    ) %>%
+    dplyr::left_join(component_weights_tbl, by = "component_key") %>%
+    dplyr::mutate(weighted_component = value * component_weight) %>%
+    dplyr::group_by(Country, tech, supply_chain, component_key, component_weight) %>%
+    dplyr::summarize(
+      value = mean(value, na.rm = TRUE),
+      weighted_component = mean(weighted_component, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(
+      category = "opportunity",
+      variable = component_key,
+      data_type = "index",
+      Year = as.integer(year),
+      source = "Author calculation",
+      explanation = "Average component contribution across top opportunity dyads."
+    ) %>%
+    dplyr::select(
+      Country,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      component_weight,
+      weighted_component,
+      Year,
+      source,
+      explanation
+    )
+}
+
 partnership_strength_build_opportunity_dyads_table <- function(opportunity_all,
                                                                country_info,
                                                                component_weights,
@@ -308,6 +379,14 @@ prosperous_opportunity <- function(comtrade_dyads,
     year = max(years)
   )
 
+  opportunity_inputs_country <- partnership_strength_build_opportunity_inputs_country(
+    opportunity_all,
+    country_info,
+    component_weights = component_weights,
+    top_n = top_n,
+    year = max(years)
+  )
+
   opportunity_dyads <- partnership_strength_build_opportunity_dyads_table(
     opportunity_all,
     country_info,
@@ -321,8 +400,12 @@ prosperous_opportunity <- function(comtrade_dyads,
   standardized_country <- partnership_strength_standardize_bind_rows(opportunity_country)
   partnership_strength_validate_schema(standardized_country, label = "prosperous_opportunity_country")
 
+  standardized_inputs_country <- partnership_strength_standardize_bind_rows(opportunity_inputs_country)
+  partnership_strength_validate_schema(standardized_inputs_country, label = "prosperous_opportunity_inputs_country")
+
   list(
     dyads = standardized_dyads,
-    country = standardized_country
+    country = standardized_country,
+    inputs_country = standardized_inputs_country
   )
 }

@@ -127,6 +127,7 @@ friendshore_outputs <- safer_friendshore(
 
 partner_friendshore_tbl <- friendshore_outputs$dyads
 partner_friendshore_country_tbl <- friendshore_outputs$country
+partner_friendshore_inputs_tbl <- friendshore_outputs$inputs_country
 
 opportunity_outputs <- prosperous_opportunity(
   comtrade_dyads = comtrade_dyads,
@@ -141,6 +142,7 @@ opportunity_outputs <- prosperous_opportunity(
 
 partner_opportunity_tbl <- opportunity_outputs$dyads
 partner_opportunity_country_tbl <- opportunity_outputs$country
+partner_opportunity_inputs_tbl <- opportunity_outputs$inputs_country
 
 development_outputs <- stronger_development(
   comtrade_dyads = comtrade_dyads,
