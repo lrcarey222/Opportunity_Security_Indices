@@ -123,9 +123,9 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
   es_iso <- energy_security_index %>%
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
-      iso3c = partnership_strength_country_to_iso(Country, country_info)
+      iso3c = partnership_strength_country_to_iso(Country, country_info),
+      value=Economic_Opportunity_Index
     ) %>%
-    dplyr::filter(grepl("Overall\\s*Energy\\s*Security", variable, ignore.case = TRUE)) %>%
     dplyr::transmute(reporter_iso = iso3c, tech, supply_chain, es_need = 1 - value)
 
   eo_partner_iso <- econ_opp_index %>%
