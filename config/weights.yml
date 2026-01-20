@@ -24,3 +24,15 @@ psi:
   friendshore: 0.4
   opportunity: 0.4
   development: 0.2
+
+partnership_opportunity_components:
+  trade_index: 2
+  econ_opp_index: 2
+  energy_security_index: 1
+
+partnership_friendshore_components:
+  imp_trade_index: 1
+  econ_opp_raw: 1
+  es_need: 3
+  eo_partner: 2
+  outbound_index: 2
