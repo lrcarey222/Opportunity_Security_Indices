@@ -17,7 +17,15 @@ aggregate_economic_opportunity_index <- function(economic_opportunity_outputs,
     stop("economic_opportunity_outputs is missing index data.")
   }
 
-  require_columns(index_tbl, c("Country", "tech", "supply_chain", "Economic_Opportunity_Index"), label = "economic_opportunity_index")
+  index_col <- intersect(
+    c("Economic_Opportunity_Index", "Economic Opportunity Index", "economic_opportunity_index"),
+    names(index_tbl)
+  )
+  if (length(index_col) == 0) {
+    stop("economic_opportunity_index is missing an Economic Opportunity index column.")
+  }
+  index_col <- index_col[[1]]
+  require_columns(index_tbl, c("Country", "tech", "supply_chain", index_col), label = "economic_opportunity_index")
 
   diagnostics <- economic_opportunity_outputs$diagnostics
   if (is.null(diagnostics) || is.null(diagnostics$year_provenance)) {
@@ -50,7 +58,7 @@ aggregate_economic_opportunity_index <- function(economic_opportunity_outputs,
       category = category,
       variable = variable,
       data_type = "index",
-      value = Economic_Opportunity_Index,
+      value = .data[[index_col]],
       Year = as.integer(Year_selected),
       source = source,
       explanation = explanation
@@ -74,7 +82,15 @@ aggregate_energy_security_index <- function(energy_security_outputs,
     stop("energy_security_outputs is missing index data.")
   }
 
-  require_columns(index_tbl, c("Country", "tech", "supply_chain", "Energy_Security_Index"), label = "energy_security_index")
+  index_col <- intersect(
+    c("Energy_Security_Index", "Energy Security Index", "energy_security_index"),
+    names(index_tbl)
+  )
+  if (length(index_col) == 0) {
+    stop("energy_security_index is missing an Energy Security index column.")
+  }
+  index_col <- index_col[[1]]
+  require_columns(index_tbl, c("Country", "tech", "supply_chain", index_col), label = "energy_security_index")
 
   diagnostics <- energy_security_outputs$diagnostics
   if (is.null(diagnostics) || is.null(diagnostics$year_provenance)) {
@@ -107,7 +123,7 @@ aggregate_energy_security_index <- function(energy_security_outputs,
       category = category,
       variable = variable,
       data_type = "index",
-      value = Energy_Security_Index,
+      value = .data[[index_col]],
       Year = as.integer(Year_selected),
       source = source,
       explanation = explanation
