@@ -69,23 +69,42 @@ partnership_strength_country_to_iso <- function(country, country_info) {
   mapped <- tibble::tibble(country = cleaned) %>%
     dplyr::left_join(lookup, by = "country")
 
+  aggregates <- c(
+    "EU",
+    "European Union",
+    "World",
+    "OECD",
+    "OPEC",
+    "Aggregates"
+  )
+
   unmapped <- mapped$country[is.na(mapped$iso3c)]
   if (length(unmapped) > 0) {
-    fallback <- countrycode::countrycode(
-      unmapped,
-      "country.name",
-      "iso3c",
-      custom_match = c(
-        "Viet Nam" = "VNM",
-        "Turkiye" = "TUR",
-        "South Korea" = "KOR",
-        "Curaçao" = "CUW",
-        "Cura ao" = "CUW",
-        "Laos" = "LAO",
-        "Czech Republic" = "CZE"
-      )
-    )
-    mapped$iso3c[is.na(mapped$iso3c)] <- fallback
+    non_aggregate <- unmapped[!unmapped %in% aggregates]
+    if (length(non_aggregate) > 0) {
+      fallback <- suppressWarnings(countrycode::countrycode(
+        non_aggregate,
+        "country.name",
+        "iso3c",
+        warn = FALSE,
+        custom_match = c(
+          "Viet Nam" = "VNM",
+          "Turkiye" = "TUR",
+          "South Korea" = "KOR",
+          "Curaçao" = "CUW",
+          "Cura ao" = "CUW",
+          "Laos" = "LAO",
+          "Czech Republic" = "CZE"
+        )
+      ))
+      mapped$iso3c[is.na(mapped$iso3c)] <- fallback
+    }
+  }
+
+  unresolved <- mapped$country[is.na(mapped$iso3c) & !mapped$country %in% aggregates]
+  if (length(unresolved) > 0) {
+    sample_vals <- paste(utils::head(unique(unresolved), 5), collapse = ", ")
+    stop("Unmapped country names in partnership_strength_country_to_iso: ", sample_vals)
   }
 
   mapped$iso3c
