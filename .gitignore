@@ -8,5 +8,7 @@ config/weights.yml
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !outputs/.gitkeep
+!R/outputs/
 !R/outputs/.gitkeep
+!R/outputs/*.R
 .Rproj.user
