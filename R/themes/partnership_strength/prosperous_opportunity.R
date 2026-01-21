@@ -93,8 +93,16 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
     energy_security_index = 1,
     climate_policy_weight = 0.2
   )
+  climate_policy_weight <- 0.2
+  component_weights_mean <- component_weights
+  if (!is.null(component_weights)) {
+    if (!is.null(component_weights$climate_policy_weight)) {
+      climate_policy_weight <- component_weights$climate_policy_weight
+    }
+    component_weights_mean$climate_policy_weight <- NULL
+  }
   component_weights <- partnership_strength_resolve_weights(
-    component_weights,
+    component_weights_mean,
     default_weights,
     "Opportunity component"
   )
@@ -155,7 +163,7 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
           component_weights$energy_security_index
         )
       ),
-      penalty = (1 - ghg_index) * climate_policy_index * component_weights$climate_policy_weight,
+      penalty = (1 - ghg_index) * climate_policy_index * climate_policy_weight,
       opportunity_index_raw = pmax(0, opportunity_raw - penalty)
     ) %>%
     dplyr::ungroup() %>%
