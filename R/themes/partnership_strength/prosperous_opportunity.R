@@ -90,7 +90,8 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
   default_weights <- list(
     trade_index = 2,
     econ_opp_index = 2,
-    energy_security_index = 1
+    energy_security_index = 1,
+    climate_policy_weight = 0.2
   )
   component_weights <- partnership_strength_resolve_weights(
     component_weights,
@@ -152,7 +153,7 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
           component_weights$energy_security_index
         )
       ),
-      penalty = (1 - ghg_index) * climate_policy_index * 0.20,
+      penalty = (1 - ghg_index) * climate_policy_index * component_weights$climate_policy_weight,
       opportunity_index_raw = pmax(0, opportunity_raw - penalty)
     ) %>%
     dplyr::ungroup() %>%
