@@ -317,7 +317,14 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
     ) %>%
     dplyr::left_join(component_weights_tbl, by = "component_key") %>%
     dplyr::mutate(weighted_component = value * component_weight_share) %>%
-    dplyr::group_by(Country, tech, supply_chain, component_key, component_weight) %>%
+    dplyr::group_by(
+      Country,
+      tech,
+      supply_chain,
+      component_key,
+      component_weight,
+      component_weight_share
+    ) %>%
     dplyr::summarize(
       value = mean(value, na.rm = TRUE),
       weighted_component = mean(weighted_component, na.rm = TRUE),
