@@ -67,6 +67,12 @@ tech_ghg_path <- file.path(latest_snapshot, "ipcc_ghg_intensity.csv")
 cat_policy_path <- file.path(latest_snapshot, "CAT_country ratings data.csv")
 country_info_path <- file.path(latest_snapshot, "wdi_country_info.csv")
 country_gdp_path <- file.path(latest_snapshot, "wdi_gdp.csv")
+wb_doingbusiness_path <- file.path(latest_snapshot, "wb_doingbusiness.csv")
+wb_wdi_path <- file.path(latest_snapshot, "wb_wdi.csv")
+oecd_1215_path <- file.path(latest_snapshot, "oecd_1215.csv")
+oecd_1518_path <- file.path(latest_snapshot, "oecd_1518.csv")
+oecd_1823_path <- file.path(latest_snapshot, "oecd_1823.csv")
+oecd_api_path <- file.path(latest_snapshot, "oecd_crs_api.csv")
 
 missing_files <- c(
   comtrade_dyads_path,
@@ -75,7 +81,13 @@ missing_files <- c(
   tech_ghg_path,
   cat_policy_path,
   country_info_path,
-  country_gdp_path
+  country_gdp_path,
+  wb_doingbusiness_path,
+  wb_wdi_path,
+  oecd_1215_path,
+  oecd_1518_path,
+  oecd_1823_path,
+  oecd_api_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
 
@@ -103,6 +115,12 @@ tech_ghg_raw <- read.csv(tech_ghg_path)
 cat_raw <- read.csv(cat_policy_path)
 country_info <- read.csv(country_info_path)
 country_gdp <- read.csv(country_gdp_path)
+wb_doingbusiness <- read.csv(wb_doingbusiness_path)
+wb_wdi <- read.csv(wb_wdi_path)
+oecd_1215 <- read.csv(oecd_1215_path)
+oecd_1518 <- read.csv(oecd_1518_path)
+oecd_1823 <- read.csv(oecd_1823_path)
+oecd_api_raw <- read.csv(oecd_api_path)
 
 country_info <- standardize_country_info(country_info)
 
@@ -147,9 +165,14 @@ partner_opportunity_inputs_tbl <- opportunity_outputs$inputs_country
 development_outputs <- stronger_development(
   comtrade_dyads = comtrade_dyads,
   subcat = subcat,
-  fdi_raw = fdi_raw,
   country_info = country_info,
-  gdp_data = country_gdp
+  gdp_data = country_gdp,
+  economic_opportunity_index = econ_opp_index,
+  energy_security_index = energy_security_index,
+  wb_wdi = wb_wdi,
+  wb_doingbusiness = wb_doingbusiness,
+  oecd_sector_raw = dplyr::bind_rows(oecd_1215, oecd_1518, oecd_1823),
+  oecd_api_raw = oecd_api_raw
 )
 
 partner_development_tbl <- development_outputs$dyads
