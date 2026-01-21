@@ -155,6 +155,83 @@ if (!file.exists(wdi_gdp_path) || !file.exists(wdi_country_path)) {
   }
 }
 
+# --- Source: OECD CRS (development assistance) ---
+oecd_api_path <- file.path(snapshot_dir, "oecd_crs_api.csv")
+
+if (!file.exists(oecd_api_path)) {
+  copy_snapshot_file(file.path(sharepoint_raw_dir, "oecd_crs_api.csv"), oecd_api_path)
+}
+
+if (!file.exists(oecd_api_path)) {
+  if (skip_data_downloads) {
+    message("Skipping OECD CRS API download; missing OECD CRS output in snapshot.")
+  } else {
+    if (!requireNamespace("httr", quietly = TRUE) ||
+        !requireNamespace("readr", quietly = TRUE) ||
+        !requireNamespace("glue", quietly = TRUE) ||
+        !requireNamespace("purrr", quietly = TRUE)) {
+      stop("Packages 'httr', 'readr', 'glue', and 'purrr' are required to ingest OECD CRS data.")
+    }
+    if (!file.exists(wdi_country_path)) {
+      stop("WDI country data missing from snapshot: ", wdi_country_path)
+    }
+
+    wdi_country_info <- read.csv(wdi_country_path)
+    if (!"iso3c" %in% names(wdi_country_info)) {
+      stop("WDI country data missing iso3c column: ", wdi_country_path)
+    }
+
+    iso_vec <- wdi_country_info$iso3c
+    if ("income" %in% names(wdi_country_info)) {
+      iso_vec <- iso_vec[wdi_country_info$income != "High income"]
+    }
+    iso_vec <- iso_vec[!is.na(iso_vec) & nzchar(iso_vec)]
+
+    chunk_size <- 132
+    iso_chunks <- split(iso_vec, ceiling(seq_along(iso_vec) / chunk_size))
+
+    fetch_chunk <- function(recipients) {
+      recips <- paste(recipients, collapse = "+")
+
+      url <- glue::glue(
+        "https://sdmx.oecd.org/dcd-public/rest/data/",
+        "OECD.DCD.FSD,DSD_CRS@DF_CRS,1.4/USA.{recips}.",
+        "32262+32261+322+321+230+1000.100._T._T.D.Q._T..",
+        "?startPeriod=2014",
+        "&dimensionAtObservation=AllDimensions",
+        "&format=csvfilewithlabels"
+      )
+
+      tmp <- tempfile(fileext = ".csv")
+
+      httr::RETRY(
+        "GET",
+        url,
+        httr::user_agent("opportunity-security-indices/1.0"),
+        httr::write_disk(tmp, overwrite = TRUE),
+        times = 6,
+        terminate_on = c(404)
+      )
+
+      readr::read_csv(
+        tmp,
+        col_names = FALSE,
+        skip = 1,
+        col_types = readr::cols(.default = "c"),
+        show_col_types = FALSE
+      )
+    }
+
+    all_oecd <- purrr::map_dfr(iso_chunks, function(chunk) {
+      dat <- fetch_chunk(chunk)
+      Sys.sleep(12)
+      dat
+    })
+
+    readr::write_csv(all_oecd, oecd_api_path)
+  }
+}
+
 critical_minerals_path <- file.path(snapshot_dir, "iea_criticalminerals_25.csv")
 critical_minerals_hs_path <- file.path(
   snapshot_dir,
