@@ -90,7 +90,8 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
   default_weights <- list(
     trade_index = 2,
     econ_opp_index = 2,
-    energy_security_index = 1
+    energy_security_index = 1,
+    climate_policy_weight = 0.2
   )
   climate_policy_weight <- 0.2
   if (!is.null(component_weights)) {
@@ -109,16 +110,18 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
   econ_opp_iso <- econ_opp_index %>%
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
-      exporter_iso = partnership_strength_country_to_iso(Country, country_info),
-      value = Economic_Opportunity_Index
+      exporter_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
+    group_by(tech,supply_chain) %>%
+    mutate(value=median_scurve(Economic_Opportunity_Index)
     ) %>%
     dplyr::transmute(exporter_iso, tech, supply_chain, econ_opp_raw = value)
 
   energy_sec_iso <- energy_security_index %>%
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
-      partner_iso = partnership_strength_country_to_iso(Country, country_info),
-      value = Energy_Security_Index
+      partner_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
+    group_by(tech,supply_chain) %>%
+    mutate(value=median_scurve(Energy_Security_Index)
     ) %>%
     dplyr::transmute(partner_iso, tech, supply_chain, energy_sec_raw = 1 - value)
 

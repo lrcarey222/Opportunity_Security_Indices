@@ -27,7 +27,7 @@ psi:
 
 partnership_opportunity_components:
   trade_index: 2
-  econ_opp_index: 2
+  econ_opp_index: 4
   energy_security_index: 1
   climate_policy_weight: 0.2
 
