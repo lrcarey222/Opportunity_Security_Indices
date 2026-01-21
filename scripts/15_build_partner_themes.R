@@ -106,8 +106,8 @@ country_gdp <- read.csv(country_gdp_path)
 
 country_info <- standardize_country_info(country_info)
 
-econ_opp_index <- aggregate_economic_opportunity_index(economic_opportunity_outputs)
-energy_security_index <- aggregate_energy_security_index(energy_security_outputs)
+econ_opp_index <- economic_opportunity_outputs$index
+energy_security_index <- energy_security_outputs$index
 
 tech_ghg <- partnership_strength_clean_ghg(tech_ghg_raw)
 policy_tbl <- partnership_strength_clean_policy(cat_raw)

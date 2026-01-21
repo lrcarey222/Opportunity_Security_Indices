@@ -100,17 +100,17 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
   econ_opp_iso <- econ_opp_index %>%
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
-      exporter_iso = partnership_strength_country_to_iso(Country, country_info)
+      exporter_iso = partnership_strength_country_to_iso(Country, country_info),
+      value = Economic_Opportunity_Index
     ) %>%
-    dplyr::filter(grepl("Overall\\s*Economic\\s*Opportunity", variable, ignore.case = TRUE)) %>%
     dplyr::transmute(exporter_iso, tech, supply_chain, econ_opp_raw = value)
 
   energy_sec_iso <- energy_security_index %>%
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
-      partner_iso = partnership_strength_country_to_iso(Country, country_info)
+      partner_iso = partnership_strength_country_to_iso(Country, country_info),
+      value = Energy_Security_Index
     ) %>%
-    dplyr::filter(grepl("Overall\\s*Energy\\s*Security", variable, ignore.case = TRUE)) %>%
     dplyr::transmute(partner_iso, tech, supply_chain, energy_sec_raw = 1 - value)
 
   ghg_iso <- tech_ghg %>%
@@ -121,7 +121,9 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       Country = partnership_strength_standardize_countries(Country),
       iso3c = partnership_strength_country_to_iso(Country, country_info)
     ) %>%
-    dplyr::transmute(iso3c, climate_policy_index)
+    dplyr::transmute(iso3c, climate_policy_index) %>%
+    dplyr::group_by(iso3c) %>%
+    dplyr::summarize(climate_policy_index = mean(climate_policy_index, na.rm = TRUE), .groups = "drop")
 
   default_ghg <- if (nrow(ghg_iso)) median(ghg_iso$ghg_index, na.rm = TRUE) else 0.5
   default_policy <- if (nrow(policy_iso)) median(policy_iso$climate_policy_index, na.rm = TRUE) else 0.5
@@ -223,7 +225,8 @@ partnership_strength_build_opportunity_inputs_country <- function(opportunity_al
     dplyr::group_by(partner_iso, tech, supply_chain) %>%
     dplyr::slice_max(order_by = opportunity_index, n = top_n, with_ties = FALSE) %>%
     dplyr::ungroup() %>%
-    dplyr::select(partner_iso, reporter_iso, tech, supply_chain)
+    dplyr::select(partner_iso, reporter_iso, tech, supply_chain) %>%
+    dplyr::distinct()
 
   if (nrow(top_dyads) == 0) {
     return(tibble::tibble(
@@ -273,7 +276,14 @@ partnership_strength_build_opportunity_inputs_country <- function(opportunity_al
     ) %>%
     dplyr::left_join(component_weights_tbl, by = "component_key") %>%
     dplyr::mutate(weighted_component = value * component_weight_share) %>%
-    dplyr::group_by(Country, tech, supply_chain, component_key, component_weight) %>%
+    dplyr::group_by(
+      Country,
+      tech,
+      supply_chain,
+      component_key,
+      component_weight,
+      component_weight_share
+    ) %>%
     dplyr::summarize(
       value = mean(value, na.rm = TRUE),
       weighted_component = mean(weighted_component, na.rm = TRUE),
