@@ -94,12 +94,13 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
     climate_policy_weight = 0.2
   )
   climate_policy_weight <- 0.2
-  component_weights_mean <- component_weights
   if (!is.null(component_weights)) {
     if (!is.null(component_weights$climate_policy_weight)) {
       climate_policy_weight <- component_weights$climate_policy_weight
     }
-    component_weights_mean$climate_policy_weight <- NULL
+    component_weights_mean <- component_weights[names(default_weights)]
+  } else {
+    component_weights_mean <- NULL
   }
   component_weights <- partnership_strength_resolve_weights(
     component_weights_mean,
