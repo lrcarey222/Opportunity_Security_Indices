@@ -202,11 +202,11 @@ energy_prices_build_table <- function(volatility_by_tech,
 
 energy_prices <- function(imf_price,
                           mineral_demand_clean,
-                          ...,
                           country_info = NULL,
                           years_back = c(5, 10, 20),
                           min_months = 24,
-                          gamma = 0.5) {
+                          gamma = 0.5,
+                          ...) {
   imf_monthly_long <- energy_prices_imf_monthly_long(imf_price)
   imf_monthly <- energy_prices_imf_clean(imf_monthly_long)
 
