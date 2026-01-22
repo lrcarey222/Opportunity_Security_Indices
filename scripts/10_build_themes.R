@@ -276,7 +276,8 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   imf_price <- read.csv(imf_commodity_prices_path)
   energy_prices_tbl <- energy_prices(
     imf_price = imf_price,
-    mineral_demand_clean = mineral_demand_clean
+    mineral_demand_clean = mineral_demand_clean,
+    country_info = country_info
   )
   energy_prices_tbl <- standardize_theme_types(energy_prices_tbl, country_info = country_info)
 

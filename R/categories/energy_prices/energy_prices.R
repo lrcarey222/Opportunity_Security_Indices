@@ -151,8 +151,20 @@ energy_prices_build_volatility <- function(imf_monthly, mineral_demand_clean, ye
     )
 }
 
-energy_prices_build_table <- function(volatility_by_tech, as_of_year, gamma = 0.5) {
-  volatility_by_tech %>%
+energy_prices_build_table <- function(volatility_by_tech,
+                                      as_of_year,
+                                      country_info = NULL,
+                                      gamma = 0.5) {
+  base_tbl <- if (!is.null(country_info) && "country" %in% names(country_info)) {
+    countries <- country_info %>%
+      dplyr::distinct(country) %>%
+      dplyr::rename(Country = country)
+    tidyr::crossing(countries, volatility_by_tech)
+  } else {
+    volatility_by_tech %>% dplyr::mutate(Country = "Global")
+  }
+
+  base_tbl %>%
     dplyr::mutate(
       price_volatility = suppressWarnings(as.numeric(vol_logret_annualized)),
       price_volatility_index = median_scurve(-price_volatility, gamma = gamma)
@@ -163,7 +175,6 @@ energy_prices_build_table <- function(volatility_by_tech, as_of_year, gamma = 0.
       values_to = "value"
     ) %>%
     dplyr::mutate(
-      Country = "Global",
       supply_chain = "Upstream",
       category = "Energy Prices",
       data_type = dplyr::if_else(stringr::str_detect(variable, "_index$"), "index", "raw"),
@@ -192,6 +203,7 @@ energy_prices_build_table <- function(volatility_by_tech, as_of_year, gamma = 0.
 energy_prices <- function(imf_price,
                           mineral_demand_clean,
                           ...,
+                          country_info = NULL,
                           years_back = c(5, 10, 20),
                           min_months = 24,
                           gamma = 0.5) {
@@ -210,6 +222,7 @@ energy_prices <- function(imf_price,
   energy_prices_build_table(
     volatility_by_tech = volatility_by_tech,
     as_of_year = as_of_year,
+    country_info = country_info,
     gamma = gamma
   ) %>%
     energy_security_add_overall_index()
