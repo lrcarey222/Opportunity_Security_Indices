@@ -13,6 +13,7 @@ source(file.path(repo_root, "R", "categories", "foreign_dependency", "critical_m
 source(file.path(repo_root, "R", "categories", "production", "critical_minerals_production.R"))
 source(file.path(repo_root, "R", "categories", "minerals_trade", "critical_minerals_trade.R"))
 source(file.path(repo_root, "R", "categories", "energy_access", "energy_access_consumption.R"))
+source(file.path(repo_root, "R", "categories", "energy_access", "solar_pv_potential.R"))
 source(file.path(repo_root, "R", "categories", "consumption", "energy_consumption.R"))
 source(file.path(repo_root, "R", "categories", "energy_prices", "energy_prices.R"))
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "foreign_dependency.R"))
@@ -119,6 +120,7 @@ bnef_supply_chain_path <- file.path(latest_snapshot, "BNEF_Energy Transition Sup
 relative_costs_iea_path <- file.path(latest_snapshot, "Relative_Costs_IEA.csv")
 imf_lending_rates_path <- file.path(latest_snapshot, "imf_lending_rates.csv")
 imf_ppi_path <- file.path(latest_snapshot, "imf_ppi.csv")
+solar_pv_potential_path <- file.path(latest_snapshot, "solar_potential_clean.csv")
 
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
@@ -145,7 +147,8 @@ missing_files <- c(
   bnef_supply_chain_path,
   relative_costs_iea_path,
   imf_lending_rates_path,
-  imf_ppi_path
+  imf_ppi_path,
+  solar_pv_potential_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
 
@@ -166,6 +169,14 @@ country_info <- standardize_country_info(country_info)
 # Theme: Energy access and consumption (EI data).
 energy_access_tbl <- energy_access_consumption(ei)
 energy_access_tbl <- standardize_theme_types(energy_access_tbl, country_info = country_info)
+
+# Theme: Solar PV potential (Global Solar Atlas GIS data).
+solar_pv_raw <- read.csv(solar_pv_potential_path)
+solar_pv_potential_tbl <- solar_pv_potential(solar_pv_raw)
+solar_pv_potential_tbl <- standardize_theme_types(
+  solar_pv_potential_tbl,
+  country_info = country_info
+)
 
 # Theme: Import dependence (EI data).
 import_dependence_tbl <- import_dependence(ei)
@@ -379,6 +390,7 @@ theme_outputs <- list(
   critical_minerals_production = critical_minerals_production_tbl,
   critical_minerals_trade = critical_minerals_trade_tbl,
   energy_access_consumption = energy_access_tbl,
+  solar_pv_potential = solar_pv_potential_tbl,
   energy_consumption = energy_consumption_tbl,
   energy_prices = energy_prices_tbl,
   foreign_dependency = foreign_dependency_tbl,

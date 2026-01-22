@@ -24,6 +24,7 @@ include_sub_sector <- isTRUE(if (!is.null(config$include_sub_sector)) {
 })
 energy_security_inputs <- list(
   energy_access_consumption = energy_access_tbl,
+  solar_pv_potential = solar_pv_potential_tbl,
   import_dependence = import_dependence_tbl,
   reserves = reserves_tbl,
   foreign_dependency = foreign_dependency_tbl,
@@ -54,6 +55,7 @@ energy_security_index <- if (!is.null(energy_security_outputs$index)) {
 
 economic_opportunity_inputs <- list(
   energy_access_consumption = energy_access_tbl,
+  solar_pv_potential = solar_pv_potential_tbl,
   energy_consumption = energy_consumption_tbl,
   energy_prices = energy_prices_tbl,
   export_feasibility = export_feasibility_tbl,
