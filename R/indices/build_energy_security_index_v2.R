@@ -35,6 +35,27 @@ standardize_energy_security_inputs_v2 <- function(theme_tables, include_sub_sect
 
   standardized <- dplyr::bind_rows(standardized)
 
+  if (nrow(standardized) > 0 && "theme" %in% names(standardized)) {
+    global_energy_prices <- standardized %>%
+      dplyr::filter(theme == "energy_prices", Country == "Global")
+
+    if (nrow(global_energy_prices) > 0) {
+      country_reference <- standardized %>%
+        dplyr::filter(Country != "Global") %>%
+        dplyr::distinct(Country)
+
+      if (nrow(country_reference) > 0) {
+        expanded_energy_prices <- global_energy_prices %>%
+          dplyr::select(-Country) %>%
+          tidyr::crossing(country_reference)
+
+        standardized <- standardized %>%
+          dplyr::filter(!(theme == "energy_prices" & Country == "Global")) %>%
+          dplyr::bind_rows(expanded_energy_prices)
+      }
+    }
+  }
+
   if (!"sub_sector" %in% names(standardized)) {
     standardized$sub_sector <- NA_character_
   }
