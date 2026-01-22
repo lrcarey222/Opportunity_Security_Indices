@@ -186,18 +186,26 @@ if (!file.exists(oecd_api_path)) {
       iso_vec <- iso_vec[wdi_country_info$income != "High income"]
     }
     iso_vec <- iso_vec[!is.na(iso_vec) & nzchar(iso_vec)]
+    
+    iso_vec_high <- wdi_country_info$iso3c
+    if ("income" %in% names(wdi_country_info)) {
+      iso_vec_high <- iso_vec_high[wdi_country_info$income == "High income"]
+    }
+    iso_vec_high <- iso_vec_high[!is.na(iso_vec_high) & nzchar(iso_vec_high)]
 
     chunk_size <- 132
     iso_chunks <- split(iso_vec, ceiling(seq_along(iso_vec) / chunk_size))
+    iso_chunks_high <- split(iso_vec_high, ceiling(seq_along(iso_vec_high) / chunk_size))
 
-    fetch_chunk <- function(recipients) {
+    fetch_chunk <- function(donors, recipients) {
+      dons   <- paste(donors, collapse = "+")
       recips <- paste(recipients, collapse = "+")
 
       url <- glue::glue(
         "https://sdmx.oecd.org/dcd-public/rest/data/",
-        "OECD.DCD.FSD,DSD_CRS@DF_CRS,1.4/USA.{recips}.",
+        "OECD.DCD.FSD,DSD_CRS@DF_CRS,1.4/{dons}.{recips}.",
         "32262+32261+322+321+230+1000.100._T._T.D.Q._T..",
-        "?startPeriod=2014",
+        "?startPeriod=2013",
         "&dimensionAtObservation=AllDimensions",
         "&format=csvfilewithlabels"
       )
@@ -223,7 +231,7 @@ if (!file.exists(oecd_api_path)) {
     }
 
     all_oecd <- purrr::map_dfr(iso_chunks, function(chunk) {
-      dat <- fetch_chunk(chunk)
+      dat <- fetch_chunk(donors=iso_vec_high, recipients=chunk)
       Sys.sleep(12)
       dat
     })

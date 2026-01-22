@@ -174,9 +174,7 @@ overall_variables:
   Overall Energy Prices Index:
     category: "Energy Prices"
     components:
-      - "lcoe_24"
-      - "lcoe_50"
-      - "Overall input cost index"
+      - "price_volatility"
     aggregation: mean
   Overall Technology Demand Index:
     category: "Technology Demand"
@@ -207,6 +205,9 @@ overall_variables:
   Overall Input Cost Index:
     category: "Cost Competitiveness"
     components:
+      - "lcoe_24"
+      - "lcoe_50"
+      - "Overall input cost index"
       - "Input Cost Index"
       - "IEA Cost index"
     aggregation: mean

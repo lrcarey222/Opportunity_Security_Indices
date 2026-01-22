@@ -7,7 +7,7 @@ energy_security:
   Production: 6
   Energy Access: 4
   Consumption: 5
-  Energy Prices: 0
+  Energy Prices: 2
 
 economic_opportunity:
   Trade: 3
@@ -29,7 +29,7 @@ partnership_opportunity_components:
   trade_index: 2
   econ_opp_index: 4
   energy_security_index: 1
-  climate_policy_weight: 0.2
+  climate_policy_weight: 0.05
 
 partnership_friendshore_components:
   imp_trade_index: 2

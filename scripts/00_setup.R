@@ -121,3 +121,4 @@ options(
 setup_stub <- function() {
   NULL
 }
+

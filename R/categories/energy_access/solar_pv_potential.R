@@ -1,15 +1,9 @@
 # Solar photovoltaic power potential theme builder functions.
 
 solar_pv_potential_clean_raw <- function(pv_raw) {
-  require_columns(
-    pv_raw,
-    c("Country", "pvout_total", "pvout_mean"),
-    label = "solar_potential_clean"
-  )
-
   pv_raw %>%
     dplyr::transmute(
-      Country = standardize_country_names(Country),
+      Country = standardize_country_names(name_long),
       pvout_total = suppressWarnings(as.numeric(pvout_total)),
       pvout_mean = suppressWarnings(as.numeric(pvout_mean))
     ) %>%
