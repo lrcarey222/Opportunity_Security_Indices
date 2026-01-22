@@ -156,6 +156,8 @@ overall_variables:
     components:
       - "Energy consumption per capita"
       - "Energy consumption per capita growth"
+      - "Solar PV power potential"
+      - "Solar PV power potential per sq km"
     aggregation: mean
   Overall Consumption Index:
     category: "Consumption"
