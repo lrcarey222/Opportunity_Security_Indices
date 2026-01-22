@@ -78,17 +78,12 @@ economic_opportunity_category_contributions <- economic_opportunity_outputs$cate
 economic_opportunity_variable_contributions <- economic_opportunity_outputs$variable_contributions
 economic_opportunity_index <- economic_opportunity_outputs$index
 
-hhi_tbl <- trade_concentration_tbl %>%
-  dplyr::filter(variable == "HHI", data_type == "index") %>%
-  dplyr::select(tech, supply_chain, sub_sector, Year, HHI = value) %>%
-  dplyr::distinct()
 
-energy_security_index_coupled <- couple_pillar_scores_by_hhi(
-  pillar_tbl = energy_security_index,
-  hhi_tbl = hhi_tbl,
-  score_col = energy_security_index,
-  include_sub_sector = include_sub_sector
-)
+strategic_index<-left_join(economic_opportunity_index,energy_security_index,by=c("Country","tech","supply_chain")) %>%
+  mutate(strategic_index=Economic_Opportunity_Index + Energy_Security_Index )
+
+
+
 
 if (exists("economic_opportunity_index")) {
   economic_opportunity_index_coupled <- couple_pillar_scores_by_hhi(
