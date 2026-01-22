@@ -7,6 +7,7 @@ source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index_v2.R"))
+source(file.path(repo_root, "R", "indices", "build_policy_index.R"))
 source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
 
 config <- getOption("opportunity_security.config")
@@ -22,6 +23,7 @@ include_sub_sector <- isTRUE(if (!is.null(config$include_sub_sector)) {
 } else {
   config$energy_security_include_sub_sector
 })
+processed_dir <- file.path(repo_root, config$processed_dir)
 energy_security_inputs <- list(
   energy_access_consumption = energy_access_tbl,
   solar_pv_potential = solar_pv_potential_tbl,
@@ -83,6 +85,46 @@ economic_opportunity_category_contributions <- economic_opportunity_outputs$cate
 economic_opportunity_variable_contributions <- economic_opportunity_outputs$variable_contributions
 economic_opportunity_index <- economic_opportunity_outputs$index
 
+manifest_path <- file.path(repo_root, "config", "raw_inputs_manifest.yml")
+if (!file.exists(manifest_path)) {
+  stop("Raw inputs manifest not found: ", manifest_path)
+}
+raw_manifest <- yaml::read_yaml(manifest_path)
+if (length(raw_manifest) == 0) {
+  stop("Raw inputs manifest is empty: ", manifest_path)
+}
+pams_entries <- vapply(raw_manifest, function(entry) {
+  is.character(entry$path) && stringr::str_detect(entry$path, "IEA_PAMS_Export")
+}, logical(1))
+if (!any(pams_entries)) {
+  stop("PAMS export not found in raw inputs manifest; add the IEA PAMS file entry.")
+}
+if (sum(pams_entries) > 1) {
+  stop("Multiple PAMS exports found in raw inputs manifest; keep only one entry.")
+}
+pams_policy_path <- raw_manifest[[which(pams_entries)[1]]]$path
+pams_processed_path <- file.path(processed_dir, pams_policy_path)
+if (!file.exists(pams_processed_path)) {
+  stop("PAMS policy input not found: ", pams_processed_path)
+}
+
+pams_raw <- readr::read_csv(
+  pams_processed_path,
+  show_col_types = FALSE,
+  col_types = readr::cols(
+    countries = readr::col_character(),
+    technologies = readr::col_character(),
+    tags = readr::col_character(),
+    policyType = readr::col_character(),
+    .default = readr::col_character()
+  )
+)
+
+policy_outputs <- build_policy_index_from_raw(pams_raw, split_strength = FALSE)
+policy_index <- policy_outputs$policy_index
+policy_agg <- policy_outputs$policy_agg
+policy_clean <- policy_outputs$policy_clean
+
 
 strategic_index<-left_join(economic_opportunity_index,energy_security_index,by=c("Country","tech","supply_chain")) %>%
   group_by(Country) %>%
@@ -143,6 +185,7 @@ saveRDS(
   list(
     energy_security_outputs = energy_security_outputs,
     economic_opportunity_outputs = economic_opportunity_outputs,
+    policy_outputs = policy_outputs,
     energy_security_category_scores = energy_security_category_scores,
     energy_security_category_contributions = energy_security_category_contributions,
     energy_security_variable_contributions = energy_security_variable_contributions,
@@ -150,7 +193,10 @@ saveRDS(
     economic_opportunity_category_scores = economic_opportunity_category_scores,
     economic_opportunity_category_contributions = economic_opportunity_category_contributions,
     economic_opportunity_variable_contributions = economic_opportunity_variable_contributions,
-    economic_opportunity_index = economic_opportunity_index
+    economic_opportunity_index = economic_opportunity_index,
+    policy_index = policy_index,
+    policy_agg = policy_agg,
+    policy_clean = policy_clean
   ),
   outputs_rds_path
 )
