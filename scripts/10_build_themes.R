@@ -120,6 +120,7 @@ bnef_supply_chain_path <- file.path(latest_snapshot, "BNEF_Energy Transition Sup
 relative_costs_iea_path <- file.path(latest_snapshot, "Relative_Costs_IEA.csv")
 imf_lending_rates_path <- file.path(latest_snapshot, "imf_lending_rates.csv")
 imf_ppi_path <- file.path(latest_snapshot, "imf_ppi.csv")
+imf_commodity_prices_path <- file.path(latest_snapshot, "imf_commodity_prices.csv")
 solar_pv_potential_path <- file.path(latest_snapshot, "solar_potential_clean.csv")
 
 # Fail fast (or skip) if required raw inputs are missing.
@@ -148,6 +149,7 @@ missing_files <- c(
   relative_costs_iea_path,
   imf_lending_rates_path,
   imf_ppi_path,
+  imf_commodity_prices_path,
   solar_pv_potential_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
@@ -270,19 +272,16 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   )
   energy_consumption_tbl <- standardize_theme_types(energy_consumption_tbl, country_info = country_info)
 
-  # Theme: Energy prices (EI + BNEF data).
-  gas_price_sheet <- readxl::read_excel(reserves_excel_path, sheet = 40, skip = 3)
-  coal_price_sheet <- readxl::read_excel(reserves_excel_path, sheet = 50, skip = 3)
-  lcoe_bnef <- read.csv(energy_prices_lcoe_path, skip = 8)
+  # Theme: Energy prices (IMF data).
+  imf_price <- read.csv(imf_commodity_prices_path)
   energy_prices_tbl <- energy_prices(
-    ei = ei,
-    gas_price_sheet = gas_price_sheet,
-    coal_price_sheet = coal_price_sheet,
-    lcoe_bnef = lcoe_bnef
+    imf_price = imf_price,
+    mineral_demand_clean = mineral_demand_clean
   )
   energy_prices_tbl <- standardize_theme_types(energy_prices_tbl, country_info = country_info)
 
   # Theme: LCOE competitiveness (BNEF data).
+  lcoe_bnef <- read.csv(energy_prices_lcoe_path, skip = 8)
   lcoe_competitiveness_tbl <- lcoe_competitiveness(lcoe_bnef = lcoe_bnef)
   lcoe_competitiveness_tbl <- standardize_theme_types(
     lcoe_competitiveness_tbl,
