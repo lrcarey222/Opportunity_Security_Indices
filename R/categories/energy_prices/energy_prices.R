@@ -191,6 +191,7 @@ energy_prices_build_table <- function(volatility_by_tech, as_of_year, gamma = 0.
 
 energy_prices <- function(imf_price,
                           mineral_demand_clean,
+                          ...,
                           years_back = c(5, 10, 20),
                           min_months = 24,
                           gamma = 0.5) {
