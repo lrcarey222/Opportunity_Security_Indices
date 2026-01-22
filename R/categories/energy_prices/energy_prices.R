@@ -200,6 +200,30 @@ energy_prices_build_table <- function(volatility_by_tech,
     )
 }
 
+energy_prices_add_overall_fallback <- function(tbl) {
+  if (is.null(tbl) || nrow(tbl) == 0) {
+    return(tbl)
+  }
+
+  has_overall <- any(
+    tbl$variable == "Overall Energy Prices Index" & tbl$data_type == "index",
+    na.rm = TRUE
+  )
+  if (has_overall) {
+    return(tbl)
+  }
+
+  fallback <- tbl %>%
+    dplyr::filter(variable == "price_volatility", data_type == "index") %>%
+    dplyr::mutate(
+      variable = "Overall Energy Prices Index",
+      source = "Author calculation",
+      explanation = "Author calculation across category indices"
+    )
+
+  dplyr::bind_rows(tbl, fallback)
+}
+
 energy_prices <- function(imf_price,
                           mineral_demand_clean,
                           country_info = NULL,
@@ -225,5 +249,6 @@ energy_prices <- function(imf_price,
     country_info = country_info,
     gamma = gamma
   ) %>%
+    energy_prices_add_overall_fallback() %>%
     energy_security_add_overall_index()
 }
