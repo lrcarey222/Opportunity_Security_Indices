@@ -154,7 +154,7 @@ energy_prices_build_volatility <- function(imf_monthly, mineral_demand_clean, ye
 energy_prices_build_table <- function(volatility_by_tech, as_of_year, gamma = 0.5) {
   volatility_by_tech %>%
     dplyr::mutate(
-      price_volatility = vol_logret_annualized,
+      price_volatility = suppressWarnings(as.numeric(vol_logret_annualized)),
       price_volatility_index = median_scurve(-price_volatility, gamma = gamma)
     ) %>%
     tidyr::pivot_longer(
