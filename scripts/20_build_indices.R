@@ -83,7 +83,8 @@ economic_opportunity_index <- economic_opportunity_outputs$index
 
 
 strategic_index<-left_join(economic_opportunity_index,energy_security_index,by=c("Country","tech","supply_chain")) %>%
-  mutate(strategic_index=Economic_Opportunity_Index + Energy_Security_Index )
+  group_by(Country) %>%
+  mutate(strategic_index=median_scurve(Economic_Opportunity_Index) + (1-median_scurve(Energy_Security_Index )))
 
 
 

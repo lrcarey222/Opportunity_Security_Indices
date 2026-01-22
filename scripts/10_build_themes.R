@@ -279,7 +279,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     mineral_demand_clean = mineral_demand_clean,
     country_info = country_info
   )
-  energy_prices_tbl <- standardize_theme_types(energy_prices_tbl, country_info = country_info)
+  #energy_prices_tbl2 <- standardize_theme_types(energy_prices_tbl, country_info = country_info)
 
   # Theme: LCOE competitiveness (BNEF data).
   lcoe_bnef <- read.csv(energy_prices_lcoe_path, skip = 8)
