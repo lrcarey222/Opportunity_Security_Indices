@@ -61,6 +61,7 @@ economic_opportunity_inputs <- list(
   export_feasibility = export_feasibility_tbl,
   foreign_dependency = foreign_dependency_tbl,
   future_demand = future_demand_tbl,
+  lcoe_competitiveness = lcoe_competitiveness_tbl,
   market_share_manufacturing = market_share_manufacturing_tbl,
   cost_competitiveness = cost_competitiveness_tbl,
   production_depth_momentum = production_depth_momentum_tbl,
