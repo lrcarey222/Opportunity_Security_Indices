@@ -1,89 +1,189 @@
-# Energy prices theme builder functions.
+# Energy prices theme builder functions (IMF price volatility).
 
-# ---- Clean EI price sheet (gas/coal) ----
-energy_prices_clean_ei_sheet <- function(price_sheet,
-                                         price_col,
-                                         drop_regex,
-                                         eu_marker,
-                                         country_recode,
-                                         year_range = 2019:2024) {
-  price_col <- rlang::ensym(price_col)
+energy_prices_imf_patterns <- list(
+  Aluminum = "aluminum.*(unit prices|us dollars|usd)",
+  Oil_APSP = "apsp.*crude oil|crude oil.*apsp",
+  Oil_Brent = "brent.*crude|brent.*oil",
+  Oil_WTI = "wti.*crude|wti.*oil",
+  Chromium = "chromium",
+  Coal = "coal",
+  Cobalt = "cobalt",
+  Copper = "copper",
+  Lithium = "lithium",
+  LNG = "lng|liquefied natural gas",
+  Manganese = "manganese",
+  Natural_Gas_Index = "natural gas index|commodity price index.*natural gas",
+  Natural_Gas_EU = "natural gas.*eu",
+  Natural_Gas_Henry_Hub = "henry hub|us henry hub",
+  Nickel = "nickel",
+  Rare_Earths = "rare earth",
+  Silicon = "silicon",
+  Uranium = "uranium",
+  Zinc = "zinc"
+)
 
-  price_sheet %>%
-    dplyr::rename(Year = `...1`) %>%
-    dplyr::filter(stringr::str_detect(Year, "^\\d{4}$")) %>%
-    dplyr::select(-dplyr::matches(drop_regex)) %>%
-    dplyr::mutate(
-      dplyr::across(-Year, ~ dplyr::na_if(as.character(.x), "-")),
-      dplyr::across(-Year, readr::parse_number)
-    ) %>%
-    dplyr::filter(Year %in% year_range) %>%
-    tidyr::pivot_longer(
-      cols = -Year,
-      names_to = "Country",
-      values_to = "Value",
-      values_drop_na = TRUE
-    ) %>%
-    dplyr::mutate(
-      Country = Country %>%
-        stringr::str_remove_all("\\d+") %>%
-        stringr::str_remove_all("\\s*\\(Mainland\\)") %>%
-        stringr::str_trim() %>%
-        dplyr::recode(!!!country_recode),
-      EU = dplyr::if_else(Country == eu_marker, 1L, 0L),
-      country2 = dplyr::if_else(EU == 1L, "EU", Country)
-    ) %>%
-    dplyr::group_by(country2) %>%
-    dplyr::summarize(!!price_col := mean(Value, na.rm = TRUE), .groups = "drop")
+energy_prices_normalize_mineral <- function(x) {
+  stringr::str_to_lower(stringr::str_replace_all(x, "_", " "))
 }
 
-# ---- Build EI price indices (gas + coal) ----
-energy_prices_build_ei_indices <- function(ei, gas_prices, coal_prices, gamma = 0.5) {
-  ei %>%
-    dplyr::mutate(country2 = dplyr::if_else(EU == 1L, "EU", Country)) %>%
-    dplyr::distinct(Country, country2) %>%
-    dplyr::left_join(gas_prices %>% dplyr::select(country2, Gas), by = "country2") %>%
-    dplyr::mutate(
-      Country = dplyr::if_else(Country == "US", "United States", Country),
-      country2 = dplyr::if_else(country2 == "US", "United States", country2)
-    ) %>%
-    dplyr::left_join(coal_prices %>% dplyr::select(country2, Coal), by = "country2") %>%
-    dplyr::select(-country2) %>%
-    dplyr::rename(
-      gas_price = Gas,
-      coal_price = Coal
-    ) %>%
-    dplyr::filter(!is.na(gas_price), !is.na(coal_price)) %>%
-    dplyr::mutate(
-      gas_price_index = median_scurve(gas_price, gamma = gamma),
-      coal_price_index = median_scurve(coal_price, gamma = gamma)
-    ) %>%
+energy_prices_imf_monthly_long <- function(imf_price) {
+  monthly_re <- "^X\\d{4}\\.M\\d{2}$"
+
+  imf_price %>%
+    dplyr::select(INDICATOR, dplyr::matches(monthly_re)) %>%
     tidyr::pivot_longer(
-      cols = c(gas_price:coal_price_index),
-      names_to = "tech",
-      values_to = "value"
+      cols = dplyr::matches(monthly_re),
+      names_to = "period",
+      values_to = "value_raw"
+    ) %>%
+    dplyr::mutate(
+      year = as.integer(stringr::str_match(period, "^X(\\d{4})\\.M\\d{2}$")[, 2]),
+      month = as.integer(stringr::str_match(period, "^X\\d{4}\\.M(\\d{2})$")[, 2]),
+      date = as.Date(sprintf("%04d-%02d-01", year, month)),
+      value = suppressWarnings(as.numeric(stringr::str_replace_all(as.character(value_raw), ",", "")))
+    ) %>%
+    dplyr::select(INDICATOR, date, value) %>%
+    dplyr::filter(!is.na(date))
+}
+
+energy_prices_imf_clean <- function(imf_monthly_long, patterns = energy_prices_imf_patterns) {
+  imf_monthly_long %>%
+    dplyr::mutate(ind_lc = stringr::str_to_lower(INDICATOR)) %>%
+    dplyr::mutate(
+      clean = dplyr::case_when(
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Aluminum, ignore_case = TRUE)) ~ "Aluminum",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Oil_APSP, ignore_case = TRUE)) ~ "Oil_APSP",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Oil_Brent, ignore_case = TRUE)) ~ "Oil_Brent",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Oil_WTI, ignore_case = TRUE)) ~ "Oil_WTI",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Chromium, ignore_case = TRUE)) ~ "Chromium",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Coal, ignore_case = TRUE)) ~ "Coal",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Cobalt, ignore_case = TRUE)) ~ "Cobalt",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Copper, ignore_case = TRUE)) ~ "Copper",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Lithium, ignore_case = TRUE)) ~ "Lithium",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$LNG, ignore_case = TRUE)) ~ "LNG",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Manganese, ignore_case = TRUE)) ~ "Manganese",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Natural_Gas_Index, ignore_case = TRUE)) ~ "Natural_Gas_Index",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Natural_Gas_EU, ignore_case = TRUE)) ~ "Natural_Gas_EU",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Natural_Gas_Henry_Hub, ignore_case = TRUE)) ~ "Natural_Gas_Henry_Hub",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Nickel, ignore_case = TRUE)) ~ "Nickel",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Rare_Earths, ignore_case = TRUE)) ~ "Rare_Earths",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Silicon, ignore_case = TRUE)) ~ "Silicon",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Uranium, ignore_case = TRUE)) ~ "Uranium",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Zinc, ignore_case = TRUE)) ~ "Zinc",
+        TRUE ~ NA_character_
+      )
+    ) %>%
+    dplyr::select(-ind_lc) %>%
+    dplyr::filter(!is.na(value), !is.na(clean))
+}
+
+energy_prices_calc_vol <- function(df, years_back, min_months = 24) {
+  stopifnot(all(c("date", "value") %in% names(df)))
+  end_date <- max(df$date, na.rm = TRUE)
+  start_date <- lubridate::`%m-%`(end_date, lubridate::years(years_back))
+
+  x <- df %>%
+    dplyr::filter(date > start_date, date <= end_date) %>%
+    dplyr::arrange(date) %>%
+    dplyr::filter(!is.na(value))
+
+  n_obs <- nrow(x)
+
+  lr <- x %>%
+    dplyr::filter(value > 0) %>%
+    dplyr::mutate(log_ret = log(value) - dplyr::lag(log(value))) %>%
+    dplyr::pull(log_ret)
+
+  lr <- lr[is.finite(lr) & !is.na(lr)]
+
+  tibble::tibble(
+    window_years = years_back,
+    end_date = end_date,
+    start_date = start_date,
+    n_months = n_obs,
+    vol_logret_annualized = if (length(lr) >= min_months) sqrt(12) * stats::sd(lr, na.rm = TRUE) else NA_real_,
+    vol_level_sd = if (n_obs >= min_months) stats::sd(x$value, na.rm = TRUE) else NA_real_,
+    vol_level_cv = if (n_obs >= min_months) stats::sd(x$value, na.rm = TRUE) / mean(x$value, na.rm = TRUE) else NA_real_
+  )
+}
+
+energy_prices_build_volatility <- function(imf_monthly, mineral_demand_clean, years_back = c(5, 10, 20), min_months = 24) {
+  mineral_map <- mineral_demand_clean %>%
+    dplyr::mutate(
+      Mineral = dplyr::if_else(
+        stringr::str_detect(Mineral, stringr::regex("graphite", ignore_case = TRUE)),
+        "Graphite",
+        Mineral
+      ),
+      clean_key = energy_prices_normalize_mineral(Mineral)
+    ) %>%
+    dplyr::select(clean_key, tech) %>%
+    dplyr::distinct()
+
+  volatility_by_indicator <- imf_monthly %>%
+    dplyr::group_by(INDICATOR, clean) %>%
+    dplyr::group_modify(~ dplyr::bind_rows(lapply(years_back, function(window_years) {
+      energy_prices_calc_vol(.x, window_years, min_months = min_months)
+    }))) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(clean_key = energy_prices_normalize_mineral(clean)) %>%
+    dplyr::left_join(mineral_map, by = "clean_key") %>%
+    dplyr::mutate(
+      tech = dplyr::case_when(
+        clean %in% c("Oil_APSP", "Oil_Brent", "Oil_WTI") ~ "Oil",
+        clean %in% c("Natural_Gas_Index", "Natural_Gas_EU", "Natural_Gas_Henry_Hub", "LNG") ~ "Gas",
+        clean == "Coal" ~ "Coal",
+        !is.na(tech) ~ tech,
+        TRUE ~ clean
+      )
+    ) %>%
+    dplyr::select(-clean_key)
+
+  volatility_by_indicator %>%
+    dplyr::filter(!is.na(tech)) %>%
+    dplyr::group_by(tech) %>%
+    dplyr::summarize(
+      vol_logret_annualized = mean(vol_logret_annualized, na.rm = TRUE),
+      vol_level_sd = mean(vol_level_sd, na.rm = TRUE),
+      vol_level_cv = mean(vol_level_cv, na.rm = TRUE),
+      n_series = sum(!is.na(vol_logret_annualized)),
+      .groups = "drop"
     )
 }
 
-# ---- Build EI energy price table ----
-energy_prices_build_ei_table <- function(ei_price_indices, year_range = 2019:2024) {
-  price_year <- paste0(min(year_range), "-", max(year_range))
+energy_prices_build_table <- function(volatility_by_tech,
+                                      as_of_year,
+                                      country_info = NULL,
+                                      gamma = 0.5) {
+  base_tbl <- if (!is.null(country_info) && "country" %in% names(country_info)) {
+    countries <- country_info %>%
+      dplyr::distinct(country) %>%
+      dplyr::rename(Country = country)
+    tidyr::crossing(countries, volatility_by_tech)
+  } else {
+    volatility_by_tech %>% dplyr::mutate(Country = "Global")
+  }
 
-  ei_price_indices %>%
+  base_tbl %>%
     dplyr::mutate(
-      data_type = dplyr::if_else(stringr::str_detect(tech, "_index$"), "index", "raw"),
-      tech = tech %>%
-        stringr::str_remove("_index$") %>%
-        stringr::str_replace_all("_", " ") %>%
-        stringr::str_to_sentence(),
-      supply_chain = "Downstream",
+      price_volatility = suppressWarnings(as.numeric(vol_logret_annualized)),
+      price_volatility_index = median_scurve(-price_volatility, gamma = gamma)
+    ) %>%
+    tidyr::pivot_longer(
+      cols = c(price_volatility, price_volatility_index),
+      names_to = "variable",
+      values_to = "value"
+    ) %>%
+    dplyr::mutate(
+      supply_chain = "Upstream",
       category = "Energy Prices",
-      variable = "Fuel Prices",
-      Year = price_year,
-      source = "EI Statistical Review of World Energy (2024)",
+      data_type = dplyr::if_else(stringr::str_detect(variable, "_index$"), "index", "raw"),
+      variable = stringr::str_remove(variable, "_index$"),
+      Year = as_of_year,
+      source = "IMF Commodity Prices",
       explanation = dplyr::case_when(
-        data_type == "raw" ~ "Price",
-        data_type == "index" ~ "Percent-rank of prices among countries"
+        data_type == "raw" ~ "Annualized volatility of monthly log returns.",
+        data_type == "index" ~ "Percent-rank of lower price volatility."
       )
     ) %>%
     dplyr::select(
@@ -100,124 +200,55 @@ energy_prices_build_ei_table <- function(ei_price_indices, year_range = 2019:202
     )
 }
 
-# ---- Build BNEF LCOE table ----
-energy_prices_build_lcoe_table <- function(lcoe_bnef, lcoe_years = c(2024, 2050), gamma = 0.5) {
-  lcoe_bnef %>%
+energy_prices_add_overall_fallback <- function(tbl) {
+  if (is.null(tbl) || nrow(tbl) == 0) {
+    return(tbl)
+  }
+
+  has_overall <- any(
+    tbl$variable == "Overall Energy Prices Index" & tbl$data_type == "index",
+    na.rm = TRUE
+  )
+  if (has_overall) {
+    return(tbl)
+  }
+
+  fallback <- tbl %>%
+    dplyr::filter(variable == "price_volatility", data_type == "index") %>%
     dplyr::mutate(
-      Technology = dplyr::recode(
-        Technology,
-        "CCGT" = "Gas",
-        "Coal" = "Coal",
-        "PV fixed-axis" = "Solar",
-        "PV fixed-axis + storage" = "Solar",
-        "Wind onshore" = "Wind",
-        "Utility-scale battery (1h)" = "Batteries",
-        "Utility-scale battery (4h)" = "Batteries",
-        .default = NA_character_
-      )
-    ) %>%
-    dplyr::filter(
-      Scenario == "Mid",
-      Metric == "LCOE",
-      !is.na(Technology)
-    ) %>%
-    dplyr::group_by(Technology, Region) %>%
-    dplyr::summarize(
-      lcoe_24_raw = mean(as.numeric(X2024), na.rm = TRUE),
-      lcoe_50_raw = mean(as.numeric(X2050), na.rm = TRUE),
-      .groups = "drop"
-    ) %>%
-    dplyr::group_by(Technology) %>%
-    dplyr::mutate(
-      lcoe_24_index = median_scurve(-lcoe_24_raw, gamma = gamma),
-      lcoe_50_index = median_scurve(-lcoe_50_raw, gamma = gamma)
-    ) %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(overall_lcoe_index = mean(dplyr::c_across(dplyr::ends_with("_index")), na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(
-      Region,
-      Technology,
-      lcoe_24_raw,
-      lcoe_50_raw,
-      lcoe_24_index,
-      lcoe_50_index,
-      overall_lcoe_index
-    ) %>%
-    tidyr::pivot_longer(
-      cols = c(lcoe_24_raw:overall_lcoe_index),
-      names_to = c("variable", "data_type"),
-      names_pattern = "(.*)_(raw|index)",
-      values_to = "value"
-    ) %>%
-    dplyr::transmute(
-      Country = Region,
-      tech = Technology,
-      supply_chain = "Downstream",
-      category = "Energy Prices",
-      variable,
-      data_type,
-      value,
-      Year = paste0(min(lcoe_years), "-", max(lcoe_years)),
-      source = "BNEF LCOE Estimates (2025)",
-      explanation = dplyr::case_when(
-        data_type == "raw" ~ "Levelized cost of energy",
-        data_type == "index" ~ "Percent-rank of LCOE across countries"
-      )
+      variable = "Overall Energy Prices Index",
+      source = "Author calculation",
+      explanation = "Author calculation across category indices"
     )
+
+  dplyr::bind_rows(tbl, fallback)
 }
 
-# ---- Energy prices theme ----
-energy_prices <- function(ei,
-                          gas_price_sheet,
-                          coal_price_sheet,
-                          lcoe_bnef,
-                          year_range = 2019:2024,
-                          gamma = 0.5) {
-  gas_prices <- energy_prices_clean_ei_sheet(
-    price_sheet = gas_price_sheet,
-    price_col = "Gas",
-    drop_regex = "US Gulf Coast6|Northwest Europe6|Middle East7|Far East Asia6",
-    eu_marker = "Zeebrugge",
-    country_recode = c("UK" = "United Kingdom"),
-    year_range = year_range
+energy_prices <- function(imf_price,
+                          mineral_demand_clean,
+                          country_info = NULL,
+                          years_back = c(5, 10, 20),
+                          min_months = 24,
+                          gamma = 0.5,
+                          ...) {
+  imf_monthly_long <- energy_prices_imf_monthly_long(imf_price)
+  imf_monthly <- energy_prices_imf_clean(imf_monthly_long)
+
+  volatility_by_tech <- energy_prices_build_volatility(
+    imf_monthly = imf_monthly,
+    mineral_demand_clean = mineral_demand_clean,
+    years_back = years_back,
+    min_months = min_months
   )
 
-  coal_prices <- energy_prices_clean_ei_sheet(
-    price_sheet = coal_price_sheet,
-    price_col = "Coal",
-    drop_regex = "Canada9",
-    eu_marker = "Northwest Europe",
-    country_recode = c(
-      "South China" = "China",
-      "UK" = "United Kingdom"
-    ),
-    year_range = year_range
-  )
+  as_of_year <- lubridate::year(max(imf_monthly$date, na.rm = TRUE))
 
-  ei_price_indices <- energy_prices_build_ei_indices(
-    ei = ei,
-    gas_prices = gas_prices,
-    coal_prices = coal_prices,
+  energy_prices_build_table(
+    volatility_by_tech = volatility_by_tech,
+    as_of_year = as_of_year,
+    country_info = country_info,
     gamma = gamma
-  )
-
-  ei_prices_tbl <- energy_prices_build_ei_table(
-    ei_price_indices = ei_price_indices,
-    year_range = year_range
-  )
-
-  lcoe_tbl <- energy_prices_build_lcoe_table(
-    lcoe_bnef = lcoe_bnef,
-    gamma = gamma
-  )
-
-  standardized <- lapply(
-    list(ei_prices_tbl, lcoe_tbl),
-    standardize_bind_rows_inputs
-  )
-
-  energy_security_add_overall_index(
-    dplyr::bind_rows(standardized)
-  )
+  ) %>%
+    energy_prices_add_overall_fallback() %>%
+    energy_security_add_overall_index()
 }
