@@ -10,7 +10,12 @@ source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
 source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index_v2.R"))
+source(file.path(repo_root, "R", "indices", "build_policy_index.R"))
 source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
+
+techs <- c("Electric Vehicles",
+           "Nuclear","Coal","Batteries","Green Hydrogen","Wind","Oil",                       
+           "Solar", "Gas", "Geothermal","Electric Grid")
 
 config <- getOption("opportunity_security.config")
 weights <- getOption("opportunity_security.weights")
@@ -29,6 +34,7 @@ processed_dir <- file.path(repo_root, config$processed_dir)
 energy_security_inputs <- list(
   energy_access_consumption = energy_access_tbl,
   solar_pv_potential = solar_pv_potential_tbl,
+  wind_potential = wind_potential_tbl,
   import_dependence = import_dependence_tbl,
   reserves = reserves_tbl,
   foreign_dependency = foreign_dependency_tbl,
@@ -60,6 +66,7 @@ energy_security_index <- if (!is.null(energy_security_outputs$index)) {
 economic_opportunity_inputs <- list(
   energy_access_consumption = energy_access_tbl,
   solar_pv_potential = solar_pv_potential_tbl,
+  wind_potential = wind_potential_tbl,
   energy_consumption = energy_consumption_tbl,
   energy_prices = energy_prices_tbl,
   export_feasibility = export_feasibility_tbl,
@@ -177,8 +184,6 @@ policy_index <- policy_component_tbl %>%
   )
 
 
-strategic_index<-left_join(economic_opportunity_index,energy_security_index,by=c("Country","tech","supply_chain")) %>%
-  mutate(strategic_index=Economic_Opportunity_Index + Energy_Security_Index )
 
 
 
