@@ -226,9 +226,11 @@ partnership_strength_clean_ghg <- function(tech_ghg_raw) {
 }
 
 partnership_strength_clean_policy <- function(cat_raw) {
-  require_columns(cat_raw, c("Country", "Overall.rating"), label = "cat_raw")
-
+  
   cat_raw %>%
+    dplyr::rename(
+      Overall.rating="Overall rating"
+    ) %>%
     dplyr::mutate(
       climate_policy_index = dplyr::case_when(
         Overall.rating == "Critically insufficient" ~ 0.25,
