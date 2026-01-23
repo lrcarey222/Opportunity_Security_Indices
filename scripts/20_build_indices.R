@@ -92,70 +92,13 @@ economic_opportunity_category_contributions <- economic_opportunity_outputs$cate
 economic_opportunity_variable_contributions <- economic_opportunity_outputs$variable_contributions
 economic_opportunity_index <- economic_opportunity_outputs$index
 
-manifest_path <- file.path(repo_root, "config", "raw_inputs_manifest.yml")
-if (!file.exists(manifest_path)) {
-  stop("Raw inputs manifest not found: ", manifest_path)
-}
-raw_manifest <- yaml::read_yaml(manifest_path)
-if (length(raw_manifest) == 0) {
-  stop("Raw inputs manifest is empty: ", manifest_path)
+if (!exists("policy_component_tbl") || !exists("policy_outputs")) {
+  stop("Policy theme outputs not found; run scripts/10_build_themes.R first.")
 }
 
-find_manifest_path <- function(pattern, label) {
-  hits <- vapply(raw_manifest, function(entry) {
-    is.character(entry$path) && stringr::str_detect(entry$path, pattern)
-  }, logical(1))
-  if (!any(hits)) {
-    stop(label, " not found in raw inputs manifest.")
-  }
-  if (sum(hits) > 1) {
-    stop("Multiple entries found for ", label, "; keep only one entry.")
-  }
-  raw_manifest[[which(hits)[1]]]$path
-}
-
-pams_policy_path <- find_manifest_path("IEA_PAMS_Export", "PAMS export")
-pams_processed_path <- file.path(processed_dir, pams_policy_path)
-
-tech_ghg_path <- find_manifest_path("ipcc_ghg_intensity.csv$", "IPCC GHG intensity")
-cat_policy_path <- find_manifest_path("CAT_country ratings data.csv$", "CAT policy ratings")
-tech_ghg_processed_path <- file.path(processed_dir, tech_ghg_path)
-cat_policy_processed_path <- file.path(processed_dir, cat_policy_path)
-missing_policy_inputs <- c(
-  pams_processed_path,
-  tech_ghg_processed_path,
-  cat_policy_processed_path
-)
-missing_policy_inputs <- missing_policy_inputs[!file.exists(missing_policy_inputs)]
-if (length(missing_policy_inputs) > 0) {
-  stop("Missing policy inputs:\n", paste0("- ", missing_policy_inputs, collapse = "\n"))
-}
-
-pams_raw <- readr::read_csv(
-  pams_processed_path,
-  show_col_types = FALSE,
-  col_types = readr::cols(
-    countries = readr::col_character(),
-    technologies = readr::col_character(),
-    tags = readr::col_character(),
-    policyType = readr::col_character(),
-    .default = readr::col_character()
-  )
-)
-tech_ghg_raw <- readr::read_csv(tech_ghg_processed_path, show_col_types = FALSE)
-cat_policy_raw <- readr::read_csv(cat_policy_processed_path, show_col_types = FALSE)
-
-iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
-iea_policy_index_tbl <- iea_policy_outputs$index_tbl
-policy_outputs <- iea_policy_outputs$outputs
 policy_agg <- policy_outputs$policy_agg
 policy_clean <- policy_outputs$policy_clean
 
-tech_ghg <- partnership_strength_clean_ghg(tech_ghg_raw)
-cat_policy <- partnership_strength_clean_policy(cat_policy_raw)
-cat_policy_index_tbl <- cat_policy_index(tech_ghg, cat_policy)
-
-policy_component_tbl <- dplyr::bind_rows(iea_policy_index_tbl, cat_policy_index_tbl)
 policy_index <- policy_component_tbl %>%
   dplyr::group_by(.data$Country, .data$tech, .data$supply_chain) %>%
   dplyr::summarize(

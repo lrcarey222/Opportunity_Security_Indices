@@ -8,6 +8,9 @@ source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
+source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
+source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
+source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
 source(file.path(repo_root, "R", "categories", "trade", "trade_core.R"))
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "critical_minerals_processing.R"))
 source(file.path(repo_root, "R", "categories", "production", "critical_minerals_production.R"))
@@ -96,6 +99,28 @@ if (is.null(latest_snapshot)) {
   return()
 }
 
+manifest_path <- file.path(repo_root, "config", "raw_inputs_manifest.yml")
+if (!file.exists(manifest_path)) {
+  stop("Raw inputs manifest not found: ", manifest_path)
+}
+raw_manifest <- yaml::read_yaml(manifest_path)
+if (length(raw_manifest) == 0) {
+  stop("Raw inputs manifest is empty: ", manifest_path)
+}
+
+find_manifest_path <- function(pattern, label) {
+  hits <- vapply(raw_manifest, function(entry) {
+    is.character(entry$path) && stringr::str_detect(entry$path, pattern)
+  }, logical(1))
+  if (!any(hits)) {
+    stop(label, " not found in raw inputs manifest.")
+  }
+  if (sum(hits) > 1) {
+    stop("Multiple entries found for ", label, "; keep only one entry.")
+  }
+  raw_manifest[[which(hits)[1]]]$path
+}
+
 # Assemble required raw file paths for theme builders.
 raw_path <- file.path(latest_snapshot, "ei_stat_review_world_energy.csv")
 reserves_excel_path <- file.path(latest_snapshot, "ei_stat_review_world_energy_wide.xlsx")
@@ -122,7 +147,18 @@ relative_costs_iea_path <- file.path(latest_snapshot, "Relative_Costs_IEA.csv")
 imf_lending_rates_path <- file.path(latest_snapshot, "imf_lending_rates.csv")
 imf_ppi_path <- file.path(latest_snapshot, "imf_ppi.csv")
 solar_pv_potential_path <- file.path(latest_snapshot, "solar_potential_clean.csv")
-wind_potential_path <- file.path(latest_snapshot, "wb_wind_country.csv")
+iea_pams_path <- file.path(
+  latest_snapshot,
+  find_manifest_path("IEA_PAMS_Export", "PAMS export")
+)
+tech_ghg_path <- file.path(
+  latest_snapshot,
+  find_manifest_path("ipcc_ghg_intensity.csv$", "IPCC GHG intensity")
+)
+cat_policy_path <- file.path(
+  latest_snapshot,
+  find_manifest_path("CAT_country ratings data.csv$", "CAT policy ratings")
+)
 
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
@@ -150,8 +186,11 @@ missing_files <- c(
   relative_costs_iea_path,
   imf_lending_rates_path,
   imf_ppi_path,
+  imf_commodity_prices_path,
   solar_pv_potential_path,
-  wind_potential_path
+  iea_pams_path,
+  tech_ghg_path,
+  cat_policy_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
 
@@ -393,6 +432,22 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     cost_competitiveness_tbl,
     country_info = country_info
   )
+
+  pams_raw <- readr::read_csv(iea_pams_path, show_col_types = FALSE)
+  tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE)
+  cat_policy_raw <- readr::read_csv(cat_policy_path, show_col_types = FALSE)
+
+  iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
+  iea_policy_index_tbl <- iea_policy_outputs$index_tbl
+  policy_outputs <- iea_policy_outputs$outputs
+  policy_agg <- policy_outputs$policy_agg
+  policy_clean <- policy_outputs$policy_clean
+
+  tech_ghg <- partnership_strength_clean_ghg(tech_ghg_raw)
+  cat_policy <- partnership_strength_clean_policy(cat_policy_raw)
+  cat_policy_index_tbl <- cat_policy_index(tech_ghg, cat_policy)
+
+  policy_component_tbl <- dplyr::bind_rows(iea_policy_index_tbl, cat_policy_index_tbl)
 
   # Collect all theme outputs in a named list for downstream consumers.
   theme_outputs <- list(
