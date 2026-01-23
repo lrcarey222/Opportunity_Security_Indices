@@ -5,6 +5,9 @@ if (!exists("repo_root")) {
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
+source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
+source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
@@ -22,6 +25,7 @@ include_sub_sector <- isTRUE(if (!is.null(config$include_sub_sector)) {
 } else {
   config$energy_security_include_sub_sector
 })
+processed_dir <- file.path(repo_root, config$processed_dir)
 energy_security_inputs <- list(
   energy_access_consumption = energy_access_tbl,
   solar_pv_potential = solar_pv_potential_tbl,
@@ -80,6 +84,97 @@ economic_opportunity_category_scores <- economic_opportunity_outputs$category_sc
 economic_opportunity_category_contributions <- economic_opportunity_outputs$category_contributions
 economic_opportunity_variable_contributions <- economic_opportunity_outputs$variable_contributions
 economic_opportunity_index <- economic_opportunity_outputs$index
+
+manifest_path <- file.path(repo_root, "config", "raw_inputs_manifest.yml")
+if (!file.exists(manifest_path)) {
+  stop("Raw inputs manifest not found: ", manifest_path)
+}
+raw_manifest <- yaml::read_yaml(manifest_path)
+if (length(raw_manifest) == 0) {
+  stop("Raw inputs manifest is empty: ", manifest_path)
+}
+
+find_manifest_path <- function(pattern, label) {
+  hits <- vapply(raw_manifest, function(entry) {
+    is.character(entry$path) && stringr::str_detect(entry$path, pattern)
+  }, logical(1))
+  if (!any(hits)) {
+    stop(label, " not found in raw inputs manifest.")
+  }
+  if (sum(hits) > 1) {
+    stop("Multiple entries found for ", label, "; keep only one entry.")
+  }
+  raw_manifest[[which(hits)[1]]]$path
+}
+
+pams_policy_path <- find_manifest_path("IEA_PAMS_Export", "PAMS export")
+pams_processed_path <- file.path(processed_dir, pams_policy_path)
+
+tech_ghg_path <- find_manifest_path("ipcc_ghg_intensity.csv$", "IPCC GHG intensity")
+cat_policy_path <- find_manifest_path("CAT_country ratings data.csv$", "CAT policy ratings")
+tech_ghg_processed_path <- file.path(processed_dir, tech_ghg_path)
+cat_policy_processed_path <- file.path(processed_dir, cat_policy_path)
+missing_policy_inputs <- c(
+  pams_processed_path,
+  tech_ghg_processed_path,
+  cat_policy_processed_path
+)
+missing_policy_inputs <- missing_policy_inputs[!file.exists(missing_policy_inputs)]
+if (length(missing_policy_inputs) > 0) {
+  stop("Missing policy inputs:\n", paste0("- ", missing_policy_inputs, collapse = "\n"))
+}
+
+pams_raw <- readr::read_csv(
+  pams_processed_path,
+  show_col_types = FALSE,
+  col_types = readr::cols(
+    countries = readr::col_character(),
+    technologies = readr::col_character(),
+    tags = readr::col_character(),
+    policyType = readr::col_character(),
+    .default = readr::col_character()
+  )
+)
+tech_ghg_raw <- readr::read_csv(tech_ghg_processed_path, show_col_types = FALSE)
+cat_policy_raw <- readr::read_csv(cat_policy_processed_path, show_col_types = FALSE)
+
+iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
+iea_policy_index_tbl <- iea_policy_outputs$index_tbl
+policy_outputs <- iea_policy_outputs$outputs
+policy_agg <- policy_outputs$policy_agg
+policy_clean <- policy_outputs$policy_clean
+
+tech_ghg <- partnership_strength_clean_ghg(tech_ghg_raw)
+cat_policy <- partnership_strength_clean_policy(cat_policy_raw)
+cat_policy_index_tbl <- cat_policy_index(tech_ghg, cat_policy)
+
+policy_component_tbl <- dplyr::bind_rows(iea_policy_index_tbl, cat_policy_index_tbl)
+policy_index <- policy_component_tbl %>%
+  dplyr::group_by(.data$Country, .data$tech, .data$supply_chain) %>%
+  dplyr::summarize(
+    value = if (all(is.na(.data$value))) NA_real_ else mean(.data$value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(
+    category = "Policy",
+    variable = "Overall Policy Index",
+    data_type = "index",
+    Year = 0L,
+    source = "Author calculation",
+    explanation = "Mean of IEA PAMS and CAT policy indices"
+  ) %>%
+  dplyr::select(
+    Country,
+    tech,
+    supply_chain,
+    category,
+    variable,
+    data_type,
+    value,
+    Year,
+    source,
+    explanation
+  )
 
 
 strategic_index<-left_join(economic_opportunity_index,energy_security_index,by=c("Country","tech","supply_chain")) %>%
@@ -140,6 +235,7 @@ saveRDS(
   list(
     energy_security_outputs = energy_security_outputs,
     economic_opportunity_outputs = economic_opportunity_outputs,
+    policy_outputs = policy_outputs,
     energy_security_category_scores = energy_security_category_scores,
     energy_security_category_contributions = energy_security_category_contributions,
     energy_security_variable_contributions = energy_security_variable_contributions,
@@ -147,7 +243,11 @@ saveRDS(
     economic_opportunity_category_scores = economic_opportunity_category_scores,
     economic_opportunity_category_contributions = economic_opportunity_category_contributions,
     economic_opportunity_variable_contributions = economic_opportunity_variable_contributions,
-    economic_opportunity_index = economic_opportunity_index
+    economic_opportunity_index = economic_opportunity_index,
+    policy_component_tbl = policy_component_tbl,
+    policy_index = policy_index,
+    policy_agg = policy_agg,
+    policy_clean = policy_clean
   ),
   outputs_rds_path
 )
