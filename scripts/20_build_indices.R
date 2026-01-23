@@ -10,6 +10,10 @@ source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index_v2
 source(file.path(repo_root, "R", "indices", "build_policy_index.R"))
 source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
 
+techs <- c("Electric Vehicles",
+           "Nuclear","Coal","Batteries","Green Hydrogen","Wind","Oil",                       
+           "Solar", "Gas", "Geothermal","Electric Grid")
+
 config <- getOption("opportunity_security.config")
 weights <- getOption("opportunity_security.weights")
 missing_data <- getOption("opportunity_security.missing_data")
@@ -85,31 +89,11 @@ economic_opportunity_category_contributions <- economic_opportunity_outputs$cate
 economic_opportunity_variable_contributions <- economic_opportunity_outputs$variable_contributions
 economic_opportunity_index <- economic_opportunity_outputs$index
 
-manifest_path <- file.path(repo_root, "config", "raw_inputs_manifest.yml")
-if (!file.exists(manifest_path)) {
-  stop("Raw inputs manifest not found: ", manifest_path)
-}
-raw_manifest <- yaml::read_yaml(manifest_path)
-if (length(raw_manifest) == 0) {
-  stop("Raw inputs manifest is empty: ", manifest_path)
-}
-pams_entries <- vapply(raw_manifest, function(entry) {
-  is.character(entry$path) && stringr::str_detect(entry$path, "IEA_PAMS_Export")
-}, logical(1))
-if (!any(pams_entries)) {
-  stop("PAMS export not found in raw inputs manifest; add the IEA PAMS file entry.")
-}
-if (sum(pams_entries) > 1) {
-  stop("Multiple PAMS exports found in raw inputs manifest; keep only one entry.")
-}
-pams_policy_path <- raw_manifest[[which(pams_entries)[1]]]$path
-pams_processed_path <- file.path(processed_dir, pams_policy_path)
-if (!file.exists(pams_processed_path)) {
-  stop("PAMS policy input not found: ", pams_processed_path)
-}
+pams_policy_path <- paste0("data/raw/2026-01-10/",raw_manifest[[which(pams_entries)[1]]]$path)
+
 
 pams_raw <- readr::read_csv(
-  pams_processed_path,
+  pams_policy_path,
   show_col_types = FALSE,
   col_types = readr::cols(
     countries = readr::col_character(),
@@ -126,9 +110,28 @@ policy_agg <- policy_outputs$policy_agg
 policy_clean <- policy_outputs$policy_clean
 
 
-strategic_index<-left_join(economic_opportunity_index,energy_security_index,by=c("Country","tech","supply_chain")) %>%
+strategic_index <- left_join(economic_opportunity_index, energy_security_index,
+                             by = c("Country","tech","supply_chain")) %>%
+  left_join(
+    policy_index %>% select(country, tech, supply_chain, policy_index),
+    by = c("Country"="country","tech","supply_chain")
+  ) %>%
+  filter(tech %in% techs) %>%
   group_by(Country) %>%
-  mutate(strategic_index=median_scurve(Economic_Opportunity_Index) + (1-median_scurve(Energy_Security_Index )))
+  mutate(
+    eo  = median_scurve(Economic_Opportunity_Index),
+    es  = 1 - median_scurve(Energy_Security_Index),
+    pol = median_scurve(policy_index),
+    
+    # impute NAs to country mean (of the computed index)
+    eo  = if_else(is.na(eo),  mean(eo,  na.rm = TRUE), eo),
+    es  = if_else(is.na(es),  mean(es,  na.rm = TRUE), es),
+    pol = if_else(is.na(pol), mean(pol, na.rm = TRUE), pol),
+    
+    strategic_index = eo + es + pol
+  ) %>%
+  ungroup()
+
 
 
 
