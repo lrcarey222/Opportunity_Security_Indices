@@ -158,6 +158,10 @@ overall_variables:
       - "Energy consumption per capita growth"
       - "Solar PV power potential"
       - "Solar PV power potential per sq km"
+      - "Wind power potential"
+      - "Wind power potential per sq km"
+      - "Wind power potential share over threshold"
+      - "Wind power potential index"
     aggregation: mean
   Overall Consumption Index:
     category: "Consumption"
