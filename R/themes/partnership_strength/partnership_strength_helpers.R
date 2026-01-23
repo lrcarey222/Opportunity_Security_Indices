@@ -208,8 +208,8 @@ partnership_strength_build_trade_mapping <- function(subcat, include_sub_sector 
 
 partnership_strength_clean_ghg <- function(tech_ghg_raw) {
   require_columns(tech_ghg_raw, c("Tech", "ghg_intensity"), label = "tech_ghg_raw")
-
-  tech_ghg_raw %>%
+  
+  base <- tech_ghg_raw %>%
     dplyr::mutate(
       Tech = dplyr::recode(
         Tech,
@@ -221,24 +221,53 @@ partnership_strength_clean_ghg <- function(tech_ghg_raw) {
         "Wind - onshore" = "Wind"
       )
     ) %>%
+    dplyr::filter(Tech %in% c("Coal","Gas","Oil","Solar","Nuclear","Wind")) %>%
     dplyr::mutate(ghg_index = partnership_strength_min_max_index(-ghg_intensity)) %>%
-    dplyr::transmute(tech = Tech, ghg_index = ghg_index)
-}
-
-partnership_strength_clean_policy <- function(cat_raw) {
+    dplyr::transmute(tech = Tech, ghg_index)
   
-  cat_raw %>%
-    dplyr::rename(
-      Overall.rating="Overall rating"
-    ) %>%
+  # collapse duplicates if any (safest default)
+  base <- base %>%
+    dplyr::group_by(tech) %>%
+    dplyr::summarise(ghg_index = mean(ghg_index, na.rm = TRUE), .groups = "drop")
+  
+  # safe getter
+  get_idx <- function(df, t) {
+    x <- df$ghg_index[df$tech == t]
+    if (length(x) == 0 || all(is.na(x))) NA_real_ else x[1]
+  }
+  
+  extra <- tibble::tibble(
+    tech = c("Batteries",
+             "Electric Vehicles",
+             "Green Hydrogen",
+             "Geothermal",
+             "Electric Grid"),
+    ghg_index = c(
+      get_idx(base, "Solar"),
+      mean(base$ghg_index[base$tech %in% c("Coal","Oil","Gas","Solar","Wind","Nuclear")], na.rm = TRUE),
+      mean(base$ghg_index[base$tech %in% c("Gas","Solar")], na.rm = TRUE),
+      get_idx(base, "Solar"),
+      mean(base$ghg_index[base$tech %in% c("Solar","Wind")], na.rm = TRUE)
+    )
+  )
+  
+  dplyr::bind_rows(base, extra)
+}
+partnership_strength_clean_policy <- function(cat_raw, country_info = NULL) {
+  
+  cleaned <- cat_raw %>%
+    dplyr::rename(Overall.rating = "Overall rating") %>%
     dplyr::mutate(
       climate_policy_index = dplyr::case_when(
         Overall.rating == "Critically insufficient" ~ 0.25,
-        Overall.rating == "Highly insufficient" ~ 0.5,
-        Overall.rating == "Insufficient" ~ 0.75,
-        Overall.rating == "Almost Sufficient" ~ 1,
+        Overall.rating == "Highly insufficient"     ~ 0.5,
+        Overall.rating == "Insufficient"            ~ 0.75,
+        Overall.rating == "Almost Sufficient"       ~ 1,
         TRUE ~ NA_real_
       )
     ) %>%
     dplyr::transmute(Country = Country, climate_policy_index = climate_policy_index)
+  
+  # standardize country names + (optionally) attach iso3c and filter to valid iso3c
+  standardize_country_table(cleaned, country_info = country_info)
 }

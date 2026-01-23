@@ -10,7 +10,9 @@ cat_policy_index <- function(tech_ghg,
   base_tbl <- tidyr::crossing(cat_policy, tech_ghg) %>%
     tidyr::crossing(supply_chain = supply_chain_universe) %>%
     dplyr::mutate(
-      value = .data$ghg_index * .data$climate_policy_index
+      g = .data$ghg_index,
+      c = .data$climate_policy_index,
+      value = c * g + (1 - c) * (1 - g)
     )
 
   base_tbl %>%

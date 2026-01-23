@@ -147,6 +147,7 @@ relative_costs_iea_path <- file.path(latest_snapshot, "Relative_Costs_IEA.csv")
 imf_lending_rates_path <- file.path(latest_snapshot, "imf_lending_rates.csv")
 imf_ppi_path <- file.path(latest_snapshot, "imf_ppi.csv")
 solar_pv_potential_path <- file.path(latest_snapshot, "solar_potential_clean.csv")
+wind_potential_path <- file.path(latest_snapshot, "wb_wind_country.csv")
 iea_pams_path <- file.path(
   latest_snapshot,
   find_manifest_path("IEA_PAMS_Export", "PAMS export")
@@ -434,7 +435,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   )
 
   pams_raw <- readr::read_csv(iea_pams_path, show_col_types = FALSE)
-  tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE)
+  tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE) 
   cat_policy_raw <- readr::read_csv(cat_policy_path, show_col_types = FALSE)
 
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
@@ -444,8 +445,8 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   policy_clean <- policy_outputs$policy_clean
 
   tech_ghg <- partnership_strength_clean_ghg(tech_ghg_raw)
-  cat_policy <- partnership_strength_clean_policy(cat_policy_raw)
-  cat_policy_index_tbl <- cat_policy_index(tech_ghg, cat_policy)
+  cat_policy_tbl <- partnership_strength_clean_policy(cat_policy_raw,country_info=country_info)
+  cat_policy_index_tbl <- cat_policy_index(tech_ghg, cat_policy_tbl)
 
   policy_component_tbl <- dplyr::bind_rows(iea_policy_index_tbl, cat_policy_index_tbl)
 

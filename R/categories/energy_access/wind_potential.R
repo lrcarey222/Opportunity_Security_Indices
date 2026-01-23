@@ -1,13 +1,8 @@
 # Wind power potential theme builder functions.
 
 wind_potential_clean_raw <- function(wind_raw) {
-  require_columns(
-    wind_raw,
-    c("Country", "pd_total_MW_equiv", "pd_mean_Wm2", "pd_share_over_threshold"),
-    label = "wind_country_clean"
-  )
-
   wind_raw %>%
+    dplyr::rename(Country=name_long) %>%
     dplyr::transmute(
       Country = standardize_country_names(Country),
       pd_total_MW_equiv = suppressWarnings(as.numeric(pd_total_MW_equiv)),

@@ -126,6 +126,27 @@ policy_index <- policy_component_tbl %>%
     explanation
   )
 
+strategic_index <- left_join(economic_opportunity_index, energy_security_index,
+                             by = c("Country","tech","supply_chain")) %>%
+  left_join(
+    policy_index %>% select(Country, tech, supply_chain, value),
+    by = c("Country","tech","supply_chain")
+  ) %>%
+  filter(tech %in% techs) %>%
+  group_by(Country) %>%
+  mutate(
+    eo  = median_scurve(Economic_Opportunity_Index),
+    es  = 1 - median_scurve(Energy_Security_Index),
+    pol = median_scurve(value),
+    
+    # impute NAs to country mean (of the computed index)
+    eo  = if_else(is.na(eo),  mean(eo,  na.rm = TRUE), eo),
+    es  = if_else(is.na(es),  mean(es,  na.rm = TRUE), es),
+    pol = if_else(is.na(pol), mean(pol, na.rm = TRUE), pol),
+    
+    strategic_index = eo + es + pol
+  ) %>%
+  ungroup()
 
 
 
