@@ -22,6 +22,7 @@ include_sub_sector <- isTRUE(if (!is.null(config$include_sub_sector)) {
 } else {
   config$energy_security_include_sub_sector
 })
+processed_dir <- file.path(repo_root, config$processed_dir)
 energy_security_inputs <- list(
   energy_access_consumption = energy_access_tbl,
   solar_pv_potential = solar_pv_potential_tbl,
@@ -80,6 +81,40 @@ economic_opportunity_category_scores <- economic_opportunity_outputs$category_sc
 economic_opportunity_category_contributions <- economic_opportunity_outputs$category_contributions
 economic_opportunity_variable_contributions <- economic_opportunity_outputs$variable_contributions
 economic_opportunity_index <- economic_opportunity_outputs$index
+
+if (!exists("policy_component_tbl") || !exists("policy_outputs")) {
+  stop("Policy theme outputs not found; run scripts/10_build_themes.R first.")
+}
+
+policy_agg <- policy_outputs$policy_agg
+policy_clean <- policy_outputs$policy_clean
+
+policy_index <- policy_component_tbl %>%
+  dplyr::group_by(.data$Country, .data$tech, .data$supply_chain) %>%
+  dplyr::summarize(
+    value = if (all(is.na(.data$value))) NA_real_ else mean(.data$value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(
+    category = "Policy",
+    variable = "Overall Policy Index",
+    data_type = "index",
+    Year = 0L,
+    source = "Author calculation",
+    explanation = "Mean of IEA PAMS and CAT policy indices"
+  ) %>%
+  dplyr::select(
+    Country,
+    tech,
+    supply_chain,
+    category,
+    variable,
+    data_type,
+    value,
+    Year,
+    source,
+    explanation
+  )
 
 
 strategic_index<-left_join(economic_opportunity_index,energy_security_index,by=c("Country","tech","supply_chain")) %>%
@@ -140,6 +175,7 @@ saveRDS(
   list(
     energy_security_outputs = energy_security_outputs,
     economic_opportunity_outputs = economic_opportunity_outputs,
+    policy_outputs = policy_outputs,
     energy_security_category_scores = energy_security_category_scores,
     energy_security_category_contributions = energy_security_category_contributions,
     energy_security_variable_contributions = energy_security_variable_contributions,
@@ -147,7 +183,11 @@ saveRDS(
     economic_opportunity_category_scores = economic_opportunity_category_scores,
     economic_opportunity_category_contributions = economic_opportunity_category_contributions,
     economic_opportunity_variable_contributions = economic_opportunity_variable_contributions,
-    economic_opportunity_index = economic_opportunity_index
+    economic_opportunity_index = economic_opportunity_index,
+    policy_component_tbl = policy_component_tbl,
+    policy_index = policy_index,
+    policy_agg = policy_agg,
+    policy_clean = policy_clean
   ),
   outputs_rds_path
 )
