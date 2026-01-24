@@ -161,7 +161,7 @@ bnef_supply_chain_path <- file.path(latest_snapshot, "BNEF_Energy Transition Sup
 relative_costs_iea_path <- file.path(latest_snapshot, "Relative_Costs_IEA.csv")
 imf_lending_rates_path <- file.path(latest_snapshot, "imf_lending_rates.csv")
 imf_ppi_path <- file.path(latest_snapshot, "imf_ppi.csv")
-imf_commodity_prices_path <- file.path(latest_snapshot, "imf_pcps_prices.csv")
+imf_commodity_prices_path <- file.path(latest_snapshot, "imf_commodity_prices.csv")
 solar_pv_potential_path <- file.path(latest_snapshot, "solar_potential_clean.csv")
 wind_potential_path <- file.path(latest_snapshot, "wb_wind_country.csv")
 iea_pams_path <- file.path(
