@@ -31,6 +31,7 @@ source(file.path(repo_root, "R", "categories", "foreign_dependency", "market_sha
 source(file.path(repo_root, "R", "categories", "production", "production_depth_momentum.R"))
 source(file.path(repo_root, "R", "categories", "technology_demand", "overcapacity_premium.R"))
 source(file.path(repo_root, "R", "categories", "economic opportunity", "cost_competitiveness.R"))
+source(file.path(repo_root, "R", "categories", "technological_readiness", "technological_readiness.R"))
 
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
@@ -126,6 +127,7 @@ raw_path <- file.path(latest_snapshot, "ei_stat_review_world_energy.csv")
 reserves_excel_path <- file.path(latest_snapshot, "ei_stat_review_world_energy_wide.xlsx")
 critical_minerals_path <- file.path(latest_snapshot, "iea_criticalminerals_25.csv")
 cleantech_midstream_path <- file.path(latest_snapshot, "iea_cleantech_Midstream.csv")
+iea_cleantech_guide_path <- file.path(latest_snapshot, "IEA_Clean_Tech_Guide.csv")
 ev_midstream_path <- file.path(latest_snapshot, "ev_Midstream_capacity.csv")
 trade_codes_path <- file.path(latest_snapshot, "consolidated_hs6_energy_tech_long.csv")
 trade_hs4_path <- file.path(latest_snapshot, "hs92_country_product_year_4.csv")
@@ -167,6 +169,7 @@ missing_files <- c(
   reserves_excel_path,
   critical_minerals_path,
   cleantech_midstream_path,
+  iea_cleantech_guide_path,
   ev_midstream_path,
   trade_codes_path,
   trade_hs4_path,
@@ -268,6 +271,17 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   # Shared WDI country reference for multiple themes.
   gdp_data <- read.csv(wdi_gdp_path)
   country_reference <- foreign_dependency_build_country_reference(ei, year = 2024)
+
+  # Theme: Technological readiness (IEA Clean Tech Guide).
+  iea_cleantech_guide <- read.csv(iea_cleantech_guide_path)
+  technological_readiness_tbl <- technological_readiness(
+    iea_cleantech_all = iea_cleantech_guide,
+    country_reference = country_reference
+  )
+  technological_readiness_tbl <- standardize_theme_types(
+    technological_readiness_tbl,
+    country_info = country_info
+  )
 
   # Theme: Critical minerals processing (IEA data).
   critical_minerals_processing_tbl <- critical_minerals_processing(
@@ -470,6 +484,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     lcoe_competitiveness = lcoe_competitiveness_tbl,
     market_share_manufacturing = market_share_manufacturing_tbl,
     production_depth_momentum = production_depth_momentum_tbl,
+    technological_readiness = technological_readiness_tbl,
     cost_competitiveness = cost_competitiveness_tbl
   )
 }

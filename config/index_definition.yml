@@ -27,6 +27,8 @@ pillars:
         score_variable: "Overall Production Index"
       Technology Demand:
         score_variable: "Overall Technology Demand Index"
+      Technological Readiness:
+        score_variable: "Overall Technological Readiness Index"
       Energy Prices:
         score_variable: "Overall Energy Prices Index"
       Investment:
@@ -202,6 +204,13 @@ overall_variables:
     category: "Investment"
     components: []
     aggregation: mean
+  Overall Technological Readiness Index:
+    category: "Technological Readiness"
+    components:
+      - "TRL Index"
+    aggregation: mean
+    source: "Author calculation"
+    explanation: "Author calculation across technology readiness indices"
   Overall Input Cost Index:
     category: "Cost Competitiveness"
     components:
@@ -225,4 +234,5 @@ variable_levels:
   Overall Energy Prices Index: "country_tech_supply_chain"
   Overall Technology Demand Index: "country_tech_supply_chain"
   Overall Investment Index: "country_tech_supply_chain"
+  Overall Technological Readiness Index: "country_tech_supply_chain"
   Overall Cost Competitiveness Index: "country_tech_supply_chain"
