@@ -46,6 +46,38 @@ energy_prices_imf_monthly_long <- function(imf_price) {
     dplyr::filter(!is.na(date))
 }
 
+energy_prices_long_from_pcps <- function(imf_price) {
+  if (is.null(imf_price) || nrow(imf_price) == 0) {
+    return(tibble::tibble(INDICATOR = character(), date = as.Date(character()), value = numeric()))
+  }
+
+  indicator <- if ("INDICATOR" %in% names(imf_price)) {
+    imf_price$INDICATOR
+  } else if ("commodity_label" %in% names(imf_price)) {
+    imf_price$commodity_label
+  } else if ("commodity_code" %in% names(imf_price)) {
+    imf_price$commodity_code
+  } else if ("tech" %in% names(imf_price)) {
+    imf_price$tech
+  } else {
+    NA_character_
+  }
+
+  date_str <- as.character(imf_price$date)
+  date_str <- dplyr::case_when(
+    nchar(date_str) == 7 ~ paste0(date_str, "-01"),
+    nchar(date_str) == 4 ~ paste0(date_str, "-01-01"),
+    TRUE ~ date_str
+  )
+
+  tibble::tibble(
+    INDICATOR = as.character(indicator),
+    date = as.Date(date_str),
+    value = suppressWarnings(as.numeric(imf_price$value))
+  ) %>%
+    dplyr::filter(!is.na(date))
+}
+
 energy_prices_imf_clean <- function(imf_monthly_long, patterns = energy_prices_imf_patterns) {
   imf_monthly_long %>%
     dplyr::mutate(ind_lc = stringr::str_to_lower(INDICATOR)) %>%
@@ -231,7 +263,11 @@ energy_prices <- function(imf_price,
                           min_months = 24,
                           gamma = 0.5,
                           ...) {
-  imf_monthly_long <- energy_prices_imf_monthly_long(imf_price)
+  imf_monthly_long <- if (all(c("date", "value") %in% names(imf_price))) {
+    energy_prices_long_from_pcps(imf_price)
+  } else {
+    energy_prices_imf_monthly_long(imf_price)
+  }
   imf_monthly <- energy_prices_imf_clean(imf_monthly_long)
 
   volatility_by_tech <- energy_prices_build_volatility(
