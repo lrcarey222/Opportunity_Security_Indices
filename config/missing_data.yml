@@ -19,6 +19,7 @@ economic_opportunity:
   export_feasibility: global_average
   foreign_dependency: global_average
   future_demand: global_average
+  technological_readiness: global_average
   market_share_manufacturing: zero
   cost_competitiveness: global_average
   production_depth_momentum: global_average

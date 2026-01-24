@@ -13,6 +13,7 @@
 - path: ei_stat_review_world_energy_wide.xlsx
 - path: MCS2025_World_Data.csv
 - path: iea_cleantech_Midstream.csv
+- path: IEA_Clean_Tech_Guide.csv
 - path: ev_Midstream_capacity.csv
 - path: greenplexity_scrape_full.csv
 - path: hs92_country_product_year_4.csv
