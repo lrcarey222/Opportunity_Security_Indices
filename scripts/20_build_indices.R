@@ -10,6 +10,7 @@ source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
 source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index_v2.R"))
+source(file.path(repo_root, "R", "indices", "build_indices.R"))
 source(file.path(repo_root, "R", "indices", "build_policy_index.R"))
 source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
 
@@ -76,7 +77,8 @@ economic_opportunity_inputs <- list(
   market_share_manufacturing = market_share_manufacturing_tbl,
   cost_competitiveness = cost_competitiveness_tbl,
   production_depth_momentum = production_depth_momentum_tbl,
-  overcapacity_premium = overcapacity_premium_tbl
+  overcapacity_premium = overcapacity_premium_tbl,
+  technological_readiness = technological_readiness_tbl
 )
 
 economic_opportunity_outputs <- build_economic_opportunity_index_v2(
@@ -91,6 +93,15 @@ economic_opportunity_category_scores <- economic_opportunity_outputs$category_sc
 economic_opportunity_category_contributions <- economic_opportunity_outputs$category_contributions
 economic_opportunity_variable_contributions <- economic_opportunity_outputs$variable_contributions
 economic_opportunity_index <- economic_opportunity_outputs$index
+
+technological_readiness_index <- economic_opportunity_category_scores %>%
+  dplyr::filter(.data$category == "Technological Readiness") %>%
+  dplyr::select(
+    Country,
+    tech,
+    supply_chain,
+    trl_index = category_score
+  )
 
 if (!exists("policy_component_tbl") || !exists("policy_outputs")) {
   stop("Policy theme outputs not found; run scripts/10_build_themes.R first.")
@@ -127,6 +138,13 @@ policy_index <- policy_component_tbl %>%
   )
 library(dplyr)
 
+strategic_index <- build_strategic_index(
+  economic_opportunity_index = economic_opportunity_index,
+  energy_security_index = energy_security_index,
+  policy_index = policy_index,
+  technological_readiness_index = technological_readiness_index,
+  techs = techs
+)
 iea_trl <- read.csv("C:/Users/LCarey/Downloads/iea_trl_tech.csv") %>%
   mutate(
     tech = as.character(tech),
