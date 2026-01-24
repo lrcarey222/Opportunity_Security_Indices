@@ -125,26 +125,71 @@ policy_index <- policy_component_tbl %>%
     source,
     explanation
   )
+library(dplyr)
 
-strategic_index <- left_join(economic_opportunity_index, energy_security_index,
-                             by = c("Country","tech","supply_chain")) %>%
+iea_trl <- read.csv("C:/Users/LCarey/Downloads/iea_trl_tech.csv") %>%
+  mutate(
+    tech = as.character(tech),
+    trl2023 = as.numeric(trl2023)
+  )
+
+strategic_index <- left_join(
+  economic_opportunity_index,
+  energy_security_index,
+  by = c("Country","tech","supply_chain")
+) %>%
   left_join(
-    policy_index %>% select(Country, tech, supply_chain, value),
+    policy_index %>% dplyr::select(Country, tech, supply_chain, value),
     by = c("Country","tech","supply_chain")
   ) %>%
+  # tech_weight from ghg_index
+  left_join(
+    tech_ghg %>% dplyr::select(tech, ghg_index),
+    by = "tech"
+  ) %>%
+  # trl2023 from IEA (default to 11 if missing)
+  left_join(
+    iea_trl %>% dplyr::select(tech, trl2023),
+    by = "tech"
+  ) %>%
+  mutate(trl2023 = dplyr::coalesce(as.numeric(trl2023), 11)) %>%
   filter(tech %in% techs) %>%
   group_by(Country) %>%
   mutate(
+    # component indices
     eo  = median_scurve(Economic_Opportunity_Index),
     es  = 1 - median_scurve(Energy_Security_Index),
     pol = median_scurve(value),
     
-    # impute NAs to country mean (of the computed index)
+    # impute NAs to country mean (computed components)
     eo  = if_else(is.na(eo),  mean(eo,  na.rm = TRUE), eo),
     es  = if_else(is.na(es),  mean(es,  na.rm = TRUE), es),
     pol = if_else(is.na(pol), mean(pol, na.rm = TRUE), pol),
     
-    strategic_index = eo + es + pol
+    # supply-chain weights
+    sc_weight = case_when(
+      supply_chain == "Upstream"   ~ 0.50,
+      supply_chain == "Midstream"  ~ 0.75,
+      supply_chain == "Downstream" ~ 0.25,
+      TRUE ~ NA_real_
+    ),
+    
+    # tech weight (ghg_index) - safer global fallback than within-country
+    tech_weight = coalesce(ghg_index, mean(tech_ghg$ghg_index, na.rm = TRUE)),
+    
+    # TRL index (scaled 0-1 using your existing curve)
+    trl_index = median_scurve(trl2023),
+    
+    # base score
+    base_score = eo + es + pol,
+    
+    # UPDATED strategic index weights
+    strategic_index =
+      0.20 * base_score +
+      0.25 * trl_index +
+      0.15 * eo +
+      0.15 * es +
+      0.35 * (sc_weight * tech_weight)
   ) %>%
   ungroup()
 
@@ -220,3 +265,117 @@ saveRDS(
   ),
   outputs_rds_path
 )
+
+
+# install.packages("openxlsx")
+library(dplyr)
+library(openxlsx)
+
+# Countries to export (data may store Korea as "South Korea")
+countries_export <- c("Japan", "India", "South Korea", "Viet Nam", "United States")
+
+# Build the 4 data frames (and name sheets as requested)
+sheets <- list(
+  "Japan"   = strategic_index %>% filter(Country == "Japan"),
+  "India"   = strategic_index %>% filter(Country == "India"),
+  "Korea"   = strategic_index %>% filter(Country %in% c("Korea", "South Korea")),
+  "Viet Nam"= strategic_index %>% filter(Country == "Viet Nam"),
+  "USA"= strategic_index %>% filter(Country == "United States")
+)
+
+# Keep only requested columns, sort, and (optionally) rename for the sheet
+sheets <- lapply(sheets, function(df) {
+  df %>%
+    transmute(
+      Country,
+      tech,
+      supply_chain,
+      eo,
+      es,
+      pol,
+      neis_weight=sc_weight,
+      climate_weight=tech_weight,
+      trl_index,
+      `strategic index` = strategic_index
+    ) %>%
+    arrange(desc(`strategic index`))
+})
+
+# Write to Excel with one tab per country
+out_path <-  "C:/Users/LCarey/Downloads/strategic_index_selected_countries.xlsx"
+openxlsx::write.xlsx(
+  x = sheets,
+  file = out_path,
+  overwrite = TRUE
+)
+
+out_path
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+# Decompose strategic_index into non-overlapping weighted contributions
+# strategic_index =
+#   0.20*(eo+es+pol) + 0.15*trl_index + 0.15*eo + 0.15*es + 0.35*(sc_weight*tech_weight)
+# => contributions:
+#   EO      = 0.35*eo
+#   ES      = 0.35*es
+#   Policy  = 0.20*pol
+#   TRL     = 0.15*trl_index
+#   SCxTech = 0.35*(sc_weight*tech_weight)
+
+top10_by_country <- strategic_index %>%
+  mutate(
+    sector = paste(tech, supply_chain, sep = " - "),
+    contrib_eo      = 0.35 * eo,
+    contrib_es      = 0.35 * es,
+    contrib_policy  = 0.20 * pol,
+    contrib_trl     = 0.25 * trl_index,
+    contrib_sc_tech = 0.35 * (sc_weight * tech_weight)
+  ) %>%
+  group_by(Country) %>%
+  slice_max(order_by = strategic_index, n = 10, with_ties = FALSE) %>%
+  arrange(Country, strategic_index) %>%   # ascending so highest ends up at top after coord_flip()
+  mutate(
+    # unique key per facet to enforce ordering
+    sector_key = paste(Country, sector, sep = "||"),
+    sector_key = factor(sector_key, levels = unique(sector_key))
+  ) %>%
+  ungroup()
+
+plot_df <- top10_by_country %>%
+  filter(Country %in% c("Japan","South Korea","India","Viet Nam")) %>%
+  select(Country, sector, sector_key, strategic_index,
+         contrib_eo, contrib_es, contrib_policy, contrib_trl, contrib_sc_tech) %>%
+  pivot_longer(
+    cols = starts_with("contrib_"),
+    names_to = "component",
+    values_to = "contribution"
+  ) %>%
+  mutate(
+    component = recode(component,
+                       contrib_eo      = "Economic opportunity",
+                       contrib_es      = "Energy security",
+                       contrib_policy  = "Policy",
+                       contrib_trl     = "TRL",
+                       contrib_sc_tech = "Supply chain × Tech weight"
+    )
+  )
+
+rmi_palette <- c("#0BD0D9",
+                 "#0989B1",
+                 "#003A61",
+                 "#FFCA08",
+                 "#F8931D",
+                 "#548538",
+                 "#7F7F7F")
+
+ggplot(plot_df %>% filter(Country=="India"), aes(x = sector_key, y = contribution, fill = component)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ Country, scales = "free_y") +
+  scale_x_discrete(labels = function(x) sub("^.*\\|\\|", "", x)) +
+  scale_fill_manual(values = rmi_palette) +
+  labs(x = NULL, y = "Weighted contribution to strategic_index", fill = NULL) +
+  theme_minimal()
