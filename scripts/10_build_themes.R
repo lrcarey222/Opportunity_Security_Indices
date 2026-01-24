@@ -275,8 +275,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   # Theme: Technological readiness (IEA Clean Tech Guide).
   iea_cleantech_guide <- read.csv(iea_cleantech_guide_path)
   technological_readiness_tbl <- technological_readiness(
-    iea_cleantech_all = iea_cleantech_guide,
-    country_reference = country_reference
+    iea_cleantech_all = iea_cleantech_guide
   )
   technological_readiness_tbl <- standardize_theme_types(
     technological_readiness_tbl,

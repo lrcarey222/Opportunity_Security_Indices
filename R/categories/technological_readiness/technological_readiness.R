@@ -1,23 +1,3 @@
-# Technological readiness theme (IEA Clean Tech Guide TRL).
-technological_readiness_expand_global <- function(tbl, country_reference) {
-  if (is.null(country_reference)) {
-    stop("country_reference is required for technological readiness global data.")
-  }
-
-  countries <- country_reference
-  if (is.vector(countries) && !is.list(countries)) {
-    countries <- tibble::tibble(Country = as.character(countries))
-  }
-
-  require_columns(countries, "Country", label = "country_reference")
-  countries <- countries %>%
-    dplyr::transmute(Country = as.character(Country)) %>%
-    dplyr::distinct()
-
-  assert_unique_keys(countries, "Country", label = "country_reference")
-  tidyr::crossing(countries, tbl)
-}
-
 technological_readiness_clean <- function(iea_cleantech_all) {
   require_columns(iea_cleantech_all, c("sector", "trl2023", "name"), label = "iea_cleantech_all")
 
@@ -26,14 +6,25 @@ technological_readiness_clean <- function(iea_cleantech_all) {
       sector,
       into = c("sector1", "sector2", "sector3", "sector4"),
       sep = ",",
-      fill = "right"
+      fill = "right",
+      extra = "merge"
     ) %>%
     dplyr::mutate(
       trl2023 = dplyr::case_when(
         is.na(trl2023) ~ NA_real_,
-        stringr::str_detect(as.character(trl2023), "-") ~
-          purrr::map_dbl(stringr::str_split(as.character(trl2023), "-"), ~ mean(as.numeric(.x))),
-        TRUE ~ suppressWarnings(as.numeric(trl2023))
+        stringr::str_detect(as.character(trl2023), "-") ~ {
+          parts <- stringr::str_split(as.character(trl2023), "-")
+          purrr::map_dbl(parts, function(values) {
+            numeric_values <- readr::parse_number(values)
+            numeric_values <- numeric_values[!is.na(numeric_values)]
+            if (length(numeric_values) == 0) {
+              NA_real_
+            } else {
+              mean(numeric_values)
+            }
+          })
+        },
+        TRUE ~ readr::parse_number(as.character(trl2023))
       )
     )
 }
@@ -194,7 +185,6 @@ technological_readiness_build_indices <- function(iea_tech,
 }
 
 technological_readiness <- function(iea_cleantech_all,
-                                    country_reference,
                                     techs = c(
                                       "Electric Vehicles",
                                       "Nuclear",
@@ -214,6 +204,18 @@ technological_readiness <- function(iea_cleantech_all,
   iea_cleantech_sector <- technological_readiness_build_sector(iea_cleantech)
   iea_tech <- technological_readiness_build_tech(iea_cleantech_sector, techs = techs)
   readiness_tbl <- technological_readiness_build_indices(iea_tech, gamma = gamma, year = year)
-
-  technological_readiness_expand_global(readiness_tbl, country_reference = country_reference)
+  readiness_tbl %>%
+    dplyr::mutate(Country = "Global") %>%
+    dplyr::select(
+      Country,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      Year,
+      source,
+      explanation
+    )
 }
