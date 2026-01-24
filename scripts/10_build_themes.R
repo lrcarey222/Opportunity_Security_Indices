@@ -277,9 +277,10 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   technological_readiness_tbl <- technological_readiness(
     iea_cleantech_all = iea_cleantech_guide
   )
+  readiness_country_info <- if (exists("country_info")) country_info else NULL
   technological_readiness_tbl <- standardize_theme_types(
     technological_readiness_tbl,
-    country_info = country_info
+    country_info = readiness_country_info
   )
 
   # Theme: Critical minerals processing (IEA data).
