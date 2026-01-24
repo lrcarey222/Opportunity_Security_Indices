@@ -32,6 +32,57 @@ include_sub_sector <- isTRUE(if (!is.null(config$include_sub_sector)) {
   config$energy_security_include_sub_sector
 })
 processed_dir <- file.path(repo_root, config$processed_dir)
+if (!dir.exists(processed_dir)) {
+  stop("Processed data directory not found: ", processed_dir)
+}
+
+read_processed_tbl <- function(name, processed_dir) {
+  path <- file.path(processed_dir, paste0(name, ".rds"))
+  if (!file.exists(path)) {
+    stop("Processed table not found: ", path)
+  }
+  readRDS(path)
+}
+
+energy_access_tbl <- read_processed_tbl("energy_access_tbl", processed_dir)
+solar_pv_potential_tbl <- read_processed_tbl("solar_pv_potential_tbl", processed_dir)
+wind_potential_tbl <- read_processed_tbl("wind_potential_tbl", processed_dir)
+import_dependence_tbl <- read_processed_tbl("import_dependence_tbl", processed_dir)
+reserves_tbl <- read_processed_tbl("reserves_tbl", processed_dir)
+foreign_dependency_tbl <- read_processed_tbl("foreign_dependency_tbl", processed_dir)
+critical_minerals_processing_tbl <- read_processed_tbl(
+  "critical_minerals_processing_tbl",
+  processed_dir
+)
+critical_minerals_production_tbl <- read_processed_tbl(
+  "critical_minerals_production_tbl",
+  processed_dir
+)
+critical_minerals_trade_tbl <- read_processed_tbl("critical_minerals_trade_tbl", processed_dir)
+energy_consumption_tbl <- read_processed_tbl("energy_consumption_tbl", processed_dir)
+trade_concentration_tbl <- read_processed_tbl("trade_concentration_tbl", processed_dir)
+energy_prices_tbl <- read_processed_tbl("energy_prices_tbl", processed_dir)
+export_feasibility_tbl <- read_processed_tbl("export_feasibility_tbl", processed_dir)
+future_demand_tbl <- read_processed_tbl("future_demand_tbl", processed_dir)
+lcoe_competitiveness_tbl <- read_processed_tbl("lcoe_competitiveness_tbl", processed_dir)
+market_share_manufacturing_tbl <- read_processed_tbl(
+  "market_share_manufacturing_tbl",
+  processed_dir
+)
+cost_competitiveness_tbl <- read_processed_tbl("cost_competitiveness_tbl", processed_dir)
+production_depth_momentum_tbl <- read_processed_tbl(
+  "production_depth_momentum_tbl",
+  processed_dir
+)
+overcapacity_premium_tbl <- read_processed_tbl("overcapacity_premium_tbl", processed_dir)
+technological_readiness_tbl <- read_processed_tbl(
+  "technological_readiness_tbl",
+  processed_dir
+)
+policy_component_tbl <- read_processed_tbl("policy_component_tbl", processed_dir)
+policy_outputs <- read_processed_tbl("policy_outputs", processed_dir)
+tech_ghg <- read_processed_tbl("tech_ghg_tbl", processed_dir)
+
 energy_security_inputs <- list(
   energy_access_consumption = energy_access_tbl,
   solar_pv_potential = solar_pv_potential_tbl,
@@ -103,10 +154,6 @@ technological_readiness_index <- economic_opportunity_category_scores %>%
     trl_index = category_score
   )
 
-if (!exists("policy_component_tbl") || !exists("policy_outputs")) {
-  stop("Policy theme outputs not found; run scripts/10_build_themes.R first.")
-}
-
 policy_agg <- policy_outputs$policy_agg
 policy_clean <- policy_outputs$policy_clean
 
@@ -145,7 +192,11 @@ strategic_index <- build_strategic_index(
   technological_readiness_index = technological_readiness_index,
   techs = techs
 )
-iea_trl <- read.csv("C:/Users/LCarey/Downloads/iea_trl_tech.csv") %>%
+iea_trl_path <- file.path(processed_dir, "iea_trl_tech.csv")
+if (!file.exists(iea_trl_path)) {
+  stop("IEA TRL data not found: ", iea_trl_path)
+}
+iea_trl <- read.csv(iea_trl_path) %>%
   mutate(
     tech = as.character(tech),
     trl2023 = as.numeric(trl2023)
@@ -218,8 +269,7 @@ strategic_index <- left_join(
 if (exists("economic_opportunity_index")) {
   interdependence_path <- file.path(
     repo_root,
-    "data",
-    "raw",
+    config$raw_data_dir,
     "2026-01-10",
     "interdependence_edges_primary_secondary_tertiary.csv"
   )
@@ -332,7 +382,7 @@ sheets <- lapply(sheets, function(df) {
 })
 
 # Write to Excel with one tab per country
-out_path <-  "C:/Users/LCarey/Downloads/strategic_index_selected_countries.xlsx"
+out_path <- file.path(processed_dir, "strategic_index_selected_countries.xlsx")
 openxlsx::write.xlsx(
   x = sheets,
   file = out_path,

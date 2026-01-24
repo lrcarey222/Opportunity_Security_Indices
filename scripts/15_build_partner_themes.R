@@ -21,6 +21,34 @@ if (is.null(weights)) {
   stop("Weights not loaded; run scripts/00_setup.R first.")
 }
 
+processed_dir <- file.path(repo_root, config$processed_dir)
+if (!dir.exists(processed_dir)) {
+  dir.create(processed_dir, recursive = TRUE)
+}
+
+write_processed_tbl <- function(tbl, name, processed_dir) {
+  if (is.null(tbl)) {
+    return(invisible(NULL))
+  }
+  saveRDS(tbl, file.path(processed_dir, paste0(name, ".rds")))
+  invisible(tbl)
+}
+
+read_index_outputs <- function(config, processed_dir) {
+  outputs_rds_path <- Sys.getenv("OPSI_OUTPUTS_RDS", "")
+  if (!nzchar(outputs_rds_path)) {
+    outputs_rds_path <- if (!is.null(config$outputs_rds) && nzchar(config$outputs_rds)) {
+      file.path(repo_root, config$outputs_rds)
+    } else {
+      file.path(processed_dir, "outputs", "index_outputs.rds")
+    }
+  }
+  if (!file.exists(outputs_rds_path)) {
+    stop("Index outputs not found: ", outputs_rds_path)
+  }
+  readRDS(outputs_rds_path)
+}
+
 is_skip_data_downloads <- function() {
   tolower(Sys.getenv("SKIP_DATA_DOWNLOADS")) %in% c("1", "true", "yes")
 }
@@ -101,11 +129,10 @@ if (length(missing_files) > 0) {
   stop("Missing required raw data. Expected raw files:\n", expected_list)
 }
 
-if (!exists("economic_opportunity_outputs")) {
-  stop("economic_opportunity_outputs not found; run scripts/20_build_indices.R first.")
-}
-if (!exists("energy_security_outputs")) {
-  stop("energy_security_outputs not found; run scripts/20_build_indices.R first.")
+if (!exists("economic_opportunity_outputs") || !exists("energy_security_outputs")) {
+  index_outputs <- read_index_outputs(config, processed_dir)
+  economic_opportunity_outputs <- index_outputs$economic_opportunity_outputs
+  energy_security_outputs <- index_outputs$energy_security_outputs
 }
 
 comtrade_dyads <- read.csv(comtrade_dyads_path)
@@ -146,6 +173,17 @@ friendshore_outputs <- safer_friendshore(
 partner_friendshore_tbl <- friendshore_outputs$dyads
 partner_friendshore_country_tbl <- friendshore_outputs$country
 partner_friendshore_inputs_tbl <- friendshore_outputs$inputs_country
+write_processed_tbl(partner_friendshore_tbl, "partner_friendshore_tbl", processed_dir)
+write_processed_tbl(
+  partner_friendshore_country_tbl,
+  "partner_friendshore_country_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_friendshore_inputs_tbl,
+  "partner_friendshore_inputs_tbl",
+  processed_dir
+)
 
 opportunity_outputs <- prosperous_opportunity(
   comtrade_dyads = comtrade_dyads,
@@ -161,6 +199,17 @@ opportunity_outputs <- prosperous_opportunity(
 partner_opportunity_tbl <- opportunity_outputs$dyads
 partner_opportunity_country_tbl <- opportunity_outputs$country
 partner_opportunity_inputs_tbl <- opportunity_outputs$inputs_country
+write_processed_tbl(partner_opportunity_tbl, "partner_opportunity_tbl", processed_dir)
+write_processed_tbl(
+  partner_opportunity_country_tbl,
+  "partner_opportunity_country_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_opportunity_inputs_tbl,
+  "partner_opportunity_inputs_tbl",
+  processed_dir
+)
 
 development_outputs <- stronger_development(
   comtrade_dyads = comtrade_dyads,
@@ -177,3 +226,9 @@ development_outputs <- stronger_development(
 
 partner_development_tbl <- development_outputs$dyads
 partner_development_country_tbl <- development_outputs$country
+write_processed_tbl(partner_development_tbl, "partner_development_tbl", processed_dir)
+write_processed_tbl(
+  partner_development_country_tbl,
+  "partner_development_country_tbl",
+  processed_dir
+)

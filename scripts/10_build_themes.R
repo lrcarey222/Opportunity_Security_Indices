@@ -61,6 +61,19 @@ if (is.null(config)) {
   stop("Config not loaded; run scripts/00_setup.R first.")
 }
 
+processed_dir <- file.path(repo_root, config$processed_dir)
+if (!dir.exists(processed_dir)) {
+  dir.create(processed_dir, recursive = TRUE)
+}
+
+write_processed_tbl <- function(tbl, name, processed_dir) {
+  if (is.null(tbl)) {
+    return(invisible(NULL))
+  }
+  saveRDS(tbl, file.path(processed_dir, paste0(name, ".rds")))
+  invisible(tbl)
+}
+
 is_skip_data_downloads <- function() {
   tolower(Sys.getenv("SKIP_DATA_DOWNLOADS")) %in% c("1", "true", "yes")
 }
@@ -215,6 +228,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   # Theme: Energy access and consumption (EI data).
   energy_access_tbl <- energy_access_consumption(ei)
   energy_access_tbl <- standardize_theme_types(energy_access_tbl, country_info = country_info)
+  write_processed_tbl(energy_access_tbl, "energy_access_tbl", processed_dir)
 
   # Theme: Solar PV potential (Global Solar Atlas GIS data).
   solar_pv_raw <- read.csv(solar_pv_potential_path)
@@ -223,6 +237,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     solar_pv_potential_tbl,
     country_info = country_info
   )
+  write_processed_tbl(solar_pv_potential_tbl, "solar_pv_potential_tbl", processed_dir)
 
   # Theme: Wind potential (Global Wind Atlas country data).
   wind_raw <- read.csv(wind_potential_path)
@@ -231,10 +246,12 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     wind_potential_tbl,
     country_info = country_info
   )
+  write_processed_tbl(wind_potential_tbl, "wind_potential_tbl", processed_dir)
 
   # Theme: Import dependence (EI data).
   import_dependence_tbl <- import_dependence(ei)
   import_dependence_tbl <- standardize_theme_types(import_dependence_tbl, country_info = country_info)
+  write_processed_tbl(import_dependence_tbl, "import_dependence_tbl", processed_dir)
 
   # Theme: Foreign dependency inputs (critical minerals + IEA datasets).
   critical <- read.csv(critical_minerals_path)
@@ -247,6 +264,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   reserves_tbl <- reserves(ei, reserve_inputs, mineral_demand_clean)
   reserves_tbl <- standardize_theme_types(reserves_tbl, country_info = country_info)
+  write_processed_tbl(reserves_tbl, "reserves_tbl", processed_dir)
   cleantech_midstream <- read.csv(cleantech_midstream_path)
   ev_midstream <- read.csv(ev_midstream_path)
   foreign_dependency_tbl <- foreign_dependency(
@@ -257,6 +275,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     ev_midstream = ev_midstream
   )
   foreign_dependency_tbl <- standardize_theme_types(foreign_dependency_tbl, country_info = country_info)
+  write_processed_tbl(foreign_dependency_tbl, "foreign_dependency_tbl", processed_dir)
 
   # Theme: Market share manufacturing (IEA midstream data).
   market_share_manufacturing_tbl <- market_share_manufacturing(
@@ -267,6 +286,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   market_share_manufacturing_tbl <- standardize_theme_types(
     market_share_manufacturing_tbl,
     country_info = country_info
+  )
+  write_processed_tbl(
+    market_share_manufacturing_tbl,
+    "market_share_manufacturing_tbl",
+    processed_dir
   )
 
   # Shared WDI country reference for multiple themes.
@@ -283,6 +307,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     technological_readiness_tbl,
     country_info = readiness_country_info
   )
+  write_processed_tbl(
+    technological_readiness_tbl,
+    "technological_readiness_tbl",
+    processed_dir
+  )
 
   # Theme: Critical minerals processing (IEA data).
   critical_minerals_processing_tbl <- critical_minerals_processing(
@@ -294,6 +323,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   critical_minerals_processing_tbl <- standardize_theme_types(
     critical_minerals_processing_tbl,
     country_info = country_info
+  )
+  write_processed_tbl(
+    critical_minerals_processing_tbl,
+    "critical_minerals_processing_tbl",
+    processed_dir
   )
 
   # Theme: Critical minerals production (EI data).
@@ -309,6 +343,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   critical_minerals_production_tbl <- standardize_theme_types(
     critical_minerals_production_tbl,
     country_info = country_info
+  )
+  write_processed_tbl(
+    critical_minerals_production_tbl,
+    "critical_minerals_production_tbl",
+    processed_dir
   )
 
   # Theme: Critical minerals trade (UN Comtrade).
@@ -326,6 +365,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     critical_minerals_trade_tbl,
     country_info = country_info
   )
+  write_processed_tbl(
+    critical_minerals_trade_tbl,
+    "critical_minerals_trade_tbl",
+    processed_dir
+  )
 
   # Theme: Energy consumption (EI + BNEF data).
   bnef_neo <- read.csv(bnef_neo_path, skip = 2)
@@ -335,6 +379,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     country_info = country_info
   )
   energy_consumption_tbl <- standardize_theme_types(energy_consumption_tbl, country_info = country_info)
+  write_processed_tbl(energy_consumption_tbl, "energy_consumption_tbl", processed_dir)
 
   # Theme: Energy prices (IMF PCPS data).
   imf_commodity_prices <- read.csv(imf_commodity_prices_path)
@@ -344,6 +389,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     country_info = country_info
   )
   energy_prices_tbl <- standardize_theme_types(energy_prices_tbl, country_info = country_info)
+  write_processed_tbl(energy_prices_tbl, "energy_prices_tbl", processed_dir)
 
   # Theme: LCOE competitiveness (BNEF data).
   lcoe_bnef <- read.csv(energy_prices_lcoe_path, skip = 8)
@@ -351,6 +397,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   lcoe_competitiveness_tbl <- standardize_theme_types(
     lcoe_competitiveness_tbl,
     country_info = country_info
+  )
+  write_processed_tbl(
+    lcoe_competitiveness_tbl,
+    "lcoe_competitiveness_tbl",
+    processed_dir
   )
 
   # Theme: Trade concentration (Atlas data + WDI country reference).
@@ -376,6 +427,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     include_sub_sector = include_sub_sector
   )
   trade_concentration_tbl <- standardize_theme_types(trade_concentration_tbl, country_info = country_info)
+  write_processed_tbl(
+    trade_concentration_tbl,
+    "trade_concentration_tbl",
+    processed_dir
+  )
 
   # Theme: Export feasibility (Atlas/Comtrade trade data).
   export_feasibility_tbl <- export_feasibility(
@@ -389,6 +445,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     include_sub_sector = include_sub_sector
   )
   export_feasibility_tbl <- standardize_theme_types(export_feasibility_tbl, country_info = country_info)
+  write_processed_tbl(
+    export_feasibility_tbl,
+    "export_feasibility_tbl",
+    processed_dir
+  )
 
   # Theme: Overcapacity premium (BNEF supply chains data + trade reference).
   overcapacity_bnef <- readxl::read_excel(bnef_supply_chain_path, sheet = 3, skip = 9)
@@ -399,6 +460,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   overcapacity_premium_tbl <- standardize_theme_types(
     overcapacity_premium_tbl,
     country_info = country_info
+  )
+  write_processed_tbl(
+    overcapacity_premium_tbl,
+    "overcapacity_premium_tbl",
+    processed_dir
   )
 
   # Theme: Future demand (IEA + BNEF + EV + BCG data).
@@ -415,6 +481,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     country_reference = country_reference
   )
   future_demand_tbl <- standardize_theme_types(future_demand_tbl, country_info = country_info)
+  write_processed_tbl(future_demand_tbl, "future_demand_tbl", processed_dir)
 
   # Theme: Production depth + momentum (EI + IEA critical minerals).
   production_depth_momentum_tbl <- production_depth_momentum(
@@ -426,6 +493,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   production_depth_momentum_tbl <- standardize_theme_types(
     production_depth_momentum_tbl,
     country_info = country_info
+  )
+  write_processed_tbl(
+    production_depth_momentum_tbl,
+    "production_depth_momentum_tbl",
+    processed_dir
   )
 
   # Theme: Cost competitiveness (IEA relative costs).
@@ -446,6 +518,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     cost_competitiveness_tbl,
     country_info = country_info
   )
+  write_processed_tbl(
+    cost_competitiveness_tbl,
+    "cost_competitiveness_tbl",
+    processed_dir
+  )
 
   pams_raw <- readr::read_csv(iea_pams_path, show_col_types = FALSE)
   tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE) 
@@ -460,8 +537,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   tech_ghg <- partnership_strength_clean_ghg(tech_ghg_raw)
   cat_policy_tbl <- partnership_strength_clean_policy(cat_policy_raw,country_info=country_info)
   cat_policy_index_tbl <- cat_policy_index(tech_ghg, cat_policy_tbl)
+  write_processed_tbl(tech_ghg, "tech_ghg_tbl", processed_dir)
 
   policy_component_tbl <- dplyr::bind_rows(iea_policy_index_tbl, cat_policy_index_tbl)
+  write_processed_tbl(policy_component_tbl, "policy_component_tbl", processed_dir)
+  write_processed_tbl(policy_outputs, "policy_outputs", processed_dir)
 
   # Collect all theme outputs in a named list for downstream consumers.
   theme_outputs <- list(
