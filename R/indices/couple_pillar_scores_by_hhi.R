@@ -1,19 +1,16 @@
-# Coupling helper to shrink pillar scores toward a tech-level chain score using HHI.
+# Coupling helper to shrink pillar scores toward a tech-level chain score using interdependence edges.
 couple_pillar_scores_by_hhi <- function(pillar_tbl,
-                                        hhi_tbl,
+                                        interdependence_tbl,
                                         score_col,
-                                        hhi_col = NULL,
                                         include_sub_sector = FALSE,
                                         lambda_min = 0.15,
                                         lambda_max = 0.65,
-                                        h0 = 0.25,
-                                        k = 10,
                                         eps = 1e-6) {
   if (!inherits(pillar_tbl, "data.frame")) {
     stop("pillar_tbl must be a data.frame or tibble.")
   }
-  if (!inherits(hhi_tbl, "data.frame")) {
-    stop("hhi_tbl must be a data.frame or tibble.")
+  if (!inherits(interdependence_tbl, "data.frame")) {
+    stop("interdependence_tbl must be a data.frame or tibble.")
   }
 
   score_col_quo <- rlang::enquo(score_col)
@@ -21,20 +18,6 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
 
   if (!score_col_name %in% names(pillar_tbl)) {
     stop("Score column not found in pillar_tbl: ", score_col_name)
-  }
-
-  if (is.null(hhi_col)) {
-    if ("HHI" %in% names(hhi_tbl)) {
-      hhi_col <- rlang::sym("HHI")
-    } else if ("hhi" %in% names(hhi_tbl)) {
-      hhi_col <- rlang::sym("hhi")
-    } else if ("value" %in% names(hhi_tbl)) {
-      hhi_col <- rlang::sym("value")
-    } else {
-      stop("Unable to infer HHI column in hhi_tbl; provide hhi_col.")
-    }
-  } else {
-    hhi_col <- rlang::ensym(hhi_col)
   }
 
   pillar_tbl <- pillar_tbl %>%
@@ -93,48 +76,108 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
     )
   }
 
-  hhi_latest <- hhi_tbl %>%
-    dplyr::filter(.data$supply_chain %in% c("Upstream", "Midstream")) %>%
-    dplyr::mutate(Year = as.integer(Year))
-
-  latest_year <- max(hhi_latest$Year, na.rm = TRUE)
-  if (!is.finite(latest_year)) {
-    warning("HHI table has no usable Year values; using lambda_min for all techs.")
-    hhi_latest <- hhi_latest %>% dplyr::slice(0)
-  } else {
-    hhi_latest <- hhi_latest %>% dplyr::filter(Year == latest_year)
+  weight_candidates <- c("weight", "strength", "edge_weight", "value")
+  weight_col <- weight_candidates[weight_candidates %in% names(interdependence_tbl)][1]
+  if (is.na(weight_col)) {
+    weight_col <- NULL
   }
 
-  hhi_values <- hhi_latest %>%
-    dplyr::mutate(hhi_value = suppressWarnings(as.numeric(!!hhi_col)))
-
-  max_hhi <- max(hhi_values$hhi_value, na.rm = TRUE)
-  hhi_values <- hhi_values %>%
-    dplyr::mutate(
-      hhi_norm = pmin(pmax(hhi_value, 0), 1)
+  if (all(c("from", "to") %in% names(interdependence_tbl))) {
+    edges <- interdependence_tbl %>%
+      dplyr::transmute(
+        tech = if ("tech" %in% names(interdependence_tbl)) .data$tech else NA_character_,
+        from_stage = .data$from,
+        to_stage = .data$to,
+        weight = if (is.null(weight_col)) 1 else suppressWarnings(as.numeric(.data[[weight_col]]))
       )
-    
-
-  hhi_group_cols <- c("tech")
-  if (include_sub_sector && "sub_sector" %in% names(hhi_values)) {
-    hhi_group_cols <- c("tech", "sub_sector")
+  } else if (all(c("source", "target") %in% names(interdependence_tbl))) {
+    edges <- interdependence_tbl %>%
+      dplyr::transmute(
+        tech = if ("tech" %in% names(interdependence_tbl)) .data$tech else NA_character_,
+        from_stage = .data$source,
+        to_stage = .data$target,
+        weight = if (is.null(weight_col)) 1 else suppressWarnings(as.numeric(.data[[weight_col]]))
+      )
+  } else if (all(c("primary", "secondary", "tertiary") %in% names(interdependence_tbl))) {
+    edges <- dplyr::bind_rows(
+      interdependence_tbl %>%
+        dplyr::transmute(
+          tech = if ("tech" %in% names(interdependence_tbl)) .data$tech else NA_character_,
+          from_stage = .data$primary,
+          to_stage = .data$secondary,
+          weight = if (is.null(weight_col)) 1 else suppressWarnings(as.numeric(.data[[weight_col]]))
+        ),
+      interdependence_tbl %>%
+        dplyr::transmute(
+          tech = if ("tech" %in% names(interdependence_tbl)) .data$tech else NA_character_,
+          from_stage = .data$primary,
+          to_stage = .data$tertiary,
+          weight = if (is.null(weight_col)) 1 else suppressWarnings(as.numeric(.data[[weight_col]]))
+        ),
+      interdependence_tbl %>%
+        dplyr::transmute(
+          tech = if ("tech" %in% names(interdependence_tbl)) .data$tech else NA_character_,
+          from_stage = .data$secondary,
+          to_stage = .data$tertiary,
+          weight = if (is.null(weight_col)) 1 else suppressWarnings(as.numeric(.data[[weight_col]]))
+        )
+    )
+  } else {
+    stop("interdependence_tbl must include columns (from, to), (source, target), or (primary, secondary, tertiary).")
   }
 
-  hhi_by_tech <- hhi_values %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(hhi_group_cols))) %>%
-    dplyr::summarize(
-      hhi_tech = mean(hhi_norm, na.rm = TRUE),
-      non_missing = sum(!is.na(hhi_norm)),
-      .groups = "drop"
-    ) %>%
-    dplyr::mutate(hhi_tech = dplyr::if_else(non_missing > 0, hhi_tech, NA_real_)) %>%
-    dplyr::select(-non_missing)
-
-  hhi_by_tech <- hhi_by_tech %>%
+  edges <- edges %>%
     dplyr::mutate(
-      hhi_tech = pmin(pmax(hhi_tech, 0), 1),
-      lambda = lambda_min + (lambda_max - lambda_min) * (1 / (1 + exp(-k * (hhi_tech - h0))))
+      weight = dplyr::if_else(is.na(weight), 1, weight),
+      from_stage = as.character(from_stage),
+      to_stage = as.character(to_stage)
+    ) %>%
+    dplyr::filter(!is.na(from_stage), !is.na(to_stage))
+
+  edge_group_cols <- "supply_chain"
+  if ("tech" %in% names(edges) && "tech" %in% names(pillar_tbl)) {
+    edge_group_cols <- c("tech", "supply_chain")
+  }
+
+  interdependence_strength <- edges %>%
+    tidyr::pivot_longer(
+      cols = c("from_stage", "to_stage"),
+      names_to = "endpoint",
+      values_to = "supply_chain"
+    ) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(edge_group_cols))) %>%
+    dplyr::summarize(
+      strength = sum(weight, na.rm = TRUE),
+      .groups = "drop"
     )
+
+  strength_group_cols <- setdiff(edge_group_cols, "supply_chain")
+  if (length(strength_group_cols) > 0) {
+    interdependence_strength <- interdependence_strength %>%
+      dplyr::group_by(dplyr::across(dplyr::all_of(strength_group_cols))) %>%
+      dplyr::mutate(
+        max_strength = max(strength, na.rm = TRUE),
+        interdependence_norm = dplyr::if_else(max_strength > 0, strength / max_strength, 0)
+      ) %>%
+      dplyr::ungroup()
+  } else {
+    max_strength <- max(interdependence_strength$strength, na.rm = TRUE)
+    if (!is.finite(max_strength)) {
+      max_strength <- 0
+    }
+    interdependence_strength <- interdependence_strength %>%
+      dplyr::mutate(
+        max_strength = max_strength,
+        interdependence_norm = dplyr::if_else(max_strength > 0, strength / max_strength, 0)
+      )
+  }
+
+  interdependence_strength <- interdependence_strength %>%
+    dplyr::mutate(
+      interdependence_norm = pmin(pmax(interdependence_norm, 0), 1),
+      lambda = lambda_min + (lambda_max - lambda_min) * interdependence_norm
+    ) %>%
+    dplyr::select(-max_strength, -interdependence_norm)
 
   chain_scores <- pillar_tbl %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
@@ -153,13 +196,8 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
   score_coupled_col <- paste0(score_col_name, "_coupled")
 
   coupled <- pillar_tbl %>%
-    dplyr::left_join(hhi_by_tech, by = hhi_group_cols) %>%
+    dplyr::left_join(interdependence_strength, by = edge_group_cols) %>%
     dplyr::left_join(chain_scores, by = group_cols)
-
-  missing_lambda <- coupled %>%
-    dplyr::filter(is.na(lambda)) %>%
-    dplyr::distinct(tech) %>%
-    dplyr::pull(tech)
 
   coupled <- coupled %>%
     dplyr::mutate(
@@ -168,13 +206,6 @@ couple_pillar_scores_by_hhi <- function(pillar_tbl,
       "{score_coupled_col}" := pmin(pmax(.data[[score_coupled_col]], 0), 1)
     ) %>%
     dplyr::select(-lambda, -chain_score)
-
-  if (length(missing_lambda) > 0) {
-    warning(
-      "Missing HHI for tech(s); using lambda_min: ",
-      paste(missing_lambda, collapse = ", ")
-    )
-  }
 
   coupled
 }
