@@ -205,7 +205,18 @@ technological_readiness <- function(iea_cleantech_all,
   iea_tech <- technological_readiness_build_tech(iea_cleantech_sector, techs = techs)
   readiness_tbl <- technological_readiness_build_indices(iea_tech, gamma = gamma, year = year)
   readiness_tbl %>%
-    dplyr::mutate(Country = "Global") %>%
+    dplyr::mutate(
+      Country = "Global",
+      tech = as.character(tech),
+      supply_chain = as.character(supply_chain),
+      category = as.character(category),
+      variable = as.character(variable),
+      data_type = as.character(data_type),
+      value = suppressWarnings(as.numeric(value)),
+      Year = as.integer(year),
+      source = as.character(source),
+      explanation = as.character(explanation)
+    ) %>%
     dplyr::select(
       Country,
       tech,

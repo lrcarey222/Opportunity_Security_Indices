@@ -154,6 +154,10 @@ technological_readiness_index <- economic_opportunity_category_scores %>%
     trl_index = category_score
   )
 
+if (!exists("policy_component_tbl") || !exists("policy_outputs")) {
+  stop("Policy theme outputs not found; run scripts/10_build_themes.R first.")
+}
+
 policy_agg <- policy_outputs$policy_agg
 policy_clean <- policy_outputs$policy_clean
 
