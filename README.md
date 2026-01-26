@@ -115,8 +115,6 @@ There is an optional “coupled” pillar score that shrinks stage-level pillar 
 
 ## Pillars, categories, and technical appendix
 
-This section is written to function as a **drop-in technical appendix inside the README**. For publication, you can move it into `docs/technical_appendix.md` and link it here.
-
 ### Energy Security (ES)
 
 **Interpretation:** ES measures exposure and resilience across upstream resources, midstream manufacturing, and downstream deployment/consumption.
