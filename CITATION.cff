@@ -1,7 +1,12 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it."
 title: "Opportunity Security Indices"
-version: "0.0.0"
+version: "0.1.0"
 authors:
-  - family-names: "TBD"
-    given-names: "TBD"
+  - family-names: "Carey"
+    given-names: "Lachlan"
+    affiliation: "Rocky Mountain Institute"
+repository-code: "https://github.com/lrcarey222/Opportunity_Security_Indices"
+url: "https://github.com/lrcarey222/Opportunity_Security_Indices"
+date-released: "2026-01-26"
+license: "MIT"
