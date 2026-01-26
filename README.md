@@ -72,7 +72,9 @@ A schema validator and standardization helpers live under `R/utils/`.
 Most raw metrics are converted to a 0–1 index using a median-centered S-curve:
 
 ```
+
 idx = r^gamma / (r^gamma + (1 - r)^gamma)
+
 ```
 
 where `r` is the percentile rank and `gamma = 0.5` by default.
@@ -442,20 +444,23 @@ Each component is normalized using the same median S-curve framework, then combi
 
 ## Repository layout
 
-R/ # Pure functions (no IO)
-utils/ # Reusable helpers, schema checks, standardization
-categories/ # Category/theme calculations
-indices/ # Pillar indices + helpers (ES, EO, PSI)
-outputs/ # Output builders (no file IO)
-charts/ # Chart builders (no file IO)
-themes/ # Theme grouping (incl. partnership_strength)
+```
 
-scripts/ # Orchestration + IO (reads raw, writes processed/outputs)
-config/ # Config files (weights, missing data, index definitions)
-docs/ # Methodology + data sources
-run_pipeline.R # Pipeline entry point
-tests/ # Unit tests (testthat)
+R/                    # Pure functions (no IO)
+utils/              # Reusable helpers, schema checks, standardization
+categories/         # Category/theme calculations
+indices/            # Pillar indices + helpers (ES, EO, PSI)
+outputs/            # Output builders (no file IO)
+charts/             # Chart builders (no file IO)
+themes/             # Theme grouping (incl. partnership_strength)
 
+scripts/              # Orchestration + IO (reads raw, writes processed/outputs)
+config/               # Config files (weights, missing data, index definitions)
+docs/                 # Methodology + data sources
+run_pipeline.R        # Pipeline entry point
+tests/                # Unit tests (testthat)
+
+````
 
 ---
 
@@ -465,58 +470,111 @@ tests/ # Unit tests (testthat)
 
 ```bash
 cp config/config.example.yml config/config.yml
+````
 
 This repo also ships with:
 
-config/weights.yml
+* `config/weights.yml`
+* `config/missing_data.yml`
+* `config/index_definition.yml`
 
-config/missing_data.yml
-
-config/index_definition.yml
-
-(Optional) Run without local raw snapshots
+2. **(Optional) Run without local raw snapshots**
 
 If you don’t have the raw inputs available, set:
 
-SKIP_DATA_DOWNLOADS=true (or 1)
+* `SKIP_DATA_DOWNLOADS=true` (or `1`)
 
-so scripts/10_build_themes.R can exit cleanly when inputs are missing.
+so `scripts/10_build_themes.R` can exit cleanly when inputs are missing.
 
-Run the pipeline scripts in order
+3. **Run the pipeline scripts in order**
 
+```bash
 Rscript scripts/00_setup.R
 Rscript scripts/10_build_themes.R
 Rscript scripts/20_build_indices.R
+```
 
 For an end-to-end run, use:
 
+```bash
 Rscript run_pipeline.R
+```
 
-Outputs
+---
 
-Outputs are written under your configured outputs directory (or processed/outputs by default). Typical outputs include:
+## Outputs
 
-ES and EO pillar index tables
+Outputs are written under your configured outputs directory (or `processed/outputs` by default). Typical outputs include:
 
-Category scores
+* ES and EO pillar index tables
+* Category scores
+* Category contribution tables
+* Variable contribution tables
+* PSI tables
+* Optional “coupled” pillar index variants (if interdependence edges are provided)
 
-Category contribution tables
+See `scripts/20_build_indices.R` for the exact CSV outputs written.
 
-Variable contribution tables
+---
 
-PSI tables
-
-Optional “coupled” pillar index variants (if interdependence edges are provided)
-
-See scripts/20_build_indices.R for the exact CSV outputs written.
-
-Data sources
+## Data sources
 
 A curated list of sources (including links and expected provenance) is maintained in:
 
-docs/sources.md
+* `docs/sources.md`
 
-Theme builders typically read from date-stamped input snapshots under your configured raw_data_dir/<snapshot>/....
+Theme builders typically read from date-stamped input snapshots under your configured `raw_data_dir/<snapshot>/...`.
 
-Tip: scripts/10_build_themes.R and scripts/15_build_partner_themes.R are the authoritative “what files are required” inventory, because they list the expected raw file names and wire them into each theme builder.
+> **Tip:** `scripts/10_build_themes.R` and `scripts/15_build_partner_themes.R` are the authoritative “what files are required” inventory, because they list the expected raw file names and wire them into each theme builder.
+
+### Key external sources (cited)
+
+* [IEA Critical Minerals Dataset][IEA-CM]
+* [IEA ETP Clean Energy Technology Guide][IEA-CTG]
+* [IEA Global EV Data Explorer][IEA-EV]
+* [Energy Institute Statistical Review][EI-SR]
+* [UN Comtrade][COMTRADE]
+* [Harvard Atlas of Economic Complexity][AEC]
+* [World Development Indicators (WDI)][WDI]
+* [Global Solar Atlas][GSA]
+* [Global Wind Atlas][GWA]
+* [BloombergNEF New Energy Outlook][BNEF-NEO]
+* [IMF Commodity Prices][IMF-COMM]
+* [ILOSTAT][ILO]
+* [IMF Data Explorer][IMF-DEX]
+
+---
+
+## Citation
+
+If you use OSI outputs in external work, cite:
+
+* This repository (commit hash / release tag)
+* `docs/methodology.md`
+* `docs/sources.md`
+* The exact configuration files used (`config/*.yml`)
+
+And record:
+
+* input snapshot dates
+* processing date
+* any manual overrides (e.g., missing data policies or custom weights)
+
+---
+
+<!-- Link reference definitions -->
+
+[IEA-CM]: https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset
+[IEA-CTG]: https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide
+[IEA-EV]: https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer
+[EI-SR]: https://www.energyinst.org/statistical-review
+[COMTRADE]: https://comtrade.un.org/
+[AEC]: https://atlas.hks.harvard.edu/
+[WDI]: https://databank.worldbank.org/source/world-development-indicators
+[GSA]: https://globalsolaratlas.info
+[GWA]: https://globalwindatlas.info/
+[BNEF-NEO]: https://about.bnef.com/insights/clean-energy/new-energy-outlook/
+[IMF-COMM]: https://www.imf.org/en/research/commodity-prices
+[ILO]: https://ilostat.ilo.org/data/
+[IMF-DEX]: https://data.imf.org/en/Data-Explorer
 
