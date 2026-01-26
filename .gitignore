@@ -1,13 +1,34 @@
+# R session / IDE
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj.user/
+
+# renv (if adopted later)
+renv/library/
+renv/python/
+renv/staging/
+
+# Local data + outputs (do not commit)
 data/raw/
+data/processed/
+data/raw_cache/
 outputs/
-.Renviron
-.env
-config/config.yml
-config/weights.yml
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!outputs/.gitkeep
-!R/outputs/
-!R/outputs/.gitkeep
-!R/outputs/*.R
-.Rproj.user
+output/
+output*/
+
+# Logs / temp
+*.log
+tmp/
+temp/
+
+# Website build artifacts (if site/ is used)
+site/node_modules/
+site/dist/
+site/.vite/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
