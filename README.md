@@ -27,6 +27,7 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
   - [Partnership Strength Index (PSI)](#partnership-strength-index-psi)
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
+- [Interactive explorer (Shiny)](#interactive-explorer-shiny)
 - [Outputs](#outputs)
 - [Data sources](#data-sources)
 - [Known issues and to-dos](#known-issues-and-to-dos)
@@ -450,13 +451,14 @@ R/                    # Pure functions (no IO)
 utils/              # Reusable helpers, schema checks, standardization
 categories/         # Category/theme calculations
 indices/            # Pillar indices + helpers (ES, EO, PSI)
-outputs/            # Output builders (no file IO)
 charts/             # Chart builders (no file IO)
 themes/             # Theme grouping (incl. partnership_strength)
 
 scripts/              # Orchestration + IO (reads raw, writes processed/outputs)
 config/               # Config files (weights, missing data, index definitions)
 docs/                 # Methodology + data sources
+shiny/                # Interactive Shiny app (world map explorer)
+archive/              # Deprecated website assets (archived)
 run_pipeline.R        # Pipeline entry point
 tests/                # Unit tests (testthat)
 
@@ -499,6 +501,34 @@ For an end-to-end run, use:
 ```bash
 Rscript run_pipeline.R
 ```
+
+---
+
+## Interactive explorer (Shiny)
+
+Run the interactive world map from the repository root:
+
+```r
+install.packages(c(
+  "shiny",
+  "bslib",
+  "dplyr",
+  "scales",
+  "countrycode",
+  "leaflet",
+  "sf",
+  "rnaturalearth",
+  "rnaturalearthdata"
+))
+shiny::runApp("shiny", launch.browser = FALSE)
+```
+
+**Data sources:**
+
+- The app looks for pipeline outputs in `data/processed/outputs/index_outputs.rds` (or other
+  common output paths). You can override this with `OPSI_OUTPUTS_RDS=/path/to/index_outputs.rds`.
+- If no outputs are found, the app falls back to a small synthetic sample dataset stored in
+  `shiny/inst/extdata/sample_indices.csv`. The sidebar indicates which data source is active.
 
 ---
 
@@ -577,4 +607,3 @@ And record:
 [IMF-COMM]: https://www.imf.org/en/research/commodity-prices
 [ILO]: https://ilostat.ilo.org/data/
 [IMF-DEX]: https://data.imf.org/en/Data-Explorer
-

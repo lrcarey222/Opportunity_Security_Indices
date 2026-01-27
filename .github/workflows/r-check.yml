@@ -15,6 +15,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Secret scan
+        run: |
+          pattern='(DATA'"'"'WRAPPER|api\\.data'"'"'wrapper|sk-[A-Za-z0-9]|Bea'"'"'rer [A-Za-z0-9]|OPENAI'"'"'_API_KEY)'
+          git grep -n -E "$pattern" -- . ':(exclude)Legacy Scripts/**'
+
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
@@ -25,7 +30,7 @@ jobs:
       - name: Install dependencies (packages)
         if: ${{ hashFiles('renv.lock') == '' }}
         run: |
-          Rscript -e "install.packages(c('dplyr','tibble','stringr','testthat','yaml','purrr','tidyr'), repos='https://cloud.r-project.org')"
+          Rscript -e "install.packages(c('dplyr','tibble','stringr','testthat','yaml','purrr','tidyr','shiny','bslib','scales','countrycode'), repos='https://cloud.r-project.org')"
 
       - name: Run unit tests
         run: |
