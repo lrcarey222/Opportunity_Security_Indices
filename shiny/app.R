@@ -35,21 +35,13 @@ tech_choices <- sort(unique(index_data$tech))
 if (length(tech_choices) == 0) {
   tech_choices <- "All"
 }
-tech_choices <- unique(c("All", tech_choices))
+tech_choices <- tech_choices[!is.na(tech_choices)]
 
 supply_choices <- sort(unique(index_data$supply_chain))
 if (length(supply_choices) == 0) {
   supply_choices <- "All"
 }
-supply_choices <- unique(c("All", supply_choices))
-
-year_values <- sort(unique(index_data$year))
-show_year <- !all(is.na(year_values)) && length(year_values) > 0
-if (show_year) {
-  year_choices <- unique(c("All", year_values[!is.na(year_values)]))
-} else {
-  year_choices <- "All"
-}
+supply_choices <- supply_choices[!is.na(supply_choices)]
 
 ui <- bslib::page_sidebar(
   title = "Opportunity & Security Indices",
@@ -57,9 +49,8 @@ ui <- bslib::page_sidebar(
   sidebar = bslib::sidebar(
     shiny::h4("Map controls"),
     shiny::selectInput("metric", "Index", choices = metric_choices, selected = metric_choices[1]),
-    shiny::selectInput("tech", "Technology", choices = tech_choices, selected = "All"),
-    shiny::selectInput("supply_chain", "Supply chain", choices = supply_choices, selected = "All"),
-    shiny::uiOutput("year_ui"),
+    shiny::selectInput("tech", "Technology", choices = tech_choices, selected = tech_choices[1]),
+    shiny::selectInput("supply_chain", "Supply chain", choices = supply_choices, selected = supply_choices[1]),
     shiny::hr(),
     shiny::h5("Data source"),
     shiny::verbatimTextOutput("data_source", placeholder = TRUE),
@@ -70,13 +61,6 @@ ui <- bslib::page_sidebar(
 )
 
 server <- function(input, output, session) {
-  output$year_ui <- shiny::renderUI({
-    if (!show_year) {
-      return(NULL)
-    }
-    shiny::selectInput("year", "Year", choices = year_choices, selected = year_choices[1])
-  })
-
   output$data_source <- shiny::renderText({
     paste0(app_data$source, " (", app_data$detail, ")")
   })
@@ -112,8 +96,7 @@ server <- function(input, output, session) {
       index_data,
       input$metric,
       input$tech,
-      input$supply_chain,
-      if (show_year) input$year else "All"
+      input$supply_chain
     )
     world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
     world <- sf::st_transform(world, 4326)

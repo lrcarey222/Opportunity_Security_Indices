@@ -44,7 +44,6 @@ standardize_index_tbl <- function(tbl, metric_col, metric_label) {
   if (!all(c("Country", "tech", "supply_chain") %in% names(tbl))) {
     return(NULL)
   }
-  year <- if ("Year" %in% names(tbl)) tbl$Year else NA_integer_
   iso3_col <- rep(NA_character_, nrow(tbl))
   if ("iso3" %in% names(tbl)) {
     iso3_col <- tbl$iso3
@@ -56,7 +55,6 @@ standardize_index_tbl <- function(tbl, metric_col, metric_label) {
     iso3 = iso3_col,
     tech = tbl$tech,
     supply_chain = tbl$supply_chain,
-    year = year,
     metric = metric_label,
     value = tbl[[metric_col]],
     stringsAsFactors = FALSE
@@ -138,7 +136,6 @@ load_index_data <- function(app_dir, repo_root) {
     iso3 = sample$iso3,
     tech = sample$tech,
     supply_chain = sample$supply_chain,
-    year = sample$Year,
     metric = rep("Energy Security Index", nrow(sample)),
     value = sample$Energy_Security_Index,
     stringsAsFactors = FALSE
@@ -150,7 +147,6 @@ load_index_data <- function(app_dir, repo_root) {
       iso3 = sample$iso3,
       tech = sample$tech,
       supply_chain = sample$supply_chain,
-      year = sample$Year,
       metric = rep("Economic Opportunity Index", nrow(sample)),
       value = sample$Economic_Opportunity_Index,
       stringsAsFactors = FALSE
@@ -160,7 +156,6 @@ load_index_data <- function(app_dir, repo_root) {
       iso3 = sample$iso3,
       tech = sample$tech,
       supply_chain = sample$supply_chain,
-      year = sample$Year,
       metric = rep("Strategic Index (Sample)", nrow(sample)),
       value = sample$Strategic_Index,
       stringsAsFactors = FALSE
@@ -173,28 +168,24 @@ load_index_data <- function(app_dir, repo_root) {
   )
 }
 
-summarize_for_map <- function(data, metric, tech, supply_chain, year) {
+summarize_for_map <- function(data, metric, tech, supply_chain) {
   filtered <- data[data$metric == metric, , drop = FALSE]
-  if (!is.null(tech) && tech != "All") {
+  if (!is.null(tech)) {
     filtered <- filtered[filtered$tech == tech, , drop = FALSE]
   }
-  if (!is.null(supply_chain) && supply_chain != "All") {
+  if (!is.null(supply_chain)) {
     filtered <- filtered[filtered$supply_chain == supply_chain, , drop = FALSE]
-  }
-  if (!is.null(year) && year != "All") {
-    filtered <- filtered[filtered$year == year, , drop = FALSE]
   }
   if (nrow(filtered) == 0) {
     return(data.frame(
       country = character(),
       iso3 = character(),
       metric = character(),
-      year = integer(),
       value = numeric(),
       stringsAsFactors = FALSE
     ))
   }
-  aggregate(value ~ country + iso3 + metric + year, data = filtered, FUN = function(x) {
+  aggregate(value ~ country + iso3 + metric, data = filtered, FUN = function(x) {
     if (all(is.na(x))) {
       NA_real_
     } else {
