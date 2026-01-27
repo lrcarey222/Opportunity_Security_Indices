@@ -1,8 +1,13 @@
 frame_path <- tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
+cwd <- normalizePath(getwd(), winslash = "/", mustWork = FALSE)
 if (!is.null(frame_path) && nzchar(frame_path)) {
   app_dir <- normalizePath(dirname(frame_path), winslash = "/", mustWork = FALSE)
+} else if (file.exists(file.path(cwd, "app.R"))) {
+  app_dir <- cwd
+} else if (file.exists(file.path(cwd, "shiny", "app.R"))) {
+  app_dir <- normalizePath(file.path(cwd, "shiny"), winslash = "/", mustWork = FALSE)
 } else {
-  app_dir <- normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+  app_dir <- cwd
 }
 source(file.path(app_dir, "R", "helpers.R"))
 
