@@ -62,7 +62,7 @@ ui <- bslib::page_sidebar(
     bslib::nav_panel("Local Map", shiny::uiOutput("map_ui")),
     bslib::nav_panel(
       "Datawrapper Map",
-      shiny::layout_column_wrap(
+      bslib::layout_column_wrap(
         width = 1,
         shiny::passwordInput("dw_key", "Datawrapper API key (optional)", ""),
         shiny::textInput("dw_chart_id", "Datawrapper chart ID (optional)", Sys.getenv("DATAWRAPPER_CHART_ID_WORLD", "")),
