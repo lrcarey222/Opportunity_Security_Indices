@@ -59,8 +59,8 @@ ui <- bslib::page_sidebar(
     shiny::h5("Dependencies"),
     shiny::uiOutput("dependency_notice")
   ),
-  shiny::layout_sidebar(
-    sidebar = shiny::sidebar(
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
       width = 320,
       shiny::textInput("dw_chart_id", "Datawrapper chart ID (optional)", Sys.getenv("DATAWRAPPER_CHART_ID_WORLD", "")),
       shiny::selectInput(
