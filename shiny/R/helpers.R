@@ -45,7 +45,7 @@ standardize_index_tbl <- function(tbl, metric_col, metric_label) {
     return(NULL)
   }
   year <- if ("Year" %in% names(tbl)) tbl$Year else NA_integer_
-  iso3_col <- NULL
+  iso3_col <- rep(NA_character_, nrow(tbl))
   if ("iso3" %in% names(tbl)) {
     iso3_col <- tbl$iso3
   } else if ("ISO3" %in% names(tbl)) {
