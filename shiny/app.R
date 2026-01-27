@@ -28,8 +28,13 @@ missing_dw_packages <- datawrapper_packages[
   !vapply(datawrapper_packages, requireNamespace, logical(1), quietly = TRUE)
 ]
 
+techs <- c("Electric Vehicles",
+           "Nuclear","Coal","Batteries","Green Hydrogen","Wind","Oil",                       
+           "Solar", "Gas", "Geothermal","Electric Grid")
+
 app_data <- load_index_data(app_dir, repo_root)
-index_data <- app_data$data
+index_data <- app_data$data %>%
+  filter(tech %in% techs)
 
 metric_choices <- sort(unique(index_data$metric))
 tech_choices <- sort(unique(index_data$tech))
