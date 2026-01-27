@@ -100,10 +100,9 @@ dw_get_iframe_src <- function(publish_response) {
     iframe <- publish_response$data$metadata$publish$`embed-codes`$`embed-method-iframe`
   }
   if (!is.null(iframe)) {
-    match <- regexpr("src=\"([^\"]+)\"", iframe, perl = TRUE)
-    if (match[1] != -1) {
-      src <- regmatches(iframe, match)
-      return(sub("^src=\"|\"$", "", src))
+    src <- sub(".*src=[\"']([^\"']+)[\"'].*", "\\1", iframe)
+    if (!identical(src, iframe) && nzchar(src)) {
+      return(src)
     }
   }
   publish_response$publicUrl
