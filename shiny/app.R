@@ -108,19 +108,27 @@ server <- function(input, output, session) {
     if (is.null(map_tbl)) {
       return(NULL)
     }
+    map_tbl_data <- map_tbl[!is.na(map_tbl$value), , drop = FALSE]
+    if (nrow(map_tbl_data) == 0) {
+      map_tbl_data <- map_tbl
+    }
     pal <- leaflet::colorNumeric(
       palette = "YlGnBu",
       domain = map_tbl$value,
       na.color = "#e0e0e0"
     )
     label_text <- paste0(
-      map_tbl$name,
+      map_tbl_data$name,
       ": ",
-      ifelse(is.na(map_tbl$value), "No data", scales::number(map_tbl$value, accuracy = 0.01))
+      ifelse(is.na(map_tbl_data$value), "No data", scales::number(map_tbl_data$value, accuracy = 0.01))
     )
 
-    leaflet::leaflet(map_tbl) %>%
-      leaflet::addProviderTiles("CartoDB.Positron") %>%
+    bbox <- sf::st_bbox(map_tbl_data)
+    leaflet::leaflet(map_tbl_data, options = leaflet::leafletOptions(worldCopyJump = FALSE)) %>%
+      leaflet::addProviderTiles(
+        "CartoDB.Positron",
+        options = leaflet::providerTileOptions(noWrap = TRUE)
+      ) %>%
       leaflet::addPolygons(
         fillColor = ~pal(value),
         color = "#666666",
@@ -128,6 +136,12 @@ server <- function(input, output, session) {
         fillOpacity = 0.7,
         label = label_text,
         highlightOptions = leaflet::highlightOptions(weight = 2, color = "#000000", bringToFront = TRUE)
+      ) %>%
+      leaflet::fitBounds(
+        lng1 = bbox[["xmin"]],
+        lat1 = bbox[["ymin"]],
+        lng2 = bbox[["xmax"]],
+        lat2 = bbox[["ymax"]]
       ) %>%
       leaflet::addLegend(
         position = "bottomright",
