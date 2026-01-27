@@ -28,10 +28,6 @@ missing_dw_packages <- datawrapper_packages[
   !vapply(datawrapper_packages, requireNamespace, logical(1), quietly = TRUE)
 ]
 
-techs <- c("Electric Vehicles",
-           "Nuclear","Coal","Batteries","Green Hydrogen","Wind","Oil",                       
-           "Solar", "Gas", "Geothermal","Electric Grid")
-
 app_data <- load_index_data(app_dir, repo_root)
 index_data <- app_data$data %>%
   filter(tech %in% techs)
@@ -69,7 +65,6 @@ ui <- bslib::page_sidebar(
       "Datawrapper Map",
       bslib::layout_column_wrap(
         width = 1,
-        shiny::passwordInput("dw_key", "Datawrapper API key (optional)", ""),
         shiny::textInput("dw_chart_id", "Datawrapper chart ID (optional)", Sys.getenv("DATAWRAPPER_CHART_ID_WORLD", "")),
         shiny::selectInput(
           "dw_map_key_attr",
@@ -146,9 +141,6 @@ server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$dw_update, {
-    if (nzchar(input$dw_key)) {
-      Sys.setenv(DATAWRAPPER_API_KEY = input$dw_key)
-    }
     api_key <- Sys.getenv("DATAWRAPPER_API_KEY", "")
     if (!nzchar(api_key)) {
       dw_status("Datawrapper disabled. Set DATAWRAPPER_API_KEY to enable publishing.")

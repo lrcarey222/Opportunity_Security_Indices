@@ -51,10 +51,24 @@ export DATAWRAPPER_API_KEY="..."
 export DATAWRAPPER_CHART_ID_WORLD="..." # optional
 ```
 
-You can also paste a key and chart ID into the Datawrapper tab in the UI. The chart ID is
-cached locally in `~/.config/opportunity_security_indices/datawrapper_chart_world.txt` when
-created. If ISO3 joins fail in Datawrapper, switch the basemap key attribute to “Name” and
-ensure the `country` column matches Datawrapper’s country naming.
+You can also set the key inside an R session:
+
+```r
+Sys.setenv(DATAWRAPPER_API_KEY = "your-key-here")
+Sys.setenv(DATAWRAPPER_CHART_ID_WORLD = "your-chart-id") # optional
+```
+
+For a persistent key that is not committed, add it to your `~/.Renviron` file and restart R:
+
+```
+DATAWRAPPER_API_KEY=your-key-here
+DATAWRAPPER_CHART_ID_WORLD=your-chart-id
+```
+
+You can also paste a chart ID into the Datawrapper tab in the UI. The chart ID is cached
+locally in `~/.config/opportunity_security_indices/datawrapper_chart_world.txt` when created.
+If ISO3 joins fail in Datawrapper, switch the basemap key attribute to “Name” and ensure
+the `country` column matches Datawrapper’s country naming.
 
 ## Security check (no secrets)
 
