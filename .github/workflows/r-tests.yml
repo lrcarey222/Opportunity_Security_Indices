@@ -18,7 +18,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          Rscript -e 'packages <- c("testthat","yaml","dplyr","tibble","stringr","tidyr","purrr"); if (file.exists("DESCRIPTION")) packages <- c(packages, "devtools"); install.packages(unique(packages), repos="https://cloud.r-project.org")'
+          Rscript -e 'packages <- c("testthat","yaml","dplyr","tibble","stringr","tidyr","purrr","shiny","bslib","scales","countrycode"); if (file.exists("DESCRIPTION")) packages <- c(packages, "devtools"); install.packages(unique(packages), repos="https://cloud.r-project.org")'
 
       - name: Run tests
         run: |
