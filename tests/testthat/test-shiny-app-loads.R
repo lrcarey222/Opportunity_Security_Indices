@@ -11,5 +11,6 @@ test_that("shiny app loads", {
   expect_true(exists("ui", envir = app_env))
   expect_true(exists("server", envir = app_env))
   expect_true(exists("app", envir = app_env))
+  expect_true(exists("dw_create_chart", envir = app_env))
   expect_s3_class(app_env$app, "shiny.appobj")
 })
