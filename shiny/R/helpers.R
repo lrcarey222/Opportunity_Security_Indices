@@ -184,6 +184,16 @@ summarize_for_map <- function(data, metric, tech, supply_chain, year) {
   if (!is.null(year) && year != "All") {
     filtered <- filtered[filtered$year == year, , drop = FALSE]
   }
+  if (nrow(filtered) == 0) {
+    return(data.frame(
+      country = character(),
+      iso3 = character(),
+      metric = character(),
+      year = integer(),
+      value = numeric(),
+      stringsAsFactors = FALSE
+    ))
+  }
   aggregate(value ~ country + iso3 + metric + year, data = filtered, FUN = function(x) {
     if (all(is.na(x))) {
       NA_real_
