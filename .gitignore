@@ -26,6 +26,9 @@ temp/
 site/node_modules/
 site/dist/
 site/.vite/
+archive/site/node_modules/
+archive/site/dist/
+archive/site/.vite/
 
 # OS/editor
 .DS_Store
