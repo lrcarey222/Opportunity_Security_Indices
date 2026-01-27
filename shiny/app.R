@@ -59,8 +59,8 @@ ui <- bslib::page_sidebar(
     shiny::uiOutput("dependency_notice")
   ),
   bslib::navset_tab(
-    shiny::nav_panel("Local Map", shiny::uiOutput("map_ui")),
-    shiny::nav_panel(
+    bslib::nav_panel("Local Map", shiny::uiOutput("map_ui")),
+    bslib::nav_panel(
       "Datawrapper Map",
       shiny::layout_column_wrap(
         width = 1,
