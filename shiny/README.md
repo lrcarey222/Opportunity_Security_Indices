@@ -1,6 +1,7 @@
 # Shiny interactive explorer
 
-This Shiny app provides an interactive world map for the Opportunity Security Indices.
+This Shiny app provides an interactive world map for the Opportunity Security Indices using
+an embedded Datawrapper choropleth (optional).
 
 ## Run locally
 
@@ -13,10 +14,8 @@ install.packages(c(
   "dplyr",
   "scales",
   "countrycode",
-  "leaflet",
-  "sf",
-  "rnaturalearth",
-  "rnaturalearthdata"
+  "httr",
+  "jsonlite"
 ))
 shiny::runApp("shiny", launch.browser = FALSE)
 ```
@@ -38,6 +37,46 @@ If no outputs are found, the app falls back to a small synthetic sample dataset 
 The map joins data to country polygons using ISO3 codes. If pipeline outputs do not include
 ISO3 values, the app derives them from country names with `countrycode` and a small override
 dictionary defined in `shiny/R/helpers.R`.
+
+## Datawrapper publishing (optional)
+
+The app includes an optional Datawrapper tab that can publish a world choropleth map using
+the Datawrapper API. The app still runs without a Datawrapper key; it will show a
+“Datawrapper disabled” message until a key is provided.
+
+Set environment variables before running the app:
+
+```bash
+export DATAWRAPPER_API_KEY="..."
+export DATAWRAPPER_CHART_ID_WORLD="..." # optional
+```
+
+You can also set the key inside an R session:
+
+```r
+Sys.setenv(DATAWRAPPER_API_KEY = "your-key-here")
+Sys.setenv(DATAWRAPPER_CHART_ID_WORLD = "your-chart-id") # optional
+```
+
+For a persistent key that is not committed, add it to your `~/.Renviron` file and restart R:
+
+```
+DATAWRAPPER_API_KEY=your-key-here
+DATAWRAPPER_CHART_ID_WORLD=your-chart-id
+```
+
+You can also paste a chart ID into the Datawrapper tab in the UI. The chart ID is cached
+locally in `~/.config/opportunity_security_indices/datawrapper_chart_world.txt` when created.
+If ISO3 joins fail in Datawrapper, switch the basemap key attribute to “Name” and ensure
+the `country` column matches Datawrapper’s country naming.
+
+## Security check (no secrets)
+
+To confirm no Datawrapper keys are stored in tracked files, run:
+
+```bash
+git grep -n -E "(DATAWRAPPER_API_KEY\\s*=\\s*\\\"|api\\.datawrapper|Bearer\\s+[A-Za-z0-9]{10,}|sk-[A-Za-z0-9])"
+```
 
 ## Deployment (optional)
 
