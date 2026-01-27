@@ -93,7 +93,12 @@ dw_publish <- function(chart_id,
 }
 
 dw_get_iframe_src <- function(publish_response) {
-  iframe <- publish_response$embedCodes$iframe
+  iframe <- NULL
+  if (!is.null(publish_response$embedCodes$iframe)) {
+    iframe <- publish_response$embedCodes$iframe
+  } else if (!is.null(publish_response$data$metadata$publish$`embed-codes`$`embed-method-iframe`)) {
+    iframe <- publish_response$data$metadata$publish$`embed-codes`$`embed-method-iframe`
+  }
   if (!is.null(iframe)) {
     match <- regexpr("src=\"([^\"]+)\"", iframe, perl = TRUE)
     if (match[1] != -1) {
