@@ -59,29 +59,25 @@ ui <- bslib::page_sidebar(
     shiny::h5("Dependencies"),
     shiny::uiOutput("dependency_notice")
   ),
-  bslib::navset_tab(
-    bslib::nav_panel("Local Map", shiny::uiOutput("map_ui")),
-    bslib::nav_panel(
-      "Datawrapper Map",
-      bslib::layout_column_wrap(
-        width = 1,
-        shiny::textInput("dw_chart_id", "Datawrapper chart ID (optional)", Sys.getenv("DATAWRAPPER_CHART_ID_WORLD", "")),
-        shiny::selectInput(
-          "dw_map_key_attr",
-          "Basemap key attribute",
-          choices = c("ISO3", "Name"),
-          selected = "ISO3"
-        ),
-        shiny::tags$p(
-          class = "text-muted",
-          "Use ISO3 for ISO-3 country codes. If joins fail, switch to Name and",
-          "ensure the country names match Datawrapper's world basemap."
-        ),
-        shiny::actionButton("dw_update", "Update Datawrapper map"),
-        shiny::verbatimTextOutput("dw_status"),
-        shiny::uiOutput("dw_iframe")
-      )
-    )
+  shiny::layout_sidebar(
+    sidebar = shiny::sidebar(
+      width = 320,
+      shiny::textInput("dw_chart_id", "Datawrapper chart ID (optional)", Sys.getenv("DATAWRAPPER_CHART_ID_WORLD", "")),
+      shiny::selectInput(
+        "dw_map_key_attr",
+        "Basemap key attribute",
+        choices = c("ISO3", "Name"),
+        selected = "ISO3"
+      ),
+      shiny::tags$p(
+        class = "text-muted",
+        "Use ISO3 for ISO-3 country codes. If joins fail, switch to Name and",
+        "ensure the country names match Datawrapper's world basemap."
+      ),
+      shiny::actionButton("dw_update", "Update Datawrapper map"),
+      shiny::verbatimTextOutput("dw_status")
+    ),
+    shiny::uiOutput("dw_iframe")
   )
 )
 
