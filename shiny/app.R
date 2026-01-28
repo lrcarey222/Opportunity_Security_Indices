@@ -134,7 +134,7 @@ server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$dw_update, {
-    api_key <- Sys.getenv("DATAWRAPPER_API_KEY", "")
+    api_key <- "FARkk5iDkLAsKNRn9jZDf2ZPRJQvFX4CsxvFd5VBfxLaFk0VNvkOZrH2ZTv0tEYN"
     if (!nzchar(api_key)) {
       dw_status("Datawrapper disabled. Set DATAWRAPPER_API_KEY to enable publishing.")
       dw_iframe_src(NULL)
