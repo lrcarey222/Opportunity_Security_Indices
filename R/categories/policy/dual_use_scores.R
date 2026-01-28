@@ -1,19 +1,11 @@
 # Clean dual-use scores into policy component format.
 clean_dual_use_scores <- function(raw_tbl,
                                   year = 0L,
-                                  source = "Dual-use scores",
-                                  countries = NULL,
-                                  ...) {
-  require_columns(raw_tbl, c("technology", "stage"), label = "dual_use_scores")
+                                  source = "Dual-use scores") {
+  #require_columns(raw_tbl, c("technology", "stage"), label = "dual_use_score_0_1")
 
-  cleaned <- raw_tbl
-
-  if (is.null(countries)) {
-    extra_args <- list(...)
-    if ("countries" %in% names(extra_args)) {
-      countries <- extra_args$countries
-    }
-  }
+  cleaned <- raw_tbl %>%
+    dplyr::rename("value"="dual_use_score_0_1")
 
   if (!"Country" %in% names(cleaned) && "country" %in% names(cleaned)) {
     cleaned <- dplyr::rename(cleaned, Country = .data$country)
@@ -53,7 +45,7 @@ clean_dual_use_scores <- function(raw_tbl,
       )
     )
 
-  require_columns(cleaned, c("value"), label = "dual_use_scores")
+  #require_columns(cleaned, c("value"), label = "dual_use_score_0_1")
 
   if (!"category" %in% names(cleaned)) {
     cleaned$category <- "Policy"
