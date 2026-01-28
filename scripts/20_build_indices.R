@@ -158,9 +158,6 @@ if (!exists("policy_component_tbl") || !exists("policy_outputs")) {
   stop("Policy theme outputs not found; run scripts/10_build_themes.R first.")
 }
 
-policy_agg <- policy_outputs$policy_agg
-policy_clean <- policy_outputs$policy_clean
-
 policy_index <- policy_component_tbl %>%
   dplyr::group_by(.data$Country, .data$tech, .data$supply_chain) %>%
   dplyr::summarize(
@@ -173,7 +170,7 @@ policy_index <- policy_component_tbl %>%
     data_type = "index",
     Year = 0L,
     source = "Author calculation",
-    explanation = "Mean of IEA PAMS, CAT, and dual-use policy indices"
+    explanation = "Mean of IEA PAMS and CAT policy indices"
   ) %>%
   dplyr::select(
     Country,
@@ -187,24 +184,7 @@ policy_index <- policy_component_tbl %>%
     source,
     explanation
   )
-library(dplyr)
 
-strategic_index <- build_strategic_index(
-  economic_opportunity_index = economic_opportunity_index,
-  energy_security_index = energy_security_index,
-  policy_index = policy_index,
-  technological_readiness_index = technological_readiness_index,
-  techs = techs
-)
-iea_trl_path <- file.path(processed_dir, "iea_trl_tech.csv")
-if (!file.exists(iea_trl_path)) {
-  stop("IEA TRL data not found: ", iea_trl_path)
-}
-iea_trl <- read.csv(iea_trl_path) %>%
-  mutate(
-    tech = as.character(tech),
-    trl2023 = as.numeric(trl2023)
-  )
 
 strategic_index <- left_join(
   economic_opportunity_index,
@@ -222,10 +202,9 @@ strategic_index <- left_join(
   ) %>%
   # trl2023 from IEA (default to 11 if missing)
   left_join(
-    iea_trl %>% dplyr::select(tech, trl2023),
-    by = "tech"
+    technological_readiness_index %>% dplyr::select(Country, tech, supply_chain, trl_index),
+    by = c("Country","tech","supply_chain")
   ) %>%
-  mutate(trl2023 = dplyr::coalesce(as.numeric(trl2023), 11)) %>%
   filter(tech %in% techs) %>%
   group_by(Country) %>%
   mutate(
@@ -249,9 +228,6 @@ strategic_index <- left_join(
     
     # tech weight (ghg_index) - safer global fallback than within-country
     tech_weight = coalesce(ghg_index, mean(tech_ghg$ghg_index, na.rm = TRUE)),
-    
-    # TRL index (scaled 0-1 using your existing curve)
-    trl_index = median_scurve(trl2023),
     
     # base score
     base_score = eo + es + pol,
