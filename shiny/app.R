@@ -208,11 +208,18 @@ server <- function(input, output, session) {
       return()
     }
 
+    x_min <- min(merged$value_eo, na.rm = TRUE)
+    x_max <- max(merged$value_eo, na.rm = TRUE)
+    y_min <- min(merged$value_es, na.rm = TRUE)
+    y_max <- max(merged$value_es, na.rm = TRUE)
+
     graphics::plot(
       merged$value_eo,
       merged$value_es,
       xlab = "Economic Opportunity Index",
       ylab = "Energy Security Index",
+      xlim = c(x_min, x_max),
+      ylim = c(y_min, y_max),
       pch = 19,
       col = "#1f78b4",
       asp = 1
