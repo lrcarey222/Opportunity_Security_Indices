@@ -540,10 +540,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   write_processed_tbl(tech_ghg, "tech_ghg_tbl", processed_dir)
 
   dual_use_scores_tbl <- clean_dual_use_scores(dual_use_scores_raw)
-  dual_use_scores_tbl <- standardize_theme_types(
-    dual_use_scores_tbl,
-    country_info = country_info
-  )
+  dual_use_scores_tbl <- standardize_theme_types(dual_use_scores_tbl)
   write_processed_tbl(dual_use_scores_tbl, "dual_use_scores_tbl", processed_dir)
 
   policy_component_tbl <- dplyr::bind_rows(

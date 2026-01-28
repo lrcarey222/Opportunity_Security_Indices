@@ -2,12 +2,15 @@
 clean_dual_use_scores <- function(raw_tbl,
                                   year = 0L,
                                   source = "Dual-use scores") {
-  require_columns(raw_tbl, c("technology", "stage"), label = "dual_use_scores")
+  require_columns(raw_tbl, c("technology", "stage"), label = "dual_use_score_0_1")
 
   cleaned <- raw_tbl
 
   if (!"Country" %in% names(cleaned) && "country" %in% names(cleaned)) {
     cleaned <- dplyr::rename(cleaned, Country = .data$country)
+  }
+  if (!"Country" %in% names(cleaned)) {
+    cleaned$Country <- "Global"
   }
 
   if (!"value" %in% names(cleaned)) {
