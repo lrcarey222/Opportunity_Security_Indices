@@ -53,32 +53,15 @@ ui <- bslib::page_sidebar(
     shiny::selectInput("metric", "Index", choices = metric_choices, selected = metric_choices[1]),
     shiny::selectInput("tech", "Technology", choices = tech_choices, selected = tech_choices[1]),
     shiny::selectInput("supply_chain", "Supply chain", choices = supply_choices, selected = supply_choices[1]),
+    shiny::actionButton("dw_update", "Update Map"),
     shiny::hr(),
     shiny::h5("Data source"),
     shiny::verbatimTextOutput("data_source", placeholder = TRUE),
     shiny::h5("Dependencies"),
     shiny::uiOutput("dependency_notice")
   ),
-  bslib::layout_sidebar(
-    sidebar = bslib::sidebar(
-      width = 320,
-      shiny::textInput("dw_chart_id", "Datawrapper chart ID (optional)", Sys.getenv("DATAWRAPPER_CHART_ID_WORLD", "")),
-      shiny::selectInput(
-        "dw_map_key_attr",
-        "Basemap key attribute",
-        choices = c("ISO3", "Name"),
-        selected = "ISO3"
-      ),
-      shiny::tags$p(
-        class = "text-muted",
-        "Use ISO3 for ISO-3 country codes. If joins fail, switch to Name and",
-        "ensure the country names match Datawrapper's world basemap."
-      ),
-      shiny::actionButton("dw_update", "Update Datawrapper map"),
-      shiny::verbatimTextOutput("dw_status")
-    ),
-    shiny::uiOutput("dw_iframe")
-  )
+  shiny::verbatimTextOutput("dw_status"),
+  shiny::uiOutput("dw_iframe")
 )
 
 server <- function(input, output, session) {
@@ -96,17 +79,6 @@ server <- function(input, output, session) {
         shiny::tags$p("Install the packages above to enable the interactive map.")
       )
     }
-  })
-
-  output$map_ui <- shiny::renderUI({
-    if (length(missing_packages) > 0) {
-      return(shiny::tags$div(
-        class = "p-4",
-        shiny::tags$h4("Interactive map unavailable"),
-        shiny::tags$p("Install the missing packages listed in the sidebar to render the map.")
-      ))
-    }
-    shiny::uiOutput("map")
   })
 
   dw_status <- shiny::reactiveVal("Datawrapper disabled. Set DATAWRAPPER_API_KEY to enable publishing.")
@@ -166,11 +138,7 @@ server <- function(input, output, session) {
       input$metric
     }
 
-    key_column <- if (identical(input$dw_map_key_attr, "Name")) {
-      "country"
-    } else {
-      "iso3"
-    }
+    key_column <- "iso3"
 
     filtered <- summarize_for_map(
       index_data,
@@ -201,7 +169,7 @@ server <- function(input, output, session) {
       ),
       visualize = list(
         basemap = "world",
-        `map-key-attr` = input$dw_map_key_attr,
+        `map-key-attr` = "ISO3",
         "tooltip-title" = "{{country}}",
         "tooltip-body" = "{{ ROUND(value, 2) }}",
         "color-scale" = list(
@@ -215,10 +183,7 @@ server <- function(input, output, session) {
 
     chart_id <- NULL
     chart_id_env <- Sys.getenv("DATAWRAPPER_CHART_ID_WORLD", "")
-    chart_id_input <- input$dw_chart_id
-    if (nzchar(chart_id_input)) {
-      chart_id <- chart_id_input
-    } else if (nzchar(chart_id_env)) {
+    if (nzchar(chart_id_env)) {
       chart_id <- chart_id_env
     } else if (file.exists(dw_chart_cache)) {
       chart_id <- trimws(readLines(dw_chart_cache, warn = FALSE))
@@ -229,12 +194,12 @@ server <- function(input, output, session) {
 
     result <- tryCatch({
       if (is.null(chart_id)) {
-        chart_id <- dw_create_chart(title = paste("Opportunity & Security Indices:", input$metric))
+        chart_id <- dw_create_chart(title = paste(input$tech, input$supply_chain, input$metric))
         dir.create(dirname(dw_chart_cache), recursive = TRUE, showWarnings = FALSE)
         writeLines(chart_id, dw_chart_cache)
       }
       dw_upload_csv(chart_id, csv_data)
-      dw_patch_metadata(chart_id, metadata, title = paste("Opportunity & Security Indices:", input$metric))
+      dw_patch_metadata(chart_id, metadata, title = paste(input$tech, input$supply_chain, input$metric))
       publish_response <- dw_publish(chart_id)
       iframe_src <- dw_get_iframe_src(publish_response)
       list(
@@ -252,23 +217,6 @@ server <- function(input, output, session) {
     dw_iframe_src(result$iframe_src)
   })
 
-  output$map <- shiny::renderUI({
-    src <- dw_iframe_src()
-    if (is.null(src) || !nzchar(src)) {
-      shiny::tags$div(
-        class = "p-4",
-        shiny::tags$h4("Datawrapper map unavailable"),
-        shiny::tags$p("Use the Datawrapper tab to publish a map and embed it here.")
-      )
-    } else {
-      shiny::tags$iframe(
-        src = src,
-        width = "100%",
-        height = "800px",
-        frameborder = 0
-      )
-    }
-  })
 }
 
 app <- shiny::shinyApp(ui = ui, server = server)

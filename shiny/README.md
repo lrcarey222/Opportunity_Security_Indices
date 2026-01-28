@@ -65,10 +65,8 @@ DATAWRAPPER_API_KEY=your-key-here
 DATAWRAPPER_CHART_ID_WORLD=your-chart-id
 ```
 
-You can also paste a chart ID into the Datawrapper tab in the UI. The chart ID is cached
-locally in `~/.config/opportunity_security_indices/datawrapper_chart_world.txt` when created.
-If ISO3 joins fail in Datawrapper, switch the basemap key attribute to “Name” and ensure
-the `country` column matches Datawrapper’s country naming.
+The chart ID is cached locally in `~/.config/opportunity_security_indices/datawrapper_chart_world.txt`
+when created.
 
 ## Security check (no secrets)
 
