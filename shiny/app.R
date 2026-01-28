@@ -97,7 +97,7 @@ ui <- bslib::page_sidebar(
   shiny::uiOutput("metric_note"),
   shiny::tags$h5("Country comparison"),
   shiny::tags$p(class = "text-muted", "Click a country in the map to view all tech × supply-chain combinations."),
-  shiny::plotOutput("country_scatter", height = "1000px", width = "1000px")
+  shiny::plotOutput("country_scatter", height = "1000px")
 )
 
 server <- function(input, output, session) {
