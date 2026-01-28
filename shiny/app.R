@@ -61,7 +61,8 @@ ui <- bslib::page_sidebar(
     shiny::uiOutput("dependency_notice")
   ),
   shiny::verbatimTextOutput("dw_status"),
-  shiny::uiOutput("dw_iframe")
+  shiny::uiOutput("dw_iframe"),
+  shiny::uiOutput("metric_note")
 )
 
 server <- function(input, output, session) {
@@ -105,6 +106,30 @@ server <- function(input, output, session) {
         height = "800px",
         frameborder = 0
       )
+    }
+  })
+
+  output$metric_note <- shiny::renderUI({
+    if (identical(input$metric, "Energy Security Index")) {
+      shiny::tags$div(
+        class = "text-muted mt-2",
+        shiny::tags$strong("Energy Security Index:"),
+        "Measures resilience and security across energy supply chains.",
+        "Raw metrics are normalized to 0–1 with a median-centered S-curve, then",
+        "category scores are aggregated into a weighted mean within each",
+        "country × tech × supply-chain group (weights in config/weights.yml)."
+      )
+    } else if (identical(input$metric, "Economic Opportunity Index")) {
+      shiny::tags$div(
+        class = "text-muted mt-2",
+        shiny::tags$strong("Economic Opportunity Index:"),
+        "Captures opportunity for growth and competitiveness in energy-related markets.",
+        "Raw metrics are normalized to 0–1 with a median-centered S-curve, then",
+        "category scores are aggregated into a weighted mean within each",
+        "country × tech × supply-chain group (weights in config/weights.yml)."
+      )
+    } else {
+      NULL
     }
   })
 
