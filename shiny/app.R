@@ -60,9 +60,44 @@ ui <- bslib::page_sidebar(
     shiny::h5("Dependencies"),
     shiny::uiOutput("dependency_notice")
   ),
+  shiny::tags$script(
+    shiny::HTML(paste0(
+      "(function(){\n",
+      "  function parseMessage(eventData) {\n",
+      "    var data = eventData;\n",
+      "    if (!data) return null;\n",
+      "    if (typeof data === 'string') {\n",
+      "      try { data = JSON.parse(data); } catch (e) { return null; }\n",
+      "    }\n",
+      "    return data;\n",
+      "  }\n",
+      "  window.addEventListener('message', function(event) {\n",
+      "    var iframe = document.getElementById('dw_map_iframe');\n",
+      "    if (!iframe || event.source !== iframe.contentWindow) return;\n",
+      "    var data = parseMessage(event.data);\n",
+      "    if (!data || data['datawrapper-height']) return;\n",
+      "    var payload = data.data || data.payload || data;\n",
+      "    var country = payload.country || payload.name || payload.label || null;\n",
+      "    var iso3 = payload.iso3 || payload.ISO3 || payload.key || null;\n",
+      "    if (country || iso3) {\n",
+      "      if (window.Shiny) {\n",
+      "        Shiny.setInputValue('dw_selected_country', {\n",
+      "          country: country,\n",
+      "          iso3: iso3,\n",
+      "          nonce: Date.now()\n",
+      "        }, {priority: 'event'});\n",
+      "      }\n",
+      "    }\n",
+      "  }, false);\n",
+      "})();\n"
+    ))
+  ),
   shiny::verbatimTextOutput("dw_status"),
   shiny::uiOutput("dw_iframe"),
-  shiny::uiOutput("metric_note")
+  shiny::uiOutput("metric_note"),
+  shiny::tags$h5("Country comparison"),
+  shiny::tags$p(class = "text-muted", "Click a country in the map to highlight it below."),
+  shiny::plotOutput("country_scatter", height = "400px")
 )
 
 server <- function(input, output, session) {
@@ -101,6 +136,7 @@ server <- function(input, output, session) {
       shiny::tags$p(class = "text-muted", "No Datawrapper chart embedded yet.")
     } else {
       shiny::tags$iframe(
+        id = "dw_map_iframe",
         src = src,
         width = "100%",
         height = "800px",
@@ -130,6 +166,76 @@ server <- function(input, output, session) {
       )
     } else {
       NULL
+    }
+  })
+
+  selected_country <- shiny::reactiveVal(NULL)
+
+  shiny::observeEvent(input$dw_selected_country, {
+    selected_country(input$dw_selected_country)
+  })
+
+  output$country_scatter <- shiny::renderPlot({
+    selected <- selected_country()
+    if (is.null(selected)) {
+      graphics::plot.new()
+      graphics::text(0.5, 0.5, "Select a country on the map to view its position.")
+      return()
+    }
+
+    es_tbl <- index_data[index_data$metric == "Energy Security Index", , drop = FALSE]
+    eo_tbl <- index_data[index_data$metric == "Economic Opportunity Index", , drop = FALSE]
+    es_tbl <- es_tbl[es_tbl$tech == input$tech & es_tbl$supply_chain == input$supply_chain, , drop = FALSE]
+    eo_tbl <- eo_tbl[eo_tbl$tech == input$tech & eo_tbl$supply_chain == input$supply_chain, , drop = FALSE]
+
+    merged <- merge(
+      es_tbl[, c("country", "iso3", "value")],
+      eo_tbl[, c("country", "iso3", "value")],
+      by = "iso3",
+      suffixes = c("_es", "_eo"),
+      all = FALSE
+    )
+
+    if (nrow(merged) == 0) {
+      graphics::plot.new()
+      graphics::text(0.5, 0.5, "No index data available for the selected filters.")
+      return()
+    }
+
+    selected_row <- NULL
+    if (!is.null(selected$iso3) && nzchar(selected$iso3)) {
+      selected_row <- merged[merged$iso3 == selected$iso3, , drop = FALSE]
+    }
+    if (is.null(selected_row) || nrow(selected_row) == 0) {
+      country_name <- selected$country
+      if (!is.null(country_name) && nzchar(country_name)) {
+        selected_row <- merged[merged$country_es == country_name, , drop = FALSE]
+      }
+    }
+
+    graphics::plot(
+      merged$value_eo,
+      merged$value_es,
+      xlab = "Economic Opportunity Index",
+      ylab = "Energy Security Index",
+      pch = 19,
+      col = "#bdbdbd"
+    )
+
+    if (!is.null(selected_row) && nrow(selected_row) > 0) {
+      graphics::points(
+        selected_row$value_eo,
+        selected_row$value_es,
+        pch = 19,
+        col = "#1f78b4"
+      )
+      graphics::text(
+        selected_row$value_eo,
+        selected_row$value_es,
+        labels = selected_row$country_es,
+        pos = 3,
+        cex = 0.8
+      )
     }
   })
 
