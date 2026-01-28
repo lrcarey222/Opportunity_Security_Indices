@@ -164,6 +164,10 @@ overall_variables:
       - "Wind power potential per sq km"
       - "Wind power potential share over threshold"
       - "Wind power potential index"
+      - "Geothermal LCOE (500 MW)"
+      - "Geothermal LCOE (5 GW)"
+      - "Geothermal total potential (MW)"
+      - "Geothermal potential index"
     aggregation: mean
   Overall Consumption Index:
     category: "Consumption"

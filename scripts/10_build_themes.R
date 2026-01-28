@@ -19,6 +19,7 @@ source(file.path(repo_root, "R", "categories", "minerals_trade", "critical_miner
 source(file.path(repo_root, "R", "categories", "energy_access", "energy_access_consumption.R"))
 source(file.path(repo_root, "R", "categories", "energy_access", "solar_pv_potential.R"))
 source(file.path(repo_root, "R", "categories", "energy_access", "wind_potential.R"))
+source(file.path(repo_root, "R", "categories", "energy_access", "geothermal_potential.R"))
 source(file.path(repo_root, "R", "categories", "consumption", "energy_consumption.R"))
 source(file.path(repo_root, "R", "categories", "energy_prices", "energy_prices.R"))
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "foreign_dependency.R"))
@@ -165,6 +166,7 @@ imf_ppi_path <- file.path(latest_snapshot, "imf_ppi.csv")
 imf_commodity_prices_path <- file.path(latest_snapshot, "imf_commodity_prices.csv")
 solar_pv_potential_path <- file.path(latest_snapshot, "solar_potential_clean.csv")
 wind_potential_path <- file.path(latest_snapshot, "wb_wind_country.csv")
+geothermal_potential_path <- file.path(latest_snapshot, "geothermal_lcoe_mw.csv")
 iea_pams_path <- file.path(
   latest_snapshot,
   find_manifest_path("IEA_PAMS_Export", "PAMS export")
@@ -214,6 +216,7 @@ missing_files <- c(
   imf_ppi_path,
   imf_commodity_prices_path,
   solar_pv_potential_path,
+  geothermal_potential_path,
   iea_pams_path,
   tech_ghg_path,
   cat_policy_path,
@@ -256,6 +259,15 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     country_info = country_info
   )
   write_processed_tbl(wind_potential_tbl, "wind_potential_tbl", processed_dir)
+
+  # Theme: Geothermal potential (LCOE and resource potential data).
+  geothermal_raw <- read.csv(geothermal_potential_path)
+  geothermal_potential_tbl <- geothermal_potential(geothermal_raw, country_info = country_info)
+  geothermal_potential_tbl <- standardize_theme_types(
+    geothermal_potential_tbl,
+    country_info = country_info
+  )
+  write_processed_tbl(geothermal_potential_tbl, "geothermal_potential_tbl", processed_dir)
 
   # Theme: Import dependence (EI data).
   import_dependence_tbl <- import_dependence(ei)
@@ -565,6 +577,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     energy_access_consumption = energy_access_tbl,
     solar_pv_potential = solar_pv_potential_tbl,
     wind_potential = wind_potential_tbl,
+    geothermal_potential = geothermal_potential_tbl,
     energy_consumption = energy_consumption_tbl,
     energy_prices = energy_prices_tbl,
     foreign_dependency = foreign_dependency_tbl,
