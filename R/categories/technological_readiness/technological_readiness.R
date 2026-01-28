@@ -140,6 +140,21 @@ technological_readiness_build_tech <- function(iea_cleantech_sector,
     dplyr::arrange(dplyr::desc(trl2023))
 }
 
+trl_bell_hard <- function(x, min_trl = 2, mu = 6, max_trl = 11) {
+  left_w  <- mu - min_trl
+  right_w <- max_trl - mu
+  
+  y <- dplyr::case_when(
+    is.na(x) ~ NA_real_,
+    x <= min_trl | x >= max_trl ~ 0,
+    x <= mu ~ cos((pi/2) * (mu - x) / left_w),
+    TRUE    ~ cos((pi/2) * (x - mu) / right_w)
+  )
+  
+  # Numerical safety
+  pmax(0, pmin(1, y))
+}
+
 technological_readiness_build_indices <- function(iea_tech,
                                                   gamma = 0.5,
                                                   year = 2023L) {
@@ -147,8 +162,8 @@ technological_readiness_build_indices <- function(iea_tech,
 
   iea_tech %>%
     dplyr::mutate(
-      trl_index = median_scurve(trl2023, gamma = gamma)
-    ) %>%
+      trl_index = trl_bell_hard(trl2023, min_trl = 2, mu = 6, max_trl = 11)
+      ) %>%
     tidyr::crossing(supply_chain = supply_chain_levels) %>%
     tidyr::pivot_longer(
       cols = c(trl2023, trl_index),
