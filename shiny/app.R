@@ -10,6 +10,7 @@ if (!is.null(frame_path) && nzchar(frame_path)) {
   app_dir <- cwd
 }
 source(file.path(app_dir, "R", "helpers.R"))
+source(file.path(app_dir, "R", "datawrapper.R"))
 
 app_dir <- resolve_app_dir()
 repo_root <- resolve_repo_root(app_dir)
@@ -19,13 +20,13 @@ required_packages <- c(
   "bslib",
   "dplyr",
   "scales",
-  "countrycode",
-  "leaflet",
-  "sf",
-  "rnaturalearth",
-  "rnaturalearthdata"
+  "countrycode"
 )
 missing_packages <- required_packages[!vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)]
+datawrapper_packages <- c("httr", "jsonlite")
+missing_dw_packages <- datawrapper_packages[
+  !vapply(datawrapper_packages, requireNamespace, logical(1), quietly = TRUE)
+]
 
 app_data <- load_index_data(app_dir, repo_root)
 index_data <- app_data$data
@@ -51,13 +52,16 @@ ui <- bslib::page_sidebar(
     shiny::selectInput("metric", "Index", choices = metric_choices, selected = metric_choices[1]),
     shiny::selectInput("tech", "Technology", choices = tech_choices, selected = tech_choices[1]),
     shiny::selectInput("supply_chain", "Supply chain", choices = supply_choices, selected = supply_choices[1]),
+    shiny::actionButton("dw_update", "Update Map"),
     shiny::hr(),
     shiny::h5("Data source"),
     shiny::verbatimTextOutput("data_source", placeholder = TRUE),
     shiny::h5("Dependencies"),
     shiny::uiOutput("dependency_notice")
   ),
-  shiny::uiOutput("map_ui")
+  shiny::verbatimTextOutput("dw_status"),
+  shiny::uiOutput("dw_iframe"),
+  shiny::uiOutput("metric_note")
 )
 
 server <- function(input, output, session) {
@@ -77,79 +81,166 @@ server <- function(input, output, session) {
     }
   })
 
-  output$map_ui <- shiny::renderUI({
-    if (length(missing_packages) > 0) {
-      return(shiny::tags$div(
-        class = "p-4",
-        shiny::tags$h4("Interactive map unavailable"),
-        shiny::tags$p("Install the missing packages listed in the sidebar to render the map.")
-      ))
-    }
-    leaflet::leafletOutput("map", height = "650px")
+  dw_status <- shiny::reactiveVal("Datawrapper disabled. Set DATAWRAPPER_API_KEY to enable publishing.")
+  dw_iframe_src <- shiny::reactiveVal(NULL)
+  dw_chart_cache <- file.path(
+    path.expand("~"),
+    ".config",
+    "opportunity_security_indices",
+    "datawrapper_chart_world.txt"
+  )
+
+  output$dw_status <- shiny::renderText({
+    dw_status()
   })
 
-  map_data <- shiny::reactive({
-    if (length(missing_packages) > 0) {
+  output$dw_iframe <- shiny::renderUI({
+    src <- dw_iframe_src()
+    if (is.null(src) || !nzchar(src)) {
+      shiny::tags$p(class = "text-muted", "No Datawrapper chart embedded yet.")
+    } else {
+      shiny::tags$iframe(
+        src = src,
+        width = "100%",
+        height = "800px",
+        frameborder = 0
+      )
+    }
+  })
+
+  output$metric_note <- shiny::renderUI({
+    if (identical(input$metric, "Energy Security Index")) {
+      shiny::tags$div(
+        class = "text-muted mt-2",
+        shiny::tags$strong("Energy Security Index:"),
+        "Measures resilience and security across energy supply chains.",
+        "Raw metrics are normalized to 0–1 with a median-centered S-curve, then",
+        "category scores are aggregated into a weighted mean within each",
+        "country × tech × supply-chain group (weights in config/weights.yml)."
+      )
+    } else if (identical(input$metric, "Economic Opportunity Index")) {
+      shiny::tags$div(
+        class = "text-muted mt-2",
+        shiny::tags$strong("Economic Opportunity Index:"),
+        "Captures opportunity for growth and competitiveness in energy-related markets.",
+        "Raw metrics are normalized to 0–1 with a median-centered S-curve, then",
+        "category scores are aggregated into a weighted mean within each",
+        "country × tech × supply-chain group (weights in config/weights.yml)."
+      )
+    } else {
+      NULL
+    }
+  })
+
+  shiny::observeEvent(input$dw_update, {
+    api_key <- Sys.getenv("DATAWRAPPER_API_KEY", "")
+    if (!nzchar(api_key)) {
+      dw_status("Datawrapper disabled. Set DATAWRAPPER_API_KEY to enable publishing.")
+      dw_iframe_src(NULL)
       return(NULL)
     }
+    if (length(missing_dw_packages) > 0) {
+      dw_status(paste(
+        "Missing packages for Datawrapper:",
+        paste(missing_dw_packages, collapse = ", ")
+      ))
+      dw_iframe_src(NULL)
+      return(NULL)
+    }
+
+    metric_unit <- NULL
+    if ("unit" %in% names(index_data)) {
+      metric_unit <- unique(index_data$unit[index_data$metric == input$metric])
+      metric_unit <- metric_unit[!is.na(metric_unit) & nzchar(metric_unit)]
+      if (length(metric_unit) != 1) {
+        metric_unit <- NULL
+      }
+    }
+    legend_title <- if (!is.null(metric_unit)) {
+      paste0(input$metric, " (", metric_unit, ")")
+    } else {
+      input$metric
+    }
+
+    key_column <- "iso3"
+
     filtered <- summarize_for_map(
       index_data,
       input$metric,
       input$tech,
       input$supply_chain
     )
-    world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
-    world <- sf::st_transform(world, 4326)
-    dplyr::left_join(world, filtered, by = c("iso_a3" = "iso3"))
-  })
-
-  output$map <- leaflet::renderLeaflet({
-    map_tbl <- map_data()
-    if (is.null(map_tbl)) {
+    filtered <- filtered[!is.na(filtered$value), , drop = FALSE]
+    if (nrow(filtered) == 0) {
+      dw_status("No data available for the selected filters.")
+      dw_iframe_src(NULL)
       return(NULL)
     }
-    map_tbl_data <- map_tbl[!is.na(map_tbl$value), , drop = FALSE]
-    if (nrow(map_tbl_data) == 0) {
-      map_tbl_data <- map_tbl
-    }
-    pal <- leaflet::colorNumeric(
-      palette = "YlGnBu",
-      domain = map_tbl$value,
-      na.color = "#e0e0e0"
-    )
-    label_text <- paste0(
-      map_tbl_data$name,
-      ": ",
-      ifelse(is.na(map_tbl_data$value), "No data", scales::number(map_tbl_data$value, accuracy = 0.01))
+
+    dw_data <- filtered[, c("iso3", "country", "value"), drop = FALSE]
+    csv_data <- paste(
+      capture.output(utils::write.csv(dw_data, row.names = FALSE, quote = TRUE)),
+      collapse = "\n"
     )
 
-    bbox <- sf::st_bbox(map_tbl_data)
-    leaflet::leaflet(map_tbl_data, options = leaflet::leafletOptions(worldCopyJump = FALSE)) %>%
-      leaflet::addProviderTiles(
-        "CartoDB.Positron",
-        options = leaflet::providerTileOptions(noWrap = TRUE)
-      ) %>%
-      leaflet::addPolygons(
-        fillColor = ~pal(value),
-        color = "#666666",
-        weight = 0.5,
-        fillOpacity = 0.7,
-        label = label_text,
-        highlightOptions = leaflet::highlightOptions(weight = 2, color = "#000000", bringToFront = TRUE)
-      ) %>%
-      leaflet::fitBounds(
-        lng1 = bbox[["xmin"]],
-        lat1 = bbox[["ymin"]],
-        lng2 = bbox[["xmax"]],
-        lat2 = bbox[["ymax"]]
-      ) %>%
-      leaflet::addLegend(
-        position = "bottomright",
-        pal = pal,
-        values = ~value,
-        title = input$metric
+    metadata <- list(
+      axes = list(
+        keys = key_column,
+        values = "value"
+      ),
+      describe = list(
+        intro = paste("Opportunity & Security Indices:", input$metric)
+      ),
+      visualize = list(
+        basemap = "world",
+        `map-key-attr` = "ISO3",
+        "tooltip-title" = "{{country}}",
+        "tooltip-body" = "{{ ROUND(value, 2) }}",
+        "color-scale" = list(
+          colors = c("#f7fbff", "#c6dbef", "#6baed6", "#2171b5", "#08306b"),
+          mode = "linear",
+          nullColor = "#e0e0e0"
+        ),
+        "legend-title" = legend_title
       )
+    )
+
+    chart_id <- NULL
+    chart_id_env <- Sys.getenv("DATAWRAPPER_CHART_ID_WORLD", "")
+    if (nzchar(chart_id_env)) {
+      chart_id <- chart_id_env
+    } else if (file.exists(dw_chart_cache)) {
+      chart_id <- trimws(readLines(dw_chart_cache, warn = FALSE))
+      if (!nzchar(chart_id)) {
+        chart_id <- NULL
+      }
+    }
+
+    result <- tryCatch({
+      if (is.null(chart_id)) {
+        chart_id <- dw_create_chart(title = paste(input$tech, input$supply_chain, input$metric))
+        dir.create(dirname(dw_chart_cache), recursive = TRUE, showWarnings = FALSE)
+        writeLines(chart_id, dw_chart_cache)
+      }
+      dw_upload_csv(chart_id, csv_data)
+      dw_patch_metadata(chart_id, metadata, title = paste(input$tech, input$supply_chain, input$metric))
+      publish_response <- dw_publish(chart_id)
+      iframe_src <- dw_get_iframe_src(publish_response)
+      list(
+        status = paste("Published Datawrapper chart", chart_id),
+        iframe_src = iframe_src
+      )
+    }, error = function(err) {
+      list(
+        status = paste("Datawrapper update failed:", conditionMessage(err)),
+        iframe_src = NULL
+      )
+    })
+
+    dw_status(result$status)
+    dw_iframe_src(result$iframe_src)
   })
+
 }
 
 app <- shiny::shinyApp(ui = ui, server = server)
