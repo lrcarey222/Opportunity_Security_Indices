@@ -96,8 +96,8 @@ ui <- bslib::page_sidebar(
   shiny::uiOutput("dw_iframe"),
   shiny::uiOutput("metric_note"),
   shiny::tags$h5("Country comparison"),
-  shiny::tags$p(class = "text-muted", "Click a country in the map to highlight it below."),
-  shiny::plotOutput("country_scatter", height = "400px")
+  shiny::tags$p(class = "text-muted", "Click a country in the map to view all tech × supply-chain combinations."),
+  shiny::plotOutput("country_scatter", height = "1000px", width = "1000px")
 )
 
 server <- function(input, output, session) {
@@ -185,32 +185,27 @@ server <- function(input, output, session) {
 
     es_tbl <- index_data[index_data$metric == "Energy Security Index", , drop = FALSE]
     eo_tbl <- index_data[index_data$metric == "Economic Opportunity Index", , drop = FALSE]
-    es_tbl <- es_tbl[es_tbl$tech == input$tech & es_tbl$supply_chain == input$supply_chain, , drop = FALSE]
-    eo_tbl <- eo_tbl[eo_tbl$tech == input$tech & eo_tbl$supply_chain == input$supply_chain, , drop = FALSE]
+
+    if (!is.null(selected$iso3) && nzchar(selected$iso3)) {
+      es_tbl <- es_tbl[es_tbl$iso3 == selected$iso3, , drop = FALSE]
+      eo_tbl <- eo_tbl[eo_tbl$iso3 == selected$iso3, , drop = FALSE]
+    } else if (!is.null(selected$country) && nzchar(selected$country)) {
+      es_tbl <- es_tbl[es_tbl$country == selected$country, , drop = FALSE]
+      eo_tbl <- eo_tbl[eo_tbl$country == selected$country, , drop = FALSE]
+    }
 
     merged <- merge(
-      es_tbl[, c("country", "iso3", "value")],
-      eo_tbl[, c("country", "iso3", "value")],
-      by = "iso3",
+      es_tbl[, c("country", "iso3", "tech", "supply_chain", "value")],
+      eo_tbl[, c("country", "iso3", "tech", "supply_chain", "value")],
+      by = c("iso3", "tech", "supply_chain"),
       suffixes = c("_es", "_eo"),
       all = FALSE
     )
 
     if (nrow(merged) == 0) {
       graphics::plot.new()
-      graphics::text(0.5, 0.5, "No index data available for the selected filters.")
+      graphics::text(0.5, 0.5, "No index data available for the selected country.")
       return()
-    }
-
-    selected_row <- NULL
-    if (!is.null(selected$iso3) && nzchar(selected$iso3)) {
-      selected_row <- merged[merged$iso3 == selected$iso3, , drop = FALSE]
-    }
-    if (is.null(selected_row) || nrow(selected_row) == 0) {
-      country_name <- selected$country
-      if (!is.null(country_name) && nzchar(country_name)) {
-        selected_row <- merged[merged$country_es == country_name, , drop = FALSE]
-      }
     }
 
     graphics::plot(
@@ -219,28 +214,21 @@ server <- function(input, output, session) {
       xlab = "Economic Opportunity Index",
       ylab = "Energy Security Index",
       pch = 19,
-      col = "#bdbdbd"
+      col = "#1f78b4",
+      asp = 1
     )
 
-    if (!is.null(selected_row) && nrow(selected_row) > 0) {
-      graphics::points(
-        selected_row$value_eo,
-        selected_row$value_es,
-        pch = 19,
-        col = "#1f78b4"
-      )
-      graphics::text(
-        selected_row$value_eo,
-        selected_row$value_es,
-        labels = selected_row$country_es,
-        pos = 3,
-        cex = 0.8
-      )
-    }
+    graphics::text(
+      merged$value_eo,
+      merged$value_es,
+      labels = paste(merged$tech, merged$supply_chain, sep = " · "),
+      pos = 3,
+      cex = 0.7
+    )
   })
 
   shiny::observeEvent(input$dw_update, {
-    api_key <- "FARkk5iDkLAsKNRn9jZDf2ZPRJQvFX4CsxvFd5VBfxLaFk0VNvkOZrH2ZTv0tEYN"
+    api_key <- Sys.getenv("DATAWRAPPER_API_KEY", "")
     if (!nzchar(api_key)) {
       dw_status("Datawrapper disabled. Set DATAWRAPPER_API_KEY to enable publishing.")
       dw_iframe_src(NULL)
