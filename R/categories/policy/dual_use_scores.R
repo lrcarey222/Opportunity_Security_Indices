@@ -2,9 +2,10 @@
 clean_dual_use_scores <- function(raw_tbl,
                                   year = 0L,
                                   source = "Dual-use scores") {
-  require_columns(raw_tbl, c("technology", "stage"), label = "dual_use_score_0_1")
+  #require_columns(raw_tbl, c("technology", "stage"), label = "dual_use_score_0_1")
 
-  cleaned <- raw_tbl
+  cleaned <- raw_tbl %>%
+    dplyr::rename("value"="dual_use_score_0_1")
 
   if (!"Country" %in% names(cleaned) && "country" %in% names(cleaned)) {
     cleaned <- dplyr::rename(cleaned, Country = .data$country)
@@ -16,7 +17,7 @@ clean_dual_use_scores <- function(raw_tbl,
   if (!"value" %in% names(cleaned)) {
     if ("score" %in% names(cleaned)) {
       cleaned <- dplyr::rename(cleaned, value = .data$score)
-    } else if ("dual_use_score" %in% names(cleaned)) {
+    } else if ("dual_use_score_0_1" %in% names(cleaned)) {
       cleaned <- dplyr::rename(cleaned, value = .data$dual_use_score)
     }
   }
@@ -36,7 +37,7 @@ clean_dual_use_scores <- function(raw_tbl,
       )
     )
 
-  require_columns(cleaned, c("value"), label = "dual_use_scores")
+  #require_columns(cleaned, c("value"), label = "dual_use_score_0_1")
 
   if (!"category" %in% names(cleaned)) {
     cleaned$category <- "Policy"
