@@ -11,6 +11,7 @@ source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
 source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
+source(file.path(repo_root, "R", "categories", "policy", "dual_use_scores.R"))
 source(file.path(repo_root, "R", "categories", "trade", "trade_core.R"))
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "critical_minerals_processing.R"))
 source(file.path(repo_root, "R", "categories", "production", "critical_minerals_production.R"))
@@ -176,6 +177,13 @@ cat_policy_path <- file.path(
   latest_snapshot,
   find_manifest_path("CAT_country ratings data.csv$", "CAT policy ratings")
 )
+dual_use_scores_path <- file.path(
+  latest_snapshot,
+  find_manifest_path(
+    "dual_use_scores_primary_secondary_tertiary\\.csv$",
+    "Dual-use scores"
+  )
+)
 
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
@@ -208,7 +216,8 @@ missing_files <- c(
   solar_pv_potential_path,
   iea_pams_path,
   tech_ghg_path,
-  cat_policy_path
+  cat_policy_path,
+  dual_use_scores_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
 
@@ -517,6 +526,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   pams_raw <- readr::read_csv(iea_pams_path, show_col_types = FALSE)
   tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE) 
   cat_policy_raw <- readr::read_csv(cat_policy_path, show_col_types = FALSE)
+  dual_use_scores_raw <- readr::read_csv(dual_use_scores_path, show_col_types = FALSE)
 
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
@@ -529,7 +539,21 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   cat_policy_index_tbl <- cat_policy_index(tech_ghg, cat_policy_tbl)
   write_processed_tbl(tech_ghg, "tech_ghg_tbl", processed_dir)
 
-  policy_component_tbl <- dplyr::bind_rows(iea_policy_index_tbl, cat_policy_index_tbl)
+  dual_use_scores_tbl <- clean_dual_use_scores(
+    dual_use_scores_raw,
+    countries = country_info$country
+  )
+  dual_use_scores_tbl <- standardize_theme_types(
+    dual_use_scores_tbl,
+    country_info = country_info
+  )
+  write_processed_tbl(dual_use_scores_tbl, "dual_use_scores_tbl", processed_dir)
+
+  policy_component_tbl <- dplyr::bind_rows(
+    iea_policy_index_tbl,
+    cat_policy_index_tbl,
+    dual_use_scores_tbl
+  )
   write_processed_tbl(policy_component_tbl, "policy_component_tbl", processed_dir)
   write_processed_tbl(policy_outputs, "policy_outputs", processed_dir)
 
