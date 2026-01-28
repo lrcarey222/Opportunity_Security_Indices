@@ -170,7 +170,7 @@ policy_index <- policy_component_tbl %>%
     data_type = "index",
     Year = 0L,
     source = "Author calculation",
-    explanation = "Mean of IEA PAMS and CAT policy indices"
+    explanation = "Mean of IEA PAMS, CAT, and dual-use policy indices"
   ) %>%
   dplyr::select(
     Country,

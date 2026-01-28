@@ -179,7 +179,10 @@ cat_policy_path <- file.path(
 )
 dual_use_scores_path <- file.path(
   latest_snapshot,
-  find_manifest_path("dual_use_scores_primary_secondary_tertiary.csv$", "Dual-use scores")
+  find_manifest_path(
+    "dual_use_scores_primary_secondary_tertiary\\.csv$",
+    "Dual-use scores"
+  )
 )
 
 # Fail fast (or skip) if required raw inputs are missing.
