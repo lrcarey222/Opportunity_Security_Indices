@@ -29,7 +29,8 @@ missing_dw_packages <- datawrapper_packages[
 ]
 
 app_data <- load_index_data(app_dir, repo_root)
-index_data <- app_data$data
+index_data <- app_data$data %>%
+  filter(tech %in% techs)
 
 metric_choices <- sort(unique(index_data$metric))
 tech_choices <- sort(unique(index_data$tech))
