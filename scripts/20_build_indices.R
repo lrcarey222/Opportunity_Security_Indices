@@ -47,6 +47,7 @@ read_processed_tbl <- function(name, processed_dir) {
 energy_access_tbl <- read_processed_tbl("energy_access_tbl", processed_dir)
 solar_pv_potential_tbl <- read_processed_tbl("solar_pv_potential_tbl", processed_dir)
 wind_potential_tbl <- read_processed_tbl("wind_potential_tbl", processed_dir)
+geothermal_potential_tbl <- read_processed_tbl("geothermal_potential_tbl", processed_dir)
 import_dependence_tbl <- read_processed_tbl("import_dependence_tbl", processed_dir)
 reserves_tbl <- read_processed_tbl("reserves_tbl", processed_dir)
 foreign_dependency_tbl <- read_processed_tbl("foreign_dependency_tbl", processed_dir)
@@ -87,6 +88,7 @@ energy_security_inputs <- list(
   energy_access_consumption = energy_access_tbl,
   solar_pv_potential = solar_pv_potential_tbl,
   wind_potential = wind_potential_tbl,
+  geothermal_potential = geothermal_potential_tbl,
   import_dependence = import_dependence_tbl,
   reserves = reserves_tbl,
   foreign_dependency = foreign_dependency_tbl,
@@ -119,6 +121,7 @@ economic_opportunity_inputs <- list(
   energy_access_consumption = energy_access_tbl,
   solar_pv_potential = solar_pv_potential_tbl,
   wind_potential = wind_potential_tbl,
+  geothermal_potential = geothermal_potential_tbl,
   energy_consumption = energy_consumption_tbl,
   energy_prices = energy_prices_tbl,
   export_feasibility = export_feasibility_tbl,

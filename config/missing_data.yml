@@ -5,6 +5,7 @@ energy_security:
   energy_access_consumption: global_average
   solar_pv_potential: global_average
   wind_potential: global_average
+  geothermal_potential: global_average
   energy_consumption: global_average
   energy_prices: global_average
   foreign_dependency: global_average
@@ -14,6 +15,7 @@ economic_opportunity:
   energy_access_consumption: global_average
   solar_pv_potential: global_average
   wind_potential: global_average
+  geothermal_potential: global_average
   energy_consumption: global_average
   energy_prices: global_average
   export_feasibility: global_average
