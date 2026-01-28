@@ -14,10 +14,18 @@ clean_dual_use_scores <- function(raw_tbl,
     cleaned$Country <- "Global"
   }
 
+  if (length(unique(cleaned$Country)) == 1 &&
+    identical(cleaned$Country[[1]], "Global") &&
+    !is.null(countries)) {
+    countries_tbl <- tibble::tibble(Country = as.character(countries))
+    cleaned_no_country <- cleaned %>% dplyr::select(-.data$Country)
+    cleaned <- tidyr::crossing(countries_tbl, cleaned_no_country)
+  }
+
   if (!"value" %in% names(cleaned)) {
     if ("score" %in% names(cleaned)) {
       cleaned <- dplyr::rename(cleaned, value = .data$score)
-    } else if ("dual_use_score_0_1" %in% names(cleaned)) {
+    } else if ("dual_use_score" %in% names(cleaned)) {
       cleaned <- dplyr::rename(cleaned, value = .data$dual_use_score)
     }
   }
