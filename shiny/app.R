@@ -48,6 +48,7 @@ supply_choices <- supply_choices[!is.na(supply_choices)]
 ui <- bslib::page_sidebar(
   title = "Opportunity & Security Indices",
   theme = bslib::bs_theme(bootswatch = "flatly"),
+  fill = FALSE,
   sidebar = bslib::sidebar(
     shiny::h4("Map controls"),
     shiny::selectInput("metric", "Index", choices = metric_choices, selected = metric_choices[1]),
@@ -97,7 +98,7 @@ ui <- bslib::page_sidebar(
   shiny::uiOutput("metric_note"),
   shiny::tags$h5("Country comparison"),
   shiny::tags$p(class = "text-muted", "Click a country in the map to view all tech × supply-chain combinations."),
-  shiny::plotOutput("country_scatter", height = "1000px")
+  shiny::plotOutput("country_scatter", height = "1000px", width = "100%")
 )
 
 server <- function(input, output, session) {
@@ -208,18 +209,22 @@ server <- function(input, output, session) {
       return()
     }
 
-    x_min <- min(merged$value_eo, na.rm = TRUE)
-    x_max <- max(merged$value_eo, na.rm = TRUE)
-    y_min <- min(merged$value_es, na.rm = TRUE)
-    y_max <- max(merged$value_es, na.rm = TRUE)
+    x_range <- range(merged$value_eo, finite = TRUE)
+    y_range <- range(merged$value_es, finite = TRUE)
+
+    if (any(!is.finite(x_range)) || any(!is.finite(y_range))) {
+      graphics::plot.new()
+      graphics::text(0.5, 0.5, "No finite index values available for the selected country.")
+      return()
+    }
 
     graphics::plot(
       merged$value_eo,
       merged$value_es,
       xlab = "Economic Opportunity Index",
       ylab = "Energy Security Index",
-      xlim = c(x_min, x_max),
-      ylim = c(y_min, y_max),
+      xlim = x_range,
+      ylim = y_range,
       pch = 19,
       col = "#1f78b4",
       asp = 1
