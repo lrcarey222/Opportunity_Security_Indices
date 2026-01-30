@@ -41,11 +41,11 @@ clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
     ) %>%
     tidyr::separate_rows(.data$hs6_raw, sep = "\\s*,\\s*") %>%
     dplyr::mutate(code = stringr::str_pad(.data$hs6_raw, width = 6, pad = "0")) %>%
-    dplyr::left_join(subcat_lu, by = "code") %>%
+    dplyr::left_join(subcat_lu, by = "code", relationship = "many-to-many") %>%
     dplyr::group_by(.data$nipo_row_id) %>%
     dplyr::summarise(
       dplyr::across(
-        -c(.data$Technology, .data$`Value Chain`, .data$Sub.Sector, .data$code, .data$hs6_raw),
+        -c(.data$Technology, .data$Value.Chain, .data$Sub.Sector, .data$code, .data$hs6_raw),
         dplyr::first,
         .names = "{.col}"
       ),
@@ -318,7 +318,10 @@ build_policy_index_from_raw <- function(raw_nipo,
   if (is.null(tech_universe)) {
     tech_universe <- nipo_country %>%
       dplyr::summarise(techs = list(sort(unique(unlist(.data$Technology))))) %>%
-      dplyr::pull(.data$techs)
+      dplyr::pull(.data$techs) %>%
+      unlist() %>%
+      as.character()
+    tech_universe <- tech_universe[!is.na(tech_universe) & nzchar(tech_universe)]
   }
 
   policy_tbl <- build_policy_table(nipo_country)
