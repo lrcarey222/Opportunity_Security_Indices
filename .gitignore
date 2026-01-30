@@ -16,6 +16,8 @@ data/raw_cache/
 outputs/
 output/
 output*/
+!data/raw/2026-01-10/
+!data/raw/2026-01-10/GTA NIPO - February 2026.xlsx
 
 # Logs / temp
 *.log

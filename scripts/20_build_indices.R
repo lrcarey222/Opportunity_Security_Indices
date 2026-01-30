@@ -83,6 +83,8 @@ technological_readiness_tbl <- read_processed_tbl(
 policy_component_tbl <- read_processed_tbl("policy_component_tbl", processed_dir)
 policy_outputs <- read_processed_tbl("policy_outputs", processed_dir)
 tech_ghg <- read_processed_tbl("tech_ghg_tbl", processed_dir)
+policy_agg <- policy_outputs$policy_agg
+policy_clean <- policy_outputs$policy_clean
 
 energy_security_inputs <- list(
   energy_access_consumption = energy_access_tbl,
@@ -173,7 +175,7 @@ policy_index <- policy_component_tbl %>%
     data_type = "index",
     Year = 0L,
     source = "Author calculation",
-    explanation = "Mean of IEA PAMS, CAT, and dual-use policy indices"
+    explanation = "Mean of IEA PAMS, GTA NIPO, CAT, and dual-use policy indices"
   ) %>%
   dplyr::select(
     Country,

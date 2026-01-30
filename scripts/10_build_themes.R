@@ -10,6 +10,7 @@ source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
+source(file.path(repo_root, "R", "categories", "policy", "nipo_policy_index.R"))
 source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
 source(file.path(repo_root, "R", "categories", "policy", "dual_use_scores.R"))
 source(file.path(repo_root, "R", "categories", "trade", "trade_core.R"))
@@ -171,6 +172,14 @@ iea_pams_path <- file.path(
   latest_snapshot,
   find_manifest_path("IEA_PAMS_Export", "PAMS export")
 )
+nipo_policy_path <- file.path(
+  latest_snapshot,
+  find_manifest_path("GTA NIPO - February 2026.xlsx$", "GTA NIPO export")
+)
+hs6_category_path <- file.path(
+  latest_snapshot,
+  find_manifest_path("hts_codes_categories_bolstered_final\\.csv$", "HS6 category lookup")
+)
 tech_ghg_path <- file.path(
   latest_snapshot,
   find_manifest_path("ipcc_ghg_intensity.csv$", "IPCC GHG intensity")
@@ -218,6 +227,8 @@ missing_files <- c(
   solar_pv_potential_path,
   geothermal_potential_path,
   iea_pams_path,
+  nipo_policy_path,
+  hs6_category_path,
   tech_ghg_path,
   cat_policy_path,
   dual_use_scores_path
@@ -536,13 +547,27 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   )
 
   pams_raw <- readr::read_csv(iea_pams_path, show_col_types = FALSE)
+  nipo_raw <- readxl::read_excel(nipo_policy_path, sheet = 1)
+  hs6_categories_raw <- readr::read_csv(hs6_category_path, show_col_types = FALSE)
   tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE) 
   cat_policy_raw <- readr::read_csv(cat_policy_path, show_col_types = FALSE)
   dual_use_scores_raw <- readr::read_csv(dual_use_scores_path, show_col_types = FALSE)
 
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
-  policy_outputs <- iea_policy_outputs$outputs
+  nipo_policy_outputs <- nipo_policy_index(
+    nipo_raw,
+    hs6_categories_raw,
+    country_info = country_info,
+    split_strength = FALSE
+  )
+  nipo_policy_index_tbl <- nipo_policy_outputs$index_tbl
+  policy_outputs <- list(
+    policy_agg = iea_policy_outputs$outputs$policy_agg,
+    policy_clean = iea_policy_outputs$outputs$policy_clean,
+    iea = iea_policy_outputs$outputs,
+    nipo = nipo_policy_outputs$outputs
+  )
   policy_agg <- policy_outputs$policy_agg
   policy_clean <- policy_outputs$policy_clean
 
@@ -563,6 +588,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   policy_component_tbl <- dplyr::bind_rows(
     iea_policy_index_tbl,
+    nipo_policy_index_tbl,
     cat_policy_index_tbl,
     dual_use_scores_tbl
   )
