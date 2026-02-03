@@ -211,48 +211,48 @@ partnership_strength_clean_ghg <- function(tech_ghg_raw) {
   
   base <- tech_ghg_raw %>%
     dplyr::mutate(
-      Tech = dplyr::recode(
-        Tech,
-        "Coal (pulverised)" = "Coal",
-        "Natural-gas combined cycle" = "Gas",
-        "Oil-fired steam" = "Oil",
-        "Solar PV - utility scale" = "Solar",
-        "Nuclear (light-water)" = "Nuclear",
-        "Wind - onshore" = "Wind"
+      # normalize unicode dashes to plain hyphen
+      Tech = stringr::str_replace_all(Tech, "[\u2013\u2014]", "-"),
+      Tech = stringr::str_squish(Tech),
+      Tech = dplyr::case_when(
+        Tech == "Coal (pulverised)" ~ "Coal",
+        Tech == "Natural-gas combined cycle" ~ "Gas",
+        Tech == "Oil-fired steam" ~ "Oil",
+        stringr::str_detect(Tech, "^Solar PV") ~ "Solar",
+        stringr::str_detect(Tech, "Concentrated solar power") ~ "Solar",
+        stringr::str_detect(Tech, "^Wind") ~ "Wind",
+        Tech == "Nuclear (light-water)" ~ "Nuclear",
+        TRUE ~ Tech
       )
     ) %>%
     dplyr::filter(Tech %in% c("Coal","Gas","Oil","Solar","Nuclear","Wind")) %>%
     dplyr::mutate(ghg_index = partnership_strength_min_max_index(-ghg_intensity)) %>%
-    dplyr::transmute(tech = Tech, ghg_index)
-  
-  # collapse duplicates if any (safest default)
-  base <- base %>%
+    dplyr::transmute(tech = Tech, ghg_index) %>%
     dplyr::group_by(tech) %>%
     dplyr::summarise(ghg_index = mean(ghg_index, na.rm = TRUE), .groups = "drop")
   
-  # safe getter
   get_idx <- function(df, t) {
     x <- df$ghg_index[df$tech == t]
     if (length(x) == 0 || all(is.na(x))) NA_real_ else x[1]
   }
   
+  safe_mean <- function(x) if (length(x) == 0 || all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
+  
   extra <- tibble::tibble(
-    tech = c("Batteries",
-             "Electric Vehicles",
-             "Green Hydrogen",
-             "Geothermal",
-             "Electric Grid"),
+    tech = c("Batteries", "Electric Vehicles", "Green Hydrogen", "Geothermal", "Electric Grid"),
     ghg_index = c(
       get_idx(base, "Solar"),
-      mean(base$ghg_index[base$tech %in% c("Coal","Oil","Gas","Solar","Wind","Nuclear")], na.rm = TRUE),
-      mean(base$ghg_index[base$tech %in% c("Gas","Solar")], na.rm = TRUE),
+      safe_mean(base$ghg_index[base$tech %in% c("Coal","Oil","Gas","Solar","Wind","Nuclear")]),
+      safe_mean(base$ghg_index[base$tech %in% c("Gas","Solar")]),
       get_idx(base, "Solar"),
-      mean(base$ghg_index[base$tech %in% c("Solar","Wind")], na.rm = TRUE)
+      safe_mean(base$ghg_index[base$tech %in% c("Solar","Wind")])
     )
   )
   
   dplyr::bind_rows(base, extra)
 }
+
+
 partnership_strength_clean_policy <- function(cat_raw, country_info = NULL) {
   
   cleaned <- cat_raw %>%

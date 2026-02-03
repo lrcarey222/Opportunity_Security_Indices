@@ -555,13 +555,12 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
-  nipo_policy_outputs <- nipo_policy_index(
+  nipo_policy_out <- nipo_policy_outputs(
     nipo_raw,
     hs6_categories_raw,
-    country_info = country_info,
-    split_strength = FALSE
+    country_info = country_info
   )
-  nipo_policy_index_tbl <- nipo_policy_outputs$index_tbl
+  nipo_policy_index_tbl <- nipo_policy_out$by_tech_sc
   policy_outputs <- list(
     policy_agg = iea_policy_outputs$outputs$policy_agg,
     policy_clean = iea_policy_outputs$outputs$policy_clean,

@@ -1,0 +1,203 @@
+cpc3,cpc.name,tech,supply_chain,sub_sector,n_hs6,hs6_list
+110,Coal & peat,Coal,Midstream,Coal,4,"270111,270112,270119,270120"
+110,Coal & peat,Coal,Midstream,Lignite,2,"270210,270220"
+110,Coal & peat,Coal,Upstream,Fuels & storage,6,"270111,270112,270119,270120,270210,270220"
+120,Crude petroleum & natural gas,Gas,Midstream,Natural Gas,2,"271111,271121"
+120,Crude petroleum & natural gas,Gas,Upstream,Fuels & storage,2,"271111,271121"
+120,Crude petroleum & natural gas,Oil,Midstream,Crude Oils,1,270900
+120,Crude petroleum & natural gas,Oil,Upstream,Fuels & storage,1,270900
+142,Non-ferrous metal ores & concentrates,Batteries,Upstream,Battery Inputs: Cobalt,1,260500
+142,Non-ferrous metal ores & concentrates,Batteries,Upstream,Battery Inputs: Manganese,1,260200
+142,Non-ferrous metal ores & concentrates,Batteries,Upstream,Battery Inputs: Nickel,1,260400
+142,Non-ferrous metal ores & concentrates,Batteries,Upstream,Battery Inputs: Vanadium,1,261590
+142,Non-ferrous metal ores & concentrates,Batteries,Upstream,Battery Inputs: Zinc,1,260800
+142,Non-ferrous metal ores & concentrates,Batteries,Upstream,Cathode,5,"260200,260400,260500,260800,261590"
+142,Non-ferrous metal ores & concentrates,Electric Vehicles,Upstream,Battery materials (cathode/anode),5,"260200,260300,260400,260500,260600"
+161,Chemical & fertilizer minerals,Batteries,Upstream,Battery Inputs: Lithium,1,253090
+161,Chemical & fertilizer minerals,Batteries,Upstream,Cathode,1,253090
+161,Chemical & fertilizer minerals,Batteries,Upstream,Electrolyte,1,253090
+163,Precious & semi-precious stones; natural abrasives; other minerals,Batteries,Upstream,Anode,1,250410
+163,Precious & semi-precious stones; natural abrasives; other minerals,Batteries,Upstream,Battery Inputs: Graphite,1,250410
+171,Electrical energy,Electric Grid,Midstream,Electricity,1,271600
+313,"Wood, rough or treated; railway sleepers; poles",Electric Grid,Midstream,Cables & accessories,2,"440311,440312"
+313,"Wood, rough or treated; railway sleepers; poles",Offshore Wind,Midstream,Array,2,"440311,440312"
+313,"Wood, rough or treated; railway sleepers; poles",Solar,Midstream,Cabling,2,"440311,440312"
+313,"Wood, rough or treated; railway sleepers; poles",Wind,Midstream,Array,2,"440311,440312"
+331,"Coke & semi-coke of coal, of lignite or of peat; retort carbon",Coal,Midstream,Coke and Semicoke,1,270400
+331,"Coke & semi-coke of coal, of lignite or of peat; retort carbon",Coal,Upstream,Fuels & storage,1,270400
+333,"Petroleum oils & oils of bituminous materials, other than crude",Oil,Midstream,Fuel Oils: Heavy Oils,1,271019
+333,"Petroleum oils & oils of bituminous materials, other than crude",Oil,Midstream,Fuel Oils: Light Oils,1,271012
+333,"Petroleum oils & oils of bituminous materials, other than crude",Oil,Upstream,Fuels & storage,2,"271012,271019"
+334,"Petroleum gases & other gaseous hydrocarbons, except natural gas",Gas,Midstream,Butadiene,1,271114
+334,"Petroleum gases & other gaseous hydrocarbons, except natural gas",Gas,Midstream,Butane,2,"271113,271129"
+334,"Petroleum gases & other gaseous hydrocarbons, except natural gas",Gas,Midstream,Ethane,1,271119
+334,"Petroleum gases & other gaseous hydrocarbons, except natural gas",Gas,Midstream,Propane,1,271112
+334,"Petroleum gases & other gaseous hydrocarbons, except natural gas",Gas,Upstream,Fuels & storage,4,"271112,271113,271119,271129"
+335,"Petroleum jelly, coke or bitumen; paraffin wax & similar products",Oil,Midstream,Petroleum Solids,4,"271311,271312,271320,271390"
+335,"Petroleum jelly, coke or bitumen; paraffin wax & similar products",Oil,Upstream,Fuels & storage,4,"271311,271312,271320,271390"
+336,Radioactive elements or residues & prodcuts containing them,Nuclear,Midstream,Nuclear Fuel,2,"284410,284420"
+336,Radioactive elements or residues & prodcuts containing them,Nuclear,Upstream,Uranium mining & conversion,2,"284410,284420"
+337,"Fuel elements (cartridges), for or of nuclear reactors",Nuclear,Midstream,Nuclear Fuel,1,284450
+337,"Fuel elements (cartridges), for or of nuclear reactors",Nuclear,Midstream,Reactor components,1,840130
+337,"Fuel elements (cartridges), for or of nuclear reactors",Nuclear,Upstream,Uranium mining & conversion,1,284450
+341,Basic organic chemicals,Batteries,Upstream,Battery Inputs: Esters,1,292090
+341,Basic organic chemicals,Batteries,Upstream,Electrolyte,1,292090
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Anode,2,"280300,280461"
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Battery Inputs: Aluminum,1,283322
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Battery Inputs: Cobalt,2,"282200,283329"
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Battery Inputs: Graphite,1,280300
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Battery Inputs: Iron-Chloride,1,282739
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Battery Inputs: Lithium,3,"280519,282520,283691"
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Battery Inputs: Manganese,1,282010
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Battery Inputs: Nickel,2,"282540,283324"
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Battery Inputs: Silicon,1,280461
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Battery Inputs: Vanadium,1,282530
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Battery Inputs: Zinc,1,281700
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Cathode,11,"280519,281700,282010,282200,282520,282530,282540,282739,283324,283329,283691"
+342,Basic inorganic chemicals n.e.c.,Batteries,Upstream,Electrolyte,4,"280519,282520,282739,283691"
+342,Basic inorganic chemicals n.e.c.,Electric Grid,Midstream,Cables & accessories,1,281290
+342,Basic inorganic chemicals n.e.c.,Electric Vehicles,Upstream,Battery materials (cathode/anode),14,"280519,282010,282090,282200,282520,282540,282690,283324,283329,283529,283691,283699,284290,285390"
+342,Basic inorganic chemicals n.e.c.,Offshore Wind,Midstream,Array,1,281290
+342,Basic inorganic chemicals n.e.c.,Solar,Midstream,Cabling,1,281290
+342,Basic inorganic chemicals n.e.c.,Wind,Midstream,Array,1,281290
+347,Plastics in primary forms,Batteries,Upstream,Battery Inputs: Fluoropolymers,1,390469
+347,Plastics in primary forms,Batteries,Upstream,Battery Inputs: Polyethylene,2,"390110,390120"
+347,Plastics in primary forms,Batteries,Upstream,Battery Inputs: Polypropylene,1,390210
+347,Plastics in primary forms,Batteries,Upstream,Electrolyte,1,390469
+354,Chemical products n.e.c.,Batteries,Upstream,Battery Inputs: Inorganic Mixtures,1,382499
+354,Chemical products n.e.c.,Batteries,Upstream,Electrolyte,1,382499
+363,Semi-manufactures of plastics,Electric Vehicles,Midstream,Final vehicle assembly,2,"392010,392020"
+371,Glass & glass products,Electric Grid,Midstream,Cables & accessories,1,854610
+371,Glass & glass products,Offshore Wind,Midstream,Array,1,854610
+371,Glass & glass products,Solar,Midstream,Cabling,1,854610
+371,Glass & glass products,Wind,Midstream,Array,1,854610
+372,Non-structural ceramic ware,Electric Grid,Midstream,Cables & accessories,1,854620
+372,Non-structural ceramic ware,Offshore Wind,Midstream,Array,1,854620
+372,Non-structural ceramic ware,Solar,Midstream,Cabling,1,854620
+372,Non-structural ceramic ware,Wind,Midstream,Array,1,854620
+375,"Articles of concrete, cement & plaster",Wind,Midstream,Foundation,2,"681091,681099"
+379,Other non-metallic mineral products n.e.c.,Batteries,Upstream,Anode,2,"380110,380190"
+379,Other non-metallic mineral products n.e.c.,Batteries,Upstream,Battery Inputs: Graphite,2,"380110,380190"
+379,Other non-metallic mineral products n.e.c.,Electric Vehicles,Midstream,Final vehicle assembly,2,"380110,380190"
+393,Metal wastes or scraps,Batteries,Upstream,Battery Inputs: Cobalt,1,810530
+393,Metal wastes or scraps,Batteries,Upstream,Battery Inputs: Vanadium,2,"262040,262099"
+393,Metal wastes or scraps,Batteries,Upstream,Battery Inputs: Zinc,1,262019
+393,Metal wastes or scraps,Batteries,Upstream,Cathode,4,"262019,262040,262099,810530"
+399,Other wastes & scraps,Oil,Midstream,Waste Oils,2,"271091,271099"
+399,Other wastes & scraps,Oil,Upstream,Fuels & storage,2,"271091,271099"
+412,Products of iron or steel,Gas,Midstream,Pipelines,14,"730411,730419,730422,730423,730424,730429,730511,730512,730519,730520,730611,730619,730621,730629"
+412,Products of iron or steel,Offshore Wind,Midstream,Substructure,1,730511
+412,Products of iron or steel,Oil,Midstream,Pipelines,14,"730411,730419,730422,730423,730424,730429,730511,730512,730519,730520,730611,730619,730621,730629"
+414,"Copper, nickel, aluminium, alumina, lead, zinc & tin, unwrought",Batteries,Upstream,Battery Inputs: Aluminum,1,281820
+414,"Copper, nickel, aluminium, alumina, lead, zinc & tin, unwrought",Batteries,Upstream,Battery Inputs: Nickel,2,"750120,750210"
+414,"Copper, nickel, aluminium, alumina, lead, zinc & tin, unwrought",Batteries,Upstream,Cathode,2,"750120,750210"
+414,"Copper, nickel, aluminium, alumina, lead, zinc & tin, unwrought",Electric Vehicles,Midstream,Final vehicle assembly,2,"750110,750120"
+415,"Unfinished products of copper, nickel, aluminium, lead, zinc or tin",Batteries,Upstream,Anode,1,741021
+415,"Unfinished products of copper, nickel, aluminium, lead, zinc or tin",Batteries,Upstream,Battery Inputs: Aluminum,2,"760711,760719"
+415,"Unfinished products of copper, nickel, aluminium, lead, zinc or tin",Batteries,Upstream,Battery Inputs: Copper,4,"741011,741012,741021,741022"
+415,"Unfinished products of copper, nickel, aluminium, lead, zinc or tin",Batteries,Upstream,Battery Inputs: Nickel,1,750400
+415,"Unfinished products of copper, nickel, aluminium, lead, zinc or tin",Batteries,Upstream,Cathode,1,750400
+415,"Unfinished products of copper, nickel, aluminium, lead, zinc or tin",Batteries,Upstream,Collector,6,"741011,741012,741021,741022,760711,760719"
+415,"Unfinished products of copper, nickel, aluminium, lead, zinc or tin",Electric Grid,Midstream,Cables & accessories,2,"740811,740819"
+415,"Unfinished products of copper, nickel, aluminium, lead, zinc or tin",Offshore Wind,Midstream,Array,2,"740811,740819"
+415,"Unfinished products of copper, nickel, aluminium, lead, zinc or tin",Solar,Midstream,Cabling,2,"740811,740819"
+415,"Unfinished products of copper, nickel, aluminium, lead, zinc or tin",Wind,Midstream,Array,2,"740811,740819"
+416,"Other non-ferrous metals, cerments & articles thereos",Batteries,Upstream,Battery Inputs: Cobalt,1,810520
+416,"Other non-ferrous metals, cerments & articles thereos",Batteries,Upstream,Cathode,1,810520
+416,"Other non-ferrous metals, cerments & articles thereos",Electric Vehicles,Midstream,Final vehicle assembly,1,810520
+421,Structural metal products & parts,Offshore Wind,Midstream,Substructure,2,"730820,730890"
+421,Structural metal products & parts,Offshore Wind,Midstream,Turbine,1,730820
+421,Structural metal products & parts,Solar,Midstream,Racking,2,"730890,761090"
+421,Structural metal products & parts,Wind,Midstream,Foundation,2,"730840,730890"
+421,Structural metal products & parts,Wind,Midstream,Towers,1,730820
+421,Structural metal products & parts,Wind,Midstream,Turbine,1,730820
+422,"Tanks, reservoirs & containers of iron, steel or aluminium",Gas,Midstream,LNG/LPG equipment,1,731100
+422,"Tanks, reservoirs & containers of iron, steel or aluminium",Oil,Midstream,Fuels & storage,1,731100
+423,"Steam generators, (except central heating boilers) & parts",Coal,Midstream,Ash handling,4,"840290,840410,840420,840490"
+423,"Steam generators, (except central heating boilers) & parts",Coal,Midstream,Boilers & burners,4,"840211,840212,840219,840220"
+423,"Steam generators, (except central heating boilers) & parts",Gas,Midstream,LNG/LPG equipment,8,"840211,840212,840219,840220,840290,840410,840420,840490"
+423,"Steam generators, (except central heating boilers) & parts",Nuclear,Midstream,Reactor components,2,"840110,840140"
+423,"Steam generators, (except central heating boilers) & parts",Nuclear,Midstream,Steam cycle/BOP,8,"840211,840212,840219,840220,840290,840410,840420,840490"
+429,Other fabricated metal products,Electric Grid,Midstream,Cables & accessories,4,"731210,741300,761410,761490"
+429,Other fabricated metal products,Gas,Midstream,LNG/LPG equipment,2,"820713,820719"
+429,Other fabricated metal products,Offshore Wind,Midstream,Array,4,"731210,741300,761410,761490"
+429,Other fabricated metal products,Oil,Midstream,Fuels & storage,2,"820713,820719"
+429,Other fabricated metal products,Solar,Midstream,Cabling,4,"731210,741300,761410,761490"
+429,Other fabricated metal products,Wind,Midstream,Array,4,"731210,741300,761410,761490"
+431,Engines & turbines & parts,Coal,Midstream,Ash handling,9,"840681,840682,840690,841111,841112,841181,841182,841191,841199"
+431,Engines & turbines & parts,Gas,Midstream,LNG/LPG equipment,9,"840681,840682,840690,841111,841112,841181,841182,841191,841199"
+431,Engines & turbines & parts,Nuclear,Midstream,Steam cycle/BOP,9,"840681,840682,840690,841111,841112,841181,841182,841191,841199"
+432,"Pumps, compressors, hydraulic & pneumatic power engines; parts",Gas,Midstream,LNG/LPG equipment,4,"841350,841360,841382,841392"
+432,"Pumps, compressors, hydraulic & pneumatic power engines; parts",Offshore Wind,Midstream,Turbine,1,841290
+432,"Pumps, compressors, hydraulic & pneumatic power engines; parts",Oil,Midstream,Pumps & compressors,4,"841350,841360,841382,841392"
+432,"Pumps, compressors, hydraulic & pneumatic power engines; parts",Wind,Midstream,Blades,1,841290
+432,"Pumps, compressors, hydraulic & pneumatic power engines; parts",Wind,Midstream,Turbine,1,841290
+433,"Bearings, gears, gearing & driving elements; parts",Offshore Wind,Midstream,Turbine,1,848340
+433,"Bearings, gears, gearing & driving elements; parts",Wind,Midstream,Nacelle & drivetrain,1,848340
+433,"Bearings, gears, gearing & driving elements; parts",Wind,Midstream,Turbine,1,848340
+435,Lifting & handling equipment & parts,Gas,Midstream,LNG/LPG equipment,2,"842890,843139"
+435,Lifting & handling equipment & parts,Oil,Midstream,Fuels & storage,2,"842890,843139"
+439,Other general-purpose machinery & parts,Coal,Midstream,Ash handling,2,"840510,840590"
+439,Other general-purpose machinery & parts,Gas,Midstream,LNG/LPG equipment,4,"840510,840590,841960,842129"
+439,Other general-purpose machinery & parts,Nuclear,Midstream,Steam cycle/BOP,2,"840510,840590"
+439,Other general-purpose machinery & parts,Oil,Midstream,Fuels & storage,2,"841960,842129"
+444,"Machinery for mining, quarrying & construction; parts",Gas,Midstream,LNG/LPG equipment,7,"843041,843049,843143,843149,847410,847420,847490"
+444,"Machinery for mining, quarrying & construction; parts",Oil,Midstream,Fuels & storage,7,"843041,843049,843143,843149,847410,847420,847490"
+448,Domestic appliances & parts,Coal,Midstream,Boilers & burners,2,"840310,840390"
+448,Domestic appliances & parts,Gas,Midstream,LNG/LPG equipment,2,"840310,840390"
+448,Domestic appliances & parts,Nuclear,Midstream,Steam cycle/BOP,2,"840310,840390"
+449,Other special-purpose machinery & parts,Gas,Midstream,LNG/LPG equipment,2,"847982,847989"
+449,Other special-purpose machinery & parts,Nuclear,Midstream,Reactor components,1,840120
+449,Other special-purpose machinery & parts,Oil,Midstream,Fuels & storage,2,"847982,847989"
+461,"Electric motors, generators & transformers; parts",Electric Grid,Midstream,Transformer Parts,1,850490
+461,"Electric motors, generators & transformers; parts",Electric Grid,Midstream,Transformers,7,"850421,850422,850423,850431,850432,850433,850434"
+461,"Electric motors, generators & transformers; parts",Offshore Wind,Midstream,Substation,8,"850421,850422,850423,850431,850432,850433,850434,850490"
+461,"Electric motors, generators & transformers; parts",Offshore Wind,Midstream,Turbine,3,"850164,850231,850300"
+461,"Electric motors, generators & transformers; parts",Oil,Midstream,Fuels & storage,14,"850131,850132,850133,850134,850161,850162,850163,850164,850211,850212,850213,850220,850239,850300"
+461,"Electric motors, generators & transformers; parts",Solar,Midstream,BOS,4,"850131,850132,850172,850180"
+461,"Electric motors, generators & transformers; parts",Solar,Midstream,Inverter,1,850440
+461,"Electric motors, generators & transformers; parts",Solar,Midstream,Mounting/trackers & BOS,4,"850131,850132,850172,850180"
+461,"Electric motors, generators & transformers; parts",Solar,Midstream,Transformer,8,"850421,850422,850423,850431,850432,850433,850434,850490"
+461,"Electric motors, generators & transformers; parts",Wind,Midstream,Nacelle & drivetrain,3,"850164,850231,850300"
+461,"Electric motors, generators & transformers; parts",Wind,Midstream,Substation,8,"850421,850422,850423,850431,850432,850433,850434,850490"
+461,"Electric motors, generators & transformers; parts",Wind,Midstream,Turbine,3,"850164,850231,850300"
+462,Electricity distribution & control apparatus; parts,Electric Grid,Midstream,Arresters,1,853540
+462,Electricity distribution & control apparatus; parts,Electric Grid,Midstream,"Capacitors, Fuses",1,853510
+462,Electricity distribution & control apparatus; parts,Electric Grid,Midstream,Circuit Breakers,2,"853521,853529"
+462,Electricity distribution & control apparatus; parts,Electric Grid,Midstream,Connector,1,853590
+462,Electricity distribution & control apparatus; parts,Electric Grid,Midstream,Controls,2,"853710,853720"
+462,Electricity distribution & control apparatus; parts,Electric Grid,Midstream,Switchgear,1,853530
+462,Electricity distribution & control apparatus; parts,Offshore Wind,Midstream,Substation,8,"853510,853521,853529,853530,853540,853590,853710,853720"
+462,Electricity distribution & control apparatus; parts,Solar,Midstream,BOS,8,"853510,853521,853529,853530,853540,853590,853710,853720"
+462,Electricity distribution & control apparatus; parts,Wind,Midstream,Substation,8,"853510,853521,853529,853530,853540,853590,853710,853720"
+463,Insulated wire & cable; optical fibre cables,Electric Grid,Midstream,Cables & accessories,5,"854420,854442,854449,854460,854470"
+463,Insulated wire & cable; optical fibre cables,Offshore Wind,Midstream,Array,5,"854420,854442,854449,854460,854470"
+463,Insulated wire & cable; optical fibre cables,Solar,Midstream,BOS,5,"854420,854442,854449,854460,854470"
+463,Insulated wire & cable; optical fibre cables,Solar,Midstream,Cabling,5,"854420,854442,854449,854460,854470"
+463,Insulated wire & cable; optical fibre cables,Wind,Midstream,Array,5,"854420,854442,854449,854460,854470"
+464,"Accumulators, primary cells & primary batteries; parts",Batteries,Midstream,Cell manufacturing,1,850760
+464,"Accumulators, primary cells & primary batteries; parts",Batteries,Midstream,Module assembly,1,850780
+464,"Accumulators, primary cells & primary batteries; parts",Batteries,Midstream,Pack + BMS,1,850790
+464,"Accumulators, primary cells & primary batteries; parts",Batteries,Upstream,Cases,1,850790
+464,"Accumulators, primary cells & primary batteries; parts",Electric Vehicles,Midstream,Final vehicle assembly,2,"850760,850790"
+471,Electronic valves & tubes; electronic components; parts,Electric Grid,Midstream,Cables & accessories,1,853210
+471,Electronic valves & tubes; electronic components; parts,Offshore Wind,Midstream,Array,1,853210
+471,Electronic valves & tubes; electronic components; parts,Solar,Midstream,Cabling,1,853210
+471,Electronic valves & tubes; electronic components; parts,Solar,Midstream,Module,2,"854142,854143"
+471,Electronic valves & tubes; electronic components; parts,Solar,Midstream,Module assembly,2,"854142,854143"
+471,Electronic valves & tubes; electronic components; parts,Wind,Midstream,Array,1,853210
+482,"Instruments & control equipment, except optical instruments",Electric Grid,Midstream,Cables & accessories,2,"902830,902890"
+482,"Instruments & control equipment, except optical instruments",Gas,Midstream,LNG/LPG equipment,1,902810
+482,"Instruments & control equipment, except optical instruments",Offshore Wind,Midstream,Array,2,"902830,902890"
+482,"Instruments & control equipment, except optical instruments",Offshore Wind,Midstream,Substation,2,"902830,902890"
+482,"Instruments & control equipment, except optical instruments",Oil,Midstream,Fuels & storage,1,902810
+482,"Instruments & control equipment, except optical instruments",Solar,Midstream,BOS,2,"902830,902890"
+482,"Instruments & control equipment, except optical instruments",Solar,Midstream,Cabling,2,"902830,902890"
+482,"Instruments & control equipment, except optical instruments",Wind,Midstream,Array,2,"902830,902890"
+482,"Instruments & control equipment, except optical instruments",Wind,Midstream,Substation,2,"902830,902890"
+491,"Motor vehicles, trailers & semi-trailers; parts",Electric Vehicles,Midstream,Final vehicle assembly,9,"870124,870240,870340,870350,870360,870370,870380,870460,870490"
+491,"Motor vehicles, trailers & semi-trailers; parts",Gas,Midstream,LNG/LPG equipment,1,870520
+491,"Motor vehicles, trailers & semi-trailers; parts",Oil,Midstream,Fuels & storage,1,870520
+493,Ships,Gas,Midstream,LNG/LPG equipment,3,"890120,890520,890590"
+493,Ships,Oil,Midstream,Fuels & storage,3,"890120,890520,890590"
+499,Other transport equipment & parts,Electric Vehicles,Midstream,Final vehicle assembly,1,871160
