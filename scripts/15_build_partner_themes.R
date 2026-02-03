@@ -58,6 +58,18 @@ raw_data_dir <- config$raw_data_dir
 if (is.null(raw_data_dir)) {
   stop("Config missing raw_data_dir.")
 }
+sharepoint_raw_dir <- config$sharepoint_raw_dir
+
+copy_snapshot_file <- function(source_path, dest_path) {
+  if (!file.exists(source_path)) {
+    return(FALSE)
+  }
+  dest_dir <- dirname(dest_path)
+  if (!dir.exists(dest_dir)) {
+    dir.create(dest_dir, recursive = TRUE)
+  }
+  file.copy(source_path, dest_path, overwrite = TRUE)
+}
 
 latest_raw_snapshot <- function(root_dir, raw_data_dir, skip_data_downloads = FALSE) {
   raw_base_dir <- file.path(root_dir, raw_data_dir)
@@ -97,10 +109,11 @@ country_info_path <- file.path(latest_snapshot, "wdi_country_info.csv")
 country_gdp_path <- file.path(latest_snapshot, "wdi_gdp.csv")
 wb_doingbusiness_path <- file.path(latest_snapshot, "wb_doingbusiness.csv")
 wb_wdi_path <- file.path(latest_snapshot, "wb_wdi.csv")
-oecd_1215_path <- file.path(latest_snapshot, "oecd_1215.csv")
-oecd_1518_path <- file.path(latest_snapshot, "oecd_1518.csv")
-oecd_1823_path <- file.path(latest_snapshot, "oecd_1823.csv")
 oecd_api_path <- file.path(latest_snapshot, "oecd_crs_api.csv")
+
+if (!file.exists(oecd_api_path) && !is.null(sharepoint_raw_dir) && nzchar(sharepoint_raw_dir)) {
+  copy_snapshot_file(file.path(sharepoint_raw_dir, "oecd_crs_api.csv"), oecd_api_path)
+}
 
 missing_files <- c(
   comtrade_dyads_path,
@@ -112,9 +125,6 @@ missing_files <- c(
   country_gdp_path,
   wb_doingbusiness_path,
   wb_wdi_path,
-  oecd_1215_path,
-  oecd_1518_path,
-  oecd_1823_path,
   oecd_api_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
@@ -144,9 +154,6 @@ country_info <- read.csv(country_info_path)
 country_gdp <- read.csv(country_gdp_path)
 wb_doingbusiness <- read.csv(wb_doingbusiness_path)
 wb_wdi <- read.csv(wb_wdi_path)
-oecd_1215 <- read.csv(oecd_1215_path)
-oecd_1518 <- read.csv(oecd_1518_path)
-oecd_1823 <- read.csv(oecd_1823_path)
 oecd_api_raw <- read.csv(oecd_api_path)
 
 country_info <- standardize_country_info(country_info)
@@ -220,7 +227,6 @@ development_outputs <- stronger_development(
   energy_security_index = energy_security_index,
   wb_wdi = wb_wdi,
   wb_doingbusiness = wb_doingbusiness,
-  oecd_sector_raw = dplyr::bind_rows(oecd_1215, oecd_1518, oecd_1823),
   oecd_api_raw = oecd_api_raw
 )
 
