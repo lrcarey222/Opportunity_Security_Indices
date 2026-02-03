@@ -222,6 +222,237 @@ safe_list_or_empty <- function(x) {
   if (is.null(x) || length(x) == 0) character(0) else normalize_chr_vec(x)
 }
 
+# ---- CPC helpers -------------------------------------------------------------
+
+parse_code_list <- function(x, width = 3) {
+  x <- as.character(x)
+  if (is.na(x) || !nzchar(x)) return(character(0))
+  toks <- unlist(strsplit(x, "\\s*,\\s*"))
+  toks <- stringr::str_replace_all(toks, "\\D", "")
+  toks <- toks[nzchar(toks)]
+  if (length(toks) == 0) return(character(0))
+  toks <- substr(toks, 1, width)
+  toks <- stringr::str_pad(toks, width = width, pad = "0")
+  unique(toks)
+}
+
+get_cpc_hs_map <- function() {
+  if (!requireNamespace("gtalibrary", quietly = TRUE)) {
+    stop("gtalibrary not installed. Run remotes::install_github('global-trade-alert/gtalibrary').")
+  }
+  df <- gtalibrary::cpc.to.hs
+  nms <- tolower(names(df))
+  
+  cpc_col <- names(df)[which(grepl("^cpc$", nms) | grepl("cpc", nms))[1]]
+  hs_col  <- names(df)[which(grepl("^hs$",  nms)  | grepl("hs",  nms))[1]]
+  
+  if (is.na(cpc_col) || is.na(hs_col)) {
+    stop("Couldn't infer CPC/HS columns from gtalibrary::cpc.to.hs. Check names(gtalibrary::cpc.to.hs).")
+  }
+  
+  out <- df %>%
+    dplyr::transmute(
+      cpc3 = stringr::str_pad(stringr::str_replace_all(as.character(.data[[cpc_col]]), "\\D", ""), 3, pad = "0"),
+      hs6  = stringr::str_pad(stringr::str_replace_all(as.character(.data[[hs_col]]),  "\\D", ""), 6, pad = "0")
+    ) %>%
+    dplyr::mutate(
+      cpc3 = substr(.data$cpc3, 1, 3),
+      hs6  = substr(.data$hs6, 1, 6)
+    ) %>%
+    dplyr::filter(nzchar(.data$cpc3), nzchar(.data$hs6)) %>%
+    dplyr::distinct(.data$cpc3, .data$hs6)
+  
+  out
+}
+
+get_cpc3_names <- function() {
+  if (!requireNamespace("gtalibrary", quietly = TRUE)) return(NULL)
+  df <- gtalibrary::cpc.names
+  nms <- tolower(names(df))
+  
+  code_col <- names(df)[which(nms %in% c("cpc", "code", "cpc_code") | grepl("^cpc$", nms) | grepl("cpc", nms))[1]]
+  name_col <- names(df)[which(nms %in% c("cpc.name", "cpc_name", "name", "title", "description") | grepl("name|title|desc", nms))[1]]
+  lvl_col  <- names(df)[which(nms %in% c("cpc.digit.level", "cpc_digit_level", "digit.level", "digit_level", "level") | grepl("digit|level", nms))[1]]
+  
+  if (is.na(code_col) || is.na(name_col)) return(NULL)
+  
+  out <- df %>%
+    dplyr::transmute(
+      cpc3 = stringr::str_pad(stringr::str_replace_all(as.character(.data[[code_col]]), "\\D", ""), 3, pad = "0"),
+      cpc.name = stringr::str_squish(as.character(.data[[name_col]])),
+      lvl = if (!is.na(lvl_col)) suppressWarnings(as.integer(.data[[lvl_col]])) else NA_integer_
+    ) %>%
+    dplyr::mutate(cpc3 = substr(.data$cpc3, 1, 3)) %>%
+    dplyr::filter(
+      nzchar(.data$cpc3),
+      if (!all(is.na(.data$lvl))) .data$lvl == 3 else TRUE
+    ) %>%
+    dplyr::select(.data$cpc3, .data$cpc.name) %>%
+    dplyr::distinct(.data$cpc3, .keep_all = TRUE)
+  
+  out
+}
+
+build_cpc3_to_tech_sc_pairs <- function(subcat_raw, cpc_hs) {
+  # support either (HS6, Technology, `Value Chain`) or (hs6, tech, supply_chain)
+  hs_col <- dplyr::case_when(
+    "HS6" %in% names(subcat_raw) ~ "HS6",
+    "hs6" %in% names(subcat_raw) ~ "hs6",
+    TRUE ~ NA_character_
+  )
+  tech_col <- dplyr::case_when(
+    "Technology" %in% names(subcat_raw) ~ "Technology",
+    "tech" %in% names(subcat_raw) ~ "tech",
+    TRUE ~ NA_character_
+  )
+  sc_col <- dplyr::case_when(
+    "Value Chain" %in% names(subcat_raw) ~ "Value Chain",
+    "supply_chain" %in% names(subcat_raw) ~ "supply_chain",
+    TRUE ~ NA_character_
+  )
+  
+  if (is.na(hs_col) || is.na(tech_col) || is.na(sc_col)) {
+    stop("subcat_raw must contain HS6 + Technology/Value Chain (or hs6 + tech/supply_chain).")
+  }
+  
+  sub <- subcat_raw %>%
+    dplyr::transmute(
+      hs6 = stringr::str_pad(stringr::str_replace_all(as.character(.data[[hs_col]]), "\\D", ""), 6, pad = "0"),
+      tech = as.character(.data[[tech_col]]),
+      supply_chain = as.character(.data[[sc_col]])
+    ) %>%
+    dplyr::filter(nzchar(.data$hs6), nzchar(.data$tech), nzchar(.data$supply_chain)) %>%
+    dplyr::distinct(.data$hs6, .data$tech, .data$supply_chain)
+  
+  x <- sub %>%
+    dplyr::left_join(cpc_hs, by = c("hs6" = "hs6")) %>%
+    dplyr::filter(!is.na(.data$cpc3)) %>%
+    dplyr::mutate(pair = paste(.data$tech, .data$supply_chain, sep = "||")) %>%
+    dplyr::group_by(.data$cpc3) %>%
+    dplyr::summarise(
+      allowed_pairs_cpc = list(sort(unique(.data$pair))),
+      .groups = "drop"
+    )
+  
+  x
+}
+
+attach_cpc_validation <- function(nipo_country, cpc_hs, cpc_pairs) {
+  # 1) allowed tech||sc pairs implied by the CPC basket on that row
+  cpc_long <- nipo_country %>%
+    dplyr::select(.data$nipo_row_id, .data$cpc3_codes) %>%
+    tidyr::unnest(.data$cpc3_codes) %>%
+    dplyr::rename(cpc3 = .data$cpc3_codes) %>%
+    dplyr::filter(nzchar(.data$cpc3)) %>%
+    dplyr::distinct()
+  
+  allowed <- cpc_long %>%
+    dplyr::left_join(cpc_pairs, by = "cpc3") %>%
+    dplyr::group_by(.data$nipo_row_id) %>%
+    dplyr::summarise(
+      allowed_pairs_cpc = list(sort(unique(unlist(.data$allowed_pairs_cpc)))),
+      .groups = "drop"
+    )
+  
+  # 2) HS6 -> CPC consistency: share of HS6 whose mapped CPC hits the row's CPC basket
+  hs6_long <- nipo_country %>%
+    dplyr::select(.data$nipo_row_id, .data$hs6_codes, .data$cpc3_n) %>%
+    tidyr::unnest(.data$hs6_codes) %>%
+    dplyr::rename(hs6 = .data$hs6_codes) %>%
+    dplyr::mutate(hs6 = stringr::str_pad(stringr::str_replace_all(as.character(.data$hs6), "\\D", ""), 6, pad = "0")) %>%
+    dplyr::left_join(cpc_hs, by = c("hs6" = "hs6"))
+  
+  # which (row, hs6) have at least one CPC mapping?
+  hs6_has_map <- hs6_long %>%
+    dplyr::group_by(.data$nipo_row_id, .data$hs6) %>%
+    dplyr::summarise(has_map = any(!is.na(.data$cpc3)), .groups = "drop")
+  
+  # hits: any mapped cpc3 that appears in row's cpc basket
+  hs6_hits <- hs6_long %>%
+    dplyr::filter(!is.na(.data$cpc3)) %>%
+    dplyr::semi_join(cpc_long, by = c("nipo_row_id", "cpc3")) %>%
+    dplyr::distinct(.data$nipo_row_id, .data$hs6) %>%
+    dplyr::mutate(hit = TRUE)
+  
+  hs6_status <- hs6_has_map %>%
+    dplyr::left_join(hs6_hits, by = c("nipo_row_id", "hs6")) %>%
+    dplyr::mutate(
+      hit = dplyr::coalesce(.data$hit, FALSE),
+      unmapped = !.data$has_map
+    )
+  
+  hs6_row_rates <- hs6_status %>%
+    dplyr::group_by(.data$nipo_row_id) %>%
+    dplyr::summarise(
+      hs6_cpc_match_rate = dplyr::if_else(
+        dplyr::first(nipo_country$cpc3_n[match(.data$nipo_row_id, nipo_country$nipo_row_id)]) > 0,
+        mean(.data$hit, na.rm = TRUE),
+        NA_real_
+      ),
+      hs6_cpc_unmapped_rate = mean(.data$unmapped, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  nipo_country %>%
+    dplyr::left_join(allowed, by = "nipo_row_id") %>%
+    dplyr::left_join(hs6_row_rates, by = "nipo_row_id") %>%
+    dplyr::mutate(
+      allowed_pairs_cpc = purrr::map(.data$allowed_pairs_cpc, ~ if (is.null(.x)) character(0) else .x),
+      hs6_cpc_match_rate = dplyr::coalesce(.data$hs6_cpc_match_rate, NA_real_),
+      hs6_cpc_unmapped_rate = dplyr::coalesce(.data$hs6_cpc_unmapped_rate, NA_real_)
+    )
+}
+
+make_validated_combos <- function(techs, scs, allowed_pairs) {
+  techs <- safe_list_or_empty(techs)
+  scs   <- safe_list_or_empty(scs)
+  if (length(techs) == 0 || length(scs) == 0) {
+    return(tibble::tibble(tech = character(0), supply_chain = character(0)))
+  }
+  combos <- utils::expand.grid(tech = techs, supply_chain = scs, stringsAsFactors = FALSE)
+  if (!is.null(allowed_pairs) && length(allowed_pairs) > 0) {
+    pair <- paste(combos$tech, combos$supply_chain, sep = "||")
+    keep <- pair %in% allowed_pairs
+    if (any(keep)) combos <- combos[keep, , drop = FALSE]
+  }
+  tibble::as_tibble(combos)
+}
+
+attach_policy_cpc_names <- function(policy_tbl, cpc_names) {
+  if (is.null(cpc_names) || nrow(cpc_names) == 0) {
+    policy_tbl$cpc3_codes_csv <- NA_character_
+    policy_tbl$cpc.name_csv <- NA_character_
+    return(policy_tbl)
+  }
+  
+  # Ensure cpc3_codes exists (fallback: parse raw CPC string column if needed)
+  if (!("cpc3_codes" %in% names(policy_tbl))) {
+    if (!("Sector: CPC 3-digit (v2.1)" %in% names(policy_tbl))) {
+      policy_tbl$cpc3_codes <- replicate(nrow(policy_tbl), character(0), simplify = FALSE)
+      policy_tbl$cpc3_n <- 0L
+    } else {
+      policy_tbl <- policy_tbl %>%
+        dplyr::mutate(
+          cpc3_codes = purrr::map(.data$`Sector: CPC 3-digit (v2.1)`, parse_code_list, width = 3),
+          cpc3_n = purrr::map_int(.data$cpc3_codes, length)
+        )
+    }
+  }
+  
+  policy_tbl %>%
+    dplyr::mutate(
+      cpc3_codes_csv = purrr::map_chr(.data$cpc3_codes, ~ if (length(.x) == 0) NA_character_ else paste(.x, collapse = ",")),
+      cpc.name_csv = purrr::map_chr(.data$cpc3_codes, ~ {
+        if (length(.x) == 0) return(NA_character_)
+        nm <- cpc_names$cpc.name[match(.x, cpc_names$cpc3)]
+        nm <- unique(nm[!is.na(nm) & nzchar(nm)])
+        if (length(nm) == 0) NA_character_ else paste(nm, collapse = " | ")
+      })
+    )
+}
+
+
+
 # ==============================================================================
 # 1) Clean NIPO raw
 #    - Keeps HS6 list as a list-column (hs6_codes)
@@ -282,6 +513,14 @@ clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
     nipo_classified <- nipo_classified %>%
       dplyr::mutate(iso3 = NA_character_)
   }
+  
+  # ---- CPC3 list (parsed from "Sector: CPC 3-digit (v2.1)") ------------------
+  nipo_classified <- nipo_classified %>%
+    dplyr::mutate(
+      cpc3_codes = purrr::map(.data$`Sector: CPC 3-digit (v2.1)`, parse_code_list, width = 3),
+      cpc3_n = purrr::map_int(.data$cpc3_codes, length)
+    )
+  
   
   nipo_classified
 }
@@ -653,13 +892,28 @@ build_by_tech_sc <- function(policy_asof_tbl,
     )
   
   # ---- (a) mapped tech×sc combos ---------------------------------------------
+  policy_shares <- policy_asof_tbl %>%
+    dplyr::mutate(
+      mapped_share = dplyr::if_else(.data$hs6_n > 0, pmin(1, .data$matched_hs6_n / pmax(1, .data$hs6_n)), 0),
+      tech_mapped = purrr::map(.data$Technology, safe_list_or_empty),
+      sc_mapped   = purrr::map(.data$`Value Chain`, safe_list_or_empty),
+      mapped_share = dplyr::if_else((purrr::map_int(.data$tech_mapped, length) == 0) |
+                                      (purrr::map_int(.data$sc_mapped, length) == 0),
+                                    0, .data$mapped_share),
+      unmapped_share = dplyr::if_else(.data$hs6_n > 0, pmax(0, 1 - .data$mapped_share), 0),
+      
+      # NEW: CPC-validated allowed pairs (optional; empty if not present)
+      allowed_pairs_cpc = purrr::map(dplyr::coalesce(.data$allowed_pairs_cpc, list(character(0))),
+                                     ~ if (is.null(.x)) character(0) else .x)
+    )
+  
   mapped_long <- policy_shares %>%
     dplyr::filter(.data$mapped_share > 0) %>%
     dplyr::mutate(
-      combos = purrr::map2(.data$tech_mapped, .data$sc_mapped, ~ tidyr::expand_grid(
-        tech = .x,
-        supply_chain = .y
-      )),
+      combos = purrr::pmap(
+        list(.data$tech_mapped, .data$sc_mapped, .data$allowed_pairs_cpc),
+        make_validated_combos
+      ),
       n_combo = purrr::map_int(.data$combos, nrow)
     ) %>%
     tidyr::unnest(.data$combos) %>%
@@ -667,6 +921,8 @@ build_by_tech_sc <- function(policy_asof_tbl,
       alloc = .data$mapped_share / pmax(1, .data$n_combo)
     ) %>%
     dplyr::select(-n_combo)
+  
+  
   
   # ---- (b) unmapped bucket ----------------------------------------------------
   unmapped_long <- policy_shares %>%
@@ -747,18 +1003,16 @@ build_by_tech_year <- function(policy_base_tbl,
                                expand_cross_cutting = TRUE,
                                split_cross_cutting_strength = TRUE) {
   
-  # Reuse the tech-sc allocator but WITHOUT as-of flags.
-  # We'll create a minimal table with alloc, then do year overlap math.
+  # ---- 0) Prep ---------------------------------------------------------------
   tmp <- policy_base_tbl %>%
     dplyr::mutate(
-      # placeholders used by build_by_tech_sc
+      # placeholders used by build_by_tech_sc-style logic
       is_active_asof = TRUE,
       as_of_date = as.Date(NA)
     )
   
-  # Build allocation rows (policy × tech × sc × alloc)
-  # We call build_by_tech_sc internals by recreating the long form quickly:
-  policy_shares <- tmp %>%
+  # ---- 1) Compute mapping shares (mapped vs unmapped) ------------------------
+  policy_shares <- policy_asof_tbl %>%
     dplyr::mutate(
       mapped_share = dplyr::if_else(.data$hs6_n > 0, pmin(1, .data$matched_hs6_n / pmax(1, .data$hs6_n)), 0),
       tech_mapped = purrr::map(.data$Technology, safe_list_or_empty),
@@ -766,21 +1020,28 @@ build_by_tech_year <- function(policy_base_tbl,
       mapped_share = dplyr::if_else((purrr::map_int(.data$tech_mapped, length) == 0) |
                                       (purrr::map_int(.data$sc_mapped, length) == 0),
                                     0, .data$mapped_share),
-      unmapped_share = dplyr::if_else(.data$hs6_n > 0, pmax(0, 1 - .data$mapped_share), 0)
+      unmapped_share = dplyr::if_else(.data$hs6_n > 0, pmax(0, 1 - .data$mapped_share), 0),
+      
+      # NEW: CPC-validated allowed pairs (optional; empty if not present)
+      allowed_pairs_cpc = purrr::map(dplyr::coalesce(.data$allowed_pairs_cpc, list(character(0))),
+                                     ~ if (is.null(.x)) character(0) else .x)
     )
   
   mapped_long <- policy_shares %>%
     dplyr::filter(.data$mapped_share > 0) %>%
     dplyr::mutate(
-      combos = purrr::map2(.data$tech_mapped, .data$sc_mapped, ~ tidyr::expand_grid(
-        tech = .x,
-        supply_chain = .y
-      )),
+      combos = purrr::pmap(
+        list(.data$tech_mapped, .data$sc_mapped, .data$allowed_pairs_cpc),
+        make_validated_combos
+      ),
       n_combo = purrr::map_int(.data$combos, nrow)
     ) %>%
     tidyr::unnest(.data$combos) %>%
-    dplyr::mutate(alloc = .data$mapped_share / pmax(1, .data$n_combo)) %>%
+    dplyr::mutate(
+      alloc = .data$mapped_share / pmax(1, .data$n_combo)
+    ) %>%
     dplyr::select(-n_combo)
+  
   
   unmapped_long <- policy_shares %>%
     dplyr::filter(.data$unmapped_share > 0) %>%
@@ -788,20 +1049,25 @@ build_by_tech_year <- function(policy_base_tbl,
       dplyr::across(dplyr::everything()),
       tech = "Unmapped",
       supply_chain = "Unmapped",
-      alloc = .data$unmapped_share
+      alloc = .data$unmapped_share,
+      is_crosscutting_policy = FALSE
     )
   
+  # IMPORTANT: tag cross-cutting policies so we can exclude them from "emphasis"
   cross_long <- policy_shares %>%
     dplyr::filter(.data$hs6_n == 0) %>%
     dplyr::transmute(
       dplyr::across(dplyr::everything()),
       tech = "Cross-cutting",
       supply_chain = "Cross-cutting",
-      alloc = 1
+      alloc = 1,
+      is_crosscutting_policy = TRUE
     )
   
   tech_sc_long <- dplyr::bind_rows(mapped_long, unmapped_long, cross_long)
   
+  # ---- 3) Expand cross-cutting across your tech/sc universe (optional) -------
+  # (Your expand_cross_cutting_rows() should be the "fixed" version using base if())
   if (isTRUE(expand_cross_cutting)) {
     tech_sc_long <- expand_cross_cutting_rows(
       tech_sc_long,
@@ -812,25 +1078,25 @@ build_by_tech_year <- function(policy_base_tbl,
       dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
   }
   
+  # ---- 4) Allocate policy strength to tech×sc rows ---------------------------
   tech_sc_long <- tech_sc_long %>%
     dplyr::mutate(
-      bite_ts = .data$bite_strength_pkg * .data$alloc,
+      bite_ts  = .data$bite_strength_pkg  * .data$alloc,
       scale_ts = .data$scale_strength_pkg * .data$alloc
     )
   
-  # ---- infer year range if not provided --------------------------------------
+  # ---- 5) Infer year range if not provided -----------------------------------
   impl_years <- suppressWarnings(as.integer(format(tech_sc_long$impl_date, "%Y")))
   impl_years <- impl_years[is.finite(impl_years)]
   if (is.null(year_min)) year_min <- if (length(impl_years) > 0) min(impl_years) else as.integer(format(Sys.Date(), "%Y"))
   
-  # if removal dates exist, include their year for overlap calcs; otherwise use current year
   rem_years <- suppressWarnings(as.integer(format(tech_sc_long$removal_date, "%Y")))
   rem_years <- rem_years[is.finite(rem_years)]
   if (is.null(year_max)) {
     year_max <- max(c(impl_years, rem_years, as.integer(format(Sys.Date(), "%Y"))), na.rm = TRUE)
   }
   
-  # ---- time-weighted annualization -------------------------------------------
+  # ---- 6) Time-weighted annualization ----------------------------------------
   annual_long <- tech_sc_long %>%
     dplyr::filter(!is.na(.data$impl_date)) %>%
     dplyr::mutate(
@@ -864,31 +1130,130 @@ build_by_tech_year <- function(policy_base_tbl,
       overlap_days = pmax(0, as.numeric(.data$interval_end - .data$interval_start)),
       year_frac = dplyr::if_else(.data$days_in_year > 0, .data$overlap_days / .data$days_in_year, 0),
       
-      bite_avg = .data$bite_ts * .data$year_frac,
-      scale_avg = .data$scale_ts * .data$year_frac
+      bite_avg  = .data$bite_ts  * .data$year_frac,
+      scale_avg = .data$scale_ts * .data$year_frac,
+      
+      # targeted-only contributions (exclude cross-cutting policies)
+      bite_avg_targeted  = dplyr::if_else(!.data$is_crosscutting_policy, .data$bite_avg,  0),
+      scale_avg_targeted = dplyr::if_else(!.data$is_crosscutting_policy, .data$scale_avg, 0)
     )
   
-  # ---- aggregate to Country × tech × Year (overall across supply_chain) -------
+  # ---- 7) Aggregate to Country × tech × Year (across supply_chain) ------------
   agg <- annual_long %>%
     dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$Year) %>%
     dplyr::summarise(
-      bite_avg_stock_sum = sum(.data$bite_avg, na.rm = TRUE),
+      bite_avg_stock_sum  = sum(.data$bite_avg,  na.rm = TRUE),
       scale_avg_stock_sum = sum(.data$scale_avg, na.rm = TRUE),
+      
+      bite_avg_targeted_sum  = sum(.data$bite_avg_targeted,  na.rm = TRUE),
+      scale_avg_targeted_sum = sum(.data$scale_avg_targeted, na.rm = TRUE),
+      
       n_policies_touching_year = dplyr::n_distinct(.data$policy_id),
       .groups = "drop"
     )
   
-  # ---- indices across countries within each Year×tech -------------------------
+  # ---- 8) NEW: within-country-year tech emphasis shares -----------------------
+  # This is the metric that will show Oil -> Batteries shifts for a given country.
+  agg <- agg %>%
+    dplyr::group_by(.data$iso3, .data$country, .data$Year) %>%
+    dplyr::mutate(
+      scale_total_year = sum(.data$scale_avg_stock_sum, na.rm = TRUE),
+      scale_targeted_total_year = sum(.data$scale_avg_targeted_sum, na.rm = TRUE),
+      
+      scale_share_all = dplyr::if_else(.data$scale_total_year > 0,
+                                       .data$scale_avg_stock_sum / .data$scale_total_year,
+                                       NA_real_),
+      scale_share_targeted = dplyr::if_else(.data$scale_targeted_total_year > 0,
+                                            .data$scale_avg_targeted_sum / .data$scale_targeted_total_year,
+                                            NA_real_)
+    ) %>%
+    dplyr::ungroup()
+  
+  # ---- 9) Keep your old cross-sectional indices, but label them clearly -------
   idx <- agg %>%
     dplyr::group_by(.data$Year, .data$tech) %>%
     dplyr::mutate(
-      tech_year_bite_index = median_scurve(log1p(.data$bite_avg_stock_sum)),
-      tech_year_scale_index = median_scurve(log1p(.data$scale_avg_stock_sum))
+      tech_year_bite_index_xs  = median_scurve(log1p(.data$bite_avg_stock_sum)),
+      tech_year_scale_index_xs = median_scurve(log1p(.data$scale_avg_stock_sum))
     ) %>%
     dplyr::ungroup()
   
   idx
 }
+
+#5) Build by CPC
+build_by_cpc <- function(policy_asof_tbl,
+                         cpc_name_lu = NULL,
+                         split_across_cpc = TRUE) {
+  
+  # Ensure CPC codes exist (fallback parses raw string column)
+  if (!("cpc3_codes" %in% names(policy_asof_tbl))) {
+    if ("Sector: CPC 3-digit (v2.1)" %in% names(policy_asof_tbl)) {
+      policy_asof_tbl <- policy_asof_tbl %>%
+        dplyr::mutate(
+          cpc3_codes = purrr::map(.data$`Sector: CPC 3-digit (v2.1)`, parse_code_list, width = 3),
+          cpc3_n = purrr::map_int(.data$cpc3_codes, length)
+        )
+    } else {
+      policy_asof_tbl <- policy_asof_tbl %>%
+        dplyr::mutate(
+          cpc3_codes = replicate(nrow(.), character(0), simplify = FALSE),
+          cpc3_n = 0L
+        )
+    }
+  }
+  
+  cpc_long <- policy_asof_tbl %>%
+    dplyr::mutate(
+      cpc_list = purrr::map(.data$cpc3_codes, ~{
+        v <- as.character(.x)
+        v <- v[!is.na(v) & nzchar(v)]
+        if (length(v) == 0) "Cross-cutting" else unique(substr(v, 1, 3))
+      })
+    ) %>%
+    tidyr::unnest(.data$cpc_list) %>%
+    dplyr::rename(cpc3 = .data$cpc_list) %>%
+    dplyr::mutate(
+      alloc_cpc = dplyr::case_when(
+        .data$cpc3 == "Cross-cutting" ~ 1,
+        split_across_cpc ~ 1 / pmax(1, dplyr::coalesce(.data$cpc3_n, 1L)),
+        TRUE ~ 1
+      ),
+      bite_cpc  = .data$bite_strength_pkg  * .data$alloc_cpc,
+      scale_cpc = .data$scale_strength_pkg * .data$alloc_cpc
+    )
+  
+  # If this is still empty, you truly have 0 rows upstream
+  if (nrow(cpc_long) == 0) {
+    return(tibble::tibble())
+  }
+  
+  agg <- cpc_long %>%
+    dplyr::group_by(.data$iso3, .data$country, .data$cpc3) %>%
+    dplyr::summarise(
+      as_of_date = dplyr::first(.data$as_of_date),
+      n_active_policies = dplyr::n_distinct(.data$policy_id[.data$is_active_asof]),
+      bite_stock_sum  = sum(.data$bite_cpc[.data$is_active_asof],  na.rm = TRUE),
+      scale_stock_sum = sum(.data$scale_cpc[.data$is_active_asof], na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  if (!is.null(cpc_name_lu) && nrow(cpc_name_lu) > 0) {
+    agg <- agg %>% dplyr::left_join(cpc_name_lu, by = "cpc3")
+  } else {
+    agg <- agg %>% dplyr::mutate(cpc.name = NA_character_)
+  }
+  
+  agg %>%
+    dplyr::group_by(.data$cpc3) %>%
+    dplyr::mutate(
+      cpc_bite_index  = median_scurve(log1p(.data$bite_stock_sum)),
+      cpc_scale_index = median_scurve(log1p(.data$scale_stock_sum))
+    ) %>%
+    dplyr::ungroup()
+}
+
+
 
 # ==============================================================================
 # 8) Top-level wrapper: nipo_policy_outputs()
@@ -930,6 +1295,17 @@ nipo_policy_outputs <- function(raw_nipo,
     subcat_raw = subcat_raw,
     country_info = country_info
   )
+  
+  # ---- CPC resources + validation --------------------------------------------
+  cpc_hs <- get_cpc_hs_map()
+  cpc_names <- get_cpc3_names()
+  cpc_pairs <- build_cpc3_to_tech_sc_pairs(subcat_raw = subcat_raw, cpc_hs = cpc_hs)
+  
+  # Attach CPC validation fields to the cleaned NIPO rows:
+  # - allowed_pairs_cpc (tech||supply_chain) per policy row
+  # - hs6_cpc_match_rate, hs6_cpc_unmapped_rate diagnostics
+  nipo_country <- attach_cpc_validation(nipo_country, cpc_hs = cpc_hs, cpc_pairs = cpc_pairs)
+  
   
   # ---- infer universes if not provided ---------------------------------------
   if (is.null(tech_universe)) {
@@ -988,15 +1364,26 @@ nipo_policy_outputs <- function(raw_nipo,
     split_cross_cutting_strength = split_cross_cutting_strength
   )
   
+  # ---- 5) CPC-level (by cpc.name) --------------------------------------------
+  by_cpc <- build_by_cpc(
+    policy_asof_tbl = policy_asof, 
+    cpc_name_lu = cpc_names, 
+    split_across_cpc = TRUE)
+  
   list(
     by_policy = by_policy,
     by_hs6 = by_hs6,
     by_tech_sc = by_tech_sc,
     by_tech_year = by_tech_year,
+    by_cpc = by_cpc,   # <--- NEW OUTPUT
     internals = list(
       nipo_country = nipo_country,
       policy_base = policy_base,
-      policy_asof = policy_asof
+      policy_asof = policy_asof,
+      cpc_hs = cpc_hs,
+      cpc_names = cpc_names,
+      cpc_pairs = cpc_pairs
     )
   )
+  
 }

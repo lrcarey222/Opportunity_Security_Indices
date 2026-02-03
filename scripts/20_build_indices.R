@@ -237,13 +237,18 @@ strategic_index <- left_join(
     
     # UPDATED strategic index weights
     strategic_index =
-      0.20 * base_score +
-      0.25 * trl_index +
-      0.15 * eo +
-      0.15 * es +
-      0.35 * (sc_weight * tech_weight)
+      0.2 * pol +
+      #0.25 * trl_index +
+      0.25 * Economic_Opportunity_Index +
+      0.25 * Energy_Security_Index +
+      0.15 * sc_weight +
+      0.15 * tech_weight
   ) %>%
   ungroup() %>%
+  mutate(
+    sector = paste(tech, supply_chain, sep = " - ")
+  ) %>%
+  filter(sector != "Geothermal - Midstream") %>%
   arrange(desc(strategic_index))
 
 
@@ -352,6 +357,7 @@ sheets <- lapply(sheets, function(df) {
   df %>%
     transmute(
       Country,
+      sector,
       tech,
       supply_chain,
       eo,
@@ -392,12 +398,14 @@ library(ggplot2)
 top10_by_country <- strategic_index %>%
   mutate(
     sector = paste(tech, supply_chain, sep = " - "),
-    contrib_eo      = 0.35 * eo,
-    contrib_es      = 0.35 * es,
-    contrib_policy  = 0.20 * pol,
-    contrib_trl     = 0.25 * trl_index,
-    contrib_sc_tech = 0.35 * (sc_weight * tech_weight)
+    contrib_eo      = 0.25 * Economic_Opportunity_Index,
+    contrib_es      = 0.25 * Energy_Security_Index,
+    contrib_policy  = 0.2 * pol,
+    contrib_trl     = 0 * trl_index,
+    contrib_sc = 0.15 * (sc_weight ),
+    contrib_ghg = 0.15* tech_weight
   ) %>%
+  filter(sector != "Geothermal - Midstream") %>%
   group_by(Country) %>%
   slice_max(order_by = strategic_index, n = 10, with_ties = FALSE) %>%
   arrange(Country, strategic_index) %>%   # ascending so highest ends up at top after coord_flip()
@@ -411,7 +419,7 @@ top10_by_country <- strategic_index %>%
 plot_df <- top10_by_country %>%
   filter(Country %in% c("Japan","South Korea","India","Viet Nam")) %>%
   select(Country, sector, sector_key, strategic_index,
-         contrib_eo, contrib_es, contrib_policy, contrib_trl, contrib_sc_tech) %>%
+         contrib_eo, contrib_es, contrib_policy, contrib_sc,contrib_ghg) %>%
   pivot_longer(
     cols = starts_with("contrib_"),
     names_to = "component",
@@ -422,8 +430,8 @@ plot_df <- top10_by_country %>%
                        contrib_eo      = "Economic opportunity",
                        contrib_es      = "Energy security",
                        contrib_policy  = "Policy",
-                       contrib_trl     = "TRL",
-                       contrib_sc_tech = "Supply chain × Tech weight"
+                       contrib_ghg     = "Climate",
+                       contrib_sc = "Supply chain"
     )
   )
 
@@ -435,7 +443,7 @@ rmi_palette <- c("#0BD0D9",
                  "#548538",
                  "#7F7F7F")
 
-ggplot(plot_df %>% filter(Country=="India"), aes(x = sector_key, y = contribution, fill = component)) +
+ggplot(plot_df %>% filter(Country=="Viet Nam"), aes(x = sector_key, y = contribution, fill = component)) +
   geom_col() +
   coord_flip() +
   facet_wrap(~ Country, scales = "free_y") +
@@ -443,3 +451,4 @@ ggplot(plot_df %>% filter(Country=="India"), aes(x = sector_key, y = contributio
   scale_fill_manual(values = rmi_palette) +
   labs(x = NULL, y = "Weighted contribution to strategic_index", fill = NULL) +
   theme_minimal()
+

@@ -240,13 +240,15 @@ if (length(missing_files) > 0 && !skip_data_downloads) {
   stop("Missing required raw data. Expected raw files:\n", expected_list)
 }
 
+country_info <- read.csv(wdi_country_path)
+country_info <- standardize_country_info(country_info)
+
 if (length(missing_files) > 0 && skip_data_downloads) {
   message("Skipping raw data lookup; missing file(s): ", paste(missing_files, collapse = ", "))
   theme_outputs <- list()
 } else {
   ei <- read.csv(raw_path)
-  country_info <- read.csv(wdi_country_path)
-  country_info <- standardize_country_info(country_info)
+  
 
   # Theme: Energy access and consumption (EI data).
   energy_access_tbl <- energy_access_consumption(ei)
@@ -333,6 +335,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   iea_cleantech_guide <- read.csv(iea_cleantech_guide_path)
   technological_readiness_tbl <- technological_readiness(
     iea_cleantech_all = iea_cleantech_guide
+  )
+  write_processed_tbl(
+    technological_readiness_tbl,
+    "technological_readiness_tbl",
+    processed_dir
   )
 
   # Theme: Critical minerals processing (IEA data).
@@ -555,11 +562,16 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
+  
   nipo_policy_out <- nipo_policy_outputs(
-    nipo_raw,
+    nipo_raw2,
     hs6_categories_raw,
     country_info = country_info
   )
+  nipo_policy_all <- nipo_policy_out$by_policy
+  nipo_hs6 <- nipo_policy_out$by_hs6
+  nipo_tech_year <- nipo_policy_out$by_tech_year
+  nipo_policy_cpc <- nipo_policy_out$by_cpc
   nipo_policy_index_tbl <- nipo_policy_out$by_tech_sc
   policy_outputs <- list(
     policy_agg = iea_policy_outputs$outputs$policy_agg,
