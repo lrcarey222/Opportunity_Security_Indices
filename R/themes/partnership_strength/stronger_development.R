@@ -361,7 +361,6 @@ partnership_strength_build_oecd_supplychain <- function(oecd_api_raw,
 
 partnership_strength_build_development_index <- function(energy_security_index,
                                                          economic_opportunity_index,
-                                                         oecd_sector_raw,
                                                          oecd_api_raw,
                                                          wb_wdi,
                                                          wb_doingbusiness,
@@ -392,12 +391,6 @@ partnership_strength_build_development_index <- function(energy_security_index,
       us_economic_opportunity = economic_opportunity
     )
 
-  oecd_sector_clean <- partnership_strength_build_oecd_sector(
-    oecd_sector_raw,
-    gdp_data,
-    gdp_year = gdp_year
-  )
-
   oecd_supplychain <- partnership_strength_build_oecd_supplychain(
     oecd_api_raw,
     gdp_data,
@@ -415,7 +408,7 @@ partnership_strength_build_development_index <- function(energy_security_index,
 
   base_tbl <- Reduce(
     function(x, y) dplyr::full_join(x, y, by = c("iso3c", "tech", "supply_chain")),
-    list(energy_security_clean, econ_opp_clean, oecd_sector_clean)
+    list(energy_security_clean, econ_opp_clean)
   )
 
   dev_potential_index <- base_tbl %>%
@@ -433,13 +426,11 @@ partnership_strength_build_development_index <- function(energy_security_index,
           energy_security,
           economic_opportunity,
           us_economic_opportunity,
-          aid_index_sector,
-          aidgdp_index_sector,
           aid_index_supplychain,
           aidgdp_index_supplychain,
           energy_use_index
         ),
-        c(1, 1, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 2, 1)
+        c(1, 1, 1, 1, 1.5, 1.5, 1.5, 2, 1)
       )
     ) %>%
     dplyr::ungroup() %>%
@@ -456,7 +447,6 @@ stronger_development <- function(comtrade_dyads,
                                  energy_security_index,
                                  wb_wdi,
                                  wb_doingbusiness,
-                                 oecd_sector_raw,
                                  oecd_api_raw,
                                  years = 2020:2024,
                                  gdp_year = 2023) {
@@ -467,7 +457,6 @@ stronger_development <- function(comtrade_dyads,
   dev_potential_index <- partnership_strength_build_development_index(
     energy_security_index = energy_security_index,
     economic_opportunity_index = economic_opportunity_index,
-    oecd_sector_raw = oecd_sector_raw,
     oecd_api_raw = oecd_api_raw,
     wb_wdi = wb_wdi,
     wb_doingbusiness = wb_doingbusiness,
@@ -476,6 +465,34 @@ stronger_development <- function(comtrade_dyads,
     trade_pairs = trade_pairs,
     gdp_year = gdp_year
   )
+
+  development_dyads <- res_tech %>%
+    dplyr::distinct(reporter_iso, partner_iso, tech, supply_chain) %>%
+    dplyr::left_join(
+      dev_potential_index,
+      by = c("partner_iso" = "iso3c", "tech", "supply_chain")
+    ) %>%
+    dplyr::mutate(
+      Reporter = partnership_strength_iso_to_country(reporter_iso, country_info),
+      Partner = partnership_strength_iso_to_country(partner_iso, country_info),
+      Country = Partner
+    ) %>%
+    dplyr::transmute(
+      Country,
+      Reporter,
+      Partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category = "development",
+      variable = "Development Potential Index",
+      data_type = "index",
+      value = dev_potential_index,
+      Year = as.integer(max(years)),
+      source = "Author calculation",
+      explanation = "Development potential per reporter-partner dyad."
+    )
 
   development_country <- dev_potential_index %>%
     dplyr::mutate(Country = partnership_strength_iso_to_country(iso3c, country_info)) %>%
@@ -495,7 +512,7 @@ stronger_development <- function(comtrade_dyads,
   standardized_country <- partnership_strength_standardize_bind_rows(development_country)
   partnership_strength_validate_schema(standardized_country, label = "stronger_development_country")
 
-  standardized_dyads <- standardized_country
+  standardized_dyads <- partnership_strength_standardize_bind_rows(development_dyads)
   partnership_strength_validate_schema(standardized_dyads, label = "stronger_development_dyads")
 
   list(
