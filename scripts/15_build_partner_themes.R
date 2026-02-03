@@ -58,6 +58,18 @@ raw_data_dir <- config$raw_data_dir
 if (is.null(raw_data_dir)) {
   stop("Config missing raw_data_dir.")
 }
+sharepoint_raw_dir <- config$sharepoint_raw_dir
+
+copy_snapshot_file <- function(source_path, dest_path) {
+  if (!file.exists(source_path)) {
+    return(FALSE)
+  }
+  dest_dir <- dirname(dest_path)
+  if (!dir.exists(dest_dir)) {
+    dir.create(dest_dir, recursive = TRUE)
+  }
+  file.copy(source_path, dest_path, overwrite = TRUE)
+}
 
 latest_raw_snapshot <- function(root_dir, raw_data_dir, skip_data_downloads = FALSE) {
   raw_base_dir <- file.path(root_dir, raw_data_dir)
@@ -101,6 +113,10 @@ oecd_1215_path <- file.path(latest_snapshot, "oecd_1215.csv")
 oecd_1518_path <- file.path(latest_snapshot, "oecd_1518.csv")
 oecd_1823_path <- file.path(latest_snapshot, "oecd_1823.csv")
 oecd_api_path <- file.path(latest_snapshot, "oecd_crs_api.csv")
+
+if (!file.exists(oecd_api_path) && !is.null(sharepoint_raw_dir) && nzchar(sharepoint_raw_dir)) {
+  copy_snapshot_file(file.path(sharepoint_raw_dir, "oecd_crs_api.csv"), oecd_api_path)
+}
 
 missing_files <- c(
   comtrade_dyads_path,
