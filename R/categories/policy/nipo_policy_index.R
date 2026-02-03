@@ -428,6 +428,45 @@ attach_policy_cpc_names <- function(policy_tbl, cpc_names) {
     )
 }
 
+build_hs6_name_lookup <- function(subcat_raw) {
+  if (is.null(subcat_raw) || nrow(subcat_raw) == 0) {
+    return(tibble::tibble(HS6 = character(0), hs6_name = character(0)))
+  }
+  nms <- names(subcat_raw)
+  nms_lower <- tolower(nms)
+
+  hs6_col <- dplyr::case_when(
+    "HS6" %in% nms ~ "HS6",
+    "hs6" %in% nms ~ "hs6",
+    "HS_6" %in% nms ~ "HS_6",
+    TRUE ~ NA_character_
+  )
+  name_idx <- which(grepl("hs6", nms_lower) & grepl("name|desc|description|title", nms_lower))
+  if (length(name_idx) == 0) {
+    name_idx <- which(grepl("description|desc|title|name", nms_lower))
+  }
+  name_col <- if (length(name_idx) > 0) nms[[name_idx[[1]]]] else NA_character_
+
+  if (is.na(hs6_col) || is.na(name_col)) {
+    return(tibble::tibble(HS6 = character(0), hs6_name = character(0)))
+  }
+
+  subcat_raw %>%
+    dplyr::transmute(
+      HS6 = stringr::str_pad(stringr::str_replace_all(as.character(.data[[hs6_col]]), "\\D", ""), 6, pad = "0"),
+      hs6_name = stringr::str_squish(as.character(.data[[name_col]]))
+    ) %>%
+    dplyr::filter(nzchar(.data$HS6)) %>%
+    dplyr::group_by(.data$HS6) %>%
+    dplyr::summarise(
+      hs6_name = {
+        vals <- unique(.data$hs6_name[!is.na(.data$hs6_name) & nzchar(.data$hs6_name)])
+        if (length(vals) == 0) NA_character_ else vals[[1]]
+      },
+      .groups = "drop"
+    )
+}
+
 build_hs6_cpc_lookup <- function(cpc_hs, cpc_names) {
   if (nrow(cpc_hs) == 0) {
     return(tibble::tibble(HS6 = character(0), cpc3_codes_csv = character(0), cpc_name_csv = character(0)))
@@ -538,7 +577,7 @@ make_validated_combos <- function(techs, scs, allowed_pairs) {
   if (length(techs) == 0 || length(scs) == 0) {
     return(tibble::tibble(tech = character(0), supply_chain = character(0), cpc_validation_failed = logical(0)))
   }
-  combos <- utils::expand.grid(tech = techs, supply_chain = scs, stringsAsFactors = FALSE)
+  combos <- base::expand.grid(tech = techs, supply_chain = scs, stringsAsFactors = FALSE)
   if (!is.null(allowed_pairs) && length(allowed_pairs) > 0) {
     pair <- paste(combos$tech, combos$supply_chain, sep = "||")
     keep <- pair %in% allowed_pairs
@@ -587,7 +626,7 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
       mapped_share = dplyr::if_else(.data$hs6_n > 0,
                                     pmin(1, .data$matched_hs6_n / pmax(1, .data$hs6_n)),
                                     0),
-      tech_mapped = purrr::map(.data$Technology, safe_list_or_empty),
+      tech_mapped = purrr::map(.data$Technology, ~ setdiff(safe_list_or_empty(.x), "Unmapped")),
       sc_mapped   = purrr::map(.data$`Value Chain`, safe_list_or_empty),
       mapped_share = dplyr::if_else(
         (purrr::map_int(.data$tech_mapped, length) == 0) |
@@ -958,7 +997,10 @@ build_by_policy <- function(policy_asof_tbl, cpc_names) {
 # 5) Output 2: HS6-level stock table (country level)
 # ==============================================================================
 
-build_by_hs6 <- function(policy_asof_tbl, hs6_cpc_lu, split_across_hs6 = TRUE) {
+build_by_hs6 <- function(policy_asof_tbl,
+                         hs6_cpc_lu,
+                         hs6_name_lu = NULL,
+                         split_across_hs6 = TRUE) {
   hs6_long <- policy_asof_tbl %>%
     dplyr::mutate(
       hs6_list = purrr::map(.data$hs6_codes, function(v) {
@@ -990,7 +1032,7 @@ build_by_hs6 <- function(policy_asof_tbl, hs6_cpc_lu, split_across_hs6 = TRUE) {
     )
 
   idx <- agg %>%
-    dplyr::group_by(.data$HS6) %>%
+    dplyr::group_by(.data$iso3) %>%
     dplyr::mutate(
       hs6_bite_index = median_scurve(log1p(.data$bite_stock_sum)),
       hs6_scale_index = median_scurve(log1p(.data$scale_stock_sum)),
@@ -1003,6 +1045,12 @@ build_by_hs6 <- function(policy_asof_tbl, hs6_cpc_lu, split_across_hs6 = TRUE) {
     idx <- idx %>% dplyr::left_join(hs6_cpc_lu, by = "HS6")
   } else {
     idx <- idx %>% dplyr::mutate(cpc3_codes_csv = NA_character_, cpc_name_csv = NA_character_)
+  }
+
+  if (!is.null(hs6_name_lu) && nrow(hs6_name_lu) > 0) {
+    idx <- idx %>% dplyr::left_join(hs6_name_lu, by = "HS6")
+  } else {
+    idx <- idx %>% dplyr::mutate(hs6_name = NA_character_)
   }
 
   idx
@@ -1031,6 +1079,7 @@ build_by_tech_sc <- function(policy_asof_tbl,
   }
 
   tech_sc_long <- tech_sc_long %>%
+    dplyr::filter(.data$tech != "Unmapped") %>%
     dplyr::mutate(
       bite_ts = .data$bite_strength_pkg * .data$alloc,
       scale_ts = .data$scale_strength_pkg * .data$alloc
@@ -1047,7 +1096,7 @@ build_by_tech_sc <- function(policy_asof_tbl,
     )
 
   idx <- agg %>%
-    dplyr::group_by(.data$tech, .data$supply_chain) %>%
+    dplyr::group_by(.data$iso3) %>%
     dplyr::mutate(
       tech_sc_bite_index = median_scurve(log1p(.data$bite_stock_sum)),
       tech_sc_scale_index = median_scurve(log1p(.data$scale_stock_sum)),
@@ -1099,6 +1148,7 @@ build_by_tech_year <- function(policy_base_tbl,
   }
 
   tech_sc_long <- tech_sc_long %>%
+    dplyr::filter(.data$tech != "Unmapped") %>%
     dplyr::mutate(
       bite_ts  = .data$bite_strength_pkg  * .data$alloc,
       scale_ts = .data$scale_strength_pkg * .data$alloc
@@ -1110,9 +1160,11 @@ build_by_tech_year <- function(policy_base_tbl,
 
   rem_years <- suppressWarnings(as.integer(format(tech_sc_long$removal_date, "%Y")))
   rem_years <- rem_years[is.finite(rem_years)]
+  current_year <- as.integer(format(Sys.Date(), "%Y"))
   if (is.null(year_max)) {
-    year_max <- max(c(impl_years, rem_years, as.integer(format(Sys.Date(), "%Y"))), na.rm = TRUE)
+    year_max <- max(c(impl_years, rem_years, current_year), na.rm = TRUE)
   }
+  year_max <- min(year_max, current_year)
 
   annual_long <- tech_sc_long %>%
     dplyr::filter(!is.na(.data$impl_date)) %>%
@@ -1175,7 +1227,7 @@ build_by_tech_year <- function(policy_base_tbl,
     dplyr::ungroup()
 
   idx <- agg %>%
-    dplyr::group_by(.data$Year, .data$tech) %>%
+    dplyr::group_by(.data$iso3, .data$Year) %>%
     dplyr::mutate(
       tech_year_bite_index_xs  = median_scurve(log1p(.data$bite_avg_stock_sum)),
       tech_year_scale_index_xs = median_scurve(log1p(.data$scale_avg_stock_sum)),
@@ -1251,7 +1303,7 @@ build_by_cpc <- function(policy_asof_tbl,
   }
 
   agg %>%
-    dplyr::group_by(.data$cpc3) %>%
+    dplyr::group_by(.data$iso3) %>%
     dplyr::mutate(
       cpc_bite_index  = median_scurve(log1p(.data$bite_stock_sum)),
       cpc_scale_index = median_scurve(log1p(.data$scale_stock_sum)),
@@ -1310,6 +1362,7 @@ nipo_policy_outputs <- function(raw_nipo,
   }
 
   hs6_cpc_lu <- build_hs6_cpc_lookup(cpc_hs = cpc_hs, cpc_names = cpc_names)
+  hs6_name_lu <- build_hs6_name_lookup(subcat_raw = subcat_raw)
   tech_sc_cpc_lu <- build_tech_sc_cpc_lookup(subcat_raw = subcat_raw, cpc_hs = cpc_hs, cpc_names = cpc_names)
   tech_cpc_lu <- build_tech_cpc_lookup(tech_sc_cpc_lu)
 
@@ -1332,7 +1385,12 @@ nipo_policy_outputs <- function(raw_nipo,
 
   by_policy <- build_by_policy(policy_asof, cpc_names = cpc_names)
 
-  by_hs6 <- build_by_hs6(policy_asof, hs6_cpc_lu = hs6_cpc_lu, split_across_hs6 = split_across_hs6)
+  by_hs6 <- build_by_hs6(
+    policy_asof,
+    hs6_cpc_lu = hs6_cpc_lu,
+    hs6_name_lu = hs6_name_lu,
+    split_across_hs6 = split_across_hs6
+  )
 
   tech_sc_out <- build_by_tech_sc(
     policy_asof_tbl = policy_asof,
@@ -1377,6 +1435,7 @@ nipo_policy_outputs <- function(raw_nipo,
       cpc_names = cpc_names,
       cpc_pairs = cpc_pairs,
       hs6_cpc_lu = hs6_cpc_lu,
+      hs6_name_lu = hs6_name_lu,
       tech_sc_cpc_lu = tech_sc_cpc_lu,
       tech_cpc_lu = tech_cpc_lu
     )
@@ -1396,7 +1455,7 @@ if (FALSE) {
 
   expected_cols <- list(
     by_policy = c("cpc3_codes_csv", "cpc_name_csv", "policy_index_bite", "policy_index_scale"),
-    by_hs6 = c("cpc3_codes_csv", "cpc_name_csv", "policy_index_bite", "policy_index_scale"),
+    by_hs6 = c("cpc3_codes_csv", "cpc_name_csv", "hs6_name", "policy_index_bite", "policy_index_scale"),
     by_tech_sc = c("cpc3_codes_csv", "cpc_name_csv", "policy_index_bite", "policy_index_scale"),
     by_tech_year = c("cpc3_codes_csv", "cpc_name_csv", "policy_index_bite", "policy_index_scale",
                      "policy_index_scale_share_targeted", "policy_index_scale_xs"),
