@@ -538,7 +538,7 @@ make_validated_combos <- function(techs, scs, allowed_pairs) {
   if (length(techs) == 0 || length(scs) == 0) {
     return(tibble::tibble(tech = character(0), supply_chain = character(0), cpc_validation_failed = logical(0)))
   }
-  combos <- utils::expand.grid(tech = techs, supply_chain = scs, stringsAsFactors = FALSE)
+  combos <- base::expand.grid(tech = techs, supply_chain = scs, stringsAsFactors = FALSE)
   if (!is.null(allowed_pairs) && length(allowed_pairs) > 0) {
     pair <- paste(combos$tech, combos$supply_chain, sep = "||")
     keep <- pair %in% allowed_pairs
