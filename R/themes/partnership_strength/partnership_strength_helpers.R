@@ -109,12 +109,13 @@ partnership_strength_country_to_iso <- function(country, country_info) {
     "EU",
     "European Union",
     "World",
+    "Global",
     "OECD",
     "OPEC",
     "Aggregates"
   )
 
-  unmapped <- mapped$country[is.na(mapped$iso3c)]
+  unmapped <- mapped$country[is.na(mapped$iso3c) & !is.na(mapped$country)]
   if (length(unmapped) > 0) {
     non_aggregate <- unmapped[!unmapped %in% aggregates]
     if (length(non_aggregate) > 0) {
@@ -139,7 +140,11 @@ partnership_strength_country_to_iso <- function(country, country_info) {
     }
   }
 
-  unresolved <- mapped$country[is.na(mapped$iso3c) & !mapped$country %in% aggregates]
+  unresolved <- mapped$country[
+    is.na(mapped$iso3c) &
+      !is.na(mapped$country) &
+      !mapped$country %in% aggregates
+  ]
   if (length(unresolved) > 0) {
     sample_vals <- paste(utils::head(unique(unresolved), 5), collapse = ", ")
     stop("Unmapped country names in partnership_strength_country_to_iso: ", sample_vals)
