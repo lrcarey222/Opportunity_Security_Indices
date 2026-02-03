@@ -466,6 +466,34 @@ stronger_development <- function(comtrade_dyads,
     gdp_year = gdp_year
   )
 
+  development_dyads <- res_tech %>%
+    dplyr::distinct(reporter_iso, partner_iso, tech, supply_chain) %>%
+    dplyr::left_join(
+      dev_potential_index,
+      by = c("partner_iso" = "iso3c", "tech", "supply_chain")
+    ) %>%
+    dplyr::mutate(
+      Reporter = partnership_strength_iso_to_country(reporter_iso, country_info),
+      Partner = partnership_strength_iso_to_country(partner_iso, country_info),
+      Country = Partner
+    ) %>%
+    dplyr::transmute(
+      Country,
+      Reporter,
+      Partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category = "development",
+      variable = "Development Potential Index",
+      data_type = "index",
+      value = dev_potential_index,
+      Year = as.integer(max(years)),
+      source = "Author calculation",
+      explanation = "Development potential per reporter-partner dyad."
+    )
+
   development_country <- dev_potential_index %>%
     dplyr::mutate(Country = partnership_strength_iso_to_country(iso3c, country_info)) %>%
     dplyr::transmute(
@@ -484,7 +512,7 @@ stronger_development <- function(comtrade_dyads,
   standardized_country <- partnership_strength_standardize_bind_rows(development_country)
   partnership_strength_validate_schema(standardized_country, label = "stronger_development_country")
 
-  standardized_dyads <- standardized_country
+  standardized_dyads <- partnership_strength_standardize_bind_rows(development_dyads)
   partnership_strength_validate_schema(standardized_dyads, label = "stronger_development_dyads")
 
   list(
