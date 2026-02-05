@@ -55,8 +55,19 @@ partnership_strength_resolve_weights <- function(weights, defaults, label) {
     return(defaults)
   }
 
+  # Allow a scalar numeric shorthand (e.g., w = 1) by broadcasting it to all
+  # expected components.
+  if (is.atomic(weights) && is.null(names(weights)) && length(weights) == 1) {
+    return(stats::setNames(as.list(rep(as.numeric(weights), length(defaults))), names(defaults)))
+  }
+
+  # Accept numeric vectors and coerce to list for `$`/`[[` access downstream.
+  if (is.atomic(weights) && !is.list(weights)) {
+    weights <- as.list(weights)
+  }
+
   if (is.null(names(weights)) || any(names(weights) == "")) {
-    stop(label, " weights must be a named list.")
+    stop(label, " weights must be a named list or a scalar numeric value.")
   }
 
   expected <- names(defaults)
