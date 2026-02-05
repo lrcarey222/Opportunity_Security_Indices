@@ -55,25 +55,8 @@ partnership_strength_resolve_weights <- function(weights, defaults, label) {
     return(defaults)
   }
 
-  # Allow a scalar numeric shorthand (e.g., w = 1) by broadcasting it to all
-  # expected components.
-  if (is.atomic(weights) && is.null(names(weights)) && length(weights) == 1) {
-    return(stats::setNames(as.list(rep(as.numeric(weights), length(defaults))), names(defaults)))
-  }
-
-  # Allow unnamed numeric vectors with the same arity as defaults by assigning
-  # names positionally.
-  if (is.atomic(weights) && is.null(names(weights)) && length(weights) == length(defaults)) {
-    weights <- stats::setNames(as.list(as.numeric(weights)), names(defaults))
-  }
-
-  # Accept numeric vectors and coerce to list for `$`/`[[` access downstream.
-  if (is.atomic(weights) && !is.list(weights)) {
-    weights <- as.list(weights)
-  }
-
   if (is.null(names(weights)) || any(names(weights) == "")) {
-    stop(label, " weights must be a named list or a scalar numeric value.")
+    stop(label, " weights must be a named list.")
   }
 
   expected <- names(defaults)
@@ -109,12 +92,7 @@ partnership_strength_standardize_countries <- function(country) {
   standardize_country_names(country)
 }
 
-partnership_strength_country_to_iso <- function(
-    country,
-    country_info,
-    unresolved_action = c("ignore", "warn", "error")) {
-  unresolved_action <- match.arg(unresolved_action)
-
+partnership_strength_country_to_iso <- function(country, country_info) {
   if (is.null(country_info) || nrow(country_info) == 0) {
     stop("country_info is required to map country names to ISO3 codes.")
   }
@@ -127,22 +105,16 @@ partnership_strength_country_to_iso <- function(
   mapped <- tibble::tibble(country = cleaned) %>%
     dplyr::left_join(lookup, by = "country")
 
-  # Keep only ISO3 values present in country_info to ensure downstream joins
-  # stay within the modeled country universe.
-  valid_iso3c <- unique(country_info$iso3c)
-  mapped$iso3c <- dplyr::if_else(mapped$iso3c %in% valid_iso3c, mapped$iso3c, NA_character_)
-
   aggregates <- c(
     "EU",
     "European Union",
     "World",
-    "Global",
     "OECD",
     "OPEC",
     "Aggregates"
   )
 
-  unmapped <- mapped$country[is.na(mapped$iso3c) & !is.na(mapped$country)]
+  unmapped <- mapped$country[is.na(mapped$iso3c)]
   if (length(unmapped) > 0) {
     non_aggregate <- unmapped[!unmapped %in% aggregates]
     if (length(non_aggregate) > 0) {
@@ -167,24 +139,10 @@ partnership_strength_country_to_iso <- function(
     }
   }
 
-  unresolved <- mapped$country[
-    is.na(mapped$iso3c) &
-      !is.na(mapped$country) &
-      !mapped$country %in% aggregates
-  ]
+  unresolved <- mapped$country[is.na(mapped$iso3c) & !mapped$country %in% aggregates]
   if (length(unresolved) > 0) {
     sample_vals <- paste(utils::head(unique(unresolved), 5), collapse = ", ")
-    message <- paste0(
-      "Unmapped country names in partnership_strength_country_to_iso: ",
-      sample_vals
-    )
-
-    if (identical(unresolved_action, "error")) {
-      stop(message)
-    }
-    if (identical(unresolved_action, "warn")) {
-      warning(message, call. = FALSE)
-    }
+    stop("Unmapped country names in partnership_strength_country_to_iso: ", sample_vals)
   }
 
   mapped$iso3c
@@ -298,7 +256,6 @@ partnership_strength_clean_ghg <- function(tech_ghg_raw) {
 partnership_strength_clean_policy <- function(cat_raw, country_info = NULL) {
   
   cleaned <- cat_raw %>%
-    dplyr::rename(Overall.rating = "Overall rating") %>%
     dplyr::mutate(
       climate_policy_index = dplyr::case_when(
         Overall.rating == "Critically insufficient" ~ 0.25,
