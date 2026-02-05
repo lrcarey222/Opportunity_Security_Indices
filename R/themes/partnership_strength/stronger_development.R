@@ -14,6 +14,7 @@ partnership_strength_clean_index_country <- function(index_tbl,
       country = partnership_strength_standardize_countries(Country),
       value = .data[[index_col]]
     ) %>%
+    dplyr::filter(!is.na(iso3c)) %>%
     dplyr::mutate(value = if (isTRUE(invert)) 1 - value else value) %>%
     dplyr::transmute(
       iso3c,

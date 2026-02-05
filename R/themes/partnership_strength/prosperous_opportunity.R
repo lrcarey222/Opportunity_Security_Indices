@@ -111,6 +111,7 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
       exporter_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
+    dplyr::filter(!is.na(exporter_iso)) %>%
     group_by(tech,supply_chain) %>%
     mutate(value=median_scurve(Economic_Opportunity_Index)
     ) %>%
@@ -120,6 +121,7 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
     dplyr::mutate(
       Country = partnership_strength_standardize_countries(Country),
       partner_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
+    dplyr::filter(!is.na(partner_iso)) %>%
     group_by(tech,supply_chain) %>%
     mutate(value=median_scurve(Energy_Security_Index)
     ) %>%
@@ -133,6 +135,7 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       Country = partnership_strength_standardize_countries(Country),
       iso3c = partnership_strength_country_to_iso(Country, country_info)
     ) %>%
+    dplyr::filter(!is.na(iso3c)) %>%
     dplyr::transmute(iso3c, climate_policy_index) %>%
     dplyr::group_by(iso3c) %>%
     dplyr::summarize(climate_policy_index = mean(climate_policy_index, na.rm = TRUE), .groups = "drop")
