@@ -95,7 +95,7 @@ partnership_strength_standardize_countries <- function(country) {
 partnership_strength_country_to_iso <- function(
     country,
     country_info,
-    unresolved_action = c("warn", "error", "ignore")) {
+    unresolved_action = c("ignore", "warn", "error")) {
   unresolved_action <- match.arg(unresolved_action)
 
   if (is.null(country_info) || nrow(country_info) == 0) {
@@ -109,6 +109,11 @@ partnership_strength_country_to_iso <- function(
 
   mapped <- tibble::tibble(country = cleaned) %>%
     dplyr::left_join(lookup, by = "country")
+
+  # Keep only ISO3 values present in country_info to ensure downstream joins
+  # stay within the modeled country universe.
+  valid_iso3c <- unique(country_info$iso3c)
+  mapped$iso3c <- dplyr::if_else(mapped$iso3c %in% valid_iso3c, mapped$iso3c, NA_character_)
 
   aggregates <- c(
     "EU",
