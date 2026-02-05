@@ -111,11 +111,8 @@ energy_security_outputs <- build_energy_security_index_v2(
 energy_security_category_scores <- energy_security_outputs$category_scores
 energy_security_category_contributions <- energy_security_outputs$category_contributions
 energy_security_variable_contributions <- energy_security_outputs$variable_contributions
-energy_security_index <- if (!is.null(energy_security_outputs$index)) {
-  energy_security_outputs$index
-} else {
-  energy_security_outputs$energy_security_index
-}
+energy_security_index <- energy_security_outputs$index %>%
+  filter(tech %in% techs)
 
 economic_opportunity_inputs <- list(
   energy_access_consumption = energy_access_tbl,
@@ -146,7 +143,8 @@ economic_opportunity_outputs <- build_economic_opportunity_index_v2(
 economic_opportunity_category_scores <- economic_opportunity_outputs$category_scores
 economic_opportunity_category_contributions <- economic_opportunity_outputs$category_contributions
 economic_opportunity_variable_contributions <- economic_opportunity_outputs$variable_contributions
-economic_opportunity_index <- economic_opportunity_outputs$index
+economic_opportunity_index <- economic_opportunity_outputs$index%>%
+  filter(tech %in% techs)
 
 technological_readiness_index <- economic_opportunity_category_scores %>%
   dplyr::filter(.data$category == "Technological Readiness") %>%
@@ -186,7 +184,8 @@ policy_index <- policy_component_tbl %>%
     Year,
     source,
     explanation
-  )
+  )%>%
+  filter(tech %in% techs)
 
 
 strategic_index <- left_join(
@@ -328,9 +327,7 @@ saveRDS(
     economic_opportunity_variable_contributions = economic_opportunity_variable_contributions,
     economic_opportunity_index = economic_opportunity_index,
     policy_component_tbl = policy_component_tbl,
-    policy_index = policy_index,
-    policy_agg = policy_agg,
-    policy_clean = policy_clean
+    policy_index = policy_index
   ),
   outputs_rds_path
 )
@@ -443,7 +440,7 @@ rmi_palette <- c("#0BD0D9",
                  "#548538",
                  "#7F7F7F")
 
-ggplot(plot_df %>% filter(Country=="Viet Nam"), aes(x = sector_key, y = contribution, fill = component)) +
+ggplot(plot_df %>% filter(Country=="Japan"), aes(x = sector_key, y = contribution, fill = component)) +
   geom_col() +
   coord_flip() +
   facet_wrap(~ Country, scales = "free_y") +

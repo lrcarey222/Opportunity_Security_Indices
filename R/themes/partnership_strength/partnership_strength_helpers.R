@@ -148,13 +148,12 @@ partnership_strength_country_to_iso <- function(
     "EU",
     "European Union",
     "World",
-    "Global",
     "OECD",
     "OPEC",
     "Aggregates"
   )
 
-  unmapped <- mapped$country[is.na(mapped$iso3c) & !is.na(mapped$country)]
+  unmapped <- mapped$country[is.na(mapped$iso3c)]
   if (length(unmapped) > 0) {
     non_aggregate <- unmapped[!unmapped %in% aggregates]
     if (length(non_aggregate) > 0) {
@@ -179,11 +178,7 @@ partnership_strength_country_to_iso <- function(
     }
   }
 
-  unresolved <- mapped$country[
-    is.na(mapped$iso3c) &
-      !is.na(mapped$country) &
-      !mapped$country %in% aggregates
-  ]
+  unresolved <- mapped$country[is.na(mapped$iso3c) & !mapped$country %in% aggregates]
   if (length(unresolved) > 0) {
     sample_vals <- paste(utils::head(unique(unresolved), 5), collapse = ", ")
     message <- paste0(
@@ -310,7 +305,6 @@ partnership_strength_clean_ghg <- function(tech_ghg_raw) {
 partnership_strength_clean_policy <- function(cat_raw, country_info = NULL) {
   
   cleaned <- cat_raw %>%
-    dplyr::rename(Overall.rating = "Overall rating") %>%
     dplyr::mutate(
       climate_policy_index = dplyr::case_when(
         Overall.rating == "Critically insufficient" ~ 0.25,

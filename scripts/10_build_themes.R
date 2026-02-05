@@ -563,8 +563,8 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
   
-  nipo_policy_out <- nipo_policy_outputs(
-    nipo_raw2,
+  nipo_policy_out <-  nipo_domestic_intervention_outputs(
+    raw_nipo=nipo_raw2,
     hs6_categories_raw,
     country_info = country_info
   )
