@@ -92,7 +92,12 @@ partnership_strength_standardize_countries <- function(country) {
   standardize_country_names(country)
 }
 
-partnership_strength_country_to_iso <- function(country, country_info) {
+partnership_strength_country_to_iso <- function(
+    country,
+    country_info,
+    unresolved_action = c("warn", "error", "ignore")) {
+  unresolved_action <- match.arg(unresolved_action)
+
   if (is.null(country_info) || nrow(country_info) == 0) {
     stop("country_info is required to map country names to ISO3 codes.")
   }
@@ -147,7 +152,17 @@ partnership_strength_country_to_iso <- function(country, country_info) {
   ]
   if (length(unresolved) > 0) {
     sample_vals <- paste(utils::head(unique(unresolved), 5), collapse = ", ")
-    stop("Unmapped country names in partnership_strength_country_to_iso: ", sample_vals)
+    message <- paste0(
+      "Unmapped country names in partnership_strength_country_to_iso: ",
+      sample_vals
+    )
+
+    if (identical(unresolved_action, "error")) {
+      stop(message)
+    }
+    if (identical(unresolved_action, "warn")) {
+      warning(message, call. = FALSE)
+    }
   }
 
   mapped$iso3c
