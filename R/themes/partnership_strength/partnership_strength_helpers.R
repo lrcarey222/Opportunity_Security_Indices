@@ -61,6 +61,12 @@ partnership_strength_resolve_weights <- function(weights, defaults, label) {
     return(stats::setNames(as.list(rep(as.numeric(weights), length(defaults))), names(defaults)))
   }
 
+  # Allow unnamed numeric vectors with the same arity as defaults by assigning
+  # names positionally.
+  if (is.atomic(weights) && is.null(names(weights)) && length(weights) == length(defaults)) {
+    weights <- stats::setNames(as.list(as.numeric(weights)), names(defaults))
+  }
+
   # Accept numeric vectors and coerce to list for `$`/`[[` access downstream.
   if (is.atomic(weights) && !is.list(weights)) {
     weights <- as.list(weights)
