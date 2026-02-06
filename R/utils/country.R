@@ -8,6 +8,7 @@ country_recode_map <- function() {
     "United kingdom" = "United Kingdom",
     "Korea" = "South Korea",
     "Korea, Rep." = "South Korea",
+    "Republic of Korea" = "South Korea",
     "Korea, Dem. People's Rep." = "North Korea",
     "Vietnam" = "Viet Nam",
     "Iran, Islamic Rep." = "Iran",
