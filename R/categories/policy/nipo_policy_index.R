@@ -2,7 +2,7 @@
 # GTA / NIPO DOMESTIC INTERVENTION INDEX (ENHANCED + DOCUMENTED)
 # ------------------------------------------------------------------------------
 # What this does (high-level):
-#   1) Cleans raw NIPO/GTA inventory rows and maps HS6 codes -> (Technology, Value Chain)
+#   1) Cleans raw NIPO/GTA inventory rows and maps HS6 codes -> (Technology, Value.Chain)
 #   2) Builds a per-policy Domestic Intervention Strength measure with interpretable components:
 #        - Tool weight: instrument family (subsidy/procurement/localisation/FDI/import etc.)
 #        - Status multiplier: counts Discriminatory; includes Liberalising (downweighted); downweights Neutral/Unclear
@@ -331,13 +331,13 @@ build_cpc3_to_tech_sc_pairs <- function(subcat_raw, cpc_hs) {
     TRUE ~ NA_character_
   )
   sc_col <- dplyr::case_when(
-    "Value Chain" %in% names(subcat_raw) ~ "Value Chain",
+    "Value.Chain" %in% names(subcat_raw) ~ "Value.Chain",
     "supply_chain" %in% names(subcat_raw) ~ "supply_chain",
     TRUE ~ NA_character_
   )
   
   if (is.na(hs_col) || is.na(tech_col) || is.na(sc_col)) {
-    stop("subcat_raw must contain HS6 + Technology/Value Chain (or hs6 + tech/supply_chain).")
+    stop("subcat_raw must contain HS6 + Technology/Value.Chain (or hs6 + tech/supply_chain).")
   }
   
   sub <- subcat_raw %>%
@@ -542,13 +542,13 @@ build_tech_sc_cpc_lookup <- function(subcat_raw, cpc_hs, cpc_names) {
     return(tibble::tibble(tech = character(0), supply_chain = character(0),
                           cpc3_codes_csv = character(0), cpc_name_csv = character(0)))
   }
-  check_required_columns(subcat_raw, c("HS6", "Technology", "Value Chain"), "subcat_raw")
+  check_required_columns(subcat_raw, c("HS6", "Technology", "Value.Chain"), "subcat_raw")
   
   tech_sc <- subcat_raw %>%
     dplyr::transmute(
       hs6 = stringr::str_pad(stringr::str_replace_all(as.character(.data$HS6), "\\D", ""), 6, pad = "0"),
       tech = as.character(.data$Technology),
-      supply_chain = as.character(.data$`Value Chain`)
+      supply_chain = as.character(.data$`Value.Chain`)
     ) %>%
     dplyr::filter(nzchar(.data$hs6), nzchar(.data$tech), nzchar(.data$supply_chain)) %>%
     dplyr::distinct()
@@ -779,7 +779,7 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
                                     pmin(1, .data$matched_hs6_n / pmax(1, .data$hs6_n)),
                                     0),
       tech_mapped = purrr::map(.data$Technology, ~ setdiff(safe_list_or_empty(.x), "Unmapped")),
-      sc_mapped   = purrr::map(.data$`Value Chain`, safe_list_or_empty),
+      sc_mapped   = purrr::map(.data$`Value.Chain`, safe_list_or_empty),
       mapped_share = dplyr::if_else(
         (purrr::map_int(.data$tech_mapped, length) == 0) |
           (purrr::map_int(.data$sc_mapped, length) == 0),
@@ -861,11 +861,11 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
 
 clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
   check_required_columns(raw_nipo, c("Product: HS 6-digit (2022)", "Implementing Jurisdiction"), "raw_nipo")
-  check_required_columns(subcat_raw, c("HS6", "Technology", "Value Chain", "Sub.Sector"), "subcat_raw")
+  check_required_columns(subcat_raw, c("HS6", "Technology", "Value.Chain", "Sub.Sector"), "subcat_raw")
   
   subcat_lu <- subcat_raw %>%
     dplyr::mutate(code = stringr::str_pad(as.character(.data$HS6), width = 6, pad = "0")) %>%
-    dplyr::distinct(.data$code, .data$Technology, .data$`Value Chain`, .data$Sub.Sector)
+    dplyr::distinct(.data$code, .data$Technology, .data$`Value.Chain`, .data$Sub.Sector)
   
   nipo_classified <- raw_nipo %>%
     dplyr::mutate(
@@ -878,12 +878,12 @@ clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
     dplyr::group_by(.data$nipo_row_id) %>%
     dplyr::summarise(
       dplyr::across(
-        -c(.data$Technology, .data$`Value Chain`, .data$Sub.Sector, .data$code, .data$hs6_raw),
+        -c(.data$Technology, .data$`Value.Chain`, .data$Sub.Sector, .data$code, .data$hs6_raw),
         dplyr::first,
         .names = "{.col}"
       ),
       Technology    = list(sort(unique(na.omit(.data$Technology)))),
-      `Value Chain` = list(sort(unique(na.omit(.data$`Value Chain`)))),
+      `Value.Chain` = list(sort(unique(na.omit(.data$`Value.Chain`)))),
       Sub.Sector    = list(sort(unique(na.omit(.data$Sub.Sector)))),
       hs6_codes = list(sort(unique(na.omit(.data$code)))),
       total_hs6 = dplyr::n_distinct(.data$code[!is.na(.data$code) & nzchar(.data$code)]),
@@ -1604,7 +1604,7 @@ nipo_policy_outputs <- function(raw_nipo,
   }
   if (is.null(supply_chain_universe)) {
     supply_chain_universe <- subcat_raw %>%
-      dplyr::pull(.data$`Value Chain`) %>%
+      dplyr::pull(.data$`Value.Chain`) %>%
       normalize_chr_vec()
   }
   
