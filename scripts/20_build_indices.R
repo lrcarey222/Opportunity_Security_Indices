@@ -159,33 +159,63 @@ if (!exists("policy_component_tbl") || !exists("policy_outputs")) {
   stop("Policy theme outputs not found; run scripts/10_build_themes.R first.")
 }
 
-policy_index <- policy_component_tbl %>%
-  dplyr::group_by(.data$Country, .data$tech, .data$supply_chain) %>%
-  dplyr::summarize(
-    value = if (all(is.na(.data$value))) NA_real_ else mean(.data$value, na.rm = TRUE),
+required_vars <- c(
+  "IEA PAMS Policy Index",
+  "NIPO Policy Index",
+  "CAT Policy Index",
+  "Dual-use policy score"
+)
+
+weights_tbl <- tibble::tibble(
+  variable = required_vars,
+  w = c(3, 4, 2, 1)  # IEA=3, NIPO=4, CAT=2, Dual-Use=1 (same order as required_vars)
+)
+
+# (Optional but robust) collapse to one value per Country×tech×supply_chain×variable
+policy_components_clean <- policy_component_tbl %>%
+  dplyr::filter(tech %in% techs, variable %in% required_vars) %>%
+  dplyr::group_by(Country, tech, supply_chain, variable) %>%
+  dplyr::summarise(
+    value = dplyr::if_else(all(is.na(value)), NA_real_, mean(value, na.rm = TRUE)),
     .groups = "drop"
   ) %>%
+  dplyr::left_join(weights_tbl, by = "variable")
+
+# Country-level eligibility: must have ALL 4 variables somewhere (non-NA)
+eligible_countries <- policy_components_clean %>%
+  dplyr::group_by(Country, variable) %>%
+  dplyr::summarise(has = any(!is.na(value)), .groups = "drop") %>%
+  tidyr::complete(Country, variable = required_vars, fill = list(has = FALSE)) %>%
+  dplyr::group_by(Country) %>%
+  dplyr::summarise(ok = all(has), .groups = "drop") %>%
+  dplyr::filter(ok) %>%
+  dplyr::pull(Country)
+
+policy_index <- policy_components_clean %>%
+  dplyr::filter(Country %in% eligible_countries) %>%
+  dplyr::group_by(Country, tech, supply_chain) %>%
+  dplyr::summarise(
+    value = {
+      denom <- sum(w[!is.na(value)])
+      if (denom == 0) NA_real_ else sum(value * w, na.rm = TRUE) / denom
+    },
+    .groups = "drop"
+  ) %>%
+  dplyr::filter(!is.na(value)) %>%
   dplyr::mutate(
     category = "Policy",
     variable = "Overall Policy Index",
     data_type = "index",
     Year = 0L,
     source = "Author calculation",
-    explanation = "Mean of IEA PAMS, CAT, and dual-use policy indices"
+    explanation = "Weighted mean of NIPO (4), IEA PAMS (3), CAT (2), Dual-use (1); countries kept only if all 4 exist somewhere"
   ) %>%
   dplyr::select(
-    Country,
-    tech,
-    supply_chain,
-    category,
-    variable,
-    data_type,
-    value,
-    Year,
-    source,
-    explanation
-  )%>%
-  filter(tech %in% techs)
+    Country, tech, supply_chain,
+    category, variable, data_type,
+    value, Year, source, explanation
+  )
+
 
 
 strategic_index <- left_join(

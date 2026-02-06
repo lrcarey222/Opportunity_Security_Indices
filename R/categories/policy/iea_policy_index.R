@@ -376,7 +376,7 @@ build_policy_index <- function(policy_tbl,
     dplyr::mutate(strength_sum_log = log1p(.data$strength_sum))
 
   idx <- agg %>%
-    dplyr::group_by(.data$iso3) %>%
+    #dplyr::group_by(.data$iso3) %>%
     dplyr::mutate(policy_index = median_scurve(.data$strength_sum_log)) %>%
     dplyr::ungroup()
 

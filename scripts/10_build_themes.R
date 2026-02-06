@@ -625,7 +625,8 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   nipo_raw <- readxl::read_excel(nipo_policy_path, sheet = 1)
   hs6_categories_raw <- readr::read_csv(hs6_category_path, show_col_types = FALSE)
   tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE) 
-  cat_policy_raw <- readr::read_csv(cat_policy_path, show_col_types = FALSE)
+  cat_policy_raw <- readr::read_csv(cat_policy_path, show_col_types = FALSE) %>%
+    rename("Overall.rating"="Overall rating")
   dual_use_scores_raw <- readr::read_csv(dual_use_scores_path, show_col_types = FALSE)
 
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
@@ -697,6 +698,19 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   )
   write_processed_tbl(dual_use_scores_tbl, "dual_use_scores_tbl", processed_dir)
 
+  nipo_policy_index_tbl <- nipo_policy_index_tbl %>%
+    transmute(
+      Country=country,
+      tech,
+      supply_chain,
+      variable="NIPO Policy Index",
+      data_type="Index",
+      value=domestic_intervention_index,
+      Year=2026,
+      source="NIPO",
+      explanation="See README"
+    )
+  
   policy_component_tbl <- dplyr::bind_rows(
     iea_policy_index_tbl,
     nipo_policy_index_tbl,
