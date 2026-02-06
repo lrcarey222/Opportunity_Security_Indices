@@ -631,16 +631,27 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
   
-  hs6_categories_essential<-read.csv("C:/Users/LCarey/Downloads/hs6_categories_with_essential.csv")
-  
-  nipo_allies<-nipo_raw %>%
-    left_join(country_info,by=c("Implementing Jurisdiction"="country")) %>%
-    rename("iso"="iso3c") %>%
-    filter(iso %in% c(
-      "USA","CAN","JPN","AUS","IND","MEX","KOR","GBR","DEU","FRA","ITA","BRA","SAU",
-      "ZAF","IDN","NOR","UAE","VNM","KEN","DNK","ARG","MAR","CHL"
-    ))
-  
+  hs6_categories_essential <- hs6_categories_raw
+
+  ally_iso3 <- c(
+    "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA", "ITA", "BRA", "SAU",
+    "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK", "ARG", "MAR", "CHL"
+  )
+
+  country_lookup <- country_info %>%
+    dplyr::transmute(
+      country = standardize_country_names(.data$country),
+      iso3c = toupper(as.character(.data$iso3c))
+    )
+
+  nipo_allies <- nipo_raw %>%
+    dplyr::mutate(
+      implementing_country = standardize_country_names(.data$`Implementing Jurisdiction`)
+    ) %>%
+    dplyr::left_join(country_lookup, by = c("implementing_country" = "country")) %>%
+    dplyr::rename(iso = .data$iso3c) %>%
+    dplyr::filter(.data$iso %in% ally_iso3)
+
   nipo_policy_out <- nipo_domestic_intervention_outputs(
     raw_nipo = nipo_allies,
     hs6_categories_essential,
@@ -649,18 +660,18 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     balance_alpha = 0.5,
     weight_by_active_fraction = TRUE
   )
-  
-  
+
+
   nipo_policy_all <- nipo_policy_out$by_policy
   nipo_hs6 <- nipo_policy_out$by_hs6
-  nipo_tech_year <- nipo_policy_out$by_tech_year
+  nipo_tech_year <- nipo_policy_out$by_tech_sc_year
   nipo_policy_cpc <- nipo_policy_out$by_cpc
   nipo_policy_index_tbl <- nipo_policy_out$by_tech_sc
   policy_outputs <- list(
     policy_agg = iea_policy_outputs$outputs$policy_agg,
     policy_clean = iea_policy_outputs$outputs$policy_clean,
     iea = iea_policy_outputs$outputs,
-    nipo = nipo_policy_outputs$outputs
+    nipo = nipo_policy_out
   )
   policy_agg <- policy_outputs$policy_agg
   policy_clean <- policy_outputs$policy_clean
