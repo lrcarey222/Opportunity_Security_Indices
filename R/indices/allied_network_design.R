@@ -28,9 +28,13 @@ allied_network_default_iso3c <- function() {
 }
 
 allied_network_normalize_weights <- function(w) {
-  w <- as.numeric(w)
+  nm <- names(w)
+  w <- suppressWarnings(as.numeric(w))
+  if (!is.null(nm)) names(w) <- nm
   if (length(w) == 0 || all(is.na(w)) || sum(w, na.rm = TRUE) <= 0) {
-    return(rep(NA_real_, length(w)))
+    out <- rep(NA_real_, length(w))
+    if (!is.null(nm)) names(out) <- nm
+    return(out)
   }
   w / sum(w, na.rm = TRUE)
 }
