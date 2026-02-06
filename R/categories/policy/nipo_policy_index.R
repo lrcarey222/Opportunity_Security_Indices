@@ -662,7 +662,7 @@ expand_cross_cutting_rows <- function(tbl,
 # when NIPO sector flags provide corroborating evidence.
 # Heuristic matching is intentionally conservative and fully configurable below.
 DEFAULT_VALIDATION_BONUS <- 0.20  # +20% weight when corroborated
-DEFAULT_VALIDATION_KEYWORD_BONUS <- 0.15  # +15% weight when Title/Source corroborates tech
+DEFAULT_VALIDATION_KEYWORD_BONUS <- 0.35  # +15% weight when Title/Source corroborates tech
 
 # ---- Tech taxonomy (user-defined) ----
 TECH_TAXONOMY <- c("Electric Vehicles","Nuclear","Coal","Batteries","Green Hydrogen","Wind","Oil","Solar","Gas","Geothermal","Electric Grid")
@@ -1026,8 +1026,8 @@ build_policy_base <- function(nipo_country_tbl,
       m_scope = dplyr::case_when(
         .data$is_horizontal ~ 1.00,
         .data$has_beneficiary ~ 0.60,
-        stringr::str_detect(.data$policy_level, "economy|cross|horizontal") ~ 1.00,
-        stringr::str_detect(.data$policy_level, "sector|industry") ~ 0.80,
+        stringr::str_detect(.data$policy_level, "economy|cross|horizontal") ~ 0.75,
+        stringr::str_detect(.data$policy_level, "sector|industry") ~ 1,
         stringr::str_detect(.data$policy_level, "firm") ~ 0.60,
         TRUE ~ 0.75
       )
@@ -1089,9 +1089,9 @@ build_policy_base <- function(nipo_country_tbl,
       m_geo = cap_mult(log_mult(.data$partner_n, p95_geo), cap = geo_cap),
       m_trade   = cap_mult(log_mult(.data$trade_covered_usd_m, p95_trade), cap = scale_cap),
       m_subsidy = cap_mult(log_mult(.data$subsidy_usd_m, p95_subsidy), cap = scale_cap),
-      m_scale   = pmax(.data$m_trade, .data$m_subsidy),
+      m_scale   = pmax(.data$m_subsidy),
       bite_strength_base  = .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration,
-      scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * .data$m_scale
+      scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * 2*.data$m_scale
     )
   
   act_pkg <- base %>%
