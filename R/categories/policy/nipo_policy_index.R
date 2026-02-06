@@ -1,11 +1,12 @@
 # ==============================================================================
-# GTA / NIPO POLICY INDEX (ENHANCED + DOCUMENTED)
+# GTA / NIPO DOMESTIC INTERVENTION INDEX (ENHANCED + DOCUMENTED)
 # ------------------------------------------------------------------------------
 # What this does (high-level):
 #   1) Cleans raw NIPO/GTA inventory rows and maps HS6 codes -> (Technology, Value Chain)
-#   2) Builds per-policy "strength" measures with interpretable components:
-#        - Bite strength (bindingness proxy): type × status × jurisdiction × scope × duration
-#        - Scale strength: bite × (breadth × geographic reach × money/coverage scale)
+#   2) Builds a per-policy Domestic Intervention Strength measure with interpretable components:
+#        - Tool weight: instrument family (subsidy/procurement/localisation/FDI/import etc.)
+#        - Status multiplier: counts Discriminatory; includes Liberalising (downweighted); downweights Neutral/Unclear
+#        - Reach/scale: jurisdiction × scope × duration × breadth × geographic reach × money/coverage scale
 #        - Package strength: multiplies by a capped "policy mix" multiplier at State Act level
 #   3) Converts the underlying event stream into a STOCK index:
 #        - Active as-of a chosen date (defaults to latest date in the dataset)
@@ -107,15 +108,32 @@ POLICY_TYPE_WEIGHTS <- tibble::tribble(
 )
 
 # ---- STATUS_WEIGHTS -----------------------------------------------------------
-# Interprets GTA's initial assessment as a multiplier + we also derive sign.
-STATUS_WEIGHTS <- tibble::tribble(
-  ~status, ~w_status,
-  "Discriminatory", 1.00,
-  "Liberalising", 0.60,
-  "Neutral", 0.50,
-  "Unclear", 0.30,
-  "Unknown", 0.30
+# Domestic Intervention Score (DIS) interpretation:
+#   DIS is intended to represent the *strength of support / intervention* directed at a sector.
+#   In that interpretation, both "Discriminatory" and "Liberalising" measures can be supportive.
+#   We typically down-weight Liberalising actions because, in GTA/NIPO, they often reflect
+#   barrier-removal that may benefit the sector's ecosystem (inputs, competition, investment)
+#   rather than protect producers directly.
+STATUS_LEVELS <- c("Distortive","Liberalising","Neutral","Unclear","Unknown")
+
+# Base status weights (flow-conditional adjustment applied later):
+# - Distortive always positive (adds intervention/support)
+# - Liberalising depends on Affected Trade Flow:
+#     * inward  -> negative (reduces domestic intervention)
+#     * outward -> positive (supports outward expansion / market access)
+# - Neutral/Unclear/Unknown downweighted positive
+STATUS_WEIGHTS_BASE <- tibble::tribble(
+  ~status, ~w_status_base,
+  "Distortive",    1.00,
+  "Neutral",       0.50,
+  "Unclear",       0.30,
+  "Unknown",       0.30
 )
+
+# Liberalising weights by flow (can be tuned)
+LIBERALISING_INWARD_WEIGHT  <- -0.20
+LIBERALISING_OUTWARD_WEIGHT <-  0.20
+LIBERALISING_UNKNOWN_WEIGHT <-  0.00
 
 # ---- JURIS_WEIGHTS ------------------------------------------------------------
 # Where implemented: national tends to have larger reach than local/international tagging.
@@ -130,6 +148,24 @@ JURIS_WEIGHTS <- tibble::tribble(
   "International", 0.20,
   "Unknown", 0.30
 )
+
+# ---- DOMESTIC_FAMILY_WEIGHTS --------------------------------------------------
+# Primary instrument-family weights for Domestic Intervention Score (DIS).
+# We use the maximum weight across the families flagged for a measure.
+# (If no family flags are present, we fall back to the intervention-type override.)
+DOMESTIC_FAMILY_WEIGHTS <- tibble::tribble(
+  ~family_flag, ~w_family,
+  "fam_subsidy", 1.00,
+  "fam_procurement_policy", 0.90,
+  "fam_localisation_policy", 0.90,
+  "fam_fdi_policy", 0.85,
+  "fam_export_incentive", 0.80,
+  "fam_import_policy", 0.70,
+  "fam_trade_defence", 0.65,
+  "fam_export_policy", 0.60,
+  "fam_other_policy", 0.30
+)
+
 
 # ==============================================================================
 # 0) Helper functions
@@ -224,14 +260,14 @@ get_cpc_hs_map <- function() {
     return(tibble::tibble(cpc3 = character(0), hs6 = character(0)))
   }
   nms <- tolower(names(df))
-
+  
   cpc_col <- names(df)[which(grepl("^cpc$", nms) | grepl("cpc", nms))[1]]
   hs_col  <- names(df)[which(grepl("^hs$", nms) | grepl("hs", nms))[1]]
-
+  
   if (is.na(cpc_col) || is.na(hs_col)) {
     return(tibble::tibble(cpc3 = character(0), hs6 = character(0)))
   }
-
+  
   df %>%
     dplyr::transmute(
       cpc3 = stringr::str_pad(stringr::str_replace_all(as.character(.data[[cpc_col]]), "\\D", ""), 3, pad = "0"),
@@ -254,17 +290,17 @@ get_cpc3_names <- function() {
     return(tibble::tibble(cpc3 = character(0), cpc.name = character(0)))
   }
   nms <- tolower(names(df))
-
+  
   code_col <- names(df)[which(nms %in% c("cpc", "code", "cpc_code") | grepl("^cpc$", nms) | grepl("cpc", nms))[1]]
   name_col <- names(df)[which(nms %in% c("cpc.name", "cpc_name", "name", "title", "description") |
                                 grepl("name|title|desc", nms))[1]]
   lvl_col  <- names(df)[which(nms %in% c("cpc.digit.level", "cpc_digit_level", "digit.level", "digit_level", "level") |
                                 grepl("digit|level", nms))[1]]
-
+  
   if (is.na(code_col) || is.na(name_col)) {
     return(tibble::tibble(cpc3 = character(0), cpc.name = character(0)))
   }
-
+  
   df %>%
     dplyr::transmute(
       cpc3 = stringr::str_pad(stringr::str_replace_all(as.character(.data[[code_col]]), "\\D", ""), 3, pad = "0"),
@@ -299,11 +335,11 @@ build_cpc3_to_tech_sc_pairs <- function(subcat_raw, cpc_hs) {
     "supply_chain" %in% names(subcat_raw) ~ "supply_chain",
     TRUE ~ NA_character_
   )
-
+  
   if (is.na(hs_col) || is.na(tech_col) || is.na(sc_col)) {
     stop("subcat_raw must contain HS6 + Technology/Value Chain (or hs6 + tech/supply_chain).")
   }
-
+  
   sub <- subcat_raw %>%
     dplyr::transmute(
       hs6 = stringr::str_pad(stringr::str_replace_all(as.character(.data[[hs_col]]), "\\D", ""), 6, pad = "0"),
@@ -312,9 +348,9 @@ build_cpc3_to_tech_sc_pairs <- function(subcat_raw, cpc_hs) {
     ) %>%
     dplyr::filter(nzchar(.data$hs6), nzchar(.data$tech), nzchar(.data$supply_chain)) %>%
     dplyr::distinct(.data$hs6, .data$tech, .data$supply_chain)
-
+  
   sub %>%
-    dplyr::left_join(cpc_hs, by = c("hs6" = "hs6")) %>%
+    dplyr::left_join(cpc_hs, by = c("hs6" = "hs6"), relationship = "many-to-many") %>%
     dplyr::filter(!is.na(.data$cpc3)) %>%
     dplyr::mutate(pair = paste(.data$tech, .data$supply_chain, sep = "||")) %>%
     dplyr::group_by(.data$cpc3) %>%
@@ -334,23 +370,23 @@ attach_cpc_validation <- function(nipo_country, cpc_hs, cpc_pairs) {
     nipo_country$total_hs6 <- 0L
     nipo_country$matched_hs6 <- 0L
   }
-
+  
   if (nrow(cpc_hs) == 0 || nrow(cpc_pairs) == 0) {
     return(nipo_country %>%
-      dplyr::mutate(
-        allowed_pairs_cpc = replicate(n(), character(0), simplify = FALSE),
-        hs6_cpc_match_rate = NA_real_,
-        hs6_cpc_unmapped_rate = NA_real_
-      ))
+             dplyr::mutate(
+               allowed_pairs_cpc = replicate(n(), character(0), simplify = FALSE),
+               hs6_cpc_match_rate = NA_real_,
+               hs6_cpc_unmapped_rate = NA_real_
+             ))
   }
-
+  
   cpc_long <- nipo_country %>%
     dplyr::select(.data$nipo_row_id, .data$cpc3_codes) %>%
     tidyr::unnest(.data$cpc3_codes) %>%
     dplyr::rename(cpc3 = .data$cpc3_codes) %>%
     dplyr::filter(nzchar(.data$cpc3)) %>%
     dplyr::distinct()
-
+  
   allowed <- cpc_long %>%
     dplyr::left_join(cpc_pairs, by = "cpc3") %>%
     dplyr::group_by(.data$nipo_row_id) %>%
@@ -358,31 +394,31 @@ attach_cpc_validation <- function(nipo_country, cpc_hs, cpc_pairs) {
       allowed_pairs_cpc = list(sort(unique(unlist(.data$allowed_pairs_cpc)))),
       .groups = "drop"
     )
-
+  
   hs6_long <- nipo_country %>%
     dplyr::select(.data$nipo_row_id, .data$hs6_codes) %>%
     tidyr::unnest(.data$hs6_codes) %>%
     dplyr::rename(hs6 = .data$hs6_codes) %>%
     dplyr::mutate(hs6 = stringr::str_pad(stringr::str_replace_all(as.character(.data$hs6), "\\D", ""), 6, pad = "0")) %>%
-    dplyr::left_join(cpc_hs, by = c("hs6" = "hs6"))
-
+    dplyr::left_join(cpc_hs, by = c("hs6" = "hs6"), relationship = "many-to-many")
+  
   hs6_has_map <- hs6_long %>%
     dplyr::group_by(.data$nipo_row_id, .data$hs6) %>%
     dplyr::summarise(has_map = any(!is.na(.data$cpc3)), .groups = "drop")
-
+  
   hs6_hits <- hs6_long %>%
     dplyr::filter(!is.na(.data$cpc3)) %>%
     dplyr::semi_join(cpc_long, by = c("nipo_row_id", "cpc3")) %>%
     dplyr::distinct(.data$nipo_row_id, .data$hs6) %>%
     dplyr::mutate(hit = TRUE)
-
+  
   hs6_status <- hs6_has_map %>%
     dplyr::left_join(hs6_hits, by = c("nipo_row_id", "hs6")) %>%
     dplyr::mutate(
       hit = dplyr::coalesce(.data$hit, FALSE),
       unmapped = !.data$has_map
     )
-
+  
   hs6_row_rates <- hs6_status %>%
     dplyr::group_by(.data$nipo_row_id) %>%
     dplyr::summarise(
@@ -394,7 +430,7 @@ attach_cpc_validation <- function(nipo_country, cpc_hs, cpc_pairs) {
       hs6_cpc_unmapped_rate = mean(.data$unmapped, na.rm = TRUE),
       .groups = "drop"
     )
-
+  
   nipo_country %>%
     dplyr::left_join(allowed, by = "nipo_row_id") %>%
     dplyr::left_join(hs6_row_rates, by = "nipo_row_id") %>%
@@ -415,7 +451,7 @@ attach_policy_cpc_names <- function(policy_tbl, cpc_names) {
     policy_tbl$cpc_name_csv <- NA_character_
     return(policy_tbl)
   }
-
+  
   policy_tbl %>%
     dplyr::mutate(
       cpc3_codes_csv = purrr::map_chr(.data$cpc3_codes, ~ if (length(.x) == 0) NA_character_ else paste(.x, collapse = " | ")),
@@ -434,7 +470,7 @@ build_hs6_name_lookup <- function(subcat_raw) {
   }
   nms <- names(subcat_raw)
   nms_lower <- tolower(nms)
-
+  
   hs6_col <- dplyr::case_when(
     "HS6" %in% nms ~ "HS6",
     "hs6" %in% nms ~ "hs6",
@@ -446,11 +482,11 @@ build_hs6_name_lookup <- function(subcat_raw) {
     name_idx <- which(grepl("description|desc|title|name", nms_lower))
   }
   name_col <- if (length(name_idx) > 0) nms[[name_idx[[1]]]] else NA_character_
-
+  
   if (is.na(hs6_col) || is.na(name_col)) {
     return(tibble::tibble(HS6 = character(0), hs6_name = character(0)))
   }
-
+  
   subcat_raw %>%
     dplyr::transmute(
       HS6 = stringr::str_pad(stringr::str_replace_all(as.character(.data[[hs6_col]]), "\\D", ""), 6, pad = "0"),
@@ -480,7 +516,7 @@ build_hs6_cpc_lookup <- function(cpc_hs, cpc_names) {
     dplyr::mutate(
       cpc3_codes_csv = purrr::map_chr(.data$cpc3, ~ if (length(.x) == 0) NA_character_ else paste(.x, collapse = " | "))
     )
-
+  
   if (!is.null(cpc_names) && nrow(cpc_names) > 0) {
     lu <- lu %>%
       tidyr::unnest(.data$cpc3) %>%
@@ -497,7 +533,7 @@ build_hs6_cpc_lookup <- function(cpc_hs, cpc_names) {
   } else {
     lu <- lu %>% dplyr::mutate(cpc_name_csv = NA_character_)
   }
-
+  
   lu %>% dplyr::rename(HS6 = .data$hs6)
 }
 
@@ -507,7 +543,7 @@ build_tech_sc_cpc_lookup <- function(subcat_raw, cpc_hs, cpc_names) {
                           cpc3_codes_csv = character(0), cpc_name_csv = character(0)))
   }
   check_required_columns(subcat_raw, c("HS6", "Technology", "Value Chain"), "subcat_raw")
-
+  
   tech_sc <- subcat_raw %>%
     dplyr::transmute(
       hs6 = stringr::str_pad(stringr::str_replace_all(as.character(.data$HS6), "\\D", ""), 6, pad = "0"),
@@ -516,9 +552,9 @@ build_tech_sc_cpc_lookup <- function(subcat_raw, cpc_hs, cpc_names) {
     ) %>%
     dplyr::filter(nzchar(.data$hs6), nzchar(.data$tech), nzchar(.data$supply_chain)) %>%
     dplyr::distinct()
-
+  
   lu <- tech_sc %>%
-    dplyr::left_join(cpc_hs, by = c("hs6" = "hs6")) %>%
+    dplyr::left_join(cpc_hs, by = c("hs6" = "hs6"), relationship = "many-to-many") %>%
     dplyr::filter(!is.na(.data$cpc3)) %>%
     dplyr::group_by(.data$tech, .data$supply_chain) %>%
     dplyr::summarise(
@@ -528,7 +564,7 @@ build_tech_sc_cpc_lookup <- function(subcat_raw, cpc_hs, cpc_names) {
     dplyr::mutate(
       cpc3_codes_csv = purrr::map_chr(.data$cpc3, ~ if (length(.x) == 0) NA_character_ else paste(.x, collapse = " | "))
     )
-
+  
   if (!is.null(cpc_names) && nrow(cpc_names) > 0) {
     lu <- lu %>%
       tidyr::unnest(.data$cpc3) %>%
@@ -545,7 +581,7 @@ build_tech_sc_cpc_lookup <- function(subcat_raw, cpc_hs, cpc_names) {
   } else {
     lu <- lu %>% dplyr::mutate(cpc_name_csv = NA_character_)
   }
-
+  
   lu
 }
 
@@ -599,7 +635,7 @@ expand_cross_cutting_rows <- function(tbl,
                                       split_strength = TRUE) {
   tech_universe <- setdiff(unique(tech_universe), c("Cross-cutting", "Unmapped"))
   supply_chain_universe <- setdiff(unique(supply_chain_universe), c("Cross-cutting", "Unmapped"))
-
+  
   tbl %>%
     dplyr::mutate(
       tech_targets = purrr::map(.data$tech, ~ if (.x == "Cross-cutting") tech_universe else .x),
@@ -620,6 +656,122 @@ expand_cross_cutting_rows <- function(tbl,
     dplyr::select(-.data$tech_exp, -.data$sc_exp, -.data$expansion_n)
 }
 
+
+# ---- Tech x Supply-chain validation using sector flags ----
+# These multipliers increase the share of a policy allocated to a tech/supply_chain pair
+# when NIPO sector flags provide corroborating evidence.
+# Heuristic matching is intentionally conservative and fully configurable below.
+DEFAULT_VALIDATION_BONUS <- 0.20  # +20% weight when corroborated
+DEFAULT_VALIDATION_KEYWORD_BONUS <- 0.15  # +15% weight when Title/Source corroborates tech
+
+# ---- Tech taxonomy (user-defined) ----
+TECH_TAXONOMY <- c("Electric Vehicles","Nuclear","Coal","Batteries","Green Hydrogen","Wind","Oil","Solar","Gas","Geothermal","Electric Grid")
+
+LOW_CARBON_TECHS <- c("Electric Vehicles","Nuclear","Batteries","Green Hydrogen","Wind","Solar","Geothermal","Electric Grid")
+CRITICAL_MINERALS_LINKED_TECHS <- c("Batteries","Electric Vehicles","Electric Grid","Wind","Solar","Green Hydrogen")
+DUAL_USE_LINKED_TECHS <- c("Nuclear","Electric Grid","Advanced Technology Products")
+ADV_TECH_LINKED_TECHS <- c("Electric Grid","Batteries","Nuclear","Electric Vehicles","Advanced Technology Products")
+
+is_low_carbon_tech <- function(tech) {
+  tech %in% LOW_CARBON_TECHS
+}
+is_critical_minerals_tech <- function(tech) {
+  tech %in% CRITICAL_MINERALS_LINKED_TECHS
+}
+is_dual_use_tech <- function(tech) {
+  tech %in% DUAL_USE_LINKED_TECHS
+}
+is_advanced_tech <- function(tech) {
+  tech %in% ADV_TECH_LINKED_TECHS
+}
+
+# Keyword validation: look for tech-relevant terms in Title/Source.
+TECH_KEYWORDS <- list(
+  `Electric Vehicles` = c("electric vehicle","electric vehicles","\\bev\\b","\\bevs\\b","charging","charger","battery electric","plug-in","phev","bev"),
+  `Batteries` = c("battery","batteries","\\bli-ion\\b","lithium-ion","cell manufacturing","gigafactory","anode","cathode","bms","energy storage"),
+  `Green Hydrogen` = c("hydrogen","\\bh2\\b","electrolyser","electrolyzer","electrolysis","green hydrogen","ammonia","ptx","power-to-x"),
+  `Wind` = c("wind","turbine","offshore wind","onshore wind","blade","nacelle"),
+  `Solar` = c("solar","photovoltaic","\\bpv\\b","inverter","module","panel","wafer","polysilicon"),
+  `Geothermal` = c("geothermal","egs","enhanced geothermal","heat flow","geofluid"),
+  `Electric Grid` = c("grid","transmission","distribution","substation","transformer","switchgear","interconnector","interconnection","hvdc","smart grid"),
+  `Nuclear` = c("nuclear","reactor","smr","spent fuel","uranium","enrichment","fission"),
+  `Coal` = c("coal","coking coal","thermal coal","coal-fired","lignite"),
+  `Oil` = c("oil","petroleum","crude","refinery","refining","pipeline"),
+  `Gas` = c("gas","natural gas","lng","liquefaction","regasification","pipeline gas")
+)
+
+keyword_evidence <- function(tech, title, source) {
+  hay <- stringr::str_to_lower(paste(dplyr::coalesce(title, ""), dplyr::coalesce(source, ""), sep = " | "))
+  kws <- TECH_KEYWORDS[[tech]]
+  if (is.null(kws) || length(kws) == 0) return(FALSE)
+  any(purrr::map_lgl(kws, ~ stringr::str_detect(hay, .x)))
+}
+
+# Supply-chain keyword validation: look for stage-relevant terms in Title/Source.
+# Your supply_chain options: Upstream (commodities/critical minerals etc), Midstream (manufacturing),
+# Downstream (deployment and services).
+DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.12  # +12% when Title/Source corroborates supply-chain stage
+
+# ---- Mapping confidence (applied to policy strength contributions) ----
+CONFIDENCE_FLOOR <- 0.25
+CONFIDENCE_CAP   <- 1.50
+# Baseline formula: confidence = 0.75 + 0.75 * mapped_share * evidence_mean
+# evidence_mean is the within-policy mean of combo_weight (>= 1 when validation hits).
+CONFIDENCE_UNMAPPED      <- 0.10
+CONFIDENCE_CROSSCUTTING  <- 0.25
+
+SUPPLY_CHAIN_KEYWORDS <- list(
+  `Upstream` = c(
+    "mining", "mine", "extraction", "extractive", "ore", "concentrate", "beneficiation",
+    "exploration", "prospecting", "drilling", "upstream",
+    "smelt", "smelting", "refin", "refining", "processing", "metallurg", "critical mineral", "raw material"
+  ),
+  `Midstream` = c(
+    "manufactur", "factory", "plant", "gigafactory", "assembly", "fabricat", "production line",
+    "component", "module", "cells?", "anode", "cathode", "electrolyser manufacturing", "electrolyzer manufacturing",
+    "enrichment", "conversion", "processing", "midstream"
+  ),
+  `Downstream` = c(
+    "deploy", "deployment", "install", "installation", "commission", "construction",
+    "service", "servicing", "maintenance", "operations", "o\\&m", "retail",
+    "charging station", "charger", "grid connection", "interconnection", "hook[- ]?up",
+    "rebate", "consumer", "end[- ]?use", "downstream"
+  )
+)
+
+supply_chain_keyword_evidence <- function(supply_chain, title, source) {
+  hay <- stringr::str_to_lower(paste(dplyr::coalesce(title, ""), dplyr::coalesce(source, ""), sep = " | "))
+  kws <- SUPPLY_CHAIN_KEYWORDS[[supply_chain]]
+  if (is.null(kws) || length(kws) == 0) return(FALSE)
+  any(purrr::map_lgl(kws, ~ stringr::str_detect(hay, .x)))
+}
+
+validation_weight <- function(tech, supply_chain, title, source,
+                              sector_low_carbon, sector_dual_use, sector_critical_minerals, sector_advanced_tech,
+                              bonus = DEFAULT_VALIDATION_BONUS,
+                              keyword_bonus = DEFAULT_VALIDATION_KEYWORD_BONUS,
+                              sc_keyword_bonus = DEFAULT_VALIDATION_SC_KEYWORD_BONUS) {
+  w <- 1.0
+  
+  # Sector-flag corroboration (tech-level).
+  if (isTRUE(sector_low_carbon) && is_low_carbon_tech(tech)) w <- w + bonus
+  if (isTRUE(sector_critical_minerals) && is_critical_minerals_tech(tech)) w <- w + bonus
+  if (isTRUE(sector_dual_use) && is_dual_use_tech(tech)) w <- w + bonus
+  if (isTRUE(sector_advanced_tech) && is_advanced_tech(tech)) w <- w + bonus
+  
+  # Keyword corroboration (tech-level).
+  if (isTRUE(keyword_evidence(tech, title, source))) w <- w + keyword_bonus
+  
+  # Keyword corroboration (supply-chain stage-level).
+  if (isTRUE(supply_chain_keyword_evidence(supply_chain, title, source))) w <- w + sc_keyword_bonus
+  
+  # Extra sanity: if it's explicitly "Critical Minerals", bias toward Upstream when present.
+  if (isTRUE(sector_critical_minerals) && identical(supply_chain, "Upstream")) w <- w + 0.10
+  
+  w
+}
+
+
 allocate_policy_to_tech_sc <- function(policy_tbl) {
   policy_shares <- policy_tbl %>%
     dplyr::mutate(
@@ -638,7 +790,7 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
       allowed_pairs_cpc = purrr::map(dplyr::coalesce(.data$allowed_pairs_cpc, list(character(0))),
                                      ~ if (is.null(.x)) character(0) else .x)
     )
-
+  
   mapped_long <- policy_shares %>%
     dplyr::filter(.data$mapped_share > 0) %>%
     dplyr::mutate(
@@ -651,11 +803,29 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
     dplyr::filter(.data$n_combo > 0) %>%
     tidyr::unnest(.data$combos) %>%
     dplyr::mutate(
-      alloc = .data$mapped_share / pmax(1, .data$n_combo),
-      is_crosscutting_policy = FALSE
+      combo_weight = purrr::pmap_dbl(
+        list(.data$tech,
+             .data$supply_chain,
+             dplyr::coalesce(.data$Title, ""),
+             dplyr::coalesce(.data$Source, ""),
+             .data$sector_low_carbon,
+             .data$sector_dual_use,
+             .data$sector_critical_minerals,
+             .data$sector_advanced_tech),
+        ~ validation_weight(..1, ..2, ..3, ..4, ..5, ..6, ..7, ..8)
+      ),
+      is_crosscutting_policy = FALSE,
+      mapping_confidence = CONFIDENCE_UNMAPPED
     ) %>%
+    dplyr::group_by(.data$nipo_row_id) %>%
+    dplyr::mutate(
+      alloc = .data$mapped_share * .data$combo_weight / pmax(1e-9, sum(.data$combo_weight, na.rm = TRUE)),
+      evidence_mean = mean(.data$combo_weight, na.rm = TRUE),
+      mapping_confidence = pmin(CONFIDENCE_CAP, pmax(CONFIDENCE_FLOOR, 0.75 + 0.75 * .data$mapped_share * dplyr::coalesce(.data$evidence_mean, 1)))
+    ) %>%
+    dplyr::ungroup() %>%
     dplyr::select(-.data$n_combo)
-
+  
   unmapped_long <- policy_shares %>%
     dplyr::filter(.data$unmapped_share > 0) %>%
     dplyr::transmute(
@@ -664,9 +834,10 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
       supply_chain = "Unmapped",
       alloc = .data$unmapped_share,
       cpc_validation_failed = FALSE,
-      is_crosscutting_policy = FALSE
+      is_crosscutting_policy = FALSE,
+      mapping_confidence = CONFIDENCE_UNMAPPED
     )
-
+  
   cross_long <- policy_shares %>%
     dplyr::filter(.data$hs6_n == 0) %>%
     dplyr::transmute(
@@ -675,9 +846,10 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
       supply_chain = "Cross-cutting",
       alloc = 1,
       cpc_validation_failed = FALSE,
-      is_crosscutting_policy = TRUE
+      is_crosscutting_policy = TRUE,
+      mapping_confidence = CONFIDENCE_CROSSCUTTING
     )
-
+  
   dplyr::bind_rows(mapped_long, unmapped_long, cross_long)
 }
 
@@ -690,11 +862,11 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
 clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
   check_required_columns(raw_nipo, c("Product: HS 6-digit (2022)", "Implementing Jurisdiction"), "raw_nipo")
   check_required_columns(subcat_raw, c("HS6", "Technology", "Value Chain", "Sub.Sector"), "subcat_raw")
-
+  
   subcat_lu <- subcat_raw %>%
     dplyr::mutate(code = stringr::str_pad(as.character(.data$HS6), width = 6, pad = "0")) %>%
     dplyr::distinct(.data$code, .data$Technology, .data$`Value Chain`, .data$Sub.Sector)
-
+  
   nipo_classified <- raw_nipo %>%
     dplyr::mutate(
       nipo_row_id = dplyr::row_number(),
@@ -721,12 +893,12 @@ clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
     dplyr::mutate(
       country = standardize_country_names(.data$`Implementing Jurisdiction`)
     )
-
+  
   if (!is.null(country_info) && all(c("country", "iso3c") %in% names(country_info))) {
     country_lu <- country_info %>%
       dplyr::mutate(country = standardize_country_names(.data$country)) %>%
       dplyr::select(.data$country, .data$iso3c)
-
+    
     nipo_classified <- nipo_classified %>%
       dplyr::left_join(country_lu, by = "country") %>%
       dplyr::mutate(iso3 = toupper(.data$iso3c))
@@ -734,7 +906,7 @@ clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
     nipo_classified <- nipo_classified %>%
       dplyr::mutate(iso3 = NA_character_)
   }
-
+  
   if ("Sector: CPC 3-digit (v2.1)" %in% names(nipo_classified)) {
     nipo_classified <- nipo_classified %>%
       dplyr::mutate(
@@ -748,7 +920,19 @@ clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
         cpc3_n = 0L
       )
   }
-
+  
+  
+  # ---- Sector validation flags (binary) ----
+  # These are used to strengthen/validate tech x supply_chain mappings where relevant.
+  # If columns are absent in a given extract, default to FALSE.
+  nipo_classified <- nipo_classified %>%
+    dplyr::mutate(
+      sector_low_carbon = if ("Sector: Low Carbon Technology" %in% names(nipo_classified)) as_bool(.data$`Sector: Low Carbon Technology`) else FALSE,
+      sector_dual_use = if ("Sector: Dual-Use Products" %in% names(nipo_classified)) as_bool(.data$`Sector: Dual-Use Products`) else FALSE,
+      sector_critical_minerals = if ("Sector: Critical Minerals" %in% names(nipo_classified)) as_bool(.data$`Sector: Critical Minerals`) else FALSE,
+      sector_advanced_tech = if ("Sector: Advanced Technology Products" %in% names(nipo_classified)) as_bool(.data$`Sector: Advanced Technology Products`) else FALSE
+    )
+  
   nipo_classified
 }
 
@@ -781,7 +965,7 @@ build_policy_base <- function(nipo_country_tbl,
     ),
     "nipo_country_tbl"
   )
-
+  
   base <- nipo_country_tbl %>%
     dplyr::mutate(
       policy_id = .data$nipo_row_id,
@@ -789,6 +973,7 @@ build_policy_base <- function(nipo_country_tbl,
       entry_id = .data$`Entry ID`,
       intervention_type = stringr::str_squish(dplyr::coalesce(.data$`GTA Intervention Type`, "")),
       status_raw = stringr::str_squish(dplyr::coalesce(.data$`Initial Assessment (Change Relative to 1 Jan 2009)`, "")),
+      flow_raw   = stringr::str_squish(dplyr::coalesce(.data$`Affected Trade Flow`, "")),
       juris_raw  = stringr::str_squish(dplyr::coalesce(.data$`Level of Government Implementation`, "")),
       announce_date = as_date_safe(.data$`Announcement Date`),
       impl_date     = as_date_safe(.data$`Implementation Date`),
@@ -811,18 +996,24 @@ build_policy_base <- function(nipo_country_tbl,
       fam_procurement_policy  = as_bool(.data$`Is Procurement Policy`),
       fam_localisation_policy = as_bool(.data$`Is Localisation Policy`),
       fam_other_policy        = as_bool(.data$`Is Other Policy`),
+      sector_low_carbon        = as_bool(.data$sector_low_carbon),
+      sector_dual_use           = as_bool(.data$sector_dual_use),
+      sector_critical_minerals  = as_bool(.data$sector_critical_minerals),
+      sector_advanced_tech      = as_bool(.data$sector_advanced_tech),
+      flow_norm = dplyr::case_when(
+        stringr::str_detect(stringr::str_to_lower(.data$flow_raw), "inward")  ~ "inward",
+        stringr::str_detect(stringr::str_to_lower(.data$flow_raw), "outward") ~ "outward",
+        TRUE ~ "unknown"
+      ),
       status_norm = dplyr::case_when(
-        .data$status_raw %in% STATUS_WEIGHTS$status ~ .data$status_raw,
-        stringr::str_detect(stringr::str_to_lower(.data$status_raw), "discrimin") ~ "Discriminatory",
-        stringr::str_detect(stringr::str_to_lower(.data$status_raw), "liberal") ~ "Liberalising",
+        # NIPO/GTA sometimes uses Red/Amber/Green or Harmful/Beneficial language.
+        .data$status_raw %in% STATUS_LEVELS ~ .data$status_raw,
+        stringr::str_detect(stringr::str_to_lower(.data$status_raw), "red|harmful|restrict|discrimin|protection") ~ "Distortive",
+        stringr::str_detect(stringr::str_to_lower(.data$status_raw), "green|beneficial|liberal|facilitat") ~ "Liberalising",
+        stringr::str_detect(stringr::str_to_lower(.data$status_raw), "amber|likely") ~ "Unclear",
         stringr::str_detect(stringr::str_to_lower(.data$status_raw), "neutral") ~ "Neutral",
         stringr::str_detect(stringr::str_to_lower(.data$status_raw), "unclear|unknown") ~ "Unclear",
         TRUE ~ "Unknown"
-      ),
-      status_sign = dplyr::case_when(
-        .data$status_norm == "Discriminatory" ~  1L,
-        .data$status_norm == "Liberalising"  ~ -1L,
-        TRUE ~ 0L
       ),
       jurisdiction_norm = dplyr::case_when(
         .data$juris_raw %in% JURIS_WEIGHTS$jurisdiction ~ .data$juris_raw,
@@ -841,21 +1032,41 @@ build_policy_base <- function(nipo_country_tbl,
         TRUE ~ 0.75
       )
     ) %>%
-    dplyr::left_join(POLICY_TYPE_WEIGHTS, by = c("intervention_type" = "intervention_type")) %>%
-    dplyr::left_join(STATUS_WEIGHTS, by = c("status_norm" = "status")) %>%
-    dplyr::left_join(JURIS_WEIGHTS, by = c("jurisdiction_norm" = "jurisdiction")) %>%
+    dplyr::left_join(POLICY_TYPE_WEIGHTS, by = c("intervention_type" = "intervention_type")) %>%    dplyr::left_join(JURIS_WEIGHTS, by = c("jurisdiction_norm" = "jurisdiction")) %>%
     dplyr::mutate(
       w_type   = dplyr::coalesce(.data$w_type, 0.40),
-      w_status = dplyr::coalesce(.data$w_status, 0.50),
-      w_juris  = dplyr::coalesce(.data$w_juris, 0.80)
+      w_status = dplyr::case_when(
+        .data$status_norm == "Distortive" ~ 1.00,
+        .data$status_norm == "Liberalising" & .data$flow_norm == "inward"  ~ LIBERALISING_INWARD_WEIGHT,
+        .data$status_norm == "Liberalising" & .data$flow_norm == "outward" ~ LIBERALISING_OUTWARD_WEIGHT,
+        .data$status_norm == "Liberalising" ~ LIBERALISING_UNKNOWN_WEIGHT,
+        .data$status_norm == "Neutral" ~ 0.50,
+        .data$status_norm == "Unclear" ~ 0.30,
+        .data$status_norm == "Unknown" ~ 0.30,
+        TRUE ~ 0.30
+      ),
+      w_juris  = dplyr::coalesce(.data$w_juris, 0.80),
+      w_family = pmax(
+        dplyr::if_else(.data$fam_subsidy,             1.00, 0),
+        dplyr::if_else(.data$fam_procurement_policy,  0.90, 0),
+        dplyr::if_else(.data$fam_localisation_policy, 0.90, 0),
+        dplyr::if_else(.data$fam_fdi_policy,          0.85, 0),
+        dplyr::if_else(.data$fam_export_incentive,    0.80, 0),
+        dplyr::if_else(.data$fam_import_policy,       0.70, 0),
+        dplyr::if_else(.data$fam_trade_defence,       0.65, 0),
+        dplyr::if_else(.data$fam_export_policy,       0.60, 0),
+        dplyr::if_else(.data$fam_other_policy,        0.30, 0),
+        0
+      ),
+      w_tool = dplyr::if_else(.data$w_family > 0, .data$w_family, .data$w_type)
     )
-
+  
   p95_hs6     <- calc_p95(base$hs6_n, fallback = 1)
   p95_cpc     <- calc_p95(base$cpc_n, fallback = 1)
   p95_geo     <- calc_p95(base$partner_n, fallback = 1)
   p95_trade   <- calc_p95(base$trade_covered_usd_m, fallback = 1)
   p95_subsidy <- calc_p95(base$subsidy_usd_m, fallback = 1)
-
+  
   base <- base %>%
     dplyr::mutate(
       planned_end = dplyr::case_when(
@@ -879,10 +1090,10 @@ build_policy_base <- function(nipo_country_tbl,
       m_trade   = cap_mult(log_mult(.data$trade_covered_usd_m, p95_trade), cap = scale_cap),
       m_subsidy = cap_mult(log_mult(.data$subsidy_usd_m, p95_subsidy), cap = scale_cap),
       m_scale   = pmax(.data$m_trade, .data$m_subsidy),
-      bite_strength_base  = .data$w_type * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration,
+      bite_strength_base  = .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration,
       scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * .data$m_scale
     )
-
+  
   act_pkg <- base %>%
     dplyr::group_by(.data$iso3, .data$country, .data$state_act_id) %>%
     dplyr::summarise(
@@ -893,7 +1104,7 @@ build_policy_base <- function(nipo_country_tbl,
       n_families = rowSums(dplyr::across(dplyr::starts_with("fam_"), ~ as.integer(.x)), na.rm = TRUE),
       m_package = pmin(package_cap, 1 + package_step * pmax(0, .data$n_families - 1))
     )
-
+  
   base %>%
     dplyr::left_join(act_pkg %>% dplyr::select(.data$iso3, .data$state_act_id, .data$m_package),
                      by = c("iso3", "state_act_id")) %>%
@@ -918,7 +1129,7 @@ add_asof_flags <- function(policy_base_tbl,
   }
   as_of_date <- as_date_safe(as_of_date)
   flow_start <- as_of_date - as.difftime(flow_window_days, units = "days")
-
+  
   policy_base_tbl %>%
     dplyr::mutate(
       as_of_date = as_of_date,
@@ -935,66 +1146,60 @@ add_asof_flags <- function(policy_base_tbl,
 # ==============================================================================
 
 build_by_policy <- function(policy_asof_tbl, cpc_names) {
+  
+  # Summarise tech × supply_chain mapping (and confidence) at the policy level
+  alloc_long <- allocate_policy_to_tech_sc(policy_asof_tbl) %>%
+    dplyr::mutate(
+      mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1)
+    )
+  
+  map_sum <- alloc_long %>%
+    dplyr::group_by(.data$policy_id) %>%
+    dplyr::summarise(
+      tech_csv = paste(sort(unique(.data$tech[.data$tech != "Unmapped"])), collapse = "|"),
+      supply_chain_csv = paste(sort(unique(.data$supply_chain[.data$supply_chain != "Unmapped"])), collapse = "|"),
+      tech_sc_csv = paste(sort(unique(paste(.data$tech, .data$supply_chain, sep = "::"))), collapse = "|"),
+      mapping_confidence_mean = mean(.data$mapping_confidence, na.rm = TRUE),
+      mapping_confidence_max = max(.data$mapping_confidence, na.rm = TRUE),
+      mapped_share_sum = sum(dplyr::coalesce(.data$mapped_share, 0), na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  # CPC names (policy-level)
+  cpc_name_lu <- cpc_names %>%
+    dplyr::rename(cpc3 = 1, cpc_name = 2) %>%
+    dplyr::mutate(cpc3 = as.character(.data$cpc3))
+  
   by_policy <- policy_asof_tbl %>%
+    dplyr::left_join(map_sum, by = "policy_id") %>%
+    dplyr::mutate(
+      hs6_codes_csv = vapply(.data$hs6_codes, function(v) paste(v, collapse = ","), character(1)),
+      cpc3_codes_csv = vapply(.data$cpc3_codes, function(v) paste(v, collapse = ","), character(1)),
+      cpc_name_csv = vapply(.data$cpc3_codes, function(v) {
+        v <- as.character(v)
+        if (length(v) == 0) return("")
+        nm <- cpc_name_lu$cpc_name[match(v, cpc_name_lu$cpc3)]
+        nm <- nm[!is.na(nm)]
+        paste(unique(nm), collapse = "|")
+      }, character(1))
+    ) %>%
     dplyr::group_by(.data$iso3, .data$country) %>%
     dplyr::mutate(
-      country_bite_stock = sum(.data$bite_strength_pkg[.data$is_active_asof], na.rm = TRUE),
-      country_scale_stock = sum(.data$scale_strength_pkg[.data$is_active_asof], na.rm = TRUE),
-      bite_share_of_country_stock = dplyr::if_else(
-        .data$is_active_asof & .data$country_bite_stock > 0,
-        .data$bite_strength_pkg / .data$country_bite_stock,
-        NA_real_
+      country_domestic_stock = sum(.data$scale_strength_pkg[.data$is_active_asof], na.rm = TRUE),
+      domestic_share_of_country_stock = dplyr::if_else(
+        .data$is_active_asof & .data$country_domestic_stock > 0,
+        .data$scale_strength_pkg / .data$country_domestic_stock,
+        0
       ),
-      scale_share_of_country_stock = dplyr::if_else(
-        .data$is_active_asof & .data$country_scale_stock > 0,
-        .data$scale_strength_pkg / .data$country_scale_stock,
-        NA_real_
-      )
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(.data$iso3) %>%
-    dplyr::mutate(
-      bite_policy_index_within_country = dplyr::if_else(
-        .data$is_active_asof,
-        median_scurve(log1p(dplyr::if_else(.data$is_active_asof, .data$bite_strength_pkg, NA_real_))),
-        NA_real_
-      ),
-      scale_policy_index_within_country = dplyr::if_else(
-        .data$is_active_asof,
-        median_scurve(log1p(dplyr::if_else(.data$is_active_asof, .data$scale_strength_pkg, NA_real_))),
-        NA_real_
-      )
+      domestic_intervention_index = median_scurve(log1p(.data$scale_strength_pkg))
     ) %>%
     dplyr::ungroup()
-
-  by_policy <- attach_policy_cpc_names(by_policy, cpc_names)
-
-  by_policy %>%
-    dplyr::mutate(
-      bite_stock_sum = .data$bite_strength_pkg,
-      scale_stock_sum = .data$scale_strength_pkg,
-      policy_index_bite = .data$bite_policy_index_within_country,
-      policy_index_scale = .data$scale_policy_index_within_country
-    ) %>%
-    dplyr::select(
-      iso3, country,
-      policy_id, state_act_id, entry_id,
-      Title, URL,
-      intervention_type, status_norm, jurisdiction_norm,
-      announce_date, impl_date, removal_date,
-      is_implemented_asof, is_active_asof,
-      bite_strength_pkg, scale_strength_pkg,
-      bite_stock_sum, scale_stock_sum,
-      bite_share_of_country_stock, scale_share_of_country_stock,
-      bite_policy_index_within_country, scale_policy_index_within_country,
-      policy_index_bite, policy_index_scale,
-      hs6_cpc_match_rate, hs6_cpc_unmapped_rate,
-      cpc3_codes_csv, cpc_name_csv
-    )
+  
+  by_policy
 }
 
 # ==============================================================================
-# 5) Output 2: HS6-level stock table (country level)
+# 5) Output 2: HS6 stock table
 # ==============================================================================
 
 build_by_hs6 <- function(policy_asof_tbl,
@@ -1017,42 +1222,37 @@ build_by_hs6 <- function(policy_asof_tbl,
         split_across_hs6 ~ 1 / pmax(1, .data$hs6_n),
         TRUE ~ 1
       ),
-      bite_hs6 = .data$bite_strength_pkg * .data$alloc_hs6,
-      scale_hs6 = .data$scale_strength_pkg * .data$alloc_hs6
+      domestic_hs6 = .data$scale_strength_pkg * .data$alloc_hs6
     )
-
+  
   agg <- hs6_long %>%
     dplyr::group_by(.data$iso3, .data$country, .data$HS6) %>%
     dplyr::summarise(
       as_of_date = dplyr::first(.data$as_of_date),
       n_active_policies = dplyr::n_distinct(.data$policy_id[.data$is_active_asof]),
-      bite_stock_sum = sum(.data$bite_hs6[.data$is_active_asof], na.rm = TRUE),
-      scale_stock_sum = sum(.data$scale_hs6[.data$is_active_asof], na.rm = TRUE),
+      domestic_stock_sum = sum(.data$domestic_hs6[.data$is_active_asof], na.rm = TRUE),
       .groups = "drop"
     )
-
+  
   idx <- agg %>%
     dplyr::group_by(.data$iso3) %>%
     dplyr::mutate(
-      hs6_bite_index = median_scurve(log1p(.data$bite_stock_sum)),
-      hs6_scale_index = median_scurve(log1p(.data$scale_stock_sum)),
-      policy_index_bite = .data$hs6_bite_index,
-      policy_index_scale = .data$hs6_scale_index
+      domestic_intervention_index = median_scurve(log1p(.data$domestic_stock_sum))
     ) %>%
     dplyr::ungroup()
-
+  
   if (nrow(hs6_cpc_lu) > 0) {
     idx <- idx %>% dplyr::left_join(hs6_cpc_lu, by = "HS6")
   } else {
     idx <- idx %>% dplyr::mutate(cpc3_codes_csv = NA_character_, cpc_name_csv = NA_character_)
   }
-
+  
   if (!is.null(hs6_name_lu) && nrow(hs6_name_lu) > 0) {
     idx <- idx %>% dplyr::left_join(hs6_name_lu, by = "HS6")
   } else {
     idx <- idx %>% dplyr::mutate(hs6_name = NA_character_)
   }
-
+  
   idx
 }
 
@@ -1065,9 +1265,17 @@ build_by_tech_sc <- function(policy_asof_tbl,
                              tech_universe,
                              supply_chain_universe,
                              expand_cross_cutting = TRUE,
-                             split_cross_cutting_strength = TRUE) {
+                             split_cross_cutting_strength = TRUE,
+                             balance_alpha = 0.5) {
+  
+  # balance_alpha in [0,1]:
+  #   1.0 -> pure SUM (extensive margin dominates)
+  #   0.0 -> pure MEAN (intensive margin dominates)
+  #   default 0.5 -> geometric blend between sum and mean
+  balance_alpha <- max(0, min(1, balance_alpha))
+  
   tech_sc_long <- allocate_policy_to_tech_sc(policy_asof_tbl)
-
+  
   if (isTRUE(expand_cross_cutting)) {
     tech_sc_long <- expand_cross_cutting_rows(
       tech_sc_long,
@@ -1077,40 +1285,57 @@ build_by_tech_sc <- function(policy_asof_tbl,
     ) %>%
       dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
   }
-
+  
   tech_sc_long <- tech_sc_long %>%
     dplyr::filter(.data$tech != "Unmapped") %>%
     dplyr::mutate(
-      bite_ts = .data$bite_strength_pkg * .data$alloc,
-      scale_ts = .data$scale_strength_pkg * .data$alloc
+      mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1),
+      domestic_ts = .data$scale_strength_pkg * .data$alloc * .data$mapping_confidence
     )
-
-  agg <- tech_sc_long %>%
+  
+  # Collapse to POLICY-level within each Country × Tech × SupplyChain so we can
+  # blend "sum" and "average" policy strength without double-counting a policy.
+  policy_level <- tech_sc_long %>%
+    dplyr::filter(.data$is_active_asof) %>%
+    dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain, .data$policy_id) %>%
+    dplyr::summarise(
+      as_of_date = dplyr::first(.data$as_of_date),
+      policy_strength = sum(.data$domestic_ts, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  agg <- policy_level %>%
     dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain) %>%
     dplyr::summarise(
       as_of_date = dplyr::first(.data$as_of_date),
-      n_active_policies = dplyr::n_distinct(.data$policy_id[.data$is_active_asof]),
-      bite_stock_sum = sum(.data$bite_ts[.data$is_active_asof], na.rm = TRUE),
-      scale_stock_sum = sum(.data$scale_ts[.data$is_active_asof], na.rm = TRUE),
+      n_active_policies = dplyr::n_distinct(.data$policy_id),
+      domestic_strength_sum = sum(.data$policy_strength, na.rm = TRUE),
+      domestic_strength_avg = dplyr::if_else(.data$n_active_policies > 0,
+                                             mean(.data$policy_strength, na.rm = TRUE),
+                                             0),
+      # blended measure:
+      # geometric blend: exp( alpha*log(sum+1) + (1-alpha)*log(avg+1) ) - 1
+      domestic_strength_balanced = exp(
+        balance_alpha * log1p(.data$domestic_strength_sum) +
+          (1 - balance_alpha) * log1p(.data$domestic_strength_avg)
+      ) - 1,
       .groups = "drop"
-    )
-
+    ) %>%
+    dplyr::rename(domestic_stock_sum = .data$domestic_strength_balanced)
+  
   idx <- agg %>%
     dplyr::group_by(.data$iso3) %>%
     dplyr::mutate(
-      tech_sc_bite_index = median_scurve(log1p(.data$bite_stock_sum)),
-      tech_sc_scale_index = median_scurve(log1p(.data$scale_stock_sum)),
-      policy_index_bite = .data$tech_sc_bite_index,
-      policy_index_scale = .data$tech_sc_scale_index
+      domestic_intervention_index = median_scurve(log1p(.data$domestic_stock_sum))
     ) %>%
     dplyr::ungroup()
-
+  
   if (nrow(tech_sc_cpc_lu) > 0) {
     idx <- idx %>% dplyr::left_join(tech_sc_cpc_lu, by = c("tech", "supply_chain"))
   } else {
     idx <- idx %>% dplyr::mutate(cpc3_codes_csv = NA_character_, cpc_name_csv = NA_character_)
   }
-
+  
   list(
     data = idx,
     policy_alloc = tech_sc_long
@@ -1118,25 +1343,40 @@ build_by_tech_sc <- function(policy_asof_tbl,
 }
 
 # ==============================================================================
-# 7) Output 4: tech annualized (time-weighted average stock)
+# 7) Output 4: tech x supply_chain by announcement year (rolling 3-year window)
 # ==============================================================================
 
-build_by_tech_year <- function(policy_base_tbl,
-                               tech_cpc_lu,
-                               tech_universe,
-                               supply_chain_universe,
-                               year_min = NULL,
-                               year_max = NULL,
-                               expand_cross_cutting = TRUE,
-                               split_cross_cutting_strength = TRUE) {
+# ==============================================================================
+
+
+# ==============================================================================
+# 7) Output 4: tech yearly priorities (rolling active window)
+# ==============================================================================
+
+build_by_tech_sc_year <- function(policy_base_tbl,
+                                  tech_sc_cpc_lu,
+                                  tech_universe,
+                                  supply_chain_universe,
+                                  year_min = NULL,
+                                  year_max = NULL,
+                                  rolling_window_years = 3,
+                                  weight_by_active_fraction = TRUE,
+                                  expand_cross_cutting = TRUE,
+                                  split_cross_cutting_strength = TRUE,
+                                  balance_alpha = 0.5) {
+  
+  balance_alpha <- max(0, min(1, balance_alpha))
+  if (!is.finite(rolling_window_years) || rolling_window_years < 1) rolling_window_years <- 1
+  rolling_window_years <- as.integer(rolling_window_years)
+  
   tmp <- policy_base_tbl %>%
     dplyr::mutate(
       is_active_asof = TRUE,
       as_of_date = as.Date(NA)
     )
-
+  
   tech_sc_long <- allocate_policy_to_tech_sc(tmp)
-
+  
   if (isTRUE(expand_cross_cutting)) {
     tech_sc_long <- expand_cross_cutting_rows(
       tech_sc_long,
@@ -1146,105 +1386,114 @@ build_by_tech_year <- function(policy_base_tbl,
     ) %>%
       dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
   }
-
+  
   tech_sc_long <- tech_sc_long %>%
     dplyr::filter(.data$tech != "Unmapped") %>%
     dplyr::mutate(
-      bite_ts  = .data$bite_strength_pkg  * .data$alloc,
-      scale_ts = .data$scale_strength_pkg * .data$alloc
-    )
-
-  impl_years <- suppressWarnings(as.integer(format(tech_sc_long$impl_date, "%Y")))
-  impl_years <- impl_years[is.finite(impl_years)]
-  if (is.null(year_min)) year_min <- if (length(impl_years) > 0) min(impl_years) else as.integer(format(Sys.Date(), "%Y"))
-
-  rem_years <- suppressWarnings(as.integer(format(tech_sc_long$removal_date, "%Y")))
-  rem_years <- rem_years[is.finite(rem_years)]
+      mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1),
+      domestic_ts = .data$scale_strength_pkg * .data$alloc * .data$mapping_confidence,
+      announce_year_raw = suppressWarnings(as.integer(format(.data$announce_date, "%Y"))),
+      impl_year = suppressWarnings(as.integer(format(.data$impl_date, "%Y"))),
+      anchor_year = dplyr::if_else(is.finite(.data$announce_year_raw), .data$announce_year_raw, .data$impl_year)
+    ) %>%
+    dplyr::filter(!is.na(.data$impl_date), is.finite(.data$anchor_year))
+  
+  anchor_years <- tech_sc_long$anchor_year
+  if (is.null(year_min)) year_min <- if (length(anchor_years) > 0) min(anchor_years) else as.integer(format(Sys.Date(), "%Y"))
+  
   current_year <- as.integer(format(Sys.Date(), "%Y"))
-  if (is.null(year_max)) {
-    year_max <- max(c(impl_years, rem_years, current_year), na.rm = TRUE)
-  }
+  if (is.null(year_max)) year_max <- max(c(anchor_years, current_year), na.rm = TRUE)
   year_max <- min(year_max, current_year)
-
-  annual_long <- tech_sc_long %>%
-    dplyr::filter(!is.na(.data$impl_date)) %>%
+  
+  tech_sc_long <- tech_sc_long %>%
     dplyr::mutate(
-      start_year = suppressWarnings(as.integer(format(.data$impl_date, "%Y"))),
-      end_year = dplyr::if_else(
-        !is.na(.data$removal_date),
-        suppressWarnings(as.integer(format(.data$removal_date, "%Y"))),
-        year_max
+      removal_year_last_active = dplyr::if_else(
+        is.na(.data$removal_date),
+        year_max,
+        suppressWarnings(as.integer(format(.data$removal_date - 1, "%Y")))
       ),
-      start_year = pmax(.data$start_year, year_min),
-      end_year   = pmin(.data$end_year, year_max),
-      year_list = purrr::map2(.data$start_year, .data$end_year, ~ {
-        if (!is.finite(.x) || !is.finite(.y) || .y < .x) integer(0) else seq(.x, .y)
+      end_year_window = .data$anchor_year + rolling_window_years - 1L,
+      start_year = pmax(.data$anchor_year, year_min),
+      end_year = pmin(year_max, .data$removal_year_last_active, .data$end_year_window),
+      year_seq = purrr::map2(.data$start_year, .data$end_year, ~{
+        if (is.na(.x) || is.na(.y) || .y < .x) integer(0) else seq.int(.x, .y)
       })
     ) %>%
-    tidyr::unnest(.data$year_list) %>%
-    dplyr::rename(Year = .data$year_list) %>%
+    tidyr::unnest(.data$year_seq) %>%
+    dplyr::rename(announce_year = .data$year_seq)
+  
+  if (nrow(tech_sc_long) == 0) {
+    out <- tibble::tibble(
+      iso3 = character(0), country = character(0),
+      tech = character(0), supply_chain = character(0), announce_year = integer(0),
+      domestic_strength_sum = numeric(0), domestic_strength_avg = numeric(0),
+      domestic_strength_balanced = numeric(0), n_policies_window = integer(0),
+      domestic_intervention_index_xs = numeric(0),
+      cpc3_codes_csv = character(0), cpc_name_csv = character(0)
+    )
+    return(out)
+  }
+  
+  annual <- tech_sc_long %>%
     dplyr::mutate(
-      year_start = as.Date(paste0(.data$Year, "-01-01")),
-      year_end_excl = as.Date(paste0(.data$Year + 1L, "-01-01")),
-      days_in_year = as.numeric(.data$year_end_excl - .data$year_start),
+      year_start = as.Date(paste0(.data$announce_year, "-01-01")),
+      year_end_excl = as.Date(paste0(.data$announce_year + 1L, "-01-01")),
       interval_start = pmax(.data$impl_date, .data$year_start),
       interval_end = dplyr::if_else(
         is.na(.data$removal_date),
         .data$year_end_excl,
         pmin(.data$removal_date, .data$year_end_excl)
       ),
+      days_in_year = as.numeric(.data$year_end_excl - .data$year_start),
       overlap_days = pmax(0, as.numeric(.data$interval_end - .data$interval_start)),
-      year_frac = dplyr::if_else(.data$days_in_year > 0, .data$overlap_days / .data$days_in_year, 0),
-      bite_avg  = .data$bite_ts  * .data$year_frac,
-      scale_avg = .data$scale_ts * .data$year_frac,
-      bite_avg_targeted  = dplyr::if_else(!.data$is_crosscutting_policy, .data$bite_avg,  0),
-      scale_avg_targeted = dplyr::if_else(!.data$is_crosscutting_policy, .data$scale_avg, 0)
-    )
-
-  agg <- annual_long %>%
-    dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$Year) %>%
+      year_weight = {
+        if (isTRUE(weight_by_active_fraction)) {
+          dplyr::if_else(.data$days_in_year > 0, .data$overlap_days / .data$days_in_year, 0)
+        } else {
+          dplyr::if_else(.data$overlap_days > 0, 1, 0)
+        }
+      },
+      domestic_flow = .data$domestic_ts * .data$year_weight
+    ) %>%
+    dplyr::filter(.data$year_weight > 0)
+  
+  # Collapse to POLICY-level within each Country × Tech × SupplyChain × Year
+  policy_level <- annual %>%
+    dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain, .data$announce_year, .data$policy_id) %>%
     dplyr::summarise(
-      bite_avg_stock_sum  = sum(.data$bite_avg,  na.rm = TRUE),
-      scale_avg_stock_sum = sum(.data$scale_avg, na.rm = TRUE),
-      bite_avg_targeted_sum  = sum(.data$bite_avg_targeted,  na.rm = TRUE),
-      scale_avg_targeted_sum = sum(.data$scale_avg_targeted, na.rm = TRUE),
-      n_policies_touching_year = dplyr::n_distinct(.data$policy_id),
+      policy_strength = sum(.data$domestic_flow, na.rm = TRUE),
       .groups = "drop"
     )
-
-  agg <- agg %>%
-    dplyr::group_by(.data$iso3, .data$country, .data$Year) %>%
+  
+  agg <- policy_level %>%
+    dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain, .data$announce_year) %>%
+    dplyr::summarise(
+      n_policies_window = dplyr::n_distinct(.data$policy_id),
+      domestic_strength_sum = sum(.data$policy_strength, na.rm = TRUE),
+      domestic_strength_avg = dplyr::if_else(.data$n_policies_window > 0,
+                                             mean(.data$policy_strength, na.rm = TRUE),
+                                             0),
+      domestic_strength_balanced = exp(
+        balance_alpha * log1p(.data$domestic_strength_sum) +
+          (1 - balance_alpha) * log1p(.data$domestic_strength_avg)
+      ) - 1,
+      .groups = "drop"
+    )
+  
+  out <- agg %>%
+    dplyr::group_by(.data$iso3, .data$country, .data$announce_year) %>%
     dplyr::mutate(
-      scale_total_year = sum(.data$scale_avg_stock_sum, na.rm = TRUE),
-      scale_targeted_total_year = sum(.data$scale_avg_targeted_sum, na.rm = TRUE),
-      scale_share_all = dplyr::if_else(.data$scale_total_year > 0,
-                                       .data$scale_avg_stock_sum / .data$scale_total_year,
-                                       NA_real_),
-      scale_share_targeted = dplyr::if_else(.data$scale_targeted_total_year > 0,
-                                            .data$scale_avg_targeted_sum / .data$scale_targeted_total_year,
-                                            NA_real_)
+      domestic_intervention_index_xs = median_scurve(log1p(.data$domestic_strength_balanced))
     ) %>%
     dplyr::ungroup()
-
-  idx <- agg %>%
-    dplyr::group_by(.data$iso3, .data$Year) %>%
-    dplyr::mutate(
-      tech_year_bite_index_xs  = median_scurve(log1p(.data$bite_avg_stock_sum)),
-      tech_year_scale_index_xs = median_scurve(log1p(.data$scale_avg_stock_sum)),
-      policy_index_bite = .data$tech_year_bite_index_xs,
-      policy_index_scale = .data$tech_year_scale_index_xs,
-      policy_index_scale_share_targeted = .data$scale_share_targeted,
-      policy_index_scale_xs = .data$tech_year_scale_index_xs
-    ) %>%
-    dplyr::ungroup()
-
-  if (nrow(tech_cpc_lu) > 0) {
-    idx <- idx %>% dplyr::left_join(tech_cpc_lu, by = "tech")
+  
+  if (nrow(tech_sc_cpc_lu) > 0) {
+    out <- out %>% dplyr::left_join(tech_sc_cpc_lu, by = c("tech", "supply_chain"))
   } else {
-    idx <- idx %>% dplyr::mutate(cpc3_codes_csv = NA_character_, cpc_name_csv = NA_character_)
+    out <- out %>% dplyr::mutate(cpc3_codes_csv = NA_character_, cpc_name_csv = NA_character_)
   }
-
-  idx
+  
+  out
 }
 
 # ==============================================================================
@@ -1261,7 +1510,7 @@ build_by_cpc <- function(policy_asof_tbl,
         cpc3_n = 0L
       )
   }
-
+  
   cpc_long <- policy_asof_tbl %>%
     dplyr::mutate(
       cpc_list = purrr::map(.data$cpc3_codes, ~{
@@ -1278,37 +1527,32 @@ build_by_cpc <- function(policy_asof_tbl,
         split_across_cpc ~ 1 / pmax(1, dplyr::coalesce(.data$cpc3_n, 1L)),
         TRUE ~ 1
       ),
-      bite_cpc  = .data$bite_strength_pkg  * .data$alloc_cpc,
-      scale_cpc = .data$scale_strength_pkg * .data$alloc_cpc
+      domestic_cpc = .data$scale_strength_pkg * .data$alloc_cpc
     )
-
+  
   if (nrow(cpc_long) == 0) {
     return(tibble::tibble())
   }
-
+  
   agg <- cpc_long %>%
     dplyr::group_by(.data$iso3, .data$country, .data$cpc3) %>%
     dplyr::summarise(
       as_of_date = dplyr::first(.data$as_of_date),
       n_active_policies = dplyr::n_distinct(.data$policy_id[.data$is_active_asof]),
-      bite_stock_sum  = sum(.data$bite_cpc[.data$is_active_asof],  na.rm = TRUE),
-      scale_stock_sum = sum(.data$scale_cpc[.data$is_active_asof], na.rm = TRUE),
+      domestic_stock_sum = sum(.data$domestic_cpc[.data$is_active_asof], na.rm = TRUE),
       .groups = "drop"
     )
-
+  
   if (!is.null(cpc_name_lu) && nrow(cpc_name_lu) > 0) {
     agg <- agg %>% dplyr::left_join(cpc_name_lu, by = "cpc3")
   } else {
     agg <- agg %>% dplyr::mutate(cpc.name = NA_character_)
   }
-
+  
   agg %>%
     dplyr::group_by(.data$iso3) %>%
     dplyr::mutate(
-      cpc_bite_index  = median_scurve(log1p(.data$bite_stock_sum)),
-      cpc_scale_index = median_scurve(log1p(.data$scale_stock_sum)),
-      policy_index_bite = .data$cpc_bite_index,
-      policy_index_scale = .data$cpc_scale_index,
+      domestic_intervention_index = median_scurve(log1p(.data$domestic_stock_sum)),
       cpc3_codes_csv = .data$cpc3,
       cpc_name_csv = .data$cpc.name
     ) %>%
@@ -1337,19 +1581,22 @@ nipo_policy_outputs <- function(raw_nipo,
                                 split_cross_cutting_strength = TRUE,
                                 split_across_hs6 = TRUE,
                                 year_min = NULL,
-                                year_max = NULL) {
+                                year_max = NULL,
+                                rolling_window_years = 3,
+                                balance_alpha = 0.5,
+                                weight_by_active_fraction = TRUE) {
   nipo_country <- clean_nipo_raw(
     raw_nipo = raw_nipo,
     subcat_raw = subcat_raw,
     country_info = country_info
   )
-
+  
   cpc_hs <- get_cpc_hs_map()
   cpc_names <- get_cpc3_names()
   cpc_pairs <- build_cpc3_to_tech_sc_pairs(subcat_raw = subcat_raw, cpc_hs = cpc_hs)
-
+  
   nipo_country <- attach_cpc_validation(nipo_country, cpc_hs = cpc_hs, cpc_pairs = cpc_pairs)
-
+  
   if (is.null(tech_universe)) {
     tech_universe <- subcat_raw %>%
       dplyr::pull(.data$Technology) %>%
@@ -1360,12 +1607,12 @@ nipo_policy_outputs <- function(raw_nipo,
       dplyr::pull(.data$`Value Chain`) %>%
       normalize_chr_vec()
   }
-
+  
   hs6_cpc_lu <- build_hs6_cpc_lookup(cpc_hs = cpc_hs, cpc_names = cpc_names)
   hs6_name_lu <- build_hs6_name_lookup(subcat_raw = subcat_raw)
   tech_sc_cpc_lu <- build_tech_sc_cpc_lookup(subcat_raw = subcat_raw, cpc_hs = cpc_hs, cpc_names = cpc_names)
   tech_cpc_lu <- build_tech_cpc_lookup(tech_sc_cpc_lu)
-
+  
   policy_base <- build_policy_base(
     nipo_country_tbl = nipo_country,
     duration_norm_months = duration_norm_months,
@@ -1376,22 +1623,22 @@ nipo_policy_outputs <- function(raw_nipo,
     package_cap = package_cap,
     package_step = package_step
   )
-
+  
   policy_asof <- add_asof_flags(
     policy_base_tbl = policy_base,
     as_of_date = as_of_date,
     flow_window_days = flow_window_days
   )
-
+  
   by_policy <- build_by_policy(policy_asof, cpc_names = cpc_names)
-
+  
   by_hs6 <- build_by_hs6(
     policy_asof,
     hs6_cpc_lu = hs6_cpc_lu,
     hs6_name_lu = hs6_name_lu,
     split_across_hs6 = split_across_hs6
   )
-
+  
   tech_sc_out <- build_by_tech_sc(
     policy_asof_tbl = policy_asof,
     tech_sc_cpc_lu = tech_sc_cpc_lu,
@@ -1399,32 +1646,37 @@ nipo_policy_outputs <- function(raw_nipo,
     supply_chain_universe = supply_chain_universe,
     expand_cross_cutting = expand_cross_cutting,
     split_cross_cutting_strength = split_cross_cutting_strength
+    ,
+    balance_alpha = balance_alpha
   )
-
+  
   by_tech_sc <- tech_sc_out$data
-
-  by_tech_year <- build_by_tech_year(
+  
+  by_tech_sc_year <- build_by_tech_sc_year(
     policy_base_tbl = policy_base,
-    tech_cpc_lu = tech_cpc_lu,
+    tech_sc_cpc_lu = tech_sc_cpc_lu,
     tech_universe = tech_universe,
     supply_chain_universe = supply_chain_universe,
     year_min = year_min,
     year_max = year_max,
+    rolling_window_years = rolling_window_years,
+    weight_by_active_fraction = weight_by_active_fraction,
     expand_cross_cutting = expand_cross_cutting,
-    split_cross_cutting_strength = split_cross_cutting_strength
+    split_cross_cutting_strength = split_cross_cutting_strength,
+    balance_alpha = balance_alpha
   )
-
+  
   by_cpc <- build_by_cpc(
     policy_asof_tbl = policy_asof,
     cpc_name_lu = cpc_names,
     split_across_cpc = TRUE
   )
-
+  
   list(
     by_policy = by_policy,
     by_hs6 = by_hs6,
     by_tech_sc = by_tech_sc,
-    by_tech_year = by_tech_year,
+    by_tech_sc_year = by_tech_sc_year,
     by_cpc = by_cpc,
     internals = list(
       nipo_country = nipo_country,
@@ -1443,6 +1695,12 @@ nipo_policy_outputs <- function(raw_nipo,
 }
 
 # ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Backwards-compatible alias (clearer name)
+# ------------------------------------------------------------------------------
+nipo_domestic_intervention_outputs <- nipo_policy_outputs
+
 # Self-test (disabled)
 # ==============================================================================
 
@@ -1452,17 +1710,17 @@ if (FALSE) {
     subcat_raw = subcat_raw,
     country_info = country_info
   )
-
+  
   expected_cols <- list(
-    by_policy = c("cpc3_codes_csv", "cpc_name_csv", "policy_index_bite", "policy_index_scale"),
-    by_hs6 = c("cpc3_codes_csv", "cpc_name_csv", "hs6_name", "policy_index_bite", "policy_index_scale"),
-    by_tech_sc = c("cpc3_codes_csv", "cpc_name_csv", "policy_index_bite", "policy_index_scale"),
-    by_tech_year = c("cpc3_codes_csv", "cpc_name_csv", "policy_index_bite", "policy_index_scale",
-                     "policy_index_scale_share_targeted", "policy_index_scale_xs"),
-    by_cpc = c("cpc3", "cpc.name", "policy_index_bite", "policy_index_scale")
+    by_policy = c("cpc3_codes_csv", "cpc_name_csv", "domestic_intervention_index"),
+    by_hs6 = c("cpc3_codes_csv", "cpc_name_csv", "hs6_name", "domestic_intervention_index"),
+    by_tech_sc = c("cpc3_codes_csv", "cpc_name_csv", "domestic_intervention_index"),
+    by_tech_sc_year = c("cpc3_codes_csv", "cpc_name_csv", "domestic_intervention_index_xs"),
+    by_cpc = c("cpc3", "cpc.name", "domestic_intervention_index")
   )
-
+  
   for (nm in names(expected_cols)) {
+    
     missing <- setdiff(expected_cols[[nm]], names(nipo_out[[nm]]))
     if (length(missing) > 0) {
       stop(sprintf("Missing columns in %s: %s", nm, paste(missing, collapse = ", ")))
