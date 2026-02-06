@@ -1,6 +1,7 @@
 # Country standardization helpers.
 country_recode_map <- function() {
   c(
+    "United States of America" = "United States",
     "US" = "United States",
     "USA" = "United States",
     "UK" = "United Kingdom",
