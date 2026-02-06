@@ -677,7 +677,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     policy_agg = iea_policy_outputs$outputs$policy_agg,
     policy_clean = iea_policy_outputs$outputs$policy_clean,
     iea = iea_policy_outputs$outputs,
-    nipo = nipo_policy_out
+    nipo = nipo_policy_index_tbl
   )
   policy_agg <- policy_outputs$policy_agg
   policy_clean <- policy_outputs$policy_clean

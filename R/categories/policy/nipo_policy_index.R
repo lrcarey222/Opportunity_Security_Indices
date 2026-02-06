@@ -690,10 +690,10 @@ TECH_KEYWORDS <- list(
   `Electric Vehicles` = c("electric vehicle","electric vehicles","\\bev\\b","\\bevs\\b","charging","charger","battery electric","plug-in","phev","bev"),
   `Batteries` = c("battery","batteries","\\bli-ion\\b","lithium-ion","cell manufacturing","gigafactory","anode","cathode","bms","energy storage"),
   `Green Hydrogen` = c("hydrogen","\\bh2\\b","electrolyser","electrolyzer","electrolysis","green hydrogen","ammonia","ptx","power-to-x"),
-  `Wind` = c("wind","turbine","offshore wind","onshore wind","blade","nacelle"),
-  `Solar` = c("solar","photovoltaic","\\bpv\\b","inverter","module","panel","wafer","polysilicon"),
+  `Wind` = c("wind","turbine","offshore wind","onshore wind","blade","nacelle","rare earth"),
+  `Solar` = c("solar","photovoltaic","\\bpv\\b","inverter","module","panel","wafer","polysilicon","silicon"),
   `Geothermal` = c("geothermal","egs","enhanced geothermal","heat flow","geofluid"),
-  `Electric Grid` = c("grid","transmission","distribution","substation","transformer","switchgear","interconnector","interconnection","hvdc","smart grid"),
+  `Electric Grid` = c("grid","transmission","distribution","substation","transformer","switchgear","interconnector","interconnection","hvdc","smart grid","copper"),
   `Nuclear` = c("nuclear","reactor","smr","spent fuel","uranium","enrichment","fission"),
   `Coal` = c("coal","coking coal","thermal coal","coal-fired","lignite"),
   `Oil` = c("oil","petroleum","crude","refinery","refining","pipeline"),
@@ -710,11 +710,11 @@ keyword_evidence <- function(tech, title, source) {
 # Supply-chain keyword validation: look for stage-relevant terms in Title/Source.
 # Your supply_chain options: Upstream (commodities/critical minerals etc), Midstream (manufacturing),
 # Downstream (deployment and services).
-DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.12  # +12% when Title/Source corroborates supply-chain stage
+DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.5  # +12% when Title/Source corroborates supply-chain stage
 
 # ---- Mapping confidence (applied to policy strength contributions) ----
 CONFIDENCE_FLOOR <- 0.25
-CONFIDENCE_CAP   <- 1.50
+CONFIDENCE_CAP   <- 2
 # Baseline formula: confidence = 0.75 + 0.75 * mapped_share * evidence_mean
 # evidence_mean is the within-policy mean of combo_weight (>= 1 when validation hits).
 CONFIDENCE_UNMAPPED      <- 0.10
@@ -724,7 +724,7 @@ SUPPLY_CHAIN_KEYWORDS <- list(
   `Upstream` = c(
     "mining", "mine", "extraction", "extractive", "ore", "concentrate", "beneficiation",
     "exploration", "prospecting", "drilling", "upstream",
-    "smelt", "smelting", "refin", "refining", "processing", "metallurg", "critical mineral", "raw material"
+    "smelt", "smelting", "refin", "refining", "processing", "metallurg", "critical mineral", "raw material", "rare earth"
   ),
   `Midstream` = c(
     "manufactur", "factory", "plant", "gigafactory", "assembly", "fabricat", "production line",

@@ -242,7 +242,7 @@ normalize_policy_type <- function(policyType_vec, text_all) {
   )
 }
 
-POLICY_TYPE_WEIGHTS <- tibble::tribble(
+POLICY_TYPE_WEIGHTS_IEA <- tibble::tribble(
   ~policy_type_bucket, ~w_type,
   "Regulation/standard", 0.5,
   "Financial incentive", 0.85,
@@ -310,7 +310,7 @@ build_policy_table <- function(pams_country_tbl) {
         TRUE ~ "Unknown"
       )
     ) %>%
-    dplyr::left_join(POLICY_TYPE_WEIGHTS, by = "policy_type_bucket") %>%
+    dplyr::left_join(POLICY_TYPE_WEIGHTS_IEA, by = "policy_type_bucket") %>%
     dplyr::left_join(STATUS_WEIGHTS, by = c("status_norm" = "status")) %>%
     dplyr::left_join(JURIS_WEIGHTS, by = c("jurisdiction_norm" = "jurisdiction")) %>%
     dplyr::mutate(

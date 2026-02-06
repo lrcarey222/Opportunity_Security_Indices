@@ -23,4 +23,9 @@ asia_nipo <- nipo_policy_index_tbl %>%
                     "VNM",
                     "IND")) %>%
   mutate(industry=paste0(tech,"-",supply_chain)) %>%
-  select(country, industry, domestic_strength)
+  select(country, industry, domestic_stock_sum) %>%
+  pivot_wider(names_from="country", 
+              values_from="domestic_stock_sum") 
+
+write.csv(asia_nipo,paste0(processed_dir,"/charts/asia_nipo.csv"))
+  
