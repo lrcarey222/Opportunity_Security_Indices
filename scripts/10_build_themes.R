@@ -631,7 +631,8 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
   
-  hs6_categories_essential <- hs6_categories_raw
+  hs6_categories_essential <- hs6_categories_raw %>%
+    rename("Value.Chain"="Value Chain")
 
   ally_iso3 <- c(
     "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA", "ITA", "BRA", "SAU",
@@ -667,6 +668,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   nipo_tech_year <- nipo_policy_out$by_tech_sc_year
   nipo_policy_cpc <- nipo_policy_out$by_cpc
   nipo_policy_index_tbl <- nipo_policy_out$by_tech_sc
+  
+  write_processed_tbl(nipo_tech_year, "nipo_tech_year", processed_dir)
+  write_processed_tbl(nipo_policy_index_tbl, "nipo_policy_index_tbl", processed_dir)
+  
+  
   policy_outputs <- list(
     policy_agg = iea_policy_outputs$outputs$policy_agg,
     policy_clean = iea_policy_outputs$outputs$policy_clean,
