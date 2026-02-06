@@ -28,9 +28,13 @@ allied_network_default_iso3c <- function() {
 }
 
 allied_network_normalize_weights <- function(w) {
-  w <- as.numeric(w)
+  nm <- names(w)
+  w <- suppressWarnings(as.numeric(w))
+  if (!is.null(nm)) names(w) <- nm
   if (length(w) == 0 || all(is.na(w)) || sum(w, na.rm = TRUE) <= 0) {
-    return(rep(NA_real_, length(w)))
+    out <- rep(NA_real_, length(w))
+    if (!is.null(nm)) names(out) <- nm
+    return(out)
   }
   w / sum(w, na.rm = TRUE)
 }
@@ -498,17 +502,27 @@ allied_network_solve_stage_milp <- function(nodes_stage,
   # Index mapping iso3c -> i
   idx <- stats::setNames(seq_len(n), iso)
   
-  # Vectors/matrix
-  a <- nodes_stage$producer_score
-  d <- nodes_stage$demand_weight
-  dev <- nodes_stage$dev_potential
+  # Vectors/matrix (sanitize to avoid NA coefficients in MILP objective/constraints)
+  a <- suppressWarnings(as.numeric(nodes_stage$producer_score))
+  d <- suppressWarnings(as.numeric(nodes_stage$demand_weight))
+  dev <- suppressWarnings(as.numeric(nodes_stage$dev_potential))
+
+  a[!is.finite(a)] <- 0
+  dev[!is.finite(dev)] <- 0
+  d[!is.finite(d)] <- 0
+  if (sum(d, na.rm = TRUE) <= 0) {
+    d <- rep(1 / n, n)
+  } else {
+    d <- d / sum(d, na.rm = TRUE)
+  }
   
   W <- matrix(0, nrow = n, ncol = n, dimnames = list(iso, iso))
   for (k in seq_len(nrow(edges_full))) {
     i <- edges_full$reporter_iso[[k]]
     j <- edges_full$partner_iso[[k]]
     if (!is.na(i) && !is.na(j) && i %in% iso && j %in% iso) {
-      W[i, j] <- edges_full$edge_weight[[k]]
+      ew <- suppressWarnings(as.numeric(edges_full$edge_weight[[k]]))
+      W[i, j] <- if (is.finite(ew)) ew else 0
     }
   }
   
