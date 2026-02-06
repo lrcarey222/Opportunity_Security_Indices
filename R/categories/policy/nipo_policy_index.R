@@ -1205,7 +1205,10 @@ build_by_policy <- function(policy_asof_tbl, cpc_names) {
 build_by_hs6 <- function(policy_asof_tbl,
                          hs6_cpc_lu,
                          hs6_name_lu = NULL,
-                         split_across_hs6 = TRUE) {
+                         split_across_hs6 = TRUE,
+                         balance_alpha = 0.5) {
+  balance_alpha <- max(0, min(1, balance_alpha))
+
   hs6_long <- policy_asof_tbl %>%
     dplyr::mutate(
       hs6_list = purrr::map(.data$hs6_codes, function(v) {
@@ -1225,14 +1228,31 @@ build_by_hs6 <- function(policy_asof_tbl,
       domestic_hs6 = .data$scale_strength_pkg * .data$alloc_hs6
     )
   
-  agg <- hs6_long %>%
+  policy_level <- hs6_long %>%
+    dplyr::filter(.data$is_active_asof) %>%
+    dplyr::group_by(.data$iso3, .data$country, .data$HS6, .data$policy_id) %>%
+    dplyr::summarise(
+      as_of_date = dplyr::first(.data$as_of_date),
+      policy_strength = sum(.data$domestic_hs6, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  agg <- policy_level %>%
     dplyr::group_by(.data$iso3, .data$country, .data$HS6) %>%
     dplyr::summarise(
       as_of_date = dplyr::first(.data$as_of_date),
-      n_active_policies = dplyr::n_distinct(.data$policy_id[.data$is_active_asof]),
-      domestic_stock_sum = sum(.data$domestic_hs6[.data$is_active_asof], na.rm = TRUE),
+      n_active_policies = dplyr::n_distinct(.data$policy_id),
+      domestic_strength_sum = sum(.data$policy_strength, na.rm = TRUE),
+      domestic_strength_avg = dplyr::if_else(.data$n_active_policies > 0,
+                                             mean(.data$policy_strength, na.rm = TRUE),
+                                             0),
+      domestic_strength_balanced = exp(
+        balance_alpha * log1p(.data$domestic_strength_sum) +
+          (1 - balance_alpha) * log1p(.data$domestic_strength_avg)
+      ) - 1,
       .groups = "drop"
-    )
+    ) %>%
+    dplyr::rename(domestic_stock_sum = .data$domestic_strength_balanced)
   
   idx <- agg %>%
     dplyr::group_by(.data$iso3) %>%
@@ -1502,7 +1522,10 @@ build_by_tech_sc_year <- function(policy_base_tbl,
 
 build_by_cpc <- function(policy_asof_tbl,
                          cpc_name_lu = NULL,
-                         split_across_cpc = TRUE) {
+                         split_across_cpc = TRUE,
+                         balance_alpha = 0.5) {
+  balance_alpha <- max(0, min(1, balance_alpha))
+
   if (!("cpc3_codes" %in% names(policy_asof_tbl))) {
     policy_asof_tbl <- policy_asof_tbl %>%
       dplyr::mutate(
@@ -1534,14 +1557,31 @@ build_by_cpc <- function(policy_asof_tbl,
     return(tibble::tibble())
   }
   
-  agg <- cpc_long %>%
+  policy_level <- cpc_long %>%
+    dplyr::filter(.data$is_active_asof) %>%
+    dplyr::group_by(.data$iso3, .data$country, .data$cpc3, .data$policy_id) %>%
+    dplyr::summarise(
+      as_of_date = dplyr::first(.data$as_of_date),
+      policy_strength = sum(.data$domestic_cpc, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  agg <- policy_level %>%
     dplyr::group_by(.data$iso3, .data$country, .data$cpc3) %>%
     dplyr::summarise(
       as_of_date = dplyr::first(.data$as_of_date),
-      n_active_policies = dplyr::n_distinct(.data$policy_id[.data$is_active_asof]),
-      domestic_stock_sum = sum(.data$domestic_cpc[.data$is_active_asof], na.rm = TRUE),
+      n_active_policies = dplyr::n_distinct(.data$policy_id),
+      domestic_strength_sum = sum(.data$policy_strength, na.rm = TRUE),
+      domestic_strength_avg = dplyr::if_else(.data$n_active_policies > 0,
+                                             mean(.data$policy_strength, na.rm = TRUE),
+                                             0),
+      domestic_strength_balanced = exp(
+        balance_alpha * log1p(.data$domestic_strength_sum) +
+          (1 - balance_alpha) * log1p(.data$domestic_strength_avg)
+      ) - 1,
       .groups = "drop"
-    )
+    ) %>%
+    dplyr::rename(domestic_stock_sum = .data$domestic_strength_balanced)
   
   if (!is.null(cpc_name_lu) && nrow(cpc_name_lu) > 0) {
     agg <- agg %>% dplyr::left_join(cpc_name_lu, by = "cpc3")
@@ -1636,7 +1676,8 @@ nipo_policy_outputs <- function(raw_nipo,
     policy_asof,
     hs6_cpc_lu = hs6_cpc_lu,
     hs6_name_lu = hs6_name_lu,
-    split_across_hs6 = split_across_hs6
+    split_across_hs6 = split_across_hs6,
+    balance_alpha = balance_alpha
   )
   
   tech_sc_out <- build_by_tech_sc(
@@ -1669,7 +1710,8 @@ nipo_policy_outputs <- function(raw_nipo,
   by_cpc <- build_by_cpc(
     policy_asof_tbl = policy_asof,
     cpc_name_lu = cpc_names,
-    split_across_cpc = TRUE
+    split_across_cpc = TRUE,
+    balance_alpha = balance_alpha
   )
   
   list(
