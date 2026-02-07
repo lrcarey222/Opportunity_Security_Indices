@@ -86,6 +86,44 @@ iso3c_network <- c(
 )
 
 # Run
+fmt_time <- function(seconds) {
+  if (!is.finite(seconds) || is.na(seconds)) return("--:--")
+  seconds <- max(0, round(seconds))
+  mins <- seconds %/% 60
+  secs <- seconds %% 60
+  sprintf("%02d:%02d", mins, secs)
+}
+
+progress_bar <- NULL
+on.exit({
+  if (!is.null(progress_bar)) close(progress_bar)
+}, add = TRUE)
+
+progress_callback <- function(info) {
+  if (!is.list(info) || is.null(info$event)) return(invisible(NULL))
+  if (info$event == "start_stage") {
+    if (is.null(progress_bar)) {
+      progress_bar <<- utils::txtProgressBar(min = 0, max = info$total, style = 3)
+    }
+    return(invisible(NULL))
+  }
+  if (info$event == "end_stage" && !is.null(progress_bar)) {
+    utils::setTxtProgressBar(progress_bar, info$current)
+    pct_remaining <- max(0, min(100, 100 * info$pct_remaining))
+    msg <- sprintf(
+      "  %s/%s complete | %0.1f%% remaining | ETA %s | stage: %s / %s",
+      info$current,
+      info$total,
+      pct_remaining,
+      fmt_time(info$eta_sec),
+      info$tech,
+      info$supply_chain
+    )
+    cat(msg, "\n")
+  }
+  invisible(NULL)
+}
+
 res <- allied_network_design(
   economic_opportunity_index = economic_opportunity_index,
   energy_security_index = energy_security_index,
@@ -104,7 +142,8 @@ res <- allied_network_design(
   allow_self = TRUE,
   w_node = 1.0,
   w_edge = 0.5,
-  w_dev = 0.0
+  w_dev = 0.0,
+  progress_callback = progress_callback
 )
 
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
