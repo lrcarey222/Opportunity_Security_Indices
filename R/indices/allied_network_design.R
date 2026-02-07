@@ -629,7 +629,10 @@ allied_network_design <- function(economic_opportunity_index,
                                   # objective weights
                                   w_node = 1.0,
                                   w_edge = 0.5,
-                                  w_dev = 0.0) {
+                                  w_dev = 0.0,
+                                  progress_callback = NULL,
+                                  auto_milp_max_nodes = 18,
+                                  milp_stage_time_limit_sec = 120) {
   method <- match.arg(method)
   
   nodes <- allied_network_prepare_nodes(
@@ -663,30 +666,94 @@ allied_network_design <- function(economic_opportunity_index,
     stop("No (tech, supply_chain) stages available after filtering.")
   }
   
+  has_milp <- allied_network_has_milp()
   use_method <- method
   if (method == "auto") {
-    use_method <- if (allied_network_has_milp()) "milp" else "greedy"
+    use_method <- if (has_milp) "milp" else "greedy"
   }
   
-  results <- purrr::pmap(
-    list(stages$tech, stages$supply_chain),
-    function(t, sc) {
-      nodes_stage <- nodes %>% dplyr::filter(tech == t, supply_chain == sc)
-      # skip tiny stages
-      if (nrow(nodes_stage) < 3) {
-        return(list(
-          tech = t, supply_chain = sc,
-          specialization = NULL, flows = NULL,
-          objective = NA_real_, hhi = NA_real_, n_producers = NA_integer_
-        ))
-      }
-      
-      edges_stage <- edges %>% dplyr::filter(tech == t, supply_chain == sc)
-      
-      sol <- if (use_method == "milp") {
+  nodes_selected <- nodes %>%
+    dplyr::select(tech, supply_chain, iso3c, country, producer_score, demand_weight, dev_potential)
+  edges_selected <- edges %>%
+    dplyr::select(tech, supply_chain, reporter_iso, partner_iso, edge_weight, dplyr::any_of(c("friendshore_index", "opportunity_index")))
+
+  stage_keys <- paste(stages$tech, stages$supply_chain, sep = "||")
+  node_keys <- paste(nodes_selected$tech, nodes_selected$supply_chain, sep = "||")
+  edge_keys <- paste(edges_selected$tech, edges_selected$supply_chain, sep = "||")
+
+  nodes_by_stage <- split(nodes_selected, node_keys, drop = TRUE)
+  edges_by_stage <- split(edges_selected, edge_keys, drop = TRUE)
+
+  stage_count <- length(stage_keys)
+  start_time <- Sys.time()
+  results <- vector("list", stage_count)
+
+  for (i in seq_len(stage_count)) {
+    t <- stages$tech[[i]]
+    sc <- stages$supply_chain[[i]]
+    key <- stage_keys[[i]]
+
+    if (is.function(progress_callback)) {
+      progress_callback(list(
+        event = "start_stage",
+        current = i,
+        total = stage_count,
+        tech = t,
+        supply_chain = sc,
+        elapsed_sec = as.numeric(difftime(Sys.time(), start_time, units = "secs")),
+        eta_sec = if (i <= 1) NA_real_ else as.numeric(difftime(Sys.time(), start_time, units = "secs")) / (i - 1) * (stage_count - i + 1),
+        pct_complete = (i - 1) / stage_count,
+        pct_remaining = 1 - ((i - 1) / stage_count),
+        method = use_method
+      ))
+    }
+
+    nodes_stage <- nodes_by_stage[[key]]
+    # skip tiny stages
+    if (is.null(nodes_stage) || nrow(nodes_stage) < 3) {
+      results[[i]] <- list(
+        tech = t, supply_chain = sc,
+        specialization = NULL, flows = NULL,
+        objective = NA_real_, hhi = NA_real_, n_producers = NA_integer_, method_used = NA_character_
+      )
+      next
+    }
+
+    edges_stage <- edges_by_stage[[key]]
+    if (is.null(edges_stage)) {
+      edges_stage <- edges_selected[0, , drop = FALSE]
+    }
+
+    nodes_stage_core <- nodes_stage %>% dplyr::select(iso3c, country, producer_score, demand_weight, dev_potential)
+    edges_stage_core <- edges_stage %>% dplyr::select(reporter_iso, partner_iso, edge_weight, dplyr::any_of(c("friendshore_index", "opportunity_index")))
+
+    stage_method <- use_method
+    if (method == "auto") {
+      stage_method <- if (has_milp && nrow(nodes_stage_core) <= auto_milp_max_nodes) "milp" else "greedy"
+    }
+
+    solve_greedy <- function() {
+      allied_network_solve_stage_greedy(
+        nodes_stage = nodes_stage_core,
+        edges_stage = edges_stage_core,
+        min_producers = min_producers,
+        max_share = max_share,
+        min_share = min_share,
+        w_edge = w_edge,
+        w_node = w_node,
+        w_dev = w_dev,
+        allow_self = allow_self
+      )
+    }
+
+    if (stage_method == "milp") {
+      sol <- tryCatch({
+        if (is.finite(milp_stage_time_limit_sec) && !is.na(milp_stage_time_limit_sec) && milp_stage_time_limit_sec > 0) {
+          setTimeLimit(elapsed = milp_stage_time_limit_sec, transient = TRUE)
+        }
         allied_network_solve_stage_milp(
-          nodes_stage = nodes_stage %>% dplyr::select(iso3c, country, producer_score, demand_weight, dev_potential),
-          edges_stage = edges_stage %>% dplyr::select(reporter_iso, partner_iso, edge_weight, dplyr::any_of(c("friendshore_index", "opportunity_index"))),
+          nodes_stage = nodes_stage_core,
+          edges_stage = edges_stage_core,
           min_producers = min_producers,
           max_share = max_share,
           min_share = min_share,
@@ -697,31 +764,57 @@ allied_network_design <- function(economic_opportunity_index,
           w_dev = w_dev,
           allow_self = allow_self
         )
-      } else {
-        allied_network_solve_stage_greedy(
-          nodes_stage = nodes_stage %>% dplyr::select(iso3c, country, producer_score, demand_weight, dev_potential),
-          edges_stage = edges_stage %>% dplyr::select(reporter_iso, partner_iso, edge_weight, dplyr::any_of(c("friendshore_index", "opportunity_index"))),
-          min_producers = min_producers,
-          max_share = max_share,
-          min_share = min_share,
-          w_edge = w_edge,
-          w_node = w_node,
-          w_dev = w_dev,
-          allow_self = allow_self
-        )
-      }
-      
-      list(
+      }, error = function(e) {
+        if (is.function(progress_callback)) {
+          progress_callback(list(
+            event = "fallback_greedy",
+            current = i,
+            total = stage_count,
+            tech = t,
+            supply_chain = sc,
+            elapsed_sec = as.numeric(difftime(Sys.time(), start_time, units = "secs")),
+            reason = conditionMessage(e),
+            from_method = "milp",
+            to_method = "greedy"
+          ))
+        }
+        stage_method <<- "greedy"
+        solve_greedy()
+      })
+      setTimeLimit(cpu = Inf, elapsed = Inf, transient = FALSE)
+    } else {
+      sol <- solve_greedy()
+    }
+
+    elapsed_done <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+    done_count <- i
+    eta_done <- if (done_count <= 0) NA_real_ else (elapsed_done / done_count) * (stage_count - done_count)
+    if (is.function(progress_callback)) {
+      progress_callback(list(
+        event = "end_stage",
+        current = i,
+        total = stage_count,
         tech = t,
         supply_chain = sc,
-        specialization = sol$specialization,
-        flows = sol$flows,
-        objective = sol$objective,
-        hhi = sol$hhi,
-        n_producers = sol$n_producers
-      )
+        elapsed_sec = elapsed_done,
+        eta_sec = eta_done,
+        pct_complete = done_count / stage_count,
+        pct_remaining = 1 - (done_count / stage_count),
+        method = stage_method
+      ))
     }
-  )
+
+    results[[i]] <- list(
+      tech = t,
+      supply_chain = sc,
+      specialization = sol$specialization,
+      flows = sol$flows,
+      objective = sol$objective,
+      hhi = sol$hhi,
+      n_producers = sol$n_producers,
+      method_used = stage_method
+    )
+  }
   
   specialization_tbl <- purrr::map_dfr(results, function(x) {
     if (is.null(x$specialization)) return(NULL)
@@ -741,7 +834,7 @@ allied_network_design <- function(economic_opportunity_index,
     tibble::tibble(
       tech = x$tech,
       supply_chain = x$supply_chain,
-      method = use_method,
+      method = dplyr::coalesce(x$method_used, use_method),
       n_producers = x$n_producers,
       hhi = x$hhi,
       objective = x$objective
@@ -776,7 +869,9 @@ allied_network_design <- function(economic_opportunity_index,
       allow_self = allow_self,
       w_node = w_node,
       w_edge = w_edge,
-      w_dev = w_dev
+      w_dev = w_dev,
+      auto_milp_max_nodes = auto_milp_max_nodes,
+      milp_stage_time_limit_sec = milp_stage_time_limit_sec
     ),
     specialization = specialization_tbl,
     flows = flows_tbl,
