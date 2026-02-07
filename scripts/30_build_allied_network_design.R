@@ -107,15 +107,20 @@ progress_callback <- function(info) {
     }
     return(invisible(NULL))
   }
+  if (info$event == "fallback_greedy") {
+    cat(sprintf("  fallback to greedy for %s / %s: %s\n", info$tech, info$supply_chain, info$reason))
+    return(invisible(NULL))
+  }
   if (info$event == "end_stage" && !is.null(progress_bar)) {
     utils::setTxtProgressBar(progress_bar, info$current)
     pct_remaining <- max(0, min(100, 100 * info$pct_remaining))
     msg <- sprintf(
-      "  %s/%s complete | %0.1f%% remaining | ETA %s | stage: %s / %s",
+      "  %s/%s complete | %0.1f%% remaining | ETA %s | method: %s | stage: %s / %s",
       info$current,
       info$total,
       pct_remaining,
       fmt_time(info$eta_sec),
+      info$method,
       info$tech,
       info$supply_chain
     )
@@ -143,7 +148,9 @@ res <- allied_network_design(
   w_node = 1.0,
   w_edge = 0.5,
   w_dev = 0.0,
-  progress_callback = progress_callback
+  progress_callback = progress_callback,
+  auto_milp_max_nodes = 18,
+  milp_stage_time_limit_sec = 120
 )
 
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
