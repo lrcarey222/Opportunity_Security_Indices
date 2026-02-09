@@ -19,7 +19,7 @@ The pipeline draws from multiple datasets. The legacy implementation references 
 - **IMF lending rates + PPI** (`imf_lending_rates.csv`, `imf_ppi.csv`).
 - **WIPO indicator trends** (`wipo_treated_indicator_trends_2025.csv`).
 - **BNEF Energy Transition Supply Chains 2025** (`BNEF_Energy Transition Supply Chains 2025.xlsx`).
-- **IEA WEO 2024 Annex A** (`WEO2024_AnnexA_Free_Dataset_World.csv`).
+- **IEA WEO 2025 Annex A** (`WEO2025_AnnexA_Free_Dataset_World.csv`).
 - **IEA EV Data Explorer 2025** (`IEA_EVDataExplorer2025.xlsx`).
 - **BCG market size** (`Market Size for Technology and Supply Chain.xlsx`).
 - **Clean energy foreign policy heatmap** (`clean_energy_foreign_policy_heatmap.xlsx`).
