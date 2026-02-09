@@ -133,6 +133,44 @@ copy_snapshot_file <- function(source_path, dest_path) {
   file.copy(source_path, dest_path, overwrite = TRUE)
 }
 
+
+resolve_comtrade_reporters <- function(wdi_country_info, reporter_ref) {
+  reporter_iso_col <- intersect(c("iso_3", "iso3_code", "iso3c"), names(reporter_ref))
+  if (length(reporter_iso_col) == 0) {
+    stop("Unable to locate ISO3 reporter codes in comtradr reporter reference data.")
+  }
+
+  valid_reporters <- reporter_ref[[reporter_iso_col[1]]]
+  valid_reporters <- as.character(valid_reporters)
+  valid_reporters <- valid_reporters[!is.na(valid_reporters) & nzchar(valid_reporters)]
+  valid_reporters <- unique(valid_reporters[nchar(valid_reporters) == 3])
+
+  excluded_iso3 <- c("ASM", "CHI", "GUM", "IMN", "LIE", "MAF", "MCO", "PRI", "XKX")
+  valid_reporters <- setdiff(valid_reporters, excluded_iso3)
+
+  wdi_candidates <- character()
+  if ("iso3c" %in% names(wdi_country_info)) {
+    wdi_candidates <- as.character(wdi_country_info$iso3c)
+    wdi_candidates <- wdi_candidates[!is.na(wdi_candidates) & nzchar(wdi_candidates)]
+    wdi_candidates <- unique(wdi_candidates[nchar(wdi_candidates) == 3])
+    wdi_candidates <- setdiff(wdi_candidates, excluded_iso3)
+  }
+
+  reporter_candidates <- intersect(wdi_candidates, valid_reporters)
+
+  # If a malformed or partial WDI file is present, fall back to Comtrade reporter reference
+  # so API pulls still run for the full country set.
+  if (length(reporter_candidates) < 50) {
+    reporter_candidates <- valid_reporters
+  }
+
+  if (length(reporter_candidates) == 0) {
+    stop("No valid reporter codes remain after filtering against comtradr reference data.")
+  }
+
+  reporter_candidates
+}
+
 if (!file.exists(wdi_gdp_path)) {
   copy_snapshot_file(file.path(sharepoint_raw_dir, "wdi_gdp.csv"), wdi_gdp_path)
 }
@@ -248,6 +286,196 @@ critical_minerals_hs_path <- file.path(
 )
 energy_trade_codes_path <- file.path(snapshot_dir, "consolidated_hs6_energy_tech_long.csv")
 
+split_by_nchar <- function(x, max_chars = 2500) {
+  chunks <- list()
+  cur <- character()
+  cur_len <- 0
+  for (code in x) {
+    add_len <- nchar(code) + ifelse(length(cur) == 0, 0, 1)
+    if (cur_len + add_len > max_chars) {
+      chunks[[length(chunks) + 1]] <- cur
+      cur <- code
+      cur_len <- nchar(code)
+    } else {
+      cur <- c(cur, code)
+      cur_len <- cur_len + add_len
+    }
+  }
+  if (length(cur)) {
+    chunks[[length(chunks) + 1]] <- cur
+  }
+  chunks
+}
+
+split_vec <- function(x, chunk_size) {
+  if (length(x) == 0) {
+    return(list(character()))
+  }
+  split(x, ceiling(seq_along(x) / chunk_size))
+}
+
+comtrade_chunk_count_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_CHUNK_COUNT", "1")))
+comtrade_chunk_index_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_CHUNK_INDEX", "1")))
+comtrade_chunk_count <- if (!is.na(comtrade_chunk_count_env) && comtrade_chunk_count_env > 0) {
+  comtrade_chunk_count_env
+} else {
+  1L
+}
+comtrade_chunk_index <- if (!is.na(comtrade_chunk_index_env) && comtrade_chunk_index_env > 0) {
+  comtrade_chunk_index_env
+} else {
+  1L
+}
+if (comtrade_chunk_index > comtrade_chunk_count) {
+  stop("COMTRADE_CHUNK_INDEX cannot be greater than COMTRADE_CHUNK_COUNT.")
+}
+
+stage_comtrade_output <- function(data, output_path, chunk_index = 1L, chunk_count = 1L) {
+  if (chunk_count <= 1) {
+    write.csv(data, output_path, row.names = FALSE)
+    return(invisible(TRUE))
+  }
+
+  output_name <- tools::file_path_sans_ext(basename(output_path))
+  chunk_dir <- file.path(dirname(output_path), "comtrade_chunks", output_name)
+  if (!dir.exists(chunk_dir)) {
+    dir.create(chunk_dir, recursive = TRUE)
+  }
+
+  chunk_path <- file.path(
+    chunk_dir,
+    sprintf("chunk_%03d_of_%03d.csv", as.integer(chunk_index), as.integer(chunk_count))
+  )
+  write.csv(data, chunk_path, row.names = FALSE)
+
+  expected_paths <- file.path(
+    chunk_dir,
+    sprintf("chunk_%03d_of_%03d.csv", seq_len(chunk_count), rep(chunk_count, chunk_count))
+  )
+
+  if (!all(file.exists(expected_paths))) {
+    message(
+      "Staged Comtrade chunk ", chunk_index, "/", chunk_count,
+      " for ", basename(output_path), ".",
+      " Run remaining chunks to finalize."
+    )
+    return(invisible(FALSE))
+  }
+
+  combined <- dplyr::bind_rows(lapply(expected_paths, read.csv)) %>% dplyr::distinct()
+  write.csv(combined, output_path, row.names = FALSE)
+  message("Combined ", chunk_count, " chunk files into ", output_path)
+  invisible(TRUE)
+}
+
+fetch_comtrade_grid <- function(reporters,
+                                partners,
+                                code_chunks,
+                                years,
+                                flows,
+                                partner_chunk_size = 50,
+                                sleep_seconds = 0.5,
+                                retries = 5,
+                                chunk_index = 1L,
+                                chunk_count = 1L) {
+  if (length(reporters) == 0 || length(partners) == 0 || length(code_chunks) == 0) {
+    return(data.frame())
+  }
+
+  partner_chunks <- split_vec(partners, chunk_size = partner_chunk_size)
+  request_grid <- tidyr::expand_grid(
+    rep = reporters,
+    yr = years,
+    dir = flows,
+    cc = code_chunks,
+    pch = partner_chunks
+  )
+
+  if (chunk_count > 1) {
+    row_index <- seq_len(nrow(request_grid))
+    selected_rows <- row_index[((row_index - 1) %% chunk_count) + 1 == chunk_index]
+    request_grid <- request_grid[selected_rows, , drop = FALSE]
+    message("Running Comtrade request chunk ", chunk_index, "/", chunk_count,
+            " with ", nrow(request_grid), " request(s).")
+  }
+
+  output <- vector("list", nrow(request_grid))
+  failed <- character()
+
+  for (i in seq_len(nrow(request_grid))) {
+    req <- request_grid[i, ]
+
+    data_chunk <- NULL
+    last_err <- NULL
+    for (attempt in seq_len(retries)) {
+      attempt_out <- tryCatch(
+        comtradr::ct_get_data(
+          reporter = req$rep[[1]],
+          partner = req$pch[[1]],
+          commodity_code = req$cc[[1]],
+          start_date = req$yr[[1]],
+          end_date = req$yr[[1]],
+          flow_direction = req$dir[[1]]
+        ),
+        error = function(e) e
+      )
+
+      if (!inherits(attempt_out, "error")) {
+        data_chunk <- attempt_out
+        break
+      }
+
+      last_err <- attempt_out
+      if (attempt < retries) {
+        Sys.sleep(sleep_seconds * attempt)
+      }
+    }
+
+    if (inherits(last_err, "error") && is.null(data_chunk)) {
+      failed <- c(
+        failed,
+        paste0(
+          "rep=", req$rep[[1]],
+          ", yr=", req$yr[[1]],
+          ", dir=", req$dir[[1]],
+          ", codes=", paste(req$cc[[1]], collapse = ","),
+          ", partners=", paste(req$pch[[1]], collapse = ","),
+          " -> ", conditionMessage(last_err)
+        )
+      )
+      next
+    }
+
+    if (!"flow_direction" %in% names(data_chunk)) {
+      data_chunk <- dplyr::mutate(data_chunk, flow_direction = req$dir[[1]])
+    }
+    if ("trade_flow" %in% names(data_chunk)) {
+      data_chunk <- dplyr::filter(data_chunk, tolower(trade_flow) == req$dir[[1]])
+    }
+
+    output[[i]] <- dplyr::mutate(
+      data_chunk,
+      reporter_req = req$rep[[1]],
+      year_req = req$yr[[1]]
+    )
+
+    Sys.sleep(sleep_seconds)
+  }
+
+  if (length(failed) > 0) {
+    stop(
+      "UN Comtrade requests failed for ",
+      length(failed),
+      " request(s). Example failures:
+",
+      paste(utils::head(failed, 5), collapse = "
+")
+    )
+  }
+
+  dplyr::bind_rows(output) %>% dplyr::distinct()
+}
+
 # --- Source: UN Comtrade (critical minerals trade) ---
 critmin_import_path <- file.path(snapshot_dir, "critmin_import_2025.csv")
 critmin_export_path <- file.path(snapshot_dir, "critmin_export_2025.csv")
@@ -300,60 +528,94 @@ if (needs_comtrade) {
     mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
     crit_hs <- read.csv(critical_minerals_hs_path)
     crit_hs_filtered <- critical_minerals_trade_filter_hs(crit_hs, mineral_demand_clean)
+    crit_codes <- crit_hs_filtered$hscode %>%
+      as.character() %>%
+      stringr::str_replace_all("\\D", "") %>%
+      stringr::str_pad(width = 6, side = "left", pad = "0") %>%
+      stats::na.omit() %>%
+      unique()
+
     wdi_country_info <- read.csv(wdi_country_path)
-
-    reporter_candidates <- wdi_country_info$iso3c
-    reporter_candidates <- reporter_candidates[!is.na(reporter_candidates) & nzchar(reporter_candidates)]
-    reporter_candidates <- unique(reporter_candidates)
-
     reporter_ref <- comtradr::ct_get_ref_table("reporter")
-    reporter_iso_col <- intersect(c("iso_3", "iso3_code", "iso3c"), names(reporter_ref))
-    if (length(reporter_iso_col) == 0) {
-      stop("Unable to locate ISO3 reporter codes in comtradr reporter reference data.")
-    }
-    valid_reporters <- reporter_ref[[reporter_iso_col[1]]]
-    valid_reporters <- unique(valid_reporters[!is.na(valid_reporters) & nzchar(valid_reporters)])
-    reporter_candidates <- intersect(reporter_candidates, valid_reporters)
-    if (length(reporter_candidates) == 0) {
-      stop("No valid reporter codes remain after filtering against comtradr reference data.")
-    }
+    reporter_candidates <- resolve_comtrade_reporters(wdi_country_info, reporter_ref)
+    crit_code_chunks <- split_by_nchar(crit_codes, max_chars = 2500)
 
-    critmin_import <- comtradr::ct_get_data(
-      reporter = reporter_candidates,
-      partner = "World",
-      commodity_code = crit_hs_filtered$hscode,
-      start_date = 2025,
-      end_date = 2025,
-      flow_direction = "import"
-    )
-    critmin_export <- comtradr::ct_get_data(
-      reporter = reporter_candidates,
-      partner = "World",
-      commodity_code = crit_hs_filtered$hscode,
-      start_date = 2025,
-      end_date = 2025,
-      flow_direction = "export"
-    )
-    total_export <- comtradr::ct_get_data(
-      reporter = reporter_candidates,
-      partner = "World",
-      commodity_code = "TOTAL",
-      start_date = 2025,
-      end_date = 2025,
-      flow_direction = "export"
+    critmin_import <- fetch_comtrade_grid(
+      reporters = reporter_candidates,
+      partners = "World",
+      code_chunks = crit_code_chunks,
+      years = 2025,
+      flows = "import",
+      partner_chunk_size = 1,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
     )
 
-    write.csv(critmin_import, critmin_import_path, row.names = FALSE)
-    write.csv(critmin_export, critmin_export_path, row.names = FALSE)
-    write.csv(total_export, critmin_total_export_path, row.names = FALSE)
+    critmin_export <- fetch_comtrade_grid(
+      reporters = reporter_candidates,
+      partners = "World",
+      code_chunks = crit_code_chunks,
+      years = 2025,
+      flows = "export",
+      partner_chunk_size = 1,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
+    )
+
+    total_export <- fetch_comtrade_grid(
+      reporters = reporter_candidates,
+      partners = "World",
+      code_chunks = list("TOTAL"),
+      years = 2025,
+      flows = "export",
+      partner_chunk_size = 1,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
+    )
+
+    stage_comtrade_output(
+      critmin_import,
+      critmin_import_path,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
+    )
+    stage_comtrade_output(
+      critmin_export,
+      critmin_export_path,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
+    )
+    stage_comtrade_output(
+      total_export,
+      critmin_total_export_path,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
+    )
   }
 }
 
 # --- Source: UN Comtrade (energy trade) ---
 comtrade_energy_trade_path <- file.path(snapshot_dir, "comtrade_energy_trade.csv")
 comtrade_total_export_path <- file.path(snapshot_dir, "comtrade_total_export.csv")
+allied_comtrade_energy_path <- file.path(snapshot_dir, "allied_comtrade_energy_data.csv")
 
-comtrade_target_year <- as.integer(format(Sys.Date(), "%Y")) - 1
+comtrade_target_year_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_TARGET_YEAR", "")))
+comtrade_target_year <- if (!is.na(comtrade_target_year_env)) {
+  comtrade_target_year_env
+} else {
+  as.integer(format(Sys.Date(), "%Y")) - 1
+}
+
+comtrade_start_year_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_START_YEAR", "")))
+comtrade_start_year <- if (!is.na(comtrade_start_year_env)) {
+  comtrade_start_year_env
+} else {
+  comtrade_target_year - 4
+}
+
+if (comtrade_start_year > comtrade_target_year) {
+  stop("COMTRADE_START_YEAR cannot be greater than COMTRADE_TARGET_YEAR.")
+}
 
 comtrade_has_year <- function(path, year) {
   if (!file.exists(path)) {
@@ -370,7 +632,8 @@ comtrade_has_year <- function(path, year) {
 
 needs_energy_comtrade <- !(
   comtrade_has_year(comtrade_energy_trade_path, comtrade_target_year) &&
-    comtrade_has_year(comtrade_total_export_path, comtrade_target_year)
+    comtrade_has_year(comtrade_total_export_path, comtrade_target_year) &&
+    comtrade_has_year(allied_comtrade_energy_path, comtrade_target_year)
 )
 
 if (needs_energy_comtrade) {
@@ -401,85 +664,72 @@ if (needs_energy_comtrade) {
       stringr::str_pad(width = 6, side = "left", pad = "0") %>%
       stats::na.omit() %>%
       unique()
-
-    split_by_nchar <- function(x, max_chars = 2500) {
-      chunks <- list()
-      cur <- character()
-      cur_len <- 0
-      for (code in x) {
-        add_len <- nchar(code) + ifelse(length(cur) == 0, 0, 1)
-        if (cur_len + add_len > max_chars) {
-          chunks[[length(chunks) + 1]] <- cur
-          cur <- code
-          cur_len <- nchar(code)
-        } else {
-          cur <- c(cur, code)
-          cur_len <- cur_len + add_len
-        }
-      }
-      if (length(cur)) {
-        chunks[[length(chunks) + 1]] <- cur
-      }
-      chunks
-    }
-
     code_chunks <- split_by_nchar(energy_codes, max_chars = 2500)
 
     wdi_country_info <- read.csv(wdi_country_path)
-    reporter_candidates <- wdi_country_info$iso3c
-    reporter_candidates <- reporter_candidates[!is.na(reporter_candidates) & nzchar(reporter_candidates)]
-    reporter_candidates <- unique(reporter_candidates)
-
     reporter_ref <- comtradr::ct_get_ref_table("reporter")
-    reporter_iso_col <- intersect(c("iso_3", "iso3_code", "iso3c"), names(reporter_ref))
-    if (length(reporter_iso_col) == 0) {
-      stop("Unable to locate ISO3 reporter codes in comtradr reporter reference data.")
-    }
-    valid_reporters <- reporter_ref[[reporter_iso_col[1]]]
-    valid_reporters <- unique(valid_reporters[!is.na(valid_reporters) & nzchar(valid_reporters)])
-    reporter_candidates <- intersect(reporter_candidates, valid_reporters)
-    if (length(reporter_candidates) == 0) {
-      stop("No valid reporter codes remain after filtering against comtradr reference data.")
-    }
+    reporter_candidates <- resolve_comtrade_reporters(wdi_country_info, reporter_ref)
 
-    safe_ct <- purrr::possibly(comtradr::ct_get_data, otherwise = NULL)
+    ally_reporters <- c(
+      "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA",
+      "ITA", "BRA", "SAU", "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK",
+      "ARG", "MAR", "CHL"
+    )
+    ally_reporters <- intersect(ally_reporters, reporter_candidates)
+
     trade_flows <- c("export", "import")
 
-    energy_trade_list <- list()
-    idx <- 1
-    for (flow in trade_flows) {
-      for (chunk in code_chunks) {
-        data_chunk <- safe_ct(
-          reporter = reporter_candidates,
-          partner = "World",
-          commodity_code = chunk,
-          start_date = comtrade_target_year,
-          end_date = comtrade_target_year,
-          flow_direction = flow
-        )
-        if (!is.null(data_chunk)) {
-          if (!"flow_direction" %in% names(data_chunk)) {
-            data_chunk <- dplyr::mutate(data_chunk, flow_direction = flow)
-          }
-          energy_trade_list[[idx]] <- data_chunk
-          idx <- idx + 1
-        }
-      }
-    }
-
-    energy_trade <- dplyr::bind_rows(energy_trade_list) %>% dplyr::distinct()
-
-    total_export <- comtradr::ct_get_data(
-      reporter = reporter_candidates,
-      partner = "World",
-      commodity_code = "TOTAL",
-      start_date = comtrade_target_year,
-      end_date = comtrade_target_year,
-      flow_direction = "export"
+    energy_trade <- fetch_comtrade_grid(
+      reporters = reporter_candidates,
+      partners = "World",
+      code_chunks = code_chunks,
+      years = comtrade_start_year:comtrade_target_year,
+      flows = trade_flows,
+      partner_chunk_size = 1,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
     )
 
-    write.csv(energy_trade, comtrade_energy_trade_path, row.names = FALSE)
-    write.csv(total_export, comtrade_total_export_path, row.names = FALSE)
+    allied_comtrade_energy <- fetch_comtrade_grid(
+      reporters = ally_reporters,
+      partners = reporter_candidates,
+      code_chunks = code_chunks,
+      years = comtrade_start_year:comtrade_target_year,
+      flows = trade_flows,
+      partner_chunk_size = 50,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
+    )
+
+    total_export <- fetch_comtrade_grid(
+      reporters = reporter_candidates,
+      partners = "World",
+      code_chunks = list("TOTAL"),
+      years = comtrade_start_year:comtrade_target_year,
+      flows = "export",
+      partner_chunk_size = 1,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
+    )
+
+    stage_comtrade_output(
+      energy_trade,
+      comtrade_energy_trade_path,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
+    )
+    stage_comtrade_output(
+      total_export,
+      comtrade_total_export_path,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
+    )
+    stage_comtrade_output(
+      allied_comtrade_energy,
+      allied_comtrade_energy_path,
+      chunk_index = comtrade_chunk_index,
+      chunk_count = comtrade_chunk_count
+    )
   }
 }
 
