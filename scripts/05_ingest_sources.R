@@ -133,43 +133,8 @@ copy_snapshot_file <- function(source_path, dest_path) {
   file.copy(source_path, dest_path, overwrite = TRUE)
 }
 
+source(file.path(repo_root, "scripts", "utils", "comtrade_ingest_utils.R"))
 
-resolve_comtrade_reporters <- function(wdi_country_info, reporter_ref) {
-  reporter_iso_col <- intersect(c("iso_3", "iso3_code", "iso3c"), names(reporter_ref))
-  if (length(reporter_iso_col) == 0) {
-    stop("Unable to locate ISO3 reporter codes in comtradr reporter reference data.")
-  }
-
-  valid_reporters <- reporter_ref[[reporter_iso_col[1]]]
-  valid_reporters <- as.character(valid_reporters)
-  valid_reporters <- valid_reporters[!is.na(valid_reporters) & nzchar(valid_reporters)]
-  valid_reporters <- unique(valid_reporters[nchar(valid_reporters) == 3])
-
-  excluded_iso3 <- c("ASM", "CHI", "GUM", "IMN", "LIE", "MAF", "MCO", "PRI", "XKX")
-  valid_reporters <- setdiff(valid_reporters, excluded_iso3)
-
-  wdi_candidates <- character()
-  if ("iso3c" %in% names(wdi_country_info)) {
-    wdi_candidates <- as.character(wdi_country_info$iso3c)
-    wdi_candidates <- wdi_candidates[!is.na(wdi_candidates) & nzchar(wdi_candidates)]
-    wdi_candidates <- unique(wdi_candidates[nchar(wdi_candidates) == 3])
-    wdi_candidates <- setdiff(wdi_candidates, excluded_iso3)
-  }
-
-  reporter_candidates <- intersect(wdi_candidates, valid_reporters)
-
-  # If a malformed or partial WDI file is present, fall back to Comtrade reporter reference
-  # so API pulls still run for the full country set.
-  if (length(reporter_candidates) < 50) {
-    reporter_candidates <- valid_reporters
-  }
-
-  if (length(reporter_candidates) == 0) {
-    stop("No valid reporter codes remain after filtering against comtradr reference data.")
-  }
-
-  reporter_candidates
-}
 
 if (!file.exists(wdi_gdp_path)) {
   copy_snapshot_file(file.path(sharepoint_raw_dir, "wdi_gdp.csv"), wdi_gdp_path)
@@ -817,6 +782,35 @@ Hint: adjust COMTRADE_REQUEST_TIMEOUT_SECONDS / COMTRADE_MAX_RETRIES, ",
   dplyr::bind_rows(output) %>% dplyr::distinct()
 }
 
+comtrade_chunk_count_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_CHUNK_COUNT", "1")))
+comtrade_chunk_index_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_CHUNK_INDEX", "1")))
+comtrade_chunk_count <- if (!is.na(comtrade_chunk_count_env) && comtrade_chunk_count_env > 0) {
+  comtrade_chunk_count_env
+} else {
+  1L
+}
+comtrade_chunk_index <- if (!is.na(comtrade_chunk_index_env) && comtrade_chunk_index_env > 0) {
+  comtrade_chunk_index_env
+} else {
+  1L
+}
+if (comtrade_chunk_index > comtrade_chunk_count) {
+  stop("COMTRADE_CHUNK_INDEX cannot be greater than COMTRADE_CHUNK_COUNT.")
+}
+
+comtrade_request_timeout_env <- suppressWarnings(as.numeric(Sys.getenv("COMTRADE_REQUEST_TIMEOUT_SECONDS", "120")))
+comtrade_request_timeout_seconds <- if (!is.na(comtrade_request_timeout_env) && comtrade_request_timeout_env > 0) {
+  comtrade_request_timeout_env
+} else {
+  120
+}
+comtrade_max_retries_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_MAX_RETRIES", "3")))
+comtrade_max_retries <- if (!is.na(comtrade_max_retries_env) && comtrade_max_retries_env > 0) {
+  comtrade_max_retries_env
+} else {
+  3L
+}
+
 # --- Source: UN Comtrade (critical minerals trade) ---
 critmin_import_path <- file.path(snapshot_dir, "critmin_import_2025.csv")
 critmin_export_path <- file.path(snapshot_dir, "critmin_export_2025.csv")
@@ -889,7 +883,9 @@ if (needs_comtrade) {
       flows = "import",
       partner_chunk_size = 1,
       chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count
+      chunk_count = comtrade_chunk_count,
+      retries = comtrade_max_retries,
+      request_timeout_seconds = comtrade_request_timeout_seconds
     )
 
     critmin_export <- fetch_comtrade_grid(
@@ -900,7 +896,9 @@ if (needs_comtrade) {
       flows = "export",
       partner_chunk_size = 1,
       chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count
+      chunk_count = comtrade_chunk_count,
+      retries = comtrade_max_retries,
+      request_timeout_seconds = comtrade_request_timeout_seconds
     )
 
     total_export <- fetch_comtrade_grid(
@@ -911,7 +909,9 @@ if (needs_comtrade) {
       flows = "export",
       partner_chunk_size = 1,
       chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count
+      chunk_count = comtrade_chunk_count,
+      retries = comtrade_max_retries,
+      request_timeout_seconds = comtrade_request_timeout_seconds
     )
 
     stage_comtrade_output(
@@ -1028,7 +1028,9 @@ if (needs_energy_comtrade) {
       flows = trade_flows,
       partner_chunk_size = 1,
       chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count
+      chunk_count = comtrade_chunk_count,
+      retries = comtrade_max_retries,
+      request_timeout_seconds = comtrade_request_timeout_seconds
     )
 
     allied_comtrade_energy <- fetch_comtrade_grid(
@@ -1039,7 +1041,9 @@ if (needs_energy_comtrade) {
       flows = trade_flows,
       partner_chunk_size = 50,
       chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count
+      chunk_count = comtrade_chunk_count,
+      retries = comtrade_max_retries,
+      request_timeout_seconds = comtrade_request_timeout_seconds
     )
 
     total_export <- fetch_comtrade_grid(
@@ -1050,7 +1054,9 @@ if (needs_energy_comtrade) {
       flows = "export",
       partner_chunk_size = 1,
       chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count
+      chunk_count = comtrade_chunk_count,
+      retries = comtrade_max_retries,
+      request_timeout_seconds = comtrade_request_timeout_seconds
     )
 
     stage_comtrade_output(
