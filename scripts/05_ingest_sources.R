@@ -604,6 +604,219 @@ fetch_comtrade_grid <- function(reporters,
   dplyr::bind_rows(output) %>% dplyr::distinct()
 }
 
+split_by_nchar <- function(x, max_chars = 2500) {
+  chunks <- list()
+  cur <- character()
+  cur_len <- 0
+  for (code in x) {
+    add_len <- nchar(code) + ifelse(length(cur) == 0, 0, 1)
+    if (cur_len + add_len > max_chars) {
+      chunks[[length(chunks) + 1]] <- cur
+      cur <- code
+      cur_len <- nchar(code)
+    } else {
+      cur <- c(cur, code)
+      cur_len <- cur_len + add_len
+    }
+  }
+  if (length(cur)) {
+    chunks[[length(chunks) + 1]] <- cur
+  }
+  chunks
+}
+
+split_vec <- function(x, chunk_size) {
+  if (length(x) == 0) {
+    return(list(character()))
+  }
+  split(x, ceiling(seq_along(x) / chunk_size))
+}
+
+comtrade_chunk_count_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_CHUNK_COUNT", "1")))
+comtrade_chunk_index_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_CHUNK_INDEX", "1")))
+comtrade_chunk_count <- if (!is.na(comtrade_chunk_count_env) && comtrade_chunk_count_env > 0) {
+  comtrade_chunk_count_env
+} else {
+  1L
+}
+comtrade_chunk_index <- if (!is.na(comtrade_chunk_index_env) && comtrade_chunk_index_env > 0) {
+  comtrade_chunk_index_env
+} else {
+  1L
+}
+if (comtrade_chunk_index > comtrade_chunk_count) {
+  stop("COMTRADE_CHUNK_INDEX cannot be greater than COMTRADE_CHUNK_COUNT.")
+}
+
+comtrade_request_timeout_env <- suppressWarnings(as.numeric(Sys.getenv("COMTRADE_REQUEST_TIMEOUT_SECONDS", "120")))
+comtrade_request_timeout_seconds <- if (!is.na(comtrade_request_timeout_env) && comtrade_request_timeout_env > 0) {
+  comtrade_request_timeout_env
+} else {
+  120
+}
+comtrade_max_retries_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_MAX_RETRIES", "3")))
+comtrade_max_retries <- if (!is.na(comtrade_max_retries_env) && comtrade_max_retries_env > 0) {
+  comtrade_max_retries_env
+} else {
+  3L
+}
+
+timed_ct_get_data <- function(..., timeout_seconds = 120) {
+  on.exit(setTimeLimit(cpu = Inf, elapsed = Inf, transient = FALSE), add = TRUE)
+  setTimeLimit(cpu = Inf, elapsed = timeout_seconds, transient = TRUE)
+  comtradr::ct_get_data(...)
+}
+
+stage_comtrade_output <- function(data, output_path, chunk_index = 1L, chunk_count = 1L) {
+  if (chunk_count <= 1) {
+    write.csv(data, output_path, row.names = FALSE)
+    return(invisible(TRUE))
+  }
+
+  output_name <- tools::file_path_sans_ext(basename(output_path))
+  chunk_dir <- file.path(dirname(output_path), "comtrade_chunks", output_name)
+  if (!dir.exists(chunk_dir)) {
+    dir.create(chunk_dir, recursive = TRUE)
+  }
+
+  chunk_path <- file.path(
+    chunk_dir,
+    sprintf("chunk_%03d_of_%03d.csv", as.integer(chunk_index), as.integer(chunk_count))
+  )
+  write.csv(data, chunk_path, row.names = FALSE)
+
+  expected_paths <- file.path(
+    chunk_dir,
+    sprintf("chunk_%03d_of_%03d.csv", seq_len(chunk_count), rep(chunk_count, chunk_count))
+  )
+
+  if (!all(file.exists(expected_paths))) {
+    message(
+      "Staged Comtrade chunk ", chunk_index, "/", chunk_count,
+      " for ", basename(output_path), ".",
+      " Run remaining chunks to finalize."
+    )
+    return(invisible(FALSE))
+  }
+
+  combined <- dplyr::bind_rows(lapply(expected_paths, read.csv)) %>% dplyr::distinct()
+  write.csv(combined, output_path, row.names = FALSE)
+  message("Combined ", chunk_count, " chunk files into ", output_path)
+  invisible(TRUE)
+}
+
+fetch_comtrade_grid <- function(reporters,
+                                partners,
+                                code_chunks,
+                                years,
+                                flows,
+                                partner_chunk_size = 50,
+                                sleep_seconds = 0.5,
+                                retries = comtrade_max_retries,
+                                chunk_index = 1L,
+                                chunk_count = 1L) {
+  if (length(reporters) == 0 || length(partners) == 0 || length(code_chunks) == 0) {
+    return(data.frame())
+  }
+
+  partner_chunks <- split_vec(partners, chunk_size = partner_chunk_size)
+  request_grid <- tidyr::expand_grid(
+    rep = reporters,
+    yr = years,
+    dir = flows,
+    cc = code_chunks,
+    pch = partner_chunks
+  )
+
+  if (chunk_count > 1) {
+    row_index <- seq_len(nrow(request_grid))
+    selected_rows <- row_index[((row_index - 1) %% chunk_count) + 1 == chunk_index]
+    request_grid <- request_grid[selected_rows, , drop = FALSE]
+    message("Running Comtrade request chunk ", chunk_index, "/", chunk_count,
+            " with ", nrow(request_grid), " request(s).")
+  }
+
+  output <- vector("list", nrow(request_grid))
+  failed <- character()
+
+  for (i in seq_len(nrow(request_grid))) {
+    req <- request_grid[i, ]
+
+    data_chunk <- NULL
+    last_err <- NULL
+    for (attempt in seq_len(retries)) {
+      attempt_out <- tryCatch(
+        timed_ct_get_data(
+          reporter = req$rep[[1]],
+          partner = req$pch[[1]],
+          commodity_code = req$cc[[1]],
+          start_date = req$yr[[1]],
+          end_date = req$yr[[1]],
+          flow_direction = req$dir[[1]],
+          timeout_seconds = comtrade_request_timeout_seconds
+        ),
+        error = function(e) e
+      )
+
+      if (!inherits(attempt_out, "error")) {
+        data_chunk <- attempt_out
+        break
+      }
+
+      last_err <- attempt_out
+      if (attempt < retries) {
+        Sys.sleep(sleep_seconds * attempt)
+      }
+    }
+
+    if (inherits(last_err, "error") && is.null(data_chunk)) {
+      failed <- c(
+        failed,
+        paste0(
+          "rep=", req$rep[[1]],
+          ", yr=", req$yr[[1]],
+          ", dir=", req$dir[[1]],
+          ", codes=", paste(req$cc[[1]], collapse = ","),
+          ", partners=", paste(req$pch[[1]], collapse = ","),
+          " -> ", conditionMessage(last_err)
+        )
+      )
+      next
+    }
+
+    if (!"flow_direction" %in% names(data_chunk)) {
+      data_chunk <- dplyr::mutate(data_chunk, flow_direction = req$dir[[1]])
+    }
+    if ("trade_flow" %in% names(data_chunk)) {
+      data_chunk <- dplyr::filter(data_chunk, tolower(trade_flow) == req$dir[[1]])
+    }
+
+    output[[i]] <- dplyr::mutate(
+      data_chunk,
+      reporter_req = req$rep[[1]],
+      year_req = req$yr[[1]]
+    )
+
+    Sys.sleep(sleep_seconds)
+  }
+
+  if (length(failed) > 0) {
+    stop(
+      "UN Comtrade requests failed for ",
+      length(failed),
+      " request(s). Example failures:
+",
+      paste(utils::head(failed, 5), collapse = "
+"),
+      "
+Hint: adjust COMTRADE_REQUEST_TIMEOUT_SECONDS / COMTRADE_MAX_RETRIES, ",
+      "or run more chunks via COMTRADE_CHUNK_COUNT."
+    )
+  }
+
+  dplyr::bind_rows(output) %>% dplyr::distinct()
+}
+
 # --- Source: UN Comtrade (critical minerals trade) ---
 critmin_import_path <- file.path(snapshot_dir, "critmin_import_2025.csv")
 critmin_export_path <- file.path(snapshot_dir, "critmin_export_2025.csv")

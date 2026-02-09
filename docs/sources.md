@@ -65,6 +65,8 @@ For long Comtrade refreshes, you can split ingestion into multiple runs with:
 
 - `COMTRADE_CHUNK_COUNT` (total number of chunks)
 - `COMTRADE_CHUNK_INDEX` (1-based index of the chunk to run)
+- `COMTRADE_REQUEST_TIMEOUT_SECONDS` (per-request timeout safeguard)
+- `COMTRADE_MAX_RETRIES` (agent-level retries before failing fast)
 
 Chunk runs stage files in `data/raw/<snapshot_date>/comtrade_chunks/` and automatically
 assemble final outputs once all chunks are present.

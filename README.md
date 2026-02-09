@@ -502,6 +502,8 @@ export COMTRADE_API_KEY=your_key_here
 # Optional chunked runs for long API pulls:
 # export COMTRADE_CHUNK_COUNT=8
 # export COMTRADE_CHUNK_INDEX=1   # run 1..8 in separate executions
+# export COMTRADE_REQUEST_TIMEOUT_SECONDS=120
+# export COMTRADE_MAX_RETRIES=3
 ```
 
 Then run:
