@@ -488,12 +488,29 @@ If you don’t have the raw inputs available, set:
 
 so `scripts/10_build_themes.R` can exit cleanly when inputs are missing.
 
-3. **Run the pipeline scripts in order**
+3. **Run ingestion and theme/index scripts in order**
+
+If you are refreshing UN Comtrade outputs (including
+`allied_comtrade_energy_data.csv`, `comtrade_energy_trade.csv`, and
+`comtrade_total_export.csv`), set your API key first:
+
+```bash
+export COMTRADE_API_KEY=your_key_here
+# Optional overrides (defaults shown):
+# export COMTRADE_TARGET_YEAR=$(($(date +%Y)-1))
+# export COMTRADE_START_YEAR=$((COMTRADE_TARGET_YEAR-4))
+```
+
+Then run:
 
 ```bash
 Rscript scripts/00_setup.R
+Rscript scripts/05_ingest_sources.R
 Rscript scripts/10_build_themes.R
 Rscript scripts/20_build_indices.R
+Rscript scripts/15_build_partner_themes.R
+Rscript scripts/25_build_partner_indices.R
+Rscript scripts/80_write_outputs.R
 ```
 
 For an end-to-end run, use:
