@@ -160,9 +160,9 @@ required_raw_paths <- function(snapshot_dir) {
     "2024-10-29 - New Energy Outlook 2024.csv",
     "wdi_gdp.csv",
     "wdi_country_info.csv",
-    "critmin_import_2024.csv",
-    "critmin_export_2024.csv",
-    "critmin_total_export_2024.csv",
+    "critmin_import_2025.csv",
+    "critmin_export_2025.csv",
+    "critmin_total_export_2025.csv",
     "2025-03-24 - 2025 LCOE Data Viewer Tool.csv",
     "WEO2024_AnnexA_Free_Dataset_World.csv",
     "IEA_EVDataExplorer2025.xlsx",
@@ -221,9 +221,9 @@ comtrade_total_export_path <- file.path(latest_snapshot, "comtrade_total_export.
 bnef_neo_path <- file.path(latest_snapshot, "2024-10-29 - New Energy Outlook 2024.csv")
 wdi_gdp_path <- file.path(latest_snapshot, "wdi_gdp.csv")
 wdi_country_path <- file.path(latest_snapshot, "wdi_country_info.csv")
-critmin_import_path <- file.path(latest_snapshot, "critmin_import_2024.csv")
-critmin_export_path <- file.path(latest_snapshot, "critmin_export_2024.csv")
-critmin_total_export_path <- file.path(latest_snapshot, "critmin_total_export_2024.csv")
+critmin_import_path <- file.path(latest_snapshot, "critmin_import_2025.csv")
+critmin_export_path <- file.path(latest_snapshot, "critmin_export_2025.csv")
+critmin_total_export_path <- file.path(latest_snapshot, "critmin_total_export_2025.csv")
 energy_prices_lcoe_path <- file.path(latest_snapshot, "2025-03-24 - 2025 LCOE Data Viewer Tool.csv")
 iea_weo_path <- file.path(latest_snapshot, "WEO2024_AnnexA_Free_Dataset_World.csv")
 iea_ev_path <- file.path(latest_snapshot, "IEA_EVDataExplorer2025.xlsx")
