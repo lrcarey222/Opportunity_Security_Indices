@@ -194,6 +194,7 @@ as_bool <- function(x) {
 
 normalize_chr_vec <- function(x) {
   x <- as.character(x)
+  x <- stringr::str_squish(x)
   x <- x[!is.na(x) & nzchar(x)]
   unique(x)
 }
@@ -864,7 +865,11 @@ clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
   check_required_columns(subcat_raw, c("HS6", "Technology", "Value.Chain", "Sub.Sector"), "subcat_raw")
   
   subcat_lu <- subcat_raw %>%
-    dplyr::mutate(code = stringr::str_pad(as.character(.data$HS6), width = 6, pad = "0")) %>%
+    dplyr::mutate(
+      code = stringr::str_pad(as.character(.data$HS6), width = 6, pad = "0"),
+      Technology = stringr::str_squish(as.character(.data$Technology)),
+      `Value.Chain` = stringr::str_squish(as.character(.data$`Value.Chain`))
+    ) %>%
     dplyr::distinct(.data$code, .data$Technology, .data$`Value.Chain`, .data$Sub.Sector)
   
   nipo_classified <- raw_nipo %>%

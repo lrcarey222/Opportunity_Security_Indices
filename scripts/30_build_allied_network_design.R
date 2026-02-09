@@ -77,6 +77,8 @@ latest_raw_snapshot <- function(root_dir, raw_data_dir, skip_data_downloads = FA
 latest_snapshot <- latest_raw_snapshot(repo_root, config$raw_data_dir, skip_data_downloads)
 if (is.null(latest_snapshot)) stop("No raw snapshots found (and SKIP_DATA_DOWNLOADS is set).")
 
+wdi_country_path <- file.path(latest_snapshot, "wdi_country_info.csv")
+country_info <- read.csv(wdi_country_path)
 country_info <- standardize_country_info(country_info)
 
 # Coalition definition (your list)
