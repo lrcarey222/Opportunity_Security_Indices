@@ -44,3 +44,18 @@ Rscript scripts/01_generate_raw_inputs_manifest.R
 ```
 
 Commit the updated `config/raw_inputs_manifest.yml` alongside the script changes so ingestion stays in sync with the legacy raw-input references.
+
+### UN Comtrade refresh process (energy and ally dyads)
+
+The ingestion stage (`scripts/05_ingest_sources.R`) now builds all three energy-trade Comtrade artifacts directly into the active snapshot:
+
+- `comtrade_energy_trade.csv`
+- `comtrade_total_export.csv`
+- `allied_comtrade_energy_data.csv`
+
+Set `COMTRADE_API_KEY` before running ingestion. You can optionally set:
+
+- `COMTRADE_TARGET_YEAR` (defaults to previous calendar year)
+- `COMTRADE_START_YEAR` (defaults to `COMTRADE_TARGET_YEAR - 4`)
+
+This lets maintainers refresh the 5-year window when new data (for example 2025) becomes available without editing code.
