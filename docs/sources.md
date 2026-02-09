@@ -44,3 +44,29 @@ Rscript scripts/01_generate_raw_inputs_manifest.R
 ```
 
 Commit the updated `config/raw_inputs_manifest.yml` alongside the script changes so ingestion stays in sync with the legacy raw-input references.
+
+### UN Comtrade refresh process (energy and ally dyads)
+
+The ingestion stage (`scripts/05_ingest_sources.R`) now builds all three energy-trade Comtrade artifacts directly into the active snapshot:
+
+- `comtrade_energy_trade.csv`
+- `comtrade_total_export.csv`
+- `allied_comtrade_energy_data.csv`
+
+Set `COMTRADE_API_KEY` before running ingestion. You can optionally set:
+
+- `COMTRADE_TARGET_YEAR` (defaults to previous calendar year)
+- `COMTRADE_START_YEAR` (defaults to `COMTRADE_TARGET_YEAR - 4`)
+
+This lets maintainers refresh the 5-year window when new data (for example 2025) becomes available without editing code.
+
+
+For long Comtrade refreshes, you can split ingestion into multiple runs with:
+
+- `COMTRADE_CHUNK_COUNT` (total number of chunks)
+- `COMTRADE_CHUNK_INDEX` (1-based index of the chunk to run)
+- `COMTRADE_REQUEST_TIMEOUT_SECONDS` (per-request timeout safeguard)
+- `COMTRADE_MAX_RETRIES` (agent-level retries before failing fast)
+
+Chunk runs stage files in `data/raw/<snapshot_date>/comtrade_chunks/` and automatically
+assemble final outputs once all chunks are present.
