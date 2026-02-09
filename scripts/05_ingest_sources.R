@@ -284,7 +284,9 @@ critical_minerals_hs_path <- file.path(
   "Columbia University Critical Minerals Dashboard",
   "unique_comtrade.csv"
 )
-energy_trade_codes_path <- file.path(snapshot_dir, "consolidated_hs6_energy_tech_long.csv")
+
+
+energy_trade_codes_path <- hs6_category_path
 
 split_by_nchar <- function(x, max_chars = 2500) {
   chunks <- list()
@@ -509,7 +511,7 @@ if (needs_comtrade) {
   }
 }
 
-# --- Source: UN Comtrade (energy trade) ---
+# --- Source: UN Comtrade (energy trade) -------------
 comtrade_energy_trade_path <- file.path(snapshot_dir, "comtrade_energy_trade.csv")
 comtrade_total_export_path <- file.path(snapshot_dir, "comtrade_total_export.csv")
 allied_comtrade_energy_path <- file.path(snapshot_dir, "allied_comtrade_energy_data.csv")
@@ -623,7 +625,7 @@ if (needs_energy_comtrade) {
       reporters = reporter_candidates,
       partners = "World",
       code_chunks = list("TOTAL"),
-      years = comtrade_start_year:comtrade_target_year,
+      years = c(comtrade_start_year,comtrade_target_year),
       flows = "export",
       partner_chunk_size = 1
     )
@@ -634,7 +636,7 @@ if (needs_energy_comtrade) {
   }
 }
 
-# --- Source: IMF Primary Commodity Price System (PCPS) ---
+# --- Source: IMF Primary Commodity Price System (PCPS) ------------------
 imf_pcps_excel_path <- file.path(snapshot_dir, "IMF_PCPS_all.xlsx")
 if (!file.exists(imf_pcps_excel_path)) {
   imf_pcps_candidates <- c(
