@@ -1196,7 +1196,11 @@ build_by_policy <- function(policy_asof_tbl, cpc_names) {
         .data$scale_strength_pkg / .data$country_domestic_stock,
         0
       ),
-      domestic_intervention_index = median_scurve(log1p(.data$scale_strength_pkg))
+      domestic_strength_sum = .data$scale_strength_pkg,
+      domestic_strength_avg = .data$scale_strength_pkg,
+      domestic_strength_balanced = .data$scale_strength_pkg,
+      domestic_stock_sum = .data$domestic_strength_balanced,
+      domestic_intervention_index = median_scurve(log1p(.data$domestic_stock_sum))
     ) %>%
     dplyr::ungroup()
   
@@ -1257,7 +1261,7 @@ build_by_hs6 <- function(policy_asof_tbl,
       ) - 1,
       .groups = "drop"
     ) %>%
-    dplyr::rename(domestic_stock_sum = .data$domestic_strength_balanced)
+    dplyr::mutate(domestic_stock_sum = .data$domestic_strength_balanced)
   
   idx <- agg %>%
     dplyr::group_by(.data$iso3) %>%
@@ -1346,7 +1350,7 @@ build_by_tech_sc <- function(policy_asof_tbl,
       ) - 1,
       .groups = "drop"
     ) %>%
-    dplyr::rename(domestic_stock_sum = .data$domestic_strength_balanced)
+    dplyr::mutate(domestic_stock_sum = .data$domestic_strength_balanced)
   
   idx <- agg %>%
     dplyr::group_by(.data$iso3) %>%
@@ -1452,7 +1456,8 @@ build_by_tech_sc_year <- function(policy_base_tbl,
       iso3 = character(0), country = character(0),
       tech = character(0), supply_chain = character(0), announce_year = integer(0),
       domestic_strength_sum = numeric(0), domestic_strength_avg = numeric(0),
-      domestic_strength_balanced = numeric(0), n_policies_window = integer(0),
+      domestic_strength_balanced = numeric(0), domestic_stock_sum = numeric(0),
+      n_policies_window = integer(0),
       domestic_intervention_index_xs = numeric(0),
       cpc3_codes_csv = character(0), cpc_name_csv = character(0)
     )
@@ -1506,9 +1511,10 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     )
   
   out <- agg %>%
+    dplyr::mutate(domestic_stock_sum = .data$domestic_strength_balanced) %>%
     dplyr::group_by(.data$iso3, .data$country, .data$announce_year) %>%
     dplyr::mutate(
-      domestic_intervention_index_xs = median_scurve(log1p(.data$domestic_strength_balanced))
+      domestic_intervention_index_xs = median_scurve(log1p(.data$domestic_stock_sum))
     ) %>%
     dplyr::ungroup()
   
@@ -1586,7 +1592,7 @@ build_by_cpc <- function(policy_asof_tbl,
       ) - 1,
       .groups = "drop"
     ) %>%
-    dplyr::rename(domestic_stock_sum = .data$domestic_strength_balanced)
+    dplyr::mutate(domestic_stock_sum = .data$domestic_strength_balanced)
   
   if (!is.null(cpc_name_lu) && nrow(cpc_name_lu) > 0) {
     agg <- agg %>% dplyr::left_join(cpc_name_lu, by = "cpc3")
