@@ -352,8 +352,25 @@ if (needs_comtrade) {
 # --- Source: UN Comtrade (energy trade) ---
 comtrade_energy_trade_path <- file.path(snapshot_dir, "comtrade_energy_trade.csv")
 comtrade_total_export_path <- file.path(snapshot_dir, "comtrade_total_export.csv")
+allied_comtrade_energy_path <- file.path(snapshot_dir, "allied_comtrade_energy_data.csv")
 
-comtrade_target_year <- as.integer(format(Sys.Date(), "%Y")) - 1
+comtrade_target_year_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_TARGET_YEAR", "")))
+comtrade_target_year <- if (!is.na(comtrade_target_year_env)) {
+  comtrade_target_year_env
+} else {
+  as.integer(format(Sys.Date(), "%Y")) - 1
+}
+
+comtrade_start_year_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_START_YEAR", "")))
+comtrade_start_year <- if (!is.na(comtrade_start_year_env)) {
+  comtrade_start_year_env
+} else {
+  comtrade_target_year - 4
+}
+
+if (comtrade_start_year > comtrade_target_year) {
+  stop("COMTRADE_START_YEAR cannot be greater than COMTRADE_TARGET_YEAR.")
+}
 
 comtrade_has_year <- function(path, year) {
   if (!file.exists(path)) {
@@ -370,7 +387,8 @@ comtrade_has_year <- function(path, year) {
 
 needs_energy_comtrade <- !(
   comtrade_has_year(comtrade_energy_trade_path, comtrade_target_year) &&
-    comtrade_has_year(comtrade_total_export_path, comtrade_target_year)
+    comtrade_has_year(comtrade_total_export_path, comtrade_target_year) &&
+    comtrade_has_year(allied_comtrade_energy_path, comtrade_target_year)
 )
 
 if (needs_energy_comtrade) {
@@ -425,6 +443,13 @@ if (needs_energy_comtrade) {
 
     code_chunks <- split_by_nchar(energy_codes, max_chars = 2500)
 
+    split_vec <- function(x, chunk_size) {
+      if (length(x) == 0) {
+        return(list(character()))
+      }
+      split(x, ceiling(seq_along(x) / chunk_size))
+    }
+
     wdi_country_info <- read.csv(wdi_country_path)
     reporter_candidates <- wdi_country_info$iso3c
     reporter_candidates <- reporter_candidates[!is.na(reporter_candidates) & nzchar(reporter_candidates)]
@@ -442,44 +467,95 @@ if (needs_energy_comtrade) {
       stop("No valid reporter codes remain after filtering against comtradr reference data.")
     }
 
-    safe_ct <- purrr::possibly(comtradr::ct_get_data, otherwise = NULL)
-    trade_flows <- c("export", "import")
+    ally_reporters <- c(
+      "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA",
+      "ITA", "BRA", "SAU", "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK",
+      "ARG", "MAR", "CHL"
+    )
+    ally_reporters <- intersect(ally_reporters, reporter_candidates)
 
-    energy_trade_list <- list()
-    idx <- 1
-    for (flow in trade_flows) {
-      for (chunk in code_chunks) {
-        data_chunk <- safe_ct(
-          reporter = reporter_candidates,
-          partner = "World",
-          commodity_code = chunk,
-          start_date = comtrade_target_year,
-          end_date = comtrade_target_year,
-          flow_direction = flow
-        )
-        if (!is.null(data_chunk)) {
-          if (!"flow_direction" %in% names(data_chunk)) {
-            data_chunk <- dplyr::mutate(data_chunk, flow_direction = flow)
-          }
-          energy_trade_list[[idx]] <- data_chunk
-          idx <- idx + 1
-        }
+    fetch_comtrade_grid <- function(reporters,
+                                    partners,
+                                    code_chunks,
+                                    years,
+                                    flows,
+                                    partner_chunk_size = 50,
+                                    sleep_seconds = 0.5) {
+      if (length(reporters) == 0 || length(partners) == 0 || length(code_chunks) == 0) {
+        return(data.frame())
       }
+
+      safe_ct <- purrr::possibly(comtradr::ct_get_data, otherwise = NULL)
+      partner_chunks <- split_vec(partners, chunk_size = partner_chunk_size)
+      request_grid <- tidyr::expand_grid(
+        rep = reporters,
+        yr = years,
+        dir = flows,
+        cc = code_chunks,
+        pch = partner_chunks
+      )
+
+      output <- purrr::pmap(
+        request_grid,
+        function(rep, yr, dir, cc, pch) {
+          Sys.sleep(sleep_seconds)
+          data_chunk <- safe_ct(
+            reporter = rep,
+            partner = pch,
+            commodity_code = cc,
+            start_date = yr,
+            end_date = yr,
+            flow_direction = dir
+          )
+
+          if (is.null(data_chunk)) {
+            return(NULL)
+          }
+          if (!"flow_direction" %in% names(data_chunk)) {
+            data_chunk <- dplyr::mutate(data_chunk, flow_direction = dir)
+          }
+          if ("trade_flow" %in% names(data_chunk)) {
+            data_chunk <- dplyr::filter(data_chunk, tolower(trade_flow) == dir)
+          }
+          dplyr::mutate(data_chunk, reporter_req = rep, year_req = yr)
+        }
+      )
+
+      dplyr::bind_rows(output) %>% dplyr::distinct()
     }
 
-    energy_trade <- dplyr::bind_rows(energy_trade_list) %>% dplyr::distinct()
+    trade_flows <- c("export", "import")
+
+    energy_trade <- fetch_comtrade_grid(
+      reporters = reporter_candidates,
+      partners = "World",
+      code_chunks = code_chunks,
+      years = comtrade_start_year:comtrade_target_year,
+      flows = trade_flows,
+      partner_chunk_size = 1
+    )
+
+    allied_comtrade_energy <- fetch_comtrade_grid(
+      reporters = ally_reporters,
+      partners = reporter_candidates,
+      code_chunks = code_chunks,
+      years = comtrade_start_year:comtrade_target_year,
+      flows = trade_flows,
+      partner_chunk_size = 50
+    )
 
     total_export <- comtradr::ct_get_data(
       reporter = reporter_candidates,
       partner = "World",
       commodity_code = "TOTAL",
-      start_date = comtrade_target_year,
+      start_date = comtrade_start_year,
       end_date = comtrade_target_year,
       flow_direction = "export"
     )
 
     write.csv(energy_trade, comtrade_energy_trade_path, row.names = FALSE)
     write.csv(total_export, comtrade_total_export_path, row.names = FALSE)
+    write.csv(allied_comtrade_energy, allied_comtrade_energy_path, row.names = FALSE)
   }
 }
 
