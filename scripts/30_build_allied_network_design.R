@@ -77,13 +77,94 @@ latest_raw_snapshot <- function(root_dir, raw_data_dir, skip_data_downloads = FA
 latest_snapshot <- latest_raw_snapshot(repo_root, config$raw_data_dir, skip_data_downloads)
 if (is.null(latest_snapshot)) stop("No raw snapshots found (and SKIP_DATA_DOWNLOADS is set).")
 
-country_info <- standardize_country_info(country_info)
+country_info_path <- file.path(latest_snapshot, "wdi_country_info.csv")
+country_info <- standardize_country_info(read.csv(country_info_path))
 
 # Coalition definition (your list)
 iso3c_network <- c(
   "USA","CAN","JPN","AUS","IND","MEX","KOR","GBR","DEU","FRA","ITA","BRA","SAU",
   "ZAF","IDN","NOR","UAE","VNM","KEN","DNK","ARG","MAR","CHL"
 )
+
+trade_concentration_tbl <- read_processed_tbl("trade_concentration_tbl")
+
+exports_tbl <- trade_concentration_tbl %>%
+  dplyr::filter(
+    category == "Trade",
+    variable == "exports",
+    data_type == "raw",
+    is.na(sub_sector) | sub_sector == "All"
+  ) %>%
+  dplyr::transmute(
+    iso3c = as.character(iso3c),
+    tech = as.character(tech),
+    supply_chain = as.character(supply_chain),
+    Year = suppressWarnings(as.numeric(Year)),
+    exports_usd = suppressWarnings(as.numeric(value))
+  ) %>%
+  dplyr::mutate(exports_usd = dplyr::coalesce(exports_usd, 0))
+
+stage_targets_tbl <- exports_tbl %>%
+  dplyr::group_by(tech, supply_chain, Year) %>%
+  dplyr::summarize(
+    world_exports_usd = sum(exports_usd, na.rm = TRUE),
+    china_exports_usd = sum(dplyr::if_else(iso3c == "CHN", exports_usd, 0), na.rm = TRUE),
+    target_exports_usd = china_exports_usd,
+    .groups = "drop"
+  ) %>%
+  dplyr::filter(is.finite(target_exports_usd), target_exports_usd > 0)
+
+cap_share_tbl <- trade_concentration_tbl %>%
+  dplyr::filter(
+    category == "Trade",
+    variable == "market_share",
+    data_type == "raw",
+    is.na(sub_sector) | sub_sector == "All",
+    iso3c %in% iso3c_network
+  ) %>%
+  dplyr::transmute(
+    iso3c = as.character(iso3c),
+    supply_chain = as.character(supply_chain),
+    market_share = suppressWarnings(as.numeric(value))
+  ) %>%
+  dplyr::group_by(iso3c, supply_chain) %>%
+  dplyr::summarize(cap_share = suppressWarnings(max(market_share, na.rm = TRUE)), .groups = "drop") %>%
+  dplyr::mutate(cap_share = dplyr::if_else(is.infinite(cap_share), NA_real_, cap_share))
+
+scale_caps_tbl <- tidyr::crossing(
+  iso3c = iso3c_network,
+  stage_targets_tbl %>% dplyr::distinct(tech, supply_chain, Year)
+) %>%
+  dplyr::left_join(stage_targets_tbl, by = c("tech", "supply_chain", "Year")) %>%
+  dplyr::left_join(exports_tbl, by = c("iso3c", "tech", "supply_chain", "Year")) %>%
+  dplyr::left_join(cap_share_tbl, by = c("iso3c", "supply_chain")) %>%
+  dplyr::mutate(
+    cap0_exports_usd = dplyr::coalesce(exports_usd, 0),
+    current_share_ts = dplyr::if_else(world_exports_usd > 0, cap0_exports_usd / world_exports_usd, 0),
+    cap_share = dplyr::coalesce(cap_share, current_share_ts),
+    capMax_exports_usd = pmax(cap0_exports_usd, cap_share * world_exports_usd),
+    build_max_usd = pmax(0, capMax_exports_usd - cap0_exports_usd)
+  ) %>%
+  dplyr::select(
+    iso3c, tech, supply_chain, Year,
+    cap0_exports_usd, current_share_ts, cap_share,
+    world_exports_usd, capMax_exports_usd, build_max_usd
+  )
+
+stage_feasibility_tbl <- scale_caps_tbl %>%
+  dplyr::left_join(
+    stage_targets_tbl %>% dplyr::select(tech, supply_chain, Year, target_exports_usd),
+    by = c("tech", "supply_chain", "Year")
+  ) %>%
+  dplyr::group_by(tech, supply_chain, Year) %>%
+  dplyr::summarize(
+    target_exports_usd = dplyr::first(target_exports_usd),
+    allies_cap0_usd = sum(cap0_exports_usd, na.rm = TRUE),
+    allies_capMax_usd = sum(capMax_exports_usd, na.rm = TRUE),
+    feasible = allies_capMax_usd >= target_exports_usd,
+    gap_to_target_usd = pmax(0, target_exports_usd - allies_capMax_usd),
+    .groups = "drop"
+  )
 
 # Run
 fmt_time <- function(seconds) {
@@ -138,6 +219,11 @@ res <- allied_network_design(
   partner_development_country_tbl = partner_development_country_tbl,
   country_info = country_info,
   iso3c_network = iso3c_network,
+  stage_targets_tbl = stage_targets_tbl,
+  scale_caps_tbl = scale_caps_tbl,
+  scale_mode = "usd_target_match_china",
+  build_cost_mode = "dev_potential",
+  build_cost_weight = 0.25,
   method = "auto",        # uses MILP if installed, otherwise greedy
   min_producers = 3,
   max_share = 0.40,
@@ -163,6 +249,9 @@ if (!dir.exists(outputs_dir)) dir.create(outputs_dir, recursive = TRUE)
 utils::write.csv(res$specialization, file.path(outputs_dir, "allied_network_specialization.csv"), row.names = FALSE)
 utils::write.csv(res$flows,          file.path(outputs_dir, "allied_network_flows.csv"),         row.names = FALSE)
 utils::write.csv(res$diagnostics,    file.path(outputs_dir, "allied_network_diagnostics.csv"),   row.names = FALSE)
+utils::write.csv(stage_targets_tbl,  file.path(outputs_dir, "allied_network_stage_targets.csv"),      row.names = FALSE)
+utils::write.csv(scale_caps_tbl,     file.path(outputs_dir, "allied_network_scale_caps.csv"),         row.names = FALSE)
+utils::write.csv(stage_feasibility_tbl, file.path(outputs_dir, "allied_network_stage_feasibility.csv"), row.names = FALSE)
 if (!is.null(res$build_candidates)) {
   utils::write.csv(res$build_candidates, file.path(outputs_dir, "allied_network_build_candidates.csv"), row.names = FALSE)
 }
