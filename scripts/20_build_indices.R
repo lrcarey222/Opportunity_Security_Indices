@@ -82,6 +82,8 @@ technological_readiness_tbl <- read_processed_tbl(
 )
 policy_component_tbl <- read_processed_tbl("policy_component_tbl", processed_dir)
 policy_outputs <- read_processed_tbl("policy_outputs", processed_dir)
+nipo_tech_year<-read_processed_tbl("nipo_tech_year", processed_dir)
+
 tech_ghg <- read_processed_tbl("tech_ghg_tbl", processed_dir)
 
 energy_security_inputs <- list(
@@ -238,6 +240,14 @@ strategic_index <- left_join(
     by = c("Country","tech","supply_chain")
   ) %>%
   filter(tech %in% techs) %>%
+  group_by(Country,supply_chain) %>%
+  mutate(
+    
+    # impute NAs to country mean (computed components)
+    Economic_Opportunity_Index  = if_else(is.na(Economic_Opportunity_Index),  mean(Economic_Opportunity_Index,  na.rm = TRUE), Economic_Opportunity_Index),
+    Energy_Security_Index  = if_else(is.na(Energy_Security_Index),  mean(Energy_Security_Index,  na.rm = TRUE), Energy_Security_Index),
+    value = if_else(is.na(value), mean(value, na.rm = TRUE), value)
+  ) %>%
   group_by(Country) %>%
   mutate(
     # component indices
@@ -245,19 +255,13 @@ strategic_index <- left_join(
     es  = 1 - median_scurve(Energy_Security_Index),
     pol = median_scurve(value),
     
-    # impute NAs to country mean (computed components)
-    eo  = if_else(is.na(eo),  mean(eo,  na.rm = TRUE), eo),
-    es  = if_else(is.na(es),  mean(es,  na.rm = TRUE), es),
-    pol = if_else(is.na(pol), mean(pol, na.rm = TRUE), pol),
-    
-    # supply-chain weights
+     # supply-chain weights
     sc_weight = case_when(
       supply_chain == "Upstream"   ~ 0.50,
       supply_chain == "Midstream"  ~ 0.75,
       supply_chain == "Downstream" ~ 0.25,
       TRUE ~ NA_real_
     ),
-    
     # tech weight (ghg_index) - safer global fallback than within-country
     tech_weight = coalesce(ghg_index, mean(tech_ghg$ghg_index, na.rm = TRUE)),
     
@@ -376,7 +380,8 @@ sheets <- list(
   "India"   = strategic_index %>% filter(Country == "India"),
   "Korea"   = strategic_index %>% filter(Country %in% c("Korea", "South Korea")),
   "Viet Nam"= strategic_index %>% filter(Country == "Viet Nam"),
-  "USA"= strategic_index %>% filter(Country == "United States")
+  "USA"= strategic_index %>% filter(Country == "United States"),
+  "UK" = strategic_index %>% filter(Country=="United Kingdom")
 )
 
 # Keep only requested columns, sort, and (optionally) rename for the sheet
@@ -444,7 +449,7 @@ top10_by_country <- strategic_index %>%
   ungroup()
 
 plot_df <- top10_by_country %>%
-  filter(Country %in% c("Japan","South Korea","India","Viet Nam")) %>%
+  filter(Country %in% c("Japan","South Korea","India","Viet Nam","United Kingdom")) %>%
   select(Country, sector, sector_key, strategic_index,
          contrib_eo, contrib_es, contrib_policy, contrib_sc,contrib_ghg) %>%
   pivot_longer(
@@ -470,10 +475,10 @@ rmi_palette <- c("#0BD0D9",
                  "#548538",
                  "#7F7F7F")
 
-ggplot(plot_df %>% filter(Country=="Japan"), aes(x = sector_key, y = contribution, fill = component)) +
+ggplot(plot_df %>% filter(Country=="United Kingdom"), aes(x = sector_key, y = contribution, fill = component)) +
   geom_col() +
   coord_flip() +
-  facet_wrap(~ Country, scales = "free_y") +
+  #facet_wrap(~ Country, scales = "free_y") +
   scale_x_discrete(labels = function(x) sub("^.*\\|\\|", "", x)) +
   scale_fill_manual(values = rmi_palette) +
   labs(x = NULL, y = "Weighted contribution to strategic_index", fill = NULL) +
