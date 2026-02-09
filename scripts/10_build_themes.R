@@ -164,7 +164,7 @@ required_raw_paths <- function(snapshot_dir) {
     "critmin_export_2025.csv",
     "critmin_total_export_2025.csv",
     "2025-03-24 - 2025 LCOE Data Viewer Tool.csv",
-    "WEO2024_AnnexA_Free_Dataset_World.csv",
+    "WEO2025_AnnexA_Free_Dataset_World.csv",
     "IEA_EVDataExplorer2025.xlsx",
     "Market Size for Technology and Supply Chain.xlsx",
     "BNEF_Energy Transition Supply Chains 2025.xlsx",
@@ -225,7 +225,7 @@ critmin_import_path <- file.path(latest_snapshot, "critmin_import_2025.csv")
 critmin_export_path <- file.path(latest_snapshot, "critmin_export_2025.csv")
 critmin_total_export_path <- file.path(latest_snapshot, "critmin_total_export_2025.csv")
 energy_prices_lcoe_path <- file.path(latest_snapshot, "2025-03-24 - 2025 LCOE Data Viewer Tool.csv")
-iea_weo_path <- file.path(latest_snapshot, "WEO2024_AnnexA_Free_Dataset_World.csv")
+iea_weo_path <- file.path(latest_snapshot, "WEO2025_AnnexA_Free_Dataset_World.csv")
 iea_ev_path <- file.path(latest_snapshot, "IEA_EVDataExplorer2025.xlsx")
 bcg_future_demand_path <- file.path(latest_snapshot, "Market Size for Technology and Supply Chain.xlsx")
 bnef_supply_chain_path <- file.path(latest_snapshot, "BNEF_Energy Transition Supply Chains 2025.xlsx")
