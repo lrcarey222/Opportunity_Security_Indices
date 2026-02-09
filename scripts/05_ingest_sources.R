@@ -441,7 +441,7 @@ if (needs_comtrade) {
       stop("Package 'comtradr' is required to ingest critical minerals trade data.")
     }
 
-    comtrade_key <- Sys.getenv("COMTRADE_API_KEY")
+    comtrade_key <- "2940653b9bbe4671b3f7fde2846d14be"
     if (comtrade_key == "") {
       stop("COMTRADE_API_KEY environment variable must be set to ingest critical minerals trade data.")
     }
@@ -559,7 +559,7 @@ if (needs_energy_comtrade) {
       stop("Package 'comtradr' is required to ingest energy trade data.")
     }
 
-    comtrade_key <- Sys.getenv("COMTRADE_API_KEY")
+    comtrade_key <- "2940653b9bbe4671b3f7fde2846d14be"
     if (comtrade_key == "") {
       stop("COMTRADE_API_KEY environment variable must be set to ingest energy trade data.")
     }
