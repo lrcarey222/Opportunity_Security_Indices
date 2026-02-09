@@ -249,18 +249,18 @@ critical_minerals_hs_path <- file.path(
 energy_trade_codes_path <- file.path(snapshot_dir, "consolidated_hs6_energy_tech_long.csv")
 
 # --- Source: UN Comtrade (critical minerals trade) ---
-critmin_import_path <- file.path(snapshot_dir, "critmin_import_2024.csv")
-critmin_export_path <- file.path(snapshot_dir, "critmin_export_2024.csv")
-critmin_total_export_path <- file.path(snapshot_dir, "critmin_total_export_2024.csv")
+critmin_import_path <- file.path(snapshot_dir, "critmin_import_2025.csv")
+critmin_export_path <- file.path(snapshot_dir, "critmin_export_2025.csv")
+critmin_total_export_path <- file.path(snapshot_dir, "critmin_total_export_2025.csv")
 
 if (!file.exists(critmin_import_path)) {
-  copy_snapshot_file(file.path(sharepoint_raw_dir, "critmin_import_2024.csv"), critmin_import_path)
+  copy_snapshot_file(file.path(sharepoint_raw_dir, "critmin_import_2025.csv"), critmin_import_path)
 }
 if (!file.exists(critmin_export_path)) {
-  copy_snapshot_file(file.path(sharepoint_raw_dir, "critmin_export_2024.csv"), critmin_export_path)
+  copy_snapshot_file(file.path(sharepoint_raw_dir, "critmin_export_2025.csv"), critmin_export_path)
 }
 if (!file.exists(critmin_total_export_path)) {
-  copy_snapshot_file(file.path(sharepoint_raw_dir, "critmin_total_export_2024.csv"), critmin_total_export_path)
+  copy_snapshot_file(file.path(sharepoint_raw_dir, "critmin_total_export_2025.csv"), critmin_total_export_path)
 }
 
 needs_comtrade <- !(
@@ -322,24 +322,24 @@ if (needs_comtrade) {
       reporter = reporter_candidates,
       partner = "World",
       commodity_code = crit_hs_filtered$hscode,
-      start_date = 2024,
-      end_date = 2024,
+      start_date = 2025,
+      end_date = 2025,
       flow_direction = "import"
     )
     critmin_export <- comtradr::ct_get_data(
       reporter = reporter_candidates,
       partner = "World",
       commodity_code = crit_hs_filtered$hscode,
-      start_date = 2024,
-      end_date = 2024,
+      start_date = 2025,
+      end_date = 2025,
       flow_direction = "export"
     )
     total_export <- comtradr::ct_get_data(
       reporter = reporter_candidates,
       partner = "World",
       commodity_code = "TOTAL",
-      start_date = 2024,
-      end_date = 2024,
+      start_date = 2025,
+      end_date = 2025,
       flow_direction = "export"
     )
 
