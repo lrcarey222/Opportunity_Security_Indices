@@ -499,6 +499,9 @@ export COMTRADE_API_KEY=your_key_here
 # Optional overrides (defaults shown):
 # export COMTRADE_TARGET_YEAR=$(($(date +%Y)-1))
 # export COMTRADE_START_YEAR=$((COMTRADE_TARGET_YEAR-4))
+# Optional chunked runs for long API pulls:
+# export COMTRADE_CHUNK_COUNT=8
+# export COMTRADE_CHUNK_INDEX=1   # run 1..8 in separate executions
 ```
 
 Then run:
@@ -518,6 +521,11 @@ For an end-to-end run, use:
 ```bash
 Rscript run_pipeline.R
 ```
+
+
+When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under
+`data/raw/<snapshot_date>/comtrade_chunks/...` and automatically combines them into final CSVs
+once all chunk indices have been run.
 
 ---
 

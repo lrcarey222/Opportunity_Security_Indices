@@ -59,3 +59,12 @@ Set `COMTRADE_API_KEY` before running ingestion. You can optionally set:
 - `COMTRADE_START_YEAR` (defaults to `COMTRADE_TARGET_YEAR - 4`)
 
 This lets maintainers refresh the 5-year window when new data (for example 2025) becomes available without editing code.
+
+
+For long Comtrade refreshes, you can split ingestion into multiple runs with:
+
+- `COMTRADE_CHUNK_COUNT` (total number of chunks)
+- `COMTRADE_CHUNK_INDEX` (1-based index of the chunk to run)
+
+Chunk runs stage files in `data/raw/<snapshot_date>/comtrade_chunks/` and automatically
+assemble final outputs once all chunks are present.
