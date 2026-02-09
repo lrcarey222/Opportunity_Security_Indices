@@ -581,6 +581,13 @@ if (needs_energy_comtrade) {
       unique()
     code_chunks <- split_by_nchar(energy_codes, max_chars = 2500)
 
+    split_vec <- function(x, chunk_size) {
+      if (length(x) == 0) {
+        return(list(character()))
+      }
+      split(x, ceiling(seq_along(x) / chunk_size))
+    }
+
     wdi_country_info <- read.csv(wdi_country_path)
     reporter_ref <- comtradr::ct_get_ref_table("reporter")
     reporter_candidates <- resolve_comtrade_reporters(wdi_country_info, reporter_ref)

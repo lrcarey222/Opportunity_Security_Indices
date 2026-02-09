@@ -46,6 +46,78 @@ allied_network_hhi <- function(shares) {
   sum(shares^2)
 }
 
+allied_network_get_stage_target <- function(stage_targets_tbl, tech, supply_chain) {
+  if (is.null(stage_targets_tbl)) return(NA_real_)
+  require_columns(stage_targets_tbl, c("tech", "supply_chain", "target_exports_usd"), label = "stage_targets_tbl")
+
+  target_tbl <- stage_targets_tbl %>%
+    dplyr::filter(tech == !!tech, supply_chain == !!supply_chain) %>%
+    dplyr::mutate(
+      Year = suppressWarnings(as.numeric(.data$Year)),
+      target_exports_usd = suppressWarnings(as.numeric(target_exports_usd))
+    )
+
+  if (nrow(target_tbl) == 0) return(NA_real_)
+  if ("Year" %in% names(target_tbl) && any(is.finite(target_tbl$Year))) {
+    yr <- max(target_tbl$Year[is.finite(target_tbl$Year)], na.rm = TRUE)
+    target_tbl <- target_tbl %>% dplyr::filter(.data$Year == yr)
+  }
+
+  out <- target_tbl$target_exports_usd[[1]]
+  if (!is.finite(out)) return(NA_real_)
+  out
+}
+
+allied_network_get_scale_caps <- function(scale_caps_tbl, tech, supply_chain, iso_vec) {
+  iso_vec <- as.character(iso_vec)
+  if (is.null(scale_caps_tbl)) {
+    return(list(
+      cap0 = stats::setNames(rep(0, length(iso_vec)), iso_vec),
+      capMax = stats::setNames(rep(Inf, length(iso_vec)), iso_vec),
+      build_max = stats::setNames(rep(Inf, length(iso_vec)), iso_vec)
+    ))
+  }
+
+  require_columns(
+    scale_caps_tbl,
+    c("iso3c", "tech", "supply_chain", "cap0_exports_usd", "capMax_exports_usd", "build_max_usd"),
+    label = "scale_caps_tbl"
+  )
+
+  caps <- scale_caps_tbl %>%
+    dplyr::filter(tech == !!tech, supply_chain == !!supply_chain, iso3c %in% iso_vec) %>%
+    dplyr::mutate(
+      Year = suppressWarnings(as.numeric(.data$Year)),
+      cap0_exports_usd = suppressWarnings(as.numeric(cap0_exports_usd)),
+      capMax_exports_usd = suppressWarnings(as.numeric(capMax_exports_usd)),
+      build_max_usd = suppressWarnings(as.numeric(build_max_usd))
+    )
+
+  if ("Year" %in% names(caps) && any(is.finite(caps$Year))) {
+    caps <- caps %>%
+      dplyr::group_by(iso3c) %>%
+      dplyr::filter(.data$Year == max(.data$Year, na.rm = TRUE)) %>%
+      dplyr::slice(1) %>%
+      dplyr::ungroup()
+  } else {
+    caps <- caps %>% dplyr::group_by(iso3c) %>% dplyr::slice(1) %>% dplyr::ungroup()
+  }
+
+  caps <- tibble::tibble(iso3c = iso_vec) %>%
+    dplyr::left_join(caps, by = "iso3c") %>%
+    dplyr::mutate(
+      cap0_exports_usd = dplyr::coalesce(cap0_exports_usd, 0),
+      capMax_exports_usd = dplyr::coalesce(capMax_exports_usd, 0),
+      build_max_usd = dplyr::coalesce(build_max_usd, 0)
+    )
+
+  list(
+    cap0 = stats::setNames(caps$cap0_exports_usd, caps$iso3c),
+    capMax = stats::setNames(caps$capMax_exports_usd, caps$iso3c),
+    build_max = stats::setNames(caps$build_max_usd, caps$iso3c)
+  )
+}
+
 # ---- Extract edges from partner dyad theme tables ----------------------------
 
 # Expects the standardized dyad tables written by scripts/15_build_partner_themes.R:
@@ -605,6 +677,286 @@ allied_network_solve_stage_milp <- function(nodes_stage,
   )
 }
 
+allied_network_build_cost <- function(dev_potential, build_cost_mode = c("none", "flat", "dev_potential")) {
+  build_cost_mode <- match.arg(build_cost_mode)
+  dev <- suppressWarnings(as.numeric(dev_potential))
+  dev[!is.finite(dev)] <- 0.5
+  dev <- pmax(0, pmin(1, dev))
+  if (build_cost_mode == "none") return(rep(0, length(dev)))
+  if (build_cost_mode == "flat") return(rep(1, length(dev)))
+  1 - dev
+}
+
+allied_network_solve_stage_milp_scaled <- function(nodes_stage,
+                                                   edges_stage,
+                                                   target_total_usd,
+                                                   cap0_usd,
+                                                   capMax_usd,
+                                                   build_max_usd,
+                                                   build_cost_mode = c("none", "flat", "dev_potential"),
+                                                   build_cost_weight = 0,
+                                                   min_producers = 3,
+                                                   max_share = 0.40,
+                                                   min_share = 0.05,
+                                                   min_suppliers_per_consumer = 2,
+                                                   epsilon_supplier_share = 0.10,
+                                                   w_edge = 0.5,
+                                                   w_node = 1.0,
+                                                   w_dev = 0.0,
+                                                   allow_self = TRUE,
+                                                   solver = c("glpk")) {
+  solver <- match.arg(solver)
+  build_cost_mode <- match.arg(build_cost_mode)
+  if (!allied_network_has_milp()) {
+    stop("MILP solver packages not available. Install ompr, ompr.roi, ROI, ROI.plugin.glpk or use method='greedy'.")
+  }
+  require_columns(nodes_stage, c("iso3c", "producer_score", "demand_weight", "dev_potential"), label = "nodes_stage")
+  require_columns(edges_stage, c("reporter_iso", "partner_iso", "edge_weight"), label = "edges_stage")
+
+  iso <- as.character(nodes_stage$iso3c)
+  n <- length(iso)
+  if (n == 0) stop("No nodes in stage.")
+  target_total_usd <- suppressWarnings(as.numeric(target_total_usd))
+  if (!is.finite(target_total_usd) || target_total_usd <= 0) stop("target_total_usd must be positive.")
+
+  cap0 <- suppressWarnings(as.numeric(cap0_usd[iso]))
+  capMax <- suppressWarnings(as.numeric(capMax_usd[iso]))
+  build_max <- suppressWarnings(as.numeric(build_max_usd[iso]))
+  cap0[!is.finite(cap0)] <- 0
+  capMax[!is.finite(capMax)] <- 0
+  build_max[!is.finite(build_max)] <- 0
+  cap0 <- pmax(0, cap0)
+  capMax <- pmax(0, capMax)
+  build_max <- pmax(0, build_max)
+
+  edges_full <- allied_network_complete_edges_stage(edges_stage, iso3c_vec = iso, allow_self = TRUE, fill_missing = 0, self_weight = NULL)
+
+  a <- suppressWarnings(as.numeric(nodes_stage$producer_score)); a[!is.finite(a)] <- 0
+  d <- suppressWarnings(as.numeric(nodes_stage$demand_weight)); d[!is.finite(d)] <- 0
+  dev <- suppressWarnings(as.numeric(nodes_stage$dev_potential)); dev[!is.finite(dev)] <- 0.5
+  if (sum(d, na.rm = TRUE) <= 0) d <- rep(1 / n, n) else d <- d / sum(d, na.rm = TRUE)
+  D <- d * target_total_usd
+  min_lb <- pmin(min_share * target_total_usd, capMax)
+  max_prod <- pmin(max_share * target_total_usd, capMax)
+  build_cost <- allied_network_build_cost(dev, build_cost_mode = build_cost_mode)
+
+  W <- matrix(0, nrow = n, ncol = n, dimnames = list(iso, iso))
+  for (k in seq_len(nrow(edges_full))) {
+    i <- edges_full$reporter_iso[[k]]
+    j <- edges_full$partner_iso[[k]]
+    ew <- suppressWarnings(as.numeric(edges_full$edge_weight[[k]]))
+    if (!is.na(i) && !is.na(j) && i %in% iso && j %in% iso) W[i, j] <- if (is.finite(ew)) ew else 0
+  }
+
+  suppressPackageStartupMessages(library(ompr))
+  suppressPackageStartupMessages(library(ompr.roi))
+  suppressPackageStartupMessages(library(ROI))
+  suppressPackageStartupMessages(library(ROI.plugin.glpk))
+
+  model <- ompr::MIPModel() %>%
+    ompr::add_variable(q[i, j], i = 1:n, j = 1:n, type = "continuous", lb = 0) %>%
+    ompr::add_variable(z[i], i = 1:n, type = "binary") %>%
+    ompr::add_variable(y[i, j], i = 1:n, j = 1:n, type = "binary") %>%
+    ompr::add_variable(build[i], i = 1:n, type = "continuous", lb = 0) %>%
+    ompr::set_objective(
+      ompr::sum_expr(q[i, j] * (w_node * a[i] + w_edge * W[iso[i], iso[j]]), i = 1:n, j = 1:n) +
+        ompr::sum_expr(w_dev * dev[i] * z[i], i = 1:n) -
+        build_cost_weight * ompr::sum_expr(build[i] * build_cost[i], i = 1:n),
+      "max"
+    ) %>%
+    ompr::add_constraint(ompr::sum_expr(q[i, j], i = 1:n) == D[j], j = 1:n) %>%
+    ompr::add_constraint(ompr::sum_expr(q[i, j], j = 1:n) <= cap0[i] + build[i], i = 1:n) %>%
+    ompr::add_constraint(build[i] <= build_max[i], i = 1:n) %>%
+    ompr::add_constraint(ompr::sum_expr(q[i, j], j = 1:n) <= capMax[i], i = 1:n) %>%
+    ompr::add_constraint(ompr::sum_expr(q[i, j], j = 1:n) <= max_prod[i] * z[i], i = 1:n) %>%
+    ompr::add_constraint(ompr::sum_expr(q[i, j], j = 1:n) >= min_lb[i] * z[i], i = 1:n) %>%
+    ompr::add_constraint(ompr::sum_expr(z[i], i = 1:n) >= min_producers) %>%
+    ompr::add_constraint(q[i, j] <= D[j] * y[i, j], i = 1:n, j = 1:n) %>%
+    ompr::add_constraint(q[i, j] >= epsilon_supplier_share * D[j] * y[i, j], i = 1:n, j = 1:n) %>%
+    ompr::add_constraint(y[i, j] <= z[i], i = 1:n, j = 1:n) %>%
+    ompr::add_constraint(ompr::sum_expr(y[i, j], i = 1:n) >= min_suppliers_per_consumer, j = 1:n)
+
+  if (!isTRUE(allow_self)) {
+    model <- model %>% ompr::add_constraint(q[i, i] == 0, i = 1:n) %>% ompr::add_constraint(y[i, i] == 0, i = 1:n)
+  }
+
+  result <- ompr::solve_model(model, ompr.roi::with_ROI(solver = solver))
+  status <- ROI::solution(result, "status")$code
+  if (!identical(status, 0L)) stop("Scaled MILP did not converge to optimal solution.")
+
+  flows <- ompr::get_solution(result, q[i, j]) %>%
+    dplyr::mutate(reporter_iso = iso[i], partner_iso = iso[j], flow_usd = value) %>%
+    dplyr::select(reporter_iso, partner_iso, flow_usd) %>%
+    dplyr::filter(flow_usd > 1e-9) %>%
+    dplyr::mutate(flow_share = flow_usd / target_total_usd) %>%
+    dplyr::left_join(edges_full, by = c("reporter_iso", "partner_iso"))
+
+  selected <- ompr::get_solution(result, z[i]) %>%
+    dplyr::mutate(iso3c = iso[i], selected = as.integer(value) == 1) %>%
+    dplyr::select(iso3c, selected)
+
+  build_tbl <- ompr::get_solution(result, build[i]) %>%
+    dplyr::transmute(iso3c = iso[i], build_usd = value)
+
+  specialization <- nodes_stage %>%
+    dplyr::left_join(selected, by = "iso3c") %>%
+    dplyr::mutate(selected = dplyr::coalesce(selected, FALSE)) %>%
+    dplyr::left_join(
+      flows %>% dplyr::group_by(reporter_iso) %>% dplyr::summarize(production_usd = sum(flow_usd, na.rm = TRUE), .groups = "drop") %>% dplyr::rename(iso3c = reporter_iso),
+      by = "iso3c"
+    ) %>%
+    dplyr::left_join(build_tbl, by = "iso3c") %>%
+    dplyr::mutate(
+      production_usd = dplyr::coalesce(production_usd, 0),
+      production_share = production_usd / target_total_usd,
+      cap0_exports_usd = cap0,
+      capMax_exports_usd = capMax,
+      build_max_usd = build_max,
+      build_needed_usd = pmax(0, production_usd - cap0_exports_usd),
+      build_usd = dplyr::coalesce(build_usd, 0)
+    ) %>%
+    dplyr::select(iso3c, country, selected, production_usd, production_share, cap0_exports_usd, capMax_exports_usd, build_max_usd, build_needed_usd, demand_weight, producer_score, dev_potential, dplyr::any_of("connectivity_out"))
+
+  list(
+    specialization = specialization,
+    flows = flows %>% dplyr::select(reporter_iso, partner_iso, flow_usd, flow_share, edge_weight, dplyr::any_of(c("friendshore_index", "opportunity_index"))),
+    objective = ompr::objective_value(result),
+    hhi = allied_network_hhi(specialization$production_share),
+    n_producers = sum(specialization$selected, na.rm = TRUE),
+    unmet_demand_usd = 0
+  )
+}
+
+allied_network_solve_stage_greedy_scaled <- function(nodes_stage,
+                                                     edges_stage,
+                                                     target_total_usd,
+                                                     cap0_usd,
+                                                     capMax_usd,
+                                                     build_max_usd,
+                                                     min_producers = 3,
+                                                     max_share = 0.40,
+                                                     min_share = 0.05,
+                                                     min_suppliers_per_consumer = 2,
+                                                     epsilon_supplier_share = 0.10,
+                                                     w_edge = 0.5,
+                                                     w_node = 1.0,
+                                                     w_dev = 0.0,
+                                                     allow_self = TRUE) {
+  require_columns(nodes_stage, c("iso3c", "producer_score", "demand_weight", "dev_potential"), label = "nodes_stage")
+  require_columns(edges_stage, c("reporter_iso", "partner_iso", "edge_weight"), label = "edges_stage")
+  iso <- as.character(nodes_stage$iso3c)
+  target_total_usd <- suppressWarnings(as.numeric(target_total_usd))
+  if (!is.finite(target_total_usd) || target_total_usd <= 0) stop("target_total_usd must be positive.")
+
+  edges_full <- allied_network_complete_edges_stage(edges_stage, iso3c_vec = iso, allow_self = TRUE, fill_missing = 0, self_weight = NULL)
+  d_tbl <- nodes_stage %>% dplyr::select(iso3c, demand_weight)
+  d <- suppressWarnings(as.numeric(d_tbl$demand_weight)); d[!is.finite(d)] <- 0
+  if (sum(d) <= 0) d <- rep(1 / length(d), length(d)) else d <- d / sum(d)
+  D <- stats::setNames(d * target_total_usd, d_tbl$iso3c)
+
+  conn <- edges_full %>%
+    dplyr::left_join(d_tbl, by = c("partner_iso" = "iso3c")) %>%
+    dplyr::group_by(reporter_iso) %>%
+    dplyr::summarize(connectivity_out = sum(edge_weight * demand_weight, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::rename(iso3c = reporter_iso)
+
+  candidates <- nodes_stage %>%
+    dplyr::left_join(conn, by = "iso3c") %>%
+    dplyr::mutate(
+      connectivity_out = dplyr::coalesce(connectivity_out, 0),
+      combined_score = w_node * producer_score + w_edge * connectivity_out + w_dev * dev_potential
+    ) %>%
+    dplyr::arrange(dplyr::desc(combined_score))
+
+  cap0 <- stats::setNames(pmax(0, suppressWarnings(as.numeric(cap0_usd[iso]))), iso); cap0[!is.finite(cap0)] <- 0
+  capMax <- stats::setNames(pmax(0, suppressWarnings(as.numeric(capMax_usd[iso]))), iso); capMax[!is.finite(capMax)] <- 0
+  build_max <- stats::setNames(pmax(0, suppressWarnings(as.numeric(build_max_usd[iso]))), iso); build_max[!is.finite(build_max)] <- 0
+  remaining_cap <- capMax
+
+  min_required <- max(min_producers, ceiling(1 / max_share))
+  selected_iso <- utils::head(candidates$iso3c, min(min_required, length(iso)))
+
+  allocate_once <- function(selected_iso, remaining_cap, unmet_by_consumer) {
+    flow_rows <- list()
+    for (j in names(unmet_by_consumer)) {
+      remaining_j <- unmet_by_consumer[[j]]
+      if (remaining_j <= 1e-9) next
+      while (remaining_j > 1e-9) {
+        cand <- selected_iso[remaining_cap[selected_iso] > 1e-9]
+        if (!length(cand)) break
+        wj <- edges_full %>%
+          dplyr::filter(reporter_iso %in% cand, partner_iso == j) %>%
+          dplyr::left_join(candidates %>% dplyr::select(iso3c, producer_score), by = c("reporter_iso" = "iso3c")) %>%
+          dplyr::mutate(weight = pmax(0, edge_weight * producer_score)) %>%
+          dplyr::select(reporter_iso, weight)
+        if (!isTRUE(allow_self)) wj <- wj %>% dplyr::filter(reporter_iso != j)
+        if (!nrow(wj)) break
+        if (sum(wj$weight, na.rm = TRUE) <= 0) wj$weight <- 1
+        wj <- wj %>% dplyr::mutate(weight = weight / sum(weight, na.rm = TRUE))
+        allocated_any <- FALSE
+        for (k in seq_len(nrow(wj))) {
+          i <- wj$reporter_iso[[k]]
+          alloc <- min(remaining_j * wj$weight[[k]], remaining_cap[[i]])
+          if (alloc <= 1e-9) next
+          flow_rows[[length(flow_rows) + 1]] <- tibble::tibble(reporter_iso = i, partner_iso = j, flow_usd = alloc)
+          remaining_j <- remaining_j - alloc
+          remaining_cap[[i]] <- remaining_cap[[i]] - alloc
+          allocated_any <- TRUE
+        }
+        if (!allocated_any) break
+      }
+      unmet_by_consumer[[j]] <- remaining_j
+    }
+    list(flows = dplyr::bind_rows(flow_rows), remaining_cap = remaining_cap, unmet = unmet_by_consumer)
+  }
+
+  unmet <- D
+  all_flows <- tibble::tibble(reporter_iso = character(), partner_iso = character(), flow_usd = numeric())
+  cursor <- length(selected_iso)
+  repeat {
+    alloc <- allocate_once(selected_iso, remaining_cap, unmet)
+    if (nrow(alloc$flows) > 0) all_flows <- dplyr::bind_rows(all_flows, alloc$flows)
+    remaining_cap <- alloc$remaining_cap
+    unmet <- alloc$unmet
+    if (sum(unmet, na.rm = TRUE) <= 1e-6) break
+    if (sum(remaining_cap, na.rm = TRUE) <= 1e-9 || cursor >= nrow(candidates)) break
+    cursor <- cursor + 1
+    selected_iso <- unique(c(selected_iso, candidates$iso3c[[cursor]]))
+  }
+
+  flows <- all_flows %>%
+    dplyr::group_by(reporter_iso, partner_iso) %>%
+    dplyr::summarize(flow_usd = sum(flow_usd, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::mutate(flow_share = flow_usd / target_total_usd) %>%
+    dplyr::left_join(edges_full, by = c("reporter_iso", "partner_iso"))
+
+  prod <- flows %>% dplyr::group_by(reporter_iso) %>% dplyr::summarize(production_usd = sum(flow_usd, na.rm = TRUE), .groups = "drop") %>% dplyr::rename(iso3c = reporter_iso)
+  specialization <- candidates %>%
+    dplyr::left_join(prod, by = "iso3c") %>%
+    dplyr::mutate(
+      selected = iso3c %in% selected_iso,
+      production_usd = dplyr::coalesce(production_usd, 0),
+      production_share = production_usd / target_total_usd,
+      cap0_exports_usd = as.numeric(cap0[iso3c]),
+      capMax_exports_usd = as.numeric(capMax[iso3c]),
+      build_max_usd = as.numeric(build_max[iso3c]),
+      build_needed_usd = pmax(0, production_usd - cap0_exports_usd)
+    ) %>%
+    dplyr::select(iso3c, country, selected, production_usd, production_share, cap0_exports_usd, capMax_exports_usd, build_max_usd, build_needed_usd, demand_weight, producer_score, dev_potential, connectivity_out)
+
+  objective <- sum(flows$flow_usd * (w_node * specialization$producer_score[match(flows$reporter_iso, specialization$iso3c)] + w_edge * dplyr::coalesce(flows$edge_weight, 0)), na.rm = TRUE) +
+    sum(w_dev * specialization$dev_potential * as.numeric(specialization$selected), na.rm = TRUE)
+
+  list(
+    specialization = specialization,
+    flows = flows %>% dplyr::select(reporter_iso, partner_iso, flow_usd, flow_share, edge_weight, dplyr::any_of(c("friendshore_index", "opportunity_index"))),
+    objective = objective,
+    hhi = allied_network_hhi(specialization$production_share),
+    n_producers = sum(specialization$selected, na.rm = TRUE),
+    unmet_demand_usd = sum(unmet, na.rm = TRUE)
+  )
+}
+
 # ---- Main orchestration ------------------------------------------------------
 
 allied_network_design <- function(economic_opportunity_index,
@@ -619,6 +971,11 @@ allied_network_design <- function(economic_opportunity_index,
                                   node_weights = list(eo = 0.5, policy = 0.3, resilience = 0.2),
                                   edge_weights = list(friendshore = 0.5, opportunity = 0.5),
                                   method = c("auto", "milp", "greedy"),
+                                  stage_targets_tbl = NULL,
+                                  scale_caps_tbl = NULL,
+                                  scale_mode = c("shares", "usd_target_match_china"),
+                                  build_cost_mode = c("none", "flat", "dev_potential"),
+                                  build_cost_weight = 0,
                                   # constraints / knobs
                                   min_producers = 3,
                                   max_share = 0.40,
@@ -634,6 +991,8 @@ allied_network_design <- function(economic_opportunity_index,
                                   auto_milp_max_nodes = 18,
                                   milp_stage_time_limit_sec = 120) {
   method <- match.arg(method)
+  scale_mode <- match.arg(scale_mode)
+  build_cost_mode <- match.arg(build_cost_mode)
   
   nodes <- allied_network_prepare_nodes(
     economic_opportunity_index = economic_opportunity_index,
@@ -728,11 +1087,58 @@ allied_network_design <- function(economic_opportunity_index,
     edges_stage_core <- edges_stage %>% dplyr::select(reporter_iso, partner_iso, edge_weight, dplyr::any_of(c("friendshore_index", "opportunity_index")))
 
     stage_method <- use_method
+    target_total_usd <- NA_real_
+    allies_cap0_usd <- NA_real_
+    allies_capMax_usd <- NA_real_
+    feasible_caps <- NA
+    unmet_demand_usd <- NA_real_
+
+    scaled_enabled <- identical(scale_mode, "usd_target_match_china") && !is.null(stage_targets_tbl) && !is.null(scale_caps_tbl)
+    caps <- NULL
+    if (scaled_enabled) {
+      target_total_usd <- allied_network_get_stage_target(stage_targets_tbl, t, sc)
+      caps <- allied_network_get_scale_caps(scale_caps_tbl, t, sc, nodes_stage_core$iso3c)
+      allies_cap0_usd <- sum(caps$cap0, na.rm = TRUE)
+      allies_capMax_usd <- sum(caps$capMax, na.rm = TRUE)
+      feasible_caps <- allies_capMax_usd >= target_total_usd
+      if (!is.finite(target_total_usd) || target_total_usd <= 0) {
+        results[[i]] <- list(
+          tech = t, supply_chain = sc,
+          specialization = NULL, flows = NULL,
+          objective = NA_real_, hhi = NA_real_, n_producers = NA_integer_, method_used = "skipped_missing_target",
+          target_exports_usd = target_total_usd,
+          allies_cap0_usd = allies_cap0_usd,
+          allies_capMax_usd = allies_capMax_usd,
+          feasible_caps = feasible_caps,
+          unmet_demand_usd = NA_real_
+        )
+        next
+      }
+    }
     if (method == "auto") {
       stage_method <- if (has_milp && nrow(nodes_stage_core) <= auto_milp_max_nodes) "milp" else "greedy"
     }
 
     solve_greedy <- function() {
+      if (scaled_enabled) {
+        return(allied_network_solve_stage_greedy_scaled(
+          nodes_stage = nodes_stage_core,
+          edges_stage = edges_stage_core,
+          target_total_usd = target_total_usd,
+          cap0_usd = caps$cap0,
+          capMax_usd = caps$capMax,
+          build_max_usd = caps$build_max,
+          min_producers = min_producers,
+          max_share = max_share,
+          min_share = min_share,
+          min_suppliers_per_consumer = min_suppliers_per_consumer,
+          epsilon_supplier_share = epsilon_supplier_share,
+          w_edge = w_edge,
+          w_node = w_node,
+          w_dev = w_dev,
+          allow_self = allow_self
+        ))
+      }
       allied_network_solve_stage_greedy(
         nodes_stage = nodes_stage_core,
         edges_stage = edges_stage_core,
@@ -751,19 +1157,41 @@ allied_network_design <- function(economic_opportunity_index,
         if (is.finite(milp_stage_time_limit_sec) && !is.na(milp_stage_time_limit_sec) && milp_stage_time_limit_sec > 0) {
           setTimeLimit(elapsed = milp_stage_time_limit_sec, transient = TRUE)
         }
-        allied_network_solve_stage_milp(
-          nodes_stage = nodes_stage_core,
-          edges_stage = edges_stage_core,
-          min_producers = min_producers,
-          max_share = max_share,
-          min_share = min_share,
-          min_suppliers_per_consumer = min_suppliers_per_consumer,
-          epsilon_supplier_share = epsilon_supplier_share,
-          w_edge = w_edge,
-          w_node = w_node,
-          w_dev = w_dev,
-          allow_self = allow_self
-        )
+        if (scaled_enabled) {
+          allied_network_solve_stage_milp_scaled(
+            nodes_stage = nodes_stage_core,
+            edges_stage = edges_stage_core,
+            target_total_usd = target_total_usd,
+            cap0_usd = caps$cap0,
+            capMax_usd = caps$capMax,
+            build_max_usd = caps$build_max,
+            build_cost_mode = build_cost_mode,
+            build_cost_weight = build_cost_weight,
+            min_producers = min_producers,
+            max_share = max_share,
+            min_share = min_share,
+            min_suppliers_per_consumer = min_suppliers_per_consumer,
+            epsilon_supplier_share = epsilon_supplier_share,
+            w_edge = w_edge,
+            w_node = w_node,
+            w_dev = w_dev,
+            allow_self = allow_self
+          )
+        } else {
+          allied_network_solve_stage_milp(
+            nodes_stage = nodes_stage_core,
+            edges_stage = edges_stage_core,
+            min_producers = min_producers,
+            max_share = max_share,
+            min_share = min_share,
+            min_suppliers_per_consumer = min_suppliers_per_consumer,
+            epsilon_supplier_share = epsilon_supplier_share,
+            w_edge = w_edge,
+            w_node = w_node,
+            w_dev = w_dev,
+            allow_self = allow_self
+          )
+        }
       }, error = function(e) {
         if (is.function(progress_callback)) {
           progress_callback(list(
@@ -812,7 +1240,12 @@ allied_network_design <- function(economic_opportunity_index,
       objective = sol$objective,
       hhi = sol$hhi,
       n_producers = sol$n_producers,
-      method_used = stage_method
+      method_used = stage_method,
+      target_exports_usd = target_total_usd,
+      allies_cap0_usd = allies_cap0_usd,
+      allies_capMax_usd = allies_capMax_usd,
+      feasible_caps = feasible_caps,
+      unmet_demand_usd = dplyr::coalesce(sol$unmet_demand_usd, NA_real_)
     )
   }
   
@@ -831,7 +1264,7 @@ allied_network_design <- function(economic_opportunity_index,
   })
   
   diagnostics_tbl <- purrr::map_dfr(results, function(x) {
-    tibble::tibble(
+    out <- tibble::tibble(
       tech = x$tech,
       supply_chain = x$supply_chain,
       method = dplyr::coalesce(x$method_used, use_method),
@@ -839,6 +1272,17 @@ allied_network_design <- function(economic_opportunity_index,
       hhi = x$hhi,
       objective = x$objective
     )
+    if (identical(scale_mode, "usd_target_match_china")) {
+      out <- out %>%
+        dplyr::mutate(
+          target_exports_usd = x$target_exports_usd,
+          allies_cap0_usd = x$allies_cap0_usd,
+          allies_capMax_usd = x$allies_capMax_usd,
+          feasible_caps = x$feasible_caps,
+          unmet_demand_usd = x$unmet_demand_usd
+        )
+    }
+    out
   })
   
   # Build-candidates (optional): rank non-selected (or low-share) nodes by dev_potential * connectivity
@@ -861,6 +1305,9 @@ allied_network_design <- function(economic_opportunity_index,
       node_weights = node_weights,
       edge_weights = edge_weights,
       method = use_method,
+      scale_mode = scale_mode,
+      build_cost_mode = build_cost_mode,
+      build_cost_weight = build_cost_weight,
       min_producers = min_producers,
       max_share = max_share,
       min_share = min_share,
