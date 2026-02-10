@@ -480,7 +480,7 @@ This repo also ships with:
 * `config/missing_data.yml`
 * `config/index_definition.yml`
 
-2. **(Optional) Run without local raw snapshots**
+2. **(Optional) Run without local raw data**
 
 If you don’t have the raw inputs available, set:
 
@@ -526,7 +526,7 @@ Rscript run_pipeline.R
 
 
 When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under
-`data/raw/<snapshot_date>/comtrade_chunks/...` and automatically combines them into final CSVs
+`data/raw/comtrade_chunks/...` and automatically combines them into final CSVs
 once all chunk indices have been run.
 
 ---
@@ -580,7 +580,7 @@ A curated list of sources (including links and expected provenance) is maintaine
 
 * `docs/sources.md`
 
-Theme builders typically read from date-stamped input snapshots under your configured `raw_data_dir/<snapshot>/...`.
+Theme builders read raw inputs directly from your configured `raw_data_dir/...`.
 
 > **Tip:** `scripts/10_build_themes.R` and `scripts/15_build_partner_themes.R` are the authoritative “what files are required” inventory, because they list the expected raw file names and wire them into each theme builder.
 
@@ -613,7 +613,7 @@ If you use OSI outputs in external work, cite:
 
 And record:
 
-* input snapshot dates
+* raw input folder state/date
 * processing date
 * any manual overrides (e.g., missing data policies or custom weights)
 

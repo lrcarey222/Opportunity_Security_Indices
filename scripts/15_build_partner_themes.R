@@ -60,7 +60,7 @@ if (is.null(raw_data_dir)) {
 }
 sharepoint_raw_dir <- config$sharepoint_raw_dir
 
-copy_snapshot_file <- function(source_path, dest_path) {
+copy_raw_file <- function(source_path, dest_path) {
   if (!file.exists(source_path)) {
     return(FALSE)
   }
@@ -71,7 +71,7 @@ copy_snapshot_file <- function(source_path, dest_path) {
   file.copy(source_path, dest_path, overwrite = TRUE)
 }
 
-latest_raw_snapshot <- function(root_dir, raw_data_dir, skip_data_downloads = FALSE) {
+resolve_raw_data_dir <- function(root_dir, raw_data_dir, skip_data_downloads = FALSE) {
   raw_base_dir <- file.path(root_dir, raw_data_dir)
   if (!dir.exists(raw_base_dir)) {
     if (skip_data_downloads) {
@@ -81,38 +81,28 @@ latest_raw_snapshot <- function(root_dir, raw_data_dir, skip_data_downloads = FA
     stop("Raw data directory not found: ", raw_base_dir)
   }
 
-  snapshot_dirs <- list.dirs(raw_base_dir, recursive = FALSE, full.names = TRUE)
-  if (length(snapshot_dirs) == 0) {
-    if (skip_data_downloads) {
-      message("Skipping raw data lookup; no snapshots in: ", raw_base_dir)
-      return(NULL)
-    }
-    stop("No raw data snapshots found in: ", raw_base_dir)
-  }
-
-  snapshot_info <- file.info(snapshot_dirs)
-  snapshot_dirs[order(snapshot_info$mtime, decreasing = TRUE)][1]
+  raw_base_dir
 }
 
-latest_snapshot <- latest_raw_snapshot(repo_root, raw_data_dir, skip_data_downloads)
-if (is.null(latest_snapshot)) {
+raw_data_path <- resolve_raw_data_dir(repo_root, raw_data_dir, skip_data_downloads)
+if (is.null(raw_data_path)) {
   invisible(list())
   return()
 }
 
-comtrade_dyads_path <- file.path(latest_snapshot, "allied_comtrade_energy_data.csv")
-subcat_path <- file.path(latest_snapshot, "consolidated_hs6_energy_tech_long.csv")
-fdi_path <- file.path(latest_snapshot, "imf_dip.csv")
-tech_ghg_path <- file.path(latest_snapshot, "ipcc_ghg_intensity.csv")
-cat_policy_path <- file.path(latest_snapshot, "CAT_country ratings data.csv")
-country_info_path <- file.path(latest_snapshot, "wdi_country_info.csv")
-country_gdp_path <- file.path(latest_snapshot, "wdi_gdp.csv")
-wb_doingbusiness_path <- file.path(latest_snapshot, "wb_doingbusiness.csv")
-wb_wdi_path <- file.path(latest_snapshot, "wb_wdi.csv")
-oecd_api_path <- file.path(latest_snapshot, "oecd_crs_api.csv")
+comtrade_dyads_path <- file.path(raw_data_path, "allied_comtrade_energy_data.csv")
+subcat_path <- file.path(raw_data_path, "consolidated_hs6_energy_tech_long.csv")
+fdi_path <- file.path(raw_data_path, "imf_dip.csv")
+tech_ghg_path <- file.path(raw_data_path, "ipcc_ghg_intensity.csv")
+cat_policy_path <- file.path(raw_data_path, "CAT_country ratings data.csv")
+country_info_path <- file.path(raw_data_path, "wdi_country_info.csv")
+country_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
+wb_doingbusiness_path <- file.path(raw_data_path, "wb_doingbusiness.csv")
+wb_wdi_path <- file.path(raw_data_path, "wb_wdi.csv")
+oecd_api_path <- file.path(raw_data_path, "oecd_crs_api.csv")
 
 if (!file.exists(oecd_api_path) && !is.null(sharepoint_raw_dir) && nzchar(sharepoint_raw_dir)) {
-  copy_snapshot_file(file.path(sharepoint_raw_dir, "oecd_crs_api.csv"), oecd_api_path)
+  copy_raw_file(file.path(sharepoint_raw_dir, "oecd_crs_api.csv"), oecd_api_path)
 }
 
 missing_files <- c(

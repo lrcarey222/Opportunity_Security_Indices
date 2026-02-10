@@ -43,21 +43,13 @@ if (!dir.exists(raw_base_dir)) {
   stop("Raw data directory not found: ", raw_base_dir)
 }
 
-snapshot_dirs <- list.dirs(raw_base_dir, recursive = FALSE, full.names = TRUE)
-if (length(snapshot_dirs) == 0) {
-  stop("No raw data snapshots found in: ", raw_base_dir)
-}
-
-snapshot_info <- file.info(snapshot_dirs)
-latest_snapshot <- snapshot_dirs[order(snapshot_info$mtime, decreasing = TRUE)][1]
-
 processed_dir <- file.path(repo_root, config$processed_dir)
 if (!dir.exists(processed_dir)) {
   dir.create(processed_dir, recursive = TRUE)
 }
 
 source(file.path(repo_root, "R", "process", "process_all.R"))
-plan <- process_all(latest_snapshot, processed_dir, list(raw_inputs_manifest = raw_manifest))
+plan <- process_all(raw_base_dir, processed_dir, list(raw_inputs_manifest = raw_manifest))
 
 missing_processed <- character()
 for (i in seq_along(plan$raw_paths)) {

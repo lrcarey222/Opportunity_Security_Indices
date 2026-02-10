@@ -1,4 +1,4 @@
-# Ingest raw sources from SharePoint into a snapshot folder.
+# Ingest raw sources from SharePoint into the configured raw data folder.
 resolve_repo_root <- function() {
   # Prefer rprojroot if available (most robust)
   if (requireNamespace("rprojroot", quietly = TRUE)) {
@@ -68,10 +68,9 @@ if (length(manifest) == 0) {
   stop("Raw inputs manifest is empty: ", manifest_path)
 }
 
-snapshot_date <- format(Sys.Date(), "%Y-%m-%d")
-snapshot_dir <- file.path(raw_data_dir, snapshot_date)
-if (!dir.exists(snapshot_dir)) {
-  dir.create(snapshot_dir, recursive = TRUE)
+raw_data_path <- raw_data_dir
+if (!dir.exists(raw_data_path)) {
+  dir.create(raw_data_path, recursive = TRUE)
 }
 
 missing <- character()
@@ -83,7 +82,7 @@ for (entry in manifest) {
   }
   is_optional <- isTRUE(entry$optional)
   source_path <- file.path(sharepoint_raw_dir, entry$path)
-  dest_path <- file.path(snapshot_dir, entry$path)
+  dest_path <- file.path(raw_data_path, entry$path)
 
   if (file.exists(dest_path)) {
     next
@@ -112,17 +111,17 @@ if (length(missing) > 0) {
   stop("Missing required raw inputs in sharepoint_raw_dir:\n", missing_list)
 }
 
-message("Raw inputs snapshot created at: ", snapshot_dir)
+message("Raw inputs refreshed in: ", raw_data_path)
 
 # --- Supplemental API pulls ---
 # These API pulls are kept in the ingest stage so downstream steps only read
-# local snapshot files. This keeps theme builders focused on transformations.
+# local raw files. This keeps theme builders focused on transformations.
 
 # --- Source: World Bank WDI (GDP + country info) ---
-wdi_gdp_path <- file.path(snapshot_dir, "wdi_gdp.csv")
-wdi_country_path <- file.path(snapshot_dir, "wdi_country_info.csv")
+wdi_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
+wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")
 
-copy_snapshot_file <- function(source_path, dest_path) {
+copy_raw_file <- function(source_path, dest_path) {
   if (!file.exists(source_path)) {
     return(FALSE)
   }
@@ -137,15 +136,15 @@ source(file.path(repo_root, "scripts", "utils", "comtrade_ingest_utils.R"))
 
 
 if (!file.exists(wdi_gdp_path)) {
-  copy_snapshot_file(file.path(sharepoint_raw_dir, "wdi_gdp.csv"), wdi_gdp_path)
+  copy_raw_file(file.path(sharepoint_raw_dir, "wdi_gdp.csv"), wdi_gdp_path)
 }
 if (!file.exists(wdi_country_path)) {
-  copy_snapshot_file(file.path(sharepoint_raw_dir, "wdi_country_info.csv"), wdi_country_path)
+  copy_raw_file(file.path(sharepoint_raw_dir, "wdi_country_info.csv"), wdi_country_path)
 }
 
 if (!file.exists(wdi_gdp_path) || !file.exists(wdi_country_path)) {
   if (skip_data_downloads) {
-    message("Skipping WDI download; missing WDI outputs in snapshot.")
+    message("Skipping WDI download; missing WDI outputs in raw data directory.")
   } else {
     if (!requireNamespace("WDI", quietly = TRUE)) {
       stop("Package 'WDI' is required to ingest World Bank GDP and country data.")
@@ -159,15 +158,15 @@ if (!file.exists(wdi_gdp_path) || !file.exists(wdi_country_path)) {
 }
 
 # --- Source: OECD CRS (development assistance) -------
-oecd_api_path <- file.path(snapshot_dir, "oecd_crs_api.csv")
+oecd_api_path <- file.path(raw_data_path, "oecd_crs_api.csv")
 
 if (!file.exists(oecd_api_path)) {
-  copy_snapshot_file(file.path(sharepoint_raw_dir, "oecd_crs_api.csv"), oecd_api_path)
+  copy_raw_file(file.path(sharepoint_raw_dir, "oecd_crs_api.csv"), oecd_api_path)
 }
 
 if (!file.exists(oecd_api_path)) {
   if (skip_data_downloads) {
-    message("Skipping OECD CRS API download; missing OECD CRS output in snapshot.")
+    message("Skipping OECD CRS API download; missing OECD CRS output in raw data directory.")
   } else {
     if (!requireNamespace("httr", quietly = TRUE) ||
         !requireNamespace("readr", quietly = TRUE) ||
@@ -176,7 +175,7 @@ if (!file.exists(oecd_api_path)) {
       stop("Packages 'httr', 'readr', 'glue', and 'purrr' are required to ingest OECD CRS data.")
     }
     if (!file.exists(wdi_country_path)) {
-      stop("WDI country data missing from snapshot: ", wdi_country_path)
+      stop("WDI country data missing from raw data directory: ", wdi_country_path)
     }
 
     wdi_country_info <- read.csv(wdi_country_path)
@@ -244,9 +243,9 @@ if (!file.exists(oecd_api_path)) {
 }
 
 #Critical Minerals--------------
-critical_minerals_path <- file.path(snapshot_dir, "iea_criticalminerals_25.csv")
+critical_minerals_path <- file.path(raw_data_path, "iea_criticalminerals_25.csv")
 critical_minerals_hs_path <- file.path(
-  snapshot_dir,
+  raw_data_path,
   "Columbia University Critical Minerals Dashboard",
   "unique_comtrade.csv"
 )
@@ -813,18 +812,18 @@ comtrade_max_retries <- if (!is.na(comtrade_max_retries_env) && comtrade_max_ret
 }
 
 # --- Source: UN Comtrade (critical minerals trade) ----------------------
-critmin_import_path <- file.path(snapshot_dir, "critmin_import_2025.csv")
-critmin_export_path <- file.path(snapshot_dir, "critmin_export_2025.csv")
-critmin_total_export_path <- file.path(snapshot_dir, "critmin_total_export_2025.csv")
+critmin_import_path <- file.path(raw_data_path, "critmin_import_2025.csv")
+critmin_export_path <- file.path(raw_data_path, "critmin_export_2025.csv")
+critmin_total_export_path <- file.path(raw_data_path, "critmin_total_export_2025.csv")
 
 if (!file.exists(critmin_import_path)) {
-  copy_snapshot_file(file.path(sharepoint_raw_dir, "critmin_import_2025.csv"), critmin_import_path)
+  copy_raw_file(file.path(sharepoint_raw_dir, "critmin_import_2025.csv"), critmin_import_path)
 }
 if (!file.exists(critmin_export_path)) {
-  copy_snapshot_file(file.path(sharepoint_raw_dir, "critmin_export_2025.csv"), critmin_export_path)
+  copy_raw_file(file.path(sharepoint_raw_dir, "critmin_export_2025.csv"), critmin_export_path)
 }
 if (!file.exists(critmin_total_export_path)) {
-  copy_snapshot_file(file.path(sharepoint_raw_dir, "critmin_total_export_2025.csv"), critmin_total_export_path)
+  copy_raw_file(file.path(sharepoint_raw_dir, "critmin_total_export_2025.csv"), critmin_total_export_path)
 }
 
 needs_comtrade <- !(
@@ -835,7 +834,7 @@ needs_comtrade <- !(
 
 if (needs_comtrade) {
   if (skip_data_downloads) {
-    message("Skipping comtrade download; missing critical minerals trade outputs in snapshot.")
+    message("Skipping comtrade download; missing critical minerals trade outputs in raw data directory.")
   } else {
     if (!requireNamespace("comtradr", quietly = TRUE)) {
       stop("Package 'comtradr' is required to ingest critical minerals trade data.")
@@ -848,13 +847,13 @@ if (needs_comtrade) {
     comtradr::set_primary_comtrade_key(comtrade_key)
 
     if (!file.exists(critical_minerals_path)) {
-      stop("Critical minerals dataset missing from snapshot: ", critical_minerals_path)
+      stop("Critical minerals dataset missing from raw data directory: ", critical_minerals_path)
     }
     if (!file.exists(critical_minerals_hs_path)) {
-      stop("Critical minerals HS dataset missing from snapshot: ", critical_minerals_hs_path)
+      stop("Critical minerals HS dataset missing from raw data directory: ", critical_minerals_hs_path)
     }
     if (!file.exists(wdi_country_path)) {
-      stop("WDI country data missing from snapshot: ", wdi_country_path)
+      stop("WDI country data missing from raw data directory: ", wdi_country_path)
     }
 
     source(file.path(repo_root, "R", "categories", "minerals_trade", "critical_minerals_trade.R"))
@@ -937,9 +936,9 @@ if (needs_comtrade) {
 }
 
 # --- Source: UN Comtrade (energy trade) -------------
-comtrade_energy_trade_path <- file.path(snapshot_dir, "comtrade_energy_trade.csv")
-comtrade_total_export_path <- file.path(snapshot_dir, "comtrade_total_export.csv")
-allied_comtrade_energy_path <- file.path(snapshot_dir, "allied_comtrade_energy_data.csv")
+comtrade_energy_trade_path <- file.path(raw_data_path, "comtrade_energy_trade.csv")
+comtrade_total_export_path <- file.path(raw_data_path, "comtrade_total_export.csv")
+allied_comtrade_energy_path <- file.path(raw_data_path, "allied_comtrade_energy_data.csv")
 
 library(comtradr)
 set_primary_comtrade_key('2940653b9bbe4671b3f7fde2846d14be')
@@ -997,7 +996,7 @@ dirs      <- c("export")
 # (tune chunk_size if you still hit the cap; larger == fewer calls, smaller == safer)
 partner_chunks <- split_vec(partners, chunk_size = 50)
 
-# Cartesian product: one reporter × one year × one flow × one code-chunk × one partner-chunk
+# Cartesian product: one reporter Ã— one year Ã— one flow Ã— one code-chunk Ã— one partner-chunk
 grid <- tidyr::expand_grid(
   rep  = reporters,
   yr   = years,
@@ -1058,7 +1057,7 @@ tot <- ct_get_data(
 )
 
 # --- Source: IMF Primary Commodity Price System (PCPS) ------------------
-imf_pcps_excel_path <- file.path(snapshot_dir, "IMF_PCPS_all.xlsx")
+imf_pcps_excel_path <- file.path(raw_data_path, "IMF_PCPS_all.xlsx")
 if (!file.exists(imf_pcps_excel_path)) {
   imf_pcps_candidates <- c(
     file.path(sharepoint_raw_dir, "IMF_PCPS_all.xlsx"),
@@ -1066,22 +1065,22 @@ if (!file.exists(imf_pcps_excel_path)) {
   )
   for (candidate in imf_pcps_candidates) {
     if (file.exists(candidate)) {
-      copy_snapshot_file(candidate, imf_pcps_excel_path)
+      copy_raw_file(candidate, imf_pcps_excel_path)
       break
     }
   }
 }
 if (!file.exists(imf_pcps_excel_path)) {
   if (skip_data_downloads) {
-    message("Skipping IMF PCPS snapshot lookup; missing file: ", imf_pcps_excel_path)
+    message("Skipping IMF PCPS raw data lookup; missing file: ", imf_pcps_excel_path)
   } else {
-    stop("IMF PCPS Excel snapshot missing: ", imf_pcps_excel_path)
+    stop("IMF PCPS Excel file missing from raw data directory: ", imf_pcps_excel_path)
   }
 }
 
-imf_pcps_prices_path <- file.path(snapshot_dir, "imf_pcps_prices.csv")
-imf_pcps_volatility_path <- file.path(snapshot_dir, "imf_pcps_price_volatility.csv")
-imf_pcps_series_volatility_path <- file.path(snapshot_dir, "imf_pcps_price_volatility_series.csv")
+imf_pcps_prices_path <- file.path(raw_data_path, "imf_pcps_prices.csv")
+imf_pcps_volatility_path <- file.path(raw_data_path, "imf_pcps_price_volatility.csv")
+imf_pcps_series_volatility_path <- file.path(raw_data_path, "imf_pcps_price_volatility_series.csv")
 
 needs_imf_pcps <- !(
   file.exists(imf_pcps_prices_path) &&
@@ -1098,7 +1097,7 @@ if (needs_imf_pcps) {
 
 if (needs_imf_pcps) {
   old_snapshot_option <- getOption("opportunity_security.raw_snapshot_dir")
-  options(opportunity_security.raw_snapshot_dir = snapshot_dir)
+  options(opportunity_security.raw_snapshot_dir = raw_data_path)
 
   source(file.path(repo_root, "scripts", "06_energy_prices_imf.R"))
   end_year <- as.integer(format(Sys.Date(), "%Y"))
