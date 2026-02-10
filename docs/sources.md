@@ -35,7 +35,7 @@ Sources enter the pipeline during ingestion (`scripts/05_ingest_sources.R`), the
 
 ## Manifest-driven ingestion
 
-Raw inputs are allowlisted in `config/raw_inputs_manifest.yml`. The ingestion step copies only the files listed in that manifest from the SharePoint/OneDrive staging area (`sharepoint_raw_dir` in `config/config.yml`) into the snapshot folder at `data/raw/<snapshot_date>/`, preserving subfolder structure. Optional entries in the manifest (for legacy-generated caches like `allied_comtrade_energy_data.csv` and `scatter_index.csv`) do not fail ingestion when missing.
+Raw inputs are allowlisted in `config/raw_inputs_manifest.yml`. The ingestion step copies only the files listed in that manifest from the SharePoint/OneDrive staging area (`sharepoint_raw_dir` in `config/config.yml`) into the configured raw-data folder at `data/raw/`, preserving subfolder structure. Optional entries in the manifest (for legacy-generated caches like `allied_comtrade_energy_data.csv` and `scatter_index.csv`) do not fail ingestion when missing.
 
 When legacy scripts change, regenerate the manifest by running:
 
@@ -47,7 +47,7 @@ Commit the updated `config/raw_inputs_manifest.yml` alongside the script changes
 
 ### UN Comtrade refresh process (energy and ally dyads)
 
-The ingestion stage (`scripts/05_ingest_sources.R`) now builds all three energy-trade Comtrade artifacts directly into the active snapshot:
+The ingestion stage (`scripts/05_ingest_sources.R`) now builds all three energy-trade Comtrade artifacts directly into the raw-data folder:
 
 - `comtrade_energy_trade.csv`
 - `comtrade_total_export.csv`
@@ -68,5 +68,5 @@ For long Comtrade refreshes, you can split ingestion into multiple runs with:
 - `COMTRADE_REQUEST_TIMEOUT_SECONDS` (per-request timeout safeguard)
 - `COMTRADE_MAX_RETRIES` (agent-level retries before failing fast)
 
-Chunk runs stage files in `data/raw/<snapshot_date>/comtrade_chunks/` and automatically
+Chunk runs stage files in `data/raw/comtrade_chunks/` and automatically
 assemble final outputs once all chunks are present.

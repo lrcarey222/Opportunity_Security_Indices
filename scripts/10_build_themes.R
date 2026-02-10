@@ -87,7 +87,7 @@ if (is.null(raw_data_dir)) {
   stop("Config missing raw_data_dir.")
 }
 
-latest_raw_snapshots <- function(root_dir, raw_data_dir, skip_data_downloads = FALSE) {
+resolve_raw_data_dir <- function(root_dir, raw_data_dir, skip_data_downloads = FALSE) {
   raw_base_dir <- file.path(root_dir, raw_data_dir)
   if (!dir.exists(raw_base_dir)) {
     if (skip_data_downloads) {
@@ -97,27 +97,11 @@ latest_raw_snapshots <- function(root_dir, raw_data_dir, skip_data_downloads = F
     stop("Raw data directory not found: ", raw_base_dir)
   }
 
-  snapshot_dirs <- list.dirs(raw_base_dir, recursive = FALSE, full.names = TRUE)
-  if (length(snapshot_dirs) == 0) {
-    if (skip_data_downloads) {
-      message("Skipping raw data lookup; no snapshots in: ", raw_base_dir)
-      return(NULL)
-    }
-    stop("No raw data snapshots found in: ", raw_base_dir)
-  }
-
-  snapshot_dates <- suppressWarnings(as.Date(basename(snapshot_dirs)))
-  snapshot_info <- file.info(snapshot_dirs)
-  has_date <- !is.na(snapshot_dates)
-  if (any(has_date)) {
-    return(snapshot_dirs[order(snapshot_dates, decreasing = TRUE, na.last = TRUE)])
-  }
-
-  snapshot_dirs[order(snapshot_info$mtime, decreasing = TRUE)]
+  raw_base_dir
 }
 
-snapshot_candidates <- latest_raw_snapshots(repo_root, raw_data_dir, skip_data_downloads)
-if (is.null(snapshot_candidates)) {
+raw_data_path <- resolve_raw_data_dir(repo_root, raw_data_dir, skip_data_downloads)
+if (is.null(raw_data_path)) {
   invisible(list())
   return()
 }
@@ -144,120 +128,58 @@ find_manifest_path <- function(pattern, label) {
   raw_manifest[[which(hits)[1]]]$path
 }
 
-required_raw_paths <- function(snapshot_dir) {
-  c(
-    "ei_stat_review_world_energy.csv",
-    "ei_stat_review_world_energy_wide.xlsx",
-    "iea_criticalminerals_25.csv",
-    "iea_cleantech_Midstream.csv",
-    "IEA_Clean_Tech_Guide.csv",
-    "ev_Midstream_capacity.csv",
-    "consolidated_hs6_energy_tech_long.csv",
-    "hs92_country_product_year_4.csv",
-    "hs92_country_product_year_6.csv",
-    "comtrade_energy_trade.csv",
-    "comtrade_total_export.csv",
-    "2024-10-29 - New Energy Outlook 2024.csv",
-    "wdi_gdp.csv",
-    "wdi_country_info.csv",
-    "critmin_import_2025.csv",
-    "critmin_export_2025.csv",
-    "critmin_total_export_2025.csv",
-    "2025-03-24 - 2025 LCOE Data Viewer Tool.csv",
-    "WEO2025_AnnexA_Free_Dataset_World.csv",
-    "IEA_EVDataExplorer2025.xlsx",
-    "Market Size for Technology and Supply Chain.xlsx",
-    "BNEF_Energy Transition Supply Chains 2025.xlsx",
-    "Relative_Costs_IEA.csv",
-    "imf_lending_rates.csv",
-    "imf_ppi.csv",
-    "imf_commodity_prices.csv",
-    "solar_potential_clean.csv",
-    "wb_wind_country.csv",
-    "geothermal_lcoe_mw.csv",
-    find_manifest_path("IEA_PAMS_Export", "PAMS export"),
-    find_manifest_path("GTA NIPO - February 2026.xlsx$", "GTA NIPO export"),
-    find_manifest_path("hts_codes_categories_bolstered_final\\.csv$", "HS6 category lookup"),
-    find_manifest_path("ipcc_ghg_intensity.csv$", "IPCC GHG intensity"),
-    find_manifest_path("CAT_country ratings data.csv$", "CAT policy ratings"),
-    find_manifest_path(
-      "dual_use_scores_primary_secondary_tertiary\\.csv$",
-      "Dual-use scores"
-    )
-  ) |>
-    vapply(function(path) file.path(snapshot_dir, path), character(1))
-}
-
-latest_snapshot <- NULL
-missing_files <- character(0)
-for (candidate in snapshot_candidates) {
-  candidate_required_files <- required_raw_paths(candidate)
-  candidate_missing_files <- candidate_required_files[!file.exists(candidate_required_files)]
-  if (length(candidate_missing_files) == 0) {
-    latest_snapshot <- candidate
-    break
-  }
-  if (length(missing_files) == 0) {
-    missing_files <- candidate_missing_files
-  }
-}
-
-if (is.null(latest_snapshot)) {
-  latest_snapshot <- snapshot_candidates[[1]]
-}
-
 # Assemble required raw file paths for theme builders.
-raw_path <- file.path(latest_snapshot, "ei_stat_review_world_energy.csv")
-reserves_excel_path <- file.path(latest_snapshot, "ei_stat_review_world_energy_wide.xlsx")
-critical_minerals_path <- file.path(latest_snapshot, "iea_criticalminerals_25.csv")
-cleantech_midstream_path <- file.path(latest_snapshot, "iea_cleantech_Midstream.csv")
-iea_cleantech_guide_path <- file.path(latest_snapshot, "IEA_Clean_Tech_Guide.csv")
-ev_midstream_path <- file.path(latest_snapshot, "ev_Midstream_capacity.csv")
-trade_codes_path <- file.path(latest_snapshot, "consolidated_hs6_energy_tech_long.csv")
-trade_hs4_path <- file.path(latest_snapshot, "hs92_country_product_year_4.csv")
-trade_hs6_path <- file.path(latest_snapshot, "hs92_country_product_year_6.csv")
-comtrade_energy_trade_path <- file.path(latest_snapshot, "comtrade_energy_trade_25.csv")
-comtrade_total_export_path <- file.path(latest_snapshot, "comtrade_total_export_25.csv")
-bnef_neo_path <- file.path(latest_snapshot, "2024-10-29 - New Energy Outlook 2024.csv")
-wdi_gdp_path <- file.path(latest_snapshot, "wdi_gdp.csv")
-wdi_country_path <- file.path(latest_snapshot, "wdi_country_info.csv")
-critmin_import_path <- file.path(latest_snapshot, "critmin_import_2025.csv")
-critmin_export_path <- file.path(latest_snapshot, "critmin_export_2025.csv")
-critmin_total_export_path <- file.path(latest_snapshot, "critmin_total_export_2025.csv")
-energy_prices_lcoe_path <- file.path(latest_snapshot, "2025-03-24 - 2025 LCOE Data Viewer Tool.csv")
-iea_weo_path <- file.path(latest_snapshot, "WEO2025_AnnexA_Free_Dataset_World.csv")
-iea_ev_path <- file.path(latest_snapshot, "IEA_EVDataExplorer2025.xlsx")
-bcg_future_demand_path <- file.path(latest_snapshot, "Market Size for Technology and Supply Chain.xlsx")
-bnef_supply_chain_path <- file.path(latest_snapshot, "BNEF_Energy Transition Supply Chains 2025.xlsx")
-relative_costs_iea_path <- file.path(latest_snapshot, "Relative_Costs_IEA.csv")
-imf_lending_rates_path <- file.path(latest_snapshot, "imf_lending_rates.csv")
-imf_ppi_path <- file.path(latest_snapshot, "imf_ppi.csv")
-imf_commodity_prices_path <- file.path(latest_snapshot, "imf_commodity_prices.csv")
-solar_pv_potential_path <- file.path(latest_snapshot, "solar_potential_clean.csv")
-wind_potential_path <- file.path(latest_snapshot, "wb_wind_country.csv")
-geothermal_potential_path <- file.path(latest_snapshot, "geothermal_lcoe_mw.csv")
+raw_path <- file.path(raw_data_path, "ei_stat_review_world_energy.csv")
+reserves_excel_path <- file.path(raw_data_path, "ei_stat_review_world_energy_wide.xlsx")
+critical_minerals_path <- file.path(raw_data_path, "iea_criticalminerals_25.csv")
+cleantech_midstream_path <- file.path(raw_data_path, "iea_cleantech_Midstream.csv")
+iea_cleantech_guide_path <- file.path(raw_data_path, "IEA_Clean_Tech_Guide.csv")
+ev_midstream_path <- file.path(raw_data_path, "ev_Midstream_capacity.csv")
+trade_codes_path <- file.path(raw_data_path, "consolidated_hs6_energy_tech_long.csv")
+trade_hs4_path <- file.path(raw_data_path, "hs92_country_product_year_4.csv")
+trade_hs6_path <- file.path(raw_data_path, "hs92_country_product_year_6.csv")
+comtrade_energy_trade_path <- file.path(raw_data_path, "comtrade_energy_trade.csv")
+comtrade_total_export_path <- file.path(raw_data_path, "comtrade_total_export.csv")
+bnef_neo_path <- file.path(raw_data_path, "2024-10-29 - New Energy Outlook 2024.csv")
+wdi_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
+wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")
+critmin_import_path <- file.path(raw_data_path, "critmin_import_2025.csv")
+critmin_export_path <- file.path(raw_data_path, "critmin_export_2025.csv")
+critmin_total_export_path <- file.path(raw_data_path, "critmin_total_export_2025.csv")
+energy_prices_lcoe_path <- file.path(raw_data_path, "2025-03-24 - 2025 LCOE Data Viewer Tool.csv")
+iea_weo_path <- file.path(raw_data_path, "WEO2025_AnnexA_Free_Dataset_World.csv")
+iea_ev_path <- file.path(raw_data_path, "IEA_EVDataExplorer2025.xlsx")
+bcg_future_demand_path <- file.path(raw_data_path, "Market Size for Technology and Supply Chain.xlsx")
+bnef_supply_chain_path <- file.path(raw_data_path, "BNEF_Energy Transition Supply Chains 2025.xlsx")
+relative_costs_iea_path <- file.path(raw_data_path, "Relative_Costs_IEA.csv")
+imf_lending_rates_path <- file.path(raw_data_path, "imf_lending_rates.csv")
+imf_ppi_path <- file.path(raw_data_path, "imf_ppi.csv")
+imf_commodity_prices_path <- file.path(raw_data_path, "imf_commodity_prices.csv")
+solar_pv_potential_path <- file.path(raw_data_path, "solar_potential_clean.csv")
+wind_potential_path <- file.path(raw_data_path, "wb_wind_country.csv")
+geothermal_potential_path <- file.path(raw_data_path, "geothermal_lcoe_mw.csv")
 iea_pams_path <- file.path(
-  latest_snapshot,
+  raw_data_path,
   find_manifest_path("IEA_PAMS_Export", "PAMS export")
 )
 nipo_policy_path <- file.path(
-  latest_snapshot,
+  raw_data_path,
   find_manifest_path("GTA NIPO - February 2026.xlsx$", "GTA NIPO export")
 )
 hs6_category_path <- file.path(
-  latest_snapshot,
+  raw_data_path,
   find_manifest_path("hts_codes_categories_bolstered_final\\.csv$", "HS6 category lookup")
 )
 tech_ghg_path <- file.path(
-  latest_snapshot,
+  raw_data_path,
   find_manifest_path("ipcc_ghg_intensity.csv$", "IPCC GHG intensity")
 )
 cat_policy_path <- file.path(
-  latest_snapshot,
+  raw_data_path,
   find_manifest_path("CAT_country ratings data.csv$", "CAT policy ratings")
 )
 dual_use_scores_path <- file.path(
-  latest_snapshot,
+  raw_data_path,
   find_manifest_path(
     "dual_use_scores_primary_secondary_tertiary\\.csv$",
     "Dual-use scores"
