@@ -75,7 +75,7 @@ strategic_tbl <- build_country_strategic_tbl(index_outputs = index_outputs, coun
 if (length(selected_sector_labels) == 0) {
   selected_sector_labels <- strategic_tbl %>%
     dplyr::arrange(dplyr::desc(.data$strategic_index)) %>%
-    dplyr::slice_head(n = min(3, n())) %>%
+    dplyr::slice_head(n = 5) %>%
     dplyr::pull(.data$sector_label)
 }
 

@@ -218,7 +218,9 @@ policy_index <- policy_components_clean %>%
     value, Year, source, explanation
   )
 
-
+economic_opportunity_index <- index_outputs$economic_opportunity_index
+energy_security_index <- index_outputs$energy_security_index
+policy_index <-index_outputs$policy_index
 
 strategic_index <- left_join(
   economic_opportunity_index,
@@ -361,7 +363,8 @@ saveRDS(
     economic_opportunity_variable_contributions = economic_opportunity_variable_contributions,
     economic_opportunity_index = economic_opportunity_index,
     policy_component_tbl = policy_component_tbl,
-    policy_index = policy_index
+    policy_index = policy_index,
+    strategic_index = strategic_index
   ),
   outputs_rds_path
 )

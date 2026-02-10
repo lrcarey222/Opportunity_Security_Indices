@@ -72,50 +72,10 @@ build_country_strategic_tbl <- function(index_outputs,
       dplyr::transmute(.data$Country, .data$tech, .data$supply_chain, trl_index = .data$category_score)
   }
 
-  strategic_tbl <- eo_sel %>%
-    dplyr::inner_join(es_sel, by = c("Country", "tech", "supply_chain")) %>%
-    dplyr::left_join(
-      policy_tbl %>% dplyr::select("Country", "tech", "supply_chain", "value"),
-      by = c("Country", "tech", "supply_chain")
-    ) %>%
-    dplyr::left_join(ghg_tbl, by = "tech") %>%
-    dplyr::left_join(trl_tbl, by = c("Country", "tech", "supply_chain")) %>%
-    dplyr::mutate(
-      Economic_Opportunity_Index = ifelse(
-        is.na(.data$Economic_Opportunity_Index),
-        mean(.data$Economic_Opportunity_Index, na.rm = TRUE),
-        .data$Economic_Opportunity_Index
-      ),
-      Energy_Security_Index = ifelse(
-        is.na(.data$Energy_Security_Index),
-        mean(.data$Energy_Security_Index, na.rm = TRUE),
-        .data$Energy_Security_Index
-      )
-    ) %>%
-    dplyr::mutate(
-      policy_fill = ifelse(
-        is.na(.data$value),
-        ifelse(all(is.na(.data$value)), 0.5, mean(.data$value, na.rm = TRUE)),
-        .data$value
-      ),
-      eo = median_scurve(.data$Economic_Opportunity_Index),
-      es_risk = 1 - median_scurve(.data$Energy_Security_Index),
-      pol = median_scurve(.data$policy_fill),
-      sc_weight = dplyr::case_when(
-        .data$supply_chain == "Upstream" ~ 0.50,
-        .data$supply_chain == "Midstream" ~ 0.75,
-        .data$supply_chain == "Downstream" ~ 0.25,
-        TRUE ~ NA_real_
-      ),
-      tech_weight = dplyr::coalesce(.data$ghg_index, mean(.data$ghg_index, na.rm = TRUE), 0.5),
-      strategic_index =
-        0.2 * .data$pol +
-        0.25 * .data$Economic_Opportunity_Index +
-        0.25 * .data$Energy_Security_Index +
-        0.15 * .data$sc_weight +
-        0.15 * .data$tech_weight,
-      sector_label = paste(.data$tech, .data$supply_chain, sep = " - ")
-    ) %>%
+  strategic_tbl <- index_outputs$strategic_index %>%
+    dplyr::filter(.data$Country == country_name) %>%
+    dplyr::rename("sector_label"="sector",
+                  "es_risk"="es") %>%
     dplyr::select(
       "Country",
       "tech",
