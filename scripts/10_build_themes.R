@@ -523,10 +523,11 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     comtrade_trade = comtrade_energy_trade,
     comtrade_total_export = comtrade_total_export,
     country_info = country_info,
-    gdp_data = gdp_data,
     include_sub_sector = include_sub_sector
   )
+  
   trade_concentration_tbl <- standardize_theme_types(trade_concentration_tbl, country_info = country_info)
+  
   write_processed_tbl(
     trade_concentration_tbl,
     "trade_concentration_tbl",

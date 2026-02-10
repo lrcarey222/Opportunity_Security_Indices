@@ -150,7 +150,6 @@ trade_core_build_country_trade <- function(comtrade_trade,
                                            comtrade_total_export,
                                            market_share,
                                            feasibility,
-                                           gdp_data,
                                            year = 2025) {
   comtrade_rca <- trade_core_build_comtrade_rca(
     comtrade_trade = comtrade_trade,
@@ -170,15 +169,6 @@ trade_core_build_country_trade <- function(comtrade_trade,
       feasibility,
       by = c("reporter_iso" = "country_iso3_code", "tech", "supply_chain", "sub_sector")
     ) %>%
-    #dplyr::mutate(deficit = exports - imports) %>%
-    dplyr::left_join(
-      gdp_data %>%
-        dplyr::filter(year == "2025") %>%
-        dplyr::rename(gdp = NY.GDP.MKTP.CD) %>%
-        dplyr::select(iso3c, gdp),
-      by = c("reporter_iso" = "iso3c")
-    ) %>%
-    #dplyr::mutate(deficit_gdp = deficit / gdp) %>%
     dplyr::group_by(tech, supply_chain, sub_sector) %>%
     dplyr::mutate(
       market_share_index = median_scurve(market_share),
@@ -280,7 +270,6 @@ trade_category_build_trade <- function(subcat,
                                        comtrade_trade,
                                        comtrade_total_export,
                                        country_info,
-                                       gdp_data,
                                        year_4 = 2022,
                                        year_6 = 2023,
                                        year_comtrade = 2025,
@@ -310,7 +299,6 @@ trade_category_build_trade <- function(subcat,
     comtrade_total_export = comtrade_total_export,
     market_share = market_share,
     feasibility = feasibility,
-    gdp_data = gdp_data,
     year = year_comtrade
   )
 
