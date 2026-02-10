@@ -173,7 +173,7 @@ weights_tbl <- tibble::tibble(
   w = c(3, 4, 2, 1)  # IEA=3, NIPO=4, CAT=2, Dual-Use=1 (same order as required_vars)
 )
 
-# (Optional but robust) collapse to one value per Country×tech×supply_chain×variable
+# (Optional but robust) collapse to one value per CountryÃ—techÃ—supply_chainÃ—variable
 policy_components_clean <- policy_component_tbl %>%
   dplyr::filter(tech %in% techs, variable %in% required_vars) %>%
   dplyr::group_by(Country, tech, supply_chain, variable) %>%
@@ -294,7 +294,6 @@ if (exists("economic_opportunity_index")) {
   interdependence_path <- file.path(
     repo_root,
     config$raw_data_dir,
-    "2026-01-10",
     "interdependence_edges_primary_secondary_tertiary.csv"
   )
   if (!file.exists(interdependence_path)) {

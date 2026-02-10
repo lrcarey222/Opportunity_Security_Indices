@@ -53,31 +53,25 @@ if (file.exists(dev_path)) {
   partner_development_country_tbl <- readRDS(dev_path)
 }
 
-# Load country_info from the latest raw snapshot (same approach as scripts/15_build_partner_themes.R)
+# Load country_info from the configured raw data directory.
 is_skip_data_downloads <- function() {
   tolower(Sys.getenv("SKIP_DATA_DOWNLOADS")) %in% c("1", "true", "yes")
 }
 skip_data_downloads <- is_skip_data_downloads()
 
-latest_raw_snapshot <- function(root_dir, raw_data_dir, skip_data_downloads = FALSE) {
+resolve_raw_data_dir <- function(root_dir, raw_data_dir, skip_data_downloads = FALSE) {
   raw_base_dir <- file.path(root_dir, raw_data_dir)
   if (!dir.exists(raw_base_dir)) {
     if (skip_data_downloads) return(NULL)
     stop("Raw data directory not found: ", raw_base_dir)
   }
-  snapshot_dirs <- list.dirs(raw_base_dir, recursive = FALSE, full.names = TRUE)
-  if (length(snapshot_dirs) == 0) {
-    if (skip_data_downloads) return(NULL)
-    stop("No raw data snapshots found in: ", raw_base_dir)
-  }
-  snapshot_info <- file.info(snapshot_dirs)
-  snapshot_dirs[order(snapshot_info$mtime, decreasing = TRUE)][1]
+  raw_base_dir
 }
 
-latest_snapshot <- latest_raw_snapshot(repo_root, config$raw_data_dir, skip_data_downloads)
-if (is.null(latest_snapshot)) stop("No raw snapshots found (and SKIP_DATA_DOWNLOADS is set).")
+raw_data_path <- resolve_raw_data_dir(repo_root, config$raw_data_dir, skip_data_downloads)
+if (is.null(raw_data_path)) stop("Raw data directory not found (and SKIP_DATA_DOWNLOADS is set).")
 
-wdi_country_path <- file.path(latest_snapshot, "wdi_country_info.csv")
+wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")
 country_info <- read.csv(wdi_country_path)
 country_info <- standardize_country_info(country_info)
 
