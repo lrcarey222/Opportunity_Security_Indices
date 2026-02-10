@@ -10,6 +10,8 @@ source(file.path(script_dir, "00_setup.R"))
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "charts", "package_selection_viz.R"))
 
+DEFAULT_COUNTRY <- "Japan"
+
 parse_args <- function(args) {
   out <- list(country = NULL, out_dir = NULL, top_n = 10L, selected = NULL)
   for (arg in args) {
@@ -50,13 +52,14 @@ safe_chart <- function(expr) {
 }
 
 args <- parse_args(commandArgs(trailingOnly = TRUE))
-if (is.null(args$country) || !nzchar(args$country)) {
-  stop("Required argument missing: --country=\"Japan\"")
+country <- args$country %||% DEFAULT_COUNTRY
+if (!nzchar(country)) {
+  stop("Country is empty. Set DEFAULT_COUNTRY in this script or pass --country=\"India\".")
 }
 
 config <- getOption("opportunity_security.config")
 outputs_dir_name <- args$out_dir %||% config$outputs_dir %||% "outputs"
-country_slug <- tolower(gsub("[^a-zA-Z0-9]+", "_", args$country))
+country_slug <- tolower(gsub("[^a-zA-Z0-9]+", "_", country))
 base_out_dir <- file.path(repo_root, outputs_dir_name, "package_selection_viz", country_slug)
 plots_dir <- file.path(base_out_dir, "plots")
 data_dir <- file.path(base_out_dir, "datawrapper")
@@ -66,8 +69,9 @@ dir.create(data_dir, recursive = TRUE, showWarnings = FALSE)
 outputs_rds <- resolve_outputs_rds(repo_root, config)
 index_outputs <- readRDS(outputs_rds)
 selected_sector_labels <- split_selected(args$selected)
+message("Building package-selection outputs for country: ", country)
 
-strategic_tbl <- build_country_strategic_tbl(index_outputs = index_outputs, country = args$country)
+strategic_tbl <- build_country_strategic_tbl(index_outputs = index_outputs, country = country)
 if (length(selected_sector_labels) == 0) {
   selected_sector_labels <- strategic_tbl %>%
     dplyr::arrange(dplyr::desc(.data$strategic_index)) %>%
@@ -104,7 +108,7 @@ heatmap_plot_path <- file.path(plots_dir, "country_strategic_heatmap.png")
 ggsave(heatmap_plot_path, heatmap_plot, width = 9, height = 6, dpi = 300, bg = "white")
 
 heatmap_csv <- strategic_tbl %>%
-  dplyr::select(.data$tech, .data$supply_chain, .data$strategic_index) %>%
+  dplyr::select("tech", "supply_chain", "strategic_index") %>%
   tidyr::pivot_wider(names_from = .data$supply_chain, values_from = .data$strategic_index)
 heatmap_csv_path <- file.path(data_dir, "country_strategic_heatmap_wide.csv")
 readr::write_csv(heatmap_csv, heatmap_csv_path)
@@ -117,7 +121,7 @@ ggsave(scatter_plot_path, scatter_plot, width = 9, height = 6, dpi = 300, bg = "
 
 scatter_csv <- strategic_tbl %>%
   dplyr::mutate(selected = .data$sector_label %in% selected_sector_labels) %>%
-  dplyr::select(.data$sector_label, .data$tech, .data$supply_chain, .data$eo, .data$es_risk, .data$pol, .data$trl_index, .data$strategic_index, .data$selected)
+  dplyr::select("sector_label", "tech", "supply_chain", "eo", "es_risk", "pol", "trl_index", "strategic_index", "selected")
 scatter_csv_path <- file.path(data_dir, "country_eo_vs_es_risk_scatter.csv")
 readr::write_csv(scatter_csv, scatter_csv_path)
 append_manifest("country_eo_vs_es_risk_scatter", "EO vs ES-risk scatter", scatter_plot_path, scatter_csv_path, "d3-scatter-plot")
@@ -131,13 +135,13 @@ topn_plot_path <- file.path(plots_dir, "topn_sector_decomposition.png")
 ggsave(topn_plot_path, topn_plot, width = 10, height = 7, dpi = 300, bg = "white")
 
 topn_csv_path <- file.path(data_dir, "topn_sector_decomposition.csv")
-readr::write_csv(topn_tbl %>% dplyr::select(-.data$Country), topn_csv_path)
+readr::write_csv(topn_tbl %>% dplyr::select(-dplyr::all_of("Country")), topn_csv_path)
 append_manifest("topn_sector_decomposition", "Top-N sectors decomposition", topn_plot_path, topn_csv_path, "d3-bars")
 
 # (4) ES category contributions (selected)
 es_wide <- build_category_contrib_wide(
   contrib_tbl = index_outputs$energy_security_category_contributions,
-  country = args$country,
+  country = country,
   selected_sector_labels = selected_sector_labels,
   pillar = "ES"
 )
@@ -156,7 +160,7 @@ if (nrow(es_wide) > 0) {
 # (5) EO category contributions (selected)
 eo_wide <- build_category_contrib_wide(
   contrib_tbl = index_outputs$economic_opportunity_category_contributions,
-  country = args$country,
+  country = country,
   selected_sector_labels = selected_sector_labels,
   pillar = "EO"
 )
@@ -188,14 +192,14 @@ if (file.exists(friendshore_path) || file.exists(opportunity_path)) {
     # Export a merged, best-effort shortlist when key columns exist.
     if (all(c("reporter_name", "partner_name", "friendshore_index", "tech", "supply_chain") %in% colnames(friendshore_tbl))) {
       partner_tbl <- friendshore_tbl %>%
-        dplyr::filter(tolower(.data$reporter_name) == tolower(args$country)) %>%
+        dplyr::filter(tolower(.data$reporter_name) == tolower(country)) %>%
         dplyr::mutate(sector_label = paste(.data$tech, .data$supply_chain, sep = " - ")) %>%
         dplyr::filter(.data$sector_label %in% selected_sector_labels) %>%
         dplyr::group_by(.data$sector_label) %>%
         dplyr::slice_max(order_by = .data$friendshore_index, n = args$top_n, with_ties = FALSE) %>%
         dplyr::ungroup() %>%
         dplyr::mutate(opportunity_index = NA_real_) %>%
-        dplyr::select(.data$sector_label, partner_name = .data$partner_name, .data$friendshore_index, .data$opportunity_index)
+        dplyr::select("sector_label", partner_name = "partner_name", "friendshore_index", "opportunity_index")
 
       if (nrow(partner_tbl) > 0) {
         partner_csv_path <- file.path(data_dir, "partner_shortlist_selected.csv")

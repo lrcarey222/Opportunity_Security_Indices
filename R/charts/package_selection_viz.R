@@ -41,14 +41,12 @@ build_country_strategic_tbl <- function(index_outputs,
 
   eo_sel <- eo_tbl %>%
     dplyr::filter(.data$Country == country_name) %>%
-    dplyr::select(.data$Country, .data$tech, .data$supply_chain,
-                  Economic_Opportunity_Index) %>%
+    dplyr::select("Country", "tech", "supply_chain", "Economic_Opportunity_Index") %>%
     dplyr::distinct()
 
   es_sel <- es_tbl %>%
     dplyr::filter(.data$Country == country_name) %>%
-    dplyr::select(.data$Country, .data$tech, .data$supply_chain,
-                  Energy_Security_Index) %>%
+    dplyr::select("Country", "tech", "supply_chain", "Energy_Security_Index") %>%
     dplyr::distinct()
 
   policy_tbl <- index_outputs$policy_index
@@ -59,15 +57,15 @@ build_country_strategic_tbl <- function(index_outputs,
                        .groups = "drop")
   }
   if (is.null(policy_tbl)) {
-    policy_tbl <- eo_sel %>% dplyr::transmute(.data$Country, .data$tech, .data$supply_chain, value = NA_real_)
+    policy_tbl <- eo_sel %>% dplyr::transmute(Country, tech, supply_chain, value = NA_real_)
   }
 
-  ghg_tbl <- NULL
+  ghg_tbl <- tibble::tibble(tech = character(), ghg_index = numeric())
   if (!is.null(index_outputs$tech_ghg)) {
-    ghg_tbl <- index_outputs$tech_ghg %>% dplyr::select(.data$tech, .data$ghg_index)
+    ghg_tbl <- index_outputs$tech_ghg %>% dplyr::select("tech", "ghg_index")
   }
 
-  trl_tbl <- NULL
+  trl_tbl <- tibble::tibble(Country = character(), tech = character(), supply_chain = character(), trl_index = numeric())
   if (!is.null(index_outputs$economic_opportunity_category_scores)) {
     trl_tbl <- index_outputs$economic_opportunity_category_scores %>%
       dplyr::filter(.data$category == "Technological Readiness") %>%
@@ -77,7 +75,7 @@ build_country_strategic_tbl <- function(index_outputs,
   strategic_tbl <- eo_sel %>%
     dplyr::inner_join(es_sel, by = c("Country", "tech", "supply_chain")) %>%
     dplyr::left_join(
-      policy_tbl %>% dplyr::select(.data$Country, .data$tech, .data$supply_chain, .data$value),
+      policy_tbl %>% dplyr::select("Country", "tech", "supply_chain", "value"),
       by = c("Country", "tech", "supply_chain")
     ) %>%
     dplyr::left_join(ghg_tbl, by = "tech") %>%
@@ -119,19 +117,19 @@ build_country_strategic_tbl <- function(index_outputs,
       sector_label = paste(.data$tech, .data$supply_chain, sep = " - ")
     ) %>%
     dplyr::select(
-      .data$Country,
-      .data$tech,
-      .data$supply_chain,
-      .data$eo,
-      .data$es_risk,
-      .data$pol,
-      .data$trl_index,
-      .data$sc_weight,
-      .data$tech_weight,
-      .data$Economic_Opportunity_Index,
-      .data$Energy_Security_Index,
-      .data$strategic_index,
-      .data$sector_label
+      "Country",
+      "tech",
+      "supply_chain",
+      "eo",
+      "es_risk",
+      "pol",
+      "trl_index",
+      "sc_weight",
+      "tech_weight",
+      "Economic_Opportunity_Index",
+      "Energy_Security_Index",
+      "strategic_index",
+      "sector_label"
     ) %>%
     dplyr::arrange(dplyr::desc(.data$strategic_index))
 
@@ -144,7 +142,7 @@ build_country_strategic_tbl <- function(index_outputs,
       dplyr::left_join(
         eo_tbl %>%
           dplyr::filter(.data$Country == country_name) %>%
-          dplyr::select(.data$Country, .data$tech, .data$supply_chain, .data$sub_sector) %>%
+          dplyr::select("Country", "tech", "supply_chain", "sub_sector") %>%
           dplyr::distinct(),
         by = c("Country", "tech", "supply_chain")
       )
@@ -223,14 +221,14 @@ build_topn_contrib_tbl <- function(strategic_tbl, top_n = 10) {
     dplyr::arrange(dplyr::desc(.data$strategic_index)) %>%
     dplyr::slice_head(n = top_n) %>%
     dplyr::select(
-      .data$Country,
-      .data$sector_label,
-      .data$strategic_index,
-      .data$contrib_eo,
-      .data$contrib_es,
-      .data$contrib_policy,
-      .data$contrib_sc,
-      .data$contrib_climate
+      "Country",
+      "sector_label",
+      "strategic_index",
+      "contrib_eo",
+      "contrib_es",
+      "contrib_policy",
+      "contrib_sc",
+      "contrib_climate"
     )
 
   topn_long <- topn_wide %>%
@@ -295,7 +293,7 @@ build_category_contrib_wide <- function(contrib_tbl,
     dplyr::filter(.data$Country == country_name) %>%
     dplyr::mutate(sector_label = paste(.data$tech, .data$supply_chain, sep = " - ")) %>%
     dplyr::filter(.data$sector_label %in% selected_sector_labels) %>%
-    dplyr::select(.data$category, .data$sector_label, value = dplyr::all_of(score_col))
+    dplyr::select("category", "sector_label", value = dplyr::all_of(score_col))
 
   if (nrow(long_tbl) == 0) {
     return(tibble::tibble())

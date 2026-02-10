@@ -20,6 +20,12 @@ Rscript scripts/90_build_package_selection_viz.R --country="Japan"
 
 With optional arguments:
 
+If you prefer not to pass CLI args every run, you can set the default in the script:
+
+- Edit `scripts/90_build_package_selection_viz.R` and change `DEFAULT_COUNTRY <- "Japan"` to your preferred country (for example `"India"`).
+- `--country=...` still overrides that default when provided.
+
+
 ```bash
 Rscript scripts/90_build_package_selection_viz.R \
   --country="Japan" \

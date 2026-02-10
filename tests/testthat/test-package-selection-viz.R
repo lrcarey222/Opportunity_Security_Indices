@@ -106,3 +106,26 @@ test_that("plotting functions return ggplot objects", {
   expect_s3_class(plot_topn_contrib(topn_long), "ggplot")
   expect_s3_class(plot_category_contrib(cat_wide, pillar = "ES"), "ggplot")
 })
+
+
+test_that("build_country_strategic_tbl handles missing optional ghg/trl tables", {
+  index_outputs <- list(
+    economic_opportunity_index = tibble::tibble(
+      Country = c("India", "India"),
+      tech = c("Solar", "Wind"),
+      supply_chain = c("Upstream", "Midstream"),
+      Economic_Opportunity_Index = c(0.7, 0.6)
+    ),
+    energy_security_index = tibble::tibble(
+      Country = c("India", "India"),
+      tech = c("Solar", "Wind"),
+      supply_chain = c("Upstream", "Midstream"),
+      Energy_Security_Index = c(0.5, 0.4)
+    )
+  )
+
+  out <- build_country_strategic_tbl(index_outputs, "India")
+
+  expect_equal(nrow(out), 2)
+  expect_true(all(!is.na(out$tech_weight)))
+})
