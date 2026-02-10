@@ -216,8 +216,8 @@ ev_midstream_path <- file.path(latest_snapshot, "ev_Midstream_capacity.csv")
 trade_codes_path <- file.path(latest_snapshot, "consolidated_hs6_energy_tech_long.csv")
 trade_hs4_path <- file.path(latest_snapshot, "hs92_country_product_year_4.csv")
 trade_hs6_path <- file.path(latest_snapshot, "hs92_country_product_year_6.csv")
-comtrade_energy_trade_path <- file.path(latest_snapshot, "comtrade_energy_trade.csv")
-comtrade_total_export_path <- file.path(latest_snapshot, "comtrade_total_export.csv")
+comtrade_energy_trade_path <- file.path(latest_snapshot, "comtrade_energy_trade_25.csv")
+comtrade_total_export_path <- file.path(latest_snapshot, "comtrade_total_export_25.csv")
 bnef_neo_path <- file.path(latest_snapshot, "2024-10-29 - New Energy Outlook 2024.csv")
 wdi_gdp_path <- file.path(latest_snapshot, "wdi_gdp.csv")
 wdi_country_path <- file.path(latest_snapshot, "wdi_country_info.csv")
@@ -502,7 +502,10 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   )
 
   # Theme: Trade concentration (Atlas data + WDI country reference).
-  subcat <- read.csv(trade_codes_path)
+  subcat <- readr::read_csv(hs6_category_path, show_col_types = FALSE) %>%
+    rename("tech"="Technology",
+           "supply_chain" = "Value Chain")
+
   aec_4_data <- read.csv(trade_hs4_path)
   aec_6_data <- read.csv(trade_hs6_path)
   comtrade_energy_trade <- read.csv(comtrade_energy_trade_path)

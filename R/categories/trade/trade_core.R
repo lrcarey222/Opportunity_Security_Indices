@@ -73,7 +73,7 @@ trade_core_build_aec_feasibility <- function(aec_4_data, energy_codes, year = 20
 
 trade_core_build_comtrade_trade <- function(comtrade_data,
                                             energy_codes,
-                                            year = 2024) {
+                                            year = 2025) {
   comtrade_data <- trade_core_filter_year(
     comtrade_data,
     year = year,
@@ -103,12 +103,12 @@ trade_core_build_comtrade_trade <- function(comtrade_data,
       values_from = value,
       values_fill = 0
     ) %>%
-    dplyr::rename(exports = export, imports = import)
+    dplyr::rename("exports" = "export")
 }
 
 trade_core_build_comtrade_rca <- function(comtrade_trade,
                                           comtrade_total_export,
-                                          year = 2024) {
+                                          year = 2025) {
   total_export <- trade_core_filter_year(
     comtrade_total_export,
     year = year,
@@ -151,7 +151,7 @@ trade_core_build_country_trade <- function(comtrade_trade,
                                            market_share,
                                            feasibility,
                                            gdp_data,
-                                           year = 2024) {
+                                           year = 2025) {
   comtrade_rca <- trade_core_build_comtrade_rca(
     comtrade_trade = comtrade_trade,
     comtrade_total_export = comtrade_total_export,
@@ -160,8 +160,7 @@ trade_core_build_country_trade <- function(comtrade_trade,
 
   comtrade_rca %>%
     dplyr::mutate(
-      exports = dplyr::coalesce(exports, 0),
-      imports = dplyr::coalesce(imports, 0)
+      exports = dplyr::coalesce(exports, 0)
     ) %>%
     dplyr::left_join(
       market_share,
@@ -171,20 +170,19 @@ trade_core_build_country_trade <- function(comtrade_trade,
       feasibility,
       by = c("reporter_iso" = "country_iso3_code", "tech", "supply_chain", "sub_sector")
     ) %>%
-    dplyr::mutate(deficit = exports - imports) %>%
+    #dplyr::mutate(deficit = exports - imports) %>%
     dplyr::left_join(
       gdp_data %>%
-        dplyr::filter(year == "2024") %>%
+        dplyr::filter(year == "2025") %>%
         dplyr::rename(gdp = NY.GDP.MKTP.CD) %>%
         dplyr::select(iso3c, gdp),
       by = c("reporter_iso" = "iso3c")
     ) %>%
-    dplyr::mutate(deficit_gdp = deficit / gdp) %>%
+    #dplyr::mutate(deficit_gdp = deficit / gdp) %>%
     dplyr::group_by(tech, supply_chain, sub_sector) %>%
     dplyr::mutate(
       market_share_index = median_scurve(market_share),
-      rca_index = median_scurve(export_rca),
-      deficit_gdp_index = median_scurve(deficit_gdp)
+      rca_index = median_scurve(export_rca)
     ) %>%
     dplyr::group_by(reporter_iso) %>%
     dplyr::mutate(
@@ -285,7 +283,7 @@ trade_category_build_trade <- function(subcat,
                                        gdp_data,
                                        year_4 = 2022,
                                        year_6 = 2023,
-                                       year_comtrade = 2024,
+                                       year_comtrade = 2025,
                                        include_sub_sector = FALSE) {
   energy_codes <- trade_core_build_energy_codes(subcat, include_sub_sector = include_sub_sector)
 

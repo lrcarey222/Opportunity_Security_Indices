@@ -158,7 +158,7 @@ if (!file.exists(wdi_gdp_path) || !file.exists(wdi_country_path)) {
   }
 }
 
-# --- Source: OECD CRS (development assistance) ---
+# --- Source: OECD CRS (development assistance) -------
 oecd_api_path <- file.path(snapshot_dir, "oecd_crs_api.csv")
 
 if (!file.exists(oecd_api_path)) {
@@ -243,6 +243,7 @@ if (!file.exists(oecd_api_path)) {
   }
 }
 
+#Critical Minerals--------------
 critical_minerals_path <- file.path(snapshot_dir, "iea_criticalminerals_25.csv")
 critical_minerals_hs_path <- file.path(
   snapshot_dir,
@@ -811,7 +812,7 @@ comtrade_max_retries <- if (!is.na(comtrade_max_retries_env) && comtrade_max_ret
   3L
 }
 
-# --- Source: UN Comtrade (critical minerals trade) ---
+# --- Source: UN Comtrade (critical minerals trade) ----------------------
 critmin_import_path <- file.path(snapshot_dir, "critmin_import_2025.csv")
 critmin_export_path <- file.path(snapshot_dir, "critmin_export_2025.csv")
 critmin_total_export_path <- file.path(snapshot_dir, "critmin_total_export_2025.csv")
@@ -940,145 +941,121 @@ comtrade_energy_trade_path <- file.path(snapshot_dir, "comtrade_energy_trade.csv
 comtrade_total_export_path <- file.path(snapshot_dir, "comtrade_total_export.csv")
 allied_comtrade_energy_path <- file.path(snapshot_dir, "allied_comtrade_energy_data.csv")
 
-comtrade_target_year_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_TARGET_YEAR", "")))
-comtrade_target_year <- if (!is.na(comtrade_target_year_env)) {
-  comtrade_target_year_env
-} else {
-  as.integer(format(Sys.Date(), "%Y")) - 1
-}
+library(comtradr)
+set_primary_comtrade_key('2940653b9bbe4671b3f7fde2846d14be')
 
-comtrade_start_year_env <- suppressWarnings(as.integer(Sys.getenv("COMTRADE_START_YEAR", "")))
-comtrade_start_year <- if (!is.na(comtrade_start_year_env)) {
-  comtrade_start_year_env
-} else {
-  comtrade_target_year - 4
-}
+#All Energy Trade Data Import from Comtrade-----------------------------------
+country_info_iso <- country_info %>%
+  filter(!iso3c %in% c("ASM", "CHI", "GUM", "IMN", "LIE", "MAF", "MCO", "PRI", "XKX"))
 
-if (comtrade_start_year > comtrade_target_year) {
-  stop("COMTRADE_START_YEAR cannot be greater than COMTRADE_TARGET_YEAR.")
-}
+subcat<-read.csv(paste0(raw_data,"hts_codes_categories_bolstered_final.csv")) %>%
+  mutate(code=as.character(HS6))
 
-comtrade_has_year <- function(path, year) {
-  if (!file.exists(path)) {
-    return(FALSE)
+# 1) Clean & prep the HS6 codes
+codes <- subcat$code %>%
+  as.character() %>%
+  str_replace_all("\\D", "") %>%        # keep digits only, just in case
+  str_pad(width = 6, side = "left", pad = "0") %>%
+  na.omit() %>%
+  unique()
+
+# 2) Split into chunks by max characters allowed in the commodity_code param
+split_by_nchar <- function(x, max_chars = 2500) {
+  chunks <- list(); cur <- character(); cur_len <- 0
+  for (code in x) {
+    add_len <- nchar(code) + ifelse(length(cur) == 0, 0, 1) # comma if not first
+    if (cur_len + add_len > max_chars) {
+      chunks[[length(chunks) + 1]] <- cur
+      cur <- code
+      cur_len <- nchar(code)
+    } else {
+      cur <- c(cur, code)
+      cur_len <- cur_len + add_len
+    }
   }
-  data <- read.csv(path)
-  year_col <- intersect(c("period", "ref_year", "year", "Year"), names(data))
-  if (length(year_col) == 0) {
-    return(FALSE)
-  }
-  max_year <- suppressWarnings(max(as.integer(data[[year_col[[1]]]]), na.rm = TRUE))
-  !is.na(max_year) && max_year >= year
+  if (length(cur)) chunks[[length(chunks) + 1]] <- cur
+  chunks
 }
 
-needs_energy_comtrade <- !(
-  comtrade_has_year(comtrade_energy_trade_path, comtrade_target_year) &&
-    comtrade_has_year(comtrade_total_export_path, comtrade_target_year) &&
-    comtrade_has_year(allied_comtrade_energy_path, comtrade_target_year)
+code_chunks <- split_by_nchar(codes, max_chars = 2500)  # conservative margin under 4096
+
+split_vec <- function(x, chunk_size) {
+  if (length(x) == 0) return(list(character()))
+  split(x, ceiling(seq_along(x) / chunk_size))
+}
+
+safe_ct <- purrr::possibly(ct_get_data, otherwise = NULL)
+
+# reporter / partner / code inputs you already have
+reporters <- country_info_iso$iso3c
+partners  <- "World"
+codes     <- code_chunks                 # from your split_by_nchar(...)
+years     <- c(2021,2025)
+dirs      <- c("export")
+
+# ALSO chunk the partner list to keep rows per call below 100k
+# (tune chunk_size if you still hit the cap; larger == fewer calls, smaller == safer)
+partner_chunks <- split_vec(partners, chunk_size = 50)
+
+# Cartesian product: one reporter × one year × one flow × one code-chunk × one partner-chunk
+grid <- tidyr::expand_grid(
+  rep  = reporters,
+  yr   = years,
+  dir  = dirs,
+  cc   = codes,
+  pch  = partner_chunks
 )
 
-if (needs_energy_comtrade) {
-  if (skip_data_downloads) {
-    message("Skipping comtrade download; missing energy trade outputs in snapshot.")
-  } else {
-    if (!requireNamespace("comtradr", quietly = TRUE)) {
-      stop("Package 'comtradr' is required to ingest energy trade data.")
+library(progress)
+pb <- progress_bar$new(
+  format = "  :current/:total [:bar] :percent | ETA: :eta | rep=:rep yr=:yr dir=:dir partners=:pn codes=:cn",
+  total  = nrow(grid),
+  clear  = FALSE, width = 90
+)
+
+# Run the queries
+res_list <- purrr::pmap(
+  grid,
+  function(rep, yr, dir, cc, pch) {
+    pb$tick(tokens = list(rep = rep, yr = yr, dir = dir,
+                          pn = length(pch), cn = length(cc)))
+    Sys.sleep(0.5)  # increase if rate-limited
+    out <- safe_ct(
+      reporter       = rep,
+      partner        = pch,
+      commodity_code = cc,
+      start_date     = yr,
+      end_date       = yr,
+      flow_direction = dir
+    )
+    if (is.null(out)) return(NULL)
+    
+    # Tag the direction if the API payload doesn't include it
+    if (!"flow_direction" %in% names(out)) {
+      out <- dplyr::mutate(out, flow_direction = dir)
     }
-
-    comtrade_key <- "2940653b9bbe4671b3f7fde2846d14be"
-    if (comtrade_key == "") {
-      stop("COMTRADE_API_KEY environment variable must be set to ingest energy trade data.")
+    # (Optional) if there's a 'trade_flow' column, keep only the requested flow
+    if ("trade_flow" %in% names(out)) {
+      out <- dplyr::filter(out, tolower(trade_flow) == dir)
     }
-    comtradr::set_primary_comtrade_key(comtrade_key)
-
-    if (!file.exists(energy_trade_codes_path)) {
-      stop("Energy trade HS6 codes missing from snapshot: ", energy_trade_codes_path)
-    }
-    if (!file.exists(wdi_country_path)) {
-      stop("WDI country data missing from snapshot: ", wdi_country_path)
-    }
-
-    energy_trade_codes <- read.csv(energy_trade_codes_path)
-    energy_codes <- energy_trade_codes$HS6 %>%
-      as.character() %>%
-      stringr::str_replace_all("\\D", "") %>%
-      stringr::str_pad(width = 6, side = "left", pad = "0") %>%
-      stats::na.omit() %>%
-      unique()
-    code_chunks <- split_by_nchar(energy_codes, max_chars = 2500)
-
-    wdi_country_info <- read.csv(wdi_country_path)
-    reporter_ref <- comtradr::ct_get_ref_table("reporter")
-    reporter_candidates <- resolve_comtrade_reporters(wdi_country_info, reporter_ref)
-
-    ally_reporters <- c(
-      "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA",
-      "ITA", "BRA", "SAU", "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK",
-      "ARG", "MAR", "CHL"
-    )
-    ally_reporters <- intersect(ally_reporters, reporter_candidates)
-
-    trade_flows <- c("export", "import")
-
-    energy_trade <- fetch_comtrade_grid(
-      reporters = reporter_candidates,
-      partners = "World",
-      code_chunks = code_chunks,
-      years = comtrade_start_year:comtrade_target_year,
-      flows = trade_flows,
-      partner_chunk_size = 1,
-      chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count,
-      retries = comtrade_max_retries,
-      request_timeout_seconds = comtrade_request_timeout_seconds
-    )
-
-    allied_comtrade_energy <- fetch_comtrade_grid(
-      reporters = ally_reporters,
-      partners = reporter_candidates,
-      code_chunks = code_chunks,
-      years = comtrade_start_year:comtrade_target_year,
-      flows = trade_flows,
-      partner_chunk_size = 50,
-      chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count,
-      retries = comtrade_max_retries,
-      request_timeout_seconds = comtrade_request_timeout_seconds
-    )
-
-    total_export <- fetch_comtrade_grid(
-      reporters = reporter_candidates,
-      partners = "World",
-      code_chunks = list("TOTAL"),
-      years = comtrade_start_year:comtrade_target_year,
-      flows = "export",
-      partner_chunk_size = 1,
-      chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count,
-      retries = comtrade_max_retries,
-      request_timeout_seconds = comtrade_request_timeout_seconds
-    )
-
-    stage_comtrade_output(
-      energy_trade,
-      comtrade_energy_trade_path,
-      chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count
-    )
-    stage_comtrade_output(
-      total_export,
-      comtrade_total_export_path,
-      chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count
-    )
-    stage_comtrade_output(
-      allied_comtrade_energy,
-      allied_comtrade_energy_path,
-      chunk_index = comtrade_chunk_index,
-      chunk_count = comtrade_chunk_count
-    )
+    
+    # Stamp keys to help debugging / dedup if needed
+    dplyr::mutate(out, reporter_req = rep, year_req = yr)
   }
-}
+)
+
+# Bind and dedupe
+res_all <- dplyr::bind_rows(res_list) %>% dplyr::distinct()
+#write.csv(res,paste0(raw_data,"allied_comtrade_energy_data.csv"))
+
+tot <- ct_get_data(
+  reporter = "all_countries",
+  partner  = "World",      # aggregate partner (default)
+  commodity_code = "TOTAL",# all commodities (default)
+  flow_direction = c("Export"),
+  start_date = 2021,
+  end_date   = 2025
+)
 
 # --- Source: IMF Primary Commodity Price System (PCPS) ------------------
 imf_pcps_excel_path <- file.path(snapshot_dir, "IMF_PCPS_all.xlsx")

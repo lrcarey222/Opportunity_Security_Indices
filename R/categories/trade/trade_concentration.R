@@ -9,7 +9,7 @@ trade_concentration <- function(subcat,
                                 gdp_data,
                                 year_4 = 2022,
                                 year_6 = 2023,
-                                year_comtrade = 2024,
+                                year_comtrade = 2025,
                                 include_sub_sector = FALSE) {
   trade_category_build_trade(
     subcat = subcat,
