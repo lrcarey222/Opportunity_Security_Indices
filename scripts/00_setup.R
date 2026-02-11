@@ -67,7 +67,8 @@ packages <- c(
   "countrycode",
   "WDI",
   "comtradr",
-  "magrittr"
+  "magrittr",
+  "progress"
 )
 missing_packages <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]
 if (length(missing_packages) > 0) {
