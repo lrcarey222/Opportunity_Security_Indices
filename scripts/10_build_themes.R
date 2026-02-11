@@ -138,8 +138,8 @@ ev_midstream_path <- file.path(raw_data_path, "ev_Midstream_capacity.csv")
 trade_codes_path <- file.path(raw_data_path, "consolidated_hs6_energy_tech_long.csv")
 trade_hs4_path <- file.path(raw_data_path, "hs92_country_product_year_4.csv")
 trade_hs6_path <- file.path(raw_data_path, "hs92_country_product_year_6.csv")
-comtrade_energy_trade_path <- file.path(raw_data_path, "comtrade_energy_trade.csv")
-comtrade_total_export_path <- file.path(raw_data_path, "comtrade_total_export.csv")
+comtrade_energy_trade_path <- file.path(raw_data_path, "comtrade_energy_trade_25.csv")
+comtrade_total_export_path <- file.path(raw_data_path, "comtrade_total_export_25.csv")
 bnef_neo_path <- file.path(raw_data_path, "2024-10-29 - New Energy Outlook 2024.csv")
 wdi_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
 wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")
@@ -159,31 +159,23 @@ solar_pv_potential_path <- file.path(raw_data_path, "solar_potential_clean.csv")
 wind_potential_path <- file.path(raw_data_path, "wb_wind_country.csv")
 geothermal_potential_path <- file.path(raw_data_path, "geothermal_lcoe_mw.csv")
 iea_pams_path <- file.path(
-  raw_data_path,
-  find_manifest_path("IEA_PAMS_Export", "PAMS export")
+  raw_data_path,"IEA_PAMS_Export.csv"
 )
 nipo_policy_path <- file.path(
-  raw_data_path,
-  find_manifest_path("GTA NIPO - February 2026.xlsx$", "GTA NIPO export")
+  raw_data_path,"GTA NIPO - February 2026.xlsx"
 )
 hs6_category_path <- file.path(
-  raw_data_path,
-  find_manifest_path("hts_codes_categories_bolstered_final\\.csv$", "HS6 category lookup")
+  raw_data_path,"hts_codes_categories_bolstered_final.csv"
 )
 tech_ghg_path <- file.path(
-  raw_data_path,
-  find_manifest_path("ipcc_ghg_intensity.csv$", "IPCC GHG intensity")
+  raw_data_path,"ipcc_ghg_intensity.csv"
 )
 cat_policy_path <- file.path(
-  raw_data_path,
-  find_manifest_path("CAT_country ratings data.csv$", "CAT policy ratings")
+  raw_data_path,"CAT_country ratings data.csv"
 )
 dual_use_scores_path <- file.path(
   raw_data_path,
-  find_manifest_path(
-    "dual_use_scores_primary_secondary_tertiary\\.csv$",
-    "Dual-use scores"
-  )
+    "dual_use_scores_primary_secondary_tertiary.csv"
 )
 
 # Fail fast (or skip) if required raw inputs are missing.
@@ -598,7 +590,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   
   write_processed_tbl(nipo_tech_year, "nipo_tech_year", processed_dir)
   write_processed_tbl(nipo_policy_index_tbl, "nipo_policy_index_tbl", processed_dir)
-  
+  write_processed_tbl(nipo_policy_all,"nipo_policy_all",processed_dir)
   
   policy_outputs <- list(
     policy_agg = iea_policy_outputs$outputs$policy_agg,

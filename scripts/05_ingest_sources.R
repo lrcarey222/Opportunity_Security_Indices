@@ -1045,7 +1045,8 @@ res_list <- purrr::pmap(
 
 # Bind and dedupe
 res_all <- dplyr::bind_rows(res_list) %>% dplyr::distinct()
-#write.csv(res,paste0(raw_data,"allied_comtrade_energy_data.csv"))
+write.csv(tot,"data/raw/comtrade_energy_trade_25.csv")
+
 
 tot <- ct_get_data(
   reporter = "all_countries",
@@ -1055,6 +1056,115 @@ tot <- ct_get_data(
   start_date = 2021,
   end_date   = 2025
 )
+write.csv(tot,"data/raw/comtrade_total_export_25.csv")
+
+
+
+#All Energy Trade Data Import from Comtrade-----------------------------------
+country_info_iso <- country_info %>%
+  filter(!iso3c %in% c("ASM", "CHI", "GUM", "IMN", "LIE", "MAF", "MCO", "PRI", "XKX"))
+
+subcat<-readr::read_csv(hs6_category_path, show_col_types = FALSE) %>%
+  mutate(code=as.character(HS6))
+
+# 1) Clean & prep the HS6 codes
+codes <- subcat$code %>%
+  as.character() %>%
+  str_replace_all("\\D", "") %>%        # keep digits only, just in case
+  str_pad(width = 6, side = "left", pad = "0") %>%
+  na.omit() %>%
+  unique()
+
+# 2) Split into chunks by max characters allowed in the commodity_code param
+split_by_nchar <- function(x, max_chars = 2500) {
+  chunks <- list(); cur <- character(); cur_len <- 0
+  for (code in x) {
+    add_len <- nchar(code) + ifelse(length(cur) == 0, 0, 1) # comma if not first
+    if (cur_len + add_len > max_chars) {
+      chunks[[length(chunks) + 1]] <- cur
+      cur <- code
+      cur_len <- nchar(code)
+    } else {
+      cur <- c(cur, code)
+      cur_len <- cur_len + add_len
+    }
+  }
+  if (length(cur)) chunks[[length(chunks) + 1]] <- cur
+  chunks
+}
+
+code_chunks <- split_by_nchar(codes, max_chars = 2500)  # conservative margin under 4096
+
+split_vec <- function(x, chunk_size) {
+  if (length(x) == 0) return(list(character()))
+  split(x, ceiling(seq_along(x) / chunk_size))
+}
+
+safe_ct <- purrr::possibly(ct_get_data, otherwise = NULL)
+
+# reporter / partner / code inputs you already have
+reporters <- allies$iso3c
+partners  <- country_info_iso$iso3c
+codes     <- code_chunks                 # from your split_by_nchar(...)
+years     <- c(2021,2025)
+dirs      <- c("export","import")
+
+# ALSO chunk the partner list to keep rows per call below 100k
+# (tune chunk_size if you still hit the cap; larger == fewer calls, smaller == safer)
+partner_chunks <- split_vec(partners, chunk_size = 50)
+
+# Cartesian product: one reporter × one year × one flow × one code-chunk × one partner-chunk
+grid <- tidyr::expand_grid(
+  rep  = reporters,
+  yr   = years,
+  dir  = dirs,
+  cc   = codes,
+  pch  = partner_chunks
+)
+
+pb <- progress_bar$new(
+  format = "  :current/:total [:bar] :percent | ETA: :eta | rep=:rep yr=:yr dir=:dir partners=:pn codes=:cn",
+  total  = nrow(grid),
+  clear  = FALSE, width = 90
+)
+
+# Run the queries
+res_list <- purrr::pmap(
+  grid,
+  function(rep, yr, dir, cc, pch) {
+    pb$tick(tokens = list(rep = rep, yr = yr, dir = dir,
+                          pn = length(pch), cn = length(cc)))
+    Sys.sleep(0.5)  # increase if rate-limited
+    out <- safe_ct(
+      reporter       = rep,
+      partner        = pch,
+      commodity_code = cc,
+      start_date     = yr,
+      end_date       = yr,
+      flow_direction = dir
+    )
+    if (is.null(out)) return(NULL)
+    
+    # Tag the direction if the API payload doesn't include it
+    if (!"flow_direction" %in% names(out)) {
+      out <- dplyr::mutate(out, flow_direction = dir)
+    }
+    # (Optional) if there's a 'trade_flow' column, keep only the requested flow
+    if ("trade_flow" %in% names(out)) {
+      out <- dplyr::filter(out, tolower(trade_flow) == dir)
+    }
+    
+    # Stamp keys to help debugging / dedup if needed
+    dplyr::mutate(out, reporter_req = rep, year_req = yr)
+  }
+)
+
+# Bind and dedupe
+res <- dplyr::bind_rows(res_list) %>% dplyr::distinct()
+write.csv(res,"data/raw/allied_comtrade_energy_data.csv")
+--------------------------------
+  
+  
 
 # --- Source: IMF Primary Commodity Price System (PCPS) ------------------
 imf_pcps_excel_path <- file.path(raw_data_path, "IMF_PCPS_all.xlsx")

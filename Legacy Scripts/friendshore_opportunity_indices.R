@@ -155,7 +155,7 @@ trio_opportunity <- trio_scatter %>%
 country_info_iso <- country_info %>%
   filter(!iso3c %in% c("ASM", "CHI", "GUM", "IMN", "LIE", "MAF", "MCO", "PRI", "XKX"))
 
-subcat<-read.csv(paste0(raw_data,"hts_codes_categories_bolstered_final.csv")) %>%
+subcat<-readr::read_csv(hs6_category_path, show_col_types = FALSE) %>%
   mutate(code=as.character(HS6))
 
 # 1) Clean & prep the HS6 codes
@@ -197,7 +197,7 @@ safe_ct <- purrr::possibly(ct_get_data, otherwise = NULL)
 reporters <- allies$iso3c
 partners  <- country_info_iso$iso3c
 codes     <- code_chunks                 # from your split_by_nchar(...)
-years     <- c(2020,2024)
+years     <- c(2021,2025)
 dirs      <- c("export","import")
 
 # ALSO chunk the partner list to keep rows per call below 100k
@@ -250,14 +250,14 @@ res_list <- purrr::pmap(
   }
 )
 
-# Bind and dedupe
+ # Bind and dedupe
 res <- dplyr::bind_rows(res_list) %>% dplyr::distinct()
-write.csv(res,paste0(raw_data,"allied_comtrade_energy_data.csv"))
+write.csv(res,"data/raw/allied_comtrade_energy_data.csv")
 --------------------------------
 
 
 
-res <-read.csv(paste0(raw_data,"allied_comtrade_energy_data.csv"))
+res <-read.csv("data/raw/allied_comtrade_energy_data.csv")
 
 #All Allies Trade Calculations---------------------------
 
