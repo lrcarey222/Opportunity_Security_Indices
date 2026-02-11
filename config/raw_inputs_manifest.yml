@@ -50,4 +50,7 @@
 - path: OneDrive - RMI/Documents - US Program/6_Projects/Clean Regional Economic Development/ACRE/Data/Raw
     Data/clean_investment_monitor_q4_2024/quarterly_actual_investment.csv
 - path: battery_hscodes_mit.csv
-- path: consolidated_hs6_energy_tech_long
+- path: consolidated_hs6_energy_tech_long.csv
+- path: IEA_PAMS_Export.csv
+- path: GTA NIPO - February 2026.xlsx
+- path: dual_use_scores_primary_secondary_tertiary.csv
