@@ -79,6 +79,62 @@ normalize_partners_arg <- function(partners) {
   }
 }
 
+
+resolve_repo_root_local <- function() {
+  repo_root <- getOption("opportunity_security.repo_root")
+  if (!is.null(repo_root) && nzchar(repo_root)) {
+    return(repo_root)
+  }
+
+  if (requireNamespace("rprojroot", quietly = TRUE)) {
+    return(rprojroot::find_root(rprojroot::is_git_root))
+  }
+
+  d <- normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
+    d <- dirname(d)
+  }
+  if (!file.exists(file.path(d, ".git"))) {
+    stop("Unable to resolve repo root; run from the repository root.")
+  }
+  d
+}
+
+ensure_trade_timeseries_helpers <- function() {
+  if (exists("build_trade_timeseries_request_grid", mode = "function") &&
+      exists("trade_tag_response_chunk", mode = "function")) {
+    return(invisible(TRUE))
+  }
+
+  repo_root <- resolve_repo_root_local()
+  source(file.path(repo_root, "R", "charts", "trade_timeseries.R"))
+
+  if (!exists("build_trade_timeseries_request_grid", mode = "function") ||
+      !exists("trade_tag_response_chunk", mode = "function")) {
+    stop("trade_timeseries helpers were not loaded. Check R/charts/trade_timeseries.R")
+  }
+
+  invisible(TRUE)
+}
+
+
+ensure_setup_loaded <- function() {
+  config <- getOption("opportunity_security.config")
+  if (!is.null(config) && !is.null(config$raw_data_dir)) {
+    return(invisible(TRUE))
+  }
+
+  repo_root <- resolve_repo_root_local()
+  source(file.path(repo_root, "scripts", "00_setup.R"))
+
+  config <- getOption("opportunity_security.config")
+  if (is.null(config) || is.null(config$raw_data_dir)) {
+    stop("Failed to load config from scripts/00_setup.R")
+  }
+
+  invisible(TRUE)
+}
+
 run_trade_timeseries_pull <- function(country,
                                       tech,
                                       supply_chain,
@@ -117,6 +173,8 @@ run_trade_timeseries_pull <- function(country,
     stop("Package 'comtradr' is required.")
   }
 
+  ensure_trade_timeseries_helpers()
+
   repo_root <- getOption("opportunity_security.repo_root")
   if (is.null(repo_root) || !nzchar(repo_root)) {
     if (requireNamespace("rprojroot", quietly = TRUE)) {
@@ -126,10 +184,8 @@ run_trade_timeseries_pull <- function(country,
     }
   }
 
+  ensure_setup_loaded()
   config <- getOption("opportunity_security.config")
-  if (is.null(config) || is.null(config$raw_data_dir)) {
-    stop("Config missing. Source scripts/00_setup.R before running.")
-  }
 
   raw_data_path <- file.path(repo_root, config$raw_data_dir)
   if (is.null(hs6_catalog_path) || !nzchar(hs6_catalog_path)) {
