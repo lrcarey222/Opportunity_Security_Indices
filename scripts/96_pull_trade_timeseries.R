@@ -85,6 +85,21 @@ normalize_partners_arg <- function(partners) {
   normalize_character_arg(partners, default = "World")
 }
 
+is_throttle_error <- function(err) {
+  if (is.null(err)) {
+    return(FALSE)
+  }
+
+  msg <- if (inherits(err, "error")) conditionMessage(err) else as.character(err)
+  msg <- tolower(paste(msg, collapse = " "))
+
+  grepl("429|throttl|rate\\s*limit|too\\s*many\\s*requests", msg)
+}
+
+normalize_partners_arg <- function(partners) {
+  normalize_character_arg(partners, default = "World")
+}
+
 run_trade_timeseries_pull <- function(country,
                                       tech,
                                       supply_chain,
@@ -97,7 +112,8 @@ run_trade_timeseries_pull <- function(country,
                                       retries = 3,
                                       sleep_seconds = 0.5,
                                       max_code_chars = 2500,
-                                      partner_chunk_size = 50) {
+                                      partner_chunk_size = 50,
+                                      request_pause_seconds = 0) {
   country <- normalize_character_arg(country)
   if (is.null(country) || length(country) == 0) {
     stop("country is required.")
@@ -205,7 +221,8 @@ run_trade_timeseries_pull <- function(country,
 
       last_err <- attempt_out
       if (attempt < retries) {
-        Sys.sleep(sleep_seconds * attempt)
+        backoff_multiplier <- if (is_throttle_error(attempt_out)) 3 else 1
+        Sys.sleep(sleep_seconds * attempt * backoff_multiplier)
       }
     }
 
@@ -230,7 +247,9 @@ run_trade_timeseries_pull <- function(country,
       supply_chain = supply_chain
     )
 
-    Sys.sleep(sleep_seconds)
+    if (request_pause_seconds > 0) {
+      Sys.sleep(request_pause_seconds)
+    }
   }
 
   trade_tbl <- dplyr::bind_rows(output) %>% dplyr::distinct()
@@ -270,7 +289,8 @@ pull_trade_timeseries <- function(country,
                                   retries = 3,
                                   sleep_seconds = 0.5,
                                   max_code_chars = 2500,
-                                  partner_chunk_size = 50) {
+                                  partner_chunk_size = 50,
+                                      request_pause_seconds = 0) {
   years_parsed <- if (is.character(years) && length(years) == 1) {
     parse_years_arg(years)
   } else {
@@ -293,7 +313,8 @@ pull_trade_timeseries <- function(country,
     retries = retries,
     sleep_seconds = sleep_seconds,
     max_code_chars = max_code_chars,
-    partner_chunk_size = partner_chunk_size
+    partner_chunk_size = partner_chunk_size,
+    request_pause_seconds = request_pause_seconds
   )
 }
 
@@ -327,6 +348,7 @@ if (sys.nframe() == 0) {
     retries = as.integer(args[["retries"]] %||% "3"),
     sleep_seconds = as.numeric(args[["sleep-seconds"]] %||% "0.5"),
     max_code_chars = as.integer(args[["max-code-chars"]] %||% "2500"),
-    partner_chunk_size = as.integer(args[["partner-chunk-size"]] %||% "50")
+    partner_chunk_size = as.integer(args[["partner-chunk-size"]] %||% "50"),
+    request_pause_seconds = as.numeric(args[["request-pause-seconds"]] %||% "0")
   )
 }
