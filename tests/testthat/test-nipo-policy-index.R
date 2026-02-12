@@ -25,3 +25,43 @@ test_that("clean_nipo_raw trims Technology and Value.Chain labels from subcat ma
   expect_equal(out$Technology[[1]], "Green Hydrogen")
   expect_equal(out$`Value.Chain`[[1]], "Upstream")
 })
+
+test_that("keyword matching detects added semiconductor and magnet technologies", {
+  expect_true(keyword_evidence(
+    "Semiconductors Midstream",
+    title = "New wafer fab and advanced chip packaging incentives",
+    source = ""
+  ))
+
+  expect_true(keyword_evidence(
+    "Semiconductors Downstream (datacenters & AI)",
+    title = "Tax relief for AI datacenter GPU clusters",
+    source = ""
+  ))
+
+  expect_true(keyword_evidence(
+    "Magnets Upstream (rare earths)",
+    title = "Rare earth mining and NdPr extraction support",
+    source = ""
+  ))
+
+  expect_true(keyword_evidence(
+    "Magnets Midstream",
+    title = "Investment in NdFeB magnet manufacturing",
+    source = ""
+  ))
+})
+
+test_that("supply-chain keyword matching captures semiconductor and AI stage terms", {
+  expect_true(supply_chain_keyword_evidence(
+    "Midstream",
+    title = "Domestic foundry, fab, and ATMP capacity expansion",
+    source = ""
+  ))
+
+  expect_true(supply_chain_keyword_evidence(
+    "Downstream",
+    title = "Cloud datacenter build-out for AI inference",
+    source = ""
+  ))
+})
