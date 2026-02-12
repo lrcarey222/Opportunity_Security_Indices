@@ -534,7 +534,9 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   pams_raw <- readr::read_csv(iea_pams_path, show_col_types = FALSE)
   nipo_raw <- readxl::read_excel(nipo_policy_path, sheet = 1)
-  hs6_categories_raw <- readr::read_csv(hs6_category_path, show_col_types = FALSE)
+  hs6_categories_essential <- readr::read_csv(file.path(
+    raw_data_path,"hs6_categories_with_essential.csv")) %>%
+    rename("Value.Chain"="Value Chain")
   tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE) 
   cat_policy_raw <- readr::read_csv(cat_policy_path, show_col_types = FALSE) %>%
     rename("Overall.rating"="Overall rating")
@@ -543,9 +545,6 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
   
-  hs6_categories_essential <- hs6_categories_raw %>%
-    rename("Value.Chain"="Value Chain")
-
   ally_iso3 <- c(
     "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA", "ITA", "BRA", "SAU",
     "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK", "ARG", "MAR", "CHL"
@@ -565,6 +564,10 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     dplyr::rename(iso = .data$iso3c) %>%
     dplyr::filter(.data$iso %in% ally_iso3)
 
+  
+  nipo_us<-nipo_raw %>%
+    filter(`Implementing Jurisdiction`=="United States of America")
+  
   nipo_policy_out <- nipo_domestic_intervention_outputs(
     raw_nipo = nipo_allies,
     hs6_categories_essential,
@@ -575,7 +578,13 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   )
 
 
-  nipo_policy_all <- nipo_policy_out$by_policy
+  nipo_policy_all <- nipo_policy_out$by_policy%>% 
+    select(`Implementing Jurisdiction`,Title,domestic_intervention_index,
+           `Implementation Date`,`Removal Date`, bite_strength_base:policy_strength_pkg,
+           tech_csv,supply_chain_csv,mapping_confidence_mean,Source,URL) %>%
+    arrange(desc(mapping_confidence_mean)) %>%
+    arrange(desc(domestic_intervention_index))
+  
   nipo_hs6 <- nipo_policy_out$by_hs6
   nipo_tech_year <- nipo_policy_out$by_tech_sc_year
   nipo_policy_cpc <- nipo_policy_out$by_cpc
@@ -583,6 +592,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   
   write_processed_tbl(nipo_tech_year, "nipo_tech_year", processed_dir)
   write_processed_tbl(nipo_policy_index_tbl, "nipo_policy_index_tbl", processed_dir)
+  write_processed_tbl(nipo_policy_all, "nipo_policy_all", processed_dir)
   
   
   policy_outputs <- list(

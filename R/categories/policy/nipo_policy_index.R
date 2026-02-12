@@ -711,7 +711,7 @@ keyword_evidence <- function(tech, title, source) {
 # Supply-chain keyword validation: look for stage-relevant terms in Title/Source.
 # Your supply_chain options: Upstream (commodities/critical minerals etc), Midstream (manufacturing),
 # Downstream (deployment and services).
-DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.5  # +12% when Title/Source corroborates supply-chain stage
+DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.25  # +12% when Title/Source corroborates supply-chain stage
 
 # ---- Mapping confidence (applied to policy strength contributions) ----
 CONFIDENCE_FLOOR <- 0.25
@@ -1033,7 +1033,7 @@ build_policy_base <- function(nipo_country_tbl,
         .data$has_beneficiary ~ 0.60,
         stringr::str_detect(.data$policy_level, "economy|cross|horizontal") ~ 0.75,
         stringr::str_detect(.data$policy_level, "sector|industry") ~ 1,
-        stringr::str_detect(.data$policy_level, "firm") ~ 0.60,
+        stringr::str_detect(.data$policy_level, "firm") ~ 0.40,
         TRUE ~ 0.75
       )
     ) %>%
@@ -1096,7 +1096,8 @@ build_policy_base <- function(nipo_country_tbl,
       m_subsidy = cap_mult(log_mult(.data$subsidy_usd_m, p95_subsidy), cap = scale_cap),
       m_scale   = pmax(.data$m_subsidy),
       bite_strength_base  = .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration,
-      scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * 2*.data$m_scale
+      scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * 2*.data$m_scale,
+      policy_strength= .data$w_tool * .data$w_status* .data$m_scope * .data$m_scale
     )
   
   act_pkg <- base %>%
@@ -1116,7 +1117,8 @@ build_policy_base <- function(nipo_country_tbl,
     dplyr::mutate(
       m_package = dplyr::coalesce(.data$m_package, 1.0),
       bite_strength_pkg  = .data$bite_strength_base  * .data$m_package,
-      scale_strength_pkg = .data$scale_strength_base * .data$m_package
+      scale_strength_pkg = .data$scale_strength_base * .data$m_package,
+      policy_strength_pkg = .data$policy_strength * .data$m_package
     )
 }
 
@@ -1196,7 +1198,8 @@ build_by_policy <- function(policy_asof_tbl, cpc_names) {
         .data$scale_strength_pkg / .data$country_domestic_stock,
         0
       ),
-      domestic_intervention_index = median_scurve(log1p(.data$scale_strength_pkg))
+      domestic_intervention_index = median_scurve(log1p(.data$scale_strength_pkg)),
+      policy_strength_index = median_scurve(log1p(.data$policy_strength_pkg))
     ) %>%
     dplyr::ungroup()
   
