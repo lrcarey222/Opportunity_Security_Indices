@@ -43,7 +43,7 @@ trade_normalize_years <- function(years) {
 }
 
 
-trade_chunk_years <- function(years, year_chunk_size = 1L) {
+trade_chunk_years <- function(years, year_chunk_size = 12L) {
   years <- sort(unique(as.integer(years)))
   years <- years[!is.na(years)]
 
@@ -52,16 +52,28 @@ trade_chunk_years <- function(years, year_chunk_size = 1L) {
   }
 
   if (is.null(year_chunk_size) || is.na(year_chunk_size) || year_chunk_size <= 0) {
-    year_chunk_size <- 1L
+    year_chunk_size <- 12L
   }
 
   year_chunk_size <- min(as.integer(year_chunk_size), 12L)
-  starts <- years[seq(1, length(years), by = year_chunk_size)]
-  ends <- vapply(seq_along(starts), function(i) {
-    years[min(i * year_chunk_size, length(years))]
-  }, integer(1))
 
-  data.frame(ys = starts, ye = ends)
+  latest_year <- max(years)
+  base_years <- years[years < latest_year]
+
+  chunk_starts <- integer()
+  chunk_ends <- integer()
+
+  if (length(base_years) > 0) {
+    chunk_starts <- base_years[seq(1, length(base_years), by = year_chunk_size)]
+    chunk_ends <- vapply(seq_along(chunk_starts), function(i) {
+      base_years[min(i * year_chunk_size, length(base_years))]
+    }, integer(1))
+  }
+
+  data.frame(
+    ys = c(chunk_starts, latest_year),
+    ye = c(chunk_ends, latest_year)
+  )
 }
 
 trade_pick_column <- function(tbl, candidates, label) {
@@ -139,7 +151,7 @@ build_trade_timeseries_request_grid <- function(country,
                                                 supply_chain_col = "supply_chain",
                                                 max_code_chars = 2500,
                                                 partner_chunk_size = 50,
-                                                year_chunk_size = 1L) {
+                                                year_chunk_size = 12L) {
   years <- trade_normalize_years(years)
   flows <- tolower(flow_direction)
 
