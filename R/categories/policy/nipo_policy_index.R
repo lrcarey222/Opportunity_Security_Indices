@@ -678,10 +678,8 @@ TECH_TAXONOMY <- c(
   "Gas",
   "Geothermal",
   "Electric Grid",
-  "Semiconductors Midstream",
-  "Semiconductors Downstream (datacenters & AI)",
-  "Magnets Upstream (rare earths)",
-  "Magnets Midstream"
+  "Semiconductors",
+  "Magnets"
 )
 
 LOW_CARBON_TECHS <- c("Electric Vehicles","Nuclear","Batteries","Green Hydrogen","Wind","Solar","Geothermal","Electric Grid")
@@ -692,18 +690,17 @@ CRITICAL_MINERALS_LINKED_TECHS <- c(
   "Wind",
   "Solar",
   "Green Hydrogen",
-  "Magnets Upstream (rare earths)",
-  "Magnets Midstream"
+  "Semiconductors",
+  "Magnets"
 )
-DUAL_USE_LINKED_TECHS <- c("Nuclear","Electric Grid","Advanced Technology Products")
+DUAL_USE_LINKED_TECHS <- c("Nuclear","Electric Grid","Advanced Technology Products","Semiconductors","Magnets")
 ADV_TECH_LINKED_TECHS <- c(
   "Electric Grid",
   "Batteries",
   "Nuclear",
   "Electric Vehicles",
   "Advanced Technology Products",
-  "Semiconductors Midstream",
-  "Semiconductors Downstream (datacenters & AI)"
+  "Semiconductors"
 )
 
 is_low_carbon_tech <- function(tech) {
@@ -732,19 +729,15 @@ TECH_KEYWORDS <- list(
   `Coal` = c("coal","coking coal","thermal coal","coal-fired","lignite"),
   `Oil` = c("oil","petroleum","crude","refinery","refining","pipeline"),
   `Gas` = c("gas","natural gas","lng","liquefaction","regasification","pipeline gas"),
-  `Semiconductors Midstream` = c(
+  `Semiconductors` = c(
     "semiconductor","semiconductors","chip","chips","wafer","wafers","fab","fabs",
-    "foundry","fabrication","packaging","assembly","atmp","front-end"
-  ),
-  `Semiconductors Downstream (datacenters & AI)` = c(
+    "foundry","fabrication","packaging","assembly","atmp","front-end",
     "datacenter","data center","server","servers","gpu","gpus","ai","artificial intelligence",
     "accelerator","hpc","cloud", "model training", "inference"
   ),
   `Magnets Upstream (rare earths)` = c(
     "rare earth","rare-earth","ndpr","neodymium","praseodymium","dysprosium","terbium",
-    "magnet ore","rare earth mine","rare earth mining"
-  ),
-  `Magnets Midstream` = c(
+    "magnet ore","rare earth mine","rare earth mining",
     "magnet","magnets","permanent magnet","ndfeb","sintered magnet","magnet manufacturing",
     "magnet production","bonded magnet"
   )

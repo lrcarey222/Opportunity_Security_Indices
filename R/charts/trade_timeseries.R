@@ -76,7 +76,7 @@ trade_prepare_hs6_codes <- function(catalog,
   unique(stats::na.omit(selected[[hs_col]]))
 }
 
-pull_trade_timeseries <- function(country,
+pull_trade_timeseries <- function(country = "Country",
                                   tech,
                                   supply_chain,
                                   years,
@@ -188,3 +188,15 @@ pull_trade_timeseries <- function(country,
 
   dplyr::bind_rows(output) %>% dplyr::distinct()
 }
+
+#US Battery Midstream
+COMTRADE_API_KEY="2940653b9bbe4671b3f7fde2846d14be"
+
+us_batt_mid <- pull_trade_timeseries(
+  country = "USA",
+  tech = "Batteries",
+  supply_chain = "Midstream",
+  partners = c("CHN,FRA,DEU,ITA,ESP,NLD,BEL,SWE,POL,DNK,FIN,CZE,ROU,HUN,AUT,PRT,GRC,IRL,JPN,KOR,IND,VNM"),
+  years = "2021:2025",
+  flow = "export"
+)
