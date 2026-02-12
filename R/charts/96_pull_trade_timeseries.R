@@ -169,7 +169,7 @@ run_trade_timeseries_pull <- function(country,
                                       sleep_seconds = 0.5,
                                       max_code_chars = 2500,
                                       partner_chunk_size = 50,
-                                      year_chunk_size = NULL,
+                                      year_chunk_size = 12,
                                       request_pause_seconds = 0,
                                       show_progress = interactive()) {
   country <- normalize_character_arg(country)
@@ -198,9 +198,10 @@ run_trade_timeseries_pull <- function(country,
   }
   partners <- normalize_partners_arg(partners)
 
-  if (!is.null(year_chunk_size) && !is.na(year_chunk_size) && year_chunk_size <= 0) {
-    year_chunk_size <- NULL
+  if (is.null(year_chunk_size) || is.na(year_chunk_size) || year_chunk_size <= 0) {
+    year_chunk_size <- 12
   }
+  year_chunk_size <- min(as.integer(year_chunk_size), 12L)
 
   if (!requireNamespace("comtradr", quietly = TRUE)) {
     stop("Package 'comtradr' is required.")
@@ -375,7 +376,7 @@ pull_trade_timeseries <- function(country,
                                   sleep_seconds = 0.5,
                                   max_code_chars = 2500,
                                   partner_chunk_size = 50,
-                                  year_chunk_size = NULL,
+                                  year_chunk_size = 12,
                                   request_pause_seconds = 0,
                                   show_progress = interactive()) {
   years_parsed <- if (is.character(years) && length(years) == 1) {
@@ -447,7 +448,7 @@ if (sys.nframe() == 0) {
     sleep_seconds = as.numeric(args[["sleep-seconds"]] %||% "0.5"),
     max_code_chars = as.integer(args[["max-code-chars"]] %||% "2500"),
     partner_chunk_size = as.integer(args[["partner-chunk-size"]] %||% "50"),
-    year_chunk_size = as.integer(args[["year-chunk-size"]] %||% "0"),
+    year_chunk_size = as.integer(args[["year-chunk-size"]] %||% "12"),
     request_pause_seconds = as.numeric(args[["request-pause-seconds"]] %||% "0"),
     show_progress = TRUE
   )
