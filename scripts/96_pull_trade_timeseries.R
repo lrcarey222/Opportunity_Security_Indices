@@ -96,6 +96,10 @@ is_throttle_error <- function(err) {
   grepl("429|throttl|rate\\s*limit|too\\s*many\\s*requests", msg)
 }
 
+normalize_partners_arg <- function(partners) {
+  normalize_character_arg(partners, default = "World")
+}
+
 run_trade_timeseries_pull <- function(country,
                                       tech,
                                       supply_chain,
