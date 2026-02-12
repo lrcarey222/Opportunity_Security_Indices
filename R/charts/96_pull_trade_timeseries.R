@@ -85,6 +85,22 @@ normalize_partners_arg <- function(partners) {
   normalize_character_arg(partners, default = "World")
 }
 
+normalize_frequency_arg <- function(frequency) {
+  if (is.null(frequency) || !nzchar(as.character(frequency))) {
+    return("A")
+  }
+
+  value <- tolower(trimws(as.character(frequency)[[1]]))
+  mapping <- c(annual = "A", yearly = "A", year = "A", a = "A",
+               monthly = "M", month = "M", m = "M")
+
+  if (!value %in% names(mapping)) {
+    stop("frequency must be one of: annual, monthly, A, or M")
+  }
+
+  mapping[[value]]
+}
+
 is_throttle_error <- function(err) {
   if (is.null(err)) {
     return(FALSE)
@@ -162,6 +178,7 @@ run_trade_timeseries_pull <- function(country,
                                       years = 2021:2025,
                                       flow_direction = "export",
                                       flow = NULL,
+                                      frequency = "annual",
                                       hs6_catalog_path = NULL,
                                       output_path = NULL,
                                       write_output = FALSE,
@@ -188,6 +205,7 @@ run_trade_timeseries_pull <- function(country,
     flow <- flow_direction
   }
   flow_direction <- normalize_character_arg(flow, default = "export")
+  frequency <- normalize_frequency_arg(frequency)
   if (is.null(flow_direction) || length(flow_direction) == 0) {
     stop("flow is required.")
   }
@@ -253,6 +271,8 @@ run_trade_timeseries_pull <- function(country,
 
   hs6_catalog <- utils::read.csv(hs6_catalog_path, stringsAsFactors = FALSE)
 
+  effective_year_chunk_size <- if (identical(frequency, "M")) 1L else as.integer(year_chunk_size)
+
   request_grid <- build_trade_timeseries_request_grid(
     country = country,
     tech = tech,
@@ -263,7 +283,7 @@ run_trade_timeseries_pull <- function(country,
     flow_direction = flow_direction,
     max_code_chars = max_code_chars,
     partner_chunk_size = partner_chunk_size,
-    year_chunk_size = year_chunk_size
+    year_chunk_size = effective_year_chunk_size
   )
 
   output <- vector("list", nrow(request_grid))
@@ -290,7 +310,8 @@ run_trade_timeseries_pull <- function(country,
           commodity_code = req$cc[[1]],
           start_date = req$ys[[1]],
           end_date = req$ye[[1]],
-          flow_direction = req$dir[[1]]
+          flow_direction = req$dir[[1]],
+          frequency = frequency
         ),
         error = function(e) e
       )
@@ -368,6 +389,7 @@ pull_trade_timeseries <- function(country,
                                   partner = NULL,
                                   years = 2021:2025,
                                   flow = "export",
+                                  frequency = "annual",
                                   flow_direction = NULL,
                                   hs6_catalog_path = NULL,
                                   output_path = NULL,
@@ -403,6 +425,7 @@ pull_trade_timeseries <- function(country,
     partners = partners_parsed,
     years = years_parsed,
     flow_direction = flow_direction,
+    frequency = frequency,
     hs6_catalog_path = hs6_catalog_path,
     output_path = output_path,
     write_output = write_output,
@@ -441,6 +464,7 @@ if (sys.nframe() == 0) {
     partners = partners,
     years = years,
     flow_direction = args[["flow"]] %||% "export",
+    frequency = args[["frequency"]] %||% "annual",
     hs6_catalog_path = args[["hs6-catalog"]] %||% args[["hs6_catalog"]],
     output_path = args[["output"]],
     write_output = TRUE,
