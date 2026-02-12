@@ -149,6 +149,8 @@ run_trade_timeseries_pull <- function(country,
   }
 
   comtrade_set_key_from_env()
+  effective_year_chunk_size <- if (identical(frequency, "M")) 1L else as.integer(year_chunk_size)
+
   request_grid <- build_trade_timeseries_request_grid(
     country = country,
     tech = tech,
@@ -159,7 +161,7 @@ run_trade_timeseries_pull <- function(country,
     flow_direction = flow_direction,
     max_code_chars = max_code_chars,
     partner_chunk_size = partner_chunk_size,
-    year_chunk_size = year_chunk_size
+    year_chunk_size = effective_year_chunk_size
   )
 
   request_df <- dplyr::mutate(
