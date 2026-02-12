@@ -1,7 +1,7 @@
-# Trade timeseries pull helpers (UN Comtrade)
+# Trade timeseries helpers (UN Comtrade request planning)
 #
-# This module reuses the request-grid/chunking approach from scripts/05_ingest_sources.R
-# and exposes a focused API for pulling a country/tech/supply-chain timeseries.
+# Keep this file pure: it only prepares request inputs and transforms returned
+# data chunks. API calls and file IO should happen in scripts/.
 
 trade_split_by_nchar <- function(x, max_chars = 2500) {
   x <- unique(stats::na.omit(as.character(x)))
@@ -57,7 +57,11 @@ trade_prepare_hs6_codes <- function(catalog,
     )
   }
 
-  selected <- catalog[catalog[[tech_col]] == tech & catalog[[supply_chain_col]] == supply_chain, , drop = FALSE]
+  selected <- catalog[
+    catalog[[tech_col]] == tech & catalog[[supply_chain_col]] == supply_chain,
+    ,
+    drop = FALSE
+  ]
 
   if (nrow(selected) == 0) {
     stop(
@@ -76,21 +80,18 @@ trade_prepare_hs6_codes <- function(catalog,
   unique(stats::na.omit(selected[[hs_col]]))
 }
 
-pull_trade_timeseries <- function(country,
-                                  tech,
-                                  supply_chain,
-                                  years,
-                                  hs6_catalog,
-                                  partner = "World",
-                                  flow_direction = c("export", "import"),
-                                  hs_col = "HS6",
-                                  tech_col = "tech",
-                                  supply_chain_col = "supply_chain",
-                                  max_code_chars = 2500,
-                                  partner_chunk_size = 50,
-                                  sleep_seconds = 0.5,
-                                  retries = 3,
-                                  ct_get_data_fn = comtradr::ct_get_data) {
+build_trade_timeseries_request_grid <- function(country,
+                                                tech,
+                                                supply_chain,
+                                                years,
+                                                hs6_catalog,
+                                                partner = "World",
+                                                flow_direction = c("export", "import"),
+                                                hs_col = "HS6",
+                                                tech_col = "tech",
+                                                supply_chain_col = "supply_chain",
+                                                max_code_chars = 2500,
+                                                partner_chunk_size = 50) {
   years <- trade_normalize_years(years)
   flows <- tolower(flow_direction)
 
@@ -104,87 +105,30 @@ pull_trade_timeseries <- function(country,
   )
 
   code_chunks <- trade_split_by_nchar(hs6_codes, max_chars = max_code_chars)
-  partner_chunks <- trade_split_vec(partner, chunk_size = partner_chunk_size)
+  partner_chunks <- trade_split_vec(as.character(partner), chunk_size = partner_chunk_size)
 
-  request_grid <- tidyr::expand_grid(
-    rep = country,
+  tidyr::expand_grid(
+    rep = as.character(country),
     yr = years,
     dir = flows,
     cc = code_chunks,
     pch = partner_chunks
   )
+}
 
-  output <- vector("list", nrow(request_grid))
-  failed <- character()
-
-  for (i in seq_len(nrow(request_grid))) {
-    req <- request_grid[i, ]
-
-    data_chunk <- NULL
-    last_err <- NULL
-
-    for (attempt in seq_len(retries)) {
-      attempt_out <- tryCatch(
-        ct_get_data_fn(
-          reporter = req$rep[[1]],
-          partner = req$pch[[1]],
-          commodity_code = req$cc[[1]],
-          start_date = req$yr[[1]],
-          end_date = req$yr[[1]],
-          flow_direction = req$dir[[1]]
-        ),
-        error = function(e) e
-      )
-
-      if (!inherits(attempt_out, "error")) {
-        data_chunk <- attempt_out
-        break
-      }
-
-      last_err <- attempt_out
-      if (attempt < retries) {
-        Sys.sleep(sleep_seconds * attempt)
-      }
-    }
-
-    if (is.null(data_chunk)) {
-      failed <- c(
-        failed,
-        paste0(
-          "country=", req$rep[[1]],
-          ", year=", req$yr[[1]],
-          ", flow=", req$dir[[1]],
-          " -> ",
-          if (inherits(last_err, "error")) conditionMessage(last_err) else "unknown error"
-        )
-      )
-      next
-    }
-
-    if (!"flow_direction" %in% names(data_chunk)) {
-      data_chunk <- dplyr::mutate(data_chunk, flow_direction = req$dir[[1]])
-    }
-    if ("trade_flow" %in% names(data_chunk)) {
-      data_chunk <- dplyr::filter(data_chunk, tolower(trade_flow) == req$dir[[1]])
-    }
-
-    output[[i]] <- dplyr::mutate(
-      data_chunk,
-      country_req = req$rep[[1]],
-      year_req = req$yr[[1]],
-      tech_req = tech,
-      supply_chain_req = supply_chain
-    )
-
-    Sys.sleep(sleep_seconds)
+trade_tag_response_chunk <- function(data_chunk, req, tech, supply_chain) {
+  if (!"flow_direction" %in% names(data_chunk)) {
+    data_chunk <- dplyr::mutate(data_chunk, flow_direction = req$dir[[1]])
+  }
+  if ("trade_flow" %in% names(data_chunk)) {
+    data_chunk <- dplyr::filter(data_chunk, tolower(trade_flow) == req$dir[[1]])
   }
 
-  if (length(failed) > 0) {
-    warning(
-      "Some Comtrade requests failed (showing up to 5):\n",
-      paste(utils::head(failed, 5), collapse = "\n")
-    )
-  }
-
-  dplyr::bind_rows(output) %>% dplyr::distinct()
+  dplyr::mutate(
+    data_chunk,
+    country_req = req$rep[[1]],
+    year_req = req$yr[[1]],
+    tech_req = tech,
+    supply_chain_req = supply_chain
+  )
 }
