@@ -42,6 +42,40 @@ trade_normalize_years <- function(years) {
   sort(unique(as.integer(years)))
 }
 
+
+trade_chunk_years <- function(years, year_chunk_size = 12L) {
+  years <- sort(unique(as.integer(years)))
+  years <- years[!is.na(years)]
+
+  if (length(years) == 0) {
+    stop("years must include at least one valid year.")
+  }
+
+  if (is.null(year_chunk_size) || is.na(year_chunk_size) || year_chunk_size <= 0) {
+    year_chunk_size <- 12L
+  }
+
+  year_chunk_size <- min(as.integer(year_chunk_size), 12L)
+
+  latest_year <- max(years)
+  base_years <- years[years < latest_year]
+
+  chunk_starts <- integer()
+  chunk_ends <- integer()
+
+  if (length(base_years) > 0) {
+    chunk_starts <- base_years[seq(1, length(base_years), by = year_chunk_size)]
+    chunk_ends <- vapply(seq_along(chunk_starts), function(i) {
+      base_years[min(i * year_chunk_size, length(base_years))]
+    }, integer(1))
+  }
+
+  data.frame(
+    ys = c(chunk_starts, latest_year),
+    ye = c(chunk_ends, latest_year)
+  )
+}
+
 trade_pick_column <- function(tbl, candidates, label) {
   hits <- candidates[candidates %in% names(tbl)]
   if (length(hits) == 0) {
@@ -75,15 +109,22 @@ trade_prepare_hs6_codes <- function(catalog,
     trade_pick_column(catalog, c("supply_chain", "Value.Chain", "value_chain", "Supply.Chain"), "supply_chain")
   }
 
+  tech <- as.character(tech)
+  tech <- trimws(tech)
+  tech <- unique(tech[nzchar(tech)])
+  if (length(tech) == 0) {
+    stop("tech is required.")
+  }
+
   selected <- catalog[
-    catalog[[tech_col]] == tech & catalog[[supply_chain_col]] == supply_chain,
+    catalog[[tech_col]] %in% tech & catalog[[supply_chain_col]] == supply_chain,
     ,
     drop = FALSE
   ]
 
   if (nrow(selected) == 0) {
     stop(
-      "No HS codes found for tech='", tech,
+      "No HS codes found for tech='", paste(tech, collapse = ", "),
       "' and supply_chain='", supply_chain, "'."
     )
   }
@@ -109,29 +150,45 @@ build_trade_timeseries_request_grid <- function(country,
                                                 tech_col = "tech",
                                                 supply_chain_col = "supply_chain",
                                                 max_code_chars = 2500,
-                                                partner_chunk_size = 50) {
+                                                partner_chunk_size = 50,
+                                                year_chunk_size = 12L) {
   years <- trade_normalize_years(years)
   flows <- tolower(flow_direction)
 
-  hs6_codes <- trade_prepare_hs6_codes(
-    catalog = hs6_catalog,
-    tech = tech,
-    supply_chain = supply_chain,
-    hs_col = hs_col,
-    tech_col = tech_col,
-    supply_chain_col = supply_chain_col
-  )
+  tech <- as.character(tech)
+  tech <- trimws(tech)
+  tech <- unique(tech[nzchar(tech)])
+  if (length(tech) == 0) {
+    stop("tech is required.")
+  }
 
-  code_chunks <- trade_split_by_nchar(hs6_codes, max_chars = max_code_chars)
   partner_chunks <- trade_split_vec(as.character(partner), chunk_size = partner_chunk_size)
+  year_windows <- trade_chunk_years(years, year_chunk_size = year_chunk_size)
 
-  tidyr::expand_grid(
-    rep = as.character(country),
-    yr = years,
-    dir = flows,
-    cc = code_chunks,
-    pch = partner_chunks
-  )
+  request_blocks <- lapply(tech, function(tech_item) {
+    hs6_codes <- trade_prepare_hs6_codes(
+      catalog = hs6_catalog,
+      tech = tech_item,
+      supply_chain = supply_chain,
+      hs_col = hs_col,
+      tech_col = tech_col,
+      supply_chain_col = supply_chain_col
+    )
+
+    code_chunks <- trade_split_by_nchar(hs6_codes, max_chars = max_code_chars)
+
+    tidyr::expand_grid(
+      rep = as.character(country),
+      ys = year_windows$ys,
+      ye = year_windows$ye,
+      dir = flows,
+      tech = tech_item,
+      cc = code_chunks,
+      pch = partner_chunks
+    )
+  })
+
+  dplyr::bind_rows(request_blocks)
 }
 
 trade_tag_response_chunk <- function(data_chunk, req, tech, supply_chain) {
@@ -145,8 +202,9 @@ trade_tag_response_chunk <- function(data_chunk, req, tech, supply_chain) {
   dplyr::mutate(
     data_chunk,
     country_req = req$rep[[1]],
-    year_req = req$yr[[1]],
-    tech_req = tech,
+    year_req = req$ys[[1]],
+    year_req_end = req$ye[[1]],
+    tech_req = if ("tech" %in% names(req)) req$tech[[1]] else tech,
     supply_chain_req = supply_chain
   )
 }
