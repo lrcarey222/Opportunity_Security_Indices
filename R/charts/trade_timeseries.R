@@ -43,7 +43,7 @@ trade_normalize_years <- function(years) {
 }
 
 
-trade_chunk_years <- function(years, year_chunk_size = 12L) {
+trade_chunk_years <- function(years, year_chunk_size = 1L) {
   years <- sort(unique(as.integer(years)))
   years <- years[!is.na(years)]
 
@@ -52,7 +52,7 @@ trade_chunk_years <- function(years, year_chunk_size = 12L) {
   }
 
   if (is.null(year_chunk_size) || is.na(year_chunk_size) || year_chunk_size <= 0) {
-    year_chunk_size <- 12L
+    year_chunk_size <- 1L
   }
 
   year_chunk_size <- min(as.integer(year_chunk_size), 12L)
@@ -139,7 +139,7 @@ build_trade_timeseries_request_grid <- function(country,
                                                 supply_chain_col = "supply_chain",
                                                 max_code_chars = 2500,
                                                 partner_chunk_size = 50,
-                                                year_chunk_size = 12L) {
+                                                year_chunk_size = 1L) {
   years <- trade_normalize_years(years)
   flows <- tolower(flow_direction)
 
