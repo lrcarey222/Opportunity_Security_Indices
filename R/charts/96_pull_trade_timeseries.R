@@ -169,8 +169,9 @@ run_trade_timeseries_pull <- function(country,
                                       sleep_seconds = 0.5,
                                       max_code_chars = 2500,
                                       partner_chunk_size = 50,
-                                  request_pause_seconds = 0,
-                                  show_progress = interactive()) {
+                                      year_chunk_size = NULL,
+                                      request_pause_seconds = 0,
+                                      show_progress = interactive()) {
   country <- normalize_character_arg(country)
   if (is.null(country) || length(country) == 0) {
     stop("country is required.")
@@ -196,6 +197,10 @@ run_trade_timeseries_pull <- function(country,
     partners <- partner
   }
   partners <- normalize_partners_arg(partners)
+
+  if (!is.null(year_chunk_size) && !is.na(year_chunk_size) && year_chunk_size <= 0) {
+    year_chunk_size <- NULL
+  }
 
   if (!requireNamespace("comtradr", quietly = TRUE)) {
     stop("Package 'comtradr' is required.")
@@ -256,7 +261,8 @@ run_trade_timeseries_pull <- function(country,
     partner = partners,
     flow_direction = flow_direction,
     max_code_chars = max_code_chars,
-    partner_chunk_size = partner_chunk_size
+    partner_chunk_size = partner_chunk_size,
+    year_chunk_size = year_chunk_size
   )
 
   output <- vector("list", nrow(request_grid))
@@ -281,8 +287,8 @@ run_trade_timeseries_pull <- function(country,
           reporter = req$rep[[1]],
           partner = req$pch[[1]],
           commodity_code = req$cc[[1]],
-          start_date = req$yr[[1]],
-          end_date = req$yr[[1]],
+          start_date = req$ys[[1]],
+          end_date = req$ye[[1]],
           flow_direction = req$dir[[1]]
         ),
         error = function(e) e
@@ -305,7 +311,7 @@ run_trade_timeseries_pull <- function(country,
         failed,
         paste0(
           "country=", req$rep[[1]],
-          ", year=", req$yr[[1]],
+          ", years=", req$ys[[1]], "-", req$ye[[1]],
           ", flow=", req$dir[[1]],
           " -> ",
           if (inherits(last_err, "error")) conditionMessage(last_err) else "unknown error"
@@ -369,6 +375,7 @@ pull_trade_timeseries <- function(country,
                                   sleep_seconds = 0.5,
                                   max_code_chars = 2500,
                                   partner_chunk_size = 50,
+                                  year_chunk_size = NULL,
                                   request_pause_seconds = 0,
                                   show_progress = interactive()) {
   years_parsed <- if (is.character(years) && length(years) == 1) {
@@ -402,6 +409,7 @@ pull_trade_timeseries <- function(country,
     sleep_seconds = sleep_seconds,
     max_code_chars = max_code_chars,
     partner_chunk_size = partner_chunk_size,
+    year_chunk_size = year_chunk_size,
     request_pause_seconds = request_pause_seconds,
     show_progress = show_progress
   )
@@ -439,6 +447,7 @@ if (sys.nframe() == 0) {
     sleep_seconds = as.numeric(args[["sleep-seconds"]] %||% "0.5"),
     max_code_chars = as.integer(args[["max-code-chars"]] %||% "2500"),
     partner_chunk_size = as.integer(args[["partner-chunk-size"]] %||% "50"),
+    year_chunk_size = as.integer(args[["year-chunk-size"]] %||% "0"),
     request_pause_seconds = as.numeric(args[["request-pause-seconds"]] %||% "0"),
     show_progress = TRUE
   )
