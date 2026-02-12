@@ -35,6 +35,28 @@ trade_split_vec <- function(x, chunk_size) {
   split(x, ceiling(seq_along(x) / chunk_size))
 }
 
+
+trade_prepare_partner_chunks <- function(partner, partner_chunk_size = 50) {
+  partners <- unique(stats::na.omit(as.character(partner)))
+  partners <- trimws(partners)
+  partners <- partners[nzchar(partners)]
+
+  if (length(partners) == 0) {
+    return(list("World"))
+  }
+
+  world_idx <- tolower(partners) == "world"
+  has_world <- any(world_idx)
+
+  if (!has_world || length(partners) == 1) {
+    return(trade_split_vec(partners, chunk_size = partner_chunk_size))
+  }
+
+  non_world <- partners[!world_idx]
+  non_world_chunks <- trade_split_vec(non_world, chunk_size = partner_chunk_size)
+  c(non_world_chunks, list("World"))
+}
+
 trade_normalize_years <- function(years) {
   if (length(years) == 2 && is.numeric(years)) {
     return(seq.int(min(years), max(years)))
@@ -57,8 +79,9 @@ trade_chunk_years <- function(years, year_chunk_size = 12L) {
 
   year_chunk_size <- min(as.integer(year_chunk_size), 12L)
 
-  latest_year <- max(years)
-  base_years <- years[years < latest_year]
+  recent_year_count <- min(2L, length(years))
+  recent_years <- tail(years, recent_year_count)
+  base_years <- head(years, length(years) - recent_year_count)
 
   chunk_starts <- integer()
   chunk_ends <- integer()
@@ -71,8 +94,8 @@ trade_chunk_years <- function(years, year_chunk_size = 12L) {
   }
 
   data.frame(
-    ys = c(chunk_starts, latest_year),
-    ye = c(chunk_ends, latest_year)
+    ys = c(chunk_starts, recent_years),
+    ye = c(chunk_ends, recent_years)
   )
 }
 
@@ -162,7 +185,7 @@ build_trade_timeseries_request_grid <- function(country,
     stop("tech is required.")
   }
 
-  partner_chunks <- trade_split_vec(as.character(partner), chunk_size = partner_chunk_size)
+  partner_chunks <- trade_prepare_partner_chunks(partner, partner_chunk_size = partner_chunk_size)
   year_windows <- trade_chunk_years(years, year_chunk_size = year_chunk_size)
 
   request_blocks <- lapply(tech, function(tech_item) {
