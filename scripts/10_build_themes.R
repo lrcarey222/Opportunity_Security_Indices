@@ -417,6 +417,25 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   aec_6_data <- read.csv(trade_hs6_path)
   comtrade_energy_trade <- read.csv(comtrade_energy_trade_path)
   comtrade_total_export <- read.csv(comtrade_total_export_path)
+
+  comtrade_vintage_path <- file.path(raw_data_path, "comtrade_vintage.yml")
+  comtrade_year_option <- NA_integer_
+  if (file.exists(comtrade_vintage_path)) {
+    comtrade_vintage <- yaml::read_yaml(comtrade_vintage_path)
+    comtrade_year_option <- suppressWarnings(as.integer(comtrade_vintage$actual_year_end_used))
+  }
+  if (is.na(comtrade_year_option)) {
+    fallback_col <- intersect(c("ref_year", "period", "year", "Year"), names(comtrade_energy_trade))
+    if (length(fallback_col) > 0) {
+      fallback_years <- suppressWarnings(as.integer(stringr::str_extract(as.character(comtrade_energy_trade[[fallback_col[[1]]]]), "\\d{4}")))
+      fallback_years <- fallback_years[!is.na(fallback_years)]
+      if (length(fallback_years) > 0) {
+        comtrade_year_option <- max(fallback_years)
+      }
+    }
+  }
+  options(opportunity_security.comtrade_year = comtrade_year_option)
+
   include_sub_sector <- isTRUE(if (!is.null(config$include_sub_sector)) {
     config$include_sub_sector
   } else {
@@ -430,6 +449,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     comtrade_trade = comtrade_energy_trade,
     comtrade_total_export = comtrade_total_export,
     country_info = country_info,
+    year_comtrade = getOption("opportunity_security.comtrade_year"),
     include_sub_sector = include_sub_sector
   )
   
@@ -450,6 +470,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     gdp_data = gdp_data,
     comtrade_trade = comtrade_energy_trade,
     comtrade_total_export = comtrade_total_export,
+    year_comtrade = getOption("opportunity_security.comtrade_year"),
     include_sub_sector = include_sub_sector
   )
   export_feasibility_tbl <- standardize_theme_types(export_feasibility_tbl, country_info = country_info)
