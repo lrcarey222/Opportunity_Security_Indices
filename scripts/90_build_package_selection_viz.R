@@ -11,7 +11,7 @@ source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "charts", "package_selection_viz.R"))
 source(file.path(repo_root, "R", "charts", "package_selection_raw_highlights.R"))
 
-DEFAULT_COUNTRY <- "Japan"
+DEFAULT_COUNTRY <- "United States"
 
 parse_args <- function(args) {
   out <- list(country = NULL, out_dir = NULL, top_n = 10L, selected = NULL, top_k_vars = 5L, include_raw_highlights = TRUE)
