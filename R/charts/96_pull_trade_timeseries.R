@@ -100,17 +100,20 @@ resolve_repo_root_local <- function() {
   d
 }
 
-ensure_trade_timeseries_helpers <- function() {
-  if (exists("build_trade_timeseries_request_grid", mode = "function") &&
-      exists("trade_tag_response_chunk", mode = "function")) {
-    return(invisible(TRUE))
+ensure_trade_timeseries_helpers <- function(force_reload = TRUE) {
+  repo_root <- resolve_repo_root_local()
+  helper_path <- file.path(repo_root, "R", "charts", "trade_timeseries.R")
+
+  if (isTRUE(force_reload) ||
+      !exists("build_trade_timeseries_request_grid", mode = "function") ||
+      !exists("trade_tag_response_chunk", mode = "function") ||
+      !exists("trade_prepare_hs6_codes", mode = "function")) {
+    source(helper_path)
   }
 
-  repo_root <- resolve_repo_root_local()
-  source(file.path(repo_root, "R", "charts", "trade_timeseries.R"))
-
   if (!exists("build_trade_timeseries_request_grid", mode = "function") ||
-      !exists("trade_tag_response_chunk", mode = "function")) {
+      !exists("trade_tag_response_chunk", mode = "function") ||
+      !exists("trade_prepare_hs6_codes", mode = "function")) {
     stop("trade_timeseries helpers were not loaded. Check R/charts/trade_timeseries.R")
   }
 
