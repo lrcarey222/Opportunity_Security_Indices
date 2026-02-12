@@ -666,12 +666,45 @@ DEFAULT_VALIDATION_BONUS <- 0.20  # +20% weight when corroborated
 DEFAULT_VALIDATION_KEYWORD_BONUS <- 0.35  # +15% weight when Title/Source corroborates tech
 
 # ---- Tech taxonomy (user-defined) ----
-TECH_TAXONOMY <- c("Electric Vehicles","Nuclear","Coal","Batteries","Green Hydrogen","Wind","Oil","Solar","Gas","Geothermal","Electric Grid")
+TECH_TAXONOMY <- c(
+  "Electric Vehicles",
+  "Nuclear",
+  "Coal",
+  "Batteries",
+  "Green Hydrogen",
+  "Wind",
+  "Oil",
+  "Solar",
+  "Gas",
+  "Geothermal",
+  "Electric Grid",
+  "Semiconductors Midstream",
+  "Semiconductors Downstream (datacenters & AI)",
+  "Magnets Upstream (rare earths)",
+  "Magnets Midstream"
+)
 
 LOW_CARBON_TECHS <- c("Electric Vehicles","Nuclear","Batteries","Green Hydrogen","Wind","Solar","Geothermal","Electric Grid")
-CRITICAL_MINERALS_LINKED_TECHS <- c("Batteries","Electric Vehicles","Electric Grid","Wind","Solar","Green Hydrogen")
+CRITICAL_MINERALS_LINKED_TECHS <- c(
+  "Batteries",
+  "Electric Vehicles",
+  "Electric Grid",
+  "Wind",
+  "Solar",
+  "Green Hydrogen",
+  "Magnets Upstream (rare earths)",
+  "Magnets Midstream"
+)
 DUAL_USE_LINKED_TECHS <- c("Nuclear","Electric Grid","Advanced Technology Products")
-ADV_TECH_LINKED_TECHS <- c("Electric Grid","Batteries","Nuclear","Electric Vehicles","Advanced Technology Products")
+ADV_TECH_LINKED_TECHS <- c(
+  "Electric Grid",
+  "Batteries",
+  "Nuclear",
+  "Electric Vehicles",
+  "Advanced Technology Products",
+  "Semiconductors Midstream",
+  "Semiconductors Downstream (datacenters & AI)"
+)
 
 is_low_carbon_tech <- function(tech) {
   tech %in% LOW_CARBON_TECHS
@@ -698,7 +731,23 @@ TECH_KEYWORDS <- list(
   `Nuclear` = c("nuclear","reactor","smr","spent fuel","uranium","enrichment","fission"),
   `Coal` = c("coal","coking coal","thermal coal","coal-fired","lignite"),
   `Oil` = c("oil","petroleum","crude","refinery","refining","pipeline"),
-  `Gas` = c("gas","natural gas","lng","liquefaction","regasification","pipeline gas")
+  `Gas` = c("gas","natural gas","lng","liquefaction","regasification","pipeline gas"),
+  `Semiconductors Midstream` = c(
+    "semiconductor","semiconductors","chip","chips","wafer","wafers","fab","fabs",
+    "foundry","fabrication","packaging","assembly","atmp","front-end"
+  ),
+  `Semiconductors Downstream (datacenters & AI)` = c(
+    "datacenter","data center","server","servers","gpu","gpus","ai","artificial intelligence",
+    "accelerator","hpc","cloud", "model training", "inference"
+  ),
+  `Magnets Upstream (rare earths)` = c(
+    "rare earth","rare-earth","ndpr","neodymium","praseodymium","dysprosium","terbium",
+    "magnet ore","rare earth mine","rare earth mining"
+  ),
+  `Magnets Midstream` = c(
+    "magnet","magnets","permanent magnet","ndfeb","sintered magnet","magnet manufacturing",
+    "magnet production","bonded magnet"
+  )
 )
 
 keyword_evidence <- function(tech, title, source) {
@@ -730,13 +779,15 @@ SUPPLY_CHAIN_KEYWORDS <- list(
   `Midstream` = c(
     "manufactur", "factory", "plant", "gigafactory", "assembly", "fabricat", "production line",
     "component", "module", "cells?", "anode", "cathode", "electrolyser manufacturing", "electrolyzer manufacturing",
-    "enrichment", "conversion", "processing", "midstream"
+    "enrichment", "conversion", "processing", "midstream",
+    "foundry", "fabs?", "wafer", "chip packaging", "atmp", "magnet manufacturing", "ndfeb"
   ),
   `Downstream` = c(
     "deploy", "deployment", "install", "installation", "commission", "construction",
     "service", "servicing", "maintenance", "operations", "o\\&m", "retail",
     "charging station", "charger", "grid connection", "interconnection", "hook[- ]?up",
-    "rebate", "consumer", "end[- ]?use", "downstream"
+    "rebate", "consumer", "end[- ]?use", "downstream",
+    "datacenter", "data center", "server", "gpu", "ai", "inference", "model training", "cloud"
   )
 )
 
