@@ -76,6 +76,7 @@ run_trade_timeseries_pull <- function(country,
                                       partners,
                                       years,
                                       flow_direction = "export",
+                                      catalog = NULL,
                                       hs6_catalog_path = NULL,
                                       output_path = NULL,
                                       write_output = TRUE,
@@ -105,11 +106,21 @@ run_trade_timeseries_pull <- function(country,
   source(file.path(repo_root, "scripts", "utils", "comtrade_client.R"))
 
   raw_data_path <- file.path(repo_root, config$raw_data_dir)
-  if (is.null(hs6_catalog_path) || !nzchar(hs6_catalog_path)) {
-    hs6_catalog_path <- file.path(raw_data_path, "hts_codes_categories_bolstered_final.csv")
-  }
-  if (!file.exists(hs6_catalog_path)) {
-    stop("HS6 catalog not found: ", hs6_catalog_path)
+  if (is.null(catalog)) {
+    if (is.null(hs6_catalog_path) || !nzchar(hs6_catalog_path)) {
+      preferred_paths <- c(
+        file.path(raw_data_path, "hs6_categories_with_essential.csv"),
+        file.path(raw_data_path, "hts_codes_categories_bolstered_final.csv")
+      )
+      existing_path <- preferred_paths[file.exists(preferred_paths)]
+      hs6_catalog_path <- if (length(existing_path) > 0) existing_path[[1]] else preferred_paths[[1]]
+    }
+    if (!file.exists(hs6_catalog_path)) {
+      stop("HS6 catalog not found: ", hs6_catalog_path)
+    }
+    hs6_catalog <- utils::read.csv(hs6_catalog_path, stringsAsFactors = FALSE)
+  } else {
+    hs6_catalog <- as.data.frame(catalog, stringsAsFactors = FALSE)
   }
 
   if (is.null(output_path) || !nzchar(output_path)) {
@@ -120,8 +131,6 @@ run_trade_timeseries_pull <- function(country,
   }
 
   comtrade_set_key_from_env()
-  hs6_catalog <- utils::read.csv(hs6_catalog_path, stringsAsFactors = FALSE)
-
   request_grid <- build_trade_timeseries_request_grid(
     country = country,
     tech = tech,
@@ -209,6 +218,7 @@ pull_trade_timeseries <- function(country,
                                   partners = "World",
                                   years = (as.integer(format(Sys.Date(), "%Y")) - 5):(as.integer(format(Sys.Date(), "%Y")) - 1),
                                   flow = "export",
+                                  catalog = NULL,
                                   hs6_catalog_path = NULL,
                                   output_path = NULL,
                                   write_output = FALSE,
@@ -228,6 +238,7 @@ pull_trade_timeseries <- function(country,
     partners = partners,
     years = years_parsed,
     flow_direction = flow,
+    catalog = catalog,
     hs6_catalog_path = hs6_catalog_path,
     output_path = output_path,
     write_output = write_output,
