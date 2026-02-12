@@ -82,9 +82,11 @@ normalize_partners_arg <- function(partners) {
 run_trade_timeseries_pull <- function(country,
                                       tech,
                                       supply_chain,
-                                      partners,
+                                      partners = NULL,
+                                      partner = NULL,
                                       years = 2021:2025,
                                       flow_direction = "export",
+                                      flow = NULL,
                                       hs6_catalog_path = NULL,
                                       output_path = NULL,
                                       retries = 3,
@@ -100,6 +102,16 @@ run_trade_timeseries_pull <- function(country,
   if (is.null(supply_chain) || !nzchar(supply_chain)) {
     stop("supply_chain is required.")
   }
+
+  if (is.null(flow) || !nzchar(as.character(flow))) {
+    flow <- flow_direction
+  }
+  flow_direction <- as.character(flow)[1]
+
+  if (is.null(partners) || length(partners) == 0) {
+    partners <- partner
+  }
+  partners <- normalize_partners_arg(partners)
 
   if (!requireNamespace("comtradr", quietly = TRUE)) {
     stop("Package 'comtradr' is required.")
@@ -136,10 +148,6 @@ run_trade_timeseries_pull <- function(country,
       "trade_timeseries",
       paste0("trade_timeseries_", safe_country, "_", safe_tech, "_", safe_chain, ".csv")
     )
-  }
-
-  if (length(partners) == 0) {
-    stop("At least one partner is required.")
   }
 
   comtrade_key <- Sys.getenv("COMTRADE_API_KEY")
@@ -246,9 +254,11 @@ run_trade_timeseries_pull <- function(country,
 pull_trade_timeseries <- function(country,
                                   tech,
                                   supply_chain,
-                                  partners = "World",
+                                  partners = NULL,
+                                  partner = NULL,
                                   years = 2021:2025,
                                   flow = "export",
+                                  flow_direction = NULL,
                                   hs6_catalog_path = NULL,
                                   output_path = NULL,
                                   retries = 3,
@@ -261,7 +271,14 @@ pull_trade_timeseries <- function(country,
     years
   }
 
+  if (is.null(partners) || length(partners) == 0) {
+    partners <- partner
+  }
   partners_parsed <- normalize_partners_arg(partners)
+
+  if (is.null(flow_direction) || !nzchar(as.character(flow_direction))) {
+    flow_direction <- flow
+  }
 
   run_trade_timeseries_pull(
     country = country,
@@ -269,7 +286,7 @@ pull_trade_timeseries <- function(country,
     supply_chain = supply_chain,
     partners = partners_parsed,
     years = years_parsed,
-    flow_direction = flow,
+    flow_direction = flow_direction,
     hs6_catalog_path = hs6_catalog_path,
     output_path = output_path,
     retries = retries,
