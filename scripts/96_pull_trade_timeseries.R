@@ -54,29 +54,35 @@ parse_years_arg <- function(years_arg) {
   sort(unique(years))
 }
 
-normalize_partners_arg <- function(partners) {
-  if (is.null(partners)) {
-    return("World")
+normalize_character_arg <- function(values, default = NULL) {
+  if (is.null(values)) {
+    return(default)
   }
 
-  partners <- as.character(partners)
-  partners <- trimws(partners)
-  partners <- partners[nzchar(partners)]
+  values <- as.character(values)
+  values <- trimws(values)
+  values <- values[nzchar(values)]
 
-  if (length(partners) == 0) {
-    return("World")
+  if (length(values) == 0) {
+    return(default)
   }
 
-  if (length(partners) == 1 && grepl(",", partners, fixed = TRUE)) {
-    partners <- trimws(strsplit(partners, ",", fixed = TRUE)[[1]])
-    partners <- partners[nzchar(partners)]
+  if (length(values) == 1 && grepl(",", values, fixed = TRUE)) {
+    values <- trimws(strsplit(values, ",", fixed = TRUE)[[1]])
+    values <- values[nzchar(values)]
   }
 
-  if (length(partners) == 0) {
-    "World"
+  values <- unique(values)
+
+  if (length(values) == 0) {
+    default
   } else {
-    partners
+    values
   }
+}
+
+normalize_partners_arg <- function(partners) {
+  normalize_character_arg(partners, default = "World")
 }
 
 run_trade_timeseries_pull <- function(country,
@@ -87,19 +93,28 @@ run_trade_timeseries_pull <- function(country,
                                       flow_direction = "export",
                                       hs6_catalog_path = NULL,
                                       output_path = NULL,
+                                      write_output = TRUE,
                                       retries = 3,
                                       sleep_seconds = 0.5,
                                       max_code_chars = 2500,
                                       partner_chunk_size = 50) {
-  if (is.null(country) || !nzchar(country)) {
+  country <- normalize_character_arg(country)
+  if (is.null(country) || length(country) == 0) {
     stop("country is required.")
   }
-  if (is.null(tech) || !nzchar(tech)) {
+  tech <- normalize_character_arg(tech)
+  if (is.null(tech) || length(tech) == 0) {
     stop("tech is required.")
   }
   if (is.null(supply_chain) || !nzchar(supply_chain)) {
     stop("supply_chain is required.")
   }
+
+  flow_direction <- normalize_character_arg(flow_direction, default = "export")
+  if (is.null(flow_direction) || length(flow_direction) == 0) {
+    stop("flow_direction is required.")
+  }
+  flow_direction <- tolower(flow_direction)
 
   if (!requireNamespace("comtradr", quietly = TRUE)) {
     stop("Package 'comtradr' is required.")
@@ -128,8 +143,8 @@ run_trade_timeseries_pull <- function(country,
   }
 
   if (is.null(output_path) || !nzchar(output_path)) {
-    safe_country <- gsub("[^A-Za-z0-9]+", "_", country)
-    safe_tech <- gsub("[^A-Za-z0-9]+", "_", tech)
+    safe_country <- gsub("[^A-Za-z0-9]+", "_", paste(country, collapse = "_"))
+    safe_tech <- gsub("[^A-Za-z0-9]+", "_", paste(tech, collapse = "_"))
     safe_chain <- gsub("[^A-Za-z0-9]+", "_", supply_chain)
     output_path <- file.path(
       raw_data_path,
@@ -220,11 +235,13 @@ run_trade_timeseries_pull <- function(country,
 
   trade_tbl <- dplyr::bind_rows(output) %>% dplyr::distinct()
 
-  output_dir <- dirname(output_path)
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
+  if (isTRUE(write_output)) {
+    output_dir <- dirname(output_path)
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+    }
+    utils::write.csv(trade_tbl, output_path, row.names = FALSE)
   }
-  utils::write.csv(trade_tbl, output_path, row.names = FALSE)
 
   if (length(failed) > 0) {
     warning(
@@ -233,14 +250,12 @@ run_trade_timeseries_pull <- function(country,
     )
   }
 
-  message("Rows written: ", nrow(trade_tbl))
-  message("Output: ", output_path)
+  message("Rows fetched: ", nrow(trade_tbl))
+  if (isTRUE(write_output)) {
+    message("Output: ", output_path)
+  }
 
-  invisible(list(
-    data = trade_tbl,
-    output_path = output_path,
-    failed = failed
-  ))
+  trade_tbl
 }
 
 pull_trade_timeseries <- function(country,
@@ -251,6 +266,7 @@ pull_trade_timeseries <- function(country,
                                   flow = "export",
                                   hs6_catalog_path = NULL,
                                   output_path = NULL,
+                                  write_output = FALSE,
                                   retries = 3,
                                   sleep_seconds = 0.5,
                                   max_code_chars = 2500,
@@ -261,17 +277,19 @@ pull_trade_timeseries <- function(country,
     years
   }
 
+  tech_parsed <- normalize_character_arg(tech)
   partners_parsed <- normalize_partners_arg(partners)
 
   run_trade_timeseries_pull(
     country = country,
-    tech = tech,
+    tech = tech_parsed,
     supply_chain = supply_chain,
     partners = partners_parsed,
     years = years_parsed,
     flow_direction = flow,
     hs6_catalog_path = hs6_catalog_path,
     output_path = output_path,
+    write_output = write_output,
     retries = retries,
     sleep_seconds = sleep_seconds,
     max_code_chars = max_code_chars,
