@@ -42,19 +42,37 @@ trade_normalize_years <- function(years) {
   sort(unique(as.integer(years)))
 }
 
+trade_pick_column <- function(tbl, candidates, label) {
+  hits <- candidates[candidates %in% names(tbl)]
+  if (length(hits) == 0) {
+    stop(
+      "Catalog is missing ", label, " column. Tried: ",
+      paste(candidates, collapse = ", ")
+    )
+  }
+  hits[[1]]
+}
+
 trade_prepare_hs6_codes <- function(catalog,
                                     tech,
                                     supply_chain,
                                     hs_col = "HS6",
                                     tech_col = "tech",
                                     supply_chain_col = "supply_chain") {
-  required_cols <- c(hs_col, tech_col, supply_chain_col)
-  missing_cols <- setdiff(required_cols, names(catalog))
-  if (length(missing_cols) > 0) {
-    stop(
-      "Catalog is missing required column(s): ",
-      paste(missing_cols, collapse = ", ")
-    )
+  hs_col <- if (hs_col %in% names(catalog)) {
+    hs_col
+  } else {
+    trade_pick_column(catalog, c("HS6", "hs6", "HS_6", "code_hs", "code"), "HS6")
+  }
+  tech_col <- if (tech_col %in% names(catalog)) {
+    tech_col
+  } else {
+    trade_pick_column(catalog, c("tech", "Technology", "technology"), "tech")
+  }
+  supply_chain_col <- if (supply_chain_col %in% names(catalog)) {
+    supply_chain_col
+  } else {
+    trade_pick_column(catalog, c("supply_chain", "Value.Chain", "value_chain", "Supply.Chain"), "supply_chain")
   }
 
   selected <- catalog[

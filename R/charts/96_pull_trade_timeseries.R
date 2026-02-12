@@ -189,7 +189,12 @@ run_trade_timeseries_pull <- function(country,
 
   raw_data_path <- file.path(repo_root, config$raw_data_dir)
   if (is.null(hs6_catalog_path) || !nzchar(hs6_catalog_path)) {
-    hs6_catalog_path <- file.path(raw_data_path, "hts_codes_categories_bolstered_final.csv")
+    preferred_paths <- c(
+      file.path(raw_data_path, "hs6_categories_with_essential.csv"),
+      file.path(raw_data_path, "hts_codes_categories_bolstered_final.csv")
+    )
+    existing_path <- preferred_paths[file.exists(preferred_paths)]
+    hs6_catalog_path <- if (length(existing_path) > 0) existing_path[[1]] else preferred_paths[[1]]
   }
   if (!file.exists(hs6_catalog_path)) {
     stop("HS6 catalog not found: ", hs6_catalog_path)
