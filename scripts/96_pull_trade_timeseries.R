@@ -96,10 +96,6 @@ is_throttle_error <- function(err) {
   grepl("429|throttl|rate\\s*limit|too\\s*many\\s*requests", msg)
 }
 
-normalize_partners_arg <- function(partners) {
-  normalize_character_arg(partners, default = "World")
-}
-
 run_trade_timeseries_pull <- function(country,
                                       tech,
                                       supply_chain,
@@ -113,7 +109,8 @@ run_trade_timeseries_pull <- function(country,
                                       sleep_seconds = 0.5,
                                       max_code_chars = 2500,
                                       partner_chunk_size = 50,
-                                      request_pause_seconds = 0) {
+                                  request_pause_seconds = 0,
+                                  show_progress = interactive()) {
   country <- normalize_character_arg(country)
   if (is.null(country) || length(country) == 0) {
     stop("country is required.")
@@ -196,6 +193,14 @@ run_trade_timeseries_pull <- function(country,
   output <- vector("list", nrow(request_grid))
   failed <- character()
 
+  pb <- NULL
+  if (isTRUE(show_progress) && nrow(request_grid) > 0) {
+    pb <- utils::txtProgressBar(min = 0, max = nrow(request_grid), style = 3)
+    on.exit({
+      if (!is.null(pb)) close(pb)
+    }, add = TRUE)
+  }
+
   for (i in seq_len(nrow(request_grid))) {
     req <- request_grid[i, ]
 
@@ -237,6 +242,7 @@ run_trade_timeseries_pull <- function(country,
           if (inherits(last_err, "error")) conditionMessage(last_err) else "unknown error"
         )
       )
+      if (!is.null(pb)) utils::setTxtProgressBar(pb, i)
       next
     }
 
@@ -246,6 +252,8 @@ run_trade_timeseries_pull <- function(country,
       tech = tech,
       supply_chain = supply_chain
     )
+
+    if (!is.null(pb)) utils::setTxtProgressBar(pb, i)
 
     if (request_pause_seconds > 0) {
       Sys.sleep(request_pause_seconds)
@@ -290,7 +298,8 @@ pull_trade_timeseries <- function(country,
                                   sleep_seconds = 0.5,
                                   max_code_chars = 2500,
                                   partner_chunk_size = 50,
-                                      request_pause_seconds = 0) {
+                                  request_pause_seconds = 0,
+                                  show_progress = interactive()) {
   years_parsed <- if (is.character(years) && length(years) == 1) {
     parse_years_arg(years)
   } else {
@@ -314,7 +323,8 @@ pull_trade_timeseries <- function(country,
     sleep_seconds = sleep_seconds,
     max_code_chars = max_code_chars,
     partner_chunk_size = partner_chunk_size,
-    request_pause_seconds = request_pause_seconds
+    request_pause_seconds = request_pause_seconds,
+    show_progress = show_progress
   )
 }
 
@@ -349,6 +359,7 @@ if (sys.nframe() == 0) {
     sleep_seconds = as.numeric(args[["sleep-seconds"]] %||% "0.5"),
     max_code_chars = as.integer(args[["max-code-chars"]] %||% "2500"),
     partner_chunk_size = as.integer(args[["partner-chunk-size"]] %||% "50"),
-    request_pause_seconds = as.numeric(args[["request-pause-seconds"]] %||% "0")
+    request_pause_seconds = as.numeric(args[["request-pause-seconds"]] %||% "0"),
+    show_progress = TRUE
   )
 }
