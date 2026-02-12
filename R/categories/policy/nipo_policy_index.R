@@ -666,12 +666,42 @@ DEFAULT_VALIDATION_BONUS <- 0.20  # +20% weight when corroborated
 DEFAULT_VALIDATION_KEYWORD_BONUS <- 0.35  # +15% weight when Title/Source corroborates tech
 
 # ---- Tech taxonomy (user-defined) ----
-TECH_TAXONOMY <- c("Electric Vehicles","Nuclear","Coal","Batteries","Green Hydrogen","Wind","Oil","Solar","Gas","Geothermal","Electric Grid")
+TECH_TAXONOMY <- c(
+  "Electric Vehicles",
+  "Nuclear",
+  "Coal",
+  "Batteries",
+  "Green Hydrogen",
+  "Wind",
+  "Oil",
+  "Solar",
+  "Gas",
+  "Geothermal",
+  "Electric Grid",
+  "Semiconductors",
+  "Magnets"
+)
 
 LOW_CARBON_TECHS <- c("Electric Vehicles","Nuclear","Batteries","Green Hydrogen","Wind","Solar","Geothermal","Electric Grid")
-CRITICAL_MINERALS_LINKED_TECHS <- c("Batteries","Electric Vehicles","Electric Grid","Wind","Solar","Green Hydrogen")
-DUAL_USE_LINKED_TECHS <- c("Nuclear","Electric Grid","Advanced Technology Products")
-ADV_TECH_LINKED_TECHS <- c("Electric Grid","Batteries","Nuclear","Electric Vehicles","Advanced Technology Products")
+CRITICAL_MINERALS_LINKED_TECHS <- c(
+  "Batteries",
+  "Electric Vehicles",
+  "Electric Grid",
+  "Wind",
+  "Solar",
+  "Green Hydrogen",
+  "Semiconductors",
+  "Magnets"
+)
+DUAL_USE_LINKED_TECHS <- c("Nuclear","Electric Grid","Advanced Technology Products","Semiconductors","Magnets")
+ADV_TECH_LINKED_TECHS <- c(
+  "Electric Grid",
+  "Batteries",
+  "Nuclear",
+  "Electric Vehicles",
+  "Advanced Technology Products",
+  "Semiconductors"
+)
 
 is_low_carbon_tech <- function(tech) {
   tech %in% LOW_CARBON_TECHS
@@ -698,7 +728,19 @@ TECH_KEYWORDS <- list(
   `Nuclear` = c("nuclear","reactor","smr","spent fuel","uranium","enrichment","fission"),
   `Coal` = c("coal","coking coal","thermal coal","coal-fired","lignite"),
   `Oil` = c("oil","petroleum","crude","refinery","refining","pipeline"),
-  `Gas` = c("gas","natural gas","lng","liquefaction","regasification","pipeline gas")
+  `Gas` = c("gas","natural gas","lng","liquefaction","regasification","pipeline gas"),
+  `Semiconductors` = c(
+    "semiconductor","semiconductors","chip","chips","wafer","wafers","fab","fabs",
+    "foundry","fabrication","packaging","assembly","atmp","front-end",
+    "datacenter","data center","server","servers","gpu","gpus","ai","artificial intelligence",
+    "accelerator","hpc","cloud", "model training", "inference"
+  ),
+  `Magnets Upstream (rare earths)` = c(
+    "rare earth","rare-earth","ndpr","neodymium","praseodymium","dysprosium","terbium",
+    "magnet ore","rare earth mine","rare earth mining",
+    "magnet","magnets","permanent magnet","ndfeb","sintered magnet","magnet manufacturing",
+    "magnet production","bonded magnet"
+  )
 )
 
 keyword_evidence <- function(tech, title, source) {
@@ -711,7 +753,7 @@ keyword_evidence <- function(tech, title, source) {
 # Supply-chain keyword validation: look for stage-relevant terms in Title/Source.
 # Your supply_chain options: Upstream (commodities/critical minerals etc), Midstream (manufacturing),
 # Downstream (deployment and services).
-DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.5  # +12% when Title/Source corroborates supply-chain stage
+DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.25  # +12% when Title/Source corroborates supply-chain stage
 
 # ---- Mapping confidence (applied to policy strength contributions) ----
 CONFIDENCE_FLOOR <- 0.25
@@ -730,13 +772,15 @@ SUPPLY_CHAIN_KEYWORDS <- list(
   `Midstream` = c(
     "manufactur", "factory", "plant", "gigafactory", "assembly", "fabricat", "production line",
     "component", "module", "cells?", "anode", "cathode", "electrolyser manufacturing", "electrolyzer manufacturing",
-    "enrichment", "conversion", "processing", "midstream"
+    "enrichment", "conversion", "processing", "midstream",
+    "foundry", "fabs?", "wafer", "chip packaging", "atmp", "magnet manufacturing", "ndfeb"
   ),
   `Downstream` = c(
     "deploy", "deployment", "install", "installation", "commission", "construction",
     "service", "servicing", "maintenance", "operations", "o\\&m", "retail",
     "charging station", "charger", "grid connection", "interconnection", "hook[- ]?up",
-    "rebate", "consumer", "end[- ]?use", "downstream"
+    "rebate", "consumer", "end[- ]?use", "downstream",
+    "datacenter", "data center", "server", "gpu", "ai", "inference", "model training", "cloud"
   )
 )
 
@@ -1033,7 +1077,7 @@ build_policy_base <- function(nipo_country_tbl,
         .data$has_beneficiary ~ 0.60,
         stringr::str_detect(.data$policy_level, "economy|cross|horizontal") ~ 0.75,
         stringr::str_detect(.data$policy_level, "sector|industry") ~ 1,
-        stringr::str_detect(.data$policy_level, "firm") ~ 0.60,
+        stringr::str_detect(.data$policy_level, "firm") ~ 0.40,
         TRUE ~ 0.75
       )
     ) %>%
@@ -1096,7 +1140,8 @@ build_policy_base <- function(nipo_country_tbl,
       m_subsidy = cap_mult(log_mult(.data$subsidy_usd_m, p95_subsidy), cap = scale_cap),
       m_scale   = pmax(.data$m_subsidy),
       bite_strength_base  = .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration,
-      scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * 2*.data$m_scale
+      scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * 2*.data$m_scale,
+      policy_strength= .data$w_tool * .data$w_status* .data$m_scope * .data$m_scale
     )
   
   act_pkg <- base %>%
@@ -1116,7 +1161,8 @@ build_policy_base <- function(nipo_country_tbl,
     dplyr::mutate(
       m_package = dplyr::coalesce(.data$m_package, 1.0),
       bite_strength_pkg  = .data$bite_strength_base  * .data$m_package,
-      scale_strength_pkg = .data$scale_strength_base * .data$m_package
+      scale_strength_pkg = .data$scale_strength_base * .data$m_package,
+      policy_strength_pkg = .data$policy_strength * .data$m_package
     )
 }
 
@@ -1196,7 +1242,8 @@ build_by_policy <- function(policy_asof_tbl, cpc_names) {
         .data$scale_strength_pkg / .data$country_domestic_stock,
         0
       ),
-      domestic_intervention_index = median_scurve(log1p(.data$scale_strength_pkg))
+      domestic_intervention_index = median_scurve(log1p(.data$scale_strength_pkg)),
+      policy_strength_index = median_scurve(log1p(.data$policy_strength_pkg))
     ) %>%
     dplyr::ungroup()
   
