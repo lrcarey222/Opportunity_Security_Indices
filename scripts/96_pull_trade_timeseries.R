@@ -70,12 +70,29 @@ normalize_partners_arg <- function(partners) {
   normalize_character_arg(partners, default = "World")
 }
 
+normalize_frequency_arg <- function(frequency) {
+  if (is.null(frequency) || !nzchar(as.character(frequency))) {
+    return("A")
+  }
+
+  value <- tolower(trimws(as.character(frequency)[[1]]))
+  mapping <- c(annual = "A", yearly = "A", year = "A", a = "A",
+               monthly = "M", month = "M", m = "M")
+
+  if (!value %in% names(mapping)) {
+    stop("frequency must be one of: annual, monthly, A, or M")
+  }
+
+  mapping[[value]]
+}
+
 run_trade_timeseries_pull <- function(country,
                                       tech,
                                       supply_chain,
                                       partners,
                                       years,
                                       flow_direction = "export",
+                                      frequency = "annual",
                                       catalog = NULL,
                                       hs6_catalog_path = NULL,
                                       output_path = NULL,
@@ -92,6 +109,7 @@ run_trade_timeseries_pull <- function(country,
   tech <- normalize_character_arg(tech)
   partners <- normalize_partners_arg(partners)
   flow_direction <- tolower(normalize_character_arg(flow_direction, default = "export"))
+  frequency <- normalize_frequency_arg(frequency)
 
   if (is.null(country) || is.null(tech) || is.null(supply_chain) || !nzchar(supply_chain)) {
     stop("country, tech, and supply_chain are required.")
@@ -152,9 +170,10 @@ run_trade_timeseries_pull <- function(country,
     commodity_code = cc,
     start_date = ys,
     end_date = ye,
-    flow_direction = dir
+    flow_direction = dir,
+    frequency = frequency
   ) %>%
-    dplyr::select(request_id, reporter, partner, commodity_code, start_date, end_date, flow_direction)
+    dplyr::select(request_id, reporter, partner, commodity_code, start_date, end_date, flow_direction, frequency)
 
   fetch_out <- comtrade_fetch_requests(
     request_df = request_df,
@@ -218,6 +237,7 @@ pull_trade_timeseries <- function(country,
                                   partners = "World",
                                   years = (as.integer(format(Sys.Date(), "%Y")) - 5):(as.integer(format(Sys.Date(), "%Y")) - 1),
                                   flow = "export",
+                                  frequency = "annual",
                                   catalog = NULL,
                                   hs6_catalog_path = NULL,
                                   output_path = NULL,
@@ -238,6 +258,7 @@ pull_trade_timeseries <- function(country,
     partners = partners,
     years = years_parsed,
     flow_direction = flow,
+    frequency = frequency,
     catalog = catalog,
     hs6_catalog_path = hs6_catalog_path,
     output_path = output_path,
@@ -281,6 +302,7 @@ if (sys.nframe() == 0) {
     partners = partners,
     years = years,
     flow_direction = args[["flow"]] %||% "export",
+    frequency = args[["frequency"]] %||% "annual",
     hs6_catalog_path = args[["hs6-catalog"]] %||% args[["hs6_catalog"]],
     output_path = output_path,
     write_output = TRUE,

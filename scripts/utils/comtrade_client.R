@@ -95,7 +95,7 @@ comtrade_fetch_requests <- function(request_df,
   pb <- NULL
   if (isTRUE(show_progress) && nrow(request_df) > 0) {
     pb <- progress::progress_bar$new(
-      format = "Comtrade :current/:total [:bar] :percent eta=:eta rep=:rep flow=:flow yrs=:years",
+      format = "Comtrade :current/:total [:bar] :percent eta=:eta rep=:rep flow=:flow yrs=:years freq=:freq",
       total = nrow(request_df),
       clear = FALSE,
       width = 90
@@ -109,17 +109,27 @@ comtrade_fetch_requests <- function(request_df,
     last_err <- NULL
     throttle_multiplier <- 1
 
+    frequency_arg <- NULL
+    if ("frequency" %in% names(req) && !is.null(req$frequency[[1]]) && nzchar(as.character(req$frequency[[1]]))) {
+      frequency_arg <- as.character(req$frequency[[1]])
+    }
+
     for (attempt in seq_len(retries)) {
+      request_args <- list(
+        reporter = req$reporter[[1]],
+        partner = req$partner[[1]],
+        commodity_code = req$commodity_code[[1]],
+        start_date = req$start_date[[1]],
+        end_date = req$end_date[[1]],
+        flow_direction = req$flow_direction[[1]],
+        timeout_seconds = timeout_seconds
+      )
+      if (!is.null(frequency_arg)) {
+        request_args$frequency <- frequency_arg
+      }
+
       attempt_out <- tryCatch(
-        comtrade_ct_get_data_with_timeout(
-          reporter = req$reporter[[1]],
-          partner = req$partner[[1]],
-          commodity_code = req$commodity_code[[1]],
-          start_date = req$start_date[[1]],
-          end_date = req$end_date[[1]],
-          flow_direction = req$flow_direction[[1]],
-          timeout_seconds = timeout_seconds
-        ),
+        do.call(comtrade_ct_get_data_with_timeout, request_args),
         error = function(e) e
       )
 
@@ -142,7 +152,8 @@ comtrade_fetch_requests <- function(request_df,
       ", rep=", req$reporter[[1]],
       ", partner=", paste(req$partner[[1]], collapse = ","),
       ", flow=", req$flow_direction[[1]],
-      ", years=", req$start_date[[1]], "-", req$end_date[[1]]
+      ", years=", req$start_date[[1]], "-", req$end_date[[1]],
+      if ("frequency" %in% names(req)) paste0(", freq=", req$frequency[[1]]) else ""
     )
 
     if (is.null(data_chunk)) {
@@ -164,7 +175,8 @@ comtrade_fetch_requests <- function(request_df,
       pb$tick(tokens = list(
         rep = as.character(req$reporter[[1]]),
         flow = as.character(req$flow_direction[[1]]),
-        years = paste0(req$start_date[[1]], "-", req$end_date[[1]])
+        years = paste0(req$start_date[[1]], "-", req$end_date[[1]]),
+        freq = if ("frequency" %in% names(req)) as.character(req$frequency[[1]]) else "NA"
       ))
     }
 
