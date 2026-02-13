@@ -140,6 +140,11 @@ energy_prices_calc_vol <- function(df, years_back, min_months = 24) {
 }
 
 energy_prices_build_volatility <- function(imf_monthly, mineral_demand_clean, years_back = c(5, 10, 20), min_months = 24) {
+  tech_groups <- c(
+    "Electric Vehicles", "Nuclear", "Coal", "Batteries", "Green Hydrogen",
+    "Wind", "Oil", "Solar", "Gas", "Geothermal"
+  )
+
   mineral_map <- mineral_demand_clean %>%
     dplyr::mutate(
       Mineral = dplyr::if_else(
@@ -165,15 +170,23 @@ energy_prices_build_volatility <- function(imf_monthly, mineral_demand_clean, ye
         clean %in% c("Oil_APSP", "Oil_Brent", "Oil_WTI") ~ "Oil",
         clean %in% c("Natural_Gas_Index", "Natural_Gas_EU", "Natural_Gas_Henry_Hub", "LNG") ~ "Gas",
         clean == "Coal" ~ "Coal",
+        clean == "Uranium" ~ "Nuclear",
         !is.na(tech) ~ tech,
-        TRUE ~ clean
+        TRUE ~ NA_character_
+      ),
+      sub_sector = dplyr::case_when(
+        clean %in% c("Oil_APSP", "Oil_Brent", "Oil_WTI") ~ clean,
+        clean %in% c("Natural_Gas_Index", "Natural_Gas_EU", "Natural_Gas_Henry_Hub", "LNG") ~ clean,
+        clean == "Coal" ~ "Coal",
+        !is.na(tech) ~ clean,
+        TRUE ~ NA_character_
       )
     ) %>%
     dplyr::select(-clean_key)
 
   volatility_by_indicator %>%
-    dplyr::filter(!is.na(tech)) %>%
-    dplyr::group_by(tech) %>%
+    dplyr::filter(!is.na(tech), tech %in% tech_groups) %>%
+    dplyr::group_by(tech, sub_sector) %>%
     dplyr::summarize(
       vol_logret_annualized = mean(vol_logret_annualized, na.rm = TRUE),
       vol_level_sd = mean(vol_level_sd, na.rm = TRUE),
@@ -221,6 +234,7 @@ energy_prices_build_table <- function(volatility_by_tech,
     dplyr::select(
       Country,
       tech,
+      sub_sector,
       supply_chain,
       category,
       variable,
@@ -286,5 +300,5 @@ energy_prices <- function(imf_price,
     gamma = gamma
   ) %>%
     energy_prices_add_overall_fallback() %>%
-    energy_security_add_overall_index()
+    energy_security_add_overall_index(include_sub_sector = TRUE)
 }
