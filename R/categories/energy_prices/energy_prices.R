@@ -37,7 +37,12 @@ energy_prices_imf_patterns <- list(
 )
 
 energy_prices_normalize_mineral <- function(x) {
-  stringr::str_to_lower(stringr::str_replace_all(x, "_", " "))
+  normalized <- stringr::str_to_lower(stringr::str_replace_all(x, "_", " "))
+
+  dplyr::case_when(
+    stringr::str_detect(normalized, "rare earth") ~ "rare earth",
+    TRUE ~ normalized
+  )
 }
 
 energy_prices_imf_monthly_long <- function(imf_price) {
@@ -211,6 +216,47 @@ energy_prices_calc_vol <- function(df, years_back, min_months = 24) {
   )
 }
 
+energy_prices_extract_unit <- function(indicator) {
+  indicator_lc <- stringr::str_to_lower(indicator)
+
+  dplyr::case_when(
+    stringr::str_detect(indicator_lc, "\$\/bbl|\\busd per barrel\\b|\\bus dollars per barrel\\b") ~ "USD per barrel",
+    stringr::str_detect(indicator_lc, "us cents per gallon") ~ "US cents per gallon",
+    stringr::str_detect(indicator_lc, "us dollars per metric tonne|usd per metric tonne") ~ "USD per metric tonne",
+    stringr::str_detect(indicator_lc, "us dollars per mmbtu|usd per mmbtu") ~ "USD per MMBtu",
+    stringr::str_detect(indicator_lc, "us dollars per kilogram|usd per kilogram") ~ "USD per kilogram",
+    stringr::str_detect(indicator_lc, "unit prices") ~ "Indicator-native IMF unit",
+    TRUE ~ "Indicator-native IMF unit"
+  )
+}
+
+energy_prices_latest_and_yoy <- function(df) {
+  x <- df %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::arrange(date)
+
+  if (nrow(x) == 0) {
+    return(tibble::tibble(latest_price = NA_real_, yoy_price_change_pct = NA_real_))
+  }
+
+  latest_row <- x %>% dplyr::slice_tail(n = 1)
+  latest_date <- latest_row$date[[1]]
+  latest_price <- latest_row$value[[1]]
+  yoy_target <- lubridate::`%m-%`(latest_date, lubridate::years(1))
+  yoy_base <- x %>% dplyr::filter(date == yoy_target) %>% dplyr::slice_tail(n = 1)
+
+  yoy_price_change_pct <- if (nrow(yoy_base) == 1 && !is.na(yoy_base$value[[1]]) && yoy_base$value[[1]] != 0) {
+    100 * (latest_price / yoy_base$value[[1]] - 1)
+  } else {
+    NA_real_
+  }
+
+  tibble::tibble(
+    latest_price = latest_price,
+    yoy_price_change_pct = yoy_price_change_pct
+  )
+}
+
 energy_prices_build_volatility <- function(imf_monthly,
                                            mineral_demand_clean,
                                            years_back = c(5, 10, 20),
@@ -239,6 +285,14 @@ energy_prices_build_volatility <- function(imf_monthly,
     dplyr::group_modify(~ dplyr::bind_rows(lapply(years_back, function(window_years) {
       energy_prices_calc_vol(.x, window_years, min_months = min_months)
     }))) %>%
+    dplyr::left_join(
+      imf_monthly %>%
+        dplyr::group_by(INDICATOR, clean) %>%
+        dplyr::group_modify(~ energy_prices_latest_and_yoy(.x)) %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(unit = energy_prices_extract_unit(INDICATOR)),
+      by = c("INDICATOR", "clean")
+    ) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(clean_key = energy_prices_normalize_mineral(clean)) %>%
     dplyr::left_join(mineral_map, by = "clean_key") %>%
@@ -268,6 +322,9 @@ energy_prices_build_volatility <- function(imf_monthly,
       vol_logret_annualized = mean(vol_logret_annualized, na.rm = TRUE),
       vol_level_sd = mean(vol_level_sd, na.rm = TRUE),
       vol_level_cv = mean(vol_level_cv, na.rm = TRUE),
+      latest_price = mean(latest_price, na.rm = TRUE),
+      yoy_price_change_pct = mean(yoy_price_change_pct, na.rm = TRUE),
+      unit = paste(unique(unit[!is.na(unit)]), collapse = "; "),
       n_series = sum(!is.na(vol_logret_annualized)),
       .groups = "drop"
     )
@@ -289,10 +346,12 @@ energy_prices_build_table <- function(volatility_by_tech,
   base_tbl %>%
     dplyr::mutate(
       price_volatility = suppressWarnings(as.numeric(vol_logret_annualized)),
-      price_volatility_index = median_scurve(-price_volatility, gamma = gamma)
+      price_volatility_index = median_scurve(-price_volatility, gamma = gamma),
+      latest_price = suppressWarnings(as.numeric(latest_price)),
+      yoy_price_change_pct = suppressWarnings(as.numeric(yoy_price_change_pct))
     ) %>%
     tidyr::pivot_longer(
-      cols = c(price_volatility, price_volatility_index),
+      cols = c(price_volatility, price_volatility_index, latest_price, yoy_price_change_pct),
       names_to = "variable",
       values_to = "value"
     ) %>%
@@ -304,8 +363,11 @@ energy_prices_build_table <- function(volatility_by_tech,
       Year = as_of_year,
       source = "IMF Commodity Prices",
       explanation = dplyr::case_when(
-        data_type == "raw" ~ "Annualized volatility of monthly log returns.",
-        data_type == "index" ~ "Percent-rank of lower price volatility."
+        variable == "price_volatility" & data_type == "raw" ~ "Annualized volatility of monthly log returns.",
+        variable == "price_volatility" & data_type == "index" ~ "Percent-rank of lower price volatility.",
+        variable == "latest_price" ~ paste0("Latest observed commodity price level (average across mapped IMF series). Unit: ", unit, "."),
+        variable == "yoy_price_change_pct" ~ paste0("Year-on-year percentage price change from latest monthly observation (average across mapped IMF series). Underlying unit(s): ", unit, "."),
+        TRUE ~ NA_character_
       )
     ) %>%
     dplyr::select(
