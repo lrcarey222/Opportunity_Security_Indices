@@ -299,5 +299,5 @@ energy_prices <- function(imf_price,
     gamma = gamma
   ) %>%
     energy_prices_add_overall_fallback() %>%
-    energy_security_add_overall_index()
+    energy_security_add_overall_index(include_sub_sector = TRUE)
 }
