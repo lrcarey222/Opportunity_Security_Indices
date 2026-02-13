@@ -136,3 +136,64 @@ test_that("energy_prices_latest_and_yoy uses year-on-year change in trailing 12-
   expect_equal(out$latest_price[[1]], 110)
   expect_equal(out$yoy_price_change_pct[[1]], 10)
 })
+
+test_that("energy_prices_sub_sector_unit_lookup returns joinable sub_sector to unit_description tibble", {
+  imf_price <- tibble::tibble(
+    INDICATOR = c(
+      "Natural Gas, US Henry Hub, US dollars per MMBtu, Unit prices",
+      "Natural Gas, US Henry Hub, US dollars per MMBtu, Unit prices",
+      "Coal, US dollars per metric tonne, Unit prices"
+    ),
+    date = as.Date(c("2024-01-01", "2024-02-01", "2024-01-01")),
+    value = c(2.5, 2.7, 150)
+  )
+
+  lookup <- energy_prices_sub_sector_unit_lookup(imf_price)
+
+  expect_true(all(c("sub_sector", "unit_description") %in% names(lookup)))
+  expect_true(any(lookup$sub_sector == "Natural_Gas_Henry_Hub"))
+  expect_true(any(lookup$sub_sector == "Coal"))
+  expect_true(any(lookup$unit_description == "USD per MMBtu"))
+  expect_true(any(lookup$unit_description == "USD per metric tonne"))
+})
+
+test_that("energy_prices_imf_annual_yoy_lookup reads IMF annual yoy transformation", {
+  imf_price <- tibble::tibble(
+    INDICATOR = c("Natural Gas, US Henry Hub, US dollars per MMBtu, Unit prices"),
+    FREQUENCY = "Annual",
+    DATA_TRANSFORMATION = "Index, percent change from a year ago",
+    X2024 = 8.0,
+    X2025 = 10.0
+  )
+
+  yoy_lookup <- energy_prices_imf_annual_yoy_lookup(imf_price)
+
+  expect_equal(nrow(yoy_lookup), 1)
+  expect_equal(yoy_lookup$clean[[1]], "Natural_Gas_Henry_Hub")
+  expect_equal(yoy_lookup$yoy_price_change_pct_annual[[1]], 10)
+})
+
+test_that("energy_prices_build_volatility prefers IMF annual yoy and avoids NaN aggregation", {
+  imf_monthly <- tibble::tibble(
+    INDICATOR = rep("Natural Gas, US Henry Hub, US dollars per MMBtu, Unit prices", 3),
+    clean = rep("Natural_Gas_Henry_Hub", 3),
+    date = as.Date(c("2024-01-01", "2024-02-01", "2024-03-01")),
+    value = c(1, 1.1, 1.2)
+  )
+
+  out <- energy_prices_build_volatility(
+    imf_monthly = imf_monthly,
+    mineral_demand_clean = tibble::tibble(Mineral = character(), tech = character()),
+    years_back = c(5),
+    min_months = 24,
+    annual_yoy_lookup = tibble::tibble(
+      INDICATOR = "Natural Gas, US Henry Hub, US dollars per MMBtu, Unit prices",
+      clean = "Natural_Gas_Henry_Hub",
+      yoy_price_change_pct_annual = 7.5
+    )
+  )
+
+  expect_true(any(out$sub_sector == "Natural_Gas_Henry_Hub"))
+  expect_equal(out$yoy_price_change_pct[out$sub_sector == "Natural_Gas_Henry_Hub"][[1]], 7.5)
+  expect_false(any(is.nan(out$yoy_price_change_pct)))
+})

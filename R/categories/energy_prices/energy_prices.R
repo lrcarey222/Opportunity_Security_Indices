@@ -65,6 +65,33 @@ energy_prices_imf_monthly_long <- function(imf_price) {
     dplyr::filter(!is.na(date))
 }
 
+energy_prices_imf_annual_yoy_long <- function(imf_price) {
+  year_re <- "^X\\d{4}$"
+
+  if (!all(c("INDICATOR", "FREQUENCY", "DATA_TRANSFORMATION") %in% names(imf_price))) {
+    return(tibble::tibble(INDICATOR = character(), date = as.Date(character()), value = numeric()))
+  }
+
+  imf_price %>%
+    dplyr::filter(
+      FREQUENCY == "Annual",
+      DATA_TRANSFORMATION == "Index, percent change from a year ago"
+    ) %>%
+    dplyr::select(INDICATOR, dplyr::matches(year_re)) %>%
+    tidyr::pivot_longer(
+      cols = dplyr::matches(year_re),
+      names_to = "period",
+      values_to = "value_raw"
+    ) %>%
+    dplyr::mutate(
+      year = as.integer(stringr::str_match(period, "^X(\\d{4})$")[, 2]),
+      date = as.Date(sprintf("%04d-01-01", year)),
+      value = suppressWarnings(as.numeric(stringr::str_replace_all(as.character(value_raw), ",", "")))
+    ) %>%
+    dplyr::select(INDICATOR, date, value) %>%
+    dplyr::filter(!is.na(date), !is.na(value))
+}
+
 energy_prices_long_from_pcps <- function(imf_price) {
   if (is.null(imf_price) || nrow(imf_price) == 0) {
     return(tibble::tibble(INDICATOR = character(), date = as.Date(character()), value = numeric()))
@@ -272,11 +299,73 @@ energy_prices_latest_and_yoy <- function(df) {
   )
 }
 
+energy_prices_sub_sector_unit_lookup <- function(imf_price,
+                                                 include_optional_indices = FALSE) {
+  imf_monthly_long <- if (all(c("date", "value") %in% names(imf_price))) {
+    energy_prices_long_from_pcps(imf_price)
+  } else {
+    energy_prices_imf_monthly_long(imf_price)
+  }
+
+  imf_monthly <- energy_prices_imf_clean(
+    imf_monthly_long = imf_monthly_long,
+    include_optional_indices = include_optional_indices
+  )
+
+  imf_monthly %>%
+    dplyr::mutate(
+      sub_sector = dplyr::case_when(
+        clean %in% c("Oil_APSP", "Oil_Brent", "Oil_WTI", "Dubai_Crude") ~ clean,
+        clean %in% c("Natural_Gas_Index", "Natural_Gas_EU", "Natural_Gas_Henry_Hub", "LNG", "Propane") ~ clean,
+        clean == "Coal" ~ "Coal",
+        TRUE ~ clean
+      ),
+      unit = energy_prices_extract_unit(INDICATOR)
+    ) %>%
+    dplyr::group_by(sub_sector) %>%
+    dplyr::summarize(
+      unit_description = paste(sort(unique(unit[!is.na(unit)])), collapse = "; "),
+      .groups = "drop"
+    ) %>%
+    dplyr::arrange(sub_sector)
+}
+
+energy_prices_imf_annual_yoy_lookup <- function(imf_price,
+                                                include_optional_indices = FALSE) {
+  yoy_long <- energy_prices_imf_annual_yoy_long(imf_price)
+  if (nrow(yoy_long) == 0) {
+    return(tibble::tibble(INDICATOR = character(), clean = character(), yoy_price_change_pct_annual = numeric()))
+  }
+
+  energy_prices_imf_clean(
+    imf_monthly_long = yoy_long,
+    include_optional_indices = include_optional_indices
+  ) %>%
+    dplyr::group_by(INDICATOR, clean) %>%
+    dplyr::arrange(date, .by_group = TRUE) %>%
+    dplyr::slice_tail(n = 1) %>%
+    dplyr::ungroup() %>%
+    dplyr::transmute(
+      INDICATOR,
+      clean,
+      yoy_price_change_pct_annual = value
+    )
+}
+
 energy_prices_build_volatility <- function(imf_monthly,
                                            mineral_demand_clean,
                                            years_back = c(5, 10, 20),
                                            min_months = 24,
-                                           include_fertilizer_inputs = FALSE) {
+                                           include_fertilizer_inputs = FALSE,
+                                           annual_yoy_lookup = NULL) {
+  if (is.null(annual_yoy_lookup)) {
+    annual_yoy_lookup <- tibble::tibble(
+      INDICATOR = character(),
+      clean = character(),
+      yoy_price_change_pct_annual = numeric()
+    )
+  }
+
   tech_groups <- c(
     "Electric Vehicles", "Nuclear", "Coal", "Batteries", "Green Hydrogen",
     "Wind", "Oil", "Solar", "Gas", "Geothermal", "Electric Grid"
@@ -308,6 +397,9 @@ energy_prices_build_volatility <- function(imf_monthly,
         dplyr::mutate(unit = energy_prices_extract_unit(INDICATOR)),
       by = c("INDICATOR", "clean")
     ) %>%
+    dplyr::left_join(annual_yoy_lookup, by = c("INDICATOR", "clean")) %>%
+    dplyr::mutate(yoy_price_change_pct = dplyr::coalesce(yoy_price_change_pct_annual, yoy_price_change_pct)) %>%
+    dplyr::select(-yoy_price_change_pct_annual) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(clean_key = energy_prices_normalize_mineral(clean)) %>%
     dplyr::left_join(mineral_map, by = "clean_key") %>%
@@ -334,11 +426,11 @@ energy_prices_build_volatility <- function(imf_monthly,
     dplyr::filter(!is.na(tech), tech %in% tech_groups) %>%
     dplyr::group_by(tech, sub_sector) %>%
     dplyr::summarize(
-      vol_logret_annualized = mean(vol_logret_annualized, na.rm = TRUE),
-      vol_level_sd = mean(vol_level_sd, na.rm = TRUE),
-      vol_level_cv = mean(vol_level_cv, na.rm = TRUE),
-      latest_price = mean(latest_price, na.rm = TRUE),
-      yoy_price_change_pct = mean(yoy_price_change_pct, na.rm = TRUE),
+      vol_logret_annualized = dplyr::if_else(all(is.na(vol_logret_annualized)), NA_real_, mean(vol_logret_annualized, na.rm = TRUE)),
+      vol_level_sd = dplyr::if_else(all(is.na(vol_level_sd)), NA_real_, mean(vol_level_sd, na.rm = TRUE)),
+      vol_level_cv = dplyr::if_else(all(is.na(vol_level_cv)), NA_real_, mean(vol_level_cv, na.rm = TRUE)),
+      latest_price = dplyr::if_else(all(is.na(latest_price)), NA_real_, mean(latest_price, na.rm = TRUE)),
+      yoy_price_change_pct = dplyr::if_else(all(is.na(yoy_price_change_pct)), NA_real_, mean(yoy_price_change_pct, na.rm = TRUE)),
       unit = paste(unique(unit[!is.na(unit)]), collapse = "; "),
       n_series = sum(!is.na(vol_logret_annualized)),
       .groups = "drop"
@@ -467,12 +559,22 @@ energy_prices <- function(imf_price,
     }
   }
 
+  annual_yoy_lookup <- if (!all(c("date", "value") %in% names(imf_price))) {
+    energy_prices_imf_annual_yoy_lookup(
+      imf_price = imf_price,
+      include_optional_indices = include_optional_indices
+    )
+  } else {
+    NULL
+  }
+
   volatility_by_tech <- energy_prices_build_volatility(
     imf_monthly = imf_monthly,
     mineral_demand_clean = mineral_demand_clean,
     years_back = years_back,
     min_months = min_months,
-    include_fertilizer_inputs = include_fertilizer_inputs
+    include_fertilizer_inputs = include_fertilizer_inputs,
+    annual_yoy_lookup = annual_yoy_lookup
   )
 
   as_of_year <- lubridate::year(max(imf_monthly$date, na.rm = TRUE))
