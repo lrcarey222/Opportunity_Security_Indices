@@ -48,7 +48,17 @@ energy_prices_normalize_mineral <- function(x) {
 energy_prices_imf_monthly_long <- function(imf_price) {
   monthly_re <- "^X\\d{4}\\.M\\d{2}$"
 
-  imf_price %>%
+  monthly_source <- imf_price
+
+  if ("FREQUENCY" %in% names(monthly_source)) {
+    monthly_source <- monthly_source %>% dplyr::filter(FREQUENCY == "Monthly")
+  }
+
+  if ("DATA_TRANSFORMATION" %in% names(monthly_source)) {
+    monthly_source <- monthly_source %>% dplyr::filter(DATA_TRANSFORMATION == "US dollars")
+  }
+
+  monthly_source %>%
     dplyr::select(INDICATOR, dplyr::matches(monthly_re)) %>%
     tidyr::pivot_longer(
       cols = dplyr::matches(monthly_re),
