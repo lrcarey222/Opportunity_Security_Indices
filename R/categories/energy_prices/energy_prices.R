@@ -78,7 +78,17 @@ energy_prices_imf_monthly_usd_long <- function(imf_price) {
 energy_prices_imf_monthly_long <- function(imf_price) {
   monthly_re <- "^X\\d{4}\\.M\\d{2}$"
 
-  imf_price %>%
+  imf_price_filtered <- if (all(c("FREQUENCY", "DATA_TRANSFORMATION") %in% names(imf_price))) {
+    imf_price %>%
+      dplyr::filter(
+        FREQUENCY == "Monthly",
+        DATA_TRANSFORMATION == "US dollars"
+      )
+  } else {
+    imf_price
+  }
+
+  imf_price_filtered %>%
     dplyr::select(INDICATOR, dplyr::matches(monthly_re)) %>%
     tidyr::pivot_longer(
       cols = dplyr::matches(monthly_re),
@@ -93,6 +103,10 @@ energy_prices_imf_monthly_long <- function(imf_price) {
     ) %>%
     dplyr::select(INDICATOR, date, value) %>%
     dplyr::filter(!is.na(date))
+}
+
+energy_prices_imf_monthly_long <- function(imf_price) {
+  energy_prices_imf_monthly_usd_long(imf_price)
 }
 
 energy_prices_imf_annual_yoy_long <- function(imf_price) {
