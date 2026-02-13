@@ -2,6 +2,7 @@ technological_readiness_clean <- function(iea_cleantech_all) {
   require_columns(iea_cleantech_all, c("sector", "trl2023", "name"), label = "iea_cleantech_all")
 
   iea_cleantech_all %>%
+    dplyr::mutate(sector_raw = sector) %>%
     tidyr::separate(
       sector,
       into = c("sector1", "sector2", "sector3", "sector4"),
@@ -29,11 +30,24 @@ technological_readiness_clean <- function(iea_cleantech_all) {
     )
 }
 
+taxonomy_has_token <- function(sector_raw, sector4, token) {
+  pattern <- stringr::regex(
+    paste0("(^|,)\\s*", stringr::str_replace_all(token, "([\\W])", "\\\\\\1"), "\\s*(,|$)"),
+    ignore_case = TRUE
+  )
+
+  stringr::str_detect(dplyr::coalesce(as.character(sector_raw), ""), pattern) |
+    stringr::str_detect(dplyr::coalesce(as.character(sector4), ""), pattern)
+}
+
 technological_readiness_assign_sector <- function(iea_cleantech) {
   iea_cleantech %>%
     dplyr::mutate(
+      battery_in_taxonomy = taxonomy_has_token(sector_raw, sector4, "Battery"),
+      storage_in_taxonomy = taxonomy_has_token(sector_raw, sector4, "Storage"),
       rmi_sector = dplyr::case_when(
         name == "Composite materials" ~ "Mass Timber",
+        battery_in_taxonomy & sector2 != "Mining" ~ "Batteries",
         stringr::str_detect(name, "Lithium") & sector2 != "Mining" ~ "Batteries",
         sector3 == "Biofuels" ~ "Biofuels",
         stringr::str_detect(name, "Biomass") ~ "Biomass",
@@ -41,12 +55,13 @@ technological_readiness_assign_sector <- function(iea_cleantech) {
         stringr::str_detect(sector4, regex("recycling", ignore_case = TRUE)) ~ "Circular Economy",
         stringr::str_detect(sector4, regex("End-of-life", ignore_case = TRUE)) ~ "Circular Economy",
         sector3 == "Road transport" &
+          !battery_in_taxonomy &
           !stringr::str_detect(name, regex("Hydrogen", ignore_case = TRUE)) &
           !stringr::str_detect(name, "Lithium") ~ "Electric Vehicles",
         sector4 == "Appliance" ~ "Energy Efficient Appliances",
         sector3 == "Heating and cooling" ~ "Energy Efficient Heating/Cooling",
         sector3 == "Lighting" ~ "Energy Efficient Lighting",
-        sector4 == "Storage" & sector1 == "Supply" ~ "Energy Storage",
+        storage_in_taxonomy & sector1 == "Supply" & !battery_in_taxonomy ~ "Energy Storage",
         sector3 %in% c("Iron and steel", "Aluminium") ~ "Energy Transition Metals",
         name == "Closed-loop and hybrid deep geothermal systems" ~ "Geothermal",
         stringr::str_detect(name, regex("hydrogen", ignore_case = TRUE)) ~ "Green Hydrogen",
@@ -116,7 +131,7 @@ technological_readiness_build_sector <- function(iea_cleantech) {
 }
 
 technological_readiness_build_tech <- function(iea_cleantech_sector,
-                                               techs = c(
+                                                techs = c(
                                                  "Electric Vehicles",
                                                  "Nuclear",
                                                  "Coal",
@@ -128,15 +143,29 @@ technological_readiness_build_tech <- function(iea_cleantech_sector,
                                                  "Gas",
                                                  "Geothermal",
                                                  "Electric Grid"
-                                               )) {
-  recode_rmi_sector_to_tech(iea_cleantech_sector) %>%
+                                               ),
+                                               min_trl = 2,
+                                               mu = 6,
+                                               max_trl = 11,
+                                               gamma = 0.5) {
+  technological_readiness_assign_sector(iea_cleantech_sector) %>%
+    recode_rmi_sector_to_tech() %>%
     dplyr::filter(.data$tech %in% techs) %>%
     dplyr::group_by(.data$tech) %>%
-    dplyr::summarize(trl2023 = mean(trl2023, na.rm = TRUE), .groups = "drop") %>%
-    dplyr::right_join(tibble::tibble(tech = techs), by = "tech") %>%
-    dplyr::mutate(
-      trl2023 = dplyr::if_else(is.na(trl2023) | is.nan(trl2023), 11, trl2023)
+    dplyr::summarize(
+      trl2023 = {
+        values <- trl2023[!is.na(trl2023)]
+        if (length(values) == 0) NA_real_ else mean(values)
+      },
+      trl_index = {
+        scores <- trl_bell_soft(trl2023, min_trl = min_trl, mu = mu, max_trl = max_trl, gamma = gamma)
+        scores <- scores[!is.na(scores)]
+        if (length(scores) == 0) NA_real_ else mean(scores)
+      },
+      n_items = sum(!is.na(trl2023)),
+      .groups = "drop"
     ) %>%
+    dplyr::right_join(tibble::tibble(tech = techs), by = "tech") %>%
     dplyr::arrange(dplyr::desc(trl2023))
 }
 
@@ -155,14 +184,26 @@ trl_bell_hard <- function(x, min_trl = 2, mu = 6, max_trl = 11) {
   pmax(0, pmin(1, y))
 }
 
+trl_bell_soft <- function(x, min_trl = 2, mu = 6, max_trl = 11, gamma = 0.5) {
+  y <- trl_bell_hard(x, min_trl = min_trl, mu = mu, max_trl = max_trl)
+  dplyr::if_else(is.na(y), NA_real_, pmax(0, pmin(1, y^gamma)))
+}
+
 technological_readiness_build_indices <- function(iea_tech,
+                                                  min_trl = 2,
+                                                  mu = 6,
+                                                  max_trl = 11,
                                                   gamma = 0.5,
                                                   year = 2023L) {
   supply_chain_levels <- c("Upstream", "Midstream", "Downstream")
 
   iea_tech %>%
     dplyr::mutate(
-      trl_index = trl_bell_hard(trl2023, min_trl = 2, mu = 6, max_trl = 11)
+      trl_index = dplyr::if_else(
+        is.na(trl_index),
+        trl_bell_soft(trl2023, min_trl = min_trl, mu = mu, max_trl = max_trl, gamma = gamma),
+        trl_index
+      )
       ) %>%
     tidyr::crossing(supply_chain = supply_chain_levels) %>%
     tidyr::pivot_longer(
@@ -192,8 +233,8 @@ technological_readiness_build_indices <- function(iea_tech,
       Year = as.integer(year),
       source = "IEA Clean Tech Guide",
       explanation = dplyr::case_when(
-        variable == "TRL 2023" ~ "Mean technology readiness level from the IEA Clean Tech Guide",
-        variable == "TRL Index" ~ "Normalized index of technology readiness level (TRL 2023)",
+        variable == "TRL 2023" ~ "Mean technology readiness level from IEA Clean Tech Guide items mapped to each technology",
+        variable == "TRL Index" ~ "Mean bell-curve score across item-level TRLs mapped to each technology",
         TRUE ~ NA_character_
       )
     )
@@ -213,12 +254,28 @@ technological_readiness <- function(iea_cleantech_all,
                                       "Geothermal",
                                       "Electric Grid"
                                     ),
+                                    min_trl = 2,
+                                    mu = 6,
+                                    max_trl = 11,
                                     gamma = 0.5,
                                     year = 2023L) {
   iea_cleantech <- technological_readiness_clean(iea_cleantech_all)
-  iea_cleantech_sector <- technological_readiness_build_sector(iea_cleantech)
-  iea_tech <- technological_readiness_build_tech(iea_cleantech_sector, techs = techs)
-  readiness_tbl <- technological_readiness_build_indices(iea_tech, gamma = gamma, year = year)
+  iea_tech <- technological_readiness_build_tech(
+    iea_cleantech,
+    techs = techs,
+    min_trl = min_trl,
+    mu = mu,
+    max_trl = max_trl,
+    gamma = gamma
+  )
+  readiness_tbl <- technological_readiness_build_indices(
+    iea_tech,
+    min_trl = min_trl,
+    mu = mu,
+    max_trl = max_trl,
+    gamma = gamma,
+    year = year
+  )
   readiness_tbl %>%
     dplyr::mutate(
       Country = "Global",
