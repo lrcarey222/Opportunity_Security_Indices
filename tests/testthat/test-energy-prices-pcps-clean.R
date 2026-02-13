@@ -157,6 +157,26 @@ test_that("energy_prices_sub_sector_unit_lookup returns joinable sub_sector to u
   expect_true(any(lookup$unit_description == "USD per metric tonne"))
 })
 
+
+
+test_that("monthly parsers distinguish generic monthly_long vs monthly_usd_long", {
+  imf_price <- tibble::tibble(
+    INDICATOR = c(
+      "Natural Gas, EU, US dollars per million metric British thermal units of gas, Unit prices",
+      "Natural Gas, EU, index row"
+    ),
+    FREQUENCY = c("Monthly", "Monthly"),
+    DATA_TRANSFORMATION = c("US dollars", "Index"),
+    X2025.M12 = c(9.460, 105)
+  )
+
+  monthly_all <- energy_prices_imf_monthly_long(imf_price)
+  monthly_usd <- energy_prices_imf_monthly_usd_long(imf_price)
+
+  expect_equal(nrow(monthly_all), 2)
+  expect_equal(nrow(monthly_usd), 1)
+})
+
 test_that("energy_prices_imf_annual_yoy_lookup reads IMF annual yoy transformation", {
   imf_price <- tibble::tibble(
     INDICATOR = c("Natural Gas, US Henry Hub, US dollars per MMBtu, Unit prices"),
@@ -196,4 +216,148 @@ test_that("energy_prices_build_volatility prefers IMF annual yoy and avoids NaN 
   expect_true(any(out$sub_sector == "Natural_Gas_Henry_Hub"))
   expect_equal(out$yoy_price_change_pct[out$sub_sector == "Natural_Gas_Henry_Hub"][[1]], 7.5)
   expect_false(any(is.nan(out$yoy_price_change_pct)))
+})
+
+pcps_gas_indicator <- "Natural Gas, EU, US dollars per million metric British thermal units of gas, Unit prices"
+
+build_pcps_wide_monthly_and_yoy <- function(include_yoy = TRUE) {
+  monthly_row <- tibble::tibble(
+    INDICATOR = pcps_gas_indicator,
+    FREQUENCY = "Monthly",
+    DATA_TRANSFORMATION = "US dollars",
+    X2024.M12 = 13.757,
+    X2025.M12 = 9.460
+  )
+
+  if (!include_yoy) {
+    return(monthly_row)
+  }
+
+  annual_row <- tibble::tibble(
+    INDICATOR = pcps_gas_indicator,
+    FREQUENCY = "Annual",
+    DATA_TRANSFORMATION = "Index, percent change from a year ago",
+    X2025 = 10.0
+  )
+
+  dplyr::bind_rows(monthly_row, annual_row)
+}
+
+test_that("energy_prices latest_price uses latest monthly level", {
+  imf_price <- build_pcps_wide_monthly_and_yoy(include_yoy = TRUE)
+
+  out <- energy_prices(
+    imf_price,
+    mineral_demand_clean = tibble::tibble(Mineral = character(), tech = character()),
+    country_info = NULL,
+    years_back = c(5),
+    min_months = 2
+  )
+
+  latest_row <- out |>
+    dplyr::filter(variable == "latest_price", sub_sector == "Natural_Gas_EU", data_type == "raw")
+
+  expect_equal(nrow(latest_row), 1)
+  expect_equal(latest_row$value[[1]], 9.460, tolerance = 1e-8)
+  expect_equal(latest_row$Year[[1]], 2025)
+})
+
+test_that("energy_prices yoy_price_change_pct uses IMF annual YoY value", {
+  imf_price <- build_pcps_wide_monthly_and_yoy(include_yoy = TRUE)
+
+  out <- energy_prices(
+    imf_price,
+    mineral_demand_clean = tibble::tibble(Mineral = character(), tech = character()),
+    country_info = NULL,
+    years_back = c(5),
+    min_months = 2
+  )
+
+  yoy_row <- out |>
+    dplyr::filter(variable == "yoy_price_change_pct", sub_sector == "Natural_Gas_EU", data_type == "raw")
+
+  expect_equal(nrow(yoy_row), 1)
+  expect_equal(yoy_row$value[[1]], 10.0, tolerance = 1e-8)
+})
+
+test_that("adding annual YoY rows does not affect price_volatility or price_volatility_index", {
+  imf_price_monthly_only <- build_pcps_wide_monthly_and_yoy(include_yoy = FALSE)
+  imf_price_with_yoy <- build_pcps_wide_monthly_and_yoy(include_yoy = TRUE)
+
+  out_monthly_only <- energy_prices(
+    imf_price_monthly_only,
+    mineral_demand_clean = tibble::tibble(Mineral = character(), tech = character()),
+    country_info = NULL,
+    years_back = c(5),
+    min_months = 2
+  )
+
+  out_with_yoy <- energy_prices(
+    imf_price_with_yoy,
+    mineral_demand_clean = tibble::tibble(Mineral = character(), tech = character()),
+    country_info = NULL,
+    years_back = c(5),
+    min_months = 2
+  )
+
+  vol_monthly_only <- out_monthly_only |>
+    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "price_volatility", data_type == "raw") |>
+    dplyr::pull(value)
+  vol_with_yoy <- out_with_yoy |>
+    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "price_volatility", data_type == "raw") |>
+    dplyr::pull(value)
+
+  vol_index_monthly_only <- out_monthly_only |>
+    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "price_volatility", data_type == "index") |>
+    dplyr::pull(value)
+  vol_index_with_yoy <- out_with_yoy |>
+    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "price_volatility", data_type == "index") |>
+    dplyr::pull(value)
+
+  expect_equal(vol_monthly_only, vol_with_yoy)
+  expect_equal(vol_index_monthly_only, vol_index_with_yoy)
+})
+
+test_that("Overall Energy Prices Index remains index-only fallback from price_volatility index", {
+  imf_price <- build_pcps_wide_monthly_and_yoy(include_yoy = TRUE)
+
+  out <- energy_prices(
+    imf_price,
+    mineral_demand_clean = tibble::tibble(Mineral = character(), tech = character()),
+    country_info = NULL,
+    years_back = c(5),
+    min_months = 2
+  )
+
+  overall_rows <- out |>
+    dplyr::filter(variable == "Overall Energy Prices Index")
+
+  expect_true(nrow(overall_rows) > 0)
+  expect_true(all(overall_rows$data_type == "index"))
+  expect_false(any(stringr::str_detect(overall_rows$source, "latest_price|yoy_price_change_pct"), na.rm = TRUE))
+})
+
+test_that("energy_prices defaults include 1-year window and preserve window rows in final table", {
+  imf_price <- tibble::tibble(
+    INDICATOR = "Natural Gas, EU, US dollars per million metric British thermal units of gas, Unit prices",
+    FREQUENCY = "Monthly",
+    DATA_TRANSFORMATION = "US dollars",
+    X2023.M12 = 12.0,
+    X2024.M12 = 13.757,
+    X2025.M12 = 9.460
+  )
+
+  out <- energy_prices(
+    imf_price,
+    mineral_demand_clean = tibble::tibble(Mineral = character(), tech = character()),
+    country_info = NULL,
+    min_months = 2
+  )
+
+  windows <- out |>
+    dplyr::filter(variable == "price_volatility", data_type == "raw", sub_sector == "Natural_Gas_EU") |>
+    dplyr::distinct(window_years) |>
+    dplyr::pull(window_years)
+
+  expect_equal(sort(windows), c(1, 5, 10, 20))
 })
