@@ -95,7 +95,7 @@ geothermal_potential_build_table <- function(geo_clean, year) {
         metric == "lcoe_500mw_index" ~ "Geothermal LCOE (500 MW)",
         metric == "lcoe_5gw_index" ~ "Geothermal LCOE (5 GW)",
         metric == "total_mw_index" ~ "Geothermal total potential (MW)",
-        metric == "geothermal_index" ~ "Geothermal potential index",
+        metric == "geothermal_index" ~ "Overall Geothermal Potential Index",
         TRUE ~ metric
       ),
       data_type = "index"
@@ -106,7 +106,7 @@ geothermal_potential_build_table <- function(geo_clean, year) {
       Country,
       tech = "Geothermal",
       supply_chain = "Downstream",
-      category = "Energy Access",
+      category = "Reserves",
       variable,
       data_type,
       value,
@@ -129,7 +129,7 @@ geothermal_potential_build_table <- function(geo_clean, year) {
           "Estimated total geothermal potential in megawatts",
         variable == "Geothermal total potential (MW)" & data_type == "index" ~
           "Normalized index of total geothermal potential in megawatts",
-        variable == "Geothermal potential index" ~
+        variable == "Overall Geothermal Potential Index" ~
           "Composite index based on geothermal LCOE and total potential",
         TRUE ~ NA_character_
       )
@@ -139,6 +139,7 @@ geothermal_potential_build_table <- function(geo_clean, year) {
 geothermal_potential <- function(geo_raw, country_info = NULL, year = 2023) {
   geo_clean <- geothermal_potential_clean_raw(geo_raw, country_info = country_info)
   output <- geothermal_potential_build_table(geo_clean, year = year)
+  output <- energy_security_add_overall_index(output)
 
   output <- standardize_theme_table(output)
   validate_schema(output)
