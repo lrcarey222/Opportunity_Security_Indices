@@ -45,10 +45,10 @@ import_dependence_build_imports <- function(imports_raw) {
       fossil_import_share = 100 * fossil_imports_ej / (oilcons_ej + gascons_ej + coalcons_ej)
     ) %>%
     dplyr::mutate(
-      oil_import_index = median_scurve(oil_imports_share),
-      gas_import_index = median_scurve(gas_imports_share),
-      coal_import_index = median_scurve(coal_imports_share),
-      fossil_import_index = median_scurve(fossil_import_share)
+      oil_import_index = rowMeans(cbind(median_scurve(oil_imports_share), median_scurve(oil_imports_ej)), na.rm = TRUE),
+      gas_import_index = rowMeans(cbind(median_scurve(gas_imports_share), median_scurve(gas_imports_ej)), na.rm = TRUE),
+      coal_import_index = rowMeans(cbind(median_scurve(coal_imports_share), median_scurve(coal_imports_ej)), na.rm = TRUE),
+      fossil_import_index = rowMeans(cbind(median_scurve(fossil_import_share), median_scurve(fossil_imports_ej)), na.rm = TRUE)
     ) %>%
     dplyr::ungroup()
 }
