@@ -29,6 +29,8 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
 - [Quick start](#quick-start)
 - [Interactive explorer (Shiny)](#interactive-explorer-shiny)
 - [Outputs](#outputs)
+- [Testing and quality checks](#testing-and-quality-checks)
+- [Additional utilities and workflows](#additional-utilities-and-workflows)
 - [Data sources](#data-sources)
 - [Known issues and to-dos](#known-issues-and-to-dos)
 - [Citation](#citation)
@@ -574,6 +576,41 @@ See `scripts/20_build_indices.R` for the exact CSV outputs written.
 
 ---
 
+## Testing and quality checks
+
+This repository includes a `testthat` suite under `tests/testthat/` that covers core scoring behavior and integration-sensitive paths, including:
+
+* S-curve normalization and schema checks
+* ES/EO v2 index construction
+* NIPO policy index logic
+* Comtrade unification behavior
+* Package-selection visual outputs
+* Allied network design scaling
+* Shiny app load smoke test
+
+Run tests from repo root with:
+
+```bash
+Rscript -e "testthat::test_dir('tests/testthat')"
+```
+
+---
+
+## Additional utilities and workflows
+
+Beyond the main pipeline scripts, the repo includes supporting workflows:
+
+* `scripts/01_generate_raw_inputs_manifest.R` — generates/refreshes a raw-input inventory from configured requirements.
+* `config/raw_inputs_manifest.yml` — declarative manifest used to track expected raw datasets.
+* `scripts/30_build_allied_network_design.R` — builds allied network design outputs used for partnership analyses.
+* `scripts/90_build_package_selection_viz.R` — prepares package-selection visualization outputs.
+* `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — pull and visualize trade time series.
+* `docs/data_dictionary.md` and `docs/comtrade_ingestion_and_timeseries.md` — implementation details for data fields and Comtrade workflows.
+
+For app-specific details (UI behavior, data-loading order, and deployment notes), see `shiny/README.md`.
+
+---
+
 ## Data sources
 
 A curated list of sources (including links and expected provenance) is maintained in:
@@ -616,6 +653,22 @@ And record:
 * raw input folder state/date
 * processing date
 * any manual overrides (e.g., missing data policies or custom weights)
+
+---
+
+## Known issues and to-dos
+
+* **EO Investment category is currently a placeholder** in the configured EO category list and may not yet represent a finalized production methodology.
+* **Supply-chain coupling implementation differs from the methodology text**: current code uses normalized interdependence edge strength with linear lambda mapping (rather than HHI-driven logistic mapping).
+* **Raw-input completeness is environment dependent**. If expected files are missing, use the manifest workflow and source documentation to reconcile gaps before running full builds.
+
+---
+
+## License
+
+This project is licensed under the terms in `LICENSE`.
+
+For contribution expectations and responsible disclosure guidance, see `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `SECURITY.md`.
 
 ---
 
