@@ -295,7 +295,7 @@ technological_readiness_build_indices <- function(iea_tech,
         variable == "trl_delta_2020_2023" ~ delta_label,
         variable == "trl_level_index" ~ "TRL Level Index",
         variable == "trl_momentum_index" ~ "TRL Momentum Index",
-        variable == "trl_index" ~ "TRL Index",
+        variable == "trl_index" ~ "Overall Technology Readiness Index",
         TRUE ~ variable
       )
     ) %>%
@@ -313,7 +313,7 @@ technological_readiness_build_indices <- function(iea_tech,
         variable == delta_label ~ "Mean change in TRL from start-year to end-year across mapped IEA Clean Tech Guide items.",
         variable == "TRL Level Index" ~ "Goldilocks bell-curve score applied at item level to end-year TRL, then averaged by technology.",
         variable == "TRL Momentum Index" ~ "Scaled positive TRL change from start-year to end-year, capped and transformed, then averaged by technology.",
-        variable == "TRL Index" ~ "Weighted blend of TRL Level Index and TRL Momentum Index averaged across mapped items.",
+        variable == "Overall Technology Readiness Index" ~ "Weighted blend of TRL Level Index and TRL Momentum Index averaged across mapped items.",
         TRUE ~ NA_character_
       )
     )
