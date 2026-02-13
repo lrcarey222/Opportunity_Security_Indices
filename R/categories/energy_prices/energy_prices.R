@@ -9,21 +9,40 @@ energy_prices_imf_patterns <- list(
   Coal = "coal",
   Cobalt = "cobalt",
   Copper = "copper",
+  Diammonium_Phosphate = "diammonium phosphate",
+  Dubai_Crude = "dubai.*crude|crude.*dubai",
+  Energy_Index = "^energy index|commodity price index.*energy",
+  Energy_Transition_Metal_Index = "energy transition metal index",
+  All_Metals_Index = "^all metals index",
+  Base_Metals_Index = "^base metals index",
+  Iron_Ore = "iron ore",
   Lithium = "lithium",
+  Lead = "\\blead\\b",
   LNG = "lng|liquefied natural gas",
   Manganese = "manganese",
+  Molybdenum = "\\bmolybdenum\\b",
   Natural_Gas_Index = "natural gas index|commodity price index.*natural gas",
   Natural_Gas_EU = "natural gas.*eu",
   Natural_Gas_Henry_Hub = "henry hub|us henry hub",
   Nickel = "nickel",
+  Potassium_Fertilizer = "potassium fertilizer",
+  Propane = "\\bpropane\\b",
   Rare_Earths = "rare earth",
   Silicon = "silicon",
+  Tin = "\\btin\\b",
+  Urea = "\\burea\\b",
   Uranium = "uranium",
+  Vanadium = "\\bvanadium\\b",
   Zinc = "zinc"
 )
 
 energy_prices_normalize_mineral <- function(x) {
-  stringr::str_to_lower(stringr::str_replace_all(x, "_", " "))
+  normalized <- stringr::str_to_lower(stringr::str_replace_all(x, "_", " "))
+
+  dplyr::case_when(
+    stringr::str_detect(normalized, "rare earth") ~ "rare earth",
+    TRUE ~ normalized
+  )
 }
 
 energy_prices_imf_monthly_long <- function(imf_price) {
@@ -78,7 +97,9 @@ energy_prices_long_from_pcps <- function(imf_price) {
     dplyr::filter(!is.na(date))
 }
 
-energy_prices_imf_clean <- function(imf_monthly_long, patterns = energy_prices_imf_patterns) {
+energy_prices_imf_clean <- function(imf_monthly_long,
+                                    patterns = energy_prices_imf_patterns,
+                                    include_optional_indices = FALSE) {
   imf_monthly_long %>%
     dplyr::mutate(ind_lc = stringr::str_to_lower(INDICATOR)) %>%
     dplyr::mutate(
@@ -86,27 +107,84 @@ energy_prices_imf_clean <- function(imf_monthly_long, patterns = energy_prices_i
         stringr::str_detect(ind_lc, stringr::regex(patterns$Aluminum, ignore_case = TRUE)) ~ "Aluminum",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Oil_APSP, ignore_case = TRUE)) ~ "Oil_APSP",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Oil_Brent, ignore_case = TRUE)) ~ "Oil_Brent",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Dubai_Crude, ignore_case = TRUE)) ~ "Dubai_Crude",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Oil_WTI, ignore_case = TRUE)) ~ "Oil_WTI",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Chromium, ignore_case = TRUE)) ~ "Chromium",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Coal, ignore_case = TRUE)) ~ "Coal",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Cobalt, ignore_case = TRUE)) ~ "Cobalt",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Copper, ignore_case = TRUE)) ~ "Copper",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Diammonium_Phosphate, ignore_case = TRUE)) ~ "Diammonium_Phosphate",
+        include_optional_indices && stringr::str_detect(ind_lc, stringr::regex(patterns$Energy_Index, ignore_case = TRUE)) ~ "Energy_Index",
+        include_optional_indices && stringr::str_detect(ind_lc, stringr::regex(patterns$Energy_Transition_Metal_Index, ignore_case = TRUE)) ~ "Energy_Transition_Metal_Index",
+        include_optional_indices && stringr::str_detect(ind_lc, stringr::regex(patterns$All_Metals_Index, ignore_case = TRUE)) ~ "All_Metals_Index",
+        include_optional_indices && stringr::str_detect(ind_lc, stringr::regex(patterns$Base_Metals_Index, ignore_case = TRUE)) ~ "Base_Metals_Index",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Iron_Ore, ignore_case = TRUE)) ~ "Iron_Ore",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Lithium, ignore_case = TRUE)) ~ "Lithium",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Lead, ignore_case = TRUE)) ~ "Lead",
         stringr::str_detect(ind_lc, stringr::regex(patterns$LNG, ignore_case = TRUE)) ~ "LNG",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Manganese, ignore_case = TRUE)) ~ "Manganese",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Molybdenum, ignore_case = TRUE)) ~ "Molybdenum",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Natural_Gas_Index, ignore_case = TRUE)) ~ "Natural_Gas_Index",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Natural_Gas_EU, ignore_case = TRUE)) ~ "Natural_Gas_EU",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Natural_Gas_Henry_Hub, ignore_case = TRUE)) ~ "Natural_Gas_Henry_Hub",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Nickel, ignore_case = TRUE)) ~ "Nickel",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Potassium_Fertilizer, ignore_case = TRUE)) ~ "Potassium_Fertilizer",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Propane, ignore_case = TRUE)) ~ "Propane",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Rare_Earths, ignore_case = TRUE)) ~ "Rare_Earths",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Silicon, ignore_case = TRUE)) ~ "Silicon",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Tin, ignore_case = TRUE)) ~ "Tin",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Urea, ignore_case = TRUE)) ~ "Urea",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Uranium, ignore_case = TRUE)) ~ "Uranium",
+        stringr::str_detect(ind_lc, stringr::regex(patterns$Vanadium, ignore_case = TRUE)) ~ "Vanadium",
         stringr::str_detect(ind_lc, stringr::regex(patterns$Zinc, ignore_case = TRUE)) ~ "Zinc",
         TRUE ~ NA_character_
       )
     ) %>%
     dplyr::select(-ind_lc) %>%
     dplyr::filter(!is.na(value), !is.na(clean))
+}
+
+energy_prices_pcps_match_report <- function(imf_monthly_long,
+                                            patterns = energy_prices_imf_patterns,
+                                            include_optional_indices = FALSE) {
+  matched <- energy_prices_imf_clean(
+    imf_monthly_long = imf_monthly_long,
+    patterns = patterns,
+    include_optional_indices = include_optional_indices
+  ) %>%
+    dplyr::distinct(INDICATOR, matched_clean = clean)
+
+  imf_monthly_long %>%
+    dplyr::distinct(INDICATOR) %>%
+    dplyr::left_join(matched, by = "INDICATOR") %>%
+    dplyr::mutate(matched = !is.na(matched_clean))
+}
+
+energy_prices_extra_mineral_map <- function(include_fertilizer_inputs = FALSE) {
+  # PCPS-only extensions for transition-input coverage where IEA mineral map is sparse.
+  extra_map <- tibble::tribble(
+    ~clean_key, ~tech,
+    "vanadium", "Batteries",
+    "rare earth", "Wind",
+    "iron ore", "Batteries",
+    "iron ore", "Electric Grid",
+    "iron ore", "Wind",
+    "iron ore", "Solar",
+    "diammonium phosphate", "Batteries"
+  )
+
+  if (include_fertilizer_inputs) {
+    extra_map <- dplyr::bind_rows(
+      extra_map,
+      tibble::tribble(
+        ~clean_key, ~tech,
+        "urea", "Green Hydrogen",
+        "potassium fertilizer", "Green Hydrogen"
+      )
+    )
+  }
+
+  extra_map
 }
 
 energy_prices_calc_vol <- function(df, years_back, min_months = 24) {
@@ -139,10 +217,65 @@ energy_prices_calc_vol <- function(df, years_back, min_months = 24) {
   )
 }
 
-energy_prices_build_volatility <- function(imf_monthly, mineral_demand_clean, years_back = c(5, 10, 20), min_months = 24) {
+energy_prices_extract_unit <- function(indicator) {
+  indicator_lc <- stringr::str_to_lower(indicator)
+
+  dplyr::case_when(
+    stringr::str_detect(indicator_lc, "\\$/bbl|\\busd per barrel\\b|\\bus dollars per barrel\\b") ~ "USD per barrel",
+    stringr::str_detect(indicator_lc, "us cents per gallon") ~ "US cents per gallon",
+    stringr::str_detect(indicator_lc, "us dollars per metric tonne|usd per metric tonne") ~ "USD per metric tonne",
+    stringr::str_detect(indicator_lc, "us dollars per mmbtu|usd per mmbtu") ~ "USD per MMBtu",
+    stringr::str_detect(indicator_lc, "us dollars per kilogram|usd per kilogram") ~ "USD per kilogram",
+    stringr::str_detect(indicator_lc, "unit prices") ~ "Indicator-native IMF unit",
+    TRUE ~ "Indicator-native IMF unit"
+  )
+}
+
+energy_prices_latest_and_yoy <- function(df) {
+  x <- df %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::arrange(date)
+
+  if (nrow(x) == 0) {
+    return(tibble::tibble(latest_price = NA_real_, yoy_price_change_pct = NA_real_))
+  }
+
+  latest_row <- x %>% dplyr::slice_tail(n = 1)
+  latest_date <- latest_row$date[[1]]
+  latest_price <- latest_row$value[[1]]
+
+  current_window_start <- lubridate::`%m-%`(latest_date, lubridate::months(11))
+  previous_window_end <- lubridate::`%m-%`(current_window_start, lubridate::months(1))
+  previous_window_start <- lubridate::`%m-%`(previous_window_end, lubridate::months(11))
+
+  current_window <- x %>%
+    dplyr::filter(date >= current_window_start, date <= latest_date)
+  previous_window <- x %>%
+    dplyr::filter(date >= previous_window_start, date <= previous_window_end)
+
+  current_avg <- if (nrow(current_window) == 12) mean(current_window$value, na.rm = TRUE) else NA_real_
+  previous_avg <- if (nrow(previous_window) == 12) mean(previous_window$value, na.rm = TRUE) else NA_real_
+
+  yoy_price_change_pct <- if (is.finite(current_avg) && is.finite(previous_avg) && !is.na(previous_avg) && previous_avg != 0) {
+    100 * (current_avg / previous_avg - 1)
+  } else {
+    NA_real_
+  }
+
+  tibble::tibble(
+    latest_price = latest_price,
+    yoy_price_change_pct = yoy_price_change_pct
+  )
+}
+
+energy_prices_build_volatility <- function(imf_monthly,
+                                           mineral_demand_clean,
+                                           years_back = c(5, 10, 20),
+                                           min_months = 24,
+                                           include_fertilizer_inputs = FALSE) {
   tech_groups <- c(
     "Electric Vehicles", "Nuclear", "Coal", "Batteries", "Green Hydrogen",
-    "Wind", "Oil", "Solar", "Gas", "Geothermal"
+    "Wind", "Oil", "Solar", "Gas", "Geothermal", "Electric Grid"
   )
 
   mineral_map <- mineral_demand_clean %>%
@@ -155,6 +288,7 @@ energy_prices_build_volatility <- function(imf_monthly, mineral_demand_clean, ye
       clean_key = energy_prices_normalize_mineral(Mineral)
     ) %>%
     dplyr::select(clean_key, tech) %>%
+    dplyr::bind_rows(energy_prices_extra_mineral_map(include_fertilizer_inputs = include_fertilizer_inputs)) %>%
     dplyr::distinct()
 
   volatility_by_indicator <- imf_monthly %>%
@@ -162,21 +296,29 @@ energy_prices_build_volatility <- function(imf_monthly, mineral_demand_clean, ye
     dplyr::group_modify(~ dplyr::bind_rows(lapply(years_back, function(window_years) {
       energy_prices_calc_vol(.x, window_years, min_months = min_months)
     }))) %>%
+    dplyr::left_join(
+      imf_monthly %>%
+        dplyr::group_by(INDICATOR, clean) %>%
+        dplyr::group_modify(~ energy_prices_latest_and_yoy(.x)) %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(unit = energy_prices_extract_unit(INDICATOR)),
+      by = c("INDICATOR", "clean")
+    ) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(clean_key = energy_prices_normalize_mineral(clean)) %>%
     dplyr::left_join(mineral_map, by = "clean_key") %>%
     dplyr::mutate(
       tech = dplyr::case_when(
-        clean %in% c("Oil_APSP", "Oil_Brent", "Oil_WTI") ~ "Oil",
-        clean %in% c("Natural_Gas_Index", "Natural_Gas_EU", "Natural_Gas_Henry_Hub", "LNG") ~ "Gas",
+        clean %in% c("Oil_APSP", "Oil_Brent", "Oil_WTI", "Dubai_Crude") ~ "Oil",
+        clean %in% c("Natural_Gas_Index", "Natural_Gas_EU", "Natural_Gas_Henry_Hub", "LNG", "Propane") ~ "Gas",
         clean == "Coal" ~ "Coal",
         clean == "Uranium" ~ "Nuclear",
         !is.na(tech) ~ tech,
         TRUE ~ NA_character_
       ),
       sub_sector = dplyr::case_when(
-        clean %in% c("Oil_APSP", "Oil_Brent", "Oil_WTI") ~ clean,
-        clean %in% c("Natural_Gas_Index", "Natural_Gas_EU", "Natural_Gas_Henry_Hub", "LNG") ~ clean,
+        clean %in% c("Oil_APSP", "Oil_Brent", "Oil_WTI", "Dubai_Crude") ~ clean,
+        clean %in% c("Natural_Gas_Index", "Natural_Gas_EU", "Natural_Gas_Henry_Hub", "LNG", "Propane") ~ clean,
         clean == "Coal" ~ "Coal",
         !is.na(tech) ~ clean,
         TRUE ~ NA_character_
@@ -191,6 +333,9 @@ energy_prices_build_volatility <- function(imf_monthly, mineral_demand_clean, ye
       vol_logret_annualized = mean(vol_logret_annualized, na.rm = TRUE),
       vol_level_sd = mean(vol_level_sd, na.rm = TRUE),
       vol_level_cv = mean(vol_level_cv, na.rm = TRUE),
+      latest_price = mean(latest_price, na.rm = TRUE),
+      yoy_price_change_pct = mean(yoy_price_change_pct, na.rm = TRUE),
+      unit = paste(unique(unit[!is.na(unit)]), collapse = "; "),
       n_series = sum(!is.na(vol_logret_annualized)),
       .groups = "drop"
     )
@@ -212,10 +357,12 @@ energy_prices_build_table <- function(volatility_by_tech,
   base_tbl %>%
     dplyr::mutate(
       price_volatility = suppressWarnings(as.numeric(vol_logret_annualized)),
-      price_volatility_index = median_scurve(-price_volatility, gamma = gamma)
+      price_volatility_index = median_scurve(-price_volatility, gamma = gamma),
+      latest_price = suppressWarnings(as.numeric(latest_price)),
+      yoy_price_change_pct = suppressWarnings(as.numeric(yoy_price_change_pct))
     ) %>%
     tidyr::pivot_longer(
-      cols = c(price_volatility, price_volatility_index),
+      cols = c(price_volatility, price_volatility_index, latest_price, yoy_price_change_pct),
       names_to = "variable",
       values_to = "value"
     ) %>%
@@ -227,8 +374,11 @@ energy_prices_build_table <- function(volatility_by_tech,
       Year = as_of_year,
       source = "IMF Commodity Prices",
       explanation = dplyr::case_when(
-        data_type == "raw" ~ "Annualized volatility of monthly log returns.",
-        data_type == "index" ~ "Percent-rank of lower price volatility."
+        variable == "price_volatility" & data_type == "raw" ~ "Annualized volatility of monthly log returns.",
+        variable == "price_volatility" & data_type == "index" ~ "Percent-rank of lower price volatility.",
+        variable == "latest_price" ~ paste0("Latest observed commodity price level for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, "."),
+        variable == "yoy_price_change_pct" ~ paste0("Year-on-year percentage change in 12-month average commodity prices for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, "."),
+        TRUE ~ NA_character_
       )
     ) %>%
     dplyr::select(
@@ -276,19 +426,49 @@ energy_prices <- function(imf_price,
                           years_back = c(5, 10, 20),
                           min_months = 24,
                           gamma = 0.5,
+                          include_optional_indices = FALSE,
+                          include_fertilizer_inputs = FALSE,
+                          verbose = FALSE,
                           ...) {
   imf_monthly_long <- if (all(c("date", "value") %in% names(imf_price))) {
     energy_prices_long_from_pcps(imf_price)
   } else {
     energy_prices_imf_monthly_long(imf_price)
   }
-  imf_monthly <- energy_prices_imf_clean(imf_monthly_long)
+  imf_monthly <- energy_prices_imf_clean(
+    imf_monthly_long = imf_monthly_long,
+    include_optional_indices = include_optional_indices
+  )
+
+  if (isTRUE(verbose)) {
+    report <- energy_prices_pcps_match_report(
+      imf_monthly_long = imf_monthly_long,
+      include_optional_indices = include_optional_indices
+    )
+
+    match_count <- sum(report$matched, na.rm = TRUE)
+    total_count <- nrow(report)
+    match_pct <- if (total_count > 0) 100 * match_count / total_count else 0
+    message(sprintf("Energy Prices PCPS match coverage: %d/%d (%.1f%%)", match_count, total_count, match_pct))
+
+    keyword_re <- "oil|gas|lng|coal|uranium|lithium|nickel|cobalt|manganese|copper|aluminum|rare earth|silicon|zinc|iron ore|vanadium|phosphate|urea|propane"
+    unmatched <- report %>%
+      dplyr::filter(!matched, stringr::str_detect(stringr::str_to_lower(INDICATOR), keyword_re)) %>%
+      dplyr::slice_head(n = 20) %>%
+      dplyr::pull(INDICATOR)
+
+    if (length(unmatched) > 0) {
+      message("Top unmatched energy-related IMF indicators:")
+      message(paste0(" - ", unmatched, collapse = "\n"))
+    }
+  }
 
   volatility_by_tech <- energy_prices_build_volatility(
     imf_monthly = imf_monthly,
     mineral_demand_clean = mineral_demand_clean,
     years_back = years_back,
-    min_months = min_months
+    min_months = min_months,
+    include_fertilizer_inputs = include_fertilizer_inputs
   )
 
   as_of_year <- lubridate::year(max(imf_monthly$date, na.rm = TRUE))
