@@ -179,8 +179,11 @@ This section is written to function as a **drop-in technical appendix inside the
 
 **Substantive rationale:** reserves proxy long-run domestic supply optionality and reduce risk of external supply squeeze.
 
-**Implementation entry point:**
+**Implementation entry points:**
 - `R/categories/reserves/reserves.R`
+- `R/categories/energy_access/solar_pv_potential.R`
+- `R/categories/energy_access/wind_potential.R`
+- `R/categories/energy_access/geothermal_potential.R`
 
 ---
 
@@ -230,19 +233,15 @@ This section is written to function as a **drop-in technical appendix inside the
 ---
 
 #### 7) Energy Access
-**What it captures:** downstream access/enabling conditions, including per-capita consumption and renewable resource potential.
+**What it captures:** downstream access/enabling conditions via per-capita consumption (renewable resource potential is grouped under Reserves).
 
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR]) — population + per-capita consumption metrics
-- **Global Solar Atlas** ([GSA]) — solar PV potential GIS-derived country data (as used in repo extracts)
-- **Global Wind Atlas** ([GWA]) — wind power density / thresholds / totals (as used in repo extracts)
 
 **Substantive rationale:** reliable energy access and domestic renewable potential reduce dependence on imported fuels and enable industrial scaling.
 
 **Implementation entry points:**
 - `R/categories/energy_access/energy_access_consumption.R`
-- `R/categories/energy_access/solar_pv_potential.R`
-- `R/categories/energy_access/wind_potential.R`
 
 ---
 
@@ -385,17 +384,13 @@ This section is written to function as a **drop-in technical appendix inside the
 ---
 
 #### 7) Energy Access
-**What it captures:** enabling conditions (per-capita consumption and renewable resource potential).
+**What it captures:** enabling conditions via per-capita consumption.
 
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR])
-- **Global Solar Atlas** ([GSA])
-- **Global Wind Atlas** ([GWA])
 
-**Implementation entry points:**
+**Implementation entry point:**
 - `R/categories/energy_access/energy_access_consumption.R`
-- `R/categories/energy_access/solar_pv_potential.R`
-- `R/categories/energy_access/wind_potential.R`
 
 ---
 

@@ -61,7 +61,7 @@ wind_potential_build_table <- function(wind_indices, year) {
         metric == "wind_total_index" ~ "Wind power potential",
         metric == "wind_mean_index" ~ "Wind power potential per sq km",
         metric == "wind_threshold_index" ~ "Wind power potential share over threshold",
-        metric == "wind_overall_index" ~ "Wind power potential index",
+        metric == "wind_overall_index" ~ "Overall Wind Potential Index",
         TRUE ~ metric
       ),
       data_type = "index"
@@ -72,7 +72,7 @@ wind_potential_build_table <- function(wind_indices, year) {
       Country,
       tech = "Wind",
       supply_chain = "Downstream",
-      category = "Energy Access",
+      category = "Reserves",
       variable,
       data_type,
       value,
@@ -91,7 +91,7 @@ wind_potential_build_table <- function(wind_indices, year) {
           "Share of area above wind power density threshold",
         variable == "Wind power potential share over threshold" & data_type == "index" ~
           "Normalized index of share above wind power density threshold",
-        variable == "Wind power potential index" ~
+        variable == "Overall Wind Potential Index" ~
           "Composite index based on total, mean, and threshold wind potential",
         TRUE ~ NA_character_
       )
@@ -102,6 +102,7 @@ wind_potential <- function(wind_raw, year = 2023, gamma = 0.5) {
   wind_clean <- wind_potential_clean_raw(wind_raw)
   wind_indices <- wind_potential_build_indices(wind_clean, gamma = gamma)
   output <- wind_potential_build_table(wind_indices, year = year)
+  output <- energy_security_add_overall_index(output)
 
   output <- standardize_theme_table(output)
   validate_schema(output)

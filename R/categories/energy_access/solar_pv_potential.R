@@ -53,7 +53,7 @@ solar_pv_potential_build_table <- function(pv_indices, year) {
       variable = dplyr::case_when(
         metric == "solar_pot_tot_index" ~ "Solar PV power potential",
         metric == "solar_pot_mean_index" ~ "Solar PV power potential per sq km",
-        metric == "solar_pot_index" ~ "Solar PV power potential index",
+        metric == "solar_pot_index" ~ "Overall Solar PV Potential Index",
         TRUE ~ metric
       ),
       data_type = "index"
@@ -64,7 +64,7 @@ solar_pv_potential_build_table <- function(pv_indices, year) {
       Country,
       tech = "Solar",
       supply_chain = "Downstream",
-      category = "Energy Access",
+      category = "Reserves",
       variable,
       data_type,
       value,
@@ -79,7 +79,7 @@ solar_pv_potential_build_table <- function(pv_indices, year) {
           "Photovoltaic power potential per square kilometer (GIS mean)",
         variable == "Solar PV power potential per sq km" & data_type == "index" ~
           "Normalized index of photovoltaic power potential per square kilometer",
-        variable == "Solar PV power potential index" ~
+        variable == "Overall Solar PV Potential Index" ~
           "Composite index based on total and per-area photovoltaic power potential",
         TRUE ~ NA_character_
       )
@@ -90,6 +90,7 @@ solar_pv_potential <- function(pv_raw, year = 2023, gamma = 0.5) {
   pv_clean <- solar_pv_potential_clean_raw(pv_raw)
   pv_indices <- solar_pv_potential_build_indices(pv_clean, gamma = gamma)
   output <- solar_pv_potential_build_table(pv_indices, year = year)
+  output <- energy_security_add_overall_index(output)
 
   output <- standardize_theme_table(output)
   validate_schema(output)
