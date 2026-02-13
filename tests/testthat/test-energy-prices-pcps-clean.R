@@ -98,6 +98,7 @@ test_that("energy_prices_build_table includes latest price and yoy change withou
     vol_logret_annualized = 0.2,
     vol_level_sd = 0.1,
     vol_level_cv = 0.05,
+    window_years = 5,
     latest_price = 3.4,
     yoy_price_change_pct = 12.5,
     unit = "USD per MMBtu",
@@ -110,13 +111,12 @@ test_that("energy_prices_build_table includes latest price and yoy change withou
     gamma = 0.5
   )
 
-  expect_true(all(c("price_volatility", "latest_price", "yoy_price_change_pct") %in% tbl$variable))
+  expect_true(all(c("price_volatility_5yr", "mean_price_volatility", "latest_price", "yoy_price_change_pct") %in% tbl$variable))
   expect_true(any(tbl$variable == "latest_price" & stringr::str_detect(tbl$explanation, "Unit: USD per MMBtu")))
   expect_true(any(tbl$variable == "latest_price" & stringr::str_detect(tbl$explanation, "Natural_Gas_Henry_Hub")))
 
-  overall_tbl <- energy_prices_add_overall_fallback(tbl)
-  overall_rows <- overall_tbl |>
-    dplyr::filter(variable == "Overall Energy Prices Index")
+  overall_rows <- tbl |>
+    dplyr::filter(variable == "Overall Price Volatility Index")
 
   expect_true(nrow(overall_rows) > 0)
   expect_true(all(overall_rows$data_type == "index"))
@@ -301,24 +301,24 @@ test_that("adding annual YoY rows does not affect price_volatility or price_vola
   )
 
   vol_monthly_only <- out_monthly_only |>
-    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "price_volatility", data_type == "raw") |>
+    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "price_volatility_5yr", data_type == "raw") |>
     dplyr::pull(value)
   vol_with_yoy <- out_with_yoy |>
-    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "price_volatility", data_type == "raw") |>
+    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "price_volatility_5yr", data_type == "raw") |>
     dplyr::pull(value)
 
-  vol_index_monthly_only <- out_monthly_only |>
-    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "price_volatility", data_type == "index") |>
+  mean_vol_monthly_only <- out_monthly_only |>
+    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "mean_price_volatility", data_type == "raw") |>
     dplyr::pull(value)
-  vol_index_with_yoy <- out_with_yoy |>
-    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "price_volatility", data_type == "index") |>
+  mean_vol_with_yoy <- out_with_yoy |>
+    dplyr::filter(sub_sector == "Natural_Gas_EU", variable == "mean_price_volatility", data_type == "raw") |>
     dplyr::pull(value)
 
   expect_equal(vol_monthly_only, vol_with_yoy)
-  expect_equal(vol_index_monthly_only, vol_index_with_yoy)
+  expect_equal(mean_vol_monthly_only, mean_vol_with_yoy)
 })
 
-test_that("Overall Energy Prices Index remains index-only fallback from price_volatility index", {
+test_that("Overall Price Volatility Index exists per tech", {
   imf_price <- build_pcps_wide_monthly_and_yoy(include_yoy = TRUE)
 
   out <- energy_prices(
@@ -330,14 +330,14 @@ test_that("Overall Energy Prices Index remains index-only fallback from price_vo
   )
 
   overall_rows <- out |>
-    dplyr::filter(variable == "Overall Energy Prices Index")
+    dplyr::filter(variable == "Overall Price Volatility Index")
 
   expect_true(nrow(overall_rows) > 0)
   expect_true(all(overall_rows$data_type == "index"))
   expect_false(any(stringr::str_detect(overall_rows$source, "latest_price|yoy_price_change_pct"), na.rm = TRUE))
 })
 
-test_that("energy_prices default output keeps window context in explanation without adding columns", {
+test_that("energy_prices outputs window-specific volatility variables and unsplit latest/yoy", {
   imf_price <- tibble::tibble(
     INDICATOR = "Natural Gas, EU, US dollars per million metric British thermal units of gas, Unit prices",
     FREQUENCY = "Monthly",
@@ -354,13 +354,9 @@ test_that("energy_prices default output keeps window context in explanation with
     min_months = 2
   )
 
-  vol_rows <- out |>
-    dplyr::filter(variable == "price_volatility", data_type == "raw", sub_sector == "Natural_Gas_EU")
-
-  expect_false("window_years" %in% names(out))
-  expect_equal(nrow(vol_rows), 4)
-  expect_true(all(stringr::str_detect(vol_rows$explanation, "Lookback window:")))
-  expect_true(all(stringr::str_detect(vol_rows$explanation, "1 year\(s\)|5 year\(s\)|10 year\(s\)|20 year\(s\)")))
+  expect_true(all(c("price_volatility_1yr", "price_volatility_5yr", "price_volatility_10yr", "price_volatility_20yr", "mean_price_volatility") %in% out$variable))
+  expect_equal(sum(out$variable == "latest_price" & out$sub_sector == "Natural_Gas_EU"), 1)
+  expect_equal(sum(out$variable == "yoy_price_change_pct" & out$sub_sector == "Natural_Gas_EU"), 1)
 })
 
 

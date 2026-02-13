@@ -544,47 +544,105 @@ energy_prices_build_table <- function(volatility_by_tech,
     volatility_by_tech %>% dplyr::mutate(Country = "Global")
   }
 
-  base_tbl %>%
+  base_tbl <- base_tbl %>%
     dplyr::mutate(
       price_volatility = suppressWarnings(as.numeric(vol_logret_annualized)),
-      price_volatility_index = median_scurve(-price_volatility, gamma = gamma),
       latest_price = suppressWarnings(as.numeric(latest_price)),
       yoy_price_change_pct = suppressWarnings(as.numeric(yoy_price_change_pct))
-    ) %>%
-    tidyr::pivot_longer(
-      cols = c(price_volatility, price_volatility_index, latest_price, yoy_price_change_pct),
-      names_to = "variable",
-      values_to = "value"
-    ) %>%
-    dplyr::mutate(
-      supply_chain = "Upstream",
-      category = "Energy Prices",
-      data_type = dplyr::if_else(stringr::str_detect(variable, "_index$"), "index", "raw"),
-      variable = stringr::str_remove(variable, "_index$"),
-      Year = as_of_year,
-      source = "IMF Commodity Prices",
-      explanation = dplyr::case_when(
-        variable == "price_volatility" & data_type == "raw" ~ paste0("Annualized volatility of monthly log returns. Lookback window: ", window_years, " year(s)."),
-        variable == "price_volatility" & data_type == "index" ~ paste0("Percent-rank of lower price volatility. Lookback window: ", window_years, " year(s)."),
-        variable == "latest_price" ~ paste0("Latest observed commodity price level for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, ". Lookback window context: ", window_years, " year(s)."),
-        variable == "yoy_price_change_pct" ~ paste0("Latest IMF annual year-on-year percentage change for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, ". Lookback window context: ", window_years, " year(s)."),
-        TRUE ~ NA_character_
-      )
-    ) %>%
-    dplyr::select(
+    )
+
+  vol_window_tbl <- base_tbl %>%
+    dplyr::transmute(
       Country,
       tech,
       sub_sector,
-      supply_chain,
-      category,
-      window_years,
-      variable,
-      data_type,
-      value,
-      Year,
-      source,
-      explanation
+      supply_chain = "Upstream",
+      category = "Energy Prices",
+      variable = paste0("price_volatility_", window_years, "yr"),
+      data_type = "raw",
+      value = price_volatility,
+      Year = as_of_year,
+      source = "IMF Commodity Prices",
+      explanation = paste0("Annualized volatility of monthly log returns using a ", window_years, "-year lookback window.")
     )
+
+  mean_vol_tbl <- base_tbl %>%
+    dplyr::group_by(Country, tech, sub_sector) %>%
+    dplyr::summarize(
+      value = dplyr::if_else(all(is.na(price_volatility)), NA_real_, mean(price_volatility, na.rm = TRUE)),
+      .groups = "drop"
+    ) %>%
+    dplyr::transmute(
+      Country,
+      tech,
+      sub_sector,
+      supply_chain = "Upstream",
+      category = "Energy Prices",
+      variable = "mean_price_volatility",
+      data_type = "raw",
+      value,
+      Year = as_of_year,
+      source = "IMF Commodity Prices",
+      explanation = "Mean of annualized monthly-log-return volatility across 1-, 5-, 10-, and 20-year windows."
+    )
+
+  latest_yoy_tbl <- base_tbl %>%
+    dplyr::group_by(Country, tech, sub_sector) %>%
+    dplyr::summarize(
+      latest_price = dplyr::if_else(all(is.na(latest_price)), NA_real_, mean(latest_price, na.rm = TRUE)),
+      yoy_price_change_pct = dplyr::if_else(all(is.na(yoy_price_change_pct)), NA_real_, mean(yoy_price_change_pct, na.rm = TRUE)),
+      unit = paste(unique(unit[!is.na(unit)]), collapse = "; "),
+      .groups = "drop"
+    ) %>%
+    tidyr::pivot_longer(
+      cols = c(latest_price, yoy_price_change_pct),
+      names_to = "variable",
+      values_to = "value"
+    ) %>%
+    dplyr::transmute(
+      Country,
+      tech,
+      sub_sector,
+      supply_chain = "Upstream",
+      category = "Energy Prices",
+      variable,
+      data_type = "raw",
+      value,
+      Year = as_of_year,
+      source = "IMF Commodity Prices",
+      explanation = dplyr::case_when(
+        variable == "latest_price" ~ paste0("Latest observed commodity price level for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, "."),
+        variable == "yoy_price_change_pct" ~ paste0("Latest IMF annual year-on-year percentage change for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, "."),
+        TRUE ~ NA_character_
+      )
+    )
+
+  overall_vol_index_tbl <- mean_vol_tbl %>%
+    dplyr::group_by(Country, tech) %>%
+    dplyr::summarize(
+      mean_price_volatility = dplyr::if_else(all(is.na(value)), NA_real_, mean(value, na.rm = TRUE)),
+      .groups = "drop"
+    ) %>%
+    dplyr::transmute(
+      Country,
+      tech,
+      sub_sector = "Overall",
+      supply_chain = "Upstream",
+      category = "Energy Prices",
+      variable = "Overall Price Volatility Index",
+      data_type = "index",
+      value = median_scurve(-mean_price_volatility, gamma = gamma),
+      Year = as_of_year,
+      source = "Author calculation",
+      explanation = "Index from mean_price_volatility aggregated across sub_sectors within each tech."
+    )
+
+  dplyr::bind_rows(
+    vol_window_tbl,
+    mean_vol_tbl,
+    latest_yoy_tbl,
+    overall_vol_index_tbl
+  )
 }
 
 energy_prices_add_overall_fallback <- function(tbl) {
