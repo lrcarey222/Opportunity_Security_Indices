@@ -29,6 +29,8 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
 - [Quick start](#quick-start)
 - [Interactive explorer (Shiny)](#interactive-explorer-shiny)
 - [Outputs](#outputs)
+- [Testing and quality checks](#testing-and-quality-checks)
+- [Additional utilities and workflows](#additional-utilities-and-workflows)
 - [Data sources](#data-sources)
 - [Known issues and to-dos](#known-issues-and-to-dos)
 - [Citation](#citation)
@@ -426,20 +428,88 @@ This section is written to function as a **drop-in technical appendix inside the
 
 ### Partnership Strength Index (PSI)
 
-PSI is a weighted blend of three components:
+**Interpretation:** PSI measures bilateral and country-level partnership quality for energy-system cooperation by combining partner reliability (friendshoring), market upside (opportunity), and absorptive capacity (development potential).
 
-- **Friendshore index** (0.4)
-- **Opportunity index** (0.4)
-- **Development potential index** (0.2)
+**Configured PSI components (see `config/weights.yml`):**
+- Friendshore (0.4)
+- Opportunity (0.4)
+- Development (0.2)
 
-Each component is normalized using the same median S-curve framework, then combined via a weighted mean.
+<details>
+<summary><strong>PSI — component-by-component construction notes (with cited sources)</strong></summary>
 
-**Cited sources most commonly used in PSI inputs:**
-- **UN Comtrade** ([COMTRADE]) — dyadic trade flows (as used in repo extracts)
-- **World Development Indicators (WDI)** ([WDI]) — GDP/country reference scaffolding (as used in repo extracts)
-- **IMF Data Explorer** ([IMF-DEX]) — outward investment / positions series (as used in repo extracts)
+#### 1) Friendshore (Safer Friendshore)
+**What it captures:** importer-side partner safety/compatibility at the reporter-partner dyad level, built from import trade concentration and strategic compatibility signals.
 
-*(Other PSI inputs include additional policy/aid/governance datasets; see `docs/sources.md`.)*
+**Data sources:**
+- **UN Comtrade** ([COMTRADE]) — import dyads and product-level trade exposure
+- **World Development Indicators (WDI)** ([WDI]) — GDP scaffolding for scaling and harmonization
+- **IMF Data Explorer** ([IMF-DEX]) — outward investment / position proxies used in outbound connectivity
+- **Climate Action Tracker country ratings** (repo extract; see `docs/sources.md`) — climate-policy compatibility inputs
+
+**Substantive rationale:** friendshoring emphasizes dependence on partners that are economically capable, strategically aligned, and less likely to create concentrated vulnerability.
+
+**Implementation entry point:**
+- `R/themes/partnership_strength/safer_friendshore.R`
+
+---
+
+#### 2) Partnership Opportunity (Prosperous Opportunity)
+**What it captures:** exporter/opportunity upside in each dyad using trade potential with reporter and partner fundamentals, then penalizing risk where applicable.
+
+**Data sources:**
+- **UN Comtrade** ([COMTRADE]) — dyadic export structure and concentration inputs
+- **World Development Indicators (WDI)** ([WDI]) — country mapping and macro scaffolding
+- **Climate Action Tracker country ratings** (repo extract; see `docs/sources.md`) — policy-related weighting/penalty inputs
+
+**Substantive rationale:** high-opportunity partnerships pair favorable market structure with capable partners while discounting combinations that are likely to be lower quality or less resilient.
+
+**Implementation entry point:**
+- `R/themes/partnership_strength/prosperous_opportunity.R`
+
+---
+
+#### 3) Development Potential (Stronger Development)
+**What it captures:** country-level absorptive and institutional capacity to convert partnership into durable development gains.
+
+**Data sources:**
+- **World Development Indicators (WDI)** ([WDI]) — governance, macro/financial, infrastructure, and enabling-condition indicators
+- **World Bank Doing Business** (historical extract; see `docs/sources.md`) — business-environment index inputs
+- **OECD CRS aid data** (repo extract; see `docs/sources.md`) — aid/sector channels used in development-related scoring
+
+**Substantive rationale:** partnership value is partly determined by local ability to deploy capital, absorb technology, and sustain implementation.
+
+**Implementation entry point:**
+- `R/themes/partnership_strength/stronger_development.R`
+
+---
+
+#### 4) PSI composite
+**What it captures:** a country × technology × supply-chain composite of friendshore, opportunity, and development components using configured PSI weights.
+
+**Configured default weights:**
+- Friendshore = 0.4
+- Opportunity = 0.4
+- Development = 0.2
+
+Each component is normalized using the median S-curve framework before weighted aggregation.
+
+**Implementation entry points:**
+- Build and aggregate in `scripts/25_build_partner_indices.R`
+- Tidy composite output helper in `R/themes/partnership_strength/psi_composite.R`
+
+---
+
+#### 5) Allied network design (optimization module)
+**What it captures:** coalition-oriented producer-consumer flow design that uses PSI-derived edge quality (friendshore + opportunity) and node capacity/readiness signals to generate feasible alliance network scenarios.
+
+**Substantive rationale:** PSI can be used not only as a scorecard, but also as an input into constrained network design for diversified allied sourcing.
+
+**Implementation entry points:**
+- Core optimizer + helpers: `R/indices/allied_network_design.R`
+- Scripted run/output writer: `scripts/30_build_allied_network_design.R`
+
+</details>
 
 ---
 
@@ -574,6 +644,41 @@ See `scripts/20_build_indices.R` for the exact CSV outputs written.
 
 ---
 
+## Testing and quality checks
+
+This repository includes a `testthat` suite under `tests/testthat/` that covers core scoring behavior and integration-sensitive paths, including:
+
+* S-curve normalization and schema checks
+* ES/EO v2 index construction
+* NIPO policy index logic
+* Comtrade unification behavior
+* Package-selection visual outputs
+* Allied network design scaling
+* Shiny app load smoke test
+
+Run tests from repo root with:
+
+```bash
+Rscript -e "testthat::test_dir('tests/testthat')"
+```
+
+---
+
+## Additional utilities and workflows
+
+Beyond the main pipeline scripts, the repo includes supporting workflows:
+
+* `scripts/01_generate_raw_inputs_manifest.R` — generates/refreshes a raw-input inventory from configured requirements.
+* `config/raw_inputs_manifest.yml` — declarative manifest used to track expected raw datasets.
+* `scripts/30_build_allied_network_design.R` — builds allied network design outputs used for partnership analyses.
+* `scripts/90_build_package_selection_viz.R` — prepares package-selection visualization outputs.
+* `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — pull and visualize trade time series.
+* `docs/data_dictionary.md` and `docs/comtrade_ingestion_and_timeseries.md` — implementation details for data fields and Comtrade workflows.
+
+For app-specific details (UI behavior, data-loading order, and deployment notes), see `shiny/README.md`.
+
+---
+
 ## Data sources
 
 A curated list of sources (including links and expected provenance) is maintained in:
@@ -616,6 +721,22 @@ And record:
 * raw input folder state/date
 * processing date
 * any manual overrides (e.g., missing data policies or custom weights)
+
+---
+
+## Known issues and to-dos
+
+* **EO Investment category is currently a placeholder** in the configured EO category list and may not yet represent a finalized production methodology.
+* **Supply-chain coupling implementation differs from the methodology text**: current code uses normalized interdependence edge strength with linear lambda mapping (rather than HHI-driven logistic mapping).
+* **Raw-input completeness is environment dependent**. If expected files are missing, use the manifest workflow and source documentation to reconcile gaps before running full builds.
+
+---
+
+## License
+
+This project is licensed under the terms in `LICENSE`.
+
+For contribution expectations and responsible disclosure guidance, see `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `SECURITY.md`.
 
 ---
 
