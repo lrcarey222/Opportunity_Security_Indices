@@ -434,7 +434,7 @@ energy_prices_imf_latest_price_lookup <- function(imf_price,
 
 energy_prices_build_volatility <- function(imf_monthly,
                                            mineral_demand_clean,
-                                           years_back = c(5, 10, 20),
+                                           years_back = c(1, 5, 10, 20),
                                            min_months = 24,
                                            include_fertilizer_inputs = FALSE,
                                            annual_yoy_lookup = NULL,
@@ -517,7 +517,7 @@ energy_prices_build_volatility <- function(imf_monthly,
 
   volatility_by_indicator %>%
     dplyr::filter(!is.na(tech), tech %in% tech_groups) %>%
-    dplyr::group_by(tech, sub_sector) %>%
+    dplyr::group_by(tech, sub_sector, window_years) %>%
     dplyr::summarize(
       vol_logret_annualized = dplyr::if_else(all(is.na(vol_logret_annualized)), NA_real_, mean(vol_logret_annualized, na.rm = TRUE)),
       vol_level_sd = dplyr::if_else(all(is.na(vol_level_sd)), NA_real_, mean(vol_level_sd, na.rm = TRUE)),
@@ -576,6 +576,7 @@ energy_prices_build_table <- function(volatility_by_tech,
       sub_sector,
       supply_chain,
       category,
+      window_years,
       variable,
       data_type,
       value,
@@ -612,7 +613,7 @@ energy_prices_add_overall_fallback <- function(tbl) {
 energy_prices <- function(imf_price,
                           mineral_demand_clean,
                           country_info = NULL,
-                          years_back = c(5, 10, 20),
+                          years_back = c(1, 5, 10, 20),
                           min_months = 24,
                           gamma = 0.5,
                           include_optional_indices = FALSE,

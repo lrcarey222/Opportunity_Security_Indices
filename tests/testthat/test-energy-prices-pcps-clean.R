@@ -336,3 +336,28 @@ test_that("Overall Energy Prices Index remains index-only fallback from price_vo
   expect_true(all(overall_rows$data_type == "index"))
   expect_false(any(stringr::str_detect(overall_rows$source, "latest_price|yoy_price_change_pct"), na.rm = TRUE))
 })
+
+test_that("energy_prices defaults include 1-year window and preserve window rows in final table", {
+  imf_price <- tibble::tibble(
+    INDICATOR = "Natural Gas, EU, US dollars per million metric British thermal units of gas, Unit prices",
+    FREQUENCY = "Monthly",
+    DATA_TRANSFORMATION = "US dollars",
+    X2023.M12 = 12.0,
+    X2024.M12 = 13.757,
+    X2025.M12 = 9.460
+  )
+
+  out <- energy_prices(
+    imf_price,
+    mineral_demand_clean = tibble::tibble(Mineral = character(), tech = character()),
+    country_info = NULL,
+    min_months = 2
+  )
+
+  windows <- out |>
+    dplyr::filter(variable == "price_volatility", data_type == "raw", sub_sector == "Natural_Gas_EU") |>
+    dplyr::distinct(window_years) |>
+    dplyr::pull(window_years)
+
+  expect_equal(sort(windows), c(1, 5, 10, 20))
+})
