@@ -170,6 +170,7 @@ energy_prices_build_volatility <- function(imf_monthly, mineral_demand_clean, ye
         clean %in% c("Oil_APSP", "Oil_Brent", "Oil_WTI") ~ "Oil",
         clean %in% c("Natural_Gas_Index", "Natural_Gas_EU", "Natural_Gas_Henry_Hub", "LNG") ~ "Gas",
         clean == "Coal" ~ "Coal",
+        clean == "Uranium" ~ "Nuclear",
         !is.na(tech) ~ tech,
         TRUE ~ NA_character_
       ),
