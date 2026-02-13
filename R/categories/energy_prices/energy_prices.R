@@ -244,9 +244,13 @@ energy_prices_latest_and_yoy <- function(df) {
   latest_date <- latest_row$date[[1]]
   latest_price <- latest_row$value[[1]]
 
-  current_window_start <- lubridate::`%m-%`(latest_date, lubridate::months(11))
-  previous_window_end <- lubridate::`%m-%`(current_window_start, lubridate::months(1))
-  previous_window_start <- lubridate::`%m-%`(previous_window_end, lubridate::months(11))
+  shift_months <- function(date, n_months) {
+    as.Date(seq(date, by = sprintf("%+d months", n_months), length.out = 2)[2])
+  }
+
+  current_window_start <- shift_months(latest_date, -11)
+  previous_window_end <- shift_months(current_window_start, -1)
+  previous_window_start <- shift_months(previous_window_end, -11)
 
   current_window <- x %>%
     dplyr::filter(date >= current_window_start, date <= latest_date)
