@@ -1,0 +1,7 @@
+name,sector,supplyChain,trl2020,trl2021,trl2022,trl2023
+Sodium-ion battery,"Demand,Transport,Road transport,Battery","Vehicle component,Battery production",4,5,6,6
+Battery electric passenger car,"Demand,Transport,Road transport,Battery electric vehicle",Vehicle,8,8,9,9
+Coal mine methane use for energy supply,"Supply,Fossil fuels,Coal,Extraction and production,Methane,Coal mine methane use for energy supply",CH4 abatement,10,10,10,10
+Vapour recovery units,"Supply,Fossil fuels,Oil and gas,Extraction and production,Methane,Vapour recovery units",CH4 abatement,10,10,11,11
+Integrating electrolytic hydrogen into the refinery,"Supply,Fossil fuels,Oil and gas,Extraction and production,Hydrogen,Integrating electrolytic hydrogen into the refinery","Heat generation,H2 use",5,5,6,6
+Transmission digital upgrade,"Supply,Power,Infrastructure,Transmission",Power transport,7,7,8,8

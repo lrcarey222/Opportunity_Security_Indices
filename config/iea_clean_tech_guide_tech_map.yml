@@ -1,0 +1,37 @@
+rules:
+  - tech: Coal
+    all_tokens: ["Fossil fuels", "Coal"]
+
+  - tech: ["Oil", "Gas"]
+    all_tokens: ["Fossil fuels", "Oil and gas"]
+
+  - tech: Batteries
+    any_tokens: ["Battery", "Electrochemical storage"]
+    any_supplychain_tokens: ["Battery production", "Battery recycling", "Battery charging", "Power storage"]
+    exclude_tokens: ["Mining"]
+
+  - tech: Electric Vehicles
+    any_tokens: ["Road transport", "Battery electric vehicle"]
+    any_supplychain_tokens: ["Vehicle", "Vehicle component", "Transport infrastructure"]
+    exclude_tokens: ["Battery"]
+
+  - tech: Green Hydrogen
+    any_tokens: ["Hydrogen"]
+    any_supplychain_tokens: ["H2 production", "H2 transport", "H2 storage", "H2 use"]
+    exclude_tokens: ["Fossil fuels"]
+
+  - tech: Electric Grid
+    any_tokens: ["Infrastructure"]
+    any_supplychain_tokens: ["Power transport"]
+
+  - tech: Solar
+    any_name_regex: ["\\bPV\\b", "solar", "photovoltaic"]
+
+  - tech: Wind
+    any_name_regex: ["wind"]
+
+  - tech: Nuclear
+    any_name_regex: ["nuclear", "reactor"]
+
+  - tech: Geothermal
+    any_name_regex: ["geothermal"]

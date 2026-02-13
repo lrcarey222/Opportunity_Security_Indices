@@ -371,7 +371,15 @@ This section is written to function as a **drop-in technical appendix inside the
 **Data sources:**
 - **IEA ETP Clean Energy Technology Guide** ([IEA-CTG]) — TRL and technology classification inputs (as used in repo extracts)
 
-**Rationale:** higher readiness usually implies nearer-term deployability, clearer cost curves, and lower commercialization risk.
+**Rationale:** readiness is strongest in a "Goldilocks" band (not too nascent, not fully mature), and technologies with improving TRL trajectories can represent rising opportunity.
+
+**Method notes:**
+- Mapping from IEA taxonomy to target technologies is token-based and config-driven via `config/iea_clean_tech_guide_tech_map.yml` (using taxonomy + supply-chain signals rather than brittle fixed sector positions).
+- The TRL theme now blends:
+  - **TRL Level Index**: Goldilocks bell-curve score on end-year TRL.
+  - **TRL Momentum Index**: scaled positive TRL change from 2020 to 2023.
+  - **TRL Index**: weighted combination of level and momentum.
+- Fossil fuel technologies (**Coal**, **Oil**, **Gas**) are explicitly supported through taxonomy rules.
 
 **Implementation entry point:**
 - `R/categories/technological_readiness/technological_readiness.R`
