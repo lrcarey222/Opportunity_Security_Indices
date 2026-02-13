@@ -282,6 +282,11 @@ This section is written to function as a **drop-in technical appendix inside the
 **Data sources:**
 - **IMF Commodity Prices** ([IMF-COMM]) — monthly commodity price series used to compute volatility indices (as used in repo extracts)
 
+**PCPS coverage notes:**
+- Annualized volatility is computed from monthly **log returns** of IMF PCPS commodity series.
+- Coverage includes fossil fuels + uranium and energy-transition minerals available in snapshot data (e.g., lithium, nickel, cobalt, copper, vanadium, iron ore, and diammonium phosphate).
+- Limitations: key inputs absent from PCPS snapshots (e.g., graphite and soda ash/sodium carbonate) are not captured unless integrated from another source.
+
 **Substantive rationale:** volatility is a strong proxy for macro supply instability and economic exposure to shocks.
 
 **Implementation entry point:**
@@ -413,6 +418,11 @@ This section is written to function as a **drop-in technical appendix inside the
 
 **Data sources:**
 - **IMF Commodity Prices** ([IMF-COMM])
+
+**PCPS coverage notes:**
+- Annualized volatility is computed from monthly **log returns** of IMF PCPS commodity series.
+- Coverage includes fossil fuels + uranium and energy-transition minerals available in snapshot data (e.g., lithium, nickel, cobalt, copper, vanadium, iron ore, and diammonium phosphate).
+- Limitations: key inputs absent from PCPS snapshots (e.g., graphite and soda ash/sodium carbonate) are not captured unless integrated from another source.
 
 **Rationale:** stable price environments improve bankability and reduce risk premiums for investment.
 
