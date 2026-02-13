@@ -76,6 +76,36 @@ energy_prices_imf_monthly_usd_long <- function(imf_price) {
 }
 
 energy_prices_imf_monthly_long <- function(imf_price) {
+  monthly_re <- "^X\\d{4}\\.M\\d{2}$"
+
+  imf_price_filtered <- if (all(c("FREQUENCY", "DATA_TRANSFORMATION") %in% names(imf_price))) {
+    imf_price %>%
+      dplyr::filter(
+        FREQUENCY == "Monthly",
+        DATA_TRANSFORMATION == "US dollars"
+      )
+  } else {
+    imf_price
+  }
+
+  imf_price_filtered %>%
+    dplyr::select(INDICATOR, dplyr::matches(monthly_re)) %>%
+    tidyr::pivot_longer(
+      cols = dplyr::matches(monthly_re),
+      names_to = "period",
+      values_to = "value_raw"
+    ) %>%
+    dplyr::mutate(
+      year = as.integer(stringr::str_match(period, "^X(\\d{4})\\.M\\d{2}$")[, 2]),
+      month = as.integer(stringr::str_match(period, "^X\\d{4}\\.M(\\d{2})$")[, 2]),
+      date = as.Date(sprintf("%04d-%02d-01", year, month)),
+      value = suppressWarnings(as.numeric(stringr::str_replace_all(as.character(value_raw), ",", "")))
+    ) %>%
+    dplyr::select(INDICATOR, date, value) %>%
+    dplyr::filter(!is.na(date))
+}
+
+energy_prices_imf_monthly_long <- function(imf_price) {
   energy_prices_imf_monthly_usd_long(imf_price)
 }
 

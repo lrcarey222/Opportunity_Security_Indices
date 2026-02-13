@@ -157,6 +157,26 @@ test_that("energy_prices_sub_sector_unit_lookup returns joinable sub_sector to u
   expect_true(any(lookup$unit_description == "USD per metric tonne"))
 })
 
+
+
+test_that("monthly parsers distinguish generic monthly_long vs monthly_usd_long", {
+  imf_price <- tibble::tibble(
+    INDICATOR = c(
+      "Natural Gas, EU, US dollars per million metric British thermal units of gas, Unit prices",
+      "Natural Gas, EU, index row"
+    ),
+    FREQUENCY = c("Monthly", "Monthly"),
+    DATA_TRANSFORMATION = c("US dollars", "Index"),
+    X2025.M12 = c(9.460, 105)
+  )
+
+  monthly_all <- energy_prices_imf_monthly_long(imf_price)
+  monthly_usd <- energy_prices_imf_monthly_usd_long(imf_price)
+
+  expect_equal(nrow(monthly_all), 2)
+  expect_equal(nrow(monthly_usd), 1)
+})
+
 test_that("energy_prices_imf_annual_yoy_lookup reads IMF annual yoy transformation", {
   imf_price <- tibble::tibble(
     INDICATOR = c("Natural Gas, US Henry Hub, US dollars per MMBtu, Unit prices"),
