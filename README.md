@@ -142,6 +142,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 1) Foreign Dependency
 **What it captures:** exposure to foreign control of critical upstream inputs (minerals) and midstream manufacturing capacity (clean tech / EV supply).
 
+**Overall variable construction (configured):** the category score uses `Overall Foreign Dependency Index`, calculated as the **mean** of: `Mineral Supply`, `Market Share`, `Overall Market Share`, `production`, `sales`, `import`, `market_share`, and `Overall Production`.
+
 **Data sources:**
 - **IEA Critical Minerals Dataset** ([IEA-CM]) — mineral supply series used to compute market share + concentration proxies
 - **IEA Global EV Data Explorer** ([IEA-EV]) — EV market/production/import share inputs (as used in repo exports)
@@ -160,6 +162,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 2) Energy Imports
 **What it captures:** reliance on external suppliers for fuels (oil/gas/coal), proxied by production-consumption balance.
 
+**Overall variable construction (configured):** the category score uses `Overall Energy Imports Index`, calculated as the **mean** of: `Production surplus/deficit`.
+
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR])
 
@@ -172,6 +176,8 @@ This section is written to function as a **drop-in technical appendix inside the
 
 #### 3) Reserves
 **What it captures:** domestic reserves depth (fossil + minerals) and demand-weighted “technology reserves” for minerals.
+
+**Overall variable construction (configured):** the category score uses `Overall Reserves Index`, calculated as the **mean** of reserve and potential components: `Oil Reserves`, `Gas Reserves`, `Coal Reserves`, `Cobalt Reserves`, `Lithium Reserves`, `Graphite Reserves`, `Rare Earths Reserves`, `Copper Reserves`, `Manganese Reserves`, `Nickel Reserves`, `Zinc Reserves`, `PGMs Reserves`, `Solar Reserves`, `Wind Reserves`, `Electric Vehicles Reserves`, `Batteries Reserves`, `Electric Grid Reserves`, `Green Hydrogen Reserves`, `Heat Pumps Reserves`, `Nuclear Reserves`, `Hydroelectric Power Reserves`, `Geothermal Reserves`, `Overall Solar PV Potential Index`, `Overall Wind Potential Index`, and `Overall Geothermal Potential Index`.
 
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR]) — fossil and mineral reserves tables used in the repo
@@ -190,6 +196,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 4) Trade (risk)
 **What it captures:** concentrated exposure and/or weak strategic positioning in relevant traded energy-tech products.
 
+**Overall variable construction (configured):** the category score uses `Overall Trade Risk Index`, calculated as the **mean** of: `HHI`, `market_share`, and `deficit_gdp`.
+
 **Data sources:**
 - **UN Comtrade** ([COMTRADE]) — exports/imports; RCA inputs (as used in repo exports)
 - **Harvard Atlas of Economic Complexity** ([AEC]) — distance→feasibility and market-share fields (as used in repo exports)
@@ -207,6 +215,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 5) Minerals Trade
 **What it captures:** critical minerals trade positioning and concentration, rolled up into technology exposure via demand weights.
 
+**Overall variable construction (configured):** the category score uses `Overall Minerals Trade Index`, calculated as the **mean** of: `critmin_trade`.
+
 **Data sources:**
 - **UN Comtrade** ([COMTRADE]) — critical-minerals import/export/totals (as used in repo exports)
 - **IEA Critical Minerals Dataset** ([IEA-CM]) — mineral list + demand-by-tech shares used to roll minerals into tech exposure
@@ -220,6 +230,8 @@ This section is written to function as a **drop-in technical appendix inside the
 
 #### 6) Production
 **What it captures:** depth and momentum of domestic production (energy production and generation proxies; plus critical minerals supply/production proxies).
+
+**Overall variable construction (configured):** the category score uses `Overall Production Index`, calculated as the **mean** of: `size`, `growth_abs`, `Overall Production`, `Cobalt Production`, `Lithium Production`, `Graphite Production`, `Rare Earths Production`, `Copper Production`, `Manganese Production`, `Nickel Production`, `Zinc Production`, `PGMs Production`, `Solar Production`, `Wind Production`, `Electric Vehicles Production`, `Batteries Production`, `Electric Grid Production`, `Green Hydrogen Production`, `Heat Pumps Production`, `Coal Production`, `Nuclear Production`, `Oil Production`, `Gas Production`, `Hydroelectric Power Production`, and `Geothermal Production`.
 
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR]) — fossil production and generation series
@@ -235,6 +247,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 7) Energy Access
 **What it captures:** downstream access/enabling conditions via per-capita consumption (renewable resource potential is grouped under Reserves).
 
+**Overall variable construction (configured):** the category score uses `Overall Energy Access Index`, calculated as the **mean** of: `Energy consumption per capita` and `Energy consumption per capita growth`.
+
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR]) — population + per-capita consumption metrics
 
@@ -248,6 +262,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 8) Consumption
 **What it captures:** installed base / consumption-side scale and growth (e.g., per-capita installed capacity and projected growth).
 
+**Overall variable construction (configured):** the category score uses `Overall Consumption Index`, calculated as the **mean** of: `Energy consumption per capita`, `Energy consumption per capita growth`, `installed_cap_index`, and `elec_growth_index`.
+
 **Data sources:**
 - **BloombergNEF New Energy Outlook** ([BNEF-NEO]) — installed capacity and projections used for per-capita and growth indices (as used in repo extracts)
 
@@ -260,6 +276,8 @@ This section is written to function as a **drop-in technical appendix inside the
 
 #### 9) Energy Prices
 **What it captures:** commodity input price volatility (annualized volatility of monthly log returns), oriented so lower volatility scores higher.
+
+**Overall variable construction (configured):** the category score uses `Overall Energy Prices Index`, calculated as the **mean** of: `price_volatility`.
 
 **Data sources:**
 - **IMF Commodity Prices** ([IMF-COMM]) — monthly commodity price series used to compute volatility indices (as used in repo extracts)
@@ -295,6 +313,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 1) Trade (opportunity)
 **What it captures:** export competitiveness and feasibility (e.g., RCA, feasibility, market shares), rather than import vulnerability.
 
+**Overall variable construction (configured):** the category score uses `Overall Trade Index`, calculated as the **mean** of: `market_share`, `rca`, `export_size`, `feas`, `deficit_gdp`, and `HHI`.
+
 **Data sources:**
 - **UN Comtrade** ([COMTRADE])
 - **Harvard Atlas of Economic Complexity** ([AEC])
@@ -311,6 +331,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 2) Production
 **What it captures:** productive capability and momentum — similar underlying measures as ES, but interpreted as growth potential.
 
+**Overall variable construction (configured):** the category score uses `Overall Production Index`, calculated as the **mean** of: `size`, `growth_abs`, `Overall Production`, `Cobalt Production`, `Lithium Production`, `Graphite Production`, `Rare Earths Production`, `Copper Production`, `Manganese Production`, `Nickel Production`, `Zinc Production`, `PGMs Production`, `Solar Production`, `Wind Production`, `Electric Vehicles Production`, `Batteries Production`, `Electric Grid Production`, `Green Hydrogen Production`, `Heat Pumps Production`, `Coal Production`, `Nuclear Production`, `Oil Production`, `Gas Production`, `Hydroelectric Power Production`, and `Geothermal Production`.
+
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR])
 - **IEA Critical Minerals Dataset** ([IEA-CM])
@@ -324,6 +346,8 @@ This section is written to function as a **drop-in technical appendix inside the
 
 #### 3) Technology Demand
 **What it captures:** forward demand and growth (global and/or country-level), plus midstream overcapacity penalties as a margin-risk proxy.
+
+**Overall variable construction (configured):** the category score uses `Overall Technology Demand Index`, calculated as the **mean** of: `demand_size`, `demand_growth`, `Overall Global Demand`, `Overall Demand`, `sales_growth`, `sales_size`, `sales_forecast_growth`, `sales_forecast_size`, `stock_growth`, `stock_size`, `stock_forecast_growth`, `stock_forecast_size`, `share_growth`, `share_size`, `share_forecast_growth`, `share_forecast_size`, `Overall Addressable Market`, and `Overall Overcapacity`.
 
 **Data sources (cited where applicable):**
 - **BloombergNEF New Energy Outlook** ([BNEF-NEO]) — region/country demand levels and growth (as used in repo extracts)
@@ -342,6 +366,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 4) Technological Readiness
 **What it captures:** technology maturity proxy (TRL), normalized to 0–1.
 
+**Overall variable construction (configured):** the category score uses `Overall Technological Readiness Index`, calculated as the **mean** of: `TRL Index`.
+
 **Data sources:**
 - **IEA ETP Clean Energy Technology Guide** ([IEA-CTG]) — TRL and technology classification inputs (as used in repo extracts)
 
@@ -354,6 +380,8 @@ This section is written to function as a **drop-in technical appendix inside the
 
 #### 5) Cost Competitiveness
 **What it captures:** deployment/manufacturing cost position, including relative technology costs, LCOE competitiveness, and composite “input cost” competitiveness (labor + capital proxies).
+
+**Overall variable construction (configured):** the category score uses `Overall Input Cost Index`, calculated as the **mean** of: `lcoe_24`, `lcoe_50`, `Overall input cost index`, `Input Cost Index`, and `IEA Cost index`.
 
 **Data sources (cited where applicable):**
 - **IMF Data Explorer** ([IMF-DEX]) — lending rates and PPI series used as capital/input-cost proxies (as used in repo extracts)
@@ -373,6 +401,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 6) Energy Prices
 **What it captures:** macro input price volatility, oriented so lower volatility scores higher.
 
+**Overall variable construction (configured):** the category score uses `Overall Energy Prices Index`, calculated as the **mean** of: `price_volatility`.
+
 **Data sources:**
 - **IMF Commodity Prices** ([IMF-COMM])
 
@@ -386,6 +416,8 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 7) Energy Access
 **What it captures:** enabling conditions via per-capita consumption.
 
+**Overall variable construction (configured):** the category score uses `Overall Energy Access Index`, calculated as the **mean** of: `Energy consumption per capita` and `Energy consumption per capita growth`.
+
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR])
 
@@ -396,6 +428,8 @@ This section is written to function as a **drop-in technical appendix inside the
 
 #### 8) Foreign Dependency
 **What it captures:** in EO, these variables can reflect constraint *or* positioning (e.g., high midstream market share can be “opportunity” even if framed elsewhere as “dependency”).
+
+**Overall variable construction (configured):** the category score uses `Overall Foreign Dependency Index`, calculated as the **mean** of: `Mineral Supply`, `Market Share`, `Overall Market Share`, `production`, `sales`, `import`, `market_share`, and `Overall Production`.
 
 **Data sources:**
 - **IEA Critical Minerals Dataset** ([IEA-CM])
@@ -411,11 +445,21 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 9) Consumption
 **What it captures:** market size and growth runway (installed capacity per capita and projected growth).
 
+**Overall variable construction (configured):** the category score uses `Overall Consumption Index`, calculated as the **mean** of: `Energy consumption per capita`, `Energy consumption per capita growth`, `installed_cap_index`, and `elec_growth_index`.
+
 **Data sources:**
 - **BloombergNEF New Energy Outlook** ([BNEF-NEO])
 
 **Implementation entry point:**
 - `R/categories/consumption/energy_consumption.R`
+
+
+---
+
+#### 10) Investment *(placeholder in current config)*
+**What it captures:** currently a placeholder category in the EO configuration.
+
+**Overall variable construction (configured):** the category score is mapped to `Overall Investment Index`, whose configured component list is currently empty (`components: []`), so no sub-indicator aggregation is applied until components are added in configuration.
 
 </details>
 
