@@ -1,0 +1,7 @@
+name,sector,trl2023
+LFP cell manufacturing,"Supply,Manufacturing,Road transport,Battery",8
+Sodium-ion pack,"Supply,Manufacturing,Road transport,Vehicle,Battery",4
+EV drivetrain,"Demand,Transport,Road transport,Vehicle",9
+Grid storage system,"Supply,Power,Grid,Storage",6
+Lithium extraction,"Supply,Mining,Critical minerals,Battery",7
+Hydrogen truck,"Demand,Transport,Road transport,Vehicle",8
