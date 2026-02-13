@@ -50,7 +50,7 @@ future_demand_build_weo <- function(iea_weo, country_reference, gamma = 0.5) {
     dplyr::summarize(VALUE = sum(VALUE, na.rm = TRUE), .groups = "drop") %>%
     tidyr::pivot_wider(names_from = "YEAR", values_from = "VALUE")
 
-  required_years <- c("2022", "2035")
+  required_years <- c("2024", "2035")
   missing_years <- setdiff(required_years, names(weo_wide))
   if (length(missing_years) > 0) {
     stop("IEA WEO data missing year columns: ", paste(missing_years, collapse = ", "))
@@ -58,9 +58,9 @@ future_demand_build_weo <- function(iea_weo, country_reference, gamma = 0.5) {
 
   weo_wide <- weo_wide %>%
     dplyr::mutate(
-      `2022` = as.numeric(`2022`),
+      `2024` = as.numeric(`2024`),
       `2035` = as.numeric(`2035`),
-      growth = `2035` - `2022`
+      growth = `2035` - `2024`
     )
 
   weo_indexed <- weo_wide %>%
@@ -105,10 +105,10 @@ future_demand_build_weo <- function(iea_weo, country_reference, gamma = 0.5) {
       source = "IEA World Energy Outlook",
       explanation = dplyr::case_when(
         variable == "2035" ~ "Global energy demand in 2035",
-        variable == "growth" ~ "Modelled demand growth, 2022-2035, IEA States Policies Scenario",
+        variable == "growth" ~ "Modelled demand growth, 2024-2035, IEA States Policies Scenario",
         variable == "demand_size" ~ "Index of global energy demand in 2035",
         variable == "demand_growth_index" ~
-          "Index of modelled demand growth, 2022-2035, IEA States Policies Scenario",
+          "Index of modelled demand growth, 2024-2035, IEA States Policies Scenario",
         variable == "demand_index" ~ "Mean of growth and size indices",
         TRUE ~ variable
       )
