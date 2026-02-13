@@ -68,7 +68,8 @@ packages <- c(
   "WDI",
   "comtradr",
   "magrittr",
-  "progress"
+  "progress",
+  "lubridate"
 )
 missing_packages <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]
 if (length(missing_packages) > 0) {
@@ -122,4 +123,7 @@ options(
 setup_stub <- function() {
   NULL
 }
+
+techs <- c("Electric Vehicles","Nuclear","Coal","Batteries","Green Hydrogen",
+           "Wind","Oil","Solar","Gas","Geothermal")
 

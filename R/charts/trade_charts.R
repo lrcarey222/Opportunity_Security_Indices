@@ -16,19 +16,19 @@ source("scripts/96_pull_trade_timeseries.R")
 iso_rep<-"KOR"
 iso_partner<-c("CHN","FRA","DEU","ITA","ESP","NLD","BEL","SWE","POL","DNK","FIN","CZE","ROU","HUN","AUT","PRT","GRC","IRL","JPN","USA","IND","VNM")
 
-res4 <- pull_trade_timeseries(
+res_chn <- pull_trade_timeseries(
   catalog = hs6_categories_essential,
-  country = "USA",
+  country = "CHN",
   tech = c("Semiconductors",
            "Batteries",
            "Solar",
            "Magnets",
            "Electric Motors"),
   supply_chain = "Midstream",
-  partners = c("CHN","World"),
-  years = c("2009:2014"),
-  flow = c("import"),
-  frequency="monthly"
+  partners = c("World"),
+  years = c("2009:2025"),
+  flow = c("export"),
+  frequency="annual"
 )
 
 res<-bind_rows(res2,res3,res4)
