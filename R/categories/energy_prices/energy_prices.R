@@ -165,6 +165,7 @@ energy_prices_extra_mineral_map <- function(include_fertilizer_inputs = FALSE) {
   extra_map <- tibble::tribble(
     ~clean_key, ~tech,
     "vanadium", "Batteries",
+    "rare earth", "Wind",
     "iron ore", "Batteries",
     "iron ore", "Electric Grid",
     "iron ore", "Wind",
@@ -220,7 +221,7 @@ energy_prices_extract_unit <- function(indicator) {
   indicator_lc <- stringr::str_to_lower(indicator)
 
   dplyr::case_when(
-    stringr::str_detect(indicator_lc, "\$\/bbl|\\busd per barrel\\b|\\bus dollars per barrel\\b") ~ "USD per barrel",
+    stringr::str_detect(indicator_lc, "\\$/bbl|\\busd per barrel\\b|\\bus dollars per barrel\\b") ~ "USD per barrel",
     stringr::str_detect(indicator_lc, "us cents per gallon") ~ "US cents per gallon",
     stringr::str_detect(indicator_lc, "us dollars per metric tonne|usd per metric tonne") ~ "USD per metric tonne",
     stringr::str_detect(indicator_lc, "us dollars per mmbtu|usd per mmbtu") ~ "USD per MMBtu",
@@ -242,11 +243,21 @@ energy_prices_latest_and_yoy <- function(df) {
   latest_row <- x %>% dplyr::slice_tail(n = 1)
   latest_date <- latest_row$date[[1]]
   latest_price <- latest_row$value[[1]]
-  yoy_target <- lubridate::`%m-%`(latest_date, lubridate::years(1))
-  yoy_base <- x %>% dplyr::filter(date == yoy_target) %>% dplyr::slice_tail(n = 1)
 
-  yoy_price_change_pct <- if (nrow(yoy_base) == 1 && !is.na(yoy_base$value[[1]]) && yoy_base$value[[1]] != 0) {
-    100 * (latest_price / yoy_base$value[[1]] - 1)
+  current_window_start <- lubridate::`%m-%`(latest_date, lubridate::months(11))
+  previous_window_end <- lubridate::`%m-%`(current_window_start, lubridate::months(1))
+  previous_window_start <- lubridate::`%m-%`(previous_window_end, lubridate::months(11))
+
+  current_window <- x %>%
+    dplyr::filter(date >= current_window_start, date <= latest_date)
+  previous_window <- x %>%
+    dplyr::filter(date >= previous_window_start, date <= previous_window_end)
+
+  current_avg <- if (nrow(current_window) == 12) mean(current_window$value, na.rm = TRUE) else NA_real_
+  previous_avg <- if (nrow(previous_window) == 12) mean(previous_window$value, na.rm = TRUE) else NA_real_
+
+  yoy_price_change_pct <- if (is.finite(current_avg) && is.finite(previous_avg) && !is.na(previous_avg) && previous_avg != 0) {
+    100 * (current_avg / previous_avg - 1)
   } else {
     NA_real_
   }
@@ -365,8 +376,8 @@ energy_prices_build_table <- function(volatility_by_tech,
       explanation = dplyr::case_when(
         variable == "price_volatility" & data_type == "raw" ~ "Annualized volatility of monthly log returns.",
         variable == "price_volatility" & data_type == "index" ~ "Percent-rank of lower price volatility.",
-        variable == "latest_price" ~ paste0("Latest observed commodity price level (average across mapped IMF series). Unit: ", unit, "."),
-        variable == "yoy_price_change_pct" ~ paste0("Year-on-year percentage price change from latest monthly observation (average across mapped IMF series). Underlying unit(s): ", unit, "."),
+        variable == "latest_price" ~ paste0("Latest observed commodity price level for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, "."),
+        variable == "yoy_price_change_pct" ~ paste0("Year-on-year percentage change in 12-month average commodity prices for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, "."),
         TRUE ~ NA_character_
       )
     ) %>%

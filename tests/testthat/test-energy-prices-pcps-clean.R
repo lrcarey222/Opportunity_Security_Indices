@@ -71,6 +71,26 @@ test_that("energy_prices_build_volatility keeps rare earth mappings from mineral
   expect_true(any(out$sub_sector == "Rare_Earths"))
 })
 
+test_that("energy_prices_build_volatility maps rare earths to Wind via PCPS extension map", {
+  imf_monthly_long <- tibble::tibble(
+    INDICATOR = rep("Rare Earth Elements, Rare earth carbonate REO 42-45 Dom, Unit prices", 3),
+    date = as.Date(c("2022-01-01", "2022-02-01", "2022-03-01")),
+    value = c(50, 55, 53)
+  )
+
+  imf_monthly <- energy_prices_imf_clean(imf_monthly_long)
+
+  out <- energy_prices_build_volatility(
+    imf_monthly = imf_monthly,
+    mineral_demand_clean = tibble::tibble(Mineral = character(), tech = character()),
+    years_back = c(5),
+    min_months = 2
+  )
+
+  expect_true(any(out$tech == "Wind"))
+  expect_true(any(out$sub_sector == "Rare_Earths"))
+})
+
 test_that("energy_prices_build_table includes latest price and yoy change without affecting overall volatility index", {
   volatility_by_tech <- tibble::tibble(
     tech = "Gas",
@@ -92,6 +112,7 @@ test_that("energy_prices_build_table includes latest price and yoy change withou
 
   expect_true(all(c("price_volatility", "latest_price", "yoy_price_change_pct") %in% tbl$variable))
   expect_true(any(tbl$variable == "latest_price" & stringr::str_detect(tbl$explanation, "Unit: USD per MMBtu")))
+  expect_true(any(tbl$variable == "latest_price" & stringr::str_detect(tbl$explanation, "Natural_Gas_Henry_Hub")))
 
   overall_tbl <- energy_prices_add_overall_fallback(tbl)
   overall_rows <- overall_tbl |>
@@ -99,4 +120,19 @@ test_that("energy_prices_build_table includes latest price and yoy change withou
 
   expect_true(nrow(overall_rows) > 0)
   expect_true(all(overall_rows$data_type == "index"))
+})
+
+test_that("energy_prices_latest_and_yoy uses year-on-year change in trailing 12-month averages", {
+  dates <- seq(as.Date("2023-01-01"), as.Date("2024-12-01"), by = "month")
+  values <- c(rep(100, 12), rep(110, 12))
+
+  out <- energy_prices_latest_and_yoy(
+    tibble::tibble(
+      date = dates,
+      value = values
+    )
+  )
+
+  expect_equal(out$latest_price[[1]], 110)
+  expect_equal(out$yoy_price_change_pct[[1]], 10)
 })
