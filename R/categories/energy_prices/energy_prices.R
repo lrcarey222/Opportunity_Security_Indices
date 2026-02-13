@@ -478,7 +478,8 @@ energy_prices_build_volatility <- function(imf_monthly,
   volatility_by_indicator <- imf_monthly %>%
     dplyr::group_by(INDICATOR, clean) %>%
     dplyr::group_modify(~ dplyr::bind_rows(lapply(years_back, function(window_years) {
-      energy_prices_calc_vol(.x, window_years, min_months = min_months)
+      min_months_window <- min(min_months, max(window_years * 12 - 1, 1))
+      energy_prices_calc_vol(.x, window_years, min_months = min_months_window)
     }))) %>%
     dplyr::left_join(
       latest_price_lookup,
@@ -563,10 +564,10 @@ energy_prices_build_table <- function(volatility_by_tech,
       Year = as_of_year,
       source = "IMF Commodity Prices",
       explanation = dplyr::case_when(
-        variable == "price_volatility" & data_type == "raw" ~ "Annualized volatility of monthly log returns.",
-        variable == "price_volatility" & data_type == "index" ~ "Percent-rank of lower price volatility.",
-        variable == "latest_price" ~ paste0("Latest observed commodity price level for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, "."),
-        variable == "yoy_price_change_pct" ~ paste0("Latest IMF annual year-on-year percentage change for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, "."),
+        variable == "price_volatility" & data_type == "raw" ~ paste0("Annualized volatility of monthly log returns. Lookback window: ", window_years, " year(s)."),
+        variable == "price_volatility" & data_type == "index" ~ paste0("Percent-rank of lower price volatility. Lookback window: ", window_years, " year(s)."),
+        variable == "latest_price" ~ paste0("Latest observed commodity price level for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, ". Lookback window context: ", window_years, " year(s)."),
+        variable == "yoy_price_change_pct" ~ paste0("Latest IMF annual year-on-year percentage change for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, ". Lookback window context: ", window_years, " year(s)."),
         TRUE ~ NA_character_
       )
     ) %>%

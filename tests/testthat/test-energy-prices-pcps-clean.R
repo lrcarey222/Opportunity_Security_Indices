@@ -337,7 +337,7 @@ test_that("Overall Energy Prices Index remains index-only fallback from price_vo
   expect_false(any(stringr::str_detect(overall_rows$source, "latest_price|yoy_price_change_pct"), na.rm = TRUE))
 })
 
-test_that("energy_prices defaults include 1-year window and preserve window rows in final table", {
+test_that("energy_prices default output keeps window context in explanation without adding columns", {
   imf_price <- tibble::tibble(
     INDICATOR = "Natural Gas, EU, US dollars per million metric British thermal units of gas, Unit prices",
     FREQUENCY = "Monthly",
@@ -354,10 +354,35 @@ test_that("energy_prices defaults include 1-year window and preserve window rows
     min_months = 2
   )
 
-  windows <- out |>
-    dplyr::filter(variable == "price_volatility", data_type == "raw", sub_sector == "Natural_Gas_EU") |>
-    dplyr::distinct(window_years) |>
-    dplyr::pull(window_years)
+  vol_rows <- out |>
+    dplyr::filter(variable == "price_volatility", data_type == "raw", sub_sector == "Natural_Gas_EU")
 
-  expect_equal(sort(windows), c(1, 5, 10, 20))
+  expect_false("window_years" %in% names(out))
+  expect_equal(nrow(vol_rows), 4)
+  expect_true(all(stringr::str_detect(vol_rows$explanation, "Lookback window:")))
+  expect_true(all(stringr::str_detect(vol_rows$explanation, "1 year\(s\)|5 year\(s\)|10 year\(s\)|20 year\(s\)")))
+})
+
+
+test_that("1-year window computes non-NA volatility with default min_months", {
+  dates <- seq(as.Date("2024-01-01"), as.Date("2025-12-01"), by = "month")
+  imf_monthly_long <- tibble::tibble(
+    INDICATOR = rep("Natural Gas, EU, US dollars per million metric British thermal units of gas, Unit prices", length(dates)),
+    date = dates,
+    value = seq(8, 12, length.out = length(dates))
+  )
+
+  imf_monthly <- energy_prices_imf_clean(imf_monthly_long)
+
+  out <- energy_prices_build_volatility(
+    imf_monthly = imf_monthly,
+    mineral_demand_clean = tibble::tibble(Mineral = character(), tech = character())
+  )
+
+  vol_1y <- out |>
+    dplyr::filter(sub_sector == "Natural_Gas_EU", window_years == 1) |>
+    dplyr::pull(vol_logret_annualized)
+
+  expect_equal(length(vol_1y), 1)
+  expect_true(is.finite(vol_1y[[1]]))
 })
