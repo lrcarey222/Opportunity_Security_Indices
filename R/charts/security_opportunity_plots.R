@@ -6,16 +6,44 @@ group1 <- c("India","Viet Nam","South Korea","Japan")
 #Energy Access------
 
 #Energy consumption per capita
-for var in unique(energy_access_tbl$variable){
 
 plot1<-energy_access_tbl %>%
-  filter(Country == country1,
-         variable==var,
+  left_join(country_info %>%
+              select(iso3c,region)) %>%
+  filter(region %in% c("South Asia",
+                       "East Asia & Pacific")) %>%
+  filter(variable=="Energy consumption per capita",
          data_type=="raw") %>%
-  arrange(desc(value))
+  left_join(country_info %>%
+              select(iso3c,region)) %>%
+  filter(region %in% c("South Asia",
+                       "East Asia & Pacific")) %>%
+  arrange(desc(value)) %>%
+  select(Country,tech,value) %>%
+  pivot_wider(names_from=Country,values_from=value)
 
-}
+write.csv(plot1,"data/processed/charts/energy_access_asia.csv")
 
+#Reserves
+
+plot2<-reserves_tbl %>%
+  left_join(country_info %>%
+              select(iso3c,region),by=c("ISO3166_alpha3"="iso3c")) %>%
+  filter(region %in% c("South Asia",
+                       "East Asia & Pacific")) %>%
+  filter(data_type=="index") %>%
+  left_join(country_info %>%
+              select(iso3c,region)) %>%
+  filter(region %in% c("South Asia",
+                       "East Asia & Pacific")) %>%
+  distinct(Country,tech,value) %>%
+  filter(!is.na(value),
+         tech %in% techs) %>%
+  arrange(desc(value)) %>%
+  select(Country,tech,value) %>%
+  pivot_wider(names_from=tech,values_from=value)
+
+write.csv(plot2,"data/processed/charts/reserves_asia.csv")
 
 
 #Commodity Price Volatility
@@ -134,3 +162,13 @@ plot_prices_clean <- plot_prices %>%
 
 
 write.csv(plot_prices_clean,"data/processed/charts/commodity_price_volatility.csv")
+
+plot_volatility <- energy_prices_tbl %>%
+  filter(Country=="Australia", data_type=="raw",
+         grepl("price_volatility_",variable)) %>% 
+  select(-explanation) %>%
+  distinct(sub_sector,variable,value) %>%
+  arrange(desc(value)) %>%
+  pivot_wider(names_from=sub_sector,values_from=value) 
+
+write.csv(plot_volatility,"data/processed/charts/commodity_price_volatility_years.csv")
