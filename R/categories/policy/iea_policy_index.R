@@ -272,7 +272,7 @@ JURIS_WEIGHTS <- tibble::tribble(
   "Province", 0.5,
   "Regional", 0.5,
   "Local", 0.25,
-  "International", 0.20,
+  "International", 0.66,
   "Unknown", 0.30
 )
 
