@@ -86,6 +86,45 @@ normalize_frequency_arg <- function(frequency) {
   mapping[[value]]
 }
 
+resolve_repo_root_local <- function() {
+  repo_root <- getOption("opportunity_security.repo_root")
+  if (!is.null(repo_root) && nzchar(repo_root)) {
+    return(repo_root)
+  }
+
+  if (requireNamespace("rprojroot", quietly = TRUE)) {
+    return(rprojroot::find_root(rprojroot::is_git_root))
+  }
+
+  d <- normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
+    d <- dirname(d)
+  }
+  if (!file.exists(file.path(d, ".git"))) {
+    stop("Unable to resolve repo root; run from the repository root.")
+  }
+  d
+}
+
+ensure_trade_timeseries_helpers <- function(force_reload = FALSE) {
+  helper_path <- file.path(resolve_repo_root_local(), "R", "charts", "trade_timeseries.R")
+
+  if (isTRUE(force_reload) ||
+      !exists("build_trade_timeseries_request_grid", mode = "function") ||
+      !exists("trade_tag_response_chunk", mode = "function") ||
+      !exists("trade_prepare_hs6_codes", mode = "function")) {
+    source(helper_path)
+  }
+
+  if (!exists("build_trade_timeseries_request_grid", mode = "function") ||
+      !exists("trade_tag_response_chunk", mode = "function") ||
+      !exists("trade_prepare_hs6_codes", mode = "function")) {
+    stop("trade_timeseries helpers were not loaded. Check R/charts/trade_timeseries.R")
+  }
+
+  invisible(TRUE)
+}
+
 run_trade_timeseries_pull <- function(country,
                                       tech,
                                       supply_chain,
@@ -105,6 +144,8 @@ run_trade_timeseries_pull <- function(country,
                                       request_pause_seconds = 0,
                                       timeout_seconds = 120,
                                       show_progress = interactive()) {
+  ensure_trade_timeseries_helpers()
+
   country <- normalize_character_arg(country)
   tech <- normalize_character_arg(tech)
   partners <- normalize_partners_arg(partners)
