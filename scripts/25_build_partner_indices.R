@@ -44,23 +44,39 @@ read_index_outputs <- function(config, processed_dir) {
   }
   readRDS(outputs_rds_path)
 }
-
-
+prepare_partner_top5_for_psi <- function(tbl) {
+  tbl %>%
+    dplyr::transmute(
+      Country = as.character(partner),
+      tech = "All",
+      supply_chain = "All",
+      category = as.character(category),
+      variable = as.character(variable),
+      data_type = as.character(data_type),
+      value = suppressWarnings(as.numeric(value)),
+      Year = suppressWarnings(as.integer(Year)),
+      source = as.character(source),
+      explanation = as.character(explanation)
+    )
+}
 
 partner_opportunity_country_tbl <- read_processed_tbl(
-  "partner_opportunity_tbl",
+  "partner_opportunity_top5_tbl",
   processed_dir
-)%>%
-  filter(tech %in% techs)
+) %>%
+  prepare_partner_top5_for_psi()
 
 partner_development_country_tbl <- read_processed_tbl(
-  "partner_development_tbl",
+  "partner_development_top5_tbl",
   processed_dir
-)%>%
-  filter(tech %in% techs)
+) %>%
+  prepare_partner_top5_for_psi()
 
-partner_friendshore_country_tbl <- read_processed_tbl("partner_friendshore_tbl", processed_dir)%>%
-  filter(tech %in% techs)
+partner_friendshore_country_tbl <- read_processed_tbl(
+  "partner_friendshore_top5_tbl",
+  processed_dir
+) %>%
+  prepare_partner_top5_for_psi()
 
 if (!exists("economic_opportunity_outputs")) {
   index_outputs <- read_index_outputs(config, processed_dir)
@@ -79,5 +95,5 @@ partnership_strength_outputs <- build_partnership_strength_index(
 
 psi_tbl <- psi_composite(
   partnership_strength_outputs$partnership_strength_index,
-  year = max(partner_friendshore_tbl$Year, na.rm = TRUE)
+  year = max(partner_friendshore_country_tbl$Year, na.rm = TRUE)
 )
