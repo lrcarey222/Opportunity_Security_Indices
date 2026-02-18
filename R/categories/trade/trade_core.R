@@ -49,8 +49,8 @@ trade_core_filter_year <- function(tbl, year, label = "trade data") {
 
 trade_core_build_aec_market_share <- function(aec_6_data, energy_codes, year = 2023) {
   aec_6_data %>%
-    dplyr::filter(year == as.character(year)) %>%
-    dplyr::left_join(energy_codes, by = c("product_hs92_code" = "code6")) %>%
+    trade_core_filter_year(year = year, label = "AEC HS6 market share data") %>%
+    dplyr::left_join(energy_codes, by = c("product_hs92_code" = "code6"), relationship = "many-to-many") %>%
     dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
     dplyr::group_by(country_iso3_code, tech, supply_chain, sub_sector) %>%
     dplyr::summarize(
@@ -61,8 +61,8 @@ trade_core_build_aec_market_share <- function(aec_6_data, energy_codes, year = 2
 
 trade_core_build_aec_feasibility <- function(aec_4_data, energy_codes, year = 2022) {
   aec_4_data %>%
-    dplyr::filter(year == as.character(year)) %>%
-    dplyr::left_join(energy_codes, by = c("product_hs92_code" = "code4")) %>%
+    trade_core_filter_year(year = year, label = "AEC HS4 feasibility data") %>%
+    dplyr::left_join(energy_codes, by = c("product_hs92_code" = "code4"), relationship = "many-to-many") %>%
     dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
     dplyr::group_by(country_iso3_code, tech, supply_chain, sub_sector) %>%
     dplyr::summarize(
@@ -94,7 +94,7 @@ trade_core_build_comtrade_trade <- function(comtrade_data,
       flow_direction = stringr::str_to_lower(flow_direction)
     ) %>%
     dplyr::filter(flow_direction %in% c("export", "import")) %>%
-    dplyr::left_join(energy_codes, by = c("cmd_code" = "code6")) %>%
+    dplyr::left_join(energy_codes, by = c("cmd_code" = "code6"), relationship = "many-to-many") %>%
     dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
     dplyr::group_by(reporter_iso, tech, supply_chain, sub_sector, flow_direction) %>%
     dplyr::summarize(value = sum(primary_value, na.rm = TRUE), .groups = "drop") %>%
