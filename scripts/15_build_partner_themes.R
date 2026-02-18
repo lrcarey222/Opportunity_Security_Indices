@@ -34,6 +34,86 @@ write_processed_tbl <- function(tbl, name, processed_dir) {
   invisible(tbl)
 }
 
+build_partner_variable_tbl <- function(dyads_tbl) {
+  dyads_tbl %>%
+    dplyr::mutate(
+      reporter = dplyr::coalesce(.data$Reporter, .data$Country),
+      partner = dplyr::coalesce(.data$Partner, .data$Country)
+    ) %>%
+    dplyr::select(
+      reporter,
+      partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      Year,
+      source,
+      explanation
+    )
+}
+
+build_partner_contributions_tbl <- function(dyads_tbl) {
+  contribution_col <- if ("weighted_component" %in% names(dyads_tbl)) "weighted_component" else "value"
+
+  dyads_tbl %>%
+    dplyr::mutate(
+      reporter = dplyr::coalesce(.data$Reporter, .data$Country),
+      partner = dplyr::coalesce(.data$Partner, .data$Country),
+      contribution = as.numeric(.data[[contribution_col]])
+    ) %>%
+    dplyr::filter(!is.na(contribution)) %>%
+    dplyr::mutate(data_type = "contribution") %>%
+    dplyr::select(
+      reporter,
+      partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      contribution,
+      Year,
+      source,
+      explanation
+    )
+}
+
+build_partner_top5_tbl <- function(variable_tbl) {
+  variable_tbl %>%
+    dplyr::group_by(reporter, partner, reporter_iso, partner_iso, category, variable, Year) %>%
+    dplyr::summarise(
+      value = mean(value, na.rm = TRUE),
+      source = dplyr::first(source),
+      explanation = dplyr::first(explanation),
+      .groups = "drop"
+    ) %>%
+    dplyr::group_by(category, variable, Year) %>%
+    dplyr::slice_max(order_by = value, n = 5, with_ties = FALSE) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(data_type = "index") %>%
+    dplyr::select(
+      reporter,
+      partner,
+      reporter_iso,
+      partner_iso,
+      category,
+      variable,
+      data_type,
+      value,
+      Year,
+      source,
+      explanation
+    )
+}
+
 read_index_outputs <- function(config, processed_dir) {
   outputs_rds_path <- Sys.getenv("OPSI_OUTPUTS_RDS", "")
   if (!nzchar(outputs_rds_path)) {
@@ -170,6 +250,9 @@ friendshore_outputs <- safer_friendshore(
 partner_friendshore_tbl <- friendshore_outputs$dyads
 partner_friendshore_country_tbl <- friendshore_outputs$country
 partner_friendshore_inputs_tbl <- friendshore_outputs$inputs_country
+partner_friendshore_variable_tbl <- build_partner_variable_tbl(partner_friendshore_tbl)
+partner_friendshore_contributions_tbl <- build_partner_contributions_tbl(partner_friendshore_tbl)
+partner_friendshore_top5_tbl <- build_partner_top5_tbl(partner_friendshore_variable_tbl)
 write_processed_tbl(partner_friendshore_tbl, "partner_friendshore_tbl", processed_dir)
 write_processed_tbl(
   partner_friendshore_country_tbl,
@@ -179,6 +262,21 @@ write_processed_tbl(
 write_processed_tbl(
   partner_friendshore_inputs_tbl,
   "partner_friendshore_inputs_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_friendshore_variable_tbl,
+  "partner_friendshore_variable_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_friendshore_contributions_tbl,
+  "partner_friendshore_contributions_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_friendshore_top5_tbl,
+  "partner_friendshore_top5_tbl",
   processed_dir
 )
 
@@ -196,6 +294,9 @@ opportunity_outputs <- prosperous_opportunity(
 partner_opportunity_tbl <- opportunity_outputs$dyads
 partner_opportunity_country_tbl <- opportunity_outputs$country
 partner_opportunity_inputs_tbl <- opportunity_outputs$inputs_country
+partner_opportunity_variable_tbl <- build_partner_variable_tbl(partner_opportunity_tbl)
+partner_opportunity_contributions_tbl <- build_partner_contributions_tbl(partner_opportunity_tbl)
+partner_opportunity_top5_tbl <- build_partner_top5_tbl(partner_opportunity_variable_tbl)
 write_processed_tbl(partner_opportunity_tbl, "partner_opportunity_tbl", processed_dir)
 write_processed_tbl(
   partner_opportunity_country_tbl,
@@ -205,6 +306,21 @@ write_processed_tbl(
 write_processed_tbl(
   partner_opportunity_inputs_tbl,
   "partner_opportunity_inputs_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_opportunity_variable_tbl,
+  "partner_opportunity_variable_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_opportunity_contributions_tbl,
+  "partner_opportunity_contributions_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_opportunity_top5_tbl,
+  "partner_opportunity_top5_tbl",
   processed_dir
 )
 
@@ -222,9 +338,27 @@ development_outputs <- stronger_development(
 
 partner_development_tbl <- development_outputs$dyads
 partner_development_country_tbl <- development_outputs$country
+partner_development_variable_tbl <- build_partner_variable_tbl(partner_development_tbl)
+partner_development_contributions_tbl <- build_partner_contributions_tbl(partner_development_tbl)
+partner_development_top5_tbl <- build_partner_top5_tbl(partner_development_variable_tbl)
 write_processed_tbl(partner_development_tbl, "partner_development_tbl", processed_dir)
 write_processed_tbl(
   partner_development_country_tbl,
   "partner_development_country_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_development_variable_tbl,
+  "partner_development_variable_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_development_contributions_tbl,
+  "partner_development_contributions_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_development_top5_tbl,
+  "partner_development_top5_tbl",
   processed_dir
 )
