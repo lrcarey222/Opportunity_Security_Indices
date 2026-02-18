@@ -429,21 +429,6 @@ prosperous_opportunity <- function(comtrade_dyads,
     component_weights = component_weights
   )
 
-  opportunity_country <- partnership_strength_build_opportunity_country(
-    opportunity_all,
-    country_info,
-    top_n = top_n,
-    year = max(years)
-  )
-
-  opportunity_inputs_country <- partnership_strength_build_opportunity_inputs_country(
-    opportunity_all,
-    country_info,
-    component_weights = component_weights,
-    top_n = top_n,
-    year = max(years)
-  )
-
   opportunity_dyads <- partnership_strength_build_opportunity_dyads_table(
     opportunity_all,
     country_info,
@@ -451,18 +436,82 @@ prosperous_opportunity <- function(comtrade_dyads,
     year = max(years)
   )
 
-  standardized_dyads <- partnership_strength_standardize_bind_rows(opportunity_dyads)
-  partnership_strength_validate_schema(standardized_dyads, label = "prosperous_opportunity_dyads")
+  variable_tbl <- opportunity_dyads %>%
+    dplyr::mutate(
+      reporter = Reporter,
+      partner = Partner
+    ) %>%
+    dplyr::select(
+      reporter,
+      partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      Year,
+      source,
+      explanation
+    )
 
-  standardized_country <- partnership_strength_standardize_bind_rows(opportunity_country)
-  partnership_strength_validate_schema(standardized_country, label = "prosperous_opportunity_country")
+  contributions_tbl <- opportunity_dyads %>%
+    dplyr::mutate(
+      reporter = Reporter,
+      partner = Partner,
+      data_type = "contribution",
+      contribution = dplyr::coalesce(weighted_component, value)
+    ) %>%
+    dplyr::filter(!is.na(contribution)) %>%
+    dplyr::select(
+      reporter,
+      partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      contribution,
+      Year,
+      source,
+      explanation
+    )
 
-  standardized_inputs_country <- partnership_strength_standardize_bind_rows(opportunity_inputs_country)
-  partnership_strength_validate_schema(standardized_inputs_country, label = "prosperous_opportunity_inputs_country")
+  top5_tbl <- variable_tbl %>%
+    dplyr::group_by(reporter, partner, reporter_iso, partner_iso, category, variable) %>%
+    dplyr::slice_max(order_by = value, n = 5, with_ties = FALSE) %>%
+    dplyr::summarise(
+      value = mean(value, na.rm = TRUE),
+      source = dplyr::first(source),
+      explanation = dplyr::first(explanation),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(
+      data_type = "index",
+      Year = as.integer(max(years))
+    ) %>%
+    dplyr::select(
+      reporter,
+      partner,
+      reporter_iso,
+      partner_iso,
+      category,
+      variable,
+      data_type,
+      value,
+      Year,
+      source,
+      explanation
+    )
 
   list(
-    dyads = standardized_dyads,
-    country = standardized_country,
-    inputs_country = standardized_inputs_country
+    variable = variable_tbl,
+    contributions = contributions_tbl,
+    top5 = top5_tbl
   )
 }

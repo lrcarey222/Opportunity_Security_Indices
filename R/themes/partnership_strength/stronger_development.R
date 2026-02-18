@@ -495,29 +495,82 @@ stronger_development <- function(comtrade_dyads,
       explanation = "Development potential per reporter-partner dyad."
     )
 
-  development_country <- dev_potential_index %>%
-    dplyr::mutate(Country = partnership_strength_iso_to_country(iso3c, country_info)) %>%
-    dplyr::transmute(
-      Country,
+  variable_tbl <- development_dyads %>%
+    dplyr::mutate(
+      reporter = Reporter,
+      partner = Partner
+    ) %>%
+    dplyr::select(
+      reporter,
+      partner,
+      reporter_iso,
+      partner_iso,
       tech,
       supply_chain,
-      category = "development",
-      variable = "Development Potential Index",
-      data_type = "index",
-      value = dev_potential_index,
-      Year = as.integer(max(years)),
-      source = "Author calculation",
-      explanation = "Weighted composite of OECD aid, WDI development indicators, energy security, and economic opportunity."
+      category,
+      variable,
+      data_type,
+      value,
+      Year,
+      source,
+      explanation
     )
 
-  standardized_country <- partnership_strength_standardize_bind_rows(development_country)
-  partnership_strength_validate_schema(standardized_country, label = "stronger_development_country")
+  contributions_tbl <- development_dyads %>%
+    dplyr::mutate(
+      reporter = Reporter,
+      partner = Partner,
+      data_type = "contribution",
+      contribution = value
+    ) %>%
+    dplyr::filter(!is.na(contribution)) %>%
+    dplyr::select(
+      reporter,
+      partner,
+      reporter_iso,
+      partner_iso,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      contribution,
+      Year,
+      source,
+      explanation
+    )
 
-  standardized_dyads <- partnership_strength_standardize_bind_rows(development_dyads)
-  partnership_strength_validate_schema(standardized_dyads, label = "stronger_development_dyads")
+  top5_tbl <- variable_tbl %>%
+    dplyr::group_by(reporter, partner, reporter_iso, partner_iso, category, variable) %>%
+    dplyr::slice_max(order_by = value, n = 5, with_ties = FALSE) %>%
+    dplyr::summarise(
+      value = mean(value, na.rm = TRUE),
+      source = dplyr::first(source),
+      explanation = dplyr::first(explanation),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(
+      data_type = "index",
+      Year = as.integer(max(years))
+    ) %>%
+    dplyr::select(
+      reporter,
+      partner,
+      reporter_iso,
+      partner_iso,
+      category,
+      variable,
+      data_type,
+      value,
+      Year,
+      source,
+      explanation
+    )
 
   list(
-    dyads = standardized_dyads,
-    country = standardized_country
+    variable = variable_tbl,
+    contributions = contributions_tbl,
+    top5 = top5_tbl
   )
 }
