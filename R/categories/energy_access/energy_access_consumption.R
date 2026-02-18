@@ -68,8 +68,14 @@ energy_access_build_growth <- function(ec_base, ec_target, base_year, target_yea
       suffix = c("_base", "_target")
     ) %>%
     dplyr::filter(data_type == "raw") %>%
-    dplyr::mutate(growth_raw = (value_target - value_base) / value_base) %>%
-    dplyr::group_by(Country) %>%
+    dplyr::mutate(
+      growth_raw = dplyr::if_else(
+        value_base == 0,
+        NA_real_,
+        (value_target - value_base) / value_base
+      )
+    ) %>%
+    dplyr::group_by(tech) %>%
     dplyr::mutate(growth_index = median_scurve(growth_raw, gamma = gamma)) %>%
     dplyr::ungroup() %>%
     dplyr::select(-data_type) %>%
