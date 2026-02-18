@@ -172,11 +172,11 @@ plot_country_scatter <- function(strategic_tbl, selected_sector_labels = NULL) {
 build_topn_contrib_tbl <- function(strategic_tbl, top_n = 10) {
   topn_wide <- strategic_tbl %>%
     dplyr::mutate(
-      contrib_eo = 0.25 * .data$Economic_Opportunity_Index,
-      contrib_es = 0.25 * .data$Energy_Security_Index,
+      contrib_eo = 0.3 * .data$Economic_Opportunity_Index,
+      contrib_es = 0.3 * .data$Energy_Security_Index,
       contrib_policy = 0.2 * .data$pol,
-      contrib_sc = 0.15 * .data$sc_weight,
-      contrib_climate = 0.15 * .data$tech_weight
+      contrib_sc = 0.1 * .data$sc_weight,
+      contrib_climate = 0.1 * .data$tech_weight
     ) %>%
     dplyr::arrange(dplyr::desc(.data$strategic_index)) %>%
     dplyr::slice_head(n = top_n) %>%

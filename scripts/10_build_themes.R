@@ -564,6 +564,10 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   dual_use_scores_raw <- readr::read_csv(dual_use_scores_path, show_col_types = FALSE)
 
   iea_policy_outputs <- iea_policy_index(pams_raw, split_strength = FALSE)
+  iea_policy_clean <- iea_policy_outputs$outputs$policy_clean %>%
+    select(iso3,country,title_text:year,policy_strength,tech,supply_chain,policy_type_bucket,w_type:w_sc) %>%
+    arrange(desc(policy_strength)) %>%
+    arrange(desc(year))
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
   
   ally_iso3 <- c(
@@ -590,7 +594,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     filter(`Implementing Jurisdiction`=="United States of America")
   
   nipo_policy_out <- nipo_domestic_intervention_outputs(
-    raw_nipo = nipo_allies,
+    raw_nipo = nipo_raw,
     hs6_categories_essential,
     country_info = country_info,
     rolling_window_years = 3,

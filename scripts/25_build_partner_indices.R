@@ -45,26 +45,27 @@ read_index_outputs <- function(config, processed_dir) {
   readRDS(outputs_rds_path)
 }
 
-partner_friendshore_country_tbl <- read_processed_tbl(
-  "partner_friendshore_country_tbl",
-  processed_dir
-)
+
+
 partner_opportunity_country_tbl <- read_processed_tbl(
-  "partner_opportunity_country_tbl",
+  "partner_opportunity_tbl",
   processed_dir
-)
+)%>%
+  filter(tech %in% techs)
+
 partner_development_country_tbl <- read_processed_tbl(
-  "partner_development_country_tbl",
+  "partner_development_tbl",
   processed_dir
-)
-partner_friendshore_tbl <- read_processed_tbl("partner_friendshore_tbl", processed_dir)
+)%>%
+  filter(tech %in% techs)
+
+partner_friendshore_country_tbl <- read_processed_tbl("partner_friendshore_tbl", processed_dir)%>%
+  filter(tech %in% techs)
 
 if (!exists("economic_opportunity_outputs")) {
   index_outputs <- read_index_outputs(config, processed_dir)
   economic_opportunity_outputs <- index_outputs$economic_opportunity_outputs
 }
-
-partner_economic_opportunity_tbl <- aggregate_economic_opportunity_index(economic_opportunity_outputs)
 
 partnership_strength_outputs <- build_partnership_strength_index(
   theme_tables = list(

@@ -100,14 +100,14 @@ write.csv(plot_tot %>%
 #Atlas Economic COmplexity Data
 
 world<-read.csv("data/raw/hs92_product_year_6.csv")
+world<- read.csv("C:/Users/LCarey/Downloads/hs92_country_product_year_6.csv")
 
-base_year=2009
+base_year=2016
 
 world_plot<-world %>%
   inner_join(hs6_categories_essential %>% mutate(code6 = as.character(HS6)),
             by = c("product_hs92_code" = "code6"),
             relationship = "many-to-many") %>%
-  #filter(Technology %in% c("Semiconductors","Batteries","Solar","Magnets","Electric Motors")) %>%
   group_by(Technology,Value.Chain, year) %>%
   summarise(exports = sum(export_value, na.rm = TRUE), .groups = "drop") %>%
   group_by(Technology,Value.Chain) %>%
@@ -118,6 +118,36 @@ world_plot<-world %>%
   ) %>%
   ungroup() %>%
   mutate(industry=paste(Technology,Value.Chain)) 
+
+write.csv(world_plot %>%
+            filter(Technology %in% c("Semiconductors","Batteries","Solar","Gas","Oil")) %>%
+            select(year,industry,export_index) %>%
+            pivot_wider(names_from=industry,values_from=export_index),paste0(processed_dir,"/charts/electro_world_ind.csv"))
+
+
+clean_electro_fossil <- world_plot %>%
+  mutate(
+    sector = case_when(
+      Technology %in% c("Semiconductors","Batteries","Magnets","Electric Motors","Electric Grid") ~ "Electro-Industrial",
+      Technology %in% c("Oil","Coal","Gas") ~ "Fossil",
+      Technology %in% c("Solar","Wind","Green Hydrogen") ~ "Clean Power",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(sector)) %>%
+  group_by(sector, year) %>%
+  summarise(exports = sum(exports, na.rm = TRUE), .groups = "drop") %>%
+  group_by(sector) %>%
+  arrange(year, .by_group = TRUE) %>%
+  mutate(
+    base_exports = first(exports[year == base_year]),
+    export_index = if_else(is.na(base_exports) | base_exports == 0, NA_real_, (exports / base_exports) * 100)
+  ) %>%
+  ungroup()
+write.csv(clean_electro_fossil %>%
+            select(year,sector,export_index) %>%
+            pivot_wider(names_from=sector,values_from=export_index),paste0(processed_dir,"/charts/electro_world.csv"))
+
 
 %>%
   select(industry, date, import_index) %>%
@@ -133,3 +163,4 @@ ggplot(data=plot_tot,
   theme_minimal()
 
 write.csv(plot_tot,paste0(processed_dir,"/charts/trade_time_plot_","KOR",".csv"))
+

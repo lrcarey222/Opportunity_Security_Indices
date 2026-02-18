@@ -248,6 +248,7 @@ strategic_index <- left_join(
     # impute NAs to country mean (computed components)
     Economic_Opportunity_Index  = if_else(is.na(Economic_Opportunity_Index),  mean(Economic_Opportunity_Index,  na.rm = TRUE), Economic_Opportunity_Index),
     Energy_Security_Index  = if_else(is.na(Energy_Security_Index),  mean(Energy_Security_Index,  na.rm = TRUE), Energy_Security_Index),
+    Energy_Security_Index=1-Energy_Security_Index,
     value = if_else(is.na(value), mean(value, na.rm = TRUE), value)
   ) %>%
   group_by(Country) %>%
@@ -274,10 +275,10 @@ strategic_index <- left_join(
     strategic_index =
       0.2 * pol +
       #0.25 * trl_index +
-      0.25 * Economic_Opportunity_Index +
-      0.25 * Energy_Security_Index +
-      0.15 * sc_weight +
-      0.15 * tech_weight
+      0.3 * Economic_Opportunity_Index +
+      0.3 * Energy_Security_Index +
+      0.1 * sc_weight +
+      0.1 * tech_weight
   ) %>%
   ungroup() %>%
   mutate(
