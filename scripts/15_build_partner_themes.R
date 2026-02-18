@@ -167,18 +167,33 @@ friendshore_outputs <- safer_friendshore(
   component_weights = weights$partnership_friendshore_components
 )
 
-partner_friendshore_tbl <- friendshore_outputs$dyads
-partner_friendshore_country_tbl <- friendshore_outputs$country
-partner_friendshore_inputs_tbl <- friendshore_outputs$inputs_country
-write_processed_tbl(partner_friendshore_tbl, "partner_friendshore_tbl", processed_dir)
+partner_friendshore_variable_tbl <- friendshore_outputs$variable
+partner_friendshore_contributions_tbl <- friendshore_outputs$contributions
+partner_friendshore_top5_tbl <- friendshore_outputs$top5
+write_processed_tbl(partner_friendshore_variable_tbl, "partner_friendshore_tbl", processed_dir)
 write_processed_tbl(
-  partner_friendshore_country_tbl,
+  partner_friendshore_variable_tbl,
   "partner_friendshore_country_tbl",
   processed_dir
 )
 write_processed_tbl(
-  partner_friendshore_inputs_tbl,
+  partner_friendshore_contributions_tbl,
   "partner_friendshore_inputs_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_friendshore_variable_tbl,
+  "partner_friendshore_variable_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_friendshore_contributions_tbl,
+  "partner_friendshore_contributions_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_friendshore_top5_tbl,
+  "partner_friendshore_top5_tbl",
   processed_dir
 )
 
@@ -193,18 +208,33 @@ opportunity_outputs <- prosperous_opportunity(
   component_weights = weights$partnership_opportunity_components
 )
 
-partner_opportunity_tbl <- opportunity_outputs$dyads
-partner_opportunity_country_tbl <- opportunity_outputs$country
-partner_opportunity_inputs_tbl <- opportunity_outputs$inputs_country
-write_processed_tbl(partner_opportunity_tbl, "partner_opportunity_tbl", processed_dir)
+partner_opportunity_variable_tbl <- opportunity_outputs$variable
+partner_opportunity_contributions_tbl <- opportunity_outputs$contributions
+partner_opportunity_top5_tbl <- opportunity_outputs$top5
+write_processed_tbl(partner_opportunity_variable_tbl, "partner_opportunity_tbl", processed_dir)
 write_processed_tbl(
-  partner_opportunity_country_tbl,
+  partner_opportunity_variable_tbl,
   "partner_opportunity_country_tbl",
   processed_dir
 )
 write_processed_tbl(
-  partner_opportunity_inputs_tbl,
+  partner_opportunity_contributions_tbl,
   "partner_opportunity_inputs_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_opportunity_variable_tbl,
+  "partner_opportunity_variable_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_opportunity_contributions_tbl,
+  "partner_opportunity_contributions_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_opportunity_top5_tbl,
+  "partner_opportunity_top5_tbl",
   processed_dir
 )
 
@@ -220,11 +250,32 @@ development_outputs <- stronger_development(
   oecd_api_raw = oecd_api_raw
 )
 
-partner_development_tbl <- development_outputs$dyads
-partner_development_country_tbl <- development_outputs$country
-write_processed_tbl(partner_development_tbl, "partner_development_tbl", processed_dir)
+partner_development_variable_tbl <- development_outputs$variable
+partner_development_contributions_tbl <- development_outputs$contributions
+partner_development_top5_tbl <- development_outputs$top5
+write_processed_tbl(partner_development_variable_tbl, "partner_development_tbl", processed_dir)
 write_processed_tbl(
-  partner_development_country_tbl,
+  partner_development_variable_tbl,
   "partner_development_country_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_development_variable_tbl,
+  "partner_development_variable_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_development_contributions_tbl,
+  "partner_development_inputs_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_development_contributions_tbl,
+  "partner_development_contributions_tbl",
+  processed_dir
+)
+write_processed_tbl(
+  partner_development_top5_tbl,
+  "partner_development_top5_tbl",
   processed_dir
 )
