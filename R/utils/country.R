@@ -67,16 +67,32 @@ standardize_country_table <- function(tbl, country_info = NULL) {
   }
 
   standardized <- tbl %>%
-    dplyr::mutate(Country = standardize_country_names(Country))
+    dplyr::mutate(
+      Country = standardize_country_names(Country),
+      iso3c = if ("iso3c" %in% names(tbl)) toupper(as.character(iso3c)) else NA_character_
+    )
 
   if (is.null(country_info)) {
     return(standardized)
   }
 
-  standardized %>%
-    dplyr::left_join(
-      country_info %>% dplyr::select(iso3c, country),
-      by = c("Country" = "country")
+  country_ref <- country_info %>%
+    dplyr::transmute(
+      iso3c = toupper(as.character(iso3c)),
+      country = as.character(country)
     ) %>%
-    dplyr::filter(!is.na(iso3c))
+    dplyr::distinct(iso3c, .keep_all = TRUE)
+
+  with_iso <- standardized %>%
+    dplyr::filter(!is.na(iso3c), nzchar(iso3c)) %>%
+    dplyr::left_join(country_ref, by = "iso3c") %>%
+    dplyr::mutate(Country = dplyr::coalesce(country, Country)) %>%
+    dplyr::select(-country)
+
+  without_iso <- standardized %>%
+    dplyr::filter(is.na(iso3c) | !nzchar(iso3c)) %>%
+    dplyr::left_join(country_ref, by = c("Country" = "country"))
+
+  dplyr::bind_rows(with_iso, without_iso) %>%
+    dplyr::filter(!is.na(iso3c), nzchar(iso3c))
 }
