@@ -250,6 +250,7 @@ trade_core_build_tidy <- function(trade_indices, year = 2023, include_sub_sector
       )
     ) %>%
     dplyr::select(
+      iso3c,
       Country,
       tech,
       supply_chain,
