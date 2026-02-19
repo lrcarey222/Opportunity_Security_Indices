@@ -10,6 +10,8 @@ partnership_strength_build_import_indices <- function(ds_import) {
       imp_den = 2 * (!is.na(import_index)) + 1 * (!is.na(import_growth_idx)),
       imp_trade_index = dplyr::if_else(imp_den > 0, imp_num / imp_den, NA_real_)
     ) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(reporter_iso, tech, supply_chain) %>%
     dplyr::mutate(imp_trade_index = partnership_strength_safe_scurve(imp_trade_index)) %>%
     dplyr::ungroup() %>%
     dplyr::transmute(reporter_iso, partner_iso, tech, supply_chain, imp_trade_index)
@@ -166,7 +168,31 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
   default_ghg <- if (nrow(ghg_iso)) median(ghg_iso$ghg_index, na.rm = TRUE) else 0.5
   default_policy <- if (nrow(policy_iso)) median(policy_iso$climate_policy_index, na.rm = TRUE) else 0.5
 
-  import_indices %>%
+  reporter_keys <- dplyr::bind_rows(
+    es_iso %>% dplyr::distinct(reporter_iso, tech, supply_chain),
+    econ_opp_iso %>% dplyr::distinct(reporter_iso = exporter_iso, tech, supply_chain)
+  ) %>%
+    dplyr::distinct(reporter_iso, tech, supply_chain)
+  partner_keys <- eo_partner_iso %>%
+    dplyr::distinct(partner_iso, tech, supply_chain)
+
+  dyad_backbone <- reporter_keys %>%
+    dplyr::inner_join(partner_keys, by = c("tech", "supply_chain"), relationship = "many-to-many")
+
+  dyad_backbone %>%
+    dplyr::left_join(import_indices, by = c("reporter_iso", "partner_iso", "tech", "supply_chain")) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(
+      imp_trade_index = dplyr::coalesce(
+        imp_trade_index,
+        dplyr::if_else(
+          is.nan(mean(imp_trade_index, na.rm = TRUE)),
+          0.5,
+          mean(imp_trade_index, na.rm = TRUE)
+        )
+      )
+    ) %>%
+    dplyr::ungroup() %>%
     dplyr::left_join(es_iso, by = c("tech", "supply_chain", "reporter_iso")) %>%
     dplyr::left_join(econ_opp_iso, by = c("reporter_iso" = "exporter_iso", "tech", "supply_chain")) %>%
     dplyr::left_join(eo_partner_iso, by = c("tech", "supply_chain", "partner_iso")) %>%
