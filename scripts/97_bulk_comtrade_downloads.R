@@ -79,6 +79,51 @@ extract_hs92_codes <- function(hs_tbl) {
   sort(unique(codes))
 }
 
+extract_reporter_iso3 <- function(reporter_ref) {
+  if (!is.data.frame(reporter_ref) || nrow(reporter_ref) == 0) {
+    return(character())
+  }
+
+  candidate_cols <- c(
+    "iso3_code", "reporter_iso", "reporterISO", "reporter_iso3",
+    "ReporterISO", "reporterCodeIsoAlpha3", "reporter_code_iso_alpha_3"
+  )
+  match_cols <- candidate_cols[candidate_cols %in% names(reporter_ref)]
+
+  if (length(match_cols) == 0) {
+    # Fallback: detect likely 3-letter reporter code columns.
+    likely_name <- grepl("iso|alpha", names(reporter_ref), ignore.case = TRUE)
+    likely_vals <- vapply(
+      reporter_ref,
+      function(col) {
+        vals <- as.character(col)
+        vals <- vals[nzchar(vals)]
+        if (length(vals) == 0) {
+          return(FALSE)
+        }
+        mean(grepl("^[A-Z]{3}$", toupper(vals))) > 0.8
+      },
+      logical(1)
+    )
+    fallback_cols <- names(reporter_ref)[likely_name & likely_vals]
+    if (length(fallback_cols) == 0) {
+      stop(
+        "Unable to detect reporter ISO3 column from ct_get_ref_table('reporter'). ",
+        "Available columns: ",
+        paste(names(reporter_ref), collapse = ", ")
+      )
+    }
+    match_cols <- fallback_cols[[1]]
+  }
+
+  reporters <- as.character(reporter_ref[[match_cols[[1]]]])
+  reporters <- trimws(reporters)
+  reporters <- toupper(reporters)
+  reporters <- reporters[nzchar(reporters)]
+  reporters <- reporters[grepl("^[A-Z]{3}$", reporters)]
+  sort(unique(reporters))
+}
+
 split_vec <- function(x, chunk_size) {
   if (length(x) == 0) {
     return(list())
@@ -166,12 +211,7 @@ run_bulk_comtrade_download <- function(
   }
 
   reporter_ref <- comtradr::ct_get_ref_table("reporter")
-  reporters <- reporter_ref %>%
-    dplyr::pull(iso3_code) %>%
-    as.character() %>%
-    unique() %>%
-    sort()
-  reporters <- reporters[nzchar(reporters)]
+  reporters <- extract_reporter_iso3(reporter_ref)
 
   monthly_reporters <- sort(unique(monthly_reporters))
   monthly_reporters <- monthly_reporters[monthly_reporters %in% reporters]
