@@ -10,6 +10,8 @@ partnership_strength_build_import_indices <- function(ds_import) {
       imp_den = 2 * (!is.na(import_index)) + 1 * (!is.na(import_growth_idx)),
       imp_trade_index = dplyr::if_else(imp_den > 0, imp_num / imp_den, NA_real_)
     ) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(reporter_iso, tech, supply_chain) %>%
     dplyr::mutate(imp_trade_index = partnership_strength_safe_scurve(imp_trade_index)) %>%
     dplyr::ungroup() %>%
     dplyr::transmute(reporter_iso, partner_iso, tech, supply_chain, imp_trade_index)
