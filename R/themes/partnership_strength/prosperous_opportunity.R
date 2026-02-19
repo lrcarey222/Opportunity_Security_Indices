@@ -75,6 +75,8 @@ partnership_strength_build_export_indices <- function(ds_export) {
       ti_den = 2 * (!is.na(export_index)) + 1 * (!is.na(export_growth_index)),
       trade_index_raw = dplyr::if_else(ti_den > 0, ti_num / ti_den, NA_real_)
     ) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(reporter_iso, tech, supply_chain) %>%
     dplyr::mutate(trade_index = partnership_strength_safe_scurve(trade_index_raw)) %>%
     dplyr::ungroup() %>%
     dplyr::select(reporter_iso, partner_iso, tech, supply_chain, trade_index)
