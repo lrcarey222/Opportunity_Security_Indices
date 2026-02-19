@@ -75,6 +75,8 @@ partnership_strength_build_export_indices <- function(ds_export) {
       ti_den = 2 * (!is.na(export_index)) + 1 * (!is.na(export_growth_index)),
       trade_index_raw = dplyr::if_else(ti_den > 0, ti_num / ti_den, NA_real_)
     ) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(reporter_iso, tech, supply_chain) %>%
     dplyr::mutate(trade_index = partnership_strength_safe_scurve(trade_index_raw)) %>%
     dplyr::ungroup() %>%
     dplyr::select(reporter_iso, partner_iso, tech, supply_chain, trade_index)
@@ -143,7 +145,28 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
   default_ghg <- if (nrow(ghg_iso)) median(ghg_iso$ghg_index, na.rm = TRUE) else 0.5
   default_policy <- if (nrow(policy_iso)) median(policy_iso$climate_policy_index, na.rm = TRUE) else 0.5
 
-  trade_indices %>%
+  reporter_keys <- econ_opp_iso %>%
+    dplyr::distinct(reporter_iso = exporter_iso, tech, supply_chain)
+  partner_keys <- energy_sec_iso %>%
+    dplyr::distinct(partner_iso, tech, supply_chain)
+
+  dyad_backbone <- reporter_keys %>%
+    dplyr::inner_join(partner_keys, by = c("tech", "supply_chain"), relationship = "many-to-many")
+
+  dyad_backbone %>%
+    dplyr::left_join(trade_indices, by = c("reporter_iso", "partner_iso", "tech", "supply_chain")) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(
+      trade_index = dplyr::coalesce(
+        trade_index,
+        dplyr::if_else(
+          is.nan(mean(trade_index, na.rm = TRUE)),
+          0.5,
+          mean(trade_index, na.rm = TRUE)
+        )
+      )
+    ) %>%
+    dplyr::ungroup() %>%
     dplyr::left_join(econ_opp_iso, by = c("reporter_iso" = "exporter_iso", "tech", "supply_chain")) %>%
     dplyr::left_join(energy_sec_iso, by = c("partner_iso", "tech", "supply_chain")) %>%
     dplyr::left_join(ghg_iso, by = "tech") %>%
