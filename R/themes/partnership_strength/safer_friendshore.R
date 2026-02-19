@@ -224,7 +224,7 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
 partnership_strength_build_friendshore_country <- function(friendshore_all,
                                                            country_info,
                                                            top_n = 3,
-                                                           year = 2025L) {
+                                                           year = 2024L) {
   friendshore_all %>%
     dplyr::filter(!is.na(friendshore_index)) %>%
     dplyr::group_by(partner_iso, tech, supply_chain) %>%
@@ -251,7 +251,7 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
                                                                   country_info,
                                                                   component_weights,
                                                                   top_n = 3,
-                                                                  year = 2025L) {
+                                                                  year = 2024L) {
   component_weights_tbl <- tibble::tibble(
     component_key = c("imp_trade_index", "econ_opp_raw", "es_need", "eo_partner", "outbound_index"),
     component_weight = c(
@@ -365,7 +365,7 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
 partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
                                                                country_info,
                                                                component_weights,
-                                                               year = 2025L) {
+                                                               year = 2024L) {
   component_weights_tbl <- tibble::tibble(
     component_key = c("imp_trade_index", "econ_opp_raw", "es_need", "eo_partner", "outbound_index"),
     component_weight = c(
@@ -453,7 +453,7 @@ safer_friendshore <- function(comtrade_dyads,
                               country_info,
                               gdp_data,
                               component_weights = NULL,
-                              years = 2021:2025,
+                              years = 2020:2024,
                               top_n = 3,
                               gdp_year = 2023) {
   res_tech <- partnership_strength_clean_trade_data(comtrade_dyads, subcat, years = years)

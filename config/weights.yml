@@ -27,14 +27,14 @@ psi:
   development: 0.2
 
 partnership_opportunity_components:
-  trade_index: 2
-  econ_opp_index: 4
+  trade_index: 3
+  econ_opp_index: 3
   energy_security_index: 1
   climate_policy_weight: 0.05
 
 partnership_friendshore_components:
   imp_trade_index: 2
   econ_opp_raw: 0
-  es_need: 3
-  eo_partner: 3
+  es_need: 2
+  eo_partner: 2
   outbound_index: 2
