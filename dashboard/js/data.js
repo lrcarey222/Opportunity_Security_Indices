@@ -317,7 +317,24 @@ function buildCountries() {
       }
     }
 
-    return { ...c, esCategories, eoCategories, techBreakdown, policy };
+    // Flat techScores array expected by app.js (renderScatterTab, renderTechTab, etc.)
+    const techScores = [];
+    for (const tech of TECHNOLOGIES) {
+      for (const sc of SUPPLY_CHAINS) {
+        const d = techBreakdown[tech.key]?.[sc.key];
+        if (d) {
+          techScores.push({
+            tech: tech.key,
+            sc:   sc.key,
+            es:   d.es,
+            eo:   d.eo,
+            psi:  +(d.es * 0.4 + d.eo * 0.4 + (policy || 0.5) * 0.2).toFixed(3),
+          });
+        }
+      }
+    }
+
+    return { ...c, esCategories, eoCategories, techBreakdown, techScores, policy };
   });
 }
 
@@ -387,15 +404,25 @@ function getPartners(homeIso3, type = 'friendshore') {
 }
 
 // ─── Tooltip helper: top N industries by index ───────────────────────────────
+// Returns [{icon, tech, sc, score}] — format expected by app.js tooltip renderer
 function topIndustries(country, indexKey = 'es', n = 3) {
   const combos = [];
   for (const tech of TECHNOLOGIES) {
     for (const sc of SUPPLY_CHAINS) {
-      const val = country.techBreakdown[tech.key]?.[sc.key]?.[indexKey];
-      if (val != null) combos.push({ tech: tech.label, sc: sc.label, val });
+      const d = country.techBreakdown[tech.key]?.[sc.key];
+      if (!d) continue;
+      let score;
+      if (indexKey === 'policy') {
+        // Policy is country-level; weight toward EO as a proxy for clean-tech readiness
+        score = d.eo * 0.6 + (country.policy ?? 0.5) * 0.4;
+      } else {
+        score = d[indexKey];
+      }
+      if (score == null || isNaN(score)) continue;
+      combos.push({ icon: tech.icon, tech: tech.label, sc: sc.label, score: +score.toFixed(3) });
     }
   }
-  return combos.sort((a, b) => b.val - a.val).slice(0, n);
+  return combos.sort((a, b) => b.score - a.score).slice(0, n);
 }
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
