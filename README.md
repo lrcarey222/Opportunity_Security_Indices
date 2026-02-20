@@ -566,6 +566,16 @@ Each component is normalized using the median S-curve framework before weighted 
 - Core optimizer + helpers: `R/indices/allied_network_design.R`
 - Scripted run/output writer: `scripts/30_build_allied_network_design.R`
 
+`allied_network_design()` now supports configurable demand composition through `demand_mode` (`"need"`, `"size"`, `"mixed"`, `"equal"`).
+For backwards compatibility, the function default remains `demand_mode = "need"` (legacy need-only demand).
+The production runner (`scripts/30_build_allied_network_design.R`) now uses `demand_mode = "mixed"` with 50/50 need-size weights.
+
+Portfolio constraints can optionally cap how often a country appears in stage-level top-K producers.
+Caps are GDP-derived by default (`portfolio_min_cap = 2`, `portfolio_max_cap = 10`, `portfolio_top_k = 5`, log scaling), while leaving countries available as consumers.
+Portfolio enforcement is iterative and writes diagnostics for convergence and any residual violations.
+
+Runner outputs now include three additional diagnostics files: `allied_network_portfolio_caps.csv`, `allied_network_portfolio_counts.csv`, and `allied_network_topk_by_stage.csv`.
+
 </details>
 
 ---
