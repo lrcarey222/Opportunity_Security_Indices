@@ -75,6 +75,7 @@ comtrade_is_throttle_error <- function(err) {
 comtrade_fetch_requests <- function(request_df,
                                     retries = 3,
                                     sleep_seconds = 0.5,
+                                    max_sleep_seconds = 120,
                                     timeout_seconds = 120,
                                     show_progress = interactive(),
                                     request_pause_seconds = 0) {
@@ -143,7 +144,9 @@ comtrade_fetch_requests <- function(request_df,
         throttle_multiplier <- max(throttle_multiplier * 2, 2)
       }
       if (attempt < retries) {
-        Sys.sleep((sleep_seconds * (2 ^ (attempt - 1))) * throttle_multiplier)
+        wait_seconds <- (sleep_seconds * (2 ^ (attempt - 1))) * throttle_multiplier
+        wait_seconds <- min(wait_seconds, max_sleep_seconds)
+        Sys.sleep(wait_seconds)
       }
     }
 
