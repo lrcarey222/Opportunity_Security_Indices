@@ -1,3 +1,15 @@
+source(local({
+  # Prefer sys.frame(1)$ofile when sourced (e.g., from run_pipeline.R).
+  sf <- tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
+  this_file <- if (!is.null(sf) && nzchar(sf)) sf else {
+    # Fallback for direct Rscript execution of this script.
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) sub("^--file=", "", fa[1]) else ""
+  }
+  if (!nzchar(this_file)) stop("Unable to resolve script path for bootstrap.")
+  file.path(dirname(normalizePath(this_file, winslash = "/", mustWork = FALSE)), "utils", "bootstrap.R")
+}))
+
 # Pull a focused UN Comtrade timeseries for selected country/tech/supply_chain.
 
 `%||%` <- function(x, y) {
@@ -87,23 +99,7 @@ normalize_frequency_arg <- function(frequency) {
 }
 
 resolve_repo_root_local <- function() {
-  repo_root <- getOption("opportunity_security.repo_root")
-  if (!is.null(repo_root) && nzchar(repo_root)) {
-    return(repo_root)
-  }
-
-  if (requireNamespace("rprojroot", quietly = TRUE)) {
-    return(rprojroot::find_root(rprojroot::is_git_root))
-  }
-
-  d <- normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
-    d <- dirname(d)
-  }
-  if (!file.exists(file.path(d, ".git"))) {
-    stop("Unable to resolve repo root; run from the repository root.")
-  }
-  d
+  resolve_repo_root()
 }
 
 ensure_trade_timeseries_helpers <- function(force_reload = FALSE) {
@@ -318,13 +314,9 @@ pull_trade_timeseries <- function(country,
 }
 
 if (sys.nframe() == 0) {
-  args_all <- commandArgs(trailingOnly = FALSE)
-  file_arg <- grep("^--file=", args_all, value = TRUE)
-  script_path <- if (length(file_arg) > 0) sub("^--file=", "", file_arg[1]) else file.path(getwd(), "scripts", "96_pull_trade_timeseries.R")
-  repo_root <- normalizePath(file.path(dirname(script_path), ".."), winslash = "/", mustWork = FALSE)
+  repo_root <- resolve_repo_root()
 
-  source(file.path(repo_root, "scripts", "00_setup.R"))
-  source(file.path(getOption("opportunity_security.repo_root"), "R", "charts", "trade_timeseries.R"))
+  source(file.path(repo_root, "R", "charts", "trade_timeseries.R"))
 
   args <- parse_args(commandArgs(trailingOnly = TRUE))
   years <- parse_years_arg(args[["years"]])

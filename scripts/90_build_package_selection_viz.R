@@ -1,12 +1,21 @@
 #!/usr/bin/env Rscript
 
+source(local({
+  # Prefer sys.frame(1)$ofile when sourced (e.g., from run_pipeline.R).
+  sf <- tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
+  this_file <- if (!is.null(sf) && nzchar(sf)) sf else {
+    # Fallback for direct Rscript execution of this script.
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) sub("^--file=", "", fa[1]) else ""
+  }
+  if (!nzchar(this_file)) stop("Unable to resolve script path for bootstrap.")
+  file.path(dirname(normalizePath(this_file, winslash = "/", mustWork = FALSE)), "utils", "bootstrap.R")
+}))
+
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x
 }
 
-script_path <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1])
-script_dir <- if (!is.na(script_path) && nzchar(script_path)) dirname(normalizePath(script_path, mustWork = FALSE)) else file.path(getwd(), "scripts")
-source(file.path(script_dir, "00_setup.R"))
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "charts", "package_selection_viz.R"))
 source(file.path(repo_root, "R", "charts", "package_selection_raw_highlights.R"))

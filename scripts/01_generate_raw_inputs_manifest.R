@@ -1,46 +1,15 @@
-# Generate raw inputs manifest from legacy scripts.
-resolve_repo_root <- function() {
-  # Prefer rprojroot if available (most robust)
-  if (requireNamespace("rprojroot", quietly = TRUE)) {
-    return(rprojroot::find_root(rprojroot::is_git_root))
+source(local({
+  # Prefer sys.frame(1)$ofile when sourced (e.g., from run_pipeline.R).
+  sf <- tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
+  this_file <- if (!is.null(sf) && nzchar(sf)) sf else {
+    # Fallback for direct Rscript execution of this script.
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) sub("^--file=", "", fa[1]) else ""
   }
-  
-  # Fallback: start from script path if we have it, otherwise from getwd()
-  args <- commandArgs(trailingOnly = FALSE)
-  file_arg <- grep("^--file=", args, value = TRUE)
-  
-  start <- if (length(file_arg) > 0) {
-    sub("^--file=", "", file_arg[1])
-  } else if (!is.null(sys.frame(1)$ofile)) {
-    sys.frame(1)$ofile
-  } else {
-    ""
-  }
-  
-  d <- if (nzchar(start)) {
-    dirname(normalizePath(start, winslash = "/", mustWork = FALSE))
-  } else {
-    normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-  }
-  
-  # Walk up until we find a .git directory
-  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
-    d <- dirname(d)
-  }
-  
-  if (!file.exists(file.path(d, ".git"))) {
-    stop("Could not locate repo root (no .git found). Run from the repo directory or set OPSI_CONFIG/OPSI_WEIGHTS.")
-  }
-  
-  d
-}
+  if (!nzchar(this_file)) stop("Unable to resolve script path for bootstrap.")
+  file.path(dirname(normalizePath(this_file, winslash = "/", mustWork = FALSE)), "utils", "bootstrap.R")
+}))
 
-
-if (!requireNamespace("yaml", quietly = TRUE)) {
-  stop("Package 'yaml' is required to write the manifest.")
-}
-
-repo_root <- resolve_repo_root()
 legacy_dirs <- file.path(repo_root, c("legacy", "Legacy Scripts"))
 legacy_dirs <- legacy_dirs[dir.exists(legacy_dirs)]
 

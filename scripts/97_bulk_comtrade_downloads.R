@@ -1,3 +1,15 @@
+source(local({
+  # Prefer sys.frame(1)$ofile when sourced (e.g., from run_pipeline.R).
+  sf <- tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
+  this_file <- if (!is.null(sf) && nzchar(sf)) sf else {
+    # Fallback for direct Rscript execution of this script.
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) sub("^--file=", "", fa[1]) else ""
+  }
+  if (!nzchar(this_file)) stop("Unable to resolve script path for bootstrap.")
+  file.path(dirname(normalizePath(this_file, winslash = "/", mustWork = FALSE)), "utils", "bootstrap.R")
+}))
+
 # Bulk UN Comtrade pull for HS92 trade and country totals.
 #
 # Downloads annual import/export data for all reporters from 2020:2025,
@@ -366,12 +378,7 @@ run_bulk_comtrade_download <- function(
 }
 
 if (sys.nframe() == 0) {
-  args_all <- commandArgs(trailingOnly = FALSE)
-  file_arg <- grep("^--file=", args_all, value = TRUE)
-  script_path <- if (length(file_arg) > 0) sub("^--file=", "", file_arg[1]) else file.path(getwd(), "scripts", "97_bulk_comtrade_downloads.R")
-  repo_root <- normalizePath(file.path(dirname(script_path), ".."), winslash = "/", mustWork = FALSE)
-
-  source(file.path(repo_root, "scripts", "00_setup.R"))
+  repo_root <- resolve_repo_root()
 
   args <- parse_args(commandArgs(trailingOnly = TRUE))
 
