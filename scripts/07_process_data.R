@@ -1,32 +1,14 @@
-# Process raw inputs into standardized datasets.
-if (!requireNamespace("yaml", quietly = TRUE)) {
-  stop("Package 'yaml' is required to load the manifest.")
-}
-
-resolve_repo_root <- function() {
-  args <- commandArgs(trailingOnly = FALSE)
-  file_arg <- grep("^--file=", args, value = TRUE)
-  script_path <- if (length(file_arg) > 0) {
-    sub("^--file=", "", file_arg[1])
-  } else if (!is.null(sys.frame(1)$ofile)) {
-    sys.frame(1)$ofile
-  } else {
-    ""
+source(local({
+  # Prefer sys.frame(1)$ofile when sourced (e.g., from run_pipeline.R).
+  sf <- tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
+  this_file <- if (!is.null(sf) && nzchar(sf)) sf else {
+    # Fallback for direct Rscript execution of this script.
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) sub("^--file=", "", fa[1]) else ""
   }
-  dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
-}
-
-repo_root <- resolve_repo_root()
-config <- getOption("opportunity_security.config")
-if (is.null(config)) {
-  stop("Config not loaded. Run scripts/00_setup.R first.")
-}
-if (is.null(config$raw_data_dir)) {
-  stop("Config is missing raw_data_dir.")
-}
-if (is.null(config$processed_dir)) {
-  stop("Config is missing processed_dir.")
-}
+  if (!nzchar(this_file)) stop("Unable to resolve script path for bootstrap.")
+  file.path(dirname(normalizePath(this_file, winslash = "/", mustWork = FALSE)), "utils", "bootstrap.R")
+}))
 
 manifest_path <- file.path(repo_root, "config", "raw_inputs_manifest.yml")
 if (!file.exists(manifest_path)) {

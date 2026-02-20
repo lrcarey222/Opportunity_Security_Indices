@@ -1,31 +1,14 @@
-# User-facing entrypoint for building allied network outputs only.
-
-resolve_repo_root_from_script <- function() {
-  args <- commandArgs(trailingOnly = FALSE)
-  file_arg <- grep("^--file=", args, value = TRUE)
-  script_path <- if (length(file_arg) > 0) {
-    sub("^--file=", "", file_arg[1])
-  } else if (!is.null(sys.frame(1)$ofile)) {
-    sys.frame(1)$ofile
-  } else {
-    ""
+source(local({
+  # Prefer sys.frame(1)$ofile when sourced (e.g., from run_pipeline.R).
+  sf <- tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
+  this_file <- if (!is.null(sf) && nzchar(sf)) sf else {
+    # Fallback for direct Rscript execution of this script.
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) sub("^--file=", "", fa[1]) else ""
   }
-
-  start_dir <- if (nzchar(script_path)) {
-    normalizePath(dirname(script_path), winslash = "/", mustWork = FALSE)
-  } else {
-    normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-  }
-
-  d <- start_dir
-  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
-    d <- dirname(d)
-  }
-  if (!file.exists(file.path(d, ".git"))) {
-    stop("Could not locate repo root (no .git found).")
-  }
-  d
-}
+  if (!nzchar(this_file)) stop("Unable to resolve script path for bootstrap.")
+  file.path(dirname(normalizePath(this_file, winslash = "/", mustWork = FALSE)), "utils", "bootstrap.R")
+}))
 
 ensure_cran_repo <- function() {
   repos <- getOption("repos")
@@ -85,9 +68,6 @@ ensure_milp_pkgs <- function(install_if_missing = TRUE, require_milp = FALSE) {
 is_true <- function(x) {
   tolower(x) %in% c("1", "true", "yes")
 }
-
-repo_root <- resolve_repo_root_from_script()
-source(file.path(repo_root, "scripts", "00_setup.R"))
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) stop("Config not loaded after setup.")
