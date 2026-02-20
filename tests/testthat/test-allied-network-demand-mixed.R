@@ -99,3 +99,36 @@ test_that("mixed demand responds to ES need when GDP is equal", {
   s <- res$specialization %>% dplyr::arrange(need_idx)
   expect_gte(s$demand_weight[[3]], s$demand_weight[[1]])
 })
+
+
+test_that("partner development accepts lowercase country column", {
+  x <- make_base_inputs(es_values = c(0.4, 0.4, 0.4), gdp_values = c(1000, 500, 100))
+  dev_tbl <- tibble::tibble(
+    country = c("Bigland", "Midland", "Smalland"),
+    tech = "solar",
+    supply_chain = "manufacturing",
+    category = "development",
+    variable = "Development Potential Index",
+    data_type = "index",
+    value = c(0.9, 0.6, 0.3)
+  )
+
+  res <- allied_network_design(
+    economic_opportunity_index = x$eo,
+    energy_security_index = x$es,
+    policy_index = x$policy,
+    partner_friendshore_tbl = x$friend,
+    partner_opportunity_tbl = x$opp,
+    partner_development_country_tbl = dev_tbl,
+    country_info = x$country_info,
+    iso3c_network = x$iso,
+    method = "greedy",
+    country_size_tbl = x$size,
+    demand_mode = "need",
+    min_producers = 2,
+    portfolio_enable = FALSE
+  )
+
+  s <- res$specialization %>% dplyr::arrange(iso3c)
+  expect_equal(s$dev_potential, c(0.9, 0.6, 0.3))
+})
