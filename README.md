@@ -661,6 +661,18 @@ For an end-to-end run, use:
 Rscript run_pipeline.R
 ```
 
+Run allied network only:
+
+```bash
+Rscript scripts/build_allied_network.R
+```
+
+Optional environment variables:
+
+- `OPSI_INSTALL_MILP_PKGS=true|false`
+- `OPSI_REQUIRE_MILP=true|false`
+- `OPSI_AUTO_PREREQS=true|false`
+- `OPSI_RUN_ALLIED_NETWORK=true|false`
 
 When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under
 `data/raw/comtrade_chunks/...` and automatically combines them into final CSVs
