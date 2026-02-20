@@ -2,9 +2,101 @@
 # Runs the allied network design module using existing pipeline outputs
 # and writes CSVs to outputs_dir.
 
-if (!exists("repo_root")) {
-  repo_root <- resolve_repo_root()
+resolve_repo_root_from_script <- function() {
+  args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- grep("^--file=", args, value = TRUE)
+  script_path <- if (length(file_arg) > 0) {
+    sub("^--file=", "", file_arg[1])
+  } else if (!is.null(sys.frame(1)$ofile)) {
+    sys.frame(1)$ofile
+  } else {
+    ""
+  }
+
+  start_dir <- if (nzchar(script_path)) {
+    normalizePath(dirname(script_path), winslash = "/", mustWork = FALSE)
+  } else {
+    normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+  }
+
+  d <- start_dir
+  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
+    d <- dirname(d)
+  }
+  if (!file.exists(file.path(d, ".git"))) {
+    stop("Could not locate repo root (no .git found).")
+  }
+  d
 }
+
+if (!exists("repo_root") || !nzchar(repo_root)) {
+  repo_root <- resolve_repo_root_from_script()
+}
+
+if (is.null(getOption("opportunity_security.config"))) {
+  source(file.path(repo_root, "scripts", "00_setup.R"))
+}
+
+ensure_cran_repo <- function() {
+  repos <- getOption("repos")
+  cran <- if (is.null(repos) || is.null(repos[["CRAN"]])) "" else repos[["CRAN"]]
+  if (is.null(repos) || identical(cran, "@CRAN@") || is.na(cran) || cran == "") {
+    options(repos = c(CRAN = "https://cloud.r-project.org"))
+  }
+}
+
+ensure_user_lib <- function() {
+  user_lib <- Sys.getenv("R_LIBS_USER")
+  if (!nzchar(user_lib)) {
+    user_lib <- file.path(
+      Sys.getenv("USERPROFILE"),
+      "Documents",
+      "R",
+      "win-library",
+      paste0(getRversion()[1, 1:2], collapse = ".")
+    )
+  }
+  if (!dir.exists(user_lib)) dir.create(user_lib, recursive = TRUE, showWarnings = FALSE)
+  .libPaths(c(user_lib, .libPaths()))
+  invisible(user_lib)
+}
+
+ensure_milp_pkgs <- function(install_if_missing = TRUE, require_milp = FALSE) {
+  milp_pkgs <- c("ompr", "ompr.roi", "ROI", "ROI.plugin.glpk")
+  missing <- milp_pkgs[!vapply(milp_pkgs, requireNamespace, logical(1), quietly = TRUE)]
+  if (length(missing) == 0) return(TRUE)
+
+  if (!install_if_missing) {
+    if (require_milp) stop("MILP required but missing packages: ", paste(missing, collapse = ", "))
+    return(FALSE)
+  }
+
+  ensure_cran_repo()
+  ensure_user_lib()
+  message("MILP packages missing; attempting install on Windows: ", paste(missing, collapse = ", "))
+  ok <- TRUE
+  tryCatch({
+    install.packages(missing, dependencies = TRUE)
+  }, error = function(e) {
+    ok <<- FALSE
+    message("Automatic install failed: ", conditionMessage(e))
+  })
+
+  missing2 <- milp_pkgs[!vapply(milp_pkgs, requireNamespace, logical(1), quietly = TRUE)]
+  if (length(missing2) == 0) return(TRUE)
+
+  msg <- paste0(
+    "MILP packages still missing after install attempt: ", paste(missing2, collapse = ", "), "\n",
+    "On Windows this usually means you need permissions to write to your R library or a build toolchain.\n",
+    "Try running R/RStudio as Administrator, or set a user library (R_LIBS_USER), or install Rtools if compilation is required."
+  )
+  if (require_milp) stop(msg) else message(msg)
+  FALSE
+}
+
+install_if_missing <- tolower(Sys.getenv("OPSI_INSTALL_MILP_PKGS", "true")) %in% c("1", "true", "yes")
+require_milp <- tolower(Sys.getenv("OPSI_REQUIRE_MILP", "false")) %in% c("1", "true", "yes")
+milp_available <- ensure_milp_pkgs(install_if_missing = install_if_missing, require_milp = require_milp)
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
@@ -14,7 +106,6 @@ source(file.path(repo_root, "R", "indices", "allied_network_design.R"))
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) stop("Config not loaded; run scripts/00_setup.R first.")
-
 processed_dir <- file.path(repo_root, config$processed_dir)
 if (!dir.exists(processed_dir)) stop("Processed data directory not found: ", processed_dir)
 
@@ -177,6 +268,13 @@ progress_callback <- function(info) {
     cat(msg, "\n")
   }
   invisible(NULL)
+}
+
+
+if (milp_available) {
+  message("MILP solver stack detected (ompr/ROI/GLPK). method='auto' will use MILP (unless stage too large or solver errors).")
+} else {
+  message("MILP solver stack not detected. method='auto' will use greedy fallback.")
 }
 
 res <- allied_network_design(
