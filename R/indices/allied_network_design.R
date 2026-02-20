@@ -319,6 +319,26 @@ allied_network_prepare_nodes <- function(economic_opportunity_index,
     label = "policy_index"
   )
   require_columns(country_info, c("iso3c", "country"), label = "country_info")
+
+  normalize_country_col <- function(tbl) {
+    if (!inherits(tbl, "data.frame") || "Country" %in% names(tbl)) {
+      return(tbl)
+    }
+
+    if ("country" %in% names(tbl)) {
+      return(dplyr::rename(tbl, Country = country))
+    }
+
+    if ("Partner" %in% names(tbl)) {
+      return(dplyr::rename(tbl, Country = Partner))
+    }
+
+    if ("partner" %in% names(tbl)) {
+      return(dplyr::rename(tbl, Country = partner))
+    }
+
+    tbl
+  }
   
   w_node <- c(
     eo = node_weights$eo,
@@ -364,6 +384,7 @@ allied_network_prepare_nodes <- function(economic_opportunity_index,
   
   # Development potential (optional; only populated for EMEs in your current build)
   if (!is.null(partner_development_country_tbl)) {
+    partner_development_country_tbl <- normalize_country_col(partner_development_country_tbl)
     require_columns(
       partner_development_country_tbl,
       c("Country", "tech", "supply_chain", "category", "variable", "data_type", "value"),
