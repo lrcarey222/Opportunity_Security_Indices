@@ -27,7 +27,7 @@ future_demand_clean_weo <- function(iea_weo) {
 
   iea_weo %>%
     dplyr::filter(
-      SCENARIO == "Stated Policies Scenario",
+      SCENARIO %in% c("Historical","Stated Policies Scenario"),
       CATEGORY == "Energy",
       PRODUCT %in% c(
         "Solar",
