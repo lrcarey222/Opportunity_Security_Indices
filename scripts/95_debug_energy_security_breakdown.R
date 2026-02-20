@@ -1,47 +1,25 @@
-# Debug helper: reverse-engineer energy security index values.
-#
-# Example usage:
-#   Rscript scripts/95_debug_energy_security_breakdown.R \
-#     --country="United States" \
-#     --tech="Oil" \
-#     --supply_chain="Upstream" \
-#     --output-dir="output/debug"
-#
-# In an R session:
-#   source("scripts/95_debug_energy_security_breakdown.R")
-#   run_energy_security_breakdown(
-#     country = "United States",
-#     tech = "Oil",
-#     supply_chain = "Upstream"
-#   )
-#
-# Country summary for stacked bar chart data:
-#   Rscript scripts/95_debug_energy_security_breakdown.R \
-#     --country="United States" \
-#     --mode="country" \
-#     --output-dir="output/debug"
-
-resolve_repo_root_local <- function() {
-  repo_root <- getOption("opportunity_security.repo_root")
-  if (!is.null(repo_root) && nzchar(repo_root)) {
-    return(repo_root)
+source(local({
+  # Prefer sys.frame(1)$ofile when sourced (e.g., from run_pipeline.R).
+  sf <- tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
+  this_file <- if (!is.null(sf) && nzchar(sf)) sf else {
+    ofiles <- vapply(sys.frames(), function(fr) {
+      of <- tryCatch(fr$ofile, error = function(e) NULL)
+      if (is.null(of) || !nzchar(of)) "" else as.character(of)
+    }, character(1))
+    ofiles <- ofiles[nzchar(ofiles)]
+    if (length(ofiles) > 0) ofiles[[length(ofiles)]] else {
+      # Fallback for direct Rscript execution of this script.
+      fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+      if (length(fa) > 0) sub("^--file=", "", fa[1]) else ""
+    }
   }
-
-  if (requireNamespace("rprojroot", quietly = TRUE)) {
-    return(rprojroot::find_root(rprojroot::is_git_root))
+  if (!nzchar(this_file)) {
+    candidate <- file.path(normalizePath(getwd(), winslash = "/", mustWork = FALSE), "scripts", "utils", "bootstrap.R")
+    if (file.exists(candidate)) return(candidate)
+    stop("Unable to resolve script path for bootstrap.")
   }
-
-  d <- normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
-    d <- dirname(d)
-  }
-
-  if (!file.exists(file.path(d, ".git"))) {
-    stop("Unable to determine repo root; set working directory to the repo.")
-  }
-
-  d
-}
+  file.path(dirname(normalizePath(this_file, winslash = "/", mustWork = FALSE)), "utils", "bootstrap.R")
+}))
 
 parse_args <- function(args) {
   out <- list()
@@ -85,9 +63,7 @@ run_energy_security_breakdown <- function(country,
     stop("tech and supply_chain are required when mode = \"single\".")
   }
 
-  repo_root <- resolve_repo_root_local()
-
-  source(file.path(repo_root, "scripts", "00_setup.R"))
+  repo_root <- getOption("opportunity_security.repo_root")
 
   if (isTRUE(run_ingest)) {
     source(file.path(repo_root, "scripts", "05_ingest_sources.R"))
