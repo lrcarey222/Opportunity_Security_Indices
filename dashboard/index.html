@@ -52,9 +52,13 @@
 
     <div class="header-meta">
       Opportunity Security Indices<br>
-      <span style="color:var(--teal);font-weight:700">v2.0</span> · 2024 data
+      <span style="color:var(--gold);font-weight:700">v2.0</span> · 2024 data
     </div>
   </header>
+
+  <!-- ═══ Tech × Supply Chain Picker Strip ══════════════════════════════ -->
+  <!-- Populated dynamically by buildTechPicker() in app.js -->
+  <div id="tech-picker"></div>
 
   <!-- ═══ Toolbar ════════════════════════════════════════════════════════ -->
   <div id="toolbar">
@@ -66,18 +70,6 @@
         <button class="idx-btn" data-index="eo">Econ. Opportunity</button>
         <button class="idx-btn" data-index="psi">Partnership</button>
       </div>
-    </div>
-
-    <!-- Technology filter -->
-    <div class="filter-group">
-      <span class="label-xs">Technology</span>
-      <select id="filter-tech"></select>
-    </div>
-
-    <!-- Supply chain filter -->
-    <div class="filter-group">
-      <span class="label-xs">Supply Chain</span>
-      <select id="filter-sc"></select>
     </div>
 
     <!-- Region filter -->
@@ -145,10 +137,10 @@
 
         <!-- Panel navigation tabs -->
         <div class="panel-tabs">
-          <button class="panel-tab active" data-tab="overview">Overview</button>
+          <button class="panel-tab active" data-tab="scatter">Industries</button>
           <button class="panel-tab" data-tab="es">Energy Security</button>
           <button class="panel-tab" data-tab="eo">Econ. Opportunity</button>
-          <button class="panel-tab" data-tab="tech">By Technology</button>
+          <button class="panel-tab" data-tab="tech">Heatmap</button>
           <button class="panel-tab" data-tab="advanced">Advanced</button>
           <button class="panel-tab" data-tab="method">Methodology</button>
         </div>
@@ -156,21 +148,27 @@
         <!-- Panel body -->
         <div class="panel-body">
 
-          <!-- ── Overview ───────────────────────────── -->
-          <div class="tab-pane active" data-tab="overview">
-            <div class="section-head">Index Radar</div>
-            <div class="chart-wrap">
-              <div class="chart-title">Energy Security vs Economic Opportunity by Category</div>
-              <canvas id="radar-overview"></canvas>
+          <!-- ── Industries Scatter (primary) ────────────────────────── -->
+          <div class="tab-pane active" data-tab="scatter">
+            <div class="section-head">EO vs ES Need by Industry</div>
+            <div id="scatter-chart-wrap">
+              <!-- Chart.js bubble chart rendered here by JS -->
             </div>
-
-            <div class="section-head">Key Insights</div>
-            <div id="insights-content">
-              <!-- Populated by JS -->
+            <!-- Tech legend injected here by JS -->
+            <div class="section-head">How to read this chart</div>
+            <div class="insight-card">
+              <div class="insight-label">Axes</div>
+              <strong>X-axis:</strong> Economic Opportunity — higher means more market potential.<br>
+              <strong>Y-axis:</strong> Energy Security Need (1 − ES) — higher means more reliant on imports / supply risk.
+            </div>
+            <div class="insight-card" style="border-left-color:var(--eo-color)">
+              <div class="insight-label">Ideal quadrant</div>
+              Bottom-right = high EO, low ES need (strong domestic position).<br>
+              Top-right = high opportunity but also high import dependency.
             </div>
           </div>
 
-          <!-- ── Energy Security ─────────────────────── -->
+          <!-- ── Energy Security ─────────────────────── ---->
           <div class="tab-pane" data-tab="es">
             <div class="section-head">Weighted Contribution</div>
             <div class="chart-wrap" style="height:160px;position:relative">
@@ -184,7 +182,7 @@
             </div>
           </div>
 
-          <!-- ── Economic Opportunity ─────────────────── -->
+          <!-- ── Economic Opportunity ─────────────────── ---->
           <div class="tab-pane" data-tab="eo">
             <div class="section-head">Score Breakdown</div>
             <div class="chart-wrap" style="height:220px;position:relative">
@@ -198,7 +196,7 @@
             </div>
           </div>
 
-          <!-- ── By Technology ────────────────────────── -->
+          <!-- ── Tech Heatmap ────────────────────────── ---->
           <div class="tab-pane" data-tab="tech">
             <div class="section-head">Heatmap</div>
             <div class="heatmap-toggle" style="margin-bottom:0.75rem">
@@ -216,7 +214,7 @@
             </div>
           </div>
 
-          <!-- ── Advanced ──────────────────────────────── -->
+          <!-- ── Advanced ──────────────────────────────── ---->
           <div class="tab-pane" data-tab="advanced">
             <button class="export-btn" id="btn-export-csv">⬇ Export CSV</button>
             <div style="overflow-x:auto">
@@ -236,7 +234,7 @@
             </div>
           </div>
 
-          <!-- ── Methodology ───────────────────────────── -->
+          <!-- ── Methodology ───────────────────────────── ---->
           <div class="tab-pane" data-tab="method">
             <div class="section-head">Energy Security Index</div>
             <p class="method-text" id="method-es-text"></p>
@@ -251,7 +249,7 @@
 
             <div class="section-head" style="margin-top:1rem">Normalisation</div>
             <p class="method-text">
-              Scores are normalised using a median-centred S-curve: <code>idx = r^γ / (r^γ + (1−r)^γ)</code> where r is the percentile rank and γ = 0.5. This compresses the distribution near the median while preserving separation at the tails, rewarding true leaders and penalising laggards more than a linear ranking.
+              Scores are normalised using a median-centred S-curve: <code>idx = r^γ / (r^γ + (1−r)^γ)</code> where r is the percentile rank and γ = 0.5. This compresses the distribution near the median while preserving separation at the tails.
             </p>
 
             <div class="section-head" style="margin-top:1rem">Data Sources</div>
@@ -272,7 +270,7 @@
     <!-- ──────────────── PARTNERSHIPS VIEW ─────────────────────────────── -->
     <div class="view" id="view-partnerships">
 
-      <!-- Partnerships toolbar -->
+      <!-- Partnerships toolbar (shown/hidden by switchView) -->
       <div id="partnerships-toolbar" style="display:none">
         <div class="filter-group">
           <span class="label-xs">Home Country</span>
@@ -292,10 +290,16 @@
         </div>
       </div>
 
-      <!-- Partnerships main area -->
+      <!-- Partnerships main area: world map + list + detail -->
       <div id="partnerships-main">
 
-        <!-- Left: ranked list -->
+        <!-- World map with partner highlights -->
+        <div id="partners-map-container">
+          <svg id="partners-world-map"></svg>
+          <div id="partner-map-legend"></div>
+        </div>
+
+        <!-- Ranked list -->
         <div id="partners-list-panel">
           <div class="partners-list-head">
             <h3>Ranked Partners</h3>
@@ -308,7 +312,7 @@
           </div>
         </div>
 
-        <!-- Right: detail -->
+        <!-- Partner detail -->
         <div id="partners-detail-panel">
 
           <!-- Placeholder -->
@@ -316,14 +320,12 @@
             <div class="empty-icon">🤝</div>
             <div class="empty-title">Partnership Analysis</div>
             <div class="empty-desc">
-              Select a home country and a partnership type to explore bilateral partnership
-              opportunities. The dashboard assesses friendshore alignment, export market fit, and
-              development partnership potential.
+              Select a home country and a partnership type, then click a partner from the list.
               <br><br>
               <strong style="color:var(--text-secondary)">Three partnership types:</strong><br>
-              🛡 <strong>Friendshore</strong> — Reliable, strategically aligned partners for secure supply chains<br>
-              📦 <strong>Export Partners</strong> — High-demand markets for your country's clean energy exports<br>
-              🌱 <strong>Development</strong> — Countries where investment &amp; capacity-building creates strategic value
+              🛡 <strong>Friendshore</strong> — Strategically aligned secure supply chains<br>
+              📦 <strong>Export Partners</strong> — High-demand markets for your clean energy exports<br>
+              🌱 <strong>Development</strong> — Countries where investment creates strategic value
             </div>
           </div>
 
@@ -336,7 +338,7 @@
                 <div class="partner-detail-title" id="partner-detail-name">—</div>
                 <div style="font-size:0.72rem;color:var(--text-muted)" id="partner-detail-region">—</div>
               </div>
-              <div id="partner-scores-row" class="partner-detail-scores score-badges" style="flex-wrap:wrap;gap:0.5rem">
+              <div id="partner-scores-row" class="partner-detail-scores score-badges" style="flex-wrap:wrap;gap:0.5rem;border:none;padding:0;margin-top:6px">
                 <!-- Populated by JS -->
               </div>
             </div>
@@ -394,7 +396,7 @@
 <div id="weight-modal">
   <div class="modal-card">
     <h2>⚙ Customise Index Weights</h2>
-    <p class="sub">Adjust the relative importance of each category in the index calculation. Changes update all charts immediately.</p>
+    <p class="sub">Adjust the relative importance of each category. Changes update all charts immediately.</p>
 
     <div class="label-sm" style="margin-bottom:0.5rem;margin-top:0.75rem">Energy Security Categories</div>
     <div id="weight-es-rows"></div>
