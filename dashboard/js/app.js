@@ -68,11 +68,20 @@ function indexLabel(idx) {
   return idx === 'es' ? 'Energy Security' : idx === 'eo' ? 'Econ. Opportunity' : 'Partnership';
 }
 
-// D3 colour scale for choropleth
+// D3 colour scale for choropleth — uses actual data range for better contrast
 function makeColorScale(scores, idx) {
   const color = indexColor(idx);
-  const lo = '#152D56', hi = color;
-  return d3.scaleLinear().domain([0, 1]).range([lo, hi]).clamp(true);
+  // Collect all country scores for the active index/tech/sc to normalize the domain
+  const vals = D.COUNTRIES.map(c => getScore(c, idx, STATE.activeTech, STATE.activeSC))
+                           .filter(v => !isNaN(v));
+  const lo_val = vals.length ? Math.max(0, d3.quantile(vals.sort(d3.ascending), 0.05)) : 0;
+  const hi_val = vals.length ? Math.min(1, d3.quantile(vals.sort(d3.ascending), 0.95)) : 1;
+  const domLo  = Math.max(0, lo_val - 0.05);
+  const domHi  = Math.min(1, hi_val + 0.05);
+  return d3.scaleLinear()
+           .domain([domLo, domHi])
+           .range(['#152D56', color])
+           .clamp(true);
 }
 
 // ─── D3 Map Setup ─────────────────────────────────────────────────────────────
@@ -858,13 +867,13 @@ function renderPartners() {
     return;
   }
 
-  // Compute partner scores for all other countries
+  // Compute partner scores — use data.js computePartnership (has proper ALIGN_COMPAT table)
   const scored = D.COUNTRIES
     .filter(c => c.iso3 !== homeIso)
-    .map(partner => ({
-      country: partner,
-      score: computePartnerScore(home, partner, ptype),
-    }))
+    .map(partner => {
+      const ps = D.computePartnership(home, partner);
+      return { country: partner, score: ps?.[ptype] ?? NaN, ps };
+    })
     .filter(x => !isNaN(x.score) && x.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 20);
@@ -892,25 +901,24 @@ function renderPartners() {
 
 function computePartnerScore(home, partner, ptype) {
   if (ptype === 'friendshore') {
-    // Inspired by safer_friendshore.R:
-    // friendshore = weighted mean(imp_trade, econ_opp_raw, es_need, eo_partner, outbound)
-    // es_need = 1 - home.es  (home's energy security need)
+    // Inspired by safer_friendshore.R: es_need, eo_partner, alignment, trade
     const esNeed     = 1 - (home.es ?? 0.5);
     const eoPartner  = partner.eo ?? 0.5;
     const alignment  = 1 - Math.abs((home.es ?? 0.5) - (partner.es ?? 0.5));
-    const tradeComp  = (home.eoCategories?.Trade ?? 0.5 + partner.eoCategories?.Trade ?? 0.5) / 2;
+    // Fix: parenthesise each operand of ?? to avoid precedence collision with +
+    const tradeComp  = ((home.eoCategories?.trade ?? 0.5) + (partner.eoCategories?.trade ?? 0.5)) / 2;
     return 0.3*alignment + 0.3*eoPartner + 0.25*esNeed + 0.15*tradeComp;
   }
   if (ptype === 'export_partner') {
     // prosperous_opportunity.R: trade_index, econ_opp_index, energy_security_index
-    const demand    = partner.eoCategories?.['Technology Demand'] ?? partner.eo ?? 0.5;
-    const tradeFit  = (partner.eoCategories?.Trade ?? 0.5);
-    const cap       = home.eoCategories?.Production ?? home.eo ?? 0.5;
+    const demand    = partner.eoCategories?.technology_demand ?? partner.eo ?? 0.5;
+    const tradeFit  = partner.eoCategories?.trade ?? 0.5;
+    const cap       = home.eoCategories?.production ?? home.eo ?? 0.5;
     return 0.45*demand + 0.35*tradeFit + 0.20*cap;
   }
   // development
   const partnerNeed = 1 - (partner.es ?? 0.5);
-  const potential   = partner.esCategories?.Reserves ?? partner.es ?? 0.5;
+  const potential   = partner.esCategories?.reserves ?? partner.es ?? 0.5;
   const homeCap     = home.eo ?? 0.5;
   return 0.4*partnerNeed + 0.3*potential + 0.3*homeCap;
 }
@@ -939,7 +947,7 @@ function selectPartner(iso3, scored) {
     badgesRow.innerHTML = `
       <div class="score-badge"><div class="badge-label">Partner ES</div><div class="badge-value es-val mono">${fmt(partner.es)}</div></div>
       <div class="score-badge"><div class="badge-label">Partner EO</div><div class="badge-value eo-val mono">${fmt(partner.eo)}</div></div>
-      <div class="score-badge"><div class="badge-label">PSI</div><div class="badge-value psi-val mono">${fmt(computePartnerScore(home,partner,STATE.partnerType))}</div></div>
+      <div class="score-badge"><div class="badge-label">PSI</div><div class="badge-value psi-val mono">${fmt(D.computePartnership(home,partner)?.[STATE.partnerType] ?? 0)}</div></div>
     `;
   }
 
@@ -960,11 +968,11 @@ function renderPartnerCharts(home, partner) {
         labels,
         datasets: [{
           label: home.name,
-          data: [alignment, home.eo??0, esNeed, home.eoCategories?.Trade??0.5, home.eoCategories?.Production??0.5],
+          data: [alignment, home.eo??0, esNeed, home.eoCategories?.trade??0.5, home.eoCategories?.production??0.5],
           backgroundColor: C.esColor+'33', borderColor: C.esColor, borderWidth: 2, pointRadius: 3,
         },{
           label: partner.name,
-          data: [alignment, partner.eo??0, 1-(partner.es??0), partner.eoCategories?.Trade??0.5, partner.eoCategories?.Production??0.5],
+          data: [alignment, partner.eo??0, 1-(partner.es??0), partner.eoCategories?.trade??0.5, partner.eoCategories?.production??0.5],
           backgroundColor: C.eoColor+'33', borderColor: C.eoColor, borderWidth: 2, pointRadius: 3,
         }]
       },
