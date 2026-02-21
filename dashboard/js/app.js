@@ -131,7 +131,7 @@ async function loadTopoAndRender() {
 
     // Build ISO numeric → A3 map from OSI data (field is isoN in data.js)
     D.COUNTRIES.forEach(c => {
-      if (c.isoN) ISO_NUM_TO_A3[String(c.isoN)] = c.iso3;
+      if (c.isoN) ISO_NUM_TO_A3[String(c.isoN).padStart(3, '0')] = c.iso3;
     });
 
     // ── World view map ──
