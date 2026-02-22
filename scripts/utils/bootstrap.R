@@ -43,24 +43,21 @@ ensure_user_lib <- function() {
 
 ensure_packages <- function(pkgs, install_if_missing = FALSE, quiet = TRUE) {
   missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
-  if (length(missing) == 0) {
-    invisible(TRUE)
-    return(missing)
-  }
-
-  if (install_if_missing && .Platform$OS.type == "windows") {
-    ensure_cran_repo()
-    ensure_user_lib()
-    opsi_bootstrap_message("Installing missing packages: ", paste(missing, collapse = ", "))
-    install.packages(missing, dependencies = TRUE)
-    missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
-  }
-
   if (length(missing) > 0) {
-    stop(
-      "Missing required packages: ", paste(missing, collapse = ", "), "\n",
-      "Install them manually or set OPSI_AUTO_INSTALL_PACKAGES=true on Windows."
-    )
+    if (install_if_missing && .Platform$OS.type == "windows") {
+      ensure_cran_repo()
+      ensure_user_lib()
+      opsi_bootstrap_message("Installing missing packages: ", paste(missing, collapse = ", "))
+      install.packages(missing, dependencies = TRUE)
+      missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+    }
+
+    if (length(missing) > 0) {
+      stop(
+        "Missing required packages: ", paste(missing, collapse = ", "), "\n",
+        "Install them manually or set OPSI_AUTO_INSTALL_PACKAGES=true on Windows."
+      )
+    }
   }
 
   invisible(lapply(pkgs, function(pkg) {
