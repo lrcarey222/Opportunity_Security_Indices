@@ -1419,10 +1419,12 @@ allied_network_design <- function(economic_opportunity_index,
         cand <- topk_tbl %>%
           dplyr::filter(in_top_k, iso3c == offender_iso) %>%
           dplyr::left_join(
-            specialization_tbl_iter %>% dplyr::filter(iso3c == offender_iso) %>% dplyr::select(tech, supply_chain, producer_score, dplyr::any_of('production_usd')),
+            specialization_tbl_iter %>% dplyr::filter(iso3c == offender_iso) %>% dplyr::select(tech, supply_chain, producer_score),
             by = c('tech', 'supply_chain')
-          ) %>%
-          dplyr::mutate(drop_priority = dplyr::coalesce(production_usd, production_share) * producer_score) %>%
+          )
+        priority_base <- if ('production_usd' %in% names(cand)) dplyr::coalesce(cand$production_usd, cand$production_share) else cand$production_share
+        cand <- cand %>%
+          dplyr::mutate(drop_priority = priority_base * producer_score) %>%
           dplyr::arrange(drop_priority)
         if (!nrow(cand)) next
         drops <- utils::head(cand, over)
