@@ -1108,7 +1108,7 @@ allied_network_build_topk_tbl <- function(specialization_tbl, portfolio_top_k = 
       in_top_k = rank_in_stage <= portfolio_top_k & dplyr::coalesce(production_share, 0) > 0
     ) %>%
     dplyr::ungroup() %>%
-    dplyr::select(tech, supply_chain, iso3c, production_share, dplyr::any_of('production_usd'), rank_in_stage, in_top_k)
+    dplyr::select(tech, supply_chain, iso3c, production_share, dplyr::any_of(c('production_usd', 'producer_score')), rank_in_stage, in_top_k)
 }
 
 allied_network_design <- function(economic_opportunity_index,
@@ -1417,12 +1417,13 @@ allied_network_design <- function(economic_opportunity_index,
         offender_iso <- offenders$iso3c[[r]]
         over <- offenders$over_by[[r]]
         cand <- topk_tbl %>%
-          dplyr::filter(in_top_k, iso3c == offender_iso) %>%
-          dplyr::left_join(
-            specialization_tbl_iter %>% dplyr::filter(iso3c == offender_iso) %>% dplyr::select(tech, supply_chain, producer_score, dplyr::any_of('production_usd')),
-            by = c('tech', 'supply_chain')
+          dplyr::filter(in_top_k, iso3c == offender_iso)
+        priority_base <- if ('production_usd' %in% names(cand)) dplyr::coalesce(cand$production_usd, cand$production_share) else cand$production_share
+        cand <- cand %>%
+          dplyr::mutate(
+            producer_score = dplyr::coalesce(producer_score, 1),
+            drop_priority = priority_base * producer_score
           ) %>%
-          dplyr::mutate(drop_priority = dplyr::coalesce(production_usd, production_share) * producer_score) %>%
           dplyr::arrange(drop_priority)
         if (!nrow(cand)) next
         drops <- utils::head(cand, over)
