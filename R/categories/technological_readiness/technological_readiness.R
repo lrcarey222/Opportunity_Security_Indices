@@ -16,7 +16,7 @@ parse_trl_value <- function(x) {
 }
 
 technological_readiness_clean <- function(iea_cleantech_all) {
-  require_columns(iea_cleantech_all, c("sector", "trl2023", "name"), label = "iea_cleantech_all")
+  require_columns(iea_cleantech_all, c("sector", "trl2024", "name"), label = "iea_cleantech_all")
 
   trl_cols <- names(iea_cleantech_all)[stringr::str_detect(names(iea_cleantech_all), "^trl20\\d{2}$")]
 
@@ -229,7 +229,7 @@ technological_readiness_build_tech <- function(iea_cleantech,
   iea_cleantech %>%
     dplyr::filter(.data$tech %in% techs) %>%
     dplyr::mutate(
-      trl_end = .data$trl2023,
+      trl_end = .data$trl2024,
       trl_start = find_trl_start(dplyr::pick(dplyr::everything())),
       trl_delta = .data$trl_end - .data$trl_start,
       trl_level_index_item = trl_bell_hard(.data$trl_end, min_trl = min_trl, mu = mu, max_trl = max_trl),
@@ -244,11 +244,11 @@ technological_readiness_build_tech <- function(iea_cleantech,
     ) %>%
     dplyr::group_by(.data$tech) %>%
     dplyr::summarize(
-      trl2023 = {
+      trl2024 = {
         values <- trl_end[!is.na(trl_end)]
         if (length(values) == 0) NA_real_ else mean(values)
       },
-      `trl_delta_2020_2023` = {
+      `trl_delta_2020_2024` = {
         values <- trl_delta[!is.na(trl_delta)]
         if (length(values) == 0) NA_real_ else mean(values)
       },
@@ -271,28 +271,28 @@ technological_readiness_build_tech <- function(iea_cleantech,
 }
 
 technological_readiness_build_indices <- function(iea_tech,
-                                                  year = 2023L,
+                                                  year = 2024L,
                                                   year_start = 2020L,
-                                                  year_end = 2023L) {
+                                                  year_end = 2024L) {
   supply_chain_levels <- c("Upstream", "Midstream", "Downstream")
   delta_label <- paste0("TRL Δ ", year_start, "–", year_end)
 
   iea_tech %>%
     tidyr::crossing(supply_chain = supply_chain_levels) %>%
     tidyr::pivot_longer(
-      cols = c(trl2023, trl_delta_2020_2023, trl_level_index, trl_momentum_index, trl_index),
+      cols = c(trl2024, trl_delta_2020_2024, trl_level_index, trl_momentum_index, trl_index),
       names_to = "variable",
       values_to = "value"
     ) %>%
     dplyr::mutate(
       data_type = dplyr::case_when(
-        variable %in% c("trl2023", "trl_delta_2020_2023") ~ "raw",
+        variable %in% c("trl2024", "trl_delta_2020_2024") ~ "raw",
         variable %in% c("trl_level_index", "trl_momentum_index", "trl_index") ~ "index",
         TRUE ~ "raw"
       ),
       variable = dplyr::case_when(
-        variable == "trl2023" ~ "TRL 2023",
-        variable == "trl_delta_2020_2023" ~ delta_label,
+        variable == "trl2024" ~ "TRL 2024",
+        variable == "trl_delta_2020_2024" ~ delta_label,
         variable == "trl_level_index" ~ "TRL Level Index",
         variable == "trl_momentum_index" ~ "TRL Momentum Index",
         variable == "trl_index" ~ "Overall Technology Readiness Index",
@@ -309,7 +309,7 @@ technological_readiness_build_indices <- function(iea_tech,
       Year = as.integer(year),
       source = "IEA Clean Tech Guide",
       explanation = dplyr::case_when(
-        variable == "TRL 2023" ~ "Mean end-year technology readiness level (TRL) from IEA Clean Tech Guide items mapped to each technology.",
+        variable == "TRL 2024" ~ "Mean end-year technology readiness level (TRL) from IEA Clean Tech Guide items mapped to each technology.",
         variable == delta_label ~ "Mean change in TRL from start-year to end-year across mapped IEA Clean Tech Guide items.",
         variable == "TRL Level Index" ~ "Goldilocks bell-curve score applied at item level to end-year TRL, then averaged by technology.",
         variable == "TRL Momentum Index" ~ "Scaled positive TRL change from start-year to end-year, capped and transformed, then averaged by technology.",
@@ -333,7 +333,7 @@ technological_readiness <- function(iea_cleantech_all,
                                       "Geothermal",
                                       "Electric Grid"
                                     ),
-                                    year_end = 2023L,
+                                    year_end = 2024L,
                                     year_start = 2020L,
                                     min_trl = 2,
                                     mu = 6,
