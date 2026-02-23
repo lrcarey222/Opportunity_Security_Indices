@@ -96,34 +96,37 @@ rule_matches <- function(row, rule) {
     taxonomy_has_token(sector_raw = sector_raw, sector4 = sector4, token = token)
   }, logical(1)))
 
-  has_any_tokens <- {
-    any_tokens <- null_coalesce(rule$any_tokens, character(0))
-    if (length(any_tokens) == 0) TRUE else any(vapply(any_tokens, function(token) {
+  any_tokens <- null_coalesce(rule$any_tokens, character(0))
+  supply_tokens <- null_coalesce(rule$any_supplychain_tokens, character(0))
+  regex_patterns <- null_coalesce(rule$any_name_regex, character(0))
+
+  has_any_tokens <- if (length(any_tokens) == 0) {
+    NA
+  } else {
+    any(vapply(any_tokens, function(token) {
       taxonomy_has_token(sector_raw = sector_raw, sector4 = sector4, token = token)
     }, logical(1)))
   }
 
-  has_any_supplychain <- {
-    supply_tokens <- null_coalesce(rule$any_supplychain_tokens, character(0))
-    if (length(supply_tokens) == 0) {
-      TRUE
-    } else {
-      any(vapply(supply_tokens, function(token) {
-        stringr::str_detect(supply_chain, stringr::regex(token, ignore_case = TRUE))
-      }, logical(1)))
-    }
+  has_any_supplychain <- if (length(supply_tokens) == 0) {
+    NA
+  } else {
+    any(vapply(supply_tokens, function(token) {
+      stringr::str_detect(supply_chain, stringr::regex(token, ignore_case = TRUE))
+    }, logical(1)))
   }
 
-  has_any_name_regex <- {
-    regex_patterns <- null_coalesce(rule$any_name_regex, character(0))
-    if (length(regex_patterns) == 0) {
-      TRUE
-    } else {
-      any(vapply(regex_patterns, function(pattern) {
-        stringr::str_detect(name, stringr::regex(pattern, ignore_case = TRUE))
-      }, logical(1)))
-    }
+  has_any_name_regex <- if (length(regex_patterns) == 0) {
+    NA
+  } else {
+    any(vapply(regex_patterns, function(pattern) {
+      stringr::str_detect(name, stringr::regex(pattern, ignore_case = TRUE))
+    }, logical(1)))
   }
+
+  any_match_checks <- c(has_any_tokens, has_any_supplychain, has_any_name_regex)
+  any_match_checks <- any_match_checks[!is.na(any_match_checks)]
+  has_any_match <- if (length(any_match_checks) == 0) TRUE else any(any_match_checks)
 
   has_excluded <- any(vapply(null_coalesce(rule$exclude_tokens, character(0)), function(token) {
     taxonomy_has_token(sector_raw = sector_raw, sector4 = sector4, token = token) ||
@@ -131,7 +134,7 @@ rule_matches <- function(row, rule) {
       stringr::str_detect(supply_chain, stringr::regex(token, ignore_case = TRUE))
   }, logical(1)))
 
-  has_all_tokens && has_any_tokens && has_any_supplychain && has_any_name_regex && !has_excluded
+  has_all_tokens && has_any_match && !has_excluded
 }
 
 assign_tech_from_iea <- function(row, map_rules) {

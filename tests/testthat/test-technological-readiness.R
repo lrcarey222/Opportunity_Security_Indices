@@ -43,6 +43,37 @@ test_that("battery taxonomy is prioritized over road-transport EV mapping", {
   expect_identical(ev_sector, "Electric Vehicles")
 })
 
+
+
+test_that("battery mapping can match by name when taxonomy tokens are sparse", {
+  sparse_battery <- tibble::tibble(
+    name = "Advanced battery separator",
+    sector = "Demand,Transport,Road transport,Vehicle",
+    supplyChain = "Manufacturing",
+    trl2023 = 6
+  )
+
+  assigned <- sparse_battery |>
+    technological_readiness_clean() |>
+    technological_readiness_assign_tech()
+
+  expect_identical(unique(assigned$tech), "Batteries")
+})
+
+test_that("mapping any-match rules do not require all any_* fields simultaneously", {
+  hydrogen_name_only <- tibble::tibble(
+    name = "Electrolyser balance-of-plant",
+    sector = "Supply,Power,Infrastructure,Equipment",
+    supplyChain = "Other",
+    trl2023 = 5
+  )
+
+  assigned <- hydrogen_name_only |>
+    technological_readiness_clean() |>
+    technological_readiness_assign_tech()
+
+  expect_identical(unique(assigned$tech), "Green Hydrogen")
+})
 test_that("tech aggregation uses mean of item-level bell scores and does not impute missing", {
   fixture <- iea_fixture() |>
     dplyr::mutate(
