@@ -8,7 +8,7 @@ rules:
   - tech: Batteries
     any_tokens: ["Battery", "Electrochemical storage"]
     any_supplychain_tokens: ["Battery production", "Battery recycling", "Battery charging", "Power storage"]
-    any_name_regex: ["battery", "\bcell\b", "electrochemical storage"]
+    any_name_regex: ["battery", "cell", "electrochemical storage"]
     exclude_tokens: ["Mining"]
 
   - tech: Electric Vehicles
