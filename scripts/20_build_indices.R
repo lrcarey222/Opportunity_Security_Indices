@@ -46,6 +46,24 @@ source(file.path(repo_root, "R", "indices", "build_indices.R"))
 source(file.path(repo_root, "R", "indices", "build_policy_index.R"))
 source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
 
+# Always reload runtime configs from repository YAML so this script is not
+# affected by option overrides from tests/interactive sessions.
+reload_runtime_configs <- function(repo_root) {
+  config_path <- Sys.getenv("OPSI_CONFIG", file.path(repo_root, "config", "config.yml"))
+  weights_path <- Sys.getenv("OPSI_WEIGHTS", file.path(repo_root, "config", "weights.yml"))
+  missing_data_path <- Sys.getenv("OPSI_MISSING_DATA", file.path(repo_root, "config", "missing_data.yml"))
+  index_definition_path <- Sys.getenv("OPSI_INDEX_DEFINITION", file.path(repo_root, "config", "index_definition.yml"))
+
+  options(
+    opportunity_security.config = yaml::read_yaml(config_path),
+    opportunity_security.weights = yaml::read_yaml(weights_path),
+    opportunity_security.missing_data = yaml::read_yaml(missing_data_path),
+    opportunity_security.index_definition = yaml::read_yaml(index_definition_path)
+  )
+}
+
+reload_runtime_configs(repo_root)
+
 techs <- c("Electric Vehicles",
            "Nuclear","Coal","Batteries","Green Hydrogen","Wind","Oil",                       
            "Solar", "Gas", "Geothermal","Electric Grid")
@@ -112,6 +130,7 @@ technological_readiness_tbl <- read_processed_tbl(
   "technological_readiness_tbl",
   processed_dir
 )
+investment_momentum_tbl <- read_processed_tbl("investment_momentum_tbl", processed_dir)
 policy_component_tbl <- read_processed_tbl("policy_component_tbl", processed_dir)
 policy_outputs <- read_processed_tbl("policy_outputs", processed_dir)
 nipo_tech_year<-read_processed_tbl("nipo_tech_year", processed_dir)
@@ -131,7 +150,8 @@ energy_security_inputs <- list(
   critical_minerals_trade = critical_minerals_trade_tbl,
   energy_consumption = energy_consumption_tbl,
   trade_concentration = trade_concentration_tbl,
-  energy_prices = energy_prices_tbl
+  energy_prices = energy_prices_tbl,
+  investment_momentum = investment_momentum_tbl
 )
 
 energy_security_outputs <- build_energy_security_index_v2(
@@ -163,7 +183,8 @@ economic_opportunity_inputs <- list(
   cost_competitiveness = cost_competitiveness_tbl,
   production_depth_momentum = production_depth_momentum_tbl,
   overcapacity_premium = overcapacity_premium_tbl,
-  technological_readiness = technological_readiness_tbl
+  technological_readiness = technological_readiness_tbl,
+  investment_momentum = investment_momentum_tbl
 )
 
 economic_opportunity_outputs <- build_economic_opportunity_index_v2(
@@ -249,10 +270,6 @@ policy_index <- policy_components_clean %>%
     category, variable, data_type,
     value, Year, source, explanation
   )
-
-economic_opportunity_index <- index_outputs$economic_opportunity_index
-energy_security_index <- index_outputs$energy_security_index
-policy_index <-index_outputs$policy_index
 
 strategic_index <- left_join(
   economic_opportunity_index,
@@ -518,4 +535,3 @@ ggplot(plot_df %>% filter(Country=="United Kingdom"), aes(x = sector_key, y = co
   scale_fill_manual(values = rmi_palette) +
   labs(x = NULL, y = "Weighted contribution to strategic_index", fill = NULL) +
   theme_minimal()
-

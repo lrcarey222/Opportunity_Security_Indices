@@ -19,6 +19,8 @@ pillars:
         score_variable: "Overall Consumption Index"
       Energy Prices:
         score_variable: "Overall Energy Prices Index"
+      Investment:
+        score_variable: "Overall Investment Index"
   economic_opportunity:
     categories:
       Trade:
@@ -199,8 +201,14 @@ overall_variables:
     aggregation: mean
   Overall Investment Index:
     category: "Investment"
-    components: []
+    components:
+      - "Annual Investment Index"
+      - "Investment Momentum Index"
+      - "Operating Capacity Index"
+      - "Pipeline Capacity Index"
     aggregation: mean
+    source: "GCIM / Rhodium + author normalization"
+    explanation: "Mean of investment flow, momentum, and capacity pipeline indices"
   Overall Technological Readiness Index:
     category: "Technological Readiness"
     components:
