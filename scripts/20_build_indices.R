@@ -112,6 +112,7 @@ technological_readiness_tbl <- read_processed_tbl(
   "technological_readiness_tbl",
   processed_dir
 )
+investment_momentum_tbl <- read_processed_tbl("investment_momentum_tbl", processed_dir)
 policy_component_tbl <- read_processed_tbl("policy_component_tbl", processed_dir)
 policy_outputs <- read_processed_tbl("policy_outputs", processed_dir)
 nipo_tech_year<-read_processed_tbl("nipo_tech_year", processed_dir)
@@ -131,7 +132,8 @@ energy_security_inputs <- list(
   critical_minerals_trade = critical_minerals_trade_tbl,
   energy_consumption = energy_consumption_tbl,
   trade_concentration = trade_concentration_tbl,
-  energy_prices = energy_prices_tbl
+  energy_prices = energy_prices_tbl,
+  investment_momentum = investment_momentum_tbl
 )
 
 energy_security_outputs <- build_energy_security_index_v2(
@@ -163,7 +165,8 @@ economic_opportunity_inputs <- list(
   cost_competitiveness = cost_competitiveness_tbl,
   production_depth_momentum = production_depth_momentum_tbl,
   overcapacity_premium = overcapacity_premium_tbl,
-  technological_readiness = technological_readiness_tbl
+  technological_readiness = technological_readiness_tbl,
+  investment_momentum = investment_momentum_tbl
 )
 
 economic_opportunity_outputs <- build_economic_opportunity_index_v2(
