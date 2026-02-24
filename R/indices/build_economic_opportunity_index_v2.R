@@ -233,7 +233,18 @@ build_economic_opportunity_index_v2 <- function(theme_tables,
     )
   }
 
-  rules_tbl <- parse_missing_policy(missing_data, latest_tbl)
+  known_missing_keys <- unique(c(
+    names(theme_tables),
+    score_variables_tbl$category,
+    score_variables_tbl$score_variable,
+    names(index_definition$overall_variables)
+  ))
+
+  rules_tbl <- parse_missing_policy(
+    missing_data,
+    latest_tbl,
+    known_keys = known_missing_keys
+  )
 
   imputed_tbl <- apply_missing_policy(
     latest_tbl,
