@@ -26,7 +26,8 @@ energy_access_build_per_capita <- function(ei_clean, year, country_info = NULL) 
     ) %>%
     dplyr::mutate(dplyr::across(dplyr::ends_with("_raw"), ~tidyr::replace_na(.x, 0)))
 
-  standardize_country_table(per_capita_tbl, country_info = country_info)
+  standardize_country_table(per_capita_tbl, country_info = country_info) %>%
+    dplyr::select(-dplyr::any_of("iso3c"))
 }
 
 energy_access_build_indices <- function(ec_per_capita, year, gamma = 0.5) {
@@ -39,7 +40,7 @@ energy_access_build_indices <- function(ec_per_capita, year, gamma = 0.5) {
       )
     ) %>%
     tidyr::pivot_longer(
-      cols = -Country,
+      cols = tidyselect::matches("_(raw|index)$"),
       names_to = c("tech", "data_type"),
       names_pattern = "(.*)_(raw|index)",
       values_to = "value"
