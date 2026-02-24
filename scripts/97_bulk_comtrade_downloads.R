@@ -169,6 +169,90 @@ split_vec <- function(x, chunk_size) {
   split(x, idx)
 }
 
+normalize_commodity_code <- function(x) {
+  if (is.null(x)) {
+    return(character())
+  }
+
+  if (is.list(x)) {
+    if (length(x) == 1) {
+      return(normalize_commodity_code(x[[1]]))
+    }
+    stop("commodity_code list entries must contain exactly one character vector per request row.")
+  }
+
+  if (is.character(x)) {
+    if (length(x) == 1 && grepl(",", x, fixed = TRUE)) {
+      x <- strsplit(x, ",", fixed = TRUE)[[1]]
+    }
+    x <- trimws(x)
+    x <- x[nzchar(x)]
+    return(x)
+  }
+
+  stop("Unsupported commodity_code type: ", typeof(x))
+}
+
+validate_request_df <- function(request_df) {
+  required_cols <- c("request_id", "reporter", "partner", "commodity_code", "start_date", "end_date", "flow_direction", "frequency")
+  missing_cols <- setdiff(required_cols, names(request_df))
+  if (length(missing_cols) > 0) {
+    stop("request_df missing required columns: ", paste(missing_cols, collapse = ", "))
+  }
+
+  commodity_col <- request_df$commodity_code
+  if (!is.list(commodity_col) && !is.character(commodity_col)) {
+    stop("request_df$commodity_code must be a character vector or list-column.")
+  }
+
+  bad_code_sample <- character()
+  bad_code_request <- NA_integer_
+
+  for (i in seq_len(nrow(request_df))) {
+    request_id <- request_df$request_id[[i]]
+    entry <- commodity_col[[i]]
+
+    if (is.character(entry) && length(entry) == 1 && identical(trimws(entry), "TOTAL")) {
+      next
+    }
+
+    if (is.list(entry)) {
+      stop("request_id ", request_id, " has nested list commodity_code; expected a character vector.")
+    }
+
+    if (!is.character(entry)) {
+      stop("request_id ", request_id, " has unsupported commodity_code type: ", typeof(entry))
+    }
+
+    if (length(entry) == 1 && grepl(",", entry, fixed = TRUE)) {
+      stop(
+        "request_id ", request_id,
+        " has commodity_code as a single comma-delimited string. ",
+        "Use normalize_commodity_code() to split into a character vector."
+      )
+    }
+
+    entry <- trimws(entry)
+    entry <- entry[nzchar(entry)]
+    bad_codes <- entry[!grepl("^\\d{6}$", entry)]
+    if (length(bad_codes) > 0) {
+      bad_code_sample <- utils::head(bad_codes, 5)
+      bad_code_request <- request_id
+      break
+    }
+  }
+
+  if (length(bad_code_sample) > 0) {
+    stop(
+      "Invalid HS commodity codes in request_id ", bad_code_request,
+      ". Expected 6-digit codes. Sample bad codes: ",
+      paste(bad_code_sample, collapse = ", ")
+    )
+  }
+
+  invisible(TRUE)
+}
+
 build_bulk_requests <- function(reporters,
                                 hs_codes,
                                 years,
@@ -191,7 +275,8 @@ build_bulk_requests <- function(reporters,
   req$partner <- partner
   req$start_date <- vapply(req$year_chunk_id, function(i) min(year_chunks[[i]]), integer(1))
   req$end_date <- vapply(req$year_chunk_id, function(i) max(year_chunks[[i]]), integer(1))
-  req$commodity_code <- vapply(req$code_chunk_id, function(i) paste(code_chunks[[i]], collapse = ","), character(1))
+  # Keep HS chunks as per-request vectors; ct_get_data expects a vector, not a single comma-string.
+  req$commodity_code <- lapply(req$code_chunk_id, function(i) code_chunks[[i]])
   req$frequency <- frequency
   req$request_id <- seq_len(nrow(req))
 
@@ -312,6 +397,10 @@ run_bulk_comtrade_download <- function(
     chunk_size = hs_chunk_size,
     year_chunk_size = annual_year_chunk_size
   )
+  # Normalize defensively in case upstream request construction changes.
+  annual_hs_requests$commodity_code <- lapply(annual_hs_requests$commodity_code, normalize_commodity_code)
+  validate_request_df(annual_hs_requests)
+
   annual_total_requests <- build_total_requests(
     reporters = reporters,
     years = annual_years,
@@ -331,6 +420,8 @@ run_bulk_comtrade_download <- function(
   } else {
     annual_hs_requests[0, ]
   }
+  monthly_hs_requests$commodity_code <- lapply(monthly_hs_requests$commodity_code, normalize_commodity_code)
+  validate_request_df(monthly_hs_requests)
 
   monthly_total_requests <- if (length(monthly_reporters) > 0) {
     build_total_requests(
