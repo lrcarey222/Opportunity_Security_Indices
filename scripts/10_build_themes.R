@@ -69,6 +69,30 @@ source(file.path(repo_root, "R", "categories", "investment", "investment_momentu
 source(file.path(repo_root, "R", "categories", "economic opportunity", "cost_competitiveness.R"))
 source(file.path(repo_root, "R", "categories", "technological_readiness", "technological_readiness.R"))
 
+rebuild_theme_overall_indices <- function(tbl) {
+  if (is.null(tbl) || nrow(tbl) == 0 || !"variable" %in% names(tbl) || !"data_type" %in% names(tbl)) {
+    return(tbl)
+  }
+
+  index_definition <- getOption("opportunity_security.index_definition")
+  if (is.null(index_definition)) {
+    return(tbl)
+  }
+
+  overall_defs <- index_definition$overall_variables
+  overall_names <- names(overall_defs)
+
+  if (is.null(overall_defs) || length(overall_names) == 0) {
+    return(tbl)
+  }
+
+  include_sub_sector <- "sub_sector" %in% names(tbl)
+  tbl_without_overall <- tbl %>%
+    dplyr::filter(!(data_type == "index" & variable %in% overall_names))
+
+  apply_overall_definitions(tbl_without_overall, include_sub_sector = include_sub_sector)
+}
+
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
     return(tbl)
@@ -90,7 +114,7 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
     )
 
   if (is.null(country_info)) {
-    return(standardized)
+    return(rebuild_theme_overall_indices(standardized))
   }
 
   standardized_with_country <- standardize_country_table(
@@ -104,13 +128,14 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
   if (nrow(standardized_with_country) == 0 && nrow(standardized) > 0) {
     warning(
       "Country standardization dropped all rows in standardize_theme_types(); ",
-      "returning unfiltered standardized rows instead."
+      "returning unfiltered standardized rows before rebuilding overall indices."
     )
-    return(standardized)
+    return(rebuild_theme_overall_indices(standardized))
   }
 
-  standardized_with_country
+  rebuild_theme_overall_indices(standardized_with_country)
 }
+
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) {
@@ -290,7 +315,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   
 
   # Theme: Energy access and consumption (EI data).
-  energy_access_tbl <- energy_access_consumption(ei)
+  energy_access_tbl <- energy_access_consumption(ei, country_info = country_info)
   energy_access_tbl <- standardize_theme_types(energy_access_tbl, country_info = country_info)
   write_processed_tbl(energy_access_tbl, "energy_access_tbl", processed_dir)
 
