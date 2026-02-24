@@ -65,6 +65,7 @@ source(file.path(repo_root, "R", "categories", "energy_prices", "lcoe_competitiv
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "market_share_manufacturing.R"))
 source(file.path(repo_root, "R", "categories", "production", "production_depth_momentum.R"))
 source(file.path(repo_root, "R", "categories", "technology_demand", "overcapacity_premium.R"))
+source(file.path(repo_root, "R", "categories", "investment", "investment_momentum.R"))
 source(file.path(repo_root, "R", "categories", "economic opportunity", "cost_competitiveness.R"))
 source(file.path(repo_root, "R", "categories", "technological_readiness", "technological_readiness.R"))
 
@@ -202,6 +203,8 @@ cat_policy_path <- file.path(
   raw_data_path,"CAT_country ratings data.csv")
 dual_use_scores_path <- file.path(
   raw_data_path,"dual_use_scores_primary_secondary_tertiary.csv")
+investment_monitor_path <- file.path(
+  raw_data_path, "GCIM_Investment_Capacity_aggregated.xlsx")
 
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
@@ -238,9 +241,18 @@ missing_files <- c(
   hs6_category_path,
   tech_ghg_path,
   cat_policy_path,
-  dual_use_scores_path
+  dual_use_scores_path,
+  investment_monitor_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
+
+if (investment_monitor_path %in% missing_files && !skip_data_downloads) {
+  stop(
+    "Missing GCIM investment monitor file at data/raw/GCIM_Investment_Capacity_aggregated.xlsx (resolved: ",
+    investment_monitor_path,
+    ")."
+  )
+}
 
 if (length(missing_files) > 0 && !skip_data_downloads) {
   expected_list <- paste0("- ", missing_files, collapse = "\n")
@@ -561,6 +573,21 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     processed_dir
   )
 
+  # Theme: Investment momentum + capacity (GCIM investment monitor).
+  investment_momentum_tbl <- investment_momentum_from_excel(
+    investment_monitor_path,
+    country_reference = country_reference$Country
+  )
+  investment_momentum_tbl <- standardize_theme_types(
+    investment_momentum_tbl,
+    country_info = country_info
+  )
+  write_processed_tbl(
+    investment_momentum_tbl,
+    "investment_momentum_tbl",
+    processed_dir
+  )
+
   # Theme: Cost competitiveness (IEA relative costs).
   iea_relative_costs <- read.csv(relative_costs_iea_path)
   ilo_url <- "https://rplumber.ilo.org/data/indicator/?id=EAR_4MTH_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat&title=average-monthly-earnings-of-employees-by-sex-and-economic-activity-annual"
@@ -719,6 +746,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     lcoe_competitiveness = lcoe_competitiveness_tbl,
     market_share_manufacturing = market_share_manufacturing_tbl,
     production_depth_momentum = production_depth_momentum_tbl,
+    investment_momentum = investment_momentum_tbl,
     technological_readiness = technological_readiness_tbl,
     cost_competitiveness = cost_competitiveness_tbl
   )
