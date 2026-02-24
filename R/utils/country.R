@@ -86,8 +86,7 @@ standardize_country_table <- function(tbl, country_info = NULL) {
   with_iso <- standardized %>%
     dplyr::filter(!is.na(iso3c), nzchar(iso3c)) %>%
     dplyr::left_join(country_ref, by = "iso3c") %>%
-    dplyr::mutate(Country = dplyr::coalesce(country, Country)) %>%
-    dplyr::select(-country, -country_std)
+    dplyr::mutate(Country = dplyr::coalesce(country, Country))
 
   without_iso <- standardized %>%
     dplyr::filter(is.na(iso3c) | !nzchar(iso3c)) %>%
@@ -98,6 +97,6 @@ standardize_country_table <- function(tbl, country_info = NULL) {
       iso3c = toupper(as.character(iso3c)),
       Country = dplyr::coalesce(country, Country)
     ) %>%
-    dplyr::select(-country, -country_std) %>%
+    dplyr::select(-dplyr::any_of(c("country", "country_std"))) %>%
     dplyr::filter(!is.na(iso3c), nzchar(iso3c))
 }
