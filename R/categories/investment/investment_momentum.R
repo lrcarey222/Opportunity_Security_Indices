@@ -25,19 +25,15 @@ investment_segment_to_supply_chain <- function(segment) {
 }
 
 investment_map_tech <- function(technology) {
-  tech_clean <- stringr::str_trim(as.character(technology))
+  tech_clean <- stringr::str_squish(stringr::str_to_lower(as.character(technology)))
 
   dplyr::case_when(
-    tech_clean %in% c("Solar PV", "Solar") ~ "Solar",
-    tech_clean %in% c("Wind") ~ "Wind",
-    tech_clean %in% c("Batteries", "Stationary Battery Storage") ~ "Batteries",
-    tech_clean %in% c(
-      "Zero Emission Vehicles",
-      "Electric Vehicles (LDV)",
-      "Electric Vehicles (MHCV)"
-    ) ~ "Electric Vehicles",
-    tech_clean %in% c("Nuclear Power", "Advanced Nuclear") ~ "Nuclear",
-    tech_clean %in% c("Enhanced Geothermal") ~ "Geothermal",
+    stringr::str_detect(tech_clean, "solar") ~ "Solar",
+    stringr::str_detect(tech_clean, "wind") ~ "Wind",
+    stringr::str_detect(tech_clean, "batter(y|ies)|battery storage|bess") ~ "Batteries",
+    stringr::str_detect(tech_clean, "zero emission vehicles|electric vehicles|\bzev\b|\bev\b") ~ "Electric Vehicles",
+    stringr::str_detect(tech_clean, "nuclear") ~ "Nuclear",
+    stringr::str_detect(tech_clean, "geothermal") ~ "Geothermal",
     TRUE ~ NA_character_
   )
 }
@@ -115,9 +111,23 @@ investment_momentum <- function(annual_tbl,
   annual_clean <- annual_clean %>%
     dplyr::filter(!is.na(tech))
 
+  if (nrow(annual_clean) == 0) {
+    stop(
+      "No mappable annual investment rows after applying Segment/Technology mappings. ",
+      "Expected at least one technology mapping into: Solar, Wind, Batteries, Electric Vehicles, Nuclear, Geothermal."
+    )
+  }
+
   if (!is.null(country_reference)) {
     annual_clean <- annual_clean %>%
       dplyr::filter(Country %in% country_reference)
+  }
+
+  if (nrow(annual_clean) == 0) {
+    stop(
+      "No annual investment rows remain after applying country_reference filter. ",
+      "Check country naming alignment between workbook and EI country reference."
+    )
   }
 
   annual_agg <- annual_clean %>%
@@ -208,6 +218,12 @@ investment_momentum <- function(annual_tbl,
   if (!is.null(country_reference)) {
     capacity_clean <- capacity_clean %>%
       dplyr::filter(Country %in% country_reference)
+  }
+
+  if (nrow(capacity_clean) == 0) {
+    stop(
+      "No mappable capacity rows remain after Technology/Segment mapping and country filtering."
+    )
   }
 
   capacity_stage_levels <- c(
