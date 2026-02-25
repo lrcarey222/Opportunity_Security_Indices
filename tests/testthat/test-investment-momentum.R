@@ -82,6 +82,7 @@ test_that("investment_momentum returns schema-valid Investment category output",
     dplyr::filter(variable %in% component_vars, data_type == "index")
 
   expect_true(all(component_out$value >= 0 & component_out$value <= 1, na.rm = TRUE))
+  expect_true(any(out$data_type == "raw"))
 
   dupes <- out %>%
     dplyr::count(
@@ -97,6 +98,36 @@ test_that("investment_momentum returns schema-valid Investment category output",
     dplyr::filter(n > 1)
 
   expect_equal(nrow(dupes), 0)
+})
+
+test_that("Critical Minerals maps to Batteries Upstream and Electric Vehicles Upstream", {
+  annual_tbl <- tibble::tibble(
+    Country = c("US"),
+    Segment = c("Industry"),
+    Technology = c("Critical Minerals"),
+    Year = c(2024),
+    Investment = c(7)
+  )
+
+  capacity_tbl <- tibble::tibble(
+    Country = c("US", "US"),
+    Segment = c("Industry", "Industry"),
+    Technology = c("Critical Minerals", "Critical Minerals"),
+    Product = c("Lithium", "Nickel"),
+    End_use_application = c("Battery", "Vehicle"),
+    Facility_Type = c("Plant", "Plant"),
+    Category = c("Current operational capacity", "Under construction - anticipated capacity"),
+    Value = c(10, 20)
+  )
+
+  out <- investment_momentum(annual_tbl = annual_tbl, capacity_tbl = capacity_tbl)
+
+  mapped_pairs <- out %>%
+    dplyr::filter(data_type == "raw", variable == "Annual Investment (USD bn, 2024$)") %>%
+    dplyr::distinct(tech, supply_chain)
+
+  expect_true(any(mapped_pairs$tech == "Batteries" & mapped_pairs$supply_chain == "Upstream"))
+  expect_true(any(mapped_pairs$tech == "Electric Vehicles" & mapped_pairs$supply_chain == "Upstream"))
 })
 
 test_that("all-zero annual groups normalize to zero instead of 0.5", {

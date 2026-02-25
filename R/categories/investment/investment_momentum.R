@@ -38,6 +38,11 @@ investment_map_tech <- function(technology) {
   )
 }
 
+investment_is_critical_minerals <- function(technology) {
+  tech_clean <- stringr::str_squish(stringr::str_to_lower(as.character(technology)))
+  stringr::str_detect(tech_clean, "critical minerals")
+}
+
 investment_safe_index <- function(x, gamma = 0.5) {
   if (!is.numeric(x)) {
     stop("investment_safe_index() expects numeric input.")
@@ -88,13 +93,29 @@ investment_momentum <- function(annual_tbl,
   annual_clean <- annual_tbl %>%
     dplyr::transmute(
       Country = standardize_country_names(Country),
+      Technology = as.character(Technology),
       tech = investment_map_tech(Technology),
-      supply_chain = investment_segment_to_supply_chain(Segment),
+      supply_chain_segment = investment_segment_to_supply_chain(Segment),
       Year = suppressWarnings(as.integer(Year)),
       investment_value = suppressWarnings(as.numeric(Investment))
     ) %>%
     dplyr::filter(!is.na(Year)) %>%
     dplyr::mutate(investment_value = dplyr::coalesce(investment_value, 0))
+
+  annual_regular <- annual_clean %>%
+    dplyr::filter(!is.na(tech)) %>%
+    dplyr::transmute(Country, tech, supply_chain = supply_chain_segment, Year, investment_value)
+
+  # Explicit special-case mapping requested by user:
+  # raw Technology == "Critical Minerals" contributes to both
+  # Batteries Upstream and Electric Vehicles Upstream.
+  annual_critical_minerals <- annual_clean %>%
+    dplyr::filter(investment_is_critical_minerals(Technology)) %>%
+    dplyr::select(Country, Year, investment_value) %>%
+    tidyr::crossing(tech = c("Batteries", "Electric Vehicles")) %>%
+    dplyr::mutate(supply_chain = "Upstream")
+
+  annual_clean <- dplyr::bind_rows(annual_regular, annual_critical_minerals)
 
   dropped_techs <- annual_tbl %>%
     dplyr::mutate(mapped_tech = investment_map_tech(Technology)) %>%
@@ -107,9 +128,6 @@ investment_momentum <- function(annual_tbl,
       paste(sort(dropped_techs), collapse = ", ")
     )
   }
-
-  annual_clean <- annual_clean %>%
-    dplyr::filter(!is.na(tech))
 
   if (nrow(annual_clean) == 0) {
     stop(
@@ -133,6 +151,20 @@ investment_momentum <- function(annual_tbl,
   annual_agg <- annual_clean %>%
     dplyr::group_by(Country, tech, supply_chain, Year) %>%
     dplyr::summarise(investment_value = sum(investment_value, na.rm = TRUE), .groups = "drop")
+
+  annual_raw <- annual_agg %>%
+    dplyr::transmute(
+      Country,
+      tech,
+      supply_chain,
+      category = "Investment",
+      variable = "Annual Investment (USD bn, 2024$)",
+      data_type = "raw",
+      value = investment_value,
+      Year,
+      source = "GCIM / Rhodium",
+      explanation = "Annual investment amount in 2024 USD billions, summed within Country-tech-supply_chain-year"
+    )
 
   annual_complete <- annual_agg %>%
     dplyr::group_by(Country, tech, Year) %>%
@@ -203,17 +235,52 @@ investment_momentum <- function(annual_tbl,
       explanation = "Within tech-supply-chain median_scurve(log1p(latest)-log1p(baseline)); all-zero groups set to 0"
     )
 
+  momentum_raw_tbl <- annual_latest %>%
+    dplyr::left_join(
+      annual_baseline,
+      by = c("Country", "tech", "supply_chain", "baseline_year")
+    ) %>%
+    dplyr::mutate(
+      invest_baseline = dplyr::coalesce(invest_baseline, 0),
+      value = log1p(invest_latest) - log1p(invest_baseline),
+      Year = as.integer(latest_year)
+    ) %>%
+    dplyr::transmute(
+      Country,
+      tech,
+      supply_chain,
+      category = "Investment",
+      variable = "Investment Momentum (log1p latest-baseline)",
+      data_type = "raw",
+      value,
+      Year,
+      source = "GCIM / Rhodium + author transform",
+      explanation = "Raw momentum signal before normalization"
+    )
+
   capacity_clean <- capacity_tbl %>%
     dplyr::transmute(
       Country = standardize_country_names(Country),
+      Technology = as.character(Technology),
       tech = investment_map_tech(Technology),
-      supply_chain = investment_segment_to_supply_chain(Segment),
+      supply_chain_segment = investment_segment_to_supply_chain(Segment),
       Product = as.character(Product),
       capacity_stage = as.character(Category),
       Value = suppressWarnings(as.numeric(Value))
     ) %>%
-    dplyr::filter(!is.na(tech)) %>%
     dplyr::mutate(Value = dplyr::coalesce(Value, 0))
+
+  capacity_regular <- capacity_clean %>%
+    dplyr::filter(!is.na(tech)) %>%
+    dplyr::transmute(Country, tech, supply_chain = supply_chain_segment, Product, capacity_stage, Value)
+
+  capacity_critical_minerals <- capacity_clean %>%
+    dplyr::filter(investment_is_critical_minerals(Technology)) %>%
+    dplyr::select(Country, Product, capacity_stage, Value) %>%
+    tidyr::crossing(tech = c("Batteries", "Electric Vehicles")) %>%
+    dplyr::mutate(supply_chain = "Upstream")
+
+  capacity_clean <- dplyr::bind_rows(capacity_regular, capacity_critical_minerals)
 
   if (!is.null(country_reference)) {
     capacity_clean <- capacity_clean %>%
@@ -241,6 +308,38 @@ investment_momentum <- function(annual_tbl,
     dplyr::group_by(tech, supply_chain, Product, capacity_stage) %>%
     dplyr::mutate(product_stage_index = investment_safe_index(log1p(Value), gamma = gamma)) %>%
     dplyr::ungroup()
+
+  capacity_stage_raw <- capacity_clean %>%
+    dplyr::filter(capacity_stage %in% capacity_stage_levels) %>%
+    dplyr::mutate(stage_group = dplyr::case_when(
+      capacity_stage == "Current operational capacity" ~ "Operating",
+      capacity_stage %in% c(
+        "Operational yet to come online",
+        "Under construction - anticipated capacity",
+        "Announced - anticipated capacity",
+        "Paused - anticipated capacity"
+      ) ~ "Pipeline",
+      TRUE ~ NA_character_
+    )) %>%
+    dplyr::filter(!is.na(stage_group)) %>%
+    dplyr::group_by(Country, tech, supply_chain, stage_group) %>%
+    dplyr::summarise(value = sum(Value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::transmute(
+      Country,
+      tech,
+      supply_chain,
+      category = "Investment",
+      variable = dplyr::if_else(
+        stage_group == "Operating",
+        "Operating Capacity (raw stage sum)",
+        "Pipeline Capacity (raw stage sum)"
+      ),
+      data_type = "raw",
+      value,
+      Year = as.integer(capacity_year),
+      source = "GCIM / Rhodium",
+      explanation = "Raw summed capacity by stage group (units may differ across products)"
+    )
 
   operating_capacity <- capacity_product_stage %>%
     dplyr::filter(capacity_stage == "Current operational capacity") %>%
@@ -288,6 +387,9 @@ investment_momentum <- function(annual_tbl,
     )
 
   out <- dplyr::bind_rows(
+    annual_raw,
+    momentum_raw_tbl,
+    capacity_stage_raw,
     annual_index,
     momentum_tbl,
     operating_capacity,
