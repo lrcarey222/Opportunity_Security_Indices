@@ -66,6 +66,14 @@ standardize_country_table <- function(tbl, country_info = NULL) {
   }
 
   standardized <- tbl %>%
+    dplyr::select(-dplyr::any_of(c(
+      "country",
+      "country_std",
+      "country_std.x",
+      "country_std.y",
+      "iso3c.x",
+      "iso3c.y"
+    ))) %>%
     dplyr::mutate(
       Country = standardize_country_names(Country),
       iso3c = if ("iso3c" %in% names(tbl)) toupper(as.character(iso3c)) else NA_character_
@@ -77,27 +85,28 @@ standardize_country_table <- function(tbl, country_info = NULL) {
 
   country_ref <- country_info %>%
     dplyr::transmute(
-      iso3c = toupper(as.character(iso3c)),
-      country = as.character(country),
-      country_std = standardize_country_names(country)
+      ref_iso3c = toupper(as.character(iso3c)),
+      ref_country = as.character(country),
+      ref_country_std = standardize_country_names(country)
     ) %>%
-    dplyr::distinct(iso3c, .keep_all = TRUE)
+    dplyr::distinct(ref_iso3c, .keep_all = TRUE)
 
   with_iso <- standardized %>%
     dplyr::filter(!is.na(iso3c), nzchar(iso3c)) %>%
-    dplyr::left_join(country_ref, by = "iso3c") %>%
-    dplyr::mutate(Country = dplyr::coalesce(country, Country))
+    dplyr::left_join(country_ref, by = c("iso3c" = "ref_iso3c")) %>%
+    dplyr::mutate(Country = dplyr::coalesce(ref_country, Country))
 
   without_iso <- standardized %>%
     dplyr::filter(is.na(iso3c) | !nzchar(iso3c)) %>%
-    dplyr::left_join(country_ref, by = c("Country" = "country_std"))
+    dplyr::left_join(country_ref, by = c("Country" = "ref_country_std")) %>%
+    dplyr::mutate(
+      iso3c = dplyr::coalesce(iso3c, ref_iso3c),
+      Country = dplyr::coalesce(ref_country, Country)
+    )
 
   standardized_with_ref <- dplyr::bind_rows(with_iso, without_iso) %>%
-    dplyr::mutate(
-      iso3c = toupper(as.character(iso3c)),
-      Country = dplyr::coalesce(country, Country)
-    ) %>%
-    dplyr::select(-dplyr::any_of(c("country", "country_std")))
+    dplyr::mutate(iso3c = toupper(as.character(iso3c))) %>%
+    dplyr::select(-dplyr::any_of(c("ref_iso3c", "ref_country", "ref_country_std")))
 
   standardized_filtered <- standardized_with_ref %>%
     dplyr::filter(!is.na(iso3c), nzchar(iso3c))
@@ -112,3 +121,4 @@ standardize_country_table <- function(tbl, country_info = NULL) {
 
   standardized_filtered
 }
+

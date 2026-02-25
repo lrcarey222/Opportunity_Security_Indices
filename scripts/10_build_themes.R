@@ -98,6 +98,16 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
     return(tbl)
   }
 
+  core_cols <- c(
+    "Country", "iso3c", "tech", "supply_chain", "sub_sector",
+    "category", "variable", "data_type", "value", "Year", "source", "explanation"
+  )
+
+  keep_theme_schema <- function(x) {
+    x %>%
+      dplyr::select(dplyr::any_of(core_cols))
+  }
+
   standardized <- tbl %>%
     dplyr::mutate(
       Country = as.character(Country),
@@ -111,7 +121,8 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
       value = suppressWarnings(as.numeric(value)),
       source = as.character(source),
       explanation = as.character(explanation)
-    )
+    ) %>%
+    keep_theme_schema()
 
   if (is.null(country_info)) {
     return(rebuild_theme_overall_indices(standardized))
@@ -120,7 +131,8 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
   standardized_with_country <- standardize_country_table(
     standardized,
     country_info = country_info
-  )
+  ) %>%
+    keep_theme_schema()
 
   # Guard against full row-loss when country matching fails for a dataset.
   # In that case, preserve the standardized rows and allow downstream missing-data
