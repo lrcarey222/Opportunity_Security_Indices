@@ -750,23 +750,25 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   nipo_policy_index_tbl <- nipo_policy_index_tbl %>%
     transmute(
-      Country=country,
+      Country = country,
       tech,
       supply_chain,
-      variable="NIPO Policy Index",
-      data_type="Index",
-      value=domestic_intervention_index,
-      Year=2026,
-      source="NIPO",
-      explanation="See README"
-    )
-  
+      variable = "NIPO Policy Index",
+      data_type = "Index",
+      value = domestic_intervention_index,
+      Year = 2026,
+      source = "NIPO",
+      explanation = "See README"
+    ) %>%
+    standardize_theme_types(country_info = country_info)
+
   policy_component_tbl <- dplyr::bind_rows(
     iea_policy_index_tbl,
     nipo_policy_index_tbl,
     cat_policy_index_tbl,
     dual_use_scores_tbl
-  )
+  ) %>%
+    standardize_theme_types(country_info = country_info)
   write_processed_tbl(policy_component_tbl, "policy_component_tbl", processed_dir)
   write_processed_tbl(policy_outputs, "policy_outputs", processed_dir)
 

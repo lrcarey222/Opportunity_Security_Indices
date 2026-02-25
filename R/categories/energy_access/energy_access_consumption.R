@@ -26,7 +26,9 @@ energy_access_build_per_capita <- function(ei_clean, year, country_info = NULL) 
     ) %>%
     dplyr::mutate(dplyr::across(dplyr::ends_with("_raw"), ~tidyr::replace_na(.x, 0)))
 
-  standardize_country_table(per_capita_tbl, country_info = country_info) %>%
+  # Keep this builder resilient to country reference mismatches; enforce iso3c
+  # later in the shared theme standardization flow.
+  standardize_country_table(per_capita_tbl, country_info = NULL) %>%
     dplyr::select(-dplyr::any_of("iso3c"))
 }
 
