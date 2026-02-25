@@ -98,6 +98,16 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
     return(tbl)
   }
 
+  core_cols <- c(
+    "Country", "iso3c", "tech", "supply_chain", "sub_sector",
+    "category", "variable", "data_type", "value", "Year", "source", "explanation"
+  )
+
+  keep_theme_schema <- function(x) {
+    x %>%
+      dplyr::select(dplyr::any_of(core_cols))
+  }
+
   standardized <- tbl %>%
     dplyr::mutate(
       Country = as.character(Country),
@@ -111,7 +121,8 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
       value = suppressWarnings(as.numeric(value)),
       source = as.character(source),
       explanation = as.character(explanation)
-    )
+    ) %>%
+    keep_theme_schema()
 
   if (is.null(country_info)) {
     return(rebuild_theme_overall_indices(standardized))
@@ -120,7 +131,8 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
   standardized_with_country <- standardize_country_table(
     standardized,
     country_info = country_info
-  )
+  ) %>%
+    keep_theme_schema()
 
   # Guard against full row-loss when country matching fails for a dataset.
   # In that case, preserve the standardized rows and allow downstream missing-data
@@ -750,23 +762,25 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   nipo_policy_index_tbl <- nipo_policy_index_tbl %>%
     transmute(
-      Country=country,
+      Country = country,
       tech,
       supply_chain,
-      variable="NIPO Policy Index",
-      data_type="Index",
-      value=domestic_intervention_index,
-      Year=2026,
-      source="NIPO",
-      explanation="See README"
-    )
-  
+      variable = "NIPO Policy Index",
+      data_type = "Index",
+      value = domestic_intervention_index,
+      Year = 2026,
+      source = "NIPO",
+      explanation = "See README"
+    ) %>%
+    standardize_theme_types(country_info = country_info)
+
   policy_component_tbl <- dplyr::bind_rows(
     iea_policy_index_tbl,
     nipo_policy_index_tbl,
     cat_policy_index_tbl,
     dual_use_scores_tbl
-  )
+  ) %>%
+    standardize_theme_types(country_info = country_info)
   write_processed_tbl(policy_component_tbl, "policy_component_tbl", processed_dir)
   write_processed_tbl(policy_outputs, "policy_outputs", processed_dir)
 
