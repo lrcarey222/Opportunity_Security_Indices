@@ -129,3 +129,4 @@ psi_tbl <- psi_composite(
   partnership_strength_outputs$partnership_strength_index,
   year = max(partner_friendshore_country_tbl$Year, na.rm = TRUE)
 )
+

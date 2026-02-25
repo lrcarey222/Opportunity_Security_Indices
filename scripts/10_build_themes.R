@@ -319,10 +319,7 @@ if (length(missing_files) > 0 && !skip_data_downloads) {
 country_info <- read.csv(wdi_country_path)
 country_info <- standardize_country_info(country_info)
 
-if (length(missing_files) > 0 && skip_data_downloads) {
-  message("Skipping raw data lookup; missing file(s): ", paste(missing_files, collapse = ", "))
-  theme_outputs <- list()
-} else {
+
   ei <- read.csv(raw_path)
   
 
@@ -647,7 +644,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   # Theme: Cost competitiveness (IEA relative costs).
   iea_relative_costs <- read.csv(relative_costs_iea_path)
-  ilo_url <- "https://rplumber.ilo.org/data/indicator/?id=EAR_4MTH_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat&title=average-monthly-earnings-of-employees-by-sex-and-economic-activity-annual"
+  ilo_url <- "https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat&title=average-monthly-earnings-of-employees-by-sex-economic-activity-and-currency-annual"
   ilo_raw <- read.csv(ilo_url)
   imf_lending_rates <- read.csv(imf_lending_rates_path)
   imf_ppi <- read.csv(imf_ppi_path)
@@ -809,11 +806,4 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     technological_readiness = technological_readiness_tbl,
     cost_competitiveness = cost_competitiveness_tbl
   )
-}
 
-invisible(theme_outputs)
-# build_themes (placeholder).
-# TODO: implement.
-build_themes_stub <- function() {
-  NULL
-}

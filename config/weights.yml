@@ -8,7 +8,7 @@ energy_security:
   Energy Access: 4
   Consumption: 5
   Energy Prices: 2
-  Investment: 3
+  Investment: 2
 
 economic_opportunity:
   Trade: 3
@@ -21,6 +21,7 @@ economic_opportunity:
   Foreign Dependency: 3
   Cost Competitiveness: 3
   Consumption: 3
+  Reserves: 2
 
 psi:
   friendshore: 0.4
