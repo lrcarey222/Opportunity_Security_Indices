@@ -69,9 +69,43 @@ source(file.path(repo_root, "R", "categories", "investment", "investment_momentu
 source(file.path(repo_root, "R", "categories", "economic opportunity", "cost_competitiveness.R"))
 source(file.path(repo_root, "R", "categories", "technological_readiness", "technological_readiness.R"))
 
+rebuild_theme_overall_indices <- function(tbl) {
+  if (is.null(tbl) || nrow(tbl) == 0 || !"variable" %in% names(tbl) || !"data_type" %in% names(tbl)) {
+    return(tbl)
+  }
+
+  index_definition <- getOption("opportunity_security.index_definition")
+  if (is.null(index_definition)) {
+    return(tbl)
+  }
+
+  overall_defs <- index_definition$overall_variables
+  overall_names <- names(overall_defs)
+
+  if (is.null(overall_defs) || length(overall_names) == 0) {
+    return(tbl)
+  }
+
+  include_sub_sector <- "sub_sector" %in% names(tbl)
+  tbl_without_overall <- tbl %>%
+    dplyr::filter(!(data_type == "index" & variable %in% overall_names))
+
+  apply_overall_definitions(tbl_without_overall, include_sub_sector = include_sub_sector)
+}
+
 standardize_theme_types <- function(tbl, country_info = NULL) {
   if (is.null(tbl)) {
     return(tbl)
+  }
+
+  core_cols <- c(
+    "Country", "iso3c", "tech", "supply_chain", "sub_sector",
+    "category", "variable", "data_type", "value", "Year", "source", "explanation"
+  )
+
+  keep_theme_schema <- function(x) {
+    x %>%
+      dplyr::select(dplyr::any_of(core_cols))
   }
 
   standardized <- tbl %>%
@@ -87,7 +121,29 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
       value = suppressWarnings(as.numeric(value)),
       source = as.character(source),
       explanation = as.character(explanation)
+    ) %>%
+    keep_theme_schema()
+
+  if (is.null(country_info)) {
+    return(rebuild_theme_overall_indices(standardized))
+  }
+
+  standardized_with_country <- standardize_country_table(
+    standardized,
+    country_info = country_info
+  ) %>%
+    keep_theme_schema()
+
+  # Guard against full row-loss when country matching fails for a dataset.
+  # In that case, preserve the standardized rows and allow downstream missing-data
+  # handling to proceed rather than returning an empty table.
+  if (nrow(standardized_with_country) == 0 && nrow(standardized) > 0) {
+    warning(
+      "Country standardization dropped all rows in standardize_theme_types(); ",
+      "returning unfiltered standardized rows before rebuilding overall indices."
     )
+    return(rebuild_theme_overall_indices(standardized))
+  }
 
   if (is.null(country_info)) {
     return(standardized)
@@ -111,6 +167,7 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
 
   standardized_with_country
 }
+
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) {
@@ -282,15 +339,12 @@ if (length(missing_files) > 0 && !skip_data_downloads) {
 country_info <- read.csv(wdi_country_path)
 country_info <- standardize_country_info(country_info)
 
-if (length(missing_files) > 0 && skip_data_downloads) {
-  message("Skipping raw data lookup; missing file(s): ", paste(missing_files, collapse = ", "))
-  theme_outputs <- list()
-} else {
+
   ei <- read.csv(raw_path)
   
 
   # Theme: Energy access and consumption (EI data).
-  energy_access_tbl <- energy_access_consumption(ei)
+  energy_access_tbl <- energy_access_consumption(ei, country_info = country_info)
   energy_access_tbl <- standardize_theme_types(energy_access_tbl, country_info = country_info)
   write_processed_tbl(energy_access_tbl, "energy_access_tbl", processed_dir)
 
@@ -610,7 +664,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   # Theme: Cost competitiveness (IEA relative costs).
   iea_relative_costs <- read.csv(relative_costs_iea_path)
-  ilo_url <- "https://rplumber.ilo.org/data/indicator/?id=EAR_4MTH_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat&title=average-monthly-earnings-of-employees-by-sex-and-economic-activity-annual"
+  ilo_url <- "https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat&title=average-monthly-earnings-of-employees-by-sex-economic-activity-and-currency-annual"
   ilo_raw <- read.csv(ilo_url)
   imf_lending_rates <- read.csv(imf_lending_rates_path)
   imf_ppi <- read.csv(imf_ppi_path)
@@ -725,23 +779,25 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   nipo_policy_index_tbl <- nipo_policy_index_tbl %>%
     transmute(
-      Country=country,
+      Country = country,
       tech,
       supply_chain,
-      variable="NIPO Policy Index",
-      data_type="Index",
-      value=domestic_intervention_index,
-      Year=2026,
-      source="NIPO",
-      explanation="See README"
-    )
-  
+      variable = "NIPO Policy Index",
+      data_type = "Index",
+      value = domestic_intervention_index,
+      Year = 2026,
+      source = "NIPO",
+      explanation = "See README"
+    ) %>%
+    standardize_theme_types(country_info = country_info)
+
   policy_component_tbl <- dplyr::bind_rows(
     iea_policy_index_tbl,
     nipo_policy_index_tbl,
     cat_policy_index_tbl,
     dual_use_scores_tbl
-  )
+  ) %>%
+    standardize_theme_types(country_info = country_info)
   write_processed_tbl(policy_component_tbl, "policy_component_tbl", processed_dir)
   write_processed_tbl(policy_outputs, "policy_outputs", processed_dir)
 
@@ -770,11 +826,4 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     technological_readiness = technological_readiness_tbl,
     cost_competitiveness = cost_competitiveness_tbl
   )
-}
 
-invisible(theme_outputs)
-# build_themes (placeholder).
-# TODO: implement.
-build_themes_stub <- function() {
-  NULL
-}

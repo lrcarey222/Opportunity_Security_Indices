@@ -122,3 +122,37 @@ test_that("economic opportunity v2 contributions reconcile to index", {
   expect_equal(combined$total_category, combined$Economic_Opportunity_Index, tolerance = 1e-8)
   expect_equal(combined$total_variable, combined$Economic_Opportunity_Index, tolerance = 1e-8)
 })
+
+test_that("economic opportunity v2 warns and proceeds with unexpected categories", {
+  set_test_index_definition()
+
+  theme_tbl <- dplyr::bind_rows(
+    build_eo_theme_tbl(),
+    tibble::tibble(
+      Country = "A",
+      tech = "Solar",
+      supply_chain = "Upstream",
+      category = "Reserves",
+      variable = "Overall Reserves Index",
+      value = 0.9,
+      Year = 2021,
+      data_type = "index",
+      source = "Test",
+      explanation = "Extra category"
+    )
+  )
+
+  expect_warning(
+    outputs <- build_economic_opportunity_index_v2(
+      theme_tables = list(economic_opportunity_theme = theme_tbl),
+      weights = list(Investment = 0.6, Innovation = 0.4),
+      missing_data = list(),
+      allow_partial_categories = TRUE,
+      include_sub_sector = FALSE
+    ),
+    "unexpected categories: Reserves"
+  )
+
+  expect_s3_class(outputs$economic_opportunity_index, "data.frame")
+  expect_gt(nrow(outputs$economic_opportunity_index), 0)
+})
