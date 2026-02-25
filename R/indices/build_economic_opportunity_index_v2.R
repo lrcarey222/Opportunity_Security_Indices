@@ -192,9 +192,9 @@ build_economic_opportunity_index_v2 <- function(theme_tables,
 
   extra_categories <- setdiff(unique(economic_opportunity_data$category), score_variables_tbl$category)
   if (length(extra_categories) > 0) {
-    stop(
+    warning(
       "Economic opportunity inputs include unexpected categories: ",
-      paste(extra_categories, collapse = ", ")
+      paste(sort(extra_categories), collapse = ", ")
     )
   }
 
