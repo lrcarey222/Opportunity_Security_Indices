@@ -92,11 +92,23 @@ standardize_country_table <- function(tbl, country_info = NULL) {
     dplyr::filter(is.na(iso3c) | !nzchar(iso3c)) %>%
     dplyr::left_join(country_ref, by = c("Country" = "country_std"))
 
-  dplyr::bind_rows(with_iso, without_iso) %>%
+  standardized_with_ref <- dplyr::bind_rows(with_iso, without_iso) %>%
     dplyr::mutate(
       iso3c = toupper(as.character(iso3c)),
       Country = dplyr::coalesce(country, Country)
     ) %>%
-    dplyr::select(-dplyr::any_of(c("country", "country_std"))) %>%
+    dplyr::select(-dplyr::any_of(c("country", "country_std")))
+
+  standardized_filtered <- standardized_with_ref %>%
     dplyr::filter(!is.na(iso3c), nzchar(iso3c))
+
+  if (nrow(standardized_filtered) == 0 && nrow(standardized_with_ref) > 0) {
+    warning(
+      "Country standardization dropped all rows in standardize_country_table(); ",
+      "returning rows without iso3c filtering."
+    )
+    return(standardized_with_ref)
+  }
+
+  standardized_filtered
 }
