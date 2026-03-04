@@ -65,6 +65,12 @@ apply_overall_definitions <- function(tbl,
     group_cols <- variable_level_columns(level, include_sub_sector = include_sub_sector)
     group_cols <- group_cols[group_cols %in% names(tbl)]
 
+    # Preserve iso3c on computed overall rows when present so downstream joins
+    # and aggregations can key on iso3c safely.
+    if ("iso3c" %in% names(tbl) && !"iso3c" %in% group_cols) {
+      group_cols <- c("iso3c", group_cols)
+    }
+
     components <- def$components
     if (is.null(components)) {
       return(NULL)

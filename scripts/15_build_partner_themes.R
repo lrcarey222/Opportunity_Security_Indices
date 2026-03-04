@@ -311,3 +311,34 @@ write_processed_tbl(
   "partner_development_top5_tbl",
   processed_dir
 )
+
+
+
+outputs_rds_path <- Sys.getenv("OPSI_OUTPUTS_RDS", "")
+if (!nzchar(outputs_rds_path)) {
+  outputs_rds_path <- if (!is.null(config$outputs_rds) && nzchar(config$outputs_rds)) {
+    file.path(repo_root, config$outputs_rds)
+  } else {
+    file.path(outputs_dir, "partnership_index_outputs.rds")
+  }
+}
+
+outputs_rds_dir <- dirname(outputs_rds_path)
+if (!dir.exists(outputs_rds_dir)) {
+  dir.create(outputs_rds_dir, recursive = TRUE)
+}
+
+saveRDS(
+  list(
+    partner_friendshore_variable_tbl = partner_friendshore_variable_tbl,
+    partner_friendshore_contributions_tbl = partner_friendshore_contributions_tbl,
+    partner_friendshore_top5_tbl = partner_friendshore_top5_tbl,
+    partner_opportunity_contributions_tbl = partner_opportunity_contributions_tbl,
+    partner_opportunity_variable_tbl = partner_opportunity_variable_tbl,
+    partner_opportunity_top5_tbl = partner_opportunity_top5_tbl,
+    partner_development_variable_tbl = partner_development_variable_tbl,
+    partner_development_contributions_tbl = partner_development_contributions_tbl,
+    partner_development_top5_tbl = partner_development_top5_tbl
+  ),
+  outputs_rds_path
+)
