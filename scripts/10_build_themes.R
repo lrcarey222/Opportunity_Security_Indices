@@ -165,6 +165,26 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
     return(standardized)
   }
 
+  if (is.null(country_info)) {
+    return(standardized)
+  }
+
+  standardized_with_country <- standardize_country_table(
+    standardized,
+    country_info = country_info
+  )
+
+  # Guard against full row-loss when country matching fails for a dataset.
+  # In that case, preserve the standardized rows and allow downstream missing-data
+  # handling to proceed rather than returning an empty table.
+  if (nrow(standardized_with_country) == 0 && nrow(standardized) > 0) {
+    warning(
+      "Country standardization dropped all rows in standardize_theme_types(); ",
+      "returning unfiltered standardized rows instead."
+    )
+    return(standardized)
+  }
+
   standardized_with_country
 }
 

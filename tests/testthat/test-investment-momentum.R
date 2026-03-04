@@ -130,6 +130,35 @@ test_that("Critical Minerals maps to Batteries Upstream and Electric Vehicles Up
   expect_true(any(mapped_pairs$tech == "Electric Vehicles" & mapped_pairs$supply_chain == "Upstream"))
 })
 
+test_that("country_reference filtering standardizes Vietnam/Viet Nam", {
+  annual_tbl <- tibble::tibble(
+    Country = c("Vietnam", "US"),
+    Segment = c("Industry", "Industry"),
+    Technology = c("Solar PV", "Solar PV"),
+    Year = c(2024, 2024),
+    Investment = c(5, 3)
+  )
+
+  capacity_tbl <- tibble::tibble(
+    Country = c("Vietnam", "US"),
+    Segment = c("Industry", "Industry"),
+    Technology = c("Solar PV", "Solar PV"),
+    Product = c("Module", "Module"),
+    End_use_application = c("Grid", "Grid"),
+    Facility_Type = c("Plant", "Plant"),
+    Category = c("Current operational capacity", "Current operational capacity"),
+    Value = c(8, 6)
+  )
+
+  out <- investment_momentum(
+    annual_tbl = annual_tbl,
+    capacity_tbl = capacity_tbl,
+    country_reference = c("Viet Nam", "United States")
+  )
+
+  expect_true(any(out$Country == "Viet Nam"))
+})
+
 test_that("all-zero annual groups normalize to zero instead of 0.5", {
   annual_tbl <- tibble::tibble(
     Country = c("US", "Canada"),

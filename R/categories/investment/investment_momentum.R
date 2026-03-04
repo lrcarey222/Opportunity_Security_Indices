@@ -72,6 +72,12 @@ investment_momentum <- function(annual_tbl,
                                 capacity_year = 2025L,
                                 gamma = 0.5,
                                 country_reference = NULL) {
+  country_reference_std <- NULL
+  if (!is.null(country_reference)) {
+    country_reference_std <- standardize_country_names(country_reference)
+    country_reference_std <- unique(country_reference_std[!is.na(country_reference_std) & nzchar(country_reference_std)])
+  }
+
   investment_assert_columns(
     annual_tbl,
     c("Country", "Segment", "Technology", "Year", "Investment"),
@@ -136,9 +142,9 @@ investment_momentum <- function(annual_tbl,
     )
   }
 
-  if (!is.null(country_reference)) {
+  if (!is.null(country_reference_std)) {
     annual_clean <- annual_clean %>%
-      dplyr::filter(Country %in% country_reference)
+      dplyr::filter(Country %in% country_reference_std)
   }
 
   if (nrow(annual_clean) == 0) {
@@ -282,9 +288,9 @@ investment_momentum <- function(annual_tbl,
 
   capacity_clean <- dplyr::bind_rows(capacity_regular, capacity_critical_minerals)
 
-  if (!is.null(country_reference)) {
+  if (!is.null(country_reference_std)) {
     capacity_clean <- capacity_clean %>%
-      dplyr::filter(Country %in% country_reference)
+      dplyr::filter(Country %in% country_reference_std)
   }
 
   if (nrow(capacity_clean) == 0) {
