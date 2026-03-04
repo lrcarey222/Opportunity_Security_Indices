@@ -39,7 +39,7 @@ normalize_sub_sector_or_keys <- function(base_cols, include_sub_sector) {
   }
 }
 
-parse_missing_policy <- function(missing_data, data_tbl) {
+parse_missing_policy <- function(missing_data, data_tbl, known_keys = NULL) {
   if (is.null(missing_data) || length(missing_data) == 0) {
     return(tibble::tibble())
   }
@@ -61,6 +61,7 @@ parse_missing_policy <- function(missing_data, data_tbl) {
   available_variables <- unique(data_tbl$variable)
   available_categories <- unique(data_tbl$category)
   available_themes <- unique(data_tbl$theme)
+  known_keys <- unique(c(known_keys, available_variables, available_categories, available_themes))
 
   rules_tbl <- rules_tbl %>%
     dplyr::mutate(
@@ -68,6 +69,7 @@ parse_missing_policy <- function(missing_data, data_tbl) {
         key %in% available_variables ~ "variable",
         key %in% available_categories ~ "category",
         key %in% available_themes ~ "theme",
+        key %in% known_keys ~ "known_but_absent",
         TRUE ~ "unknown"
       )
     )
@@ -110,7 +112,8 @@ apply_missing_policy <- function(tbl, rules_tbl, include_sub_sector = FALSE) {
   grid <- variable_groups %>%
     dplyr::left_join(
       country_groups,
-      by = normalize_sub_sector_or_keys(c("tech", "supply_chain"), include_sub_sector)
+      by = normalize_sub_sector_or_keys(c("tech", "supply_chain"), include_sub_sector),
+      relationship = "many-to-many"
     )
 
   completed <- grid %>%
@@ -327,9 +330,15 @@ compute_index_and_contributions <- function(category_scores,
 
   extra_config_categories <- setdiff(categories_in_weights, categories_in_data)
   if (length(extra_config_categories) > 0) {
-    warning(
-      pillar_label, " weights include categories not present in theme output: ",
+    extra_category_msg <- paste0(
+      pillar_label,
+      " weights include categories not present in theme output: ",
       paste(extra_config_categories, collapse = ", ")
+    )
+    warning(
+      extra_category_msg,
+      call. = FALSE,
+      immediate. = !isTRUE(allow_partial_categories)
     )
   }
 

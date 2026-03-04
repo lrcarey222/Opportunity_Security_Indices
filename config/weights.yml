@@ -21,6 +21,7 @@ economic_opportunity:
   Foreign Dependency: 3
   Cost Competitiveness: 3
   Consumption: 3
+  Reserves: 2
 
 psi:
   friendshore: 0.4

@@ -6,8 +6,8 @@ energy_access_clean_raw <- function(ei) {
     )
 }
 
-energy_access_build_per_capita <- function(ei_clean, year) {
-  ei_clean %>%
+energy_access_build_per_capita <- function(ei_clean, year, country_info = NULL) {
+  per_capita_tbl <- ei_clean %>%
     dplyr::filter(
       Year == year,
       Var %in% c("pop", "coalcons_ej", "oilcons_ej", "gascons_ej", "solar_ej", "wind_ej", "nuclear_ej"),
@@ -25,6 +25,11 @@ energy_access_build_per_capita <- function(ei_clean, year) {
       nuclear_raw = nuclear_ej / pop
     ) %>%
     dplyr::mutate(dplyr::across(dplyr::ends_with("_raw"), ~tidyr::replace_na(.x, 0)))
+
+  # Keep this builder resilient to country reference mismatches; enforce iso3c
+  # later in the shared theme standardization flow.
+  standardize_country_table(per_capita_tbl, country_info = NULL) %>%
+    dplyr::select(-dplyr::any_of("iso3c"))
 }
 
 energy_access_build_indices <- function(ec_per_capita, year, gamma = 0.5) {
@@ -37,7 +42,7 @@ energy_access_build_indices <- function(ec_per_capita, year, gamma = 0.5) {
       )
     ) %>%
     tidyr::pivot_longer(
-      cols = -Country,
+      cols = tidyselect::matches("_(raw|index)$"),
       names_to = c("tech", "data_type"),
       names_pattern = "(.*)_(raw|index)",
       values_to = "value"
@@ -97,16 +102,20 @@ energy_access_build_growth <- function(ec_base, ec_target, base_year, target_yea
     )
 }
 
-energy_access_consumption <- function(ei, base_year = 2019, target_year = 2024, gamma = 0.5) {
+energy_access_consumption <- function(ei,
+                                      country_info = NULL,
+                                      base_year = 2019,
+                                      target_year = 2024,
+                                      gamma = 0.5) {
   ei_clean <- energy_access_clean_raw(ei)
 
   ec_base <- energy_access_build_indices(
-    energy_access_build_per_capita(ei_clean, base_year),
+    energy_access_build_per_capita(ei_clean, base_year, country_info = country_info),
     base_year,
     gamma = gamma
   )
   ec_target <- energy_access_build_indices(
-    energy_access_build_per_capita(ei_clean, target_year),
+    energy_access_build_per_capita(ei_clean, target_year, country_info = country_info),
     target_year,
     gamma = gamma
   )

@@ -1,10 +1,11 @@
-Sys.setenv(COMTRADE_API_KEY = "4967b706a00e49ee8819eee592f4fbb9")
+Sys.setenv(COMTRADE_API_KEY = "fd178c714d644e1ab8adbc16026faaaf")
 primary_key <- "5927e0b514da47d98f869ba5ca186485"
 secondary_key<- "1ffe814c2cd048f0b1da30cc401cbac2"
 tertiary_key <- "2940653b9bbe4671b3f7fde2846d14be"
 additional_key <- "aca1f47164e348fe978af0b93bfa6af4"
 key4<-"a709c13423c9424898a4292b383edc7a"
 key5 <- "4967b706a00e49ee8819eee592f4fbb9"
+premium_key <- "fd178c714d644e1ab8adbc16026faaaf"
 
 library(lubridate)
 library(slider)
@@ -16,19 +17,15 @@ source("scripts/96_pull_trade_timeseries.R")
 iso_rep<-"KOR"
 iso_partner<-c("CHN","FRA","DEU","ITA","ESP","NLD","BEL","SWE","POL","DNK","FIN","CZE","ROU","HUN","AUT","PRT","GRC","IRL","JPN","USA","IND","VNM")
 
-res_chn <- pull_trade_timeseries(
+res_vnm <- pull_trade_timeseries(
   catalog = hs6_categories_essential,
-  country = "CHN",
-  tech = c("Semiconductors",
-           "Batteries",
-           "Solar",
-           "Magnets",
-           "Electric Motors"),
+  country = "VNM",
+  tech = c("Solar"),
   supply_chain = "Midstream",
   partners = c("World"),
-  years = c("2009:2025"),
+  years = c("2023:2026"),
   flow = c("export"),
-  frequency="annual"
+  frequency="monthly"
 )
 
 res<-bind_rows(res2,res3,res4)
