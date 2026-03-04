@@ -169,6 +169,10 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
     return(standardized)
   }
 
+  if (is.null(country_info)) {
+    return(standardized)
+  }
+
   standardized_with_country <- standardize_country_table(
     standardized,
     country_info = country_info

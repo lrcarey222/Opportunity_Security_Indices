@@ -71,7 +71,8 @@ investment_momentum <- function(annual_tbl,
                                 momentum_window_years = 3,
                                 capacity_year = 2025L,
                                 gamma = 0.5,
-                                country_reference = NULL) {
+                                country_reference = NULL,
+                                enforce_country_reference = FALSE) {
   country_reference_std <- NULL
   if (!is.null(country_reference)) {
     country_reference_std <- standardize_country_names(country_reference)
@@ -142,16 +143,17 @@ investment_momentum <- function(annual_tbl,
     )
   }
 
-  if (!is.null(country_reference_std)) {
-    annual_clean <- annual_clean %>%
+  if (!is.null(country_reference_std) && isTRUE(enforce_country_reference)) {
+    annual_filtered <- annual_clean %>%
       dplyr::filter(Country %in% country_reference_std)
-  }
 
-  if (nrow(annual_clean) == 0) {
-    stop(
-      "No annual investment rows remain after applying country_reference filter. ",
-      "Check country naming alignment between workbook and EI country reference."
-    )
+    if (nrow(annual_filtered) == 0) {
+      warning(
+        "country_reference filtering removed all annual rows; retaining unfiltered annual rows instead."
+      )
+    } else {
+      annual_clean <- annual_filtered
+    }
   }
 
   annual_agg <- annual_clean %>%
@@ -288,15 +290,21 @@ investment_momentum <- function(annual_tbl,
 
   capacity_clean <- dplyr::bind_rows(capacity_regular, capacity_critical_minerals)
 
-  if (!is.null(country_reference_std)) {
-    capacity_clean <- capacity_clean %>%
+  if (!is.null(country_reference_std) && isTRUE(enforce_country_reference)) {
+    capacity_filtered <- capacity_clean %>%
       dplyr::filter(Country %in% country_reference_std)
+
+    if (nrow(capacity_filtered) == 0) {
+      warning(
+        "country_reference filtering removed all capacity rows; retaining unfiltered capacity rows instead."
+      )
+    } else {
+      capacity_clean <- capacity_filtered
+    }
   }
 
   if (nrow(capacity_clean) == 0) {
-    stop(
-      "No mappable capacity rows remain after Technology/Segment mapping and country filtering."
-    )
+    stop("No mappable capacity rows remain after Technology/Segment mapping.")
   }
 
   capacity_stage_levels <- c(

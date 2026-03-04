@@ -159,6 +159,35 @@ test_that("country_reference filtering standardizes Vietnam/Viet Nam", {
   expect_true(any(out$Country == "Viet Nam"))
 })
 
+test_that("Viet Nam is retained when country_reference does not include it (default non-enforcing)", {
+  annual_tbl <- tibble::tibble(
+    Country = c("Vietnam"),
+    Segment = c("Industry"),
+    Technology = c("Solar PV"),
+    Year = c(2024),
+    Investment = c(5)
+  )
+
+  capacity_tbl <- tibble::tibble(
+    Country = c("Vietnam"),
+    Segment = c("Industry"),
+    Technology = c("Solar PV"),
+    Product = c("Module"),
+    End_use_application = c("Grid"),
+    Facility_Type = c("Plant"),
+    Category = c("Current operational capacity"),
+    Value = c(8)
+  )
+
+  out <- investment_momentum(
+    annual_tbl = annual_tbl,
+    capacity_tbl = capacity_tbl,
+    country_reference = c("United States")
+  )
+
+  expect_true(any(out$Country == "Viet Nam"))
+})
+
 test_that("all-zero annual groups normalize to zero instead of 0.5", {
   annual_tbl <- tibble::tibble(
     Country = c("US", "Canada"),
