@@ -1,5 +1,16 @@
 args <- commandArgs(trailingOnly = TRUE)
-repo_root <- ifelse(length(args) > 0, args[[1]], normalizePath(file.path(dirname(sys.frame(1)$ofile), "..", ".."), mustWork = TRUE))
+if (length(args) > 0) {
+  repo_root <- normalizePath(args[[1]], winslash = "/", mustWork = TRUE)
+} else {
+  repo_root <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+  while (!file.exists(file.path(repo_root, ".git")) && dirname(repo_root) != repo_root) {
+    repo_root <- dirname(repo_root)
+  }
+}
+
+if (!file.exists(file.path(repo_root, ".git"))) {
+  stop("Could not locate repository root (.git).")
+}
 
 for (pkg in c("unvotes", "dplyr", "readr", "countrycode")) {
   if (!requireNamespace(pkg, quietly = TRUE)) install.packages(pkg, repos = "https://cloud.r-project.org")

@@ -1,4 +1,14 @@
-repo_root <- getwd()
+repo_root <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+while (!file.exists(file.path(repo_root, ".git")) && dirname(repo_root) != repo_root) {
+  repo_root <- dirname(repo_root)
+}
+
+if (!file.exists(file.path(repo_root, ".git"))) {
+  stop("Could not locate repository root (.git). Run from within the repository tree.")
+}
+
+setwd(repo_root)
+
 steps <- c(
   "R/geopolitical_distance/pipeline/fetch_data.R",
   "R/geopolitical_distance/pipeline/estimate_ideal_points.R",
