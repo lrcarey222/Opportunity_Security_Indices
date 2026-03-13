@@ -285,6 +285,11 @@ run_trade_timeseries_pull <- function(country,
     partner_chunk_size = partner_chunk_size,
     year_chunk_size = effective_year_chunk_size
   )
+  
+  if (identical(frequency, "M")) {
+    request_grid <- request_grid %>%
+      dplyr::filter(ys == ye)
+  }
 
   output <- vector("list", nrow(request_grid))
   failed <- character()

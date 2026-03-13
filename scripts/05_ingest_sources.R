@@ -87,7 +87,7 @@ if (comtrade_chunk_index > comtrade_chunk_count) stop("COMTRADE_CHUNK_INDEX cann
 
 candidate_target_year <- as.integer(Sys.getenv("COMTRADE_TARGET_YEAR", as.character(as.integer(format(Sys.Date(), "%Y")) - 1L)))
 comtrade_start_year <- as.integer(Sys.getenv("COMTRADE_START_YEAR", as.character(candidate_target_year - 4L)))
-comtrade_years <- seq.int(comtrade_start_year, candidate_target_year)
+comtrade_years <- seq.int(comtrade_start_year:candidate_target_year)
 comtrade_retries <- max(1L, as.integer(Sys.getenv("COMTRADE_MAX_RETRIES", "3")))
 comtrade_sleep_seconds <- as.numeric(Sys.getenv("COMTRADE_SLEEP_SECONDS", "0.5"))
 comtrade_pause_seconds <- as.numeric(Sys.getenv("COMTRADE_REQUEST_PAUSE_SECONDS", "0.2"))

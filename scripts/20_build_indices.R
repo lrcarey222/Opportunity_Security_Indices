@@ -338,30 +338,6 @@ strategic_index <- left_join(
 
 
 
-
-
-if (exists("economic_opportunity_index")) {
-  interdependence_path <- file.path(
-    repo_root,
-    config$raw_data_dir,
-    "interdependence_edges_primary_secondary_tertiary.csv"
-  )
-  if (!file.exists(interdependence_path)) {
-    stop("Interdependence edges file not found: ", interdependence_path)
-  }
-  interdependence_edges <- utils::read.csv(interdependence_path, stringsAsFactors = FALSE)
-
-  economic_opportunity_index_coupled <- couple_pillar_scores_by_hhi(
-    pillar_tbl = economic_opportunity_index,
-    interdependence_tbl = interdependence_edges,
-    score_col = economic_opportunity_index,
-    include_sub_sector = include_sub_sector
-  )
-} else {
-  economic_opportunity_index_coupled <- NULL
-  warning("economic_opportunity_index not found; skipping interdependence coupling.")
-}
-
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
   file.path(repo_root, config$outputs_dir)
 } else {

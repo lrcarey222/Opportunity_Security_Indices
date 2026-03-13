@@ -73,7 +73,7 @@ trade_core_build_aec_feasibility <- function(aec_4_data, energy_codes, year = 20
 
 trade_core_build_comtrade_trade <- function(comtrade_data,
                                             energy_codes,
-                                            year = 2025) {
+                                            year = 2024) {
   comtrade_data <- trade_core_filter_year(
     comtrade_data,
     year = year,
@@ -108,7 +108,7 @@ trade_core_build_comtrade_trade <- function(comtrade_data,
 
 trade_core_build_comtrade_rca <- function(comtrade_trade,
                                           comtrade_total_export,
-                                          year = 2025) {
+                                          year = 2024) {
   total_export <- trade_core_filter_year(
     comtrade_total_export,
     year = year,
@@ -150,7 +150,7 @@ trade_core_build_country_trade <- function(comtrade_trade,
                                            comtrade_total_export,
                                            market_share,
                                            feasibility,
-                                           year = 2025) {
+                                           year = 2024) {
   comtrade_rca <- trade_core_build_comtrade_rca(
     comtrade_trade = comtrade_trade,
     comtrade_total_export = comtrade_total_export,

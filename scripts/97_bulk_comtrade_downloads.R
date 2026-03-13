@@ -332,7 +332,8 @@ run_bulk_comtrade_download <- function(
   source(file.path(repo_root, "scripts", "utils", "comtrade_client.R"))
 
   raw_data_path <- file.path(repo_root, config$raw_data_dir)
-  hs_path <- resolve_hs_essentials_path(raw_data_path, hs_essentials_path)
+  hs_path <- file.path(
+    raw_data_path,"hts_codes_categories_bolstered_final.csv")
   hs_tbl <- utils::read.csv(hs_path, stringsAsFactors = FALSE)
   hs_codes <- extract_hs92_codes(hs_tbl)
 

@@ -307,6 +307,8 @@ dual_use_scores_path <- file.path(
 investment_monitor_path <- file.path(
   raw_data_path, "GCIM_Investment_Capacity_aggregated.xlsx")
 
+
+
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
   raw_path,
@@ -365,6 +367,9 @@ country_info <- standardize_country_info(country_info)
 
 
   ei <- read.csv(raw_path)
+  # Shared WDI country reference for multiple themes.
+  gdp_data <- read.csv(wdi_gdp_path)
+  country_reference <- foreign_dependency_build_country_reference(ei, year = 2024)
   
 
   # Theme: Energy access and consumption (EI data).
@@ -444,10 +449,7 @@ country_info <- standardize_country_info(country_info)
     processed_dir
   )
 
-  # Shared WDI country reference for multiple themes.
-  gdp_data <- read.csv(wdi_gdp_path)
-  country_reference <- foreign_dependency_build_country_reference(ei, year = 2024)
-
+  
   # Theme: Technological readiness (IEA Clean Tech Guide).
   iea_cleantech_guide <- read.csv(iea_cleantech_guide_path)
   technological_readiness_tbl <- technological_readiness(
