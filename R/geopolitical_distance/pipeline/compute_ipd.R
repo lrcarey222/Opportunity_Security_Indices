@@ -10,15 +10,7 @@ source(file.path(repo_root, "R", "geopolitical_distance", "core.R"))
 cfg <- read_yaml(file.path(repo_root, "config", "geopolitical_distance.yml"))
 ideal <- read_csv(file.path(repo_root, cfg$outputs$ideal_points), show_col_types = FALSE)
 
-required_cols <- c("iso3", "country", "year", "theta", "spec_name")
-missing_cols <- setdiff(required_cols, names(ideal))
-if (length(missing_cols) > 0) {
-  stop(
-    "Ideal-points file is missing required columns: ",
-    paste(missing_cols, collapse = ", "),
-    ". Verify estimate_ideal_points.R produced the expected schema."
-  )
-}
+assert_required_columns(ideal, c("iso3", "country", "year", "theta", "theta_se", "spec_name"), "ideal_points")
 
 out <- list()
 for (spec_name in names(cfg$specifications)) {

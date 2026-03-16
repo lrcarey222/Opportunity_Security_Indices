@@ -14,6 +14,15 @@ votes <- readr::read_csv(file.path(repo_root, "data_raw", "un_votes_enriched.csv
 issues <- readr::read_csv(file.path(repo_root, "data_raw", "un_roll_call_issues.csv"), show_col_types = FALSE)
 
 all_points <- list()
+empty_points_schema <- data.frame(
+  iso3 = character(),
+  country = character(),
+  year = integer(),
+  theta = numeric(),
+  theta_se = numeric(),
+  spec_name = character(),
+  stringsAsFactors = FALSE
+)
 for (spec_name in names(cfg$specifications)) {
   spec <- cfg$specifications[[spec_name]]
   message("Estimating ", spec_name)
@@ -27,27 +36,7 @@ for (spec_name in names(cfg$specifications)) {
   all_points[[spec_name]] <- pts
 }
 
-all_points_df <- bind_rows(all_points)
-
-required_cols <- c("iso3", "country", "year", "theta", "theta_se", "spec_name")
-if (!all(required_cols %in% names(all_points_df))) {
-  all_points_df <- tibble::tibble(
-    iso3 = character(),
-    country = character(),
-    year = integer(),
-    theta = double(),
-    theta_se = double(),
-    spec_name = character()
-  )
-}
-
-if (nrow(all_points_df) == 0) {
-  warning(
-    "No ideal points were estimated for any specification. ",
-    "Downstream pipeline steps will fail unless input vote data or filters are adjusted."
-  )
-}
-
+all_points_df <- if (length(all_points) == 0) empty_points_schema else bind_rows(all_points)
 dir.create(file.path(repo_root, "data_processed"), showWarnings = FALSE, recursive = TRUE)
 write_csv(all_points_df, file.path(repo_root, cfg$outputs$ideal_points))
 message("Saved ideal points.")
