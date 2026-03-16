@@ -37,6 +37,10 @@ for (spec_name in names(cfg$specifications)) {
 }
 
 all_points_df <- if (length(all_points) == 0) empty_points_schema else bind_rows(all_points)
+if (length(all_points) == 0) {
+  warning("No ideal points were estimated for any specification. Downstream pipeline steps will fail unless input vote data or filters are adjusted.")
+}
+
 dir.create(file.path(repo_root, "data_processed"), showWarnings = FALSE, recursive = TRUE)
 write_csv(all_points_df, file.path(repo_root, cfg$outputs$ideal_points))
 message("Saved ideal points.")
