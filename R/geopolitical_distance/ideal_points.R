@@ -8,13 +8,52 @@ filter_votes_for_spec <- function(votes_df, issues_df, spec_cfg) {
   df
 }
 
-estimate_ideal_points_yearly <- function(votes_df) {
-  if (!requireNamespace("pscl", quietly = TRUE)) {
-    stop("Package 'pscl' is required for ideal-point estimation.")
+normalize_vote_to_binary <- function(vote_vec) {
+  if (is.numeric(vote_vec)) {
+    return(ifelse(vote_vec == 1, 1, ifelse(vote_vec == 3, 0, NA_real_)))
   }
 
-  votes_df <- votes_df[votes_df$vote %in% c(1, 2, 3), ]
-  votes_df$vote_bin <- ifelse(votes_df$vote == 1, 1, ifelse(votes_df$vote == 3, 0, NA))
+  vote_chr <- tolower(trimws(as.character(vote_vec)))
+  yes_tokens <- c("yes", "yea", "1")
+  no_tokens <- c("no", "nay", "3")
+
+  out <- ifelse(vote_chr %in% yes_tokens, 1,
+                ifelse(vote_chr %in% no_tokens, 0, NA_real_))
+  as.numeric(out)
+}
+
+estimate_theta_pca <- function(mat) {
+  mat_num <- as.matrix(mat)
+  mat_num[is.na(mat_num)] <- 0.5
+
+  if (nrow(mat_num) < 3 || ncol(mat_num) < 3) return(NULL)
+
+  pca <- try(stats::prcomp(mat_num, center = TRUE, scale. = FALSE), silent = TRUE)
+  if (inherits(pca, "try-error")) return(NULL)
+
+  theta <- pca$x[, 1]
+  if (is.null(theta) || length(theta) == 0) return(NULL)
+
+  theta_centered <- as.numeric(scale(theta, center = TRUE, scale = TRUE))
+  list(theta = theta_centered, theta_se = rep(NA_real_, length(theta_centered)), country = rownames(mat_num))
+}
+
+estimate_theta_pscl <- function(mat) {
+  if (!requireNamespace("pscl", quietly = TRUE)) return(NULL)
+
+  rc <- pscl::rollcall(mat, yea = c(1), nay = c(0), missing = c(NA), notInLegis = NA, legis.names = rownames(mat))
+  fit <- try(pscl::ideal(rc, d = 1, maxiter = 5000, burnin = 1000, thin = 10, store.item = FALSE, verbose = FALSE), silent = TRUE)
+  if (inherits(fit, "try-error")) return(NULL)
+
+  draws <- fit$x
+  theta <- apply(draws[, , 1, drop = FALSE], 2, mean, na.rm = TRUE)
+  theta_se <- apply(draws[, , 1, drop = FALSE], 2, stats::sd, na.rm = TRUE)
+
+  list(theta = as.numeric(theta), theta_se = as.numeric(theta_se), country = names(theta))
+}
+
+estimate_ideal_points_yearly <- function(votes_df) {
+  votes_df$vote_bin <- normalize_vote_to_binary(votes_df$vote)
   votes_df <- votes_df[!is.na(votes_df$vote_bin), ]
 
   years <- sort(unique(votes_df$year))
@@ -26,17 +65,27 @@ estimate_ideal_points_yearly <- function(votes_df) {
 
     if (nrow(mat) < 8 || ncol(mat) < 20) next
 
-    rc <- pscl::rollcall(mat, yea = c(1), nay = c(0), missing = c(NA), notInLegis = NA, legis.names = rownames(mat))
-    fit <- try(pscl::ideal(rc, d = 1, maxiter = 5000, burnin = 1000, thin = 10, store.item = FALSE, verbose = FALSE), silent = TRUE)
-    if (inherits(fit, "try-error")) next
+    fit <- estimate_theta_pscl(mat)
+    estimator <- "pscl::ideal"
 
-    draws <- fit$x
-    theta <- apply(draws[, , 1, drop = FALSE], 2, mean, na.rm = TRUE)
-    theta_se <- apply(draws[, , 1, drop = FALSE], 2, stats::sd, na.rm = TRUE)
+    if (is.null(fit)) {
+      fit <- estimate_theta_pca(mat)
+      estimator <- "pca_fallback"
+    }
 
-    tmp <- data.frame(country = names(theta), year = yr, theta = as.numeric(theta), theta_se = as.numeric(theta_se), stringsAsFactors = FALSE)
+    if (is.null(fit)) next
+
+    tmp <- data.frame(
+      country = fit$country,
+      year = yr,
+      theta = as.numeric(fit$theta),
+      theta_se = as.numeric(fit$theta_se),
+      estimator = estimator,
+      stringsAsFactors = FALSE
+    )
     out[[as.character(yr)]] <- tmp
   }
 
+  if (length(out) == 0) return(NULL)
   do.call(rbind, out)
 }

@@ -34,3 +34,17 @@ testthat::test_that("required-column guard fails loudly", {
     "Missing required columns"
   )
 })
+
+
+testthat::test_that("vote normalization handles numeric and string codes", {
+  source("R/geopolitical_distance/ideal_points.R")
+  vals <- normalize_vote_to_binary(c(1, 3, 2, "yes", "no", "abstain", "YEA", "NAY"))
+  testthat::expect_equal(vals[1], 1)
+  testthat::expect_equal(vals[2], 0)
+  testthat::expect_true(is.na(vals[3]))
+  testthat::expect_equal(vals[4], 1)
+  testthat::expect_equal(vals[5], 0)
+  testthat::expect_true(is.na(vals[6]))
+  testthat::expect_equal(vals[7], 1)
+  testthat::expect_equal(vals[8], 0)
+})
