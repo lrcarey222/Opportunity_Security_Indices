@@ -24,3 +24,13 @@ testthat::test_that("seg and bloc assignment are consistent", {
   blocs <- assign_blocs(seg)
   testthat::expect_true(all(blocs$bloc %in% c("U.S.-leaning", "China-leaning", "Nonaligned")))
 })
+
+
+testthat::test_that("required-column guard fails loudly", {
+  source("R/geopolitical_distance/core.R")
+  bad <- data.frame(foo = 1, bar = 2)
+  testthat::expect_error(
+    compute_ipd_matrix(bad, 2021, "s"),
+    "Missing required columns"
+  )
+})
