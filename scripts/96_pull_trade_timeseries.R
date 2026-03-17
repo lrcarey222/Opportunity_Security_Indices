@@ -35,8 +35,6 @@ source(local({
   resolve_bootstrap_path()
 }))
 
-# Pull a focused UN Comtrade timeseries for selected country/tech/supply_chain.
-
 `%||%` <- function(x, y) {
   if (is.null(x) || (length(x) == 1 && is.na(x))) y else x
 }
@@ -64,11 +62,20 @@ parse_bool_arg <- function(x, default = FALSE) {
 
 parse_years_arg <- function(years_arg) {
   current_year <- as.integer(format(Sys.Date(), "%Y"))
-  if (is.null(years_arg) || !nzchar(years_arg)) {
+  if (is.null(years_arg) || !nzchar(as.character(years_arg))) {
     return((current_year - 5):(current_year - 1))
   }
 
-  years_arg <- gsub("\\s+", "", years_arg)
+  if (length(years_arg) > 1) {
+    years <- suppressWarnings(as.integer(years_arg))
+    years <- sort(unique(stats::na.omit(years)))
+    if (length(years) == 0) {
+      stop("Invalid years vector.")
+    }
+    return(years)
+  }
+
+  years_arg <- gsub("\\s+", "", as.character(years_arg)[[1]])
   if (tolower(years_arg) == "latest5") {
     return((current_year - 5):(current_year - 1))
   }
@@ -76,17 +83,18 @@ parse_years_arg <- function(years_arg) {
   if (grepl(":", years_arg, fixed = TRUE)) {
     bounds <- as.integer(strsplit(years_arg, ":", fixed = TRUE)[[1]])
     if (length(bounds) != 2 || any(is.na(bounds))) {
-      stop("Invalid --years range. Use format like --years=2021:2025")
+      stop("Invalid years range. Use format like '2024:2026'.")
     }
     return(seq.int(min(bounds), max(bounds)))
   }
 
   years <- as.integer(strsplit(years_arg, ",", fixed = TRUE)[[1]])
-  years <- years[!is.na(years)]
+  years <- sort(unique(stats::na.omit(years)))
   if (length(years) == 0) {
-    stop("Invalid --years list. Use format like --years=2021,2022,2023")
+    stop("Invalid years list. Use format like '2024,2025,2026'.")
   }
-  sort(unique(years))
+
+  years
 }
 
 normalize_character_arg <- function(values, default = NULL) {
@@ -123,40 +131,60 @@ normalize_frequency_arg <- function(frequency) {
   mapping[[value]]
 }
 
-resolve_repo_root_local <- function() {
-  resolve_repo_root()
-}
-
 ensure_trade_timeseries_helpers <- function(force_reload = FALSE) {
-  helper_path <- file.path(resolve_repo_root_local(), "R", "charts", "trade_timeseries.R")
+  helper_path <- file.path(resolve_repo_root(), "R", "charts", "trade_timeseries.R")
 
   if (isTRUE(force_reload) ||
       !exists("build_trade_timeseries_request_grid", mode = "function") ||
       !exists("trade_tag_response_chunk", mode = "function") ||
-      !exists("trade_prepare_hs6_codes", mode = "function")) {
+      !exists("validate_trade_timeseries_requests", mode = "function")) {
     source(helper_path)
   }
 
   if (!exists("build_trade_timeseries_request_grid", mode = "function") ||
       !exists("trade_tag_response_chunk", mode = "function") ||
-      !exists("trade_prepare_hs6_codes", mode = "function")) {
+      !exists("validate_trade_timeseries_requests", mode = "function")) {
     stop("trade_timeseries helpers were not loaded. Check R/charts/trade_timeseries.R")
   }
 
   invisible(TRUE)
 }
 
+ensure_comtrade_client_loaded <- function(force_reload = FALSE) {
+  client_path <- file.path(resolve_repo_root(), "scripts", "utils", "comtrade_client.R")
+  if (isTRUE(force_reload) || !exists("comtrade_fetch_requests", mode = "function")) {
+    source(client_path)
+  }
+  invisible(TRUE)
+}
+
+build_trade_timeseries_summary <- function(fetch_out, requested_year_start, requested_year_end, actual_max_year) {
+  total_failed <- if (is.data.frame(fetch_out$failed)) nrow(fetch_out$failed) else length(fetch_out$failed)
+  total_no_data <- if (is.data.frame(fetch_out$no_data)) nrow(fetch_out$no_data) else length(fetch_out$no_data)
+
+  list(
+    request_count = fetch_out$request_count,
+    succeeded_requests = fetch_out$request_count - total_failed - total_no_data,
+    failed_requests = total_failed,
+    no_data_requests = total_no_data,
+    requested_year_start = requested_year_start,
+    requested_year_end = requested_year_end,
+    max_year_returned = actual_max_year,
+    latest_year_complete = !is.na(actual_max_year) && actual_max_year >= requested_year_end
+  )
+}
+
 run_trade_timeseries_pull <- function(country,
                                       tech,
                                       supply_chain,
-                                      partners,
-                                      years,
+                                      partners = "World",
+                                      years = 2021:2025,
                                       flow_direction = "export",
                                       frequency = "annual",
                                       catalog = NULL,
                                       hs6_catalog_path = NULL,
                                       output_path = NULL,
-                                      write_output = TRUE,
+                                      write_output = FALSE,
                                       retries = 3,
                                       sleep_seconds = 0.5,
                                       max_code_chars = 2500,
@@ -164,14 +192,17 @@ run_trade_timeseries_pull <- function(country,
                                       year_chunk_size = 12,
                                       request_pause_seconds = 0,
                                       timeout_seconds = 120,
-                                      show_progress = interactive()) {
+                                      show_progress = interactive(),
+                                      return_details = FALSE) {
   ensure_trade_timeseries_helpers()
+  ensure_comtrade_client_loaded()
 
   country <- normalize_character_arg(country)
   tech <- normalize_character_arg(tech)
   partners <- normalize_partners_arg(partners)
   flow_direction <- tolower(normalize_character_arg(flow_direction, default = "export"))
   frequency <- normalize_frequency_arg(frequency)
+  years <- parse_years_arg(years)
 
   if (is.null(country) || is.null(tech) || is.null(supply_chain) || !nzchar(supply_chain)) {
     stop("country, tech, and supply_chain are required.")
@@ -182,8 +213,6 @@ run_trade_timeseries_pull <- function(country,
   if (is.null(repo_root) || is.null(config) || is.null(config$raw_data_dir)) {
     stop("Config missing. Source scripts/00_setup.R before running.")
   }
-
-  source(file.path(repo_root, "scripts", "utils", "comtrade_client.R"))
 
   raw_data_path <- file.path(repo_root, config$raw_data_dir)
   if (is.null(catalog)) {
@@ -239,6 +268,8 @@ run_trade_timeseries_pull <- function(country,
   ) %>%
     dplyr::select(request_id, reporter, partner, commodity_code, start_date, end_date, flow_direction, frequency)
 
+  validate_trade_timeseries_requests(request_df)
+
   fetch_out <- comtrade_fetch_requests(
     request_df = request_df,
     retries = retries,
@@ -248,16 +279,32 @@ run_trade_timeseries_pull <- function(country,
     request_pause_seconds = request_pause_seconds
   )
 
-  if (length(fetch_out$failed) > 0) {
-    warning("Some Comtrade requests failed (showing up to 5):\n", paste(utils::head(fetch_out$failed, 5), collapse = "\n"))
+  total_failed <- if (is.data.frame(fetch_out$failed)) nrow(fetch_out$failed) else length(fetch_out$failed)
+  total_no_data <- if (is.data.frame(fetch_out$no_data)) nrow(fetch_out$no_data) else length(fetch_out$no_data)
+
+  if (total_failed == fetch_out$request_count) {
+    err_table <- if (is.data.frame(fetch_out$failed)) {
+      paste(utils::head(paste0(fetch_out$failed$error_type, ": ", fetch_out$failed$request_label, " -> ", fetch_out$failed$message), 5), collapse = "\n")
+    } else {
+      paste(utils::head(fetch_out$failed, 5), collapse = "\n")
+    }
+    stop(
+      "All Comtrade requests failed.\n",
+      err_table,
+      call. = FALSE
+    )
   }
 
-  if (length(fetch_out$no_data) > 0) {
-    message("Comtrade requests with no rows: ", length(fetch_out$no_data))
+  if (total_failed > 0) {
+    warning("Some Comtrade requests failed: ", total_failed, "/", fetch_out$request_count)
   }
 
-  if (nrow(fetch_out$data) == 0) {
-    trade_tbl <- fetch_out$data
+  if (total_no_data > 0) {
+    message("Comtrade requests with no rows: ", total_no_data, "/", fetch_out$request_count)
+  }
+
+  trade_tbl <- if (nrow(fetch_out$data) == 0) {
+    fetch_out$data
   } else {
     request_lookup <- split(request_grid, seq_len(nrow(request_grid)))
     data_by_request <- split(fetch_out$data, fetch_out$data$request_id)
@@ -270,16 +317,25 @@ run_trade_timeseries_pull <- function(country,
         supply_chain = supply_chain
       )
     })
-    trade_tbl <- dplyr::bind_rows(tagged) %>% dplyr::distinct()
+    dplyr::bind_rows(tagged) %>% dplyr::distinct()
   }
 
   requested_year_start <- min(years)
   requested_year_end <- max(years)
   actual_max_year <- comtrade_max_year(trade_tbl)
+
   message("Requested year range: ", requested_year_start, "-", requested_year_end)
-  message("Max year actually returned: ", ifelse(is.na(actual_max_year), "NA", as.character(actual_max_year)))
+  if (is.na(actual_max_year)) {
+    message("Max year actually returned: NA (no data returned)")
+  } else {
+    message("Max year actually returned: ", actual_max_year)
+  }
+
   if (is.na(actual_max_year) || actual_max_year < requested_year_end) {
-    warning("Requested end year ", requested_year_end, " not fully available in returned data.")
+    warning(
+      "Requested end year ", requested_year_end,
+      " is not fully available yet (partial-year publication lag or no matching data)."
+    )
   }
 
   if (isTRUE(write_output)) {
@@ -291,9 +347,16 @@ run_trade_timeseries_pull <- function(country,
     message("Output: ", output_path)
   }
 
-  trade_tbl
-}
+  details <- list(
+    data = trade_tbl,
+    request_df = request_df,
+    failed = fetch_out$failed,
+    no_data = fetch_out$no_data,
+    summary = build_trade_timeseries_summary(fetch_out, requested_year_start, requested_year_end, actual_max_year)
+  )
 
+  if (isTRUE(return_details)) details else trade_tbl
+}
 
 pull_trade_timeseries <- function(country,
                                   tech,
@@ -313,14 +376,14 @@ pull_trade_timeseries <- function(country,
                                   year_chunk_size = 12,
                                   request_pause_seconds = 0,
                                   timeout_seconds = 120,
-                                  show_progress = interactive()) {
-  years_parsed <- if (is.character(years) && length(years) == 1) parse_years_arg(years) else years
+                                  show_progress = interactive(),
+                                  return_details = FALSE) {
   run_trade_timeseries_pull(
     country = country,
     tech = tech,
     supply_chain = supply_chain,
     partners = partners,
-    years = years_parsed,
+    years = years,
     flow_direction = flow,
     frequency = frequency,
     catalog = catalog,
@@ -334,15 +397,12 @@ pull_trade_timeseries <- function(country,
     year_chunk_size = year_chunk_size,
     request_pause_seconds = request_pause_seconds,
     timeout_seconds = timeout_seconds,
-    show_progress = show_progress
+    show_progress = show_progress,
+    return_details = return_details
   )
 }
 
 if (sys.nframe() == 0) {
-  repo_root <- resolve_repo_root()
-
-  source(file.path(repo_root, "R", "charts", "trade_timeseries.R"))
-
   args <- parse_args(commandArgs(trailingOnly = TRUE))
   years <- parse_years_arg(args[["years"]])
   partners <- normalize_partners_arg(args[["partners"]])
@@ -363,6 +423,7 @@ if (sys.nframe() == 0) {
     years = years,
     flow_direction = args[["flow"]] %||% "export",
     frequency = args[["frequency"]] %||% "annual",
+    catalog = NULL,
     hs6_catalog_path = args[["hs6-catalog"]] %||% args[["hs6_catalog"]],
     output_path = output_path,
     write_output = TRUE,

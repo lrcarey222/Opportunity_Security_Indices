@@ -63,13 +63,30 @@ comtrade_ct_get_data_with_timeout <- function(timeout_seconds = 120, ...) {
   comtradr::ct_get_data(...)
 }
 
-comtrade_is_throttle_error <- function(err) {
+comtrade_error_message <- function(err) {
   if (is.null(err)) {
-    return(FALSE)
+    return("unknown error")
   }
-  msg <- if (inherits(err, "error")) conditionMessage(err) else as.character(err)
-  msg <- tolower(paste(msg, collapse = " "))
-  grepl("429|throttl|rate\\s*limit|too\\s*many\\s*requests", msg)
+  if (inherits(err, "error")) {
+    return(conditionMessage(err))
+  }
+  as.character(err)
+}
+
+comtrade_classify_error <- function(err) {
+  msg <- tolower(comtrade_error_message(err))
+
+  if (grepl("401|unauthoriz|forbidden|invalid\s*key|api\s*key", msg)) {
+    return("auth")
+  }
+  if (grepl("429|throttl|rate\s*limit|too\s*many\s*requests", msg)) {
+    return("rate_limit")
+  }
+  if (grepl("timed?\s*out|timeout", msg)) {
+    return("timeout")
+  }
+
+  "request_error"
 }
 
 comtrade_fetch_requests <- function(request_df,
@@ -79,19 +96,15 @@ comtrade_fetch_requests <- function(request_df,
                                     timeout_seconds = 120,
                                     show_progress = interactive(),
                                     request_pause_seconds = 0) {
-  required_cols <- c("reporter", "partner", "commodity_code", "start_date", "end_date", "flow_direction")
+  required_cols <- c("request_id", "reporter", "partner", "commodity_code", "start_date", "end_date", "flow_direction", "frequency")
   missing_cols <- setdiff(required_cols, names(request_df))
   if (length(missing_cols) > 0) {
     stop("request_df is missing required columns: ", paste(missing_cols, collapse = ", "))
   }
 
-  if (!"request_id" %in% names(request_df)) {
-    request_df$request_id <- seq_len(nrow(request_df))
-  }
-
   out <- vector("list", nrow(request_df))
-  failed <- character()
-  no_data <- character()
+  failed_rows <- list()
+  no_data_rows <- list()
 
   pb <- NULL
   if (isTRUE(show_progress) && nrow(request_df) > 0) {
@@ -108,12 +121,8 @@ comtrade_fetch_requests <- function(request_df,
 
     data_chunk <- NULL
     last_err <- NULL
+    last_error_type <- "request_error"
     throttle_multiplier <- 1
-
-    frequency_arg <- NULL
-    if ("frequency" %in% names(req) && !is.null(req$frequency[[1]]) && nzchar(as.character(req$frequency[[1]]))) {
-      frequency_arg <- as.character(req$frequency[[1]])
-    }
 
     for (attempt in seq_len(retries)) {
       request_args <- list(
@@ -123,11 +132,9 @@ comtrade_fetch_requests <- function(request_df,
         start_date = req$start_date[[1]],
         end_date = req$end_date[[1]],
         flow_direction = req$flow_direction[[1]],
+        frequency = req$frequency[[1]],
         timeout_seconds = timeout_seconds
       )
-      if (!is.null(frequency_arg)) {
-        request_args$frequency <- frequency_arg
-      }
 
       attempt_out <- tryCatch(
         do.call(comtrade_ct_get_data_with_timeout, request_args),
@@ -140,7 +147,8 @@ comtrade_fetch_requests <- function(request_df,
       }
 
       last_err <- attempt_out
-      if (comtrade_is_throttle_error(attempt_out)) {
+      last_error_type <- comtrade_classify_error(attempt_out)
+      if (identical(last_error_type, "rate_limit")) {
         throttle_multiplier <- max(throttle_multiplier * 2, 2)
       }
       if (attempt < retries) {
@@ -156,20 +164,24 @@ comtrade_fetch_requests <- function(request_df,
       ", partner=", paste(req$partner[[1]], collapse = ","),
       ", flow=", req$flow_direction[[1]],
       ", years=", req$start_date[[1]], "-", req$end_date[[1]],
-      if ("frequency" %in% names(req)) paste0(", freq=", req$frequency[[1]]) else ""
+      ", freq=", req$frequency[[1]]
     )
 
     if (is.null(data_chunk)) {
-      failed <- c(
-        failed,
-        paste0(
-          req_label,
-          " -> ",
-          if (inherits(last_err, "error")) conditionMessage(last_err) else "unknown error"
-        )
+      failed_rows[[length(failed_rows) + 1]] <- data.frame(
+        request_id = req$request_id[[1]],
+        error_type = last_error_type,
+        message = comtrade_error_message(last_err),
+        request_label = req_label,
+        stringsAsFactors = FALSE
       )
     } else if (nrow(data_chunk) == 0) {
-      no_data <- c(no_data, req_label)
+      no_data_rows[[length(no_data_rows) + 1]] <- data.frame(
+        request_id = req$request_id[[1]],
+        reason = "no_data",
+        request_label = req_label,
+        stringsAsFactors = FALSE
+      )
     } else {
       out[[i]] <- dplyr::mutate(data_chunk, request_id = req$request_id[[1]])
     }
@@ -179,7 +191,7 @@ comtrade_fetch_requests <- function(request_df,
         rep = as.character(req$reporter[[1]]),
         flow = as.character(req$flow_direction[[1]]),
         years = paste0(req$start_date[[1]], "-", req$end_date[[1]]),
-        freq = if ("frequency" %in% names(req)) as.character(req$frequency[[1]]) else "NA"
+        freq = as.character(req$frequency[[1]])
       ))
     }
 
@@ -188,10 +200,13 @@ comtrade_fetch_requests <- function(request_df,
     }
   }
 
+  failed_df <- if (length(failed_rows) > 0) dplyr::bind_rows(failed_rows) else data.frame()
+  no_data_df <- if (length(no_data_rows) > 0) dplyr::bind_rows(no_data_rows) else data.frame()
+
   list(
     data = dplyr::bind_rows(out) %>% dplyr::distinct(),
-    failed = failed,
-    no_data = no_data,
+    failed = failed_df,
+    no_data = no_data_df,
     request_count = nrow(request_df)
   )
 }
