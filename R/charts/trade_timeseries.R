@@ -35,7 +35,6 @@ trade_split_vec <- function(x, chunk_size) {
   split(x, ceiling(seq_along(x) / chunk_size))
 }
 
-
 trade_prepare_partner_chunks <- function(partner, partner_chunk_size = 50) {
   partners <- unique(stats::na.omit(as.character(partner)))
   partners <- trimws(partners)
@@ -58,33 +57,87 @@ trade_prepare_partner_chunks <- function(partner, partner_chunk_size = 50) {
 }
 
 trade_normalize_years <- function(years) {
-  if (length(years) == 2 && is.numeric(years)) {
-    return(seq.int(min(years), max(years)))
-  }
-  sort(unique(as.integer(years)))
-}
+  year_values <- suppressWarnings(as.integer(years))
+  year_values <- sort(unique(stats::na.omit(year_values)))
 
-
-trade_chunk_years <- function(years, year_chunk_size = 12L) {
-  years <- sort(unique(as.integer(years)))
-  years <- years[!is.na(years)]
-  
-  if (length(years) == 0) {
+  if (length(year_values) == 0) {
     stop("years must include at least one valid year.")
   }
-  
+
+  year_values
+}
+
+trade_chunk_years <- function(years, year_chunk_size = 12L) {
+  years <- trade_normalize_years(years)
+
   if (is.null(year_chunk_size) || is.na(year_chunk_size) || year_chunk_size <= 0) {
-    year_chunk_size <- 12L
+    stop("year_chunk_size must be a positive integer.")
   }
-  
-  year_chunk_size <- min(as.integer(year_chunk_size), 12L)
-  
-  idx <- split(seq_along(years), ceiling(seq_along(years) / year_chunk_size))
-  
+
+  chunk_size <- as.integer(year_chunk_size)
+  start_idx <- seq(1L, length(years), by = chunk_size)
+  end_idx <- pmin(start_idx + chunk_size - 1L, length(years))
+
   data.frame(
-    ys = vapply(idx, function(i) years[min(i)], integer(1)),
-    ye = vapply(idx, function(i) years[max(i)], integer(1))
+    ys = years[start_idx],
+    ye = years[end_idx],
+    stringsAsFactors = FALSE
   )
+}
+
+validate_trade_timeseries_requests <- function(request_df) {
+  required_cols <- c(
+    "reporter", "partner", "commodity_code", "start_date",
+    "end_date", "flow_direction", "frequency"
+  )
+  missing_cols <- setdiff(required_cols, names(request_df))
+  if (length(missing_cols) > 0) {
+    stop("request_df is missing required columns: ", paste(missing_cols, collapse = ", "))
+  }
+
+  if (nrow(request_df) == 0) {
+    stop("request_df has no rows.")
+  }
+
+  start_year <- suppressWarnings(as.integer(request_df$start_date))
+  end_year <- suppressWarnings(as.integer(request_df$end_date))
+  frequency <- toupper(trimws(as.character(request_df$frequency)))
+
+  if (any(is.na(start_year)) || any(is.na(end_year))) {
+    stop("start_date and end_date must be valid years.")
+  }
+
+  bad_windows <- which(start_year > end_year)
+  if (length(bad_windows) > 0) {
+    stop("Invalid year windows found (start_date > end_date) at rows: ", paste(bad_windows, collapse = ", "))
+  }
+
+  bad_frequency <- which(!frequency %in% c("A", "M"))
+  if (length(bad_frequency) > 0) {
+    stop("frequency must be one of 'A' or 'M'. Invalid rows: ", paste(bad_frequency, collapse = ", "))
+  }
+
+  monthly_bad <- which(frequency == "M" & start_year != end_year)
+  if (length(monthly_bad) > 0) {
+    stop(
+      "Monthly requests must have start_date == end_date. Invalid rows: ",
+      paste(monthly_bad, collapse = ", ")
+    )
+  }
+
+  check_non_empty <- function(values, label) {
+    val <- trimws(as.character(values))
+    bad <- which(is.na(val) | !nzchar(val))
+    if (length(bad) > 0) {
+      stop(label, " must be non-empty. Invalid rows: ", paste(bad, collapse = ", "))
+    }
+  }
+
+  check_non_empty(request_df$reporter, "reporter")
+  check_non_empty(request_df$partner, "partner")
+  check_non_empty(request_df$commodity_code, "commodity_code")
+
+  invisible(request_df)
 }
 
 trade_pick_column <- function(tbl, candidates, label) {
@@ -199,7 +252,12 @@ build_trade_timeseries_request_grid <- function(country,
     )
   })
 
-  dplyr::bind_rows(request_blocks)
+  request_grid <- dplyr::bind_rows(request_blocks)
+  if (nrow(request_grid) > 0 && any(request_grid$ys > request_grid$ye)) {
+    stop("Invalid request grid generated: found ys > ye.")
+  }
+
+  request_grid
 }
 
 trade_tag_response_chunk <- function(data_chunk, req, tech, supply_chain) {
