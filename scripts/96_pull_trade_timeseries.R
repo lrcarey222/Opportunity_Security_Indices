@@ -194,8 +194,8 @@ run_trade_timeseries_pull <- function(country,
                                       timeout_seconds = 120,
                                       show_progress = interactive(),
                                       return_details = FALSE) {
-  ensure_trade_timeseries_helpers()
-  ensure_comtrade_client_loaded()
+  ensure_trade_timeseries_helpers(force_reload = TRUE)
+  ensure_comtrade_client_loaded(force_reload = TRUE)
 
   country <- normalize_character_arg(country)
   tech <- normalize_character_arg(tech)

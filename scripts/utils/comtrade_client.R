@@ -76,13 +76,13 @@ comtrade_error_message <- function(err) {
 comtrade_classify_error <- function(err) {
   msg <- tolower(comtrade_error_message(err))
 
-  if (grepl("401|unauthoriz|forbidden|invalid\s*key|api\s*key", msg)) {
+  if (grepl("401|unauthoriz|forbidden|invalid\\s*key|api\\s*key", msg, perl = TRUE)) {
     return("auth")
   }
-  if (grepl("429|throttl|rate\s*limit|too\s*many\s*requests", msg)) {
+  if (grepl("429|throttl|rate\\s*limit|too\\s*many\\s*requests", msg, perl = TRUE)) {
     return("rate_limit")
   }
-  if (grepl("timed?\s*out|timeout", msg)) {
+  if (grepl("timed?\\s*out|timeout", msg, perl = TRUE)) {
     return("timeout")
   }
 
