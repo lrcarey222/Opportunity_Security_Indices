@@ -228,6 +228,17 @@ build_trade_timeseries_request_grid <- function(country,
 
   partner_chunks <- trade_prepare_partner_chunks(partner, partner_chunk_size = partner_chunk_size)
   year_windows <- trade_chunk_years(years, year_chunk_size = year_chunk_size)
+  year_windows$ys <- suppressWarnings(as.integer(year_windows$ys))
+  year_windows$ye <- suppressWarnings(as.integer(year_windows$ye))
+
+  invalid_windows <- which(is.na(year_windows$ys) | is.na(year_windows$ye) | year_windows$ys > year_windows$ye)
+  if (length(invalid_windows) > 0) {
+    stop(
+      "Invalid year windows generated at rows: ",
+      paste(invalid_windows, collapse = ", "),
+      "."
+    )
+  }
 
   request_blocks <- lapply(tech, function(tech_item) {
     hs6_codes <- trade_prepare_hs6_codes(
@@ -240,21 +251,46 @@ build_trade_timeseries_request_grid <- function(country,
     )
 
     code_chunks <- trade_split_by_nchar(hs6_codes, max_chars = max_code_chars)
-
-    tidyr::expand_grid(
-      rep = as.character(country),
-      ys = year_windows$ys,
-      ye = year_windows$ye,
-      dir = flows,
-      tech = tech_item,
-      cc = code_chunks,
-      pch = partner_chunks
+    request_rows <- vector(
+      "list",
+      length(country) * nrow(year_windows) * length(flows) * length(code_chunks) * length(partner_chunks)
     )
+    row_id <- 1L
+
+    for (country_item in as.character(country)) {
+      for (window_idx in seq_len(nrow(year_windows))) {
+        for (flow_item in flows) {
+          for (code_idx in seq_along(code_chunks)) {
+            for (partner_idx in seq_along(partner_chunks)) {
+              request_rows[[row_id]] <- tibble::tibble(
+                rep = country_item,
+                ys = year_windows$ys[[window_idx]],
+                ye = year_windows$ye[[window_idx]],
+                dir = flow_item,
+                tech = tech_item,
+                cc = list(code_chunks[[code_idx]]),
+                pch = list(partner_chunks[[partner_idx]])
+              )
+              row_id <- row_id + 1L
+            }
+          }
+        }
+      }
+    }
+
+    dplyr::bind_rows(request_rows)
   })
 
   request_grid <- dplyr::bind_rows(request_blocks)
-  if (nrow(request_grid) > 0 && any(request_grid$ys > request_grid$ye)) {
-    stop("Invalid request grid generated: found ys > ye.")
+  start_year <- suppressWarnings(as.integer(request_grid$ys))
+  end_year <- suppressWarnings(as.integer(request_grid$ye))
+  bad_windows <- which(is.na(start_year) | is.na(end_year) | start_year > end_year)
+  if (length(bad_windows) > 0) {
+    stop(
+      "Invalid request grid generated: found invalid year windows at rows ",
+      paste(utils::head(bad_windows, 10), collapse = ", "),
+      "."
+    )
   }
 
   request_grid
