@@ -68,34 +68,22 @@ trade_normalize_years <- function(years) {
 trade_chunk_years <- function(years, year_chunk_size = 12L) {
   years <- sort(unique(as.integer(years)))
   years <- years[!is.na(years)]
-
+  
   if (length(years) == 0) {
     stop("years must include at least one valid year.")
   }
-
+  
   if (is.null(year_chunk_size) || is.na(year_chunk_size) || year_chunk_size <= 0) {
     year_chunk_size <- 12L
   }
-
+  
   year_chunk_size <- min(as.integer(year_chunk_size), 12L)
-
-  recent_year_count <- min(2L, length(years))
-  recent_years <- tail(years, recent_year_count)
-  base_years <- head(years, length(years) - recent_year_count)
-
-  chunk_starts <- integer()
-  chunk_ends <- integer()
-
-  if (length(base_years) > 0) {
-    chunk_starts <- base_years[seq(1, length(base_years), by = year_chunk_size)]
-    chunk_ends <- vapply(seq_along(chunk_starts), function(i) {
-      base_years[min(i * year_chunk_size, length(base_years))]
-    }, integer(1))
-  }
-
+  
+  idx <- split(seq_along(years), ceiling(seq_along(years) / year_chunk_size))
+  
   data.frame(
-    ys = c(chunk_starts, recent_years),
-    ye = c(chunk_ends, recent_years)
+    ys = vapply(idx, function(i) years[min(i)], integer(1)),
+    ye = vapply(idx, function(i) years[max(i)], integer(1))
   )
 }
 

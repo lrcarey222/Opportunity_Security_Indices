@@ -1,4 +1,4 @@
-Sys.setenv(COMTRADE_API_KEY = "fd178c714d644e1ab8adbc16026faaaf")
+Sys.setenv(COMTRADE_API_KEY = "aca1f47164e348fe978af0b93bfa6af4")
 primary_key <- "5927e0b514da47d98f869ba5ca186485"
 secondary_key<- "1ffe814c2cd048f0b1da30cc401cbac2"
 tertiary_key <- "2940653b9bbe4671b3f7fde2846d14be"
@@ -7,6 +7,7 @@ key4<-"a709c13423c9424898a4292b383edc7a"
 key5 <- "4967b706a00e49ee8819eee592f4fbb9"
 premium_key <- "fd178c714d644e1ab8adbc16026faaaf"
 
+
 library(lubridate)
 library(slider)
 
@@ -14,18 +15,22 @@ source("scripts/96_pull_trade_timeseries.R")
 
 #Trade Timeseries plot-------------
 
-iso_rep<-"KOR"
+iso_rep<-"VNM"
 iso_partner<-c("CHN","FRA","DEU","ITA","ESP","NLD","BEL","SWE","POL","DNK","FIN","CZE","ROU","HUN","AUT","PRT","GRC","IRL","JPN","USA","IND","VNM")
 
+subcat2<-subcat %>%
+  mutate(HS6=as.character(HS6)) %>%
+  filter(HS6=="854140")
+
 res_vnm <- pull_trade_timeseries(
-  catalog = hs6_categories_essential,
+  catalog = subcat2,
   country = "VNM",
   tech = c("Solar"),
   supply_chain = "Midstream",
-  partners = c("World"),
-  years = c("2023:2026"),
+  partners = "USA",
+  years = c("2022:2025"),
   flow = c("export"),
-  frequency="monthly"
+  frequency="annual"
 )
 
 res<-bind_rows(res2,res3,res4)
@@ -160,4 +165,50 @@ ggplot(data=plot_tot,
   theme_minimal()
 
 write.csv(plot_tot,paste0(processed_dir,"/charts/trade_time_plot_","KOR",".csv"))
+
+#India Monthly Exports
+bulk_month<-read.csv("data/raw/comtrade_bulk/comtrade_bulk_monthly_hs92_selected_reporters.csv")
+bulk_annual<-read.csv("data/raw/comtrade_bulk/comtrade_bulk_annual_hs92.csv")
+
+
+india_month <- bulk_month %>%
+  filter(reporter_desc=="India",
+         partner_desc=="World",
+         flow_desc=="Export") %>%
+  left_join(subcat,by=c("cmd_code"="HS6")) %>%
+  group_by(reporter_code,tech,supply_chain,`Sub.Sector`,ref_year,ref_month) %>%
+  summarize(value=sum(primary_value,na.rm=T))
+
+wind_export_ind_ann <- india_month %>%
+  filter(tech=="Wind") %>%
+  group_by(Sub.Sector,ref_year) %>%
+  summarize(export=sum(value,na.rm=T)) %>%
+  arrange(Sub.Sector,ref_year)
+
+
+ggplot(data=wind_export_ind_ann,aes(x=ref_year,y=export,color=Sub.Sector))+geom_line()+theme_minimal()
+
+
+india_import <- comtrade_energy_trade %>%
+  filter(reporter_desc=="India") %>%
+  left_join(subcat %>%
+              mutate(hs6=as.character(HS6)),by=c("cmd_code"="HS6")) %>%
+  filter(tech=="Wind") %>%
+  group_by(reporter_desc,partner_desc,tech,supply_chain,`Sub.Sector`,ref_year) %>%
+  summarize(value=sum(primary_value,na.rm=T)) %>%
+  group_by(tech,supply_chain,`Sub.Sector`,ref_year) %>%
+  mutate(share=value/value[[partner_desc=="World"]])
+
+
+#China Fossil Import v Renewable Exports
+plot_chn<-bulk_annual %>%
+  filter(reporter_iso=="CHN",
+         ref_year=="2024") %>%
+  left_join(hts_codes_categories_bolstered_final %>%
+              mutate(hs_code=as.character(HS6)),
+            by=c("cmd_code"="HS6")) %>%
+  group_by(Technology,flow_desc) %>%
+  summarize(total=sum(primary_value,na.rm=T)) %>%
+  pivot_wider(names_from=flow_desc,values_from=total)
+write.csv(plot_chn,"data/processed/charts/china_importsexports_tech.csv")
 
