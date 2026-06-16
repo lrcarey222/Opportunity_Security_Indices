@@ -90,7 +90,7 @@ india_batt_owners <- all_bnef %>%
   summarize(battery_capacity_m_wh=sum(as.numeric(battery_capacity_m_wh),na.rm=T))
 
 ownership_batt <- all_bnef %>%
-  filter(country %in% c("India","Vietnam","South Korea", "Japan")) %>%
+  #filter(country %in% c("India","Vietnam","South Korea", "Japan")) %>%
   distinct(country,status,owners)
 
 write.csv(ownership_batt,"C:/Users/LCarey/Downloads/ownership.csv")
@@ -132,7 +132,7 @@ capacity_by_owner_hq <- joined_bnef %>%
   mutate(
     owner_share_pct_raw = parse_number(str_extract(owners, "\\d+(?:\\.\\d+)?%")),
     owner_name = str_trim(str_remove(owners, "\\s*\\d+(?:\\.\\d+)?%$")),
-    owner_hq_country = str_trim(str_replace(owner_headquarters, "^.*?\\s+[--]\\s+", ""))
+    owner_hq_country = str_trim(str_replace(owner_headquarters, "^.*?[---]\\s*", ""))
   ) %>%
   group_by(id) %>%
   mutate(
@@ -157,6 +157,18 @@ capacity_summary <- capacity_by_owner_hq %>%
     allocated_capacity_gwh = sum(allocated_capacity_gwh, na.rm = TRUE),
     .groups = "drop"
   ) %>%
+  arrange(desc(allocated_capacity_gwh))
+
+owner_country<-capacity_by_owner_hq %>%
+  group_by(owner_hq_country) %>%
+  summarise(
+    facilities = n_distinct(id),
+    allocated_capacity_mwh = sum(allocated_capacity_mwh, na.rm = TRUE),
+    allocated_capacity_gwh = sum(allocated_capacity_gwh, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  ungroup() %>%
+  mutate(share=allocated_capacity_gwh/sum(allocated_capacity_gwh)*100) %>%
   arrange(desc(allocated_capacity_gwh))
 
 write.csv(capacity_summary %>%

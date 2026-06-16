@@ -182,4 +182,44 @@ ggplot(wind_manu_index%>%
     y = "Index (2022 = 100)"
   ) +
   theme_minimal()
-  
+
+
+#India Cleantech Manufacturing Chart
+
+india_man_plot<-investment_index %>%
+  filter(Country=="India",
+         supply_chain=="Midstream",
+         data_type=="raw",
+         variable=="Annual Investment (USD bn, 2024$)") %>%
+  group_by(Year) %>%
+  mutate(share=value/sum(value,na.rm=T))
+
+%>%
+  select(Year,tech,value) %>%
+  pivot_wider(names_from=tech,values_from=value)
+
+write.csv(india_man_plot,"data/processed/charts/india_man_year.csv")
+
+#Global Clean Investment and Interest rates
+world_plot<-investment_index %>%
+  filter(supply_chain=="Midstream",
+         data_type=="raw",
+         variable=="Annual Investment (USD bn, 2024$)") %>%
+  group_by(Year) %>%
+  summarize(inv=sum(value,na.rm=T)) %>%
+  ungroup() %>%
+  mutate(index=inv/inv[Year=="2022"]*100)
+write.csv(world_plot,"data/processed/charts/world_man.csv")
+
+#Korean Battery and EV Manufacturing investment
+
+kor_ev_batt<- investment_index %>%
+  filter(tech %in% c("Electric Vehicles","Batteries"),
+         supply_chain=="Midstream",
+         data_type=="raw",
+         grepl("Annual Investment",variable)) %>%
+  group_by(Year,Country) %>%
+  summarize(inv=sum(value,na.rm=T)) %>%
+  group_by(Year) %>%
+  mutate(share=inv/sum(inv)*100) %>%
+  arrange(desc(share))

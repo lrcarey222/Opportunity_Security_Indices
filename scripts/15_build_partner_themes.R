@@ -123,7 +123,7 @@ if (is.null(raw_data_path)) {
 }
 
 comtrade_dyads_path <- file.path(raw_data_path, "allied_comtrade_energy_data.csv")
-subcat_path <- file.path(raw_data_path, "consolidated_hs6_energy_tech_long.csv")
+subcat_path <- file.path(raw_data_path, "energy_hs6_master.csv")
 fdi_path <- file.path(raw_data_path, "imf_dip.csv")
 tech_ghg_path <- file.path(raw_data_path, "ipcc_ghg_intensity.csv")
 cat_policy_path <- file.path(raw_data_path, "CAT_country ratings data.csv")
