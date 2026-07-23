@@ -4,6 +4,15 @@
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
+/* ---------- difficulty: how much scouting info is visible while drafting ----------
+   easy   → sector scores + home-turf synergies both shown (full info)
+   normal → home-turf synergies shown, sector scores hidden (default)
+   hard   → all numerical info hidden                                              */
+function difficulty() { const el = $("#diffSel"); return el ? el.value : (STATE.difficulty || "normal"); }
+function showScores()  { return difficulty() === "easy"; }
+function showSynergy() { return difficulty() !== "hard"; }
+function synergyOf(ally, sub) { return (ally.home[sub.cat] || 0) + (ally.picks.includes(sub.n) ? 6 : 0); }
+
 /* Alliance must reach this share of the max-possible stack to beat the big boss.
    Near-optimal collective drafting lands ~0.89-0.99; sloppy drafting ~0.63-0.80,
    so 0.85 rewards prioritizing high-value sub-sectors. */
@@ -67,8 +76,9 @@ function selectAlly(id) {
   $$(".ally-card").forEach(c => c.classList.toggle("selected", c.dataset.id === id));
   const a = ALLY_BY_ID[id];
   const detail = $("#allyDetail");
+  const syn = showSynergy();
   const strengths = Object.entries(a.home).sort((x, y) => y[1] - x[1])
-    .map(([c, v]) => `<span class="chipcat" style="background:${CATEGORIES[c].c2}">${CATEGORIES[c].short} +${v}</span>`).join(" ");
+    .map(([c, v]) => `<span class="chipcat" style="background:${CATEGORIES[c].c2}">${CATEGORIES[c].short}${syn ? " +" + v : ""}</span>`).join(" ");
   const sigs = a.picks.map(n => SUB_BY_N[n].name).join(" · ");
   detail.style.setProperty("--cc1", a.c1); detail.style.setProperty("--cc2", a.c2);
   detail.innerHTML = `
@@ -79,7 +89,7 @@ function selectAlly(id) {
       <p class="bio">${a.bio}</p>
       <div style="margin:10px 0 4px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);font-family:var(--font-disp);font-style:italic">Home-turf synergies</div>
       <div class="strengths" style="justify-content:flex-start">${strengths}</div>
-      <div style="margin:10px 0 4px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);font-family:var(--font-disp);font-style:italic">Signature sub-sectors (+6 fit)</div>
+      <div style="margin:10px 0 4px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);font-family:var(--font-disp);font-style:italic">Signature sub-sectors${syn ? " (+6 fit)" : ""}</div>
       <div class="bio" style="color:var(--red-2);font-size:12.5px">${sigs}</div>
     </div>`;
   detail.style.display = "grid";
@@ -110,6 +120,7 @@ function gradeFor(i, n) {
 function startDraft() {
   STATE.numAllies = parseInt($("#alliesSel").value, 10);
   STATE.rounds   = parseInt($("#roundsSel").value, 10);
+  STATE.difficulty = $("#diffSel").value;
   STATE.autodelay = $("#speedSel").value === "fast" ? 230 : $("#speedSel").value === "slow" ? 1000 : 620;
 
   // participants: always include your fighter, then fill from roster order
@@ -225,17 +236,23 @@ function updateOnClock(id) {
 function renderFilters() {
   const bar = $("#filters");
   const cats = ["ALL", ...Object.keys(CATEGORIES)];
+  // sort options depend on difficulty — never expose a sort that reveals hidden numbers
+  let opts;
+  if (showScores()) {
+    opts = [["value", "Best fit for you"], ["ovr", "Overall (OVR)"], ["nat", "National Security"],
+            ["ensc", "Energy &amp; Economic Security"], ["clim", "Climate Salience"], ["opp", "Economic Opportunity"], ["num", "By sector #"]];
+  } else if (showSynergy()) {
+    opts = [["fit", "Best home-fit for you"], ["num", "By sector #"]];
+  } else {
+    opts = [["num", "By sector #"], ["cat", "By stack category"]];
+  }
+  if (!opts.some(o => o[0] === STATE.sort)) STATE.sort = opts[0][0];
   bar.innerHTML = cats.map(c => {
     const label = c === "ALL" ? "ALL SECTORS" : `${c} · ${CATEGORIES[c].short}`;
     return `<button class="fbtn ${c === STATE.filter ? "on" : ""}" data-f="${c}">${label}</button>`;
   }).join("") + `<span class="spacer"></span>
     <select id="sortSel" title="Sort">
-      <option value="value">Sort: Best fit for you</option>
-      <option value="ovr">Sort: Overall (OVR)</option>
-      <option value="nat">Sort: National Security</option>
-      <option value="ensc">Sort: Energy &amp; Economic Security</option>
-      <option value="clim">Sort: Climate Salience</option>
-      <option value="opp">Sort: Economic Opportunity</option>
+      ${opts.map(([v, l]) => `<option value="${v}">Sort: ${l}</option>`).join("")}
     </select>`;
   $$(".fbtn", bar).forEach(b => b.addEventListener("click", () => {
     STATE.filter = b.dataset.f; renderFilters(); renderPool();
@@ -253,20 +270,24 @@ function renderPool() {
   let list = SUBSECTORS.filter(s => STATE.filter === "ALL" || s.cat === STATE.filter);
   const sorters = {
     value:  (a, b) => scoreFor(you, b) - scoreFor(you, a),
+    fit:    (a, b) => synergyOf(you, b) - synergyOf(you, a) || a.n - b.n,
     ovr:    (a, b) => b.ovr - a.ovr,
     nat:    (a, b) => b.NAT - a.NAT,
     ensc:   (a, b) => b.ENSC - a.ENSC,
     clim:   (a, b) => b.CLIM - a.CLIM,
     opp:    (a, b) => b.OPP - a.OPP,
+    num:    (a, b) => a.n - b.n,
+    cat:    (a, b) => (a.cat < b.cat ? -1 : a.cat > b.cat ? 1 : a.n - b.n),
   };
-  list = [...list].sort(sorters[STATE.sort]);
+  list = [...list].sort(sorters[STATE.sort] || sorters.num);
   // drafted cards sink to the bottom
   list.sort((a, b) => (STATE.drafted[a.n] ? 1 : 0) - (STATE.drafted[b.n] ? 1 : 0));
 
+  const scores = showScores(), syn = showSynergy();
   pool.innerHTML = list.map(s => {
     const cat = CATEGORIES[s.cat];
     const drafted = STATE.drafted[s.n];
-    const fit = scoreFor(you, s) - s.ovr;
+    const fit = synergyOf(you, s);
     const owner = drafted ? ALLY_BY_ID[drafted] : null;
     const bars = [
       ["NAT SEC", s.NAT, "National Security"],
@@ -274,7 +295,10 @@ function renderPool() {
       ["CLIMATE", s.CLIM, "Climate Salience"],
       ["ECON OPP", s.OPP, "Economic Opportunity"],
     ].map(([k, v, full]) => `<div class="statrow" title="${full}"><span>${k}</span><span class="bar"><i style="width:${v}%"></i></span><b>${v}</b></div>`).join("");
-    return `<div class="pcard ${drafted ? "drafted" : ""}" style="--cc1:${cat.c1};--cc2:${cat.c2}">
+    const footLeft = syn
+      ? (fit > 0 ? `<div class="synergy">↑ +${fit} home-fit for ${you.flag} ${you.name}</div>` : `<div class="synergy" style="color:var(--ink-faint)">Open pick</div>`)
+      : "";
+    return `<div class="pcard ${drafted ? "drafted" : ""} ${scores ? "" : "noscore"}" style="--cc1:${cat.c1};--cc2:${cat.c2}">
       <div class="pcard-top">
         ${iconSVG(s.glyph, cat.c1, cat.c2, 54)}
         <div class="meta">
@@ -282,11 +306,11 @@ function renderPool() {
           <div class="pname">${s.n}. ${s.name}</div>
           <div class="tagline">“${s.tagline}”</div>
         </div>
-        <div class="ovr-badge"><div class="num">${s.ovr}</div><div class="lbl">OVR</div><div><span class="tier ${s.tier}">TIER ${s.tier}</span></div></div>
+        ${scores ? `<div class="ovr-badge"><div class="num">${s.ovr}</div><div class="lbl">OVR</div><div><span class="tier ${s.tier}">TIER ${s.tier}</span></div></div>` : ""}
       </div>
-      <div class="statbars">${bars}</div>
+      ${scores ? `<div class="statbars">${bars}</div>` : ""}
       <div class="pcard-foot">
-        <div>${fit > 0 ? `<div class="synergy">↑ +${fit} home-fit for ${you.flag} ${you.name}</div>` : `<div class="synergy" style="color:var(--ink-faint)">Open pick</div>`}</div>
+        <div>${footLeft}</div>
         ${drafted
           ? `<div class="drafted-by">Drafted by<br><b>${owner.flag} ${owner.name}</b></div>`
           : `<button class="btn pick red" data-n="${s.n}" ${yourTurn ? "" : "disabled"}>${yourTurn ? "SELECT ▸" : "Wait…"}</button>`}
@@ -310,7 +334,7 @@ function renderRail() {
     rl.innerHTML = team.roster.map(n => {
       const s = SUB_BY_N[n], cat = CATEGORIES[s.cat];
       return `<li style="border-left:3px solid ${cat.c2}">
-        <span class="ovrmini">${s.ovr}</span>
+        <span class="ovrmini" ${showScores() ? "" : `style="color:${cat.c2}"`}>${showScores() ? s.ovr : s.cat}</span>
         <span class="rn"><div class="t">${s.name}</div><div class="c">${s.cat} · ${cat.short}</div></span>
       </li>`;
     }).join("");
@@ -323,7 +347,7 @@ function renderRail() {
     const a = ALLY_BY_ID[e.ally];
     if (e.subN == null) return `<li class="${e.you ? "you" : ""}">R${e.round} — <b>${a.flag} ${a.name}</b> passed (cap)</li>`;
     const s = SUB_BY_N[e.subN];
-    return `<li class="${e.you ? "you" : ""}">R${e.round} — <b>${a.flag} ${a.name}</b> drafted <b>${s.name}</b>${e.syn > 0 ? ` <span style="color:var(--leaf-2)">(+${e.syn} fit)</span>` : ""}</li>`;
+    return `<li class="${e.you ? "you" : ""}">R${e.round} — <b>${a.flag} ${a.name}</b> drafted <b>${s.name}</b>${(showSynergy() && e.syn > 0) ? ` <span style="color:var(--red-2)">(+${e.syn} fit)</span>` : ""}</li>`;
   }).join("");
 
   // live standings
@@ -587,6 +611,7 @@ window.addEventListener("DOMContentLoaded", () => {
   renderSetup();
   populateRounds();
   $("#alliesSel").addEventListener("change", populateRounds);
+  $("#diffSel").addEventListener("change", () => { if (STATE.you) selectAlly(STATE.you); });
   $("#startBtn").addEventListener("click", startDraft);
   $("#restartBtn").addEventListener("click", restart);
   $("#draftAgainBtn").addEventListener("click", restart);

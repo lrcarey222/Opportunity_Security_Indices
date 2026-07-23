@@ -33,6 +33,11 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
 2. **Choose the field** — pick how many allies play (4 → 21) and the number of rounds.
    The rounds available scale automatically so `allies × rounds ≤ 39` sub-sectors. Your
    chosen fighter is always in the draft.
+   - **Difficulty** controls how much scouting info you see while drafting:
+     **Easy** shows everything (sector OVR/stats + home-turf synergy numbers);
+     **Normal** (default) shows only the home-turf synergies and hides sector scores;
+     **Hard** hides all numbers, so you draft on names and judgement alone. Sort options
+     adapt so you can't sort by a hidden number.
 3. **Snake draft** against the AI allies — a pure snake draft, no salary cap. Each of the
    39 sub-sectors is a "player" card with an industry icon, an **OVR** rating, tier
    (S/A/B/C), and four scouting stats rendered as HP life-bars, drawn from the OSI scoring
