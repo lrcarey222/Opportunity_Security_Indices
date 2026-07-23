@@ -112,6 +112,51 @@ function mascotSVG(ally, size = 128) {
   </svg>`;
 }
 
+/* The big boss: China — a shadowed industrial titan, red/gold flag motif.
+   Deliberately an abstract silhouette (no facial features), read as a final boss. */
+function chinaBossSVG(size = 180) {
+  return `
+  <svg viewBox="0 0 160 200" width="${size}" class="boss-svg" role="img" aria-label="China — the big boss">
+    <defs>
+      <radialGradient id="boss-bg" cx="50%" cy="28%" r="85%">
+        <stop offset="0%" stop-color="#d11a2a"/><stop offset="55%" stop-color="#8f0f1c"/><stop offset="100%" stop-color="#2a0206"/>
+      </radialGradient>
+      <linearGradient id="boss-rim" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ff5a3c"/><stop offset="100%" stop-color="#b3121f"/>
+      </linearGradient>
+      <radialGradient id="boss-core" cx="50%" cy="50%" r="60%">
+        <stop offset="0%" stop-color="#ffe14d"/><stop offset="100%" stop-color="#ff6a00" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="160" height="200" fill="url(#boss-bg)"/>
+    <!-- flag stars -->
+    <g fill="#ffde3a">
+      <path d="M22 22 l3 6 6.6 .9 -4.8 4.6 1.2 6.6 -6-3.1 -6 3.1 1.2-6.6 -4.8-4.6 6.6-.9Z"/>
+      <g transform="translate(46 12) scale(.42)"><path d="M0 -8 l2.4 4.8 5.3 .7 -3.9 3.7 1 5.3 -4.8-2.5 -4.8 2.5 1-5.3 -3.9-3.7 5.3-.7Z"/></g>
+      <g transform="translate(54 26) scale(.42)"><path d="M0 -8 l2.4 4.8 5.3 .7 -3.9 3.7 1 5.3 -4.8-2.5 -4.8 2.5 1-5.3 -3.9-3.7 5.3-.7Z"/></g>
+      <g transform="translate(54 44) scale(.42)"><path d="M0 -8 l2.4 4.8 5.3 .7 -3.9 3.7 1 5.3 -4.8-2.5 -4.8 2.5 1-5.3 -3.9-3.7 5.3-.7Z"/></g>
+      <g transform="translate(46 60) scale(.42)"><path d="M0 -8 l2.4 4.8 5.3 .7 -3.9 3.7 1 5.3 -4.8-2.5 -4.8 2.5 1-5.3 -3.9-3.7 5.3-.7Z"/></g>
+    </g>
+    <!-- energy aura -->
+    <ellipse cx="80" cy="120" rx="60" ry="70" fill="url(#boss-core)" opacity=".5"/>
+    <!-- titan silhouette -->
+    <g fill="#0a0304" stroke="url(#boss-rim)" stroke-width="2.4" stroke-linejoin="round">
+      <!-- head -->
+      <path d="M80 44 c-11 0-18 8-18 18 0 8 4 13 4 18 l28 0 c0-5 4-10 4-18 0-10-7-18-18-18Z"/>
+      <!-- crest/horns -->
+      <path d="M62 52 l-9-10 6 13Z M98 52 l9-10 -6 13Z" fill="url(#boss-rim)" stroke="none"/>
+      <!-- torso: broad shoulders, arms crossed -->
+      <path d="M52 92 c-8 4-18 12-22 30 l0 48 100 0 0-48 c-4-18-14-26-22-30 l-14-6 -28 0 -14 6Z"/>
+      <!-- crossed forearms -->
+      <path d="M42 132 l76 22 0 12 -76-22Z" fill="#12070a"/>
+      <path d="M118 132 l-76 22 0 12 76-22Z" fill="#1a0a0e"/>
+    </g>
+    <!-- glowing eyes -->
+    <g fill="#ffe14d"><ellipse cx="73" cy="66" rx="4" ry="2.4"/><ellipse cx="87" cy="66" rx="4" ry="2.4"/></g>
+    <g fill="#fff" opacity=".8"><circle cx="73" cy="66" r="1"/><circle cx="87" cy="66" r="1"/></g>
+  </svg>`;
+}
+
 /* -------------------- INDUSTRY ICON GLYPHS -------------------- */
 /* Each returns SVG inner markup drawn in a 48x48 box, stroke=#fff style. */
 const GLYPHS = {

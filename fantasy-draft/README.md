@@ -45,6 +45,11 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
    sub-sector ranked by the overall draft order (pick #1 = top alliance priority, with the
    ones nobody took shown as "passed over"), a per-category demand summary, and the final
    standings. Rematch with a new fighter.
+6. **Final boss: FIGHT China.** The board shows the alliance's **power** — how close the
+   collective draft got to the maximum-possible stack (the highest-OVR sub-sectors). Hit
+   **FIGHT!** for a Street-Fighter-style bout against China, the big boss: reach the win
+   threshold (**85%** of the max stack) and you K.O. China; fall short and the wall holds.
+   Prioritize high-value sub-sectors to win.
 
 ## The Electro-Industrial Stack (the six "positions")
 

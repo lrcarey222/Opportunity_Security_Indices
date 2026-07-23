@@ -4,6 +4,11 @@
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
+/* Alliance must reach this share of the max-possible stack to beat the big boss.
+   Near-optimal collective drafting lands ~0.89-0.99; sloppy drafting ~0.63-0.80,
+   so 0.85 rewards prioritizing high-value sub-sectors. */
+const WIN_THRESHOLD = 0.85;
+
 const STATE = {
   you: null,              // ally id
   teams: [],              // {ally, roster:[subN], spent, pointsBudget}
@@ -357,8 +362,19 @@ function finishDraft() {
     (top1 ? ` The #1 overall priority was <b>${top1.name}</b>.` : "") +
     `<br><span style="font-size:.9em;color:var(--ink-dim)">🏆 Draft champion: <b style="color:var(--gold)">${champ.flag} ${champ.name}</b> · You finished <b>#${yourRank + 1}</b> of ${N} (grade ${gradeFor(yourRank, N)})</span>`;
 
+  // Alliance "power": how close the collective draft got to the maximum-OVR stack
+  const K = STATE.picks.length;
+  const ovrDesc = SUBSECTORS.map(s => s.ovr).sort((a, b) => b - a);
+  const maxSum = ovrDesc.slice(0, K).reduce((a, b) => a + b, 0) || 1;
+  const minSum = ovrDesc.slice(-K).reduce((a, b) => a + b, 0) || 0;
+  const actualSum = STATE.picks.reduce((a, p) => a + SUB_BY_N[p.subN].ovr, 0);
+  STATE.powerRatio = (actualSum - minSum) / (maxSum - minSum || 1);   // normalized 0..1
+  STATE.powerPct = Math.round(STATE.powerRatio * 100);
+  STATE.allianceWin = STATE.powerRatio >= WIN_THRESHOLD;
+
   renderCategoryPriority();
   renderSectorBoard();
+  renderBossChallenge();
 
   $("#resultsTable").innerHTML = `
     <tr><th>#</th><th>Ally</th><th>Roster</th><th>Sectors</th><th>Coverage</th><th>Stack combo</th><th>Total</th><th>Grade</th></tr>
@@ -426,6 +442,122 @@ function renderSectorBoard() {
       <div class="prio-ally">${owner ? `${owner.flag} ${owner.name}` : "—"}</div>
     </div>`;
   }).join("");
+}
+
+/* ========================= BIG BOSS FIGHT ========================= */
+function renderBossChallenge() {
+  const you = ALLY_BY_ID[STATE.you];
+  const el = $("#bossChallenge");
+  el.innerHTML = `
+    <div class="bc-inner">
+      <div class="bc-side">
+        <div class="bc-portrait" style="--cc1:${you.c1};--cc2:${you.c2}"><div class="flagbg">${you.flag}</div>${portrait(you, 130)}</div>
+        <div class="bc-name">${you.flag} ${you.name}</div>
+      </div>
+      <div class="bc-mid">
+        <div class="bc-power">Alliance power<br><b>${STATE.powerPct}%</b><span>of the maximum stack · needs ${Math.round(WIN_THRESHOLD * 100)}%</span></div>
+        <button class="btn red bc-fight" id="fightBtn">FIGHT! ▶</button>
+        <div class="bc-hint">Take on China — the big boss</div>
+      </div>
+      <div class="bc-side">
+        <div class="bc-portrait boss"><div class="flagbg">🇨🇳</div>${chinaBossSVG(130)}</div>
+        <div class="bc-name">🇨🇳 China · <span style="color:var(--red-2)">BIG BOSS</span></div>
+      </div>
+    </div>`;
+  $("#fightBtn").addEventListener("click", runFight);
+}
+
+function runFight() {
+  const you = ALLY_BY_ID[STATE.you];
+  const win = STATE.allianceWin;
+  const ov = $("#fightOverlay");
+  ov.innerHTML = `
+    <div class="fight-arena">
+      <div class="hpbars">
+        <div class="hp left"><div class="hp-name">${you.flag} ${you.name}</div><div class="hp-track"><i id="hpYou"></i></div></div>
+        <div class="hp-vs">VS</div>
+        <div class="hp right"><div class="hp-name">CHINA 🇨🇳</div><div class="hp-track"><i id="hpBoss"></i></div></div>
+      </div>
+      <div class="stage" id="stage">
+        <div class="fighter yous" id="fYou" style="--cc1:${you.c1};--cc2:${you.c2}"><div class="flagbg">${you.flag}</div>${portrait(you, 240)}</div>
+        <div class="announce" id="announce">ROUND 1</div>
+        <div class="fighter bossf" id="fBoss">${chinaBossSVG(240)}</div>
+      </div>
+      <div class="fight-result" id="fightResult"></div>
+    </div>`;
+  ov.classList.add("show");
+  document.body.classList.add("scrolllock");
+
+  const hpYou = $("#hpYou"), hpBoss = $("#hpBoss"), ann = $("#announce");
+  const fYou = $("#fYou"), fBoss = $("#fBoss"), stage = $("#stage");
+  hpYou.style.width = "100%"; hpBoss.style.width = "100%";
+
+  const seq = win
+    ? [ {a:"you",bh:74}, {a:"boss",yh:80}, {a:"you",bh:46}, {a:"boss",yh:60}, {a:"you",bh:20}, {a:"boss",yh:44}, {a:"you",bh:0} ]
+    : [ {a:"boss",yh:74}, {a:"you",bh:72}, {a:"boss",yh:46}, {a:"you",bh:52}, {a:"boss",yh:20}, {a:"you",bh:38}, {a:"boss",yh:0} ];
+
+  const finish = () => {
+    (win ? fBoss : fYou).classList.add("ko");
+    setTimeout(() => showFightResult(win), 500);
+  };
+
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) {
+    hpYou.style.width = (win ? 44 : 0) + "%";
+    hpBoss.style.width = (win ? 0 : 44) + "%";
+    ann.textContent = "FIGHT!";
+    setTimeout(finish, 350);
+    return;
+  }
+
+  let i = 0;
+  const step = () => {
+    if (i >= seq.length) { finish(); return; }
+    const m = seq[i++];
+    if (m.a === "you") {
+      fYou.classList.add("lunge"); fBoss.classList.add("hit");
+      if (m.bh != null) hpBoss.style.width = m.bh + "%";
+    } else {
+      fBoss.classList.add("lunge"); fYou.classList.add("hit");
+      if (m.yh != null) hpYou.style.width = m.yh + "%";
+    }
+    stage.classList.add("shake");
+    setTimeout(() => {
+      fYou.classList.remove("lunge", "hit"); fBoss.classList.remove("lunge", "hit"); stage.classList.remove("shake");
+    }, 280);
+    setTimeout(step, 640);
+  };
+  setTimeout(() => {
+    ann.textContent = "FIGHT!"; ann.classList.add("flash");
+    setTimeout(() => ann.classList.remove("flash"), 480);
+    step();
+  }, 950);
+}
+
+function showFightResult(win) {
+  const you = ALLY_BY_ID[STATE.you];
+  const ann = $("#announce"); if (ann) ann.style.display = "none";
+  const r = $("#fightResult");
+  r.innerHTML = `
+    <div class="ko-flash">K.O.!</div>
+    <div class="fr-banner ${win ? "win" : "lose"}">${win ? "YOU WIN" : "YOU LOSE"}</div>
+    <div class="fr-sub">${win
+      ? `${you.flag} ${you.name} led the alliance through China's wall — the allied stack was deep enough to win.`
+      : `China's wall held. The alliance's collective stack fell short — draft higher-value sub-sectors and try again.`}</div>
+    <div class="fr-power">Alliance power <b>${STATE.powerPct}%</b> · needed <b>${Math.round(WIN_THRESHOLD * 100)}%</b></div>
+    <div class="fr-actions">
+      <button class="btn gold" id="fightRematch">Fight again ▶</button>
+      <button class="btn ghost" id="fightClose">Back to the board</button>
+    </div>`;
+  r.classList.add("show");
+  $("#fightRematch").addEventListener("click", runFight);
+  $("#fightClose").addEventListener("click", closeFight);
+}
+
+function closeFight() {
+  const ov = $("#fightOverlay");
+  ov.classList.remove("show"); ov.innerHTML = "";
+  document.body.classList.remove("scrolllock");
 }
 
 /* stack-combo synergies: reward vertically-integrated portfolios */
