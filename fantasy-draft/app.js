@@ -8,7 +8,8 @@ const STATE = {
   you: null,              // ally id
   teams: [],              // {ally, roster:[subN], spent, pointsBudget}
   order: [],              // draft order (ally ids) for round 1
-  rounds: 6,
+  numAllies: 12,          // teams in the draft
+  rounds: 3,
   cap: 220,               // salary cap credits per team
   pickIndex: 0,           // global pick counter
   drafted: {},            // subN -> ally id
@@ -81,17 +82,39 @@ function selectAlly(id) {
   detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
+/* Rounds available depend on ally count (allies × rounds must fit 39 sub-sectors) */
+function populateRounds() {
+  const n = parseInt($("#alliesSel").value, 10);
+  const maxR = Math.min(6, Math.max(1, Math.floor(SUBSECTORS.length / n)));
+  const prev = parseInt($("#roundsSel").value, 10) || Math.min(3, maxR);
+  const keep = Math.min(prev, maxR);
+  let opts = "";
+  for (let r = 1; r <= maxR; r++)
+    opts += `<option value="${r}" ${r === keep ? "selected" : ""}>${r} · ${n * r} total picks</option>`;
+  $("#roundsSel").innerHTML = opts;
+}
+
+/* Letter grade scaled to any field size (rank i of n, 0-based) */
+function gradeFor(i, n) {
+  const g = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D"];
+  const p = n <= 1 ? 0 : i / (n - 1);
+  return g[Math.min(g.length - 1, Math.round(p * (g.length - 1)))];
+}
+
 /* ========================= DRAFT SETUP ========================= */
 function startDraft() {
+  STATE.numAllies = parseInt($("#alliesSel").value, 10);
   STATE.rounds   = parseInt($("#roundsSel").value, 10);
   STATE.cap      = parseInt($("#capSel").value, 10);
   STATE.autodelay = $("#speedSel").value === "fast" ? 230 : $("#speedSel").value === "slow" ? 1000 : 620;
 
-  // teams in a randomized-but-deterministic order (seeded by 'you' position)
-  const ids = ALLIES.map(a => a.id);
-  // rotate so 'you' isn't always first; simple shuffle without Math.random
-  const seed = ids.indexOf(STATE.you) + 3;
-  const shuffled = [...ids];
+  // participants: always include your fighter, then fill from roster order
+  const rest = ALLIES.map(a => a.id).filter(id => id !== STATE.you);
+  const participants = [STATE.you, ...rest].slice(0, STATE.numAllies);
+
+  // randomized-but-deterministic draft order (seeded by 'you'; no Math.random)
+  const seed = ALLIES.findIndex(a => a.id === STATE.you) + 3;
+  const shuffled = [...participants];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = (i * seed + 7) % (i + 1);
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -366,7 +389,7 @@ function finishDraft() {
     return t;
   }).sort((a, b) => b.final - a.final);
 
-  const grades = ["A+", "A", "A-", "B+", "B", "B", "B-", "C+", "C", "C", "C-", "D"];
+  const N = sorted.length;
   $("#setupScreen").classList.remove("active");
   $("#draftScreen").classList.remove("active");
   $("#resultsScreen").classList.add("active");
@@ -390,7 +413,7 @@ function finishDraft() {
   const yourRank = sorted.findIndex(t => t.ally === STATE.you);
   $("#resultHead").innerHTML = yourRank === 0
     ? `🏆 <b>${ALLY_BY_ID[STATE.you].name}</b> wins the Allied Industrial Draft!`
-    : `You finished <b>#${yourRank + 1}</b> of ${sorted.length} — grade <span class="grade" style="color:var(--gold)">${grades[yourRank]}</span>`;
+    : `You finished <b>#${yourRank + 1}</b> of ${N} — grade <span class="grade" style="color:var(--gold)">${gradeFor(yourRank, N)}</span>`;
 
   $("#resultsTable").innerHTML = `
     <tr><th>#</th><th>Ally</th><th>Roster</th><th>Sectors</th><th>Coverage</th><th>Stack combo</th><th>Total</th><th>Grade</th></tr>
@@ -405,7 +428,7 @@ function finishDraft() {
         <td>+${t.coverage}</td>
         <td style="color:var(--leaf-2)">+${t.combo}</td>
         <td class="sc">${t.final}</td>
-        <td class="grade">${grades[i]}</td>
+        <td class="grade">${gradeFor(i, N)}</td>
       </tr>`;
     }).join("")}`;
 }
@@ -448,6 +471,8 @@ function restart() {
 window.addEventListener("DOMContentLoaded", () => {
   makeSky();
   renderSetup();
+  populateRounds();
+  $("#alliesSel").addEventListener("change", populateRounds);
   $("#startBtn").addEventListener("click", startDraft);
   $("#restartBtn").addEventListener("click", restart);
   $("#draftAgainBtn").addEventListener("click", restart);

@@ -1,14 +1,15 @@
 # ⚡ Allied Industrial Policy — Fantasy Draft
 
-A playful, ESPN-style **fantasy draft** for the clean-energy supply chain. Instead of
-picking football players, you're an **allied nation** drafting sub-sectors from the
-**Electro-Industrial Stack** — minerals, chips, cells, wires, turbines and molecules.
+A playful, **Street Fighter "PLAYER SELECT"–style** fantasy draft for the clean-energy
+supply chain. Instead of picking fighters, you're an **allied nation** drafting
+sub-sectors from the **Electro-Industrial Stack** — minerals, chips, cells, wires,
+turbines and molecules.
 
-A Solarpunk / anime–themed companion to the **Opportunity Security Indices (OSI)**
-project (Energy Security · Economic Opportunity · Partnership Strength).
+A companion to the **Opportunity Security Indices (OSI)** project
+(Energy Security · Economic Opportunity · Partnership Strength).
 
-![theme](https://img.shields.io/badge/theme-solarpunk%20%C2%B7%20anime-2dd4bf) ·
-12 allies · 39 sub-sectors · snake draft
+![theme](https://img.shields.io/badge/theme-street%20fighter%20arcade-e02440) ·
+up to 21 fighters · 39 sub-sectors · snake draft
 
 ## Play it
 
@@ -24,20 +25,23 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
 
 ## How it works
 
-1. **Pick your Ally** — 12 nations, each with a hand-drawn anime mascot, a signature
-   title, home-turf synergies, and signature sub-sectors that reflect real industrial
-   strengths (Taiwan → advanced logic, South Korea → battery cells, Australia →
-   critical minerals, France → nuclear, Germany → machines, and so on).
-2. **Snake draft** against the other 11 allies (AI). Each of the 39 sub-sectors is a
-   "player" card with an anime industry icon, an **OVR** rating, tier (S/A/B/C), and
-   four scouting stats drawn from the OSI scoring framework: **National Security ·
-   Energy & Economic Security · Climate Salience · Economic Opportunity** (OVR is
-   their mean).
-3. **Salary cap** forces trade-offs — you can't just draft every S-tier chokepoint.
-4. **Score** = fantasy points (OVR + home synergy + signature fit) **+ sector coverage**
+1. **Select your fighter** — a full 21-nation PLAYER SELECT roster, each with a
+   Street-Fighter-style portrait, a signature title (THE LEADER, THE CHIP MASTER, …),
+   home-turf synergies, and signature sub-sectors reflecting real industrial strengths
+   (Taiwan → advanced logic, South Korea → battery cells, Australia → critical minerals,
+   France → nuclear, Germany → machines, and so on).
+2. **Choose the field** — pick how many allies play (4 → 21) and the number of rounds.
+   The rounds available scale automatically so `allies × rounds ≤ 39` sub-sectors. Your
+   chosen fighter is always in the draft.
+3. **Snake draft** against the AI allies. Each of the 39 sub-sectors is a "player" card
+   with an industry icon, an **OVR** rating, tier (S/A/B/C), and four scouting stats
+   rendered as HP life-bars, drawn from the OSI scoring framework: **National Security ·
+   Energy & Economic Security · Climate Salience · Economic Opportunity** (OVR is their mean).
+4. **Salary cap** forces trade-offs — you can't just draft every S-tier chokepoint.
+5. **Score** = fantasy points (OVR + home synergy + signature fit) **+ sector coverage**
    (breadth across the six stack categories) **+ vertical-stack combos** (e.g. owning
    *Silicon → Materials → Chips* or the *full battery stack*).
-5. **Draft grades** and a podium at the end. Run it back with a different ally.
+6. **K.O.!** — draft grades and a WINNER podium at the end. Rematch with a new fighter.
 
 ## The Electro-Industrial Stack (the six "positions")
 
@@ -54,13 +58,16 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
 
 | File | Purpose |
 |---|---|
-| `index.html` | App shell + screens (setup / draft / results) |
-| `styles.css` | Solarpunk/anime theme, fully responsive |
-| `data.js` | The 12 allies, 39 sub-sectors, stats, synergies, scoring |
-| `art.js` | Hand-built inline **SVG**: chibi country mascots + industry icons |
-| `app.js` | Draft engine (snake order, salary cap, AI, scoring, rendering) |
+| `index.html` | App shell + screens (select / draft / results) |
+| `styles.css` | Street Fighter arcade theme, fully responsive |
+| `data.js` | The 21 allies, 39 sub-sectors, stats, synergies, scoring |
+| `avatars.js` | Cropped fighter portraits (WebP data-URIs) per ally |
+| `art.js` | Portrait pipeline + inline **SVG** industry icons and fallback mascots |
+| `app.js` | Draft engine (ally-count/rounds setup, snake order, salary cap, AI, scoring) |
 
-Everything is self-contained inline SVG — there are **no external image, font, or
-script dependencies**, so it runs offline and can be hosted on GitHub Pages as-is.
+The fighter portraits in `avatars.js` are cropped from the roster art
+(`cc86eb27-…png`) and embedded as data-URIs, so the game stays **fully self-contained**
+— no external image, font, or script dependencies — and runs offline or on GitHub Pages
+as-is. If a portrait is ever missing, a hand-built SVG mascot is used as a fallback.
 
-> Stats are for fantasy fun, not investment advice. 🌱⚡
+> Stats are for fantasy fun, not investment advice. ⚡

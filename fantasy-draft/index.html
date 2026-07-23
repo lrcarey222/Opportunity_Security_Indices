@@ -22,7 +22,7 @@
         </div>
       </div>
       <div class="spacer"></div>
-      <div class="pill">12 Fighters · <b>39</b> sub-sectors</div>
+      <div class="pill">21 Fighters · <b>39</b> sub-sectors</div>
     </header>
 
     <!-- ================= SETUP SCREEN ================= -->
@@ -33,7 +33,7 @@
         <div class="choose">Choose Your Ally</div>
         <p class="lede">You are an allied nation entering the arena to assemble a supply-chain dynasty from the <b>Electro-Industrial Stack</b> —
           the minerals, chips, cells, wires, turbines and molecules that power the electro-industrial age.
-          Out-draft eleven rival allies. Own the chokepoints. Build the deepest stack.</p>
+          Out-draft your rival allies. Own the chokepoints. Build the deepest stack.</p>
       </div>
 
       <div class="section-title">
@@ -46,11 +46,19 @@
 
       <div class="setup-actions">
         <button class="btn red" id="startBtn" disabled>Fight! Enter the Draft ▸</button>
-        <div class="field">Rounds
-          <select id="roundsSel">
-            <option value="2">2 · 24 picks</option>
-            <option value="3" selected>3 · 36 picks</option>
+        <div class="field">Allies
+          <select id="alliesSel">
+            <option value="4">4</option>
+            <option value="6">6</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+            <option value="12" selected>12</option>
+            <option value="16">16</option>
+            <option value="21">21 (full roster)</option>
           </select>
+        </div>
+        <div class="field">Rounds
+          <select id="roundsSel"></select>
         </div>
         <div class="field">Salary cap
           <select id="capSel">
