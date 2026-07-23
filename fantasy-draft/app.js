@@ -227,8 +227,10 @@ function renderFilters() {
     <select id="sortSel" title="Sort">
       <option value="value">Sort: Best fit for you</option>
       <option value="ovr">Sort: Overall (OVR)</option>
-      <option value="growth">Sort: Growth upside</option>
-      <option value="choke">Sort: Chokepoint control</option>
+      <option value="nat">Sort: National Security</option>
+      <option value="ensc">Sort: Energy &amp; Economic Security</option>
+      <option value="clim">Sort: Climate Salience</option>
+      <option value="opp">Sort: Economic Opportunity</option>
       <option value="cost">Sort: Cheapest</option>
     </select>`;
   $$(".fbtn", bar).forEach(b => b.addEventListener("click", () => {
@@ -247,11 +249,13 @@ function renderPool() {
 
   let list = SUBSECTORS.filter(s => STATE.filter === "ALL" || s.cat === STATE.filter);
   const sorters = {
-    value: (a, b) => scoreFor(you, b) - scoreFor(you, a),
-    ovr:   (a, b) => b.ovr - a.ovr,
-    growth:(a, b) => b.GROWTH - a.GROWTH,
-    choke: (a, b) => b.CHOKE - a.CHOKE,
-    cost:  (a, b) => a.cost - b.cost,
+    value:  (a, b) => scoreFor(you, b) - scoreFor(you, a),
+    ovr:    (a, b) => b.ovr - a.ovr,
+    nat:    (a, b) => b.NAT - a.NAT,
+    ensc:   (a, b) => b.ENSC - a.ENSC,
+    clim:   (a, b) => b.CLIM - a.CLIM,
+    opp:    (a, b) => b.OPP - a.OPP,
+    cost:   (a, b) => a.cost - b.cost,
   };
   list = [...list].sort(sorters[STATE.sort]);
   // drafted cards sink to the bottom
@@ -263,8 +267,12 @@ function renderPool() {
     const fit = scoreFor(you, s) - s.ovr;
     const affordable = team && canAfford(team, s);
     const owner = drafted ? ALLY_BY_ID[drafted] : null;
-    const bars = [["STRAT", s.STRAT], ["CHOKE", s.CHOKE], ["GROWTH", s.GROWTH], ["MOAT", s.MOAT]]
-      .map(([k, v]) => `<div class="statrow"><span>${k}</span><span class="bar"><i style="width:${v}%"></i></span><b>${v}</b></div>`).join("");
+    const bars = [
+      ["NAT SEC", s.NAT, "National Security"],
+      ["E&E SEC", s.ENSC, "Energy & Economic Security"],
+      ["CLIMATE", s.CLIM, "Climate Salience"],
+      ["ECON OPP", s.OPP, "Economic Opportunity"],
+    ].map(([k, v, full]) => `<div class="statrow" title="${full}"><span>${k}</span><span class="bar"><i style="width:${v}%"></i></span><b>${v}</b></div>`).join("");
     return `<div class="pcard ${drafted ? "drafted" : ""}" style="--cc1:${cat.c1};--cc2:${cat.c2}">
       <div class="pcard-top">
         ${iconSVG(s.glyph, cat.c1, cat.c2, 54)}

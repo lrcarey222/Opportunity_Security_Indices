@@ -31,108 +31,111 @@ const CATEGORIES = {
 
 /* ---------------------------------------------------------------------------
    SUB-SECTORS  (the 39 draftable "players")
-   stats: STRAT (strategic value), CHOKE (chokepoint control),
-          GROWTH (growth upside), CAPEX (capital intensity), MOAT (tech moat)
-   ovr is derived. cost is a salary-cap value (in "GW$" credits).
+   stats (0-100), from the OSI scoring table:
+     NAT  = National Security
+     ENSC = Energy & Economic Security
+     CLIM = Climate Salience
+     OPP  = Economic Opportunity
+   ovr is the mean of the four pillars. cost is a salary-cap value (credits).
    glyph = key into the icon art library.
    --------------------------------------------------------------------------- */
 const SUBSECTORS = [
   // A — Upstream materials and processed inputs
   { n: 1,  cat: "A", name: "Critical-Mineral Extraction", glyph: "pickaxe",
-    tagline: "Dig where the future is buried.", STRAT: 95, CHOKE: 88, GROWTH: 78, CAPEX: 86, MOAT: 62 },
+    tagline: "Dig where the future is buried.", NAT: 80, ENSC: 85, CLIM: 75, OPP: 75 },
   { n: 2,  cat: "A", name: "Battery-Mineral Refining & Chemical Conversion", glyph: "flask",
-    tagline: "The step China quietly owns.", STRAT: 96, CHOKE: 94, GROWTH: 84, CAPEX: 80, MOAT: 74 },
+    tagline: "The step China quietly owns.", NAT: 85, ENSC: 95, CLIM: 85, OPP: 85 },
   { n: 3,  cat: "A", name: "Graphite & Anode Feedstocks", glyph: "layers",
-    tagline: "Every cell needs an anode.", STRAT: 84, CHOKE: 90, GROWTH: 80, CAPEX: 70, MOAT: 66 },
+    tagline: "Every cell needs an anode.", NAT: 85, ENSC: 95, CLIM: 85, OPP: 80 },
   { n: 4,  cat: "A", name: "Rare-Earth Separation & Metallization", glyph: "prism",
-    tagline: "Seventeen elements, one chokepoint.", STRAT: 97, CHOKE: 96, GROWTH: 76, CAPEX: 82, MOAT: 80 },
+    tagline: "Seventeen elements, one chokepoint.", NAT: 100, ENSC: 95, CLIM: 80, OPP: 80 },
   { n: 5,  cat: "A", name: "Copper & Aluminum Materials", glyph: "ingot",
-    tagline: "You cannot electrify without them.", STRAT: 92, CHOKE: 70, GROWTH: 74, CAPEX: 84, MOAT: 55 },
+    tagline: "You cannot electrify without them.", NAT: 75, ENSC: 90, CLIM: 85, OPP: 75 },
   { n: 6,  cat: "A", name: "Electrical & Specialty Steels", glyph: "coil",
-    tagline: "Grain-oriented steel = every transformer.", STRAT: 86, CHOKE: 82, GROWTH: 68, CAPEX: 78, MOAT: 72 },
+    tagline: "Grain-oriented steel = every transformer.", NAT: 85, ENSC: 90, CLIM: 80, OPP: 75 },
   { n: 7,  cat: "A", name: "Polysilicon & High-Purity Silicon", glyph: "droplet",
-    tagline: "9-nines pure or bust.", STRAT: 88, CHOKE: 86, GROWTH: 82, CAPEX: 88, MOAT: 78 },
+    tagline: "9-nines pure or bust.", NAT: 70, ENSC: 85, CLIM: 90, OPP: 70 },
   { n: 8,  cat: "A", name: "Semiconductor & Specialty Electronic Materials", glyph: "wafer",
-    tagline: "Photoresists, gases, and quiet monopolies.", STRAT: 90, CHOKE: 92, GROWTH: 80, CAPEX: 74, MOAT: 88 },
+    tagline: "Photoresists, gases, and quiet monopolies.", NAT: 95, ENSC: 90, CLIM: 60, OPP: 85 },
   { n: 9,  cat: "A", name: "Uranium Conversion, Enrichment & Nuclear Fuels", glyph: "hex",
-    tagline: "Firm power starts here.", STRAT: 91, CHOKE: 89, GROWTH: 70, CAPEX: 90, MOAT: 84 },
+    tagline: "Firm power starts here.", NAT: 100, ENSC: 95, CLIM: 85, OPP: 70 },
 
   // B — Semiconductors, electrochemical components, electric machines
   { n: 10, cat: "B", name: "Logic, Memory, Analog & Mature-Node Semiconductors", glyph: "cpu",
-    tagline: "The most valuable rocks on Earth.", STRAT: 99, CHOKE: 95, GROWTH: 90, CAPEX: 96, MOAT: 97 },
+    tagline: "The most valuable rocks on Earth.", NAT: 100, ENSC: 100, CLIM: 60, OPP: 95 },
   { n: 11, cat: "B", name: "Power Semiconductors", glyph: "sic",
-    tagline: "SiC & GaN: efficiency, weaponized.", STRAT: 93, CHOKE: 84, GROWTH: 94, CAPEX: 82, MOAT: 88 },
+    tagline: "SiC & GaN: efficiency, weaponized.", NAT: 95, ENSC: 95, CLIM: 90, OPP: 95 },
   { n: 12, cat: "B", name: "Power Electronics & Conversion Equipment", glyph: "inverter",
-    tagline: "Inverters translate the whole stack.", STRAT: 88, CHOKE: 72, GROWTH: 88, CAPEX: 68, MOAT: 76 },
+    tagline: "Inverters translate the whole stack.", NAT: 90, ENSC: 95, CLIM: 90, OPP: 90 },
   { n: 13, cat: "B", name: "Sensors, Controls & Industrial Electronics", glyph: "sensor",
-    tagline: "The nervous system of the factory.", STRAT: 82, CHOKE: 66, GROWTH: 84, CAPEX: 58, MOAT: 74 },
+    tagline: "The nervous system of the factory.", NAT: 100, ENSC: 95, CLIM: 65, OPP: 90 },
   { n: 14, cat: "B", name: "Battery Cathode Precursors & Active Materials", glyph: "cathode",
-    tagline: "Where cell chemistry is decided.", STRAT: 90, CHOKE: 88, GROWTH: 89, CAPEX: 78, MOAT: 79 },
+    tagline: "Where cell chemistry is decided.", NAT: 85, ENSC: 95, CLIM: 90, OPP: 90 },
   { n: 15, cat: "B", name: "Electrolytes, Separators & Current Collectors", glyph: "membrane",
-    tagline: "The unglamorous cell internals.", STRAT: 83, CHOKE: 85, GROWTH: 82, CAPEX: 66, MOAT: 77 },
+    tagline: "The unglamorous cell internals.", NAT: 80, ENSC: 90, CLIM: 85, OPP: 80 },
   { n: 16, cat: "B", name: "Battery Cells, Modules, Packs & BMS", glyph: "battery",
-    tagline: "The gigafactory trophy pick.", STRAT: 95, CHOKE: 80, GROWTH: 93, CAPEX: 92, MOAT: 82 },
+    tagline: "The gigafactory trophy pick.", NAT: 95, ENSC: 95, CLIM: 95, OPP: 95 },
   { n: 17, cat: "B", name: "Stationary & Long-Duration Energy Storage", glyph: "storage",
-    tagline: "Firming the intermittent future.", STRAT: 87, CHOKE: 60, GROWTH: 95, CAPEX: 74, MOAT: 70 },
+    tagline: "Firming the intermittent future.", NAT: 75, ENSC: 95, CLIM: 95, OPP: 90 },
   { n: 18, cat: "B", name: "Permanent Magnets", glyph: "magnet",
-    tagline: "No magnet, no motor.", STRAT: 92, CHOKE: 95, GROWTH: 80, CAPEX: 72, MOAT: 86 },
+    tagline: "No magnet, no motor.", NAT: 100, ENSC: 95, CLIM: 85, OPP: 85 },
   { n: 19, cat: "B", name: "Electric Motors, Generators & Actuators", glyph: "motor",
-    tagline: "Torque is destiny.", STRAT: 85, CHOKE: 68, GROWTH: 83, CAPEX: 70, MOAT: 72 },
+    tagline: "Torque is destiny.", NAT: 95, ENSC: 95, CLIM: 90, OPP: 95 },
 
   // C — Grid and electricity-system equipment
   { n: 20, cat: "C", name: "Transformers", glyph: "transformer",
-    tagline: "36-month lead times. Draft early.", STRAT: 94, CHOKE: 86, GROWTH: 79, CAPEX: 80, MOAT: 74 },
+    tagline: "36-month lead times. Draft early.", NAT: 90, ENSC: 100, CLIM: 90, OPP: 85 },
   { n: 21, cat: "C", name: "Switchgear, Breakers & Protection Systems", glyph: "switch",
-    tagline: "The grid's circuit-breaker moat.", STRAT: 84, CHOKE: 74, GROWTH: 76, CAPEX: 70, MOAT: 72 },
+    tagline: "The grid's circuit-breaker moat.", NAT: 90, ENSC: 100, CLIM: 90, OPP: 85 },
   { n: 22, cat: "C", name: "Cables, Conductors & HV Transmission", glyph: "cable",
-    tagline: "Copper by the continent.", STRAT: 88, CHOKE: 70, GROWTH: 82, CAPEX: 84, MOAT: 68 },
+    tagline: "Copper by the continent.", NAT: 80, ENSC: 100, CLIM: 95, OPP: 90 },
   { n: 23, cat: "C", name: "HVDC & Flexible Transmission Systems", glyph: "hvdc",
-    tagline: "Move gigawatts across a continent.", STRAT: 90, CHOKE: 82, GROWTH: 88, CAPEX: 86, MOAT: 85 },
+    tagline: "Move gigawatts across a continent.", NAT: 80, ENSC: 95, CLIM: 95, OPP: 90 },
   { n: 24, cat: "C", name: "Digital Grids & Grid-Enhancing Tech", glyph: "digitalgrid",
-    tagline: "Squeeze 30% more from the wires you have.", STRAT: 80, CHOKE: 55, GROWTH: 92, CAPEX: 52, MOAT: 70 },
+    tagline: "Squeeze 30% more from the wires you have.", NAT: 95, ENSC: 100, CLIM: 95, OPP: 95 },
   { n: 25, cat: "C", name: "Microgrids & Resilient Power Systems", glyph: "microgrid",
-    tagline: "Islands of power when the grid fails.", STRAT: 78, CHOKE: 52, GROWTH: 90, CAPEX: 60, MOAT: 64 },
+    tagline: "Islands of power when the grid fails.", NAT: 95, ENSC: 95, CLIM: 80, OPP: 80 },
 
   // D — Power-generation technologies
   { n: 26, cat: "D", name: "Solar Photovoltaic Manufacturing", glyph: "solar",
-    tagline: "Cheapest electrons in history.", STRAT: 93, CHOKE: 90, GROWTH: 91, CAPEX: 82, MOAT: 66 },
+    tagline: "Cheapest electrons in history.", NAT: 50, ENSC: 90, CLIM: 100, OPP: 80 },
   { n: 27, cat: "D", name: "Onshore Wind Turbine Manufacturing", glyph: "wind",
-    tagline: "The mature-tech workhorse.", STRAT: 82, CHOKE: 64, GROWTH: 72, CAPEX: 78, MOAT: 68 },
+    tagline: "The mature-tech workhorse.", NAT: 50, ENSC: 80, CLIM: 90, OPP: 65 },
   { n: 28, cat: "D", name: "Offshore & Floating Wind Systems", glyph: "offshore",
-    tagline: "Gigawatts from the deep water.", STRAT: 86, CHOKE: 72, GROWTH: 87, CAPEX: 92, MOAT: 80 },
+    tagline: "Gigawatts from the deep water.", NAT: 65, ENSC: 80, CLIM: 90, OPP: 75 },
   { n: 29, cat: "D", name: "Nuclear Reactor Systems & Components", glyph: "reactor",
-    tagline: "Firm, dense, and back in fashion.", STRAT: 95, CHOKE: 84, GROWTH: 88, CAPEX: 97, MOAT: 90 },
+    tagline: "Firm, dense, and back in fashion.", NAT: 95, ENSC: 95, CLIM: 95, OPP: 90 },
   { n: 30, cat: "D", name: "Geothermal & Subsurface Energy", glyph: "geo",
-    tagline: "Drill for heat, not oil.", STRAT: 79, CHOKE: 58, GROWTH: 89, CAPEX: 80, MOAT: 76 },
+    tagline: "Drill for heat, not oil.", NAT: 70, ENSC: 90, CLIM: 90, OPP: 85 },
   { n: 31, cat: "D", name: "Other Firm & Flexible Power Equipment", glyph: "turbine",
-    tagline: "Turbines that fill the gaps.", STRAT: 80, CHOKE: 62, GROWTH: 70, CAPEX: 76, MOAT: 66 },
+    tagline: "Turbines that fill the gaps.", NAT: 80, ENSC: 95, CLIM: 60, OPP: 75 },
 
   // E — Electrified end-use systems
   { n: 32, cat: "E", name: "Electric Vehicles & Electric Drivetrains", glyph: "ev",
-    tagline: "The consumer face of the transition.", STRAT: 94, CHOKE: 68, GROWTH: 92, CAPEX: 90, MOAT: 78 },
+    tagline: "The consumer face of the transition.", NAT: 80, ENSC: 85, CLIM: 95, OPP: 100 },
   { n: 33, cat: "E", name: "Charging & Grid-Interactive Mobility", glyph: "charger",
-    tagline: "Every EV needs a plug.", STRAT: 78, CHOKE: 50, GROWTH: 90, CAPEX: 58, MOAT: 60 },
+    tagline: "Every EV needs a plug.", NAT: 50, ENSC: 80, CLIM: 90, OPP: 85 },
   { n: 34, cat: "E", name: "Heat Pumps, Compressors & Advanced Cooling", glyph: "heatpump",
-    tagline: "3x efficiency, quietly enormous.", STRAT: 85, CHOKE: 66, GROWTH: 90, CAPEX: 62, MOAT: 72 },
+    tagline: "3x efficiency, quietly enormous.", NAT: 40, ENSC: 75, CLIM: 95, OPP: 85 },
   { n: 35, cat: "E", name: "Industrial Electrification & Process Heat", glyph: "furnace",
-    tagline: "Decarbonize the hard-to-abate.", STRAT: 83, CHOKE: 60, GROWTH: 86, CAPEX: 74, MOAT: 74 },
+    tagline: "Decarbonize the hard-to-abate.", NAT: 75, ENSC: 90, CLIM: 100, OPP: 95 },
   { n: 36, cat: "E", name: "Data-Center Power & Cooling Systems", glyph: "datacenter",
-    tagline: "The AI-era load monster.", STRAT: 91, CHOKE: 62, GROWTH: 98, CAPEX: 84, MOAT: 76 },
+    tagline: "The AI-era load monster.", NAT: 100, ENSC: 100, CLIM: 65, OPP: 100 },
 
   // F — Molecules, materials, and carbon management
   { n: 37, cat: "F", name: "Electrolysers & Hydrogen Production", glyph: "electrolyser",
-    tagline: "Split water, store sunshine.", STRAT: 84, CHOKE: 64, GROWTH: 93, CAPEX: 80, MOAT: 78 },
+    tagline: "Split water, store sunshine.", NAT: 65, ENSC: 75, CLIM: 85, OPP: 75 },
   { n: 38, cat: "F", name: "Hydrogen Derivatives & Low-Emissions Fuels", glyph: "fuel",
-    tagline: "Ammonia, e-methanol, SAF.", STRAT: 80, CHOKE: 58, GROWTH: 88, CAPEX: 78, MOAT: 70 },
+    tagline: "Ammonia, e-methanol, SAF.", NAT: 75, ENSC: 80, CLIM: 95, OPP: 80 },
   { n: 39, cat: "F", name: "Near-Zero Materials & Carbon Management", glyph: "carbon",
-    tagline: "Green steel, cement, and capture.", STRAT: 82, CHOKE: 56, GROWTH: 85, CAPEX: 82, MOAT: 74 },
+    tagline: "Green steel, cement, and carbon capture.", NAT: 75, ENSC: 85, CLIM: 100, OPP: 90 },
 ];
 
-// Derive OVR + cost for each sub-sector.
+// Derive OVR + cost + tier for each sub-sector (OVR = mean of the four pillars).
 SUBSECTORS.forEach(s => {
-  s.ovr = Math.round((s.STRAT * 0.30) + (s.CHOKE * 0.24) + (s.GROWTH * 0.24) + (s.MOAT * 0.16) + (s.CAPEX * 0.06));
+  s.ovr = Math.round((s.NAT + s.ENSC + s.CLIM + s.OPP) / 4);
   s.cost = Math.max(6, Math.round((s.ovr - 62) * 3.4));   // salary-cap credits
-  s.tier = s.ovr >= 92 ? "S" : s.ovr >= 87 ? "A" : s.ovr >= 82 ? "B" : "C";
+  s.tier = s.ovr >= 93 ? "S" : s.ovr >= 88 ? "A" : s.ovr >= 80 ? "B" : "C";
 });
 
 /* ---------------------------------------------------------------------------

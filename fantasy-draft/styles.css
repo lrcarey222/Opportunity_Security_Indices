@@ -152,7 +152,7 @@ select,input[type=text]{ font-family:var(--font); background:rgba(0,0,0,.35); co
 .tier.S{ background:var(--tier-s);} .tier.A{ background:var(--tier-a);} .tier.B{ background:var(--tier-b);} .tier.C{ background:var(--tier-c);}
 
 .statbars{ margin:12px 0 10px; display:grid; gap:5px; }
-.statrow{ display:grid; grid-template-columns:58px 1fr 26px; align-items:center; gap:8px; font-size:10px; letter-spacing:.5px; color:var(--ink-faint); }
+.statrow{ display:grid; grid-template-columns:64px 1fr 26px; align-items:center; gap:8px; font-size:9.5px; letter-spacing:.3px; color:var(--ink-faint); white-space:nowrap; }
 .bar{ height:6px; border-radius:6px; background:rgba(255,255,255,.08); overflow:hidden; }
 .bar > i{ display:block; height:100%; border-radius:6px; background:linear-gradient(90deg,var(--cc1),var(--cc2)); }
 .statrow b{ color:var(--ink-dim); text-align:right; font-size:11px; }

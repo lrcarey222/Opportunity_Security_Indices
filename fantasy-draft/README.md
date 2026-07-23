@@ -30,7 +30,9 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
    critical minerals, France → nuclear, Germany → machines, and so on).
 2. **Snake draft** against the other 11 allies (AI). Each of the 39 sub-sectors is a
    "player" card with an anime industry icon, an **OVR** rating, tier (S/A/B/C), and
-   five scouting stats: **STRAT · CHOKE · GROWTH · MOAT · CAPEX**.
+   four scouting stats drawn from the OSI scoring framework: **National Security ·
+   Energy & Economic Security · Climate Salience · Economic Opportunity** (OVR is
+   their mean).
 3. **Salary cap** forces trade-offs — you can't just draft every S-tier chokepoint.
 4. **Score** = fantasy points (OVR + home synergy + signature fit) **+ sector coverage**
    (breadth across the six stack categories) **+ vertical-stack combos** (e.g. owning
