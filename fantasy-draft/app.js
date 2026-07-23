@@ -460,91 +460,78 @@ function renderBossChallenge() {
         <div class="bc-hint">Take on China — the big boss</div>
       </div>
       <div class="bc-side">
-        <div class="bc-portrait boss"><div class="flagbg">🇨🇳</div>${chinaBossSVG(130)}</div>
+        <div class="bc-portrait boss"><img class="portrait-fill" src="${FIGHT_FRAMES.L2}" alt="China — the big boss"></div>
         <div class="bc-name">🇨🇳 China · <span style="color:var(--red-2)">BIG BOSS</span></div>
       </div>
     </div>`;
   $("#fightBtn").addEventListener("click", runFight);
 }
 
+const FIGHT_CAPS = {
+  win:  ["Round 1 — Idle / Standoff", "China Attacks", "Allies Defend Together", "China Weakens", "China Returns to Human", "Allies Win!"],
+  lose: ["Round 1 — Idle / Standoff", "China Powers Up", "Transform into Dragon", "Full Dragon", "Dragon Attack", "China Wins"],
+};
+
 function runFight() {
-  const you = ALLY_BY_ID[STATE.you];
   const win = STATE.allianceWin;
+  const frames = win ? ["W1", "W2", "W3", "W4", "W5", "W6"] : ["L1", "L2", "L3", "L4", "L5", "L6"];
+  const caps = win ? FIGHT_CAPS.win : FIGHT_CAPS.lose;
   const ov = $("#fightOverlay");
   ov.innerHTML = `
     <div class="fight-arena">
-      <div class="hpbars">
-        <div class="hp left"><div class="hp-name">${you.flag} ${you.name}</div><div class="hp-track"><i id="hpYou"></i></div></div>
-        <div class="hp-vs">VS</div>
-        <div class="hp right"><div class="hp-name">CHINA 🇨🇳</div><div class="hp-track"><i id="hpBoss"></i></div></div>
+      <div class="film">
+        <img class="framebg" id="frameBg" alt="">
+        <img class="frame" id="frameA" alt="">
+        <img class="frame" id="frameB" alt="">
       </div>
-      <div class="stage" id="stage">
-        <div class="fighter yous" id="fYou" style="--cc1:${you.c1};--cc2:${you.c2}"><div class="flagbg">${you.flag}</div>${portrait(you, 240)}</div>
-        <div class="announce" id="announce">ROUND 1</div>
-        <div class="fighter bossf" id="fBoss">${chinaBossSVG(240)}</div>
-      </div>
+      <div class="film-cap" id="filmCap"></div>
+      <div class="film-dots" id="filmDots">${frames.map(() => "<i></i>").join("")}</div>
+      <button class="fight-x" id="fightX" title="Skip to result" aria-label="Skip to result">✕</button>
       <div class="fight-result" id="fightResult"></div>
     </div>`;
   ov.classList.add("show");
   document.body.classList.add("scrolllock");
 
-  const hpYou = $("#hpYou"), hpBoss = $("#hpBoss"), ann = $("#announce");
-  const fYou = $("#fYou"), fBoss = $("#fBoss"), stage = $("#stage");
-  hpYou.style.width = "100%"; hpBoss.style.width = "100%";
-
-  const seq = win
-    ? [ {a:"you",bh:74}, {a:"boss",yh:80}, {a:"you",bh:46}, {a:"boss",yh:60}, {a:"you",bh:20}, {a:"boss",yh:44}, {a:"you",bh:0} ]
-    : [ {a:"boss",yh:74}, {a:"you",bh:72}, {a:"boss",yh:46}, {a:"you",bh:52}, {a:"boss",yh:20}, {a:"you",bh:38}, {a:"boss",yh:0} ];
-
-  const finish = () => {
-    (win ? fBoss : fYou).classList.add("ko");
-    setTimeout(() => showFightResult(win), 500);
+  const A = $("#frameA"), B = $("#frameB"), bg = $("#frameBg"), cap = $("#filmCap"), dots = $$("#filmDots i");
+  let showA = true;
+  const setFrame = (i) => {
+    const incoming = showA ? A : B, outgoing = showA ? B : A;
+    incoming.src = FIGHT_FRAMES[frames[i]];
+    bg.src = FIGHT_FRAMES[frames[i]];
+    incoming.classList.add("on"); outgoing.classList.remove("on");
+    showA = !showA;
+    cap.textContent = caps[i];
+    dots.forEach((d, di) => d.classList.toggle("done", di <= i));
   };
 
+  let ended = false;
+  const end = () => { if (ended) return; ended = true; showFightResult(win); };
+  $("#fightX").addEventListener("click", () => { setFrame(frames.length - 1); end(); });
+
+  setFrame(0);
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduce) {
-    hpYou.style.width = (win ? 44 : 0) + "%";
-    hpBoss.style.width = (win ? 0 : 44) + "%";
-    ann.textContent = "FIGHT!";
-    setTimeout(finish, 350);
-    return;
-  }
+  if (reduce) { setTimeout(() => { setFrame(frames.length - 1); end(); }, 400); return; }
 
-  let i = 0;
-  const step = () => {
-    if (i >= seq.length) { finish(); return; }
-    const m = seq[i++];
-    if (m.a === "you") {
-      fYou.classList.add("lunge"); fBoss.classList.add("hit");
-      if (m.bh != null) hpBoss.style.width = m.bh + "%";
-    } else {
-      fBoss.classList.add("lunge"); fYou.classList.add("hit");
-      if (m.yh != null) hpYou.style.width = m.yh + "%";
-    }
-    stage.classList.add("shake");
-    setTimeout(() => {
-      fYou.classList.remove("lunge", "hit"); fBoss.classList.remove("lunge", "hit"); stage.classList.remove("shake");
-    }, 280);
-    setTimeout(step, 640);
+  let i = 1;
+  const tick = () => {
+    if (ended) return;
+    if (i >= frames.length) { setTimeout(end, 1200); return; }
+    setFrame(i);
+    // punch-zoom on the action frames
+    const cur = showA ? B : A;
+    cur.classList.remove("punch"); void cur.offsetWidth; cur.classList.add("punch");
+    i++;
+    setTimeout(tick, 1050);
   };
-  setTimeout(() => {
-    ann.textContent = "FIGHT!"; ann.classList.add("flash");
-    setTimeout(() => ann.classList.remove("flash"), 480);
-    step();
-  }, 950);
+  setTimeout(tick, 1050);
 }
 
 function showFightResult(win) {
-  const you = ALLY_BY_ID[STATE.you];
-  const ann = $("#announce"); if (ann) ann.style.display = "none";
   const r = $("#fightResult");
+  if (r.classList.contains("show")) return;
   r.innerHTML = `
-    <div class="ko-flash">K.O.!</div>
-    <div class="fr-banner ${win ? "win" : "lose"}">${win ? "YOU WIN" : "YOU LOSE"}</div>
-    <div class="fr-sub">${win
-      ? `${you.flag} ${you.name} led the alliance through China's wall — the allied stack was deep enough to win.`
-      : `China's wall held. The alliance's collective stack fell short — draft higher-value sub-sectors and try again.`}</div>
-    <div class="fr-power">Alliance power <b>${STATE.powerPct}%</b> · needed <b>${Math.round(WIN_THRESHOLD * 100)}%</b></div>
+    <div class="fr-tag ${win ? "win" : "lose"}">${win ? "Victory" : "Defeat"}</div>
+    <div class="fr-power">Alliance power <b>${STATE.powerPct}%</b> · needed <b>${Math.round(WIN_THRESHOLD * 100)}%</b> to beat China</div>
     <div class="fr-actions">
       <button class="btn gold" id="fightRematch">Fight again ▶</button>
       <button class="btn ghost" id="fightClose">Back to the board</button>

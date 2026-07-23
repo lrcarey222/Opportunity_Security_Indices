@@ -47,9 +47,11 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
    standings. Rematch with a new fighter.
 6. **Final boss: FIGHT China.** The board shows the alliance's **power** — how close the
    collective draft got to the maximum-possible stack (the highest-OVR sub-sectors). Hit
-   **FIGHT!** for a Street-Fighter-style bout against China, the big boss: reach the win
-   threshold (**85%** of the max stack) and you K.O. China; fall short and the wall holds.
-   Prioritize high-value sub-sectors to win.
+   **FIGHT!** and a six-frame **storyboard animation** plays out the bout against China, the
+   big boss. Reach the win threshold (**85%** of the max stack) and the *Allies Win* sequence
+   plays (China attacks → allies defend → China returns to human → allies win); fall short and
+   the *China Wins* sequence plays (China powers up → transforms into a dragon → dragon
+   attack → China wins). Prioritize high-value sub-sectors to win.
 
 ## The Electro-Industrial Stack (the six "positions")
 
@@ -70,6 +72,7 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
 | `styles.css` | Street Fighter arcade theme, fully responsive |
 | `data.js` | The 21 allies, 39 sub-sectors, stats, synergies, scoring |
 | `avatars.js` | Cropped fighter portraits (WebP data-URIs) per ally |
+| `fight-frames.js` | 12 boss-fight keyframes (WebP data-URIs) cropped from the storyboard |
 | `art.js` | Portrait pipeline + inline **SVG** industry icons and fallback mascots |
 | `app.js` | Draft engine (ally-count/rounds setup, snake order, salary cap, AI, scoring) |
 
