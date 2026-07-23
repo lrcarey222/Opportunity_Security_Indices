@@ -21,6 +21,30 @@ const EMBLEMS = {
   shield:  `<path d="M0,-8 7,-5 7,1 C7,5 4,7 0,8 -4,7 -7,5 -7,1 L-7,-5Z"/>`,
 };
 
+/* ---------------------------------------------------------------------------
+   FIGHTER PORTRAITS
+   AVATARS maps an ally id -> an image URL / data-URI of its Street-Fighter-style
+   portrait. When present it is used everywhere a mascot is shown; otherwise we
+   fall back to the hand-built SVG chibi so the game always renders.
+   (Populated from PORTRAITS in avatars.js when the roster art is available.)
+   --------------------------------------------------------------------------- */
+const AVATARS = (typeof PORTRAITS !== "undefined") ? PORTRAITS : {};
+
+/* Portrait markup that fills its container.
+   variant: "fill" (object-fit cover, for tiles/podium) or "chip" (round, HUD). */
+function portrait(ally, size = 128, variant = "fill") {
+  const src = AVATARS[ally.id];
+  if (src) {
+    if (variant === "chip") {
+      return `<img class="portrait-chip" src="${src}" alt="${ally.name}"
+                width="${size}" height="${size}" loading="lazy" />`;
+    }
+    return `<img class="portrait-fill" src="${src}" alt="${ally.name} — ${ally.title}" loading="lazy" />`;
+  }
+  // SVG fallback
+  return mascotSVG(ally, size);
+}
+
 /* Build a chibi anime mascot badge for a country.
    Each call gets a unique id-suffix so paint servers never collide across
    multiple mascots on the same page (e.g. hidden setup screen + podium). */

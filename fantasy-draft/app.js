@@ -39,14 +39,16 @@ function makeSky() {
 function renderSetup() {
   const grid = $("#allyGrid");
   grid.innerHTML = ALLIES.map(a => {
-    const strengths = Object.entries(a.home).sort((x, y) => y[1] - x[1]).slice(0, 3)
-      .map(([c]) => `<span class="chipcat" style="background:${CATEGORIES[c].c2}">${CATEGORIES[c].short}</span>`).join("");
     return `<div class="ally-card" data-id="${a.id}" style="--cc1:${a.c1};--cc2:${a.c2}">
-      ${mascotSVG(a, 118)}
-      <div class="cname">${a.flag} ${a.name}</div>
-      <div class="mname">★ ${a.mascot}</div>
-      <div class="ctitle">${a.title}</div>
-      <div class="strengths">${strengths}</div>
+      <div class="ready-stamp">Ready!</div>
+      <div class="tile-portrait">
+        <div class="flagbg">${a.flag}</div>
+        ${portrait(a, 118)}
+      </div>
+      <div class="label">
+        <div class="cname">${a.name}</div>
+        <div class="ctitle">${a.title}</div>
+      </div>
     </div>`;
   }).join("");
 
@@ -64,15 +66,15 @@ function selectAlly(id) {
   const sigs = a.picks.map(n => SUB_BY_N[n].name).join(" · ");
   detail.style.setProperty("--cc1", a.c1); detail.style.setProperty("--cc2", a.c2);
   detail.innerHTML = `
-    <div>${mascotSVG(a, 150)}</div>
-    <div>
-      <h3>${a.flag} ${a.name} — <span style="color:var(--gold)">${a.mascot}</span></h3>
-      <div class="ctitle" style="letter-spacing:1px;color:var(--teal);text-transform:uppercase;font-size:12px;margin-bottom:6px">${a.title}</div>
+    <div class="dportrait"><div class="flagbg">${a.flag}</div>${portrait(a, 170)}</div>
+    <div class="dbody">
+      <h3>${a.flag} ${a.name}</h3>
+      <div class="dtitle">${a.title} · <span style="color:var(--ink-dim)">${a.mascot}</span></div>
       <p class="bio">${a.bio}</p>
-      <div style="margin:10px 0 4px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint)">Home-turf synergies</div>
+      <div style="margin:10px 0 4px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);font-family:var(--font-disp);font-style:italic">Home-turf synergies</div>
       <div class="strengths" style="justify-content:flex-start">${strengths}</div>
-      <div style="margin:10px 0 4px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint)">Signature sub-sectors (+6 fit)</div>
-      <div class="bio" style="color:var(--leaf-2);font-size:12.5px">${sigs}</div>
+      <div style="margin:10px 0 4px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);font-family:var(--font-disp);font-style:italic">Signature sub-sectors (+6 fit)</div>
+      <div class="bio" style="color:var(--red-2);font-size:12.5px">${sigs}</div>
     </div>`;
   detail.style.display = "grid";
   $("#startBtn").disabled = false;
@@ -210,9 +212,9 @@ function updateOnClock(id) {
   const oc = $("#onclock");
   oc.classList.toggle("you", id === STATE.you);
   oc.innerHTML = `
-    ${mascotSVG(a, 46)}
-    <div><div class="lbl">On the clock — Round ${currentRound()}/${STATE.rounds}</div>
-    <div class="who">${a.flag} ${a.name} ${id === STATE.you ? "· <span style='color:var(--gold)'>YOU</span>" : ""}</div></div>`;
+    ${portrait(a, 52, "chip")}
+    <div><div class="lbl">${id === STATE.you ? "Your pick — Fight!" : "On the clock"} · Round ${currentRound()}/${STATE.rounds}</div>
+    <div class="who">${a.flag} ${a.name} ${id === STATE.you ? "<span class='you-tag'>· YOU</span>" : ""}</div></div>`;
   $("#roundPill").innerHTML = `Pick <b>${Math.min(STATE.pickIndex + 1, totalPicks())}</b> / ${totalPicks()}`;
 }
 
@@ -291,7 +293,7 @@ function renderPool() {
         </div>
         ${drafted
           ? `<div style="font-size:12px;color:var(--ink-faint);text-align:right">Drafted by<br><b style="color:var(--ink)">${owner.flag} ${owner.name}</b></div>`
-          : `<button class="btn pick ${affordable ? "" : "gold"}" data-n="${s.n}" ${yourTurn && affordable ? "" : "disabled"}>${yourTurn ? (affordable ? "DRAFT ✦" : "Over cap") : "Wait…"}</button>`}
+          : `<button class="btn pick ${affordable ? "red" : "ghost"}" data-n="${s.n}" ${yourTurn && affordable ? "" : "disabled"}>${yourTurn ? (affordable ? "SELECT ▸" : "Over cap") : "Wait…"}</button>`}
       </div>
     </div>`;
   }).join("");
@@ -374,11 +376,14 @@ function finishDraft() {
   const posClass = ["p2", "p1", "p3"];
   $("#podium").innerHTML = podium.map((t, i) => {
     const a = ALLY_BY_ID[t.ally];
-    return `<div class="slot ${posClass[i]}">
-      ${mascotSVG(a, i === 1 ? 108 : 84)}
-      <div class="rank">${i === 1 ? "🥇" : i === 0 ? "🥈" : "🥉"}</div>
-      <div style="font-family:var(--font-disp);font-size:15px">${a.flag} ${a.name}</div>
-      <div class="score">${t.final} pts</div>
+    return `<div class="slot ${posClass[i]}" style="--cc1:${a.c1};--cc2:${a.c2}">
+      ${i === 1 ? '<div class="winner-banner">Winner</div>' : ""}
+      <div class="pod-portrait"><div class="flagbg">${a.flag}</div>${portrait(a, i === 1 ? 150 : 120)}</div>
+      <div class="plabel">
+        <div class="rank">${i === 1 ? "🥇" : i === 0 ? "🥈" : "🥉"}</div>
+        <div class="pname2">${a.flag} ${a.name}</div>
+        <div class="score">${t.final} PTS</div>
+      </div>
     </div>`;
   }).join("");
 
