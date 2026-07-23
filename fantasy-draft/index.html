@@ -60,13 +60,6 @@
         <div class="field">Rounds
           <select id="roundsSel"></select>
         </div>
-        <div class="field">Salary cap
-          <select id="capSel">
-            <option value="180">◈ 180 (tight)</option>
-            <option value="220" selected>◈ 220 (standard)</option>
-            <option value="280">◈ 280 (loose)</option>
-          </select>
-        </div>
         <div class="field">Draft speed
           <select id="speedSel">
             <option value="fast">Fast</option>
@@ -92,12 +85,10 @@
 
         <aside class="rail">
           <div class="panel">
-            <h4>⭐ Your Roster <span style="margin-left:auto;font-size:12px;color:var(--ink-faint)">Slots <span id="rosterCount">0/3</span></span></h4>
+            <h4>⭐ Your Roster <span style="margin-left:auto;font-size:12.5px;color:var(--ink-faint)">Slots <span id="rosterCount">0/3</span></span></h4>
             <div class="body">
-              <div class="capbar"><i id="capFill" style="width:0%"></i></div>
-              <div class="capnums" id="capNums"></div>
-              <div style="margin-top:10px;font-size:12px;color:var(--ink-dim)">Roster fantasy points:
-                <b style="color:var(--gold);font-size:15px" id="teamPoints">0</b></div>
+              <div style="font-size:13px;color:var(--ink-dim)">Roster fantasy points:
+                <b style="color:var(--gold);font-size:17px;font-family:var(--font-num);font-style:italic" id="teamPoints">0</b></div>
               <ul class="roster-list" id="rosterList"></ul>
             </div>
           </div>
@@ -118,16 +109,27 @@
     <!-- ================= RESULTS SCREEN ================= -->
     <section id="resultsScreen" class="screen">
       <div class="hero">
-        <div class="kicker">Final Board · Season 1</div>
-        <div class="player-select">K.O.!</div>
+        <div class="kicker">Full Time · The Alliance Has Spoken</div>
+        <div class="player-select">Draft Priorities</div>
         <p class="lede" id="resultHead"></p>
       </div>
-      <div class="podium" id="podium"></div>
-      <div class="section-title"><h3>Full Standings</h3><div class="rule"></div>
+
+      <div class="section-title"><h3>Where the alliance spent its picks</h3><div class="rule"></div>
+        <span class="hint">Share of each stack tier claimed</span></div>
+      <div class="catprio" id="catPriority"></div>
+
+      <div class="section-title"><h3>Sector Priority Board</h3><div class="rule"></div>
+        <span class="hint">Ranked by draft order · pick #1 = top alliance priority</span></div>
+      <div class="panel"><div class="body" style="overflow-x:auto">
+        <div class="prio-list" id="sectorBoard"></div>
+      </div></div>
+
+      <div class="section-title"><h3>Final Standings</h3><div class="rule"></div>
         <span class="hint">Total = fantasy points + sector coverage + vertical-stack combos</span></div>
-      <div class="panel"><div class="body" style="overflow:auto">
+      <div class="panel"><div class="body" style="overflow-x:auto">
         <table class="results-table" id="resultsTable"></table>
       </div></div>
+
       <div style="text-align:center;margin-top:26px">
         <button class="btn red" id="draftAgainBtn">Rematch ▸</button>
         <button class="btn ghost" id="restartBtn">Change fighter</button>

@@ -33,15 +33,18 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
 2. **Choose the field** — pick how many allies play (4 → 21) and the number of rounds.
    The rounds available scale automatically so `allies × rounds ≤ 39` sub-sectors. Your
    chosen fighter is always in the draft.
-3. **Snake draft** against the AI allies. Each of the 39 sub-sectors is a "player" card
-   with an industry icon, an **OVR** rating, tier (S/A/B/C), and four scouting stats
-   rendered as HP life-bars, drawn from the OSI scoring framework: **National Security ·
-   Energy & Economic Security · Climate Salience · Economic Opportunity** (OVR is their mean).
-4. **Salary cap** forces trade-offs — you can't just draft every S-tier chokepoint.
-5. **Score** = fantasy points (OVR + home synergy + signature fit) **+ sector coverage**
+3. **Snake draft** against the AI allies — a pure snake draft, no salary cap. Each of the
+   39 sub-sectors is a "player" card with an industry icon, an **OVR** rating, tier
+   (S/A/B/C), and four scouting stats rendered as HP life-bars, drawn from the OSI scoring
+   framework: **National Security · Energy & Economic Security · Climate Salience ·
+   Economic Opportunity** (OVR is their mean).
+4. **Score** = fantasy points (OVR + home synergy + signature fit) **+ sector coverage**
    (breadth across the six stack categories) **+ vertical-stack combos** (e.g. owning
    *Silicon → Materials → Chips* or the *full battery stack*).
-6. **K.O.!** — draft grades and a WINNER podium at the end. Rematch with a new fighter.
+5. **Draft Priorities board** — the final screen reveals what the *group* valued: every
+   sub-sector ranked by the overall draft order (pick #1 = top alliance priority, with the
+   ones nobody took shown as "passed over"), a per-category demand summary, and the final
+   standings. Rematch with a new fighter.
 
 ## The Electro-Industrial Stack (the six "positions")
 
