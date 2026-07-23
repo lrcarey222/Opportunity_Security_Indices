@@ -4,11 +4,17 @@
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
+/* Alliance must reach this share of the max-possible stack to beat the big boss.
+   Near-optimal collective drafting lands ~0.89-0.99; sloppy drafting ~0.63-0.80,
+   so 0.85 rewards prioritizing high-value sub-sectors. */
+const WIN_THRESHOLD = 0.85;
+
 const STATE = {
   you: null,              // ally id
   teams: [],              // {ally, roster:[subN], spent, pointsBudget}
   order: [],              // draft order (ally ids) for round 1
-  rounds: 6,
+  numAllies: 12,          // teams in the draft
+  rounds: 3,
   cap: 220,               // salary cap credits per team
   pickIndex: 0,           // global pick counter
   drafted: {},            // subN -> ally id
@@ -81,26 +87,48 @@ function selectAlly(id) {
   detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
+/* Rounds available depend on ally count (allies × rounds must fit 39 sub-sectors) */
+function populateRounds() {
+  const n = parseInt($("#alliesSel").value, 10);
+  const maxR = Math.min(6, Math.max(1, Math.floor(SUBSECTORS.length / n)));
+  const prev = parseInt($("#roundsSel").value, 10) || Math.min(3, maxR);
+  const keep = Math.min(prev, maxR);
+  let opts = "";
+  for (let r = 1; r <= maxR; r++)
+    opts += `<option value="${r}" ${r === keep ? "selected" : ""}>${r} · ${n * r} total picks</option>`;
+  $("#roundsSel").innerHTML = opts;
+}
+
+/* Letter grade scaled to any field size (rank i of n, 0-based) */
+function gradeFor(i, n) {
+  const g = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D"];
+  const p = n <= 1 ? 0 : i / (n - 1);
+  return g[Math.min(g.length - 1, Math.round(p * (g.length - 1)))];
+}
+
 /* ========================= DRAFT SETUP ========================= */
 function startDraft() {
+  STATE.numAllies = parseInt($("#alliesSel").value, 10);
   STATE.rounds   = parseInt($("#roundsSel").value, 10);
-  STATE.cap      = parseInt($("#capSel").value, 10);
   STATE.autodelay = $("#speedSel").value === "fast" ? 230 : $("#speedSel").value === "slow" ? 1000 : 620;
 
-  // teams in a randomized-but-deterministic order (seeded by 'you' position)
-  const ids = ALLIES.map(a => a.id);
-  // rotate so 'you' isn't always first; simple shuffle without Math.random
-  const seed = ids.indexOf(STATE.you) + 3;
-  const shuffled = [...ids];
+  // participants: always include your fighter, then fill from roster order
+  const rest = ALLIES.map(a => a.id).filter(id => id !== STATE.you);
+  const participants = [STATE.you, ...rest].slice(0, STATE.numAllies);
+
+  // randomized-but-deterministic draft order (seeded by 'you'; no Math.random)
+  const seed = ALLIES.findIndex(a => a.id === STATE.you) + 3;
+  const shuffled = [...participants];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = (i * seed + 7) % (i + 1);
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   STATE.order = shuffled;
-  STATE.teams = shuffled.map(id => ({ ally: id, roster: [], spent: 0, points: 0 }));
+  STATE.teams = shuffled.map(id => ({ ally: id, roster: [], points: 0 }));
   STATE.pickIndex = 0;
   STATE.drafted = {};
   STATE.log = [];
+  STATE.picks = [];
 
   $("#setupScreen").classList.remove("active");
   $("#draftScreen").classList.add("active");
@@ -123,23 +151,6 @@ function currentRound() { return Math.floor(STATE.pickIndex / STATE.teams.length
 function totalPicks() { return STATE.teams.length * STATE.rounds; }
 function teamOf(id) { return STATE.teams.find(t => t.ally === id); }
 
-/* affordability: this pick must still leave enough cap to fill remaining slots
-   with the cheapest sub-sectors currently on the board (prevents cap soft-lock) */
-function canAfford(team, sub) {
-  const slotsLeft = STATE.rounds - team.roster.length;      // includes this pick
-  if (slotsLeft <= 0) return false;
-  const others = SUBSECTORS
-    .filter(s => !STATE.drafted[s.n] && s.n !== sub.n)
-    .map(s => s.cost).sort((a, b) => a - b);
-  let reserve = 0;
-  for (let i = 0; i < slotsLeft - 1 && i < others.length; i++) reserve += others[i];
-  return team.spent + sub.cost + reserve <= STATE.cap;
-}
-/* any affordable, undrafted pick left for this team? */
-function hasAffordable(team) {
-  return SUBSECTORS.some(s => !STATE.drafted[s.n] && canAfford(team, s));
-}
-
 /* ========================= DRAFT FLOW ========================= */
 function advance() {
   if (STATE.pickIndex >= totalPicks()) return finishDraft();
@@ -156,7 +167,7 @@ function advance() {
 function aiPick(id) {
   const team = teamOf(id);
   const ally = ALLY_BY_ID[id];
-  const avail = SUBSECTORS.filter(s => !STATE.drafted[s.n] && canAfford(team, s));
+  const avail = SUBSECTORS.filter(s => !STATE.drafted[s.n]);
   if (!avail.length) { commitPick(id, null); return; }
   // AI values: synergy score + slight category-need + a touch of variety
   const catCount = {};
@@ -165,7 +176,6 @@ function aiPick(id) {
   avail.forEach(s => {
     let v = scoreFor(ally, s);
     v -= (catCount[s.cat] || 0) * 4;                 // encourage diversification
-    v -= s.cost * 0.05;                              // mild value sense
     v += ((s.n * (id.charCodeAt(0) + id.charCodeAt(1))) % 5) * 0.6;  // deterministic jitter
     if (v > bestV) { bestV = v; best = s; }
   });
@@ -175,10 +185,7 @@ function aiPick(id) {
 function draftByYou(subN) {
   const id = STATE.you;
   if (currentAllyId() !== id) return;
-  const team = teamOf(id);
-  const sub = SUB_BY_N[subN];
   if (STATE.drafted[subN]) return;
-  if (!canAfford(team, sub)) { toast("Not enough cap — keep 6 credits per remaining pick."); return; }
   commitPick(id, subN);
 }
 
@@ -189,16 +196,12 @@ function commitPick(id, subN) {
     const sub = SUB_BY_N[subN];
     STATE.drafted[subN] = id;
     team.roster.push(subN);
-    team.spent += sub.cost;
     const pts = scoreFor(ally, sub);
     team.points += pts;
     const syn = pts - sub.ovr;
-    STATE.log.unshift({
-      round: currentRound(), ally: id, subN,
-      you: id === STATE.you, syn,
-    });
-  } else {
-    STATE.log.unshift({ round: currentRound(), ally: id, subN: null, you: id === STATE.you });
+    const pickNo = STATE.picks.length + 1;
+    STATE.picks.push({ pickNo, round: currentRound(), ally: id, subN });
+    STATE.log.unshift({ pickNo, round: currentRound(), ally: id, subN, you: id === STATE.you, syn });
   }
   STATE.pickIndex++;
   renderRail();
@@ -233,7 +236,6 @@ function renderFilters() {
       <option value="ensc">Sort: Energy &amp; Economic Security</option>
       <option value="clim">Sort: Climate Salience</option>
       <option value="opp">Sort: Economic Opportunity</option>
-      <option value="cost">Sort: Cheapest</option>
     </select>`;
   $$(".fbtn", bar).forEach(b => b.addEventListener("click", () => {
     STATE.filter = b.dataset.f; renderFilters(); renderPool();
@@ -247,7 +249,6 @@ function renderPool() {
   const pool = $("#pool");
   const you = ALLY_BY_ID[STATE.you];
   const yourTurn = currentAllyId() === STATE.you && STATE.pickIndex < totalPicks();
-  const team = teamOf(STATE.you);
 
   let list = SUBSECTORS.filter(s => STATE.filter === "ALL" || s.cat === STATE.filter);
   const sorters = {
@@ -257,7 +258,6 @@ function renderPool() {
     ensc:   (a, b) => b.ENSC - a.ENSC,
     clim:   (a, b) => b.CLIM - a.CLIM,
     opp:    (a, b) => b.OPP - a.OPP,
-    cost:   (a, b) => a.cost - b.cost,
   };
   list = [...list].sort(sorters[STATE.sort]);
   // drafted cards sink to the bottom
@@ -267,7 +267,6 @@ function renderPool() {
     const cat = CATEGORIES[s.cat];
     const drafted = STATE.drafted[s.n];
     const fit = scoreFor(you, s) - s.ovr;
-    const affordable = team && canAfford(team, s);
     const owner = drafted ? ALLY_BY_ID[drafted] : null;
     const bars = [
       ["NAT SEC", s.NAT, "National Security"],
@@ -287,28 +286,13 @@ function renderPool() {
       </div>
       <div class="statbars">${bars}</div>
       <div class="pcard-foot">
-        <div>
-          <div class="cost">◈ ${s.cost} <small>credits</small></div>
-          ${fit > 0 ? `<div class="synergy">↑ +${fit} home-fit for ${you.flag}</div>` : ""}
-        </div>
+        <div>${fit > 0 ? `<div class="synergy">↑ +${fit} home-fit for ${you.flag} ${you.name}</div>` : `<div class="synergy" style="color:var(--ink-faint)">Open pick</div>`}</div>
         ${drafted
-          ? `<div style="font-size:12px;color:var(--ink-faint);text-align:right">Drafted by<br><b style="color:var(--ink)">${owner.flag} ${owner.name}</b></div>`
-          : `<button class="btn pick ${affordable ? "red" : "ghost"}" data-n="${s.n}" ${yourTurn && affordable ? "" : "disabled"}>${yourTurn ? (affordable ? "SELECT ▸" : "Over cap") : "Wait…"}</button>`}
+          ? `<div class="drafted-by">Drafted by<br><b>${owner.flag} ${owner.name}</b></div>`
+          : `<button class="btn pick red" data-n="${s.n}" ${yourTurn ? "" : "disabled"}>${yourTurn ? "SELECT ▸" : "Wait…"}</button>`}
       </div>
     </div>`;
   }).join("");
-
-  // pass fallback: your turn but nothing affordable / nothing left
-  if (yourTurn && !hasAffordable(team)) {
-    const banner = document.createElement("div");
-    banner.style.cssText = "grid-column:1/-1;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:16px 18px;border-radius:16px;background:rgba(255,176,32,.12);border:1px solid var(--line-2)";
-    banner.innerHTML = `<span style="color:var(--ink-dim);font-size:14px">No sub-sector fits your remaining cap of <b style="color:var(--gold)">◈ ${STATE.cap - team.spent}</b>. You can pass this pick.</span>`;
-    const pb = document.createElement("button");
-    pb.className = "btn gold"; pb.textContent = "Pass this pick ▸";
-    pb.addEventListener("click", () => commitPick(STATE.you, null));
-    banner.appendChild(pb);
-    pool.prepend(banner);
-  }
 
   $$(".btn.pick", pool).forEach(b => b.addEventListener("click", () => draftByYou(parseInt(b.dataset.n, 10))));
 }
@@ -317,9 +301,6 @@ function renderPool() {
 function renderRail() {
   const team = teamOf(STATE.you);
   const you = ALLY_BY_ID[STATE.you];
-  const capPct = Math.min(100, (team.spent / STATE.cap) * 100);
-  $("#capFill").style.width = capPct + "%";
-  $("#capNums").innerHTML = `Spent <b>◈ ${team.spent}</b> · Cap ◈ ${STATE.cap} · Left ◈ ${STATE.cap - team.spent}`;
 
   // roster
   const rl = $("#rosterList");
@@ -366,31 +347,34 @@ function finishDraft() {
     return t;
   }).sort((a, b) => b.final - a.final);
 
-  const grades = ["A+", "A", "A-", "B+", "B", "B", "B-", "C+", "C", "C", "C-", "D"];
+  const N = sorted.length;
   $("#setupScreen").classList.remove("active");
   $("#draftScreen").classList.remove("active");
   $("#resultsScreen").classList.add("active");
   window.scrollTo({ top: 0 });
 
-  const podium = [sorted[1], sorted[0], sorted[2]];
-  const posClass = ["p2", "p1", "p3"];
-  $("#podium").innerHTML = podium.map((t, i) => {
-    const a = ALLY_BY_ID[t.ally];
-    return `<div class="slot ${posClass[i]}" style="--cc1:${a.c1};--cc2:${a.c2}">
-      ${i === 1 ? '<div class="winner-banner">Winner</div>' : ""}
-      <div class="pod-portrait"><div class="flagbg">${a.flag}</div>${portrait(a, i === 1 ? 150 : 120)}</div>
-      <div class="plabel">
-        <div class="rank">${i === 1 ? "🥇" : i === 0 ? "🥈" : "🥉"}</div>
-        <div class="pname2">${a.flag} ${a.name}</div>
-        <div class="score">${t.final} PTS</div>
-      </div>
-    </div>`;
-  }).join("");
-
+  const champ = ALLY_BY_ID[sorted[0].ally];
   const yourRank = sorted.findIndex(t => t.ally === STATE.you);
-  $("#resultHead").innerHTML = yourRank === 0
-    ? `🏆 <b>${ALLY_BY_ID[STATE.you].name}</b> wins the Allied Industrial Draft!`
-    : `You finished <b>#${yourRank + 1}</b> of ${sorted.length} — grade <span class="grade" style="color:var(--gold)">${grades[yourRank]}</span>`;
+  const drafted = STATE.picks.length;
+  const top1 = STATE.picks[0] ? SUB_BY_N[STATE.picks[0].subN] : null;
+  $("#resultHead").innerHTML =
+    `The alliance drafted <b>${drafted}</b> of ${SUBSECTORS.length} sub-sectors.` +
+    (top1 ? ` The #1 overall priority was <b>${top1.name}</b>.` : "") +
+    `<br><span style="font-size:.9em;color:var(--ink-dim)">🏆 Draft champion: <b style="color:var(--gold)">${champ.flag} ${champ.name}</b> · You finished <b>#${yourRank + 1}</b> of ${N} (grade ${gradeFor(yourRank, N)})</span>`;
+
+  // Alliance "power": how close the collective draft got to the maximum-OVR stack
+  const K = STATE.picks.length;
+  const ovrDesc = SUBSECTORS.map(s => s.ovr).sort((a, b) => b - a);
+  const maxSum = ovrDesc.slice(0, K).reduce((a, b) => a + b, 0) || 1;
+  const minSum = ovrDesc.slice(-K).reduce((a, b) => a + b, 0) || 0;
+  const actualSum = STATE.picks.reduce((a, p) => a + SUB_BY_N[p.subN].ovr, 0);
+  STATE.powerRatio = (actualSum - minSum) / (maxSum - minSum || 1);   // normalized 0..1
+  STATE.powerPct = Math.round(STATE.powerRatio * 100);
+  STATE.allianceWin = STATE.powerRatio >= WIN_THRESHOLD;
+
+  renderCategoryPriority();
+  renderSectorBoard();
+  renderBossChallenge();
 
   $("#resultsTable").innerHTML = `
     <tr><th>#</th><th>Ally</th><th>Roster</th><th>Sectors</th><th>Coverage</th><th>Stack combo</th><th>Total</th><th>Grade</th></tr>
@@ -405,9 +389,162 @@ function finishDraft() {
         <td>+${t.coverage}</td>
         <td style="color:var(--leaf-2)">+${t.combo}</td>
         <td class="sc">${t.final}</td>
-        <td class="grade">${grades[i]}</td>
+        <td class="grade">${gradeFor(i, N)}</td>
       </tr>`;
     }).join("")}`;
+}
+
+/* Category demand: how much of each stack tier the alliance claimed */
+function renderCategoryPriority() {
+  const pickMap = {}; STATE.picks.forEach(p => pickMap[p.subN] = p);
+  const rows = Object.values(CATEGORIES).map(cat => {
+    const subs = SUBSECTORS.filter(s => s.cat === cat.id);
+    const dsubs = subs.filter(s => pickMap[s.n]);
+    const first = dsubs.length ? Math.min(...dsubs.map(s => pickMap[s.n].pickNo)) : null;
+    const avg = dsubs.length ? dsubs.reduce((a, s) => a + pickMap[s.n].pickNo, 0) / dsubs.length : Infinity;
+    return { cat, cnt: dsubs.length, total: subs.length, first, avg, share: dsubs.length / subs.length };
+  }).sort((a, b) => b.share - a.share || a.avg - b.avg);
+  $("#catPriority").innerHTML = rows.map(r => `
+    <div class="catprio-item" style="--cc1:${r.cat.c1};--cc2:${r.cat.c2}">
+      <div class="cp-head"><span class="cp-key">${r.cat.id}</span><span class="cp-name">${r.cat.short}</span>
+        <span class="cp-count">${r.cnt}/${r.total}</span></div>
+      <div class="cp-bar"><i style="width:${Math.round(r.share * 100)}%"></i></div>
+      <div class="cp-foot">${r.first ? `first taken at pick #${r.first}` : "not drafted"}</div>
+    </div>`).join("");
+}
+
+/* Sector priority board: every sub-sector ranked by draft order */
+function renderSectorBoard() {
+  const pickMap = {}; STATE.picks.forEach(p => pickMap[p.subN] = p);
+  const listed = [...SUBSECTORS].sort((a, b) => {
+    const pa = pickMap[a.n], pb = pickMap[b.n];
+    if (pa && pb) return pa.pickNo - pb.pickNo;
+    if (pa) return -1; if (pb) return 1;
+    return b.ovr - a.ovr;
+  });
+  let rank = 0;
+  $("#sectorBoard").innerHTML = listed.map(s => {
+    const cat = CATEGORIES[s.cat];
+    const p = pickMap[s.n];
+    const owner = p ? ALLY_BY_ID[p.ally] : null;
+    if (p) rank++;
+    const isYou = owner && owner.id === STATE.you;
+    return `<div class="prio-row ${p ? "" : "undrafted"} ${isYou ? "you" : ""}" style="--cc1:${cat.c1};--cc2:${cat.c2}">
+      <div class="prio-rank">${p ? "#" + rank : "—"}</div>
+      ${iconSVG(s.glyph, cat.c1, cat.c2, 38)}
+      <div class="prio-main">
+        <div class="prio-name">${s.name}</div>
+        <div class="prio-cat">${s.cat} · ${cat.short} · OVR ${s.ovr}</div>
+      </div>
+      ${p
+        ? `<div class="prio-pick">PICK ${p.pickNo}<small>Round ${p.round}</small></div>`
+        : `<div class="prio-pick undrafted-tag">Passed over</div>`}
+      <div class="prio-ally">${owner ? `${owner.flag} ${owner.name}` : "—"}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ========================= BIG BOSS FIGHT ========================= */
+function renderBossChallenge() {
+  const you = ALLY_BY_ID[STATE.you];
+  const el = $("#bossChallenge");
+  el.innerHTML = `
+    <div class="bc-inner">
+      <div class="bc-side">
+        <div class="bc-portrait" style="--cc1:${you.c1};--cc2:${you.c2}"><div class="flagbg">${you.flag}</div>${portrait(you, 130)}</div>
+        <div class="bc-name">${you.flag} ${you.name}</div>
+      </div>
+      <div class="bc-mid">
+        <div class="bc-power">Alliance power<br><b>${STATE.powerPct}%</b><span>of the maximum stack · needs ${Math.round(WIN_THRESHOLD * 100)}%</span></div>
+        <button class="btn red bc-fight" id="fightBtn">FIGHT! ▶</button>
+        <div class="bc-hint">Take on China — the big boss</div>
+      </div>
+      <div class="bc-side">
+        <div class="bc-portrait boss"><img class="portrait-fill" src="${FIGHT_FRAMES.L2}" alt="China — the big boss"></div>
+        <div class="bc-name">🇨🇳 China · <span style="color:var(--red-2)">BIG BOSS</span></div>
+      </div>
+    </div>`;
+  $("#fightBtn").addEventListener("click", runFight);
+}
+
+const FIGHT_CAPS = {
+  win:  ["Round 1 — Idle / Standoff", "China Attacks", "Allies Defend Together", "China Weakens", "China Returns to Human", "Allies Win!"],
+  lose: ["Round 1 — Idle / Standoff", "China Powers Up", "Transform into Dragon", "Full Dragon", "Dragon Attack", "China Wins"],
+};
+
+function runFight() {
+  const win = STATE.allianceWin;
+  const frames = win ? ["W1", "W2", "W3", "W4", "W5", "W6"] : ["L1", "L2", "L3", "L4", "L5", "L6"];
+  const caps = win ? FIGHT_CAPS.win : FIGHT_CAPS.lose;
+  const ov = $("#fightOverlay");
+  ov.innerHTML = `
+    <div class="fight-arena">
+      <div class="film">
+        <img class="framebg" id="frameBg" alt="">
+        <img class="frame" id="frameA" alt="">
+        <img class="frame" id="frameB" alt="">
+      </div>
+      <div class="film-cap" id="filmCap"></div>
+      <div class="film-dots" id="filmDots">${frames.map(() => "<i></i>").join("")}</div>
+      <button class="fight-x" id="fightX" title="Skip to result" aria-label="Skip to result">✕</button>
+      <div class="fight-result" id="fightResult"></div>
+    </div>`;
+  ov.classList.add("show");
+  document.body.classList.add("scrolllock");
+
+  const A = $("#frameA"), B = $("#frameB"), bg = $("#frameBg"), cap = $("#filmCap"), dots = $$("#filmDots i");
+  let showA = true;
+  const setFrame = (i) => {
+    const incoming = showA ? A : B, outgoing = showA ? B : A;
+    incoming.src = FIGHT_FRAMES[frames[i]];
+    bg.src = FIGHT_FRAMES[frames[i]];
+    incoming.classList.add("on"); outgoing.classList.remove("on");
+    showA = !showA;
+    cap.textContent = caps[i];
+    dots.forEach((d, di) => d.classList.toggle("done", di <= i));
+  };
+
+  let ended = false;
+  const end = () => { if (ended) return; ended = true; showFightResult(win); };
+  $("#fightX").addEventListener("click", () => { setFrame(frames.length - 1); end(); });
+
+  setFrame(0);
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) { setTimeout(() => { setFrame(frames.length - 1); end(); }, 400); return; }
+
+  let i = 1;
+  const tick = () => {
+    if (ended) return;
+    if (i >= frames.length) { setTimeout(end, 1200); return; }
+    setFrame(i);
+    // punch-zoom on the action frames
+    const cur = showA ? B : A;
+    cur.classList.remove("punch"); void cur.offsetWidth; cur.classList.add("punch");
+    i++;
+    setTimeout(tick, 1050);
+  };
+  setTimeout(tick, 1050);
+}
+
+function showFightResult(win) {
+  const r = $("#fightResult");
+  if (r.classList.contains("show")) return;
+  r.innerHTML = `
+    <div class="fr-tag ${win ? "win" : "lose"}">${win ? "Victory" : "Defeat"}</div>
+    <div class="fr-power">Alliance power <b>${STATE.powerPct}%</b> · needed <b>${Math.round(WIN_THRESHOLD * 100)}%</b> to beat China</div>
+    <div class="fr-actions">
+      <button class="btn gold" id="fightRematch">Fight again ▶</button>
+      <button class="btn ghost" id="fightClose">Back to the board</button>
+    </div>`;
+  r.classList.add("show");
+  $("#fightRematch").addEventListener("click", runFight);
+  $("#fightClose").addEventListener("click", closeFight);
+}
+
+function closeFight() {
+  const ov = $("#fightOverlay");
+  ov.classList.remove("show"); ov.innerHTML = "";
+  document.body.classList.remove("scrolllock");
 }
 
 /* stack-combo synergies: reward vertically-integrated portfolios */
@@ -448,6 +585,8 @@ function restart() {
 window.addEventListener("DOMContentLoaded", () => {
   makeSky();
   renderSetup();
+  populateRounds();
+  $("#alliesSel").addEventListener("change", populateRounds);
   $("#startBtn").addEventListener("click", startDraft);
   $("#restartBtn").addEventListener("click", restart);
   $("#draftAgainBtn").addEventListener("click", restart);
