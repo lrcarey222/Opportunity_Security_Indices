@@ -10,7 +10,8 @@
   const GAMEKEYS = new Set(["KeyA", "KeyD", "KeyW", "KeyS", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"]);
 
   let cv, ctx, raf, overlay, endPanel, last = 0;
-  let ally, avatarImg = null, powerPct = 80;
+  let ally, avatarImg = null, dragonImg = null, dragonFireImg = null, powerPct = 80;
+  let featherCache = {};
   let P, D, blasts, fires, parts, G;
   const held = Object.create(null);
 
@@ -24,7 +25,32 @@
   function rectsOverlap(a, b) {
     return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   }
-  const lerpHex = (h) => h; // colors passed through
+  /* Draw an image into an offscreen canvas with an elliptical alpha feather so the
+     baked-in rectangular background fades out and the character reads as a sprite. */
+  function feather(img, key, targetH, cx, cy, rx, ry) {
+    if (!img || !img.complete || !img.naturalWidth) return null;
+    if (featherCache[key]) return featherCache[key];
+    const aspect = img.naturalWidth / img.naturalHeight;
+    const h = targetH, w = Math.round(h * aspect);
+    const oc = document.createElement("canvas"); oc.width = w; oc.height = h;
+    const o = oc.getContext("2d");
+    o.drawImage(img, 0, 0, w, h);
+    o.globalCompositeOperation = "destination-in";
+    o.save();
+    o.translate(w * (cx || 0.5), h * (cy || 0.48));
+    o.scale(w * (rx || 0.6), h * (ry || 0.6));
+    const g = o.createRadialGradient(0, 0, 0.2, 0, 0, 1);
+    g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(0.72, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    o.fillStyle = g; o.beginPath(); o.arc(0, 0, 1, 0, 7); o.fill();
+    o.restore();
+    o.globalCompositeOperation = "source-over";
+    featherCache[key] = { canvas: oc, w, h };
+    return featherCache[key];
+  }
+  function dragonBox() {
+    const dw = 190, dh = 250;
+    return { x: D.hx - dw * 0.30, y: D.hy - dh * 0.42, w: dw * 0.6, h: dh * 0.84 };
+  }
 
   /* ---------------- lifecycle ---------------- */
   function startArcade(allyId, pPct) {
@@ -47,8 +73,14 @@
     cv = document.getElementById("arcCanvas"); ctx = cv.getContext("2d");
     endPanel = document.getElementById("arcEnd");
     document.getElementById("arcX").onclick = stopArcade;
+    featherCache = {};
     avatarImg = null;
     if (typeof AVATARS !== "undefined" && AVATARS[allyId]) { avatarImg = new Image(); avatarImg.src = AVATARS[allyId]; }
+    dragonImg = null; dragonFireImg = null;
+    if (typeof FIGHT_FRAMES !== "undefined") {
+      if (FIGHT_FRAMES.L4) { dragonImg = new Image(); dragonImg.src = FIGHT_FRAMES.L4; }
+      if (FIGHT_FRAMES.L5) { dragonFireImg = new Image(); dragonFireImg.src = FIGHT_FRAMES.L5; }
+    }
     buildTouch();
     initGame();
     window.addEventListener("keydown", onKey, true);
@@ -110,10 +142,9 @@
     };
     D = {
       hx: 740, hy: GROUND - 210, vx: 0, vy: 0, maxHp: 168, hp: 168,
-      segs: [], state: "approach", stT: 0, mouth: 0, hasHit: false, hitFlash: 0,
+      state: "approach", stT: 0, mouth: 0, hasHit: false, hitFlash: 0,
       cd: 90, bob: 0, facing: -1,
     };
-    for (let i = 0; i < 16; i++) D.segs.push({ x: D.hx + i * 22, y: D.hy });
     blasts = []; fires = []; parts = [];
     G = { phase: "intro", t: 0, timer: 60, timerF: 0, shake: 0, announce: "ROUND 1", flash: 0, result: null };
   }
@@ -187,6 +218,12 @@
     P.vy += 0.62 * dt;
     P.x += P.vx * dt; P.y += P.vy * dt;
     P.x = clamp(P.x, 40, W - 40);
+    // soft pushbox so the fighter can't walk through the dragon (except while it lunges)
+    if (D.state === "approach" || D.state === "recover") {
+      const gap = 96;
+      if (D.hx > P.x) P.x = Math.min(P.x, D.hx - gap);
+      else P.x = Math.max(P.x, D.hx + gap);
+    }
     if (P.y >= GROUND) { P.y = GROUND; P.vy = 0; if (!P.onGround) { P.onGround = true; if (!acting) P.state = "idle"; } }
     else P.onGround = false;
 
@@ -219,10 +256,8 @@
 
   function meleeHit(reach, yoff, r, kind, dmg, kb) {
     const hx = P.x + P.facing * reach, hy = P.y + yoff;
-    // vs dragon head + front segments
-    let hit = false;
-    if (dist2(hx, hy, D.hx, D.hy) < (r + 34) * (r + 34)) hit = true;
-    else for (let i = 0; i < 5 && !hit; i++) { const s = D.segs[i]; if (dist2(hx, hy, s.x, s.y) < (r + 24) * (r + 24)) hit = true; }
+    const box = dragonBox();
+    const hit = circleRect(hx, hy, r + 8, box.x, box.y, box.w, box.h);
     if (hit && D.hitFlash <= 0.35) {
       P.hasHit = true;
       damageDragon(dmg, kb * P.facing, kind);
@@ -243,16 +278,6 @@
   function updateDragonIdle(dt) {
     D.bob += dt * 0.05;
     D.hy = GROUND - 210 + Math.sin(D.bob) * 14;
-    trailSegs(dt);
-  }
-  function trailSegs(dt) {
-    let px = D.hx, py = D.hy;
-    for (let i = 0; i < D.segs.length; i++) {
-      const s = D.segs[i]; const dx = px - s.x, dy = py - s.y; const d = Math.hypot(dx, dy) || 1;
-      const target = 22; const f = (d - target) / d;
-      s.x += dx * f * 0.5; s.y += dy * f * 0.5;
-      px = s.x; py = s.y;
-    }
   }
   function updateDragon(dt) {
     if (D.hitFlash > 0) D.hitFlash -= dt * 0.09;
@@ -262,7 +287,7 @@
     const dist = Math.abs(P.x - D.hx);
     const aggro = 1 - D.hp / D.maxHp; // 0..1
 
-    if (D.state === "ko") { D.hy += 2 * dt; D.hx += D.vx * dt; D.vx *= 0.9; trailSegs(dt); return; }
+    if (D.state === "ko") { D.hy += 2 * dt; D.hx += D.vx * dt; D.vx *= 0.9; return; }
 
     D.stT += dt;
     if (D.state === "approach") {
@@ -301,7 +326,7 @@
       if (D.stT > 24 && D.stT < 66 && Math.floor(D.stT) % 3 === 0) {
         const a = Math.atan2((P.y - 60) - D.hy, P.x - D.hx) + (Math.random() - 0.5) * 0.18;
         const sp = 7 + Math.random() * 2;
-        fires.push({ x: D.hx + D.facing * 34, y: D.hy + 8, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 9 + Math.random() * 6, life: 70 });
+        fires.push({ x: D.hx + D.facing * 64, y: D.hy + 6, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 9 + Math.random() * 6, life: 70 });
       }
       if (D.stT > 86) { D.state = "recover"; D.stT = 0; D.cd = 70 - aggro * 26; }
     } else if (D.state === "recover") {
@@ -309,9 +334,8 @@
       D.hy += (homeY - D.hy) * 0.06 * dt;
       if (D.stT > 20) { D.state = "approach"; D.stT = 0; }
     }
-    D.hx = clamp(D.hx, 120, W - 60);
-    D.hy = clamp(D.hy, 60, GROUND - 60);
-    trailSegs(dt);
+    D.hx = clamp(D.hx, 150, W - 90);
+    D.hy = clamp(D.hy, 120, GROUND - 60);
   }
   function startDragonAtk(kind) { D.state = kind; D.stT = 0; D.hasHit = false; }
 
@@ -332,9 +356,8 @@
   function updateBlasts(dt) {
     for (let i = blasts.length - 1; i >= 0; i--) {
       const b = blasts[i]; b.x += b.vx * dt; b.life -= dt;
-      let hit = false;
-      if (dist2(b.x, b.y, D.hx, D.hy) < (b.r + 32) * (b.r + 32)) hit = true;
-      else for (let k = 0; k < 6 && !hit; k++) { const s = D.segs[k]; if (dist2(b.x, b.y, s.x, s.y) < (b.r + 22) * (b.r + 22)) hit = true; }
+      const box = dragonBox();
+      const hit = circleRect(b.x, b.y, b.r + 6, box.x, box.y, box.w, box.h);
       if (hit && D.hitFlash <= 0.4) { damageDragon(b.dmg, b.dir * 4, "blast"); spawnHits(b.x, b.y, "#8be9ff"); blasts.splice(i, 1); continue; }
       if (b.x < -30 || b.x > W + 30 || b.life <= 0) blasts.splice(i, 1);
     }
@@ -424,94 +447,65 @@
 
   function drawFighter() {
     const s = P;
-    shadow(s.x, 30);
-    const c1 = ally.c1 || "#2b6fff", c2 = ally.c2 || "#7db4ff";
-    let crouch = s.state === "crouch" ? 22 : 0;
-    let lean = (s.state === "hit") ? -s.facing * 12 : (s.state === "block" ? -s.facing * 6 : 0);
-    const feetY = s.y;
-    const hipY = feetY - 46 + crouch;
-    const shX = s.x + lean, shY = hipY - 44 + crouch * .4;
-    const headY = shY - 22, headX = shX + s.facing * 3;
-    // limbs endpoints
-    let frontHandX = shX + s.facing * 16, frontHandY = shY + 6;
-    let backHandX = shX - s.facing * 12, backHandY = shY + 8;
-    let frontFootX = s.x + s.facing * 14, backFootX = s.x - s.facing * 15;
-    let frontFootY = feetY, backFootY = feetY;
-    const wk = Math.sin(s.walk * 6) * 10;
-    if (s.state === "walk") { frontFootX += wk; backFootX -= wk; }
-    if (s.state === "block") { frontHandX = shX + s.facing * 22; frontHandY = shY - 6; backHandX = shX + s.facing * 18; backHandY = shY + 10; }
-    if (s.atk === "punch") { const e = clamp(s.atkT / 8, 0, 1); frontHandX = shX + s.facing * (16 + 52 * e); frontHandY = shY + 2; }
-    if (s.atk === "kick") { const e = clamp(s.atkT / 10, 0, 1); const reach = s.onGround ? 78 : 66; frontFootX = s.x + s.facing * (14 + reach * e); frontFootY = feetY - (s.onGround ? 34 : 46) * e; }
-    if (s.atk === "blast") { const e = clamp(s.atkT / 12, 0, 1); frontHandX = shX + s.facing * (16 + 34 * e); frontHandY = shY + 4; backHandX = shX + s.facing * 8; }
-    if (!s.onGround && s.atk !== "kick") { frontFootX = s.x + s.facing * 8; backFootX = s.x - s.facing * 6; frontFootY = feetY - 10; backFootY = feetY - 6; }
-
-    ctx.lineCap = "round";
-    // back leg + arm (darker)
-    ctx.strokeStyle = shade(c1, -30); ctx.lineWidth = 11;
-    line(s.x, hipY, backFootX, backFootY);
-    ctx.strokeStyle = shade(c2, -20); ctx.lineWidth = 9;
-    line(shX, shY + 4, backHandX, backHandY);
-    // torso
-    ctx.fillStyle = c2; roundRectPath(shX - 12, shY, 24, hipY - shY + 6, 7); ctx.fill();
-    ctx.fillStyle = shade(c1, -10); roundRectPath(s.x - 12, hipY, 24, 14, 5); ctx.fill(); // belt/hips
-    // front leg + arm
-    ctx.strokeStyle = c1; ctx.lineWidth = 12;
-    line(s.x, hipY, frontFootX, frontFootY);
-    if (s.atk === "kick") { ctx.strokeStyle = "#ffe6d0"; ctx.lineWidth = 12; line(s.x, hipY, frontFootX, frontFootY); }
-    ctx.strokeStyle = "#ffe6d0"; ctx.lineWidth = 10;   // front arm (skin)
-    line(shX, shY + 4, frontHandX, frontHandY);
-    // fist glow on punch
-    if (s.atk === "punch" && s.active) { ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.beginPath(); ctx.arc(frontHandX, frontHandY, 9, 0, 7); ctx.fill(); }
-    // head
-    ctx.fillStyle = "#ffe0c4"; ctx.beginPath(); ctx.arc(headX, headY, 15, 0, 7); ctx.fill();
-    // headband
-    ctx.strokeStyle = c1; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(headX, headY - 2, 15, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
-    ctx.strokeStyle = c1; ctx.lineWidth = 4; line(headX - s.facing * 13, headY - 4, headX - s.facing * 26, headY + 4 + Math.sin(G.t * .3) * 3);
-    // eyes
-    ctx.fillStyle = "#1a1a1a"; ctx.beginPath(); ctx.arc(headX + s.facing * 5, headY, 2.2, 0, 7); ctx.fill();
-    // flash overlay when hit
-    if (s.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${s.flash * .7})`; roundRectPath(shX - 16, headY - 18, 34, hipY - headY + 30, 8); ctx.fill(); }
-    // flag tag
-    ctx.font = "16px sans-serif"; ctx.textAlign = "center"; ctx.fillText(ally.flag || "", headX, headY - 24);
+    shadow(s.x, 34);
+    const fe = feather(avatarImg, "ally", 200, 0.5, 0.46, 0.52, 0.6);
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    let sx = 1, sy = 1, ox = 0, oy = 0, rot = 0;
+    if (s.state === "crouch") sy = 0.72;
+    else if (!s.onGround) { sx = 0.94; sy = 1.09; }
+    else if (s.state === "walk") oy = Math.sin(s.walk * 6) * 3;
+    else oy = Math.sin(G.t * 0.08) * 3;
+    if (s.atk === "punch") { const e = Math.sin(clamp(s.atkT / 12, 0, 1) * Math.PI); ox = s.facing * 14 * e; sx = 1 + 0.06 * e; }
+    else if (s.atk === "kick") { const e = Math.sin(clamp(s.atkT / 16, 0, 1) * Math.PI); ox = s.facing * 18 * e; rot = 0.10 * e; }
+    else if (s.atk === "blast") { const e = Math.sin(clamp(s.atkT / 16, 0, 1) * Math.PI); ox = s.facing * 8 * e; }
+    if (s.state === "hit") { rot = -0.20; ox = -s.facing * 8; }
+    if (s.state === "block") ox = -s.facing * 7;
+    ctx.translate(ox, oy);
+    ctx.rotate(rot * s.facing);
+    ctx.scale(s.facing * sx, sy);
+    if (fe) {
+      ctx.drawImage(fe.canvas, -fe.w / 2, -fe.h + 8, fe.w, fe.h);
+      if (s.flash > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = clamp(s.flash, 0, 1) * 0.75; ctx.drawImage(fe.canvas, -fe.w / 2, -fe.h + 8, fe.w, fe.h); ctx.restore(); }
+    } else {
+      ctx.fillStyle = ally.c1 || "#2b6fff"; ctx.beginPath(); ctx.ellipse(0, -94, 34, 94, 0, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+    // block shield
+    if (s.state === "block") { ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = "rgba(120,180,255,.6)"; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(s.x + s.facing * 26, s.y - 92, 60, s.facing > 0 ? -1.1 : Math.PI - (-1.1), s.facing > 0 ? 1.1 : Math.PI - 1.1, s.facing < 0); ctx.stroke(); ctx.restore(); }
+    // attack effects (in front)
+    if (s.atk === "punch" && s.active) impact(s.x + s.facing * 78, s.y - 122, "#ffffff", 22);
+    if (s.atk === "kick" && s.active) arcSlash(s.x + s.facing * 92, s.y - 96, s.facing, "#ffd23e");
   }
 
   function drawDragon() {
-    const flash = D.hitFlash > 0;
-    // body from tail to head
-    for (let i = D.segs.length - 1; i >= 0; i--) {
-      const s = D.segs[i]; const r = 10 + (D.segs.length - i) / D.segs.length * 18;
-      ctx.fillStyle = flash ? "#ffffff" : (i % 2 ? "#b3121f" : "#e0242f");
-      ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, 7); ctx.fill();
-      // belly/scale
-      ctx.fillStyle = flash ? "#fff" : "rgba(255,200,60,.5)"; ctx.beginPath(); ctx.arc(s.x, s.y + r * .3, r * .4, 0, 7); ctx.fill();
-      // spine spike
-      if (i % 2 === 0) { ctx.fillStyle = flash ? "#fff" : "#ffb020"; ctx.beginPath(); ctx.moveTo(s.x, s.y - r); ctx.lineTo(s.x - 5, s.y - r - 8); ctx.lineTo(s.x + 5, s.y - r - 8); ctx.fill(); }
+    const breathing = D.state === "breathe" && D.stT > 16;
+    let img = dragonImg, key = "dragon";
+    if (breathing && dragonFireImg && dragonFireImg.complete && dragonFireImg.naturalWidth) { img = dragonFireImg; key = "dfire"; }
+    const fe = feather(img, key, 320, 0.5, 0.5, 0.56, 0.58);
+    ctx.save();
+    ctx.translate(D.hx, D.hy + Math.sin(D.bob) * 6);
+    ctx.scale(D.facing, 1);
+    if (fe) {
+      ctx.drawImage(fe.canvas, -fe.w / 2, -fe.h * 0.5, fe.w, fe.h);
+      if (D.hitFlash > 0.4) { ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.55; ctx.drawImage(fe.canvas, -fe.w / 2, -fe.h * 0.5, fe.w, fe.h); ctx.restore(); }
+    } else {
+      ctx.fillStyle = D.hitFlash > 0.4 ? "#fff" : "#e0242f"; ctx.beginPath(); ctx.ellipse(0, 0, 80, 130, 0, 0, 7); ctx.fill();
     }
-    // head
-    const hx = D.hx, hy = D.hy, f = D.facing;
-    ctx.save(); ctx.translate(hx, hy); ctx.scale(f, 1);
-    // horns
-    ctx.fillStyle = flash ? "#fff" : "#ffce4a";
-    ctx.beginPath(); ctx.moveTo(-6, -22); ctx.lineTo(-14, -46); ctx.lineTo(2, -26); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(8, -20); ctx.lineTo(4, -44); ctx.lineTo(18, -22); ctx.fill();
-    // skull
-    ctx.fillStyle = flash ? "#fff" : "#e0242f";
-    ctx.beginPath(); ctx.ellipse(0, 0, 32, 26, 0, 0, 7); ctx.fill();
-    // snout
-    ctx.beginPath(); ctx.moveTo(18, -8); ctx.quadraticCurveTo(52, -6, 50, 4); ctx.quadraticCurveTo(48, 8, 20, 10); ctx.fill();
-    // mouth open
-    const mo = D.mouth * 16;
-    ctx.fillStyle = "#2a0206"; ctx.beginPath(); ctx.moveTo(24, 6); ctx.lineTo(52, 6 + mo); ctx.lineTo(24, 14 + mo * .4); ctx.fill();
-    // teeth
-    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.moveTo(46, 6); ctx.lineTo(50, 12); ctx.lineTo(42, 8); ctx.fill();
-    // whiskers
-    ctx.strokeStyle = flash ? "#fff" : "#ffce4a"; ctx.lineWidth = 3; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(46, 2); ctx.quadraticCurveTo(80, -6, 92, 14); ctx.stroke();
-    // eye
-    ctx.fillStyle = flash ? "#111" : "#ffe14d"; ctx.beginPath(); ctx.arc(2, -6, 6, 0, 7); ctx.fill();
-    ctx.fillStyle = "#2a0206"; ctx.beginPath(); ctx.ellipse(3, -6, 2, 5, 0, 0, 7); ctx.fill();
-    // glow when breathing
-    if (D.state === "breathe" && D.stT > 20) { ctx.fillStyle = "rgba(255,160,40,.6)"; ctx.beginPath(); ctx.arc(46, 8, 10 + Math.random() * 6, 0, 7); ctx.fill(); }
+    ctx.restore();
+  }
+
+  function impact(x, y, c, r) {
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    const g = ctx.createRadialGradient(x, y, 1, x, y, r); g.addColorStop(0, c); g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    ctx.strokeStyle = c; ctx.lineWidth = 3;
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + G.t * 0.3; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r * 0.5, y + Math.sin(a) * r * 0.5); ctx.lineTo(x + Math.cos(a) * r * 1.35, y + Math.sin(a) * r * 1.35); ctx.stroke(); }
+    ctx.restore();
+  }
+  function arcSlash(x, y, f, c) {
+    ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = c; ctx.lineWidth = 7; ctx.globalAlpha = 0.85;
+    ctx.beginPath(); ctx.arc(x - f * 26, y, 44, f > 0 ? -1.15 : Math.PI + 1.15, f > 0 ? 1.15 : Math.PI - 1.15, f < 0); ctx.stroke();
     ctx.restore();
   }
 
