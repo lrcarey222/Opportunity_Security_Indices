@@ -445,37 +445,126 @@
 
   function shadow(x, w) { ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.beginPath(); ctx.ellipse(x, GROUND + 4, w, 8, 0, 0, 7); ctx.fill(); }
 
+  /* circular head cut-out from the avatar portrait (the ally's real face) */
+  function headCut(img) {
+    if (!img || !img.complete || !img.naturalWidth) return null;
+    if (featherCache.__head) return featherCache.__head;
+    const S = 128, oc = document.createElement("canvas"); oc.width = S; oc.height = S;
+    const o = oc.getContext("2d");
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const cx = iw * 0.5, cy = ih * 0.30, rr = iw * 0.36;
+    o.save(); o.beginPath(); o.arc(S / 2, S / 2, S / 2 - 1, 0, 7); o.clip();
+    o.drawImage(img, cx - rr, cy - rr, rr * 2, rr * 2, 0, 0, S, S);
+    o.restore();
+    featherCache.__head = { canvas: oc, S };
+    return featherCache.__head;
+  }
+  // 2-bone IK: joint between (x1,y1)->target given segment lengths + bend direction
+  function ik(x1, y1, x2, y2, l1, l2, bend) {
+    let dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy) || 0.001;
+    const maxd = l1 + l2 - 0.5;
+    if (d > maxd) { x2 = x1 + dx / d * maxd; y2 = y1 + dy / d * maxd; dx = x2 - x1; dy = y2 - y1; d = maxd; }
+    const a = Math.atan2(dy, dx);
+    const A = Math.acos(clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1));
+    return { jx: x1 + Math.cos(a + A * bend) * l1, jy: y1 + Math.sin(a + A * bend) * l1, ex: x2, ey: y2 };
+  }
+  function limb(x1, y1, j, x3, y3, wUp, wLo, col, outline) {
+    ctx.lineCap = "round";
+    ctx.strokeStyle = outline; ctx.lineWidth = wUp + 4; seg(x1, y1, j.jx, j.jy); ctx.lineWidth = wLo + 4; seg(j.jx, j.jy, x3, y3);
+    ctx.strokeStyle = col; ctx.lineWidth = wUp; seg(x1, y1, j.jx, j.jy); ctx.lineWidth = wLo; seg(j.jx, j.jy, x3, y3);
+  }
+  function seg(a, b, c, d) { ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c, d); ctx.stroke(); }
+
   function drawFighter() {
     const s = P;
-    shadow(s.x, 34);
-    const fe = feather(avatarImg, "ally", 200, 0.5, 0.46, 0.52, 0.6);
+    shadow(s.x, 30);
+    const c1 = ally.c1 || "#2b6fff", c2 = ally.c2 || "#7db4ff";
+    const skin = "#e7b489", ol = "rgba(10,4,8,.9)";
+    const pants = c1, sleeve = c2, boot = shade(c1, -46), glove = shade(c2, -20);
+    const hc = headCut(avatarImg);
+    const t = G.t, f = 1; // draw in facing-right space, flip via transform
+
+    const crouch = s.state === "crouch";
+    const breath = (s.onGround && !s.atk && s.hitstun <= 0 && s.state !== "block") ? Math.sin(t * 0.08) * 2 : 0;
+    let hipY = s.y - (crouch ? 34 : 52);
+    let lean = 0;
+    if (s.state === "hit") lean = -13;
+    else if (s.state === "block") lean = -5;
+    else if (s.atk === "punch") lean = 6 * Math.sin(clamp(s.atkT / 12, 0, 1) * Math.PI);
+    else if (s.atk === "kick") lean = -7;
+    else if (s.atk === "blast") lean = 4 * Math.sin(clamp(s.atkT / 16, 0, 1) * Math.PI);
+    const shY = hipY - (crouch ? 38 : 48) + breath;
+    const shX = s.x + lean;
+    const headY = shY - 17, headX = shX + 3 + lean * 0.35, headR = 19;
+
+    // ---- foot targets ----
+    let ffX = s.x + 15, fbX = s.x - 16, ffY = s.y, fbY = s.y;
+    if (s.state === "walk") { const c = Math.sin(s.walk * 6); ffX = s.x + 16 + c * 16; fbX = s.x - 16 - c * 16; ffY = s.y - Math.max(0, c) * 9; fbY = s.y - Math.max(0, -c) * 9; }
+    else if (!s.onGround) { ffX = s.x + 12; fbX = s.x - 12; ffY = fbY = hipY + 30; }
+    else if (crouch) { ffX = s.x + 20; fbX = s.x - 20; }
+    // ---- hand targets ----
+    let fhX = shX + 17, fhY = shY + 12, bhX = shX - 13, bhY = shY + 12;   // guard
+    if (s.state === "block") { fhX = shX + 20; fhY = shY - 4; bhX = shX + 15; bhY = shY + 14; }
+    if (s.atk === "punch") { const e = Math.sin(clamp(s.atkT / 11, 0, 1) * Math.PI); fhX = shX + 20 + 58 * e; fhY = shY + 6; bhX = shX - 16 - 4 * e; }
+    else if (s.atk === "blast") { const e = Math.sin(clamp(s.atkT / 14, 0, 1) * Math.PI); fhX = shX + 22 + 30 * e; fhY = shY + 10; bhX = shX + 10 * e; bhY = shY + 12; }
+    else if (s.atk === "kick") { fhX = shX + 8; fhY = shY - 4; bhX = shX - 18; bhY = shY + 4; }
+    else if (s.state === "hit") { fhX = shX + 8; fhY = shY - 8; bhX = shX - 20; bhY = shY - 4; }
+    if (s.atk === "kick") { const e = Math.sin(clamp(s.atkT / 12, 0, 1) * Math.PI); ffX = s.x + 26 + 62 * e; ffY = s.y - 22 - 22 * e; fbX = s.x - 12; }
+
     ctx.save();
-    ctx.translate(s.x, s.y);
-    let sx = 1, sy = 1, ox = 0, oy = 0, rot = 0;
-    if (s.state === "crouch") sy = 0.72;
-    else if (!s.onGround) { sx = 0.94; sy = 1.09; }
-    else if (s.state === "walk") oy = Math.sin(s.walk * 6) * 3;
-    else oy = Math.sin(G.t * 0.08) * 3;
-    if (s.atk === "punch") { const e = Math.sin(clamp(s.atkT / 12, 0, 1) * Math.PI); ox = s.facing * 14 * e; sx = 1 + 0.06 * e; }
-    else if (s.atk === "kick") { const e = Math.sin(clamp(s.atkT / 16, 0, 1) * Math.PI); ox = s.facing * 18 * e; rot = 0.10 * e; }
-    else if (s.atk === "blast") { const e = Math.sin(clamp(s.atkT / 16, 0, 1) * Math.PI); ox = s.facing * 8 * e; }
-    if (s.state === "hit") { rot = -0.20; ox = -s.facing * 8; }
-    if (s.state === "block") ox = -s.facing * 7;
-    ctx.translate(ox, oy);
-    ctx.rotate(rot * s.facing);
-    ctx.scale(s.facing * sx, sy);
-    if (fe) {
-      ctx.drawImage(fe.canvas, -fe.w / 2, -fe.h + 8, fe.w, fe.h);
-      if (s.flash > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = clamp(s.flash, 0, 1) * 0.75; ctx.drawImage(fe.canvas, -fe.w / 2, -fe.h + 8, fe.w, fe.h); ctx.restore(); }
-    } else {
-      ctx.fillStyle = ally.c1 || "#2b6fff"; ctx.beginPath(); ctx.ellipse(0, -94, 34, 94, 0, 0, 7); ctx.fill();
-    }
+    ctx.translate(s.x, 0); ctx.scale(s.facing, 1); ctx.translate(-s.x, 0);
+
+    const hipFX = s.x + 8, hipBX = s.x - 8;
+    // back limbs (behind torso, darker)
+    limb(hipBX, hipY, ik(hipBX, hipY, fbX, fbY, 28, 28, 1), fbX, fbY, 13, 11, shade(pants, -22), ol);
+    ctx.strokeStyle = shade(boot, -10); ctx.lineWidth = 12; seg(fbX - 6, fbY, fbX + 8, fbY);
+    limb(shX - 9, shY + 2, ik(shX - 9, shY + 2, bhX, bhY, 20, 20, 1), bhX, bhY, 10, 8, shade(skin, -26), ol);
+
+    // torso
+    ctx.beginPath();
+    ctx.moveTo(shX - 15, shY);
+    ctx.quadraticCurveTo(shX - 19, (shY + hipY) / 2, s.x - 13, hipY);
+    ctx.lineTo(s.x + 13, hipY);
+    ctx.quadraticCurveTo(shX + 19, (shY + hipY) / 2, shX + 15, shY);
+    ctx.closePath();
+    ctx.fillStyle = ol; ctx.strokeStyle = ol; ctx.lineWidth = 4; ctx.stroke();
+    const tg = ctx.createLinearGradient(0, shY, 0, hipY); tg.addColorStop(0, c2); tg.addColorStop(1, shade(c2, -34));
+    ctx.fillStyle = tg; ctx.fill();
+    // chest shading + belt
+    ctx.strokeStyle = "rgba(0,0,0,.18)"; ctx.lineWidth = 2; seg(shX, shY + 6, s.x, hipY - 6);
+    ctx.fillStyle = pants; roundRectPath(s.x - 14, hipY - 5, 28, 12, 4); ctx.fill();
+    // neck
+    ctx.strokeStyle = skin; ctx.lineWidth = 11; seg(headX, headY + 10, shX, shY + 2);
+
+    // front limbs
+    limb(hipFX, hipY, ik(hipFX, hipY, ffX, ffY, 28, 28, 1), ffX, ffY, 14, 12, pants, ol);
+    ctx.strokeStyle = boot; ctx.lineWidth = 13; seg(ffX - 7, ffY, ffX + 10, ffY);
+    // front arm: upper=sleeve, fore=skin
+    const armJ = ik(shX + 9, shY + 2, fhX, fhY, 20, 20, 1);
+    ctx.lineCap = "round";
+    ctx.strokeStyle = ol; ctx.lineWidth = 15; seg(shX + 9, shY + 2, armJ.jx, armJ.jy); ctx.lineWidth = 13; seg(armJ.jx, armJ.jy, armJ.ex, armJ.ey);
+    ctx.strokeStyle = sleeve; ctx.lineWidth = 12; seg(shX + 9, shY + 2, armJ.jx, armJ.jy);
+    ctx.strokeStyle = skin; ctx.lineWidth = 10; seg(armJ.jx, armJ.jy, armJ.ex, armJ.ey);
+    ctx.fillStyle = glove; ctx.beginPath(); ctx.arc(armJ.ex, armJ.ey, 6.5, 0, 7); ctx.fill();
+    // shoulder cap
+    ctx.fillStyle = sleeve; ctx.strokeStyle = ol; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(shX + 12, shY + 1, 8, 0, 7); ctx.fill(); ctx.stroke();
+
+    // head: real face cut-out + headband
+    ctx.fillStyle = ol; ctx.beginPath(); ctx.arc(headX, headY, headR + 2, 0, 7); ctx.fill();
+    if (hc) { ctx.save(); ctx.beginPath(); ctx.arc(headX, headY, headR, 0, 7); ctx.clip(); ctx.drawImage(hc.canvas, headX - headR, headY - headR, headR * 2, headR * 2); ctx.restore(); }
+    else { ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(headX, headY, headR, 0, 7); ctx.fill(); }
+    // small trailing ribbon behind the head (motion flair; avatar keeps its own headwear)
+    ctx.strokeStyle = c1; ctx.lineCap = "round"; ctx.lineWidth = 4;
+    seg(headX - headR + 3, headY - 6, headX - headR - 16, headY - 3 + Math.sin(t * 0.3) * 4);
+    // hit flash over whole body
+    if (s.flash > 0) { ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = clamp(s.flash, 0, 1) * 0.5; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.ellipse(shX, (shY + hipY) / 2, 26, (hipY - headY) / 1.4, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over"; }
+
     ctx.restore();
-    // block shield
-    if (s.state === "block") { ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = "rgba(120,180,255,.6)"; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(s.x + s.facing * 26, s.y - 92, 60, s.facing > 0 ? -1.1 : Math.PI - (-1.1), s.facing > 0 ? 1.1 : Math.PI - 1.1, s.facing < 0); ctx.stroke(); ctx.restore(); }
-    // attack effects (in front)
-    if (s.atk === "punch" && s.active) impact(s.x + s.facing * 78, s.y - 122, "#ffffff", 22);
-    if (s.atk === "kick" && s.active) arcSlash(s.x + s.facing * 92, s.y - 96, s.facing, "#ffd23e");
+
+    // block shield + attack effects (world space)
+    if (s.state === "block") { ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = "rgba(120,180,255,.6)"; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(s.x + s.facing * 26, s.y - 92, 58, s.facing > 0 ? -1.1 : Math.PI - -1.1, s.facing > 0 ? 1.1 : Math.PI - 1.1, s.facing < 0); ctx.stroke(); ctx.restore(); }
+    if (s.atk === "punch" && s.active) impact(s.x + s.facing * 86, s.y - 106, "#ffffff", 22);
+    if (s.atk === "kick" && s.active) arcSlash(s.x + s.facing * 96, s.y - 96, s.facing, "#ffd23e");
   }
 
   function drawDragon() {
