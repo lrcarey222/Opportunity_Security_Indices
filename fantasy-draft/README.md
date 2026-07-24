@@ -50,13 +50,17 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
    sub-sector ranked by the overall draft order (pick #1 = top alliance priority, with the
    ones nobody took shown as "passed over"), a per-category demand summary, and the final
    standings. Rematch with a new fighter.
-6. **Final boss: FIGHT China.** The board shows the alliance's **power** — how close the
-   collective draft got to the maximum-possible stack (the highest-OVR sub-sectors). Hit
-   **FIGHT!** and a six-frame **storyboard animation** plays out the bout against China, the
-   big boss. Reach the win threshold (**85%** of the max stack) and the *Allies Win* sequence
-   plays (China attacks → allies defend → China returns to human → allies win); fall short and
-   the *China Wins* sequence plays (China powers up → transforms into a dragon → dragon
-   attack → China wins). Prioritize high-value sub-sectors to win.
+6. **Final boss vs China.** The board shows the alliance's **power** — how close the
+   collective draft got to the maximum-possible stack (the highest-OVR sub-sectors). Two ways
+   to face the boss:
+   - **🕹 Fight the Dragon** — a playable 90s-arcade fighting mini-game: your Allied fighter
+     vs a Chinese dragon. Controls are keyboard-only: **A/D** move · **W** jump · **S** crouch ·
+     **←** punch · **→** kick · **↑** energy blast · **↓** block (on-screen buttons appear on
+     touch devices). Health bars, a round timer, and K.O. win/lose. Your **alliance power boosts
+     your fighter's health**, so a better draft makes the fight easier.
+   - **▶ Watch cinematic** — a six-frame storyboard animation whose outcome is decided by the
+     draft: reach the win threshold (**85%** of the max stack) and the *Allies Win* sequence
+     plays; fall short and the *China Wins* (dragon) sequence plays.
 
 ## The Electro-Industrial Stack (the six "positions")
 
@@ -78,6 +82,7 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
 | `data.js` | The 21 allies, 39 sub-sectors, stats, synergies, scoring |
 | `avatars.js` | Cropped fighter portraits (WebP data-URIs) per ally |
 | `fight-frames.js` | 12 boss-fight keyframes (WebP data-URIs) cropped from the storyboard |
+| `arcade.js` | Playable Canvas fighting mini-game (Allied fighter vs Chinese dragon) |
 | `art.js` | Portrait pipeline + inline **SVG** industry icons and fallback mascots |
 | `app.js` | Draft engine (ally-count/rounds setup, snake order, salary cap, AI, scoring) |
 

@@ -479,9 +479,10 @@ function renderBossChallenge() {
         <div class="bc-name">${you.flag} ${you.name}</div>
       </div>
       <div class="bc-mid">
-        <div class="bc-power">Alliance power<br><b>${STATE.powerPct}%</b><span>of the maximum stack · needs ${Math.round(WIN_THRESHOLD * 100)}%</span></div>
-        <button class="btn red bc-fight" id="fightBtn">FIGHT! ▶</button>
-        <div class="bc-hint">Take on China — the big boss</div>
+        <div class="bc-power">Alliance power<br><b>${STATE.powerPct}%</b><span>boosts your fighter's health</span></div>
+        <button class="btn red bc-fight" id="arcadeBtn">🕹 Fight the Dragon</button>
+        <button class="btn ghost bc-cine" id="fightBtn">▶ Watch cinematic</button>
+        <div class="bc-hint">Playable · WASD + arrow keys</div>
       </div>
       <div class="bc-side">
         <div class="bc-portrait boss"><img class="portrait-fill" src="${FIGHT_FRAMES.L2}" alt="China — the big boss"></div>
@@ -489,6 +490,7 @@ function renderBossChallenge() {
       </div>
     </div>`;
   $("#fightBtn").addEventListener("click", runFight);
+  $("#arcadeBtn").addEventListener("click", () => startArcade(STATE.you, STATE.powerPct));
 }
 
 const FIGHT_CAPS = {
