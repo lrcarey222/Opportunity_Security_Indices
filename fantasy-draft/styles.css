@@ -417,5 +417,33 @@ body.scrolllock{ overflow:hidden; }
 .ae-actions{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
 .bc-mid .bc-cine{ font-size:13px; padding:9px 16px; }
 
+/* ---------- Multiplayer / lobby ---------- */
+.mp-row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+#playerName{ font-family:var(--font); background:rgba(0,0,0,.45); color:var(--ink); border:1px solid var(--line-2);
+  padding:11px 14px; font-size:14px; min-width:180px; clip-path:polygon(6px 0,100% 0,100% 100%,0 100%); }
+.share-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:6px 4px 4px; }
+#shareLink{ flex:1; min-width:220px; font-family:var(--font); background:rgba(0,0,0,.45); color:var(--gold-2);
+  border:1px solid var(--line-2); padding:11px 14px; font-size:13px; }
+.code-chip{ font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-dim); padding:8px 12px;
+  border:1px solid var(--line-2); background:rgba(0,0,0,.3); }
+.code-chip b{ color:var(--gold); font-family:var(--font-num); font-style:italic; font-size:15px; letter-spacing:2px; }
+.lobby-players{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+.lp-card{ position:relative; background:var(--bg-2); border:3px solid var(--cc1); box-shadow:var(--shadow); text-align:center; overflow:hidden;
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); }
+.lp-portrait{ position:relative; aspect-ratio:1/1; overflow:hidden; display:grid; place-items:center;
+  background:radial-gradient(120% 90% at 50% 8%, var(--cc2), var(--cc1) 70%, #10080b); }
+.lp-portrait .flagbg{ position:absolute; inset:0; font-size:80px; display:grid; place-items:center; opacity:.16; }
+.lp-portrait .portrait-fill,.lp-portrait .mascot-svg{ position:relative; z-index:1; }
+.lp-dot{ position:absolute; top:7px; right:7px; z-index:2; width:12px; height:12px; border-radius:50%; border:2px solid rgba(0,0,0,.6); }
+.lp-dot.on{ background:#48e06a; box-shadow:0 0 8px rgba(72,224,106,.8); } .lp-dot.off{ background:#7a5c52; }
+.lp-name{ font-family:var(--font-disp); font-style:italic; text-transform:uppercase; font-size:15px; color:var(--ink); margin-top:7px; padding:0 6px; }
+.lp-sub{ font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.4px; }
+.lp-badges{ display:flex; gap:5px; justify-content:center; padding:6px; }
+.lp-badge{ font-family:var(--font-disp); font-style:italic; font-size:10px; padding:2px 7px; color:#160305; clip-path:polygon(4px 0,100% 0,100% 100%,0 100%); }
+.lp-badge.host{ background:var(--gold); } .lp-badge.you{ background:var(--cyan); }
+.lobby-controls{ display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; margin:22px 0 8px; }
+.lobby-waiting{ text-align:center; margin:24px 0; font-family:var(--font-disp); font-style:italic; text-transform:uppercase;
+  font-size:20px; letter-spacing:1px; color:var(--gold); }
+
 footer{ text-align:center; color:var(--ink-faint); font-size:12px; margin-top:40px; line-height:1.7; letter-spacing:.3px; }
 footer a{ color:var(--gold-2); text-decoration:none; }

@@ -62,6 +62,26 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
      draft: reach the win threshold (**85%** of the max stack) and the *Allies Win* sequence
      plays; fall short and the *China Wins* (dragon) sequence plays.
 
+## Multiplayer leagues (draft with friends)
+
+One person creates a **League**, shares the link, and everyone who opens it joins the
+**same draft room** and drafts together in real time. The host decides when to start.
+
+- On the home screen: pick your fighter, type a name, and hit **Create League** — you'll
+  get a shareable link + code. Others open the link, pick their own fighter, and **Join**.
+- The **host** sees rounds/difficulty controls and a **Start Draft** button; everyone else
+  sees "waiting for the host". When the host starts, all players draft in a synchronized
+  snake order (with a 45-second auto-pick so nobody can stall the room; the host also
+  auto-picks for anyone who disconnects). The final priorities board + standings are shared.
+
+**Enabling real cross-device play (one-time, free):** multiplayer uses Firebase. Until you
+add your Firebase config it runs in **local mode** (works only across tabs of the *same*
+browser — fine for trying it out). To play with friends on other devices, follow the
+step-by-step instructions in **`firebase-config.js`** (create a free Firebase project, turn
+on the Realtime Database, paste the web config). Then deploy on **GitHub Pages** (or any
+static host) — the multiplayer link won't work inside the Claude artifact preview, which
+can't reach outside services.
+
 ## The Electro-Industrial Stack (the six "positions")
 
 | | Category | Draftable sub-sectors |
@@ -83,6 +103,9 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
 | `avatars.js` | Cropped fighter portraits (WebP data-URIs) per ally |
 | `fight-frames.js` | 12 boss-fight keyframes (WebP data-URIs) cropped from the storyboard |
 | `arcade.js` | Playable Canvas fighting mini-game (Allied fighter vs Chinese dragon) |
+| `net.js` | Realtime sync layer (Firebase adapter + local BroadcastChannel fallback) |
+| `lobby.js` | Multiplayer league flow: create / join / lobby / synchronized draft |
+| `firebase-config.js` | Your Firebase keys + setup instructions (enables cross-device play) |
 | `art.js` | Portrait pipeline + inline **SVG** industry icons and fallback mascots |
 | `app.js` | Draft engine (ally-count/rounds setup, snake order, salary cap, AI, scoring) |
 

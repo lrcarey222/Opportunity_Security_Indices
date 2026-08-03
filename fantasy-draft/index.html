@@ -45,7 +45,7 @@
       <div class="ally-detail" id="allyDetail" style="display:none"></div>
 
       <div class="setup-actions">
-        <button class="btn red" id="startBtn" disabled>Fight! Enter the Draft ▸</button>
+        <button class="btn red" id="startBtn" disabled>Solo vs AI — Enter Draft ▸</button>
         <div class="field">Allies
           <select id="alliesSel">
             <option value="4">4</option>
@@ -75,7 +75,19 @@
           </select>
         </div>
       </div>
+
+      <div class="section-title"><h3>Play with friends</h3><div class="rule"></div>
+        <span class="hint">Create a league · share the link · draft together live</span></div>
+      <div class="mp-row">
+        <input id="playerName" type="text" maxlength="16" placeholder="Your name" />
+        <button class="btn gold" id="createLeagueBtn" disabled>Create League ▶</button>
+        <button class="btn gold" id="joinLeagueBtn" disabled style="display:none">Join League ▶</button>
+      </div>
+      <div class="hint" id="joinHint" style="display:none;margin:8px 4px"></div>
     </section>
+
+    <!-- ================= LOBBY SCREEN ================= -->
+    <section id="lobbyScreen" class="screen"></section>
 
     <!-- ================= DRAFT SCREEN ================= -->
     <section id="draftScreen" class="screen">
@@ -157,11 +169,18 @@
   <div class="fight-overlay" id="fightOverlay"></div>
   <div class="arcade-overlay" id="arcadeOverlay"></div>
 
+  <!-- Firebase (multiplayer). Loads from CDN on your hosted site; ignored offline/in preview. -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
   <script src="data.js"></script>
   <script src="avatars.js"></script>
   <script src="fight-frames.js"></script>
   <script src="art.js"></script>
   <script src="arcade.js"></script>
+  <script src="net.js"></script>
   <script src="app.js"></script>
+  <script src="lobby.js"></script>
 </body>
 </html>
