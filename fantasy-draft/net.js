@@ -56,6 +56,7 @@ const NET = (function () {
       async setSettings(s) { const d = read(id); if (!d) return; d.settings = Object.assign(d.settings || {}, s); write(id, d); },
       async removePlayer(uid) { const d = read(id); if (!d) return; if (d.players) delete d.players[uid]; if (d.presence) delete d.presence[uid]; write(id, d); },
       async startDraft(order, settings) { const d = read(id); if (!d) return; d.settings = Object.assign(d.settings || {}, settings); d.status = "drafting"; d.draft = { order, pickIndex: 0, picks: {}, seq: {} }; write(id, d); },
+      async setSeason(season) { const d = read(id); if (!d) return; d.season = season; d.status = "season"; write(id, d); },
       async makePick(subN, ctx) { const d = read(id); if (!d || !d.draft) return { error: "no_draft" }; const nd = applyPick(d.draft, subN, ctx.seat, ctx.pickIndex, ctx.round); if (!nd) return { error: "stale" }; d.draft = nd; if (nd.pickIndex >= ctx.total) d.status = "results"; write(id, d); return { ok: true }; },
       onLeague(fn) { cb = fn; emit(); },
       leave() { const d = read(id); if (d && d.presence) { delete d.presence[me]; write(id, d); } if (bc) bc.close(); if (hb) clearInterval(hb); },
@@ -96,6 +97,7 @@ const NET = (function () {
       async startDraft(order, settings) {
         await db.ref("leagues/" + id).update({ status: "drafting", settings, draft: { order, pickIndex: 0, picks: {}, seq: {} } });
       },
+      async setSeason(season) { await db.ref("leagues/" + id).update({ season, status: "season" }); },
       async makePick(subN, ctx) {
         const res = await db.ref("leagues/" + id + "/draft").transaction((dr) => {
           const nd = applyPick(dr, subN, ctx.seat, ctx.pickIndex, ctx.round);
