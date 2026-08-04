@@ -118,6 +118,20 @@ Headlines:\n${titles.map((h, i) => `${i}. ${h}`).join("\n")}`;
 }
 
 /* ---------- Firebase REST ---------- */
+const RULES_HINT = [
+  "",
+  "Firebase denied the request (401/403). The bot reads & writes over REST without",
+  "logging in, so your Realtime Database rules must allow public access to /leagues.",
+  "In the Firebase console → Realtime Database → Rules, publish (note: .read/.write",
+  "sit on the `leagues` node itself — the bot lists all leagues, and Firebase read",
+  "rules do not cascade upward from a `$id` child):",
+  "",
+  '  { "rules": { "leagues": { ".read": true, ".write": true } } }',
+  "",
+  "Then re-run this workflow. (These test-mode-style rules also expire if you used the",
+  "default timed rules — publishing the above makes them persistent.)",
+  "",
+].join("\n");
 function dbUrl() {
   if (process.env.FIREBASE_DB_URL) return process.env.FIREBASE_DB_URL.replace(/\/$/, "");
   try {
@@ -185,23 +199,36 @@ async function main() {
   // 3. write per league
   const DB = dbUrl();
   if (!DB) { console.error("No FIREBASE_DB_URL / databaseURL — cannot write. (set it or run with --dry)"); process.exit(1); }
-  const leagues = (await jget(`${DB}/leagues.json`)) || {};
-  let written = 0;
+  let leagues;
+  try {
+    leagues = (await jget(`${DB}/leagues.json`)) || {};
+  } catch (e) {
+    if (/\b40[13]\b/.test(String(e.message))) { console.error(RULES_HINT); process.exit(1); }
+    throw e;
+  }
+  let written = 0, skipped = 0;
   for (const [id, lg] of Object.entries(leagues)) {
     if (!lg || !lg.players) continue;
     const { countries, sectors } = leagueTargets(lg);
     if (!countries.size && !sectors.size) continue;
     const week = currentWeek(lg);
-    const seen = (await jget(`${DB}/leagues/${id}/seen.json`)) || {};
+    let seen;
+    try { seen = (await jget(`${DB}/leagues/${id}/seen.json`)) || {}; }
+    catch (e) { console.warn(`league ${id}: could not read seen (${e.message}) — skipping`); skipped++; continue; }
     for (const ev of events) {
       const relevant = ev.sectors.some(s => sectors.has(s)) || ev.countries.some(c => countries.has(c));
       if (!relevant || seen[ev.id]) continue;
-      await jpost(`${DB}/leagues/${id}/events.json`, { ...ev, week });
-      await jput(`${DB}/leagues/${id}/seen/${ev.id}.json`, ev.ts);
-      written++;
+      try {
+        await jpost(`${DB}/leagues/${id}/events.json`, { ...ev, week });
+        await jput(`${DB}/leagues/${id}/seen/${ev.id}.json`, ev.ts);
+        written++;
+      } catch (e) {
+        if (/\b40[13]\b/.test(String(e.message))) { console.error(RULES_HINT); process.exit(1); }
+        console.warn(`league ${id}: write failed (${e.message})`);
+      }
     }
   }
-  console.log(`wrote ${written} events across ${Object.keys(leagues).length} leagues`);
+  console.log(`wrote ${written} events across ${Object.keys(leagues).length} leagues${skipped ? ` (${skipped} skipped)` : ""}`);
 }
 
 if (process.argv[1] && process.argv[1].endsWith("news-bot.mjs")) {

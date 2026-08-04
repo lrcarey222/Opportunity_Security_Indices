@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - name: Run news bot
         env:
           # Optional: add ANTHROPIC_API_KEY as a repo secret to upgrade tagging to AI.
