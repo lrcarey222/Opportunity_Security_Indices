@@ -84,6 +84,14 @@
     return { sectors, country, total: weeklyPoints(snap, uid, week) };
   }
 
+  /* drafted sub-sectors for a team, in draft-pick order (slot 1..R) */
+  function orderedRoster(snap, uid) {
+    const seq = (snap.draft && snap.draft.seq) || {};
+    return Object.keys(seq).map(Number).sort((a, b) => a - b).filter(k => seq[k].uid === uid).map(k => Number(seq[k].subN));
+  }
+  /* {subN: weekly points} for a team this week (0 for sectors that didn't score) */
+  function weekSectorMap(snap, uid, week) { const m = {}; weekBreakdown(snap, uid, week).sectors.forEach(s => m[s.subN] = s.pts); return m; }
+
   /* ---------- CTA on the results screen (before season starts) ---------- */
   function renderSeasonCta(snap) {
     const el = $("#seasonCta"); if (!el) return;
@@ -207,55 +215,73 @@
     const oppSide = opp != null ? matchPortrait(opp, oppPts, oppPts > myPts)
       : `<div class="mu-side"><div class="mu-portrait" style="display:grid;place-items:center;font-size:40px">🛌</div><div class="mu-name">Bye week</div><div class="mu-country">No opponent</div><div class="mu-pts">—</div></div>`;
 
-    const bd = weekBreakdown(snap, me, wk);
-    const rows = [];
-    bd.sectors.forEach(s => {
-      const sub = SUB_BY_N[s.subN], cat = sub ? CATEGORIES[sub.cat] : null;
-      rows.push(`<button class="contrib-row" data-sec="${s.subN}" style="--cc1:${cat ? cat.c1 : "#888"};--cc2:${cat ? cat.c2 : "#aaa"}">
-        <span class="cr-ico">${sub ? iconSVG(sub.glyph, cat.c1, cat.c2, 34) : ""}</span>
-        <span class="cr-main"><span class="cr-name">${sub ? escHtml(sub.name) : "Sector " + s.subN}</span>
-          <span class="cr-sub">${sub ? sub.cat + " · " + cat.short : ""} · ${s.events.length} headline${s.events.length === 1 ? "" : "s"}</span></span>
-        <span class="cr-pts ${s.pts < 0 ? "neg" : s.pts > 0 ? "pos" : "zero"}">${sgn(s.pts)}</span><span class="cr-arrow">▸</span></button>`);
-    });
-    if (bd.country.pts || bd.country.events.length) {
-      const c = seatCountry(me);
-      rows.push(`<button class="contrib-row" data-sec="country" style="--cc1:${c.c1};--cc2:${c.c2}">
-        <span class="cr-ico" style="font-size:26px;display:grid;place-items:center;width:34px;height:34px">${c.flag}</span>
-        <span class="cr-main"><span class="cr-name">National news — ${c.name}</span>
-          <span class="cr-sub">Country-wide + ally partnerships · ${bd.country.events.length} headline${bd.country.events.length === 1 ? "" : "s"}</span></span>
-        <span class="cr-pts ${bd.country.pts < 0 ? "neg" : bd.country.pts > 0 ? "pos" : "zero"}">${sgn(bd.country.pts)}</span><span class="cr-arrow">▸</span></button>`);
+    // classic head-to-head box score: each team's drafted sub-sectors (like roster players)
+    // with the points they scored this week, aligned by draft slot, national-news + totals rows.
+    const myR = orderedRoster(snap, me), opR = opp != null ? orderedRoster(snap, opp) : [];
+    const mySec = weekSectorMap(snap, me, wk), opSec = opp != null ? weekSectorMap(snap, opp, wk) : {};
+    const myNat = weekBreakdown(snap, me, wk).country.pts, opNat = opp != null ? weekBreakdown(snap, opp, wk).country.pts : 0;
+    const meC = seatCountry(me), opC = opp != null ? seatCountry(opp) : null;
+    const maxLen = Math.max(myR.length, opR.length, 1);
+
+    const ptsCell = (pts, side) => `<td class="mb-pts ${side} ${pts < 0 ? "neg" : pts > 0 ? "pos" : "zero"}">${sgn(pts)}</td>`;
+    const playerCell = (subN, side, uid) => {
+      if (subN == null) return `<td class="mb-player ${side} empty"></td>`;
+      const sub = SUB_BY_N[subN], cat = sub ? CATEGORIES[sub.cat] : null;
+      return `<td class="mb-player ${side}" data-sec="${subN}" data-uid="${uid}" style="--cc2:${cat ? cat.c2 : "#888"}">
+        <span class="mb-nm">${sub ? escHtml(sub.name) : "Sector " + subN}</span><span class="mb-cat">${sub ? sub.cat + " · " + cat.short : ""}</span></td>`;
+    };
+    const natCell = (uid, c, side) => c
+      ? `<td class="mb-player ${side}" data-sec="country" data-uid="${uid}" style="--cc2:${c.c2}"><span class="mb-nm">National news</span><span class="mb-cat">${c.flag} ${c.name}</span></td>`
+      : `<td class="mb-player ${side} empty"></td>`;
+
+    let body = "";
+    for (let i = 0; i < maxLen; i++) {
+      const ls = myR[i], rs = opR[i];
+      body += `<tr class="mb-row">${playerCell(ls, "left", me)}${ptsCell(ls != null ? (mySec[ls] || 0) : 0, "left")}
+        <td class="mb-slot">R${i + 1}</td>${ptsCell(rs != null ? (opSec[rs] || 0) : 0, "right")}${playerCell(rs, "right", opp)}</tr>`;
     }
-    const breakdownHtml = rows.length ? rows.join("")
-      : `<div class="roster-empty">No points yet this week. As headlines land, the sub-sectors and country news that earned them show up here — tap any to see the stories.</div>`;
+    body += `<tr class="mb-row mb-nat">${natCell(me, meC, "left")}${ptsCell(myNat, "left")}<td class="mb-slot">NAT</td>${ptsCell(opNat, "right")}${natCell(opp, opC, "right")}</tr>`;
+    const resultLbl = opp == null ? "—" : myPts === oppPts ? "TIE" : myPts > oppPts ? "◀ WIN" : "WIN ▶";
+    body += `<tr class="mb-tot"><td class="mb-player left"><span class="mb-nm">TOTAL</span></td>
+      <td class="mb-pts left ${myPts < 0 ? "neg" : "pos"}">${sgn(myPts)}</td><td class="mb-slot">${resultLbl}</td>
+      <td class="mb-pts right ${oppPts < 0 ? "neg" : "pos"}">${opp != null ? sgn(oppPts) : "—"}</td><td class="mb-player right"><span class="mb-nm">TOTAL</span></td></tr>`;
 
     $("#seasonScreen").innerHTML = `
       ${navBar("matchup")}
       <div class="hero">
         <div class="kicker">${escHtml(snap.name || "League")} · Week ${wk + 1} of ${weeks}</div>
         <div class="player-select">Matchup</div>
-        <p class="lede">Higher weekly points wins the week. Below: exactly which of your drafted sub-sectors — and your national news — earned your ${sgn(myPts)} this week. Tap any row to read the stories behind it.</p>
+        <p class="lede">Head-to-head box score — every sub-sector you drafted and the points it scored this week. Higher total wins the week. Tap any sub-sector for the headlines behind its points.</p>
       </div>
       <div class="matchup">${matchPortrait(me, myPts, myPts >= oppPts)}<div class="mu-vs">VS</div>${oppSide}</div>
-      <div class="section-title"><h3>What earned your ${sgn(myPts)} this week</h3><div class="rule"></div><span class="hint">Sorted by impact · tap for the news</span></div>
-      <div class="contrib-list">${breakdownHtml}</div>
+      <div class="section-title"><h3>Box score — week ${wk + 1}</h3><div class="rule"></div><span class="hint">Points scored per drafted sub-sector</span></div>
+      <div class="mbox-wrap"><table class="mbox">
+        <thead><tr><th class="mb-team left" colspan="2">${meC.flag} ${escHtml(seatName(me))}</th><th class="mb-slot">SLOT</th><th class="mb-team right" colspan="2">${opp != null ? (opC.flag + " " + escHtml(seatName(opp))) : "Bye week"}</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table></div>
       <div style="text-align:center;margin-top:22px">
         <button class="btn ghost" id="backHome">◂ Back to league home</button>
       </div>`;
     wireNav($("#seasonScreen"));
-    $$(".contrib-row", $("#seasonScreen")).forEach(b => b.addEventListener("click", () => go("sector/" + b.dataset.sec)));
+    $$(".mb-player[data-sec]", $("#seasonScreen")).forEach(td => td.addEventListener("click", () => {
+      const sec = td.dataset.sec, uid = td.dataset.uid;
+      go("sector/" + sec + (uid === STATE.you ? "" : "/" + uid));
+    }));
     $("#backHome").addEventListener("click", () => go("home"));
   }
 
   /* ============================ SECTOR DETAIL ============================ */
-  function renderSectorDetail(snap, key) {
+  function renderSectorDetail(snap, key, uid) {
     showOnly("seasonScreen");
-    const me = STATE.you, wk = currentWeek(snap.season), weeks = (snap.season && snap.season.weeks) || 12;
-    const bd = weekBreakdown(snap, me, wk);
+    const me = STATE.you, who = uid || me, forOther = who !== me;
+    const wk = currentWeek(snap.season), weeks = (snap.season && snap.season.weeks) || 12;
+    const bd = weekBreakdown(snap, who, wk);
+    const whoName = forOther ? escHtml(seatName(who)) + "’s" : "your";
     const isCountry = key === "country";
     let title, subtitle, c1 = "#888", c2 = "#aaa", ico = "", pts = 0, list = [];
     if (isCountry) {
-      const c = seatCountry(me);
-      title = "National news — " + c.name; subtitle = "Points your country earned across all sub-sectors, plus double-points for partnerships with league allies.";
+      const c = seatCountry(who);
+      title = "National news — " + c.name; subtitle = `Points ${whoName} country earned across all sub-sectors, plus double-points for partnerships with league allies.`;
       c1 = c.c1; c2 = c.c2; ico = `<div class="sd-flag">${c.flag}</div>`;
       pts = bd.country.pts; list = bd.country.events;
     } else {
@@ -265,7 +291,7 @@
       if (cat) { c1 = cat.c1; c2 = cat.c2; ico = iconSVG(sub.glyph, cat.c1, cat.c2, 46); }
       pts = row.pts; list = row.events;
     }
-    const myCtx = ctxFor(snap, me);
+    const myCtx = ctxFor(snap, who);
     const SEC_LABELS = new Set(["Your sub-sector", "Sector × country (extra)"]);
     const items = list.length ? list.map(({ ev, pts: p }) => {
       // show only the reasons attributable to THIS bucket, so the chips reconcile with the row's points
@@ -286,7 +312,7 @@
       ${navBar("matchup")}
       <div class="sd-hero" style="--cc1:${c1};--cc2:${c2}">
         <div class="sd-ico">${ico}</div>
-        <div class="sd-meta"><div class="sd-kick">Week ${wk + 1} of ${weeks} · your contribution</div>
+        <div class="sd-meta"><div class="sd-kick">Week ${wk + 1} of ${weeks} · ${whoName} contribution</div>
           <h2 class="sd-title">${escHtml(title)}</h2><div class="sd-sub">${escHtml(subtitle)}</div></div>
         <div class="sd-pts ${pts < 0 ? "neg" : pts > 0 ? "pos" : "zero"}">${sgn(pts)}<span>week pts</span></div>
       </div>
@@ -304,7 +330,7 @@
   /* ---------- router ---------- */
   function parseHash() {
     const h = (location.hash || "").replace(/^#/, "");
-    if (h.indexOf("sector/") === 0) return { view: "sector", key: h.slice(7) };
+    if (h.indexOf("sector/") === 0) { const parts = h.slice(7).split("/"); return { view: "sector", key: parts[0], uid: parts[1] }; }
     if (h === "matchup") return { view: "matchup" };
     if (h === "board") return { view: "board" };
     return { view: "home" };
@@ -319,7 +345,7 @@
       return;
     }
     if (r.view === "matchup") return renderMatchup(snap);
-    if (r.view === "sector") return renderSectorDetail(snap, r.key);
+    if (r.view === "sector") return renderSectorDetail(snap, r.key, r.uid);
     return renderHome(snap);
   }
   window.addEventListener("hashchange", () => {

@@ -488,6 +488,34 @@ body.scrolllock{ overflow:hidden; }
 .cr-pts.pos{ color:#6ee08a; } .cr-pts.neg{ color:var(--red-2); } .cr-pts.zero{ color:var(--ink-faint); }
 .cr-arrow{ color:var(--ink-faint); font-size:14px; }
 
+/* ---------- Matchup: ESPN-style head-to-head box score ---------- */
+.mbox-wrap{ overflow-x:auto; }
+.mbox{ width:100%; border-collapse:collapse; min-width:640px; background:var(--panel); border:2px solid var(--line); }
+.mbox thead th{ padding:10px 12px; background:linear-gradient(180deg, rgba(255,190,40,.10), rgba(20,10,14,.6));
+  font-family:var(--font-disp); font-style:italic; text-transform:uppercase; letter-spacing:.6px; font-size:14px; color:var(--ink); border-bottom:2px solid var(--line-2); }
+.mbox th.mb-team.left{ text-align:left; } .mbox th.mb-team.right{ text-align:right; }
+.mbox td{ padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+.mb-row:nth-child(even) td{ background:rgba(255,255,255,.018); }
+.mb-row:hover td{ background:rgba(255,160,60,.06); }
+.mb-slot{ text-align:center; width:64px; font-family:var(--font-disp); font-style:italic; font-size:12px; letter-spacing:.5px;
+  color:var(--ink-faint); background:rgba(0,0,0,.22); white-space:nowrap; }
+.mb-player{ cursor:pointer; border-left:4px solid transparent; }
+.mb-player.left{ text-align:left; border-left-color:var(--cc2,transparent); }
+.mb-player.right{ text-align:right; border-right:4px solid var(--cc2,transparent); }
+.mb-player.empty{ cursor:default; }
+.mb-player[data-sec]:hover .mb-nm{ color:var(--gold); }
+.mb-nm{ display:block; font-size:14px; color:var(--ink); font-weight:600; line-height:1.2; }
+.mb-cat{ display:block; font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.3px; }
+.mb-pts{ font-family:var(--font-num); font-style:italic; font-size:19px; width:58px; white-space:nowrap; }
+.mb-pts.left{ text-align:right; } .mb-pts.right{ text-align:left; }
+.mb-pts.pos{ color:#6ee08a; } .mb-pts.neg{ color:var(--red-2); } .mb-pts.zero{ color:var(--ink-faint); }
+.mb-nat td{ background:rgba(255,190,40,.05); }
+.mb-nat .mb-nm{ font-style:italic; }
+.mb-tot td{ background:linear-gradient(180deg, rgba(255,190,40,.12), rgba(20,10,14,.5)); border-top:2px solid var(--line-2); border-bottom:none; }
+.mb-tot .mb-nm{ font-family:var(--font-disp); font-style:italic; letter-spacing:1px; color:var(--gold); }
+.mb-tot .mb-pts{ font-size:24px; color:var(--gold); }
+.mb-tot .mb-slot{ color:var(--gold); background:transparent; font-size:13px; }
+
 /* ---------- Sector detail hero + "why" chips ---------- */
 .sd-hero{ display:flex; align-items:center; gap:16px; padding:16px 18px; margin-bottom:14px;
   background:linear-gradient(120deg, color-mix(in srgb, var(--cc1) 30%, transparent), rgba(16,9,12,.75));
