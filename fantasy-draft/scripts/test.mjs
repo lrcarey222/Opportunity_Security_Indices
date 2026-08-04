@@ -45,6 +45,16 @@ ok(s3b === s3 * 3 / 1 || s3b > s3, "s3b (DE owner) > s3, got " + s3b + " vs " + 
 const none = SCORING.scoreForPlayer({ ...t3 }, { country: "FR", sectors: [10], leagueCountries: ["FR"] });
 ok(none === 0, "unrelated player scores 0");
 
+/* --- scoreDetail: decomposition must reconcile with scoreForPlayer --- */
+for (const [ev, pl, label] of [[t1, player, "t1/US"], [t2, player, "t2/US"], [t3, demander, "t3/DE"]]) {
+  const d = SCORING.scoreDetail({ ...ev }, pl);
+  const total = SCORING.scoreForPlayer({ ...ev }, pl);
+  ok(d.sectorPortion + d.countryPortion === total, `scoreDetail reconciles (${label}): ${d.sectorPortion}+${d.countryPortion} vs ${total}`);
+}
+const dd = SCORING.scoreDetail({ ...t1 }, player); // partnership: sector part = base(sector)+base(extra)=16; country part = base(country)+2*base(bilateral)=24
+ok(dd.sectorPortion === 16 && dd.countryPortion === 24, `t1 split 16/24, got ${dd.sectorPortion}/${dd.countryPortion}`);
+ok(dd.matched.includes(1), "t1 matched sector 1");
+
 /* --- rss parse --- */
 const xml = `<rss><channel>
 <item><title>US, Australia sign lithium deal - Reuters</title><link>http://x/1</link><pubDate>Mon, 21 Jul 2026 10:00:00 GMT</pubDate></item>

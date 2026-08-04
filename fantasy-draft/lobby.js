@@ -3,7 +3,7 @@
    Uses NET (net.js) for realtime sync and drives the app.js draft renderers.
    ============================================================================ */
 (function () {
-  let ADAPTER = null, currentSnap = null, joinCode = null, hostIv = null;
+  let ADAPTER = null, currentSnap = null, joinCode = null, hostIv = null, connectedId = null;
   let offlineTicks = 0, lastPickIdx = -1;
 
   const $ = (s) => document.querySelector(s);
@@ -24,6 +24,11 @@
   function onSnap(snap) {
     currentSnap = snap;
     if (!snap) return;
+    // A visitor who opened the league link but hasn't joined yet: don't hijack their
+    // screen — show the join gate so they can pick a fighter and enter. (Also covers
+    // the brief moment during create/join before setPlayer lands.)
+    const isMember = !!(snap.players && snap.players[ADAPTER.me]);
+    if (!isMember) { enterJoinMode(snap.id); return; }
     STATE.mode = "league";
     STATE.league.snapshot = snap;
     STATE.league.id = snap.id;
@@ -67,12 +72,30 @@
     armTurnTimer();
   }
 
-  /* ---------- create / join ---------- */
+  /* ---------- create / join / resume ---------- */
+  // Bind to a league's realtime feed exactly once (idempotent across resume + join).
+  async function connect(code) {
+    ensureAdapter();
+    if (connectedId === code) return { ok: true };
+    const r = await ADAPTER.joinLeague(code);
+    if (r && r.error) return r;
+    connectedId = code;
+    STATE.league.id = code;
+    return { ok: true };
+  }
+  // On page load with ?league=CODE: subscribe. If we're already a member (returning
+  // player), onSnap routes us straight to the league home; if not, it shows the join gate.
+  async function autoResume(code) {
+    const r = await connect(code);
+    if (r && r.error) { enterJoinMode(code); return; }
+  }
+
   async function createLeague() {
     if (!STATE.pickAlly) { toast("Pick your fighter first"); return; }
     ensureAdapter();
     const nm = playerName();
     const id = await ADAPTER.createLeague({ name: nm + "'s League", settings: { rounds: 3, difficulty: $("#diffSel").value } });
+    connectedId = id;
     STATE.league.id = id;
     await ADAPTER.setPlayer({ name: nm, allyId: STATE.pickAlly });
     setUrl(id);
@@ -81,22 +104,25 @@
     code = (code || "").trim().toUpperCase();
     if (!code) { toast("Enter a league code"); return; }
     if (!STATE.pickAlly) { toast("Pick your fighter first"); return; }
-    ensureAdapter();
-    const r = await ADAPTER.joinLeague(code);
+    const r = await connect(code);
     if (r && r.error) { toast("League not found — check the link/code"); return; }
-    STATE.league.id = code;
     await ADAPTER.setPlayer({ name: playerName(), allyId: STATE.pickAlly });
     setUrl(code);
   }
 
   function leaveLeague() {
     if (ADAPTER) ADAPTER.leave();
-    ADAPTER = null; currentSnap = null;
+    ADAPTER = null; currentSnap = null; connectedId = null; joinCode = null;
     if (hostIv) { clearInterval(hostIv); hostIv = null; }
     STATE.mode = "solo"; STATE.league = null; STATE.seatMeta = {};
     STATE.you = STATE.pickAlly;
     clearTurnTimer();
-    try { const u = new URL(location.href); u.searchParams.delete("league"); history.replaceState(null, "", u); } catch (e) {}
+    try { const u = new URL(location.href); u.searchParams.delete("league"); u.hash = ""; history.replaceState(null, "", u); } catch (e) {}
+    // restore the setup-screen join controls to their default (create) state
+    const cb = $("#createLeagueBtn"), jb = $("#joinLeagueBtn"), hint = $("#joinHint");
+    if (cb) cb.style.display = "";
+    if (jb) jb.style.display = "none";
+    if (hint) hint.style.display = "none";
     showOnly("setupScreen");
   }
 
@@ -225,7 +251,7 @@
     const cb = $("#createLeagueBtn"), jb = $("#joinLeagueBtn");
     if (cb) cb.addEventListener("click", createLeague);
     if (jb) jb.addEventListener("click", () => doJoin(joinCode || (prompt("Enter league code:") || "")));
-    try { const code = new URL(location.href).searchParams.get("league"); if (code) { joinCode = code.toUpperCase(); enterJoinMode(joinCode); } } catch (e) {}
+    try { const code = new URL(location.href).searchParams.get("league"); if (code) { joinCode = code.toUpperCase(); enterJoinMode(joinCode); autoResume(joinCode); } } catch (e) {}
   });
 
   // expose for app.js

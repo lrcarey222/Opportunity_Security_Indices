@@ -75,7 +75,29 @@
     return (ev.sectors || []).some(s => roster.includes(s)) || (ev.countries || []).includes(player.country);
   }
 
-  const API = { TYPE_WEIGHT, baseValue, scoreForPlayer, breakdown, touches };
+  /* Decompose an event's points into a sector-attributable part and a
+     country-attributable part, plus which of the player's drafted sectors matched.
+     sectorPortion + countryPortion === scoreForPlayer(ev, player).
+     Used by the "why did I score this" matchup / sector drill-downs. */
+  function scoreDetail(ev, player) {
+    const base = baseValue(ev);
+    const evSectors = ev.sectors || [], evCountries = ev.countries || [];
+    const roster = player.sectors || [];
+    const matched = evSectors.filter(s => roster.includes(s));
+    const sectorHit = matched.length > 0;
+    const countryHit = evCountries.includes(player.country);
+    let sectorPortion = 0, countryPortion = 0;
+    if (sectorHit) sectorPortion += base;                    // your sub-sector, anywhere
+    if (countryHit) countryPortion += base;                  // your country, any sector
+    if (sectorHit && countryHit) sectorPortion += base;      // EXTRA: your sector in your country
+    if (countryHit && ev.type === "partnership") {           // DOUBLE-EXTRA: bilateral with a league ally
+      const others = evCountries.filter(c => c !== player.country && (player.leagueCountries || []).includes(c));
+      if (others.length) countryPortion += base * 2;
+    }
+    return { total: Math.round(sectorPortion + countryPortion), sectorPortion, countryPortion, matched, sectorHit, countryHit };
+  }
+
+  const API = { TYPE_WEIGHT, baseValue, scoreForPlayer, breakdown, touches, scoreDetail };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   if (typeof window !== "undefined") window.SCORING = API;
 })(typeof globalThis !== "undefined" ? globalThis : this);
