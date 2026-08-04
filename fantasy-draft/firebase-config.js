@@ -25,9 +25,11 @@
    (Still open, but scoped. For real auth you'd add Firebase Anonymous Auth.)
    ============================================================================ */
 const FIREBASE_CONFIG = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://PASTE_YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "PASTE_YOUR_PROJECT",
-  appId: "PASTE_YOUR_APP_ID",
+  apiKey: "AIzaSyB9Pp2u19J_VUYNCPmmNezeP8Urr2e4mQ8",
+  authDomain: "industrial-policy-fantasy.firebaseapp.com",
+  databaseURL: "https://industrial-policy-fantasy-default-rtdb.firebaseio.com",
+  projectId: "industrial-policy-fantasy",
+  storageBucket: "industrial-policy-fantasy.firebasestorage.app",
+  messagingSenderId: "655170195435",
+  appId: "1:655170195435:web:4c18819fc0be5613c493ae",
 };

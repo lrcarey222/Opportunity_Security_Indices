@@ -86,7 +86,7 @@ const NET = (function () {
       },
       async joinLeague(lid) {
         id = lid;
-        const snap = await db.ref("leagues/" + id).get();
+        const snap = await db.ref("leagues/" + id).once("value");
         if (!snap.exists()) return { error: "not_found" };
         bind(); setPresence(); return { ok: true };
       },
@@ -120,5 +120,5 @@ const NET = (function () {
     return LocalAdapter();
   }
 
-  return { make, myUid, newCode, get backend() { const cfg = (typeof FIREBASE_CONFIG !== "undefined") ? FIREBASE_CONFIG : null; return (cfg && cfg.apiKey && !/PASTE|YOUR_/.test(cfg.apiKey) && cfg.databaseURL) ? "firebase" : "local"; } };
+  return { make, myUid, newCode, get backend() { const cfg = (typeof FIREBASE_CONFIG !== "undefined") ? FIREBASE_CONFIG : null; const configured = cfg && cfg.apiKey && !/PASTE|YOUR_/.test(cfg.apiKey) && cfg.databaseURL; return (configured && typeof window !== "undefined" && window.firebase) ? "firebase" : "local"; } };
 })();
