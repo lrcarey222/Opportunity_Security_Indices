@@ -55,7 +55,13 @@
     });
     STATE.pickIndex = (snap.draft && snap.draft.pickIndex) || 0;
 
-    if (snap.status === "results") { showOnly("resultsScreen"); finishDraft(); clearTurnTimer(); return; }
+    if (snap.status === "results" || snap.status === "season") {
+      finishDraft();                               // populate the draft board once
+      clearTurnTimer();
+      if (snap.status === "season") { if (typeof renderSeason === "function") renderSeason(snap); }
+      else { showOnly("resultsScreen"); if (typeof renderSeasonCta === "function") renderSeasonCta(snap); }
+      return;
+    }
     if (!$("#draftScreen").classList.contains("active")) showOnly("draftScreen");
     renderFilters(); renderRail(); renderPool(); updateOnClock(currentAllyId());
     armTurnTimer();

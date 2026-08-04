@@ -651,7 +651,7 @@ function toast(msg) {
 }
 
 function showOnly(screenId) {
-  ["setupScreen", "lobbyScreen", "draftScreen", "resultsScreen"].forEach(s => {
+  ["setupScreen", "lobbyScreen", "draftScreen", "resultsScreen", "seasonScreen"].forEach(s => {
     const el = $("#" + s); if (el) el.classList.toggle("active", s === screenId);
   });
   window.scrollTo({ top: 0 });

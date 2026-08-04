@@ -1,0 +1,28 @@
+name: Fantasy news scoring
+
+# Scrapes headlines and writes fantasy point-events into each league's Firebase.
+# Runs every 6 hours through the week; also runnable on demand from the Actions tab.
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: news-scoring
+  cancel-in-progress: false
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run news bot
+        env:
+          # Optional: add ANTHROPIC_API_KEY as a repo secret to upgrade tagging to AI.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # DB url is read from fantasy-draft/firebase-config.js; override here if you like.
+          FIREBASE_DB_URL: ${{ vars.FIREBASE_DB_URL }}
+        run: node fantasy-draft/scripts/news-bot.mjs
