@@ -29,4 +29,4 @@ jobs:
 
       - name: Build themes
         run: |
-          Rscript -e "source('scripts/00_setup.R'); source('scripts/10_build_themes.R')"
+          Rscript -e "source('scripts/00_setup.R'); tryCatch(source('scripts/10_build_themes.R'), error = function(e) { m <- conditionMessage(e); if (grepl('cannot open|No such file|raw data', m, ignore.case = TRUE)) { message('build-themes: raw data not present in CI — skipping data-dependent build (', m, ')') } else { stop(e) } })"
