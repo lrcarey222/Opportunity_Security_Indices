@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Allied Industrial Policy Fantasy Draft</title>
+  <meta name="description" content="Draft the Electro-Industrial Stack. Pick your Ally, build your supply-chain dynasty, out-draft the alliance." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="sky" id="sky"></div>
+
+  <div class="wrap">
+    <!-- ===== TOP BAR ===== -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">⚡</div>
+        <div>
+          <h1>Allied Industrial Policy — Fantasy Draft</h1>
+          <div class="sub">The Electro-Industrial Stack · Season 1</div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="pill">21 Fighters · <b>39</b> sub-sectors</div>
+    </header>
+
+    <!-- ================= SETUP SCREEN ================= -->
+    <section id="setupScreen" class="screen active">
+      <div class="hero">
+        <div class="kicker">Insert Coin · Season 1 · Snake Draft</div>
+        <div class="player-select">Player Select</div>
+        <div class="choose">Choose Your Ally</div>
+        <p class="lede">You are an allied nation entering the arena to assemble a supply-chain dynasty from the <b>Electro-Industrial Stack</b> —
+          the minerals, chips, cells, wires, turbines and molecules that power the electro-industrial age.
+          Out-draft your rival allies. Own the chokepoints. Build the deepest stack.</p>
+      </div>
+
+      <div class="section-title">
+        <h3>Select your fighter</h3><div class="rule"></div>
+        <span class="hint">Each ally has home-turf synergies + signature picks</span>
+      </div>
+      <div class="ally-grid" id="allyGrid"></div>
+
+      <div class="ally-detail" id="allyDetail" style="display:none"></div>
+
+      <div class="setup-actions">
+        <button class="btn red" id="startBtn" disabled>Solo vs AI — Enter Draft ▸</button>
+        <div class="field">Allies
+          <select id="alliesSel">
+            <option value="4">4</option>
+            <option value="6">6</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+            <option value="12" selected>12</option>
+            <option value="16">16</option>
+            <option value="21">21 (full roster)</option>
+          </select>
+        </div>
+        <div class="field">Rounds
+          <select id="roundsSel"></select>
+        </div>
+        <div class="field">Draft speed
+          <select id="speedSel">
+            <option value="fast">Fast</option>
+            <option value="normal" selected>Normal</option>
+            <option value="slow">Slow</option>
+          </select>
+        </div>
+        <div class="field">Difficulty
+          <select id="diffSel" title="How much scouting info you see while drafting">
+            <option value="easy">Easy — all numbers</option>
+            <option value="normal" selected>Normal — synergies only</option>
+            <option value="hard">Hard — no numbers</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-title"><h3>Play with friends</h3><div class="rule"></div>
+        <span class="hint">Create a league · share the link · draft together live</span></div>
+      <div class="mp-row">
+        <input id="playerName" type="text" maxlength="16" placeholder="Your name" />
+        <button class="btn gold" id="createLeagueBtn" disabled>Create League ▶</button>
+        <button class="btn gold" id="joinLeagueBtn" disabled style="display:none">Join League ▶</button>
+      </div>
+      <div class="hint" id="joinHint" style="display:none;margin:8px 4px"></div>
+    </section>
+
+    <!-- ================= LOBBY SCREEN ================= -->
+    <section id="lobbyScreen" class="screen"></section>
+
+    <!-- ================= DRAFT SCREEN ================= -->
+    <section id="draftScreen" class="screen">
+      <div class="board-head">
+        <div class="onclock you" id="onclock"></div>
+        <div class="round-pill" id="roundPill"></div>
+      </div>
+
+      <div class="draft-grid">
+        <div>
+          <div class="filters" id="filters"></div>
+          <div class="pool" id="pool"></div>
+        </div>
+
+        <aside class="rail">
+          <div class="panel">
+            <h4>⭐ Your Roster <span style="margin-left:auto;font-size:12.5px;color:var(--ink-faint)">Slots <span id="rosterCount">0/3</span></span></h4>
+            <div class="body">
+              <div style="font-size:13px;color:var(--ink-dim)">Roster fantasy points:
+                <b style="color:var(--gold);font-size:17px;font-family:var(--font-num);font-style:italic" id="teamPoints">0</b></div>
+              <ul class="roster-list" id="rosterList"></ul>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h4>📊 Live Standings</h4>
+            <div class="body"><ul class="standings" id="standings"></ul></div>
+          </div>
+
+          <div class="panel">
+            <h4>📡 Draft Wire</h4>
+            <div class="body"><ul class="log-list" id="logList"></ul></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ================= RESULTS SCREEN ================= -->
+    <section id="resultsScreen" class="screen">
+      <div class="hero">
+        <div class="kicker">Full Time · The Alliance Has Spoken</div>
+        <div class="player-select">Draft Priorities</div>
+        <p class="lede" id="resultHead"></p>
+      </div>
+
+      <div class="section-title"><h3>Where the alliance spent its picks</h3><div class="rule"></div>
+        <span class="hint">Share of each stack tier claimed</span></div>
+      <div class="catprio" id="catPriority"></div>
+
+      <div class="section-title"><h3>Sector Priority Board</h3><div class="rule"></div>
+        <span class="hint">Ranked by draft order · pick #1 = top alliance priority</span></div>
+      <div class="panel"><div class="body" style="overflow-x:auto">
+        <div class="prio-list" id="sectorBoard"></div>
+      </div></div>
+
+      <div class="section-title"><h3>Final Standings</h3><div class="rule"></div>
+        <span class="hint">Total = fantasy points + sector coverage + vertical-stack combos</span></div>
+      <div class="panel"><div class="body" style="overflow-x:auto">
+        <table class="results-table" id="resultsTable"></table>
+      </div></div>
+
+      <div class="section-title"><h3>Final Boss</h3><div class="rule"></div>
+        <span class="hint">Can the allied stack beat China?</span></div>
+      <div class="boss-challenge" id="bossChallenge"></div>
+
+      <div id="seasonCta" style="margin-top:20px"></div>
+
+      <div style="text-align:center;margin-top:20px">
+        <button class="btn red" id="draftAgainBtn">Rematch ▸</button>
+        <button class="btn ghost" id="restartBtn">Change fighter</button>
+      </div>
+    </section>
+
+    <!-- ================= SEASON SCREEN ================= -->
+    <section id="seasonScreen" class="screen"></section>
+
+    <footer>
+      A playful companion to the <b>Opportunity Security Indices</b> — Energy Security · Economic Opportunity · Partnership Strength.<br>
+      Sub-sector taxonomy from the Electro-Industrial Stack. Stats are for fantasy fun, not investment advice. ⚡🌱
+    </footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="fight-overlay" id="fightOverlay"></div>
+  <div class="arcade-overlay" id="arcadeOverlay"></div>
+
+  <!-- Firebase (multiplayer). Loads from CDN on your hosted site; ignored offline/in preview. -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <script src="data.js"></script>
+  <script src="avatars.js"></script>
+  <script src="fight-frames.js"></script>
+  <script src="art.js"></script>
+  <script src="arcade.js"></script>
+  <script src="scoring.js"></script>
+  <script src="net.js"></script>
+  <script src="app.js"></script>
+  <script src="lobby.js"></script>
+  <script src="season.js"></script>
+</body>
+</html>
