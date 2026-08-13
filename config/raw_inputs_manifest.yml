@@ -1,53 +1,579 @@
-- path: hts_codes_categories_bolstered_final.csv
-- path: allied_comtrade_energy_data.csv
+version: 2.0
+generated_by: scripts/01_generate_raw_inputs_manifest.R
+inputs:
+- id: allied_comtrade_energy_data
+  path: allied_comtrade_energy_data.csv
+  source_type: api
+  source_name: UN Comtrade (allied reporter-partner dyads)
+  url: https://comtradeplus.un.org/
+  cadence: annual
+  owner: unassigned
+  staged_from: pipeline
+  notes: Written by scripts/05_ingest_sources.R; requires COMTRADE_API_KEY.
+  required_by:
+  - scripts/05_ingest_sources.R
+  - scripts/15_build_partner_themes.R
+- id: comtrade_energy_trade
+  path: comtrade_energy_trade.csv
+  source_type: api
+  source_name: UN Comtrade (energy-tech HS6 exports and imports)
+  url: https://comtradeplus.un.org/
+  cadence: annual
+  owner: unassigned
+  staged_from: pipeline
+  required_by:
+  - scripts/05_ingest_sources.R
+  - scripts/10_build_themes.R
+- id: comtrade_total_export
+  path: comtrade_total_export.csv
+  source_type: api
+  source_name: UN Comtrade (total exports, TOTAL commodity code)
+  url: https://comtradeplus.un.org/
+  cadence: annual
+  owner: unassigned
+  staged_from: pipeline
+  required_by:
+  - scripts/05_ingest_sources.R
+  - scripts/10_build_themes.R
+- id: critmin_export
+  path: critmin_export_2024.csv
+  pattern: ^critmin_export_\d{4}\.csv$
+  resolve: newest
+  source_type: api
+  source_name: UN Comtrade (critical minerals exports)
+  url: https://comtradeplus.un.org/
+  cadence: annual
+  owner: unassigned
+  staged_from: pipeline
+  required_by:
+  - scripts/10_build_themes.R
+- id: critmin_import
+  path: critmin_import_2024.csv
+  pattern: ^critmin_import_\d{4}\.csv$
+  resolve: newest
+  source_type: api
+  source_name: UN Comtrade (critical minerals imports)
+  url: https://comtradeplus.un.org/
+  cadence: annual
+  owner: unassigned
+  staged_from: pipeline
+  notes: Year suffix follows the latest year Comtrade actually returns data for.
+  required_by:
+  - scripts/10_build_themes.R
+- id: critmin_total_export
+  path: critmin_total_export_2024.csv
+  pattern: ^critmin_total_export_\d{4}\.csv$
+  resolve: newest
+  source_type: api
+  source_name: UN Comtrade (critical minerals total exports)
+  url: https://comtradeplus.un.org/
+  cadence: annual
+  owner: unassigned
+  staged_from: pipeline
+  required_by:
+  - scripts/10_build_themes.R
+- id: imf_pcps_price_volatility
+  path: imf_pcps_price_volatility.csv
+  source_type: api
+  source_name: IMF PCPS derived volatility by technology
+  url: https://www.imf.org/en/research/commodity-prices
+  cadence: monthly
+  owner: unassigned
+  staged_from: pipeline
+  required_by:
+  - scripts/05_ingest_sources.R
+- id: imf_pcps_price_volatility_series
+  path: imf_pcps_price_volatility_series.csv
+  source_type: api
+  source_name: IMF PCPS derived volatility by commodity series
+  url: https://www.imf.org/en/research/commodity-prices
+  cadence: monthly
+  owner: unassigned
+  staged_from: pipeline
+  required_by:
+  - scripts/05_ingest_sources.R
+- id: imf_pcps_prices
+  path: imf_pcps_prices.csv
+  source_type: api
+  source_name: IMF Primary Commodity Price System (monthly price panel)
+  url: https://www.imf.org/en/research/commodity-prices
+  cadence: monthly
+  owner: unassigned
+  staged_from: pipeline
+  notes: Derived from IMF_PCPS_all.xlsx by scripts/06_energy_prices_imf.R.
+  required_by:
+  - scripts/05_ingest_sources.R
+  - scripts/10_build_themes.R
+- id: wdi_country_info
+  path: wdi_country_info.csv
+  source_type: api
+  source_name: World Bank WDI country reference table
+  url: https://databank.worldbank.org/source/world-development-indicators
+  cadence: annual
+  owner: unassigned
+  staged_from: pipeline
+  required_by:
+  - scripts/05_ingest_sources.R
+  - scripts/10_build_themes.R
+  - scripts/15_build_partner_themes.R
+  - scripts/30_build_allied_network_design.R
+- id: wdi_gdp
+  path: wdi_gdp.csv
+  source_type: api
+  source_name: World Bank World Development Indicators (NY.GDP.MKTP.CD)
+  url: https://databank.worldbank.org/source/world-development-indicators
+  cadence: annual
+  owner: unassigned
+  staged_from: pipeline
+  notes: Pulled via the WDI R package in scripts/05_ingest_sources.R.
+  required_by:
+  - scripts/05_ingest_sources.R
+  - scripts/10_build_themes.R
+  - scripts/15_build_partner_themes.R
+  - scripts/30_build_allied_network_design.R
+- id: allies
+  path: allies.csv
+  source_type: derived
+  source_name: Allied reporter list for Comtrade dyad pulls
+  cadence: ad-hoc
+  owner: unassigned
+  staged_from: sharepoint
   optional: yes
-- path: imf_dip.csv
-- path: OneDrive - RMI/New Energy Industrial Strategy - Documents/Research/Data/scatter_index.csv
+  notes: Falls back to all valid WDI reporters when absent.
+  required_by:
+  - scripts/05_ingest_sources.R
+- id: consolidated_hs6_energy_tech_long
+  path: consolidated_hs6_energy_tech_long.csv
+  source_type: derived
+  source_name: HS6 to technology and supply-chain crosswalk (long)
+  cadence: ad-hoc
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: dual_use_scores
+  path: dual_use_scores_primary_secondary_tertiary.csv
+  source_type: derived
+  source_name: Dual-use scoring by primary/secondary/tertiary category
+  cadence: ad-hoc
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: energy_hs6_master
+  path: energy_hs6_master.csv
+  source_type: derived
+  source_name: Master energy HS6 catalogue
+  cadence: ad-hoc
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - R/charts/trade_charts.R
+  - scripts/15_build_partner_themes.R
+- id: hs6_categories_with_essential
+  path: hs6_categories_with_essential.csv
+  source_type: derived
+  source_name: HS6 categories flagged for essential goods
+  cadence: ad-hoc
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+  - scripts/96_pull_trade_timeseries.R
+  - scripts/97_bulk_comtrade_downloads.R
+- id: hts_codes_categories_bolstered_final
+  path: hts_codes_categories_bolstered_final.csv
+  source_type: derived
+  source_name: HS6 to energy technology category mapping (bolstered)
+  cadence: ad-hoc
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/05_ingest_sources.R
+  - scripts/10_build_themes.R
+  - scripts/96_pull_trade_timeseries.R
+  - scripts/97_bulk_comtrade_downloads.R
+- id: comtrade_vintage
+  path: comtrade_vintage.yml
+  source_type: generated
+  source_name: Comtrade retrieval vintage stamp
+  cadence: per-run
+  owner: unassigned
+  staged_from: pipeline
   optional: yes
-- path: OneDrive - RMI/New Energy Industrial Strategy - Documents/NEIS Center Asia
-    Trips/Research/Benchmark_Indices.xlsx
-- path: ei_stat_review_world_energy.csv
-- path: 2024-10-29 - New Energy Outlook 2024.csv
-- path: iea_criticalminerals_25.csv
-- path: yao_etal_nature_supplychains.xlsx
-- path: ei_stat_review_world_energy_wide.xlsx
-- path: MCS2025_World_Data.csv
-- path: iea_cleantech_Midstream.csv
-- path: ev_Midstream_capacity.csv
-- path: greenplexity_scrape_full.csv
-- path: hs92_country_product_year_4.csv
-- path: hs92_country_product_year_6.csv
-- path: Columbia University Critical Minerals Dashboard/unique_comtrade.csv
-- path: 2025-03-24 - 2025 LCOE Data Viewer Tool.csv
-- path: bis_debtserviceratio.csv
-- path: imf_lending_rates.csv
-- path: imf_ppi.csv
-- path: wipo_treated_indicator_trends_2025.csv
-- path: BNEF_Energy Transition Supply Chains 2025.xlsx
-- path: 2025-06-03 - Energy Transition Investment Trends 2025 Countries Annex.xlsx
-- path: Relative_Costs_IEA.csv
-- path: WEO2024_AnnexA_Free_Dataset_World.csv
-- path: IEA_EVDataExplorer2025.xlsx
-- path: Market Size for Technology and Supply Chain.xlsx
-- path: clean_energy_foreign_policy_heatmap.xlsx
-- path: ipcc_ghg_intensity.csv
-- path: CAT_country ratings data.csv
-- path: wb_doingbusiness.csv
-- path: wb_wdi.csv
-- path: oecd_1215.csv
-- path: oecd_1518.csv
-- path: oecd_1823.csv
-- path: clean_industry_naics_test.xlsx
-- path: egrid2023_data_metric_rev2.xlsx
-- path: 2022-NEI-Co-pollutant data.xlsx
-- path: 2022-NEI-Co-pollutant-data-onroad.xlsx
-- path: 2020 Facility-Level Data for Point  Emissions (70f61977-e493-46d2-b03d-b62a6e683153).xlsx
-- path: ghg_ems_fossil_combustion_fuel.csv
-- path: us_outbound_15_24.csv
-- path: fossil_industry_naics.xlsx
-- path: OneDrive - RMI/Documents - US Program/6_Projects/Clean Regional Economic Development/ACRE/Data/Raw
-    Data/hts_codes_categories.csv
-- path: OneDrive - RMI/Documents - US Program/6_Projects/Clean Regional Economic Development/ACRE/Data/Raw
-    Data/clean_investment_monitor_q4_2024/quarterly_actual_investment.csv
-- path: battery_hscodes_mit.csv
-- path: consolidated_hs6_energy_tech_long
+  retain: yes
+  required_by:
+  - scripts/05_ingest_sources.R
+  - scripts/10_build_themes.R
+- id: raw_inputs_resolved
+  path: raw_inputs_resolved.yml
+  source_type: generated
+  source_name: Resolved vintage stamp for pattern-matched inputs
+  cadence: per-run
+  owner: unassigned
+  staged_from: pipeline
+  optional: yes
+  retain: yes
+- id: bcg_market_size
+  path: Market Size for Technology and Supply Chain.xlsx
+  source_type: manual
+  source_name: BCG market sizing for technology and supply chain
+  cadence: ad-hoc
+  owner: unassigned
+  licence: proprietary
+  staged_from: sharepoint
+  notes: Consultancy extract; no public endpoint.
+  required_by:
+  - scripts/10_build_themes.R
+- id: bnef_lcoe_viewer
+  path: 2025-03-24 - 2025 LCOE Data Viewer Tool.csv
+  pattern: ^\d{4}-\d{2}-\d{2} - \d{4} LCOE Data Viewer Tool\.csv$
+  resolve: newest
+  source_type: manual
+  source_name: BloombergNEF LCOE Data Viewer
+  url: https://about.bnef.com/insights/clean-energy/new-energy-outlook/
+  cadence: semiannual
+  owner: unassigned
+  vintage: '2025-03-24'
+  licence: subscription
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: bnef_neo
+  path: 2024-10-29 - New Energy Outlook 2024.csv
+  pattern: ^\d{4}-\d{2}-\d{2} - New Energy Outlook \d{4}\.csv$
+  resolve: newest
+  source_type: manual
+  source_name: BloombergNEF New Energy Outlook
+  url: https://about.bnef.com/insights/clean-energy/new-energy-outlook/
+  cadence: annual
+  owner: unassigned
+  vintage: '2024-10-29'
+  licence: subscription
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: bnef_supply_chains
+  path: BNEF_Energy Transition Supply Chains 2025.xlsx
+  pattern: ^BNEF_Energy Transition Supply Chains \d{4}\.xlsx$
+  resolve: newest
+  source_type: manual
+  source_name: BloombergNEF Energy Transition Supply Chains
+  url: https://about.bnef.com/insights/clean-energy/new-energy-outlook/
+  cadence: annual
+  owner: unassigned
+  vintage: '2025'
+  licence: subscription
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: cat_country_ratings
+  path: CAT_country ratings data.csv
+  source_type: manual
+  source_name: Climate Action Tracker country ratings
+  url: https://climateactiontracker.org/countries/
+  cadence: irregular
+  owner: unassigned
+  staged_from: sharepoint
+  notes: No bulk API; ratings are transcribed from the country pages.
+  required_by:
+  - scripts/10_build_themes.R
+  - scripts/15_build_partner_themes.R
+- id: columbia_critmin_hs
+  path: Columbia University Critical Minerals Dashboard/unique_comtrade.csv
+  source_type: manual
+  source_name: Columbia University Critical Minerals Dashboard HS mapping
+  url: https://www.energypolicy.columbia.edu/critical-materials/
+  cadence: irregular
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/05_ingest_sources.R
+- id: ei_stat_review
+  path: ei_stat_review_world_energy.csv
+  source_type: manual
+  source_name: Energy Institute Statistical Review of World Energy (long format)
+  url: https://www.energyinst.org/statistical-review
+  cadence: annual
+  owner: unassigned
+  staged_from: sharepoint
+  notes: Public annual download; a strong candidate for automated fetching.
+  required_by:
+  - scripts/10_build_themes.R
+- id: ei_stat_review_wide
+  path: ei_stat_review_world_energy_wide.xlsx
+  source_type: manual
+  source_name: Energy Institute Statistical Review of World Energy (workbook)
+  url: https://www.energyinst.org/statistical-review
+  cadence: annual
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: ev_midstream_capacity
+  path: ev_Midstream_capacity.csv
+  source_type: manual
+  source_name: IEA EV midstream manufacturing capacity extract
+  url: https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer
+  cadence: annual
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: gcim_investment_capacity
+  path: GCIM_Investment_Capacity_aggregated.xlsx
+  source_type: manual
+  source_name: Clean Investment Monitor investment and capacity (aggregated)
+  url: https://www.cleaninvestmentmonitor.org/
+  cadence: quarterly
+  owner: unassigned
+  staged_from: sharepoint
+  notes: Hand-aggregated from the quarterly release before staging.
+  required_by:
+  - R/charts/Investment_index.R
+  - scripts/10_build_themes.R
+- id: geothermal_lcoe
+  path: geothermal_lcoe_mw.csv
+  source_type: manual
+  source_name: Geothermal LCOE and capacity potential extract
+  cadence: irregular
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: gta_nipo
+  path: GTA NIPO - February 2026.xlsx
+  pattern: ^GTA NIPO - .*\.xlsx$
+  resolve: newest
+  source_type: manual
+  source_name: Global Trade Alert New Industrial Policy Observatory
+  url: https://www.globaltradealert.org/
+  cadence: monthly
+  owner: unassigned
+  vintage: February 2026
+  licence: subscription
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: hs92_country_product_year_4
+  path: hs92_country_product_year_4.csv
+  source_type: manual
+  source_name: Harvard Atlas of Economic Complexity (HS92, 4-digit)
+  url: https://atlas.hks.harvard.edu/
+  cadence: annual
+  owner: unassigned
+  staged_from: sharepoint
+  notes: Available via Harvard Dataverse; automatable.
+  required_by:
+  - scripts/10_build_themes.R
+- id: hs92_country_product_year_6
+  path: hs92_country_product_year_6.csv
+  source_type: manual
+  source_name: Harvard Atlas of Economic Complexity (HS92, 6-digit)
+  url: https://atlas.hks.harvard.edu/
+  cadence: annual
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: iea_clean_tech_guide
+  path: IEA_Clean_Tech_Guide.csv
+  source_type: manual
+  source_name: IEA ETP Clean Energy Technology Guide
+  url: https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide
+  cadence: annual
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: iea_cleantech_midstream
+  path: iea_cleantech_Midstream.csv
+  source_type: manual
+  source_name: IEA clean technology midstream manufacturing capacity
+  url: https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide
+  cadence: annual
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: iea_critical_minerals
+  path: iea_criticalminerals_25.csv
+  pattern: ^iea_criticalminerals_\d{2}\.csv$
+  resolve: newest
+  source_type: manual
+  source_name: IEA Critical Minerals Dataset
+  url: https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset
+  cadence: annual
+  owner: unassigned
+  vintage: '2025'
+  staged_from: sharepoint
+  required_by:
+  - scripts/05_ingest_sources.R
+  - scripts/10_build_themes.R
+- id: iea_ev_data_explorer
+  path: IEA_EVDataExplorer2025.xlsx
+  pattern: ^IEA_EVDataExplorer\d{4}\.xlsx$
+  resolve: newest
+  source_type: manual
+  source_name: IEA Global EV Data Explorer
+  url: https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer
+  cadence: annual
+  owner: unassigned
+  vintage: '2025'
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: iea_pams
+  path: IEA_PAMS_Export.csv
+  source_type: manual
+  source_name: IEA Policies and Measures database export
+  url: https://www.iea.org/policies
+  cadence: continuous
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: iea_relative_costs
+  path: Relative_Costs_IEA.csv
+  source_type: manual
+  source_name: IEA relative technology cost extract
+  url: https://www.iea.org/data-and-statistics
+  cadence: irregular
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: imf_commodity_prices
+  path: imf_commodity_prices.csv
+  source_type: manual
+  source_name: IMF commodity prices (wide export, includes annual YoY series)
+  url: https://www.imf.org/en/research/commodity-prices
+  cadence: monthly
+  owner: unassigned
+  staged_from: sharepoint
+  optional: yes
+  notes: Preferred over imf_pcps_prices.csv because it carries the annual year-on-year
+    series. The pipeline falls back to the API-derived PCPS file when this is absent.
+  required_by:
+  - scripts/10_build_themes.R
+- id: imf_dip
+  path: imf_dip.csv
+  source_type: manual
+  source_name: IMF Coordinated Direct Investment Survey positions
+  url: https://data.imf.org/en/Data-Explorer
+  cadence: annual
+  owner: unassigned
+  staged_from: sharepoint
+  notes: Available via the IMF Data API; automatable.
+  required_by:
+  - scripts/15_build_partner_themes.R
+- id: imf_lending_rates
+  path: imf_lending_rates.csv
+  source_type: manual
+  source_name: IMF lending rates
+  url: https://data.imf.org/en/Data-Explorer
+  cadence: monthly
+  owner: unassigned
+  staged_from: sharepoint
+  notes: Available via the IMF Data API; automatable.
+  required_by:
+  - scripts/10_build_themes.R
+- id: imf_pcps_all
+  path: IMF_PCPS_all.xlsx
+  source_type: manual
+  source_name: IMF Primary Commodity Price System full workbook
+  url: https://www.imf.org/en/research/commodity-prices
+  cadence: monthly
+  owner: unassigned
+  staged_from: sharepoint
+  notes: Snapshot input to scripts/06_energy_prices_imf.R.
+  required_by:
+  - scripts/05_ingest_sources.R
+- id: imf_ppi
+  path: imf_ppi.csv
+  source_type: manual
+  source_name: IMF producer price indices
+  url: https://data.imf.org/en/Data-Explorer
+  cadence: monthly
+  owner: unassigned
+  staged_from: sharepoint
+  notes: Available via the IMF Data API; automatable.
+  required_by:
+  - scripts/10_build_themes.R
+- id: ipcc_ghg_intensity
+  path: ipcc_ghg_intensity.csv
+  source_type: manual
+  source_name: IPCC technology GHG intensity factors
+  url: https://www.ipcc.ch/report/ar6/wg3/
+  cadence: irregular
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+  - scripts/15_build_partner_themes.R
+- id: oecd_crs_api
+  path: oecd_crs_api.csv
+  source_type: manual
+  source_name: OECD Creditor Reporting System aid flows
+  url: https://data-explorer.oecd.org/
+  cadence: annual
+  owner: unassigned
+  staged_from: sharepoint
+  notes: OECD publishes an SDMX API; the filename is aspirational, not automated.
+  required_by:
+  - scripts/15_build_partner_themes.R
+- id: solar_potential
+  path: solar_potential_clean.csv
+  source_type: manual
+  source_name: Global Solar Atlas country potential
+  url: https://globalsolaratlas.info
+  cadence: irregular
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: wb_doingbusiness
+  path: wb_doingbusiness.csv
+  source_type: manual
+  source_name: World Bank Doing Business indicators (historical)
+  url: https://archive.doingbusiness.org/en/data
+  cadence: discontinued
+  owner: unassigned
+  staged_from: sharepoint
+  notes: Series was retired in 2021; no further vintages will be published.
+  required_by:
+  - scripts/15_build_partner_themes.R
+- id: wb_wdi
+  path: wb_wdi.csv
+  source_type: manual
+  source_name: World Bank WDI development indicator panel
+  url: https://databank.worldbank.org/source/world-development-indicators
+  cadence: annual
+  owner: unassigned
+  staged_from: sharepoint
+  notes: The WDI package is already a dependency; this is automatable today.
+  required_by:
+  - scripts/15_build_partner_themes.R
+- id: wb_wind_country
+  path: wb_wind_country.csv
+  source_type: manual
+  source_name: Global Wind Atlas country potential
+  url: https://globalwindatlas.info/
+  cadence: irregular
+  owner: unassigned
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: weo_annex_a
+  path: WEO2025_AnnexA_Free_Dataset_World.csv
+  pattern: ^WEO\d{4}_AnnexA_Free_Dataset_World\.csv$
+  resolve: newest
+  source_type: manual
+  source_name: IEA World Energy Outlook Annex A free dataset
+  url: https://www.iea.org/reports/world-energy-outlook-2025
+  cadence: annual
+  owner: unassigned
+  vintage: '2025'
+  staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R

@@ -43,38 +43,57 @@ if (!dir.exists(raw_data_path)) dir.create(raw_data_path, recursive = TRUE)
 is_skip_data_downloads <- function() tolower(Sys.getenv("SKIP_DATA_DOWNLOADS")) %in% c("1", "true", "yes")
 skip_data_downloads <- is_skip_data_downloads()
 
+source(file.path(repo_root, "scripts", "utils", "raw_inputs.R"))
+force_refresh <- opsi_force_refresh()
+
 copy_raw_file <- function(source_path, dest_path) {
-  if (!file.exists(source_path)) return(FALSE)
-  if (!dir.exists(dirname(dest_path))) dir.create(dirname(dest_path), recursive = TRUE)
-  file.copy(source_path, dest_path, overwrite = TRUE)
+  sync_raw_file(source_path, dest_path, force = force_refresh) != "missing"
 }
 
 source(file.path(repo_root, "scripts", "utils", "comtrade_ingest_utils.R"))
 source(file.path(repo_root, "scripts", "utils", "comtrade_client.R"))
 
-manifest_path <- file.path(repo_root, "config", "raw_inputs_manifest.yml")
-manifest <- yaml::read_yaml(manifest_path)
+# Sync staged raw inputs. This compares size and mtime rather than skipping any file
+# that already exists locally, so a newer vintage in the staging area actually lands.
+# Set OPSI_FORCE_REFRESH=true to recopy everything regardless.
+manifest_path <- raw_inputs_manifest_path(repo_root)
+manifest <- read_raw_inputs_manifest(manifest_path)
+staged_entries <- raw_inputs_staged_entries(manifest)
+
 missing <- character()
-for (entry in manifest) {
-  if (is.null(entry$path) || !nzchar(entry$path)) next
-  source_path <- file.path(sharepoint_raw_dir, entry$path)
-  dest_path <- file.path(raw_data_path, entry$path)
-  if (file.exists(dest_path)) next
-  if (!file.exists(source_path)) {
-    if (!isTRUE(entry$optional)) missing <- c(missing, entry$path)
+sync_counts <- c(copied = 0L, current = 0L)
+for (entry in staged_entries) {
+  status <- sync_raw_input_entry(entry, sharepoint_raw_dir, raw_data_path, force = force_refresh)
+
+  if (status == "missing") {
+    # A local copy is still fine; only flag inputs we can neither find nor refresh.
+    if (!raw_input_present_locally(entry, raw_data_path) && !isTRUE(entry$optional)) {
+      missing <- c(missing, entry$path)
+    }
     next
   }
-  if (!dir.exists(dirname(dest_path))) dir.create(dirname(dest_path), recursive = TRUE)
-  if (!file.copy(source_path, dest_path, overwrite = TRUE)) stop("Failed to copy raw input: ", entry$path)
+
+  sync_counts[[status]] <- sync_counts[[status]] + 1L
 }
-if (length(missing) > 0) stop("Missing required raw inputs in sharepoint_raw_dir:\n", paste0("- ", missing, collapse = "\n"))
-message("Raw inputs refreshed in: ", raw_data_path)
+
+if (length(missing) > 0) {
+  stop(
+    "Missing required raw inputs in sharepoint_raw_dir:\n",
+    paste0("- ", missing, collapse = "\n")
+  )
+}
+message(
+  "Raw inputs synced in ", raw_data_path,
+  " (", sync_counts[["copied"]], " updated, ", sync_counts[["current"]], " already current",
+  if (force_refresh) ", forced" else "", ")"
+)
 
 wdi_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
 wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")
-if (!file.exists(wdi_gdp_path)) copy_raw_file(file.path(sharepoint_raw_dir, "wdi_gdp.csv"), wdi_gdp_path)
-if (!file.exists(wdi_country_path)) copy_raw_file(file.path(sharepoint_raw_dir, "wdi_country_info.csv"), wdi_country_path)
-if ((!file.exists(wdi_gdp_path) || !file.exists(wdi_country_path)) && !skip_data_downloads) {
+copy_raw_file(file.path(sharepoint_raw_dir, "wdi_gdp.csv"), wdi_gdp_path)
+copy_raw_file(file.path(sharepoint_raw_dir, "wdi_country_info.csv"), wdi_country_path)
+wdi_needs_pull <- !file.exists(wdi_gdp_path) || !file.exists(wdi_country_path) || force_refresh
+if (wdi_needs_pull && !skip_data_downloads) {
   wdi_gdp <- WDI::WDI(indicator = "NY.GDP.MKTP.CD", start = 2007, end = as.integer(format(Sys.Date(), "%Y")) - 1)
   write.csv(wdi_gdp, wdi_gdp_path, row.names = FALSE)
   write.csv(WDI::WDI_data$country, wdi_country_path, row.names = FALSE)
@@ -87,7 +106,9 @@ if (comtrade_chunk_index > comtrade_chunk_count) stop("COMTRADE_CHUNK_INDEX cann
 
 candidate_target_year <- as.integer(Sys.getenv("COMTRADE_TARGET_YEAR", as.character(as.integer(format(Sys.Date(), "%Y")) - 1L)))
 comtrade_start_year <- as.integer(Sys.getenv("COMTRADE_START_YEAR", as.character(candidate_target_year - 4L)))
-comtrade_years <- seq.int(comtrade_start_year:candidate_target_year)
+# seq.int() with a single length>1 argument returns seq_along(), which silently
+# requested years 1..5 instead of the calendar window. Build the range explicitly.
+comtrade_years <- seq.int(from = comtrade_start_year, to = candidate_target_year)
 comtrade_retries <- max(1L, as.integer(Sys.getenv("COMTRADE_MAX_RETRIES", "3")))
 comtrade_sleep_seconds <- as.numeric(Sys.getenv("COMTRADE_SLEEP_SECONDS", "0.5"))
 comtrade_pause_seconds <- as.numeric(Sys.getenv("COMTRADE_REQUEST_PAUSE_SECONDS", "0.2"))
@@ -115,7 +136,12 @@ if (!skip_data_downloads) {
   comtrade_set_key_from_env()
 }
 
-critical_minerals_path <- file.path(raw_data_path, "iea_criticalminerals_25.csv")
+critical_minerals_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^iea_criticalminerals_\\d{2}\\.csv$",
+  fallback = "iea_criticalminerals_25.csv",
+  label = "IEA Critical Minerals Dataset"
+)
 critical_minerals_hs_path <- file.path(raw_data_path, "Columbia University Critical Minerals Dashboard", "unique_comtrade.csv")
 hs6_category_path <- file.path(raw_data_path, "hts_codes_categories_bolstered_final.csv")
 allies_path <- file.path(raw_data_path, "allies.csv")
@@ -132,10 +158,21 @@ probe_year <- function(request_builder, year) {
 
 actual_years <- list()
 
-# Critical minerals outputs (backward compatible filenames)
-critmin_import_path <- file.path(raw_data_path, "critmin_import_2025.csv")
-critmin_export_path <- file.path(raw_data_path, "critmin_export_2025.csv")
-critmin_total_export_path <- file.path(raw_data_path, "critmin_total_export_2025.csv")
+# Critical minerals outputs. The year suffix must match the year Comtrade actually
+# served, otherwise downstream readers resolve a different (older) file than the one
+# this step just wrote.
+critmin_output_paths <- function(year) {
+  list(
+    import = file.path(raw_data_path, sprintf("critmin_import_%d.csv", year)),
+    export = file.path(raw_data_path, sprintf("critmin_export_%d.csv", year)),
+    total_export = file.path(raw_data_path, sprintf("critmin_total_export_%d.csv", year))
+  )
+}
+
+critmin_paths <- critmin_output_paths(candidate_target_year)
+critmin_import_path <- critmin_paths$import
+critmin_export_path <- critmin_paths$export
+critmin_total_export_path <- critmin_paths$total_export
 
 if (!skip_data_downloads) {
   source(file.path(repo_root, "R", "categories", "minerals_trade", "critical_minerals_trade.R"))
@@ -151,6 +188,11 @@ if (!skip_data_downloads) {
   crit_probe_builder <- function(y) build_requests(reporter_candidates[1], "World", crit_code_chunks[1], y, "import", partner_chunk_size = 1)
   crit_target_year <- comtrade_pick_latest_available_year(function(y) probe_year(crit_probe_builder, y), candidate_target_year)
   actual_years$critmin <- crit_target_year
+
+  critmin_paths <- critmin_output_paths(crit_target_year)
+  critmin_import_path <- critmin_paths$import
+  critmin_export_path <- critmin_paths$export
+  critmin_total_export_path <- critmin_paths$total_export
 
   crit_import_req <- build_requests(reporter_candidates, "World", crit_code_chunks, crit_target_year, "import", partner_chunk_size = 1)
   crit_export_req <- build_requests(reporter_candidates, "World", crit_code_chunks, crit_target_year, "export", partner_chunk_size = 1)
@@ -207,20 +249,26 @@ if (!skip_data_downloads) {
 
 # --- Source: IMF Primary Commodity Price System (PCPS) ------------------
 imf_pcps_excel_path <- file.path(raw_data_path, "IMF_PCPS_all.xlsx")
-if (!file.exists(imf_pcps_excel_path)) {
-  candidates <- c(file.path(sharepoint_raw_dir, "IMF_PCPS_all.xlsx"), file.path(raw_data_path, "IMF_PCPS_all.xlsx"))
-  for (candidate in candidates) {
-    if (file.exists(candidate)) {
-      copy_raw_file(candidate, imf_pcps_excel_path)
-      break
-    }
-  }
-}
+imf_pcps_excel_status <- sync_raw_file(
+  file.path(sharepoint_raw_dir, "IMF_PCPS_all.xlsx"),
+  imf_pcps_excel_path,
+  force = force_refresh
+)
 
 imf_pcps_prices_path <- file.path(raw_data_path, "imf_pcps_prices.csv")
 imf_pcps_volatility_path <- file.path(raw_data_path, "imf_pcps_price_volatility.csv")
 imf_pcps_series_volatility_path <- file.path(raw_data_path, "imf_pcps_price_volatility_series.csv")
-needs_imf_pcps <- !(file.exists(imf_pcps_prices_path) && file.exists(imf_pcps_volatility_path) && file.exists(imf_pcps_series_volatility_path))
+
+# Recompute when a derived file is missing, when the snapshot workbook moved ahead of
+# the derived outputs, or on a forced refresh.
+imf_pcps_outputs <- c(imf_pcps_prices_path, imf_pcps_volatility_path, imf_pcps_series_volatility_path)
+imf_pcps_stale <- identical(imf_pcps_excel_status, "copied") ||
+  (file.exists(imf_pcps_excel_path) && any(vapply(
+    imf_pcps_outputs,
+    function(p) !file.exists(p) || as.numeric(file.info(imf_pcps_excel_path)$mtime) > as.numeric(file.info(p)$mtime),
+    logical(1)
+  )))
+needs_imf_pcps <- force_refresh || !all(file.exists(imf_pcps_outputs)) || imf_pcps_stale
 if (needs_imf_pcps && !skip_data_downloads) {
   old_snapshot_option <- getOption("opportunity_security.raw_snapshot_dir")
   options(opportunity_security.raw_snapshot_dir = raw_data_path)

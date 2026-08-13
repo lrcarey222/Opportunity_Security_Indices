@@ -203,16 +203,317 @@ safe_list_or_empty <- function(x) {
   if (is.null(x) || length(x) == 0) character(0) else normalize_chr_vec(x)
 }
 
+# ---- robust code parsing ------------------------------------------------------
+# Vectorized cleaner for HS/CPC-style numeric codes.
+# Keeps leading zero chapters intact; strips punctuation like "0101.21" -> "010121".
+clean_code <- function(x, width = 6) {
+  x <- as.character(x)
+  x <- stringr::str_replace_all(x, "\\D", "")
+  x <- substr(x, 1, width)
+  
+  ifelse(
+    !is.na(x) & nzchar(x),
+    stringr::str_pad(x, width = width, pad = "0"),
+    NA_character_
+  )
+}
+
 parse_code_list <- function(x, width = 3) {
   x <- as.character(x)
-  if (is.na(x) || !nzchar(x)) return(character(0))
-  toks <- unlist(strsplit(x, "\\s*,\\s*"))
-  toks <- stringr::str_replace_all(toks, "\\D", "")
-  toks <- toks[nzchar(toks)]
-  if (length(toks) == 0) return(character(0))
-  toks <- substr(toks, 1, width)
-  toks <- stringr::str_pad(toks, width = width, pad = "0")
+  
+  if (length(x) == 0 || all(is.na(x))) {
+    return(character(0))
+  }
+  
+  toks <- unlist(strsplit(paste(x, collapse = ","), "\\s*,\\s*"))
+  toks <- clean_code(toks, width = width)
+  toks <- toks[!is.na(toks) & nzchar(toks)]
+  
   unique(toks)
+}
+
+# ---- max-with-missing helper --------------------------------------------------
+# Use when "no monetary data" should mean neutral multiplier = 1,
+# not NA and not zero.
+pmax_na <- function(..., default = 1) {
+  m <- cbind(...)
+  
+  if (ncol(m) == 0) {
+    return(numeric(0))
+  }
+  
+  apply(m, 1, function(row) {
+    row <- suppressWarnings(as.numeric(row))
+    row <- row[is.finite(row)]
+    
+    if (length(row) == 0) default else max(row)
+  })
+}
+
+# ---- signed transform for possibly negative liberalising scores ---------------
+signed_log1p <- function(x) {
+  x <- suppressWarnings(as.numeric(x))
+  x[!is.finite(x)] <- NA_real_
+  sign(x) * log1p(abs(x))
+}
+
+# Inverse transform for signed_log1p().
+# Needed when blending sum and average scores that may be negative because of
+# inward liberalising measures.
+signed_expm1 <- function(x) {
+  x <- suppressWarnings(as.numeric(x))
+  out <- sign(x) * expm1(abs(x))
+  out[!is.finite(out)] <- NA_real_
+  out
+}
+
+# Stable signed blend of sum and average strength.
+# This avoids NaN from log1p(x) when x is negative.
+signed_log_blend <- function(strength_sum, strength_avg, alpha = 0.5) {
+  alpha <- suppressWarnings(as.numeric(alpha))
+  if (!is.finite(alpha)) alpha <- 0.5
+  alpha <- max(0, min(1, alpha))
+  
+  signed_expm1(
+    alpha * signed_log1p(strength_sum) +
+      (1 - alpha) * signed_log1p(strength_avg)
+  )
+}
+
+signed_log_blend <- function(strength_sum, strength_avg, alpha = 0.5) {
+  alpha <- max(0, min(1, alpha))
+  
+  signed_expm1(
+    alpha * signed_log1p(strength_sum) +
+      (1 - alpha) * signed_log1p(strength_avg)
+  )
+}
+
+safe_median_scurve <- function(x) {
+  x <- suppressWarnings(as.numeric(x))
+  x[!is.finite(x)] <- NA_real_
+  
+  out <- rep(NA_real_, length(x))
+  keep <- !is.na(x)
+  
+  if (!any(keep)) {
+    return(out)
+  }
+  
+  # Avoid divide-by-zero behavior in single-observation / all-tie groups.
+  if (length(unique(x[keep])) <= 1) {
+    out[keep] <- 0.5
+    return(out)
+  }
+  
+  out[keep] <- median_scurve(x[keep])
+  out
+}
+
+pct_rank_safe <- function(x) {
+  x <- suppressWarnings(as.numeric(x))
+  out <- rep(NA_real_, length(x))
+  keep <- is.finite(x)
+  
+  if (!any(keep)) {
+    return(out)
+  }
+  
+  if (sum(keep) == 1) {
+    out[keep] <- 1
+    return(out)
+  }
+  
+  out[keep] <- dplyr::percent_rank(x[keep])
+  out
+}
+
+# Adds three kinds of normalized index columns:
+#   *_within_country: old behavior, useful diagnostically
+#   *_xcountry: comparable across countries within the relevant product/tech/year group
+#   *_global: pooled comparison across the whole output table
+#
+# The default index column is set to *_xcountry unless otherwise specified.
+add_dis_indices <- function(tbl,
+                            score_col,
+                            within_country_by,
+                            xcountry_by,
+                            index_col = "domestic_intervention_index",
+                            default = c("xcountry", "global", "within_country")) {
+  default <- match.arg(default)
+  
+  within_name <- paste0(index_col, "_within_country")
+  xcountry_name <- paste0(index_col, "_xcountry")
+  global_name <- paste0(index_col, "_global")
+  rank_name <- paste0(index_col, "_xcountry_rank")
+  pct_name <- paste0(index_col, "_xcountry_pctile")
+  
+  out <- tbl %>%
+    dplyr::mutate(
+      dis_score_for_index = signed_log1p(.data[[score_col]])
+    )
+  
+  if (length(within_country_by) > 0) {
+    out <- out %>%
+      dplyr::group_by(dplyr::across(dplyr::all_of(within_country_by))) %>%
+      dplyr::mutate(
+        "{within_name}" := safe_median_scurve(.data$dis_score_for_index)
+      ) %>%
+      dplyr::ungroup()
+  } else {
+    out[[within_name]] <- NA_real_
+  }
+  
+  if (length(xcountry_by) > 0) {
+    out <- out %>%
+      dplyr::group_by(dplyr::across(dplyr::all_of(xcountry_by))) %>%
+      dplyr::mutate(
+        "{xcountry_name}" := safe_median_scurve(.data$dis_score_for_index),
+        "{rank_name}" := dplyr::dense_rank(dplyr::desc(.data$dis_score_for_index)),
+        "{pct_name}" := pct_rank_safe(.data$dis_score_for_index)
+      ) %>%
+      dplyr::ungroup()
+  } else {
+    out[[xcountry_name]] <- safe_median_scurve(out$dis_score_for_index)
+    out[[rank_name]] <- dplyr::dense_rank(dplyr::desc(out$dis_score_for_index))
+    out[[pct_name]] <- pct_rank_safe(out$dis_score_for_index)
+  }
+  
+  out <- out %>%
+    dplyr::mutate(
+      "{global_name}" := safe_median_scurve(.data$dis_score_for_index)
+    )
+  
+  default_name <- switch(
+    default,
+    xcountry = xcountry_name,
+    global = global_name,
+    within_country = within_name
+  )
+  
+  out[[index_col]] <- out[[default_name]]
+  
+  out
+}
+
+# ---- essential HS6 mapping helpers -------------------------------------------
+resolve_hs6_essential_tbl <- function(hs6_essential_tbl = NULL) {
+  if (!is.null(hs6_essential_tbl)) {
+    return(hs6_essential_tbl)
+  }
+  
+  if (exists("hs6_categories_essential", inherits = TRUE)) {
+    return(get("hs6_categories_essential", inherits = TRUE))
+  }
+  
+  NULL
+}
+
+prepare_subcat_mapping <- function(subcat_raw, hs6_essential_tbl = NULL) {
+  check_required_columns(subcat_raw, c("HS6", "Technology", "Value.Chain", "Sub.Sector"), "subcat_raw")
+  
+  sub <- subcat_raw %>%
+    dplyr::mutate(
+      code = clean_code(.data$HS6, width = 6),
+      Technology = stringr::str_squish(as.character(.data$Technology)),
+      `Value.Chain` = stringr::str_squish(as.character(.data$`Value.Chain`))
+    )
+  
+  # First look for the flag already attached to subcat_raw.
+  if ("essential_for_tech_sc" %in% names(sub)) {
+    sub <- sub %>%
+      dplyr::mutate(essential_for_tech_sc = as_bool(.data$essential_for_tech_sc))
+  } else if ("essential" %in% names(sub)) {
+    sub <- sub %>%
+      dplyr::mutate(essential_for_tech_sc = as_bool(.data$essential))
+  } else {
+    sub <- sub %>%
+      dplyr::mutate(essential_for_tech_sc = TRUE)
+  }
+  
+  # Then, if available, override from hs6_categories_essential.
+  hs6_essential_tbl <- resolve_hs6_essential_tbl(hs6_essential_tbl)
+  
+  if (!is.null(hs6_essential_tbl)) {
+    ess_names <- names(hs6_essential_tbl)
+    
+    hs6_col <- dplyr::case_when(
+      "HS6" %in% ess_names ~ "HS6",
+      "hs6" %in% ess_names ~ "hs6",
+      "code" %in% ess_names ~ "code",
+      TRUE ~ NA_character_
+    )
+    
+    tech_col <- dplyr::case_when(
+      "Technology" %in% ess_names ~ "Technology",
+      "tech" %in% ess_names ~ "tech",
+      TRUE ~ NA_character_
+    )
+    
+    sc_col <- dplyr::case_when(
+      "Value.Chain" %in% ess_names ~ "Value.Chain",
+      "supply_chain" %in% ess_names ~ "supply_chain",
+      TRUE ~ NA_character_
+    )
+    
+    essential_col <- dplyr::case_when(
+      "essential" %in% ess_names ~ "essential",
+      "essential_for_tech_sc" %in% ess_names ~ "essential_for_tech_sc",
+      TRUE ~ NA_character_
+    )
+    
+    if (!is.na(hs6_col) && !is.na(essential_col)) {
+      ess <- tibble::tibble(
+        code = clean_code(hs6_essential_tbl[[hs6_col]], width = 6),
+        Technology = if (!is.na(tech_col)) {
+          stringr::str_squish(as.character(hs6_essential_tbl[[tech_col]]))
+        } else {
+          NA_character_
+        },
+        `Value.Chain` = if (!is.na(sc_col)) {
+          stringr::str_squish(as.character(hs6_essential_tbl[[sc_col]]))
+        } else {
+          NA_character_
+        },
+        essential_override = as_bool(hs6_essential_tbl[[essential_col]])
+      ) %>%
+        dplyr::filter(!is.na(.data$code), nzchar(.data$code))
+      
+      join_by <- "code"
+      
+      # Prefer tech-stage-specific essentiality when those columns exist.
+      if (!is.na(tech_col) && !is.na(sc_col)) {
+        join_by <- c("code", "Technology", "Value.Chain")
+      }
+      
+      ess <- ess %>%
+        dplyr::group_by(dplyr::across(dplyr::all_of(join_by))) %>%
+        dplyr::summarise(
+          essential_override = any(.data$essential_override, na.rm = TRUE),
+          .groups = "drop"
+        )
+      
+      sub <- sub %>%
+        dplyr::left_join(ess, by = join_by) %>%
+        dplyr::mutate(
+          essential_for_tech_sc = dplyr::coalesce(
+            .data$essential_override,
+            .data$essential_for_tech_sc
+          )
+        ) %>%
+        dplyr::select(-.data$essential_override)
+    }
+  }
+  
+  sub %>%
+    dplyr::filter(
+      !is.na(.data$code),
+      nzchar(.data$code),
+      !is.na(.data$Technology),
+      nzchar(.data$Technology),
+      !is.na(.data$`Value.Chain`),
+      nzchar(.data$`Value.Chain`)
+    )
 }
 
 # ---- multipliers -------------------------------------------------------------
@@ -735,11 +1036,12 @@ TECH_KEYWORDS <- list(
     "datacenter","data center","server","servers","gpu","gpus","ai","artificial intelligence",
     "accelerator","hpc","cloud", "model training", "inference"
   ),
-  `Magnets Upstream (rare earths)` = c(
-    "rare earth","rare-earth","ndpr","neodymium","praseodymium","dysprosium","terbium",
-    "magnet ore","rare earth mine","rare earth mining",
-    "magnet","magnets","permanent magnet","ndfeb","sintered magnet","magnet manufacturing",
-    "magnet production","bonded magnet"
+  `Magnets` = c(
+    "rare earth", "rare-earth", "ndpr", "neodymium", "praseodymium",
+    "dysprosium", "terbium", "magnet ore", "rare earth mine",
+    "rare earth mining", "magnet", "magnets", "permanent magnet",
+    "ndfeb", "sintered magnet", "magnet manufacturing",
+    "magnet production", "bonded magnet"
   )
 )
 
@@ -852,7 +1154,7 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
         list(.data$tech,
              .data$supply_chain,
              dplyr::coalesce(.data$Title, ""),
-             dplyr::coalesce(.data$Source, ""),
+             dplyr::coalesce(.data$source_text, .data$Source, ""),
              .data$sector_low_carbon,
              .data$sector_dual_use,
              .data$sector_critical_minerals,
@@ -904,17 +1206,27 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
 #    - Computes distinct total_hs6 and matched_hs6 (not inflated by many-to-many joins)
 # ==============================================================================
 
-clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
+clean_nipo_raw <- function(raw_nipo,
+                           subcat_raw,
+                           country_info = NULL,
+                           hs6_essential_tbl = NULL) {
   check_required_columns(raw_nipo, c("Product: HS 6-digit (2022)", "Implementing Jurisdiction"), "raw_nipo")
   check_required_columns(subcat_raw, c("HS6", "Technology", "Value.Chain", "Sub.Sector"), "subcat_raw")
   
-  subcat_lu <- subcat_raw %>%
-    dplyr::mutate(
-      code = stringr::str_pad(as.character(.data$HS6), width = 6, pad = "0"),
-      Technology = stringr::str_squish(as.character(.data$Technology)),
-      `Value.Chain` = stringr::str_squish(as.character(.data$`Value.Chain`))
-    ) %>%
-    dplyr::distinct(.data$code, .data$Technology, .data$`Value.Chain`, .data$Sub.Sector)
+  # Use only essential HS6 codes to drive tech × supply_chain classification.
+  # Non-essential/generic HS6 codes still remain in hs6_codes for diagnostics/context.
+  subcat_lu <- prepare_subcat_mapping(
+    subcat_raw = subcat_raw,
+    hs6_essential_tbl = hs6_essential_tbl
+  ) %>%
+    dplyr::filter(.data$essential_for_tech_sc) %>%
+    dplyr::distinct(
+      .data$code,
+      .data$Technology,
+      .data$`Value.Chain`,
+      .data$Sub.Sector,
+      .data$essential_for_tech_sc
+    )
   
   nipo_classified <- raw_nipo %>%
     dplyr::mutate(
@@ -922,7 +1234,7 @@ clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
       hs6_raw = .data$`Product: HS 6-digit (2022)`
     ) %>%
     tidyr::separate_rows(.data$hs6_raw, sep = "\\s*,\\s*") %>%
-    dplyr::mutate(code = stringr::str_pad(.data$hs6_raw, width = 6, pad = "0")) %>%
+    dplyr::mutate(code = clean_code(.data$hs6_raw, width = 6)) %>%
     dplyr::left_join(subcat_lu, by = "code", relationship = "many-to-many") %>%
     dplyr::group_by(.data$nipo_row_id) %>%
     dplyr::summarise(
@@ -981,6 +1293,36 @@ clean_nipo_raw <- function(raw_nipo, subcat_raw, country_info = NULL) {
       sector_critical_minerals = if ("Sector: Critical Minerals" %in% names(nipo_classified)) as_bool(.data$`Sector: Critical Minerals`) else FALSE,
       sector_advanced_tech = if ("Sector: Advanced Technology Products" %in% names(nipo_classified)) as_bool(.data$`Sector: Advanced Technology Products`) else FALSE
     )
+  
+  # ---- Text field used for keyword validation ----------------------------------
+  # Some NIPO exports have URL but not Source. Keyword validation should never fail
+  # just because Source is missing.
+  title_col <- if ("Title" %in% names(nipo_classified)) "Title" else NA_character_
+  
+  source_col <- dplyr::case_when(
+    "Source" %in% names(nipo_classified) ~ "Source",
+    "URL" %in% names(nipo_classified) ~ "URL",
+    TRUE ~ NA_character_
+  )
+  
+  nipo_classified <- nipo_classified %>%
+    dplyr::mutate(
+      Title = if (!is.na(title_col)) {
+        dplyr::coalesce(as.character(.data[[title_col]]), "")
+      } else {
+        ""
+      },
+      source_text = if (!is.na(source_col)) {
+        dplyr::coalesce(as.character(.data[[source_col]]), "")
+      } else {
+        ""
+      }
+    )
+  
+  # Backward-compatible alias for code that still references Source.
+  if (!("Source" %in% names(nipo_classified))) {
+    nipo_classified$Source <- nipo_classified$source_text
+  }
   
   nipo_classified
 }
@@ -1138,10 +1480,16 @@ build_policy_base <- function(nipo_country_tbl,
       m_geo = cap_mult(log_mult(.data$partner_n, p95_geo), cap = geo_cap),
       m_trade   = cap_mult(log_mult(.data$trade_covered_usd_m, p95_trade), cap = scale_cap),
       m_subsidy = cap_mult(log_mult(.data$subsidy_usd_m, p95_subsidy), cap = scale_cap),
-      m_scale   = pmax(.data$m_subsidy),
+      
+      # Methodology fix: scale should use the larger of trade covered and subsidy size.
+      m_scale = pmax_na(.data$m_trade, .data$m_subsidy, default = 1),
+      
       bite_strength_base  = .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration,
-      scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * 2*.data$m_scale,
-      policy_strength= .data$w_tool * .data$w_status* .data$m_scope * .data$m_scale
+      scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * 2 * .data$m_scale,
+      
+      # Clearer name. Keep policy_strength as a backward-compatible alias.
+      simple_policy_strength = .data$w_tool * .data$w_status * .data$m_scope * .data$m_scale,
+      policy_strength = .data$simple_policy_strength
     )
   
   act_pkg <- base %>%
@@ -1162,7 +1510,9 @@ build_policy_base <- function(nipo_country_tbl,
       m_package = dplyr::coalesce(.data$m_package, 1.0),
       bite_strength_pkg  = .data$bite_strength_base  * .data$m_package,
       scale_strength_pkg = .data$scale_strength_base * .data$m_package,
-      policy_strength_pkg = .data$policy_strength * .data$m_package
+      
+      simple_policy_strength_pkg = .data$simple_policy_strength * .data$m_package,
+      policy_strength_pkg = .data$simple_policy_strength_pkg
     )
 }
 
@@ -1175,8 +1525,16 @@ add_asof_flags <- function(policy_base_tbl,
                            flow_window_days = 365) {
   if (is.null(as_of_date)) {
     cand <- c(as_date_safe(policy_base_tbl$announce_date), as_date_safe(policy_base_tbl$impl_date))
-    as_of_date <- suppressWarnings(max(cand, na.rm = TRUE))
-    if (!is.finite(as_of_date)) as_of_date <- Sys.Date()
+    cand <- cand[!is.na(cand)]
+    
+    if (length(cand) == 0) {
+      stop(
+        "as_of_date is NULL and no announcement/implementation dates are available. ",
+        "Pass as_of_date explicitly for reproducible stock comparisons."
+      )
+    }
+    
+    as_of_date <- max(cand)
   }
   as_of_date <- as_date_safe(as_of_date)
   flow_start <- as_of_date - as.difftime(flow_window_days, units = "days")
@@ -1212,7 +1570,11 @@ build_by_policy <- function(policy_asof_tbl, cpc_names) {
       tech_sc_csv = paste(sort(unique(paste(.data$tech, .data$supply_chain, sep = "::"))), collapse = "|"),
       mapping_confidence_mean = mean(.data$mapping_confidence, na.rm = TRUE),
       mapping_confidence_max = max(.data$mapping_confidence, na.rm = TRUE),
-      mapped_share_sum = sum(dplyr::coalesce(.data$mapped_share, 0), na.rm = TRUE),
+      # mapped_share is repeated after allocation expansion; summing it can exceed 1.
+      mapped_share_policy = max(dplyr::coalesce(.data$mapped_share, 0), na.rm = TRUE),
+      
+      # Backward-compatible alias; now corrected to policy-level mapped share.
+      mapped_share_sum = max(dplyr::coalesce(.data$mapped_share, 0), na.rm = TRUE),
       .groups = "drop"
     )
   
@@ -1242,8 +1604,8 @@ build_by_policy <- function(policy_asof_tbl, cpc_names) {
         .data$scale_strength_pkg / .data$country_domestic_stock,
         0
       ),
-      domestic_intervention_index = median_scurve(log1p(.data$scale_strength_pkg)),
-      policy_strength_index = median_scurve(log1p(.data$policy_strength_pkg))
+      domestic_intervention_index = safe_median_scurve(signed_log1p(.data$scale_strength_pkg)),
+      policy_strength_index = safe_median_scurve(signed_log1p(.data$policy_strength_pkg))
     ) %>%
     dplyr::ungroup()
   
@@ -1298,20 +1660,23 @@ build_by_hs6 <- function(policy_asof_tbl,
       domestic_strength_avg = dplyr::if_else(.data$n_active_policies > 0,
                                              mean(.data$policy_strength, na.rm = TRUE),
                                              0),
-      domestic_strength_balanced = exp(
-        balance_alpha * log1p(.data$domestic_strength_sum) +
-          (1 - balance_alpha) * log1p(.data$domestic_strength_avg)
-      ) - 1,
+      domestic_strength_balanced = signed_log_blend(
+        .data$domestic_strength_sum,
+        .data$domestic_strength_avg,
+        alpha = balance_alpha
+      ),
       .groups = "drop"
     ) %>%
     dplyr::rename(domestic_stock_sum = .data$domestic_strength_balanced)
   
-  idx <- agg %>%
-    dplyr::group_by(.data$iso3) %>%
-    dplyr::mutate(
-      domestic_intervention_index = median_scurve(log1p(.data$domestic_stock_sum))
-    ) %>%
-    dplyr::ungroup()
+  idx <- add_dis_indices(
+    tbl = agg,
+    score_col = "domestic_stock_sum",
+    within_country_by = c("iso3", "country"),
+    xcountry_by = c("HS6"),
+    index_col = "domestic_intervention_index",
+    default = "xcountry"
+  )
   
   if (nrow(hs6_cpc_lu) > 0) {
     idx <- idx %>% dplyr::left_join(hs6_cpc_lu, by = "HS6")
@@ -1387,20 +1752,23 @@ build_by_tech_sc <- function(policy_asof_tbl,
                                              0),
       # blended measure:
       # geometric blend: exp( alpha*log(sum+1) + (1-alpha)*log(avg+1) ) - 1
-      domestic_strength_balanced = exp(
-        balance_alpha * log1p(.data$domestic_strength_sum) +
-          (1 - balance_alpha) * log1p(.data$domestic_strength_avg)
-      ) - 1,
+      domestic_strength_balanced = signed_log_blend(
+        .data$domestic_strength_sum,
+        .data$domestic_strength_avg,
+        alpha = balance_alpha
+      ),
       .groups = "drop"
     ) %>%
     dplyr::rename(domestic_stock_sum = .data$domestic_strength_balanced)
   
-  idx <- agg %>%
-    dplyr::group_by(.data$iso3) %>%
-    dplyr::mutate(
-      domestic_intervention_index = median_scurve(log1p(.data$domestic_stock_sum))
-    ) %>%
-    dplyr::ungroup()
+  idx <- add_dis_indices(
+    tbl = agg,
+    score_col = "domestic_stock_sum",
+    within_country_by = c("iso3", "country"),
+    xcountry_by = c("tech", "supply_chain"),
+    index_col = "domestic_intervention_index",
+    default = "xcountry"
+  )
   
   if (nrow(tech_sc_cpc_lu) > 0) {
     idx <- idx %>% dplyr::left_join(tech_sc_cpc_lu, by = c("tech", "supply_chain"))
@@ -1471,11 +1839,25 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     dplyr::filter(!is.na(.data$impl_date), is.finite(.data$anchor_year))
   
   anchor_years <- tech_sc_long$anchor_year
-  if (is.null(year_min)) year_min <- if (length(anchor_years) > 0) min(anchor_years) else as.integer(format(Sys.Date(), "%Y"))
+  anchor_years <- anchor_years[is.finite(anchor_years)]
   
-  current_year <- as.integer(format(Sys.Date(), "%Y"))
-  if (is.null(year_max)) year_max <- max(c(anchor_years, current_year), na.rm = TRUE)
-  year_max <- min(year_max, current_year)
+  if (is.null(year_min)) {
+    if (length(anchor_years) == 0) {
+      stop("year_min is NULL and no valid announcement/implementation years are available.")
+    }
+    year_min <- min(anchor_years, na.rm = TRUE)
+  }
+  
+  if (is.null(year_max)) {
+    if (length(anchor_years) == 0) {
+      stop("year_max is NULL and no valid announcement/implementation years are available.")
+    }
+    year_max <- max(anchor_years, na.rm = TRUE)
+  }
+  
+  if (!is.finite(year_min) || !is.finite(year_max) || year_max < year_min) {
+    stop("Invalid year_min/year_max. Pass explicit year_min and year_max for reproducible yearly outputs.")
+  }
   
   tech_sc_long <- tech_sc_long %>%
     dplyr::mutate(
@@ -1545,19 +1927,22 @@ build_by_tech_sc_year <- function(policy_base_tbl,
       domestic_strength_avg = dplyr::if_else(.data$n_policies_window > 0,
                                              mean(.data$policy_strength, na.rm = TRUE),
                                              0),
-      domestic_strength_balanced = exp(
-        balance_alpha * log1p(.data$domestic_strength_sum) +
-          (1 - balance_alpha) * log1p(.data$domestic_strength_avg)
-      ) - 1,
+      domestic_strength_balanced = signed_log_blend(
+        .data$domestic_strength_sum,
+        .data$domestic_strength_avg,
+        alpha = balance_alpha
+      ),
       .groups = "drop"
     )
   
-  out <- agg %>%
-    dplyr::group_by(.data$iso3, .data$country, .data$announce_year) %>%
-    dplyr::mutate(
-      domestic_intervention_index_xs = median_scurve(log1p(.data$domestic_strength_balanced))
-    ) %>%
-    dplyr::ungroup()
+  out <- add_dis_indices(
+    tbl = agg,
+    score_col = "domestic_strength_balanced",
+    within_country_by = c("iso3", "country", "announce_year"),
+    xcountry_by = c("tech", "supply_chain", "announce_year"),
+    index_col = "domestic_intervention_index_xs",
+    default = "xcountry"
+  )
   
   if (nrow(tech_sc_cpc_lu) > 0) {
     out <- out %>% dplyr::left_join(tech_sc_cpc_lu, by = c("tech", "supply_chain"))
@@ -1627,10 +2012,11 @@ build_by_cpc <- function(policy_asof_tbl,
       domestic_strength_avg = dplyr::if_else(.data$n_active_policies > 0,
                                              mean(.data$policy_strength, na.rm = TRUE),
                                              0),
-      domestic_strength_balanced = exp(
-        balance_alpha * log1p(.data$domestic_strength_sum) +
-          (1 - balance_alpha) * log1p(.data$domestic_strength_avg)
-      ) - 1,
+      domestic_strength_balanced = signed_log_blend(
+        .data$domestic_strength_sum,
+        .data$domestic_strength_avg,
+        alpha = balance_alpha
+      ),
       .groups = "drop"
     ) %>%
     dplyr::rename(domestic_stock_sum = .data$domestic_strength_balanced)
@@ -1641,14 +2027,18 @@ build_by_cpc <- function(policy_asof_tbl,
     agg <- agg %>% dplyr::mutate(cpc.name = NA_character_)
   }
   
-  agg %>%
-    dplyr::group_by(.data$iso3) %>%
+  add_dis_indices(
+    tbl = agg,
+    score_col = "domestic_stock_sum",
+    within_country_by = c("iso3", "country"),
+    xcountry_by = c("cpc3"),
+    index_col = "domestic_intervention_index",
+    default = "xcountry"
+  ) %>%
     dplyr::mutate(
-      domestic_intervention_index = median_scurve(log1p(.data$domestic_stock_sum)),
       cpc3_codes_csv = .data$cpc3,
       cpc_name_csv = .data$cpc.name
-    ) %>%
-    dplyr::ungroup()
+    )
 }
 
 # ==============================================================================
@@ -1657,6 +2047,7 @@ build_by_cpc <- function(policy_asof_tbl,
 
 nipo_policy_outputs <- function(raw_nipo,
                                 subcat_raw,
+                                hs6_essential_tbl = NULL,
                                 country_info = NULL,
                                 as_of_date = NULL,
                                 flow_window_days = 365,
@@ -1677,15 +2068,32 @@ nipo_policy_outputs <- function(raw_nipo,
                                 rolling_window_years = 3,
                                 balance_alpha = 0.5,
                                 weight_by_active_fraction = TRUE) {
+  hs6_essential_tbl <- resolve_hs6_essential_tbl(hs6_essential_tbl)
+  
+  # Driver mapping used for CPC validation / lookup tables.
+  # This prevents generic/non-essential HS6 codes from expanding allowed tech-stage pairs.
+  subcat_driver <- prepare_subcat_mapping(
+    subcat_raw = subcat_raw,
+    hs6_essential_tbl = hs6_essential_tbl
+  ) %>%
+    dplyr::filter(.data$essential_for_tech_sc) %>%
+    dplyr::transmute(
+      HS6 = .data$code,
+      Technology = .data$Technology,
+      `Value.Chain` = .data$`Value.Chain`,
+      Sub.Sector = .data$Sub.Sector
+    ) %>%
+    dplyr::distinct()
   nipo_country <- clean_nipo_raw(
     raw_nipo = raw_nipo,
     subcat_raw = subcat_raw,
-    country_info = country_info
+    country_info = country_info,
+    hs6_essential_tbl = hs6_essential_tbl
   )
   
   cpc_hs <- get_cpc_hs_map()
   cpc_names <- get_cpc3_names()
-  cpc_pairs <- build_cpc3_to_tech_sc_pairs(subcat_raw = subcat_raw, cpc_hs = cpc_hs)
+  cpc_pairs <- build_cpc3_to_tech_sc_pairs(subcat_raw = subcat_driver, cpc_hs = cpc_hs)
   
   nipo_country <- attach_cpc_validation(nipo_country, cpc_hs = cpc_hs, cpc_pairs = cpc_pairs)
   
@@ -1702,7 +2110,7 @@ nipo_policy_outputs <- function(raw_nipo,
   
   hs6_cpc_lu <- build_hs6_cpc_lookup(cpc_hs = cpc_hs, cpc_names = cpc_names)
   hs6_name_lu <- build_hs6_name_lookup(subcat_raw = subcat_raw)
-  tech_sc_cpc_lu <- build_tech_sc_cpc_lookup(subcat_raw = subcat_raw, cpc_hs = cpc_hs, cpc_names = cpc_names)
+  tech_sc_cpc_lu <- build_tech_sc_cpc_lookup(subcat_raw = subcat_driver, cpc_hs = cpc_hs, cpc_names = cpc_names)
   tech_cpc_lu <- build_tech_cpc_lookup(tech_sc_cpc_lu)
   
   policy_base <- build_policy_base(

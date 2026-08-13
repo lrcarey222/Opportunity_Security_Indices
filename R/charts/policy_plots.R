@@ -13,19 +13,20 @@ read_processed_tbl <- function(name, processed_dir) {
   readRDS(path)
 }
 
-nipo_policy_index_tbl <- read_processed_tbl("nipo_policy_index_tbl", processed_dir)
+#nipo_policy_index_tbl <- read_processed_tbl("nipo_policy_index_tbl", processed_dir)
 
 #Asia Trip NIPO Comparison
 
-asia_nipo <- nipo_policy_index_tbl %>%
+asia_nipo <- nipo_tech_year %>%
   filter(iso3 %in% c("JPN",
                     "KOR",
-                    "VNM",
-                    "IND")) %>%
+                    #"VNM",
+                    "IND"),
+         announce_year=="2026") %>%
   mutate(industry=paste0(tech,"-",supply_chain)) %>%
-  select(country, industry, domestic_stock_sum) %>%
+  select(country, industry, domestic_intervention_index_xs) %>%
   pivot_wider(names_from="country", 
-              values_from="domestic_stock_sum") 
+              values_from="domestic_intervention_index_xs") 
 
 write.csv(asia_nipo,paste0(processed_dir,"/charts/asia_nipo.csv"))
 
@@ -34,7 +35,7 @@ write.csv(asia_nipo,paste0(processed_dir,"/charts/asia_nipo.csv"))
 index_outputs <- read_processed_tbl("outputs/index_outputs", processed_dir)
 policy_index<-index_outputs$policy_index
 
-iso <- "IND"
+iso <- "JPN"
 
 ally_iso3 <- c(
   "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA", "ITA", "BRA", "SAU",
@@ -107,22 +108,26 @@ write.csv(policy_heatmap,paste0(processed_dir,"/charts/policy_heatmap_",iso,".cs
 
 nipo_tech_year <- read_processed_tbl("nipo_tech_year_tbl", processed_dir)
 
-nipo_top<-nipo_policy_index_tbl %>%
+nipo_top<-nipo_tech_year %>%
   filter(iso3 == iso,
-         #supply_chain != "Downstream",
-         !tech  %in% c("Electric Motors", "Magnets")) %>%
-  arrange(desc(domestic_intervention_index)) %>%
-  slice_max(n=5,order_by=domestic_intervention_index) 
+         supply_chain != "Downstream",
+         !tech  %in% c("Electric Motors", "Magnets"),
+         announce_year=="2026") %>%
+  arrange(desc(domestic_intervention_index_xs_within_country)) %>%
+  slice_max(n=5,order_by=domestic_intervention_index_xs_within_country) %>%
+  mutate(industry=paste(tech,supply_chain)) 
+  
   
 
 nipo_time_plot<- nipo_tech_year %>%
-  filter(iso3 == iso,
-         #supply_chain != "Downstream",
-         !tech  %in% c("Electric Motors", "Magnets")) %>%
-  inner_join(nipo_top,by=c("tech","supply_chain")) %>%
   mutate(industry=paste(tech,supply_chain)) %>%
-  select(industry,announce_year,domestic_strength_balanced) %>%
-  pivot_wider(names_from=industry,values_from=domestic_strength_balanced) %>%
+    filter(iso3 == iso,
+         supply_chain != "Downstream",
+         !tech  %in% c("Electric Motors", "Magnets"),
+         industry %in% unique(nipo_top$industry)) %>%
+  #inner_join(nipo_top,by=c("iso3","country","tech","supply_chain","announce_year")) %>%
+  select(industry,announce_year,domestic_intervention_index_xs_within_country) %>%
+  pivot_wider(names_from=industry,values_from=domestic_intervention_index_xs_within_country) %>%
   arrange(announce_year)
   
 write.csv(nipo_time_plot,paste0(processed_dir,"/charts/nipo_time_plot_",iso,".csv"))

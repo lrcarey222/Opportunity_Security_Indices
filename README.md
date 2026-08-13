@@ -31,7 +31,9 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
 - [Outputs](#outputs)
 - [Testing and quality checks](#testing-and-quality-checks)
 - [Additional utilities and workflows](#additional-utilities-and-workflows)
-- [Data sources](#data-sources)
+- [Raw inputs and refresh](#raw-inputs-and-refresh)
+  - [How refresh works](#how-refresh-works)
+  - [Key external sources (cited)](#key-external-sources-cited)
 - [Known issues and to-dos](#known-issues-and-to-dos)
 - [Citation](#citation)
 - [License](#license)
@@ -673,6 +675,10 @@ Optional environment variables:
 - `OPSI_REQUIRE_MILP=true|false`
 - `OPSI_AUTO_PREREQS=true|false`
 - `OPSI_RUN_ALLIED_NETWORK=true|false`
+- `OPSI_FORCE_REFRESH=true|false` — recopy every staged raw input even when the local
+  copy looks current (see [Raw inputs and refresh](#raw-inputs-and-refresh))
+- `OPSI_ENERGY_PRICES_SOURCE=auto|manual|pcps` — which IMF price file the Energy Prices
+  theme reads (`auto` prefers the staged wide export, falls back to the API-derived PCPS panel)
 
 When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under
 `data/raw/comtrade_chunks/...` and automatically combines them into final CSVs
@@ -734,6 +740,8 @@ This repository includes a `testthat` suite under `tests/testthat/` that covers 
 * Package-selection visual outputs
 * Allied network design scaling
 * Shiny app load smoke test
+* Raw-input manifest drift (manifest vs. what `scripts/` actually reads, in both directions)
+* Raw-input sync and vintage resolution (mtime/size comparison, newest-release matching)
 
 Run tests from repo root with:
 
@@ -747,8 +755,10 @@ Rscript -e "testthat::test_dir('tests/testthat')"
 
 Beyond the main pipeline scripts, the repo includes supporting workflows:
 
-* `scripts/01_generate_raw_inputs_manifest.R` — generates/refreshes a raw-input inventory from configured requirements.
-* `config/raw_inputs_manifest.yml` — declarative manifest used to track expected raw datasets.
+* `scripts/01_generate_raw_inputs_manifest.R` — regenerates the raw-input inventory by scanning the active `scripts/` and `R/` code.
+* `scripts/02_render_sources_doc.R` — renders `docs/sources.md` from the manifest.
+* `config/raw_inputs_manifest.yml` — declarative manifest of every raw dataset, with provenance and refresh cadence.
+* `scripts/utils/raw_inputs.R` — shared helpers for manifest reading, staged-file sync, and vintage resolution.
 * `scripts/30_build_allied_network_design.R` — builds allied network design outputs used for partnership analyses.
 * `scripts/90_build_package_selection_viz.R` — prepares package-selection visualization outputs.
 * `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — pull and visualize trade time series.
@@ -758,15 +768,56 @@ For app-specific details (UI behavior, data-loading order, and deployment notes)
 
 ---
 
-## Data sources
+## Raw inputs and refresh
 
-A curated list of sources (including links and expected provenance) is maintained in:
+`config/raw_inputs_manifest.yml` is the single inventory of every raw input the pipeline
+reads. Each entry records where the file comes from and how often it changes:
 
-* `docs/sources.md`
+| `source_type` | Meaning |
+| --- | --- |
+| `api` | Fetched automatically during ingestion (Comtrade, WDI, IMF PCPS) |
+| `manual` | Staged by hand into `sharepoint_raw_dir` before a run |
+| `derived` | Authored by the project — a crosswalk, not a fetched dataset |
+| `generated` | Written by the pipeline as bookkeeping |
+
+The manifest is generated **from the active pipeline**, so it cannot drift away from what
+`scripts/` actually reads:
+
+```bash
+Rscript scripts/01_generate_raw_inputs_manifest.R
+```
+
+Curated fields (`source_name`, `url`, `cadence`, `owner`, `vintage`) survive regeneration;
+`required_by` is refreshed from code. `tests/testthat/test-raw-inputs-manifest.R` fails if
+the manifest and the pipeline disagree in either direction.
+
+`docs/sources.md` is rendered from the manifest — edit the manifest, not the doc:
+
+```bash
+Rscript scripts/02_render_sources_doc.R
+```
+
+### How refresh works
+
+- **Ingestion syncs rather than copies once.** `scripts/05_ingest_sources.R` compares size
+  and mtime, so replacing a file in the staging area with a newer vintage is enough for it
+  to reach `data/raw`. Force a full recopy with `OPSI_FORCE_REFRESH=true`.
+- **Vintage-bearing inputs resolve to the newest match.** Inputs whose file name carries a
+  release date (`GTA NIPO - <month> <year>.xlsx`, `WEO<year>_AnnexA_...`, `critmin_*_<year>.csv`,
+  the dated BNEF exports) are resolved by pattern, not pinned in code. Publishing a new
+  release into `data/raw` is all that is needed to pick it up.
+- **Each run stamps what it used.** `data/raw/raw_inputs_resolved.yml` records the file and
+  vintage behind every pattern-resolved input, alongside `data/raw/comtrade_vintage.yml`.
+
+> **Note:** entries marked `derived` are project-authored crosswalks that are still staged
+> from SharePoint. Until they move under version control, a collaborator without access to
+> that OneDrive folder cannot reproduce a full run.
 
 Theme builders read raw inputs directly from your configured `raw_data_dir/...`.
 
-> **Tip:** `scripts/10_build_themes.R` and `scripts/15_build_partner_themes.R` are the authoritative “what files are required” inventory, because they list the expected raw file names and wire them into each theme builder.
+> **Tip:** `scripts/10_build_themes.R` and `scripts/15_build_partner_themes.R` remain the
+> authoritative “what files are required to run” inventory, because they fail fast on a
+> concrete list of paths. The manifest describes provenance for those same inputs.
 
 ### Key external sources (cited)
 
@@ -808,6 +859,9 @@ And record:
 * **EO Investment category is currently a placeholder** in the configured EO category list and may not yet represent a finalized production methodology.
 * **Supply-chain coupling implementation differs from the methodology text**: current code uses normalized interdependence edge strength with linear lambda mapping (rather than HHI-driven logistic mapping).
 * **Raw-input completeness is environment dependent**. If expected files are missing, use the manifest workflow and source documentation to reconcile gaps before running full builds.
+* **Project-authored crosswalks are not version controlled.** The manifest entries marked `source_type: derived` (HS6 mappings, dual-use scores, the allies list) are staged from SharePoint rather than committed, so the pipeline is not reproducible without access to that folder.
+* **~15 `manual` inputs have a public API or stable download URL** and could be automated: Energy Institute, the IEA free datasets, World Bank WDI/Doing Business, the IMF Data API series, OECD CRS, and the Atlas of Economic Complexity extracts. See `docs/sources.md` for the current split.
+* **No input has a named owner.** Every manifest entry is `owner: unassigned`, so there is no one accountable for noticing a stale vintage.
 
 ---
 

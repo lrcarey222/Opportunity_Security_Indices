@@ -92,15 +92,10 @@ if (is.null(raw_data_dir)) {
 }
 sharepoint_raw_dir <- config$sharepoint_raw_dir
 
+source(file.path(repo_root, "scripts", "utils", "raw_inputs.R"))
+
 copy_raw_file <- function(source_path, dest_path) {
-  if (!file.exists(source_path)) {
-    return(FALSE)
-  }
-  dest_dir <- dirname(dest_path)
-  if (!dir.exists(dest_dir)) {
-    dir.create(dest_dir, recursive = TRUE)
-  }
-  file.copy(source_path, dest_path, overwrite = TRUE)
+  sync_raw_file(source_path, dest_path) != "missing"
 }
 
 resolve_raw_data_dir <- function(root_dir, raw_data_dir, skip_data_downloads = FALSE) {
@@ -133,7 +128,8 @@ wb_doingbusiness_path <- file.path(raw_data_path, "wb_doingbusiness.csv")
 wb_wdi_path <- file.path(raw_data_path, "wb_wdi.csv")
 oecd_api_path <- file.path(raw_data_path, "oecd_crs_api.csv")
 
-if (!file.exists(oecd_api_path) && !is.null(sharepoint_raw_dir) && nzchar(sharepoint_raw_dir)) {
+if (!is.null(sharepoint_raw_dir) && nzchar(sharepoint_raw_dir)) {
+  # sync_raw_file() is a no-op when the staged copy has not moved ahead of the local one.
   copy_raw_file(file.path(sharepoint_raw_dir, "oecd_crs_api.csv"), oecd_api_path)
 }
 

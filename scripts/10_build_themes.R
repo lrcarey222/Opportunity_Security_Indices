@@ -35,6 +35,7 @@ source(local({
   resolve_bootstrap_path()
 }))
 
+source(file.path(repo_root, "scripts", "utils", "raw_inputs.R"))
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
@@ -240,32 +241,23 @@ if (is.null(raw_data_path)) {
   return()
 }
 
-manifest_path <- file.path(repo_root, "config", "raw_inputs_manifest.yml")
-if (!file.exists(manifest_path)) {
-  stop("Raw inputs manifest not found: ", manifest_path)
-}
-raw_manifest <- yaml::read_yaml(manifest_path)
-if (length(raw_manifest) == 0) {
-  stop("Raw inputs manifest is empty: ", manifest_path)
-}
-
-find_manifest_path <- function(pattern, label) {
-  hits <- vapply(raw_manifest, function(entry) {
-    is.character(entry$path) && stringr::str_detect(entry$path, pattern)
-  }, logical(1))
-  if (!any(hits)) {
-    stop(label, " not found in raw inputs manifest.")
-  }
-  if (sum(hits) > 1) {
-    stop("Multiple entries found for ", label, "; keep only one entry.")
-  }
-  raw_manifest[[which(hits)[1]]]$path
-}
+manifest_path <- raw_inputs_manifest_path(repo_root)
+raw_manifest <- read_raw_inputs_manifest(manifest_path)
 
 # Assemble required raw file paths for theme builders.
+#
+# Inputs whose file name carries a release vintage are resolved to the newest match in
+# data/raw rather than pinned to one release, so a new upstream publication flows in
+# without a code edit. `fallback` keeps the previously pinned name working when no
+# other candidate is present.
 raw_path <- file.path(raw_data_path, "ei_stat_review_world_energy.csv")
 reserves_excel_path <- file.path(raw_data_path, "ei_stat_review_world_energy_wide.xlsx")
-critical_minerals_path <- file.path(raw_data_path, "iea_criticalminerals_25.csv")
+critical_minerals_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^iea_criticalminerals_\\d{2}\\.csv$",
+  fallback = "iea_criticalminerals_25.csv",
+  label = "IEA Critical Minerals Dataset"
+)
 cleantech_midstream_path <- file.path(raw_data_path, "iea_cleantech_Midstream.csv")
 iea_cleantech_guide_path <- file.path(raw_data_path, "IEA_Clean_Tech_Guide.csv")
 ev_midstream_path <- file.path(raw_data_path, "ev_Midstream_capacity.csv")
@@ -274,28 +266,71 @@ trade_hs4_path <- file.path(raw_data_path, "hs92_country_product_year_4.csv")
 trade_hs6_path <- file.path(raw_data_path, "hs92_country_product_year_6.csv")
 comtrade_energy_trade_path <- file.path(raw_data_path, "comtrade_energy_trade.csv")
 comtrade_total_export_path <- file.path(raw_data_path, "comtrade_total_export.csv")
-bnef_neo_path <- file.path(raw_data_path, "2024-10-29 - New Energy Outlook 2024.csv")
+bnef_neo_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^\\d{4}-\\d{2}-\\d{2} - New Energy Outlook \\d{4}\\.csv$",
+  fallback = "2024-10-29 - New Energy Outlook 2024.csv",
+  label = "BNEF New Energy Outlook"
+)
 wdi_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
 wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")
-critmin_import_path <- file.path(raw_data_path, "critmin_import_2024.csv")
-critmin_export_path <- file.path(raw_data_path, "critmin_export_2024.csv")
-critmin_total_export_path <- file.path(raw_data_path, "critmin_total_export_2024.csv")
-energy_prices_lcoe_path <- file.path(raw_data_path, "2025-03-24 - 2025 LCOE Data Viewer Tool.csv")
-iea_weo_path <- file.path(raw_data_path, "WEO2025_AnnexA_Free_Dataset_World.csv")
-iea_ev_path <- file.path(raw_data_path, "IEA_EVDataExplorer2025.xlsx")
+critmin_import_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^critmin_import_\\d{4}\\.csv$",
+  fallback = "critmin_import_2024.csv",
+  label = "Comtrade critical minerals imports"
+)
+critmin_export_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^critmin_export_\\d{4}\\.csv$",
+  fallback = "critmin_export_2024.csv",
+  label = "Comtrade critical minerals exports"
+)
+critmin_total_export_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^critmin_total_export_\\d{4}\\.csv$",
+  fallback = "critmin_total_export_2024.csv",
+  label = "Comtrade critical minerals total exports"
+)
+energy_prices_lcoe_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^\\d{4}-\\d{2}-\\d{2} - \\d{4} LCOE Data Viewer Tool\\.csv$",
+  fallback = "2025-03-24 - 2025 LCOE Data Viewer Tool.csv",
+  label = "BNEF LCOE Data Viewer"
+)
+iea_weo_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^WEO\\d{4}_AnnexA_Free_Dataset_World\\.csv$",
+  fallback = "WEO2025_AnnexA_Free_Dataset_World.csv",
+  label = "IEA WEO Annex A"
+)
+iea_ev_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^IEA_EVDataExplorer\\d{4}\\.xlsx$",
+  fallback = "IEA_EVDataExplorer2025.xlsx",
+  label = "IEA Global EV Data Explorer"
+)
 bcg_future_demand_path <- file.path(raw_data_path, "Market Size for Technology and Supply Chain.xlsx")
-bnef_supply_chain_path <- file.path(raw_data_path, "BNEF_Energy Transition Supply Chains 2025.xlsx")
+bnef_supply_chain_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^BNEF_Energy Transition Supply Chains \\d{4}\\.xlsx$",
+  fallback = "BNEF_Energy Transition Supply Chains 2025.xlsx",
+  label = "BNEF Energy Transition Supply Chains"
+)
 relative_costs_iea_path <- file.path(raw_data_path, "Relative_Costs_IEA.csv")
 imf_lending_rates_path <- file.path(raw_data_path, "imf_lending_rates.csv")
 imf_ppi_path <- file.path(raw_data_path, "imf_ppi.csv")
-imf_commodity_prices_path <- file.path(raw_data_path, "imf_commodity_prices.csv")
 solar_pv_potential_path <- file.path(raw_data_path, "solar_potential_clean.csv")
 wind_potential_path <- file.path(raw_data_path, "wb_wind_country.csv")
 geothermal_potential_path <- file.path(raw_data_path, "geothermal_lcoe_mw.csv")
 iea_pams_path <- file.path(
   raw_data_path,"IEA_PAMS_Export.csv")
-nipo_policy_path <- file.path(
-  raw_data_path,"GTA NIPO - February 2026.xlsx")
+nipo_policy_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^GTA NIPO - .*\\.xlsx$",
+  fallback = "GTA NIPO - February 2026.xlsx",
+  label = "GTA New Industrial Policy Observatory"
+)
 hs6_category_path <- file.path(
   raw_data_path,"hts_codes_categories_bolstered_final.csv")
 tech_ghg_path <- file.path(
@@ -306,6 +341,30 @@ dual_use_scores_path <- file.path(
   raw_data_path,"dual_use_scores_primary_secondary_tertiary.csv")
 investment_monitor_path <- file.path(
   raw_data_path, "GCIM_Investment_Capacity_aggregated.xlsx")
+
+# Energy prices input. The hand-staged wide IMF export is preferred because it carries
+# the annual year-on-year series, but the pipeline now falls back to the PCPS panel
+# that scripts/05_ingest_sources.R derives from IMF_PCPS_all.xlsx. energy_prices()
+# already accepts either shape (see energy_prices_long_from_pcps). Override with
+# OPSI_ENERGY_PRICES_SOURCE=manual|pcps|auto.
+imf_commodity_prices_path <- file.path(raw_data_path, "imf_commodity_prices.csv")
+imf_pcps_prices_path <- file.path(raw_data_path, "imf_pcps_prices.csv")
+energy_prices_source_pref <- tolower(Sys.getenv("OPSI_ENERGY_PRICES_SOURCE", "auto"))
+
+imf_price_path <- switch(
+  energy_prices_source_pref,
+  manual = imf_commodity_prices_path,
+  pcps = imf_pcps_prices_path,
+  if (file.exists(imf_commodity_prices_path)) imf_commodity_prices_path else imf_pcps_prices_path
+)
+
+if (identical(imf_price_path, imf_pcps_prices_path)) {
+  message(
+    "Energy prices: using API-derived ", basename(imf_pcps_prices_path),
+    ". yoy_price_change_pct is not available from this source; ",
+    "stage imf_commodity_prices.csv to restore it."
+  )
+}
 
 
 
@@ -336,7 +395,7 @@ missing_files <- c(
   relative_costs_iea_path,
   imf_lending_rates_path,
   imf_ppi_path,
-  imf_commodity_prices_path,
+  imf_price_path,
   solar_pv_potential_path,
   geothermal_potential_path,
   iea_pams_path,
@@ -361,6 +420,25 @@ if (length(missing_files) > 0 && !skip_data_downloads) {
   expected_list <- paste0("- ", missing_files, collapse = "\n")
   stop("Missing required raw data. Expected raw files:\n", expected_list)
 }
+
+# Stamp which vintage each pattern-resolved input actually landed on, so an index run
+# can be replicated later even after newer releases arrive in data/raw.
+write_resolved_vintages(
+  list(
+    iea_critical_minerals = critical_minerals_path,
+    bnef_neo = bnef_neo_path,
+    bnef_lcoe_viewer = energy_prices_lcoe_path,
+    bnef_supply_chains = bnef_supply_chain_path,
+    critmin_import = critmin_import_path,
+    critmin_export = critmin_export_path,
+    critmin_total_export = critmin_total_export_path,
+    weo_annex_a = iea_weo_path,
+    iea_ev_data_explorer = iea_ev_path,
+    gta_nipo = nipo_policy_path,
+    energy_prices_input = imf_price_path
+  ),
+  raw_data_path
+)
 
 country_info <- read.csv(wdi_country_path)
 country_info <- standardize_country_info(country_info)
@@ -530,7 +608,7 @@ country_info <- standardize_country_info(country_info)
   write_processed_tbl(energy_consumption_tbl, "energy_consumption_tbl", processed_dir)
 
   # Theme: Energy prices (IMF PCPS data).
-  imf_commodity_prices <- read.csv(imf_commodity_prices_path)
+  imf_commodity_prices <- read.csv(imf_price_path)
   energy_prices_tbl <- energy_prices(
     imf_price = imf_commodity_prices,
     mineral_demand_clean = mineral_demand_clean,

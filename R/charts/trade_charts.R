@@ -10,6 +10,7 @@ premium_key <- "fd178c714d644e1ab8adbc16026faaaf"
 
 library(lubridate)
 library(slider)
+library(countrycode)
 
 source("scripts/96_pull_trade_timeseries.R")
 
@@ -18,66 +19,106 @@ source("scripts/96_pull_trade_timeseries.R")
 iso_rep<-"VNM"
 iso_partner<-c("CHN","FRA","DEU","ITA","ESP","NLD","BEL","SWE","POL","DNK","FIN","CZE","ROU","HUN","AUT","PRT","GRC","IRL","JPN","USA","IND","VNM")
 
+codelist_iso3 <- countrycode::codelist |>
+  as_tibble() |>
+  filter(!is.na(eu28)) |>
+  pull(iso3c)
+
+
+hs6_category_path <- file.path(
+  raw_data_path,"energy_hs6_master.csv")
+
+subcat <- readr::read_csv(hs6_category_path, show_col_types = FALSE)  
+subcat_wind <- subcat %>%filter(essential==T)
 subcat2<-subcat %>%
   mutate(HS6=as.character(HS6)) %>%
   filter(HS6=="854140")
 
-res_vnm <- pull_trade_timeseries(
-  catalog = subcat2,
-  country = "VNM",
-  tech = c("Solar"),
+oil_producers<- ei %>%
+  filter(Var=="oilprod_kbd",
+         Year=="2024",
+         !is.na(ISO3166_numeric)) %>%
+  arrange(desc(Value)) %>%
+  slice_max(Value,n=25)
+
+producer_iso <-distinct(oil_producers$ISO3166_alpha3)
+
+res_wind <- pull_trade_timeseries(
+  catalog = subcat_wind,
+  country = country_info$iso3c,
+  tech = c("Wind"),
   supply_chain = "Midstream",
-  partners = "USA",
-  years = c("2022:2025"),
-  flow = c("export"),
+  partners = "World",
+  years = c("2025"),
+  flow = c("import"),
   frequency="annual"
 )
+
 
 res<-bind_rows(res2,res3,res4)
 
 base_year  <- 2019
 base_month <- 1
 
-plot_tot <- res %>%
-  filter(flow_desc == "Import") %>%
-  left_join(country_info %>% select(iso3c, region),
-            by = c("partner_iso" = "iso3c")) %>%
-  left_join(hs6_categories_essential %>% mutate(code6 = as.character(HS6)),
-            by = c("cmd_code" = "code6"),
-            relationship = "many-to-many") %>%
-  filter(Technology %in% c("Semiconductors","Batteries","Solar","Magnets","Electric Motors")) %>%
-  group_by(Technology,Sub.Sector, partner_desc, ref_year, ref_month) %>%
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(slider)
+
+plot_tot <- res_irn %>%
+  #filter(flow_desc == "Export") %>%
+  left_join(
+    country_info %>% select(iso3c, region),
+    by = c("partner_iso" = "iso3c")
+  ) %>%
+  left_join(
+    subcat %>% mutate(code6 = as.character(hs6)),
+    by = c("cmd_code" = "code6"),
+    relationship = "many-to-many"
+  ) %>%
+  group_by(tech, reporter_desc,partner_desc, ref_year, ref_month) %>%
   summarise(imports = sum(primary_value, na.rm = TRUE), .groups = "drop") %>%
   mutate(date = ymd(sprintf("%d-%02d-01", ref_year, ref_month))) %>%
-  group_by(Technology, Sub.Sector,partner_desc) %>%
-  arrange(date, .by_group = TRUE) %>%
-  mutate(imports_roll3m = slide_dbl(
-    imports,
-    ~ mean(.x, na.rm = TRUE),
-    .before = 11,
-    .complete = TRUE
-  )) %>%
-  ungroup() %>%
-  filter(partner_desc == "World") %>%
-  group_by(Technology,Sub.Sector) %>%
+  select(tech, reporter_desc,partner_desc, date, imports) %>%
+  
+  # create missing months for every tech-partner combo
+  group_by(tech, reporter_desc,partner_desc) %>%
+  # 3-month rolling average
   mutate(
-    base_imports = first(imports_roll3m[ref_year == base_year & ref_month == base_month]),
-    import_index = (imports_roll3m / base_imports) * 100
+    imports_roll3m = slide_dbl(
+      imports,
+      ~ mean(.x, na.rm = TRUE),
+      .before = 2,
+      .complete = TRUE
+    )
   ) %>%
-  ungroup() %>%
-  mutate(industry=paste(Technology,Sub.Sector)) %>%
-  select(industry, date, import_index) %>%
-  filter(industry %in% plot_df_top$industry) %>%
-  pivot_wider(names_from = industry, values_from = import_index) %>%
-  arrange(date)
+  ungroup() 
 
-plot_df_top <- plot_tot %>%
-  filter(date=="2024-12-01") %>%
-  arrange(desc(import_index)) %>%
-  slice_max(n=10,order_by=import_index)
+iran_oil <- plot_tot %>%
+  group_by(reporter_desc,partner_desc) %>%
+  summarize(imports=sum(imports,na.rm=T)) %>%
+  ungroup() %>%
+  mutate(share=imports/sum(imports)*100) %>%
+  arrange(desc(share))
   
 
-write.csv(plot_tot,paste0(processed_dir,"/charts/us_electro_monthly_sub.csv"))
+plot_df_top <- plot_tot %>%
+  mutate(year=substr(date,1,4)) %>%
+  group_by(year,partner_desc) %>%
+  summarize(imports=sum(imports,na.rm=T)) %>%
+  filter(year=="2025") %>%
+  arrange(desc(imports)) %>%
+  slice_max(n=10,order_by=imports)
+  
+
+write.csv(plot_tot%>%
+            filter(partner_desc %in% plot_df_top$partner_desc) %>%
+            select(date, tech, partner_desc, imports_roll3m) %>%
+            pivot_wider(
+              names_from = partner_desc,
+              values_from = imports_roll3m,
+              values_fill = 0
+            ),paste0("data/processed/charts/india_oil_country_monthly.csv"))
 
 
 
@@ -212,3 +253,200 @@ plot_chn<-bulk_annual %>%
   pivot_wider(names_from=flow_desc,values_from=total)
 write.csv(plot_chn,"data/processed/charts/china_importsexports_tech.csv")
 
+
+#India Manufacturing Exports
+ind_man_plot <- aec_6_data %>%
+  filter(country_iso3_code=="IND") %>%
+  inner_join(subcat %>%
+              mutate(HS6=as.character(hs6)),by=c("product_hs92_code"="HS6"), relationship = "many-to-many") %>%
+  filter(tech %in% c("Wind","Solar","Batteries"),
+         supply_chain=="Midstream") %>%
+  group_by(tech,supply_chain,year) %>%
+  summarize(export=sum(export_value,na.rm=T)) %>%
+  group_by(year) %>%
+  mutate(share=export/sum(export,na.rm=T)) 
+
+write.csv(ind_man_plot%>%
+            select(year,tech,export) %>%
+            pivot_wider(names_from=year,values_from=export),"data/processed/charts/ind_man_exports.csv")
+ggplot(data=ind_man_plot,aes(x=year,y=export,fill=tech))+geom_col()+theme_minimal()
+
+#India Solar Trade Concentration
+
+ind_solar_concentration <- trade_concentration_tbl %>%
+  filter(iso3c=="IND",tech=="Solar",data_type=="index") %>%
+  select(sub_sector,variable,value) %>%
+  pivot_wider(names_from=sub_sector,values_from=value) %>%
+  write.csv("data/processed/charts/ind_solar_concentration.csv")
+
+
+#Japanese Nuclear
+jpn_nuc_concentration_bubble <- trade_concentration_tbl %>%
+  filter(iso3c=="JPN",tech=="Nuclear",data_type=="index") %>%
+  select(sub_sector,variable,value) %>%
+  pivot_wider(names_from=variable,values_from=value) 
+
+hs6_names<-comtrade_energy_trade %>%
+  inner_join(subcat,by=c("cmd_code"="hs6")) %>%
+  distinct(tech,supply_chain,sub_sector,cmd_code,cmd_desc)
+
+jpn_nuclear_exports<-comtrade_energy_trade %>%
+  inner_join(subcat,by=c("cmd_code"="hs6")) %>%
+  filter(tech=="Nuclear",
+         reporter_iso=="JPN") %>%
+  arrange(desc(primary_value)) %>%
+  distinct(reporter_iso,tech,supply_chain,sub_sector,cmd_code,cmd_desc,ref_year,flow_direction,primary_value) %>%
+  pivot_wider(names_from=flow_direction,values_from=primary_value)
+
+  write.csv(jpn_nuc_concentration_bubble,"data/processed/charts/jpn_nuc_concentration_bubble.csv")
+
+  hs92_tbl <- ct_get_ref_table("H0")
+  
+  jap_nuc_4 <- aec_4_data %>%
+    left_join(hs6_names %>%
+                mutate(hs4=substr(cmd_code,1,4)),by=c("product_hs92_code"="hs4")) %>%
+    filter(tech=="Nuclear",
+           country_iso3_code=="JPN") %>%
+    distinct(year,product_hs92_code,export_value,import_value,export_rca,pci,distance) %>%
+    left_join(hs92_tbl,by=c("product_hs92_code"="id")) %>%
+    mutate(text_clean = str_remove(text, "^[^-]+\\s*-\\s*"))
+  
+  
+  
+  jap_feas_bubble <- jap_nuc_4 %>%
+    filter(year=="2023") %>%
+    distinct(product_hs92_code,text_clean, export_value,export_rca,pci,distance)
+  
+  write.csv(jap_feas_bubble,"data/processed/charts/jap_feas_nuclear.csv")
+
+  jea_nuc_trade <- jap_nuc_4 %>%
+    mutate(net_exports=export_value-import_value) %>%
+    select(year,text_clean,net_exports) %>%
+    pivot_wider(names_from=text_clean,values_from=net_exports)
+  
+  write.csv(jea_nuc_trade,"data/processed/charts/jea_nuc_trade.csv")
+  
+#Grid Export Market
+  
+  grid_export <- trade_concentration_tbl %>%
+    filter(tech=="Electric Grid",
+           Year=="2024",
+           variable=="export_size")%>%
+    group_by(sub_sector) %>%
+    summarize(export_size=sum(value,na.rm=T)) %>%
+    arrange(desc(export_size))
+
+  cables_export <- trade_concentration_tbl %>%
+    filter(tech=="Electric Grid",
+           Year=="2024",
+           grepl("Cables",sub_sector))
+
+#Korea Annual Nuclear Exports
+  korea_nuc_exp<-res_kor %>%
+    inner_join(subcat %>%
+                 filter(tech=="Nuclear") %>%
+                 mutate(cmd_code=as.character(hs6)),by=c("cmd_code")) %>%
+    group_by(partner_desc,ref_year,tech) %>%
+    summarize(exports=sum(primary_value,na.rm=T)) %>%
+    pivot_wider(names_from=partner_desc,values_from=exports)
+
+  write.csv(korea_nuc_exp,"data/processed/charts/korea_nuclear_exports_ts.csv")  
+  
+  wind_scatter <- res_eu_wind %>%
+    inner_join(subcat %>%
+                mutate(cmd_code=as.character(hs6)) %>%
+                filter(essential==T),by=c("cmd_code"))
+  
+  #Wind Scatter
+  library(WDI)
+  gdp_pc <- WDI(
+    country = "all",
+    indicator = c("NY.GDP.PCAP.CD",
+                  "NY.GDP.MKTP.CD"),
+    start = 2023,
+    end = 2023
+  )
+  
+  wind_scatter <- res_wind %>%
+    left_join(subcat %>%
+      filter(tech=="Wind") %>%
+      mutate(cmd_code=as.character(hs6)),by=c("cmd_code")) %>%
+    left_join(codelist_iso3 %>%
+                select(iso3c, region23,eu28),by=c("reporter_iso"="iso3c")) %>%
+    filter(sub_sector %in% c("Wind Towers",
+                             "Wind Blades",
+                             "Nacelles & Drivetrains",
+                             "Wind Turbines & Generators",
+                             "Offshore Substructures")) %>%
+    left_join(gdp_pc %>% 
+                select(iso3c,`NY.GDP.PCAP.CD`,
+                       `NY.GDP.MKTP.CD`),by=c("reporter_iso"="iso3c")) %>%
+    mutate(region23=ifelse(grepl("Europe",region23),"Other Europe",region23)) %>%
+    mutate(region=ifelse(reporter_iso=="USA","USA",
+                         ifelse(!is.na(eu28),"EU",
+                                ifelse(reporter_iso=="CHN","CHN",region23)))) %>%
+    group_by(region) %>% 
+    summarize(val=sum(primary_value,na.rm=T),
+              gdp_cap=weighted.mean(x=NY.GDP.PCAP.CD,w=NY.GDP.MKTP.CD,na.rm=T)) %>%
+    arrange(desc(val))
+  
+  # install.packages(c("unvotes", "tidyverse", "lubridate"))
+  
+  library(unvotes)
+  library(tidyverse)
+  library(lubridate)
+  
+  # Parameters
+  start_year <- 2014
+  end_year   <- 2024
+  
+  # Combine UN votes with vote dates
+  votes <- un_votes %>%
+    left_join(un_roll_calls, by = "rcid") %>%
+    mutate(year = year(date)) %>%
+    filter(year >= start_year, year <= end_year)
+  
+  # Pull China's vote on each roll call
+  china_votes <- votes %>%
+    filter(country_code == "CN") %>%
+    select(rcid, china_vote = vote)
+  
+  # Country-year voting similarity with China
+  china_alignment <- votes %>%
+    inner_join(china_votes, by = "rcid") %>%
+    filter(country_code != "CN") %>%
+    mutate(
+      same_as_china = vote == china_vote
+    ) %>%
+    group_by(country, country_code) %>%
+    summarise(
+      votes_compared = n(),
+      china_similarity = mean(same_as_china, na.rm = TRUE),
+      china_distance = 1 - china_similarity,
+      .groups = "drop"
+    )
+  
+  china_alignment
+ 
+
+  china_alignment <- china_alignment %>%
+    select(country_code,china_distance) %>%
+  left_join(codelist_iso3 %>%
+              select(iso2c,iso3c, region23,eu28),by=c("country_code"="iso2c")) %>%
+    left_join(gdp_pc %>% 
+                select(iso3c,`NY.GDP.PCAP.CD`,
+                       `NY.GDP.MKTP.CD`),by=c("iso3c")) %>%
+    mutate(region23=ifelse(grepl("Europe",region23),"Other Europe",region23)) %>%
+    mutate(region=ifelse(iso3c=="USA","USA",
+                         ifelse(!is.na(eu28),"EU",
+                                ifelse(iso3c=="CHN","CHN",region23)))) %>%
+    group_by(region) %>% 
+    summarize(china_index=weighted.mean(china_distance,
+                                        w=NY.GDP.MKTP.CD,
+                                        na.rm=T))
+
+  wind_scatter<-wind_scatter %>%
+    left_join(china_alignment,by=c("region"))
+  
+  write.csv(wind_scatter,"data/processed/charts/wind_scatter.csv")
+  
