@@ -1,7 +1,0 @@
-sharepoint_raw_dir: "C:/Users/LCarey/OneDrive - RMI/Documents - US Program/6_Projects/Clean Regional Economic Development/ACRE/Data/Raw Data"
-raw_data_dir: "data/raw"
-processed_dir: "data/processed"
-allow_partial_categories: true
-energy_security_include_sub_sector: false
-include_sub_sector: false
-use_economic_opportunity_v2: true

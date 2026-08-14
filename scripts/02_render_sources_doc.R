@@ -58,9 +58,16 @@ render_sources_doc <- function(manifest) {
       }
 
       file_cell <- if (!is.na(e$pattern)) {
-        paste0("`", esc(e$pattern), "`<br>newest match")
+        paste0("`", esc(e$path), "`<br>newest match: `", esc(e$pattern), "`")
       } else {
         paste0("`", esc(e$path), "`")
+      }
+
+      if (identical(e$source_type, "api") && identical(e$staged_from, "sharepoint")) {
+        file_cell <- paste0(
+          file_cell, "<br>fetch: ", e$fetch_policy,
+          if (identical(e$fetch_policy, "fallback")) " (staged copy wins)" else " (API wins)"
+        )
       }
 
       used_by <- if (length(e$required_by) > 0) {
@@ -122,7 +129,12 @@ render_sources_doc <- function(manifest) {
     section(
       by_type("api"),
       "Automated (api)",
-      "These refresh on every ingestion run. Comtrade requires `COMTRADE_API_KEY`."
+      paste(
+        "Fetched programmatically; no human step. Comtrade requires `COMTRADE_API_KEY`.",
+        "Entries showing a fetch policy also have a staged copy: `prefer` means the API",
+        "is the authority, `fallback` means the staged file wins and the fetcher only",
+        "runs when no local copy exists."
+      )
     ),
     section(
       by_type("manual"),
@@ -137,9 +149,9 @@ render_sources_doc <- function(manifest) {
       by_type("derived"),
       "Project-authored crosswalks (derived)",
       paste(
-        "These are maintained by the team rather than fetched. They are still staged from",
-        "SharePoint, which means a collaborator without OneDrive access cannot reproduce a run;",
-        "moving them under version control would fix that."
+        "Maintained by the team rather than fetched. Entries marked `staged_from: repo`",
+        "live in `data/reference/` under version control, so a fresh clone can build",
+        "without access to anyone's OneDrive; ingestion copies them into `data/raw/`."
       )
     ),
     section(

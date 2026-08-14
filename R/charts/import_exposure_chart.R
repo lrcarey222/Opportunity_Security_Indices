@@ -208,7 +208,7 @@ ggplot(df_plot, aes(x = exposure_decile, y = fct_reorder(ISO3166_alpha3, exposur
   labs(
     x = "Exposure decile",
     y = "Countries (ISO3, ordered by exposure)",
-    fill = "Fossil import exposure\n(import dependence × fossil share)"
+    fill = "Fossil import exposure\n(import dependence Ã— fossil share)"
   ) +
   theme_minimal() +
   theme(axis.text.y = element_text(size = 6))
@@ -229,7 +229,7 @@ ggplot(df_top, aes(x = Country)) +
     x = NULL,
     y = "Value (0-1)",
     title = "Fossil import exposure",
-    subtitle = "Bar = import dependence × fossil share; dots = components"
+    subtitle = "Bar = import dependence Ã— fossil share; dots = components"
   ) +
   theme_minimal()
 

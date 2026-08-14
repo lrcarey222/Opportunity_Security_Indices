@@ -9,9 +9,15 @@ renv/library/
 renv/python/
 renv/staging/
 
+# Local environment config (copy config/config.example.yml to config/config.yml).
+# It holds a machine-specific sharepoint_raw_dir, so it must not be committed.
+config/config.yml
+
 # Local data + outputs (do not commit)
 data/raw/
 data/processed/
+# ...but project-authored crosswalks are version controlled; see data/reference/.
+!data/reference/
 data/raw_cache/
 outputs/
 output/

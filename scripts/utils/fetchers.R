@@ -280,20 +280,25 @@ opsi_normalize_period <- function(x) {
   x
 }
 
-# Sort canonical periods chronologically: year, then Q/M within the year.
+# Order periods the way the IMF Data Explorer exports do: within each year the annual
+# column comes first, then each quarter immediately followed by its three months
+# (2021, 2021-Q1, 2021-M01, 2021-M02, 2021-M03, 2021-Q2, 2021-M04, ...).
+# Ordering is cosmetic for the parsers, which read the period out of the column name,
+# but matching the staged layout keeps fetched and staged files diffable.
 opsi_order_periods <- function(periods) {
   year <- suppressWarnings(as.integer(substr(periods, 1, 4)))
   rank_within <- rep(0, length(periods))
 
   is_q <- grepl("-Q[1-4]$", periods)
-  rank_within[is_q] <- as.integer(sub(".*-Q", "", periods[is_q])) * 3
+  quarter_num <- as.integer(sub(".*-Q", "", periods[is_q]))
+  rank_within[is_q] <- quarter_num * 10L
 
   is_m <- grepl("-M\\d{2}$", periods)
-  rank_within[is_m] <- as.integer(sub(".*-M", "", periods[is_m]))
+  month_num <- as.integer(sub(".*-M", "", periods[is_m]))
+  month_quarter <- ((month_num - 1L) %/% 3L) + 1L
+  rank_within[is_m] <- month_quarter * 10L + (month_num - 3L * (month_quarter - 1L))
 
-  # Annual first, then quarters, then months inside a year, matching staged exports.
-  kind <- ifelse(is_m, 2L, ifelse(is_q, 1L, 0L))
-  periods[order(year, kind, rank_within)]
+  periods[order(year, rank_within)]
 }
 
 source_fetcher_files <- function(repo_root) {

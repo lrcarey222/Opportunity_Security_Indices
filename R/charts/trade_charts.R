@@ -122,20 +122,6 @@ write.csv(plot_tot%>%
 
 
 
-%>%
-  pivot_wider(names_from=partner_desc,values_from=exports) %>%
-  mutate(china_share=China/World*100,
-         non_china=World-China) %>%
-  group_by(Technology,Sub.Sector) %>%
-  mutate(base_exports = World[ref_year == base_year][1]) %>%  # take the first if duplicates
-  mutate(export_index = (World / base_exports-1)*100) %>%
-  ungroup() %>%
-  filter(ref_year=="2024") %>%
-  #select(Sub.Sector, ref_year, export_index) %>%
-  #pivot_wider(names_from = Sub.Sector, values_from = export_index) %>%
-  mutate(industry=paste(Technology)) %>%
-  arrange(desc(export_index))
-
 write.csv(plot_tot %>%
             slice_max(n=15,order_by=World),paste0(processed_dir,"/charts/us_electroindustrial_agg_imports_china.csv"))
 
@@ -191,13 +177,6 @@ write.csv(clean_electro_fossil %>%
             select(year,sector,export_index) %>%
             pivot_wider(names_from=sector,values_from=export_index),paste0(processed_dir,"/charts/electro_world.csv"))
 
-
-%>%
-  select(industry, date, import_index) %>%
-  filter(industry %in% plot_df_top$industry) %>%
-  pivot_wider(names_from = industry, values_from = import_index) %>%
-  arrange(date)
-  
 
 library(ggplot2)
 ggplot(data=plot_tot,

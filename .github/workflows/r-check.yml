@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies (packages)
         if: ${{ hashFiles('renv.lock') == '' }}
         run: |
-          Rscript -e "install.packages(c('dplyr','tibble','stringr','testthat','yaml','purrr','tidyr','shiny','bslib','scales','countrycode'), repos='https://cloud.r-project.org')"
+          Rscript -e "install.packages(c('dplyr','tibble','stringr','testthat','yaml','purrr','tidyr','shiny','bslib','scales','countrycode','readr','curl','jsonlite'), repos='https://cloud.r-project.org')"
 
       - name: Run unit tests
         run: |

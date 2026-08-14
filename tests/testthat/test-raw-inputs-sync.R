@@ -156,6 +156,61 @@ test_that("pattern entries stage the newest matching release", {
   expect_true(raw_input_present_locally(entry, local_dir))
 })
 
+test_that("repo-staged entries sync out of the reference dir, not sharepoint", {
+  opsi_load_raw_inputs_sync()
+
+  reference <- opsi_temp_dir()
+  staging <- opsi_temp_dir()
+  local_dir <- opsi_temp_dir()
+  on.exit(unlink(c(reference, staging, local_dir), recursive = TRUE), add = TRUE)
+
+  opsi_write_tmp(file.path(reference, "crosswalk.csv"), "from-version-control")
+  opsi_write_tmp(file.path(staging, "crosswalk.csv"), "from-onedrive")
+
+  entry <- normalize_raw_input_entry(list(
+    id = "crosswalk",
+    path = "crosswalk.csv",
+    source_type = "derived",
+    staged_from = "repo"
+  ))
+
+  expect_equal(
+    sync_raw_input_entry(entry, staging, local_dir, force = FALSE, reference_dir = reference),
+    "copied"
+  )
+  expect_equal(readLines(file.path(local_dir, "crosswalk.csv")), "from-version-control")
+})
+
+test_that("repo-staged entries report missing when the reference dir has no copy", {
+  opsi_load_raw_inputs_sync()
+
+  reference <- opsi_temp_dir()
+  local_dir <- opsi_temp_dir()
+  on.exit(unlink(c(reference, local_dir), recursive = TRUE), add = TRUE)
+
+  entry <- normalize_raw_input_entry(list(
+    id = "absent", path = "absent.csv", source_type = "derived", staged_from = "repo"
+  ))
+
+  expect_equal(
+    sync_raw_input_entry(entry, "", local_dir, force = FALSE, reference_dir = reference),
+    "missing"
+  )
+})
+
+test_that("staged entry list covers both sharepoint and repo sources", {
+  opsi_load_raw_inputs_sync()
+
+  manifest <- list(
+    normalize_raw_input_entry(list(id = "a", path = "a.csv", staged_from = "sharepoint")),
+    normalize_raw_input_entry(list(id = "b", path = "b.csv", staged_from = "repo")),
+    normalize_raw_input_entry(list(id = "c", path = "c.csv", source_type = "api", staged_from = "pipeline"))
+  )
+
+  staged <- raw_inputs_staged_entries(manifest)
+  expect_equal(sort(vapply(staged, function(e) e$id, character(1))), c("a", "b"))
+})
+
 test_that("OPSI_FORCE_REFRESH is read from the environment", {
   opsi_load_raw_inputs_sync()
 

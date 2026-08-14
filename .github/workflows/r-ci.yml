@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies (packages)
         if: ${{ hashFiles('renv.lock') == '' }}
         run: |
-          Rscript -e "install.packages(c('dplyr','tidyr','stringr','readr','readxl','tibble','purrr','glue','rlang','yaml','rprojroot','countrycode','WDI','comtradr','magrittr','progress','lubridate'), repos='https://packagemanager.posit.co/cran/__linux__/noble/latest')"
+          Rscript -e "install.packages(c('dplyr','tidyr','stringr','readr','readxl','tibble','purrr','glue','rlang','yaml','rprojroot','countrycode','WDI','comtradr','magrittr','progress','lubridate','curl','jsonlite'), repos='https://packagemanager.posit.co/cran/__linux__/noble/latest')"
 
       - name: Build themes
         run: |

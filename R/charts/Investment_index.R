@@ -36,7 +36,7 @@ ggplot(df_plot, aes(x = supply_chain, y = tech, fill = value)) +
   scale_fill_continuous(labels = label_number()) +
   labs(
     title = var_to_plot,
-    subtitle = "Latest year shown for each Country × tech × supply_chain",
+    subtitle = "Latest year shown for each Country Ã— tech Ã— supply_chain",
     x = NULL, y = NULL, fill = "Value"
   ) +
   theme_minimal() +
@@ -193,10 +193,6 @@ india_man_plot<-investment_index %>%
          variable=="Annual Investment (USD bn, 2024$)") %>%
   group_by(Year) %>%
   mutate(share=value/sum(value,na.rm=T))
-
-%>%
-  select(Year,tech,value) %>%
-  pivot_wider(names_from=tech,values_from=value)
 
 write.csv(india_man_plot,"data/processed/charts/india_man_year.csv")
 

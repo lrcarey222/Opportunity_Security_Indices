@@ -79,11 +79,24 @@ normalize_raw_input_entry <- function(entry) {
     if (is.null(x) || length(x) == 0) default else as.character(x)[1]
   }
 
+  # How a registered fetcher relates to the staged copy:
+  #   prefer   - fetch on the source's cadence; the API is the authority
+  #   fallback - only fetch when no local file exists (curated staging wins)
+  #   never    - do not fetch even if a fetcher is registered
+  fetch_policy <- if (is.null(entry$fetch_policy)) "fallback" else as.character(entry$fetch_policy)[1]
+  if (!fetch_policy %in% c("prefer", "fallback", "never")) {
+    stop(
+      "Unknown fetch_policy '", fetch_policy, "' for raw input '", id,
+      "'. Expected one of: prefer, fallback, never"
+    )
+  }
+
   list(
     id = id,
     path = path,
     pattern = pattern,
     subdir = as_chr(entry$subdir),
+    fetch_policy = fetch_policy,
     resolve = if (is.null(entry$resolve)) (if (!is.na(pattern)) "newest" else "exact") else as.character(entry$resolve)[1],
     source_type = source_type,
     source_name = as_chr(entry$source_name),
@@ -123,9 +136,18 @@ read_raw_inputs_manifest <- function(path) {
   normalized
 }
 
-# Entries the ingest step should copy out of sharepoint_raw_dir.
+# Entries the ingest step must place into data/raw before a build: staged manually into
+# sharepoint_raw_dir, or version controlled under data/reference.
 raw_inputs_staged_entries <- function(manifest) {
-  Filter(function(e) identical(e$staged_from, "sharepoint") && !is.na(e$path), manifest)
+  Filter(
+    function(e) e$staged_from %in% c("sharepoint", "repo") && !is.na(e$path),
+    manifest
+  )
+}
+
+# Project-authored inputs live here so the pipeline is reproducible without OneDrive.
+raw_inputs_reference_dir <- function(repo_root) {
+  file.path(repo_root, "data", "reference")
 }
 
 ## Discovery ------------------------------------------------------------
@@ -316,7 +338,19 @@ sync_raw_file <- function(source_path, dest_path, force = opsi_force_refresh()) 
 sync_raw_input_entry <- function(entry,
                                  sharepoint_raw_dir,
                                  raw_data_path,
-                                 force = opsi_force_refresh()) {
+                                 force = opsi_force_refresh(),
+                                 reference_dir = NULL) {
+  # Repo-staged inputs are project-authored crosswalks copied out of version control
+  # rather than a personal OneDrive, so a fresh clone can build without staging.
+  if (identical(entry$staged_from, "repo")) {
+    if (is.null(reference_dir) || !nzchar(reference_dir)) return("missing")
+    return(sync_raw_file(
+      file.path(reference_dir, entry$path),
+      file.path(raw_data_path, entry$path),
+      force = force
+    ))
+  }
+
   if (is.null(sharepoint_raw_dir) || !nzchar(sharepoint_raw_dir)) return("missing")
 
   if (!is.na(entry$pattern)) {

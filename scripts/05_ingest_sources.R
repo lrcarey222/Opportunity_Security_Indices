@@ -44,7 +44,10 @@ is_skip_data_downloads <- function() tolower(Sys.getenv("SKIP_DATA_DOWNLOADS")) 
 skip_data_downloads <- is_skip_data_downloads()
 
 source(file.path(repo_root, "scripts", "utils", "raw_inputs.R"))
+source(file.path(repo_root, "scripts", "utils", "fetchers.R"))
+source_fetcher_files(repo_root)
 force_refresh <- opsi_force_refresh()
+prefer_fetch <- tolower(Sys.getenv("OPSI_PREFER_FETCH", "false")) %in% c("1", "true", "yes")
 
 copy_raw_file <- function(source_path, dest_path) {
   sync_raw_file(source_path, dest_path, force = force_refresh) != "missing"
@@ -62,23 +65,48 @@ staged_entries <- raw_inputs_staged_entries(manifest)
 
 missing <- character()
 sync_counts <- c(copied = 0L, current = 0L)
-for (entry in staged_entries) {
-  status <- sync_raw_input_entry(entry, sharepoint_raw_dir, raw_data_path, force = force_refresh)
+fetch_counts <- c(fetched = 0L, fresh = 0L, failed = 0L, skipped = 0L)
 
-  if (status == "missing") {
-    # A local copy is still fine; only flag inputs we can neither find nor refresh.
-    if (!raw_input_present_locally(entry, raw_data_path) && !isTRUE(entry$optional)) {
-      missing <- c(missing, entry$path)
-    }
-    next
+reference_dir <- raw_inputs_reference_dir(repo_root)
+
+for (entry in staged_entries) {
+  status <- sync_raw_input_entry(
+    entry, sharepoint_raw_dir, raw_data_path,
+    force = force_refresh, reference_dir = reference_dir
+  )
+  if (status != "missing") sync_counts[[status]] <- sync_counts[[status]] + 1L
+
+  has_local <- raw_input_present_locally(entry, raw_data_path)
+  fetcher_available <- !is.null(get_fetcher(entry$id)) && !identical(entry$fetch_policy, "never")
+
+  # A registered fetcher runs when the API is the declared authority for this input
+  # (fetch_policy: prefer), or when there is no local copy to fall back on. Curated
+  # staged files otherwise win, because for some sources the API's country coverage
+  # differs from the extract the indices were built against.
+  should_fetch <- fetcher_available &&
+    (prefer_fetch || identical(entry$fetch_policy, "prefer") || !has_local)
+
+  if (should_fetch) {
+    outcome <- run_fetcher(
+      entry$id,
+      dest_path = file.path(raw_data_path, entry$path),
+      cadence = entry$cadence,
+      force = force_refresh || (!has_local)
+    )
+    fetch_counts[[outcome]] <- fetch_counts[[outcome]] + 1L
+    if (outcome %in% c("fetched", "fresh")) has_local <- TRUE
   }
 
-  sync_counts[[status]] <- sync_counts[[status]] + 1L
+  if (!has_local && !isTRUE(entry$optional)) {
+    missing <- c(missing, entry$path)
+  }
 }
 
 if (length(missing) > 0) {
   stop(
-    "Missing required raw inputs in sharepoint_raw_dir:\n",
+    "Missing required raw inputs.\n",
+    "Staged inputs are expected in sharepoint_raw_dir (", sharepoint_raw_dir, ");\n",
+    "project-authored crosswalks are expected in ", reference_dir, ".\n",
     paste0("- ", missing, collapse = "\n")
   )
 }
@@ -87,6 +115,12 @@ message(
   " (", sync_counts[["copied"]], " updated, ", sync_counts[["current"]], " already current",
   if (force_refresh) ", forced" else "", ")"
 )
+if (sum(fetch_counts) > 0) {
+  message(
+    "API fetchers: ", fetch_counts[["fetched"]], " fetched, ", fetch_counts[["fresh"]],
+    " already fresh, ", fetch_counts[["failed"]], " failed"
+  )
+}
 
 wdi_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
 wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")

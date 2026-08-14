@@ -132,18 +132,90 @@ test_that("required theme inputs are all declared in the manifest", {
   }
 })
 
-test_that("ingestion only requires manifest entries staged from sharepoint", {
+test_that("pipeline-generated outputs are never demanded from the staging area", {
   opsi_load_raw_inputs()
   manifest <- read_raw_inputs_manifest(raw_inputs_manifest_path(opsi_repo_root()))
 
   staged <- raw_inputs_staged_entries(manifest)
   expect_gt(length(staged), 0)
 
-  # Pipeline-written outputs must never be demanded from the staging area.
+  # source_type says where data originates; staged_from says how it can arrive locally.
+  # An api source may legitimately also have a staged fallback, but something the
+  # pipeline itself writes must never be requested from SharePoint.
   for (entry in staged) {
     expect_false(
-      entry$source_type %in% c("api", "generated"),
+      identical(entry$source_type, "generated"),
       info = paste0(entry$id, " is pipeline-generated but marked staged_from: sharepoint")
     )
+  }
+})
+
+test_that("repo-staged crosswalks are present in data/reference", {
+  opsi_load_raw_inputs()
+  repo_root <- opsi_repo_root()
+
+  manifest <- read_raw_inputs_manifest(raw_inputs_manifest_path(repo_root))
+  repo_entries <- Filter(function(e) identical(e$staged_from, "repo"), manifest)
+
+  # These exist so a fresh clone can build without access to anyone's OneDrive.
+  expect_gt(length(repo_entries), 0)
+
+  reference_dir <- raw_inputs_reference_dir(repo_root)
+  expect_true(dir.exists(reference_dir))
+
+  for (entry in repo_entries) {
+    path <- file.path(reference_dir, entry$path)
+    expect_true(
+      file.exists(path),
+      info = paste0(
+        entry$id, " is staged_from: repo but data/reference/", entry$path, " is missing"
+      )
+    )
+    if (file.exists(path)) {
+      expect_gt(file.info(path)$size, 0)
+    }
+  }
+})
+
+test_that("every api-sourced input is backed by a fetcher or by the pipeline", {
+  repo_root <- opsi_repo_root()
+  opsi_load_raw_inputs()
+  source(file.path(repo_root, "scripts", "utils", "fetchers.R"), local = FALSE)
+  source_fetcher_files(repo_root)
+
+  manifest <- read_raw_inputs_manifest(raw_inputs_manifest_path(repo_root))
+  api_entries <- Filter(function(e) identical(e$source_type, "api"), manifest)
+  expect_gt(length(api_entries), 0)
+
+  for (entry in api_entries) {
+    # Either a registered fetcher owns it, or an ingest step writes it directly.
+    covered <- !is.null(get_fetcher(entry$id)) || identical(entry$staged_from, "pipeline")
+    expect_true(
+      covered,
+      info = paste0(entry$id, " is source_type: api but has no fetcher and is not pipeline-written")
+    )
+  }
+})
+
+test_that("fetch_policy values are valid and only set where a fetcher exists", {
+  repo_root <- opsi_repo_root()
+  opsi_load_raw_inputs()
+  source(file.path(repo_root, "scripts", "utils", "fetchers.R"), local = FALSE)
+  source_fetcher_files(repo_root)
+
+  manifest <- read_raw_inputs_manifest(raw_inputs_manifest_path(repo_root))
+
+  for (entry in manifest) {
+    expect_true(
+      entry$fetch_policy %in% c("prefer", "fallback", "never"),
+      info = paste0(entry$id, " has invalid fetch_policy: ", entry$fetch_policy)
+    )
+
+    if (identical(entry$fetch_policy, "prefer")) {
+      expect_false(
+        is.null(get_fetcher(entry$id)),
+        info = paste0(entry$id, " sets fetch_policy: prefer but has no registered fetcher")
+      )
+    }
   }
 })

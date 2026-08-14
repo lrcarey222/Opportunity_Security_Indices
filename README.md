@@ -32,6 +32,7 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
 - [Testing and quality checks](#testing-and-quality-checks)
 - [Additional utilities and workflows](#additional-utilities-and-workflows)
 - [Raw inputs and refresh](#raw-inputs-and-refresh)
+  - [API fetchers](#api-fetchers)
   - [How refresh works](#how-refresh-works)
   - [Key external sources (cited)](#key-external-sources-cited)
 - [Known issues and to-dos](#known-issues-and-to-dos)
@@ -594,6 +595,14 @@ charts/             # Chart builders (no file IO)
 themes/             # Theme grouping (incl. partnership_strength)
 
 scripts/              # Orchestration + IO (reads raw, writes processed/outputs)
+fetchers/           # One file per API source; registered, contract-validated
+utils/              # Bootstrap, manifest/sync helpers, fetcher framework
+
+data/
+reference/          # Project-authored crosswalks (version controlled)
+raw/                # Local raw inputs (gitignored; populated by ingestion)
+processed/          # Intermediate theme tables (gitignored)
+
 config/               # Config files (weights, missing data, index definitions)
 docs/                 # Methodology + data sources
 shiny/                # Interactive Shiny app (world map explorer)
@@ -677,6 +686,13 @@ Optional environment variables:
 - `OPSI_RUN_ALLIED_NETWORK=true|false`
 - `OPSI_FORCE_REFRESH=true|false` — recopy every staged raw input even when the local
   copy looks current (see [Raw inputs and refresh](#raw-inputs-and-refresh))
+- `OPSI_PREFER_FETCH=true|false` — treat the API as authoritative for every input that
+  has a fetcher, overriding each entry's `fetch_policy` for one run
+- `OPSI_SKIP_FETCH=true|false` — disable API fetchers entirely
+- `OPSI_REQUIRE_FETCH=true|false` — make a failed fetch fatal instead of falling back to
+  the local file
+- `OPSI_IMF_START_YEAR=<year>` — earliest year kept by the IMF fetchers (default 1990;
+  the window controls country coverage, not just recency)
 - `OPSI_ENERGY_PRICES_SOURCE=auto|manual|pcps` — which IMF price file the Energy Prices
   theme reads (`auto` prefers the staged wide export, falls back to the API-derived PCPS panel)
 
@@ -759,6 +775,7 @@ Beyond the main pipeline scripts, the repo includes supporting workflows:
 * `scripts/02_render_sources_doc.R` — renders `docs/sources.md` from the manifest.
 * `config/raw_inputs_manifest.yml` — declarative manifest of every raw dataset, with provenance and refresh cadence.
 * `scripts/utils/raw_inputs.R` — shared helpers for manifest reading, staged-file sync, and vintage resolution.
+* `scripts/utils/fetchers.R` and `scripts/fetchers/*.R` — API fetchers and the contract-validated write path.
 * `scripts/30_build_allied_network_design.R` — builds allied network design outputs used for partnership analyses.
 * `scripts/90_build_package_selection_viz.R` — prepares package-selection visualization outputs.
 * `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — pull and visualize trade time series.
@@ -780,6 +797,10 @@ reads. Each entry records where the file comes from and how often it changes:
 | `derived` | Authored by the project — a crosswalk, not a fetched dataset |
 | `generated` | Written by the pipeline as bookkeeping |
 
+A second field, `staged_from`, says how each input reaches `data/raw/`: `sharepoint`
+(copied from your staging folder), `repo` (version controlled in `data/reference/`), or
+`pipeline` (written by an ingestion step).
+
 The manifest is generated **from the active pipeline**, so it cannot drift away from what
 `scripts/` actually reads:
 
@@ -797,6 +818,36 @@ the manifest and the pipeline disagree in either direction.
 Rscript scripts/02_render_sources_doc.R
 ```
 
+### API fetchers
+
+Inputs with a public API are fetched by `scripts/fetchers/*.R` and written in the same
+layout the pipeline already parses, so no downstream code changes:
+
+| Input | Source | Notes |
+| --- | --- | --- |
+| `wb_wdi.csv` | World Bank v2 API | 44 series, DataBank wide layout |
+| `wb_doingbusiness.csv` | World Bank v2 API | Archived series; reproduces 190 of 192 economies |
+| `imf_ppi.csv` | IMF SDMX 3.0 | Producer price index, Index transformation |
+| `imf_lending_rates.csv` | IMF SDMX 3.0 | The six rate types the theme scores |
+
+Three properties matter:
+
+- **A failed fetch never destroys a good file.** Every fetch is written to a temp path,
+  validated against a declared contract (required columns, minimum rows, minimum time
+  columns, and a uniqueness key), and only then swapped into place. On failure the
+  existing file is kept and a warning raised; `OPSI_REQUIRE_FETCH=true` makes it fatal.
+- **`fetch_policy` decides who wins.** `prefer` means the API is the authority and the
+  fetcher runs on the source's cadence. `fallback` (the default) means a staged file wins
+  and the fetcher only runs when no local copy exists. `OPSI_PREFER_FETCH=true` overrides
+  all entries for one run.
+- **Coverage differences are recorded, not hidden.** The IMF entries are `fallback`
+  because the live flows no longer publish every country in the staged extracts — see
+  their `notes` in the manifest for the measured deltas.
+
+Not automatable, and marked `manual` for that reason: the Energy Institute download sits
+behind a Cloudflare challenge, and BNEF, BCG, GTA NIPO and the IEA extracts are
+subscription or licence-restricted.
+
 ### How refresh works
 
 - **Ingestion syncs rather than copies once.** `scripts/05_ingest_sources.R` compares size
@@ -809,9 +860,10 @@ Rscript scripts/02_render_sources_doc.R
 - **Each run stamps what it used.** `data/raw/raw_inputs_resolved.yml` records the file and
   vintage behind every pattern-resolved input, alongside `data/raw/comtrade_vintage.yml`.
 
-> **Note:** entries marked `derived` are project-authored crosswalks that are still staged
-> from SharePoint. Until they move under version control, a collaborator without access to
-> that OneDrive folder cannot reproduce a full run.
+> **Project-authored crosswalks are version controlled.** The HS6 mappings, dual-use
+> scores and related lookups live in `data/reference/` and are copied into `data/raw/`
+> during ingestion, so a fresh clone builds them without access to anyone's OneDrive.
+> Edit them in `data/reference/` — a copy sitting in `data/raw/` will be overwritten.
 
 Theme builders read raw inputs directly from your configured `raw_data_dir/...`.
 
@@ -859,8 +911,9 @@ And record:
 * **EO Investment category is currently a placeholder** in the configured EO category list and may not yet represent a finalized production methodology.
 * **Supply-chain coupling implementation differs from the methodology text**: current code uses normalized interdependence edge strength with linear lambda mapping (rather than HHI-driven logistic mapping).
 * **Raw-input completeness is environment dependent**. If expected files are missing, use the manifest workflow and source documentation to reconcile gaps before running full builds.
-* **Project-authored crosswalks are not version controlled.** The manifest entries marked `source_type: derived` (HS6 mappings, dual-use scores, the allies list) are staged from SharePoint rather than committed, so the pipeline is not reproducible without access to that folder.
-* **~15 `manual` inputs have a public API or stable download URL** and could be automated: Energy Institute, the IEA free datasets, World Bank WDI/Doing Business, the IMF Data API series, OECD CRS, and the Atlas of Economic Complexity extracts. See `docs/sources.md` for the current split.
+* **`allies.csv` is the last uncommitted project-authored input.** It was not present locally when the other crosswalks moved into `data/reference/`, so it remains staged from SharePoint. It is optional — ingestion falls back to all valid WDI reporters — but committing it would make the allied dyad pull fully reproducible.
+* **Remaining automation candidates**: `imf_dip.csv` (the SDMX flow works but a full pull is ~6.5MB per reporter, so it needs a dimension-filtering strategy), `oecd_crs_api.csv` (the CRS dataflow is not exposed under the `OECD.DCD.FSD` agency the staged file names), and the Atlas of Economic Complexity extracts via Harvard Dataverse. See `docs/sources.md` for the current split.
+* **IMF fetchers are `fallback`, not `prefer`.** The live PPI and MFS_IR flows have dropped countries the staged extracts still carry (France, Chile, Finland, Greece for PPI; Spain for rates). Switching them to `prefer` would change index coverage.
 * **No input has a named owner.** Every manifest entry is `owner: unassigned`, so there is no one accountable for noticing a stale vintage.
 
 ---
