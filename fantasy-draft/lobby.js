@@ -37,6 +37,7 @@
     STATE.you = ADAPTER.me;
     STATE.difficulty = (snap.settings && snap.settings.difficulty) || "normal";
     STATE.rounds = (snap.settings && snap.settings.rounds) || 3;
+    STATE.pickSeconds = (snap.settings && snap.settings.pickSeconds != null) ? snap.settings.pickSeconds : 60;
     STATE.seatMeta = {};
     Object.entries(snap.players || {}).forEach(([uid, p]) => STATE.seatMeta[uid] = { allyId: p.allyId, name: p.name, ts: p.ts });
     if (snap.status === "lobby") showLobby(snap);
@@ -136,7 +137,8 @@
     const maxR = Math.max(1, Math.min(6, Math.floor(SUBSECTORS.length / uids.length)));
     const rounds = Math.min(parseInt($("#lobbyRounds") ? $("#lobbyRounds").value : 3, 10) || 3, maxR);
     const diff = $("#lobbyDiff") ? $("#lobbyDiff").value : "normal";
-    ADAPTER.startDraft(order, { rounds, difficulty: diff });
+    const pickSeconds = $("#lobbyClock") ? parseInt($("#lobbyClock").value, 10) : 60;
+    ADAPTER.startDraft(order, { rounds, difficulty: diff, pickSeconds });
   }
 
   /* ---------- host watchdog: auto-pick for a disconnected player ---------- */
@@ -173,6 +175,8 @@
     const maxR = Math.max(1, Math.min(6, Math.floor(SUBSECTORS.length / Math.max(1, nPlay))));
     const curRounds = Math.min((snap.settings && snap.settings.rounds) || 3, maxR);
     const curDiff = (snap.settings && snap.settings.difficulty) || "normal";
+    const curClock = (snap.settings && snap.settings.pickSeconds != null) ? snap.settings.pickSeconds : 60;
+    const clockLabel = (s) => s <= 0 ? "no clock" : s < 60 ? s + "s per pick" : (s / 60) + " min per pick";
     const online = (uid) => isOnline(snap, uid);
 
     const pcards = players.map(([uid, p]) => {
@@ -199,10 +203,19 @@
             <option value="hard" ${curDiff === "hard" ? "selected" : ""}>Hard — no numbers</option>
           </select>
         </div>
+        <div class="field">Pick clock
+          <select id="lobbyClock" title="Time each player gets per pick before it auto-picks">
+            <option value="30" ${curClock === 30 ? "selected" : ""}>30 sec</option>
+            <option value="60" ${curClock === 60 ? "selected" : ""}>1 min</option>
+            <option value="120" ${curClock === 120 ? "selected" : ""}>2 min</option>
+            <option value="300" ${curClock === 300 ? "selected" : ""}>5 min</option>
+            <option value="0" ${curClock === 0 ? "selected" : ""}>Off</option>
+          </select>
+        </div>
         <button class="btn red" id="lobbyStart" ${nPlay < 2 ? "disabled" : ""}>Start Draft ▶</button>
       </div>
       <div class="hint" style="text-align:center">${nPlay < 2 ? "Waiting for at least one more player to join…" : "You're the host — start when everyone's in."}</div>`
-      : `<div class="lobby-waiting">Waiting for the host to start the draft…<br><span class="hint">${curRounds} rounds · ${curDiff} difficulty</span></div>`;
+      : `<div class="lobby-waiting">Waiting for the host to start the draft…<br><span class="hint">${curRounds} rounds · ${curDiff} difficulty · ${clockLabel(curClock)}</span></div>`;
 
     $("#lobbyScreen").innerHTML = `
       <div class="hero">
@@ -227,9 +240,10 @@
     $("#lobbyLeave").addEventListener("click", leaveLeague);
     if (isHost) {
       $("#lobbyStart").addEventListener("click", startLeagueDraft);
-      const push = () => ADAPTER.setSettings({ rounds: parseInt($("#lobbyRounds").value, 10), difficulty: $("#lobbyDiff").value });
+      const push = () => ADAPTER.setSettings({ rounds: parseInt($("#lobbyRounds").value, 10), difficulty: $("#lobbyDiff").value, pickSeconds: parseInt($("#lobbyClock").value, 10) });
       $("#lobbyRounds").addEventListener("change", push);
       $("#lobbyDiff").addEventListener("change", push);
+      $("#lobbyClock").addEventListener("change", push);
     }
   }
 

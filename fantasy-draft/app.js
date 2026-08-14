@@ -50,6 +50,7 @@ const STATE = {
   log: [],
   picks: [],
   autodelay: 620,
+  pickSeconds: 60,        // seconds allowed per pick (0 = no clock)
 };
 
 /* ---------- floating spores ---------- */
@@ -145,6 +146,7 @@ function startDraft() {
   STATE.rounds   = parseInt($("#roundsSel").value, 10);
   STATE.difficulty = $("#diffSel").value;
   STATE.autodelay = $("#speedSel").value === "fast" ? 230 : $("#speedSel").value === "slow" ? 1000 : 620;
+  STATE.pickSeconds = $("#clockSel") ? parseInt($("#clockSel").value, 10) : 60;
 
   // participants: always include your fighter, then fill from roster order
   const rest = ALLIES.map(a => a.id).filter(id => id !== STATE.you);
@@ -187,11 +189,13 @@ function teamOf(id) { return STATE.teams.find(t => t.ally === id); }
 
 /* ========================= DRAFT FLOW ========================= */
 function advance() {
+  clearTurnTimer();
   if (STATE.pickIndex >= totalPicks()) return finishDraft();
   const id = currentAllyId();
   updateOnClock(id);
   if (id === STATE.you) {
     renderPool();          // enable your pick buttons
+    armTurnTimer();        // start your pick clock
   } else {
     setTimeout(() => aiPick(id), STATE.autodelay);
     renderPool();
@@ -431,6 +435,7 @@ function finishDraft() {
 
   renderCategoryPriority();
   renderSectorBoard();
+  renderMetricBoard();
   renderBossChallenge();
 
   $("#resultsTable").innerHTML = `
@@ -502,6 +507,29 @@ function renderSectorBoard() {
   }).join("");
 }
 
+/* Metric board: every sub-sector ranked by OVR with its four OSI pillar scores,
+   so the group's draft-order priorities can be compared against the raw numbers. */
+function renderMetricBoard() {
+  const el = $("#metricBoard"); if (!el) return;
+  const pickMap = {}; STATE.picks.forEach(p => pickMap[p.subN] = p);
+  const listed = [...SUBSECTORS].sort((a, b) => b.ovr - a.ovr || a.n - b.n);
+  el.innerHTML = listed.map((s, i) => {
+    const cat = CATEGORIES[s.cat];
+    const p = pickMap[s.n];
+    const isYou = p && p.ally === STATE.you;
+    const bars = [["NAT", s.NAT, "National Security"], ["E&E", s.ENSC, "Energy & Economic Security"], ["CLI", s.CLIM, "Climate Salience"], ["OPP", s.OPP, "Economic Opportunity"]]
+      .map(([k, v, full]) => `<span class="ms-stat" title="${full}: ${v}"><span class="ms-k">${k}</span><span class="ms-bar"><i style="width:${v}%"></i></span><b>${v}</b></span>`).join("");
+    return `<div class="metric-row ${p ? "" : "undrafted"} ${isYou ? "you" : ""}" style="--cc1:${cat.c1};--cc2:${cat.c2}">
+      <div class="mr-rank">${i + 1}</div>
+      <div class="mr-main">
+        <div class="mr-name">${s.name}<span class="mr-ovr">OVR ${s.ovr}</span></div>
+        <div class="mr-cat">${s.cat} · ${cat.short} · ${p ? `<span class="mr-drafted">drafted #${p.pickNo}</span>` : "undrafted"}</div>
+        <div class="mr-stats">${bars}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
 /* ========================= BIG BOSS FIGHT ========================= */
 function renderBossChallenge() {
   const you = myCountry();
@@ -527,22 +555,42 @@ function renderBossChallenge() {
   $("#arcadeBtn").addEventListener("click", () => startArcade(myCountry().id, STATE.powerPct));
 }
 
-/* per-turn auto-pick timer (league) so an idle/slow player can't stall the room */
-let _turnTimer = null;
-function clearTurnTimer() { if (_turnTimer) { clearTimeout(_turnTimer); _turnTimer = null; } }
+/* ---------- pick clock: visible countdown during your pick (solo + league) ----------
+   Duration = STATE.pickSeconds (host-set in league, setup-set in solo; 0 = no clock).
+   On expiry it auto-picks your best available sub-sector so a slow/idle player can't
+   stall the room. */
+let _turnTimer = null, _pickTick = null, _pickDeadline = 0;
+function fmtClock(s) { const m = Math.floor(s / 60), ss = s % 60; return m + ":" + (ss < 10 ? "0" : "") + ss; }
+function clearTurnTimer() {
+  if (_turnTimer) { clearTimeout(_turnTimer); _turnTimer = null; }
+  if (_pickTick) { clearInterval(_pickTick); _pickTick = null; }
+  const el = $("#pickClock"); if (el) { el.hidden = true; el.classList.remove("low"); }
+}
 function armTurnTimer() {
   clearTurnTimer();
-  if (STATE.mode !== "league") return;
+  const secs = STATE.pickSeconds || 0;
+  if (secs <= 0) return;                                             // clock disabled
   if (currentAllyId() !== STATE.you || STATE.pickIndex >= totalPicks()) return;
+  const el = $("#pickClock"), t = $("#pickClockTime");
+  _pickDeadline = Date.now() + secs * 1000;
+  const paint = () => {
+    const rem = Math.max(0, Math.round((_pickDeadline - Date.now()) / 1000));
+    if (t) t.textContent = fmtClock(rem);
+    if (el) el.classList.toggle("low", rem <= 10);
+  };
+  if (el) el.hidden = false;
+  paint();
+  _pickTick = setInterval(paint, 250);
   _turnTimer = setTimeout(() => {
-    if (currentAllyId() !== STATE.you) return;
+    clearTurnTimer();
+    if (currentAllyId() !== STATE.you || STATE.pickIndex >= totalPicks()) return;
     const you = myCountry();
     const avail = SUBSECTORS.filter(s => !STATE.drafted[s.n]);
     if (!avail.length) return;
     avail.sort((a, b) => (synergyOf(you, b) + b.ovr * 0.01) - (synergyOf(you, a) + a.ovr * 0.01));
     draftByYou(avail[0].n);
     toast("Auto-picked (time up)");
-  }, 45000);
+  }, secs * 1000);
 }
 
 const FIGHT_CAPS = {
