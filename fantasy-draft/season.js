@@ -23,8 +23,40 @@
   function ctxFor(snap, uid) { const p = players(snap)[uid] || {}; return { country: p.allyId, sectors: rosterOf(snap, uid), leagueCountries: leagueCountries(snap) }; }
   const allEvents = (snap) => Object.values(snap.events || {});
   function currentWeek(season) { if (!season || !season.startTs) return 0; const w = Math.floor((Date.now() - season.startTs) / WEEK_MS); return Math.max(0, Math.min((season.weeks || 12) - 1, w)); }
-  function weeklyPoints(snap, uid, week) { const c = ctxFor(snap, uid); let p = 0; allEvents(snap).forEach(ev => { if ((ev.week || 0) === week) p += SCORING.scoreForPlayer(ev, c); }); return p; }
-  function totalPoints(snap, uid) { const c = ctxFor(snap, uid); let p = 0; allEvents(snap).forEach(ev => p += SCORING.scoreForPlayer(ev, c)); return p; }
+
+  /* ---------- weekly scoring with country-news volume normalization ----------
+     A player's weekly score = sector points (drafting skill, kept as-is) + country
+     points. Country points are scaled toward a league reference volume so a big
+     country generating many headlines can't out-score a smaller one on story count
+     alone. Only the country bucket is normalized; sector points are untouched. */
+  const REF_FLOOR = 4;                       // never normalize below "a normal week" of country news
+  function median(arr) { if (!arr.length) return 0; const a = arr.slice().sort((x, y) => x - y); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; }
+  function countryScale(vol, ref) { return vol > ref ? ref / vol : 1; }               // only ever scales DOWN
+
+  /* raw per-player weekly parts (before country normalization) */
+  function weekParts(snap, uid, week) {
+    const c = ctxFor(snap, uid);
+    const sectorMap = {}; let sectorSum = 0, countryRaw = 0, countryVol = 0; const countryEvents = [];
+    allEvents(snap).forEach(ev => {
+      if ((ev.week || 0) !== week) return;
+      const d = SCORING.scoreDetail(ev, c);
+      if (d.countryPortion) { countryRaw += d.countryPortion; countryVol++; countryEvents.push({ ev, pts: d.countryPortion }); }
+      if (d.sectorPortion && d.matched.length) {
+        sectorSum += d.sectorPortion;
+        const share = d.sectorPortion / d.matched.length;
+        d.matched.forEach(sn => { const m = sectorMap[sn] || (sectorMap[sn] = { subN: sn, pts: 0, events: [] }); m.pts += share; m.events.push({ ev, pts: share }); });
+      }
+    });
+    return { sectorSum, sectorMap, countryRaw, countryVol, countryEvents };
+  }
+  /* league reference country-news volume for a week (median across players, floored) */
+  function countryRef(snap, week) { return Math.max(REF_FLOOR, median(orderUids(snap).map(u => weekParts(snap, u, week).countryVol))); }
+
+  function weeklyPoints(snap, uid, week) {
+    const wp = weekParts(snap, uid, week);
+    return Math.round(wp.sectorSum) + Math.round(wp.countryRaw * countryScale(wp.countryVol, countryRef(snap, week)));
+  }
+  function totalPoints(snap, uid) { let p = 0; new Set(allEvents(snap).map(e => e.week || 0)).forEach(w => p += weeklyPoints(snap, uid, w)); return p; }
 
   /* round-robin (circle method), repeated to fill `weeks` */
   function buildSchedule(uids, weeks) {
@@ -58,29 +90,23 @@
     return uids.map(u => ({ uid: u, ...rec[u] })).sort((x, y) => y.w - x.w || y.pts - x.pts);
   }
 
-  /* per-week score attribution: how each drafted sector (and your country) earned points */
+  /* per-week score attribution: how each drafted sector (and your country) earned points.
+     The country bucket reports its normalized total (`pts`) plus the raw sum, the story
+     volume, and the applied scale so the UI can explain the normalization. Individual
+     country event `pts` stay RAW (they reconcile to `raw`, not the normalized total). */
   function weekBreakdown(snap, uid, week) {
-    const c = ctxFor(snap, uid);
-    const evs = allEvents(snap).filter(e => (e.week || 0) === week);
-    const sectorMap = {};
-    const country = { pts: 0, events: [] };
-    evs.forEach(ev => {
-      const d = SCORING.scoreDetail(ev, c);
-      if (d.total === 0) return;
-      if (d.countryPortion) { country.pts += d.countryPortion; country.events.push({ ev, pts: d.countryPortion }); }
-      if (d.sectorPortion && d.matched.length) {
-        const share = d.sectorPortion / d.matched.length;
-        d.matched.forEach(sn => {
-          const m = sectorMap[sn] || (sectorMap[sn] = { subN: sn, pts: 0, events: [] });
-          m.pts += share; m.events.push({ ev, pts: share });
-        });
-      }
-    });
-    const sectors = Object.values(sectorMap)
+    const wp = weekParts(snap, uid, week);
+    const scale = countryScale(wp.countryVol, countryRef(snap, week));
+    const sectors = Object.values(wp.sectorMap)
       .map(s => ({ subN: s.subN, pts: Math.round(s.pts), events: s.events.sort((a, b) => Math.abs(b.pts) - Math.abs(a.pts)) }))
       .sort((a, b) => Math.abs(b.pts) - Math.abs(a.pts) || b.pts - a.pts);
-    country.pts = Math.round(country.pts);
-    country.events.sort((a, b) => Math.abs(b.pts) - Math.abs(a.pts));
+    const country = {
+      pts: Math.round(wp.countryRaw * scale),
+      raw: Math.round(wp.countryRaw),
+      vol: wp.countryVol,
+      scale,
+      events: wp.countryEvents.sort((a, b) => Math.abs(b.pts) - Math.abs(a.pts)),
+    };
     return { sectors, country, total: weeklyPoints(snap, uid, week) };
   }
 
@@ -259,6 +285,7 @@
         <thead><tr><th class="mb-team left" colspan="2">${meC.flag} ${escHtml(seatName(me))}</th><th class="mb-slot">SLOT</th><th class="mb-team right" colspan="2">${opp != null ? (opC.flag + " " + escHtml(seatName(opp))) : "Bye week"}</th></tr></thead>
         <tbody>${body}</tbody>
       </table></div>
+      <div class="hint" style="text-align:center;margin-top:8px">National-news points are volume-normalized — a country with more headlines can't win on story count alone. Tap the NAT row for the raw math.</div>
       <div style="text-align:center;margin-top:22px">
         <button class="btn ghost" id="backHome">◂ Back to league home</button>
       </div>`;
@@ -281,7 +308,10 @@
     let title, subtitle, c1 = "#888", c2 = "#aaa", ico = "", pts = 0, list = [];
     if (isCountry) {
       const c = seatCountry(who);
-      title = "National news — " + c.name; subtitle = `Points ${whoName} country earned across all sub-sectors, plus double-points for partnerships with league allies.`;
+      title = "National news — " + c.name;
+      subtitle = bd.country.scale < 1
+        ? `Country + ally-partnership news. Volume-normalized for a fair matchup: raw ${sgn(bd.country.raw)} from ${bd.country.vol} stories × ${bd.country.scale.toFixed(2)} → ${sgn(bd.country.pts)} counted. Stories below show raw points.`
+        : `Country-wide news across all sub-sectors, plus double-points for partnerships with league allies (${bd.country.vol} ${bd.country.vol === 1 ? "story" : "stories"}).`;
       c1 = c.c1; c2 = c.c2; ico = `<div class="sd-flag">${c.flag}</div>`;
       pts = bd.country.pts; list = bd.country.events;
     } else {

@@ -1,6 +1,6 @@
 /* Offline unit tests for the news pipeline + scoring model (no network). */
 import { createRequire } from "node:module";
-import { tagHeadline, parseRss } from "./news-bot.mjs";
+import { tagHeadline, parseRss, isApItem } from "./news-bot.mjs";
 const require = createRequire(import.meta.url);
 const SCORING = require("../scoring.js");
 
@@ -64,6 +64,14 @@ const items = parseRss(xml);
 ok(items.length === 2, "parsed 2 items, got " + items.length);
 ok(items[0].title === "US, Australia sign lithium deal" && items[0].source === "Reuters", "split ' - Publisher' from title");
 ok(items[1].title === "Solar module prices tumble amid glut", "CDATA title parsed");
+
+/* --- AP-only filter --- */
+ok(isApItem({ source: "Associated Press", link: "http://news.google.com/x" }), "AP source kept");
+ok(isApItem({ source: "", link: "https://apnews.com/article/abc" }), "apnews.com link kept");
+ok(!isApItem({ source: "Reuters", link: "http://news.google.com/x" }), "Reuters dropped");
+ok(!isApItem({ source: "Bloomberg", link: "https://bloomberg.com/x" }), "Bloomberg dropped");
+const apItems = [{ title: "US signs deal", source: "Associated Press" }, { title: "US signs deal", source: "Reuters" }].filter(isApItem);
+ok(apItems.length === 1 && apItems[0].source === "Associated Press", "dedup-by-source keeps only AP copy");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
