@@ -2,7 +2,8 @@
 /* ============================================================================
    NEWS BOT — the "fantasy points from the news" engine.
    Runs on a schedule (GitHub Actions). For every active league it:
-     1. pulls headlines from free Google-News RSS feeds across the stack,
+     1. pulls headlines across the stack via Google-News RSS, keeping only
+        Associated Press stories (one wire report, not a dozen republished copies),
      2. tags each headline with countries / sub-sectors / type / sentiment /
         pillar / magnitude (keyword rules; optional Anthropic AI upgrade),
      3. keeps the ones relevant to that league's countries or drafted sectors,
@@ -94,6 +95,16 @@ function decodeEntities(s) {
 }
 function hashId(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return "e" + (h >>> 0).toString(36); }
 
+/* Keep only Associated Press stories, so one wire-service report can't be
+   double-counted across the dozen outlets that republish it. Google-News RSS
+   labels the publisher in <source> ("Associated Press") and, for AP originals,
+   links through apnews.com. */
+export function isApItem(it) {
+  const src = (it && it.source) || "";
+  const link = (it && it.link) || "";
+  return /\b(associated press|ap news|apnews)\b/i.test(src) || /(^|[/.@])apnews\.com/i.test(link);
+}
+
 /* ---------- optional AI tagging (Anthropic) ---------- */
 async function aiTag(titles, key) {
   const model = process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-latest";
@@ -174,7 +185,10 @@ async function main() {
   // dedup by link/title
   const seenLink = new Set();
   items = items.filter(it => { const k = it.link || it.title; if (seenLink.has(k)) return false; seenLink.add(k); return true; });
-  console.log(`fetched ${items.length} unique headlines`);
+  // AP-only: avoid double-counting a single story that many outlets republish
+  const beforeAp = items.length;
+  items = items.filter(isApItem);
+  console.log(`fetched ${beforeAp} unique headlines, ${items.length} from AP`);
 
   // 2. tag
   let tags = items.map(it => ({ it, tag: tagHeadline(it.title) }));

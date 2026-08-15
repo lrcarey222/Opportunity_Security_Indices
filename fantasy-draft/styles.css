@@ -516,6 +516,37 @@ body.scrolllock{ overflow:hidden; }
 .mb-tot .mb-pts{ font-size:24px; color:var(--gold); }
 .mb-tot .mb-slot{ color:var(--gold); background:transparent; font-size:13px; }
 
+/* ---------- Pick clock (draft board-head) ---------- */
+.pick-clock{ display:inline-flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  padding:4px 16px; background:var(--bg-2); border:2px solid var(--line-2); min-width:96px;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+.pick-clock .pc-lbl{ font-size:9px; letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-faint); font-family:var(--font-disp); font-style:italic; }
+.pick-clock .pc-time{ font-family:var(--font-num); font-style:italic; font-size:26px; line-height:1; color:var(--gold); font-variant-numeric:tabular-nums; }
+.pick-clock.low{ border-color:var(--red-2); animation:clockpulse .9s ease-in-out infinite; }
+.pick-clock.low .pc-time{ color:var(--red-2); }
+@keyframes clockpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,60,60,.0); } 50%{ box-shadow:0 0 0 3px rgba(255,60,60,.35); } }
+
+/* ---------- Results: side-by-side priority + metric boards ---------- */
+.board-2col{ display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
+.panel h4 .panel-sub{ margin-left:auto; font-size:11px; font-weight:400; color:var(--ink-faint); text-transform:none; letter-spacing:0; font-style:italic; }
+.metric-list{ display:flex; flex-direction:column; }
+.metric-row{ display:flex; align-items:flex-start; gap:10px; padding:9px 6px; border-bottom:1px solid var(--line); border-left:4px solid var(--cc2,var(--line-2)); }
+.metric-row.undrafted{ opacity:.62; }
+.metric-row.you{ background:rgba(255,190,40,.06); }
+.mr-rank{ font-family:var(--font-num); font-style:italic; font-size:17px; color:var(--ink-faint); min-width:26px; text-align:center; }
+.mr-main{ flex:1; min-width:0; }
+.mr-name{ font-size:14px; color:var(--ink); font-weight:600; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.mr-ovr{ font-family:var(--font-num); font-style:italic; font-size:13px; color:var(--gold); }
+.mr-cat{ font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.3px; margin:1px 0 5px; }
+.mr-drafted{ color:var(--gold); }
+.mr-stats{ display:grid; grid-template-columns:1fr 1fr; gap:3px 12px; }
+.ms-stat{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-dim); }
+.ms-k{ min-width:24px; color:var(--ink-faint); font-size:9.5px; letter-spacing:.4px; }
+.ms-bar{ flex:1; height:5px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; }
+.ms-bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--cc1,#888),var(--cc2,#bbb)); }
+.ms-stat b{ font-family:var(--font-num); font-style:italic; font-size:12px; min-width:20px; text-align:right; color:var(--ink); }
+@media (max-width:760px){ .board-2col{ grid-template-columns:1fr; } }
+
 /* ---------- Sector detail hero + "why" chips ---------- */
 .sd-hero{ display:flex; align-items:center; gap:16px; padding:16px 18px; margin-bottom:14px;
   background:linear-gradient(120deg, color-mix(in srgb, var(--cc1) 30%, transparent), rgba(16,9,12,.75));

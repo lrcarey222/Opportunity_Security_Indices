@@ -74,6 +74,15 @@
             <option value="hard">Hard — no numbers</option>
           </select>
         </div>
+        <div class="field">Pick clock
+          <select id="clockSel" title="Time you get to make each pick before it auto-picks">
+            <option value="30">30 sec</option>
+            <option value="60" selected>1 min</option>
+            <option value="120">2 min</option>
+            <option value="300">5 min</option>
+            <option value="0">Off</option>
+          </select>
+        </div>
       </div>
 
       <div class="section-title"><h3>Play with friends</h3><div class="rule"></div>
@@ -93,6 +102,7 @@
     <section id="draftScreen" class="screen">
       <div class="board-head">
         <div class="onclock you" id="onclock"></div>
+        <div class="pick-clock" id="pickClock" hidden><span class="pc-lbl">On the clock</span><span class="pc-time" id="pickClockTime">1:00</span></div>
         <div class="round-pill" id="roundPill"></div>
       </div>
 
@@ -138,10 +148,17 @@
       <div class="catprio" id="catPriority"></div>
 
       <div class="section-title"><h3>Sector Priority Board</h3><div class="rule"></div>
-        <span class="hint">Ranked by draft order · pick #1 = top alliance priority</span></div>
-      <div class="panel"><div class="body" style="overflow-x:auto">
-        <div class="prio-list" id="sectorBoard"></div>
-      </div></div>
+        <span class="hint">Draft-order picks vs. metric ranking — compare the manual list to the numbers</span></div>
+      <div class="board-2col">
+        <div class="panel">
+          <h4>🗳️ Alliance draft order <span class="panel-sub">pick #1 = top priority</span></h4>
+          <div class="body" style="overflow-x:auto"><div class="prio-list" id="sectorBoard"></div></div>
+        </div>
+        <div class="panel">
+          <h4>📊 By metric score <span class="panel-sub">ranked by OVR · four OSI pillars</span></h4>
+          <div class="body" style="overflow-x:auto"><div class="metric-list" id="metricBoard"></div></div>
+        </div>
+      </div>
 
       <div class="section-title"><h3>Final Standings</h3><div class="rule"></div>
         <span class="hint">Total = fantasy points + sector coverage + vertical-stack combos</span></div>
