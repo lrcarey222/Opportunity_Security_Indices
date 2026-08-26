@@ -10,7 +10,13 @@
 critical_minerals_processing_build_supply <- function(critical,
                                                       mineral_demand_clean,
                                                       country_info,
-                                                      gamma = 0.5) {
+                                                      gamma = 0.5,
+                                                      base_year = iea_critical_minerals_base_year(critical),
+                                                      horizon_year = 2035) {
+  # The IEA restates its base year each release, so address the supply columns by year.
+  base_col <- iea_critical_minerals_year_col(critical, base_year, label = "mineral supply")
+  horizon_col <- iea_critical_minerals_year_col(critical, horizon_year, label = "mineral supply")
+
   critical <- critical %>%
     dplyr::mutate(`Sector.Country` = standardize_country_names(`Sector.Country`))
 
@@ -48,12 +54,16 @@ critical_minerals_processing_build_supply <- function(critical,
       )
     ) %>%
     dplyr::ungroup() %>%
-    dplyr::select(mineral, country, supply_chain, X2024, X2035) %>%
+    dplyr::select(
+      mineral, country, supply_chain,
+      supply_base = dplyr::all_of(base_col),
+      supply_horizon = dplyr::all_of(horizon_col)
+    ) %>%
     tidyr::complete(
       mineral = minerals$mineral,
       supply_chain = c("Upstream", "Upstream"),
       country = countries$`Sector.Country`,
-      fill = list(X2024 = 0, X2035 = 0)
+      fill = list(supply_base = 0, supply_horizon = 0)
     ) %>%
     dplyr::inner_join(
       mineral_demand_clean %>%
@@ -63,8 +73,8 @@ critical_minerals_processing_build_supply <- function(critical,
       by = c("mineral" = "Mineral")
     ) %>%
     dplyr::mutate(
-      supply_24 = share_24 * X2024,
-      supply_35 = share_35 * X2035
+      supply_24 = share_24 * supply_base,
+      supply_35 = share_35 * supply_horizon
     ) %>%
     dplyr::group_by(mineral, tech, supply_chain) %>%
     dplyr::mutate(
@@ -148,13 +158,14 @@ critical_minerals_processing <- function(critical,
                                          mineral_demand_clean,
                                          country_info,
                                          country_reference,
-                                         year = 2024,
+                                         year = iea_critical_minerals_base_year(critical),
                                          gamma = 0.5) {
   mineral_supply <- critical_minerals_processing_build_supply(
     critical = critical,
     mineral_demand_clean = mineral_demand_clean,
     country_info = country_info,
-    gamma = gamma
+    gamma = gamma,
+    base_year = year
   )
 
   critical_minerals_processing_build_tidy(

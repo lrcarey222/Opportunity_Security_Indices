@@ -29,6 +29,7 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
 - [Quick start](#quick-start)
 - [Interactive explorer (Shiny)](#interactive-explorer-shiny)
 - [Outputs](#outputs)
+- [Comparing index vintages across years](#comparing-index-vintages-across-years)
 - [Testing and quality checks](#testing-and-quality-checks)
 - [Additional utilities and workflows](#additional-utilities-and-workflows)
 - [Raw inputs and refresh](#raw-inputs-and-refresh)
@@ -186,7 +187,7 @@ This section is written to function as a **drop-in technical appendix inside the
 
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR]) — fossil and mineral reserves tables used in the repo
-- **IEA Critical Minerals Dataset** ([IEA-CM]) — cleantech demand-by-tech shares used to roll mineral reserves into tech-weighted reserve indices
+- **IEA Critical Minerals Dataset** ([IEA-CM]) — energy demand-by-tech shares used to roll mineral reserves into tech-weighted reserve indices
 
 **Substantive rationale:** reserves proxy long-run domestic supply optionality and reduce risk of external supply squeeze.
 
@@ -744,6 +745,40 @@ Outputs are written under your configured outputs directory (or `processed/outpu
 * Optional “coupled” pillar index variants (if interdependence edges are provided)
 
 See `scripts/20_build_indices.R` for the exact CSV outputs written.
+
+---
+
+## Comparing index vintages across years
+
+The main pipeline produces one snapshot: every theme builder reaches for the newest observation its source carries, so `data/processed` holds a single vintage and cannot be re-cut into an earlier year after the fact. `scripts/40_build_index_vintages.R` builds the ES and EO pillars at a chosen set of years instead, so vintages can be compared:
+
+```bash
+Rscript scripts/40_build_index_vintages.R --years=2020,2025
+```
+
+Years can also be set with `OPSI_INDEX_YEARS=2015,2020,2025`. The default is `2020,2025`. Any number of years is accepted; the comparison table is built between the earliest and the latest.
+
+It works by slicing each **raw input** to the requested year and then running the same theme builders and the same v2 index builders the annual pipeline uses — the index construction itself is untouched. `scripts/10_build_themes.R` must have been run at least once first, because the themes with no time dimension are read from `data/processed` and reused unchanged across vintages, which keeps the fixed components identical between years.
+
+**What actually moves.** Only sources with a genuine time dimension can be re-cut. EI Statistical Review (energy access, imports, consumption, production), the Atlas of Economic Complexity (trade), IMF monthly prices and rates, ILO earnings, and GCIM investment all do. Resource potential, reserves, the IEA critical minerals release, BNEF demand and LCOE, overcapacity, and TRL are single snapshots or forward projections, so they are held fixed and contribute nothing to the year-on-year delta. In the current configuration that leaves **50% of scored Energy Security weight and 72% of scored Economic Opportunity weight** re-deriving per vintage. Every run writes the split it used.
+
+The trade themes run off the Atlas for *all* vintages rather than Comtrade, because the staged Comtrade extract is a single year — mixing a Comtrade numerator in one vintage with an Atlas one in another would show a source change as if it were real change. The Atlas stops at 2023, so a 2025 vintage uses Atlas 2023 and says so in `index_vintage_source_years.csv`.
+
+**Reading the results.** Every component is a cross-sectional percent rank, so an index value is a country's standing against its peers in that year, not an absolute level. A rise from 2020 to 2025 means the country gained ground on the field. Both level change and rank change are written out for that reason. As a sanity check, the 2025 vintage tracks the annual pipeline's headline index at r ≈ 0.98 (ES) and 0.99 (EO).
+
+Outputs land in `data/processed/vintages/`:
+
+| File | Contents |
+| --- | --- |
+| `energy_security_index_by_year.csv` | ES pillar index per country × tech × supply chain × vintage year, with `Energy_Security_Risk` as the complement |
+| `economic_opportunity_index_by_year.csv` | EO pillar index, same keys |
+| `index_category_scores_by_year.csv` | Category scores behind both pillars, so a delta can be attributed |
+| `energy_security_comparison_<a>_vs_<b>.csv` | Level and rank in each end year, plus `index_change` and `rank_change` |
+| `economic_opportunity_comparison_<a>_vs_<b>.csv` | Same for EO |
+| `index_vintage_theme_provenance.csv` | Per theme: whether it varies with the year, and why |
+| `index_vintage_weight_coverage.csv` | Share of each pillar's scored weight that re-derives per vintage |
+| `index_vintage_source_years.csv` | The year each source actually resolved to, per vintage |
+| `index_vintages.rds` | All of the above plus the full builder outputs per year |
 
 ---
 

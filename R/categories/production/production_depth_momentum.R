@@ -113,12 +113,17 @@ production_depth_momentum_build_energy_indices <- function(production_clean,
 production_depth_momentum_build_mineral_supply <- function(critical,
                                                            mineral_demand_clean,
                                                            country_info,
-                                                           gamma = 0.5) {
+                                                           gamma = 0.5,
+                                                           base_year = iea_critical_minerals_base_year(critical),
+                                                           horizon_year = 2035) {
   require_columns(
     critical,
-    c("Pillar", "Sector.Country", "Mineral", "X2024", "X2035"),
+    c("Pillar", "Sector.Country", "Mineral"),
     label = "critical"
   )
+  # The IEA restates its base year each release, so address the supply columns by year.
+  base_col <- iea_critical_minerals_year_col(critical, base_year, label = "mineral supply")
+  horizon_col <- iea_critical_minerals_year_col(critical, horizon_year, label = "mineral supply")
   require_columns(
     mineral_demand_clean,
     c("Mineral", "tech", "share_24", "share_35"),
@@ -168,12 +173,16 @@ production_depth_momentum_build_mineral_supply <- function(critical,
       )
     ) %>%
     dplyr::ungroup() %>%
-    dplyr::select(mineral, country, supply_chain, X2024, X2035) %>%
+    dplyr::select(
+      mineral, country, supply_chain,
+      supply_base = dplyr::all_of(base_col),
+      supply_horizon = dplyr::all_of(horizon_col)
+    ) %>%
     tidyr::complete(
       mineral = minerals$mineral,
       supply_chain = c("Upstream", "Midstream"),
       country = countries$`Sector.Country`,
-      fill = list(X2024 = 0, X2035 = 0)
+      fill = list(supply_base = 0, supply_horizon = 0)
     ) %>%
     dplyr::inner_join(
       mineral_demand_clean %>%
@@ -184,8 +193,8 @@ production_depth_momentum_build_mineral_supply <- function(critical,
       relationship = "many-to-many"
     ) %>%
     dplyr::mutate(
-      supply_24 = share_24 * X2024,
-      supply_35 = share_35 * X2035
+      supply_24 = share_24 * supply_base,
+      supply_35 = share_35 * supply_horizon
     ) %>%
     dplyr::group_by(mineral, tech, supply_chain) %>%
     dplyr::mutate(
@@ -218,21 +227,21 @@ production_depth_momentum_build_mineral_supply <- function(critical,
 production_depth_momentum_build_mineral_production <- function(mineral_supply, gamma = 0.5) {
   require_columns(
     mineral_supply,
-    c("mineral", "country", "tech", "supply_chain", "X2024", "X2035", "HHI_24"),
+    c("mineral", "country", "tech", "supply_chain", "supply_base", "supply_horizon", "HHI_24"),
     label = "mineral_supply"
   )
 
   mineral_supply %>%
-    dplyr::mutate(supply_growth = (X2035 - X2024) / X2024) %>%
-    dplyr::select(mineral, country, tech, supply_chain, X2024, X2035, supply_growth, HHI_24) %>%
+    dplyr::mutate(supply_growth = (supply_horizon - supply_base) / supply_base) %>%
+    dplyr::select(mineral, country, tech, supply_chain, supply_base, supply_horizon, supply_growth, HHI_24) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
-      size_index = median_scurve(X2024, gamma = gamma),
+      size_index = median_scurve(supply_base, gamma = gamma),
       growth_abs_index = median_scurve(supply_growth, gamma = gamma),
       HHI_index = median_scurve(-HHI_24, gamma = gamma)
     ) %>%
     dplyr::group_by(country, tech, supply_chain) %>%
-    dplyr::summarize(dplyr::across(X2024:HHI_index, mean, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::summarize(dplyr::across(supply_base:HHI_index, mean, na.rm = TRUE), .groups = "drop") %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
       size_index = median_scurve(size_index, gamma = gamma),
@@ -253,7 +262,8 @@ production_depth_momentum_build_mineral_production <- function(mineral_supply, g
 
 production_depth_momentum_build_combined <- function(production_growth,
                                                      mineral_production,
-                                                     energy_year = 2025) {
+                                                     energy_year = 2025,
+                                                     mineral_year = 2025) {
   energy_year_col <- as.character(energy_year)
 
   require_columns(
@@ -263,7 +273,7 @@ production_depth_momentum_build_combined <- function(production_growth,
   )
   require_columns(
     mineral_production,
-    c("Country", "tech", "supply_chain", "X2024", "size_index", "growth_abs_index", "overall_production_index"),
+    c("Country", "tech", "supply_chain", "supply_base", "size_index", "growth_abs_index", "overall_production_index"),
     label = "mineral_production"
   )
 
@@ -286,8 +296,8 @@ production_depth_momentum_build_combined <- function(production_growth,
       Country,
       tech,
       supply_chain,
-      production_latest = X2024,
-      raw_year = 2024,
+      production_latest = supply_base,
+      raw_year = mineral_year,
       size_index,
       growth_abs_index,
       overall_production_index
@@ -353,6 +363,7 @@ production_depth_momentum <- function(ei,
                                       mineral_demand_clean,
                                       country_info,
                                       year = 2025,
+                                      mineral_year = iea_critical_minerals_base_year(critical),
                                       gamma = 0.5) {
   production_clean <- production_depth_momentum_clean_energy_production(
     ei,
@@ -367,13 +378,15 @@ production_depth_momentum <- function(ei,
     critical = critical,
     mineral_demand_clean = mineral_demand_clean,
     country_info = country_info,
-    gamma = gamma
+    gamma = gamma,
+    base_year = mineral_year
   )
   mineral_production <- production_depth_momentum_build_mineral_production(mineral_supply, gamma = gamma)
   production_combined <- production_depth_momentum_build_combined(
     production_growth = production_growth,
     mineral_production = mineral_production,
-    energy_year = year
+    energy_year = year,
+    mineral_year = mineral_year
   )
 
   output <- production_depth_momentum_build_table(

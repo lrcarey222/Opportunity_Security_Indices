@@ -143,19 +143,38 @@ reserves_country_names <- function(country_reference) {
   country_reference$Country
 }
 
-reserves_build_mineral_demand_clean <- function(critical) {
+# Demand-by-technology shares from the IEA critical minerals dataset.
+#
+# The pillar label carries the release's own wording ("3.1 Cleantech demand by tech" in the
+# 2025 vintage, "3.1 Energy demand by tech" in 2026), so only the section number is matched.
+# Likewise the base year moves with each release, so the base and 2035 columns are resolved
+# from the data. `share_24`/`share_35` keep their names — they are the base-year and 2035
+# shares, and every downstream weighting step joins on them.
+reserves_build_mineral_demand_clean <- function(critical,
+                                               base_year = iea_critical_minerals_base_year(critical),
+                                               horizon_year = 2035) {
+  base_col <- iea_critical_minerals_year_col(critical, base_year, label = "mineral demand")
+  horizon_col <- iea_critical_minerals_year_col(critical, horizon_year, label = "mineral demand")
+
   mineral_demand <- critical %>%
     dplyr::filter(
-      Pillar == "3.1 Cleantech demand by tech",
+      grepl("^3\\.1", Pillar),
       !grepl("Other|Total", `Sector.Country`)
     ) %>%
-    dplyr::mutate(growth = X2035 / X2024 - 1) %>%
+    dplyr::mutate(
+      demand_base = as.numeric(.data[[base_col]]),
+      demand_horizon = as.numeric(.data[[horizon_col]]),
+      growth = demand_horizon / demand_base - 1
+    ) %>%
     dplyr::group_by(Pillar, Mineral) %>%
     dplyr::mutate(
-      share_24 = X2024 / sum(X2024),
-      share_35 = X2035 / sum(X2035)
+      share_24 = demand_base / sum(demand_base),
+      share_35 = demand_horizon / sum(demand_horizon)
     ) %>%
-    dplyr::select(1:3, X2024, X2035, growth, share_24, share_35) %>%
+    dplyr::select(
+      Pillar, Mineral, `Sector.Country`,
+      demand_base, demand_horizon, growth, share_24, share_35
+    ) %>%
     dplyr::ungroup()
 
   mineral_demand %>%

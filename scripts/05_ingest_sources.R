@@ -195,8 +195,10 @@ if (!skip_data_downloads) {
 
 critical_minerals_path <- resolve_versioned_raw_input(
   raw_data_path,
-  pattern = "^iea_criticalminerals_\\d{2}\\.csv$",
-  fallback = "iea_criticalminerals_25.csv",
+  # Top-level alternation, no capture group: the manifest scanner in scripts/utils
+  # reads this call as source text and stops at the first closing bracket it finds.
+  pattern = "^IEA Critical Minerals Dataset \\d{4}\\.xlsx$|^iea_criticalminerals_\\d{2}\\.csv$",
+  fallback = "IEA Critical Minerals Dataset 2026.xlsx",
   label = "IEA Critical Minerals Dataset"
 )
 critical_minerals_hs_path <- file.path(raw_data_path, "Columbia University Critical Minerals Dashboard", "unique_comtrade.csv")
@@ -232,9 +234,10 @@ critmin_export_path <- critmin_paths$export
 critmin_total_export_path <- critmin_paths$total_export
 
 if (!skip_data_downloads) {
+  source(file.path(repo_root, "R", "utils", "iea_critical_minerals.R"))
   source(file.path(repo_root, "R", "categories", "minerals_trade", "critical_minerals_trade.R"))
   source(file.path(repo_root, "R", "categories", "reserves", "reserves.R"))
-  critical <- read.csv(critical_minerals_path)
+  critical <- read_iea_critical_minerals(critical_minerals_path)
   mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
   crit_hs <- read.csv(critical_minerals_hs_path)
   crit_codes <- critical_minerals_trade_filter_hs(crit_hs, mineral_demand_clean)$hscode %>%

@@ -471,16 +471,19 @@ inputs:
   required_by:
   - scripts/10_build_themes.R
 - id: iea_critical_minerals
-  path: iea_criticalminerals_25.csv
-  pattern: ^iea_criticalminerals_\d{2}\.csv$
+  path: IEA Critical Minerals Dataset 2026.xlsx
+  pattern: ^IEA Critical Minerals Dataset \d{4}\.xlsx$|^iea_criticalminerals_\d{2}\.csv$
   resolve: newest
   source_type: manual
   source_name: IEA Critical Minerals Dataset
   url: https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset
   cadence: annual
   owner: lcarey@rmi.org
-  vintage: '2025'
+  vintage: '2026'
   staged_from: sharepoint
+  notes: Staged as the published IEA workbook from the 2026 release onward; earlier
+    vintages were staged as a hand-flattened CSV. R/utils/iea_critical_minerals.R
+    reads either form.
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R

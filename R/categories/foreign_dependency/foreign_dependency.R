@@ -14,8 +14,13 @@ foreign_dependency_build_country_reference <- function(ei, year = 2025) {
 foreign_dependency_build_mineral_supply <- function(critical,
                                                     mineral_demand_clean,
                                                     country_reference,
-                                                    year = 2024,
-                                                    gamma = 0.5) {
+                                                    year = iea_critical_minerals_base_year(critical),
+                                                    gamma = 0.5,
+                                                    horizon_year = 2035) {
+  # The IEA restates its base year each release, so address the supply columns by year.
+  base_col <- iea_critical_minerals_year_col(critical, year, label = "mineral supply")
+  horizon_col <- iea_critical_minerals_year_col(critical, horizon_year, label = "mineral supply")
+
   critical <- critical %>%
     dplyr::mutate(`Sector.Country` = standardize_country_names(`Sector.Country`))
 
@@ -56,12 +61,16 @@ foreign_dependency_build_mineral_supply <- function(critical,
       )
     ) %>%
     dplyr::ungroup() %>%
-    dplyr::select(mineral, country, supply_chain, X2024, X2035) %>%
+    dplyr::select(
+      mineral, country, supply_chain,
+      supply_base = dplyr::all_of(base_col),
+      supply_horizon = dplyr::all_of(horizon_col)
+    ) %>%
     tidyr::complete(
       mineral = minerals$mineral,
       supply_chain = c("Upstream"),
       country = countries$`Sector.Country`,
-      fill = list(X2024 = 0, X2035 = 0)
+      fill = list(supply_base = 0, supply_horizon = 0)
     ) %>%
     dplyr::inner_join(
       mineral_demand_clean %>%
@@ -72,8 +81,8 @@ foreign_dependency_build_mineral_supply <- function(critical,
       relationship = "many-to-many"
     ) %>%
     dplyr::mutate(
-      supply_24 = share_24 * X2024,
-      supply_35 = share_35 * X2035
+      supply_24 = share_24 * supply_base,
+      supply_35 = share_35 * supply_horizon
     ) %>%
     dplyr::group_by(mineral, tech, supply_chain) %>%
     dplyr::mutate(
@@ -388,7 +397,11 @@ foreign_dependency <- function(critical,
                                ei,
                                cleantech_midstream,
                                ev_midstream,
-                               year = list(minerals = "2024", cleantech = "2035", ev = "2024"),
+                               year = list(
+                                 minerals = iea_critical_minerals_base_year(critical),
+                                 cleantech = "2035",
+                                 ev = "2024"
+                               ),
                                ei_year = "2025",
                                gamma = 0.5) {
   # Reference country list and run each foreign dependency sub-theme builder. The EI country
