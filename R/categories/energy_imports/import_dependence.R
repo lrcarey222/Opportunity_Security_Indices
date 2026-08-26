@@ -59,7 +59,7 @@ import_dependence_build_imports <- function(imports_raw) {
       oil_imports_share = dplyr::if_else(oil_tes_ej > 0, 100 * oil_imports_ej / oil_tes_ej, NA_real_),
       gas_imports_share = dplyr::if_else(gas_tes_ej > 0, 100 * gas_imports_ej / gas_tes_ej, NA_real_),
       coal_imports_share = dplyr::if_else(coal_tes_ej > 0, 100 * coal_imports_ej / coal_tes_ej, NA_real_),
-      fossil_import_share = dplyr::if_else(
+      fossil_imports_share = dplyr::if_else(
         (oil_tes_ej + gas_tes_ej + coal_tes_ej) > 0,
         100 * fossil_imports_ej / (oil_tes_ej + gas_tes_ej + coal_tes_ej),
         NA_real_
@@ -69,61 +69,75 @@ import_dependence_build_imports <- function(imports_raw) {
       oil_import_index = rowMeans(cbind(median_scurve(oil_imports_share), median_scurve(oil_imports_ej)), na.rm = TRUE),
       gas_import_index = rowMeans(cbind(median_scurve(gas_imports_share), median_scurve(gas_imports_ej)), na.rm = TRUE),
       coal_import_index = rowMeans(cbind(median_scurve(coal_imports_share), median_scurve(coal_imports_ej)), na.rm = TRUE),
-      fossil_import_index = rowMeans(cbind(median_scurve(fossil_import_share), median_scurve(fossil_imports_ej)), na.rm = TRUE)
+      fossil_import_index = rowMeans(cbind(median_scurve(fossil_imports_share), median_scurve(fossil_imports_ej)), na.rm = TRUE)
     ) %>%
     dplyr::ungroup()
 }
 
+# The index is the mean of two percent-ranked components: the absolute balance and the
+# import share. Publish both as raw rows so the composite can be audited, and keep them on
+# separate `variable` names so (Country, tech, variable, data_type) stays unique.
+#
+# "Production surplus/deficit" must stay the EJ balance: config/index_definition.yml lists
+# it as the Overall Energy Imports Index component, and R/charts/import_exposure_chart.R
+# reads its raw row as production_surplus_deficit_ej.
+import_dependence_component_specs <- function() {
+  list(
+    list(
+      suffix = "_imports_ej",
+      variable = "Production surplus/deficit",
+      data_type = "raw",
+      explanation = paste(
+        "{tech} production surplus/deficit (EJ) = production minus consumption;",
+        "negative means net importer"
+      )
+    ),
+    list(
+      suffix = "_imports_share",
+      variable = "Import share",
+      data_type = "raw",
+      explanation = paste(
+        "{tech} import share (%) = production minus consumption as a share of consumption;",
+        "negative means net importer. NA where the country consumes none of the fuel"
+      )
+    ),
+    list(
+      suffix = "_import_index",
+      variable = "Production surplus/deficit",
+      data_type = "index",
+      explanation = "Mean of the percent-ranked import share and percent-ranked absolute balance for {tech}"
+    )
+  )
+}
+
 import_dependence_build_tidy <- function(imports_indexed, year = 2025) {
-  imports_indexed %>%
-    dplyr::select(
-      Country,
-      oil_imports_ej,
-      oil_import_index,
-      gas_imports_ej,
-      gas_import_index,
-      coal_imports_ej,
-      coal_import_index,
-      fossil_imports_ej,
-      fossil_import_index
-    ) %>%
-    dplyr::rename_with(~ stringr::str_replace(.x, "oil_imports_ej", "Oil_raw"), dplyr::everything()) %>%
-    dplyr::rename_with(~ stringr::str_replace(.x, "oil_import_index", "Oil_index"), dplyr::everything()) %>%
-    dplyr::rename_with(~ stringr::str_replace(.x, "gas_imports_ej", "Gas_raw"), dplyr::everything()) %>%
-    dplyr::rename_with(~ stringr::str_replace(.x, "gas_import_index", "Gas_index"), dplyr::everything()) %>%
-    dplyr::rename_with(~ stringr::str_replace(.x, "coal_imports_ej", "Coal_raw"), dplyr::everything()) %>%
-    dplyr::rename_with(~ stringr::str_replace(.x, "coal_import_index", "Coal_index"), dplyr::everything()) %>%
-    dplyr::rename_with(~ stringr::str_replace(.x, "fossil_imports_ej", "Fossil_raw"), dplyr::everything()) %>%
-    dplyr::rename_with(~ stringr::str_replace(.x, "fossil_import_index", "Fossil_index"), dplyr::everything()) %>%
-    tidyr::pivot_longer(
-      cols = -Country,
-      names_to = c("tech", "data_type"),
-      names_pattern = "^(.*)_(raw|index)$",
-      values_to = "value"
-    ) %>%
+  techs <- c(oil = "Oil", gas = "Gas", coal = "Coal", fossil = "Fossil")
+
+  components <- lapply(import_dependence_component_specs(), function(spec) {
+    cols <- paste0(names(techs), spec$suffix)
+    require_columns(imports_indexed, cols, label = "imports_indexed")
+
+    imports_indexed %>%
+      dplyr::select(Country, dplyr::all_of(cols)) %>%
+      tidyr::pivot_longer(
+        cols = dplyr::all_of(cols),
+        names_to = "tech",
+        values_to = "value"
+      ) %>%
+      dplyr::mutate(
+        tech = unname(techs[sub(paste0(spec$suffix, "$"), "", tech)]),
+        variable = spec$variable,
+        data_type = spec$data_type,
+        explanation = as.character(stringr::str_glue(spec$explanation))
+      )
+  })
+
+  dplyr::bind_rows(components) %>%
     dplyr::mutate(
       supply_chain = "Upstream",
       category = "Energy Imports",
-      variable = "Production surplus/deficit",
       Year = year,
-      source = "EI Statistical Review of World Energy (2025)",
-      explanation = dplyr::case_when(
-        data_type == "raw" & tech == "Oil" ~
-          "Oil import share (%) = oil production minus consumption as a share of consumption",
-        data_type == "raw" & tech == "Gas" ~
-          "Gas import share (%) = gas production minus consumption as a share of consumption",
-        data_type == "raw" & tech == "Coal" ~
-          "Coal import share (%) = coal production minus consumption as a share of consumption",
-        data_type == "raw" & tech == "Fossil" ~
-          "Fossil import share (%) = sum of oil, gas, and coal imports as a share of consumption",
-        data_type == "raw" & tech == "Renewables" ~
-          "Renewable generation share (%) = electbyfuel_ren_power ÷ electbyfuel_total × 100",
-        data_type == "index" & tech %in% c("Oil", "Gas", "Coal", "Fossil") ~
-          stringr::str_glue("Mean of percent-ranked import share & absolute imports for {tech}"),
-        data_type == "index" & tech == "Renewables" ~
-          "Percent-rank of renewable-generation share across countries",
-        TRUE ~ NA_character_
-      )
+      source = "EI Statistical Review of World Energy (2025)"
     ) %>%
     dplyr::select(
       Country,
