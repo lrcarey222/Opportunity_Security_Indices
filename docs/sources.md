@@ -43,7 +43,7 @@ Each of these must be downloaded and placed in `sharepoint_raw_dir` before a run
 | [BloombergNEF Energy Transition Supply Chains](https://about.bnef.com/insights/clean-energy/new-energy-outlook/) | `BNEF_Energy Transition Supply Chains 2025.xlsx`<br>newest match: `^BNEF_Energy Transition Supply Chains \d{4}\.xlsx$` | annual | 2025 | lcarey@rmi.org | `10_build_themes.R` |
 | [BloombergNEF LCOE Data Viewer](https://about.bnef.com/insights/clean-energy/new-energy-outlook/) | `2025-03-24 - 2025 LCOE Data Viewer Tool.csv`<br>newest match: `^\d{4}-\d{2}-\d{2} - \d{4} LCOE Data Viewer Tool\.csv$` | semiannual | 2025-03-24 | lcarey@rmi.org | `10_build_themes.R` |
 | [BloombergNEF New Energy Outlook](https://about.bnef.com/insights/clean-energy/new-energy-outlook/) | `2024-10-29 - New Energy Outlook 2024.csv`<br>newest match: `^\d{4}-\d{2}-\d{2} - New Energy Outlook \d{4}\.csv$` | annual | 2024-10-29 | lcarey@rmi.org | `10_build_themes.R` |
-| [Clean Investment Monitor investment and capacity (aggregated)](https://www.cleaninvestmentmonitor.org/) | `GCIM_Investment_Capacity_aggregated.xlsx` | quarterly | — | lcarey@rmi.org | `Investment_index.R`, `10_build_themes.R` |
+| [Clean Investment Monitor investment and capacity (aggregated)](https://www.cleaninvestmentmonitor.org/) | `GCIM_Investment_Capacity_aggregated.xlsx` | quarterly | — | lcarey@rmi.org | `10_build_themes.R` |
 | [Climate Action Tracker country ratings](https://climateactiontracker.org/countries/) | `CAT_country ratings data.csv` | irregular | — | lcarey@rmi.org | `10_build_themes.R`, `15_build_partner_themes.R` |
 | [Columbia University Critical Minerals Dashboard HS mapping](https://www.energypolicy.columbia.edu/critical-materials/) | `Columbia University Critical Minerals Dashboard/unique_comtrade.csv` | irregular | — | lcarey@rmi.org | `05_ingest_sources.R` |
 | [Energy Institute Statistical Review of World Energy (long format)](https://www.energyinst.org/statistical-review) | `ei_stat_review_world_energy.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
@@ -55,7 +55,7 @@ Each of these must be downloaded and placed in `sharepoint_raw_dir` before a run
 | [Harvard Atlas of Economic Complexity (HS92, 4-digit)](https://atlas.hks.harvard.edu/) | `hs92_country_product_year_4.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [Harvard Atlas of Economic Complexity (HS92, 6-digit)](https://atlas.hks.harvard.edu/) | `hs92_country_product_year_6.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [IEA clean technology midstream manufacturing capacity](https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide) | `iea_cleantech_Midstream.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
-| [IEA Critical Minerals Dataset](https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset) | `iea_criticalminerals_25.csv`<br>newest match: `^iea_criticalminerals_\d{2}\.csv$` | annual | 2025 | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R` |
+| [IEA Critical Minerals Dataset](https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset) | `IEA Critical Minerals Dataset 2026.xlsx`<br>newest match: `^IEA Critical Minerals Dataset \d{4}\.xlsx$\|^iea_criticalminerals_\d{2}\.csv$` | annual | 2026 | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R` |
 | [IEA ETP Clean Energy Technology Guide](https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide) | `IEA_Clean_Tech_Guide.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [IEA EV midstream manufacturing capacity extract](https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer) | `ev_Midstream_capacity.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [IEA Global EV Data Explorer](https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer) | `IEA_EVDataExplorer2025.xlsx`<br>newest match: `^IEA_EVDataExplorer\d{4}\.xlsx$` | annual | 2025 | lcarey@rmi.org | `10_build_themes.R` |
@@ -76,9 +76,9 @@ Maintained by the team rather than fetched. Entries marked `staged_from: repo` l
 | --- | --- | --- | --- | --- | --- |
 | Allied reporter list for Comtrade dyad pulls | `allies.csv` | ad-hoc | — | lcarey@rmi.org | `05_ingest_sources.R` |
 | Dual-use scoring by primary/secondary/tertiary category | `dual_use_scores_primary_secondary_tertiary.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R` |
-| HS6 categories flagged for essential goods | `hs6_categories_with_essential.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R`, `96_pull_trade_timeseries.R`, `97_bulk_comtrade_downloads.R` |
-| HS6 to energy technology category mapping (bolstered) | `hts_codes_categories_bolstered_final.csv` | ad-hoc | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `96_pull_trade_timeseries.R`, `97_bulk_comtrade_downloads.R` |
-| HS6 to technology and supply-chain crosswalk (long) | `consolidated_hs6_energy_tech_long.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R` |
+| HS6 to technology / supply-chain view (tech, supply_chain, sub_sector, HS6) | `consolidated_hs6_energy_tech_long.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R` |
+| HS6 to technology / supply-chain view (Technology, Value Chain, Sub.Sector, HS6) | `hts_codes_categories_bolstered_final.csv` | ad-hoc | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `96_pull_trade_timeseries.R`, `97_bulk_comtrade_downloads.R` |
+| HS6 view carrying the essential-goods flag (Technology, Value Chain, Sub.Sector, HS6, essential) | `hs6_categories_with_essential.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R`, `96_pull_trade_timeseries.R`, `97_bulk_comtrade_downloads.R` |
 | Master energy HS6 catalogue | `energy_hs6_master.csv` | ad-hoc | — | lcarey@rmi.org | `trade_charts.R`, `15_build_partner_themes.R` |
 
 ### Pipeline bookkeeping (generated)

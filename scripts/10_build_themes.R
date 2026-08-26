@@ -40,6 +40,7 @@ source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "utils", "iea_critical_minerals.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
@@ -254,8 +255,10 @@ raw_path <- file.path(raw_data_path, "ei_stat_review_world_energy.csv")
 reserves_excel_path <- file.path(raw_data_path, "ei_stat_review_world_energy_wide.xlsx")
 critical_minerals_path <- resolve_versioned_raw_input(
   raw_data_path,
-  pattern = "^iea_criticalminerals_\\d{2}\\.csv$",
-  fallback = "iea_criticalminerals_25.csv",
+  # Top-level alternation, no capture group: the manifest scanner in scripts/utils
+  # reads this call as source text and stops at the first closing bracket it finds.
+  pattern = "^IEA Critical Minerals Dataset \\d{4}\\.xlsx$|^iea_criticalminerals_\\d{2}\\.csv$",
+  fallback = "IEA Critical Minerals Dataset 2026.xlsx",
   label = "IEA Critical Minerals Dataset"
 )
 cleantech_midstream_path <- file.path(raw_data_path, "iea_cleantech_Midstream.csv")
@@ -488,7 +491,7 @@ country_info <- standardize_country_info(country_info)
   write_processed_tbl(import_dependence_tbl, "import_dependence_tbl", processed_dir)
 
   # Theme: Foreign dependency inputs (critical minerals + IEA datasets).
-  critical <- read.csv(critical_minerals_path)
+  critical <- read_iea_critical_minerals(critical_minerals_path)
   mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
 
   reserve_inputs <- lapply(reserves_specs(), function(spec) {

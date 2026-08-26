@@ -29,10 +29,13 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
 - [Quick start](#quick-start)
 - [Interactive explorer (Shiny)](#interactive-explorer-shiny)
 - [Outputs](#outputs)
+- [Comparing index vintages across years](#comparing-index-vintages-across-years)
 - [Testing and quality checks](#testing-and-quality-checks)
 - [Additional utilities and workflows](#additional-utilities-and-workflows)
 - [Raw inputs and refresh](#raw-inputs-and-refresh)
   - [API fetchers](#api-fetchers)
+  - [The HS6 crosswalk](#the-hs6-crosswalk)
+  - [When ingestion fails](#when-ingestion-fails)
   - [How refresh works](#how-refresh-works)
   - [Key external sources (cited)](#key-external-sources-cited)
 - [Known issues and to-dos](#known-issues-and-to-dos)
@@ -184,7 +187,7 @@ This section is written to function as a **drop-in technical appendix inside the
 
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR]) — fossil and mineral reserves tables used in the repo
-- **IEA Critical Minerals Dataset** ([IEA-CM]) — cleantech demand-by-tech shares used to roll mineral reserves into tech-weighted reserve indices
+- **IEA Critical Minerals Dataset** ([IEA-CM]) — energy demand-by-tech shares used to roll mineral reserves into tech-weighted reserve indices
 
 **Substantive rationale:** reserves proxy long-run domestic supply optionality and reduce risk of external supply squeeze.
 
@@ -745,6 +748,40 @@ See `scripts/20_build_indices.R` for the exact CSV outputs written.
 
 ---
 
+## Comparing index vintages across years
+
+The main pipeline produces one snapshot: every theme builder reaches for the newest observation its source carries, so `data/processed` holds a single vintage and cannot be re-cut into an earlier year after the fact. `scripts/40_build_index_vintages.R` builds the ES and EO pillars at a chosen set of years instead, so vintages can be compared:
+
+```bash
+Rscript scripts/40_build_index_vintages.R --years=2020,2025
+```
+
+Years can also be set with `OPSI_INDEX_YEARS=2015,2020,2025`. The default is `2020,2025`. Any number of years is accepted; the comparison table is built between the earliest and the latest.
+
+It works by slicing each **raw input** to the requested year and then running the same theme builders and the same v2 index builders the annual pipeline uses — the index construction itself is untouched. `scripts/10_build_themes.R` must have been run at least once first, because the themes with no time dimension are read from `data/processed` and reused unchanged across vintages, which keeps the fixed components identical between years.
+
+**What actually moves.** Only sources with a genuine time dimension can be re-cut. EI Statistical Review (energy access, imports, consumption, production), the Atlas of Economic Complexity (trade), IMF monthly prices and rates, ILO earnings, and GCIM investment all do. Resource potential, reserves, the IEA critical minerals release, BNEF demand and LCOE, overcapacity, and TRL are single snapshots or forward projections, so they are held fixed and contribute nothing to the year-on-year delta. In the current configuration that leaves **50% of scored Energy Security weight and 72% of scored Economic Opportunity weight** re-deriving per vintage. Every run writes the split it used.
+
+The trade themes run off the Atlas for *all* vintages rather than Comtrade, because the staged Comtrade extract is a single year — mixing a Comtrade numerator in one vintage with an Atlas one in another would show a source change as if it were real change. The Atlas stops at 2023, so a 2025 vintage uses Atlas 2023 and says so in `index_vintage_source_years.csv`.
+
+**Reading the results.** Every component is a cross-sectional percent rank, so an index value is a country's standing against its peers in that year, not an absolute level. A rise from 2020 to 2025 means the country gained ground on the field. Both level change and rank change are written out for that reason. As a sanity check, the 2025 vintage tracks the annual pipeline's headline index at r ≈ 0.98 (ES) and 0.99 (EO).
+
+Outputs land in `data/processed/vintages/`:
+
+| File | Contents |
+| --- | --- |
+| `energy_security_index_by_year.csv` | ES pillar index per country × tech × supply chain × vintage year, with `Energy_Security_Risk` as the complement |
+| `economic_opportunity_index_by_year.csv` | EO pillar index, same keys |
+| `index_category_scores_by_year.csv` | Category scores behind both pillars, so a delta can be attributed |
+| `energy_security_comparison_<a>_vs_<b>.csv` | Level and rank in each end year, plus `index_change` and `rank_change` |
+| `economic_opportunity_comparison_<a>_vs_<b>.csv` | Same for EO |
+| `index_vintage_theme_provenance.csv` | Per theme: whether it varies with the year, and why |
+| `index_vintage_weight_coverage.csv` | Share of each pillar's scored weight that re-derives per vintage |
+| `index_vintage_source_years.csv` | The year each source actually resolved to, per vintage |
+| `index_vintages.rds` | All of the above plus the full builder outputs per year |
+
+---
+
 ## Testing and quality checks
 
 This repository includes a `testthat` suite under `tests/testthat/` that covers core scoring behavior and integration-sensitive paths, including:
@@ -773,12 +810,15 @@ Beyond the main pipeline scripts, the repo includes supporting workflows:
 
 * `scripts/01_generate_raw_inputs_manifest.R` — regenerates the raw-input inventory by scanning the active `scripts/` and `R/` code.
 * `scripts/02_render_sources_doc.R` — renders `docs/sources.md` from the manifest.
+* `scripts/03_check_raw_inputs.R` — read-only preflight: reports which raw inputs would block a build and where each is expected to come from. Run this first when ingestion fails.
+* `scripts/04_build_hs6_views.R` and `R/utils/hs6_crosswalk.R` — regenerate the HS6 crosswalk views from the master.
 * `config/raw_inputs_manifest.yml` — declarative manifest of every raw dataset, with provenance and refresh cadence.
 * `scripts/utils/raw_inputs.R` — shared helpers for manifest reading, staged-file sync, and vintage resolution.
 * `scripts/utils/fetchers.R` and `scripts/fetchers/*.R` — API fetchers and the contract-validated write path.
 * `scripts/30_build_allied_network_design.R` — builds allied network design outputs used for partnership analyses.
 * `scripts/90_build_package_selection_viz.R` — prepares package-selection visualization outputs.
 * `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — pull and visualize trade time series.
+* `R/charts/export_similarity.R` — Finger–Kreinin export similarity between the six major energy-technology exporters (CHN, DEU, FRA, JPN, KOR, USA), over the HS6 master basket. Produces an overall index plus a per-technology breakdown. Data is pulled at HS6 and aggregated to `ESI_LEVEL` (`hs6`/`hs4`/`hs2`/`tech`/`sub_sector`, default `hs4`) before scoring. The index rises mechanically with aggregation, so it is only comparable within a level — every output row records the level it was computed at.
 * `docs/data_dictionary.md` and `docs/comtrade_ingestion_and_timeseries.md` — implementation details for data fields and Comtrade workflows.
 
 For app-specific details (UI behavior, data-loading order, and deployment notes), see `shiny/README.md`.
@@ -848,6 +888,17 @@ Not automatable, and marked `manual` for that reason: the Energy Institute downl
 behind a Cloudflare challenge, and BNEF, BCG, GTA NIPO and the IEA extracts are
 subscription or licence-restricted.
 
+### When ingestion fails
+
+```bash
+Rscript scripts/03_check_raw_inputs.R
+```
+
+Reports, without writing anything, which inputs are blocking, which are absent but
+covered by a fetcher, and which are absent but optional. Optional inputs let the
+pipeline degrade rather than stop — `IMF_PCPS_all.xlsx` is the main one: without it the
+PCPS derivation is skipped and the Energy Prices theme reads `imf_commodity_prices.csv`.
+
 ### How refresh works
 
 - **Ingestion syncs rather than copies once.** `scripts/05_ingest_sources.R` compares size
@@ -860,10 +911,35 @@ subscription or licence-restricted.
 - **Each run stamps what it used.** `data/raw/raw_inputs_resolved.yml` records the file and
   vintage behind every pattern-resolved input, alongside `data/raw/comtrade_vintage.yml`.
 
-> **Project-authored crosswalks are version controlled.** The HS6 mappings, dual-use
-> scores and related lookups live in `data/reference/` and are copied into `data/raw/`
-> during ingestion, so a fresh clone builds them without access to anyone's OneDrive.
-> Edit them in `data/reference/` — a copy sitting in `data/raw/` will be overwritten.
+### The HS6 crosswalk
+
+`data/reference/energy_hs6_master.csv` is the **single source of truth** for the
+HS6 → technology / supply-chain / sub-sector mapping, and the only HS6 file under
+version control. Its columns are `tech`, `supply_chain`, `sub_sector`, `hs6`, `essential`.
+
+Three legacy file names are regenerated from it as views during ingestion, so existing
+consumers keep working unchanged:
+
+| Generated view | Shape | Read by |
+| --- | --- | --- |
+| `hts_codes_categories_bolstered_final.csv` | `Technology, Value Chain, Sub.Sector, HS6` | Comtrade code list (`05`), ES/EO trade themes (`10`), `96`, `97` |
+| `consolidated_hs6_energy_tech_long.csv` | `tech, supply_chain, sub_sector, HS6` | `R/charts/35_trade_bloc_counterfactual.R` |
+| `hs6_categories_with_essential.csv` | as above plus `essential` | NIPO essential-goods override (`10`), `96`, `97` |
+
+```bash
+Rscript scripts/04_build_hs6_views.R
+```
+
+**To change the mapping, edit the master.** The views are overwritten on every ingest,
+and `tests/testthat/test-hs6-crosswalk.R` fails if they ever disagree with it.
+
+Before this consolidation the three files were staged independently and had drifted: on
+the codes they shared, only 60–81% agreed on the technology assignment, so ES/EO and PSI
+were scored on different baskets of HS codes for the same technologies.
+
+> **Other project-authored inputs** (the dual-use scores) also live in `data/reference/`
+> and are copied into `data/raw/` during ingestion, so a fresh clone builds without
+> access to anyone's OneDrive. Edit them there — a copy in `data/raw/` will be overwritten.
 
 Theme builders read raw inputs directly from your configured `raw_data_dir/...`.
 
@@ -911,6 +987,7 @@ And record:
 * **EO Investment category is currently a placeholder** in the configured EO category list and may not yet represent a finalized production methodology.
 * **Supply-chain coupling implementation differs from the methodology text**: current code uses normalized interdependence edge strength with linear lambda mapping (rather than HHI-driven logistic mapping).
 * **Raw-input completeness is environment dependent**. If expected files are missing, use the manifest workflow and source documentation to reconcile gaps before running full builds.
+* **HS 854140 is no longer in the crosswalk.** The master uses the HS2022 codes `854142` (solar cells) and `854143` (solar modules), which replaced the pre-2022 `854140` for photovoltaic cells. That is correct for recent years, but Comtrade reporting for 2021 and earlier still uses `854140`, so historical Solar trade may be understated. Adding `854140` to `data/reference/energy_hs6_master.csv` as a legacy Solar/Midstream row would close the gap; it is left out pending a decision.
 * **`allies.csv` is the last uncommitted project-authored input.** It was not present locally when the other crosswalks moved into `data/reference/`, so it remains staged from SharePoint. It is optional — ingestion falls back to all valid WDI reporters — but committing it would make the allied dyad pull fully reproducible.
 * **Remaining automation candidates**: `imf_dip.csv` (the SDMX flow works but a full pull is ~6.5MB per reporter, so it needs a dimension-filtering strategy), `oecd_crs_api.csv` (the CRS dataflow is not exposed under the `OECD.DCD.FSD` agency the staged file names), and the Atlas of Economic Complexity extracts via Harvard Dataverse. See `docs/sources.md` for the current split.
 * **IMF fetchers are `fallback`, not `prefer`.** The live PPI and MFS_IR flows have dropped countries the staged extracts still carry (France, Chile, Finland, Greece for PPI; Spain for rates). Switching them to `prefer` would change index coverage.

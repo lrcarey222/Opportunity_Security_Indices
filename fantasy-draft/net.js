@@ -4,9 +4,10 @@
      • FirebaseAdapter  — real cross-device multiplayer (needs firebase-config.js)
      • LocalAdapter     — same-origin multi-tab (BroadcastChannel) for testing/fallback
    League snapshot shape:
-     { id, host, name, status:'lobby'|'drafting'|'results',
-       settings:{rounds,difficulty}, players:{uid:{name,allyId,ts}},
-       presence:{uid:true}, draft:{order:[uid],pickIndex,picks:{subN:uid},seq:{n:{subN,uid,round}}} }
+     { id, host, name, status:'lobby'|'drafting'|'results'|'season'|'coord',
+       settings:{rounds,difficulty,gameMode}, players:{uid:{name,allyId,ts}},
+       presence:{uid:true}, draft:{order:[uid],pickIndex,picks:{subN:uid},seq:{n:{subN,uid,round}}},
+       coord:{...}  // Alliance Architect state — see coord.js blankGame() }
    ============================================================================ */
 const NET = (function () {
   const UIDKEY = "osi_uid";
@@ -33,6 +34,21 @@ const NET = (function () {
     return draft;
   }
 
+  /* Write `value` at a slash-separated path inside an object, creating objects
+     along the way. Shared by the local adapter's coord helpers so they mirror
+     Firebase's ref(path).set() semantics. */
+  function setPath(obj, path, value) {
+    const parts = String(path).split("/").filter(Boolean);
+    let cur = obj;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (typeof cur[parts[i]] !== "object" || cur[parts[i]] === null) cur[parts[i]] = {};
+      cur = cur[parts[i]];
+    }
+    if (value === null) delete cur[parts[parts.length - 1]];
+    else cur[parts[parts.length - 1]] = value;
+    return obj;
+  }
+
   /* ---------------- Local adapter (BroadcastChannel + localStorage) ---------------- */
   function LocalAdapter() {
     const me = myUid();
@@ -57,6 +73,10 @@ const NET = (function () {
       async removePlayer(uid) { const d = read(id); if (!d) return; if (d.players) delete d.players[uid]; if (d.presence) delete d.presence[uid]; write(id, d); },
       async startDraft(order, settings) { const d = read(id); if (!d) return; d.settings = Object.assign(d.settings || {}, settings); d.status = "drafting"; d.draft = { order, pickIndex: 0, picks: {}, seq: {} }; write(id, d); },
       async setSeason(season) { const d = read(id); if (!d) return; d.season = season; d.status = "season"; write(id, d); },
+      /* ----- Alliance Architect (coordination mode) ----- */
+      async startCoord(coord, settings) { const d = read(id); if (!d) return; d.settings = Object.assign(d.settings || {}, settings || {}); d.status = "coord"; d.coord = coord; write(id, d); },
+      async setCoordAt(path, value) { const d = read(id); if (!d) return; d.coord = d.coord || {}; setPath(d.coord, path, value); write(id, d); },
+      async updateCoord(patch) { const d = read(id); if (!d) return; d.coord = Object.assign(d.coord || {}, patch); write(id, d); },
       async makePick(subN, ctx) { const d = read(id); if (!d || !d.draft) return { error: "no_draft" }; const nd = applyPick(d.draft, subN, ctx.seat, ctx.pickIndex, ctx.round); if (!nd) return { error: "stale" }; d.draft = nd; if (nd.pickIndex >= ctx.total) d.status = "results"; write(id, d); return { ok: true }; },
       onLeague(fn) { cb = fn; emit(); },
       leave() { const d = read(id); if (d && d.presence) { delete d.presence[me]; write(id, d); } if (bc) bc.close(); if (hb) clearInterval(hb); },
@@ -98,6 +118,14 @@ const NET = (function () {
         await db.ref("leagues/" + id).update({ status: "drafting", settings, draft: { order, pickIndex: 0, picks: {}, seq: {} } });
       },
       async setSeason(season) { await db.ref("leagues/" + id).update({ season, status: "season" }); },
+      /* ----- Alliance Architect (coordination mode) -----
+         NOTE ON PRIVACY: everything written here lands in the single league
+         node, which every joined client reads. National plans are therefore
+         UI-private only. `coord/plans/<round>/<uid>` is deliberately shaped so
+         a Realtime Database rule can later restrict reads to `auth.uid`. */
+      async startCoord(coord, settings) { await db.ref("leagues/" + id).update({ status: "coord", coord, settings: Object.assign({}, settings || {}) }); },
+      async setCoordAt(path, value) { await db.ref("leagues/" + id + "/coord/" + path).set(value); },
+      async updateCoord(patch) { await db.ref("leagues/" + id + "/coord").update(patch); },
       async makePick(subN, ctx) {
         const res = await db.ref("leagues/" + id + "/draft").transaction((dr) => {
           const nd = applyPick(dr, subN, ctx.seat, ctx.pickIndex, ctx.round);
@@ -115,12 +143,21 @@ const NET = (function () {
     };
   }
 
+  /* `?local=1` forces the same-browser adapter even when Firebase is configured.
+     Handy for developing and for playtesting without writing to the live
+     database (see the README's testing section). */
+  function forcedLocal() {
+    try { return new URL(location.href).searchParams.get("local") === "1"; } catch (e) { return false; }
+  }
+  function isConfigured() {
+    const cfg = (typeof FIREBASE_CONFIG !== "undefined") ? FIREBASE_CONFIG : null;
+    return !!(cfg && cfg.apiKey && !/PASTE|YOUR_/.test(cfg.apiKey) && cfg.databaseURL) && !forcedLocal();
+  }
   function make() {
     const cfg = (typeof FIREBASE_CONFIG !== "undefined") ? FIREBASE_CONFIG : null;
-    const configured = cfg && cfg.apiKey && !/PASTE|YOUR_/.test(cfg.apiKey) && cfg.databaseURL;
-    if (configured) { const fa = FirebaseAdapter(cfg); if (fa) return fa; }
+    if (isConfigured()) { const fa = FirebaseAdapter(cfg); if (fa) return fa; }
     return LocalAdapter();
   }
 
-  return { make, myUid, newCode, get backend() { const cfg = (typeof FIREBASE_CONFIG !== "undefined") ? FIREBASE_CONFIG : null; const configured = cfg && cfg.apiKey && !/PASTE|YOUR_/.test(cfg.apiKey) && cfg.databaseURL; return (configured && typeof window !== "undefined" && window.firebase) ? "firebase" : "local"; } };
+  return { make, myUid, newCode, get backend() { return (isConfigured() && typeof window !== "undefined" && window.firebase) ? "firebase" : "local"; } };
 })();

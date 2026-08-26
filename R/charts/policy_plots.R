@@ -132,3 +132,69 @@ nipo_time_plot<- nipo_tech_year %>%
   
 write.csv(nipo_time_plot,paste0(processed_dir,"/charts/nipo_time_plot_",iso,".csv"))
 
+
+
+#Equity intervention
+
+allies <- country_info %>%
+  filter(iso3c %in% ally_iso3)
+
+equity <- nipo_raw %>%
+  dplyr::mutate(
+    `Implementing Jurisdiction` = standardize_country_names(`Implementing Jurisdiction`)
+  ) %>%
+  left_join(subcat %>%
+              mutate(HS6=as.character(hs6)),by=c("Product: HS 6-digit (2022)"="HS6")) %>%
+  filter(`GTA Intervention Type`=="Equity stake",
+         `Implementing Jurisdiction` %in% allies$country,
+         URL != "https://www.globaltradealert.org/intervention/153898") %>%
+  select(-`Sector: CPC 3-digit (v2.1)`) %>%
+  mutate(year=substr(`Announcement Date`,1,4)) %>%
+  #filter(year>2020) %>%
+  separate_rows(Product, sep = ";\\s*") %>%
+  
+  # Reshape Sector columns
+  pivot_longer(
+    cols = starts_with("Sector:"),
+    names_to = "Sector",
+    values_to = "sector_flag"
+  ) %>%
+  filter(sector_flag == TRUE) %>%
+  
+  # Reshape Motive columns
+  pivot_longer(
+    cols = starts_with("Motive:"),
+    names_to = "Motive",
+    values_to = "motive_flag"
+  ) %>%
+  filter(motive_flag == TRUE) %>%
+  
+  # Clean labels
+  mutate(
+    Sector = str_remove(Sector, "^Sector: "),
+    Motive = str_remove(Motive, "^Motive: "),
+    Product = str_trim(Product)
+  ) %>%
+  
+  # Count policies
+  group_by(`Implementing Jurisdiction`,year) %>%
+  summarise(
+    #n_policies = n_distinct(`Entry ID`),
+    sub=sum(`Size of Subsidy (USD Million)`,na.rm=T ),
+    .groups = "drop"
+  ) %>%
+  arrange(year,desc(sub)) %>%
+  pivot_wider(names_from=year,values_from=sub)
+
+write.csv(equity,"data/processed/charts/equity_policies.csv")
+
+
+#Japan Investment Roadmap
+
+jpn_rdmp <- read.csv("C:/Users/LCarey/Downloads/japan_growth_strategy_product_breakdown_usd.csv")
+
+jpn_rdmp <- jpn_rdmp %>%
+  select(Sector,Product.technology,Investment.USD.bn) %>%
+  pivot_wider(names_from="Product.technology",values_from="Investment.USD.bn")
+
+write.csv(jpn_rdmp,"data/processed/charts/jpn_roadmap_products.csv")

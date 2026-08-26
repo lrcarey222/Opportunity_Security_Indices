@@ -34,6 +34,7 @@ function myCountry() { return seatCountry(STATE.you); }
 const WIN_THRESHOLD = 0.85;
 
 const STATE = {
+  gameMode: "draft",      // "draft" (Fantasy Draft) | "coordination" (Alliance Architect)
   mode: "solo",           // "solo" (vs AI) | "league" (multiplayer)
   you: null,              // seat id (country id in solo, my uid in league)
   pickAlly: null,         // the country the local player chose on the fighter grid
@@ -116,6 +117,7 @@ function selectAlly(id) {
     </div>`;
   detail.style.display = "grid";
   $("#startBtn").disabled = false;
+  const csb = $("#coordSoloBtn"); if (csb) csb.disabled = false;
   detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -542,9 +544,8 @@ function renderBossChallenge() {
       </div>
       <div class="bc-mid">
         <div class="bc-power">Alliance power<br><b>${STATE.powerPct}%</b><span>boosts your fighter's health</span></div>
-        <button class="btn red bc-fight" id="arcadeBtn">🕹 Fight the Dragon</button>
-        <button class="btn ghost bc-cine" id="fightBtn">▶ Watch cinematic</button>
-        <div class="bc-hint">Playable · WASD + arrow keys</div>
+        <button class="btn red bc-fight" id="fightBtn">▶ Watch cinematic</button>
+        <div class="bc-hint">Outcome decided by your draft</div>
       </div>
       <div class="bc-side">
         <div class="bc-portrait boss"><img class="portrait-fill" src="${FIGHT_FRAMES.L2}" alt="China — the big boss"></div>
@@ -552,7 +553,6 @@ function renderBossChallenge() {
       </div>
     </div>`;
   $("#fightBtn").addEventListener("click", runFight);
-  $("#arcadeBtn").addEventListener("click", () => startArcade(myCountry().id, STATE.powerPct));
 }
 
 /* ---------- pick clock: visible countdown during your pick (solo + league) ----------
@@ -699,7 +699,7 @@ function toast(msg) {
 }
 
 function showOnly(screenId) {
-  ["setupScreen", "lobbyScreen", "draftScreen", "resultsScreen", "seasonScreen"].forEach(s => {
+  ["setupScreen", "lobbyScreen", "draftScreen", "resultsScreen", "seasonScreen", "coordScreen"].forEach(s => {
     const el = $("#" + s); if (el) el.classList.toggle("active", s === screenId);
   });
   window.scrollTo({ top: 0 });
@@ -709,8 +709,40 @@ function restart() {
   STATE.mode = "solo";
   showOnly("setupScreen");
   STATE.you = STATE.pickAlly = null; $("#startBtn").disabled = true;
+  const csb = $("#coordSoloBtn"); if (csb) csb.disabled = true;
   $("#allyDetail").style.display = "none";
   $$(".ally-card").forEach(c => c.classList.remove("selected"));
+}
+
+/* ========================= game-mode picker =========================
+   Two modes share the whole setup screen (fighter grid, name, league create /
+   join). Only the mode-specific settings row swaps out. */
+function setGameMode(mode) {
+  STATE.gameMode = mode === "coordination" ? "coordination" : "draft";
+  const coord = STATE.gameMode === "coordination";
+  $$(".mode-card").forEach(c => c.classList.toggle("selected", c.dataset.mode === STATE.gameMode));
+  const d = $("#draftSetupActions"), c = $("#coordSetupActions");
+  if (d) d.style.display = coord ? "none" : "";
+  if (c) c.style.display = coord ? "" : "none";
+  const hint = $("#mpHint");
+  if (hint) hint.textContent = coord
+    ? "Create a room · share the link · negotiate together live (3–6 countries)"
+    : "Create a league · share the link · draft together live";
+  const cb = $("#createLeagueBtn");
+  if (cb) cb.textContent = coord ? "Create Alliance Room ▶" : "Create League ▶";
+  document.body.classList.toggle("coord-mode", coord);
+  // the marquee follows the mode
+  const bt = $("#brandTitle"), bs = $("#brandSub"), bp = $("#brandPill");
+  const title = (typeof COORD_DATA !== "undefined") ? COORD_DATA.COORD_CONFIG.title : "Alliance Architect";
+  if (bt) bt.textContent = coord ? "Allied Industrial Policy — " + title : "Allied Industrial Policy — Fantasy Draft";
+  if (bs) bs.textContent = coord ? "Coordinative optimisation · negotiated specialization" : "The Electro-Industrial Stack · Season 1";
+  if (bp) {
+    const cfg = (typeof COORD_DATA !== "undefined") ? COORD_DATA.COORD_CONFIG : { minPlayers: 3, maxPlayers: 6 };
+    const nNodes = (typeof COORD_DATA !== "undefined") ? COORD_DATA.getScenario("batteries").nodes.length : 9;
+    bp.innerHTML = coord
+      ? `${cfg.minPlayers}–${cfg.maxPlayers} countries · <b>${nNodes}</b> chain nodes`
+      : "21 Fighters · <b>39</b> sub-sectors";
+  }
 }
 
 /* ========================= boot ========================= */
@@ -723,4 +755,8 @@ window.addEventListener("DOMContentLoaded", () => {
   $("#startBtn").addEventListener("click", startDraft);
   $("#restartBtn").addEventListener("click", restart);
   $("#draftAgainBtn").addEventListener("click", restart);
+  $$(".mode-card").forEach(card => card.addEventListener("click", () => setGameMode(card.dataset.mode)));
+  if (typeof COORD_DATA !== "undefined") {
+    const t = $("#coordModeTitle"); if (t) t.textContent = COORD_DATA.COORD_CONFIG.title;
+  }
 });

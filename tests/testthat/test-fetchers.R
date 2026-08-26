@@ -14,6 +14,15 @@ opsi_fetch_tmpdir <- function() {
   path
 }
 
+# These tests must behave the same whether or not the caller has SKIP_DATA_DOWNLOADS
+# set (CI does). withr ships with testthat, so it is always available here.
+opsi_fetching_enabled <- function(.local_envir = parent.frame()) {
+  withr::local_envvar(
+    c(OPSI_SKIP_FETCH = NA, SKIP_DATA_DOWNLOADS = NA, OPSI_REQUIRE_FETCH = NA),
+    .local_envir = .local_envir
+  )
+}
+
 test_that("period normalisation produces the spellings the parsers expect", {
   opsi_load_fetchers()
 
@@ -122,6 +131,7 @@ test_that("a contract-violating fetch never overwrites an existing good file", {
 
 test_that("run_fetcher keeps the local file and warns when the fetch errors", {
   opsi_load_fetchers()
+  opsi_fetching_enabled()
 
   dir <- opsi_fetch_tmpdir()
   on.exit(unlink(dir, recursive = TRUE), add = TRUE)
@@ -136,13 +146,6 @@ test_that("run_fetcher keeps the local file and warns when the fetch errors", {
     contract = list(required_columns = "COUNTRY", min_rows = 1)
   )
 
-  old <- Sys.getenv("OPSI_REQUIRE_FETCH", unset = NA)
-  on.exit(
-    if (is.na(old)) Sys.unsetenv("OPSI_REQUIRE_FETCH") else Sys.setenv(OPSI_REQUIRE_FETCH = old),
-    add = TRUE
-  )
-  Sys.unsetenv("OPSI_REQUIRE_FETCH")
-
   expect_warning(
     outcome <- run_fetcher("probe_exploding", dest, cadence = "per-run", force = TRUE, quiet = TRUE),
     "upstream is down"
@@ -151,15 +154,56 @@ test_that("run_fetcher keeps the local file and warns when the fetch errors", {
   expect_equal(readLines(dest), before)
 
   # Opt-in strict mode turns the same failure into a hard error.
-  Sys.setenv(OPSI_REQUIRE_FETCH = "true")
-  expect_error(
-    run_fetcher("probe_exploding", dest, cadence = "per-run", force = TRUE, quiet = TRUE),
-    "upstream is down"
+  withr::with_envvar(
+    c(OPSI_REQUIRE_FETCH = "true"),
+    expect_error(
+      run_fetcher("probe_exploding", dest, cadence = "per-run", force = TRUE, quiet = TRUE),
+      "upstream is down"
+    )
   )
+})
+
+test_that("SKIP_DATA_DOWNLOADS disables fetchers, not just OPSI_SKIP_FETCH", {
+  opsi_load_fetchers()
+  opsi_fetching_enabled()
+
+  expect_true(opsi_fetch_enabled())
+
+  # CI sets SKIP_DATA_DOWNLOADS; fetchers must not reach the network there.
+  withr::with_envvar(c(SKIP_DATA_DOWNLOADS = "1"), expect_false(opsi_fetch_enabled()))
+  withr::with_envvar(c(OPSI_SKIP_FETCH = "true"), expect_false(opsi_fetch_enabled()))
+})
+
+test_that("run_fetcher does no work while fetching is disabled", {
+  opsi_load_fetchers()
+  opsi_fetching_enabled()
+
+  dir <- opsi_fetch_tmpdir()
+  on.exit(unlink(dir, recursive = TRUE), add = TRUE)
+
+  withr::local_envvar(c(SKIP_DATA_DOWNLOADS = "1"))
+
+  touched <- new.env(parent = emptyenv())
+  touched$n <- 0L
+  register_fetcher(
+    id = "probe_network",
+    fn = function() {
+      touched$n <- touched$n + 1L
+      data.frame(COUNTRY = "USA", stringsAsFactors = FALSE)
+    },
+    contract = list(required_columns = "COUNTRY", min_rows = 1)
+  )
+
+  expect_equal(
+    run_fetcher("probe_network", file.path(dir, "none.csv"), cadence = "per-run", force = TRUE, quiet = TRUE),
+    "skipped"
+  )
+  expect_equal(touched$n, 0L)
 })
 
 test_that("run_fetcher skips work when the local copy is within its cadence", {
   opsi_load_fetchers()
+  opsi_fetching_enabled()
 
   dir <- opsi_fetch_tmpdir()
   on.exit(unlink(dir, recursive = TRUE), add = TRUE)
@@ -191,7 +235,7 @@ test_that("registered fetchers cover the manifest entries that declare them", {
   source(file.path(root, "scripts", "utils", "raw_inputs.R"), local = FALSE)
 
   manifest <- read_raw_inputs_manifest(raw_inputs_manifest_path(root))
-  ids <- setdiff(list_fetchers(), c("probe_exploding", "probe_counting"))
+  ids <- setdiff(list_fetchers(), c("probe_exploding", "probe_counting", "probe_network"))
 
   expect_true(all(c("wb_wdi", "wb_doingbusiness", "imf_ppi", "imf_lending_rates") %in% ids))
 

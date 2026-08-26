@@ -219,6 +219,120 @@ test_that("all-zero annual groups normalize to zero instead of 0.5", {
   expect_true(all(annual_idx$value == 0))
 })
 
+test_that("GCIM 'Sector'/'Region' column labels are accepted in place of 'Segment'", {
+  annual_tbl <- tibble::tibble(
+    Region = c("US", "Rest of the World"),
+    Country = c("US", "Canada"),
+    Sector = c("Manufacturing", "Manufacturing"),
+    Technology = c("Solar PV", "Solar PV"),
+    Year = c(2024, 2024),
+    Investment = c(10, 4)
+  )
+
+  # The 2026Q1 download drops End_use_application / Facility_Type entirely.
+  capacity_tbl <- tibble::tibble(
+    Region = c("US", "Rest of the World"),
+    Country = c("US", "Canada"),
+    Sector = c("Manufacturing", "Manufacturing"),
+    Technology = c("Solar", "Solar"),
+    Product = c("Modules", "Modules"),
+    Category = c("Current operational capacity", "Current operational capacity"),
+    Value = c(100, 20)
+  )
+
+  out <- investment_momentum(annual_tbl = annual_tbl, capacity_tbl = capacity_tbl)
+
+  expect_invisible(validate_schema(out))
+  expect_true(all(out$supply_chain %in% c("Upstream", "Midstream", "Downstream")))
+  expect_true(any(out$variable == "Operating Capacity Index"))
+})
+
+test_that("investment_momentum_from_excel finds sheets and header rows by content", {
+  skip_if_not_installed("writexl")
+  skip_if_not_installed("readxl")
+
+  path <- withr::local_tempfile(fileext = ".xlsx")
+
+  pad <- function(tbl, notes) {
+    # Mimic the workbook's title/notes rows above the header row.
+    header <- names(tbl)
+    body <- lapply(tbl, as.character)
+    blanks <- rep(NA_character_, length(header))
+    rows <- c(
+      lapply(notes, function(note) c(note, blanks[-1])),
+      list(header),
+      lapply(seq_len(nrow(tbl)), function(i) vapply(body, function(col) col[[i]], character(1)))
+    )
+    out <- as.data.frame(do.call(rbind, rows), stringsAsFactors = FALSE)
+    names(out) <- paste0("V", seq_along(out))
+    out
+  }
+
+  annual <- tibble::tibble(
+    Region = c("US", "Rest of the World"),
+    Country = c("US", "Canada"),
+    Sector = c("Manufacturing", "Manufacturing"),
+    Technology = c("Solar PV", "Solar PV"),
+    Year = c(2022, 2022),
+    Investment = c(1, 2)
+  )
+  annual2 <- annual
+  annual2$Year <- c(2025, 2025)
+  annual2$Investment <- c(9, 3)
+
+  capacity <- tibble::tibble(
+    Region = c("US", "Rest of the World"),
+    Country = c("US", "Canada"),
+    Sector = c("Manufacturing", "Manufacturing"),
+    Technology = c("Solar", "Solar"),
+    Product = c("Modules", "Modules"),
+    Category = c("Current operational capacity", "Announced - anticipated capacity"),
+    Value = c(50, 10)
+  )
+
+  quarterly <- tibble::tibble(
+    Region = c("US"),
+    Country = c("US"),
+    Sector = c("Manufacturing"),
+    Technology = c("Solar"),
+    Quarter = c("2025-Q1"),
+    Investment = c(0.5)
+  )
+
+  writexl::write_xlsx(
+    list(
+      README = data.frame(V1 = "Notes tab that must be ignored."),
+      annual_actual_investment = pad(dplyr::bind_rows(annual, annual2), c("Capital investment", NA)),
+      mfg_ind_capacity = pad(capacity, c("Country-level capacity : 2025", rep(NA, 8))),
+      mfg_ind_quarterly_actual_inv = pad(quarterly, c("Quarterly investment", NA, NA))
+    ),
+    path,
+    col_names = FALSE
+  )
+
+  out <- investment_momentum_from_excel(path, momentum_window_years = 3)
+
+  expect_invisible(validate_schema(out))
+  expect_true(any(out$variable == "Investment Momentum Index"))
+  expect_true(any(out$variable == "Operating Capacity Index"))
+  expect_true(any(out$variable == "Pipeline Capacity Index"))
+  expect_setequal(unique(out$Country), c("United States", "Canada"))
+})
+
+test_that("investment_momentum_from_excel errors informatively on an unusable workbook", {
+  skip_if_not_installed("writexl")
+  skip_if_not_installed("readxl")
+
+  path <- withr::local_tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(list(annual_actual_investment = data.frame(x = 1)), path)
+
+  expect_error(
+    investment_momentum_from_excel(path),
+    "Could not locate the manufacturing/industry capacity sheet",
+    fixed = TRUE
+  )
+})
+
 test_that("standardize_theme_types fallback preserves rows when country_info mismatches", {
   annual_tbl <- tibble::tibble(
     Country = c("US", "Canada"),

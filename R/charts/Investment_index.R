@@ -1,7 +1,7 @@
 investment_monitor_path <- file.path(
-  raw_data_path, "GCIM_Investment_Capacity_aggregated.xlsx")
+  raw_data_path, "CIM_Global_Data_Download_2026_q1/CIM_Global_Data_Download_2018_2025/Clean Investment Monitor Global - Data Download (Dashboard Data).xlsx")
 
-gcim <- read_excel(investment_monitor_path,2, skip=2)
+gcim <- read_excel(investment_monitor_path,4, skip=3)
 
 investment_index<-readRDS(paste0(processed_dir,"/investment_momentum_tbl.rds"))
 
@@ -10,7 +10,38 @@ library(ggplot2)
 library(forcats)
 library(scales)
 
-countries <- c("India", "Viet Nam", "South Korea", "Japan")
+
+#Time Series
+gcim_ts <- gcim %>%
+  filter(
+    Country %in% c("India", "South Korea", "Japan", "US"),
+    Sector == "Manufacturing"
+  ) %>%
+  mutate(Quarter = zoo::as.yearqtr(Quarter, format = "%Y-Q%q")) %>%
+  group_by(Quarter, Country) %>%
+  summarize(
+    Investment = sum(Investment, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  tidyr::complete(
+    Quarter,
+    Country,
+    fill = list(Investment = 0)
+  ) %>%
+  group_by(Country) %>%
+  mutate(
+    index = Investment / Investment[Quarter == "2021 Q1"] * 100
+  ) %>%
+  ungroup() %>%
+  select(Quarter, Country, index) %>%
+  pivot_wider(
+    names_from = Country,
+    values_from = index
+  )
+write.csv(gcim_ts,"data/processed/charts/gcim_ts.csv")
+
+
+countries <- c("India", "South Korea", "Japan")
 var_to_plot <- "Investment Momentum Index" 
 
 df_plot <- investment_index %>%
@@ -57,7 +88,7 @@ library(tidyr)
 library(ggplot2)
 library(scales)
 
-countries <- c("India","Viet Nam","South Korea","Japan")
+countries <- c("India","South Korea","Japan")
 var_to_plot <- "Annual Investment Index"   # <-- radar works best with an index
 
 df <- investment_index %>%
@@ -96,11 +127,21 @@ ggplot(df_closed, aes(x = supply_chain, y = value, group = tech, color=tech)) +
     axis.ticks = element_blank()
   )
 
+
+df_ts <- investment_index %>%
+  filter(Country %in% "India",
+         variable=="Annual Investment Index" ) %>%
+  mutate(industry=paste(tech,"-",supply_chain)) %>%
+  select(Year,Country,industry,value) %>%
+  pivot_wider(names_from=industry,values_from=value)
+
+write.csv(df_ts,"data/processed/charts/investment_index_ts_India.csv")
+
 library(dplyr)
 library(ggplot2)
 library(scales)
 
-countries <- c("India","Vietnam","South Korea","Japan")
+countries <- c("India","South Korea","Japan")
 var_to_plot <- "Annual Investment (USD bn, 2024$)"
 
 df_radial <- investment_index %>%

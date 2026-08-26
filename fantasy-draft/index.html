@@ -7,6 +7,7 @@
   <meta name="description" content="Draft the Electro-Industrial Stack. Pick your Ally, build your supply-chain dynasty, out-draft the alliance." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles-coord.css" />
 </head>
 <body>
   <div class="sky" id="sky"></div>
@@ -17,12 +18,12 @@
       <div class="brand">
         <div class="brand-mark">⚡</div>
         <div>
-          <h1>Allied Industrial Policy — Fantasy Draft</h1>
-          <div class="sub">The Electro-Industrial Stack · Season 1</div>
+          <h1 id="brandTitle">Allied Industrial Policy — Fantasy Draft</h1>
+          <div class="sub" id="brandSub">The Electro-Industrial Stack · Season 1</div>
         </div>
       </div>
       <div class="spacer"></div>
-      <div class="pill">21 Fighters · <b>39</b> sub-sectors</div>
+      <div class="pill" id="brandPill">21 Fighters · <b>39</b> sub-sectors</div>
     </header>
 
     <!-- ================= SETUP SCREEN ================= -->
@@ -36,6 +37,31 @@
           Out-draft your rival allies. Own the chokepoints. Build the deepest stack.</p>
       </div>
 
+      <!-- ===== GAME MODE PICKER ===== -->
+      <div class="section-title">
+        <h3>Choose your game</h3><div class="rule"></div>
+        <span class="hint">Two ways to play the same industrial stack</span>
+      </div>
+      <div class="mode-grid" id="modeGrid">
+        <button class="mode-card selected" data-mode="draft">
+          <div class="mc-tag">Mode 1 · 1–21 players</div>
+          <div class="mc-title">Fantasy Draft</div>
+          <div class="mc-q">“What sectors should <b>my country</b> prioritize?”</div>
+          <p class="mc-body">Build the strongest national industrial portfolio. Snake-draft the 39 sub-sectors
+            of the Electro-Industrial Stack against rival allies, then take the alliance into the final boss fight.</p>
+          <div class="mc-foot">Competitive · draft · scoring</div>
+        </button>
+        <button class="mode-card" data-mode="coordination">
+          <div class="mc-tag">Mode 2 · 3–6 players</div>
+          <div class="mc-title" id="coordModeTitle">Alliance Architect</div>
+          <div class="mc-q">“Given what <b>every</b> country wants, what bargains beat acting alone?”</div>
+          <p class="mc-body">Negotiate the strongest collective industrial strategy. Plan privately, discover what the
+            alliance actually built, then trade roles, finance and offtake until the allied chain works — without
+            selling out your own national interest.</p>
+          <div class="mc-foot">Cooperative-competitive · negotiation · coordinative optimisation</div>
+        </button>
+      </div>
+
       <div class="section-title">
         <h3>Select your fighter</h3><div class="rule"></div>
         <span class="hint">Each ally has home-turf synergies + signature picks</span>
@@ -44,7 +70,7 @@
 
       <div class="ally-detail" id="allyDetail" style="display:none"></div>
 
-      <div class="setup-actions">
+      <div class="setup-actions" id="draftSetupActions">
         <button class="btn red" id="startBtn" disabled>Solo vs AI — Enter Draft ▸</button>
         <div class="field">Allies
           <select id="alliesSel">
@@ -85,8 +111,38 @@
         </div>
       </div>
 
+      <!-- Alliance Architect setup (coordination mode only) -->
+      <div class="setup-actions" id="coordSetupActions" style="display:none">
+        <button class="btn red" id="coordSoloBtn" disabled>Practice vs AI allies ▸</button>
+        <div class="field">Scenario
+          <select id="coordScenarioSel"></select>
+        </div>
+        <div class="field">Rounds
+          <select id="coordRoundsSel">
+            <option value="2">2 rounds</option>
+            <option value="3" selected>3 rounds</option>
+            <option value="4">4 rounds</option>
+          </select>
+        </div>
+        <div class="field">Policy tokens
+          <select id="coordTokensSel">
+            <option value="8">8 per round</option>
+            <option value="10" selected>10 per round</option>
+            <option value="12">12 per round</option>
+          </select>
+        </div>
+        <div class="field">AI allies
+          <select id="coordBotsSel">
+            <option value="2">2 (3 countries)</option>
+            <option value="3" selected>3 (4 countries)</option>
+            <option value="4">4 (5 countries)</option>
+            <option value="5">5 (6 countries)</option>
+          </select>
+        </div>
+      </div>
+
       <div class="section-title"><h3>Play with friends</h3><div class="rule"></div>
-        <span class="hint">Create a league · share the link · draft together live</span></div>
+        <span class="hint" id="mpHint">Create a league · share the link · draft together live</span></div>
       <div class="mp-row">
         <input id="playerName" type="text" maxlength="16" placeholder="Your name" />
         <button class="btn gold" id="createLeagueBtn" disabled>Create League ▶</button>
@@ -181,6 +237,9 @@
     <!-- ================= SEASON SCREEN ================= -->
     <section id="seasonScreen" class="screen"></section>
 
+    <!-- ============ ALLIANCE ARCHITECT (coordination mode) ============ -->
+    <section id="coordScreen" class="screen"></section>
+
     <footer>
       A playful companion to the <b>Opportunity Security Indices</b> — Energy Security · Economic Opportunity · Partnership Strength.<br>
       Sub-sector taxonomy from the Electro-Industrial Stack. Stats are for fantasy fun, not investment advice. ⚡🌱
@@ -189,7 +248,6 @@
 
   <div class="toast" id="toast"></div>
   <div class="fight-overlay" id="fightOverlay"></div>
-  <div class="arcade-overlay" id="arcadeOverlay"></div>
 
   <!-- Firebase (multiplayer). Loads from CDN on your hosted site; ignored offline/in preview. -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -200,10 +258,13 @@
   <script src="avatars.js"></script>
   <script src="fight-frames.js"></script>
   <script src="art.js"></script>
-  <script src="arcade.js"></script>
   <script src="scoring.js"></script>
   <script src="net.js"></script>
+  <!-- Alliance Architect: scenario config → engine → UI -->
+  <script src="coord-scenarios.js"></script>
+  <script src="coord-model.js"></script>
   <script src="app.js"></script>
+  <script src="coord.js"></script>
   <script src="lobby.js"></script>
   <script src="season.js"></script>
 </body>
