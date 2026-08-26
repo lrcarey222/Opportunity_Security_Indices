@@ -447,7 +447,7 @@ country_info <- standardize_country_info(country_info)
   ei <- read.csv(raw_path)
   # Shared WDI country reference for multiple themes.
   gdp_data <- read.csv(wdi_gdp_path)
-  country_reference <- foreign_dependency_build_country_reference(ei, year = 2024)
+  country_reference <- foreign_dependency_build_country_reference(ei, year = 2025)
   
 
   # Theme: Energy access and consumption (EI data).

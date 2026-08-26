@@ -14,20 +14,20 @@ energy_consumption_clean_ei <- function(ei, year) {
     ) %>%
     dplyr::filter(
       Year == year,
-      Var %in% c("pop", "coalcons_ej", "oilcons_ej", "gascons_ej",
-                "solar_ej", "wind_ej", "nuclear_ej"),
+      Var %in% c("pop", "coal_tes_ej", "oil_tes_ej", "gas_tes_ej",
+                "solar_tes_ej", "wind_tes_ej", "nuclear_tes_ej"),
       !grepl("World|Other|Total|OECD|OPEC", Country)
     ) %>%
     dplyr::select(Country, Var, Value) %>%
     tidyr::pivot_wider(names_from = Var, values_from = Value) %>%
     dplyr::transmute(
       Country,
-      coal_raw = coalcons_ej / pop,
-      oil_raw = oilcons_ej / pop,
-      gas_raw = gascons_ej / pop,
-      solar_raw = solar_ej / pop,
-      wind_raw = wind_ej / pop,
-      nuclear_raw = nuclear_ej / pop
+      coal_raw = coal_tes_ej / pop,
+      oil_raw = oil_tes_ej / pop,
+      gas_raw = gas_tes_ej / pop,
+      solar_raw = solar_tes_ej / pop,
+      wind_raw = wind_tes_ej / pop,
+      nuclear_raw = nuclear_tes_ej / pop
     ) %>%
     dplyr::mutate(dplyr::across(dplyr::ends_with("_raw"), ~tidyr::replace_na(.x, 0)))
 }
@@ -57,9 +57,11 @@ energy_consumption_build_ei_indices <- function(ei_clean, year, gamma = 0.5) {
       data_type,
       value,
       Year = year,
-      source = "EI Statistical Review of World Energy (2024)",
+      source = "EI Statistical Review of World Energy (2025)",
       explanation = dplyr::case_when(
-        data_type == "raw" ~ stringr::str_glue("Per-capita {tech} consumption = {tech}cons_ej ÷ pop"),
+        data_type == "raw" ~ stringr::str_glue(
+          "Per-capita {tech} consumption = {stringr::str_to_lower(tech)}_tes_ej ÷ pop"
+        ),
         data_type == "index" ~ stringr::str_glue("Normalized index of per-capita {tech} consumption")
       )
     )
@@ -75,7 +77,11 @@ energy_consumption_build_ei_growth <- function(ei_base, ei_target, base_year, ta
     ) %>%
     dplyr::filter(data_type == "raw") %>%
     dplyr::mutate(growth_raw = (value_target - value_base) / value_base) %>%
-    dplyr::group_by(Country) %>%
+    # Normalize each tech's growth ACROSS countries, matching how the level index in
+    # energy_consumption_build_ei_indices() scales each tech column. Grouping by Country
+    # instead ranks a country's fuels against each other, which hands every country a
+    # 1.000 for whichever of its own fuels grew fastest.
+    dplyr::group_by(tech) %>%
     dplyr::mutate(growth_index = median_scurve(growth_raw, gamma = gamma)) %>%
     dplyr::ungroup() %>%
     dplyr::select(-data_type) %>%
@@ -94,7 +100,7 @@ energy_consumption_build_ei_growth <- function(ei_base, ei_target, base_year, ta
       data_type,
       value,
       Year = paste0(base_year, "-", target_year),
-      source = "EI Statistical Review of World Energy (2024)",
+      source = "EI Statistical Review of World Energy (2025)",
       explanation = dplyr::case_when(
         data_type == "raw" ~ stringr::str_glue("{base_year}-{target_year} growth of per-capita consumption"),
         data_type == "index" ~ "Normalized index of per-capita consumption growth"
@@ -253,8 +259,8 @@ energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, coun
 energy_consumption <- function(ei,
                                bnef_neo,
                                country_info,
-                               base_year = 2019,
-                               target_year = 2024,
+                               base_year = 2020,
+                               target_year = 2025,
                                techs = c(
                                  "Electric Vehicles",
                                  "Nuclear",

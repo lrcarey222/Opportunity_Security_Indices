@@ -4,7 +4,7 @@ library(dplyr)
 library(tidyr)
 library(countrycode)
 
-build_surplus_vs_tes_share_ratio <- function(ei, year = 2024, verbose = TRUE) {
+build_surplus_vs_tes_share_ratio <- function(ei, year = 2025, verbose = TRUE) {
   
   # ---------- helper: standard ISO map from EI ----------
   iso_map <- ei %>%
@@ -17,7 +17,7 @@ build_surplus_vs_tes_share_ratio <- function(ei, year = 2024, verbose = TRUE) {
     select(ISO3166_alpha3, Country, Year, Var, Value) %>%
     filter(
       Year == as.character(year),
-      Var %in% c("pop", "tes_ej", "tes_gj_pc", "oilcons_ej", "gascons_ej", "coalcons_ej"),
+      Var %in% c("pop", "tes_ej", "tes_gj_pc", "oil_tes_ej", "gas_tes_ej", "coal_tes_ej"),
       !is.na(ISO3166_alpha3), ISO3166_alpha3 != ""
     ) %>%
     distinct() %>%
@@ -30,9 +30,9 @@ build_surplus_vs_tes_share_ratio <- function(ei, year = 2024, verbose = TRUE) {
       pop = as.numeric(pop),
       tes_ej = as.numeric(tes_ej),
       tes_gj_pc = as.numeric(tes_gj_pc),
-      oilcons_ej = as.numeric(coalesce(oilcons_ej, 0)),
-      gascons_ej = as.numeric(coalesce(gascons_ej, 0)),
-      coalcons_ej = as.numeric(coalesce(coalcons_ej, 0))
+      oil_tes_ej = as.numeric(coalesce(oil_tes_ej, 0)),
+      gas_tes_ej = as.numeric(coalesce(gas_tes_ej, 0)),
+      coal_tes_ej = as.numeric(coalesce(coal_tes_ej, 0))
     ) %>%
     mutate(
       total_energy_ej = case_when(
@@ -40,7 +40,7 @@ build_surplus_vs_tes_share_ratio <- function(ei, year = 2024, verbose = TRUE) {
         is.na(tes_ej) & !is.na(tes_gj_pc) & !is.na(pop) ~ (tes_gj_pc * pop) / 1e9, # GJ -> EJ
         TRUE ~ NA_real_
       ),
-      fossil_cons_ej = oilcons_ej + gascons_ej + coalcons_ej
+      fossil_cons_ej = oil_tes_ej + gas_tes_ej + coal_tes_ej
     )
   
   if (all(is.na(cons_wide$total_energy_ej))) {
@@ -49,17 +49,17 @@ build_surplus_vs_tes_share_ratio <- function(ei, year = 2024, verbose = TRUE) {
   
   cons_tbl <- cons_wide %>%
     select(ISO3166_alpha3, Country, pop, total_energy_ej,
-           oilcons_ej, gascons_ej, coalcons_ej, fossil_cons_ej) %>%
+           oil_tes_ej, gas_tes_ej, coal_tes_ej, fossil_cons_ej) %>%
     pivot_longer(
-      cols = c(oilcons_ej, gascons_ej, coalcons_ej, fossil_cons_ej),
+      cols = c(oil_tes_ej, gas_tes_ej, coal_tes_ej, fossil_cons_ej),
       names_to = "tech_raw",
       values_to = "tech_consumption_ej"
     ) %>%
     mutate(
       tech = case_when(
-        tech_raw == "oilcons_ej" ~ "Oil",
-        tech_raw == "gascons_ej" ~ "Gas",
-        tech_raw == "coalcons_ej" ~ "Coal",
+        tech_raw == "oil_tes_ej" ~ "Oil",
+        tech_raw == "gas_tes_ej" ~ "Gas",
+        tech_raw == "coal_tes_ej" ~ "Coal",
         tech_raw == "fossil_cons_ej" ~ "Fossil",
         TRUE ~ NA_character_
       ),
@@ -163,12 +163,12 @@ build_surplus_vs_tes_share_ratio <- function(ei, year = 2024, verbose = TRUE) {
 }
 
 # Example:
-df_compare <- build_surplus_vs_tes_share_ratio(ei, year = 2024, verbose = TRUE)
+df_compare <- build_surplus_vs_tes_share_ratio(ei, year = 2025, verbose = TRUE)
 # df_compare %>% filter(ISO3166_alpha3 == "USA")
 
 df_fossil <- df_compare %>%
   inner_join(gdp_data %>%
-              filter(year=="2024") %>%
+              filter(year=="2025") %>%
               select(iso3c,NY.GDP.MKTP.CD) %>%
               rename(gdp="NY.GDP.MKTP.CD") %>%
                slice_max(order_by=gdp,n=75),by=c("ISO3166_alpha3"="iso3c")) %>%
@@ -182,7 +182,7 @@ library(forcats)
 # df is your output from build_surplus_vs_tes_share_ratio(), filtered to tech == "Fossil"
 df_fossil <- df_compare %>%
   inner_join(gdp_data %>%
-               filter(year=="2024") %>%
+               filter(year=="2025") %>%
                select(iso3c,NY.GDP.MKTP.CD) %>%
                rename(gdp="NY.GDP.MKTP.CD") %>%
                slice_max(order_by=gdp,n=75),by=c("ISO3166_alpha3"="iso3c")) %>%
@@ -240,7 +240,7 @@ library(httr)
 library(jsonlite)
 library(stringr)
 
-target_year <- 2024
+target_year <- 2025
 
 oil_shock  <- 0.30
 gas_shock  <- 0.40
