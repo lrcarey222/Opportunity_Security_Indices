@@ -65,6 +65,51 @@ investment_assert_columns <- function(tbl, expected, label) {
   invisible(tbl)
 }
 
+# GCIM relabels columns between releases (e.g. "Sector" replaced "Segment" in the
+# 2026Q1 download). Inputs are renamed to the canonical names used below rather
+# than pinned to whatever the current release happens to call them.
+investment_input_column_map <- c(
+  region = "Region",
+  country = "Country",
+  segment = "Segment",
+  sector = "Segment",
+  market_sector = "Segment",
+  technology = "Technology",
+  product = "Product",
+  category = "Category",
+  capacity_status = "Category",
+  capacity_category = "Category",
+  year = "Year",
+  quarter = "Quarter",
+  investment = "Investment",
+  value = "Value",
+  end_use_application = "End_use_application",
+  facility_type = "Facility_Type",
+  investment_status = "Investment_Status",
+  announcement_quarter = "Announcement_Quarter"
+)
+
+investment_canonical_column <- function(x) {
+  raw <- as.character(x)
+  raw[is.na(raw)] <- ""
+  raw <- stringr::str_squish(raw)
+
+  key <- stringr::str_to_lower(raw)
+  key <- stringr::str_replace_all(key, "[^a-z0-9]+", "_")
+  key <- stringr::str_replace_all(key, "^_+|_+$", "")
+
+  mapped <- unname(investment_input_column_map[key])
+  dplyr::coalesce(mapped, raw)
+}
+
+investment_standardize_input_names <- function(tbl) {
+  if (is.null(tbl)) {
+    return(tbl)
+  }
+  names(tbl) <- investment_canonical_column(names(tbl))
+  tbl
+}
+
 investment_momentum <- function(annual_tbl,
                                 capacity_tbl,
                                 quarterly_tbl = NULL,
@@ -78,6 +123,10 @@ investment_momentum <- function(annual_tbl,
     country_reference_std <- standardize_country_names(country_reference)
     country_reference_std <- unique(country_reference_std[!is.na(country_reference_std) & nzchar(country_reference_std)])
   }
+
+  annual_tbl <- investment_standardize_input_names(annual_tbl)
+  capacity_tbl <- investment_standardize_input_names(capacity_tbl)
+  quarterly_tbl <- investment_standardize_input_names(quarterly_tbl)
 
   investment_assert_columns(
     annual_tbl,
@@ -124,9 +173,16 @@ investment_momentum <- function(annual_tbl,
 
   annual_clean <- dplyr::bind_rows(annual_regular, annual_critical_minerals)
 
+  # Critical Minerals has no direct tech mapping but is routed upstream above,
+  # so it is not a dropped technology.
   dropped_techs <- annual_tbl %>%
     dplyr::mutate(mapped_tech = investment_map_tech(Technology)) %>%
-    dplyr::filter(is.na(mapped_tech), !is.na(Technology), Technology != "") %>%
+    dplyr::filter(
+      is.na(mapped_tech),
+      !investment_is_critical_minerals(Technology),
+      !is.na(Technology),
+      Technology != ""
+    ) %>%
     dplyr::distinct(Technology) %>%
     dplyr::pull(Technology)
   if (length(dropped_techs) > 0) {
@@ -415,6 +471,80 @@ investment_momentum <- function(annual_tbl,
   out
 }
 
+# Sheet names have also moved between releases (capacity used to live on the
+# announced-investment tab), so sheets are matched by pattern, most specific first.
+investment_gcim_sheet_patterns <- list(
+  annual = c("^annual_actual_investment$", "annual.*actual.*invest"),
+  quarterly = c("^mfg_ind_quarterly_actual_inv", "quarter.*actual.*inv"),
+  capacity = c("^mfg_ind_capacity$", "^mfg.?ind.*capacity", "manufactur.*capacity")
+)
+
+investment_resolve_gcim_sheet <- function(sheets, patterns, label, required = TRUE) {
+  for (pattern in patterns) {
+    hits <- sheets[stringr::str_detect(sheets, stringr::regex(pattern, ignore_case = TRUE))]
+    if (length(hits) > 0) {
+      return(hits[[1]])
+    }
+  }
+
+  if (!required) {
+    return(NA_character_)
+  }
+
+  stop(
+    "Could not locate the ", label, " sheet in the GCIM investment workbook. ",
+    "Tried patterns: ", paste(patterns, collapse = ", "),
+    ". Found sheets: ", paste(sheets, collapse = ", "), "."
+  )
+}
+
+# Header rows sit below a variable number of title/notes rows, so the header is
+# found by scanning for the first row that carries all required column labels.
+investment_read_gcim_sheet <- function(path, sheet, required_columns, label, probe_rows = 30) {
+  probe <- suppressMessages(readxl::read_excel(
+    path,
+    sheet = sheet,
+    col_names = FALSE,
+    n_max = probe_rows
+  ))
+
+  header_row <- NA_integer_
+  for (i in seq_len(nrow(probe))) {
+    candidate <- investment_canonical_column(
+      vapply(probe[i, , drop = FALSE], function(col) as.character(col)[[1]], character(1))
+    )
+    if (all(required_columns %in% candidate)) {
+      header_row <- i
+      break
+    }
+  }
+
+  if (is.na(header_row)) {
+    stop(
+      "Unexpected column layout in GCIM investment workbook sheet '", sheet, "' (", label, "). ",
+      "Expected columns: ", paste(required_columns, collapse = ", "),
+      ". No header row carrying them was found in the first ", probe_rows, " rows. ",
+      "Row 1 reads: ",
+      paste(
+        investment_canonical_column(
+          vapply(probe[1, , drop = FALSE], function(col) as.character(col)[[1]], character(1))
+        ),
+        collapse = ", "
+      ),
+      "."
+    )
+  }
+
+  tbl <- suppressMessages(readxl::read_excel(path, sheet = sheet, skip = header_row - 1))
+  tbl <- investment_standardize_input_names(tbl)
+
+  named_cols <- nzchar(names(tbl)) & !stringr::str_detect(names(tbl), "^\\.{3}[0-9]+$")
+  tbl <- tbl[, named_cols, drop = FALSE]
+
+  investment_assert_columns(tbl, required_columns, label = paste0(label, " sheet '", sheet, "'"))
+  tbl
+}
+
 investment_momentum_from_excel <- function(path,
                                            momentum_window_years = 3,
                                            capacity_year = 2025L,
@@ -428,46 +558,51 @@ investment_momentum_from_excel <- function(path,
     )
   }
 
-  expected_sheets <- c(
-    "annual_investment",
-    "quarterly_investment",
-    "operating_and_planned_capacity"
-  )
   sheets <- readxl::excel_sheets(path)
-  missing_sheets <- setdiff(expected_sheets, sheets)
-  if (length(missing_sheets) > 0) {
-    stop(
-      "Unexpected sheet layout in ", path,
-      ". Missing sheets: ", paste(missing_sheets, collapse = ", "),
-      ". Expected sheets: ", paste(expected_sheets, collapse = ", "),
-      ". Found: ", paste(sheets, collapse = ", ")
-    )
-  }
-
-  annual_tbl <- readxl::read_excel(path, sheet = "annual_investment", skip = 2)
-  quarterly_tbl <- readxl::read_excel(path, sheet = "quarterly_investment", skip = 3)
-  capacity_tbl <- readxl::read_excel(path, sheet = "operating_and_planned_capacity", skip = 8)
-
-  expected_annual <- c("Country", "Segment", "Technology", "Year", "Investment")
-  expected_quarterly <- c("Country", "Segment", "Technology", "Quarter", "Investment")
-  expected_capacity <- c(
-    "Country", "Segment", "Technology", "Product", "End_use_application",
-    "Facility_Type", "Category", "Value"
+  annual_sheet <- investment_resolve_gcim_sheet(
+    sheets, investment_gcim_sheet_patterns$annual, "annual investment"
+  )
+  capacity_sheet <- investment_resolve_gcim_sheet(
+    sheets, investment_gcim_sheet_patterns$capacity, "manufacturing/industry capacity"
+  )
+  quarterly_sheet <- investment_resolve_gcim_sheet(
+    sheets, investment_gcim_sheet_patterns$quarterly, "quarterly investment",
+    required = FALSE
   )
 
-  missing_annual <- setdiff(expected_annual, names(annual_tbl))
-  missing_quarterly <- setdiff(expected_quarterly, names(quarterly_tbl))
-  missing_capacity <- setdiff(expected_capacity, names(capacity_tbl))
+  annual_tbl <- investment_read_gcim_sheet(
+    path, annual_sheet,
+    c("Country", "Segment", "Technology", "Year", "Investment"),
+    label = "annual investment"
+  )
+  capacity_tbl <- investment_read_gcim_sheet(
+    path, capacity_sheet,
+    c("Country", "Segment", "Technology", "Product", "Category", "Value"),
+    label = "manufacturing/industry capacity"
+  )
 
-  if (length(missing_annual) > 0 || length(missing_quarterly) > 0 || length(missing_capacity) > 0) {
-    stop(
-      "Unexpected column layout in GCIM investment workbook. ",
-      "Expected annual columns: ", paste(expected_annual, collapse = ", "), "; ",
-      "found: ", paste(names(annual_tbl), collapse = ", "), ". ",
-      "Expected quarterly columns: ", paste(expected_quarterly, collapse = ", "), "; ",
-      "found: ", paste(names(quarterly_tbl), collapse = ", "), ". ",
-      "Expected capacity columns: ", paste(expected_capacity, collapse = ", "), "; ",
-      "found: ", paste(names(capacity_tbl), collapse = ", "), "."
+  # Quarterly investment is carried through for callers but is not used by any
+  # current index component, so a missing/renamed sheet is a message, not a stop.
+  quarterly_tbl <- NULL
+  if (is.na(quarterly_sheet)) {
+    message(
+      "No quarterly investment sheet found in ", path,
+      "; continuing without it. Found sheets: ", paste(sheets, collapse = ", ")
+    )
+  } else {
+    quarterly_tbl <- tryCatch(
+      investment_read_gcim_sheet(
+        path, quarterly_sheet,
+        c("Country", "Segment", "Technology", "Quarter", "Investment"),
+        label = "quarterly investment"
+      ),
+      error = function(e) {
+        message(
+          "Skipping quarterly investment sheet '", quarterly_sheet, "': ",
+          conditionMessage(e)
+        )
+        NULL
+      }
     )
   }
 

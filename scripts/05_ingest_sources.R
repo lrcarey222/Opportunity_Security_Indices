@@ -69,6 +69,12 @@ fetch_counts <- c(fetched = 0L, fresh = 0L, failed = 0L, skipped = 0L)
 
 reference_dir <- raw_inputs_reference_dir(repo_root)
 
+# Regenerate the HS6 crosswalk views from the single master in data/reference before
+# anything reads them. Historically three differently-shaped crosswalks were staged
+# independently and had drifted apart; they are now derived from one table.
+source(file.path(repo_root, "scripts", "04_build_hs6_views.R"))
+build_hs6_views(repo_root = repo_root, raw_data_path = raw_data_path)
+
 for (entry in staged_entries) {
   status <- sync_raw_input_entry(
     entry, sharepoint_raw_dir, raw_data_path,
@@ -154,16 +160,33 @@ subset_request_chunk <- function(request_df, chunk_index, chunk_count) {
   request_df[idx[((idx - 1) %% chunk_count) + 1 == chunk_index], , drop = FALSE]
 }
 
-build_requests <- function(reporters, partners, commodity_codes, years, flows, partner_chunk_size = 50) {
+# Build the request grid in the shape scripts/utils/comtrade_client.R validates:
+# request_id, reporter, partner, commodity_code, start_date, end_date, flow_direction,
+# frequency. request_id is assigned before chunking so ids stay stable and unique
+# across chunked runs (COMTRADE_CHUNK_INDEX).
+build_requests <- function(reporters, partners, commodity_codes, years, flows,
+                           partner_chunk_size = 50, frequency = "A") {
   partner_chunks <- split_vec(partners, chunk_size = partner_chunk_size)
+  # Expand over a single year column. Crossing start_date and end_date separately
+  # would emit every (start, end) pair - including inverted ranges - which is 5x the
+  # requests for the multi-year allied pull and wrong for all but the diagonal.
   tidyr::expand_grid(
     reporter = reporters,
-    start_date = years,
-    end_date = years,
+    year = years,
     flow_direction = flows,
     commodity_code = commodity_codes,
     partner = partner_chunks
-  )
+  ) %>%
+    dplyr::mutate(
+      request_id = dplyr::row_number(),
+      start_date = year,
+      end_date = year,
+      frequency = frequency
+    ) %>%
+    dplyr::select(
+      request_id, reporter, partner, commodity_code,
+      start_date, end_date, flow_direction, frequency
+    )
 }
 
 if (!skip_data_downloads) {
@@ -303,6 +326,19 @@ imf_pcps_stale <- identical(imf_pcps_excel_status, "copied") ||
     logical(1)
   )))
 needs_imf_pcps <- force_refresh || !all(file.exists(imf_pcps_outputs)) || imf_pcps_stale
+
+# The derivation reads the workbook directly, so without it there is nothing to derive.
+# This is not fatal: 10_build_themes.R falls back to imf_commodity_prices.csv for the
+# Energy Prices theme (see OPSI_ENERGY_PRICES_SOURCE).
+if (needs_imf_pcps && !file.exists(imf_pcps_excel_path)) {
+  message(
+    "IMF PCPS: ", basename(imf_pcps_excel_path), " not found in ", raw_data_path,
+    " or sharepoint_raw_dir; skipping the PCPS derivation.\n",
+    "  Energy Prices will read imf_commodity_prices.csv instead."
+  )
+  needs_imf_pcps <- FALSE
+}
+
 if (needs_imf_pcps && !skip_data_downloads) {
   old_snapshot_option <- getOption("opportunity_security.raw_snapshot_dir")
   options(opportunity_security.raw_snapshot_dir = raw_data_path)

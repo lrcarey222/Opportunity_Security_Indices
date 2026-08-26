@@ -176,7 +176,6 @@ economic_opportunity_inputs <- list(
   energy_consumption = energy_consumption_tbl,
   energy_prices = energy_prices_tbl,
   export_feasibility = export_feasibility_tbl,
-  foreign_dependency = foreign_dependency_tbl,
   future_demand = future_demand_tbl,
   lcoe_competitiveness = lcoe_competitiveness_tbl,
   market_share_manufacturing = market_share_manufacturing_tbl,
@@ -336,7 +335,20 @@ strategic_index <- left_join(
   filter(sector != "Geothermal - Midstream") %>%
   arrange(desc(strategic_index))
 
+allies<- country_info %>%
+  filter(iso3c %in% 
+           c("USA","CAN", "JPN","AUS", "IND","MEX","KOR","GBR","DEU","FRA","ITA","BRA","SAU", "ZAF", "IDN", "NOR", "UAE","VNM","KEN","DNK","ARG","MAR","CHL"))
 
+allied_index<-strategic_index %>%
+  filter(Country %in% allies$country,
+         supply_chain %in% c("Midstream","Upstream"),
+         !is.na(strategic_index),
+         !tech %in% c("Geothermal","Green Hydrogen")) %>%
+  group_by(Country) %>%
+  slice_max(order_by=strategic_index,n=1)
+
+write.csv(allied_index,"data/processed/charts/allied_strategic.csv")
+  
 
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
   file.path(repo_root, config$outputs_dir)
@@ -404,12 +416,12 @@ countries_export <- c("Japan", "India", "South Korea", "Viet Nam", "United State
 
 # Build the 4 data frames (and name sheets as requested)
 sheets <- list(
-  "Japan"   = strategic_index %>% filter(Country == "Japan"),
-  "India"   = strategic_index %>% filter(Country == "India"),
-  "Korea"   = strategic_index %>% filter(Country %in% c("Korea", "South Korea")),
-  "Viet Nam"= strategic_index %>% filter(Country == "Viet Nam"),
-  "USA"= strategic_index %>% filter(Country == "United States"),
-  "UK" = strategic_index %>% filter(Country=="United Kingdom")
+  "Japan"   = strategic_index %>% filter(Country == "Japan") %>% mutate(es=1-es),
+  "India"   = strategic_index %>% filter(Country == "India") %>% mutate(es=1-es),
+  "Korea"   = strategic_index %>% filter(Country %in% c("Korea", "South Korea")) %>% mutate(es=1-es),
+  "Viet Nam"= strategic_index %>% filter(Country == "Viet Nam") %>% mutate(es=1-es),
+  "USA"= strategic_index %>% filter(Country == "United States") %>% mutate(es=1-es),
+  "UK" = strategic_index %>% filter(Country=="United Kingdom") %>% mutate(es=1-es)
 )
 
 # Keep only requested columns, sort, and (optionally) rename for the sheet
@@ -510,4 +522,8 @@ ggplot(plot_df %>% filter(Country=="United Kingdom"), aes(x = sector_key, y = co
   scale_x_discrete(labels = function(x) sub("^.*\\|\\|", "", x)) +
   scale_fill_manual(values = rmi_palette) +
   labs(x = NULL, y = "Weighted contribution to strategic_index", fill = NULL) +
-  theme_minimal()
+  theme_minimal
+
+strategic_asia <- strategic_index %>%
+  inner_join(country_info %>%
+               filter(region=="East Asia & Pacific"),by=c("Country"="country"))

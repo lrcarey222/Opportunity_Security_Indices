@@ -12,7 +12,10 @@
 ## Config -------------------------------------------------------------------
 
 opsi_fetch_enabled <- function() {
-  !(tolower(Sys.getenv("OPSI_SKIP_FETCH", "false")) %in% c("1", "true", "yes"))
+  truthy <- function(name) tolower(Sys.getenv(name, "false")) %in% c("1", "true", "yes")
+  # SKIP_DATA_DOWNLOADS is the pipeline-wide "no network" switch used by CI, so it must
+  # disable fetchers too; OPSI_SKIP_FETCH turns off only the fetchers.
+  !truthy("OPSI_SKIP_FETCH") && !truthy("SKIP_DATA_DOWNLOADS")
 }
 
 opsi_fetch_required <- function() {

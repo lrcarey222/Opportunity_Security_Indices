@@ -28,7 +28,11 @@
     // screen — show the join gate so they can pick a fighter and enter. (Also covers
     // the brief moment during create/join before setPlayer lands.)
     const isMember = !!(snap.players && snap.players[ADAPTER.me]);
-    if (!isMember) { enterJoinMode(snap.id); return; }
+    if (!isMember) {
+      // match the home screen to the room you're about to join
+      if (snap.settings && snap.settings.gameMode === "coordination" && typeof setGameMode === "function") setGameMode("coordination");
+      enterJoinMode(snap.id); return;
+    }
     STATE.mode = "league";
     STATE.league.snapshot = snap;
     STATE.league.id = snap.id;
@@ -40,6 +44,11 @@
     STATE.pickSeconds = (snap.settings && snap.settings.pickSeconds != null) ? snap.settings.pickSeconds : 60;
     STATE.seatMeta = {};
     Object.entries(snap.players || {}).forEach(([uid, p]) => STATE.seatMeta[uid] = { allyId: p.allyId, name: p.name, ts: p.ts });
+    if (snap.status === "coord") {                     // Alliance Architect
+      STATE.gameMode = "coordination";
+      if (window.COORD_UI) COORD_UI.onSnap(snap, ADAPTER);
+      return;
+    }
     if (snap.status === "lobby") showLobby(snap);
     else applyDraftSnapshot(snap);
   }
@@ -95,7 +104,11 @@
     if (!STATE.pickAlly) { toast("Pick your fighter first"); return; }
     ensureAdapter();
     const nm = playerName();
-    const id = await ADAPTER.createLeague({ name: nm + "'s League", settings: { rounds: 3, difficulty: $("#diffSel").value } });
+    const coord = STATE.gameMode === "coordination";
+    const id = await ADAPTER.createLeague({
+      name: nm + (coord ? "'s Alliance" : "'s League"),
+      settings: { rounds: 3, difficulty: $("#diffSel").value, gameMode: coord ? "coordination" : "draft" },
+    });
     connectedId = id;
     STATE.league.id = id;
     await ADAPTER.setPlayer({ name: nm, allyId: STATE.pickAlly });
@@ -149,7 +162,12 @@
   }
   function hostTick() {
     const snap = currentSnap;
-    if (!snap || snap.status !== "drafting" || snap.host !== ADAPTER.me) return;
+    if (!snap || snap.host !== ADAPTER.me) return;
+    if (snap.status === "coord") {
+      if (window.COORD_UI) COORD_UI.hostTick(snap, ADAPTER);
+      return;
+    }
+    if (snap.status !== "drafting") return;
     if (STATE.pickIndex >= totalPicks()) return;
     const cur = currentAllyId();
     if (STATE.pickIndex !== lastPickIdx) { lastPickIdx = STATE.pickIndex; offlineTicks = 0; }
@@ -190,6 +208,83 @@
         <div class="lp-badges">${host ? `<span class="lp-badge host">HOST</span>` : ""}${you ? `<span class="lp-badge you">YOU</span>` : ""}</div>
       </div>`;
     }).join("");
+
+    /* ---- Alliance Architect lobby (coordination mode) ---- */
+    const isCoord = (snap.settings && snap.settings.gameMode) === "coordination";
+    if (isCoord) {
+      const scen = Object.values(COORD_DATA.COORD_SCENARIOS);
+      const curScen = (snap.settings && snap.settings.scenario) || "batteries";
+      const curCR = (snap.settings && snap.settings.coordRounds) || COORD_DATA.COORD_CONFIG.roundsDefault;
+      const curTok = (snap.settings && snap.settings.tokens) || COORD_DATA.COORD_CONFIG.tokensPerRound;
+      const curBots = (snap.settings && snap.settings.bots != null) ? snap.settings.bots : Math.max(0, 3 - nPlay);
+      const seats = nPlay + curBots;
+      /* One country per seat. Two players running the same country would have
+         identical comparative advantage, which makes the whole negotiation
+         meaningless — so block the start instead of quietly allowing it. */
+      const claimed = players.map(([, p]) => p.allyId);
+      const dupes = [...new Set(claimed.filter((c, i) => claimed.indexOf(c) !== i))];
+      const seatsOk = seats >= COORD_DATA.COORD_CONFIG.minPlayers &&
+        seats <= COORD_DATA.COORD_CONFIG.maxPlayers && !dupes.length;
+      const coordCtl = isHost ? `
+        <div class="lobby-controls">
+          <div class="field">Scenario
+            <select id="cScen">${scen.map(s => `<option value="${s.id}" ${s.id === curScen ? "selected" : ""} ${s.available ? "" : "disabled"}>${s.name}${s.available ? "" : " — soon"}</option>`).join("")}</select>
+          </div>
+          <div class="field">Rounds
+            <select id="cRounds">${[2, 3, 4].map(r => `<option value="${r}" ${r === curCR ? "selected" : ""}>${r} rounds</option>`).join("")}</select>
+          </div>
+          <div class="field">Policy tokens
+            <select id="cTokens">${[8, 10, 12].map(t => `<option value="${t}" ${t === curTok ? "selected" : ""}>${t} per round</option>`).join("")}</select>
+          </div>
+          <div class="field">AI allies
+            <select id="cBots" title="Fill empty seats with AI-run countries">${[0, 1, 2, 3, 4, 5].map(b => `<option value="${b}" ${b === curBots ? "selected" : ""}>${b}</option>`).join("")}</select>
+          </div>
+          <button class="btn red" id="coordStart" ${seatsOk ? "" : "disabled"}>Open ${COORD_DATA.COORD_CONFIG.title} ▶</button>
+        </div>
+        <div class="hint" style="text-align:center">${dupes.length
+          ? `Two players have picked <b>${dupes.map(d => (ALLY_BY_ID[d] ? ALLY_BY_ID[d].name : d)).join(", ")}</b>.
+             One country per seat — ask one of them to change fighter.`
+          : seatsOk
+          ? `${nPlay} human${nPlay === 1 ? "" : "s"} + ${curBots} AI = <b>${seats} countries</b> at the table.`
+          : `Needs ${COORD_DATA.COORD_CONFIG.minPlayers}–${COORD_DATA.COORD_CONFIG.maxPlayers} countries — currently ${seats}. Invite allies or add AI allies.`}</div>`
+        : `<div class="lobby-waiting">Waiting for the host to open the negotiation room…<br><span class="hint">${COORD_DATA.getScenario(curScen).name} · ${curCR} rounds · ${curTok} policy tokens per round</span></div>`;
+
+      $("#lobbyScreen").innerHTML = `
+        <div class="hero">
+          <div class="kicker">${NET.backend === "firebase" ? "Online alliance" : "Local alliance (this browser only)"} · ${nPlay} in the room</div>
+          <div class="player-select">${COORD_DATA.COORD_CONFIG.title}</div>
+          <p class="lede">${escapeHtml(snap.name || "Allied Coordination")} — share the link so allies can join.
+            Each of you runs one country's industrial policy. You will plan privately, then discover together
+            what the alliance actually built.</p>
+        </div>
+        <div class="share-row">
+          <input id="shareLink" readonly value="${shareLink()}" />
+          <button class="btn gold" id="copyLink">Copy link</button>
+          <span class="code-chip">Code <b>${snap.id}</b></span>
+        </div>
+        <div class="section-title"><h3>Countries at the table</h3><div class="rule"></div><span class="hint">One player, one country</span></div>
+        <div class="lobby-players">${pcards}</div>
+        ${coordCtl}
+        <div style="text-align:center;margin-top:22px"><button class="btn ghost" id="lobbyLeave">Leave room</button></div>`;
+
+      $("#copyLink").addEventListener("click", copyShare);
+      $("#lobbyLeave").addEventListener("click", leaveLeague);
+      if (isHost) {
+        const push = () => ADAPTER.setSettings({
+          scenario: $("#cScen").value, coordRounds: parseInt($("#cRounds").value, 10),
+          tokens: parseInt($("#cTokens").value, 10), bots: parseInt($("#cBots").value, 10),
+        });
+        ["#cScen", "#cRounds", "#cTokens", "#cBots"].forEach(s => $(s).addEventListener("change", push));
+        $("#coordStart").addEventListener("click", () => {
+          const cfg = {
+            scenario: $("#cScen").value, rounds: parseInt($("#cRounds").value, 10),
+            tokens: parseInt($("#cTokens").value, 10), bots: parseInt($("#cBots").value, 10),
+          };
+          COORD_UI.startGame(snap, ADAPTER, cfg);
+        });
+      }
+      return;
+    }
 
     const hostCtl = isHost ? `
       <div class="lobby-controls">
@@ -233,10 +328,7 @@
       ${hostCtl}
       <div style="text-align:center;margin-top:22px"><button class="btn ghost" id="lobbyLeave">Leave league</button></div>`;
 
-    $("#copyLink").addEventListener("click", () => {
-      const inp = $("#shareLink"); inp.select();
-      (navigator.clipboard ? navigator.clipboard.writeText(inp.value) : Promise.reject()).then(() => toast("Link copied!"), () => { document.execCommand && document.execCommand("copy"); toast("Link copied!"); });
-    });
+    $("#copyLink").addEventListener("click", copyShare);
     $("#lobbyLeave").addEventListener("click", leaveLeague);
     if (isHost) {
       $("#lobbyStart").addEventListener("click", startLeagueDraft);
@@ -245,6 +337,13 @@
       $("#lobbyDiff").addEventListener("change", push);
       $("#lobbyClock").addEventListener("change", push);
     }
+  }
+
+  function copyShare() {
+    const inp = $("#shareLink"); if (!inp) return;
+    inp.select();
+    (navigator.clipboard ? navigator.clipboard.writeText(inp.value) : Promise.reject())
+      .then(() => toast("Link copied!"), () => { document.execCommand && document.execCommand("copy"); toast("Link copied!"); });
   }
 
   function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
@@ -261,9 +360,42 @@
     if (jb) jb.style.display = "";
   }
 
+  /* ---------- Alliance Architect: single-player practice ----------
+     Creates a room (local adapter unless Firebase is configured), seats the
+     player, fills the rest of the table with AI-run countries and opens the
+     game immediately. Same code path as multiplayer — bots are just seats the
+     host client plans for. */
+  async function coordSolo() {
+    if (!STATE.pickAlly) { toast("Pick your country first"); return; }
+    ensureAdapter();
+    const nm = playerName();
+    const id = await ADAPTER.createLeague({
+      name: nm + "'s Alliance (practice)",
+      settings: { gameMode: "coordination", difficulty: "normal" },
+    });
+    connectedId = id; STATE.league.id = id;
+    await ADAPTER.setPlayer({ name: nm, allyId: STATE.pickAlly });
+    setUrl(id);
+    const cfg = {
+      scenario: ($("#coordScenarioSel") && $("#coordScenarioSel").value) || "batteries",
+      rounds: parseInt(($("#coordRoundsSel") || {}).value || 3, 10),
+      tokens: parseInt(($("#coordTokensSel") || {}).value || 10, 10),
+      bots: parseInt(($("#coordBotsSel") || {}).value || 3, 10),
+    };
+    // the snapshot may not have landed yet — synthesise the minimum COORD_UI needs
+    const seed = currentSnap || { id, host: ADAPTER.me, players: { [ADAPTER.me]: { name: nm, allyId: STATE.pickAlly } } };
+    COORD_UI.startGame(seed, ADAPTER, cfg);
+  }
+
   window.addEventListener("DOMContentLoaded", () => {
     const cb = $("#createLeagueBtn"), jb = $("#joinLeagueBtn");
     if (cb) cb.addEventListener("click", createLeague);
+    const sb = $("#coordSoloBtn"); if (sb) sb.addEventListener("click", coordSolo);
+    const ss = $("#coordScenarioSel");
+    if (ss && typeof COORD_DATA !== "undefined") {
+      ss.innerHTML = Object.values(COORD_DATA.COORD_SCENARIOS)
+        .map(s => `<option value="${s.id}" ${s.available ? "" : "disabled"}>${s.name}${s.available ? "" : " — soon"}</option>`).join("");
+    }
     if (jb) jb.addEventListener("click", () => doJoin(joinCode || (prompt("Enter league code:") || "")));
     try { const code = new URL(location.href).searchParams.get("league"); if (code) { joinCode = code.toUpperCase(); enterJoinMode(joinCode); autoResume(joinCode); } } catch (e) {}
   });

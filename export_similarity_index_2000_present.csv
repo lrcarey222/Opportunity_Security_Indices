@@ -1,0 +1,151 @@
+year,country_a,country_a_name,country_b,country_b_name,pair,esi,products_compared
+2000,CHN,China,FRA,France,China – France,45.92559457054884,260
+2001,CHN,China,FRA,France,China – France,44.9592103454985,260
+2002,CHN,China,FRA,France,China – France,43.983687506078326,260
+2003,CHN,China,FRA,France,China – France,42.33027622554757,260
+2004,CHN,China,FRA,France,China – France,42.762754935775064,260
+2005,CHN,China,FRA,France,China – France,43.62307524545172,260
+2006,CHN,China,FRA,France,China – France,44.87679737588068,260
+2007,CHN,China,FRA,France,China – France,44.894348336650864,260
+2008,CHN,China,FRA,France,China – France,45.206880080891125,260
+2009,CHN,China,FRA,France,China – France,43.85026570145002,260
+2000,CHN,China,DEU,Germany,China – Germany,41.72702825359859,260
+2001,CHN,China,DEU,Germany,China – Germany,42.96194203935743,260
+2002,CHN,China,DEU,Germany,China – Germany,43.16858880287919,260
+2003,CHN,China,DEU,Germany,China – Germany,41.23624533996902,260
+2004,CHN,China,DEU,Germany,China – Germany,42.91248393273167,260
+2005,CHN,China,DEU,Germany,China – Germany,44.72547469788148,260
+2006,CHN,China,DEU,Germany,China – Germany,45.86103135304003,260
+2007,CHN,China,DEU,Germany,China – Germany,46.1441007373337,260
+2008,CHN,China,DEU,Germany,China – Germany,47.85246833753202,260
+2009,CHN,China,DEU,Germany,China – Germany,46.35678539865632,260
+2000,CHN,China,JPN,Japan,China – Japan,40.67092278134622,260
+2001,CHN,China,JPN,Japan,China – Japan,41.7974645150904,260
+2002,CHN,China,JPN,Japan,China – Japan,40.44571088443358,260
+2003,CHN,China,JPN,Japan,China – Japan,40.20024036144789,260
+2004,CHN,China,JPN,Japan,China – Japan,41.46987392860755,260
+2005,CHN,China,JPN,Japan,China – Japan,42.08654533929954,260
+2006,CHN,China,JPN,Japan,China – Japan,43.56986847139386,260
+2007,CHN,China,JPN,Japan,China – Japan,44.461114608524994,260
+2008,CHN,China,JPN,Japan,China – Japan,46.02034007222795,260
+2009,CHN,China,JPN,Japan,China – Japan,45.64237998393601,260
+2000,CHN,China,KOR,South Korea,China – South Korea,46.58135572860515,260
+2001,CHN,China,KOR,South Korea,China – South Korea,49.892730229638524,260
+2002,CHN,China,KOR,South Korea,China – South Korea,50.65068472907082,260
+2003,CHN,China,KOR,South Korea,China – South Korea,49.8225722700919,260
+2004,CHN,China,KOR,South Korea,China – South Korea,49.85666372987988,260
+2005,CHN,China,KOR,South Korea,China – South Korea,49.67757044446298,260
+2006,CHN,China,KOR,South Korea,China – South Korea,50.6086036111592,260
+2007,CHN,China,KOR,South Korea,China – South Korea,50.540477038540345,260
+2008,CHN,China,KOR,South Korea,China – South Korea,50.054348184362205,260
+2009,CHN,China,KOR,South Korea,China – South Korea,50.24247230487251,260
+2000,CHN,China,USA,United States,China – United States,45.95150348558331,260
+2001,CHN,China,USA,United States,China – United States,46.408765341680066,260
+2002,CHN,China,USA,United States,China – United States,45.24800702760442,260
+2003,CHN,China,USA,United States,China – United States,44.421105650044666,260
+2004,CHN,China,USA,United States,China – United States,44.81739226825628,260
+2005,CHN,China,USA,United States,China – United States,45.69757314537766,260
+2006,CHN,China,USA,United States,China – United States,45.69685219331975,260
+2007,CHN,China,USA,United States,China – United States,45.034281027980796,260
+2008,CHN,China,USA,United States,China – United States,45.68750795560518,260
+2009,CHN,China,USA,United States,China – United States,45.88347221886271,260
+2000,FRA,France,JPN,Japan,France – Japan,58.27978873033801,260
+2001,FRA,France,JPN,Japan,France – Japan,59.27502908694328,260
+2002,FRA,France,JPN,Japan,France – Japan,58.007164676306566,260
+2003,FRA,France,JPN,Japan,France – Japan,57.918526459469,260
+2004,FRA,France,JPN,Japan,France – Japan,58.19342301728836,260
+2005,FRA,France,JPN,Japan,France – Japan,57.40204361980076,260
+2006,FRA,France,JPN,Japan,France – Japan,57.142456693978815,260
+2007,FRA,France,JPN,Japan,France – Japan,56.29738234335409,260
+2008,FRA,France,JPN,Japan,France – Japan,55.142951126729436,260
+2009,FRA,France,JPN,Japan,France – Japan,53.824017203215476,260
+2000,FRA,France,KOR,South Korea,France – South Korea,52.02780283096106,260
+2001,FRA,France,KOR,South Korea,France – South Korea,52.07525050319409,260
+2002,FRA,France,KOR,South Korea,France – South Korea,50.18944321559502,260
+2003,FRA,France,KOR,South Korea,France – South Korea,49.639642724193834,260
+2004,FRA,France,KOR,South Korea,France – South Korea,48.88710293687564,260
+2005,FRA,France,KOR,South Korea,France – South Korea,49.0993115369278,260
+2006,FRA,France,KOR,South Korea,France – South Korea,48.73850940473318,260
+2007,FRA,France,KOR,South Korea,France – South Korea,46.663945834488516,260
+2008,FRA,France,KOR,South Korea,France – South Korea,45.581866753245244,260
+2009,FRA,France,KOR,South Korea,France – South Korea,43.221409674418446,260
+2000,FRA,France,USA,United States,France – United States,72.19713739167042,260
+2001,FRA,France,USA,United States,France – United States,72.67461753542528,260
+2002,FRA,France,USA,United States,France – United States,71.79626177611092,260
+2003,FRA,France,USA,United States,France – United States,71.33287267845041,260
+2004,FRA,France,USA,United States,France – United States,66.86656714340602,260
+2005,FRA,France,USA,United States,France – United States,67.19379242385804,260
+2006,FRA,France,USA,United States,France – United States,73.42457200959592,260
+2007,FRA,France,USA,United States,France – United States,72.64770729935782,260
+2008,FRA,France,USA,United States,France – United States,72.30301819697084,260
+2009,FRA,France,USA,United States,France – United States,64.83031115054585,260
+2000,DEU,Germany,FRA,France,Germany – France,74.38389186069628,260
+2001,DEU,Germany,FRA,France,Germany – France,76.91933710548423,260
+2002,DEU,Germany,FRA,France,Germany – France,77.09255441332277,260
+2003,DEU,Germany,FRA,France,Germany – France,75.47374764508899,260
+2004,DEU,Germany,FRA,France,Germany – France,76.28733887782313,260
+2005,DEU,Germany,FRA,France,Germany – France,76.23380820667322,260
+2006,DEU,Germany,FRA,France,Germany – France,76.2402492694726,260
+2007,DEU,Germany,FRA,France,Germany – France,74.53076718371288,260
+2008,DEU,Germany,FRA,France,Germany – France,73.84708327460604,260
+2009,DEU,Germany,FRA,France,Germany – France,74.24912935771924,260
+2000,DEU,Germany,JPN,Japan,Germany – Japan,67.19592914740123,260
+2001,DEU,Germany,JPN,Japan,Germany – Japan,70.10748011783707,260
+2002,DEU,Germany,JPN,Japan,Germany – Japan,69.70988310290214,260
+2003,DEU,Germany,JPN,Japan,Germany – Japan,68.77393820690332,260
+2004,DEU,Germany,JPN,Japan,Germany – Japan,68.43534210976729,260
+2005,DEU,Germany,JPN,Japan,Germany – Japan,69.8728250476608,260
+2006,DEU,Germany,JPN,Japan,Germany – Japan,69.27176577453173,260
+2007,DEU,Germany,JPN,Japan,Germany – Japan,69.40985694399284,260
+2008,DEU,Germany,JPN,Japan,Germany – Japan,68.85268693997975,260
+2009,DEU,Germany,JPN,Japan,Germany – Japan,67.53021707520493,260
+2000,DEU,Germany,KOR,South Korea,Germany – South Korea,48.16284776584023,260
+2001,DEU,Germany,KOR,South Korea,Germany – South Korea,50.96658082921961,260
+2002,DEU,Germany,KOR,South Korea,Germany – South Korea,50.602485692453,260
+2003,DEU,Germany,KOR,South Korea,Germany – South Korea,50.68715202293224,260
+2004,DEU,Germany,KOR,South Korea,Germany – South Korea,51.920909565738405,260
+2005,DEU,Germany,KOR,South Korea,Germany – South Korea,53.73263469728329,260
+2006,DEU,Germany,KOR,South Korea,Germany – South Korea,53.771520534530005,260
+2007,DEU,Germany,KOR,South Korea,Germany – South Korea,52.94916263563347,260
+2008,DEU,Germany,KOR,South Korea,Germany – South Korea,50.140957008062934,260
+2009,DEU,Germany,KOR,South Korea,Germany – South Korea,48.31948623695689,260
+2000,DEU,Germany,USA,United States,Germany – United States,70.05511559355946,260
+2001,DEU,Germany,USA,United States,Germany – United States,71.51582110583503,260
+2002,DEU,Germany,USA,United States,Germany – United States,72.00020095650918,260
+2003,DEU,Germany,USA,United States,Germany – United States,70.34244909762972,260
+2004,DEU,Germany,USA,United States,Germany – United States,74.12950544758658,260
+2005,DEU,Germany,USA,United States,Germany – United States,72.46351430704439,260
+2006,DEU,Germany,USA,United States,Germany – United States,72.67730828860711,260
+2007,DEU,Germany,USA,United States,Germany – United States,70.16289151451971,260
+2008,DEU,Germany,USA,United States,Germany – United States,68.77905603933108,260
+2009,DEU,Germany,USA,United States,Germany – United States,68.93194480629917,260
+2000,JPN,Japan,KOR,South Korea,Japan – South Korea,58.2257505327375,260
+2001,JPN,Japan,KOR,South Korea,Japan – South Korea,59.31604073978733,260
+2002,JPN,Japan,KOR,South Korea,Japan – South Korea,59.09059492473967,260
+2003,JPN,Japan,KOR,South Korea,Japan – South Korea,60.771734701446235,260
+2004,JPN,Japan,KOR,South Korea,Japan – South Korea,61.370215344073145,260
+2005,JPN,Japan,KOR,South Korea,Japan – South Korea,61.86388279786426,260
+2006,JPN,Japan,KOR,South Korea,Japan – South Korea,62.34205998258188,260
+2007,JPN,Japan,KOR,South Korea,Japan – South Korea,61.126300571361604,260
+2008,JPN,Japan,KOR,South Korea,Japan – South Korea,60.028066057766374,260
+2009,JPN,Japan,KOR,South Korea,Japan – South Korea,61.36754631512482,260
+2000,JPN,Japan,USA,United States,Japan – United States,66.6832008298021,260
+2001,JPN,Japan,USA,United States,Japan – United States,64.64356902343987,260
+2002,JPN,Japan,USA,United States,Japan – United States,63.480597179742716,260
+2003,JPN,Japan,USA,United States,Japan – United States,63.302781940434016,260
+2004,JPN,Japan,USA,United States,Japan – United States,64.52640556348979,260
+2005,JPN,Japan,USA,United States,Japan – United States,64.37058727417616,260
+2006,JPN,Japan,USA,United States,Japan – United States,61.92047476596384,260
+2007,JPN,Japan,USA,United States,Japan – United States,60.810033114660214,260
+2008,JPN,Japan,USA,United States,Japan – United States,59.3660632698922,260
+2009,JPN,Japan,USA,United States,Japan – United States,60.83923174740615,260
+2000,KOR,South Korea,USA,United States,South Korea – United States,52.45738263980623,260
+2001,KOR,South Korea,USA,United States,South Korea – United States,51.961466358994656,260
+2002,KOR,South Korea,USA,United States,South Korea – United States,50.633875610032284,260
+2003,KOR,South Korea,USA,United States,South Korea – United States,52.04184604851698,260
+2004,KOR,South Korea,USA,United States,South Korea – United States,51.811434189021725,260
+2005,KOR,South Korea,USA,United States,South Korea – United States,52.24451701766698,260
+2006,KOR,South Korea,USA,United States,South Korea – United States,52.35739027723667,260
+2007,KOR,South Korea,USA,United States,South Korea – United States,50.99276923937376,260
+2008,KOR,South Korea,USA,United States,South Korea – United States,51.30730717964398,260
+2009,KOR,South Korea,USA,United States,South Korea – United States,49.23113327078825,260
