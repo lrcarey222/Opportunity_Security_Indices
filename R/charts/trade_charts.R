@@ -36,7 +36,7 @@ subcat2<-subcat %>%
 
 oil_producers<- ei %>%
   filter(Var=="oilprod_kbd",
-         Year=="2024",
+         Year=="2025",
          !is.na(ISO3166_numeric)) %>%
   arrange(desc(Value)) %>%
   slice_max(Value,n=25)

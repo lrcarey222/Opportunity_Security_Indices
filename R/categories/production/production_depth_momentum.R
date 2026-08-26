@@ -1,7 +1,7 @@
 # Production depth + momentum theme builder functions.
 
 production_depth_momentum_clean_energy_production <- function(ei,
-                                                              years = c(2014, 2019, 2024),
+                                                              years = c(2015, 2020, 2025),
                                                               vars = c(
                                                                 "oilprod_kbd",
                                                                 "gasprod_ej",
@@ -14,6 +14,13 @@ production_depth_momentum_clean_energy_production <- function(ei,
                                                                 "electbyfuel_oil"
                                                               )) {
   require_columns(ei, c("Country", "Year", "Var", "Value"), label = "ei")
+
+  # Reference the observation years by value rather than by literal column name so a new
+  # EI release only needs the `years` argument moved.
+  years <- sort(unique(as.integer(years)))
+  yr_base10 <- as.character(years[1])
+  yr_base5 <- as.character(years[2])
+  yr_latest <- as.character(years[length(years)])
 
   ei %>%
     dplyr::select(Country, Year, Var, Value) %>%
@@ -51,22 +58,31 @@ production_depth_momentum_clean_energy_production <- function(ei,
     ) %>%
     tidyr::pivot_wider(names_from = "Year", values_from = "Value") %>%
     dplyr::mutate(
-      change_5yr = (`2024` / `2019` - 1) * 100,
-      change_10yr = (`2024` / `2014` - 1) * 100,
-      change_5yr_abs = `2024` - `2019`
+      change_5yr = (.data[[yr_latest]] / .data[[yr_base5]] - 1) * 100,
+      change_10yr = (.data[[yr_latest]] / .data[[yr_base10]] - 1) * 100,
+      change_5yr_abs = .data[[yr_latest]] - .data[[yr_base5]]
     ) %>%
     tidyr::pivot_longer(
-      cols = `2014`:change_5yr_abs,
+      cols = c(
+        dplyr::all_of(c(yr_base10, yr_base5, yr_latest)),
+        change_5yr,
+        change_10yr,
+        change_5yr_abs
+      ),
       names_to = "year",
       values_to = "value"
     ) %>%
     tidyr::pivot_wider(names_from = year, values_from = value)
 }
 
-production_depth_momentum_build_energy_indices <- function(production_clean, gamma = 0.5) {
+production_depth_momentum_build_energy_indices <- function(production_clean,
+                                                           latest_year = 2025,
+                                                           gamma = 0.5) {
+  yr_latest <- as.character(latest_year)
+
   require_columns(
     production_clean,
-    c("Country", "Var", "2014", "2019", "2024", "change_5yr", "change_10yr", "change_5yr_abs"),
+    c("Country", "Var", yr_latest, "change_5yr", "change_10yr", "change_5yr_abs"),
     label = "production_clean"
   )
 
@@ -79,7 +95,7 @@ production_depth_momentum_build_energy_indices <- function(production_clean, gam
     ) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
-      size_index = median_scurve(`2024`, gamma = gamma),
+      size_index = median_scurve(.data[[yr_latest]], gamma = gamma),
       growth_index = median_scurve(change_5yr, gamma = gamma),
       growth_abs_index = median_scurve(change_5yr_abs, gamma = gamma)
     ) %>%
@@ -235,10 +251,14 @@ production_depth_momentum_build_mineral_production <- function(mineral_supply, g
     dplyr::select(-country)
 }
 
-production_depth_momentum_build_combined <- function(production_growth, mineral_production) {
+production_depth_momentum_build_combined <- function(production_growth,
+                                                     mineral_production,
+                                                     energy_year = 2025) {
+  energy_year_col <- as.character(energy_year)
+
   require_columns(
     production_growth,
-    c("Country", "tech", "supply_chain", "2024", "size_index", "growth_abs_index", "overall_production_index"),
+    c("Country", "tech", "supply_chain", energy_year_col, "size_index", "growth_abs_index", "overall_production_index"),
     label = "production_growth"
   )
   require_columns(
@@ -247,12 +267,16 @@ production_depth_momentum_build_combined <- function(production_growth, mineral_
     label = "mineral_production"
   )
 
+  # EI energy production and IEA critical mineral production carry different latest
+  # years, so the raw level is unified under one year-neutral column and the source
+  # year is kept alongside it for the explanation text.
   production_tbl <- production_growth %>%
     dplyr::transmute(
       Country,
       tech,
       supply_chain,
-      X2024 = `2024`,
+      production_latest = .data[[energy_year_col]],
+      raw_year = energy_year,
       size_index,
       growth_abs_index,
       overall_production_index
@@ -262,7 +286,8 @@ production_depth_momentum_build_combined <- function(production_growth, mineral_
       Country,
       tech,
       supply_chain,
-      X2024,
+      production_latest = X2024,
+      raw_year = 2024,
       size_index,
       growth_abs_index,
       overall_production_index
@@ -275,18 +300,18 @@ production_depth_momentum_build_combined <- function(production_growth, mineral_
 }
 
 production_depth_momentum_build_table <- function(production_combined,
-                                                  year = 2024,
+                                                  year = 2025,
                                                   source = "EI Statistical Review World Energy") {
   require_columns(
     production_combined,
-    c("Country", "tech", "supply_chain", "X2024", "size_index", "growth_abs_index", "overall_production_index"),
+    c("Country", "tech", "supply_chain", "production_latest", "raw_year", "size_index", "growth_abs_index", "overall_production_index"),
     label = "production_combined"
   )
 
   production_combined %>%
     dplyr::filter(supply_chain != "Midstream") %>%
     tidyr::pivot_longer(
-      cols = c(X2024:overall_production_index),
+      cols = c(production_latest, size_index, growth_abs_index, overall_production_index),
       names_to = "metric",
       values_to = "value"
     ) %>%
@@ -298,10 +323,10 @@ production_depth_momentum_build_table <- function(production_combined,
       category = "Production",
       source = source,
       explanation = dplyr::case_when(
-        metric_clean %in% c("X2024") ~
-          glue::glue("Raw production of {tech} ({supply_chain}) in {metric_clean}"),
+        metric_clean == "production_latest" ~
+          glue::glue("Raw production of {tech} ({supply_chain}) in {raw_year}"),
         metric_clean == "size" ~
-          glue::glue("Min-max scaled production in 2024 for {tech}"),
+          glue::glue("Min-max scaled production in {raw_year} for {tech}"),
         metric_clean == "growth_abs" ~
           glue::glue("Min-max scaled absolute growth index for {tech}"),
         metric_clean == "overall_production" ~
@@ -327,10 +352,17 @@ production_depth_momentum <- function(ei,
                                       critical,
                                       mineral_demand_clean,
                                       country_info,
-                                      year = 2024,
+                                      year = 2025,
                                       gamma = 0.5) {
-  production_clean <- production_depth_momentum_clean_energy_production(ei)
-  production_growth <- production_depth_momentum_build_energy_indices(production_clean, gamma = gamma)
+  production_clean <- production_depth_momentum_clean_energy_production(
+    ei,
+    years = c(year - 10L, year - 5L, year)
+  )
+  production_growth <- production_depth_momentum_build_energy_indices(
+    production_clean,
+    latest_year = year,
+    gamma = gamma
+  )
   mineral_supply <- production_depth_momentum_build_mineral_supply(
     critical = critical,
     mineral_demand_clean = mineral_demand_clean,
@@ -340,7 +372,8 @@ production_depth_momentum <- function(ei,
   mineral_production <- production_depth_momentum_build_mineral_production(mineral_supply, gamma = gamma)
   production_combined <- production_depth_momentum_build_combined(
     production_growth = production_growth,
-    mineral_production = mineral_production
+    mineral_production = mineral_production,
+    energy_year = year
   )
 
   output <- production_depth_momentum_build_table(

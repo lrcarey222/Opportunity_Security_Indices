@@ -1,8 +1,12 @@
 # Reserves theme builder functions.
+#
+# Sheets are addressed by name rather than by position: the EI workbook adds and drops
+# sheets between releases (the 2026 edition inserted "Data Centre Demand" and "SAF prices"
+# ahead of the mineral block), so positional indices silently read the wrong sheet.
 reserves_specs <- function() {
   list(
     list(
-      sheet = 13,
+      sheet = "Oil - Proved reserves history",
       skip = 4,
       nm_col = "Thousand million barrels",
       val_col = "2020...42",
@@ -10,7 +14,7 @@ reserves_specs <- function() {
       unit_desc = "Thousand million barrels"
     ),
     list(
-      sheet = 32,
+      sheet = "Gas - Proved reserves history",
       skip = 4,
       nm_col = "Trillion cubic metres",
       val_col = "2020...42",
@@ -18,7 +22,7 @@ reserves_specs <- function() {
       unit_desc = "Trillion cubic metres"
     ),
     list(
-      sheet = 46,
+      sheet = "Coal - Reserves",
       skip = 5,
       nm_col = "Million tonnes",
       val_col = "Total",
@@ -26,81 +30,106 @@ reserves_specs <- function() {
       unit_desc = "Million tonnes"
     ),
     list(
-      sheet = 83,
+      sheet = "Cobalt P-R",
       skip = 2,
       nm_col = "Thousand tonnes",
-      val_col = "At end of 2024",
+      val_col = "At end of 2025",
       tech_name = "Cobalt",
       unit_desc = "Thousand tonnes"
     ),
     list(
-      sheet = 84,
+      sheet = "Lithium P-R",
       skip = 2,
       nm_col = "Thousand tonnes of Lithium content",
-      val_col = "At end of 2024",
+      val_col = "At end of 2025",
       tech_name = "Lithium",
       unit_desc = "Thousand tonnes"
     ),
     list(
-      sheet = 85,
+      sheet = "Natural Graphite P-R",
       skip = 2,
       nm_col = "Thousand tonnes",
-      val_col = "At end of 2024",
+      val_col = "At end of 2025",
       tech_name = "Graphite",
       unit_desc = "Thousand tonnes"
     ),
     list(
-      sheet = 86,
+      sheet = "Rare Earth metals P-R",
       skip = 2,
       nm_col = "Thousand tonnes1",
-      val_col = "At end of 2024",
+      val_col = "At end of 2025",
       tech_name = "Rare Earths",
       unit_desc = "Thousand tonnes"
     ),
     list(
-      sheet = 87,
+      sheet = "Copper P-R",
       skip = 2,
       nm_col = "Thousand tonnes",
-      val_col = "At end of 2024",
+      val_col = "At end of 2025",
       tech_name = "Copper",
       unit_desc = "Thousand tonnes"
     ),
     list(
-      sheet = 88,
+      sheet = "Manganese P-R",
       skip = 2,
       nm_col = "Thousand tonnes",
-      val_col = "At end of 2024",
+      val_col = "At end of 2025",
       tech_name = "Manganese",
       unit_desc = "Thousand tonnes"
     ),
     list(
-      sheet = 89,
+      sheet = "Nickel P-R",
       skip = 2,
       nm_col = "Thousand tonnes",
-      val_col = "At end of 2024",
+      val_col = "At end of 2025",
       tech_name = "Nickel",
       unit_desc = "Thousand tonnes"
     ),
     list(
-      sheet = 90,
+      sheet = "Zinc P-R",
       skip = 2,
       nm_col = "Thousand tonnes",
-      val_col = "At end of 2024",
+      val_col = "At end of 2025",
       tech_name = "Zinc",
       unit_desc = "Thousand tonnes"
     ),
     list(
-      sheet = 91,
+      # Renamed from "Platinum Group Metals P-R" and restated in kilograms in the 2026 edition.
+      sheet = "PGM",
       skip = 2,
-      nm_col = "Thousand tonnes",
-      val_col = "At end of 2024",
+      nm_col = "Kilogram",
+      val_col = "At end of 2025",
       tech_name = "PGMs",
-      unit_desc = "Thousand tonnes"
+      unit_desc = "Kilograms"
     )
   )
 }
 
-reserves_build_country_reference <- function(ei, year = 2024) {
+# Resolve the reserves value column on a mineral P-R sheet.
+#
+# The mineral sheets label reserves "At end of <year>", so the pinned name in
+# reserves_specs() goes stale every release. When the pinned column is absent, fall back to
+# the latest "At end of <year>" column actually present and say so, rather than erroring on
+# a column name that only differs by vintage.
+reserves_resolve_val_col <- function(sheet_data, val_col, sheet_id = NULL) {
+  if (val_col %in% names(sheet_data)) {
+    return(val_col)
+  }
+
+  candidates <- grep("^At end of \\d{4}$", names(sheet_data), value = TRUE)
+  if (length(candidates) == 0) {
+    return(val_col)
+  }
+
+  resolved <- candidates[which.max(as.integer(sub("^At end of ", "", candidates)))]
+  message(
+    "Reserves sheet ", sheet_id %||% "<unnamed>", ": '", val_col,
+    "' not found; using '", resolved, "'."
+  )
+  resolved
+}
+
+reserves_build_country_reference <- function(ei, year = 2025) {
   ei %>%
     dplyr::filter(
       Year == year,
@@ -158,11 +187,13 @@ reserves_build_reserve_table <- function(sheet_data,
                                          unit_desc,
                                          sheet_id,
                                          country_reference,
-                                         year = 2024,
+                                         year = 2025,
                                          gamma = 0.5) {
   country_reference <- country_reference %>%
     dplyr::filter(!is.na(ISO3166_alpha3), nzchar(ISO3166_alpha3)) %>%
     dplyr::distinct(ISO3166_alpha3, Country)
+
+  val_col <- reserves_resolve_val_col(sheet_data, val_col, sheet_id = sheet_id)
 
   raw_inputs <- sheet_data %>%
     dplyr::rename(
@@ -230,7 +261,7 @@ reserves_build_reserve_table <- function(sheet_data,
       variable = stringr::str_glue("{tech_name} Reserves"),
       data_type = dplyr::if_else(data_type == "raw_value", "raw", "index"),
       Year = year,
-      source = "EI Statistical Review of World Energy (2024)",
+      source = "EI Statistical Review of World Energy (2025)",
       explanation = dplyr::case_when(
         data_type == "raw" ~ stringr::str_glue("{tech_name} reserves ({unit_desc}) from sheet {sheet_id}"),
         data_type == "index" ~ "Percent-rank of reserves across reporting entities (countries + RoW)",
@@ -255,7 +286,7 @@ reserves_build_reserve_table <- function(sheet_data,
 reserves_build_critical_mineral_reserves <- function(mineral_reserves,
                                                      mineral_demand_clean,
                                                      country_reference,
-                                                     year = 2024) {
+                                                     year = 2025) {
   country_reference <- country_reference %>%
     dplyr::filter(!is.na(ISO3166_alpha3), nzchar(ISO3166_alpha3)) %>%
     dplyr::distinct(ISO3166_alpha3, Country)
@@ -338,7 +369,7 @@ reserves_build_clean_table <- function(reserve_tables, country_reference) {
     dplyr::select(Country, ISO3166_alpha3, dplyr::everything())
 }
 
-reserves <- function(ei, reserve_inputs, mineral_demand_clean, year = 2024, gamma = 0.5) {
+reserves <- function(ei, reserve_inputs, mineral_demand_clean, year = 2025, gamma = 0.5) {
   country_reference <- reserves_build_country_reference(ei, year = year)
 
   reserve_tables <- lapply(reserve_inputs, function(spec) {

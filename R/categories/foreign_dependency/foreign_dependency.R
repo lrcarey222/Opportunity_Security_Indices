@@ -1,5 +1,5 @@
 # Foreign Dependency theme builder functions.
-foreign_dependency_build_country_reference <- function(ei, year = 2024) {
+foreign_dependency_build_country_reference <- function(ei, year = 2025) {
   # Use EI data as the authoritative country reference and apply legacy naming.
   # Use EI as the authoritative country reference and harmonize legacy naming tweaks.
   ei %>%
@@ -389,9 +389,11 @@ foreign_dependency <- function(critical,
                                cleantech_midstream,
                                ev_midstream,
                                year = list(minerals = "2024", cleantech = "2035", ev = "2024"),
+                               ei_year = "2025",
                                gamma = 0.5) {
-  # Reference country list and run each foreign dependency sub-theme builder.
-  country_reference <- foreign_dependency_build_country_reference(ei, year = year$minerals)
+  # Reference country list and run each foreign dependency sub-theme builder. The EI country
+  # roster follows the EI release year, which moves independently of the IEA vintages in `year`.
+  country_reference <- foreign_dependency_build_country_reference(ei, year = ei_year)
 
   mineral_supply <- foreign_dependency_build_mineral_supply(
     critical = critical,
