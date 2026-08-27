@@ -12,7 +12,10 @@ trade_core_build_energy_codes <- function(subcat, include_sub_sector = FALSE) {
   tech_col <- pick_col(subcat, c("tech", "Technology", "technology"), "tech")
   supply_chain_col <- pick_col(
     subcat,
-    c("supply_chain", "Value.Chain", "value_chain", "Supply.Chain", "supply chain"),
+    # "Value Chain" with a space is the header the staged hts_codes_categories CSV
+    # actually carries. readr::read_csv() preserves it verbatim, so callers that hand
+    # the file over unrenamed reach here with the spaced spelling.
+    c("supply_chain", "Value.Chain", "Value Chain", "value_chain", "Supply.Chain", "supply chain"),
     "supply_chain"
   )
   sub_sector_col <- pick_col(subcat, c("sub_sector", "Sub.Sector", "subsector"), "sub_sector")

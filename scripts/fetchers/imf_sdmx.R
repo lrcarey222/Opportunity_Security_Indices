@@ -1,16 +1,19 @@
-# IMF fetchers: imf_ppi.csv and imf_lending_rates.csv, via the SDMX 3.0 API.
+# IMF fetchers: imf_ppi.csv, imf_lending_rates.csv and imf_commodity_prices.csv,
+# via the SDMX 3.0 API.
 #
-# Consumers (R/categories/economic opportunity/cost_competitiveness.R) read these as
-# IMF Data Explorer "wide" exports: metadata columns plus one column per period named
-# "2024-M01" / "2024-Q1" / "2024", which read.csv turns into X2024.M01 etc. The API
-# returns long SDMX-CSV, so we pivot.
+# Consumers (R/categories/economic opportunity/cost_competitiveness.R,
+# R/categories/energy_prices/energy_prices.R) read these as IMF Data Explorer "wide"
+# exports: metadata columns plus one column per period named "2024-M01" / "2024-Q1" /
+# "2024", which read.csv turns into X2024.M01 etc. The API returns long SDMX-CSV, so
+# we pivot.
 #
 # Two upstream quirks drive the implementation:
 #   * startPeriod/endPeriod are ignored on these flows, so the whole flow is fetched
-#     and filtered locally. Responses are large (PPI ~35MB, MFS_IR ~130MB), so the
-#     body is streamed to a temp file and only the needed columns are parsed.
-#   * The FREQUENCY column is mislabelled upstream (it echoes the PPI_ACTIVITY
-#     codelist), so frequency is derived from TIME_PERIOD instead.
+#     and filtered locally. Responses are large (PPI ~35MB, MFS_IR ~130MB, PCPS ~40MB),
+#     so the body is streamed to a temp file and only the needed columns are parsed.
+#   * The FREQUENCY column is mislabelled upstream (on PPI it echoes the PPI_ACTIVITY
+#     codelist; on PCPS "M" is labelled "Mixed-type data" and "Q" "Constant prices"),
+#     so frequency is derived from TIME_PERIOD instead.
 
 IMF_SDMX_BASE <- "https://api.imf.org/external/sdmx/3.0"
 IMF_SDMX_CSV_ACCEPT <- "application/vnd.sdmx.data+csv;version=2.0.0;labels=both"
@@ -198,6 +201,92 @@ register_fetcher(
     imf_to_wide(
       raw,
       id_cols = c("COUNTRY", "INDICATOR", "FREQUENCY"),
+      start_year = imf_window_start_year()
+    )
+  }
+)
+
+## imf_commodity_prices.csv -------------------------------------------------
+
+# PCPS is published by IMF.RES, not IMF.STA like the two flows above.
+IMF_PCPS_AGENCY <- "IMF.RES"
+IMF_PCPS_VERSION <- "9.0.0"
+
+# The API names an indicator with its short form ("Aluminum"); the Data Explorer export
+# the Energy Prices theme was built against composes "<name>, <unit>, <measure>"
+# ("Aluminum, US dollars per metric tonne, Unit prices"). The unit is not carried in the
+# data message at all, so it is restored from config. See the file header there for why
+# two downstream consumers need it.
+imf_pcps_label_map <- local({
+  cached <- NULL
+  function() {
+    if (!is.null(cached)) return(cached)
+
+    root <- getOption("opportunity_security.repo_root")
+    if (is.null(root) || !nzchar(root)) {
+      root <- if (requireNamespace("rprojroot", quietly = TRUE)) {
+        tryCatch(rprojroot::find_root(rprojroot::is_git_root), error = function(e) getwd())
+      } else {
+        getwd()
+      }
+    }
+
+    path <- file.path(root, "config", "imf_pcps_indicator_labels.yml")
+    if (!file.exists(path)) {
+      stop("IMF PCPS indicator label map not found: ", path)
+    }
+
+    cached <<- unlist(yaml::read_yaml(path))
+    cached
+  }
+})
+
+# "PALUM: Aluminum" -> "Aluminum, US dollars per metric tonne, Unit prices".
+# Codes absent from the map keep their plain API label, so a commodity the IMF adds
+# later degrades to a missing unit rather than a failed fetch.
+imf_pcps_compose_indicator <- function(x) {
+  x <- as.character(x)
+  code <- sub("^([^:]+):.*$", "\\1", x)
+  plain <- imf_strip_code(x)
+
+  map <- imf_pcps_label_map()
+  composed <- unname(map[code])
+  ifelse(is.na(composed), plain, composed)
+}
+
+register_fetcher(
+  id = "imf_commodity_prices",
+  description = "IMF Primary Commodity Price System (SDMX 3.0, wide Data Explorer layout)",
+  contract = list(
+    required_columns = c("COUNTRY", "INDICATOR", "DATA_TRANSFORMATION", "FREQUENCY"),
+    min_rows = 200,
+    unique_key = c("COUNTRY", "INDICATOR", "DATA_TRANSFORMATION", "FREQUENCY"),
+    time_column_pattern = "^X?\\d{4}([.-][MQ]\\d{1,2})?$",
+    min_time_columns = 4
+  ),
+  fn = function() {
+    raw <- imf_fetch_dataflow(
+      flow = "PCPS", version = IMF_PCPS_VERSION, agency = IMF_PCPS_AGENCY,
+      columns = c(
+        COUNTRY = "COUNTRY", INDICATOR = "INDICATOR",
+        DATA_TRANSFORMATION = "DATA_TRANSFORMATION",
+        TIME_PERIOD = "TIME_PERIOD", OBS_VALUE = "OBS_VALUE"
+      )
+    )
+
+    raw$COUNTRY <- imf_strip_code(raw$COUNTRY)
+    raw$INDICATOR <- imf_pcps_compose_indicator(raw$INDICATOR)
+    raw$DATA_TRANSFORMATION <- imf_strip_code(raw$DATA_TRANSFORMATION)
+
+    # energy_prices_imf_monthly_usd_long() filters on the plural spelling the staged
+    # export uses; the API returns the singular.
+    raw$DATA_TRANSFORMATION[raw$DATA_TRANSFORMATION == "US dollar"] <- "US dollars"
+
+    raw$FREQUENCY <- imf_frequency_from_period(opsi_normalize_period(raw$TIME_PERIOD))
+
+    imf_to_wide(
+      raw,
+      id_cols = c("COUNTRY", "INDICATOR", "DATA_TRANSFORMATION", "FREQUENCY"),
       start_year = imf_window_start_year()
     )
   }

@@ -307,49 +307,5 @@ if (!skip_data_downloads) {
   yaml::write_yaml(vintage, vintage_path)
 }
 
-# --- Source: IMF Primary Commodity Price System (PCPS) ------------------
-imf_pcps_excel_path <- file.path(raw_data_path, "IMF_PCPS_all.xlsx")
-imf_pcps_excel_status <- sync_raw_file(
-  file.path(sharepoint_raw_dir, "IMF_PCPS_all.xlsx"),
-  imf_pcps_excel_path,
-  force = force_refresh
-)
-
-imf_pcps_prices_path <- file.path(raw_data_path, "imf_pcps_prices.csv")
-imf_pcps_volatility_path <- file.path(raw_data_path, "imf_pcps_price_volatility.csv")
-imf_pcps_series_volatility_path <- file.path(raw_data_path, "imf_pcps_price_volatility_series.csv")
-
-# Recompute when a derived file is missing, when the snapshot workbook moved ahead of
-# the derived outputs, or on a forced refresh.
-imf_pcps_outputs <- c(imf_pcps_prices_path, imf_pcps_volatility_path, imf_pcps_series_volatility_path)
-imf_pcps_stale <- identical(imf_pcps_excel_status, "copied") ||
-  (file.exists(imf_pcps_excel_path) && any(vapply(
-    imf_pcps_outputs,
-    function(p) !file.exists(p) || as.numeric(file.info(imf_pcps_excel_path)$mtime) > as.numeric(file.info(p)$mtime),
-    logical(1)
-  )))
-needs_imf_pcps <- force_refresh || !all(file.exists(imf_pcps_outputs)) || imf_pcps_stale
-
-# The derivation reads the workbook directly, so without it there is nothing to derive.
-# This is not fatal: 10_build_themes.R falls back to imf_commodity_prices.csv for the
-# Energy Prices theme (see OPSI_ENERGY_PRICES_SOURCE).
-if (needs_imf_pcps && !file.exists(imf_pcps_excel_path)) {
-  message(
-    "IMF PCPS: ", basename(imf_pcps_excel_path), " not found in ", raw_data_path,
-    " or sharepoint_raw_dir; skipping the PCPS derivation.\n",
-    "  Energy Prices will read imf_commodity_prices.csv instead."
-  )
-  needs_imf_pcps <- FALSE
-}
-
-if (needs_imf_pcps && !skip_data_downloads) {
-  old_snapshot_option <- getOption("opportunity_security.raw_snapshot_dir")
-  options(opportunity_security.raw_snapshot_dir = raw_data_path)
-  source(file.path(repo_root, "scripts", "06_energy_prices_imf.R"))
-  end_year <- as.integer(format(Sys.Date(), "%Y"))
-  imf_pcps_data <- imf_pcps_energy_prices(start_year = end_year - 9, end_year = end_year)
-  write.csv(imf_pcps_data$prices, imf_pcps_prices_path, row.names = FALSE)
-  write.csv(imf_pcps_data$tech_vol, imf_pcps_volatility_path, row.names = FALSE)
-  write.csv(imf_pcps_data$series_vol, imf_pcps_series_volatility_path, row.names = FALSE)
-  options(opportunity_security.raw_snapshot_dir = old_snapshot_option)
-}
+# IMF Primary Commodity Price System is fetched like the other IMF flows, through the
+# manifest-driven fetcher loop above (id: imf_commodity_prices).

@@ -87,38 +87,7 @@ inputs:
     or resolved.
   required_by:
   - scripts/10_build_themes.R
-- id: imf_pcps_price_volatility
-  path: imf_pcps_price_volatility.csv
-  source_type: api
-  source_name: IMF PCPS derived volatility by technology
-  url: https://www.imf.org/en/research/commodity-prices
-  cadence: monthly
-  owner: lcarey@rmi.org
-  staged_from: pipeline
-  required_by:
-  - scripts/05_ingest_sources.R
-- id: imf_pcps_price_volatility_series
-  path: imf_pcps_price_volatility_series.csv
-  source_type: api
-  source_name: IMF PCPS derived volatility by commodity series
-  url: https://www.imf.org/en/research/commodity-prices
-  cadence: monthly
-  owner: lcarey@rmi.org
-  staged_from: pipeline
-  required_by:
-  - scripts/05_ingest_sources.R
-- id: imf_pcps_prices
-  path: imf_pcps_prices.csv
-  source_type: api
-  source_name: IMF Primary Commodity Price System (monthly price panel)
-  url: https://www.imf.org/en/research/commodity-prices
-  cadence: monthly
-  owner: lcarey@rmi.org
-  staged_from: pipeline
-  notes: Derived from IMF_PCPS_all.xlsx by scripts/06_energy_prices_imf.R.
-  required_by:
-  - scripts/05_ingest_sources.R
-  - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: imf_ppi
   path: imf_ppi.csv
   source_type: api
@@ -134,6 +103,7 @@ inputs:
     have been added.'
   required_by:
   - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: wb_doingbusiness
   path: wb_doingbusiness.csv
   fetch_policy: prefer
@@ -176,6 +146,7 @@ inputs:
   - scripts/10_build_themes.R
   - scripts/15_build_partner_themes.R
   - scripts/30_build_allied_network_design.R
+  - scripts/40_build_index_vintages.R
 - id: wdi_gdp
   path: wdi_gdp.csv
   source_type: api
@@ -262,6 +233,7 @@ inputs:
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
   - scripts/96_pull_trade_timeseries.R
   - scripts/97_bulk_comtrade_downloads.R
 - id: comtrade_vintage
@@ -297,17 +269,25 @@ inputs:
   required_by:
   - scripts/10_build_themes.R
 - id: bnef_lcoe_viewer
-  path: 2025-03-24 - 2025 LCOE Data Viewer Tool.csv
-  pattern: ^\d{4}-\d{2}-\d{2} - \d{4} LCOE Data Viewer Tool\.csv$
+  path: 2026-08-11 - LCOE Data.xlsb
+  pattern: ^\d{4}-\d{2}-\d{2} - .*LCOE Data\.xlsb$|^\d{4}-\d{2}-\d{2} - \d{4} LCOE
+    Data Viewer Tool\.csv$
   resolve: newest
   source_type: manual
   source_name: BloombergNEF LCOE Data Viewer
   url: https://about.bnef.com/insights/clean-energy/new-energy-outlook/
   cadence: semiannual
   owner: lcarey@rmi.org
-  vintage: '2025-03-24'
+  vintage: '2026-08-11'
   licence: subscription
   staged_from: sharepoint
+  notes: 'Staged as the whole macro workbook (.xlsb) from the 2026 release onward;
+    the 2025 release was staged as a CSV export of the "Raw LCOE data" sheet and both
+    names still resolve. No R package reads .xlsb, so scripts/utils/bnef_lcoe.R flattens
+    the sheet once via scripts/utils/convert_xlsb_sheet.ps1 (Excel automation, Windows
+    only) and caches the CSV under data/raw_cache/bnef_lcoe. The theme''s current
+    year comes from the workbook''s "Key cost metrics (YYYY real)" banner: 2024 for
+    the 2025 release, 2025 for the 2026 one.'
   required_by:
   - scripts/10_build_themes.R
 - id: bnef_neo
@@ -324,6 +304,7 @@ inputs:
   staged_from: sharepoint
   required_by:
   - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: bnef_supply_chains
   path: BNEF_Energy Transition Supply Chains 2025.xlsx
   pattern: ^BNEF_Energy Transition Supply Chains \d{4}\.xlsx$
@@ -371,6 +352,7 @@ inputs:
   notes: Public annual download; a strong candidate for automated fetching.
   required_by:
   - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: ei_stat_review_wide
   path: ei_stat_review_world_energy_wide.xlsx
   source_type: manual
@@ -406,6 +388,7 @@ inputs:
     so a relabelled release needs no code change.
   required_by:
   - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: geothermal_lcoe
   path: geothermal_lcoe_mw.csv
   source_type: manual
@@ -440,6 +423,7 @@ inputs:
   notes: Available via Harvard Dataverse; automatable.
   required_by:
   - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: hs92_country_product_year_6
   path: hs92_country_product_year_6.csv
   source_type: manual
@@ -450,14 +434,25 @@ inputs:
   staged_from: sharepoint
   required_by:
   - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: iea_clean_tech_guide
-  path: IEA_Clean_Tech_Guide.csv
+  path: IEACleanTechGuidepublicdataset.csv
+  pattern: ^IEACleanTechGuide.*\.csv$|^IEA_Clean_Tech_Guide\.csv$
+  resolve: newest
   source_type: manual
   source_name: IEA ETP Clean Energy Technology Guide
   url: https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide
   cadence: annual
   owner: lcarey@rmi.org
+  vintage: '2026'
   staged_from: sharepoint
+  notes: Staged as the published IEA public dataset from the 2026 release onward -
+    wide category.1-4 columns, TRL.2020 to TRL.2025, no supplyChain field. Earlier
+    vintages were staged as a hand-built extract named IEA_Clean_Tech_Guide.csv with
+    a comma-joined sector path and trl2020-trl2023. technological_readiness() detects
+    and normalizes either layout and reads the TRL window off whichever columns are
+    present. Neither file name carries a vintage, so resolution falls back to mtime
+    - stage only the current release if that is ambiguous.
   required_by:
   - scripts/10_build_themes.R
 - id: iea_cleantech_midstream
@@ -487,6 +482,7 @@ inputs:
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: iea_ev_data_explorer
   path: IEA_EVDataExplorer2025.xlsx
   pattern: ^IEA_EVDataExplorer\d{4}\.xlsx$
@@ -520,19 +516,28 @@ inputs:
   staged_from: sharepoint
   required_by:
   - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: imf_commodity_prices
   path: imf_commodity_prices.csv
-  source_type: manual
-  source_name: IMF commodity prices (wide export, includes annual YoY series)
+  fetch_policy: prefer
+  source_type: api
+  source_name: IMF Primary Commodity Price System (wide export, includes annual YoY series)
   url: https://www.imf.org/en/research/commodity-prices
   cadence: monthly
   owner: lcarey@rmi.org
   staged_from: sharepoint
-  optional: yes
-  notes: Preferred over imf_pcps_prices.csv because it carries the annual year-on-year
-    series. The pipeline falls back to the API-derived PCPS file when this is absent.
+  notes: 'Fetched from the IMF.RES/PCPS SDMX 3.0 flow by scripts/fetchers/imf_sdmx.R.
+    fetch_policy is prefer, unlike the other IMF entries: PCPS is a world-level price
+    panel with no country dimension, so the coverage divergence that keeps imf_ppi and
+    imf_lending_rates on fallback does not apply. Verified against the 2026-01-22 staged
+    export: 6842 of 6870 overlapping monthly USD observations are identical, and all 28
+    scored commodities still resolve. The 28 differences are upstream revisions to Urea,
+    Potassium Fertilizer and Propane - the staged export had frozen Urea at 183.7051 for
+    all of 2025, which the fetched series corrects. The flow no longer publishes the PCPS
+    exchange-rate series (T*); they return as empty stubs and nothing reads them.'
   required_by:
   - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: imf_dip
   path: imf_dip.csv
   source_type: manual
@@ -544,20 +549,6 @@ inputs:
   notes: Available via the IMF Data API; automatable.
   required_by:
   - scripts/15_build_partner_themes.R
-- id: imf_pcps_all
-  path: IMF_PCPS_all.xlsx
-  source_type: manual
-  source_name: IMF Primary Commodity Price System full workbook
-  url: https://www.imf.org/en/research/commodity-prices
-  cadence: monthly
-  owner: lcarey@rmi.org
-  staged_from: sharepoint
-  optional: yes
-  notes: 'Snapshot input to scripts/06_energy_prices_imf.R, which derives imf_pcps_prices.csv
-    and the two volatility files. Optional: when the workbook is absent the derivation
-    is skipped and the Energy Prices theme reads imf_commodity_prices.csv instead.'
-  required_by:
-  - scripts/05_ingest_sources.R
 - id: ipcc_ghg_intensity
   path: ipcc_ghg_intensity.csv
   source_type: manual

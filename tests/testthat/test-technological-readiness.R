@@ -1,8 +1,11 @@
-repo_root <- getwd()
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
-source(file.path(repo_root, "R", "utils", "assertions.R"))
 source(file.path(repo_root, "R", "categories", "technological_readiness", "technological_readiness.R"))
+
+# read_iea_tech_map_rules() finds config/ from the repo root; without this it would
+# resolve against tests/testthat.
+withr::local_options(opportunity_security.repo_root = repo_root, .local_envir = teardown_env())
 
 iea_fixture <- function() {
   read_fixture_csv("technological_readiness_iea_fixture.csv")
@@ -97,12 +100,14 @@ test_that("tech aggregation uses mean of item-level bell scores and does not imp
   battery_row <- tech_tbl[tech_tbl$tech == "Batteries", ]
   coal_row <- tech_tbl[tech_tbl$tech == "Coal", ]
 
-  expected_item_mean <- mean(c(
-    trl_bell_hard(3, min_trl = 2, mu = 6, max_trl = 11),
-    trl_bell_hard(9, min_trl = 2, mu = 6, max_trl = 11)
-  ))
+  # Three fixture items map to Batteries: the two cells set above plus "Grid storage
+  # system" at TRL 6, which the Storage taxonomy token claims. Derive the expectation
+  # from the assignment so the check stays about the aggregation, not the rule set.
+  battery_trls <- fixture$trl2023[which(fixture$tech == "Batteries")]
+  expect_setequal(battery_trls, c(3, 9, 6))
+  expected_item_mean <- mean(trl_bell_hard(battery_trls, min_trl = 2, mu = 6, max_trl = 11))
 
-  expect_equal(battery_row$trl2023, 6)
+  expect_equal(battery_row$trl2023, mean(battery_trls))
   expect_true(!is.na(battery_row$trl_index))
   expect_true(battery_row$trl_level_index < trl_bell_hard(6, min_trl = 2, mu = 6, max_trl = 11))
   expect_equal(battery_row$trl_level_index, expected_item_mean)
@@ -121,5 +126,58 @@ test_that("technological_readiness output schema stays stable", {
 
   expect_true(all(out$Country == "Global"))
   expect_setequal(unique(out$supply_chain), c("Upstream", "Midstream", "Downstream"))
-  expect_true(all(c("TRL 2023", "TRL Δ 2020–2023", "TRL Level Index", "TRL Momentum Index", "TRL Index") %in% unique(out$variable)))
+  # The fixture carries a single TRL year, so the momentum window collapses onto it.
+  expect_true(all(c("TRL 2023", "TRL Δ 2023–2023", "TRL Level Index", "TRL Momentum Index", "TRL Index") %in% unique(out$variable)))
+  expect_true(all(out$Year == 2023L))
+})
+
+test_that("TRL years follow the release rather than a pinned year", {
+  fixture <- iea_fixture()
+  fixture$trl2024 <- fixture$trl2023 + 1
+  fixture$trl2025 <- fixture$trl2023 + 1
+
+  out <- technological_readiness(fixture, techs = c("Batteries", "Electric Vehicles", "Coal"))
+
+  expect_true("TRL 2025" %in% out$variable)
+  expect_false("TRL 2023" %in% out$variable)
+  expect_true("TRL Δ 2023–2025" %in% out$variable)
+  expect_true(all(out$Year == 2025L))
+})
+
+test_that("the 2026 IEA public dataset layout normalizes onto the legacy columns", {
+  public_dataset <- tibble::tibble(
+    `tech.final.name` = c("Sodium-ion battery", "Small modular reactor"),
+    `tech.description` = c("desc a", "desc b"),
+    `category.1` = c("Energy networks and storage", "Nuclear"),
+    `category.2` = c("Electrochemical storage", "Fission"),
+    `category.3` = c("Batteries", "Small modular reactors"),
+    `category.4` = c("", ""),
+    `Energy Storage.cc` = c("Batteries", ""),
+    `Power.cc` = c("Storage", "Generation"),
+    `TRL.2020` = c(4, 5),
+    `TRL.2025` = c(7, 6)
+  )
+
+  normalized <- technological_readiness_normalize_iea(public_dataset)
+
+  expect_true(all(c("name", "sector", "supplyChain", "trl2020", "trl2025") %in% names(normalized)))
+  expect_identical(normalized$name[[1]], "Sodium-ion battery")
+  # Empty category cells are dropped rather than left as blank taxonomy tokens.
+  expect_identical(
+    normalized$sector[[1]],
+    "Energy networks and storage,Electrochemical storage,Batteries"
+  )
+  expect_identical(normalized$supplyChain[[1]], "Batteries,Storage")
+  expect_identical(normalized$supplyChain[[2]], "Generation")
+
+  assigned <- normalized |>
+    technological_readiness_clean() |>
+    technological_readiness_assign_tech()
+
+  expect_identical(assigned$tech[assigned$name == "Sodium-ion battery"], "Batteries")
+  expect_identical(assigned$tech[assigned$name == "Small modular reactor"], "Nuclear")
+
+  out <- technological_readiness(public_dataset, techs = c("Batteries", "Nuclear"))
+  expect_true(all(c("TRL 2025", "TRL Δ 2020–2025", "TRL Index") %in% out$variable))
+  expect_true(all(out$Year == 2025L))
 })

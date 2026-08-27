@@ -1,4 +1,12 @@
 fixture_path <- function(...) {
+  # testthat runs with the working directory set to tests/testthat, so resolve fixtures
+  # relative to the test file. The repo-relative form is kept as a fallback for callers
+  # that source these helpers from the project root.
+  from_test_file <- tryCatch(testthat::test_path("..", "fixtures", ...), error = function(e) NULL)
+  if (!is.null(from_test_file) && file.exists(from_test_file)) {
+    return(from_test_file)
+  }
+
   file.path("tests", "fixtures", ...)
 }
 
