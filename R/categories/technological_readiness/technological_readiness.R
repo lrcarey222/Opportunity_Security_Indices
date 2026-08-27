@@ -1,3 +1,90 @@
+# Technological readiness theme builder functions.
+#
+# Input is the IEA ETP Clean Energy Technology Guide. The 2026 public dataset changed shape
+# from the extract the pipeline was originally written against:
+#
+#   legacy  name, sector (comma-joined taxonomy path), supplyChain, trl2020..trl2023
+#   2026    tech.final.name, category.1..category.4, <theme>.cc cross-cutting columns,
+#           TRL.2020..TRL.2025
+#
+# technological_readiness_normalize_iea() folds the newer layout back onto the legacy column
+# names so one rule engine and one set of mapping rules serve both. Everything downstream is
+# driven by whichever TRL years are actually present, so a release that adds TRL.2026 moves
+# the theme forward without a code edit.
+
+IEA_CLEAN_TECH_TRL_PATTERN <- "^trl20\\d{2}$"
+
+# TRL columns present, ascending by year.
+technological_readiness_trl_columns <- function(df) {
+  cols <- names(df)[stringr::str_detect(tolower(names(df)), IEA_CLEAN_TECH_TRL_PATTERN)]
+  cols[order(readr::parse_number(cols))]
+}
+
+technological_readiness_trl_years <- function(df) {
+  as.integer(readr::parse_number(technological_readiness_trl_columns(df)))
+}
+
+# TRUE for the 2026-style public dataset (wide categories, TRL.YYYY, no supplyChain).
+is_iea_clean_tech_public_dataset <- function(df) {
+  any(c("tech.final.name", "tech final name") %in% names(df)) ||
+    any(stringr::str_detect(names(df), "^category[.]\\d+$"))
+}
+
+# Join the non-empty values of a set of columns with commas, row-wise. Empty strings are
+# dropped rather than kept as blanks so taxonomy_has_token() never sees an empty token.
+iea_paste_columns <- function(df, cols) {
+  cols <- intersect(cols, names(df))
+  if (length(cols) == 0) {
+    return(rep(NA_character_, nrow(df)))
+  }
+
+  parts <- lapply(cols, function(col) trimws(as.character(df[[col]])))
+  out <- vapply(seq_len(nrow(df)), function(i) {
+    values <- vapply(parts, function(p) p[[i]], character(1))
+    values <- values[!is.na(values) & nzchar(values)]
+    if (length(values) == 0) NA_character_ else paste(values, collapse = ",")
+  }, character(1))
+
+  out
+}
+
+technological_readiness_normalize_iea <- function(iea_cleantech_all) {
+  if (!is_iea_clean_tech_public_dataset(iea_cleantech_all)) {
+    return(iea_cleantech_all)
+  }
+
+  df <- iea_cleantech_all
+  names(df) <- gsub(" ", ".", names(df), fixed = TRUE)
+
+  category_cols <- grep("^category[.]\\d+$", names(df), value = TRUE)
+  category_cols <- category_cols[order(readr::parse_number(category_cols))]
+
+  # The ".cc" columns are the 2026 dataset's cross-cutting classification (Power.cc =
+  # "Generation", Energy.Storage.cc = "Batteries", ...). They carry the same signal the
+  # legacy `supplyChain` column did, so the mapping rules read them the same way.
+  cc_cols <- grep("[.]cc$", names(df), value = TRUE)
+
+  normalized <- tibble::tibble(
+    name = as.character(df[["tech.final.name"]]),
+    sector = iea_paste_columns(df, category_cols),
+    supplyChain = iea_paste_columns(df, cc_cols)
+  )
+
+  trl_cols <- grep("^TRL[.]20\\d{2}$", names(df), value = TRUE)
+  for (col in trl_cols) {
+    normalized[[paste0("trl", sub("^TRL[.]", "", col))]] <- df[[col]]
+  }
+
+  if ("tech.description" %in% names(df)) {
+    normalized$description <- as.character(df[["tech.description"]])
+  }
+  if ("tech.nze.rationale" %in% names(df)) {
+    normalized$NZErationale <- as.character(df[["tech.nze.rationale"]])
+  }
+
+  normalized
+}
+
 parse_trl_value <- function(x) {
   x_chr <- as.character(x)
 
@@ -16,9 +103,18 @@ parse_trl_value <- function(x) {
 }
 
 technological_readiness_clean <- function(iea_cleantech_all) {
-  require_columns(iea_cleantech_all, c("sector", "trl2024", "name"), label = "iea_cleantech_all")
+  iea_cleantech_all <- technological_readiness_normalize_iea(iea_cleantech_all)
 
-  trl_cols <- names(iea_cleantech_all)[stringr::str_detect(names(iea_cleantech_all), "^trl20\\d{2}$")]
+  require_columns(iea_cleantech_all, c("sector", "name"), label = "iea_cleantech_all")
+
+  trl_cols <- technological_readiness_trl_columns(iea_cleantech_all)
+  if (length(trl_cols) == 0) {
+    stop(
+      "iea_cleantech_all carries no TRL columns. Expected trl20XX (legacy extract) or ",
+      "TRL.20XX (IEA public dataset); found: ",
+      paste(utils::head(names(iea_cleantech_all), 20), collapse = ", ")
+    )
+  }
 
   iea_cleantech_all %>%
     dplyr::mutate(
@@ -162,7 +258,15 @@ technological_readiness_assign_tech <- function(clean_tbl, map_rules = read_iea_
     dplyr::mutate(tech = dplyr::na_if(tech, "NA"))
 }
 
-find_trl_start <- function(df, start_candidates = c("trl2020", "trl2021", "trl2022")) {
+# Baseline TRL for the momentum term: the earliest reading an item actually has inside the
+# opening window of the release. The window is the first three TRL years present (trl2020
+# through trl2022 in every release so far), which keeps items that the Guide only started
+# tracking mid-series from scoring a spurious zero delta.
+technological_readiness_start_candidates <- function(df, window = 3L) {
+  utils::head(technological_readiness_trl_columns(df), window)
+}
+
+find_trl_start <- function(df, start_candidates = technological_readiness_start_candidates(df)) {
   candidates <- intersect(start_candidates, names(df))
   if (length(candidates) == 0) {
     return(rep(NA_real_, nrow(df)))
@@ -195,6 +299,51 @@ technological_readiness_mapping_diagnostics <- function(clean_tbl, techs, top_n 
   )
 }
 
+# End year of the release: the newest TRL column the data actually carries, so a Guide
+# release that adds a year moves the theme forward on its own. An explicit year still wins,
+# and is checked against the data rather than trusted.
+technological_readiness_resolve_year_end <- function(df, year_end = NULL) {
+  years <- technological_readiness_trl_years(df)
+  if (length(years) == 0) {
+    stop("No TRL columns found; cannot resolve the technological readiness end year.")
+  }
+
+  if (is.null(year_end)) {
+    return(max(years))
+  }
+
+  year_end <- as.integer(year_end)
+  if (!year_end %in% years) {
+    stop(
+      "Requested TRL end year ", year_end, " is not in the data. Available: ",
+      paste(years, collapse = ", ")
+    )
+  }
+  year_end
+}
+
+technological_readiness_resolve_year_start <- function(df, year_start = NULL) {
+  years <- technological_readiness_trl_years(df)
+  if (is.null(year_start)) {
+    return(min(years))
+  }
+  as.integer(year_start)
+}
+
+# Start/end years carried by an aggregated tech table's trl_delta_<start>_<end> column.
+technological_readiness_delta_window <- function(iea_tech) {
+  delta_col <- grep("^trl_delta_\\d{4}_\\d{4}$", names(iea_tech), value = TRUE)
+  if (length(delta_col) != 1) {
+    stop(
+      "Expected exactly one trl_delta_<start>_<end> column in the aggregated tech table; ",
+      "found: ", if (length(delta_col) == 0) "none" else paste(delta_col, collapse = ", ")
+    )
+  }
+
+  years <- as.integer(stringr::str_match(delta_col, "^trl_delta_(\\d{4})_(\\d{4})$")[1, 2:3])
+  c(start = years[[1]], end = years[[2]])
+}
+
 trl_bell_hard <- function(x, min_trl = 2, mu = 6, max_trl = 11) {
   left_w <- mu - min_trl
   right_w <- max_trl - mu
@@ -223,16 +372,23 @@ technological_readiness_build_tech <- function(iea_cleantech,
                                                  "Geothermal",
                                                  "Electric Grid"
                                                ),
+                                               year_end = NULL,
+                                               year_start = NULL,
                                                min_trl = 2,
                                                mu = 6,
                                                max_trl = 11,
                                                momentum_weight = 0.3,
                                                delta_cap = 3,
                                                gamma_momentum = 0.5) {
+  year_end <- technological_readiness_resolve_year_end(iea_cleantech, year_end)
+  year_start <- technological_readiness_resolve_year_start(iea_cleantech, year_start)
+  end_col <- paste0("trl", year_end)
+  delta_col <- paste0("trl_delta_", year_start, "_", year_end)
+
   iea_cleantech %>%
     dplyr::filter(.data$tech %in% techs) %>%
     dplyr::mutate(
-      trl_end = .data$trl2024,
+      trl_end = .data[[end_col]],
       trl_start = find_trl_start(dplyr::pick(dplyr::everything())),
       trl_delta = .data$trl_end - .data$trl_start,
       trl_level_index_item = trl_bell_hard(.data$trl_end, min_trl = min_trl, mu = mu, max_trl = max_trl),
@@ -247,11 +403,11 @@ technological_readiness_build_tech <- function(iea_cleantech,
     ) %>%
     dplyr::group_by(.data$tech) %>%
     dplyr::summarize(
-      trl2024 = {
+      "{end_col}" := {
         values <- trl_end[!is.na(trl_end)]
         if (length(values) == 0) NA_real_ else mean(values)
       },
-      `trl_delta_2020_2024` = {
+      "{delta_col}" := {
         values <- trl_delta[!is.na(trl_delta)]
         if (length(values) == 0) NA_real_ else mean(values)
       },
@@ -274,31 +430,44 @@ technological_readiness_build_tech <- function(iea_cleantech,
 }
 
 technological_readiness_build_indices <- function(iea_tech,
-                                                  year = 2024L,
-                                                  year_start = 2020L,
-                                                  year_end = 2024L) {
+                                                  year = NULL,
+                                                  year_start = NULL,
+                                                  year_end = NULL) {
+  # technological_readiness_build_tech() names its delta column trl_delta_<start>_<end>,
+  # which is the only place the aggregated table still records the window it used.
+  window <- technological_readiness_delta_window(iea_tech)
+  year_end <- if (is.null(year_end)) window[["end"]] else as.integer(year_end)
+  year_start <- if (is.null(year_start)) window[["start"]] else as.integer(year_start)
+  year <- if (is.null(year)) year_end else as.integer(year)
+
   supply_chain_levels <- c("Upstream", "Midstream", "Downstream")
+  end_col <- paste0("trl", year_end)
+  delta_col <- paste0("trl_delta_", year_start, "_", year_end)
+  end_label <- paste0("TRL ", year_end)
   delta_label <- paste0("TRL Δ ", year_start, "–", year_end)
 
   iea_tech %>%
     tidyr::crossing(supply_chain = supply_chain_levels) %>%
     tidyr::pivot_longer(
-      cols = c(trl2024, trl_delta_2020_2024, trl_level_index, trl_momentum_index, trl_index),
+      cols = dplyr::all_of(c(
+        end_col, delta_col,
+        "trl_level_index", "trl_momentum_index", "trl_index"
+      )),
       names_to = "variable",
       values_to = "value"
     ) %>%
     dplyr::mutate(
       data_type = dplyr::case_when(
-        variable %in% c("trl2024", "trl_delta_2020_2024") ~ "raw",
+        variable %in% c(end_col, delta_col) ~ "raw",
         variable %in% c("trl_level_index", "trl_momentum_index", "trl_index") ~ "index",
         TRUE ~ "raw"
       ),
       variable = dplyr::case_when(
-        variable == "trl2024" ~ "TRL 2024",
-        variable == "trl_delta_2020_2024" ~ delta_label,
+        variable == end_col ~ end_label,
+        variable == delta_col ~ delta_label,
         variable == "trl_level_index" ~ "TRL Level Index",
         variable == "trl_momentum_index" ~ "TRL Momentum Index",
-        variable == "trl_index" ~ "Overall Technology Readiness Index",
+        variable == "trl_index" ~ "TRL Index",
         TRUE ~ variable
       )
     ) %>%
@@ -312,11 +481,11 @@ technological_readiness_build_indices <- function(iea_tech,
       Year = as.integer(year),
       source = "IEA Clean Tech Guide",
       explanation = dplyr::case_when(
-        variable == "TRL 2024" ~ "Mean end-year technology readiness level (TRL) from IEA Clean Tech Guide items mapped to each technology.",
+        variable == end_label ~ "Mean end-year technology readiness level (TRL) from IEA Clean Tech Guide items mapped to each technology.",
         variable == delta_label ~ "Mean change in TRL from start-year to end-year across mapped IEA Clean Tech Guide items.",
         variable == "TRL Level Index" ~ "Goldilocks bell-curve score applied at item level to end-year TRL, then averaged by technology.",
         variable == "TRL Momentum Index" ~ "Scaled positive TRL change from start-year to end-year, capped and transformed, then averaged by technology.",
-        variable == "Overall Technology Readiness Index" ~ "Weighted blend of TRL Level Index and TRL Momentum Index averaged across mapped items.",
+        variable == "TRL Index" ~ "Weighted blend of TRL Level Index and TRL Momentum Index averaged across mapped items.",
         TRUE ~ NA_character_
       )
     )
@@ -336,8 +505,8 @@ technological_readiness <- function(iea_cleantech_all,
                                       "Geothermal",
                                       "Electric Grid"
                                     ),
-                                    year_end = 2024L,
-                                    year_start = 2020L,
+                                    year_end = NULL,
+                                    year_start = NULL,
                                     min_trl = 2,
                                     mu = 6,
                                     max_trl = 11,
@@ -347,6 +516,12 @@ technological_readiness <- function(iea_cleantech_all,
                                     verbose = FALSE,
                                     tech_map_rules = NULL) {
   iea_cleantech <- technological_readiness_clean(iea_cleantech_all)
+
+  # Both years follow the release unless pinned: the newest TRL column is the end year and
+  # the oldest is the start of the momentum window.
+  year_end <- technological_readiness_resolve_year_end(iea_cleantech, year_end)
+  year_start <- technological_readiness_resolve_year_start(iea_cleantech, year_start)
+
   map_rules <- null_coalesce(tech_map_rules, read_iea_tech_map_rules())
 
   iea_with_tech <- technological_readiness_assign_tech(iea_cleantech, map_rules = map_rules)
@@ -363,6 +538,8 @@ technological_readiness <- function(iea_cleantech_all,
   iea_tech <- technological_readiness_build_tech(
     iea_with_tech,
     techs = techs,
+    year_end = year_end,
+    year_start = year_start,
     min_trl = min_trl,
     mu = mu,
     max_trl = max_trl,

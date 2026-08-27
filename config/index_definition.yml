@@ -219,7 +219,11 @@ overall_variables:
   Overall Input Cost Index:
     category: "Cost Competitiveness"
     components:
+      # The LCOE theme names its current-year variable after the BNEF release's reference
+      # year (lcoe_24 for the 2025 release, lcoe_25 for the 2026 one). Only one of these is
+      # ever present in a build; listing both keeps an older staged vintage scoring.
       - "lcoe_24"
+      - "lcoe_25"
       - "lcoe_50"
       - "Overall input cost index"
       - "Input Cost Index"

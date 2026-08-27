@@ -229,6 +229,62 @@ test_that("run_fetcher skips work when the local copy is within its cadence", {
   expect_equal(called$n, 1L)
 })
 
+test_that("PCPS indicator codes are composed into the Data Explorer label form", {
+  root <- normalizePath(test_path("..", ".."), winslash = "/")
+  withr::local_options(opportunity_security.repo_root = root)
+  opsi_load_fetchers()
+
+  # The API's short name carries no unit; energy_prices_extract_unit() and the Aluminum
+  # pattern both read the unit out of the label, so the fetcher has to restore it.
+  expect_equal(
+    imf_pcps_compose_indicator("PALUM: Aluminum"),
+    "Aluminum, US dollars per metric tonne, Unit prices"
+  )
+
+  # "Coal" is the coal index, not the Australian coal price - the codes disambiguate.
+  expect_equal(
+    imf_pcps_compose_indicator("PCOAL: Coal"),
+    "Coal index, Commodity price index, Index, 2016=100"
+  )
+  expect_equal(
+    imf_pcps_compose_indicator("PCOALAU: Coal, Australia"),
+    "Coal, Australia, US dollars per metric tonne, Unit prices"
+  )
+
+  # An unmapped code degrades to its plain label rather than failing the fetch.
+  expect_equal(imf_pcps_compose_indicator("PNEWTHING: Some New Commodity"), "Some New Commodity")
+
+  # Vectorised, because it is applied to a whole column.
+  expect_equal(
+    imf_pcps_compose_indicator(c("PZINC: Zinc", "PNEWTHING: Some New Commodity")),
+    c("Zinc, US dollars per metric tonne, Unit prices", "Some New Commodity")
+  )
+})
+
+test_that("the PCPS label map covers every commodity the Energy Prices theme scores", {
+  root <- normalizePath(test_path("..", ".."), winslash = "/")
+  withr::local_options(opportunity_security.repo_root = root)
+  opsi_load_fetchers()
+  source(file.path(root, "R", "categories", "energy_prices", "energy_prices.R"), local = FALSE)
+
+  labels <- unname(imf_pcps_label_map())
+
+  # Every pattern the theme scores must still find a label in the map, or the swap from
+  # the hand-staged export silently drops a commodity.
+  scored <- setdiff(
+    names(energy_prices_imf_patterns),
+    # Index series the theme only reads when include_optional_indices is on.
+    c("Energy_Index", "Energy_Transition_Metal_Index", "All_Metals_Index", "Base_Metals_Index")
+  )
+
+  unmatched <- Filter(
+    function(nm) !any(grepl(energy_prices_imf_patterns[[nm]], tolower(labels))),
+    scored
+  )
+
+  expect_equal(unmatched, character(0))
+})
+
 test_that("registered fetchers cover the manifest entries that declare them", {
   root <- normalizePath(test_path("..", ".."), winslash = "/")
   opsi_load_fetchers()
@@ -237,7 +293,8 @@ test_that("registered fetchers cover the manifest entries that declare them", {
   manifest <- read_raw_inputs_manifest(raw_inputs_manifest_path(root))
   ids <- setdiff(list_fetchers(), c("probe_exploding", "probe_counting", "probe_network"))
 
-  expect_true(all(c("wb_wdi", "wb_doingbusiness", "imf_ppi", "imf_lending_rates") %in% ids))
+  expect_true(all(c("wb_wdi", "wb_doingbusiness", "imf_ppi", "imf_lending_rates",
+                    "imf_commodity_prices") %in% ids))
 
   # Every fetcher must correspond to a real input, or it writes a file nothing reads.
   for (id in ids) {

@@ -1,3 +1,22 @@
+# Maps IEA Clean Energy Technology Guide items onto the index's technology list.
+#
+# Rules are evaluated in order and the first match wins, which is why Batteries sits above
+# Electric Vehicles: an EV battery item should score as a battery, not as a vehicle.
+#
+# Tokens are matched as whole comma-delimited entries against the item's taxonomy path.
+# Two vintages of that path exist and both are supported:
+#   legacy  sector      = "Demand,Transport,Road transport,Battery"
+#           supplyChain = "Vehicle component,Battery production"
+#   2026    sector      = category.1..category.4, e.g. "Transport,Road transport,..."
+#           supplyChain = the ".cc" cross-cutting columns, e.g. "Electric (batteries),Batteries"
+# The 2026 dataset renamed most of the top level ("Energy networks and storage" for what
+# used to sit under "Supply,Power,Infrastructure"), so token lists carry both spellings.
+#
+# all_tokens / any_tokens / exclude_tokens are matched literally - the matcher escapes them
+# before building the regex - so write them exactly as they appear in the taxonomy.
+# any_supplychain_tokens and any_name_regex ARE regexes, so "Transmission" still matches
+# "Transmission and distribution" and parentheses have to be escaped there.
+
 rules:
   - tech: Coal
     all_tokens: ["Fossil fuels", "Coal"]
@@ -6,35 +25,48 @@ rules:
     all_tokens: ["Fossil fuels", "Oil and gas"]
 
   - tech: Batteries
-    any_tokens: ["Battery", "Electrochemical storage", "Storage"]
-    any_supplychain_tokens: ["Battery production", "Battery recycling", "Battery charging", "Power storage"]
-    any_name_regex: ["battery", "cell", "electrochemical storage"]
-    exclude_tokens: ["Mining"]
+    any_tokens: ["Battery", "Electrochemical storage", "Storage", "Lithium based batteries", "Other batteries technologies", "Battery recycling"]
+    any_supplychain_tokens: ["Battery production", "Battery recycling", "Battery charging", "Power storage", "Batteries", "Electric \\(batteries\\)"]
+    # "\bcell\b" and not bare "cell": the loose form matched every "fuel cell" item and
+    # any word containing the letters, which pulled hydrogen technologies in here.
+    any_name_regex: ["battery", "\\bcell\\b", "electrochemical storage"]
+    # A whole battery-electric vehicle is a vehicle, not a battery, even though its name
+    # starts with "Battery". The taxonomy nodes for complete vehicles hand those to
+    # Electric Vehicles instead; "fuel cell" does the same for hydrogen drivetrains.
+    exclude_tokens: ["Mining", "fuel cell", "Battery electric vehicle", "Electric vehicle (EV)"]
 
   - tech: Electric Vehicles
-    any_tokens: ["Road transport", "Battery electric vehicle"]
-    any_supplychain_tokens: ["Vehicle", "Vehicle component", "Transport infrastructure"]
-    exclude_tokens: ["Battery"]
+    any_tokens: ["Road transport", "Battery electric vehicle", "Electric vehicle (EV)"]
+    any_supplychain_tokens: ["Vehicle", "Vehicle component", "Transport infrastructure", "Electric \\(vehicles\\)"]
+    # No "Battery" exclusion: Batteries is evaluated first and now carries precise
+    # exclusions, so anything genuinely battery-shaped has already been claimed. Excluding
+    # the word here only pushed complete vehicles named "Battery electric ..." off the list.
 
   - tech: Green Hydrogen
-    any_tokens: ["Hydrogen"]
-    any_supplychain_tokens: ["H2 production", "H2 transport", "H2 storage", "H2 use", "Hydrogen production", "Hydrogen transport", "Hydrogen storage", "Hydrogen use"]
+    any_tokens: ["Hydrogen", "Electrolysis"]
+    any_supplychain_tokens: ["H2 production", "H2 transport", "H2 storage", "H2 use", "Hydrogen production", "Hydrogen transport", "Hydrogen storage", "Hydrogen use", "Direct use", "Hydrogen-based fuels"]
     any_name_regex: ["electrolys", "green hydrogen", "renewable hydrogen"]
     exclude_tokens: ["Fossil fuels"]
 
   - tech: Electric Grid
-    any_tokens: ["Infrastructure", "Grid"]
-    any_supplychain_tokens: ["Power transport", "Transmission", "Distribution", "Grid operation", "Power system"]
+    # Deliberately "Power grids" and not the 2026 top level "Energy networks and storage":
+    # that level also holds thermal and mechanical storage, which are not grid assets.
+    any_tokens: ["Infrastructure", "Grid", "Power grids"]
+    any_supplychain_tokens: ["Power transport", "Transmission", "Distribution", "Grid operation", "Power system", "Flexibility \\(grids\\)"]
     any_name_regex: ["transmission", "distribution", "smart grid", "substation", "grid"]
 
   - tech: Solar
+    any_tokens: ["Solar", "Photovoltaic"]
     any_name_regex: ["\\bPV\\b", "solar", "photovoltaic"]
 
   - tech: Wind
+    any_tokens: ["Wind"]
     any_name_regex: ["wind"]
 
   - tech: Nuclear
+    any_tokens: ["Nuclear", "Fission", "Fusion"]
     any_name_regex: ["nuclear", "reactor"]
 
   - tech: Geothermal
+    any_tokens: ["Geothermal"]
     any_name_regex: ["geothermal"]

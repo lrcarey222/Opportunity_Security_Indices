@@ -36,6 +36,7 @@ source(local({
 }))
 
 source(file.path(repo_root, "scripts", "utils", "raw_inputs.R"))
+source(file.path(repo_root, "scripts", "utils", "bnef_lcoe.R"))
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
@@ -143,7 +144,17 @@ critical_minerals_path <- resolve_versioned_raw_input(
   label = "IEA Critical Minerals Dataset"
 )
 cleantech_midstream_path <- file.path(raw_data_path, "iea_cleantech_Midstream.csv")
-iea_cleantech_guide_path <- file.path(raw_data_path, "IEA_Clean_Tech_Guide.csv")
+iea_cleantech_guide_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  # The 2026 public dataset ships under a new name and a new schema; the hand-built
+  # extract stays matchable so an older stage still builds. Neither name carries a
+  # vintage, so the newer file on disk wins, and the theme builder detects which
+  # layout it was handed. No brackets in this comment - the manifest scanner reads
+  # the call as source text and stops at the first closing bracket it finds.
+  pattern = "^IEACleanTechGuide.*\\.csv$|^IEA_Clean_Tech_Guide\\.csv$",
+  fallback = "IEACleanTechGuidepublicdataset.csv",
+  label = "IEA Clean Tech Guide"
+)
 ev_midstream_path <- file.path(raw_data_path, "ev_Midstream_capacity.csv")
 trade_codes_path <- file.path(raw_data_path, "consolidated_hs6_energy_tech_long.csv")
 trade_hs4_path <- file.path(raw_data_path, "hs92_country_product_year_4.csv")
@@ -178,8 +189,11 @@ critmin_total_export_path <- resolve_versioned_raw_input(
 )
 energy_prices_lcoe_path <- resolve_versioned_raw_input(
   raw_data_path,
-  pattern = "^\\d{4}-\\d{2}-\\d{2} - \\d{4} LCOE Data Viewer Tool\\.csv$",
-  fallback = "2025-03-24 - 2025 LCOE Data Viewer Tool.csv",
+  # BNEF stopped shipping a CSV export after the 2025 release and now stages the whole
+  # macro workbook as .xlsb. Top-level alternation with no capture group, because the
+  # manifest scanner reads this call as source text and stops at the first bracket.
+  pattern = "^\\d{4}-\\d{2}-\\d{2} - .*LCOE Data\\.xlsb$|^\\d{4}-\\d{2}-\\d{2} - \\d{4} LCOE Data Viewer Tool\\.csv$",
+  fallback = "2026-08-11 - LCOE Data.xlsb",
   label = "BNEF LCOE Data Viewer"
 )
 iea_weo_path <- resolve_versioned_raw_input(
@@ -226,29 +240,10 @@ dual_use_scores_path <- file.path(
 investment_monitor_path <- file.path(
   raw_data_path, "GCIM_Investment_Capacity_aggregated.xlsx")
 
-# Energy prices input. The hand-staged wide IMF export is preferred because it carries
-# the annual year-on-year series, but the pipeline now falls back to the PCPS panel
-# that scripts/05_ingest_sources.R derives from IMF_PCPS_all.xlsx. energy_prices()
-# already accepts either shape (see energy_prices_long_from_pcps). Override with
-# OPSI_ENERGY_PRICES_SOURCE=manual|pcps|auto.
-imf_commodity_prices_path <- file.path(raw_data_path, "imf_commodity_prices.csv")
-imf_pcps_prices_path <- file.path(raw_data_path, "imf_pcps_prices.csv")
-energy_prices_source_pref <- tolower(Sys.getenv("OPSI_ENERGY_PRICES_SOURCE", "auto"))
-
-imf_price_path <- switch(
-  energy_prices_source_pref,
-  manual = imf_commodity_prices_path,
-  pcps = imf_pcps_prices_path,
-  if (file.exists(imf_commodity_prices_path)) imf_commodity_prices_path else imf_pcps_prices_path
-)
-
-if (identical(imf_price_path, imf_pcps_prices_path)) {
-  message(
-    "Energy prices: using API-derived ", basename(imf_pcps_prices_path),
-    ". yoy_price_change_pct is not available from this source; ",
-    "stage imf_commodity_prices.csv to restore it."
-  )
-}
+# Energy prices input: the wide IMF PCPS export, fetched from the SDMX API by
+# scripts/fetchers/imf_sdmx.R or hand-staged from the IMF Data Explorer. Both carry the
+# annual year-on-year series the theme reports alongside volatility.
+imf_price_path <- file.path(raw_data_path, "imf_commodity_prices.csv")
 
 
 
@@ -383,6 +378,7 @@ country_info <- standardize_country_info(country_info)
   reserves_tbl <- reserves(ei, reserve_inputs, mineral_demand_clean)
   reserves_tbl <- standardize_theme_types(reserves_tbl, country_info = country_info)
   write_processed_tbl(reserves_tbl, "reserves_tbl", processed_dir)
+
   cleantech_midstream <- read.csv(cleantech_midstream_path)
   ev_midstream <- read.csv(ev_midstream_path)
   foreign_dependency_tbl <- foreign_dependency(
@@ -413,7 +409,10 @@ country_info <- standardize_country_info(country_info)
 
   
   # Theme: Technological readiness (IEA Clean Tech Guide).
-  iea_cleantech_guide <- read.csv(iea_cleantech_guide_path)
+  # The 2026 public dataset ships with a UTF-8 BOM, which would otherwise land in the first
+  # column name and hide it from the layout check. The TRL window (2020-2025 for the 2026
+  # release) is read off whichever TRL columns the file carries.
+  iea_cleantech_guide <- read.csv(iea_cleantech_guide_path, fileEncoding = "UTF-8-BOM")
   technological_readiness_tbl <- technological_readiness(
     iea_cleantech_all = iea_cleantech_guide
   )
@@ -502,8 +501,18 @@ country_info <- standardize_country_info(country_info)
   write_processed_tbl(energy_prices_tbl, "energy_prices_tbl", processed_dir)
 
   # Theme: LCOE competitiveness (BNEF data).
-  lcoe_bnef <- read.csv(energy_prices_lcoe_path, skip = 8)
-  lcoe_competitiveness_tbl <- lcoe_competitiveness(lcoe_bnef = lcoe_bnef)
+  # read_bnef_lcoe() flattens the .xlsb release to CSV once (cached under data/raw_cache)
+  # and attaches the release's reference year, which is the "current" year the theme scores
+  # against 2050. It moved from 2024 to 2025 with the 2026 release.
+  lcoe_bnef <- read_bnef_lcoe(energy_prices_lcoe_path, root_dir = repo_root)
+  lcoe_competitiveness_tbl <- lcoe_competitiveness(
+    lcoe_bnef = lcoe_bnef,
+    source_label = paste0(
+      "BNEF LCOE Data Viewer (",
+      sub("^(\\d{4}-\\d{2}-\\d{2}).*$", "\\1", basename(energy_prices_lcoe_path)),
+      ")"
+    )
+  )
   lcoe_competitiveness_tbl <- standardize_theme_types(
     lcoe_competitiveness_tbl,
     country_info = country_info
@@ -515,9 +524,7 @@ country_info <- standardize_country_info(country_info)
   )
 
   # Theme: Trade concentration (Atlas data + WDI country reference).
-  subcat <- readr::read_csv(hs6_category_path, show_col_types = FALSE) %>%
-    rename("tech"="Technology",
-           "supply_chain" = "Value Chain")
+  subcat <- readr::read_csv(hs6_category_path, show_col_types = FALSE)
 
   aec_4_data <- read.csv(trade_hs4_path)
   aec_6_data <- read.csv(trade_hs6_path)

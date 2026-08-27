@@ -297,7 +297,7 @@ index_vintage_theme_spec <- function() {
     "future_demand",                   "Technology Demand",          FALSE, "IEA WEO / BNEF NEO / BCG forward projections",
     "overcapacity_premium",            "Technology Demand",          FALSE, "BNEF supply-chain snapshot",
     "market_share_manufacturing",      "Foreign Dependency",         FALSE, "IEA clean-tech manufacturing shares, single release",
-    "lcoe_competitiveness",            "Cost Competitiveness",       FALSE, "BNEF LCOE projection to 2050",
+    "lcoe_competitiveness",            "Cost Competitiveness",       FALSE, "BNEF LCOE, release reference year plus its 2050 projection",
     "technological_readiness",         "Technological Readiness",    FALSE, "IEA Clean Tech Guide TRL columns, single release"
   )
 }

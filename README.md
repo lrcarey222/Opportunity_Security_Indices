@@ -380,16 +380,18 @@ This section is written to function as a **drop-in technical appendix inside the
 **Overall variable construction (configured):** the category score uses `Overall Technological Readiness Index`, calculated as the **mean** of: `TRL Index`.
 
 **Data sources:**
-- **IEA ETP Clean Energy Technology Guide** ([IEA-CTG]) — TRL and technology classification inputs (as used in repo extracts)
+- **IEA ETP Clean Energy Technology Guide** ([IEA-CTG]) — TRL and technology classification inputs. The 2026 public dataset (`IEACleanTechGuidepublicdataset.csv`) carries `TRL.2020`–`TRL.2025`, so the current window is **2020 → 2025**.
 
 **Rationale:** readiness is strongest in a "Goldilocks" band (not too nascent, not fully mature), and technologies with improving TRL trajectories can represent rising opportunity.
 
 **Method notes:**
 - Mapping from IEA taxonomy to target technologies is token-based and config-driven via `config/iea_clean_tech_guide_tech_map.yml` (using taxonomy + supply-chain signals rather than brittle fixed sector positions).
-- The TRL theme now blends:
+- The theme reads the TRL window off whichever `TRL.YYYY` columns the release carries: the newest is the end year, the oldest opens the momentum window. Nothing is pinned, so a Guide release that adds a year moves the theme forward on its own.
+- Two IEA layouts are accepted. The 2026 public dataset uses `tech.final.name`, `category.1`–`category.4` and cross-cutting `*.cc` columns; the earlier hand-built extract used `name`, a comma-joined `sector` path and `supplyChain`. The builder normalizes the newer shape onto the older column names before mapping.
+- The TRL theme blends:
   - **TRL Level Index**: Goldilocks bell-curve score on end-year TRL.
-  - **TRL Momentum Index**: scaled positive TRL change from 2020 to 2023.
-  - **TRL Index**: weighted combination of level and momentum.
+  - **TRL Momentum Index**: scaled positive TRL change across the release's window.
+  - **TRL Index**: weighted combination of level and momentum. This is the variable `Overall Technological Readiness Index` is built from.
 - Fossil fuel technologies (**Coal**, **Oil**, **Gas**) are explicitly supported through taxonomy rules.
 
 **Implementation entry point:**
@@ -400,7 +402,9 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 5) Cost Competitiveness
 **What it captures:** deployment/manufacturing cost position, including relative technology costs, LCOE competitiveness, and composite “input cost” competitiveness (labor + capital proxies).
 
-**Overall variable construction (configured):** the category score uses `Overall Input Cost Index`, calculated as the **mean** of: `lcoe_24`, `lcoe_50`, `Overall input cost index`, `Input Cost Index`, and `IEA Cost index`.
+**Overall variable construction (configured):** the category score uses `Overall Input Cost Index`, calculated as the **mean** of: `lcoe_<current year>`, `lcoe_50`, `Overall input cost index`, `Input Cost Index`, and `IEA Cost index`.
+
+The LCOE theme names its current-year variable after the reference year of the staged BNEF release — `lcoe_24` for the 2025 release, `lcoe_25` for the 2026 one, read from the workbook's "Key cost metrics (YYYY real)" banner. `config/index_definition.yml` lists both spellings; only the one matching the staged vintage is ever present in a build.
 
 **Data sources (cited where applicable):**
 - **IMF Data Explorer** ([IMF-DEX]) — lending rates and PPI series used as capital/input-cost proxies (as used in repo extracts)
@@ -408,6 +412,8 @@ This section is written to function as a **drop-in technical appendix inside the
 - **BloombergNEF New Energy Outlook** ([BNEF-NEO]) — used in some downstream competitiveness scaffolding (as used in repo extracts)
 
 *(Note: the repo also uses BNEF LCOE and IEA relative cost exports; see `docs/sources.md` for provenance and internal snapshot naming.)*
+
+*BNEF ships the LCOE Data Viewer as a macro workbook (`.xlsb`) from the 2026 release onward. No R package reads that container, so `scripts/utils/bnef_lcoe.R` flattens the "Raw LCOE data" sheet once through `scripts/utils/convert_xlsb_sheet.ps1` (Excel automation, Windows only) and caches the CSV under `data/raw_cache/bnef_lcoe/`, keyed on the source file's mtime. A `.csv` export of the same sheet is still read directly, so the 2025 release keeps working.*
 
 **Rationale:** opportunity depends not just on demand, but on **bankable cost competitiveness** — production + deployment happen where costs clear.
 
@@ -695,9 +701,8 @@ Optional environment variables:
 - `OPSI_REQUIRE_FETCH=true|false` — make a failed fetch fatal instead of falling back to
   the local file
 - `OPSI_IMF_START_YEAR=<year>` — earliest year kept by the IMF fetchers (default 1990;
-  the window controls country coverage, not just recency)
-- `OPSI_ENERGY_PRICES_SOURCE=auto|manual|pcps` — which IMF price file the Energy Prices
-  theme reads (`auto` prefers the staged wide export, falls back to the API-derived PCPS panel)
+  on PPI and lending rates the window controls country coverage, not just recency, and on
+  commodity prices it must stay well behind the 20-year volatility window)
 
 When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under
 `data/raw/comtrade_chunks/...` and automatically combines them into final CSVs
@@ -880,9 +885,12 @@ Three properties matter:
   fetcher runs on the source's cadence. `fallback` (the default) means a staged file wins
   and the fetcher only runs when no local copy exists. `OPSI_PREFER_FETCH=true` overrides
   all entries for one run.
-- **Coverage differences are recorded, not hidden.** The IMF entries are `fallback`
-  because the live flows no longer publish every country in the staged extracts — see
-  their `notes` in the manifest for the measured deltas.
+- **Coverage differences are recorded, not hidden.** `imf_ppi` and `imf_lending_rates` are
+  `fallback` because the live flows no longer publish every country in the staged extracts —
+  see their `notes` in the manifest for the measured deltas. `imf_commodity_prices` is
+  `prefer`: PCPS is a world-level price panel with no country dimension, so that divergence
+  does not arise, and the fetched series match the staged export on 6842 of 6870 overlapping
+  observations.
 
 Not automatable, and marked `manual` for that reason: the Energy Institute download sits
 behind a Cloudflare challenge, and BNEF, BCG, GTA NIPO and the IEA extracts are
@@ -896,8 +904,7 @@ Rscript scripts/03_check_raw_inputs.R
 
 Reports, without writing anything, which inputs are blocking, which are absent but
 covered by a fetcher, and which are absent but optional. Optional inputs let the
-pipeline degrade rather than stop — `IMF_PCPS_all.xlsx` is the main one: without it the
-PCPS derivation is skipped and the Energy Prices theme reads `imf_commodity_prices.csv`.
+pipeline degrade rather than stop.
 
 ### How refresh works
 
