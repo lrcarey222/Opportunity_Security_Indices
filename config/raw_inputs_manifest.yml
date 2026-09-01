@@ -483,17 +483,23 @@ inputs:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
-- id: iea_ev_data_explorer
-  path: IEA_EVDataExplorer2025.xlsx
-  pattern: ^IEA_EVDataExplorer\d{4}\.xlsx$
+- id: iea_ev_outlook
+  path: EV data by country 2026.csv
+  pattern: ^EV data by country \d{4}\.csv$|^IEA_EVDataExplorer\d{4}\.xlsx$
   resolve: newest
   source_type: manual
-  source_name: IEA Global EV Data Explorer
-  url: https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer
+  source_name: IEA Global EV Outlook
+  url: https://www.iea.org/data-and-statistics/data-product/global-ev-outlook-2026
   cadence: annual
   owner: lcarey@rmi.org
-  vintage: '2025'
+  vintage: '2026'
   staged_from: sharepoint
+  notes: 'Global EV Outlook 2026, staged as the published country CSV ("EV data by
+    country 2026.csv"); through the 2025 release the same extract arrived as the EV
+    Data Explorer workbook and both names still resolve. R/utils/iea_ev.R reads either
+    form. The 2026 release moved the projection horizon from 2030 to 2035, added a
+    Current Policies scenario beside Stated Policies, and added an "EV" powertrain
+    total alongside the BEV/PHEV/FCEV rows it sums.'
   required_by:
   - scripts/10_build_themes.R
 - id: iea_pams
