@@ -302,7 +302,12 @@ test_that("mapped rows cannot reach CONFIDENCE_FLOOR, so the realised range is n
 # product can be tested without touching the real export.
 make_policy_fixture <- function(n = 3,
                                 partner_csv = c("Brazil", "Brazil, China",
-                                                "Brazil, China, India, Japan")) {
+                                                "Brazil, China, India, Japan"),
+                                announce_date = as.Date("2020-01-01"),
+                                impl_date = as.Date("2020-06-01"),
+                                removal_date = as.Date(NA)) {
+  rep_to_n <- function(x) if (length(x) == n) x else rep(x, length.out = n)
+
   tibble::tibble(
     nipo_row_id = seq_len(n),
     `State Act ID` = seq_len(n),
@@ -313,9 +318,9 @@ make_policy_fixture <- function(n = 3,
     `Initial Assessment (Change Relative to 1 Jan 2009)` = rep("Distortive", n),
     `Level of Government Implementation` = rep("National", n),
     `Affected Trade Flow` = rep("inward", n),
-    `Announcement Date` = rep(as.Date("2020-01-01"), n),
-    `Implementation Date` = rep(as.Date("2020-06-01"), n),
-    `Removal Date` = rep(as.Date(NA), n),
+    `Announcement Date` = rep_to_n(announce_date),
+    `Implementation Date` = rep_to_n(impl_date),
+    `Removal Date` = rep_to_n(removal_date),
     total_hs6 = rep(4L, n),
     matched_hs6 = rep(2L, n),
     `Affected Jurisdiction` = partner_csv[seq_len(n)],
@@ -400,6 +405,236 @@ test_that("strength_constant only rescales and cannot change any ranking", {
     rank(one$scale_strength_base),
     rank(two$scale_strength_base)
   )
+})
+
+# ==============================================================================
+# Task 4 - announced-but-unimplemented measures stop being discarded
+# ==============================================================================
+
+test_that("pending_implementation flags announced measures with no impl date", {
+  base <- build_policy_base(make_policy_fixture(
+    n = 3,
+    announce_date = as.Date(c("2020-01-01", "2020-01-01", NA)),
+    impl_date = as.Date(c("2020-06-01", NA, NA))
+  ))
+
+  expect_equal(base$pending_implementation, c(FALSE, TRUE, FALSE))
+})
+
+test_that("impl_lag_days measures the announcement-to-implementation gap", {
+  base <- build_policy_base(make_policy_fixture(
+    n = 4,
+    announce_date = as.Date(c("2020-01-01", "2020-01-01", "2020-06-01", NA)),
+    impl_date = as.Date(c("2020-01-31", NA, "2020-01-01", "2020-06-01"))
+  ))
+
+  # 30-day gap; pending; negative lag (data error) -> NA; missing announce -> NA.
+  expect_equal(base$impl_lag_days, c(30, NA, NA, NA))
+})
+
+test_that("m_duration still zeroes pending measures, preserving stock semantics", {
+  base <- build_policy_base(make_policy_fixture(
+    n = 2,
+    announce_date = as.Date(c("2020-01-01", "2020-01-01")),
+    impl_date = as.Date(c("2020-06-01", NA))
+  ))
+
+  expect_equal(base$m_duration[2], 0)
+  # And so the whole product is zero for that row - the behaviour Task 4
+  # documents rather than changes.
+  expect_equal(base$scale_strength_pkg[2], 0)
+  expect_gt(base$scale_strength_pkg[1], 0)
+})
+
+test_that("m_duration saturates at 1 for every in-force measure", {
+  # The reason m_duration carries no information for the 69% of the export that
+  # is implemented with no removal date: planned_end is impl + 60 months, so
+  # m_duration = min(1, sqrt(60/24)) = 1 regardless of actual age.
+  base <- build_policy_base(make_policy_fixture(
+    n = 2,
+    impl_date = as.Date(c("2009-01-01", "2026-01-01")),
+    removal_date = as.Date(c(NA, NA))
+  ))
+
+  expect_equal(base$m_duration, c(1, 1))
+})
+
+test_that("observed_duration_days is NA while in force and exact once removed", {
+  asof <- as.Date("2026-06-30")
+  base <- add_asof_flags(
+    build_policy_base(make_policy_fixture(
+      n = 3,
+      impl_date = as.Date(c("2020-01-01", "2020-01-01", NA)),
+      removal_date = as.Date(c("2020-01-31", NA, NA))
+    )),
+    as_of_date = asof
+  )
+
+  expect_equal(base$observed_duration_days, c(30, NA, NA))
+  expect_equal(base$duration_censored, c(FALSE, TRUE, FALSE))
+})
+
+test_that("exposure_days censors at as_of_date", {
+  asof <- as.Date("2020-12-31")
+  base <- add_asof_flags(
+    build_policy_base(make_policy_fixture(
+      n = 3,
+      impl_date = as.Date(c("2020-01-01", "2020-01-01", NA)),
+      removal_date = as.Date(c("2020-01-31", NA, NA))
+    )),
+    as_of_date = asof
+  )
+
+  # Removed measure: full lifetime. In-force: censored at as_of. Pending: NA.
+  expect_equal(base$exposure_days, c(30, 365, NA))
+})
+
+test_that("a removal date after as_of_date is censored, not counted", {
+  base <- add_asof_flags(
+    build_policy_base(make_policy_fixture(
+      n = 1, impl_date = as.Date("2020-01-01"),
+      removal_date = as.Date("2030-01-01")
+    )),
+    as_of_date = as.Date("2020-12-31")
+  )
+
+  expect_equal(base$exposure_days, 365)
+  expect_true(base$duration_censored)
+})
+
+test_that("add_asof_flags warns when the as-of date is in the future", {
+  fixture <- build_policy_base(make_policy_fixture(n = 1))
+  expect_warning(
+    add_asof_flags(fixture, as_of_date = Sys.Date() + 400),
+    "in the future"
+  )
+  expect_silent(add_asof_flags(fixture, as_of_date = Sys.Date() - 1))
+})
+
+test_that("the new duration columns do not enter the strength product", {
+  # Two measures identical except that one has ended, so they differ in
+  # observed_duration_days and exposure_days but must not differ in strength.
+  base <- add_asof_flags(
+    build_policy_base(make_policy_fixture(
+      n = 2, partner_csv = c("Brazil", "Brazil"),
+      impl_date = as.Date(c("2020-01-01", "2020-01-01")),
+      removal_date = as.Date(c(as.Date("2026-01-01"), NA))
+    )),
+    as_of_date = as.Date("2026-06-30")
+  )
+
+  expect_false(identical(base$exposure_days[1], base$exposure_days[2]))
+  # m_duration does differ (the removed one is downweighted, the perverse
+  # behaviour Task 4 documents), but nothing reads the new columns.
+  expect_true(all(c("observed_duration_days", "exposure_days",
+                    "impl_lag_days", "pending_implementation") %in% names(base)))
+})
+
+test_that("pending rows survive into the allocation table", {
+  # The requirement: pending measures must reach the allocation table so the
+  # Task 9 delivery metrics can use them, even though they carry zero strength
+  # and are excluded from the active stock.
+  fixture <- make_policy_fixture(
+    n = 2,
+    announce_date = as.Date(c("2020-01-01", "2020-01-01")),
+    impl_date = as.Date(c("2020-06-01", NA))
+  )
+  fixture$Technology <- list("Solar", "Solar")
+  fixture$`Value.Chain` <- list("Midstream", "Midstream")
+  fixture$hs6_codes <- list("854143", "854143")
+  fixture$cpc3_codes <- list("461", "461")
+  fixture$cpc3_n <- c(1L, 1L)
+  fixture$allowed_pairs_cpc <- list(character(0), character(0))
+  fixture$Title <- c("solar module plant", "solar module plant")
+  fixture$source_text <- c("", "")
+  # allocate_policy_to_tech_sc() reads coalesce(source_text, Source, ""), so
+  # both text columns must exist.
+  fixture$Source <- c("", "")
+
+  asof <- add_asof_flags(build_policy_base(fixture), as_of_date = as.Date("2026-06-30"))
+  expect_equal(nrow(asof), 2)
+
+  alloc <- allocate_policy_to_tech_sc(asof)
+  # Both policies present in the allocation, pending one included.
+  expect_setequal(unique(alloc$policy_id), c(1, 2))
+  expect_true(any(alloc$pending_implementation))
+
+  # ...but the pending one is not part of the active stock.
+  expect_equal(sum(asof$is_active_asof), 1)
+})
+
+# ==============================================================================
+# Task 5 - the scale multiplier split into exposure and fiscal
+# ==============================================================================
+
+# Scale fields vary per row: one trade-only, one subsidy-only, one both, one
+# neither. p95 is computed within the call, so compare across modes not to
+# hard-coded multiplier values.
+make_scale_fixture <- function() {
+  f <- make_policy_fixture(n = 4, partner_csv = rep("Brazil", 4))
+  f$`Trade Covered (USD Million)` <- c(500, NA, 500, NA)
+  f$`Size of Subsidy (USD Million)` <- c(NA, 500, 500, NA)
+  f
+}
+
+test_that("m_scale_exposure and m_scale_fiscal are reported separately", {
+  base <- build_policy_base(make_scale_fixture())
+
+  expect_true(all(c("m_scale_exposure", "m_scale_fiscal",
+                    "scale_exposure_available", "scale_fiscal_available")
+                  %in% names(base)))
+  # The legacy m_trade / m_subsidy columns are kept, not renamed away.
+  expect_true(all(c("m_trade", "m_subsidy", "m_scale") %in% names(base)))
+  expect_equal(base$m_scale_exposure, base$m_trade)
+  expect_equal(base$m_scale_fiscal, base$m_subsidy)
+})
+
+test_that("availability flags distinguish missing from smallest-scale", {
+  base <- build_policy_base(make_scale_fixture())
+
+  expect_equal(base$scale_exposure_available, c(TRUE, FALSE, TRUE, FALSE))
+  expect_equal(base$scale_fiscal_available, c(FALSE, TRUE, TRUE, FALSE))
+
+  # This is the defect the flags expose: log_mult() maps NA to 0 and returns a
+  # multiplier of 1, so a missing field is numerically identical to a genuinely
+  # zero-value one. Row 4 has neither field populated yet still scores 1.
+  expect_equal(base$m_scale_exposure[2], 1)
+  expect_equal(base$m_scale_exposure[4], 1)
+  expect_false(base$scale_exposure_available[2])
+})
+
+test_that("scale_mode selects the intended term", {
+  exposure <- build_policy_base(make_scale_fixture(), scale_mode = "exposure")
+  fiscal <- build_policy_base(make_scale_fixture(), scale_mode = "fiscal")
+  legacy <- build_policy_base(make_scale_fixture(), scale_mode = "max")
+  none <- build_policy_base(make_scale_fixture(), scale_mode = "none")
+
+  expect_equal(exposure$m_scale, exposure$m_scale_exposure)
+  expect_equal(fiscal$m_scale, fiscal$m_scale_fiscal)
+  expect_equal(legacy$m_scale, pmax(legacy$m_trade, legacy$m_subsidy))
+  expect_equal(none$m_scale, rep(1, 4))
+})
+
+test_that("exposure is the default scale_mode", {
+  default <- build_policy_base(make_scale_fixture())
+  exposure <- build_policy_base(make_scale_fixture(), scale_mode = "exposure")
+  expect_equal(default$m_scale, exposure$m_scale)
+})
+
+test_that("legacy max() lets exposure stand in for fiscal commitment", {
+  # The substantive complaint: a trade-heavy measure with NO fiscal outlay
+  # (row 1) scores the same under "max" as a large subsidy with no trade
+  # coverage (row 2), because max() cannot tell the two apart.
+  legacy <- build_policy_base(make_scale_fixture(), scale_mode = "max")
+  expect_equal(legacy$m_scale[1], legacy$m_scale[2])
+
+  # Under "fiscal" they separate, because row 1 committed no money.
+  fiscal <- build_policy_base(make_scale_fixture(), scale_mode = "fiscal")
+  expect_lt(fiscal$m_scale[1], fiscal$m_scale[2])
+})
+
+test_that("scale_mode rejects an unknown value", {
+  expect_error(build_policy_base(make_scale_fixture(), scale_mode = "nonsense"))
 })
 
 test_that("neis_audit_keywords() reports hit rates in the documented shape", {

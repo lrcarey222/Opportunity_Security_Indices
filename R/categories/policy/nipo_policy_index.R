@@ -1549,6 +1549,17 @@ clean_nipo_raw <- function(raw_nipo,
 #'   1. The pre-remediation product carried a bare, undocumented 2 here, which
 #'   only rescaled every row identically and so changed no ranking; it is kept
 #'   as an argument purely so dis_legacy_mode can reproduce old levels.
+#' @param scale_mode which monetary/coverage term enters m_scale:
+#'   "exposure" (default) uses Trade Covered only, "fiscal" uses Size of Subsidy
+#'   only, "max" is the legacy pmax of both, "none" drops the term entirely.
+#'   "exposure" is the default because it has by far the more consistent series:
+#'   in the July 2026 export Trade Covered is populated for 26-58% of policies
+#'   in every year since 2008, against 1-45% for Size of Subsidy. Note that this
+#'   is NOT the rationale originally proposed for the default; there is no
+#'   coverage break at 2023. Subsidy coverage actually PEAKS in 2019 at 45.1%
+#'   and declines to 12.5% by 2025, consistent with reporting lag on recent
+#'   measures rather than a change in collection regime. See
+#'   diagnostics/scale_coverage_by_year.csv.
 build_policy_base <- function(nipo_country_tbl,
                               duration_norm_months = 24,
                               duration_cap_months = 60,
@@ -1558,7 +1569,9 @@ build_policy_base <- function(nipo_country_tbl,
                               package_cap = 1.6,
                               package_step = 0.15,
                               include_geo_in_strength = FALSE,
-                              strength_constant = 1) {
+                              strength_constant = 1,
+                              scale_mode = c("exposure", "fiscal", "max", "none")) {
+  scale_mode <- match.arg(scale_mode)
   check_required_columns(
     nipo_country_tbl,
     c(
@@ -1688,20 +1701,75 @@ build_policy_base <- function(nipo_country_tbl,
         TRUE ~ 0
       ),
       planned_months = pmax(0, planned_days / 30.44),
+
+      # m_duration stays 0 for a measure with no implementation date. That is
+      # correct for a STOCK index: an unimplemented measure is not part of the
+      # in-force stock. But because m_duration multiplies the whole product,
+      # those rows carry zero strength, and the announcement-to-implementation
+      # gap they represent was previously thrown away rather than measured.
+      # The columns below preserve it. They are reported only and are
+      # deliberately NOT folded into the strength product.
       m_duration = dplyr::case_when(
         !is.na(.data$impl_date) ~ pmin(1, sqrt(planned_months / duration_norm_months)),
         TRUE ~ 0
       ),
+
+      # Announced but not yet in force. 8.5% of the July 2026 export (4,723 of
+      # 55,271), every one of which carries an announcement date.
+      pending_implementation = is.na(.data$impl_date) & !is.na(.data$announce_date),
+
+      # Days from announcement to implementation. NA when either date is
+      # missing, and NA rather than negative when the recorded implementation
+      # precedes the announcement (a data error, not a negative lag).
+      impl_lag_days = dplyr::if_else(
+        !is.na(.data$announce_date) & !is.na(.data$impl_date) &
+          .data$impl_date >= .data$announce_date,
+        as.numeric(.data$impl_date - .data$announce_date),
+        NA_real_
+      ),
+
+      # Note on m_duration saturation, for whoever reads this next: when
+      # removal_date is absent, planned_end is impl_date + duration_cap_months,
+      # so planned_months = 60 and m_duration = min(1, sqrt(60/24)) = 1.0 for
+      # EVERY in-force measure - 69.3% of the export. Only measures that have
+      # been removed can score below 1, so a taper currently reads as weakness.
+      # observed_duration_days and exposure_days, set in add_asof_flags(),
+      # carry the real duration signal instead.
       m_hs6 = cap_mult(log_mult(.data$hs6_n, p95_hs6), cap = breadth_cap),
       m_cpc = cap_mult(log_mult(.data$cpc_n, p95_cpc), cap = breadth_cap),
       m_breadth = cap_mult(.data$m_hs6 * .data$m_cpc, cap = breadth_cap),
       m_geo = cap_mult(log_mult(.data$partner_n, p95_geo), cap = geo_cap),
       m_trade   = cap_mult(log_mult(.data$trade_covered_usd_m, p95_trade), cap = scale_cap),
       m_subsidy = cap_mult(log_mult(.data$subsidy_usd_m, p95_subsidy), cap = scale_cap),
-      
-      # Methodology fix: scale should use the larger of trade covered and subsidy size.
-      m_scale = pmax_na(.data$m_trade, .data$m_subsidy, default = 1),
-      
+
+      # ---- Task 5: scale split into its two distinct meanings ----------------
+      # These measure different things and should not be collapsed with max():
+      #   m_scale_exposure - Trade Covered, i.e. how much trade the measure
+      #     touches. This is exposure breadth, already largely captured by
+      #     m_breadth.
+      #   m_scale_fiscal   - Size of Subsidy, i.e. how much money the state
+      #     committed. This is fiscal intensity.
+      # Taking the max meant a broad-coverage measure with no fiscal outlay
+      # scored like a large subsidy.
+      m_scale_exposure = .data$m_trade,
+      m_scale_fiscal   = .data$m_subsidy,
+
+      # Whether the underlying field was populated at all. This matters because
+      # log_mult() maps NA -> 0 -> multiplier 1, so a missing value is silently
+      # indistinguishable from a genuinely smallest-scale one. The flags make
+      # the difference visible rather than fixing it inside log_mult(), which is
+      # shared with m_hs6, m_cpc, m_breadth and m_geo.
+      scale_exposure_available = !is.na(.data$trade_covered_usd_m),
+      scale_fiscal_available   = !is.na(.data$subsidy_usd_m),
+
+      m_scale = switch(
+        scale_mode,
+        exposure = .data$m_scale_exposure,
+        fiscal   = .data$m_scale_fiscal,
+        max      = pmax_na(.data$m_trade, .data$m_subsidy, default = 1),
+        none     = 1
+      ),
+
       bite_strength_base  = .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration,
 
       # m_geo is excluded from the product by default: breadth of AFFECTED
@@ -1764,7 +1832,25 @@ add_asof_flags <- function(policy_base_tbl,
   }
   as_of_date <- as_date_safe(as_of_date)
   flow_start <- as_of_date - as.difftime(flow_window_days, units = "days")
-  
+
+  # A default as_of_date is max(announce, impl) across the whole inventory, so a
+  # single future-dated phase-in sets the as-of date for every row. In the July
+  # 2026 export 241 records carry implementation dates up to 2028-10-01 (staged
+  # phase-ins of one EU sanctions package), which pushes as_of_date two years
+  # past the data. That inflates exposure_days for every in-force measure,
+  # treats not-yet-in-force measures as active stock, and leaves the flow window
+  # covering a period with almost no events in it. Warn rather than silently
+  # clamp, because clamping would change published numbers.
+  if (!is.na(as_of_date) && as_of_date > Sys.Date()) {
+    warning(
+      "add_asof_flags(): as_of_date (", as.character(as_of_date),
+      ") is in the future, so the stock is evaluated past the end of the data. ",
+      "It defaults to max(announce_date, impl_date), which future-dated phase-ins ",
+      "can push forward. Pass as_of_date explicitly for a meaningful stock.",
+      call. = FALSE
+    )
+  }
+
   policy_base_tbl %>%
     dplyr::mutate(
       as_of_date = as_of_date,
@@ -1772,7 +1858,36 @@ add_asof_flags <- function(policy_base_tbl,
       is_implemented_asof = !is.na(.data$impl_date) & (.data$impl_date <= as_of_date),
       is_active_asof = .data$is_implemented_asof & (is.na(.data$removal_date) | (.data$removal_date > as_of_date)),
       is_new_impl_window = .data$is_implemented_asof & (.data$impl_date >= flow_start) & (.data$impl_date <= as_of_date),
-      is_removed_window  = !is.na(.data$removal_date) & (.data$removal_date >= flow_start) & (.data$removal_date <= as_of_date)
+      is_removed_window  = !is.na(.data$removal_date) & (.data$removal_date >= flow_start) & (.data$removal_date <= as_of_date),
+
+      # ---- Task 4: real duration, reported not scored --------------------------
+      # observed_duration_days is the UNCENSORED lifetime: only defined for a
+      # measure that has actually ended. NA while still in force, which is the
+      # honest answer - not a small number, and not the 60-month cap that
+      # m_duration silently assumes.
+      observed_duration_days = dplyr::if_else(
+        !is.na(.data$impl_date) & !is.na(.data$removal_date) &
+          .data$removal_date >= .data$impl_date,
+        as.numeric(.data$removal_date - .data$impl_date),
+        NA_real_
+      ),
+
+      # exposure_days is the CENSORED time in force: how long the measure has
+      # been observed, ending at removal or at as_of_date, whichever is first.
+      # Every implemented measure has one, so this is what survival-style
+      # estimates in Task 9 use for at-risk time.
+      exposure_days = dplyr::if_else(
+        !is.na(.data$impl_date) & .data$impl_date <= as_of_date,
+        as.numeric(
+          pmin(dplyr::coalesce(.data$removal_date, as_of_date), as_of_date) - .data$impl_date
+        ),
+        NA_real_
+      ),
+
+      # TRUE when the measure was still in force at as_of_date, i.e. its
+      # exposure_days is right-censored rather than a completed lifetime.
+      duration_censored = !is.na(.data$impl_date) & (.data$impl_date <= as_of_date) &
+        (is.na(.data$removal_date) | .data$removal_date > as_of_date)
     )
 }
 
@@ -2470,7 +2585,9 @@ nipo_policy_outputs <- function(raw_nipo,
                                 conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
                                 include_geo_in_strength = FALSE,
                                 strength_constant = 1,
+                                scale_mode = c("exposure", "fiscal", "max", "none"),
                                 dis_legacy_mode = FALSE) {
+  scale_mode <- match.arg(scale_mode)
   # dis_legacy_mode is a single switch that restores every pre-remediation
   # behaviour at once, for attributing a rank change to a specific fix. It
   # overrides the individual arguments rather than sitting alongside them.
@@ -2482,6 +2599,7 @@ nipo_policy_outputs <- function(raw_nipo,
     sc_dict <- SUPPLY_CHAIN_KEYWORDS_LEGACY
     include_geo_in_strength <- TRUE
     strength_constant <- 2
+    scale_mode <- "max"
   } else {
     tech_dict <- TECH_KEYWORDS
     sc_dict <- SUPPLY_CHAIN_KEYWORDS
@@ -2542,7 +2660,8 @@ nipo_policy_outputs <- function(raw_nipo,
     package_cap = package_cap,
     package_step = package_step,
     include_geo_in_strength = include_geo_in_strength,
-    strength_constant = strength_constant
+    strength_constant = strength_constant,
+    scale_mode = scale_mode
   )
   
   policy_asof <- add_asof_flags(
@@ -2616,6 +2735,7 @@ nipo_policy_outputs <- function(raw_nipo,
       conf_threshold = conf_threshold,
       include_geo_in_strength = isTRUE(include_geo_in_strength),
       strength_constant = strength_constant,
+      scale_mode = scale_mode,
       dis_legacy_mode = isTRUE(dis_legacy_mode),
       keyword_dictionary = if (isTRUE(dis_legacy_mode)) "legacy" else "bounded"
     ),
