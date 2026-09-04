@@ -234,7 +234,7 @@ future_demand_build_bnef <- function(bnef_neo, gamma = 0.5) {
 future_demand_build_ev <- function(iea_ev, country_info, gamma = 0.5) {
   require_columns(
     iea_ev,
-    c("region_country", "mode", "parameter", "year", "value"),
+    c("region_country", "category", "mode", "parameter", "powertrain", "year", "value"),
     label = "iea_ev"
   )
   require_columns(country_info, c("iso3c", "country"), label = "country_info")
@@ -248,13 +248,27 @@ future_demand_build_ev <- function(iea_ev, country_info, gamma = 0.5) {
     ) %>%
     dplyr::filter(
       mode == "Cars",
-      parameter %in% c("EV stock", "EV sales", "EV sales share")
+      parameter %in% c("EV stock", "EV sales", "EV sales share"),
+      # Global EV Outlook 2026 added Current Policies beside Stated Policies. The rest of
+      # the theme (WEO, BNEF) is built on stated policies, so keep the index consistent.
+      category %in% c("Historical", "Projection-STEPS")
     ) %>%
+    # The 2025 workbook restated recent history under the projection scenario as well as
+    # under "Historical"; take the observation when a year has one.
+    dplyr::group_by(region_country, parameter, powertrain, year) %>%
+    dplyr::filter(category == "Historical" | !any(category == "Historical")) %>%
+    # From 2026 stock and sales also carry an "EV" row totalling BEV/PHEV/FCEV. Sum the
+    # components where they exist (they are published at full precision, the total is
+    # rounded); sales share is published only as the "EV" aggregate.
     dplyr::group_by(region_country, parameter, year) %>%
+    dplyr::filter(powertrain != "EV" | !any(powertrain != "EV")) %>%
     dplyr::summarize(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
     tidyr::pivot_wider(names_from = "year", values_from = "value")
 
-  required_years <- c("2021", "2024", "2030")
+  # Latest observed year, the start of the three-year growth window, and the release's
+  # projection horizon. All three move with the vintage: the 2025 release ran 2021/2024
+  # and projected 2030, Global EV Outlook 2026 runs 2022/2025 and projects 2035.
+  required_years <- c("2022", "2025", "2035")
   missing_years <- setdiff(required_years, names(evs))
   if (length(missing_years) > 0) {
     stop("IEA EV data missing year columns: ", paste(missing_years, collapse = ", "))
@@ -262,15 +276,15 @@ future_demand_build_ev <- function(iea_ev, country_info, gamma = 0.5) {
 
   evs <- evs %>%
     dplyr::mutate(
-      growth_2124 = `2024` / `2021` - 1,
-      forecast_growth = `2030` / `2024` - 1
+      growth_2225 = `2025` / `2022` - 1,
+      forecast_growth = `2035` / `2025` - 1
     ) %>%
     dplyr::group_by(parameter) %>%
     dplyr::mutate(
-      growth_index = median_scurve(growth_2124, gamma = gamma),
-      size_index = median_scurve(`2024`, gamma = gamma),
+      growth_index = median_scurve(growth_2225, gamma = gamma),
+      size_index = median_scurve(`2025`, gamma = gamma),
       forecast_growth_index = median_scurve(forecast_growth, gamma = gamma),
-      forecast_size_index = median_scurve(`2030`, gamma = gamma)
+      forecast_size_index = median_scurve(`2035`, gamma = gamma)
     ) %>%
     dplyr::select(
       region_country,
@@ -279,10 +293,10 @@ future_demand_build_ev <- function(iea_ev, country_info, gamma = 0.5) {
       size_index,
       forecast_growth_index,
       forecast_size_index,
-      `2030`,
-      `2024`,
-      `2021`,
-      growth_2124,
+      `2035`,
+      `2025`,
+      `2022`,
+      growth_2225,
       forecast_growth
     )
 
@@ -291,9 +305,9 @@ future_demand_build_ev <- function(iea_ev, country_info, gamma = 0.5) {
     "size_index",
     "forecast_growth_index",
     "forecast_size_index",
-    "2030",
-    "2024",
-    "growth_2124",
+    "2035",
+    "2025",
+    "growth_2225",
     "forecast_growth"
   )
 
@@ -318,9 +332,12 @@ future_demand_build_ev <- function(iea_ev, country_info, gamma = 0.5) {
     dplyr::ungroup() %>%
     dplyr::mutate(ev_index = median_scurve(ev_index, gamma = gamma)) %>%
     dplyr::arrange(dplyr::desc(ev_index)) %>%
-    dplyr::select(region_country, sales_2030:ev_index) %>%
+    # pivot_wider emits the per-parameter index columns first, then the raw ones, so this
+    # range reports the raw values and the composite only. The first raw column is named
+    # for the release's projection year, so it moves with the vintage.
+    dplyr::select(region_country, sales_2035:ev_index) %>%
     tidyr::pivot_longer(
-      cols = c(sales_2030:ev_index),
+      cols = c(sales_2035:ev_index),
       names_to = "variable",
       values_to = "value"
     ) %>%
@@ -336,11 +353,18 @@ future_demand_build_ev <- function(iea_ev, country_info, gamma = 0.5) {
       variable,
       data_type,
       value,
-      Year = 2030L,
-      source = "IEA EVs Outlook",
+      Year = 2035L,
+      source = "IEA Global EV Outlook 2026",
       explanation = dplyr::case_when(
-        variable == "ev_index" ~
+        # "_index" is already stripped above, so match the trimmed name.
+        variable == "ev" ~
           "Index of EV sales, stock and sales share, growth and absolute (index)",
+        stringr::str_ends(variable, "_2035") ~
+          "Modelled car market level in 2035, IEA Stated Policies Scenario",
+        stringr::str_ends(variable, "_2025") ~ "Observed car market level in 2025",
+        stringr::str_ends(variable, "_growth_2225") ~ "Observed growth, 2022-2025",
+        stringr::str_ends(variable, "_forecast_growth") ~
+          "Modelled growth, 2025-2035, IEA Stated Policies Scenario",
         TRUE ~ variable
       )
     ) %>%

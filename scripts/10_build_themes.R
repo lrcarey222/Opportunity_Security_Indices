@@ -42,6 +42,7 @@ source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "utils", "iea_critical_minerals.R"))
+source(file.path(repo_root, "R", "utils", "iea_ev.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
@@ -204,9 +205,13 @@ iea_weo_path <- resolve_versioned_raw_input(
 )
 iea_ev_path <- resolve_versioned_raw_input(
   raw_data_path,
-  pattern = "^IEA_EVDataExplorer\\d{4}\\.xlsx$",
-  fallback = "IEA_EVDataExplorer2025.xlsx",
-  label = "IEA Global EV Data Explorer"
+  # The IEA published this extract as the EV Data Explorer workbook through the 2025
+  # release and as a flat CSV from Global EV Outlook 2026 onward; both names still
+  # resolve and R/utils/iea_ev.R reads either form. Top-level alternation with no capture
+  # group, because the manifest scanner reads this call as source text.
+  pattern = "^EV data by country \\d{4}\\.csv$|^IEA_EVDataExplorer\\d{4}\\.xlsx$",
+  fallback = "EV data by country 2026.csv",
+  label = "IEA Global EV Outlook"
 )
 bcg_future_demand_path <- file.path(raw_data_path, "Market Size for Technology and Supply Chain.xlsx")
 bnef_supply_chain_path <- resolve_versioned_raw_input(
@@ -312,7 +317,7 @@ write_resolved_vintages(
     critmin_export = critmin_export_path,
     critmin_total_export = critmin_total_export_path,
     weo_annex_a = iea_weo_path,
-    iea_ev_data_explorer = iea_ev_path,
+    iea_ev_outlook = iea_ev_path,
     gta_nipo = nipo_policy_path,
     energy_prices_input = imf_price_path
   ),
@@ -611,7 +616,7 @@ country_info <- standardize_country_info(country_info)
 
   # Theme: Future demand (IEA + BNEF + EV + BCG data).
   iea_weo <- read.csv(iea_weo_path)
-  iea_ev <- readxl::read_excel(iea_ev_path, sheet = 1)
+  iea_ev <- read_iea_ev(iea_ev_path)
   bcg <- readxl::read_excel(bcg_future_demand_path, sheet = 1)
 
   future_demand_tbl <- future_demand(

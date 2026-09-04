@@ -152,7 +152,7 @@ This section is written to function as a **drop-in technical appendix inside the
 
 **Data sources:**
 - **IEA Critical Minerals Dataset** ([IEA-CM]) — mineral supply series used to compute market share + concentration proxies
-- **IEA Global EV Data Explorer** ([IEA-EV]) — EV market/production/import share inputs (as used in repo exports)
+- **IEA Global EV Outlook** ([IEA-EV]) — EV market/production/import share inputs (as used in repo exports)
 - **Energy Institute Statistical Review** ([EI-SR]) — country harmonization + EU mapping used for rollups/expansion (and associated energy stats)
 
 *(Note: some midstream capacity snapshots are sourced from IEA ETP exports; see `docs/sources.md` for provenance when the public landing page differs from the internal extract.)*
@@ -362,7 +362,7 @@ This section is written to function as a **drop-in technical appendix inside the
 
 **Data sources (cited where applicable):**
 - **BloombergNEF New Energy Outlook** ([BNEF-NEO]) — region/country demand levels and growth (as used in repo extracts)
-- **IEA Global EV Data Explorer** ([IEA-EV]) — EV stock/sales/share and growth inputs (as used in repo extracts)
+- **IEA Global EV Outlook** ([IEA-EV]) — EV stock/sales/share and growth inputs (as used in repo extracts)
 
 *(Note: the repo also uses IEA WEO annex exports and BCG market sizing sheets; these are referenced in `docs/sources.md` where public landing pages differ from the internal extracts.)*
 
@@ -463,7 +463,7 @@ The LCOE theme names its current-year variable after the reference year of the s
 
 **Data sources:**
 - **IEA Critical Minerals Dataset** ([IEA-CM])
-- **IEA Global EV Data Explorer** ([IEA-EV])
+- **IEA Global EV Outlook** ([IEA-EV])
 - **Energy Institute Statistical Review** ([EI-SR])
 
 **Implementation entry points:**
@@ -958,7 +958,7 @@ Theme builders read raw inputs directly from your configured `raw_data_dir/...`.
 
 * [IEA Critical Minerals Dataset][IEA-CM]
 * [IEA ETP Clean Energy Technology Guide][IEA-CTG]
-* [IEA Global EV Data Explorer][IEA-EV]
+* [IEA Global EV Outlook][IEA-EV]
 * [Energy Institute Statistical Review][EI-SR]
 * [UN Comtrade][COMTRADE]
 * [Harvard Atlas of Economic Complexity][AEC]
@@ -1014,7 +1014,7 @@ For contribution expectations and responsible disclosure guidance, see `CONTRIBU
 
 [IEA-CM]: https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset
 [IEA-CTG]: https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide
-[IEA-EV]: https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer
+[IEA-EV]: https://www.iea.org/data-and-statistics/data-product/global-ev-outlook-2026
 [EI-SR]: https://www.energyinst.org/statistical-review
 [COMTRADE]: https://comtrade.un.org/
 [AEC]: https://atlas.hks.harvard.edu/
