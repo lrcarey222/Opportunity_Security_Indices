@@ -170,6 +170,56 @@ apply_missing_policy <- function(tbl, rules_tbl, include_sub_sector = FALSE) {
     dplyr::select(-global_avg, -value_raw)
 }
 
+# Bring compute_overall_scores()'s component_contributions onto the shape the index builders
+# bind into variable_contributions.
+#
+# That table arrives shaped by compute_overall_scores()'s own grouping, and both v2 builders
+# used to rename `value` and select `sub_sector` from it unconditionally. Two shapes broke
+# that, and either aborted the whole index build:
+#
+#   * a zero-column tibble, returned whenever the index definition carries no overall
+#     variables or none of them matched any data - "Column `value` doesn't exist"
+#   * no sub_sector column, because variable_level_columns() only groups by it when
+#     include_sub_sector is TRUE - "Column `sub_sector` doesn't exist"
+#
+# The "All" placeholder is the same one compute_category_scores() uses when sub_sector is
+# not being scored, so the two sides of the later bind_rows() agree.
+COMPONENT_CONTRIBUTION_COLUMNS <- c(
+  "Country", "tech", "supply_chain", "sub_sector", "category", "variable",
+  "component_value", "component_weight_within_overall", "missing_rule_applied", "imputed"
+)
+
+normalize_component_contributions <- function(component_contributions,
+                                              include_sub_sector = FALSE) {
+  if (is.null(component_contributions) || nrow(component_contributions) == 0) {
+    return(tibble::tibble(
+      Country = character(),
+      tech = character(),
+      supply_chain = character(),
+      sub_sector = character(),
+      category = character(),
+      variable = character(),
+      component_value = numeric(),
+      component_weight_within_overall = numeric(),
+      missing_rule_applied = character(),
+      imputed = logical()
+    ))
+  }
+
+  if (!"component_value" %in% names(component_contributions) &&
+      "value" %in% names(component_contributions)) {
+    component_contributions <- dplyr::rename(component_contributions, component_value = value)
+  }
+
+  if (!"sub_sector" %in% names(component_contributions) && !isTRUE(include_sub_sector)) {
+    component_contributions$sub_sector <- "All"
+  }
+
+  # Anything still missing is a real defect upstream, so let all_of() report it.
+  component_contributions %>%
+    dplyr::select(dplyr::all_of(COMPONENT_CONTRIBUTION_COLUMNS))
+}
+
 compute_overall_scores <- function(tbl, index_definition, include_sub_sector = FALSE) {
   if (is.null(index_definition) || is.null(index_definition$overall_variables)) {
     return(list(overall_scores = tibble::tibble(), component_contributions = tibble::tibble()))
@@ -374,28 +424,42 @@ compute_index_and_contributions <- function(category_scores,
     ) %>%
     dplyr::mutate(complete_categories = present_count == length(expected_categories))
 
+  # The normalizing denominator: one weight per category present in each key group.
+  #
+  # Both tables used to derive this by summing `weight` down their own rows. That is correct
+  # for category_contributions, which holds one row per category, but wrong for
+  # variable_contributions, which holds one row per *variable* - each category's weight was
+  # counted once per variable, inflating the denominator. A key group with two Investment
+  # variables and one Innovation variable normalized by 0.6 + 0.6 + 0.4 = 1.6 instead of
+  # 0.6 + 0.4 = 1.0, so every variable contribution came out proportionally too small and
+  # they no longer summed to the index the category contributions produced.
+  #
+  # Deriving it once from category_scores makes the two provably consistent, which is what
+  # the contributions-reconcile-to-index tests assert.
+  category_weight_sums <- category_scores %>%
+    dplyr::distinct(dplyr::across(dplyr::all_of(c(key_cols, "category")))) %>%
+    dplyr::left_join(weights_tbl, by = "category") %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(key_cols))) %>%
+    dplyr::summarize(weight_sum = sum(weight, na.rm = TRUE), .groups = "drop")
+
   category_contributions <- category_scores %>%
     dplyr::left_join(weights_tbl, by = "category") %>%
     dplyr::left_join(category_completeness, by = key_cols) %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(key_cols))) %>%
+    dplyr::left_join(category_weight_sums, by = key_cols) %>%
     dplyr::mutate(
-      weight_sum = sum(weight, na.rm = TRUE),
-      category_weight = weight / weight_sum
+      category_weight = weight / weight_sum,
+      weighted_category_contribution = category_score * category_weight
     ) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(weighted_category_contribution = category_score * category_weight) %>%
     dplyr::select(-present_categories, -present_count)
 
   variable_contributions <- variable_contributions %>%
     dplyr::left_join(weights_tbl, by = "category") %>%
     dplyr::left_join(category_completeness, by = key_cols) %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(key_cols))) %>%
+    dplyr::left_join(category_weight_sums, by = key_cols) %>%
     dplyr::mutate(
-      weight_sum = sum(weight, na.rm = TRUE),
       category_weight = weight / weight_sum,
       weighted_variable_contribution = component_value * component_weight_within_overall * category_weight
     ) %>%
-    dplyr::ungroup() %>%
     dplyr::select(
       dplyr::all_of(key_cols),
       category,
