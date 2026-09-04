@@ -1,7 +1,12 @@
-repo_root <- getwd()
+# testthat runs with the working directory set to tests/testthat, so the repo root is
+# resolved from this file rather than from getwd().
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+# Sourced ahead of the _v2 builder: it otherwise self-locates index_builder_core.R via
+# dirname(sys.frame(1)$ofile), which is NULL when sourced under testthat.
+source(file.path(repo_root, "R", "indices", "index_builder_core.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index_v2.R"))
 
 test_that("normalize_year handles character and integer years", {

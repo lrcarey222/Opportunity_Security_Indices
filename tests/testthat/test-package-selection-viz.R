@@ -1,5 +1,9 @@
-source(file.path("R", "utils", "scurve.R"))
-source(file.path("R", "charts", "package_selection_viz.R"))
+# testthat runs with the working directory set to tests/testthat, so the repo root is
+# resolved from this file rather than from the working directory.
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
+
+source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "charts", "package_selection_viz.R"))
 
 test_that("build_country_strategic_tbl returns expected columns", {
   index_outputs <- list(
