@@ -31,11 +31,12 @@ jobs:
         if: ${{ hashFiles('renv.lock') != '' }}
         uses: r-lib/actions/setup-renv@v2
 
-      # Verified rather than trusted: install.packages() warns and exits 0 on failure.
+      # Repo URL passed explicitly for the same reason as in r-tests.yml. Verified rather
+      # than trusted: install.packages() warns and exits 0 on failure.
       - name: Install dependencies (packages)
         if: ${{ hashFiles('renv.lock') == '' }}
         run: |
-          Rscript -e "packages <- c('dplyr','tibble','stringr','testthat','yaml','purrr','tidyr','shiny','bslib','scales','countrycode','readr','curl','jsonlite'); install.packages(packages); missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop('dependency install failed for: ', paste(missing, collapse = ', '))"
+          Rscript -e "packages <- c('dplyr','tibble','stringr','testthat','yaml','purrr','tidyr','shiny','bslib','scales','countrycode','readr','curl','jsonlite'); install.packages(packages, repos = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'); missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop('dependency install failed for: ', paste(missing, collapse = ', '))"
 
       - name: Run unit tests
         run: |

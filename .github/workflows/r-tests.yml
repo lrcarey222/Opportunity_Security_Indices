@@ -22,12 +22,16 @@ jobs:
           # took pkgload -> testthat and sass -> bslib -> shiny down with them.
           use-public-rspm: true
 
+      # The repo URL is passed explicitly, as r-ci.yml does: use-public-rspm sets the RSPM
+      # environment variable but leaves getOption("repos") at "@CRAN@" in a fresh Rscript,
+      # which fails with "trying to use CRAN without setting a mirror".
+      #
       # install.packages() only warns on failure and still exits 0, so a broken install used
       # to surface much later as "there is no package called 'testthat'" in the run step.
       # Verify every package is loadable and fail here instead.
       - name: Install dependencies
         run: |
-          Rscript -e 'packages <- c("testthat","yaml","dplyr","tibble","stringr","tidyr","purrr","shiny","bslib","scales","countrycode","readr","curl","jsonlite"); if (file.exists("DESCRIPTION")) packages <- c(packages, "devtools"); packages <- unique(packages); install.packages(packages); missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop("dependency install failed for: ", paste(missing, collapse = ", "))'
+          Rscript -e 'packages <- c("testthat","yaml","dplyr","tibble","stringr","tidyr","purrr","shiny","bslib","scales","countrycode","readr","curl","jsonlite"); if (file.exists("DESCRIPTION")) packages <- c(packages, "devtools"); packages <- unique(packages); install.packages(packages, repos = "https://packagemanager.posit.co/cran/__linux__/noble/latest"); missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop("dependency install failed for: ", paste(missing, collapse = ", "))'
 
       - name: Run tests
         run: |
