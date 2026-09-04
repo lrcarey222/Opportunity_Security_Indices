@@ -1017,8 +1017,82 @@ is_advanced_tech <- function(tech) {
   tech %in% ADV_TECH_LINKED_TECHS
 }
 
+# ---- Keyword dictionaries and word-boundary matching -------------------------
+# Dictionary terms are matched against Title pasted with Source. They used to be
+# matched as UNANCHORED substrings, so short terms fired inside longer unrelated
+# words. The worst offender was the bare "ai" in Semiconductors and Downstream,
+# which matched Ukraine, rail, chain, certain, against and aid: 24.2% of all
+# titles in the July 2026 export (13,360 of 55,271) contain a bare "ai" substring
+# with no standalone "ai" or "artificial intelligence" anywhere in them.
+#
+# Terms are now wrapped in \b...\b once at load time by neis_bind_dictionary().
+#
+# Two categories of term are written as explicit regexes in the *_TERMS lists
+# below so that neis_bound_kws() leaves them alone:
+#   1) deliberate PREFIXES ("manufactur", "refin", ...). Wrapping these in \b..\b
+#      would destroy them outright, since \bmanufactur\b never matches
+#      "manufacturing". They are written as \bmanufactur\w* instead.
+#   2) terms already carrying regex syntax ("cells?", "fabs?"). These are now
+#      spelled with their own \b anchors, because passing them through unbounded
+#      left real false positives: unanchored "cells?" matches "ex-cell-ent" and
+#      unanchored "fabs?" matches "fab-ric".
+NEIS_KEYWORD_REGEX_CHARS <- "\\\\b|\\\\w|\\[|\\]|\\?|\\+|\\{|\\(|\\)|\\||\\*"
+
+#' Wrap a dictionary term in word boundaries.
+#'
+#' Terms that already carry regex syntax are returned unchanged, so "\\bpv\\b",
+#' "cells?" and "\\bmanufactur\\w*" all pass through untouched.
+#'
+#' @param allow_plural when TRUE, append an optional "s" inside the trailing
+#'   boundary. Word boundaries make singular-only terms stop matching their
+#'   plurals ("turbine" no longer matches "turbines"), which costs recall on the
+#'   ~20 terms in these dictionaries that list only a singular form. Defaults to
+#'   FALSE, which is the strict reading of the fix; flip it to trade a little
+#'   precision back for that recall.
+neis_bound_kws <- function(kws, allow_plural = FALSE) {
+  vapply(kws, function(k) {
+    if (grepl(NEIS_KEYWORD_REGEX_CHARS, k)) return(k)
+    suffix <- if (isTRUE(allow_plural) && !grepl("s$", k)) "s?" else ""
+    paste0("\\b", k, suffix, "\\b")
+  }, character(1), USE.NAMES = FALSE)
+}
+
+neis_bind_dictionary <- function(dict, allow_plural = FALSE) {
+  lapply(dict, neis_bound_kws, allow_plural = allow_plural)
+}
+
+#' Report which dictionary terms are dangerously permissive.
+#'
+#' Run against a sample of the Title/Source text actually being matched and
+#' inspect the hit rate. Any term matching more than a few percent of all records
+#' is almost certainly matching something other than what was intended.
+#'
+#' @return group, term, hits, hit_rate, flagged - sorted by hit_rate descending.
+neis_audit_keywords <- function(dict, text_vec, warn_hit_rate = 0.05) {
+  text_vec <- stringr::str_to_lower(dplyr::coalesce(as.character(text_vec), ""))
+  n <- length(text_vec)
+  if (n == 0) stop("neis_audit_keywords(): text_vec is empty.")
+
+  rows <- list()
+  for (grp in names(dict)) {
+    for (k in dict[[grp]]) {
+      hits <- sum(stringr::str_detect(text_vec, k), na.rm = TRUE)
+      rows[[length(rows) + 1L]] <- tibble::tibble(
+        group = grp,
+        term = k,
+        hits = hits,
+        hit_rate = hits / n,
+        flagged = (hits / n) > warn_hit_rate
+      )
+    }
+  }
+  dplyr::arrange(dplyr::bind_rows(rows), dplyr::desc(.data$hit_rate))
+}
+
 # Keyword validation: look for tech-relevant terms in Title/Source.
-TECH_KEYWORDS <- list(
+# TECH_KEYWORD_TERMS_LEGACY is the pre-fix dictionary, kept verbatim so
+# dis_legacy_mode = TRUE can reproduce the old numbers exactly. Do not edit it.
+TECH_KEYWORD_TERMS_LEGACY <- list(
   `Electric Vehicles` = c("electric vehicle","electric vehicles","\\bev\\b","\\bevs\\b","charging","charger","battery electric","plug-in","phev","bev"),
   `Batteries` = c("battery","batteries","\\bli-ion\\b","lithium-ion","cell manufacturing","gigafactory","anode","cathode","bms","energy storage"),
   `Green Hydrogen` = c("hydrogen","\\bh2\\b","electrolyser","electrolyzer","electrolysis","green hydrogen","ammonia","ptx","power-to-x"),
@@ -1045,9 +1119,44 @@ TECH_KEYWORDS <- list(
   )
 )
 
-keyword_evidence <- function(tech, title, source) {
+# Current dictionary. Removals relative to legacy, per methodological review:
+#   Semiconductors: dropped "packaging", "assembly" (generic industrial terms
+#     that carry no semiconductor information) and "cloud". "ai" is RETAINED
+#     here because bounded \bai\b is genuinely diagnostic of chip measures.
+#   Solar: dropped "module" (matches any modular anything).
+TECH_KEYWORD_TERMS <- list(
+  `Electric Vehicles` = c("electric vehicle","electric vehicles","\\bev\\b","\\bevs\\b","charging","charger","battery electric","plug-in","phev","bev"),
+  `Batteries` = c("battery","batteries","\\bli-ion\\b","lithium-ion","cell manufacturing","gigafactory","anode","cathode","bms","energy storage"),
+  `Green Hydrogen` = c("hydrogen","\\bh2\\b","electrolyser","electrolyzer","electrolysis","green hydrogen","ammonia","ptx","power-to-x"),
+  `Wind` = c("wind","turbine","offshore wind","onshore wind","blade","nacelle","rare earth"),
+  `Solar` = c("solar","photovoltaic","\\bpv\\b","inverter","panel","wafer","polysilicon","silicon"),
+  `Geothermal` = c("geothermal","egs","enhanced geothermal","heat flow","geofluid"),
+  `Electric Grid` = c("grid","transmission","distribution","substation","transformer","switchgear","interconnector","interconnection","hvdc","smart grid","copper"),
+  `Nuclear` = c("nuclear","reactor","smr","spent fuel","uranium","enrichment","fission"),
+  `Coal` = c("coal","coking coal","thermal coal","coal-fired","lignite"),
+  `Oil` = c("oil","petroleum","crude","refinery","refining","pipeline"),
+  `Gas` = c("gas","natural gas","lng","liquefaction","regasification","pipeline gas"),
+  `Semiconductors` = c(
+    "semiconductor","semiconductors","chip","chips","wafer","wafers","fab","fabs",
+    "foundry","fabrication","atmp","front-end",
+    "datacenter","data center","server","servers","gpu","gpus","ai","artificial intelligence",
+    "accelerator","hpc", "model training", "inference"
+  ),
+  `Magnets` = c(
+    "rare earth", "rare-earth", "ndpr", "neodymium", "praseodymium",
+    "dysprosium", "terbium", "magnet ore", "rare earth mine",
+    "rare earth mining", "magnet", "magnets", "permanent magnet",
+    "ndfeb", "sintered magnet", "magnet manufacturing",
+    "magnet production", "bonded magnet"
+  )
+)
+
+TECH_KEYWORDS <- neis_bind_dictionary(TECH_KEYWORD_TERMS)
+TECH_KEYWORDS_LEGACY <- TECH_KEYWORD_TERMS_LEGACY
+
+keyword_evidence <- function(tech, title, source, dict = TECH_KEYWORDS) {
   hay <- stringr::str_to_lower(paste(dplyr::coalesce(title, ""), dplyr::coalesce(source, ""), sep = " | "))
-  kws <- TECH_KEYWORDS[[tech]]
+  kws <- dict[[tech]]
   if (is.null(kws) || length(kws) == 0) return(FALSE)
   any(purrr::map_lgl(kws, ~ stringr::str_detect(hay, .x)))
 }
@@ -1065,7 +1174,8 @@ CONFIDENCE_CAP   <- 2
 CONFIDENCE_UNMAPPED      <- 0.10
 CONFIDENCE_CROSSCUTTING  <- 0.25
 
-SUPPLY_CHAIN_KEYWORDS <- list(
+# Pre-fix supply-chain dictionary, kept verbatim for dis_legacy_mode. Do not edit.
+SUPPLY_CHAIN_KEYWORD_TERMS_LEGACY <- list(
   `Upstream` = c(
     "mining", "mine", "extraction", "extractive", "ore", "concentrate", "beneficiation",
     "exploration", "prospecting", "drilling", "upstream",
@@ -1086,9 +1196,50 @@ SUPPLY_CHAIN_KEYWORDS <- list(
   )
 )
 
-supply_chain_keyword_evidence <- function(supply_chain, title, source) {
+# Current dictionary. Removals relative to legacy, per methodological review:
+#   Upstream + Midstream: dropped "processing" from BOTH. It sat in both lists,
+#     so it carried no stage information whatsoever.
+#   Downstream: dropped "ai" (matched Ukraine/rail/chain/certain/against/aid),
+#     "service" and "operations" (fire on any government or corporate activity).
+# Prefix terms are spelled \bstem\w* so they survive boundary wrapping, and the
+# previously unanchored "cells?" / "fabs?" now carry their own anchors.
+SUPPLY_CHAIN_KEYWORD_TERMS <- list(
+  `Upstream` = c(
+    "mining", "mine", "extraction", "extractive", "ore", "concentrate", "beneficiation",
+    "exploration", "prospecting", "drilling", "upstream",
+    "\\bsmelt\\w*", "\\brefin\\w*", "\\bmetallurg\\w*",
+    "critical mineral", "raw material", "rare earth"
+  ),
+  `Midstream` = c(
+    "\\bmanufactur\\w*", "factory", "plant", "gigafactory", "assembly",
+    "\\bfabricat\\w*", "production line",
+    "component", "module", "\\bcells?\\b", "anode", "cathode",
+    "electrolyser manufacturing", "electrolyzer manufacturing",
+    "enrichment", "conversion", "midstream",
+    "foundry", "\\bfabs?\\b", "wafer", "chip packaging", "atmp",
+    "magnet manufacturing", "ndfeb"
+  ),
+  `Downstream` = c(
+    "\\bdeploy\\w*", "\\binstall\\w*",
+    # Participial forms only. A bare "commission" stem matches "European
+    # Commission" and "Commission Regulation", i.e. the EU's institutional
+    # name, which fired on 20% of all records.
+    "\\bcommission(?:ing|ed)\\b", "construction",
+    "servicing", "maintenance", "\\bo\\&m\\b", "retail",
+    "charging station", "charger", "grid connection", "interconnection",
+    "\\bhook[- ]?up\\b",
+    "rebate", "consumer", "\\bend[- ]?use\\b", "downstream",
+    "datacenter", "data center", "server", "gpu", "inference", "model training", "cloud"
+  )
+)
+
+SUPPLY_CHAIN_KEYWORDS <- neis_bind_dictionary(SUPPLY_CHAIN_KEYWORD_TERMS)
+SUPPLY_CHAIN_KEYWORDS_LEGACY <- SUPPLY_CHAIN_KEYWORD_TERMS_LEGACY
+
+supply_chain_keyword_evidence <- function(supply_chain, title, source,
+                                         dict = SUPPLY_CHAIN_KEYWORDS) {
   hay <- stringr::str_to_lower(paste(dplyr::coalesce(title, ""), dplyr::coalesce(source, ""), sep = " | "))
-  kws <- SUPPLY_CHAIN_KEYWORDS[[supply_chain]]
+  kws <- dict[[supply_chain]]
   if (is.null(kws) || length(kws) == 0) return(FALSE)
   any(purrr::map_lgl(kws, ~ stringr::str_detect(hay, .x)))
 }
@@ -1097,20 +1248,22 @@ validation_weight <- function(tech, supply_chain, title, source,
                               sector_low_carbon, sector_dual_use, sector_critical_minerals, sector_advanced_tech,
                               bonus = DEFAULT_VALIDATION_BONUS,
                               keyword_bonus = DEFAULT_VALIDATION_KEYWORD_BONUS,
-                              sc_keyword_bonus = DEFAULT_VALIDATION_SC_KEYWORD_BONUS) {
+                              sc_keyword_bonus = DEFAULT_VALIDATION_SC_KEYWORD_BONUS,
+                              tech_dict = TECH_KEYWORDS,
+                              sc_dict = SUPPLY_CHAIN_KEYWORDS) {
   w <- 1.0
-  
+
   # Sector-flag corroboration (tech-level).
   if (isTRUE(sector_low_carbon) && is_low_carbon_tech(tech)) w <- w + bonus
   if (isTRUE(sector_critical_minerals) && is_critical_minerals_tech(tech)) w <- w + bonus
   if (isTRUE(sector_dual_use) && is_dual_use_tech(tech)) w <- w + bonus
   if (isTRUE(sector_advanced_tech) && is_advanced_tech(tech)) w <- w + bonus
-  
+
   # Keyword corroboration (tech-level).
-  if (isTRUE(keyword_evidence(tech, title, source))) w <- w + keyword_bonus
-  
+  if (isTRUE(keyword_evidence(tech, title, source, dict = tech_dict))) w <- w + keyword_bonus
+
   # Keyword corroboration (supply-chain stage-level).
-  if (isTRUE(supply_chain_keyword_evidence(supply_chain, title, source))) w <- w + sc_keyword_bonus
+  if (isTRUE(supply_chain_keyword_evidence(supply_chain, title, source, dict = sc_dict))) w <- w + sc_keyword_bonus
   
   # Extra sanity: if it's explicitly "Critical Minerals", bias toward Upstream when present.
   if (isTRUE(sector_critical_minerals) && identical(supply_chain, "Upstream")) w <- w + 0.10
@@ -1119,7 +1272,9 @@ validation_weight <- function(tech, supply_chain, title, source,
 }
 
 
-allocate_policy_to_tech_sc <- function(policy_tbl) {
+allocate_policy_to_tech_sc <- function(policy_tbl,
+                                       tech_dict = TECH_KEYWORDS,
+                                       sc_dict = SUPPLY_CHAIN_KEYWORDS) {
   policy_shares <- policy_tbl %>%
     dplyr::mutate(
       mapped_share = dplyr::if_else(.data$hs6_n > 0,
@@ -1159,7 +1314,8 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
              .data$sector_dual_use,
              .data$sector_critical_minerals,
              .data$sector_advanced_tech),
-        ~ validation_weight(..1, ..2, ..3, ..4, ..5, ..6, ..7, ..8)
+        ~ validation_weight(..1, ..2, ..3, ..4, ..5, ..6, ..7, ..8,
+                            tech_dict = tech_dict, sc_dict = sc_dict)
       ),
       is_crosscutting_policy = FALSE,
       mapping_confidence = CONFIDENCE_UNMAPPED
@@ -1213,7 +1369,7 @@ clean_nipo_raw <- function(raw_nipo,
   check_required_columns(raw_nipo, c("Product: HS 6-digit (2022)", "Implementing Jurisdiction"), "raw_nipo")
   check_required_columns(subcat_raw, c("HS6", "Technology", "Value.Chain", "Sub.Sector"), "subcat_raw")
   
-  # Use only essential HS6 codes to drive tech × supply_chain classification.
+  # Use only essential HS6 codes to drive tech ï¿½ supply_chain classification.
   # Non-essential/generic HS6 codes still remain in hs6_codes for diagnostics/context.
   subcat_lu <- prepare_subcat_mapping(
     subcat_raw = subcat_raw,
