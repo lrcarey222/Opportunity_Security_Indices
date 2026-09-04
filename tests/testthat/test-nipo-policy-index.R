@@ -224,6 +224,76 @@ test_that("reviewed terms were removed from their dictionaries", {
   expect_true("ai" %in% TECH_KEYWORD_TERMS$Semiconductors)
 })
 
+# ==============================================================================
+# Task 2 - mapping confidence separated from policy strength
+# ==============================================================================
+
+test_that("dis_confidence_weight() implements the four documented modes", {
+  mc <- c(0.10, 0.25, 0.50, 0.75, 1.00, 1.50, 2.00)
+
+  # "none": confidence contributes nothing to the product.
+  expect_equal(dis_confidence_weight(mc, "none"), rep(1, length(mc)))
+
+  # "filter": a hard gate at conf_threshold, not a weight.
+  expect_equal(
+    dis_confidence_weight(mc, "filter", conf_threshold = 0.75),
+    c(0, 0, 0, 1, 1, 1, 1)
+  )
+
+  # "downweight": bounded reliability weight that never amplifies.
+  expect_equal(dis_confidence_weight(mc, "downweight"), c(0.10, 0.25, 0.50, 0.75, 1, 1, 1))
+  expect_true(all(dis_confidence_weight(mc, "downweight") <= 1))
+
+  # "legacy": the multiplier as computed, which can exceed 1.
+  expect_equal(dis_confidence_weight(mc, "legacy"), mc)
+  expect_true(any(dis_confidence_weight(mc, "legacy") > 1))
+})
+
+test_that("dis_confidence_weight() honours conf_threshold and handles NA", {
+  mc <- c(0.5, 0.9)
+  expect_equal(dis_confidence_weight(mc, "filter", conf_threshold = 0.4), c(1, 1))
+  expect_equal(dis_confidence_weight(mc, "filter", conf_threshold = 0.95), c(0, 0))
+
+  # Missing confidence is treated as neutral (1), never as zero strength.
+  expect_equal(dis_confidence_weight(c(NA, 1), "none"), c(1, 1))
+  expect_equal(dis_confidence_weight(NA_real_, "downweight"), 1)
+  expect_equal(dis_confidence_weight(NA_real_, "legacy"), 1)
+})
+
+test_that("dis_confidence_weight() rejects an unknown mode", {
+  expect_error(dis_confidence_weight(1, "nonsense"))
+})
+
+test_that("dis_confidence_weight() returns one weight per input", {
+  # It is multiplied into a column, so length must be preserved.
+  for (m in DIS_CONFIDENCE_MODES) {
+    expect_length(dis_confidence_weight(runif(7), m), 7)
+  }
+  expect_length(dis_confidence_weight(numeric(0), "none"), 0)
+})
+
+test_that("the confidence mode constants are the documented set", {
+  expect_equal(DIS_CONFIDENCE_MODES, c("none", "filter", "downweight", "legacy"))
+  expect_equal(DIS_DEFAULT_CONF_THRESHOLD, 0.75)
+})
+
+test_that("mapped rows cannot reach CONFIDENCE_FLOOR, so the realised range is narrower", {
+  # The review described an 8x range from CONFIDENCE_FLOOR (0.25) to
+  # CONFIDENCE_CAP (2). But for a mapped row, mapped_share > 0 and
+  # evidence_mean >= 1, so the formula cannot fall below 0.75.
+  conf <- function(mapped_share, evidence_mean) {
+    pmin(CONFIDENCE_CAP, pmax(CONFIDENCE_FLOOR, 0.75 + 0.75 * mapped_share * evidence_mean))
+  }
+  smallest_mapped <- conf(1e-9, 1)
+  expect_gte(smallest_mapped, 0.75)
+  expect_equal(conf(1, 1), 1.5)
+  expect_equal(conf(1, 2), CONFIDENCE_CAP)
+
+  # The 8x swing comes from the pinned non-mapped rows instead.
+  expect_equal(CONFIDENCE_CROSSCUTTING, 0.25)
+  expect_equal(CONFIDENCE_UNMAPPED, 0.10)
+})
+
 test_that("neis_audit_keywords() reports hit rates in the documented shape", {
   txt <- c(
     "support for ai chip fabrication",

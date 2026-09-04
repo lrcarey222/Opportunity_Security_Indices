@@ -1166,13 +1166,61 @@ keyword_evidence <- function(tech, title, source, dict = TECH_KEYWORDS) {
 # Downstream (deployment and services).
 DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.25  # +12% when Title/Source corroborates supply-chain stage
 
-# ---- Mapping confidence (applied to policy strength contributions) ----
+# ---- Mapping confidence -------------------------------------------------------
+# Confidence is an EPISTEMIC quantity: it says how sure we are that a policy
+# belongs to a tech x stage cell. It is NOT a measure of how interventionist the
+# policy is. It therefore must not multiply strength by default, which is what
+# confidence_mode controls below.
 CONFIDENCE_FLOOR <- 0.25
 CONFIDENCE_CAP   <- 2
 # Baseline formula: confidence = 0.75 + 0.75 * mapped_share * evidence_mean
 # evidence_mean is the within-policy mean of combo_weight (>= 1 when validation hits).
 CONFIDENCE_UNMAPPED      <- 0.10
 CONFIDENCE_CROSSCUTTING  <- 0.25
+
+# How mapping_confidence enters the strength contribution.
+#
+#   "none"        domestic_ts = scale_strength_pkg * alloc            (default)
+#   "filter"      zero the contribution below conf_threshold
+#   "downweight"  multiply by pmin(1, mapping_confidence): never amplifies
+#   "legacy"      multiply by mapping_confidence as computed, which can exceed 1
+#
+# Why "none" is the default. Used as a multiplier, confidence let documentation
+# quality outweigh instrument choice. Note the realised range is narrower than
+# CONFIDENCE_FLOOR/CAP imply: for mapped rows the formula cannot fall below 0.75
+# (mapped_share > 0 and evidence_mean >= 1), so mapped rows occupy [0.75, 2.00],
+# a 2.7x spread, while cross-cutting rows are pinned at 0.25 and unmapped at
+# 0.10. The 8x swing is therefore mostly cross-cutting versus well-documented
+# mapped, and 2.7x among mapped rows still rivals the 3.3x spread of
+# DOMESTIC_FAMILY_WEIGHTS (0.30 to 1.00). Documentation richness is not randomly
+# distributed across countries, so either way this injected a systematic bias
+# into a cross-country index.
+#
+# There is also double counting: alloc already carries mapped_share (via
+# alloc = mapped_share * combo_weight / sum(combo_weight)) and
+# mapping_confidence carries mapped_share again, so under "legacy" it enters
+# the product roughly quadratically.
+DIS_CONFIDENCE_MODES <- c("none", "filter", "downweight", "legacy")
+DIS_DEFAULT_CONF_THRESHOLD <- 0.75
+
+#' Multiplier that mapping_confidence contributes to a strength product.
+#'
+#' Returns a numeric vector the same length as mapping_confidence, so callers
+#' multiply rather than branch.
+dis_confidence_weight <- function(mapping_confidence,
+                                  confidence_mode = "none",
+                                  conf_threshold = DIS_DEFAULT_CONF_THRESHOLD) {
+  confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
+  mc <- dplyr::coalesce(suppressWarnings(as.numeric(mapping_confidence)), 1)
+
+  switch(
+    confidence_mode,
+    none = rep(1, length(mc)),
+    filter = dplyr::if_else(mc >= conf_threshold, 1, 0),
+    downweight = pmin(1, mc),
+    legacy = mc
+  )
+}
 
 # Pre-fix supply-chain dictionary, kept verbatim for dis_legacy_mode. Do not edit.
 SUPPLY_CHAIN_KEYWORD_TERMS_LEGACY <- list(
@@ -1710,14 +1758,19 @@ add_asof_flags <- function(policy_base_tbl,
 # 4) Output 1: policy-level table (country level)
 # ==============================================================================
 
-build_by_policy <- function(policy_asof_tbl, cpc_names) {
-  
+build_by_policy <- function(policy_asof_tbl,
+                            cpc_names,
+                            tech_dict = TECH_KEYWORDS,
+                            sc_dict = SUPPLY_CHAIN_KEYWORDS) {
+
   # Summarise tech × supply_chain mapping (and confidence) at the policy level
-  alloc_long <- allocate_policy_to_tech_sc(policy_asof_tbl) %>%
+  alloc_long <- allocate_policy_to_tech_sc(policy_asof_tbl,
+                                           tech_dict = tech_dict,
+                                           sc_dict = sc_dict) %>%
     dplyr::mutate(
       mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1)
     )
-  
+
   map_sum <- alloc_long %>%
     dplyr::group_by(.data$policy_id) %>%
     dplyr::summarise(
@@ -1728,9 +1781,17 @@ build_by_policy <- function(policy_asof_tbl, cpc_names) {
       mapping_confidence_max = max(.data$mapping_confidence, na.rm = TRUE),
       # mapped_share is repeated after allocation expansion; summing it can exceed 1.
       mapped_share_policy = max(dplyr::coalesce(.data$mapped_share, 0), na.rm = TRUE),
-      
+
       # Backward-compatible alias; now corrected to policy-level mapped share.
       mapped_share_sum = max(dplyr::coalesce(.data$mapped_share, 0), na.rm = TRUE),
+
+      # The two inputs to mapping_confidence, reported so the confidence figure
+      # can be decomposed. mapping_confidence is
+      # pmin(2, pmax(0.25, 0.75 + 0.75 * mapped_share * evidence_mean)), and
+      # note mapped_share is already inside alloc, which is the double counting
+      # that made confidence enter the legacy product quadratically.
+      mapped_share = max(dplyr::coalesce(.data$mapped_share, 0), na.rm = TRUE),
+      evidence_mean = mean(dplyr::coalesce(.data$evidence_mean, 1), na.rm = TRUE),
       .groups = "drop"
     )
   
@@ -1859,33 +1920,61 @@ build_by_tech_sc <- function(policy_asof_tbl,
                              supply_chain_universe,
                              expand_cross_cutting = TRUE,
                              split_cross_cutting_strength = TRUE,
-                             balance_alpha = 0.5) {
-  
+                             balance_alpha = 0.5,
+                             confidence_mode = "none",
+                             conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
+                             tech_dict = TECH_KEYWORDS,
+                             sc_dict = SUPPLY_CHAIN_KEYWORDS,
+                             alloc_long = NULL) {
+
   # balance_alpha in [0,1]:
   #   1.0 -> pure SUM (extensive margin dominates)
   #   0.0 -> pure MEAN (intensive margin dominates)
   #   default 0.5 -> geometric blend between sum and mean
   balance_alpha <- max(0, min(1, balance_alpha))
-  
-  tech_sc_long <- allocate_policy_to_tech_sc(policy_asof_tbl)
-  
-  if (isTRUE(expand_cross_cutting)) {
-    tech_sc_long <- expand_cross_cutting_rows(
-      tech_sc_long,
-      tech_universe = tech_universe,
-      supply_chain_universe = supply_chain_universe,
-      split_strength = split_cross_cutting_strength
-    ) %>%
-      dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
+  confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
+
+  # alloc_long lets a caller supply an ALREADY-EXPANDED allocation table and skip
+  # the allocation entirely. confidence_mode does not affect allocation, so
+  # dis_variant_stability() allocates once and reuses it across all four modes
+  # instead of paying for the expansion four times.
+  if (is.null(alloc_long)) {
+    tech_sc_long <- allocate_policy_to_tech_sc(policy_asof_tbl,
+                                               tech_dict = tech_dict,
+                                               sc_dict = sc_dict)
+
+    if (isTRUE(expand_cross_cutting)) {
+      tech_sc_long <- expand_cross_cutting_rows(
+        tech_sc_long,
+        tech_universe = tech_universe,
+        supply_chain_universe = supply_chain_universe,
+        split_strength = split_cross_cutting_strength
+      ) %>%
+        dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
+    }
+  } else {
+    tech_sc_long <- alloc_long
   }
-  
+
+  # confidence_weight is kept as its own column so the contribution of the
+  # epistemic term is always inspectable, never folded silently into strength.
   tech_sc_long <- tech_sc_long %>%
     dplyr::filter(.data$tech != "Unmapped") %>%
     dplyr::mutate(
       mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1),
-      domestic_ts = .data$scale_strength_pkg * .data$alloc * .data$mapping_confidence
+      # Compute the weight BEFORE recording confidence_mode as a column: a
+      # column of that name would shadow the scalar argument for every later
+      # expression in the same mutate(). .env$ pins it either way.
+      confidence_weight = dis_confidence_weight(
+        .data$mapping_confidence,
+        confidence_mode = .env$confidence_mode,
+        conf_threshold = .env$conf_threshold
+      ),
+      domestic_ts = .data$scale_strength_pkg * .data$alloc * .data$confidence_weight,
+      confidence_mode = .env$confidence_mode,
+      conf_threshold = .env$conf_threshold
     )
-  
+
   # Collapse to POLICY-level within each Country × Tech × SupplyChain so we can
   # blend "sum" and "average" policy strength without double-counting a policy.
   policy_level <- tech_sc_long %>%
@@ -1894,14 +1983,19 @@ build_by_tech_sc <- function(policy_asof_tbl,
     dplyr::summarise(
       as_of_date = dplyr::first(.data$as_of_date),
       policy_strength = sum(.data$domestic_ts, na.rm = TRUE),
+      mapping_confidence = mean(.data$mapping_confidence, na.rm = TRUE),
       .groups = "drop"
     )
-  
+
   agg <- policy_level %>%
     dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain) %>%
     dplyr::summarise(
       as_of_date = dplyr::first(.data$as_of_date),
       n_active_policies = dplyr::n_distinct(.data$policy_id),
+      # Reported in every mode, including "none", so the epistemic quality of a
+      # cell stays visible even when it no longer scales the strength.
+      mapping_confidence_mean = mean(.data$mapping_confidence, na.rm = TRUE),
+      mapping_confidence_min = suppressWarnings(min(.data$mapping_confidence, na.rm = TRUE)),
       domestic_strength_sum = sum(.data$policy_strength, na.rm = TRUE),
       domestic_strength_avg = dplyr::if_else(.data$n_active_policies > 0,
                                              mean(.data$policy_strength, na.rm = TRUE),
@@ -1931,7 +2025,14 @@ build_by_tech_sc <- function(policy_asof_tbl,
   } else {
     idx <- idx %>% dplyr::mutate(cpc3_codes_csv = NA_character_, cpc_name_csv = NA_character_)
   }
-  
+
+  # Record how the score was built, so a stored output is self-describing.
+  idx <- idx %>%
+    dplyr::mutate(
+      confidence_mode = confidence_mode,
+      conf_threshold = conf_threshold
+    )
+
   list(
     data = idx,
     policy_alloc = tech_sc_long
@@ -1959,20 +2060,27 @@ build_by_tech_sc_year <- function(policy_base_tbl,
                                   weight_by_active_fraction = TRUE,
                                   expand_cross_cutting = TRUE,
                                   split_cross_cutting_strength = TRUE,
-                                  balance_alpha = 0.5) {
-  
+                                  balance_alpha = 0.5,
+                                  confidence_mode = "none",
+                                  conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
+                                  tech_dict = TECH_KEYWORDS,
+                                  sc_dict = SUPPLY_CHAIN_KEYWORDS) {
+
   balance_alpha <- max(0, min(1, balance_alpha))
+  confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
   if (!is.finite(rolling_window_years) || rolling_window_years < 1) rolling_window_years <- 1
   rolling_window_years <- as.integer(rolling_window_years)
-  
+
   tmp <- policy_base_tbl %>%
     dplyr::mutate(
       is_active_asof = TRUE,
       as_of_date = as.Date(NA)
     )
-  
-  tech_sc_long <- allocate_policy_to_tech_sc(tmp)
-  
+
+  tech_sc_long <- allocate_policy_to_tech_sc(tmp,
+                                             tech_dict = tech_dict,
+                                             sc_dict = sc_dict)
+
   if (isTRUE(expand_cross_cutting)) {
     tech_sc_long <- expand_cross_cutting_rows(
       tech_sc_long,
@@ -1982,12 +2090,20 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     ) %>%
       dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
   }
-  
+
   tech_sc_long <- tech_sc_long %>%
     dplyr::filter(.data$tech != "Unmapped") %>%
     dplyr::mutate(
       mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1),
-      domestic_ts = .data$scale_strength_pkg * .data$alloc * .data$mapping_confidence,
+      # See the note in build_by_tech_sc(): weight first, recorded columns after.
+      confidence_weight = dis_confidence_weight(
+        .data$mapping_confidence,
+        confidence_mode = .env$confidence_mode,
+        conf_threshold = .env$conf_threshold
+      ),
+      domestic_ts = .data$scale_strength_pkg * .data$alloc * .data$confidence_weight,
+      confidence_mode = .env$confidence_mode,
+      conf_threshold = .env$conf_threshold,
       announce_year_raw = suppressWarnings(as.integer(format(.data$announce_date, "%Y"))),
       impl_year = suppressWarnings(as.integer(format(.data$impl_date, "%Y"))),
       anchor_year = dplyr::if_else(is.finite(.data$announce_year_raw), .data$announce_year_raw, .data$impl_year)
@@ -2072,13 +2188,15 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain, .data$announce_year, .data$policy_id) %>%
     dplyr::summarise(
       policy_strength = sum(.data$domestic_flow, na.rm = TRUE),
+      mapping_confidence = mean(.data$mapping_confidence, na.rm = TRUE),
       .groups = "drop"
     )
-  
+
   agg <- policy_level %>%
     dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain, .data$announce_year) %>%
     dplyr::summarise(
       n_policies_window = dplyr::n_distinct(.data$policy_id),
+      mapping_confidence_mean = mean(.data$mapping_confidence, na.rm = TRUE),
       domestic_strength_sum = sum(.data$policy_strength, na.rm = TRUE),
       domestic_strength_avg = dplyr::if_else(.data$n_policies_window > 0,
                                              mean(.data$policy_strength, na.rm = TRUE),
@@ -2105,6 +2223,12 @@ build_by_tech_sc_year <- function(policy_base_tbl,
   } else {
     out <- out %>% dplyr::mutate(cpc3_codes_csv = NA_character_, cpc_name_csv = NA_character_)
   }
+
+  out <- out %>%
+    dplyr::mutate(
+      confidence_mode = confidence_mode,
+      conf_threshold = conf_threshold
+    )
   
   out
 }
@@ -2198,6 +2322,102 @@ build_by_cpc <- function(policy_asof_tbl,
 }
 
 # ==============================================================================
+# 8b) Diagnostic: how much of the ranking was documentation quality?
+# ------------------------------------------------------------------------------
+# Rebuilds by_tech_sc under every confidence_mode from one shared allocation and
+# compares country rankings within each tech x supply_chain cell. A low
+# rho(legacy, none) means the published index was substantially an index of how
+# well GTA wrote a measure up, not of how interventionist it was.
+# ==============================================================================
+
+#' @param policy_asof_tbl output of add_asof_flags()
+#' @param expand_cross_cutting passed through to build_by_tech_sc() and held
+#'   constant across all four modes. Worth running both ways: cross-cutting rows
+#'   are pinned at CONFIDENCE_CROSSCUTTING = 0.25 while mapped rows sit in
+#'   [0.75, 2.00], so with expansion on, part of the legacy-vs-none gap measured
+#'   here is really the cross-cutting attribution problem that Task 9 addresses.
+#' @return one row per tech x supply_chain, with the Spearman correlation of
+#'   country rankings between "legacy" and each other mode, and the count of
+#'   countries whose rank moves by more than rank_move_threshold places.
+dis_variant_stability <- function(policy_asof_tbl,
+                                  tech_sc_cpc_lu,
+                                  tech_universe,
+                                  supply_chain_universe,
+                                  conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
+                                  balance_alpha = 0.5,
+                                  rank_move_threshold = 3,
+                                  expand_cross_cutting = TRUE,
+                                  tech_dict = TECH_KEYWORDS,
+                                  sc_dict = SUPPLY_CHAIN_KEYWORDS) {
+
+  # Allocate once. confidence_mode enters only after allocation, so all four
+  # variants share this table; re-deriving it per mode would quadruple the cost
+  # of the most expensive step in the pipeline.
+  alloc_shared <- allocate_policy_to_tech_sc(policy_asof_tbl,
+                                             tech_dict = tech_dict,
+                                             sc_dict = sc_dict)
+  if (isTRUE(expand_cross_cutting)) {
+    alloc_shared <- expand_cross_cutting_rows(
+      alloc_shared,
+      tech_universe = tech_universe,
+      supply_chain_universe = supply_chain_universe,
+      split_strength = TRUE
+    ) %>%
+      dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
+  }
+
+  build_one <- function(mode) {
+    build_by_tech_sc(
+      policy_asof_tbl = policy_asof_tbl,
+      tech_sc_cpc_lu = tech_sc_cpc_lu,
+      tech_universe = tech_universe,
+      supply_chain_universe = supply_chain_universe,
+      expand_cross_cutting = expand_cross_cutting,
+      balance_alpha = balance_alpha,
+      confidence_mode = mode,
+      conf_threshold = conf_threshold,
+      alloc_long = alloc_shared
+    )$data %>%
+      dplyr::select(dplyr::all_of(c("iso3", "country", "tech", "supply_chain",
+                                    "domestic_stock_sum"))) %>%
+      dplyr::rename("score_{mode}" := "domestic_stock_sum")
+  }
+
+  variants <- lapply(DIS_CONFIDENCE_MODES, build_one)
+  names(variants) <- DIS_CONFIDENCE_MODES
+
+  joined <- Reduce(
+    function(a, b) dplyr::full_join(a, b, by = c("iso3", "country", "tech", "supply_chain")),
+    variants
+  )
+
+  compare_modes <- setdiff(DIS_CONFIDENCE_MODES, "legacy")
+
+  joined %>%
+    dplyr::group_by(.data$tech, .data$supply_chain) %>%
+    dplyr::group_modify(function(g, key) {
+      legacy <- g[["score_legacy"]]
+      # dense_rank on the negated score: rank 1 = strongest.
+      rank_legacy <- dplyr::dense_rank(dplyr::desc(legacy))
+
+      out <- tibble::tibble(n_countries = nrow(g))
+      for (m in compare_modes) {
+        v <- g[[paste0("score_", m)]]
+        rank_v <- dplyr::dense_rank(dplyr::desc(v))
+        rho <- suppressWarnings(stats::cor(legacy, v, method = "spearman",
+                                           use = "pairwise.complete.obs"))
+        moved <- sum(abs(rank_legacy - rank_v) > rank_move_threshold, na.rm = TRUE)
+        out[[paste0("rho_legacy_", m)]] <- rho
+        out[[paste0("n_rank_moved_gt", rank_move_threshold, "_", m)]] <- moved
+        out[[paste0("share_rank_moved_", m)]] <- if (nrow(g) > 0) moved / nrow(g) else NA_real_
+      }
+      out
+    }) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(.data$rho_legacy_none)
+}
+
+# ==============================================================================
 # 9) Top-level wrapper: nipo_policy_outputs()
 # ==============================================================================
 
@@ -2223,7 +2443,24 @@ nipo_policy_outputs <- function(raw_nipo,
                                 year_max = NULL,
                                 rolling_window_years = 3,
                                 balance_alpha = 0.5,
-                                weight_by_active_fraction = TRUE) {
+                                weight_by_active_fraction = TRUE,
+                                confidence_mode = "none",
+                                conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
+                                dis_legacy_mode = FALSE) {
+  # dis_legacy_mode is a single switch that restores every pre-remediation
+  # behaviour at once, for attributing a rank change to a specific fix. It
+  # overrides the individual arguments rather than sitting alongside them.
+  confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
+
+  if (isTRUE(dis_legacy_mode)) {
+    confidence_mode <- "legacy"
+    tech_dict <- TECH_KEYWORDS_LEGACY
+    sc_dict <- SUPPLY_CHAIN_KEYWORDS_LEGACY
+  } else {
+    tech_dict <- TECH_KEYWORDS
+    sc_dict <- SUPPLY_CHAIN_KEYWORDS
+  }
+
   hs6_essential_tbl <- resolve_hs6_essential_tbl(hs6_essential_tbl)
   
   # Driver mapping used for CPC validation / lookup tables.
@@ -2286,7 +2523,8 @@ nipo_policy_outputs <- function(raw_nipo,
     flow_window_days = flow_window_days
   )
   
-  by_policy <- build_by_policy(policy_asof, cpc_names = cpc_names)
+  by_policy <- build_by_policy(policy_asof, cpc_names = cpc_names,
+                               tech_dict = tech_dict, sc_dict = sc_dict)
   
   by_hs6 <- build_by_hs6(
     policy_asof,
@@ -2304,9 +2542,13 @@ nipo_policy_outputs <- function(raw_nipo,
     expand_cross_cutting = expand_cross_cutting,
     split_cross_cutting_strength = split_cross_cutting_strength
     ,
-    balance_alpha = balance_alpha
+    balance_alpha = balance_alpha,
+    confidence_mode = confidence_mode,
+    conf_threshold = conf_threshold,
+    tech_dict = tech_dict,
+    sc_dict = sc_dict
   )
-  
+
   by_tech_sc <- tech_sc_out$data
   
   by_tech_sc_year <- build_by_tech_sc_year(
@@ -2320,9 +2562,13 @@ nipo_policy_outputs <- function(raw_nipo,
     weight_by_active_fraction = weight_by_active_fraction,
     expand_cross_cutting = expand_cross_cutting,
     split_cross_cutting_strength = split_cross_cutting_strength,
-    balance_alpha = balance_alpha
+    balance_alpha = balance_alpha,
+    confidence_mode = confidence_mode,
+    conf_threshold = conf_threshold,
+    tech_dict = tech_dict,
+    sc_dict = sc_dict
   )
-  
+
   by_cpc <- build_by_cpc(
     policy_asof_tbl = policy_asof,
     cpc_name_lu = cpc_names,
@@ -2336,6 +2582,13 @@ nipo_policy_outputs <- function(raw_nipo,
     by_tech_sc = by_tech_sc,
     by_tech_sc_year = by_tech_sc_year,
     by_cpc = by_cpc,
+    # What this run actually did. Additive: no existing element is changed.
+    dis_settings = list(
+      confidence_mode = confidence_mode,
+      conf_threshold = conf_threshold,
+      dis_legacy_mode = isTRUE(dis_legacy_mode),
+      keyword_dictionary = if (isTRUE(dis_legacy_mode)) "legacy" else "bounded"
+    ),
     internals = list(
       nipo_country = nipo_country,
       policy_base = policy_base,
