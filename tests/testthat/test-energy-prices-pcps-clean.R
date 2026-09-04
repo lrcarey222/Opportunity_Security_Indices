@@ -1,5 +1,8 @@
-repo_root <- getwd()
+# testthat runs with the working directory set to tests/testthat, so the repo root is
+# resolved from this file rather than from getwd().
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
+source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "categories", "energy_prices", "energy_prices.R"))
 source(file.path(repo_root, "tests", "testthat", "helper-fixtures.R"))
 

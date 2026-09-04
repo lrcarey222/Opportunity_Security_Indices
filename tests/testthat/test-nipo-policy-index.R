@@ -1,3 +1,14 @@
+# testthat runs with the working directory set to tests/testthat, so the repo root is
+# resolved from this file rather than from the working directory.
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
+
+# This file exercised normalize_chr_vec(), clean_nipo_raw() and the keyword helpers
+# without ever sourcing the file that defines them, so every test in it errored with
+# "could not find function" in a clean session.
+source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "utils", "country.R"))
+source(file.path(repo_root, "R", "categories", "policy", "nipo_policy_index.R"))
+
 test_that("normalize_chr_vec trims and de-duplicates tech labels", {
   vals <- c("Green Hydrogen", " Green Hydrogen ", "Geothermal", "Geothermal  ", "")
 
