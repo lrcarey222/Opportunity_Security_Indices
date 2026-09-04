@@ -29,9 +29,12 @@ jobs:
       # install.packages() only warns on failure and still exits 0, so a broken install used
       # to surface much later as "there is no package called 'testthat'" in the run step.
       # Verify every package is loadable and fail here instead.
+      # The package list covers scripts/utils/bootstrap.R's core_packages as well as the
+      # test-only ones: any test that sources a pipeline script runs opsi_bootstrap(),
+      # which stops on "Missing required packages" for anything absent.
       - name: Install dependencies
         run: |
-          Rscript -e 'packages <- c("testthat","yaml","dplyr","tibble","stringr","tidyr","purrr","shiny","bslib","scales","countrycode","readr","curl","jsonlite"); if (file.exists("DESCRIPTION")) packages <- c(packages, "devtools"); packages <- unique(packages); install.packages(packages, repos = "https://packagemanager.posit.co/cran/__linux__/noble/latest"); missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop("dependency install failed for: ", paste(missing, collapse = ", "))'
+          Rscript -e 'packages <- c("testthat","yaml","dplyr","tibble","stringr","tidyr","purrr","shiny","bslib","scales","countrycode","readr","curl","jsonlite","readxl","WDI","comtradr","magrittr","progress","lubridate","glue","rprojroot"); if (file.exists("DESCRIPTION")) packages <- c(packages, "devtools"); packages <- unique(packages); install.packages(packages, repos = "https://packagemanager.posit.co/cran/__linux__/noble/latest"); missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop("dependency install failed for: ", paste(missing, collapse = ", "))'
 
       - name: Run tests
         run: |
