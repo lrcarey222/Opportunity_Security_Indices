@@ -131,6 +131,10 @@ cat("n with a completed lifetime: ", sum(!is.na(policy_asof$observed_duration_da
 cat("\nexposure_days (censored at as_of_date):\n")
 print(summary(policy_asof$exposure_days))
 cat("n censored (still in force): ", sum(policy_asof$duration_censored), "\n", sep = "")
+cat("removal recorded BEFORE implementation (exposure_days set to NA): ",
+    sum(policy_asof$removal_before_impl), "\n", sep = "")
+stopifnot(all(policy_asof$exposure_days[!is.na(policy_asof$exposure_days)] >= 0))
+cat("all defined exposure_days are non-negative: TRUE\n")
 
 # ---- 4) Save ----------------------------------------------------------------
 summary_tbl <- tibble::tibble(

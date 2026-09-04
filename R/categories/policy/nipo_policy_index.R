@@ -1537,6 +1537,57 @@ clean_nipo_raw <- function(raw_nipo,
 #    - Applies: package multiplier (m_package) at State Act ID level
 # ==============================================================================
 
+#' Scope multiplier: how economy-wide a measure is.
+#'
+#' case_when() evaluates in order, and in the legacy ordering the
+#' has_beneficiary test sat ABOVE the firm-level test. Any measure naming a
+#' beneficiary therefore scored 0.60, and the 0.40 firm branch could only fire
+#' when the level field said "firm" but NO beneficiary was named - the opposite
+#' of the informative case. "firm_first" moves the firm-level test above
+#' has_beneficiary so a firm-specific measure scores 0.40 whether or not the
+#' beneficiary happens to be recorded.
+#'
+#' NOTE on the sector-versus-horizontal ordering. The review asked whether
+#' "sector|industry" ~ 1 scoring above the 0.75 given to
+#' "economy|cross|horizontal" is inverted. On the current export the question
+#' does not arise: `Levels of Policy Intervention` takes exactly three values -
+#' "Policy or regulation", "Firm-specific" and "Industrial strategy or plan" -
+#' and NEITHER regex matches any of them. "industrial" does not contain
+#' "industry", and no value contains "economy", "cross", "horizontal" or
+#' "sector". Both branches are unreachable. They are left exactly as they were,
+#' in both modes, because their intent cannot be inferred from behaviour that
+#' never occurs, and a future NIPO vintage with richer level labels may need
+#' them. Do not "fix" the ordering without deciding what it should mean.
+#'
+#' @param scope_mode "firm_first" (default) or "legacy".
+dis_m_scope <- function(is_horizontal,
+                        has_beneficiary,
+                        policy_level,
+                        scope_mode = c("firm_first", "legacy")) {
+  scope_mode <- match.arg(scope_mode)
+
+  if (scope_mode == "legacy") {
+    return(dplyr::case_when(
+      is_horizontal ~ 1.00,
+      has_beneficiary ~ 0.60,
+      stringr::str_detect(policy_level, "economy|cross|horizontal") ~ 0.75,
+      stringr::str_detect(policy_level, "sector|industry") ~ 1,
+      stringr::str_detect(policy_level, "firm") ~ 0.40,
+      TRUE ~ 0.75
+    ))
+  }
+
+  dplyr::case_when(
+    is_horizontal ~ 1.00,
+    # Moved above has_beneficiary. This is the only reordering.
+    stringr::str_detect(policy_level, "firm") ~ 0.40,
+    has_beneficiary ~ 0.60,
+    stringr::str_detect(policy_level, "economy|cross|horizontal") ~ 0.75,
+    stringr::str_detect(policy_level, "sector|industry") ~ 1,
+    TRUE ~ 0.75
+  )
+}
+
 #' @param include_geo_in_strength whether m_geo enters scale_strength_base.
 #'   Defaults to FALSE. m_geo is cap_mult(log_mult(partner_n, p95_geo)), i.e. a
 #'   function of how many jurisdictions a measure AFFECTS. A measure hitting 100
@@ -1570,8 +1621,10 @@ build_policy_base <- function(nipo_country_tbl,
                               package_step = 0.15,
                               include_geo_in_strength = FALSE,
                               strength_constant = 1,
-                              scale_mode = c("exposure", "fiscal", "max", "none")) {
+                              scale_mode = c("exposure", "fiscal", "max", "none"),
+                              scope_mode = c("firm_first", "legacy")) {
   scale_mode <- match.arg(scale_mode)
+  scope_mode <- match.arg(scope_mode)
   check_required_columns(
     nipo_country_tbl,
     c(
@@ -1645,13 +1698,11 @@ build_policy_base <- function(nipo_country_tbl,
         stringr::str_detect(stringr::str_to_lower(.data$juris_raw), "local|city|municip") ~ "Local",
         TRUE ~ "Unknown"
       ),
-      m_scope = dplyr::case_when(
-        .data$is_horizontal ~ 1.00,
-        .data$has_beneficiary ~ 0.60,
-        stringr::str_detect(.data$policy_level, "economy|cross|horizontal") ~ 0.75,
-        stringr::str_detect(.data$policy_level, "sector|industry") ~ 1,
-        stringr::str_detect(.data$policy_level, "firm") ~ 0.40,
-        TRUE ~ 0.75
+      m_scope = dis_m_scope(
+        is_horizontal = .data$is_horizontal,
+        has_beneficiary = .data$has_beneficiary,
+        policy_level = .data$policy_level,
+        scope_mode = scope_mode
       )
     ) %>%
     dplyr::left_join(POLICY_TYPE_WEIGHTS, by = c("intervention_type" = "intervention_type")) %>%    dplyr::left_join(JURIS_WEIGHTS, by = c("jurisdiction_norm" = "jurisdiction")) %>%
@@ -1876,13 +1927,24 @@ add_asof_flags <- function(policy_base_tbl,
       # been observed, ending at removal or at as_of_date, whichever is first.
       # Every implemented measure has one, so this is what survival-style
       # estimates in Task 9 use for at-risk time.
+      #
+      # A recorded removal BEFORE implementation is a data error and yields an
+      # incoherent timeline, so exposure is NA rather than negative. The same
+      # guard already exists on planned_end and observed_duration_days. Without
+      # it the minimum exposure_days on the July 2026 export is -98.
       exposure_days = dplyr::if_else(
-        !is.na(.data$impl_date) & .data$impl_date <= as_of_date,
+        !is.na(.data$impl_date) & .data$impl_date <= as_of_date &
+          (is.na(.data$removal_date) | .data$removal_date >= .data$impl_date),
         as.numeric(
           pmin(dplyr::coalesce(.data$removal_date, as_of_date), as_of_date) - .data$impl_date
         ),
         NA_real_
       ),
+
+      # Flags the incoherent-timeline records above, so they are countable
+      # rather than merely absent.
+      removal_before_impl = !is.na(.data$impl_date) & !is.na(.data$removal_date) &
+        .data$removal_date < .data$impl_date,
 
       # TRUE when the measure was still in force at as_of_date, i.e. its
       # exposure_days is right-censored rather than a completed lifetime.
@@ -2586,8 +2648,10 @@ nipo_policy_outputs <- function(raw_nipo,
                                 include_geo_in_strength = FALSE,
                                 strength_constant = 1,
                                 scale_mode = c("exposure", "fiscal", "max", "none"),
+                                scope_mode = c("firm_first", "legacy"),
                                 dis_legacy_mode = FALSE) {
   scale_mode <- match.arg(scale_mode)
+  scope_mode <- match.arg(scope_mode)
   # dis_legacy_mode is a single switch that restores every pre-remediation
   # behaviour at once, for attributing a rank change to a specific fix. It
   # overrides the individual arguments rather than sitting alongside them.
@@ -2600,6 +2664,7 @@ nipo_policy_outputs <- function(raw_nipo,
     include_geo_in_strength <- TRUE
     strength_constant <- 2
     scale_mode <- "max"
+    scope_mode <- "legacy"
   } else {
     tech_dict <- TECH_KEYWORDS
     sc_dict <- SUPPLY_CHAIN_KEYWORDS
@@ -2661,7 +2726,8 @@ nipo_policy_outputs <- function(raw_nipo,
     package_step = package_step,
     include_geo_in_strength = include_geo_in_strength,
     strength_constant = strength_constant,
-    scale_mode = scale_mode
+    scale_mode = scale_mode,
+    scope_mode = scope_mode
   )
   
   policy_asof <- add_asof_flags(
@@ -2736,6 +2802,7 @@ nipo_policy_outputs <- function(raw_nipo,
       include_geo_in_strength = isTRUE(include_geo_in_strength),
       strength_constant = strength_constant,
       scale_mode = scale_mode,
+      scope_mode = scope_mode,
       dis_legacy_mode = isTRUE(dis_legacy_mode),
       keyword_dictionary = if (isTRUE(dis_legacy_mode)) "legacy" else "bounded"
     ),

@@ -489,6 +489,39 @@ test_that("exposure_days censors at as_of_date", {
   expect_equal(base$exposure_days, c(30, 365, NA))
 })
 
+test_that("exposure_days is never negative when removal precedes implementation", {
+  # Real data contains these: the July 2026 export produced a minimum
+  # exposure_days of -98 before this guard was added.
+  base <- add_asof_flags(
+    build_policy_base(make_policy_fixture(
+      n = 2,
+      impl_date = as.Date(c("2020-06-01", "2020-06-01")),
+      removal_date = as.Date(c("2020-01-01", "2021-06-01"))
+    )),
+    as_of_date = as.Date("2026-06-30")
+  )
+
+  expect_equal(base$removal_before_impl, c(TRUE, FALSE))
+  expect_true(is.na(base$exposure_days[1]))
+  expect_equal(base$exposure_days[2], 365)
+  # observed_duration_days carried the same guard already.
+  expect_true(is.na(base$observed_duration_days[1]))
+})
+
+test_that("exposure_days is non-negative wherever it is defined", {
+  base <- add_asof_flags(
+    build_policy_base(make_policy_fixture(
+      n = 4,
+      impl_date = as.Date(c("2020-06-01", "2020-06-01", "2020-06-01", NA)),
+      removal_date = as.Date(c("2019-01-01", NA, "2020-06-01", NA))
+    )),
+    as_of_date = as.Date("2026-06-30")
+  )
+
+  defined <- base$exposure_days[!is.na(base$exposure_days)]
+  expect_true(all(defined >= 0))
+})
+
 test_that("a removal date after as_of_date is censored, not counted", {
   base <- add_asof_flags(
     build_policy_base(make_policy_fixture(
@@ -635,6 +668,107 @@ test_that("legacy max() lets exposure stand in for fiscal commitment", {
 
 test_that("scale_mode rejects an unknown value", {
   expect_error(build_policy_base(make_scale_fixture(), scale_mode = "nonsense"))
+})
+
+# ==============================================================================
+# Task 6 - the unreachable m_scope branch
+# ==============================================================================
+
+test_that("legacy m_scope makes the 0.40 firm branch fire only without a beneficiary", {
+  # This is the defect: a firm-specific measure that NAMES its beneficiary is
+  # the more informative case, yet scored 0.60, while the 0.40 firm weight was
+  # reserved for firm-specific measures with the beneficiary left blank.
+  scope <- dis_m_scope(
+    is_horizontal = c(FALSE, FALSE),
+    has_beneficiary = c(TRUE, FALSE),
+    policy_level = c("firm-specific", "firm-specific"),
+    scope_mode = "legacy"
+  )
+  expect_equal(scope, c(0.60, 0.40))
+})
+
+test_that("firm_first scores firm-specific measures at 0.40 either way", {
+  scope <- dis_m_scope(
+    is_horizontal = c(FALSE, FALSE),
+    has_beneficiary = c(TRUE, FALSE),
+    policy_level = c("firm-specific", "firm-specific"),
+    scope_mode = "firm_first"
+  )
+  expect_equal(scope, c(0.40, 0.40))
+})
+
+test_that("firm_first leaves non-firm rows with a beneficiary at 0.60", {
+  # Reordering only, not merging: a named beneficiary under a policy-level
+  # measure still scores 0.60.
+  scope <- dis_m_scope(
+    is_horizontal = FALSE,
+    has_beneficiary = TRUE,
+    policy_level = "policy or regulation",
+    scope_mode = "firm_first"
+  )
+  expect_equal(scope, 0.60)
+})
+
+test_that("is_horizontal still wins in both modes", {
+  for (m in c("firm_first", "legacy")) {
+    expect_equal(
+      dis_m_scope(TRUE, TRUE, "firm-specific", scope_mode = m),
+      1.00
+    )
+  }
+})
+
+test_that("the two dead regex branches are unreachable on real field values", {
+  # `Levels of Policy Intervention` takes exactly three values. Neither
+  # "economy|cross|horizontal" nor "sector|industry" matches any of them:
+  # "industrial" does not contain "industry". Both branches never fire, which
+  # is why the sector-versus-horizontal ordering question cannot be settled
+  # from this data and has been left untouched.
+  levels_seen <- c("policy or regulation", "firm-specific",
+                   "industrial strategy or plan")
+
+  expect_false(any(stringr::str_detect(levels_seen, "economy|cross|horizontal")))
+  expect_false(any(stringr::str_detect(levels_seen, "sector|industry")))
+  expect_equal(
+    stringr::str_detect(levels_seen, "firm"),
+    c(FALSE, TRUE, FALSE)
+  )
+
+  # So only three m_scope values are reachable: 1.00, 0.60, 0.40 and the 0.75
+  # default.
+  reachable <- unique(dis_m_scope(
+    is_horizontal = rep(c(TRUE, FALSE), each = 6),
+    has_beneficiary = rep(c(TRUE, FALSE), times = 6),
+    policy_level = rep(levels_seen, times = 4)
+  ))
+  expect_setequal(reachable, c(1.00, 0.40, 0.60, 0.75))
+})
+
+test_that("both dead branches behave identically in both modes", {
+  # Guard against a future edit silently changing the untouched ordering.
+  args <- list(
+    is_horizontal = c(FALSE, FALSE),
+    has_beneficiary = c(FALSE, FALSE),
+    policy_level = c("economy-wide programme", "sector support")
+  )
+  expect_equal(
+    do.call(dis_m_scope, c(args, scope_mode = "firm_first")),
+    do.call(dis_m_scope, c(args, scope_mode = "legacy"))
+  )
+})
+
+test_that("scope_mode is threaded through build_policy_base", {
+  f <- make_policy_fixture(n = 2, partner_csv = rep("Brazil", 2))
+  f$`Levels of Policy Intervention` <- rep("Firm-specific", 2)
+  f$`Firm: Beneficiary` <- c("Acme Corp", NA_character_)
+
+  new <- build_policy_base(f)
+  old <- build_policy_base(f, scope_mode = "legacy")
+
+  expect_equal(new$m_scope, c(0.40, 0.40))
+  expect_equal(old$m_scope, c(0.60, 0.40))
+  # Only the beneficiary-named row changes.
+  expect_equal(sum(new$m_scope != old$m_scope), 1)
 })
 
 test_that("neis_audit_keywords() reports hit rates in the documented shape", {
