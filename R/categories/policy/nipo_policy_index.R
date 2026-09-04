@@ -1537,6 +1537,18 @@ clean_nipo_raw <- function(raw_nipo,
 #    - Applies: package multiplier (m_package) at State Act ID level
 # ==============================================================================
 
+#' @param include_geo_in_strength whether m_geo enters scale_strength_base.
+#'   Defaults to FALSE. m_geo is cap_mult(log_mult(partner_n, p95_geo)), i.e. a
+#'   function of how many jurisdictions a measure AFFECTS. A measure hitting 100
+#'   partners is not a stronger *domestic* intervention than one hitting two; it
+#'   is a more widely directed one. That is a directionality property, and the
+#'   same Affected Jurisdiction field is needed intact for the partner-side
+#'   exposure metrics (neis_inbound_exposure() and neis_rival_direction(), added
+#'   in Task 9), where it belongs. m_geo and partner_n remain reported columns.
+#' @param strength_constant flat multiplier on scale_strength_base. Defaults to
+#'   1. The pre-remediation product carried a bare, undocumented 2 here, which
+#'   only rescaled every row identically and so changed no ranking; it is kept
+#'   as an argument purely so dis_legacy_mode can reproduce old levels.
 build_policy_base <- function(nipo_country_tbl,
                               duration_norm_months = 24,
                               duration_cap_months = 60,
@@ -1544,7 +1556,9 @@ build_policy_base <- function(nipo_country_tbl,
                               geo_cap = 3.0,
                               scale_cap = 3.0,
                               package_cap = 1.6,
-                              package_step = 0.15) {
+                              package_step = 0.15,
+                              include_geo_in_strength = FALSE,
+                              strength_constant = 1) {
   check_required_columns(
     nipo_country_tbl,
     c(
@@ -1689,7 +1703,15 @@ build_policy_base <- function(nipo_country_tbl,
       m_scale = pmax_na(.data$m_trade, .data$m_subsidy, default = 1),
       
       bite_strength_base  = .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration,
-      scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * 2 * .data$m_scale,
+
+      # m_geo is excluded from the product by default: breadth of AFFECTED
+      # jurisdictions measures who a measure is aimed at, not how hard the
+      # implementing state is pushing at home. It stays available as its own
+      # column, and Task 9 consumes the same field for inbound exposure and
+      # rival-direction metrics. m_geo_applied records what was actually used.
+      m_geo_applied = if (isTRUE(include_geo_in_strength)) .data$m_geo else 1,
+      scale_strength_base = .data$bite_strength_base * .data$m_breadth *
+        .data$m_geo_applied * strength_constant * .data$m_scale,
       
       # Clearer name. Keep policy_strength as a backward-compatible alias.
       simple_policy_strength = .data$w_tool * .data$w_status * .data$m_scope * .data$m_scale,
@@ -2446,6 +2468,8 @@ nipo_policy_outputs <- function(raw_nipo,
                                 weight_by_active_fraction = TRUE,
                                 confidence_mode = "none",
                                 conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
+                                include_geo_in_strength = FALSE,
+                                strength_constant = 1,
                                 dis_legacy_mode = FALSE) {
   # dis_legacy_mode is a single switch that restores every pre-remediation
   # behaviour at once, for attributing a rank change to a specific fix. It
@@ -2456,6 +2480,8 @@ nipo_policy_outputs <- function(raw_nipo,
     confidence_mode <- "legacy"
     tech_dict <- TECH_KEYWORDS_LEGACY
     sc_dict <- SUPPLY_CHAIN_KEYWORDS_LEGACY
+    include_geo_in_strength <- TRUE
+    strength_constant <- 2
   } else {
     tech_dict <- TECH_KEYWORDS
     sc_dict <- SUPPLY_CHAIN_KEYWORDS
@@ -2514,7 +2540,9 @@ nipo_policy_outputs <- function(raw_nipo,
     geo_cap = geo_cap,
     scale_cap = scale_cap,
     package_cap = package_cap,
-    package_step = package_step
+    package_step = package_step,
+    include_geo_in_strength = include_geo_in_strength,
+    strength_constant = strength_constant
   )
   
   policy_asof <- add_asof_flags(
@@ -2586,6 +2614,8 @@ nipo_policy_outputs <- function(raw_nipo,
     dis_settings = list(
       confidence_mode = confidence_mode,
       conf_threshold = conf_threshold,
+      include_geo_in_strength = isTRUE(include_geo_in_strength),
+      strength_constant = strength_constant,
       dis_legacy_mode = isTRUE(dis_legacy_mode),
       keyword_dictionary = if (isTRUE(dis_legacy_mode)) "legacy" else "bounded"
     ),

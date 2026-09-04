@@ -294,6 +294,114 @@ test_that("mapped rows cannot reach CONFIDENCE_FLOOR, so the realised range is n
   expect_equal(CONFIDENCE_UNMAPPED, 0.10)
 })
 
+# ==============================================================================
+# Task 3 - geographic reach and the bare constant removed from the product
+# ==============================================================================
+
+# Minimal table with every column build_policy_base() requires, so the strength
+# product can be tested without touching the real export.
+make_policy_fixture <- function(n = 3,
+                                partner_csv = c("Brazil", "Brazil, China",
+                                                "Brazil, China, India, Japan")) {
+  tibble::tibble(
+    nipo_row_id = seq_len(n),
+    `State Act ID` = seq_len(n),
+    `Entry ID` = seq_len(n),
+    iso3 = rep("USA", n),
+    country = rep("United States", n),
+    `GTA Intervention Type` = rep("Production subsidy", n),
+    `Initial Assessment (Change Relative to 1 Jan 2009)` = rep("Distortive", n),
+    `Level of Government Implementation` = rep("National", n),
+    `Affected Trade Flow` = rep("inward", n),
+    `Announcement Date` = rep(as.Date("2020-01-01"), n),
+    `Implementation Date` = rep(as.Date("2020-06-01"), n),
+    `Removal Date` = rep(as.Date(NA), n),
+    total_hs6 = rep(4L, n),
+    matched_hs6 = rep(2L, n),
+    `Affected Jurisdiction` = partner_csv[seq_len(n)],
+    `Sector: CPC 3-digit (v2.1)` = rep("461, 462", n),
+    `Trade Covered (USD Million)` = rep(100, n),
+    `Size of Subsidy (USD Million)` = rep(50, n),
+    `Is Horizontal` = rep(FALSE, n),
+    `Levels of Policy Intervention` = rep("Policy or regulation", n),
+    `Firm: Beneficiary` = rep(NA_character_, n),
+    `Is Export Policy` = rep(FALSE, n),
+    `Is Import Policy` = rep(FALSE, n),
+    `Is Trade Defence` = rep(FALSE, n),
+    `Is Subsidy` = rep(TRUE, n),
+    `Is Export Incentive` = rep(FALSE, n),
+    `Is FDI Policy` = rep(FALSE, n),
+    `Is Procurement Policy` = rep(FALSE, n),
+    `Is Localisation Policy` = rep(FALSE, n),
+    `Is Other Policy` = rep(FALSE, n),
+    sector_low_carbon = rep(TRUE, n),
+    sector_dual_use = rep(FALSE, n),
+    sector_critical_minerals = rep(FALSE, n),
+    sector_advanced_tech = rep(FALSE, n)
+  )
+}
+
+test_that("m_geo is excluded from the strength product by default", {
+  base <- build_policy_base(make_policy_fixture())
+
+  # m_geo_applied records what actually entered the product.
+  expect_true(all(base$m_geo_applied == 1))
+  expect_equal(
+    base$scale_strength_base,
+    base$bite_strength_base * base$m_breadth * base$m_scale
+  )
+})
+
+test_that("include_geo_in_strength = TRUE restores m_geo and the constant", {
+  legacy <- build_policy_base(make_policy_fixture(),
+                              include_geo_in_strength = TRUE,
+                              strength_constant = 2)
+
+  expect_equal(legacy$m_geo_applied, legacy$m_geo)
+  expect_equal(
+    legacy$scale_strength_base,
+    legacy$bite_strength_base * legacy$m_breadth * legacy$m_geo * 2 * legacy$m_scale
+  )
+})
+
+test_that("m_geo and partner_n survive as reported columns in both modes", {
+  for (geo in c(FALSE, TRUE)) {
+    base <- build_policy_base(make_policy_fixture(), include_geo_in_strength = geo)
+    expect_true(all(c("m_geo", "partner_n", "m_geo_applied") %in% names(base)))
+    # partner_n counts the CSV tokens in Affected Jurisdiction. count_csv_tokens()
+    # vapply()s over a character vector, so the result carries names; unname()
+    # rather than assert the incidental names.
+    expect_equal(unname(base$partner_n), c(1L, 2L, 4L))
+    # m_geo still varies with partner count even when it does not enter strength.
+    expect_true(all(base$m_geo >= 1))
+    expect_gt(base$m_geo[3], base$m_geo[1])
+  }
+})
+
+test_that("dropping m_geo removes a term that varies across measures", {
+  # The point of the fix: under legacy, three otherwise IDENTICAL measures get
+  # different strengths purely because they name different numbers of affected
+  # jurisdictions.
+  legacy <- build_policy_base(make_policy_fixture(),
+                              include_geo_in_strength = TRUE,
+                              strength_constant = 2)
+  fixed <- build_policy_base(make_policy_fixture())
+
+  expect_gt(length(unique(round(legacy$scale_strength_base, 10))), 1)
+  expect_equal(length(unique(round(fixed$scale_strength_base, 10))), 1)
+})
+
+test_that("strength_constant only rescales and cannot change any ranking", {
+  one <- build_policy_base(make_policy_fixture(), strength_constant = 1)
+  two <- build_policy_base(make_policy_fixture(), strength_constant = 2)
+
+  expect_equal(two$scale_strength_base, one$scale_strength_base * 2)
+  expect_equal(
+    rank(one$scale_strength_base),
+    rank(two$scale_strength_base)
+  )
+})
+
 test_that("neis_audit_keywords() reports hit rates in the documented shape", {
   txt <- c(
     "support for ai chip fabrication",
