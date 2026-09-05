@@ -290,61 +290,76 @@ signed_expm1 <- function(x) {
 
 # Stable signed blend of sum and average strength.
 # This avoids NaN from log1p(x) when x is negative.
+#' This was defined twice. The second definition silently overwrote the first
+#' and dropped its is.finite(alpha) guard, so the version actually in use by
+#' every aggregation propagated a non-finite alpha instead of falling back to
+#' 0.5: max(0, min(1, NA)) is NA, which blanked the whole blended column. The
+#' guarded version is kept and the duplicate deleted.
 signed_log_blend <- function(strength_sum, strength_avg, alpha = 0.5) {
   alpha <- suppressWarnings(as.numeric(alpha))
   if (!is.finite(alpha)) alpha <- 0.5
   alpha <- max(0, min(1, alpha))
-  
+
   signed_expm1(
     alpha * signed_log1p(strength_sum) +
       (1 - alpha) * signed_log1p(strength_avg)
   )
 }
 
-signed_log_blend <- function(strength_sum, strength_avg, alpha = 0.5) {
-  alpha <- max(0, min(1, alpha))
-  
-  signed_expm1(
-    alpha * signed_log1p(strength_sum) +
-      (1 - alpha) * signed_log1p(strength_avg)
-  )
-}
+# ---- Singleton handling -------------------------------------------------------
+# safe_median_scurve() returned 0.5 for a one-observation group while
+# pct_rank_safe() returned 1 for the SAME group, so a cell containing a single
+# country scored 0.5 on the index and the 100th percentile on the companion
+# pctile column.
+#
+# THE CHOICE: both now return 0.5, and the reason is that a percentile computed
+# over one observation is not a percentile. That country is simultaneously the
+# best and the worst in its cell; 1 asserts "top of the field" on the strength
+# of no comparison at all, which is the more misleading of the two answers.
+# 0.5 is neutral, and it matches what median_scurve already does for an all-tie
+# group, which is the same degenerate case with more rows.
+#
+# NA was the other candidate and would arguably be the most honest, but it
+# would blank the default index column for thin cells and break downstream
+# consumers that expect a number. n_countries_in_cell, added below, is the
+# mechanism for spotting thin cells instead.
+DIS_SINGLETON_INDEX_VALUE <- 0.5
 
-safe_median_scurve <- function(x) {
+safe_median_scurve <- function(x, singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   x <- suppressWarnings(as.numeric(x))
   x[!is.finite(x)] <- NA_real_
-  
+
   out <- rep(NA_real_, length(x))
   keep <- !is.na(x)
-  
+
   if (!any(keep)) {
     return(out)
   }
-  
+
   # Avoid divide-by-zero behavior in single-observation / all-tie groups.
   if (length(unique(x[keep])) <= 1) {
-    out[keep] <- 0.5
+    out[keep] <- singleton_value
     return(out)
   }
-  
+
   out[keep] <- median_scurve(x[keep])
   out
 }
 
-pct_rank_safe <- function(x) {
+pct_rank_safe <- function(x, singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   x <- suppressWarnings(as.numeric(x))
   out <- rep(NA_real_, length(x))
   keep <- is.finite(x)
-  
+
   if (!any(keep)) {
     return(out)
   }
-  
+
   if (sum(keep) == 1) {
-    out[keep] <- 1
+    out[keep] <- singleton_value
     return(out)
   }
-  
+
   out[keep] <- dplyr::percent_rank(x[keep])
   out
 }
@@ -355,25 +370,38 @@ pct_rank_safe <- function(x) {
 #   *_global: pooled comparison across the whole output table
 #
 # The default index column is set to *_xcountry unless otherwise specified.
+#' @param pctile_singleton_value value the *_xcountry_pctile column takes for a
+#'   group with one observation. See DIS_SINGLETON_INDEX_VALUE.
+#'
+#' The default index is *_xcountry: a percentile WITHIN tech x supply_chain.
+#' That makes 0.8 mean "high relative to the other countries active in this
+#' cell", which is not comparable across cells: 0.8 where four countries act is
+#' a different claim from 0.8 where forty do. The default is kept, but every
+#' output carrying an xcountry index now also carries n_countries_in_cell so a
+#' thin cell is visible rather than implied.
 add_dis_indices <- function(tbl,
                             score_col,
                             within_country_by,
                             xcountry_by,
                             index_col = "domestic_intervention_index",
-                            default = c("xcountry", "global", "within_country")) {
+                            default = c("xcountry", "global", "within_country"),
+                            pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   default <- match.arg(default)
-  
+
   within_name <- paste0(index_col, "_within_country")
   xcountry_name <- paste0(index_col, "_xcountry")
   global_name <- paste0(index_col, "_global")
   rank_name <- paste0(index_col, "_xcountry_rank")
   pct_name <- paste0(index_col, "_xcountry_pctile")
-  
+
   out <- tbl %>%
     dplyr::mutate(
       dis_score_for_index = signed_log1p(.data[[score_col]])
     )
-  
+
+  # NOTE: safe_median_scurve() keeps its own 0.5 default, which is what it
+  # already did. Only pct_rank_safe() changes behaviour, so only that call
+  # receives the threaded value.
   if (length(within_country_by) > 0) {
     out <- out %>%
       dplyr::group_by(dplyr::across(dplyr::all_of(within_country_by))) %>%
@@ -384,22 +412,28 @@ add_dis_indices <- function(tbl,
   } else {
     out[[within_name]] <- NA_real_
   }
-  
+
   if (length(xcountry_by) > 0) {
     out <- out %>%
       dplyr::group_by(dplyr::across(dplyr::all_of(xcountry_by))) %>%
       dplyr::mutate(
         "{xcountry_name}" := safe_median_scurve(.data$dis_score_for_index),
         "{rank_name}" := dplyr::dense_rank(dplyr::desc(.data$dis_score_for_index)),
-        "{pct_name}" := pct_rank_safe(.data$dis_score_for_index)
+        "{pct_name}" := pct_rank_safe(.data$dis_score_for_index,
+                                      singleton_value = pctile_singleton_value),
+        # Size of the comparison group the xcountry index is relative to. Each
+        # row of these tables is one country, so n() is the country count.
+        n_countries_in_cell = dplyr::n()
       ) %>%
       dplyr::ungroup()
   } else {
     out[[xcountry_name]] <- safe_median_scurve(out$dis_score_for_index)
     out[[rank_name]] <- dplyr::dense_rank(dplyr::desc(out$dis_score_for_index))
-    out[[pct_name]] <- pct_rank_safe(out$dis_score_for_index)
+    out[[pct_name]] <- pct_rank_safe(out$dis_score_for_index,
+                                     singleton_value = pctile_singleton_value)
+    out$n_countries_in_cell <- nrow(out)
   }
-  
+
   out <- out %>%
     dplyr::mutate(
       "{global_name}" := safe_median_scurve(.data$dis_score_for_index)
@@ -2067,7 +2101,8 @@ build_by_hs6 <- function(policy_asof_tbl,
                          hs6_cpc_lu,
                          hs6_name_lu = NULL,
                          split_across_hs6 = TRUE,
-                         balance_alpha = 0.5) {
+                         balance_alpha = 0.5,
+                         pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   balance_alpha <- max(0, min(1, balance_alpha))
 
   hs6_long <- policy_asof_tbl %>%
@@ -2122,7 +2157,8 @@ build_by_hs6 <- function(policy_asof_tbl,
     within_country_by = c("iso3", "country"),
     xcountry_by = c("HS6"),
     index_col = "domestic_intervention_index",
-    default = "xcountry"
+    default = "xcountry",
+    pctile_singleton_value = pctile_singleton_value
   )
   
   if (nrow(hs6_cpc_lu) > 0) {
@@ -2196,7 +2232,8 @@ build_by_tech_sc <- function(policy_asof_tbl,
                              conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
                              tech_dict = TECH_KEYWORDS,
                              sc_dict = SUPPLY_CHAIN_KEYWORDS,
-                             alloc_long = NULL) {
+                             alloc_long = NULL,
+                             pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
 
   # balance_alpha in [0,1]:
   #   1.0 -> pure SUM (extensive margin dominates)
@@ -2301,7 +2338,8 @@ build_by_tech_sc <- function(policy_asof_tbl,
     within_country_by = c("iso3", "country"),
     xcountry_by = c("tech", "supply_chain"),
     index_col = "domestic_intervention_index",
-    default = "xcountry"
+    default = "xcountry",
+    pctile_singleton_value = pctile_singleton_value
   )
   
   if (nrow(tech_sc_cpc_lu) > 0) {
@@ -2348,7 +2386,8 @@ build_by_tech_sc_year <- function(policy_base_tbl,
                                   confidence_mode = "none",
                                   conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
                                   tech_dict = TECH_KEYWORDS,
-                                  sc_dict = SUPPLY_CHAIN_KEYWORDS) {
+                                  sc_dict = SUPPLY_CHAIN_KEYWORDS,
+                                  pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
 
   balance_alpha <- max(0, min(1, balance_alpha))
   confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
@@ -2507,7 +2546,8 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     within_country_by = c("iso3", "country", "announce_year"),
     xcountry_by = c("tech", "supply_chain", "announce_year"),
     index_col = "domestic_intervention_index_xs",
-    default = "xcountry"
+    default = "xcountry",
+    pctile_singleton_value = pctile_singleton_value
   )
   
   if (nrow(tech_sc_cpc_lu) > 0) {
@@ -2532,7 +2572,8 @@ build_by_tech_sc_year <- function(policy_base_tbl,
 build_by_cpc <- function(policy_asof_tbl,
                          cpc_name_lu = NULL,
                          split_across_cpc = TRUE,
-                         balance_alpha = 0.5) {
+                         balance_alpha = 0.5,
+                         pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   balance_alpha <- max(0, min(1, balance_alpha))
 
   if (!("cpc3_codes" %in% names(policy_asof_tbl))) {
@@ -2605,7 +2646,8 @@ build_by_cpc <- function(policy_asof_tbl,
     within_country_by = c("iso3", "country"),
     xcountry_by = c("cpc3"),
     index_col = "domestic_intervention_index",
-    default = "xcountry"
+    default = "xcountry",
+    pctile_singleton_value = pctile_singleton_value
   ) %>%
     dplyr::mutate(
       cpc3_codes_csv = .data$cpc3,
@@ -2745,6 +2787,7 @@ nipo_policy_outputs <- function(raw_nipo,
                                 unclear_status_weight = STATUS_UNCLEAR_WEIGHT_DEFAULT,
                                 unknown_status_weight = STATUS_UNKNOWN_WEIGHT_DEFAULT,
                                 neutral_status_weight = STATUS_NEUTRAL_WEIGHT_DEFAULT,
+                                pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
                                 dis_legacy_mode = FALSE) {
   scale_mode <- match.arg(scale_mode)
   scope_mode <- match.arg(scope_mode)
@@ -2765,6 +2808,10 @@ nipo_policy_outputs <- function(raw_nipo,
     unclear_status_weight <- 0.30
     unknown_status_weight <- 0.30
     neutral_status_weight <- 0.50
+    # Legacy pct_rank_safe() returned 1 for a singleton group while
+    # safe_median_scurve() returned 0.5 for the same group. Only the former
+    # changed, so only the former is restored here.
+    pctile_singleton_value <- 1
   } else {
     tech_dict <- TECH_KEYWORDS
     sc_dict <- SUPPLY_CHAIN_KEYWORDS

@@ -846,6 +846,95 @@ test_that("STATUS defaults are the documented values", {
   expect_true(is.na(STATUS_UNKNOWN_WEIGHT_DEFAULT))
 })
 
+# ==============================================================================
+# Task 8 - housekeeping
+# ==============================================================================
+
+test_that("signed_log_blend keeps its non-finite alpha guard", {
+  # It was defined twice; the second definition overwrote the first and dropped
+  # this guard, so max(0, min(1, NA)) returned NA and blanked the blended
+  # column instead of falling back to 0.5.
+  expect_equal(
+    signed_log_blend(10, 2, alpha = NA_real_),
+    signed_log_blend(10, 2, alpha = 0.5)
+  )
+  expect_equal(
+    signed_log_blend(10, 2, alpha = Inf),
+    signed_log_blend(10, 2, alpha = 0.5)
+  )
+  expect_false(is.na(signed_log_blend(10, 2, alpha = NA_real_)))
+
+  # alpha is still clamped to [0, 1].
+  expect_equal(signed_log_blend(10, 2, alpha = 5), signed_log_blend(10, 2, alpha = 1))
+  expect_equal(signed_log_blend(10, 2, alpha = -5), signed_log_blend(10, 2, alpha = 0))
+})
+
+test_that("signed_log_blend is defined exactly once", {
+  src <- readLines(file.path(repo_root, "R", "categories", "policy",
+                             "nipo_policy_index.R"))
+  expect_equal(sum(grepl("^signed_log_blend <- function", src)), 1)
+})
+
+test_that("singleton handling is consistent between the two index helpers", {
+  # Previously safe_median_scurve gave 0.5 and pct_rank_safe gave 1 for the
+  # same one-observation group.
+  expect_equal(safe_median_scurve(42), 0.5)
+  expect_equal(pct_rank_safe(42), 0.5)
+  expect_equal(safe_median_scurve(42), pct_rank_safe(42))
+
+  # An all-tie group is the same degenerate case with more rows.
+  expect_equal(safe_median_scurve(c(7, 7, 7)), rep(0.5, 3))
+})
+
+test_that("the legacy singleton percentile is still reachable", {
+  expect_equal(pct_rank_safe(42, singleton_value = 1), 1)
+})
+
+test_that("multi-observation groups are untouched by the singleton change", {
+  x <- c(1, 5, 3, 9)
+  expect_equal(pct_rank_safe(x), dplyr::percent_rank(x))
+  expect_false(any(is.na(safe_median_scurve(x))))
+})
+
+test_that("add_dis_indices reports n_countries_in_cell", {
+  tbl <- tibble::tibble(
+    iso3 = c("USA", "CHN", "DEU", "JPN"),
+    tech = c("Solar", "Solar", "Solar", "Wind"),
+    supply_chain = rep("Midstream", 4),
+    score = c(10, 8, 6, 4)
+  )
+
+  out <- add_dis_indices(
+    tbl, score_col = "score",
+    within_country_by = c("iso3"),
+    xcountry_by = c("tech", "supply_chain")
+  )
+
+  expect_true("n_countries_in_cell" %in% names(out))
+  # Three countries in Solar/Midstream, one in Wind/Midstream.
+  expect_equal(out$n_countries_in_cell, c(3, 3, 3, 1))
+})
+
+test_that("n_countries_in_cell exposes the thin cell the xcountry index hides", {
+  tbl <- tibble::tibble(
+    iso3 = c("USA", "CHN", "DEU", "JPN"),
+    tech = c("Solar", "Solar", "Solar", "Wind"),
+    supply_chain = rep("Midstream", 4),
+    score = c(10, 8, 6, 4)
+  )
+  out <- add_dis_indices(
+    tbl, score_col = "score",
+    within_country_by = c("iso3"),
+    xcountry_by = c("tech", "supply_chain")
+  )
+
+  # Japan is alone in its cell, so its index is the neutral singleton value
+  # rather than a percentile earned against anyone.
+  jpn <- out[out$iso3 == "JPN", ]
+  expect_equal(jpn$domestic_intervention_index, 0.5)
+  expect_equal(jpn$n_countries_in_cell, 1)
+})
+
 test_that("neis_audit_keywords() reports hit rates in the documented shape", {
   txt <- c(
     "support for ai chip fabrication",
