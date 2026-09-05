@@ -150,4 +150,51 @@ cat("\nDouble-count exposure: summing eu_wide + eu_member gives ",
     round(sum(eu_split$strength[eu_split$eu_view %in% c("eu_wide", "eu_member")]), 1),
     " against ", round(sum(eu_split$strength), 1), " total.\n", sep = "")
 
-message("\nWrote crosscutting_impact.csv and eu_split.csv")
+# ---- 4) The double-count that IS present -------------------------------------
+hr("EU act replication - the actual double-count mechanism")
+cat("There are no eu_wide rows in this export, so the eu_wide-versus-eu_member\n")
+cat("double-count the review described does not arise. A DIFFERENT one does:\n")
+cat("a single EU act is recorded once per member state.\n\n")
+
+acts <- policy_asof %>%
+  mutate(is_eu_member = .data$iso3 %in% EU_MEMBER_ISO3) %>%
+  group_by(.data$state_act_id) %>%
+  summarise(
+    n_jurisdictions = dplyr::n_distinct(.data$country),
+    n_eu_members = dplyr::n_distinct(.data$country[.data$is_eu_member]),
+    strength = sum(.data$scale_strength_pkg, na.rm = TRUE),
+    strength_eu = sum(.data$scale_strength_pkg[.data$is_eu_member], na.rm = TRUE),
+    .groups = "drop"
+  )
+
+replicated <- acts %>% filter(.data$n_eu_members > 1)
+cat("state acts spanning >1 EU member state : ", nrow(replicated),
+    " of ", nrow(acts), "\n", sep = "")
+cat("max EU members on one act             : ", max(acts$n_eu_members), "\n", sep = "")
+cat("strength carried by replicated acts   : ", round(sum(replicated$strength_eu), 1), "\n", sep = "")
+cat("total EU-member strength              : ",
+    round(sum(acts$strength_eu), 1), "\n", sep = "")
+cat("share of EU strength that is replicated: ",
+    round(sum(replicated$strength_eu) / sum(acts$strength_eu), 4), "\n", sep = "")
+
+cat("\nIf each replicated act were counted ONCE rather than per member state,\n")
+cat("EU-member strength would fall from ", round(sum(acts$strength_eu), 1),
+    " to roughly ",
+    round(sum(acts$strength_eu) - sum(replicated$strength_eu) +
+            sum(replicated$strength_eu / replicated$n_eu_members), 1), ".\n", sep = "")
+
+eu_replication <- tibble::tibble(
+  metric = c("state_acts_total", "state_acts_spanning_multiple_eu_members",
+             "max_eu_members_on_one_act", "strength_replicated_acts",
+             "strength_eu_total", "share_eu_strength_replicated",
+             "strength_eu_if_deduplicated"),
+  value = c(nrow(acts), nrow(replicated), max(acts$n_eu_members),
+            round(sum(replicated$strength_eu), 1), round(sum(acts$strength_eu), 1),
+            round(sum(replicated$strength_eu) / sum(acts$strength_eu), 4),
+            round(sum(acts$strength_eu) - sum(replicated$strength_eu) +
+                    sum(replicated$strength_eu / replicated$n_eu_members), 1))
+)
+utils::write.csv(eu_replication, file.path(out_dir, "eu_act_replication.csv"),
+                 row.names = FALSE)
+
+message("\nWrote crosscutting_impact.csv, eu_split.csv and eu_act_replication.csv")
