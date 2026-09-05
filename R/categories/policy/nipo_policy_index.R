@@ -135,6 +135,27 @@ LIBERALISING_INWARD_WEIGHT  <- -0.20
 LIBERALISING_OUTWARD_WEIGHT <-  0.20
 LIBERALISING_UNKNOWN_WEIGHT <-  0.00
 
+# ---- Unclear versus Unknown ---------------------------------------------------
+# These were both weighted 0.30, which conflated two different things:
+#
+#   "Unclear"  GTA's amber category. A judgement that the measure is LIKELY
+#              distortive but not confirmed. That is information, and it earns
+#              a positive weight.
+#   "Unknown"  genuinely absent data. Missing information should not contribute
+#              positive strength by default, so this defaults to NA rather than
+#              to a number.
+#
+# NOTE FOR THIS DATASET: on the July 2026 export, `Initial Assessment` takes
+# exactly two values, "Distortive" (44,108) and "Liberalising" (11,163). There
+# is no amber, no Neutral, no Unclear and no Unknown. The Neutral, Unclear and
+# Unknown branches of w_status are therefore DEAD CODE on this vintage, and
+# changing their weights moves zero rows. This split is implemented defensively
+# for a future vintage that does carry amber, and so the intended semantics are
+# recorded rather than inferred later from a magic 0.30.
+STATUS_UNCLEAR_WEIGHT_DEFAULT <- 0.30
+STATUS_NEUTRAL_WEIGHT_DEFAULT <- 0.50
+STATUS_UNKNOWN_WEIGHT_DEFAULT <- NA_real_
+
 # ---- JURIS_WEIGHTS ------------------------------------------------------------
 # Where implemented: national tends to have larger reach than local/international tagging.
 JURIS_WEIGHTS <- tibble::tribble(
@@ -1622,7 +1643,10 @@ build_policy_base <- function(nipo_country_tbl,
                               include_geo_in_strength = FALSE,
                               strength_constant = 1,
                               scale_mode = c("exposure", "fiscal", "max", "none"),
-                              scope_mode = c("firm_first", "legacy")) {
+                              scope_mode = c("firm_first", "legacy"),
+                              unclear_status_weight = STATUS_UNCLEAR_WEIGHT_DEFAULT,
+                              unknown_status_weight = STATUS_UNKNOWN_WEIGHT_DEFAULT,
+                              neutral_status_weight = STATUS_NEUTRAL_WEIGHT_DEFAULT) {
   scale_mode <- match.arg(scale_mode)
   scope_mode <- match.arg(scope_mode)
   check_required_columns(
@@ -1708,16 +1732,23 @@ build_policy_base <- function(nipo_country_tbl,
     dplyr::left_join(POLICY_TYPE_WEIGHTS, by = c("intervention_type" = "intervention_type")) %>%    dplyr::left_join(JURIS_WEIGHTS, by = c("jurisdiction_norm" = "jurisdiction")) %>%
     dplyr::mutate(
       w_type   = dplyr::coalesce(.data$w_type, 0.40),
+      # Unclear (amber, likely distortive) and Unknown (absent data) are now
+      # separately tunable. The trailing catch-all is Unknown rather than 0.30:
+      # an unrecognised status label is missing information, not weak evidence.
       w_status = dplyr::case_when(
         .data$status_norm == "Distortive" ~ 1.00,
         .data$status_norm == "Liberalising" & .data$flow_norm == "inward"  ~ LIBERALISING_INWARD_WEIGHT,
         .data$status_norm == "Liberalising" & .data$flow_norm == "outward" ~ LIBERALISING_OUTWARD_WEIGHT,
         .data$status_norm == "Liberalising" ~ LIBERALISING_UNKNOWN_WEIGHT,
-        .data$status_norm == "Neutral" ~ 0.50,
-        .data$status_norm == "Unclear" ~ 0.30,
-        .data$status_norm == "Unknown" ~ 0.30,
-        TRUE ~ 0.30
+        .data$status_norm == "Neutral" ~ neutral_status_weight,
+        .data$status_norm == "Unclear" ~ unclear_status_weight,
+        .data$status_norm == "Unknown" ~ unknown_status_weight,
+        TRUE ~ unknown_status_weight
       ),
+
+      # Genuinely absent status, as distinct from amber. Reported so the share
+      # of a cell's strength resting on missing information is visible.
+      status_missing = !nzchar(.data$status_raw) | .data$status_norm == "Unknown",
       w_juris  = dplyr::coalesce(.data$w_juris, 0.80),
       w_family = pmax(
         dplyr::if_else(.data$fam_subsidy,             1.00, 0),
@@ -2111,6 +2142,47 @@ build_by_hs6 <- function(policy_asof_tbl,
 
 # ==============================================================================
 # 6) Output 3: tech x supply_chain stock table
+# ------------------------------------------------------------------------------
+# AUDIT: every na.rm = TRUE in the aggregation path, and whether it needs an
+# explicit missingness denominator now that unknown_status_weight can be NA.
+#
+# An NA w_status propagates: w_status -> bite_strength_base ->
+# scale_strength_base -> scale_strength_pkg -> domestic_ts. Every downstream
+# sum(na.rm = TRUE) then treats that row as absent rather than as unknown, and
+# an all-NA group returns 0, which is indistinguishable from a real zero.
+#
+#   SITE                                            VERDICT
+#   build_by_tech_sc/policy_level
+#     sum(domestic_ts, na.rm = TRUE)                NEEDS a denominator - added
+#                                                   n_alloc_rows and
+#                                                   n_alloc_rows_na_strength
+#     mean(mapping_confidence, na.rm = TRUE)        safe: confidence is never NA
+#                                                   after coalesce(., 1)
+#   build_by_tech_sc/agg
+#     sum(policy_strength, na.rm = TRUE)            NEEDS a denominator - added
+#                                                   n_policies_strength_undefined
+#                                                   and n_policies_status_missing
+#     mean(policy_strength, na.rm = TRUE)           same denominator applies; the
+#                                                   mean is over the surviving
+#                                                   policies only
+#     min/mean(mapping_confidence, na.rm = TRUE)    safe, as above
+#   build_by_tech_sc_year/policy_level + agg        same two sites, same fix
+#   build_by_hs6, build_by_cpc                      same shape, NOT given
+#                                                   denominators: neither feeds
+#                                                   a composite (see Task 0),
+#                                                   both are diagnostic-only
+#   build_by_policy
+#     sum(scale_strength_pkg[is_active_asof])       country-level denominator,
+#                                                   used only for a share; an NA
+#                                                   numerator yields NA share,
+#                                                   which is correct
+#     max(mapped_share, na.rm = TRUE)               safe: mapped_share coalesced
+#   build_policy_base/act_pkg
+#     any(fam_*, na.rm = TRUE)                      safe: as_bool() coalesces
+#     rowSums(fam_*, na.rm = TRUE)                  safe, as above
+#
+# On the July 2026 export all of this is inert: status is only ever Distortive
+# or Liberalising, so no w_status is NA and every denominator reads zero.
 # ==============================================================================
 
 build_by_tech_sc <- function(policy_asof_tbl,
@@ -2182,6 +2254,13 @@ build_by_tech_sc <- function(policy_asof_tbl,
     dplyr::summarise(
       as_of_date = dplyr::first(.data$as_of_date),
       policy_strength = sum(.data$domestic_ts, na.rm = TRUE),
+      # Explicit missingness denominator. sum(na.rm = TRUE) above returns 0 for
+      # an all-NA policy, which is indistinguishable from a genuine zero. This
+      # counts what that na.rm dropped, so an NA weight is visible rather than
+      # silently absorbed. See the na.rm audit above build_by_tech_sc().
+      n_alloc_rows = dplyr::n(),
+      n_alloc_rows_na_strength = sum(is.na(.data$domestic_ts)),
+      status_missing = any(dplyr::coalesce(.data$status_missing, FALSE)),
       mapping_confidence = mean(.data$mapping_confidence, na.rm = TRUE),
       .groups = "drop"
     )
@@ -2195,6 +2274,12 @@ build_by_tech_sc <- function(policy_asof_tbl,
       # cell stays visible even when it no longer scales the strength.
       mapping_confidence_mean = mean(.data$mapping_confidence, na.rm = TRUE),
       mapping_confidence_min = suppressWarnings(min(.data$mapping_confidence, na.rm = TRUE)),
+      # Missingness denominators for this cell.
+      n_policies_status_missing = sum(.data$status_missing, na.rm = TRUE),
+      share_policies_status_missing = dplyr::if_else(
+        dplyr::n() > 0, sum(.data$status_missing, na.rm = TRUE) / dplyr::n(), NA_real_
+      ),
+      n_policies_strength_undefined = sum(.data$n_alloc_rows_na_strength > 0, na.rm = TRUE),
       domestic_strength_sum = sum(.data$policy_strength, na.rm = TRUE),
       domestic_strength_avg = dplyr::if_else(.data$n_active_policies > 0,
                                              mean(.data$policy_strength, na.rm = TRUE),
@@ -2387,6 +2472,9 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain, .data$announce_year, .data$policy_id) %>%
     dplyr::summarise(
       policy_strength = sum(.data$domestic_flow, na.rm = TRUE),
+      # See the na.rm audit above build_by_tech_sc().
+      n_alloc_rows_na_strength = sum(is.na(.data$domestic_flow)),
+      status_missing = any(dplyr::coalesce(.data$status_missing, FALSE)),
       mapping_confidence = mean(.data$mapping_confidence, na.rm = TRUE),
       .groups = "drop"
     )
@@ -2396,6 +2484,11 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     dplyr::summarise(
       n_policies_window = dplyr::n_distinct(.data$policy_id),
       mapping_confidence_mean = mean(.data$mapping_confidence, na.rm = TRUE),
+      n_policies_status_missing = sum(.data$status_missing, na.rm = TRUE),
+      share_policies_status_missing = dplyr::if_else(
+        dplyr::n() > 0, sum(.data$status_missing, na.rm = TRUE) / dplyr::n(), NA_real_
+      ),
+      n_policies_strength_undefined = sum(.data$n_alloc_rows_na_strength > 0, na.rm = TRUE),
       domestic_strength_sum = sum(.data$policy_strength, na.rm = TRUE),
       domestic_strength_avg = dplyr::if_else(.data$n_policies_window > 0,
                                              mean(.data$policy_strength, na.rm = TRUE),
@@ -2649,6 +2742,9 @@ nipo_policy_outputs <- function(raw_nipo,
                                 strength_constant = 1,
                                 scale_mode = c("exposure", "fiscal", "max", "none"),
                                 scope_mode = c("firm_first", "legacy"),
+                                unclear_status_weight = STATUS_UNCLEAR_WEIGHT_DEFAULT,
+                                unknown_status_weight = STATUS_UNKNOWN_WEIGHT_DEFAULT,
+                                neutral_status_weight = STATUS_NEUTRAL_WEIGHT_DEFAULT,
                                 dis_legacy_mode = FALSE) {
   scale_mode <- match.arg(scale_mode)
   scope_mode <- match.arg(scope_mode)
@@ -2665,6 +2761,10 @@ nipo_policy_outputs <- function(raw_nipo,
     strength_constant <- 2
     scale_mode <- "max"
     scope_mode <- "legacy"
+    # Legacy weighted Unclear and Unknown identically at 0.30.
+    unclear_status_weight <- 0.30
+    unknown_status_weight <- 0.30
+    neutral_status_weight <- 0.50
   } else {
     tech_dict <- TECH_KEYWORDS
     sc_dict <- SUPPLY_CHAIN_KEYWORDS
@@ -2727,7 +2827,10 @@ nipo_policy_outputs <- function(raw_nipo,
     include_geo_in_strength = include_geo_in_strength,
     strength_constant = strength_constant,
     scale_mode = scale_mode,
-    scope_mode = scope_mode
+    scope_mode = scope_mode,
+    unclear_status_weight = unclear_status_weight,
+    unknown_status_weight = unknown_status_weight,
+    neutral_status_weight = neutral_status_weight
   )
   
   policy_asof <- add_asof_flags(
@@ -2803,6 +2906,9 @@ nipo_policy_outputs <- function(raw_nipo,
       strength_constant = strength_constant,
       scale_mode = scale_mode,
       scope_mode = scope_mode,
+      unclear_status_weight = unclear_status_weight,
+      unknown_status_weight = unknown_status_weight,
+      neutral_status_weight = neutral_status_weight,
       dis_legacy_mode = isTRUE(dis_legacy_mode),
       keyword_dictionary = if (isTRUE(dis_legacy_mode)) "legacy" else "bounded"
     ),

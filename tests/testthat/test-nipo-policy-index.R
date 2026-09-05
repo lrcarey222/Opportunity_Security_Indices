@@ -771,6 +771,81 @@ test_that("scope_mode is threaded through build_policy_base", {
   expect_equal(sum(new$m_scope != old$m_scope), 1)
 })
 
+# ==============================================================================
+# Task 7 - Unclear (amber) separated from Unknown (absent data)
+# ==============================================================================
+
+make_status_fixture <- function(statuses) {
+  f <- make_policy_fixture(n = length(statuses),
+                           partner_csv = rep("Brazil", length(statuses)))
+  f$`Initial Assessment (Change Relative to 1 Jan 2009)` <- statuses
+  f
+}
+
+test_that("Unclear and Unknown are weighted separately", {
+  base <- build_policy_base(make_status_fixture(c("Distortive", "Unclear", "Unknown")))
+
+  expect_equal(base$w_status[1], 1.00)
+  expect_equal(base$w_status[2], 0.30)       # amber: likely distortive
+  expect_true(is.na(base$w_status[3]))       # absent data: NA, not 0.30
+})
+
+test_that("unknown_status_weight defaults to NA and is tunable", {
+  expect_true(is.na(STATUS_UNKNOWN_WEIGHT_DEFAULT))
+
+  tuned <- build_policy_base(make_status_fixture(c("Unknown")),
+                             unknown_status_weight = 0.10)
+  expect_equal(tuned$w_status, 0.10)
+
+  legacy <- build_policy_base(make_status_fixture(c("Unclear", "Unknown")),
+                              unclear_status_weight = 0.30,
+                              unknown_status_weight = 0.30)
+  expect_equal(legacy$w_status, c(0.30, 0.30))
+})
+
+test_that("an unrecognised status label is treated as Unknown, not as 0.30", {
+  base <- build_policy_base(make_status_fixture(c("something GTA never wrote")))
+  expect_equal(base$status_norm, "Unknown")
+  expect_true(is.na(base$w_status))
+})
+
+test_that("status_missing flags absent status but not amber", {
+  base <- build_policy_base(make_status_fixture(
+    c("Distortive", "Liberalising", "Unclear", "Unknown", "")
+  ))
+  expect_equal(base$status_missing, c(FALSE, FALSE, FALSE, TRUE, TRUE))
+})
+
+test_that("an NA status weight propagates through the whole strength product", {
+  base <- build_policy_base(make_status_fixture(c("Distortive", "Unknown")))
+
+  expect_false(is.na(base$scale_strength_pkg[1]))
+  # The point of the NA default: missing information yields an undefined
+  # strength rather than a positive one.
+  expect_true(is.na(base$bite_strength_base[2]))
+  expect_true(is.na(base$scale_strength_base[2]))
+  expect_true(is.na(base$scale_strength_pkg[2]))
+})
+
+test_that("the current export exercises none of this", {
+  # Initial Assessment holds only Distortive and Liberalising, so every
+  # Neutral / Unclear / Unknown branch is dead code on this vintage and the
+  # change moves zero rows. Recorded as a test so a future vintage that DOES
+  # carry amber makes this fail loudly rather than changing numbers silently.
+  observed <- c("Distortive", "Liberalising")
+  base <- build_policy_base(make_status_fixture(observed))
+
+  expect_false(any(base$status_missing))
+  expect_false(any(is.na(base$w_status)))
+  expect_setequal(unique(base$status_norm), observed)
+})
+
+test_that("STATUS defaults are the documented values", {
+  expect_equal(STATUS_UNCLEAR_WEIGHT_DEFAULT, 0.30)
+  expect_equal(STATUS_NEUTRAL_WEIGHT_DEFAULT, 0.50)
+  expect_true(is.na(STATUS_UNKNOWN_WEIGHT_DEFAULT))
+})
+
 test_that("neis_audit_keywords() reports hit rates in the documented shape", {
   txt <- c(
     "support for ai chip fabrication",
