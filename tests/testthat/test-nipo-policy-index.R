@@ -10,6 +10,12 @@ source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "categories", "policy", "nipo_policy_index.R"))
 
+# nipo_policy_index.R sources the NEIS extensions itself, but that path
+# resolution depends on sys.frame(), so source explicitly if it did not fire.
+if (!exists("neis_panel", mode = "function")) {
+  source(file.path(repo_root, "R", "categories", "policy", "nipo_neis_extensions.R"))
+}
+
 
 # ==============================================================================
 # Pre-existing tests
@@ -933,6 +939,214 @@ test_that("n_countries_in_cell exposes the thin cell the xcountry index hides", 
   jpn <- out[out$iso3 == "JPN", ]
   expect_equal(jpn$domestic_intervention_index, 0.5)
   expect_equal(jpn$n_countries_in_cell, 1)
+})
+
+# ==============================================================================
+# Task 9 - NEIS framework layers
+# ==============================================================================
+
+test_that("MOTIVE_KEYS matches the export's five motive columns", {
+  # National security and geopolitical concern are ONE combined field in the
+  # NIPO export, not two. Six keys would double-count n_motives and halve
+  # motive_unit_weight on every national-security measure.
+  expect_length(MOTIVE_KEYS, 5)
+  expect_true(all(MOTIVE_KEYS %in% names(NEIS_COLS)))
+
+  # No two keys may point at the same column, which is how that bug would
+  # reappear.
+  targets <- unlist(NEIS_COLS[MOTIVE_KEYS])
+  expect_equal(length(unique(targets)), length(targets))
+
+  expect_equal(NEIS_COLS$motive_security,
+               "Motive: National Security or Geopolitical Concern")
+  expect_equal(NEIS_COLS$motive_resilience,
+               "Motive: Resilience/Security of Supply (Non-Food)")
+})
+
+test_that("the NEIS module does not overwrite the Task 1 keyword helpers", {
+  # The module used to redefine these with different behaviour, and is sourced
+  # after nipo_policy_index.R, so it would have silently won.
+  expect_true("allow_plural" %in% names(formals(neis_bound_kws)))
+  expect_identical(neis_bound_kws("\\bmanufactur\\w*"), "\\bmanufactur\\w*")
+  expect_false("blocklisted" %in% names(
+    neis_audit_keywords(list(a = "\\bai\\b"), c("ai chip", "rail"))
+  ))
+})
+
+test_that("neis_classify_layer maps the three real values directly", {
+  tbl <- tibble::tibble(
+    `Levels of Policy Intervention` = c("Policy or regulation", "Firm-specific",
+                                        "Industrial strategy or plan"),
+    has_beneficiary = c(TRUE, TRUE, TRUE)
+  )
+  out <- neis_classify_layer(tbl)
+  expect_equal(out$nipo_layer, c("policy", "action", "strategy"))
+})
+
+test_that("neis_classify_layer ignores has_beneficiary", {
+  # The original tested has_beneficiary FIRST, which reclassified a
+  # "Policy or regulation" row naming a beneficiary as a firm-level action,
+  # inflating delivery_ratio's numerator and deflating its denominator at once.
+  with_ben <- neis_classify_layer(tibble::tibble(
+    `Levels of Policy Intervention` = "Policy or regulation", has_beneficiary = TRUE
+  ))
+  without <- neis_classify_layer(tibble::tibble(
+    `Levels of Policy Intervention` = "Policy or regulation", has_beneficiary = FALSE
+  ))
+  expect_equal(with_ben$nipo_layer, "policy")
+  expect_equal(with_ben$nipo_layer, without$nipo_layer)
+})
+
+test_that("neis_classify_layer falls back for an unseen label", {
+  out <- neis_classify_layer(tibble::tibble(
+    `Levels of Policy Intervention` = c("National hydrogen roadmap", "gibberish")
+  ))
+  # Strategy is tested before action in the fallback, or "industrial strategy
+  # or plan" style labels would never be reached.
+  expect_equal(out$nipo_layer, c("strategy", "unclassified"))
+})
+
+test_that("neis_entropy and neis_hhi match known values", {
+  expect_equal(neis_entropy(c(1, 1, 1, 1)), 1)
+  expect_equal(neis_entropy(c(10, 0, 0)), 0)
+  expect_equal(neis_entropy(numeric(0)), 0)
+
+  expect_true(is.na(neis_hhi(c(5))))
+  expect_equal(neis_hhi(c(1, 1, 1, 1)), 0)
+  expect_equal(neis_hhi(c(1, 0, 0, 0)), 1)
+})
+
+test_that("censoring-aware retention matches the worked example", {
+  # 2 removed at 100d, 3 still in force at 800d -> retention at 365d is 3/5.
+  t <- c(100, 100, 800, 800, 800)
+  e <- c(1, 1, 0, 0, 0)
+  expect_equal(neis_retention_at(t, e, 365), 3 / 5)
+})
+
+test_that("neis_km_median is NA when nothing was ever removed", {
+  expect_true(is.na(neis_km_median(c(500, 600), c(0, 0))))
+  expect_true(is.na(neis_km_median(numeric(0), numeric(0))))
+})
+
+test_that("crosscutting report_only never expands", {
+  tbl <- tibble::tibble(
+    tech = c("Cross-cutting", "Solar"),
+    supply_chain = c("Cross-cutting", "Midstream"),
+    alloc = c(1, 1)
+  )
+  out <- expand_cross_cutting_rows(tbl, c("Solar", "Wind"), c("Midstream", "Upstream"),
+                                   crosscutting_mode = "report_only")
+  expect_equal(nrow(out), 2)
+  expect_true("Cross-cutting" %in% out$tech)
+  # Strength is untouched, not divided across invented cells.
+  expect_equal(out$alloc, c(1, 1))
+})
+
+test_that("crosscutting uniform smears across every cell and conserves the total", {
+  tbl <- tibble::tibble(tech = "Cross-cutting", supply_chain = "Cross-cutting", alloc = 1)
+  out <- expand_cross_cutting_rows(tbl, c("Solar", "Wind"), c("Midstream", "Upstream"),
+                                   crosscutting_mode = "uniform")
+  expect_equal(nrow(out), 4)
+  expect_equal(sum(out$alloc), 1)
+  expect_false("Cross-cutting" %in% out$tech)
+})
+
+test_that("crosscutting sector_flagged expands only into corroborated techs", {
+  tbl <- tibble::tibble(
+    tech = c("Cross-cutting", "Cross-cutting"),
+    supply_chain = c("Cross-cutting", "Cross-cutting"),
+    alloc = c(1, 1),
+    sector_low_carbon = c(TRUE, FALSE),
+    sector_critical_minerals = c(FALSE, FALSE),
+    sector_dual_use = c(FALSE, FALSE),
+    sector_advanced_tech = c(FALSE, FALSE)
+  )
+  out <- expand_cross_cutting_rows(tbl, c("Solar", "Coal"), c("Midstream"),
+                                   crosscutting_mode = "sector_flagged")
+
+  # Row 1 is flagged low-carbon, so it reaches Solar but not Coal.
+  r1 <- out[out$sector_low_carbon, ]
+  expect_setequal(r1$tech, "Solar")
+
+  # Row 2 carries no flag, so it stays Cross-cutting rather than being invented
+  # into cells.
+  r2 <- out[!out$sector_low_carbon, ]
+  expect_equal(r2$tech, "Cross-cutting")
+  expect_equal(r2$alloc, 1)
+})
+
+test_that("an unflagged cross-cutting row keeps its stage unattributed too", {
+  # If the technology cannot be identified, neither can the value-chain stage.
+  # Expanding the stage alone would manufacture one row per stage, each
+  # asserting a position on no evidence.
+  tbl <- tibble::tibble(
+    tech = "Cross-cutting", supply_chain = "Cross-cutting", alloc = 1,
+    sector_low_carbon = FALSE, sector_critical_minerals = FALSE,
+    sector_dual_use = FALSE, sector_advanced_tech = FALSE
+  )
+  out <- expand_cross_cutting_rows(tbl, c("Solar", "Coal"),
+                                   c("Upstream", "Midstream", "Downstream"),
+                                   crosscutting_mode = "sector_flagged")
+
+  expect_equal(nrow(out), 1)
+  expect_equal(out$supply_chain, "Cross-cutting")
+  expect_equal(out$alloc, 1)
+})
+
+test_that("a flagged cross-cutting row does expand across stages", {
+  tbl <- tibble::tibble(
+    tech = "Cross-cutting", supply_chain = "Cross-cutting", alloc = 1,
+    sector_low_carbon = TRUE, sector_critical_minerals = FALSE,
+    sector_dual_use = FALSE, sector_advanced_tech = FALSE
+  )
+  out <- expand_cross_cutting_rows(tbl, c("Solar", "Coal"),
+                                   c("Upstream", "Midstream"),
+                                   crosscutting_mode = "sector_flagged")
+
+  # Solar is low-carbon, Coal is not: 1 tech x 2 stages.
+  expect_equal(nrow(out), 2)
+  expect_setequal(out$tech, "Solar")
+  expect_setequal(out$supply_chain, c("Upstream", "Midstream"))
+  expect_equal(sum(out$alloc), 1)
+})
+
+test_that("neis_consolidate_eu labels every row and filters as documented", {
+  tbl <- tibble::tibble(
+    iso3 = c("EUU", "DEU", "USA"),
+    strength = c(10, 5, 3)
+  )
+
+  both <- neis_consolidate_eu(tbl, mode = "both_flagged")
+  expect_equal(both$eu_view, c("eu_wide", "eu_member", "non_eu"))
+  expect_equal(nrow(both), 3)
+
+  # member_only drops the EU-wide row; eu_only drops the member row. Summing
+  # both sides double-counts, which is why a view must be chosen.
+  expect_equal(nrow(neis_consolidate_eu(tbl, mode = "member_only")), 2)
+  expect_false("eu_wide" %in% neis_consolidate_eu(tbl, mode = "member_only")$eu_view)
+  expect_equal(nrow(neis_consolidate_eu(tbl, mode = "eu_only")), 2)
+  expect_false("eu_member" %in% neis_consolidate_eu(tbl, mode = "eu_only")$eu_view)
+})
+
+test_that("neis_consolidate_eu_safe degrades when the module is absent", {
+  tbl <- tibble::tibble(iso3 = "USA", x = 1)
+  # With the module loaded it delegates and adds eu_view.
+  expect_true("eu_view" %in% names(neis_consolidate_eu_safe(tbl)))
+})
+
+test_that("the geo adjustment divides by m_geo_applied, not m_geo", {
+  # Since Task 3 the product already excludes m_geo and records m_geo_applied.
+  # Dividing by m_geo would remove it a SECOND time and deflate every strength.
+  alloc <- tibble::tibble(
+    scale_strength_pkg = c(10, 10),
+    alloc = c(1, 1),
+    mapping_confidence = c(1, 1),
+    m_geo = c(2, 3),
+    m_geo_applied = c(1, 1)
+  )
+  out <- neis_strength_variants(alloc)
+  # m_geo_applied is 1, so the neutral variant equals strength * alloc.
+  expect_equal(out$dis_v1_neutral, c(10, 10))
 })
 
 test_that("neis_audit_keywords() reports hit rates in the documented shape", {

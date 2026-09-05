@@ -986,17 +986,93 @@ make_validated_combos <- function(techs, scs, allowed_pairs) {
   tibble::as_tibble(combos)
 }
 
+# Which technologies a cross-cutting policy's own sector flags corroborate.
+# Used by crosscutting_mode = "sector_flagged".
+crosscutting_flagged_techs <- function(low_carbon, critical_minerals,
+                                       dual_use, advanced_tech, tech_universe) {
+  out <- character(0)
+  if (isTRUE(low_carbon))        out <- c(out, LOW_CARBON_TECHS)
+  if (isTRUE(critical_minerals)) out <- c(out, CRITICAL_MINERALS_LINKED_TECHS)
+  if (isTRUE(dual_use))          out <- c(out, DUAL_USE_LINKED_TECHS)
+  if (isTRUE(advanced_tech))     out <- c(out, ADV_TECH_LINKED_TECHS)
+  intersect(unique(out), tech_universe)
+}
+
+#' Handle policies with no HS6 codes, which are allocated to Cross-cutting.
+#'
+#' @param crosscutting_mode
+#'   "report_only"    keep Cross-cutting as its own row and never expand it.
+#'                    NEW DEFAULT.
+#'   "sector_flagged" expand only into technologies corroborated by the four
+#'                    NIPO sector flags. A policy with no flags stays
+#'                    Cross-cutting.
+#'   "uniform"        legacy: smear across every technology x stage with
+#'                    alloc / n_cells.
+#'
+#' Why the default changed. Under "uniform" the total is conserved but the
+#' attribution is invented: a cross-cutting policy is asserted to apply to all
+#' 13 technologies x 3 stages equally. That adds a country-specific floor to
+#' every cell, which shifts the xcountry percentile ranks that are the published
+#' index. It also manufactures whole cells: with expansion on there are 20
+#' populated tech x stage cells, without it 15, so five cells exist purely as
+#' smeared attribution.
 expand_cross_cutting_rows <- function(tbl,
                                       tech_universe,
                                       supply_chain_universe,
-                                      split_strength = TRUE) {
+                                      split_strength = TRUE,
+                                      crosscutting_mode = c("report_only",
+                                                            "sector_flagged",
+                                                            "uniform")) {
+  crosscutting_mode <- match.arg(crosscutting_mode)
   tech_universe <- setdiff(unique(tech_universe), c("Cross-cutting", "Unmapped"))
   supply_chain_universe <- setdiff(unique(supply_chain_universe), c("Cross-cutting", "Unmapped"))
-  
+
+  if (identical(crosscutting_mode, "report_only")) {
+    # Nothing to expand. Cross-cutting rows travel through untouched, and the
+    # caller decides whether to keep or drop them.
+    return(dplyr::mutate(tbl, expansion_n = 1L))
+  }
+
+  flag_or_false <- function(nm) {
+    if (nm %in% names(tbl)) as_bool(tbl[[nm]]) else rep(FALSE, nrow(tbl))
+  }
+
+  if (identical(crosscutting_mode, "sector_flagged")) {
+    resolved <- purrr::pmap(
+      list(tbl$tech, tbl$supply_chain, flag_or_false("sector_low_carbon"),
+           flag_or_false("sector_critical_minerals"),
+           flag_or_false("sector_dual_use"), flag_or_false("sector_advanced_tech")),
+      function(tech, sc, lc, cm, du, at) {
+        if (!identical(tech, "Cross-cutting")) {
+          return(list(tech = tech,
+                      sc = if (identical(sc, "Cross-cutting")) supply_chain_universe else sc))
+        }
+        hits <- crosscutting_flagged_techs(lc, cm, du, at, tech_universe)
+        if (length(hits) == 0) {
+          # No corroborating flag. Leave the row wholly unattributed rather than
+          # inventing one: if the technology cannot be identified, neither can
+          # the stage, so the supply chain stays Cross-cutting too. Expanding
+          # the stage alone would manufacture three rows per policy that assert
+          # a value-chain position on no evidence at all.
+          return(list(tech = "Cross-cutting", sc = "Cross-cutting"))
+        }
+        list(tech = hits,
+             sc = if (identical(sc, "Cross-cutting")) supply_chain_universe else sc)
+      }
+    )
+    tech_targets <- purrr::map(resolved, "tech")
+    sc_targets <- purrr::map(resolved, "sc")
+  } else {
+    tech_targets <- purrr::map(tbl$tech,
+                               ~ if (.x == "Cross-cutting") tech_universe else .x)
+    sc_targets <- purrr::map(tbl$supply_chain,
+                             ~ if (.x == "Cross-cutting") supply_chain_universe else .x)
+  }
+
   tbl %>%
     dplyr::mutate(
-      tech_targets = purrr::map(.data$tech, ~ if (.x == "Cross-cutting") tech_universe else .x),
-      sc_targets   = purrr::map(.data$supply_chain, ~ if (.x == "Cross-cutting") supply_chain_universe else .x),
+      tech_targets = tech_targets,
+      sc_targets   = sc_targets,
       expanded     = purrr::map2(.data$tech_targets, .data$sc_targets, ~ tidyr::expand_grid(
         tech_exp = .x,
         sc_exp = .y
@@ -1010,7 +1086,7 @@ expand_cross_cutting_rows <- function(tbl,
       supply_chain = .data$sc_exp,
       alloc = if (isTRUE(split_strength)) .data$alloc / pmax(1, .data$expansion_n) else .data$alloc
     ) %>%
-    dplyr::select(-.data$tech_exp, -.data$sc_exp, -.data$expansion_n)
+    dplyr::select(-.data$tech_exp, -.data$sc_exp)
 }
 
 
@@ -2233,7 +2309,9 @@ build_by_tech_sc <- function(policy_asof_tbl,
                              tech_dict = TECH_KEYWORDS,
                              sc_dict = SUPPLY_CHAIN_KEYWORDS,
                              alloc_long = NULL,
-                             pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
+                             pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                             crosscutting_mode = c("report_only", "sector_flagged",
+                                                   "uniform")) {
 
   # balance_alpha in [0,1]:
   #   1.0 -> pure SUM (extensive margin dominates)
@@ -2241,6 +2319,11 @@ build_by_tech_sc <- function(policy_asof_tbl,
   #   default 0.5 -> geometric blend between sum and mean
   balance_alpha <- max(0, min(1, balance_alpha))
   confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
+  crosscutting_mode <- match.arg(crosscutting_mode)
+  # expand_cross_cutting predates crosscutting_mode and is kept for API
+  # compatibility. Passing FALSE still means "do not expand", which is
+  # report_only; otherwise crosscutting_mode decides.
+  if (!isTRUE(expand_cross_cutting)) crosscutting_mode <- "report_only"
 
   # alloc_long lets a caller supply an ALREADY-EXPANDED allocation table and skip
   # the allocation entirely. confidence_mode does not affect allocation, so
@@ -2251,13 +2334,20 @@ build_by_tech_sc <- function(policy_asof_tbl,
                                                tech_dict = tech_dict,
                                                sc_dict = sc_dict)
 
-    if (isTRUE(expand_cross_cutting)) {
-      tech_sc_long <- expand_cross_cutting_rows(
-        tech_sc_long,
-        tech_universe = tech_universe,
-        supply_chain_universe = supply_chain_universe,
-        split_strength = split_cross_cutting_strength
-      ) %>%
+    tech_sc_long <- expand_cross_cutting_rows(
+      tech_sc_long,
+      tech_universe = tech_universe,
+      supply_chain_universe = supply_chain_universe,
+      split_strength = split_cross_cutting_strength,
+      crosscutting_mode = crosscutting_mode
+    )
+
+    # Under "uniform" every cross-cutting row has been distributed, so any
+    # remainder is dropped as before. Under "report_only" and "sector_flagged"
+    # the un-attributable rows are KEPT as their own Cross-cutting row, which is
+    # the point: the strength is reported rather than invented into cells.
+    if (identical(crosscutting_mode, "uniform")) {
+      tech_sc_long <- tech_sc_long %>%
         dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
     }
   } else {
@@ -2387,10 +2477,14 @@ build_by_tech_sc_year <- function(policy_base_tbl,
                                   conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
                                   tech_dict = TECH_KEYWORDS,
                                   sc_dict = SUPPLY_CHAIN_KEYWORDS,
-                                  pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
+                                  pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                                  crosscutting_mode = c("report_only", "sector_flagged",
+                                                        "uniform")) {
 
   balance_alpha <- max(0, min(1, balance_alpha))
   confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
+  crosscutting_mode <- match.arg(crosscutting_mode)
+  if (!isTRUE(expand_cross_cutting)) crosscutting_mode <- "report_only"
   if (!is.finite(rolling_window_years) || rolling_window_years < 1) rolling_window_years <- 1
   rolling_window_years <- as.integer(rolling_window_years)
 
@@ -2404,13 +2498,16 @@ build_by_tech_sc_year <- function(policy_base_tbl,
                                              tech_dict = tech_dict,
                                              sc_dict = sc_dict)
 
-  if (isTRUE(expand_cross_cutting)) {
-    tech_sc_long <- expand_cross_cutting_rows(
-      tech_sc_long,
-      tech_universe = tech_universe,
-      supply_chain_universe = supply_chain_universe,
-      split_strength = split_cross_cutting_strength
-    ) %>%
+  tech_sc_long <- expand_cross_cutting_rows(
+    tech_sc_long,
+    tech_universe = tech_universe,
+    supply_chain_universe = supply_chain_universe,
+    split_strength = split_cross_cutting_strength,
+    crosscutting_mode = crosscutting_mode
+  )
+
+  if (identical(crosscutting_mode, "uniform")) {
+    tech_sc_long <- tech_sc_long %>%
       dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
   }
 
@@ -2752,6 +2849,22 @@ dis_variant_stability <- function(policy_asof_tbl,
 }
 
 # ==============================================================================
+# 8c) NEIS extension bridge
+# ------------------------------------------------------------------------------
+# The NEIS framework layers live in the companion file nipo_neis_extensions.R,
+# which is sourced at the bottom of this file. These wrappers let
+# nipo_policy_outputs() degrade gracefully rather than error if that file is
+# unavailable, so an existing caller that sources only this file keeps working.
+# ==============================================================================
+
+neis_consolidate_eu_safe <- function(tbl, mode = "both_flagged") {
+  if (!exists("neis_consolidate_eu", mode = "function")) {
+    return(tbl)
+  }
+  neis_consolidate_eu(tbl, mode = mode)
+}
+
+# ==============================================================================
 # 9) Top-level wrapper: nipo_policy_outputs()
 # ==============================================================================
 
@@ -2788,7 +2901,13 @@ nipo_policy_outputs <- function(raw_nipo,
                                 unknown_status_weight = STATUS_UNKNOWN_WEIGHT_DEFAULT,
                                 neutral_status_weight = STATUS_NEUTRAL_WEIGHT_DEFAULT,
                                 pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                                crosscutting_mode = c("report_only", "sector_flagged",
+                                                      "uniform"),
+                                eu_mode = c("both_flagged", "member_only", "eu_only"),
+                                include_neis_panel = TRUE,
                                 dis_legacy_mode = FALSE) {
+  crosscutting_mode <- match.arg(crosscutting_mode)
+  eu_mode <- match.arg(eu_mode)
   scale_mode <- match.arg(scale_mode)
   scope_mode <- match.arg(scope_mode)
   # dis_legacy_mode is a single switch that restores every pre-remediation
@@ -2812,6 +2931,7 @@ nipo_policy_outputs <- function(raw_nipo,
     # safe_median_scurve() returned 0.5 for the same group. Only the former
     # changed, so only the former is restored here.
     pctile_singleton_value <- 1
+    crosscutting_mode <- "uniform"
   } else {
     tech_dict <- TECH_KEYWORDS
     sc_dict <- SUPPLY_CHAIN_KEYWORDS
@@ -2909,7 +3029,9 @@ nipo_policy_outputs <- function(raw_nipo,
     confidence_mode = confidence_mode,
     conf_threshold = conf_threshold,
     tech_dict = tech_dict,
-    sc_dict = sc_dict
+    sc_dict = sc_dict,
+    pctile_singleton_value = pctile_singleton_value,
+    crosscutting_mode = crosscutting_mode
   )
 
   by_tech_sc <- tech_sc_out$data
@@ -2929,7 +3051,9 @@ nipo_policy_outputs <- function(raw_nipo,
     confidence_mode = confidence_mode,
     conf_threshold = conf_threshold,
     tech_dict = tech_dict,
-    sc_dict = sc_dict
+    sc_dict = sc_dict,
+    pctile_singleton_value = pctile_singleton_value,
+    crosscutting_mode = crosscutting_mode
   )
 
   by_cpc <- build_by_cpc(
@@ -2939,12 +3063,42 @@ nipo_policy_outputs <- function(raw_nipo,
     balance_alpha = balance_alpha
   )
   
+  # EU-wide measures are recorded once while member-state measures are counted
+  # separately, so any aggregation including both double-counts. The flag is
+  # always attached; eu_mode decides whether either side is dropped.
+  by_tech_sc <- neis_consolidate_eu_safe(by_tech_sc, mode = eu_mode)
+  by_tech_sc_year <- neis_consolidate_eu_safe(by_tech_sc_year, mode = eu_mode)
+
+  # NEIS framework layers. Built last, from the allocation table, and returned
+  # as a NEW list element: no existing element is modified.
+  neis_panel_out <- NULL
+  if (isTRUE(include_neis_panel) && !exists("neis_panel", mode = "function")) {
+    warning("include_neis_panel = TRUE but nipo_neis_extensions.R is not loaded; ",
+            "returning neis_panel = NULL.", call. = FALSE)
+  } else if (isTRUE(include_neis_panel)) {
+    neis_panel_out <- tryCatch(
+      neis_panel(
+        nipo_out = list(
+          by_tech_sc = by_tech_sc,
+          internals = list(policy_alloc_tech_sc = tech_sc_out$policy_alloc)
+        ),
+        as_of_date = policy_asof$as_of_date[1],
+        eu_mode = eu_mode
+      ),
+      error = function(e) {
+        warning("neis_panel() skipped: ", conditionMessage(e), call. = FALSE)
+        NULL
+      }
+    )
+  }
+
   list(
     by_policy = by_policy,
     by_hs6 = by_hs6,
     by_tech_sc = by_tech_sc,
     by_tech_sc_year = by_tech_sc_year,
     by_cpc = by_cpc,
+    neis_panel = neis_panel_out,
     # What this run actually did. Additive: no existing element is changed.
     dis_settings = list(
       confidence_mode = confidence_mode,
@@ -2956,6 +3110,9 @@ nipo_policy_outputs <- function(raw_nipo,
       unclear_status_weight = unclear_status_weight,
       unknown_status_weight = unknown_status_weight,
       neutral_status_weight = neutral_status_weight,
+      pctile_singleton_value = pctile_singleton_value,
+      crosscutting_mode = crosscutting_mode,
+      eu_mode = eu_mode,
       dis_legacy_mode = isTRUE(dis_legacy_mode),
       keyword_dictionary = if (isTRUE(dis_legacy_mode)) "legacy" else "bounded"
     ),
@@ -2976,6 +3133,24 @@ nipo_policy_outputs <- function(raw_nipo,
 }
 
 # ==============================================================================
+
+# ------------------------------------------------------------------------------
+# NEIS extension layer
+# ------------------------------------------------------------------------------
+# Sourced here so that a caller who sources only this file still gets
+# neis_panel() and neis_consolidate_eu(). It must come AFTER everything above,
+# because the extension module calls helpers defined here. If the path cannot be
+# resolved, nipo_policy_outputs() degrades via neis_consolidate_eu_safe() and
+# the exists() guard on neis_panel().
+if (!exists("neis_panel", mode = "function")) {
+  local({
+    p <- tryCatch(
+      file.path(dirname(sys.frame(1)$ofile), "nipo_neis_extensions.R"),
+      error = function(e) NA_character_
+    )
+    if (!is.na(p) && file.exists(p)) source(p)
+  })
+}
 
 # ------------------------------------------------------------------------------
 # Backwards-compatible alias (clearer name)
