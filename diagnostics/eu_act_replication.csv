@@ -1,0 +1,8 @@
+"metric","value"
+"state_acts_total",27170
+"state_acts_spanning_multiple_eu_members",807
+"max_eu_members_on_one_act",26
+"strength_replicated_acts",13165.8
+"strength_eu_total",15885.1
+"share_eu_strength_replicated",0.8288
+"strength_eu_if_deduplicated",3344.4

@@ -23,6 +23,13 @@ Expected columns include (as in your `names(nipo_raw2)`):
 - Sector validation flags:  
   `Sector: Low Carbon Technology`, `Sector: Dual-Use Products`, `Sector: Critical Minerals`, `Sector: Advanced Technology Products`
 - Scale: `Trade Covered (USD Million)`, `Size of Subsidy (USD Million)`
+- Motive flags, used by the NEIS Objective Structure layer. All logical and 100% populated on the February and July 2026 exports:  
+  `Motive: National Security or Geopolitical Concern`, `Motive: Resilience/Security of Supply (Non-Food)`, `Motive: Strategic Competitiveness`, `Motive: Climate Change Mitigation`, `Motive: Digital Transformation`
+
+  Note the **first is one combined field**, not two — national security and geopolitical concern are not separable in this export, so `MOTIVE_KEYS` has five entries, not six. Two keys pointing at the same column would double-count `n_motives` and halve `motive_unit_weight` on every national-security measure. The export also carries `Mentions Food Security`, `Mentions Public Health Concerns` and `Mentions Other`, which are not motives in the IMF sense and are deliberately excluded.
+
+  Column names are resolved by name through `NEIS_COLS`, because export headers vary by vintage. Set it once, up front.
+- Unused by the pipeline but present: `Firm: Targeted` (7.3% populated). It is the restrictive-measure analogue of `Firm: Beneficiary` — measures aimed *at* a firm rather than support flowing *to* one — and is the most likely source of additional scope signal.
 
 ### 2) HS6 → tech × supply_chain mapping table (`hs6_categories_raw`)
 Required columns:
@@ -59,10 +66,41 @@ The function returns a list of tables (names may vary slightly by script version
 
 4) Optional: `by_hs6`, `by_cpc`  
    Useful for drilling down to product level or reconciling sector tagging.
+   **Neither feeds any composite** — they are written to disk but read by no
+   downstream index, so they are diagnostic-only.
+
+5) **`neis_panel`** (when `include_neis_panel = TRUE`, the default)  
+   The NEIS framework layers, joined side by side onto `by_tech_sc`. Deliberately
+   **not** a composite: each metric keeps its own column so a reader can see which
+   layer drives a posture judgement. Contains Objective Structure (motive shares,
+   motive HHI, coverage), Delivery Conversion (firm-action-to-strategy ratio,
+   implementation lag, right-censored implementation rate), Taper Profile (taper
+   rate, Kaplan–Meier median duration, 12- and 36-month retention), Fence Posture
+   (restrictive / conditional / funding / localisation shares, instrument
+   entropy), Inbound Exposure and Rival Direction, and Sequencing Position.
+
+6) **`dis_settings`**  
+   What the run actually applied — every mode argument plus the resolved
+   `as_of_date`. Stored outputs are self-describing.
 
 ---
 
 ## Method overview
+
+> **The strength chain, as it now stands.** Terms marked † changed in the
+> de-biasing work and are parameterised; see the Argument reference.
+>
+> ```
+> bite_strength_base  = w_tool * w_status† * w_juris * m_scope† * m_duration
+> scale_strength_base = bite_strength_base * m_breadth * m_geo_applied†
+>                       * strength_constant† * m_scale†
+> scale_strength_pkg  = scale_strength_base * m_package
+> domestic_ts         = scale_strength_pkg * alloc * confidence_weight†
+> ```
+>
+> Under the defaults, `m_geo_applied = 1`, `strength_constant = 1` and
+> `confidence_weight = 1`, so geographic reach, the undocumented constant and
+> mapping confidence no longer enter the product at all. Each is still reported.
 
 ### Step 1 — Clean and normalize NIPO
 - Parse dates (`Announcement Date`, `Implementation Date`, `Removal Date`)
@@ -94,42 +132,55 @@ This is a key methodological choice.
 - “Liberalising” should be **positive** if `Affected Trade Flow == outward`  
   (supports outward expansion / export facilitation)
 
-Example weights:
+Weights:
 
 - Distortive: `+1.00`
 - Liberalising + inward: `−0.20`
 - Liberalising + outward: `+0.20`
-- Neutral: `+0.50`
-- Unclear: `+0.30`
-- Unknown: `+0.30`
+- Neutral: `neutral_status_weight`, default `+0.50`
+- Unclear: `unclear_status_weight`, default `+0.30` — GTA's **amber** category, meaning *likely distortive*. That is information, so it earns a positive weight.
+- Unknown: `unknown_status_weight`, default **`NA`** — genuinely absent data. Missing information should not contribute positive strength, so this is undefined rather than a number. An unrecognised status label resolves here too.
 
-Tune these magnitudes based on your interpretation of “support” vs “intervention.”
+These two used to share a hardcoded `0.30`, which conflated "we think it is distortive but are not certain" with "we do not know". Tune the magnitudes to your interpretation of support versus intervention.
+
+**On this vintage all of this is inert:** `Initial Assessment` only ever holds `Distortive` or `Liberalising`. See Structural limits.
 
 #### 2.3 Scope multiplier (`m_scope`)
-Captures how economy-wide the measure is:
-- Horizontal measures generally score higher than firm-targeted measures.
-- `Levels of Policy Intervention` and `Firm: Beneficiary` inform this.
+Captures how economy-wide the measure is, from `Is Horizontal`, `Levels of Policy Intervention` and `Firm: Beneficiary`.
+
+`case_when` evaluates in order, and `has_beneficiary` used to sit **above** the firm-level test, so any measure naming a beneficiary scored `0.60` and the `0.40` firm weight could only fire when the level said "firm" but *no* beneficiary was named — the opposite of the informative case. `scope_mode = "firm_first"` (default) moves the firm test above it, so a firm-specific measure scores `0.40` either way. This is a reordering, not a merge: a named beneficiary on a non-firm-level measure still scores `0.60`.
+
+Only three values are reachable on this export — `0.40`, `0.75`, `1.00` — and two regex branches match zero rows. See Structural limits.
 
 #### 2.4 Duration multiplier (`m_duration`)
-Policies that exist longer are more consequential, but duration is capped to avoid domination:
-- If `Removal Date` exists, use the duration.
-- If not, assume it persists up to a cap.
+**This term carries almost no information, and not in the direction the name suggests.**
 
-Use a bounded concave scaling function (e.g., sqrt of months / norm).
+When `Removal Date` is absent, `planned_end` becomes `impl_date + duration_cap_months`, so `m_duration = min(1, sqrt(60/24)) = 1.0` for **every** in-force measure — all 38,311 of them. Only measures that have been *removed* can score below 1, and they average 0.70. So a five-year programme and a permanent one are indistinguishable, while a measure that tapered is *penalised*.
+
+It is left as-is because `m_duration = 0` for an unimplemented measure is correct for a stock index. The real duration signal lives in `observed_duration_days`, `exposure_days` and `duration_censored`, which are **reported and not folded into the product**, alongside `pending_implementation` and `impl_lag_days`.
 
 #### 2.5 Breadth multiplier (`m_breadth`)
 Uses how many products/sectors are covered:
 - #HS6 and #CPC codes (log-scaled to p95 and capped)
 
-#### 2.6 Geographic reach multiplier (`m_geo`)
-Uses breadth of affected partner jurisdictions (log-scaled, capped).
+#### 2.6 Geographic reach multiplier (`m_geo`) — excluded by default
+Breadth of affected partner jurisdictions, log-scaled and capped.
+
+**No longer part of the strength product.** A measure affecting 100 partners is not a stronger *domestic* intervention than one affecting two — it is a more widely directed one. That is a directionality property, and the same `Affected Jurisdiction` field is needed intact for the partner-side metrics (`neis_inbound_exposure()`, `neis_rival_direction()`).
+
+`include_geo_in_strength = FALSE` is the default; `m_geo`, `partner_n` and `m_geo_applied` remain reported. The product also carried an undocumented bare `2`, now `strength_constant = 1`; being a flat factor it only ever rescaled and changed no ranking.
+
+**This was the single largest source of ranking bias in the index** — removing it moves 13.9% of country-cells more than three rank places, more than any other fix. It hit Oil/Upstream and Coal/Upstream hardest, the sanctions- and export-control-heavy cells that name many affected jurisdictions.
 
 #### 2.7 Monetary/coverage scale multiplier (`m_scale`)
-Uses the larger of:
-- `Trade Covered (USD Million)`
-- `Size of Subsidy (USD Million)`
+These are two different quantities and are no longer collapsed with `max()`:
 
-Log scaling + cap prevents large subsidies from overwhelming the entire index.
+- `m_scale_exposure` — from `Trade Covered (USD Million)`. Exposure breadth, already largely captured by `m_breadth`.
+- `m_scale_fiscal` — from `Size of Subsidy (USD Million)`. Fiscal commitment.
+
+Taking the maximum meant a broad-coverage measure with **no fiscal outlay** scored identically to a large subsidy with no trade coverage. `scale_mode` selects: `"exposure"` (default, the longer consistent series), `"fiscal"`, `"max"` (legacy) or `"none"`.
+
+`scale_exposure_available` and `scale_fiscal_available` flag whether each field was populated at all — necessary because `log_mult()` maps `NA → 0 → multiplier 1`, so "unknown scale" is otherwise indistinguishable from "smallest scale". Log scaling and a cap still prevent large values dominating.
 
 #### 2.8 Package multiplier (`m_package`)
 Policies often come in **packages** (same `State Act ID` spanning multiple families).
@@ -147,6 +198,22 @@ That’s why we recommend an `essential_for_tech_sc` filter:
 - `TRUE`: HS6 is diagnostic of tech×stage classification
 - `FALSE`: HS6 is too generic; keep for context but do not use to drive mapping
 
+### Policies with no HS6 codes (`crosscutting_mode`)
+
+3,285 policies (5.9%), carrying 2.96% of all policy strength, have no HS6 codes at all and are allocated to `Cross-cutting`.
+
+| mode | behaviour |
+|---|---|
+| `"report_only"` | **default.** Keep `Cross-cutting` as its own row; never expand it. |
+| `"sector_flagged"` | Expand only into technologies corroborated by the four sector flags; a policy with no flag stays `Cross-cutting`. **Inert on this data** — see Structural limits. |
+| `"uniform"` | Legacy: smear across every technology × stage with `alloc / n_cells`. |
+
+Under `"uniform"` the total is conserved but the attribution is **invented** — the policy is asserted to apply equally to all 13 technologies × 3 stages. That adds a country-specific floor to every cell, which shifts the `xcountry` percentile ranks that *are* the published index, and it manufactures whole cells: 20 populated tech × stage cells with expansion on, **15** without. The six cells that exist only under smearing are all Upstream (Batteries, Electric Vehicles, Nuclear, Semiconductors, Solar, Wind).
+
+### How `combo_weight` enters — and what it cannot do
+
+`alloc = mapped_share * combo_weight / sum(combo_weight)` **within a policy**, so the allocations sum to `mapped_share` regardless of the weights. Keyword and sector evidence therefore **redistribute** a policy's strength across the tech × stage cells its HS6 codes already permit; they cannot change a country's total. This is why the keyword fix, despite removing 32,422 spurious corroborations, barely moved any ranking.
+
 ---
 
 ## Validation and mapping confidence
@@ -159,27 +226,53 @@ To avoid letting weak or noisy mappings dominate, compute a **mapping confidence
 2) **CPC validation (HS6 ↔ CPC agreement)**  
    Cross-check implied tech×stage against policy CPC tags.
 3) **Keyword validation in `Title` and `Source`**  
-   Tech and stage keyword dictionaries (e.g., “electrolyser”, “HVDC”, “gigafactory”, “mining”, “installation”).
+   Tech and stage keyword dictionaries (e.g. "electrolyser", "HVDC", "gigafactory", "mining", "installation").
+
+   Terms are matched with **word boundaries**, applied once at load time. They were previously unanchored substrings, so the bare `"ai"` matched *Ukraine, rail, chain, certain, against* and *aid*: Semiconductors corroborated 60.7% of the entire inventory and Downstream 64.7%. Both now sit near 2%.
+
+   Two classes of term are written as explicit regexes so the boundary wrapper leaves them alone: deliberate **prefixes** (`\bmanufactur\w*`, `\brefin\w*`, …), which plain `\b...\b` would destroy since `\bmanufactur\b` never matches "manufacturing"; and terms already carrying regex syntax, now given their own anchors because unanchored `cells?` matched *ex-**cell**-ent* and `fabs?` matched ***fab**-ric*.
+
+   `Source` is a ~613-character bibliographic citation, not a URL field, and 51% of all keyword hits come from it alone. Most are **correct** — GTA titles routinely name the instrument and borrower without naming the technology, and the citation headline is what identifies it. So it is kept, with the scaffolding stripped: URLs (whose path segments matched terms by coincidence — `pipeline` hit 26 titles but 439 sources) and the `(retrieved on ...)` boilerplate. See `neis_clean_source()` and `clean_source_text`.
+
+   Run `neis_audit_keywords(dict, text_vec)` against real text to see which terms are over-firing; `diagnostics/keyword_audit.csv` holds the current report.
 4) **Binary sector flags**  
    - Low carbon technology
    - Critical minerals
    - Dual-use products
    - Advanced technology products
 
+   These only ever appear on rows that carry HS6 codes, which is why `crosscutting_mode = "sector_flagged"` is inert. See Structural limits.
+
 ### How confidence affects the index
-Key design choice:
 
-> Policies with stronger tech×stage validation should count more toward the index.
+**This section previously presented confidence-as-a-strength-multiplier as a deliberate design choice. That was wrong, and the behaviour has changed.**
 
-So mapping confidence should be used as a **multiplier on contributions**, not only as a reallocation mechanism:
+Mapping confidence is an **epistemic** quantity: it says how sure we are that a policy belongs in a tech × stage cell. It says nothing about how interventionist the policy is. Using it as a multiplier on strength conflated the two, so a well-documented minor measure could outscore a thinly-documented major one. Because documentation richness is not randomly distributed across countries, that injected a systematic bias into a cross-country index.
 
-- low confidence → contribution is downweighted
-- high confidence → contribution is upweighted (capped)
+There was also double counting. `alloc = mapped_share * combo_weight / sum(combo_weight)` already carries `mapped_share`, and `mapping_confidence = 0.75 + 0.75 * mapped_share * evidence_mean` carries it again, so under the old behaviour `mapped_share` entered the product roughly quadratically.
 
-Subjective parameters control:
-- maximum boost (confidence cap)
-- penalty for weak validation
-- relative importance of CPC vs keywords vs sector flags
+`confidence_mode` now controls this explicitly:
+
+| value | behaviour |
+|---|---|
+| `"none"` | **default.** `domestic_ts = scale_strength_pkg * alloc`. Confidence does not scale strength. |
+| `"filter"` | zero the contribution when `mapping_confidence < conf_threshold` (default 0.75) |
+| `"downweight"` | multiply by `pmin(1, mapping_confidence)` — never amplifies |
+| `"legacy"` | multiply by `mapping_confidence` as computed, which can exceed 1 |
+
+`mapping_confidence` remains a **reported** column in every mode, as `mapping_confidence_mean` and `mapping_confidence_min` on `by_tech_sc` and `by_tech_sc_year`, and the allocation table carries `confidence_weight` so the epistemic term is always inspectable. `by_policy` reports `mapped_share` and `evidence_mean` so the confidence figure can be decomposed.
+
+#### What the nominal range is, versus the realised one
+
+The constants `CONFIDENCE_FLOOR = 0.25` and `CONFIDENCE_CAP = 2` suggest an 8× dynamic range. The realised range is narrower and differently shaped. For a **mapped** row, `mapped_share > 0` and `evidence_mean >= 1`, so `0.75 + 0.75 * mapped_share * evidence_mean` cannot fall below 0.75: mapped rows occupy `[0.75, 2.00]`, a 2.7× spread. The floor is only reached by rows that bypass the formula entirely — cross-cutting rows are pinned at 0.25 and unmapped rows at 0.10.
+
+So the 8× swing is mostly *cross-cutting versus well-documented mapped*, which is the cross-cutting attribution problem (see `crosscutting_mode`) rather than a property of the confidence formula. The 2.7× spread among mapped rows still rivals the 3.3× spread of `DOMESTIC_FAMILY_WEIGHTS` (0.30 to 1.00), which is why `"none"` is the default.
+
+#### Measured effect
+
+Switching from `"legacy"` to `"none"` changes **levels** substantially but **rankings** very little. Across 20 tech × stage cells the Spearman correlation of country rankings has a median of **0.9974** (minimum 0.9448), and 72 of 1,381 country-cells move more than three rank places. Holding cross-cutting handling fixed, the median rises to **0.9987** and only 18 of 1,062 country-cells move. The reason is that within a cell the multiplier is close to a monotone rescaling across countries, and the published index is a percentile *within* the cell.
+
+See `diagnostics/confidence_sensitivity.csv` and `diagnostics/confidence_sensitivity_nocc.csv`.
 
 ---
 
@@ -237,14 +330,20 @@ Caps prevent dominance by extremely broad or large measures:
 - raise caps → more sensitivity to large/broad measures
 - lower caps → more equalized index
 
+Note `geo_cap` now only bounds a **reported** column, since `m_geo` no longer enters the product under the default.
+
 ### 4) Duration normalization & cap
 Lower the cap if you want recent priorities to dominate; raise if persistence is central.
+
+In practice this lever does very little: `duration_cap_months` is what makes `m_duration` saturate at exactly `1.0` for every in-force measure, so raising it changes nothing and lowering it only shortens the plateau. See §2.4.
 
 ### 5) Essential HS6 filtering (`essential_for_tech_sc`)
 The strongest lever for reducing false positives from generic inputs.
 
 ### 6) Validation/confidence parameters
-Increase keyword/sector bonus if text/flags are reliable; increase CPC penalty if CPC tags are high quality.
+Increase the keyword/sector bonus if text and flags are reliable.
+
+Two things to keep in mind. First, these bonuses feed `combo_weight`, which is purely **redistributive** — they change which cell a policy's strength lands in, never the total. Second, `confidence_mode` is a separate decision from the bonuses: the bonuses set `combo_weight`, while `confidence_mode` decides whether `mapping_confidence` scales strength at all (it does not, by default).
 
 ### 7) Sum vs average blend (`balance_alpha`)
 Controls whether you reward volume (sum) or typical strength (avg).
@@ -253,6 +352,68 @@ Controls whether you reward volume (sum) or typical strength (avg).
 Longer window smooths noise but blurs priorities; shorter window is more responsive.
 
 ---
+
+## Argument reference
+
+All of these are arguments to `nipo_policy_outputs()`. Every one defaults to the **new** behaviour; `dis_legacy_mode = TRUE` restores all of them at once.
+
+| argument | default | legacy | what it controls |
+|---|---|---|---|
+| `confidence_mode` | `"none"` | `"legacy"` | whether `mapping_confidence` scales strength |
+| `conf_threshold` | `0.75` | `0.75` | cut-off for `confidence_mode = "filter"` |
+| `include_geo_in_strength` | `FALSE` | `TRUE` | whether `m_geo` enters `scale_strength_base` |
+| `strength_constant` | `1` | `2` | flat multiplier on `scale_strength_base` |
+| `scale_mode` | `"exposure"` | `"max"` | which monetary term becomes `m_scale` |
+| `scope_mode` | `"firm_first"` | `"legacy"` | ordering of the `m_scope` firm test |
+| `unclear_status_weight` | `0.30` | `0.30` | weight for amber / likely-distortive |
+| `unknown_status_weight` | `NA_real_` | `0.30` | weight for genuinely absent status |
+| `neutral_status_weight` | `0.50` | `0.50` | weight for `Neutral` |
+| `pctile_singleton_value` | `0.5` | `1` | `*_xcountry_pctile` for a one-country cell |
+| `crosscutting_mode` | `"report_only"` | `"uniform"` | how HS6-less policies are attributed |
+| `eu_mode` | `"both_flagged"` | `"both_flagged"` | whether either side of the EU split is dropped |
+| `clamp_future_as_of` | `TRUE` | `FALSE` | ignore future dates when inferring `as_of_date` |
+| `clean_source_text` | `TRUE` | `FALSE` | strip URLs and retrieval boilerplate from `Source` before keyword matching |
+| `include_neis_panel` | `TRUE` | `TRUE` | build the NEIS framework layers |
+| `dis_legacy_mode` | `FALSE` | — | restore every behaviour above at once |
+
+`dis_legacy_mode` **overrides** the individual arguments rather than sitting alongside them. Runs return a `dis_settings` element recording what was actually applied.
+
+**Superseded:** `expand_cross_cutting` predates `crosscutting_mode` and is kept for API compatibility. Passing `FALSE` still means "do not expand", which is now `crosscutting_mode = "report_only"`; otherwise `crosscutting_mode` decides. Prefer the latter in new code.
+
+The remaining arguments — `tech_universe`, `supply_chain_universe`, `year_min`, `year_max`, `flow_window_days`, `rolling_window_years`, `weight_by_active_fraction`, `balance_alpha`, `split_cross_cutting_strength`, `split_across_hs6`, and the `*_cap` / `duration_*` / `package_*` knobs — are unchanged by this work. See the function signature and the Subjective parameters section above.
+
+### New reported columns
+
+None of these enter any strength product.
+
+**On `policy_base` / `policy_asof` / `by_policy`:**
+
+| column | meaning |
+|---|---|
+| `m_geo_applied` | the geo multiplier that actually entered the product (1 when excluded) |
+| `m_scale_exposure`, `m_scale_fiscal` | the two scale terms, separately |
+| `scale_exposure_available`, `scale_fiscal_available` | whether each underlying field was populated |
+| `status_missing` | status genuinely absent, as distinct from amber |
+| `pending_implementation` | announced but not yet in force |
+| `impl_lag_days` | announcement → implementation, `NA` if negative or either date missing |
+| `observed_duration_days` | uncensored lifetime, `NA` while still in force |
+| `exposure_days` | censored at removal or `as_of_date`, whichever is first |
+| `duration_censored` | whether `exposure_days` is right-censored |
+| `removal_before_impl` | incoherent timeline (removal recorded before implementation) |
+| `mapped_share`, `evidence_mean` | the two inputs to `mapping_confidence` |
+
+**On `by_tech_sc` / `by_tech_sc_year`:**
+
+| column | meaning |
+|---|---|
+| `mapping_confidence_mean`, `mapping_confidence_min` | confidence, reported not applied |
+| `n_policies_status_missing`, `share_policies_status_missing` | missingness denominator for status |
+| `n_policies_strength_undefined` | policies whose strength was `NA` and so dropped by `na.rm` |
+| `n_countries_in_cell` | size of the `xcountry` comparison group |
+| `confidence_mode`, `conf_threshold` | how the score was built |
+| `eu_view` | `eu_wide` / `eu_member` / `non_eu` |
+
+**New list element:** `neis_panel` (Objective Structure, Delivery Conversion, Taper Profile, Fence Posture, Inbound Exposure, Rival Direction, Sequencing Position). Existing list elements are unchanged.
 
 ## Practical tips
 
@@ -270,7 +431,70 @@ Sanity checks that should always be run:
 
 ---
 
+## Structural limits
+
+These are properties of the GTA/NIPO dataset, not of the code. No parameter fixes them, and any reading of DIS has to live with them.
+
+### GTA excludes product standards, TBT and SPS
+
+Technical barriers to trade, sanitary and phytosanitary measures, and product standards are **out of scope** for the GTA inventory. For several technologies these are among the most consequential instruments — efficiency standards, grid codes, certification regimes — and DIS is structurally blind to all of them. A country that regulates through standards rather than subsidies will score low for reasons that have nothing to do with its actual interventionism.
+
+### GTA records only unilateral action, so "gates" are unobservable
+
+The inventory covers measures a jurisdiction takes on its own. Bilateral, plurilateral and multilateral **agreed** measures are excluded. In a Gates & Fences framing, this dataset can measure **fences** — unilateral restriction and support — but the **gate** side is not observable in it at all. `neis_fence_posture()` is named accordingly and is documented as measuring fences only. A register of gates has to be maintained separately by hand.
+
+### Subsidy values are incomplete, and not in the way often assumed
+
+`Size of Subsidy (USD Million)` is populated for a minority of policies in every year. It is **not** true that values are systematic only from 2023, nor that the historical extension records none:
+
+| announcement year | 2009 | 2015 | 2019 | 2023 | 2025 |
+|---|---|---|---|---|---|
+| subsidy populated | 13.2% | 26.0% | **45.1%** | 31.4% | 12.5% |
+| trade covered populated | 56.4% | 55.5% | 39.9% | 44.6% | 35.4% |
+
+Coverage **peaks in 2019 and declines into the present**, consistent with reporting lag on recent measures rather than a change in collection regime. Among *active* policies the series is smoother, with trade covered at 44–56% and subsidy at 16–35%, and no break anywhere.
+
+The consequential defect is different and stable: **22–29% of active policies have neither scale field populated** in every year, and `log_mult()` maps `NA → 0 → multiplier 1`. "Unknown scale" is therefore numerically identical to "smallest scale" for roughly a quarter of the stock. `scale_exposure_available` and `scale_fiscal_available` expose this; nothing corrects it. See `diagnostics/scale_coverage_by_year.csv`.
+
+### The status field carries only two values
+
+On the July 2026 export, `Initial Assessment` is only ever `Distortive` (44,108) or `Liberalising` (11,163). There is no amber, `Neutral`, `Unclear` or `Unknown`. The corresponding branches of `w_status` are dead code on this vintage. `unclear_status_weight` and `unknown_status_weight` exist for a future vintage that does carry amber, and a test pins the observed two-value domain so such a vintage fails loudly rather than changing numbers silently.
+
+### The sector flags only ever appear on rows that have HS6 codes
+
+Of the 3,285 policies with no HS6 codes, **zero** carry any of the four `Sector: ...` flags, while 82.6% of HS6-bearing rows do. GTA evidently derives those flags from the product codes. Consequently `crosscutting_mode = "sector_flagged"` is **inert on this data** — exactly equivalent to `"report_only"` — because the corroborating evidence it depends on is definitionally absent from the rows it would apply to.
+
+### The policy-level field has three values, and two regex branches are unreachable
+
+`Levels of Policy Intervention` takes only `Policy or regulation` (34,728), `Firm-specific` (20,188) and `Industrial strategy or plan` (355). In `m_scope`, neither `"economy|cross|horizontal"` nor `"sector|industry"` matches any of them — `"industrial"` does not contain `"industry"` — so both branches match zero rows. They are preserved unchanged because their intent cannot be inferred from behaviour that never occurs. Only three `m_scope` values are reachable: 0.40, 0.75 and 1.00.
+
+Relatedly, `Firm: Beneficiary` is populated on 11,990 rows and **every one of them is already `Firm-specific`**, so it carries no scope information independent of the level field. `Firm: Targeted` (7.3% populated) is unused by the pipeline and is the one field that might add signal, since it captures measures aimed *at* a firm rather than support flowing *to* one.
+
+### `m_duration` carries almost no information
+
+When `Removal Date` is absent, `planned_end` is `impl_date + duration_cap_months`, so `m_duration = min(1, sqrt(60/24)) = 1.0` for **every** in-force measure — all 38,311 of them, 100%. Only measures that have been *removed* can score below 1, and they average 0.70. A taper therefore reads as weakness. `observed_duration_days`, `exposure_days` and `duration_censored` carry the real duration signal instead, and are reported rather than folded into the product.
+
+### One EU act is recorded once per member state
+
+807 State Act IDs span more than one EU member state, up to 26 of them, and **82.9% of all EU-member policy strength sits in such replicated acts**. Deduplicating would cut EU-member strength by roughly 79%.
+
+**This is retained deliberately, not overlooked.** For a country-level index the question is how strong a country's policy toward a capability is, and EU policy that a member state has effectively outsourced to Brussels *is* part of that member's policy stance. The replication is the correct behaviour under that reading. It does mean cross-country comparisons between EU members and non-members are comparing different things: an EU member is credited with the whole EU regulatory stack alongside its national measures. `eu_view` (`eu_wide` / `eu_member` / `non_eu`) is attached to every output so the bloc can be identified, and `eu_mode` can drop either side.
+
+Note that `eu_wide` is **empty** on this export: no implementing jurisdiction is the EU itself, and `EUU` does not appear in `country_info`. The `eu_wide`-versus-`eu_member` double count that `neis_consolidate_eu()` was designed to catch does not arise in this data. See `diagnostics/eu_act_replication.csv`.
+
+### The as-of date is inferred from the data, and the data contains future dates
+
+241 records carry implementation dates up to 2028-10-01 — staged phase-ins of a single EU sanctions package. The default inference, `max(announce_date, impl_date)`, therefore put the as-of date more than two years past the end of the data, which treated not-yet-in-force measures as active stock and left the flow window covering a period with almost no events. `clamp_future_as_of = TRUE` (default) restricts the inference to dates at or before today. Passing `as_of_date` explicitly is still the right thing to do for a reproducible published run.
+
+### Keyword evidence is driven mostly by `Source`, not `Title`
+
+Of 5,463 records matching `\bwind\b`, only 809 match in the title; the remaining 4,654 match in the source/URL blob, which contains arbitrary path words. Since `source_text` falls back to `URL` when `Source` is missing, a large share of all keyword corroboration is earned by URLs rather than by descriptions of the measure. This is not corrected.
+
+---
+
 ## Interpretation caveats
 - DIS is a proxy; many policies have missing scale fields.
 - GTA/NIPO assessments and trade-flow fields are useful but imperfect.
 - Use results as **comparative signals**, not absolute levels.
+- The default index is `*_xcountry`, a percentile **within** `tech × supply_chain`. It is not comparable across cells: 0.8 where four countries act is a different claim from 0.8 where forty do. Every output carrying an `xcountry` index also carries `n_countries_in_cell` — check it before comparing across technologies.
+- A cell containing one country scores the neutral singleton value of 0.5 on both the index and the percentile, not 1. A percentile over one observation is not a percentile.

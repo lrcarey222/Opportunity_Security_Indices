@@ -135,6 +135,27 @@ LIBERALISING_INWARD_WEIGHT  <- -0.20
 LIBERALISING_OUTWARD_WEIGHT <-  0.20
 LIBERALISING_UNKNOWN_WEIGHT <-  0.00
 
+# ---- Unclear versus Unknown ---------------------------------------------------
+# These were both weighted 0.30, which conflated two different things:
+#
+#   "Unclear"  GTA's amber category. A judgement that the measure is LIKELY
+#              distortive but not confirmed. That is information, and it earns
+#              a positive weight.
+#   "Unknown"  genuinely absent data. Missing information should not contribute
+#              positive strength by default, so this defaults to NA rather than
+#              to a number.
+#
+# NOTE FOR THIS DATASET: on the July 2026 export, `Initial Assessment` takes
+# exactly two values, "Distortive" (44,108) and "Liberalising" (11,163). There
+# is no amber, no Neutral, no Unclear and no Unknown. The Neutral, Unclear and
+# Unknown branches of w_status are therefore DEAD CODE on this vintage, and
+# changing their weights moves zero rows. This split is implemented defensively
+# for a future vintage that does carry amber, and so the intended semantics are
+# recorded rather than inferred later from a magic 0.30.
+STATUS_UNCLEAR_WEIGHT_DEFAULT <- 0.30
+STATUS_NEUTRAL_WEIGHT_DEFAULT <- 0.50
+STATUS_UNKNOWN_WEIGHT_DEFAULT <- NA_real_
+
 # ---- JURIS_WEIGHTS ------------------------------------------------------------
 # Where implemented: national tends to have larger reach than local/international tagging.
 JURIS_WEIGHTS <- tibble::tribble(
@@ -269,61 +290,76 @@ signed_expm1 <- function(x) {
 
 # Stable signed blend of sum and average strength.
 # This avoids NaN from log1p(x) when x is negative.
+#' This was defined twice. The second definition silently overwrote the first
+#' and dropped its is.finite(alpha) guard, so the version actually in use by
+#' every aggregation propagated a non-finite alpha instead of falling back to
+#' 0.5: max(0, min(1, NA)) is NA, which blanked the whole blended column. The
+#' guarded version is kept and the duplicate deleted.
 signed_log_blend <- function(strength_sum, strength_avg, alpha = 0.5) {
   alpha <- suppressWarnings(as.numeric(alpha))
   if (!is.finite(alpha)) alpha <- 0.5
   alpha <- max(0, min(1, alpha))
-  
+
   signed_expm1(
     alpha * signed_log1p(strength_sum) +
       (1 - alpha) * signed_log1p(strength_avg)
   )
 }
 
-signed_log_blend <- function(strength_sum, strength_avg, alpha = 0.5) {
-  alpha <- max(0, min(1, alpha))
-  
-  signed_expm1(
-    alpha * signed_log1p(strength_sum) +
-      (1 - alpha) * signed_log1p(strength_avg)
-  )
-}
+# ---- Singleton handling -------------------------------------------------------
+# safe_median_scurve() returned 0.5 for a one-observation group while
+# pct_rank_safe() returned 1 for the SAME group, so a cell containing a single
+# country scored 0.5 on the index and the 100th percentile on the companion
+# pctile column.
+#
+# THE CHOICE: both now return 0.5, and the reason is that a percentile computed
+# over one observation is not a percentile. That country is simultaneously the
+# best and the worst in its cell; 1 asserts "top of the field" on the strength
+# of no comparison at all, which is the more misleading of the two answers.
+# 0.5 is neutral, and it matches what median_scurve already does for an all-tie
+# group, which is the same degenerate case with more rows.
+#
+# NA was the other candidate and would arguably be the most honest, but it
+# would blank the default index column for thin cells and break downstream
+# consumers that expect a number. n_countries_in_cell, added below, is the
+# mechanism for spotting thin cells instead.
+DIS_SINGLETON_INDEX_VALUE <- 0.5
 
-safe_median_scurve <- function(x) {
+safe_median_scurve <- function(x, singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   x <- suppressWarnings(as.numeric(x))
   x[!is.finite(x)] <- NA_real_
-  
+
   out <- rep(NA_real_, length(x))
   keep <- !is.na(x)
-  
+
   if (!any(keep)) {
     return(out)
   }
-  
+
   # Avoid divide-by-zero behavior in single-observation / all-tie groups.
   if (length(unique(x[keep])) <= 1) {
-    out[keep] <- 0.5
+    out[keep] <- singleton_value
     return(out)
   }
-  
+
   out[keep] <- median_scurve(x[keep])
   out
 }
 
-pct_rank_safe <- function(x) {
+pct_rank_safe <- function(x, singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   x <- suppressWarnings(as.numeric(x))
   out <- rep(NA_real_, length(x))
   keep <- is.finite(x)
-  
+
   if (!any(keep)) {
     return(out)
   }
-  
+
   if (sum(keep) == 1) {
-    out[keep] <- 1
+    out[keep] <- singleton_value
     return(out)
   }
-  
+
   out[keep] <- dplyr::percent_rank(x[keep])
   out
 }
@@ -334,25 +370,38 @@ pct_rank_safe <- function(x) {
 #   *_global: pooled comparison across the whole output table
 #
 # The default index column is set to *_xcountry unless otherwise specified.
+#' @param pctile_singleton_value value the *_xcountry_pctile column takes for a
+#'   group with one observation. See DIS_SINGLETON_INDEX_VALUE.
+#'
+#' The default index is *_xcountry: a percentile WITHIN tech x supply_chain.
+#' That makes 0.8 mean "high relative to the other countries active in this
+#' cell", which is not comparable across cells: 0.8 where four countries act is
+#' a different claim from 0.8 where forty do. The default is kept, but every
+#' output carrying an xcountry index now also carries n_countries_in_cell so a
+#' thin cell is visible rather than implied.
 add_dis_indices <- function(tbl,
                             score_col,
                             within_country_by,
                             xcountry_by,
                             index_col = "domestic_intervention_index",
-                            default = c("xcountry", "global", "within_country")) {
+                            default = c("xcountry", "global", "within_country"),
+                            pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   default <- match.arg(default)
-  
+
   within_name <- paste0(index_col, "_within_country")
   xcountry_name <- paste0(index_col, "_xcountry")
   global_name <- paste0(index_col, "_global")
   rank_name <- paste0(index_col, "_xcountry_rank")
   pct_name <- paste0(index_col, "_xcountry_pctile")
-  
+
   out <- tbl %>%
     dplyr::mutate(
       dis_score_for_index = signed_log1p(.data[[score_col]])
     )
-  
+
+  # NOTE: safe_median_scurve() keeps its own 0.5 default, which is what it
+  # already did. Only pct_rank_safe() changes behaviour, so only that call
+  # receives the threaded value.
   if (length(within_country_by) > 0) {
     out <- out %>%
       dplyr::group_by(dplyr::across(dplyr::all_of(within_country_by))) %>%
@@ -363,22 +412,28 @@ add_dis_indices <- function(tbl,
   } else {
     out[[within_name]] <- NA_real_
   }
-  
+
   if (length(xcountry_by) > 0) {
     out <- out %>%
       dplyr::group_by(dplyr::across(dplyr::all_of(xcountry_by))) %>%
       dplyr::mutate(
         "{xcountry_name}" := safe_median_scurve(.data$dis_score_for_index),
         "{rank_name}" := dplyr::dense_rank(dplyr::desc(.data$dis_score_for_index)),
-        "{pct_name}" := pct_rank_safe(.data$dis_score_for_index)
+        "{pct_name}" := pct_rank_safe(.data$dis_score_for_index,
+                                      singleton_value = pctile_singleton_value),
+        # Size of the comparison group the xcountry index is relative to. Each
+        # row of these tables is one country, so n() is the country count.
+        n_countries_in_cell = dplyr::n()
       ) %>%
       dplyr::ungroup()
   } else {
     out[[xcountry_name]] <- safe_median_scurve(out$dis_score_for_index)
     out[[rank_name]] <- dplyr::dense_rank(dplyr::desc(out$dis_score_for_index))
-    out[[pct_name]] <- pct_rank_safe(out$dis_score_for_index)
+    out[[pct_name]] <- pct_rank_safe(out$dis_score_for_index,
+                                     singleton_value = pctile_singleton_value)
+    out$n_countries_in_cell <- nrow(out)
   }
-  
+
   out <- out %>%
     dplyr::mutate(
       "{global_name}" := safe_median_scurve(.data$dis_score_for_index)
@@ -931,17 +986,93 @@ make_validated_combos <- function(techs, scs, allowed_pairs) {
   tibble::as_tibble(combos)
 }
 
+# Which technologies a cross-cutting policy's own sector flags corroborate.
+# Used by crosscutting_mode = "sector_flagged".
+crosscutting_flagged_techs <- function(low_carbon, critical_minerals,
+                                       dual_use, advanced_tech, tech_universe) {
+  out <- character(0)
+  if (isTRUE(low_carbon))        out <- c(out, LOW_CARBON_TECHS)
+  if (isTRUE(critical_minerals)) out <- c(out, CRITICAL_MINERALS_LINKED_TECHS)
+  if (isTRUE(dual_use))          out <- c(out, DUAL_USE_LINKED_TECHS)
+  if (isTRUE(advanced_tech))     out <- c(out, ADV_TECH_LINKED_TECHS)
+  intersect(unique(out), tech_universe)
+}
+
+#' Handle policies with no HS6 codes, which are allocated to Cross-cutting.
+#'
+#' @param crosscutting_mode
+#'   "report_only"    keep Cross-cutting as its own row and never expand it.
+#'                    NEW DEFAULT.
+#'   "sector_flagged" expand only into technologies corroborated by the four
+#'                    NIPO sector flags. A policy with no flags stays
+#'                    Cross-cutting.
+#'   "uniform"        legacy: smear across every technology x stage with
+#'                    alloc / n_cells.
+#'
+#' Why the default changed. Under "uniform" the total is conserved but the
+#' attribution is invented: a cross-cutting policy is asserted to apply to all
+#' 13 technologies x 3 stages equally. That adds a country-specific floor to
+#' every cell, which shifts the xcountry percentile ranks that are the published
+#' index. It also manufactures whole cells: with expansion on there are 20
+#' populated tech x stage cells, without it 15, so five cells exist purely as
+#' smeared attribution.
 expand_cross_cutting_rows <- function(tbl,
                                       tech_universe,
                                       supply_chain_universe,
-                                      split_strength = TRUE) {
+                                      split_strength = TRUE,
+                                      crosscutting_mode = c("report_only",
+                                                            "sector_flagged",
+                                                            "uniform")) {
+  crosscutting_mode <- match.arg(crosscutting_mode)
   tech_universe <- setdiff(unique(tech_universe), c("Cross-cutting", "Unmapped"))
   supply_chain_universe <- setdiff(unique(supply_chain_universe), c("Cross-cutting", "Unmapped"))
-  
+
+  if (identical(crosscutting_mode, "report_only")) {
+    # Nothing to expand. Cross-cutting rows travel through untouched, and the
+    # caller decides whether to keep or drop them.
+    return(dplyr::mutate(tbl, expansion_n = 1L))
+  }
+
+  flag_or_false <- function(nm) {
+    if (nm %in% names(tbl)) as_bool(tbl[[nm]]) else rep(FALSE, nrow(tbl))
+  }
+
+  if (identical(crosscutting_mode, "sector_flagged")) {
+    resolved <- purrr::pmap(
+      list(tbl$tech, tbl$supply_chain, flag_or_false("sector_low_carbon"),
+           flag_or_false("sector_critical_minerals"),
+           flag_or_false("sector_dual_use"), flag_or_false("sector_advanced_tech")),
+      function(tech, sc, lc, cm, du, at) {
+        if (!identical(tech, "Cross-cutting")) {
+          return(list(tech = tech,
+                      sc = if (identical(sc, "Cross-cutting")) supply_chain_universe else sc))
+        }
+        hits <- crosscutting_flagged_techs(lc, cm, du, at, tech_universe)
+        if (length(hits) == 0) {
+          # No corroborating flag. Leave the row wholly unattributed rather than
+          # inventing one: if the technology cannot be identified, neither can
+          # the stage, so the supply chain stays Cross-cutting too. Expanding
+          # the stage alone would manufacture three rows per policy that assert
+          # a value-chain position on no evidence at all.
+          return(list(tech = "Cross-cutting", sc = "Cross-cutting"))
+        }
+        list(tech = hits,
+             sc = if (identical(sc, "Cross-cutting")) supply_chain_universe else sc)
+      }
+    )
+    tech_targets <- purrr::map(resolved, "tech")
+    sc_targets <- purrr::map(resolved, "sc")
+  } else {
+    tech_targets <- purrr::map(tbl$tech,
+                               ~ if (.x == "Cross-cutting") tech_universe else .x)
+    sc_targets <- purrr::map(tbl$supply_chain,
+                             ~ if (.x == "Cross-cutting") supply_chain_universe else .x)
+  }
+
   tbl %>%
     dplyr::mutate(
-      tech_targets = purrr::map(.data$tech, ~ if (.x == "Cross-cutting") tech_universe else .x),
-      sc_targets   = purrr::map(.data$supply_chain, ~ if (.x == "Cross-cutting") supply_chain_universe else .x),
+      tech_targets = tech_targets,
+      sc_targets   = sc_targets,
       expanded     = purrr::map2(.data$tech_targets, .data$sc_targets, ~ tidyr::expand_grid(
         tech_exp = .x,
         sc_exp = .y
@@ -955,7 +1086,7 @@ expand_cross_cutting_rows <- function(tbl,
       supply_chain = .data$sc_exp,
       alloc = if (isTRUE(split_strength)) .data$alloc / pmax(1, .data$expansion_n) else .data$alloc
     ) %>%
-    dplyr::select(-.data$tech_exp, -.data$sc_exp, -.data$expansion_n)
+    dplyr::select(-.data$tech_exp, -.data$sc_exp)
 }
 
 
@@ -1017,8 +1148,117 @@ is_advanced_tech <- function(tech) {
   tech %in% ADV_TECH_LINKED_TECHS
 }
 
+# ---- Keyword dictionaries and word-boundary matching -------------------------
+# Dictionary terms are matched against Title pasted with Source. They used to be
+# matched as UNANCHORED substrings, so short terms fired inside longer unrelated
+# words. The worst offender was the bare "ai" in Semiconductors and Downstream,
+# which matched Ukraine, rail, chain, certain, against and aid: 24.2% of all
+# titles in the July 2026 export (13,360 of 55,271) contain a bare "ai" substring
+# with no standalone "ai" or "artificial intelligence" anywhere in them.
+#
+# Terms are now wrapped in \b...\b once at load time by neis_bind_dictionary().
+#
+# Two categories of term are written as explicit regexes in the *_TERMS lists
+# below so that neis_bound_kws() leaves them alone:
+#   1) deliberate PREFIXES ("manufactur", "refin", ...). Wrapping these in \b..\b
+#      would destroy them outright, since \bmanufactur\b never matches
+#      "manufacturing". They are written as \bmanufactur\w* instead.
+#   2) terms already carrying regex syntax ("cells?", "fabs?"). These are now
+#      spelled with their own \b anchors, because passing them through unbounded
+#      left real false positives: unanchored "cells?" matches "ex-cell-ent" and
+#      unanchored "fabs?" matches "fab-ric".
+NEIS_KEYWORD_REGEX_CHARS <- "\\\\b|\\\\w|\\[|\\]|\\?|\\+|\\{|\\(|\\)|\\||\\*"
+
+#' Strip citation scaffolding out of the Source field before keyword matching.
+#'
+#' `Source` is not a URL field: it is a bibliographic citation averaging 613
+#' characters, holding publisher, native-language name, date, document title,
+#' press-release headline and a retrieval URL. 51% of all keyword hits come
+#' from Source alone, and most of them are CORRECT - GTA titles routinely name
+#' the instrument and the borrower without naming the technology, so the
+#' citation headline is what identifies it:
+#'
+#'   Title : "Latvia: NIB signs EUR 28 million loan agreement with SIA WPR2"
+#'   Source: "nib finances large-scale wind farm in latvia"
+#'
+#' So Source is kept. What is removed is the scaffolding around the headline:
+#'
+#'   1. URLs. Path segments are arbitrary tokens that match dictionary terms by
+#'      coincidence: /energy-pipeline-projects/, /components/. This is visible
+#'      in the term-level audit as a large source-to-title ratio - "pipeline"
+#'      hits 26 titles but 439 sources, and "component" 17 against 287, both
+#'      roughly 17x, where a genuine headline signal sits nearer 1-2x.
+#'   2. The "(retrieved on ...)" boilerplate, present on 14,247 rows. Harmless
+#'      in itself, but it lengthens the haystack for no signal.
+#'
+#' Note this only affects which tech x stage cell a policy's strength lands in,
+#' never a country's total: alloc = mapped_share * combo_weight /
+#' sum(combo_weight), so the weights redistribute within a policy and sum to
+#' mapped_share regardless.
+neis_clean_source <- function(x) {
+  x <- dplyr::coalesce(as.character(x), "")
+  x <- stringr::str_remove_all(x, "https?://\\S+")
+  x <- stringr::str_remove_all(
+    x, stringr::regex("\\(retrieved(\\s+on)?[^)]*\\)", ignore_case = TRUE)
+  )
+  stringr::str_squish(x)
+}
+
+#' Wrap a dictionary term in word boundaries.
+#'
+#' Terms that already carry regex syntax are returned unchanged, so "\\bpv\\b",
+#' "cells?" and "\\bmanufactur\\w*" all pass through untouched.
+#'
+#' @param allow_plural when TRUE, append an optional "s" inside the trailing
+#'   boundary. Word boundaries make singular-only terms stop matching their
+#'   plurals ("turbine" no longer matches "turbines"), which costs recall on the
+#'   ~20 terms in these dictionaries that list only a singular form. Defaults to
+#'   FALSE, which is the strict reading of the fix; flip it to trade a little
+#'   precision back for that recall.
+neis_bound_kws <- function(kws, allow_plural = FALSE) {
+  vapply(kws, function(k) {
+    if (grepl(NEIS_KEYWORD_REGEX_CHARS, k)) return(k)
+    suffix <- if (isTRUE(allow_plural) && !grepl("s$", k)) "s?" else ""
+    paste0("\\b", k, suffix, "\\b")
+  }, character(1), USE.NAMES = FALSE)
+}
+
+neis_bind_dictionary <- function(dict, allow_plural = FALSE) {
+  lapply(dict, neis_bound_kws, allow_plural = allow_plural)
+}
+
+#' Report which dictionary terms are dangerously permissive.
+#'
+#' Run against a sample of the Title/Source text actually being matched and
+#' inspect the hit rate. Any term matching more than a few percent of all records
+#' is almost certainly matching something other than what was intended.
+#'
+#' @return group, term, hits, hit_rate, flagged - sorted by hit_rate descending.
+neis_audit_keywords <- function(dict, text_vec, warn_hit_rate = 0.05) {
+  text_vec <- stringr::str_to_lower(dplyr::coalesce(as.character(text_vec), ""))
+  n <- length(text_vec)
+  if (n == 0) stop("neis_audit_keywords(): text_vec is empty.")
+
+  rows <- list()
+  for (grp in names(dict)) {
+    for (k in dict[[grp]]) {
+      hits <- sum(stringr::str_detect(text_vec, k), na.rm = TRUE)
+      rows[[length(rows) + 1L]] <- tibble::tibble(
+        group = grp,
+        term = k,
+        hits = hits,
+        hit_rate = hits / n,
+        flagged = (hits / n) > warn_hit_rate
+      )
+    }
+  }
+  dplyr::arrange(dplyr::bind_rows(rows), dplyr::desc(.data$hit_rate))
+}
+
 # Keyword validation: look for tech-relevant terms in Title/Source.
-TECH_KEYWORDS <- list(
+# TECH_KEYWORD_TERMS_LEGACY is the pre-fix dictionary, kept verbatim so
+# dis_legacy_mode = TRUE can reproduce the old numbers exactly. Do not edit it.
+TECH_KEYWORD_TERMS_LEGACY <- list(
   `Electric Vehicles` = c("electric vehicle","electric vehicles","\\bev\\b","\\bevs\\b","charging","charger","battery electric","plug-in","phev","bev"),
   `Batteries` = c("battery","batteries","\\bli-ion\\b","lithium-ion","cell manufacturing","gigafactory","anode","cathode","bms","energy storage"),
   `Green Hydrogen` = c("hydrogen","\\bh2\\b","electrolyser","electrolyzer","electrolysis","green hydrogen","ammonia","ptx","power-to-x"),
@@ -1045,9 +1285,44 @@ TECH_KEYWORDS <- list(
   )
 )
 
-keyword_evidence <- function(tech, title, source) {
+# Current dictionary. Removals relative to legacy, per methodological review:
+#   Semiconductors: dropped "packaging", "assembly" (generic industrial terms
+#     that carry no semiconductor information) and "cloud". "ai" is RETAINED
+#     here because bounded \bai\b is genuinely diagnostic of chip measures.
+#   Solar: dropped "module" (matches any modular anything).
+TECH_KEYWORD_TERMS <- list(
+  `Electric Vehicles` = c("electric vehicle","electric vehicles","\\bev\\b","\\bevs\\b","charging","charger","battery electric","plug-in","phev","bev"),
+  `Batteries` = c("battery","batteries","\\bli-ion\\b","lithium-ion","cell manufacturing","gigafactory","anode","cathode","bms","energy storage"),
+  `Green Hydrogen` = c("hydrogen","\\bh2\\b","electrolyser","electrolyzer","electrolysis","green hydrogen","ammonia","ptx","power-to-x"),
+  `Wind` = c("wind","turbine","offshore wind","onshore wind","blade","nacelle","rare earth"),
+  `Solar` = c("solar","photovoltaic","\\bpv\\b","inverter","panel","wafer","polysilicon","silicon"),
+  `Geothermal` = c("geothermal","egs","enhanced geothermal","heat flow","geofluid"),
+  `Electric Grid` = c("grid","transmission","distribution","substation","transformer","switchgear","interconnector","interconnection","hvdc","smart grid","copper"),
+  `Nuclear` = c("nuclear","reactor","smr","spent fuel","uranium","enrichment","fission"),
+  `Coal` = c("coal","coking coal","thermal coal","coal-fired","lignite"),
+  `Oil` = c("oil","petroleum","crude","refinery","refining","pipeline"),
+  `Gas` = c("gas","natural gas","lng","liquefaction","regasification","pipeline gas"),
+  `Semiconductors` = c(
+    "semiconductor","semiconductors","chip","chips","wafer","wafers","fab","fabs",
+    "foundry","fabrication","atmp","front-end",
+    "datacenter","data center","server","servers","gpu","gpus","ai","artificial intelligence",
+    "accelerator","hpc", "model training", "inference"
+  ),
+  `Magnets` = c(
+    "rare earth", "rare-earth", "ndpr", "neodymium", "praseodymium",
+    "dysprosium", "terbium", "magnet ore", "rare earth mine",
+    "rare earth mining", "magnet", "magnets", "permanent magnet",
+    "ndfeb", "sintered magnet", "magnet manufacturing",
+    "magnet production", "bonded magnet"
+  )
+)
+
+TECH_KEYWORDS <- neis_bind_dictionary(TECH_KEYWORD_TERMS)
+TECH_KEYWORDS_LEGACY <- TECH_KEYWORD_TERMS_LEGACY
+
+keyword_evidence <- function(tech, title, source, dict = TECH_KEYWORDS) {
   hay <- stringr::str_to_lower(paste(dplyr::coalesce(title, ""), dplyr::coalesce(source, ""), sep = " | "))
-  kws <- TECH_KEYWORDS[[tech]]
+  kws <- dict[[tech]]
   if (is.null(kws) || length(kws) == 0) return(FALSE)
   any(purrr::map_lgl(kws, ~ stringr::str_detect(hay, .x)))
 }
@@ -1057,7 +1332,11 @@ keyword_evidence <- function(tech, title, source) {
 # Downstream (deployment and services).
 DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.25  # +12% when Title/Source corroborates supply-chain stage
 
-# ---- Mapping confidence (applied to policy strength contributions) ----
+# ---- Mapping confidence -------------------------------------------------------
+# Confidence is an EPISTEMIC quantity: it says how sure we are that a policy
+# belongs to a tech x stage cell. It is NOT a measure of how interventionist the
+# policy is. It therefore must not multiply strength by default, which is what
+# confidence_mode controls below.
 CONFIDENCE_FLOOR <- 0.25
 CONFIDENCE_CAP   <- 2
 # Baseline formula: confidence = 0.75 + 0.75 * mapped_share * evidence_mean
@@ -1065,7 +1344,52 @@ CONFIDENCE_CAP   <- 2
 CONFIDENCE_UNMAPPED      <- 0.10
 CONFIDENCE_CROSSCUTTING  <- 0.25
 
-SUPPLY_CHAIN_KEYWORDS <- list(
+# How mapping_confidence enters the strength contribution.
+#
+#   "none"        domestic_ts = scale_strength_pkg * alloc            (default)
+#   "filter"      zero the contribution below conf_threshold
+#   "downweight"  multiply by pmin(1, mapping_confidence): never amplifies
+#   "legacy"      multiply by mapping_confidence as computed, which can exceed 1
+#
+# Why "none" is the default. Used as a multiplier, confidence let documentation
+# quality outweigh instrument choice. Note the realised range is narrower than
+# CONFIDENCE_FLOOR/CAP imply: for mapped rows the formula cannot fall below 0.75
+# (mapped_share > 0 and evidence_mean >= 1), so mapped rows occupy [0.75, 2.00],
+# a 2.7x spread, while cross-cutting rows are pinned at 0.25 and unmapped at
+# 0.10. The 8x swing is therefore mostly cross-cutting versus well-documented
+# mapped, and 2.7x among mapped rows still rivals the 3.3x spread of
+# DOMESTIC_FAMILY_WEIGHTS (0.30 to 1.00). Documentation richness is not randomly
+# distributed across countries, so either way this injected a systematic bias
+# into a cross-country index.
+#
+# There is also double counting: alloc already carries mapped_share (via
+# alloc = mapped_share * combo_weight / sum(combo_weight)) and
+# mapping_confidence carries mapped_share again, so under "legacy" it enters
+# the product roughly quadratically.
+DIS_CONFIDENCE_MODES <- c("none", "filter", "downweight", "legacy")
+DIS_DEFAULT_CONF_THRESHOLD <- 0.75
+
+#' Multiplier that mapping_confidence contributes to a strength product.
+#'
+#' Returns a numeric vector the same length as mapping_confidence, so callers
+#' multiply rather than branch.
+dis_confidence_weight <- function(mapping_confidence,
+                                  confidence_mode = "none",
+                                  conf_threshold = DIS_DEFAULT_CONF_THRESHOLD) {
+  confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
+  mc <- dplyr::coalesce(suppressWarnings(as.numeric(mapping_confidence)), 1)
+
+  switch(
+    confidence_mode,
+    none = rep(1, length(mc)),
+    filter = dplyr::if_else(mc >= conf_threshold, 1, 0),
+    downweight = pmin(1, mc),
+    legacy = mc
+  )
+}
+
+# Pre-fix supply-chain dictionary, kept verbatim for dis_legacy_mode. Do not edit.
+SUPPLY_CHAIN_KEYWORD_TERMS_LEGACY <- list(
   `Upstream` = c(
     "mining", "mine", "extraction", "extractive", "ore", "concentrate", "beneficiation",
     "exploration", "prospecting", "drilling", "upstream",
@@ -1086,9 +1410,50 @@ SUPPLY_CHAIN_KEYWORDS <- list(
   )
 )
 
-supply_chain_keyword_evidence <- function(supply_chain, title, source) {
+# Current dictionary. Removals relative to legacy, per methodological review:
+#   Upstream + Midstream: dropped "processing" from BOTH. It sat in both lists,
+#     so it carried no stage information whatsoever.
+#   Downstream: dropped "ai" (matched Ukraine/rail/chain/certain/against/aid),
+#     "service" and "operations" (fire on any government or corporate activity).
+# Prefix terms are spelled \bstem\w* so they survive boundary wrapping, and the
+# previously unanchored "cells?" / "fabs?" now carry their own anchors.
+SUPPLY_CHAIN_KEYWORD_TERMS <- list(
+  `Upstream` = c(
+    "mining", "mine", "extraction", "extractive", "ore", "concentrate", "beneficiation",
+    "exploration", "prospecting", "drilling", "upstream",
+    "\\bsmelt\\w*", "\\brefin\\w*", "\\bmetallurg\\w*",
+    "critical mineral", "raw material", "rare earth"
+  ),
+  `Midstream` = c(
+    "\\bmanufactur\\w*", "factory", "plant", "gigafactory", "assembly",
+    "\\bfabricat\\w*", "production line",
+    "component", "module", "\\bcells?\\b", "anode", "cathode",
+    "electrolyser manufacturing", "electrolyzer manufacturing",
+    "enrichment", "conversion", "midstream",
+    "foundry", "\\bfabs?\\b", "wafer", "chip packaging", "atmp",
+    "magnet manufacturing", "ndfeb"
+  ),
+  `Downstream` = c(
+    "\\bdeploy\\w*", "\\binstall\\w*",
+    # Participial forms only. A bare "commission" stem matches "European
+    # Commission" and "Commission Regulation", i.e. the EU's institutional
+    # name, which fired on 20% of all records.
+    "\\bcommission(?:ing|ed)\\b", "construction",
+    "servicing", "maintenance", "\\bo\\&m\\b", "retail",
+    "charging station", "charger", "grid connection", "interconnection",
+    "\\bhook[- ]?up\\b",
+    "rebate", "consumer", "\\bend[- ]?use\\b", "downstream",
+    "datacenter", "data center", "server", "gpu", "inference", "model training", "cloud"
+  )
+)
+
+SUPPLY_CHAIN_KEYWORDS <- neis_bind_dictionary(SUPPLY_CHAIN_KEYWORD_TERMS)
+SUPPLY_CHAIN_KEYWORDS_LEGACY <- SUPPLY_CHAIN_KEYWORD_TERMS_LEGACY
+
+supply_chain_keyword_evidence <- function(supply_chain, title, source,
+                                         dict = SUPPLY_CHAIN_KEYWORDS) {
   hay <- stringr::str_to_lower(paste(dplyr::coalesce(title, ""), dplyr::coalesce(source, ""), sep = " | "))
-  kws <- SUPPLY_CHAIN_KEYWORDS[[supply_chain]]
+  kws <- dict[[supply_chain]]
   if (is.null(kws) || length(kws) == 0) return(FALSE)
   any(purrr::map_lgl(kws, ~ stringr::str_detect(hay, .x)))
 }
@@ -1097,20 +1462,22 @@ validation_weight <- function(tech, supply_chain, title, source,
                               sector_low_carbon, sector_dual_use, sector_critical_minerals, sector_advanced_tech,
                               bonus = DEFAULT_VALIDATION_BONUS,
                               keyword_bonus = DEFAULT_VALIDATION_KEYWORD_BONUS,
-                              sc_keyword_bonus = DEFAULT_VALIDATION_SC_KEYWORD_BONUS) {
+                              sc_keyword_bonus = DEFAULT_VALIDATION_SC_KEYWORD_BONUS,
+                              tech_dict = TECH_KEYWORDS,
+                              sc_dict = SUPPLY_CHAIN_KEYWORDS) {
   w <- 1.0
-  
+
   # Sector-flag corroboration (tech-level).
   if (isTRUE(sector_low_carbon) && is_low_carbon_tech(tech)) w <- w + bonus
   if (isTRUE(sector_critical_minerals) && is_critical_minerals_tech(tech)) w <- w + bonus
   if (isTRUE(sector_dual_use) && is_dual_use_tech(tech)) w <- w + bonus
   if (isTRUE(sector_advanced_tech) && is_advanced_tech(tech)) w <- w + bonus
-  
+
   # Keyword corroboration (tech-level).
-  if (isTRUE(keyword_evidence(tech, title, source))) w <- w + keyword_bonus
-  
+  if (isTRUE(keyword_evidence(tech, title, source, dict = tech_dict))) w <- w + keyword_bonus
+
   # Keyword corroboration (supply-chain stage-level).
-  if (isTRUE(supply_chain_keyword_evidence(supply_chain, title, source))) w <- w + sc_keyword_bonus
+  if (isTRUE(supply_chain_keyword_evidence(supply_chain, title, source, dict = sc_dict))) w <- w + sc_keyword_bonus
   
   # Extra sanity: if it's explicitly "Critical Minerals", bias toward Upstream when present.
   if (isTRUE(sector_critical_minerals) && identical(supply_chain, "Upstream")) w <- w + 0.10
@@ -1119,7 +1486,9 @@ validation_weight <- function(tech, supply_chain, title, source,
 }
 
 
-allocate_policy_to_tech_sc <- function(policy_tbl) {
+allocate_policy_to_tech_sc <- function(policy_tbl,
+                                       tech_dict = TECH_KEYWORDS,
+                                       sc_dict = SUPPLY_CHAIN_KEYWORDS) {
   policy_shares <- policy_tbl %>%
     dplyr::mutate(
       mapped_share = dplyr::if_else(.data$hs6_n > 0,
@@ -1159,7 +1528,8 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
              .data$sector_dual_use,
              .data$sector_critical_minerals,
              .data$sector_advanced_tech),
-        ~ validation_weight(..1, ..2, ..3, ..4, ..5, ..6, ..7, ..8)
+        ~ validation_weight(..1, ..2, ..3, ..4, ..5, ..6, ..7, ..8,
+                            tech_dict = tech_dict, sc_dict = sc_dict)
       ),
       is_crosscutting_policy = FALSE,
       mapping_confidence = CONFIDENCE_UNMAPPED
@@ -1206,14 +1576,19 @@ allocate_policy_to_tech_sc <- function(policy_tbl) {
 #    - Computes distinct total_hs6 and matched_hs6 (not inflated by many-to-many joins)
 # ==============================================================================
 
+#' @param clean_source_text strip URLs and "(retrieved on ...)" boilerplate out
+#'   of source_text before it is used for keyword matching. See
+#'   neis_clean_source(). The raw `Source` column is left untouched. FALSE
+#'   restores the unfiltered text and is what dis_legacy_mode uses.
 clean_nipo_raw <- function(raw_nipo,
                            subcat_raw,
                            country_info = NULL,
-                           hs6_essential_tbl = NULL) {
+                           hs6_essential_tbl = NULL,
+                           clean_source_text = TRUE) {
   check_required_columns(raw_nipo, c("Product: HS 6-digit (2022)", "Implementing Jurisdiction"), "raw_nipo")
   check_required_columns(subcat_raw, c("HS6", "Technology", "Value.Chain", "Sub.Sector"), "subcat_raw")
   
-  # Use only essential HS6 codes to drive tech � supply_chain classification.
+  # Use only essential HS6 codes to drive tech � supply_chain classification.
   # Non-essential/generic HS6 codes still remain in hs6_codes for diagnostics/context.
   subcat_lu <- prepare_subcat_mapping(
     subcat_raw = subcat_raw,
@@ -1313,7 +1688,11 @@ clean_nipo_raw <- function(raw_nipo,
         ""
       },
       source_text = if (!is.na(source_col)) {
-        dplyr::coalesce(as.character(.data[[source_col]]), "")
+        if (isTRUE(clean_source_text)) {
+          neis_clean_source(.data[[source_col]])
+        } else {
+          dplyr::coalesce(as.character(.data[[source_col]]), "")
+        }
       } else {
         ""
       }
@@ -1333,6 +1712,80 @@ clean_nipo_raw <- function(raw_nipo,
 #    - Applies: package multiplier (m_package) at State Act ID level
 # ==============================================================================
 
+#' Scope multiplier: how economy-wide a measure is.
+#'
+#' case_when() evaluates in order, and in the legacy ordering the
+#' has_beneficiary test sat ABOVE the firm-level test. Any measure naming a
+#' beneficiary therefore scored 0.60, and the 0.40 firm branch could only fire
+#' when the level field said "firm" but NO beneficiary was named - the opposite
+#' of the informative case. "firm_first" moves the firm-level test above
+#' has_beneficiary so a firm-specific measure scores 0.40 whether or not the
+#' beneficiary happens to be recorded.
+#'
+#' NOTE on the sector-versus-horizontal ordering. The review asked whether
+#' "sector|industry" ~ 1 scoring above the 0.75 given to
+#' "economy|cross|horizontal" is inverted. On the current export the question
+#' does not arise: `Levels of Policy Intervention` takes exactly three values -
+#' "Policy or regulation", "Firm-specific" and "Industrial strategy or plan" -
+#' and NEITHER regex matches any of them. "industrial" does not contain
+#' "industry", and no value contains "economy", "cross", "horizontal" or
+#' "sector". Both branches are unreachable. They are left exactly as they were,
+#' in both modes, because their intent cannot be inferred from behaviour that
+#' never occurs, and a future NIPO vintage with richer level labels may need
+#' them. Do not "fix" the ordering without deciding what it should mean.
+#'
+#' @param scope_mode "firm_first" (default) or "legacy".
+dis_m_scope <- function(is_horizontal,
+                        has_beneficiary,
+                        policy_level,
+                        scope_mode = c("firm_first", "legacy")) {
+  scope_mode <- match.arg(scope_mode)
+
+  if (scope_mode == "legacy") {
+    return(dplyr::case_when(
+      is_horizontal ~ 1.00,
+      has_beneficiary ~ 0.60,
+      stringr::str_detect(policy_level, "economy|cross|horizontal") ~ 0.75,
+      stringr::str_detect(policy_level, "sector|industry") ~ 1,
+      stringr::str_detect(policy_level, "firm") ~ 0.40,
+      TRUE ~ 0.75
+    ))
+  }
+
+  dplyr::case_when(
+    is_horizontal ~ 1.00,
+    # Moved above has_beneficiary. This is the only reordering.
+    stringr::str_detect(policy_level, "firm") ~ 0.40,
+    has_beneficiary ~ 0.60,
+    stringr::str_detect(policy_level, "economy|cross|horizontal") ~ 0.75,
+    stringr::str_detect(policy_level, "sector|industry") ~ 1,
+    TRUE ~ 0.75
+  )
+}
+
+#' @param include_geo_in_strength whether m_geo enters scale_strength_base.
+#'   Defaults to FALSE. m_geo is cap_mult(log_mult(partner_n, p95_geo)), i.e. a
+#'   function of how many jurisdictions a measure AFFECTS. A measure hitting 100
+#'   partners is not a stronger *domestic* intervention than one hitting two; it
+#'   is a more widely directed one. That is a directionality property, and the
+#'   same Affected Jurisdiction field is needed intact for the partner-side
+#'   exposure metrics (neis_inbound_exposure() and neis_rival_direction(), added
+#'   in Task 9), where it belongs. m_geo and partner_n remain reported columns.
+#' @param strength_constant flat multiplier on scale_strength_base. Defaults to
+#'   1. The pre-remediation product carried a bare, undocumented 2 here, which
+#'   only rescaled every row identically and so changed no ranking; it is kept
+#'   as an argument purely so dis_legacy_mode can reproduce old levels.
+#' @param scale_mode which monetary/coverage term enters m_scale:
+#'   "exposure" (default) uses Trade Covered only, "fiscal" uses Size of Subsidy
+#'   only, "max" is the legacy pmax of both, "none" drops the term entirely.
+#'   "exposure" is the default because it has by far the more consistent series:
+#'   in the July 2026 export Trade Covered is populated for 26-58% of policies
+#'   in every year since 2008, against 1-45% for Size of Subsidy. Note that this
+#'   is NOT the rationale originally proposed for the default; there is no
+#'   coverage break at 2023. Subsidy coverage actually PEAKS in 2019 at 45.1%
+#'   and declines to 12.5% by 2025, consistent with reporting lag on recent
+#'   measures rather than a change in collection regime. See
+#'   diagnostics/scale_coverage_by_year.csv.
 build_policy_base <- function(nipo_country_tbl,
                               duration_norm_months = 24,
                               duration_cap_months = 60,
@@ -1340,7 +1793,16 @@ build_policy_base <- function(nipo_country_tbl,
                               geo_cap = 3.0,
                               scale_cap = 3.0,
                               package_cap = 1.6,
-                              package_step = 0.15) {
+                              package_step = 0.15,
+                              include_geo_in_strength = FALSE,
+                              strength_constant = 1,
+                              scale_mode = c("exposure", "fiscal", "max", "none"),
+                              scope_mode = c("firm_first", "legacy"),
+                              unclear_status_weight = STATUS_UNCLEAR_WEIGHT_DEFAULT,
+                              unknown_status_weight = STATUS_UNKNOWN_WEIGHT_DEFAULT,
+                              neutral_status_weight = STATUS_NEUTRAL_WEIGHT_DEFAULT) {
+  scale_mode <- match.arg(scale_mode)
+  scope_mode <- match.arg(scope_mode)
   check_required_columns(
     nipo_country_tbl,
     c(
@@ -1414,28 +1876,33 @@ build_policy_base <- function(nipo_country_tbl,
         stringr::str_detect(stringr::str_to_lower(.data$juris_raw), "local|city|municip") ~ "Local",
         TRUE ~ "Unknown"
       ),
-      m_scope = dplyr::case_when(
-        .data$is_horizontal ~ 1.00,
-        .data$has_beneficiary ~ 0.60,
-        stringr::str_detect(.data$policy_level, "economy|cross|horizontal") ~ 0.75,
-        stringr::str_detect(.data$policy_level, "sector|industry") ~ 1,
-        stringr::str_detect(.data$policy_level, "firm") ~ 0.40,
-        TRUE ~ 0.75
+      m_scope = dis_m_scope(
+        is_horizontal = .data$is_horizontal,
+        has_beneficiary = .data$has_beneficiary,
+        policy_level = .data$policy_level,
+        scope_mode = scope_mode
       )
     ) %>%
     dplyr::left_join(POLICY_TYPE_WEIGHTS, by = c("intervention_type" = "intervention_type")) %>%    dplyr::left_join(JURIS_WEIGHTS, by = c("jurisdiction_norm" = "jurisdiction")) %>%
     dplyr::mutate(
       w_type   = dplyr::coalesce(.data$w_type, 0.40),
+      # Unclear (amber, likely distortive) and Unknown (absent data) are now
+      # separately tunable. The trailing catch-all is Unknown rather than 0.30:
+      # an unrecognised status label is missing information, not weak evidence.
       w_status = dplyr::case_when(
         .data$status_norm == "Distortive" ~ 1.00,
         .data$status_norm == "Liberalising" & .data$flow_norm == "inward"  ~ LIBERALISING_INWARD_WEIGHT,
         .data$status_norm == "Liberalising" & .data$flow_norm == "outward" ~ LIBERALISING_OUTWARD_WEIGHT,
         .data$status_norm == "Liberalising" ~ LIBERALISING_UNKNOWN_WEIGHT,
-        .data$status_norm == "Neutral" ~ 0.50,
-        .data$status_norm == "Unclear" ~ 0.30,
-        .data$status_norm == "Unknown" ~ 0.30,
-        TRUE ~ 0.30
+        .data$status_norm == "Neutral" ~ neutral_status_weight,
+        .data$status_norm == "Unclear" ~ unclear_status_weight,
+        .data$status_norm == "Unknown" ~ unknown_status_weight,
+        TRUE ~ unknown_status_weight
       ),
+
+      # Genuinely absent status, as distinct from amber. Reported so the share
+      # of a cell's strength resting on missing information is visible.
+      status_missing = !nzchar(.data$status_raw) | .data$status_norm == "Unknown",
       w_juris  = dplyr::coalesce(.data$w_juris, 0.80),
       w_family = pmax(
         dplyr::if_else(.data$fam_subsidy,             1.00, 0),
@@ -1470,22 +1937,85 @@ build_policy_base <- function(nipo_country_tbl,
         TRUE ~ 0
       ),
       planned_months = pmax(0, planned_days / 30.44),
+
+      # m_duration stays 0 for a measure with no implementation date. That is
+      # correct for a STOCK index: an unimplemented measure is not part of the
+      # in-force stock. But because m_duration multiplies the whole product,
+      # those rows carry zero strength, and the announcement-to-implementation
+      # gap they represent was previously thrown away rather than measured.
+      # The columns below preserve it. They are reported only and are
+      # deliberately NOT folded into the strength product.
       m_duration = dplyr::case_when(
         !is.na(.data$impl_date) ~ pmin(1, sqrt(planned_months / duration_norm_months)),
         TRUE ~ 0
       ),
+
+      # Announced but not yet in force. 8.5% of the July 2026 export (4,723 of
+      # 55,271), every one of which carries an announcement date.
+      pending_implementation = is.na(.data$impl_date) & !is.na(.data$announce_date),
+
+      # Days from announcement to implementation. NA when either date is
+      # missing, and NA rather than negative when the recorded implementation
+      # precedes the announcement (a data error, not a negative lag).
+      impl_lag_days = dplyr::if_else(
+        !is.na(.data$announce_date) & !is.na(.data$impl_date) &
+          .data$impl_date >= .data$announce_date,
+        as.numeric(.data$impl_date - .data$announce_date),
+        NA_real_
+      ),
+
+      # Note on m_duration saturation, for whoever reads this next: when
+      # removal_date is absent, planned_end is impl_date + duration_cap_months,
+      # so planned_months = 60 and m_duration = min(1, sqrt(60/24)) = 1.0 for
+      # EVERY in-force measure - 69.3% of the export. Only measures that have
+      # been removed can score below 1, so a taper currently reads as weakness.
+      # observed_duration_days and exposure_days, set in add_asof_flags(),
+      # carry the real duration signal instead.
       m_hs6 = cap_mult(log_mult(.data$hs6_n, p95_hs6), cap = breadth_cap),
       m_cpc = cap_mult(log_mult(.data$cpc_n, p95_cpc), cap = breadth_cap),
       m_breadth = cap_mult(.data$m_hs6 * .data$m_cpc, cap = breadth_cap),
       m_geo = cap_mult(log_mult(.data$partner_n, p95_geo), cap = geo_cap),
       m_trade   = cap_mult(log_mult(.data$trade_covered_usd_m, p95_trade), cap = scale_cap),
       m_subsidy = cap_mult(log_mult(.data$subsidy_usd_m, p95_subsidy), cap = scale_cap),
-      
-      # Methodology fix: scale should use the larger of trade covered and subsidy size.
-      m_scale = pmax_na(.data$m_trade, .data$m_subsidy, default = 1),
-      
+
+      # ---- Task 5: scale split into its two distinct meanings ----------------
+      # These measure different things and should not be collapsed with max():
+      #   m_scale_exposure - Trade Covered, i.e. how much trade the measure
+      #     touches. This is exposure breadth, already largely captured by
+      #     m_breadth.
+      #   m_scale_fiscal   - Size of Subsidy, i.e. how much money the state
+      #     committed. This is fiscal intensity.
+      # Taking the max meant a broad-coverage measure with no fiscal outlay
+      # scored like a large subsidy.
+      m_scale_exposure = .data$m_trade,
+      m_scale_fiscal   = .data$m_subsidy,
+
+      # Whether the underlying field was populated at all. This matters because
+      # log_mult() maps NA -> 0 -> multiplier 1, so a missing value is silently
+      # indistinguishable from a genuinely smallest-scale one. The flags make
+      # the difference visible rather than fixing it inside log_mult(), which is
+      # shared with m_hs6, m_cpc, m_breadth and m_geo.
+      scale_exposure_available = !is.na(.data$trade_covered_usd_m),
+      scale_fiscal_available   = !is.na(.data$subsidy_usd_m),
+
+      m_scale = switch(
+        scale_mode,
+        exposure = .data$m_scale_exposure,
+        fiscal   = .data$m_scale_fiscal,
+        max      = pmax_na(.data$m_trade, .data$m_subsidy, default = 1),
+        none     = 1
+      ),
+
       bite_strength_base  = .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration,
-      scale_strength_base = .data$bite_strength_base * .data$m_breadth * .data$m_geo * 2 * .data$m_scale,
+
+      # m_geo is excluded from the product by default: breadth of AFFECTED
+      # jurisdictions measures who a measure is aimed at, not how hard the
+      # implementing state is pushing at home. It stays available as its own
+      # column, and Task 9 consumes the same field for inbound exposure and
+      # rival-direction metrics. m_geo_applied records what was actually used.
+      m_geo_applied = if (isTRUE(include_geo_in_strength)) .data$m_geo else 1,
+      scale_strength_base = .data$bite_strength_base * .data$m_breadth *
+        .data$m_geo_applied * strength_constant * .data$m_scale,
       
       # Clearer name. Keep policy_strength as a backward-compatible alias.
       simple_policy_strength = .data$w_tool * .data$w_status * .data$m_scope * .data$m_scale,
@@ -1520,25 +2050,70 @@ build_policy_base <- function(nipo_country_tbl,
 # 3) Add "as-of" stock/flow flags (used for outputs 1-3)
 # ==============================================================================
 
+#' @param clamp_future_as_of when as_of_date is inferred rather than passed,
+#'   ignore dates in the future. The default inference is
+#'   max(announce_date, impl_date) over the whole inventory, so a single
+#'   future-dated phase-in sets the as-of date for every row: on the July 2026
+#'   export, 241 records carry implementation dates up to 2028-10-01 (staged
+#'   phase-ins of one EU sanctions package), which pushed as_of_date more than
+#'   two years past the end of the data. That treated not-yet-in-force measures
+#'   as active stock, counted removals scheduled before 2028 as already removed,
+#'   left the flow window covering a period with almost no events, and inflated
+#'   exposure_days for every in-force measure.
+#'
+#'   TRUE (default) clamps the inference to dates at or before today. FALSE
+#'   restores the old inference and is what dis_legacy_mode uses. An explicitly
+#'   passed as_of_date is always honoured as given, future or not.
 add_asof_flags <- function(policy_base_tbl,
                            as_of_date = NULL,
-                           flow_window_days = 365) {
+                           flow_window_days = 365,
+                           clamp_future_as_of = TRUE) {
   if (is.null(as_of_date)) {
     cand <- c(as_date_safe(policy_base_tbl$announce_date), as_date_safe(policy_base_tbl$impl_date))
     cand <- cand[!is.na(cand)]
-    
+
     if (length(cand) == 0) {
       stop(
         "as_of_date is NULL and no announcement/implementation dates are available. ",
         "Pass as_of_date explicitly for reproducible stock comparisons."
       )
     }
-    
-    as_of_date <- max(cand)
+
+    if (isTRUE(clamp_future_as_of)) {
+      today <- Sys.Date()
+      past <- cand[cand <= today]
+      if (length(past) == 0) {
+        stop(
+          "as_of_date is NULL and every announcement/implementation date is in ",
+          "the future. Pass as_of_date explicitly."
+        )
+      }
+      as_of_date <- max(past)
+    } else {
+      as_of_date <- max(cand)
+    }
   }
   as_of_date <- as_date_safe(as_of_date)
   flow_start <- as_of_date - as.difftime(flow_window_days, units = "days")
-  
+
+  # A default as_of_date is max(announce, impl) across the whole inventory, so a
+  # single future-dated phase-in sets the as-of date for every row. In the July
+  # 2026 export 241 records carry implementation dates up to 2028-10-01 (staged
+  # phase-ins of one EU sanctions package), which pushes as_of_date two years
+  # past the data. That inflates exposure_days for every in-force measure,
+  # treats not-yet-in-force measures as active stock, and leaves the flow window
+  # covering a period with almost no events in it. Warn rather than silently
+  # clamp, because clamping would change published numbers.
+  if (!is.na(as_of_date) && as_of_date > Sys.Date()) {
+    warning(
+      "add_asof_flags(): as_of_date (", as.character(as_of_date),
+      ") is in the future, so the stock is evaluated past the end of the data. ",
+      "It defaults to max(announce_date, impl_date), which future-dated phase-ins ",
+      "can push forward. Pass as_of_date explicitly for a meaningful stock.",
+      call. = FALSE
+    )
+  }
+
   policy_base_tbl %>%
     dplyr::mutate(
       as_of_date = as_of_date,
@@ -1546,7 +2121,47 @@ add_asof_flags <- function(policy_base_tbl,
       is_implemented_asof = !is.na(.data$impl_date) & (.data$impl_date <= as_of_date),
       is_active_asof = .data$is_implemented_asof & (is.na(.data$removal_date) | (.data$removal_date > as_of_date)),
       is_new_impl_window = .data$is_implemented_asof & (.data$impl_date >= flow_start) & (.data$impl_date <= as_of_date),
-      is_removed_window  = !is.na(.data$removal_date) & (.data$removal_date >= flow_start) & (.data$removal_date <= as_of_date)
+      is_removed_window  = !is.na(.data$removal_date) & (.data$removal_date >= flow_start) & (.data$removal_date <= as_of_date),
+
+      # ---- Task 4: real duration, reported not scored --------------------------
+      # observed_duration_days is the UNCENSORED lifetime: only defined for a
+      # measure that has actually ended. NA while still in force, which is the
+      # honest answer - not a small number, and not the 60-month cap that
+      # m_duration silently assumes.
+      observed_duration_days = dplyr::if_else(
+        !is.na(.data$impl_date) & !is.na(.data$removal_date) &
+          .data$removal_date >= .data$impl_date,
+        as.numeric(.data$removal_date - .data$impl_date),
+        NA_real_
+      ),
+
+      # exposure_days is the CENSORED time in force: how long the measure has
+      # been observed, ending at removal or at as_of_date, whichever is first.
+      # Every implemented measure has one, so this is what survival-style
+      # estimates in Task 9 use for at-risk time.
+      #
+      # A recorded removal BEFORE implementation is a data error and yields an
+      # incoherent timeline, so exposure is NA rather than negative. The same
+      # guard already exists on planned_end and observed_duration_days. Without
+      # it the minimum exposure_days on the July 2026 export is -98.
+      exposure_days = dplyr::if_else(
+        !is.na(.data$impl_date) & .data$impl_date <= as_of_date &
+          (is.na(.data$removal_date) | .data$removal_date >= .data$impl_date),
+        as.numeric(
+          pmin(dplyr::coalesce(.data$removal_date, as_of_date), as_of_date) - .data$impl_date
+        ),
+        NA_real_
+      ),
+
+      # Flags the incoherent-timeline records above, so they are countable
+      # rather than merely absent.
+      removal_before_impl = !is.na(.data$impl_date) & !is.na(.data$removal_date) &
+        .data$removal_date < .data$impl_date,
+
+      # TRUE when the measure was still in force at as_of_date, i.e. its
+      # exposure_days is right-censored rather than a completed lifetime.
+      duration_censored = !is.na(.data$impl_date) & (.data$impl_date <= as_of_date) &
+        (is.na(.data$removal_date) | .data$removal_date > as_of_date)
     )
 }
 
@@ -1554,14 +2169,19 @@ add_asof_flags <- function(policy_base_tbl,
 # 4) Output 1: policy-level table (country level)
 # ==============================================================================
 
-build_by_policy <- function(policy_asof_tbl, cpc_names) {
-  
+build_by_policy <- function(policy_asof_tbl,
+                            cpc_names,
+                            tech_dict = TECH_KEYWORDS,
+                            sc_dict = SUPPLY_CHAIN_KEYWORDS) {
+
   # Summarise tech × supply_chain mapping (and confidence) at the policy level
-  alloc_long <- allocate_policy_to_tech_sc(policy_asof_tbl) %>%
+  alloc_long <- allocate_policy_to_tech_sc(policy_asof_tbl,
+                                           tech_dict = tech_dict,
+                                           sc_dict = sc_dict) %>%
     dplyr::mutate(
       mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1)
     )
-  
+
   map_sum <- alloc_long %>%
     dplyr::group_by(.data$policy_id) %>%
     dplyr::summarise(
@@ -1572,9 +2192,17 @@ build_by_policy <- function(policy_asof_tbl, cpc_names) {
       mapping_confidence_max = max(.data$mapping_confidence, na.rm = TRUE),
       # mapped_share is repeated after allocation expansion; summing it can exceed 1.
       mapped_share_policy = max(dplyr::coalesce(.data$mapped_share, 0), na.rm = TRUE),
-      
+
       # Backward-compatible alias; now corrected to policy-level mapped share.
       mapped_share_sum = max(dplyr::coalesce(.data$mapped_share, 0), na.rm = TRUE),
+
+      # The two inputs to mapping_confidence, reported so the confidence figure
+      # can be decomposed. mapping_confidence is
+      # pmin(2, pmax(0.25, 0.75 + 0.75 * mapped_share * evidence_mean)), and
+      # note mapped_share is already inside alloc, which is the double counting
+      # that made confidence enter the legacy product quadratically.
+      mapped_share = max(dplyr::coalesce(.data$mapped_share, 0), na.rm = TRUE),
+      evidence_mean = mean(dplyr::coalesce(.data$evidence_mean, 1), na.rm = TRUE),
       .groups = "drop"
     )
   
@@ -1620,7 +2248,8 @@ build_by_hs6 <- function(policy_asof_tbl,
                          hs6_cpc_lu,
                          hs6_name_lu = NULL,
                          split_across_hs6 = TRUE,
-                         balance_alpha = 0.5) {
+                         balance_alpha = 0.5,
+                         pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   balance_alpha <- max(0, min(1, balance_alpha))
 
   hs6_long <- policy_asof_tbl %>%
@@ -1675,7 +2304,8 @@ build_by_hs6 <- function(policy_asof_tbl,
     within_country_by = c("iso3", "country"),
     xcountry_by = c("HS6"),
     index_col = "domestic_intervention_index",
-    default = "xcountry"
+    default = "xcountry",
+    pctile_singleton_value = pctile_singleton_value
   )
   
   if (nrow(hs6_cpc_lu) > 0) {
@@ -1695,6 +2325,47 @@ build_by_hs6 <- function(policy_asof_tbl,
 
 # ==============================================================================
 # 6) Output 3: tech x supply_chain stock table
+# ------------------------------------------------------------------------------
+# AUDIT: every na.rm = TRUE in the aggregation path, and whether it needs an
+# explicit missingness denominator now that unknown_status_weight can be NA.
+#
+# An NA w_status propagates: w_status -> bite_strength_base ->
+# scale_strength_base -> scale_strength_pkg -> domestic_ts. Every downstream
+# sum(na.rm = TRUE) then treats that row as absent rather than as unknown, and
+# an all-NA group returns 0, which is indistinguishable from a real zero.
+#
+#   SITE                                            VERDICT
+#   build_by_tech_sc/policy_level
+#     sum(domestic_ts, na.rm = TRUE)                NEEDS a denominator - added
+#                                                   n_alloc_rows and
+#                                                   n_alloc_rows_na_strength
+#     mean(mapping_confidence, na.rm = TRUE)        safe: confidence is never NA
+#                                                   after coalesce(., 1)
+#   build_by_tech_sc/agg
+#     sum(policy_strength, na.rm = TRUE)            NEEDS a denominator - added
+#                                                   n_policies_strength_undefined
+#                                                   and n_policies_status_missing
+#     mean(policy_strength, na.rm = TRUE)           same denominator applies; the
+#                                                   mean is over the surviving
+#                                                   policies only
+#     min/mean(mapping_confidence, na.rm = TRUE)    safe, as above
+#   build_by_tech_sc_year/policy_level + agg        same two sites, same fix
+#   build_by_hs6, build_by_cpc                      same shape, NOT given
+#                                                   denominators: neither feeds
+#                                                   a composite (see Task 0),
+#                                                   both are diagnostic-only
+#   build_by_policy
+#     sum(scale_strength_pkg[is_active_asof])       country-level denominator,
+#                                                   used only for a share; an NA
+#                                                   numerator yields NA share,
+#                                                   which is correct
+#     max(mapped_share, na.rm = TRUE)               safe: mapped_share coalesced
+#   build_policy_base/act_pkg
+#     any(fam_*, na.rm = TRUE)                      safe: as_bool() coalesces
+#     rowSums(fam_*, na.rm = TRUE)                  safe, as above
+#
+# On the July 2026 export all of this is inert: status is only ever Distortive
+# or Liberalising, so no w_status is NA and every denominator reads zero.
 # ==============================================================================
 
 build_by_tech_sc <- function(policy_asof_tbl,
@@ -1703,33 +2374,76 @@ build_by_tech_sc <- function(policy_asof_tbl,
                              supply_chain_universe,
                              expand_cross_cutting = TRUE,
                              split_cross_cutting_strength = TRUE,
-                             balance_alpha = 0.5) {
-  
+                             balance_alpha = 0.5,
+                             confidence_mode = "none",
+                             conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
+                             tech_dict = TECH_KEYWORDS,
+                             sc_dict = SUPPLY_CHAIN_KEYWORDS,
+                             alloc_long = NULL,
+                             pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                             crosscutting_mode = c("report_only", "sector_flagged",
+                                                   "uniform")) {
+
   # balance_alpha in [0,1]:
   #   1.0 -> pure SUM (extensive margin dominates)
   #   0.0 -> pure MEAN (intensive margin dominates)
   #   default 0.5 -> geometric blend between sum and mean
   balance_alpha <- max(0, min(1, balance_alpha))
-  
-  tech_sc_long <- allocate_policy_to_tech_sc(policy_asof_tbl)
-  
-  if (isTRUE(expand_cross_cutting)) {
+  confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
+  crosscutting_mode <- match.arg(crosscutting_mode)
+  # expand_cross_cutting predates crosscutting_mode and is kept for API
+  # compatibility. Passing FALSE still means "do not expand", which is
+  # report_only; otherwise crosscutting_mode decides.
+  if (!isTRUE(expand_cross_cutting)) crosscutting_mode <- "report_only"
+
+  # alloc_long lets a caller supply an ALREADY-EXPANDED allocation table and skip
+  # the allocation entirely. confidence_mode does not affect allocation, so
+  # dis_variant_stability() allocates once and reuses it across all four modes
+  # instead of paying for the expansion four times.
+  if (is.null(alloc_long)) {
+    tech_sc_long <- allocate_policy_to_tech_sc(policy_asof_tbl,
+                                               tech_dict = tech_dict,
+                                               sc_dict = sc_dict)
+
     tech_sc_long <- expand_cross_cutting_rows(
       tech_sc_long,
       tech_universe = tech_universe,
       supply_chain_universe = supply_chain_universe,
-      split_strength = split_cross_cutting_strength
-    ) %>%
-      dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
+      split_strength = split_cross_cutting_strength,
+      crosscutting_mode = crosscutting_mode
+    )
+
+    # Under "uniform" every cross-cutting row has been distributed, so any
+    # remainder is dropped as before. Under "report_only" and "sector_flagged"
+    # the un-attributable rows are KEPT as their own Cross-cutting row, which is
+    # the point: the strength is reported rather than invented into cells.
+    if (identical(crosscutting_mode, "uniform")) {
+      tech_sc_long <- tech_sc_long %>%
+        dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
+    }
+  } else {
+    tech_sc_long <- alloc_long
   }
-  
+
+  # confidence_weight is kept as its own column so the contribution of the
+  # epistemic term is always inspectable, never folded silently into strength.
   tech_sc_long <- tech_sc_long %>%
     dplyr::filter(.data$tech != "Unmapped") %>%
     dplyr::mutate(
       mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1),
-      domestic_ts = .data$scale_strength_pkg * .data$alloc * .data$mapping_confidence
+      # Compute the weight BEFORE recording confidence_mode as a column: a
+      # column of that name would shadow the scalar argument for every later
+      # expression in the same mutate(). .env$ pins it either way.
+      confidence_weight = dis_confidence_weight(
+        .data$mapping_confidence,
+        confidence_mode = .env$confidence_mode,
+        conf_threshold = .env$conf_threshold
+      ),
+      domestic_ts = .data$scale_strength_pkg * .data$alloc * .data$confidence_weight,
+      confidence_mode = .env$confidence_mode,
+      conf_threshold = .env$conf_threshold
     )
-  
+
   # Collapse to POLICY-level within each Country × Tech × SupplyChain so we can
   # blend "sum" and "average" policy strength without double-counting a policy.
   policy_level <- tech_sc_long %>%
@@ -1738,14 +2452,32 @@ build_by_tech_sc <- function(policy_asof_tbl,
     dplyr::summarise(
       as_of_date = dplyr::first(.data$as_of_date),
       policy_strength = sum(.data$domestic_ts, na.rm = TRUE),
+      # Explicit missingness denominator. sum(na.rm = TRUE) above returns 0 for
+      # an all-NA policy, which is indistinguishable from a genuine zero. This
+      # counts what that na.rm dropped, so an NA weight is visible rather than
+      # silently absorbed. See the na.rm audit above build_by_tech_sc().
+      n_alloc_rows = dplyr::n(),
+      n_alloc_rows_na_strength = sum(is.na(.data$domestic_ts)),
+      status_missing = any(dplyr::coalesce(.data$status_missing, FALSE)),
+      mapping_confidence = mean(.data$mapping_confidence, na.rm = TRUE),
       .groups = "drop"
     )
-  
+
   agg <- policy_level %>%
     dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain) %>%
     dplyr::summarise(
       as_of_date = dplyr::first(.data$as_of_date),
       n_active_policies = dplyr::n_distinct(.data$policy_id),
+      # Reported in every mode, including "none", so the epistemic quality of a
+      # cell stays visible even when it no longer scales the strength.
+      mapping_confidence_mean = mean(.data$mapping_confidence, na.rm = TRUE),
+      mapping_confidence_min = suppressWarnings(min(.data$mapping_confidence, na.rm = TRUE)),
+      # Missingness denominators for this cell.
+      n_policies_status_missing = sum(.data$status_missing, na.rm = TRUE),
+      share_policies_status_missing = dplyr::if_else(
+        dplyr::n() > 0, sum(.data$status_missing, na.rm = TRUE) / dplyr::n(), NA_real_
+      ),
+      n_policies_strength_undefined = sum(.data$n_alloc_rows_na_strength > 0, na.rm = TRUE),
       domestic_strength_sum = sum(.data$policy_strength, na.rm = TRUE),
       domestic_strength_avg = dplyr::if_else(.data$n_active_policies > 0,
                                              mean(.data$policy_strength, na.rm = TRUE),
@@ -1767,7 +2499,8 @@ build_by_tech_sc <- function(policy_asof_tbl,
     within_country_by = c("iso3", "country"),
     xcountry_by = c("tech", "supply_chain"),
     index_col = "domestic_intervention_index",
-    default = "xcountry"
+    default = "xcountry",
+    pctile_singleton_value = pctile_singleton_value
   )
   
   if (nrow(tech_sc_cpc_lu) > 0) {
@@ -1775,7 +2508,14 @@ build_by_tech_sc <- function(policy_asof_tbl,
   } else {
     idx <- idx %>% dplyr::mutate(cpc3_codes_csv = NA_character_, cpc_name_csv = NA_character_)
   }
-  
+
+  # Record how the score was built, so a stored output is self-describing.
+  idx <- idx %>%
+    dplyr::mutate(
+      confidence_mode = confidence_mode,
+      conf_threshold = conf_threshold
+    )
+
   list(
     data = idx,
     policy_alloc = tech_sc_long
@@ -1803,35 +2543,58 @@ build_by_tech_sc_year <- function(policy_base_tbl,
                                   weight_by_active_fraction = TRUE,
                                   expand_cross_cutting = TRUE,
                                   split_cross_cutting_strength = TRUE,
-                                  balance_alpha = 0.5) {
-  
+                                  balance_alpha = 0.5,
+                                  confidence_mode = "none",
+                                  conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
+                                  tech_dict = TECH_KEYWORDS,
+                                  sc_dict = SUPPLY_CHAIN_KEYWORDS,
+                                  pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                                  crosscutting_mode = c("report_only", "sector_flagged",
+                                                        "uniform")) {
+
   balance_alpha <- max(0, min(1, balance_alpha))
+  confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
+  crosscutting_mode <- match.arg(crosscutting_mode)
+  if (!isTRUE(expand_cross_cutting)) crosscutting_mode <- "report_only"
   if (!is.finite(rolling_window_years) || rolling_window_years < 1) rolling_window_years <- 1
   rolling_window_years <- as.integer(rolling_window_years)
-  
+
   tmp <- policy_base_tbl %>%
     dplyr::mutate(
       is_active_asof = TRUE,
       as_of_date = as.Date(NA)
     )
-  
-  tech_sc_long <- allocate_policy_to_tech_sc(tmp)
-  
-  if (isTRUE(expand_cross_cutting)) {
-    tech_sc_long <- expand_cross_cutting_rows(
-      tech_sc_long,
-      tech_universe = tech_universe,
-      supply_chain_universe = supply_chain_universe,
-      split_strength = split_cross_cutting_strength
-    ) %>%
+
+  tech_sc_long <- allocate_policy_to_tech_sc(tmp,
+                                             tech_dict = tech_dict,
+                                             sc_dict = sc_dict)
+
+  tech_sc_long <- expand_cross_cutting_rows(
+    tech_sc_long,
+    tech_universe = tech_universe,
+    supply_chain_universe = supply_chain_universe,
+    split_strength = split_cross_cutting_strength,
+    crosscutting_mode = crosscutting_mode
+  )
+
+  if (identical(crosscutting_mode, "uniform")) {
+    tech_sc_long <- tech_sc_long %>%
       dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
   }
-  
+
   tech_sc_long <- tech_sc_long %>%
     dplyr::filter(.data$tech != "Unmapped") %>%
     dplyr::mutate(
       mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1),
-      domestic_ts = .data$scale_strength_pkg * .data$alloc * .data$mapping_confidence,
+      # See the note in build_by_tech_sc(): weight first, recorded columns after.
+      confidence_weight = dis_confidence_weight(
+        .data$mapping_confidence,
+        confidence_mode = .env$confidence_mode,
+        conf_threshold = .env$conf_threshold
+      ),
+      domestic_ts = .data$scale_strength_pkg * .data$alloc * .data$confidence_weight,
+      confidence_mode = .env$confidence_mode,
+      conf_threshold = .env$conf_threshold,
       announce_year_raw = suppressWarnings(as.integer(format(.data$announce_date, "%Y"))),
       impl_year = suppressWarnings(as.integer(format(.data$impl_date, "%Y"))),
       anchor_year = dplyr::if_else(is.finite(.data$announce_year_raw), .data$announce_year_raw, .data$impl_year)
@@ -1916,13 +2679,23 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain, .data$announce_year, .data$policy_id) %>%
     dplyr::summarise(
       policy_strength = sum(.data$domestic_flow, na.rm = TRUE),
+      # See the na.rm audit above build_by_tech_sc().
+      n_alloc_rows_na_strength = sum(is.na(.data$domestic_flow)),
+      status_missing = any(dplyr::coalesce(.data$status_missing, FALSE)),
+      mapping_confidence = mean(.data$mapping_confidence, na.rm = TRUE),
       .groups = "drop"
     )
-  
+
   agg <- policy_level %>%
     dplyr::group_by(.data$iso3, .data$country, .data$tech, .data$supply_chain, .data$announce_year) %>%
     dplyr::summarise(
       n_policies_window = dplyr::n_distinct(.data$policy_id),
+      mapping_confidence_mean = mean(.data$mapping_confidence, na.rm = TRUE),
+      n_policies_status_missing = sum(.data$status_missing, na.rm = TRUE),
+      share_policies_status_missing = dplyr::if_else(
+        dplyr::n() > 0, sum(.data$status_missing, na.rm = TRUE) / dplyr::n(), NA_real_
+      ),
+      n_policies_strength_undefined = sum(.data$n_alloc_rows_na_strength > 0, na.rm = TRUE),
       domestic_strength_sum = sum(.data$policy_strength, na.rm = TRUE),
       domestic_strength_avg = dplyr::if_else(.data$n_policies_window > 0,
                                              mean(.data$policy_strength, na.rm = TRUE),
@@ -1941,7 +2714,8 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     within_country_by = c("iso3", "country", "announce_year"),
     xcountry_by = c("tech", "supply_chain", "announce_year"),
     index_col = "domestic_intervention_index_xs",
-    default = "xcountry"
+    default = "xcountry",
+    pctile_singleton_value = pctile_singleton_value
   )
   
   if (nrow(tech_sc_cpc_lu) > 0) {
@@ -1949,6 +2723,12 @@ build_by_tech_sc_year <- function(policy_base_tbl,
   } else {
     out <- out %>% dplyr::mutate(cpc3_codes_csv = NA_character_, cpc_name_csv = NA_character_)
   }
+
+  out <- out %>%
+    dplyr::mutate(
+      confidence_mode = confidence_mode,
+      conf_threshold = conf_threshold
+    )
   
   out
 }
@@ -1960,7 +2740,8 @@ build_by_tech_sc_year <- function(policy_base_tbl,
 build_by_cpc <- function(policy_asof_tbl,
                          cpc_name_lu = NULL,
                          split_across_cpc = TRUE,
-                         balance_alpha = 0.5) {
+                         balance_alpha = 0.5,
+                         pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   balance_alpha <- max(0, min(1, balance_alpha))
 
   if (!("cpc3_codes" %in% names(policy_asof_tbl))) {
@@ -2033,12 +2814,125 @@ build_by_cpc <- function(policy_asof_tbl,
     within_country_by = c("iso3", "country"),
     xcountry_by = c("cpc3"),
     index_col = "domestic_intervention_index",
-    default = "xcountry"
+    default = "xcountry",
+    pctile_singleton_value = pctile_singleton_value
   ) %>%
     dplyr::mutate(
       cpc3_codes_csv = .data$cpc3,
       cpc_name_csv = .data$cpc.name
     )
+}
+
+# ==============================================================================
+# 8b) Diagnostic: how much of the ranking was documentation quality?
+# ------------------------------------------------------------------------------
+# Rebuilds by_tech_sc under every confidence_mode from one shared allocation and
+# compares country rankings within each tech x supply_chain cell. A low
+# rho(legacy, none) means the published index was substantially an index of how
+# well GTA wrote a measure up, not of how interventionist it was.
+# ==============================================================================
+
+#' @param policy_asof_tbl output of add_asof_flags()
+#' @param expand_cross_cutting passed through to build_by_tech_sc() and held
+#'   constant across all four modes. Worth running both ways: cross-cutting rows
+#'   are pinned at CONFIDENCE_CROSSCUTTING = 0.25 while mapped rows sit in
+#'   [0.75, 2.00], so with expansion on, part of the legacy-vs-none gap measured
+#'   here is really the cross-cutting attribution problem that Task 9 addresses.
+#' @return one row per tech x supply_chain, with the Spearman correlation of
+#'   country rankings between "legacy" and each other mode, and the count of
+#'   countries whose rank moves by more than rank_move_threshold places.
+dis_variant_stability <- function(policy_asof_tbl,
+                                  tech_sc_cpc_lu,
+                                  tech_universe,
+                                  supply_chain_universe,
+                                  conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
+                                  balance_alpha = 0.5,
+                                  rank_move_threshold = 3,
+                                  expand_cross_cutting = TRUE,
+                                  tech_dict = TECH_KEYWORDS,
+                                  sc_dict = SUPPLY_CHAIN_KEYWORDS) {
+
+  # Allocate once. confidence_mode enters only after allocation, so all four
+  # variants share this table; re-deriving it per mode would quadruple the cost
+  # of the most expensive step in the pipeline.
+  alloc_shared <- allocate_policy_to_tech_sc(policy_asof_tbl,
+                                             tech_dict = tech_dict,
+                                             sc_dict = sc_dict)
+  if (isTRUE(expand_cross_cutting)) {
+    alloc_shared <- expand_cross_cutting_rows(
+      alloc_shared,
+      tech_universe = tech_universe,
+      supply_chain_universe = supply_chain_universe,
+      split_strength = TRUE
+    ) %>%
+      dplyr::filter(.data$tech != "Cross-cutting", .data$supply_chain != "Cross-cutting")
+  }
+
+  build_one <- function(mode) {
+    build_by_tech_sc(
+      policy_asof_tbl = policy_asof_tbl,
+      tech_sc_cpc_lu = tech_sc_cpc_lu,
+      tech_universe = tech_universe,
+      supply_chain_universe = supply_chain_universe,
+      expand_cross_cutting = expand_cross_cutting,
+      balance_alpha = balance_alpha,
+      confidence_mode = mode,
+      conf_threshold = conf_threshold,
+      alloc_long = alloc_shared
+    )$data %>%
+      dplyr::select(dplyr::all_of(c("iso3", "country", "tech", "supply_chain",
+                                    "domestic_stock_sum"))) %>%
+      dplyr::rename("score_{mode}" := "domestic_stock_sum")
+  }
+
+  variants <- lapply(DIS_CONFIDENCE_MODES, build_one)
+  names(variants) <- DIS_CONFIDENCE_MODES
+
+  joined <- Reduce(
+    function(a, b) dplyr::full_join(a, b, by = c("iso3", "country", "tech", "supply_chain")),
+    variants
+  )
+
+  compare_modes <- setdiff(DIS_CONFIDENCE_MODES, "legacy")
+
+  joined %>%
+    dplyr::group_by(.data$tech, .data$supply_chain) %>%
+    dplyr::group_modify(function(g, key) {
+      legacy <- g[["score_legacy"]]
+      # dense_rank on the negated score: rank 1 = strongest.
+      rank_legacy <- dplyr::dense_rank(dplyr::desc(legacy))
+
+      out <- tibble::tibble(n_countries = nrow(g))
+      for (m in compare_modes) {
+        v <- g[[paste0("score_", m)]]
+        rank_v <- dplyr::dense_rank(dplyr::desc(v))
+        rho <- suppressWarnings(stats::cor(legacy, v, method = "spearman",
+                                           use = "pairwise.complete.obs"))
+        moved <- sum(abs(rank_legacy - rank_v) > rank_move_threshold, na.rm = TRUE)
+        out[[paste0("rho_legacy_", m)]] <- rho
+        out[[paste0("n_rank_moved_gt", rank_move_threshold, "_", m)]] <- moved
+        out[[paste0("share_rank_moved_", m)]] <- if (nrow(g) > 0) moved / nrow(g) else NA_real_
+      }
+      out
+    }) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(.data$rho_legacy_none)
+}
+
+# ==============================================================================
+# 8c) NEIS extension bridge
+# ------------------------------------------------------------------------------
+# The NEIS framework layers live in the companion file nipo_neis_extensions.R,
+# which is sourced at the bottom of this file. These wrappers let
+# nipo_policy_outputs() degrade gracefully rather than error if that file is
+# unavailable, so an existing caller that sources only this file keeps working.
+# ==============================================================================
+
+neis_consolidate_eu_safe <- function(tbl, mode = "both_flagged") {
+  if (!exists("neis_consolidate_eu", mode = "function")) {
+    return(tbl)
+  }
+  neis_consolidate_eu(tbl, mode = mode)
 }
 
 # ==============================================================================
@@ -2067,7 +2961,57 @@ nipo_policy_outputs <- function(raw_nipo,
                                 year_max = NULL,
                                 rolling_window_years = 3,
                                 balance_alpha = 0.5,
-                                weight_by_active_fraction = TRUE) {
+                                weight_by_active_fraction = TRUE,
+                                confidence_mode = "none",
+                                conf_threshold = DIS_DEFAULT_CONF_THRESHOLD,
+                                include_geo_in_strength = FALSE,
+                                strength_constant = 1,
+                                scale_mode = c("exposure", "fiscal", "max", "none"),
+                                scope_mode = c("firm_first", "legacy"),
+                                unclear_status_weight = STATUS_UNCLEAR_WEIGHT_DEFAULT,
+                                unknown_status_weight = STATUS_UNKNOWN_WEIGHT_DEFAULT,
+                                neutral_status_weight = STATUS_NEUTRAL_WEIGHT_DEFAULT,
+                                pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                                crosscutting_mode = c("report_only", "sector_flagged",
+                                                      "uniform"),
+                                eu_mode = c("both_flagged", "member_only", "eu_only"),
+                                include_neis_panel = TRUE,
+                                clamp_future_as_of = TRUE,
+                                clean_source_text = TRUE,
+                                dis_legacy_mode = FALSE) {
+  crosscutting_mode <- match.arg(crosscutting_mode)
+  eu_mode <- match.arg(eu_mode)
+  scale_mode <- match.arg(scale_mode)
+  scope_mode <- match.arg(scope_mode)
+  # dis_legacy_mode is a single switch that restores every pre-remediation
+  # behaviour at once, for attributing a rank change to a specific fix. It
+  # overrides the individual arguments rather than sitting alongside them.
+  confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
+
+  if (isTRUE(dis_legacy_mode)) {
+    confidence_mode <- "legacy"
+    tech_dict <- TECH_KEYWORDS_LEGACY
+    sc_dict <- SUPPLY_CHAIN_KEYWORDS_LEGACY
+    include_geo_in_strength <- TRUE
+    strength_constant <- 2
+    scale_mode <- "max"
+    scope_mode <- "legacy"
+    # Legacy weighted Unclear and Unknown identically at 0.30.
+    unclear_status_weight <- 0.30
+    unknown_status_weight <- 0.30
+    neutral_status_weight <- 0.50
+    # Legacy pct_rank_safe() returned 1 for a singleton group while
+    # safe_median_scurve() returned 0.5 for the same group. Only the former
+    # changed, so only the former is restored here.
+    pctile_singleton_value <- 1
+    crosscutting_mode <- "uniform"
+    clamp_future_as_of <- FALSE
+    clean_source_text <- FALSE
+  } else {
+    tech_dict <- TECH_KEYWORDS
+    sc_dict <- SUPPLY_CHAIN_KEYWORDS
+  }
+
   hs6_essential_tbl <- resolve_hs6_essential_tbl(hs6_essential_tbl)
   
   # Driver mapping used for CPC validation / lookup tables.
@@ -2088,7 +3032,8 @@ nipo_policy_outputs <- function(raw_nipo,
     raw_nipo = raw_nipo,
     subcat_raw = subcat_raw,
     country_info = country_info,
-    hs6_essential_tbl = hs6_essential_tbl
+    hs6_essential_tbl = hs6_essential_tbl,
+    clean_source_text = clean_source_text
   )
   
   cpc_hs <- get_cpc_hs_map()
@@ -2121,16 +3066,25 @@ nipo_policy_outputs <- function(raw_nipo,
     geo_cap = geo_cap,
     scale_cap = scale_cap,
     package_cap = package_cap,
-    package_step = package_step
+    package_step = package_step,
+    include_geo_in_strength = include_geo_in_strength,
+    strength_constant = strength_constant,
+    scale_mode = scale_mode,
+    scope_mode = scope_mode,
+    unclear_status_weight = unclear_status_weight,
+    unknown_status_weight = unknown_status_weight,
+    neutral_status_weight = neutral_status_weight
   )
   
   policy_asof <- add_asof_flags(
     policy_base_tbl = policy_base,
     as_of_date = as_of_date,
-    flow_window_days = flow_window_days
+    flow_window_days = flow_window_days,
+    clamp_future_as_of = clamp_future_as_of
   )
   
-  by_policy <- build_by_policy(policy_asof, cpc_names = cpc_names)
+  by_policy <- build_by_policy(policy_asof, cpc_names = cpc_names,
+                               tech_dict = tech_dict, sc_dict = sc_dict)
   
   by_hs6 <- build_by_hs6(
     policy_asof,
@@ -2148,9 +3102,15 @@ nipo_policy_outputs <- function(raw_nipo,
     expand_cross_cutting = expand_cross_cutting,
     split_cross_cutting_strength = split_cross_cutting_strength
     ,
-    balance_alpha = balance_alpha
+    balance_alpha = balance_alpha,
+    confidence_mode = confidence_mode,
+    conf_threshold = conf_threshold,
+    tech_dict = tech_dict,
+    sc_dict = sc_dict,
+    pctile_singleton_value = pctile_singleton_value,
+    crosscutting_mode = crosscutting_mode
   )
-  
+
   by_tech_sc <- tech_sc_out$data
   
   by_tech_sc_year <- build_by_tech_sc_year(
@@ -2164,9 +3124,15 @@ nipo_policy_outputs <- function(raw_nipo,
     weight_by_active_fraction = weight_by_active_fraction,
     expand_cross_cutting = expand_cross_cutting,
     split_cross_cutting_strength = split_cross_cutting_strength,
-    balance_alpha = balance_alpha
+    balance_alpha = balance_alpha,
+    confidence_mode = confidence_mode,
+    conf_threshold = conf_threshold,
+    tech_dict = tech_dict,
+    sc_dict = sc_dict,
+    pctile_singleton_value = pctile_singleton_value,
+    crosscutting_mode = crosscutting_mode
   )
-  
+
   by_cpc <- build_by_cpc(
     policy_asof_tbl = policy_asof,
     cpc_name_lu = cpc_names,
@@ -2174,12 +3140,62 @@ nipo_policy_outputs <- function(raw_nipo,
     balance_alpha = balance_alpha
   )
   
+  # EU-wide measures are recorded once while member-state measures are counted
+  # separately, so any aggregation including both double-counts. The flag is
+  # always attached; eu_mode decides whether either side is dropped.
+  by_tech_sc <- neis_consolidate_eu_safe(by_tech_sc, mode = eu_mode)
+  by_tech_sc_year <- neis_consolidate_eu_safe(by_tech_sc_year, mode = eu_mode)
+
+  # NEIS framework layers. Built last, from the allocation table, and returned
+  # as a NEW list element: no existing element is modified.
+  neis_panel_out <- NULL
+  if (isTRUE(include_neis_panel) && !exists("neis_panel", mode = "function")) {
+    warning("include_neis_panel = TRUE but nipo_neis_extensions.R is not loaded; ",
+            "returning neis_panel = NULL.", call. = FALSE)
+  } else if (isTRUE(include_neis_panel)) {
+    neis_panel_out <- tryCatch(
+      neis_panel(
+        nipo_out = list(
+          by_tech_sc = by_tech_sc,
+          internals = list(policy_alloc_tech_sc = tech_sc_out$policy_alloc)
+        ),
+        as_of_date = policy_asof$as_of_date[1],
+        eu_mode = eu_mode
+      ),
+      error = function(e) {
+        warning("neis_panel() skipped: ", conditionMessage(e), call. = FALSE)
+        NULL
+      }
+    )
+  }
+
   list(
     by_policy = by_policy,
     by_hs6 = by_hs6,
     by_tech_sc = by_tech_sc,
     by_tech_sc_year = by_tech_sc_year,
     by_cpc = by_cpc,
+    neis_panel = neis_panel_out,
+    # What this run actually did. Additive: no existing element is changed.
+    dis_settings = list(
+      confidence_mode = confidence_mode,
+      conf_threshold = conf_threshold,
+      include_geo_in_strength = isTRUE(include_geo_in_strength),
+      strength_constant = strength_constant,
+      scale_mode = scale_mode,
+      scope_mode = scope_mode,
+      unclear_status_weight = unclear_status_weight,
+      unknown_status_weight = unknown_status_weight,
+      neutral_status_weight = neutral_status_weight,
+      pctile_singleton_value = pctile_singleton_value,
+      crosscutting_mode = crosscutting_mode,
+      eu_mode = eu_mode,
+      clamp_future_as_of = isTRUE(clamp_future_as_of),
+      clean_source_text = isTRUE(clean_source_text),
+      as_of_date = as.character(policy_asof$as_of_date[1]),
+      dis_legacy_mode = isTRUE(dis_legacy_mode),
+      keyword_dictionary = if (isTRUE(dis_legacy_mode)) "legacy" else "bounded"
+    ),
     internals = list(
       nipo_country = nipo_country,
       policy_base = policy_base,
@@ -2197,6 +3213,24 @@ nipo_policy_outputs <- function(raw_nipo,
 }
 
 # ==============================================================================
+
+# ------------------------------------------------------------------------------
+# NEIS extension layer
+# ------------------------------------------------------------------------------
+# Sourced here so that a caller who sources only this file still gets
+# neis_panel() and neis_consolidate_eu(). It must come AFTER everything above,
+# because the extension module calls helpers defined here. If the path cannot be
+# resolved, nipo_policy_outputs() degrades via neis_consolidate_eu_safe() and
+# the exists() guard on neis_panel().
+if (!exists("neis_panel", mode = "function")) {
+  local({
+    p <- tryCatch(
+      file.path(dirname(sys.frame(1)$ofile), "nipo_neis_extensions.R"),
+      error = function(e) NA_character_
+    )
+    if (!is.na(p) && file.exists(p)) source(p)
+  })
+}
 
 # ------------------------------------------------------------------------------
 # Backwards-compatible alias (clearer name)
