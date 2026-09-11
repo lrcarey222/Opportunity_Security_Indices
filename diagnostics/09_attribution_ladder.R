@@ -248,12 +248,41 @@ if (!file.exists(baseline_path)) {
   cat("baseline rows: ", nrow(baseline), "   v0 rows: ", nrow(rungs$v0),
       "   matched: ", nrow(cmp), "\n", sep = "")
   d <- abs(cmp$base_score - cmp$score_v0)
+  rel <- d / pmax(abs(cmp$base_score), 1e-12)
   cat("max abs difference in domestic_stock_sum: ", format(max(d, na.rm = TRUE)), "\n", sep = "")
+  cat("max rel difference                      : ", format(max(rel, na.rm = TRUE)), "\n", sep = "")
   cat("rows differing by more than 1e-8        : ",
       sum(d > 1e-8, na.rm = TRUE), "\n", sep = "")
   cat("spearman(baseline, v0)                  : ",
       round(suppressWarnings(stats::cor(cmp$base_score, cmp$score_v0,
                                         method = "spearman")), 6), "\n", sep = "")
+
+  # Persist the verdict so tests/testthat/test-nipo-policy-index.R can assert on
+  # it without needing the 25 MB export and several GB of memory in the test
+  # process. This is what makes the golden-file regression a real numeric check
+  # rather than a column-shape check.
+  utils::write.csv(
+    tibble::tibble(
+      metric = c("baseline_rows", "legacy_rung_rows", "matched_rows",
+                 "max_abs_diff", "max_rel_diff", "rows_over_1e8",
+                 "spearman", "nipo_export", "captured_at_utc"),
+      value = c(nrow(baseline), nrow(rungs$v0), nrow(cmp),
+                format(max(d, na.rm = TRUE), scientific = TRUE),
+                format(max(rel, na.rm = TRUE), scientific = TRUE),
+                sum(d > 1e-8, na.rm = TRUE),
+                suppressWarnings(stats::cor(cmp$base_score, cmp$score_v0,
+                                            method = "spearman")),
+                basename(nipo_policy_path),
+                format(Sys.time(), tz = "UTC", usetz = TRUE))
+    ),
+    file.path(out_dir, "legacy_vs_baseline.csv"), row.names = FALSE
+  )
+
+  # Full per-cell scores, so a failure can be localised rather than just
+  # reported as a max.
+  utils::write.csv(cmp, file.path(out_dir, "legacy_vs_baseline_rows.csv"),
+                   row.names = FALSE)
+  cat("\nWrote legacy_vs_baseline.csv and legacy_vs_baseline_rows.csv\n")
 }
 
 message("\nWrote attribution_ladder.csv and attribution_summary.csv")
