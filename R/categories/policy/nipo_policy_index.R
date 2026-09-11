@@ -2006,21 +2006,48 @@ build_policy_base <- function(nipo_country_tbl,
 # 3) Add "as-of" stock/flow flags (used for outputs 1-3)
 # ==============================================================================
 
+#' @param clamp_future_as_of when as_of_date is inferred rather than passed,
+#'   ignore dates in the future. The default inference is
+#'   max(announce_date, impl_date) over the whole inventory, so a single
+#'   future-dated phase-in sets the as-of date for every row: on the July 2026
+#'   export, 241 records carry implementation dates up to 2028-10-01 (staged
+#'   phase-ins of one EU sanctions package), which pushed as_of_date more than
+#'   two years past the end of the data. That treated not-yet-in-force measures
+#'   as active stock, counted removals scheduled before 2028 as already removed,
+#'   left the flow window covering a period with almost no events, and inflated
+#'   exposure_days for every in-force measure.
+#'
+#'   TRUE (default) clamps the inference to dates at or before today. FALSE
+#'   restores the old inference and is what dis_legacy_mode uses. An explicitly
+#'   passed as_of_date is always honoured as given, future or not.
 add_asof_flags <- function(policy_base_tbl,
                            as_of_date = NULL,
-                           flow_window_days = 365) {
+                           flow_window_days = 365,
+                           clamp_future_as_of = TRUE) {
   if (is.null(as_of_date)) {
     cand <- c(as_date_safe(policy_base_tbl$announce_date), as_date_safe(policy_base_tbl$impl_date))
     cand <- cand[!is.na(cand)]
-    
+
     if (length(cand) == 0) {
       stop(
         "as_of_date is NULL and no announcement/implementation dates are available. ",
         "Pass as_of_date explicitly for reproducible stock comparisons."
       )
     }
-    
-    as_of_date <- max(cand)
+
+    if (isTRUE(clamp_future_as_of)) {
+      today <- Sys.Date()
+      past <- cand[cand <= today]
+      if (length(past) == 0) {
+        stop(
+          "as_of_date is NULL and every announcement/implementation date is in ",
+          "the future. Pass as_of_date explicitly."
+        )
+      }
+      as_of_date <- max(past)
+    } else {
+      as_of_date <- max(cand)
+    }
   }
   as_of_date <- as_date_safe(as_of_date)
   flow_start <- as_of_date - as.difftime(flow_window_days, units = "days")
@@ -2905,6 +2932,7 @@ nipo_policy_outputs <- function(raw_nipo,
                                                       "uniform"),
                                 eu_mode = c("both_flagged", "member_only", "eu_only"),
                                 include_neis_panel = TRUE,
+                                clamp_future_as_of = TRUE,
                                 dis_legacy_mode = FALSE) {
   crosscutting_mode <- match.arg(crosscutting_mode)
   eu_mode <- match.arg(eu_mode)
@@ -2932,6 +2960,7 @@ nipo_policy_outputs <- function(raw_nipo,
     # changed, so only the former is restored here.
     pctile_singleton_value <- 1
     crosscutting_mode <- "uniform"
+    clamp_future_as_of <- FALSE
   } else {
     tech_dict <- TECH_KEYWORDS
     sc_dict <- SUPPLY_CHAIN_KEYWORDS
@@ -3003,7 +3032,8 @@ nipo_policy_outputs <- function(raw_nipo,
   policy_asof <- add_asof_flags(
     policy_base_tbl = policy_base,
     as_of_date = as_of_date,
-    flow_window_days = flow_window_days
+    flow_window_days = flow_window_days,
+    clamp_future_as_of = clamp_future_as_of
   )
   
   by_policy <- build_by_policy(policy_asof, cpc_names = cpc_names,
@@ -3113,6 +3143,8 @@ nipo_policy_outputs <- function(raw_nipo,
       pctile_singleton_value = pctile_singleton_value,
       crosscutting_mode = crosscutting_mode,
       eu_mode = eu_mode,
+      clamp_future_as_of = isTRUE(clamp_future_as_of),
+      as_of_date = as.character(policy_asof$as_of_date[1]),
       dis_legacy_mode = isTRUE(dis_legacy_mode),
       keyword_dictionary = if (isTRUE(dis_legacy_mode)) "legacy" else "bounded"
     ),
