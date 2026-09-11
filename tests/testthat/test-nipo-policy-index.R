@@ -1213,6 +1213,74 @@ test_that("no baseline output column has been dropped from by_tech_sc", {
   expect_true(all(index_cols %in% names(idx)))
 })
 
+# ==============================================================================
+# Source citation scaffolding stripped before keyword matching
+# ==============================================================================
+
+test_that("neis_clean_source strips URLs", {
+  x <- "NIB (13 October 2025). NIB finances large-scale wind farm in Latvia: https://www.nib.int/news/nib-financ"
+  out <- neis_clean_source(x)
+  expect_false(grepl("https?://", out))
+  # The headline, which is the part carrying real signal, survives.
+  expect_true(grepl("wind farm", out))
+})
+
+test_that("neis_clean_source strips the retrieval boilerplate, case-insensitively", {
+  expect_equal(neis_clean_source("Gazette (retrieved on 7 June 2026). Decree"),
+               "Gazette . Decree")
+  expect_equal(neis_clean_source("Gazette (Retrieved on 7 June 2026). Decree"),
+               "Gazette . Decree")
+  # "retrieved" without "on" is also handled.
+  expect_equal(neis_clean_source("Gazette (retrieved 7 June 2026). Decree"),
+               "Gazette . Decree")
+  # A parenthetical that is NOT a retrieval note is left alone.
+  expect_true(grepl("1 December 2025",
+                    neis_clean_source("NIB (1 December 2025). Wind farm")))
+})
+
+test_that("neis_clean_source removes the URL path tokens that caused the noise", {
+  # The two worst offenders in the term audit: "pipeline" hit 26 titles but 439
+  # sources, and "component" 17 against 287, both roughly 17x.
+  expect_false(grepl("pipeline",
+    neis_clean_source("EIB (2025). Loan agreement: https://eib.org/energy-pipeline-projects/x")))
+  expect_false(grepl("component",
+    neis_clean_source("EIB (2025). Loan: https://eib.org/components/list")))
+
+  # A genuine mention outside a URL is retained.
+  expect_true(grepl("pipeline",
+    neis_clean_source("EIB (2025). Financing for a gas pipeline: https://eib.org/x")))
+})
+
+test_that("neis_clean_source handles NA and empty input", {
+  expect_equal(neis_clean_source(NA_character_), "")
+  expect_equal(neis_clean_source(""), "")
+  expect_length(neis_clean_source(c("a", NA, "b https://x/y")), 3)
+})
+
+test_that("clean_source_text is on by default and reversible", {
+  raw_nipo <- tibble::tibble(
+    `Product: HS 6-digit (2022)` = "123456",
+    `Implementing Jurisdiction` = "United States",
+    Title = "Support measure",
+    Source = "Agency (2025). Wind farm: https://x.org/energy-pipeline-projects/a"
+  )
+  subcat_raw <- tibble::tibble(HS6 = "123456", Technology = "Wind",
+                              Value.Chain = "Midstream", Sub.Sector = "Wind")
+
+  cleaned <- clean_nipo_raw(raw_nipo, subcat_raw)
+  expect_false(grepl("https?://", cleaned$source_text))
+  expect_false(grepl("pipeline", cleaned$source_text))
+  expect_true(grepl("Wind farm", cleaned$source_text))
+
+  legacy <- clean_nipo_raw(raw_nipo, subcat_raw, clean_source_text = FALSE)
+  expect_true(grepl("https?://", legacy$source_text))
+  expect_true(grepl("pipeline", legacy$source_text))
+
+  # The raw Source column is never modified in either mode.
+  expect_equal(cleaned$Source, raw_nipo$Source)
+  expect_equal(legacy$Source, raw_nipo$Source)
+})
+
 test_that("neis_audit_keywords() reports hit rates in the documented shape", {
   txt <- c(
     "support for ai chip fabrication",

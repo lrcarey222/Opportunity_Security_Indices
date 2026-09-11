@@ -1169,6 +1169,41 @@ is_advanced_tech <- function(tech) {
 #      unanchored "fabs?" matches "fab-ric".
 NEIS_KEYWORD_REGEX_CHARS <- "\\\\b|\\\\w|\\[|\\]|\\?|\\+|\\{|\\(|\\)|\\||\\*"
 
+#' Strip citation scaffolding out of the Source field before keyword matching.
+#'
+#' `Source` is not a URL field: it is a bibliographic citation averaging 613
+#' characters, holding publisher, native-language name, date, document title,
+#' press-release headline and a retrieval URL. 51% of all keyword hits come
+#' from Source alone, and most of them are CORRECT - GTA titles routinely name
+#' the instrument and the borrower without naming the technology, so the
+#' citation headline is what identifies it:
+#'
+#'   Title : "Latvia: NIB signs EUR 28 million loan agreement with SIA WPR2"
+#'   Source: "nib finances large-scale wind farm in latvia"
+#'
+#' So Source is kept. What is removed is the scaffolding around the headline:
+#'
+#'   1. URLs. Path segments are arbitrary tokens that match dictionary terms by
+#'      coincidence: /energy-pipeline-projects/, /components/. This is visible
+#'      in the term-level audit as a large source-to-title ratio - "pipeline"
+#'      hits 26 titles but 439 sources, and "component" 17 against 287, both
+#'      roughly 17x, where a genuine headline signal sits nearer 1-2x.
+#'   2. The "(retrieved on ...)" boilerplate, present on 14,247 rows. Harmless
+#'      in itself, but it lengthens the haystack for no signal.
+#'
+#' Note this only affects which tech x stage cell a policy's strength lands in,
+#' never a country's total: alloc = mapped_share * combo_weight /
+#' sum(combo_weight), so the weights redistribute within a policy and sum to
+#' mapped_share regardless.
+neis_clean_source <- function(x) {
+  x <- dplyr::coalesce(as.character(x), "")
+  x <- stringr::str_remove_all(x, "https?://\\S+")
+  x <- stringr::str_remove_all(
+    x, stringr::regex("\\(retrieved(\\s+on)?[^)]*\\)", ignore_case = TRUE)
+  )
+  stringr::str_squish(x)
+}
+
 #' Wrap a dictionary term in word boundaries.
 #'
 #' Terms that already carry regex syntax are returned unchanged, so "\\bpv\\b",
@@ -1541,10 +1576,15 @@ allocate_policy_to_tech_sc <- function(policy_tbl,
 #    - Computes distinct total_hs6 and matched_hs6 (not inflated by many-to-many joins)
 # ==============================================================================
 
+#' @param clean_source_text strip URLs and "(retrieved on ...)" boilerplate out
+#'   of source_text before it is used for keyword matching. See
+#'   neis_clean_source(). The raw `Source` column is left untouched. FALSE
+#'   restores the unfiltered text and is what dis_legacy_mode uses.
 clean_nipo_raw <- function(raw_nipo,
                            subcat_raw,
                            country_info = NULL,
-                           hs6_essential_tbl = NULL) {
+                           hs6_essential_tbl = NULL,
+                           clean_source_text = TRUE) {
   check_required_columns(raw_nipo, c("Product: HS 6-digit (2022)", "Implementing Jurisdiction"), "raw_nipo")
   check_required_columns(subcat_raw, c("HS6", "Technology", "Value.Chain", "Sub.Sector"), "subcat_raw")
   
@@ -1648,7 +1688,11 @@ clean_nipo_raw <- function(raw_nipo,
         ""
       },
       source_text = if (!is.na(source_col)) {
-        dplyr::coalesce(as.character(.data[[source_col]]), "")
+        if (isTRUE(clean_source_text)) {
+          neis_clean_source(.data[[source_col]])
+        } else {
+          dplyr::coalesce(as.character(.data[[source_col]]), "")
+        }
       } else {
         ""
       }
@@ -2933,6 +2977,7 @@ nipo_policy_outputs <- function(raw_nipo,
                                 eu_mode = c("both_flagged", "member_only", "eu_only"),
                                 include_neis_panel = TRUE,
                                 clamp_future_as_of = TRUE,
+                                clean_source_text = TRUE,
                                 dis_legacy_mode = FALSE) {
   crosscutting_mode <- match.arg(crosscutting_mode)
   eu_mode <- match.arg(eu_mode)
@@ -2961,6 +3006,7 @@ nipo_policy_outputs <- function(raw_nipo,
     pctile_singleton_value <- 1
     crosscutting_mode <- "uniform"
     clamp_future_as_of <- FALSE
+    clean_source_text <- FALSE
   } else {
     tech_dict <- TECH_KEYWORDS
     sc_dict <- SUPPLY_CHAIN_KEYWORDS
@@ -2986,7 +3032,8 @@ nipo_policy_outputs <- function(raw_nipo,
     raw_nipo = raw_nipo,
     subcat_raw = subcat_raw,
     country_info = country_info,
-    hs6_essential_tbl = hs6_essential_tbl
+    hs6_essential_tbl = hs6_essential_tbl,
+    clean_source_text = clean_source_text
   )
   
   cpc_hs <- get_cpc_hs_map()
@@ -3144,6 +3191,7 @@ nipo_policy_outputs <- function(raw_nipo,
       crosscutting_mode = crosscutting_mode,
       eu_mode = eu_mode,
       clamp_future_as_of = isTRUE(clamp_future_as_of),
+      clean_source_text = isTRUE(clean_source_text),
       as_of_date = as.character(policy_asof$as_of_date[1]),
       dis_legacy_mode = isTRUE(dis_legacy_mode),
       keyword_dictionary = if (isTRUE(dis_legacy_mode)) "legacy" else "bounded"
