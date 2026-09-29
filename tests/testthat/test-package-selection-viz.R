@@ -1,5 +1,7 @@
-source(file.path("R", "utils", "scurve.R"))
-source(file.path("R", "charts", "package_selection_viz.R"))
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
+
+source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "charts", "package_selection_viz.R"))
 
 test_that("build_country_strategic_tbl returns expected columns", {
   index_outputs <- list(

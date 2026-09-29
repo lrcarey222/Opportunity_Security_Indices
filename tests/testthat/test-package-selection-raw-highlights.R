@@ -1,6 +1,8 @@
-source(file.path("R", "utils", "scurve.R"))
-source(file.path("R", "charts", "package_selection_viz.R"))
-source(file.path("R", "charts", "package_selection_raw_highlights.R"))
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
+
+source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "charts", "package_selection_viz.R"))
+source(file.path(repo_root, "R", "charts", "package_selection_raw_highlights.R"))
 
 test_that("build_top_variable_contrib_long returns top_k by sector", {
   var_tbl <- tibble::tibble(

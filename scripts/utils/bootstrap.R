@@ -67,9 +67,18 @@ ensure_packages <- function(pkgs, install_if_missing = FALSE, quiet = TRUE) {
 }
 
 find_repo_root_from_bootstrap <- function() {
-  bootstrap_path <- sys.frame(1)$ofile
-  if (is.null(bootstrap_path) || !nzchar(bootstrap_path)) {
-    stop("bootstrap.R could not determine its own source path via sys.frame(1)$ofile.")
+  # sys.frame(1) is the source() call only when bootstrap.R is sourced at top level. Inside
+  # test_that() or another function it is not, so search every frame for the source() call
+  # whose file is bootstrap.R, preferring the innermost.
+  frame_ofiles <- vapply(sys.frames(), function(fr) {
+    val <- tryCatch(fr$ofile, error = function(e) NULL)
+    if (is.character(val) && length(val) == 1 && nzchar(val)) val else ""
+  }, character(1))
+  frame_ofiles <- frame_ofiles[nzchar(frame_ofiles)]
+  bootstrap_ofiles <- frame_ofiles[basename(frame_ofiles) == "bootstrap.R"]
+  bootstrap_path <- if (length(bootstrap_ofiles) > 0) utils::tail(bootstrap_ofiles, 1) else ""
+  if (!nzchar(bootstrap_path)) {
+    stop("bootstrap.R could not determine its own source path from the source() call frames.")
   }
 
   start_dir <- dirname(normalizePath(bootstrap_path, winslash = "/", mustWork = FALSE))
