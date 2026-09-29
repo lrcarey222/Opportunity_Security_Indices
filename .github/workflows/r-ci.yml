@@ -22,10 +22,22 @@ jobs:
         if: ${{ hashFiles('renv.lock') != '' }}
         uses: r-lib/actions/setup-renv@v2
 
+      # Verified rather than trusted: install.packages() warns and exits 0 on failure.
       - name: Install dependencies (packages)
         if: ${{ hashFiles('renv.lock') == '' }}
         run: |
-          Rscript -e "install.packages(c('dplyr','tidyr','stringr','readr','readxl','tibble','purrr','glue','rlang','yaml','rprojroot','countrycode','WDI','comtradr','magrittr','progress','lubridate','curl','jsonlite'), repos='https://packagemanager.posit.co/cran/__linux__/noble/latest')"
+          Rscript -e "packages <- c('dplyr','tidyr','stringr','readr','readxl','tibble','purrr','glue','rlang','yaml','rprojroot','countrycode','WDI','comtradr','magrittr','progress','lubridate','curl','jsonlite'); install.packages(packages, repos = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'); missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop('dependency install failed for: ', paste(missing, collapse = ', '))"
+
+      # config/config.yml is gitignored, so opsi_bootstrap() could never find one here and
+      # the job died on "Config file not found" before reaching any of the build. That
+      # message is not matched by the skip patterns below, so it failed rather than skipped.
+      # The example config points raw_data_dir at data/raw, which is what the skip path
+      # below expects to find empty.
+      - name: Seed CI config
+        run: |
+          if [ ! -f config/config.yml ]; then
+            cp config/config.example.yml config/config.yml
+          fi
 
       - name: Build themes
         run: |

@@ -18,10 +18,14 @@
 IMF_SDMX_BASE <- "https://api.imf.org/external/sdmx/3.0"
 IMF_SDMX_CSV_ACCEPT <- "application/vnd.sdmx.data+csv;version=2.0.0;labels=both"
 
-# How far back to keep observations. The consumers take the latest value per country,
-# so the window is really about coverage, not recency: countries whose series stopped
+# How far back to keep observations. The consumers key off the latest value per country,
+# so the window is mostly about coverage, not recency: countries whose series stopped
 # reporting years ago drop out entirely if the window is too short. 1990 reproduces the
 # country coverage of the staged Data Explorer extracts. Override with OPSI_IMF_START_YEAR.
+#
+# PPI additionally needs the observation twelve months before each country's latest one -
+# cost_competitiveness_build_ppi() indexes year-on-year change, not the index level - so a
+# window that reaches back only a year or two would silently empty that leg.
 imf_window_start_year <- function(default_start = 1990L) {
   configured <- suppressWarnings(as.integer(Sys.getenv("OPSI_IMF_START_YEAR", "")))
   if (!is.na(configured)) configured else default_start
