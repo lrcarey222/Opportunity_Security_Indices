@@ -51,6 +51,7 @@ jobs:
         run: |
           R -q -e 'testthat::test_dir("tests/testthat")'
 
+      # R/ code expects dplyr attached (bootstrap.R attaches it for the pipeline).
       - name: Run smoke test
         run: |
-          R -q -e 'source("R/utils/schema.R"); source("R/utils/levels.R"); source("R/indices/build_energy_security_index_v2.R"); index_definition <- yaml::read_yaml("tests/fixtures/index_definition.yml"); options(opportunity_security.index_definition = index_definition); theme_tbl <- read.csv("tests/fixtures/energy_security_theme.csv", stringsAsFactors = FALSE); theme_tbl <- theme_tbl[!is.na(theme_tbl$value), ]; outputs <- build_energy_security_index_v2(theme_tables = list(energy_access_consumption = theme_tbl), weights = list(`Energy Access` = 0.5, Reliability = 0.5), allow_partial_categories = TRUE, include_sub_sector = FALSE); stopifnot(nrow(outputs$energy_security_index) > 0)'
+          R -q -e 'suppressPackageStartupMessages(library(dplyr)); source("R/utils/schema.R"); source("R/utils/levels.R"); source("R/indices/build_energy_security_index_v2.R"); index_definition <- yaml::read_yaml("tests/fixtures/index_definition.yml"); options(opportunity_security.index_definition = index_definition); theme_tbl <- read.csv("tests/fixtures/energy_security_theme.csv", stringsAsFactors = FALSE); theme_tbl <- theme_tbl[!is.na(theme_tbl$value), ]; outputs <- build_energy_security_index_v2(theme_tables = list(energy_access_consumption = theme_tbl), weights = list(`Energy Access` = 0.5, Reliability = 0.5), allow_partial_categories = TRUE, include_sub_sector = FALSE); stopifnot(nrow(outputs$energy_security_index) > 0)'

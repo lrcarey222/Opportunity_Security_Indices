@@ -983,6 +983,8 @@ allied_network_solve_stage_greedy_scaled <- function(nodes_stage,
   require_columns(nodes_stage, c("iso3c", "producer_score", "demand_weight", "dev_potential"), label = "nodes_stage")
   require_columns(edges_stage, c("reporter_iso", "partner_iso", "edge_weight"), label = "edges_stage")
   iso <- as.character(nodes_stage$iso3c)
+  eligible_iso <- setdiff(iso, producer_forbidden)
+  if (!length(eligible_iso)) eligible_iso <- iso
   target_total_usd <- suppressWarnings(as.numeric(target_total_usd))
   if (!is.finite(target_total_usd) || target_total_usd <= 0) stop("target_total_usd must be positive.")
 

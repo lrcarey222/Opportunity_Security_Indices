@@ -2,6 +2,7 @@ repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRU
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "indices", "allied_network_design.R"))
 
