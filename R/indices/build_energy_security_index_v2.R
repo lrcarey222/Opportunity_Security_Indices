@@ -293,20 +293,10 @@ build_energy_security_index_v2 <- function(theme_tables,
       missing_rule_applied = dplyr::na_if(missing_rule_applied, "")
     )
 
-  component_contributions <- component_contributions %>%
-    dplyr::rename(component_value = value) %>%
-    dplyr::select(
-      Country,
-      tech,
-      supply_chain,
-      sub_sector,
-      category,
-      variable,
-      component_value,
-      component_weight_within_overall,
-      missing_rule_applied,
-      imputed
-    )
+  component_contributions <- normalize_component_contributions(
+    component_contributions,
+    include_sub_sector = include_sub_sector
+  )
 
   variable_contributions <- dplyr::bind_rows(
     component_contributions,

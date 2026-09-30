@@ -54,7 +54,9 @@ standardize_theme_types <- function(tbl, country_info = NULL) {
       category = as.character(category),
       variable = as.character(variable),
       data_type = as.character(data_type),
-      Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$"))),
+      # First four-digit run, matching standardize_theme_table() and normalize_year(); the
+      # end-anchored form could not parse an ISO date such as "2022-01-01".
+      Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}"))),
       value = suppressWarnings(as.numeric(value)),
       source = as.character(source),
       explanation = as.character(explanation)
