@@ -15,10 +15,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Matches credential values, not env-var names: Comtrade keys are 32 hex, Datawrapper tokens
+      # 64 alphanumerics, the rest fixed provider prefixes. No -i, and prefixes can't follow a base64
+      # char, because fantasy-draft's image data URIs contain "akia" + 16 letters by chance. Hits
+      # print as file:line only, to keep keys out of the public log; exit >1 is a grep error, not a
+      # clean tree. renv.lock hashes are quoted 32-hex; a Firebase web apiKey is public by design.
       - name: Secret scan
         run: |
-          pattern='(DATA'"'"'WRAPPER|api\\.data'"'"'wrapper|sk-[A-Za-z0-9]|Bea'"'"'rer [A-Za-z0-9]|OPENAI'"'"'_API_KEY)'
-          git grep -n -E "$pattern" -- . ':(exclude)Legacy Scripts/**'
+          status=0
+          hits=$(git grep -n -I -E \
+            -e "[\"'][0-9a-fA-F]{32}[\"']" \
+            -e "(key|Key|KEY|token|Token|TOKEN|secret|Secret|SECRET|auth|Auth|AUTH|passw|Passw|PASSW)[^\"']*[\"'][A-Za-z0-9]{32,}[\"']" \
+            -e '[Bb]earer [A-Za-z0-9._~+/=-]{20,}' \
+            -e '(^|[^A-Za-z0-9+/])(sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|AIza[0-9A-Za-z_-]{35})' \
+            -e '-----BEGIN ([A-Z]+ )?PRIVATE KEY-----' \
+            -- . ':(exclude)renv.lock' ':(exclude)fantasy-draft/firebase-config.js') || status=$?
+          if [ "$status" -gt 1 ]; then
+            echo "::error::git grep failed with exit $status, so the secret scan did not run"
+            exit "$status"
+          fi
+          if [ -n "$hits" ]; then
+            printf '%s\n' "$hits" | cut -d: -f1,2 | while IFS=: read -r file line; do
+              echo "::error file=$file,line=$line::Possible hard-coded credential"
+            done
+            echo "Move each value to an environment variable (e.g. in ~/.Renviron) and read it with Sys.getenv()."
+            exit 1
+          fi
+          echo "No literal credentials found."
 
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
