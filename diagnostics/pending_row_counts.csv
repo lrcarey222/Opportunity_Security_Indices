@@ -1,0 +1,7 @@
+"stage","rows","distinct_policies","pending_policies"
+"raw_nipo",55271,55271,4723
+"nipo_country",55271,55271,NA
+"policy_base",55271,55271,4723
+"policy_asof",55271,55271,4723
+"by_policy",55271,55271,4723
+"allocation_table",134672,55271,4723

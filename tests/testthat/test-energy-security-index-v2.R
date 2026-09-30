@@ -1,7 +1,8 @@
-repo_root <- getwd()
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "indices", "index_builder_core.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index_v2.R"))
 
 test_that("normalize_year handles character and integer years", {
