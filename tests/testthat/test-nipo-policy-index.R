@@ -1,3 +1,26 @@
+# Tests for R/categories/policy/nipo_policy_index.R
+#
+# Resolve the repo root from the test file rather than getwd(): testthat sets the
+# working directory to tests/testthat, so relative source() paths would break.
+repo_root <- normalizePath(testthat::test_path("..", ".."), winslash = "/", mustWork = TRUE)
+
+# median_scurve() and standardize_country_names() must exist before the index
+# script is sourced, or its own fallback source() block fires and fails.
+source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "utils", "country.R"))
+source(file.path(repo_root, "R", "categories", "policy", "nipo_policy_index.R"))
+
+# ==============================================================================
+# Pre-existing tests
+# ------------------------------------------------------------------------------
+# These four blocks predate the DIS de-biasing work and are kept as-is, except
+# that the two keyword blocks passed tech/stage labels that are not keys in
+# TECH_KEYWORDS ("Semiconductors Midstream", "Magnets Upstream (rare earths)").
+# TECH_KEYWORDS[["Semiconductors Midstream"]] is NULL, so keyword_evidence()
+# returned FALSE and those expect_true() calls could never have held. They now
+# use the real dictionary keys, preserving the original intent.
+# ==============================================================================
+
 test_that("normalize_chr_vec trims and de-duplicates tech labels", {
   vals <- c("Green Hydrogen", " Green Hydrogen ", "Geothermal", "Geothermal  ", "")
 
@@ -28,25 +51,25 @@ test_that("clean_nipo_raw trims Technology and Value.Chain labels from subcat ma
 
 test_that("keyword matching detects added semiconductor and magnet technologies", {
   expect_true(keyword_evidence(
-    "Semiconductors Midstream",
+    "Semiconductors",
     title = "New wafer fab and advanced chip packaging incentives",
     source = ""
   ))
 
   expect_true(keyword_evidence(
-    "Semiconductors Downstream (datacenters & AI)",
+    "Semiconductors",
     title = "Tax relief for AI datacenter GPU clusters",
     source = ""
   ))
 
   expect_true(keyword_evidence(
-    "Magnets Upstream (rare earths)",
+    "Magnets",
     title = "Rare earth mining and NdPr extraction support",
     source = ""
   ))
 
   expect_true(keyword_evidence(
-    "Magnets Midstream",
+    "Magnets",
     title = "Investment in NdFeB magnet manufacturing",
     source = ""
   ))

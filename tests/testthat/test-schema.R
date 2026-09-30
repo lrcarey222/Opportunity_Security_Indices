@@ -7,7 +7,7 @@ test_that("validate_schema accepts valid data", {
     variable = "Metric",
     data_type = "raw",
     value = 1.2,
-    Year = 2024,
+    Year = 2024L,
     source = "Test",
     explanation = "Example",
     stringsAsFactors = FALSE

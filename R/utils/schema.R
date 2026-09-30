@@ -92,6 +92,19 @@ assert_unique_keys <- function(tbl, keys, label = "table") {
   invisible(tbl)
 }
 
+# Year as integer from a year, a date, or a label. ISO dates ("2022-01-01", "2022-01")
+# take their leading year; anything else takes a trailing four-digit year, so a range
+# such as "2020-2022" resolves to its end year.
+extract_year_int <- function(x) {
+  if (inherits(x, "Date") || inherits(x, "POSIXt")) {
+    return(as.POSIXlt(x)$year + 1900L)
+  }
+  values <- as.character(x)
+  iso_year <- stringr::str_match(values, "^(\\d{4})-\\d{2}(-\\d{2})?([ T].*)?$")[, 2]
+  year_text <- dplyr::coalesce(iso_year, stringr::str_extract(values, "\\d{4}$"))
+  suppressWarnings(as.integer(year_text))
+}
+
 standardize_theme_table <- function(tbl) {
   if (is.null(tbl)) {
     return(tbl)
@@ -109,7 +122,7 @@ standardize_theme_table <- function(tbl) {
       category = as.character(category),
       variable = as.character(variable),
       data_type = as.character(data_type),
-      Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$"))),
+      Year = extract_year_int(Year),
       value = suppressWarnings(as.numeric(value)),
       source = as.character(source),
       explanation = as.character(explanation)
@@ -126,7 +139,7 @@ standardize_bind_rows_inputs <- function(tbl) {
   }
 
   if ("Year" %in% names(tbl)) {
-    tbl$Year <- suppressWarnings(as.integer(stringr::str_extract(as.character(tbl$Year), "\\d{4}$")))
+    tbl$Year <- extract_year_int(tbl$Year)
   }
 
   if ("value" %in% names(tbl)) {

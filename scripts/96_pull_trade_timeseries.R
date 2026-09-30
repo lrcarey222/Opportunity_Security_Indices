@@ -62,10 +62,7 @@ parse_bool_arg <- function(x, default = FALSE) {
 
 parse_years_arg <- function(years_arg) {
   current_year <- as.integer(format(Sys.Date(), "%Y"))
-  if (is.null(years_arg) || !nzchar(as.character(years_arg))) {
-    return((current_year - 5):(current_year - 1))
-  }
-
+  # Vectors first: nzchar() on one returns several values, which `||` rejects.
   if (length(years_arg) > 1) {
     years <- suppressWarnings(as.integer(years_arg))
     years <- sort(unique(stats::na.omit(years)))
@@ -73,6 +70,10 @@ parse_years_arg <- function(years_arg) {
       stop("Invalid years vector.")
     }
     return(years)
+  }
+
+  if (length(years_arg) == 0 || is.na(years_arg) || !nzchar(as.character(years_arg))) {
+    return((current_year - 5):(current_year - 1))
   }
 
   years_arg <- gsub("\\s+", "", as.character(years_arg)[[1]])

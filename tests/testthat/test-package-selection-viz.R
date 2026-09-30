@@ -1,8 +1,39 @@
-source(file.path("R", "utils", "scurve.R"))
-source(file.path("R", "charts", "package_selection_viz.R"))
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
+
+source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "charts", "package_selection_viz.R"))
+
+# Shape of the strategic_index table scripts/20_build_indices.R writes, which
+# build_country_strategic_tbl() reads rather than recomputes.
+make_strategic_index_tbl <- function(country, tech, supply_chain, strategic_index) {
+  tibble::tibble(
+    Country = country,
+    tech = tech,
+    supply_chain = supply_chain,
+    eo = 0.5,
+    es = 0.5,
+    pol = 0.5,
+    trl_index = 0.5,
+    sc_weight = 0.5,
+    tech_weight = 0.5,
+    Economic_Opportunity_Index = 0.5,
+    Energy_Security_Index = 0.5,
+    strategic_index = strategic_index,
+    sector = paste(tech, supply_chain, sep = " - ")
+  )
+}
 
 test_that("build_country_strategic_tbl returns expected columns", {
   index_outputs <- list(
+    strategic_index = dplyr::bind_rows(
+      make_strategic_index_tbl(
+        "Japan",
+        c("Solar", "Wind", "Batteries"),
+        c("Upstream", "Midstream", "Downstream"),
+        c(0.4, 0.6, 0.5)
+      ),
+      make_strategic_index_tbl("India", "Solar", "Upstream", 0.9)
+    ),
     economic_opportunity_index = tibble::tibble(
       Country = c("Japan", "Japan", "Japan"),
       tech = c("Solar", "Wind", "Batteries"),
@@ -30,6 +61,8 @@ test_that("build_country_strategic_tbl returns expected columns", {
     "sc_weight", "tech_weight", "strategic_index", "sector_label"
   ) %in% names(out)))
   expect_equal(unique(out$Country), "Japan")
+  expect_equal(out$strategic_index, c(0.6, 0.5, 0.4))
+  expect_equal(out$sector_label[[1]], "Wind - Midstream")
 })
 
 test_that("CSV builders return wide format", {
@@ -108,7 +141,7 @@ test_that("plotting functions return ggplot objects", {
 })
 
 
-test_that("build_country_strategic_tbl handles missing optional ghg/trl tables", {
+test_that("build_country_strategic_tbl errors clearly without a strategic_index table", {
   index_outputs <- list(
     economic_opportunity_index = tibble::tibble(
       Country = c("India", "India"),
@@ -124,8 +157,5 @@ test_that("build_country_strategic_tbl handles missing optional ghg/trl tables",
     )
   )
 
-  out <- build_country_strategic_tbl(index_outputs, "India")
-
-  expect_equal(nrow(out), 2)
-  expect_true(all(!is.na(out$tech_weight)))
+  expect_error(build_country_strategic_tbl(index_outputs, "India"), "strategic_index")
 })

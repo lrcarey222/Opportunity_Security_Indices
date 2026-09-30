@@ -10,6 +10,9 @@ country_recode_map <- function() {
     "Korea, Rep." = "South Korea",
     "Republic of Korea" = "South Korea",
     "Korea, Dem. People's Rep." = "North Korea",
+    # WDI country_info names it "Viet Nam"; without this, tables standardized without a
+    # country_info join keep "Vietnam" and never meet the rest of the pipeline.
+    "Vietnam" = "Viet Nam",
     "Iran, Islamic Rep." = "Iran",
     "Turkey" = "Turkiye",
     # The EI mineral sheets spell it with the diaeresis; the EI and WDI country rosters

@@ -75,15 +75,14 @@ energy_prices_imf_monthly_usd_long <- function(imf_price) {
     dplyr::filter(!is.na(date))
 }
 
+# All monthly rows, whatever their DATA_TRANSFORMATION. The price pipeline wants the
+# US-dollar levels only and calls energy_prices_imf_monthly_usd_long() for them.
 energy_prices_imf_monthly_long <- function(imf_price) {
   monthly_re <- "^X\\d{4}\\.M\\d{2}$"
 
-  imf_price_filtered <- if (all(c("FREQUENCY", "DATA_TRANSFORMATION") %in% names(imf_price))) {
+  imf_price_filtered <- if ("FREQUENCY" %in% names(imf_price)) {
     imf_price %>%
-      dplyr::filter(
-        FREQUENCY == "Monthly",
-        DATA_TRANSFORMATION == "US dollars"
-      )
+      dplyr::filter(FREQUENCY == "Monthly")
   } else {
     imf_price
   }
@@ -105,14 +104,14 @@ energy_prices_imf_monthly_long <- function(imf_price) {
     dplyr::filter(!is.na(date))
 }
 
-energy_prices_imf_monthly_long <- function(imf_price) {
-  energy_prices_imf_monthly_usd_long(imf_price)
-}
-
 energy_prices_imf_annual_yoy_long <- function(imf_price) {
   year_re <- "^X\\d{4}$"
 
   if (!all(c("INDICATOR", "FREQUENCY", "DATA_TRANSFORMATION") %in% names(imf_price))) {
+    return(tibble::tibble(INDICATOR = character(), date = as.Date(character()), value = numeric()))
+  }
+
+  if (!any(grepl(year_re, names(imf_price)))) {
     return(tibble::tibble(INDICATOR = character(), date = as.Date(character()), value = numeric()))
   }
 
@@ -348,7 +347,7 @@ energy_prices_sub_sector_unit_lookup <- function(imf_price,
   imf_monthly_long <- if (all(c("date", "value") %in% names(imf_price))) {
     energy_prices_long_from_pcps(imf_price)
   } else {
-    energy_prices_imf_monthly_long(imf_price)
+    energy_prices_imf_monthly_usd_long(imf_price)
   }
 
   imf_monthly <- energy_prices_imf_clean(
@@ -493,7 +492,7 @@ energy_prices_build_volatility <- function(imf_monthly,
     ) %>%
     dplyr::left_join(annual_yoy_lookup, by = c("INDICATOR", "clean")) %>%
     dplyr::mutate(yoy_price_change_pct = yoy_price_change_pct_annual) %>%
-    dplyr::select(-yoy_price_change_pct_annual, -yoy_year, -latest_month_date) %>%
+    dplyr::select(-dplyr::any_of(c("yoy_price_change_pct_annual", "yoy_year", "latest_month_date"))) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(clean_key = energy_prices_normalize_mineral(clean)) %>%
     dplyr::left_join(mineral_map, by = "clean_key") %>%
@@ -682,7 +681,7 @@ energy_prices <- function(imf_price,
   imf_monthly_long <- if (all(c("date", "value") %in% names(imf_price))) {
     energy_prices_long_from_pcps(imf_price)
   } else {
-    energy_prices_imf_monthly_long(imf_price)
+    energy_prices_imf_monthly_usd_long(imf_price)
   }
   imf_monthly <- energy_prices_imf_clean(
     imf_monthly_long = imf_monthly_long,

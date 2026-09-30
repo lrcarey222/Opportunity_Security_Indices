@@ -36,12 +36,22 @@ jobs:
       - name: Install dependencies (packages)
         if: ${{ hashFiles('renv.lock') == '' }}
         run: |
-          Rscript -e "packages <- c('dplyr','tibble','stringr','testthat','yaml','purrr','tidyr','shiny','bslib','scales','countrycode','readr','curl','jsonlite'); install.packages(packages, repos = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'); missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop('dependency install failed for: ', paste(missing, collapse = ', '))"
+          Rscript -e "packages <- c('dplyr','tibble','stringr','testthat','yaml','purrr','tidyr','shiny','bslib','scales','countrycode','readr','curl','jsonlite','readxl','writexl','withr','ggplot2','glue','rlang','rprojroot','WDI','comtradr','magrittr','progress','lubridate'); install.packages(packages, repos = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'); missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop('dependency install failed for: ', paste(missing, collapse = ', '))"
+
+      # tests/testthat/test-bootstrap-smoke.R and test-comtrade-unification.R source
+      # scripts/utils/bootstrap.R, which loads the core packages above and reads
+      # config/config.yml. That file is gitignored, so seed it from the example as r-ci.yml does.
+      - name: Seed CI config
+        run: |
+          if [ ! -f config/config.yml ]; then
+            cp config/config.example.yml config/config.yml
+          fi
 
       - name: Run unit tests
         run: |
           R -q -e 'testthat::test_dir("tests/testthat")'
 
+      # R/ code expects dplyr attached (bootstrap.R attaches it for the pipeline).
       - name: Run smoke test
         run: |
-          R -q -e 'source("R/utils/schema.R"); source("R/utils/levels.R"); source("R/indices/build_energy_security_index_v2.R"); index_definition <- yaml::read_yaml("tests/fixtures/index_definition.yml"); options(opportunity_security.index_definition = index_definition); theme_tbl <- read.csv("tests/fixtures/energy_security_theme.csv", stringsAsFactors = FALSE); theme_tbl <- theme_tbl[!is.na(theme_tbl$value), ]; outputs <- build_energy_security_index_v2(theme_tables = list(energy_access_consumption = theme_tbl), weights = list(`Energy Access` = 0.5, Reliability = 0.5), allow_partial_categories = TRUE, include_sub_sector = FALSE); stopifnot(nrow(outputs$energy_security_index) > 0)'
+          R -q -e 'suppressPackageStartupMessages(library(dplyr)); source("R/utils/schema.R"); source("R/utils/levels.R"); source("R/indices/build_energy_security_index_v2.R"); index_definition <- yaml::read_yaml("tests/fixtures/index_definition.yml"); options(opportunity_security.index_definition = index_definition); theme_tbl <- read.csv("tests/fixtures/energy_security_theme.csv", stringsAsFactors = FALSE); theme_tbl <- theme_tbl[!is.na(theme_tbl$value), ]; outputs <- build_energy_security_index_v2(theme_tables = list(energy_access_consumption = theme_tbl), weights = list(`Energy Access` = 0.5, Reliability = 0.5), allow_partial_categories = TRUE, include_sub_sector = FALSE); stopifnot(nrow(outputs$energy_security_index) > 0)'
