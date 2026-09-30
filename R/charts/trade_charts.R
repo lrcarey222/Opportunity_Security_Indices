@@ -1,11 +1,11 @@
-Sys.setenv(COMTRADE_API_KEY = "aca1f47164e348fe978af0b93bfa6af4")
-primary_key <- "5927e0b514da47d98f869ba5ca186485"
-secondary_key<- "1ffe814c2cd048f0b1da30cc401cbac2"
-tertiary_key <- "2940653b9bbe4671b3f7fde2846d14be"
-additional_key <- "aca1f47164e348fe978af0b93bfa6af4"
-key4<-"a709c13423c9424898a4292b383edc7a"
-key5 <- "4967b706a00e49ee8819eee592f4fbb9"
-premium_key <- "fd178c714d644e1ab8adbc16026faaaf"
+# The Comtrade key comes from the environment (see README "Quick start"); never hard-code it here.
+if (!nzchar(Sys.getenv("COMTRADE_API_KEY"))) {
+  stop(
+    "COMTRADE_API_KEY is not set. Add it to your environment (e.g. ~/.Renviron) ",
+    "before running R/charts/trade_charts.R.",
+    call. = FALSE
+  )
+}
 
 
 library(lubridate)
