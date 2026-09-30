@@ -13,6 +13,10 @@ renv/staging/
 # It holds a machine-specific sharepoint_raw_dir, so it must not be committed.
 config/config.yml
 
+# API keys (COMTRADE_API_KEY, DATAWRAPPER_API_KEY) belong in env files, never in git.
+.Renviron
+.env
+
 # Local data + outputs (do not commit)
 data/raw/
 data/processed/

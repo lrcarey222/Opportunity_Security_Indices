@@ -17,7 +17,7 @@ suppressPackageStartupMessages({
 
 options(dplyr.summarise.inform = FALSE)
 
-set_primary_comtrade_key('2940653b9bbe4671b3f7fde2846d14be')
+set_primary_comtrade_key(Sys.getenv("COMTRADE_API_KEY"))
 
 
 # -------------------------------------- #
