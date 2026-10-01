@@ -1,7 +1,18 @@
+# Missing-data rules, keyed by theme (a variable or category name also works; variable >
+# category > theme). A rule fills a country the theme does not cover, within one
+# (tech, stage, category, variable, theme) group, and only when the theme covers at least
+# one country in that group; otherwise the group stays NA. A theme with no rule stays NA.
+# NA components drop out of their overall's mean, and an NA category drops out of the
+# pillar with its weight (available-case), so NA never counts as 0.
 energy_security:
   critical_minerals_processing: zero
   critical_minerals_trade: zero
   critical_minerals_production: zero
+  # The EI and USGS reserve tables list every holder of material reserves, so a country
+  # absent from them has no recorded reserves: it takes the bottom index value (0), which
+  # the median S-curve also gives the smallest listed holder. global_average would credit
+  # it with a typical holder's reserves.
+  reserves: zero
   energy_access_consumption: global_average
   solar_pv_potential: global_average
   wind_potential: global_average
@@ -20,7 +31,6 @@ economic_opportunity:
   energy_consumption: global_average
   energy_prices: global_average
   export_feasibility: global_average
-  foreign_dependency: global_average
   future_demand: global_average
   technological_readiness: global_average
   market_share_manufacturing: zero
@@ -28,3 +38,6 @@ economic_opportunity:
   production_depth_momentum: global_average
   overcapacity_premium: global_average
   investment_momentum: zero
+  # lcoe_competitiveness has no rule on purpose: BNEF covers ~20-30 countries per tech, and
+  # a country it does not cover scores Cost Competitiveness from the input-cost components
+  # alone rather than from an imputed LCOE.

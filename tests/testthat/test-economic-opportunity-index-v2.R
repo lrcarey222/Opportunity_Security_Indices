@@ -122,6 +122,13 @@ test_that("economic opportunity v2 contributions reconcile to index", {
 
   expect_equal(combined$total_category, combined$Economic_Opportunity_Index, tolerance = 1e-8)
   expect_equal(combined$total_variable, combined$Economic_Opportunity_Index, tolerance = 1e-8)
+
+  # Both categories must score: Investment = mean(0.2, 0.4) for A. Reconciliation alone
+  # also held when the Investment overall was silently lost and only Innovation scored.
+  expect_equal(
+    combined$Economic_Opportunity_Index[combined$Country == "A"],
+    0.6 * 0.3 + 0.4 * 0.5
+  )
 })
 
 test_that("economic opportunity v2 warns and proceeds with unexpected categories", {
@@ -130,7 +137,7 @@ test_that("economic opportunity v2 warns and proceeds with unexpected categories
   theme_tbl <- dplyr::bind_rows(
     build_eo_theme_tbl(),
     tibble::tibble(
-      Country = "A",
+      Country = c("A", "Z"),
       tech = "Solar",
       supply_chain = "Upstream",
       category = "Reserves",
@@ -147,7 +154,7 @@ test_that("economic opportunity v2 warns and proceeds with unexpected categories
     outputs <- build_economic_opportunity_index_v2(
       theme_tables = list(economic_opportunity_theme = theme_tbl),
       weights = list(Investment = 0.6, Innovation = 0.4),
-      missing_data = list(),
+      missing_data = list(Investment = "global_average"),
       allow_partial_categories = TRUE,
       include_sub_sector = FALSE
     ),
@@ -156,4 +163,9 @@ test_that("economic opportunity v2 warns and proceeds with unexpected categories
 
   expect_s3_class(outputs$economic_opportunity_index, "data.frame")
   expect_gt(nrow(outputs$economic_opportunity_index), 0)
+
+  # Z appears only in the unscored category. It must not enter the missing-data grid and
+  # come out with an index built entirely from imputed values.
+  expect_false("Z" %in% outputs$economic_opportunity_index$Country)
+  expect_equal(outputs$diagnostics$index_imputation$imputed_weight_share, c(0, 0))
 })

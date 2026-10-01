@@ -190,12 +190,19 @@ build_economic_opportunity_index_v2 <- function(theme_tables,
     dplyr::group_by(Country, tech, supply_chain, sub_sector, category, variable, data_type, Year) %>%
     dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
 
+  # Rows of a category EO does not score are dropped here, before the missing-data grid is
+  # built. The grid takes its country list from every input row, so the solar/wind potential
+  # themes (category Reserves, scored in ES only) used to add ~90 Solar/Wind-Downstream
+  # country-cells (Vatican, Pitcairn Islands, ...) whose every EO category was then imputed.
   extra_categories <- setdiff(unique(economic_opportunity_data$category), score_variables_tbl$category)
   if (length(extra_categories) > 0) {
     warning(
       "Economic opportunity inputs include unexpected categories: ",
-      paste(sort(extra_categories), collapse = ", ")
+      paste(sort(extra_categories), collapse = ", "),
+      " (dropped: EO does not score them)"
     )
+    economic_opportunity_data <- economic_opportunity_data %>%
+      dplyr::filter(category %in% score_variables_tbl$category)
   }
 
   validate_variable_levels(
@@ -273,33 +280,17 @@ build_economic_opportunity_index_v2 <- function(theme_tables,
 
   scored_data <- dplyr::bind_rows(score_variable_data, overall_scores)
 
-  available_pairs <- scored_data %>%
-    dplyr::distinct(category, variable)
-  missing_pairs <- score_variables_tbl %>%
-    dplyr::left_join(available_pairs, by = c("category" = "category", "score_variable" = "variable")) %>%
-    dplyr::filter(is.na(score_variable))
-  if (nrow(missing_pairs) > 0) {
-    available_summary <- scored_data %>%
-      dplyr::distinct(category, variable) %>%
-      dplyr::group_by(category) %>%
-      dplyr::summarize(
-        variables = paste(sort(unique(variable)), collapse = ", "),
-        .groups = "drop"
-      ) %>%
-      dplyr::mutate(summary = paste0(category, ": ", variables)) %>%
-      dplyr::pull(summary) %>%
-      head(10)
-    available_text <- if (length(available_summary) == 0) {
-      "none"
-    } else {
-      paste(available_summary, collapse = "; ")
-    }
-    stop(
-      "Score-variable filter returned missing category/variable pairs; check index_definition score_variable names ",
-      "vs available variables. Available variables per category: ",
-      available_text
-    )
-  }
+  # A configured category whose score variable was never built (an overall whose components
+  # name variables the theme does not emit) silently scored nothing and dropped out of the
+  # index. The former check joined on its own key and could never fire; this one warns,
+  # naming the category, the missing variable and what the category's inputs do carry. The
+  # second check catches the same defect when a theme's same-named composite stands in.
+  unproduced_score_variables <- find_unproduced_score_variables(score_variables_tbl, scored_data)
+  warn_unproduced_score_variables(unproduced_score_variables, pillar_label = "Economic opportunity")
+  substituted_score_variables <- find_substituted_score_variables(
+    score_variables_tbl, index_definition, overall_names, scored_data
+  )
+  warn_substituted_score_variables(substituted_score_variables, pillar_label = "Economic opportunity")
 
   validate_score_bounds(scored_data, score_variables_tbl, include_sub_sector = include_sub_sector)
 
@@ -313,27 +304,16 @@ build_economic_opportunity_index_v2 <- function(theme_tables,
     stop("Economic opportunity category scores are empty after filtering to score variables.")
   }
 
-  direct_score_variables <- score_variables_tbl %>%
-    dplyr::filter(!score_variable %in% overall_names)
-
-  direct_variable_contributions <- scored_data %>%
-    dplyr::inner_join(direct_score_variables, by = c("category", "variable" = "score_variable")) %>%
-    dplyr::group_by(Country, tech, supply_chain, sub_sector, category, variable) %>%
-    dplyr::summarize(
-      component_value = mean(value, na.rm = TRUE),
-      imputed = any(isTRUE(imputed)),
-      missing_rule_applied = paste(sort(unique(stats::na.omit(missing_rule_applied))), collapse = "; "),
-      .groups = "drop"
-    ) %>%
-    dplyr::mutate(
-      component_weight_within_overall = 1,
-      component_value = dplyr::if_else(is.nan(component_value), NA_real_, component_value),
-      missing_rule_applied = dplyr::na_if(missing_rule_applied, "")
-    )
+  direct_variable_contributions <- direct_score_contributions(
+    scored_data,
+    score_variables_tbl,
+    overall_names
+  )
 
   component_contributions <- normalize_component_contributions(
     component_contributions,
-    include_sub_sector = include_sub_sector
+    include_sub_sector = include_sub_sector,
+    score_variables_tbl = score_variables_tbl
   )
 
   variable_contributions <- dplyr::bind_rows(
@@ -353,19 +333,40 @@ build_economic_opportunity_index_v2 <- function(theme_tables,
     allow_partial_categories = allow_partial_categories,
     include_sub_sector = include_sub_sector,
     pillar_label = "Economic opportunity",
-    index_col = "Economic_Opportunity_Index"
+    index_col = "Economic_Opportunity_Index",
+    absent_categories_reported = unproduced_score_variables$category
   )
 
+  # imputed_share(_by_category): share of category scores with at least one imputed component.
+  # unscored_groups / index_cells: country-cells and tech x stage cells left without any
+  # observed category (NA index), and cells whose index is constant across countries.
+  # index_imputation: share of each index value's weight on imputed components.
+  # unobserved_components: component groups no country is observed in, left NA.
   diagnostics <- list(
     categories_configured = score_variables_tbl$category,
-    categories_in_data = sort(unique(category_scores$category)),
+    categories_in_data = sort(unique(category_scores$category[!is.na(category_scores$category_score)])),
+    categories_unproduced = unproduced_score_variables,
+    categories_substituted = substituted_score_variables,
+    imputed_share = mean(category_scores$imputed, na.rm = TRUE),
     imputed_share_by_category = category_scores %>%
       dplyr::group_by(category) %>%
       dplyr::summarize(
         imputed_share = mean(imputed, na.rm = TRUE),
+        observed_share = mean(!is.na(category_score)),
         n = dplyr::n(),
         .groups = "drop"
       ),
+    unscored_groups = index_outputs$unscored_groups,
+    index_cells = summarize_index_cells(
+      index_outputs$index_tbl,
+      index_col = "Economic_Opportunity_Index",
+      include_sub_sector = include_sub_sector
+    ),
+    index_imputation = summarize_index_imputation(
+      index_outputs$variable_contributions,
+      include_sub_sector = include_sub_sector
+    ),
+    unobserved_components = unobserved_component_groups(imputed_tbl, include_sub_sector = include_sub_sector),
     year_provenance = year_provenance
   )
 

@@ -23,12 +23,16 @@ test_that("normalize_year handles character and integer years", {
     )
   )
 
-  outputs <- build_energy_security_index_v2(
-    theme_tables = theme_tables,
-    weights = list(`Energy Access` = 1),
-    missing_data = list(`Overall Energy Access Index` = "global_average"),
-    allow_partial_categories = TRUE,
-    include_sub_sector = FALSE
+  # The fixture definition also configures Reliability, which these inputs do not carry.
+  expect_warning(
+    outputs <- build_energy_security_index_v2(
+      theme_tables = theme_tables,
+      weights = list(`Energy Access` = 1),
+      missing_data = list(`Overall Energy Access Index` = "global_average"),
+      allow_partial_categories = TRUE,
+      include_sub_sector = FALSE
+    ),
+    "Reliability"
   )
 
   year_selected <- outputs$diagnostics$year_provenance$Year_selected
@@ -45,20 +49,26 @@ test_that("missing-data policy applies global average vs zero", {
   missing_global <- read_fixture_yaml("missing_data_global_average.yml")
   missing_zero <- read_fixture_yaml("missing_data_zero.yml")
 
-  outputs_global <- build_energy_security_index_v2(
-    theme_tables = list(energy_access_consumption = theme_tbl),
-    weights = list(`Energy Access` = 1),
-    missing_data = missing_global,
-    allow_partial_categories = TRUE,
-    include_sub_sector = FALSE
+  expect_warning(
+    outputs_global <- build_energy_security_index_v2(
+      theme_tables = list(energy_access_consumption = theme_tbl),
+      weights = list(`Energy Access` = 1),
+      missing_data = missing_global,
+      allow_partial_categories = TRUE,
+      include_sub_sector = FALSE
+    ),
+    "Reliability"
   )
 
-  outputs_zero <- build_energy_security_index_v2(
-    theme_tables = list(energy_access_consumption = theme_tbl),
-    weights = list(`Energy Access` = 1),
-    missing_data = missing_zero,
-    allow_partial_categories = TRUE,
-    include_sub_sector = FALSE
+  expect_warning(
+    outputs_zero <- build_energy_security_index_v2(
+      theme_tables = list(energy_access_consumption = theme_tbl),
+      weights = list(`Energy Access` = 1),
+      missing_data = missing_zero,
+      allow_partial_categories = TRUE,
+      include_sub_sector = FALSE
+    ),
+    "Reliability"
   )
 
   index_global <- outputs_global$energy_security_index |>
@@ -114,11 +124,14 @@ test_that("score_variable selection in index_definition controls category scores
   theme_tbl <- read_fixture_csv("energy_security_theme.csv") |>
     dplyr::filter(Country == "A", category == "Energy Access")
 
-  outputs <- build_energy_security_index_v2(
-    theme_tables = list(energy_access_consumption = theme_tbl),
-    weights = list(`Energy Access` = 1),
-    allow_partial_categories = TRUE,
-    include_sub_sector = FALSE
+  expect_warning(
+    outputs <- build_energy_security_index_v2(
+      theme_tables = list(energy_access_consumption = theme_tbl),
+      weights = list(`Energy Access` = 1),
+      allow_partial_categories = TRUE,
+      include_sub_sector = FALSE
+    ),
+    "Reliability"
   )
 
   category_score <- outputs$category_scores |>
