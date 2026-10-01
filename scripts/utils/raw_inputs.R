@@ -91,6 +91,13 @@ normalize_raw_input_entry <- function(entry) {
     )
   }
 
+  # Optional coverage floor for tabular pattern inputs (Comtrade pulls): the resolver skips
+  # vintages with fewer distinct reporters than this. See resolve_versioned_raw_input().
+  min_reporters <- if (is.null(entry$min_reporters)) NA_integer_ else suppressWarnings(as.integer(entry$min_reporters)[1])
+  if (!is.null(entry$min_reporters) && (is.na(min_reporters) || min_reporters < 1)) {
+    stop("min_reporters for raw input '", id, "' must be a positive integer.")
+  }
+
   list(
     id = id,
     path = path,
@@ -98,6 +105,8 @@ normalize_raw_input_entry <- function(entry) {
     subdir = as_chr(entry$subdir),
     fetch_policy = fetch_policy,
     resolve = if (is.null(entry$resolve)) (if (!is.na(pattern)) "newest" else "exact") else as.character(entry$resolve)[1],
+    min_reporters = min_reporters,
+    reporter_col = as_chr(entry$reporter_col),
     source_type = source_type,
     source_name = as_chr(entry$source_name),
     url = as_chr(entry$url),
@@ -427,18 +436,85 @@ raw_input_vintage_key <- function(filename) {
   NA_real_
 }
 
+# Column names that identify the reporting country in a Comtrade-style extract, in the
+# order they are tried when a manifest entry does not name one.
+RAW_INPUT_REPORTER_COLUMNS <- c(
+  "reporter_iso", "reporterISO", "reporter_code", "reporterCode", "reporter_desc", "reporterDesc", "reporter"
+)
+
+# Distinct non-empty reporters in a CSV extract, reading only the reporter column. NA when
+# the file cannot be read or has no reporter column.
+raw_input_reporter_count <- function(path, reporter_col = NULL) {
+  header <- tryCatch(
+    names(utils::read.csv(path, nrows = 1, check.names = FALSE)),
+    error = function(e) character()
+  )
+  wanted <- c(if (!is.null(reporter_col) && !is.na(reporter_col)) reporter_col, RAW_INPUT_REPORTER_COLUMNS)
+  col <- intersect(wanted, header)[1]
+  if (is.na(col)) {
+    return(NA_integer_)
+  }
+
+  classes <- rep("NULL", length(header))
+  classes[match(col, header)] <- "character"
+  values <- tryCatch(
+    utils::read.csv(path, colClasses = classes, check.names = FALSE)[[1]],
+    error = function(e) NULL
+  )
+  if (is.null(values)) {
+    return(NA_integer_)
+  }
+
+  values <- trimws(values)
+  length(unique(values[!is.na(values) & nzchar(values)]))
+}
+
 # Resolve a versioned raw input to the newest available match.
 #
 # pattern is a regex matched against file names inside raw_data_path. Falls back to
 # `fallback` (a literal file name) when nothing matches, so pinned legacy names keep
 # working while a repo migrates.
+#
+# min_reporters adds a coverage floor for tabular (CSV) extracts. Comtrade publishes a year
+# reporter by reporter over roughly eighteen months, so the newest pull is a stub for most
+# of its life (the staged critmin 2025 files hold 3 reporters against 130 for 2024), and
+# shares, HHIs and rankings over a stub compute happily and mean nothing. With a floor set,
+# vintages are walked newest-first and the first one with at least min_reporters distinct
+# reporters is taken; if none reaches it, the best-covered one is taken with a warning.
+# Pass `manifest` (read_raw_inputs_manifest()) to take min_reporters and reporter_col from
+# the entry for this pattern (or, failing that, for `fallback`); explicit arguments win, and
+# a manifest with no matching entry raises a warning. The chosen path carries
+# the reporter count as attribute "reporters", which write_resolved_vintages() stamps.
 resolve_versioned_raw_input <- function(raw_data_path,
                                         pattern,
                                         fallback = NULL,
                                         label = pattern,
                                         subdir = NULL,
-                                        quiet = FALSE) {
+                                        quiet = FALSE,
+                                        min_reporters = NULL,
+                                        reporter_col = NULL,
+                                        manifest = NULL) {
   search_dir <- if (is.null(subdir)) raw_data_path else file.path(raw_data_path, subdir)
+
+  if (!is.null(manifest)) {
+    # Matched the way the manifest test matches a call: by pattern, else by the fallback
+    # name, so a pattern edited in the script but not the manifest still finds its entry.
+    entry <- match_raw_input_entry(manifest, list(
+      pattern = pattern,
+      path = if (is.null(fallback)) NA_character_ else fallback
+    ))
+    if (is.null(entry)) {
+      # The caller asked for the manifest's floor; finding no entry would drop it silently.
+      warning("No manifest entry matches ", label, "; no coverage floor applied.", call. = FALSE)
+    } else {
+      if (is.null(min_reporters) && !is.null(entry$min_reporters) && !is.na(entry$min_reporters)) {
+        min_reporters <- entry$min_reporters
+      }
+      if (is.null(reporter_col) && !is.null(entry$reporter_col) && !is.na(entry$reporter_col)) {
+        reporter_col <- entry$reporter_col
+      }
+    }
+  }
 
   candidates <- if (dir.exists(search_dir)) {
     list.files(search_dir, pattern = pattern, full.names = FALSE)
@@ -459,16 +535,62 @@ resolve_versioned_raw_input <- function(raw_data_path,
 
   # Newest declared vintage wins; mtime breaks ties and covers unversioned names.
   ordering <- order(keys, mtimes, decreasing = TRUE, na.last = TRUE)
-  chosen <- candidates[ordering[1]]
+  ordered <- candidates[ordering]
+  chosen <- ordered[1]
+  reporters <- NULL
 
-  if (!quiet && length(candidates) > 1) {
+  if (!is.null(min_reporters) && !is.na(min_reporters)) {
+    counts <- integer(0)
+    for (candidate in ordered) {
+      n <- raw_input_reporter_count(file.path(search_dir, candidate), reporter_col = reporter_col)
+      counts[candidate] <- n
+      if (!is.na(n) && n >= min_reporters) break
+    }
+
+    covering <- names(counts)[!is.na(counts) & counts >= min_reporters]
+    if (length(covering) > 0) {
+      chosen <- covering[1]
+      skipped <- seq_len(match(chosen, names(counts)) - 1L)
+      if (!quiet && length(skipped) > 0) {
+        message(
+          "Resolved ", label, " -> ", chosen, " (", counts[[chosen]], " reporters); skipped newer ",
+          paste0(names(counts)[skipped], " = ", counts[skipped], collapse = ", "),
+          " below the ", min_reporters, "-reporter floor"
+        )
+      }
+    } else if (any(!is.na(counts))) {
+      # Nothing reaches the floor: the best-covered vintage beats the newest stub.
+      chosen <- names(counts)[which.max(counts)]
+      warning(
+        "No ", label, " vintage has ", min_reporters, " reporters (",
+        paste0(names(counts), " = ", counts, collapse = ", "), "); using ", chosen, ".",
+        call. = FALSE
+      )
+    } else {
+      # No readable reporter column anywhere: say so rather than pretend the floor held.
+      warning(
+        "Could not count reporters in any ", label, " vintage; the ", min_reporters,
+        "-reporter floor was not applied and ", chosen, " is used.",
+        call. = FALSE
+      )
+    }
+    if (!is.na(counts[[chosen]])) {
+      reporters <- counts[[chosen]]
+    }
+  }
+
+  if (!quiet && length(candidates) > 1 && identical(chosen, ordered[1])) {
     message(
       "Resolved ", label, " -> ", chosen,
       " (", length(candidates) - 1, " older candidate(s) ignored)"
     )
   }
 
-  file.path(search_dir, chosen)
+  resolved <- file.path(search_dir, chosen)
+  if (!is.null(reporters)) {
+    attr(resolved, "reporters") <- reporters
+  }
+  resolved
 }
 
 # Record what each versioned input actually resolved to, so an index run is replicable.
@@ -492,7 +614,9 @@ write_resolved_vintages <- function(resolved, raw_data_path) {
           format(file.info(path)$mtime, tz = "UTC", usetz = TRUE)
         } else {
           NULL
-        }
+        },
+        # Set when the resolver applied a min_reporters coverage floor.
+        reporters = attr(path, "reporters", exact = TRUE)
       )
     })
   )

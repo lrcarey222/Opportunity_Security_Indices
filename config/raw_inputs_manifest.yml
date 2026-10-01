@@ -39,6 +39,8 @@ inputs:
   path: critmin_export_2024.csv
   pattern: ^critmin_export_\d{4}\.csv$
   resolve: newest
+  min_reporters: 50
+  reporter_col: reporter_iso
   source_type: api
   source_name: UN Comtrade (critical minerals exports)
   url: https://comtradeplus.un.org/
@@ -51,6 +53,8 @@ inputs:
   path: critmin_import_2024.csv
   pattern: ^critmin_import_\d{4}\.csv$
   resolve: newest
+  min_reporters: 50
+  reporter_col: reporter_iso
   source_type: api
   source_name: UN Comtrade (critical minerals imports)
   url: https://comtradeplus.un.org/
@@ -64,6 +68,8 @@ inputs:
   path: critmin_total_export_2024.csv
   pattern: ^critmin_total_export_\d{4}\.csv$
   resolve: newest
+  min_reporters: 50
+  reporter_col: reporter_iso
   source_type: api
   source_name: UN Comtrade (critical minerals total exports)
   url: https://comtradeplus.un.org/
@@ -435,6 +441,18 @@ inputs:
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
+- id: hs92_product_year_6
+  path: hs92_product_year_6.csv
+  source_type: manual
+  source_name: Harvard Atlas of Economic Complexity (HS92 6-digit product-year totals)
+  url: https://atlas.hks.harvard.edu/
+  cadence: annual
+  owner: lcarey@rmi.org
+  staged_from: sharepoint
+  optional: yes
+  notes: Product list for the HS92 match report in scripts/04; skipped when absent.
+  required_by:
+  - scripts/04_build_hs6_views.R
 - id: iea_clean_tech_guide
   path: IEACleanTechGuidepublicdataset.csv
   pattern: ^IEACleanTechGuide.*\.csv$|^IEA_Clean_Tech_Guide\.csv$

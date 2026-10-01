@@ -123,6 +123,10 @@ serialize_entry <- function(e) {
     pattern = e$pattern,
     subdir = e$subdir,
     resolve = if (!is.na(e$pattern)) e$resolve else NULL,
+    # Coverage floor for vintage resolution (scripts/utils/raw_inputs.R); listed here so a
+    # regenerated manifest keeps it.
+    min_reporters = e$min_reporters,
+    reporter_col = e$reporter_col,
     fetch_policy = if (identical(e$fetch_policy, "fallback")) NULL else e$fetch_policy,
     source_type = e$source_type,
     source_name = e$source_name,

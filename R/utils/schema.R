@@ -92,6 +92,42 @@ assert_unique_keys <- function(tbl, keys, label = "table") {
   invisible(tbl)
 }
 
+# The index tables key on Country while the partner and allied-network code keys on iso3c,
+# so the two must name the same economies one-to-one. Reports Country strings carrying more
+# than one code and codes carrying more than one Country string (NA codes are ignored).
+# action = "warn" returns the offending pairs invisibly; "error" stops.
+assert_country_iso3_consistent <- function(tbl, label = "table", action = c("warn", "error")) {
+  action <- match.arg(action)
+  if (!inherits(tbl, "data.frame") || !all(c("Country", "iso3c") %in% names(tbl))) {
+    return(invisible(NULL))
+  }
+
+  pairs <- tbl %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(!is.na(iso3c), nzchar(iso3c), !is.na(Country)) %>%
+    dplyr::distinct(Country, iso3c)
+
+  conflicts <- dplyr::bind_rows(
+    pairs %>% dplyr::group_by(Country) %>% dplyr::filter(dplyr::n() > 1) %>% dplyr::ungroup(),
+    pairs %>% dplyr::group_by(iso3c) %>% dplyr::filter(dplyr::n() > 1) %>% dplyr::ungroup()
+  ) %>%
+    dplyr::distinct(Country, iso3c) %>%
+    dplyr::arrange(iso3c, Country)
+
+  if (nrow(conflicts) > 0) {
+    msg <- paste0(
+      "Country and iso3c are not one-to-one in ", label, ": ",
+      paste0(conflicts$Country, " = ", conflicts$iso3c, collapse = "; ")
+    )
+    if (identical(action, "error")) {
+      stop(msg, call. = FALSE)
+    }
+    warning(msg, call. = FALSE)
+  }
+
+  invisible(conflicts)
+}
+
 # Year as integer from a year, a date, or a label. ISO dates ("2022-01-01", "2022-01")
 # take their leading year; anything else takes a trailing four-digit year, so a range
 # such as "2020-2022" resolves to its end year.
