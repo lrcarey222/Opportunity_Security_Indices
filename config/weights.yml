@@ -21,8 +21,10 @@ economic_opportunity:
   Foreign Dependency: 3
   Cost Competitiveness: 3
   Consumption: 3
-  Reserves: 2
 
+# Partner-level PSI category weights (scripts/25). A partner is scored on the categories it has,
+# weights renormalized: development is defined only for non-high-income partners, so a
+# high-income partner's PSI is (0.4 FS + 0.4 OP) / 0.8.
 psi:
   friendshore: 0.4
   opportunity: 0.4
@@ -31,7 +33,8 @@ psi:
 partnership_opportunity_components:
   trade_index: 3
   econ_opp_index: 3
-  energy_security_index: 1
+  # The partner market's energy-security NEED (1 - its ES rank); formerly energy_security_index.
+  partner_es_need: 1
   climate_policy_weight: 0.05
 
 partnership_friendshore_components:
@@ -40,3 +43,15 @@ partnership_friendshore_components:
   es_need: 2
   eo_partner: 2
   outbound_index: 2
+
+# Development potential (partner-level, non-high-income partners). These were hard-coded in
+# stronger_development.R; the US-EO term that had weight 1.5 there has been dropped.
+partnership_development_components:
+  development_index: 1
+  doingbusiness_index: 1
+  investment_enviro_index: 1
+  energy_security: 1
+  economic_opportunity: 1.5
+  aid_index_supplychain: 1.5
+  aidgdp_index_supplychain: 2
+  energy_use_index: 1

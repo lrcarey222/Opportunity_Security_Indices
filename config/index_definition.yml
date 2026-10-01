@@ -44,27 +44,39 @@ pillars:
       Consumption:
         score_variable: "Overall Consumption Index"
 
+# Component names only (documentation; the builders read weights from config/weights.yml).
 partnership_strength:
   opportunity_components:
     - trade_index
     - econ_opp_index
-    - energy_security_index
+    - partner_es_need
   friendshore_components:
     - imp_trade_index
     - econ_opp_raw
     - es_need
     - eo_partner
     - outbound_index
+  # Partner-level (no reporter dimension), non-high-income partners only.
+  development_components:
+    - development_index
+    - doingbusiness_index
+    - investment_enviro_index
+    - energy_security
+    - economic_opportunity
+    - aid_index_supplychain
+    - aidgdp_index_supplychain
+    - energy_use_index
 
 overall_variables:
   Overall Trade Index:
     category: "Trade"
+    # EO export capability (export_feasibility). The net-import term is ES-only: it is
+    # emitted by trade_concentration and scored in the Trade Risk overall below.
     components:
       - market_share
       - rca
       - export_size
       - feas
-      - deficit_gdp
       - HHI
     aggregation: mean
     source: "Author calculation"
@@ -81,7 +93,11 @@ overall_variables:
   Overall Minerals Trade Index:
     category: "Minerals Trade"
     components:
-      - "critmin_trade"
+      # mean(market share, HHI), demand-weighted across minerals, as the Technical Appendix
+      # specifies; the theme used to compute both and keep only market share ("critmin_trade").
+      # critmin_hhi is a world-market term, identical for every country within a tech.
+      - "critmin_market_share"
+      - "critmin_hhi"
     aggregation: mean
   Overall Foreign Dependency Index:
     category: "Foreign Dependency"
@@ -175,27 +191,24 @@ overall_variables:
   Overall Energy Prices Index:
     category: "Energy Prices"
     components:
-      - "price_volatility"
+      # The energy_prices theme's only index-scale variable (median_scurve of minus the
+      # mean price volatility, so higher = more stable). The former "price_volatility"
+      # matched nothing, so the category was never scored. It is a world-level series,
+      # identical for every country within a tech: it shifts levels across techs but cannot
+      # rank countries within a tech x stage cell.
+      - "Overall Price Volatility Index"
     aggregation: mean
   Overall Technology Demand Index:
     category: "Technology Demand"
     components:
-      - "demand_size"
-      - "demand_growth"
+      # One vote per source, each already a composite of its own size and growth terms:
+      # IEA WEO global demand, BNEF NEO regional demand (or, for EV Downstream, the IEA EV
+      # Outlook index; both are named "Overall Demand"), BCG addressable market and BNEF
+      # overcapacity. demand_size and demand_growth were listed beside the composites built
+      # from them, which gave WEO half the category and overrode the 1:2 size:growth
+      # weighting; the EV per-parameter names listed here were never emitted.
       - "Overall Global Demand"
       - "Overall Demand"
-      - "sales_growth"
-      - "sales_size"
-      - "sales_forecast_growth"
-      - "sales_forecast_size"
-      - "stock_growth"
-      - "stock_size"
-      - "stock_forecast_growth"
-      - "stock_forecast_size"
-      - "share_growth"
-      - "share_size"
-      - "share_forecast_growth"
-      - "share_forecast_size"
       - "Overall Addressable Market"
       - "Overall Overcapacity"
     aggregation: mean
@@ -219,13 +232,11 @@ overall_variables:
   Overall Input Cost Index:
     category: "Cost Competitiveness"
     components:
-      # The LCOE theme names its current-year variable after the BNEF release's reference
-      # year (lcoe_24 for the 2025 release, lcoe_25 for the 2026 one). Only one of these is
-      # ever present in a build; listing both keeps an older staged vintage scoring.
-      - "lcoe_24"
-      - "lcoe_25"
-      - "lcoe_50"
-      - "Overall input cost index"
+      # One vote per distinct input: BNEF LCOE (Downstream, ~30 markets), the ILO/IMF labour
+      # and capital Input Cost Index, and the IEA relative equipment cost. "LCOE Index" is
+      # the mean of the theme's current-year and 2050 LCOE indices; listing those two and
+      # their mean (formerly "Overall input cost index") as well gave LCOE 3 of 4 votes.
+      - "LCOE Index"
       - "Input Cost Index"
       - "IEA Cost index"
     aggregation: mean

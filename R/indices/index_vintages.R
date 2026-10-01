@@ -222,12 +222,17 @@ trade_core_build_atlas_total_export <- function(aec_6_data, year) {
 #
 # `aec_6_data` and `aec_4_data` must already carry zero-padded character HS codes
 # (atlas_pad_hs_codes()) and may be pre-filtered to the years of interest.
+# Returns list(trade_concentration, export_feasibility): the ES and EO trade themes score
+# different variables (TRADE_THEME_VARIABLES in R/categories/trade/trade_core.R), so the
+# vintage build splits them the same way the annual pipeline does. With gdp_data the ES
+# theme also carries the net-imports-to-GDP exposure term; without it that term is absent.
 atlas_trade_theme <- function(aec_4_data,
                               aec_6_data,
                               subcat,
                               country_info,
                               year,
-                              include_sub_sector = FALSE) {
+                              include_sub_sector = FALSE,
+                              gdp_data = NULL) {
   energy_codes <- trade_core_build_energy_codes(subcat, include_sub_sector = include_sub_sector)
 
   market_share <- trade_core_build_aec_market_share(aec_6_data, energy_codes, year = year)
@@ -240,22 +245,31 @@ atlas_trade_theme <- function(aec_4_data,
 
   total_export <- trade_core_build_atlas_total_export(aec_6_data, year = year)
 
+  trade_balance <- if (is.null(gdp_data)) {
+    NULL
+  } else {
+    trade_core_build_aec_trade_balance(aec_6_data, energy_codes, gdp_data = gdp_data, year = year)
+  }
+
   country_trade <- trade_core_build_country_trade(
     comtrade_trade = atlas_trade,
     comtrade_total_export = total_export,
     market_share = market_share,
     feasibility = feasibility,
-    year = year
+    year = year,
+    trade_balance = trade_balance,
+    economies = country_info$iso3c
   )
 
   hhi_tbl <- trade_core_build_comtrade_hhi(atlas_trade)
   indices <- trade_core_build_indices(country_trade, hhi_tbl, country_info)
 
-  trade_core_build_tidy(
+  tidy <- trade_core_build_tidy(
     indices$trade_indices,
     year = year,
     include_sub_sector = include_sub_sector
   ) %>%
+    dplyr::filter(!is.na(value)) %>%
     # trade_core_build_tidy() attributes values to Comtrade; this build is Atlas-only.
     dplyr::mutate(
       source = dplyr::if_else(
@@ -263,8 +277,16 @@ atlas_trade_theme <- function(aec_4_data,
         "Harvard Atlas of Economic Complexity",
         .data$source
       )
-    ) %>%
-    energy_security_add_overall_index(include_sub_sector = include_sub_sector)
+    )
+
+  lapply(
+    c(trade_concentration = "trade_concentration", export_feasibility = "export_feasibility"),
+    function(theme) {
+      tidy %>%
+        trade_core_select_theme(theme = theme) %>%
+        energy_security_add_overall_index(include_sub_sector = include_sub_sector)
+    }
+  )
 }
 
 # ---------------------------------------------------------------------------

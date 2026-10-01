@@ -170,24 +170,44 @@ bnef_neo_path <- resolve_versioned_raw_input(
 )
 wdi_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
 wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")
+# The manifest gives the critmin entries a min_reporters floor, so the resolver walks past a
+# stub vintage to the newest file with enough Comtrade reporters.
 critmin_import_path <- resolve_versioned_raw_input(
   raw_data_path,
   pattern = "^critmin_import_\\d{4}\\.csv$",
   fallback = "critmin_import_2024.csv",
-  label = "Comtrade critical minerals imports"
+  label = "Comtrade critical minerals imports",
+  manifest = raw_manifest
 )
 critmin_export_path <- resolve_versioned_raw_input(
   raw_data_path,
   pattern = "^critmin_export_\\d{4}\\.csv$",
   fallback = "critmin_export_2024.csv",
-  label = "Comtrade critical minerals exports"
+  label = "Comtrade critical minerals exports",
+  manifest = raw_manifest
 )
 critmin_total_export_path <- resolve_versioned_raw_input(
   raw_data_path,
   pattern = "^critmin_total_export_\\d{4}\\.csv$",
   fallback = "critmin_total_export_2024.csv",
-  label = "Comtrade critical minerals total exports"
+  label = "Comtrade critical minerals total exports",
+  manifest = raw_manifest
 )
+
+# Market shares divide one year's exports by the same year's world total, so the three
+# critmin files must come from one vintage even though each is resolved on its own floor.
+critmin_years <- unique(sub(
+  "^.*_(\\d{4})\\.csv$", "\\1",
+  basename(c(critmin_import_path, critmin_export_path, critmin_total_export_path))
+))
+if (length(critmin_years) != 1) {
+  stop(
+    "Comtrade critical minerals files resolve to different vintages (",
+    paste(basename(c(critmin_import_path, critmin_export_path, critmin_total_export_path)), collapse = ", "),
+    "); stage a complete set for one year."
+  )
+}
+
 energy_prices_lcoe_path <- resolve_versioned_raw_input(
   raw_data_path,
   # BNEF stopped shipping a CSV export after the 2025 release and now stages the whole
@@ -341,7 +361,14 @@ country_info <- standardize_country_info(country_info)
 
   # Theme: Solar PV potential (Global Solar Atlas GIS data).
   solar_pv_raw <- read.csv(solar_pv_potential_path)
-  solar_pv_potential_tbl <- solar_pv_potential(solar_pv_raw)
+  # The ranking is restricted to the economies the index scores - WDI's plus the EI roster,
+  # which adds Taiwan - so the GIS layer's non-economy polygons (Northern Cyprus, Siachen
+  # Glacier, Somaliland) do not take a place in the percent ranks.
+  potential_roster <- dplyr::distinct(dplyr::bind_rows(
+    dplyr::select(country_info, country),
+    tibble::tibble(country = country_reference$Country)
+  ))
+  solar_pv_potential_tbl <- solar_pv_potential(solar_pv_raw, country_info = potential_roster)
   solar_pv_potential_tbl <- standardize_theme_types(
     solar_pv_potential_tbl,
     country_info = country_info
@@ -350,7 +377,7 @@ country_info <- standardize_country_info(country_info)
 
   # Theme: Wind potential (Global Wind Atlas country data).
   wind_raw <- read.csv(wind_potential_path)
-  wind_potential_tbl <- wind_potential(wind_raw)
+  wind_potential_tbl <- wind_potential(wind_raw, country_info = potential_roster)
   wind_potential_tbl <- standardize_theme_types(
     wind_potential_tbl,
     country_info = country_info
@@ -412,20 +439,8 @@ country_info <- standardize_country_info(country_info)
     processed_dir
   )
 
-  
-  # Theme: Technological readiness (IEA Clean Tech Guide).
-  # The 2026 public dataset ships with a UTF-8 BOM, which would otherwise land in the first
-  # column name and hide it from the layout check. The TRL window (2020-2025 for the 2026
-  # release) is read off whichever TRL columns the file carries.
-  iea_cleantech_guide <- read.csv(iea_cleantech_guide_path, fileEncoding = "UTF-8-BOM")
-  technological_readiness_tbl <- technological_readiness(
-    iea_cleantech_all = iea_cleantech_guide
-  )
-  write_processed_tbl(
-    technological_readiness_tbl,
-    "technological_readiness_tbl",
-    processed_dir
-  )
+  # Theme: Technological readiness is built after Export feasibility, whose countries it is
+  # copied to.
 
   # Theme: Critical minerals processing (IEA data).
   critical_minerals_processing_tbl <- critical_minerals_processing(
@@ -516,7 +531,9 @@ country_info <- standardize_country_info(country_info)
       "BNEF LCOE Data Viewer (",
       sub("^(\\d{4}-\\d{2}-\\d{2}).*$", "\\1", basename(energy_prices_lcoe_path)),
       ")"
-    )
+    ),
+    # Markets outside country_info (Taiwan) are not ranked.
+    country_info = country_info
   )
   lcoe_competitiveness_tbl <- standardize_theme_types(
     lcoe_competitiveness_tbl,
@@ -531,8 +548,38 @@ country_info <- standardize_country_info(country_info)
   # Theme: Trade concentration (Atlas data + WDI country reference).
   subcat <- readr::read_csv(hs6_category_path, show_col_types = FALSE)
 
-  aec_4_data <- read.csv(trade_hs4_path)
-  aec_6_data <- read.csv(trade_hs6_path)
+  # The Atlas panels are 0.4 and 0.9 GB. Read only the columns the trade themes use, keep
+  # product codes as text (read as integers, chapters 01-09 lose their leading zero), and
+  # keep only the newest year: both legs read the newest year the staged panel carries, so
+  # market share, the trade balance and feasibility describe the same year (the theme
+  # defaults, HS4 2022 and HS6 2023, had the feasibility leg a year behind).
+  read_atlas_panel <- function(path, columns) {
+    as.data.frame(data.table::fread(
+      path,
+      select = columns,
+      colClasses = list(character = "product_hs92_code"),
+      # Trade values pass 2^31; fread would otherwise return bit64 integers, which base
+      # arithmetic misreads without bit64 attached.
+      integer64 = "double",
+      showProgress = FALSE
+    ))
+  }
+  aec_6_data <- read_atlas_panel(
+    trade_hs6_path,
+    c("country_iso3_code", "product_hs92_code", "year", "export_value", "import_value", "global_market_share")
+  )
+  atlas_year_6 <- max(suppressWarnings(as.integer(aec_6_data$year)), na.rm = TRUE)
+  aec_6_data <- aec_6_data[aec_6_data$year == atlas_year_6, , drop = FALSE]
+  gc()
+
+  aec_4_data <- read_atlas_panel(
+    trade_hs4_path,
+    c("country_iso3_code", "product_hs92_code", "year", "distance")
+  )
+  atlas_year_4 <- max(suppressWarnings(as.integer(aec_4_data$year[!is.na(aec_4_data$distance)])), na.rm = TRUE)
+  aec_4_data <- aec_4_data[aec_4_data$year == atlas_year_4, , drop = FALSE]
+  gc()
+
   comtrade_energy_trade <- read.csv(comtrade_energy_trade_path)
   comtrade_total_export <- read.csv(comtrade_total_export_path)
 
@@ -560,6 +607,8 @@ country_info <- standardize_country_info(country_info)
     config$energy_security_include_sub_sector
   })
 
+  # atlas_year_6 / atlas_year_4 were set where the Atlas panels were read, above.
+  # gdp_data (WDI) scales the basket's net imports in the ES exposure term.
   trade_concentration_tbl <- trade_concentration(
     subcat = subcat,
     aec_4_data = aec_4_data,
@@ -567,8 +616,11 @@ country_info <- standardize_country_info(country_info)
     comtrade_trade = comtrade_energy_trade,
     comtrade_total_export = comtrade_total_export,
     country_info = country_info,
+    year_4 = atlas_year_4,
+    year_6 = atlas_year_6,
     year_comtrade = getOption("opportunity_security.comtrade_year"),
-    include_sub_sector = include_sub_sector
+    include_sub_sector = include_sub_sector,
+    gdp_data = gdp_data
   )
   
   trade_concentration_tbl <- standardize_theme_types(trade_concentration_tbl, country_info = country_info)
@@ -588,6 +640,8 @@ country_info <- standardize_country_info(country_info)
     gdp_data = gdp_data,
     comtrade_trade = comtrade_energy_trade,
     comtrade_total_export = comtrade_total_export,
+    year_4 = atlas_year_4,
+    year_6 = atlas_year_6,
     year_comtrade = getOption("opportunity_security.comtrade_year"),
     include_sub_sector = include_sub_sector
   )
@@ -611,6 +665,26 @@ country_info <- standardize_country_info(country_info)
   write_processed_tbl(
     overcapacity_premium_tbl,
     "overcapacity_premium_tbl",
+    processed_dir
+  )
+
+  # Theme: Technological readiness (IEA Clean Tech Guide).
+  # The 2026 public dataset ships with a UTF-8 BOM, which would otherwise land in the first
+  # column name and hide it from the layout check. The TRL window (2020-2025 for the 2026
+  # release) is read off whichever TRL columns the file carries.
+  # TRL is one value per technology. Like overcapacity it is copied to the countries the
+  # trade theme scores, so the pillar reads it as observed; a single "Global" row was
+  # imputed to every country instead. The trade countries, not all of country_info: seven
+  # WDI microstates (Monaco, Liechtenstein, ...) appear in no other EO input and would
+  # otherwise enter the EO grid on TRL alone.
+  iea_cleantech_guide <- read.csv(iea_cleantech_guide_path, fileEncoding = "UTF-8-BOM")
+  technological_readiness_tbl <- technological_readiness(
+    iea_cleantech_all = iea_cleantech_guide,
+    country_reference = unique(export_feasibility_tbl$Country)
+  )
+  write_processed_tbl(
+    technological_readiness_tbl,
+    "technological_readiness_tbl",
     processed_dir
   )
 
@@ -648,9 +722,12 @@ country_info <- standardize_country_info(country_info)
   )
 
   # Theme: Investment momentum + capacity (GCIM investment monitor).
+  # Critical-minerals investment is split between Batteries and EV Upstream by the IEA
+  # base-year demand shares for battery minerals instead of being counted in full in both.
   investment_momentum_tbl <- investment_momentum_from_excel(
     investment_monitor_path,
-    country_reference = country_reference$Country
+    country_reference = country_reference$Country,
+    critical_minerals_split = investment_critical_minerals_split(mineral_demand_clean)
   )
   investment_momentum_tbl <- standardize_theme_types(
     investment_momentum_tbl,
@@ -691,7 +768,7 @@ country_info <- standardize_country_info(country_info)
   hs6_categories_essential <- readr::read_csv(file.path(
     raw_data_path,"hs6_categories_with_essential.csv")) %>%
     rename("Value.Chain"="Value Chain")
-  tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE) 
+  tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE)
   cat_policy_raw <- readr::read_csv(cat_policy_path, show_col_types = FALSE) %>%
     rename("Overall.rating"="Overall rating")
   dual_use_scores_raw <- readr::read_csv(dual_use_scores_path, show_col_types = FALSE)
@@ -702,7 +779,8 @@ country_info <- standardize_country_info(country_info)
     arrange(desc(policy_strength)) %>%
     arrange(desc(year))
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
-  
+  rm(pams_raw)
+
   ally_iso3 <- c(
     "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA", "ITA", "BRA", "SAU",
     "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK", "ARG", "MAR", "CHL"
@@ -720,51 +798,97 @@ country_info <- standardize_country_info(country_info)
     ) %>%
     dplyr::left_join(country_lookup, by = c("implementing_country" = "country")) %>%
     dplyr::rename(iso = .data$iso3c) %>%
-    dplyr::filter(.data$iso %in% ally_iso3)
+    dplyr::filter(.data$iso %in% ally_iso3) %>%
+    dplyr::select(-"implementing_country", -"iso")
 
-  
-  nipo_us<-nipo_raw %>%
-    filter(`Implementing Jurisdiction`=="United States of America")
-  
+  # Which implementing jurisdictions NIPO scores. "all" (the default, and the committed
+  # behaviour since Feb 2026) keeps every jurisdiction in the extract (77 in the 2026
+  # extracts), so the S-curve across countries within each tech x stage ranks a country
+  # against all the economies GTA monitors and the Policy index is not conditioned on allied
+  # status. "allies" reproduces the Feb and June 2026 builds, which ran on the 23 allies
+  # only. OPSI_NIPO_SCOPE=allies is also the fallback if the full extract runs out of memory.
+  nipo_scope <- tolower(Sys.getenv("OPSI_NIPO_SCOPE", "all"))
+  if (!nipo_scope %in% c("all", "allies")) {
+    stop("OPSI_NIPO_SCOPE must be 'all' or 'allies', not '", nipo_scope, "'.")
+  }
+  nipo_input <- if (identical(nipo_scope, "allies")) nipo_allies else nipo_raw
+  rm(nipo_raw, nipo_allies)
+  invisible(gc())
+
+  # The NIPO stock counts measures in force on its as-of date: the extract's latest
+  # announcement date (the add_asof_flags() default), capped at the last day of the release
+  # month in the file name and at today. The June 2026 build defaulted to the latest
+  # implementation date instead, 2028-10-01, and so counted measures scheduled for 2027-28.
+  nipo_as_of_cap <- nipo_as_of_cap_date(
+    raw_input_vintage_key(nipo_policy_path),
+    run_date = Sys.Date()
+  )
+
   nipo_policy_out <- nipo_domestic_intervention_outputs(
-    raw_nipo = nipo_raw,
-    hs6_categories_essential,
+    raw_nipo = nipo_input,
+    subcat_raw = hs6_categories_essential,
+    hs6_essential_tbl = hs6_categories_essential,
     country_info = country_info,
+    as_of_cap = nipo_as_of_cap,
+    # by_hs6 and by_cpc are never used downstream and are the memory peak on a full extract
+    # (one row per policy x HS6 code with every policy column attached).
+    include_hs6 = FALSE,
+    include_cpc = FALSE,
+    year_max = if (is.na(nipo_as_of_cap)) NULL else as.integer(format(nipo_as_of_cap, "%Y")),
     rolling_window_years = 3,
     balance_alpha = 0.5,
     weight_by_active_fraction = TRUE
   )
+  rm(nipo_input)
 
 
-  nipo_policy_all <- nipo_policy_out$by_policy%>% 
+  nipo_policy_all <- nipo_policy_out$by_policy%>%
     select(`Implementing Jurisdiction`,Title,domestic_intervention_index,
            `Implementation Date`,`Removal Date`, bite_strength_base:policy_strength_pkg,
            tech_csv,supply_chain_csv,mapping_confidence_mean,Source,URL) %>%
     arrange(desc(mapping_confidence_mean)) %>%
     arrange(desc(domestic_intervention_index))
-  
-  nipo_hs6 <- nipo_policy_out$by_hs6
+
   nipo_tech_year <- nipo_policy_out$by_tech_sc_year
-  nipo_policy_cpc <- nipo_policy_out$by_cpc
   nipo_policy_index_tbl <- nipo_policy_out$by_tech_sc
-  
+  nipo_as_of_date <- max(nipo_policy_index_tbl$as_of_date, na.rm = TRUE)
+  rm(nipo_policy_out)
+  invisible(gc())
+
   write_processed_tbl(nipo_tech_year, "nipo_tech_year", processed_dir)
   write_processed_tbl(nipo_policy_index_tbl, "nipo_policy_index_tbl", processed_dir)
   write_processed_tbl(nipo_policy_all, "nipo_policy_all", processed_dir)
-  
-  
+
+
   policy_outputs <- list(
     policy_agg = iea_policy_outputs$outputs$policy_agg,
     policy_clean = iea_policy_outputs$outputs$policy_clean,
     iea = iea_policy_outputs$outputs,
-    nipo = nipo_policy_index_tbl
+    nipo = nipo_policy_index_tbl,
+    # Read back by scripts/20, which warns when a component table carries no provenance.
+    provenance = list(
+      built_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
+      nipo_extract = basename(nipo_policy_path),
+      nipo_scope = nipo_scope,
+      nipo_as_of_date = nipo_as_of_date,
+      nipo_jurisdictions = dplyr::n_distinct(nipo_policy_index_tbl$country),
+      iea_pams_extract = basename(iea_pams_path),
+      cat_ratings = basename(cat_policy_path)
+    )
   )
   policy_agg <- policy_outputs$policy_agg
   policy_clean <- policy_outputs$policy_clean
 
   tech_ghg <- partnership_strength_clean_ghg(tech_ghg_raw)
-  cat_policy_tbl <- partnership_strength_clean_policy(cat_policy_raw,country_info=country_info)
+  # CAT labels resolved to WDI names, and EU members without their own rating given the EU
+  # bloc rating (R/categories/policy/cat_policy_index.R); rating_scope marks which.
+  cat_ratings <- cat_prepare_ratings(cat_policy_raw, country_info = country_info)
+  cat_policy_tbl <- partnership_strength_clean_policy(cat_ratings, country_info = country_info) %>%
+    dplyr::left_join(dplyr::distinct(cat_ratings, Country, rating_scope), by = "Country")
   cat_policy_index_tbl <- cat_policy_index(tech_ghg, cat_policy_tbl)
+  policy_outputs$provenance$cat_eu_bloc_members <- sort(
+    cat_ratings$Country[cat_ratings$rating_scope == "EU bloc rating"]
+  )
   write_processed_tbl(tech_ghg, "tech_ghg_tbl", processed_dir)
 
   dual_use_scores_tbl <- clean_dual_use_scores(
@@ -777,17 +901,26 @@ country_info <- standardize_country_info(country_info)
   )
   write_processed_tbl(dual_use_scores_tbl, "dual_use_scores_tbl", processed_dir)
 
+  # iso3c is carried so the rows take the WDI name by code rather than by spelling.
+  # standardize_theme_types() needs `category`; without it this step stopped with "object
+  # 'category' not found", which is why the June 2026 run wrote the NIPO tables but never
+  # policy_component_tbl or policy_outputs.
   nipo_policy_index_tbl <- nipo_policy_index_tbl %>%
     transmute(
       Country = country,
+      iso3c = iso3,
       tech,
       supply_chain,
+      category = "Policy",
       variable = "NIPO Policy Index",
-      data_type = "Index",
+      data_type = "index",
       value = domestic_intervention_index,
-      Year = 2026,
-      source = "NIPO",
-      explanation = "See README"
+      Year = as.integer(format(as_of_date, "%Y")),
+      source = paste0("GTA NIPO (", basename(nipo_policy_path), ")"),
+      explanation = paste0(
+        "Domestic intervention stock in force on ", format(as_of_date),
+        ", S-curved across countries within tech x stage"
+      )
     ) %>%
     standardize_theme_types(country_info = country_info)
 

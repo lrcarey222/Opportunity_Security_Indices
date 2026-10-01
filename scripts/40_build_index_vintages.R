@@ -198,6 +198,8 @@ static_themes <- list(
 message("Reading raw inputs for time-varying themes ...")
 
 country_info <- standardize_country_info(read.csv(file.path(raw_data_path, "wdi_country_info.csv")))
+# WDI GDP scales the ES trade exposure term (net basket imports / GDP), as in scripts/10.
+gdp_data <- read.csv(file.path(raw_data_path, "wdi_gdp.csv"))
 
 ei <- read.csv(file.path(raw_data_path, "ei_stat_review_world_energy.csv"))
 ei_years <- sort(unique(suppressWarnings(as.integer(ei$Year))))
@@ -361,15 +363,16 @@ build_varying_themes <- function(year) {
   ) %>%
     standardize_theme_types(country_info = country_info)
 
-  trade_tbl <- atlas_trade_theme(
+  trade_tbls <- atlas_trade_theme(
     aec_4_data = atlas_hs4,
     aec_6_data = atlas_hs6,
     subcat = subcat,
     country_info = country_info,
     year = atlas_year,
-    include_sub_sector = include_sub_sector
+    include_sub_sector = include_sub_sector,
+    gdp_data = gdp_data
   ) %>%
-    standardize_theme_types(country_info = country_info)
+    lapply(standardize_theme_types, country_info = country_info)
 
   energy_prices_tbl <- energy_prices(
     imf_price = imf_prices_slice,
@@ -392,7 +395,9 @@ build_varying_themes <- function(year) {
   investment_momentum_tbl <- investment_momentum(
     annual_tbl = gcim_slice,
     capacity_tbl = gcim_capacity,
-    country_reference = country_reference$Country
+    country_reference = country_reference$Country,
+    # Same Batteries/EV split of GCIM critical-minerals investment as scripts/10.
+    critical_minerals_split = investment_critical_minerals_split(mineral_demand_clean)
   ) %>%
     standardize_theme_types(country_info = country_info)
 
@@ -402,8 +407,8 @@ build_varying_themes <- function(year) {
       energy_consumption = energy_consumption_tbl,
       import_dependence = import_dependence_tbl,
       production_depth_momentum = production_depth_momentum_tbl,
-      trade_concentration = trade_tbl,
-      export_feasibility = trade_tbl,
+      trade_concentration = trade_tbls$trade_concentration,
+      export_feasibility = trade_tbls$export_feasibility,
       energy_prices = energy_prices_tbl,
       cost_competitiveness = cost_competitiveness_tbl,
       investment_momentum = investment_momentum_tbl
