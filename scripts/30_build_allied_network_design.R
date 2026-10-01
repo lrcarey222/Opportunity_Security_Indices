@@ -133,9 +133,29 @@ if (is.null(economic_opportunity_index) || is.null(energy_security_index) || is.
   stop("Index outputs missing one of: economic_opportunity_index, energy_security_index, policy_index")
 }
 
-# Partner dyad tables (from scripts/15_build_partner_themes.R)
-partner_friendshore_tbl <- read_processed_tbl("partner_friendshore_tbl")
-partner_opportunity_tbl <- read_processed_tbl("partner_opportunity_tbl")
+# Coalition definition. ARE is the ISO3 code for the United Arab Emirates ("UAE" matched no table).
+iso3c_network <- allied_network_default_iso3c()
+
+# Partner dyad tables (from scripts/15_build_partner_themes.R). The friendshore table has ~17M rows;
+# keep only the coalition's index rows as each table is read, so the full tables are never held
+# together. allied_network_design() collapses whatever duplicates remain.
+partner_tbl_cols <- c("reporter_iso", "partner_iso", "tech", "supply_chain", "category", "variable", "data_type", "value", "Year")
+read_coalition_dyads <- function(name, variable_name) {
+  tbl <- read_processed_tbl(name)
+  out <- tbl %>%
+    dplyr::filter(
+      variable == variable_name,
+      reporter_iso %in% iso3c_network,
+      partner_iso %in% iso3c_network
+    ) %>%
+    dplyr::select(dplyr::any_of(partner_tbl_cols)) %>%
+    tibble::as_tibble()
+  rm(tbl)
+  invisible(gc())
+  out
+}
+partner_friendshore_tbl <- read_coalition_dyads("partner_friendshore_tbl", "Friendshore Index")
+partner_opportunity_tbl <- read_coalition_dyads("partner_opportunity_tbl", "Opportunity Index")
 partner_development_country_tbl <- NULL
 dev_path <- file.path(processed_dir, "partner_development_country_tbl.rds")
 if (file.exists(dev_path)) {
@@ -164,67 +184,16 @@ wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")
 country_info <- read.csv(wdi_country_path)
 country_info <- standardize_country_info(country_info)
 
-load_country_size_tbl <- function(raw_data_path, country_info, iso3c_network) {
-  gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
-  if (!file.exists(gdp_path)) stop("GDP file not found: ", gdp_path)
-  gdp_raw <- read.csv(gdp_path, stringsAsFactors = FALSE)
-
-  lower_names <- tolower(names(gdp_raw))
-  year_col <- names(gdp_raw)[match(TRUE, lower_names %in% c("year"), nomatch = 0)]
-  country_col <- names(gdp_raw)[match(TRUE, lower_names %in% c("country", "country_name"), nomatch = 0)]
-  iso_col <- names(gdp_raw)[match(TRUE, lower_names %in% c("iso3c", "iso3", "iso_code"), nomatch = 0)]
-
-  gdp_col <- if ("NY.GDP.MKTP.CD" %in% names(gdp_raw)) {
-    "NY.GDP.MKTP.CD"
-  } else {
-    candidate <- names(gdp_raw)[vapply(gdp_raw, is.numeric, logical(1))]
-    candidate <- setdiff(candidate, c(year_col, "iso2c", "country", "Country", "iso3c"))
-    if (!length(candidate)) stop("No usable GDP numeric column found in wdi_gdp.csv")
-    candidate[[1]]
-  }
-
-  if (is.null(country_col) || !nzchar(country_col)) stop("Could not identify country column in wdi_gdp.csv")
-
-  gdp_tbl <- gdp_raw %>%
-    dplyr::transmute(
-      country = standardize_country_names(.data[[country_col]]),
-      iso3c = if (!is.null(iso_col) && nzchar(iso_col)) toupper(as.character(.data[[iso_col]])) else NA_character_,
-      year = if (!is.null(year_col) && nzchar(year_col)) suppressWarnings(as.numeric(.data[[year_col]])) else NA_real_,
-      gdp_usd = suppressWarnings(as.numeric(.data[[gdp_col]]))
-    ) %>%
-    dplyr::left_join(country_info %>% dplyr::transmute(country = standardize_country_names(country), iso3c_ref = toupper(as.character(iso3c))), by = "country") %>%
-    dplyr::mutate(iso3c = dplyr::coalesce(iso3c, iso3c_ref)) %>%
-    dplyr::select(-iso3c_ref) %>%
-    dplyr::filter(iso3c %in% iso3c_network) %>%
-    dplyr::group_by(iso3c) %>%
-    dplyr::arrange(dplyr::desc(year), .by_group = TRUE) %>%
-    dplyr::slice(1) %>%
-    dplyr::ungroup()
-
-  med <- stats::median(gdp_tbl$gdp_usd[is.finite(gdp_tbl$gdp_usd)], na.rm = TRUE)
-  if (!is.finite(med)) med <- 1
-
-  tibble::tibble(iso3c = iso3c_network) %>%
-    dplyr::left_join(gdp_tbl, by = "iso3c") %>%
-    dplyr::left_join(country_info %>% dplyr::transmute(iso3c = toupper(as.character(iso3c)), country_ref = country), by = "iso3c") %>%
-    dplyr::mutate(
-      country = dplyr::coalesce(country, country_ref),
-      year = suppressWarnings(as.numeric(year)),
-      gdp_imputed = !is.finite(gdp_usd),
-      gdp_usd = dplyr::if_else(is.finite(gdp_usd), gdp_usd, med)
-    ) %>%
-    dplyr::select(iso3c, country, year, gdp_usd, gdp_imputed)
-}
-
-
-# Coalition definition (your list)
-iso3c_network <- c(
-  "USA","CAN","JPN","AUS","IND","MEX","KOR","GBR","DEU","FRA","ITA","BRA","SAU",
-  "ZAF","IDN","NOR","UAE","VNM","KEN","DNK","ARG","MAR","CHL"
+# Coalition GDP: latest finite WDI year per member (see allied_network_country_size_tbl)
+gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
+if (!file.exists(gdp_path)) stop("GDP file not found: ", gdp_path)
+country_size_tbl <- allied_network_country_size_tbl(
+  read.csv(gdp_path, stringsAsFactors = FALSE),
+  country_info,
+  iso3c_network
 )
 
 # Run
-country_size_tbl <- load_country_size_tbl(raw_data_path, country_info, iso3c_network)
 fmt_time <- function(seconds) {
   if (!is.finite(seconds) || is.na(seconds)) return("--:--")
   seconds <- max(0, round(seconds))
@@ -269,8 +238,9 @@ progress_callback <- function(info) {
 }
 
 
+auto_milp_max_nodes <- 30
 if (milp_available) {
-  message("MILP solver stack detected (ompr/ROI/GLPK). method='auto' will use MILP (unless stage too large or solver errors).")
+  message("MILP solver stack detected (ompr/ROI/GLPK). method='auto' uses MILP for stages with up to ", auto_milp_max_nodes, " members; greedy if a stage is larger or the solver fails.")
 } else {
   message("MILP solver stack not detected. method='auto' will use greedy fallback.")
 }
@@ -284,7 +254,7 @@ res <- allied_network_design(
   partner_development_country_tbl = partner_development_country_tbl,
   country_info = country_info,
   iso3c_network = iso3c_network,
-  method = "auto",        # uses MILP if installed, otherwise greedy
+  method = "auto",        # MILP per stage when installed and the stage is small enough, else greedy
   min_producers = 3,
   max_share = 0.40,
   min_share = 0.05,
@@ -295,7 +265,7 @@ res <- allied_network_design(
   w_edge = 0.5,
   w_dev = 0.0,
   progress_callback = progress_callback,
-  auto_milp_max_nodes = 18,
+  auto_milp_max_nodes = auto_milp_max_nodes,
   milp_stage_time_limit_sec = 120,
   country_size_tbl = country_size_tbl,
   demand_mode = "mixed",
@@ -304,7 +274,19 @@ res <- allied_network_design(
   portfolio_top_k = 5,
   portfolio_min_cap = 2,
   portfolio_max_cap = 10,
-  portfolio_transform = "log"
+  portfolio_transform = "log",
+  # missing-data rules and edge orientation (the function defaults, stated for the record)
+  policy_missing = "coalition_median",
+  missing_components = "renormalize",
+  friendshore_orientation = "reporter_is_consumer"
+)
+
+diag_tbl <- res$diagnostics
+message(
+  "Allied network: ", nrow(diag_tbl), " stages; method per stage: ",
+  paste(names(table(diag_tbl$method)), table(diag_tbl$method), sep = " = ", collapse = ", "),
+  "; policy-imputed members selected in ", sum(dplyr::coalesce(diag_tbl$n_selected_policy_imputed, 0L) > 0), " stages",
+  if (!is.null(res$portfolio)) paste0("; portfolio converged: ", res$portfolio$converged, " after ", res$portfolio$iters, " iterations") else ""
 )
 
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
@@ -317,6 +299,7 @@ if (!dir.exists(outputs_dir)) dir.create(outputs_dir, recursive = TRUE)
 utils::write.csv(res$specialization, file.path(outputs_dir, "allied_network_specialization.csv"), row.names = FALSE)
 utils::write.csv(res$flows,          file.path(outputs_dir, "allied_network_flows.csv"),         row.names = FALSE)
 utils::write.csv(res$diagnostics,    file.path(outputs_dir, "allied_network_diagnostics.csv"),   row.names = FALSE)
+utils::write.csv(res$input_checks,   file.path(outputs_dir, "allied_network_input_checks.csv"),  row.names = FALSE)
 if (!is.null(res$build_candidates)) {
   utils::write.csv(res$build_candidates, file.path(outputs_dir, "allied_network_build_candidates.csv"), row.names = FALSE)
 }

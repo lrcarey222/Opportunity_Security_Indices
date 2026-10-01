@@ -101,7 +101,7 @@ install_if_missing <- is_true(Sys.getenv("OPSI_INSTALL_MILP_PKGS", "true"))
 require_milp <- is_true(Sys.getenv("OPSI_REQUIRE_MILP", "false"))
 milp_available <- ensure_milp_pkgs(install_if_missing = install_if_missing, require_milp = require_milp)
 if (milp_available) {
-  message("MILP solver stack detected (ompr/ROI/GLPK). method='auto' will use MILP (unless stage too large or solver errors).")
+  message("MILP solver stack detected (ompr/ROI/GLPK). method='auto' uses MILP per stage (greedy if a stage is larger than auto_milp_max_nodes or the solver fails).")
 } else {
   message("MILP solver stack not detected. method='auto' will use greedy fallback.")
 }
@@ -122,12 +122,14 @@ required_paths <- function(config, repo_root) {
     partner_friendshore = file.path(processed_dir, "partner_friendshore_tbl.rds"),
     partner_opportunity = file.path(processed_dir, "partner_opportunity_tbl.rds"),
     partner_development_optional = file.path(processed_dir, "partner_development_country_tbl.rds"),
-    wdi_country_info = file.path(repo_root, config$raw_data_dir, "wdi_country_info.csv")
+    wdi_country_info = file.path(repo_root, config$raw_data_dir, "wdi_country_info.csv"),
+    # coalition GDP (demand size and portfolio caps); scripts/30 stops without it
+    wdi_gdp = file.path(repo_root, config$raw_data_dir, "wdi_gdp.csv")
   )
 }
 
 missing_required <- function(paths) {
-  required <- c(paths$outputs_rds, paths$partner_friendshore, paths$partner_opportunity, paths$wdi_country_info)
+  required <- c(paths$outputs_rds, paths$partner_friendshore, paths$partner_opportunity, paths$wdi_country_info, paths$wdi_gdp)
   required[!file.exists(required)]
 }
 
