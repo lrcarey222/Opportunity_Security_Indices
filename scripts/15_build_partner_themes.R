@@ -43,6 +43,7 @@ source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_
 source(file.path(repo_root, "R", "themes", "partnership_strength", "prosperous_opportunity.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "safer_friendshore.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "stronger_development.R"))
+source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
 
 config <- getOption("opportunity_security.config")
 weights <- getOption("opportunity_security.weights")
@@ -163,9 +164,23 @@ if (!exists("economic_opportunity_outputs") || !exists("energy_security_outputs"
   energy_security_outputs <- index_outputs$energy_security_outputs
 }
 
+# imf_dip.csv is ~1.9 GB, mostly repeated metadata text; read only the columns the outbound
+# builder uses (read.csv of the whole file needs several GB).
+read_imf_dip <- function(path) {
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    return(read.csv(path))
+  }
+  header <- names(data.table::fread(path, nrows = 0))
+  keep <- c(
+    intersect(c("COUNTRY", "COUNTERPART_COUNTRY", "DV_TYPE", "INDICATOR"), header),
+    grep("^X?[0-9]{4}$", header, value = TRUE)
+  )
+  as.data.frame(data.table::fread(path, select = keep, showProgress = FALSE))
+}
+
 comtrade_dyads <- read.csv(comtrade_dyads_path)
 subcat <- read.csv(subcat_path)
-fdi_raw <- read.csv(fdi_path)
+fdi_raw <- read_imf_dip(fdi_path)
 tech_ghg_raw <- read.csv(tech_ghg_path)
 cat_raw <- read.csv(cat_policy_path)
 country_info <- read.csv(country_info_path)
@@ -180,8 +195,24 @@ econ_opp_index <- economic_opportunity_outputs$index
 energy_security_index <- energy_security_outputs$index
 
 tech_ghg <- partnership_strength_clean_ghg(tech_ghg_raw)
-policy_tbl <- partnership_strength_clean_policy(cat_raw)
+# Same CAT treatment as the Policy index (scripts/10): WDI names, and EU members without
+# their own rating take the EU bloc rating.
+policy_tbl <- partnership_strength_clean_policy(
+  cat_prepare_ratings(cat_raw, country_info = country_info),
+  country_info = country_info
+)
 
+# The partner themes rank over the pillars' 11 headline technologies (scripts/20 `techs`); the
+# all-tech ES/EO tables also carry minerals, Aluminium, Steel, Heat pumps and NA-tech rows.
+partner_techs <- partnership_strength_headline_techs()
+
+# Table shapes written below (see the builders' headers for the direction conventions):
+# - partner_friendshore_* / partner_opportunity_*: one row per (reporter_iso, partner_iso, tech,
+#   supply_chain, variable), self-dyads excluded. Friendshore: reporter = importer rating the
+#   partner as a supplier. Opportunity: reporter = exporter rating the partner as a market.
+#   *_country_tbl is the partner-level mean over reporters of the dyad index.
+# - partner_development_*: partner-level, one row per (partner_iso, tech, supply_chain,
+#   variable), non-high-income partners only; there is no reporter dimension.
 friendshore_outputs <- safer_friendshore(
   comtrade_dyads = comtrade_dyads,
   subcat = subcat,
@@ -192,15 +223,19 @@ friendshore_outputs <- safer_friendshore(
   fdi_raw = fdi_raw,
   country_info = country_info,
   gdp_data = country_gdp,
-  component_weights = weights$partnership_friendshore_components
+  component_weights = weights$partnership_friendshore_components,
+  techs = partner_techs
 )
+rm(fdi_raw)
+invisible(gc())
 
 partner_friendshore_variable_tbl <- friendshore_outputs$variable
 partner_friendshore_contributions_tbl <- friendshore_outputs$contributions
 partner_friendshore_top5_tbl <- friendshore_outputs$top5
+partner_friendshore_country_tbl <- friendshore_outputs$country
 write_processed_tbl(partner_friendshore_variable_tbl, "partner_friendshore_tbl", processed_dir)
 write_processed_tbl(
-  partner_friendshore_variable_tbl,
+  partner_friendshore_country_tbl,
   "partner_friendshore_country_tbl",
   processed_dir
 )
@@ -233,15 +268,17 @@ opportunity_outputs <- prosperous_opportunity(
   tech_ghg = tech_ghg,
   policy = policy_tbl,
   country_info = country_info,
-  component_weights = weights$partnership_opportunity_components
+  component_weights = weights$partnership_opportunity_components,
+  techs = partner_techs
 )
 
 partner_opportunity_variable_tbl <- opportunity_outputs$variable
 partner_opportunity_contributions_tbl <- opportunity_outputs$contributions
 partner_opportunity_top5_tbl <- opportunity_outputs$top5
+partner_opportunity_country_tbl <- opportunity_outputs$country
 write_processed_tbl(partner_opportunity_variable_tbl, "partner_opportunity_tbl", processed_dir)
 write_processed_tbl(
-  partner_opportunity_variable_tbl,
+  partner_opportunity_country_tbl,
   "partner_opportunity_country_tbl",
   processed_dir
 )
@@ -267,17 +304,19 @@ write_processed_tbl(
 )
 
 development_outputs <- stronger_development(
-  comtrade_dyads = comtrade_dyads,
-  subcat = subcat,
   country_info = country_info,
   gdp_data = country_gdp,
   economic_opportunity_index = econ_opp_index,
   energy_security_index = energy_security_index,
   wb_wdi = wb_wdi,
   wb_doingbusiness = wb_doingbusiness,
-  oecd_api_raw = oecd_api_raw
+  oecd_api_raw = oecd_api_raw,
+  component_weights = weights$partnership_development_components,
+  techs = partner_techs
 )
 
+# Development is partner-level, so the "country" table is the variable table itself (one row per
+# partner, tech, stage and variable); the allied network joins it to nodes on partner_iso.
 partner_development_variable_tbl <- development_outputs$variable
 partner_development_contributions_tbl <- development_outputs$contributions
 partner_development_top5_tbl <- development_outputs$top5
@@ -310,13 +349,12 @@ write_processed_tbl(
 
 
 
-outputs_rds_path <- Sys.getenv("OPSI_OUTPUTS_RDS", "")
+# Its own path. This used OPSI_OUTPUTS_RDS / config$outputs_rds, which name the index outputs
+# this script reads, so setting either overwrote index_outputs.rds; and without them it used
+# `outputs_dir`, which only scripts/20 defines.
+outputs_rds_path <- Sys.getenv("OPSI_PARTNERSHIP_OUTPUTS_RDS", "")
 if (!nzchar(outputs_rds_path)) {
-  outputs_rds_path <- if (!is.null(config$outputs_rds) && nzchar(config$outputs_rds)) {
-    file.path(repo_root, config$outputs_rds)
-  } else {
-    file.path(outputs_dir, "partnership_index_outputs.rds")
-  }
+  outputs_rds_path <- file.path(processed_dir, "outputs", "partnership_index_outputs.rds")
 }
 
 outputs_rds_dir <- dirname(outputs_rds_path)
@@ -329,9 +367,11 @@ saveRDS(
     partner_friendshore_variable_tbl = partner_friendshore_variable_tbl,
     partner_friendshore_contributions_tbl = partner_friendshore_contributions_tbl,
     partner_friendshore_top5_tbl = partner_friendshore_top5_tbl,
+    partner_friendshore_country_tbl = partner_friendshore_country_tbl,
     partner_opportunity_contributions_tbl = partner_opportunity_contributions_tbl,
     partner_opportunity_variable_tbl = partner_opportunity_variable_tbl,
     partner_opportunity_top5_tbl = partner_opportunity_top5_tbl,
+    partner_opportunity_country_tbl = partner_opportunity_country_tbl,
     partner_development_variable_tbl = partner_development_variable_tbl,
     partner_development_contributions_tbl = partner_development_contributions_tbl,
     partner_development_top5_tbl = partner_development_top5_tbl

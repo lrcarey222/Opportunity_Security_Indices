@@ -1,4 +1,25 @@
-# Prosperous opportunity theme (partner-level opportunity index).
+# Prosperous opportunity theme (dyadic export-opportunity index).
+#
+# Direction convention. In every opportunity table the reporter (reporter_iso) is the exporting
+# country and the partner (partner_iso) is the candidate export market: Opportunity(i, j, t, s)
+# rates market j for reporter i's exports of (t, s), from i's reported exports to j, i's own
+# economic opportunity and j's energy-security need, less a climate penalty on j. Friendshore
+# uses the import flow (reporter = importer, partner = supplier; safer_friendshore.R), so both
+# rate the partner from the reporter's side. The tables are not transposed here.
+#
+# Universe: reporters with an EO record x partners with an ES record, one row per ISO3, no
+# self-dyads. The trade component is observed only for the Comtrade reporters; other dyads take
+# the (tech, stage) mean.
+
+# Code defaults; the pipeline passes config/weights.yml partnership_opportunity_components.
+partnership_strength_opportunity_default_weights <- function() {
+  list(
+    trade_index = 2,
+    econ_opp_index = 2,
+    partner_es_need = 1,
+    climate_policy_weight = 0.2
+  )
+}
 
 partnership_strength_clean_trade_data <- function(comtrade_dyads, subcat, years = 2020:2024) {
   require_columns(
@@ -88,46 +109,36 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
                                                          tech_ghg,
                                                          policy,
                                                          country_info,
-                                                         component_weights = NULL) {
-  default_weights <- list(
-    trade_index = 2,
-    econ_opp_index = 2,
-    energy_security_index = 1,
-    climate_policy_weight = 0.2
-  )
-  climate_policy_weight <- 0.2
-  if (!is.null(component_weights)) {
-    if (!is.null(component_weights$climate_policy_weight)) {
-      climate_policy_weight <- component_weights$climate_policy_weight
-    }
-    component_weights_mean <- component_weights[names(default_weights)]
-  } else {
-    component_weights_mean <- NULL
-  }
-  component_weights <- partnership_strength_resolve_weights(
-    component_weights_mean,
-    default_weights,
-    "Opportunity component"
-  )
-  econ_opp_iso <- econ_opp_index %>%
-    dplyr::mutate(
-      Country = partnership_strength_standardize_countries(Country),
-      exporter_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
-    dplyr::filter(!is.na(exporter_iso)) %>%
-    dplyr::group_by(tech,supply_chain) %>%
-    dplyr::mutate(value=median_scurve(Economic_Opportunity_Index)
-    ) %>%
-    dplyr::transmute(exporter_iso, tech, supply_chain, econ_opp_raw = value)
+                                                         component_weights = NULL,
+                                                         techs = NULL) {
+  component_weights <- partnership_strength_resolve_opportunity_weights(component_weights)
+  climate_policy_weight <- component_weights$climate_policy_weight
 
-  energy_sec_iso <- energy_security_index %>%
-    dplyr::mutate(
-      Country = partnership_strength_standardize_countries(Country),
-      partner_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
-    dplyr::filter(!is.na(partner_iso)) %>%
-    dplyr::group_by(tech,supply_chain) %>%
-    dplyr::mutate(value=median_scurve(Energy_Security_Index)
-    ) %>%
-    dplyr::transmute(partner_iso, tech, supply_chain, energy_sec_raw = 1 - value)
+  # One value per (ISO3, tech, stage) before any ranking; the ES/EO tables file some economies
+  # under several spellings (partnership_strength_country_iso_table()).
+  econ_opp_iso <- partnership_strength_country_iso_table(
+    econ_opp_index,
+    "Economic_Opportunity_Index",
+    country_info,
+    techs = techs
+  ) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(value = median_scurve(Economic_Opportunity_Index)) %>%
+    dplyr::ungroup() %>%
+    dplyr::transmute(exporter_iso = iso3c, tech, supply_chain, econ_opp_raw = value)
+
+  # Partner (market) need: 1 - the partner's cross-country ES rank in (tech, stage). Higher = a
+  # less secure market = more room for the reporter's exports. Not a security score.
+  energy_sec_iso <- partnership_strength_country_iso_table(
+    energy_security_index,
+    "Energy_Security_Index",
+    country_info,
+    techs = techs
+  ) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(value = median_scurve(Energy_Security_Index)) %>%
+    dplyr::ungroup() %>%
+    dplyr::transmute(partner_iso = iso3c, tech, supply_chain, energy_sec_raw = 1 - value)
 
   ghg_iso <- tech_ghg %>%
     dplyr::transmute(tech, ghg_index = as.numeric(ghg_index))
@@ -151,9 +162,11 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
     dplyr::distinct(partner_iso, tech, supply_chain)
 
   dyad_backbone <- reporter_keys %>%
-    dplyr::inner_join(partner_keys, by = c("tech", "supply_chain"), relationship = "many-to-many")
+    dplyr::inner_join(partner_keys, by = c("tech", "supply_chain"), relationship = "many-to-many") %>%
+    # A country is not its own export market; keep self-dyads out of every ranking.
+    dplyr::filter(reporter_iso != partner_iso)
 
-  dyad_backbone %>%
+  out <- dyad_backbone %>%
     dplyr::left_join(trade_indices, by = c("reporter_iso", "partner_iso", "tech", "supply_chain")) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
@@ -175,25 +188,24 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
       econ_opp_index = partnership_strength_safe_scurve(econ_opp_raw),
-      energy_security_index = partnership_strength_safe_scurve(energy_sec_raw),
+      # Called energy_security_index until 2026-09; it is the partner's INsecurity (need).
+      partner_es_need = partnership_strength_safe_scurve(energy_sec_raw),
       ghg_index = dplyr::coalesce(ghg_index, default_ghg),
       climate_policy_index = dplyr::coalesce(climate_policy_index, default_policy)
     ) %>%
     dplyr::ungroup() %>%
-    dplyr::rowwise() %>%
     dplyr::mutate(
-      opportunity_raw = partnership_strength_weighted_mean(
-        c(trade_index, econ_opp_index, energy_security_index),
+      opportunity_raw = partnership_strength_row_weighted_mean(
+        list(trade_index, econ_opp_index, partner_es_need),
         c(
           component_weights$trade_index,
           component_weights$econ_opp_index,
-          component_weights$energy_security_index
+          component_weights$partner_es_need
         )
       ),
       penalty = (1 - ghg_index) * climate_policy_index * climate_policy_weight,
       opportunity_index_raw = pmax(0, opportunity_raw - penalty)
     ) %>%
-    dplyr::ungroup() %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(opportunity_index = partnership_strength_safe_scurve(opportunity_index_raw)) %>%
     dplyr::group_by(reporter_iso) %>%
@@ -206,7 +218,7 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       supply_chain,
       trade_index,
       econ_opp_index,
-      energy_security_index,
+      partner_es_need,
       ghg_index,
       climate_policy_index,
       penalty,
@@ -215,6 +227,40 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       opportunity_index,
       opportunity_index_country
     )
+
+  partnership_strength_assert_unique(
+    out,
+    c("reporter_iso", "partner_iso", "tech", "supply_chain"),
+    label = "opportunity dyads"
+  )
+}
+
+# Resolve the opportunity weights: the three component weights plus climate_policy_weight.
+# The partner-need component was keyed energy_security_index before it was renamed; an old
+# config using that key is still read, with a warning.
+partnership_strength_resolve_opportunity_weights <- function(component_weights = NULL) {
+  defaults <- partnership_strength_opportunity_default_weights()
+  if (is.null(component_weights) || length(component_weights) == 0) {
+    return(defaults)
+  }
+  component_weights <- as.list(component_weights)
+  if (!is.null(component_weights$energy_security_index) && is.null(component_weights$partner_es_need)) {
+    warning(
+      "Opportunity weight 'energy_security_index' is now 'partner_es_need' (the partner's energy-security need); ",
+      "reading it under the new name.",
+      call. = FALSE
+    )
+    component_weights$partner_es_need <- component_weights$energy_security_index
+  }
+  component_weights$energy_security_index <- NULL
+  if (is.null(component_weights$climate_policy_weight)) {
+    component_weights$climate_policy_weight <- defaults$climate_policy_weight
+  }
+  partnership_strength_resolve_weights(
+    component_weights[intersect(names(defaults), names(component_weights))],
+    defaults,
+    "Opportunity component"
+  )
 }
 
 partnership_strength_build_opportunity_country <- function(opportunity_all,
@@ -249,11 +295,11 @@ partnership_strength_build_opportunity_inputs_country <- function(opportunity_al
                                                                   top_n = 3,
                                                                   year = 2024L) {
   component_weights_tbl <- tibble::tibble(
-    component_key = c("trade_index", "econ_opp_index", "energy_security_index"),
+    component_key = c("trade_index", "econ_opp_index", "partner_es_need"),
     component_weight = c(
       component_weights$trade_index,
       component_weights$econ_opp_index,
-      component_weights$energy_security_index
+      component_weights$partner_es_need
     )
   ) %>%
     dplyr::mutate(component_weight_share = component_weight / sum(component_weight))
@@ -292,7 +338,7 @@ partnership_strength_build_opportunity_inputs_country <- function(opportunity_al
       supply_chain,
       trade_index,
       econ_opp_index,
-      energy_security_index,
+      partner_es_need,
       .keep_all = TRUE
     ) %>%
     dplyr::inner_join(top_dyads, by = c("partner_iso", "reporter_iso", "tech", "supply_chain")) %>%
@@ -305,10 +351,10 @@ partnership_strength_build_opportunity_inputs_country <- function(opportunity_al
       supply_chain,
       trade_index,
       econ_opp_index,
-      energy_security_index
+      partner_es_need
     ) %>%
     tidyr::pivot_longer(
-      cols = c(trade_index, econ_opp_index, energy_security_index),
+      cols = c(trade_index, econ_opp_index, partner_es_need),
       names_to = "component_key",
       values_to = "value"
     ) %>%
@@ -357,11 +403,11 @@ partnership_strength_build_opportunity_dyads_table <- function(opportunity_all,
                                                                component_weights,
                                                                year = 2024L) {
   component_weights_tbl <- tibble::tibble(
-    component_key = c("trade_index", "econ_opp_index", "energy_security_index"),
+    component_key = c("trade_index", "econ_opp_index", "partner_es_need"),
     component_weight = c(
       component_weights$trade_index,
       component_weights$econ_opp_index,
-      component_weights$energy_security_index
+      component_weights$partner_es_need
     )
   ) %>%
     dplyr::mutate(component_weight_share = component_weight / sum(component_weight))
@@ -370,7 +416,13 @@ partnership_strength_build_opportunity_dyads_table <- function(opportunity_all,
     dplyr::mutate(
       Reporter = partnership_strength_iso_to_country(reporter_iso, country_info),
       Partner = partnership_strength_iso_to_country(partner_iso, country_info),
-      Country = Partner
+      Country = Partner,
+      # Weights of the components this dyad has; opportunity_raw renormalizes over them, so the
+      # contributions below do too and sum to opportunity_raw. The negations are parenthesized:
+      # R's `!` binds looser than `*` and `+`.
+      weight_available = component_weights$trade_index * (!is.na(trade_index)) +
+        component_weights$econ_opp_index * (!is.na(econ_opp_index)) +
+        component_weights$partner_es_need * (!is.na(partner_es_need))
     ) %>%
     dplyr::select(
       Country,
@@ -380,13 +432,14 @@ partnership_strength_build_opportunity_dyads_table <- function(opportunity_all,
       partner_iso,
       tech,
       supply_chain,
+      weight_available,
       trade_index,
       econ_opp_index,
-      energy_security_index,
+      partner_es_need,
       opportunity_index
     ) %>%
     tidyr::pivot_longer(
-      cols = c(trade_index, econ_opp_index, energy_security_index, opportunity_index),
+      cols = c(trade_index, econ_opp_index, partner_es_need, opportunity_index),
       names_to = "component_key",
       values_to = "value"
     ) %>%
@@ -396,16 +449,16 @@ partnership_strength_build_opportunity_dyads_table <- function(opportunity_all,
       category = "opportunity",
       data_type = "index",
       weighted_component = dplyr::if_else(
-        !is.na(component_weight_share),
-        value * component_weight_share,
+        !is.na(component_weight_share) & weight_available > 0,
+        value * component_weight / weight_available,
         NA_real_
       ),
       Year = as.integer(year),
       source = "Author calculation",
       explanation = dplyr::if_else(
         component_key == "opportunity_index",
-        "Opportunity index per reporter-partner dyad.",
-        "Component of the opportunity index per reporter-partner dyad."
+        "Opportunity index: partner rated as an export market for the reporter (reporter exports to partner).",
+        "Opportunity component: partner rated as an export market for the reporter (reporter exports to partner)."
       )
     ) %>%
     dplyr::select(
@@ -438,7 +491,10 @@ prosperous_opportunity <- function(comtrade_dyads,
                                    country_info,
                                    component_weights = NULL,
                                    years = 2020:2024,
-                                   top_n = 3) {
+                                   top_n = 3,
+                                   techs = NULL) {
+  component_weights <- partnership_strength_resolve_opportunity_weights(component_weights)
+
   res_tech <- partnership_strength_clean_trade_data(comtrade_dyads, subcat, years = years)
   ds_export <- partnership_strength_build_dyad_series(res_tech, flow = "export", years = years)
   trade_indices <- partnership_strength_build_export_indices(ds_export)
@@ -449,7 +505,8 @@ prosperous_opportunity <- function(comtrade_dyads,
     tech_ghg,
     policy,
     country_info,
-    component_weights = component_weights
+    component_weights = component_weights,
+    techs = techs
   )
 
   opportunity_dyads <- partnership_strength_build_opportunity_dyads_table(
@@ -504,19 +561,26 @@ prosperous_opportunity <- function(comtrade_dyads,
       source,
       explanation
     )
+  # The long tables run to ~5M rows on the full build; release the intermediates before the
+  # summaries.
+  rm(opportunity_all, opportunity_dyads)
 
-  top5_tbl <- variable_tbl %>%
-    dplyr::group_by(reporter, partner, reporter_iso, partner_iso, category, variable) %>%
-    dplyr::slice_max(order_by = value, n = 5, with_ties = FALSE) %>%
-    dplyr::summarise(
-      value = mean(value, na.rm = TRUE),
-      source = dplyr::first(source),
-      explanation = dplyr::first(explanation),
-      .groups = "drop"
-    ) %>%
+  partnership_strength_assert_unique(
+    variable_tbl,
+    c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable"),
+    label = "partner_opportunity_tbl"
+  )
+
+  top5_tbl <- partnership_strength_build_top_k(
+    variable_tbl,
+    c("reporter_iso", "partner_iso"),
+    k = 5L,
+    year = max(years)
+  ) %>%
     dplyr::mutate(
-      data_type = "index",
-      Year = as.integer(max(years))
+      reporter = partnership_strength_iso_to_country(reporter_iso, country_info),
+      partner = partnership_strength_iso_to_country(partner_iso, country_info),
+      explanation = "Mean of the dyad's five highest (tech, stage) values; partner rated as an export market for the reporter."
     ) %>%
     dplyr::select(
       reporter,
@@ -532,9 +596,17 @@ prosperous_opportunity <- function(comtrade_dyads,
       explanation
     )
 
+  country_tbl <- partnership_strength_build_partner_rollup(
+    variable_tbl,
+    index_variable = "Opportunity Index",
+    year = max(years),
+    explanation = "Mean over reporters of the dyad Opportunity Index: partner as an export market."
+  )
+
   list(
     variable = variable_tbl,
     contributions = contributions_tbl,
-    top5 = top5_tbl
+    top5 = top5_tbl,
+    country = country_tbl
   )
 }

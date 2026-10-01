@@ -2,6 +2,7 @@ repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRU
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
+source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "prosperous_opportunity.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "safer_friendshore.R"))
@@ -146,8 +147,9 @@ test_that("friendshore assigns tech/supply-chain average imp_trade_index when tr
   )
 
   # Full reporter x partner grid: reporters are the ES and EO countries (4), partners the
-  # EO countries (4), each dyad once.
-  expect_equal(nrow(out), 16)
-  expect_equal(nrow(dplyr::distinct(out, reporter_iso, partner_iso)), 16)
+  # EO countries (4), each dyad once, self-dyads excluded.
+  expect_equal(nrow(out), 12)
+  expect_equal(nrow(dplyr::distinct(out, reporter_iso, partner_iso)), 12)
+  expect_false(any(out$reporter_iso == out$partner_iso))
   expect_false(any(is.na(out$imp_trade_index)))
 })

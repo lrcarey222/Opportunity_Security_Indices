@@ -62,24 +62,23 @@ read_processed_tbl <- function(name, processed_dir) {
   readRDS(path)
 }
 
-read_index_outputs <- function(config, processed_dir) {
-  outputs_rds_path <- Sys.getenv("OPSI_OUTPUTS_RDS", "")
-  if (!nzchar(outputs_rds_path)) {
-    outputs_rds_path <- if (!is.null(config$outputs_rds) && nzchar(config$outputs_rds)) {
-      file.path(repo_root, config$outputs_rds)
-    } else {
-      file.path(processed_dir, "outputs", "index_outputs.rds")
-    }
+write_processed_tbl <- function(tbl, name, processed_dir) {
+  if (is.null(tbl)) {
+    return(invisible(NULL))
   }
-  if (!file.exists(outputs_rds_path)) {
-    stop("Index outputs not found: ", outputs_rds_path)
-  }
-  readRDS(outputs_rds_path)
+  saveRDS(tbl, file.path(processed_dir, paste0(name, ".rds")))
+  invisible(tbl)
 }
+
+# PSI inputs are the top-5 summaries written by scripts/15: dyad-level for Friendshore and
+# Opportunity (one row per reporter, partner and variable), partner-level for Development.
+# Country is the partner (its ISO3 when it has no name), and the PSI is collapsed over
+# technology and stage: see R/indices/build_partnership_strength_index.R for the formula.
 prepare_partner_top5_for_psi <- function(tbl) {
   tbl %>%
     dplyr::transmute(
-      Country = as.character(partner),
+      Country = dplyr::coalesce(as.character(partner), as.character(partner_iso)),
+      partner_iso = as.character(partner_iso),
       tech = "All",
       supply_chain = "All",
       category = as.character(category),
@@ -92,41 +91,82 @@ prepare_partner_top5_for_psi <- function(tbl) {
     )
 }
 
-partner_opportunity_country_tbl <- read_processed_tbl(
-  "partner_opportunity_top5_tbl",
-  processed_dir
-) %>%
-  prepare_partner_top5_for_psi()
+partner_friendshore_top5_tbl <- read_processed_tbl("partner_friendshore_top5_tbl", processed_dir)
+partner_opportunity_top5_tbl <- read_processed_tbl("partner_opportunity_top5_tbl", processed_dir)
+partner_development_top5_tbl <- read_processed_tbl("partner_development_top5_tbl", processed_dir)
 
-partner_development_country_tbl <- read_processed_tbl(
-  "partner_development_top5_tbl",
-  processed_dir
-) %>%
-  prepare_partner_top5_for_psi()
+partner_friendshore_country_tbl <- prepare_partner_top5_for_psi(partner_friendshore_top5_tbl)
+partner_opportunity_country_tbl <- prepare_partner_top5_for_psi(partner_opportunity_top5_tbl)
+partner_development_country_tbl <- prepare_partner_top5_for_psi(partner_development_top5_tbl)
 
-partner_friendshore_country_tbl <- read_processed_tbl(
-  "partner_friendshore_top5_tbl",
-  processed_dir
+# The PSI keys on Country; it must name one partner ISO3 and vice versa, or partners would pool.
+partner_names <- dplyr::bind_rows(
+  partner_friendshore_country_tbl,
+  partner_opportunity_country_tbl,
+  partner_development_country_tbl
 ) %>%
-  prepare_partner_top5_for_psi()
-
-if (!exists("economic_opportunity_outputs")) {
-  index_outputs <- read_index_outputs(config, processed_dir)
-  economic_opportunity_outputs <- index_outputs$economic_opportunity_outputs
+  dplyr::distinct(Country, partner_iso)
+if (anyDuplicated(partner_names$Country) || anyDuplicated(partner_names$partner_iso)) {
+  stop("Partner names and ISO3 codes are not one-to-one in the partner top-5 tables.")
 }
 
 partnership_strength_outputs <- build_partnership_strength_index(
   theme_tables = list(
-    friendshore = partner_friendshore_country_tbl,
-    opportunity = partner_opportunity_country_tbl,
-    development = partner_development_country_tbl
+    friendshore = dplyr::select(partner_friendshore_country_tbl, -partner_iso),
+    opportunity = dplyr::select(partner_opportunity_country_tbl, -partner_iso),
+    development = dplyr::select(partner_development_country_tbl, -partner_iso)
   ),
   weights = weights$psi,
   allow_partial_categories = TRUE
 )
 
+psi_year <- max(partner_friendshore_country_tbl$Year, na.rm = TRUE)
+
+# Partner-level PSI (one row per partner; tech = supply_chain = "All").
 psi_tbl <- psi_composite(
   partnership_strength_outputs$partnership_strength_index,
-  year = max(partner_friendshore_country_tbl$Year, na.rm = TRUE)
+  year = psi_year,
+  explanation = paste(
+    "Partner-level composite of the Friendshore, Opportunity and Development indices",
+    "(mean over reporters of each dyad's top-5 (tech, stage) score), weights renormalized",
+    "over the categories the partner has."
+  )
+) %>%
+  dplyr::left_join(partner_names, by = "Country")
+
+# (Reporter, partner) PSI from the same top-5 inputs.
+psi_dyad_tbl <- build_partnership_strength_dyads(
+  friendshore_top5 = partner_friendshore_top5_tbl,
+  opportunity_top5 = partner_opportunity_top5_tbl,
+  development_top5 = partner_development_top5_tbl,
+  weights = weights$psi
+) %>%
+  dplyr::left_join(
+    dplyr::distinct(partner_friendshore_top5_tbl, reporter_iso, reporter),
+    by = "reporter_iso"
+  ) %>%
+  dplyr::left_join(dplyr::rename(partner_names, partner = Country), by = "partner_iso") %>%
+  dplyr::mutate(Year = as.integer(psi_year)) %>%
+  dplyr::select(
+    reporter,
+    partner,
+    reporter_iso,
+    partner_iso,
+    friendshore,
+    opportunity,
+    development,
+    n_categories,
+    Partnership_Strength_Index,
+    Year
+  )
+
+# psi_tbl: one row per partner (tech = supply_chain = "All"; read by R/charts/Country_Sector_Megatable.R).
+# psi_dyad_tbl: one row per (reporter, partner), self-dyads excluded. Neither is technology-specific.
+write_processed_tbl(psi_tbl, "psi_tbl", processed_dir)
+write_processed_tbl(
+  partnership_strength_outputs$category_contributions,
+  "psi_category_contributions_tbl",
+  processed_dir
 )
+write_processed_tbl(psi_dyad_tbl, "psi_dyad_tbl", processed_dir)
 
