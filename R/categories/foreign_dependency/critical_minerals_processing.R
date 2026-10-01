@@ -5,14 +5,20 @@
 # that mirrors the legacy “mineral_supply” pipeline.
 
 # ---- Build mineral supply inputs ----
-# Filter to total supply rows, split mineral names into mineral + supply-chain,
-# and ensure the resulting table includes all countries and minerals.
+# Filter to total supply rows, split mineral names into mineral + supply-chain stage
+# (mining -> Upstream, refining/processing -> Midstream), and ensure the resulting table
+# includes all countries for every (mineral, stage) block.
+#
+# `roster` (country names), when given, is completed as well: a roster country the IEA does
+# not list is a non-supplier and is scored like a listed country with zero supply (see
+# foreign_dependency_build_mineral_supply()), not left to a flat 0 in the tidy step.
 critical_minerals_processing_build_supply <- function(critical,
                                                       mineral_demand_clean,
                                                       country_info,
                                                       gamma = 0.5,
                                                       base_year = iea_critical_minerals_base_year(critical),
-                                                      horizon_year = 2035) {
+                                                      horizon_year = 2035,
+                                                      roster = NULL) {
   # The IEA restates its base year each release, so address the supply columns by year.
   base_col <- iea_critical_minerals_year_col(critical, base_year, label = "mineral supply")
   horizon_col <- iea_critical_minerals_year_col(critical, horizon_year, label = "mineral supply")
@@ -20,22 +26,14 @@ critical_minerals_processing_build_supply <- function(critical,
   critical <- critical %>%
     dplyr::mutate(`Sector.Country` = standardize_country_names(`Sector.Country`))
 
-  minerals <- critical %>%
-    dplyr::filter(
-      grepl("Total supply", Pillar),
-      !grepl("Top 3|Total", `Sector.Country`),
-      `Sector.Country` != "",
-      Mineral != ""
-    ) %>%
-    tidyr::separate(Mineral, into = c("mineral", "supply_chain_raw"), sep = " - ", extra = "merge") %>%
-    dplyr::distinct(mineral)
-
   countries <- critical %>%
     dplyr::distinct(`Sector.Country`) %>%
     dplyr::inner_join(
       country_info %>% dplyr::select(country),
       by = c("Sector.Country" = "country")
-    )
+    ) %>%
+    dplyr::bind_rows(tibble::tibble(`Sector.Country` = as.character(roster))) %>%
+    dplyr::distinct(`Sector.Country`)
 
   critical %>%
     dplyr::filter(
@@ -46,12 +44,11 @@ critical_minerals_processing_build_supply <- function(critical,
     ) %>%
     dplyr::rename(country = `Sector.Country`) %>%
     tidyr::separate(Mineral, into = c("mineral", "supply_chain_raw"), sep = " - ", extra = "merge") %>%
+    # Mining scores Upstream, refining/processing Midstream (the old recode sent both to
+    # Upstream), and minerals carry the canonical names their demand shares are keyed on.
     dplyr::mutate(
-      supply_chain = dplyr::if_else(
-        stringr::str_detect(supply_chain_raw, stringr::regex("Refining|Chemical", ignore_case = TRUE)),
-        "Upstream",
-        "Upstream"
-      )
+      mineral = harmonize_mineral_names(mineral),
+      supply_chain = iea_critical_minerals_supply_stage(supply_chain_raw)
     ) %>%
     dplyr::ungroup() %>%
     dplyr::select(
@@ -60,8 +57,7 @@ critical_minerals_processing_build_supply <- function(critical,
       supply_horizon = dplyr::all_of(horizon_col)
     ) %>%
     tidyr::complete(
-      mineral = minerals$mineral,
-      supply_chain = c("Upstream", "Upstream"),
+      tidyr::nesting(mineral, supply_chain),
       country = countries$`Sector.Country`,
       fill = list(supply_base = 0, supply_horizon = 0)
     ) %>%
@@ -69,8 +65,9 @@ critical_minerals_processing_build_supply <- function(critical,
       mineral_demand_clean %>%
         dplyr::filter(!is.na(tech)) %>%
         dplyr::ungroup() %>%
-        dplyr::select(Mineral, tech, share_24, share_35),
-      by = c("mineral" = "Mineral")
+        dplyr::transmute(Mineral = harmonize_mineral_names(Mineral), tech, share_24, share_35),
+      by = c("mineral" = "Mineral"),
+      relationship = "many-to-many"
     ) %>%
     dplyr::mutate(
       supply_24 = share_24 * supply_base,
@@ -88,13 +85,16 @@ critical_minerals_processing_build_supply <- function(critical,
       !is.na(share_frac_24),
       !is.na(share_frac_35)
     ) %>%
-    dplyr::ungroup() %>%
+    # Ranked within stage, so refining shares are compared with refining shares; a zero share
+    # scores 0 and suppliers are ranked above it (iea_critical_minerals_share_index()).
+    dplyr::group_by(supply_chain) %>%
     dplyr::mutate(
-      market_share24_index = median_scurve(share_frac_24, gamma = gamma),
-      market_share35_index = median_scurve(share_frac_35, gamma = gamma),
+      market_share24_index = iea_critical_minerals_share_index(share_frac_24, gamma = gamma),
+      market_share35_index = iea_critical_minerals_share_index(share_frac_35, gamma = gamma),
       hhi24_index = median_scurve(1 - HHI_24, gamma = gamma),
       hhi35_index = median_scurve(1 - HHI_35, gamma = gamma)
     ) %>%
+    dplyr::ungroup() %>%
     dplyr::rowwise() %>%
     dplyr::mutate(
       security_index = mean(dplyr::c_across(c(market_share24_index:hhi35_index)), na.rm = TRUE)
@@ -129,7 +129,8 @@ critical_minerals_processing_build_tidy <- function(mineral_supply,
       source = "IEA Critical Minerals Database",
       explanation = dplyr::case_when(
         data_type == "index" ~ stringr::str_glue(
-          "Percent-rank of {tech} market share across countries, and HHI across critical minerals"
+          "Percent-rank of {tech} market share across countries, and HHI across critical minerals, ",
+          "of {dplyr::if_else(supply_chain == 'Midstream', 'refined', 'mined')} supply"
         )
       )
     ) %>%
@@ -165,7 +166,8 @@ critical_minerals_processing <- function(critical,
     mineral_demand_clean = mineral_demand_clean,
     country_info = country_info,
     gamma = gamma,
-    base_year = year
+    base_year = year,
+    roster = country_reference$Country
   )
 
   critical_minerals_processing_build_tidy(

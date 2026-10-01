@@ -3,6 +3,10 @@
 # Sheets are addressed by name rather than by position: the EI workbook adds and drops
 # sheets between releases (the 2026 edition inserted "Data Centre Demand" and "SAF prices"
 # ahead of the mineral block), so positional indices silently read the wrong sheet.
+#
+# `data_year` records the vintage of the values where the column name does not carry it. EI
+# stopped updating fossil proved reserves after end-2020, so oil, gas and coal are end-2020
+# even in the 2026 edition; the explanation text says so rather than implying the theme year.
 reserves_specs <- function() {
   list(
     list(
@@ -11,7 +15,8 @@ reserves_specs <- function() {
       nm_col = "Thousand million barrels",
       val_col = "2020...42",
       tech_name = "Oil",
-      unit_desc = "Thousand million barrels"
+      unit_desc = "Thousand million barrels",
+      data_year = 2020
     ),
     list(
       sheet = "Gas - Proved reserves history",
@@ -19,7 +24,8 @@ reserves_specs <- function() {
       nm_col = "Trillion cubic metres",
       val_col = "2020...42",
       tech_name = "Gas",
-      unit_desc = "Trillion cubic metres"
+      unit_desc = "Trillion cubic metres",
+      data_year = 2020
     ),
     list(
       sheet = "Coal - Reserves",
@@ -27,7 +33,8 @@ reserves_specs <- function() {
       nm_col = "Million tonnes",
       val_col = "Total",
       tech_name = "Coal",
-      unit_desc = "Million tonnes"
+      unit_desc = "Million tonnes",
+      data_year = 2020
     ),
     list(
       sheet = "Cobalt P-R",
@@ -133,7 +140,9 @@ reserves_build_country_reference <- function(ei, year = 2025) {
   ei %>%
     dplyr::filter(
       Year == year,
-      !grepl("World|Other|Total|OECD|OPEC", Country)
+      # "USSR" is EI's CIS aggregate, still published for the latest year; left in, it is
+      # ranked as a country and later collapses onto Russia's ISO3.
+      !grepl("World|Other|Total|OECD|OPEC|USSR", Country)
     ) %>%
     dplyr::mutate(Country = standardize_country_names(Country)) %>%
     dplyr::distinct(ISO3166_alpha3, Country)
@@ -195,7 +204,10 @@ reserves_build_mineral_demand_clean <- function(critical,
         stringr::str_detect(`Sector.Country`, stringr::regex("Geothermal", ignore_case = TRUE)) ~ "Geothermal",
         TRUE ~ NA_character_
       ),
-      Mineral = dplyr::if_else(stringr::str_detect(Mineral, "Graphite"), "Graphite", Mineral)
+      # Shares are computed on the IEA's own labels above; the canonical name is what every
+      # downstream join keys on ("Battery-grade graphite" -> "Graphite", "Neodymium" ->
+      # "Rare Earths").
+      Mineral = harmonize_mineral_names(Mineral)
     )
 }
 
@@ -207,17 +219,31 @@ reserves_build_reserve_table <- function(sheet_data,
                                          sheet_id,
                                          country_reference,
                                          year = 2025,
-                                         gamma = 0.5) {
+                                         gamma = 0.5,
+                                         data_year = NULL) {
   country_reference <- country_reference %>%
     dplyr::filter(!is.na(ISO3166_alpha3), nzchar(ISO3166_alpha3)) %>%
     dplyr::distinct(ISO3166_alpha3, Country)
 
   val_col <- reserves_resolve_val_col(sheet_data, val_col, sheet_id = sheet_id)
+  # "At end of 2025" / "2020...42" carry their own vintage; the coal "Total" column does not.
+  data_year <- data_year %||% suppressWarnings(
+    as.integer(stringr::str_extract(val_col, "(19|20)\\d{2}"))
+  )
+  vintage_note <- if (is.na(data_year)) "" else paste0(" at end-", data_year)
 
   raw_inputs <- sheet_data %>%
     dplyr::rename(
       Country = dplyr::all_of(nm_col),
       raw_value = dplyr::all_of(val_col)
+    ) %>%
+    # Sub-rows and footnotes go before the names are standardized: name matching reads
+    # "Venezuela: Orinoco Belt" (a component of Venezuela's total) and the oil-sheet footnote
+    # about "Russian reserves" as those countries, which gave both a second, conflicting row.
+    # Rows without a value carry nothing; a country missing here is completed as NA below.
+    dplyr::filter(
+      !grepl("Orinoco|of which", Country, ignore.case = TRUE),
+      !is.na(suppressWarnings(as.numeric(raw_value)))
     ) %>%
     dplyr::mutate(
       Country = standardize_country_names(Country),
@@ -282,8 +308,8 @@ reserves_build_reserve_table <- function(sheet_data,
       Year = year,
       source = "EI Statistical Review of World Energy (2025)",
       explanation = dplyr::case_when(
-        data_type == "raw" ~ stringr::str_glue("{tech_name} reserves ({unit_desc}) from sheet {sheet_id}"),
-        data_type == "index" ~ "Percent-rank of reserves across reporting entities (countries + RoW)",
+        data_type == "raw" ~ stringr::str_glue("{tech_name} reserves ({unit_desc}){vintage_note} from sheet {sheet_id}"),
+        data_type == "index" ~ "Percent-rank of reserves across reporting countries (plus a zero anchor)",
         TRUE ~ NA_character_
       )
     ) %>%
@@ -315,28 +341,33 @@ reserves_build_critical_mineral_reserves <- function(mineral_reserves,
   ) %>%
     dplyr::rename(Mineral = "tech") %>%
     dplyr::select(-Country) %>%
+    # Both sides on the canonical names: the old ad hoc recode never matched "Rare Earths"
+    # (sheet) to "Neodymium" (IEA demand), so rare earths never reached Wind or EV reserves.
+    dplyr::mutate(join_mineral = harmonize_mineral_names(Mineral)) %>%
     dplyr::inner_join(
       mineral_demand_clean %>%
         dplyr::ungroup() %>%
-        dplyr::select(Mineral, tech, share_24) %>%
-        dplyr::mutate(
-          Mineral = dplyr::if_else(
-            stringr::str_detect(Mineral, stringr::regex("rare", ignore_case = TRUE)),
-            "Rareearths",
-            dplyr::if_else(Mineral == "Battery-grade graphite", "Graphite", Mineral)
-          )
-        ),
-      by = c("Mineral")
+        dplyr::transmute(join_mineral = harmonize_mineral_names(Mineral), tech, share_24),
+      by = "join_mineral",
+      relationship = "many-to-many"
     ) %>%
+    dplyr::select(-join_mineral) %>%
     dplyr::filter(!is.na(tech)) %>%
     dplyr::group_by(ISO3166_alpha3, tech, data_type) %>%
     dplyr::mutate(share_24 = share_24 / sum(share_24)) %>%
     dplyr::ungroup()
 
+  # A mineral a country is not listed for counts as 0 (the bottom of that mineral's index,
+  # as in the production rollup) rather than as missing: with na.rm the mean ran over the
+  # listed minerals only, so a country on one sheet scored that mineral's rank for the whole
+  # technology (Chile topped Wind Reserves on copper alone).
   critical_min_reserves %>%
     dplyr::filter(data_type == "index") %>%
     dplyr::group_by(ISO3166_alpha3, tech, supply_chain, category, data_type, source) %>%
-    dplyr::summarize(value = stats::weighted.mean(value, w = share_24, na.rm = TRUE)) %>%
+    dplyr::summarize(
+      value = stats::weighted.mean(dplyr::coalesce(value, 0), w = share_24, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
     dplyr::mutate(
       variable = stringr::str_glue("{tech} Reserves"),
       explanation = "Weighted average of reserve availability by share of demand in technology",
@@ -344,7 +375,9 @@ reserves_build_critical_mineral_reserves <- function(mineral_reserves,
     ) %>%
     dplyr::filter(value > 0) %>%
     dplyr::group_by(tech, supply_chain) %>%
-    dplyr::mutate(value = median_scurve(value)) %>%
+    # Same zero anchor as the per-mineral step: without it the smallest reporter re-scores to
+    # exactly 0, i.e. the same as a country with no reserves at all.
+    dplyr::mutate(value = median_scurve(c(0, value))[-1]) %>%
     {
       dplyr::bind_rows(
         standardize_bind_rows_inputs(.),
@@ -401,7 +434,8 @@ reserves <- function(ei, reserve_inputs, mineral_demand_clean, year = 2025, gamm
       sheet_id = spec$sheet,
       country_reference = country_reference,
       year = year,
-      gamma = gamma
+      gamma = gamma,
+      data_year = spec$data_year
     )
   })
 

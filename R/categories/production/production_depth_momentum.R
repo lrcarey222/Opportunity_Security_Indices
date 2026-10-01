@@ -24,12 +24,14 @@ production_depth_momentum_clean_energy_production <- function(ei,
 
   ei %>%
     dplyr::select(Country, Year, Var, Value) %>%
+    # Standardized before ranking; "USSR" (EI's CIS aggregate) goes with the aggregates.
     dplyr::mutate(
+      Country = standardize_country_names(Country),
       Year = as.integer(Year),
       Value = as.numeric(Value)
     ) %>%
     dplyr::filter(
-      !grepl("Other|Total|OECD|OPEC|World", Country),
+      !grepl("Other|Total|OECD|OPEC|World|USSR", Country),
       Year %in% years,
       Var %in% vars
     ) %>%
@@ -131,6 +133,10 @@ production_depth_momentum_build_mineral_supply <- function(critical,
   )
   require_columns(country_info, "country", label = "country_info")
 
+  # Standardized so "Korea" and "Lao People's Democratic Republic" meet country_info.
+  critical <- critical %>%
+    dplyr::mutate(`Sector.Country` = standardize_country_names(`Sector.Country`))
+
   minerals <- critical %>%
     dplyr::filter(
       grepl("Total supply", Pillar),
@@ -165,12 +171,11 @@ production_depth_momentum_build_mineral_supply <- function(critical,
     ) %>%
     dplyr::rename(country = `Sector.Country`) %>%
     tidyr::separate(Mineral, into = c("mineral", "supply_chain_raw"), sep = " - ", extra = "merge") %>%
+    # Canonical mineral names, so graphite and rare earths meet their demand shares; stage
+    # from the shared IEA stage map (battery-grade graphite is processing, i.e. Midstream).
     dplyr::mutate(
-      supply_chain = dplyr::if_else(
-        stringr::str_detect(supply_chain_raw, stringr::regex("Refining|Chemical", ignore_case = TRUE)),
-        "Midstream",
-        "Upstream"
-      )
+      mineral = harmonize_mineral_names(mineral),
+      supply_chain = iea_critical_minerals_supply_stage(supply_chain_raw)
     ) %>%
     dplyr::ungroup() %>%
     dplyr::select(
@@ -179,8 +184,7 @@ production_depth_momentum_build_mineral_supply <- function(critical,
       supply_horizon = dplyr::all_of(horizon_col)
     ) %>%
     tidyr::complete(
-      mineral = minerals$mineral,
-      supply_chain = c("Upstream", "Midstream"),
+      tidyr::nesting(mineral, supply_chain),
       country = countries$`Sector.Country`,
       fill = list(supply_base = 0, supply_horizon = 0)
     ) %>%
@@ -188,7 +192,7 @@ production_depth_momentum_build_mineral_supply <- function(critical,
       mineral_demand_clean %>%
         dplyr::filter(!is.na(tech)) %>%
         dplyr::ungroup() %>%
-        dplyr::select(Mineral, tech, share_24, share_35),
+        dplyr::transmute(Mineral = harmonize_mineral_names(Mineral), tech, share_24, share_35),
       by = c("mineral" = "Mineral"),
       relationship = "many-to-many"
     ) %>%
@@ -241,7 +245,7 @@ production_depth_momentum_build_mineral_production <- function(mineral_supply, g
       HHI_index = median_scurve(-HHI_24, gamma = gamma)
     ) %>%
     dplyr::group_by(country, tech, supply_chain) %>%
-    dplyr::summarize(dplyr::across(supply_base:HHI_index, mean, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::summarize(dplyr::across(supply_base:HHI_index, \(x) mean(x, na.rm = TRUE)), .groups = "drop") %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
       size_index = median_scurve(size_index, gamma = gamma),

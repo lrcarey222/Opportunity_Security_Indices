@@ -1,7 +1,11 @@
 # Solar photovoltaic power potential theme builder functions.
 
-solar_pv_potential_clean_raw <- function(pv_raw) {
-  pv_raw %>%
+# `country_info`, when given, restricts the table to its economies before anything is
+# ranked. The GIS layer carries polygons that are not economies (Northern Cyprus,
+# Somaliland, Siachen Glacier, Ashmore and Cartier Islands); they were ranked with everyone
+# else and then dropped, or folded into another ISO3 (Northern Cyprus gave Cyprus two rows).
+solar_pv_potential_clean_raw <- function(pv_raw, country_info = NULL) {
+  pv_clean <- pv_raw %>%
     dplyr::transmute(
       Country = standardize_country_names(name_long),
       pvout_total = suppressWarnings(as.numeric(pvout_total)),
@@ -13,6 +17,13 @@ solar_pv_potential_clean_raw <- function(pv_raw) {
       !is.na(pvout_total),
       !is.na(pvout_mean)
     )
+
+  if (is.null(country_info)) {
+    return(pv_clean)
+  }
+  require_columns(country_info, "country", label = "country_info")
+  pv_clean %>%
+    dplyr::filter(Country %in% standardize_country_names(country_info$country))
 }
 
 solar_pv_potential_build_indices <- function(pv_clean, gamma = 0.5) {
@@ -86,8 +97,8 @@ solar_pv_potential_build_table <- function(pv_indices, year) {
     )
 }
 
-solar_pv_potential <- function(pv_raw, year = 2023, gamma = 0.5) {
-  pv_clean <- solar_pv_potential_clean_raw(pv_raw)
+solar_pv_potential <- function(pv_raw, year = 2023, gamma = 0.5, country_info = NULL) {
+  pv_clean <- solar_pv_potential_clean_raw(pv_raw, country_info = country_info)
   pv_indices <- solar_pv_potential_build_indices(pv_clean, gamma = gamma)
   output <- solar_pv_potential_build_table(pv_indices, year = year)
   output <- energy_security_add_overall_index(output)

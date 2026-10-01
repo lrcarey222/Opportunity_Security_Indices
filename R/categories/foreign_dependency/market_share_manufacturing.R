@@ -9,6 +9,7 @@ market_share_manufacturing_build_cleantech_midstream <- function(ei,
 
   cleantech_long <- cleantech_midstream %>%
     dplyr::rename(Country = X) %>%
+    dplyr::mutate(Country = standardize_country_names(Country)) %>%
     tidyr::pivot_longer(
       cols = -Country,
       names_to = c("Technology", "Status"),
@@ -16,7 +17,10 @@ market_share_manufacturing_build_cleantech_midstream <- function(ei,
       values_to = "Value"
     ) %>%
     dplyr::mutate(
-      Year = dplyr::if_else(Status == "Current", 2024L, 2035L)
+      Year = dplyr::if_else(Status == "Current", 2024L, 2035L),
+      # IEA reports electrolyser manufacturing capacity; in this pipeline that is the
+      # Green Hydrogen midstream, which otherwise has no Foreign Dependency input.
+      Technology = dplyr::if_else(Technology == "Electrolyzers", "Green Hydrogen", Technology)
     )
 
   country_map <- ei %>%
@@ -254,6 +258,24 @@ market_share_manufacturing <- function(ei,
                                        ev_midstream,
                                        year = list(cleantech = 2035L, ev = 2024L),
                                        gamma = 0.5) {
+  # One standardized row per EI country for the regional expansions, as in
+  # foreign_dependency_ei_countries(): the expansions rank every row they produce, so EI
+  # aggregates ("Total Asia Pacific", "USSR") and raw spellings ("US", "Vietnam") are removed
+  # before ranking. Kept inline so this file can be sourced on its own.
+  ei_year <- max(suppressWarnings(as.integer(ei$Year)), na.rm = TRUE)
+  ei <- ei %>%
+    dplyr::filter(
+      as.character(Year) == as.character(ei_year),
+      !grepl("World|Other|Total|OECD|OPEC|USSR", Country)
+    ) %>%
+    dplyr::mutate(Country = standardize_country_names(Country)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(
+      EU = max(as.integer(EU), na.rm = TRUE),
+      SubRegion = dplyr::first(SubRegion[!is.na(SubRegion) & nzchar(SubRegion)]),
+      .groups = "drop"
+    )
+
   cleantech_tbl <- market_share_manufacturing_build_cleantech_midstream(
     ei = ei,
     cleantech_midstream = cleantech_midstream,

@@ -365,3 +365,106 @@ test_that("standardize_theme_types fallback preserves rows when country_info mis
   expect_gt(nrow(out), 0)
   expect_equal(nrow(standardized), nrow(out))
 })
+
+# ---- Critical-minerals split, stage/year completion, zero scoring --------------------------
+
+panel_fixture <- function() {
+  annual_tbl <- tibble::tibble(
+    Country = c("US", "US", "Canada", "Mexico", "Chile", "US", "Canada"),
+    Segment = c("Manufacturing", "Manufacturing", "Manufacturing", "Manufacturing", "Industry", "Electric Power", "Manufacturing"),
+    Technology = c("Solar PV", "Solar PV", "Solar PV", "Solar PV", "Critical Minerals", "Solar PV", "Solar PV"),
+    Year = c(2022, 2025, 2022, 2025, 2025, 2025, 2025),
+    Investment = c(4, 10, 3, 1, 8, 6, 0)
+  )
+  capacity_tbl <- tibble::tibble(
+    Country = c("US", "Chile"),
+    Segment = c("Manufacturing", "Industry"),
+    Technology = c("Solar PV", "Critical Minerals"),
+    Product = c("Module", "Lithium"),
+    Category = c("Current operational capacity", "Current operational capacity"),
+    Value = c(100, 40)
+  )
+  list(annual = annual_tbl, capacity = capacity_tbl)
+}
+
+test_that("critical-minerals investment is split between Batteries and EV, not copied to both", {
+  fx <- panel_fixture()
+  split <- c("Batteries" = 0.25, "Electric Vehicles" = 0.75)
+
+  out <- investment_momentum(fx$annual, fx$capacity, critical_minerals_split = split)
+  raw <- out %>%
+    dplyr::filter(variable == "Annual Investment (USD bn, 2024$)", supply_chain == "Upstream", Country == "Chile")
+
+  expect_equal(raw$value[raw$tech == "Batteries"], 8 * 0.25)
+  expect_equal(raw$value[raw$tech == "Electric Vehicles"], 8 * 0.75)
+  expect_equal(sum(raw$value), 8)
+
+  default_raw <- investment_momentum(fx$annual, fx$capacity) %>%
+    dplyr::filter(variable == "Annual Investment (USD bn, 2024$)", supply_chain == "Upstream", Country == "Chile")
+  expect_equal(sum(default_raw$value), 8)
+
+  expect_error(
+    investment_momentum(fx$annual, fx$capacity, critical_minerals_split = c("Batteries" = 1, "Electric Vehicles" = 1)),
+    "summing to 1"
+  )
+})
+
+test_that("the demand-based split averages each battery mineral's Batteries/EV shares", {
+  demand <- tibble::tribble(
+    ~Mineral,   ~tech,               ~share_24,
+    "Lithium",  "Electric Vehicles",      0.8,
+    "Lithium",  "Batteries",              0.2,
+    "Graphite", "Electric Vehicles",      0.6,
+    "Graphite", "Batteries",              0.4,
+    "Copper",   "Electric Grid",          0.6
+  )
+
+  split <- investment_critical_minerals_split(demand)
+
+  expect_equal(unname(split[["Batteries"]]), mean(c(0.2, 0.4)))
+  expect_equal(unname(split[["Electric Vehicles"]]), mean(c(0.8, 0.6)))
+  expect_equal(sum(split), 1)
+})
+
+test_that("only the stages the monitor covers are completed, over every year", {
+  fx <- panel_fixture()
+  out <- investment_momentum(fx$annual, fx$capacity)
+
+  annual_idx <- out %>% dplyr::filter(variable == "Annual Investment Index")
+
+  # Solar investment is Midstream/Downstream only: no manufactured all-zero Solar Upstream.
+  expect_false(any(annual_idx$tech == "Solar" & annual_idx$supply_chain == "Upstream"))
+  expect_setequal(
+    unique(annual_idx$supply_chain[annual_idx$tech == "Solar"]),
+    c("Midstream", "Downstream")
+  )
+  # Every country's panel runs to the latest year, so latest values compare like with like.
+  latest <- annual_idx %>%
+    dplyr::group_by(Country, tech, supply_chain) %>%
+    dplyr::summarize(latest = max(Year), .groups = "drop")
+  expect_true(all(latest$latest == 2025L))
+})
+
+test_that("zero investment scores 0 and the smallest investor scores above it", {
+  fx <- panel_fixture()
+  out <- investment_momentum(fx$annual, fx$capacity)
+
+  solar_mid_2025 <- out %>%
+    dplyr::filter(variable == "Annual Investment Index", tech == "Solar", supply_chain == "Midstream", Year == 2025L)
+  value_of <- function(country) solar_mid_2025$value[solar_mid_2025$Country == country]
+
+  expect_equal(value_of("Canada"), 0)
+  expect_gt(value_of("Mexico"), 0)
+  expect_gt(value_of("United States"), value_of("Mexico"))
+
+  # Canada invested in 2022 but not 2025, so it has a (negative) momentum; a country with
+  # nothing in either window year has none and is left to the missing-data rule.
+  momentum <- out %>%
+    dplyr::filter(variable == "Investment Momentum Index", tech == "Solar", supply_chain == "Midstream")
+  expect_true(all(c("United States", "Canada", "Mexico") %in% momentum$Country))
+  expect_lt(momentum$value[momentum$Country == "Canada"], momentum$value[momentum$Country == "Mexico"])
+
+  downstream_momentum <- out %>%
+    dplyr::filter(variable == "Investment Momentum Index", tech == "Solar", supply_chain == "Downstream")
+  expect_setequal(downstream_momentum$Country, "United States")
+})

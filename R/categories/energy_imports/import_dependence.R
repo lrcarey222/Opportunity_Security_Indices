@@ -2,8 +2,11 @@
 import_dependence_clean_raw <- function(ei, year = 2025) {
   ei %>%
     dplyr::select(Country, Year, Var, Value) %>%
+    # Standardized before ranking, so each economy enters the percent ranks once; "USSR"
+    # (EI's CIS aggregate) is dropped with the other aggregates.
+    dplyr::mutate(Country = standardize_country_names(Country)) %>%
     dplyr::filter(
-      !grepl("Other|Total|OECD|OPEC", Country),
+      !grepl("World|Other|Total|OECD|OPEC|USSR", Country),
       Year == as.character(year),
       Var %in% c(
         "oil_tes_ej",
@@ -150,8 +153,7 @@ import_dependence_build_tidy <- function(imports_indexed, year = 2025) {
       Year,
       source,
       explanation
-    ) %>%
-    dplyr::mutate(Country = dplyr::if_else(Country == "US", "United States", Country))
+    )
 }
 
 import_dependence <- function(ei, year = 2025) {

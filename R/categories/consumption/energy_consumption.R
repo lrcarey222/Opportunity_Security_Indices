@@ -8,15 +8,16 @@
 # Filter and reshape the EI statistical review data for per-capita consumption
 # metrics and ensure missing fuels resolve to zero.
 energy_consumption_clean_ei <- function(ei, year) {
+  # Names are standardized before anything is ranked, and EI's CIS aggregate "USSR" (still
+  # published for the latest year) is dropped with the other aggregates: left in, it was
+  # ranked as a country and later collapsed onto Russia's ISO3.
   ei %>%
-    dplyr::mutate(
-      Country = dplyr::if_else(Country == "US", "United States", Country)
-    ) %>%
+    dplyr::mutate(Country = standardize_country_names(Country)) %>%
     dplyr::filter(
       Year == year,
       Var %in% c("pop", "coal_tes_ej", "oil_tes_ej", "gas_tes_ej",
                 "solar_tes_ej", "wind_tes_ej", "nuclear_tes_ej"),
-      !grepl("World|Other|Total|OECD|OPEC", Country)
+      !grepl("World|Other|Total|OECD|OPEC|USSR", Country)
     ) %>%
     dplyr::select(Country, Var, Value) %>%
     tidyr::pivot_wider(names_from = Var, values_from = Value) %>%
@@ -123,18 +124,47 @@ energy_consumption_build_bnef_population <- function(bnef_neo) {
       Scenario == "ETS"
     ) %>%
     dplyr::transmute(
-      Country = dplyr::recode(Region, "US" = "United States", "UK" = "United Kingdom"),
+      Country = standardize_country_names(Region),
       pop_2024 = as.numeric(X2024),
       pop_2035 = as.numeric(X2035)
     )
+}
+
+# Which BNEF NEO aggregate region each WDI country falls in, for countries BNEF does not
+# model on their own.
+#
+# BNEF splits East Asia & Pacific into "Other Southeast Asia" and "Other Asia Pacific". Both
+# used to be recoded to the WDI region "East Asia & Pacific", so every country there was
+# expanded twice (two rows per country, tech and variable). The UN sub-region separates them.
+# Turkiye is the "T" in BNEF's MENAT, although WDI files it under Europe & Central Asia.
+# WDI South Asia and North America have no BNEF aggregate and are left out, as before.
+energy_consumption_bnef_region_map <- function(country_info) {
+  country_info %>%
+    dplyr::distinct(country, .keep_all = TRUE) %>%
+    dplyr::mutate(
+      un_subregion = suppressWarnings(
+        countrycode::countrycode(iso3c, "iso3c", "un.regionsub.name", warn = FALSE)
+      ),
+      bnef_region = dplyr::case_when(
+        iso3c %in% "TUR" ~ "MENAT",
+        region == "Latin America & Caribbean" ~ "Other Latin America",
+        region == "Middle East & North Africa" ~ "MENAT",
+        region == "Europe & Central Asia" ~ "Other Europe",
+        region == "Sub-Saharan Africa" ~ "Sub-Saharan Africa",
+        region == "East Asia & Pacific" & un_subregion %in% "South-eastern Asia" ~ "Other Southeast Asia",
+        region == "East Asia & Pacific" ~ "Other Asia Pacific",
+        TRUE ~ NA_character_
+      )
+    ) %>%
+    dplyr::filter(!is.na(bnef_region)) %>%
+    dplyr::select(country, bnef_region)
 }
 
 # ---- Build BNEF per-capita capacity metrics ----
 # Filter to installed capacity/final energy consumption, normalize per-capita,
 # and compute legacy share + growth indices.
 energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, country_info) {
-  country_info <- country_info %>%
-    dplyr::distinct(country, .keep_all = TRUE)
+  region_map <- energy_consumption_bnef_region_map(country_info)
 
   neo_cap <- bnef_neo %>%
     dplyr::filter(
@@ -159,7 +189,10 @@ energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, coun
         "Hydrogen" = "Green Hydrogen",
         "Battery storage" = "Batteries",
         "Small modular nuclear" = "Nuclear",
-        "Small-scale PV" = "Solar"
+        "Small-scale PV" = "Solar",
+        # Without these Wind never matched `techs`, so Wind Downstream had no Consumption.
+        "Onshore wind" = "Wind",
+        "Offshore wind" = "Wind"
       )
     ) %>%
     dplyr::select(
@@ -172,7 +205,9 @@ energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, coun
     dplyr::mutate(
       X2024 = as.numeric(X2024),
       X2035 = as.numeric(X2035),
-      Country = dplyr::recode(Country, "US" = "United States", "UK" = "United Kingdom")
+      # Standardized before the region expansion tests membership: BNEF's "Vietnam" never
+      # matched WDI's "Viet Nam", so Viet Nam got its own row and a regional copy.
+      Country = standardize_country_names(Country)
     ) %>%
     dplyr::left_join(pop_tbl, by = "Country") %>%
     dplyr::mutate(
@@ -193,10 +228,16 @@ energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, coun
       growth_2435 = (X2035_pc - X2024_pc) / X2024_pc
     ) %>%
     dplyr::filter(tech %in% techs) %>%
+    # Both indices rank countries within a technology. The growth index used to be ranked
+    # after ungroup(), i.e. pooled across techs, so it mostly said which technology grows
+    # fastest (batteries, hydrogen) rather than which country grows fastest in it - the issue
+    # the EI growth index had already been fixed for (energy_consumption_build_ei_growth()).
     dplyr::group_by(tech) %>%
-    dplyr::mutate(installed_cap_index = median_scurve(X2024_pc)) %>%
+    dplyr::mutate(
+      installed_cap_index = median_scurve(X2024_pc),
+      elec_growth_index = median_scurve(growth_2435)
+    ) %>%
     dplyr::ungroup() %>%
-    dplyr::mutate(elec_growth_index = median_scurve(growth_2435)) %>%
     tidyr::pivot_longer(
       cols = c(
         X2024_pc,
@@ -209,17 +250,9 @@ energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, coun
       names_to = "variable",
       values_to = "value"
     ) %>%
-    dplyr::mutate(
-      Country = dplyr::recode(
-        Country,
-        "Other Latin America" = "Latin America & Caribbean",
-        "Other Southeast Asia" = "East Asia & Pacific",
-        "MENAT" = "Middle East & North Africa",
-        "Other Asia Pacific" = "East Asia & Pacific",
-        "Other Europe" = "Europe & Central Asia"
-      )
-    ) %>%
-    dplyr::left_join(country_info %>% dplyr::select(country, region), by = c("Country" = "region"))
+    # Aggregate regions are copied to their member countries; a country BNEF models on its
+    # own matches no region here and keeps its own row.
+    dplyr::left_join(region_map, by = c("Country" = "bnef_region"), relationship = "many-to-many")
 
   bnef_countries <- unique(neo_cap$Country)
 
@@ -230,7 +263,9 @@ energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, coun
       supply_chain = "Downstream",
       category = "Consumption",
       data_type = dplyr::if_else(variable %in% c("installed_cap_index", "elec_growth_index"), "index", "raw"),
-      Year = NA_integer_,
+      # The base year of the per-capita levels (growth runs 2024-35). It was NA, which the
+      # index builders' year handling could only read as "no year".
+      Year = 2024L,
       source = "BNEF New Energy Outlook 2024",
       explanation = dplyr::case_when(
         variable == "X2024_pc" ~ "2024 installed electric capacity **per capita**",

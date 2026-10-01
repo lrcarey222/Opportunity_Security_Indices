@@ -1,14 +1,38 @@
 # Foreign Dependency theme builder functions.
 foreign_dependency_build_country_reference <- function(ei, year = 2025) {
-  # Use EI data as the authoritative country reference and apply legacy naming.
   # Use EI as the authoritative country reference and harmonize legacy naming tweaks.
+  # "USSR" is EI's CIS aggregate, still published for the latest year.
   ei %>%
     dplyr::filter(
       Year == year,
-      !grepl("World|Other|Total|OECD|OPEC", Country)
+      !grepl("World|Other|Total|OECD|OPEC|USSR", Country)
     ) %>%
     dplyr::mutate(Country = standardize_country_names(Country)) %>%
     dplyr::distinct(Country)
+}
+
+# EI country rows for the regional expansions, one per country: standardized name, EU flag,
+# EI sub-region.
+#
+# The expansions below copy regional values to countries and then rank every row they
+# produce, so aggregates ("Total Asia Pacific", "Other Europe", "USSR") and spellings that
+# only collapse later ("US", "Vietnam") have to be gone before the ranking, not after. EI
+# flags Cyprus and Estonia EU = 1 on some variables and 0 on others; max() keeps one row.
+foreign_dependency_ei_countries <- function(ei, year = NULL) {
+  year <- year %||% max(suppressWarnings(as.integer(ei$Year)), na.rm = TRUE)
+
+  ei %>%
+    dplyr::filter(
+      as.character(Year) == as.character(year),
+      !grepl("World|Other|Total|OECD|OPEC|USSR", Country)
+    ) %>%
+    dplyr::mutate(Country = standardize_country_names(Country)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(
+      EU = max(as.integer(EU), na.rm = TRUE),
+      SubRegion = dplyr::first(SubRegion[!is.na(SubRegion) & nzchar(SubRegion)]),
+      .groups = "drop"
+    )
 }
 
 foreign_dependency_build_mineral_supply <- function(critical,
@@ -24,26 +48,30 @@ foreign_dependency_build_mineral_supply <- function(critical,
   critical <- critical %>%
     dplyr::mutate(`Sector.Country` = standardize_country_names(`Sector.Country`))
 
-  # Identify minerals in the IEA critical minerals dataset.
-  minerals <- critical %>%
+  # Every roster country gets a zero-supply row for each (mineral, stage) it is not listed
+  # for, so a non-supplier is scored the same way whether or not the IEA lists it for some
+  # other mineral: own share 0, plus the world-concentration (HHI) terms every country shares.
+  # Completing only the listed countries scored those at the tied-zero rank and left the
+  # unlisted ones at a flat 0 in the final completion below. Listed suppliers outside the
+  # roster are completed too (as critical_minerals_processing() does): Lao PDR mines only
+  # rare earths, and without zero rows for the other minerals its EV score averaged rare
+  # earths alone and ranked second to China.
+  countries <- critical %>%
     dplyr::filter(
       grepl("Total supply", Pillar),
       !grepl("Top 3|Total", `Sector.Country`),
-      `Sector.Country` != "",
-      Mineral != ""
+      !`Sector.Country` %in% c("", "Rest of world")
     ) %>%
-    tidyr::separate(Mineral, into = c("mineral", "supply_chain_raw"), sep = " - ", extra = "merge") %>%
-    dplyr::distinct(mineral)
-
-  # Keep only country entries that appear in the EI-derived reference list.
-  countries <- critical %>%
     dplyr::distinct(`Sector.Country`) %>%
-    dplyr::inner_join(
-      country_reference %>% dplyr::transmute(country = Country),
-      by = c("Sector.Country" = "country")
-    )
+    dplyr::bind_rows(dplyr::distinct(country_reference, `Sector.Country` = Country)) %>%
+    dplyr::distinct(`Sector.Country`)
 
   # Compute market shares, HHI, and the composite supply security index.
+  #
+  # Mining rows score the Upstream stage and refining/processing rows the Midstream stage:
+  # pooling them put ore and refined-metal tonnage into one share and one HHI, and left
+  # refining dependence out of Midstream entirely. Shares and HHIs are therefore taken within
+  # (mineral, tech, stage).
   mineral_supply <- critical %>%
     dplyr::filter(
       grepl("Total supply", Pillar),
@@ -54,11 +82,8 @@ foreign_dependency_build_mineral_supply <- function(critical,
     dplyr::rename(country = `Sector.Country`) %>%
     tidyr::separate(Mineral, into = c("mineral", "supply_chain_raw"), sep = " - ", extra = "merge") %>%
     dplyr::mutate(
-      supply_chain = dplyr::if_else(
-        stringr::str_detect(supply_chain_raw, stringr::regex("Refining|Chemical", ignore_case = TRUE)),
-        "Upstream",
-        "Upstream"
-      )
+      mineral = harmonize_mineral_names(mineral),
+      supply_chain = iea_critical_minerals_supply_stage(supply_chain_raw)
     ) %>%
     dplyr::ungroup() %>%
     dplyr::select(
@@ -66,9 +91,9 @@ foreign_dependency_build_mineral_supply <- function(critical,
       supply_base = dplyr::all_of(base_col),
       supply_horizon = dplyr::all_of(horizon_col)
     ) %>%
+    # Countries absent from a (mineral, stage) block are not among its listed suppliers.
     tidyr::complete(
-      mineral = minerals$mineral,
-      supply_chain = c("Upstream"),
+      tidyr::nesting(mineral, supply_chain),
       country = countries$`Sector.Country`,
       fill = list(supply_base = 0, supply_horizon = 0)
     ) %>%
@@ -76,7 +101,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
       mineral_demand_clean %>%
         dplyr::filter(!is.na(tech)) %>%
         dplyr::ungroup() %>%
-        dplyr::select(Mineral, tech, share_24, share_35),
+        dplyr::transmute(Mineral = harmonize_mineral_names(Mineral), tech, share_24, share_35),
       by = c("mineral" = "Mineral"),
       relationship = "many-to-many"
     ) %>%
@@ -96,13 +121,17 @@ foreign_dependency_build_mineral_supply <- function(critical,
       !is.na(share_frac_24),
       !is.na(share_frac_35)
     ) %>%
-    dplyr::ungroup() %>%
+    # Ranked within stage (pooled across minerals and techs, as before the stage split), so a
+    # refining share is compared with other refining shares. A zero share scores 0 and the
+    # suppliers are ranked above it (iea_critical_minerals_share_index()).
+    dplyr::group_by(supply_chain) %>%
     dplyr::mutate(
-      market_share24_index = median_scurve(share_frac_24, gamma = gamma),
-      market_share35_index = median_scurve(share_frac_35, gamma = gamma),
+      market_share24_index = iea_critical_minerals_share_index(share_frac_24, gamma = gamma),
+      market_share35_index = iea_critical_minerals_share_index(share_frac_35, gamma = gamma),
       hhi24_index = median_scurve(1 - HHI_24, gamma = gamma),
       hhi35_index = median_scurve(1 - HHI_35, gamma = gamma)
     ) %>%
+    dplyr::ungroup() %>%
     dplyr::rowwise() %>%
     dplyr::mutate(
       security_index = mean(dplyr::c_across(c(market_share24_index:hhi35_index)), na.rm = TRUE)
@@ -110,7 +139,8 @@ foreign_dependency_build_mineral_supply <- function(critical,
     dplyr::group_by(supply_chain) %>%
     dplyr::arrange(dplyr::desc(security_index))
 
-  # Aggregate into the canonical schema with completed country coverage.
+  # Aggregate into the canonical schema with completed country coverage (every roster country
+  # already has rows, so the 0 fill below is only a safeguard).
   mineral_supply %>%
     dplyr::group_by(country, tech, supply_chain) %>%
     dplyr::summarize(
@@ -127,12 +157,12 @@ foreign_dependency_build_mineral_supply <- function(critical,
       category = "Foreign Dependency",
       variable = "Mineral Supply",
       data_type = "index",
-      Year = as.character(year),
       Year = year,
       source = "IEA Critical Minerals Database",
       explanation = dplyr::case_when(
         data_type == "index" ~ stringr::str_glue(
-          "Percent-rank of {tech} market share across countries, and HHI across critical minerals"
+          "Percent-rank of {tech} market share across countries, and HHI across critical minerals, ",
+          "of {dplyr::if_else(supply_chain == 'Midstream', 'refined', 'mined')} supply"
         )
       )
     ) %>%
@@ -160,9 +190,11 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
                                                          cleantech_midstream,
                                                          year = 2035,
                                                          gamma = 0.5) {
-  # Reshape IEA clean tech midstream data into a long form with year tags.
+  # Reshape IEA clean tech midstream data into a long form with year tags. Row labels go
+  # through the same name standardization as the EI roster they are joined to ("US").
   cleantech_long <- cleantech_midstream %>%
     dplyr::rename(Country = X) %>%
+    dplyr::mutate(Country = standardize_country_names(Country)) %>%
     tidyr::pivot_longer(
       cols = -Country,
       names_to = c("Technology", "Status"),
@@ -407,6 +439,7 @@ foreign_dependency <- function(critical,
   # Reference country list and run each foreign dependency sub-theme builder. The EI country
   # roster follows the EI release year, which moves independently of the IEA vintages in `year`.
   country_reference <- foreign_dependency_build_country_reference(ei, year = ei_year)
+  ei_countries <- foreign_dependency_ei_countries(ei, year = ei_year)
 
   mineral_supply <- foreign_dependency_build_mineral_supply(
     critical = critical,
@@ -417,14 +450,14 @@ foreign_dependency <- function(critical,
   )
 
   cleantech <- foreign_dependency_build_cleantech_midstream(
-    ei = ei,
+    ei = ei_countries,
     cleantech_midstream = cleantech_midstream,
     year = year$cleantech,
     gamma = gamma
   )
 
   ev_midstream_tbl <- foreign_dependency_build_ev_midstream(
-    ei = ei,
+    ei = ei_countries,
     ev_midstream = ev_midstream,
     year = year$ev,
     gamma = gamma

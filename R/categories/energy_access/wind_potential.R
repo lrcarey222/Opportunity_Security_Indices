@@ -1,7 +1,10 @@
 # Wind power potential theme builder functions.
 
-wind_potential_clean_raw <- function(wind_raw) {
-  wind_raw %>%
+# `country_info`, when given, restricts the table to its economies before anything is
+# ranked, so territories that are not economies do not take a place in the percent ranks
+# (see solar_pv_potential_clean_raw()).
+wind_potential_clean_raw <- function(wind_raw, country_info = NULL) {
+  wind_clean <- wind_raw %>%
     dplyr::rename(Country=name_long) %>%
     dplyr::transmute(
       Country = standardize_country_names(Country),
@@ -16,6 +19,13 @@ wind_potential_clean_raw <- function(wind_raw) {
       !is.na(pd_mean_Wm2),
       !is.na(pd_share_over_threshold)
     )
+
+  if (is.null(country_info)) {
+    return(wind_clean)
+  }
+  require_columns(country_info, "country", label = "country_info")
+  wind_clean %>%
+    dplyr::filter(Country %in% standardize_country_names(country_info$country))
 }
 
 wind_potential_build_indices <- function(wind_clean, gamma = 0.5) {
@@ -98,8 +108,8 @@ wind_potential_build_table <- function(wind_indices, year) {
     )
 }
 
-wind_potential <- function(wind_raw, year = 2023, gamma = 0.5) {
-  wind_clean <- wind_potential_clean_raw(wind_raw)
+wind_potential <- function(wind_raw, year = 2023, gamma = 0.5, country_info = NULL) {
+  wind_clean <- wind_potential_clean_raw(wind_raw, country_info = country_info)
   wind_indices <- wind_potential_build_indices(wind_clean, gamma = gamma)
   output <- wind_potential_build_table(wind_indices, year = year)
   output <- energy_security_add_overall_index(output)

@@ -31,7 +31,7 @@ investment_map_tech <- function(technology) {
     stringr::str_detect(tech_clean, "solar") ~ "Solar",
     stringr::str_detect(tech_clean, "wind") ~ "Wind",
     stringr::str_detect(tech_clean, "batter(y|ies)|battery storage|bess") ~ "Batteries",
-    stringr::str_detect(tech_clean, "zero emission vehicles|electric vehicles|\bzev\b|\bev\b") ~ "Electric Vehicles",
+    stringr::str_detect(tech_clean, "zero emission vehicles|electric vehicles|\\bzev\\b|\\bev\\b") ~ "Electric Vehicles",
     stringr::str_detect(tech_clean, "nuclear") ~ "Nuclear",
     stringr::str_detect(tech_clean, "geothermal") ~ "Geothermal",
     TRUE ~ NA_character_
@@ -43,21 +43,80 @@ investment_is_critical_minerals <- function(technology) {
   stringr::str_detect(tech_clean, "critical minerals")
 }
 
+# Rank-based index for a non-negative activity measure (investment, capacity).
+#
+# Zero means no activity and scores 0, the same as the zero the missing-data rule gives a
+# country the monitor does not cover. Positive values are ranked among themselves above a
+# zero anchor, so the smallest investor still scores above 0. Ranking zeros together with
+# everyone else gave a block of tied zeros a mid-table score (about 0.3-0.45 in a typical
+# tech-year) while an uncovered country scored 0. An all-zero group is all 0.
 investment_safe_index <- function(x, gamma = 0.5) {
   if (!is.numeric(x)) {
     stop("investment_safe_index() expects numeric input.")
   }
 
-  if (length(x) == 0) {
-    return(numeric())
+  out <- rep(NA_real_, length(x))
+  observed <- !is.na(x)
+  out[observed] <- 0
+
+  positive <- observed & x > 0
+  if (any(positive)) {
+    out[positive] <- median_scurve(c(0, x[positive]), gamma = gamma)[-1]
+  }
+  out
+}
+
+# Split of GCIM "Critical Minerals" investment between the two technologies it feeds.
+#
+# The monitor's critical-minerals products are battery materials (lithium, cobalt, nickel,
+# graphite and their chemicals), which serve both EV batteries and grid storage. Copying the
+# full amount into both Batteries and Electric Vehicles Upstream counted every dollar twice in
+# any cross-technology total. The split is each technology's base-year IEA demand share for
+# those minerals (the shares the mineral themes weight by), renormalized over the two techs
+# and averaged across minerals with equal weight, so tonnages of different minerals are never
+# added together. Rank-based indices within a (tech, stage) are unchanged by a constant split.
+investment_critical_minerals_split <- function(mineral_demand_clean,
+                                               minerals = c("Lithium", "Cobalt", "Nickel", "Graphite"),
+                                               techs = c("Batteries", "Electric Vehicles")) {
+  require_columns(mineral_demand_clean, c("Mineral", "tech", "share_24"), label = "mineral_demand_clean")
+
+  shares <- mineral_demand_clean %>%
+    dplyr::filter(Mineral %in% minerals, tech %in% techs) %>%
+    dplyr::group_by(Mineral, tech) %>%
+    dplyr::summarize(share = sum(as.numeric(share_24), na.rm = TRUE), .groups = "drop") %>%
+    tidyr::complete(Mineral, tech = techs, fill = list(share = 0)) %>%
+    dplyr::group_by(Mineral) %>%
+    dplyr::filter(sum(share) > 0) %>%
+    dplyr::mutate(share = share / sum(share)) %>%
+    dplyr::group_by(tech) %>%
+    dplyr::summarize(share = mean(share), .groups = "drop")
+
+  if (nrow(shares) == 0) {
+    stop("No base-year demand for ", paste(minerals, collapse = "/"), " in ", paste(techs, collapse = "/"), ".")
   }
 
-  all_zero <- all(dplyr::coalesce(x, 0) == 0)
-  if (all_zero) {
-    return(rep(0, length(x)))
+  split <- stats::setNames(shares$share, shares$tech)
+  split[techs] / sum(split[techs])
+}
+
+# Equal split when no demand-based split is supplied.
+investment_default_critical_minerals_split <- function() {
+  c("Batteries" = 0.5, "Electric Vehicles" = 0.5)
+}
+
+investment_route_critical_minerals <- function(tbl, value_col, split) {
+  split <- split %||% investment_default_critical_minerals_split()
+  if (is.null(names(split)) || any(!is.finite(split)) || any(split < 0) || abs(sum(split) - 1) > 1e-6) {
+    stop("critical_minerals_split must be a named, non-negative vector summing to 1.")
   }
 
-  median_scurve(x, gamma = gamma)
+  tbl %>%
+    tidyr::crossing(tibble::tibble(tech = names(split), split_share = unname(split))) %>%
+    dplyr::mutate(
+      "{value_col}" := .data[[value_col]] * split_share,
+      supply_chain = "Upstream"
+    ) %>%
+    dplyr::select(-split_share)
 }
 
 investment_assert_columns <- function(tbl, expected, label) {
@@ -117,7 +176,8 @@ investment_momentum <- function(annual_tbl,
                                 capacity_year = 2025L,
                                 gamma = 0.5,
                                 country_reference = NULL,
-                                enforce_country_reference = FALSE) {
+                                enforce_country_reference = FALSE,
+                                critical_minerals_split = NULL) {
   country_reference_std <- NULL
   if (!is.null(country_reference)) {
     country_reference_std <- standardize_country_names(country_reference)
@@ -162,14 +222,14 @@ investment_momentum <- function(annual_tbl,
     dplyr::filter(!is.na(tech)) %>%
     dplyr::transmute(Country, tech, supply_chain = supply_chain_segment, Year, investment_value)
 
-  # Explicit special-case mapping requested by user:
-  # raw Technology == "Critical Minerals" contributes to both
-  # Batteries Upstream and Electric Vehicles Upstream.
+  # Explicit special-case mapping requested by user: raw Technology == "Critical Minerals"
+  # feeds Batteries Upstream and Electric Vehicles Upstream. It is split between them
+  # (investment_critical_minerals_split(); equal split by default) rather than copied in full
+  # to both, which double counted it.
   annual_critical_minerals <- annual_clean %>%
     dplyr::filter(investment_is_critical_minerals(Technology)) %>%
     dplyr::select(Country, Year, investment_value) %>%
-    tidyr::crossing(tech = c("Batteries", "Electric Vehicles")) %>%
-    dplyr::mutate(supply_chain = "Upstream")
+    investment_route_critical_minerals("investment_value", critical_minerals_split)
 
   annual_clean <- dplyr::bind_rows(annual_regular, annual_critical_minerals)
 
@@ -230,13 +290,24 @@ investment_momentum <- function(annual_tbl,
       explanation = "Annual investment amount in 2024 USD billions, summed within Country-tech-supply_chain-year"
     )
 
+  # The monitor lists investment where it happened, so a country missing from a year, or from
+  # a stage it reports elsewhere, invested nothing there. Complete each country's panel over
+  # every year and over the stages the monitor covers for that technology - and only those:
+  # completing all three stages manufactured all-zero Solar/Wind Upstream, Nuclear
+  # Upstream/Midstream and Geothermal Upstream/Midstream cells that the index then scored as
+  # observed zeros. Completing the years puts every country's latest value in the same year,
+  # so the latest-year index and the momentum window compare like with like instead of a 2019
+  # value against a 2025 one.
+  observed_stages <- annual_agg %>%
+    dplyr::distinct(tech, supply_chain)
+  panel_years <- seq.int(min(annual_agg$Year), max(annual_agg$Year))
+
   annual_complete <- annual_agg %>%
-    dplyr::group_by(Country, tech, Year) %>%
-    tidyr::complete(
-      supply_chain = c("Upstream", "Midstream", "Downstream"),
-      fill = list(investment_value = 0)
-    ) %>%
-    dplyr::ungroup()
+    dplyr::distinct(Country, tech) %>%
+    dplyr::inner_join(observed_stages, by = "tech", relationship = "many-to-many") %>%
+    tidyr::crossing(Year = panel_years) %>%
+    dplyr::left_join(annual_agg, by = c("Country", "tech", "supply_chain", "Year")) %>%
+    dplyr::mutate(investment_value = dplyr::coalesce(investment_value, 0))
 
   annual_index <- annual_complete %>%
     dplyr::group_by(tech, supply_chain, Year) %>%
@@ -252,7 +323,7 @@ investment_momentum <- function(annual_tbl,
       value,
       Year,
       source = "GCIM / Rhodium + author normalization",
-      explanation = "Within tech-supply-chain-year median_scurve(log1p(annual investment)); all-zero groups set to 0"
+      explanation = "Within tech-supply-chain-year median_scurve of log1p(annual investment) among investors, above a zero anchor; zero investment = 0"
     )
 
   annual_latest <- annual_complete %>%
@@ -283,8 +354,12 @@ investment_momentum <- function(annual_tbl,
       momentum_raw = log1p(invest_latest) - log1p(invest_baseline),
       Year = as.integer(latest_year)
     ) %>%
+    # Momentum is ranked among countries that invested in either year of the window. With
+    # nothing in both years there is no momentum to rank: the row is left out and the zero
+    # missing-data rule scores it 0, like any country outside the monitor.
+    dplyr::filter(invest_latest > 0 | invest_baseline > 0) %>%
     dplyr::group_by(tech, supply_chain) %>%
-    dplyr::mutate(value = investment_safe_index(momentum_raw, gamma = gamma)) %>%
+    dplyr::mutate(value = median_scurve(momentum_raw, gamma = gamma)) %>%
     dplyr::ungroup() %>%
     dplyr::transmute(
       Country,
@@ -296,7 +371,7 @@ investment_momentum <- function(annual_tbl,
       value,
       Year,
       source = "GCIM / Rhodium + author normalization",
-      explanation = "Within tech-supply-chain median_scurve(log1p(latest)-log1p(baseline)); all-zero groups set to 0"
+      explanation = "Within tech-supply-chain median_scurve(log1p(latest)-log1p(baseline)) among countries investing in either year"
     )
 
   momentum_raw_tbl <- annual_latest %>%
@@ -341,8 +416,7 @@ investment_momentum <- function(annual_tbl,
   capacity_critical_minerals <- capacity_clean %>%
     dplyr::filter(investment_is_critical_minerals(Technology)) %>%
     dplyr::select(Country, Product, capacity_stage, Value) %>%
-    tidyr::crossing(tech = c("Batteries", "Electric Vehicles")) %>%
-    dplyr::mutate(supply_chain = "Upstream")
+    investment_route_critical_minerals("Value", critical_minerals_split)
 
   capacity_clean <- dplyr::bind_rows(capacity_regular, capacity_critical_minerals)
 
@@ -549,7 +623,8 @@ investment_momentum_from_excel <- function(path,
                                            momentum_window_years = 3,
                                            capacity_year = 2025L,
                                            gamma = 0.5,
-                                           country_reference = NULL) {
+                                           country_reference = NULL,
+                                           critical_minerals_split = NULL) {
   if (!file.exists(path)) {
     stop(
       "Missing GCIM investment monitor file at ",
@@ -613,6 +688,7 @@ investment_momentum_from_excel <- function(path,
     momentum_window_years = momentum_window_years,
     capacity_year = capacity_year,
     gamma = gamma,
-    country_reference = country_reference
+    country_reference = country_reference,
+    critical_minerals_split = critical_minerals_split
   )
 }

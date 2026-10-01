@@ -1,9 +1,10 @@
 # Energy access & consumption theme.
+#
+# Country names are standardized here, before anything is ranked, so the percent ranks are
+# taken over one row per economy.
 energy_access_clean_raw <- function(ei) {
   ei %>%
-    dplyr::mutate(
-      Country = dplyr::if_else(Country == "US", "United States", Country)
-    )
+    dplyr::mutate(Country = standardize_country_names(Country))
 }
 
 energy_access_build_per_capita <- function(ei_clean, year, country_info = NULL) {
@@ -11,7 +12,9 @@ energy_access_build_per_capita <- function(ei_clean, year, country_info = NULL) 
     dplyr::filter(
       Year == year,
       Var %in% c("pop", "coal_tes_ej", "oil_tes_ej", "gas_tes_ej", "solar_tes_ej", "wind_tes_ej", "nuclear_tes_ej"),
-      !grepl("World|Other|Total|OECD|OPEC", Country)
+      # "USSR" is EI's CIS aggregate, still published for the latest year (with no
+      # population, so it ranked as a zero-consumption country).
+      !grepl("World|Other|Total|OECD|OPEC|USSR", Country)
     ) %>%
     dplyr::select(Country, Var, Value) %>%
     tidyr::pivot_wider(names_from = Var, values_from = Value) %>%

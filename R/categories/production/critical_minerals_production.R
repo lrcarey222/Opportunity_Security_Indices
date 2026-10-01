@@ -124,6 +124,13 @@ critical_minerals_production_build_table <- function(sheet_data,
       Country = dplyr::all_of(nm_col),
       raw_value = dplyr::all_of(val_col)
     ) %>%
+    # Sub-rows and footnotes go before the names are standardized, which would otherwise
+    # read a component row or a sentence naming a country as that country (see
+    # reserves_build_reserve_table()). Blank values on a listed country stay: they are zeros.
+    dplyr::filter(
+      !grepl("Orinoco|of which", Country, ignore.case = TRUE),
+      !(is.na(suppressWarnings(as.numeric(raw_value))) & nchar(Country) > 40)
+    ) %>%
     dplyr::mutate(
       Country = standardize_country_names(Country),
       Country = dplyr::case_when(
@@ -169,7 +176,7 @@ critical_minerals_production_build_table <- function(sheet_data,
         data_type == "raw" ~ stringr::str_glue(
           "{tech_name} production in {value_year} ({unit_desc}) from sheet '{sheet_id}'"
         ),
-        data_type == "index" ~ "Percent-rank of production across reporting entities (countries + RoW)"
+        data_type == "index" ~ "Percent-rank of production across reporting countries (plus a zero anchor)"
       )
     ) %>%
     dplyr::select(
@@ -192,21 +199,19 @@ critical_minerals_production_build_weighted <- function(critical_min_production,
                                                         mineral_demand_clean,
                                                         country_reference,
                                                         gamma = 0.5) {
+  # Both sides on the canonical mineral names: the old recode looked for "rare" on the IEA
+  # side, which says "Neodymium", so rare-earth production never reached Wind or EV.
   weighted_inputs <- critical_min_production %>%
     dplyr::rename(Mineral = tech) %>%
+    dplyr::mutate(join_mineral = harmonize_mineral_names(Mineral)) %>%
     dplyr::inner_join(
       mineral_demand_clean %>%
         dplyr::ungroup() %>%
-        dplyr::select(Mineral, tech, share_24) %>%
-        dplyr::mutate(
-          Mineral = dplyr::case_when(
-            stringr::str_detect(Mineral, stringr::regex("rare", ignore_case = TRUE)) ~ "Rareearths",
-            Mineral == "Battery-grade graphite" ~ "Graphite",
-            TRUE ~ Mineral
-          )
-        ),
-      by = "Mineral"
+        dplyr::transmute(join_mineral = harmonize_mineral_names(Mineral), tech, share_24),
+      by = "join_mineral",
+      relationship = "many-to-many"
     ) %>%
+    dplyr::select(-join_mineral) %>%
     dplyr::filter(!is.na(tech)) %>%
     dplyr::group_by(Country, tech, data_type) %>%
     dplyr::mutate(share_24 = share_24 / sum(share_24)) %>%
@@ -219,7 +224,9 @@ critical_minerals_production_build_weighted <- function(critical_min_production,
     dplyr::mutate(variable = stringr::str_glue("{tech} Production")) %>%
     dplyr::filter(value > 0) %>%
     dplyr::group_by(tech) %>%
-    dplyr::mutate(value = median_scurve(value, gamma = gamma)) %>%
+    # Re-ranked among producers with the same zero anchor as the per-mineral step, so the
+    # smallest producer stays above the 0 that non-producers are completed with below.
+    dplyr::mutate(value = median_scurve(c(0, value), gamma = gamma)[-1]) %>%
     {
       dplyr::bind_rows(
         standardize_bind_rows_inputs(.),

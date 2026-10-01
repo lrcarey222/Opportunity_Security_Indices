@@ -80,6 +80,70 @@ iea_critical_minerals_year_col <- function(critical, year, label = "IEA critical
   resolved
 }
 
+## Mineral names and supply stages ---------------------------------------
+
+# One canonical name per mineral, shared by every theme that joins minerals across sources.
+#
+# Each source labels the same mineral its own way: the IEA demand sheet says
+# "Battery-grade graphite" and "Neodymium", the IEA supply sheet "Graphite" and "Magnet rare
+# earth elements", the EI P-R sheets "Natural Graphite" and "Rare Earth metals", Comtrade
+# "rare-earth metals" and "platinum". Joining on the raw labels silently dropped graphite and
+# rare earths from every demand-weighted rollup (Mineral Supply kept only Cu/Co/Li/Ni), so
+# every mineral column goes through this before a join.
+#
+# Rare earths: the IEA reports demand for neodymium, the magnet rare earth behind EV motors
+# and wind turbines, while the EI/USGS tables report total rare-earth oxide. The total is the
+# closest available proxy for magnet rare-earth supply and reserves, so both map to one name.
+harmonize_mineral_names <- function(x) {
+  cleaned <- stringr::str_squish(as.character(x))
+  lower <- stringr::str_to_lower(cleaned)
+
+  dplyr::case_when(
+    is.na(cleaned) | !nzchar(cleaned) ~ NA_character_,
+    stringr::str_detect(lower, "graphite") ~ "Graphite",
+    stringr::str_detect(lower, "rare.?earth|neodymium|praseodymium|dysprosium|terbium") ~ "Rare Earths",
+    stringr::str_detect(lower, "^pgms?\\b|platinum|palladium|rhodium") ~ "PGMs",
+    TRUE ~ stringr::str_to_sentence(cleaned)
+  )
+}
+
+# Supply-chain stage of an IEA supply row, from the "<mineral> - <stage>" label.
+#
+# Mining is Upstream; refining and the other processing steps the workbook reports (lithium
+# chemicals, battery-grade graphite) are Midstream, so a country's refining share scores the
+# midstream stage it describes rather than being pooled with ore tonnage.
+iea_critical_minerals_supply_stage <- function(stage_label) {
+  dplyr::if_else(
+    stringr::str_detect(
+      stage_label,
+      stringr::regex("refin|chemical|battery.?grade|process", ignore_case = TRUE)
+    ),
+    "Midstream",
+    "Upstream"
+  )
+}
+
+# Rank-based index of a market share (a country's share of world supply or exports of a
+# mineral), for the mineral themes.
+#
+# A zero share scores 0 - the same as a country the source does not list at all - and
+# positive shares are ranked among themselves above a zero anchor, so the smallest supplier
+# still scores above a non-supplier. Ranking the zeros together with the suppliers gave the
+# block of tied non-suppliers a mid-table score (Germany and Japan, which mine none of the
+# battery minerals, scored 0.44 on Batteries Upstream Mineral Supply against 0.47 for the
+# Democratic Republic of Congo) while an unlisted country scored 0. NA stays NA.
+iea_critical_minerals_share_index <- function(x, gamma = 0.5) {
+  out <- rep(NA_real_, length(x))
+  observed <- !is.na(x)
+  out[observed] <- 0
+
+  positive <- observed & x > 0
+  if (any(positive)) {
+    out[positive] <- median_scurve(c(0, x[positive]), gamma = gamma)[-1]
+  }
+  out
+}
+
 ## Workbook parsing -----------------------------------------------------
 
 # Read one sheet as parallel text/number grids.
