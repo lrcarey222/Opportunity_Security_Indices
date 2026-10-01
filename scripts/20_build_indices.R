@@ -35,6 +35,8 @@ source(local({
   resolve_bootstrap_path()
 }))
 
+source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
@@ -94,6 +96,13 @@ read_processed_tbl <- function(name, processed_dir) {
   readRDS(path)
 }
 
+# WDI country reference (names, ISO3, regions), read here so the script also runs in a fresh
+# session; it used to rely on the country_info global left behind by scripts/10.
+raw_data_path <- file.path(repo_root, config$raw_data_dir)
+country_info <- standardize_country_info(
+  read.csv(file.path(raw_data_path, "wdi_country_info.csv"))
+)
+
 energy_access_tbl <- read_processed_tbl("energy_access_tbl", processed_dir)
 solar_pv_potential_tbl <- read_processed_tbl("solar_pv_potential_tbl", processed_dir)
 wind_potential_tbl <- read_processed_tbl("wind_potential_tbl", processed_dir)
@@ -134,6 +143,24 @@ investment_momentum_tbl <- read_processed_tbl("investment_momentum_tbl", process
 policy_component_tbl <- read_processed_tbl("policy_component_tbl", processed_dir)
 policy_outputs <- read_processed_tbl("policy_outputs", processed_dir)
 nipo_tech_year<-read_processed_tbl("nipo_tech_year", processed_dir)
+
+# The policy block of scripts/10 records which NIPO extract and as-of date the components
+# were built from. A policy_outputs.rds without that record predates it: the component table
+# shipped until Sep 2026 was the Feb 2026 build, seven months older than the pillars.
+policy_provenance <- policy_outputs$provenance
+if (is.null(policy_provenance)) {
+  warning(
+    "policy_outputs.rds has no build provenance, so policy_component_tbl.rds predates the ",
+    "current policy block of scripts/10_build_themes.R. Rerun it before reporting Policy ",
+    "or Strategic Index results."
+  )
+} else {
+  message(
+    "Policy components: NIPO ", policy_provenance$nipo_extract,
+    " (stock as of ", format(policy_provenance$nipo_as_of_date), ", ",
+    policy_provenance$nipo_scope, " jurisdictions), built ", policy_provenance$built_at
+  )
+}
 
 tech_ghg <- read_processed_tbl("tech_ghg_tbl", processed_dir)
 
@@ -213,142 +240,84 @@ if (!exists("policy_component_tbl") || !exists("policy_outputs")) {
   stop("Policy theme outputs not found; run scripts/10_build_themes.R first.")
 }
 
-required_vars <- c(
-  "IEA PAMS Policy Index",
-  "NIPO Policy Index",
-  "CAT Policy Index",
-  "Dual-use policy score"
+# Composite Policy index: NIPO 4, IEA PAMS 3, CAT 2, Dual-use 1, renormalised over the
+# components present in each cell; a country needs all four somewhere
+# (R/indices/build_policy_index.R).
+policy_build <- build_composite_policy_index(policy_component_tbl, techs = techs)
+policy_index <- policy_build$index
+policy_eligibility <- policy_build$eligibility
+message(
+  "Policy index: ", sum(policy_eligibility$eligible), " of ", nrow(policy_eligibility),
+  " countries have all four policy components."
 )
 
-weights_tbl <- tibble::tibble(
-  variable = required_vars,
-  w = c(3, 4, 2, 1)  # IEA=3, NIPO=4, CAT=2, Dual-Use=1 (same order as required_vars)
+# Strategic Index (R/indices/build_indices.R):
+#   0.2 * pol + 0.3 * EO + 0.3 * energy_security_need + 0.1 * sc_weight + 0.1 * tech_weight,
+# where energy_security_need = 1 - Energy_Security_Index (the pillar is oriented
+# higher = more secure, so the SI favours sectors where the country is least secure) and
+# pol is the within-country S-curve of the Policy index. Cells missing EO, ES or policy are
+# left out rather than imputed; si_exclusion says why.
+strategic_index <- build_strategic_index(
+  economic_opportunity_index = economic_opportunity_index,
+  energy_security_index = energy_security_index,
+  policy_index = policy_index,
+  tech_ghg = tech_ghg,
+  technological_readiness_index = technological_readiness_index,
+  techs = techs
+)
+message(
+  "Strategic index: ", sum(!is.na(strategic_index$strategic_index)), " cells for ",
+  dplyr::n_distinct(strategic_index$Country[!is.na(strategic_index$strategic_index)]),
+  " countries."
 )
 
-# (Optional but robust) collapse to one value per Country×tech×supply_chain×variable
-policy_components_clean <- policy_component_tbl %>%
-  dplyr::filter(tech %in% techs, variable %in% required_vars) %>%
-  dplyr::group_by(Country, tech, supply_chain, variable) %>%
-  dplyr::summarise(
-    value = dplyr::if_else(all(is.na(value)), NA_real_, mean(value, na.rm = TRUE)),
-    .groups = "drop"
-  ) %>%
-  dplyr::left_join(weights_tbl, by = "variable")
-
-# Country-level eligibility: must have ALL 4 variables somewhere (non-NA)
-eligible_countries <- policy_components_clean %>%
-  dplyr::group_by(Country, variable) %>%
-  dplyr::summarise(has = any(!is.na(value)), .groups = "drop") %>%
-  tidyr::complete(Country, variable = required_vars, fill = list(has = FALSE)) %>%
-  dplyr::group_by(Country) %>%
-  dplyr::summarise(ok = all(has), .groups = "drop") %>%
-  dplyr::filter(ok) %>%
-  dplyr::pull(Country)
-
-policy_index <- policy_components_clean %>%
-  dplyr::filter(Country %in% eligible_countries) %>%
-  dplyr::group_by(Country, tech, supply_chain) %>%
-  dplyr::summarise(
-    value = {
-      denom <- sum(w[!is.na(value)])
-      if (denom == 0) NA_real_ else sum(value * w, na.rm = TRUE) / denom
-    },
-    .groups = "drop"
-  ) %>%
-  dplyr::filter(!is.na(value)) %>%
-  dplyr::mutate(
-    category = "Policy",
-    variable = "Overall Policy Index",
-    data_type = "index",
-    Year = 0L,
-    source = "Author calculation",
-    explanation = "Weighted mean of NIPO (4), IEA PAMS (3), CAT (2), Dual-use (1); countries kept only if all 4 exist somewhere"
-  ) %>%
-  dplyr::select(
-    Country, tech, supply_chain,
-    category, variable, data_type,
-    value, Year, source, explanation
+# A pillar that is constant across countries within a sector is a sector constant, not a
+# measurement (ES was 0 everywhere in Nuclear - Upstream in the Sep 2026 build, which made it
+# the top pick of 8 of the 18 allies scored). Name such sectors before anything is reported.
+# Such sectors are excluded and the index rebuilt, so the within-country policy ranks are
+# taken over the sectors that remain.
+strategic_degenerate <- strategic_index_degenerate_sectors(strategic_index)
+if (nrow(strategic_degenerate) > 0) {
+  message(
+    "Strategic index: excluding sectors where a pillar is constant across countries: ",
+    paste0(
+      strategic_degenerate$sector, " (",
+      dplyr::case_when(
+        strategic_degenerate$es_constant & strategic_degenerate$eo_constant ~ "ES and EO",
+        strategic_degenerate$es_constant ~ "ES",
+        TRUE ~ "EO"
+      ), ")",
+      collapse = ", "
+    )
   )
+  strategic_index <- build_strategic_index(
+    economic_opportunity_index = economic_opportunity_index,
+    energy_security_index = energy_security_index,
+    policy_index = policy_index,
+    tech_ghg = tech_ghg,
+    technological_readiness_index = technological_readiness_index,
+    techs = techs,
+    excluded_sectors = unique(c(STRATEGIC_EXCLUDED_SECTORS, strategic_degenerate$sector))
+  )
+  message(
+    "Strategic index after exclusions: ", sum(!is.na(strategic_index$strategic_index)),
+    " cells for ",
+    dplyr::n_distinct(strategic_index$Country[!is.na(strategic_index$strategic_index)]),
+    " countries."
+  )
+}
 
-strategic_index <- left_join(
-  economic_opportunity_index,
-  energy_security_index,
-  by = c("Country","tech","supply_chain")
-) %>%
-  left_join(
-    policy_index %>% dplyr::select(Country, tech, supply_chain, value),
-    by = c("Country","tech","supply_chain")
-  ) %>%
-  # tech_weight from ghg_index
-  left_join(
-    tech_ghg %>% dplyr::select(tech, ghg_index),
-    by = "tech"
-  ) %>%
-  # trl2023 from IEA (default to 11 if missing)
-  left_join(
-    technological_readiness_index %>% dplyr::select(Country, tech, supply_chain, trl_index),
-    by = c("Country","tech","supply_chain")
-  ) %>%
-  filter(tech %in% techs) %>%
-  group_by(Country,supply_chain) %>%
-  mutate(
-    
-    # impute NAs to country mean (computed components)
-    Economic_Opportunity_Index  = if_else(is.na(Economic_Opportunity_Index),  mean(Economic_Opportunity_Index,  na.rm = TRUE), Economic_Opportunity_Index),
-    Energy_Security_Index  = if_else(is.na(Energy_Security_Index),  mean(Energy_Security_Index,  na.rm = TRUE), Energy_Security_Index),
-    Energy_Security_Index=1-Energy_Security_Index,
-    value = if_else(is.na(value), mean(value, na.rm = TRUE), value)
-  ) %>%
-  group_by(Country) %>%
-  mutate(
-    # component indices
-    eo  = median_scurve(Economic_Opportunity_Index),
-    es  = 1 - median_scurve(Energy_Security_Index),
-    pol = median_scurve(value),
-    
-     # supply-chain weights
-    sc_weight = case_when(
-      supply_chain == "Upstream"   ~ 0.50,
-      supply_chain == "Midstream"  ~ 0.75,
-      supply_chain == "Downstream" ~ 0.25,
-      TRUE ~ NA_real_
-    ),
-    # tech weight (ghg_index) - safer global fallback than within-country
-    tech_weight = coalesce(ghg_index, mean(tech_ghg$ghg_index, na.rm = TRUE)),
-    
-    # base score
-    base_score = eo + es + pol,
-    
-    # UPDATED strategic index weights
-    strategic_index =
-      0.2 * pol +
-      #0.25 * trl_index +
-      0.3 * Economic_Opportunity_Index +
-      0.3 * Energy_Security_Index +
-      0.1 * sc_weight +
-      0.1 * tech_weight
-  ) %>%
-  ungroup() %>%
-  mutate(
-    sector = paste(tech, supply_chain, sep = " - ")
-  ) %>%
-  filter(sector != "Geothermal - Midstream") %>%
-  arrange(desc(strategic_index))
+allies <- country_info %>%
+  filter(iso3c %in% STRATEGIC_ALLY_ISO3)
 
-allies<- country_info %>%
-  filter(iso3c %in% 
-           c("USA","CAN", "JPN","AUS", "IND","MEX","KOR","GBR","DEU","FRA","ITA","BRA","SAU", "ZAF", "IDN", "NOR", "UAE","VNM","KEN","DNK","ARG","MAR","CHL"))
+allied_index <- select_allied_strategic_sectors(strategic_index, ally_countries = allies$country)
 
-allied_index<-strategic_index %>%
-  filter(Country %in% allies$country,
-         supply_chain %in% c("Midstream","Upstream"),
-         !is.na(strategic_index),
-         !tech %in% c("Geothermal","Green Hydrogen")) %>%
-  group_by(Country) %>%
-  slice_max(order_by=strategic_index,n=1)
+charts_dir <- file.path(processed_dir, "charts")
+if (!dir.exists(charts_dir)) {
+  dir.create(charts_dir, recursive = TRUE)
+}
+write.csv(allied_index, file.path(charts_dir, "allied_strategic.csv"), row.names = FALSE)
 
-write.csv(allied_index,"data/processed/charts/allied_strategic.csv")
-  
 
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
   file.path(repo_root, config$outputs_dir)
@@ -401,6 +370,7 @@ saveRDS(
     economic_opportunity_index = economic_opportunity_index,
     policy_component_tbl = policy_component_tbl,
     policy_index = policy_index,
+    policy_eligibility = policy_eligibility,
     strategic_index = strategic_index
   ),
   outputs_rds_path
@@ -412,19 +382,23 @@ library(dplyr)
 library(openxlsx)
 
 # Countries to export (data may store Korea as "South Korea")
-countries_export <- c("Japan", "India", "South Korea", "Viet Nam", "United States")
+countries_export <- c("Japan", "India", "South Korea", "United States")
 
 # Build the 4 data frames (and name sheets as requested)
 sheets <- list(
-  "Japan"   = strategic_index %>% filter(Country == "Japan") %>% mutate(es=1-es),
-  "India"   = strategic_index %>% filter(Country == "India") %>% mutate(es=1-es),
-  "Korea"   = strategic_index %>% filter(Country %in% c("Korea", "South Korea")) %>% mutate(es=1-es),
-  "Viet Nam"= strategic_index %>% filter(Country == "Viet Nam") %>% mutate(es=1-es),
-  "USA"= strategic_index %>% filter(Country == "United States") %>% mutate(es=1-es),
-  "UK" = strategic_index %>% filter(Country=="United Kingdom") %>% mutate(es=1-es)
+  "Japan"   = strategic_index %>% filter(Country == "Japan"),
+  "India"   = strategic_index %>% filter(Country == "India"),
+  "Korea"   = strategic_index %>% filter(Country %in% c("Korea", "South Korea")),
+  "USA"= strategic_index %>% filter(Country == "United States"),
+  "UK" = strategic_index %>% filter(Country=="United Kingdom")
 )
 
-# Keep only requested columns, sort, and (optionally) rename for the sheet
+# The columns are the Strategic Index inputs as they enter the formula:
+#   strategic index = 0.2 pol + 0.3 economic_opportunity + 0.3 energy_security_need
+#                     + 0.1 neis_weight + 0.1 climate_weight.
+# energy_security is the pillar itself (higher = more secure); energy_security_need =
+# 1 - energy_security. The sheets used to show the S-curved eo and es instead, which are not
+# in the formula, and flipped es a second time, so "es" held S-curved insecurity.
 sheets <- lapply(sheets, function(df) {
   df %>%
     transmute(
@@ -432,13 +406,15 @@ sheets <- lapply(sheets, function(df) {
       sector,
       tech,
       supply_chain,
-      eo,
-      es,
+      economic_opportunity = Economic_Opportunity_Index,
+      energy_security = Energy_Security_Index,
+      energy_security_need,
       pol,
       neis_weight=sc_weight,
       climate_weight=tech_weight,
       trl_index,
-      `strategic index` = strategic_index
+      `strategic index` = strategic_index,
+      si_exclusion
     ) %>%
     arrange(desc(`strategic index`))
 })
@@ -457,26 +433,17 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-# Decompose strategic_index into non-overlapping weighted contributions
-# strategic_index =
-#   0.20*(eo+es+pol) + 0.15*trl_index + 0.15*eo + 0.15*es + 0.35*(sc_weight*tech_weight)
-# => contributions:
-#   EO      = 0.35*eo
-#   ES      = 0.35*es
-#   Policy  = 0.20*pol
-#   TRL     = 0.15*trl_index
-#   SCxTech = 0.35*(sc_weight*tech_weight)
+# Decompose strategic_index into its weighted terms, which sum to it exactly:
+#   0.3 * Economic_Opportunity_Index   (contrib_eo)
+#   0.3 * energy_security_need         (contrib_es_need; = 1 - Energy_Security_Index)
+#   0.2 * pol                          (contrib_policy)
+#   0.1 * sc_weight                    (contrib_sc)
+#   0.1 * tech_weight                  (contrib_ghg)
+# strategic_index_contributions() takes the weights from the same constant as the index,
+# so the plot cannot drift from the formula again.
 
-top10_by_country <- strategic_index %>%
-  mutate(
-    sector = paste(tech, supply_chain, sep = " - "),
-    contrib_eo      = 0.25 * Economic_Opportunity_Index,
-    contrib_es      = 0.25 * Energy_Security_Index,
-    contrib_policy  = 0.2 * pol,
-    contrib_trl     = 0 * trl_index,
-    contrib_sc = 0.15 * (sc_weight ),
-    contrib_ghg = 0.15* tech_weight
-  ) %>%
+top10_by_country <- strategic_index_contributions(strategic_index) %>%
+  filter(!is.na(strategic_index)) %>%
   filter(sector != "Geothermal - Midstream") %>%
   group_by(Country) %>%
   slice_max(order_by = strategic_index, n = 10, with_ties = FALSE) %>%
@@ -491,7 +458,7 @@ top10_by_country <- strategic_index %>%
 plot_df <- top10_by_country %>%
   filter(Country %in% c("Japan","South Korea","India","Viet Nam","United Kingdom")) %>%
   select(Country, sector, sector_key, strategic_index,
-         contrib_eo, contrib_es, contrib_policy, contrib_sc,contrib_ghg) %>%
+         contrib_eo, contrib_es_need, contrib_policy, contrib_sc,contrib_ghg) %>%
   pivot_longer(
     cols = starts_with("contrib_"),
     names_to = "component",
@@ -500,7 +467,7 @@ plot_df <- top10_by_country %>%
   mutate(
     component = recode(component,
                        contrib_eo      = "Economic opportunity",
-                       contrib_es      = "Energy security",
+                       contrib_es_need = "Energy security need (1 - ES)",
                        contrib_policy  = "Policy",
                        contrib_ghg     = "Climate",
                        contrib_sc = "Supply chain"
@@ -515,14 +482,14 @@ rmi_palette <- c("#0BD0D9",
                  "#548538",
                  "#7F7F7F")
 
-ggplot(plot_df %>% filter(Country=="United Kingdom"), aes(x = sector_key, y = contribution, fill = component)) +
+ggplot(plot_df %>% filter(Country=="Japan"), aes(x = sector_key, y = contribution, fill = component)) +
   geom_col() +
   coord_flip() +
   #facet_wrap(~ Country, scales = "free_y") +
   scale_x_discrete(labels = function(x) sub("^.*\\|\\|", "", x)) +
   scale_fill_manual(values = rmi_palette) +
   labs(x = NULL, y = "Weighted contribution to strategic_index", fill = NULL) +
-  theme_minimal
+  theme_minimal()
 
 strategic_asia <- strategic_index %>%
   inner_join(country_info %>%

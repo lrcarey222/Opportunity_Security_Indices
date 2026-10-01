@@ -9,10 +9,13 @@
 #        - Reach/scale: jurisdiction × scope × duration × breadth × geographic reach × money/coverage scale
 #        - Package strength: multiplies by a capped "policy mix" multiplier at State Act level
 #   3) Converts the underlying event stream into a STOCK index:
-#        - Active as-of a chosen date (defaults to latest date in the dataset)
+#        - Active as-of a chosen date (defaults to the extract's latest ANNOUNCEMENT date;
+#          see add_asof_flags() for why implementation dates are not used)
 #        - Separately tracks flows over a lookback window (new implemented / removed)
-#   4) Aggregates to Country × Tech × SupplyChain, and maps sums into a 0-1 index
-#      using median_scurve(log1p(sum)) to reduce outlier dominance.
+#   4) Aggregates to Country × Tech × SupplyChain: blends the sum and the mean of active
+#      policy strength on the signed-log scale, then maps the signed log of that blend to
+#      0-1 with a median S-curve ACROSS countries within each tech × stage
+#      (domestic_intervention_index = the _xcountry variant).
 # ==============================================================================
 # ---- Dependencies -------------------------------------------------------------
 # These are internal project utilities used elsewhere in your repo.
@@ -104,7 +107,19 @@ POLICY_TYPE_WEIGHTS <- tibble::tribble(
   "Repatriation & surrender requirements", 0.75,
   "Trade balancing measure", 0.80,
   "Technical barrier to trade", 0.70,
-  "Competitive devaluation", 0.75
+  "Competitive devaluation", 0.75,
+  # GTA intervention types introduced in the 2026 taxonomy (first seen in the June 2026
+  # extract, when "Capital injection and equity stakes" disappeared and "Loan guarantee"
+  # shrank). Each takes the weight of the closest pre-2026 type (in brackets), so an
+  # extract's vintage does not change a measure's bite; without them they fell back to
+  # 0.40 whenever no family flag was set.
+  "Equity stake", 0.90,                          # [Capital injection and equity stakes]
+  "Financial investment support", 0.90,          # [Capital injection and equity stakes]
+  "Lending support", 0.75,                       # [State loan]
+  "Debt purchase", 0.75,                         # [State loan]
+  "Corporate control order", 0.65,               # [FDI: Treatment and operations, nes]
+  "Selective import channel restriction", 0.70,  # [Import-related non-tariff measure, nes]
+  "Distribution restriction", 0.70               # [Import-related non-tariff measure, nes]
 )
 
 # ---- STATUS_WEIGHTS -----------------------------------------------------------
@@ -135,9 +150,11 @@ LIBERALISING_INWARD_WEIGHT  <- -0.20
 LIBERALISING_OUTWARD_WEIGHT <-  0.20
 LIBERALISING_UNKNOWN_WEIGHT <-  0.00
 
-# ---- JURIS_WEIGHTS ------------------------------------------------------------
+# ---- NIPO_JURIS_WEIGHTS -------------------------------------------------------
 # Where implemented: national tends to have larger reach than local/international tagging.
-JURIS_WEIGHTS <- tibble::tribble(
+# Prefixed NIPO_ because iea_policy_index.R keeps its own table and scripts/10 sources both
+# files into one environment; under a shared name this one overwrote the IEA table.
+NIPO_JURIS_WEIGHTS <- tibble::tribble(
   ~jurisdiction, ~w_juris,
   "National", 1.00,
   "Subnational", 0.5,
@@ -153,6 +170,8 @@ JURIS_WEIGHTS <- tibble::tribble(
 # Primary instrument-family weights for Domestic Intervention Score (DIS).
 # We use the maximum weight across the families flagged for a measure.
 # (If no family flags are present, we fall back to the intervention-type override.)
+# Reference table only: build_policy_base() applies the same values inline (w_family), so
+# change the two together.
 DOMESTIC_FAMILY_WEIGHTS <- tibble::tribble(
   ~family_flag, ~w_family,
   "fam_subsidy", 1.00,
@@ -272,15 +291,6 @@ signed_expm1 <- function(x) {
 signed_log_blend <- function(strength_sum, strength_avg, alpha = 0.5) {
   alpha <- suppressWarnings(as.numeric(alpha))
   if (!is.finite(alpha)) alpha <- 0.5
-  alpha <- max(0, min(1, alpha))
-  
-  signed_expm1(
-    alpha * signed_log1p(strength_sum) +
-      (1 - alpha) * signed_log1p(strength_avg)
-  )
-}
-
-signed_log_blend <- function(strength_sum, strength_avg, alpha = 0.5) {
   alpha <- max(0, min(1, alpha))
   
   signed_expm1(
@@ -964,7 +974,7 @@ expand_cross_cutting_rows <- function(tbl,
 # when NIPO sector flags provide corroborating evidence.
 # Heuristic matching is intentionally conservative and fully configurable below.
 DEFAULT_VALIDATION_BONUS <- 0.20  # +20% weight when corroborated
-DEFAULT_VALIDATION_KEYWORD_BONUS <- 0.35  # +15% weight when Title/Source corroborates tech
+DEFAULT_VALIDATION_KEYWORD_BONUS <- 0.35  # +35% weight when Title/Source corroborates tech
 
 # ---- Tech taxonomy (user-defined) ----
 TECH_TAXONOMY <- c(
@@ -1055,7 +1065,7 @@ keyword_evidence <- function(tech, title, source) {
 # Supply-chain keyword validation: look for stage-relevant terms in Title/Source.
 # Your supply_chain options: Upstream (commodities/critical minerals etc), Midstream (manufacturing),
 # Downstream (deployment and services).
-DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.25  # +12% when Title/Source corroborates supply-chain stage
+DEFAULT_VALIDATION_SC_KEYWORD_BONUS <- 0.25  # +25% when Title/Source corroborates supply-chain stage
 
 # ---- Mapping confidence (applied to policy strength contributions) ----
 CONFIDENCE_FLOOR <- 0.25
@@ -1118,6 +1128,23 @@ validation_weight <- function(tech, supply_chain, title, source,
   w
 }
 
+
+# Policy-level columns the allocation and the tech x stage aggregations read. The policy
+# tables carry ~130 columns; the allocation copies every row once per tech x stage cell (39
+# cells for a cross-cutting policy), so it is fed only these. The outputs are unchanged
+# because nothing downstream of the allocation reads any other column.
+NIPO_ALLOCATION_COLUMNS <- c(
+  "nipo_row_id", "policy_id", "iso3", "country",
+  "hs6_n", "matched_hs6_n", "Technology", "Value.Chain", "allowed_pairs_cpc",
+  "Title", "source_text", "Source",
+  "sector_low_carbon", "sector_dual_use", "sector_critical_minerals", "sector_advanced_tech",
+  "scale_strength_pkg", "is_active_asof", "as_of_date",
+  "announce_date", "impl_date", "removal_date"
+)
+
+nipo_allocation_input <- function(policy_tbl) {
+  dplyr::select(policy_tbl, dplyr::any_of(NIPO_ALLOCATION_COLUMNS))
+}
 
 allocate_policy_to_tech_sc <- function(policy_tbl) {
   policy_shares <- policy_tbl %>%
@@ -1228,21 +1255,25 @@ clean_nipo_raw <- function(raw_nipo,
       .data$essential_for_tech_sc
     )
   
-  nipo_classified <- raw_nipo %>%
-    dplyr::mutate(
-      nipo_row_id = dplyr::row_number(),
+  # Only the row id and the HS6 string go through the policy x HS6 expansion; the other
+  # columns are joined back once per policy. Expanding with every column attached (8.8 M
+  # policy x code rows on the full 2026 extracts) is what exhausted memory. The result is
+  # unchanged: the same columns in the same order, with essential_for_tech_sc taken from the
+  # policy's first HS6 code as before.
+  nipo_rows <- raw_nipo %>%
+    dplyr::mutate(nipo_row_id = dplyr::row_number())
+
+  hs6_summary <- nipo_rows %>%
+    dplyr::transmute(
+      nipo_row_id = .data$nipo_row_id,
       hs6_raw = .data$`Product: HS 6-digit (2022)`
     ) %>%
-    tidyr::separate_rows(.data$hs6_raw, sep = "\\s*,\\s*") %>%
+    tidyr::separate_rows("hs6_raw", sep = "\\s*,\\s*") %>%
     dplyr::mutate(code = clean_code(.data$hs6_raw, width = 6)) %>%
     dplyr::left_join(subcat_lu, by = "code", relationship = "many-to-many") %>%
     dplyr::group_by(.data$nipo_row_id) %>%
     dplyr::summarise(
-      dplyr::across(
-        -c(.data$Technology, .data$`Value.Chain`, .data$Sub.Sector, .data$code, .data$hs6_raw),
-        dplyr::first,
-        .names = "{.col}"
-      ),
+      essential_for_tech_sc = dplyr::first(.data$essential_for_tech_sc),
       Technology    = list(sort(unique(na.omit(.data$Technology)))),
       `Value.Chain` = list(sort(unique(na.omit(.data$`Value.Chain`)))),
       Sub.Sector    = list(sort(unique(na.omit(.data$Sub.Sector)))),
@@ -1250,10 +1281,15 @@ clean_nipo_raw <- function(raw_nipo,
       total_hs6 = dplyr::n_distinct(.data$code[!is.na(.data$code) & nzchar(.data$code)]),
       matched_hs6 = dplyr::n_distinct(.data$code[!is.na(.data$Technology) & !is.na(.data$code) & nzchar(.data$code)]),
       .groups = "drop"
-    ) %>%
+    )
+
+  nipo_classified <- nipo_rows %>%
+    dplyr::relocate("nipo_row_id") %>%
+    dplyr::inner_join(hs6_summary, by = "nipo_row_id") %>%
     dplyr::mutate(
       country = standardize_country_names(.data$`Implementing Jurisdiction`)
     )
+  rm(nipo_rows, hs6_summary)
   
   if (!is.null(country_info) && all(c("country", "iso3c") %in% names(country_info))) {
     country_lu <- country_info %>%
@@ -1407,7 +1443,7 @@ build_policy_base <- function(nipo_country_tbl,
         TRUE ~ "Unknown"
       ),
       jurisdiction_norm = dplyr::case_when(
-        .data$juris_raw %in% JURIS_WEIGHTS$jurisdiction ~ .data$juris_raw,
+        .data$juris_raw %in% NIPO_JURIS_WEIGHTS$jurisdiction ~ .data$juris_raw,
         stringr::str_detect(stringr::str_to_lower(.data$juris_raw), "national") ~ "National",
         stringr::str_detect(stringr::str_to_lower(.data$juris_raw), "internat") ~ "International",
         stringr::str_detect(stringr::str_to_lower(.data$juris_raw), "sub|state|province|regional") ~ "Subnational",
@@ -1423,7 +1459,8 @@ build_policy_base <- function(nipo_country_tbl,
         TRUE ~ 0.75
       )
     ) %>%
-    dplyr::left_join(POLICY_TYPE_WEIGHTS, by = c("intervention_type" = "intervention_type")) %>%    dplyr::left_join(JURIS_WEIGHTS, by = c("jurisdiction_norm" = "jurisdiction")) %>%
+    dplyr::left_join(POLICY_TYPE_WEIGHTS, by = c("intervention_type" = "intervention_type")) %>%
+    dplyr::left_join(NIPO_JURIS_WEIGHTS, by = c("jurisdiction_norm" = "jurisdiction")) %>%
     dplyr::mutate(
       w_type   = dplyr::coalesce(.data$w_type, 0.40),
       w_status = dplyr::case_when(
@@ -1520,23 +1557,63 @@ build_policy_base <- function(nipo_country_tbl,
 # 3) Add "as-of" stock/flow flags (used for outputs 1-3)
 # ==============================================================================
 
+# Upper bound for the NIPO as-of date: the last day of the extract's release month (a
+# yyyymmdd vintage key such as 20260701 for "GTA NIPO - July 2026.xlsx", or a Date in that
+# month), and never later than run_date. Either may be NULL/NA; returns NA when both are.
+nipo_as_of_cap_date <- function(release_key = NULL, run_date = NULL) {
+  caps <- as.Date(character(0))
+  if (!is.null(release_key) && length(release_key) == 1 && !is.na(release_key)) {
+    release_start <- if (inherits(release_key, "Date")) {
+      release_key
+    } else {
+      as.Date(sprintf("%08d", as.integer(release_key)), format = "%Y%m%d")
+    }
+    if (!is.na(release_start)) {
+      month_start <- as.Date(format(release_start, "%Y-%m-01"))
+      next_month <- seq(month_start, by = "month", length.out = 2)[2]
+      caps <- c(caps, next_month - 1)
+    }
+  }
+  if (!is.null(run_date) && length(run_date) == 1 && !is.na(run_date)) {
+    caps <- c(caps, as.Date(run_date))
+  }
+  if (length(caps) == 0) {
+    return(as.Date(NA))
+  }
+  min(caps)
+}
+
+# The stock counts a measure as active when it is implemented by as_of_date and not yet
+# removed. By default as_of_date is the extract's own cut-off, its latest ANNOUNCEMENT date.
+# Implementation dates are not used: GTA records scheduled implementation dates, so their
+# maximum lies in the future (2028-10-01 in the Feb, June and July 2026 extracts) and the
+# June 2026 build counted measures that were not yet in force. as_of_cap (for example the
+# end of the extract's release month, or the run date) bounds the date from above.
 add_asof_flags <- function(policy_base_tbl,
                            as_of_date = NULL,
-                           flow_window_days = 365) {
+                           flow_window_days = 365,
+                           as_of_cap = NULL) {
   if (is.null(as_of_date)) {
-    cand <- c(as_date_safe(policy_base_tbl$announce_date), as_date_safe(policy_base_tbl$impl_date))
+    cand <- as_date_safe(policy_base_tbl$announce_date)
     cand <- cand[!is.na(cand)]
-    
+    if (length(cand) == 0) {
+      cand <- as_date_safe(policy_base_tbl$impl_date)
+      cand <- cand[!is.na(cand)]
+    }
+
     if (length(cand) == 0) {
       stop(
         "as_of_date is NULL and no announcement/implementation dates are available. ",
         "Pass as_of_date explicitly for reproducible stock comparisons."
       )
     }
-    
+
     as_of_date <- max(cand)
   }
   as_of_date <- as_date_safe(as_of_date)
+  if (!is.null(as_of_cap) && !is.na(as_date_safe(as_of_cap))) {
+    as_of_date <- min(as_of_date, as_date_safe(as_of_cap))
+  }
   flow_start <- as_of_date - as.difftime(flow_window_days, units = "days")
   
   policy_base_tbl %>%
@@ -1557,7 +1634,7 @@ add_asof_flags <- function(policy_base_tbl,
 build_by_policy <- function(policy_asof_tbl, cpc_names) {
   
   # Summarise tech × supply_chain mapping (and confidence) at the policy level
-  alloc_long <- allocate_policy_to_tech_sc(policy_asof_tbl) %>%
+  alloc_long <- allocate_policy_to_tech_sc(nipo_allocation_input(policy_asof_tbl)) %>%
     dplyr::mutate(
       mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1)
     )
@@ -1710,9 +1787,9 @@ build_by_tech_sc <- function(policy_asof_tbl,
   #   0.0 -> pure MEAN (intensive margin dominates)
   #   default 0.5 -> geometric blend between sum and mean
   balance_alpha <- max(0, min(1, balance_alpha))
-  
-  tech_sc_long <- allocate_policy_to_tech_sc(policy_asof_tbl)
-  
+
+  tech_sc_long <- allocate_policy_to_tech_sc(nipo_allocation_input(policy_asof_tbl))
+
   if (isTRUE(expand_cross_cutting)) {
     tech_sc_long <- expand_cross_cutting_rows(
       tech_sc_long,
@@ -1813,7 +1890,8 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     dplyr::mutate(
       is_active_asof = TRUE,
       as_of_date = as.Date(NA)
-    )
+    ) %>%
+    nipo_allocation_input()
   
   tech_sc_long <- allocate_policy_to_tech_sc(tmp)
   
@@ -2045,11 +2123,18 @@ build_by_cpc <- function(policy_asof_tbl,
 # 9) Top-level wrapper: nipo_policy_outputs()
 # ==============================================================================
 
+# include_hs6 / include_cpc: by_hs6 and by_cpc unnest every policy x HS6 (or CPC) code with
+# all policy columns attached. On the full 2026 extracts that is ~8.8 M rows and the step
+# that exhausts memory, while neither table feeds the index; pass FALSE to skip them (the
+# list elements are then NULL). No other output depends on them.
 nipo_policy_outputs <- function(raw_nipo,
                                 subcat_raw,
                                 hs6_essential_tbl = NULL,
                                 country_info = NULL,
                                 as_of_date = NULL,
+                                as_of_cap = NULL,
+                                include_hs6 = TRUE,
+                                include_cpc = TRUE,
                                 flow_window_days = 365,
                                 duration_norm_months = 24,
                                 duration_cap_months = 60,
@@ -2127,18 +2212,23 @@ nipo_policy_outputs <- function(raw_nipo,
   policy_asof <- add_asof_flags(
     policy_base_tbl = policy_base,
     as_of_date = as_of_date,
-    flow_window_days = flow_window_days
+    flow_window_days = flow_window_days,
+    as_of_cap = as_of_cap
   )
-  
+
   by_policy <- build_by_policy(policy_asof, cpc_names = cpc_names)
-  
-  by_hs6 <- build_by_hs6(
-    policy_asof,
-    hs6_cpc_lu = hs6_cpc_lu,
-    hs6_name_lu = hs6_name_lu,
-    split_across_hs6 = split_across_hs6,
-    balance_alpha = balance_alpha
-  )
+
+  by_hs6 <- if (isTRUE(include_hs6)) {
+    build_by_hs6(
+      policy_asof,
+      hs6_cpc_lu = hs6_cpc_lu,
+      hs6_name_lu = hs6_name_lu,
+      split_across_hs6 = split_across_hs6,
+      balance_alpha = balance_alpha
+    )
+  } else {
+    NULL
+  }
   
   tech_sc_out <- build_by_tech_sc(
     policy_asof_tbl = policy_asof,
@@ -2167,12 +2257,16 @@ nipo_policy_outputs <- function(raw_nipo,
     balance_alpha = balance_alpha
   )
   
-  by_cpc <- build_by_cpc(
-    policy_asof_tbl = policy_asof,
-    cpc_name_lu = cpc_names,
-    split_across_cpc = TRUE,
-    balance_alpha = balance_alpha
-  )
+  by_cpc <- if (isTRUE(include_cpc)) {
+    build_by_cpc(
+      policy_asof_tbl = policy_asof,
+      cpc_name_lu = cpc_names,
+      split_across_cpc = TRUE,
+      balance_alpha = balance_alpha
+    )
+  } else {
+    NULL
+  }
   
   list(
     by_policy = by_policy,

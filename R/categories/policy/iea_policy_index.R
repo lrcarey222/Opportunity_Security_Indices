@@ -154,8 +154,15 @@ TECH_RULES <- list(
   )
 )
 
+# The Upstream words are matched as whole words. As bare substrings "ore" hit "more",
+# "before", "foreign", "Korea" and "Singapore", "mine" hit "determine" and "lease" hit
+# "release": 36.9% of PAMS policies were tagged Upstream, against 12.5% on the words
+# themselves, which moved them off the cross-cutting smear onto Upstream at full weight.
 SUPPLY_CHAIN_RULES <- list(
-  "Upstream" = c("mining", "mine", "exploration", "extraction", "ore", "lease", "concession", "drilling"),
+  "Upstream" = c(
+    "\\bmining\\b", "\\bmines?\\b", "\\bexploration\\b", "\\bextraction\\b", "\\bores?\\b",
+    "\\bleases?\\b", "\\bleasing\\b", "\\bconcessions?\\b", "\\bdrilling\\b"
+  ),
   "Midstream" = c(
     "processing",
     "refining",
@@ -253,7 +260,11 @@ POLICY_TYPE_WEIGHTS_IEA <- tibble::tribble(
   "Other", 0.20
 )
 
-STATUS_WEIGHTS <- tibble::tribble(
+# The status and jurisdiction tables carry an IEA_ prefix because nipo_policy_index.R defines
+# its own jurisdiction table and scripts/10 sources both files into one environment. Under the
+# shared name JURIS_WEIGHTS the NIPO table (International = 0.20) silently replaced this one
+# (International = 0.66), so IEA PAMS was scored with the NIPO weight.
+IEA_STATUS_WEIGHTS <- tibble::tribble(
   ~status, ~w_status,
   "In force", 1.00,
   "In effect", 1.00,
@@ -264,7 +275,7 @@ STATUS_WEIGHTS <- tibble::tribble(
   "Unknown", 0.20
 )
 
-JURIS_WEIGHTS <- tibble::tribble(
+IEA_JURIS_WEIGHTS <- tibble::tribble(
   ~jurisdiction, ~w_juris,
   "National", 1.00,
   "Subnational", 0.5,
@@ -293,7 +304,7 @@ build_policy_table <- function(pams_country_tbl) {
       tech_crosscut = (.data$tech == "Cross-cutting"),
       sc_crosscut = (.data$supply_chain == "Cross-cutting"),
       status_norm = dplyr::case_when(
-        .data$status %in% STATUS_WEIGHTS$status ~ .data$status,
+        .data$status %in% IEA_STATUS_WEIGHTS$status ~ .data$status,
         stringr::str_detect(stringr::str_to_lower(.data$status), "in force|in effect") ~ "In force",
         stringr::str_detect(stringr::str_to_lower(.data$status), "ended|expired") ~ "Ended",
         stringr::str_detect(stringr::str_to_lower(.data$status), "planned") ~ "Planned",
@@ -301,7 +312,7 @@ build_policy_table <- function(pams_country_tbl) {
         TRUE ~ "Unknown"
       ),
       jurisdiction_norm = dplyr::case_when(
-        .data$jurisdiction %in% JURIS_WEIGHTS$jurisdiction ~ .data$jurisdiction,
+        .data$jurisdiction %in% IEA_JURIS_WEIGHTS$jurisdiction ~ .data$jurisdiction,
         stringr::str_detect(stringr::str_to_lower(.data$jurisdiction), "national") ~ "National",
         stringr::str_detect(stringr::str_to_lower(.data$jurisdiction), "internat") ~ "International",
         stringr::str_detect(stringr::str_to_lower(.data$jurisdiction), "sub|state|province|regional") ~
@@ -311,8 +322,8 @@ build_policy_table <- function(pams_country_tbl) {
       )
     ) %>%
     dplyr::left_join(POLICY_TYPE_WEIGHTS_IEA, by = "policy_type_bucket") %>%
-    dplyr::left_join(STATUS_WEIGHTS, by = c("status_norm" = "status")) %>%
-    dplyr::left_join(JURIS_WEIGHTS, by = c("jurisdiction_norm" = "jurisdiction")) %>%
+    dplyr::left_join(IEA_STATUS_WEIGHTS, by = c("status_norm" = "status")) %>%
+    dplyr::left_join(IEA_JURIS_WEIGHTS, by = c("jurisdiction_norm" = "jurisdiction")) %>%
     dplyr::mutate(
       w_type = dplyr::coalesce(.data$w_type, 0.30),
       w_status = dplyr::coalesce(.data$w_status, 0.50),
@@ -426,9 +437,14 @@ iea_policy_index <- function(raw_pams,
     split_strength = split_strength
   )
 
+  # iso3c comes from the PAMS country JSON. Carrying it lets standardize_country_table() put
+  # the WDI name on each row: matched by name alone, IEA spellings such as "People's Republic
+  # of China" or "Islamic Republic of Iran" kept their IEA form and never met the CAT, NIPO
+  # and dual-use rows for the same country.
   index_tbl <- outputs$policy_index %>%
     dplyr::transmute(
       Country = .data$country,
+      iso3c = .data$iso3,
       tech = .data$tech,
       supply_chain = .data$supply_chain,
       category = "Policy",

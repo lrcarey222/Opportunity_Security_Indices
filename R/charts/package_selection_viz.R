@@ -78,6 +78,7 @@ build_country_strategic_tbl <- function(index_outputs,
   }
 
   strategic_tbl <- index_outputs$strategic_index %>%
+    with_energy_security_need() %>%
     dplyr::filter(.data$Country == country_name) %>%
     dplyr::rename("sector_label"="sector",
                   "es_risk"="es") %>%
@@ -93,6 +94,7 @@ build_country_strategic_tbl <- function(index_outputs,
       "tech_weight",
       "Economic_Opportunity_Index",
       "Energy_Security_Index",
+      "energy_security_need",
       "strategic_index",
       "sector_label"
     ) %>%
@@ -174,11 +176,23 @@ plot_country_scatter <- function(strategic_tbl, selected_sector_labels = NULL) {
     theme_minimal(base_size = 11)
 }
 
+# The Strategic Index loads on energy_security_need = 1 - Energy_Security_Index, where the
+# pillar is oriented higher = more secure. Tables built before the column existed are
+# completed from the pillar.
+with_energy_security_need <- function(strategic_tbl) {
+  if (!"energy_security_need" %in% names(strategic_tbl)) {
+    strategic_tbl$energy_security_need <- 1 - strategic_tbl$Energy_Security_Index
+  }
+  strategic_tbl
+}
+
 build_topn_contrib_tbl <- function(strategic_tbl, top_n = 10) {
   topn_wide <- strategic_tbl %>%
+    with_energy_security_need() %>%
     dplyr::mutate(
       contrib_eo = 0.3 * .data$Economic_Opportunity_Index,
-      contrib_es = 0.3 * .data$Energy_Security_Index,
+      # The Strategic Index loads on the security need (1 - ES), not on security itself.
+      contrib_es = 0.3 * .data$energy_security_need,
       contrib_policy = 0.2 * .data$pol,
       contrib_sc = 0.1 * .data$sc_weight,
       contrib_climate = 0.1 * .data$tech_weight

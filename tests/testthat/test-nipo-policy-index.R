@@ -88,3 +88,54 @@ test_that("supply-chain keyword matching captures semiconductor and AI stage ter
     source = ""
   ))
 })
+
+# ==============================================================================
+# As-of date, weights and memory-saving switches (policy_si fixes, Sep 2026)
+# ==============================================================================
+
+test_that("nipo_as_of_cap_date caps at the release month end and the run date", {
+  # "GTA NIPO - July 2026.xlsx" carries the vintage key 20260701.
+  expect_equal(nipo_as_of_cap_date(20260701, run_date = as.Date("2026-09-30")), as.Date("2026-07-31"))
+  expect_equal(nipo_as_of_cap_date(20260701, run_date = as.Date("2026-07-10")), as.Date("2026-07-10"))
+  expect_equal(nipo_as_of_cap_date(20260201), as.Date("2026-02-28"))
+  expect_equal(nipo_as_of_cap_date(as.Date("2026-06-15")), as.Date("2026-06-30"))
+  expect_true(is.na(nipo_as_of_cap_date(NULL, NULL)))
+  expect_true(is.na(nipo_as_of_cap_date(NA, NA)))
+})
+
+test_that("add_asof_flags defaults to the latest announcement, not a scheduled implementation", {
+  base <- tibble::tibble(
+    policy_id = 1:3,
+    announce_date = as.Date(c("2025-01-10", "2026-03-01", "2026-06-22")),
+    impl_date = as.Date(c("2025-02-01", "2026-04-01", "2028-10-01")),
+    removal_date = as.Date(NA)
+  )
+
+  out <- add_asof_flags(base)
+  expect_equal(unique(out$as_of_date), as.Date("2026-06-22"))
+  # The measure scheduled for 2028 is not yet in force.
+  expect_equal(out$is_active_asof, c(TRUE, TRUE, FALSE))
+
+  capped <- add_asof_flags(base, as_of_cap = as.Date("2026-03-15"))
+  expect_equal(unique(capped$as_of_date), as.Date("2026-03-15"))
+  expect_equal(capped$is_active_asof, c(TRUE, FALSE, FALSE))
+})
+
+test_that("the 2026 GTA intervention types have their own weights", {
+  new_types <- c(
+    "Equity stake", "Financial investment support", "Lending support", "Debt purchase",
+    "Corporate control order", "Selective import channel restriction", "Distribution restriction"
+  )
+  expect_true(all(new_types %in% POLICY_TYPE_WEIGHTS$intervention_type))
+  expect_equal(anyDuplicated(POLICY_TYPE_WEIGHTS$intervention_type), 0L)
+  expect_true(all(POLICY_TYPE_WEIGHTS$w_type > 0 & POLICY_TYPE_WEIGHTS$w_type <= 1))
+})
+
+test_that("nipo_allocation_input keeps only the allocation columns", {
+  wide <- tibble::tibble(
+    nipo_row_id = 1L, policy_id = 1L, Title = "x", scale_strength_pkg = 2,
+    unused_column = "drop me", another_unused = 3
+  )
+  out <- nipo_allocation_input(wide)
+  expect_setequal(names(out), c("nipo_row_id", "policy_id", "Title", "scale_strength_pkg"))
+})

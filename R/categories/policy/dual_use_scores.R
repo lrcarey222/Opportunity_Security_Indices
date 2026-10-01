@@ -1,4 +1,11 @@
 # Clean dual-use scores into policy component format.
+#
+# Provenance: data/raw/dual_use_scores_primary_secondary_tertiary.csv is a project-authored
+# table of 0-1 defence-relevance scores per technology x stage (33 rows), generated with an
+# LLM (ChatGPT, "Thinking" model) and not drawn from a statistical source. It has no country
+# dimension: the same score is copied to every country, so the component shifts sector
+# levels but cannot rank countries. The `source` and `explanation` fields say so, so the
+# provenance travels with every row into the policy component table.
 clean_dual_use_scores <- function(raw_tbl,
                                   countries = NULL,
                                   year = 0L,
@@ -50,8 +57,11 @@ clean_dual_use_scores <- function(raw_tbl,
       variable = "Dual-use policy score",
       data_type = "index",
       Year = NA,
-      source = "ChatGPT - Thinking Model",
-      explanation = "Dual-use score by technology and supply chain stage",
+      source = "LLM-generated (ChatGPT - Thinking Model); project-authored",
+      explanation = paste(
+        "Dual-use (defence) relevance score by technology and supply chain stage;",
+        "LLM-elicited judgement, identical for every country"
+      ),
       value = suppressWarnings(as.numeric(value))
     )
   
