@@ -7,18 +7,25 @@ overcapacity_premium_build_overcapacity_clean <- function(overcapacity_raw) {
     label = "overcapacity_raw"
   )
 
+  # The sheet labels only the first component of each sector block, so filling down assigns
+  # every component to the block it sits in. Component names are a fallback only where no
+  # block label precedes them: "Cells" appears in both the battery and the solar block, and
+  # matching on it used to move battery cells into Solar.
   overcapacity_raw %>%
+    dplyr::mutate(Sector = stringr::str_squish(as.character(Sector))) %>%
     tidyr::fill(Sector, .direction = "down") %>%
     dplyr::mutate(
       Sector = dplyr::case_when(
-        Sector == "H???" ~ "Green Hydrogen",
+        # BNEF labels the hydrogen block "H" + U+2082 (subscript two). The literal "H???"
+        # this used to match was that label after an encoding round trip, so hydrogen never
+        # reached the table. Escaped so the pattern survives whatever encoding the file is
+        # sourced in.
+        stringr::str_detect(Sector, "^H(\u2082|2|\\?+)$") |
+          stringr::str_detect(tolower(Sector), "hydrogen|electroly") ~ "Green Hydrogen",
         Sector == "Battery" ~ "Batteries",
-        TRUE ~ Sector
-      ),
-      Sector = dplyr::case_when(
-        Component %in% c("Separators", "Electrolytes", "Cathodes", "Anodes", "cells") ~ "Batteries",
-        Component %in% c("Onshore nacelles") ~ "Wind",
-        Component %in% c("Wafers", "Cells", "Modules") ~ "Solar",
+        is.na(Sector) & Component %in% c("Separators", "Electrolytes", "Cathodes", "Anodes") ~ "Batteries",
+        is.na(Sector) & Component %in% c("Onshore nacelles", "Offshore nacelles") ~ "Wind",
+        is.na(Sector) & Component %in% c("Polysilicon", "Wafers", "Modules") ~ "Solar",
         TRUE ~ Sector
       )
     )
@@ -54,7 +61,11 @@ overcapacity_premium_build_overcapacity_indices <- function(overcapacity_clean, 
       category = "Technology Demand",
       Year = as.integer(year),
       source = "BNEF Energy Transition Supply Chains 2025",
-      explanation = "Ratio of Midstream capacity to forecast"
+      explanation = dplyr::if_else(
+        data_type == "raw",
+        "Ratio of Midstream capacity to forecast demand, mean over the sector's components",
+        "2^(-ratio): more overcapacity scores lower; a global value copied to every country"
+      )
     ) %>%
     dplyr::select(
       tech,
@@ -69,12 +80,16 @@ overcapacity_premium_build_overcapacity_indices <- function(overcapacity_clean, 
     )
 }
 
+# The countries the trade theme scores. Overcapacity is a global, technology-level ratio, so
+# it is copied to every one of them regardless of which cells they trade in: keying the copy
+# on the trade table's (country, tech, stage) rows dropped any technology without HS6 codes,
+# which is how hydrogen would have fallen out even once its label matched.
 overcapacity_premium_build_country_reference <- function(trade_tidy) {
-  require_columns(trade_tidy, c("Country", "tech", "supply_chain"), label = "trade_tidy")
+  require_columns(trade_tidy, c("Country", "tech"), label = "trade_tidy")
 
   trade_tidy %>%
-    dplyr::select(Country, tech, supply_chain) %>%
-    dplyr::distinct()
+    dplyr::filter(!is.na(Country), nzchar(Country), !is.na(tech)) %>%
+    dplyr::distinct(Country)
 }
 
 overcapacity_premium <- function(overcapacity_raw, trade_tidy, year = 2025L) {
@@ -85,7 +100,7 @@ overcapacity_premium <- function(overcapacity_raw, trade_tidy, year = 2025L) {
   )
   country_reference <- overcapacity_premium_build_country_reference(trade_tidy)
 
-  assert_unique_keys(country_reference, c("Country", "tech", "supply_chain"), label = "overcapacity_country_reference")
+  assert_unique_keys(country_reference, "Country", label = "overcapacity_country_reference")
   assert_unique_keys(
     overcapacity_indices %>% dplyr::distinct(tech, supply_chain),
     c("tech", "supply_chain"),
@@ -93,11 +108,7 @@ overcapacity_premium <- function(overcapacity_raw, trade_tidy, year = 2025L) {
   )
 
   overcapacity_tidy <- country_reference %>%
-    dplyr::left_join(
-      overcapacity_indices,
-      by = c("tech", "supply_chain"),
-      relationship = "many-to-many"
-    ) %>%
+    tidyr::crossing(overcapacity_indices) %>%
     dplyr::filter(!is.na(variable))
 
   output <- standardize_theme_table(overcapacity_tidy)

@@ -22,6 +22,10 @@ resolve_trade_comtrade_year <- function(year_comtrade, comtrade_trade) {
   NA_integer_
 }
 
+# ES Trade: the exposure components of "Overall Trade Risk Index" - world export
+# concentration (a cell-level constant), own export market share, and net imports of the
+# basket relative to GDP. `gdp_data` is the WDI GDP table (iso3c, year, NY.GDP.MKTP.CD);
+# without it the deficit term is absent and the category rests on the other two.
 trade_concentration <- function(subcat,
                                 aec_4_data,
                                 aec_6_data,
@@ -31,7 +35,8 @@ trade_concentration <- function(subcat,
                                 year_4 = 2022,
                                 year_6 = 2023,
                                 year_comtrade = NULL,
-                                include_sub_sector = FALSE) {
+                                include_sub_sector = FALSE,
+                                gdp_data = NULL) {
   year_comtrade <- resolve_trade_comtrade_year(year_comtrade, comtrade_trade)
 
   trade_category_build_trade(
@@ -44,6 +49,8 @@ trade_concentration <- function(subcat,
     year_4 = year_4,
     year_6 = year_6,
     year_comtrade = year_comtrade,
-    include_sub_sector = include_sub_sector
+    include_sub_sector = include_sub_sector,
+    gdp_data = gdp_data,
+    theme = "trade_concentration"
   )
 }

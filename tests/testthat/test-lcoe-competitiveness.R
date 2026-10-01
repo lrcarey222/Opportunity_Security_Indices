@@ -2,6 +2,7 @@ repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRU
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "scripts", "utils", "bnef_lcoe.R"))
 source(file.path(repo_root, "R", "categories", "energy_prices", "lcoe_competitiveness.R"))
 
@@ -42,8 +43,11 @@ test_that("the release's reference year drives the emitted variable names", {
     current_year = 2024L
   )
 
-  expect_setequal(unique(out_2025$variable), c("lcoe_25", "lcoe_50", "Overall input cost index"))
-  expect_setequal(unique(out_2024$variable), c("lcoe_24", "lcoe_50", "Overall input cost index"))
+  expect_setequal(unique(out_2025$variable), c("lcoe_25", "lcoe_50", "LCOE Index"))
+  expect_setequal(unique(out_2024$variable), c("lcoe_24", "lcoe_50", "LCOE Index"))
+
+  # Every row carries the release's reference year, the 2050 projection included.
+  expect_setequal(unique(out_2025$Year), 2025L)
 })
 
 test_that("the current year is taken from the reader's reference_year attribute", {
@@ -114,4 +118,57 @@ test_that("a csv input is read directly rather than sent through the converter",
     bnef_lcoe_resolve_csv(csv, cache_dir = tempdir(), converter = "does-not-exist.ps1"),
     csv
   )
+})
+
+test_that("the category scores one LCOE variable beside the input-cost indices", {
+  def <- yaml::read_yaml(file.path(repo_root, "config", "index_definition.yml"))
+  components <- unlist(def$overall_variables[["Overall Input Cost Index"]]$components)
+
+  # lcoe_<yy>, lcoe_50 and their mean used to be listed together: 3 of 4 votes for LCOE.
+  expect_setequal(components, c("LCOE Index", "Input Cost Index", "IEA Cost index"))
+
+  out <- lcoe_competitiveness(bnef_fixture(2025L), current_year = 2025L)
+  wide <- out %>%
+    dplyr::filter(data_type == "index") %>%
+    tidyr::pivot_wider(id_cols = c(Country, tech), names_from = variable, values_from = value)
+  expect_equal(wide$`LCOE Index`, (wide$lcoe_25 + wide$lcoe_50) / 2)
+})
+
+test_that("each technology is one benchmark plant, the same in every market", {
+  years <- c(current = 2025L, horizon = 2050L)
+  fixture <- bnef_fixture(2025L)
+  # Australia also quotes PV + storage, at a higher cost. Averaged in, it moved Australia
+  # alone down the Solar ranking.
+  storage <- fixture[fixture$Region == "Australia" & fixture$Technology == "PV fixed-axis", ]
+  storage$Technology <- "PV fixed-axis + storage"
+  storage$X2025 <- 1e4
+  storage$X2050 <- 1e4
+
+  plain <- lcoe_competitiveness_clean_bnef(fixture, years = years)
+  padded <- lcoe_competitiveness_clean_bnef(dplyr::bind_rows(fixture, storage), years = years)
+  expect_equal(padded, plain)
+})
+
+test_that("market names are standardized and only scored economies are ranked", {
+  years <- c(current = 2025L, horizon = 2050L)
+  fixture <- bnef_fixture(2025L)
+  fixture$Region[fixture$Region == "India"] <- "US"
+  taiwan <- fixture[fixture$Region == "Chile", ]
+  taiwan$Region <- "Taiwan"
+  taiwan$X2025 <- 0.1   # cheapest everywhere
+
+  info <- data.frame(
+    country = c("Australia", "Brazil", "Canada", "Chile", "United States"),
+    iso3c = c("AUS", "BRA", "CAN", "CHL", "USA")
+  )
+  out <- lcoe_competitiveness(
+    dplyr::bind_rows(fixture, taiwan),
+    current_year = 2025L,
+    country_info = info
+  )
+
+  expect_setequal(unique(out$Country), info$country)
+  solar <- out %>% dplyr::filter(tech == "Solar", variable == "lcoe_25", data_type == "index")
+  expect_equal(max(solar$value), 1)
+  expect_equal(solar$value[solar$Country == "Australia"], 1)
 })

@@ -1,4 +1,29 @@
 # Trade category core computations (Comtrade + Atlas hybrid pipeline).
+#
+# One builder computes every trade variable; the two themes then keep the components their
+# pillar scores (TRADE_THEME_VARIABLES), so the ES and EO trade tables are no longer copies
+# of each other:
+#
+#   trade_concentration (ES "Overall Trade Risk Index"): exposure. S(-HHI) of the world
+#     export market, own export market share, and S(-net imports / GDP) in the basket.
+#   export_feasibility (EO "Overall Trade Index"): revealed and latent export capability.
+#     Market share, Balassa RCA, export size, Atlas feasibility, S(-HHI).
+#
+# Every country-level index is ranked across the country_info economies within (tech,
+# supply_chain, sub_sector) - one data year per build. HHI is a property of the world
+# market for the basket, so it is one value per cell: it moves a cell's level relative to
+# other cells but cannot rank countries inside it.
+
+TRADE_THEME_VARIABLES <- list(
+  trade_concentration = list(
+    index = c("HHI", "market_share", "deficit_gdp"),
+    raw = c("HHI", "market_share", "exports", "imports", "deficit", "gdp", "deficit_gdp")
+  ),
+  export_feasibility = list(
+    index = c("market_share", "rca", "export_size", "feas", "HHI"),
+    raw = c("HHI", "market_share", "exports", "imports", "export_rca", "feasibility")
+  )
+)
 
 trade_core_build_energy_codes <- function(subcat, include_sub_sector = FALSE) {
   pick_col <- function(tbl, candidates, label) {
@@ -50,28 +75,128 @@ trade_core_filter_year <- function(tbl, year, label = "trade data") {
     dplyr::filter(as.character(.data[[year_col]]) == as.character(year))
 }
 
+# Atlas codes arrive as integers when the file is read without colClasses, which drops the
+# leading zero of chapters 01-09 (e.g. 2710.00 -> 271000 survives, 0101.11 -> 10111 does not).
+trade_core_pad_atlas_codes <- function(tbl, width) {
+  tbl %>%
+    dplyr::mutate(
+      product_hs92_code = stringr::str_pad(
+        as.character(product_hs92_code),
+        width = width,
+        side = "left",
+        pad = "0"
+      )
+    )
+}
+
+# The country's share of world exports of the basket: its basket exports over the world's,
+# with world exports of each product summed over every Atlas reporter (the Atlas
+# global_market_share is exactly export_value over that sum). This used to be the mean of
+# the country's product-level shares weighted by its own exports, which scores dominance
+# of the few products a country ships rather than its weight in the basket: DRC's cobalt
+# gave it 0.86 in Batteries Midstream against a 0.7% basket share, and a country with
+# imports but no basket exports got NaN, later imputed to the average.
 trade_core_build_aec_market_share <- function(aec_6_data, energy_codes, year = 2023) {
-  aec_6_data %>%
+  keys <- c("tech", "supply_chain", "sub_sector")
+  flows <- aec_6_data %>%
     trade_core_filter_year(year = year, label = "AEC HS6 market share data") %>%
-    dplyr::left_join(energy_codes, by = c("product_hs92_code" = "code6"), relationship = "many-to-many") %>%
-    dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
-    dplyr::group_by(country_iso3_code, tech, supply_chain, sub_sector) %>%
-    dplyr::summarize(
-      market_share = stats::weighted.mean(global_market_share, w = export_value, na.rm = TRUE),
-      .groups = "drop"
+    trade_core_pad_atlas_codes(width = 6) %>%
+    dplyr::mutate(export_value = suppressWarnings(as.numeric(export_value)))
+
+  basket_codes <- dplyr::distinct(energy_codes, dplyr::across(dplyr::all_of(keys)), code6)
+
+  world_basket <- flows %>%
+    dplyr::group_by(product_hs92_code) %>%
+    dplyr::summarize(world_exports = sum(export_value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::inner_join(basket_codes, by = c("product_hs92_code" = "code6"), relationship = "one-to-many") %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(keys))) %>%
+    dplyr::summarize(world_exports = sum(world_exports), .groups = "drop")
+
+  flows %>%
+    dplyr::inner_join(basket_codes, by = c("product_hs92_code" = "code6"), relationship = "many-to-many") %>%
+    dplyr::group_by(country_iso3_code, dplyr::across(dplyr::all_of(keys))) %>%
+    dplyr::summarize(basket_exports = sum(export_value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::inner_join(world_basket, by = keys, relationship = "many-to-one") %>%
+    dplyr::transmute(
+      country_iso3_code,
+      tech,
+      supply_chain,
+      sub_sector,
+      market_share = dplyr::if_else(world_exports > 0, basket_exports / world_exports, NA_real_)
     )
 }
 
 trade_core_build_aec_feasibility <- function(aec_4_data, energy_codes, year = 2022) {
+  # One row per HS4 heading and cell. Joining the HS6-level code list directly repeated a
+  # heading once per child HS6 in the basket, so a heading with many mapped HS6 codes
+  # weighed more in the mean distance than one with a single code.
+  headings <- energy_codes %>%
+    dplyr::distinct(tech, supply_chain, sub_sector, code4)
+
   aec_4_data %>%
     trade_core_filter_year(year = year, label = "AEC HS4 feasibility data") %>%
-    dplyr::left_join(energy_codes, by = c("product_hs92_code" = "code4"), relationship = "many-to-many") %>%
+    trade_core_pad_atlas_codes(width = 4) %>%
+    dplyr::left_join(headings, by = c("product_hs92_code" = "code4"), relationship = "many-to-many") %>%
     dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
     dplyr::group_by(country_iso3_code, tech, supply_chain, sub_sector) %>%
     dplyr::summarize(
       feasibility = 1 - mean(distance, na.rm = TRUE),
       .groups = "drop"
     )
+}
+
+# Nominal GDP (current USD) per country in the trade year, or the latest earlier year a
+# country reports, so a late WDI release does not drop the country from the ratio.
+trade_core_pick_gdp <- function(gdp_data, year) {
+  require_columns(gdp_data, c("iso3c", "year"), label = "gdp_data")
+  gdp_col <- intersect(c("NY.GDP.MKTP.CD", "gdp", "GDP", "value"), names(gdp_data))
+  if (length(gdp_col) == 0) {
+    stop("gdp_data carries no GDP column (expected NY.GDP.MKTP.CD).")
+  }
+
+  gdp_data %>%
+    dplyr::transmute(
+      iso3c = toupper(as.character(iso3c)),
+      gdp_year = suppressWarnings(as.integer(year)),
+      gdp = suppressWarnings(as.numeric(.data[[gdp_col[[1]]]]))
+    ) %>%
+    dplyr::filter(!is.na(gdp), gdp > 0, !is.na(gdp_year), gdp_year <= as.integer(year)) %>%
+    dplyr::slice_max(gdp_year, n = 1, with_ties = FALSE, by = iso3c)
+}
+
+# Net imports of the basket relative to GDP, the ES trade exposure term. Atlas flows are
+# used rather than Comtrade because the Atlas reconciles reporter and partner declarations,
+# so it covers ~235 economies against Comtrade's ~130 reporters, and it is the source and
+# year of the other country-level ES trade component (market share).
+#
+# deficit_gdp = (imports - exports) / GDP: positive is a deficit. The index is ranked on its
+# negation, so a smaller deficit or a surplus scores as more secure.
+trade_core_build_aec_trade_balance <- function(aec_6_data, energy_codes, gdp_data, year = 2023) {
+  require_columns(aec_6_data, c("export_value", "import_value"), label = "AEC HS6 trade data")
+
+  flows <- aec_6_data %>%
+    trade_core_filter_year(year = year, label = "AEC HS6 trade data") %>%
+    trade_core_pad_atlas_codes(width = 6) %>%
+    dplyr::left_join(energy_codes, by = c("product_hs92_code" = "code6"), relationship = "many-to-many") %>%
+    dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
+    dplyr::group_by(country_iso3_code, tech, supply_chain, sub_sector) %>%
+    dplyr::summarize(
+      basket_exports = sum(as.numeric(export_value), na.rm = TRUE),
+      basket_imports = sum(as.numeric(import_value), na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  flows %>%
+    dplyr::left_join(
+      trade_core_pick_gdp(gdp_data, year = year),
+      by = c("country_iso3_code" = "iso3c"),
+      relationship = "many-to-one"
+    ) %>%
+    dplyr::mutate(
+      deficit = basket_imports - basket_exports,
+      deficit_gdp = deficit / gdp
+    ) %>%
+    dplyr::select(country_iso3_code, tech, supply_chain, sub_sector, deficit, gdp, deficit_gdp)
 }
 
 trade_core_build_comtrade_trade <- function(comtrade_data,
@@ -106,7 +231,8 @@ trade_core_build_comtrade_trade <- function(comtrade_data,
       values_from = value,
       values_fill = 0
     ) %>%
-    dplyr::rename("exports" = "export")
+    # "imports" is the name the tidy step reports; the singular never reached the table.
+    dplyr::rename(dplyr::any_of(c("exports" = "export", "imports" = "import")))
 }
 
 trade_core_build_comtrade_rca <- function(comtrade_trade,
@@ -122,11 +248,18 @@ trade_core_build_comtrade_rca <- function(comtrade_trade,
     dplyr::group_by(reporter_iso) %>%
     dplyr::summarize(total_exports = sum(primary_value, na.rm = TRUE), .groups = "drop")
 
+  # Both world aggregates are summed over the reporters present in both extracts. The
+  # Balassa ratio compares a country's basket share with the world's, and a world basket
+  # total over one reporter set divided by a world total over another is neither.
+  common_reporters <- intersect(unique(total_export$reporter_iso), unique(comtrade_trade$reporter_iso))
+
   total_world <- total_export %>%
+    dplyr::filter(reporter_iso %in% common_reporters) %>%
     dplyr::summarize(total_world_exports = sum(total_exports, na.rm = TRUE)) %>%
     dplyr::pull(total_world_exports)
 
   world_exports <- comtrade_trade %>%
+    dplyr::filter(reporter_iso %in% common_reporters) %>%
     dplyr::group_by(tech, supply_chain, sub_sector) %>%
     dplyr::summarize(world_exports = sum(exports, na.rm = TRUE), .groups = "drop")
 
@@ -149,46 +282,79 @@ trade_core_build_comtrade_hhi <- function(comtrade_trade) {
     dplyr::mutate(HHI_index = median_scurve(-HHI))
 }
 
+# `trade_balance` (trade_core_build_aec_trade_balance()) is optional so callers that do not
+# score the ES exposure term can omit it. `economies` (ISO3 codes, normally country_info's)
+# restricts the rankings to the economies the index scores; NULL ranks every code present.
 trade_core_build_country_trade <- function(comtrade_trade,
                                            comtrade_total_export,
                                            market_share,
                                            feasibility,
-                                           year = 2024) {
+                                           year = 2024,
+                                           trade_balance = NULL,
+                                           economies = NULL) {
+  keys <- c("reporter_iso", "tech", "supply_chain", "sub_sector")
+
   comtrade_rca <- trade_core_build_comtrade_rca(
     comtrade_trade = comtrade_trade,
     comtrade_total_export = comtrade_total_export,
     year = year
+  ) %>%
+    dplyr::mutate(exports = dplyr::coalesce(exports, 0))
+
+  atlas_tbls <- list(market_share, feasibility, trade_balance)
+  atlas_tbls <- atlas_tbls[!vapply(atlas_tbls, is.null, logical(1))]
+
+  # Full joins: the Atlas covers economies that do not report to Comtrade, and their
+  # observed Atlas variables are kept rather than being dropped with the Comtrade row they
+  # would have been attached to. Comtrade-only variables stay NA for them.
+  country_trade <- Reduce(
+    function(acc, tbl) {
+      dplyr::full_join(
+        acc,
+        dplyr::rename(tbl, reporter_iso = country_iso3_code),
+        by = keys
+      )
+    },
+    atlas_tbls,
+    comtrade_rca
   )
 
-  comtrade_rca %>%
-    dplyr::mutate(
-      exports = dplyr::coalesce(exports, 0)
-    ) %>%
-    dplyr::left_join(
-      market_share,
-      by = c("reporter_iso" = "country_iso3_code", "tech", "supply_chain", "sub_sector")
-    ) %>%
-    dplyr::left_join(
-      feasibility,
-      by = c("reporter_iso" = "country_iso3_code", "tech", "supply_chain", "sub_sector")
-    ) %>%
+  if (!"deficit_gdp" %in% names(country_trade)) {
+    country_trade$deficit_gdp <- NA_real_
+  }
+
+  # The Atlas also lists "areas not specified" (ANS), uninhabited territories (Antarctica,
+  # Bouvet Island, ...) and small dependencies outside the WDI roster. They were ranked and
+  # then dropped at the country_info join, so each still took a rank from every economy
+  # below it. Raw shares keep their world denominators; only the rankings are restricted.
+  if (!is.null(economies)) {
+    country_trade <- country_trade %>%
+      dplyr::filter(reporter_iso %in% toupper(as.character(economies)))
+  }
+
+  # Every index is ranked across countries within the technology-stage cell. Export size
+  # and feasibility used to be ranked within each country across its own cells, which put
+  # Moldova and Samoa next to China in Solar Midstream because solar was their "best"
+  # basket, and mixed within-country and cross-country ranks in one category mean.
+  country_trade %>%
     dplyr::group_by(tech, supply_chain, sub_sector) %>%
     dplyr::mutate(
       market_share_index = median_scurve(market_share),
-      rca_index = median_scurve(export_rca)
-    ) %>%
-    dplyr::group_by(reporter_iso) %>%
-    dplyr::mutate(
+      rca_index = median_scurve(export_rca),
       export_size_index = median_scurve(exports),
-      feas_index = median_scurve(feasibility)
+      feas_index = median_scurve(feasibility),
+      deficit_gdp_index = median_scurve(-deficit_gdp)
     ) %>%
     dplyr::ungroup()
 }
 
 trade_core_build_indices <- function(country_trade, hhi_tbl, country_info) {
+  # Inner join: a country with no trade row used to come through with tech and stage NA,
+  # which reached the ES index as a nameless cell scored 0.
   trade_indices <- country_info %>%
     dplyr::select(country, iso3c) %>%
-    dplyr::left_join(country_trade, by = c("iso3c" = "reporter_iso")) %>%
+    dplyr::inner_join(country_trade, by = c("iso3c" = "reporter_iso")) %>%
+    dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
     dplyr::distinct()
 
   trade_indices <- trade_indices %>%
@@ -198,7 +364,23 @@ trade_core_build_indices <- function(country_trade, hhi_tbl, country_info) {
   list(trade_indices = trade_indices, trade_indices_hhi = hhi_tbl)
 }
 
-trade_core_build_tidy <- function(trade_indices, year = 2023, include_sub_sector = FALSE) {
+# `data_years` (optional, named: atlas_6, atlas_4, comtrade) is appended to each row's
+# explanation. The table carries one Year stamp - the Comtrade year - because the overall
+# rows are grouped by Year, but the Atlas components are read at their own data years.
+trade_core_build_tidy <- function(trade_indices,
+                                  year = 2023,
+                                  include_sub_sector = FALSE,
+                                  data_years = NULL) {
+  year_note <- function(key) {
+    if (is.null(data_years) || is.null(data_years[[key]]) || is.na(data_years[[key]])) {
+      return("")
+    }
+    paste0(" [", data_years[[key]], "]")
+  }
+  atlas_6_note <- year_note("atlas_6")
+  atlas_4_note <- year_note("atlas_4")
+  comtrade_note <- year_note("comtrade")
+
   trade_indices %>%
     dplyr::rename(Country = country) %>%
     dplyr::mutate(
@@ -237,19 +419,53 @@ trade_core_build_tidy <- function(trade_indices, year = 2023, include_sub_sector
     dplyr::mutate(
       category = "Trade",
       Year = year,
+      # Matched on the names after "_index" is stripped; "feas" used to fall through to
+      # Comtrade here.
       source = dplyr::case_when(
-        variable %in% c("market_share", "feasibility", "market_share_index", "feas_index") ~
+        variable %in% c("market_share", "feasibility", "feas") ~
           "Harvard Atlas of Economic Complexity",
-        variable %in% c("gdp", "deficit_gdp", "deficit_gdp_index") ~
-          "World Bank WDI; UN Comtrade",
+        variable %in% c("deficit", "gdp", "deficit_gdp") ~
+          "Harvard Atlas of Economic Complexity; World Bank WDI",
         TRUE ~ "UN Comtrade"
       ),
       explanation = dplyr::case_when(
-        variable %in% c("market_share", "feasibility") ~
-          "Atlas of Economic Complexity market share or feasibility value",
-        data_type == "raw" ~ stringr::str_glue("{variable}: raw value from Comtrade or WDI"),
-        data_type == "index" ~ stringr::str_glue("{variable}: percent-rank or HHI index"),
-        TRUE ~ NA_character_
+        variable == "HHI" & data_type == "raw" ~ paste0(
+          "Herfindahl-Hirschman index of world exports of the basket across Comtrade reporters; ",
+          "one value per technology-stage cell", comtrade_note
+        ),
+        variable == "HHI" ~ paste0(
+          "S-curve of -HHI across technology-stage cells (less concentrated market scores higher); ",
+          "constant across countries within a cell", comtrade_note
+        ),
+        variable == "market_share" & data_type == "raw" ~ paste0(
+          "Share of world exports of the basket's HS6 codes (Atlas)", atlas_6_note
+        ),
+        variable == "market_share" ~ paste0(
+          "S-curve of basket market share across countries within the cell", atlas_6_note
+        ),
+        variable == "exports" ~ paste0("Exports of the basket to the world, USD", comtrade_note),
+        variable == "imports" ~ paste0("Imports of the basket from the world, USD", comtrade_note),
+        variable == "export_rca" ~ paste0("Balassa revealed comparative advantage in the basket", comtrade_note),
+        variable == "rca" ~ paste0("S-curve of Balassa RCA across countries within the cell", comtrade_note),
+        variable == "export_size" ~ paste0(
+          "S-curve of basket exports across countries within the cell", comtrade_note
+        ),
+        variable == "feasibility" ~ paste0(
+          "1 - mean Atlas product-space distance over the basket's HS4 headings", atlas_4_note
+        ),
+        variable == "feas" ~ paste0(
+          "S-curve of Atlas feasibility across countries within the cell", atlas_4_note
+        ),
+        variable == "deficit" ~ paste0("Net imports of the basket (imports - exports), USD", atlas_6_note),
+        variable == "gdp" ~ paste0("GDP, current USD (WDI; latest year at or before the trade year)", atlas_6_note),
+        variable == "deficit_gdp" & data_type == "raw" ~ paste0(
+          "Net imports of the basket / GDP; positive is a deficit", atlas_6_note
+        ),
+        variable == "deficit_gdp" ~ paste0(
+          "S-curve of -(net imports / GDP) across countries within the cell; ",
+          "a surplus or smaller deficit scores higher", atlas_6_note
+        ),
+        TRUE ~ variable
       )
     ) %>%
     dplyr::select(
@@ -268,6 +484,26 @@ trade_core_build_tidy <- function(trade_indices, year = 2023, include_sub_sector
     )
 }
 
+# Keep the variables one theme scores (TRADE_THEME_VARIABLES). NULL keeps everything.
+trade_core_select_theme <- function(tidy, theme = NULL) {
+  if (is.null(theme)) {
+    return(tidy)
+  }
+  if (!theme %in% names(TRADE_THEME_VARIABLES)) {
+    stop(
+      "Unknown trade theme '", theme, "'; expected one of: ",
+      paste(names(TRADE_THEME_VARIABLES), collapse = ", ")
+    )
+  }
+
+  spec <- TRADE_THEME_VARIABLES[[theme]]
+  tidy %>%
+    dplyr::filter(
+      (data_type == "index" & variable %in% spec$index) |
+        (data_type == "raw" & variable %in% spec$raw)
+    )
+}
+
 trade_category_build_trade <- function(subcat,
                                        aec_4_data,
                                        aec_6_data,
@@ -277,7 +513,9 @@ trade_category_build_trade <- function(subcat,
                                        year_4 = 2022,
                                        year_6 = 2023,
                                        year_comtrade = 2025,
-                                       include_sub_sector = FALSE) {
+                                       include_sub_sector = FALSE,
+                                       gdp_data = NULL,
+                                       theme = NULL) {
   energy_codes <- trade_core_build_energy_codes(subcat, include_sub_sector = include_sub_sector)
 
   market_share <- trade_core_build_aec_market_share(
@@ -298,12 +536,22 @@ trade_category_build_trade <- function(subcat,
     year = year_comtrade
   )
 
+  # The ES exposure term needs GDP; without it the builder still produces every other
+  # variable, and deficit_gdp is simply absent.
+  trade_balance <- if (is.null(gdp_data)) {
+    NULL
+  } else {
+    trade_core_build_aec_trade_balance(aec_6_data, energy_codes, gdp_data = gdp_data, year = year_6)
+  }
+
   country_trade <- trade_core_build_country_trade(
     comtrade_trade = comtrade_trade,
     comtrade_total_export = comtrade_total_export,
     market_share = market_share,
     feasibility = feasibility,
-    year = year_comtrade
+    year = year_comtrade,
+    trade_balance = trade_balance,
+    economies = country_info$iso3c
   )
 
   hhi_tbl <- trade_core_build_comtrade_hhi(comtrade_trade)
@@ -313,7 +561,10 @@ trade_category_build_trade <- function(subcat,
   trade_core_build_tidy(
     indices$trade_indices,
     year = year_comtrade,
-    include_sub_sector = include_sub_sector
+    include_sub_sector = include_sub_sector,
+    data_years = list(atlas_6 = year_6, atlas_4 = year_4, comtrade = year_comtrade)
   ) %>%
+    dplyr::filter(!is.na(value)) %>%
+    trade_core_select_theme(theme = theme) %>%
     energy_security_add_overall_index(include_sub_sector = include_sub_sector)
 }

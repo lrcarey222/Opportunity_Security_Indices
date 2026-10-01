@@ -70,9 +70,11 @@ cost_competitiveness_labor_weights <- function() {
     "Oil", "Upstream", 0.18,
     "Oil", "Midstream", 0.10,
     "Oil", "Downstream", 0.15,
-    "Hydrogen", "Upstream", 0.06,
-    "Hydrogen", "Midstream", 0.10,
-    "Hydrogen", "Downstream", 0.08,
+    # Named as the pipeline names the technology; as "Hydrogen" the shares matched nothing,
+    # so Green Hydrogen had no Input Cost Index at any stage.
+    "Green Hydrogen", "Upstream", 0.06,
+    "Green Hydrogen", "Midstream", 0.10,
+    "Green Hydrogen", "Downstream", 0.08,
     "Electric Grid", "Upstream", 0.20,
     "Electric Grid", "Midstream", 0.25,
     "Electric Grid", "Downstream", 0.38,
@@ -109,9 +111,9 @@ cost_competitiveness_capital_weights <- function() {
     "Oil", "Upstream", 0.55,
     "Oil", "Midstream", 0.60,
     "Oil", "Downstream", 0.25,
-    "Hydrogen", "Upstream", 0.30,
-    "Hydrogen", "Midstream", 0.55,
-    "Hydrogen", "Downstream", 0.18,
+    "Green Hydrogen", "Upstream", 0.30,
+    "Green Hydrogen", "Midstream", 0.55,
+    "Green Hydrogen", "Downstream", 0.18,
     "Electric Grid", "Upstream", 0.28,
     "Electric Grid", "Midstream", 0.68,
     "Electric Grid", "Downstream", 0.53,
@@ -141,9 +143,10 @@ cost_competitiveness_clean_iea <- function(iea_cost_raw) {
       ),
       Region = dplyr::if_else(Region == "Korea", "South Korea", Region),
       supply_chain = "Midstream",
+      # "Other Southeast Asia" is broadcast to the ASEAN members in
+      # cost_competitiveness_build_country_maps(), not to the EI "Asia Pacific" sub-region.
       country2 = dplyr::case_when(
         Region == "European Union" ~ "EU",
-        Region == "Other Southeast Asia" ~ "Asia Pacific",
         TRUE ~ Region
       ),
       tech = Product,
@@ -224,6 +227,27 @@ cost_competitiveness_impute_by_peers <- function(values, groups, fallback = NULL
   values
 }
 
+# Keep the rows of `tbl` whose `country_std` is one of `economies` (ISO3), so the legs rank
+# only economies the index scores; NULL keeps everything. Each leg's panel also carries
+# economies country_info does not list (Taiwan, Anguilla, ...), and IMF aggregates have no
+# code at all: ranked first and dropped later, each shifted every other country's rank.
+cost_competitiveness_keep_economies <- function(tbl, economies = NULL, label = "input") {
+  if (is.null(economies)) {
+    return(tbl)
+  }
+
+  keep <- tbl$country_std %in% toupper(as.character(economies))
+  dropped <- sort(unique(tbl$country_std[!keep]))
+  if (length(dropped) > 0) {
+    message(
+      "cost_competitiveness: ", label, " economies outside country_info are not ranked: ",
+      paste(dropped, collapse = ", ")
+    )
+  }
+
+  tbl[keep, , drop = FALSE]
+}
+
 # Which ILO economic-activity aggregate stands in for each supply-chain stage, and in what
 # order of preference.
 #
@@ -250,9 +274,13 @@ cost_competitiveness_ilo_activities <- function() {
 # series - no economy reports PPP earnings without also reporting them in dollars.
 COST_COMPETITIVENESS_ILO_CURRENCY <- "Currency: U.S. dollars"
 
+# `economies` (ISO3 codes, normally country_info's) restricts the ranking to the economies
+# the index scores. Without it, ILO economies outside country_info were ranked and only then
+# dropped by cost_competitiveness_filter_known_countries(), so each still took a rank.
 cost_competitiveness_build_ilo_indices <- function(ilo_raw,
                                                    currency = COST_COMPETITIVENESS_ILO_CURRENCY,
-                                                   max_age = COST_COMPETITIVENESS_MAX_OBS_AGE) {
+                                                   max_age = COST_COMPETITIVENESS_MAX_OBS_AGE,
+                                                   economies = NULL) {
   require_columns(
     ilo_raw,
     c(
@@ -277,6 +305,7 @@ cost_competitiveness_build_ilo_indices <- function(ilo_raw,
     ) %>%
     dplyr::mutate(country_std = cost_competitiveness_normalize_iso_ilo(ref_area.label)) %>%
     dplyr::filter(!is.na(country_std)) %>%
+    cost_competitiveness_keep_economies(economies, label = "ILO") %>%
     dplyr::slice_max(time, n = 1, with_ties = FALSE, by = c(country_std, classif1.label)) %>%
     # The floor is measured against the newest observation in the whole panel, not per
     # activity, so all three stages share one reference year.
@@ -582,7 +611,8 @@ cost_competitiveness_rate_overrides <- function() {
 
 cost_competitiveness_build_rate_index <- function(imf_scored,
                                                   overrides = cost_competitiveness_rate_overrides(),
-                                                  max_age = COST_COMPETITIVENESS_MAX_OBS_AGE) {
+                                                  max_age = COST_COMPETITIVENESS_MAX_OBS_AGE,
+                                                  economies = NULL) {
   require_columns(
     imf_scored,
     c("COUNTRY", "INDICATOR", "period_date", "value", "priority"),
@@ -644,7 +674,9 @@ cost_competitiveness_build_rate_index <- function(imf_scored,
   # rest of the panel so the override does not sit outside the index's own scale.
   best_rate <- best_rate %>%
     dplyr::filter(!country_std %in% overrides$country_std) %>%
-    dplyr::bind_rows(overrides %>% dplyr::mutate(COUNTRY = country_std))
+    dplyr::bind_rows(overrides %>% dplyr::mutate(COUNTRY = country_std)) %>%
+    # Before the clip bounds and the min-max range are set, which every country shares.
+    cost_competitiveness_keep_economies(economies, label = "IMF lending-rate")
 
   best_rate <- best_rate %>%
     dplyr::mutate(
@@ -692,7 +724,7 @@ cost_competitiveness_build_rate_index <- function(imf_scored,
 # having near-worst input costs purely because of its rebasing. The year-on-year change is
 # comparable across countries and reads as input-cost momentum: producer prices rising
 # faster than peers erode a country's cost position.
-cost_competitiveness_build_ppi <- function(imf_ppi) {
+cost_competitiveness_build_ppi <- function(imf_ppi, economies = NULL) {
   require_columns(
     imf_ppi,
     c("COUNTRY", "INDICATOR", "TYPE_OF_TRANSFORMATION"),
@@ -751,7 +783,6 @@ cost_competitiveness_build_ppi <- function(imf_ppi) {
         100 * (ppi / ppi_prior - 1),
         NA_real_
       ),
-      ppi_index = median_scurve(ppi_yoy),
       country_std = countrycode::countrycode(
         COUNTRY,
         "country.name",
@@ -764,6 +795,10 @@ cost_competitiveness_build_ppi <- function(imf_ppi) {
       ppi_year = as.integer(format(period_date, "%Y"))
     ) %>%
     dplyr::filter(!is.na(country_std), !is.na(ppi)) %>%
+    cost_competitiveness_keep_economies(economies, label = "IMF PPI") %>%
+    # Ranked after the economies are settled: the S-curve used to run before the code
+    # lookup, so IMF aggregates (euro area, regional groups) and territories took ranks.
+    dplyr::mutate(ppi_index = median_scurve(ppi_yoy)) %>%
     dplyr::select(
       COUNTRY,
       country_std,
@@ -1017,19 +1052,36 @@ cost_competitiveness_build_input_cost_index <- function(labor_weights,
     )
 }
 
-cost_competitiveness_build_country_maps <- function(ei) {
-  require_columns(ei, c("Country", "EU", "SubRegion"), label = "ei")
+# The IEA's "Other Southeast Asia" relative-cost region: ASEAN. It used to be matched to the
+# EI "Asia Pacific" sub-region, which also holds Japan, Australia and Taiwan - and China and
+# India, which then carried both their own IEA value and the Southeast Asian one.
+COST_COMPETITIVENESS_SOUTHEAST_ASIA_ISO3 <- c(
+  "BRN", "KHM", "IDN", "LAO", "MYS", "MMR", "PHL", "SGP", "THA", "VNM"
+)
 
+cost_competitiveness_build_country_maps <- function(ei) {
+  require_columns(ei, c("Country", "EU"), label = "ei")
+
+  # Canonical names before the IEA regions are broadcast, so a member reaches the theme
+  # table under the same name the rest of the pipeline uses.
   base_ei <- ei %>%
-    dplyr::mutate(Country = dplyr::if_else(Country == "US", "United States", Country))
+    dplyr::mutate(Country = standardize_country_names(Country))
+
+  iso3 <- if ("ISO3166_alpha3" %in% names(base_ei)) {
+    toupper(as.character(base_ei$ISO3166_alpha3))
+  } else {
+    suppressWarnings(countrycode::countrycode(base_ei$Country, "country.name", "iso3c", warn = FALSE))
+  }
 
   country_map <- base_ei %>%
     dplyr::distinct(Country, EU) %>%
     dplyr::mutate(country2 = dplyr::if_else(EU == 1L, "EU", Country))
 
   subregion_map <- base_ei %>%
-    dplyr::filter(Country != "South Korea") %>%
-    dplyr::distinct(Country, SubRegion)
+    dplyr::mutate(iso3 = iso3) %>%
+    dplyr::filter(iso3 %in% COST_COMPETITIVENESS_SOUTHEAST_ASIA_ISO3) %>%
+    dplyr::distinct(Country) %>%
+    dplyr::mutate(SubRegion = "Other Southeast Asia")
 
   assert_unique_keys(country_map, c("Country", "EU"), label = "cost_competitiveness_country_map")
   assert_unique_keys(subregion_map, c("Country", "SubRegion"), label = "cost_competitiveness_subregion_map")
@@ -1173,7 +1225,14 @@ cost_competitiveness <- function(iea_cost_raw,
     year = year
   )
 
-  ilo_indices <- cost_competitiveness_build_ilo_indices(ilo_raw, max_age = max_obs_age)
+  # Every leg ranks only the economies the index scores.
+  economies <- country_info$iso3c
+
+  ilo_indices <- cost_competitiveness_build_ilo_indices(
+    ilo_raw,
+    max_age = max_obs_age,
+    economies = economies
+  )
   ilo_scaffold <- cost_competitiveness_impute_stale_labor(
     cost_competitiveness_filter_known_countries(
       cost_competitiveness_build_labor_scaffold(ilo_indices),
@@ -1191,8 +1250,12 @@ cost_competitiveness <- function(iea_cost_raw,
 
   imf_long <- cost_competitiveness_clean_imf_rates(imf_lending_rates)
   imf_scored <- cost_competitiveness_select_imf_rates(imf_long)
-  rate_index <- cost_competitiveness_build_rate_index(imf_scored, max_age = max_obs_age)
-  ppi_clean <- cost_competitiveness_build_ppi(imf_ppi)
+  rate_index <- cost_competitiveness_build_rate_index(
+    imf_scored,
+    max_age = max_obs_age,
+    economies = economies
+  )
+  ppi_clean <- cost_competitiveness_build_ppi(imf_ppi, economies = economies)
   cap_cost_base <- cost_competitiveness_build_capital_base(
     rate_index = rate_index,
     ppi_clean = ppi_clean,

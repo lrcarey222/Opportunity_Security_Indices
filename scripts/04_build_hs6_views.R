@@ -72,9 +72,34 @@ build_hs6_views <- function(repo_root, raw_data_path, quiet = FALSE) {
     }
   }
 
+  # scripts/15_build_partner_themes.R reads the master itself from data/raw. Nothing
+  # refreshed that copy, so the partner themes could score a basket the trade themes had
+  # moved on from; it is now copied alongside the views.
+  master_copy <- file.path(raw_data_path, "energy_hs6_master.csv")
+  if (normalizePath(master_copy, winslash = "/", mustWork = FALSE) !=
+    normalizePath(master_path, winslash = "/", mustWork = FALSE)) {
+    if (!file.copy(master_path, master_copy, overwrite = TRUE)) {
+      stop("Could not copy the HS6 master to ", master_copy)
+    }
+    written <- c(written, basename(master_copy))
+  }
+
   if (!quiet) {
-    codes <- length(unique(hs6_normalize_master(master)$hs6))
+    master_long <- hs6_normalize_master(master)
+    codes <- length(unique(master_long$hs6))
     message("HS6 views rebuilt from ", basename(master_path), " (", codes, " distinct HS6 codes)")
+
+    # The Atlas panel is HS92, so codes created by later revisions never match it. Report
+    # the count against the Atlas product list whenever it is staged.
+    hs92_path <- file.path(raw_data_path, "hs92_product_year_6.csv")
+    if (file.exists(hs92_path)) {
+      hs92 <- utils::read.csv(hs92_path, colClasses = c(product_hs92_code = "character"))
+      report <- hs6_match_report(master_long, unique(hs92$product_hs92_code))
+      message(sprintf(
+        "  %d of %d codes have no HS92 counterpart in the Atlas panel (%d legacy codes bridge older revisions)",
+        report$n_unmatched, report$n_codes, report$n_legacy
+      ))
+    }
   }
 
   invisible(written)

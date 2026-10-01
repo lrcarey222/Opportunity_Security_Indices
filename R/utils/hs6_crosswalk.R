@@ -8,8 +8,31 @@
 #
 # Rather than rewrite every consumer, the legacy file names are regenerated from the
 # master as views. These functions are pure; scripts/04_build_hs6_views.R does the IO.
+#
+# Conventions the master follows (its `note` column records the reason on each row that
+# departs from the original export):
+#
+#   * Stage follows the product, not the technology's shopping list. Ores, concentrates,
+#     metal-bearing slag and waste/scrap are raw materials, so they sit in Upstream even
+#     when the technology that consumes them is scored at Midstream. Filed under Batteries
+#     Midstream they made Chile, Peru and Zimbabwe the leading battery manufacturers.
+#   * `legacy_hs` rows carry an older HS code whose successors are all in the basket
+#     (e.g. 8541.40 for the HS2022 PV codes 8541.42/43, 2710.00 for the refined-oil codes).
+#     The Atlas panel is in HS92 and some Comtrade reporters still file in older
+#     revisions, so without them those sources silently lose the headline product. A code
+#     whose older scope was wider than the successors (8541.40 also holds LEDs) is an
+#     upper bound, and says so in `note`. Residual "n.e.s." headings are not bridged:
+#     HS92 3823.90 (chemical products n.e.s.) would be a fifth of the Atlas battery
+#     midstream basket and make Eswatini a leading battery-materials exporter.
+#   * One row per (tech, supply_chain, sub_sector, hs6). The source export carried some
+#     keys twice with conflicting essential flags; a code is essential if any row flagged
+#     it, because the flag is a positive designation and an unflagged row only means the
+#     source file that contributed it did not assess essentiality.
 
 HS6_MASTER_COLUMNS <- c("tech", "supply_chain", "sub_sector", "hs6", "essential")
+
+# Optional provenance columns; a master without them reads as all-current codes.
+HS6_MASTER_OPTIONAL_COLUMNS <- c("legacy_hs", "note")
 
 # Zero-pad to six characters, dropping anything that is not a usable code.
 hs6_clean_code <- function(x) {
@@ -32,25 +55,63 @@ hs6_validate_master <- function(master) {
 hs6_normalize_master <- function(master) {
   hs6_validate_master(master)
 
+  legacy <- if ("legacy_hs" %in% names(master)) as.logical(master$legacy_hs) else FALSE
+
   out <- data.frame(
     tech = trimws(as.character(master$tech)),
     supply_chain = trimws(as.character(master$supply_chain)),
     sub_sector = trimws(as.character(master$sub_sector)),
     hs6 = hs6_clean_code(master$hs6),
     essential = as.logical(master$essential),
+    legacy_hs = legacy,
     stringsAsFactors = FALSE
   )
 
   out <- out[!is.na(out$hs6) & nzchar(out$tech), , drop = FALSE]
   out$essential[is.na(out$essential)] <- FALSE
+  out$legacy_hs[is.na(out$legacy_hs)] <- FALSE
 
   # Sub-sector text in the master contains embedded newlines from its source export;
   # collapse them so downstream CSVs stay one row per record.
   out$sub_sector <- gsub("[\r\n]+", " ", out$sub_sector)
   out$sub_sector <- gsub("\\s{2,}", " ", trimws(out$sub_sector))
 
-  out <- unique(out)
-  out[order(out$tech, out$supply_chain, out$sub_sector, out$hs6), , drop = FALSE]
+  # One row per key, essential if any row flagged it (see the header). unique() alone
+  # kept both halves of a conflicting pair, so NIPO counted those codes twice.
+  key <- paste(out$tech, out$supply_chain, out$sub_sector, out$hs6, sep = "\r")
+  keep <- !duplicated(key)
+  out$essential <- as.logical(stats::ave(out$essential, key, FUN = any))
+  out$legacy_hs <- as.logical(stats::ave(out$legacy_hs, key, FUN = any))
+  out <- out[keep, , drop = FALSE]
+
+  out <- out[order(out$tech, out$supply_chain, out$sub_sector, out$hs6), , drop = FALSE]
+  rownames(out) <- NULL
+  out
+}
+
+# Which master codes a trade source can see. `available_codes` is the product list of the
+# source (e.g. the HS92 codes in the Atlas panel); unmatched codes drop out of every
+# variable built from it, so the count is reported rather than absorbed.
+hs6_match_report <- function(master_long, available_codes) {
+  codes <- unique(master_long$hs6)
+  available <- hs6_clean_code(available_codes)
+  unmatched <- sort(setdiff(codes, available))
+
+  cells <- unique(master_long[master_long$hs6 %in% unmatched, c("hs6", "tech", "supply_chain")])
+  cells$cell <- paste(cells$tech, cells$supply_chain, sep = " ")
+  by_code <- if (nrow(cells) == 0) {
+    data.frame(hs6 = character(), cells = character(), stringsAsFactors = FALSE)
+  } else {
+    stats::aggregate(cell ~ hs6, data = cells, FUN = function(x) paste(sort(unique(x)), collapse = "; "))
+  }
+  names(by_code) <- c("hs6", "cells")
+
+  list(
+    n_codes = length(codes),
+    n_unmatched = length(unmatched),
+    n_legacy = length(unique(master_long$hs6[master_long$legacy_hs])),
+    unmatched = by_code
+  )
 }
 
 ## Views ---------------------------------------------------------------------

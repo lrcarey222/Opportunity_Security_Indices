@@ -181,3 +181,29 @@ test_that("the 2026 IEA public dataset layout normalizes onto the legacy columns
   expect_true(all(c("TRL 2025", "TRL Δ 2020–2025", "TRL Index") %in% out$variable))
   expect_true(all(out$Year == 2025L))
 })
+
+test_that("a country_reference copies each technology's TRL to every country", {
+  techs <- c("Batteries", "Electric Vehicles", "Coal")
+  global <- technological_readiness(iea_fixture(), techs = techs)
+  countries <- c("India", "Chile", "Germany", "Global", NA)
+  out <- technological_readiness(iea_fixture(), techs = techs, country_reference = countries)
+
+  # Observed for every country, so the pillar has nothing to impute; "Global" is not a country.
+  expect_setequal(unique(out$Country), c("Chile", "Germany", "India"))
+  expect_equal(nrow(out), 3 * nrow(global))
+  expect_false(is.null(attr(out, "mapping_diagnostics")))
+
+  # One value per technology and variable: the same for every country and stage.
+  spread <- out %>%
+    dplyr::group_by(tech, variable) %>%
+    dplyr::summarize(n = dplyr::n_distinct(value), .groups = "drop")
+  expect_true(all(spread$n == 1))
+
+  key <- c("tech", "supply_chain", "variable")
+  joined <- dplyr::inner_join(
+    out[out$Country == "India", c(key, "value")],
+    global[, c(key, "value")],
+    by = key
+  )
+  expect_equal(joined$value.x, joined$value.y)
+})

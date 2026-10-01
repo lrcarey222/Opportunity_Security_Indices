@@ -25,6 +25,12 @@ future_demand_clean_weo <- function(iea_weo) {
     label = "iea_weo"
   )
 
+  # Total energy supply per fuel; Annex A carries no such flow for "Solar PV" or
+  # "Geothermal" (electricity generation only), so those two drop out here. Low-emissions
+  # hydrogen has no TES row and is measured by its production. The "production inputs"
+  # flows (the energy used to make it) and "H2-based fuels production inputs" (hydrogen
+  # used to make ammonia and e-fuels) are not hydrogen supply; summing all three, as this
+  # filter used to, reported 3.56 EJ for 2035 against 1.23 EJ produced.
   iea_weo %>%
     dplyr::filter(
       SCENARIO %in% c("Historical","Stated Policies Scenario"),
@@ -40,7 +46,10 @@ future_demand_clean_weo <- function(iea_weo) {
         "Hydrogen: low-emissions",
         "Geothermal"
       ),
-      FLOW == "Total energy supply" | stringr::str_detect(FLOW, "Hydrogen")
+      FLOW == "Total energy supply" |
+        (PRODUCT == "Hydrogen: low-emissions" &
+          stringr::str_detect(FLOW, "^Hydrogen production") &
+          !stringr::str_detect(FLOW, "inputs"))
     )
 }
 
@@ -104,12 +113,16 @@ future_demand_build_weo <- function(iea_weo, country_reference, gamma = 0.5) {
       category = "Technology Demand",
       source = "IEA World Energy Outlook",
       explanation = dplyr::case_when(
-        variable == "2035" ~ "Global energy demand in 2035",
-        variable == "growth" ~ "Modelled demand growth, 2024-2035, IEA States Policies Scenario",
-        variable == "demand_size" ~ "Index of global energy demand in 2035",
-        variable == "demand_growth_index" ~
-          "Index of modelled demand growth, 2024-2035, IEA States Policies Scenario",
-        variable == "demand_index" ~ "Mean of growth and size indices",
+        variable == "2035" ~
+          "Global total energy supply in 2035, EJ (low-emissions hydrogen: production)",
+        # Absolute growth, unlike the BNEF leg's relative growth: ranked across fuels, a
+        # relative measure would put hydrogen's near-zero base at the top.
+        variable == "growth" ~
+          "Modelled change in global supply, 2024-2035, EJ, IEA Stated Policies Scenario",
+        variable == "demand_size" ~ "Index of global energy demand in 2035 (ranked across fuels)",
+        variable == "demand_growth" ~
+          "Index of modelled demand growth, 2024-2035, IEA Stated Policies Scenario (ranked across fuels)",
+        variable == "demand" ~ "S-curve of (size index + 2 x growth index) / 3",
         TRUE ~ variable
       )
     ) %>%
@@ -170,24 +183,29 @@ future_demand_build_bnef <- function(bnef_neo, gamma = 0.5) {
       )
     ) %>%
     dplyr::mutate(
-      Region = standardize_country_names(Region)
+      Region = standardize_country_names(Region),
+      # BNEF reports hydrogen as final energy consumption under "Hydrogen"; left unmapped it
+      # never met the pipeline's "Green Hydrogen" rows. It is all hydrogen, not only
+      # electrolytic, which the WEO leg's "Hydrogen: low-emissions" is closer to.
+      Fuel.type = dplyr::if_else(Fuel.type == "Hydrogen", "Green Hydrogen", Fuel.type)
     ) %>%
     dplyr::mutate(
       dplyr::across(dplyr::matches("^X\\d{4}$"), as.numeric),
       growth = (X2035 - X2024) / X2024
     ) %>%
+    # Each fuel appears under one indicator only (primary energy for fuels, final energy for
+    # hydrogen), so ranking within the fuel compares regions on one measure.
     dplyr::group_by(Fuel.type) %>%
     dplyr::mutate(
       demand_size_index = median_scurve(X2035, gamma = gamma),
-      demand_growth_index = median_scurve(growth, gamma = gamma)
-    ) %>%
-    dplyr::rename(tech = Fuel.type) %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(
-      demand_index = (demand_size_index + 2 * demand_growth_index) / 3
+      demand_growth_index = median_scurve(growth, gamma = gamma),
+      # The composite is re-ranked within the fuel too. It used to be re-ranked after
+      # ungroup(), across every fuel and region at once, so a region's solar score moved
+      # with how its coal and oil composites compared.
+      demand_index = median_scurve((demand_size_index + 2 * demand_growth_index) / 3, gamma = gamma)
     ) %>%
     dplyr::ungroup() %>%
-    dplyr::mutate(demand_index = median_scurve(demand_index, gamma = gamma)) %>%
+    dplyr::rename(tech = Fuel.type) %>%
     dplyr::mutate(
       Upstream = "Upstream",
       Midstream = "Midstream",
@@ -222,9 +240,9 @@ future_demand_build_bnef <- function(bnef_neo, gamma = 0.5) {
         variable == "X2035" ~ "Energy demand (PJ) in 2035",
         variable == "growth" ~ "Modelled demand growth, 2024-2035, BNEF ETS Scenario",
         variable == "demand_size" ~ "Index of energy demand in 2035",
-        variable == "demand_growth_index" ~
+        variable == "demand_growth" ~
           "Index of modelled demand growth, 2024-2035, BNEF ETS Scenario",
-        variable == "demand_index" ~ "Mean of growth and size indices",
+        variable == "demand" ~ "S-curve of (size index + 2 x growth index) / 3",
         TRUE ~ variable
       )
     ) %>%
@@ -374,6 +392,9 @@ future_demand_build_ev <- function(iea_ev, country_info, gamma = 0.5) {
 future_demand_build_bcg <- function(bcg, gamma = 0.5) {
   require_columns(bcg, c("Energy source", "Upstream", "Midstream", "Downstream"), label = "bcg")
 
+  # A non-positive SAM marks a cell the BCG table does not size, not an empty market (its
+  # only zero is Batteries Downstream). Ranked as a zero it put that cell's demand at 0 for
+  # every country; as NA the component drops out of the cell.
   bcg %>%
     dplyr::rename(tech = `Energy source`) %>%
     tidyr::pivot_longer(
@@ -382,6 +403,7 @@ future_demand_build_bcg <- function(bcg, gamma = 0.5) {
       values_to = "SAM"
     ) %>%
     dplyr::mutate(
+      SAM = dplyr::if_else(suppressWarnings(as.numeric(SAM)) > 0, as.numeric(SAM), NA_real_),
       sam_index = median_scurve(SAM, gamma = gamma),
       Country = "United States"
     ) %>%
@@ -398,11 +420,13 @@ future_demand_build_bcg <- function(bcg, gamma = 0.5) {
       category = "Technology Demand",
       source = "BCG",
       explanation = dplyr::case_when(
-        variable == "SAM" ~ "Serviceable Addressable Market, 2020-2050",
-        variable == "sam" ~ "Serviceable Addressable Market, 2020-2050 (index)",
+        variable == "SAM" ~ "Serviceable Addressable Market, 2020-2050, $bn (US; one value per cell)",
+        variable == "sam" ~
+          "Serviceable Addressable Market, 2020-2050 (index, ranked across technology-stage cells)",
         TRUE ~ variable
       )
     ) %>%
+    dplyr::filter(!is.na(value)) %>%
     dplyr::mutate(variable = dplyr::if_else(variable == "sam", "Overall Addressable Market", variable)) %>%
     dplyr::transmute(
       Country,

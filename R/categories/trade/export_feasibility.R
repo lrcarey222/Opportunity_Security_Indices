@@ -24,11 +24,15 @@ if (!exists("resolve_trade_comtrade_year")) {
   }
 }
 
+# EO Trade: the capability components of "Overall Trade Index" - market share, Balassa
+# RCA, export size, Atlas feasibility and world export concentration. The net-import term
+# belongs to the ES exposure reading (trade_concentration()), so `gdp_data` is accepted
+# for call compatibility but not used.
 export_feasibility <- function(aec_4_data,
                                aec_6_data,
                                subcat,
                                country_info,
-                               gdp_data,
+                               gdp_data = NULL,
                                comtrade_trade,
                                comtrade_total_export,
                                year_4 = 2022,
@@ -47,6 +51,7 @@ export_feasibility <- function(aec_4_data,
     year_4 = year_4,
     year_6 = year_6,
     year_comtrade = year_comtrade,
-    include_sub_sector = include_sub_sector
+    include_sub_sector = include_sub_sector,
+    theme = "export_feasibility"
   )
 }

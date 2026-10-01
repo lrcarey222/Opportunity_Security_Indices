@@ -11,6 +11,13 @@
 # names so one rule engine and one set of mapping rules serve both. Everything downstream is
 # driven by whichever TRL years are actually present, so a release that adds TRL.2026 moves
 # the theme forward without a code edit.
+#
+# TRL is a property of the technology, not of a country: every index here is one value per
+# technology, identical across stages and countries. technological_readiness() copies it to
+# each country in `country_reference`, so the pillar reads it as an observed input rather
+# than imputing a single "Global" row to every country (99.5% of its values were flagged
+# imputed). Within a technology-stage cell it is a constant: it moves the cell's level
+# relative to other cells and cannot rank countries inside it.
 
 IEA_CLEAN_TECH_TRL_PATTERN <- "^trl20\\d{2}$"
 
@@ -252,7 +259,8 @@ technological_readiness_assign_tech <- function(clean_tbl, map_rules = read_iea_
 
   clean_tbl %>%
     dplyr::rowwise() %>%
-    dplyr::mutate(tech = list(assign_tech_from_iea(dplyr::cur_data(), map_rules = map_rules))) %>%
+    # pick() is the current row under rowwise(); cur_data() is deprecated since dplyr 1.1.
+    dplyr::mutate(tech = list(assign_tech_from_iea(dplyr::pick(dplyr::everything()), map_rules = map_rules))) %>%
     dplyr::ungroup() %>%
     tidyr::unnest(tech) %>%
     dplyr::mutate(tech = dplyr::na_if(tech, "NA"))
@@ -514,7 +522,8 @@ technological_readiness <- function(iea_cleantech_all,
                                     delta_cap = 3,
                                     gamma_momentum = 0.5,
                                     verbose = FALSE,
-                                    tech_map_rules = NULL) {
+                                    tech_map_rules = NULL,
+                                    country_reference = NULL) {
   iea_cleantech <- technological_readiness_clean(iea_cleantech_all)
 
   # Both years follow the release unless pinned: the newest TRL column is the end year and
@@ -581,6 +590,37 @@ technological_readiness <- function(iea_cleantech_all,
       explanation
     )
 
+  out <- technological_readiness_broadcast(out, country_reference)
+
   attr(out, "mapping_diagnostics") <- diagnostics
   out
+}
+
+# Copy the technology-level rows to every country in `country_reference` (a character vector
+# or a table with a Country column). NULL keeps the single Country = "Global" row per key.
+technological_readiness_broadcast <- function(tbl, country_reference = NULL) {
+  if (is.null(country_reference)) {
+    return(tbl)
+  }
+
+  countries <- if (is.data.frame(country_reference)) {
+    require_columns(country_reference, "Country", label = "country_reference")
+    country_reference$Country
+  } else {
+    country_reference
+  }
+  countries <- sort(unique(as.character(countries)))
+  countries <- countries[!is.na(countries) & nzchar(countries) & countries != "Global"]
+  if (length(countries) == 0) {
+    stop("technological_readiness(): country_reference holds no country names.")
+  }
+
+  tidyr::crossing(Country = countries, dplyr::select(tbl, -Country)) %>%
+    dplyr::mutate(
+      explanation = stringr::str_squish(paste(
+        dplyr::coalesce(explanation, ""),
+        "Technology-level value, identical for every country and stage."
+      ))
+    ) %>%
+    dplyr::select(dplyr::all_of(names(tbl)))
 }

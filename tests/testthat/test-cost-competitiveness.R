@@ -4,11 +4,14 @@
 #   3. producer-price *levels* ranked across countries that publish on different base years
 #   4. Macao's commercial lending rate emitted as mainland China's cost of capital
 #   5. every row stamped with the build year, hiding vintages from the 1980s to 2025
+# and two technology/region mismatches: the cost-share tables naming hydrogen "Hydrogen", and
+# the IEA "Other Southeast Asia" value reaching the whole EI Asia Pacific sub-region.
 
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "categories", "economic opportunity", "cost_competitiveness.R"))
 
 # --- fixtures ---------------------------------------------------------------------------
@@ -553,6 +556,46 @@ test_that("the theme emits a valid table with the expected variables and data ty
   )
 })
 
+test_that("Green Hydrogen carries an Input Cost Index at every stage", {
+  out <- cc_build()
+
+  # The share tables used to call it "Hydrogen", which matched no pipeline technology.
+  expect_false("Hydrogen" %in% out$tech)
+  h2 <- out %>% dplyr::filter(variable == "Input Cost Index", tech == "Green Hydrogen")
+  expect_setequal(unique(h2$supply_chain), c("Upstream", "Midstream", "Downstream"))
+  expect_true(all(!is.na(h2$value[h2$Country == "India"])))
+})
+
+test_that("the IEA Southeast Asia region reaches ASEAN members only", {
+  iea <- dplyr::bind_rows(
+    cc_iea_fixture(),
+    tibble::tibble(Product = "Solar PV", Region = "Other Southeast Asia", Unit = "%", Year = 2023L, Value = 105)
+  )
+  ei <- tibble::tibble(
+    Country = c("Germany", "India", "Vietnam", "China", "Japan", "Thailand", "US"),
+    EU = c(1L, 0L, 0L, 0L, 0L, 0L, 0L),
+    SubRegion = c("Europe", rep("Asia Pacific", 5), "North America")
+  )
+
+  maps <- cost_competitiveness_build_country_maps(ei)
+  tbl <- cost_competitiveness_build_iea_table(
+    cost_competitiveness_build_iea_indices(cost_competitiveness_clean_iea(iea)),
+    country_map = maps$country_map,
+    subregion_map = maps$subregion_map
+  ) %>%
+    dplyr::filter(tech == "Solar")
+
+  # Viet Nam and Thailand take the regional value; Japan is not in the region, and China and
+  # India keep only their own value instead of averaging it with the Southeast Asian one.
+  expect_setequal(
+    tbl$Country[!is.na(tbl$Country)],
+    c("Germany", "India", "Viet Nam", "China", "Thailand", "United States")
+  )
+  expect_equal(sum(tbl$Country == "China", na.rm = TRUE), 1)
+  expect_equal(sum(tbl$Country == "India", na.rm = TRUE), 1)
+  expect_false("Japan" %in% tbl$Country)
+})
+
 test_that("ILO economies absent from country_info are dropped with a warning", {
   scaffold <- cost_competitiveness_build_labor_scaffold(
     cost_competitiveness_build_ilo_indices(cc_ilo_fixture())
@@ -582,4 +625,26 @@ test_that("the IMF parser keeps only the columns its caller filters on", {
   expect_false("DATASET" %in% names(parsed))
   expect_true(all(c("COUNTRY", "INDICATOR", "FREQUENCY", "period_date", "value") %in% names(parsed)))
   expect_setequal(unique(format(parsed$period_date, "%Y-%m")), c("2025-06", "2024-06"))
+})
+
+test_that("each leg ranks only country_info economies", {
+  # The IMF panel carries aggregates (no ISO3 code) and economies outside country_info.
+  # Their inflation rates used to take ranks before the code lookup dropped them.
+  base <- cc_imf_ppi_fixture()
+  extra <- base[1:2, ]
+  extra$COUNTRY <- c("Euro Area", "Mexico")
+  extra$X2025.M06 <- c(300, 300)
+  extra$X2024.M06 <- c(100, 100)   # +200%: would sit at the top of the ranking
+
+  economies <- cc_country_info()$iso3c
+  plain <- cost_competitiveness_build_ppi(base, economies = economies)
+  padded <- suppressMessages(suppressWarnings(
+    cost_competitiveness_build_ppi(dplyr::bind_rows(base, extra), economies = economies)
+  ))
+
+  expect_setequal(padded$country_std, economies)
+  expect_equal(
+    padded$ppi_index[order(padded$country_std)],
+    plain$ppi_index[order(plain$country_std)]
+  )
 })
