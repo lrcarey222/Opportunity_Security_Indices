@@ -764,7 +764,30 @@ country_info <- standardize_country_info(country_info)
   )
 
   pams_raw <- readr::read_csv(iea_pams_path, show_col_types = FALSE)
-  nipo_raw <- readxl::read_excel(nipo_policy_path, sheet = 1)
+
+  # OPSI_SKIP_NIPO=true keeps the NIPO component of the stored policy_component_tbl.rds
+  # instead of rescoring the GTA extract, which needs ~4-5 GB on its own (see the NIPO
+  # memory note in the README). IEA PAMS, CAT and the dual-use scores are still rebuilt.
+  # The stored component carries whatever extract and parameters produced it, so the run
+  # records that it was reused rather than recomputed.
+  skip_nipo <- tolower(Sys.getenv("OPSI_SKIP_NIPO", "false")) %in% c("1", "true", "yes")
+  stored_nipo_component <- NULL
+  if (skip_nipo) {
+    stored_policy_path <- file.path(processed_dir, "policy_component_tbl.rds")
+    if (!file.exists(stored_policy_path)) {
+      stop("OPSI_SKIP_NIPO is set but no stored policy_component_tbl.rds exists to reuse.")
+    }
+    stored_nipo_component <- readRDS(stored_policy_path) %>%
+      dplyr::filter(.data$variable == "NIPO Policy Index")
+    if (nrow(stored_nipo_component) == 0) {
+      stop("OPSI_SKIP_NIPO is set but the stored policy_component_tbl.rds has no NIPO rows.")
+    }
+    message(
+      "OPSI_SKIP_NIPO: reusing ", nrow(stored_nipo_component), " stored NIPO rows for ",
+      dplyr::n_distinct(stored_nipo_component$Country), " countries; GTA NIPO not rescored."
+    )
+  }
+  nipo_raw <- if (skip_nipo) NULL else readxl::read_excel(nipo_policy_path, sheet = 1)
   hs6_categories_essential <- readr::read_csv(file.path(
     raw_data_path,"hs6_categories_with_essential.csv")) %>%
     rename("Value.Chain"="Value Chain")
@@ -792,6 +815,7 @@ country_info <- standardize_country_info(country_info)
       iso3c = toupper(as.character(.data$iso3c))
     )
 
+  if (!skip_nipo) {
   nipo_allies <- nipo_raw %>%
     dplyr::mutate(
       implementing_country = standardize_country_names(.data$`Implementing Jurisdiction`)
@@ -858,6 +882,11 @@ country_info <- standardize_country_info(country_info)
   write_processed_tbl(nipo_tech_year, "nipo_tech_year", processed_dir)
   write_processed_tbl(nipo_policy_index_tbl, "nipo_policy_index_tbl", processed_dir)
   write_processed_tbl(nipo_policy_all, "nipo_policy_all", processed_dir)
+  } else {
+    nipo_scope <- "stored component (not rescored)"
+    nipo_as_of_date <- as.Date(NA)
+    nipo_policy_index_tbl <- stored_nipo_component
+  }
 
 
   policy_outputs <- list(
@@ -868,10 +897,12 @@ country_info <- standardize_country_info(country_info)
     # Read back by scripts/20, which warns when a component table carries no provenance.
     provenance = list(
       built_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
-      nipo_extract = basename(nipo_policy_path),
+      nipo_extract = if (skip_nipo) "stored policy_component_tbl.rds" else basename(nipo_policy_path),
       nipo_scope = nipo_scope,
       nipo_as_of_date = nipo_as_of_date,
-      nipo_jurisdictions = dplyr::n_distinct(nipo_policy_index_tbl$country),
+      nipo_jurisdictions = dplyr::n_distinct(
+        if (skip_nipo) nipo_policy_index_tbl$Country else nipo_policy_index_tbl$country
+      ),
       iea_pams_extract = basename(iea_pams_path),
       cat_ratings = basename(cat_policy_path)
     )
@@ -905,6 +936,10 @@ country_info <- standardize_country_info(country_info)
   # standardize_theme_types() needs `category`; without it this step stopped with "object
   # 'category' not found", which is why the June 2026 run wrote the NIPO tables but never
   # policy_component_tbl or policy_outputs.
+  if (skip_nipo) {
+    nipo_policy_index_tbl <- stored_nipo_component %>%
+      standardize_theme_types(country_info = country_info)
+  } else {
   nipo_policy_index_tbl <- nipo_policy_index_tbl %>%
     transmute(
       Country = country,
@@ -923,6 +958,7 @@ country_info <- standardize_country_info(country_info)
       )
     ) %>%
     standardize_theme_types(country_info = country_info)
+  }
 
   policy_component_tbl <- dplyr::bind_rows(
     iea_policy_index_tbl,
