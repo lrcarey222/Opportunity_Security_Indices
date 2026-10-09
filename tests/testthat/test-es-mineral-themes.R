@@ -415,3 +415,291 @@ test_that("demand weights are renormalized over the minerals that have trade dat
   expect_false("Rare Earths" %in% ev$mineral)
   expect_equal(sum(ev$weight), 1)
 })
+
+# ---- Critical-minerals trade: mirror exports for non-reporters -----------------------------
+
+# Partner-level import declarations, shaped like critmin_mirror_import.csv. The DR Congo and the
+# Republic of Congo report nothing; Chile reports its own exports.
+mirror_fixture <- function() {
+  cu <- "Copper ores and concentrates"
+  tibble::tribble(
+    ~ref_year, ~reporter_iso, ~partner_iso, ~cmd_code, ~cmd_desc,          ~cifvalue, ~fobvalue, ~primary_value, ~flow_code,
+    2024,      "CHN",         "COD",        "260300",  cu,                       106,        NA,            106, "M",
+    2024,      "DEU",         "COD",        "260300",  cu,                        12,        10,             12, "M",
+    # The EU's declaration sums its members': counting it would count Germany twice.
+    2024,      "EUR",         "COD",        "260300",  cu,                        12,        10,             12, "M",
+    # Chile reports its own exports, so partners' imports from it are never added.
+    2024,      "CHN",         "CHL",        "260300",  cu,                       500,        NA,            500, "M",
+    # "Areas, n.e.s." is not an economy.
+    2024,      "CHN",         "_X",         "260300",  cu,                        50,        NA,             50, "M",
+    2024,      "CHN",         "COD",        "TOTAL",   "All Commodities",       1060,        NA,           1060, "M",
+    2024,      "DEU",         "COD",        "TOTAL",   "All Commodities",        120,       100,            120, "M",
+    # Another vintage than the pulls': ignored.
+    2023,      "CHN",         "COG",        "260300",  cu,                        40,        NA,             40, "M"
+  )
+}
+
+mirror_country_info <- function() {
+  dplyr::bind_rows(
+    trade_fixture()$country_info,
+    tibble::tibble(iso3c = c("COD", "COG"), country = c("Democratic Republic of Congo", "Congo"))
+  )
+}
+
+# Import declarations with both valuations: chapter 26 has enough of them for its own ratio,
+# chapter 28 too few, so it takes the pooled one.
+cif_fob_fixture <- function() {
+  tibble::tibble(
+    reporter_iso = "DEU",
+    cmd_code = c(rep("260300", 30), rep("282520", 2)),
+    cmd_desc = c(rep("Copper ores and concentrates", 30), rep("Lithium oxide and hydroxide", 2)),
+    cifvalue = c(rep(110, 30), rep(102, 2)),
+    fobvalue = c(rep(100, 30), rep(100, 2)),
+    primary_value = 0,
+    ref_year = 2024
+  )
+}
+
+test_that("the CIF/FOB ratio is estimated by chapter and pooled where declarations are few", {
+  ratio <- critical_minerals_trade_cif_fob_ratio(cif_fob_fixture())
+
+  pooled <- (30 * 110 + 2 * 102) / (32 * 100)
+  expect_equal(ratio$cif_fob[ratio$chapter == "26"], 1.10)
+  expect_equal(ratio$cif_fob[ratio$chapter == "28"], pooled)
+  expect_equal(ratio$cif_fob[ratio$chapter == "all"], pooled)
+  # Without both valuations there is nothing to estimate from.
+  expect_equal(nrow(critical_minerals_trade_cif_fob_ratio(trade_fixture()$imports)), 0)
+})
+
+test_that("mirror exports sum reporting importers at an FOB basis and skip aggregates", {
+  fx <- trade_fixture()
+  ratio <- critical_minerals_trade_cif_fob_ratio(cif_fob_fixture())
+
+  mirror <- critical_minerals_trade_build_mirror(
+    mirror_fixture(),
+    reporters = critical_minerals_trade_reporters(fx$exports, fx$total),
+    economies = mirror_country_info()$iso3c,
+    cif_fob = ratio,
+    year = 2024
+  )
+
+  cod <- mirror %>% dplyr::filter(reporter_iso == "COD", cmd_code == "260300")
+  # Germany's own FOB value, China's CIF value over the chapter-26 ratio; the EU row is dropped.
+  expect_equal(cod$exports, 10 + 106 / 1.10)
+  expect_equal(cod$n_importers, 2L)
+  expect_equal(cod$exports_cif, 106 + 12)
+  # The total takes the pooled ratio.
+  pooled <- ratio$cif_fob[ratio$chapter == "all"]
+  expect_equal(mirror$exports[mirror$reporter_iso == "COD" & mirror$cmd_code == "TOTAL"], 100 + 1060 / pooled)
+  # Chile reports; "_X" is no economy; the Congo row belongs to another year.
+  expect_setequal(unique(mirror$reporter_iso), "COD")
+})
+
+test_that("non-reporters are scored from mirror exports and reporters keep their own figures", {
+  fx <- trade_fixture()
+  demand <- reserves_build_mineral_demand_clean(critical_fixture())
+  imports <- dplyr::bind_rows(fx$imports, cif_fob_fixture())
+  ci <- mirror_country_info()
+
+  build <- function(mirror) {
+    critical_minerals_trade_flows(
+      critmin_import = imports, critmin_export = fx$exports, total_export = fx$total,
+      mineral_demand_clean = demand, country_info = ci, mirror_import = mirror
+    )
+  }
+  before <- build(NULL)
+  after <- build(mirror_fixture())
+
+  # The DR Congo now exports copper, from its partners' declarations.
+  cod <- after %>% dplyr::filter(reporter_iso == "COD", mineral == "Copper")
+  expect_equal(cod$export_source, "mirror")
+  expect_equal(cod$exports, 10 + 106 / 1.10)
+  expect_gt(cod$market_share, 0)
+  expect_false("COD" %in% before$reporter_iso)
+  # Its export share uses its mirror total exports.
+  ratio <- critical_minerals_trade_cif_fob_ratio(imports)
+  pooled <- ratio$cif_fob[ratio$chapter == "all"]
+  expect_equal(cod$exp_share, cod$exports / (100 + 1060 / pooled))
+
+  # Reporters' exports are untouched; only the world total behind their shares grows.
+  key <- c("reporter_iso", "mineral")
+  both <- dplyr::inner_join(
+    before %>% dplyr::select(dplyr::all_of(key), exports_before = exports, share_before = market_share),
+    after %>% dplyr::select(dplyr::all_of(key), exports_after = exports, share_after = market_share, export_source),
+    by = key
+  )
+  expect_equal(nrow(both), nrow(before))
+  expect_equal(both$exports_after, both$exports_before)
+  expect_true(all(both$export_source == "reported"))
+  chl <- both %>% dplyr::filter(reporter_iso == "CHL", mineral == "Copper")
+  expect_equal(chl$share_before, 1)
+  expect_equal(chl$share_after, 90 / (90 + 10 + 106 / 1.10))
+
+  # One provenance per economy, and the copper HHI now runs over both sources.
+  expect_equal(nrow(dplyr::distinct(after, reporter_iso, export_source)), dplyr::n_distinct(after$reporter_iso))
+  shares <- c(90, 10 + 106 / 1.10) / (90 + 10 + 106 / 1.10)
+  expect_equal(unique(after$HHI[after$mineral == "Copper"]), sum(shares^2))
+})
+
+test_that("the theme marks provenance and scores a mirrored producer above zero", {
+  fx <- trade_fixture()
+  out <- critical_minerals_trade(
+    critmin_import = dplyr::bind_rows(fx$imports, cif_fob_fixture()),
+    critmin_export = fx$exports,
+    total_export = fx$total,
+    mineral_demand_clean = reserves_build_mineral_demand_clean(critical_fixture()),
+    country_info = mirror_country_info(),
+    mirror_import = mirror_fixture()
+  ) %>%
+    dplyr::ungroup()
+
+  ms <- out %>% dplyr::filter(variable == "critmin_market_share", data_type == "index", tech == "Wind")
+  expect_gt(ms$value[ms$Country == "Democratic Republic of Congo"], 0)
+
+  prov <- dplyr::distinct(out, Country, provenance)
+  expect_equal(prov$provenance[prov$Country == "Democratic Republic of Congo"], "mirror")
+  expect_equal(prov$provenance[prov$Country == "Chile"], "reported")
+  # France and the Congo have neither: only the world-market rows, which every country gets.
+  expect_equal(prov$provenance[prov$Country == "France"], "none")
+  expect_equal(nrow(prov), dplyr::n_distinct(out$Country))
+  expect_false(any(is.na(out$provenance)))
+
+  src <- out %>% dplyr::filter(Country == "Democratic Republic of Congo", variable == "critmin_market_share")
+  expect_true(all(grepl("mirror", src$source)))
+  expect_equal(unique(out$source[out$variable == "critmin_hhi"]), "UN Comtrade (reported and mirror exports)")
+})
+
+test_that("mirror data from another vintage leave the non-reporters at zero, with a warning", {
+  fx <- trade_fixture()
+  stale <- mirror_fixture() %>% dplyr::mutate(ref_year = 2023)
+
+  expect_warning(
+    flows <- critical_minerals_trade_flows(
+      critmin_import = dplyr::bind_rows(fx$imports, cif_fob_fixture()),
+      critmin_export = fx$exports,
+      total_export = fx$total,
+      mineral_demand_clean = reserves_build_mineral_demand_clean(critical_fixture()),
+      country_info = mirror_country_info(),
+      mirror_import = stale
+    ),
+    "no flows for 2024"
+  )
+  expect_false(any(flows$export_source == "mirror"))
+})
+
+test_that("an economy that declares imports but not exports is mirrored once", {
+  fx <- trade_fixture()
+  # The DR Congo declares copper imports (it is in the import pull) but no exports.
+  imports <- dplyr::bind_rows(
+    fx$imports, cif_fob_fixture(),
+    tibble::tibble(
+      reporter_iso = "COD", reporter_desc = "COD", cmd_code = "260300",
+      cmd_desc = "Copper ores and concentrates", primary_value = 5, ref_year = 2024
+    )
+  )
+
+  flows <- critical_minerals_trade_flows(
+    critmin_import = imports,
+    critmin_export = fx$exports,
+    total_export = fx$total,
+    mineral_demand_clean = reserves_build_mineral_demand_clean(critical_fixture()),
+    country_info = mirror_country_info(),
+    mirror_import = mirror_fixture()
+  )
+
+  cod <- flows %>% dplyr::filter(reporter_iso == "COD")
+  expect_equal(unique(cod$export_source), "mirror")
+  expect_equal(nrow(cod), dplyr::n_distinct(flows$mineral))
+  expect_equal(cod$exports[cod$mineral == "Copper"], 10 + 106 / 1.10)
+})
+
+test_that("a late reporter's own declarations replace its mirror, zeros included", {
+  fx <- trade_fixture()
+  cu <- "Copper ores and concentrates"
+  # The DR Congo has since declared its 2024 exports: copper 150 and total 1500, to World. Its
+  # partners still record 10 + 106 of copper from it, which must no longer count.
+  late <- tibble::tribble(
+    ~ref_year, ~flow_code, ~reporter_iso, ~partner_iso, ~partner_code, ~cmd_code, ~cmd_desc,             ~cifvalue, ~fobvalue, ~primary_value,
+    2024,      "X",        "COD",         "W00",        0,             "260300",  "Copper ores, conc.",         NA,       150,            150,
+    2024,      "X",        "COD",         "W00",        0,             "TOTAL",   "All Commodities",            NA,      1500,           1500,
+    # A reporter in the staged pull is never replaced by a later declaration.
+    2024,      "X",        "CHL",         "W00",        0,             "260300",  cu,                           NA,       999,            999,
+    # Another year: ignored.
+    2023,      "X",        "COG",         "W00",        0,             "260300",  cu,                           NA,        70,             70
+  )
+  mirror <- dplyr::bind_rows(mirror_fixture() %>% dplyr::mutate(partner_code = 1), late)
+  imports <- dplyr::bind_rows(fx$imports, cif_fob_fixture())
+
+  reported <- critical_minerals_trade_late_exports(
+    mirror,
+    reporters = critical_minerals_trade_reporters(fx$exports, fx$total),
+    economies = mirror_country_info()$iso3c,
+    year = 2024
+  )
+  expect_equal(reported$exports$reporter_iso, "COD")
+  expect_equal(reported$exports$primary_value, 150)
+  expect_equal(reported$totals$primary_value, 1500)
+
+  flows <- critical_minerals_trade_flows(
+    critmin_import = imports,
+    critmin_export = fx$exports,
+    total_export = fx$total,
+    mineral_demand_clean = reserves_build_mineral_demand_clean(critical_fixture()),
+    country_info = mirror_country_info(),
+    mirror_import = mirror
+  )
+
+  cod <- flows %>% dplyr::filter(reporter_iso == "COD")
+  expect_equal(unique(cod$export_source), "reported")
+  # Its own copper, read through the pull's description for the code; zeros for the rest.
+  expect_equal(cod$exports[cod$mineral == "Copper"], 150)
+  expect_equal(sum(cod$exports[cod$mineral != "Copper"]), 0)
+  expect_equal(cod$exp_share[cod$mineral == "Copper"], 150 / 1500)
+  expect_equal(flows$exports[flows$reporter_iso == "CHL" & flows$mineral == "Copper"], 90)
+  expect_false(any(flows$export_source == "mirror"))
+  expect_equal(unique(flows$HHI[flows$mineral == "Copper"]), sum((c(90, 150) / 240)^2))
+})
+
+test_that("an economy with known total exports but none of the minerals scores zero, not 'none'", {
+  fx <- trade_fixture()
+  # The Congo has since declared its 2024 total exports but none of these minerals (as Iraq
+  # did for 2024); China records other goods from France but none of these minerals.
+  extra <- tibble::tribble(
+    ~ref_year, ~flow_code, ~reporter_iso, ~partner_iso, ~partner_code, ~cmd_code, ~cmd_desc,         ~cifvalue, ~fobvalue, ~primary_value,
+    2024,      "X",        "COG",         "W00",        0,             "TOTAL",   "All Commodities",        NA,       700,            700,
+    2024,      "M",        "CHN",         "FRA",        251,           "TOTAL",   "All Commodities",       530,        NA,            530
+  )
+  mirror <- dplyr::bind_rows(mirror_fixture() %>% dplyr::mutate(partner_code = 1), extra)
+  args <- list(
+    critmin_import = dplyr::bind_rows(fx$imports, cif_fob_fixture()),
+    critmin_export = fx$exports,
+    total_export = fx$total,
+    mineral_demand_clean = reserves_build_mineral_demand_clean(critical_fixture()),
+    country_info = mirror_country_info(),
+    mirror_import = mirror
+  )
+
+  flows <- do.call(critical_minerals_trade_flows, args)
+  cog <- flows %>% dplyr::filter(reporter_iso == "COG")
+  fra <- flows %>% dplyr::filter(reporter_iso == "FRA")
+  # Zero rows for every mineral, like any reporter (the Congo) or mirrored economy (France).
+  expect_equal(nrow(cog), dplyr::n_distinct(flows$mineral))
+  expect_equal(unique(cog$export_source), "reported")
+  expect_equal(sum(cog$exports), 0)
+  expect_equal(unique(cog$exp_share), 0)
+  expect_equal(nrow(fra), dplyr::n_distinct(flows$mineral))
+  expect_equal(unique(fra$export_source), "mirror")
+  expect_equal(sum(fra$exports), 0)
+  # The DR Congo's mirror and the copper market are unchanged by the zero rows.
+  expect_equal(flows$exports[flows$reporter_iso == "COD" & flows$mineral == "Copper"], 10 + 106 / 1.10)
+  expect_equal(sum(flows$market_share[flows$mineral == "Copper"]), 1)
+
+  out <- do.call(critical_minerals_trade, args) %>% dplyr::ungroup()
+  prov <- dplyr::distinct(out, Country, provenance)
+  expect_equal(prov$provenance[prov$Country == "Congo"], "reported")
+  expect_equal(prov$provenance[prov$Country == "France"], "mirror")
+  ms <- out %>%
+    dplyr::filter(variable == "critmin_market_share", data_type == "index", Country %in% c("Congo", "France"))
+  expect_equal(nrow(ms), 2 * dplyr::n_distinct(out$tech[out$variable == "critmin_market_share"]))
+  expect_true(all(ms$value == 0))
+})
