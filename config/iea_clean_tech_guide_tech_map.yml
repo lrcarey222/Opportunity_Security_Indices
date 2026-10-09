@@ -1,23 +1,362 @@
-# Maps IEA Clean Energy Technology Guide items onto the index's technology list.
+# Maps IEA ETP Clean Energy Technology Guide items onto the index's technologies and
+# supply-chain stages.
 #
-# Rules are evaluated in order and the first match wins, which is why Batteries sits above
-# Electric Vehicles: an EV battery item should score as a battery, not as a vehicle.
+# Rules are evaluated in order and the first match wins. A rule assigns an item to one or more
+# technologies (`tech`, a list for an item two technologies share) and one stage (`stage`), or
+# classifies it as outside the eleven index technologies (`tech: none`, with a `reason`). Every
+# item of the 2026 public dataset is classified one way or the other; an item no rule matches is
+# reported as unclassified so a new Guide release cannot drop technologies silently.
 #
-# Tokens are matched as whole comma-delimited entries against the item's taxonomy path.
-# Two vintages of that path exist and both are supported:
-#   legacy  sector      = "Demand,Transport,Road transport,Battery"
-#           supplyChain = "Vehicle component,Battery production"
-#   2026    sector      = category.1..category.4, e.g. "Transport,Road transport,..."
-#           supplyChain = the ".cc" cross-cutting columns, e.g. "Electric (batteries),Batteries"
-# The 2026 dataset renamed most of the top level ("Energy networks and storage" for what
-# used to sit under "Supply,Power,Infrastructure"), so token lists carry both spellings.
+# Stage = the part of the value chain the item's technology changes, using the stage
+# definitions of the index (Upstream = extraction of the raw materials and fuels the technology
+# needs, Midstream = processing and manufacturing of the product and its components,
+# Downstream = deployment: generation, distribution, integration, end-use and end-of-life):
+#   Upstream    mining and mineral extraction, fossil fuel production sites, geothermal
+#               subsurface operations, battery recycling into secondary raw materials (the HS6
+#               crosswalk, data/reference/energy_hs6_master.csv, files battery recycling under
+#               Batteries Upstream too)
+#   Midstream   refining and fuel processing, nuclear fuel fabrication, mineral refining,
+#               cells, components and equipment, hydrogen production
+#   Downstream  power plants and generation concepts, complete vehicles and charging, grid
+#               operation, storage deployment, hydrogen transport, storage, conversion and use,
+#               spent-fuel management, battery reuse
+# A stage with no item takes the technology-wide value (technological_readiness_build_tech()).
 #
-# all_tokens / any_tokens / exclude_tokens are matched literally - the matcher escapes them
-# before building the regex - so write them exactly as they appear in the taxonomy.
-# any_supplychain_tokens and any_name_regex ARE regexes, so "Transmission" still matches
-# "Transmission and distribution" and parentheses have to be escaped there.
+# Matching. All conditions a rule lists must hold, except that the "any" conditions
+# (any_cc, any_name_regex, and the legacy any_tokens / any_supplychain_tokens) are pooled: one
+# hit among them is enough.
+#   path            the item's category.1, category.2, ... must start with this sequence. A list
+#                   of sequences means "any of these". Compared case-insensitively after
+#                   trimming, with the subscript in "H₂" read as "H2".
+#   names           exact item names (tech.final.name), case-insensitive.
+#   any_cc          cross-cutting tags "<theme>=<value>" from the Guide's ".cc" columns, e.g.
+#                   "Hydrogen=Direct use" for Hydrogen.cc = "Direct use".
+#   any_name_regex  regular expressions on the item name.
+#
+# Source: IEA, ETP Clean Energy Technology Guide, 2026 public dataset
+# (data/raw/IEACleanTechGuidepublicdataset.csv; manifest id iea_clean_tech_guide). The
+# classification below was made item by item against that file's category.1-4, .cc and
+# tech.description columns.
 
 rules:
+  # ---- 1. Item-level exceptions, checked before the taxonomy rules ----------------------------
+  - id: heat_pumps_tagged_hydrogen
+    tech: none
+    reason: "Building heat pumps. The Guide tags them Hydrogen = Direct use, but they neither produce nor use hydrogen as an energy carrier."
+    names: ["Metal hydride heat pump", "Absorption heat pump", "Adsorption heat pump"]
+
+  - id: ammonia_without_hydrogen
+    tech: none
+    reason: "Ammonia synthesis routes that bypass hydrogen (electrochemical nitrogen reduction, plasma air-to-ammonia). The Guide tags them Hydrogen-based fuels production because ammonia is a hydrogen-based fuel, but they neither produce nor use hydrogen."
+    names: ["Direct electrochemical nitrogen reduction", "Plasma air-to-ammonia synthesis"]
+
+  - id: offshore_renewable_hydrogen
+    # Filed under Renewables > Wind, but the technology is hydrogen production.
+    tech: Green Hydrogen
+    stage: Midstream
+    names: ["Offshore renewable hydrogen production"]
+
+  # ---- 2. Fossil fuels ------------------------------------------------------------------------
+  - id: coal_mine_methane
+    tech: Coal
+    stage: Upstream
+    path: ["Fossil fuels", "Coal", "Methane emissions monitoring and abatement"]
+
+  - id: coal_power_ccus
+    tech: Coal
+    stage: Downstream
+    path: ["Fossil fuels", "Coal", "Carbon management"]
+
+  # The Guide files oil and gas together, but its fourth level and its item names separate
+  # them: refining is oil, power generation with CCUS is natural-gas fired, and the small-scale
+  # CNG / LNG / GTL plants process gas. The methane-abatement items for "oil and gas
+  # facilities" are genuinely shared, and so is acid gas removal: filed under Refining, but its
+  # description is amine treating of gas produced from high-CO2 fields plus sulfur recovery,
+  # which gas processing plants and refineries both run.
+  - id: acid_gas_removal
+    tech: [Oil, Gas]
+    stage: Midstream
+    names: ["Advanced acid gas removal"]
+
+  - id: oil_refining
+    tech: Oil
+    stage: Midstream
+    path: ["Fossil fuels", "Oil and gas", "Carbon management", "Refining"]
+
+  - id: gas_power_ccus
+    tech: Gas
+    stage: Downstream
+    path: ["Fossil fuels", "Oil and gas", "Carbon management", "Power generation"]
+
+  - id: gas_small_scale_processing
+    tech: Gas
+    stage: Midstream
+    path: ["Fossil fuels", "Oil and gas", "Methane emissions monitoring and abatement"]
+    any_name_regex: ["\\bCNG\\b", "\\bLNG\\b", "\\bGTL\\b"]
+
+  - id: oil_gas_production_methane
+    tech: [Oil, Gas]
+    stage: Upstream
+    path: ["Fossil fuels", "Oil and gas", "Methane emissions monitoring and abatement"]
+
+  # ---- 3. Nuclear -----------------------------------------------------------------------------
+  - id: nuclear_fusion
+    tech: none
+    reason: "Fusion. The index's Nuclear technology is fission power (reactors, uranium fuel cycle, nuclear generation in every other category)."
+    path: ["Nuclear", "Fusion"]
+
+  - id: nuclear_back_end
+    tech: Nuclear
+    stage: Downstream
+    path: ["Nuclear", "Fission", "Nuclear fuel cycles", "Back-end of the fuel cycle"]
+
+  - id: nuclear_fuel_cycle
+    # Conversion, enrichment, fuel fabrication, HALEU and thorium fuel cycles: fuel processing.
+    tech: Nuclear
+    stage: Midstream
+    path: ["Nuclear", "Fission", "Nuclear fuel cycles"]
+
+  - id: nuclear_reactors
+    tech: Nuclear
+    stage: Downstream
+    path: [["Nuclear", "Fission", "Large reactors"], ["Nuclear", "Fission", "Small modular reactors"]]
+
+  # ---- 4. Hydrogen ----------------------------------------------------------------------------
+  # Green hydrogen is produced by splitting water with renewable energy: electrolysis and the
+  # direct solar routes. Transport, storage, conversion to hydrogen-based fuels and end-uses do
+  # not depend on how the hydrogen was made and count as Green Hydrogen Downstream.
+  - id: hydrogen_electrolysis
+    tech: Green Hydrogen
+    stage: Midstream
+    path: ["Hydrogen", "Production", "Electrolysis"]
+
+  - id: hydrogen_direct_solar
+    tech: Green Hydrogen
+    stage: Midstream
+    names: ["Photon-based direct solar water splitting", "Solar thermochemical"]
+
+  - id: hydrogen_production_not_green
+    tech: none
+    reason: "Hydrogen from fossil fuels with CCUS, methane pyrolysis, coal gasification, nuclear heat, geologic deposits, biomass or by-product recovery: not green hydrogen."
+    path: ["Hydrogen", "Production"]
+
+  - id: hydrogen_midstream_to_use
+    tech: Green Hydrogen
+    stage: Downstream
+    # "Sythetic" is the Guide's own spelling; the corrected spelling is listed for later releases.
+    path:
+      - ["Hydrogen", "H2 infrastructure"]
+      - ["Hydrogen", "Power generation"]
+      - ["Hydrogen", "Sythetic fuels production"]
+      - ["Hydrogen", "Synthetic fuels production"]
+
+  - id: hydrogen_end_use_elsewhere
+    # Hydrogen end-uses filed under Buildings, Industry, Transport or Bioenergy, identified by
+    # the Guide's own cross-cutting hydrogen tags.
+    tech: Green Hydrogen
+    stage: Downstream
+    any_cc:
+      - "Hydrogen=Direct use"
+      - "Hydrogen=Distribution"
+      - "Hydrogen=Storage"
+      - "Hydrogen=Hydrogen-based fuels production"
+      - "Hydrogen=Hydrogen-based fuels storage"
+      - "Hydrogen=Hydrogen-based fuels use"
+      - "Mobility=Hydrogen"
+
+  - id: ammonia_fuel_use_untagged
+    # Ammonia burned for industrial heat or used as the reductant in DRI: uses of a
+    # hydrogen-based fuel, like the ammonia turbine, co-firing and ship-engine items the Guide
+    # tags Hydrogen = Hydrogen-based fuels use, but these three carry no hydrogen tag.
+    tech: Green Hydrogen
+    stage: Downstream
+    names:
+      - "Ammonia (high temperature heating)"
+      - "Ammonia (low temperature heating)"
+      - "DRI production using ammonia as a reductant"
+
+  # ---- 5. Critical minerals -------------------------------------------------------------------
+  # The Guide tags its mining and refining items Energy Storage = "Minerals mining and
+  # extraction", i.e. it links them to batteries. That link is kept where the item's own
+  # description names battery minerals (lithium, nickel, cobalt, manganese, graphite), and for
+  # battery recycling. Rare-earth items carry the same tag, but rare earths are magnet, not
+  # battery, materials and the Guide links them to no other index technology; generic mining,
+  # refining and recycling methods serve every mineral. Both stay unmapped.
+  - id: battery_reuse_and_tracking
+    tech: Batteries
+    stage: Downstream
+    names: ["EV battery reuse in BESS", "Battery passport"]
+
+  - id: battery_recycling
+    tech: Batteries
+    stage: Upstream
+    path: ["Critical minerals", "E-waste recycling", "Battery recycling"]
+
+  - id: battery_metals_extraction
+    tech: Batteries
+    stage: Upstream
+    names: ["Direct lithium extraction from brine", "Deep sea mining"]
+
+  - id: battery_metals_processing
+    tech: Batteries
+    stage: Midstream
+    names: ["High pressure acid leaching", "Advanced graphite purification & spheronization"]
+
+  - id: rare_earths
+    tech: none
+    reason: "Rare-earth extraction and separation: magnet materials, tagged Energy Storage by the Guide but not used in batteries, and linked by the Guide to no other index technology."
+    names: ["Ion-adsorption clays leaching", "Novel REE separation"]
+
+  - id: critical_minerals_generic
+    tech: none
+    reason: "Mining, refining and recycling methods common to many minerals (copper, gold, uranium, rare earths, lithium...): not attributable to one index technology."
+    path: ["Critical minerals"]
+
+  # ---- 6. Batteries ---------------------------------------------------------------------------
+  - id: battery_cells_vehicle
+    tech: Batteries
+    stage: Midstream
+    path: ["Transport", "Road transport", "Electric vehicle battery (electrical storage)"]
+
+  - id: battery_cells_stationary
+    tech: Batteries
+    stage: Midstream
+    path: ["Energy networks and storage", "Electrochemical storage"]
+
+  - id: battery_storage_deployment
+    tech: Batteries
+    stage: Downstream
+    names:
+      - "Battery storage system with grid-forming inverter"
+      - "Rail-to-grid battery energy storage system"
+      - "Electrical storage for building systems integration"
+
+  # ---- 7. Electric Vehicles (road) ------------------------------------------------------------
+  # The index's Electric Vehicles are road vehicles (EV sales and stock, vehicle assembly,
+  # charging), so electric aircraft, trains and ships are not counted here.
+  - id: ship_charging
+    # Filed under Road transport > EV charging equipment, but its description is multi-MW
+    # chargers for battery-electric ships and ferries, and its flat TRL 7 is theirs (road fast
+    # charging is the separate "Fast and ultra-fast charging" item).
+    tech: none
+    reason: "Charging equipment for battery-electric ships, filed under road transport: a non-road electric mode."
+    names: ["Fast charging"]
+
+  - id: ev_charging
+    tech: Electric Vehicles
+    stage: Downstream
+    path: ["Transport", "Road transport", "EV charging equipment"]
+
+  - id: ev_components
+    tech: Electric Vehicles
+    stage: Midstream
+    names: ["Rare-earth free electric motor", "Cell-to-chassis battery technology", "Cell-to-pack battery technology"]
+
+  - id: ev_vehicles
+    tech: Electric Vehicles
+    stage: Downstream
+    path: ["Transport", "Road transport", "Electric vehicle (EV)"]
+
+  - id: transport_other
+    tech: none
+    reason: "Other transport: non-road electric modes, combustion engines on biofuels, vehicle and vessel efficiency, nuclear propulsion."
+    path: ["Transport"]
+
+  # ---- 8. Electric Grid -----------------------------------------------------------------------
+  - id: grid_equipment_items
+    # Grid hardware filed under control systems or under buildings (the meters carry the
+    # Guide's Power = Transmission and distribution tag).
+    tech: Electric Grid
+    stage: Midstream
+    names:
+      - "Flexible alternating current transmission systems"
+      - "HVDC breaker"
+      - "Smart inverter"
+      - "Smart meter"
+      - "Interval-time of use meter"
+
+  - id: grid_equipment
+    tech: Electric Grid
+    stage: Midstream
+    path:
+      - ["Energy networks and storage", "Power grids", "Cables and conductors"]
+      - ["Energy networks and storage", "Power grids", "Transformation and conversion"]
+
+  - id: grid_operation
+    # Capacity management, monitoring, digital twins, DERMS, demand response.
+    tech: Electric Grid
+    stage: Downstream
+    path: ["Energy networks and storage", "Power grids"]
+
+  - id: storage_non_battery
+    tech: none
+    reason: "Mechanical and thermal energy storage: not batteries."
+    path: ["Energy networks and storage"]
+
+  # ---- 9. Solar (power) -----------------------------------------------------------------------
+  - id: solar_pv_deployment
+    tech: Solar
+    stage: Downstream
+    names: ["Floating solar PV", "Space solar power", "Building integrated photovoltaic systems"]
+
+  - id: solar_pv_cells_modules
+    tech: Solar
+    stage: Midstream
+    path: ["Renewables", "Solar", "Photovoltaic"]
+
+  - id: solar_csp
+    tech: Solar
+    stage: Downstream
+    path: ["Renewables", "Solar", "Solar thermal"]
+    any_cc: ["Power=Generation"]
+
+  # ---- 10. Wind -------------------------------------------------------------------------------
+  - id: wind_generation
+    tech: Wind
+    stage: Downstream
+    path: ["Renewables", "Wind"]
+
+  # ---- 11. Geothermal -------------------------------------------------------------------------
+  - id: geothermal_subsurface
+    tech: Geothermal
+    stage: Upstream
+    path: ["Renewables", "Geothermal", "Subsurface operations for geothermal energy"]
+
+  - id: geothermal_surface
+    tech: Geothermal
+    stage: Downstream
+    path: ["Renewables", "Geothermal", "Surface operations for geothermal energy"]
+
+  # ---- 12. Outside the index technologies -----------------------------------------------------
+  - id: renewables_other
+    tech: none
+    reason: "Bioenergy, hydropower, ocean energy and solar heat: not index technologies."
+    path: ["Renewables"]
+
+  - id: buildings
+    tech: none
+    reason: "Building envelope, appliances, heating and cooling, lighting, building energy management and solar heat."
+    path: ["Buildings"]
+
+  - id: industry
+    tech: none
+    reason: "Industrial process technologies (aluminium, cement, chemicals, iron and steel, pulp and paper, industrial heat)."
+    path: ["Industry"]
+
+  - id: ccus
+    tech: none
+    reason: "CO2 capture, transport and storage: not an index technology."
+    path: ["Carbon Capture and Storage"]
+
+# Rules for the superseded hand-built extract (data/raw/IEA_Clean_Tech_Guide.csv: name,
+# comma-joined `sector` path, `supplyChain`, trl2020-trl2023), kept so an older stage still
+# builds. Its taxonomy carries no stage information, so these rules set no `stage` and an item
+# counts for all three stages, as the theme did before stages were resolved.
+#
+# all_tokens / any_tokens / exclude_tokens are matched literally against the comma-delimited
+# `sector` entries; any_supplychain_tokens and any_name_regex are regexes. Rules are first
+# match wins, which is why Batteries sits above Electric Vehicles.
+legacy_rules:
   - tech: Coal
     all_tokens: ["Fossil fuels", "Coal"]
 
@@ -27,20 +366,12 @@ rules:
   - tech: Batteries
     any_tokens: ["Battery", "Electrochemical storage", "Storage", "Lithium based batteries", "Other batteries technologies", "Battery recycling"]
     any_supplychain_tokens: ["Battery production", "Battery recycling", "Battery charging", "Power storage", "Batteries", "Electric \\(batteries\\)"]
-    # "\bcell\b" and not bare "cell": the loose form matched every "fuel cell" item and
-    # any word containing the letters, which pulled hydrogen technologies in here.
     any_name_regex: ["battery", "\\bcell\\b", "electrochemical storage"]
-    # A whole battery-electric vehicle is a vehicle, not a battery, even though its name
-    # starts with "Battery". The taxonomy nodes for complete vehicles hand those to
-    # Electric Vehicles instead; "fuel cell" does the same for hydrogen drivetrains.
     exclude_tokens: ["Mining", "fuel cell", "Battery electric vehicle", "Electric vehicle (EV)"]
 
   - tech: Electric Vehicles
     any_tokens: ["Road transport", "Battery electric vehicle", "Electric vehicle (EV)"]
     any_supplychain_tokens: ["Vehicle", "Vehicle component", "Transport infrastructure", "Electric \\(vehicles\\)"]
-    # No "Battery" exclusion: Batteries is evaluated first and now carries precise
-    # exclusions, so anything genuinely battery-shaped has already been claimed. Excluding
-    # the word here only pushed complete vehicles named "Battery electric ..." off the list.
 
   - tech: Green Hydrogen
     any_tokens: ["Hydrogen", "Electrolysis"]
@@ -49,8 +380,6 @@ rules:
     exclude_tokens: ["Fossil fuels"]
 
   - tech: Electric Grid
-    # Deliberately "Power grids" and not the 2026 top level "Energy networks and storage":
-    # that level also holds thermal and mechanical storage, which are not grid assets.
     any_tokens: ["Infrastructure", "Grid", "Power grids"]
     any_supplychain_tokens: ["Power transport", "Transmission", "Distribution", "Grid operation", "Power system", "Flexibility \\(grids\\)"]
     any_name_regex: ["transmission", "distribution", "smart grid", "substation", "grid"]

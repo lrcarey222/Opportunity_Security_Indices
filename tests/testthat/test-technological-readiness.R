@@ -37,9 +37,10 @@ test_that("battery taxonomy is prioritized over road-transport EV mapping", {
     technological_readiness_assign_tech() |>
     dplyr::select(name, tech)
 
-  lfp_sector <- assigned$tech[assigned$name == "LFP cell manufacturing"]
-  sodium_sector <- assigned$tech[assigned$name == "Sodium-ion pack"]
-  ev_sector <- assigned$tech[assigned$name == "EV drivetrain"]
+  # Legacy items carry no stage, so each appears once per stage.
+  lfp_sector <- unique(assigned$tech[assigned$name == "LFP cell manufacturing"])
+  sodium_sector <- unique(assigned$tech[assigned$name == "Sodium-ion pack"])
+  ev_sector <- unique(assigned$tech[assigned$name == "EV drivetrain"])
 
   expect_identical(lfp_sector, "Batteries")
   expect_identical(sodium_sector, "Batteries")
@@ -97,8 +98,15 @@ test_that("tech aggregation uses mean of item-level bell scores and does not imp
     max_trl = 11
   )
 
-  battery_row <- tech_tbl[tech_tbl$tech == "Batteries", ]
-  coal_row <- tech_tbl[tech_tbl$tech == "Coal", ]
+  # The legacy extract carries no stage information, so its items count for every stage and
+  # the three stage rows of a technology are identical.
+  expect_equal(nrow(tech_tbl), 6L)
+  expect_true(all(tech_tbl$basis[tech_tbl$tech == "Batteries"] == "stage"))
+  battery_rows <- tech_tbl[tech_tbl$tech == "Batteries", ]
+  expect_equal(dplyr::n_distinct(battery_rows$trl_index), 1L)
+
+  battery_row <- tech_tbl[tech_tbl$tech == "Batteries" & tech_tbl$supply_chain == "Midstream", ]
+  coal_row <- tech_tbl[tech_tbl$tech == "Coal" & tech_tbl$supply_chain == "Midstream", ]
 
   # Three fixture items map to Batteries: the two cells set above plus "Grid storage
   # system" at TRL 6, which the Storage taxonomy token claims. Derive the expectation
@@ -112,8 +120,12 @@ test_that("tech aggregation uses mean of item-level bell scores and does not imp
   expect_true(battery_row$trl_level_index < trl_bell_hard(6, min_trl = 2, mu = 6, max_trl = 11))
   expect_equal(battery_row$trl_level_index, expected_item_mean)
 
+  # The index is exactly the published blend of its two components.
+  expect_equal(battery_row$trl_index, 0.7 * battery_row$trl_level_index + 0.3 * battery_row$trl_momentum_index)
+
   expect_true(is.na(coal_row$trl2023))
   expect_true(is.na(coal_row$trl_index))
+  expect_true(is.na(coal_row$basis))
 })
 
 test_that("technological_readiness output schema stays stable", {
@@ -193,11 +205,12 @@ test_that("a country_reference copies each technology's TRL to every country", {
   expect_equal(nrow(out), 3 * nrow(global))
   expect_false(is.null(attr(out, "mapping_diagnostics")))
 
-  # One value per technology and variable: the same for every country and stage.
+  # One value per technology, stage and variable: the same for every country.
   spread <- out %>%
-    dplyr::group_by(tech, variable) %>%
+    dplyr::group_by(tech, supply_chain, variable) %>%
     dplyr::summarize(n = dplyr::n_distinct(value), .groups = "drop")
   expect_true(all(spread$n == 1))
+  expect_true(all(grepl("identical for every country", out$explanation, fixed = TRUE)))
 
   key <- c("tech", "supply_chain", "variable")
   joined <- dplyr::inner_join(
