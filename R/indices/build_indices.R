@@ -242,8 +242,13 @@ build_strategic_index <- function(economic_opportunity_index,
 
   eo <- strategic_pillar_rankability(economic_opportunity_index, "Economic_Opportunity_Index", "eo")
   es <- strategic_pillar_rankability(energy_security_index, "Energy_Security_Index", "es")
+  # policy_basis (build_composite_policy_index(): "IEA PAMS + CAT" or "IEA PAMS only") is carried
+  # onto the SI rows when the policy index has it, so tables and charts can show which countries'
+  # policy term rests on IEA PAMS alone. It is joined by cell, so it is NA wherever the cell has
+  # no Policy index value (a country without one, or a cell its index lacks: 104 unscored rows of
+  # four territories in the Oct 2026 build); a scored cell always carries it.
   pol <- policy_index %>%
-    dplyr::select("Country", "tech", "supply_chain", "value")
+    dplyr::select("Country", "tech", "supply_chain", "value", dplyr::any_of("policy_basis"))
   if (!is.null(techs)) {
     eo <- eo %>% dplyr::filter(.data$tech %in% techs)
     es <- es %>% dplyr::filter(.data$tech %in% techs)
@@ -329,7 +334,7 @@ build_strategic_index <- function(economic_opportunity_index,
     dplyr::select(
       "Country", "tech", "supply_chain", "sector",
       "Economic_Opportunity_Index", "Energy_Security_Index", "energy_security_need",
-      "value", "ghg_index", "trl_index",
+      "value", dplyr::any_of("policy_basis"), "ghg_index", "trl_index",
       "eo", "es_need", "es", "pol",
       "sc_weight", "tech_weight",
       "strategic_index", "si_exclusion"

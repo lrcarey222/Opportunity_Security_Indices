@@ -124,6 +124,31 @@ test_that("countries without a Policy index get no SI and say why", {
   expect_true(all(is.na(b$pol)))
 })
 
+test_that("the policy basis is carried onto the SI rows and the allied picks, values unchanged", {
+  fx <- si_fixture()
+  plain <- build_fixture_si(fx)
+  # A policy index without policy_basis (built before the PAMS-only fallback) adds no column.
+  expect_false("policy_basis" %in% names(plain))
+
+  fx$pol <- fx$pol %>%
+    dplyr::mutate(policy_basis = dplyr::if_else(.data$Country == "A", "IEA PAMS + CAT", "IEA PAMS only"))
+  si <- build_fixture_si(fx)
+  expect_equal(setdiff(names(si), names(plain)), "policy_basis")
+  expect_equal(which(names(si) == "policy_basis"), which(names(si) == "value") + 1L)
+  expect_true(all(si$policy_basis[si$Country == "A"] == "IEA PAMS + CAT"))
+  expect_true(all(si$policy_basis[si$Country == "B"] == "IEA PAMS only"))
+  # the basis is a label: the index is the same with or without it
+  expect_equal(dplyr::select(si, -"policy_basis"), plain)
+
+  # a country without a Policy index has no basis
+  fx$pol <- fx$pol %>% dplyr::filter(.data$Country == "A")
+  si_a <- build_fixture_si(fx)
+  expect_true(all(is.na(si_a$policy_basis[si_a$Country == "B"])))
+
+  picks <- select_allied_strategic_sectors(si, ally_countries = c("A", "B"))
+  expect_equal(sort(picks$policy_basis), c("IEA PAMS + CAT", "IEA PAMS only"))
+})
+
 test_that("eo and es_need are ranked over the observed pillar, pol over the scored cells", {
   fx <- si_fixture()
   miss_es <- fx$es$Country == "A" & fx$es$tech == "Wind" & fx$es$supply_chain == "Upstream"

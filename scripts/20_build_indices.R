@@ -279,8 +279,16 @@ if (!exists("policy_component_tbl") || !exists("policy_outputs")) {
 }
 
 # Composite Policy index: IEA PAMS 3, CAT 2, renormalised over the components present in
-# each cell; a country is scored only if it has BOTH components somewhere
-# (build_composite_policy_index() in R/indices/build_policy_index.R, with the weights below).
+# each cell (build_composite_policy_index() in R/indices/build_policy_index.R, with the weights
+# and required components below).
+# Eligibility (user decision, 9 Oct 2026): IEA PAMS is required, CAT is added where it rates the
+# country. A country with IEA PAMS but no CAT rating is scored from IEA PAMS alone and flagged
+# policy_basis "IEA PAMS only" (carried onto the policy index and Strategic Index rows); until
+# then both components were required, which left 150 of 215 countries, Israel, Ukraine and nine
+# coalition partners among them, without a Policy index and so without a Strategic Index.
+# A country with CAT but no IEA PAMS is not scored (none in the Oct 2026 build; see
+# R/indices/build_policy_index.R for why). OPSI_POLICY_REQUIRE_ALL=1 restores the
+# both-required rule (robustness runs).
 # Two components are left out (Oct 2026), the same for every country:
 # - NIPO (GTA, weight 4 until Oct 2026) is excluded from the composite for now. scripts/10
 #   still builds it and its tables stay on disk untouched (nipo_policy_index_tbl.rds,
@@ -306,33 +314,67 @@ policy_components_excluded <- c(
     "cannot rank countries"
   )
 )
+policy_require_all <- tolower(Sys.getenv("OPSI_POLICY_REQUIRE_ALL", "false")) %in% c("1", "true", "yes")
+policy_required_components <- if (policy_require_all) {
+  names(policy_component_weights)
+} else {
+  "IEA PAMS Policy Index"
+}
 policy_build <- build_composite_policy_index(
   policy_component_tbl,
   techs = techs,
-  component_weights = policy_component_weights
+  component_weights = policy_component_weights,
+  required_components = policy_required_components
 )
 policy_index <- policy_build$index
 policy_eligibility <- policy_build$eligibility
+policy_full_basis <- policy_basis_label(names(policy_component_weights))
+policy_n_every_component <- sum(policy_eligibility$n_components == length(policy_component_weights))
+policy_scored <- policy_eligibility %>% dplyr::filter(.data$eligible)
+policy_basis_counts <- table(factor(
+  policy_scored$policy_basis,
+  levels = unique(c(policy_full_basis, sort(unique(policy_scored$policy_basis))))
+))
 message(
   "Policy index: ",
-  paste0(sub(" Policy Index$", "", names(policy_component_weights)), " (", policy_component_weights, ")",
+  paste0(policy_component_label(names(policy_component_weights)), " (", policy_component_weights, ")",
          collapse = " + "),
-  "; excluded: ", paste(sub(" (Policy Index|policy score)$", "", names(policy_components_excluded)), collapse = ", "),
-  ". ", sum(policy_eligibility$eligible), " of ", nrow(policy_eligibility),
-  " countries have every component."
+  "; excluded: ", paste(policy_component_label(names(policy_components_excluded)), collapse = ", "),
+  ". Required: ", paste(policy_component_label(policy_required_components), collapse = " + "),
+  if (policy_require_all) {
+    " (OPSI_POLICY_REQUIRE_ALL=1)"
+  } else {
+    " (a country without the other components is scored on what it has)"
+  },
+  ". ", policy_n_every_component, " of ", nrow(policy_eligibility),
+  " countries have every component; ", nrow(policy_scored), " are scored (",
+  paste(names(policy_basis_counts), policy_basis_counts, sep = ": ", collapse = ", "), ")."
 )
 policy_index_provenance <- list(
   components = names(policy_component_weights),
   weights = policy_component_weights,
   excluded_components = policy_components_excluded,
-  eligibility_rule = paste(
-    "a country is scored only if every component is observed for at least one of its cells",
-    "(over the headline technologies in `techs`); weights are renormalised over the components",
-    "present in each cell"
+  required_components = policy_required_components,
+  eligibility_rule = paste0(
+    "a country is scored if ",
+    if (policy_require_all) "every component" else
+      paste(policy_component_label(policy_required_components), collapse = " and "),
+    " is observed for at least one of its cells (over the headline technologies in `techs`)",
+    if (!policy_require_all) {
+      paste0(
+        "; a component it lacks everywhere is left out and policy_basis records what its index ",
+        "rests on (e.g. '", policy_basis_label(policy_required_components), "'; user decision ",
+        "9 Oct 2026, both were required before)"
+      )
+    },
+    "; weights are renormalised over the components present in each cell"
   ),
   techs = techs,
-  n_countries_eligible = sum(policy_eligibility$eligible),
-  eligible_countries = sort(policy_eligibility$Country[policy_eligibility$eligible]),
+  n_countries_eligible = nrow(policy_scored),
+  eligible_countries = sort(policy_scored$Country),
+  # the both-required count (the rule until 9 Oct 2026) and the scored countries by basis
+  n_countries_every_component = policy_n_every_component,
+  countries_by_basis = lapply(split(policy_scored$Country, policy_scored$policy_basis), sort),
   # scripts/10's record of the component build (NIPO extract, as-of date, CAT EU members);
   # NULL for a policy_outputs.rds built before that record existed
   component_build = policy_provenance,
@@ -463,26 +505,53 @@ allied_index <- select_allied_strategic_sectors(
   ally_countries = allies,
   require_resource_base = si_resource_screen
 )
-allies_unpicked <- allies %>%
-  dplyr::filter(!.data$Country %in% allied_index$Country) %>%
+allies_policy <- allies %>%
   dplyr::left_join(
-    policy_eligibility %>% dplyr::select("Country", "eligible", "missing_components"),
+    policy_eligibility %>% dplyr::select("Country", "eligible", "policy_basis", "missing_required"),
     by = "Country"
-  ) %>%
+  )
+allies_unpicked <- allies_policy %>%
+  dplyr::filter(!.data$Country %in% allied_index$Country) %>%
   dplyr::mutate(reason = dplyr::case_when(
     is.na(.data$eligible) ~ "no policy component at all",
-    !.data$eligible ~ paste0("no Policy index, lacks ", .data$missing_components),
-    TRUE ~ "no in-sample Upstream/Midstream cell"
+    !.data$eligible ~ paste0("no Policy index, lacks ", .data$missing_required),
+    TRUE ~ paste0("no in-sample Upstream/Midstream cell; Policy index ", .data$policy_basis)
   )) %>%
+  dplyr::arrange(.data$tier, .data$Country)
+# Members picked on a Policy index without every component (the PAMS-only fallback).
+allies_partial_policy <- allies_policy %>%
+  dplyr::filter(
+    .data$Country %in% allied_index$Country,
+    .data$eligible %in% TRUE,
+    .data$policy_basis != policy_full_basis
+  ) %>%
   dplyr::arrange(.data$tier, .data$Country)
 message(
   "Allied strategic selection: coalition of ", nrow(coalition), " (", coalition$source[1], "; ",
   paste(names(table(coalition$tier)), table(coalition$tier), sep = " ", collapse = ", "), "); ",
   dplyr::n_distinct(allied_index$Country),
-  " members have a scored Upstream/Midstream sector; none for ",
-  nrow(allies_unpicked), ": ",
-  paste0(allies_unpicked$Country, " (", allies_unpicked$tier, "; ", allies_unpicked$reason, ")",
-         collapse = ", ")
+  " members have a scored Upstream/Midstream sector",
+  if (nrow(allies_partial_policy) > 0) {
+    partial_by_basis <- split(allies_partial_policy$Country, allies_partial_policy$policy_basis)
+    paste0(
+      " (Policy index ",
+      paste0(
+        names(partial_by_basis), " for ", lengths(partial_by_basis), ": ",
+        vapply(partial_by_basis, paste, character(1), collapse = ", "),
+        collapse = "; "
+      ),
+      ")"
+    )
+  },
+  "; none for ", nrow(allies_unpicked),
+  if (nrow(allies_unpicked) > 0) {
+    paste0(
+      ": ",
+      paste0(allies_unpicked$Country, " (", allies_unpicked$tier, "; ", allies_unpicked$reason, ")",
+             collapse = ", ")
+    )
+  },
+  "."
 )
 # Diagnostic (nothing excluded): sectors where one ES value is shared by many scored countries
 # (strategic_index_es_floor_sectors(), R/indices/build_indices.R), with the allied picks there.
