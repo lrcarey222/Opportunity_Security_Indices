@@ -9,6 +9,7 @@ coalition_test_load <- function() {
   source(file.path(root, "R", "utils", "country.R"), local = FALSE)
   source(file.path(root, "R", "utils", "iea_critical_minerals.R"), local = FALSE)
   source(file.path(root, "R", "categories", "production", "critical_minerals_production.R"), local = FALSE)
+  source(file.path(root, "R", "categories", "reserves", "reserves.R"), local = FALSE)
   source(file.path(root, "R", "indices", "coalition.R"), local = FALSE)
 }
 
@@ -355,6 +356,206 @@ test_that("EI mineral sheets test the minerals the IEA supply sheet does not cov
   expect_error(coalition_shares_ei_minerals(bad, demand, techs = techs), "Total World")
 })
 
+test_that("reserves rows are tested at supplier_reserves_share, every other measure at supplier_share", {
+  coalition_test_load()
+  expect_equal(coalition_supplier_threshold(c("ei_reserves", "uranium_resources", "atlas_export_share", "ei_production")),
+               c(0.10, 0.10, 0.05, 0.05))
+  expect_equal(coalition_supplier_threshold("ei_reserves", supplier_share = 0.05, supplier_reserves_share = 0.2), 0.2)
+  expect_error(coalition_supplier_threshold("ei_reserves", supplier_reserves_share = 0), "supplier_reserves_share")
+
+  blocs <- data.frame(
+    iso3 = c("RRR", "SSS", "TTT", "UUU", "VVV"),
+    bloc = c("Nonaligned", "Nonaligned", "Nonaligned", "China-leaning", "Nonaligned"),
+    alignment_basis = "own_votes", stringsAsFactors = FALSE
+  )
+  gdp <- data.frame(iso3c = c("RRR", "SSS", "TTT", "UUU", "VVV"), year = 2025,
+                    `NY.GDP.MKTP.CD` = c(2e12, 2e10, 3e10, 5e11, 1e10), check.names = FALSE)
+  supplier <- tibble::tibble(
+    iso3 = c("RRR", "RRR", "SSS", "TTT", "TTT", "UUU", "VVV"),
+    tech = c("Wind", "Oil", "Batteries", "Nuclear", "Nuclear", "Gas", "Oil"),
+    supply_chain = "Upstream",
+    measure = c("ei_reserves", "ei_production", "ei_reserves", "uranium_resources", "uranium_mine_production",
+                "ei_reserves", "atlas_export_share"),
+    mineral = c("Rare Earths", NA, "Graphite", NA, NA, NA, NA),
+    world_share = c(0.227, 0.039, 0.08, 0.10, 0.06, 0.20, 0.06),
+    is_aggregate = FALSE
+  )
+  out <- derive_coalition_tiers(blocs, gdp, data.frame(iso3 = character(), agreement = character()), supplier)
+  row <- function(i) out[out$iso3 == i, ]
+
+  # RRR: a reserves holder (22.7%) with 3.9% of production -> partner by the reserves leg alone.
+  expect_equal(row("RRR")$tier, "partner")
+  expect_equal(row("RRR")$routes, "supplier: reserves")
+  expect_true(row("RRR")$route_supplier && row("RRR")$route_supplier_reserves)
+  expect_equal(row("RRR")$max_supplier_share, 0.039) # flow measures only, read against supplier_share
+  expect_equal(row("RRR")$max_reserves_share, 0.227)
+  expect_match(row("RRR")$supplier_cells, "Wind Upstream (ei_reserves Rare Earths 22.7%)", fixed = TRUE)
+  expect_match(row("RRR")$reason, "major reserves holder")
+  # SSS: 8% of reserves would pass the flow bar but not the reserves bar.
+  expect_equal(row("SSS")$tier, "none")
+  expect_true(is.na(row("SSS")$supplier_cells))
+  expect_false(row("SSS")$supplier_excluded)
+  expect_true(is.na(row("SSS")$max_supplier_share))
+  expect_equal(row("SSS")$max_reserves_share, 0.08)
+  # TTT: at both bars (inclusive) -> both legs recorded.
+  expect_equal(row("TTT")$routes, "supplier; supplier: reserves")
+  expect_match(row("TTT")$reason, "major supplier and reserves holder")
+  # UUU: China-leaning reserves holder -> excluded, flagged.
+  expect_equal(row("UUU")$tier, "none")
+  expect_false(row("UUU")$route_supplier_reserves)
+  expect_true(row("UUU")$supplier_excluded)
+  expect_match(row("UUU")$reason, "major reserves holder (excluded: China-leaning)", fixed = TRUE)
+  # VVV: a flow measure keeps the 5% bar.
+  expect_equal(row("VVV")$routes, "supplier")
+  expect_false(row("VVV")$route_supplier_reserves)
+
+  # Each bar moves on its own.
+  low <- derive_coalition_tiers(blocs, gdp, data.frame(iso3 = character(), agreement = character()), supplier,
+                                supplier_reserves_share = 0.08)
+  expect_equal(low$routes[low$iso3 == "SSS"], "supplier: reserves")
+  high <- derive_coalition_tiers(blocs, gdp, data.frame(iso3 = character(), agreement = character()), supplier,
+                                 supplier_share = 0.07)
+  expect_equal(high$routes[high$iso3 == "RRR"], "supplier: reserves")
+  expect_equal(high$routes[high$iso3 == "TTT"], "supplier: reserves")
+  expect_equal(high$tier[high$iso3 == "VVV"], "none")
+  # One bar for everything (the pre-2026-10-09 rule) admits SSS at 5%.
+  flat <- derive_coalition_tiers(blocs, gdp, data.frame(iso3 = character(), agreement = character()), supplier,
+                                 supplier_reserves_share = 0.05)
+  expect_equal(flat$tier[flat$iso3 == "SSS"], "partner")
+})
+
+# EI reserves sheets as readxl reads them with the spec's skip: a fuel sheet (proved reserves
+# history, the value column "2020...42") and a mineral "P-R" sheet ("At end of <year>").
+coalition_test_reserves_sheets <- function() {
+  oil <- tibble::tibble(
+    a = c(NA, "Canada", "US", "Total North America", "Venezuela", "Other S. & Cent. America",
+          "Total World", "of which: OECD", "Non-OPEC", "European Union#", "Canadian Oil Sands: Total",
+          "Venezuela: Orinoco Belt", "# Excludes Estonia."),
+    b = c(NA, 160, 60, 220, 290, 20, 980, 250, 400, 4, 150, 250, NA),
+    c = c(NA, 170, 70, 240, 300, 30, 1000, 260, 420, 5, 160, 260, NA)
+  )
+  names(oil) <- c("Thousand million barrels", "2019...41", "2020...42")
+  graphite <- tibble::tibble(
+    a = c(NA, "China", "Brazil1", "Madagascar", "Rest of World", "Total World", "Sources: USGS"),
+    b = c(NA, 1, 1, 1, 1, 4, NA),
+    c = c(NA, 100, 74, 27, 29, 400, NA)
+  )
+  names(graphite) <- c("Thousand tonnes", "2025", "At end of 2025")
+  zinc <- graphite
+  list(
+    list(sheet = "Oil - Proved reserves history", resource = "Oil", nm_col = "Thousand million barrels",
+         val_col = "2020...42", data_year = 2020, unit = "Thousand million barrels", data = oil),
+    list(sheet = "Natural Graphite P-R", resource = "Graphite", nm_col = "Thousand tonnes",
+         val_col = "At end of 2025", unit = "Thousand tonnes", data = graphite),
+    # No demand link for zinc in the fixture and no Coal technology: both skipped.
+    list(sheet = "Zinc P-R", resource = "Zinc", nm_col = "Thousand tonnes", val_col = "At end of 2025", data = zinc),
+    list(sheet = "Coal - Reserves", resource = "Coal", nm_col = "Thousand million barrels", val_col = "2020...42",
+         data_year = 2020, data = oil)
+  )
+}
+
+test_that("EI reserves are shares of each sheet's Total World row, mapped like the mining measures", {
+  coalition_test_load()
+  demand <- data.frame(Mineral = c("Graphite", "Graphite", "Graphite"),
+                       tech = c("Batteries", "Electric Vehicles", "Heat Pumps"),
+                       share_24 = c(0.18, 0.82, 0.002), stringsAsFactors = FALSE)
+  techs <- c("Batteries", "Electric Vehicles", "Oil")
+  r <- coalition_shares_ei_reserves(coalition_test_reserves_sheets(), demand, techs = techs)
+  share <- function(i, t) r$world_share[r$iso3 == i & r$tech == t]
+
+  # Oil: country rows over Total World (1000). Regional totals, residuals, groups, the EU (whose
+  # label carries a footnote "#") and the "<name>: <part>" component rows are dropped.
+  oil <- r[r$tech == "Oil", ]
+  expect_setequal(oil$iso3, c("CAN", "USA", "VEN"))
+  expect_equal(share("VEN", "Oil"), 0.30)
+  expect_equal(share("CAN", "Oil"), 0.17)
+  expect_true(all(is.na(oil$mineral)))
+  expect_equal(unique(oil$year), 2020L)
+  # Graphite: "Brazil1" (a footnote digit) is Brazil; the denominator keeps the Rest of World.
+  expect_equal(share("BRA", "Batteries"), 74 / 400)
+  expect_equal(share("BRA", "Electric Vehicles"), 74 / 400)
+  expect_equal(r$country[r$iso3 == "BRA"][1], "Brazil")
+  expect_equal(unique(r$mineral[r$tech == "Batteries"]), "Graphite")
+  expect_equal(unique(r$year[r$tech == "Batteries"]), 2025L)
+  expect_false(any(r$tech == "Heat Pumps"))           # not a headline technology, and below the floor
+  expect_false(any(r$tech %in% c("Coal", "Zinc")))   # Coal not in techs; zinc has no link
+  expect_equal(unique(r$measure), "ei_reserves")
+  expect_equal(unique(r$supply_chain), "Upstream")
+  expect_false(any(grepl("Total|Rest|Other|Union|Sands|:", r$country)))
+  expect_equal(anyDuplicated(r[c("iso3", "tech", "mineral")]), 0)
+
+  # Without a Total World row, or when the country rows exceed it, the sheet stops.
+  sheets <- coalition_test_reserves_sheets()[2]
+  no_world <- sheets
+  no_world[[1]]$data[[1]][no_world[[1]]$data[[1]] %in% "Total World"] <- "World total"
+  expect_error(coalition_shares_ei_reserves(no_world, demand, techs = techs), "Total World")
+  too_big <- sheets
+  too_big[[1]]$data[[3]][too_big[[1]]$data[[1]] %in% "Total World"] <- 150
+  expect_error(coalition_shares_ei_reserves(too_big, demand, techs = techs), "more than the Total World")
+  unknown <- sheets
+  unknown[[1]]$data[[1]][unknown[[1]]$data[[1]] %in% "Madagascar"] <- "Atlantis"
+  expect_error(coalition_shares_ei_reserves(unknown, demand, techs = techs), "no ISO3 code: Atlantis")
+})
+
+test_that("uranium resources are shares of the listed countries in one cost category", {
+  coalition_test_load()
+  v260 <- "identified_recoverable_resources_lt_usd260_kgu"
+  ur <- data.frame(
+    country = c("Australia", "Niger", "Brazil", "Australia", "Niger", "Brazil", "Australia"),
+    iso3c = c("AUS", "NER", "BRA", "AUS", "NER", "BRA", "AUS"),
+    variable = c(rep(v260, 3), rep("identified_recoverable_resources_lt_usd130_kgu", 3), v260),
+    value = c(600, 300, 100, 500, 100, 0, 999),
+    unit = "tU", year = c(2025, 2025, 2025, 2025, 2025, 2025, 2023),
+    stringsAsFactors = FALSE
+  )
+  u <- coalition_shares_uranium_resources(ur, variable = v260)
+  expect_equal(u$world_share[match(c("AUS", "NER", "BRA"), u$iso3)], c(0.6, 0.3, 0.1)) # latest year only
+  expect_equal(unique(u$tech), "Nuclear")
+  expect_equal(unique(u$measure), "uranium_resources")
+  expect_equal(unique(u$year), 2025L)
+  expect_error(coalition_shares_uranium_resources(ur, variable = "nope"), "no nope rows")
+
+  # In major_supplier_shares(), each row carries its threshold and the major flag follows it, and
+  # derive_coalition_tiers() with the same bars agrees with that flag.
+  demand <- data.frame(Mineral = "Graphite", tech = c("Batteries", "Electric Vehicles"),
+                       share_24 = c(0.18, 0.82), stringsAsFactors = FALSE)
+  s <- major_supplier_shares(
+    mineral_demand = demand, ei_reserves = coalition_test_reserves_sheets(), uranium_resources = ur,
+    uranium_production = data.frame(country = c("Niger", "Australia"), iso3c = c("NER", "AUS"),
+                                     variable = "mine_production", value = c(6, 94), year = 2024),
+    techs = c("Batteries", "Electric Vehicles", "Oil", "Nuclear"),
+    uranium_resources_variable = v260
+  )
+  expect_equal(unique(s$threshold[s$measure %in% COALITION_RESERVES_MEASURES]), 0.10)
+  expect_equal(unique(s$threshold[!s$measure %in% COALITION_RESERVES_MEASURES]), 0.05)
+  major <- function(i, m) unique(s$major[s$iso3 == i & s$measure == m])
+  expect_true(major("NER", "uranium_mine_production")) # 6% of production
+  expect_true(major("NER", "uranium_resources"))       # 30% of resources
+  expect_true(major("BRA", "uranium_resources"))       # exactly 10%: the bar is inclusive
+  expect_false(major("MDG", "ei_reserves"))            # 6.75% of graphite reserves: above 5%, below 10%
+  expect_true(major("BRA", "ei_reserves"))             # 18.5% of graphite reserves
+  expect_false(major("USA", "ei_reserves"))            # 7% of oil reserves
+
+  iso <- c("AUS", "NER", "BRA", "MDG", "USA", "CAN", "VEN", "CHN")
+  tiers <- derive_coalition_tiers(
+    bloc_tbl = data.frame(iso3 = iso, bloc = c("U.S.-leaning", rep("Nonaligned", 6), "China-leaning"),
+                          alignment_basis = "own_votes", stringsAsFactors = FALSE),
+    gdp_tbl = data.frame(iso3c = iso, year = 2025, `NY.GDP.MKTP.CD` = 1e9, check.names = FALSE),
+    agreements_tbl = data.frame(iso3 = character(), agreement = character()),
+    supplier_tbl = s
+  )
+  flagged <- unique(s$iso3[s$major])
+  reserves_flagged <- unique(s$iso3[s$major & s$measure %in% COALITION_RESERVES_MEASURES])
+  expect_equal(tiers$route_supplier | tiers$supplier_excluded, tiers$iso3 %in% flagged)
+  expect_equal(tiers$route_supplier_reserves, tiers$iso3 %in% reserves_flagged & !tiers$supplier_excluded)
+  expect_true(tiers$supplier_excluded[tiers$iso3 == "CHN"]) # 25% of graphite reserves, China-leaning
+  expect_equal(tiers$routes[tiers$iso3 == "MDG"], "none")
+  expect_equal(tiers$routes[tiers$iso3 == "NER"], "supplier; supplier: reserves")
+  expect_equal(tiers$routes[tiers$iso3 == "BRA"], "supplier: reserves")
+  expect_error(major_supplier_shares(uranium_resources = ur, techs = "Nuclear"), "uranium_resources_variable")
+  expect_error(major_supplier_shares(ei_reserves = coalition_test_reserves_sheets(), techs = "Oil"), "mineral_demand")
+})
+
 test_that("the agreements reference file is sourced and matches config/coalition.yml", {
   root <- coalition_test_root()
   agreements <- utils::read.csv(file.path(root, "data", "reference", "economic_security_agreements.csv"),
@@ -379,6 +580,10 @@ test_that("the agreements reference file is sourced and matches config/coalition
   cfg <- yaml::read_yaml(file.path(root, "config", "coalition.yml"))
   expect_true(all(c(unlist(cfg$coalition$partner_agreements), unlist(cfg$coalition$sensitivity_agreements)) %in% agreements$agreement))
   expect_false("MSP Forum" %in% unlist(cfg$coalition$partner_agreements))
+  # Reserves count at their own, higher bar (user decision, 2026-10-09).
+  expect_equal(cfg$coalition$supplier_share, 0.05)
+  expect_equal(cfg$coalition$supplier_reserves_share, 0.10)
+  expect_true(isTRUE(cfg$supplier_measures$reserves))
   expect_length(unique(unlist(cfg$eu_node$members)), 27)
   expect_length(unlist(cfg$headline_techs), 11)
 })

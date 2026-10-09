@@ -15,26 +15,41 @@
 #       G7, NATO; MSP Forum members only as a sensitivity) with GDP >= gdp_floor_usd, whatever
 #       its bloc; or
 #   (b) route "supplier": not China-leaning and a major supplier, i.e. a world share of at least
-#       supplier_share (5%) in at least one measure of an Upstream or Midstream stage of a
-#       headline technology (major_supplier_shares()). No GDP floor, so small resource suppliers
-#       qualify.
+#       supplier_share (5%) of production, refining, manufacturing capacity or exports in at
+#       least one measure of an Upstream or Midstream stage of a headline technology
+#       (major_supplier_shares()). No GDP floor, so small resource suppliers qualify.
+#   (b') route "supplier: reserves" (user decision, 2026-10-09): not China-leaning and holding at
+#       least supplier_reserves_share (10%) of world reserves of a headline mineral (Upstream of
+#       the technologies that use it), of oil, gas or coal (their own Upstream) or of uranium
+#       (Nuclear Upstream; Red Book identified resources < USD 260/kgU, the Reserves theme's
+#       measure). Reserves are a stock, not supply (a holder supplies only once it mines), hence
+#       a bar twice that of the flow measures. It is the same partner route as (b), with its own
+#       threshold (coalition_supplier_threshold()), and is recorded separately.
 # - none: no route.
 #
 # EU node. The 27 EU member states share one node of the allied network (eu_code, "EUU", the
 # World Bank / WDI code of the European Union), whatever their own tier; the node's tier is set
-# in config (core: 26 of 27 members are U.S.-leaning). eu_stage_weights() gives each member's
-# weight within the node per (tech, stage) for stage-weighted aggregation. Only the network layer
-# is bundled: the national indices stay national, and coalition_tbl keeps each member's own tier.
+# in config (core: all 27 members are U.S.-leaning on the 2026-10-09 run). eu_stage_weights()
+# gives each member's weight within the node per (tech, stage) for stage-weighted aggregation.
+# Only the network layer is bundled: the national indices stay national, and coalition_tbl keeps
+# each member's own tier.
 #
 # Pure functions (no IO). They use R/utils/country.R (country_name_to_iso3,
-# is_aggregate_or_residual), R/utils/iea_critical_minerals.R (harmonize_mineral_names,
-# iea_critical_minerals_supply_stage, iea_critical_minerals_base_year,
-# iea_critical_minerals_year_col) and, for the EI mineral sheets,
+# standardize_country_names, is_aggregate_or_residual), R/utils/iea_critical_minerals.R
+# (harmonize_mineral_names, iea_critical_minerals_supply_stage, iea_critical_minerals_base_year,
+# iea_critical_minerals_year_col) and, for the EI mineral and reserves sheets,
 # R/categories/production/critical_minerals_production.R
-# (critical_minerals_production_resolve_val_col), which the caller sources.
+# (critical_minerals_production_resolve_val_col) and R/categories/reserves/reserves.R
+# (reserves_resolve_val_col), which the caller sources.
 
 COALITION_TIERS <- c("core", "partner", "none")
-COALITION_ROUTES <- c("core", "agreement", "supplier")
+# Route labels of coalition_tbl$routes. "supplier" is the supplier route through a production,
+# refining, manufacturing or export measure, "supplier: reserves" through a reserves measure;
+# an economy that passes both records both.
+COALITION_ROUTES <- c("core", "agreement", "supplier", "supplier: reserves")
+# Measures of major_supplier_shares() that are stocks (reserves, identified resources) rather
+# than flows. They are tested at supplier_reserves_share instead of supplier_share.
+COALITION_RESERVES_MEASURES <- c("ei_reserves", "uranium_resources")
 
 # Columns of a major_supplier_shares() table.
 COALITION_SUPPLIER_COLUMNS <- c(
@@ -57,6 +72,23 @@ coalition_clean_codes <- function(x) {
   x <- toupper(trimws(as.character(x)))
   x[x %in% c("", "NA")] <- NA_character_
   x
+}
+
+coalition_check_share <- function(x, name) {
+  if (!is.numeric(x) || length(x) != 1 || is.na(x) || x <= 0 || x > 1) {
+    stop(name, " must be a single number in (0, 1].")
+  }
+  invisible(x)
+}
+
+# World-share threshold of each supplier-table row: supplier_reserves_share for the reserves
+# measures (COALITION_RESERVES_MEASURES), supplier_share for the production, refining,
+# manufacturing and export measures. major_supplier_shares() (its `major` flag) and
+# derive_coalition_tiers() (the supplier route) both apply this, so they agree row by row.
+coalition_supplier_threshold <- function(measure, supplier_share = 0.05, supplier_reserves_share = 0.10) {
+  coalition_check_share(supplier_share, "supplier_share")
+  coalition_check_share(supplier_reserves_share, "supplier_reserves_share")
+  ifelse(as.character(measure) %in% COALITION_RESERVES_MEASURES, supplier_reserves_share, supplier_share)
 }
 
 # One supplier-share block in the common layout; scalar arguments are recycled.
@@ -300,6 +332,151 @@ coalition_shares_uranium <- function(uranium_production, year = NULL) {
   )
 }
 
+# Energy Institute Statistical Review reserves (ei_stat_review_world_energy_wide.xlsx, the sheets
+# of reserves_specs() that the Reserves theme reads in scripts/10): each country's share of world
+# reserves, Upstream, for the reserves leg of the supplier route (tested at
+# supplier_reserves_share). A fuel in `fuels` (proved reserves at end-2020, the last year EI
+# published them) maps to its own technology; a mineral (reserves "At end of <year>", USGS data)
+# to the technologies that use it, through the same link and floor as the mining measures
+# (coalition_mineral_links()).
+#
+# `sheets`: one element per sheet, list(sheet, resource = the spec's tech_name, nm_col, val_col,
+# data_year (optional; else the year in the value column's name), unit (optional), data = the
+# sheet as readxl reads it with the spec's skip). The value column is resolved as the theme does
+# (reserves_resolve_val_col()).
+#
+# The denominator is the sheet's own "Total World" row. It includes the "Rest of World" (minerals)
+# and "Other <region>" (fuels) residuals, which the Reserves theme drops: shares of the theme's
+# country rows (reserves_tbl.rds) would overstate every holder, most for copper, where the
+# residual is 43% of the world (Chile 32% of the listed countries, 18% of the world). Regional and
+# group totals, residuals and component rows written "<name>: <part>" ("Venezuela: Orinoco Belt",
+# "Canadian Oil Sands: Total", "of which: OECD"; the parts are already in the country's total)
+# are dropped. Country rows that sum to more than the world total mean a part or a group was read
+# as a country, and stop.
+coalition_shares_ei_reserves <- function(sheets,
+                                         mineral_demand,
+                                         techs,
+                                         min_demand_share = 0.01,
+                                         fuels = c("Oil", "Gas", "Coal")) {
+  if (!is.list(sheets)) stop("sheets must be a list of list(sheet, resource, nm_col, val_col, data).")
+  links <- coalition_mineral_links(mineral_demand, techs = techs, min_demand_share = min_demand_share)
+  out <- list(coalition_empty_supplier_tbl())
+  for (sh in sheets) {
+    resource <- as.character(sh$resource)
+    if (length(resource) != 1 || is.na(resource) || !nzchar(resource)) {
+      stop("An EI reserves sheet has no resource name.")
+    }
+    if (resource %in% fuels) {
+      if (!resource %in% techs) next
+      l <- tibble::tibble(tech = resource, mineral = NA_character_, mineral_demand_share = NA_real_)
+    } else {
+      l <- links[links$mineral == harmonize_mineral_names(resource), , drop = FALSE]
+      if (nrow(l) == 0) next
+    }
+    d <- sh$data
+    if (!inherits(d, "data.frame") || ncol(d) < 2) stop("EI reserves sheet ", sh$sheet, " has no data.")
+    nm_col <- if (!is.null(sh$nm_col) && sh$nm_col %in% names(d)) sh$nm_col else names(d)[1]
+    val_col <- reserves_resolve_val_col(d, sh$val_col, sheet_id = sh$sheet)
+    if (!val_col %in% names(d)) stop("EI reserves sheet ", sh$sheet, " has no column '", val_col, "'.")
+    yr <- if (!is.null(sh$data_year)) {
+      as.integer(sh$data_year)
+    } else {
+      suppressWarnings(as.integer(sub("^.*?((19|20)[0-9]{2}).*$", "\\1", val_col, perl = TRUE)))
+    }
+
+    # EI marks a footnote with a trailing digit ("Brazil1", which country_name_to_iso3() strips) or
+    # symbol ("European Union#" on the oil sheet), which would hide an aggregate from
+    # is_aggregate_or_residual(); the symbol goes first.
+    label <- trimws(sub("[#*^]+$", "", trimws(as.character(d[[nm_col]]))))
+    value <- suppressWarnings(as.numeric(d[[val_col]]))
+    is_world <- !is.na(label) & grepl("^total world$", label, ignore.case = TRUE)
+    world <- value[is_world]
+    if (length(world) != 1 || is.na(world) || world <= 0) {
+      stop("EI reserves sheet ", sh$sheet, " has no single positive 'Total World' value in '", val_col, "'.")
+    }
+    keep <- !is.na(label) & nzchar(label) & !is.na(value) & !is_world &
+      !grepl(":", label, fixed = TRUE) & !is_aggregate_or_residual(label)
+    iso3 <- country_name_to_iso3(label[keep])
+    if (anyNA(iso3)) {
+      stop("EI reserves sheet ", sh$sheet, " rows with no ISO3 code: ", paste(label[keep][is.na(iso3)], collapse = ", "))
+    }
+    if (anyDuplicated(iso3)) {
+      stop("EI reserves sheet ", sh$sheet, " has two rows for: ", paste(unique(iso3[duplicated(iso3)]), collapse = ", "))
+    }
+    kept_value <- value[keep]
+    if (sum(kept_value) > world * (1 + 1e-6)) {
+      stop("EI reserves sheet ", sh$sheet, ": the country rows sum to ", format(sum(kept_value)),
+           ", more than the Total World row (", format(world), ").")
+    }
+    country <- standardize_country_names(label[keep]) # "Brazil1" (a footnote marker) -> "Brazil"
+    for (k in seq_len(nrow(l))) {
+      out[[length(out) + 1L]] <- coalition_supplier_rows(
+        iso3 = iso3,
+        country = country,
+        tech = l$tech[k],
+        supply_chain = "Upstream",
+        measure = "ei_reserves",
+        # The year, not the column name: readxl names the fuel columns "2020...42" and coal's "Total".
+        measure_label = paste0("EI Statistical Review: ", sh$sheet, " (reserves",
+                               if (is.na(yr)) "" else paste0(" at end-", yr), ")"),
+        year = yr,
+        value = kept_value,
+        unit = if (is.null(sh$unit)) nm_col else sh$unit,
+        world_share = kept_value / world,
+        source = "Energy Institute, Statistical Review of World Energy (reserves; minerals include USGS data)",
+        mineral = l$mineral[k],
+        mineral_demand_share = l$mineral_demand_share[k]
+      )
+    }
+  }
+  dplyr::bind_rows(out)
+}
+
+# Identified recoverable uranium resources (OECD-NEA/IAEA Red Book Table 1.2a,
+# data/reference/uranium_resources.csv) in one cost category, `variable`: Nuclear Upstream, for the
+# reserves leg of the supplier route. scripts/13 passes the Reserves theme's category
+# (uranium_resources_variable(URANIUM_DEFAULT_COST_CATEGORY): RAR plus inferred, < USD 260/kgU),
+# so the test reads the theme's "Nuclear Reserves". The table lists every country with identified
+# resources and the CSV has no world row, so the world total is the sum of the listed countries
+# (the table's own total). `year` defaults to the latest reference year.
+coalition_shares_uranium_resources <- function(uranium_resources, variable, year = NULL) {
+  coalition_require_columns(
+    uranium_resources, c("country", "iso3c", "variable", "value", "year"), "uranium_resources"
+  )
+  if (!is.character(variable) || length(variable) != 1 || is.na(variable)) {
+    stop("variable must be one uranium_resources variable, e.g. uranium_resources_variable().")
+  }
+  res <- uranium_resources[uranium_resources$variable == variable, , drop = FALSE]
+  if (nrow(res) == 0) {
+    stop("uranium_resources has no ", variable, " rows; available: ",
+         paste(sort(unique(uranium_resources$variable)), collapse = ", "))
+  }
+  if (is.null(year)) year <- max(as.integer(res$year), na.rm = TRUE)
+  res <- res[as.integer(res$year) == as.integer(year), , drop = FALSE]
+  if (nrow(res) == 0) {
+    stop("uranium_resources has no ", variable, " rows for ", year, ".")
+  }
+  iso3 <- coalition_clean_codes(res$iso3c)
+  if (anyNA(iso3) || anyDuplicated(iso3)) {
+    stop("uranium_resources has missing or duplicate ISO3 codes for ", variable, " in ", year, ".")
+  }
+  value <- as.numeric(res$value)
+  world <- sum(value, na.rm = TRUE)
+  coalition_supplier_rows(
+    iso3 = iso3,
+    country = res$country,
+    tech = "Nuclear",
+    supply_chain = "Upstream",
+    measure = "uranium_resources",
+    measure_label = paste0("Uranium identified recoverable resources (Red Book Table 1.2a): ", variable),
+    year = year,
+    value = value,
+    unit = if ("unit" %in% names(res)) paste(unique(res$unit), collapse = "/") else "tU",
+    world_share = if (world > 0) value / world else NA_real_,
+    source = "OECD-NEA/IAEA, Uranium: Resources, Production and Demand (Red Book), Table 1.2a"
+  )
+}
+
 # Energy Institute Statistical Review production (ei_stat_review_world_energy.csv, long: Country,
 # Year, ISO3166_alpha3, Var, Value), as the production themes read it: oilprod_kbd, gasprod_ej and
 # coalprod_ej, Upstream of Oil, Gas and Coal. Shares are of the "Total World" row (WLD) in each
@@ -471,10 +648,16 @@ coalition_shares_trade <- function(trade_tbl, techs, stages = c("Upstream", "Mid
 # - ei: Oil, Gas and Coal Upstream production (coalition_shares_ei_production());
 # - cleantech_midstream: Solar, Wind, Batteries and Green Hydrogen Midstream manufacturing
 #   capacity, EU as a bloc (coalition_shares_cleantech());
-# - trade_tbl: export shares of every tech x stage HS6 basket (coalition_shares_trade()).
-# Restricted to `techs` and `stages`. `major` is TRUE where a country-level (not aggregate) world
-# share is at least supplier_share. Aggregate rows (the EU in EI and the IEA manufacturing data)
-# are kept for reference and the EU weights' coverage check, never for the test.
+# - trade_tbl: export shares of every tech x stage HS6 basket (coalition_shares_trade());
+# - ei_reserves + mineral_demand: EI reserves of minerals (Upstream of the technologies that use
+#   them) and of oil, gas and coal (coalition_shares_ei_reserves()), measure "ei_reserves";
+# - uranium_resources + uranium_resources_variable: Red Book identified uranium resources, Nuclear
+#   Upstream (coalition_shares_uranium_resources()), measure "uranium_resources".
+# Restricted to `techs` and `stages`. `threshold` is the row's bar (coalition_supplier_threshold():
+# supplier_reserves_share for the two reserves measures, supplier_share otherwise) and `major` is
+# TRUE where a country-level (not aggregate) world share reaches it. Aggregate rows (the EU in EI
+# and the IEA manufacturing data) are kept for reference and the EU weights' coverage check, never
+# for the test.
 major_supplier_shares <- function(critical = NULL,
                                   mineral_demand = NULL,
                                   ei_minerals = NULL,
@@ -482,20 +665,22 @@ major_supplier_shares <- function(critical = NULL,
                                   ei = NULL,
                                   cleantech_midstream = NULL,
                                   trade_tbl = NULL,
+                                  ei_reserves = NULL,
+                                  uranium_resources = NULL,
                                   techs,
                                   stages = c("Upstream", "Midstream"),
                                   supplier_share = 0.05,
+                                  supplier_reserves_share = 0.10,
                                   mineral_min_demand_share = 0.01,
                                   eu_code = "EUU",
                                   ei_vars = c(Oil = "oilprod_kbd", Gas = "gasprod_ej", Coal = "coalprod_ej"),
                                   cleantech_tech_map = c(Solar = "Solar", Wind = "Wind",
                                                          Batteries = "Batteries", Electrolyzers = "Green Hydrogen"),
                                   cleantech_status = "Current",
-                                  cleantech_year = 2024L) {
-  if (!is.numeric(supplier_share) || length(supplier_share) != 1 || is.na(supplier_share) ||
-      supplier_share <= 0 || supplier_share > 1) {
-    stop("supplier_share must be a single number in (0, 1].")
-  }
+                                  cleantech_year = 2024L,
+                                  uranium_resources_variable = NULL) {
+  coalition_check_share(supplier_share, "supplier_share")
+  coalition_check_share(supplier_reserves_share, "supplier_reserves_share")
   parts <- list(coalition_empty_supplier_tbl())
   iea_mined <- character()
   if (!is.null(critical)) {
@@ -528,6 +713,18 @@ major_supplier_shares <- function(critical = NULL,
   if (!is.null(trade_tbl)) {
     parts[[length(parts) + 1L]] <- coalition_shares_trade(trade_tbl, techs = techs, stages = stages)
   }
+  if (!is.null(ei_reserves)) {
+    if (is.null(mineral_demand)) stop("ei_reserves needs mineral_demand (reserves_build_mineral_demand_clean()).")
+    parts[[length(parts) + 1L]] <- coalition_shares_ei_reserves(
+      ei_reserves, mineral_demand, techs = techs, min_demand_share = mineral_min_demand_share
+    )
+  }
+  if (!is.null(uranium_resources)) {
+    if (is.null(uranium_resources_variable)) {
+      stop("uranium_resources needs uranium_resources_variable (uranium_resources_variable(), R/categories/reserves/uranium.R).")
+    }
+    parts[[length(parts) + 1L]] <- coalition_shares_uranium_resources(uranium_resources, variable = uranium_resources_variable)
+  }
   out <- dplyr::bind_rows(parts)
   out <- out[out$tech %in% techs & out$supply_chain %in% stages & !is.na(out$iso3), , drop = FALSE]
   key <- paste(out$iso3, out$tech, out$supply_chain, out$measure, out$mineral)
@@ -535,7 +732,8 @@ major_supplier_shares <- function(critical = NULL,
     stop("major_supplier_shares: duplicate (iso3, tech, supply_chain, measure, mineral) rows: ",
          paste(utils::head(unique(key[duplicated(key)]), 5), collapse = "; "))
   }
-  out$major <- !out$is_aggregate & !is.na(out$world_share) & out$world_share >= supplier_share
+  out$threshold <- as.numeric(coalition_supplier_threshold(out$measure, supplier_share, supplier_reserves_share))
+  out$major <- !out$is_aggregate & !is.na(out$world_share) & out$world_share >= out$threshold
   out <- out[order(out$tech, out$supply_chain, out$measure, out$mineral, -out$world_share, na.last = TRUE), , drop = FALSE]
   rownames(out) <- NULL
   tibble::as_tibble(out)
@@ -593,14 +791,18 @@ eu_node_map <- function(iso3, eu_members, eu_code = "EUU") {
 
 # The two-tier coalition. One row per economy of bloc_tbl, agreements_tbl (country rows; the EU's
 # own rows are skipped), the country rows of supplier_tbl and eu_members:
-#   iso3, country, tier (core / partner / none), routes ("core; agreement; supplier": every route
-#   the economy satisfies, "none" if it satisfies none), bloc, alignment_basis, own_vote, gdp_usd,
-#   gdp_year, eu_member, network_node (eu_node_map()), node_tier (the node's tier: eu_node_tier for
-#   EU members, the country's own tier otherwise), route_core, route_agreement, route_supplier,
-#   agreements (every agreement listed for the economy), qualifying_agreements (those in
-#   partner_agreements), supplier_cells (the stages where it is a major supplier, with the measure
-#   and share), max_supplier_share, supplier_excluded (a major supplier kept off the supplier route
-#   because it is China-leaning or has no alignment) and reason.
+#   iso3, country, tier (core / partner / none), routes ("core; agreement; supplier; supplier:
+#   reserves": every route the economy satisfies, COALITION_ROUTES, "none" if it satisfies none),
+#   bloc, alignment_basis, own_vote, gdp_usd, gdp_year, eu_member, network_node (eu_node_map()),
+#   node_tier (the node's tier: eu_node_tier for EU members, the country's own tier otherwise),
+#   route_core, route_agreement, route_supplier (the supplier route by any measure: the partner
+#   condition), route_supplier_reserves (by a reserves measure), agreements (every agreement listed
+#   for the economy), qualifying_agreements (those in partner_agreements), supplier_cells (the
+#   stages where it is a major supplier, each with the measure and share, largest first),
+#   max_supplier_share (largest world share in a production, refining, manufacturing or export
+#   measure: compare with supplier_share), max_reserves_share (largest share of world reserves:
+#   compare with supplier_reserves_share), supplier_excluded (a major supplier by either kind of
+#   measure kept off the supplier route because it is China-leaning or has no alignment) and reason.
 #
 # - bloc_tbl: geo_ideal_points_tbl (scripts/12): iso3, bloc and optionally country and
 #   alignment_basis / imputed_from / proxy_of (coalition_own_vote()).
@@ -612,13 +814,18 @@ eu_node_map <- function(iso3, eu_members, eu_code = "EUU") {
 # Core needs the U.S.-leaning bloc, GDP >= gdp_floor_usd and (core_requires_own_vote) the
 # economy's own UN votes, as derive_alignment_coalition() does. The agreement route needs GDP >=
 # gdp_floor_usd and no bloc condition. The supplier route needs no GDP but a bloc other than
-# china_bloc (and, with supplier_requires_alignment, a known bloc).
+# china_bloc (and, with supplier_requires_alignment, a known bloc), and a world share at or above
+# the row's threshold, coalition_supplier_threshold(measure, supplier_share,
+# supplier_reserves_share): these two arguments decide, not supplier_tbl's own `major` column, so a
+# sensitivity run can move either bar; pass the values major_supplier_shares() used to reproduce
+# its flags.
 derive_coalition_tiers <- function(bloc_tbl,
                                    gdp_tbl,
                                    agreements_tbl,
                                    supplier_tbl,
                                    gdp_floor_usd = 1e11,
                                    supplier_share = 0.05,
+                                   supplier_reserves_share = 0.10,
                                    partner_agreements = c("U.S. FTA", "IPEF", "MSP", "G7", "NATO"),
                                    us_bloc = "U.S.-leaning",
                                    china_bloc = "China-leaning",
@@ -636,10 +843,8 @@ derive_coalition_tiers <- function(bloc_tbl,
   if (!is.numeric(gdp_floor_usd) || length(gdp_floor_usd) != 1 || is.na(gdp_floor_usd) || gdp_floor_usd < 0) {
     stop("gdp_floor_usd must be a single number >= 0.")
   }
-  if (!is.numeric(supplier_share) || length(supplier_share) != 1 || is.na(supplier_share) ||
-      supplier_share <= 0 || supplier_share > 1) {
-    stop("supplier_share must be a single number in (0, 1].")
-  }
+  coalition_check_share(supplier_share, "supplier_share")
+  coalition_check_share(supplier_reserves_share, "supplier_reserves_share")
   if (!eu_node_tier %in% COALITION_TIERS) stop("eu_node_tier must be one of ", paste(COALITION_TIERS, collapse = ", "))
 
   bloc_iso3 <- coalition_clean_codes(bloc_tbl$iso3)
@@ -649,7 +854,7 @@ derive_coalition_tiers <- function(bloc_tbl,
   agreements <- data.frame(
     iso3 = coalition_clean_codes(agreements_tbl$iso3),
     agreement = trimws(as.character(agreements_tbl$agreement)),
-    country = if ("country" %in% names(agreements_tbl)) as.character(agreements_tbl$country) else NA_character_,
+    country = if ("country" %in% names(agreements_tbl)) as.character(agreements_tbl$country) else rep(NA_character_, nrow(agreements_tbl)),
     stringsAsFactors = FALSE
   )
   agreements <- agreements[!is.na(agreements$iso3) & agreements$iso3 != eu_code, , drop = FALSE]
@@ -707,8 +912,11 @@ derive_coalition_tiers <- function(bloc_tbl,
   }, character(1), USE.NAMES = FALSE)
   route_agreement <- !is.na(qualifying) & big
 
-  # Supplier route.
-  major <- supplier[!is.na(supplier$world_share) & supplier$world_share >= supplier_share, , drop = FALSE]
+  # Supplier route: each row against its own threshold (reserves at supplier_reserves_share,
+  # every other measure at supplier_share).
+  supplier$reserves <- supplier$measure %in% COALITION_RESERVES_MEASURES
+  supplier$threshold <- coalition_supplier_threshold(supplier$measure, supplier_share, supplier_reserves_share)
+  major <- supplier[!is.na(supplier$world_share) & supplier$world_share >= supplier$threshold, , drop = FALSE]
   major <- major[order(major$iso3, -major$world_share), , drop = FALSE]
   cell_text <- paste0(
     major$tech, " ", major$supply_chain, " (", major$measure,
@@ -719,18 +927,28 @@ derive_coalition_tiers <- function(bloc_tbl,
     x <- unique(cell_text[major$iso3 == i])
     if (length(x) == 0) NA_character_ else paste(x, collapse = "; ")
   }, character(1), USE.NAMES = FALSE)
-  max_share <- vapply(iso3, function(i) {
-    x <- supplier$world_share[supplier$iso3 == i & !is.na(supplier$world_share)]
-    if (length(x) == 0) NA_real_ else max(x)
-  }, numeric(1), USE.NAMES = FALSE)
-  is_major <- !is.na(supplier_cells)
+  # The largest share of each kind, each to be read against its own threshold: a 7% reserves
+  # holder is below the reserves bar although 7% would pass for production.
+  max_share_of <- function(rows) {
+    vapply(iso3, function(i) {
+      x <- supplier$world_share[rows & supplier$iso3 == i & !is.na(supplier$world_share)]
+      if (length(x) == 0) NA_real_ else max(x)
+    }, numeric(1), USE.NAMES = FALSE)
+  }
+  max_share <- max_share_of(!supplier$reserves)
+  max_reserves_share <- max_share_of(supplier$reserves)
+  major_flow <- iso3 %in% major$iso3[!major$reserves]
+  major_reserves <- iso3 %in% major$iso3[major$reserves]
+  is_major <- major_flow | major_reserves
   supplier_eligible <- !(bloc %in% china_bloc) & (!is.na(bloc) | !supplier_requires_alignment)
   route_supplier <- is_major & supplier_eligible
+  route_supplier_reserves <- major_reserves & supplier_eligible
   supplier_excluded <- is_major & !supplier_eligible
 
   tier <- ifelse(route_core, "core", ifelse(route_agreement | route_supplier, "partner", "none"))
   routes <- vapply(seq_along(iso3), function(k) {
-    r <- COALITION_ROUTES[c(route_core[k], route_agreement[k], route_supplier[k])]
+    r <- COALITION_ROUTES[c(route_core[k], route_agreement[k], major_flow[k] & supplier_eligible[k],
+                            route_supplier_reserves[k])]
     if (length(r) == 0) "none" else paste(r, collapse = "; ")
   }, character(1))
 
@@ -746,7 +964,9 @@ derive_coalition_tiers <- function(bloc_tbl,
     ifelse(!is.na(b) & !own_vote & !is.na(bloc), " (no own UN vote)", ""),
     "; ", gdp_txt, ifelse(big, " >= ", " < "), floor_txt,
     ifelse(is.na(qualifying), "", paste0("; agreements: ", qualifying)),
-    ifelse(is_major, paste0("; major supplier", ifelse(supplier_excluded, " (excluded: ", ""),
+    ifelse(is_major, paste0("; ", ifelse(major_flow, ifelse(major_reserves, "major supplier and reserves holder", "major supplier"),
+                                         "major reserves holder"),
+                            ifelse(supplier_excluded, " (excluded: ", ""),
                             ifelse(supplier_excluded, ifelse(is.na(bloc), "no alignment)", paste0(bloc, ")")), "")), ""),
     ifelse(eu_member, paste0("; EU member: node ", eu_code, " (", eu_node_tier, ")"), "")
   )
@@ -767,10 +987,12 @@ derive_coalition_tiers <- function(bloc_tbl,
     route_core = route_core,
     route_agreement = route_agreement,
     route_supplier = route_supplier,
+    route_supplier_reserves = route_supplier_reserves,
     agreements = agreements_all,
     qualifying_agreements = qualifying,
     supplier_cells = supplier_cells,
     max_supplier_share = max_share,
+    max_reserves_share = max_reserves_share,
     supplier_excluded = supplier_excluded,
     reason = reason
   )
