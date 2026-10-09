@@ -247,3 +247,86 @@ test_that("hs6_match_report counts the codes a source cannot see", {
   expect_equal(report$n_legacy, 1)
   expect_setequal(report$unmatched$hs6, c("854142", "850231"))
 })
+
+test_that("excluded rows stay in the master but leave every basket", {
+  opsi_load_hs6()
+  master <- data.frame(
+    tech = c("Batteries", "Batteries", "Coal"),
+    supply_chain = "Midstream",
+    sub_sector = c("Cells", "Separators", "Turbines"),
+    hs6 = c("850760", "390110", "841112"),
+    essential = TRUE,
+    legacy_hs = FALSE,
+    excluded = c(FALSE, TRUE, NA),
+    note = c("", "excluded: commodity resin", ""),
+    stringsAsFactors = FALSE
+  )
+
+  # The staged copy drops the excluded row and the flag, keeping the master's own columns.
+  in_basket <- hs6_master_in_basket(master)
+  expect_equal(in_basket$hs6, c("850760", "841112"))
+  expect_equal(names(in_basket), setdiff(names(master), "excluded"))
+
+  long <- hs6_normalize_master(master)
+  expect_false("390110" %in% long$hs6)
+  for (view in hs6_build_views(master)) expect_false("390110" %in% view$HS6)
+
+  # A master without the column is entirely in the basket.
+  expect_identical(hs6_master_in_basket(master[, setdiff(names(master), "excluded")]),
+                   master[, setdiff(names(master), "excluded")])
+})
+
+test_that("the basket review excludes codes whose dominant use is another industry", {
+  opsi_load_hs6()
+  master <- opsi_hs6_master()
+  skip_if_not("excluded" %in% names(master), "master predates the basket review")
+
+  excluded <- as.logical(master$excluded)
+  expect_false(anyNA(excluded))
+  # Every exclusion carries its reason; no in-basket row is labelled as excluded.
+  expect_true(all(grepl("^excluded", master$note[excluded])))
+  expect_false(any(grepl("^excluded", master$note[!excluded])))
+
+  long <- hs6_normalize_master(master)
+  codes_in <- function(t, s) long$hs6[long$tech == t & long$supply_chain == s]
+
+  # Residual chemicals n.e.s. and commodity PE/PP resins are not battery separators or
+  # electrolytes; aircraft engines are not coal or gas plant; electricity is not a grid input.
+  expect_false(any(c("382499", "390110", "390120", "390210") %in% codes_in("Batteries", "Midstream")))
+  expect_false(any(c("841111", "841112", "841191") %in% codes_in("Coal", "Midstream")))
+  expect_false(any(c("841111", "841112", "841191", "847989") %in% codes_in("Gas", "Midstream")))
+  expect_false("847989" %in% codes_in("Oil", "Midstream"))
+  expect_false("260300" %in% codes_in("Batteries", "Upstream"))
+  expect_false(any(long$tech == "Electric Grid" & long$supply_chain == "Upstream"))
+
+  # Gas turbines stay with gas; the cells keep their technology-specific products.
+  expect_true(all(c("841181", "841182", "841199") %in% codes_in("Gas", "Midstream")))
+  expect_true(all(c("850760", "283691", "282520") %in% codes_in("Batteries", "Midstream")))
+  expect_true(all(c("260500", "250410", "253090") %in% codes_in("Batteries", "Upstream")))
+  expect_true(all(c("840681", "840682", "270400") %in% codes_in("Coal", "Midstream")))
+
+  # 8541.40 stays: PV is the dominant use of its HS2022 successors, and the note says so.
+  solar <- master[master$tech == "Solar" & master$supply_chain == "Midstream" & master$hs6 == 854140, ]
+  expect_equal(nrow(solar), 1)
+  expect_false(as.logical(solar$excluded))
+  expect_match(solar$note, "76.3%", fixed = TRUE)
+})
+
+test_that("general-purpose codes kept in a technology basket say so in the note", {
+  opsi_load_hs6()
+  master <- opsi_hs6_master()
+  skip_if_not("excluded" %in% names(master), "master predates the basket review")
+
+  # Control boards, static converters and low-voltage conductors are the largest single codes
+  # of several Midstream baskets, but the technology is not their dominant use. They stay
+  # (there is no technology-specific code), with the caveat and the basket share recorded.
+  kept <- master[!as.logical(master$excluded) & master$supply_chain == "Midstream", ]
+  generic <- kept[hs6_clean_code(kept$hs6) %in% c("853710", "850440", "854449") &
+                    kept$tech %in% c("Solar", "Wind", "Electric Grid", "Electric Vehicles"), ]
+  expect_gte(nrow(generic), 10)
+  expect_true(all(grepl("kept with caveat", generic$note, fixed = TRUE)))
+  expect_true(all(grepl("% of the Comtrade 2024", generic$note, fixed = TRUE)))
+
+  # Every caveat sits on an in-basket row.
+  expect_false(any(grepl("kept with caveat", master$note[as.logical(master$excluded)], fixed = TRUE)))
+})

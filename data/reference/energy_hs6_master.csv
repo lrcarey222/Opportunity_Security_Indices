@@ -1,491 +1,491 @@
-tech,supply_chain,sub_sector,hs6,essential,legacy_hs,note
-Electric Vehicles,Midstream,Charging Infrastructure,850440,TRUE,FALSE,
-Electric Vehicles,Midstream,Charging Infrastructure,850490,TRUE,FALSE,
-Electric Vehicles,Midstream,Charging Infrastructure,853669,TRUE,FALSE,
-Electric Vehicles,Midstream,Charging Infrastructure,853690,TRUE,FALSE,
-Electric Vehicles,Midstream,Charging Infrastructure,853710,TRUE,FALSE,
-Electric Vehicles,Midstream,Charging Infrastructure,853720,FALSE,FALSE,
-Electric Vehicles,Midstream,Charging Infrastructure,854442,TRUE,FALSE,
-Electric Vehicles,Midstream,Charging Infrastructure,854441,TRUE,TRUE,"legacy HS92 8544.41 (conductors <= 80V with connectors), merged into 8544.42 in HS2007"
-Electric Vehicles,Midstream,Charging Infrastructure,854451,TRUE,TRUE,"legacy HS92 8544.51 (conductors 80-1000V with connectors), merged into 8544.42 in HS2007"
-Electric Vehicles,Midstream,Charging Infrastructure,854449,TRUE,FALSE,
-Electric Vehicles,Midstream,Charging Infrastructure,854459,TRUE,TRUE,"legacy HS92 8544.59 (conductors 80-1000V without connectors), merged into 8544.49 in HS2007"
-Electric Vehicles,Midstream,Charging Infrastructure,854460,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Drive Units & Motors,850110,FALSE,FALSE,
-Electric Vehicles,Midstream,Electric Drive Units & Motors,850120,FALSE,FALSE,
-Electric Vehicles,Midstream,Electric Drive Units & Motors,850131,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Drive Units & Motors,850132,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Drive Units & Motors,850133,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Drive Units & Motors,850134,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Drive Units & Motors,850140,FALSE,FALSE,
-Electric Vehicles,Midstream,Electric Drive Units & Motors,850151,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Drive Units & Motors,850152,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Drive Units & Motors,850153,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,870124,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,870240,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,870340,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,870350,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,870360,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,870370,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,870380,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,870390,TRUE,TRUE,"legacy HS92 8703.90 (cars neither spark nor compression ignition, i.e. electric); BEVs moved to 8703.80 in HS2017, the code now holds fuel-cell cars"
-Electric Vehicles,Midstream,Electric Vehicle Assembly,870460,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,870490,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,871160,TRUE,FALSE,
-Electric Vehicles,Midstream,Electric Vehicle Assembly,871190,TRUE,TRUE,"legacy HS92 8711.90 (other motorcycles incl. electric); electric two-wheelers moved to 8711.60 in HS2017, the code now holds side-cars"
-Electric Vehicles,Midstream,Motor & Generator Parts,850300,TRUE,FALSE,
-Electric Vehicles,Midstream,Permanent Magnets & Magnet Parts,850511,TRUE,FALSE,
-Electric Vehicles,Midstream,Permanent Magnets & Magnet Parts,850519,TRUE,FALSE,
-Electric Vehicles,Midstream,Permanent Magnets & Magnet Parts,850590,FALSE,FALSE,
-Electric Vehicles,Midstream,Rare Earth Separation & Compounds,280530,TRUE,FALSE,
-Electric Vehicles,Midstream,Rare Earth Separation & Compounds,284690,TRUE,FALSE,
-Electric Vehicles,Midstream,Vehicle Batteries & Packs,850760,TRUE,FALSE,
-Electric Vehicles,Midstream,Vehicle Batteries & Packs,850790,TRUE,FALSE,
-Electric Vehicles,Midstream,Vehicle Wiring Harnesses,854430,TRUE,FALSE,
-Nuclear,Midstream,Nuclear Fuel Cycle,284410,TRUE,FALSE,
-Nuclear,Midstream,Nuclear Fuel Cycle,284420,TRUE,FALSE,
-Nuclear,Midstream,Nuclear Fuel Cycle,284450,TRUE,FALSE,
-Nuclear,Midstream,Reactor Components,840110,TRUE,FALSE,
-Nuclear,Midstream,Reactor Components,840120,TRUE,FALSE,
-Nuclear,Midstream,Reactor Components,840130,TRUE,FALSE,
-Nuclear,Midstream,Reactor Components,840140,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840211,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840212,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840219,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840220,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840290,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840410,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840420,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840490,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840681,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840682,TRUE,FALSE,
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840619,TRUE,TRUE,"legacy HS92 8406.19 (steam turbines, non-marine), split by output in HS96"
-Nuclear,Midstream,Steam Cycle & Balance of Plant,840690,TRUE,FALSE,
-Coal,Upstream,Coal,270111,TRUE,FALSE,
-Coal,Upstream,Coal,270112,TRUE,FALSE,
-Coal,Upstream,Coal,270119,TRUE,FALSE,
-Coal,Upstream,Coal,270120,TRUE,FALSE,
-Coal,Upstream,Lignite,270210,TRUE,FALSE,
-Coal,Upstream,Lignite,270220,TRUE,FALSE,
-Coal,Midstream,Ash Handling,840290,TRUE,FALSE,
-Coal,Midstream,Ash Handling,840410,TRUE,FALSE,
-Coal,Midstream,Ash Handling,840420,TRUE,FALSE,
-Coal,Midstream,Ash Handling,840490,TRUE,FALSE,
-Coal,Midstream,Ash Handling,840510,TRUE,FALSE,
-Coal,Midstream,Ash Handling,840590,TRUE,FALSE,
-Coal,Midstream,Ash Handling,840681,TRUE,FALSE,
-Coal,Midstream,Ash Handling,840682,TRUE,FALSE,
-Coal,Midstream,Ash Handling,840619,TRUE,TRUE,"legacy HS92 8406.19 (steam turbines, non-marine), split by output in HS96"
-Coal,Midstream,Ash Handling,840690,TRUE,FALSE,
-Coal,Midstream,Ash Handling,841111,TRUE,FALSE,
-Coal,Midstream,Ash Handling,841112,TRUE,FALSE,
-Coal,Midstream,Ash Handling,841181,TRUE,FALSE,
-Coal,Midstream,Ash Handling,841182,TRUE,FALSE,
-Coal,Midstream,Ash Handling,841191,TRUE,FALSE,
-Coal,Midstream,Ash Handling,841199,TRUE,FALSE,
-Coal,Midstream,Boilers & Burners,840211,TRUE,FALSE,
-Coal,Midstream,Boilers & Burners,840212,TRUE,FALSE,
-Coal,Midstream,Boilers & Burners,840219,TRUE,FALSE,
-Coal,Midstream,Boilers & Burners,840220,TRUE,FALSE,
-Coal,Midstream,Boilers & Burners,840310,TRUE,FALSE,
-Coal,Midstream,Boilers & Burners,840390,TRUE,FALSE,
-Coal,Midstream,Coke and Semicoke,270400,TRUE,FALSE,
-Batteries,Upstream,Ores & Concentrates,250410,TRUE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
-Batteries,Midstream,Anode Materials,280300,TRUE,FALSE,
-Batteries,Midstream,Anode Materials,280461,TRUE,FALSE,
-Batteries,Midstream,Anode Materials,380110,TRUE,FALSE,
-Batteries,Midstream,Anode Materials,380190,TRUE,FALSE,
-Batteries,Midstream,Battery Cells,850760,TRUE,FALSE,
-Batteries,Midstream,"Battery Packs, Parts & BMS",850780,FALSE,FALSE,
-Batteries,Midstream,"Battery Packs, Parts & BMS",850790,TRUE,FALSE,
-Batteries,Upstream,Battery Recycling & Urban Mining,262019,TRUE,FALSE,"moved from Midstream: metal-bearing slag/ash, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,262030,FALSE,FALSE,"moved from Midstream: metal-bearing slag/ash, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,262040,TRUE,FALSE,"moved from Midstream: metal-bearing slag/ash, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,262099,TRUE,FALSE,"moved from Midstream: metal-bearing slag/ash, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,262090,TRUE,TRUE,"legacy HS92 2620.90 (other metal-bearing slag and ash), split in HS2007"
-Batteries,Upstream,Battery Recycling & Urban Mining,711230,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,711291,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,711210,FALSE,TRUE,"legacy HS92 7112.10 (gold waste and scrap), renumbered 7112.91 in HS2007"
-Batteries,Upstream,Battery Recycling & Urban Mining,711292,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,711220,FALSE,TRUE,"legacy HS92 7112.20 (platinum waste and scrap), renumbered 7112.92 in HS2007"
-Batteries,Upstream,Battery Recycling & Urban Mining,711299,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,711290,FALSE,TRUE,"legacy HS92 7112.90 (other precious-metal waste), split in HS2007"
-Batteries,Upstream,Battery Recycling & Urban Mining,854913,TRUE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,854914,TRUE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,854919,TRUE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,854921,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,854929,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,854931,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,854939,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,854991,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Battery Recycling & Urban Mining,854999,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Ores & Concentrates,260200,TRUE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
-Batteries,Upstream,Ores & Concentrates,260800,TRUE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
-Batteries,Upstream,Ores & Concentrates,261590,TRUE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
-Batteries,Midstream,Cathode Materials & Battery Precursors,281700,TRUE,FALSE,
-Batteries,Midstream,Cathode Materials & Battery Precursors,282010,TRUE,FALSE,
-Batteries,Midstream,Cathode Materials & Battery Precursors,282090,TRUE,FALSE,
-Batteries,Midstream,Cathode Materials & Battery Precursors,282530,TRUE,FALSE,
-Batteries,Midstream,Cathode Materials & Battery Precursors,282690,TRUE,FALSE,
-Batteries,Midstream,Cathode Materials & Battery Precursors,283529,TRUE,FALSE,
-Batteries,Midstream,Cathode Materials & Battery Precursors,283699,TRUE,FALSE,
-Batteries,Midstream,Cathode Materials & Battery Precursors,284290,TRUE,FALSE,
-Batteries,Midstream,Cathode Materials & Battery Precursors,285390,TRUE,FALSE,
-Batteries,Midstream,Cathode Materials & Battery Precursors,750110,FALSE,FALSE,
-Batteries,Upstream,Ores & Concentrates,260400,TRUE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
-Batteries,Upstream,Ores & Concentrates,260500,TRUE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
-Batteries,Midstream,Cobalt & Nickel Refining,282200,TRUE,FALSE,
-Batteries,Midstream,Cobalt & Nickel Refining,282540,TRUE,FALSE,
-Batteries,Midstream,Cobalt & Nickel Refining,283324,TRUE,FALSE,
-Batteries,Midstream,Cobalt & Nickel Refining,283329,TRUE,FALSE,
-Batteries,Midstream,Cobalt & Nickel Refining,750120,TRUE,FALSE,
-Batteries,Midstream,Cobalt & Nickel Refining,750210,TRUE,FALSE,
-Batteries,Upstream,Battery Recycling & Urban Mining,750300,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Midstream,Cobalt & Nickel Refining,750400,TRUE,FALSE,
-Batteries,Midstream,Cobalt & Nickel Refining,810520,TRUE,FALSE,
-Batteries,Upstream,Battery Recycling & Urban Mining,810530,TRUE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
-Batteries,Upstream,Ores & Concentrates,260300,TRUE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
-Batteries,Upstream,Ores & Concentrates,260600,TRUE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
-Batteries,Midstream,Current Collectors & Foils,281820,TRUE,FALSE,
-Batteries,Midstream,Current Collectors & Foils,283322,TRUE,FALSE,
-Batteries,Midstream,Current Collectors & Foils,741011,TRUE,FALSE,
-Batteries,Midstream,Current Collectors & Foils,741012,TRUE,FALSE,
-Batteries,Midstream,Current Collectors & Foils,741021,TRUE,FALSE,
-Batteries,Midstream,Current Collectors & Foils,741022,TRUE,FALSE,
-Batteries,Midstream,Current Collectors & Foils,760711,TRUE,FALSE,
-Batteries,Midstream,Current Collectors & Foils,760719,TRUE,FALSE,
-Batteries,Midstream,Electrolyte Materials,282739,TRUE,FALSE,
-Batteries,Midstream,Electrolyte Materials,292090,TRUE,FALSE,
-Batteries,Midstream,Electrolyte Materials,382499,TRUE,FALSE,
-Batteries,Upstream,Ores & Concentrates,253090,TRUE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
-Batteries,Midstream,Lithium Chemicals,280519,TRUE,FALSE,
-Batteries,Midstream,Lithium Chemicals,282520,TRUE,FALSE,
-Batteries,Midstream,Lithium Chemicals,283691,TRUE,FALSE,
-Batteries,Midstream,Separator Materials,390110,TRUE,FALSE,
-Batteries,Midstream,Separator Materials,390120,TRUE,FALSE,
-Batteries,Midstream,Separator Materials,390210,TRUE,FALSE,
-Batteries,Midstream,Separator Materials,390469,TRUE,FALSE,
-Batteries,Midstream,Separator Materials,392010,TRUE,FALSE,
-Batteries,Midstream,Separator Materials,392020,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,281290,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,440311,FALSE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,440312,FALSE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,440310,FALSE,TRUE,"legacy HS92 4403.10 (wood in the rough, preservative-treated), split in HS2017"
-Wind,Midstream,Array Cables & Collection Systems,681510,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,731210,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,740811,FALSE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,740819,FALSE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,741300,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,761410,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,761490,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,853210,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,854420,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,854442,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,854441,TRUE,TRUE,"legacy HS92 8544.41 (conductors <= 80V with connectors), merged into 8544.42 in HS2007"
-Wind,Midstream,Array Cables & Collection Systems,854451,TRUE,TRUE,"legacy HS92 8544.51 (conductors 80-1000V with connectors), merged into 8544.42 in HS2007"
-Wind,Midstream,Array Cables & Collection Systems,854449,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,854459,TRUE,TRUE,"legacy HS92 8544.59 (conductors 80-1000V without connectors), merged into 8544.49 in HS2007"
-Wind,Midstream,Array Cables & Collection Systems,854460,TRUE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,854470,FALSE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,854610,FALSE,FALSE,
-Wind,Midstream,Array Cables & Collection Systems,854620,TRUE,FALSE,
-Wind,Midstream,Nacelles & Drivetrains,848340,TRUE,FALSE,
-Wind,Midstream,Offshore Substructures,730511,TRUE,FALSE,
-Wind,Midstream,Permanent Magnets & Magnet Parts,850511,TRUE,FALSE,
-Wind,Midstream,Permanent Magnets & Magnet Parts,850519,TRUE,FALSE,
-Wind,Midstream,Permanent Magnets & Magnet Parts,850590,FALSE,FALSE,
-Wind,Midstream,Rare Earth Separation & Compounds,280530,TRUE,FALSE,
-Wind,Midstream,Rare Earth Separation & Compounds,284690,TRUE,FALSE,
-Wind,Midstream,Wind Blades,841290,TRUE,FALSE,
-Wind,Midstream,Wind Foundations,681091,TRUE,FALSE,
-Wind,Midstream,Wind Foundations,681099,TRUE,FALSE,
-Wind,Midstream,Wind Foundations,730840,FALSE,FALSE,
-Wind,Midstream,Wind Foundations,730890,TRUE,FALSE,
-Wind,Midstream,Wind Substations,850421,TRUE,FALSE,
-Wind,Midstream,Wind Substations,850422,TRUE,FALSE,
-Wind,Midstream,Wind Substations,850423,TRUE,FALSE,
-Wind,Midstream,Wind Substations,850431,TRUE,FALSE,
-Wind,Midstream,Wind Substations,850432,TRUE,FALSE,
-Wind,Midstream,Wind Substations,850433,TRUE,FALSE,
-Wind,Midstream,Wind Substations,850434,TRUE,FALSE,
-Wind,Midstream,Wind Substations,850490,TRUE,FALSE,
-Wind,Midstream,Wind Substations,853510,TRUE,FALSE,
-Wind,Midstream,Wind Substations,853521,TRUE,FALSE,
-Wind,Midstream,Wind Substations,853529,TRUE,FALSE,
-Wind,Midstream,Wind Substations,853530,TRUE,FALSE,
-Wind,Midstream,Wind Substations,853540,TRUE,FALSE,
-Wind,Midstream,Wind Substations,853590,TRUE,FALSE,
-Wind,Midstream,Wind Substations,853710,TRUE,FALSE,
-Wind,Midstream,Wind Substations,853720,TRUE,FALSE,
-Wind,Midstream,Wind Substations,902830,FALSE,FALSE,
-Wind,Midstream,Wind Substations,902890,FALSE,FALSE,
-Wind,Midstream,Wind Towers,730820,TRUE,FALSE,
-Wind,Midstream,Wind Turbines & Generators,850164,TRUE,FALSE,
-Wind,Midstream,Wind Turbines & Generators,850231,TRUE,FALSE,
-Wind,Midstream,Wind Turbines & Generators,850300,TRUE,FALSE,
-Oil,Upstream,Crude Oils,270900,TRUE,FALSE,
-Oil,Upstream,Fuel Oils: Heavy Oils,271019,TRUE,FALSE,
-Oil,Upstream,Fuel Oils: Light Oils,271012,TRUE,FALSE,
-Oil,Upstream,Petroleum Solids,271311,TRUE,FALSE,
-Oil,Upstream,Petroleum Solids,271312,TRUE,FALSE,
-Oil,Upstream,Petroleum Solids,271320,TRUE,FALSE,
-Oil,Upstream,Petroleum Solids,271390,TRUE,FALSE,
-Oil,Upstream,Waste Oils,271091,TRUE,FALSE,
-Oil,Upstream,Waste Oils,271099,TRUE,FALSE,
-Oil,Upstream,Fuel Oils: Heavy Oils,271000,TRUE,TRUE,"legacy HS92 2710.00 (petroleum oils other than crude), split from HS2002"
-Oil,Midstream,Drilling & Field Equipment,820713,TRUE,FALSE,
-Oil,Midstream,Drilling & Field Equipment,820719,TRUE,FALSE,
-Oil,Midstream,Drilling & Field Equipment,843041,TRUE,FALSE,
-Oil,Midstream,Drilling & Field Equipment,843049,TRUE,FALSE,
-Oil,Midstream,Drilling & Field Equipment,843139,TRUE,FALSE,
-Oil,Midstream,Drilling & Field Equipment,843143,TRUE,FALSE,
-Oil,Midstream,Drilling & Field Equipment,843149,TRUE,FALSE,
-Oil,Midstream,Drilling & Field Equipment,870520,TRUE,FALSE,
-Oil,Midstream,Drilling & Field Equipment,890520,TRUE,FALSE,
-Oil,Midstream,Drilling & Field Equipment,890590,TRUE,FALSE,
-Oil,Midstream,Metering Equipment,902810,TRUE,FALSE,
-Oil,Midstream,Pipelines,730411,FALSE,FALSE,
-Oil,Midstream,Pipelines,730419,FALSE,FALSE,
-Oil,Midstream,Pipelines,730410,FALSE,TRUE,"legacy HS92 7304.10 (seamless line pipe), split in HS2007"
-Oil,Midstream,Pipelines,730422,FALSE,FALSE,
-Oil,Midstream,Pipelines,730423,FALSE,FALSE,
-Oil,Midstream,Pipelines,730424,FALSE,FALSE,
-Oil,Midstream,Pipelines,730429,FALSE,FALSE,
-Oil,Midstream,Pipelines,730420,FALSE,TRUE,"legacy HS92 7304.20 (seamless drilling casing and tubing), split in HS2007"
-Oil,Midstream,Pipelines,730511,FALSE,FALSE,
-Oil,Midstream,Pipelines,730512,FALSE,FALSE,
-Oil,Midstream,Pipelines,730519,FALSE,FALSE,
-Oil,Midstream,Pipelines,730520,FALSE,FALSE,
-Oil,Midstream,Pipelines,730611,FALSE,FALSE,
-Oil,Midstream,Pipelines,730619,FALSE,FALSE,
-Oil,Midstream,Pipelines,730610,FALSE,TRUE,"legacy HS92 7306.10 (welded line pipe), split in HS2007"
-Oil,Midstream,Pipelines,730621,FALSE,FALSE,
-Oil,Midstream,Pipelines,730629,FALSE,FALSE,
-Oil,Midstream,Pipelines,730620,FALSE,TRUE,"legacy HS92 7306.20 (welded casing and tubing), split in HS2007"
-Oil,Midstream,Prime Movers & Generator Sets,850131,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850132,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850133,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850134,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850161,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850162,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850163,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850164,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850211,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850212,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850213,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850220,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850239,TRUE,FALSE,
-Oil,Midstream,Prime Movers & Generator Sets,850300,TRUE,FALSE,
-Oil,Midstream,Processing & Separation Equipment,841960,TRUE,FALSE,
-Oil,Midstream,Processing & Separation Equipment,842129,TRUE,FALSE,
-Oil,Midstream,Processing & Separation Equipment,842890,TRUE,FALSE,
-Oil,Midstream,Processing & Separation Equipment,847410,TRUE,FALSE,
-Oil,Midstream,Processing & Separation Equipment,847420,TRUE,FALSE,
-Oil,Midstream,Processing & Separation Equipment,847490,FALSE,FALSE,
-Oil,Midstream,Processing & Separation Equipment,847982,TRUE,FALSE,
-Oil,Midstream,Processing & Separation Equipment,847989,TRUE,FALSE,
-Oil,Midstream,Pumps & Compressors,841350,TRUE,FALSE,
-Oil,Midstream,Pumps & Compressors,841360,TRUE,FALSE,
-Oil,Midstream,Pumps & Compressors,841382,TRUE,FALSE,
-Oil,Midstream,Pumps & Compressors,841392,TRUE,FALSE,
-Oil,Midstream,Storage & Transport Equipment,731100,FALSE,FALSE,
-Oil,Midstream,Storage & Transport Equipment,890120,TRUE,FALSE,
-Solar,Midstream,Inverters & Power Electronics,850440,TRUE,FALSE,
-Solar,Midstream,Inverters & Power Electronics,850490,TRUE,FALSE,
-Solar,Midstream,Inverters & Power Electronics,853710,TRUE,FALSE,
-Solar,Midstream,Inverters & Power Electronics,853720,TRUE,FALSE,
-Solar,Midstream,Inverters & Power Electronics,854129,TRUE,FALSE,
-Solar,Midstream,Inverters & Power Electronics,854130,TRUE,FALSE,
-Solar,Midstream,Inverters & Power Electronics,854190,TRUE,FALSE,
-Solar,Midstream,Polysilicon & Wafers,280461,TRUE,FALSE,
-Solar,Midstream,Polysilicon & Wafers,381800,TRUE,FALSE,
-Solar,Midstream,"Racking, Mounting & Trackers",730890,TRUE,FALSE,
-Solar,Midstream,"Racking, Mounting & Trackers",761090,TRUE,FALSE,
-Solar,Midstream,"Racking, Mounting & Trackers",850131,TRUE,FALSE,
-Solar,Midstream,"Racking, Mounting & Trackers",850132,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,281290,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,440311,FALSE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,440312,FALSE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,440310,FALSE,TRUE,"legacy HS92 4403.10 (wood in the rough, preservative-treated), split in HS2017"
-Solar,Midstream,Solar Cabling & Connectors,681510,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,731210,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,740811,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,740819,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,741300,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,761410,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,761490,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,853210,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,854420,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,854442,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,854441,TRUE,TRUE,"legacy HS92 8544.41 (conductors <= 80V with connectors), merged into 8544.42 in HS2007"
-Solar,Midstream,Solar Cabling & Connectors,854451,TRUE,TRUE,"legacy HS92 8544.51 (conductors 80-1000V with connectors), merged into 8544.42 in HS2007"
-Solar,Midstream,Solar Cabling & Connectors,854449,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,854459,TRUE,TRUE,"legacy HS92 8544.59 (conductors 80-1000V without connectors), merged into 8544.49 in HS2007"
-Solar,Midstream,Solar Cabling & Connectors,854460,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,854470,FALSE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,854610,FALSE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,854620,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,902830,TRUE,FALSE,
-Solar,Midstream,Solar Cabling & Connectors,902890,FALSE,FALSE,
-Solar,Midstream,Solar Cell Manufacturing Equipment,848610,TRUE,FALSE,
-Solar,Midstream,Solar Cell Manufacturing Equipment,848620,TRUE,FALSE,
-Solar,Midstream,Solar Cell Manufacturing Equipment,848690,TRUE,FALSE,
-Solar,Midstream,Solar Cells,854142,TRUE,FALSE,
-Solar,Midstream,Solar Module Assembly & Inputs,700719,TRUE,FALSE,
-Solar,Midstream,Solar Module Assembly & Inputs,853690,TRUE,FALSE,
-Solar,Midstream,Solar Modules,850171,TRUE,FALSE,
-Solar,Midstream,Solar Modules,850172,TRUE,FALSE,
-Solar,Midstream,Solar Modules,850180,TRUE,FALSE,
-Solar,Midstream,Solar Modules,854143,TRUE,FALSE,
-Solar,Midstream,Solar Cells,854140,TRUE,TRUE,"legacy HS2017 8541.40 (PV cells and modules, also LEDs), split in HS2022; an upper bound"
-Solar,Midstream,Transformers,850421,TRUE,FALSE,
-Solar,Midstream,Transformers,850422,TRUE,FALSE,
-Solar,Midstream,Transformers,850423,TRUE,FALSE,
-Solar,Midstream,Transformers,850431,TRUE,FALSE,
-Solar,Midstream,Transformers,850432,TRUE,FALSE,
-Solar,Midstream,Transformers,850433,TRUE,FALSE,
-Solar,Midstream,Transformers,850434,TRUE,FALSE,
-Gas,Upstream,Butadiene,271114,TRUE,FALSE,
-Gas,Upstream,Butane,271113,TRUE,FALSE,
-Gas,Upstream,Butane,271129,TRUE,FALSE,
-Gas,Upstream,Ethane,271119,TRUE,FALSE,
-Gas,Upstream,Natural Gas,271111,TRUE,FALSE,
-Gas,Upstream,Natural Gas,271121,TRUE,FALSE,
-Gas,Upstream,Propane,271112,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,731100,FALSE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,820713,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,820719,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840211,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840212,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840219,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840220,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840290,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840310,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840390,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840410,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840420,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840490,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840510,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840590,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840681,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840682,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,840619,TRUE,TRUE,"legacy HS92 8406.19 (steam turbines, non-marine), split by output in HS96"
-Gas,Midstream,LNG/LPG Equipment,840690,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841111,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841112,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841181,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841182,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841191,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841199,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841350,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841360,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841382,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841392,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,841960,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,842129,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,842890,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,843041,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,843049,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,843139,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,843143,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,843149,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,847410,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,847420,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,847490,FALSE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,847982,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,847989,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,870520,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,890120,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,890520,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,890590,TRUE,FALSE,
-Gas,Midstream,LNG/LPG Equipment,902810,TRUE,FALSE,
-Gas,Midstream,Pipelines,730411,FALSE,FALSE,
-Gas,Midstream,Pipelines,730419,FALSE,FALSE,
-Gas,Midstream,Pipelines,730410,FALSE,TRUE,"legacy HS92 7304.10 (seamless line pipe), split in HS2007"
-Gas,Midstream,Pipelines,730422,FALSE,FALSE,
-Gas,Midstream,Pipelines,730423,FALSE,FALSE,
-Gas,Midstream,Pipelines,730424,FALSE,FALSE,
-Gas,Midstream,Pipelines,730429,FALSE,FALSE,
-Gas,Midstream,Pipelines,730420,FALSE,TRUE,"legacy HS92 7304.20 (seamless drilling casing and tubing), split in HS2007"
-Gas,Midstream,Pipelines,730511,FALSE,FALSE,
-Gas,Midstream,Pipelines,730512,FALSE,FALSE,
-Gas,Midstream,Pipelines,730519,FALSE,FALSE,
-Gas,Midstream,Pipelines,730520,FALSE,FALSE,
-Gas,Midstream,Pipelines,730611,FALSE,FALSE,
-Gas,Midstream,Pipelines,730619,FALSE,FALSE,
-Gas,Midstream,Pipelines,730610,FALSE,TRUE,"legacy HS92 7306.10 (welded line pipe), split in HS2007"
-Gas,Midstream,Pipelines,730621,FALSE,FALSE,
-Gas,Midstream,Pipelines,730629,FALSE,FALSE,
-Gas,Midstream,Pipelines,730620,FALSE,TRUE,"legacy HS92 7306.20 (welded casing and tubing), split in HS2007"
-Electric Grid,Upstream,Electricity,271600,TRUE,FALSE,
-Electric Grid,Midstream,Circuit Breakers,853521,TRUE,FALSE,
-Electric Grid,Midstream,Circuit Breakers,853529,TRUE,FALSE,
-Electric Grid,Midstream,Electrical Steel (GOES),722511,TRUE,FALSE,
-Electric Grid,Midstream,Electrical Steel (GOES),722519,TRUE,FALSE,
-Electric Grid,Midstream,Electrical Steel (GOES),722510,TRUE,TRUE,"legacy HS92 7225.10 (silicon-electrical steel, width >= 600mm), split in HS2007"
-Electric Grid,Midstream,Electrical Steel (GOES),722611,TRUE,FALSE,
-Electric Grid,Midstream,Electrical Steel (GOES),722619,TRUE,FALSE,
-Electric Grid,Midstream,Electrical Steel (GOES),722610,TRUE,TRUE,"legacy HS92 7226.10 (silicon-electrical steel, width < 600mm), split in HS2007"
-Electric Grid,Midstream,Grid Automation & Control Equipment,851762,TRUE,FALSE,
-Electric Grid,Midstream,Grid Automation & Control Equipment,903289,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,281290,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,440311,FALSE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,440312,FALSE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,440310,FALSE,TRUE,"legacy HS92 4403.10 (wood in the rough, preservative-treated), split in HS2017"
-Electric Grid,Midstream,Grid Cables & Accessories,681510,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,731210,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,740811,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,740819,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,741300,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,761410,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,761490,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,854420,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,854442,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,854441,TRUE,TRUE,"legacy HS92 8544.41 (conductors <= 80V with connectors), merged into 8544.42 in HS2007"
-Electric Grid,Midstream,Grid Cables & Accessories,854451,TRUE,TRUE,"legacy HS92 8544.51 (conductors 80-1000V with connectors), merged into 8544.42 in HS2007"
-Electric Grid,Midstream,Grid Cables & Accessories,854449,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,854459,TRUE,TRUE,"legacy HS92 8544.59 (conductors 80-1000V without connectors), merged into 8544.49 in HS2007"
-Electric Grid,Midstream,Grid Cables & Accessories,854460,TRUE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,854470,FALSE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,854610,FALSE,FALSE,
-Electric Grid,Midstream,Grid Cables & Accessories,854620,TRUE,FALSE,
-Electric Grid,Midstream,Grid Control Panels,853710,TRUE,FALSE,
-Electric Grid,Midstream,Grid Control Panels,853720,TRUE,FALSE,
-Electric Grid,Midstream,Grid Metering Equipment,902830,TRUE,FALSE,
-Electric Grid,Midstream,Grid Metering Equipment,902890,TRUE,FALSE,
-Electric Grid,Midstream,Other High-Voltage Apparatus,853590,TRUE,FALSE,
-Electric Grid,Midstream,Power Capacitors & Fuses,853210,TRUE,FALSE,
-Electric Grid,Midstream,Power Capacitors & Fuses,853510,TRUE,FALSE,
-Electric Grid,Midstream,Power Converters & Parts,850440,TRUE,FALSE,
-Electric Grid,Midstream,Power Converters & Parts,850490,TRUE,FALSE,
-Electric Grid,Midstream,Power Converters & Parts,854129,TRUE,FALSE,
-Electric Grid,Midstream,Power Converters & Parts,854130,TRUE,FALSE,
-Electric Grid,Midstream,Surge Arresters,853540,TRUE,FALSE,
-Electric Grid,Midstream,Switchgear,853530,TRUE,FALSE,
-Electric Grid,Midstream,Transformers,850421,TRUE,FALSE,
-Electric Grid,Midstream,Transformers,850422,TRUE,FALSE,
-Electric Grid,Midstream,Transformers,850423,TRUE,FALSE,
-Electric Grid,Midstream,Transformers,850431,TRUE,FALSE,
-Electric Grid,Midstream,Transformers,850432,TRUE,FALSE,
-Electric Grid,Midstream,Transformers,850433,TRUE,FALSE,
-Electric Grid,Midstream,Transformers,850434,TRUE,FALSE,
-Semiconductors,Midstream,Discrete Semiconductors,854110,TRUE,FALSE,
-Semiconductors,Midstream,Discrete Semiconductors,854121,TRUE,FALSE,
-Semiconductors,Midstream,Discrete Semiconductors,854129,TRUE,FALSE,
-Semiconductors,Midstream,Discrete Semiconductors,854130,TRUE,FALSE,
-Semiconductors,Midstream,Integrated Circuit Parts,854290,TRUE,FALSE,
-Semiconductors,Midstream,Integrated Circuits,854231,TRUE,FALSE,
-Semiconductors,Midstream,Integrated Circuits,854232,TRUE,FALSE,
-Semiconductors,Midstream,Integrated Circuits,854233,TRUE,FALSE,
-Semiconductors,Midstream,Integrated Circuits,854239,TRUE,FALSE,
-Semiconductors,Midstream,Piezoelectric Components,854160,TRUE,FALSE,
-Semiconductors,Midstream,Semiconductor Device Parts,854190,TRUE,FALSE,
-Semiconductors,Midstream,Semiconductor Equipment Parts,848690,TRUE,FALSE,
-Semiconductors,Midstream,Semiconductor Manufacturing Equipment,848610,TRUE,FALSE,
-Semiconductors,Midstream,Semiconductor Manufacturing Equipment,848620,TRUE,FALSE,
-Semiconductors,Midstream,Semiconductor Materials,280461,TRUE,FALSE,
-Semiconductors,Midstream,Semiconductor Materials,282560,TRUE,FALSE,
-Semiconductors,Midstream,Semiconductor Materials,381800,TRUE,FALSE,
-Semiconductors,Midstream,Semiconductor Materials,811269,FALSE,FALSE,
-Semiconductors,Midstream,Semiconductor Materials,811292,TRUE,FALSE,
-Semiconductors,Midstream,Semiconductor Materials,811299,FALSE,FALSE,
+tech,supply_chain,sub_sector,hs6,essential,legacy_hs,excluded,note
+Electric Vehicles,Midstream,Charging Infrastructure,850440,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): static converters of every kind (inverters, rectifiers, battery chargers, power supplies, UPS): general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 11.7% of the Comtrade 2024 Electric Vehicles Midstream basket (Atlas 2023: 11.6%)"
+Electric Vehicles,Midstream,Charging Infrastructure,850490,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Charging Infrastructure,853669,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Charging Infrastructure,853690,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): residual heading of low-voltage switching and connecting apparatus (connectors, terminals) n.e.s.: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 4.7% of the Atlas 2023 Electric Vehicles Midstream basket"
+Electric Vehicles,Midstream,Charging Infrastructure,853710,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): control and distribution boards and panels (<= 1000 V) for buildings, industry and machinery as well as power plants and networks: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 10.6% of the Comtrade 2024 Electric Vehicles Midstream basket (Atlas 2023: 9.8%)"
+Electric Vehicles,Midstream,Charging Infrastructure,853720,FALSE,FALSE,FALSE,
+Electric Vehicles,Midstream,Charging Infrastructure,854442,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): low-voltage (<= 1000 V) insulated conductors fitted with connectors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 4.9% of the Comtrade 2024 Electric Vehicles Midstream basket"
+Electric Vehicles,Midstream,Charging Infrastructure,854441,TRUE,TRUE,FALSE,"legacy HS92 8544.41 (conductors <= 80V with connectors), merged into 8544.42 in HS2007. kept with caveat (basket review 2026-10): low-voltage insulated conductors fitted with connectors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 4.6% of the Atlas 2023 Electric Vehicles Midstream basket"
+Electric Vehicles,Midstream,Charging Infrastructure,854451,TRUE,TRUE,FALSE,"legacy HS92 8544.51 (conductors 80-1000V with connectors), merged into 8544.42 in HS2007"
+Electric Vehicles,Midstream,Charging Infrastructure,854449,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): low-voltage (<= 1000 V) insulated conductors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 5.1% of the Comtrade 2024 Electric Vehicles Midstream basket (Atlas 2023: 4.6%)"
+Electric Vehicles,Midstream,Charging Infrastructure,854459,TRUE,TRUE,FALSE,"legacy HS92 8544.59 (conductors 80-1000V without connectors), merged into 8544.49 in HS2007"
+Electric Vehicles,Midstream,Charging Infrastructure,854460,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850110,FALSE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850120,FALSE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850131,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850132,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850133,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850134,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850140,FALSE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850151,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850152,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850153,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870124,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870240,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870340,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): non-plug-in hybrid cars (spark ignition and electric motor, 8703.40); counting them as electric vehicles is a definitional choice, since battery-electric (8703.80) and plug-in hybrid (8703.60/70) cars have their own codes. 15.0% of the Comtrade 2024 Electric Vehicles Midstream basket"
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870350,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): non-plug-in hybrid cars (compression ignition and electric motor, 8703.50); counting them as electric vehicles is a definitional choice, since battery-electric (8703.80) and plug-in hybrid (8703.60/70) cars have their own codes. 1.1% of the Comtrade 2024 Electric Vehicles Midstream basket"
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870360,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870370,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870380,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870390,TRUE,TRUE,FALSE,"legacy HS92 8703.90 (cars neither spark nor compression ignition, i.e. electric); BEVs moved to 8703.80 in HS2017, the code now holds fuel-cell cars"
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870460,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870490,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Vehicle Assembly,871160,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Electric Vehicle Assembly,871190,TRUE,TRUE,FALSE,"legacy HS92 8711.90 (other motorcycles incl. electric); electric two-wheelers moved to 8711.60 in HS2017, the code now holds side-cars"
+Electric Vehicles,Midstream,Motor & Generator Parts,850300,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): parts of electric motors and generators of any kind (excluded from Oil Midstream, where the use is incidental): general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 3.1% of the Comtrade 2024 Electric Vehicles Midstream basket (Atlas 2023: 3.0%)"
+Electric Vehicles,Midstream,Permanent Magnets & Magnet Parts,850511,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Permanent Magnets & Magnet Parts,850519,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Permanent Magnets & Magnet Parts,850590,FALSE,FALSE,FALSE,
+Electric Vehicles,Midstream,Rare Earth Separation & Compounds,280530,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Rare Earth Separation & Compounds,284690,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Vehicle Batteries & Packs,850760,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Vehicle Batteries & Packs,850790,TRUE,FALSE,FALSE,
+Electric Vehicles,Midstream,Vehicle Wiring Harnesses,854430,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): wiring sets of a kind used in all vehicles, aircraft and ships: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 5.8% of the Atlas 2023 Electric Vehicles Midstream basket"
+Nuclear,Midstream,Nuclear Fuel Cycle,284410,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Nuclear Fuel Cycle,284420,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Nuclear Fuel Cycle,284450,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Reactor Components,840110,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Reactor Components,840120,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Reactor Components,840130,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Reactor Components,840140,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840211,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840212,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840219,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840220,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840290,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840410,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840420,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840490,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840681,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840682,TRUE,FALSE,FALSE,
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840619,TRUE,TRUE,FALSE,"legacy HS92 8406.19 (steam turbines, non-marine), split by output in HS96"
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840690,TRUE,FALSE,FALSE,
+Coal,Upstream,Coal,270111,TRUE,FALSE,FALSE,
+Coal,Upstream,Coal,270112,TRUE,FALSE,FALSE,
+Coal,Upstream,Coal,270119,TRUE,FALSE,FALSE,
+Coal,Upstream,Coal,270120,TRUE,FALSE,FALSE,
+Coal,Upstream,Lignite,270210,TRUE,FALSE,FALSE,
+Coal,Upstream,Lignite,270220,TRUE,FALSE,FALSE,
+Coal,Midstream,Ash Handling,840290,TRUE,FALSE,FALSE,
+Coal,Midstream,Ash Handling,840410,TRUE,FALSE,FALSE,
+Coal,Midstream,Ash Handling,840420,TRUE,FALSE,FALSE,
+Coal,Midstream,Ash Handling,840490,TRUE,FALSE,FALSE,
+Coal,Midstream,Ash Handling,840510,TRUE,FALSE,FALSE,
+Coal,Midstream,Ash Handling,840590,TRUE,FALSE,FALSE,
+Coal,Midstream,Ash Handling,840681,TRUE,FALSE,FALSE,
+Coal,Midstream,Ash Handling,840682,TRUE,FALSE,FALSE,
+Coal,Midstream,Ash Handling,840619,TRUE,TRUE,FALSE,"legacy HS92 8406.19 (steam turbines, non-marine), split by output in HS96"
+Coal,Midstream,Ash Handling,840690,TRUE,FALSE,FALSE,
+Coal,Midstream,Ash Handling,841111,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+Coal,Midstream,Ash Handling,841112,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+Coal,Midstream,Ash Handling,841181,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): gas turbines and their parts, fired by gas or oil; not coal-plant equipment (kept in Gas)"
+Coal,Midstream,Ash Handling,841182,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): gas turbines and their parts, fired by gas or oil; not coal-plant equipment (kept in Gas)"
+Coal,Midstream,Ash Handling,841191,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+Coal,Midstream,Ash Handling,841199,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): gas turbines and their parts, fired by gas or oil; not coal-plant equipment (kept in Gas)"
+Coal,Midstream,Boilers & Burners,840211,TRUE,FALSE,FALSE,
+Coal,Midstream,Boilers & Burners,840212,TRUE,FALSE,FALSE,
+Coal,Midstream,Boilers & Burners,840219,TRUE,FALSE,FALSE,
+Coal,Midstream,Boilers & Burners,840220,TRUE,FALSE,FALSE,
+Coal,Midstream,Boilers & Burners,840310,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): central-heating boilers for buildings (the heading excludes the 8402 steam boilers of power plants), mainly gas- and oil-fired"
+Coal,Midstream,Boilers & Burners,840390,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): central-heating boilers for buildings (the heading excludes the 8402 steam boilers of power plants), mainly gas- and oil-fired"
+Coal,Midstream,Coke and Semicoke,270400,TRUE,FALSE,FALSE,
+Batteries,Upstream,Ores & Concentrates,250410,TRUE,FALSE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
+Batteries,Midstream,Anode Materials,280300,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): carbon black, used mainly to reinforce rubber (tyres); conductive-additive use is minor"
+Batteries,Midstream,Anode Materials,280461,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): polysilicon (>= 99.99% Si), used mainly for PV and semiconductors; kept in the Solar and Semiconductors baskets"
+Batteries,Midstream,Anode Materials,380110,TRUE,FALSE,FALSE,
+Batteries,Midstream,Anode Materials,380190,TRUE,FALSE,FALSE,
+Batteries,Midstream,Battery Cells,850760,TRUE,FALSE,FALSE,
+Batteries,Midstream,"Battery Packs, Parts & BMS",850780,FALSE,FALSE,FALSE,
+Batteries,Midstream,"Battery Packs, Parts & BMS",850790,TRUE,FALSE,FALSE,
+Batteries,Upstream,Battery Recycling & Urban Mining,262019,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): slag and ash containing mainly zinc, copper or aluminium: not battery metals. Earlier note: moved from Midstream: metal-bearing slag/ash, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,262030,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): slag and ash containing mainly zinc, copper or aluminium: not battery metals. Earlier note: moved from Midstream: metal-bearing slag/ash, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,262040,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): slag and ash containing mainly zinc, copper or aluminium: not battery metals. Earlier note: moved from Midstream: metal-bearing slag/ash, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,262099,TRUE,FALSE,FALSE,"moved from Midstream: metal-bearing slag/ash, a secondary raw material. kept with caveat: residual heading (other metal-bearing slag and ash), includes battery-metal residues"
+Batteries,Upstream,Battery Recycling & Urban Mining,262090,TRUE,TRUE,FALSE,"legacy HS92 2620.90 (other metal-bearing slag and ash), split in HS2007. kept with caveat: residual heading (other metal-bearing slag and ash), includes battery-metal residues"
+Batteries,Upstream,Battery Recycling & Urban Mining,711230,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials. Earlier note: moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,711291,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials. Earlier note: moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,711210,FALSE,TRUE,TRUE,"excluded (basket review 2026-10): precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials. Earlier note: legacy HS92 7112.10 (gold waste and scrap), renumbered 7112.91 in HS2007"
+Batteries,Upstream,Battery Recycling & Urban Mining,711292,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials. Earlier note: moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,711220,FALSE,TRUE,TRUE,"excluded (basket review 2026-10): precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials. Earlier note: legacy HS92 7112.20 (platinum waste and scrap), renumbered 7112.92 in HS2007"
+Batteries,Upstream,Battery Recycling & Urban Mining,711299,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials. Earlier note: moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,711290,FALSE,TRUE,TRUE,"excluded (basket review 2026-10): precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials. Earlier note: legacy HS92 7112.90 (other precious-metal waste), split in HS2007"
+Batteries,Upstream,Battery Recycling & Urban Mining,854913,TRUE,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,854914,TRUE,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,854919,TRUE,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,854921,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): general electronic waste; battery waste is 8549.11-19, which stays. Earlier note: moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,854929,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): general electronic waste; battery waste is 8549.11-19, which stays. Earlier note: moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,854931,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): general electronic waste; battery waste is 8549.11-19, which stays. Earlier note: moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,854939,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): general electronic waste; battery waste is 8549.11-19, which stays. Earlier note: moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,854991,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): general electronic waste; battery waste is 8549.11-19, which stays. Earlier note: moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Battery Recycling & Urban Mining,854999,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): general electronic waste; battery waste is 8549.11-19, which stays. Earlier note: moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Ores & Concentrates,260200,TRUE,FALSE,FALSE,moved from Midstream: ore or concentrate (extraction stage). kept with caveat: steel is the larger use of manganese ore; kept as a core battery mineral
+Batteries,Upstream,Ores & Concentrates,260800,TRUE,FALSE,TRUE,excluded (basket review 2026-10): zinc ores: zinc goes mainly into galvanising; not a lithium-ion input. Earlier note: moved from Midstream: ore or concentrate (extraction stage)
+Batteries,Upstream,Ores & Concentrates,261590,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): niobium, tantalum and vanadium ores: used mainly in steel alloys and capacitors. Earlier note: moved from Midstream: ore or concentrate (extraction stage)"
+Batteries,Midstream,Cathode Materials & Battery Precursors,281700,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): zinc oxide, used mainly in rubber and ceramics; not a lithium-ion cathode material"
+Batteries,Midstream,Cathode Materials & Battery Precursors,282010,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cathode Materials & Battery Precursors,282090,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cathode Materials & Battery Precursors,282530,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cathode Materials & Battery Precursors,282690,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cathode Materials & Battery Precursors,283529,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cathode Materials & Battery Precursors,283699,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cathode Materials & Battery Precursors,284290,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cathode Materials & Battery Precursors,285390,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cathode Materials & Battery Precursors,750110,FALSE,FALSE,FALSE,
+Batteries,Upstream,Ores & Concentrates,260400,TRUE,FALSE,FALSE,moved from Midstream: ore or concentrate (extraction stage). kept with caveat: stainless steel is the larger use of nickel ore; kept as a core battery mineral
+Batteries,Upstream,Ores & Concentrates,260500,TRUE,FALSE,FALSE,moved from Midstream: ore or concentrate (extraction stage)
+Batteries,Midstream,Cobalt & Nickel Refining,282200,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cobalt & Nickel Refining,282540,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cobalt & Nickel Refining,283324,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cobalt & Nickel Refining,283329,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cobalt & Nickel Refining,750120,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cobalt & Nickel Refining,750210,TRUE,FALSE,FALSE,kept with caveat: unwrought nickel also goes into alloys and plating
+Batteries,Upstream,Battery Recycling & Urban Mining,750300,FALSE,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Midstream,Cobalt & Nickel Refining,750400,TRUE,FALSE,FALSE,
+Batteries,Midstream,Cobalt & Nickel Refining,810520,TRUE,FALSE,FALSE,
+Batteries,Upstream,Battery Recycling & Urban Mining,810530,TRUE,FALSE,FALSE,"moved from Midstream: waste and scrap, a secondary raw material"
+Batteries,Upstream,Ores & Concentrates,260300,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): copper ores: copper goes mainly into wiring, construction and equipment, batteries are a minor use. It was 77.7% of the Comtrade 2024 Batteries Upstream basket (Atlas 2023: 55.2%), so the cell measured copper mining. Earlier note: moved from Midstream: ore or concentrate (extraction stage)"
+Batteries,Upstream,Ores & Concentrates,260600,TRUE,FALSE,TRUE,excluded (basket review 2026-10): bauxite: feedstock for alumina and aluminium. Earlier note: moved from Midstream: ore or concentrate (extraction stage)
+Batteries,Midstream,Current Collectors & Foils,281820,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): aluminium oxide (alumina), used mainly for aluminium smelting"
+Batteries,Midstream,Current Collectors & Foils,283322,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): aluminium sulphate, used mainly in water treatment and papermaking"
+Batteries,Midstream,Current Collectors & Foils,741011,TRUE,FALSE,FALSE,
+Batteries,Midstream,Current Collectors & Foils,741012,TRUE,FALSE,FALSE,
+Batteries,Midstream,Current Collectors & Foils,741021,TRUE,FALSE,FALSE,
+Batteries,Midstream,Current Collectors & Foils,741022,TRUE,FALSE,FALSE,
+Batteries,Midstream,Current Collectors & Foils,760711,TRUE,FALSE,FALSE,kept with caveat: thin aluminium foil is mostly packaging foil; battery cathode foil is a part of it
+Batteries,Midstream,Current Collectors & Foils,760719,TRUE,FALSE,FALSE,kept with caveat: thin aluminium foil is mostly packaging foil; battery cathode foil is a part of it
+Batteries,Midstream,Electrolyte Materials,282739,TRUE,FALSE,FALSE,
+Batteries,Midstream,Electrolyte Materials,292090,TRUE,FALSE,FALSE,
+Batteries,Midstream,Electrolyte Materials,382499,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): residual heading (chemical products and preparations n.e.s.); battery electrolyte is a minor part of it. $43.1bn, 12.1% of the Comtrade 2024 Batteries Midstream basket"
+Batteries,Upstream,Ores & Concentrates,253090,TRUE,FALSE,FALSE,moved from Midstream: ore or concentrate (extraction stage). kept with caveat: residual heading (mineral substances n.e.s.) whose trade is led by lithium minerals (spodumene) but holds other minerals too
+Batteries,Midstream,Lithium Chemicals,280519,TRUE,FALSE,FALSE,
+Batteries,Midstream,Lithium Chemicals,282520,TRUE,FALSE,FALSE,
+Batteries,Midstream,Lithium Chemicals,283691,TRUE,FALSE,FALSE,
+Batteries,Midstream,Separator Materials,390110,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): polyethylene or polypropylene in primary forms: commodity resins used mainly for packaging and consumer plastics, not battery separators. The three codes were $68.9bn, 19.4% of the Comtrade 2024 basket (Atlas 2023: 20.3%)"
+Batteries,Midstream,Separator Materials,390120,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): polyethylene or polypropylene in primary forms: commodity resins used mainly for packaging and consumer plastics, not battery separators. The three codes were $68.9bn, 19.4% of the Comtrade 2024 basket (Atlas 2023: 20.3%)"
+Batteries,Midstream,Separator Materials,390210,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): polyethylene or polypropylene in primary forms: commodity resins used mainly for packaging and consumer plastics, not battery separators. The three codes were $68.9bn, 19.4% of the Comtrade 2024 basket (Atlas 2023: 20.3%)"
+Batteries,Midstream,Separator Materials,390469,TRUE,FALSE,FALSE,
+Batteries,Midstream,Separator Materials,392010,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): polyethylene or polypropylene film and sheet, mainly packaging film; separator film is a small part. Same reason as the 3901/3902 resins"
+Batteries,Midstream,Separator Materials,392020,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): polyethylene or polypropylene film and sheet, mainly packaging film; separator film is a small part. Same reason as the 3901/3902 resins"
+Wind,Midstream,Array Cables & Collection Systems,281290,TRUE,FALSE,FALSE,
+Wind,Midstream,Array Cables & Collection Systems,440311,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid"
+Wind,Midstream,Array Cables & Collection Systems,440312,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid"
+Wind,Midstream,Array Cables & Collection Systems,440310,FALSE,TRUE,TRUE,"excluded (basket review 2026-10): preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid. Earlier note: legacy HS92 4403.10 (wood in the rough, preservative-treated), split in HS2017"
+Wind,Midstream,Array Cables & Collection Systems,681510,TRUE,FALSE,FALSE,
+Wind,Midstream,Array Cables & Collection Systems,731210,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): stranded steel wire and ropes: lifting, construction and mining"
+Wind,Midstream,Array Cables & Collection Systems,740811,FALSE,FALSE,FALSE,"kept with caveat (basket review 2026-10): refined copper wire over 6 mm (wire rod), the feedstock of all copper wire and cable: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 4.7% of the Comtrade 2024 Wind Midstream basket (Atlas 2023: 5.1%)"
+Wind,Midstream,Array Cables & Collection Systems,740819,FALSE,FALSE,FALSE,
+Wind,Midstream,Array Cables & Collection Systems,741300,TRUE,FALSE,FALSE,
+Wind,Midstream,Array Cables & Collection Systems,761410,TRUE,FALSE,FALSE,
+Wind,Midstream,Array Cables & Collection Systems,761490,TRUE,FALSE,FALSE,
+Wind,Midstream,Array Cables & Collection Systems,853210,TRUE,FALSE,FALSE,
+Wind,Midstream,Array Cables & Collection Systems,854420,TRUE,FALSE,TRUE,excluded (basket review 2026-10): coaxial cable: telecommunications and broadcasting
+Wind,Midstream,Array Cables & Collection Systems,854442,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): low-voltage (<= 1000 V) insulated conductors fitted with connectors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 9.9% of the Comtrade 2024 Wind Midstream basket"
+Wind,Midstream,Array Cables & Collection Systems,854441,TRUE,TRUE,FALSE,"legacy HS92 8544.41 (conductors <= 80V with connectors), merged into 8544.42 in HS2007. kept with caveat (basket review 2026-10): low-voltage insulated conductors fitted with connectors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 9.7% of the Atlas 2023 Wind Midstream basket"
+Wind,Midstream,Array Cables & Collection Systems,854451,TRUE,TRUE,FALSE,"legacy HS92 8544.51 (conductors 80-1000V with connectors), merged into 8544.42 in HS2007"
+Wind,Midstream,Array Cables & Collection Systems,854449,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): low-voltage (<= 1000 V) insulated conductors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 10.1% of the Comtrade 2024 Wind Midstream basket (Atlas 2023: 9.8%)"
+Wind,Midstream,Array Cables & Collection Systems,854459,TRUE,TRUE,FALSE,"legacy HS92 8544.59 (conductors 80-1000V without connectors), merged into 8544.49 in HS2007"
+Wind,Midstream,Array Cables & Collection Systems,854460,TRUE,FALSE,FALSE,
+Wind,Midstream,Array Cables & Collection Systems,854470,FALSE,FALSE,TRUE,excluded (basket review 2026-10): optical fibre cables: telecommunications
+Wind,Midstream,Array Cables & Collection Systems,854610,FALSE,FALSE,FALSE,
+Wind,Midstream,Array Cables & Collection Systems,854620,TRUE,FALSE,FALSE,
+Wind,Midstream,Nacelles & Drivetrains,848340,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): gears, gearboxes and speed changers of any kind: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 5.1% of the Comtrade 2024 Wind Midstream basket (Atlas 2023: 5.5%)"
+Wind,Midstream,Offshore Substructures,730511,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): line pipe of a kind used for oil or gas pipelines, by the heading's own wording; kept in Oil and Gas"
+Wind,Midstream,Permanent Magnets & Magnet Parts,850511,TRUE,FALSE,FALSE,
+Wind,Midstream,Permanent Magnets & Magnet Parts,850519,TRUE,FALSE,FALSE,
+Wind,Midstream,Permanent Magnets & Magnet Parts,850590,FALSE,FALSE,FALSE,
+Wind,Midstream,Rare Earth Separation & Compounds,280530,TRUE,FALSE,FALSE,
+Wind,Midstream,Rare Earth Separation & Compounds,284690,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Blades,841290,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Foundations,681091,TRUE,FALSE,TRUE,excluded (basket review 2026-10): precast concrete components and other concrete articles: construction
+Wind,Midstream,Wind Foundations,681099,TRUE,FALSE,TRUE,excluded (basket review 2026-10): precast concrete components and other concrete articles: construction
+Wind,Midstream,Wind Foundations,730840,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): scaffolding, shuttering and propping equipment: construction"
+Wind,Midstream,Wind Foundations,730890,TRUE,FALSE,FALSE,"kept with caveat: residual heading (steel structures n.e.s.), led by construction; wind tower sections and steelwork are classified here"
+Wind,Midstream,Wind Substations,850421,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,850422,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,850423,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,850431,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,850432,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,850433,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,850434,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,850490,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,853510,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,853521,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,853529,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,853530,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,853540,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,853590,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,853710,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): control and distribution boards and panels (<= 1000 V) for buildings, industry and machinery as well as power plants and networks: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 21.2% of the Comtrade 2024 Wind Midstream basket (Atlas 2023: 20.7%)"
+Wind,Midstream,Wind Substations,853720,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,902830,FALSE,FALSE,FALSE,
+Wind,Midstream,Wind Substations,902890,FALSE,FALSE,FALSE,
+Wind,Midstream,Wind Towers,730820,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Turbines & Generators,850164,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Turbines & Generators,850231,TRUE,FALSE,FALSE,
+Wind,Midstream,Wind Turbines & Generators,850300,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): parts of electric motors and generators of any kind (excluded from Oil Midstream, where the use is incidental): general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 6.2% of the Comtrade 2024 Wind Midstream basket (Atlas 2023: 6.3%)"
+Oil,Upstream,Crude Oils,270900,TRUE,FALSE,FALSE,
+Oil,Upstream,Fuel Oils: Heavy Oils,271019,TRUE,FALSE,FALSE,
+Oil,Upstream,Fuel Oils: Light Oils,271012,TRUE,FALSE,FALSE,
+Oil,Upstream,Petroleum Solids,271311,TRUE,FALSE,FALSE,
+Oil,Upstream,Petroleum Solids,271312,TRUE,FALSE,FALSE,
+Oil,Upstream,Petroleum Solids,271320,TRUE,FALSE,FALSE,
+Oil,Upstream,Petroleum Solids,271390,TRUE,FALSE,FALSE,
+Oil,Upstream,Waste Oils,271091,TRUE,FALSE,FALSE,
+Oil,Upstream,Waste Oils,271099,TRUE,FALSE,FALSE,
+Oil,Upstream,Fuel Oils: Heavy Oils,271000,TRUE,TRUE,FALSE,"legacy HS92 2710.00 (petroleum oils other than crude), split from HS2002"
+Oil,Midstream,Drilling & Field Equipment,820713,TRUE,FALSE,FALSE,
+Oil,Midstream,Drilling & Field Equipment,820719,TRUE,FALSE,FALSE,
+Oil,Midstream,Drilling & Field Equipment,843041,TRUE,FALSE,FALSE,
+Oil,Midstream,Drilling & Field Equipment,843049,TRUE,FALSE,FALSE,
+Oil,Midstream,Drilling & Field Equipment,843139,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): parts of lifting, handling and conveying machinery (heading 8428: lifts, conveyors)"
+Oil,Midstream,Drilling & Field Equipment,843143,TRUE,FALSE,FALSE,
+Oil,Midstream,Drilling & Field Equipment,843149,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): parts of cranes and earth-moving machinery (8426, 8429, 8430 other than boring machinery, whose parts are 8431.43): construction and mining"
+Oil,Midstream,Drilling & Field Equipment,870520,TRUE,FALSE,FALSE,
+Oil,Midstream,Drilling & Field Equipment,890520,TRUE,FALSE,FALSE,
+Oil,Midstream,Drilling & Field Equipment,890590,TRUE,FALSE,FALSE,
+Oil,Midstream,Metering Equipment,902810,TRUE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730411,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730419,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730410,FALSE,TRUE,FALSE,"legacy HS92 7304.10 (seamless line pipe), split in HS2007"
+Oil,Midstream,Pipelines,730422,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730423,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730424,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730429,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730420,FALSE,TRUE,FALSE,"legacy HS92 7304.20 (seamless drilling casing and tubing), split in HS2007"
+Oil,Midstream,Pipelines,730511,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730512,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730519,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730520,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730611,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730619,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730610,FALSE,TRUE,FALSE,"legacy HS92 7306.10 (welded line pipe), split in HS2007"
+Oil,Midstream,Pipelines,730621,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730629,FALSE,FALSE,FALSE,
+Oil,Midstream,Pipelines,730620,FALSE,TRUE,FALSE,"legacy HS92 7306.20 (welded casing and tubing), split in HS2007"
+Oil,Midstream,Prime Movers & Generator Sets,850131,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): DC electric motors: general-purpose motors, not oil-sector prime movers"
+Oil,Midstream,Prime Movers & Generator Sets,850132,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): DC electric motors: general-purpose motors, not oil-sector prime movers"
+Oil,Midstream,Prime Movers & Generator Sets,850133,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): DC electric motors: general-purpose motors, not oil-sector prime movers"
+Oil,Midstream,Prime Movers & Generator Sets,850134,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): DC electric motors: general-purpose motors, not oil-sector prime movers"
+Oil,Midstream,Prime Movers & Generator Sets,850161,TRUE,FALSE,FALSE,
+Oil,Midstream,Prime Movers & Generator Sets,850162,TRUE,FALSE,FALSE,
+Oil,Midstream,Prime Movers & Generator Sets,850163,TRUE,FALSE,FALSE,
+Oil,Midstream,Prime Movers & Generator Sets,850164,TRUE,FALSE,FALSE,
+Oil,Midstream,Prime Movers & Generator Sets,850211,TRUE,FALSE,FALSE,
+Oil,Midstream,Prime Movers & Generator Sets,850212,TRUE,FALSE,FALSE,
+Oil,Midstream,Prime Movers & Generator Sets,850213,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): diesel generating sets over 375 kVA, used for backup and off-grid power in every sector: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 5.4% of the Comtrade 2024 Oil Midstream basket (Atlas 2023: 4.6%)"
+Oil,Midstream,Prime Movers & Generator Sets,850220,TRUE,FALSE,FALSE,
+Oil,Midstream,Prime Movers & Generator Sets,850239,TRUE,FALSE,FALSE,
+Oil,Midstream,Prime Movers & Generator Sets,850300,TRUE,FALSE,TRUE,excluded (basket review 2026-10): parts of electric motors and generators: general electrical machinery
+Oil,Midstream,Processing & Separation Equipment,841960,TRUE,FALSE,FALSE,
+Oil,Midstream,Processing & Separation Equipment,842129,TRUE,FALSE,TRUE,excluded (basket review 2026-10): filtering or purifying machinery for liquids n.e.s.: water treatment and general process industry
+Oil,Midstream,Processing & Separation Equipment,842890,TRUE,FALSE,TRUE,excluded (basket review 2026-10): lifting and handling machinery n.e.s.: general materials handling
+Oil,Midstream,Processing & Separation Equipment,847410,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): machines for sorting, screening or washing earth, stone and ores: mining, quarrying and construction"
+Oil,Midstream,Processing & Separation Equipment,847420,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): machines for crushing or grinding earth, stone and ores: mining, quarrying and construction"
+Oil,Midstream,Processing & Separation Equipment,847490,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): parts of machines for sorting, crushing or grinding earth, stone and ores: mining, quarrying and construction"
+Oil,Midstream,Processing & Separation Equipment,847982,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): mixing, kneading and crushing machinery: general process industry"
+Oil,Midstream,Processing & Separation Equipment,847989,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): residual heading (machines with individual functions n.e.s.), general industrial machinery"
+Oil,Midstream,Pumps & Compressors,841350,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): residual heading of reciprocating positive-displacement pumps for liquids, used across industry: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 7.7% of the Comtrade 2024 Oil Midstream basket (Atlas 2023: 7.4%)"
+Oil,Midstream,Pumps & Compressors,841360,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): residual heading of rotary positive-displacement pumps for liquids, used across industry: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 6.5% of the Comtrade 2024 Oil Midstream basket (Atlas 2023: 6.0%)"
+Oil,Midstream,Pumps & Compressors,841382,TRUE,FALSE,FALSE,
+Oil,Midstream,Pumps & Compressors,841392,TRUE,FALSE,FALSE,
+Oil,Midstream,Storage & Transport Equipment,731100,FALSE,FALSE,FALSE,
+Oil,Midstream,Storage & Transport Equipment,890120,TRUE,FALSE,FALSE,
+Solar,Midstream,Inverters & Power Electronics,850440,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): static converters of every kind (inverters, rectifiers, battery chargers, power supplies, UPS): general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 19.7% of the Comtrade 2024 Solar Midstream basket (Atlas 2023: 15.9%)"
+Solar,Midstream,Inverters & Power Electronics,850490,TRUE,FALSE,FALSE,
+Solar,Midstream,Inverters & Power Electronics,853710,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): control and distribution boards and panels (<= 1000 V) for buildings, industry and machinery as well as power plants and networks: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 17.9% of the Comtrade 2024 Solar Midstream basket (Atlas 2023: 13.4%)"
+Solar,Midstream,Inverters & Power Electronics,853720,TRUE,FALSE,FALSE,
+Solar,Midstream,Inverters & Power Electronics,854129,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): power transistors (other than photosensitive) of every use: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 4.7% of the Atlas 2023 Solar Midstream basket"
+Solar,Midstream,Inverters & Power Electronics,854130,TRUE,FALSE,FALSE,
+Solar,Midstream,Inverters & Power Electronics,854190,TRUE,FALSE,FALSE,
+Solar,Midstream,Polysilicon & Wafers,280461,TRUE,FALSE,FALSE,
+Solar,Midstream,Polysilicon & Wafers,381800,TRUE,FALSE,FALSE,
+Solar,Midstream,"Racking, Mounting & Trackers",730890,TRUE,FALSE,FALSE,"kept with caveat: residual heading (steel structures n.e.s.), led by construction; solar mounting structures are classified here"
+Solar,Midstream,"Racking, Mounting & Trackers",761090,TRUE,FALSE,FALSE,"kept with caveat: aluminium structures n.e.s., led by construction; solar mounting structures are classified here"
+Solar,Midstream,"Racking, Mounting & Trackers",850131,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): DC electric motors: general-purpose (appliances, vehicles); tracker drives are a minor use"
+Solar,Midstream,"Racking, Mounting & Trackers",850132,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): DC electric motors: general-purpose (appliances, vehicles); tracker drives are a minor use"
+Solar,Midstream,Solar Cabling & Connectors,281290,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cabling & Connectors,440311,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid"
+Solar,Midstream,Solar Cabling & Connectors,440312,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid"
+Solar,Midstream,Solar Cabling & Connectors,440310,FALSE,TRUE,TRUE,"excluded (basket review 2026-10): preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid. Earlier note: legacy HS92 4403.10 (wood in the rough, preservative-treated), split in HS2017"
+Solar,Midstream,Solar Cabling & Connectors,681510,TRUE,FALSE,TRUE,excluded (basket review 2026-10): non-electrical articles of graphite or carbon (carbon fibre until HS2022): no solar use (kept in Wind for blades)
+Solar,Midstream,Solar Cabling & Connectors,731210,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): stranded steel wire and ropes: lifting, construction and mining"
+Solar,Midstream,Solar Cabling & Connectors,740811,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): refined copper wire over 6 mm (wire rod), the feedstock of all copper wire and cable: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 3.9% of the Comtrade 2024 Solar Midstream basket (Atlas 2023: 3.3%)"
+Solar,Midstream,Solar Cabling & Connectors,740819,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cabling & Connectors,741300,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cabling & Connectors,761410,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cabling & Connectors,761490,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cabling & Connectors,853210,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cabling & Connectors,854420,TRUE,FALSE,TRUE,excluded (basket review 2026-10): coaxial cable: telecommunications and broadcasting
+Solar,Midstream,Solar Cabling & Connectors,854442,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): low-voltage (<= 1000 V) insulated conductors fitted with connectors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 8.4% of the Comtrade 2024 Solar Midstream basket"
+Solar,Midstream,Solar Cabling & Connectors,854441,TRUE,TRUE,FALSE,"legacy HS92 8544.41 (conductors <= 80V with connectors), merged into 8544.42 in HS2007. kept with caveat (basket review 2026-10): low-voltage insulated conductors fitted with connectors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 6.3% of the Atlas 2023 Solar Midstream basket"
+Solar,Midstream,Solar Cabling & Connectors,854451,TRUE,TRUE,FALSE,"legacy HS92 8544.51 (conductors 80-1000V with connectors), merged into 8544.42 in HS2007"
+Solar,Midstream,Solar Cabling & Connectors,854449,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): low-voltage (<= 1000 V) insulated conductors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 8.5% of the Comtrade 2024 Solar Midstream basket (Atlas 2023: 6.3%)"
+Solar,Midstream,Solar Cabling & Connectors,854459,TRUE,TRUE,FALSE,"legacy HS92 8544.59 (conductors 80-1000V without connectors), merged into 8544.49 in HS2007"
+Solar,Midstream,Solar Cabling & Connectors,854460,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cabling & Connectors,854470,FALSE,FALSE,TRUE,excluded (basket review 2026-10): optical fibre cables: telecommunications
+Solar,Midstream,Solar Cabling & Connectors,854610,FALSE,FALSE,FALSE,
+Solar,Midstream,Solar Cabling & Connectors,854620,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cabling & Connectors,902830,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cabling & Connectors,902890,FALSE,FALSE,FALSE,
+Solar,Midstream,Solar Cell Manufacturing Equipment,848610,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cell Manufacturing Equipment,848620,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cell Manufacturing Equipment,848690,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cells,854142,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Module Assembly & Inputs,700719,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Module Assembly & Inputs,853690,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): residual heading of low-voltage switching and connecting apparatus (connectors, terminals) n.e.s.: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 6.5% of the Atlas 2023 Solar Midstream basket"
+Solar,Midstream,Solar Modules,850171,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Modules,850172,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Modules,850180,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Modules,854143,TRUE,FALSE,FALSE,
+Solar,Midstream,Solar Cells,854140,TRUE,TRUE,FALSE,"legacy HS2017 8541.40 (PV cells and modules, also LEDs), split in HS2022; an upper bound. PV cells and modules were 76.3% of 2023 world exports of its HS2022 successors 8541.41-49 (LEDs 13.5%, other photosensitive devices 10.2%; UN Comtrade public API, accessed 2026-10-07), so PV is the dominant use and the code stays"
+Solar,Midstream,Transformers,850421,TRUE,FALSE,FALSE,
+Solar,Midstream,Transformers,850422,TRUE,FALSE,FALSE,
+Solar,Midstream,Transformers,850423,TRUE,FALSE,FALSE,
+Solar,Midstream,Transformers,850431,TRUE,FALSE,FALSE,
+Solar,Midstream,Transformers,850432,TRUE,FALSE,FALSE,
+Solar,Midstream,Transformers,850433,TRUE,FALSE,FALSE,
+Solar,Midstream,Transformers,850434,TRUE,FALSE,FALSE,
+Gas,Upstream,Butadiene,271114,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): liquefied ethylene, propylene, butylene and butadiene: petrochemical olefins, not natural gas"
+Gas,Upstream,Butane,271113,TRUE,FALSE,FALSE,
+Gas,Upstream,Butane,271129,TRUE,FALSE,FALSE,
+Gas,Upstream,Ethane,271119,TRUE,FALSE,FALSE,
+Gas,Upstream,Natural Gas,271111,TRUE,FALSE,FALSE,
+Gas,Upstream,Natural Gas,271121,TRUE,FALSE,FALSE,
+Gas,Upstream,Propane,271112,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,731100,FALSE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,820713,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,820719,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840211,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840212,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840219,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840220,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840290,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840310,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840390,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840410,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840420,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840490,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840510,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): producer-gas, water-gas and acetylene generators and parts: coal or biomass gasification, not natural gas"
+Gas,Midstream,LNG/LPG Equipment,840590,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): producer-gas, water-gas and acetylene generators and parts: coal or biomass gasification, not natural gas"
+Gas,Midstream,LNG/LPG Equipment,840681,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840682,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,840619,TRUE,TRUE,FALSE,"legacy HS92 8406.19 (steam turbines, non-marine), split by output in HS96"
+Gas,Midstream,LNG/LPG Equipment,840690,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,841111,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+Gas,Midstream,LNG/LPG Equipment,841112,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+Gas,Midstream,LNG/LPG Equipment,841181,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,841182,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,841191,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+Gas,Midstream,LNG/LPG Equipment,841199,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,841350,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): residual heading of reciprocating positive-displacement pumps for liquids, used across industry: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 6.5% of the Comtrade 2024 Gas Midstream basket (Atlas 2023: 6.2%)"
+Gas,Midstream,LNG/LPG Equipment,841360,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): residual heading of rotary positive-displacement pumps for liquids, used across industry: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 5.4% of the Comtrade 2024 Gas Midstream basket (Atlas 2023: 5.0%)"
+Gas,Midstream,LNG/LPG Equipment,841382,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,841392,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,841960,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,842129,TRUE,FALSE,TRUE,excluded (basket review 2026-10): filtering or purifying machinery for liquids n.e.s.: water treatment and general process industry
+Gas,Midstream,LNG/LPG Equipment,842890,TRUE,FALSE,TRUE,excluded (basket review 2026-10): lifting and handling machinery n.e.s.: general materials handling
+Gas,Midstream,LNG/LPG Equipment,843041,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,843049,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,843139,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): parts of lifting, handling and conveying machinery (heading 8428: lifts, conveyors)"
+Gas,Midstream,LNG/LPG Equipment,843143,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,843149,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): parts of cranes and earth-moving machinery (8426, 8429, 8430 other than boring machinery, whose parts are 8431.43): construction and mining"
+Gas,Midstream,LNG/LPG Equipment,847410,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): machines for sorting, screening or washing earth, stone and ores: mining, quarrying and construction"
+Gas,Midstream,LNG/LPG Equipment,847420,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): machines for crushing or grinding earth, stone and ores: mining, quarrying and construction"
+Gas,Midstream,LNG/LPG Equipment,847490,FALSE,FALSE,TRUE,"excluded (basket review 2026-10): parts of machines for sorting, crushing or grinding earth, stone and ores: mining, quarrying and construction"
+Gas,Midstream,LNG/LPG Equipment,847982,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): mixing, kneading and crushing machinery: general process industry"
+Gas,Midstream,LNG/LPG Equipment,847989,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): residual heading (machines with individual functions n.e.s.), general industrial machinery"
+Gas,Midstream,LNG/LPG Equipment,870520,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,890120,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,890520,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,890590,TRUE,FALSE,FALSE,
+Gas,Midstream,LNG/LPG Equipment,902810,TRUE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730411,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730419,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730410,FALSE,TRUE,FALSE,"legacy HS92 7304.10 (seamless line pipe), split in HS2007"
+Gas,Midstream,Pipelines,730422,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730423,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730424,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730429,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730420,FALSE,TRUE,FALSE,"legacy HS92 7304.20 (seamless drilling casing and tubing), split in HS2007"
+Gas,Midstream,Pipelines,730511,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730512,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730519,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730520,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730611,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730619,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730610,FALSE,TRUE,FALSE,"legacy HS92 7306.10 (welded line pipe), split in HS2007"
+Gas,Midstream,Pipelines,730621,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730629,FALSE,FALSE,FALSE,
+Gas,Midstream,Pipelines,730620,FALSE,TRUE,FALSE,"legacy HS92 7306.20 (welded casing and tubing), split in HS2007"
+Electric Grid,Upstream,Electricity,271600,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): electrical energy: the commodity the grid carries, not an input to building it. Cross-border power trade ($66.6bn, Atlas 2023) ranked net power exporters as grid suppliers. The cell keeps its minerals categories"
+Electric Grid,Midstream,Circuit Breakers,853521,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Circuit Breakers,853529,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Electrical Steel (GOES),722511,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Electrical Steel (GOES),722519,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Electrical Steel (GOES),722510,TRUE,TRUE,FALSE,"legacy HS92 7225.10 (silicon-electrical steel, width >= 600mm), split in HS2007"
+Electric Grid,Midstream,Electrical Steel (GOES),722611,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Electrical Steel (GOES),722619,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Electrical Steel (GOES),722610,TRUE,TRUE,FALSE,"legacy HS92 7226.10 (silicon-electrical steel, width < 600mm), split in HS2007"
+Electric Grid,Midstream,Grid Automation & Control Equipment,851762,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Automation & Control Equipment,903289,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): residual heading of automatic regulating or controlling instruments n.e.s.: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 5.1% of the Atlas 2023 Electric Grid Midstream basket"
+Electric Grid,Midstream,Grid Cables & Accessories,281290,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Cables & Accessories,440311,FALSE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Cables & Accessories,440312,FALSE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Cables & Accessories,440310,FALSE,TRUE,FALSE,"legacy HS92 4403.10 (wood in the rough, preservative-treated), split in HS2017"
+Electric Grid,Midstream,Grid Cables & Accessories,681510,TRUE,FALSE,TRUE,excluded (basket review 2026-10): non-electrical articles of graphite or carbon (carbon fibre until HS2022): no grid use (kept in Wind for blades)
+Electric Grid,Midstream,Grid Cables & Accessories,731210,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Cables & Accessories,740811,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): refined copper wire over 6 mm (wire rod), the feedstock of all copper wire and cable: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 4.9% of the Comtrade 2024 Electric Grid Midstream basket (Atlas 2023: 4.7%)"
+Electric Grid,Midstream,Grid Cables & Accessories,740819,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Cables & Accessories,741300,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Cables & Accessories,761410,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Cables & Accessories,761490,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Cables & Accessories,854420,TRUE,FALSE,TRUE,excluded (basket review 2026-10): coaxial cable: telecommunications and broadcasting
+Electric Grid,Midstream,Grid Cables & Accessories,854442,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): low-voltage (<= 1000 V) insulated conductors fitted with connectors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 10.4% of the Comtrade 2024 Electric Grid Midstream basket"
+Electric Grid,Midstream,Grid Cables & Accessories,854441,TRUE,TRUE,FALSE,"legacy HS92 8544.41 (conductors <= 80V with connectors), merged into 8544.42 in HS2007. kept with caveat (basket review 2026-10): low-voltage insulated conductors fitted with connectors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 8.9% of the Atlas 2023 Electric Grid Midstream basket"
+Electric Grid,Midstream,Grid Cables & Accessories,854451,TRUE,TRUE,FALSE,"legacy HS92 8544.51 (conductors 80-1000V with connectors), merged into 8544.42 in HS2007"
+Electric Grid,Midstream,Grid Cables & Accessories,854449,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): low-voltage (<= 1000 V) insulated conductors, used in all electrical wiring: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 10.6% of the Comtrade 2024 Electric Grid Midstream basket (Atlas 2023: 8.9%)"
+Electric Grid,Midstream,Grid Cables & Accessories,854459,TRUE,TRUE,FALSE,"legacy HS92 8544.59 (conductors 80-1000V without connectors), merged into 8544.49 in HS2007"
+Electric Grid,Midstream,Grid Cables & Accessories,854460,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Cables & Accessories,854470,FALSE,FALSE,TRUE,excluded (basket review 2026-10): optical fibre cables: telecommunications
+Electric Grid,Midstream,Grid Cables & Accessories,854610,FALSE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Cables & Accessories,854620,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Control Panels,853710,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): control and distribution boards and panels (<= 1000 V) for buildings, industry and machinery as well as power plants and networks: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 22.3% of the Comtrade 2024 Electric Grid Midstream basket (Atlas 2023: 19.0%)"
+Electric Grid,Midstream,Grid Control Panels,853720,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Metering Equipment,902830,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Metering Equipment,902890,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Other High-Voltage Apparatus,853590,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Power Capacitors & Fuses,853210,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Power Capacitors & Fuses,853510,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Power Converters & Parts,850440,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): static converters of every kind (inverters, rectifiers, battery chargers, power supplies, UPS): general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 24.6% of the Comtrade 2024 Electric Grid Midstream basket (Atlas 2023: 22.5%)"
+Electric Grid,Midstream,Power Converters & Parts,850490,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Power Converters & Parts,854129,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): power transistors (other than photosensitive) of every use: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 6.6% of the Atlas 2023 Electric Grid Midstream basket"
+Electric Grid,Midstream,Power Converters & Parts,854130,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Surge Arresters,853540,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Switchgear,853530,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Transformers,850421,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Transformers,850422,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Transformers,850423,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Transformers,850431,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Transformers,850432,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Transformers,850433,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Transformers,850434,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Discrete Semiconductors,854110,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Discrete Semiconductors,854121,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Discrete Semiconductors,854129,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Discrete Semiconductors,854130,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Integrated Circuit Parts,854290,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Integrated Circuits,854231,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Integrated Circuits,854232,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Integrated Circuits,854233,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Integrated Circuits,854239,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Piezoelectric Components,854160,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Semiconductor Device Parts,854190,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Semiconductor Equipment Parts,848690,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Semiconductor Manufacturing Equipment,848610,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Semiconductor Manufacturing Equipment,848620,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Semiconductor Materials,280461,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Semiconductor Materials,282560,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Semiconductor Materials,381800,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Semiconductor Materials,811269,FALSE,FALSE,FALSE,
+Semiconductors,Midstream,Semiconductor Materials,811292,TRUE,FALSE,FALSE,
+Semiconductors,Midstream,Semiconductor Materials,811299,FALSE,FALSE,FALSE,

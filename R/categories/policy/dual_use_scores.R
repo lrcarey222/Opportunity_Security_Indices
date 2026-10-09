@@ -6,6 +6,10 @@
 # dimension: the same score is copied to every country, so the component shifts sector
 # levels but cannot rank countries. The `source` and `explanation` fields say so, so the
 # provenance travels with every row into the policy component table.
+#
+# Since October 2026 the composite Policy index no longer uses it (R/indices/
+# build_policy_index.R: NIPO 4, IEA PAMS 3, CAT 2). The table is still built and written
+# (dual_use_scores_tbl, and rows in policy_component_tbl) for reference only.
 clean_dual_use_scores <- function(raw_tbl,
                                   countries = NULL,
                                   year = 0L,
@@ -60,7 +64,8 @@ clean_dual_use_scores <- function(raw_tbl,
       source = "LLM-generated (ChatGPT - Thinking Model); project-authored",
       explanation = paste(
         "Dual-use (defence) relevance score by technology and supply chain stage;",
-        "LLM-elicited judgement, identical for every country"
+        "LLM-elicited judgement, identical for every country;",
+        "reference only, not a component of the composite Policy index"
       ),
       value = suppressWarnings(as.numeric(value))
     )

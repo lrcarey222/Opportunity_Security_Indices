@@ -146,6 +146,35 @@ test_that("the BNEF growth index ranks countries within each technology", {
   expect_true(all(top$bottom == 0))
 })
 
+test_that("Green Hydrogen consumption is labelled as all hydrogen, not capacity", {
+  neo <- bnef_fixture()
+  h2 <- tibble::tibble(
+    Indicator = "Final energy consumption", Macro.sector = "All sectors",
+    Region = c("US", "Vietnam", "MENAT"), Scenario = "ETS", Fuel.type = "Hydrogen",
+    X2024 = c(1248.7, 30.4, 270.6), X2035 = c(1500, 40, 300)
+  )
+  neo <- dplyr::bind_rows(neo, h2)
+  out <- energy_consumption_build_bnef_metrics(
+    neo,
+    pop_tbl = energy_consumption_build_bnef_population(neo),
+    techs = c("Solar", "Green Hydrogen"),
+    country_info = bnef_country_info()
+  )
+
+  h2_rows <- out %>% dplyr::filter(tech == "Green Hydrogen")
+  expect_true(nrow(h2_rows) > 0)
+  # Every hydrogen explanation says it is hydrogen consumption; none calls it capacity.
+  expect_true(all(grepl("hydrogen", h2_rows$explanation, ignore.case = TRUE)))
+  expect_false(any(grepl("capacity", h2_rows$explanation[h2_rows$variable != "share_24"])))
+  expect_true(all(grepl("all hydrogen|mixed units", h2_rows$explanation)))
+  # Values are unchanged by the relabelling: per-capita PJ from the Final energy consumption row.
+  us <- h2_rows$value[h2_rows$Country == "United States" & h2_rows$variable == "X2024_pc"]
+  expect_equal(us, 1248.7 / neo$X2024[neo$Indicator == "Population" & neo$Region == "US"])
+  # Solar keeps the capacity wording.
+  solar <- out %>% dplyr::filter(tech == "Solar", variable == "X2024_pc")
+  expect_true(all(grepl("installed electric capacity", solar$explanation)))
+})
+
 # ---- Solar and wind potential --------------------------------------------------------------
 
 test_that("resource potentials rank only the economies in the roster", {

@@ -311,3 +311,74 @@ test_that("registered fetchers cover the manifest entries that declare them", {
     expect_true(is.numeric(contract$min_rows) && contract$min_rows > 0, info = id)
   }
 })
+
+
+test_that("UNGA ideal points: the newest country-year file is chosen from the Dataverse listing", {
+  opsi_load_fetchers()
+  files <- data.frame(
+    label = c(
+      "AgreementScores.csv", "Codebook_IdealPointEstimates1946-2025.txt",
+      "IdealPointDyads1946-2025.tab", "IdealpointestimatesAll_Jun2024.csv",
+      "IdealpointestimatesFP_2026FP.csv", "IdealpointsJuly2025.tab"
+    ),
+    id = c("11837234", "13642024", "13642051", "10295878", "14098429", "11824371"),
+    creation_date = c("2025-07-31", "2026-04-02", "2026-04-02", "2024-06-24", "2026-07-26", "2025-07-28"),
+    tabular = c(FALSE, FALSE, TRUE, FALSE, FALSE, TRUE),
+    description = "",
+    stringsAsFactors = FALSE
+  )
+  expect_equal(unga_select_ideal_point_file(files)$label, "IdealpointestimatesFP_2026FP.csv")
+  expect_equal(unga_select_ideal_point_file(files[-5, ])$label, "IdealpointsJuly2025.tab")
+  expect_error(unga_select_ideal_point_file(files[1:3, ]), "No country-year ideal-point file")
+
+  contract <- get_fetcher("un_ga_ideal_points")$contract
+  expect_equal(contract$unique_key, c("ccode", "session"))
+  expect_true(all(c("iso3c", "session", "ideal_point") %in% contract$required_columns))
+})
+
+test_that("UNGA ideal points: both release layouts map to the fixed schema, final-passage first", {
+  opsi_load_fetchers()
+  # 2026 layout: session column, "IdealPointFP", "Q5%FP", a blank row-name column.
+  fp2026 <- data.frame(
+    x = 1:3, ccode = c(2L, 2L, 710L), session = c(79L, 80L, 80L), NVotesFP = c(60L, 58L, 61L),
+    IdealPointFP = c(2.16, 2.89, NA), `Q5%FP` = c(1.9, 2.6, NA), `Q50%FP` = c(2.1, 2.9, NA),
+    `Q95%FP` = c(2.4, 3.2, NA), iso3c = c("USA", "USA", "CHN"),
+    Countryname = c("United States", "United States", "China"), year = c(2024L, 2025L, 2025L),
+    check.names = FALSE, stringsAsFactors = FALSE
+  )
+  names(fp2026)[1] <- ""
+  out <- unga_standardize_ideal_points(fp2026, source_file = "f.csv", dataset_version = "V1.0")
+  expect_equal(names(out), c(
+    "ccode", "iso3c", "country_name", "session", "year", "ideal_point", "ideal_point_q05",
+    "ideal_point_q50", "ideal_point_q95", "n_votes", "estimate", "source_file", "dataset_version"
+  ))
+  # The row without an estimate is dropped.
+  expect_equal(nrow(out), 2)
+  expect_equal(out$ideal_point, c(2.16, 2.89))
+  expect_equal(out$ideal_point_q05, c(1.9, 2.6))
+  expect_equal(out$n_votes, c(60L, 58L))
+  expect_equal(unique(out$estimate), "FP")
+  expect_equal(unique(out$source_file), "f.csv")
+
+  # July 2025 layout: lower-case names, no session column, FP and All series side by side.
+  jul2025 <- data.frame(
+    ccode = c(2L, 710L), iso3c = c("USA", "CHN"), countryname = c("United States", "China"),
+    year = c(2024, 2024), idealpointfp = c(2.2, -0.9), idealpointall = c(2.0, -1.3),
+    nvotesfp = c(60L, 61L), q5fp = c(1.9, -1.1), q50fp = c(2.2, -0.9), q95fp = c(2.5, -0.7),
+    stringsAsFactors = FALSE
+  )
+  out <- unga_standardize_ideal_points(jul2025)
+  expect_equal(out$session, c(79L, 79L))
+  expect_equal(out$ideal_point, c(2.2, -0.9))
+  expect_equal(unique(out$estimate), "FP")
+
+  # Only the All series: it is used and labelled.
+  all_only <- jul2025[setdiff(names(jul2025), c("idealpointfp", "nvotesfp", "q5fp", "q50fp", "q95fp"))]
+  expect_equal(unga_standardize_ideal_points(all_only)$ideal_point, c(2.0, -1.3))
+  expect_equal(unique(unga_standardize_ideal_points(all_only)$estimate), "All")
+
+  bad_session <- fp2026
+  bad_session$session[1] <- 70L
+  expect_error(unga_standardize_ideal_points(bad_session), "session != year - 1945")
+  expect_error(unga_standardize_ideal_points(fp2026[c("ccode", "iso3c", "year")]), "No ideal-point column")
+})

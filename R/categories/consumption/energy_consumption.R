@@ -163,6 +163,15 @@ energy_consumption_bnef_region_map <- function(country_info) {
 # ---- Build BNEF per-capita capacity metrics ----
 # Filter to installed capacity/final energy consumption, normalize per-capita,
 # and compute legacy share + growth indices.
+#
+# The "Green Hydrogen" rows are not green hydrogen. BNEF reports no electrolytic hydrogen
+# use, so the cell takes NEO "Final energy consumption" of fuel "Hydrogen" (PJ), which is
+# all hydrogen whatever its production route. IEA's Global Hydrogen Review 2024 (executive
+# summary) puts 2023 demand at 97 Mt, "principally covered by hydrogen produced from
+# unabated fossil fuels", with low-emissions production under 1 Mt. The rows keep the
+# technology label so they join the Green Hydrogen cell, and the explanation says what
+# they measure. share_24 for hydrogen divides PJ by a total that also sums GW of capacity,
+# so it is not interpretable; it is a raw column that no index reads.
 energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, country_info) {
   region_map <- energy_consumption_bnef_region_map(country_info)
 
@@ -268,6 +277,19 @@ energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, coun
       Year = 2024L,
       source = "BNEF New Energy Outlook 2024",
       explanation = dplyr::case_when(
+        # Hydrogen is final energy consumption of all hydrogen (see the header), not capacity.
+        tech == "Green Hydrogen" & variable == "X2024_pc" ~
+          "2024 hydrogen final energy consumption **per capita** (PJ; all hydrogen, mostly fossil-based, not only green)",
+        tech == "Green Hydrogen" & variable == "X2035_pc" ~
+          "Forecast 2035 hydrogen final energy consumption **per capita** (PJ; all hydrogen, not only green)",
+        tech == "Green Hydrogen" & variable == "share_24" ~
+          "Hydrogen consumption (PJ) over the region's summed capacity and hydrogen totals; mixed units, not interpretable",
+        tech == "Green Hydrogen" & variable == "installed_cap_index" ~
+          "Index of per-capita hydrogen final energy consumption (2024; all hydrogen, mostly fossil-based)",
+        tech == "Green Hydrogen" & variable == "growth_2435" ~
+          "Growth in per-capita hydrogen final energy consumption 2024-35 (all hydrogen)",
+        tech == "Green Hydrogen" & variable == "elec_growth_index" ~
+          "Index of per-capita hydrogen final energy consumption growth 2024-35 (all hydrogen)",
         variable == "X2024_pc" ~ "2024 installed electric capacity **per capita**",
         variable == "X2035_pc" ~ "Forecast 2035 installed electric capacity **per capita**",
         variable == "share_24" ~ "2024 share of *per-capita* installed capacity",

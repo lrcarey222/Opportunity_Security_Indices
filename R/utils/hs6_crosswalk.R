@@ -28,11 +28,21 @@
 #     keys twice with conflicting essential flags; a code is essential if any row flagged
 #     it, because the flag is a positive designation and an unflagged row only means the
 #     source file that contributed it did not assess essentiality.
+#   * A code belongs in a technology's basket only if that technology is a dominant use of
+#     the product. Rows that fail the test stay in the master with `excluded = TRUE` and
+#     the reason in `note`, so the decision is visible and reversible; they are dropped
+#     from every view and from the copy of the master staged in data/raw
+#     (hs6_master_in_basket()). The October 2026 review excluded, among others, the
+#     residual chemicals heading 3824.99 and polyethylene/polypropylene resins from
+#     Batteries Midstream, aircraft engines from Coal and Gas Midstream, general
+#     machinery n.e.s. from Oil and Gas Midstream, copper ore from Batteries Upstream and
+#     electrical energy (2716.00) from Electric Grid Upstream. Codes kept although the
+#     technology is not their only use say so in `note` ("kept with caveat").
 
 HS6_MASTER_COLUMNS <- c("tech", "supply_chain", "sub_sector", "hs6", "essential")
 
-# Optional provenance columns; a master without them reads as all-current codes.
-HS6_MASTER_OPTIONAL_COLUMNS <- c("legacy_hs", "note")
+# Optional provenance columns; a master without them reads as all-current, in-basket codes.
+HS6_MASTER_OPTIONAL_COLUMNS <- c("legacy_hs", "excluded", "note")
 
 # Zero-pad to six characters, dropping anything that is not a usable code.
 hs6_clean_code <- function(x) {
@@ -51,9 +61,24 @@ hs6_validate_master <- function(master) {
   invisible(TRUE)
 }
 
-# Normalise the master into the canonical long form every view is built from.
-hs6_normalize_master <- function(master) {
+# Rows of the master that are in a basket, with the master's own columns minus
+# `excluded`. scripts/04 stages this as data/raw/energy_hs6_master.csv, which scripts/15
+# and the trade charts read directly rather than through a view.
+hs6_master_in_basket <- function(master) {
   hs6_validate_master(master)
+  if (!"excluded" %in% names(master)) return(master)
+
+  excluded <- as.logical(master$excluded)
+  excluded[is.na(excluded)] <- FALSE
+  out <- master[!excluded, setdiff(names(master), "excluded"), drop = FALSE]
+  rownames(out) <- NULL
+  out
+}
+
+# Normalise the master into the canonical long form every view is built from.
+# Excluded rows are dropped first, so no view or match report ever sees them.
+hs6_normalize_master <- function(master) {
+  master <- hs6_master_in_basket(master)
 
   legacy <- if ("legacy_hs" %in% names(master)) as.logical(master$legacy_hs) else FALSE
 
