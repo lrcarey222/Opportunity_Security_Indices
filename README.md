@@ -7,7 +7,7 @@ This repository holds the **Opportunity Security Indices** pipeline. It produces
 - **Policy index**: industrial and climate policy support (IEA Policies and Measures + Climate Action Tracker).
 - **Strategic Index (SI)**: where a country should build, from EO, its energy-security *need*, policy support, the supply-chain stage and the technology's climate weight.
 - **Geopolitical alignment**: bloc membership on the US-China axis of UN General Assembly voting.
-- **Allied coalition**: a two-tier coalition (core and partners) derived from alignment, economic-security agreements and major-supplier status, with the EU as one network node.
+- **Allied coalition**: a two-tier coalition (core and partners) derived from alignment, economic-security agreements and major-supplier (or reserve-holder) status, with the EU as one network node.
 - **Partnership Strength Index (PSI)**: a partner-level score from bilateral Friendshore, Opportunity and Development components, from the coalition's point of view.
 - **Allied network design**: a coalition-wide division of labour per technology and stage (a MILP with a diversification term).
 
@@ -41,7 +41,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
   - [Allied network design](#allied-network-design)
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
-- [Interactive explorer (Shiny)](#interactive-explorer-shiny)
+- [Interactive explorer](#interactive-explorer)
 - [Outputs](#outputs)
 - [Comparing index vintages across years](#comparing-index-vintages-across-years)
 - [Testing and quality checks](#testing-and-quality-checks)
@@ -191,7 +191,7 @@ Cross-country rankings, top-N lists and the Strategic Index use rankable cells o
 
 **Uranium (Nuclear Upstream):** `Nuclear Reserves` is identified recoverable uranium resources (RAR + inferred) at **< USD 260/kgU**, the category the OECD-NEA/IAEA *Uranium 2026* "Red Book" headlines (Table 1.2a, as of 1 January 2025), ranked like the EI reserve tables. Data are transcribed with source, table and access date in `data/reference/uranium_resources.csv` (`R/categories/reserves/uranium.R`).
 
-**Missing data:** `zero`: the EI and USGS reserve tables list every holder of material reserves, so a country absent from them has none recorded; an unlisted mineral counts as 0 in the technology roll-up.
+**Missing data:** `zero`: the EI and USGS reserve tables list the material holders, so a country absent from them has none recorded (EI folds smaller holders into "Rest of World", which can hide a sizeable one; see [Known issues](#known-issues-and-to-dos)); an unlisted mineral counts as 0 in the technology roll-up.
 
 **Sources:** EI Statistical Review ([EI-SR]); IEA Critical Minerals Dataset ([IEA-CM]) demand shares; OECD-NEA/IAEA Red Book ([REDBOOK]); Global Solar Atlas ([GSA]); Global Wind Atlas ([GWA]).
 
@@ -378,10 +378,10 @@ w: IEA PAMS 3, CAT 2
 
 - **IEA Policies and Measures (PAMS)** (`R/categories/policy/iea_policy_index.R`): policies matched to technology and stage by whole-word rules (substring rules had tagged "more" and "Korea" as ore, "determine" as mine), weighted by jurisdiction.
 - **Climate Action Tracker (CAT)** ratings (`R/categories/policy/cat_policy_index.R`): EU members without a rating of their own take the EU bloc rating.
-- **Eligibility:** a country is scored only if it has **both** components for at least one of its headline cells. CAT, which rates 39 countries and the EU, is the binding source: 65 countries in the October 2026 build.
+- **Eligibility:** IEA PAMS is required; CAT is added where it rates the country (39 countries and the EU). A country is scored if it has IEA PAMS for at least one of its headline cells. One without a CAT rating is scored from IEA PAMS alone and flagged `policy_basis = "IEA PAMS only"` (150 of 215 in the October 2026 build, Israel, Ukraine and nine coalition partners among them); one with both is `"IEA PAMS + CAT"` (65). A country with a CAT rating but no IEA PAMS is not scored (none in the build): CAT varies across a country's cells only through the technology GHG index, so on its own it would rank sectors by emissions, which the SI's climate term already carries. Until 9 October 2026 both components were required (65 countries); `OPSI_POLICY_REQUIRE_ALL=1` restores that rule for robustness runs. The two bases are different readings: for the 65 countries with both, ranking their cells on IEA PAMS alone agrees with the composite at a median within-country Spearman of 0.48, so tables and charts show the basis.
 - **Excluded for now (October 2026):** GTA **NIPO** (weight 4 until October 2026). `scripts/10` still builds it and its tables stay on disk (`OPSI_SKIP_NIPO=true` reuses the stored NIPO rows instead of rescoring them), so it can return by adding it to the weights. The **dual-use** score is not a component: it is an LLM-elicited judgement per technology × stage, identical for every country, so it cannot rank countries.
 
-`scripts/20` passes the weights explicitly and records them, the exclusions and the eligible countries in `index_outputs.rds$policy_index_provenance`. **Implementation:** `R/indices/build_policy_index.R` (`build_composite_policy_index()`).
+`scripts/20` passes the weights and the required components explicitly and records them, the exclusions, the eligibility rule and the scored countries by basis in `index_outputs.rds$policy_index_provenance`. **Implementation:** `R/indices/build_policy_index.R` (`build_composite_policy_index()`).
 
 ---
 
@@ -399,7 +399,7 @@ SI_its = 0.2 pol_its + 0.3 EO_its + 0.3 (1 - ES_its) + 0.1 lambda_s + 0.1 g_t
 
 **Sample (nothing is imputed):** a cell enters only if EO, ES and the Policy index are all observed and both pillar cells are rankable; others stay in the table with `strategic_index = NA` and the reason in `si_exclusion`. Geothermal Midstream is excluded, and any sector where a pillar is constant across countries is excluded and the index rebuilt (`strategic_index_degenerate_sectors()`). `scripts/20` also reports sectors where one ES value is shared by at least a quarter of the scored countries (`strategic_index_es_floor_sectors()`; see [Known issues](#known-issues-and-to-dos) on Nuclear Upstream).
 
-**Allied selection:** each coalition member (EU members individually) gets its top Upstream/Midstream sector, excluding Geothermal and Green Hydrogen, written to `charts/allied_strategic.csv` with its tier and network node. Members without a Policy index (no CAT rating) get no pick, and `scripts/20` names them.
+**Allied selection:** each coalition member (EU members individually) gets its top Upstream/Midstream sector, excluding Geothermal and Green Hydrogen, written to `charts/allied_strategic.csv` with its tier, network node and `policy_basis`. An Upstream extraction stage can be the pick only where the country has recorded reserves or production of its resources (the endowment screen: `resource_base`, `pick_exclusion = "no resource base"`; the index is unchanged; `OPSI_SI_RESOURCE_SCREEN=0` turns it off). Every member has a Policy index, 11 on IEA PAMS alone (Israel, Ukraine, DR Congo, Dominican Republic, Gabon, Ghana, Guatemala, Malaysia, Namibia, Oman, Qatar); `scripts/20` names them and any member without a pick, with the reason.
 
 **Implementation:** `R/indices/build_indices.R` (`build_strategic_index()`, `select_allied_strategic_sectors()`).
 
@@ -427,12 +427,14 @@ Limitations are documented in the `alignment.R` header: the first UNGA dimension
 - **core:** the alignment coalition (U.S.-leaning bloc, own UN votes, GDP ≥ USD 100bn).
 - **partner** (not core), by either route:
   - **agreement:** a member of a U.S. FTA, IPEF, the Minerals Security Partnership, the G7 or NATO (`data/reference/economic_security_agreements.csv`, each row with source and access date) with GDP ≥ USD 100bn, whatever its bloc (the MSP Forum is a sensitivity only);
-  - **supplier:** not China-leaning, with a world share ≥ 5% in at least one measure of an Upstream or Midstream stage of a headline technology, no GDP floor. Measures (`major_supplier_shares_tbl.rds`): IEA mining and refining shares for copper, cobalt, lithium, nickel, graphite and magnet rare earths (linked to a technology that takes ≥ 1% of the mineral's demand); EI mine production for manganese, zinc and PGMs; EI oil, gas and coal production; Red Book uranium production; IEA clean-tech manufacturing capacity; Atlas basket export shares.
+  - **supplier:** not China-leaning, no GDP floor, with either a world share ≥ 5% of production, refining, manufacturing capacity or exports in at least one measure of an Upstream or Midstream stage of a headline technology (route `supplier`), or ≥ 10% of world reserves of a headline mineral, fuel or uranium (route `supplier: reserves`; user decision 2026-10-09: a stock is not yet supply, hence the higher bar). Flow measures (`major_supplier_shares_tbl.rds`): IEA mining and refining shares for copper, cobalt, lithium, nickel, graphite and magnet rare earths (linked to a technology that takes ≥ 1% of the mineral's demand); EI mine production for manganese, zinc and PGMs; EI oil, gas and coal production; Red Book uranium production; IEA clean-tech manufacturing capacity; Atlas basket export shares. Reserves measures, Upstream: the EI Statistical Review reserve sheets the Reserves theme reads (USGS data; cobalt, lithium, graphite, rare earths, copper, manganese, nickel, zinc and PGMs at end-2025, linked to technologies as for mining; oil, gas and coal at end-2020, each to its own technology), as shares of each sheet's "Total World" row; Red Book identified uranium resources < USD 260/kgU (Table 1.2a, 1 January 2025), as shares of the listed countries' total. Each row is tested at its own bar (`threshold`, `coalition_supplier_threshold()`).
 - **none:** no route.
 
 **EU node.** The 27 EU member states share one network node, `EUU`, with tier core, whatever their own tier (six members, CYP EST LTU LVA MLT SVN, are tier none on their own). `eu_stage_weights_tbl.rds` gives each member's weight within the node per (tech, stage): EI production or Red Book uranium production, else Atlas export shares, else GDP shares (a measure qualifies only when the members cover ≥ 50% of the EU total and the EU holds ≥ 0.1% of the world). Only the network layer is bundled: national indices, the Strategic Index selection and the PSI stay national.
 
-The coalition table in `data/processed` (run of 2026-10-08, on the theme tables of 2026-10-01) has **31 core members, 23 partners and 34 network nodes**. The partner list changes on the next run of `scripts/10` and `scripts/13`: the supplier test now also reads the EI mine-production sheets, which adds South Africa (PGMs, manganese), Gabon and Ghana (manganese), and the reviewed HS6 basket removes trade-based routes that rested on excluded codes (Switzerland's only route was its share of electricity exports, HS 2716.00).
+On the inputs of 2026-10-09 the coalition has **31 core members, 26 partners and 37 network nodes** (57 members; 63 economies with the six node-only EU members). Brazil is a partner by the reserves leg alone (rare earths 22.7%, graphite 21.8% of world reserves; its largest flow share is 3.9%, of oil production). The next non-member holders that are not China-leaning stay below 10%: Madagascar (graphite 8.0%), Mozambique (7.4%), Kuwait (oil 5.9%), Niger (uranium 5.7%), Tanzania (graphite 5.3%), New Caledonia (nickel 4.6%). Switzerland left the partner tier with the basket review: its only route was its share of electricity exports (HS 2716.00), which is no longer in the grid basket.
+
+**Taiwan is not in the coalition** (disclosed, user decision 2026-10-09). It has no UN vote, so it is neutral (p = 0.5) and cannot be core; it is in none of the agreement lists, and WDI has no GDP for it; its largest supplier share is 1.5% (Solar Midstream exports), below 5%, and it has no reserves in the EI or Red Book tables. Its semiconductor strength lies outside the baskets of the 11 headline technologies.
 
 Every consumer reads the coalition through `coalition_members()` (`R/indices/build_indices.R`), which falls back to `geo_coalition_tbl.rds` (all core, each its own node) with a warning while `coalition_tbl.rds` does not exist. The hand-picked 23-member list survives only as the legacy/test default `allied_network_default_iso3c()`.
 
@@ -483,9 +485,9 @@ A high-income partner (no Development) gets (0.4 FS + 0.4 OP) / 0.8, not a score
 **What it captures:** a coalition-wide division of labour: for each technology × stage, which nodes produce, with what share, and which producer → consumer flows serve each consumer.
 
 **Scope and inputs (`scripts/30_build_allied_network_design.R`, `R/indices/allied_network_design.R`):**
-- **Nodes:** the coalition members, with the EU-27 bundled as one node `EUU` (36 nodes on the 2026-10-09 coalition table: 31 core and 25 partner members plus the 6 other EU members). A bundled node's inputs are aggregated from its members **before** any ranking: EO, ES and development are stage-weighted means over members with a value; demand size is the summed GDP and need the GDP-weighted mean member need; an edge to or from the node is the members' edge mean weighted by their 2024 basket trade on that edge (else stage weights, else equal); edges inside the node are dropped. `allied_network_member_shares.csv` splits a node's designed share back to its members by stage weight (derived, not designed).
+- **Nodes:** the coalition members, with the EU-27 bundled as one node `EUU` (37 nodes on the inputs of 2026-10-09: 31 core and 26 partner members plus the 6 other EU members). A bundled node's inputs are aggregated from its members **before** any ranking: EO, ES and development are stage-weighted means over members with a value; demand size is the summed GDP and need the GDP-weighted mean member need; an edge to or from the node is the members' edge mean weighted by their 2024 basket trade on that edge (else stage weights, else equal); edges inside the node are dropped. `allied_network_member_shares.csv` splits a node's designed share back to its members by stage weight (derived, not designed).
 - **Stages:** **Upstream and Midstream only** (22 stage problems). Downstream deployment is not part of the allied division of labour.
-- **Producer score:** EO and ES only (`node_policy = FALSE`; weights 0.5 and 0.2 renormalised to 5/7 and 2/7). The policy term is off because the Policy index covers fewer members, whose gaps had to be filled with the stage median.
+- **Producer score:** EO and ES only (`node_policy = FALSE`; weights 0.5 and 0.2 renormalised to 5/7 and 2/7). The policy term is off (decided while the Policy index required CAT and covered fewer members, whose gaps had to be filled with the stage median; every member now has one, 11 on IEA PAMS alone).
 - **Demand:** `demand_mode = "mixed"`, need 0.5 and size 0.5.
 - **Edges:** edge(p → c) = 0.5 FS(reporter = c, partner = p) + 0.5 OP(reporter = p, partner = c): Friendshore is rated by the importer and Opportunity by the exporter, so both halves rate the producer → consumer link. A missing component counts as 0 on the edge; a node's self-supply edge takes the stage's median edge weight.
 
@@ -497,7 +499,7 @@ w_node * sum_p a_p x_p + w_edge * sum_pc W_pc f_pc + w_dev * sum_p dev_p z_p - l
 
 with x_p the production share, w_node = 1, w_edge = 0.5, w_dev = 0. **Diversification:** `lambda` (score units per unit of HHI) turns the bang-bang linear design (λ = 0: producers at the 0.40 cap) into interior shares. The MILP carries Σx² as perspective tangent cuts on a 0.01 share grid (error ≤ 2.5e-5 per producer).
 
-**Calibration rule for lambda:** the smallest λ on a grid at which the **median designed HHI over the 22 stages ≤ the median observed export HHI of the network's own nodes** (2024 basket trade from the reconciled Comtrade matrix, shares within the nodes, the EU-27 as one exporter counting only extra-EU exports; median over the 14 stages with an HS6 basket; written to `allied_network_observed_hhi.csv`). On the 36-node set of 2026-10-09 the target was 0.1396 (7.2 equivalent exporters, 13 basket stages) and the pick **λ = 0.92** (median designed HHI 0.138, all 22 stages solved by MILP; 0.91 gives 0.143). The pick is knife-edge with respect to the inputs, so it must be re-derived on each full rerun; `scripts/30` warns when the designed median exceeds the observed one.
+**Calibration rule for lambda:** the smallest λ on a grid at which the **median designed HHI over the 22 stages ≤ the median observed export HHI of the network's own nodes** (2024 basket trade from the reconciled Comtrade matrix, shares within the nodes, the EU-27 as one exporter counting only extra-EU exports; median over the 14 stages with an HS6 basket; written to `allied_network_observed_hhi.csv`). On the 36-node set of 2026-10-09 the target was 0.1396 (7.2 equivalent exporters, 13 basket stages) and the pick **λ = 0.92** (median designed HHI 0.138, all 22 stages solved by MILP; 0.91 gives 0.143). The fixes of 2026-10-09 change both sides: Brazil joins (37 nodes) and Electric Grid Upstream has a basket again (14 stages; median 0.1374 on the 36-node set), so λ is recalibrated on the next full rerun. The pick is knife-edge with respect to the inputs, so it must be re-derived on each full rerun; `scripts/30` warns when the designed median exceeds the observed one.
 
 **Constraints and solver settings:** `method = "auto"` (MILP for stages with ≤ 60 nodes, greedy fallback recorded in diagnostics), GLPK time limit 300 s per stage; `min_producers = 3`, `max_share = 0.40`, `min_share = 0.05`, `min_suppliers_per_consumer = 2`, `epsilon_supplier_share = 0.10`, `allow_self = TRUE`. **Portfolio caps (headline):** each node may appear in the stage top-5 at most `cap` times over the 22 stages, `cap` from log GDP between 2 and 10 (the EU node's cap uses the summed EU GDP), enforced iteratively (up to 30 passes; top-5 membership by strict rank). The no-caps design is the robustness variant.
 
@@ -531,7 +533,7 @@ config/               # Weights, missing data, index definitions, rankability, a
                       # coalition, partnership settings, raw-input manifest
 docs/                 # Methodology, data dictionary, sources
 paper/                # Working paper (LaTeX)
-shiny/                # Allied Industrial Base Explorer (Shiny)
+dashboard/            # Allied Industrial Base Explorer (static React app; see dashboard/README.md)
 run_pipeline.R        # Pipeline entry point
 tests/                # Unit tests (testthat)
 ```
@@ -615,9 +617,9 @@ When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under `data/raw/com
 
 ---
 
-## Interactive explorer (Shiny)
+## Interactive explorer
 
-`shiny/` holds the Allied Industrial Base Explorer. Its data bundle is exported from the pipeline outputs by `scripts/85_export_dashboard_data.R` (builders in `R/dashboard/`), which also checks the dashboard engine at its baseline against the stored outputs; rerun it after a pipeline rerun. Run the app from the repository root with `shiny::runApp("shiny", launch.browser = FALSE)`; see `shiny/README.md` for packages and deployment.
+`dashboard/` holds the Allied Industrial Base Explorer, a static React app (Vite, TypeScript, NEIS design) that recomputes the indices, partnership scores and the allied network in the browser when a reader moves the four preference dials. Its data bundle (`dashboard/public/data/`) is exported from the pipeline outputs by `scripts/85_export_dashboard_data.R` (builders in `R/dashboard/`), which also checks the dashboard engine at its baseline against the stored outputs; rerun it after a pipeline rerun, then `scripts/86_export_dashboard_fixtures.R` for the engine's parity fixtures. The TypeScript engine in `dashboard/src/engine/` is a port of `R/dashboard/` and is parity-tested against it. To run it: `cd dashboard && npm ci && npm run dev`; `dashboard/README.md` covers tests, the build and the Netlify deployment.
 
 ---
 
@@ -682,7 +684,7 @@ The `testthat` suite under `tests/testthat/` covers, among others:
 * Partnership themes: trade flows (importer-first / mirror rule), conduits, PSI viewpoints and rankability, Comtrade dyad helpers
 * Allied network: integrity, diversification, EU node, demand modes, portfolio constraints
 * Raw-input manifest drift and sync, fetchers
-* Shiny app load smoke test
+* Dashboard bundle container (OSB) round trips and the engine's parity fixtures (the app's own tests run with `npm test` in `dashboard/`)
 
 Run tests from the repo root with:
 
@@ -699,7 +701,8 @@ Rscript -e "testthat::test_dir('tests/testthat')"
 * `scripts/03_check_raw_inputs.R` — read-only preflight: which raw inputs would block a build and where each comes from.
 * `scripts/04_build_hs6_views.R` and `R/utils/hs6_crosswalk.R` — regenerate the HS6 crosswalk views from the master.
 * `scripts/12_build_geopolitical_alignment.R`, `scripts/13_build_coalition.R` — alignment and coalition (above).
-* `scripts/85_export_dashboard_data.R` — exports the dashboard bundle.
+* `scripts/85_export_dashboard_data.R` — exports the dashboard bundle to `dashboard/public/data/`.
+* `scripts/86_export_dashboard_fixtures.R` — writes the TypeScript engine's parity fixtures.
 * `scripts/90_build_package_selection_viz.R` — package-selection visualization outputs.
 * `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — trade time series.
 * `scripts/98_pull_comtrade_energy_dyads.R` — the all-reporter Comtrade dyad pull (below).
@@ -760,11 +763,14 @@ Not automatable, and marked `manual`: the Energy Institute download (Cloudflare 
 
 `scripts/98_pull_comtrade_energy_dyads.R` writes `data/raw/comtrade_energy_dyads_all.csv`: every reporter Comtrade has in 2020 and 2024, all partners, imports and exports, the HS6 basket (with legacy bridge codes). Comtrade's "Other Asia, nes" (S19) is recoded to Taiwan (`TWN`; `COMTRADE_DYADS_TAIWAN=drop` drops it); World, the other "nes" areas, bunkers and free zones are dropped. Calls are packed under the free tier's record cap, counted against `COMTRADE_DYADS_MAX_CALLS` per day, and every response is kept as a chunk so an interrupted run resumes; `COMTRADE_DYADS_STAGE=combine` rebuilds the CSV from the chunks without API calls. It needs `COMTRADE_API_KEY`.
 
+**Codes added to the basket after the pull** are fetched on their own instead of re-pulling the basket: give the pull a new `COMTRADE_DYADS_CHUNK_DIR` holding copies of the main pull's `getDA_<year>.json` (so the reporters are the same), list the codes in `COMTRADE_DYADS_CODES`, fetch, then rebuild the file with `COMTRADE_DYADS_STAGE=combine` and `COMTRADE_DYADS_COMBINE_DIRS` naming the new directory (the directories must not share a code). The combine step stops when the basket has a code that none of the directories holds, so a re-combine of the main directory alone (for example to re-run the Taiwan recode) cannot silently drop a supplementary pull's codes; `COMTRADE_DYADS_ALLOW_PARTIAL=true` combines without them and the log lists them. The supplementary chunks also hold each reporter's World row: `COMTRADE_DYADS_STAGE=energy_trade` adds them to `comtrade_energy_trade.csv` for the codes it lacks, in its year and for its reporters, instead of the ~400 calls of a `scripts/05` energy pull. The Electric Grid Upstream codes 7402.00, 7403.11, 7601.10 and 7601.20 were added this way on 2026-10-09 (14 calls); the current file combines the main chunk directory with that supplementary one (`config/raw_inputs_manifest.yml` records both vintages).
+
 ### The HS6 crosswalk
 
 `data/reference/energy_hs6_master.csv` is the **single source of truth** for the HS6 → technology / supply-chain / sub-sector mapping. Its columns are `tech`, `supply_chain`, `sub_sector`, `hs6`, `essential`, `legacy_hs`, `excluded`, `note`.
 
-- **Dominant-use rule.** A code belongs in a technology's basket only if that technology is a dominant use of the product. Codes that fail stay in the master with `excluded = TRUE` and the reason in `note` (91 rows in the October 2026 review: residual chemicals 3824.99 and PE/PP resins from Batteries Midstream, aircraft engines from Coal and Gas Midstream, general machinery n.e.s. from Oil and Gas Midstream, copper ore from Batteries Upstream, electrical energy 2716.00 from Electric Grid Upstream, ...); 249 codes remain in the basket. Generic codes kept although the technology is not their only use say "kept with caveat" with their basket share.
+- **Dominant-use rule.** A code belongs in a technology's basket only if that technology is a dominant use of the product. Codes that fail stay in the master with `excluded = TRUE` and the reason in `note` (91 rows in the October 2026 review: residual chemicals 3824.99 and PE/PP resins from Batteries Midstream, aircraft engines from Coal and Gas Midstream, general machinery n.e.s. from Oil and Gas Midstream, copper ore from Batteries Upstream, electrical energy 2716.00 from Electric Grid Upstream, ...); 256 codes are in the basket. Generic codes kept although the technology is not their only use say "kept with caveat" with their basket share.
+- **Electric Grid Upstream** holds the grid's copper and aluminium inputs (since 2026-10-09; electricity, its only code before the review, is not an input to building the grid): copper ores and concentrates (2603.00), unrefined copper and anodes (7402.00), refined copper cathodes (7403.11), bauxite (2606.00), alumina (2818.20) and unwrought aluminium, unalloyed and alloyed (7601.10, 7601.20). They are kept with caveat: the grid is a major use of both metals but not shown to be the dominant one, and neither has a grid-specific code. Copper ore, bauxite and alumina stay excluded from the Batteries baskets, so each code is in one basket. Wire rod and aluminium conductors stay in Electric Grid Midstream; scrap (7404, 7602) and the other refined-copper shapes (7403.12/13/19) are left out.
 - **Stage follows the product:** ores, concentrates, slag and scrap sit in Upstream.
 - **Legacy bridge codes** (`legacy_hs = TRUE`) carry older HS codes whose successors are all in the basket (e.g. 8541.40 for the HS2022 PV codes 8541.42/43, an upper bound since it also holds LEDs), so the HS92 Atlas and older-vintage Comtrade reporters keep the headline product.
 
@@ -824,15 +830,16 @@ Reports, without writing anything, which inputs are blocking, which are absent b
 
 ## Known issues and to-dos
 
-* **Lambda must be recalibrated on every full rerun.** The rule pick (0.92 on the 36-node set) is knife-edge: the designed median is not monotone in λ and neighbouring grid points differ by up to 0.005, more than the margin (0.91 gives 0.1433 against a target of 0.1396). Earlier picks were 0.94 on the 34-node set and 1.5 on the hand-picked coalition; any change of node set, basket or inputs moves it. `scripts/30` warns when the rule no longer holds; the calibration grid is not part of the repository.
-* **Nuclear Upstream ES floor.** ES Nuclear Upstream is Production 1/2, Reserves 1/3 and a world energy-price constant 1/6, so every economy without uranium sits at the same floor (0.117) and has a high energy-security need. Nuclear Upstream was the top allied Strategic Index pick of 20 of 45 members in the October 2026 scratch build. `scripts/20` reports such floor sectors; whether to add an exposure term, exclude the sector from the allied selection or caveat it is open.
+* **Lambda must be recalibrated on every full rerun.** The rule pick (0.92 on the 36-node set) is knife-edge: the designed median is not monotone in λ and neighbouring grid points differ by up to 0.005, more than the margin (0.91 gives 0.1433 against a target of 0.1396). Earlier picks were 0.94 on the 34-node set and 1.5 on the hand-picked coalition; any change of node set, basket or inputs moves it. The fixes of 2026-10-09 change both (37 nodes with Brazil; the Electric Grid Upstream basket returns that stage to the target, 14 basket stages, median 0.1374 on the 36-node set against 0.1396 over 13), so 0.92 is stale until the next calibration. `scripts/30` warns when the rule no longer holds; the calibration grid is not part of the repository.
+* **Nuclear Upstream ES floor.** ES Nuclear Upstream is Production 1/2, Reserves 1/3 and a world energy-price constant 1/6, so every economy without uranium sits at the same floor (0.117) and has a high energy-security need. Nuclear Upstream was the top allied Strategic Index pick of 20 of 45 members in the October 2026 scratch build. Since 2026-10-09 the endowment screen bars it as a pick where the country has no recorded uranium resources or production (see [Strategic Index](#strategic-index-si)), but the floor itself stays in the index; `scripts/20` reports such floor sectors.
 * **Coalition-view PSI and hard blocs.** With hard blocs and `geo_alignment` weighted like trade, every core reporter gives a U.S.-leaning partner 1 against 0.5 for a nonaligned one, so small U.S.-leaning economies (Malta, North Macedonia, Cyprus, Marshall Islands, San Marino, Iceland, ...) rank above India, China, Mexico and Singapore in the core view. The rankability rule removes only Monaco, Liechtenstein and Kosovo among sovereigns.
-* **Taiwan in the Atlas trade themes.** The ES/EO trade themes join the Atlas to the WDI roster, which has no Taiwan, so Taiwan's Trade category is imputed and its EO cells rest mostly on imputed inputs (it is not rankable in the PSI world view). Taiwan's bilateral Comtrade flows are observed since the S19 recode.
-* **EO Electric Grid Upstream has no product basket** after electrical energy (2716.00) was excluded; the cell is scored on cost competitiveness and production only.
+* **Taiwan has no WDI row.** The trade themes add it to their roster (`add_unlisted_economies()`, since 2026-10-09), so its Atlas market share, HHI and feasibility are observed, but the terms that need WDI GDP or the Comtrade energy pull (deficit/GDP, RCA, export size) are missing; its bilateral Comtrade flows are observed since the S19 recode. It is outside the coalition (see [Allied coalition](#allied-coalition-two-tiers-and-the-eu-node)).
+* **Electric Grid Upstream trades base metals.** Its basket (since 2026-10-09) is copper and aluminium from ore to unwrought metal, which the grid shares with building wire, equipment, transport and construction, so the cell ranks the suppliers of the grid's materials rather than of grid-specific goods. Its Comtrade-only variables (export size, RCA, HHI) miss economies outside the 2024 energy-trade pull's reporters, among them DR Congo (28% of reported 2024 cathode exports), Guinea (bauxite), Russia and the UAE (aluminium); the Atlas market share and the bilateral matrix (mirror flows) include them. In ES the cell's Trade and Minerals Trade categories both draw on copper trade, and `comtrade_energy_trade.csv` holds its four newest codes from a later pull than the rest (revisions between pulls: median 2%).
 * **Supplier-route coverage.** Chromium, molybdenum, silver and silicon have no supply data in the coalition's supplier test, and the trade-based supplier measures inherit the HS6 basket's judgement calls (re-export hubs such as Singapore, generic codes kept with caveat).
+* **EI mineral reserve sheets are older USGS figures and list only the leading holders.** EI's 2026 rare-earth sheet carries Brazil at 21 Mt, the USGS figure before *Mineral Commodity Summaries 2026* revised it to 11 Mt (14.6% of the listed 75 Mt), and leaves Brazil's manganese (USGS 16.7% of world reserves) and nickel (11.4%) in Rest of World. Brazil passes the coalition's 10% reserves bar on either figure (and on graphite, USGS 23.9%). A refresh of the mineral reserves from USGS MCS 2026 is queued (user decision 2026-10-09); the Reserves theme and the coalition's reserves leg must then read the same source.
 * **The all-votes ideal points end in 2023** (two years behind the final-passage series), so recent voting shifts are not in the blocs; Japan, Ireland and New Zealand sit just above the U.S.-leaning cut.
 * **The EU node's demand weight** is about 3.8% of coalition demand while the EU-27 is about a quarter of coalition GDP: demand is a rank S-curve over nodes, so the bundled EU is one point.
-* **Coalition members without a Policy index** (no CAT rating: Israel and Ukraine among the core; several partners) get no Strategic Index and no allied pick.
+* **Policy index on IEA PAMS alone for countries CAT does not rate** (150 economies, 11 coalition members). Their policy term lacks CAT's technology-GHG tilt: for the countries with both, IEA PAMS alone and the composite agree at a median within-country Spearman of 0.48, and on the tables of 2026-10-09 six of the 45 members with CAT (AUS, BGR, CAN, CZE, FIN, PRT) would get another pick on IEA PAMS alone. `policy_basis` flags it; `OPSI_POLICY_REQUIRE_ALL=1` is the both-required variant. The fallback also brings thinner policy signals into the SI (192 scored countries on the tables of 2026-10-09, up from 65, micro-states among them): any cross-country SI or policy-level table should show the basis.
 * **Vintages differ from the headline build in two ways:** `scripts/40` does not pass the rankability threshold (its `rankable` flags use tau = 1, sovereignty only) and does not pass the uranium production table, so EO Nuclear Upstream lacks its Production category in every vintage.
 * **Supply-chain coupling** (`couple_pillar_scores_by_hhi.R`) is unused; delete it or wire it in deliberately.
 * **Raw-input completeness is environment dependent.** Use the manifest workflow and `scripts/03_check_raw_inputs.R` to reconcile gaps before full builds.
@@ -864,11 +871,12 @@ Extensions:
 - **Rankability rule** (sovereign and imputed weight share ≤ 0.5) for ES, EO, the Strategic Index and the PSI.
 - **Uranium** (Red Book resources and mine production) for Nuclear Upstream in ES and EO.
 - **TRL stage mapping** with the post-TRL-9 adoption stage read onto the 1–11 scale.
-- **HS6 basket review** (dominant-use rule, `excluded` column, legacy bridge codes, caveat notes).
+- **HS6 basket review** (dominant-use rule, `excluded` column, legacy bridge codes, caveat notes); Electric Grid Upstream's copper and aluminium basket, with a supplementary dyad pull of its new codes.
 - **Mirror critical-minerals exports** for non-reporting economies, with late reporters.
-- **Policy index = IEA PAMS + CAT**; NIPO excluded for now; dual-use dropped.
+- **Policy index = IEA PAMS + CAT** (CAT where it rates the country; IEA PAMS alone otherwise, flagged `policy_basis`); NIPO excluded for now; dual-use dropped.
+- **Strategic Index endowment screen** for the allied picks (Upstream only where the country has a recorded resource base).
 - **Geopolitical alignment** from all-votes UNGA ideal points, quartile hard blocs, territory map; `geo_alignment` enters Friendshore.
-- **Two-tier coalition** (core / partner by agreement or supplier route) with the EU as one network node.
+- **Two-tier coalition** (core / partner by agreement or supplier route, the supplier route counting flows at 5% and reserves at 10%) with the EU as one network node.
 - **Bilateral indices:** all-reporter Comtrade dyads with Taiwan, importer-first / mirror × 1.06 rule, observed zeros, conduit financial centres excluded from outbound FDI, core-coalition (headline), full-coalition and world PSI views, PSI rankability.
 - **Allied network:** Upstream and Midstream only, diversification term with a calibration rule, perspective tangent cuts, strict top-K caps, node policy term off, EU node aggregation, MILP for every stage (≤ 60 nodes, 300 s, 30 cap passes), observed-HHI output and warning.
 

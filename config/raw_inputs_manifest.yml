@@ -20,8 +20,15 @@ inputs:
   url: https://comtradeplus.un.org/
   cadence: annual
   owner: lcarey@rmi.org
+  vintage: 2020 and 2024; main pull 2026-10-07/08 (298 codes), supplement 2026-10-09 (740200
+    740311 760110 760120)
   staged_from: pipeline
   notes: Written by scripts/98_pull_comtrade_energy_dyads.R (chunked, resumable); requires COMTRADE_API_KEY.
+    Combined from two chunk directories with disjoint codes - the main pull of the whole master
+    (2026-10-07/08) and a supplementary pull of the four Electric Grid Upstream codes the basket
+    gained on 2026-10-09 (COMTRADE_DYADS_CODES, 14 calls, same getDA reporter lists, so 168
+    reporters in 2020 and 143 in 2024); rebuild with COMTRADE_DYADS_STAGE=combine and
+    COMTRADE_DYADS_COMBINE_DIRS naming the supplementary directory.
   required_by:
   - scripts/98_pull_comtrade_energy_dyads.R
 - id: comtrade_energy_trade
@@ -31,10 +38,18 @@ inputs:
   url: https://comtradeplus.un.org/
   cadence: annual
   owner: lcarey@rmi.org
+  vintage: 2024; staged 2026-09-30 (228 codes), plus the World rows of 740200 740311 760110 760120
+    from the 2026-10-09 supplementary dyad pull
   staged_from: pipeline
+  notes: Reporter x World pull of scripts/05_ingest_sources.R (129 export and 130 import reporters).
+    The four Electric Grid Upstream codes added to the basket on 2026-10-09 come from the World rows
+    of scripts/98's supplementary pull (COMTRADE_DYADS_STAGE=energy_trade), restricted to this file's
+    year and reporters per flow; the rows already here are unchanged. A full scripts/05 energy pull
+    replaces both.
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
+  - scripts/98_pull_comtrade_energy_dyads.R
 - id: comtrade_total_export
   path: comtrade_total_export.csv
   source_type: api
@@ -241,6 +256,7 @@ inputs:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
   - scripts/12_build_geopolitical_alignment.R
+  - scripts/13_build_coalition.R
   - scripts/15_build_partner_themes.R
   - scripts/30_build_allied_network_design.R
 - id: allies
@@ -276,7 +292,7 @@ inputs:
   staged_from: repo
   notes: LLM-generated (ChatGPT) defence-relevance scores per technology x stage, the same
     for every country. Reference only since October 2026 - built into dual_use_scores_tbl
-    but not a component of the composite Policy index (NIPO 4, IEA PAMS 3, CAT 2).
+    but not a component of the composite Policy index (IEA PAMS 3, CAT 2; NIPO excluded).
   required_by:
   - scripts/10_build_themes.R
 - id: energy_hs6_master
@@ -412,7 +428,9 @@ inputs:
   cadence: irregular
   owner: lcarey@rmi.org
   staged_from: sharepoint
-  notes: No bulk API; ratings are transcribed from the country pages.
+  notes: No bulk API; ratings are transcribed from the country pages. Added to the Policy index
+    where it rates the country (39 countries and the EU; IEA PAMS alone otherwise); also the
+    Friendshore/Opportunity climate penalty.
   required_by:
   - scripts/10_build_themes.R
   - scripts/15_build_partner_themes.R
@@ -452,6 +470,7 @@ inputs:
   notes: Public annual download; a strong candidate for automated fetching.
   required_by:
   - scripts/10_build_themes.R
+  - scripts/13_build_coalition.R
   - scripts/40_build_index_vintages.R
 - id: ei_stat_review_wide
   path: ei_stat_review_world_energy_wide.xlsx
@@ -461,8 +480,11 @@ inputs:
   cadence: annual
   owner: lcarey@rmi.org
   staged_from: sharepoint
+  notes: The mineral production and reserve sheets also feed the coalition supplier route
+    (scripts/13; reserves as shares of each sheet's Total World row).
   required_by:
   - scripts/10_build_themes.R
+  - scripts/13_build_coalition.R
 - id: ev_midstream_capacity
   path: ev_Midstream_capacity.csv
   source_type: manual
@@ -577,6 +599,7 @@ inputs:
   staged_from: sharepoint
   required_by:
   - scripts/10_build_themes.R
+  - scripts/13_build_coalition.R
 - id: iea_critical_minerals
   path: IEA Critical Minerals Dataset 2026.xlsx
   pattern: ^IEA Critical Minerals Dataset \d{4}\.xlsx$|^iea_criticalminerals_\d{2}\.csv$
@@ -622,6 +645,8 @@ inputs:
   cadence: continuous
   owner: lcarey@rmi.org
   staged_from: sharepoint
+  notes: The backbone of the Policy index, required for a country to be scored (CAT is added
+    where it rates the country).
   required_by:
   - scripts/10_build_themes.R
 - id: iea_relative_costs
@@ -750,6 +775,7 @@ inputs:
     (Energy Security) and production depth/momentum (Economic Opportunity).
   required_by:
   - scripts/10_build_themes.R
+  - scripts/13_build_coalition.R
 - id: uranium_resources
   path: uranium_resources.csv
   source_type: manual
@@ -762,9 +788,11 @@ inputs:
   staged_from: repo
   notes: Identified recoverable resources (reasonably assured plus inferred, tU) by country in
     the four cost categories, transcribed from the edition PDF. Nuclear Reserves scores the
-    <USD 260/kgU category the edition headlines (R/categories/reserves/uranium.R).
+    <USD 260/kgU category the edition headlines (R/categories/reserves/uranium.R). The same
+    category is the uranium measure of the reserves leg of the coalition supplier route (scripts/13).
   required_by:
   - scripts/10_build_themes.R
+  - scripts/13_build_coalition.R
 - id: wb_wind_country
   path: wb_wind_country.csv
   source_type: manual

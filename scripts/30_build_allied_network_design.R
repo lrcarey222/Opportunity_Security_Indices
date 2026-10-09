@@ -385,9 +385,10 @@ if (length(network_nodes) > auto_milp_max_nodes) {
 network_milp_time_limit_sec <- 300
 
 # Producer (node) score without the policy term: EO and ES only (node_weights eo 0.5 and resilience
-# 0.2, renormalized to 5/7 and 2/7). The Policy index covers fewer coalition members than EO and ES,
-# so with the term on, uncovered members got the stage median imputed (policy_imputed); since Oct 2026
-# the network does not use it. allied_network_design()'s default node_policy = TRUE keeps the legacy
+# 0.2, renormalized to 5/7 and 2/7). While the Policy index required CAT it covered fewer coalition
+# members than EO and ES, so with the term on, uncovered members got the stage median imputed
+# (policy_imputed); since Oct 2026 the network does not use it (since the IEA PAMS-only fallback of
+# 9 Oct 2026 every member has a Policy index, 11 of them on IEA PAMS alone). allied_network_design()'s default node_policy = TRUE keeps the legacy
 # three-component score for other callers; the choice is recorded in params and diagnostics.
 network_node_policy <- FALSE
 
@@ -402,7 +403,8 @@ network_supply_chains <- c("Upstream", "Midstream")
 # observed export HHI of the network's own nodes (allied_network_observed_export_hhi(): 2024 basket
 # trade from the reconciled Comtrade matrix built above, shares within the nodes, the EU-27 as ONE
 # exporter counting only its extra-EU exports, every other node its exports to all other economies;
-# median over the network stages with an HS6 basket, 13 since the basket review; written to
+# median over the network stages with an HS6 basket, 14 since Electric Grid Upstream's copper and
+# aluminium basket of 2026-10-09, 13 between the basket review and then; written to
 # allied_network_observed_hhi.csv).
 # Extra-EU, because trade among the EU members is the bundled node's internal trade, as a country's
 # domestic sales are; counting it would make the EU the leading exporter of nearly every stage.

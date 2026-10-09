@@ -33,7 +33,7 @@ Every theme table (`data/processed/*_tbl.rds` from `scripts/10_build_themes.R`) 
 
 `*_category_scores` (with `imputed`, `missing_rule_applied`), `*_category_contributions` and `*_variable_contributions` decompose each value; the builders' `diagnostics` are described in `docs/energy_security_index_v2.md`.
 
-`policy_index`: the tidy schema (`variable = "Overall Policy Index"`) plus `n_components` (components observed in the cell). `policy_eligibility`: one row per country with `n_components`, `eligible`, `missing_components` and `has_<component>`. `policy_index_provenance`: components, weights, excluded components and why, eligibility rule, technologies, eligible countries, the component build record of `scripts/10`.
+`policy_index`: the tidy schema (`variable = "Overall Policy Index"`) plus `n_components` (components observed in the cell) and `policy_basis` (the country's basis: `"IEA PAMS + CAT"` or `"IEA PAMS only"`). `policy_eligibility`: one row per country with `n_components` (weighted components observed anywhere), `eligible`, `policy_basis` (`NA` when not eligible), `missing_components` (weighted components not observed), `missing_required` (required components not observed; `NA` when eligible) and `has_<component>`. `policy_index_provenance`: components, weights, required components, excluded components and why, eligibility rule, technologies, scored countries (`n_countries_eligible`, `eligible_countries`, `countries_by_basis`), the count with every component (`n_countries_every_component`), the component build record of `scripts/10`.
 
 `strategic_index`, one row per Country × tech × supply_chain:
 
@@ -43,15 +43,17 @@ Every theme table (`data/processed/*_tbl.rds` from `scripts/10_build_themes.R`) 
 | `Economic_Opportunity_Index`, `Energy_Security_Index` | The pillars as built. |
 | `energy_security_need` | `1 - Energy_Security_Index`, the term in the formula. |
 | `value` | Policy index value. |
+| `policy_basis` | Basis of the country's Policy index (`"IEA PAMS + CAT"`, `"IEA PAMS only"`), joined by cell: `NA` where the cell has no Policy index value (never on a scored cell). |
 | `pol` | Within-country median S-curve of the Policy index over in-sample sectors. |
 | `eo`, `es_need` | Within-country S-curves of EO and of the need over the country's rankable cells (chart inputs; not in the SI). `es` is a deprecated alias of `es_need`. |
 | `sc_weight` | Stage weight (Midstream 0.75, Upstream 0.50, Downstream 0.25). |
 | `ghg_index`, `tech_weight` | Technology climate weight (1 = lowest lifecycle GHG intensity). |
 | `trl_index` | EO Technological Readiness score of the cell. |
 | `strategic_index` | 0.2 pol + 0.3 EO + 0.3 need + 0.1 stage + 0.1 climate; `NA` when excluded. |
-| `si_exclusion` | Reasons a cell is out (`country not policy-eligible`, `missing energy security`, `economic opportunity not rankable (...)`, ...); `NA` when scored. |
+| `si_exclusion` | Reasons a cell is out (`country not policy-eligible` (no IEA PAMS), `missing policy index`, `missing energy security`, `economic opportunity not rankable (...)`, ...); `NA` when scored. |
+| `resource_base`, `resource_evidence`, `pick_exclusion` | Endowment screen of the allied pick: `TRUE`/`FALSE` in a screened Upstream sector (a positive technology-level reserve or production value; `resource_evidence` names the category), `NA` elsewhere; `pick_exclusion = "no resource base"` where the cell cannot be picked. The index is unchanged. |
 
-`coalition_members`: the coalition `scripts/20` used (see `coalition_members()` below). `charts/allied_strategic.csv`: each member's top Upstream/Midstream sector with `iso3`, `tier`, `network_node`.
+`coalition_members`: the coalition `scripts/20` used (see `coalition_members()` below). `charts/allied_strategic.csv`: each member's top Upstream/Midstream sector with `iso3`, `tier`, `network_node` and `policy_basis`.
 
 ## Alignment (`scripts/12`)
 
@@ -78,17 +80,17 @@ Every theme table (`data/processed/*_tbl.rds` from `scripts/10_build_themes.R`) 
 | Column | Description |
 | --- | --- |
 | `tier` | `core`, `partner` or `none`. |
-| `routes`, `route_core`, `route_agreement`, `route_supplier` | Every route the country satisfies. |
+| `routes`, `route_core`, `route_agreement`, `route_supplier`, `route_supplier_reserves` | Every route the country satisfies; `routes` lists `core`, `agreement`, `supplier` (a flow measure ≥ `supplier_share`) and `supplier: reserves` (a reserves measure ≥ `supplier_reserves_share`); `route_supplier` is the supplier route by either. |
 | `bloc`, `alignment_basis`, `own_vote` | Alignment inputs. |
 | `gdp_usd`, `gdp_year`, `gdp_floor_usd` | Latest WDI GDP and the floor. |
 | `agreements`, `qualifying_agreements` | Agreement memberships (all, and the partner-route ones). |
-| `supplier_cells`, `max_supplier_share`, `supplier_excluded`, `supplier_share` | Supplier evidence (cells ≥ threshold), the largest share, whether excluded as China-leaning, and the threshold. |
+| `supplier_cells`, `max_supplier_share`, `max_reserves_share`, `supplier_excluded`, `supplier_share`, `supplier_reserves_share` | Supplier evidence (cells at or above their measure's bar, with measure, mineral and share), the largest flow share (read against `supplier_share`, 5%), the largest reserves share (against `supplier_reserves_share`, 10%), whether excluded as China-leaning or without a bloc, and the two bars. |
 | `eu_member`, `network_node`, `node_tier` | EU membership, the network node (`EUU` for EU members) and the node's tier. |
 | `reason`, `tier_with_sensitivity` | Plain-language reason; tier with the MSP Forum as an extra route. |
 
 `eu_stage_weights_tbl.rds`: per EU member × tech × stage, `weight` (sums to 1 per stage), `basis` (`production`, `exports`, `gdp`), `measures`, `year`, `member_value`, `eu_world_share`, `coverage`.
 
-`major_supplier_shares_tbl.rds`: per country × tech × stage × measure (`iea_mineral_mining`, `iea_mineral_refining`, `ei_mineral_mining`, `ei_production`, `uranium_mine_production`, `iea_manufacturing_capacity`, `atlas_export_share`): `mineral`, `mineral_demand_share`, `year`, `value`, `unit`, `world_share`, `is_aggregate`, `source`, `major` (share ≥ threshold).
+`major_supplier_shares_tbl.rds`: per country × tech × stage × measure (flows: `iea_mineral_mining`, `iea_mineral_refining`, `ei_mineral_mining`, `ei_production`, `uranium_mine_production`, `iea_manufacturing_capacity`, `atlas_export_share`; reserves, Upstream: `ei_reserves` (mineral and fuel reserves), `uranium_resources`): `mineral`, `measure_label`, `mineral_demand_share`, `year`, `value`, `unit`, `world_share`, `is_aggregate`, `source`, `threshold` (the row's bar: 0.10 for the reserves measures, 0.05 otherwise), `major` (country row with share ≥ `threshold`).
 
 `coalition_members()` (`R/indices/build_indices.R`) returns the members (tier core or partner): `iso3`, `country`, `tier`, `network_node`, `source` and, when present, `routes`, `bloc`, `gdp_usd`, `eu_member`, `node_tier`.
 
