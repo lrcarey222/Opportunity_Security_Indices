@@ -1,0 +1,31 @@
+# Settings of the bilateral partnership themes (scripts/15_build_partner_themes.R) that are not
+# weights; the component and PSI weights are in config/weights.yml. Read by scripts/15.
+
+# Bilateral trade (Friendshore imports, Opportunity exports).
+trade:
+  # Which Comtrade dyad file to read from data/raw:
+  #   auto           comtrade_energy_dyads_all.csv (all reporters, scripts/98) when present, else
+  #                  allied_comtrade_energy_data.csv (22 reporters) with a loud warning
+  #   all_reporters  comtrade_energy_dyads_all.csv; stop when it is missing
+  #   allied         allied_comtrade_energy_data.csv (sensitivity / the build before October 2026)
+  source: auto
+  # Mirror flows (an exporter's declaration, used when the importer does not report the cell that
+  # year) are valued FOB; importers value CIF. Mirror values are multiplied by this factor. 1.06 is
+  # the IMF Direction of Trade Statistics CIF/FOB convention (Guide to DOTS; DOTS Yearbook 2017);
+  # the importers in the all-reporter pull that file both values give a median ratio of 1.05.
+  # 1 leaves mirror values as declared. Rule: partnership_strength_build_trade_cells().
+  cif_fob_factor: 1.06
+
+# Outward direct investment (Friendshore outbound_index, IMF Direct Investment Positions).
+outbound_fdi:
+  # conduits  positions with a conduit financial centre are unobserved (dropped; the component
+  #           renormalizes away): partnership_strength_conduit_centres() in
+  #           R/themes/partnership_strength/safer_friendshore.R, the ten pass-through economies of
+  #           Damgaard, Elkjaer and Johannesen ("The Rise of Phantom Investments", IMF F&D Sept 2019;
+  #           IMF WP/19/274; JIMF 2024), which host over 85% of phantom FDI, plus the six offshore
+  #           centres excluded before
+  #   legacy  the rule before October 2026: the 12 offshore centres excluded as counterparts only
+  conduit_rule: conduits
+  # Under conduit_rule: conduits, which positions are dropped: both (the centre is the counterpart
+  # or the reporter) or counterpart (positions held in a centre only).
+  conduit_scope: both

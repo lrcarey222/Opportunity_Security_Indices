@@ -17,6 +17,12 @@
 # (partner means ~0.26-0.60) sat well below the S-curved Friendshore and Opportunity top-5
 # scores, so once the PSI stopped scoring the missing category as 0 it pulled every
 # non-high-income partner down instead.
+#
+# Each partner cell also carries imputed_weight_share: the share of the component weight resting
+# on missing indicators (counted in full) and on the partner's ES and EO cells at their own
+# pillar imputed share (partnership_strength_imputed_weight_share(), partnership_strength_helpers.R).
+# The top-5 table carries the partner's mean over its top-5 cells on the Development Potential
+# Index rows (PSI rankability).
 
 # Code defaults for the development components (config/weights.yml
 # partnership_development_components overrides them).
@@ -515,10 +521,31 @@ partnership_strength_build_development_index <- function(energy_security_index,
 
   # Weighted mean over the components the partner has (missing ones dropped, not scored 0),
   # then S-curved across partners within (tech, stage).
+  component_w <- vapply(component_names, function(nm) as.numeric(component_weights[[nm]]), numeric(1))
   dev_potential_index$dev_potential_raw <- partnership_strength_row_weighted_mean(
     as.list(dev_potential_index[component_names]),
-    vapply(component_names, function(nm) as.numeric(component_weights[[nm]]), numeric(1))
+    component_w
   )
+
+  # Share of the component weight resting on missing or imputed inputs (the PSI rankability
+  # measure, partnership_strength_imputed_weight_share()): a missing component counts in full,
+  # the partner's ES and EO components at their pillar cell's own imputed share. Every component
+  # describes the partner, so all of them count.
+  pillar_share <- list(
+    energy_security = partnership_strength_pillar_imputed_share(energy_security_index, country_info, "share", techs = techs),
+    economic_opportunity = partnership_strength_pillar_imputed_share(economic_opportunity_index, country_info, "share", techs = techs)
+  )
+  unobserved <- lapply(component_names, function(nm) {
+    if (nm %in% names(pillar_share)) {
+      keyed <- partnership_strength_join_pillar_share(
+        dev_potential_index[c("iso3c", "tech", "supply_chain")], pillar_share[[nm]], "iso3c", "share"
+      )
+      partnership_strength_pillar_unobserved(dev_potential_index[[nm]], keyed$share)
+    } else {
+      as.numeric(is.na(dev_potential_index[[nm]]))
+    }
+  })
+  dev_potential_index$imputed_weight_share <- partnership_strength_imputed_weight_share(unobserved, component_w)
   dev_potential_index <- dev_potential_index %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(dev_potential_index = partnership_strength_safe_scurve(dev_potential_raw)) %>%
@@ -649,6 +676,15 @@ stronger_development <- function(country_info,
       explanation
     )
 
+  # The partner's imputed weight share over the cells its top-5 Development Potential Index
+  # averages; the PSI's rankability rule reads it off the top-5 table.
+  partner_share <- partnership_strength_top_k_share(
+    dplyr::rename(dev_potential_index, partner_iso = iso3c),
+    "partner_iso",
+    "dev_potential_index",
+    k = 5L
+  )
+
   top5_tbl <- partnership_strength_build_top_k(
     variable_tbl,
     c("partner", "partner_iso"),
@@ -659,6 +695,7 @@ stronger_development <- function(country_info,
       Country = partner,
       explanation = "Mean of the partner's five highest (tech, stage) values."
     ) %>%
+    partnership_strength_add_top5_share(partner_share, "partner_iso", "Development Potential Index") %>%
     dplyr::select(
       Country,
       partner,
@@ -667,6 +704,7 @@ stronger_development <- function(country_info,
       variable,
       data_type,
       value,
+      imputed_weight_share,
       Year,
       source,
       explanation

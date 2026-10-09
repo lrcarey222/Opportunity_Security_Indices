@@ -397,6 +397,391 @@ partnership_strength_clean_outbound_countries <- function(country) {
   partnership_strength_standardize_countries(dplyr::recode(country, !!!recode_map, .default = country))
 }
 
+# ---- Bilateral trade flows ---------------------------------------------------------------------
+#
+# The Friendshore and Opportunity trade components read one reconciled flow matrix: for every
+# exporter e, importer m, (tech, stage) cell and theme year, the value of e's exports to m.
+#
+# Source rule (per importer, cell and year):
+# 1. Importer's report. When m reports imports in the cell that year (any partner, any of the
+#    cell's HS6 codes), its declarations are used for every exporter: m's recorded imports from e,
+#    0 where m records none. Importers' declarations are the usual first choice for bilateral flows
+#    (customs record imports more carefully than exports, for duties and origin rules).
+# 2. Mirror. Otherwise, when e reports exports in the cell that year, e's declared exports to m are
+#    used (0 where e records none), multiplied by `cif_fob_factor`: importers value at CIF (cost,
+#    insurance and freight to the border), exporters at FOB, so an export declaration understates
+#    the same flow on the importer's basis. The default, 1.06, is the IMF Direction of Trade
+#    Statistics convention for deriving partner imports from reported exports (Guide to DOTS;
+#    DOTS Yearbook 2017). In the all-reporter pull the importers that file both values give a
+#    median CIF/FOB ratio of 1.05 (2020 imports). The factor is a constant, so it moves mirror flows
+#    against reported ones in the cross-dyad ranks and keeps a dyad's growth from jumping where
+#    its source switches between years; it does not change any within-source ranking. A few
+#    importers value their own imports FOB (cifvalue 0 in Comtrade: Canada, Mexico and South
+#    Africa among the large ones, ~4% of import rows of the 2020/2024 pull); their declarations
+#    are used as filed, so their own-report flows sit ~5% low against CIF-valued ones in the
+#    cross-dyad (stage-1) ranks only.
+# 3. Otherwise the flow is unobserved (NA), and the trade component is imputed downstream.
+#
+# The choice is made per (importer, cell, year), not per row: a cell never mixes the importer's
+# and the exporter's declarations. "Reports in the cell" means at least one record in the cell
+# that year, so a reporter that files none of the cell's codes (or a partial pull missing a code
+# group) counts as not reporting it rather than as a reported zero. Self-dyads (re-imports) are
+# dropped. The economies are those the trade file names as a reporter or partner; a pair with an
+# economy outside it is unobserved.
+
+# Constant CIF/FOB factor applied to mirror (exporter-reported, FOB) flows; see above.
+PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR <- 1.06
+
+# Which Comtrade dyad file the themes read (config/partnership.yml trade$source), given which
+# files exist: "all_reporters" (comtrade_energy_dyads_all.csv, scripts/98) or "allied" (the
+# 22-reporter allied_comtrade_energy_data.csv). "auto" prefers the all-reporter pull and falls back
+# to the allied file with fallback = TRUE, which the caller must warn about; an explicit choice
+# stops when its file is missing. Returns list(source, fallback).
+partnership_strength_resolve_trade_source <- function(setting = "auto", all_reporters_exists, allied_exists) {
+  setting <- if (is.null(setting) || !nzchar(setting)) "auto" else tolower(as.character(setting))
+  if (!setting %in% c("auto", "all_reporters", "allied")) {
+    stop("trade source must be auto, all_reporters or allied, not '", setting, "'.")
+  }
+  if (identical(setting, "all_reporters") && !isTRUE(all_reporters_exists)) {
+    stop("trade source all_reporters: comtrade_energy_dyads_all.csv is missing (scripts/98_pull_comtrade_energy_dyads.R).")
+  }
+  if (identical(setting, "allied") && !isTRUE(allied_exists)) {
+    stop("trade source allied: allied_comtrade_energy_data.csv is missing.")
+  }
+  if (identical(setting, "auto")) {
+    if (isTRUE(all_reporters_exists)) return(list(source = "all_reporters", fallback = FALSE))
+    if (isTRUE(allied_exists)) return(list(source = "allied", fallback = TRUE))
+    stop("No Comtrade dyad file: neither comtrade_energy_dyads_all.csv nor allied_comtrade_energy_data.csv is present.")
+  }
+  list(source = setting, fallback = FALSE)
+}
+
+# A Comtrade dyad table (the all-reporter pull or the 22-reporter allied file, comtradr tidy
+# names) reduced to reporter_iso, partner_iso, period, flow_direction ("import" / "export"),
+# cmd_code (6 digits) and primary_value. Rows without both ISO3 codes or a value, self-dyads and
+# periods outside `years` (all when NULL) are dropped.
+partnership_strength_standardize_comtrade <- function(comtrade_dyads, years = NULL) {
+  require_columns(comtrade_dyads, c("reporter_iso", "partner_iso"), label = "comtrade_dyads")
+  flow_col <- partnership_strength_pick_column(comtrade_dyads, c("flow_direction", "trade_flow", "flow"), "flow")
+  period_col <- partnership_strength_pick_column(comtrade_dyads, c("period", "year", "Year", "ref_year"), "period")
+  value_col <- partnership_strength_pick_column(comtrade_dyads, c("primary_value", "trade_value", "value"), "trade value")
+  code_col <- partnership_strength_pick_column(comtrade_dyads, c("cmd_code", "code", "hs6"), "HS6 code")
+
+  out <- tibble::tibble(
+    reporter_iso = as.character(comtrade_dyads$reporter_iso),
+    partner_iso = as.character(comtrade_dyads$partner_iso),
+    period = suppressWarnings(as.integer(comtrade_dyads[[period_col]])),
+    flow_direction = stringr::str_to_lower(as.character(comtrade_dyads[[flow_col]])),
+    cmd_code = stringr::str_pad(as.character(comtrade_dyads[[code_col]]), width = 6, side = "left", pad = "0"),
+    primary_value = suppressWarnings(as.numeric(comtrade_dyads[[value_col]]))
+  )
+  keep <- !is.na(out$reporter_iso) & nzchar(out$reporter_iso) &
+    !is.na(out$partner_iso) & nzchar(out$partner_iso) &
+    out$reporter_iso != out$partner_iso &
+    !is.na(out$period) & !is.na(out$primary_value) &
+    out$flow_direction %in% c("import", "export")
+  if (!is.null(years)) keep <- keep & out$period %in% years
+  out[keep, , drop = FALSE]
+}
+
+# The reconciled flow matrix at (tech, stage) level for the first and last theme year, from a raw
+# Comtrade dyad table and the HS6 crosswalk (rule above). One row per (exporter_iso, importer_iso,
+# tech, supply_chain) observed in at least one of the two years:
+#   value_first / value_last   flow in min(years) / max(years); NA = unobserved that year, 0 = a
+#                              reporter's declarations record no such trade
+#   source_first / source_last "importer", "mirror" or NA (unobserved)
+# A code that the crosswalk files under several technologies counts in each of them (the cells
+# are technology-attributed trade, not a partition); duplicate crosswalk rows count once.
+# mirror = FALSE keeps only importers' declarations (no fallback).
+partnership_strength_build_trade_cells <- function(comtrade_dyads,
+                                                   subcat,
+                                                   years = 2020:2024,
+                                                   cif_fob_factor = PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR,
+                                                   mirror = TRUE) {
+  if (!is.numeric(cif_fob_factor) || length(cif_fob_factor) != 1 || is.na(cif_fob_factor) || cif_fob_factor <= 0) {
+    stop("cif_fob_factor must be one positive number.")
+  }
+  y_first <- min(years)
+  y_last <- max(years)
+  keys <- c("exporter_iso", "importer_iso", "tech", "supply_chain")
+
+  mapping <- partnership_strength_build_trade_mapping(subcat) %>%
+    dplyr::filter(!is.na(tech), !is.na(supply_chain)) %>%
+    dplyr::distinct(tech, supply_chain, code)
+
+  std <- partnership_strength_standardize_comtrade(comtrade_dyads, years = c(y_first, y_last))
+  economies <- sort(unique(c(std$reporter_iso, std$partner_iso)))
+
+  cells <- std %>%
+    dplyr::inner_join(mapping, by = c("cmd_code" = "code"), relationship = "many-to-many") %>%
+    dplyr::group_by(reporter_iso, partner_iso, period, flow_direction, tech, supply_chain) %>%
+    dplyr::summarise(value = sum(primary_value), .groups = "drop")
+  rm(std)
+
+  # Who reports which cell in which year.
+  importers <- cells %>%
+    dplyr::filter(flow_direction == "import") %>%
+    dplyr::distinct(importer_iso = reporter_iso, period, tech, supply_chain)
+  exporters <- cells %>%
+    dplyr::filter(flow_direction == "export") %>%
+    dplyr::distinct(exporter_iso = reporter_iso, period, tech, supply_chain)
+
+  # Observed pairs: every exporter of a reporting importer; for the other importers, every
+  # importer of a reporting exporter.
+  own <- importers %>%
+    tidyr::expand_grid(exporter_iso = economies) %>%
+    dplyr::filter(exporter_iso != importer_iso) %>%
+    dplyr::left_join(
+      cells %>%
+        dplyr::filter(flow_direction == "import") %>%
+        dplyr::transmute(exporter_iso = partner_iso, importer_iso = reporter_iso, period, tech, supply_chain, value),
+      by = c(keys, "period")
+    ) %>%
+    dplyr::mutate(value = dplyr::coalesce(value, 0), source = "importer")
+
+  observed <- own
+  if (isTRUE(mirror)) {
+    mirrored <- exporters %>%
+      tidyr::expand_grid(importer_iso = economies) %>%
+      dplyr::filter(exporter_iso != importer_iso) %>%
+      dplyr::anti_join(importers, by = c("importer_iso", "period", "tech", "supply_chain")) %>%
+      dplyr::left_join(
+        cells %>%
+          dplyr::filter(flow_direction == "export") %>%
+          dplyr::transmute(exporter_iso = reporter_iso, importer_iso = partner_iso, period, tech, supply_chain, value),
+        by = c(keys, "period")
+      ) %>%
+      dplyr::mutate(value = dplyr::coalesce(value, 0) * cif_fob_factor, source = "mirror")
+    observed <- dplyr::bind_rows(own, mirrored)
+    rm(mirrored)
+  }
+  rm(own, cells)
+
+  first <- observed %>%
+    dplyr::filter(period == y_first) %>%
+    dplyr::select(dplyr::all_of(keys), value_first = value, source_first = source)
+  last <- observed %>%
+    dplyr::filter(period == y_last) %>%
+    dplyr::select(dplyr::all_of(keys), value_last = value, source_last = source)
+  out <- dplyr::full_join(first, last, by = keys)
+  partnership_strength_assert_unique(out, keys, label = "trade cells")
+}
+
+# One direction of the reconciled matrix as the dyad series the trade indices rank:
+# view "import" (Friendshore): reporter = importer, partner = exporter; view "export"
+# (Opportunity): reporter = exporter, partner = importer. Cells whose last-year flow is unobserved
+# are dropped (the builders impute them); growth is defined only where both years are observed
+# and the first-year flow is positive.
+partnership_strength_trade_view <- function(trade_cells, view = c("import", "export")) {
+  view <- match.arg(view)
+  require_columns(
+    trade_cells,
+    c("exporter_iso", "importer_iso", "tech", "supply_chain", "value_first", "value_last"),
+    label = "trade_cells"
+  )
+  reporter <- if (identical(view, "import")) trade_cells$importer_iso else trade_cells$exporter_iso
+  partner <- if (identical(view, "import")) trade_cells$exporter_iso else trade_cells$importer_iso
+  tibble::tibble(
+    reporter_iso = reporter,
+    partner_iso = partner,
+    tech = trade_cells$tech,
+    supply_chain = trade_cells$supply_chain,
+    level_last = trade_cells$value_last,
+    level_first = trade_cells$value_first
+  ) %>%
+    dplyr::filter(!is.na(level_last)) %>%
+    dplyr::mutate(
+      growth = dplyr::if_else(!is.na(level_first) & level_first > 0, (level_last / level_first) - 1, NA_real_)
+    )
+}
+
+# The two-stage trade index of a dyad series (Friendshore imports, Opportunity exports).
+# Stage 1, within (tech, stage) across dyads that trade (a positive flow in either theme year):
+# S-curve of the last-year level and of growth, combined 2:1 over the measures the dyad has (a
+# dyad without growth, e.g. no first-year trade, is scored on its level). Stage 2: S-curve within
+# (reporter, tech, stage). Dyads observed with no trade in either year (observed zeros) enter
+# stage 2 as one tie block below every trading partner, so they take the block's mid-rank, the
+# convention the outbound index uses for zero positions. Returns reporter_iso, partner_iso, tech,
+# supply_chain, `index_col` and trade_status ("trade" / "zero").
+partnership_strength_two_stage_trade_index <- function(ds, index_col) {
+  require_columns(ds, c("reporter_iso", "partner_iso", "tech", "supply_chain", "level_last", "level_first", "growth"), label = "dyad series")
+  ds %>%
+    dplyr::mutate(
+      trading = (!is.na(level_last) & level_last > 0) | (!is.na(level_first) & level_first > 0)
+    ) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(
+      level_idx = partnership_strength_safe_scurve(dplyr::if_else(trading, level_last, NA_real_)),
+      growth_idx = partnership_strength_safe_scurve(dplyr::if_else(trading, growth, NA_real_)),
+      # Available-case on both sides: the numerator used to propagate a missing growth, so a dyad
+      # with last-year but no first-year trade lost its trade score and was imputed at the mean.
+      combined = partnership_strength_row_weighted_mean(list(level_idx, growth_idx), c(2, 1)),
+      combined = dplyr::if_else(trading, combined, -1)
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(reporter_iso, tech, supply_chain) %>%
+    dplyr::mutate(!!index_col := partnership_strength_safe_scurve(combined)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(trade_status = dplyr::if_else(trading, "trade", "zero")) %>%
+    dplyr::select(reporter_iso, partner_iso, tech, supply_chain, dplyr::all_of(index_col), trade_status)
+}
+
+# Trade indices built elsewhere (or by hand in tests) may lack trade_status: a non-missing index
+# then counts as observed trade.
+partnership_strength_with_trade_status <- function(trade_indices, index_col) {
+  if (!"trade_status" %in% names(trade_indices)) {
+    trade_indices$trade_status <- dplyr::if_else(is.na(trade_indices[[index_col]]), NA_character_, "trade")
+  }
+  trade_indices
+}
+
+# ---- Imputed weight share (PSI rankability) -----------------------------------------------------
+#
+# The pillars rank a cell only when at most a share tau of its index weight rests on imputed
+# components (config/rankability.yml). The PSI applies the same rule to partners, with this
+# measure of how much of a partner's score rests on imputed inputs. Per scored cell (a dyad's
+# (tech, stage) for Friendshore and Opportunity, a partner's (tech, stage) for Development):
+#
+#   imputed_weight_share = sum_c w_c u_c / sum_c w_c
+#
+# over the cell's partner- and pair-specific components c (weights w_c from config/weights.yml),
+# with u_c the unobserved fraction of component c:
+#   - 1 for a component that is missing, so the theme's weighted mean drops it and renormalizes
+#     over the others (a dyad without an IMF DIP position, a dyad without a geo_alignment value,
+#     a Development indicator the partner lacks): its weight rests on the other components;
+#   - 1 for a filled component: a trade cell without an observed flow, imputed at the (tech,
+#     stage) mean (trade_status "imputed"), and a geo_alignment assigned rather than read from
+#     both countries' own UN votes (territories inherit their sovereign's bloc; Taiwan, Palestine
+#     and Kosovo are neutral; basis_reporter / basis_partner of geo_alignment_tbl);
+#   - the pillar cell's own imputed_weight_share for a component read off the partner's ES or EO
+#     cell (Friendshore eo_partner, Opportunity partner_es_need, Development energy_security and
+#     economic_opportunity); 0 when the pillar table does not carry the column;
+#   - 0 for an observed component.
+# Left out of the measure, in numerator and denominator:
+#   - the reporter's own attributes (Friendshore es_need and econ_opp_raw, Opportunity
+#     econ_opp_index). They are the same for every partner a reporter rates in a (tech, stage),
+#     so they cannot make one partner's rank more or less reliable than another's, and counting
+#     them would add the reporters' pillar imputation to every partner alike;
+#   - the trade component of a (tech, stage) without trade data (trade_status "no_data": no HS6
+#     code maps to it, every dyad gets the constant 0.5). Such a cell has no trade component, as a
+#     pillar cell has no category its sources never cover;
+#   - the climate-policy penalties, which are subtracted from the composite, not weighted in it.
+# A dyad's (partner's) share is the mean over the five (tech, stage) cells its top-5 index value
+# averages (partnership_strength_top_k_share()); the PSI averages those as it averages the scores
+# (psi_imputed_weight_share(), R/indices/build_partnership_strength_index.R).
+
+# Weighted share of unobserved weight. `unobserved` is a list of numeric vectors in [0, 1] (one
+# per component, equal lengths): NA marks a component that is not part of the cell. NA where no
+# component with a positive weight is part of the cell.
+partnership_strength_imputed_weight_share <- function(unobserved, weights) {
+  if (length(unobserved) != length(weights)) {
+    stop("Weights must align with the unobserved fractions.")
+  }
+  num <- 0
+  den <- 0
+  for (k in seq_along(unobserved)) {
+    u <- suppressWarnings(as.numeric(unobserved[[k]]))
+    w <- as.numeric(weights[[k]])
+    ok <- !is.na(u) & !is.na(w) & w > 0
+    num <- num + ifelse(ok, w * u, 0)
+    den <- den + ifelse(ok, w, 0)
+  }
+  ifelse(den > 0, num / den, NA_real_)
+}
+
+# Unobserved fraction of a trade component from its trade_status: 1 imputed, 0 observed (trade
+# or a recorded zero), NA for "no_data" (the cell has no trade component).
+partnership_strength_trade_unobserved <- function(trade_status) {
+  dplyr::case_when(
+    trade_status %in% "no_data" ~ NA_real_,
+    trade_status %in% "imputed" ~ 1,
+    TRUE ~ 0
+  )
+}
+
+# Unobserved fraction of a component read off a pillar cell: 1 when the component is missing,
+# else the pillar cell's imputed_weight_share (0 when unknown).
+partnership_strength_pillar_unobserved <- function(value, pillar_share) {
+  pillar_share <- suppressWarnings(as.numeric(pillar_share))
+  if (length(pillar_share) == 0) pillar_share <- rep(NA_real_, length(value))
+  dplyr::if_else(is.na(value), 1, dplyr::coalesce(pillar_share, 0))
+}
+
+# A pillar index table's imputed_weight_share at one value per (iso3c, tech, supply_chain), named
+# `name`; NULL when the table does not carry the column (a pillar build before the rankability
+# rule), in which case the components read off it count as observed.
+partnership_strength_pillar_imputed_share <- function(index_tbl, country_info, name, techs = NULL) {
+  if (is.null(index_tbl) || !"imputed_weight_share" %in% names(index_tbl)) {
+    return(NULL)
+  }
+  partnership_strength_country_iso_table(index_tbl, "imputed_weight_share", country_info, techs = techs) %>%
+    dplyr::rename(!!name := imputed_weight_share)
+}
+
+# Join a pillar share (from partnership_strength_pillar_imputed_share(), possibly NULL) onto `tbl`
+# by `iso_col`, tech and supply_chain; adds the column `name` (NA throughout when NULL).
+partnership_strength_join_pillar_share <- function(tbl, pillar_share, iso_col, name) {
+  if (is.null(pillar_share)) {
+    tbl[[name]] <- NA_real_
+    return(tbl)
+  }
+  dplyr::left_join(
+    tbl,
+    dplyr::rename(pillar_share, !!iso_col := iso3c),
+    by = c(iso_col, "tech", "supply_chain")
+  )
+}
+
+# Mean imputed_weight_share of the k cells with the highest `value_col` for each unit `id_cols`:
+# the cells partnership_strength_top_k_mean() averages for that unit's top-5 value (cells without
+# a value are skipped; ties at the k-th place are broken by tech and stage order). One row per unit.
+partnership_strength_top_k_share <- function(tbl, id_cols, value_col, share_col = "imputed_weight_share", k = 5L) {
+  require_columns(tbl, c(id_cols, "tech", "supply_chain", value_col, share_col), label = "top-k share")
+  tbl <- tbl[!is.na(tbl[[value_col]]), c(id_cols, "tech", "supply_chain", value_col, share_col), drop = FALSE]
+  ord <- do.call(order, c(
+    lapply(id_cols, function(col) tbl[[col]]),
+    list(-tbl[[value_col]], tbl$tech, tbl$supply_chain)
+  ))
+  tbl <- tbl[ord, , drop = FALSE]
+  unit <- do.call(paste, c(lapply(id_cols, function(col) as.character(tbl[[col]])), sep = "|"))
+  pos <- stats::ave(seq_along(unit), unit, FUN = seq_along)
+  tbl <- tbl[pos <= k, , drop = FALSE]
+  tbl %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) %>%
+    dplyr::summarise(!!share_col := mean(.data[[share_col]]), .groups = "drop")
+}
+
+# Attach a unit's imputed_weight_share to the index rows of its top-5 table (variable ==
+# `index_variable`); component rows get NA (each of them averages its own top cells).
+partnership_strength_add_top5_share <- function(top5_tbl, unit_share, id_cols, index_variable) {
+  out <- dplyr::left_join(top5_tbl, unit_share, by = id_cols)
+  out$imputed_weight_share[out$variable != index_variable] <- NA_real_
+  out
+}
+
+# Coverage of a dyad table's trade component by (tech, stage): dyad cells scored on an observed
+# flow (trade or a recorded zero), cells imputed at the cell mean, and cells of a (tech, stage)
+# without trade data (no HS6 code mapped; n_no_data = n_cells there). share_imputed is the
+# imputed share of the cells of a (tech, stage) with trade data (NA for one without).
+partnership_strength_trade_coverage <- function(dyads, theme) {
+  require_columns(dyads, c("reporter_iso", "partner_iso", "tech", "supply_chain", "trade_status"), label = "dyads")
+  dyads %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::summarise(
+      n_cells = dplyr::n(),
+      n_trade = sum(trade_status %in% "trade"),
+      n_zero = sum(trade_status %in% "zero"),
+      n_imputed = sum(trade_status %in% "imputed"),
+      n_no_data = sum(trade_status %in% "no_data"),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(
+      theme = theme,
+      share_imputed = dplyr::if_else(n_cells > n_no_data, n_imputed / (n_cells - n_no_data), NA_real_)
+    ) %>%
+    dplyr::relocate(theme)
+}
+
 partnership_strength_build_trade_mapping <- function(subcat, include_sub_sector = FALSE) {
   tech_col <- partnership_strength_pick_column(
     subcat,
@@ -428,6 +813,16 @@ partnership_strength_build_trade_mapping <- function(subcat, include_sub_sector 
     dplyr::distinct()
 }
 
+# Lifecycle GHG intensity of oil-fired electricity, gCO2eq/kWh: the median of the IPCC
+# literature review in SRREN (Moomaw et al. 2011, Annex II, Table A.II.4, p. 982;
+# https://www.ipcc.ch/site/assets/uploads/2018/03/Annex-II-Methodology-1.pdf, accessed
+# 2026-10-07; min 510, quartiles 722 / 907, max 1170). Every other row of
+# data/raw/ipcc_ghg_intensity.csv is a lifecycle median from AR5 WGIII Annex III,
+# Table A.III.2 (p. 1335), which has no oil-fired technology. The staged table's oil value,
+# 720, is in neither table (it is close to the SRREN 25th percentile), and the file is
+# staged from SharePoint, so it is corrected here.
+IPCC_OIL_LIFECYCLE_MEDIAN_G_PER_KWH <- 840
+
 partnership_strength_clean_ghg <- function(tech_ghg_raw) {
   require_columns(tech_ghg_raw, c("Tech", "ghg_intensity"), label = "tech_ghg_raw")
   
@@ -445,7 +840,8 @@ partnership_strength_clean_ghg <- function(tech_ghg_raw) {
         stringr::str_detect(Tech, "^Wind") ~ "Wind",
         Tech == "Nuclear (light-water)" ~ "Nuclear",
         TRUE ~ Tech
-      )
+      ),
+      ghg_intensity = dplyr::if_else(Tech == "Oil", IPCC_OIL_LIFECYCLE_MEDIAN_G_PER_KWH, as.numeric(ghg_intensity))
     ) %>%
     # Geothermal has its own IPCC row (38 gCO2e/kWh); it used to be filtered out here and
     # imputed with the Solar value below.

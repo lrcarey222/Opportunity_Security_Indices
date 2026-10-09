@@ -118,7 +118,47 @@ if (is.null(raw_data_path)) {
   return()
 }
 
-comtrade_dyads_path <- file.path(raw_data_path, "allied_comtrade_energy_data.csv")
+# Settings that are not weights (trade source, CIF/FOB factor, conduit rule).
+partnership_cfg_path <- file.path(repo_root, "config", "partnership.yml")
+partnership_cfg <- if (file.exists(partnership_cfg_path)) yaml::read_yaml(partnership_cfg_path) else list()
+
+# Bilateral trade: the all-reporter Comtrade pull (scripts/98_pull_comtrade_energy_dyads.R) when it
+# is present, else the 22-reporter allied file (config/partnership.yml trade$source).
+comtrade_all_path <- file.path(raw_data_path, "comtrade_energy_dyads_all.csv")
+comtrade_allied_path <- file.path(raw_data_path, "allied_comtrade_energy_data.csv")
+trade_source <- if (file.exists(comtrade_all_path) || file.exists(comtrade_allied_path)) {
+  partnership_strength_resolve_trade_source(
+    partnership_cfg$trade$source,
+    all_reporters_exists = file.exists(comtrade_all_path),
+    allied_exists = file.exists(comtrade_allied_path)
+  )
+} else {
+  # Neither file: the missing-file check below reports it (or skips under SKIP_DATA_DOWNLOADS).
+  list(source = "all_reporters", fallback = FALSE)
+}
+comtrade_dyads_path <- if (identical(trade_source$source, "all_reporters")) comtrade_all_path else comtrade_allied_path
+if (isTRUE(trade_source$fallback)) {
+  banner <- strrep("!", 78)
+  warning(
+    "\n", banner,
+    "\nPARTNER THEMES FALL BACK TO THE 22-REPORTER COMTRADE FILE (allied_comtrade_energy_data.csv):",
+    "\n", comtrade_all_path, " is missing. Dyads without a reporting importer or exporter among",
+    "\nthe 22 get an imputed trade component. Run scripts/98_pull_comtrade_energy_dyads.R and rerun.",
+    "\n", banner,
+    call. = FALSE, immediate. = TRUE
+  )
+}
+message("Partner themes: bilateral trade from ", basename(comtrade_dyads_path), " (", trade_source$source, ").")
+trade_cif_fob_factor <- if (is.null(partnership_cfg$trade$cif_fob_factor)) {
+  PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR
+} else {
+  as.numeric(partnership_cfg$trade$cif_fob_factor)
+}
+outbound_conduits <- partnership_strength_conduit_rule(
+  rule = if (is.null(partnership_cfg$outbound_fdi$conduit_rule)) "conduits" else partnership_cfg$outbound_fdi$conduit_rule,
+  scope = if (is.null(partnership_cfg$outbound_fdi$conduit_scope)) "both" else partnership_cfg$outbound_fdi$conduit_scope
+)
+
 subcat_path <- file.path(raw_data_path, "energy_hs6_master.csv")
 fdi_path <- file.path(raw_data_path, "imf_dip.csv")
 tech_ghg_path <- file.path(raw_data_path, "ipcc_ghg_intensity.csv")
@@ -178,7 +218,25 @@ read_imf_dip <- function(path) {
   as.data.frame(data.table::fread(path, select = keep, showProgress = FALSE))
 }
 
-comtrade_dyads <- read.csv(comtrade_dyads_path)
+# The all-reporter file runs to millions of rows and ~50 columns; read only those the trade
+# builder uses (cmd_code as text, so no HS6 code loses a leading zero).
+read_comtrade_dyads <- function(path) {
+  wanted <- c("reporter_iso", "partner_iso", "period", "ref_year", "flow_direction", "flow_code", "cmd_code", "primary_value")
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    return(read.csv(path, colClasses = c(cmd_code = "character")))
+  }
+  header <- names(data.table::fread(path, nrows = 0))
+  keep <- intersect(wanted, header)
+  as.data.frame(data.table::fread(
+    path,
+    select = keep,
+    colClasses = list(character = intersect(c("reporter_iso", "partner_iso", "flow_direction", "cmd_code"), keep)),
+    na.strings = c("", "NA"),
+    showProgress = FALSE
+  ))
+}
+
+comtrade_dyads <- read_comtrade_dyads(comtrade_dyads_path)
 subcat <- read.csv(subcat_path)
 fdi_raw <- read_imf_dip(fdi_path)
 tech_ghg_raw <- read.csv(tech_ghg_path)
@@ -193,6 +251,17 @@ country_info <- standardize_country_info(country_info)
 
 econ_opp_index <- economic_opportunity_outputs$index
 energy_security_index <- energy_security_outputs$index
+
+# UNGA voting alignment (scripts/12_build_geopolitical_alignment.R): the Friendshore geo_alignment
+# component, one row per (reporter_iso, partner_iso). Economies without a UN vote are assigned there
+# (territories and SARs take their sovereign's bloc; Taiwan, Palestine and Kosovo are neutral). A
+# dyad the table does not cover, or with a missing value, gets NA and the component drops out of
+# that dyad's mean.
+geo_alignment_path <- file.path(processed_dir, "geo_alignment_tbl.rds")
+if (!file.exists(geo_alignment_path)) {
+  stop("Geopolitical alignment not found: ", geo_alignment_path, "; run scripts/12_build_geopolitical_alignment.R.")
+}
+geo_alignment_tbl <- readRDS(geo_alignment_path)
 
 tech_ghg <- partnership_strength_clean_ghg(tech_ghg_raw)
 # Same CAT treatment as the Policy index (scripts/10): WDI names, and EU members without
@@ -213,8 +282,28 @@ partner_techs <- partnership_strength_headline_techs()
 #   *_country_tbl is the partner-level mean over reporters of the dyad index.
 # - partner_development_*: partner-level, one row per (partner_iso, tech, supply_chain,
 #   variable), non-high-income partners only; there is no reporter dimension.
+# - partner_trade_coverage_tbl: by theme and (tech, stage), the dyad cells whose trade component is
+#   observed trade, a recorded zero or imputed, with the trade file used.
+
+# One reconciled exporter -> importer flow matrix for both dyad themes (importer's declaration,
+# else the exporter's as a mirror at cif_fob_factor; partnership_strength_build_trade_cells()).
+partner_trade_years <- 2020:2024
+trade_cells <- partnership_strength_build_trade_cells(
+  comtrade_dyads,
+  subcat,
+  years = partner_trade_years,
+  cif_fob_factor = trade_cif_fob_factor
+)
+rm(comtrade_dyads)
+invisible(gc())
+message(
+  "Partner themes: ", format(nrow(trade_cells), big.mark = ","), " observed (exporter, importer, tech, stage) cells; ",
+  round(100 * mean(trade_cells$source_last[!is.na(trade_cells$source_last)] == "mirror"), 1),
+  "% of those observed in the last year from mirror declarations."
+)
+
 friendshore_outputs <- safer_friendshore(
-  comtrade_dyads = comtrade_dyads,
+  comtrade_dyads = NULL,
   subcat = subcat,
   econ_opp_index = econ_opp_index,
   energy_security_index = energy_security_index,
@@ -224,10 +313,31 @@ friendshore_outputs <- safer_friendshore(
   country_info = country_info,
   gdp_data = country_gdp,
   component_weights = weights$partnership_friendshore_components,
-  techs = partner_techs
+  years = partner_trade_years,
+  techs = partner_techs,
+  geo_alignment = geo_alignment_tbl,
+  trade_cells = trade_cells,
+  conduit_iso = outbound_conduits$iso3,
+  conduit_scope = outbound_conduits$scope
 )
 rm(fdi_raw)
 invisible(gc())
+
+# Countries in the Friendshore universe with no geo_alignment value against any partner: their
+# dyads are scored on the other components.
+geo_covered <- unique(c(
+  geo_alignment_tbl$reporter_iso[!is.na(geo_alignment_tbl$geo_alignment)],
+  geo_alignment_tbl$partner_iso[!is.na(geo_alignment_tbl$geo_alignment)]
+))
+fs_countries <- unique(c(
+  friendshore_outputs$country$partner_iso,
+  friendshore_outputs$top5$reporter_iso
+))
+geo_missing <- sort(setdiff(fs_countries, geo_covered))
+if (length(geo_missing) > 0) {
+  message("Friendshore: no geo_alignment (component dropped) for ", paste(geo_missing, collapse = ", "))
+}
+rm(geo_alignment_tbl, geo_covered, fs_countries, geo_missing)
 
 partner_friendshore_variable_tbl <- friendshore_outputs$variable
 partner_friendshore_contributions_tbl <- friendshore_outputs$contributions
@@ -261,7 +371,7 @@ write_processed_tbl(
 )
 
 opportunity_outputs <- prosperous_opportunity(
-  comtrade_dyads = comtrade_dyads,
+  comtrade_dyads = NULL,
   subcat = subcat,
   econ_opp_index = econ_opp_index,
   energy_security_index = energy_security_index,
@@ -269,8 +379,36 @@ opportunity_outputs <- prosperous_opportunity(
   policy = policy_tbl,
   country_info = country_info,
   component_weights = weights$partnership_opportunity_components,
-  techs = partner_techs
+  years = partner_trade_years,
+  techs = partner_techs,
+  trade_cells = trade_cells
 )
+rm(trade_cells)
+invisible(gc())
+
+# Trade coverage of both dyad themes by (tech, stage): cells scored on observed trade, on a
+# recorded zero, or imputed at the cell mean (no reporting importer or exporter in the last year),
+# and the cells of a (tech, stage) the HS6 crosswalk maps no code to (no_data).
+partner_trade_coverage_tbl <- dplyr::bind_rows(
+  friendshore_outputs$trade_coverage,
+  opportunity_outputs$trade_coverage
+) %>%
+  dplyr::mutate(
+    trade_source = trade_source$source,
+    trade_file = basename(comtrade_dyads_path),
+    cif_fob_factor = trade_cif_fob_factor
+  )
+for (theme_name in unique(partner_trade_coverage_tbl$theme)) {
+  cov <- partner_trade_coverage_tbl[partner_trade_coverage_tbl$theme == theme_name, ]
+  cov <- cov[cov$n_cells > cov$n_no_data, ]
+  message(
+    "Partner themes (", theme_name, "), ", nrow(cov), " (tech, stage) with trade data: trade component observed for ",
+    round(100 * sum(cov$n_trade + cov$n_zero) / sum(cov$n_cells), 1), "% of dyad cells (",
+    round(100 * sum(cov$n_trade) / sum(cov$n_cells), 1), "% with trade), imputed for ",
+    round(100 * sum(cov$n_imputed) / sum(cov$n_cells), 1), "%."
+  )
+}
+write_processed_tbl(partner_trade_coverage_tbl, "partner_trade_coverage_tbl", processed_dir)
 
 partner_opportunity_variable_tbl <- opportunity_outputs$variable
 partner_opportunity_contributions_tbl <- opportunity_outputs$contributions
@@ -374,7 +512,8 @@ saveRDS(
     partner_opportunity_country_tbl = partner_opportunity_country_tbl,
     partner_development_variable_tbl = partner_development_variable_tbl,
     partner_development_contributions_tbl = partner_development_contributions_tbl,
-    partner_development_top5_tbl = partner_development_top5_tbl
+    partner_development_top5_tbl = partner_development_top5_tbl,
+    partner_trade_coverage_tbl = partner_trade_coverage_tbl
   ),
   outputs_rds_path
 )

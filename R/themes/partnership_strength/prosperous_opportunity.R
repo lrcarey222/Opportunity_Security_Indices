@@ -8,8 +8,16 @@
 # rate the partner from the reporter's side. The tables are not transposed here.
 #
 # Universe: reporters with an EO record x partners with an ES record, one row per ISO3, no
-# self-dyads. The trade component is observed only for the Comtrade reporters; other dyads take
-# the (tech, stage) mean.
+# self-dyads. The trade component reads the reconciled flow matrix of
+# partnership_strength_build_trade_cells() (partnership_strength_helpers.R): the market's import
+# declaration where it reports the cell, else the reporter's own export declaration (mirror). A
+# dyad cell with no observed flow in the last theme year takes the (tech, stage) mean
+# (trade_status "imputed"); one observed with no trade is a recorded zero.
+#
+# Each dyad cell also carries imputed_weight_share, the share of its partner- and pair-specific
+# component weight (trade, partner_es_need) resting on imputed inputs
+# (partnership_strength_imputed_weight_share(), partnership_strength_helpers.R); the top-5 table
+# carries the dyad's mean over its top-5 cells on the Opportunity Index rows (PSI rankability).
 
 # Code defaults; the pipeline passes config/weights.yml partnership_opportunity_components.
 partnership_strength_opportunity_default_weights <- function() {
@@ -21,6 +29,10 @@ partnership_strength_opportunity_default_weights <- function() {
   )
 }
 
+# Reporter-only view of a Comtrade dyad table at (tech, stage) level: each reporter's own rows,
+# no mirror flows and no recorded zeros. The themes no longer use it (they read
+# partnership_strength_build_trade_cells()); it is kept with partnership_strength_build_dyad_series()
+# for the comparisons in scripts/paper/fig_bilateral.R.
 partnership_strength_clean_trade_data <- function(comtrade_dyads, subcat, years = 2020:2024) {
   require_columns(
     comtrade_dyads,
@@ -86,21 +98,11 @@ partnership_strength_build_dyad_series <- function(res_tech, flow = c("export", 
     )
 }
 
+# Reporter i's exports to market j: the two-stage trade index of
+# partnership_strength_two_stage_trade_index() (partnership_strength_helpers.R). Returns
+# reporter_iso, partner_iso, tech, supply_chain, trade_index and trade_status.
 partnership_strength_build_export_indices <- function(ds_export) {
-  ds_export %>%
-    dplyr::group_by(tech, supply_chain) %>%
-    dplyr::mutate(
-      export_index = partnership_strength_safe_scurve(level_last),
-      export_growth_index = partnership_strength_safe_scurve(growth),
-      ti_num = 2 * export_index + 1 * export_growth_index,
-      ti_den = 2 * (!is.na(export_index)) + 1 * (!is.na(export_growth_index)),
-      trade_index_raw = dplyr::if_else(ti_den > 0, ti_num / ti_den, NA_real_)
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(reporter_iso, tech, supply_chain) %>%
-    dplyr::mutate(trade_index = partnership_strength_safe_scurve(trade_index_raw)) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(reporter_iso, partner_iso, tech, supply_chain, trade_index)
+  partnership_strength_two_stage_trade_index(ds_export, "trade_index")
 }
 
 partnership_strength_build_opportunity_dyads <- function(trade_indices,
@@ -139,6 +141,11 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
     dplyr::mutate(value = median_scurve(Energy_Security_Index)) %>%
     dplyr::ungroup() %>%
     dplyr::transmute(partner_iso = iso3c, tech, supply_chain, energy_sec_raw = 1 - value)
+  # The partner's ES cell imputed share, for the imputed weight share below (NULL when the ES
+  # table predates the rankability rule).
+  es_partner_share <- partnership_strength_pillar_imputed_share(
+    energy_security_index, country_info, "es_partner_imputed", techs = techs
+  )
 
   ghg_iso <- tech_ghg %>%
     dplyr::transmute(tech, ghg_index = as.numeric(ghg_index))
@@ -166,10 +173,16 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
     # A country is not its own export market; keep self-dyads out of every ranking.
     dplyr::filter(reporter_iso != partner_iso)
 
+  trade_indices <- partnership_strength_with_trade_status(trade_indices, "trade_index")
+
   out <- dyad_backbone %>%
     dplyr::left_join(trade_indices, by = c("reporter_iso", "partner_iso", "tech", "supply_chain")) %>%
+    # A dyad cell without an observed flow in the last theme year takes the (tech, stage) mean; a
+    # (tech, stage) with no observed flow at all (no HS6 code mapped) is "no_data", a constant 0.5.
+    dplyr::mutate(trade_status = dplyr::if_else(is.na(trade_index), "imputed", trade_status)) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
+      trade_status = if (all(trade_status %in% "imputed")) rep("no_data", dplyr::n()) else trade_status,
       trade_index = dplyr::coalesce(
         trade_index,
         dplyr::if_else(
@@ -182,6 +195,7 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
     dplyr::ungroup() %>%
     dplyr::left_join(econ_opp_iso, by = c("reporter_iso" = "exporter_iso", "tech", "supply_chain")) %>%
     dplyr::left_join(energy_sec_iso, by = c("partner_iso", "tech", "supply_chain")) %>%
+    partnership_strength_join_pillar_share(es_partner_share, "partner_iso", "es_partner_imputed") %>%
     dplyr::left_join(ghg_iso, by = "tech") %>%
     dplyr::left_join(policy_iso, by = c("partner_iso" = "iso3c")) %>%
     dplyr::filter(!is.na(econ_opp_raw), !is.na(energy_sec_raw)) %>%
@@ -204,7 +218,18 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
         )
       ),
       penalty = (1 - ghg_index) * climate_policy_index * climate_policy_weight,
-      opportunity_index_raw = pmax(0, opportunity_raw - penalty)
+      opportunity_index_raw = pmax(0, opportunity_raw - penalty),
+      # Share of the cell's partner- and pair-specific component weight resting on imputed
+      # inputs (partnership_strength_imputed_weight_share(), partnership_strength_helpers.R): trade
+      # imputed at the cell mean, the partner's ES cell's own imputed share. The reporter's
+      # econ_opp_index is left out, as is the trade component of a no_data (tech, stage).
+      imputed_weight_share = partnership_strength_imputed_weight_share(
+        list(
+          partnership_strength_trade_unobserved(trade_status),
+          partnership_strength_pillar_unobserved(partner_es_need, es_partner_imputed)
+        ),
+        c(component_weights$trade_index, component_weights$partner_es_need)
+      )
     ) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(opportunity_index = partnership_strength_safe_scurve(opportunity_index_raw)) %>%
@@ -225,7 +250,9 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       opportunity_raw,
       opportunity_index_raw,
       opportunity_index,
-      opportunity_index_country
+      opportunity_index_country,
+      trade_status,
+      imputed_weight_share
     )
 
   partnership_strength_assert_unique(
@@ -492,12 +519,20 @@ prosperous_opportunity <- function(comtrade_dyads,
                                    component_weights = NULL,
                                    years = 2020:2024,
                                    top_n = 3,
-                                   techs = NULL) {
+                                   techs = NULL,
+                                   trade_cells = NULL,
+                                   cif_fob_factor = PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR) {
   component_weights <- partnership_strength_resolve_opportunity_weights(component_weights)
 
-  res_tech <- partnership_strength_clean_trade_data(comtrade_dyads, subcat, years = years)
-  ds_export <- partnership_strength_build_dyad_series(res_tech, flow = "export", years = years)
+  # The export side of the reconciled flow matrix Friendshore reads (importer's report, else the
+  # exporter's own as a mirror; partnership_strength_build_trade_cells()).
+  if (is.null(trade_cells)) {
+    trade_cells <- partnership_strength_build_trade_cells(comtrade_dyads, subcat, years = years, cif_fob_factor = cif_fob_factor)
+  }
+  ds_export <- partnership_strength_trade_view(trade_cells, view = "export")
+  rm(trade_cells)
   trade_indices <- partnership_strength_build_export_indices(ds_export)
+  rm(ds_export)
   opportunity_all <- partnership_strength_build_opportunity_dyads(
     trade_indices,
     econ_opp_index,
@@ -561,6 +596,16 @@ prosperous_opportunity <- function(comtrade_dyads,
       source,
       explanation
     )
+  # Trade coverage of the dyad cells (observed trade, recorded zero or imputed), by (tech, stage).
+  trade_coverage <- partnership_strength_trade_coverage(opportunity_all, theme = "opportunity")
+  # Each dyad's imputed weight share over the cells its top-5 Opportunity Index averages; the
+  # PSI's rankability rule reads it off the top-5 table.
+  dyad_share <- partnership_strength_top_k_share(
+    opportunity_all,
+    c("reporter_iso", "partner_iso"),
+    "opportunity_index",
+    k = 5L
+  )
   # The long tables run to ~5M rows on the full build; release the intermediates before the
   # summaries.
   rm(opportunity_all, opportunity_dyads)
@@ -582,6 +627,7 @@ prosperous_opportunity <- function(comtrade_dyads,
       partner = partnership_strength_iso_to_country(partner_iso, country_info),
       explanation = "Mean of the dyad's five highest (tech, stage) values; partner rated as an export market for the reporter."
     ) %>%
+    partnership_strength_add_top5_share(dyad_share, c("reporter_iso", "partner_iso"), "Opportunity Index") %>%
     dplyr::select(
       reporter,
       partner,
@@ -591,6 +637,7 @@ prosperous_opportunity <- function(comtrade_dyads,
       variable,
       data_type,
       value,
+      imputed_weight_share,
       Year,
       source,
       explanation
@@ -607,6 +654,7 @@ prosperous_opportunity <- function(comtrade_dyads,
     variable = variable_tbl,
     contributions = contributions_tbl,
     top5 = top5_tbl,
-    country = country_tbl
+    country = country_tbl,
+    trade_coverage = trade_coverage
   )
 }
