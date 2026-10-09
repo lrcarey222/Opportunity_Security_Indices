@@ -62,6 +62,7 @@ source(file.path(repo_root, "R", "categories", "energy_prices", "energy_prices.R
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "foreign_dependency.R"))
 source(file.path(repo_root, "R", "categories", "energy_imports", "import_dependence.R"))
 source(file.path(repo_root, "R", "categories", "reserves", "reserves.R"))
+source(file.path(repo_root, "R", "categories", "reserves", "uranium.R"))
 source(file.path(repo_root, "R", "categories", "trade", "trade_concentration.R"))
 source(file.path(repo_root, "R", "categories", "technology_demand", "future_demand.R"))
 source(file.path(repo_root, "R", "categories", "trade", "export_feasibility.R"))
@@ -207,6 +208,11 @@ if (length(critmin_years) != 1) {
     "); stage a complete set for one year."
   )
 }
+# Every reporter's imports from the economies missing from the export pulls (Russia, Guinea,
+# Gabon, ...) - the theme's mirror exports - plus the own exports of those that have reported
+# since (the DR Congo, Jordan, ...), fetched by scripts/fetchers/comtrade_mirror_critmin.R for
+# the same vintage. Optional, so a build without network access still runs.
+critmin_mirror_path <- file.path(raw_data_path, "critmin_mirror_import.csv")
 
 energy_prices_lcoe_path <- resolve_versioned_raw_input(
   raw_data_path,
@@ -270,6 +276,17 @@ investment_monitor_path <- file.path(
 # annual year-on-year series the theme reports alongside volatility.
 imf_price_path <- file.path(raw_data_path, "imf_commodity_prices.csv")
 
+# Uranium resources and mine production (Nuclear Upstream), transcribed from the OECD-NEA/IAEA
+# Red Book into data/reference and copied into data/raw by scripts/05_ingest_sources.R. Read
+# from data/reference when the ingest step has not copied them yet.
+uranium_resources_path <- file.path(raw_data_path, "uranium_resources.csv")
+if (!file.exists(uranium_resources_path)) {
+  uranium_resources_path <- file.path(raw_inputs_reference_dir(repo_root), "uranium_resources.csv")
+}
+uranium_production_path <- file.path(raw_data_path, "uranium_production.csv")
+if (!file.exists(uranium_production_path)) {
+  uranium_production_path <- file.path(raw_inputs_reference_dir(repo_root), "uranium_production.csv")
+}
 
 
 # Fail fast (or skip) if required raw inputs are missing.
@@ -308,6 +325,8 @@ missing_files <- c(
   tech_ghg_path,
   cat_policy_path,
   dual_use_scores_path,
+  uranium_resources_path,
+  uranium_production_path,
   investment_monitor_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
@@ -407,7 +426,15 @@ country_info <- standardize_country_info(country_info)
     spec
   })
 
-  reserves_tbl <- reserves(ei, reserve_inputs, mineral_demand_clean)
+  # Nuclear Upstream: Red Book uranium resources ("Nuclear Reserves") and mine production,
+  # used by the reserves, critical minerals production and production depth themes.
+  uranium_resources <- read.csv(uranium_resources_path, stringsAsFactors = FALSE)
+  uranium_production <- read.csv(uranium_production_path, stringsAsFactors = FALSE)
+
+  reserves_tbl <- reserves(
+    ei, reserve_inputs, mineral_demand_clean,
+    uranium_resources = uranium_resources
+  )
   reserves_tbl <- standardize_theme_types(reserves_tbl, country_info = country_info)
   write_processed_tbl(reserves_tbl, "reserves_tbl", processed_dir)
 
@@ -469,6 +496,20 @@ country_info <- standardize_country_info(country_info)
     mineral_demand_clean = mineral_demand_clean,
     country_reference = country_reference
   )
+  # Uranium mine production joins as "Nuclear Production", ranked like the EI minerals; this
+  # is the Energy Security production theme. The Red Book lists every producer, so the zeros
+  # are completed over every economy (EI roster plus WDI), not only the EI roster.
+  critical_minerals_production_tbl <- uranium_bind_theme_rows(
+    critical_minerals_production_tbl,
+    uranium_production_table(
+      uranium_production,
+      country_reference = dplyr::bind_rows(
+        country_reference,
+        dplyr::transmute(country_info, Country = country, iso3c = iso3c)
+      )
+    ) %>%
+      energy_security_add_overall_index()
+  )
   critical_minerals_production_tbl <- standardize_theme_types(
     critical_minerals_production_tbl,
     country_info = country_info
@@ -483,12 +524,23 @@ country_info <- standardize_country_info(country_info)
   critmin_import <- read.csv(critmin_import_path)
   critmin_export <- read.csv(critmin_export_path)
   total_export <- read.csv(critmin_total_export_path)
+  critmin_mirror <- if (file.exists(critmin_mirror_path)) {
+    read.csv(critmin_mirror_path, colClasses = c(cmd_code = "character"))
+  } else {
+    warning(
+      basename(critmin_mirror_path), " is missing (run scripts/05 with network access): ",
+      "Minerals Trade falls back to reporter-side exports and non-reporters score 0.",
+      call. = FALSE
+    )
+    NULL
+  }
   critical_minerals_trade_tbl <- critical_minerals_trade(
     critmin_import = critmin_import,
     critmin_export = critmin_export,
     total_export = total_export,
     mineral_demand_clean = mineral_demand_clean,
-    country_info = country_info
+    country_info = country_info,
+    mirror_import = critmin_mirror
   )
   critical_minerals_trade_tbl <- standardize_theme_types(
     critical_minerals_trade_tbl,
@@ -497,6 +549,21 @@ country_info <- standardize_country_info(country_info)
   write_processed_tbl(
     critical_minerals_trade_tbl,
     "critical_minerals_trade_tbl",
+    processed_dir
+  )
+  # Exporter x mineral exports, shares and HHIs with their provenance (reported / mirror).
+  critical_minerals_trade_flows_tbl <- critical_minerals_trade_flows(
+    critmin_import = critmin_import,
+    critmin_export = critmin_export,
+    total_export = total_export,
+    mineral_demand_clean = mineral_demand_clean,
+    country_info = country_info,
+    mirror_import = critmin_mirror
+  ) %>%
+    dplyr::rename(iso3c = reporter_iso)
+  write_processed_tbl(
+    critical_minerals_trade_flows_tbl,
+    "critical_minerals_trade_flows_tbl",
     processed_dir
   )
 
@@ -609,13 +676,16 @@ country_info <- standardize_country_info(country_info)
 
   # atlas_year_6 / atlas_year_4 were set where the Atlas panels were read, above.
   # gdp_data (WDI) scales the basket's net imports in the ES exposure term.
+  # The trade themes rank and keep the economies of their roster; Taiwan is not in WDI, so it
+  # is added here (add_unlisted_economies(), R/utils/country.R) rather than dropped at the join.
+  trade_country_info <- add_unlisted_economies(country_info)
   trade_concentration_tbl <- trade_concentration(
     subcat = subcat,
     aec_4_data = aec_4_data,
     aec_6_data = aec_6_data,
     comtrade_trade = comtrade_energy_trade,
     comtrade_total_export = comtrade_total_export,
-    country_info = country_info,
+    country_info = trade_country_info,
     year_4 = atlas_year_4,
     year_6 = atlas_year_6,
     year_comtrade = getOption("opportunity_security.comtrade_year"),
@@ -636,7 +706,7 @@ country_info <- standardize_country_info(country_info)
     aec_4_data = aec_4_data,
     aec_6_data = aec_6_data,
     subcat = subcat,
-    country_info = country_info,
+    country_info = trade_country_info,
     gdp_data = gdp_data,
     comtrade_trade = comtrade_energy_trade,
     comtrade_total_export = comtrade_total_export,
@@ -704,12 +774,13 @@ country_info <- standardize_country_info(country_info)
   future_demand_tbl <- standardize_theme_types(future_demand_tbl, country_info = country_info)
   write_processed_tbl(future_demand_tbl, "future_demand_tbl", processed_dir)
 
-  # Theme: Production depth + momentum (EI + IEA critical minerals).
+  # Theme: Production depth + momentum (EI + IEA critical minerals + Red Book uranium).
   production_depth_momentum_tbl <- production_depth_momentum(
     ei = ei,
     critical = critical,
     mineral_demand_clean = mineral_demand_clean,
-    country_info = country_info
+    country_info = country_info,
+    uranium_production = uranium_production
   )
   production_depth_momentum_tbl <- standardize_theme_types(
     production_depth_momentum_tbl,
@@ -804,6 +875,11 @@ country_info <- standardize_country_info(country_info)
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
   rm(pams_raw)
 
+  # The legacy 23-member ally list, used only by OPSI_NIPO_SCOPE=allies to reproduce the Feb and
+  # June 2026 NIPO builds. It is not the allied coalition (that is derived, coalition_members()
+  # in R/indices/build_indices.R: coalition_tbl.rds from scripts/13, or geo_coalition_tbl.rds
+  # from scripts/12 until that exists), and NIPO is excluded from the composite Policy index
+  # since Oct 2026 (scripts/20), so this list no longer reaches any index.
   ally_iso3 <- c(
     "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA", "ITA", "BRA", "SAU",
     "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK", "ARG", "MAR", "CHL"

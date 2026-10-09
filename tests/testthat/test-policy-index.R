@@ -22,14 +22,23 @@ component_rows <- function(country, tech, supply_chain, variable, value) {
   )
 }
 
-all_four <- function(country, tech = "Solar", supply_chain = "Upstream",
-                     values = c(0.8, 0.6, 0.4, 0.2)) {
+all_three <- function(country, tech = "Solar", supply_chain = "Upstream",
+                      values = c(0.8, 0.6, 0.4)) {
   component_rows(
     country, tech, supply_chain,
-    c("NIPO Policy Index", "IEA PAMS Policy Index", "CAT Policy Index", "Dual-use policy score"),
+    c("NIPO Policy Index", "IEA PAMS Policy Index", "CAT Policy Index"),
     values
   )
 }
+
+dual_use_row <- function(country, tech = "Solar", supply_chain = "Upstream", value = 0.2) {
+  component_rows(country, tech, supply_chain, "Dual-use policy score", value)
+}
+
+# The three-component weights used until Oct 2026 (NIPO 4, IEA PAMS 3, CAT 2). NIPO is out of
+# the composite now, but these exercise the renormalisation over a component that is missing
+# from some cells (NIPO has no Downstream cells) and the eligibility rule with three components.
+nipo_weights <- c("NIPO Policy Index" = 4, "IEA PAMS Policy Index" = 3, "CAT Policy Index" = 2)
 
 test_that("the IEA and NIPO weight tables no longer overwrite each other", {
   # Both files are sourced into one environment (scripts/10 does the same). Under the old
@@ -48,77 +57,163 @@ test_that("IEA Upstream stage words match whole words only", {
   expect_equal(assign_supply_chain("new coal mines and battery factory"), c("Upstream", "Midstream"))
 })
 
-test_that("the composite is the 4/3/2/1 weighted mean renormalised over present components", {
+test_that("the composite is the weighted mean renormalised over present components (4/3/2 weights)", {
   comp <- dplyr::bind_rows(
-    all_four("A"),
-    # Downstream has no NIPO cell: weights renormalise to IEA 3, CAT 2, DU 1.
+    all_three("A"),
+    # Downstream has no NIPO cell: weights renormalise to IEA 3, CAT 2.
     component_rows(
       "A", "Solar", "Downstream",
-      c("IEA PAMS Policy Index", "CAT Policy Index", "Dual-use policy score"),
-      c(0.6, 0.3, 0.9)
+      c("IEA PAMS Policy Index", "CAT Policy Index"),
+      c(0.6, 0.3)
     )
   )
 
-  out <- build_composite_policy_index(comp)
+  out <- build_composite_policy_index(comp, component_weights = nipo_weights)
   up <- out$index %>% dplyr::filter(.data$supply_chain == "Upstream")
   down <- out$index %>% dplyr::filter(.data$supply_chain == "Downstream")
 
-  expect_equal(up$value, (4 * 0.8 + 3 * 0.6 + 2 * 0.4 + 1 * 0.2) / 10)
-  expect_equal(down$value, (3 * 0.6 + 2 * 0.3 + 1 * 0.9) / 6)
-  expect_equal(up$n_components, 4L)
-  expect_equal(down$n_components, 3L)
+  expect_equal(up$value, (4 * 0.8 + 3 * 0.6 + 2 * 0.4) / 9)
+  expect_equal(down$value, (3 * 0.6 + 2 * 0.3) / 5)
+  expect_equal(up$n_components, 3L)
+  expect_equal(down$n_components, 2L)
   expect_true(all(out$index$variable == "Overall Policy Index"))
+  expect_match(up$explanation, "NIPO (4), IEA PAMS (3), CAT (2)", fixed = TRUE)
 })
 
-test_that("a country needs all four components somewhere to be scored", {
+test_that("the dual-use score is carried for reference but is not a component", {
+  # It is an LLM-elicited judgement, identical for every country, so it cannot rank them.
+  expect_false("Dual-use policy score" %in% names(POLICY_COMPONENT_WEIGHTS))
+
+  for (w in list(POLICY_COMPONENT_WEIGHTS, nipo_weights)) {
+    without <- build_composite_policy_index(all_three("A"), component_weights = w)
+    with <- build_composite_policy_index(
+      dplyr::bind_rows(all_three("A"), dual_use_row("A", value = 1)),
+      component_weights = w
+    )
+    expect_equal(with$index$value, without$index$value)
+    expect_equal(with$index$n_components, length(w))
+    expect_false("has_dual_use_policy_score" %in% names(with$eligibility))
+  }
+
+  # A country with a dual-use row but no CAT rating is still ineligible.
+  b_only <- dplyr::bind_rows(
+    all_three("A"),
+    component_rows("B", "Solar", "Upstream", c("NIPO Policy Index", "IEA PAMS Policy Index"), c(0.5, 0.5)),
+    dual_use_row("B")
+  )
+  el <- build_composite_policy_index(b_only)$eligibility
+  expect_false(el$eligible[el$Country == "B"])
+  el <- build_composite_policy_index(b_only, component_weights = nipo_weights)$eligibility
+  expect_false(el$eligible[el$Country == "B"])
+})
+
+test_that("a country needs all three components somewhere to be scored", {
   comp <- dplyr::bind_rows(
-    all_four("A"),
+    all_three("A"),
     # B has no CAT rating anywhere.
     component_rows(
       "B", "Solar", "Upstream",
-      c("NIPO Policy Index", "IEA PAMS Policy Index", "Dual-use policy score"),
-      c(0.5, 0.5, 0.5)
+      c("NIPO Policy Index", "IEA PAMS Policy Index"),
+      c(0.5, 0.5)
     ),
-    # C has all four, but in different cells.
+    # C has all three, but in different cells.
     component_rows("C", "Solar", "Upstream", "NIPO Policy Index", 0.3),
     component_rows("C", "Wind", "Midstream", "IEA PAMS Policy Index", 0.4),
     component_rows("C", "Wind", "Downstream", "CAT Policy Index", 0.5),
-    component_rows("C", "Coal", "Downstream", "Dual-use policy score", 0.6),
     # D's only NIPO value is NA, which does not count as observed.
-    all_four("D", values = c(NA, 0.5, 0.5, 0.5))
+    all_three("D", values = c(NA, 0.5, 0.5))
   )
 
-  out <- build_composite_policy_index(comp)
+  out <- build_composite_policy_index(comp, component_weights = nipo_weights)
   el <- out$eligibility
 
   expect_setequal(el$Country[el$eligible], c("A", "C"))
   expect_setequal(unique(out$index$Country), c("A", "C"))
   expect_equal(el$missing_components[el$Country == "B"], "CAT Policy Index")
   expect_equal(el$missing_components[el$Country == "D"], "NIPO Policy Index")
-  expect_equal(el$n_components[el$Country == "B"], 3L)
+  expect_equal(el$n_components[el$Country == "B"], 2L)
   expect_false(el$has_cat_policy_index[el$Country == "B"])
   expect_true(el$has_nipo_policy_index[el$Country == "A"])
 })
 
 test_that("duplicate component rows are averaged and techs can be restricted", {
   comp <- dplyr::bind_rows(
-    all_four("A"),
+    all_three("A"),
     component_rows("A", "Solar", "Upstream", "NIPO Policy Index", 0.4),
-    all_four("A", tech = "Semiconductors")
+    all_three("A", tech = "Semiconductors")
   )
 
-  out <- build_composite_policy_index(comp, techs = "Solar")
+  out <- build_composite_policy_index(comp, techs = "Solar", component_weights = nipo_weights)
 
   # NIPO = mean(0.8, 0.4) = 0.6.
-  expect_equal(out$index$value, (4 * 0.6 + 3 * 0.6 + 2 * 0.4 + 1 * 0.2) / 10)
+  expect_equal(out$index$value, (4 * 0.6 + 3 * 0.6 + 2 * 0.4) / 9)
   expect_equal(unique(out$index$tech), "Solar")
 })
 
 test_that("component_weights must be named by component variable", {
   expect_error(
-    build_composite_policy_index(all_four("A"), component_weights = c(4, 3, 2, 1)),
+    build_composite_policy_index(all_three("A"), component_weights = c(4, 3, 2)),
     "named numeric vector"
   )
+})
+
+# The weights scripts/20 passes since Oct 2026, read from the script so the test follows it:
+# IEA PAMS 3 + CAT 2 for every country, NIPO excluded from the composite for now.
+production_policy_weights <- function() {
+  exprs <- parse(file.path(repo_root, "scripts", "20_build_indices.R"), keep.source = FALSE)
+  hit <- Filter(function(e) {
+    is.call(e) && identical(e[[1]], as.name("<-")) && identical(e[[2]], as.name("policy_component_weights"))
+  }, as.list(exprs))
+  if (length(hit) != 1) stop("scripts/20 must assign policy_component_weights exactly once.")
+  eval(hit[[1]][[3]], envir = baseenv())
+}
+
+test_that("scripts/20 builds the Policy index from IEA PAMS (3) and CAT (2) only", {
+  w <- production_policy_weights()
+  expect_equal(w, c("IEA PAMS Policy Index" = 3, "CAT Policy Index" = 2))
+  expect_false("NIPO Policy Index" %in% names(w))
+  expect_false("Dual-use policy score" %in% names(w))
+  src <- readLines(file.path(repo_root, "scripts", "20_build_indices.R"), warn = FALSE)
+  # the composite is built with these weights, passed explicitly; the function default is the
+  # same (so the paper scripts that call build_composite_policy_index() without weights rebuild
+  # the stored index)
+  expect_true(any(grepl("component_weights = policy_component_weights", src, fixed = TRUE)))
+  expect_equal(POLICY_COMPONENT_WEIGHTS, w)
+  # and the exclusion is recorded in the provenance saved with the index outputs
+  expect_true(any(grepl("excluded_components = policy_components_excluded", src, fixed = TRUE)))
+  expect_true(any(grepl("policy_index_provenance = policy_index_provenance", src, fixed = TRUE)))
+})
+
+test_that("without NIPO the composite is 3 IEA + 2 CAT and needs both components", {
+  w <- production_policy_weights()
+  comp <- dplyr::bind_rows(
+    # A has all three: its NIPO value is ignored.
+    all_three("A", values = c(0.9, 0.6, 0.4)),
+    # B has IEA PAMS and CAT but no NIPO anywhere: eligible now.
+    component_rows("B", "Solar", "Upstream", c("IEA PAMS Policy Index", "CAT Policy Index"), c(0.2, 0.7)),
+    # C has NIPO and IEA PAMS but no CAT rating: ineligible.
+    component_rows("C", "Solar", "Upstream", c("NIPO Policy Index", "IEA PAMS Policy Index"), c(0.5, 0.5)),
+    # D has CAT only: ineligible.
+    component_rows("D", "Solar", "Upstream", "CAT Policy Index", 0.5),
+    # A Wind cell with IEA PAMS only is renormalised to IEA alone.
+    component_rows("A", "Wind", "Midstream", c("NIPO Policy Index", "IEA PAMS Policy Index"), c(0.1, 0.3)),
+    dual_use_row("A", value = 1)
+  )
+
+  out <- build_composite_policy_index(comp, component_weights = w)
+  el <- out$eligibility
+  idx <- out$index
+
+  expect_setequal(el$Country[el$eligible], c("A", "B"))
+  expect_equal(el$missing_components[el$Country == "C"], "CAT Policy Index")
+  expect_equal(el$missing_components[el$Country == "D"], "IEA PAMS Policy Index")
+  expect_false(any(grepl("nipo", names(el))))
+  expect_equal(idx$value[idx$Country == "A" & idx$tech == "Solar"], (3 * 0.6 + 2 * 0.4) / 5)
+  expect_equal(idx$value[idx$Country == "B"], (3 * 0.2 + 2 * 0.7) / 5)
+  expect_equal(idx$value[idx$Country == "A" & idx$tech == "Wind"], 0.3)
+  expect_equal(idx$n_components[idx$Country == "A" & idx$tech == "Solar"], 2L)
+  expect_match(idx$explanation[[1]], "IEA PAMS (3), CAT (2)", fixed = TRUE)
+  expect_false(any(grepl("NIPO", idx$explanation)))
 })
 
 test_that("CAT labels resolve to WDI names and EU members inherit the EU bloc rating", {

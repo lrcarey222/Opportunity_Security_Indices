@@ -552,6 +552,34 @@ standardize_country_info <- function(country_info) {
     dplyr::distinct(iso3c, .keep_all = TRUE)
 }
 
+# country_info plus the economies the indices score that WDI does not list (Taiwan), each
+# under its canonical name and with the WDI attributes NA. Builders that inner-join their rows
+# to country_info (the trade themes, trade_core_build_indices()) dropped Taiwan otherwise.
+# Codes already in country_info are left as they are.
+add_unlisted_economies <- function(country_info, iso3 = "TWN") {
+  if (is.null(country_info)) {
+    return(country_info)
+  }
+  require_cols <- c("country", "iso3c")
+  if (!all(require_cols %in% names(country_info))) {
+    stop("country_info must include columns: ", paste(require_cols, collapse = ", "), ".")
+  }
+  iso3 <- normalize_iso3c(iso3)
+  missing <- setdiff(iso3[!is.na(iso3)], country_info$iso3c)
+  if (length(missing) == 0) {
+    return(country_info)
+  }
+  canonical <- country_canonical_names()
+  unnamed <- setdiff(missing, names(canonical))
+  if (length(unnamed) > 0) {
+    stop("No canonical name for: ", paste(unnamed, collapse = ", "), ".")
+  }
+  dplyr::bind_rows(
+    country_info,
+    tibble::tibble(country = unname(canonical[missing]), iso3c = missing)
+  )
+}
+
 # Put a table's Country column on the canonical names and fill iso3c.
 #
 # Rows that carry an iso3c take the country_info name for it (or the canonical name when the

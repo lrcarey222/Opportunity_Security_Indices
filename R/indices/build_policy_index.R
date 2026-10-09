@@ -1,16 +1,31 @@
 # Composite Policy index (pure; scripts/20_build_indices.R does the IO).
 #
-# Combines the four policy components built in scripts/10_build_themes.R into one score per
+# Combines policy components built in scripts/10_build_themes.R into one score per
 # Country x tech x supply_chain:
 #
 #   P_its = sum_v w_v x^v_its / sum_v w_v, over the components v observed for the cell,
-#   w = NIPO 4, IEA PAMS 3, CAT 2, Dual-use 1.
+#   w = IEA PAMS 3, CAT 2 (POLICY_COMPONENT_WEIGHTS, the default since October 2026).
 #
-# Eligibility: a country is scored only if each of the four components is observed for at
-# least one of its cells. Within an eligible country the weights are renormalised over the
-# components present in each cell, so the effective weights differ by stage: NIPO has no
-# Downstream cells, which are therefore (3 IEA + 2 CAT + 1 DU) / 6. `n_components` records
-# how many components each cell has.
+# scripts/20_build_indices.R passes the same weights explicitly and records them in
+# policy_index_provenance. NIPO (GTA; weight 4 until October 2026, when NIPO was 4, IEA
+# PAMS 3, CAT 2) is excluded from the composite for now: scripts/10 still builds it and its
+# rows stay in policy_component_tbl, so it can return by adding "NIPO Policy Index" = 4 to
+# the weights. The default follows the pipeline so that a caller relying on it (the paper
+# scripts) rebuilds the stored index.
+#
+# Eligibility: a country is scored only if each weighted component is observed for at least
+# one of its cells (with IEA PAMS + CAT: 65 countries in the Oct 2026 build; CAT, which rates
+# 39 countries and the EU, is the binding source). Within an eligible country the weights are
+# renormalised over the components present in each cell, so with NIPO included the effective
+# weights differed by stage (NIPO had no Downstream cells). `n_components` records how many
+# components each cell has.
+#
+# The dual-use score (weight 1 until October 2026) is no longer a component. It is an
+# LLM-elicited judgement per technology x stage (R/categories/policy/dual_use_scores.R),
+# the same for every country, so it could not rank countries; it only shifted sector levels,
+# which the within-country S-curve of the Strategic Index then read as policy support. Its
+# rows still travel in policy_component_tbl for reference and are ignored here, because
+# only the components named in `component_weights` are read.
 #
 # This file used to hold an unused near-copy of the IEA PAMS builder
 # (R/categories/policy/iea_policy_index.R) with a different jurisdiction weight, a
@@ -19,10 +34,8 @@
 # the IEA one in that session.
 
 POLICY_COMPONENT_WEIGHTS <- c(
-  "NIPO Policy Index" = 4,
   "IEA PAMS Policy Index" = 3,
-  "CAT Policy Index" = 2,
-  "Dual-use policy score" = 1
+  "CAT Policy Index" = 2
 )
 
 # Returns list(index, eligibility):
