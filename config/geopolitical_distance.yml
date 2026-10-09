@@ -34,3 +34,36 @@ outputs:
   pair_bloc: data_processed/pair_bloc_labels.csv
   exposure: data_processed/exposure_country_year.csv
   validation: output/geopolitical_distance/validation_checks.csv
+# Geopolitical alignment for the Friendshore theme (scripts/12_build_geopolitical_alignment.R,
+# R/geopolitical_distance/alignment.R). Uses the published Bailey-Strezhnev-Voeten ideal points,
+# not the estimates of the replication pipeline above, and the anchors above.
+# series: `all` (default; data/raw/un_ga_ideal_points_all.csv, estimated from all recorded votes
+#   including paragraph and amendment votes, the more precise series per the BSV codebook) or `fp`
+#   (data/raw/un_ga_ideal_points.csv, final-passage votes only, a sensitivity). Both are fetched
+#   by scripts/fetchers/un_ideal_points.R. In Dataverse V39.0 the all-votes series ends in 2023
+#   and the final-passage series in 2025.
+# Each country's ideal point is its mean over the latest `sessions` UNGA sessions (years) in the
+# series (5: 2019-2023 for `all`, 2021-2025 for `fp`); its position on the US-China axis is
+# s = (theta - theta_China) / (theta_US - theta_China), clamped to [0, 1]. Its membership of the
+# US side p comes from the bloc rule: `quartile` (after Gopinath et al. 2024: top `bloc_quantile`
+# of proximity to the US or to China along the axis, the rest nonaligned) or `midpoint` (the
+# nearer anchor). `tau` is the smoothing width on the s axis: 0 = hard blocs (default), so p is
+# 1, 0.5 or 0 and geo_alignment_ij = p_i p_j + (1 - p_i)(1 - p_j) is 1, 0.5 or 0; tau > 0 is a
+# sensitivity.
+# Economies without a UN vote take an alignment from data/reference/territory_sovereign_map.csv
+# (added after the bloc cuts; never coalition members): territories and special administrative
+# regions inherit their sovereign's p; Taiwan, Palestine and Kosovo are neutral, p = neutral_p.
+alignment:
+  series: all
+  sessions: 5
+  bloc_rule: quartile
+  bloc_quantile: 0.25
+  tau: 0
+  neutral_p: 0.5
+# The allied coalition derived from the alignment (derive_alignment_coalition(); written by
+# scripts/12 as data/processed/geo_coalition_tbl.rds): the U.S.-leaning bloc (membership of the
+# U.S.-leaning bloc u_us >= p_threshold; 0.5 = the hard bloc) restricted to economies whose
+# latest non-missing WDI GDP (data/raw/wdi_gdp.csv, current USD) is at least gdp_floor_usd.
+coalition:
+  p_threshold: 0.5
+  gdp_floor_usd: 1.0e+11

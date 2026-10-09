@@ -1,0 +1,48 @@
+iso3,economy,basis,sovereign_iso3,status,note
+HKG,"Hong Kong SAR, China",inherit,CHN,Special administrative region of China,Not a UN member; the Central People's Government is responsible for its foreign affairs (Hong Kong Basic Law Art. 13).
+MAC,"Macao SAR, China",inherit,CHN,Special administrative region of China,Not a UN member; the Central People's Government is responsible for its foreign affairs (Macao Basic Law Art. 13).
+PRI,Puerto Rico,inherit,USA,Unincorporated territory (commonwealth) of the United States,Not a UN member; the US federal government conducts its foreign relations.
+GUM,Guam,inherit,USA,Unincorporated territory of the United States,Not a UN member; the US federal government conducts its foreign relations.
+VIR,U.S. Virgin Islands,inherit,USA,Unincorporated territory of the United States,Not a UN member; the US federal government conducts its foreign relations.
+ASM,American Samoa,inherit,USA,Unincorporated territory of the United States,Not a UN member; the US federal government conducts its foreign relations.
+MNP,Northern Mariana Islands,inherit,USA,Commonwealth in political union with the United States,Not a UN member; the US federal government conducts its foreign relations (Covenant of 1976).
+UMI,U.S. Minor Outlying Islands,inherit,USA,Unincorporated territories of the United States,Not a UN member; administered by the US federal government.
+GRL,Greenland,inherit,DNK,Self-governing territory within the Kingdom of Denmark,Not a UN member; Denmark conducts the Realm's foreign and security policy (Self-Government Act 2009; Greenland takes part on matters that concern it).
+FRO,Faroe Islands,inherit,DNK,Self-governing territory within the Kingdom of Denmark,Not a UN member; Denmark conducts the Realm's foreign and security policy (Home Rule Act 1948; Takeover Act 2005).
+NCL,New Caledonia,inherit,FRA,Sui generis collectivity of France,Not a UN member; France conducts its foreign relations (Noumea Accord 1998; listed by the UN as a non-self-governing territory).
+PYF,French Polynesia,inherit,FRA,Overseas collectivity of France,Not a UN member; France conducts its foreign relations (listed by the UN as a non-self-governing territory).
+WLF,Wallis and Futuna,inherit,FRA,Overseas collectivity of France,Not a UN member; France conducts its foreign relations.
+SPM,Saint Pierre and Miquelon,inherit,FRA,Overseas collectivity of France,Not a UN member; France conducts its foreign relations.
+MAF,Saint Martin (French part),inherit,FRA,Overseas collectivity of France,Not a UN member; France conducts its foreign relations.
+BLM,Saint Barthelemy,inherit,FRA,Overseas collectivity of France,Not a UN member; France conducts its foreign relations.
+REU,Reunion,inherit,FRA,Overseas department and region of France,Integral part of France (EU outermost region); not a UN member.
+GLP,Guadeloupe,inherit,FRA,Overseas department and region of France,Integral part of France (EU outermost region); not a UN member.
+MTQ,Martinique,inherit,FRA,Overseas department and region of France,Integral part of France (EU outermost region); not a UN member.
+GUF,French Guiana,inherit,FRA,Overseas department and region of France,Integral part of France (EU outermost region); not a UN member.
+MYT,Mayotte,inherit,FRA,Overseas department and region of France,Integral part of France (EU outermost region); not a UN member.
+ABW,Aruba,inherit,NLD,Constituent country of the Kingdom of the Netherlands,Not a UN member; foreign relations are a Kingdom affair conducted by the Netherlands (Charter for the Kingdom of the Netherlands Art. 3).
+CUW,Curacao,inherit,NLD,Constituent country of the Kingdom of the Netherlands,Not a UN member; foreign relations are a Kingdom affair conducted by the Netherlands (Charter for the Kingdom of the Netherlands Art. 3).
+SXM,Sint Maarten (Dutch part),inherit,NLD,Constituent country of the Kingdom of the Netherlands,Not a UN member; foreign relations are a Kingdom affair conducted by the Netherlands (Charter for the Kingdom of the Netherlands Art. 3).
+BES,"Bonaire, Sint Eustatius and Saba",inherit,NLD,Special municipalities of the Netherlands (Caribbean Netherlands),Part of the Netherlands proper since 2010; not a UN member.
+BMU,Bermuda,inherit,GBR,British Overseas Territory,Not a UN member; the United Kingdom is responsible for its external affairs and defence.
+CYM,Cayman Islands,inherit,GBR,British Overseas Territory,Not a UN member; the United Kingdom is responsible for its external affairs and defence.
+VGB,British Virgin Islands,inherit,GBR,British Overseas Territory,Not a UN member; the United Kingdom is responsible for its external affairs and defence.
+TCA,Turks and Caicos Islands,inherit,GBR,British Overseas Territory,Not a UN member; the United Kingdom is responsible for its external affairs and defence.
+GIB,Gibraltar,inherit,GBR,British Overseas Territory,Not a UN member; the United Kingdom is responsible for its external affairs and defence (sovereignty claimed by Spain).
+MSR,Montserrat,inherit,GBR,British Overseas Territory,Not a UN member; the United Kingdom is responsible for its external affairs and defence.
+AIA,Anguilla,inherit,GBR,British Overseas Territory,Not a UN member; the United Kingdom is responsible for its external affairs and defence.
+FLK,Falkland Islands,inherit,GBR,British Overseas Territory,Not a UN member; the United Kingdom is responsible for its external affairs and defence (sovereignty claimed by Argentina).
+SHN,"Saint Helena, Ascension and Tristan da Cunha",inherit,GBR,British Overseas Territory,Not a UN member; the United Kingdom is responsible for its external affairs and defence.
+IMN,Isle of Man,inherit,GBR,Crown Dependency,Not a UN member; the United Kingdom is responsible for its international relations and defence.
+CHI,Channel Islands,inherit,GBR,Crown Dependencies (Jersey and Guernsey; World Bank aggregate code),Not UN members; the United Kingdom is responsible for their international relations and defence.
+JEY,Jersey,inherit,GBR,Crown Dependency,Not a UN member; the United Kingdom is responsible for its international relations and defence.
+GGY,Guernsey,inherit,GBR,Crown Dependency,Not a UN member; the United Kingdom is responsible for its international relations and defence.
+NFK,Norfolk Island,inherit,AUS,External territory of Australia,Not a UN member; Australia conducts its foreign relations.
+CXR,Christmas Island,inherit,AUS,External territory of Australia,Not a UN member; Australia conducts its foreign relations.
+CCK,Cocos (Keeling) Islands,inherit,AUS,External territory of Australia,Not a UN member; Australia conducts its foreign relations.
+TKL,Tokelau,inherit,NZL,Dependent territory of New Zealand,Not a UN member; New Zealand conducts its foreign relations (listed by the UN as a non-self-governing territory).
+SJM,Svalbard and Jan Mayen,inherit,NOR,Integral parts of Norway,Not a UN member; Norway conducts its foreign relations (Svalbard Treaty 1920).
+ALA,Aland Islands,inherit,FIN,Autonomous region of Finland,Not a UN member; Finland conducts its foreign relations.
+TWN,Taiwan,neutral,,No UN seat since UNGA resolution 2758 (1971),No UN vote and no UN member conducts its foreign relations; neutral (p = 0.5: alignment 0.5 with every economy) by project decision.
+PSE,Palestine,neutral,,UN non-member observer State (UNGA resolution 67/19; 2012),No vote on General Assembly resolutions and not in the BSV ideal-point estimates; neutral (p = 0.5) by project decision.
+XKX,Kosovo,neutral,,Not a UN member (recognised by some UN members and not by others),No UN vote; neutral (p = 0.5) by project decision.

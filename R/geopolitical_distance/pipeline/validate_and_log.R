@@ -12,9 +12,9 @@ blocs <- read_csv(file.path(repo_root, cfg$outputs$blocs), show_col_types = FALS
 
 val_rows <- list()
 for (spec_name in unique(seg$spec_name)) {
-  v <- validate_outputs(ipd %>% filter(spec_name == spec_name),
-                        seg %>% filter(spec_name == spec_name),
-                        blocs %>% filter(spec_name == spec_name),
+  v <- validate_outputs(ipd %>% filter(spec_name == .env$spec_name),
+                        seg %>% filter(spec_name == .env$spec_name),
+                        blocs %>% filter(spec_name == .env$spec_name),
                         cfg$anchors$us_iso3, cfg$anchors$china_iso3)
   val_rows[[spec_name]] <- data.frame(spec_name = spec_name,
                                       ipd_symmetric = v$ipd_symmetric,

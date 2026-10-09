@@ -1,0 +1,137 @@
+# Two-tier allied coalition and the EU network node (scripts/13_build_coalition.R,
+# R/indices/coalition.R). Read after scripts/12 (geo_ideal_points_tbl.rds) and the theme build
+# (trade_concentration_tbl.rds); writes data/processed/coalition_tbl.rds,
+# eu_stage_weights_tbl.rds and major_supplier_shares_tbl.rds.
+#
+# core: the U.S.-leaning UN-vote bloc (scripts/12) with latest WDI GDP >= gdp_floor_usd and its
+#   own UN votes (the alignment coalition of geo_coalition_tbl.rds).
+# partner (when not core), by either route:
+#   agreement: a member of one of partner_agreements (data/reference/economic_security_agreements.csv)
+#     with GDP >= gdp_floor_usd, whatever its bloc;
+#   supplier: not China-leaning, with a world share >= supplier_share in at least one measure of an
+#     Upstream or Midstream stage of a headline technology; no GDP floor.
+# Every route a country satisfies is recorded in coalition_tbl$routes.
+coalition:
+  gdp_floor_usd: 1.0e+11
+  supplier_share: 0.05
+  us_bloc: U.S.-leaning
+  china_bloc: China-leaning
+  # Territories that inherit their sovereign's UN position (scripts/12) are never core, as in
+  # derive_alignment_coalition().
+  core_requires_own_vote: true
+  # The supplier route needs a known bloc other than China-leaning; an economy with no alignment
+  # at all cannot show that it is not China-leaning.
+  supplier_requires_alignment: true
+  # Agreement names as in economic_security_agreements.csv. MSP = the 15 MSP partners (14
+  # countries and the EU). The MSP Forum (15 further economies, 2024) is not a partner route by
+  # default; sensitivity_agreements are added for the tier_with_sensitivity column only.
+  # USTR lists 20 FTA partners; Japan's 2020 trade agreement and 2023 critical minerals agreement
+  # are not FTAs and are not listed.
+  partner_agreements:
+    - U.S. FTA
+    - IPEF
+    - MSP
+    - G7
+    - NATO
+  sensitivity_agreements:
+    - MSP Forum
+
+# The 11 headline technologies and the stages the supplier test reads.
+headline_techs:
+  - Electric Vehicles
+  - Nuclear
+  - Coal
+  - Batteries
+  - Green Hydrogen
+  - Wind
+  - Oil
+  - Solar
+  - Gas
+  - Geothermal
+  - Electric Grid
+stages:
+  - Upstream
+  - Midstream
+
+# Measures of the supplier test (major_supplier_shares()).
+supplier_measures:
+  # A mineral counts for a technology when the technology takes at least this share of the
+  # mineral's clean-energy demand in the base year (IEA sheet 3.1).
+  mineral_min_demand_share: 0.01
+  # Mine production of the minerals the IEA supply sheet does not cover (it has copper, cobalt,
+  # lithium, nickel, graphite and magnet rare earths only): the EI Statistical Review mineral
+  # sheets (ei_stat_review_world_energy_wide.xlsx, critical_minerals_production_specs(), as
+  # scripts/10 reads them) add manganese (Wind, Electric Vehicles, Batteries), zinc (Wind, Solar)
+  # and PGMs (Green Hydrogen), Upstream. With them South Africa (PGMs, manganese), Gabon and Ghana
+  # (manganese) are tested on the minerals they mine (review, Oct 2026). Still untested for want of
+  # supply data: chromium, molybdenum, silver and silicon.
+  ei_mineral_production: true
+  # EI Statistical Review production series, Upstream of each technology.
+  ei_production_vars:
+    Oil: oilprod_kbd
+    Gas: gasprod_ej
+    Coal: coalprod_ej
+  # IEA clean-tech manufacturing capacity (iea_cleantech_Midstream.csv): IEA label -> technology,
+  # Midstream. "Current" is installed capacity (2024).
+  cleantech_tech_map:
+    Solar: Solar
+    Wind: Wind
+    Batteries: Batteries
+    Electrolyzers: Green Hydrogen
+  cleantech_status: Current
+  cleantech_year: 2024
+
+# The EU as one network node. EUU is the World Bank / WDI code of the European Union.
+eu_node:
+  code: EUU
+  name: European Union
+  tier: core
+  # The 27 member states (https://european-union.europa.eu/principles-countries-history/eu-countries_en,
+  # accessed 2026-10-08).
+  members:
+    - AUT
+    - BEL
+    - BGR
+    - HRV
+    - CYP
+    - CZE
+    - DNK
+    - EST
+    - FIN
+    - FRA
+    - DEU
+    - GRC
+    - HUN
+    - IRL
+    - ITA
+    - LVA
+    - LTU
+    - LUX
+    - MLT
+    - NLD
+    - POL
+    - PRT
+    - ROU
+    - SVK
+    - SVN
+    - ESP
+    - SWE
+
+# Members' weights within the EU node per (tech, stage) (eu_stage_weights()): the first basis in
+# this order with a usable measure, else the members' GDP shares. Only measures that list EU
+# members individually and completely qualify: EI production (coverage checked against EI's
+# "Total EU"), Red Book uranium production and the Atlas export shares. The IEA manufacturing data
+# report the EU as one bloc and the IEA mineral sheet lists only leading producers, so they are not
+# bases.
+eu_weights:
+  basis_priority:
+    production:
+      - ei_production
+      - uranium_mine_production
+    exports:
+      - atlas_export_share
+  # The listed members must cover at least this share of the EU total of a measure.
+  min_coverage: 0.5
+  # A measure is not used when the EU members together hold less than this share of world
+  # production or exports (e.g. uranium from mine rehabilitation only).
+  min_eu_world_share: 0.001

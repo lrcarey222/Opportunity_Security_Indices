@@ -48,3 +48,59 @@ testthat::test_that("vote normalization handles numeric and string codes", {
   testthat::expect_equal(vals[7], 1)
   testthat::expect_equal(vals[8], 0)
 })
+
+
+testthat::test_that("build_vote_matrix keeps missing votes NA instead of summing them to 0", {
+  source(test_path("..", "..", "R", "geopolitical_distance", "ideal_points.R"))
+  sub <- data.frame(
+    country = c("A", "A", "B"),
+    rcid = c(1, 2, 1),
+    vote_bin = c(1, 0, 1)
+  )
+  mat <- build_vote_matrix(sub)
+  testthat::expect_true(is.na(mat["B", "2"]))
+  testthat::expect_equal(mat["A", "1"], 1)
+  testthat::expect_equal(mat["A", "2"], 0)
+
+  dup <- rbind(sub, data.frame(country = "A", rcid = 1, vote_bin = 0))
+  testthat::expect_error(build_vote_matrix(dup), "duplicate")
+})
+
+
+testthat::test_that("abstentions and absences are missing, not No votes, in the yearly estimates", {
+  source(test_path("..", "..", "R", "geopolitical_distance", "ideal_points.R"))
+  # Four countries always vote Yes, four always No, on 24 roll calls that split them. ABS
+  # abstains on every roll call and is absent from the record on half of them. Under the old
+  # xtabs() matrix ABS's empty row became all zeros, i.e. identical to the No bloc.
+  yes_bloc <- paste0("Y", 1:4)
+  no_bloc <- paste0("N", 1:4)
+  rcids <- 1:24
+  votes <- rbind(
+    expand.grid(country = yes_bloc, rcid = rcids, vote = "yes", stringsAsFactors = FALSE),
+    expand.grid(country = no_bloc, rcid = rcids, vote = "no", stringsAsFactors = FALSE),
+    data.frame(country = "ABS", rcid = 1:12, vote = "abstain", stringsAsFactors = FALSE)
+  )
+  # One Yes-bloc member and one No-bloc member each cross over on a few votes, so the matrix has
+  # a non-degenerate first component, and ABS casts two Yes votes.
+  votes$vote[votes$country == "Y4" & votes$rcid %in% 1:3] <- "no"
+  votes$vote[votes$country == "N4" & votes$rcid %in% 4:6] <- "yes"
+  votes <- rbind(votes, data.frame(country = "ABS", rcid = 13:14, vote = "yes", stringsAsFactors = FALSE))
+  votes$year <- 2020
+
+  pts <- estimate_ideal_points_yearly(votes, estimator = "pca", min_countries = 8, min_rollcalls = 20)
+  testthat::expect_equal(sort(pts$country), sort(c(yes_bloc, no_bloc, "ABS")))
+  testthat::expect_true(all(pts$estimator == "pca"))
+
+  theta <- stats::setNames(pts$theta, pts$country)
+  yes_mean <- mean(theta[yes_bloc])
+  no_mean <- mean(theta[no_bloc])
+  # ABS sits between the blocs (it said Yes twice and nothing else), not on top of the No bloc.
+  testthat::expect_true(abs(theta[["ABS"]] - no_mean) > 0.25 * abs(yes_mean - no_mean))
+  testthat::expect_true((theta[["ABS"]] - no_mean) * (yes_mean - theta[["ABS"]]) > 0)
+
+  # Its matrix row is NA except for the two Yes votes.
+  mat <- build_vote_matrix(transform(votes[!is.na(normalize_vote_to_binary(votes$vote)), ],
+                                     vote_bin = normalize_vote_to_binary(vote)))
+  testthat::expect_equal(sum(!is.na(mat["ABS", ])), 2)
+  testthat::expect_true(all(mat["ABS", c("13", "14")] == 1))
+})
