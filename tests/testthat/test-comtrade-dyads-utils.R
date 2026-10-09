@@ -179,3 +179,86 @@ test_that("query length counts percent-encoded commas", {
   expect_equal(lengths(groups), c(149L, 149L))
   expect_lt(comtrade_dyads_query_chars(1:50, groups[[1]]), COMTRADE_DYADS_MAX_QUERY_CHARS)
 })
+
+test_that("a supplementary pull takes only basket codes, and combined pulls must not share a code", {
+  basket <- c("260300", "740311", "760110", "854140")
+  expect_identical(comtrade_dyads_select_codes(basket), basket)
+  expect_identical(comtrade_dyads_select_codes(basket, character()), basket)
+  expect_identical(comtrade_dyads_select_codes(basket, c(" 760110", "740311", "740311")), c("740311", "760110"))
+  expect_error(comtrade_dyads_select_codes(basket, c("740311", "740319")), "outside the HS6 basket: 740319")
+  # Blank entries (a trailing comma) are ignored; an entry that is not a code is an error rather
+  # than dropped, since dropping every entry would turn the request into the whole basket.
+  expect_identical(comtrade_dyads_select_codes(basket, c("", "7403.11")), "740311")
+  expect_error(comtrade_dyads_select_codes(basket, c("cathodes")), "not HS6 codes: cathodes")
+  expect_error(comtrade_dyads_select_codes(basket, c("74O311")), "outside the HS6 basket: 074311")
+
+  expect_length(comtrade_dyads_shared_codes(list(main = basket[c(1, 4)], extra = basket[2:3])), 0)
+  expect_identical(comtrade_dyads_shared_codes(list(main = basket, extra = c("740311", "999999"))), "740311")
+
+  # Every basket code must come from some directory: the main pull alone (planned before the
+  # codes joined the basket) or the supplementary pull alone leaves codes out.
+  expect_length(comtrade_dyads_uncovered_codes(basket, list(main = basket[c(1, 4)], extra = basket[2:3])), 0)
+  expect_identical(comtrade_dyads_uncovered_codes(basket, list(main = basket[c(1, 4)])), c("740311", "760110"))
+  expect_identical(comtrade_dyads_uncovered_codes(basket, list(extra = basket[2:3])), c("260300", "854140"))
+  expect_length(comtrade_dyads_uncovered_codes(basket[1:2], list(main = basket)), 0)
+})
+
+world_row <- function(reporter = "AUS", code = "740311", flow = "X", value = 100, year = 2024L) {
+  r <- raw_row(reporter = reporter, partner = "W00", code = code, value = value, flow = flow)
+  r$partner_code <- 0L
+  r$partner_desc <- "World"
+  r$ref_year <- year
+  r$period <- as.character(year)
+  r
+}
+
+test_that("World totals are read from partner = everything chunks, totals only", {
+  raw <- rbind(world_row(), world_row(flow = "M", code = "76011"), raw_row(), world_row(reporter = "JPN"))
+  raw$customs_code[4] <- "C01"
+  w <- comtrade_dyads_world_totals(raw)
+  expect_equal(nrow(w), 2L)
+  expect_equal(w$cmd_code, c("740311", "076011"))
+  expect_equal(w$flow_direction, c("export", "import"))
+  expect_true(all(w$partner_code == 0))
+  expect_null(comtrade_dyads_world_totals(data.frame(count = 0)))
+})
+
+test_that("the energy-trade file gains only the codes it lacks, in its year and with its reporters", {
+  # The staged file as scripts/98 reads it: codes and periods as text, flow_direction added.
+  existing <- rbind(world_row(code = "260300", value = 5), world_row(reporter = "JPN", code = "260300", flow = "M"))
+  existing$flow_direction <- c("export", "import")
+  rownames(existing) <- NULL
+
+  world <- comtrade_dyads_world_totals(rbind(
+    world_row(code = "260300", value = 7),                     # code held: the file's row stays
+    world_row(code = "740311", value = 30),                    # new code, AUS exports: added
+    world_row(reporter = "JPN", code = "740311", flow = "M"),  # new code, JPN imports: added
+    world_row(reporter = "JPN", code = "740311", flow = "X"),  # JPN has no export rows in the file
+    world_row(reporter = "CHL", code = "740311"),              # reporter not in the file
+    world_row(code = "760110", year = 2020L)                   # not the file's year
+  ))
+  out <- comtrade_energy_trade_add_codes(existing, world)
+
+  kept <- out[seq_len(nrow(existing)), ]
+  rownames(kept) <- NULL
+  attr(kept, "added") <- NULL
+  expect_identical(kept, existing)
+  added <- out[-seq_len(nrow(existing)), ]
+  expect_equal(paste(added$reporter_iso, added$flow_code, added$cmd_code), c("JPN M 740311", "AUS X 740311"))
+  expect_equal(added$primary_value, c(100, 30))
+  expect_identical(names(out), names(existing))
+  expect_identical(vapply(out, class, character(1)), vapply(existing, class, character(1)))
+  expect_equal(attr(out, "added")$rows, c(1L, 1L))
+
+  # Nothing new: the file comes back unchanged.
+  same <- comtrade_energy_trade_add_codes(existing, comtrade_dyads_world_totals(world_row(code = "260300")))
+  expect_equal(nrow(attr(same, "added")), 0L)
+  attr(same, "added") <- NULL
+  expect_identical(same, existing)
+  none <- comtrade_energy_trade_add_codes(existing, NULL)
+  expect_equal(nrow(none), nrow(existing))
+  expect_equal(nrow(attr(none, "added")), 0L)
+
+  # A reporter fetched twice is an error rather than a doubled value.
+  expect_error(comtrade_energy_trade_add_codes(existing, rbind(world[2, ], world[2, ])), "duplicate")
+})

@@ -297,7 +297,7 @@ test_that("the basket review excludes codes whose dominant use is another indust
   expect_false(any(c("841111", "841112", "841191", "847989") %in% codes_in("Gas", "Midstream")))
   expect_false("847989" %in% codes_in("Oil", "Midstream"))
   expect_false("260300" %in% codes_in("Batteries", "Upstream"))
-  expect_false(any(long$tech == "Electric Grid" & long$supply_chain == "Upstream"))
+  expect_false("271600" %in% long$hs6)
 
   # Gas turbines stay with gas; the cells keep their technology-specific products.
   expect_true(all(c("841181", "841182", "841199") %in% codes_in("Gas", "Midstream")))
@@ -329,4 +329,56 @@ test_that("general-purpose codes kept in a technology basket say so in the note"
 
   # Every caveat sits on an in-basket row.
   expect_false(any(grepl("kept with caveat", master$note[as.logical(master$excluded)], fixed = TRUE)))
+})
+
+test_that("Electric Grid Upstream is the grid's copper and aluminium material inputs", {
+  opsi_load_hs6()
+  master <- opsi_hs6_master()
+  skip_if_not("excluded" %in% names(master), "master predates the basket review")
+  long <- hs6_normalize_master(master)
+
+  # Electricity (2716.00) left the stage in the basket review; raw and primary-refined copper and
+  # aluminium replace it (user decision 2026-10-09): ore, blister and cathode; bauxite, alumina and
+  # unwrought primary aluminium.
+  grid_up <- long[long$tech == "Electric Grid" & long$supply_chain == "Upstream", ]
+  basket <- c("260300", "740200", "740311", "260600", "281820", "760110", "760120")
+  expect_setequal(grid_up$hs6, basket)
+  expect_true(all(grid_up$essential))
+  # All seven codes are unchanged since HS92, so the Atlas panel sees them without bridge codes.
+  expect_false(any(grid_up$legacy_hs))
+
+  # Semi-manufactures stay Midstream (wire rod 7408, stranded aluminium conductors 7614); scrap
+  # (7404, 7602: exported by scrap generators) and the residual refined-copper shapes are left out.
+  expect_true(all(c("740811", "761410") %in% long$hs6[long$tech == "Electric Grid" & long$supply_chain == "Midstream"]))
+  expect_false(any(grepl("^(7408|7614)", grid_up$hs6)))
+  expect_false(any(c("740312", "740313", "740319", "740400", "760200") %in% long$hs6))
+
+  # Copper ore, bauxite and alumina are also Batteries rows, excluded there; so each of the seven
+  # codes is in one in-basket cell and no trade value is attributed to two cells.
+  cells <- unique(long[long$hs6 %in% basket, c("hs6", "tech", "supply_chain")])
+  expect_equal(nrow(cells), length(basket))
+  shared <- master[hs6_clean_code(master$hs6) %in% basket & master$tech != "Electric Grid", ]
+  expect_true(all(as.logical(shared$excluded)))
+
+  # The rows say why they are in and that the grid is one use among several, with the share.
+  rows <- master[master$tech == "Electric Grid" & master$supply_chain == "Upstream" & !as.logical(master$excluded), ]
+  expect_true(all(grepl("^added \\(basket review 2026-10", rows$note)))
+  expect_true(all(grepl("kept with caveat", rows$note, fixed = TRUE)))
+  expect_true(all(grepl("% of the Comtrade 2024 Electric Grid Upstream basket", rows$note, fixed = TRUE)))
+})
+
+test_that("the staged Comtrade pulls hold every Electric Grid Upstream code", {
+  opsi_load_hs6()
+  long <- hs6_normalize_master(opsi_hs6_master())
+  basket <- unique(long$hs6[long$tech == "Electric Grid" & long$supply_chain == "Upstream"])
+  path <- file.path(opsi_hs6_root(), "data", "raw", "comtrade_energy_trade.csv")
+  skip_if_not(file.exists(path), "comtrade_energy_trade.csv not staged")
+  skip_if_not_installed("data.table")
+
+  # The codes were added after both Comtrade pulls; a stage the pull lacks has no exports, HHI or
+  # RCA. scripts/98 fills them with a supplementary pull (COMTRADE_DYADS_CODES, energy_trade stage).
+  trade <- data.table::fread(path, select = c("cmd_code", "flow_code"), colClasses = "character", showProgress = FALSE)
+  for (flow in c("X", "M")) {
+    expect_true(all(basket %in% hs6_clean_code(trade$cmd_code[trade$flow_code == flow])), info = flow)
+  }
 })

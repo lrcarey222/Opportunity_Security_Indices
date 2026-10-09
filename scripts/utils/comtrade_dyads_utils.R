@@ -101,6 +101,43 @@ comtrade_dyads_basket <- function(masters) {
   list(codes = codes, legacy = sort(unique(legacy[!is.na(legacy) & legacy %in% codes])))
 }
 
+# Codes of a supplementary pull (COMTRADE_DYADS_CODES): codes added to the master after the main
+# pull are fetched into a chunk directory of their own and combined with it, rather than
+# re-pulling the whole basket. A code outside the basket is an error, not a silent drop, and so is
+# an entry that is not an HS6 code (dropping it could leave nothing requested, which means the
+# whole basket). With no codes requested the pull is the whole basket.
+comtrade_dyads_select_codes <- function(basket_codes, requested = character()) {
+  requested <- trimws(requested)
+  requested <- requested[!is.na(requested) & nzchar(requested)]
+  if (length(requested) == 0) return(basket_codes)
+  padded <- comtrade_dyads_pad_hs6(requested)
+  if (anyNA(padded)) {
+    stop("COMTRADE_DYADS_CODES lists entries that are not HS6 codes: ", paste(requested[is.na(padded)], collapse = ", "))
+  }
+  requested <- padded
+  outside <- setdiff(requested, basket_codes)
+  if (length(outside) > 0) {
+    stop("COMTRADE_DYADS_CODES lists codes outside the HS6 basket: ", paste(outside, collapse = ", "))
+  }
+  sort(unique(requested))
+}
+
+# Chunk directories combined into one file must not share a code: the same reporter, partner and
+# code would be fetched twice, and collapse_duplicates() would sum the two if a revision between
+# the pulls made them differ. `codes_by_dir` is a named list of each directory's codes.txt.
+comtrade_dyads_shared_codes <- function(codes_by_dir) {
+  all_codes <- unlist(codes_by_dir, use.names = FALSE)
+  sort(unique(all_codes[duplicated(all_codes)]))
+}
+
+# Basket codes that no chunk directory fetched. Once codes join the basket in a supplementary
+# pull, a combine of the main directory alone (the rebuild command from before) would write a
+# dyad file without them, and every cell they feed would lose its bilateral trade silently; a
+# supplementary pull combined on its own would overwrite the file with just its few codes.
+comtrade_dyads_uncovered_codes <- function(basket_codes, codes_by_dir) {
+  sort(setdiff(basket_codes, unlist(codes_by_dir, use.names = FALSE)))
+}
+
 # The economies a dyad may connect: WDI countries (no regional or income aggregates) that
 # Comtrade knows as a single partner, less the territories the allied pull excluded.
 comtrade_dyads_economies <- function(country_info, partner_ref, excluded = COMTRADE_DYADS_EXCLUDED_ISO3) {
@@ -383,4 +420,86 @@ comtrade_dyads_validate <- function(df, economies, allow_self = TRUE) {
   if (any(is.na(df$primary_value))) problems <- c(problems, paste(sum(is.na(df$primary_value)), "rows with NA primary_value"))
   if (any(!grepl("^[0-9]{6}$", df$cmd_code))) problems <- c(problems, "cmd_code not 6 digits")
   problems
+}
+
+## Reporter-World totals for comtrade_energy_trade.csv -----------------------------------------
+#
+# comtrade_energy_trade.csv (scripts/05_ingest_sources.R) holds each reporter's trade with the
+# World in the basket codes, one call per reporter and flow. A partner = "everything" request of
+# this pull returns the same World record (partner code 0) beside the partner rows; the combine
+# step drops it. So when codes join the basket after both pulls, a supplementary pull of those
+# codes here fills comtrade_energy_trade.csv as well, without ~400 more calls. On the codes both
+# files hold for 2024 the two agree to the dollar on 89% of rows; the rest differ by Comtrade's
+# revisions between the pulls (median 2%).
+
+# Columns comtrade_energy_trade.csv carries as text although they look numeric (write.csv quoted
+# them); read them as character so a rewrite of the file leaves its existing rows unchanged.
+COMTRADE_ENERGY_TRADE_TEXT_COLUMNS <- c("cmd_code", "period", "mos_code")
+
+# The World rows of one raw chunk (comtradr tidy columns), as API totals over customs procedure,
+# mode of transport and second partner, with the flow_direction column the energy-trade file has.
+comtrade_dyads_world_totals <- function(raw) {
+  if (comtrade_dyads_is_empty(raw)) return(NULL)
+  df <- as.data.frame(raw, stringsAsFactors = FALSE)
+  num <- function(x) suppressWarnings(as.numeric(x))
+  keep <- !is.na(df$reporter_iso) & !is.na(df$cmd_code) & num(df$partner_code) == 0 &
+    as.character(df$customs_code) == "C00" & num(df$mot_code) == 0 & num(df$partner2code) == 0
+  keep[is.na(keep)] <- FALSE
+  df <- df[keep, , drop = FALSE]
+  df$cmd_code <- comtrade_dyads_pad_hs6(df$cmd_code)
+  df$flow_direction <- unname(c(M = "import", X = "export")[as.character(df$flow_code)])
+  rownames(df) <- NULL
+  df
+}
+
+# Add to the energy-trade table the World totals of codes it does not hold at all. A code it
+# already holds keeps its rows, so no basket total it feeds moves. The new rows keep the file's
+# year(s) and, flow by flow, its reporters: a reporter that published after the energy pull would
+# otherwise be in the new codes only and shift their shares against the rest of the basket.
+# Columns and column types follow `existing`. attr(, "added") counts the rows added per code and
+# flow.
+comtrade_energy_trade_add_codes <- function(existing, world) {
+  required <- c("reporter_iso", "ref_year", "flow_code", "cmd_code")
+  if (is.null(world) || nrow(world) == 0) world <- existing[0, , drop = FALSE]
+  missing <- setdiff(required, intersect(names(existing), names(world)))
+  if (length(missing) > 0) stop("Energy-trade merge needs column(s): ", paste(missing, collapse = ", "))
+
+  held <- unique(comtrade_dyads_pad_hs6(existing$cmd_code))
+  years <- unique(as.integer(existing$ref_year))
+  flow_reporters <- unique(paste(existing$flow_code, existing$reporter_iso))
+
+  new <- as.data.frame(world, stringsAsFactors = FALSE)
+  new$cmd_code <- comtrade_dyads_pad_hs6(new$cmd_code)
+  new <- new[!new$cmd_code %in% held & as.integer(new$ref_year) %in% years &
+               paste(new$flow_code, new$reporter_iso) %in% flow_reporters, , drop = FALSE]
+
+  key <- paste(new$reporter_iso, new$ref_year, new$flow_code, new$cmd_code)
+  if (anyDuplicated(key) > 0) {
+    stop(sum(duplicated(key)), " duplicate reporter x year x flow x code World rows; were chunks fetched twice?")
+  }
+
+  like <- function(x, template) {
+    switch(class(template)[1],
+      character = as.character(x),
+      integer = as.integer(x),
+      numeric = as.numeric(x),
+      logical = as.logical(x),
+      x
+    )
+  }
+  for (col in names(existing)) {
+    value <- if (col %in% names(new)) new[[col]] else rep(NA, nrow(new))
+    new[[col]] <- like(value, existing[[col]])
+  }
+  new <- new[order(new$flow_code, new$reporter_iso, new$cmd_code), names(existing), drop = FALSE]
+
+  out <- rbind(existing, new)
+  rownames(out) <- NULL
+  added <- if (nrow(new) == 0) {
+    data.frame(cmd_code = character(), flow_code = character(), rows = integer())
+  } else {
+    stats::aggregate(list(rows = rep(1L, nrow(new))), by = list(cmd_code = new$cmd_code, flow_code = new$flow_code), FUN = sum)
+  }
+  attr(out, "added") <- added
+  out
 }

@@ -37,7 +37,10 @@
 #     Batteries Midstream, aircraft engines from Coal and Gas Midstream, general
 #     machinery n.e.s. from Oil and Gas Midstream, copper ore from Batteries Upstream and
 #     electrical energy (2716.00) from Electric Grid Upstream. Codes kept although the
-#     technology is not their only use say so in `note` ("kept with caveat").
+#     technology is not their only use say so in `note` ("kept with caveat"). Electric Grid
+#     Upstream now holds the grid's copper and aluminium inputs (ore, blister, cathode;
+#     bauxite, alumina, unwrought aluminium), kept with that caveat; the Batteries rows of
+#     copper ore, bauxite and alumina stay excluded, so each code is in one basket.
 
 HS6_MASTER_COLUMNS <- c("tech", "supply_chain", "sub_sector", "hs6", "essential")
 
