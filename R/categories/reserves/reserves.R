@@ -421,7 +421,17 @@ reserves_build_clean_table <- function(reserve_tables, country_reference) {
     dplyr::select(Country, ISO3166_alpha3, dplyr::everything())
 }
 
-reserves <- function(ei, reserve_inputs, mineral_demand_clean, year = 2025, gamma = 0.5) {
+# `uranium_resources` (data/reference/uranium_resources.csv, see R/categories/reserves/uranium.R)
+# adds "Nuclear Reserves". It is bound after the clean table rather than completed with it:
+# the Red Book lists producers the EI roster omits (Namibia, Niger), and completing every
+# other reserve variable over them would change nothing but the row count.
+reserves <- function(ei,
+                     reserve_inputs,
+                     mineral_demand_clean,
+                     year = 2025,
+                     gamma = 0.5,
+                     uranium_resources = NULL,
+                     uranium_cost_category = URANIUM_DEFAULT_COST_CATEGORY) {
   country_reference <- reserves_build_country_reference(ei, year = year)
 
   reserve_tables <- lapply(reserve_inputs, function(spec) {
@@ -459,9 +469,24 @@ reserves <- function(ei, reserve_inputs, mineral_demand_clean, year = 2025, gamm
     year = year
   )
 
-  reserves_build_clean_table(
+  clean_table <- reserves_build_clean_table(
     reserve_tables = c(list(critical_min_reserves), energy_reserves),
     country_reference = country_reference
-  ) %>%
+  )
+
+  if (!is.null(uranium_resources)) {
+    clean_table <- uranium_bind_theme_rows(
+      clean_table,
+      uranium_reserves_table(
+        uranium_resources,
+        country_reference = country_reference,
+        cost_category = uranium_cost_category,
+        year = year,
+        gamma = gamma
+      )
+    )
+  }
+
+  clean_table %>%
     energy_security_add_overall_index()
 }

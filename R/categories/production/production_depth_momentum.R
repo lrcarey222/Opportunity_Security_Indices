@@ -362,13 +362,57 @@ production_depth_momentum_build_table <- function(production_combined,
     )
 }
 
+# Nuclear Upstream production: uranium mine output scored like oil, gas and coal.
+#
+# The Red Book series (R/categories/reserves/uranium.R) ends a year before the EI one, so it
+# is scored on its own latest year not after `year` and the 5 years before it; the raw row's
+# explanation records its year. `countries` is every economy to score: Table 1.18 lists
+# every producer, so an economy it omits produced nothing (an observed zero, as on the
+# Energy Security side), not an unknown for the missing-data rule to fill.
+production_depth_momentum_build_uranium <- function(uranium_production,
+                                                    countries,
+                                                    year,
+                                                    gamma = 0.5) {
+  uranium_year <- uranium_production_latest_year(uranium_production, year = year)
+  uranium_clean <- uranium_production_clean(
+    uranium_production,
+    countries = countries,
+    latest_year = uranium_year
+  )
+
+  uranium_combined <- production_depth_momentum_build_energy_indices(
+    uranium_clean,
+    latest_year = uranium_year,
+    gamma = gamma
+  ) %>%
+    dplyr::transmute(
+      Country,
+      tech,
+      supply_chain,
+      production_latest = .data[[as.character(uranium_year)]],
+      raw_year = uranium_year,
+      size_index,
+      growth_abs_index,
+      overall_production_index
+    )
+
+  production_depth_momentum_build_table(
+    production_combined = uranium_combined,
+    year = year,
+    source = uranium_source_label(uranium_production$source)
+  )
+}
+
+# `uranium_production` (data/reference/uranium_production.csv) adds Nuclear Upstream; without
+# it the theme has no Nuclear Upstream rows, as before.
 production_depth_momentum <- function(ei,
                                       critical,
                                       mineral_demand_clean,
                                       country_info,
                                       year = 2025,
                                       mineral_year = iea_critical_minerals_base_year(critical),
-                                      gamma = 0.5) {
+                                      gamma = 0.5,
+                                      uranium_production = NULL) {
   production_clean <- production_depth_momentum_clean_energy_production(
     ei,
     years = c(year - 10L, year - 5L, year)
@@ -397,6 +441,20 @@ production_depth_momentum <- function(ei,
     production_combined = production_combined,
     year = year
   )
+
+  if (!is.null(uranium_production)) {
+    # The EI fuel roster plus every country_info economy: the EI roster alone left ~110
+    # economies with a global-average uranium output although the Red Book says they had none.
+    output <- uranium_bind_theme_rows(
+      output,
+      production_depth_momentum_build_uranium(
+        uranium_production,
+        countries = unique(c(production_clean$Country, country_info$country)),
+        year = year,
+        gamma = gamma
+      )
+    )
+  }
 
   output <- standardize_theme_table(output)
   validate_schema(output)
