@@ -101,6 +101,7 @@ source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "indices", "allied_network_design.R"))
+source(file.path(repo_root, "R", "indices", "build_indices.R"))  # coalition_members()
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) stop("Config not loaded; run scripts/00_setup.R first.")
@@ -127,14 +128,82 @@ index_outputs <- readRDS(outputs_rds_path)
 
 economic_opportunity_index <- index_outputs$economic_opportunity_index
 energy_security_index      <- index_outputs$energy_security_index
+# Not used by the design: the node policy term is off (network_node_policy below)
 policy_index               <- index_outputs$policy_index
+rm(index_outputs)
+invisible(gc())
 
-if (is.null(economic_opportunity_index) || is.null(energy_security_index) || is.null(policy_index)) {
-  stop("Index outputs missing one of: economic_opportunity_index, energy_security_index, policy_index")
+if (is.null(economic_opportunity_index) || is.null(energy_security_index)) {
+  stop("Index outputs missing one of: economic_opportunity_index, energy_security_index")
 }
 
-# Coalition definition. ARE is the ISO3 code for the United Arab Emirates ("UAE" matched no table).
-iso3c_network <- allied_network_default_iso3c()
+# Coalition: derived, not listed by hand (coalition_members() in R/indices/build_indices.R). The
+# two-tier coalition of coalition_tbl.rds (scripts/13_build_coalition.R; members are tier core or
+# partner) or, until that table exists, the single-tier alignment coalition of
+# geo_coalition_tbl.rds (scripts/12_build_geopolitical_alignment.R, member == TRUE: the
+# U.S.-leaning UN-vote bloc with GDP >= the floor in config/geopolitical_distance.yml, 31 members
+# with the five-session window, Oct 2026; coalition_members() warns). It replaces the hand-picked
+# 23-member list, which survives only as the legacy/test default allied_network_default_iso3c().
+#
+# Network nodes (Oct 2026 decision): the EU is ONE node ("EUU", coalition_tbl$network_node). The
+# design aggregates its members' inputs with the stage weights of eu_stage_weights_tbl.rds
+# (scripts/13: production or export shares, else GDP shares) and weights its edges by the members'
+# 2024 basket trade (rules in R/indices/allied_network_design.R, "Network nodes"). The EU node is
+# the whole EU-27: network_node_all_members = TRUE adds the six EU members that do not pass the
+# coalition's own tier rules (tier "none" in coalition_tbl.rds, below the GDP floor or Nonaligned:
+# CYP EST LTU LVA MLT SVN, ~1.5% of EU GDP) to the node, because the node stands for the EU, whose
+# stage weights, combined GDP and extra-EU trade are EU-27 quantities. FALSE bundles only the 21
+# EU coalition members (the stage weights are then renormalised over them). With the 54 coalition
+# members (31 core, 23 partner) this gives 34 network nodes.
+network_node_all_members <- TRUE
+coalition_path <- file.path(processed_dir, "coalition_tbl.rds")
+geo_coalition_path <- file.path(processed_dir, "geo_coalition_tbl.rds")
+if (!file.exists(coalition_path) && !file.exists(geo_coalition_path)) {
+  stop(
+    "No coalition table in ", processed_dir, ": neither coalition_tbl.rds ",
+    "(scripts/13_build_coalition.R) nor geo_coalition_tbl.rds ",
+    "(scripts/12_build_geopolitical_alignment.R). The allied coalition is derived, not listed by ",
+    "hand; run scripts/12_build_geopolitical_alignment.R and scripts/13_build_coalition.R first."
+  )
+}
+coalition_tbl <- if (file.exists(coalition_path)) readRDS(coalition_path) else NULL
+coalition <- if (!is.null(coalition_tbl)) {
+  coalition_members(coalition_tbl)
+} else {
+  coalition_members(NULL, geo_coalition_tbl = readRDS(geo_coalition_path))
+}
+# The countries whose inputs are read: the coalition members plus (network_node_all_members) the
+# rest of each bundled node; node_only flags the latter
+coalition_network <- if (isTRUE(network_node_all_members) && !is.null(coalition_tbl)) {
+  allied_network_add_node_members(coalition, coalition_tbl)
+} else {
+  dplyr::mutate(coalition, node_only = FALSE)
+}
+iso3c_network <- coalition_network$iso3
+network_nodes <- unique(coalition_network$network_node)
+bundled_nodes <- unique(coalition_network$network_node[duplicated(coalition_network$network_node)])
+message(
+  "Allied network coalition (", coalition$source[1], "): ", nrow(coalition), " members (",
+  paste(names(table(coalition$tier)), table(coalition$tier), sep = " ", collapse = ", "), ")",
+  if (any(coalition_network$node_only)) paste0(" + ", sum(coalition_network$node_only), " countries of bundled nodes (",
+                                             paste(coalition_network$iso3[coalition_network$node_only], collapse = " "), ")") else "",
+  "; ", length(network_nodes), " network nodes",
+  if (length(bundled_nodes)) paste0(" (bundled: ", paste(bundled_nodes, collapse = ", "), ")") else "",
+  ": ", paste(network_nodes, collapse = " ")
+)
+
+# Member weights of the bundled nodes per (tech, stage) (scripts/13_build_coalition.R)
+node_member_weights <- NULL
+if (length(bundled_nodes)) {
+  eu_weights_path <- file.path(processed_dir, "eu_stage_weights_tbl.rds")
+  if (!file.exists(eu_weights_path)) {
+    stop("The coalition bundles node(s) ", paste(bundled_nodes, collapse = ", "), " but ", eu_weights_path,
+         " is missing; run scripts/13_build_coalition.R.")
+  }
+  node_member_weights <- readRDS(eu_weights_path)
+}
+# Display names of bundled nodes
+network_node_labels <- c(EUU = "European Union")
 
 # Partner dyad tables (from scripts/15_build_partner_themes.R). The friendshore table has ~17M rows;
 # keep only the coalition's index rows as each table is read, so the full tables are never held
@@ -193,6 +262,61 @@ country_size_tbl <- allied_network_country_size_tbl(
   iso3c_network
 )
 
+# Basket trade, latest year, for the bundled nodes' edge weights and the observed export
+# concentration: the reconciled exporter -> importer matrix of the partner themes (scripts/15:
+# importer's declaration, else the exporter's at the CIF/FOB factor; config/partnership.yml) from
+# the all-reporter Comtrade dyad file (scripts/98), only the latest year. Without the file the
+# bundled edges fall back to the stage weights.
+partnership_cfg_path <- file.path(repo_root, "config", "partnership.yml")
+partnership_cfg <- if (file.exists(partnership_cfg_path)) yaml::read_yaml(partnership_cfg_path) else list()
+comtrade_all_path <- file.path(raw_data_path, "comtrade_energy_dyads_all.csv")
+comtrade_allied_path <- file.path(raw_data_path, "allied_comtrade_energy_data.csv")
+hs6_master_path <- file.path(raw_data_path, "energy_hs6_master.csv")
+trade_cells <- NULL
+if ((file.exists(comtrade_all_path) || file.exists(comtrade_allied_path)) && file.exists(hs6_master_path)) {
+  trade_source <- partnership_strength_resolve_trade_source(
+    partnership_cfg$trade$source,
+    all_reporters_exists = file.exists(comtrade_all_path),
+    allied_exists = file.exists(comtrade_allied_path)
+  )
+  trade_path <- if (identical(trade_source$source, "all_reporters")) comtrade_all_path else comtrade_allied_path
+  if (isTRUE(trade_source$fallback)) {
+    warning("Allied network: comtrade_energy_dyads_all.csv is missing; trade weights from the 22-reporter allied file.", call. = FALSE)
+  }
+  # Only the columns the trade builder uses (the all-reporter file is ~700 MB), cmd_code as text
+  trade_cols <- c("reporter_iso", "partner_iso", "period", "ref_year", "flow_direction", "flow_code", "cmd_code", "primary_value")
+  trade_dyads <- if (requireNamespace("data.table", quietly = TRUE)) {
+    trade_header <- names(data.table::fread(trade_path, nrows = 0))
+    as.data.frame(data.table::fread(
+      trade_path,
+      select = intersect(trade_cols, trade_header),
+      colClasses = list(character = intersect(c("reporter_iso", "partner_iso", "flow_direction", "cmd_code"), trade_header)),
+      na.strings = c("", "NA"),
+      showProgress = FALSE
+    ))
+  } else {
+    utils::read.csv(trade_path, colClasses = c(cmd_code = "character"))
+  }
+  trade_year_col <- intersect(c("period", "ref_year"), names(trade_dyads))[1]
+  trade_years <- suppressWarnings(as.integer(trade_dyads[[trade_year_col]]))
+  network_trade_year <- max(trade_years, na.rm = TRUE)
+  trade_dyads <- trade_dyads[!is.na(trade_years) & trade_years == network_trade_year, , drop = FALSE]
+  rm(trade_years)
+  trade_cells <- partnership_strength_build_trade_cells(
+    trade_dyads,
+    read.csv(hs6_master_path),
+    years = network_trade_year,
+    cif_fob_factor = if (is.null(partnership_cfg$trade$cif_fob_factor)) PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR else as.numeric(partnership_cfg$trade$cif_fob_factor)
+  )
+  rm(trade_dyads)
+  invisible(gc())
+  message("Allied network: ", network_trade_year, " basket trade from ", basename(trade_path), " (", format(nrow(trade_cells), big.mark = ","), " exporter-importer cells).")
+} else if (length(bundled_nodes)) {
+  warning("Allied network: no Comtrade dyad file or HS6 crosswalk in ", raw_data_path,
+          "; the bundled nodes' edges are weighted by the stage weights only.", call. = FALSE)
+}
+node_trade_tbl <- if (is.null(trade_cells)) NULL else allied_network_member_trade(trade_cells, iso3c_network)
+
 # Run
 fmt_time <- function(seconds) {
   if (!is.finite(seconds) || is.na(seconds)) return("--:--")
@@ -238,9 +362,75 @@ progress_callback <- function(info) {
 }
 
 
-auto_milp_max_nodes <- 30
+# method = "auto" solves a stage by MILP when it has at most this many network nodes and by greedy
+# above it (greedy also stays the fallback when the solver fails or hits its time limit). Every stage
+# is a MILP stage: with the EU bundled the network has 34 nodes (Oct 2026), and 60 also covers the
+# 54-member coalition solved member by member. The function default 30 dates from the 23-member
+# coalition. In a timing probe on 57 unbundled members (lambda 1.5, one pass, no caps) the stage MILPs
+# reached optimality in 23 to 245 s. A node set larger than this is warned about below rather than
+# silently solved by greedy.
+auto_milp_max_nodes <- 60
+if (length(network_nodes) > auto_milp_max_nodes) {
+  warning(
+    "The network has ", length(network_nodes), " nodes, more than auto_milp_max_nodes = ",
+    auto_milp_max_nodes, ": method = 'auto' solves every stage by greedy. Raise auto_milp_max_nodes ",
+    "(and check the stage time limit) or bundle members into shared network nodes.",
+    call. = FALSE
+  )
+}
+# GLPK time limit per stage solve (seconds); a stage that hits it falls back to greedy and the reason
+# is written to diagnostics$fallback_reason. Raised from 120 s (Oct 2026): with 31 members per stage the
+# MILP is larger, and in probe runs at 120 s Green Hydrogen Midstream hit the limit during the
+# portfolio-cap passes (lambda >= 2), which changes the path of the caps loop.
+network_milp_time_limit_sec <- 300
+
+# Producer (node) score without the policy term: EO and ES only (node_weights eo 0.5 and resilience
+# 0.2, renormalized to 5/7 and 2/7). The Policy index covers fewer coalition members than EO and ES,
+# so with the term on, uncovered members got the stage median imputed (policy_imputed); since Oct 2026
+# the network does not use it. allied_network_design()'s default node_policy = TRUE keeps the legacy
+# three-component score for other callers; the choice is recorded in params and diagnostics.
+network_node_policy <- FALSE
+
+# Stages in the network design: Upstream and Midstream only. Downstream deployment is not part of the
+# allied division of labour; the portfolio caps count top-5 appearances over these 22 stages only.
+network_supply_chains <- c("Upstream", "Midstream")
+
+# Diversification weight: each stage maximises its linear score objective minus lambda * HHI of the
+# designed production shares (score units per unit of HHI; lambda = 0 is the linear design, which
+# puts two producers at the 0.40 cap in most stages). Calibration rule: the smallest lambda on a grid
+# at which the median designed HHI over the 22 Upstream/Midstream stages is at most the median
+# observed export HHI of the network's own nodes (allied_network_observed_export_hhi(): 2024 basket
+# trade from the reconciled Comtrade matrix built above, shares within the nodes, the EU-27 as ONE
+# exporter counting only its extra-EU exports, every other node its exports to all other economies;
+# median over the 14 network stages with an HS6 basket; written to allied_network_observed_hhi.csv).
+# Extra-EU, because trade among the EU members is the bundled node's internal trade, as a country's
+# domestic sales are; counting it would make the EU the leading exporter of nearly every stage.
+# lambda = 0.94 is the pick of the Oct 2026 calibration on the final node set (54 coalition members
+# plus the 6 other EU members, 34 nodes with the EU bundled; caps on, node policy term off, Upstream
+# and Midstream, MILP for every stage, 300 s stage limit, 30 cap passes, the settings of this script;
+# EO/ES of 2026-10-01, FS/OP of a 2026-10-08 morning scripts/15 run): target 0.1432 (6.98 equivalent
+# exporters); grid 0 to 2
+# with a 0.01 step from 0.92 to 0.96: 0.92 -> 0.1450 and 0.93 -> 0.1451 (above), 0.94 -> 0.1422
+# (7.04 effective producers, 10 producers per stage at the median, no producer at 0.40, 25% of
+# producer slots at the 0.05 floor), 1.0 -> 0.1353. Every grid run solved all 22 stages by MILP
+# with no fallback and the caps loop converged (Green Hydrogen Midstream, the stage that hit the
+# limit on the 31-member coalition, solves in about 10 s); without caps, 0.94 gives 0.1313. Study:
+# osi-worktrees/scratch_final/network (log.md "Lambda study", lambda_study_g34.csv), outside the
+# repository. The previous 1.5 came from the hand-picked 23-member coalition with the node policy
+# term on. The pick is knife-edge: the designed median moves by up to 0.003 between neighbouring
+# grid points (the caps loop changes the barred sets), more than its margin to the target. On newer
+# upstream tables (EO/ES of 2026-10-07, FS/OP from the Taiwan-recoded dyads) 0.94 gave 0.14327, just
+# above the target, and 0.95 gave 0.14198 (review, scratch_final/rvn). Recalibrate on the inputs of
+# each full rerun; the run warns below when the designed median exceeds the observed one.
+network_diversity_lambda <- 0.94
+# Share step of the MILP's tangent approximation of HHI (error <= step^2 / 4 = 2.5e-5 per producer)
+network_diversity_breakpoint_step <- 0.01
+# Interior shares move top-5 membership in more stages per pass than the bang-bang design did, so
+# the portfolio-cap loop gets more passes than the default 10 (the 23-member calibration ran with 30).
+network_portfolio_max_iters <- 30
+
 if (milp_available) {
-  message("MILP solver stack detected (ompr/ROI/GLPK). method='auto' uses MILP for stages with up to ", auto_milp_max_nodes, " members; greedy if a stage is larger or the solver fails.")
+  message("MILP solver stack detected (ompr/ROI/GLPK). method='auto' uses MILP for stages with up to ", auto_milp_max_nodes, " nodes; greedy if a stage is larger or the solver fails.")
 } else {
   message("MILP solver stack not detected. method='auto' will use greedy fallback.")
 }
@@ -254,6 +444,12 @@ res <- allied_network_design(
   partner_development_country_tbl = partner_development_country_tbl,
   country_info = country_info,
   iso3c_network = iso3c_network,
+  # tier and network_node per member: members sharing a node (the EU) are solved as one node, with
+  # the stage weights, the members' basket trade on each edge and the node's display name
+  network_members = coalition_network,
+  node_member_weights = node_member_weights,
+  node_trade_tbl = node_trade_tbl,
+  node_labels = network_node_labels,
   method = "auto",        # MILP per stage when installed and the stage is small enough, else greedy
   min_producers = 3,
   max_share = 0.40,
@@ -266,7 +462,8 @@ res <- allied_network_design(
   w_dev = 0.0,
   progress_callback = progress_callback,
   auto_milp_max_nodes = auto_milp_max_nodes,
-  milp_stage_time_limit_sec = 120,
+  milp_stage_time_limit_sec = network_milp_time_limit_sec,
+  node_policy = network_node_policy,
   country_size_tbl = country_size_tbl,
   demand_mode = "mixed",
   demand_weights = list(need = 0.5, size = 0.5),
@@ -275,17 +472,29 @@ res <- allied_network_design(
   portfolio_min_cap = 2,
   portfolio_max_cap = 10,
   portfolio_transform = "log",
+  portfolio_max_iters = network_portfolio_max_iters,
   # missing-data rules and edge orientation (the function defaults, stated for the record)
   policy_missing = "coalition_median",
   missing_components = "renormalize",
-  friendshore_orientation = "reporter_is_consumer"
+  friendshore_orientation = "reporter_is_consumer",
+  supply_chains = network_supply_chains,
+  diversity_lambda = network_diversity_lambda,
+  diversity_breakpoint_step = network_diversity_breakpoint_step
 )
 
 diag_tbl <- res$diagnostics
 message(
-  "Allied network: ", nrow(diag_tbl), " stages; method per stage: ",
+  "Allied network: ", length(res$params$network_nodes), " nodes, ",
+  nrow(diag_tbl), " stages (", paste(network_supply_chains, collapse = ", "), "); method per stage: ",
   paste(names(table(diag_tbl$method)), table(diag_tbl$method), sep = " = ", collapse = ", "),
-  "; policy-imputed members selected in ", sum(dplyr::coalesce(diag_tbl$n_selected_policy_imputed, 0L) > 0), " stages",
+  "; ", sum(!is.na(diag_tbl$fallback_reason)), " MILP fallbacks to greedy",
+  "; diversity_lambda = ", network_diversity_lambda,
+  sprintf("; median HHI %.3f (%.1f effective producers)", stats::median(diag_tbl$hhi, na.rm = TRUE), stats::median(diag_tbl$effective_producers, na.rm = TRUE)),
+  "; node policy term ", if (network_node_policy) {
+    paste0("on (policy-imputed members selected in ", sum(dplyr::coalesce(diag_tbl$n_selected_policy_imputed, 0L) > 0), " stages)")
+  } else {
+    "off (producer score = EO and ES)"
+  },
   if (!is.null(res$portfolio)) paste0("; portfolio converged: ", res$portfolio$converged, " after ", res$portfolio$iters, " iterations") else ""
 )
 
@@ -300,6 +509,43 @@ utils::write.csv(res$specialization, file.path(outputs_dir, "allied_network_spec
 utils::write.csv(res$flows,          file.path(outputs_dir, "allied_network_flows.csv"),         row.names = FALSE)
 utils::write.csv(res$diagnostics,    file.path(outputs_dir, "allied_network_diagnostics.csv"),   row.names = FALSE)
 utils::write.csv(res$input_checks,   file.path(outputs_dir, "allied_network_input_checks.csv"),  row.names = FALSE)
+# The countries the design read (coalition_members(): iso3, country, tier, network_node, node_tier,
+# source; node_only = TRUE for the countries of a bundled node outside the coalition's tier rules)
+utils::write.csv(coalition_network, file.path(outputs_dir, "allied_network_members.csv"), row.names = FALSE)
+# Each node's production share split back to its members by stage weight; for a bundled node
+# (share_is_derived = TRUE) production_share_derived is derived, not designed
+if (!is.null(res$member_shares)) {
+  utils::write.csv(res$member_shares, file.path(outputs_dir, "allied_network_member_shares.csv"), row.names = FALSE)
+}
+if (!is.null(res$node_aggregation)) {
+  utils::write.csv(res$node_aggregation$nodes, file.path(outputs_dir, "allied_network_nodes.csv"), row.names = FALSE)
+  utils::write.csv(res$node_aggregation$edges, file.path(outputs_dir, "allied_network_node_edges.csv"), row.names = FALSE)
+}
+# Observed export concentration of the network's nodes in the stages solved (a bundled node counts
+# its exports outside the node only): the reference for the diversification calibration above
+if (!is.null(trade_cells)) {
+  observed_hhi <- allied_network_observed_export_hhi(
+    trade_cells,
+    res$params$network_members,
+    stages = dplyr::distinct(diag_tbl, tech, supply_chain)
+  ) %>%
+    dplyr::mutate(year = network_trade_year)
+  utils::write.csv(observed_hhi, file.path(outputs_dir, "allied_network_observed_hhi.csv"), row.names = FALSE)
+  message(sprintf(
+    "Allied network: observed node export HHI, median over %d basket stages %.3f (%.1f equivalent exporters); designed median %.3f.",
+    nrow(observed_hhi), stats::median(observed_hhi$hhi), 1 / stats::median(observed_hhi$hhi), stats::median(diag_tbl$hhi, na.rm = TRUE)
+  ))
+  # The calibration rule (see network_diversity_lambda) must hold on these inputs
+  if (stats::median(diag_tbl$hhi, na.rm = TRUE) > stats::median(observed_hhi$hhi)) {
+    warning(sprintf(
+      paste0(
+        "Allied network: the designed median HHI %.5f exceeds the observed median %.5f, so diversity_lambda = %s ",
+        "no longer meets its calibration rule on these inputs; recalibrate network_diversity_lambda."
+      ),
+      stats::median(diag_tbl$hhi, na.rm = TRUE), stats::median(observed_hhi$hhi), format(network_diversity_lambda)
+    ), call. = FALSE)
+  }
+}
 if (!is.null(res$build_candidates)) {
   utils::write.csv(res$build_candidates, file.path(outputs_dir, "allied_network_build_candidates.csv"), row.names = FALSE)
 }

@@ -266,6 +266,159 @@ test_that("missing coalition policy is imputed at the stage median and flagged",
   expect_true(all(is.na(legacy$specialization$producer_score[legacy$specialization$iso3c == "ARE"])))
 })
 
+test_that("node_policy = FALSE scores producers on EO and ES only and ignores the policy table", {
+  x <- make_clean_inputs()
+  nodes <- allied_network_prepare_nodes(x$eo, x$es, NULL, net_country_info, iso3c_network = net_iso, node_policy = FALSE)
+  # node_weights eo 0.5 and resilience 0.2, renormalized over the two
+  expect_equal(nodes$producer_score, (0.5 * nodes$eo_idx + 0.2 * nodes$es_idx) / 0.7, tolerance = 1e-12)
+  expect_true(all(is.na(nodes$policy_raw)))
+  expect_false(any(nodes$policy_imputed))
+  expect_true(all(nodes$node_components_n == 2L))
+  expect_false("policy_index" %in% attr(nodes, "input_checks")$input)
+
+  off <- run_design(x, method = "greedy", node_policy = FALSE)
+  # ARE (no policy index) is scored like everyone else; nothing is imputed
+  expect_true(all(is.finite(off$specialization$producer_score)))
+  expect_false(any(off$specialization$policy_imputed))
+  expect_equal(off$diagnostics$n_policy_imputed, c(0L, 0L))
+  # A different policy table, or none at all, gives the same design
+  x_rev <- x
+  x_rev$pol$value <- rev(x_rev$pol$value)
+  expect_equal(run_design(x_rev, method = "greedy", node_policy = FALSE)$specialization, off$specialization)
+  x_null <- x
+  x_null["pol"] <- list(NULL)
+  expect_equal(run_design(x_null, method = "greedy", node_policy = FALSE)$specialization, off$specialization)
+  # require_all no longer needs a policy value either
+  req <- run_design(x, method = "greedy", node_policy = FALSE, policy_missing = "none", missing_components = "require_all")
+  expect_equal(req$specialization$producer_score, off$specialization$producer_score, tolerance = 1e-12)
+
+  # Recorded in params and diagnostics
+  expect_false(off$params$node_policy)
+  expect_equal(off$params$node_weights_effective, list(eo = 0.5 / 0.7, policy = 0, resilience = 0.2 / 0.7), tolerance = 1e-12)
+  expect_equal(off$diagnostics$node_policy, c(FALSE, FALSE))
+
+  # The default is the legacy EO/policy/ES score
+  on <- run_design(x, method = "greedy")
+  expect_true(on$params$node_policy)
+  expect_equal(on$params$node_weights_effective, list(eo = 0.5, policy = 0.3, resilience = 0.2), tolerance = 1e-12)
+  expect_equal(on$diagnostics$node_policy, c(TRUE, TRUE))
+  expect_false(isTRUE(all.equal(on$specialization$producer_score, off$specialization$producer_score)))
+
+  expect_error(run_design(x, method = "greedy", node_policy = NA), "node_policy")
+  expect_error(run_design(x, method = "greedy", node_policy = "no"), "node_policy")
+  # With the policy term on, the policy table is still required
+  expect_error(run_design(x_null, method = "greedy"), "policy_index")
+})
+
+test_that("node_policy = FALSE carries through the MILP", {
+  skip_if_not(allied_network_has_milp(), "MILP solver packages not installed")
+  x <- make_clean_inputs(stages = "Midstream")
+  off <- run_design(x, method = "milp", node_policy = FALSE)
+  expect_equal(off$diagnostics$method, "milp")
+  expect_false(off$diagnostics$node_policy)
+  x$pol$value <- rev(x$pol$value)
+  expect_equal(run_design(x, method = "milp", node_policy = FALSE)$specialization, off$specialization)
+})
+
+test_that("network_members with every member its own node carries tier and network_node without aggregating", {
+  x <- make_clean_inputs()
+  # as coalition_members() returns it (iso3 column), rows in another order; a missing node is the
+  # member's own code
+  members <- tibble::tibble(
+    iso3 = c("VNM", "USA", "MEX", "CAN", "ARE"),
+    country = c("Viet Nam", "United States", "Mexico", "Canada", "United Arab Emirates"),
+    tier = c("partner", "core", "partner", "core", "partner"),
+    network_node = c("VNM", "USA", "MEX", "CAN", NA),
+    source = "coalition_tbl"
+  )
+  base <- run_design(x, method = "greedy", node_policy = FALSE)
+  out <- run_design(x, method = "greedy", node_policy = FALSE, network_members = members)
+
+  # The design itself is unchanged: every member is its own node
+  expect_false(out$params$node_aggregation)
+  expect_equal(dplyr::select(out$specialization, -"tier", -"network_node", -"n_members"), base$specialization)
+  expect_equal(out$flows, base$flows)
+  expect_equal(out$diagnostics, base$diagnostics)
+  # tier, network_node and n_members per row, right after iso3c
+  expect_equal(which(names(out$specialization) %in% c("tier", "network_node", "n_members")),
+               which(names(out$specialization) == "iso3c") + 1:3)
+  spec_tier <- members$tier[match(out$specialization$iso3c, members$iso3)]
+  expect_equal(out$specialization$tier, spec_tier)
+  expect_equal(out$specialization$network_node, out$specialization$iso3c)
+  expect_equal(unique(out$specialization$n_members), 1L)
+  # recorded in params, in iso3c_network order
+  expect_equal(out$params$network_members$iso3c, net_iso)
+  expect_equal(out$params$network_members$network_node, net_iso)
+  expect_equal(out$params$network_nodes, net_iso)
+  expect_null(base$params$network_members)
+  expect_false(any(c("tier", "network_node", "n_members") %in% names(base$specialization)))
+  # member_shares: each member is its own node, nothing derived
+  expect_equal(out$member_shares$production_share_derived, out$member_shares$node_production_share)
+  expect_false(any(out$member_shares$share_is_derived))
+  expect_null(base$member_shares)
+
+  # Two members on one node are aggregated, which needs member weights per stage
+  shared <- members
+  shared$network_node[shared$iso3 %in% c("MEX", "CAN")] <- "NAM"
+  expect_error(run_design(x, method = "greedy", node_policy = FALSE, network_members = shared), "node_member_weights .* is required")
+
+  # It must list exactly the coalition
+  expect_error(run_design(x, method = "greedy", network_members = members[-1, ]), "missing: VNM")
+  extra <- dplyr::bind_rows(members, tibble::tibble(iso3 = "JPN", tier = "core", network_node = "JPN"))
+  expect_error(run_design(x, method = "greedy", network_members = extra), "not in iso3c_network: JPN")
+  expect_error(run_design(x, method = "greedy", network_members = dplyr::select(members, -"network_node")), "network_node")
+  expect_error(run_design(x, method = "greedy", network_members = dplyr::select(members, -"iso3")), "iso3c \\(or iso3\\)")
+  expect_error(run_design(x, method = "greedy", network_members = members$iso3), "data frame")
+})
+
+test_that("scripts/30 turns the node policy term off and solves every coalition stage by MILP", {
+  exprs <- as.list(parse(file.path(repo_root, "scripts", "30_build_allied_network_design.R"), keep.source = FALSE))
+  assigned <- function(name) {
+    hit <- Filter(function(e) {
+      is.call(e) && identical(e[[1]], as.name("<-")) && identical(e[[2]], as.name(name))
+    }, exprs)
+    expect_length(hit, 1)
+    eval(hit[[1]][[3]], envir = baseenv())
+  }
+  expect_false(assigned("network_node_policy"))
+  # 60 covers the 34 nodes of the bundled network and the 54-member coalition solved member by
+  # member; the function default (30) would not
+  expect_equal(assigned("auto_milp_max_nodes"), 60)
+  expect_gte(assigned("auto_milp_max_nodes"), 54)
+  expect_equal(assigned("network_milp_time_limit_sec"), 300)
+  # the EU node is the whole EU-27 (the six EU members outside the tier rules are added to it)
+  expect_true(assigned("network_node_all_members"))
+  expect_equal(assigned("network_node_labels"), c(EUU = "European Union"))
+  # lambda from the Oct 2026 recalibration on the 34-node set (scratch_final/network study)
+  expect_equal(assigned("network_diversity_lambda"), 0.94)
+  expect_equal(assigned("network_supply_chains"), c("Upstream", "Midstream"))
+
+  call <- Filter(function(e) {
+    is.call(e) && identical(e[[1]], as.name("<-")) && identical(e[[2]], as.name("res"))
+  }, exprs)[[1]][[3]]
+  expect_identical(call[[1]], as.name("allied_network_design"))
+  args <- as.list(call)[-1]
+  expect_identical(args$node_policy, as.name("network_node_policy"))
+  expect_identical(args$auto_milp_max_nodes, as.name("auto_milp_max_nodes"))
+  expect_identical(args$milp_stage_time_limit_sec, as.name("network_milp_time_limit_sec"))
+  expect_identical(args$iso3c_network, as.name("iso3c_network"))
+  expect_identical(args$network_members, as.name("coalition_network"))
+  expect_identical(args$node_member_weights, as.name("node_member_weights"))
+  expect_identical(args$node_trade_tbl, as.name("node_trade_tbl"))
+  expect_identical(args$node_labels, as.name("network_node_labels"))
+  expect_identical(args$diversity_lambda, as.name("network_diversity_lambda"))
+  expect_identical(args$portfolio_enable, TRUE)
+  expect_identical(args$method, "auto")
+  src <- readLines(file.path(repo_root, "scripts", "30_build_allied_network_design.R"), warn = FALSE)
+  expect_false(any(grepl("TODO(lambda recalibration)", src, fixed = TRUE)))
+  # the bundled node's weights come from scripts/13 and its outputs are written
+  expect_true(any(grepl("eu_stage_weights_tbl.rds", src, fixed = TRUE)))
+  expect_true(any(grepl("allied_network_member_shares.csv", src, fixed = TRUE)))
+  expect_true(any(grepl("allied_network_observed_hhi.csv", src, fixed = TRUE)))
+  # the run flags inputs on which lambda no longer meets its calibration rule
+  expect_true(any(grepl("no longer meets its calibration rule", src, fixed = TRUE)))
+})
+
 test_that("a stage without ES ranks on the other components, and a stage without any signal is skipped", {
   x <- make_clean_inputs(stages = "Upstream")
   x$es <- x$es[0, ]
