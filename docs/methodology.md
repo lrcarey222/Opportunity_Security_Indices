@@ -200,7 +200,7 @@ A partner is **rankable** if it is sovereign and its PSI imputed weight share �
 - **Constraints:** ≥ 3 producers, shares in {0} ∪ [0.05, 0.40], every consumer served by ≥ 2 suppliers each with ≥ 10% of its supply, self-supply allowed.
 - **Portfolio caps (headline):** a node may be in a stage's top 5 at most `cap` times over the 22 stages, `cap` from log GDP in [2, 10]; enforced iteratively (≤ 30 passes) by barring over-cap nodes; top-5 by strict rank. No caps is the robustness variant.
 - **Solver:** MILP (ompr/ROI/GLPK) for every stage with ≤ 60 nodes, 300 s per stage; greedy fallback (water-filled shares under the same objective) recorded in diagnostics.
-- **Calibration of lambda:** the smallest λ on the grid at which the median designed HHI over the 22 stages is at most the median observed export HHI of the network's nodes over the 14 stages with an HS6 basket (2024 reconciled trade, shares within the nodes, the EU counting extra-EU exports only; `allied_network_observed_hhi.csv`). Pick on the 34-node set: λ = 0.94 (target 0.1432). The rule must be re-applied on each full rerun; `scripts/30` warns when it fails.
+- **Calibration of lambda:** the smallest λ on the grid at which the median designed HHI over the 22 stages is at most the median observed export HHI of the network's nodes over the 14 stages with an HS6 basket (2024 reconciled trade, shares within the nodes, the EU counting extra-EU exports only; `allied_network_observed_hhi.csv`). Pick on the 36-node set of 2026-10-09: λ = 0.92 (target 0.1396 over the 13 basket stages; designed median 0.1382; 0.91 gives 0.1433). The rule must be re-applied on each full rerun; `scripts/30` warns when it fails.
 
 ## 11. Pipeline stages
 
