@@ -1,13 +1,20 @@
 # Opportunity Security Indices (OSI)
 
-This repository contains the scaffold for the **Opportunity Security Indices** pipeline. It produces three related pillars:
+This repository holds the **Opportunity Security Indices** pipeline. It produces two country-level pillars, the indices built on them, and a bilateral and coalition layer:
 
-- **Energy Security (ES)** — resilience and security across energy supply chains.
-- **Economic Opportunity (EO)** — opportunity for growth and competitiveness in energy-related markets.
-- **Partnership Strength Index (PSI)** — a composite partnership measure blending friendshoring, opportunity, and development potential.
+- **Energy Security (ES)**: exposure and resilience across energy supply chains (higher = more secure).
+- **Economic Opportunity (EO)**: market opportunity and competitiveness in energy-related value chains.
+- **Policy index**: industrial and climate policy support (IEA Policies and Measures + Climate Action Tracker).
+- **Strategic Index (SI)**: where a country should build, from EO, its energy-security *need*, policy support, the supply-chain stage and the technology's climate weight.
+- **Geopolitical alignment**: bloc membership on the US-China axis of UN General Assembly voting.
+- **Allied coalition**: a two-tier coalition (core and partners) derived from alignment, economic-security agreements and major-supplier status, with the EU as one network node.
+- **Partnership Strength Index (PSI)**: a partner-level score from bilateral Friendshore, Opportunity and Development components, from the coalition's point of view.
+- **Allied network design**: a coalition-wide division of labour per technology and stage (a MILP with a diversification term).
 
-> **Unit of analysis:** **Country × Technology × Supply-chain stage**  
-> Stages are standardized to `Upstream`, `Midstream`, `Downstream`.
+> **Unit of analysis:** **Country × Technology × Supply-chain stage**
+> Stages are `Upstream`, `Midstream`, `Downstream`. The 11 headline technologies are Electric Vehicles, Nuclear, Coal, Batteries, Green Hydrogen, Wind, Oil, Solar, Gas, Geothermal and Electric Grid.
+
+The code is the specification. `docs/methodology.md` states the method in one place; this README adds the category-by-category notes, how to run the pipeline, and what changed on this branch ([Changelog](#changelog-fixallied-base-paper-sep-oct-2026)).
 
 ---
 
@@ -18,13 +25,20 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
 - [How the indices are built](#how-the-indices-are-built)
   - [Normalization: `median_scurve`](#normalization-median_scurve)
   - [Overall variables and category scoring](#overall-variables-and-category-scoring)
-  - [Pillar aggregation and weights](#pillar-aggregation-and-weights)
-  - [Missing data policy](#missing-data-policy)
-  - [Supply-chain coupling](#supply-chain-coupling)
+  - [Pillar aggregation: available case](#pillar-aggregation-available-case)
+  - [Missing data: observed-only imputation](#missing-data-observed-only-imputation)
+  - [Country harmonisation](#country-harmonisation)
+  - [Rankability](#rankability)
+  - [Supply-chain coupling (not applied)](#supply-chain-coupling-not-applied)
 - [Pillars, categories, and technical appendix](#pillars-categories-and-technical-appendix)
   - [Energy Security (ES)](#energy-security-es)
   - [Economic Opportunity (EO)](#economic-opportunity-eo)
+  - [Policy index](#policy-index)
+  - [Strategic Index (SI)](#strategic-index-si)
+  - [Geopolitical alignment](#geopolitical-alignment)
+  - [Allied coalition: two tiers and the EU node](#allied-coalition-two-tiers-and-the-eu-node)
   - [Partnership Strength Index (PSI)](#partnership-strength-index-psi)
+  - [Allied network design](#allied-network-design)
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
 - [Interactive explorer (Shiny)](#interactive-explorer-shiny)
@@ -34,11 +48,13 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
 - [Additional utilities and workflows](#additional-utilities-and-workflows)
 - [Raw inputs and refresh](#raw-inputs-and-refresh)
   - [API fetchers](#api-fetchers)
+  - [The all-reporter Comtrade dyad pull](#the-all-reporter-comtrade-dyad-pull)
   - [The HS6 crosswalk](#the-hs6-crosswalk)
   - [When ingestion fails](#when-ingestion-fails)
   - [How refresh works](#how-refresh-works)
   - [Key external sources (cited)](#key-external-sources-cited)
 - [Known issues and to-dos](#known-issues-and-to-dos)
+- [Changelog (fix/allied-base-paper, Sep-Oct 2026)](#changelog-fixallied-base-paper-sep-oct-2026)
 - [Citation](#citation)
 - [License](#license)
 
@@ -46,22 +62,29 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
 
 ## What this repo produces
 
-The pipeline produces:
+| Step | Script | Main outputs (`data/processed/`) |
+| --- | --- | --- |
+| Themes | `scripts/10_build_themes.R` | one tidy table per theme (`*_tbl.rds`), policy components, technology GHG weights |
+| Alignment | `scripts/12_build_geopolitical_alignment.R` | `geo_ideal_points_tbl.rds`, `geo_alignment_tbl.rds`, `geo_coalition_tbl.rds` |
+| Coalition | `scripts/13_build_coalition.R` | `coalition_tbl.rds`, `eu_stage_weights_tbl.rds`, `major_supplier_shares_tbl.rds` |
+| Pillars, Policy, SI | `scripts/20_build_indices.R` | `outputs/index_outputs.rds` (ES, EO, contributions, diagnostics, Policy index, Strategic Index, coalition), `charts/allied_strategic.csv` |
+| Partner themes | `scripts/15_build_partner_themes.R` | `partner_{friendshore,opportunity,development}_*_tbl.rds`, `partner_trade_coverage_tbl.rds` |
+| PSI | `scripts/25_build_partner_indices.R` | `psi_tbl.rds` (core-coalition view, headline), `psi_full_coalition_tbl.rds`, `psi_world_tbl.rds`, `psi_dyad_tbl.rds` and category contributions |
+| Allied network | `scripts/30_build_allied_network_design.R` | `outputs/allied_network_*.csv` |
+| Vintages | `scripts/40_build_index_vintages.R` | `vintages/*` (ES and EO at several years) |
 
-1. **Theme tables** (raw metrics + normalized indices) at the Country × Tech × Supply-chain level.
-2. **Category scores** and **pillar indices** for ES and EO using configured weights.
-3. **PSI** components and a composite PSI index.
-4. Optional **contribution tables** (category and variable contributions) for auditability.
+Every index keeps its decomposition (category and variable contributions reconcile to the index value), and every country-cell carries how much of its weight rests on imputed inputs.
 
 ---
 
 ## Data model
 
-Theme outputs are stored in a tidy format with common columns, including:
+Theme outputs are stored in a tidy format with common columns:
 
-- `Country`
+- `Country` (one canonical name per economy; see [Country harmonisation](#country-harmonisation))
 - `tech`
 - `supply_chain`
+- `sub_sector` (`"All"` unless `include_sub_sector` is on)
 - `category`
 - `variable`
 - `data_type` (`raw` vs `index`; some themes also emit `weight` and `contribution` for decomposition)
@@ -70,7 +93,7 @@ Theme outputs are stored in a tidy format with common columns, including:
 - `source`
 - `explanation`
 
-A schema validator and standardization helpers live under `R/utils/`.
+A schema validator and standardization helpers live under `R/utils/` (`schema.R`, `theme_standardize.R`, `country.R`). The index, coalition, partner and network tables are described in `docs/data_dictionary.md`.
 
 ---
 
@@ -81,222 +104,174 @@ A schema validator and standardization helpers live under `R/utils/`.
 Most raw metrics are converted to a 0–1 index using a median-centered S-curve:
 
 ```
-
 idx = r^gamma / (r^gamma + (1 - r)^gamma)
-
 ```
 
-where `r` is the percentile rank and `gamma = 0.5` by default.
-
-This compresses values near the median while preserving separation at the tails.
+where `r` is the percentile rank and `gamma = 0.5` by default. This compresses values near the median while preserving separation at the tails. Every country-level index is ranked **across economies within a technology × stage cell** (never across a country's own cells). A variable that is one value per cell (a world-market HHI, a technology's TRL, world price volatility) shifts the level of a cell but cannot rank countries inside it.
 
 ### Overall variables and category scoring
 
-This repo is **config-driven**:
+The pipeline is **config-driven**:
 
-- **Overall ... Index** formulas are defined in `config/index_definition.yml` as simple compositions (typically means) over component index variables.
-- Each **category** has a **score variable** (e.g., ES Trade uses `Overall Trade Risk Index`, EO Trade uses `Overall Trade Index`) defined in the same config file.
+- **Overall ... Index** formulas are defined in `config/index_definition.yml` as simple compositions (means) of component index variables. A component that is missing for a country drops out of the mean; it is not counted as 0.
+- Each **category** has a **score variable** (e.g. ES Trade uses `Overall Trade Risk Index`, EO Trade uses `Overall Trade Index`) defined in the same file.
+- The builders warn when a configured score variable is never produced, or when a theme's own composite stands in for the configured overall, naming the category and the variables its inputs do carry.
 
-This keeps scoring transparent and avoids hard-coded assumptions in code.
+### Pillar aggregation: available case
 
-### Pillar aggregation and weights
+ES and EO are weighted means of their category scores **within each Country × Tech × Stage cell**, over the categories observed in that cell:
 
-ES and EO are computed as weighted means of their category scores **within each Country × Tech × Supply-chain group**.
+```
+index = sum_{k observed} w_k c_k / sum_{k observed} w_k
+```
 
-Weights are defined in `config/weights.yml` (separately for ES, EO, and PSI).
+A category with no score carries no weight; a cell with no observed category gets `NA`. Weights are in `config/weights.yml`. Category and variable contributions share the same denominator, so both decompositions sum to the index. Builders: `R/indices/build_energy_security_index_v2.R`, `R/indices/build_economic_opportunity_index_v2.R`, shared core `R/indices/index_builder_core.R`.
 
-### Missing data policy
+### Missing data: observed-only imputation
 
-Missing-data behavior is configured in `config/missing_data.yml` and applied at the theme level. Common patterns include:
+Rules are keyed by theme (or variable/category) in `config/missing_data.yml`:
 
-- `zero` — treat missing as zero for that variable (used when absence is meaningful or conservative).
-- `global_average` — impute to the global mean for that tech/supply_chain/variable/theme group (used when missingness is likely data availability rather than true absence).
+- `zero`: absence is meaningful (reserves, mineral production and trade, manufacturing market share, investment).
+- `global_average`: the mean over the countries observed in the same (tech, stage, category, variable, theme) group.
 
-### Supply-chain coupling
+A rule fills a country **only where the source observes at least one country in the group**; a group nobody is observed in stays `NA` and drops out under the available-case rule. A theme with no rule stays `NA` (e.g. BNEF LCOE, so a country BNEF does not cover is scored on the other cost components). Every imputed value is flagged, and each index cell carries `imputed_weight_share`: the share of its weight resting on imputed components (zero and average fills alike).
 
-There is an optional “coupled” pillar score that shrinks stage-level pillar scores toward a tech-level **chain score** (geometric mean across stages), using interdependence edges data.
+### Country harmonisation
 
-- Implementation: `R/indices/couple_pillar_scores_by_hhi.R`  
-- Orchestration hook: `scripts/20_build_indices.R` loads `interdependence_edges_primary_secondary_tertiary.csv` and applies coupling.
+Sources spell economies differently ("Viet Nam"/"Vietnam", "Korea"/"South Korea", "Taiwan, Province of China"). `standardize_country_names()` (`R/utils/country.R`) maps every spelling to one canonical name, the WDI name for its ISO3 code (Taiwan is `TWN`), via `countrycode` plus a curated match table. `standardize_theme_types()` drops aggregates and residual rows ("World", "Other Asia Pacific", "USSR", WDI aggregate codes) from every theme and collapses keys that merged spellings now share, warning on genuine conflicts. Before this the index tables carried about 270 country strings for about 198 economies.
 
-**Important note:** the methodology doc describes an HHI-driven logistic mapping for coupling strength, but the current implementation uses **interdependence edge strength** (normalized) and a **linear mapping** to lambda in `[lambda_min, lambda_max]`. If you want the implementation to match the doc exactly, this should be reconciled.
+### Rankability
+
+Every country-cell the sources reach is scored and keeps its value, but a cell is **rankable** only when
+
+1. the economy is a sovereign state (a Correlates of War state-system code: the 193 UN members plus Kosovo and Taiwan; `is_sovereign_economy()`), and
+2. `imputed_weight_share <= tau`, with `tau = 0.5` in `config/rankability.yml`.
+
+Cross-country rankings, top-N lists and the Strategic Index use rankable cells only; the index tables carry `imputed_weight_share`, `rankable` and `rank_exclusion`. `tau = 0.5` is the smallest value on the calibration grid that keeps a majority of sovereign cells in every pillar and stage; it raises EO's within-cell rank correlation across imputation variants from 0.78 to 0.97 (calibration table in `config/rankability.yml`). The PSI applies the same rule to partners ([below](#partnership-strength-index-psi)).
+
+### Supply-chain coupling (not applied)
+
+`R/indices/couple_pillar_scores_by_hhi.R` (shrinking stage scores toward a technology-level chain score) is still in the repository and sourced by `scripts/20`, but no pipeline step calls it: the published pillars are **uncoupled** stage scores.
 
 ---
 
 ## Pillars, categories, and technical appendix
 
-This section is written to function as a **drop-in technical appendix inside the README**. For publication, you can move it into `docs/technical_appendix.md` and link it here.
-
 ### Energy Security (ES)
 
-**Interpretation:** ES measures exposure and resilience across upstream resources, midstream manufacturing, and downstream deployment/consumption.
+**Interpretation:** ES measures exposure and resilience across upstream resources, midstream manufacturing, and downstream deployment and consumption. Higher = more secure.
 
-**Configured ES categories (see `config/index_definition.yml`):**
-- Foreign Dependency
-- Energy Imports
-- Reserves
-- Trade
-- Minerals Trade
-- Production
-- Energy Access
-- Consumption
-- Energy Prices
+**Categories and weights (`config/index_definition.yml`, `config/weights.yml`):** Foreign Dependency 6, Production 6, Consumption 5, Energy Imports 4, Reserves 4, Trade 4, Minerals Trade 4, Energy Access 4, Investment 3, Energy Prices 2.
 
 <details>
-<summary><strong>ES — Category-by-category construction notes (with cited sources)</strong></summary>
+<summary><strong>ES — category-by-category construction notes (with cited sources)</strong></summary>
 
 #### 1) Foreign Dependency
-**What it captures:** exposure to foreign control of critical upstream inputs (minerals) and midstream manufacturing capacity (clean tech / EV supply).
+**What it captures:** exposure to foreign control of critical upstream inputs (minerals) and midstream manufacturing capacity.
 
-**Overall variable construction (configured):** the category score uses `Overall Foreign Dependency Index`, calculated as the **mean** of: `Mineral Supply`, `Market Share`, `Overall Market Share`, `production`, `sales`, `import`, `market_share`, and `Overall Production`.
+**Overall variable:** `Overall Foreign Dependency Index` = mean of `Mineral Supply`, `Market Share`, `Overall Market Share`, `production`, `sales`, `import`, `market_share`, `Overall Production` (those present).
 
-**Data sources:**
-- **IEA Critical Minerals Dataset** ([IEA-CM]) — mineral supply series used to compute market share + concentration proxies
-- **IEA Global EV Outlook** ([IEA-EV]) — EV market/production/import share inputs (as used in repo exports)
-- **Energy Institute Statistical Review** ([EI-SR]) — country harmonization + EU mapping used for rollups/expansion (and associated energy stats)
+**Data sources:** IEA Critical Minerals Dataset ([IEA-CM]) (mining = Upstream, refining and processing = Midstream; mineral names harmonised across the supply and demand sheets, so rare earths and graphite are no longer dropped; non-suppliers complete with zero supply); IEA Global EV Outlook ([IEA-EV]).
 
-*(Note: some midstream capacity snapshots are sourced from IEA ETP exports; see `docs/sources.md` for provenance when the public landing page differs from the internal extract.)*
-
-**Substantive rationale:** Foreign dependency is a first-order vulnerability channel: when upstream/midstream capacity is externally concentrated, disruptions or policy restrictions transmit quickly into domestic shortages and price shocks.
-
-**Implementation entry points:**
-- Theme code: `R/categories/foreign_dependency/foreign_dependency.R`
-- Midstream share scaffolding: `R/categories/foreign_dependency/market_share_manufacturing.R`
+**Implementation:** `R/categories/foreign_dependency/foreign_dependency.R`, `critical_minerals_processing.R`, `mineral_supply_security.R`.
 
 ---
 
 #### 2) Energy Imports
-**What it captures:** reliance on external suppliers for fuels (oil/gas/coal), proxied by production-consumption balance.
+**What it captures:** reliance on external suppliers for fuels (oil, gas, coal), proxied by the production-consumption balance.
 
-**Overall variable construction (configured):** the category score uses `Overall Energy Imports Index`, calculated as the **mean** of: `Production surplus/deficit`.
-
-**Data sources:**
-- **Energy Institute Statistical Review** ([EI-SR])
-
-**Substantive rationale:** import dependence is the classic energy-security exposure: it increases sensitivity to foreign supply disruptions and global price volatility.
-
-**Implementation entry point:**
-- `R/categories/energy_imports/import_dependence.R`
+**Overall variable:** `Overall Energy Imports Index` = `Production surplus/deficit`. **Source:** Energy Institute Statistical Review ([EI-SR]). **Implementation:** `R/categories/energy_imports/import_dependence.R`.
 
 ---
 
 #### 3) Reserves
-**What it captures:** domestic reserves depth (fossil + minerals) and demand-weighted “technology reserves” for minerals.
+**What it captures:** domestic reserves (fossil fuels, minerals, uranium) and demand-weighted "technology reserves" for minerals, plus renewable resource potential.
 
-**Overall variable construction (configured):** the category score uses `Overall Reserves Index`, calculated as the **mean** of reserve and potential components: `Oil Reserves`, `Gas Reserves`, `Coal Reserves`, `Cobalt Reserves`, `Lithium Reserves`, `Graphite Reserves`, `Rare Earths Reserves`, `Copper Reserves`, `Manganese Reserves`, `Nickel Reserves`, `Zinc Reserves`, `PGMs Reserves`, `Solar Reserves`, `Wind Reserves`, `Electric Vehicles Reserves`, `Batteries Reserves`, `Electric Grid Reserves`, `Green Hydrogen Reserves`, `Heat Pumps Reserves`, `Nuclear Reserves`, `Hydroelectric Power Reserves`, `Geothermal Reserves`, `Overall Solar PV Potential Index`, `Overall Wind Potential Index`, and `Overall Geothermal Potential Index`.
+**Overall variable:** `Overall Reserves Index` = mean of the fuel and mineral reserve indices (`Oil/Gas/Coal Reserves`, `Cobalt/Lithium/Graphite/Rare Earths/Copper/Manganese/Nickel/Zinc/PGMs Reserves`), the technology reserve roll-ups (`Solar/Wind/Electric Vehicles/Batteries/Electric Grid/Green Hydrogen/Heat Pumps/Hydroelectric Power/Geothermal Reserves`), `Nuclear Reserves`, and the Solar PV, Wind and Geothermal potential indices.
 
-**Data sources:**
-- **Energy Institute Statistical Review** ([EI-SR]) — fossil and mineral reserves tables used in the repo
-- **IEA Critical Minerals Dataset** ([IEA-CM]) — energy demand-by-tech shares used to roll mineral reserves into tech-weighted reserve indices
+**Uranium (Nuclear Upstream):** `Nuclear Reserves` is identified recoverable uranium resources (RAR + inferred) at **< USD 260/kgU**, the category the OECD-NEA/IAEA *Uranium 2026* "Red Book" headlines (Table 1.2a, as of 1 January 2025), ranked like the EI reserve tables. Data are transcribed with source, table and access date in `data/reference/uranium_resources.csv` (`R/categories/reserves/uranium.R`).
 
-**Substantive rationale:** reserves proxy long-run domestic supply optionality and reduce risk of external supply squeeze.
+**Missing data:** `zero`: the EI and USGS reserve tables list every holder of material reserves, so a country absent from them has none recorded; an unlisted mineral counts as 0 in the technology roll-up.
 
-**Implementation entry points:**
-- `R/categories/reserves/reserves.R`
-- `R/categories/energy_access/solar_pv_potential.R`
-- `R/categories/energy_access/wind_potential.R`
-- `R/categories/energy_access/geothermal_potential.R`
+**Sources:** EI Statistical Review ([EI-SR]); IEA Critical Minerals Dataset ([IEA-CM]) demand shares; OECD-NEA/IAEA Red Book ([REDBOOK]); Global Solar Atlas ([GSA]); Global Wind Atlas ([GWA]).
+
+**Implementation:** `R/categories/reserves/reserves.R`, `R/categories/reserves/uranium.R`, `R/categories/energy_access/{solar_pv,wind,geothermal}_potential.R`.
 
 ---
 
 #### 4) Trade (risk)
-**What it captures:** concentrated exposure and/or weak strategic positioning in relevant traded energy-tech products.
+**What it captures:** exposure through traded energy-technology products in the technology × stage basket.
 
-**Overall variable construction (configured):** the category score uses `Overall Trade Risk Index`, calculated as the **mean** of: `HHI`, `market_share`, and `deficit_gdp`.
+**Overall variable:** `Overall Trade Risk Index` = mean of
+- `HHI`: S(−HHI) of the world export market for the basket (one value per cell);
+- `market_share`: the country's share of world basket exports (its basket exports over the world's; non-exporters score 0);
+- `deficit_gdp`: S(−(imports − exports) / GDP), so a smaller deficit or a surplus scores as more secure.
 
-**Data sources:**
-- **UN Comtrade** ([COMTRADE]) — exports/imports; RCA inputs (as used in repo exports)
-- **Harvard Atlas of Economic Complexity** ([AEC]) — distance→feasibility and market-share fields (as used in repo exports)
-- **World Development Indicators (WDI)** ([WDI]) — GDP for deficit-to-GDP scaling
-- **Project HS mapping** — maps HS6 → tech/supply_chain/sub-sector (repo file)
+The ES and EO trade themes come from one builder but keep different components (`TRADE_THEME_VARIABLES`): the ES table carries the exposure terms, EO the capability terms. Flows are from the Harvard Atlas of Economic Complexity ([AEC], HS92, reconciled, ~235 economies, newest year on disk) with WDI GDP ([WDI]); rankings are across the WDI economies within the cell.
 
-**Substantive rationale:** concentrated trade relationships create single points of failure; persistent deficits indicate structural dependence.
-
-**Implementation entry points:**
-- Core logic: `R/categories/trade/trade_core.R`
-- Wrappers: `R/categories/trade/trade_concentration.R`, `R/categories/trade/export_feasibility.R`
+**Implementation:** `R/categories/trade/trade_core.R`, `trade_concentration.R`.
 
 ---
 
 #### 5) Minerals Trade
-**What it captures:** critical minerals trade positioning and concentration, rolled up into technology exposure via demand weights.
+**What it captures:** a country's position in the world trade of the critical minerals a technology uses.
 
-**Overall variable construction (configured):** the category score uses `Overall Minerals Trade Index`, calculated as the **mean** of: `critmin_trade`.
+**Overall variable:** `Overall Minerals Trade Index` = mean of
+- `critmin_market_share` = sum over minerals of w_mt · S_m(X_im / Σ_j X_jm) (S-curve within mineral over exporters; non-exporters 0), and
+- `critmin_hhi` = sum over minerals of w_mt · S(−HHI_m) (a world-market term, the same for every country within a technology),
 
-**Data sources:**
-- **UN Comtrade** ([COMTRADE]) — critical-minerals import/export/totals (as used in repo exports)
-- **IEA Critical Minerals Dataset** ([IEA-CM]) — mineral list + demand-by-tech shares used to roll minerals into tech exposure
+with w_mt the IEA base-year demand shares renormalised over the minerals with trade data.
 
-**Substantive rationale:** critical minerals are binding inputs in the electro-industrial stack; trade structure determines vulnerability to bottlenecks and bargaining power.
+**Mirror exports:** an economy that does not report exports to Comtrade gets its partners' import declarations, moved from CIF to FOB with an HS-chapter CIF/FOB ratio estimated from importers that file both values. Economies that declared their exports after the pulls were staged ("late reporters": DR Congo, Jordan, Oman, ...) count as reporters with their own declarations. Without the mirror, DR Congo, Russia, Guinea, Gabon, New Caledonia, Mongolia, Lao PDR and Viet Nam had no exports and every world total and HHI was computed without them. Partner-level imports come from `scripts/fetchers/comtrade_mirror_critmin.R` (keyless Comtrade preview API, `data/raw/critmin_mirror_import.csv`).
 
-**Implementation entry point:**
-- `R/categories/minerals_trade/critical_minerals_trade.R`
+**Sources:** UN Comtrade ([COMTRADE]) critical-minerals import, export and total-export pulls (the newest vintage with at least 50 reporters) and the mirror pull; IEA Critical Minerals Dataset ([IEA-CM]).
+
+**Implementation:** `R/categories/minerals_trade/critical_minerals_trade.R`.
 
 ---
 
 #### 6) Production
-**What it captures:** depth and momentum of domestic production (energy production and generation proxies; plus critical minerals supply/production proxies).
+**What it captures:** depth and momentum of domestic production (fossil fuels, generation, minerals, uranium).
 
-**Overall variable construction (configured):** the category score uses `Overall Production Index`, calculated as the **mean** of: `size`, `growth_abs`, `Overall Production`, `Cobalt Production`, `Lithium Production`, `Graphite Production`, `Rare Earths Production`, `Copper Production`, `Manganese Production`, `Nickel Production`, `Zinc Production`, `PGMs Production`, `Solar Production`, `Wind Production`, `Electric Vehicles Production`, `Batteries Production`, `Electric Grid Production`, `Green Hydrogen Production`, `Heat Pumps Production`, `Coal Production`, `Nuclear Production`, `Oil Production`, `Gas Production`, `Hydroelectric Power Production`, and `Geothermal Production`.
+**Overall variable:** `Overall Production Index` = mean of `size`, `growth_abs`, `Overall Production`, the mineral production indices (`Cobalt ... PGMs Production`), the technology roll-ups and the fuel production indices, including `Nuclear Production`: Red Book Table 1.18 uranium mine production in the latest year (`data/reference/uranium_production.csv`, 2019–2024), completed with observed zeros over the EI and WDI economies (the table is exhaustive).
 
-**Data sources:**
-- **Energy Institute Statistical Review** ([EI-SR]) — fossil production and generation series
-- **IEA Critical Minerals Dataset** ([IEA-CM]) — mineral supply series used for mineral-side production scaling and concentration proxies
+**Sources:** EI Statistical Review ([EI-SR]); IEA Critical Minerals Dataset ([IEA-CM]); Red Book ([REDBOOK]).
 
-**Substantive rationale:** deeper domestic production provides redundancy and shock-absorption capacity; it also affects surge capability.
-
-**Implementation entry point:**
-- `R/categories/production/production_depth_momentum.R`
+**Implementation:** `R/categories/production/production_depth_momentum.R`, `critical_minerals_production.R`, `R/categories/reserves/uranium.R`.
 
 ---
 
 #### 7) Energy Access
-**What it captures:** downstream access/enabling conditions via per-capita consumption (renewable resource potential is grouped under Reserves).
+**What it captures:** downstream enabling conditions via per-capita energy consumption.
 
-**Overall variable construction (configured):** the category score uses `Overall Energy Access Index`, calculated as the **mean** of: `Energy consumption per capita` and `Energy consumption per capita growth`.
-
-**Data sources:**
-- **Energy Institute Statistical Review** ([EI-SR]) — population + per-capita consumption metrics
-
-**Substantive rationale:** reliable energy access and domestic renewable potential reduce dependence on imported fuels and enable industrial scaling.
-
-**Implementation entry points:**
-- `R/categories/energy_access/energy_access_consumption.R`
+**Overall variable:** `Overall Energy Access Index` = mean of `Energy consumption per capita` and `Energy consumption per capita growth`. **Source:** EI Statistical Review ([EI-SR]). **Implementation:** `R/categories/energy_access/energy_access_consumption.R`.
 
 ---
 
 #### 8) Consumption
-**What it captures:** installed base / consumption-side scale and growth (e.g., per-capita installed capacity and projected growth).
+**What it captures:** installed base and growth (per-capita installed capacity and projected growth).
 
-**Overall variable construction (configured):** the category score uses `Overall Consumption Index`, calculated as the **mean** of: `Energy consumption per capita`, `Energy consumption per capita growth`, `installed_cap_index`, and `elec_growth_index`.
-
-**Data sources:**
-- **BloombergNEF New Energy Outlook** ([BNEF-NEO]) — installed capacity and projections used for per-capita and growth indices (as used in repo extracts)
-
-**Substantive rationale:** consumption indicates exposure scale (how much must be secured) and infrastructure intensity (how demanding the system is).
-
-**Implementation entry point:**
-- `R/categories/consumption/energy_consumption.R`
+**Overall variable:** `Overall Consumption Index` = mean of `Energy consumption per capita`, `Energy consumption per capita growth`, `installed_cap_index`, `elec_growth_index`. BNEF onshore and offshore wind are recoded to Wind, and capacity growth is ranked within technology. **Source:** BloombergNEF New Energy Outlook ([BNEF-NEO]). **Implementation:** `R/categories/consumption/energy_consumption.R`.
 
 ---
 
 #### 9) Energy Prices
-**What it captures:** commodity input price volatility (annualized volatility of monthly log returns), oriented so lower volatility scores higher.
+**What it captures:** input price volatility (annualised volatility of monthly log returns of IMF PCPS commodity series), oriented so lower volatility scores higher.
 
-**Overall variable construction (configured):** the category score uses `Overall Energy Prices Index`, calculated as the **mean** of: `price_volatility`.
+**Overall variable:** `Overall Energy Prices Index` = `Overall Price Volatility Index`. It is a **world-level series**, identical for every country within a technology: it shifts levels across technologies but cannot rank countries. (The category used to be configured on a variable nothing produced, `price_volatility`, and was silently unscored.)
 
-**Data sources:**
-- **IMF Commodity Prices** ([IMF-COMM]) — monthly commodity price series used to compute volatility indices (as used in repo extracts)
+**PCPS coverage:** fossil fuels, uranium and the transition minerals in the snapshot (lithium, nickel, cobalt, copper, vanadium, iron ore, diammonium phosphate). Graphite and soda ash are not covered.
 
-**PCPS coverage notes:**
-- Annualized volatility is computed from monthly **log returns** of IMF PCPS commodity series.
-- Coverage includes fossil fuels + uranium and energy-transition minerals available in snapshot data (e.g., lithium, nickel, cobalt, copper, vanadium, iron ore, and diammonium phosphate).
-- Limitations: key inputs absent from PCPS snapshots (e.g., graphite and soda ash/sodium carbonate) are not captured unless integrated from another source.
+**Source:** IMF Primary Commodity Prices ([IMF-COMM]). **Implementation:** `R/categories/energy_prices/energy_prices.R`.
 
-**Substantive rationale:** volatility is a strong proxy for macro supply instability and economic exposure to shocks.
+---
 
-**Implementation entry point:**
-- `R/categories/energy_prices/energy_prices.R`
+#### 10) Investment
+**What it captures:** clean-energy investment flows and capacity pipeline.
+
+**Overall variable:** `Overall Investment Index` = mean of `Annual Investment Index`, `Investment Momentum Index`, `Operating Capacity Index`, `Pipeline Capacity Index`. Critical-minerals investment is split between Batteries and EV Upstream by IEA demand shares (it used to be copied in full to both); cells with no tracked investment are not emitted as zeros. Missing data rule: `zero`.
+
+**Source:** Clean Investment Monitor investment and capacity extract (`GCIM_Investment_Capacity_aggregated.xlsx`). **Implementation:** `R/categories/investment/investment_momentum.R`.
 
 </details>
 
@@ -304,322 +279,262 @@ This section is written to function as a **drop-in technical appendix inside the
 
 ### Economic Opportunity (EO)
 
-**Interpretation:** EO measures expected market opportunity and competitiveness — demand growth, deployability, cost position, and industrial capability.
+**Interpretation:** EO measures market opportunity and competitiveness: demand, export capability, cost position, industrial capability and technology maturity.
 
-**Configured EO categories (see `config/index_definition.yml`):**
-- Trade
-- Production
-- Technology Demand
-- Technological Readiness
-- Energy Prices
-- Investment *(see “Known issues” — currently configured as a placeholder)*
-- Energy Access
-- Foreign Dependency
-- Cost Competitiveness
-- Consumption
+**Categories and weights:** Technology Demand 4; Trade, Production, Energy Prices, Investment, Energy Access, Foreign Dependency, Cost Competitiveness, Consumption 3 each; Technological Readiness 2. (Reserves is not an EO category.)
 
 <details>
-<summary><strong>EO — Category-by-category construction notes (with cited sources)</strong></summary>
+<summary><strong>EO — category-by-category construction notes (with cited sources)</strong></summary>
 
 #### 1) Trade (opportunity)
-**What it captures:** export competitiveness and feasibility (e.g., RCA, feasibility, market shares), rather than import vulnerability.
+**What it captures:** revealed and latent export capability.
 
-**Overall variable construction (configured):** the category score uses `Overall Trade Index`, calculated as the **mean** of: `market_share`, `rca`, `export_size`, `feas`, `deficit_gdp`, and `HHI`.
+**Overall variable:** `Overall Trade Index` = mean of `market_share` (share of world basket exports), `rca` (Balassa RCA, world aggregates over the reporters present in both extracts), `export_size`, `feas` (Atlas feasibility from product-space distance, one row per HS4 heading) and `HHI`. The net-import term is ES-only. Export size and feasibility are ranked across economies within the cell (they used to be ranked within each country across its own cells, which put Moldova and Samoa next to China in Solar Midstream).
 
-**Data sources:**
-- **UN Comtrade** ([COMTRADE])
-- **Harvard Atlas of Economic Complexity** ([AEC])
-- **World Development Indicators (WDI)** ([WDI])
-
-**Rationale:** trade competitiveness is a growth channel: countries positioned to export intermediate/final goods capture value and learning effects.
-
-**Implementation entry points:**
-- Core logic: `R/categories/trade/trade_core.R`
-- Wrappers: `R/categories/trade/trade_concentration.R`, `R/categories/trade/export_feasibility.R`
+**Sources:** Atlas of Economic Complexity ([AEC]); UN Comtrade ([COMTRADE]); WDI ([WDI]). **Implementation:** `R/categories/trade/trade_core.R`, `export_feasibility.R`.
 
 ---
 
 #### 2) Production
-**What it captures:** productive capability and momentum — similar underlying measures as ES, but interpreted as growth potential.
+**What it captures:** productive capability and momentum.
 
-**Overall variable construction (configured):** the category score uses `Overall Production Index`, calculated as the **mean** of: `size`, `growth_abs`, `Overall Production`, `Cobalt Production`, `Lithium Production`, `Graphite Production`, `Rare Earths Production`, `Copper Production`, `Manganese Production`, `Nickel Production`, `Zinc Production`, `PGMs Production`, `Solar Production`, `Wind Production`, `Electric Vehicles Production`, `Batteries Production`, `Electric Grid Production`, `Green Hydrogen Production`, `Heat Pumps Production`, `Coal Production`, `Nuclear Production`, `Oil Production`, `Gas Production`, `Hydroelectric Power Production`, and `Geothermal Production`.
+**Overall variable:** `Overall Production Index` (as in ES; EO reads `size`, `growth_abs` and `Overall Production` from `production_depth_momentum`). Nuclear Upstream runs Red Book uranium mine production through the same depth-and-momentum indices as oil, gas and coal, over the EI and WDI economies (non-producers are observed zeros).
 
-**Data sources:**
-- **Energy Institute Statistical Review** ([EI-SR])
-- **IEA Critical Minerals Dataset** ([IEA-CM])
-
-**Rationale:** deeper production ecosystems tend to scale faster and attract investment; production is both a capability and a market signal.
-
-**Implementation entry point:**
-- `R/categories/production/production_depth_momentum.R`
+**Sources:** EI Statistical Review ([EI-SR]); Red Book ([REDBOOK]). **Implementation:** `R/categories/production/production_depth_momentum.R`.
 
 ---
 
 #### 3) Technology Demand
-**What it captures:** forward demand and growth (global and/or country-level), plus midstream overcapacity penalties as a margin-risk proxy.
+**What it captures:** forward demand, with an overcapacity penalty as a margin-risk proxy.
 
-**Overall variable construction (configured):** the category score uses `Overall Technology Demand Index`, calculated as the **mean** of: `demand_size`, `demand_growth`, `Overall Global Demand`, `Overall Demand`, `sales_growth`, `sales_size`, `sales_forecast_growth`, `sales_forecast_size`, `stock_growth`, `stock_size`, `stock_forecast_growth`, `stock_forecast_size`, `share_growth`, `share_size`, `share_forecast_growth`, `share_forecast_size`, `Overall Addressable Market`, and `Overall Overcapacity`.
+**Overall variable:** `Overall Technology Demand Index` = mean of one composite per source: `Overall Global Demand` (IEA WEO), `Overall Demand` (BNEF NEO regional demand, or the IEA EV Outlook index for EV Downstream), `Overall Addressable Market` (BCG) and `Overall Overcapacity` (BNEF). (The size and growth terms used to be listed beside the composites built from them, which gave WEO half the category.)
 
-**Data sources (cited where applicable):**
-- **BloombergNEF New Energy Outlook** ([BNEF-NEO]) — region/country demand levels and growth (as used in repo extracts)
-- **IEA Global EV Outlook** ([IEA-EV]) — EV stock/sales/share and growth inputs (as used in repo extracts)
-
-*(Note: the repo also uses IEA WEO annex exports and BCG market sizing sheets; these are referenced in `docs/sources.md` where public landing pages differ from the internal extracts.)*
-
-**Rationale:** opportunity follows demand — but segments with persistent overcapacity may be structurally low-margin even when volumes rise.
-
-**Implementation entry points:**
-- `R/categories/technology_demand/future_demand.R`
-- `R/categories/technology_demand/overcapacity_premium.R`
+**Sources:** BloombergNEF ([BNEF-NEO]); IEA Global EV Outlook ([IEA-EV]); IEA WEO annex and BCG market sizing extracts (see `docs/sources.md`). **Implementation:** `R/categories/technology_demand/future_demand.R`, `overcapacity_premium.R`.
 
 ---
 
 #### 4) Technological Readiness
-**What it captures:** technology maturity proxy (TRL), normalized to 0–1.
+**What it captures:** technology maturity (TRL) by technology **and stage**, one value per cell, identical across countries.
 
-**Overall variable construction (configured):** the category score uses `Overall Technological Readiness Index`, calculated as the **mean** of: `TRL Index`.
+**Overall variable:** `Overall Technological Readiness Index` = `TRL Index`.
 
-**Data sources:**
-- **IEA ETP Clean Energy Technology Guide** ([IEA-CTG]) — TRL and technology classification inputs. The 2026 public dataset (`IEACleanTechGuidepublicdataset.csv`) carries `TRL.2020`–`TRL.2025`, so the current window is **2020 → 2025**.
+**Method:**
+- **Stage mapping.** Every item of the IEA ETP Clean Energy Technology Guide ([IEA-CTG], 2026 public dataset, TRL.2020–TRL.2025) is mapped to a technology and a stage (Upstream = extraction, primary inputs and recycling to raw materials; Midstream = processing and manufacturing, including hydrogen production; Downstream = deployment, generation, distribution and use) or classified out of scope with a reason, by ordered rules in `config/iea_clean_tech_guide_tech_map.yml` keyed on the Guide's taxonomy path, cross-cutting tags and names. Unclassified items raise a warning. A cell averages its items; a stage no item maps to takes the technology-wide value (recorded in `basis`).
+- **Level:** a Goldilocks bell on the end-year TRL on the 1–11 scale (peak 6, zero at 2 and 11). The 2026 Guide stops at TRL 9 and grades TRL 9 items by a post-TRL-9 adoption stage (`Post.index.2025`), read back as Awaiting adoption = 9, Building momentum = 10, Commercial in many markets = 11.
+- **Momentum:** the capped, positive TRL change over the release's window, on the scale the release reports every year.
+- **TRL Index** = 0.7 × cell Level + 0.3 × cell Momentum (blend of cell means).
+- TRL is broadcast to every country as an observed input (it used to be a "Global" pseudo-country, 99.5% imputed).
 
-**Rationale:** readiness is strongest in a "Goldilocks" band (not too nascent, not fully mature), and technologies with improving TRL trajectories can represent rising opportunity.
-
-**Method notes:**
-- Mapping from IEA taxonomy to target technologies is token-based and config-driven via `config/iea_clean_tech_guide_tech_map.yml` (using taxonomy + supply-chain signals rather than brittle fixed sector positions).
-- The theme reads the TRL window off whichever `TRL.YYYY` columns the release carries: the newest is the end year, the oldest opens the momentum window. Nothing is pinned, so a Guide release that adds a year moves the theme forward on its own.
-- Two IEA layouts are accepted. The 2026 public dataset uses `tech.final.name`, `category.1`–`category.4` and cross-cutting `*.cc` columns; the earlier hand-built extract used `name`, a comma-joined `sector` path and `supplyChain`. The builder normalizes the newer shape onto the older column names before mapping.
-- The TRL theme blends:
-  - **TRL Level Index**: Goldilocks bell-curve score on end-year TRL.
-  - **TRL Momentum Index**: scaled positive TRL change across the release's window.
-  - **TRL Index**: weighted combination of level and momentum. This is the variable `Overall Technological Readiness Index` is built from.
-- Fossil fuel technologies (**Coal**, **Oil**, **Gas**) are explicitly supported through taxonomy rules.
-
-**Implementation entry point:**
-- `R/categories/technological_readiness/technological_readiness.R`
+**Implementation:** `R/categories/technological_readiness/technological_readiness.R`.
 
 ---
 
 #### 5) Cost Competitiveness
-**What it captures:** deployment/manufacturing cost position, including relative technology costs, LCOE competitiveness, and composite “input cost” competitiveness (labor + capital proxies).
+**What it captures:** deployment and manufacturing cost position.
 
-**Overall variable construction (configured):** the category score uses `Overall Input Cost Index`, calculated as the **mean** of: `lcoe_<current year>`, `lcoe_50`, `Overall input cost index`, `Input Cost Index`, and `IEA Cost index`.
+**Overall variable:** `Overall Input Cost Index` = mean of `LCOE Index` (the mean of the BNEF current-year and 2050 LCOE indices, Downstream, ~20–30 markets per technology), `Input Cost Index` (ILO labour and IMF capital costs; Green Hydrogen has its own) and `IEA Cost index` (relative equipment cost). LCOE used to carry three of four votes. LCOE has no missing-data rule on purpose.
 
-The LCOE theme names its current-year variable after the reference year of the staged BNEF release — `lcoe_24` for the 2025 release, `lcoe_25` for the 2026 one, read from the workbook's "Key cost metrics (YYYY real)" banner. `config/index_definition.yml` lists both spellings; only the one matching the staged vintage is ever present in a build.
+*BNEF ships the LCOE Data Viewer as a macro workbook (`.xlsb`) from the 2026 release onward; `scripts/utils/bnef_lcoe.R` flattens the "Raw LCOE data" sheet once through `scripts/utils/convert_xlsb_sheet.ps1` (Excel automation, Windows only) and caches the CSV under `data/raw_cache/bnef_lcoe/`. A `.csv` export of the same sheet is still read directly. The current-year variable is named after the release's reference year (`lcoe_24`, `lcoe_25`).*
 
-**Data sources (cited where applicable):**
-- **IMF Data Explorer** ([IMF-DEX]) — lending rates and PPI series used as capital/input-cost proxies (as used in repo extracts)
-- **ILOSTAT** ([ILO]) — earnings by economic activity used as labor cost proxy (pulled via API in the pipeline)
-- **BloombergNEF New Energy Outlook** ([BNEF-NEO]) — used in some downstream competitiveness scaffolding (as used in repo extracts)
-
-*(Note: the repo also uses BNEF LCOE and IEA relative cost exports; see `docs/sources.md` for provenance and internal snapshot naming.)*
-
-*BNEF ships the LCOE Data Viewer as a macro workbook (`.xlsb`) from the 2026 release onward. No R package reads that container, so `scripts/utils/bnef_lcoe.R` flattens the "Raw LCOE data" sheet once through `scripts/utils/convert_xlsb_sheet.ps1` (Excel automation, Windows only) and caches the CSV under `data/raw_cache/bnef_lcoe/`, keyed on the source file's mtime. A `.csv` export of the same sheet is still read directly, so the 2025 release keeps working.*
-
-**Rationale:** opportunity depends not just on demand, but on **bankable cost competitiveness** — production + deployment happen where costs clear.
-
-**Implementation entry points:**
-- `R/categories/energy_prices/lcoe_competitiveness.R`
-- `R/categories/economic opportunity/cost_competitiveness.R`
+**Sources:** IMF Data Explorer ([IMF-DEX]); ILOSTAT ([ILO]); BNEF LCOE; IEA relative cost exports. **Implementation:** `R/categories/energy_prices/lcoe_competitiveness.R`, `R/categories/economic opportunity/cost_competitiveness.R`.
 
 ---
 
 #### 6) Energy Prices
-**What it captures:** macro input price volatility, oriented so lower volatility scores higher.
-
-**Overall variable construction (configured):** the category score uses `Overall Energy Prices Index`, calculated as the **mean** of: `price_volatility`.
-
-**Data sources:**
-- **IMF Commodity Prices** ([IMF-COMM])
-
-**PCPS coverage notes:**
-- Annualized volatility is computed from monthly **log returns** of IMF PCPS commodity series.
-- Coverage includes fossil fuels + uranium and energy-transition minerals available in snapshot data (e.g., lithium, nickel, cobalt, copper, vanadium, iron ore, and diammonium phosphate).
-- Limitations: key inputs absent from PCPS snapshots (e.g., graphite and soda ash/sodium carbonate) are not captured unless integrated from another source.
-
-**Rationale:** stable price environments improve bankability and reduce risk premiums for investment.
-
-**Implementation entry point:**
-- `R/categories/energy_prices/energy_prices.R`
+As in ES: `Overall Price Volatility Index`, a world-level series per technology (IMF PCPS, [IMF-COMM]).
 
 ---
 
 #### 7) Energy Access
-**What it captures:** enabling conditions via per-capita consumption.
-
-**Overall variable construction (configured):** the category score uses `Overall Energy Access Index`, calculated as the **mean** of: `Energy consumption per capita` and `Energy consumption per capita growth`.
-
-**Data sources:**
-- **Energy Institute Statistical Review** ([EI-SR])
-
-**Implementation entry point:**
-- `R/categories/energy_access/energy_access_consumption.R`
+As in ES: `Energy consumption per capita` and its growth (EI, [EI-SR]).
 
 ---
 
 #### 8) Foreign Dependency
-**What it captures:** in EO, these variables can reflect constraint *or* positioning (e.g., high midstream market share can be “opportunity” even if framed elsewhere as “dependency”).
-
-**Overall variable construction (configured):** the category score uses `Overall Foreign Dependency Index`, calculated as the **mean** of: `Mineral Supply`, `Market Share`, `Overall Market Share`, `production`, `sales`, `import`, `market_share`, and `Overall Production`.
-
-**Data sources:**
-- **IEA Critical Minerals Dataset** ([IEA-CM])
-- **IEA Global EV Outlook** ([IEA-EV])
-- **Energy Institute Statistical Review** ([EI-SR])
-
-**Implementation entry points:**
-- `R/categories/foreign_dependency/foreign_dependency.R`
-- `R/categories/foreign_dependency/market_share_manufacturing.R`
+**What it captures:** midstream manufacturing market share, read as positioning (`market_share_manufacturing`: IEA clean-tech manufacturing capacity, with electrolysers mapped to Green Hydrogen Midstream; missing data rule `zero`). **Implementation:** `R/categories/foreign_dependency/market_share_manufacturing.R`.
 
 ---
 
 #### 9) Consumption
-**What it captures:** market size and growth runway (installed capacity per capita and projected growth).
-
-**Overall variable construction (configured):** the category score uses `Overall Consumption Index`, calculated as the **mean** of: `Energy consumption per capita`, `Energy consumption per capita growth`, `installed_cap_index`, and `elec_growth_index`.
-
-**Data sources:**
-- **BloombergNEF New Energy Outlook** ([BNEF-NEO])
-
-**Implementation entry point:**
-- `R/categories/consumption/energy_consumption.R`
-
+As in ES: installed capacity per capita and projected growth (BNEF, [BNEF-NEO]).
 
 ---
 
-#### 10) Investment *(placeholder in current config)*
-**What it captures:** currently a placeholder category in the EO configuration.
-
-**Overall variable construction (configured):** the category score is mapped to `Overall Investment Index`, whose configured component list is currently empty (`components: []`), so no sub-indicator aggregation is applied until components are added in configuration.
+#### 10) Investment
+As in ES: Clean Investment Monitor flows, momentum, operating and pipeline capacity (`zero` rule).
 
 </details>
+
+---
+
+### Policy index
+
+**What it captures:** policy support for a technology × stage in a country.
+
+```
+P_its = sum_v w_v x^v_its / sum_v w_v   over the components observed in the cell
+w: IEA PAMS 3, CAT 2
+```
+
+- **IEA Policies and Measures (PAMS)** (`R/categories/policy/iea_policy_index.R`): policies matched to technology and stage by whole-word rules (substring rules had tagged "more" and "Korea" as ore, "determine" as mine), weighted by jurisdiction.
+- **Climate Action Tracker (CAT)** ratings (`R/categories/policy/cat_policy_index.R`): EU members without a rating of their own take the EU bloc rating.
+- **Eligibility:** a country is scored only if it has **both** components for at least one of its headline cells. CAT, which rates 39 countries and the EU, is the binding source: 65 countries in the October 2026 build.
+- **Excluded for now (October 2026):** GTA **NIPO** (weight 4 until October 2026). `scripts/10` still builds it and its tables stay on disk (`OPSI_SKIP_NIPO=true` reuses the stored NIPO rows instead of rescoring them), so it can return by adding it to the weights. The **dual-use** score is not a component: it is an LLM-elicited judgement per technology × stage, identical for every country, so it cannot rank countries.
+
+`scripts/20` passes the weights explicitly and records them, the exclusions and the eligible countries in `index_outputs.rds$policy_index_provenance`. **Implementation:** `R/indices/build_policy_index.R` (`build_composite_policy_index()`).
+
+---
+
+### Strategic Index (SI)
+
+```
+SI_its = 0.2 pol_its + 0.3 EO_its + 0.3 (1 - ES_its) + 0.1 lambda_s + 0.1 g_t
+```
+
+- `pol`: within-country median S-curve of the Policy index over the country's in-sample sectors.
+- `EO`: the Economic Opportunity pillar, as built.
+- `1 - ES`: energy-security **need** (column `energy_security_need`). ES is oriented higher = more secure, so the SI favours sectors where the country is least secure. `Energy_Security_Index` keeps its security meaning in the output.
+- `lambda_s`: stage weight, Midstream 0.75, Upstream 0.50, Downstream 0.25.
+- `g_t`: technology climate weight (`ghg_index`, 1 = lowest lifecycle GHG intensity; IPCC AR5 Annex III medians, oil from SRREN Annex II at 840 gCO2eq/kWh).
+
+**Sample (nothing is imputed):** a cell enters only if EO, ES and the Policy index are all observed and both pillar cells are rankable; others stay in the table with `strategic_index = NA` and the reason in `si_exclusion`. Geothermal Midstream is excluded, and any sector where a pillar is constant across countries is excluded and the index rebuilt (`strategic_index_degenerate_sectors()`). `scripts/20` also reports sectors where one ES value is shared by at least a quarter of the scored countries (`strategic_index_es_floor_sectors()`; see [Known issues](#known-issues-and-to-dos) on Nuclear Upstream).
+
+**Allied selection:** each coalition member (EU members individually) gets its top Upstream/Midstream sector, excluding Geothermal and Green Hydrogen, written to `charts/allied_strategic.csv` with its tier and network node. Members without a Policy index (no CAT rating) get no pick, and `scripts/20` names them.
+
+**Implementation:** `R/indices/build_indices.R` (`build_strategic_index()`, `select_allied_strategic_sectors()`).
+
+---
+
+### Geopolitical alignment
+
+`scripts/12_build_geopolitical_alignment.R`, `R/geopolitical_distance/alignment.R`, settings in `config/geopolitical_distance.yml`.
+
+- **Input:** Bailey–Strezhnev–Voeten UN General Assembly ideal points, **all-votes** series (Dataverse V39.0, `scripts/fetchers/un_ideal_points.R` → `data/raw/un_ga_ideal_points_all.csv`), mean over the latest **5 sessions** (2019–2023; the all-votes series ends in 2023). The final-passage series (to 2025) is kept as a sensitivity.
+- **Axis:** s_i = (θ_i − θ_CHN) / (θ_USA − θ_CHN), clamped to [0, 1], so a country voting further from the US than China does sits with China.
+- **Blocs** (after Gopinath, Gourinchas, Presbitero and Topalova, IMF WP/24/76): U.S.-leaning = top quartile of s, China-leaning = bottom quartile, nonaligned otherwise. **Hard blocs** (`tau = 0`): p_i ∈ {1, 0.5, 0}.
+- **Dyadic alignment:** A_ij = p_i p_j + (1 − p_i)(1 − p_j): 1 within a bloc, 0 between the two blocs, 0.5 when either is nonaligned.
+- **Economies without a UN vote** (`data/reference/territory_sovereign_map.csv`): territories and SARs **inherit** their sovereign's position (Hong Kong and Macao: China; Puerto Rico, Guam: US; Greenland: Denmark; ...); Taiwan, Palestine and Kosovo are **neutral** (p = 0.5). `alignment_basis` records `own_votes`, `inherited`, `neutral` or `none`.
+- **Alignment coalition:** the U.S.-leaning bloc with own votes and latest WDI GDP ≥ USD 100bn (`geo_coalition_tbl.rds`, 31 members). It is the core tier of the coalition below.
+
+Limitations are documented in the `alignment.R` header: the first UNGA dimension is driven by recurring resolutions, so Gulf partners are China-leaning or nonaligned and Mexico, India, Brazil, Turkey and Switzerland are nonaligned; Japan, Ireland and New Zealand sit just above the U.S.-leaning cut.
+
+---
+
+### Allied coalition: two tiers and the EU node
+
+`scripts/13_build_coalition.R`, `R/indices/coalition.R`, settings in `config/coalition.yml`. A country's tier is the highest route it satisfies; all routes are recorded in `coalition_tbl$routes`.
+
+- **core:** the alignment coalition (U.S.-leaning bloc, own UN votes, GDP ≥ USD 100bn).
+- **partner** (not core), by either route:
+  - **agreement:** a member of a U.S. FTA, IPEF, the Minerals Security Partnership, the G7 or NATO (`data/reference/economic_security_agreements.csv`, each row with source and access date) with GDP ≥ USD 100bn, whatever its bloc (the MSP Forum is a sensitivity only);
+  - **supplier:** not China-leaning, with a world share ≥ 5% in at least one measure of an Upstream or Midstream stage of a headline technology, no GDP floor. Measures (`major_supplier_shares_tbl.rds`): IEA mining and refining shares for copper, cobalt, lithium, nickel, graphite and magnet rare earths (linked to a technology that takes ≥ 1% of the mineral's demand); EI mine production for manganese, zinc and PGMs; EI oil, gas and coal production; Red Book uranium production; IEA clean-tech manufacturing capacity; Atlas basket export shares.
+- **none:** no route.
+
+**EU node.** The 27 EU member states share one network node, `EUU`, with tier core, whatever their own tier (six members, CYP EST LTU LVA MLT SVN, are tier none on their own). `eu_stage_weights_tbl.rds` gives each member's weight within the node per (tech, stage): EI production or Red Book uranium production, else Atlas export shares, else GDP shares (a measure qualifies only when the members cover ≥ 50% of the EU total and the EU holds ≥ 0.1% of the world). Only the network layer is bundled: national indices, the Strategic Index selection and the PSI stay national.
+
+The coalition table in `data/processed` (run of 2026-10-08, on the theme tables of 2026-10-01) has **31 core members, 23 partners and 34 network nodes**. The partner list changes on the next run of `scripts/10` and `scripts/13`: the supplier test now also reads the EI mine-production sheets, which adds South Africa (PGMs, manganese), Gabon and Ghana (manganese), and the reviewed HS6 basket removes trade-based routes that rested on excluded codes (Switzerland's only route was its share of electricity exports, HS 2716.00).
+
+Every consumer reads the coalition through `coalition_members()` (`R/indices/build_indices.R`), which falls back to `geo_coalition_tbl.rds` (all core, each its own node) with a warning while `coalition_tbl.rds` does not exist. The hand-picked 23-member list survives only as the legacy/test default `allied_network_default_iso3c()`.
 
 ---
 
 ### Partnership Strength Index (PSI)
 
-**Interpretation:** PSI measures bilateral and country-level partnership quality for energy-system cooperation by combining partner reliability (friendshoring), market upside (opportunity), and absorptive capacity (development potential).
+**Interpretation:** how valuable partner j is to the allied coalition across energy technologies, from three components rated from the reporter's side.
 
-**Configured PSI components (see `config/weights.yml`):**
-- Friendshore (0.4)
-- Opportunity (0.4)
-- Development (0.2)
+**Components (`config/weights.yml`):**
 
-<details>
-<summary><strong>PSI — component-by-component construction notes (with cited sources)</strong></summary>
+| Component | Level | Built from (weights) |
+| --- | --- | --- |
+| **Friendshore** FS(i, j) | dyad, reporter i = importer, partner j = supplier | imports of i from j (`imp_trade_index` 2), i's ES need (`es_need` 2), j's EO (`eo_partner` 2), i's outward investment position in j (`outbound_index` 2), same-bloc alignment (`geo_alignment` 2), `econ_opp_raw` 0; less a CAT climate penalty |
+| **Opportunity** OP(i, j) | dyad, reporter i = exporter, partner j = market | exports of i to j (`trade_index` 3), i's EO (`econ_opp_index` 3), j's ES need (`partner_es_need` 1); climate penalty 0.05 |
+| **Development** D(j) | partner only, non-high-income partners | WDI development, Doing Business, investment environment, j's ES and EO, OECD CRS aid to the supply chain (absolute and per GDP), energy use (weights 1, 1, 1, 1, 1.5, 1.5, 2, 1) |
 
-#### 1) Friendshore (Safer Friendshore)
-**What it captures:** importer-side partner safety/compatibility at the reporter-partner dyad level, built from import trade concentration and strategic compatibility signals.
+Each component is a weighted mean of the parts present (a missing part drops out), S-curved within its comparison set. Each dyad (or partner, for Development) is summarised by the mean of its **top-5** (tech, stage) cells over the 11 headline technologies; self-dyads are excluded.
 
-**Data sources:**
-- **UN Comtrade** ([COMTRADE]) — import dyads and product-level trade exposure
-- **World Development Indicators (WDI)** ([WDI]) — GDP scaffolding for scaling and harmonization
-- **IMF Data Explorer** ([IMF-DEX]) — outward investment / position proxies used in outbound connectivity
-- **Climate Action Tracker country ratings** (repo extract; see `docs/sources.md`) — climate-policy compatibility inputs
+**Bilateral trade (scripts/15, `config/partnership.yml`):**
+- **Source:** the all-reporter Comtrade dyad pull (`comtrade_energy_dyads_all.csv`, 2020 and 2024, imports and exports, the HS6 basket; [below](#the-all-reporter-comtrade-dyad-pull)); the 22-reporter allied file is a fallback with a warning.
+- **Importer-first / mirror rule:** per (importer, cell, year) the importer's declarations are used when it reports the cell (0 where it records nothing); otherwise the exporter's declared exports × **1.06** (IMF DOTS CIF/FOB convention; median 1.05 in the pull); otherwise unobserved. FS reads the import view and OP the export view of the same reconciled matrix.
+- **Two-stage trade index:** S-curve of last-year level and growth (2:1) across trading dyads within (tech, stage), then within the reporter. Observed zeros form one tie block below every trading partner; unobserved cells take the (tech, stage) mean (`trade_status` `trade` / `zero` / `imputed`; `no_data` where no HS6 code maps to the cell). Coverage per cell is in `partner_trade_coverage_tbl.rds`.
 
-**Substantive rationale:** friendshoring emphasizes dependence on partners that are economically capable, strategically aligned, and less likely to create concentrated vulnerability.
+**Outbound investment and conduits:** `outbound_index` is from IMF Direct Investment Positions (outward debt-instrument positions). Positions with a **conduit financial centre** are unobserved and the component renormalises away, on both sides of the dyad (`conduit_scope: both`): the ten pass-through economies of Damgaard, Elkjaer and Johannesen (NLD, LUX, HKG, VGB, BMU, SGP, CYM, CHE, IRL, MUS) plus the six offshore centres excluded before (BHS, BRB, TCA, IMN, GGY, CYP). `conduit_rule: legacy` reproduces the earlier rule.
 
-**Implementation entry point:**
-- `R/themes/partnership_strength/safer_friendshore.R`
+**PSI composite and views (scripts/25):**
 
----
+```
+C^k_j  = mean over the view's reporters i != j of the dyad's top-5 score (Development: j's own)
+PSI_j  = sum_k w_k C^k_j / sum over the categories j has of w_k      w: FS 0.4, OP 0.4, Dev 0.2
+```
 
-#### 2) Partnership Opportunity (Prosperous Opportunity)
-**What it captures:** exporter/opportunity upside in each dyad using trade potential with reporter and partner fundamentals, then penalizing risk where applicable.
+A high-income partner (no Development) gets (0.4 FS + 0.4 OP) / 0.8, not a score capped at 0.8.
+- **Core-coalition view (headline, `psi_tbl.rds`):** reporters = the core tier of `coalition_tbl.rds` (31).
+- **Full-coalition view (`psi_full_coalition_tbl.rds`):** core and partner tiers.
+- **World view (`psi_world_tbl.rds`):** every reporter (219 economies).
+- **Dyadic PSI (`psi_dyad_tbl.rds`):** the same composite per (reporter, partner), with `coalition_reporter` and `reporter_tier`.
 
-**Data sources:**
-- **UN Comtrade** ([COMTRADE]) — dyadic export structure and concentration inputs
-- **World Development Indicators (WDI)** ([WDI]) — country mapping and macro scaffolding
-- **Climate Action Tracker country ratings** (repo extract; see `docs/sources.md`) — policy-related weighting/penalty inputs
+**PSI rankability:** a partner is ranked only if it is sovereign and its `imputed_weight_share` ≤ 0.5 (`config/rankability.yml` `psi`). The share counts partner- and pair-specific inputs that are imputed or missing (trade cells imputed at the cell mean, no DIP position, an assigned rather than voted bloc, missing Development indicators, and the partner's ES/EO cells at their own pillar share), averaged like the score. At 0.5 the core view ranks 192 of 219 partners (Monaco, Liechtenstein and Kosovo drop out among sovereigns).
 
-**Substantive rationale:** high-opportunity partnerships pair favorable market structure with capable partners while discounting combinations that are likely to be lower quality or less resilient.
-
-**Implementation entry point:**
-- `R/themes/partnership_strength/prosperous_opportunity.R`
+**Implementation:** `R/themes/partnership_strength/{safer_friendshore,prosperous_opportunity,stronger_development,partnership_strength_helpers}.R`, `R/indices/build_partnership_strength_index.R`.
 
 ---
 
-#### 3) Development Potential (Stronger Development)
-**What it captures:** country-level absorptive and institutional capacity to convert partnership into durable development gains.
+### Allied network design
 
-**Data sources:**
-- **World Development Indicators (WDI)** ([WDI]) — governance, macro/financial, infrastructure, and enabling-condition indicators
-- **World Bank Doing Business** (historical extract; see `docs/sources.md`) — business-environment index inputs
-- **OECD CRS aid data** (repo extract; see `docs/sources.md`) — aid/sector channels used in development-related scoring
+**What it captures:** a coalition-wide division of labour: for each technology × stage, which nodes produce, with what share, and which producer → consumer flows serve each consumer.
 
-**Substantive rationale:** partnership value is partly determined by local ability to deploy capital, absorb technology, and sustain implementation.
+**Scope and inputs (`scripts/30_build_allied_network_design.R`, `R/indices/allied_network_design.R`):**
+- **Nodes:** the coalition members, with the EU-27 bundled as one node `EUU` (34 nodes on the 2026-10-08 coalition table). A bundled node's inputs are aggregated from its members **before** any ranking: EO, ES and development are stage-weighted means over members with a value; demand size is the summed GDP and need the GDP-weighted mean member need; an edge to or from the node is the members' edge mean weighted by their 2024 basket trade on that edge (else stage weights, else equal); edges inside the node are dropped. `allied_network_member_shares.csv` splits a node's designed share back to its members by stage weight (derived, not designed).
+- **Stages:** **Upstream and Midstream only** (22 stage problems). Downstream deployment is not part of the allied division of labour.
+- **Producer score:** EO and ES only (`node_policy = FALSE`; weights 0.5 and 0.2 renormalised to 5/7 and 2/7). The policy term is off because the Policy index covers fewer members, whose gaps had to be filled with the stage median.
+- **Demand:** `demand_mode = "mixed"`, need 0.5 and size 0.5.
+- **Edges:** edge(p → c) = 0.5 FS(reporter = c, partner = p) + 0.5 OP(reporter = p, partner = c): Friendshore is rated by the importer and Opportunity by the exporter, so both halves rate the producer → consumer link. A missing component counts as 0 on the edge; a node's self-supply edge takes the stage's median edge weight.
 
-**Implementation entry point:**
-- `R/themes/partnership_strength/stronger_development.R`
+**Objective per stage (maximised):**
 
----
+```
+w_node * sum_p a_p x_p + w_edge * sum_pc W_pc f_pc + w_dev * sum_p dev_p z_p - lambda * sum_p x_p^2
+```
 
-#### 4) PSI composite
-**What it captures:** a country × technology × supply-chain composite of friendshore, opportunity, and development components using configured PSI weights.
+with x_p the production share, w_node = 1, w_edge = 0.5, w_dev = 0. **Diversification:** `lambda` (score units per unit of HHI) turns the bang-bang linear design (λ = 0: producers at the 0.40 cap) into interior shares. The MILP carries Σx² as perspective tangent cuts on a 0.01 share grid (error ≤ 2.5e-5 per producer).
 
-**Configured default weights:**
-- Friendshore = 0.4
-- Opportunity = 0.4
-- Development = 0.2
+**Calibration rule for lambda:** the smallest λ on a grid at which the **median designed HHI over the 22 stages ≤ the median observed export HHI of the network's own nodes** (2024 basket trade from the reconciled Comtrade matrix, shares within the nodes, the EU-27 as one exporter counting only extra-EU exports; median over the 14 stages with an HS6 basket; written to `allied_network_observed_hhi.csv`). On the 34-node set the target was 0.1432 (7.0 equivalent exporters) and the pick **λ = 0.94** (median designed HHI 0.142, all 22 stages solved by MILP). The pick is knife-edge with respect to the inputs, so it must be re-derived on each full rerun; `scripts/30` warns when the designed median exceeds the observed one.
 
-Each component is normalized using the median S-curve framework before weighted aggregation.
+**Constraints and solver settings:** `method = "auto"` (MILP for stages with ≤ 60 nodes, greedy fallback recorded in diagnostics), GLPK time limit 300 s per stage; `min_producers = 3`, `max_share = 0.40`, `min_share = 0.05`, `min_suppliers_per_consumer = 2`, `epsilon_supplier_share = 0.10`, `allow_self = TRUE`. **Portfolio caps (headline):** each node may appear in the stage top-5 at most `cap` times over the 22 stages, `cap` from log GDP between 2 and 10 (the EU node's cap uses the summed EU GDP), enforced iteratively (up to 30 passes; top-5 membership by strict rank). The no-caps design is the robustness variant.
 
-**Implementation entry points:**
-- Build and aggregate in `scripts/25_build_partner_indices.R`
-- Tidy composite output helper in `R/themes/partnership_strength/psi_composite.R`
-
----
-
-#### 5) Allied network design (optimization module)
-**What it captures:** coalition-oriented producer-consumer flow design that uses PSI-derived edge quality (friendshore + opportunity) and node capacity/readiness signals to generate feasible alliance network scenarios.
-
-**Substantive rationale:** PSI can be used not only as a scorecard, but also as an input into constrained network design for diversified allied sourcing.
-
-**Implementation entry points:**
-- Core optimizer + helpers: `R/indices/allied_network_design.R`
-- Scripted run/output writer: `scripts/30_build_allied_network_design.R`
-
-`allied_network_design()` now supports configurable demand composition through `demand_mode` (`"need"`, `"size"`, `"mixed"`, `"equal"`).
-For backwards compatibility, the function default remains `demand_mode = "need"` (legacy need-only demand).
-The production runner (`scripts/30_build_allied_network_design.R`) now uses `demand_mode = "mixed"` with 50/50 need-size weights.
-
-Portfolio constraints can optionally cap how often a country appears in stage-level top-K producers.
-Caps are GDP-derived by default (`portfolio_min_cap = 2`, `portfolio_max_cap = 10`, `portfolio_top_k = 5`, log scaling), while leaving countries available as consumers.
-Portfolio enforcement is iterative and writes diagnostics for convergence and any residual violations.
-
-Runner outputs now include three additional diagnostics files: `allied_network_portfolio_caps.csv`, `allied_network_portfolio_counts.csv`, and `allied_network_topk_by_stage.csv`.
-
-</details>
+**Outputs:** `allied_network_specialization.csv`, `_flows.csv`, `_diagnostics.csv` (method, fallback reason, HHI, effective producers, objective terms, tangent error), `_members.csv`, `_member_shares.csv`, `_nodes.csv`, `_node_edges.csv`, `_observed_hhi.csv`, `_portfolio_caps.csv`, `_portfolio_counts.csv`, `_topk_by_stage.csv`, `_build_candidates.csv`, `_input_checks.csv`.
 
 ---
 
 ## Repository layout
 
 ```
-
 R/                    # Pure functions (no IO)
-utils/              # Reusable helpers, schema checks, standardization
-categories/         # Category/theme calculations
-indices/            # Pillar indices + helpers (ES, EO, PSI)
-charts/             # Chart builders (no file IO)
-themes/             # Theme grouping (incl. partnership_strength)
+  utils/              # Helpers: schema, theme standardization, country harmonisation, HS6 crosswalk
+  categories/         # Theme builders by category
+  indices/            # ES/EO builders, Policy index, Strategic Index, coalition, PSI, allied network
+  geopolitical_distance/  # UNGA ideal points and alignment
+  themes/             # Bilateral partnership themes (Friendshore, Opportunity, Development)
+  charts/             # Chart builders (no file IO)
+  dashboard/          # Pure builders of the dashboard bundle
 
 scripts/              # Orchestration + IO (reads raw, writes processed/outputs)
-fetchers/           # One file per API source; registered, contract-validated
-utils/              # Bootstrap, manifest/sync helpers, fetcher framework
+  fetchers/           # One file per API source; registered, contract-validated
+  utils/              # Bootstrap, manifest/sync helpers, fetcher framework, Comtrade dyad helpers
+  paper/              # Figure and table scripts of the working paper
 
 data/
-reference/          # Project-authored crosswalks (version controlled)
-raw/                # Local raw inputs (gitignored; populated by ingestion)
-processed/          # Intermediate theme tables (gitignored)
+  reference/          # Project-authored crosswalks and transcribed tables (version controlled)
+  raw/                # Local raw inputs (gitignored; populated by ingestion)
+  processed/          # Theme, index, partner and network tables (gitignored)
 
-config/               # Config files (weights, missing data, index definitions)
-docs/                 # Methodology + data sources
-shiny/                # Interactive Shiny app (world map explorer)
-archive/              # Deprecated website assets (archived)
+config/               # Weights, missing data, index definitions, rankability, alignment,
+                      # coalition, partnership settings, raw-input manifest
+docs/                 # Methodology, data dictionary, sources
+paper/                # Working paper (LaTeX)
+shiny/                # Allied Industrial Base Explorer (Shiny)
 run_pipeline.R        # Pipeline entry point
 tests/                # Unit tests (testthat)
-
-````
+```
 
 ---
 
@@ -629,59 +544,52 @@ tests/                # Unit tests (testthat)
 
 ```bash
 cp config/config.example.yml config/config.yml
-````
+```
 
-This repo also ships with:
+The tracked configuration lives in `config/weights.yml`, `config/missing_data.yml`, `config/index_definition.yml`, `config/rankability.yml`, `config/geopolitical_distance.yml`, `config/coalition.yml`, `config/partnership.yml` and `config/iea_clean_tech_guide_tech_map.yml`.
 
-* `config/weights.yml`
-* `config/missing_data.yml`
-* `config/index_definition.yml`
+2) **(Optional) Run without local raw data**
 
-2. **(Optional) Run without local raw data**
+Set `SKIP_DATA_DOWNLOADS=true` (or `1`) so `scripts/10_build_themes.R` can exit cleanly when inputs are missing.
 
-If you don’t have the raw inputs available, set:
+3) **Run the pipeline in order**
 
-* `SKIP_DATA_DOWNLOADS=true` (or `1`)
-
-so `scripts/10_build_themes.R` can exit cleanly when inputs are missing.
-
-3. **Run ingestion and theme/index scripts in order**
-
-If you are refreshing UN Comtrade outputs (including
-`allied_comtrade_energy_data.csv`, `comtrade_energy_trade.csv`, and
-`comtrade_total_export.csv`), set your API key first:
+If you are refreshing UN Comtrade outputs, set your API key first (never commit it):
 
 ```bash
 export COMTRADE_API_KEY=your_key_here
 # Optional overrides (defaults shown):
 # export COMTRADE_TARGET_YEAR=$(($(date +%Y)-1))
 # export COMTRADE_START_YEAR=$((COMTRADE_TARGET_YEAR-4))
-# Optional chunked runs for long API pulls:
 # export COMTRADE_CHUNK_COUNT=8
 # export COMTRADE_CHUNK_INDEX=1   # run 1..8 in separate executions
 # export COMTRADE_REQUEST_TIMEOUT_SECONDS=120
 # export COMTRADE_MAX_RETRIES=3
 ```
 
-Then run:
+Then run (the order matters: 13 reads the trade theme of 10 and the alignment of 12; 15 reads the pillars of 20 and the alignment; 25 reads the top-5 tables of 15 and the coalition of 13; 30 reads all of them):
 
 ```bash
 Rscript scripts/00_setup.R
+Rscript scripts/04_build_hs6_views.R
 Rscript scripts/05_ingest_sources.R
 Rscript scripts/10_build_themes.R
+Rscript scripts/12_build_geopolitical_alignment.R
+Rscript scripts/13_build_coalition.R
 Rscript scripts/20_build_indices.R
 Rscript scripts/15_build_partner_themes.R
 Rscript scripts/25_build_partner_indices.R
+Rscript scripts/30_build_allied_network_design.R
 Rscript scripts/80_write_outputs.R
 ```
 
-For an end-to-end run, use:
+For an end-to-end run (`00, 05, 07, 10, 12, 13, 20, 15, 25, 30, 80`; 30 unless `OPSI_RUN_ALLIED_NETWORK=false`):
 
 ```bash
 Rscript run_pipeline.R
 ```
 
-Run allied network only:
+Run the allied network only:
 
 ```bash
 Rscript scripts/build_allied_network.R
@@ -689,87 +597,59 @@ Rscript scripts/build_allied_network.R
 
 Optional environment variables:
 
-- `OPSI_INSTALL_MILP_PKGS=true|false`
-- `OPSI_REQUIRE_MILP=true|false`
+- `OPSI_INSTALL_MILP_PKGS=true|false`, `OPSI_REQUIRE_MILP=true|false` — MILP solver stack (ompr, ROI, GLPK)
 - `OPSI_AUTO_PREREQS=true|false`
 - `OPSI_RUN_ALLIED_NETWORK=true|false`
-- `OPSI_FORCE_REFRESH=true|false` — recopy every staged raw input even when the local
-  copy looks current (see [Raw inputs and refresh](#raw-inputs-and-refresh))
-- `OPSI_PREFER_FETCH=true|false` — treat the API as authoritative for every input that
-  has a fetcher, overriding each entry's `fetch_policy` for one run
+- `OPSI_SKIP_NIPO=true|false` — reuse the stored NIPO rows of `policy_component_tbl.rds` instead of rescoring the GTA extract (4–5 GB of memory); NIPO is not in the Policy index composite
+- `OPSI_NIPO_SCOPE` — NIPO country scope (`allies` keeps the legacy ally list)
+- `OPSI_CONFIG`, `OPSI_WEIGHTS`, `OPSI_MISSING_DATA`, `OPSI_INDEX_DEFINITION`, `OPSI_RANKABILITY` — alternative config files (scratch runs)
+- `OPSI_OUTPUTS_RDS` — path of `index_outputs.rds`
+- `OPSI_COALITION_OUT_DIR` — where `scripts/13` writes (default `data/processed`)
+- `OPSI_FORCE_REFRESH=true|false` — recopy every staged raw input even when the local copy looks current (see [Raw inputs and refresh](#raw-inputs-and-refresh))
+- `OPSI_PREFER_FETCH=true|false` — treat the API as authoritative for every input that has a fetcher, for one run
 - `OPSI_SKIP_FETCH=true|false` — disable API fetchers entirely
-- `OPSI_REQUIRE_FETCH=true|false` — make a failed fetch fatal instead of falling back to
-  the local file
-- `OPSI_IMF_START_YEAR=<year>` — earliest year kept by the IMF fetchers (default 1990;
-  on PPI and lending rates the window controls country coverage, not just recency, and on
-  commodity prices it must stay well behind the 20-year volatility window)
+- `OPSI_REQUIRE_FETCH=true|false` — make a failed fetch fatal instead of falling back to the local file
+- `OPSI_IMF_START_YEAR=<year>` — earliest year kept by the IMF fetchers (default 1990; on PPI and lending rates the window controls country coverage, and on commodity prices it must stay well behind the 20-year volatility window)
 
-When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under
-`data/raw/comtrade_chunks/...` and automatically combines them into final CSVs
-once all chunk indices have been run.
+When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under `data/raw/comtrade_chunks/...` and combines them into final CSVs once all chunk indices have been run.
 
 ---
 
 ## Interactive explorer (Shiny)
 
-Run the interactive world map from the repository root:
-
-```r
-install.packages(c(
-  "shiny",
-  "bslib",
-  "dplyr",
-  "scales",
-  "countrycode",
-  "leaflet",
-  "sf",
-  "rnaturalearth",
-  "rnaturalearthdata"
-))
-shiny::runApp("shiny", launch.browser = FALSE)
-```
-
-**Data sources:**
-
-- The app looks for pipeline outputs in `data/processed/outputs/index_outputs.rds` (or other
-  common output paths). You can override this with `OPSI_OUTPUTS_RDS=/path/to/index_outputs.rds`.
-- If no outputs are found, the app falls back to a small synthetic sample dataset stored in
-  `shiny/inst/extdata/sample_indices.csv`. The sidebar indicates which data source is active.
+`shiny/` holds the Allied Industrial Base Explorer. Its data bundle is exported from the pipeline outputs by `scripts/85_export_dashboard_data.R` (builders in `R/dashboard/`), which also checks the dashboard engine at its baseline against the stored outputs; rerun it after a pipeline rerun. Run the app from the repository root with `shiny::runApp("shiny", launch.browser = FALSE)`; see `shiny/README.md` for packages and deployment.
 
 ---
 
 ## Outputs
 
-Outputs are written under your configured outputs directory (or `processed/outputs` by default). Typical outputs include:
+Outputs are written under the configured outputs directory (default `data/processed/outputs`) and `data/processed`:
 
-* ES and EO pillar index tables
-* Category scores
-* Category contribution tables
-* Variable contribution tables
-* PSI tables
-* Optional “coupled” pillar index variants (if interdependence edges are provided)
+* `index_outputs.rds`: ES and EO indices (with `imputed_weight_share`, `rankable`, `rank_exclusion`), category scores, category and variable contributions, builder diagnostics, the Policy index with its eligibility and provenance, the Strategic Index, and the coalition used
+* `energy_security_category_contributions.csv`, `energy_security_variable_contributions.csv`
+* `charts/allied_strategic.csv` and `strategic_index_selected_countries.xlsx`
+* coalition, alignment, partner and PSI tables (`*.rds` in `data/processed`)
+* allied network CSVs (`allied_network_*.csv`)
 
-See `scripts/20_build_indices.R` for the exact CSV outputs written.
+`docs/data_dictionary.md` lists the columns.
 
 ---
 
 ## Comparing index vintages across years
 
-The main pipeline produces one snapshot: every theme builder reaches for the newest observation its source carries, so `data/processed` holds a single vintage and cannot be re-cut into an earlier year after the fact. `scripts/40_build_index_vintages.R` builds the ES and EO pillars at a chosen set of years instead, so vintages can be compared:
+The main pipeline produces one snapshot: every theme builder reaches for the newest observation its source carries, so `data/processed` holds a single vintage. `scripts/40_build_index_vintages.R` builds the ES and EO pillars at a chosen set of years instead:
 
 ```bash
 Rscript scripts/40_build_index_vintages.R --years=2020,2025
 ```
 
-Years can also be set with `OPSI_INDEX_YEARS=2015,2020,2025`. The default is `2020,2025`. Any number of years is accepted; the comparison table is built between the earliest and the latest.
+Years can also be set with `OPSI_INDEX_YEARS=2015,2020,2025`. The default is `2020,2025`. The comparison table is built between the earliest and the latest year.
 
-It works by slicing each **raw input** to the requested year and then running the same theme builders and the same v2 index builders the annual pipeline uses — the index construction itself is untouched. `scripts/10_build_themes.R` must have been run at least once first, because the themes with no time dimension are read from `data/processed` and reused unchanged across vintages, which keeps the fixed components identical between years.
+It slices each **raw input** to the requested year and runs the same theme builders and v2 index builders the annual pipeline uses. `scripts/10_build_themes.R` must have been run first, because themes with no time dimension are read from `data/processed` and reused unchanged across vintages.
 
-**What actually moves.** Only sources with a genuine time dimension can be re-cut. EI Statistical Review (energy access, imports, consumption, production), the Atlas of Economic Complexity (trade), IMF monthly prices and rates, ILO earnings, and GCIM investment all do. Resource potential, reserves, the IEA critical minerals release, BNEF demand and LCOE, overcapacity, and TRL are single snapshots or forward projections, so they are held fixed and contribute nothing to the year-on-year delta. In the current configuration that leaves **50% of scored Energy Security weight and 72% of scored Economic Opportunity weight** re-deriving per vintage. Every run writes the split it used.
+**What actually moves.** Only sources with a genuine time dimension can be re-cut: EI Statistical Review, the Atlas of Economic Complexity (trade, both the ES and EO trade themes with the deficit term), IMF monthly prices and rates, ILO earnings and Clean Investment Monitor investment. Resource potential, reserves, the IEA critical minerals release, BNEF demand and LCOE, overcapacity and TRL are single snapshots or projections, held fixed. Every run writes the share of each pillar's scored weight that re-derives per vintage (`index_vintage_weight_coverage.csv`) and the year each source resolved to (`index_vintage_source_years.csv`; the Atlas stops at 2023, so a 2025 vintage uses Atlas 2023).
 
-The trade themes run off the Atlas for *all* vintages rather than Comtrade, because the staged Comtrade extract is a single year — mixing a Comtrade numerator in one vintage with an Atlas one in another would show a source change as if it were real change. The Atlas stops at 2023, so a 2025 vintage uses Atlas 2023 and says so in `index_vintage_source_years.csv`.
-
-**Reading the results.** Every component is a cross-sectional percent rank, so an index value is a country's standing against its peers in that year, not an absolute level. A rise from 2020 to 2025 means the country gained ground on the field. Both level change and rank change are written out for that reason. As a sanity check, the 2025 vintage tracks the annual pipeline's headline index at r ≈ 0.98 (ES) and 0.99 (EO).
+**Reading the results.** Every component is a cross-sectional percent rank, so an index value is a country's standing against its peers in that year. Both level change and rank change are written out.
 
 Outputs land in `data/processed/vintages/`:
 
@@ -777,7 +657,7 @@ Outputs land in `data/processed/vintages/`:
 | --- | --- |
 | `energy_security_index_by_year.csv` | ES pillar index per country × tech × supply chain × vintage year, with `Energy_Security_Risk` as the complement |
 | `economic_opportunity_index_by_year.csv` | EO pillar index, same keys |
-| `index_category_scores_by_year.csv` | Category scores behind both pillars, so a delta can be attributed |
+| `index_category_scores_by_year.csv` | Category scores behind both pillars |
 | `energy_security_comparison_<a>_vs_<b>.csv` | Level and rank in each end year, plus `index_change` and `rank_change` |
 | `economic_opportunity_comparison_<a>_vs_<b>.csv` | Same for EO |
 | `index_vintage_theme_provenance.csv` | Per theme: whether it varies with the year, and why |
@@ -785,23 +665,26 @@ Outputs land in `data/processed/vintages/`:
 | `index_vintage_source_years.csv` | The year each source actually resolved to, per vintage |
 | `index_vintages.rds` | All of the above plus the full builder outputs per year |
 
+See [Known issues](#known-issues-and-to-dos) for the two ways the vintages still differ from the headline build.
+
 ---
 
 ## Testing and quality checks
 
-This repository includes a `testthat` suite under `tests/testthat/` that covers core scoring behavior and integration-sensitive paths, including:
+The `testthat` suite under `tests/testthat/` covers, among others:
 
-* S-curve normalization and schema checks
-* ES/EO v2 index construction
-* NIPO policy index logic
-* Comtrade unification behavior
-* Package-selection visual outputs
-* Allied network design scaling
+* S-curve normalization, schema checks and country harmonisation
+* ES/EO v2 construction: available-case aggregation, observed-only imputation, contributions, rankability
+* Theme builders (energy, minerals incl. the mirror, uranium, trade, TRL stage mapping, HS6 crosswalk, GHG weights)
+* Policy index and Strategic Index (weights, eligibility, exclusions, coalition wiring)
+* Geopolitical alignment, the ideal-point fetchers and the territory map
+* Coalition tiers and EU stage weights
+* Partnership themes: trade flows (importer-first / mirror rule), conduits, PSI viewpoints and rankability, Comtrade dyad helpers
+* Allied network: integrity, diversification, EU node, demand modes, portfolio constraints
+* Raw-input manifest drift and sync, fetchers
 * Shiny app load smoke test
-* Raw-input manifest drift (manifest vs. what `scripts/` actually reads, in both directions)
-* Raw-input sync and vintage resolution (mtime/size comparison, newest-release matching)
 
-Run tests from repo root with:
+Run tests from the repo root with:
 
 ```bash
 Rscript -e "testthat::test_dir('tests/testthat')"
@@ -811,53 +694,40 @@ Rscript -e "testthat::test_dir('tests/testthat')"
 
 ## Additional utilities and workflows
 
-Beyond the main pipeline scripts, the repo includes supporting workflows:
-
 * `scripts/01_generate_raw_inputs_manifest.R` — regenerates the raw-input inventory by scanning the active `scripts/` and `R/` code.
 * `scripts/02_render_sources_doc.R` — renders `docs/sources.md` from the manifest.
-* `scripts/03_check_raw_inputs.R` — read-only preflight: reports which raw inputs would block a build and where each is expected to come from. Run this first when ingestion fails.
+* `scripts/03_check_raw_inputs.R` — read-only preflight: which raw inputs would block a build and where each comes from.
 * `scripts/04_build_hs6_views.R` and `R/utils/hs6_crosswalk.R` — regenerate the HS6 crosswalk views from the master.
-* `config/raw_inputs_manifest.yml` — declarative manifest of every raw dataset, with provenance and refresh cadence.
-* `scripts/utils/raw_inputs.R` — shared helpers for manifest reading, staged-file sync, and vintage resolution.
-* `scripts/utils/fetchers.R` and `scripts/fetchers/*.R` — API fetchers and the contract-validated write path.
-* `scripts/30_build_allied_network_design.R` — builds allied network design outputs used for partnership analyses.
-* `scripts/90_build_package_selection_viz.R` — prepares package-selection visualization outputs.
-* `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — pull and visualize trade time series.
-* `R/charts/export_similarity.R` — Finger–Kreinin export similarity between the six major energy-technology exporters (CHN, DEU, FRA, JPN, KOR, USA), over the HS6 master basket. Produces an overall index plus a per-technology breakdown. Data is pulled at HS6 and aggregated to `ESI_LEVEL` (`hs6`/`hs4`/`hs2`/`tech`/`sub_sector`, default `hs4`) before scoring. The index rises mechanically with aggregation, so it is only comparable within a level — every output row records the level it was computed at.
-* `docs/data_dictionary.md` and `docs/comtrade_ingestion_and_timeseries.md` — implementation details for data fields and Comtrade workflows.
-
-For app-specific details (UI behavior, data-loading order, and deployment notes), see `shiny/README.md`.
+* `scripts/12_build_geopolitical_alignment.R`, `scripts/13_build_coalition.R` — alignment and coalition (above).
+* `scripts/85_export_dashboard_data.R` — exports the dashboard bundle.
+* `scripts/90_build_package_selection_viz.R` — package-selection visualization outputs.
+* `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — trade time series.
+* `scripts/98_pull_comtrade_energy_dyads.R` — the all-reporter Comtrade dyad pull (below).
+* `R/charts/export_similarity.R` — Finger–Kreinin export similarity between the six major energy-technology exporters (CHN, DEU, FRA, JPN, KOR, USA) over the HS6 basket, at `ESI_LEVEL` (`hs6`/`hs4`/`hs2`/`tech`/`sub_sector`, default `hs4`); only comparable within a level.
+* `docs/data_dictionary.md` and `docs/comtrade_ingestion_and_timeseries.md` — data fields and Comtrade workflows.
 
 ---
 
 ## Raw inputs and refresh
 
-`config/raw_inputs_manifest.yml` is the single inventory of every raw input the pipeline
-reads. Each entry records where the file comes from and how often it changes:
+`config/raw_inputs_manifest.yml` is the single inventory of every raw input the pipeline reads. Each entry records where the file comes from and how often it changes:
 
 | `source_type` | Meaning |
 | --- | --- |
-| `api` | Fetched automatically during ingestion (Comtrade, WDI, IMF PCPS) |
+| `api` | Fetched automatically during ingestion (Comtrade, WDI, IMF, UN ideal points) |
 | `manual` | Staged by hand into `sharepoint_raw_dir` before a run |
 | `derived` | Authored by the project — a crosswalk, not a fetched dataset |
 | `generated` | Written by the pipeline as bookkeeping |
 
-A second field, `staged_from`, says how each input reaches `data/raw/`: `sharepoint`
-(copied from your staging folder), `repo` (version controlled in `data/reference/`), or
-`pipeline` (written by an ingestion step).
+`staged_from` says how each input reaches `data/raw/`: `sharepoint` (copied from your staging folder), `repo` (version controlled in `data/reference/`), or `pipeline` (written by an ingestion step).
 
-The manifest is generated **from the active pipeline**, so it cannot drift away from what
-`scripts/` actually reads:
+The manifest is generated **from the active pipeline**, so it cannot drift away from what `scripts/` reads:
 
 ```bash
 Rscript scripts/01_generate_raw_inputs_manifest.R
 ```
 
-Curated fields (`source_name`, `url`, `cadence`, `owner`, `vintage`) survive regeneration;
-`required_by` is refreshed from code. `tests/testthat/test-raw-inputs-manifest.R` fails if
-the manifest and the pipeline disagree in either direction.
-
-`docs/sources.md` is rendered from the manifest — edit the manifest, not the doc:
+Curated fields (`source_name`, `url`, `cadence`, `owner`, `vintage`) survive regeneration; `required_by` is refreshed from code. `tests/testthat/test-raw-inputs-manifest.R` fails if the manifest and the pipeline disagree in either direction. `docs/sources.md` is rendered from the manifest — edit the manifest, not the doc:
 
 ```bash
 Rscript scripts/02_render_sources_doc.R
@@ -865,67 +735,40 @@ Rscript scripts/02_render_sources_doc.R
 
 ### API fetchers
 
-Inputs with a public API are fetched by `scripts/fetchers/*.R` and written in the same
-layout the pipeline already parses, so no downstream code changes:
+Inputs with a public API are fetched by `scripts/fetchers/*.R` and written in the layout the pipeline parses:
 
 | Input | Source | Notes |
 | --- | --- | --- |
 | `wb_wdi.csv` | World Bank v2 API | 44 series, DataBank wide layout |
 | `wb_doingbusiness.csv` | World Bank v2 API | Archived series; reproduces 190 of 192 economies |
-| `imf_ppi.csv` | IMF SDMX 3.0 | Producer price index, Index transformation |
+| `imf_ppi.csv` | IMF SDMX 3.0 | Producer price index |
 | `imf_lending_rates.csv` | IMF SDMX 3.0 | The six rate types the theme scores |
+| `imf_commodity_prices.csv` | IMF SDMX 3.0 | PCPS world price panel (`prefer`) |
+| `un_ga_ideal_points_all.csv` | Harvard Dataverse (doi:10.7910/DVN/LEJUQZ) | All-votes ideal points (alignment default; ends 2023) |
+| `un_ga_ideal_points.csv` | Harvard Dataverse | Final-passage ideal points (sensitivity; to 2025) |
+| `critmin_mirror_import.csv` | UN Comtrade public preview API (keyless) | Partner-level critical-mineral imports from non-reporters, plus late reporters' own exports (optional) |
 
 Three properties matter:
 
-- **A failed fetch never destroys a good file.** Every fetch is written to a temp path,
-  validated against a declared contract (required columns, minimum rows, minimum time
-  columns, and a uniqueness key), and only then swapped into place. On failure the
-  existing file is kept and a warning raised; `OPSI_REQUIRE_FETCH=true` makes it fatal.
-- **`fetch_policy` decides who wins.** `prefer` means the API is the authority and the
-  fetcher runs on the source's cadence. `fallback` (the default) means a staged file wins
-  and the fetcher only runs when no local copy exists. `OPSI_PREFER_FETCH=true` overrides
-  all entries for one run.
-- **Coverage differences are recorded, not hidden.** `imf_ppi` and `imf_lending_rates` are
-  `fallback` because the live flows no longer publish every country in the staged extracts —
-  see their `notes` in the manifest for the measured deltas. `imf_commodity_prices` is
-  `prefer`: PCPS is a world-level price panel with no country dimension, so that divergence
-  does not arise, and the fetched series match the staged export on 6842 of 6870 overlapping
-  observations.
+- **A failed fetch never destroys a good file.** Every fetch is written to a temp path, validated against a declared contract (required columns, minimum rows, uniqueness key), and only then swapped into place. `OPSI_REQUIRE_FETCH=true` makes a failure fatal.
+- **`fetch_policy` decides who wins.** `prefer`: the API is the authority. `fallback` (the default): a staged file wins and the fetcher only runs when no local copy exists.
+- **Coverage differences are recorded, not hidden.** `imf_ppi` and `imf_lending_rates` are `fallback` because the live flows no longer publish every country in the staged extracts (see their manifest `notes`).
 
-Not automatable, and marked `manual` for that reason: the Energy Institute download sits
-behind a Cloudflare challenge, and BNEF, BCG, GTA NIPO and the IEA extracts are
-subscription or licence-restricted.
+Not automatable, and marked `manual`: the Energy Institute download (Cloudflare challenge), and BNEF, BCG, GTA NIPO and the IEA extracts (subscription or licence-restricted).
 
-### When ingestion fails
+### The all-reporter Comtrade dyad pull
 
-```bash
-Rscript scripts/03_check_raw_inputs.R
-```
-
-Reports, without writing anything, which inputs are blocking, which are absent but
-covered by a fetcher, and which are absent but optional. Optional inputs let the
-pipeline degrade rather than stop.
-
-### How refresh works
-
-- **Ingestion syncs rather than copies once.** `scripts/05_ingest_sources.R` compares size
-  and mtime, so replacing a file in the staging area with a newer vintage is enough for it
-  to reach `data/raw`. Force a full recopy with `OPSI_FORCE_REFRESH=true`.
-- **Vintage-bearing inputs resolve to the newest match.** Inputs whose file name carries a
-  release date (`GTA NIPO - <month> <year>.xlsx`, `WEO<year>_AnnexA_...`, `critmin_*_<year>.csv`,
-  the dated BNEF exports) are resolved by pattern, not pinned in code. Publishing a new
-  release into `data/raw` is all that is needed to pick it up.
-- **Each run stamps what it used.** `data/raw/raw_inputs_resolved.yml` records the file and
-  vintage behind every pattern-resolved input, alongside `data/raw/comtrade_vintage.yml`.
+`scripts/98_pull_comtrade_energy_dyads.R` writes `data/raw/comtrade_energy_dyads_all.csv`: every reporter Comtrade has in 2020 and 2024, all partners, imports and exports, the HS6 basket (with legacy bridge codes). Comtrade's "Other Asia, nes" (S19) is recoded to Taiwan (`TWN`; `COMTRADE_DYADS_TAIWAN=drop` drops it); World, the other "nes" areas, bunkers and free zones are dropped. Calls are packed under the free tier's record cap, counted against `COMTRADE_DYADS_MAX_CALLS` per day, and every response is kept as a chunk so an interrupted run resumes; `COMTRADE_DYADS_STAGE=combine` rebuilds the CSV from the chunks without API calls. It needs `COMTRADE_API_KEY`.
 
 ### The HS6 crosswalk
 
-`data/reference/energy_hs6_master.csv` is the **single source of truth** for the
-HS6 → technology / supply-chain / sub-sector mapping, and the only HS6 file under
-version control. Its columns are `tech`, `supply_chain`, `sub_sector`, `hs6`, `essential`.
+`data/reference/energy_hs6_master.csv` is the **single source of truth** for the HS6 → technology / supply-chain / sub-sector mapping. Its columns are `tech`, `supply_chain`, `sub_sector`, `hs6`, `essential`, `legacy_hs`, `excluded`, `note`.
 
-Three legacy file names are regenerated from it as views during ingestion, so existing
-consumers keep working unchanged:
+- **Dominant-use rule.** A code belongs in a technology's basket only if that technology is a dominant use of the product. Codes that fail stay in the master with `excluded = TRUE` and the reason in `note` (91 rows in the October 2026 review: residual chemicals 3824.99 and PE/PP resins from Batteries Midstream, aircraft engines from Coal and Gas Midstream, general machinery n.e.s. from Oil and Gas Midstream, copper ore from Batteries Upstream, electrical energy 2716.00 from Electric Grid Upstream, ...); 249 codes remain in the basket. Generic codes kept although the technology is not their only use say "kept with caveat" with their basket share.
+- **Stage follows the product:** ores, concentrates, slag and scrap sit in Upstream.
+- **Legacy bridge codes** (`legacy_hs = TRUE`) carry older HS codes whose successors are all in the basket (e.g. 8541.40 for the HS2022 PV codes 8541.42/43, an upper bound since it also holds LEDs), so the HS92 Atlas and older-vintage Comtrade reporters keep the headline product.
+
+Three legacy file names are regenerated from the in-basket rows as views during ingestion:
 
 | Generated view | Shape | Read by |
 | --- | --- | --- |
@@ -937,31 +780,38 @@ consumers keep working unchanged:
 Rscript scripts/04_build_hs6_views.R
 ```
 
-**To change the mapping, edit the master.** The views are overwritten on every ingest,
-and `tests/testthat/test-hs6-crosswalk.R` fails if they ever disagree with it.
+**To change the mapping, edit the master.** The views are overwritten on every ingest, and `tests/testthat/test-hs6-crosswalk.R` fails if they disagree with it.
 
-Before this consolidation the three files were staged independently and had drifted: on
-the codes they shared, only 60–81% agreed on the technology assignment, so ES/EO and PSI
-were scored on different baskets of HS codes for the same technologies.
+> **Other project-authored inputs** (`economic_security_agreements.csv`, `territory_sovereign_map.csv`, `uranium_resources.csv`, `uranium_production.csv`, the dual-use scores) also live in `data/reference/` and are read from there or copied into `data/raw/` during ingestion. Edit them there.
 
-> **Other project-authored inputs** (the dual-use scores) also live in `data/reference/`
-> and are copied into `data/raw/` during ingestion, so a fresh clone builds without
-> access to anyone's OneDrive. Edit them there — a copy in `data/raw/` will be overwritten.
+> **Tip:** `scripts/10_build_themes.R` and `scripts/15_build_partner_themes.R` remain the authoritative "what files are required to run" inventory, because they fail fast on a concrete list of paths.
 
-Theme builders read raw inputs directly from your configured `raw_data_dir/...`.
+### When ingestion fails
 
-> **Tip:** `scripts/10_build_themes.R` and `scripts/15_build_partner_themes.R` remain the
-> authoritative “what files are required to run” inventory, because they fail fast on a
-> concrete list of paths. The manifest describes provenance for those same inputs.
+```bash
+Rscript scripts/03_check_raw_inputs.R
+```
+
+Reports, without writing anything, which inputs are blocking, which are absent but covered by a fetcher, and which are absent but optional.
+
+### How refresh works
+
+- **Ingestion syncs rather than copies once.** `scripts/05_ingest_sources.R` compares size and mtime, so replacing a staged file with a newer vintage is enough. Force a full recopy with `OPSI_FORCE_REFRESH=true`.
+- **Vintage-bearing inputs resolve to the newest match** (`GTA NIPO - <month> <year>.xlsx`, `WEO<year>_AnnexA_...`, `critmin_*_<year>.csv`, the dated BNEF exports). An input can set a reporter-count floor: the critical-minerals Comtrade pulls set `min_reporters: 50`, so a stub release with a handful of reporters is skipped for the previous full one.
+- **Each run stamps what it used.** `data/raw/raw_inputs_resolved.yml` records the file and vintage behind every pattern-resolved input, alongside `data/raw/comtrade_vintage.yml`.
 
 ### Key external sources (cited)
 
 * [IEA Critical Minerals Dataset][IEA-CM]
 * [IEA ETP Clean Energy Technology Guide][IEA-CTG]
 * [IEA Global EV Outlook][IEA-EV]
+* [IEA Policies and Measures database][IEA-PAMS]
+* [Climate Action Tracker][CAT]
 * [Energy Institute Statistical Review][EI-SR]
+* [OECD-NEA/IAEA Uranium: Resources, Production and Demand (Red Book)][REDBOOK]
 * [UN Comtrade][COMTRADE]
 * [Harvard Atlas of Economic Complexity][AEC]
+* [UN General Assembly ideal points (Bailey, Strezhnev and Voeten)][UNGA-IP]
 * [World Development Indicators (WDI)][WDI]
 * [Global Solar Atlas][GSA]
 * [Global Wind Atlas][GWA]
@@ -969,6 +819,58 @@ Theme builders read raw inputs directly from your configured `raw_data_dir/...`.
 * [IMF Commodity Prices][IMF-COMM]
 * [ILOSTAT][ILO]
 * [IMF Data Explorer][IMF-DEX]
+
+---
+
+## Known issues and to-dos
+
+* **Lambda must be recalibrated on every full rerun.** The rule pick (0.94 on the 34-node set) is knife-edge: on newer upstream tables 0.94 gave a median designed HHI of 0.14327 against a target of 0.14317, and 0.95 met it. The next coalition run also changes the node set (see [Allied coalition](#allied-coalition-two-tiers-and-the-eu-node)). `scripts/30` warns when the rule no longer holds; the calibration grid is not part of the repository.
+* **Nuclear Upstream ES floor.** ES Nuclear Upstream is Production 1/2, Reserves 1/3 and a world energy-price constant 1/6, so every economy without uranium sits at the same floor (0.117) and has a high energy-security need. Nuclear Upstream was the top allied Strategic Index pick of 20 of 45 members in the October 2026 scratch build. `scripts/20` reports such floor sectors; whether to add an exposure term, exclude the sector from the allied selection or caveat it is open.
+* **Coalition-view PSI and hard blocs.** With hard blocs and `geo_alignment` weighted like trade, every core reporter gives a U.S.-leaning partner 1 against 0.5 for a nonaligned one, so small U.S.-leaning economies (Malta, North Macedonia, Cyprus, Marshall Islands, San Marino, Iceland, ...) rank above India, China, Mexico and Singapore in the core view. The rankability rule removes only Monaco, Liechtenstein and Kosovo among sovereigns.
+* **Taiwan in the Atlas trade themes.** The ES/EO trade themes join the Atlas to the WDI roster, which has no Taiwan, so Taiwan's Trade category is imputed and its EO cells rest mostly on imputed inputs (it is not rankable in the PSI world view). Taiwan's bilateral Comtrade flows are observed since the S19 recode.
+* **EO Electric Grid Upstream has no product basket** after electrical energy (2716.00) was excluded; the cell is scored on cost competitiveness and production only.
+* **Supplier-route coverage.** Chromium, molybdenum, silver and silicon have no supply data in the coalition's supplier test, and the trade-based supplier measures inherit the HS6 basket's judgement calls (re-export hubs such as Singapore, generic codes kept with caveat).
+* **The all-votes ideal points end in 2023** (two years behind the final-passage series), so recent voting shifts are not in the blocs; Japan, Ireland and New Zealand sit just above the U.S.-leaning cut.
+* **The EU node's demand weight** is about 3.8% of coalition demand while the EU-27 is about a quarter of coalition GDP: demand is a rank S-curve over nodes, so the bundled EU is one point.
+* **Coalition members without a Policy index** (no CAT rating: Israel and Ukraine among the core; several partners) get no Strategic Index and no allied pick.
+* **Vintages differ from the headline build in two ways:** `scripts/40` does not pass the rankability threshold (its `rankable` flags use tau = 1, sovereignty only) and does not pass the uranium production table, so EO Nuclear Upstream lacks its Production category in every vintage.
+* **Supply-chain coupling** (`couple_pillar_scores_by_hhi.R`) is unused; delete it or wire it in deliberately.
+* **Raw-input completeness is environment dependent.** Use the manifest workflow and `scripts/03_check_raw_inputs.R` to reconcile gaps before full builds.
+* **`allies.csv` remains staged from SharePoint.** It only feeds the 22-reporter allied Comtrade file, which is now a fallback behind the all-reporter pull.
+* **Remaining automation candidates**: `imf_dip.csv` (a full pull is ~6.5 MB per reporter, so it needs dimension filtering), `oecd_crs_api.csv` (the CRS dataflow is not exposed under the agency the staged file names), and the Atlas extracts via Harvard Dataverse.
+* **IMF fetchers are `fallback`, not `prefer`.** The live PPI and MFS_IR flows have dropped countries the staged extracts still carry; switching would change index coverage.
+
+---
+
+## Changelog (fix/allied-base-paper, Sep-Oct 2026)
+
+Corrections:
+
+- **Test and CI paths** resolve from the test file; 35 code/test mismatches this unmasked are fixed (typed empty overall tables, ISO-date year parsing, duplicated IMF parser, grouped-tibble leak in Friendshore, `mean(a:b)` in the outbound index, Shiny filter masking).
+- **Variable-contribution weighting** used an inflated denominator; contributions now reconcile to the index.
+- **Available-case pillars:** a missing category no longer counts as 0; **observed-only imputation:** fills apply only where the source observes someone in the group; the imputed flag (which was FALSE for any multi-row group) and the guard for unproduced score variables now work. Energy Prices, silently unscored, is scored.
+- **Country harmonisation:** one name per economy (about 270 strings → 198 economies); aggregates and residual rows dropped; Comtrade vintages need ≥ 50 reporters.
+- **Theme-builder fixes:** mineral-name harmonisation (rare earths, graphite), refining mapped to Midstream (the recode mapped everything to Upstream), zero supply for non-suppliers, reserves roll-up zeros, BNEF wind recode and within-technology growth ranks, Minerals Trade scores market share and HHI, GCIM minerals investment split by demand, electrolyser capacity to Green Hydrogen Midstream.
+- **Trade themes split:** the ES and EO tables were identical and the ES deficit term was never computed; ES now scores HHI, market share and deficit/GDP, EO market share, RCA, export size, feasibility and HHI; every index is ranked across economies within the cell; market share is the basket share.
+- **Config wiring:** Energy Prices variable, Minerals Trade components, EO Trade without the deficit, Technology Demand and Cost Competitiveness counting each source once, EO Reserves weight removed.
+- **Policy index:** IEA PAMS was scored with NIPO's jurisdiction weights, substring stage rules tagged 37% of policies Upstream, Korea and the UAE were dropped by name mismatches, and the NIPO block had not run since February 2026.
+- **Strategic Index:** ES enters as need (1 − ES) explicitly; missing pillars are excluded, not filled with country means; degenerate sectors are excluded.
+- **Partnership tables:** Friendshore was ~2× duplicated; Development is partner-level (it was copied per reporter and donor); PSI is available-case (high-income partners were capped at 0.8); headline technologies only; `partner_es_need` renamed; mis-oriented WDI series fixed.
+- **Allied network:** a join fan-out (606,866 rows for 744) corrupted the outputs; edges are oriented producer → consumer; caps and greedy count distinct countries; ARE code fixed.
+- **GHG weight:** oil lifecycle median corrected to 840 gCO2eq/kWh (SRREN), which had been a 25th percentile.
+
+Extensions:
+
+- **Rankability rule** (sovereign and imputed weight share ≤ 0.5) for ES, EO, the Strategic Index and the PSI.
+- **Uranium** (Red Book resources and mine production) for Nuclear Upstream in ES and EO.
+- **TRL stage mapping** with the post-TRL-9 adoption stage read onto the 1–11 scale.
+- **HS6 basket review** (dominant-use rule, `excluded` column, legacy bridge codes, caveat notes).
+- **Mirror critical-minerals exports** for non-reporting economies, with late reporters.
+- **Policy index = IEA PAMS + CAT**; NIPO excluded for now; dual-use dropped.
+- **Geopolitical alignment** from all-votes UNGA ideal points, quartile hard blocs, territory map; `geo_alignment` enters Friendshore.
+- **Two-tier coalition** (core / partner by agreement or supplier route) with the EU as one network node.
+- **Bilateral indices:** all-reporter Comtrade dyads with Taiwan, importer-first / mirror × 1.06 rule, observed zeros, conduit financial centres excluded from outbound FDI, core-coalition (headline), full-coalition and world PSI views, PSI rankability.
+- **Allied network:** Upstream and Midstream only, diversification term with a calibration rule, perspective tangent cuts, strict top-K caps, node policy term off, EU node aggregation, MILP for every stage (≤ 60 nodes, 300 s, 30 cap passes), observed-HHI output and warning.
 
 ---
 
@@ -985,20 +887,7 @@ And record:
 
 * raw input folder state/date
 * processing date
-* any manual overrides (e.g., missing data policies or custom weights)
-
----
-
-## Known issues and to-dos
-
-* **EO Investment category is currently a placeholder** in the configured EO category list and may not yet represent a finalized production methodology.
-* **Supply-chain coupling implementation differs from the methodology text**: current code uses normalized interdependence edge strength with linear lambda mapping (rather than HHI-driven logistic mapping).
-* **Raw-input completeness is environment dependent**. If expected files are missing, use the manifest workflow and source documentation to reconcile gaps before running full builds.
-* **HS 854140 is no longer in the crosswalk.** The master uses the HS2022 codes `854142` (solar cells) and `854143` (solar modules), which replaced the pre-2022 `854140` for photovoltaic cells. That is correct for recent years, but Comtrade reporting for 2021 and earlier still uses `854140`, so historical Solar trade may be understated. Adding `854140` to `data/reference/energy_hs6_master.csv` as a legacy Solar/Midstream row would close the gap; it is left out pending a decision.
-* **`allies.csv` is the last uncommitted project-authored input.** It was not present locally when the other crosswalks moved into `data/reference/`, so it remains staged from SharePoint. It is optional — ingestion falls back to all valid WDI reporters — but committing it would make the allied dyad pull fully reproducible.
-* **Remaining automation candidates**: `imf_dip.csv` (the SDMX flow works but a full pull is ~6.5MB per reporter, so it needs a dimension-filtering strategy), `oecd_crs_api.csv` (the CRS dataflow is not exposed under the `OECD.DCD.FSD` agency the staged file names), and the Atlas of Economic Complexity extracts via Harvard Dataverse. See `docs/sources.md` for the current split.
-* **IMF fetchers are `fallback`, not `prefer`.** The live PPI and MFS_IR flows have dropped countries the staged extracts still carry (France, Chile, Finland, Greece for PPI; Spain for rates). Switching them to `prefer` would change index coverage.
-* **No input has a named owner.** Every manifest entry is `owner: unassigned`, so there is no one accountable for noticing a stale vintage.
+* any manual overrides (missing-data rules, weights, rankability threshold, lambda)
 
 ---
 
@@ -1015,9 +904,13 @@ For contribution expectations and responsible disclosure guidance, see `CONTRIBU
 [IEA-CM]: https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset
 [IEA-CTG]: https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide
 [IEA-EV]: https://www.iea.org/data-and-statistics/data-product/global-ev-outlook-2026
+[IEA-PAMS]: https://www.iea.org/policies
+[CAT]: https://climateactiontracker.org/countries/
 [EI-SR]: https://www.energyinst.org/statistical-review
+[REDBOOK]: https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand
 [COMTRADE]: https://comtrade.un.org/
 [AEC]: https://atlas.hks.harvard.edu/
+[UNGA-IP]: https://doi.org/10.7910/DVN/LEJUQZ
 [WDI]: https://databank.worldbank.org/source/world-development-indicators
 [GSA]: https://globalsolaratlas.info
 [GWA]: https://globalwindatlas.info/

@@ -43,6 +43,13 @@ partnership_friendshore_components:
   es_need: 2
   eo_partner: 2
   outbound_index: 2
+  # Probability that reporter and partner sit in the same US-China bloc of UNGA voting
+  # (data/processed/geo_alignment_tbl.rds, scripts/12; settings in config/geopolitical_distance.yml
+  # alignment). Hard blocs by default: 1 same bloc, 0 opposite blocs, 0.5 when either is
+  # nonaligned. Territories and SARs take their sovereign's bloc and Taiwan, Palestine and Kosovo
+  # are neutral (data/reference/territory_sovereign_map.csv). A dyad without a value is dropped
+  # from the weighted mean, not scored 0.
+  geo_alignment: 2
 
 # Development potential (partner-level, non-high-income partners). These were hard-coded in
 # stronger_development.R; the US-EO term that had weight 1.5 there has been dropped.

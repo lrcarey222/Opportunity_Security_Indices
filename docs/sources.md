@@ -4,7 +4,7 @@
      Regenerate with: Rscript scripts/02_render_sources_doc.R
      Edit config/raw_inputs_manifest.yml instead. -->
 
-Every raw input the pipeline reads, grouped by how it arrives. There are 47 inputs in total.
+Every raw input the pipeline reads, grouped by how it arrives. There are 56 inputs in total.
 
 - **api** — fetched automatically during ingestion; no human step.
 - **manual** — staged by hand into `sharepoint_raw_dir` before a run.
@@ -20,16 +20,20 @@ Fetched programmatically; no human step. Comtrade requires `COMTRADE_API_KEY`. E
 | [IMF lending rates (MFS_IR)](https://data.imf.org/en/Data-Explorer) | `imf_lending_rates.csv`<br>fetch: fallback (staged copy wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [IMF Primary Commodity Price System (wide export, includes annual YoY series)](https://www.imf.org/en/research/commodity-prices) | `imf_commodity_prices.csv`<br>fetch: prefer (API wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [IMF producer price indices (PPI)](https://data.imf.org/en/Data-Explorer) | `imf_ppi.csv`<br>fetch: fallback (staged copy wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
+| [UN Comtrade (all-reporter energy HS6 reporter-partner dyads)](https://comtradeplus.un.org/) | `comtrade_energy_dyads_all.csv` | annual | — | lcarey@rmi.org | `98_pull_comtrade_energy_dyads.R` |
 | [UN Comtrade (allied reporter-partner dyads)](https://comtradeplus.un.org/) | `allied_comtrade_energy_data.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `15_build_partner_themes.R` |
 | [UN Comtrade (critical minerals exports)](https://comtradeplus.un.org/) | `critmin_export_2024.csv`<br>newest match: `^critmin_export_\d{4}\.csv$` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [UN Comtrade (critical minerals imports)](https://comtradeplus.un.org/) | `critmin_import_2024.csv`<br>newest match: `^critmin_import_\d{4}\.csv$` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [UN Comtrade (critical minerals total exports)](https://comtradeplus.un.org/) | `critmin_total_export_2024.csv`<br>newest match: `^critmin_total_export_\d{4}\.csv$` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [UN Comtrade (energy-tech HS6 exports and imports)](https://comtradeplus.un.org/) | `comtrade_energy_trade.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R` |
+| [UN Comtrade (partner-reported imports from non-reporting economies, mirror exports)](https://comtradeapi.un.org/public/v1/preview/C/A/HS) | `critmin_mirror_import.csv`<br>fetch: prefer (API wins) | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [UN Comtrade (total exports, TOTAL commodity code)](https://comtradeplus.un.org/) | `comtrade_total_export.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R` |
+| [UN General Assembly ideal points, all-votes series (Bailey, Strezhnev and Voeten 2017; Voeten et al., Harvard Dataverse)](https://doi.org/10.7910/DVN/LEJUQZ) | `un_ga_ideal_points_all.csv`<br>fetch: prefer (API wins) | annual | Dataverse V39.0 (2026-07-30), IdealpointsJuly2025.tab (idealpointall), sessions 1-78 (1946-2023) | lcarey@rmi.org | `12_build_geopolitical_alignment.R` |
+| [UN General Assembly ideal points, final-passage series (Bailey, Strezhnev and Voeten 2017; Voeten et al., Harvard Dataverse)](https://doi.org/10.7910/DVN/LEJUQZ) | `un_ga_ideal_points.csv`<br>fetch: prefer (API wins) | annual | Dataverse V39.0 (2026-07-30), IdealpointestimatesFP_2026FP.csv, sessions 1-80 (1946-2025) | lcarey@rmi.org | `12_build_geopolitical_alignment.R` |
 | [World Bank Doing Business indicators (historical)](https://archive.doingbusiness.org/en/data) | `wb_doingbusiness.csv`<br>fetch: prefer (API wins) | discontinued | — | lcarey@rmi.org | `15_build_partner_themes.R` |
 | [World Bank WDI country reference table](https://databank.worldbank.org/source/world-development-indicators) | `wdi_country_info.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R`, `40_build_index_vintages.R` |
 | [World Bank WDI development indicator panel](https://databank.worldbank.org/source/world-development-indicators) | `wb_wdi.csv`<br>fetch: prefer (API wins) | annual | — | lcarey@rmi.org | `15_build_partner_themes.R` |
-| [World Bank World Development Indicators (NY.GDP.MKTP.CD)](https://databank.worldbank.org/source/world-development-indicators) | `wdi_gdp.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R` |
+| [World Bank World Development Indicators (NY.GDP.MKTP.CD)](https://databank.worldbank.org/source/world-development-indicators) | `wdi_gdp.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `12_build_geopolitical_alignment.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R` |
 
 ### Manual staging required
 
@@ -44,12 +48,14 @@ Each of these must be downloaded and placed in `sharepoint_raw_dir` before a run
 | [Clean Investment Monitor investment and capacity (aggregated)](https://www.cleaninvestmentmonitor.org/) | `GCIM_Investment_Capacity_aggregated.xlsx` | quarterly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [Climate Action Tracker country ratings](https://climateactiontracker.org/countries/) | `CAT_country ratings data.csv` | irregular | — | lcarey@rmi.org | `10_build_themes.R`, `15_build_partner_themes.R` |
 | [Columbia University Critical Minerals Dashboard HS mapping](https://www.energypolicy.columbia.edu/critical-materials/) | `Columbia University Critical Minerals Dashboard/unique_comtrade.csv` | irregular | — | lcarey@rmi.org | `05_ingest_sources.R` |
+| Economies without a UN General Assembly vote and the alignment each takes (sovereign's bloc for territories and SARs, neutral for Taiwan, Palestine and Kosovo) | `territory_sovereign_map.csv` | ad-hoc | project-authored 2026-10-08 | lcarey@rmi.org | `12_build_geopolitical_alignment.R` |
 | [Energy Institute Statistical Review of World Energy (long format)](https://www.energyinst.org/statistical-review) | `ei_stat_review_world_energy.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [Energy Institute Statistical Review of World Energy (workbook)](https://www.energyinst.org/statistical-review) | `ei_stat_review_world_energy_wide.xlsx` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | Geothermal LCOE and capacity potential extract | `geothermal_lcoe_mw.csv` | irregular | — | lcarey@rmi.org | `10_build_themes.R` |
 | [Global Solar Atlas country potential](https://globalsolaratlas.info) | `solar_potential_clean.csv` | irregular | — | lcarey@rmi.org | `10_build_themes.R` |
 | [Global Trade Alert New Industrial Policy Observatory](https://www.globaltradealert.org/) | `GTA NIPO - February 2026.xlsx`<br>newest match: `^GTA NIPO - .*\.xlsx$` | monthly | February 2026 | lcarey@rmi.org | `10_build_themes.R` |
 | [Global Wind Atlas country potential](https://globalwindatlas.info/) | `wb_wind_country.csv` | irregular | — | lcarey@rmi.org | `10_build_themes.R` |
+| [Harvard Atlas of Economic Complexity (HS92 6-digit product-year totals)](https://atlas.hks.harvard.edu/) | `hs92_product_year_6.csv` | annual | — | lcarey@rmi.org | `04_build_hs6_views.R` |
 | [Harvard Atlas of Economic Complexity (HS92, 4-digit)](https://atlas.hks.harvard.edu/) | `hs92_country_product_year_4.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [Harvard Atlas of Economic Complexity (HS92, 6-digit)](https://atlas.hks.harvard.edu/) | `hs92_country_product_year_6.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [IEA clean technology midstream manufacturing capacity](https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide) | `iea_cleantech_Midstream.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
@@ -61,7 +67,10 @@ Each of these must be downloaded and placed in `sharepoint_raw_dir` before a run
 | [IEA relative technology cost extract](https://www.iea.org/data-and-statistics) | `Relative_Costs_IEA.csv` | irregular | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [IEA World Energy Outlook Annex A free dataset](https://www.iea.org/reports/world-energy-outlook-2025) | `WEO2025_AnnexA_Free_Dataset_World.csv`<br>newest match: `^WEO\d{4}_AnnexA_Free_Dataset_World\.csv$` | annual | 2025 | lcarey@rmi.org | `10_build_themes.R` |
 | [IMF Coordinated Direct Investment Survey positions](https://data.imf.org/en/Data-Explorer) | `imf_dip.csv` | annual | — | lcarey@rmi.org | `15_build_partner_themes.R` |
-| [IPCC technology GHG intensity factors](https://www.ipcc.ch/report/ar6/wg3/) | `ipcc_ghg_intensity.csv` | irregular | — | lcarey@rmi.org | `10_build_themes.R`, `15_build_partner_themes.R` |
+| [IPCC lifecycle GHG intensity of electricity supply technologies (AR5 WGIII Annex III, Table A.III.2)](https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf) | `ipcc_ghg_intensity.csv` | irregular | AR5 (2014) | lcarey@rmi.org | `10_build_themes.R`, `15_build_partner_themes.R` |
+| [Membership of U.S. and allied economic-security agreements (U.S. FTA partners, IPEF, Minerals Security Partnership and MSP Forum, G7, NATO)](https://ustr.gov/trade-agreements/free-trade-agreements) | `economic_security_agreements.csv` | ad-hoc | accessed 2026-10-08 | lcarey@rmi.org | `13_build_coalition.R` |
+| [OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table 1.18 historical uranium production](https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand) | `uranium_production.csv` | biennial | Uranium 2026 (NEA No. 7770) for 2022-2024, Uranium 2024 (NEA No. 7683) for 2020-2021, Uranium 2022 (NEA No. 7634) for 2019; accessed 2026-10-07 | lcarey@rmi.org | `10_build_themes.R` |
+| [OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table 1.2a identified recoverable resources](https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand) | `uranium_resources.csv` | biennial | Uranium 2026 (NEA No. 7770), resources as of 1 January 2025; accessed 2026-10-07 | lcarey@rmi.org | `10_build_themes.R` |
 | [OECD Creditor Reporting System aid flows](https://data-explorer.oecd.org/) | `oecd_crs_api.csv` | annual | — | lcarey@rmi.org | `15_build_partner_themes.R` |
 
 ### Project-authored crosswalks (derived)

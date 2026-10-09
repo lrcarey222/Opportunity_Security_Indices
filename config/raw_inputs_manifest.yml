@@ -13,6 +13,17 @@ inputs:
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/15_build_partner_themes.R
+- id: comtrade_energy_dyads_all
+  path: comtrade_energy_dyads_all.csv
+  source_type: api
+  source_name: UN Comtrade (all-reporter energy HS6 reporter-partner dyads)
+  url: https://comtradeplus.un.org/
+  cadence: annual
+  owner: lcarey@rmi.org
+  staged_from: pipeline
+  notes: Written by scripts/98_pull_comtrade_energy_dyads.R (chunked, resumable); requires COMTRADE_API_KEY.
+  required_by:
+  - scripts/98_pull_comtrade_energy_dyads.R
 - id: comtrade_energy_trade
   path: comtrade_energy_trade.csv
   source_type: api
@@ -64,6 +75,25 @@ inputs:
   notes: Year suffix follows the latest year Comtrade actually returns data for.
   required_by:
   - scripts/10_build_themes.R
+- id: critmin_mirror_import
+  path: critmin_mirror_import.csv
+  optional: true
+  fetch_policy: prefer
+  source_type: api
+  source_name: UN Comtrade (partner-reported imports from non-reporting economies, mirror
+    exports)
+  url: https://comtradeapi.un.org/public/v1/preview/C/A/HS
+  cadence: annual
+  owner: lcarey@rmi.org
+  staged_from: sharepoint
+  notes: Fetched from the keyless Comtrade public preview API by scripts/fetchers/comtrade_mirror_critmin.R
+    (500 records per call; partner = each WDI economy absent from the critmin export and
+    total-export pulls, all reporters, the pulls' HS6 codes plus TOTAL, the pulls' year;
+    flow X rows are those economies' own exports to World where they have reported since).
+    First fetched 2026-10-07 for 2024. Optional - without it Minerals Trade falls back
+    to reporter-side exports. Refetch (OPSI_FORCE_REFRESH) when the critmin vintage moves.
+  required_by:
+  - scripts/10_build_themes.R
 - id: critmin_total_export
   path: critmin_total_export_2024.csv
   pattern: ^critmin_total_export_\d{4}\.csv$
@@ -110,6 +140,51 @@ inputs:
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
+- id: un_ga_ideal_points
+  path: un_ga_ideal_points.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: UN General Assembly ideal points, final-passage series (Bailey, Strezhnev
+    and Voeten 2017; Voeten et al., Harvard Dataverse)
+  url: https://doi.org/10.7910/DVN/LEJUQZ
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: Dataverse V39.0 (2026-07-30), IdealpointestimatesFP_2026FP.csv, sessions 1-80
+    (1946-2025)
+  licence: CC0-1.0
+  staged_from: sharepoint
+  notes: Fetched from the Harvard Dataverse API (public, no key) by scripts/fetchers/un_ideal_points.R
+    (fetcher un_ga_ideal_points), which takes the newest country-year ideal-point file
+    of the latest published version and writes it in a fixed schema; ideal_point is
+    the final-passage-vote estimate (estimate FP). A sensitivity since October 2026
+    (config/geopolitical_distance.yml alignment$series fp); the primary series is un_ga_ideal_points_all.
+    Nothing needs staging - staged_from is sharepoint so that scripts/05 runs the fetcher.
+  required_by:
+  - scripts/12_build_geopolitical_alignment.R
+- id: un_ga_ideal_points_all
+  path: un_ga_ideal_points_all.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: UN General Assembly ideal points, all-votes series (Bailey, Strezhnev
+    and Voeten 2017; Voeten et al., Harvard Dataverse)
+  url: https://doi.org/10.7910/DVN/LEJUQZ
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: Dataverse V39.0 (2026-07-30), IdealpointsJuly2025.tab (idealpointall), sessions
+    1-78 (1946-2023)
+  licence: CC0-1.0
+  staged_from: sharepoint
+  notes: Fetched from the Harvard Dataverse API (public, no key) by scripts/fetchers/un_ideal_points.R
+    (fetcher un_ga_ideal_points_all), which takes the newest country-year file that
+    carries the all-votes estimates (all recorded votes, including paragraph and amendment
+    votes; the more precise series per the BSV codebook) and writes it in the same fixed
+    schema (estimate All). The primary input of the geopolitical alignment (alignment$series
+    all). The 2026 release updated the final-passage estimates only, so this series
+    ends in 2023. Upstream quirks handled in R/geopolitical_distance/alignment.R - Serbia
+    is COW 345 "Yugoslavia" (YUG) throughout, Sao Tome's name has replacement characters.
+    Nothing needs staging - staged_from is sharepoint so that scripts/05 runs the fetcher.
+  required_by:
+  - scripts/12_build_geopolitical_alignment.R
 - id: wb_doingbusiness
   path: wb_doingbusiness.csv
   fetch_policy: prefer
@@ -165,6 +240,7 @@ inputs:
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
+  - scripts/12_build_geopolitical_alignment.R
   - scripts/15_build_partner_themes.R
   - scripts/30_build_allied_network_design.R
 - id: allies
@@ -198,6 +274,9 @@ inputs:
   cadence: ad-hoc
   owner: lcarey@rmi.org
   staged_from: repo
+  notes: LLM-generated (ChatGPT) defence-relevance scores per technology x stage, the same
+    for every country. Reference only since October 2026 - built into dual_use_scores_tbl
+    but not a component of the composite Policy index (NIPO 4, IEA PAMS 3, CAT 2).
   required_by:
   - scripts/10_build_themes.R
 - id: energy_hs6_master
@@ -347,6 +426,21 @@ inputs:
   staged_from: sharepoint
   required_by:
   - scripts/05_ingest_sources.R
+- id: economic_security_agreements
+  path: economic_security_agreements.csv
+  source_type: manual
+  source_name: Membership of U.S. and allied economic-security agreements (U.S. FTA partners,
+    IPEF, Minerals Security Partnership and MSP Forum, G7, NATO)
+  url: https://ustr.gov/trade-agreements/free-trade-agreements
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  vintage: accessed 2026-10-08
+  staged_from: repo
+  notes: Project-authored from the official lists (USTR, White House, European Commission, NATO,
+    G7 presidencies); one row per (iso3, agreement), each with its source, URL and access date.
+    Partner route of the two-tier coalition (R/indices/coalition.R, config/coalition.yml).
+  required_by:
+  - scripts/13_build_coalition.R
 - id: ei_stat_review
   path: ei_stat_review_world_energy.csv
   source_type: manual
@@ -576,11 +670,24 @@ inputs:
 - id: ipcc_ghg_intensity
   path: ipcc_ghg_intensity.csv
   source_type: manual
-  source_name: IPCC technology GHG intensity factors
-  url: https://www.ipcc.ch/report/ar6/wg3/
+  source_name: IPCC lifecycle GHG intensity of electricity supply technologies (AR5 WGIII
+    Annex III, Table A.III.2)
+  url: https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf
   cadence: irregular
   owner: lcarey@rmi.org
+  vintage: AR5 (2014)
   staged_from: sharepoint
+  notes: Lifecycle medians in gCO2eq/kWh from Schlomer et al. (2014), IPCC AR5 WGIII Annex
+    III, Table A.III.2, p. 1335 (not AR6, as this entry used to say). Every row matches
+    that one table except oil-fired steam - the file's Source column cites Tables A.III.3
+    to A.III.13 for the rows after coal, but those are transport, industry and waste
+    tables and A.III.13 does not exist. Table A.III.2 has no oil row
+    and the staged 720 is in no IPCC table, so partnership_strength_clean_ghg() replaces
+    it with the SRREN median of 840 (Moomaw et al. 2011, IPCC SRREN Annex II, Table A.II.4,
+    p. 982, https://www.ipcc.ch/site/assets/uploads/2018/03/Annex-II-Methodology-1.pdf).
+    SRREN's medians come from an unharmonised literature review (its coal median is 1001,
+    against 820 in AR5), so next to the AR5 rows oil (840) sits just above coal (820),
+    although within SRREN oil is below coal. Both PDFs checked 2026-10-07.
   required_by:
   - scripts/10_build_themes.R
   - scripts/15_build_partner_themes.R
@@ -603,6 +710,59 @@ inputs:
   cadence: irregular
   owner: lcarey@rmi.org
   staged_from: sharepoint
+  required_by:
+  - scripts/10_build_themes.R
+- id: territory_sovereign_map
+  path: territory_sovereign_map.csv
+  source_type: manual
+  source_name: Economies without a UN General Assembly vote and the alignment each takes (sovereign's
+    bloc for territories and SARs, neutral for Taiwan, Palestine and Kosovo)
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  vintage: project-authored 2026-10-08
+  staged_from: repo
+  retain: yes
+  notes: Project-authored, one row per economy (iso3, economy, basis inherit|neutral, sovereign_iso3,
+    status, note); 47 rows - 44 territories and SARs inherit their sovereign's UNGA bloc (CHN 2,
+    USA 6, DNK 2, FRA 11, NLD 4, GBR 13, AUS 3, NZL 1, NOR 1, FIN 1) and Taiwan, Palestine and
+    Kosovo are neutral (p = 0.5) by project decision; each note gives the legal basis (who conducts
+    the economy's foreign relations, or its UN status). Read by scripts/12 (R/geopolitical_distance/alignment.R
+    geo_apply_no_vote_map()); the alignment tables carry the basis as alignment_basis / basis_reporter
+    / basis_partner, and the PSI rankability rule counts an assigned bloc as imputed. scripts/12
+    reads it from data/reference (raw_inputs_reference_dir()), a path the reference scan of
+    scripts/01 does not follow, hence retain.
+  required_by:
+  - scripts/12_build_geopolitical_alignment.R
+- id: uranium_production
+  path: uranium_production.csv
+  source_type: manual
+  source_name: OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table
+    1.18 historical uranium production
+  url: https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand
+  cadence: biennial
+  owner: lcarey@rmi.org
+  vintage: Uranium 2026 (NEA No. 7770) for 2022-2024, Uranium 2024 (NEA No. 7683) for 2020-2021,
+    Uranium 2022 (NEA No. 7634) for 2019; accessed 2026-10-07
+  staged_from: repo
+  notes: Mine production by country (tU), transcribed from the edition PDFs; each row carries
+    its source table, URL and access date. Every producer is listed, so the rows sum to the
+    published world totals (tests/testthat/test-uranium.R). Nuclear Upstream "Nuclear Production"
+    (Energy Security) and production depth/momentum (Economic Opportunity).
+  required_by:
+  - scripts/10_build_themes.R
+- id: uranium_resources
+  path: uranium_resources.csv
+  source_type: manual
+  source_name: OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table
+    1.2a identified recoverable resources
+  url: https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand
+  cadence: biennial
+  owner: lcarey@rmi.org
+  vintage: Uranium 2026 (NEA No. 7770), resources as of 1 January 2025; accessed 2026-10-07
+  staged_from: repo
+  notes: Identified recoverable resources (reasonably assured plus inferred, tU) by country in
+    the four cost categories, transcribed from the edition PDF. Nuclear Reserves scores the
+    <USD 260/kgU category the edition headlines (R/categories/reserves/uranium.R).
   required_by:
   - scripts/10_build_themes.R
 - id: wb_wind_country

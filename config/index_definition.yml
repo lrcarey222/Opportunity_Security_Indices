@@ -56,6 +56,7 @@ partnership_strength:
     - es_need
     - eo_partner
     - outbound_index
+    - geo_alignment
   # Partner-level (no reporter dimension), non-high-income partners only.
   development_components:
     - development_index
@@ -138,6 +139,8 @@ overall_variables:
       - "Electric Grid Reserves"
       - "Green Hydrogen Reserves"
       - "Heat Pumps Reserves"
+      # Red Book identified recoverable uranium resources, <USD 260/kgU
+      # (R/categories/reserves/uranium.R).
       - "Nuclear Reserves"
       - "Hydroelectric Power Reserves"
       - "Geothermal Reserves"
@@ -168,6 +171,8 @@ overall_variables:
       - "Green Hydrogen Production"
       - "Heat Pumps Production"
       - "Coal Production"
+      # Red Book uranium mine production, latest year (Energy Security; the Economic
+      # Opportunity side scores it as Nuclear Upstream size/growth_abs/Overall Production).
       - "Nuclear Production"
       - "Oil Production"
       - "Gas Production"
