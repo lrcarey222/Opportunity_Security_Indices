@@ -1,0 +1,94 @@
+# Rankability rule for the Energy Security (ES) and Economic Opportunity (EO) pillars.
+#
+# Every country-cell (country x technology x supply-chain stage) the sources reach is scored,
+# and the cells keep their values whatever this file says, so every decomposition still
+# reconciles to the index. A cell is `rankable` only when
+#
+#   1. the economy is a sovereign state: a Correlates of War state-system code in
+#      countrycode's codelist, with Serbia (345) and Kosovo (347) supplied from the COW State
+#      System Membership List v2024 (https://correlatesofwar.org/data-sets/state-system-membership/,
+#      accessed 2026-10-07), whose 195 states of 2024 are the 193 UN members plus Kosovo and
+#      Taiwan. Territories, special administrative regions and the West Bank and Gaza are
+#      scored but not ranked (is_sovereign_economy(), R/indices/index_builder_core.R); and
+#   2. at most max_imputed_weight_share of its index weight rests on components filled by
+#      config/missing_data.yml, 'global_average' and 'zero' fills alike (imputed_weight_share,
+#      the variable decomposition's weight on imputed components).
+#
+# Cross-country rankings, top-N lists and the Strategic Index use rankable cells only
+# (build_strategic_index() applies the rule; any other ranking filters on `rankable`); the
+# index tables carry imputed_weight_share, rankable and rank_exclusion for every cell.
+#
+# Calibration (the build stored on 2026-10-01, 11 headline technologies, scored cells; rerun
+# it when the pillar inputs change; EO / ES robustness is
+# the median within technology-stage Spearman of the baseline index against the index rebuilt
+# with every 'global_average' rule removed (available case) / replaced by 'zero', over the
+# rankable cells of the pairs scripts/paper/fig_robustness.R uses):
+#
+#   tau    sovereign cells kept     EO median rho        ES median rho
+#          EO      ES               none    zero         none    zero
+#   all    -       -                0.784   0.608        0.979   0.948   (every scored cell)
+#   1.00   100%    100%             0.816   0.650        0.982   0.965   (sovereign only)
+#   0.75   96%     95%              0.830   0.670        0.984   0.970
+#   0.60   82%     83%              0.922   0.695        0.993   0.929
+#   0.50   66%     73%              0.974   0.780        0.999   0.975
+#   0.40   45%     61%              0.979   0.873        0.999   0.995
+#   0.25   26%     52%              0.983   0.952        1.000   1.000
+#
+# 0.5 is the smallest value on the grid that keeps a majority of the sovereign cells in every
+# pillar and stage (lowest: ES Upstream 55%, EO Midstream 60%); at 0.4 fewer than half of the
+# EO cells survive in all three stages. It reads as "observed data carry at least half of the
+# cell's weight", raises EO's median rank correlation from 0.78 to 0.97 (available case) and
+# from 0.61 to 0.78 (zero fill), keeps at least 40 rankable cells in every EO pair and 68 in
+# every ES pair, and keeps 1,581 of the 1,863 Strategic Index cells (85%) and 64 of its 65
+# countries, with the Policy index scripts/20 builds on 2026-10-08 (IEA PAMS + CAT); the SI
+# sample depends on that index (with the earlier four-component one: 573 of 665, 23 of 23).
+#
+# Because 'zero' fills count as imputed, most ES cells over the threshold are those of
+# economies absent from the reserve, production, investment and mineral trade tables
+# (1,351 of the 1,515 sovereign ES cells over 0.5, 837 of them Upstream, are under 0.5 on
+# 'global_average' fills alone; Reserves carry 38% of their 'zero'-filled weight, Production
+# 29%, Investment 29%, Minerals Trade 5%). Excluded cells therefore lean insecure and less
+# opportune: the 282 Strategic Index cells the rule drops (same Policy index as above) have a
+# mean energy-security need of 0.69 and EO of 0.44, against 0.55 and 0.52 for the 1,581 kept;
+# Ethiopia loses all 28 of its cells, and Bhutan, Nepal, Gambia, Costa Rica, Malta, Kenya, Iran
+# and the United Arab Emirates keep fewer than half. Counting 'global_average' fills only would
+# keep 1,776 Strategic Index cells.
+max_imputed_weight_share: 0.5
+
+# --- Partnership Strength Index (PSI) ------------------------------------------------------
+#
+# The PSI takes the same rule (decision of 2026-10-08), in its core-coalition (headline),
+# full-coalition and world views alike (scripts/25; psi_flag_rankable(),
+# R/indices/build_partnership_strength_index.R): every partner is scored, and a partner is
+# rankable only when it is a sovereign state (as above) and at most max_imputed_weight_share of its
+# PSI weight rests on imputed inputs. psi_tbl, psi_full_coalition_tbl, psi_world_tbl and
+# psi_dyad_tbl carry imputed_weight_share, rankable and rank_exclusion.
+#
+# The PSI's imputed weight share (R/themes/partnership_strength/partnership_strength_helpers.R):
+# in each scored cell, the share of the partner- and pair-specific component weight
+# (config/weights.yml) resting on imputed or missing inputs - a trade cell with no observed flow
+# (imputed at the cell mean), no IMF DIP position (the outbound component is dropped), a UNGA
+# bloc assigned rather than voted (territories, Taiwan, Palestine, Kosovo), a missing Development
+# indicator, and the partner's ES / EO cells at their own pillar imputed_weight_share. The
+# reporter's own attributes (the same for every partner it rates) and the trade component of a
+# (tech, stage) no HS6 code maps to are left out. Cells average to the dyad over the five cells
+# its top-5 value averages, dyads to the partner over the reporters of the view, and categories
+# with the PSI weights over the ones the partner has - the PSI score's own aggregation.
+#
+# On the scratch build of 2026-10-08 (all-reporter Comtrade dyads with Taiwan, ES / EO of the
+# 2026-10-07 build) the sovereign partners kept at each threshold, of 195:
+#
+#   tau    coalition view (core)   full coalition   world view
+#   0.25   117                     111              67
+#   0.40   184                     185              150
+#   0.50   192                     192              184
+#   0.60   194                     194              192
+#   0.75   195                     195              195
+#
+# At 0.5 the coalition view stops ranking Monaco, Liechtenstein (both outside the Comtrade
+# partner list, so no observed trade, and with few DIP positions) and Kosovo (neutral bloc, and
+# no Comtrade rows either); the full-coalition view the same three; the world view, which
+# averages every reporter's dyads, also Taiwan, Tuvalu, Dominica, St Vincent, Palau, Nauru, St
+# Kitts and Nevis and North Korea. The coalition top 20 is unchanged (shares 0.04-0.25).
+psi:
+  max_imputed_weight_share: 0.5

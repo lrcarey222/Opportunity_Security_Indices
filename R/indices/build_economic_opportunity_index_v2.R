@@ -4,6 +4,13 @@ if (!exists("normalize_sub_sector_or_keys", mode = "function")) {
   source(file.path(dirname(sys.frame(1)$ofile), "index_builder_core.R"))
 }
 
+# The index table carries, besides Economic_Opportunity_Index, the cell's
+# imputed_weight_share and whether it is `rankable` (sovereign economy,
+# imputed_weight_share <= max_imputed_weight_share; rank_exclusion says why not). Rows and
+# values are the same either way; cross-country rankings, top-N lists and the Strategic Index
+# use the rankable cells only (flag_rankable_cells() in index_builder_core.R). The
+# sovereignty test needs R/utils/country.R.
+
 standardize_economic_opportunity_inputs_v2 <- function(theme_tables, include_sub_sector = FALSE) {
   theme_names <- names(theme_tables)
   if (is.null(theme_names)) {
@@ -123,10 +130,12 @@ build_economic_opportunity_index_v2 <- function(theme_tables,
                                                 missing_data = NULL,
                                                 allow_partial_categories = TRUE,
                                                 include_sub_sector = FALSE,
-                                                index_definition = resolve_index_definition()) {
+                                                index_definition = resolve_index_definition(),
+                                                max_imputed_weight_share = NULL) {
   if (is.null(weights) || length(weights) == 0) {
     stop("Economic opportunity weights are missing or empty.")
   }
+  max_imputed_weight_share <- resolve_max_imputed_weight_share(max_imputed_weight_share)
 
   score_variables <- index_definition$pillars$economic_opportunity$categories
   if (is.null(score_variables) || length(score_variables) == 0) {
@@ -337,10 +346,24 @@ build_economic_opportunity_index_v2 <- function(theme_tables,
     absent_categories_reported = unproduced_score_variables$category
   )
 
+  index_imputation <- summarize_index_imputation(
+    index_outputs$variable_contributions,
+    include_sub_sector = include_sub_sector
+  )
+
+  economic_opportunity_index <- flag_rankable_cells(
+    index_outputs$index_tbl %>% dplyr::select(-complete_categories),
+    index_imputation,
+    index_col = "Economic_Opportunity_Index",
+    max_imputed_weight_share = max_imputed_weight_share,
+    include_sub_sector = include_sub_sector
+  )
+
   # imputed_share(_by_category): share of category scores with at least one imputed component.
   # unscored_groups / index_cells: country-cells and tech x stage cells left without any
   # observed category (NA index), and cells whose index is constant across countries.
   # index_imputation: share of each index value's weight on imputed components.
+  # rankability: rankable cells by stage under the imputed-weight threshold used.
   # unobserved_components: component groups no country is observed in, left NA.
   diagnostics <- list(
     categories_configured = score_variables_tbl$category,
@@ -362,16 +385,15 @@ build_economic_opportunity_index_v2 <- function(theme_tables,
       index_col = "Economic_Opportunity_Index",
       include_sub_sector = include_sub_sector
     ),
-    index_imputation = summarize_index_imputation(
-      index_outputs$variable_contributions,
-      include_sub_sector = include_sub_sector
+    index_imputation = index_imputation,
+    rankability = summarize_rankability(
+      economic_opportunity_index,
+      index_col = "Economic_Opportunity_Index",
+      max_imputed_weight_share = max_imputed_weight_share
     ),
     unobserved_components = unobserved_component_groups(imputed_tbl, include_sub_sector = include_sub_sector),
     year_provenance = year_provenance
   )
-
-  economic_opportunity_index <- index_outputs$index_tbl %>%
-    dplyr::select(-complete_categories)
 
   list(
     economic_opportunity_index = economic_opportunity_index,

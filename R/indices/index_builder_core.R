@@ -810,6 +810,157 @@ summarize_index_imputation <- function(variable_contributions, include_sub_secto
     )
 }
 
+# --- Rankability -----------------------------------------------------------------------
+#
+# The pillars score every country-cell the sources reach, and fill what they miss with the
+# rules in config/missing_data.yml. Many cells rest mostly on those fills (in the Oct 2026
+# build 31% of ES and 44% of EO index weight is imputed on average, and 24 EO cells are
+# imputed entirely), and the EO ordering of such cells is not robust to the fill rule. The
+# values are kept as built, so every decomposition still reconciles to the index, but a cell
+# is flagged `rankable` only when
+#
+#   1. the economy is a sovereign state (is_sovereign_economy()): territories, special
+#      administrative regions and the West Bank and Gaza are scored but not ranked; and
+#   2. at most a share tau of its index weight rests on imputed components,
+#      imputed_weight_share <= tau (summarize_index_imputation()), with tau the
+#      max_imputed_weight_share of config/rankability.yml.
+#
+# A cell with no index value is not rankable. Cross-country rankings, top-N lists and the
+# Strategic Index use rankable cells only: build_strategic_index() applies the rule itself;
+# any other ranking or top-N list of a pillar filters on `rankable`.
+
+# Correlates of War state-system codes countrycode's codelist does not carry: Serbia (345)
+# and Kosovo (347) (COW State System Membership List v2024,
+# https://correlatesofwar.org/data-sets/state-system-membership/, accessed 2026-10-07). Its
+# 195 states of 2024 are the 193 UN member states plus Kosovo and Taiwan, the definition
+# scripts/paper/fig_method.R reports the country universe with (countrycode also codes the
+# Holy See, 327, the Papal States, which the pipeline's economies do not include).
+SOVEREIGN_COW_CUSTOM_MATCH <- c(XKX = "347", SRB = "345")
+
+# TRUE for economies with a Correlates of War state-system code, FALSE for territories,
+# special administrative regions (Hong Kong, Macau), the West Bank and Gaza, aggregates and
+# names that resolve to no ISO3 code. Names go through country_name_to_iso3()
+# (R/utils/country.R), so every spelling the pipeline harmonises is classified alike.
+is_sovereign_economy <- function(country) {
+  if (length(country) == 0) {
+    return(logical())
+  }
+  if (!exists("country_name_to_iso3", mode = "function")) {
+    stop("is_sovereign_economy() needs R/utils/country.R; source it before the index builders.")
+  }
+
+  keys <- unique(as.character(country))
+  iso <- country_name_to_iso3(keys)
+  cown <- rep(NA_character_, length(keys))
+  has_iso <- !is.na(iso)
+  if (any(has_iso)) {
+    cown[has_iso] <- as.character(suppressWarnings(countrycode::countrycode(
+      iso[has_iso],
+      origin = "iso3c",
+      destination = "cown",
+      custom_match = SOVEREIGN_COW_CUSTOM_MATCH,
+      warn = FALSE
+    )))
+  }
+
+  (!is.na(cown))[match(as.character(country), keys)]
+}
+
+# The imputed-weight threshold tau: the argument when given, else the option scripts set from
+# config/rankability.yml (opportunity_security.rankability). With neither, no threshold
+# applies (tau = 1) and only sovereignty restricts the rankable cells; the builders record
+# which tau they used in diagnostics$rankability.
+resolve_max_imputed_weight_share <- function(max_imputed_weight_share = NULL) {
+  if (is.null(max_imputed_weight_share)) {
+    rule <- getOption("opportunity_security.rankability")
+    max_imputed_weight_share <- rule$max_imputed_weight_share
+  }
+  if (is.null(max_imputed_weight_share)) {
+    message(
+      "Rankability: no max_imputed_weight_share given (config/rankability.yml not loaded); ",
+      "cells are rankable when scored and sovereign, whatever their imputed weight share."
+    )
+    return(1)
+  }
+
+  tau <- suppressWarnings(as.numeric(max_imputed_weight_share))
+  if (length(tau) != 1 || is.na(tau) || tau < 0 || tau > 1) {
+    stop("max_imputed_weight_share must be a single number in [0, 1]; got ",
+         paste(format(max_imputed_weight_share), collapse = ", "), ".")
+  }
+  tau
+}
+
+# Add imputed_weight_share, rankable and rank_exclusion (why a cell is not rankable; NA when
+# it is) to a pillar's index table, keeping every row and the index values unchanged.
+# `index_imputation` is summarize_index_imputation()'s output for the same build. Shares
+# within `tolerance` of tau count as <= tau, so floating-point noise in a share of exactly
+# tau does not decide a cell.
+flag_rankable_cells <- function(index_tbl,
+                                index_imputation,
+                                index_col,
+                                max_imputed_weight_share,
+                                include_sub_sector = FALSE,
+                                tolerance = 1e-9) {
+  key_cols <- normalize_sub_sector_or_keys(c("Country", "tech", "supply_chain"), include_sub_sector)
+  require_columns(index_tbl, c(key_cols, index_col), label = "index_tbl")
+  require_columns(index_imputation, c(key_cols, "imputed_weight_share"), label = "index_imputation")
+  tau <- resolve_max_imputed_weight_share(max_imputed_weight_share)
+
+  flagged <- index_tbl %>%
+    dplyr::select(-dplyr::any_of(c("imputed_weight_share", "rankable", "rank_exclusion"))) %>%
+    dplyr::left_join(
+      index_imputation %>% dplyr::select(dplyr::all_of(c(key_cols, "imputed_weight_share"))),
+      by = key_cols,
+      relationship = "one-to-one"
+    )
+
+  scored <- !is.na(flagged[[index_col]])
+  sovereign <- is_sovereign_economy(flagged$Country)
+  share_known <- !is.na(flagged$imputed_weight_share)
+  over_threshold <- share_known & flagged$imputed_weight_share > tau + tolerance
+
+  reason <- dplyr::case_when(
+    !scored ~ "not scored",
+    !sovereign & over_threshold ~ paste0(
+      "not a sovereign economy and imputed weight share above ", format(tau)
+    ),
+    !sovereign ~ "not a sovereign economy",
+    !share_known ~ "imputed weight share unknown",
+    over_threshold ~ paste0("imputed weight share above ", format(tau)),
+    TRUE ~ NA_character_
+  )
+
+  flagged %>%
+    dplyr::mutate(
+      rankable = is.na(reason),
+      rank_exclusion = reason
+    )
+}
+
+# Rankable cells by supply-chain stage, for the builders' diagnostics.
+summarize_rankability <- function(flagged_index_tbl, index_col, max_imputed_weight_share) {
+  require_columns(
+    flagged_index_tbl,
+    c("Country", "supply_chain", index_col, "imputed_weight_share", "rankable", "rank_exclusion"),
+    label = "flagged_index_tbl"
+  )
+
+  flagged_index_tbl %>%
+    dplyr::mutate(.scored = !is.na(.data[[index_col]])) %>%
+    dplyr::group_by(.data$supply_chain) %>%
+    dplyr::summarize(
+      n_cells = dplyr::n(),
+      n_scored = sum(.data$.scored),
+      n_not_sovereign = sum(.data$.scored & grepl("not a sovereign economy", .data$rank_exclusion)),
+      n_over_threshold = sum(.data$.scored & grepl("imputed weight share above", .data$rank_exclusion)),
+      n_rankable = sum(.data$rankable),
+      n_countries_rankable = dplyr::n_distinct(.data$Country[.data$rankable]),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(max_imputed_weight_share = max_imputed_weight_share, .before = 1)
+}
+
 # Tech x stage summary of a pillar index for the builders' diagnostics. A cell is
 # "unscored" when no country in it has an observed category (every index NA), and
 # "constant" when the scored countries all share one value, so the cell cannot rank
