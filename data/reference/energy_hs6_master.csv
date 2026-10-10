@@ -433,7 +433,7 @@ Electric Grid,Midstream,Electrical Steel (GOES),722510,TRUE,TRUE,FALSE,"legacy H
 Electric Grid,Midstream,Electrical Steel (GOES),722611,TRUE,FALSE,FALSE,
 Electric Grid,Midstream,Electrical Steel (GOES),722619,TRUE,FALSE,FALSE,
 Electric Grid,Midstream,Electrical Steel (GOES),722610,TRUE,TRUE,FALSE,"legacy HS92 7226.10 (silicon-electrical steel, width < 600mm), split in HS2007"
-Electric Grid,Midstream,Grid Automation & Control Equipment,851762,TRUE,FALSE,FALSE,
+Electric Grid,Midstream,Grid Automation & Control Equipment,851762,TRUE,FALSE,TRUE,"excluded (basket review 2026-10): switching and routing apparatus (network switches, routers, modems): telecommunications and data-networking equipment whose grid use (substation and control-centre communications) is minor, like the coaxial and optical-fibre cables already excluded. It was the cell's largest code, $177.8bn, 28.4% of the Comtrade 2024 Electric Grid Midstream basket, with Hong Kong (re-exports) its third exporter. It has no HS92 code, so the Atlas market share never held it; its heading 8517 leaves the cell's feasibility mean. User decision 2026-10-09"
 Electric Grid,Midstream,Grid Automation & Control Equipment,903289,TRUE,FALSE,FALSE,"kept with caveat (basket review 2026-10): residual heading of automatic regulating or controlling instruments n.e.s.: general-purpose goods whose heading covers every end use; the technology is one use among several, not shown to be the dominant one, and has no code of its own. 5.1% of the Atlas 2023 Electric Grid Midstream basket"
 Electric Grid,Midstream,Grid Cables & Accessories,281290,TRUE,FALSE,FALSE,
 Electric Grid,Midstream,Grid Cables & Accessories,440311,FALSE,FALSE,FALSE,

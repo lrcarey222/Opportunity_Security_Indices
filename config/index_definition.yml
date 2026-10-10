@@ -261,3 +261,17 @@ variable_levels:
   Overall Investment Index: "country_tech_supply_chain"
   Overall Technological Readiness Index: "country_tech_supply_chain"
   Overall Cost Competitiveness Index: "country_tech_supply_chain"
+
+# Data rules of the Trade category (scripts/10 passes them to trade_concentration() and
+# export_feasibility(); R/categories/trade/trade_core.R).
+trade:
+  # Comtrade reporters left out of the Comtrade measures of both trade themes: exports, imports,
+  # Balassa RCA, export size and the export HHI, and so of the world aggregates of the RCA and of
+  # the HHI's export shares. A re-export hub's Comtrade exports are mostly goods made elsewhere
+  # (for Hong Kong, mainland China above all) that the producers' own exports already count; left
+  # in, Hong Kong was the largest 2024 exporter of Semiconductors Midstream (19%) and fifth in
+  # Electric Grid Midstream. The hubs' Atlas variables (market share, feasibility, deficit/GDP)
+  # stay, and the bilateral dyad matrix of the partner themes and the allied network is not
+  # filtered. User decision 2026-10-09.
+  re_export_hubs:
+    - HKG

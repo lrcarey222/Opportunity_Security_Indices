@@ -707,6 +707,24 @@ country_info <- standardize_country_info(country_info)
   # The trade themes rank and keep the economies of their roster; Taiwan is not in WDI, so it
   # is added here (add_unlisted_economies(), R/utils/country.R) rather than dropped at the join.
   trade_country_info <- add_unlisted_economies(country_info)
+
+  # The export-HHI S-curve ranks the cells of the headline technologies only (the technologies
+  # the indices score, config/coalition.yml headline_techs), so an unscored basket such as
+  # Semiconductors cannot move a scored cell's index (user decision 2026-10-09). Re-export hubs
+  # (config/index_definition.yml trade$re_export_hubs: Hong Kong) leave the Comtrade measures -
+  # exports, imports, RCA, export size and the export HHI - and their world aggregates; their
+  # Atlas variables stay.
+  trade_hhi_rank_techs <- unlist(yaml::read_yaml(file.path(repo_root, "config", "coalition.yml"))$headline_techs)
+  if (length(trade_hhi_rank_techs) == 0) {
+    stop("config/coalition.yml has no headline_techs, the ranking universe of the trade HHI index.")
+  }
+  trade_reexport_hubs <- toupper(unlist(getOption("opportunity_security.index_definition")$trade$re_export_hubs))
+  message(
+    "Trade themes: export HHI ranked across the cells of ", length(trade_hhi_rank_techs),
+    " headline technologies; re-export hubs left out of the Comtrade measures: ",
+    if (length(trade_reexport_hubs) > 0) paste(trade_reexport_hubs, collapse = ", ") else "none"
+  )
+
   trade_concentration_tbl <- trade_concentration(
     subcat = subcat,
     aec_4_data = aec_4_data,
@@ -718,7 +736,9 @@ country_info <- standardize_country_info(country_info)
     year_6 = atlas_year_6,
     year_comtrade = getOption("opportunity_security.comtrade_year"),
     include_sub_sector = include_sub_sector,
-    gdp_data = gdp_data
+    gdp_data = gdp_data,
+    hhi_rank_techs = trade_hhi_rank_techs,
+    reexport_hubs = trade_reexport_hubs
   )
   
   trade_concentration_tbl <- standardize_theme_types(trade_concentration_tbl, country_info = country_info)
@@ -741,7 +761,9 @@ country_info <- standardize_country_info(country_info)
     year_4 = atlas_year_4,
     year_6 = atlas_year_6,
     year_comtrade = getOption("opportunity_security.comtrade_year"),
-    include_sub_sector = include_sub_sector
+    include_sub_sector = include_sub_sector,
+    hhi_rank_techs = trade_hhi_rank_techs,
+    reexport_hubs = trade_reexport_hubs
   )
   export_feasibility_tbl <- standardize_theme_types(export_feasibility_tbl, country_info = country_info)
   write_processed_tbl(

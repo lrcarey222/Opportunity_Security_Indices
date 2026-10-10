@@ -226,13 +226,17 @@ trade_core_build_atlas_total_export <- function(aec_6_data, year) {
 # different variables (TRADE_THEME_VARIABLES in R/categories/trade/trade_core.R), so the
 # vintage build splits them the same way the annual pipeline does. With gdp_data the ES
 # theme also carries the net-imports-to-GDP exposure term; without it that term is absent.
+# `hhi_rank_techs` (the scored technologies) is the ranking universe of the HHI S-curve, as in
+# the annual build (trade_core_build_comtrade_hhi()). Re-export hubs are not dropped here: the
+# vintage build is Atlas end to end, and the annual build keeps the hubs' Atlas variables too.
 atlas_trade_theme <- function(aec_4_data,
                               aec_6_data,
                               subcat,
                               country_info,
                               year,
                               include_sub_sector = FALSE,
-                              gdp_data = NULL) {
+                              gdp_data = NULL,
+                              hhi_rank_techs = NULL) {
   energy_codes <- trade_core_build_energy_codes(subcat, include_sub_sector = include_sub_sector)
 
   market_share <- trade_core_build_aec_market_share(aec_6_data, energy_codes, year = year)
@@ -261,13 +265,14 @@ atlas_trade_theme <- function(aec_4_data,
     economies = country_info$iso3c
   )
 
-  hhi_tbl <- trade_core_build_comtrade_hhi(atlas_trade)
+  hhi_tbl <- trade_core_build_comtrade_hhi(atlas_trade, rank_techs = hhi_rank_techs)
   indices <- trade_core_build_indices(country_trade, hhi_tbl, country_info)
 
   tidy <- trade_core_build_tidy(
     indices$trade_indices,
     year = year,
-    include_sub_sector = include_sub_sector
+    include_sub_sector = include_sub_sector,
+    hhi_rank_techs = hhi_rank_techs
   ) %>%
     dplyr::filter(!is.na(value)) %>%
     # trade_core_build_tidy() attributes values to Comtrade; this build is Atlas-only.

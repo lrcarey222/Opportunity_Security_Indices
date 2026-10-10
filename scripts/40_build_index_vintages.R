@@ -370,7 +370,9 @@ build_varying_themes <- function(year) {
     country_info = country_info,
     year = atlas_year,
     include_sub_sector = include_sub_sector,
-    gdp_data = gdp_data
+    gdp_data = gdp_data,
+    # The HHI S-curve ranks the cells of the scored technologies only, as in scripts/10.
+    hhi_rank_techs = techs
   ) %>%
     lapply(standardize_theme_types, country_info = country_info)
 

@@ -12,7 +12,15 @@
 # Every country-level index is ranked across the country_info economies within (tech,
 # supply_chain, sub_sector) - one data year per build. HHI is a property of the world
 # market for the basket, so it is one value per cell: it moves a cell's level relative to
-# other cells but cannot rank countries inside it.
+# other cells but cannot rank countries inside it. Its S-curve is ranked across the cells of
+# the scored (headline) technologies only (`hhi_rank_techs`); a cell of another technology
+# (Semiconductors) is placed against them and cannot move them (median_scurve_ref()).
+#
+# Re-export hubs (`reexport_hubs`, config/index_definition.yml trade$re_export_hubs: Hong Kong)
+# are dropped from the Comtrade measures - exports, imports, Balassa RCA, export size and the
+# export HHI, and with them from the world aggregates of the RCA and the HHI - because their
+# Comtrade exports are mostly goods made elsewhere, already counted in the producers' exports.
+# Their Atlas variables (market share, feasibility, deficit/GDP) stay.
 
 TRADE_THEME_VARIABLES <- list(
   trade_concentration = list(
@@ -199,14 +207,23 @@ trade_core_build_aec_trade_balance <- function(aec_6_data, energy_codes, gdp_dat
     dplyr::select(country_iso3_code, tech, supply_chain, sub_sector, deficit, gdp, deficit_gdp)
 }
 
+# `exclude_reporters` (ISO3 codes; the re-export hubs) drops those reporters' rows, both flows,
+# before anything is summed, so every measure built from this table (exports, imports, RCA and
+# its world aggregates, export size, the HHI and its world shares) is without them.
 trade_core_build_comtrade_trade <- function(comtrade_data,
                                             energy_codes,
-                                            year = 2024) {
+                                            year = 2024,
+                                            exclude_reporters = NULL) {
   comtrade_data <- trade_core_filter_year(
     comtrade_data,
     year = year,
     label = "Comtrade energy trade data"
   )
+
+  if (length(exclude_reporters) > 0) {
+    comtrade_data <- comtrade_data %>%
+      dplyr::filter(!toupper(as.character(reporter_iso)) %in% toupper(as.character(exclude_reporters)))
+  }
 
   if ("partner_desc" %in% names(comtrade_data)) {
     comtrade_data <- comtrade_data %>%
@@ -274,12 +291,33 @@ trade_core_build_comtrade_rca <- function(comtrade_trade,
     dplyr::rename(export_rca = rca)
 }
 
-trade_core_build_comtrade_hhi <- function(comtrade_trade) {
-  comtrade_trade %>%
+# One HHI per cell over the exporters of the table, and HHI_index = S(-HHI) across cells.
+# `rank_techs` (the headline technologies the indices score, config/coalition.yml
+# headline_techs) is the ranking universe: their cells are ranked among themselves only, and a
+# cell of any other technology (Semiconductors, which the master carries but no index scores)
+# gets the value it would take if it alone were added to them (median_scurve_ref()). An
+# unscored basket therefore cannot move a scored cell's index, which it did when every cell of
+# the file was ranked together (completing the Semiconductors basket moved Batteries Midstream
+# from 0.290 to 0.217). NULL ranks every cell together.
+trade_core_build_comtrade_hhi <- function(comtrade_trade, rank_techs = NULL) {
+  hhi <- comtrade_trade %>%
     dplyr::group_by(tech, supply_chain, sub_sector) %>%
     dplyr::mutate(share_frac = exports / sum(exports, na.rm = TRUE)) %>%
-    dplyr::summarize(HHI = sum(share_frac^2, na.rm = TRUE), .groups = "drop") %>%
-    dplyr::mutate(HHI_index = median_scurve(-HHI))
+    dplyr::summarize(HHI = sum(share_frac^2, na.rm = TRUE), .groups = "drop")
+
+  if (is.null(rank_techs)) {
+    return(dplyr::mutate(hhi, HHI_index = median_scurve(-HHI)))
+  }
+  # trade_core_build_tidy() renames "Natural Gas" to "Gas"; match either spelling.
+  tech_key <- dplyr::if_else(hhi$tech == "Natural Gas", "Gas", hhi$tech)
+  in_ref <- tech_key %in% as.character(rank_techs)
+  if (nrow(hhi) > 0 && !any(in_ref)) {
+    warning(
+      "trade_core_build_comtrade_hhi(): no trade cell belongs to `rank_techs`, so every HHI index is NA.",
+      call. = FALSE
+    )
+  }
+  dplyr::mutate(hhi, HHI_index = median_scurve_ref(-HHI, in_ref = in_ref))
 }
 
 # `trade_balance` (trade_core_build_aec_trade_balance()) is optional so callers that do not
@@ -367,10 +405,14 @@ trade_core_build_indices <- function(country_trade, hhi_tbl, country_info) {
 # `data_years` (optional, named: atlas_6, atlas_4, comtrade) is appended to each row's
 # explanation. The table carries one Year stamp - the Comtrade year - because the overall
 # rows are grouped by Year, but the Atlas components are read at their own data years.
+# `hhi_rank_techs` and `reexport_hubs` (as given to trade_category_build_trade()) only word the
+# HHI and Comtrade explanations.
 trade_core_build_tidy <- function(trade_indices,
                                   year = 2023,
                                   include_sub_sector = FALSE,
-                                  data_years = NULL) {
+                                  data_years = NULL,
+                                  hhi_rank_techs = NULL,
+                                  reexport_hubs = NULL) {
   year_note <- function(key) {
     if (is.null(data_years) || is.null(data_years[[key]]) || is.na(data_years[[key]])) {
       return("")
@@ -380,6 +422,17 @@ trade_core_build_tidy <- function(trade_indices,
   atlas_6_note <- year_note("atlas_6")
   atlas_4_note <- year_note("atlas_4")
   comtrade_note <- year_note("comtrade")
+  # No square brackets: the "[YYYY]" year notes are parsed back out of explanations.
+  hub_note <- if (length(reexport_hubs) > 0) {
+    paste0(", re-export hubs (", paste(sort(unique(toupper(reexport_hubs))), collapse = ", "), ") excluded")
+  } else {
+    ""
+  }
+  hhi_scope <- if (is.null(hhi_rank_techs)) {
+    "across technology-stage cells"
+  } else {
+    "across the cells of the scored (headline) technologies, other cells placed against them"
+  }
 
   trade_indices %>%
     dplyr::rename(Country = country) %>%
@@ -430,11 +483,11 @@ trade_core_build_tidy <- function(trade_indices,
       ),
       explanation = dplyr::case_when(
         variable == "HHI" & data_type == "raw" ~ paste0(
-          "Herfindahl-Hirschman index of world exports of the basket across Comtrade reporters; ",
-          "one value per technology-stage cell", comtrade_note
+          "Herfindahl-Hirschman index of world exports of the basket across Comtrade reporters",
+          hub_note, "; one value per technology-stage cell", comtrade_note
         ),
         variable == "HHI" ~ paste0(
-          "S-curve of -HHI across technology-stage cells (less concentrated market scores higher); ",
+          "S-curve of -HHI ", hhi_scope, " (less concentrated market scores higher); ",
           "constant across countries within a cell", comtrade_note
         ),
         variable == "market_share" & data_type == "raw" ~ paste0(
@@ -445,7 +498,9 @@ trade_core_build_tidy <- function(trade_indices,
         ),
         variable == "exports" ~ paste0("Exports of the basket to the world, USD", comtrade_note),
         variable == "imports" ~ paste0("Imports of the basket from the world, USD", comtrade_note),
-        variable == "export_rca" ~ paste0("Balassa revealed comparative advantage in the basket", comtrade_note),
+        variable == "export_rca" ~ paste0(
+          "Balassa revealed comparative advantage in the basket", hub_note, comtrade_note
+        ),
         variable == "rca" ~ paste0("S-curve of Balassa RCA across countries within the cell", comtrade_note),
         variable == "export_size" ~ paste0(
           "S-curve of basket exports across countries within the cell", comtrade_note
@@ -515,7 +570,9 @@ trade_category_build_trade <- function(subcat,
                                        year_comtrade = 2025,
                                        include_sub_sector = FALSE,
                                        gdp_data = NULL,
-                                       theme = NULL) {
+                                       theme = NULL,
+                                       hhi_rank_techs = NULL,
+                                       reexport_hubs = NULL) {
   energy_codes <- trade_core_build_energy_codes(subcat, include_sub_sector = include_sub_sector)
 
   market_share <- trade_core_build_aec_market_share(
@@ -530,10 +587,14 @@ trade_category_build_trade <- function(subcat,
     year = year_4
   )
 
+  # Re-export hubs leave the Comtrade table here, so they are in neither the numerators nor the
+  # world aggregates of RCA (its world totals are summed over reporters present in both
+  # extracts, so the hubs' all-product exports drop out too) and the HHI.
   comtrade_trade <- trade_core_build_comtrade_trade(
     comtrade_trade,
     energy_codes,
-    year = year_comtrade
+    year = year_comtrade,
+    exclude_reporters = reexport_hubs
   )
 
   # The ES exposure term needs GDP; without it the builder still produces every other
@@ -554,7 +615,7 @@ trade_category_build_trade <- function(subcat,
     economies = country_info$iso3c
   )
 
-  hhi_tbl <- trade_core_build_comtrade_hhi(comtrade_trade)
+  hhi_tbl <- trade_core_build_comtrade_hhi(comtrade_trade, rank_techs = hhi_rank_techs)
 
   indices <- trade_core_build_indices(country_trade, hhi_tbl, country_info)
 
@@ -562,7 +623,9 @@ trade_category_build_trade <- function(subcat,
     indices$trade_indices,
     year = year_comtrade,
     include_sub_sector = include_sub_sector,
-    data_years = list(atlas_6 = year_6, atlas_4 = year_4, comtrade = year_comtrade)
+    data_years = list(atlas_6 = year_6, atlas_4 = year_4, comtrade = year_comtrade),
+    hhi_rank_techs = hhi_rank_techs,
+    reexport_hubs = reexport_hubs
   ) %>%
     dplyr::filter(!is.na(value)) %>%
     trade_core_select_theme(theme = theme) %>%

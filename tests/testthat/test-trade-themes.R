@@ -277,3 +277,138 @@ test_that("market share is the country's share of world exports of the basket", 
   expect_equal(share("NOR"), 0)
   expect_gt(share("CHN"), share("SMA"))
 })
+
+# --- HHI ranking universe and re-export hubs (user decisions 2026-10-09) ------------------
+
+test_that("the HHI index ranks the headline cells only and other cells cannot move them", {
+  # Solar HHI 0.5, Oil 1 (one exporter), Wind 1/3; Semiconductors (unscored) varies.
+  cells <- function(semis_iso, semis_x) {
+    tibble::tibble(
+      reporter_iso = c("A", "B", "A", "A", "B", "C", semis_iso),
+      tech = c("Solar", "Solar", "Oil", "Wind", "Wind", "Wind", rep("Semiconductors", length(semis_iso))),
+      supply_chain = c("Midstream", "Midstream", "Upstream", rep("Midstream", 3 + length(semis_iso))),
+      sub_sector = "All",
+      exports = c(1, 1, 5, 1, 1, 1, rep_len(semis_x, length(semis_iso)))
+    )
+  }
+  monopoly <- cells("A", 7)
+  flat <- cells(c("A", "B", "C", "D"), 1)
+  headline <- c("Solar", "Oil", "Wind")
+  idx <- function(ct, rank = headline) {
+    h <- trade_core_build_comtrade_hhi(ct, rank_techs = rank)
+    stats::setNames(h$HHI_index, h$tech)
+  }
+
+  # Headline cells: S(-HHI) over the three of them alone.
+  expect_equal(unname(idx(monopoly)[c("Oil", "Solar", "Wind")]), c(0, 0.5, 1))
+  for (ct in list(flat, monopoly[monopoly$tech != "Semiconductors", ])) {
+    expect_equal(idx(ct)[c("Oil", "Solar", "Wind")], idx(monopoly)[c("Oil", "Solar", "Wind")])
+  }
+  # Semiconductors is placed against them: tied with Oil at the bottom (r = 0.5 / 3), or above all.
+  s <- function(r) sqrt(r) / (sqrt(r) + sqrt(1 - r))
+  expect_equal(unname(idx(monopoly)["Semiconductors"]), s(0.5 / 3))
+  expect_equal(unname(idx(flat)["Semiconductors"]), 1)
+
+  # Ranked across every cell (NULL, the former rule), the unscored cell moved the scored ones.
+  expect_false(isTRUE(all.equal(idx(monopoly, NULL)[c("Oil", "Solar", "Wind")], idx(flat, NULL)[c("Oil", "Solar", "Wind")])))
+  expect_warning(idx(monopoly, "Coal"), "no trade cell belongs")
+})
+
+# Hong Kong as a re-export hub: in Comtrade it ships five times China's solar goods; in the
+# Atlas (and for its GDP) it looks like Smallland.
+hk_countries <- function() rbind(tr_countries(), data.frame(country = "Hong Kong", iso3c = "HKG"))
+hk_copy_of_sma <- function(tbl, col = "country_iso3_code") {
+  h <- tbl[tbl[[col]] == "SMA", ]
+  h[[col]] <- "HKG"
+  rbind(tbl, h)
+}
+hk_comtrade <- function() {
+  ct <- tr_comtrade()
+  h <- ct[ct$reporter_iso == "CHN", ]
+  h$reporter_iso <- "HKG"
+  h$primary_value <- 5 * h$primary_value
+  rbind(ct, h)
+}
+hk_total <- function() rbind(tr_total_export(), data.frame(ref_year = 2024L, reporter_iso = "HKG", primary_value = 9000))
+hk_gdp <- function() rbind(tr_gdp(), data.frame(iso3c = "HKG", year = 2023L, NY.GDP.MKTP.CD = 400))
+hk_build <- function(fun, hubs = NULL, comtrade = hk_comtrade(), total = hk_total()) {
+  args <- list(
+    subcat = tr_subcat(), aec_4_data = hk_copy_of_sma(tr_atlas4()), aec_6_data = hk_copy_of_sma(tr_atlas6()),
+    comtrade_trade = comtrade, comtrade_total_export = total, country_info = hk_countries(),
+    year_4 = 2023, year_6 = 2023, year_comtrade = 2024, gdp_data = hk_gdp(), reexport_hubs = hubs
+  )
+  do.call(fun, args)
+}
+
+test_that("re-export hubs leave the Comtrade measures and their world aggregates", {
+  withr::local_options(list(
+    opportunity_security.index_definition =
+      yaml::read_yaml(file.path(repo_root, "config", "index_definition.yml"))
+  ))
+  # Without the rule Hong Kong's re-exports make it the largest solar exporter.
+  eo_all <- hk_build(export_feasibility)
+  expect_equal(tr_value(eo_all, "HKG", "Solar", "export_size"), 1)
+
+  for (fun in c("trade_concentration", "export_feasibility")) {
+    with_hubs <- hk_build(get(fun), hubs = "hkg")
+    # The same as if Hong Kong had never reported to Comtrade: every other economy's exports,
+    # RCA (world aggregates) and HHI (world shares), and Hong Kong's Atlas variables.
+    never_reported <- hk_build(
+      get(fun),
+      comtrade = tr_comtrade(),
+      total = tr_total_export()
+    )
+    # (The explanations differ only in naming the excluded hub.)
+    key <- c("iso3c", "tech", "supply_chain", "variable", "data_type")
+    tidy <- function(tbl) as.data.frame(dplyr::arrange(dplyr::select(tbl, -explanation), dplyr::across(dplyr::all_of(key))))
+    expect_equal(tidy(with_hubs), tidy(never_reported), ignore_attr = TRUE)
+    expect_true(any(grepl("re-export hubs (HKG) excluded", with_hubs$explanation, fixed = TRUE)))
+    hk <- with_hubs[with_hubs$iso3c == "HKG", ]
+    expect_false(any(hk$variable %in% c("exports", "imports", "export_rca", "rca", "export_size")))
+    expect_true(all(c("market_share", "HHI") %in% hk$variable[hk$data_type == "index"]))
+  }
+
+  es <- hk_build(trade_concentration, hubs = "HKG")
+  eo <- hk_build(export_feasibility, hubs = "HKG")
+  expect_false(is.na(tr_value(es, "HKG", "Solar", "deficit_gdp")))
+  expect_false(is.na(tr_value(eo, "HKG", "Solar", "feas")))
+  # Solar HHI over China, Smallland and the United States (300, 6 and 30 of basket exports).
+  expect_equal(tr_value(es, "CHN", "Solar", "HHI", "raw"), sum((c(300, 6, 30) / 336)^2))
+  expect_equal(tr_value(eo, "CHN", "Solar", "export_size"), 1)
+})
+
+test_that("the pipeline ranks the HHI over the headline techs and drops the configured hubs", {
+  # The hubs list is configuration, not code.
+  idx_def <- yaml::read_yaml(file.path(repo_root, "config", "index_definition.yml"))
+  expect_identical(toupper(unlist(idx_def$trade$re_export_hubs)), "HKG")
+
+  # The ranking universe is config/coalition.yml headline_techs, the techs the pillars score.
+  headline <- unlist(yaml::read_yaml(file.path(repo_root, "config", "coalition.yml"))$headline_techs)
+  exprs <- parse(file.path(repo_root, "scripts", "20_build_indices.R"))
+  is_techs <- vapply(exprs, function(e) {
+    is.call(e) && identical(e[[1]], as.name("<-")) && identical(e[[2]], as.name("techs"))
+  }, logical(1))
+  expect_setequal(headline, eval(exprs[[which(is_techs)[1]]][[3]]))
+  # scripts/40 hands its own `techs` vector to the Atlas vintage build: it must be the same list.
+  exprs40 <- parse(file.path(repo_root, "scripts", "40_build_index_vintages.R"))
+  is_techs40 <- vapply(exprs40, function(e) {
+    is.call(e) && identical(e[[1]], as.name("<-")) && identical(e[[2]], as.name("techs"))
+  }, logical(1))
+  expect_true(any(is_techs40))
+  expect_setequal(headline, eval(exprs40[[which(is_techs40)[1]]][[3]]))
+
+  # scripts/10 passes both settings to both trade themes; scripts/40 the universe to its Atlas build.
+  call_texts <- function(script, fn) {
+    pd <- utils::getParseData(parse(file.path(repo_root, "scripts", script), keep.source = TRUE))
+    name_expr <- pd$parent[pd$token == "SYMBOL_FUNCTION_CALL" & pd$text == fn]
+    call_ids <- pd$parent[match(name_expr, pd$id)]
+    vapply(call_ids, function(i) utils::getParseText(pd, i), character(1))
+  }
+  for (fn in c("trade_concentration", "export_feasibility")) {
+    txt <- call_texts("10_build_themes.R", fn)
+    expect_length(txt, 1)
+    expect_match(txt, "hhi_rank_techs = trade_hhi_rank_techs", fixed = TRUE)
+    expect_match(txt, "reexport_hubs = trade_reexport_hubs", fixed = TRUE)
+  }
+  expect_match(call_texts("40_build_index_vintages.R", "atlas_trade_theme"), "hhi_rank_techs = techs", fixed = TRUE)
+})

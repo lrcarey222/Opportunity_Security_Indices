@@ -298,6 +298,16 @@ test_that("the basket review excludes codes whose dominant use is another indust
   expect_false("847989" %in% codes_in("Oil", "Midstream"))
   expect_false("260300" %in% codes_in("Batteries", "Upstream"))
   expect_false("271600" %in% long$hs6)
+  # Telecommunications and data-networking goods are not grid equipment: coaxial and optical-fibre
+  # cable, and switching and routing apparatus (8517.62, user decision 2026-10-09; 28% of the
+  # cell's Comtrade 2024 exports). No 8517 heading is left in Electric Grid Midstream.
+  expect_false(any(c("854420", "854470", "851762") %in% codes_in("Electric Grid", "Midstream")))
+  expect_false(any(startsWith(codes_in("Electric Grid", "Midstream"), "8517")))
+  routers <- master[hs6_clean_code(master$hs6) == "851762", ]
+  expect_equal(nrow(routers), 1)
+  expect_true(as.logical(routers$excluded))
+  expect_match(routers$note, "excluded (basket review 2026-10): switching and routing apparatus", fixed = TRUE)
+  expect_match(routers$note, "% of the Comtrade 2024 Electric Grid Midstream basket", fixed = TRUE)
 
   # Gas turbines stay with gas; the cells keep their technology-specific products.
   expect_true(all(c("841181", "841182", "841199") %in% codes_in("Gas", "Midstream")))
