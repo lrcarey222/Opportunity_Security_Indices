@@ -862,8 +862,28 @@ country_info <- standardize_country_info(country_info)
 
   # Theme: Cost competitiveness (IEA relative costs).
   iea_relative_costs <- read.csv(relative_costs_iea_path)
-  ilo_url <- "https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat&title=average-monthly-earnings-of-employees-by-sex-economic-activity-and-currency-annual"
-  ilo_raw <- read.csv(ilo_url)
+  # ILO average monthly earnings by economic activity (ILOSTAT EAR_EMTA_SEX_ECO_CUR_NB_A), read from
+  # the staged copy in data/raw (manifest id ilo_earnings_by_activity). It used to be read live from
+  # the ILO API on every run, which made reruns depend on the day and failed outright on 2026-10-10,
+  # when the API began returning empty responses to scripted requests. Without the staged file the
+  # script tries one download into it and stops if nothing usable comes back.
+  ilo_path <- file.path(raw_data_path, "ilo_earnings_by_activity.csv")
+  if (!file.exists(ilo_path)) {
+    ilo_url <- "https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat&title=average-monthly-earnings-of-employees-by-sex-economic-activity-and-currency-annual"
+    message("Staged ILO earnings not found; downloading to ", ilo_path, " ...")
+    old_timeout <- options(timeout = max(600, getOption("timeout")))
+    download_ok <- tryCatch(
+      utils::download.file(ilo_url, ilo_path, mode = "wb", quiet = TRUE) == 0,
+      error = function(e) FALSE
+    )
+    options(old_timeout)
+    if (!download_ok || !file.exists(ilo_path) || file.size(ilo_path) == 0) {
+      if (file.exists(ilo_path)) file.remove(ilo_path)
+      stop("ILO earnings are not staged and the download failed or came back empty: stage ",
+           "ILOSTAT EAR_EMTA_SEX_ECO_CUR_NB_A (CSV, labels) as ", ilo_path, ".")
+    }
+  }
+  ilo_raw <- read.csv(ilo_path)
   imf_lending_rates <- read.csv(imf_lending_rates_path)
   imf_ppi <- read.csv(imf_ppi_path)
   cost_competitiveness_tbl <- cost_competitiveness(

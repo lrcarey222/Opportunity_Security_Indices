@@ -1,6 +1,20 @@
 version: 2.0
 generated_by: scripts/01_generate_raw_inputs_manifest.R
 inputs:
+- id: ilo_earnings_by_activity
+  path: ilo_earnings_by_activity.csv
+  source_type: api
+  source_name: ILOSTAT, average monthly earnings of employees by sex, economic activity and currency (EAR_EMTA_SEX_ECO_CUR_NB_A)
+  url: https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: downloaded 2026-09-30 (the copy scripts/40 cached as data/processed/vintages/_cache_ilo_earnings.csv)
+  staged_from: pipeline
+  notes: Labelled CSV export of the ILOSTAT indicator (558,815 rows). Staged on 2026-10-10 after the
+    ILO API began returning empty responses to scripted requests; until then scripts/10 read it live.
+    Refresh by downloading the same URL from a browser and replacing the file.
+  required_by:
+  - scripts/10_build_themes.R
 - id: allied_comtrade_energy_data
   path: allied_comtrade_energy_data.csv
   source_type: api
