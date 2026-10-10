@@ -10,6 +10,7 @@ coalition_test_load <- function() {
   source(file.path(root, "R", "utils", "iea_critical_minerals.R"), local = FALSE)
   source(file.path(root, "R", "categories", "production", "critical_minerals_production.R"), local = FALSE)
   source(file.path(root, "R", "categories", "reserves", "reserves.R"), local = FALSE)
+  source(file.path(root, "R", "categories", "reserves", "usgs_mcs.R"), local = FALSE)
   source(file.path(root, "R", "indices", "coalition.R"), local = FALSE)
 }
 
@@ -358,8 +359,8 @@ test_that("EI mineral sheets test the minerals the IEA supply sheet does not cov
 
 test_that("reserves rows are tested at supplier_reserves_share, every other measure at supplier_share", {
   coalition_test_load()
-  expect_equal(coalition_supplier_threshold(c("ei_reserves", "uranium_resources", "atlas_export_share", "ei_production")),
-               c(0.10, 0.10, 0.05, 0.05))
+  expect_equal(coalition_supplier_threshold(c("usgs_reserves", "ei_reserves", "uranium_resources", "atlas_export_share", "ei_production")),
+               c(0.10, 0.10, 0.10, 0.05, 0.05))
   expect_equal(coalition_supplier_threshold("ei_reserves", supplier_share = 0.05, supplier_reserves_share = 0.2), 0.2)
   expect_error(coalition_supplier_threshold("ei_reserves", supplier_reserves_share = 0), "supplier_reserves_share")
 
@@ -374,22 +375,22 @@ test_that("reserves rows are tested at supplier_reserves_share, every other meas
     iso3 = c("RRR", "RRR", "SSS", "TTT", "TTT", "UUU", "VVV"),
     tech = c("Wind", "Oil", "Batteries", "Nuclear", "Nuclear", "Gas", "Oil"),
     supply_chain = "Upstream",
-    measure = c("ei_reserves", "ei_production", "ei_reserves", "uranium_resources", "uranium_mine_production",
+    measure = c("usgs_reserves", "ei_production", "usgs_reserves", "uranium_resources", "uranium_mine_production",
                 "ei_reserves", "atlas_export_share"),
     mineral = c("Rare Earths", NA, "Graphite", NA, NA, NA, NA),
-    world_share = c(0.227, 0.039, 0.08, 0.10, 0.06, 0.20, 0.06),
+    world_share = c(0.146, 0.039, 0.08, 0.10, 0.06, 0.20, 0.06),
     is_aggregate = FALSE
   )
   out <- derive_coalition_tiers(blocs, gdp, data.frame(iso3 = character(), agreement = character()), supplier)
   row <- function(i) out[out$iso3 == i, ]
 
-  # RRR: a reserves holder (22.7%) with 3.9% of production -> partner by the reserves leg alone.
+  # RRR: a reserves holder (14.6%) with 3.9% of production -> partner by the reserves leg alone.
   expect_equal(row("RRR")$tier, "partner")
   expect_equal(row("RRR")$routes, "supplier: reserves")
   expect_true(row("RRR")$route_supplier && row("RRR")$route_supplier_reserves)
   expect_equal(row("RRR")$max_supplier_share, 0.039) # flow measures only, read against supplier_share
-  expect_equal(row("RRR")$max_reserves_share, 0.227)
-  expect_match(row("RRR")$supplier_cells, "Wind Upstream (ei_reserves Rare Earths 22.7%)", fixed = TRUE)
+  expect_equal(row("RRR")$max_reserves_share, 0.146)
+  expect_match(row("RRR")$supplier_cells, "Wind Upstream (usgs_reserves Rare Earths 14.6%)", fixed = TRUE)
   expect_match(row("RRR")$reason, "major reserves holder")
   # SSS: 8% of reserves would pass the flow bar but not the reserves bar.
   expect_equal(row("SSS")$tier, "none")
@@ -554,6 +555,79 @@ test_that("uranium resources are shares of the listed countries in one cost cate
   expect_equal(tiers$routes[tiers$iso3 == "BRA"], "supplier: reserves")
   expect_error(major_supplier_shares(uranium_resources = ur, techs = "Nuclear"), "uranium_resources_variable")
   expect_error(major_supplier_shares(ei_reserves = coalition_test_reserves_sheets(), techs = "Oil"), "mineral_demand")
+})
+
+# The MCS commodity table as scripts/13 reads it (all text), for two minerals.
+coalition_test_mcs <- function() {
+  rows <- function(commodity, unit, country, value) {
+    data.frame(
+      Commodity = commodity, Country = country, Statistics = "Reserves",
+      Statistics_detail = ifelse(country == "World total", "Reserves: rounded", "Reserves"),
+      Unit = unit, Year = "2025", Value = value, Notes = "", stringsAsFactors = FALSE
+    )
+  }
+  rbind(
+    rows("Graphite (Natural)", "metric tons",
+         c("China", "Brazil", "Madagascar", "Ukraine", "Korea, Republic of", "World total"),
+         c("100,000,000", "74,000,000", "27,000,000", "s", "1,800,000", "310,000,000")),
+    rows("Nickel", "metric tons",
+         c("Indonesia", "Brazil", "New Caledonia", "United States", "Other countries", "World total"),
+         c("62,000,000", "16,000,000", "7,100,000", "W", ">9,100,000", ">140,000,000"))
+  )
+}
+
+coalition_test_usgs <- function() {
+  usgs_mcs_reserves(
+    coalition_test_mcs(),
+    specs = Filter(function(s) s$tech_name %in% c("Graphite", "Nickel"), reserves_usgs_specs())
+  )
+}
+
+test_that("USGS reserves are shares of the world total, mapped like the mining measures", {
+  coalition_test_load()
+  demand <- data.frame(Mineral = c("Graphite", "Graphite", "Graphite", "Nickel", "Nickel"),
+                       tech = c("Batteries", "Electric Vehicles", "Heat Pumps", "Electric Vehicles", "Wind"),
+                       share_24 = c(0.18, 0.82, 0.002, 0.9, 0.005), stringsAsFactors = FALSE)
+  techs <- c("Batteries", "Electric Vehicles", "Wind")
+  r <- coalition_shares_usgs_reserves(coalition_test_usgs(), demand, techs = techs)
+  share <- function(i, t, m) r$world_share[r$iso3 == i & r$tech == t & r$mineral == m]
+
+  expect_equal(unique(r$measure), "usgs_reserves")
+  expect_equal(unique(r$supply_chain), "Upstream")
+  expect_equal(unique(r$year), 2025L)
+  # Graphite: the World total (310 Mt) holds Ukraine's unquantified reserves, so it is the world.
+  expect_equal(share("BRA", "Batteries", "Graphite"), 74 / 310)
+  expect_equal(share("MDG", "Electric Vehicles", "Graphite"), 27 / 310)
+  # Nickel: the listed rows (62 + 16 + 7.1 + 9.1 = 94.2 Mt) sit under the ">140 Mt" floor.
+  expect_equal(share("BRA", "Electric Vehicles", "Nickel"), 16 / 140)
+  expect_equal(share("NCL", "Electric Vehicles", "Nickel"), 7.1 / 140)
+  # Holders USGS does not quantify have no share; aggregates are never holders.
+  expect_false(any(r$iso3 %in% c("UKR", "USA")))
+  expect_false(anyNA(r$iso3))
+  # The demand floor (1%) drops Heat Pumps (0.2% of graphite) and Wind (0.5% of nickel).
+  expect_false(any(r$tech == "Heat Pumps"))
+  expect_false(any(r$tech == "Wind"))
+  expect_equal(unique(r$unit), "Thousand tonnes")
+  expect_match(r$measure_label[1], "^USGS Mineral Commodity Summaries 2026: (Graphite|Nickel) reserves at end-2025")
+  expect_equal(anyDuplicated(r[c("iso3", "tech", "mineral")]), 0)
+
+  # In major_supplier_shares(): fuels from EI, minerals from USGS, each at the reserves bar.
+  fuels_only <- Filter(function(sh) sh$resource %in% c("Oil", "Gas", "Coal"), coalition_test_reserves_sheets())
+  s <- major_supplier_shares(mineral_demand = demand, ei_reserves = fuels_only, usgs_reserves = coalition_test_usgs(),
+                             techs = c(techs, "Oil"))
+  major <- function(i, m) unique(s$major[s$iso3 == i & s$measure == m])
+  expect_equal(unique(s$threshold), 0.10)
+  expect_true(major("BRA", "usgs_reserves"))   # graphite 23.9%, nickel 11.4%
+  expect_false(major("MDG", "usgs_reserves"))  # graphite 8.7%: below the reserves bar
+  expect_false(major("NCL", "usgs_reserves"))  # nickel 5.1%
+  expect_true(major("VEN", "ei_reserves"))     # oil 30%
+  # The same mineral from both sources would be tested twice: stop.
+  expect_error(
+    major_supplier_shares(mineral_demand = demand, ei_reserves = coalition_test_reserves_sheets(),
+                          usgs_reserves = coalition_test_usgs(), techs = techs),
+    "both usgs_reserves and ei_reserves"
+  )
+  expect_error(major_supplier_shares(usgs_reserves = coalition_test_usgs(), techs = techs), "mineral_demand")
 })
 
 test_that("the agreements reference file is sourced and matches config/coalition.yml", {

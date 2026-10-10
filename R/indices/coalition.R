@@ -24,7 +24,10 @@
 #       (Nuclear Upstream; Red Book identified resources < USD 260/kgU, the Reserves theme's
 #       measure). Reserves are a stock, not supply (a holder supplies only once it mines), hence
 #       a bar twice that of the flow measures. It is the same partner route as (b), with its own
-#       threshold (coalition_supplier_threshold()), and is recorded separately.
+#       threshold (coalition_supplier_threshold()), and is recorded separately. The sources are
+#       the Reserves theme's (scripts/10): USGS Mineral Commodity Summaries for the minerals
+#       (measure usgs_reserves), the EI Statistical Review for the fuels (ei_reserves) and the Red
+#       Book for uranium (uranium_resources).
 # - none: no route.
 #
 # EU node. The 27 EU member states share one node of the allied network (eu_code, "EUU", the
@@ -37,10 +40,11 @@
 # Pure functions (no IO). They use R/utils/country.R (country_name_to_iso3,
 # standardize_country_names, is_aggregate_or_residual), R/utils/iea_critical_minerals.R
 # (harmonize_mineral_names, iea_critical_minerals_supply_stage, iea_critical_minerals_base_year,
-# iea_critical_minerals_year_col) and, for the EI mineral and reserves sheets,
-# R/categories/production/critical_minerals_production.R
-# (critical_minerals_production_resolve_val_col) and R/categories/reserves/reserves.R
-# (reserves_resolve_val_col), which the caller sources.
+# iea_critical_minerals_year_col) and, for the EI mineral and reserves sheets and the USGS
+# reserves, R/categories/production/critical_minerals_production.R
+# (critical_minerals_production_resolve_val_col), R/categories/reserves/reserves.R
+# (reserves_resolve_val_col) and R/categories/reserves/usgs_mcs.R (usgs_mcs_world_reserves),
+# which the caller sources.
 
 COALITION_TIERS <- c("core", "partner", "none")
 # Route labels of coalition_tbl$routes. "supplier" is the supplier route through a production,
@@ -49,7 +53,7 @@ COALITION_TIERS <- c("core", "partner", "none")
 COALITION_ROUTES <- c("core", "agreement", "supplier", "supplier: reserves")
 # Measures of major_supplier_shares() that are stocks (reserves, identified resources) rather
 # than flows. They are tested at supplier_reserves_share instead of supplier_share.
-COALITION_RESERVES_MEASURES <- c("ei_reserves", "uranium_resources")
+COALITION_RESERVES_MEASURES <- c("usgs_reserves", "ei_reserves", "uranium_resources")
 
 # Columns of a major_supplier_shares() table.
 COALITION_SUPPLIER_COLUMNS <- c(
@@ -338,7 +342,9 @@ coalition_shares_uranium <- function(uranium_production, year = NULL) {
 # supplier_reserves_share). A fuel in `fuels` (proved reserves at end-2020, the last year EI
 # published them) maps to its own technology; a mineral (reserves "At end of <year>", USGS data)
 # to the technologies that use it, through the same link and floor as the mining measures
-# (coalition_mineral_links()).
+# (coalition_mineral_links()). Since the Reserves theme moved its minerals to USGS MCS
+# (coalition_shares_usgs_reserves()), reserves_specs() lists the fuel sheets only, so scripts/13
+# passes fuels here; a mineral sheet is still read if passed.
 #
 # `sheets`: one element per sheet, list(sheet, resource = the spec's tech_name, nm_col, val_col,
 # data_year (optional; else the year in the value column's name), unit (optional), data = the
@@ -430,6 +436,74 @@ coalition_shares_ei_reserves <- function(sheets,
     }
   }
   dplyr::bind_rows(out)
+}
+
+# USGS Mineral Commodity Summaries reserves of the critical minerals (usgs_mcs_reserves() on the MCS
+# commodity table, the rows the Reserves theme reads in scripts/10): each country's share of world
+# reserves, Upstream of the technologies that use the mineral (coalition_mineral_links(), the link
+# and floor of the mining measures), measure "usgs_reserves", for the reserves leg of the supplier
+# route (tested at supplier_reserves_share).
+#
+# The world is usgs_mcs_world_reserves(): the larger of USGS's rounded "World total" and the sum
+# of the listed rows, "Other countries" included, so it holds the residual the theme drops (as the
+# EI reader's "Total World" row does). Holders USGS does not quantify ("NA", "W", "s") get no row:
+# they have no share to test. "Other countries" and "World total" are never holders.
+coalition_shares_usgs_reserves <- function(usgs_reserves,
+                                           mineral_demand,
+                                           techs,
+                                           min_demand_share = 0.01) {
+  coalition_require_columns(
+    usgs_reserves,
+    c("tech", "Country", "ISO3166_alpha3", "row_type", "value", "unit", "basis", "data_year", "edition"),
+    "usgs_reserves"
+  )
+  links <- coalition_mineral_links(mineral_demand, techs = techs, min_demand_share = min_demand_share)
+  world <- usgs_mcs_world_reserves(usgs_reserves)
+
+  holders <- usgs_reserves[usgs_reserves$row_type == "country" & !is.na(usgs_reserves$value), , drop = FALSE]
+  rows <- data.frame(
+    iso3 = coalition_clean_codes(holders$ISO3166_alpha3),
+    country = as.character(holders$Country),
+    resource = as.character(holders$tech),
+    mineral = harmonize_mineral_names(holders$tech),
+    value = as.numeric(holders$value),
+    world = world$world[match(holders$tech, world$tech)],
+    unit = as.character(holders$unit),
+    basis = as.character(holders$basis),
+    year = as.integer(holders$data_year),
+    edition = as.integer(holders$edition),
+    stringsAsFactors = FALSE
+  )
+  if (anyNA(rows$iso3)) {
+    stop("usgs_reserves country rows without an ISO3 code: ", paste(unique(rows$country[is.na(rows$iso3)]), collapse = ", "))
+  }
+  if (anyNA(rows$world) || any(rows$world <= 0)) {
+    stop("usgs_reserves: no positive world reserves for ", paste(unique(rows$resource[is.na(rows$world) | rows$world <= 0]), collapse = ", "))
+  }
+
+  out <- dplyr::inner_join(rows, links, by = "mineral", relationship = "many-to-many")
+  if (nrow(out) == 0) {
+    return(coalition_empty_supplier_tbl())
+  }
+  coalition_supplier_rows(
+    iso3 = out$iso3,
+    country = out$country,
+    tech = out$tech,
+    supply_chain = "Upstream",
+    measure = "usgs_reserves",
+    measure_label = paste0(
+      "USGS Mineral Commodity Summaries ", out$edition, ": ", out$resource, " reserves at end-",
+      out$year, " (", out$basis, ")"
+    ),
+    year = out$year,
+    value = out$value,
+    unit = out$unit,
+    world_share = out$value / out$world,
+    source = paste0("U.S. Geological Survey, Mineral Commodity Summaries ", out$edition,
+                    " (World Mine Production and Reserves)"),
+    mineral = out$mineral,
+    mineral_demand_share = out$mineral_demand_share
+  )
 }
 
 # Identified recoverable uranium resources (OECD-NEA/IAEA Red Book Table 1.2a,
@@ -649,12 +723,16 @@ coalition_shares_trade <- function(trade_tbl, techs, stages = c("Upstream", "Mid
 # - cleantech_midstream: Solar, Wind, Batteries and Green Hydrogen Midstream manufacturing
 #   capacity, EU as a bloc (coalition_shares_cleantech());
 # - trade_tbl: export shares of every tech x stage HS6 basket (coalition_shares_trade());
-# - ei_reserves + mineral_demand: EI reserves of minerals (Upstream of the technologies that use
-#   them) and of oil, gas and coal (coalition_shares_ei_reserves()), measure "ei_reserves";
+# - usgs_reserves + mineral_demand: USGS MCS reserves of the critical minerals (usgs_mcs_reserves(),
+#   Upstream of the technologies that use them; coalition_shares_usgs_reserves()), measure
+#   "usgs_reserves";
+# - ei_reserves + mineral_demand: EI reserves of oil, gas and coal (coalition_shares_ei_reserves();
+#   mineral sheets too, if passed), measure "ei_reserves". A mineral both reserves inputs carry
+#   stops: it would be tested twice, on two vintages;
 # - uranium_resources + uranium_resources_variable: Red Book identified uranium resources, Nuclear
 #   Upstream (coalition_shares_uranium_resources()), measure "uranium_resources".
 # Restricted to `techs` and `stages`. `threshold` is the row's bar (coalition_supplier_threshold():
-# supplier_reserves_share for the two reserves measures, supplier_share otherwise) and `major` is
+# supplier_reserves_share for the reserves measures, supplier_share otherwise) and `major` is
 # TRUE where a country-level (not aggregate) world share reaches it. Aggregate rows (the EU in EI
 # and the IEA manufacturing data) are kept for reference and the EU weights' coverage check, never
 # for the test.
@@ -667,6 +745,7 @@ major_supplier_shares <- function(critical = NULL,
                                   trade_tbl = NULL,
                                   ei_reserves = NULL,
                                   uranium_resources = NULL,
+                                  usgs_reserves = NULL,
                                   techs,
                                   stages = c("Upstream", "Midstream"),
                                   supplier_share = 0.05,
@@ -713,11 +792,26 @@ major_supplier_shares <- function(critical = NULL,
   if (!is.null(trade_tbl)) {
     parts[[length(parts) + 1L]] <- coalition_shares_trade(trade_tbl, techs = techs, stages = stages)
   }
+  usgs_part <- ei_part <- coalition_empty_supplier_tbl()
+  if (!is.null(usgs_reserves)) {
+    if (is.null(mineral_demand)) stop("usgs_reserves needs mineral_demand (reserves_build_mineral_demand_clean()).")
+    usgs_part <- coalition_shares_usgs_reserves(
+      usgs_reserves, mineral_demand, techs = techs, min_demand_share = mineral_min_demand_share
+    )
+    parts[[length(parts) + 1L]] <- usgs_part
+  }
   if (!is.null(ei_reserves)) {
     if (is.null(mineral_demand)) stop("ei_reserves needs mineral_demand (reserves_build_mineral_demand_clean()).")
-    parts[[length(parts) + 1L]] <- coalition_shares_ei_reserves(
+    ei_part <- coalition_shares_ei_reserves(
       ei_reserves, mineral_demand, techs = techs, min_demand_share = mineral_min_demand_share
     )
+    parts[[length(parts) + 1L]] <- ei_part
+  }
+  # A mineral read from both would be tested twice, on two vintages of the same USGS data.
+  twice <- intersect(stats::na.omit(usgs_part$mineral), stats::na.omit(ei_part$mineral))
+  if (length(twice) > 0) {
+    stop("major_supplier_shares: reserves of ", paste(twice, collapse = ", "),
+         " come from both usgs_reserves and ei_reserves; pass each mineral from one source.")
   }
   if (!is.null(uranium_resources)) {
     if (is.null(uranium_resources_variable)) {

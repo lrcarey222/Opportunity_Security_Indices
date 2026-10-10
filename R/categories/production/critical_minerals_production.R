@@ -14,8 +14,8 @@
 # silently read the wrong sheet. The value column is resolved from the sheet for the same
 # reason — see critical_minerals_production_resolve_val_col().
 #
-# These are the same "P-R" (production and reserves) sheets reserves_specs() reads; the two
-# take different columns off them, so a rename upstream needs fixing in both places.
+# These are the EI "P-R" (production and reserves) sheets; only their production columns are
+# read since the Reserves theme took mineral reserves from USGS MCS (2026-10-09).
 critical_minerals_production_specs <- function() {
   list(
     list(sheet = "Cobalt P-R", skip = 2, nm_col = "Thousand tonnes", tech_name = "Cobalt", unit_desc = "Thousand tonnes"),

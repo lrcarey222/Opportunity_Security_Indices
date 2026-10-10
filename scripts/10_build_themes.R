@@ -63,6 +63,7 @@ source(file.path(repo_root, "R", "categories", "foreign_dependency", "foreign_de
 source(file.path(repo_root, "R", "categories", "energy_imports", "import_dependence.R"))
 source(file.path(repo_root, "R", "categories", "reserves", "reserves.R"))
 source(file.path(repo_root, "R", "categories", "reserves", "uranium.R"))
+source(file.path(repo_root, "R", "categories", "reserves", "usgs_mcs.R"))
 source(file.path(repo_root, "R", "categories", "trade", "trade_concentration.R"))
 source(file.path(repo_root, "R", "categories", "technology_demand", "future_demand.R"))
 source(file.path(repo_root, "R", "categories", "trade", "export_feasibility.R"))
@@ -137,6 +138,11 @@ raw_manifest <- read_raw_inputs_manifest(manifest_path)
 # other candidate is present.
 raw_path <- file.path(raw_data_path, "ei_stat_review_world_energy.csv")
 reserves_excel_path <- file.path(raw_data_path, "ei_stat_review_world_energy_wide.xlsx")
+# Critical-mineral reserves: USGS Mineral Commodity Summaries 2026, the commodity table of the
+# ScienceBase data release (doi:10.5066/P1WKQ63T) staged under this name. Pinned rather than
+# resolved by vintage: the 2025 world-data file beside it has another layout, and the errata
+# usgs_mcs_reserves() applies belong to one edition, so a new edition is a deliberate update.
+usgs_mcs_path <- file.path(raw_data_path, "MCS2026_World_Data.csv")
 critical_minerals_path <- resolve_versioned_raw_input(
   raw_data_path,
   # Top-level alternation, no capture group: the manifest scanner in scripts/utils
@@ -293,6 +299,7 @@ if (!file.exists(uranium_production_path)) {
 missing_files <- c(
   raw_path,
   reserves_excel_path,
+  usgs_mcs_path,
   critical_minerals_path,
   cleantech_midstream_path,
   iea_cleantech_guide_path,
@@ -421,10 +428,30 @@ country_info <- standardize_country_info(country_info)
   critical <- read_iea_critical_minerals(critical_minerals_path)
   mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
 
+  # Reserves sources (user decision, 2026-10-09): EI proved reserves for oil, gas and coal
+  # (reserves_specs()), USGS MCS for the nine critical minerals, the Red Book for uranium.
   reserve_inputs <- lapply(reserves_specs(), function(spec) {
     spec$data <- readxl::read_excel(reserves_excel_path, sheet = spec$sheet, skip = spec$skip)
     spec
   })
+
+  # The USGS table is Windows-1252 and prints "NA" as a value code ("not available"), so it is
+  # read as text and every code is parsed explicitly by usgs_mcs_reserves().
+  usgs_reserves <- usgs_mcs_reserves(readr::read_csv(
+    usgs_mcs_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    locale = readr::locale(encoding = "windows-1252"),
+    na = character(),
+    progress = FALSE
+  ))
+  usgs_unquantified <- usgs_mcs_unquantified(usgs_reserves)
+  if (nrow(usgs_unquantified) > 0) {
+    # Listed holders without a figure enter the theme as missing (imputed), not as zeros.
+    message(
+      "USGS MCS reserves listed without a figure (scored as missing, not zero): ",
+      paste0(usgs_unquantified$tech, " ", usgs_unquantified$ISO3166_alpha3, " (", usgs_unquantified$status, ")", collapse = ", ")
+    )
+  }
 
   # Nuclear Upstream: Red Book uranium resources ("Nuclear Reserves") and mine production,
   # used by the reserves, critical minerals production and production depth themes.
@@ -433,7 +460,8 @@ country_info <- standardize_country_info(country_info)
 
   reserves_tbl <- reserves(
     ei, reserve_inputs, mineral_demand_clean,
-    uranium_resources = uranium_resources
+    uranium_resources = uranium_resources,
+    usgs_reserves = usgs_reserves
   )
   reserves_tbl <- standardize_theme_types(reserves_tbl, country_info = country_info)
   write_processed_tbl(reserves_tbl, "reserves_tbl", processed_dir)

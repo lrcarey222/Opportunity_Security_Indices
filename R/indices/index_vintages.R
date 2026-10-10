@@ -311,7 +311,7 @@ index_vintage_theme_spec <- function() {
     "solar_pv_potential",              "Reserves",                   FALSE, "Global Solar Atlas resource potential, no time dimension",
     "wind_potential",                  "Reserves",                   FALSE, "Global Wind Atlas resource potential, no time dimension",
     "geothermal_potential",            "Reserves",                   FALSE, "Geothermal LCOE/potential snapshot, no time dimension",
-    "reserves",                        "Reserves",                   FALSE, "EI reserves sheets publish end-of-latest-year stocks only",
+    "reserves",                        "Reserves",                   FALSE, "EI (fuels), USGS MCS (minerals) and Red Book reserves are end-of-latest-year stocks only",
     "foreign_dependency",              "Foreign Dependency",         FALSE, "IEA critical minerals and clean-tech shares, single release",
     "critical_minerals_processing",    "Foreign Dependency",         FALSE, "IEA critical minerals, single release",
     "critical_minerals_production",    "Production",                 FALSE, "EI production sheets, single release",

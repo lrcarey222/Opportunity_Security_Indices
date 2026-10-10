@@ -19,10 +19,10 @@ coalition:
   # Production, refining, manufacturing capacity and exports.
   supplier_share: 0.05
   # Reserves (user decision, 2026-10-09): a stock is not yet supply, so the bar is twice the flow
-  # bar. On the Oct-2026 data the reserves leg adds one partner, Brazil (rare earths 22.7%, graphite
-  # 21.8% of the EI world totals; USGS MCS 2026 gives 14.6% and 23.9%); the non-member holders that
-  # are not China-leaning all sit below 10% (Madagascar graphite 8.0%, Mozambique 7.4%, Tanzania
-  # 5.3%; Kuwait oil 5.9%; Niger uranium 5.7%; New Caledonia nickel 4.6%).
+  # bar. On the Oct-2026 data the reserves leg adds one partner, Brazil (graphite 23.9%, manganese
+  # 16.7%, rare earths 14.6%, nickel 11.4% of world reserves, USGS MCS 2026); the non-member holders
+  # that are not China-leaning all sit below 10% (Madagascar graphite 8.7%, Mozambique 8.1%,
+  # Tanzania 5.8%; Kuwait oil 5.9%; Niger uranium 5.7%; New Caledonia nickel 5.1%).
   supplier_reserves_share: 0.10
   us_bloc: U.S.-leaning
   china_bloc: China-leaning
@@ -76,12 +76,14 @@ supplier_measures:
   # (manganese) are tested on the minerals they mine (review, Oct 2026). Still untested for want of
   # supply data: chromium, molybdenum, silver and silicon.
   ei_mineral_production: true
-  # World reserves, Upstream, tested at supplier_reserves_share (measures ei_reserves and
-  # uranium_resources): the sheets the Reserves theme reads (reserves_specs(): EI mineral reserves
-  # at end-2025, USGS data, mapped to technologies as the mining measures are; oil, gas and coal
-  # proved reserves at end-2020, each to its own technology), as shares of each sheet's "Total
-  # World" row, and Red Book identified uranium resources < USD 260/kgU (the theme's cost
-  # category, URANIUM_DEFAULT_COST_CATEGORY) as shares of the sum of the listed countries.
+  # World reserves, Upstream, tested at supplier_reserves_share (measures usgs_reserves, ei_reserves
+  # and uranium_resources), from the Reserves theme's sources: USGS MCS 2026 reserves of the nine
+  # critical minerals at end-2025 (data/raw/MCS2026_World_Data.csv, usgs_mcs_reserves(); mapped to
+  # technologies as the mining measures are; shares of the larger of USGS's World total and the
+  # listed rows), EI oil, gas and coal proved reserves at end-2020 (reserves_specs(), each to its
+  # own technology; shares of each sheet's "Total World" row), and Red Book identified uranium
+  # resources < USD 260/kgU (the theme's cost category, URANIUM_DEFAULT_COST_CATEGORY) as shares of
+  # the sum of the listed countries.
   reserves: true
   # EI Statistical Review production series, Upstream of each technology.
   ei_production_vars:

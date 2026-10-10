@@ -1,5 +1,13 @@
 # Reserves theme builder functions.
 #
+# Sources (user decision, 2026-10-09): oil, gas and coal from the EI Statistical Review sheets
+# of reserves_specs(); the nine critical minerals of RESERVES_MINERALS from USGS Mineral
+# Commodity Summaries (usgs_mcs.R: reserves_usgs_specs(), usgs_mcs_reserves()); uranium from
+# the Red Book (uranium.R). EI's mineral sheets copy older USGS data and fold smaller holders
+# into "Rest of World", so the theme reads USGS directly; reserves() still builds a mineral
+# from an EI sheet when one is passed in `reserve_inputs` (the layout the tests and older
+# workbooks use), but never the same mineral from both.
+#
 # Sheets are addressed by name rather than by position: the EI workbook adds and drops
 # sheets between releases (the 2026 edition inserted "Data Centre Demand" and "SAF prices"
 # ahead of the mineral block), so positional indices silently read the wrong sheet.
@@ -7,6 +15,16 @@
 # `data_year` records the vintage of the values where the column name does not carry it. EI
 # stopped updating fossil proved reserves after end-2020, so oil, gas and coal are end-2020
 # even in the 2026 edition; the explanation text says so rather than implying the theme year.
+
+# The minerals whose reserves are rolled up to technologies through their demand shares
+# (reserves_build_critical_mineral_reserves()); every other reserve table is a fuel's own.
+RESERVES_MINERALS <- c(
+  "Cobalt", "Lithium", "Graphite", "Rare Earths", "Copper", "Manganese", "Nickel", "Zinc", "PGMs"
+)
+
+# The EI sheets the theme reads: the fuels' proved reserves. The mineral "P-R" sheets left this
+# list for USGS MCS (above); critical_minerals_production_specs() still reads their production
+# columns.
 reserves_specs <- function() {
   list(
     list(
@@ -35,87 +53,14 @@ reserves_specs <- function() {
       tech_name = "Coal",
       unit_desc = "Million tonnes",
       data_year = 2020
-    ),
-    list(
-      sheet = "Cobalt P-R",
-      skip = 2,
-      nm_col = "Thousand tonnes",
-      val_col = "At end of 2025",
-      tech_name = "Cobalt",
-      unit_desc = "Thousand tonnes"
-    ),
-    list(
-      sheet = "Lithium P-R",
-      skip = 2,
-      nm_col = "Thousand tonnes of Lithium content",
-      val_col = "At end of 2025",
-      tech_name = "Lithium",
-      unit_desc = "Thousand tonnes"
-    ),
-    list(
-      sheet = "Natural Graphite P-R",
-      skip = 2,
-      nm_col = "Thousand tonnes",
-      val_col = "At end of 2025",
-      tech_name = "Graphite",
-      unit_desc = "Thousand tonnes"
-    ),
-    list(
-      sheet = "Rare Earth metals P-R",
-      skip = 2,
-      nm_col = "Thousand tonnes1",
-      val_col = "At end of 2025",
-      tech_name = "Rare Earths",
-      unit_desc = "Thousand tonnes"
-    ),
-    list(
-      sheet = "Copper P-R",
-      skip = 2,
-      nm_col = "Thousand tonnes",
-      val_col = "At end of 2025",
-      tech_name = "Copper",
-      unit_desc = "Thousand tonnes"
-    ),
-    list(
-      sheet = "Manganese P-R",
-      skip = 2,
-      nm_col = "Thousand tonnes",
-      val_col = "At end of 2025",
-      tech_name = "Manganese",
-      unit_desc = "Thousand tonnes"
-    ),
-    list(
-      sheet = "Nickel P-R",
-      skip = 2,
-      nm_col = "Thousand tonnes",
-      val_col = "At end of 2025",
-      tech_name = "Nickel",
-      unit_desc = "Thousand tonnes"
-    ),
-    list(
-      sheet = "Zinc P-R",
-      skip = 2,
-      nm_col = "Thousand tonnes",
-      val_col = "At end of 2025",
-      tech_name = "Zinc",
-      unit_desc = "Thousand tonnes"
-    ),
-    list(
-      # Renamed from "Platinum Group Metals P-R" and restated in kilograms in the 2026 edition.
-      sheet = "PGM",
-      skip = 2,
-      nm_col = "Kilogram",
-      val_col = "At end of 2025",
-      tech_name = "PGMs",
-      unit_desc = "Kilograms"
     )
   )
 }
 
 # Resolve the reserves value column on a mineral P-R sheet.
 #
-# The mineral sheets label reserves "At end of <year>", so the pinned name in
-# reserves_specs() goes stale every release. When the pinned column is absent, fall back to
+# The EI mineral sheets (when passed in the older layout) label reserves "At end of <year>",
+# so a pinned column name goes stale every release. When the pinned column is absent, fall back to
 # the latest "At end of <year>" column actually present and say so, rather than erroring on
 # a column name that only differs by vintage.
 reserves_resolve_val_col <- function(sheet_data, val_col, sheet_id = NULL) {
@@ -328,6 +273,97 @@ reserves_build_reserve_table <- function(sheet_data,
     )
 }
 
+# `country_reference` plus every economy in `iso3` it lacks, named by country_name_from_iso3().
+# USGS lists holders the EI roster omits (MCS 2026: Ghana's manganese, Mali's lithium,
+# Greenland's rare earths, North Korea's graphite); an inner join on the EI roster, as
+# reserves_build_reserve_table() does, would score them as holding nothing.
+reserves_extend_roster <- function(country_reference, iso3) {
+  country_reference <- country_reference %>%
+    dplyr::filter(!is.na(ISO3166_alpha3), nzchar(ISO3166_alpha3)) %>%
+    dplyr::distinct(ISO3166_alpha3, Country)
+  extra <- setdiff(unique(normalize_iso3c(iso3)), country_reference$ISO3166_alpha3)
+  extra <- extra[!is.na(extra)]
+  dplyr::bind_rows(
+    country_reference,
+    tibble::tibble(ISO3166_alpha3 = extra, Country = country_name_from_iso3(extra))
+  )
+}
+
+# One mineral's theme rows from usgs_mcs_reserves(): the variable, columns and zero-anchored
+# S-curve reserves_build_reserve_table() builds from an EI sheet, completed over
+# `country_reference` (reserves_extend_roster()). Only country rows are holders; "Other
+# countries" and "World total" are not ranked.
+#
+# A reported zero ("—": Germany, Japan and the Republic of Korea refine copper but hold no
+# copper reserves) scores 0, the anchor's value: ranked with the anchor it would share its
+# averaged rank and score above an unlisted economy. Unquantified holders ("NA", "W", "s"; see
+# usgs_mcs_parse_value()) stay NA, so the reserves missing-data rule scores them like an
+# unlisted economy and counts them as imputed rather than as observed zeros.
+reserves_build_usgs_table <- function(usgs_rows,
+                                      country_reference,
+                                      year = 2025,
+                                      gamma = 0.5) {
+  tech_name <- unique(usgs_rows$tech)
+  if (length(tech_name) != 1) {
+    stop("reserves_build_usgs_table() takes the rows of one mineral; got ", paste(tech_name, collapse = ", "))
+  }
+  describe <- function(x) paste(unique(x), collapse = "/")
+  holders <- usgs_rows[usgs_rows$row_type == "country", , drop = FALSE]
+
+  index <- rep(NA_real_, nrow(holders))
+  index[!is.na(holders$value) & holders$value <= 0] <- 0
+  positive <- !is.na(holders$value) & holders$value > 0
+  if (any(positive)) {
+    index[positive] <- median_scurve(c(0, holders$value[positive]), gamma = gamma)[-1]
+  }
+
+  source_label <- paste0("USGS Mineral Commodity Summaries ", describe(usgs_rows$edition))
+  raw_explanation <- paste0(
+    tech_name, " reserves (", describe(usgs_rows$unit), ", ", describe(usgs_rows$basis), ") at end-",
+    describe(usgs_rows$data_year), ", ", source_label, " (World Mine Production and Reserves)"
+  )
+
+  tibble::tibble(
+    ISO3166_alpha3 = holders$ISO3166_alpha3,
+    raw_value = holders$value,
+    index_value = index
+  ) %>%
+    tidyr::complete(ISO3166_alpha3 = country_reference$ISO3166_alpha3) %>%
+    dplyr::left_join(country_reference, by = "ISO3166_alpha3") %>%
+    tidyr::pivot_longer(
+      c(raw_value, index_value),
+      names_to = "data_type",
+      values_to = "value"
+    ) %>%
+    dplyr::mutate(
+      tech = tech_name,
+      supply_chain = "Upstream",
+      category = "Reserves",
+      variable = paste(tech_name, "Reserves"),
+      data_type = dplyr::if_else(data_type == "raw_value", "raw", "index"),
+      Year = year,
+      source = source_label,
+      explanation = dplyr::if_else(
+        data_type == "raw",
+        raw_explanation,
+        "Percent-rank of reserves across reporting countries (plus a zero anchor)"
+      )
+    ) %>%
+    dplyr::select(
+      Country,
+      ISO3166_alpha3,
+      tech,
+      supply_chain,
+      category,
+      variable,
+      data_type,
+      value,
+      Year,
+      source,
+      explanation
+    )
+}
+
 reserves_build_critical_mineral_reserves <- function(mineral_reserves,
                                                      mineral_demand_clean,
                                                      country_reference,
@@ -421,6 +457,12 @@ reserves_build_clean_table <- function(reserve_tables, country_reference) {
     dplyr::select(Country, ISO3166_alpha3, dplyr::everything())
 }
 
+# `reserve_inputs`: EI sheets (reserves_specs() with each sheet's `data`), fuels and, in the
+# older layout, minerals. `usgs_reserves` (usgs_mcs_reserves()) supplies minerals from USGS;
+# a mineral both supply stops (decide which source scores it). The mineral tables and their
+# technology rollups are completed over the EI roster plus every economy USGS lists
+# (reserves_extend_roster()), and so are the fuel tables, which only gain NA rows.
+#
 # `uranium_resources` (data/reference/uranium_resources.csv, see R/categories/reserves/uranium.R)
 # adds "Nuclear Reserves". It is bound after the clean table rather than completed with it:
 # the Red Book lists producers the EI roster omits (Namibia, Niger), and completing every
@@ -431,8 +473,35 @@ reserves <- function(ei,
                      year = 2025,
                      gamma = 0.5,
                      uranium_resources = NULL,
-                     uranium_cost_category = URANIUM_DEFAULT_COST_CATEGORY) {
+                     uranium_cost_category = URANIUM_DEFAULT_COST_CATEGORY,
+                     usgs_reserves = NULL) {
   country_reference <- reserves_build_country_reference(ei, year = year)
+  roster <- country_reference
+
+  usgs_tables <- list()
+  if (!is.null(usgs_reserves)) {
+    ei_minerals <- intersect(
+      vapply(reserve_inputs, function(spec) as.character(spec$tech_name), character(1)),
+      unique(usgs_reserves$tech)
+    )
+    if (length(ei_minerals) > 0) {
+      stop(
+        "Reserves of ", paste(ei_minerals, collapse = ", "),
+        " come from both an EI sheet and USGS; pass each mineral from one source."
+      )
+    }
+    usgs_reserves <- tibble::as_tibble(usgs_reserves)
+    holders <- usgs_reserves$row_type == "country"
+    roster <- reserves_extend_roster(country_reference, usgs_reserves$ISO3166_alpha3[holders])
+    usgs_tables <- lapply(
+      split(usgs_reserves, usgs_reserves$tech),
+      reserves_build_usgs_table,
+      country_reference = roster,
+      year = year,
+      gamma = gamma
+    )
+    names(usgs_tables) <- NULL
+  }
 
   reserve_tables <- lapply(reserve_inputs, function(spec) {
     reserves_build_reserve_table(
@@ -451,10 +520,12 @@ reserves <- function(ei,
 
   mineral_reserves <- lapply(
     reserve_tables,
-    function(tbl) if (tbl$tech[[1]] %in% c("Cobalt", "Lithium", "Copper", "Rare Earths", "Graphite",
-                                          "Manganese", "Zinc", "Nickel", "PGMs")) tbl else NULL
+    function(tbl) if (tbl$tech[[1]] %in% RESERVES_MINERALS) tbl else NULL
   )
-  mineral_reserves <- Filter(Negate(is.null), mineral_reserves)
+  mineral_reserves <- c(Filter(Negate(is.null), mineral_reserves), usgs_tables)
+  if (length(mineral_reserves) == 0) {
+    stop("reserves() has no mineral reserves: pass usgs_reserves (usgs_mcs_reserves()) or EI mineral sheets.")
+  }
 
   energy_reserves <- lapply(
     reserve_tables,
@@ -465,13 +536,13 @@ reserves <- function(ei,
   critical_min_reserves <- reserves_build_critical_mineral_reserves(
     mineral_reserves = mineral_reserves,
     mineral_demand_clean = mineral_demand_clean,
-    country_reference = country_reference,
+    country_reference = roster,
     year = year
   )
 
   clean_table <- reserves_build_clean_table(
     reserve_tables = c(list(critical_min_reserves), energy_reserves),
-    country_reference = country_reference
+    country_reference = roster
   )
 
   if (!is.null(uranium_resources)) {

@@ -48,12 +48,15 @@ source(local({
 #   data/reference otherwise), wdi_gdp.csv, the IEA Critical Minerals Dataset (newest vintage, as
 #   scripts/10 resolves it), ei_stat_review_world_energy.csv, ei_stat_review_world_energy_wide.xlsx
 #   (the mineral "P-R" sheets of critical_minerals_production_specs() with
-#   supplier_measures$ei_mineral_production, and the reserves sheets of reserves_specs() with
+#   supplier_measures$ei_mineral_production, and the fuel reserves sheets of reserves_specs() with
 #   supplier_measures$reserves, read as scripts/10 reads them), iea_cleantech_Midstream.csv,
-#   uranium_production.csv and (with supplier_measures$reserves) uranium_resources.csv (both with
-#   the data/reference fallback of scripts/10).
-#   The reserves leg reads the raw sheets rather than reserves_tbl.rds: the theme keeps country
-#   rows only, without the "Total World" row a world share needs (coalition_shares_ei_reserves()).
+#   uranium_production.csv and, with supplier_measures$reserves, MCS2026_World_Data.csv (USGS
+#   Mineral Commodity Summaries 2026 commodity data release: the critical-mineral reserves, read
+#   as scripts/10 reads them) and uranium_resources.csv (both uranium files with the
+#   data/reference fallback of scripts/10).
+#   The reserves leg reads the raw sources rather than reserves_tbl.rds: the theme keeps country
+#   rows only, without the world total a world share needs (coalition_shares_ei_reserves(),
+#   coalition_shares_usgs_reserves()).
 # Outputs (data/processed, or the directory in OPSI_COALITION_OUT_DIR):
 # - coalition_tbl.rds: one row per economy: iso3, country, tier (core / partner / none), routes,
 #   bloc, gdp_usd, eu_member, network_node (EUU for the 27 EU members) and node_tier, plus the
@@ -72,6 +75,7 @@ source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "iea_critical_minerals.R"))
 source(file.path(repo_root, "R", "categories", "reserves", "reserves.R"))
 source(file.path(repo_root, "R", "categories", "reserves", "uranium.R"))
+source(file.path(repo_root, "R", "categories", "reserves", "usgs_mcs.R"))
 source(file.path(repo_root, "R", "categories", "production", "critical_minerals_production.R"))
 source(file.path(repo_root, "R", "indices", "coalition.R"))
 
@@ -123,6 +127,8 @@ if (length(supplier_reserves_share) != 1) {
   stop("config/coalition.yml has no coalition$supplier_reserves_share (the reserves bar of the supplier route).")
 }
 ei_wide_path <- file.path(raw_data_path, "ei_stat_review_world_energy_wide.xlsx")
+# The critical-mineral reserves of the Reserves theme (scripts/10 reads the same file).
+usgs_mcs_path <- file.path(raw_data_path, "MCS2026_World_Data.csv")
 critical_minerals_path <- resolve_versioned_raw_input(
   raw_data_path,
   # Same pattern and fallback as scripts/10 (top-level alternation, no capture group, for the
@@ -138,7 +144,7 @@ trade_path <- file.path(processed_dir, "trade_concentration_tbl.rds")
 required <- c(
   agreements_path, uranium_production_path, gdp_path, ei_path, cleantech_midstream_path,
   critical_minerals_path, bloc_path, trade_path, if (use_ei_minerals || use_reserves) ei_wide_path,
-  if (use_reserves) uranium_resources_path
+  if (use_reserves) c(uranium_resources_path, usgs_mcs_path)
 )
 missing_inputs <- required[!file.exists(required)]
 if (length(missing_inputs) > 0) {
@@ -170,8 +176,19 @@ if (length(missing_inputs) > 0) {
       )
     })
   }
-  # World reserves: the sheets, skips and value columns of the Reserves theme (scripts/10), and the
-  # Red Book uranium resources in the theme's cost category.
+  # World reserves, from the Reserves theme's sources (scripts/10): USGS MCS for the critical
+  # minerals, the EI sheets, skips and value columns of reserves_specs() for oil, gas and coal, and
+  # the Red Book uranium resources in the theme's cost category. The USGS table is Windows-1252 and
+  # prints "NA" as a value code, so it is read as text and parsed by usgs_mcs_reserves().
+  usgs_reserves <- if (use_reserves) {
+    usgs_mcs_reserves(readr::read_csv(
+      usgs_mcs_path,
+      col_types = readr::cols(.default = readr::col_character()),
+      locale = readr::locale(encoding = "windows-1252"),
+      na = character(),
+      progress = FALSE
+    ))
+  }
   ei_reserves <- if (use_reserves) {
     lapply(reserves_specs(), function(spec) {
       list(
@@ -206,6 +223,7 @@ if (length(missing_inputs) > 0) {
     trade_tbl = trade_tbl,
     ei_reserves = ei_reserves,
     uranium_resources = uranium_resources,
+    usgs_reserves = usgs_reserves,
     techs = techs,
     stages = stages,
     supplier_share = supplier_share,
@@ -353,7 +371,7 @@ if (length(missing_inputs) > 0) {
 
   rm(
     bloc_tbl, geo_coalition_tbl, trade_tbl, agreements_tbl, gdp_raw, ei, cleantech_midstream,
-    uranium_production, uranium_resources, critical, mineral_demand, ei_minerals, ei_reserves, tier_args,
+    uranium_production, uranium_resources, critical, mineral_demand, ei_minerals, ei_reserves, usgs_reserves, tier_args,
     sensitivity_args, sensitivity_tbl, core, partners, partner_routes, nodes, eu_rows, excluded, china_partners, changed,
     basis_counts, country_names, unnamed, no_source, unknown_agreements
   )
@@ -362,7 +380,7 @@ rm(list = intersect(c(
   "coalition_settings", "tier_cfg", "measures_cfg", "eu_cfg", "weights_cfg", "techs", "stages",
   "eu_members", "eu_code", "out_dir", "agreements_path", "uranium_production_path", "uranium_resources_path",
   "gdp_path", "ei_path", "cleantech_midstream_path", "use_ei_minerals", "use_reserves", "supplier_share",
-  "supplier_reserves_share", "ei_wide_path", "critical_minerals_path", "bloc_path", "geo_coalition_path",
+  "supplier_reserves_share", "ei_wide_path", "usgs_mcs_path", "critical_minerals_path", "bloc_path", "geo_coalition_path",
   "trade_path", "required", "missing_inputs", "geo_core", "reserves_major", "reserves_detail", "reserves_only",
   "reserves_also", "below_bar"
 ), ls()))
