@@ -390,7 +390,7 @@ test_that("scripts/30 turns the node policy term off and solves every coalition 
   expect_true(assigned("network_node_all_members"))
   expect_equal(assigned("network_node_labels"), c(EUU = "European Union"))
   # lambda from the Oct 2026 recalibration on the 34-node set (scratch_final/network study)
-  expect_equal(assigned("network_diversity_lambda"), 0.92)
+  expect_equal(assigned("network_diversity_lambda"), 0.95)
   expect_equal(assigned("network_supply_chains"), c("Upstream", "Midstream"))
 
   call <- Filter(function(e) {

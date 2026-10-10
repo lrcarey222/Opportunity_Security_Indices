@@ -408,25 +408,24 @@ network_supply_chains <- c("Upstream", "Midstream")
 # allied_network_observed_hhi.csv).
 # Extra-EU, because trade among the EU members is the bundled node's internal trade, as a country's
 # domestic sales are; counting it would make the EU the leading exporter of nearly every stage.
-# lambda = 0.92 is the pick of the 2026-10-09 calibration on the final node set (56 coalition
-# members, 31 core and 25 partners, plus the 6 other EU members: 36 nodes with the EU bundled; caps
-# on, node policy term off, Upstream and Midstream, MILP for every stage, 300 s stage limit, 30 cap
-# passes, the settings of this script; EO/ES/FS/OP of the 2026-10-09 full rerun; 2024 trade on the
-# reviewed HS6 basket): target 0.1396 (7.16 equivalent exporters, 13 basket stages); grid 0 to 1.5
-# with a 0.01 step from 0.85 to 0.98: 0.90 -> 0.1418 and 0.91 -> 0.1433 (above), 0.92 -> 0.1382
-# (7.24 effective producers, 10 producers per stage at the median, no producer at 0.40, 26% of
-# producer slots at the 0.05 floor), 1.0 -> 0.1309. Every grid run solved all 22 stages by MILP
-# with no fallback and the caps loop converged. Study: osi-worktrees/scratch_final/network (log.md
-# "Lambda study (36 nodes, final)", lambda_study_g36.csv), outside the repository. Earlier picks:
-# 0.94 on the 34-node set of 2026-10-08 (before the supplier route added ZAF, GHA and GAB and the
-# basket review removed electricity from the grid basket, which took CHE out and Electric Grid
-# Upstream out of the observed target); 1.5 on the hand-picked 23-member coalition with the node
-# policy term on. The pick is knife-edge: the designed median is not monotone in lambda (0.86 ->
-# 0.1441, 0.87 -> 0.1494) because the caps loop changes the barred sets, and neighbouring grid
-# points differ by up to 0.005, more than the pick's margin to the target. Recalibrate on the inputs
-# of each full rerun (rebuilding the study's trade matrix on the current basket); the run warns
-# below when the designed median exceeds the observed one.
-network_diversity_lambda <- 0.92
+# lambda = 0.95 is the pick of the 2026-10-09 evening calibration on the final node set (57 coalition
+# members, 31 core and 26 partners with Brazil, plus the 6 other EU members: 37 nodes with the EU
+# bundled; caps on, node policy term off, Upstream and Midstream, MILP for every stage, 300 s stage
+# limit, 30 cap passes, the settings of this script; inputs of the evening full rerun: USGS MCS 2026
+# mineral reserves, the rebuilt Comtrade energy-trade file, Hong Kong out of the Comtrade export
+# measures, the Electric Grid Upstream copper/aluminium basket): target 0.1352 (7.40 equivalent
+# exporters, 14 basket stages); grid 0 to 1.5 with a 0.01 step from 0.85 to 1.0: 0.93 -> 0.1390 and
+# 0.94 -> 0.1370 (above), 0.95 -> 0.1349 (7.41 effective producers, 10 producers per stage at the
+# median, max share 0.278), 0.96 -> 0.1312, 1.0 -> 0.1300. Every grid run solved all 22 stages by
+# MILP with no fallback and the caps loop converged. Study: osi-worktrees/scratch_final/network
+# (log.md "Lambda study (37 nodes, final)", lambda_study_g37.csv), outside the repository. Earlier
+# picks: 0.92 (36 nodes, morning of 2026-10-09), 0.94 (34 nodes, 2026-10-08), 1.5 (the hand-picked
+# 23-member coalition with the node policy term on). The pick is knife-edge: its margin to the
+# target is 0.0003 and the designed median is not monotone in lambda (0.89 -> 0.1409 but 0.90 ->
+# 0.1429; 0.98 -> 0.1305 but 0.99 -> 0.1315) because the caps loop changes the barred sets.
+# Recalibrate on the inputs of each full rerun (rebuilding the study's trade matrix on the current
+# basket); the run warns below when the designed median exceeds the observed one.
+network_diversity_lambda <- 0.95
 # Share step of the MILP's tangent approximation of HHI (error <= step^2 / 4 = 2.5e-5 per producer)
 network_diversity_breakpoint_step <- 0.01
 # Interior shares move top-5 membership in more stages per pass than the bang-bang design did, so
