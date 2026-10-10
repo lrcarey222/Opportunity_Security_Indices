@@ -166,7 +166,7 @@ trade_core_pick_gdp <- function(gdp_data, year) {
 
 # Net imports of the basket relative to GDP, the ES trade exposure term. Atlas flows are
 # used rather than Comtrade because the Atlas reconciles reporter and partner declarations,
-# so it covers ~235 economies against Comtrade's ~130 reporters, and it is the source and
+# so it covers ~235 economies against Comtrade's ~143 reporters, and it is the source and
 # year of the other country-level ES trade component (market share).
 #
 # deficit_gdp = (imports - exports) / GDP: positive is a deficit. The index is ranked on its

@@ -424,17 +424,54 @@ comtrade_dyads_validate <- function(df, economies, allow_self = TRUE) {
 
 ## Reporter-World totals for comtrade_energy_trade.csv -----------------------------------------
 #
-# comtrade_energy_trade.csv (scripts/05_ingest_sources.R) holds each reporter's trade with the
-# World in the basket codes, one call per reporter and flow. A partner = "everything" request of
-# this pull returns the same World record (partner code 0) beside the partner rows; the combine
-# step drops it. So when codes join the basket after both pulls, a supplementary pull of those
-# codes here fills comtrade_energy_trade.csv as well, without ~400 more calls. On the codes both
-# files hold for 2024 the two agree to the dollar on 89% of rows; the rest differ by Comtrade's
-# revisions between the pulls (median 2%).
+# comtrade_energy_trade.csv holds each reporter's trade with the World in the basket codes; the
+# trade themes (scripts/10) take basket exports, Balassa RCA and the export HHI from it, with
+# comtrade_total_export.csv (each reporter's all-product exports) as the RCA denominator.
+# scripts/05_ingest_sources.R pulls it one call per reporter and flow (~400 calls) on the product
+# list of its day: the file staged 2026-09-30 lacked 60 of the 256 basket codes and 13 of the
+# economies with 2024 data (DR Congo among them). A partner = "everything" request of this pull
+# returns the same World record (partner code 0) beside the partner rows, so the energy_trade
+# stage derives the file from those World rows instead: every code and every reporter of the pull,
+# no further data calls. On the keys both pulls held for 2024 the two agreed to the dollar on 87% of
+# rows; the rest are Comtrade's revisions between the pulls (median 1%), and the newer release is
+# the one kept.
 
-# Columns comtrade_energy_trade.csv carries as text although they look numeric (write.csv quoted
-# them); read them as character so a rewrite of the file leaves its existing rows unchanged.
+# Columns comtrade_energy_trade.csv and comtrade_total_export.csv carry as text although they look
+# numeric (write.csv quoted them); read them as character so a rewrite leaves the rows it keeps
+# unchanged.
 COMTRADE_ENERGY_TRADE_TEXT_COLUMNS <- c("cmd_code", "period", "mos_code")
+
+# `df` with the columns of `template`, in its order and with its column classes (a column `df`
+# lacks is NA), so a rewritten file reads back as before. The value and weight columns are always
+# double: an extract whose weights happen to be small whole numbers reads as integer, and a larger
+# value would then become NA.
+comtrade_energy_trade_conform <- function(df, template) {
+  df <- as.data.frame(df, stringsAsFactors = FALSE)
+  like <- function(x, proto) {
+    switch(class(proto)[1],
+      character = as.character(x),
+      integer = as.integer(x),
+      numeric = as.numeric(x),
+      logical = as.logical(x),
+      x
+    )
+  }
+  cols <- lapply(names(template), function(col) {
+    value <- if (col %in% names(df)) df[[col]] else rep(NA, nrow(df))
+    if (col %in% COMTRADE_DYADS_VALUE_COLUMNS) as.numeric(value) else like(value, template[[col]])
+  })
+  as.data.frame(stats::setNames(cols, names(template)), stringsAsFactors = FALSE, optional = TRUE)
+}
+
+# Equal trade values, up to the 15 significant digits write.csv keeps (a value read back from the
+# staged file differs from the API's in the last bits). NA equals NA only.
+comtrade_energy_trade_same_value <- function(a, b) {
+  a <- as.numeric(a)
+  b <- as.numeric(b)
+  same <- abs(a - b) <= 1e-12 * pmax(abs(a), abs(b))
+  same[is.na(same)] <- FALSE
+  same | (is.na(a) & is.na(b))
+}
 
 # The World rows of one raw chunk (comtradr tidy columns), as API totals over customs procedure,
 # mode of transport and second partner, with the flow_direction column the energy-trade file has.
@@ -452,54 +489,141 @@ comtrade_dyads_world_totals <- function(raw) {
   df
 }
 
-# Add to the energy-trade table the World totals of codes it does not hold at all. A code it
-# already holds keeps its rows, so no basket total it feeds moves. The new rows keep the file's
-# year(s) and, flow by flow, its reporters: a reporter that published after the energy pull would
-# otherwise be in the new codes only and shift their shares against the rest of the basket.
-# Columns and column types follow `existing`. attr(, "added") counts the rows added per code and
-# flow.
-comtrade_energy_trade_add_codes <- function(existing, world) {
-  required <- c("reporter_iso", "ref_year", "flow_code", "cmd_code")
-  if (is.null(world) || nrow(world) == 0) world <- existing[0, , drop = FALSE]
+# The energy-trade table derived from the World rows of the dyad pull, in the table's year(s).
+# `pulled_codes` are the codes the chunk directories requested (their codes.txt): for each of them
+# every reporter-flow the World rows hold comes from the World rows, so a code and a reporter are
+# never mixed from two releases (a reporter that re-filed in a newer HS edition, as Georgia did for
+# 2024, would otherwise hold both editions' codes for the same goods). A key the table held that
+# the newer release no longer has is dropped with the rest of that reporter-flow's old rows. Rows
+# of codes the pull did not request, and of reporter-flows the World rows lack entirely, are kept
+# as they are, so no reporter is lost. Taiwan's Comtrade code S19 becomes TWN, as in the dyad file
+# (or is dropped). Columns and column types follow `existing`.
+#
+# attr(, "changes"): `keys` counts the table's keys by fate (unchanged / revised value / new /
+# dropped, and kept rows of codes outside the pull or of reporter-flows the pull lacks); `by_flow`
+# gives reporters, codes and rows per flow before and after.
+comtrade_energy_trade_from_world <- function(existing, world, pulled_codes, taiwan = c("TWN", "drop")) {
+  taiwan <- match.arg(taiwan)
+  required <- c("reporter_iso", "ref_year", "flow_code", "cmd_code", "primary_value")
+  if (is.null(world) || nrow(world) == 0) stop("No World rows to derive the energy-trade table from.")
   missing <- setdiff(required, intersect(names(existing), names(world)))
-  if (length(missing) > 0) stop("Energy-trade merge needs column(s): ", paste(missing, collapse = ", "))
+  if (length(missing) > 0) stop("Energy-trade derivation needs column(s): ", paste(missing, collapse = ", "))
 
-  held <- unique(comtrade_dyads_pad_hs6(existing$cmd_code))
   years <- unique(as.integer(existing$ref_year))
-  flow_reporters <- unique(paste(existing$flow_code, existing$reporter_iso))
+  pulled_codes <- unique(comtrade_dyads_pad_hs6(pulled_codes))
 
   new <- as.data.frame(world, stringsAsFactors = FALSE)
   new$cmd_code <- comtrade_dyads_pad_hs6(new$cmd_code)
-  new <- new[!new$cmd_code %in% held & as.integer(new$ref_year) %in% years &
-               paste(new$flow_code, new$reporter_iso) %in% flow_reporters, , drop = FALSE]
-
-  key <- paste(new$reporter_iso, new$ref_year, new$flow_code, new$cmd_code)
-  if (anyDuplicated(key) > 0) {
-    stop(sum(duplicated(key)), " duplicate reporter x year x flow x code World rows; were chunks fetched twice?")
-  }
-
-  like <- function(x, template) {
-    switch(class(template)[1],
-      character = as.character(x),
-      integer = as.integer(x),
-      numeric = as.numeric(x),
-      logical = as.logical(x),
-      x
-    )
-  }
-  for (col in names(existing)) {
-    value <- if (col %in% names(new)) new[[col]] else rep(NA, nrow(new))
-    new[[col]] <- like(value, existing[[col]])
-  }
-  new <- new[order(new$flow_code, new$reporter_iso, new$cmd_code), names(existing), drop = FALSE]
-
-  out <- rbind(existing, new)
-  rownames(out) <- NULL
-  added <- if (nrow(new) == 0) {
-    data.frame(cmd_code = character(), flow_code = character(), rows = integer())
+  new$reporter_iso <- as.character(new$reporter_iso)
+  if (identical(taiwan, "TWN")) {
+    new$reporter_iso <- comtrade_dyads_recode_taiwan(new$reporter_iso)
   } else {
-    stats::aggregate(list(rows = rep(1L, nrow(new))), by = list(cmd_code = new$cmd_code, flow_code = new$flow_code), FUN = sum)
+    new <- new[new$reporter_iso != COMTRADE_DYADS_TAIWAN_ISO, , drop = FALSE]
   }
-  attr(out, "added") <- added
+  new <- new[as.integer(new$ref_year) %in% years & new$cmd_code %in% pulled_codes, , drop = FALSE]
+  if (nrow(new) == 0) {
+    stop("The World rows hold no requested code in the energy-trade year(s) ", paste(sort(years), collapse = ", "), ".")
+  }
+  if (!"flow_direction" %in% names(new)) {
+    new$flow_direction <- unname(c(M = "import", X = "export")[as.character(new$flow_code)])
+  }
+  key_of <- function(df) paste(df$reporter_iso, as.integer(df$ref_year), df$flow_code, comtrade_dyads_pad_hs6(df$cmd_code))
+  new_key <- key_of(new)
+  if (anyDuplicated(new_key) > 0) {
+    stop(sum(duplicated(new_key)), " duplicate reporter x year x flow x code World rows; were chunks fetched twice?")
+  }
+
+  flow_of <- function(df) paste(as.integer(df$ref_year), df$flow_code, df$reporter_iso)
+  ex_key <- key_of(existing)
+  in_pull <- comtrade_dyads_pad_hs6(existing$cmd_code) %in% pulled_codes
+  in_world <- flow_of(existing) %in% flow_of(new)
+  replaced <- in_pull & in_world
+
+  out <- rbind(
+    comtrade_energy_trade_conform(existing[!replaced, , drop = FALSE], existing),
+    comtrade_energy_trade_conform(new, existing)
+  )
+  out <- out[order(as.integer(out$ref_year), out$flow_code, out$reporter_iso, comtrade_dyads_pad_hs6(out$cmd_code)), , drop = FALSE]
+  rownames(out) <- NULL
+
+  old_value <- stats::setNames(as.numeric(existing$primary_value[replaced]), ex_key[replaced])
+  both <- intersect(names(old_value), new_key)
+  same <- comtrade_energy_trade_same_value(old_value[both], new$primary_value[match(both, new_key)])
+  keys <- c(
+    unchanged = sum(same),
+    revised = sum(!same),
+    new = sum(!new_key %in% ex_key),
+    dropped = sum(!ex_key[replaced] %in% new_key),
+    kept_outside_pull = sum(!in_pull),
+    kept_reporter_flows = sum(in_pull & !in_world)
+  )
+  per_flow <- function(df, label) {
+    flows <- sort(unique(as.character(df$flow_code)))
+    counts <- data.frame(
+      flow_code = flows,
+      reporters = vapply(flows, function(f) length(unique(df$reporter_iso[df$flow_code == f])), integer(1)),
+      codes = vapply(flows, function(f) length(unique(comtrade_dyads_pad_hs6(df$cmd_code[df$flow_code == f]))), integer(1)),
+      rows = vapply(flows, function(f) sum(df$flow_code == f), integer(1)),
+      stringsAsFactors = FALSE, row.names = NULL
+    )
+    stats::setNames(counts, c("flow_code", paste0(c("reporters", "codes", "rows"), "_", label)))
+  }
+  by_flow <- merge(per_flow(existing, "before"), per_flow(out, "after"), by = "flow_code", all = TRUE)
+  attr(out, "changes") <- list(keys = keys, by_flow = by_flow)
+  out
+}
+
+# The all-product (TOTAL) export rows of a fetch (comtradr tidy columns, one World record per
+# reporter and year) in place of `existing`'s rows of comtrade_total_export.csv for the same
+# reporters and years; reporters the fetch did not return keep their rows. The table is the
+# denominator of the trade themes' RCA, so it should hold every export reporter of the
+# energy-trade table, from the same release. Taiwan's S19 becomes TWN (or is dropped). Columns
+# and column types follow `existing`. attr(, "changes"): reporters refreshed (of them with a
+# revised value), added and kept.
+comtrade_total_export_refresh <- function(existing, fetched, years, taiwan = c("TWN", "drop")) {
+  taiwan <- match.arg(taiwan)
+  required <- c("reporter_iso", "ref_year", "flow_code", "cmd_code", "partner_code", "customs_code",
+                "mot_code", "partner2code", "primary_value")
+  new <- if (is.null(fetched)) existing[0, , drop = FALSE] else as.data.frame(fetched, stringsAsFactors = FALSE)
+  missing <- setdiff(required, intersect(names(existing), names(new)))
+  if (length(missing) > 0) stop("Total-export refresh needs column(s): ", paste(missing, collapse = ", "))
+  years <- as.integer(years)
+
+  # Only the API totals (customs procedure, mode of transport and second partner), as the file holds.
+  num <- function(x) suppressWarnings(as.numeric(x))
+  total <- !is.na(new$reporter_iso) & num(new$partner_code) == 0 & as.character(new$flow_code) == "X" &
+    toupper(as.character(new$cmd_code)) == "TOTAL" & as.integer(new$ref_year) %in% years &
+    as.character(new$customs_code) == "C00" & num(new$mot_code) == 0 & num(new$partner2code) == 0
+  total[is.na(total)] <- FALSE
+  new <- new[total, , drop = FALSE]
+  new$reporter_iso <- as.character(new$reporter_iso)
+  if (identical(taiwan, "TWN")) {
+    new$reporter_iso <- comtrade_dyads_recode_taiwan(new$reporter_iso)
+  } else {
+    new <- new[new$reporter_iso != COMTRADE_DYADS_TAIWAN_ISO, , drop = FALSE]
+  }
+  key_of <- function(df) paste(df$reporter_iso, as.integer(df$ref_year))
+  new_key <- key_of(new)
+  if (anyDuplicated(new_key) > 0) {
+    stop(sum(duplicated(new_key)), " duplicate reporter x year TOTAL export rows in the fetch.")
+  }
+
+  ex_key <- key_of(existing)
+  replaced <- ex_key %in% new_key
+  out <- rbind(
+    comtrade_energy_trade_conform(existing[!replaced, , drop = FALSE], existing),
+    comtrade_energy_trade_conform(new, existing)
+  )
+  out <- out[order(as.integer(out$ref_year), out$reporter_iso), , drop = FALSE]
+  rownames(out) <- NULL
+
+  revised <- !comtrade_energy_trade_same_value(existing$primary_value[replaced],
+                                               new$primary_value[match(ex_key[replaced], new_key)])
+  attr(out, "changes") <- c(
+    refreshed = sum(replaced),
+    revised = sum(revised),
+    added = sum(!new_key %in% ex_key),
+    kept = sum(!replaced)
+  )
   out
 }

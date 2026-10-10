@@ -61,20 +61,32 @@ source(local({
 # Codes added to the basket after the main pull are fetched as a supplementary pull of just those
 # codes (COMTRADE_DYADS_CODES) into a chunk directory of its own, with the main pull's getDA files
 # copied in so the reporters are the same, and combined with the main directory
-# (COMTRADE_DYADS_COMBINE_DIRS). The supplementary chunks also carry each reporter's World row,
-# which the energy_trade stage adds to comtrade_energy_trade.csv for the codes that file lacks
-# (the Electric Grid Upstream copper and aluminium codes were added this way on 2026-10-09).
+# (COMTRADE_DYADS_COMBINE_DIRS).
+#
+# Every chunk also carries each reporter's World row (partner code 0), the record the country-level
+# trade themes read from comtrade_energy_trade.csv. The energy_trade stage derives that file from
+# the World rows of all the chunk directories (every basket code and every reporter of the pull, in
+# the file's year) and refreshes the RCA denominator, comtrade_total_export.csv, for the same
+# reporters with a few TOTAL-export calls, instead of the ~400 calls of a scripts/05 energy pull.
+# Done on 2026-10-09: the scripts/05 file lacked 60 basket codes and 13 reporters.
 #
 # Env knobs (all optional except COMTRADE_API_KEY):
 #   COMTRADE_DYADS_STAGE           plan | fetch | combine | all (default all), or energy_trade:
-#                                  add the World totals in this chunk directory to
-#                                  comtrade_energy_trade.csv for codes it does not hold (its year
-#                                  and, per flow, its reporters; no API calls)
+#                                  rewrite comtrade_energy_trade.csv from the World rows of this
+#                                  chunk directory and COMTRADE_DYADS_COMBINE_DIRS in its year, and
+#                                  comtrade_total_export.csv for its export reporters (one TOTAL
+#                                  call per COMTRADE_DYADS_MAX_REPORTERS reporters not yet in
+#                                  COMTRADE_DYADS_TOTALS_DIR; no other calls)
 #   COMTRADE_DYADS_CODES           comma-separated HS6 codes of the basket: plan a supplementary
 #                                  pull of only these codes (new chunk directory), default all
 #   COMTRADE_DYADS_COMBINE_DIRS    comma-separated further chunk directories (each with its own
 #                                  plan.csv and codes.txt, codes disjoint) combined with this one;
-#                                  together they must hold every basket code, or combine stops
+#                                  together they must hold every basket code, or combine and
+#                                  energy_trade stop
+#   COMTRADE_DYADS_TOTALS_DIR      energy_trade: where the TOTAL-export responses are kept and
+#                                  reused, default the chunk directory
+#   COMTRADE_DYADS_ENERGY_TRADE_DIR energy_trade: where the two files are written, default the raw
+#                                  data directory (they are always read from there)
 #   COMTRADE_DYADS_OUTPUT          combined file, default <raw_data_dir>/comtrade_energy_dyads_all.csv
 #   COMTRADE_DYADS_YEARS           default 2020,2024 (the first and last year the themes use)
 #   COMTRADE_DYADS_FLOWS           default import,export (imports are fetched first)
@@ -140,6 +152,9 @@ max_wait_seconds <- as.numeric(env_chr("COMTRADE_DYADS_MAX_WAIT_SECONDS", "600")
 dyads_output_path <- env_chr("COMTRADE_DYADS_OUTPUT", file.path(raw_data_path, "comtrade_energy_dyads_all.csv"))
 combine_dirs <- setdiff(env_list("COMTRADE_DYADS_COMBINE_DIRS", ""), "")
 energy_trade_path <- file.path(raw_data_path, "comtrade_energy_trade.csv")
+total_export_path <- file.path(raw_data_path, "comtrade_total_export.csv")
+totals_dir <- env_chr("COMTRADE_DYADS_TOTALS_DIR", chunk_dir)
+energy_trade_out_dir <- env_chr("COMTRADE_DYADS_ENERGY_TRADE_DIR", raw_data_path)
 dir.create(chunk_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(dirname(log_path), recursive = TRUE, showWarnings = FALSE)
 
@@ -262,6 +277,10 @@ log_plan <- function(plan, heading) {
   log_line("- calls by year and flow: ", paste(paste0(by$year, " ", by$flow, " ", by$est_records), collapse = "; "))
 }
 
+# energy_trade reads a fetched pull; on a directory without one it would plan a new pull here.
+if (stage == "energy_trade" && !file.exists(plan_path)) {
+  stop(chunk_dir, " holds no pull (plan.csv); point COMTRADE_DYADS_CHUNK_DIR at the main chunk directory.")
+}
 if (!file.exists(plan_path)) {
   pe <- plan_estimates()
   plan <- comtrade_dyads_plan(pe$estimates, target_records = target_records, max_reporters = max_reporters,
@@ -584,38 +603,127 @@ if (stage %in% c("combine", "all")) {
 }
 
 # --- Energy-trade World totals --------------------------------------------------------------
-# The World rows of this chunk directory, added to comtrade_energy_trade.csv for the codes that
-# file lacks (comtrade_energy_trade_add_codes(): the file's year and reporters; rows it already
-# has are rewritten unchanged). Run it on a supplementary pull of codes new to the basket.
+# comtrade_energy_trade.csv from the World rows of every chunk directory of the pull, in the file's
+# year (comtrade_energy_trade_from_world()), and its RCA denominator comtrade_total_export.csv for
+# the same reporters (comtrade_total_export_refresh()). The directories must hold the whole basket,
+# as for combine: a code left out would keep the old pull's reporters while the rest of its cell
+# moved to this pull's, so there is no partial mode.
 if (stage == "energy_trade") {
-  leaves <- plan_leaves()
-  if (any(leaves$state != "done")) {
-    stop("Not every planned chunk of ", chunk_dir, " is fetched yet; the World totals would be incomplete.")
+  dirs <- unique(c(chunk_dir, combine_dirs))
+  dir_codes <- lapply(dirs, function(d) readLines(file.path(d, "codes.txt")))
+  shared <- comtrade_dyads_shared_codes(dir_codes)
+  if (length(shared) > 0) {
+    stop("The chunk directories share code(s) ", paste(shared, collapse = " "), "; each code must come from one pull.")
   }
-  files <- chunk_file(leaves$chunk_id, ".csv.gz")
+  uncovered <- comtrade_dyads_uncovered_codes(basket$codes, dir_codes)
+  if (length(uncovered) > 0) {
+    stop("No chunk directory holds the basket code(s) ", paste(uncovered, collapse = " "),
+         "; name every directory of the pull in COMTRADE_DYADS_COMBINE_DIRS.")
+  }
+  leaves <- do.call(rbind, lapply(dirs, plan_leaves))
+  if (any(leaves$state != "done")) {
+    stop("Not every planned chunk is fetched yet; the World totals would be incomplete (",
+         paste(utils::head(leaves$chunk_id[leaves$state != "done"], 10), collapse = " "), ").")
+  }
+  files <- chunk_file(leaves$chunk_id, ".csv.gz", leaves$dir)
   files <- files[file.exists(files)]
   world <- as.data.frame(data.table::rbindlist(lapply(files, function(f) comtrade_dyads_world_totals(read_chunk(f))),
                                                use.names = TRUE, fill = TRUE))
-  text_cols <- COMTRADE_ENERGY_TRADE_TEXT_COLUMNS
-  existing <- utils::read.csv(energy_trade_path, stringsAsFactors = FALSE,
-                              colClasses = stats::setNames(rep("character", length(text_cols)), text_cols))
-  merged <- comtrade_energy_trade_add_codes(existing, world)
-  added <- attr(merged, "added")
-
   log_line("")
   log_line("## Energy-trade World totals ", utc_now())
-  if (nrow(added) == 0) {
-    log_line("- nothing added: ", energy_trade_path, " already holds every code with World rows in its year")
-  } else {
-    tmp <- paste0(energy_trade_path, ".tmp")
-    utils::write.csv(merged, tmp, row.names = FALSE)
-    file.rename(tmp, energy_trade_path)
-    log_line("- wrote ", energy_trade_path, ": ", format(nrow(existing), big.mark = ","), " rows kept, ",
-             format(sum(added$rows), big.mark = ","), " added (year ", paste(sort(unique(existing$ref_year)), collapse = ", "),
-             "; reporters as in the file, flow by flow)")
-    for (cc in sort(unique(added$cmd_code))) {
-      a <- added[added$cmd_code == cc, , drop = FALSE]
-      log_line("- ", cc, ": ", paste(paste0(a$flow_code, " ", a$rows, " reporters"), collapse = ", "))
-    }
+
+  # Text columns as text and values as double, so the rows kept are written back as they were read.
+  read_staged <- function(path) {
+    text_cols <- COMTRADE_ENERGY_TRADE_TEXT_COLUMNS
+    value_cols <- COMTRADE_DYADS_VALUE_COLUMNS
+    utils::read.csv(path, stringsAsFactors = FALSE,
+                    colClasses = c(stats::setNames(rep("character", length(text_cols)), text_cols),
+                                   stats::setNames(rep("numeric", length(value_cols)), value_cols)))
   }
+  existing <- read_staged(energy_trade_path)
+  derived <- comtrade_energy_trade_from_world(existing, world, unlist(dir_codes), taiwan = taiwan_mode)
+  changes <- attr(derived, "changes")
+  attr(derived, "changes") <- NULL
+  years <- sort(unique(as.integer(derived$ref_year)))
+
+  # RCA denominator: every export reporter of the new table, and every reporter the total-export
+  # file already holds, from one release. The responses are kept in totals_dir, so a rerun asks
+  # only for reporters not yet fetched (none, normally). comtrade_fetch_requests() is the client
+  # scripts/05 pulled the file with (one call per reporter there; up to max_reporters per call here);
+  # these few calls are logged but not entered in calls.csv, whose budget is checked first.
+  total_existing <- read_staged(total_export_path)
+  dir.create(totals_dir, recursive = TRUE, showWarnings = FALSE)
+  n_total_calls <- 0L
+  fetched <- lapply(years, function(y) {
+    cache <- file.path(totals_dir, sprintf("total_export_%d.csv", y))
+    have <- if (file.exists(cache)) read_chunk(cache) else NULL
+    want <- sort(union(derived$reporter_iso[derived$flow_code == "X" & as.integer(derived$ref_year) == y],
+                       total_existing$reporter_iso[as.integer(total_existing$ref_year) == y]))
+    todo <- setdiff(want, comtrade_dyads_recode_taiwan(have$reporter_iso))
+    if (length(todo) == 0) return(have)
+    if (calls_today() >= max_calls_per_day) {
+      stop("The budget of ", max_calls_per_day, " calls for ", utc_today(), " is used (", calls_path, ").")
+    }
+    comtrade_set_key_from_env()
+    todo <- replace(todo, todo == COMTRADE_DYADS_TAIWAN_ISO3, COMTRADE_DYADS_TAIWAN_ISO)  # Comtrade's code
+    batches <- unname(split(todo, ceiling(seq_along(todo) / max_reporters)))
+    req <- data.frame(request_id = seq_along(batches), partner = "World", commodity_code = "TOTAL",
+                      start_date = y, end_date = y, flow_direction = "export", frequency = "A",
+                      stringsAsFactors = FALSE)
+    req$reporter <- batches
+    res <- comtrade_fetch_requests(req, retries = retries, sleep_seconds = backoff_seconds,
+                                   max_sleep_seconds = max_wait_seconds, timeout_seconds = timeout_seconds,
+                                   show_progress = FALSE, request_pause_seconds = pause_seconds)
+    n_total_calls <<- n_total_calls + nrow(req)
+    if (nrow(res$failed) > 0) {
+      stop("TOTAL-export request(s) for ", y, " failed: ", redact(paste(unique(res$failed$message), collapse = "; ")))
+    }
+    got <- as.data.frame(res$data)
+    got$request_id <- NULL
+    log_line("- ", utc_now(), " | TOTAL exports ", y, ": ", nrow(req), " call(s) for ", length(todo),
+             " reporters, ", nrow(got), " rows")
+    if (nrow(got) == 0) return(have)
+    have <- as.data.frame(data.table::rbindlist(list(have, got), use.names = TRUE, fill = TRUE))
+    tmp <- paste0(cache, ".tmp")
+    data.table::fwrite(have, tmp)
+    file.rename(tmp, cache)
+    have
+  })
+  fetched <- as.data.frame(data.table::rbindlist(fetched, use.names = TRUE, fill = TRUE))
+  totals <- comtrade_total_export_refresh(total_existing, fetched, years, taiwan = taiwan_mode)
+  total_changes <- attr(totals, "changes")
+  attr(totals, "changes") <- NULL
+  # An export reporter without its total gets no RCA, silently; refuse rather than write that.
+  no_total <- setdiff(unique(paste(derived$reporter_iso, derived$ref_year)[derived$flow_code == "X"]),
+                      paste(totals$reporter_iso, totals$ref_year))
+  if (length(no_total) > 0) {
+    stop("No TOTAL exports for export reporter(s) ", paste(no_total, collapse = ", "), "; the RCA denominator would be missing.")
+  }
+
+  dir.create(energy_trade_out_dir, recursive = TRUE, showWarnings = FALSE)
+  write_staged <- function(df, name) {
+    path <- file.path(energy_trade_out_dir, name)
+    tmp <- paste0(path, ".tmp")
+    utils::write.csv(df, tmp, row.names = FALSE)
+    file.rename(tmp, path)
+    path
+  }
+  et_out <- write_staged(derived, "comtrade_energy_trade.csv")
+  te_out <- write_staged(totals, "comtrade_total_export.csv")
+
+  log_line("- wrote ", et_out, " from the World rows of ", length(files), " chunk files in ", length(dirs),
+           " chunk directories (", paste(dirs, collapse = ", "), "), year ", paste(years, collapse = ", "),
+           ": ", format(nrow(derived), big.mark = ","), " rows")
+  k <- changes$keys
+  log_line("- keys: ", paste(paste(names(k), format(k, big.mark = ",", trim = TRUE)), collapse = "; "),
+           " (unchanged / revised value = keys of the old file the pull also has; dropped = keys the newer release no ",
+           "longer has; kept = rows of codes outside the pull, or of reporter-flows the pull lacks)")
+  bf <- changes$by_flow
+  for (i in seq_len(nrow(bf))) {
+    log_line("- ", bf$flow_code[i], ": reporters ", bf$reporters_before[i], " -> ", bf$reporters_after[i],
+             ", codes ", bf$codes_before[i], " -> ", bf$codes_after[i], ", rows ",
+             format(bf$rows_before[i], big.mark = ","), " -> ", format(bf$rows_after[i], big.mark = ","))
+  }
+  log_line("- wrote ", te_out, ": ", nrow(totals), " reporters; ", paste(paste(names(total_changes), total_changes), collapse = ", "),
+           "; ", n_total_calls, " TOTAL-export call(s) this run (responses in ", totals_dir, ")")
 }

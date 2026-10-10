@@ -223,42 +223,94 @@ test_that("World totals are read from partner = everything chunks, totals only",
   expect_null(comtrade_dyads_world_totals(data.frame(count = 0)))
 })
 
-test_that("the energy-trade file gains only the codes it lacks, in its year and with its reporters", {
+test_that("the energy-trade file is rebuilt from the pull's World rows, reporter-flow by reporter-flow", {
   # The staged file as scripts/98 reads it: codes and periods as text, flow_direction added.
-  existing <- rbind(world_row(code = "260300", value = 5), world_row(reporter = "JPN", code = "260300", flow = "M"))
-  existing$flow_direction <- c("export", "import")
+  existing <- rbind(
+    world_row(code = "260300", value = 5),                     # pulled, revised in the newer release
+    world_row(reporter = "JPN", code = "260300", flow = "M"),  # pulled, unchanged
+    world_row(code = "854140", value = 9),                     # pulled, gone from the newer release
+    world_row(code = "440321", value = 3),                     # not pulled: kept
+    world_row(reporter = "NZL", code = "260300", value = 4)    # reporter-flow the pull lacks: kept
+  )
+  existing$flow_direction <- ifelse(existing$flow_code == "X", "export", "import")
   rownames(existing) <- NULL
+  pulled <- c("260300", "740311", "854140", "854142", "760110")
 
   world <- comtrade_dyads_world_totals(rbind(
-    world_row(code = "260300", value = 7),                     # code held: the file's row stays
-    world_row(code = "740311", value = 30),                    # new code, AUS exports: added
-    world_row(reporter = "JPN", code = "740311", flow = "M"),  # new code, JPN imports: added
-    world_row(reporter = "JPN", code = "740311", flow = "X"),  # JPN has no export rows in the file
-    world_row(reporter = "CHL", code = "740311"),              # reporter not in the file
-    world_row(code = "760110", year = 2020L)                   # not the file's year
+    world_row(code = "260300", value = 7),
+    world_row(reporter = "JPN", code = "260300", flow = "M"),
+    world_row(code = "740311", value = 30),                    # a code the file lacked
+    world_row(reporter = "CHL", code = "740311", value = 50),  # a reporter the file lacked
+    world_row(reporter = "S19", code = "854142", value = 20),  # Taiwan, recoded to TWN
+    world_row(code = "760110", year = 2020L),                  # not the file's year
+    world_row(code = "271600")                                 # a code the pull did not request
   ))
-  out <- comtrade_energy_trade_add_codes(existing, world)
+  out <- comtrade_energy_trade_from_world(existing, world, pulled)
+  ch <- attr(out, "changes")
+  attr(out, "changes") <- NULL
 
-  kept <- out[seq_len(nrow(existing)), ]
-  rownames(kept) <- NULL
-  attr(kept, "added") <- NULL
-  expect_identical(kept, existing)
-  added <- out[-seq_len(nrow(existing)), ]
-  expect_equal(paste(added$reporter_iso, added$flow_code, added$cmd_code), c("JPN M 740311", "AUS X 740311"))
-  expect_equal(added$primary_value, c(100, 30))
   expect_identical(names(out), names(existing))
   expect_identical(vapply(out, class, character(1)), vapply(existing, class, character(1)))
-  expect_equal(attr(out, "added")$rows, c(1L, 1L))
+  expect_setequal(paste(out$reporter_iso, out$flow_code, out$cmd_code, out$primary_value),
+                  c("AUS X 260300 7", "JPN M 260300 100", "AUS X 740311 30", "CHL X 740311 50", "TWN X 854142 20",
+                    "AUS X 440321 3", "NZL X 260300 4"))
+  expect_equal(unname(ch$keys), c(1, 1, 3, 1, 1, 1))
+  expect_equal(names(ch$keys), c("unchanged", "revised", "new", "dropped", "kept_outside_pull", "kept_reporter_flows"))
+  expect_equal(ch$by_flow$reporters_before[ch$by_flow$flow_code == "X"], 2L)
+  expect_equal(ch$by_flow$reporters_after[ch$by_flow$flow_code == "X"], 4L)
+  # The kept rows are the file's rows as they were.
+  kept <- out[out$cmd_code == "440321" | out$reporter_iso == "NZL", ]
+  rownames(kept) <- NULL
+  expected <- existing[c(4, 5), ]
+  rownames(expected) <- NULL
+  expect_identical(kept, expected)
+  expect_true(all(out$flow_direction == ifelse(out$flow_code == "X", "export", "import")))
 
-  # Nothing new: the file comes back unchanged.
-  same <- comtrade_energy_trade_add_codes(existing, comtrade_dyads_world_totals(world_row(code = "260300")))
-  expect_equal(nrow(attr(same, "added")), 0L)
-  attr(same, "added") <- NULL
-  expect_identical(same, existing)
-  none <- comtrade_energy_trade_add_codes(existing, NULL)
-  expect_equal(nrow(none), nrow(existing))
-  expect_equal(nrow(attr(none, "added")), 0L)
+  # Rerunning on its own output changes nothing; Taiwan can be left out instead.
+  again <- comtrade_energy_trade_from_world(out, world, pulled)
+  expect_equal(attr(again, "changes")$keys[["unchanged"]], 5)
+  attr(again, "changes") <- NULL
+  expect_identical(again, out)
+  no_twn <- comtrade_energy_trade_from_world(existing, world, pulled, taiwan = "drop")
+  expect_false(any(no_twn$reporter_iso %in% c("TWN", "S19")))
 
-  # A reporter fetched twice is an error rather than a doubled value.
-  expect_error(comtrade_energy_trade_add_codes(existing, rbind(world[2, ], world[2, ])), "duplicate")
+  # A reporter fetched twice is an error rather than a doubled value, and a pull without the
+  # file's year is an error rather than an empty file.
+  expect_error(comtrade_energy_trade_from_world(existing, rbind(world, world[3, ]), pulled), "duplicate")
+  expect_error(comtrade_energy_trade_from_world(existing, world[world$ref_year == 2020, ], pulled), "no requested code")
+  expect_error(comtrade_energy_trade_from_world(existing, NULL, pulled), "No World rows")
+})
+
+test_that("trade values compare equal up to the digits write.csv keeps", {
+  expect_equal(comtrade_energy_trade_same_value(c(340854851740.669, 1, NA, NA, 0), c(340854851740.66900634765625, 1.01, NA, 2, 0)),
+               c(TRUE, FALSE, TRUE, FALSE, TRUE))
+})
+
+test_that("total exports are refreshed for the fetched reporters, totals only, values as doubles", {
+  total_row <- function(reporter, value, year = 2024L, flow = "X", customs = "C00") {
+    r <- world_row(reporter = reporter, code = "TOTAL", value = value, flow = flow, year = year)
+    r$customs_code <- customs
+    r
+  }
+  existing <- rbind(total_row("AUS", 100), total_row("CPV", 5))
+  existing$cifvalue <- NA  # all NA in the staged file, so read.csv makes it logical
+  fetched <- rbind(
+    total_row("AUS", 110),                  # revised
+    total_row("S19", 300),                  # Taiwan, new
+    total_row("JPN", 1, customs = "C01"),   # not a total
+    total_row("JPN", 2, year = 2020L),      # not the year
+    total_row("JPN", 3, flow = "M")         # not exports
+  )
+  out <- comtrade_total_export_refresh(existing, fetched, 2024)
+
+  expect_equal(out$reporter_iso, c("AUS", "CPV", "TWN"))
+  expect_equal(out$primary_value, c(110, 5, 300))
+  expect_type(out$cifvalue, "double")
+  expect_equal(out$cifvalue, c(110, NA, 300))
+  expect_identical(names(out), names(existing))
+  expect_equal(attr(out, "changes"), c(refreshed = 1, revised = 1, added = 1, kept = 1))
+
+  none <- comtrade_total_export_refresh(existing, NULL, 2024)
+  expect_equal(none$primary_value, existing$primary_value)
+  expect_error(comtrade_total_export_refresh(existing, rbind(fetched, fetched[1, ]), 2024), "duplicate")
 })

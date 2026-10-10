@@ -376,7 +376,8 @@ test_that("the staged Comtrade pulls hold every Electric Grid Upstream code", {
   skip_if_not_installed("data.table")
 
   # The codes were added after both Comtrade pulls; a stage the pull lacks has no exports, HHI or
-  # RCA. scripts/98 fills them with a supplementary pull (COMTRADE_DYADS_CODES, energy_trade stage).
+  # RCA. A supplementary dyad pull (COMTRADE_DYADS_CODES) fetched them, and the energy_trade stage
+  # of scripts/98 derives the whole file from the World rows of every chunk directory.
   trade <- data.table::fread(path, select = c("cmd_code", "flow_code"), colClasses = "character", showProgress = FALSE)
   for (flow in c("X", "M")) {
     expect_true(all(basket %in% hs6_clean_code(trade$cmd_code[trade$flow_code == flow])), info = flow)
