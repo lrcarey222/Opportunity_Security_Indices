@@ -38,14 +38,15 @@ inputs:
   url: https://comtradeplus.un.org/
   cadence: annual
   owner: lcarey@rmi.org
-  vintage: 2024; staged 2026-09-30 (228 codes), plus the World rows of 740200 740311 760110 760120
-    from the 2026-10-09 supplementary dyad pull
+  vintage: 2024; World rows of the all-reporter dyad pull (main 2026-10-07/08, Electric Grid Upstream
+    supplement 2026-10-09), derived 2026-10-09
   staged_from: pipeline
-  notes: Reporter x World pull of scripts/05_ingest_sources.R (129 export and 130 import reporters).
-    The four Electric Grid Upstream codes added to the basket on 2026-10-09 come from the World rows
-    of scripts/98's supplementary pull (COMTRADE_DYADS_STAGE=energy_trade), restricted to this file's
-    year and reporters per flow; the rows already here are unchanged. A full scripts/05 energy pull
-    replaces both.
+  notes: Reporter x World totals of every basket code, 142 export and 143 import reporters (Taiwan,
+    Comtrade's S19, as TWN). Written by scripts/98_pull_comtrade_energy_dyads.R
+    (COMTRADE_DYADS_STAGE=energy_trade) from the World rows of the dyad chunks; it replaced the
+    scripts/05 pull staged 2026-09-30, which lacked 60 of the 256 basket codes and 13 reporters. The rows
+    of four HS 4403 codes outside the basket (440321 440323 440324 440325) are kept from that pull. A
+    scripts/05 run with downloads overwrites the file; rerun the energy_trade stage afterwards.
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
@@ -57,10 +58,16 @@ inputs:
   url: https://comtradeplus.un.org/
   cadence: annual
   owner: lcarey@rmi.org
+  vintage: 2024; pulled 2026-10-09
   staged_from: pipeline
+  notes: All-product exports to the World of the 143 reporters of comtrade_energy_trade.csv (Taiwan as
+    TWN), the denominator of the trade themes' RCA. Refreshed by scripts/98_pull_comtrade_energy_dyads.R
+    (COMTRADE_DYADS_STAGE=energy_trade, 3 calls) for every export reporter of the energy-trade file, from
+    the same release; it replaced the 130-reporter scripts/05 pull staged 2026-09-30.
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
+  - scripts/98_pull_comtrade_energy_dyads.R
 - id: critmin_export
   path: critmin_export_2024.csv
   pattern: ^critmin_export_\d{4}\.csv$
@@ -480,8 +487,9 @@ inputs:
   cadence: annual
   owner: lcarey@rmi.org
   staged_from: sharepoint
-  notes: The mineral production and reserve sheets also feed the coalition supplier route
-    (scripts/13; reserves as shares of each sheet's Total World row).
+  notes: The mineral production sheets and the oil, gas and coal reserve sheets also feed the coalition
+    supplier route (scripts/13; reserves as shares of each sheet's Total World row). Mineral reserves
+    come from USGS MCS (usgs_mcs_world_data) since 2026-10-09.
   required_by:
   - scripts/10_build_themes.R
   - scripts/13_build_coalition.R
@@ -790,6 +798,26 @@ inputs:
     the four cost categories, transcribed from the edition PDF. Nuclear Reserves scores the
     <USD 260/kgU category the edition headlines (R/categories/reserves/uranium.R). The same
     category is the uranium measure of the reserves leg of the coalition supplier route (scripts/13).
+  required_by:
+  - scripts/10_build_themes.R
+  - scripts/13_build_coalition.R
+- id: usgs_mcs_world_data
+  path: MCS2026_World_Data.csv
+  source_type: manual
+  source_name: USGS Mineral Commodity Summaries 2026 data release, Commodity Salient U.S. and World
+    Statistics (world mine production and reserves)
+  url: https://doi.org/10.5066/P1WKQ63T
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: MCS 2026 (reserves at end-2025); ScienceBase file MCS2026_Commodities_Data.csv, 3,189,010
+    bytes, uploaded 2026-02-06 (MD5 36185ff3..., ScienceBase's checksum); accessed 2026-10-09
+  licence: CC0-1.0
+  staged_from: sharepoint
+  notes: The release's commodity table staged under this name (byte-identical; Windows-1252, one long
+    table for every chapter). Critical-mineral reserves of the Reserves theme and the coalition's
+    reserves leg (usgs_mcs_reserves(), R/categories/reserves/usgs_mcs.R), which applies the report's
+    ver. 1.3 erratum (Brazil rare earths 11,000,000 t, world >75,000,000 t) the CSV predates. EI keeps
+    the fuels' reserves; the Red Book uranium. MCS2025_World_Data.csv (another layout) is not read.
   required_by:
   - scripts/10_build_themes.R
   - scripts/13_build_coalition.R

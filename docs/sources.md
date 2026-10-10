@@ -4,7 +4,7 @@
      Regenerate with: Rscript scripts/02_render_sources_doc.R
      Edit config/raw_inputs_manifest.yml instead. -->
 
-Every raw input the pipeline reads, grouped by how it arrives. There are 56 inputs in total.
+Every raw input the pipeline reads, grouped by how it arrives. There are 57 inputs in total.
 
 - **api** — fetched automatically during ingestion; no human step.
 - **manual** — staged by hand into `sharepoint_raw_dir` before a run.
@@ -25,9 +25,9 @@ Fetched programmatically; no human step. Comtrade requires `COMTRADE_API_KEY`. E
 | [UN Comtrade (critical minerals exports)](https://comtradeplus.un.org/) | `critmin_export_2024.csv`<br>newest match: `^critmin_export_\d{4}\.csv$` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [UN Comtrade (critical minerals imports)](https://comtradeplus.un.org/) | `critmin_import_2024.csv`<br>newest match: `^critmin_import_\d{4}\.csv$` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [UN Comtrade (critical minerals total exports)](https://comtradeplus.un.org/) | `critmin_total_export_2024.csv`<br>newest match: `^critmin_total_export_\d{4}\.csv$` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
-| [UN Comtrade (energy-tech HS6 exports and imports)](https://comtradeplus.un.org/) | `comtrade_energy_trade.csv` | annual | 2024; staged 2026-09-30 (228 codes), plus the World rows of 740200 740311 760110 760120 from the 2026-10-09 supplementary dyad pull | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `98_pull_comtrade_energy_dyads.R` |
+| [UN Comtrade (energy-tech HS6 exports and imports)](https://comtradeplus.un.org/) | `comtrade_energy_trade.csv` | annual | 2024; World rows of the all-reporter dyad pull (main 2026-10-07/08, Electric Grid Upstream supplement 2026-10-09), derived 2026-10-09 | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `98_pull_comtrade_energy_dyads.R` |
 | [UN Comtrade (partner-reported imports from non-reporting economies, mirror exports)](https://comtradeapi.un.org/public/v1/preview/C/A/HS) | `critmin_mirror_import.csv`<br>fetch: prefer (API wins) | annual | — | lcarey@rmi.org | `10_build_themes.R` |
-| [UN Comtrade (total exports, TOTAL commodity code)](https://comtradeplus.un.org/) | `comtrade_total_export.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R` |
+| [UN Comtrade (total exports, TOTAL commodity code)](https://comtradeplus.un.org/) | `comtrade_total_export.csv` | annual | 2024; pulled 2026-10-09 | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `98_pull_comtrade_energy_dyads.R` |
 | [UN General Assembly ideal points, all-votes series (Bailey, Strezhnev and Voeten 2017; Voeten et al., Harvard Dataverse)](https://doi.org/10.7910/DVN/LEJUQZ) | `un_ga_ideal_points_all.csv`<br>fetch: prefer (API wins) | annual | Dataverse V39.0 (2026-07-30), IdealpointsJuly2025.tab (idealpointall), sessions 1-78 (1946-2023) | lcarey@rmi.org | `12_build_geopolitical_alignment.R` |
 | [UN General Assembly ideal points, final-passage series (Bailey, Strezhnev and Voeten 2017; Voeten et al., Harvard Dataverse)](https://doi.org/10.7910/DVN/LEJUQZ) | `un_ga_ideal_points.csv`<br>fetch: prefer (API wins) | annual | Dataverse V39.0 (2026-07-30), IdealpointestimatesFP_2026FP.csv, sessions 1-80 (1946-2025) | lcarey@rmi.org | `12_build_geopolitical_alignment.R` |
 | [World Bank Doing Business indicators (historical)](https://archive.doingbusiness.org/en/data) | `wb_doingbusiness.csv`<br>fetch: prefer (API wins) | discontinued | — | lcarey@rmi.org | `15_build_partner_themes.R` |
@@ -72,6 +72,7 @@ Each of these must be downloaded and placed in `sharepoint_raw_dir` before a run
 | [OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table 1.18 historical uranium production](https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand) | `uranium_production.csv` | biennial | Uranium 2026 (NEA No. 7770) for 2022-2024, Uranium 2024 (NEA No. 7683) for 2020-2021, Uranium 2022 (NEA No. 7634) for 2019; accessed 2026-10-07 | lcarey@rmi.org | `10_build_themes.R`, `13_build_coalition.R` |
 | [OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table 1.2a identified recoverable resources](https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand) | `uranium_resources.csv` | biennial | Uranium 2026 (NEA No. 7770), resources as of 1 January 2025; accessed 2026-10-07 | lcarey@rmi.org | `10_build_themes.R`, `13_build_coalition.R` |
 | [OECD Creditor Reporting System aid flows](https://data-explorer.oecd.org/) | `oecd_crs_api.csv` | annual | — | lcarey@rmi.org | `15_build_partner_themes.R` |
+| [USGS Mineral Commodity Summaries 2026 data release, Commodity Salient U.S. and World Statistics (world mine production and reserves)](https://doi.org/10.5066/P1WKQ63T) | `MCS2026_World_Data.csv` | annual | MCS 2026 (reserves at end-2025); ScienceBase file MCS2026_Commodities_Data.csv, 3,189,010 bytes, uploaded 2026-02-06 (MD5 36185ff3..., ScienceBase's checksum); accessed 2026-10-09 | lcarey@rmi.org | `10_build_themes.R`, `13_build_coalition.R` |
 
 ### Project-authored crosswalks (derived)
 

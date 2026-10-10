@@ -20,6 +20,8 @@ Every theme table (`data/processed/*_tbl.rds` from `scripts/10_build_themes.R`) 
 
 `config/index_definition.yml` defines which Overall variables are used for category scores, how they are composed, and the level (`variable_levels`) each is checked at. `sub_sector` is controlled by the global `include_sub_sector` flag; when it is off, outputs use `sub_sector = "All"` so keys stay unique.
 
+`reserves_tbl`: `source` is "USGS Mineral Commodity Summaries 2026" for the nine mineral reserve variables and their technology roll-ups, "EI Statistical Review of World Energy (2025)" for oil, gas and coal, and the OECD-NEA/IAEA Red Book for `Nuclear Reserves`. A holder USGS lists without a figure (NA, W, s) has raw and index `value` NA, like an economy USGS does not list; a reported zero ('—') is 0.
+
 ## Pillar indices (`index_outputs.rds`, `scripts/20`)
 
 `energy_security_index` and `economic_opportunity_index`, one row per Country × tech × supply_chain:
@@ -90,7 +92,7 @@ Every theme table (`data/processed/*_tbl.rds` from `scripts/10_build_themes.R`) 
 
 `eu_stage_weights_tbl.rds`: per EU member × tech × stage, `weight` (sums to 1 per stage), `basis` (`production`, `exports`, `gdp`), `measures`, `year`, `member_value`, `eu_world_share`, `coverage`.
 
-`major_supplier_shares_tbl.rds`: per country × tech × stage × measure (flows: `iea_mineral_mining`, `iea_mineral_refining`, `ei_mineral_mining`, `ei_production`, `uranium_mine_production`, `iea_manufacturing_capacity`, `atlas_export_share`; reserves, Upstream: `ei_reserves` (mineral and fuel reserves), `uranium_resources`): `mineral`, `measure_label`, `mineral_demand_share`, `year`, `value`, `unit`, `world_share`, `is_aggregate`, `source`, `threshold` (the row's bar: 0.10 for the reserves measures, 0.05 otherwise), `major` (country row with share ≥ `threshold`).
+`major_supplier_shares_tbl.rds`: per country × tech × stage × measure (flows: `iea_mineral_mining`, `iea_mineral_refining`, `ei_mineral_mining`, `ei_production`, `uranium_mine_production`, `iea_manufacturing_capacity`, `atlas_export_share`; reserves, Upstream: `usgs_reserves` (critical-mineral reserves, USGS MCS), `ei_reserves` (oil, gas and coal proved reserves, EI), `uranium_resources`): `mineral`, `measure_label`, `mineral_demand_share`, `year`, `value`, `unit`, `world_share`, `is_aggregate`, `source`, `threshold` (the row's bar: 0.10 for the reserves measures, 0.05 otherwise), `major` (country row with share ≥ `threshold`).
 
 `coalition_members()` (`R/indices/build_indices.R`) returns the members (tier core or partner): `iso3`, `country`, `tier`, `network_node`, `source` and, when present, `routes`, `bloc`, `gdp_usd`, `eu_member`, `node_tier`.
 
