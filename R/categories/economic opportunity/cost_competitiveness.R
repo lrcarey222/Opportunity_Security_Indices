@@ -590,7 +590,63 @@ cost_competitiveness_select_imf_rates <- function(imf_long) {
         TRUE ~ 99L
       )
     ) %>%
-    dplyr::filter(priority < 99L)
+    dplyr::filter(priority < 99L) %>%
+    cost_competitiveness_drop_rate_stubs()
+}
+
+# Drop placeholder readings from the lending-rate series (priorities 1-3 above).
+#
+# No bank lends at zero, so a zero or negative reading in a lending series is not an
+# observation. MFS_IR carries such stubs after a series lapses: New Zealand's lending rate
+# stops in January 2017 at 4.76%, then reads 0.0 in December 2018 and in June and August
+# 2024, and as the newest point of its top-priority series that 0.0 became New Zealand's
+# cost of capital, the lowest in the panel. The IMF also folds the stubs into its own
+# averages: Solomon Islands' 2021 annual lending rate is 5.2%, half the 10.3-10.4% of
+# every month it reported, because the IMF averages the zero second quarter (built on a
+# zero April) into the year: 5.18 = (10.35 + 0) / 2. A stub is therefore
+# dropped together with the quarterly and annual averages of its own period, and the
+# series' last real reading stands instead (the recency floor still applies to it).
+#
+# Policy, money-market and deposit rates are left alone: zero and negative readings there
+# are real (Japan, Denmark, Sweden and Switzerland ran negative policy rates).
+cost_competitiveness_drop_rate_stubs <- function(imf_scored, lending_priorities = 1:3) {
+  require_columns(
+    imf_scored,
+    c("COUNTRY", "INDICATOR", "period_date", "value", "priority"),
+    label = "imf_scored"
+  )
+
+  is_stub <- dplyr::coalesce(
+    imf_scored$priority %in% lending_priorities & imf_scored$value <= 0,
+    FALSE
+  )
+  if (!any(is_stub)) {
+    return(imf_scored)
+  }
+
+  # Without a frequency tag every row is a point reading, and only the stubs themselves go.
+  freq <- if ("freq_tag" %in% names(imf_scored)) imf_scored$freq_tag else rep("M", nrow(imf_scored))
+  series <- paste(imf_scored$COUNTRY, imf_scored$INDICATOR, sep = "\r")
+  year <- format(imf_scored$period_date, "%Y")
+  quarter <- (as.integer(format(imf_scored$period_date, "%m")) - 1L) %/% 3L + 1L
+  row_year <- paste(series, year, sep = "\r")
+  row_quarter <- paste(row_year, quarter, sep = "\r")
+
+  # A monthly stub sits inside its quarter's and its year's average, a quarterly stub inside
+  # its year's. An annual stub is only itself.
+  stub_years <- row_year[is_stub & freq %in% c("M", "Q")]
+  stub_quarters <- row_quarter[is_stub & freq == "M"]
+  contaminated <- !is_stub & (
+    (freq == "A" & row_year %in% stub_years) | (freq == "Q" & row_quarter %in% stub_quarters)
+  )
+
+  message(
+    "cost_competitiveness: dropped ", sum(is_stub), " zero or negative lending-rate reading(s) and ",
+    sum(contaminated), " average(s) built on them (",
+    paste(sort(unique(imf_scored$COUNTRY[is_stub])), collapse = ", "), ")."
+  )
+
+  imf_scored[!(is_stub | contaminated), , drop = FALSE]
 }
 
 # Borrowing rates for economies IMF MFS_IR does not carry.

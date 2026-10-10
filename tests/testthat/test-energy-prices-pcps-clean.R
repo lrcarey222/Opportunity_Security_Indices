@@ -389,3 +389,61 @@ test_that("1-year window computes non-NA volatility with default min_months", {
   expect_equal(length(vol_1y), 1)
   expect_true(is.finite(vol_1y[[1]]))
 })
+
+# --- price units ------------------------------------------------------------------------
+
+test_that("price units come from the IMF series metadata, not the label text", {
+  # The IMF labels cobalt "US dollars per pound" and propane "US cents per gallon"; the values
+  # are USD per tonne and USD per gallon. Lithium, vanadium, chromium and rare earths carry
+  # no unit in the label at all.
+  expect_equal(
+    energy_prices_unit(c("Cobalt", "Propane", "Lithium", "Vanadium", "Chromium", "Rare_Earths")),
+    c("USD per metric tonne", "USD per gallon", "USD per metric tonne", "USD per metric tonne",
+      "USD per metric tonne", "USD per metric tonne")
+  )
+  expect_equal(energy_prices_unit(c("Natural_Gas_Henry_Hub", "LNG", "Uranium", "Oil_APSP")),
+               c("USD per MMBtu", "USD per MMBtu", "USD per pound", "USD per barrel"))
+  # Unverified or unknown: flagged, never guessed from the label.
+  expect_equal(energy_prices_unit(c("Urea", "Energy_Transition_Metal_Index", "Not_A_Commodity")),
+               rep("unit to confirm", 3))
+})
+
+test_that("every commodity the patterns can match has a unit unless deliberately held back", {
+  units <- energy_prices_pcps_units()
+  expect_false(anyDuplicated(units$clean) > 0)
+  expect_true(all(units$clean %in% names(energy_prices_imf_patterns)))
+  expect_setequal(
+    setdiff(names(energy_prices_imf_patterns), units$clean),
+    c("Urea", "Energy_Transition_Metal_Index")
+  )
+})
+
+test_that("the theme states each price in its true unit and the yoy change in percent", {
+  months <- sprintf("X2025.M%02d", 1:3)
+  wide <- function(indicator, values) {
+    row <- tibble::tibble(INDICATOR = indicator, FREQUENCY = "Monthly", DATA_TRANSFORMATION = "US dollars")
+    for (i in seq_along(months)) row[[months[[i]]]] <- values[[i]]
+    row
+  }
+  imf_price <- dplyr::bind_rows(
+    wide("Cobalt, US dollars per pound, Unit prices", c(48000, 50000, 51873)),
+    wide("Propane, US cents per gallon, Unit prices", c(0.70, 0.66, 0.646)),
+    wide("Lithium, 99%, Battery Grade, Unit prices", c(90000, 93000, 95257))
+  )
+
+  out <- energy_prices(
+    imf_price,
+    mineral_demand_clean = tibble::tibble(Mineral = c("Cobalt", "Lithium"), tech = "Batteries"),
+    country_info = NULL,
+    min_months = 2
+  )
+  explanation_of <- function(sub, var) {
+    unique(out$explanation[out$sub_sector == sub & out$variable == var])
+  }
+
+  expect_match(explanation_of("Cobalt", "latest_price"), "Unit: USD per metric tonne\\.$")
+  expect_match(explanation_of("Propane", "latest_price"), "Unit: USD per gallon\\.$")
+  expect_match(explanation_of("Lithium", "latest_price"), "Unit: USD per metric tonne\\.$")
+  expect_match(explanation_of("Cobalt", "yoy_price_change_pct"), "Unit: percent \\(price quoted in USD per metric tonne\\)\\.$")
+  expect_false(any(grepl("per pound|US cents|Indicator-native", out$explanation[out$sub_sector %in% c("Cobalt", "Propane")])))
+})

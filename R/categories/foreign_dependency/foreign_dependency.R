@@ -202,7 +202,9 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
       values_to = "Value"
     ) %>%
     dplyr::mutate(
-      Year = dplyr::if_else(Status == "Current", "2024", "2035")
+      Year = dplyr::if_else(Status == "Current", "2024", "2035"),
+      # "Heat.Pumps" is read.csv()'s name for the IEA header "Heat Pumps - Current".
+      Technology = csv_header_label(Technology)
     )
 
   # Map EU member countries into a shared "EU" entity to match legacy logic.
@@ -215,15 +217,19 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
     dplyr::select(country2) %>%
     dplyr::distinct()
 
-  # Compute global market shares per technology for the target year.
+  # Compute global market shares per technology for the target year. The denominator is the
+  # IEA world total, including the table's "Other" row, which has no EI country and is dropped
+  # by the join (as in market_share_manufacturing_build_cleantech_midstream()).
+  world_totals <- cleantech_long %>%
+    dplyr::filter(Year == as.character(year)) %>%
+    dplyr::group_by(Technology) %>%
+    dplyr::summarize(world_total = sum(Value, na.rm = TRUE), .groups = "drop")
+
   ct_ms <- country_map %>%
     dplyr::left_join(cleantech_long, by = c("country2" = "Country")) %>%
     dplyr::filter(Year == as.character(year)) %>%
-    dplyr::group_by(Technology) %>%
-    dplyr::mutate(
-      market_share = Value / sum(Value, na.rm = TRUE)
-    ) %>%
-    dplyr::ungroup() %>%
+    dplyr::left_join(world_totals, by = "Technology") %>%
+    dplyr::mutate(market_share = Value / world_total) %>%
     dplyr::select(Country = country2, Technology, market_share)
 
   # Convert market shares into percentile-based indices.
@@ -325,90 +331,147 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
     dplyr::mutate(Country = dplyr::if_else(Country == "US", "United States", Country))
 }
 
+# The five regions of the IEA Global EV Outlook extract (data/raw/ev_Midstream_capacity.csv).
+# They partition the world: their 2024 sales add up to the world's 17.3 million EVs. Rest of
+# World is the remainder, so it holds non-EU Europe (United Kingdom, Norway, Turkiye,
+# Switzerland, ...) as well as Latin America, Africa, the Middle East and the CIS.
+FOREIGN_DEPENDENCY_EV_REGIONS <- c(
+  "China", "European Union", "North America", "Other Asia Pacific", "Rest of World"
+)
+
+# IEA EV region of each EI economy (vectorized over the EI country, EU flag and sub-region).
+#
+# The legacy expansion matched EI sub-regions to the IEA regions in three joins and, to keep
+# EU members out of Rest of World, sent the whole EI "Europe" sub-region to a placeholder
+# ("boop") that matched nothing. That also dropped every non-EU European economy (United
+# Kingdom, Norway, Turkiye, Ukraine, Switzerland, Iceland, Serbia, North Macedonia) from EV
+# Midstream, although the IEA counts their sales and production in Rest of World.
+foreign_dependency_ev_region <- function(country, eu, sub_region) {
+  dplyr::case_when(
+    country == "China" ~ "China",
+    eu %in% 1 ~ "European Union",
+    sub_region %in% "North America" ~ "North America",
+    sub_region %in% "Asia Pacific" ~ "Other Asia Pacific",
+    TRUE ~ "Rest of World"
+  )
+}
+
+# One row per IEA region for `year`, with the extract's `import_share` renamed for what it
+# holds. That column is (production - sales) / sales, a net export ratio: positive for a net
+# exporter (2024: Other Asia Pacific +0.30, China +0.10), negative for a net importer (Rest of
+# World -0.89). The index ranks it as it should, higher = less dependent on imported EVs; only
+# the name was inverted. It is checked against that definition, so a restaged file that carries
+# a true import share (higher = more dependent) stops here instead of entering the index with
+# the wrong sign.
+foreign_dependency_ev_regional_values <- function(ev_midstream, year) {
+  require_columns(
+    ev_midstream,
+    c("Year", "Region", "Domestic.Production", "Domestic.sales", "import_share", "market_share"),
+    label = "ev_midstream"
+  )
+
+  regional <- ev_midstream %>%
+    dplyr::filter(as.character(Year) == as.character(year)) %>%
+    dplyr::transmute(
+      Region,
+      Domestic.sales,
+      Domestic.Production,
+      net_export_ratio = import_share,
+      market_share
+    )
+
+  if (!setequal(regional$Region, FOREIGN_DEPENDENCY_EV_REGIONS) || anyDuplicated(regional$Region) > 0) {
+    stop(
+      "ev_midstream must have one row per IEA region for ", year, " (",
+      paste(FOREIGN_DEPENDENCY_EV_REGIONS, collapse = ", "), "); found: ",
+      paste(regional$Region, collapse = ", ")
+    )
+  }
+
+  implied <- (regional$Domestic.Production - regional$Domestic.sales) / regional$Domestic.sales
+  off <- abs(regional$net_export_ratio - implied) > 1e-6
+  if (any(off | is.na(off))) {
+    stop(
+      "ev_midstream import_share is not (production - sales) / sales for ",
+      paste(regional$Region[off | is.na(off)], collapse = ", "),
+      "; the EV Midstream net export term assumes that definition."
+    )
+  }
+
+  regional
+}
+
+# Explanations of the EV Midstream rows, keyed by the column name before the "_index" suffix
+# is stripped (the raw and index rows share the name "market_share").
+foreign_dependency_ev_explanations <- function() {
+  c(
+    Domestic.sales = "EV sales in the region (million vehicles)",
+    Domestic.Production = "EV production in the region (million vehicles)",
+    net_export_ratio = paste(
+      "Net export ratio of the region = (production - sales) / sales; positive means net",
+      "exporter, negative net importer (the IEA extract labels it import_share)"
+    ),
+    market_share = "The region's share of world EV production",
+    production_index = "Percent-ranked EV production of the region",
+    sales_index = "Percent-ranked EV sales of the region",
+    net_export_index = "Percent-ranked net export ratio of the region (higher = less dependent on imported EVs)",
+    market_share_index = "Percent-ranked share of world EV production",
+    ev_Midstream_index = "Mean of the percent-ranked production, sales, net export ratio and market share"
+  )
+}
+
 foreign_dependency_build_ev_midstream <- function(ei,
                                                   ev_midstream,
                                                   year = 2024,
                                                   gamma = 0.5) {
-  # Recreate the legacy regional expansion logic for EV midstream data.
-  ev_midstream %>%
-    dplyr::filter(Year == as.character(year)) %>%
-    dplyr::mutate(EU = dplyr::if_else(Region == "European Union", 1, 2)) %>%
-    dplyr::left_join(ei %>% dplyr::distinct(Country, EU), by = c("EU")) %>%
-    dplyr::mutate(
-      SubRegion = dplyr::if_else(
-        Region == "North America",
-        "North America",
-        dplyr::if_else(
-          Region == "Other Asia Pacific",
-          "Asia Pacific",
-          dplyr::if_else(
-            Region == "European Union",
-            "EU",
-            dplyr::if_else(Region == "China", "CHN", "Rest of World")
-          )
-        )
-      )
-    ) %>%
-    dplyr::left_join(
-      ei %>%
-        dplyr::filter(Country != "China") %>%
-        dplyr::distinct(Country, SubRegion),
-      by = c("SubRegion")
-    ) %>%
-    dplyr::left_join(
-      ei %>%
-        dplyr::distinct(Country, SubRegion) %>%
-        dplyr::mutate(
-          SubRegion = dplyr::if_else(
-            SubRegion %in% c("Asia Pacific", "North America", "Europe"),
-            "boop",
-            "Rest of World"
-          )
-        ),
-      by = c("SubRegion")
-    ) %>%
-    dplyr::mutate(
-      country = dplyr::if_else(
-        Region == "China",
-        "China",
-        dplyr::if_else(
-          SubRegion == "North America",
-          Country.y,
-          dplyr::if_else(
-            SubRegion == "Asia Pacific",
-            Country.y,
-            dplyr::if_else(EU == 1, Country.x, Country)
-          )
-        )
-      )
-    ) %>%
-    # Convert raw metrics into median_scurve indices.
+  require_columns(ei, c("Country", "EU", "SubRegion"), label = "ei")
+  regional <- foreign_dependency_ev_regional_values(ev_midstream, year = year)
+
+  countries <- ei %>%
+    dplyr::distinct(Country, EU, SubRegion) %>%
+    dplyr::mutate(Region = foreign_dependency_ev_region(Country, EU, SubRegion))
+  assert_unique_keys(countries, "Country", label = "ei")
+
+  explanations <- foreign_dependency_ev_explanations()
+
+  # Every economy takes its region's values, and the percent ranks are taken over economies,
+  # so a region counts once per EI economy in it (as in the legacy expansion).
+  countries %>%
+    dplyr::inner_join(regional, by = "Region", relationship = "many-to-one") %>%
     dplyr::mutate(
       production_index = median_scurve(Domestic.Production, gamma = gamma),
       sales_index = median_scurve(Domestic.sales, gamma = gamma),
-      import_index = median_scurve(import_share, gamma = gamma),
+      net_export_index = median_scurve(net_export_ratio, gamma = gamma),
       market_share_index = median_scurve(market_share, gamma = gamma)
     ) %>%
     dplyr::rowwise() %>%
     dplyr::mutate(ev_Midstream_index = mean(dplyr::c_across(production_index:market_share_index))) %>%
-    dplyr::select(country, Domestic.sales:market_share, production_index:ev_Midstream_index) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(
+      Country, Region,
+      Domestic.sales, Domestic.Production, net_export_ratio, market_share,
+      production_index, sales_index, net_export_index, market_share_index, ev_Midstream_index
+    ) %>%
     tidyr::pivot_longer(
-      cols = -country,
+      cols = -c(Country, Region),
       names_to = "variable",
       values_to = "value"
     ) %>%
-    # Standardize variables into raw/index pairs in the canonical schema.
+    # Standardize variables into raw/index pairs in the canonical schema. The values are
+    # regional, copied to each economy, and the explanation names the region.
     dplyr::mutate(
       tech = "Electric Vehicles",
       supply_chain = "Midstream",
       category = "Foreign Dependency",
       data_type = dplyr::if_else(stringr::str_detect(variable, "_index$"), "index", "raw"),
+      explanation = paste0(
+        unname(explanations[variable]), ". IEA region: ", Region,
+        " (the regional value is copied to each economy in it)"
+      ),
       variable = stringr::str_remove(variable, "_index$"),
       Year = as.character(year),
-      source = "IEA EV Outlook",
-      explanation = "Combined index of domestic sales, production, imports and market share"
+      source = "IEA EV Outlook"
     ) %>%
-    dplyr::rename(Country = country) %>%
     dplyr::select(
       Country,
       tech,

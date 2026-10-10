@@ -58,7 +58,7 @@ energy_consumption_build_ei_indices <- function(ei_clean, year, gamma = 0.5) {
       data_type,
       value,
       Year = year,
-      source = "EI Statistical Review of World Energy (2025)",
+      source = ei_stat_review_source(year),
       explanation = dplyr::case_when(
         data_type == "raw" ~ stringr::str_glue(
           "Per-capita {tech} consumption = {stringr::str_to_lower(tech)}_tes_ej ÷ pop"
@@ -101,7 +101,7 @@ energy_consumption_build_ei_growth <- function(ei_base, ei_target, base_year, ta
       data_type,
       value,
       Year = paste0(base_year, "-", target_year),
-      source = "EI Statistical Review of World Energy (2025)",
+      source = ei_stat_review_source(target_year),
       explanation = dplyr::case_when(
         data_type == "raw" ~ stringr::str_glue("{base_year}-{target_year} growth of per-capita consumption"),
         data_type == "index" ~ "Normalized index of per-capita consumption growth"

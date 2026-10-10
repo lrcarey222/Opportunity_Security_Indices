@@ -99,7 +99,19 @@ future_demand_build_weo <- function(iea_weo, country_reference, gamma = 0.5) {
       names_to = "supply_chain",
       values_to = "supply_chain2"
     ) %>%
-    dplyr::select(tech, supply_chain, `2035`, growth, demand_size_index, demand_growth_index, demand_index) %>%
+    # The global terms are named as such. The BNEF leg emits its own growth, demand_size and
+    # demand_growth for the twelve NEO countries, so with shared names each of those
+    # countries carried two rows per key (756 in all) from different sources, and "growth"
+    # meant an absolute EJ change in one and a relative change in the other.
+    dplyr::select(
+      tech,
+      supply_chain,
+      `2035`,
+      global_growth = growth,
+      global_demand_size_index = demand_size_index,
+      global_demand_growth_index = demand_growth_index,
+      demand_index
+    ) %>%
     tidyr::pivot_longer(
       cols = c(`2035`:demand_index),
       names_to = "variable",
@@ -117,10 +129,10 @@ future_demand_build_weo <- function(iea_weo, country_reference, gamma = 0.5) {
           "Global total energy supply in 2035, EJ (low-emissions hydrogen: production)",
         # Absolute growth, unlike the BNEF leg's relative growth: ranked across fuels, a
         # relative measure would put hydrogen's near-zero base at the top.
-        variable == "growth" ~
+        variable == "global_growth" ~
           "Modelled change in global supply, 2024-2035, EJ, IEA Stated Policies Scenario",
-        variable == "demand_size" ~ "Index of global energy demand in 2035 (ranked across fuels)",
-        variable == "demand_growth" ~
+        variable == "global_demand_size" ~ "Index of global energy demand in 2035 (ranked across fuels)",
+        variable == "global_demand_growth" ~
           "Index of modelled demand growth, 2024-2035, IEA Stated Policies Scenario (ranked across fuels)",
         variable == "demand" ~ "S-curve of (size index + 2 x growth index) / 3",
         TRUE ~ variable
@@ -459,5 +471,9 @@ future_demand <- function(iea_weo,
 
   output <- dplyr::bind_rows(standardized)
   validate_schema(output)
+  # One row per country, cell and variable: the legs overlap in countries (WEO is copied to
+  # every country, BNEF and the EV Outlook cover subsets), so a variable name two legs share
+  # would put two values from different sources under one key.
+  assert_unique_keys(output, c("Country", "tech", "supply_chain", "variable"), label = "future_demand")
   output
 }

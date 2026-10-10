@@ -251,7 +251,7 @@ reserves_build_reserve_table <- function(sheet_data,
       variable = stringr::str_glue("{tech_name} Reserves"),
       data_type = dplyr::if_else(data_type == "raw_value", "raw", "index"),
       Year = year,
-      source = "EI Statistical Review of World Energy (2025)",
+      source = ei_stat_review_source(year),
       explanation = dplyr::case_when(
         data_type == "raw" ~ stringr::str_glue("{tech_name} reserves ({unit_desc}){vintage_note} from sheet {sheet_id}"),
         data_type == "index" ~ "Percent-rank of reserves across reporting countries (plus a zero anchor)",

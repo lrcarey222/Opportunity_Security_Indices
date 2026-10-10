@@ -73,7 +73,48 @@ test_that("WEO hydrogen demand is its production, not production plus inputs", {
   h2 <- weo[weo$tech == "Green Hydrogen" & weo$supply_chain == "Midstream", ]
 
   expect_equal(h2$value[h2$variable == "2035"], 1.234)
-  expect_equal(h2$value[h2$variable == "growth"], 1.234 - 0.011)
+  expect_equal(h2$value[h2$variable == "global_growth"], 1.234 - 0.011)
+})
+
+test_that("each country, cell and variable appears once when WEO and BNEF both cover a country", {
+  # India and the United States are on every leg: WEO's global terms are copied to them and
+  # BNEF reports them. Both legs used to name their terms "growth", "demand_size" and
+  # "demand_growth", so each such key carried two rows from different sources (756 in the
+  # 2026 build), and "growth" was an EJ change in one and a ratio in the other.
+  ev_rows <- function(parameter, years, values, category) {
+    data.frame(
+      region_country = "United States", category = category, parameter = parameter,
+      mode = "Cars", powertrain = "BEV", year = years, value = values, stringsAsFactors = FALSE
+    )
+  }
+  iea_ev <- do.call(rbind, lapply(c("EV stock", "EV sales", "EV sales share"), function(p) {
+    rbind(ev_rows(p, c(2022L, 2025L), c(10, 20), "Historical"), ev_rows(p, 2035L, 50, "Projection-STEPS"))
+  }))
+  bcg <- data.frame(
+    `Energy source` = c("Solar", "Coal"), Upstream = c(925, 150), Midstream = c(2825, 300),
+    Downstream = c(460, 200), check.names = FALSE
+  )
+  out <- future_demand(
+    iea_weo = td_weo(),
+    bnef_neo = td_bnef(),
+    iea_ev = iea_ev,
+    bcg = bcg,
+    country_info = data.frame(iso3c = "USA", country = "United States"),
+    country_reference = c("India", "United States", "Chile")
+  )
+
+  keys <- dplyr::count(out, Country, tech, supply_chain, variable)
+  expect_equal(max(keys$n), 1)
+
+  india_solar <- out[out$Country == "India" & out$tech == "Solar" & out$supply_chain == "Midstream", ]
+  expect_equal(india_solar$source[india_solar$variable == "global_growth"], "IEA World Energy Outlook")
+  expect_equal(india_solar$source[india_solar$variable == "growth"], "BNEF New Energy Outlook")
+  # The composites the category scores keep their names, one per source.
+  expect_setequal(
+    india_solar$variable[india_solar$data_type == "index"],
+    c("global_demand_size", "global_demand_growth", "Overall Global Demand",
+      "demand_size", "demand_growth", "Overall Demand")
+  )
 })
 
 test_that("BNEF hydrogen reaches Green Hydrogen and each composite is ranked within its fuel", {

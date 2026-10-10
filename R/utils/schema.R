@@ -184,6 +184,39 @@ standardize_bind_rows_inputs <- function(tbl) {
 
   tbl
 }
+
+# ---- Shared label helpers ----
+# They live beside standardize_bind_rows_inputs() because every builder that writes these
+# labels already calls it, so each builder, script and test that loads a builder has them.
+
+# Source label for rows built from the EI Statistical Review.
+#
+# EI publishes each edition mid-year with data to the previous calendar year: the 2026
+# edition carries 2025. The builders used to hard-code "(2025)", the data year, so the
+# label named an edition one year older than the file read, and it would have gone stale
+# again with every restaging. `data_year` is the newest year of the EI panel the builder
+# reads (its target year), not the vintage of an individual sheet: the reserves sheets in
+# the 2026 workbook hold end-2020 stocks.
+ei_stat_review_edition <- function(data_year) {
+  data_year <- suppressWarnings(as.integer(data_year))
+  if (length(data_year) != 1 || is.na(data_year)) {
+    stop("ei_stat_review_edition() needs one data year, got: ", paste(data_year, collapse = ", "))
+  }
+  data_year + 1L
+}
+
+ei_stat_review_source <- function(data_year) {
+  sprintf("EI Statistical Review of World Energy (%d edition)", ei_stat_review_edition(data_year))
+}
+
+# A label taken from a CSV header that read.csv() made syntactic.
+#
+# read.csv() turns the IEA header "Heat Pumps - Current" into "Heat.Pumps...Current"; the
+# builders split the status off that name, and the dot left between the words leaked into
+# every downstream table as the technology "Heat.Pumps". Dots become spaces again.
+csv_header_label <- function(x) {
+  stringr::str_squish(gsub(".", " ", as.character(x), fixed = TRUE))
+}
 # schema (placeholder).
 # TODO: implement.
 schema_stub <- function() {

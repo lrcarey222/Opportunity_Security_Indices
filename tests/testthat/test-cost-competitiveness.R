@@ -648,3 +648,81 @@ test_that("each leg ranks only country_info economies", {
     plain$ppi_index[order(plain$country_std)]
   )
 })
+
+# --- placeholder lending rates ----------------------------------------------------------
+
+# One wide MFS_IR row per frequency of a series, as the export lays them out.
+cc_rate_rows <- function(country, indicator, frequency, values) {
+  row <- tibble::tibble(COUNTRY = country, INDICATOR = indicator, FREQUENCY = frequency)
+  for (period in names(values)) row[[period]] <- values[[period]]
+  row
+}
+
+test_that("a zero lending-rate stub is not a country's cost of capital", {
+  # New Zealand's lending series stops at 4.76% in January 2017, then reads 0.0 in December
+  # 2018 and June 2024; the 2024 zero used to be selected as the newest reading.
+  fixture <- dplyr::bind_rows(
+    cc_imf_rates_fixture(),
+    cc_rate_rows("New Zealand", "Lending Rate, Percent per annum", "Monthly",
+                 list(X2017.M01 = 4.76, X2018.M12 = 0, X2024.M06 = 0))
+  )
+
+  scored <- suppressMessages(
+    cost_competitiveness_select_imf_rates(cost_competitiveness_clean_imf_rates(fixture))
+  )
+  rates <- cost_competitiveness_build_rate_index(scored)
+  nzl <- rates %>% dplyr::filter(country_std == "NZL")
+
+  expect_equal(nzl$nominal_rate, 4.76, tolerance = 1e-9)
+  expect_equal(nzl$rate_year, 2017L)
+  expect_false(nzl$rate_stale)            # within ten years of the panel's newest reading
+  expect_true(all(rates$nominal_rate > 0))
+  expect_message(
+    cost_competitiveness_select_imf_rates(cost_competitiveness_clean_imf_rates(fixture)),
+    "dropped 2 zero or negative lending-rate"
+  )
+})
+
+test_that("IMF averages that fold in a zero stub are dropped with it", {
+  # Solomon Islands: 10.3-10.4% in every reported month of 2021, a zero stub in April, and an
+  # IMF annual average of 5.18% and a second-quarter average of 0 built on the stubs.
+  lending <- "Lending Rate, Percent per annum"
+  fixture <- dplyr::bind_rows(
+    cc_imf_rates_fixture(),
+    cc_rate_rows("Solomon Islands", lending, "Monthly",
+                 list(X2020.M12 = 10.30, X2021.M01 = 10.28, X2021.M02 = 10.34,
+                      X2021.M03 = 10.43, X2021.M04 = 0)),
+    cc_rate_rows("Solomon Islands", lending, "Quarterly",
+                 list(X2020.Q4 = 10.38, X2021.Q1 = 10.35, X2021.Q2 = 0)),
+    cc_rate_rows("Solomon Islands", lending, "Annual", list(X2020 = 10.68, X2021 = 5.18))
+  )
+
+  scored <- suppressMessages(
+    cost_competitiveness_select_imf_rates(cost_competitiveness_clean_imf_rates(fixture))
+  )
+  slb <- scored %>% dplyr::filter(COUNTRY == "Solomon Islands")
+
+  # The stubs and the 2021 annual average are gone; the clean first quarter and the 2020
+  # averages, which no stub touches, stay.
+  expect_false(any(slb$value <= 0))
+  expect_false(any(slb$freq_tag == "A" & slb$year == 2021L))
+  expect_true(any(slb$freq_tag == "Q" & slb$period == "2021.Q1"))
+  expect_true(any(slb$freq_tag == "A" & slb$year == 2020L))
+
+  rates <- cost_competitiveness_build_rate_index(scored)
+  expect_gt(rates$nominal_rate[rates$country_std == "SLB"], 10)
+})
+
+test_that("zero and negative policy rates are kept: only lending series carry stubs", {
+  fixture <- dplyr::bind_rows(
+    cc_imf_rates_fixture(),
+    cc_rate_rows("Japan", "Monetary policy-related, Rate, Percent per annum", "Monthly",
+                 list(X2024.M06 = -0.1, X2025.M06 = 0))
+  )
+
+  scored <- cost_competitiveness_select_imf_rates(cost_competitiveness_clean_imf_rates(fixture))
+  rates <- cost_competitiveness_build_rate_index(scored)
+
+  expect_equal(rates$nominal_rate[rates$country_std == "JPN"], 0)
+  expect_equal(nrow(scored), nrow(cost_competitiveness_clean_imf_rates(fixture)))
+})

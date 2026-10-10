@@ -171,7 +171,7 @@ critical_minerals_production_build_table <- function(sheet_data,
       variable = stringr::str_glue("{tech_name} Production"),
       data_type = dplyr::if_else(data_type == "raw_value", "raw", "index"),
       Year = year,
-      source = stringr::str_glue("EI Statistical Review of World Energy ({year})"),
+      source = ei_stat_review_source(year),
       explanation = dplyr::case_when(
         data_type == "raw" ~ stringr::str_glue(
           "{tech_name} production in {value_year} ({unit_desc}) from sheet '{sheet_id}'"

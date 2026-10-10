@@ -63,6 +63,58 @@ test_that("import dependence drops USSR and keeps one row per economy", {
   expect_equal(nrow(cleaned), dplyr::n_distinct(cleaned$Country))
 })
 
+# import_dependence_clean_raw() output for a net exporter, a partial producer and two
+# economies that produce none of any fuel. 100 * (0 - 0.007) / 0.007 is -100.00000000000001
+# while 100 * (0 - 0.1) / 0.1 is -100, which is how the former "Import share" split the last
+# two by rounding noise.
+import_balance_fixture <- function() {
+  tibble::tibble(
+    Country = c("Exporter", "Partial", "None A", "None B"),
+    Year = "2025",
+    oil_tes_ej = c(1, 2, 0.1, 0.007),
+    oilcons_kbd = c(500, 1000, 50, 3.5),
+    oilprod_kbd = c(1500, 500, 0, 0),
+    gas_tes_ej = c(1, 2, 0.1, 0.007),
+    gasprod_ej = c(3, 1, 0, 0),
+    coal_tes_ej = c(1, 2, 0.1, 0.007),
+    coalprod_ej = c(3, 1, 0, 0)
+  )
+}
+
+test_that("self-sufficiency is production over consumption and replaces the inverted 'Import share'", {
+  out <- import_dependence_build_tidy(
+    import_dependence_build_imports(import_balance_fixture()),
+    year = 2025
+  )
+
+  expect_false("Import share" %in% out$variable)
+  self_sufficiency <- function(country, fuel) {
+    out$value[out$Country == country & out$tech == fuel & out$variable == "Self-sufficiency"]
+  }
+  expect_equal(self_sufficiency("Exporter", "Gas"), 300)
+  expect_equal(self_sufficiency("Partial", "Gas"), 50)
+  expect_equal(self_sufficiency("Partial", "Fossil"), 50)
+  # Oil production in EJ is taken at the country's own EJ per barrel of consumption.
+  expect_equal(self_sufficiency("Exporter", "Oil"), 300)
+  expect_equal(self_sufficiency("None B", "Coal"), 0)
+
+  # The index stays oriented higher = less import dependent.
+  index <- out %>% dplyr::filter(data_type == "index", tech == "Gas")
+  expect_equal(index$Country[which.max(index$value)], "Exporter")
+})
+
+test_that("economies that produce none of a fuel tie exactly on self-sufficiency", {
+  built <- import_dependence_build_imports(import_balance_fixture())
+  none <- built$Country %in% c("None A", "None B")
+
+  for (fuel in c("oil", "gas", "coal", "fossil")) {
+    ss <- built[[paste0(fuel, "_self_sufficiency")]]
+    expect_identical(ss[none], c(0, 0), info = fuel)
+    ranked <- median_scurve(ss)
+    expect_identical(ranked[none][[1]], ranked[none][[2]], info = fuel)
+  }
+})
+
 # ---- BNEF New Energy Outlook ---------------------------------------------------------------
 
 bnef_fixture <- function() {

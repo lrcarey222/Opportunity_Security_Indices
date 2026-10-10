@@ -108,7 +108,9 @@ overall_variables:
       - "Overall Market Share"
       - "production"
       - "sales"
-      - "import"
+      # EV Midstream (IEA EV Outlook regions): percent-ranked (production - sales) / sales,
+      # higher = net exporter. Named "import" until Oct 2026, though it never measured imports.
+      - "net_export"
       - "market_share"
       - "Overall Production"
     aggregation: mean

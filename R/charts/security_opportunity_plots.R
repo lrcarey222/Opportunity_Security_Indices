@@ -124,6 +124,9 @@ build_commodity_use_map <- function() {
 
 commodity_use_map <- build_commodity_use_map()
 
+# Units as in energy_prices_pcps_units() (R/categories/energy_prices/energy_prices.R), taken
+# from the IMF series metadata: the IMF label text says "US cents" for propane, whose values
+# are US dollars per gallon, and uranium is quoted per pound of U3O8, not per tonne.
 units<-tibble::tribble(
   ~sub_sector,                  ~unit_description,
   "Lithium",                    "USD per metric tonne",
@@ -134,17 +137,17 @@ units<-tibble::tribble(
   "Vanadium",                   "USD per metric tonne",
   "Copper",                     "USD per metric tonne",
   "Rare Earths",                "USD per metric tonne",
-  "Propane",                    "US cents per gallon",
+  "Propane",                    "USD per gallon",
   "Zinc",                       "USD per metric tonne",
   "Manganese",                  "USD per metric tonne",
   "Silicon",                    "USD per metric tonne",
-  "Natural Gas Index",          "Indicator-native IMF unit",
+  "Natural Gas Index",          "Index, 2016 = 100",
   "Diammonium Phosphate",       "USD per metric tonne",
   "Natural Gas EU",             "USD per MMBtu",
   "Natural Gas Henry Hub",      "USD per MMBtu",
   "Iron Ore",                   "USD per metric tonne",
   "LNG",                        "USD per MMBtu",
-  "Uranium",                    "USD per metric tonne",
+  "Uranium",                    "USD per pound",
   "Coal",                       "USD per metric tonne",
   "Oil Brent",                  "USD per barrel",
   "Oil WTI",                    "USD per barrel",

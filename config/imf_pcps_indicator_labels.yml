@@ -6,12 +6,15 @@
 # data message at all, so the fetcher restores it from this table to keep the staged and
 # fetched files interchangeable.
 #
-# Two consumers depend on the composite form:
-#   * energy_prices_imf_patterns - the Aluminum pattern requires a unit suffix.
-#   * energy_prices_extract_unit() - parses the unit out of the label for output metadata.
+# One consumer depends on the composite form: energy_prices_imf_patterns, whose Aluminum
+# pattern requires a unit suffix. The theme's output units do not come from these labels:
+# the IMF's own label text is wrong for cobalt ("per pound") and propane ("US cents"), and
+# silent for lithium, vanadium, chromium and rare earths, so energy_prices_pcps_units()
+# (R/categories/energy_prices/energy_prices.R) holds the units from the IMF series metadata.
+# The labels below are kept as the IMF publishes them so the two files stay interchangeable.
 #
 # Codes absent from this table pass through with the plain API label, so a commodity
-# newly published by the IMF degrades to a missing unit rather than a failed fetch.
+# newly published by the IMF degrades to a plain label rather than a failed fetch.
 #
 # Derived by matching API series to the 2026-01-22 staged export on observed values
 # rather than on label text, which is ambiguous (the API's "Coal" is the coal index,

@@ -287,18 +287,64 @@ energy_prices_calc_vol <- function(df, years_back, min_months = 24) {
   )
 }
 
-energy_prices_extract_unit <- function(indicator) {
-  indicator_lc <- stringr::str_to_lower(indicator)
-
-  dplyr::case_when(
-    stringr::str_detect(indicator_lc, "\\$/bbl|\\busd per barrel\\b|\\bus dollars per barrel\\b") ~ "USD per barrel",
-    stringr::str_detect(indicator_lc, "us cents per gallon") ~ "US cents per gallon",
-    stringr::str_detect(indicator_lc, "us dollars per metric tonne|usd per metric tonne") ~ "USD per metric tonne",
-    stringr::str_detect(indicator_lc, "us dollars per mmbtu|usd per mmbtu") ~ "USD per MMBtu",
-    stringr::str_detect(indicator_lc, "us dollars per kilogram|usd per kilogram") ~ "USD per kilogram",
-    stringr::str_detect(indicator_lc, "unit prices") ~ "Indicator-native IMF unit",
-    TRUE ~ "Indicator-native IMF unit"
+# Price unit of each PCPS series the theme can match, keyed by its `clean` name.
+#
+# Units come from the IMF's own series metadata (the PCPS SDMX codelists CL_COMMODITY and
+# CL_PCPS_INDICATOR, read 2026-10-10), checked against the published values. They do not
+# come from the INDICATOR label, which is wrong or silent for six of the series the theme
+# maps; parsing it gave these rows wrong or missing units:
+#   * Cobalt is labelled "US dollars per pound", but the IMF describes the series as "LME
+#     spot price, USD/ton" and the values are per tonne (51,873 in December 2025; 87,615 at
+#     the March 2018 peak, about USD 40 a pound).
+#   * Propane is labelled "US cents per gallon", but the values are US dollars per gallon:
+#     they equal the EIA Mont Belvieu spot series in dollars per gallon (1.448 in March 2022,
+#     0.646 in December 2025).
+#   * Lithium, vanadium, chromium and rare earths carry no unit in the label;
+#     CL_COMMODITY gives US dollars per metric ton for each.
+# A series missing from this table is reported as "unit to confirm" rather than guessed:
+# the Energy Transition Metal index (no base period published) and urea (labelled USD per
+# short ton, which its levels do not bear out) are left out on purpose.
+energy_prices_pcps_units <- function() {
+  tibble::tribble(
+    ~clean, ~imf_code, ~unit, ~benchmark,
+    "Oil_Brent", "POILBRE", "USD per barrel", "Dated Brent, light blend 38 API, fob U.K.",
+    "Oil_WTI", "POILWTI", "USD per barrel", "West Texas Intermediate 40 API, Midland Texas",
+    "Dubai_Crude", "POILDUB", "USD per barrel", "Dubai Fateh 32 API",
+    "Oil_APSP", "POILAPSP", "USD per barrel", "Average petroleum spot price: simple mean of Brent, WTI and Dubai",
+    "Natural_Gas_Henry_Hub", "PNGASUS", "USD per MMBtu", "Henry Hub spot, Louisiana",
+    "Natural_Gas_EU", "PNGASEU", "USD per MMBtu", "Netherlands TTF day-ahead",
+    "LNG", "PNGASJP", "USD per MMBtu", "Indonesian LNG delivered to Japan",
+    "Propane", "PPROPANE", "USD per gallon", "Mont Belvieu spot (LST)",
+    "Coal", "PCOALAU; PCOALSA", "USD per metric tonne", "Mean of Australian thermal coal (fob Newcastle/Port Kembla) and South African export coal",
+    "Uranium", "PURAN", "USD per pound", "NUEXCO restricted spot, U3O8",
+    "Copper", "PCOPP", "USD per metric tonne", "Grade A cathode, LME spot, CIF European ports",
+    "Nickel", "PNICK", "USD per metric tonne", "Melting grade, LME spot, CIF European ports",
+    "Cobalt", "PCOBA", "USD per metric tonne", "Minimum 99.80% purity, LME spot",
+    "Lithium", "PLITH", "USD per metric tonne", "Lithium metal, at least 99%, battery grade",
+    "Manganese", "PMANGELE", "USD per metric tonne", "Electrolytic manganese, CIF North West Europe",
+    "Zinc", "PZINC", "USD per metric tonne", "High grade, 98% pure",
+    "Molybdenum", "PLMMODY", "USD per metric tonne", "57-63% molybdenum in roasted concentrate, LME spot",
+    "Chromium", "PCHROM", "USD per metric tonne", "Chromium metal, at least 99.2%, coarse particle",
+    "Silicon", "PSILLUMP", "USD per metric tonne", "Silicon lumps, CIF North West Europe",
+    "Rare_Earths", "PREODOM", "USD per metric tonne", "Rare earth carbonate, 42-45% REO, domestic",
+    "Vanadium", "PVANPENT", "USD per metric tonne", "Vanadium pentoxide, CIF North West Europe",
+    "Iron_Ore", "PIORECR", "USD per metric tonne", "China import fines, 62% Fe, CFR Tianjin",
+    "Diammonium_Phosphate", "PDAP", "USD per metric tonne", "US Gulf NOLA export spot",
+    "Aluminum", "PALUM", "USD per metric tonne", "99.5% minimum purity, LME spot, CIF UK ports",
+    "Lead", "PLEAD", "USD per metric tonne", "99.97% pure, LME spot, CIF European ports",
+    "Tin", "PTIN", "USD per metric tonne", "Standard grade, LME spot",
+    "Potassium_Fertilizer", "PPOTASH", "USD per metric tonne", "Muriate of potash, standard grade, FOB Vancouver",
+    "Natural_Gas_Index", "PNGAS", "Index, 2016 = 100", "IMF natural gas price index",
+    "Energy_Index", "PNRG", "Index, 2016 = 100", "IMF fuel (energy) price index",
+    "All_Metals_Index", "PALLMETA", "Index, 2016 = 100", "IMF all metals price index",
+    "Base_Metals_Index", "PMETA", "Index, 2016 = 100", "IMF base metals price index"
   )
+}
+
+energy_prices_unit <- function(clean) {
+  units <- energy_prices_pcps_units()
+  unit <- units$unit[match(clean, units$clean)]
+  dplyr::coalesce(unit, "unit to confirm")
 }
 
 energy_prices_latest_and_yoy <- function(df) {
@@ -363,7 +409,7 @@ energy_prices_sub_sector_unit_lookup <- function(imf_price,
         clean == "Coal" ~ "Coal",
         TRUE ~ clean
       ),
-      unit = energy_prices_extract_unit(INDICATOR)
+      unit = energy_prices_unit(clean)
     ) %>%
     dplyr::group_by(sub_sector) %>%
     dplyr::summarize(
@@ -484,12 +530,7 @@ energy_prices_build_volatility <- function(imf_monthly,
       latest_price_lookup,
       by = c("INDICATOR", "clean")
     ) %>%
-    dplyr::left_join(
-      imf_monthly %>%
-        dplyr::distinct(INDICATOR, clean) %>%
-        dplyr::mutate(unit = energy_prices_extract_unit(INDICATOR)),
-      by = c("INDICATOR", "clean")
-    ) %>%
+    dplyr::mutate(unit = energy_prices_unit(clean)) %>%
     dplyr::left_join(annual_yoy_lookup, by = c("INDICATOR", "clean")) %>%
     dplyr::mutate(yoy_price_change_pct = yoy_price_change_pct_annual) %>%
     dplyr::select(-dplyr::any_of(c("yoy_price_change_pct_annual", "yoy_year", "latest_month_date"))) %>%
@@ -611,7 +652,8 @@ energy_prices_build_table <- function(volatility_by_tech,
       source = "IMF Commodity Prices",
       explanation = dplyr::case_when(
         variable == "latest_price" ~ paste0("Latest observed commodity price level for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, "."),
-        variable == "yoy_price_change_pct" ~ paste0("Latest IMF annual year-on-year percentage change for ", sub_sector, " (average across mapped IMF series). Unit: ", unit, "."),
+        # A percentage change: the row used to state the price unit as its own.
+        variable == "yoy_price_change_pct" ~ paste0("Latest IMF annual year-on-year percentage change for ", sub_sector, " (average across mapped IMF series). Unit: percent (price quoted in ", unit, ")."),
         TRUE ~ NA_character_
       )
     )

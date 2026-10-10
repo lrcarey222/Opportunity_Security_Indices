@@ -50,36 +50,48 @@ import_dependence_build_imports <- function(imports_raw) {
     dplyr::mutate(
       oil_calc = oil_tes_ej / oilcons_kbd,
       oilprod_ej = oil_calc * oilprod_kbd,
-      oil_imports_ej = oilprod_ej - oil_tes_ej,
-      oil_imports_kbd = oilprod_kbd - oilcons_kbd,
-      gas_imports_ej = gasprod_ej - gas_tes_ej,
-      coal_imports_ej = coalprod_ej - coal_tes_ej,
-      fossil_imports_ej = oil_imports_ej + gas_imports_ej + coal_imports_ej,
-      # An import *share* is undefined where a country consumes none of the fuel, so guard
-      # the denominators rather than emitting 0/0. The absolute surplus/deficit above is
-      # still 0 and still meaningful, and the index below averages over whichever of the two
-      # components is available.
-      oil_imports_share = dplyr::if_else(oil_tes_ej > 0, 100 * oil_imports_ej / oil_tes_ej, NA_real_),
-      gas_imports_share = dplyr::if_else(gas_tes_ej > 0, 100 * gas_imports_ej / gas_tes_ej, NA_real_),
-      coal_imports_share = dplyr::if_else(coal_tes_ej > 0, 100 * coal_imports_ej / coal_tes_ej, NA_real_),
-      fossil_imports_share = dplyr::if_else(
-        (oil_tes_ej + gas_tes_ej + coal_tes_ej) > 0,
-        100 * fossil_imports_ej / (oil_tes_ej + gas_tes_ej + coal_tes_ej),
+      fossilprod_ej = oilprod_ej + gasprod_ej + coalprod_ej,
+      fossil_tes_ej = oil_tes_ej + gas_tes_ej + coal_tes_ej,
+      # Net balance, production minus consumption (EJ): positive for a net exporter. These
+      # columns were named *_imports_ej although a net importer has a negative value.
+      oil_surplus_ej = oilprod_ej - oil_tes_ej,
+      oil_surplus_kbd = oilprod_kbd - oilcons_kbd,
+      gas_surplus_ej = gasprod_ej - gas_tes_ej,
+      coal_surplus_ej = coalprod_ej - coal_tes_ej,
+      fossil_surplus_ej = oil_surplus_ej + gas_surplus_ej + coal_surplus_ej,
+      # Self-sufficiency, production as a percent of consumption: 100 is balanced, 0 fully
+      # imported, above 100 a net exporter. It replaces the former "Import share",
+      # (production - consumption) / consumption x 100, which is this minus 100 and was
+      # positive for exporters despite its name. The index was always oriented higher = less
+      # import dependent, and a shift by 100 leaves the percent ranks as they were, with one
+      # exception that this form removes: 100 * (0 - c) / c is not exactly -100 for every c,
+      # so economies that produce none of a fuel were split by rounding noise instead of
+      # tying (2025 oil: Spain -100.00000000000001 ranked below 38 exact -100s, Israel,
+      # Netherlands, Poland and Singapore -99.999999999999986 above them). 100 * 0 / c is 0.
+      # Undefined where a country consumes none of the fuel, so the denominators are guarded
+      # rather than emitting 0/0. The absolute balance above is still 0 and still
+      # meaningful, and the index below averages over whichever of the two is available.
+      oil_self_sufficiency = dplyr::if_else(oil_tes_ej > 0, 100 * oilprod_ej / oil_tes_ej, NA_real_),
+      gas_self_sufficiency = dplyr::if_else(gas_tes_ej > 0, 100 * gasprod_ej / gas_tes_ej, NA_real_),
+      coal_self_sufficiency = dplyr::if_else(coal_tes_ej > 0, 100 * coalprod_ej / coal_tes_ej, NA_real_),
+      fossil_self_sufficiency = dplyr::if_else(
+        fossil_tes_ej > 0,
+        100 * fossilprod_ej / fossil_tes_ej,
         NA_real_
       )
     ) %>%
     dplyr::mutate(
-      oil_import_index = rowMeans(cbind(median_scurve(oil_imports_share), median_scurve(oil_imports_ej)), na.rm = TRUE),
-      gas_import_index = rowMeans(cbind(median_scurve(gas_imports_share), median_scurve(gas_imports_ej)), na.rm = TRUE),
-      coal_import_index = rowMeans(cbind(median_scurve(coal_imports_share), median_scurve(coal_imports_ej)), na.rm = TRUE),
-      fossil_import_index = rowMeans(cbind(median_scurve(fossil_imports_share), median_scurve(fossil_imports_ej)), na.rm = TRUE)
+      oil_import_index = rowMeans(cbind(median_scurve(oil_self_sufficiency), median_scurve(oil_surplus_ej)), na.rm = TRUE),
+      gas_import_index = rowMeans(cbind(median_scurve(gas_self_sufficiency), median_scurve(gas_surplus_ej)), na.rm = TRUE),
+      coal_import_index = rowMeans(cbind(median_scurve(coal_self_sufficiency), median_scurve(coal_surplus_ej)), na.rm = TRUE),
+      fossil_import_index = rowMeans(cbind(median_scurve(fossil_self_sufficiency), median_scurve(fossil_surplus_ej)), na.rm = TRUE)
     ) %>%
     dplyr::ungroup()
 }
 
-# The index is the mean of two percent-ranked components: the absolute balance and the
-# import share. Publish both as raw rows so the composite can be audited, and keep them on
-# separate `variable` names so (Country, tech, variable, data_type) stays unique.
+# The index is the mean of two percent-ranked components: the absolute balance and
+# self-sufficiency. Publish both as raw rows so the composite can be audited, and keep them
+# on separate `variable` names so (Country, tech, variable, data_type) stays unique.
 #
 # "Production surplus/deficit" must stay the EJ balance: config/index_definition.yml lists
 # it as the Overall Energy Imports Index component, and R/charts/import_exposure_chart.R
@@ -87,7 +99,7 @@ import_dependence_build_imports <- function(imports_raw) {
 import_dependence_component_specs <- function() {
   list(
     list(
-      suffix = "_imports_ej",
+      suffix = "_surplus_ej",
       variable = "Production surplus/deficit",
       data_type = "raw",
       explanation = paste(
@@ -96,19 +108,22 @@ import_dependence_component_specs <- function() {
       )
     ),
     list(
-      suffix = "_imports_share",
-      variable = "Import share",
+      suffix = "_self_sufficiency",
+      variable = "Self-sufficiency",
       data_type = "raw",
       explanation = paste(
-        "{tech} import share (%) = production minus consumption as a share of consumption;",
-        "negative means net importer. NA where the country consumes none of the fuel"
+        "{tech} self-sufficiency (%) = production as a percent of consumption; below 100 means",
+        "net importer, 0 fully imported. NA where the country consumes none of the fuel"
       )
     ),
     list(
       suffix = "_import_index",
       variable = "Production surplus/deficit",
       data_type = "index",
-      explanation = "Mean of the percent-ranked import share and percent-ranked absolute balance for {tech}"
+      explanation = paste(
+        "Mean of the percent-ranked self-sufficiency and percent-ranked absolute balance for",
+        "{tech}; higher means less dependent on imports"
+      )
     )
   )
 }
@@ -140,7 +155,7 @@ import_dependence_build_tidy <- function(imports_indexed, year = 2025) {
       supply_chain = "Upstream",
       category = "Energy Imports",
       Year = year,
-      source = "EI Statistical Review of World Energy (2025)"
+      source = ei_stat_review_source(year)
     ) %>%
     dplyr::select(
       Country,

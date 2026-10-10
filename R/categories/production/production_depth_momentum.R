@@ -205,7 +205,11 @@ production_depth_momentum_build_mineral_supply <- function(critical,
       share_frac_24 = supply_24 / sum(supply_24, na.rm = TRUE),
       HHI_24 = sum(share_frac_24^2, na.rm = TRUE),
       share_frac_35 = supply_35 / sum(supply_35, na.rm = TRUE),
-      HHI_35 = sum(share_frac_35^2, na.rm = TRUE)
+      HHI_35 = sum(share_frac_35^2, na.rm = TRUE),
+      # World supply (the named producers plus "Rest of world"), kept before that row is
+      # dropped so production can be put in shares of world supply of each mineral.
+      world_base = sum(supply_base, na.rm = TRUE),
+      horizon_year = as.integer(horizon_year)
     ) %>%
     dplyr::filter(
       country != "Rest of world",
@@ -228,37 +232,66 @@ production_depth_momentum_build_mineral_supply <- function(critical,
     dplyr::arrange(dplyr::desc(security_index))
 }
 
+# One production level per country and technology from the IEA mined supply of the
+# technology's minerals.
+#
+# Tonnes of different minerals cannot be averaged or added: copper is mined in tens of
+# millions of tonnes, cobalt, lithium and magnet rare earths in tens to hundreds of thousands,
+# so a mean of a country's kilotonnes was copper's tonnage diluted by however many other
+# minerals the technology uses, and ranking all country-mineral rows together scored a country
+# on how many of the minerals it mines rather than how much (Russia, a mid-sized producer of
+# most of them, ranked in the top two on size in five of the six technologies).
+# Each mineral therefore enters as the country's share of world supply, and the technology's
+# minerals are combined with its share of each mineral's demand (share_24, renormalised over
+# the minerals the supply sheet reports), the weights of the reserves and critical-minerals
+# production rollups:
+#
+#   supply_base    = sum_m w_m * S_m,base / W_m,base     (the raw production level)
+#   supply_horizon = sum_m w_m * S_m,horizon / W_m,base
+#
+# The horizon level is divided by the base-year world supply too, so the change between the
+# two is a change in quantity in base-year world-share units, not a change in market share.
+# Growth is that absolute change, as for oil, gas, coal and uranium: the relative change was
+# undefined for a country mining none of the minerals, and those NAs were then filled with the
+# cell's average, ranking non-producers above the smallest producers. A country the supply
+# sheet does not name for a mineral counts as 0 there, as it already did for the level.
 production_depth_momentum_build_mineral_production <- function(mineral_supply, gamma = 0.5) {
   require_columns(
     mineral_supply,
-    c("mineral", "country", "tech", "supply_chain", "supply_base", "supply_horizon", "HHI_24"),
+    c(
+      "mineral", "country", "tech", "supply_chain", "supply_base", "supply_horizon",
+      "world_base", "share_24", "HHI_24"
+    ),
     label = "mineral_supply"
   )
+  if (!"horizon_year" %in% names(mineral_supply)) {
+    mineral_supply$horizon_year <- NA_integer_
+  }
 
   mineral_supply %>%
-    dplyr::mutate(supply_growth = (supply_horizon - supply_base) / supply_base) %>%
-    dplyr::select(mineral, country, tech, supply_chain, supply_base, supply_horizon, supply_growth, HHI_24) %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(!is.na(share_24), share_24 > 0, !is.na(world_base), world_base > 0) %>%
+    dplyr::group_by(country, tech, supply_chain) %>%
+    dplyr::mutate(weight = share_24 / sum(share_24)) %>%
+    dplyr::summarize(
+      supply_base = sum(weight * dplyr::coalesce(supply_base, 0) / world_base),
+      supply_horizon = sum(weight * dplyr::coalesce(supply_horizon, 0) / world_base),
+      # A world-market term, the same for every country of the technology.
+      HHI_24 = sum(weight * HHI_24),
+      horizon_year = dplyr::first(horizon_year),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(supply_growth = supply_horizon - supply_base) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
       size_index = median_scurve(supply_base, gamma = gamma),
       growth_abs_index = median_scurve(supply_growth, gamma = gamma),
-      HHI_index = median_scurve(-HHI_24, gamma = gamma)
+      HHI_index = median_scurve(-HHI_24, gamma = gamma),
+      overall_production_index = median_scurve(
+        2 * size_index + 1 * growth_abs_index + 1 * HHI_index,
+        gamma = gamma
+      )
     ) %>%
-    dplyr::group_by(country, tech, supply_chain) %>%
-    dplyr::summarize(dplyr::across(supply_base:HHI_index, \(x) mean(x, na.rm = TRUE)), .groups = "drop") %>%
-    dplyr::group_by(tech, supply_chain) %>%
-    dplyr::mutate(
-      size_index = median_scurve(size_index, gamma = gamma),
-      growth_abs_index = median_scurve(growth_abs_index, gamma = gamma),
-      HHI_index = median_scurve(HHI_index, gamma = gamma)
-    ) %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(
-      overall_production_index = 2 * size_index + 1 * growth_abs_index + 1 * HHI_index
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(tech, supply_chain) %>%
-    dplyr::mutate(overall_production_index = median_scurve(overall_production_index, gamma = gamma)) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(Country = dplyr::if_else(country == "US", "United States", country)) %>%
     dplyr::select(-country)
@@ -267,7 +300,9 @@ production_depth_momentum_build_mineral_production <- function(mineral_supply, g
 production_depth_momentum_build_combined <- function(production_growth,
                                                      mineral_production,
                                                      energy_year = 2025,
-                                                     mineral_year = 2025) {
+                                                     mineral_year = 2025,
+                                                     energy_source = "EI Statistical Review World Energy",
+                                                     mineral_source = "IEA Critical Minerals Database") {
   energy_year_col <- as.character(energy_year)
 
   require_columns(
@@ -283,7 +318,8 @@ production_depth_momentum_build_combined <- function(production_growth,
 
   # EI energy production and IEA critical mineral production carry different latest
   # years, so the raw level is unified under one year-neutral column and the source
-  # year is kept alongside it for the explanation text.
+  # year is kept alongside it for the explanation text. Each block carries its own source
+  # and measure: the mineral rows were labelled EI although they are IEA mined supply.
   production_tbl <- production_growth %>%
     dplyr::transmute(
       Country,
@@ -293,7 +329,9 @@ production_depth_momentum_build_combined <- function(production_growth,
       raw_year = energy_year,
       size_index,
       growth_abs_index,
-      overall_production_index
+      overall_production_index,
+      block = "energy",
+      source = energy_source
     )
   mineral_tbl <- mineral_production %>%
     dplyr::transmute(
@@ -302,9 +340,12 @@ production_depth_momentum_build_combined <- function(production_growth,
       supply_chain,
       production_latest = supply_base,
       raw_year = mineral_year,
+      horizon_year = if ("horizon_year" %in% names(mineral_production)) horizon_year else NA_integer_,
       size_index,
       growth_abs_index,
-      overall_production_index
+      overall_production_index,
+      block = "mineral",
+      source = mineral_source
     )
 
   production_tbl <- standardize_bind_rows_inputs(production_tbl)
@@ -321,6 +362,17 @@ production_depth_momentum_build_table <- function(production_combined,
     c("Country", "tech", "supply_chain", "production_latest", "raw_year", "size_index", "growth_abs_index", "overall_production_index"),
     label = "production_combined"
   )
+  # Rows from production_depth_momentum_build_combined() carry their block and source; the
+  # uranium rows come without them and take `source`.
+  if (!"source" %in% names(production_combined)) {
+    production_combined$source <- source
+  }
+  if (!"block" %in% names(production_combined)) {
+    production_combined$block <- "energy"
+  }
+  if (!"horizon_year" %in% names(production_combined)) {
+    production_combined$horizon_year <- NA_integer_
+  }
 
   production_combined %>%
     dplyr::filter(supply_chain != "Midstream") %>%
@@ -335,8 +387,24 @@ production_depth_momentum_build_table <- function(production_combined,
     ) %>%
     dplyr::mutate(
       category = "Production",
-      source = source,
       explanation = dplyr::case_when(
+        block == "mineral" & metric_clean == "production_latest" ~
+          glue::glue(
+            "Share of world mined supply of the minerals {tech} uses in {raw_year}, each mineral ",
+            "weighted by {tech}'s share of its demand (0-1)"
+          ),
+        block == "mineral" & metric_clean == "size" ~
+          glue::glue("Percent-rank of {tech}'s demand-weighted share of world mined supply in {raw_year}"),
+        block == "mineral" & metric_clean == "growth_abs" ~
+          glue::glue(
+            "Percent-rank of the projected change in that supply, {raw_year}-{horizon_year} ",
+            "(IEA base case), in {raw_year} world-supply units"
+          ),
+        block == "mineral" & metric_clean == "overall_production" ~
+          glue::glue(
+            "Composite index: percent-rank of 2 x size + growth (plus a concentration term common ",
+            "to every country) for {tech}"
+          ),
         metric_clean == "production_latest" ~
           glue::glue("Raw production of {tech} ({supply_chain}) in {raw_year}"),
         metric_clean == "size" ~
@@ -434,7 +502,10 @@ production_depth_momentum <- function(ei,
     production_growth = production_growth,
     mineral_production = mineral_production,
     energy_year = year,
-    mineral_year = mineral_year
+    mineral_year = mineral_year,
+    # The edition label the other EI themes carry (R/utils/schema.R), derived from the EI
+    # data year read rather than written out, so the themes name the same edition.
+    energy_source = ei_stat_review_source(year)
   )
 
   output <- production_depth_momentum_build_table(

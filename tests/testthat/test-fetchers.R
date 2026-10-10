@@ -234,8 +234,8 @@ test_that("PCPS indicator codes are composed into the Data Explorer label form",
   withr::local_options(opportunity_security.repo_root = root)
   opsi_load_fetchers()
 
-  # The API's short name carries no unit; energy_prices_extract_unit() and the Aluminum
-  # pattern both read the unit out of the label, so the fetcher has to restore it.
+  # The API's short name carries no unit, and the Aluminum pattern reads the unit out of
+  # the label, so the fetcher has to restore it.
   expect_equal(
     imf_pcps_compose_indicator("PALUM: Aluminum"),
     "Aluminum, US dollars per metric tonne, Unit prices"

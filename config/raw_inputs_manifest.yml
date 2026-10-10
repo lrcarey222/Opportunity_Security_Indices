@@ -142,7 +142,10 @@ inputs:
     is fallback, not prefer, because the live flow no longer carries every country
     in the staged extract - it reproduces 159 of 162 scored countries, and Spain is
     absent from MFS_IR entirely. Set fetch_policy to prefer once that gap is accepted
-    or resolved.
+    or resolved. Lapsed lending series carry zero placeholder entries (New Zealand after
+    2017-M01, Solomon Islands 2021-M04 and 2021-Q2), and the IMF's quarterly and annual
+    averages fold them in; cost_competitiveness_drop_rate_stubs() drops zero or negative
+    lending-type readings and those averages, and its message names the countries affected.
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
@@ -473,8 +476,12 @@ inputs:
   url: https://www.energyinst.org/statistical-review
   cadence: annual
   owner: lcarey@rmi.org
+  vintage: 2026 edition (data 1965-2025)
   staged_from: sharepoint
-  notes: Public annual download; a strong candidate for automated fetching.
+  notes: Public annual download; a strong candidate for automated fetching. EI publishes each edition
+    with data to the previous year; the theme labels derive the edition from the year the builders
+    read (ei_stat_review_source(), R/utils/schema.R). scripts/10 calls the EI builders with their
+    default target year (2025), so move it when a later edition is staged.
   required_by:
   - scripts/10_build_themes.R
   - scripts/13_build_coalition.R
@@ -486,6 +493,7 @@ inputs:
   url: https://www.energyinst.org/statistical-review
   cadence: annual
   owner: lcarey@rmi.org
+  vintage: 2026 edition (Contents sheet; fuel reserve sheets at end-2020)
   staged_from: sharepoint
   notes: The mineral production sheets and the oil, gas and coal reserve sheets also feed the coalition
     supplier route (scripts/13; reserves as shares of each sheet's Total World row). Mineral reserves
@@ -501,6 +509,11 @@ inputs:
   cadence: annual
   owner: lcarey@rmi.org
   staged_from: sharepoint
+  notes: Rows are the five IEA regions (China, European Union, North America, Other Asia Pacific,
+    Rest of World), which partition the world, so Rest of World includes non-EU Europe; the builders
+    stop unless a year has exactly these five. Column import_share is (Domestic Production - Domestic
+    sales) / Domestic sales, a net export ratio; the builders rename it net_export_ratio and stop if
+    it is not that ratio.
   required_by:
   - scripts/10_build_themes.R
 - id: gcim_investment_capacity
@@ -605,6 +618,10 @@ inputs:
   cadence: annual
   owner: lcarey@rmi.org
   staged_from: sharepoint
+  notes: One row per entity (China, Viet Nam, India, EU, United States, Other) in percent of world
+    capacity, columns "<Technology> - Current" and "<Technology> - Pipeline". Shares are taken over
+    the column total with Other included (a World or Total row would be double counted). read.csv
+    turns "Heat Pumps - Current" into Heat.Pumps...Current; the builders relabel it Heat Pumps.
   required_by:
   - scripts/10_build_themes.R
   - scripts/13_build_coalition.R
@@ -685,7 +702,13 @@ inputs:
     scored commodities still resolve. The 28 differences are upstream revisions to Urea,
     Potassium Fertilizer and Propane - the staged export had frozen Urea at 183.7051 for
     all of 2025, which the fetched series corrects. The flow no longer publishes the PCPS
-    exchange-rate series (T*); they return as empty stubs and nothing reads them.'
+    exchange-rate series (T*); they return as empty stubs and nothing reads them. The
+    INDICATOR labels are kept as the IMF publishes them (config/imf_pcps_indicator_labels.yml)
+    but are not a source of units: they are wrong for cobalt (per pound; the series is USD
+    per metric tonne) and propane (US cents; the series is USD per gallon) and silent for
+    lithium, vanadium, chromium and rare earths. Units come from the series metadata, held
+    in energy_prices_pcps_units() (R/categories/energy_prices/energy_prices.R); add a row
+    there for a newly mapped commodity.'
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
