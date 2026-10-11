@@ -1,0 +1,30 @@
+name: Dashboard
+
+# The Allied Industrial Base Explorer (dashboard/): typecheck, unit + UI + synthetic parity tests,
+# production build and the download budget. The R side (test-dashboard-osb.R,
+# test-dashboard-fixtures.R) runs in r-tests.yml.
+
+on:
+  push:
+    paths: ["dashboard/**", ".github/workflows/dashboard.yml"]
+  pull_request:
+    paths: ["dashboard/**", ".github/workflows/dashboard.yml"]
+
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run budget

@@ -1,0 +1,12 @@
+# dependencies and build output
+node_modules/
+dist/
+coverage/
+.vite/
+.netlify/
+*.local
+*.tsbuildinfo
+
+# generated locally, not committed (pending the user's decision, spec_react.md 12.3)
+src/engine/__fixtures__/real/
+public/paper/

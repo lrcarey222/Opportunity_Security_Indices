@@ -1,0 +1,787 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   NEIS design tokens, copied from neis-intelligence/src/app/globals.css (the
+   hub's tokens, measured off neiscenter.org; see docs/neis-design-audit.md
+   there). Only the hub's next/font variables are replaced by the self-hosted
+   Roboto Variable face (@fontsource-variable/roboto, imported in main.tsx).
+   Added below the copied block: data tokens for charts, the slider, the
+   segmented control, the switch, tables and prose this app needs.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* Tailwind's grey, which is what the public site uses verbatim. */
+  --color-ink-900: #111827; /* page ground */
+  --color-ink-850: #171f2e; /* raised row */
+  --color-ink-800: #1f2937; /* panels and cards — the research card colour */
+  --color-ink-700: #374151;
+  --color-ink-600: #4b5563;
+  --color-ink-500: #6b7280;
+
+  --color-paper: #ffffff;
+  --color-paper-dim: #d1d5db; /* body text on dark */
+  --color-paper-mute: #9ca3af; /* metadata — 5.2:1 on ink-800, passes AA */
+
+  /* Brand. Measured: rgb(245 130 41). */
+  --color-signal: #f58229;
+  --color-signal-hi: #f79544;
+
+  /* From the logo. Data encoding only. */
+  --color-brand-blue: #1889b0;
+  --color-brand-green: #a3b63b;
+  --color-brand-teal: #55c4c5;
+  --color-alert: #e2574c;
+
+  /* Data tokens (chart use only), validated on the dark surface #1f2937
+     (scratch_dash/pal): stage hues, the sequential ramp (dim -> bright = low
+     -> high) and the diverging arms (decrease red | neutral | increase blue). */
+  --color-stage-up: #1889b0;
+  --color-stage-mid: #8b9d17;
+  --color-stage-down: #2fa5a6;
+  --color-seq-1: #016787;
+  --color-seq-2: #007da3;
+  --color-seq-3: #2792ba;
+  --color-seq-4: #43a8d0;
+  --color-seq-5: #5cbfe8;
+  --color-seq-6: #75d5fe;
+  --color-seq-7: #b4e7fe;
+  --color-div-neg-1: #fe968a;
+  --color-div-neg-2: #f16559;
+  --color-div-neg-3: #ce443b;
+  --color-div-neg-4: #ab1f1c;
+  --color-div-mid: #4b5563;
+  --color-div-pos-1: #016787;
+  --color-div-pos-2: #1286ad;
+  --color-div-pos-3: #3fa5cd;
+  --color-div-pos-4: #62c5ee;
+
+  /* Zeroing the radius scale squares off every `rounded-*` utility at once.
+     `rounded-full` is not a theme token, so status dots stay circular. */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+
+  --font-sans: "Roboto Variable", Roboto, ui-sans-serif, system-ui, "Segoe UI",
+    Arial, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, Consolas, monospace;
+}
+
+:root {
+  /* The card outline. The public site uses white/60, which is crisp at
+     marketing-card size and shouty at feed density — this is the same idea
+     one step down, and hover still resolves to brand orange. */
+  --hairline: rgb(255 255 255 / 0.22);
+  --hairline-strong: rgb(255 255 255 / 0.45);
+  color-scheme: dark;
+}
+
+* {
+  min-width: 0;
+}
+
+html,
+body {
+  background: var(--color-ink-900);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* --- The signature device -------------------------------------------------
+   85 x 6 px orange bar above a section heading. The most distinctive non-logo
+   element on neiscenter.org; it appears 15 times in their bundle. */
+
+.rule-neis::before {
+  content: "";
+  display: block;
+  width: 85px;
+  height: 6px;
+  background: var(--color-signal);
+  margin-bottom: 1rem;
+}
+
+/* Half scale, for the denser panel headings this product needs. */
+.rule-neis-sm::before {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 3px;
+  background: var(--color-signal);
+  margin-bottom: 0.625rem;
+}
+
+/* --- Labels ---------------------------------------------------------------
+   Uppercase and letterspaced, copied exactly: the public site sets every
+   interactive and metadata label as
+   `font-medium text-sm tracking-wider uppercase`. */
+
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-paper-mute);
+}
+
+.label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-paper-mute);
+  margin-bottom: 0.5rem;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Surfaces ------------------------------------------------------------- */
+
+.panel {
+  background: var(--color-ink-800);
+  border: 1px solid var(--hairline);
+}
+
+/* The resource card's behaviour: the border becomes orange, and a small
+   orange tab appears on the left edge. Nothing lifts or scales. */
+.card {
+  background: var(--color-ink-800);
+  border: 1px solid var(--hairline);
+  position: relative;
+  transition: border-color 300ms ease;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 1.75rem;
+  width: 4px;
+  height: 1.5rem;
+  background: var(--color-signal);
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.card:hover,
+.card:focus-within {
+  border-color: var(--color-signal);
+}
+
+.card:hover::before,
+.card:focus-within::before {
+  opacity: 1;
+}
+
+/* --- Factual vs interpretive --------------------------------------------- */
+
+.block-fact {
+  color: var(--color-paper-dim);
+}
+
+.block-interpretation {
+  border-left: 2px solid var(--color-signal);
+  padding-left: 1rem;
+  color: var(--color-paper-dim);
+}
+
+.block-comparison {
+  border-left: 2px solid var(--color-ink-600);
+  padding-left: 1rem;
+  color: var(--color-paper-dim);
+}
+
+/* --- Tags ---------------------------------------------------------------- */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-paper-dim);
+  background: rgb(255 255 255 / 0.05);
+  border: 1px solid var(--hairline);
+  white-space: nowrap;
+}
+
+a.tag:hover {
+  border-color: var(--color-signal);
+  color: var(--color-paper);
+}
+
+/* The current chip (theme, stage, section): `.tag` is unlayered, so Tailwind utilities on it lose;
+   the active state lives here (spec_sector.md 4.6: an orange border on the active chip). */
+a.tag[aria-current]:not([aria-current='false']),
+.tag[aria-pressed='true'] {
+  border-color: var(--color-signal);
+  color: var(--color-paper);
+}
+
+/* Framework tags are the NEIS lens, so they carry the accent. */
+.tag-framework {
+  color: var(--color-signal);
+  border-color: rgb(245 130 41 / 0.45);
+  background: rgb(245 130 41 / 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+/* A fixture badge that cannot be mistaken for a real record. */
+.tag-fixture {
+  color: var(--color-alert);
+  border-color: rgb(226 87 76 / 0.5);
+  background: rgb(226 87 76 / 0.12);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+/* --- Buttons -------------------------------------------------------------
+   Square, uppercase, letterspaced, inverting to a ghost on hover, with a 2px
+   transparent border at rest so nothing resizes. Near-black on orange, never
+   white (white on #f58229 is 2.4:1; ink-900 on orange is 8.0:1). */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: background-color 200ms ease, border-color 200ms ease,
+    color 200ms ease;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-signal);
+  color: var(--color-ink-900);
+}
+.btn-primary:not(:disabled):hover {
+  background: transparent;
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--hairline-strong);
+  color: var(--color-paper-dim);
+}
+.btn-ghost:not(:disabled):hover {
+  border-color: var(--color-paper);
+  color: var(--color-paper);
+}
+
+.btn-quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-paper-mute);
+  padding: 0.25rem 0.5rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.8125rem;
+}
+.btn-quiet:not(:disabled):hover {
+  color: var(--color-signal);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: rgb(226 87 76 / 0.55);
+  color: var(--color-alert);
+}
+.btn-danger:not(:disabled):hover {
+  background: rgb(226 87 76 / 0.14);
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+/* --- Links --------------------------------------------------------------- */
+
+.link {
+  color: var(--color-signal);
+}
+.link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* A link inside running text is underlined: orange alone is 1.75:1 against the body text, and WCAG
+   1.4.1 needs 3:1 or a non-colour cue (axe link-in-text-block). Link lists, nav, tables keep none. */
+p .link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* --- Form controls ------------------------------------------------------- */
+
+@layer components {
+  .field {
+    width: 100%;
+    background: var(--color-ink-900);
+    border: 1px solid var(--color-ink-600);
+    padding: 0.625rem 0.75rem;
+    color: var(--color-paper);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  .field::placeholder {
+    color: var(--color-ink-500);
+  }
+
+  .field:focus {
+    border-color: var(--color-signal);
+    outline: none;
+  }
+
+  textarea.field {
+    resize: vertical;
+    min-height: 5rem;
+  }
+
+  select.field {
+    appearance: none;
+    background-image: linear-gradient(
+        45deg,
+        transparent 50%,
+        var(--color-paper-mute) 50%
+      ),
+      linear-gradient(135deg, var(--color-paper-mute) 50%, transparent 50%);
+    background-position: right 1rem center, right 0.7rem center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 2rem;
+  }
+
+  /* iOS zooms the page when a field under 16px takes focus and never zooms
+     back out. The desktop size is right for the research workflow, so the
+     bump is scoped to touch. */
+  @media (pointer: coarse) {
+    .field {
+      font-size: 1rem;
+    }
+  }
+
+  /* The public site's filter control: a native checkbox tinted orange. */
+  .checkbox {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--color-signal);
+    flex: none;
+  }
+
+  /* Compact field for dense filter rows. */
+  .field-sm {
+    padding: 0.4375rem 0.625rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* --- Focus ---------------------------------------------------------------
+   Deliberately heavier than the public site, whose focus ring is thin
+   enough to be easy to lose. This is a keyboard-driven research tool. */
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+}
+
+/* --- Utilities ----------------------------------------------------------- */
+
+.hairline {
+  border-color: var(--hairline);
+}
+
+.hairline-strong {
+  border-color: var(--hairline-strong);
+}
+
+/* Screen-reader-only, for the labels that keep icons and colour from being
+   the only carrier of meaning. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* --- Disclosure rows ----------------------------------------------------- */
+
+.disclosure > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure > summary:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: -2px;
+}
+
+.disclosure-chevron {
+  display: inline-block;
+  transition: transform 200ms ease;
+}
+
+.disclosure[open] > summary .disclosure-chevron {
+  transform: rotate(90deg);
+  color: var(--color-signal);
+}
+
+/* --- Added for the explorer ------------------------------------------------ */
+
+/* Slider: native range, 4 px ink-700 track with the filled part orange (a
+   hard two-stop split on --fill, no visible gradient), square 16 px orange
+   thumb with a 2 px ink-900 ring. */
+.slider {
+  --fill: 50%;
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: linear-gradient(
+    to right,
+    var(--color-signal) 0,
+    var(--color-signal) var(--fill),
+    var(--color-ink-700) var(--fill),
+    var(--color-ink-700) 100%
+  );
+}
+.slider::-moz-range-track {
+  height: 4px;
+  background: var(--color-ink-700);
+}
+.slider::-moz-range-progress {
+  height: 4px;
+  background: var(--color-signal);
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  background: var(--color-signal);
+  border: 2px solid var(--color-ink-900);
+  border-radius: 0;
+}
+.slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--color-signal);
+  border: 2px solid var(--color-ink-900);
+  border-radius: 0;
+}
+.slider:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+}
+.slider:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Segmented control: a row of radio labels, hairline-strong border, checked =
+   orange fill with ink-900 text. */
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 2px solid var(--hairline-strong);
+}
+.segmented > label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-paper-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+.segmented > label + label {
+  border-left: 1px solid var(--hairline);
+}
+.segmented > label > input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.segmented > label:has(input:checked) {
+  background: var(--color-signal);
+  color: var(--color-ink-900);
+}
+.segmented > label:has(input:focus-visible) {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+}
+.segmented > label:has(input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.segmented > label:not(:has(input:checked)):not(:has(input:disabled)):hover {
+  color: var(--color-paper);
+}
+
+/* Switch: a checkbox with role="switch" drawn as a square track. */
+.switch {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  width: 2rem;
+  height: 1rem;
+  flex: none;
+  background: var(--color-ink-700);
+  border: 1px solid var(--color-ink-500);
+  cursor: pointer;
+  transition: background-color 200ms ease;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--color-paper-mute);
+  transition: transform 200ms ease, background-color 200ms ease;
+}
+.switch:checked {
+  background: rgb(245 130 41 / 0.25);
+  border-color: var(--color-signal);
+}
+.switch:checked::after {
+  transform: translateX(1rem);
+  background: var(--color-signal);
+}
+
+/* Tables (table twins and ranking tables). */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-ink-850);
+  color: var(--color-paper-mute);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--hairline);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 0.375rem 0.625rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  color: var(--color-paper-dim);
+  vertical-align: top;
+}
+.data-table td.num,
+.data-table th.num {
+  text-align: right;
+}
+.data-table tbody tr:hover td {
+  background: var(--color-ink-850);
+}
+.data-table tbody tr[aria-selected="true"] td {
+  background: var(--color-ink-700);
+}
+.data-table tbody tr[aria-selected="true"] td:first-child {
+  box-shadow: inset 2px 0 0 var(--color-signal);
+}
+
+/* Methods prose. */
+.prose-neis {
+  color: var(--color-paper-dim);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+.prose-neis h2 {
+  color: var(--color-paper);
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin: 2.25rem 0 0.75rem;
+}
+.prose-neis h2::before {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 3px;
+  background: var(--color-signal);
+  margin-bottom: 0.625rem;
+}
+.prose-neis h3 {
+  color: var(--color-paper);
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 1.5rem 0 0.5rem;
+}
+.prose-neis p,
+.prose-neis ul,
+.prose-neis ol {
+  margin: 0.75rem 0;
+}
+.prose-neis ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.prose-neis ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.prose-neis li {
+  margin: 0.375rem 0;
+}
+.prose-neis strong {
+  color: var(--color-paper);
+  font-weight: 600;
+}
+.prose-neis a {
+  color: var(--color-signal);
+}
+.prose-neis code {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-paper);
+  background: rgb(255 255 255 / 0.06);
+  padding: 0.0625rem 0.25rem;
+}
+.prose-neis table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  margin: 1rem 0;
+  display: block;
+  overflow-x: auto;
+}
+.prose-neis th {
+  text-align: left;
+  color: var(--color-paper-mute);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--color-ink-850);
+}
+.prose-neis td {
+  padding: 0.375rem 0.625rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  vertical-align: top;
+}
+.prose-neis .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+
+/* Chart frames: hold the previous render while a new result computes. */
+.chart-updating {
+  opacity: 0.6;
+  transition: opacity 200ms ease;
+}
+
+/* Hatched fill for missing / not rankable / excluded (CSS twin of the SVG
+   pattern, used in legends). */
+.swatch-hatch {
+  background-color: var(--color-ink-700);
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgb(255 255 255 / 0.28) 0,
+    rgb(255 255 255 / 0.28) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+.plot-host svg {
+  overflow: visible;
+}
+
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 100;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-signal);
+  color: var(--color-ink-900);
+  font-weight: 500;
+}
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@media print {
+  html,
+  body {
+    background: #fff;
+    color: #111;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

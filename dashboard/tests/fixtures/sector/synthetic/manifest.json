@@ -1,0 +1,406 @@
+{
+  "schema": "osi-sector",
+  "schema_version": 1,
+  "bundle_id": "cd64c26fdb2338eca68847dfd10c1dd2",
+  "created": "2026-10-10T00:00:00Z",
+  "git_commit": null,
+  "generator": "scripts/87_export_sector_data.R",
+  "phase": 1,
+  "strategic_bundle_id": null,
+  "processed_mtime_max": "synthetic",
+  "pipeline_marker": null,
+  "flags": {
+    "include_restricted": false,
+    "trade": true,
+    "atlas": false,
+    "policy_text": true,
+    "series": true
+  },
+  "chunks": [
+    {
+      "name": "sector-meta",
+      "file": "sector-meta.30a43ccb.osb",
+      "bytes": 102608,
+      "bytes_gz": 27533,
+      "md5": "30a43ccb681aa2bd307d6fa31b92c493",
+      "tech": null
+    },
+    {
+      "name": "sector-facts",
+      "file": "sector-facts.f394cc1b.osb",
+      "bytes": 25696,
+      "bytes_gz": 4690,
+      "md5": "f394cc1bf500f7791c225cf65f509750",
+      "tech": null
+    },
+    {
+      "name": "sector-trade-batteries",
+      "file": "sector-trade-batteries.409e5bec.osb",
+      "bytes": 7800,
+      "bytes_gz": 2200,
+      "md5": "409e5bec40b529786890c7b2b0098411",
+      "tech": "batteries"
+    },
+    {
+      "name": "sector-trade-oil",
+      "file": "sector-trade-oil.eeee273c.osb",
+      "bytes": 3776,
+      "bytes_gz": 1226,
+      "md5": "eeee273c722b61d68be9457e2f6e8818",
+      "tech": "oil"
+    },
+    {
+      "name": "sector-policy",
+      "file": "sector-policy.3830b77c.osb",
+      "bytes": 3312,
+      "bytes_gz": 976,
+      "md5": "3830b77c35c955dc50f4715f0a697a27",
+      "tech": null
+    },
+    {
+      "name": "sector-policy-text",
+      "file": "sector-policy-text.0c7ce6a1.osb",
+      "bytes": 1656,
+      "bytes_gz": 620,
+      "md5": "0c7ce6a12b2410e9d73a41f4ce980289",
+      "tech": null
+    },
+    {
+      "name": "sector-series",
+      "file": "sector-series.5e491242.osb",
+      "bytes": 18960,
+      "bytes_gz": 3536,
+      "md5": "5e491242a012c5dd8f19420f4f0a7a01",
+      "tech": null
+    }
+  ],
+  "headlines": [
+    {
+      "id": "supply",
+      "template": "supply@1",
+      "values": {
+        "share": 0.94395410414827896,
+        "value_kt": 2139,
+        "total_kt": 2266
+      },
+      "labels": {
+        "geo": "CHN",
+        "geo_name": "China",
+        "item": "graphite",
+        "item_text": "battery-grade graphite"
+      },
+      "source": "IEA Critical Minerals Dataset 2026",
+      "year": "2025",
+      "href": "/sector/minerals/graphite"
+    },
+    {
+      "id": "concentration",
+      "template": "concentration@1",
+      "values": {
+        "n": 5,
+        "n_total": 8
+      },
+      "labels": {},
+      "source": "Sector Insights summary (each sector's own source)",
+      "year": "latest",
+      "href": "/sector/concentration?lens=top1"
+    },
+    {
+      "id": "dependence",
+      "template": "dependence@1",
+      "values": {
+        "share": 0.61878968742307194,
+        "total_usd": 64836245360
+      },
+      "labels": {
+        "cell": "batteries-midstream",
+        "cell_label": "Batteries — Midstream"
+      },
+      "source": "UN Comtrade, reconciled matrix",
+      "year": "2024",
+      "href": "/sector/batteries/midstream#trade"
+    },
+    {
+      "id": "investment",
+      "template": "investment@1",
+      "values": {
+        "total_bn": 395.40685201760937,
+        "china": 0.65225524272602986,
+        "coalition": 0.34774475727397003
+      },
+      "labels": {},
+      "source": "Clean Investment Monitor (Rhodium Group and MIT CEEPR)",
+      "year": "2025",
+      "href": "/sector/explore/investment"
+    },
+    {
+      "id": "reserves",
+      "template": "reserves@1",
+      "values": {
+        "share": 0.27931034482758621
+      },
+      "labels": {
+        "geo": "CHN",
+        "geo_name": "China",
+        "item": "graphite",
+        "item_text": "graphite"
+      },
+      "source": "USGS Mineral Commodity Summaries 2026",
+      "year": "end-2025",
+      "href": "/sector/explore/resources?m=resources.mineral_reserves&item=graphite"
+    },
+    {
+      "id": "energy",
+      "template": "energy@1",
+      "values": {
+        "exporter_ej": 7.0999999999999996,
+        "importer_ej": 6.5
+      },
+      "labels": {
+        "exporter": "RUS",
+        "exporter_name": "Russian Federation",
+        "importer": "CHN",
+        "importer_name": "China"
+      },
+      "source": "EI Statistical Review of World Energy 2026",
+      "year": "2025",
+      "href": "/sector/explore/consumption?m=consumption.balance&item=gas"
+    },
+    {
+      "id": "policy",
+      "template": "policy@1",
+      "values": {
+        "n": 3
+      },
+      "labels": {},
+      "source": "IEA Policies and Measures",
+      "year": "2026-2030",
+      "href": "/sector/explore/policy"
+    },
+    {
+      "id": "prices",
+      "template": "prices@1",
+      "values": {
+        "vol": 0.81000000000000005
+      },
+      "labels": {
+        "item": "lithium",
+        "item_text": "lithium"
+      },
+      "source": "IMF Primary Commodity Prices",
+      "year": "2021-2025",
+      "href": "/sector/explore/prices"
+    }
+  ],
+  "coverage_glyph": [
+    {
+      "tech": "batteries",
+      "stage": "upstream",
+      "country_data": true
+    },
+    {
+      "tech": "batteries",
+      "stage": "midstream",
+      "country_data": true
+    },
+    {
+      "tech": "batteries",
+      "stage": "downstream",
+      "country_data": false
+    },
+    {
+      "tech": "coal",
+      "stage": "upstream",
+      "country_data": false
+    },
+    {
+      "tech": "coal",
+      "stage": "midstream",
+      "country_data": false
+    },
+    {
+      "tech": "coal",
+      "stage": "downstream",
+      "country_data": false
+    },
+    {
+      "tech": "electric-grid",
+      "stage": "upstream",
+      "country_data": false
+    },
+    {
+      "tech": "electric-grid",
+      "stage": "midstream",
+      "country_data": false
+    },
+    {
+      "tech": "electric-grid",
+      "stage": "downstream",
+      "country_data": false
+    },
+    {
+      "tech": "electric-vehicles",
+      "stage": "upstream",
+      "country_data": true
+    },
+    {
+      "tech": "electric-vehicles",
+      "stage": "midstream",
+      "country_data": false
+    },
+    {
+      "tech": "electric-vehicles",
+      "stage": "downstream",
+      "country_data": true
+    },
+    {
+      "tech": "gas",
+      "stage": "upstream",
+      "country_data": true
+    },
+    {
+      "tech": "gas",
+      "stage": "midstream",
+      "country_data": false
+    },
+    {
+      "tech": "gas",
+      "stage": "downstream",
+      "country_data": true
+    },
+    {
+      "tech": "geothermal",
+      "stage": "upstream",
+      "country_data": false
+    },
+    {
+      "tech": "geothermal",
+      "stage": "midstream",
+      "country_data": false
+    },
+    {
+      "tech": "geothermal",
+      "stage": "downstream",
+      "country_data": true
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "upstream",
+      "country_data": false
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "midstream",
+      "country_data": false
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "downstream",
+      "country_data": false
+    },
+    {
+      "tech": "nuclear",
+      "stage": "upstream",
+      "country_data": true
+    },
+    {
+      "tech": "nuclear",
+      "stage": "midstream",
+      "country_data": false
+    },
+    {
+      "tech": "nuclear",
+      "stage": "downstream",
+      "country_data": false
+    },
+    {
+      "tech": "oil",
+      "stage": "upstream",
+      "country_data": true
+    },
+    {
+      "tech": "oil",
+      "stage": "midstream",
+      "country_data": false
+    },
+    {
+      "tech": "oil",
+      "stage": "downstream",
+      "country_data": true
+    },
+    {
+      "tech": "solar",
+      "stage": "upstream",
+      "country_data": false
+    },
+    {
+      "tech": "solar",
+      "stage": "midstream",
+      "country_data": false
+    },
+    {
+      "tech": "solar",
+      "stage": "downstream",
+      "country_data": true
+    },
+    {
+      "tech": "wind",
+      "stage": "upstream",
+      "country_data": false
+    },
+    {
+      "tech": "wind",
+      "stage": "midstream",
+      "country_data": false
+    },
+    {
+      "tech": "wind",
+      "stage": "downstream",
+      "country_data": false
+    }
+  ],
+  "notes": [],
+  "validation": [
+    {
+      "check": "dictionary: valid, every measure of the build has an entry",
+      "status": "PASS",
+      "n": 61,
+      "detail": null
+    },
+    {
+      "check": "chunks: decode identical() to the encoded objects (NA patterns included)",
+      "status": "PASS",
+      "n": 7,
+      "detail": null
+    },
+    {
+      "check": "chunks: R mirror of the contract checks (types, NA, indices, sort, keys, slices)",
+      "status": "PASS",
+      "n": 7,
+      "detail": null
+    },
+    {
+      "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 25 MB gz)",
+      "status": "PASS",
+      "n": 7,
+      "detail": "sector 40 kB gz"
+    }
+  ],
+  "sources": [
+    {
+      "path": "config/sector_dictionary.yml",
+      "mtime": "synthetic",
+      "bytes": 101101,
+      "md5": "0cc762c41a6310ed2a82a30b9f6f514d"
+    }
+  ],
+  "budget": {
+    "sector_gz": 40781,
+    "combined_gz": null,
+    "limit_sector_gz": 9437184,
+    "limit_combined_gz": 26214400
+  },
+  "encoding": {
+    "lossy": false
+  }
+}

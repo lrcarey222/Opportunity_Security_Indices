@@ -1,0 +1,66 @@
+# Netlify settings for the Allied Industrial Base Explorer (spec_react.md 10.5).
+# In the Netlify site settings, set the Base directory to `dashboard`; everything else is read from
+# this file. The data bundle (public/data/) must be in the repository for a build from git, or
+# deploy a local build with the Netlify CLI (see README.md).
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+  # skip a deploy when nothing under dashboard/ changed
+  ignore  = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- ."
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# a missing data file must 404, not fall through to the SPA
+[[redirects]]
+  from = "/data/*"
+  to = "/404.html"
+  status = 404
+
+# client-side routes (/, /overview, /country/USA, /sector/batteries/midstream, ...) are served by the app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# hashed build assets and content-addressed data chunks never change
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/data/*.osb"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Type = "application/octet-stream"
+
+# the manifest names the current chunks: always revalidate
+[[headers]]
+  for = "/data/manifest.json"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Sector Insights data (scripts/87; spec_sector.md 8.11): explicit rules for the subfolder rather than
+# relying on /data/*.osb matching one level down. The /data/* 404 rule above already covers it.
+[[headers]]
+  for = "/data/sector/*.osb"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Type = "application/octet-stream"
+
+[[headers]]
+  for = "/data/sector/manifest.json"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# 'unsafe-inline' styles: Observable Plot's scoped <style> elements and KaTeX's inline styles.
+# No inline scripts, no third-party requests (fonts and the world map are self-hosted).
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; frame-ancestors 'self' https://neiscenter.org https://*.neiscenter.org; base-uri 'self'; form-action 'none'"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

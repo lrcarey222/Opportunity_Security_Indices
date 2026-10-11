@@ -1,0 +1,2438 @@
+# Sector Insights dictionary (spec_sector.md 8.5). Read only by scripts/87_export_sector_data.R; the
+# pipeline does not read it. It holds the editorial facts the theme tables do not: labels, units, true
+# data years, sources, caveats and the rules that turn processed rows into descriptive facts. Every
+# caption on the Sector pages is generated from it. Hand-checked; validated by
+# sector_dictionary_validate() (R/dashboard/sector/sector_dictionary.R) on every export.
+#
+# Conventions
+#   * One entry per measure (`vars`). `id` is `theme.name` and must be in the measure catalogue of
+#     dashboard/src/sector/contract.ts (VAR_CATALOGUE); `theme` equals the id prefix.
+#   * `unit` is a key into `units`; a measure whose unit differs by item (production.fuels: oil kb/d,
+#     gas and coal EJ) lists every item in `item_units`.
+#   * Displayed value = stored value x `display_scale`, in `unit`. Stored values are the processed
+#     values verbatim (prov P), so parity with data/processed stays identical().
+#   * `prov`: P = a data/processed raw row shipped verbatim; D = derived from processed values by
+#     `parity.formula`; X = read from data/raw through a pipeline function.
+#   * `link_stage` (not shipped): for measures whose items are not cells (fuels, minerals,
+#     commodities, activities, policy tags), the stage of the cells they appear on, through
+#     dims.item_links. `any` = every stage.
+#   * Caveat texts may hold {placeholders}; scripts/87 fills them from the data (counts) and stops on
+#     any it cannot fill.
+#   * No index, weight or contribution measure may appear here (a test greps for them).
+
+version: 1
+
+units:
+  - {id: usd_cif, short: "USD", long: "US dollars, current (importer-declared, CIF)", unit_kind: usd}
+  - {id: usd_fob, short: "USD", long: "US dollars, current (FOB)", unit_kind: usd}
+  - {id: usd_bn_2024, short: "USD bn (2024$)", long: "US dollars, billions, 2024 prices", unit_kind: usd_bn_real}
+  - {id: usd_month, short: "USD/month", long: "US dollars per month, market exchange rate", unit_kind: usd_month}
+  - {id: share, short: "share", long: "share (0-1)", unit_kind: share}
+  - {id: share_tbc, short: "share", long: "share of land area above a power-density threshold (threshold and hub height: unit to confirm)", unit_kind: share}
+  - {id: pct, short: "%", long: "percent", unit_kind: pct}
+  - {id: pct_change, short: "%", long: "percent change", unit_kind: pct}
+  - {id: pct_of_consumption, short: "% of consumption", long: "production as a percent of consumption", unit_kind: pct}
+  - {id: pct_pa, short: "% a year", long: "percent a year", unit_kind: pct}
+  - {id: pct_yoy, short: "% y/y", long: "percent, year on year", unit_kind: pct}
+  - {id: vol, short: "% a year", long: "annualised standard deviation of monthly log returns, percent a year", unit_kind: pct}
+  - {id: ratio_rca, short: "RCA", long: "ratio (1 = world average)", unit_kind: ratio}
+  - {id: ratio, short: "ratio", long: "ratio", unit_kind: ratio}
+  - {id: kbd, short: "kb/d", long: "thousand barrels per day", unit_kind: kbd}
+  - {id: ej, short: "EJ", long: "exajoules", unit_kind: ej}
+  - {id: twh, short: "TWh", long: "terawatt-hours", unit_kind: twh}
+  - {id: gw, short: "GW", long: "gigawatts", unit_kind: gw}
+  - {id: mw, short: "MW", long: "megawatts", unit_kind: mw}
+  - {id: kt, short: "kt", long: "thousand tonnes", unit_kind: kt}
+  - {id: kt_content, short: "kt", long: "thousand tonnes, metal content", unit_kind: kt}
+  - {id: kt_li, short: "kt Li", long: "thousand tonnes, lithium content", unit_kind: kt}
+  - {id: kt_gross, short: "kt (gross weight)", long: "thousand tonnes, gross weight", unit_kind: kt}
+  - {id: kt_reo, short: "kt REO", long: "thousand tonnes, rare-earth-oxide equivalent", unit_kind: kt}
+  - {id: kt_graphite, short: "kt", long: "thousand tonnes, natural graphite", unit_kind: kt}
+  - {id: kt_graphite_bg, short: "kt", long: "thousand tonnes, battery-grade graphite", unit_kind: kt}
+  - {id: kt_magnet_ree, short: "kt magnet REE", long: "thousand tonnes, magnet rare earth elements (Nd, Pr, Dy, Tb)", unit_kind: kt}
+  - {id: t_li, short: "t Li", long: "metric tonnes, lithium content", unit_kind: t}
+  - {id: t_reo, short: "t REO", long: "metric tonnes, rare-earth-oxide equivalent", unit_kind: t}
+  - {id: t_graphite, short: "t", long: "metric tonnes, natural graphite", unit_kind: t}
+  - {id: t_content, short: "t", long: "metric tonnes, metal content", unit_kind: t}
+  - {id: t, short: "t", long: "metric tonnes", unit_kind: t}
+  - {id: kg, short: "kg", long: "kilograms", unit_kind: kg}
+  - {id: kg_pgm, short: "kg", long: "kilograms, platinum-group-metal content", unit_kind: kg}
+  - {id: tu, short: "tU", long: "tonnes of uranium", unit_kind: tu}
+  - {id: bbl_tmn, short: "bn bbl", long: "thousand million barrels", unit_kind: number}
+  - {id: m3_tn, short: "tn m3", long: "trillion cubic metres", unit_kind: number}
+  - {id: mt, short: "Mt", long: "million tonnes", unit_kind: number}
+  - {id: gj_pc, short: "GJ per person", long: "gigajoules per person", unit_kind: gj_pc}
+  - {id: kwh_kwp_day, short: "kWh/kWp per day", long: "kilowatt-hours per kilowatt-peak per day (mean PV output)", unit_kind: kwh_kwp_day}
+  - {id: pv_area, short: "kWh/kWp/day x km2", long: "mean PV output times land area (an area-integrated index, not energy)", unit_kind: potential}
+  - {id: w_m2, short: "W/m2", long: "watts per square metre (mean wind power density)", unit_kind: w_m2}
+  - {id: wind_area, short: "MW-eq", long: "mean power density times land area, MW equivalent (gross resource)", unit_kind: potential}
+  - {id: lcoe_tbc, short: "per kWh", long: "per kWh, currency as published (unit to confirm)", unit_kind: lcoe}
+  - {id: mvehicles, short: "million vehicles", long: "million vehicles", unit_kind: mvehicles}
+  - {id: vehicles, short: "cars", long: "passenger cars", unit_kind: vehicles}
+  - {id: trl, short: "TRL", long: "technology readiness level (1-11)", unit_kind: trl}
+  - {id: trl_points, short: "TRL points", long: "change in technology readiness level, points", unit_kind: trl}
+  - {id: count, short: "records", long: "number of recorded policies", unit_kind: count}
+  - {id: ordinal, short: "rating", long: "Climate Action Tracker rating (ordinal)", unit_kind: ordinal}
+  - {id: axis01, short: "0-1", long: "position on the UN-vote axis (0 = China, 1 = United States)", unit_kind: number}
+  - {id: usd_bbl, short: "USD/bbl", long: "US dollars per barrel", unit_kind: price}
+  - {id: usd_mmbtu, short: "USD/MMBtu", long: "US dollars per million British thermal units", unit_kind: price}
+  - {id: usd_gal, short: "USD/gal", long: "US dollars per gallon", unit_kind: price}
+  - {id: usd_t, short: "USD/t", long: "US dollars per metric tonne", unit_kind: price}
+  - {id: usd_lb, short: "USD/lb", long: "US dollars per pound", unit_kind: price}
+  - {id: price_tbc, short: "unit to confirm", long: "native IMF unit (unit to confirm)", unit_kind: price}
+  - {id: native, short: "native unit", long: "native unit of each product", unit_kind: number}
+
+# IMF series units come from energy_prices_pcps_units() (R/categories/energy_prices/energy_prices.R,
+# the IMF series metadata); this maps its unit text to a unit id. Text not listed -> price_tbc.
+price_unit_ids:
+  "USD per barrel": usd_bbl
+  "USD per MMBtu": usd_mmbtu
+  "USD per gallon": usd_gal
+  "USD per metric tonne": usd_t
+  "USD per pound": usd_lb
+
+# Per-item unit overrides (dict.item_units). `axis` + `item` (slug).
+item_units:
+  - {var: production.fuels, axis: fuel, item: oil, unit: kbd}
+  - {var: production.fuels, axis: fuel, item: gas, unit: ej}
+  - {var: production.fuels, axis: fuel, item: coal, unit: ej}
+  - {var: resources.fuel_reserves, axis: fuel, item: oil, unit: bbl_tmn}
+  - {var: resources.fuel_reserves, axis: fuel, item: gas, unit: m3_tn}
+  - {var: resources.fuel_reserves, axis: fuel, item: coal, unit: mt}
+  - {var: resources.mineral_reserves, axis: mineral, item: lithium, unit: kt_li}
+  - {var: resources.mineral_reserves, axis: mineral, item: cobalt, unit: kt_content}
+  - {var: resources.mineral_reserves, axis: mineral, item: copper, unit: kt_content}
+  - {var: resources.mineral_reserves, axis: mineral, item: nickel, unit: kt_content}
+  - {var: resources.mineral_reserves, axis: mineral, item: zinc, unit: kt_content}
+  - {var: resources.mineral_reserves, axis: mineral, item: manganese, unit: kt_gross}
+  - {var: resources.mineral_reserves, axis: mineral, item: rare-earths, unit: kt_reo}
+  - {var: resources.mineral_reserves, axis: mineral, item: graphite, unit: kt_graphite}
+  - {var: resources.mineral_reserves, axis: mineral, item: pgms, unit: kg_pgm}
+  - {var: production.mining_ei, axis: mineral, item: manganese, unit: kt}
+  - {var: production.mining_ei, axis: mineral, item: zinc, unit: kt}
+  - {var: production.mining_ei, axis: mineral, item: pgms, unit: kg}
+  - {var: production.refining, axis: mineral, item: graphite, unit: kt_graphite_bg}
+  - {var: production.mining, axis: mineral, item: graphite, unit: kt_graphite}
+  # IEA Critical Minerals: lithium in Li content; "rare earths" are the magnet rare earth elements
+  # (Nd, Pr, Dy, Tb) only, a narrower quantity than the USGS all-rare-earth REO figures.
+  - {var: production.mining, axis: mineral, item: lithium, unit: kt_li}
+  - {var: production.refining, axis: mineral, item: lithium, unit: kt_li}
+  - {var: production.mining, axis: mineral, item: rare-earths, unit: kt_magnet_ree}
+  - {var: production.refining, axis: mineral, item: rare-earths, unit: kt_magnet_ree}
+  - {var: consumption.mineral_demand, axis: mineral, item: lithium, unit: kt_li}
+  - {var: consumption.mineral_demand, axis: mineral, item: rare-earths, unit: kt_magnet_ree}
+  # USGS mine production in the chapter's own unit (MCS 2026 "Data in ..."); scripts/87 checks the
+  # kt / t scale against the USGS unit column.
+  - {var: production.mine_usgs, axis: mineral, item: lithium, unit: t_li}
+  - {var: production.mine_usgs, axis: mineral, item: rare-earths, unit: t_reo}
+  - {var: production.mine_usgs, axis: mineral, item: nickel, unit: t_content}
+  - {var: production.mine_usgs, axis: mineral, item: cobalt, unit: t_content}
+  - {var: production.mine_usgs, axis: mineral, item: copper, unit: kt_content}
+  - {var: production.mine_usgs, axis: mineral, item: zinc, unit: kt_content}
+  - {var: production.mine_usgs, axis: mineral, item: graphite, unit: t_graphite}
+  - {var: production.mine_usgs, axis: mineral, item: manganese, unit: kt_gross}
+
+sources:
+  - id: comtrade_matrix
+    short: "UN Comtrade, reconciled matrix"
+    citation: "United Nations, UN Comtrade Database, HS6 bilateral trade (all reporters), 2020 and 2024; reconciled by the authors"
+    publisher: "United Nations Statistics Division"
+    edition: "pulled 2026-10-07 to 2026-10-09"
+    url: "https://comtradeplus.un.org/"
+    licence: attribution
+    attribution: "Source: UN Comtrade (United Nations). Reconciled matrix by the authors."
+    accessed: "2026-10-09"
+    transform: "partnership_strength_build_trade_cells(): importer-declared values (CIF); exporters' declarations x1.06 where the importer did not declare; summed over the HS6 basket of each technology-stage cell; self-dyads dropped."
+    issues: "Technology-attributed: codes count in every cell that lists them. CAN, MEX and ZAF declare imports FOB."
+  - id: comtrade_reported
+    short: "UN Comtrade, exporter-reported"
+    citation: "United Nations, UN Comtrade Database, exports to World by reporter, 2024"
+    publisher: "United Nations Statistics Division"
+    edition: "2024 data"
+    url: "https://comtradeplus.un.org/"
+    licence: attribution
+    attribution: "Source: UN Comtrade (United Nations)."
+    accessed: "2026-10-09"
+    transform: "trade_core (scripts/10): exporters' own World rows; Hong Kong removed as a re-export hub; Balassa RCA against reporters' total exports."
+    issues: "Non-reporters (VNM, RUS, IRN, ARE, ...) are absent."
+  - id: comtrade_critmin
+    short: "UN Comtrade, critical minerals"
+    citation: "United Nations, UN Comtrade Database, critical-mineral HS codes, exports and imports by reporter, {critmin_year}"
+    publisher: "United Nations Statistics Division"
+    edition: "{critmin_year} data"
+    url: "https://comtradeplus.un.org/"
+    licence: attribution
+    attribution: "Source: UN Comtrade (United Nations)."
+    accessed: "2026-10-09"
+    transform: "critical_minerals_trade (scripts/10): mineral labels from HS descriptions; mirror exports (partner imports at FOB) for non-reporters."
+    issues: "No rare-earth or PGM codes; baskets include semi-manufactures (galvanized steel under zinc)."
+  - id: atlas
+    short: "Harvard Atlas of Economic Complexity"
+    citation: "Growth Lab at Harvard University, The Atlas of Economic Complexity, HS92 6-digit country-product-year data"
+    publisher: "Growth Lab at Harvard University"
+    edition: "data to 2023"
+    url: "https://atlas.hks.harvard.edu/"
+    licence: attribution
+    attribution: "Source: The Atlas of Economic Complexity, Growth Lab at Harvard University."
+    accessed: "2026-09"
+    transform: "Share of world exports of each cell's HS6 basket (sums to 1 per cell)."
+    issues: "Basket codes newer than HS92 are missing."
+  - id: ei
+    short: "EI Statistical Review"
+    citation: "Energy Institute, Statistical Review of World Energy 2026"
+    publisher: "Energy Institute"
+    edition: "2026 (data to 2025)"
+    url: "https://www.energyinst.org/statistical-review"
+    licence: attribution
+    attribution: "Source: Energy Institute Statistical Review of World Energy 2026."
+    accessed: "2026-09"
+    transform: "Country rows as published; EI's EU row shipped as 'European Union'; regional residuals not shown as countries."
+    issues: "Lists some economies only inside regional residuals; proved reserves not updated after end-2020."
+  - id: ei_minerals
+    short: "EI Statistical Review (minerals)"
+    citation: "Energy Institute, Statistical Review of World Energy 2026, mineral production sheets"
+    publisher: "Energy Institute"
+    edition: "2026 (data to 2025)"
+    url: "https://www.energyinst.org/statistical-review"
+    licence: attribution
+    attribution: "Source: Energy Institute Statistical Review of World Energy 2026."
+    accessed: "2026-09"
+    transform: "Named producers only; economies off the sheet are 'not reported separately'."
+    issues: "Sheets name only leading producers."
+  - id: usgs
+    short: "USGS Mineral Commodity Summaries"
+    citation: "U.S. Geological Survey, Mineral Commodity Summaries 2026, world mine production and reserves (doi:10.5066/P1WKQ63T)"
+    publisher: "U.S. Geological Survey"
+    edition: "2026 (data to 2025)"
+    url: "https://www.usgs.gov/centers/national-minerals-information-center/mineral-commodity-summaries"
+    licence: open
+    attribution: "Source: U.S. Geological Survey, Mineral Commodity Summaries 2026."
+    accessed: "2026-10"
+    transform: "usgs_mcs_reserves(): W, NA and s read as 'listed without a figure'; '-' as zero; the Brazil rare-earth erratum applied; world reserves from usgs_mcs_world_reserves()."
+    issues: "2025 production figures are estimates."
+  - id: iea_cm
+    short: "IEA Critical Minerals Dataset"
+    citation: "IEA (2026), Critical Minerals Dataset 2026, IEA, Paris"
+    publisher: "International Energy Agency"
+    edition: "2026 (base year 2025; base case to 2040)"
+    url: "https://www.iea.org/data-and-statistics/data-product/critical-minerals-data-explorer"
+    licence: attribution
+    attribution: "Source: IEA (2026), Critical Minerals Dataset. All rights reserved; shown with attribution."
+    accessed: "2026-09"
+    transform: "read_iea_critical_minerals(): sheet 2 total supply by country (top producers, Rest of world, Total), mining and refining; sheet 3.1 demand by technology."
+    issues: "Names the six largest producers per mineral; refining graphite is battery grade."
+  - id: iea_etp
+    short: "IEA Energy Technology Perspectives"
+    citation: "IEA (2024), Energy Technology Perspectives 2024, manufacturing capacity by economy"
+    publisher: "International Energy Agency"
+    edition: "2024"
+    url: "https://www.iea.org/reports/energy-technology-perspectives-2024"
+    licence: attribution
+    attribution: "Source: IEA (2024), Energy Technology Perspectives 2024."
+    accessed: "2026-08"
+    transform: "Current (2024) and announced 2035 shares over the world total including 'Other'."
+    issues: "A 0 means under 1% or not reported."
+  - id: iea_ev
+    short: "IEA Global EV Outlook (regions)"
+    citation: "IEA, Global EV Outlook, EV production and sales by region, 2021-2024"
+    publisher: "International Energy Agency"
+    edition: "2025"
+    url: "https://www.iea.org/reports/global-ev-outlook-2025"
+    licence: attribution
+    attribution: "Source: IEA, Global EV Outlook."
+    accessed: "2026-08"
+    transform: "Five regions as published; the extract's import_share is the net-export ratio (production - sales) / sales."
+    issues: "Regional values; countries are not ranked."
+  - id: iea_gevo
+    short: "IEA Global EV Outlook 2026"
+    citation: "IEA (2026), Global EV Outlook 2026, EV data by country (cars)"
+    publisher: "International Energy Agency"
+    edition: "2026"
+    url: "https://www.iea.org/reports/global-ev-outlook-2026"
+    licence: attribution
+    attribution: "Source: IEA (2026), Global EV Outlook 2026."
+    accessed: "2026-09"
+    transform: "Cars: sales, stock and sales share 2025; growth 2022-2025; STEPS 2035 for five countries."
+    issues: "Growth from small bases is not shown."
+  - id: iea_weo
+    short: "IEA World Energy Outlook 2025"
+    citation: "IEA (2025), World Energy Outlook 2025, Annex A (Stated Policies Scenario, world)"
+    publisher: "International Energy Agency"
+    edition: "2025"
+    url: "https://www.iea.org/reports/world-energy-outlook-2025"
+    licence: attribution
+    attribution: "Source: IEA (2025), World Energy Outlook 2025."
+    accessed: "2026-09"
+    transform: "World total energy supply by fuel, 2024 and 2035 (STEPS)."
+    issues: null
+  - id: iea_ctg
+    short: "IEA Clean Energy Technology Guide"
+    citation: "IEA (2026), ETP Clean Energy Technology Guide, public dataset"
+    publisher: "International Energy Agency"
+    edition: "2026"
+    url: "https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide"
+    licence: attribution
+    attribution: "Source: IEA (2026), ETP Clean Energy Technology Guide."
+    accessed: "2026-09"
+    transform: "Mean TRL of the Guide items mapped to each technology and stage (config/iea_clean_tech_guide_tech_map.yml); adoption stages lift TRL 9 items to 10 and 11."
+    issues: "Global, not national; some cells use the technology-wide value."
+  - id: iea_pams
+    short: "IEA Policies and Measures"
+    citation: "IEA, Policies and Measures Database"
+    publisher: "International Energy Agency"
+    edition: "export of {pams_export_date}"
+    url: "https://www.iea.org/policies"
+    licence: attribution
+    attribution: "Source: IEA Policies and Measures Database. Titles and links as published by the IEA."
+    accessed: "{pams_export_date}"
+    transform: "clean_pams_raw() and build_policy_table() (stopping before the cross-cutting expansion); EU measures as 'European Union'."
+    issues: "Recorded activity, not stringency; coverage is uneven."
+  - id: cat
+    short: "Climate Action Tracker"
+    citation: "Climate Action Tracker, country ratings"
+    publisher: "Climate Analytics and NewClimate Institute"
+    edition: "ratings updated 2022-2025"
+    url: "https://climateactiontracker.org/"
+    licence: attribution
+    attribution: "Source: Climate Action Tracker."
+    accessed: "2026-08"
+    transform: "Ratings as published, with each country's update date."
+    issues: null
+  - id: redbook
+    short: "Red Book (OECD-NEA/IAEA)"
+    citation: "OECD-NEA/IAEA (2026), Uranium 2026: Resources, Production and Demand, NEA No. 7770; earlier editions for 2019-2022 production"
+    publisher: "OECD Nuclear Energy Agency and International Atomic Energy Agency"
+    edition: "2026"
+    url: "https://www.oecd-nea.org/"
+    licence: attribution
+    attribution: "Source: OECD-NEA/IAEA, Uranium: Resources, Production and Demand (Red Book)."
+    accessed: "2026-10-07"
+    transform: "Table 1.2a (identified recoverable resources below USD 260/kgU) and Table 1.18 (mine production), transcribed to data/reference."
+    issues: null
+  - id: cim
+    short: "Clean Investment Monitor"
+    citation: "Rhodium Group and MIT CEEPR, Clean Investment Monitor (global), Q4 2025 release"
+    publisher: "Rhodium Group and MIT CEEPR"
+    edition: "2026 release (data to 2025)"
+    url: "https://www.cleaninvestmentmonitor.org/"
+    licence: attribution
+    attribution: "Source: Clean Investment Monitor, Rhodium Group and MIT CEEPR."
+    accessed: "2026-03"
+    transform: "investment_momentum (scripts/10): manufacturing to Midstream, electric power and transport to Downstream, critical minerals split between Batteries and EV Upstream by IEA demand shares."
+    issues: "2025 includes estimated fourth-quarter values; EV Downstream is consumer purchases."
+  - id: imf_pcps
+    short: "IMF Primary Commodity Prices"
+    citation: "IMF, Primary Commodity Price System (PCPS), monthly prices"
+    publisher: "International Monetary Fund"
+    edition: "data to December 2025"
+    url: "https://data.imf.org/"
+    licence: attribution
+    attribution: "Source: International Monetary Fund, Primary Commodity Prices."
+    accessed: "2026-01"
+    transform: "Units from the IMF series metadata (energy_prices_pcps_units()); coal is the mean of the Australian and South African benchmarks."
+    issues: "The IMF label text is wrong for cobalt and propane; the metadata units are used."
+  - id: imf_rates
+    short: "IMF interest rates"
+    citation: "IMF, Monetary and Financial Statistics (lending and related rates); PBoC one-year loan prime rate for China"
+    publisher: "International Monetary Fund"
+    edition: "latest per economy"
+    url: "https://data.imf.org/"
+    licence: attribution
+    attribution: "Source: International Monetary Fund."
+    accessed: "2026-08"
+    transform: "One series per economy in priority order: lending rate, loans to firms, money-market, policy, deposit rate."
+    issues: "Series differ by economy."
+  - id: imf_ppi
+    short: "IMF producer prices"
+    citation: "IMF, producer price indices"
+    publisher: "International Monetary Fund"
+    edition: "latest per economy"
+    url: "https://data.imf.org/"
+    licence: attribution
+    attribution: "Source: International Monetary Fund."
+    accessed: "2026-08"
+    transform: "Year-on-year change of the producer price index."
+    issues: "Levels are not comparable across economies."
+  - id: ilo
+    short: "ILOSTAT earnings"
+    citation: "International Labour Organization, ILOSTAT, average monthly earnings of employees by economic activity"
+    publisher: "International Labour Organization"
+    edition: "latest per economy"
+    url: "https://ilostat.ilo.org/"
+    licence: attribution
+    attribution: "Source: ILOSTAT, International Labour Organization."
+    accessed: "2026-10"
+    transform: "Upstream = mining and utilities (economy-wide where missing), Midstream = manufacturing, Downstream = construction; latest year per economy."
+    issues: "Observation years differ by economy."
+  - id: gsa
+    short: "Global Solar Atlas"
+    citation: "World Bank Group / ESMAP / Solargis, Global Solar Atlas, country statistics"
+    publisher: "World Bank Group (ESMAP), Solargis"
+    edition: "static"
+    url: "https://globalsolaratlas.info/"
+    licence: attribution
+    attribution: "Source: Global Solar Atlas (World Bank Group, ESMAP, Solargis)."
+    accessed: "2026-08"
+    transform: "Mean PVOUT and mean x land area per economy."
+    issues: null
+  - id: gwa
+    short: "Global Wind Atlas"
+    citation: "Global Wind Atlas (DTU, World Bank Group, ESMAP), country statistics"
+    publisher: "DTU Wind Energy, World Bank Group (ESMAP)"
+    edition: "static"
+    url: "https://globalwindatlas.info/"
+    licence: attribution
+    attribution: "Source: Global Wind Atlas (DTU, World Bank Group, ESMAP)."
+    accessed: "2026-08"
+    transform: "Mean power density, density x land area, and the land share above a power-density threshold."
+    issues: "Threshold and hub height of the share are not recorded (unit to confirm)."
+  - id: egs
+    short: "Franzmann et al. 2025 (EGS)"
+    citation: "Franzmann, D., Heinrichs, H. and Stolten, D. (2025), Global Technical Energy Potentials of Enhanced Geothermal Systems, Mendeley Data V2, doi:10.17632/sbs8k66bwf.2"
+    publisher: "Mendeley Data"
+    edition: "V2 (2025)"
+    url: "https://doi.org/10.17632/sbs8k66bwf.2"
+    licence: attribution
+    attribution: "Source: Franzmann, Heinrichs and Stolten (2025), CC BY 4.0."
+    accessed: "2026-08"
+    transform: "Technical potential and the LCOE of the cheapest 500 MW and 5 GW per economy."
+    issues: "LCOE currency not verified (unit to confirm)."
+  - id: un_votes
+    short: "UNGA ideal points"
+    citation: "Bailey, M., Strezhnev, A. and Voeten, E., United Nations General Assembly Voting Data, ideal points (Harvard Dataverse V39.0)"
+    publisher: "Harvard Dataverse"
+    edition: "V39.0 (sessions to 2023)"
+    url: "https://dataverse.harvard.edu/dataset.xhtml?persistentId=hdl:1902.1/12379"
+    licence: attribution
+    attribution: "Source: Bailey, Strezhnev and Voeten, UNGA voting data."
+    accessed: "2026-07"
+    transform: "Mean ideal point over sessions 74-78 (2019-2023), rescaled so China = 0 and the United States = 1, clamped to [0, 1]."
+    issues: "Territories take their sovereign's position."
+
+caveats:
+  - {id: hs6_overlap, text: "Technology-attributed trade: {n_shared_codes} of the {n_codes} HS6 codes in the baskets count in more than one sector, so values are never added across technologies."}
+  - {id: nominal_usd, text: "Current US dollars: 2020 was a COVID trough and fuel prices roughly doubled by 2024, so changes are nominal."}
+  - {id: mirror_factor, text: "Where an importer did not report, its imports come from exporters' declarations multiplied by 1.06 (CIF/FOB)."}
+  - {id: hkg_hub_matrix, text: "Hong Kong is kept in the matrix and tagged as a re-export hub; importers record goods by origin, so its share is small."}
+  - {id: fob_importers, text: "Canada, Mexico and South Africa declare imports FOB, about 5% below the CIF basis of other importers."}
+  - {id: exporter_reported, text: "Exporter-reported basis (exporters' own declarations, {n_rca_reporters} reporters); not comparable with the reconciled matrix."}
+  - {id: rca_small, text: "Shown only where exporter-reported basket exports reach USD 50 m; smaller exporters read 'too small to compare'."}
+  - {id: hkg_excluded, text: "Hong Kong is excluded from the exporter-reported measures as a re-export hub."}
+  - {id: atlas_source, text: "Harvard Atlas 2023: a different source and year from the Comtrade 2024 matrix, so it is shown in its own card."}
+  - {id: critmin_basket, text: "Mineral labels come from HS descriptions: zinc includes galvanized steel, copper includes wire and scrap, silicon includes silicones, graphite includes artificial graphite."}
+  - {id: critmin_no_ree_pgm, text: "The Comtrade mineral pull has no rare-earth or PGM codes."}
+  - {id: critmin_hkg, text: "Hong Kong is kept in the mineral trade data and tagged as a re-export hub."}
+  - {id: critmin_mirror, text: "Exports of economies that did not report come from partners' import declarations, converted to FOB."}
+  - {id: ei_reserves_stale, text: "EI stopped updating proved reserves after end-2020."}
+  - {id: usgs_withheld, text: "USGS lists some holders without a figure (W, NA or s); they read 'listed without a figure', never zero."}
+  - {id: usgs_units, text: "Units differ by mineral: metal content, manganese gross weight, rare-earth oxide, natural graphite; PGMs in kilograms."}
+  - {id: brazil_ree, text: "Brazil's rare-earth reserves follow the USGS erratum."}
+  - {id: redbook_resources, text: "Identified recoverable resources (reasonably assured plus inferred) below USD 260/kgU, at 1 January 2025."}
+  - {id: pv_area_size, text: "Area-integrated potential is mean output times land area, so it ranks mostly by size; shown in scatters, never ranked."}
+  - {id: wind_islands, text: "Small islands top the power-density scale."}
+  - {id: wind_threshold_tbc, text: "The power-density threshold and hub height behind this share are not recorded in the source extract: unit to confirm."}
+  - {id: geo_lcoe_currency, text: "LCOE per kWh in the currency of Franzmann et al. (2025), not yet verified: unit to confirm. No value means no tranche of that size."}
+  - {id: ei_residual, text: "EI shows some economies only inside its regional residuals; they read 'not reported separately'."}
+  - {id: gross_generation, text: "Gross electricity generation."}
+  - {id: iea_top6, text: "The IEA names the six largest producers of each mineral; the rest is 'Rest of world', so concentration is a lower bound."}
+  - {id: projection_base_case, text: "2030-2040 values are IEA base-case projections."}
+  - {id: iea_magnet_ree, text: "For rare earths the IEA covers only the magnet rare earth elements (neodymium, praseodymium, dysprosium and terbium), not all rare earths as USGS does; lithium is in lithium content."}
+  - {id: graphite_grade, text: "Graphite refining is battery-grade graphite; graphite mining is natural graphite."}
+  - {id: ei_minerals_named, text: "EI's mineral sheets name only leading producers; others are inside 'Rest of world'."}
+  - {id: usgs_estimates, text: "USGS 2025 figures are estimates."}
+  - {id: uranium_zero, text: "The Red Book lists every producer; other economies mined none."}
+  - {id: ev_regions, text: "The IEA reports EV production and sales for five regions; countries in a region share its value and are not ranked."}
+  - {id: iea_etp_zero, text: "In the IEA data a 0 means under 1% or not reported."}
+  - {id: projection_pipeline, text: "Pipeline shares are of announced capacity, over the world total including 'Other'. The IEA extract names no year (stored as 2035 by the pipeline): year to confirm."}
+  - {id: ev_net_export, text: "(Production - sales) / sales: positive means the region produces more EVs than it buys."}
+  - {id: cim_estimate, text: "2025 includes estimated fourth-quarter values."}
+  - {id: cim_ev_purchases, text: "EV Downstream investment is consumer purchases of zero-emission vehicles."}
+  - {id: cim_split, text: "Batteries and EV Upstream are one critical-minerals investment series split by a constant demand share; never add them."}
+  - {id: cim_geothermal, text: "Geothermal is enhanced geothermal only."}
+  - {id: per_capita_six_fuels, text: "Six fuels only; hydro, biomass and total consumption are not included, so these are not an energy mix."}
+  - {id: growth_base_zero, text: "A zero base year reads 'new'; zero to zero reads 'n/a'."}
+  - {id: self_sufficiency_ref, text: "100 means production equals consumption; below 100 the economy is a net importer; 0 means fully imported."}
+  - {id: gevo_min_base, text: "Growth is shown only where the 2022 level was at least 1,000 cars."}
+  - {id: gevo_projection, text: "2035 values are IEA Stated Policies projections, given for five countries."}
+  - {id: weo_world, text: "World totals, IEA Stated Policies Scenario; 2024 is the base year."}
+  - {id: imf_units, text: "Units from the IMF series metadata; the IMF label text is wrong for cobalt (per tonne, not per pound) and propane (dollars, not cents)."}
+  - {id: coal_mean, text: "Coal is the mean of the Australian and South African benchmarks."}
+  - {id: prices_world, text: "World prices: the same for every country."}
+  - {id: wage_years, text: "Each economy's latest observation; the year is shown beside the value, and values more than 5 years old are marked."}
+  - {id: wage_activity, text: "Upstream = mining and utilities (economy-wide total where missing); Midstream = manufacturing; Downstream = construction."}
+  - {id: lending_mixed, text: "The rate series differs by economy (lending rate, loans to firms, money-market or policy rate); China is the PBoC one-year loan prime rate."}
+  - {id: ppi_levels, text: "Year-on-year change only; PPI levels are not comparable across economies."}
+  - {id: trl_global, text: "A property of the technology, the same in every country."}
+  - {id: trl_fallback, text: "Cells without their own Guide items use the technology-wide value: {trl_fallback_cells}."}
+  - {id: policy_activity, text: "Counts measure policy activity recorded in the IEA Policies and Measures database, not stringency or spending; coverage is uneven."}
+  - {id: policy_eu, text: "The EU's own measures appear as 'European Union'."}
+  - {id: policy_cross_cutting, text: "{pct_cross_cutting}% of records are economy-wide (cross-cutting); they are left out unless included."}
+  - {id: policy_text_tags, text: "Where the IEA gives no technology, the tag comes from keyword rules on the text and is marked 'text-derived'."}
+  - {id: cat_dated, text: "Each rating carries its own update date; the EU is rated as a bloc."}
+  - {id: alignment_basis, text: "Territories without their own votes take their sovereign's position (basis 'inherited')."}
+  - {id: ei_eu_row, text: "The EU row is EI's own European Union total."}
+  - {id: cim_capacity_units, text: "Units differ by product; products are never summed."}
+  - {id: cim_capacity_status, text: "Operational is the 2025 snapshot and includes plants still ramping up ('operational yet to come online'); under construction, announced and paused are capacity planned to 2030."}
+  - {id: cim_power, text: "Capacity additions in the year, GW."}
+  - {id: imf_monthly_coal, text: "Coal is the monthly mean of the Australian and South African benchmarks."}
+
+themes:
+  - {slug: trade, label: "Trade", order: 1, default_var: trade.exports, description: "Exports, imports, flows and concentration of each sector's HS6 basket, plus mineral exports."}
+  - {slug: resources, label: "Reserves & resources", order: 2, default_var: resources.mineral_reserves, description: "Fuel and mineral reserves, uranium resources, and solar, wind and geothermal potential."}
+  - {slug: production, label: "Production", order: 3, default_var: production.fuels, description: "Fuel, power, mineral and uranium production, and EV production by region."}
+  - {slug: consumption, label: "Consumption & dependence", order: 4, default_var: consumption.per_capita, description: "Energy use per person, net balances, self-sufficiency, EV sales and the world outlook."}
+  - {slug: investment, label: "Investment", order: 5, default_var: investment.annual, description: "Clean-technology investment by economy and sector, 2018-2025, and power capacity additions."}
+  - {slug: manufacturing, label: "Manufacturing capacity", order: 6, default_var: manufacturing.share_now, description: "Shares of global manufacturing capacity, now and announced for 2035, and capacity by product."}
+  - {slug: prices, label: "Prices & costs", order: 7, default_var: prices.latest, description: "Commodity prices and volatility, wages, lending rates and producer-price inflation."}
+  - {slug: technology, label: "Technology & outlook", order: 8, default_var: technology.trl, description: "Technology readiness of each sector, from the IEA Clean Energy Technology Guide."}
+  - {slug: policy, label: "Policy", order: 9, default_var: policy.records, description: "Recorded energy policies by economy, technology and year, and Climate Action Tracker ratings."}
+  - {slug: development, label: "Development & finance", order: 10, default_var: development.alignment, description: "Economies' positions on the US-China UN-vote axis."}
+
+families:
+  - {id: exports, label: "Trade", section: trade}
+  - {id: production, label: "Production", section: production}
+  - {id: capacity, label: "Manufacturing capacity", section: production}
+  - {id: reserves, label: "Reserves & resources", section: resources}
+  - {id: investment, label: "Investment", section: investment}
+  - {id: consumption, label: "Consumption & demand", section: demand}
+  - {id: prices, label: "Prices", section: prices}
+  - {id: policy, label: "Policy", section: policy}
+  - {id: technology, label: "Technology readiness", section: technology}
+  - {id: context, label: "Stage context: labour and capital", section: context}
+  - {id: development, label: "Development & alignment", section: null}
+
+techs:
+  - {slug: batteries, tech_blurb: "From lithium, nickel, cobalt, graphite and manganese through cathode and anode materials, cells and packs to stationary storage."}
+  - {slug: coal, tech_blurb: "Coal mining and trade, processing and handling equipment, and coal use and coal-fired power."}
+  - {slug: electric-grid, tech_blurb: "Copper and aluminium inputs, cables, transformers, switchgear and converters, and grid deployment."}
+  - {slug: electric-vehicles, tech_blurb: "Battery minerals, vehicle and component manufacturing, and the sale of electric cars."}
+  - {slug: gas, tech_blurb: "Natural gas production and trade, pipes, compressors and LNG equipment, and gas use and gas-fired power."}
+  - {slug: geothermal, tech_blurb: "Enhanced geothermal resources and costs; little country data exists upstream and midstream."}
+  - {slug: green-hydrogen, tech_blurb: "Nickel and platinum-group metals, electrolyser manufacturing, and hydrogen use."}
+  - {slug: nuclear, tech_blurb: "Uranium resources and mining, fuel-cycle and reactor hardware, and nuclear generation."}
+  - {slug: oil, tech_blurb: "Crude oil production, reserves and trade, refining and handling equipment, and oil use."}
+  - {slug: solar, tech_blurb: "The minerals behind solar, polysilicon, wafers, cells, modules and inverters, and solar generation and resource."}
+  - {slug: wind, tech_blurb: "The minerals behind wind, nacelles, blades, towers and cables, and wind generation and resource."}
+  - {slug: semiconductors, tech_blurb: "Non-headline basket: semiconductor devices and manufacturing equipment, Midstream trade only."}
+
+cells:
+  - {slug: batteries-upstream, cell_blurb: "Battery minerals: lithium, nickel, cobalt, graphite and manganese ores, concentrates and intermediates, mining and refining."}
+  - {slug: batteries-midstream, cell_blurb: "Cathode and anode materials, lithium chemicals, electrolytes, separators, cells, packs and battery-management parts, plus manufacturing investment and capacity."}
+  - {slug: batteries-downstream, cell_blurb: "Stationary battery storage: deployment investment."}
+  - {slug: coal-upstream, cell_blurb: "Coal mining, reserves and trade in coal."}
+  - {slug: coal-midstream, cell_blurb: "Coal processing, briquettes, coke and handling equipment."}
+  - {slug: coal-downstream, cell_blurb: "Coal use and coal-fired electricity."}
+  - {slug: electric-grid-upstream, cell_blurb: "Copper and aluminium: ores, concentrates, cathodes and unwrought metal for grid equipment."}
+  - {slug: electric-grid-midstream, cell_blurb: "Cables, transformers, switchgear, converters and other grid equipment."}
+  - {slug: electric-grid-downstream, cell_blurb: "Grid deployment: little country-level data exists; see Grid Midstream."}
+  - {slug: electric-vehicles-upstream, cell_blurb: "The battery minerals EVs use; critical-minerals investment (shared with Batteries Upstream)."}
+  - {slug: electric-vehicles-midstream, cell_blurb: "Electric and hybrid vehicles, components and charging equipment, and EV production by region."}
+  - {slug: electric-vehicles-downstream, cell_blurb: "Electric-car sales, stock and sales share, and consumer purchases."}
+  - {slug: gas-upstream, cell_blurb: "Natural gas production, reserves and trade, including LNG."}
+  - {slug: gas-midstream, cell_blurb: "Pipes, compressors, liquefaction and regasification equipment."}
+  - {slug: gas-downstream, cell_blurb: "Gas use and gas-fired electricity."}
+  - {slug: geothermal-upstream, cell_blurb: "Geothermal exploration: little country-level data exists; the resource data sit in Geothermal Downstream."}
+  - {slug: geothermal-midstream, cell_blurb: "Geothermal equipment: little country-level data exists; the resource data sit in Geothermal Downstream."}
+  - {slug: geothermal-downstream, cell_blurb: "Enhanced geothermal technical potential and costs, and enhanced geothermal investment."}
+  - {slug: green-hydrogen-upstream, cell_blurb: "The minerals behind electrolysers: nickel and platinum-group metals."}
+  - {slug: green-hydrogen-midstream, cell_blurb: "Electrolyser manufacturing capacity, reported by the IEA for five economies and the EU."}
+  - {slug: green-hydrogen-downstream, cell_blurb: "Hydrogen use: little country-level data exists."}
+  - {slug: nuclear-upstream, cell_blurb: "Uranium resources and mine production."}
+  - {slug: nuclear-midstream, cell_blurb: "Uranium compounds, fuel elements, reactors and their parts."}
+  - {slug: nuclear-downstream, cell_blurb: "Nuclear generation and investment in nuclear power."}
+  - {slug: oil-upstream, cell_blurb: "Crude oil production, reserves and trade."}
+  - {slug: oil-midstream, cell_blurb: "Refining and handling equipment, pipes and tanks."}
+  - {slug: oil-downstream, cell_blurb: "Oil use and oil-fired electricity."}
+  - {slug: solar-upstream, cell_blurb: "The materials behind solar: silicon, silver, copper and other minerals, mining and refining."}
+  - {slug: solar-midstream, cell_blurb: "Polysilicon, wafers, cells, modules, inverters and related equipment, plus manufacturing investment and capacity."}
+  - {slug: solar-downstream, cell_blurb: "Solar generation, deployment investment and the solar resource."}
+  - {slug: wind-upstream, cell_blurb: "The materials behind wind: rare earths, copper, zinc and other minerals, mining and refining."}
+  - {slug: wind-midstream, cell_blurb: "Nacelles, blades, towers, generators and cables, plus manufacturing investment and capacity."}
+  - {slug: wind-downstream, cell_blurb: "Wind generation, deployment investment and the wind resource."}
+  - {slug: semiconductors-midstream, cell_blurb: "Non-headline basket: semiconductor devices, wafers and manufacturing equipment."}
+
+vars:
+  # ---- trade --------------------------------------------------------------------------------------
+  - id: trade.exports
+    theme: trade
+    family: exports
+    label: "Exports of the HS6 basket"
+    short: "Exports"
+    definition: "Value of the economy's exports of the cell's HS6 codes to the world, from importers' declarations (exporters' reports x1.06 where an importer did not declare)."
+    unit: usd_cif
+    data_year: "2024"
+    years: [2020, 2024]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: comtrade_matrix
+    roster: comtrade_matrix
+    licence: attribution
+    caveats: [hs6_overlap, nominal_usd, mirror_factor, hkg_hub_matrix]
+    primary_for: [oil-midstream, gas-midstream, coal-midstream, nuclear-midstream, solar-midstream, wind-midstream, batteries-upstream, batteries-midstream, electric-vehicles-midstream, electric-grid-upstream, electric-grid-midstream, semiconductors-midstream]
+    section: trade
+    stale_years: null
+    min_base: null
+    feeds: ["ES: Trade (exporter-reported basis)", "EO: Trade (exporter-reported basis)"]
+    prov: X
+    prov_detail: "partnership_strength_build_trade_cells(comtrade_energy_dyads_all.csv, energy_hs6_master.csv, years 2020 and 2024); summed over importers"
+    parity: {none: "the reconciled matrix is a different basis from the processed exporter-reported exports; the reconciliation table compares them"}
+    phase: "1"
+  - id: trade.imports
+    theme: trade
+    family: exports
+    label: "Imports of the HS6 basket"
+    short: "Imports"
+    definition: "Value of the economy's imports of the cell's HS6 codes from the world, as the importer declared them (exporters' reports x1.06 where it did not declare)."
+    unit: usd_cif
+    data_year: "2024"
+    years: [2020, 2024]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: comtrade_matrix
+    roster: comtrade_matrix
+    licence: attribution
+    caveats: [hs6_overlap, nominal_usd, mirror_factor, fob_importers]
+    primary_for: []
+    section: trade
+    feeds: ["ES: Trade (net imports, Atlas basis)"]
+    prov: X
+    prov_detail: "partnership_strength_build_trade_cells(); summed over exporters"
+    parity: {none: "the reconciled matrix is a different basis from the processed exporter-reported imports"}
+    phase: "1"
+  - id: trade.net
+    theme: trade
+    family: exports
+    label: "Net trade (exports minus imports)"
+    short: "Net trade"
+    definition: "Exports minus imports of the cell's HS6 basket, both on the reconciled matrix."
+    unit: usd_cif
+    data_year: "2024"
+    years: [2020, 2024]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: "Positive = net exporter; negative = net importer."
+    display_scale: 1
+    source: comtrade_matrix
+    roster: comtrade_matrix
+    licence: attribution
+    caveats: [hs6_overlap, nominal_usd]
+    primary_for: []
+    section: trade
+    feeds: []
+    prov: X
+    prov_detail: "trade.exports - trade.imports on the reconciled matrix"
+    parity: {none: "derived from matrix totals"}
+    phase: "1"
+  - id: trade.flow
+    theme: trade
+    family: exports
+    label: "Bilateral flow"
+    short: "Flow"
+    definition: "Value of one economy's exports of the cell's HS6 basket to another, from the importer's declaration (the exporter's x1.06 where the importer did not declare)."
+    unit: usd_cif
+    data_year: "2020, 2024"
+    years: [2020, 2024]
+    year_field: false
+    native_level: dyad
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: comtrade_matrix
+    roster: comtrade_matrix
+    licence: attribution
+    caveats: [hs6_overlap, nominal_usd, mirror_factor]
+    primary_for: []
+    section: trade
+    feeds: ["Partners: Friendshore and Opportunity trade components"]
+    prov: X
+    prov_detail: "partnership_strength_build_trade_cells(); positive flows in either year"
+    parity: {none: "record-level matrix"}
+    phase: "1"
+  - id: trade.rca
+    theme: trade
+    family: exports
+    label: "Revealed comparative advantage (exporter-reported)"
+    short: "RCA"
+    definition: "Balassa index: the basket's share in the economy's exports over its share in world exports, on exporters' own declarations."
+    unit: ratio_rca
+    data_year: "2024"
+    years: [2024]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: "Above 1 = the basket weighs more in the economy's exports than in world exports."
+    display_scale: 1
+    source: comtrade_reported
+    roster: comtrade_reporters
+    licence: attribution
+    caveats: [exporter_reported, rca_small, hkg_excluded]
+    primary_for: []
+    section: trade
+    min_base: 50000000
+    feeds: ["EO: Trade"]
+    prov: P
+    prov_detail: "export_feasibility_tbl, variable export_rca"
+    parity: {table: export_feasibility_tbl, variable: export_rca}
+    phase: "1"
+  - id: trade.atlas_share
+    theme: trade
+    family: exports
+    label: "Share of world exports (Atlas)"
+    short: "Atlas share"
+    definition: "The economy's share of world exports of the cell's HS6 basket in the Harvard Atlas (HS92), which sums to 1 per cell."
+    unit: share
+    data_year: "2023"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: one
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: atlas
+    roster: atlas
+    licence: attribution
+    caveats: [atlas_source, hs6_overlap]
+    primary_for: []
+    section: trade
+    feeds: ["ES: Trade", "EO: Trade"]
+    prov: P
+    prov_detail: "trade_concentration_tbl, variable market_share"
+    parity: {table: trade_concentration_tbl, variable: market_share}
+    phase: "1"
+  - id: trade.critmin_exports
+    theme: trade
+    family: exports
+    label: "Mineral exports"
+    short: "Mineral exports"
+    definition: "Value of the economy's exports of the mineral's HS codes (ores, refined metal, chemicals and semi-manufactures), FOB."
+    unit: usd_fob
+    data_year: "{critmin_year}"
+    years: [2024]
+    year_field: false
+    native_level: country
+    item_axis: mineral
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: comtrade_critmin
+    roster: comtrade_critmin
+    licence: attribution
+    caveats: [critmin_basket, critmin_no_ree_pgm, critmin_mirror, critmin_hkg]
+    primary_for: []
+    section: trade
+    link_stage: Upstream
+    feeds: ["ES: Minerals Trade"]
+    prov: P
+    prov_detail: "critical_minerals_trade_flows_tbl, column exports (export_source reported / mirror)"
+    parity: {table: critical_minerals_trade_flows_tbl, variable: exports}
+    phase: "1"
+  - id: trade.critmin_dependence
+    theme: trade
+    family: exports
+    label: "Mineral exports as a share of total exports"
+    short: "Export dependence"
+    definition: "The mineral's exports as a share of the economy's total exports."
+    unit: share
+    data_year: "{critmin_year}"
+    years: [2024]
+    year_field: false
+    native_level: country
+    item_axis: mineral
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: comtrade_critmin
+    roster: comtrade_critmin
+    licence: attribution
+    caveats: [critmin_basket, critmin_mirror]
+    primary_for: []
+    section: trade
+    link_stage: Upstream
+    feeds: ["ES: Minerals Trade"]
+    prov: P
+    prov_detail: "critical_minerals_trade_flows_tbl, column exp_share"
+    parity: {table: critical_minerals_trade_flows_tbl, variable: exp_share}
+    phase: "1"
+  # ---- resources ----------------------------------------------------------------------------------
+  - id: resources.fuel_reserves
+    theme: resources
+    family: reserves
+    label: "Proved reserves"
+    short: "Reserves"
+    definition: "Proved reserves of oil, gas and coal as published by EI."
+    unit: bbl_tmn
+    data_year: "end-2020"
+    years: [2020]
+    year_field: false
+    native_level: country
+    item_axis: fuel
+    agg: sum
+    world_basis: sum_listed
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: ei
+    roster: ei_reserves
+    licence: attribution
+    caveats: [ei_reserves_stale]
+    primary_for: []
+    section: resources
+    link_stage: Upstream
+    feeds: ["ES: Reserves"]
+    prov: P
+    prov_detail: "reserves_tbl, variables Oil / Gas / Coal Reserves"
+    parity: {table: reserves_tbl, variable: "Oil Reserves|Gas Reserves|Coal Reserves"}
+    phase: "1"
+  - id: resources.mineral_reserves
+    theme: resources
+    family: reserves
+    label: "Mineral reserves"
+    short: "Reserves"
+    definition: "Reserves of the mineral as listed by the USGS, at end-2025."
+    unit: kt_content
+    data_year: "end-2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: mineral
+    agg: sum
+    world_basis: source_world
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: usgs
+    roster: usgs_reserves
+    licence: open
+    caveats: [usgs_withheld, usgs_units, brazil_ree]
+    primary_for: []
+    section: resources
+    link_stage: Upstream
+    feeds: ["ES: Reserves"]
+    prov: P
+    prov_detail: "reserves_tbl, variables <Mineral> Reserves; world totals from usgs_mcs_world_reserves()"
+    parity: {table: reserves_tbl, variable: "<Mineral> Reserves"}
+    phase: "1"
+  - id: resources.uranium_resources
+    theme: resources
+    family: reserves
+    label: "Identified recoverable uranium resources"
+    short: "Uranium resources"
+    definition: "Reasonably assured plus inferred uranium resources recoverable below USD 260/kgU, at 1 January 2025."
+    unit: tu
+    data_year: "1 Jan 2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: redbook
+    roster: redbook_resources
+    licence: attribution
+    caveats: [redbook_resources]
+    primary_for: []
+    section: resources
+    feeds: ["ES: Reserves"]
+    prov: P
+    prov_detail: "reserves_tbl, variable Nuclear Reserves"
+    parity: {table: reserves_tbl, variable: "Nuclear Reserves"}
+    phase: "1"
+  - id: resources.pv_quality
+    theme: resources
+    family: reserves
+    label: "Mean PV output"
+    short: "PV output"
+    definition: "Mean photovoltaic output per kilowatt-peak per day over the economy's land area."
+    unit: kwh_kwp_day
+    data_year: "static (Global Solar Atlas)"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: gsa
+    roster: gsa
+    licence: attribution
+    caveats: []
+    primary_for: []
+    section: resources
+    feeds: ["ES: Reserves", "EO: Reserves"]
+    prov: P
+    prov_detail: "solar_pv_potential_tbl, variable Solar PV power potential per sq km"
+    parity: {table: solar_pv_potential_tbl, variable: "Solar PV power potential per sq km"}
+    phase: "1"
+  - id: resources.pv_area
+    theme: resources
+    family: reserves
+    label: "Area-integrated PV potential"
+    short: "PV potential (area)"
+    definition: "Mean PV output times land area: an index of the total resource that grows with land area."
+    unit: pv_area
+    data_year: "static (Global Solar Atlas)"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: gsa
+    roster: gsa
+    licence: attribution
+    caveats: [pv_area_size]
+    primary_for: []
+    section: resources
+    feeds: ["ES: Reserves", "EO: Reserves"]
+    prov: P
+    prov_detail: "solar_pv_potential_tbl, variable Solar PV power potential"
+    parity: {table: solar_pv_potential_tbl, variable: "Solar PV power potential"}
+    phase: "1"
+  - id: resources.wind_density
+    theme: resources
+    family: reserves
+    label: "Mean wind power density"
+    short: "Wind power density"
+    definition: "Mean wind power density over the economy's land area."
+    unit: w_m2
+    data_year: "static (Global Wind Atlas)"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: gwa
+    roster: gwa
+    licence: attribution
+    caveats: [wind_islands]
+    primary_for: []
+    section: resources
+    feeds: ["ES: Reserves", "EO: Reserves"]
+    prov: P
+    prov_detail: "wind_potential_tbl, variable Wind power potential per sq km"
+    parity: {table: wind_potential_tbl, variable: "Wind power potential per sq km"}
+    phase: "1"
+  - id: resources.wind_area
+    theme: resources
+    family: reserves
+    label: "Area-integrated wind potential"
+    short: "Wind potential (area)"
+    definition: "Mean wind power density times land area: the gross theoretical resource, which grows with land area."
+    unit: wind_area
+    data_year: "static (Global Wind Atlas)"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: gwa
+    roster: gwa
+    licence: attribution
+    caveats: [pv_area_size]
+    primary_for: []
+    section: resources
+    feeds: ["ES: Reserves", "EO: Reserves"]
+    prov: P
+    prov_detail: "wind_potential_tbl, variable Wind power potential"
+    parity: {table: wind_potential_tbl, variable: "Wind power potential"}
+    phase: "1"
+  - id: resources.wind_share
+    theme: resources
+    family: reserves
+    label: "Land share above the wind power-density threshold"
+    short: "Windy land share"
+    definition: "Share of the economy's land area above a wind power-density threshold (threshold and hub height: unit to confirm)."
+    unit: share_tbc
+    data_year: "static (Global Wind Atlas)"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: gwa
+    roster: gwa
+    licence: attribution
+    caveats: [wind_threshold_tbc]
+    primary_for: []
+    section: resources
+    feeds: ["ES: Reserves", "EO: Reserves"]
+    prov: P
+    prov_detail: "wind_potential_tbl, variable Wind power potential share over threshold"
+    parity: {table: wind_potential_tbl, variable: "Wind power potential share over threshold"}
+    phase: "1"
+  - id: resources.geo_potential
+    theme: resources
+    family: reserves
+    label: "Enhanced geothermal technical potential"
+    short: "EGS potential"
+    definition: "Technical potential of enhanced geothermal systems."
+    unit: mw
+    data_year: "static (2025 dataset)"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_listed
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: egs
+    roster: egs
+    licence: attribution
+    caveats: []
+    primary_for: [geothermal-downstream]
+    section: resources
+    feeds: ["ES: Reserves", "EO: Reserves"]
+    prov: P
+    prov_detail: "geothermal_potential_tbl, variable Geothermal total potential (MW)"
+    parity: {table: geothermal_potential_tbl, variable: "Geothermal total potential (MW)"}
+    phase: "1"
+  - id: resources.geo_lcoe_500
+    theme: resources
+    family: reserves
+    label: "Enhanced geothermal LCOE, cheapest 500 MW"
+    short: "EGS LCOE (500 MW)"
+    definition: "Levelised cost of the economy's cheapest 500 MW of enhanced geothermal potential."
+    unit: lcoe_tbc
+    data_year: "static (2025 dataset)"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: egs
+    roster: egs
+    licence: attribution
+    caveats: [geo_lcoe_currency]
+    primary_for: []
+    section: resources
+    feeds: ["ES: Reserves", "EO: Reserves"]
+    prov: P
+    prov_detail: "geothermal_potential_tbl, variable Geothermal LCOE (500 MW)"
+    parity: {table: geothermal_potential_tbl, variable: "Geothermal LCOE (500 MW)"}
+    phase: "1"
+  - id: resources.geo_lcoe_5000
+    theme: resources
+    family: reserves
+    label: "Enhanced geothermal LCOE, cheapest 5 GW"
+    short: "EGS LCOE (5 GW)"
+    definition: "Levelised cost of the economy's cheapest 5 GW of enhanced geothermal potential."
+    unit: lcoe_tbc
+    data_year: "static (2025 dataset)"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: egs
+    roster: egs
+    licence: attribution
+    caveats: [geo_lcoe_currency]
+    primary_for: []
+    section: resources
+    feeds: ["ES: Reserves", "EO: Reserves"]
+    prov: P
+    prov_detail: "geothermal_potential_tbl, variable Geothermal LCOE (5 GW)"
+    parity: {table: geothermal_potential_tbl, variable: "Geothermal LCOE (5 GW)"}
+    phase: "1"
+  # ---- production ---------------------------------------------------------------------------------
+  - id: production.fuels
+    theme: production
+    family: production
+    label: "Fuel production"
+    short: "Production"
+    definition: "Production of crude oil (kb/d), natural gas and coal (EJ)."
+    unit: ej
+    data_year: "2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: fuel
+    agg: sum
+    world_basis: source_world
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: ei
+    roster: ei
+    licence: attribution
+    caveats: [ei_residual]
+    primary_for: [oil-upstream, gas-upstream, coal-upstream]
+    section: production
+    link_stage: Upstream
+    feeds: ["EO: Production"]
+    prov: P
+    prov_detail: "production_depth_momentum_tbl, variable production_latest, Upstream Oil / Gas / Coal; series and world totals from the EI long CSV"
+    parity: {table: production_depth_momentum_tbl, variable: production_latest}
+    phase: "1"
+  - id: production.generation
+    theme: production
+    family: production
+    label: "Electricity generation"
+    short: "Generation"
+    definition: "Gross electricity generation from the fuel."
+    unit: twh
+    data_year: "2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: fuel
+    agg: sum
+    world_basis: source_world
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: ei
+    roster: ei
+    licence: attribution
+    caveats: [gross_generation, ei_residual]
+    primary_for: [nuclear-downstream, solar-downstream, wind-downstream]
+    section: production
+    link_stage: Downstream
+    feeds: ["EO: Production"]
+    prov: P
+    prov_detail: "production_depth_momentum_tbl, variable production_latest, Downstream cells; series and world totals from the EI long CSV"
+    parity: {table: production_depth_momentum_tbl, variable: production_latest}
+    phase: "1"
+  - id: production.mining
+    theme: production
+    family: production
+    label: "Mine production (IEA base case)"
+    short: "Mining"
+    definition: "Mined supply of the mineral by producing economy, IEA base case; 2030-2040 are projections."
+    unit: kt
+    data_year: "2025 (projections to 2040)"
+    years: [2025, 2030, 2035, 2040]
+    projection_from: 2030
+    year_field: false
+    native_level: country
+    item_axis: mineral
+    agg: sum
+    world_basis: source_world
+    norms: [value, share]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_cm
+    roster: iea_cm
+    licence: attribution
+    caveats: [iea_top6, projection_base_case, iea_magnet_ree]
+    primary_for: []
+    section: production
+    link_stage: Upstream
+    feeds: ["ES: Foreign Dependency (Mineral Supply)"]
+    prov: X
+    prov_detail: "read_iea_critical_minerals(IEA Critical Minerals Dataset 2026.xlsx), sheet 2, mining blocks"
+    parity: {cross_check: "2025 shares = major_supplier_shares_tbl iea_mineral_mining world_share"}
+    phase: "1"
+  - id: production.refining
+    theme: production
+    family: production
+    label: "Refined production (IEA base case)"
+    short: "Refining"
+    definition: "Refined supply of the mineral by producing economy, IEA base case; 2030-2040 are projections."
+    unit: kt
+    data_year: "2025 (projections to 2040)"
+    years: [2025, 2030, 2035, 2040]
+    projection_from: 2030
+    year_field: false
+    native_level: country
+    item_axis: mineral
+    agg: sum
+    world_basis: source_world
+    norms: [value, share]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_cm
+    roster: iea_cm
+    licence: attribution
+    caveats: [iea_top6, projection_base_case, graphite_grade, iea_magnet_ree]
+    primary_for: []
+    section: production
+    link_stage: Upstream
+    feeds: ["ES: Foreign Dependency (Mineral Supply)"]
+    prov: X
+    prov_detail: "read_iea_critical_minerals(IEA Critical Minerals Dataset 2026.xlsx), sheet 2, refining blocks"
+    parity: {cross_check: "2025 shares = major_supplier_shares_tbl iea_mineral_refining world_share"}
+    phase: "1"
+  - id: production.mining_ei
+    theme: production
+    family: production
+    label: "Mine production (EI)"
+    short: "Mining (EI)"
+    definition: "Mine production of manganese, zinc and platinum-group metals by named producer."
+    unit: kt
+    data_year: "2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: mineral
+    agg: sum
+    world_basis: source_world
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: ei_minerals
+    roster: ei_minerals
+    licence: attribution
+    caveats: [ei_minerals_named]
+    primary_for: []
+    section: production
+    link_stage: Upstream
+    feeds: ["ES: Production"]
+    prov: P
+    prov_detail: "critical_minerals_production_tbl, variables Manganese / Zinc / PGMs Production; world totals from major_supplier_shares_tbl ei_mineral_mining"
+    parity: {table: critical_minerals_production_tbl, variable: "<Mineral> Production"}
+    phase: "1"
+  - id: production.mine_usgs
+    theme: production
+    family: production
+    label: "Mine production (USGS)"
+    short: "Mining (USGS)"
+    definition: "Mine production of the mineral by economy, with the USGS world total."
+    unit: t
+    data_year: "2025 (estimated)"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: mineral
+    agg: sum
+    world_basis: source_world
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: usgs
+    roster: usgs_production
+    licence: open
+    caveats: [usgs_estimates, usgs_withheld]
+    primary_for: []
+    section: production
+    link_stage: Upstream
+    feeds: []
+    prov: X
+    prov_detail: "MCS2026_World_Data.csv, Mine production rows, year 2025"
+    parity: {none: "no processed table carries USGS mine production"}
+    phase: "1"
+  - id: production.uranium
+    theme: production
+    family: production
+    label: "Uranium mine production"
+    short: "Uranium production"
+    definition: "Uranium produced by mines in the economy."
+    unit: tu
+    data_year: "2024 (series 2019-2024)"
+    years: [2019, 2020, 2021, 2022, 2023, 2024]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: redbook
+    roster: redbook_production
+    licence: attribution
+    caveats: [uranium_zero]
+    primary_for: [nuclear-upstream]
+    section: production
+    feeds: ["ES: Production", "EO: Production"]
+    prov: P
+    prov_detail: "2024: production_depth_momentum_tbl production_latest (Nuclear Upstream); 2019-2023: data/reference/uranium_production.csv"
+    parity: {table: production_depth_momentum_tbl, variable: production_latest}
+    phase: "1"
+  - id: production.ev_region
+    theme: production
+    family: production
+    label: "EV production by region"
+    short: "EV production"
+    definition: "Electric cars produced in the IEA region."
+    unit: mvehicles
+    data_year: "2024 (series 2021-2024)"
+    years: [2024]
+    year_field: false
+    native_level: region
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_ev
+    roster: iea_ev_regions
+    licence: attribution
+    caveats: [ev_regions]
+    primary_for: []
+    section: production
+    feeds: ["ES: Foreign Dependency"]
+    prov: P
+    prov_detail: "market_share_manufacturing_tbl, variable Domestic.Production, one value per IEA region; series from ev_Midstream_capacity.csv"
+    parity: {table: market_share_manufacturing_tbl, variable: Domestic.Production}
+    phase: "1"
+  - id: production.ev_region_sales
+    theme: production
+    family: production
+    label: "EV sales by region"
+    short: "EV sales (region)"
+    definition: "Electric cars sold in the IEA region."
+    unit: mvehicles
+    data_year: "2024 (series 2021-2024)"
+    years: [2024]
+    year_field: false
+    native_level: region
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_ev
+    roster: iea_ev_regions
+    licence: attribution
+    caveats: [ev_regions]
+    primary_for: []
+    section: production
+    feeds: ["ES: Foreign Dependency"]
+    prov: P
+    prov_detail: "market_share_manufacturing_tbl, variable Domestic.sales, one value per IEA region; series from ev_Midstream_capacity.csv"
+    parity: {table: market_share_manufacturing_tbl, variable: Domestic.sales}
+    phase: "1"
+  # ---- manufacturing ------------------------------------------------------------------------------
+  - id: manufacturing.share_now
+    theme: manufacturing
+    family: capacity
+    label: "Share of global manufacturing capacity"
+    short: "Capacity share"
+    definition: "The economy's share of global manufacturing capacity for the technology, as reported by the IEA ('Current' in the IEA extract; the pipeline stores it as 2024)."
+    unit: share
+    data_year: "current (year to confirm)"
+    years: [2024]
+    year_field: false
+    native_level: entity
+    item_axis: cell
+    agg: sum
+    world_basis: one
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_etp
+    roster: iea_etp
+    licence: attribution
+    caveats: [iea_etp_zero]
+    primary_for: [green-hydrogen-midstream]
+    section: production
+    feeds: []
+    prov: P
+    prov_detail: "major_supplier_shares_tbl, measure iea_manufacturing_capacity"
+    parity: {table: major_supplier_shares_tbl, variable: iea_manufacturing_capacity}
+    phase: "1"
+  - id: manufacturing.share_2035
+    theme: manufacturing
+    family: capacity
+    label: "Share of announced manufacturing capacity (pipeline)"
+    short: "Pipeline capacity share"
+    definition: "The economy's share of announced global manufacturing capacity (the IEA 'Pipeline'; the pipeline stores it as 2035), over the world total including 'Other'."
+    unit: share
+    data_year: "announced pipeline (year to confirm)"
+    years: [2035]
+    projection_from: 2035
+    year_field: false
+    native_level: entity
+    item_axis: cell
+    agg: sum
+    world_basis: one
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_etp
+    roster: iea_etp
+    licence: attribution
+    caveats: [projection_pipeline, iea_etp_zero]
+    primary_for: []
+    section: production
+    feeds: ["ES: Foreign Dependency", "EO: Foreign Dependency"]
+    prov: P
+    prov_detail: "foreign_dependency_tbl, variable Market Share (EU members carry the EU value; Electrolyzers = Green Hydrogen)"
+    parity: {table: foreign_dependency_tbl, variable: "Market Share"}
+    phase: "1"
+  - id: manufacturing.ev_net_export_ratio
+    theme: manufacturing
+    family: capacity
+    label: "EV net-export ratio by region"
+    short: "EV net exports"
+    definition: "(Production - sales) / sales of electric cars in the IEA region."
+    unit: ratio
+    data_year: "2024"
+    years: [2024]
+    year_field: false
+    native_level: region
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: "Positive = the region produces more EVs than it buys (net exporter)."
+    display_scale: 1
+    source: iea_ev
+    roster: iea_ev_regions
+    licence: attribution
+    caveats: [ev_net_export, ev_regions]
+    primary_for: []
+    section: production
+    feeds: ["ES: Foreign Dependency", "EO: Foreign Dependency"]
+    prov: P
+    prov_detail: "market_share_manufacturing_tbl, variable net_export_ratio, one value per IEA region"
+    parity: {table: market_share_manufacturing_tbl, variable: net_export_ratio}
+    phase: "1"
+  - id: manufacturing.capacity
+    theme: manufacturing
+    family: capacity
+    label: "Manufacturing capacity by product"
+    short: "Capacity"
+    definition: "Manufacturing capacity of each product (cells, modules, polysilicon, nacelles, cathode material, ...) by status, in the product's own unit. Operational: facilities in operation in 2025, including those still ramping up to full output; under construction, announced and paused: capacity anticipated by 2030."
+    unit: native
+    data_year: "2025 operational; under construction, announced and paused: planned to 2030"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: cim
+    roster: cim
+    licence: attribution
+    caveats: [cim_capacity_units, cim_capacity_status]
+    primary_for: []
+    section: production
+    feeds: []
+    prov: X
+    prov_detail: "GCIM_Investment_Capacity_aggregated.xlsx, manufacturing capacity by product and status"
+    parity: {none: "the processed table keeps only mixed-unit stage sums"}
+    phase: "2"
+  # ---- investment ---------------------------------------------------------------------------------
+  - id: investment.annual
+    theme: investment
+    family: investment
+    label: "Annual investment"
+    short: "Investment"
+    definition: "Actual capital investment in the technology and stage: factories for Midstream, deployment for Downstream, mines and processing for Upstream."
+    unit: usd_bn_2024
+    data_year: "2018-2025"
+    years: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: cim
+    roster: cim
+    licence: attribution
+    caveats: [cim_estimate, cim_ev_purchases, cim_split, cim_geothermal]
+    primary_for: [batteries-downstream, electric-vehicles-upstream]
+    section: investment
+    feeds: ["ES: Investment", "EO: Investment"]
+    prov: P
+    prov_detail: "investment_momentum_tbl, variable Annual Investment (USD bn, 2024$)"
+    parity: {table: investment_momentum_tbl, variable: "Annual Investment (USD bn, 2024$)"}
+    phase: "1"
+  - id: investment.power_additions
+    theme: investment
+    family: investment
+    label: "Power capacity additions"
+    short: "Capacity additions"
+    definition: "Electric power capacity added in the year."
+    unit: gw
+    data_year: "2018-2025"
+    years: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: cim
+    roster: cim
+    licence: attribution
+    caveats: [cim_power, cim_estimate]
+    primary_for: []
+    section: investment
+    feeds: []
+    prov: X
+    prov_detail: "GCIM_Investment_Capacity_aggregated.xlsx, electric power capacity additions"
+    parity: {none: "no processed table carries capacity additions"}
+    phase: "2"
+  # ---- consumption --------------------------------------------------------------------------------
+  - id: consumption.per_capita
+    theme: consumption
+    family: consumption
+    label: "Consumption per person"
+    short: "Per person"
+    definition: "Primary consumption of the fuel per person."
+    unit: gj_pc
+    data_year: "2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: fuel
+    agg: ratio
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1000
+    source: ei
+    roster: ei
+    licence: attribution
+    caveats: [per_capita_six_fuels, ei_residual]
+    primary_for: [oil-downstream, gas-downstream, coal-downstream]
+    section: demand
+    link_stage: Downstream
+    feeds: ["ES: Energy Access", "ES: Consumption", "EO: Energy Access", "EO: Consumption"]
+    prov: P
+    prov_detail: "energy_access_tbl, variable Energy consumption per capita (EJ per million persons; identical to the EI rows of energy_consumption_tbl)"
+    parity: {table: energy_access_tbl, variable: "Energy consumption per capita"}
+    phase: "1"
+  - id: consumption.pc_change
+    theme: consumption
+    family: consumption
+    label: "Change in consumption per person, 2020-2025"
+    short: "Change 2020-25"
+    definition: "Relative change in consumption of the fuel per person from 2020 to 2025."
+    unit: pct_change
+    data_year: "2020-2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: fuel
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 100
+    source: ei
+    roster: ei
+    licence: attribution
+    caveats: [growth_base_zero]
+    primary_for: []
+    section: demand
+    link_stage: Downstream
+    feeds: ["ES: Energy Access", "ES: Consumption"]
+    prov: P
+    prov_detail: "energy_access_tbl, variable Energy consumption per capita growth (fraction)"
+    parity: {table: energy_access_tbl, variable: "Energy consumption per capita growth"}
+    phase: "1"
+  - id: consumption.balance
+    theme: consumption
+    family: consumption
+    label: "Net balance (production minus consumption)"
+    short: "Net balance"
+    definition: "Production minus consumption of the fuel, in energy terms; 'fossil' sums oil, gas and coal."
+    unit: ej
+    data_year: "2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: fuel
+    agg: sum
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: "Positive = net exporter; negative = net importer."
+    display_scale: 1
+    source: ei
+    roster: ei
+    licence: attribution
+    caveats: [ei_residual]
+    primary_for: []
+    section: demand
+    link_stage: Upstream
+    feeds: ["ES: Energy Imports"]
+    prov: P
+    prov_detail: "import_dependence_tbl, variable Production surplus/deficit"
+    parity: {table: import_dependence_tbl, variable: "Production surplus/deficit"}
+    phase: "1"
+  - id: consumption.self_sufficiency
+    theme: consumption
+    family: consumption
+    label: "Self-sufficiency"
+    short: "Self-sufficiency"
+    definition: "Production of the fuel as a percent of consumption."
+    unit: pct_of_consumption
+    data_year: "2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: fuel
+    agg: ratio
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: "100 = production equals consumption; below 100 = net importer."
+    display_scale: 1
+    source: ei
+    roster: ei
+    licence: attribution
+    caveats: [self_sufficiency_ref]
+    primary_for: []
+    section: demand
+    link_stage: Upstream
+    feeds: []
+    prov: P
+    prov_detail: "import_dependence_tbl, variable Self-sufficiency (percent); NA where consumption is zero"
+    parity: {table: import_dependence_tbl, variable: "Self-sufficiency"}
+    phase: "1"
+  - id: consumption.ev_sales
+    theme: consumption
+    family: consumption
+    label: "Electric-car sales"
+    short: "EV sales"
+    definition: "Electric cars (battery and plug-in hybrid) sold in the year; 2035 is the IEA STEPS projection."
+    unit: vehicles
+    data_year: "2025 (2035 projection for five countries)"
+    years: [2025, 2035]
+    projection_from: 2035
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_listed
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_gevo
+    roster: iea_gevo
+    licence: attribution
+    caveats: [gevo_projection]
+    primary_for: [electric-vehicles-downstream]
+    section: demand
+    feeds: ["EO: Technology Demand"]
+    prov: P
+    prov_detail: "future_demand_tbl, variables sales_2025 and sales_2035"
+    parity: {table: future_demand_tbl, variable: "sales_2025|sales_2035"}
+    phase: "1"
+  - id: consumption.ev_stock
+    theme: consumption
+    family: consumption
+    label: "Electric-car stock"
+    short: "EV stock"
+    definition: "Electric cars on the road at year end; 2035 is the IEA STEPS projection."
+    unit: vehicles
+    data_year: "2025 (2035 projection for five countries)"
+    years: [2025, 2035]
+    projection_from: 2035
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_listed
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_gevo
+    roster: iea_gevo
+    licence: attribution
+    caveats: [gevo_projection]
+    primary_for: []
+    section: demand
+    feeds: ["EO: Technology Demand"]
+    prov: P
+    prov_detail: "future_demand_tbl, variables stock_2025 and stock_2035"
+    parity: {table: future_demand_tbl, variable: "stock_2025|stock_2035"}
+    phase: "1"
+  - id: consumption.ev_sales_share
+    theme: consumption
+    family: consumption
+    label: "Electric share of new-car sales"
+    short: "EV sales share"
+    definition: "Electric cars as a percent of new cars sold; 2035 is the IEA STEPS projection."
+    unit: pct
+    data_year: "2025 (2035 projection for five countries)"
+    years: [2025, 2035]
+    projection_from: 2035
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_gevo
+    roster: iea_gevo
+    licence: attribution
+    caveats: [gevo_projection]
+    primary_for: []
+    section: demand
+    feeds: ["EO: Technology Demand"]
+    prov: P
+    prov_detail: "future_demand_tbl, variables share_2025 and share_2035 (percent)"
+    parity: {table: future_demand_tbl, variable: "share_2025|share_2035"}
+    phase: "1"
+  - id: consumption.ev_sales_growth
+    theme: consumption
+    family: consumption
+    label: "Growth of electric-car sales, 2022-2025"
+    short: "Sales growth 2022-25"
+    definition: "Relative change in electric-car sales from 2022 to 2025."
+    unit: pct_change
+    data_year: "2022-2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 100
+    source: iea_gevo
+    roster: iea_gevo
+    licence: attribution
+    caveats: [gevo_min_base]
+    primary_for: []
+    section: demand
+    min_base: 1000
+    feeds: ["EO: Technology Demand"]
+    prov: P
+    prov_detail: "future_demand_tbl, variable sales_growth_2225 (fraction); base = sales_2025 / (1 + growth)"
+    parity: {table: future_demand_tbl, variable: sales_growth_2225}
+    phase: "1"
+  - id: consumption.ev_stock_growth
+    theme: consumption
+    family: consumption
+    label: "Growth of the electric-car stock, 2022-2025"
+    short: "Stock growth 2022-25"
+    definition: "Relative change in the electric-car stock from 2022 to 2025."
+    unit: pct_change
+    data_year: "2022-2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 100
+    source: iea_gevo
+    roster: iea_gevo
+    licence: attribution
+    caveats: [gevo_min_base]
+    primary_for: []
+    section: demand
+    min_base: 1000
+    feeds: ["EO: Technology Demand"]
+    prov: P
+    prov_detail: "future_demand_tbl, variable stock_growth_2225 (fraction); base = stock_2025 / (1 + growth)"
+    parity: {table: future_demand_tbl, variable: stock_growth_2225}
+    phase: "1"
+  - id: consumption.weo
+    theme: consumption
+    family: consumption
+    label: "World energy supply (WEO, Stated Policies)"
+    short: "World supply"
+    definition: "World total energy supply of the fuel (low-emissions hydrogen: production), 2024 and the 2035 Stated Policies projection."
+    unit: ej
+    data_year: "2024; 2035 projection"
+    years: [2024, 2035]
+    projection_from: 2035
+    year_field: false
+    native_level: world
+    item_axis: fuel
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_weo
+    roster: null
+    licence: attribution
+    caveats: [weo_world]
+    primary_for: []
+    section: demand
+    link_stage: Downstream
+    feeds: ["EO: Technology Demand"]
+    prov: P
+    prov_detail: "future_demand_tbl, variable 2035 (world, de-broadcast); 2024 = 2035 - global_growth"
+    parity: {table: future_demand_tbl, variable: "2035", formula: "v2024 = `2035` - global_growth"}
+    phase: "1"
+  - id: consumption.mineral_demand
+    theme: consumption
+    family: consumption
+    label: "Clean-energy mineral demand by technology"
+    short: "Mineral demand"
+    definition: "Demand for the mineral from each clean-energy technology, IEA (observed 2025; Stated Policies projections)."
+    unit: kt
+    data_year: "2025 (projections to 2040)"
+    years: [2025, 2030, 2035, 2040]
+    projection_from: 2030
+    year_field: false
+    native_level: world
+    item_axis: mineral
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_cm
+    roster: null
+    licence: attribution
+    caveats: [projection_base_case]
+    primary_for: []
+    section: demand
+    link_stage: Upstream
+    feeds: []
+    prov: X
+    prov_detail: "read_iea_critical_minerals(), sheet 3.1 demand by technology (meta dims.mineral_demand)"
+    parity: {none: "meta table"}
+    phase: "1"
+  - id: consumption.total_ej
+    theme: consumption
+    family: consumption
+    label: "Primary energy consumption"
+    short: "Consumption"
+    definition: "Primary consumption of the fuel, in energy terms."
+    unit: ej
+    data_year: "1965-2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: fuel
+    agg: sum
+    world_basis: source_world
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: ei
+    roster: ei
+    licence: attribution
+    caveats: [ei_residual]
+    primary_for: []
+    section: demand
+    link_stage: Downstream
+    feeds: []
+    prov: X
+    prov_detail: "EI long CSV, <fuel>_tes_ej, 1965-2025"
+    parity: {cross_check: "2025 / population = energy_access_tbl Energy consumption per capita"}
+    phase: "2"
+  # ---- prices -------------------------------------------------------------------------------------
+  - id: prices.latest
+    theme: prices
+    family: prices
+    label: "Latest monthly price"
+    short: "Price"
+    definition: "The commodity's price in the latest month, in its own unit."
+    unit: price_tbc
+    data_year: "December 2025"
+    years: [2025]
+    year_field: false
+    native_level: world
+    item_axis: commodity
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: imf_pcps
+    roster: null
+    licence: attribution
+    caveats: [prices_world, imf_units, coal_mean]
+    primary_for: []
+    section: prices
+    link_stage: Upstream
+    feeds: ["ES: Energy Prices", "EO: Energy Prices"]
+    prov: P
+    prov_detail: "energy_prices_tbl, variable latest_price, de-broadcast (one value per commodity)"
+    parity: {table: energy_prices_tbl, variable: latest_price}
+    phase: "1"
+  - id: prices.yoy
+    theme: prices
+    family: prices
+    label: "Price change, 2025 vs 2024"
+    short: "Change y/y"
+    definition: "The IMF's annual percent change of the commodity's price, 2025 over 2024."
+    unit: pct
+    data_year: "2025"
+    years: [2025]
+    year_field: false
+    native_level: world
+    item_axis: commodity
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: imf_pcps
+    roster: null
+    licence: attribution
+    caveats: [prices_world]
+    primary_for: []
+    section: prices
+    link_stage: Upstream
+    feeds: ["ES: Energy Prices", "EO: Energy Prices"]
+    prov: P
+    prov_detail: "energy_prices_tbl, variable yoy_price_change_pct, de-broadcast"
+    parity: {table: energy_prices_tbl, variable: yoy_price_change_pct}
+    phase: "1"
+  - id: prices.vol_1y
+    theme: prices
+    family: prices
+    label: "Price volatility, 1 year"
+    short: "Volatility 1y"
+    definition: "Annualised standard deviation of monthly log returns over the last year."
+    unit: vol
+    data_year: "to December 2025"
+    years: [2025]
+    year_field: false
+    native_level: world
+    item_axis: commodity
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 100
+    source: imf_pcps
+    roster: null
+    licence: attribution
+    caveats: [prices_world]
+    primary_for: []
+    section: prices
+    link_stage: Upstream
+    feeds: ["ES: Energy Prices", "EO: Energy Prices"]
+    prov: P
+    prov_detail: "energy_prices_tbl, variable price_volatility_1yr, de-broadcast"
+    parity: {table: energy_prices_tbl, variable: price_volatility_1yr}
+    phase: "1"
+  - id: prices.vol_5y
+    theme: prices
+    family: prices
+    label: "Price volatility, 5 years"
+    short: "Volatility 5y"
+    definition: "Annualised standard deviation of monthly log returns over the last five years."
+    unit: vol
+    data_year: "2021-2025"
+    years: [2025]
+    year_field: false
+    native_level: world
+    item_axis: commodity
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 100
+    source: imf_pcps
+    roster: null
+    licence: attribution
+    caveats: [prices_world]
+    primary_for: []
+    section: prices
+    link_stage: Upstream
+    feeds: ["ES: Energy Prices", "EO: Energy Prices"]
+    prov: P
+    prov_detail: "energy_prices_tbl, variable price_volatility_5yr, de-broadcast"
+    parity: {table: energy_prices_tbl, variable: price_volatility_5yr}
+    phase: "1"
+  - id: prices.vol_10y
+    theme: prices
+    family: prices
+    label: "Price volatility, 10 years"
+    short: "Volatility 10y"
+    definition: "Annualised standard deviation of monthly log returns over the last ten years."
+    unit: vol
+    data_year: "2016-2025"
+    years: [2025]
+    year_field: false
+    native_level: world
+    item_axis: commodity
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 100
+    source: imf_pcps
+    roster: null
+    licence: attribution
+    caveats: [prices_world]
+    primary_for: []
+    section: prices
+    link_stage: Upstream
+    feeds: ["ES: Energy Prices", "EO: Energy Prices"]
+    prov: P
+    prov_detail: "energy_prices_tbl, variable price_volatility_10yr, de-broadcast"
+    parity: {table: energy_prices_tbl, variable: price_volatility_10yr}
+    phase: "1"
+  - id: prices.vol_20y
+    theme: prices
+    family: prices
+    label: "Price volatility, 20 years"
+    short: "Volatility 20y"
+    definition: "Annualised standard deviation of monthly log returns over the last twenty years (or the series' length)."
+    unit: vol
+    data_year: "2006-2025"
+    years: [2025]
+    year_field: false
+    native_level: world
+    item_axis: commodity
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 100
+    source: imf_pcps
+    roster: null
+    licence: attribution
+    caveats: [prices_world]
+    primary_for: []
+    section: prices
+    link_stage: Upstream
+    feeds: ["ES: Energy Prices", "EO: Energy Prices"]
+    prov: P
+    prov_detail: "energy_prices_tbl, variable price_volatility_20yr, de-broadcast"
+    parity: {table: energy_prices_tbl, variable: price_volatility_20yr}
+    phase: "1"
+  - id: prices.monthly
+    theme: prices
+    family: prices
+    label: "Monthly price"
+    short: "Monthly price"
+    definition: "The commodity's monthly price, in its own unit."
+    unit: price_tbc
+    data_year: "2003-2025 (monthly)"
+    years: [2025]
+    year_field: false
+    native_level: world
+    item_axis: commodity
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: imf_pcps
+    roster: null
+    licence: attribution
+    caveats: [prices_world, imf_units, imf_monthly_coal]
+    primary_for: []
+    section: prices
+    link_stage: Upstream
+    feeds: []
+    prov: X
+    prov_detail: "imf_commodity_prices.csv via energy_prices_imf_monthly_usd_long() and energy_prices_imf_clean(); mean over a commodity's series per month"
+    parity: {cross_check: "the last month = prices.latest"}
+    phase: "2"
+  - id: prices.wages
+    theme: prices
+    family: context
+    label: "Average monthly earnings in the stage's activity"
+    short: "Monthly earnings"
+    definition: "Average monthly earnings of employees in mining and utilities (Upstream), manufacturing (Midstream) or construction (Downstream), market-rate US dollars."
+    unit: usd_month
+    data_year: "latest available per economy"
+    years: [2025]
+    year_field: true
+    native_level: country
+    item_axis: activity
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: ilo
+    roster: ilo
+    licence: attribution
+    caveats: [wage_years, wage_activity]
+    primary_for: []
+    section: context
+    stale_years: 5
+    link_stage: any
+    feeds: ["EO: Cost Competitiveness"]
+    prov: P
+    prov_detail: "cost_competitiveness_tbl, variable earnings_usd, one value per economy and stage (copies across technologies collapsed)"
+    parity: {table: cost_competitiveness_tbl, variable: earnings_usd}
+    phase: "1"
+  - id: prices.lending_rate
+    theme: prices
+    family: context
+    label: "Lending rate"
+    short: "Lending rate"
+    definition: "The economy's lending rate (or the nearest available rate series)."
+    unit: pct_pa
+    data_year: "latest available per economy"
+    years: [2025]
+    year_field: true
+    native_level: country
+    item_axis: none
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: imf_rates
+    roster: imf_rates
+    licence: attribution
+    caveats: [lending_mixed, wage_years]
+    primary_for: []
+    section: context
+    stale_years: 5
+    link_stage: any
+    feeds: ["EO: Cost Competitiveness"]
+    prov: P
+    prov_detail: "cost_competitiveness_tbl, variable nominal_rate, one value per economy"
+    parity: {table: cost_competitiveness_tbl, variable: nominal_rate}
+    phase: "1"
+  - id: prices.ppi_yoy
+    theme: prices
+    family: context
+    label: "Producer-price inflation"
+    short: "PPI y/y"
+    definition: "Year-on-year change of the producer price index."
+    unit: pct_yoy
+    data_year: "latest available per economy"
+    years: [2025]
+    year_field: true
+    native_level: country
+    item_axis: none
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: imf_ppi
+    roster: imf_ppi
+    licence: attribution
+    caveats: [ppi_levels, wage_years]
+    primary_for: []
+    section: context
+    stale_years: 5
+    link_stage: any
+    feeds: ["EO: Cost Competitiveness"]
+    prov: P
+    prov_detail: "cost_competitiveness_tbl, variable ppi_yoy, one value per economy"
+    parity: {table: cost_competitiveness_tbl, variable: ppi_yoy}
+    phase: "1"
+  # ---- technology ---------------------------------------------------------------------------------
+  - id: technology.trl
+    theme: technology
+    family: technology
+    label: "Technology readiness level"
+    short: "TRL"
+    definition: "Mean technology readiness level (1-11) of the IEA Clean Energy Technology Guide items mapped to the technology and stage."
+    unit: trl
+    data_year: "2025"
+    years: [2025]
+    year_field: false
+    native_level: cell_global
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_ctg
+    roster: null
+    licence: attribution
+    caveats: [trl_global, trl_fallback]
+    primary_for: []
+    section: technology
+    feeds: ["EO: Technological Readiness"]
+    prov: P
+    prov_detail: "technological_readiness_tbl, variable TRL 2025, de-broadcast (one value per cell)"
+    parity: {table: technological_readiness_tbl, variable: "TRL 2025"}
+    phase: "1"
+  - id: technology.trl_change
+    theme: technology
+    family: technology
+    label: "Change in technology readiness, 2020-2025"
+    short: "TRL change"
+    definition: "Mean change in TRL of the same items from 2020 to 2025."
+    unit: trl_points
+    data_year: "2020-2025"
+    years: [2025]
+    year_field: false
+    native_level: cell_global
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_ctg
+    roster: null
+    licence: attribution
+    caveats: [trl_global, trl_fallback]
+    primary_for: []
+    section: technology
+    feeds: ["EO: Technological Readiness"]
+    prov: P
+    prov_detail: "technological_readiness_tbl, variable TRL change 2020-2025, de-broadcast"
+    parity: {table: technological_readiness_tbl, variable: "TRL Δ 2020–2025"}
+    phase: "1"
+  # ---- policy -------------------------------------------------------------------------------------
+  - id: policy.records
+    theme: policy
+    family: policy
+    label: "Recorded policies"
+    short: "Policies"
+    definition: "Policies and measures recorded by the IEA for the economy, by technology tag and IEA PAMS year (the year in force or announced; not always the promulgation date)."
+    unit: count
+    data_year: "IEA PAMS year (in force or announced; not always the promulgation date), to {pams_year_max}"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: policy_tag
+    agg: sum
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: iea_pams
+    roster: iea_pams
+    licence: attribution
+    caveats: [policy_activity, policy_cross_cutting, policy_text_tags, policy_eu]
+    primary_for: []
+    section: policy
+    link_stage: any
+    feeds: ["Policy: IEA PAMS (required)"]
+    prov: X
+    prov_detail: "IEA_PAMS_Export.csv via clean_pams_raw() and build_policy_table(), before expand_cross_cutting()"
+    parity: {none: "record-level policy table"}
+    phase: "1"
+  - id: policy.cat
+    theme: policy
+    family: policy
+    label: "Climate Action Tracker rating"
+    short: "CAT rating"
+    definition: "The Climate Action Tracker's overall rating and its sub-ratings."
+    unit: ordinal
+    data_year: "updated 2022-2025"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: none
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: cat
+    roster: cat
+    licence: attribution
+    caveats: [cat_dated]
+    primary_for: []
+    section: policy
+    feeds: ["Policy: Climate Action Tracker (where it rates)"]
+    prov: X
+    prov_detail: "CAT_country ratings data.csv"
+    parity: {none: "ordinal ratings"}
+    phase: "1"
+  # ---- development --------------------------------------------------------------------------------
+  - id: development.alignment
+    theme: development
+    family: development
+    label: "Position on the US-China UN-vote axis"
+    short: "UN-vote position"
+    definition: "Mean UN General Assembly ideal point over 2019-2023, rescaled so China = 0 and the United States = 1."
+    unit: axis01
+    data_year: "2019-2023 (sessions 74-78)"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: none
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: "0 = China's position, 1 = the United States'."
+    display_scale: 1
+    source: un_votes
+    roster: un_votes
+    licence: attribution
+    caveats: [alignment_basis]
+    primary_for: []
+    section: null
+    feeds: ["Coalition: U.S.-leaning bloc test", "Partners: geopolitical alignment"]
+    prov: P
+    prov_detail: "geo_ideal_points_tbl, column s_axis"
+    parity: {table: geo_ideal_points_tbl, variable: s_axis}
+    phase: "1"
