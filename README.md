@@ -72,6 +72,8 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | PSI | `scripts/25_build_partner_indices.R` | `psi_tbl.rds` (core-coalition view, headline), `psi_full_coalition_tbl.rds`, `psi_world_tbl.rds`, `psi_dyad_tbl.rds` and category contributions |
 | Allied network | `scripts/30_build_allied_network_design.R` | `outputs/allied_network_*.csv` |
 | Vintages | `scripts/40_build_index_vintages.R` | `vintages/*` (ES and EO at several years) |
+| Dashboard: Strategic Insights | `scripts/85_export_dashboard_data.R`, `scripts/86_export_dashboard_fixtures.R` | `dashboard/validation_report.csv`; the app's bundle goes to the repo's `dashboard/public/data/` and the engine's parity fixtures to `dashboard/src/engine/__fixtures__/` |
+| Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 15 OSB chunks) |
 
 Every index keeps its decomposition (category and variable contributions reconcile to the index value), and every country-cell carries how much of its weight rests on imputed inputs.
 
@@ -639,7 +641,12 @@ When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under `data/raw/com
 
 ## Interactive explorer
 
-`dashboard/` holds the Allied Industrial Base Explorer, a static React app (Vite, TypeScript, NEIS design) that recomputes the indices, partnership scores and the allied network in the browser when a reader moves the four preference dials. Its data bundle (`dashboard/public/data/`) is exported from the pipeline outputs by `scripts/85_export_dashboard_data.R` (builders in `R/dashboard/`), which also checks the dashboard engine at its baseline against the stored outputs; rerun it after a pipeline rerun, then `scripts/86_export_dashboard_fixtures.R` for the engine's parity fixtures. The TypeScript engine in `dashboard/src/engine/` is a port of `R/dashboard/` and is parity-tested against it. To run it: `cd dashboard && npm ci && npm run dev`; `dashboard/README.md` covers tests, the build and the Netlify deployment.
+`dashboard/` holds the Allied Industrial Base Explorer, a static React app (Vite, TypeScript, NEIS design) with a Home page and two modules:
+
+* **Strategic Insights** (normative) recomputes the indices, partnership scores and the allied network in the browser when a reader moves the four preference dials. Its data bundle (`dashboard/public/data/`) is exported from the pipeline outputs by `scripts/85_export_dashboard_data.R` (builders in `R/dashboard/`), which also checks the dashboard engine at its baseline against the stored outputs; rerun it after a pipeline rerun, then `scripts/86_export_dashboard_fixtures.R` for the engine's parity fixtures. The TypeScript engine in `dashboard/src/engine/` is a port of `R/dashboard/` and is parity-tested against it.
+* **Sector Insights** (descriptive) shows the measured data behind the indices, by technology and supply-chain stage, in each source's own units and years: trade (the reconciled Comtrade dyad matrix), investment, reserves, production, consumption, prices, policy (IEA PAMS records and CAT ratings) and time series (EI 1965-2025, IMF monthly prices, CIM investment and capacity, IEA EV regions). No index, weight or dial value appears in it. Its data (`dashboard/public/data/sector/`) are exported by `scripts/87_export_sector_data.R` (pure helpers in `R/dashboard/sector/`, captions and units from `config/sector_dictionary.yml`): every value with a `data/processed` source is checked `identical()` to it after the encode/decode round trip, and the run writes `data/processed/dashboard/sector_validation.csv`. Rerun it after a pipeline rerun (`--check-only` runs every check without writing; `--synthetic <dir>` writes the small test fixture). Restricted sources (BNEF, BCG) never ship.
+
+To run it: `cd dashboard && npm ci && npm run dev`; `dashboard/README.md` covers tests, the build and the Netlify deployment.
 
 ---
 
@@ -705,6 +712,7 @@ The `testthat` suite under `tests/testthat/` covers, among others:
 * Allied network: integrity, diversification, EU node, demand modes, portfolio constraints
 * Raw-input manifest drift and sync, fetchers
 * Dashboard bundle container (OSB) round trips and the engine's parity fixtures (the app's own tests run with `npm test` in `dashboard/`)
+* Sector Insights export helpers: the dictionary validator, facts and value states, the trade matrix and zero rebuild, concentration summaries, chunk round trips and the parity ledger (`test-sector-*.R`, synthetic inputs only)
 
 Run tests from the repo root with:
 
@@ -723,6 +731,7 @@ Rscript -e "testthat::test_dir('tests/testthat')"
 * `scripts/12_build_geopolitical_alignment.R`, `scripts/13_build_coalition.R` — alignment and coalition (above).
 * `scripts/85_export_dashboard_data.R` — exports the dashboard bundle to `dashboard/public/data/`.
 * `scripts/86_export_dashboard_fixtures.R` — writes the TypeScript engine's parity fixtures.
+* `scripts/87_export_sector_data.R` — exports the Sector Insights data to `dashboard/public/data/sector/` (`--check-only`, `--synthetic <dir>`).
 * `scripts/90_build_package_selection_viz.R` — package-selection visualization outputs.
 * `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — trade time series.
 * `scripts/98_pull_comtrade_energy_dyads.R` — the all-reporter Comtrade dyad pull (below).

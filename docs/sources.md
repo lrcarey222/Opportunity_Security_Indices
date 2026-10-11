@@ -4,7 +4,7 @@
      Regenerate with: Rscript scripts/02_render_sources_doc.R
      Edit config/raw_inputs_manifest.yml instead. -->
 
-Every raw input the pipeline reads, grouped by how it arrives. There are 57 inputs in total.
+Every raw input the pipeline reads, grouped by how it arrives. There are 58 inputs in total.
 
 - **api** — fetched automatically during ingestion; no human step.
 - **manual** — staged by hand into `sharepoint_raw_dir` before a run.
@@ -17,11 +17,12 @@ Fetched programmatically; no human step. Comtrade requires `COMTRADE_API_KEY`. E
 
 | Source | File | Cadence | Vintage in use | Owner | Read by |
 | --- | --- | --- | --- | --- | --- |
+| [ILOSTAT, average monthly earnings of employees by sex, economic activity and currency (EAR_EMTA_SEX_ECO_CUR_NB_A)](https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat) | `ilo_earnings_by_activity.csv` | annual | downloaded 2026-09-30 (the copy scripts/40 cached as data/processed/vintages/_cache_ilo_earnings.csv) | lcarey@rmi.org | `10_build_themes.R` |
 | [IMF lending rates (MFS_IR)](https://data.imf.org/en/Data-Explorer) | `imf_lending_rates.csv`<br>fetch: fallback (staged copy wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [IMF Primary Commodity Price System (wide export, includes annual YoY series)](https://www.imf.org/en/research/commodity-prices) | `imf_commodity_prices.csv`<br>fetch: prefer (API wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [IMF producer price indices (PPI)](https://data.imf.org/en/Data-Explorer) | `imf_ppi.csv`<br>fetch: fallback (staged copy wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
-| [UN Comtrade (all-reporter energy HS6 reporter-partner dyads)](https://comtradeplus.un.org/) | `comtrade_energy_dyads_all.csv` | annual | 2020 and 2024; main pull 2026-10-07/08 (298 codes), supplement 2026-10-09 (740200 740311 760110 760120) | lcarey@rmi.org | `98_pull_comtrade_energy_dyads.R` |
-| [UN Comtrade (allied reporter-partner dyads)](https://comtradeplus.un.org/) | `allied_comtrade_energy_data.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `15_build_partner_themes.R` |
+| [UN Comtrade (all-reporter energy HS6 reporter-partner dyads)](https://comtradeplus.un.org/) | `comtrade_energy_dyads_all.csv` | annual | 2020 and 2024; main pull 2026-10-07/08 (298 codes), supplement 2026-10-09 (740200 740311 760110 760120) | lcarey@rmi.org | `15_build_partner_themes.R`, `30_build_allied_network_design.R`, `98_pull_comtrade_energy_dyads.R` |
+| [UN Comtrade (allied reporter-partner dyads)](https://comtradeplus.un.org/) | `allied_comtrade_energy_data.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R` |
 | [UN Comtrade (critical minerals exports)](https://comtradeplus.un.org/) | `critmin_export_2024.csv`<br>newest match: `^critmin_export_\d{4}\.csv$` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [UN Comtrade (critical minerals imports)](https://comtradeplus.un.org/) | `critmin_import_2024.csv`<br>newest match: `^critmin_import_\d{4}\.csv$` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [UN Comtrade (critical minerals total exports)](https://comtradeplus.un.org/) | `critmin_total_export_2024.csv`<br>newest match: `^critmin_total_export_\d{4}\.csv$` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
@@ -31,9 +32,9 @@ Fetched programmatically; no human step. Comtrade requires `COMTRADE_API_KEY`. E
 | [UN General Assembly ideal points, all-votes series (Bailey, Strezhnev and Voeten 2017; Voeten et al., Harvard Dataverse)](https://doi.org/10.7910/DVN/LEJUQZ) | `un_ga_ideal_points_all.csv`<br>fetch: prefer (API wins) | annual | Dataverse V39.0 (2026-07-30), IdealpointsJuly2025.tab (idealpointall), sessions 1-78 (1946-2023) | lcarey@rmi.org | `12_build_geopolitical_alignment.R` |
 | [UN General Assembly ideal points, final-passage series (Bailey, Strezhnev and Voeten 2017; Voeten et al., Harvard Dataverse)](https://doi.org/10.7910/DVN/LEJUQZ) | `un_ga_ideal_points.csv`<br>fetch: prefer (API wins) | annual | Dataverse V39.0 (2026-07-30), IdealpointestimatesFP_2026FP.csv, sessions 1-80 (1946-2025) | lcarey@rmi.org | `12_build_geopolitical_alignment.R` |
 | [World Bank Doing Business indicators (historical)](https://archive.doingbusiness.org/en/data) | `wb_doingbusiness.csv`<br>fetch: prefer (API wins) | discontinued | — | lcarey@rmi.org | `15_build_partner_themes.R` |
-| [World Bank WDI country reference table](https://databank.worldbank.org/source/world-development-indicators) | `wdi_country_info.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R`, `40_build_index_vintages.R` |
+| [World Bank WDI country reference table](https://databank.worldbank.org/source/world-development-indicators) | `wdi_country_info.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `15_build_partner_themes.R`, `20_build_indices.R`, `30_build_allied_network_design.R`, `40_build_index_vintages.R`, `98_pull_comtrade_energy_dyads.R` |
 | [World Bank WDI development indicator panel](https://databank.worldbank.org/source/world-development-indicators) | `wb_wdi.csv`<br>fetch: prefer (API wins) | annual | — | lcarey@rmi.org | `15_build_partner_themes.R` |
-| [World Bank World Development Indicators (NY.GDP.MKTP.CD)](https://databank.worldbank.org/source/world-development-indicators) | `wdi_gdp.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `12_build_geopolitical_alignment.R`, `13_build_coalition.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R` |
+| [World Bank World Development Indicators (NY.GDP.MKTP.CD)](https://databank.worldbank.org/source/world-development-indicators) | `wdi_gdp.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `12_build_geopolitical_alignment.R`, `13_build_coalition.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R`, `40_build_index_vintages.R` |
 
 ### Manual staging required
 
@@ -59,7 +60,7 @@ Each of these must be downloaded and placed in `sharepoint_raw_dir` before a run
 | [Harvard Atlas of Economic Complexity (HS92, 4-digit)](https://atlas.hks.harvard.edu/) | `hs92_country_product_year_4.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [Harvard Atlas of Economic Complexity (HS92, 6-digit)](https://atlas.hks.harvard.edu/) | `hs92_country_product_year_6.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [IEA clean technology midstream manufacturing capacity](https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide) | `iea_cleantech_Midstream.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R`, `13_build_coalition.R` |
-| [IEA Critical Minerals Dataset](https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset) | `IEA Critical Minerals Dataset 2026.xlsx`<br>newest match: `^IEA Critical Minerals Dataset \d{4}\.xlsx$\|^iea_criticalminerals_\d{2}\.csv$` | annual | 2026 | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `40_build_index_vintages.R` |
+| [IEA Critical Minerals Dataset](https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset) | `IEA Critical Minerals Dataset 2026.xlsx`<br>newest match: `^IEA Critical Minerals Dataset \d{4}\.xlsx$\|^iea_criticalminerals_\d{2}\.csv$` | annual | 2026 | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `40_build_index_vintages.R`, `87_export_sector_data.R`, `fig_es.R` |
 | [IEA ETP Clean Energy Technology Guide](https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide) | `IEACleanTechGuidepublicdataset.csv`<br>newest match: `^IEACleanTechGuide.*\.csv$\|^IEA_Clean_Tech_Guide\.csv$` | annual | 2026 | lcarey@rmi.org | `10_build_themes.R` |
 | [IEA EV midstream manufacturing capacity extract](https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer) | `ev_Midstream_capacity.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [IEA Global EV Outlook](https://www.iea.org/data-and-statistics/data-product/global-ev-outlook-2026) | `EV data by country 2026.csv`<br>newest match: `^EV data by country \d{4}\.csv$\|^IEA_EVDataExplorer\d{4}\.xlsx$` | annual | 2026 | lcarey@rmi.org | `10_build_themes.R` |
@@ -85,7 +86,7 @@ Maintained by the team rather than fetched. Entries marked `staged_from: repo` l
 | HS6 to technology / supply-chain view (tech, supply_chain, sub_sector, HS6) | `consolidated_hs6_energy_tech_long.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R` |
 | HS6 to technology / supply-chain view (Technology, Value Chain, Sub.Sector, HS6) | `hts_codes_categories_bolstered_final.csv` | ad-hoc | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `40_build_index_vintages.R`, `96_pull_trade_timeseries.R`, `97_bulk_comtrade_downloads.R` |
 | HS6 view carrying the essential-goods flag (Technology, Value Chain, Sub.Sector, HS6, essential) | `hs6_categories_with_essential.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R`, `96_pull_trade_timeseries.R`, `97_bulk_comtrade_downloads.R` |
-| Master energy HS6 catalogue | `energy_hs6_master.csv` | ad-hoc | — | lcarey@rmi.org | `trade_charts.R`, `15_build_partner_themes.R` |
+| Master energy HS6 catalogue | `energy_hs6_master.csv` | ad-hoc | — | lcarey@rmi.org | `trade_charts.R`, `04_build_hs6_views.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R`, `98_pull_comtrade_energy_dyads.R` |
 
 ### Pipeline bookkeeping (generated)
 

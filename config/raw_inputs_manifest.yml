@@ -1,20 +1,6 @@
 version: 2.0
 generated_by: scripts/01_generate_raw_inputs_manifest.R
 inputs:
-- id: ilo_earnings_by_activity
-  path: ilo_earnings_by_activity.csv
-  source_type: api
-  source_name: ILOSTAT, average monthly earnings of employees by sex, economic activity and currency (EAR_EMTA_SEX_ECO_CUR_NB_A)
-  url: https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat
-  cadence: annual
-  owner: lcarey@rmi.org
-  vintage: downloaded 2026-09-30 (the copy scripts/40 cached as data/processed/vintages/_cache_ilo_earnings.csv)
-  staged_from: pipeline
-  notes: Labelled CSV export of the ILOSTAT indicator (558,815 rows). Staged on 2026-10-10 after the
-    ILO API began returning empty responses to scripted requests; until then scripts/10 read it live.
-    Refresh by downloading the same URL from a browser and replacing the file.
-  required_by:
-  - scripts/10_build_themes.R
 - id: allied_comtrade_energy_data
   path: allied_comtrade_energy_data.csv
   source_type: api
@@ -27,6 +13,7 @@ inputs:
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/15_build_partner_themes.R
+  - scripts/30_build_allied_network_design.R
 - id: comtrade_energy_dyads_all
   path: comtrade_energy_dyads_all.csv
   source_type: api
@@ -34,16 +21,19 @@ inputs:
   url: https://comtradeplus.un.org/
   cadence: annual
   owner: lcarey@rmi.org
-  vintage: 2020 and 2024; main pull 2026-10-07/08 (298 codes), supplement 2026-10-09 (740200
-    740311 760110 760120)
+  vintage: 2020 and 2024; main pull 2026-10-07/08 (298 codes), supplement 2026-10-09
+    (740200 740311 760110 760120)
   staged_from: pipeline
-  notes: Written by scripts/98_pull_comtrade_energy_dyads.R (chunked, resumable); requires COMTRADE_API_KEY.
-    Combined from two chunk directories with disjoint codes - the main pull of the whole master
-    (2026-10-07/08) and a supplementary pull of the four Electric Grid Upstream codes the basket
-    gained on 2026-10-09 (COMTRADE_DYADS_CODES, 14 calls, same getDA reporter lists, so 168
-    reporters in 2020 and 143 in 2024); rebuild with COMTRADE_DYADS_STAGE=combine and
-    COMTRADE_DYADS_COMBINE_DIRS naming the supplementary directory.
+  notes: Written by scripts/98_pull_comtrade_energy_dyads.R (chunked, resumable);
+    requires COMTRADE_API_KEY. Combined from two chunk directories with disjoint codes
+    - the main pull of the whole master (2026-10-07/08) and a supplementary pull of
+    the four Electric Grid Upstream codes the basket gained on 2026-10-09 (COMTRADE_DYADS_CODES,
+    14 calls, same getDA reporter lists, so 168 reporters in 2020 and 143 in 2024);
+    rebuild with COMTRADE_DYADS_STAGE=combine and COMTRADE_DYADS_COMBINE_DIRS naming
+    the supplementary directory.
   required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/30_build_allied_network_design.R
   - scripts/98_pull_comtrade_energy_dyads.R
 - id: comtrade_energy_trade
   path: comtrade_energy_trade.csv
@@ -52,15 +42,16 @@ inputs:
   url: https://comtradeplus.un.org/
   cadence: annual
   owner: lcarey@rmi.org
-  vintage: 2024; World rows of the all-reporter dyad pull (main 2026-10-07/08, Electric Grid Upstream
-    supplement 2026-10-09), derived 2026-10-09
+  vintage: 2024; World rows of the all-reporter dyad pull (main 2026-10-07/08, Electric
+    Grid Upstream supplement 2026-10-09), derived 2026-10-09
   staged_from: pipeline
-  notes: Reporter x World totals of every basket code, 142 export and 143 import reporters (Taiwan,
-    Comtrade's S19, as TWN). Written by scripts/98_pull_comtrade_energy_dyads.R
-    (COMTRADE_DYADS_STAGE=energy_trade) from the World rows of the dyad chunks; it replaced the
-    scripts/05 pull staged 2026-09-30, which lacked 60 of the 256 basket codes and 13 reporters. The rows
-    of four HS 4403 codes outside the basket (440321 440323 440324 440325) are kept from that pull. A
-    scripts/05 run with downloads overwrites the file; rerun the energy_trade stage afterwards.
+  notes: Reporter x World totals of every basket code, 142 export and 143 import reporters
+    (Taiwan, Comtrade's S19, as TWN). Written by scripts/98_pull_comtrade_energy_dyads.R
+    (COMTRADE_DYADS_STAGE=energy_trade) from the World rows of the dyad chunks; it
+    replaced the scripts/05 pull staged 2026-09-30, which lacked 60 of the 256 basket
+    codes and 13 reporters. The rows of four HS 4403 codes outside the basket (440321
+    440323 440324 440325) are kept from that pull. A scripts/05 run with downloads
+    overwrites the file; rerun the energy_trade stage afterwards.
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
@@ -74,10 +65,11 @@ inputs:
   owner: lcarey@rmi.org
   vintage: 2024; pulled 2026-10-09
   staged_from: pipeline
-  notes: All-product exports to the World of the 143 reporters of comtrade_energy_trade.csv (Taiwan as
-    TWN), the denominator of the trade themes' RCA. Refreshed by scripts/98_pull_comtrade_energy_dyads.R
-    (COMTRADE_DYADS_STAGE=energy_trade, 3 calls) for every export reporter of the energy-trade file, from
-    the same release; it replaced the 130-reporter scripts/05 pull staged 2026-09-30.
+  notes: All-product exports to the World of the 143 reporters of comtrade_energy_trade.csv
+    (Taiwan as TWN), the denominator of the trade themes' RCA. Refreshed by scripts/98_pull_comtrade_energy_dyads.R
+    (COMTRADE_DYADS_STAGE=energy_trade, 3 calls) for every export reporter of the
+    energy-trade file, from the same release; it replaced the 130-reporter scripts/05
+    pull staged 2026-09-30.
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
@@ -113,21 +105,22 @@ inputs:
   - scripts/10_build_themes.R
 - id: critmin_mirror_import
   path: critmin_mirror_import.csv
-  optional: true
   fetch_policy: prefer
   source_type: api
-  source_name: UN Comtrade (partner-reported imports from non-reporting economies, mirror
-    exports)
+  source_name: UN Comtrade (partner-reported imports from non-reporting economies,
+    mirror exports)
   url: https://comtradeapi.un.org/public/v1/preview/C/A/HS
   cadence: annual
   owner: lcarey@rmi.org
   staged_from: sharepoint
+  optional: yes
   notes: Fetched from the keyless Comtrade public preview API by scripts/fetchers/comtrade_mirror_critmin.R
-    (500 records per call; partner = each WDI economy absent from the critmin export and
-    total-export pulls, all reporters, the pulls' HS6 codes plus TOTAL, the pulls' year;
-    flow X rows are those economies' own exports to World where they have reported since).
-    First fetched 2026-10-07 for 2024. Optional - without it Minerals Trade falls back
-    to reporter-side exports. Refetch (OPSI_FORCE_REFRESH) when the critmin vintage moves.
+    (500 records per call; partner = each WDI economy absent from the critmin export
+    and total-export pulls, all reporters, the pulls' HS6 codes plus TOTAL, the pulls'
+    year; flow X rows are those economies' own exports to World where they have reported
+    since). First fetched 2026-10-07 for 2024. Optional - without it Minerals Trade
+    falls back to reporter-side exports. Refetch (OPSI_FORCE_REFRESH) when the critmin
+    vintage moves.
   required_by:
   - scripts/10_build_themes.R
 - id: critmin_total_export
@@ -144,6 +137,50 @@ inputs:
   staged_from: pipeline
   required_by:
   - scripts/10_build_themes.R
+- id: ilo_earnings_by_activity
+  path: ilo_earnings_by_activity.csv
+  source_type: api
+  source_name: ILOSTAT, average monthly earnings of employees by sex, economic activity
+    and currency (EAR_EMTA_SEX_ECO_CUR_NB_A)
+  url: https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: downloaded 2026-09-30 (the copy scripts/40 cached as data/processed/vintages/_cache_ilo_earnings.csv)
+  staged_from: pipeline
+  notes: Labelled CSV export of the ILOSTAT indicator (558,815 rows). Staged on 2026-10-10
+    after the ILO API began returning empty responses to scripted requests; until
+    then scripts/10 read it live. Refresh by downloading the same URL from a browser
+    and replacing the file.
+  required_by:
+  - scripts/10_build_themes.R
+- id: imf_commodity_prices
+  path: imf_commodity_prices.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: IMF Primary Commodity Price System (wide export, includes annual YoY
+    series)
+  url: https://www.imf.org/en/research/commodity-prices
+  cadence: monthly
+  owner: lcarey@rmi.org
+  staged_from: sharepoint
+  notes: 'Fetched from the IMF.RES/PCPS SDMX 3.0 flow by scripts/fetchers/imf_sdmx.R.
+    fetch_policy is prefer, unlike the other IMF entries: PCPS is a world-level price
+    panel with no country dimension, so the coverage divergence that keeps imf_ppi
+    and imf_lending_rates on fallback does not apply. Verified against the 2026-01-22
+    staged export: 6842 of 6870 overlapping monthly USD observations are identical,
+    and all 28 scored commodities still resolve. The 28 differences are upstream revisions
+    to Urea, Potassium Fertilizer and Propane - the staged export had frozen Urea
+    at 183.7051 for all of 2025, which the fetched series corrects. The flow no longer
+    publishes the PCPS exchange-rate series (T*); they return as empty stubs and nothing
+    reads them. The INDICATOR labels are kept as the IMF publishes them (config/imf_pcps_indicator_labels.yml)
+    but are not a source of units: they are wrong for cobalt (per pound; the series
+    is USD per metric tonne) and propane (US cents; the series is USD per gallon)
+    and silent for lithium, vanadium, chromium and rare earths. Units come from the
+    series metadata, held in energy_prices_pcps_units() (R/categories/energy_prices/energy_prices.R);
+    add a row there for a newly mapped commodity.'
+  required_by:
+  - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: imf_lending_rates
   path: imf_lending_rates.csv
   source_type: api
@@ -156,10 +193,11 @@ inputs:
     is fallback, not prefer, because the live flow no longer carries every country
     in the staged extract - it reproduces 159 of 162 scored countries, and Spain is
     absent from MFS_IR entirely. Set fetch_policy to prefer once that gap is accepted
-    or resolved. Lapsed lending series carry zero placeholder entries (New Zealand after
-    2017-M01, Solomon Islands 2021-M04 and 2021-Q2), and the IMF's quarterly and annual
-    averages fold them in; cost_competitiveness_drop_rate_stubs() drops zero or negative
-    lending-type readings and those averages, and its message names the countries affected.
+    or resolved. Lapsed lending series carry zero placeholder entries (New Zealand
+    after 2017-M01, Solomon Islands 2021-M04 and 2021-Q2), and the IMF's quarterly
+    and annual averages fold them in; cost_competitiveness_drop_rate_stubs() drops
+    zero or negative lending-type readings and those averages, and its message names
+    the countries affected.
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
@@ -188,16 +226,17 @@ inputs:
   url: https://doi.org/10.7910/DVN/LEJUQZ
   cadence: annual
   owner: lcarey@rmi.org
-  vintage: Dataverse V39.0 (2026-07-30), IdealpointestimatesFP_2026FP.csv, sessions 1-80
-    (1946-2025)
+  vintage: Dataverse V39.0 (2026-07-30), IdealpointestimatesFP_2026FP.csv, sessions
+    1-80 (1946-2025)
   licence: CC0-1.0
   staged_from: sharepoint
   notes: Fetched from the Harvard Dataverse API (public, no key) by scripts/fetchers/un_ideal_points.R
-    (fetcher un_ga_ideal_points), which takes the newest country-year ideal-point file
-    of the latest published version and writes it in a fixed schema; ideal_point is
-    the final-passage-vote estimate (estimate FP). A sensitivity since October 2026
-    (config/geopolitical_distance.yml alignment$series fp); the primary series is un_ga_ideal_points_all.
-    Nothing needs staging - staged_from is sharepoint so that scripts/05 runs the fetcher.
+    (fetcher un_ga_ideal_points), which takes the newest country-year ideal-point
+    file of the latest published version and writes it in a fixed schema; ideal_point
+    is the final-passage-vote estimate (estimate FP). A sensitivity since October
+    2026 (config/geopolitical_distance.yml alignment$series fp); the primary series
+    is un_ga_ideal_points_all. Nothing needs staging - staged_from is sharepoint so
+    that scripts/05 runs the fetcher.
   required_by:
   - scripts/12_build_geopolitical_alignment.R
 - id: un_ga_ideal_points_all
@@ -209,19 +248,20 @@ inputs:
   url: https://doi.org/10.7910/DVN/LEJUQZ
   cadence: annual
   owner: lcarey@rmi.org
-  vintage: Dataverse V39.0 (2026-07-30), IdealpointsJuly2025.tab (idealpointall), sessions
-    1-78 (1946-2023)
+  vintage: Dataverse V39.0 (2026-07-30), IdealpointsJuly2025.tab (idealpointall),
+    sessions 1-78 (1946-2023)
   licence: CC0-1.0
   staged_from: sharepoint
   notes: Fetched from the Harvard Dataverse API (public, no key) by scripts/fetchers/un_ideal_points.R
     (fetcher un_ga_ideal_points_all), which takes the newest country-year file that
     carries the all-votes estimates (all recorded votes, including paragraph and amendment
-    votes; the more precise series per the BSV codebook) and writes it in the same fixed
-    schema (estimate All). The primary input of the geopolitical alignment (alignment$series
+    votes; the more precise series per the BSV codebook) and writes it in the same
+    fixed schema (estimate All). The primary input of the geopolitical alignment (alignment$series
     all). The 2026 release updated the final-passage estimates only, so this series
-    ends in 2023. Upstream quirks handled in R/geopolitical_distance/alignment.R - Serbia
-    is COW 345 "Yugoslavia" (YUG) throughout, Sao Tome's name has replacement characters.
-    Nothing needs staging - staged_from is sharepoint so that scripts/05 runs the fetcher.
+    ends in 2023. Upstream quirks handled in R/geopolitical_distance/alignment.R -
+    Serbia is COW 345 "Yugoslavia" (YUG) throughout, Sao Tome's name has replacement
+    characters. Nothing needs staging - staged_from is sharepoint so that scripts/05
+    runs the fetcher.
   required_by:
   - scripts/12_build_geopolitical_alignment.R
 - id: wb_doingbusiness
@@ -265,8 +305,10 @@ inputs:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
   - scripts/15_build_partner_themes.R
+  - scripts/20_build_indices.R
   - scripts/30_build_allied_network_design.R
   - scripts/40_build_index_vintages.R
+  - scripts/98_pull_comtrade_energy_dyads.R
 - id: wdi_gdp
   path: wdi_gdp.csv
   source_type: api
@@ -283,6 +325,7 @@ inputs:
   - scripts/13_build_coalition.R
   - scripts/15_build_partner_themes.R
   - scripts/30_build_allied_network_design.R
+  - scripts/40_build_index_vintages.R
 - id: allies
   path: allies.csv
   source_type: derived
@@ -314,8 +357,8 @@ inputs:
   cadence: ad-hoc
   owner: lcarey@rmi.org
   staged_from: repo
-  notes: LLM-generated (ChatGPT) defence-relevance scores per technology x stage, the same
-    for every country. Reference only since October 2026 - built into dual_use_scores_tbl
+  notes: LLM-generated (ChatGPT) defence-relevance scores per technology x stage,
+    the same for every country. Reference only since October 2026 - built into dual_use_scores_tbl
     but not a component of the composite Policy index (IEA PAMS 3, CAT 2; NIPO excluded).
   required_by:
   - scripts/10_build_themes.R
@@ -328,7 +371,10 @@ inputs:
   staged_from: repo
   required_by:
   - R/charts/trade_charts.R
+  - scripts/04_build_hs6_views.R
   - scripts/15_build_partner_themes.R
+  - scripts/30_build_allied_network_design.R
+  - scripts/98_pull_comtrade_energy_dyads.R
 - id: hs6_categories_with_essential
   path: hs6_categories_with_essential.csv
   source_type: derived
@@ -452,9 +498,9 @@ inputs:
   cadence: irregular
   owner: lcarey@rmi.org
   staged_from: sharepoint
-  notes: No bulk API; ratings are transcribed from the country pages. Added to the Policy index
-    where it rates the country (39 countries and the EU; IEA PAMS alone otherwise); also the
-    Friendshore/Opportunity climate penalty.
+  notes: No bulk API; ratings are transcribed from the country pages. Added to the
+    Policy index where it rates the country (39 countries and the EU; IEA PAMS alone
+    otherwise); also the Friendshore/Opportunity climate penalty.
   required_by:
   - scripts/10_build_themes.R
   - scripts/15_build_partner_themes.R
@@ -471,16 +517,17 @@ inputs:
 - id: economic_security_agreements
   path: economic_security_agreements.csv
   source_type: manual
-  source_name: Membership of U.S. and allied economic-security agreements (U.S. FTA partners,
-    IPEF, Minerals Security Partnership and MSP Forum, G7, NATO)
+  source_name: Membership of U.S. and allied economic-security agreements (U.S. FTA
+    partners, IPEF, Minerals Security Partnership and MSP Forum, G7, NATO)
   url: https://ustr.gov/trade-agreements/free-trade-agreements
   cadence: ad-hoc
   owner: lcarey@rmi.org
   vintage: accessed 2026-10-08
   staged_from: repo
-  notes: Project-authored from the official lists (USTR, White House, European Commission, NATO,
-    G7 presidencies); one row per (iso3, agreement), each with its source, URL and access date.
-    Partner route of the two-tier coalition (R/indices/coalition.R, config/coalition.yml).
+  notes: Project-authored from the official lists (USTR, White House, European Commission,
+    NATO, G7 presidencies); one row per (iso3, agreement), each with its source, URL
+    and access date. Partner route of the two-tier coalition (R/indices/coalition.R,
+    config/coalition.yml).
   required_by:
   - scripts/13_build_coalition.R
 - id: ei_stat_review
@@ -492,10 +539,11 @@ inputs:
   owner: lcarey@rmi.org
   vintage: 2026 edition (data 1965-2025)
   staged_from: sharepoint
-  notes: Public annual download; a strong candidate for automated fetching. EI publishes each edition
-    with data to the previous year; the theme labels derive the edition from the year the builders
-    read (ei_stat_review_source(), R/utils/schema.R). scripts/10 calls the EI builders with their
-    default target year (2025), so move it when a later edition is staged.
+  notes: Public annual download; a strong candidate for automated fetching. EI publishes
+    each edition with data to the previous year; the theme labels derive the edition
+    from the year the builders read (ei_stat_review_source(), R/utils/schema.R). scripts/10
+    calls the EI builders with their default target year (2025), so move it when a
+    later edition is staged.
   required_by:
   - scripts/10_build_themes.R
   - scripts/13_build_coalition.R
@@ -509,9 +557,10 @@ inputs:
   owner: lcarey@rmi.org
   vintage: 2026 edition (Contents sheet; fuel reserve sheets at end-2020)
   staged_from: sharepoint
-  notes: The mineral production sheets and the oil, gas and coal reserve sheets also feed the coalition
-    supplier route (scripts/13; reserves as shares of each sheet's Total World row). Mineral reserves
-    come from USGS MCS (usgs_mcs_world_data) since 2026-10-09.
+  notes: The mineral production sheets and the oil, gas and coal reserve sheets also
+    feed the coalition supplier route (scripts/13; reserves as shares of each sheet's
+    Total World row). Mineral reserves come from USGS MCS (usgs_mcs_world_data) since
+    2026-10-09.
   required_by:
   - scripts/10_build_themes.R
   - scripts/13_build_coalition.R
@@ -523,11 +572,12 @@ inputs:
   cadence: annual
   owner: lcarey@rmi.org
   staged_from: sharepoint
-  notes: Rows are the five IEA regions (China, European Union, North America, Other Asia Pacific,
-    Rest of World), which partition the world, so Rest of World includes non-EU Europe; the builders
-    stop unless a year has exactly these five. Column import_share is (Domestic Production - Domestic
-    sales) / Domestic sales, a net export ratio; the builders rename it net_export_ratio and stop if
-    it is not that ratio.
+  notes: Rows are the five IEA regions (China, European Union, North America, Other
+    Asia Pacific, Rest of World), which partition the world, so Rest of World includes
+    non-EU Europe; the builders stop unless a year has exactly these five. Column
+    import_share is (Domestic Production - Domestic sales) / Domestic sales, a net
+    export ratio; the builders rename it net_export_ratio and stop if it is not that
+    ratio.
   required_by:
   - scripts/10_build_themes.R
 - id: gcim_investment_capacity
@@ -632,10 +682,11 @@ inputs:
   cadence: annual
   owner: lcarey@rmi.org
   staged_from: sharepoint
-  notes: One row per entity (China, Viet Nam, India, EU, United States, Other) in percent of world
-    capacity, columns "<Technology> - Current" and "<Technology> - Pipeline". Shares are taken over
-    the column total with Other included (a World or Total row would be double counted). read.csv
-    turns "Heat Pumps - Current" into Heat.Pumps...Current; the builders relabel it Heat Pumps.
+  notes: One row per entity (China, Viet Nam, India, EU, United States, Other) in
+    percent of world capacity, columns "<Technology> - Current" and "<Technology>
+    - Pipeline". Shares are taken over the column total with Other included (a World
+    or Total row would be double counted). read.csv turns "Heat Pumps - Current" into
+    Heat.Pumps...Current; the builders relabel it Heat Pumps.
   required_by:
   - scripts/10_build_themes.R
   - scripts/13_build_coalition.R
@@ -657,6 +708,8 @@ inputs:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
+  - scripts/87_export_sector_data.R
+  - scripts/paper/fig_es.R
 - id: iea_ev_outlook
   path: EV data by country 2026.csv
   pattern: ^EV data by country \d{4}\.csv$|^IEA_EVDataExplorer\d{4}\.xlsx$
@@ -668,12 +721,12 @@ inputs:
   owner: lcarey@rmi.org
   vintage: '2026'
   staged_from: sharepoint
-  notes: 'Global EV Outlook 2026, staged as the published country CSV ("EV data by
+  notes: Global EV Outlook 2026, staged as the published country CSV ("EV data by
     country 2026.csv"); through the 2025 release the same extract arrived as the EV
     Data Explorer workbook and both names still resolve. R/utils/iea_ev.R reads either
     form. The 2026 release moved the projection horizon from 2030 to 2035, added a
     Current Policies scenario beside Stated Policies, and added an "EV" powertrain
-    total alongside the BEV/PHEV/FCEV rows it sums.'
+    total alongside the BEV/PHEV/FCEV rows it sums.
   required_by:
   - scripts/10_build_themes.R
 - id: iea_pams
@@ -684,8 +737,8 @@ inputs:
   cadence: continuous
   owner: lcarey@rmi.org
   staged_from: sharepoint
-  notes: The backbone of the Policy index, required for a country to be scored (CAT is added
-    where it rates the country).
+  notes: The backbone of the Policy index, required for a country to be scored (CAT
+    is added where it rates the country).
   required_by:
   - scripts/10_build_themes.R
 - id: iea_relative_costs
@@ -696,33 +749,6 @@ inputs:
   cadence: irregular
   owner: lcarey@rmi.org
   staged_from: sharepoint
-  required_by:
-  - scripts/10_build_themes.R
-  - scripts/40_build_index_vintages.R
-- id: imf_commodity_prices
-  path: imf_commodity_prices.csv
-  fetch_policy: prefer
-  source_type: api
-  source_name: IMF Primary Commodity Price System (wide export, includes annual YoY series)
-  url: https://www.imf.org/en/research/commodity-prices
-  cadence: monthly
-  owner: lcarey@rmi.org
-  staged_from: sharepoint
-  notes: 'Fetched from the IMF.RES/PCPS SDMX 3.0 flow by scripts/fetchers/imf_sdmx.R.
-    fetch_policy is prefer, unlike the other IMF entries: PCPS is a world-level price
-    panel with no country dimension, so the coverage divergence that keeps imf_ppi and
-    imf_lending_rates on fallback does not apply. Verified against the 2026-01-22 staged
-    export: 6842 of 6870 overlapping monthly USD observations are identical, and all 28
-    scored commodities still resolve. The 28 differences are upstream revisions to Urea,
-    Potassium Fertilizer and Propane - the staged export had frozen Urea at 183.7051 for
-    all of 2025, which the fetched series corrects. The flow no longer publishes the PCPS
-    exchange-rate series (T*); they return as empty stubs and nothing reads them. The
-    INDICATOR labels are kept as the IMF publishes them (config/imf_pcps_indicator_labels.yml)
-    but are not a source of units: they are wrong for cobalt (per pound; the series is USD
-    per metric tonne) and propane (US cents; the series is USD per gallon) and silent for
-    lithium, vanadium, chromium and rare earths. Units come from the series metadata, held
-    in energy_prices_pcps_units() (R/categories/energy_prices/energy_prices.R); add a row
-    there for a newly mapped commodity.'
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
@@ -740,24 +766,24 @@ inputs:
 - id: ipcc_ghg_intensity
   path: ipcc_ghg_intensity.csv
   source_type: manual
-  source_name: IPCC lifecycle GHG intensity of electricity supply technologies (AR5 WGIII
-    Annex III, Table A.III.2)
+  source_name: IPCC lifecycle GHG intensity of electricity supply technologies (AR5
+    WGIII Annex III, Table A.III.2)
   url: https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf
   cadence: irregular
   owner: lcarey@rmi.org
   vintage: AR5 (2014)
   staged_from: sharepoint
-  notes: Lifecycle medians in gCO2eq/kWh from Schlomer et al. (2014), IPCC AR5 WGIII Annex
-    III, Table A.III.2, p. 1335 (not AR6, as this entry used to say). Every row matches
-    that one table except oil-fired steam - the file's Source column cites Tables A.III.3
-    to A.III.13 for the rows after coal, but those are transport, industry and waste
-    tables and A.III.13 does not exist. Table A.III.2 has no oil row
-    and the staged 720 is in no IPCC table, so partnership_strength_clean_ghg() replaces
-    it with the SRREN median of 840 (Moomaw et al. 2011, IPCC SRREN Annex II, Table A.II.4,
-    p. 982, https://www.ipcc.ch/site/assets/uploads/2018/03/Annex-II-Methodology-1.pdf).
-    SRREN's medians come from an unharmonised literature review (its coal median is 1001,
-    against 820 in AR5), so next to the AR5 rows oil (840) sits just above coal (820),
-    although within SRREN oil is below coal. Both PDFs checked 2026-10-07.
+  notes: Lifecycle medians in gCO2eq/kWh from Schlomer et al. (2014), IPCC AR5 WGIII
+    Annex III, Table A.III.2, p. 1335 (not AR6, as this entry used to say). Every
+    row matches that one table except oil-fired steam - the file's Source column cites
+    Tables A.III.3 to A.III.13 for the rows after coal, but those are transport, industry
+    and waste tables and A.III.13 does not exist. Table A.III.2 has no oil row and
+    the staged 720 is in no IPCC table, so partnership_strength_clean_ghg() replaces
+    it with the SRREN median of 840 (Moomaw et al. 2011, IPCC SRREN Annex II, Table
+    A.II.4, p. 982, https://www.ipcc.ch/site/assets/uploads/2018/03/Annex-II-Methodology-1.pdf).
+    SRREN's medians come from an unharmonised literature review (its coal median is
+    1001, against 820 in AR5), so next to the AR5 rows oil (840) sits just above coal
+    (820), although within SRREN oil is below coal. Both PDFs checked 2026-10-07.
   required_by:
   - scripts/10_build_themes.R
   - scripts/15_build_partner_themes.R
@@ -785,76 +811,82 @@ inputs:
 - id: territory_sovereign_map
   path: territory_sovereign_map.csv
   source_type: manual
-  source_name: Economies without a UN General Assembly vote and the alignment each takes (sovereign's
-    bloc for territories and SARs, neutral for Taiwan, Palestine and Kosovo)
+  source_name: Economies without a UN General Assembly vote and the alignment each
+    takes (sovereign's bloc for territories and SARs, neutral for Taiwan, Palestine
+    and Kosovo)
   cadence: ad-hoc
   owner: lcarey@rmi.org
   vintage: project-authored 2026-10-08
   staged_from: repo
   retain: yes
-  notes: Project-authored, one row per economy (iso3, economy, basis inherit|neutral, sovereign_iso3,
-    status, note); 47 rows - 44 territories and SARs inherit their sovereign's UNGA bloc (CHN 2,
-    USA 6, DNK 2, FRA 11, NLD 4, GBR 13, AUS 3, NZL 1, NOR 1, FIN 1) and Taiwan, Palestine and
-    Kosovo are neutral (p = 0.5) by project decision; each note gives the legal basis (who conducts
-    the economy's foreign relations, or its UN status). Read by scripts/12 (R/geopolitical_distance/alignment.R
-    geo_apply_no_vote_map()); the alignment tables carry the basis as alignment_basis / basis_reporter
-    / basis_partner, and the PSI rankability rule counts an assigned bloc as imputed. scripts/12
-    reads it from data/reference (raw_inputs_reference_dir()), a path the reference scan of
-    scripts/01 does not follow, hence retain.
+  notes: Project-authored, one row per economy (iso3, economy, basis inherit|neutral,
+    sovereign_iso3, status, note); 47 rows - 44 territories and SARs inherit their
+    sovereign's UNGA bloc (CHN 2, USA 6, DNK 2, FRA 11, NLD 4, GBR 13, AUS 3, NZL
+    1, NOR 1, FIN 1) and Taiwan, Palestine and Kosovo are neutral (p = 0.5) by project
+    decision; each note gives the legal basis (who conducts the economy's foreign
+    relations, or its UN status). Read by scripts/12 (R/geopolitical_distance/alignment.R
+    geo_apply_no_vote_map()); the alignment tables carry the basis as alignment_basis
+    / basis_reporter / basis_partner, and the PSI rankability rule counts an assigned
+    bloc as imputed. scripts/12 reads it from data/reference (raw_inputs_reference_dir()),
+    a path the reference scan of scripts/01 does not follow, hence retain.
   required_by:
   - scripts/12_build_geopolitical_alignment.R
 - id: uranium_production
   path: uranium_production.csv
   source_type: manual
-  source_name: OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table
-    1.18 historical uranium production
+  source_name: OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book),
+    Table 1.18 historical uranium production
   url: https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand
   cadence: biennial
   owner: lcarey@rmi.org
-  vintage: Uranium 2026 (NEA No. 7770) for 2022-2024, Uranium 2024 (NEA No. 7683) for 2020-2021,
-    Uranium 2022 (NEA No. 7634) for 2019; accessed 2026-10-07
+  vintage: Uranium 2026 (NEA No. 7770) for 2022-2024, Uranium 2024 (NEA No. 7683)
+    for 2020-2021, Uranium 2022 (NEA No. 7634) for 2019; accessed 2026-10-07
   staged_from: repo
-  notes: Mine production by country (tU), transcribed from the edition PDFs; each row carries
-    its source table, URL and access date. Every producer is listed, so the rows sum to the
-    published world totals (tests/testthat/test-uranium.R). Nuclear Upstream "Nuclear Production"
-    (Energy Security) and production depth/momentum (Economic Opportunity).
+  notes: Mine production by country (tU), transcribed from the edition PDFs; each
+    row carries its source table, URL and access date. Every producer is listed, so
+    the rows sum to the published world totals (tests/testthat/test-uranium.R). Nuclear
+    Upstream "Nuclear Production" (Energy Security) and production depth/momentum
+    (Economic Opportunity).
   required_by:
   - scripts/10_build_themes.R
   - scripts/13_build_coalition.R
 - id: uranium_resources
   path: uranium_resources.csv
   source_type: manual
-  source_name: OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table
-    1.2a identified recoverable resources
+  source_name: OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book),
+    Table 1.2a identified recoverable resources
   url: https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand
   cadence: biennial
   owner: lcarey@rmi.org
   vintage: Uranium 2026 (NEA No. 7770), resources as of 1 January 2025; accessed 2026-10-07
   staged_from: repo
-  notes: Identified recoverable resources (reasonably assured plus inferred, tU) by country in
-    the four cost categories, transcribed from the edition PDF. Nuclear Reserves scores the
-    <USD 260/kgU category the edition headlines (R/categories/reserves/uranium.R). The same
-    category is the uranium measure of the reserves leg of the coalition supplier route (scripts/13).
+  notes: Identified recoverable resources (reasonably assured plus inferred, tU) by
+    country in the four cost categories, transcribed from the edition PDF. Nuclear
+    Reserves scores the <USD 260/kgU category the edition headlines (R/categories/reserves/uranium.R).
+    The same category is the uranium measure of the reserves leg of the coalition
+    supplier route (scripts/13).
   required_by:
   - scripts/10_build_themes.R
   - scripts/13_build_coalition.R
 - id: usgs_mcs_world_data
   path: MCS2026_World_Data.csv
   source_type: manual
-  source_name: USGS Mineral Commodity Summaries 2026 data release, Commodity Salient U.S. and World
-    Statistics (world mine production and reserves)
+  source_name: USGS Mineral Commodity Summaries 2026 data release, Commodity Salient
+    U.S. and World Statistics (world mine production and reserves)
   url: https://doi.org/10.5066/P1WKQ63T
   cadence: annual
   owner: lcarey@rmi.org
-  vintage: MCS 2026 (reserves at end-2025); ScienceBase file MCS2026_Commodities_Data.csv, 3,189,010
-    bytes, uploaded 2026-02-06 (MD5 36185ff3..., ScienceBase's checksum); accessed 2026-10-09
+  vintage: MCS 2026 (reserves at end-2025); ScienceBase file MCS2026_Commodities_Data.csv,
+    3,189,010 bytes, uploaded 2026-02-06 (MD5 36185ff3..., ScienceBase's checksum);
+    accessed 2026-10-09
   licence: CC0-1.0
   staged_from: sharepoint
-  notes: The release's commodity table staged under this name (byte-identical; Windows-1252, one long
-    table for every chapter). Critical-mineral reserves of the Reserves theme and the coalition's
-    reserves leg (usgs_mcs_reserves(), R/categories/reserves/usgs_mcs.R), which applies the report's
-    ver. 1.3 erratum (Brazil rare earths 11,000,000 t, world >75,000,000 t) the CSV predates. EI keeps
-    the fuels' reserves; the Red Book uranium. MCS2025_World_Data.csv (another layout) is not read.
+  notes: The release's commodity table staged under this name (byte-identical; Windows-1252,
+    one long table for every chapter). Critical-mineral reserves of the Reserves theme
+    and the coalition's reserves leg (usgs_mcs_reserves(), R/categories/reserves/usgs_mcs.R),
+    which applies the report's ver. 1.3 erratum (Brazil rare earths 11,000,000 t,
+    world >75,000,000 t) the CSV predates. EI keeps the fuels' reserves; the Red Book
+    uranium. MCS2025_World_Data.csv (another layout) is not read.
   required_by:
   - scripts/10_build_themes.R
   - scripts/13_build_coalition.R
