@@ -193,7 +193,7 @@ test_that("friendshore dyads are unique, exclude self-dyads and drop a missing o
   tech_ghg <- tibble::tibble(tech = "Solar", ghg_index = 1)
   # No alignment table: geo_alignment is NA for every dyad and drops out whatever its weight
   # (test-friendshore-geo-alignment.R covers the component).
-  weights <- list(imp_trade_index = 2, econ_opp_raw = 0, es_need = 2, eo_partner = 2, outbound_index = 2, geo_alignment = 2)
+  weights <- list(imp_trade_index = 2, econ_opp_raw = 0, es_need = 2, eo_partner = 2, outbound_index = 2, geo_alignment = 2, chinese_parent_exposure = 1)
 
   out <- partnership_strength_build_friendshore_dyads(
     import_indices, eo, es, outbound_edges, tech_ghg, policy, ci,

@@ -57,6 +57,8 @@ partnership_strength:
     - eo_partner
     - outbound_index
     - geo_alignment
+    # CM-FDI risk component (scored as 1 - share); Solar, Wind, Batteries, EV Midstream only.
+    - chinese_parent_exposure
   # Partner-level (no reporter dimension), non-high-income partners only.
   development_components:
     - development_index

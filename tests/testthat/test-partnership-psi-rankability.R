@@ -84,7 +84,7 @@ test_that("Friendshore cells count imputed trade, the partner's EO share, missin
     basis_reporter = "own_votes",
     basis_partner = c("own_votes", "neutral")
   )
-  w <- list(imp_trade_index = 2, econ_opp_raw = 1, es_need = 2, eo_partner = 2, outbound_index = 2, geo_alignment = 2)
+  w <- list(imp_trade_index = 2, econ_opp_raw = 1, es_need = 2, eo_partner = 2, outbound_index = 2, geo_alignment = 2, chinese_parent_exposure = 1)
   dyads <- partnership_strength_build_friendshore_dyads(
     tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", tech = "Solar", supply_chain = "Upstream", imp_trade_index = 0.9),
     eo, es,

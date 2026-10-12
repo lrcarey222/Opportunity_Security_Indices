@@ -80,7 +80,9 @@ fsg_alignment <- function() {
 }
 
 fsg_weights <- function(geo) {
-  list(imp_trade_index = 2, econ_opp_raw = 0, es_need = 2, eo_partner = 2, outbound_index = 2, geo_alignment = geo)
+  # chinese_parent_exposure (CM-FDI) has no input here, so it is NA in every dyad and drops out.
+  list(imp_trade_index = 2, econ_opp_raw = 0, es_need = 2, eo_partner = 2, outbound_index = 2, geo_alignment = geo,
+       chinese_parent_exposure = 1)
 }
 
 fsg_run <- function(geo_weight, geo_alignment) {

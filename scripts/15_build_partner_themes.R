@@ -42,6 +42,7 @@ source(file.path(repo_root, "R", "indices", "aggregate_economic_opportunity_inde
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "prosperous_opportunity.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "safer_friendshore.R"))
+source(file.path(repo_root, "R", "themes", "partnership_strength", "cm_fdi.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "stronger_development.R"))
 source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
 
@@ -158,6 +159,11 @@ outbound_conduits <- partnership_strength_conduit_rule(
   rule = if (is.null(partnership_cfg$outbound_fdi$conduit_rule)) "conduits" else partnership_cfg$outbound_fdi$conduit_rule,
   scope = if (is.null(partnership_cfg$outbound_fdi$conduit_scope)) "both" else partnership_cfg$outbound_fdi$conduit_scope
 )
+# CM-FDI (config/partnership.yml cm_fdi; R/themes/partnership_strength/cm_fdi.R): the Friendshore
+# investment ties in (Solar, Wind, Batteries, EV) x Midstream and the chinese_parent_exposure
+# component. With both switches off the file is not read and Friendshore is the IMF-only build.
+cm_fdi_settings <- cm_fdi_resolve_settings(partnership_cfg$cm_fdi)
+cm_fdi_enabled <- isTRUE(cm_fdi_settings$investment_ties) || isTRUE(cm_fdi_settings$chinese_parent_exposure)
 
 subcat_path <- file.path(raw_data_path, "energy_hs6_master.csv")
 fdi_path <- file.path(raw_data_path, "imf_dip.csv")
@@ -168,6 +174,7 @@ country_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
 wb_doingbusiness_path <- file.path(raw_data_path, "wb_doingbusiness.csv")
 wb_wdi_path <- file.path(raw_data_path, "wb_wdi.csv")
 oecd_api_path <- file.path(raw_data_path, "oecd_crs_api.csv")
+cm_fdi_path <- file.path(raw_data_path, "cm_fdi_projects.csv")
 
 if (!is.null(sharepoint_raw_dir) && nzchar(sharepoint_raw_dir)) {
   # sync_raw_file() is a no-op when the staged copy has not moved ahead of the local one.
@@ -184,9 +191,20 @@ missing_files <- c(
   country_gdp_path,
   wb_doingbusiness_path,
   wb_wdi_path,
-  oecd_api_path
+  oecd_api_path,
+  if (cm_fdi_enabled) cm_fdi_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
+
+if (cm_fdi_enabled && !file.exists(cm_fdi_path) && !skip_data_downloads) {
+  stop(
+    "CM-FDI project file not found: ", cm_fdi_path, "\n",
+    "Download the project CSV of the Cleantech Manufacturing FDI Dataset from https://cmfdi.netzeropolicylab.com ",
+    "and save it as data/raw/cm_fdi_projects.csv (config/raw_inputs_manifest.yml, id cm_fdi_projects; a copy is in the ",
+    "SharePoint raw folder once staged there). For a build without it set cm_fdi: investment_ties: false and ",
+    "chinese_parent_exposure: false in config/partnership.yml."
+  )
+}
 
 if (length(missing_files) > 0) {
   if (skip_data_downloads) {
@@ -246,6 +264,20 @@ country_gdp <- read.csv(country_gdp_path)
 wb_doingbusiness <- read.csv(wb_doingbusiness_path)
 wb_wdi <- read.csv(wb_wdi_path)
 oecd_api_raw <- read.csv(oecd_api_path)
+# Every column as text (UTF-8 with a byte-order mark); cm_fdi_clean_projects() types it and stops on
+# an unknown technology, country name or malformed number.
+cm_fdi_raw <- if (cm_fdi_enabled) {
+  utils::read.csv(
+    cm_fdi_path,
+    colClasses = "character",
+    check.names = FALSE,
+    fileEncoding = "UTF-8-BOM",
+    na.strings = character(),
+    stringsAsFactors = FALSE
+  )
+} else {
+  NULL
+}
 
 country_info <- standardize_country_info(country_info)
 
@@ -284,6 +316,41 @@ partner_techs <- partnership_strength_headline_techs()
 #   variable), non-high-income partners only; there is no reporter dimension.
 # - partner_trade_coverage_tbl: by theme and (tech, stage), the dyad cells whose trade component is
 #   observed trade, a recorded zero or imputed, with the trade file used.
+# - cm_fdi_projects_tbl: every CM-FDI project (cm_fdi_clean_projects()) with index_use,
+#   index_exclusion, supply_chain, china_parent and attribution_weight (cm_fdi_flag_index_use()).
+# - partner_cm_fdi_ties_tbl: one row per (investor_iso, destination_iso, tech, supply_chain) with an
+#   index project: attributed project count, count with a disclosed value, disclosed value (US$ m).
+#   Friendshore reads it with reporter = investor, partner = destination.
+# - partner_cm_fdi_exposure_tbl: one row per (destination_iso, tech, supply_chain) with a
+#   foreign-invested index project (and China, Hong Kong, Macao at 1 under china_supplier: exposed):
+#   chinese_parent_exposure with its counts, values and exposure_basis.
+# - partner_cm_fdi_coverage_tbl: Friendshore cells with a CM-FDI tie / exposure, by (tech, stage).
+
+# CM-FDI inputs of the Friendshore theme: the projects flagged for index use (manufacturing; status
+# and time window from config/partnership.yml cm_fdi), the investor -> destination ties and the
+# partners' Chinese-parent exposure, by (tech, Midstream).
+cm_fdi_inputs <- NULL
+if (cm_fdi_enabled) {
+  cm_fdi_inputs <- partnership_strength_cm_fdi_inputs(
+    cm_fdi_clean_projects(cm_fdi_raw, technologies = cm_fdi_settings$technologies),
+    cm_fdi_settings
+  )
+  rm(cm_fdi_raw)
+  used <- cm_fdi_inputs$projects[cm_fdi_inputs$projects$index_use, ]
+  message(
+    "CM-FDI: ", nrow(used), " of ", nrow(cm_fdi_inputs$projects), " projects used (",
+    paste(names(table(used$tech)), table(used$tech), sep = " ", collapse = ", "), "); ",
+    dplyr::n_distinct(used$home_iso3), " home economies, ", dplyr::n_distinct(used$destination_iso3), " destinations; ",
+    sum(!used$capital_disclosed), " without a disclosed value. Investment ties ",
+    if (isTRUE(cm_fdi_settings$investment_ties)) "on" else "OFF", ", chinese_parent_exposure ",
+    if (isTRUE(cm_fdi_settings$chinese_parent_exposure)) "on" else "OFF",
+    " (time window: ", if (is.na(cm_fdi_settings$announced_from)) "all years" else paste0("announced from ", cm_fdi_settings$announced_from),
+    "; exposure weighting ", cm_fdi_settings$exposure_weighting, ")."
+  )
+  rm(used)
+} else {
+  message("CM-FDI: off (config/partnership.yml cm_fdi); Friendshore uses the IMF outbound measure in every cell and no chinese_parent_exposure.")
+}
 
 # One reconciled exporter -> importer flow matrix for both dyad themes (importer's declaration,
 # else the exporter's as a mirror at cif_fob_factor; partnership_strength_build_trade_cells()).
@@ -318,10 +385,21 @@ friendshore_outputs <- safer_friendshore(
   geo_alignment = geo_alignment_tbl,
   trade_cells = trade_cells,
   conduit_iso = outbound_conduits$iso3,
-  conduit_scope = outbound_conduits$scope
+  conduit_scope = outbound_conduits$scope,
+  cm_fdi = cm_fdi_inputs
 )
 rm(fdi_raw)
 invisible(gc())
+
+partner_cm_fdi_coverage_tbl <- friendshore_outputs$cm_fdi_coverage
+for (i in seq_len(nrow(partner_cm_fdi_coverage_tbl))) {
+  cv <- partner_cm_fdi_coverage_tbl[i, ]
+  message(
+    "Friendshore CM-FDI, ", cv$tech, " ", cv$supply_chain, ": investment tie for ", cv$n_tie, " of ", cv$n_cells,
+    " dyad cells (", cv$n_tie_reporters, " investor reporters); chinese_parent_exposure for ", cv$n_exposure_partners,
+    " partners (", cv$n_exposure, " dyad cells)."
+  )
+}
 
 # Countries in the Friendshore universe with no geo_alignment value against any partner: their
 # dyads are scored on the other components.
@@ -369,6 +447,22 @@ write_processed_tbl(
   "partner_friendshore_top5_tbl",
   processed_dir
 )
+# CM-FDI tables: every project with its index flags (index_use, index_exclusion, attribution_weight),
+# the investor -> destination ties and the partners' exposure (Friendshore inputs), and the coverage
+# of the Friendshore cells. A switch that is off removes its table, so no stale copy outlives it.
+partner_cm_fdi_tbls <- list(
+  cm_fdi_projects_tbl = cm_fdi_inputs$projects,
+  partner_cm_fdi_ties_tbl = cm_fdi_inputs$ties,
+  partner_cm_fdi_exposure_tbl = cm_fdi_inputs$exposure,
+  partner_cm_fdi_coverage_tbl = if (cm_fdi_enabled) partner_cm_fdi_coverage_tbl else NULL
+)
+for (nm in names(partner_cm_fdi_tbls)) {
+  if (is.null(partner_cm_fdi_tbls[[nm]])) {
+    unlink(file.path(processed_dir, paste0(nm, ".rds")))
+  } else {
+    write_processed_tbl(partner_cm_fdi_tbls[[nm]], nm, processed_dir)
+  }
+}
 
 opportunity_outputs <- prosperous_opportunity(
   comtrade_dyads = NULL,
@@ -513,7 +607,10 @@ saveRDS(
     partner_development_variable_tbl = partner_development_variable_tbl,
     partner_development_contributions_tbl = partner_development_contributions_tbl,
     partner_development_top5_tbl = partner_development_top5_tbl,
-    partner_trade_coverage_tbl = partner_trade_coverage_tbl
+    partner_trade_coverage_tbl = partner_trade_coverage_tbl,
+    partner_cm_fdi_ties_tbl = partner_cm_fdi_tbls$partner_cm_fdi_ties_tbl,
+    partner_cm_fdi_exposure_tbl = partner_cm_fdi_tbls$partner_cm_fdi_exposure_tbl,
+    partner_cm_fdi_coverage_tbl = partner_cm_fdi_tbls$partner_cm_fdi_coverage_tbl
   ),
   outputs_rds_path
 )

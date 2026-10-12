@@ -34,16 +34,50 @@
 # table does not cover has NA, and the component drops out of the weighted mean; it is never
 # scored 0.
 #
+# CM-FDI (R/themes/partnership_strength/cm_fdi.R; the Net Zero Industrial Policy Lab's
+# project-level database of cross-border solar, wind, battery and EV manufacturing investment;
+# config/partnership.yml cm_fdi) enters in the cells it covers, (Solar, Wind, Batteries, Electric
+# Vehicles) x Midstream, and nowhere else:
+#   - outbound_index there is the CM-FDI investment tie of reporter i to partner j in the cell
+#     (projects whose parent is headquartered in i, located in j; i = investor/home,
+#     j = destination, the same direction as the IMF position it replaces:
+#     partnership_strength_cm_fdi_tie_index()); outbound_source says which measure a cell holds
+#     ("cm_fdi" or "imf_dip"). Every other cell keeps the IMF DIP position.
+#   - chinese_parent_exposure: the share of partner j's foreign-invested manufacturing in the
+#     technology whose parent is headquartered in China (cm_fdi_chinese_parent_exposure()); the same
+#     for every reporter. It is a risk: the stored value is the share, and the Friendshore mean
+#     scores it as 1 - share (partnership_strength_friendshore_score()). NA (dropped from the
+#     mean, never 0) where j has fewer than two foreign-invested projects in the cell (cm_fdi
+#     min_projects) and in every cell CM-FDI does not cover, so those cells' Friendshore is
+#     unchanged. Its rows in the long tables exist only where it is defined.
+# Without CM-FDI inputs (cm_fdi = NULL, or the switches in config/partnership.yml off) the theme is
+# the IMF-only build of before October 2026.
+#
 # Each dyad cell also carries imputed_weight_share, the share of its partner- and pair-specific
-# component weight (trade, eo_partner, outbound, geo_alignment) resting on imputed or missing
-# inputs (partnership_strength_imputed_weight_share(), partnership_strength_helpers.R); the top-5
-# table carries the dyad's mean over its top-5 cells on the Friendshore Index rows, which the PSI
-# rankability rule reads (scripts/25).
+# component weight (trade, eo_partner, outbound, geo_alignment, chinese_parent_exposure) resting on
+# imputed or missing inputs (partnership_strength_imputed_weight_share(),
+# partnership_strength_helpers.R); the top-5 table carries the dyad's mean over its top-5 cells on
+# the Friendshore Index rows, which the PSI rankability rule reads (scripts/25). The CM-FDI parts
+# count as observed where defined and are not part of the cell where undefined (a census: a
+# reporter without projects abroad, or a partner without foreign-invested plants, is not a gap in
+# the data), unlike a missing IMF position, which counts as unobserved.
 
 # The Friendshore components, in table order; each has a weight in
 # config/weights.yml partnership_friendshore_components.
 partnership_strength_friendshore_components <- function() {
-  c("imp_trade_index", "econ_opp_raw", "es_need", "eo_partner", "outbound_index", "geo_alignment")
+  c("imp_trade_index", "econ_opp_raw", "es_need", "eo_partner", "outbound_index", "geo_alignment", "chinese_parent_exposure")
+}
+
+# Components stored as risks (higher = worse supplier): the Friendshore mean and the contribution
+# tables score them as 1 - value.
+partnership_strength_friendshore_risk_components <- function() {
+  "chinese_parent_exposure"
+}
+
+# The score a component contributes to the Friendshore mean: the value, or 1 - value for a risk
+# component.
+partnership_strength_friendshore_score <- function(component, value) {
+  if (component %in% partnership_strength_friendshore_risk_components()) 1 - value else value
 }
 
 # Code defaults; the pipeline passes config/weights.yml partnership_friendshore_components.
@@ -54,8 +88,46 @@ partnership_strength_friendshore_default_weights <- function() {
     es_need = 2,
     eo_partner = 1.5,
     outbound_index = 1.5,
-    geo_alignment = 2
+    geo_alignment = 2,
+    chinese_parent_exposure = 1
   )
+}
+
+# Apply the CM-FDI inputs of partnership_strength_cm_fdi_inputs() (cm_fdi.R) to the dyad rows `out`
+# (with outbound_index from the IMF positions already joined): in the covered cells outbound_index
+# becomes the CM-FDI tie index (outbound_source "cm_fdi"); chinese_parent_exposure is joined on
+# (partner, tech, stage). NULL inputs, or NULL ties / exposure in them, leave the IMF measure and
+# an NA exposure.
+partnership_strength_apply_cm_fdi <- function(out, cm_fdi = NULL) {
+  out$outbound_source <- "imf_dip"
+  out$chinese_parent_exposure <- NA_real_
+  if (is.null(cm_fdi)) {
+    return(out)
+  }
+  cells <- cm_fdi$cells
+  if (!is.null(cm_fdi$ties) && !is.null(cells) && nrow(cells) > 0) {
+    covered <- paste(out$tech, out$supply_chain) %in% paste(cells$tech, cells$supply_chain)
+    if (any(covered)) {
+      tie <- partnership_strength_cm_fdi_tie_index(
+        out[covered, c("reporter_iso", "partner_iso", "tech", "supply_chain"), drop = FALSE],
+        cm_fdi$ties
+      )
+      out$outbound_index[covered] <- tie$cm_fdi_tie
+      out$outbound_source[covered] <- "cm_fdi"
+    }
+  }
+  if (!is.null(cm_fdi$exposure)) {
+    exposure <- cm_fdi$exposure
+    require_columns(exposure, c("destination_iso", "tech", "supply_chain", "chinese_parent_exposure"), label = "CM-FDI exposure")
+    partnership_strength_assert_unique(exposure, c("destination_iso", "tech", "supply_chain"), label = "CM-FDI exposure")
+    if (any(exposure$chinese_parent_exposure < 0 | exposure$chinese_parent_exposure > 1, na.rm = TRUE)) {
+      stop("chinese_parent_exposure values must lie in [0, 1].")
+    }
+    key_out <- paste(out$partner_iso, out$tech, out$supply_chain)
+    key_exp <- paste(exposure$destination_iso, exposure$tech, exposure$supply_chain)
+    out$chinese_parent_exposure <- as.numeric(exposure$chinese_parent_exposure)[match(key_out, key_exp)]
+  }
+  out
 }
 
 # The dyadic alignment table reduced to the join keys, the component and geo_imputed, checked:
@@ -300,7 +372,8 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
                                                          country_info,
                                                          component_weights = NULL,
                                                          techs = NULL,
-                                                         geo_alignment = NULL) {
+                                                         geo_alignment = NULL,
+                                                         cm_fdi = NULL) {
   component_weights <- partnership_strength_resolve_weights(
     component_weights,
     partnership_strength_friendshore_default_weights(),
@@ -404,6 +477,9 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
     dplyr::left_join(eo_partner_iso, by = c("tech", "supply_chain", "partner_iso")) %>%
     partnership_strength_join_pillar_share(eo_partner_share, "partner_iso", "eo_partner_imputed") %>%
     dplyr::left_join(outbound_edges, by = c("reporter_iso", "partner_iso")) %>%
+    # In the cells CM-FDI covers, outbound_index becomes the CM-FDI investment tie and the
+    # partner's chinese_parent_exposure is joined (NA elsewhere, and everywhere without inputs).
+    partnership_strength_apply_cm_fdi(cm_fdi) %>%
     # NA where either country has no UN ideal point (or no table was given): dropped below.
     dplyr::left_join(geo_alignment, by = c("reporter_iso", "partner_iso")) %>%
     dplyr::left_join(dplyr::rename(policy_iso, reporter_iso = iso3c, cpi_r = climate_policy_index), by = "reporter_iso") %>%
@@ -416,16 +492,21 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       # outbound_index stays NA where the dyad has no IMF DIP position (most dyads), so the
       # weighted mean drops it and renormalizes. It used to be coalesced to 0, which scored a
       # missing record below a reported zero position (~0.3-0.4 after ranking). geo_alignment is
-      # dropped the same way where it is NA.
+      # dropped the same way where it is NA, and so is chinese_parent_exposure, a risk scored as
+      # 1 - share.
       fsi_raw = partnership_strength_row_weighted_mean(
-        list(imp_trade_index, econ_opp_raw, es_need, eo_partner, outbound_index, geo_alignment),
+        list(
+          imp_trade_index, econ_opp_raw, es_need, eo_partner, outbound_index, geo_alignment,
+          partnership_strength_friendshore_score("chinese_parent_exposure", chinese_parent_exposure)
+        ),
         c(
           component_weights$imp_trade_index,
           component_weights$econ_opp_raw,
           component_weights$es_need,
           component_weights$eo_partner,
           component_weights$outbound_index,
-          component_weights$geo_alignment
+          component_weights$geo_alignment,
+          component_weights$chinese_parent_exposure
         )
       ),
       penalty_r = (1 - gh_entry) * cpi_r * 0.10,
@@ -435,19 +516,28 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       # missing inputs (partnership_strength_imputed_weight_share(), partnership_strength_helpers.R):
       # trade imputed at the cell mean, the partner's EO cell's own imputed share, no outbound
       # position, an assigned or missing geo_alignment. The reporter's es_need and econ_opp_raw
-      # are left out, as is the trade component of a no_data (tech, stage).
+      # are left out, as is the trade component of a no_data (tech, stage). The CM-FDI parts are
+      # observed where defined and not part of the cell where undefined (NA): an outbound tie a
+      # reporter without projects abroad lacks, an exposure a partner without foreign-invested
+      # plants lacks.
       imputed_weight_share = partnership_strength_imputed_weight_share(
         list(
           partnership_strength_trade_unobserved(trade_status),
           partnership_strength_pillar_unobserved(eo_partner, eo_partner_imputed),
-          as.numeric(is.na(outbound_index)),
-          dplyr::if_else(is.na(geo_alignment) | geo_imputed %in% TRUE, 1, 0)
+          dplyr::case_when(
+            outbound_source == "cm_fdi" & is.na(outbound_index) ~ NA_real_,
+            is.na(outbound_index) ~ 1,
+            TRUE ~ 0
+          ),
+          dplyr::if_else(is.na(geo_alignment) | geo_imputed %in% TRUE, 1, 0),
+          dplyr::if_else(is.na(chinese_parent_exposure), NA_real_, 0)
         ),
         c(
           component_weights$imp_trade_index,
           component_weights$eo_partner,
           component_weights$outbound_index,
-          component_weights$geo_alignment
+          component_weights$geo_alignment,
+          component_weights$chinese_parent_exposure
         )
       )
     ) %>%
@@ -467,6 +557,7 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       eo_partner,
       outbound_index,
       geo_alignment,
+      chinese_parent_exposure,
       penalty_r,
       penalty_p,
       fsi_raw,
@@ -474,6 +565,7 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       friendshore_index,
       friendshore_index_country,
       trade_status,
+      outbound_source,
       imputed_weight_share
     )
 
@@ -551,6 +643,7 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
   }
 
   friendshore_all %>%
+    partnership_strength_friendshore_fill_columns() %>%
     dplyr::distinct(
       partner_iso,
       reporter_iso,
@@ -562,6 +655,7 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
       eo_partner,
       outbound_index,
       geo_alignment,
+      chinese_parent_exposure,
       .keep_all = TRUE
     ) %>%
     dplyr::inner_join(top_dyads, by = c("partner_iso", "reporter_iso", "tech", "supply_chain")) %>%
@@ -577,7 +671,8 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
       es_need,
       eo_partner,
       outbound_index,
-      geo_alignment
+      geo_alignment,
+      chinese_parent_exposure
     ) %>%
     tidyr::pivot_longer(
       cols = dplyr::all_of(component_keys),
@@ -585,7 +680,12 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
       values_to = "value"
     ) %>%
     dplyr::left_join(component_weights_tbl, by = "component_key") %>%
-    dplyr::mutate(weighted_component = value * component_weight_share) %>%
+    # A risk component contributes its score, 1 - value.
+    dplyr::mutate(
+      weighted_component = dplyr::if_else(
+        component_key %in% partnership_strength_friendshore_risk_components(), 1 - value, value
+      ) * component_weight_share
+    ) %>%
     dplyr::group_by(
       Country,
       tech,
@@ -624,6 +724,14 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
     )
 }
 
+# Dyad tables built before CM-FDI (or by hand) lack its columns: chinese_parent_exposure is NA and
+# outbound_index is the IMF measure.
+partnership_strength_friendshore_fill_columns <- function(friendshore_all) {
+  if (!"chinese_parent_exposure" %in% names(friendshore_all)) friendshore_all$chinese_parent_exposure <- NA_real_
+  if (!"outbound_source" %in% names(friendshore_all)) friendshore_all$outbound_source <- "imf_dip"
+  friendshore_all
+}
+
 partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
                                                                country_info,
                                                                component_weights,
@@ -636,6 +744,7 @@ partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
     dplyr::mutate(component_weight_share = component_weight / sum(component_weight))
 
   friendshore_all %>%
+    partnership_strength_friendshore_fill_columns() %>%
     dplyr::mutate(
       Reporter = partnership_strength_iso_to_country(reporter_iso, country_info),
       Partner = partnership_strength_iso_to_country(partner_iso, country_info),
@@ -648,7 +757,8 @@ partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
         component_weights$es_need * (!is.na(es_need)) +
         component_weights$eo_partner * (!is.na(eo_partner)) +
         component_weights$outbound_index * (!is.na(outbound_index)) +
-        component_weights$geo_alignment * (!is.na(geo_alignment))
+        component_weights$geo_alignment * (!is.na(geo_alignment)) +
+        component_weights$chinese_parent_exposure * (!is.na(chinese_parent_exposure))
     ) %>%
     dplyr::select(
       Country,
@@ -665,29 +775,48 @@ partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
       eo_partner,
       outbound_index,
       geo_alignment,
-      friendshore_index
+      chinese_parent_exposure,
+      friendshore_index,
+      outbound_source
     ) %>%
     tidyr::pivot_longer(
       cols = dplyr::all_of(c(component_keys, "friendshore_index")),
       names_to = "component_key",
       values_to = "value"
     ) %>%
+    # chinese_parent_exposure is defined in a few percent of the dyad cells (the cells CM-FDI covers,
+    # partners with foreign-invested plants); its rows are kept only there, so the ~10M-row table
+    # does not grow by a row of NA per dyad cell. A missing row reads as NA, like a missing value.
+    dplyr::filter(!(component_key == "chinese_parent_exposure" & is.na(value))) %>%
     dplyr::left_join(component_weights_tbl, by = "component_key") %>%
     dplyr::mutate(
       variable = dplyr::if_else(component_key == "friendshore_index", "Friendshore Index", component_key),
       category = "friendshore",
       data_type = "index",
+      # A risk component (chinese_parent_exposure) contributes its score, 1 - value, so the
+      # contributions still add up to fsi_raw.
       weighted_component = dplyr::if_else(
         !is.na(component_weight_share) & weight_available > 0,
-        value * component_weight / weight_available,
+        dplyr::if_else(component_key %in% partnership_strength_friendshore_risk_components(), 1 - value, value) *
+          component_weight / weight_available,
         NA_real_
       ),
       Year = as.integer(year),
-      source = "Author calculation",
-      explanation = dplyr::if_else(
-        component_key == "friendshore_index",
-        "Friendshore index: partner rated as a supplier to the reporter (reporter imports from partner).",
-        "Friendshore component: partner rated as a supplier to the reporter (reporter imports from partner)."
+      cm_fdi_row = component_key == "chinese_parent_exposure" |
+        (component_key == "outbound_index" & outbound_source %in% "cm_fdi"),
+      source = dplyr::if_else(
+        cm_fdi_row,
+        "Cleantech Manufacturing FDI Dataset (CM-FDI), Bandara, P. and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05 (CC BY 4.0); author calculation",
+        "Author calculation"
+      ),
+      explanation = dplyr::case_when(
+        component_key == "friendshore_index" ~
+          "Friendshore index: partner rated as a supplier to the reporter (reporter imports from partner).",
+        component_key == "chinese_parent_exposure" ~
+          "Friendshore risk component: share of the partner's foreign-invested manufacturing in the technology whose parent is headquartered in China (CM-FDI); enters the index as 1 - share.",
+        cm_fdi_row ~
+          "Friendshore component: the reporter's CM-FDI manufacturing investment tie to the partner in the technology (parents headquartered in the reporter, projects in the partner).",
+        TRUE ~ "Friendshore component: partner rated as a supplier to the reporter (reporter imports from partner)."
       )
     ) %>%
     dplyr::select(
@@ -729,7 +858,8 @@ safer_friendshore <- function(comtrade_dyads,
                               trade_cells = NULL,
                               cif_fob_factor = PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR,
                               conduit_iso = partnership_strength_conduit_centres()$iso3,
-                              conduit_scope = "both") {
+                              conduit_scope = "both",
+                              cm_fdi = NULL) {
   component_weights <- partnership_strength_resolve_weights(
     component_weights,
     partnership_strength_friendshore_default_weights(),
@@ -739,6 +869,11 @@ safer_friendshore <- function(comtrade_dyads,
   # it the component is NA for every dyad and drops out of the weighted mean.
   if (is.null(geo_alignment) && isTRUE(component_weights$geo_alignment > 0)) {
     message("safer_friendshore(): no geo_alignment table; the component is left out of every dyad.")
+  }
+  # cm_fdi: partnership_strength_cm_fdi_inputs() (cm_fdi.R). Without it every cell keeps the IMF
+  # outbound measure and chinese_parent_exposure is NA for every dyad.
+  if (is.null(cm_fdi$exposure) && isTRUE(component_weights$chinese_parent_exposure > 0)) {
+    message("safer_friendshore(): no CM-FDI exposure table; chinese_parent_exposure is left out of every dyad.")
   }
 
   # The reconciled flow matrix (importer's report, else the exporter's as a mirror); scripts/15
@@ -772,8 +907,11 @@ safer_friendshore <- function(comtrade_dyads,
     country_info,
     component_weights = component_weights,
     techs = techs,
-    geo_alignment = geo_alignment
+    geo_alignment = geo_alignment,
+    cm_fdi = cm_fdi
   )
+  # Coverage of the CM-FDI parts by (tech, stage), for the scripts/15 log.
+  cm_fdi_coverage <- partnership_strength_cm_fdi_coverage(friendshore_all)
 
   friendshore_dyads <- partnership_strength_build_friendshore_dyads_table(
     friendshore_all,
@@ -886,6 +1024,34 @@ safer_friendshore <- function(comtrade_dyads,
     contributions = contributions_tbl,
     top5 = top5_tbl,
     country = country_tbl,
-    trade_coverage = trade_coverage
+    trade_coverage = trade_coverage,
+    cm_fdi_coverage = cm_fdi_coverage
   )
+}
+
+# Coverage of the CM-FDI parts of a Friendshore dyad table by (tech, stage), cells CM-FDI covers
+# only (no rows without CM-FDI inputs): dyad cells, those whose outbound_index is a CM-FDI tie
+# (n_tie: the reporter has a project in some partner of the cell), the reporters with a tie
+# (n_tie_reporters), and the dyad cells and partners with a chinese_parent_exposure value.
+partnership_strength_cm_fdi_coverage <- function(friendshore_all) {
+  friendshore_all <- partnership_strength_friendshore_fill_columns(friendshore_all)
+  covered <- friendshore_all$outbound_source %in% "cm_fdi" | !is.na(friendshore_all$chinese_parent_exposure)
+  cells <- unique(paste(friendshore_all$tech[covered], friendshore_all$supply_chain[covered]))
+  x <- friendshore_all[paste(friendshore_all$tech, friendshore_all$supply_chain) %in% cells, , drop = FALSE]
+  if (nrow(x) == 0) {
+    return(tibble::tibble(
+      tech = character(), supply_chain = character(), n_cells = integer(), n_tie = integer(),
+      n_tie_reporters = integer(), n_exposure = integer(), n_exposure_partners = integer()
+    ))
+  }
+  x %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::summarise(
+      n_cells = dplyr::n(),
+      n_tie = sum(outbound_source %in% "cm_fdi" & !is.na(outbound_index)),
+      n_tie_reporters = dplyr::n_distinct(reporter_iso[outbound_source %in% "cm_fdi" & !is.na(outbound_index)]),
+      n_exposure = sum(!is.na(chinese_parent_exposure)),
+      n_exposure_partners = dplyr::n_distinct(partner_iso[!is.na(chinese_parent_exposure)]),
+      .groups = "drop"
+    )
 }

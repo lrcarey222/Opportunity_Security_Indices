@@ -50,6 +50,15 @@ partnership_friendshore_components:
   # are neutral (data/reference/territory_sovereign_map.csv). A dyad without a value is dropped
   # from the weighted mean, not scored 0.
   geo_alignment: 2
+  # Chinese-parent ownership exposure of the partner (CM-FDI, Net Zero Industrial Policy Lab;
+  # R/themes/partnership_strength/cm_fdi.R): the share of the partner's foreign-invested
+  # manufacturing in the technology whose parent is headquartered in China. A risk, scored as
+  # 1 - share; defined only in the cells CM-FDI covers ((Solar, Wind, Batteries, Electric
+  # Vehicles) x Midstream) and for partners with at least min_projects (2) foreign-invested
+  # projects there (China, Hong Kong and Macao: 1), dropped from the weighted mean elsewhere
+  # (never scored 0). config/partnership.yml cm_fdi chinese_parent_exposure: false
+  # leaves it out of every dyad (robustness run); 0 here keeps it in the tables with no weight.
+  chinese_parent_exposure: 1
 
 # Development potential (partner-level, non-high-income partners). These were hard-coded in
 # stronger_development.R; the US-EO term that had weight 1.5 there has been dropped.

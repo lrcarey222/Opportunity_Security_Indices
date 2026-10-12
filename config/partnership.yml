@@ -29,3 +29,81 @@ outbound_fdi:
   # Under conduit_rule: conduits, which positions are dropped: both (the centre is the counterpart
   # or the reporter) or counterpart (positions held in a centre only).
   conduit_scope: both
+
+# CM-FDI: the Cleantech Manufacturing FDI Dataset of the Net Zero Industrial Policy Lab, Johns
+# Hopkins University (https://cmfdi.netzeropolicylab.com; edition 2026.10.05; CC BY 4.0; cite as
+# "Bandara, P. and the Net Zero Industrial Policy Lab. Cleantech Manufacturing FDI Dataset, edition
+# 2026.10.05. Johns Hopkins University."). Project-level cross-border greenfield and
+# expansion projects in solar, wind, battery and EV manufacturing (parent and its headquarters
+# economy, destination, status, years, technology, activity, capital investment, joint-venture
+# fields, a source link per field), staged as data/raw/cm_fdi_projects.csv and read by scripts/15
+# through R/themes/partnership_strength/cm_fdi.R. It enters Friendshore only (Opportunity and
+# Development read no investment data; Economic Opportunity does not read it, as its Investment
+# category already scores investment and would count it twice):
+#   - investment ties: in the cells it covers ((Solar, Wind, Batteries, Electric Vehicles) x
+#     `stage`) the outbound_index of FS(i, j) is the tie of reporter i's parents to partner j
+#     (i = home economy of the parent = investor, j = destination), S-curved like the IMF index
+#     it replaces there; every other cell keeps the IMF DIP position (outbound_fdi above);
+#   - chinese_parent_exposure (weight in config/weights.yml): the share of partner j's
+#     foreign-invested manufacturing in the technology whose parent is headquartered in China,
+#     a risk scored as 1 - share; missing (not 0) where j has fewer than min_projects
+#     foreign-invested projects (none or one). It is the parent-company case of common-mode risk
+#     in the NEIS Allied Industrial Base concept paper (section 7.4): plants in two supplier
+#     countries owned by the same Chinese parents do not diversify supply away from China.
+cm_fdi:
+  # Robustness switches: false restores the IMF measure in the covered cells / leaves the exposure
+  # component out of every dyad (NA, dropped from the weighted mean). With both false the file is
+  # not read.
+  investment_ties: true
+  chinese_parent_exposure: true
+  # CM-FDI Technology value -> pipeline technology. A value not listed stops the build.
+  technologies:
+    Battery: Batteries
+    Solar: Solar
+    Wind: Wind
+    EV: Electric Vehicles
+  # Every manufacturing project is a Midstream (processing and manufacturing) investment; battery
+  # materials plants (cathode, anode, precursor) sit in the Batteries Midstream basket too.
+  stage: Midstream
+  # Projects the index measures use. Status: the CM-FDI working paper drops Cancelled, Paused and
+  # Closed projects and keeps the rest, announced projects included (they are the pipeline of
+  # foreign-owned capacity). The Operational field also marks plants that have since closed
+  # ("Ceased operations": 38 projects, 28 of them Completed), dropped as Closed.
+  keep_status: [Announced, Under Construction, Completed, Operational]
+  drop_operational: [Ceased operations, Paused]
+  # Industry activity values used: Manufacturing (974 projects, the count CM-FDI and Sector
+  # Insights report). R&D, design and logistics projects, and the 3 combined "R&D & Manufacturing"
+  # EV projects, are for the descriptive views only; add "R&D & Manufacturing" here to count them.
+  manufacturing_activities: [Manufacturing]
+  # Time window: first year announced, null = every year (1996-2026). Both measures read the stock
+  # of foreign-owned capacity standing or in the pipeline, as the IMF position they replace is a
+  # stock, and the status filters above already drop plants that closed (22 of the 92 projects
+  # announced before 2010), so a project's age says nothing more about whether the tie exists. A
+  # 2015 cut-off would drop 131 standing plants (14% of the projects used), 116 of them with
+  # non-Chinese parents (Japanese, European and US plants in the US, China and India), and raise the
+  # measured Chinese exposure mechanically. Values are nominal US$ at announcement, so older
+  # projects already weigh less. Robustness: 2015.
+  announced_from: null
+  # Joint ventures: CM-FDI names one parent per project and does not code the JV partner's economy;
+  # the listed parent is attributed this share of a JV project (counts and values; ownership shares
+  # are mostly undisclosed, so an equal split). The rest - the local partner's domestic capital or a
+  # foreign partner of uncoded headquarters - is left out of both measures. 1 attributes the whole
+  # project to the listed parent.
+  jv_parent_share: 0.5
+  # Parents headquartered in these economies count as Chinese: mainland China and the two SARs
+  # (e.g. GCL, coded Hong Kong). Taiwan (TWN) is not included.
+  china_hq_iso3: [CHN, HKG, MAC]
+  # Exposure of China (and the SARs) as a supplier: "exposed" gives them 1 in every covered cell
+  # (their capacity sits with Chinese-headquartered firms; their foreign-invested plants are
+  # non-Chinese by definition and would score them unexposed); "missing" leaves them without a value.
+  china_supplier: exposed
+  # Exposure weighting: "blend" (default) = value-weighted where values are disclosed, count-based for
+  # the projects without a disclosed value (259 of the 1,042 projects; undisclosed is not zero);
+  # "value" = value share over the disclosed projects, falling back to the count share where none
+  # is disclosed; "count" = attributed count share.
+  exposure_weighting: blend
+  # Fewest projects (rows, JVs included) a destination needs in a technology for its exposure to be
+  # defined; below it the component is missing, as with none. With one plant the share is 0 or 1 by
+  # construction (one Chinese battery plant in Japan would read as full exposure). 1 keeps every
+  # destination with a project (robustness).
+  min_projects: 2
