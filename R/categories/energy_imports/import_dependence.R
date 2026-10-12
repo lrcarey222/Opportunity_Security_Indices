@@ -10,6 +10,8 @@ IMPORT_DEPENDENCE_CONSUMPTION_VARS <- c("oil_tes_ej", "oilcons_kbd", "gas_tes_ej
 # gas and coal, which EIA publishes a year after oil, from the latest EIA year within
 # `eia_max_lag` years) and recorded in <var>_eia_year and <var>_eia_basis. A value whose fuel is
 # not EI's (EIA_INTL_COMPARABILITY: 2025 Estonia coal, where EI counts oil shale) is not used.
+# Where such a value is of an earlier year than the other side of the fuel's ratio, production
+# and consumption are then set against each other in one year (import_dependence_pair_years()).
 #
 # `eia_fill_consumption` (default FALSE here; scripts/10 sets it TRUE since 2026-10-11): also take the oil,
 # gas and coal consumption of economies EI lists with a production row but no oil consumption
@@ -84,13 +86,149 @@ import_dependence_clean_raw <- function(ei,
   # Named explicitly rather than as a column range: the pivoted column order follows the
   # order Vars happen to appear in the extract, so a positional range is not stable across
   # EI releases.
-  dplyr::mutate(
+  wide <- dplyr::mutate(
     wide,
     dplyr::across(
       dplyr::any_of(c("oil_tes_ej", "gas_tes_ej", "coal_tes_ej")),
       ~tidyr::replace_na(.x, 0)
     )
   )
+
+  # An EIA value of an earlier year stands in for `year` on one side of a fuel's ratio: set
+  # production and consumption against each other in one year (import_dependence_pair_years()).
+  if (!is.null(eia)) {
+    wide <- import_dependence_pair_years(wide, ei, eia, year)
+  }
+  wide
+}
+
+# Production variable of each fuel and the consumption variable its self-sufficiency divides by
+# (oil in thousand b/d, the unit of its production, so EI's EJ per barrel cancels), with the unit
+# the explanation names.
+IMPORT_DEPENDENCE_PAIRS <- tibble::tribble(
+  ~fuel,  ~prod_var,     ~cons_var,     ~unit,
+  "oil",  "oilprod_kbd", "oilcons_kbd", "thousand b/d",
+  "gas",  "gasprod_ej",  "gas_tes_ej",  "EJ",
+  "coal", "coalprod_ej", "coal_tes_ej", "EJ"
+)
+
+# Sets a fuel's production of an earlier year against consumption of that year. A production value
+# EIA has not published for `year` stands in from EIA's latest year (eia_intl_lookup(max_lag)):
+# 2025 gas and coal production of economies EI does not list (EIA 2024). Until 2026-10-11
+# (fixes9) it was divided by EI's 2025 consumption, so a consumer whose use moved in 2025 was
+# misread: Slovenia coal 121% self-sufficient (EIA 2024 production over EI 2025 consumption,
+# which fell 39%; 73.5% against EI 2024), New Zealand gas 122% (109.5%).
+#
+# Rule, where production is of an earlier year than consumption: the self-sufficiency is
+# production over consumption of the production year (consumption from the cell's own source:
+# EI, or EIA in EI's units), and the balance applies it to the consumption the cell uses:
+# production becomes P(pair) x C / C(pair), EIA's 2024 production scaled by EI's consumption
+# change 2024-2025, i.e. the 2024 self-sufficiency carried to 2025, so the balance stays on 2025
+# consumption as for every other economy and the Fossil total adds 2025 quantities.
+#
+# Not paired: consumption of an earlier year than production (eia_fill_consumption: the 2025
+# consumption of the producers EI lists without consumption is EIA's 2024). Their 2025
+# production is observed and moves (2024-2025: Yemen oil -57%, South Sudan oil +53%, Bolivia gas
+# -15%); pairing would replace it with 2024's, so these cells keep EI's 2025 production over
+# consumption carried from 2024, and the explanation names the EIA year (fixes9 review; user
+# decision open, README EIA open end (6)). The general rule (pair year = earlier of the two) is
+# kept below: `py != cy` in `need` would pair this side too.
+#
+# Zero production is left alone (0 in any year). A fuel whose pair-year consumption is missing or
+# 0, or whose consumption is 0, keeps its values and is flagged <prod_var>_unpaired (none in
+# 2025). Records <prod_var>_production_year, _consumption_year, _pair_year, _pair_production and
+# _pair_consumption (in the units of IMPORT_DEPENDENCE_PAIRS) for the explanation.
+import_dependence_pair_years <- function(wide, ei, eia, year) {
+  year <- as.integer(year)
+  vars <- c(IMPORT_DEPENDENCE_PAIRS$prod_var, IMPORT_DEPENDENCE_PAIRS$cons_var)
+  ei_long <- tibble::tibble(
+    Country = standardize_country_names(as.character(ei$Country)),
+    Year = suppressWarnings(as.integer(as.character(ei$Year))),
+    Var = as.character(ei$Var),
+    Value = suppressWarnings(as.numeric(ei$Value))
+  )
+  ei_long <- ei_long[ei_long$Var %in% vars & !is.na(ei_long$Year) & !is.na(ei_long$Value), , drop = FALSE]
+  ei_long <- ei_long[!duplicated(ei_long[, c("Country", "Year", "Var")]), , drop = FALSE]
+  eia_units <- eia_intl_ei_units(eia, vars)
+  ei_at <- function(var, yr) {
+    ei_long$Value[match(paste(wide$Country, var, yr), paste(ei_long$Country, ei_long$Var, ei_long$Year))]
+  }
+  eia_at <- function(var, yr) {
+    eia_units$value[match(paste(wide$iso3, var, yr), paste(eia_units$iso3, eia_units$ei_var, eia_units$year))]
+  }
+
+  for (i in seq_len(nrow(IMPORT_DEPENDENCE_PAIRS))) {
+    pv <- IMPORT_DEPENDENCE_PAIRS$prod_var[i]
+    cv <- IMPORT_DEPENDENCE_PAIRS$cons_var[i]
+    p_eia_year <- as.integer(import_dependence_col(wide, paste0(pv, "_eia_year"), NA_integer_))
+    c_eia_year <- as.integer(import_dependence_col(wide, paste0(cv, "_eia_year"), NA_integer_))
+    py <- dplyr::coalesce(p_eia_year, year)
+    cy <- dplyr::coalesce(c_eia_year, year)
+    p <- wide[[pv]]
+    cons <- wide[[cv]]
+    pair <- pmin(py, cy)
+    # Production of the earlier year only (see above).
+    need <- !is.na(p) & p > 0 & py < cy
+    # The other side's value of the pair year, from the same source as the cell's own value.
+    p_pair <- dplyr::case_when(pair == py ~ p, is.na(p_eia_year) ~ ei_at(pv, pair), TRUE ~ eia_at(pv, pair))
+    c_pair <- dplyr::case_when(pair == cy ~ cons, is.na(c_eia_year) ~ ei_at(cv, pair), TRUE ~ eia_at(cv, pair))
+    ok <- need & !is.na(p_pair) & !is.na(c_pair) & c_pair > 0 & !is.na(cons) & cons > 0
+
+    wide[[paste0(pv, "_production_year")]] <- dplyr::if_else(is.na(p), NA_integer_, py)
+    wide[[paste0(pv, "_consumption_year")]] <- cy
+    wide[[paste0(pv, "_pair_year")]] <- dplyr::if_else(ok, pair, NA_integer_)
+    wide[[paste0(pv, "_pair_production")]] <- dplyr::if_else(ok, p_pair, NA_real_)
+    wide[[paste0(pv, "_pair_consumption")]] <- dplyr::if_else(ok, c_pair, NA_real_)
+    wide[[paste0(pv, "_unpaired")]] <- need & !ok
+    wide[[pv]][ok] <- p_pair[ok] * cons[ok] / c_pair[ok]
+  }
+  wide
+}
+
+# The explanation of a fuel whose production and consumption are of different years
+# (import_dependence_pair_years()); "" where they are of the same year. One element per row.
+import_dependence_pair_note <- function(fuel, unit, production_source, consumption_source,
+                                        production_year, consumption_year, pair_year,
+                                        pair_production, pair_consumption, consumption, unpaired) {
+  num <- function(x) {
+    vapply(x, function(v) {
+      if (is.na(v)) "NA" else format(signif(v, 4), big.mark = ",", scientific = FALSE, trim = TRUE)
+    }, character(1))
+  }
+  fuel <- tolower(fuel)
+  out <- rep("", length(fuel))
+  sides <- paste0(
+    ". Production is ", production_source, "'s ", production_year, " value and consumption ",
+    consumption_source, "'s ", consumption_year
+  )
+  ss <- sprintf("%.1f%%", 100 * pair_production / pair_consumption)
+  paired <- !is.na(pair_year)
+
+  # Production of the earlier year: the self-sufficiency is that year's, carried to the
+  # consumption year by EI's (or EIA's) consumption change.
+  p <- paired & pair_year == production_year
+  out[p] <- paste0(
+    sides[p], ", so self-sufficiency pairs them in ", pair_year[p], ": ", num(pair_production[p]), " ",
+    unit[p], " produced against ", consumption_source[p], "'s ", pair_year[p], " consumption of ",
+    num(pair_consumption[p]), " ", unit[p], " (", ss[p], "). The balance applies that share to the ",
+    consumption_year[p], " consumption of ", num(consumption[p]), " ", unit[p], " (production taken as the ",
+    pair_year[p], " value x ", num(consumption[p] / pair_consumption[p]), ", the change in ",
+    consumption_source[p], "'s ", fuel[p], " consumption ", pair_year[p], "-", consumption_year[p], ")"
+  )
+  # Consumption of the earlier year: production of that year, so both are that year's. Not reached
+  # while import_dependence_pair_years() pairs only production of the earlier year.
+  cons <- paired & !p
+  out[cons] <- paste0(
+    sides[cons], ", so self-sufficiency and balance pair them in ", pair_year[cons], ": ",
+    num(pair_production[cons]), " ", unit[cons], " produced (", production_source[cons], ", ",
+    pair_year[cons], ") against ", num(pair_consumption[cons]), " ", unit[cons], " consumed (", ss[cons], ")"
+  )
+  unpaired <- unpaired %in% TRUE
+  out[unpaired] <- paste0(
+    sides[unpaired], ", and no value of the earlier year is available for the other side (or a ",
+    "consumption is 0), so they are compared as they are"
+  )
+  out
 }
 
 # Fills the NA cells of `vars` in the rows `rows` (logical) of the wide table from EIA, and
@@ -284,16 +422,33 @@ import_dependence_annotations <- function(imports_indexed, techs, year) {
 
   ann <- dplyr::bind_rows(lapply(names(techs), function(f) {
     var <- if (f %in% names(IMPORT_DEPENDENCE_PRODUCTION_VARS)) IMPORT_DEPENDENCE_PRODUCTION_VARS[[f]] else NA_character_
+    pair <- IMPORT_DEPENDENCE_PAIRS[IMPORT_DEPENDENCE_PAIRS$fuel == f, , drop = FALSE]
+    col <- function(suffix, default) {
+      if (is.na(var)) rep(default, nrow(imports_indexed)) else import_dependence_col(imports_indexed, paste0(var, suffix), default)
+    }
+    cons_var <- if (nrow(pair) == 1) pair$cons_var else NA_character_
     tibble::tibble(
       Country = imports_indexed$Country,
       tech = unname(techs[[f]]),
       ei_var = var,
       production_reported = imports_indexed[[paste0(f, "_production_reported")]],
       production_source = import_dependence_col(imports_indexed, paste0(f, "_production_source"), "EI"),
-      eia_year = if (is.na(var)) NA_integer_ else import_dependence_col(imports_indexed, paste0(var, "_eia_year"), NA_integer_),
-      eia_basis = if (is.na(var)) NA_character_ else import_dependence_col(imports_indexed, paste0(var, "_eia_basis"), NA_character_),
-      eia_coverage = if (is.na(var)) NA_real_ else import_dependence_col(imports_indexed, paste0(var, "_eia_coverage"), NA_real_),
-      consumption_eia_year = consumption_eia_year
+      eia_year = col("_eia_year", NA_integer_),
+      eia_basis = col("_eia_basis", NA_character_),
+      eia_coverage = col("_eia_coverage", NA_real_),
+      consumption_eia_year = consumption_eia_year,
+      # Production and consumption of different years (import_dependence_pair_years()).
+      pair_unit = if (nrow(pair) == 1) pair$unit else NA_character_,
+      pair_consumption_source = if (is.na(cons_var)) NA_character_ else dplyr::if_else(
+        is.na(import_dependence_col(imports_indexed, paste0(cons_var, "_eia_year"), NA_integer_)), "EI", "EIA"
+      ),
+      pair_consumption_used = if (is.na(cons_var)) NA_real_ else imports_indexed[[cons_var]],
+      production_year = col("_production_year", NA_integer_),
+      consumption_year = col("_consumption_year", NA_integer_),
+      pair_year = col("_pair_year", NA_integer_),
+      pair_production = col("_pair_production", NA_real_),
+      pair_consumption = col("_pair_consumption", NA_real_),
+      unpaired = col("_unpaired", FALSE)
     )
   }))
 
@@ -326,6 +481,20 @@ import_dependence_annotations <- function(imports_indexed, techs, year) {
       ann$note[consumption_eia], ". ",
       eia_intl_fill_note("oil, gas and coal", "oil_tes_ej", ann$consumption_eia_year[consumption_eia], year, flow = "consumption"),
       " (oil in b/d: petroleum and other liquids consumption)"
+    )
+  }
+  fuel_pair <- ann$tech != "Fossil" & (!is.na(ann$pair_year) | ann$unpaired %in% TRUE)
+  if (any(fuel_pair)) {
+    ann$note[fuel_pair] <- paste0(ann$note[fuel_pair], import_dependence_pair_note(
+      ann$tech[fuel_pair], ann$pair_unit[fuel_pair], ann$production_source[fuel_pair],
+      ann$pair_consumption_source[fuel_pair], ann$production_year[fuel_pair], ann$consumption_year[fuel_pair],
+      ann$pair_year[fuel_pair], ann$pair_production[fuel_pair], ann$pair_consumption[fuel_pair],
+      ann$pair_consumption_used[fuel_pair], ann$unpaired[fuel_pair]
+    ))
+    fossil_pair <- ann$tech == "Fossil" & ann$Country %in% ann$Country[fuel_pair & !is.na(ann$pair_year)]
+    ann$note[fossil_pair] <- paste0(
+      ann$note[fossil_pair], ". Each fuel's production enters with its consumption of the same year ",
+      "(see the Oil, Gas and Coal rows)"
     )
   }
   ann$from_eia <- ann$production_source %in% "EIA" | consumption_eia

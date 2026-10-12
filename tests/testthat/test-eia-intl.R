@@ -227,7 +227,12 @@ ei_gap_fixture <- function() {
     "Other Asia Pacific", NA,              "oilcons_kbd", 500,
     "Other Asia Pacific", NA,              "gasprod_ej",  0.7
   )
-  dplyr::mutate(rows, Year = 2025L, .after = Country)
+  dplyr::bind_rows(
+    dplyr::mutate(rows, Year = 2025L, .after = Country),
+    # EI's 2024 gas consumption of New Zealand, the year of its EIA gas production: the 2025
+    # self-sufficiency pairs the two (import_dependence_pair_years()).
+    tibble::tibble(Country = "New Zealand", Year = 2024L, ISO3166_alpha3 = "NZL", Var = "gas_tes_ej", Value = 0.12)
+  )
 }
 
 test_that("import dependence takes EIA production only where EI has no row, and flags it", {
@@ -238,9 +243,11 @@ test_that("import dependence takes EIA production only where EI has no row, and 
   expect_identical(value("Netherlands", "oilprod_kbd"), 20)
   expect_identical(value("Spain", "coalprod_ej"), 0)
   expect_true(is.na(value("Netherlands", "oilprod_kbd_eia_year")))
-  # Gaps take EIA: New Zealand oil (2025) and gas (2024, EIA's latest), Spain oil.
+  # Gaps take EIA: New Zealand oil (2025) and gas (2024, EIA's latest), Spain oil. The 2024 gas
+  # is set against EI's 2024 consumption (0.12 EJ), and carried to 2025 consumption (0.1 EJ).
   expect_equal(value("New Zealand", "oilprod_kbd"), 12)
-  expect_equal(value("New Zealand", "gasprod_ej"), 3.3 * 0.036)
+  expect_equal(value("New Zealand", "gasprod_ej_pair_production"), 3.3 * 0.036)
+  expect_equal(value("New Zealand", "gasprod_ej"), 3.3 * 0.036 * 0.1 / 0.12)
   expect_identical(value("New Zealand", "gasprod_ej_eia_year"), 2024L)
   expect_equal(value("Spain", "oilprod_kbd"), 2)
   # EIA zeros are real zeros.
@@ -263,9 +270,11 @@ test_that("an EIA value is observed data with its source, and the remaining gaps
   }
 
   nz <- cell("New Zealand", "Gas", "Self-sufficiency")
-  expect_equal(nz$value, 100 * 3.3 * 0.036 / 0.1)
+  # EIA's 2024 production against EI's 2024 consumption, not EI's 2025 (0.1 EJ).
+  expect_equal(nz$value, 100 * 3.3 * 0.036 / 0.12)
   expect_match(nz$source, "; EIA International Energy Statistics$")
   expect_match(nz$explanation, "EI does not report gas production for this economy separately; EIA International Energy Statistics \\(2024, the latest EIA year, for 2025\\): dry natural gas, bcm x 0.036 EJ/bcm")
+  expect_match(nz$explanation, "Production is EIA's 2024 value and consumption EI's 2025, so self-sufficiency pairs them in 2024: 0.1188 EJ produced against EI's 2024 consumption of 0.12 EJ \\(99.0%\\)", fixed = FALSE)
   expect_false(is.na(cell("New Zealand", "Gas", "Production surplus/deficit", "index")$value))
   # Unchanged for EI-reported cells.
   expect_false(grepl("EIA", cell("Norway", "Oil", "Self-sufficiency")$source))
@@ -287,10 +296,91 @@ test_that("an EIA value is observed data with its source, and the remaining gaps
   expect_false(any(grepl("EIA", plain$source)))
 })
 
-test_that("the proposed consumption fill puts producers without an EI consumption row on the roster", {
+test_that("production and consumption of different years are set against each other in one year", {
+  # Slovenia-like coal: EIA has 2024 production only; EI's consumption fell 39% in 2025. Dividing
+  # EIA 2024 by EI 2025 read 121% self-sufficient and a positive balance (HEAD of 2026-10-11).
   ei <- dplyr::bind_rows(
     ei_gap_fixture(),
-    tibble::tibble(Country = "Angola", Year = 2025L, ISO3166_alpha3 = "AGO", Var = "oilprod_kbd", Value = 1100)
+    tibble::tribble(
+      ~Country,   ~Year, ~ISO3166_alpha3, ~Var,          ~Value,
+      "Slovenia", 2025L, "SVN",           "oil_tes_ej",  0.2,
+      "Slovenia", 2025L, "SVN",           "oilcons_kbd", 100,
+      "Slovenia", 2025L, "SVN",           "gas_tes_ej",  0.03,
+      "Slovenia", 2025L, "SVN",           "coal_tes_ej", 0.0197,
+      "Slovenia", 2024L, "SVN",           "coal_tes_ej", 0.0325
+    )
+  )
+  base <- eia_extract_fixture()
+  eia <- dplyr::bind_rows(
+    # Testland: EIA 2024 gas production, but EI has no consumption row of 2024: left unpaired.
+    base[base$series_id != "INTL.26-1-TST-BCM.A", ],
+    eia_row("TST", "gas", "production", "dry_gas", "BCM", c("2024" = 0.5), 26, 1),
+    eia_row("SVN", "coal", "production", "coal", "TJ", c("2024" = 25200), 7, 1),
+    eia_row("SVN", "coal", "consumption", "coal", "TJ", c("2024" = 33000), 7, 2),
+    eia_row("SVN", "oil", "production", "crude_condensate", "TBPD", c("2025" = 0), 57, 1),
+    eia_row("SVN", "gas", "production", "dry_gas", "BCM", c("2024" = 0), 26, 1)
+  )
+  cleaned <- import_dependence_clean_raw(ei, year = 2025, eia = eia)
+  built <- import_dependence_build_imports(cleaned)
+  svn <- built[built$Country == "Slovenia", ]
+  p2024 <- 25200 * 0.95e-6
+
+  # The self-sufficiency is 2024's: EIA 2024 production over EI 2024 consumption (73.7%).
+  expect_identical(svn$coalprod_ej_production_year, 2024L)
+  expect_identical(svn$coalprod_ej_consumption_year, 2025L)
+  expect_identical(svn$coalprod_ej_pair_year, 2024L)
+  expect_equal(svn$coalprod_ej_pair_production, p2024)
+  expect_equal(svn$coalprod_ej_pair_consumption, 0.0325)
+  expect_equal(svn$coal_self_sufficiency, 100 * p2024 / 0.0325)
+  # The balance applies it to the 2025 consumption: production is EIA's 2024 value scaled by EI's
+  # consumption change, so a net importer stays a net importer.
+  expect_equal(svn$coalprod_ej, p2024 * 0.0197 / 0.0325)
+  expect_equal(svn$coal_surplus_ej, 0.0197 * (p2024 / 0.0325 - 1))
+  expect_lt(svn$coal_surplus_ej, 0)
+  # Fossil adds the paired production (gas and oil are EIA zeros) to 2025 consumption.
+  expect_equal(svn$fossilprod_ej, svn$coalprod_ej)
+  expect_equal(svn$fossil_self_sufficiency, 100 * svn$coalprod_ej / (0.2 + 0.03 + 0.0197))
+  # Oil (EIA 2025 against EI 2025) and New Zealand oil are of one year: untouched.
+  expect_true(is.na(svn$oilprod_kbd_pair_year))
+  expect_identical(svn$oilprod_kbd, 0)
+  nz <- built[built$Country == "New Zealand", ]
+  expect_true(is.na(nz$oilprod_kbd_pair_year))
+  expect_equal(nz$oilprod_kbd, 12)
+  # EIA zeros of an earlier year stay 0 (0 in any year): Singapore and Netherlands, 2024.
+  expect_identical(built$gasprod_ej[built$Country == "Singapore"], 0)
+  expect_true(is.na(built$gasprod_ej_pair_year[built$Country == "Singapore"]))
+  expect_identical(built$coalprod_ej[built$Country == "Netherlands"], 0)
+  # No EI consumption of 2024: compared as they are, and flagged.
+  tst <- built[built$Country == "Testland", ]
+  expect_equal(tst$gasprod_ej, 0.5 * 0.036)
+  expect_true(tst$gasprod_ej_unpaired)
+  expect_true(is.na(tst$gasprod_ej_pair_year))
+  expect_false(any(built$coalprod_ej_unpaired[built$Country != "Testland"]))
+
+  # balance = consumption x (self-sufficiency - 1) for every fuel, paired or not.
+  for (f in c("oil", "gas", "coal", "fossil")) {
+    cons <- built[[paste0(f, "_tes_ej")]]
+    ok <- !is.na(built[[paste0(f, "_self_sufficiency")]])
+    expect_equal(built[[paste0(f, "_surplus_ej")]][ok], (cons * (built[[paste0(f, "_self_sufficiency")]] / 100 - 1))[ok], info = f)
+  }
+
+  out <- import_dependence_build_tidy(built, year = 2025)
+  ex <- function(country, fuel) out$explanation[out$Country == country & out$tech == fuel & out$variable == "Self-sufficiency"]
+  expect_match(ex("Slovenia", "Coal"), "Production is EIA's 2024 value and consumption EI's 2025, so self-sufficiency pairs them in 2024: 0.02394 EJ produced against EI's 2024 consumption of 0.0325 EJ \\(73.7%\\)")
+  expect_match(ex("Slovenia", "Coal"), "The balance applies that share to the 2025 consumption of 0.0197 EJ \\(production taken as the 2024 value x 0.6062, the change in EI's coal consumption 2024-2025\\)")
+  expect_match(ex("Slovenia", "Fossil"), "Each fuel's production enters with its consumption of the same year")
+  expect_match(ex("Testland", "Gas"), "Production is EIA's 2024 value and consumption EI's 2025, and no value of the earlier year is available")
+  expect_false(grepl("pairs them", ex("Norway", "Gas")))
+  expect_false(grepl("same year", ex("Norway", "Fossil")))
+})
+
+test_that("the consumption fill puts producers without an EI consumption row on the roster", {
+  ei <- dplyr::bind_rows(
+    ei_gap_fixture(),
+    tibble::tibble(Country = "Angola", Year = 2025L, ISO3166_alpha3 = "AGO", Var = "oilprod_kbd", Value = 1100),
+    # EI's 2024 oil production, the year of the EIA consumption: not used, since EI's 2025
+    # production is observed (consumption of an earlier year is not paired).
+    tibble::tibble(Country = "Angola", Year = 2024L, ISO3166_alpha3 = "AGO", Var = "oilprod_kbd", Value = 1150)
   )
   eia <- dplyr::bind_rows(
     eia_extract_fixture(),
@@ -309,7 +399,22 @@ test_that("the proposed consumption fill puts producers without an EI consumptio
   expect_identical(ago$consumption_source, "EIA")
   expect_identical(ago$oil_production_source, "EI")
   expect_identical(ago$gas_production_source, "EIA")
-  expect_equal(ago$oil_self_sufficiency, 100 * (ago$oil_tes_ej / 130) * 1100 / ago$oil_tes_ej)
+  # Consumption is EIA's 2024 (its latest), carried to 2025; production stays EI's observed 2025
+  # value (1100, not 2024's 1150): consumption of an earlier year is not paired.
+  expect_true(is.na(ago$oilprod_kbd_pair_year))
+  expect_false(ago$oilprod_kbd_unpaired)
+  expect_identical(ago$oilprod_kbd_production_year, 2025L)
+  expect_identical(ago$oilprod_kbd_consumption_year, 2024L)
+  expect_equal(ago$oilprod_kbd, 1100)
+  expect_equal(ago$oil_self_sufficiency, 100 * 1100 / 130)
+  expect_equal(ago$oil_surplus_ej, ago$oil_tes_ej * (1100 / 130 - 1))
+  # Gas production and consumption are both EIA 2024: nothing to pair.
+  expect_true(is.na(ago$gasprod_ej_pair_year))
+  expect_equal(ago$gas_self_sufficiency, 100 * 5.8 / 1.2)
+  tidy <- import_dependence_build_tidy(proposed, year = 2025)
+  ex <- tidy$explanation[tidy$Country == "Angola" & tidy$tech == "Oil" & tidy$variable == "Self-sufficiency"]
+  expect_match(ex, "EIA International Energy Statistics \\(2024, the latest EIA year, for 2025\\): petroleum and other liquids consumption")
+  expect_false(grepl("pairs them|pair them", ex))
 })
 
 # ---- Production depth + momentum ---------------------------------------------------------

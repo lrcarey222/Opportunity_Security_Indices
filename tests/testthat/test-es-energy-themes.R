@@ -12,6 +12,7 @@ source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "utils", "eia_intl.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "categories", "energy_access", "energy_access_consumption.R"))
 source(file.path(repo_root, "R", "categories", "consumption", "energy_consumption.R"))
@@ -230,6 +231,71 @@ test_that("an unreported fuel takes the pillar's missing-data rule and is flagge
   expect_identical(nz$missing_rule_applied, "global_average")
   expect_equal(nz$value, mean(index_rows$value, na.rm = TRUE))
   expect_false(any(filled$imputed[filled$Country %in% c("Norway", "Netherlands")]))
+})
+
+test_that("the balance is consumption times self-sufficiency minus one for every fuel", {
+  built <- import_dependence_build_imports(import_dependence_clean_raw(ei_production_gap_fixture(), year = 2025))
+  for (f in c("oil", "gas", "coal", "fossil")) {
+    ss <- built[[paste0(f, "_self_sufficiency")]]
+    ok <- !is.na(ss)
+    expect_true(any(ok), info = f)
+    expect_equal(built[[paste0(f, "_surplus_ej")]][ok], (built[[paste0(f, "_tes_ej")]] * (ss / 100 - 1))[ok], info = f)
+  }
+})
+
+# The 2025 production EIA supplies for gas and coal is its 2024 value (EIA publishes them a year
+# after oil). Until fixes9 (2026-10-11) it was divided by EI's 2025 consumption, so a consumer whose
+# use fell in 2025 read as self-sufficient: Slovenia coal 121% and a net exporter (EI's coal
+# consumption fell 39%), New Zealand gas 122%. Values as in the 2026-10-11 inputs.
+test_that("an EIA production value of an earlier year is set against consumption of that year", {
+  ei <- tibble::tribble(
+    ~Country,      ~Year, ~ISO3166_alpha3, ~Var,          ~Value,
+    "Slovenia",    2025L, "SVN",           "oil_tes_ej",  0.2,
+    "Slovenia",    2025L, "SVN",           "oilcons_kbd", 100,
+    "Slovenia",    2025L, "SVN",           "oilprod_kbd", 0,
+    "Slovenia",    2025L, "SVN",           "gas_tes_ej",  0.0326,
+    "Slovenia",    2025L, "SVN",           "gasprod_ej",  0,
+    "Slovenia",    2025L, "SVN",           "coal_tes_ej", 0.01971,
+    "Slovenia",    2024L, "SVN",           "coal_tes_ej", 0.03254,
+    "New Zealand", 2025L, "NZL",           "oil_tes_ej",  0.32,
+    "New Zealand", 2025L, "NZL",           "oilcons_kbd", 160,
+    "New Zealand", 2025L, "NZL",           "oilprod_kbd", 12,
+    "New Zealand", 2025L, "NZL",           "gas_tes_ej",  0.09883,
+    "New Zealand", 2024L, "NZL",           "gas_tes_ej",  0.10995,
+    "New Zealand", 2025L, "NZL",           "coal_tes_ej", 0.04,
+    "New Zealand", 2025L, "NZL",           "coalprod_ej", 0.07
+  )
+  eia_series <- function(iso3, fuel, component, unit, product, value) {
+    tibble::tibble(
+      iso3 = iso3, country = iso3, fuel = fuel, flow = "production", component = component, year = 2024L,
+      value = value, unit = unit, series_id = paste0("INTL.", product, "-1-", iso3, "-", unit, ".A"), value_note = ""
+    )
+  }
+  eia <- dplyr::bind_rows(
+    eia_series("SVN", "coal", "coal", "TJ", 7L, 0.02393 / 0.95e-6),
+    eia_series("NZL", "gas", "dry_gas", "BCM", 26L, 3.344)
+  )
+  out <- withr::with_options(
+    list(opportunity_security.index_definition = yaml::read_yaml(file.path(repo_root, "config", "index_definition.yml"))),
+    import_dependence(ei, year = 2025, eia = eia)
+  )
+  raw <- function(country, fuel, variable) {
+    out$value[out$Country == country & out$tech == fuel & out$variable == variable & out$data_type == "raw"]
+  }
+
+  # Slovenia coal: 2024 production over 2024 consumption, a net importer.
+  expect_equal(raw("Slovenia", "Coal", "Self-sufficiency"), 100 * 0.02393 / 0.03254)
+  expect_equal(raw("Slovenia", "Coal", "Self-sufficiency"), 73.5, tolerance = 0.001)
+  expect_equal(raw("Slovenia", "Coal", "Production surplus/deficit"), 0.01971 * (0.02393 / 0.03254 - 1))
+  expect_lt(raw("Slovenia", "Coal", "Production surplus/deficit"), 0)
+  # New Zealand gas: 109.5%, not 122%.
+  expect_equal(raw("New Zealand", "Gas", "Self-sufficiency"), 100 * 3.344 * 0.036 / 0.10995)
+  expect_equal(raw("New Zealand", "Gas", "Production surplus/deficit"), 0.09883 * (3.344 * 0.036 / 0.10995 - 1))
+  # EI values of EI's year are untouched.
+  expect_equal(raw("New Zealand", "Coal", "Self-sufficiency"), 175)
+  expect_identical(raw("Slovenia", "Gas", "Self-sufficiency"), 0)
+  ex <- out$explanation[out$Country == "Slovenia" & out$tech == "Coal" & out$variable == "Self-sufficiency"]
+  expect_match(ex, "self-sufficiency pairs them in 2024")
 })
 
 # ---- BNEF New Energy Outlook ---------------------------------------------------------------
