@@ -9,6 +9,7 @@ import type { FactRow } from '../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, SummaryInfo, VarInfo } from '../data/model.ts';
 import type { GeoScope } from '../url.ts';
 import { concentration, type Concentration } from './concentration.ts';
+import { isFdiVar } from './fdi.ts';
 import { isCoalition, partOf } from './groups.ts';
 import { stateOf, type StateOf } from './states.ts';
 
@@ -33,7 +34,9 @@ export type ExploreLayout =
   /** IEA mineral demand by technology (dims.mineral_demand) */
   | 'mineral_demand'
   /** CIM manufacturing capacity by product (series.capacity; native units, never summed) */
-  | 'capacity';
+  | 'capacity'
+  /** CM-FDI cross-border projects (sector-fdi): destinations, flows, parent groups, years, projects */
+  | 'fdi';
 
 /** Area-integrated potentials and the quality measure they are plotted against (3.2: scatter only). */
 export const SCATTER_PAIRS: Readonly<Record<string, string>> = {
@@ -45,6 +48,7 @@ export function layoutOf(v: VarInfo): ExploreLayout {
   if (v.id in SCATTER_PAIRS) return 'scatter';
   if (v.id === 'consumption.mineral_demand') return 'mineral_demand';
   if (v.id === 'manufacturing.capacity') return 'capacity';
+  if (isFdiVar(v.id)) return 'fdi';
   if (v.theme === 'policy' || v.id.startsWith('policy.')) return 'policy';
   switch (v.native_level) {
     case 'region':
@@ -77,6 +81,8 @@ export function layoutBanner(v: VarInfo): string | null {
       return 'Bilateral flows of the technology-attributed HS6 basket: an HS6 code can count in more than one sector.';
     case 'scatter':
       return 'Area-integrated potential is the mean quality times land area, so it ranks mostly by size: shown against quality, never ranked.';
+    case 'fdi':
+      return 'Project-level data: cross-border manufacturing projects by the parent company’s headquarters and the destination, counted as published (capital where disclosed). Not a country total: domestic investment is not covered.';
     default:
       return null;
   }

@@ -12,7 +12,9 @@
 # README: gas and coal, which EIA has published only to 2024, take EIA's latest year within one
 # year of EI's (eia_intl_lookup(max_lag)); and a value whose fuel is not EI's fuel fails the
 # comparability check (EIA_INTL_COMPARABILITY; Estonia coal, where EI counts oil shale) and is
-# not used.
+# not used. Where a lagged production value is of an earlier year than the consumption it is
+# divided by, import dependence sets it against consumption of its own year
+# (import_dependence_pair_years(), since 2026-10-11).
 #
 # Pure (no IO). scripts/fetchers/eia_intl.R downloads https://www.eia.gov/opendata/bulk/INTL.zip
 # and stages eia_intl_parse_lines() as data/raw/eia_intl_fossil_production.csv; scripts/10 and

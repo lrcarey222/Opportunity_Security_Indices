@@ -67,10 +67,14 @@ sector_synthetic_items <- function(trade_cells = c("batteries-upstream", "batter
   dplyr::bind_rows(cells, other[names(cells)], sector_fixed_items())
 }
 
-# The 34 cell items (Strategic tech order x stage), has_trade for `trade_cells`.
+# The cell items (Strategic tech order x stage), has_trade for `trade_cells`: the 33 headline cells,
+# Semiconductors Midstream, and any other Semiconductors stage the trade basket has (Upstream since
+# the basket review of 2026-10-11: gallium, germanium and indium). Semiconductors cells are
+# non-headline (trade only).
 sector_cell_items <- function(trade_cells) {
   g <- expand.grid(stage = SECTOR_STAGE_SLUGS, tech = SECTOR_TECH_SLUGS, stringsAsFactors = FALSE)
-  g <- g[!(g$tech == "semiconductors" & g$stage != "midstream"), c("tech", "stage")]
+  semi <- g$tech == "semiconductors"
+  g <- g[!semi | g$stage == "midstream" | paste0(g$tech, "-", g$stage) %in% trade_cells, c("tech", "stage")]
   slug <- paste0(g$tech, "-", g$stage)
   tibble::tibble(
     axis = "cell", slug = slug,
@@ -321,8 +325,10 @@ sector_synthetic_parts <- function(dict) {
   add("consumption.pc_change", "fuel:oil", econ, 2025, c(0.04, 0.12, -0.06, -0.1, -0.02, 0.15, -0.08, 0.05, 0.03, -0.01))
   add("consumption.pc_change", "fuel:gas", econ, 2025, c(0.1, 0.35, -0.18, NaN, 0.02, 0.2, -0.05, 0.08, 0.06, 0.04),
       c("obs", "obs", "obs", "na_growth", "obs", "obs", "obs", "obs", "obs", "obs"))
+  # Estonia's oil production is not reported separately (production.fuels nsr): assumed 0, so its
+  # balance is minus consumption, nsr, with the note production_assumed_zero (fact_notes below).
   add("consumption.balance", "fuel:oil", c("USA", "RUS", "BRA", "CHN", "JPN", "DEU", "POL", "IDN", "EST"), 2025,
-      c(3.3, 16, 2, -25, -7, -4, -1.2, -1, -0.05))
+      c(3.3, 16, 2, -25, -7, -4, -1.2, -1, -0.05), c(rep("obs", 8), "nsr"))
   add("consumption.balance", "fuel:gas", c("USA", "RUS", "CHN", "JPN", "DEU", "POL", "IDN", "BRA", "EST"), 2025,
       c(5.2, 7.1, -6.5, -3.6, -2.9, -0.6, 0.9, -0.3, -0.02))
   add("consumption.self_sufficiency", "fuel:oil", c("USA", "RUS", "BRA", "CHN", "JPN", "DEU", "POL", "IDN"), 2025,
@@ -536,6 +542,9 @@ sector_synthetic_parts <- function(dict) {
 
   reported <- tibble::tibble(item_key = bm, year = 2024L, total = 6.2e10, china_reported = 0.61, hhi_reported = 0.41, n_reporters = 8L)
 
+  fdi_clean <- sector_fdi_clean(sector_synthetic_cmfdi_raw(), sector_synthetic_iso3)
+  fdi <- sector_fdi_part(fdi_clean, geo)
+
   list(
     geo = geo,
     region_members = tibble::tribble(
@@ -551,9 +560,17 @@ sector_synthetic_parts <- function(dict) {
     items = items, item_links = item_links, mineral_demand = mineral_demand,
     eu_outside_coalition = "EST",
     item_units = item_units,
-    roster_extra = tibble::tibble(roster = c(rep("comtrade_matrix", length(econ)), rep("ei", 9)),
-                                  geo = c(econ, setdiff(econ, "HKG"))),
-    facts = facts, world = world, series = series, trade = trade, eu_intra = eu_intra, policy = policy,
+    roster_extra = dplyr::bind_rows(
+      tibble::tibble(roster = c(rep("comtrade_matrix", length(econ)), rep("ei", 9)), geo = c(econ, setdiff(econ, "HKG"))),
+      tibble::tibble(roster = "cmfdi_home", geo = sort(unique(fdi$projects$home)))
+    ),
+    facts = facts, world = world, series = series, trade = trade, eu_intra = eu_intra, policy = policy, fdi = fdi,
+    # Per-fact notes (facts.notes): Japan's gas production as if from EIA, Estonia's oil balance assumed zero.
+    fact_notes = tibble::tibble(
+      var = c("production.fuels", "consumption.balance", "consumption.balance"),
+      item_key = c("fuel:gas", "fuel:gas", "fuel:oil"), geo = c("JPN", "JPN", "EST"), year = 2025L,
+      note = c("eia_production", "eia_production", "production_assumed_zero")
+    ),
     reported = reported,
     licensed = tibble::tibble(item_key = c("cell:solar-downstream", "cell:wind-downstream"), family = "prices", sources = "BNEF LCOE"),
     headline_sources = sector_headline_sources()
@@ -568,8 +585,59 @@ sector_headline_sources <- function() {
        policy = "IEA Policies and Measures", prices = "IMF Primary Commodity Prices")
 }
 
-# Placeholder values of the synthetic bundle.
+# Placeholder values of the synthetic bundle (the CM-FDI counts from its synthetic projects).
 sector_synthetic_fill <- function() {
-  list(n_shared_codes = 1, n_codes = 7, n_rca_reporters = 8, critmin_year = 2024, pams_export_date = "2026-01-22",
-       pams_year_max = 2030, trl_fallback_cells = "Geothermal Upstream", pct_cross_cutting = 16)
+  c(list(n_shared_codes = 1, n_codes = 7, n_rca_reporters = 8, critmin_year = 2024, pams_export_date = "2026-01-22",
+         pams_year_max = 2030, trl_fallback_cells = "Geothermal Upstream", pct_cross_cutting = 16),
+    sector_fdi_fill(sector_fdi_clean(sector_synthetic_cmfdi_raw(), sector_synthetic_iso3)))
+}
+
+# Country names of the synthetic CM-FDI rows -> ISO3 (the real export uses country_name_to_iso3()).
+sector_synthetic_iso3 <- function(x) {
+  map <- c(Brazil = "BRA", China = "CHN", Germany = "DEU", Estonia = "EST", `Hong Kong` = "HKG", Indonesia = "IDN",
+           Japan = "JPN", Poland = "POL", Russia = "RUS", `United States` = "USA")
+  unname(map[x])
+}
+
+# A CM-FDI extract in the CSV's own layout (every column text, as scripts/87 reads it): 14 projects
+# covering the four technologies, every status, a non-manufacturing activity, undisclosed values, a
+# joint venture, a Hong Kong parent, an expansion phase, a blank city, "N/A" and blank completion
+# years, and source cells with dates, several links, "[UNVERIFIED]" and fDi Markets.
+sector_synthetic_cmfdi_raw <- function() {
+  p <- tibble::tribble(
+    ~id, ~parent, ~hq, ~status, ~dest, ~city, ~ya, ~yc, ~tech, ~act, ~cap, ~exp, ~phase, ~jv, ~jvl, ~jvls, ~jvc, ~op,
+    "EV1", "Toyota", "Japan", "Operational", "United States", "Liberty (North Carolina)", "2021", "2025", "Battery", "Manufacturing", "13900", "0", "", "0", "0", "", "", "Operational",
+    "HAR0010", "CATL", "China", "Completed", "Germany", "Arnstadt (Thuringia)", "2018", "2022", "Battery", "Manufacturing", "1800", "0", "", "0", "0", "", "", "Operational",
+    "HAR0011", "Gotion", "China", "Under Construction", "Indonesia", "Karawang (West Java)", "2024", "N/A", "Battery", "Manufacturing", "", "0", "All", "1", "1", "1", "Indonesia Battery Corporation (IBC)", "Under construction",
+    "HKB1", "HK Battery Co", "Hong Kong", "Closed", "Poland", "Wroclaw", "2016", "2017", "Battery", "Manufacturing", "40", "0", "", "0", "0", "", "", "Ceased operations",
+    "RUB1", "Rosatom", "Russia", "Announced", "Germany", "", "2025", "", "Battery", "Manufacturing", "", "1", "2", "0", "0", "", "", "Announced only",
+    "SOL1", "LONGi", "China", "Announced", "United States", "Pataskala (Ohio)", "2024", "2027", "Solar", "Manufacturing", "600", "0", "", "1", "0", "", "Invenergy", "Announced only",
+    "SOL2", "Sharp", "Japan", "Cancelled", "Poland", "Gdansk", "2019", "", "Solar", "Manufacturing", "120.5", "0", "", "0", "0", "", "", "Announced only",
+    "SOL3", "Siemens", "Germany", "Operational", "Brazil", "Jundiai (Sao Paulo)", "2015", "2016", "Solar", "Research & Development", "15", "0", "", "0", "0", "", "", "Operational",
+    "WND1", "Nordex", "Germany", "Completed", "Brazil", "Camaçari (Bahia)", "2012", "2013", "Wind", "Manufacturing", "80", "0", "", "0", "0", "", "", "Ceased operations",
+    "WND2", "Goldwind", "China", "Paused", "Brazil", "Camaçari (Bahia)", "2023", "N/A", "Wind", "Manufacturing", "200", "0", "", "0", "0", "", "", "Paused",
+    "WND3", "Goldwind", "China", "Operational", "Brazil", "Camaçari (Bahia)", "2019", "2020", "Wind", "Manufacturing", "60", "1", "1", "0", "0", "", "", "Operational",
+    "EVX", "BYD", "China", "Under Construction", "Brazil", "Camaçari (Bahia)", "2023", "2026", "EV", "Manufacturing", "620", "0", "", "1", "0", "", "Ford (site seller)", "Under construction",
+    "EVY", "Toyota", "Japan", "Operational", "Indonesia", "Karawang (West Java)", "2013", "2015", "EV", "Manufacturing", "", "0", "", "0", "0", "", "", "Operational",
+    "EVZ", "BMW", "Germany", "Completed", "United States", "Spartanburg (South Carolina)", "2010", "2011", "EV", "Logistics, Distribution & Transportation", "50", "0", "", "0", "0", "", "", "Operational"
+  )
+  src <- function(id) paste0("https://example.org/cmfdi/", tolower(id))
+  amount <- ifelse(p$cap == "", "Investment value not publicly disclosed", src(p$id))
+  amount[p$id == "SOL1"] <- "[UNVERIFIED] https://example.org/cmfdi/sol1, https://example.com/news/sol1-plant (US$600m incl. phase 2)"
+  amount[p$id == "WND1"] <- "fDi Markets (FT)"
+  out <- data.frame(
+    Sector = p$tech, `Project ID` = p$id, `Parent company` = p$parent, `Company Country (HQ)` = p$hq, `Project Status` = p$status,
+    `Destination Country` = p$dest, `Destination city` = p$city, `Year Announced` = p$ya, `Year Completed` = p$yc,
+    Technology = p$tech, `Industry activity` = p$act, `Capital Investment (US$m)` = p$cap, Expansion = p$exp, Phase = p$phase,
+    `Joint Venture` = p$jv, `Joint Venture Local` = p$jvl, `Joint Venture Local State` = p$jvls, `Joint Venture Company` = p$jvc,
+    `Source (Parent company name and HQ)` = src(p$id), `Source (Project Status)` = src(p$id),
+    `Source (Project location, country and city)` = ifelse(p$id == "WND1", "fDi Markets (FT)", src(p$id)),
+    `Source (Amount)` = amount, `Source (Ownership share, where available)` = ifelse(p$jv == "1", src(p$id), ""),
+    `Source (Date Announced [MM/DD/YYYY])` = paste0(src(p$id), " 03/23/", p$ya),
+    `Source (Date Completed [MM/DD/YYYY])` = ifelse(p$yc %in% c("", "N/A"), "", paste0(src(p$id), " (year only)")),
+    `Source (Industry Activity)` = src(p$id), `Source (Joint Venture)` = ifelse(p$jv == "1", paste0("[UNVERIFIED] ", src(p$id)), ""),
+    Operational = p$op,
+    check.names = FALSE, stringsAsFactors = FALSE
+  )
+  out
 }

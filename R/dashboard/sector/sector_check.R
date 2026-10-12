@@ -20,12 +20,20 @@ SECTOR_V <- list(
   family = c("exports", "production", "capacity", "reserves", "investment", "consumption", "prices", "policy", "technology", "context", "development"),
   section = c("snapshot", "who", "leaders", "trade", "investment", "production", "resources", "demand", "prices", "policy", "technology", "context", "countries"),
   cov = c("country", "region", "global", "licensed", "none"),
-  chunk = c("meta", "facts", "trade", "policy", "series", "atlas", "dev"),
+  chunk = c("meta", "facts", "trade", "policy", "series", "atlas", "dev", "fdi"),
   flow = c("importer", "mirror", "none"),
   tech_src = c("iea", "text"),
   tech_label = c("Batteries", "Coal", "Electric Grid", "Electric Vehicles", "Gas", "Geothermal", "Green Hydrogen", "Nuclear", "Oil", "Solar", "Wind", "Semiconductors"),
   stage_label = c("Upstream", "Midstream", "Downstream"),
-  cap_status = c("operational", "construction", "announced", "paused")
+  cap_status = c("operational", "construction", "announced", "paused"),
+  fdi_status = c("Announced", "Under Construction", "Completed", "Operational", "Paused", "Cancelled", "Closed"),
+  fdi_operational = c("Operational", "Announced only", "Under construction", "Ceased operations", "Paused"),
+  fdi_activity = c("Manufacturing", "R&D & Manufacturing", "Research & Development", "Design, Development & Testing",
+                   "Logistics, Distribution & Transportation"),
+  fdi_value_status = c("obs", "nq"),
+  fdi_field = c("parent", "status", "location", "amount", "ownership", "announced", "completed", "activity", "jv"),
+  fdi_basis = c("all", "index_use"),
+  fdi_group = c("china", "core", "partner", "rest")
 )
 
 sector_tbl_spec <- function(cols, sorted = NULL, unique = NULL, values = list(), optional = FALSE) {
@@ -88,7 +96,10 @@ sector_chunk_specs <- function() {
                                     reported_total = "f", reported_china = "f", reported_hhi = "f", n_reporters = "i", warn = "b!"),
                                   unique = c("item", "year"))
     ),
-    facts = list(`facts.obs` = obs, `facts.index` = index, `facts.world` = world),
+    facts = list(`facts.obs` = obs, `facts.index` = index, `facts.world` = world,
+                 `facts.notes` = sector_tbl_spec(c(var = "i!@vars", item = "i!@items", geo = "i!@geo", year = "i!", note = "s!"),
+                                                 sorted = c("var", "item", "year", "geo"), unique = c("var", "item", "year", "geo", "note"),
+                                                 optional = TRUE)),
     trade = list(
       `trade.flows` = sector_tbl_spec(c(item = "i!@items", exporter = "i!@geo", importer = "i!@geo", v2020 = "f", v2024 = "f", s2020 = "s!", s2024 = "s!"),
                                       sorted = c("item", "exporter"), unique = c("item", "exporter", "importer"),
@@ -116,6 +127,30 @@ sector_chunk_specs <- function() {
       `series.capacity` = sector_tbl_spec(c(item = "i!@items", product = "s!", unit = "s!", geo = "i!@geo", year = "i!", cap_status = "s!",
                                             value = "f", status = "s!"), unique = c("item", "product", "geo", "year", "cap_status"),
                                           values = list(status = SECTOR_V$status, cap_status = SECTOR_V$cap_status), optional = TRUE)
+    ),
+    fdi = list(
+      `fdi.projects` = sector_tbl_spec(c(pid = "s!", item = "i!@items", technology = "s!", parent = "s!", home = "i!@geo", dest = "i!@geo",
+                                         city = "s", status = "s!", operational = "s!", activity = "s!", year_announced = "i!",
+                                         year_completed = "i", value = "f", value_status = "s!", expansion = "b!", phase = "s",
+                                         jv = "b!", jv_local = "b!", jv_local_state = "b", jv_company = "s", manufacturing = "b!",
+                                         active = "b!", index_use = "b!", home_group = "s!"),
+                                       sorted = c("item", "year_announced"), unique = "pid",
+                                       values = list(status = SECTOR_V$fdi_status, operational = SECTOR_V$fdi_operational,
+                                                     activity = SECTOR_V$fdi_activity, value_status = SECTOR_V$fdi_value_status,
+                                                     home_group = SECTOR_V$fdi_group)),
+      `fdi.sources` = sector_tbl_spec(c(project = "i!", field = "s!", text = "s!", url = "s", unverified = "b!"),
+                                      sorted = "project", unique = c("project", "field"), values = list(field = SECTOR_V$fdi_field)),
+      `fdi.flows` = sector_tbl_spec(c(item = "i!@items", home = "i!@geo", dest = "i!@geo", basis = "s!", n = "i!", n_value = "i!",
+                                      value = "f", year_min = "i!", year_max = "i!"),
+                                    sorted = c("item", "home", "dest"), unique = c("item", "home", "dest", "basis"),
+                                    values = list(basis = SECTOR_V$fdi_basis)),
+      `fdi.groups` = sector_tbl_spec(c(item = "i!@items", dest = "i!@geo", basis = "s!", group = "s!", n = "i!", n_value = "i!",
+                                       value = "f", share_n = "f!", share_value = "f"),
+                                     sorted = c("item", "dest"), unique = c("item", "dest", "basis", "group"),
+                                     values = list(basis = SECTOR_V$fdi_basis, group = SECTOR_V$fdi_group)),
+      `fdi.years` = sector_tbl_spec(c(item = "i!@items", year = "i!", basis = "s!", group = "s!", n = "i!", n_value = "i!", value = "f"),
+                                    sorted = c("item", "year"), unique = c("item", "year", "basis", "group"),
+                                    values = list(basis = SECTOR_V$fdi_basis, group = SECTOR_V$fdi_group))
     )
   )
 }
@@ -124,7 +159,7 @@ sector_spec_of <- function(name) {
   s <- sector_chunk_specs()
   if (startsWith(name, "sector-trade-")) return(s$trade)
   switch(name, `sector-meta` = s$meta, `sector-facts` = s$facts, `sector-policy` = s$policy,
-         `sector-policy-text` = s$policy_text, `sector-series` = s$series, stop("no spec for ", name))
+         `sector-policy-text` = s$policy_text, `sector-series` = s$series, `sector-fdi` = s$fdi, stop("no spec for ", name))
 }
 
 # A dotted path of a nested list.
@@ -228,8 +263,17 @@ sector_check_chunk <- function(name, objects, sizes = list(), var_ids = NULL) {
     }
   }
   if (length(e)) return(e)
-  if (name == "sector-facts") e <- c(e, sector_check_obs_index("facts", objects$facts$obs, objects$facts$index))
+  if (name == "sector-facts") {
+    e <- c(e, sector_check_obs_index("facts", objects$facts$obs, objects$facts$index))
+    nt <- objects$facts$notes
+    if (!is.null(nt) && nrow(nt)) {
+      o <- objects$facts$obs
+      if (!all(paste(nt$var, nt$item, nt$year, nt$geo) %in% paste(o$var, o$item, o$year, o$geo))) e <- c(e, "facts.notes has rows without a facts.obs row")
+      if (any(!nzchar(nt$note))) e <- c(e, "facts.notes.note has empty ids")
+    }
+  }
   if (name == "sector-series") e <- c(e, sector_check_obs_index("series", objects$series$obs, objects$series$index))
+  if (name == "sector-fdi") e <- c(e, sector_check_fdi(objects$fdi))
   if (startsWith(name, "sector-trade-")) {
     f <- objects$trade$flows
     for (y in SECTOR_TRADE_YEARS) {
@@ -268,5 +312,37 @@ sector_check_chunk <- function(name, objects, sizes = list(), var_ids = NULL) {
     if (length(setdiff(objects$dict$themes$default_var, dv$id))) e <- c(e, "dict.themes.default_var not in dict.vars")
     if (!setequal(objects$dict$techs$slug, SECTOR_TECH_SLUGS)) e <- c(e, "dict.techs must hold the 12 tech slugs")
   }
+  e
+}
+
+# Cross-table rules of sector-fdi (contract checkFdi()): value states, project references, links,
+# derived flags, aggregate counts and shares.
+sector_check_fdi <- function(f) {
+  e <- character()
+  p <- f$projects
+  if (any(is.na(p$value) != (p$value_status == "nq"))) e <- c(e, "fdi.projects: value NaN <=> value_status nq is violated")
+  if (any(!is.na(p$value) & p$value <= 0)) e <- c(e, "fdi.projects.value has zero or negative values (undisclosed values are NaN)")
+  # The flag rules are the settings' (config/partnership.yml cm_fdi); index_use always implies both.
+  if (any(p$index_use & !(p$manufacturing & p$active))) e <- c(e, "fdi.projects.index_use without manufacturing and active")
+  if (any(p$home == p$dest)) e <- c(e, "fdi.projects: a project in its parent's HQ economy")
+  s <- f$sources
+  if (any(s$project < 0L | s$project >= nrow(p))) e <- c(e, "fdi.sources.project outside fdi.projects")
+  u <- unlist(strsplit(stats::na.omit(s$url), "|", fixed = TRUE))
+  if (length(u) && !all(grepl("^https?://[^[:space:]\"<>|`\\]+$", u))) e <- c(e, "fdi.sources.url holds a link that is not a clean http(s) URL")
+  for (nm in c("flows", "years")) {
+    t <- f[[nm]]
+    if (any(t$n < 1L)) e <- c(e, paste0("fdi.", nm, ".n has rows without projects"))
+    if (any(t$n_value > t$n | t$n_value < 0L)) e <- c(e, paste0("fdi.", nm, ".n_value outside 0..n"))
+    if (any(is.na(t$value) != (t$n_value == 0L))) e <- c(e, paste0("fdi.", nm, ": value NaN <=> n_value 0 is violated"))
+  }
+  g <- f$groups
+  if (any(g$n_value > g$n)) e <- c(e, "fdi.groups.n_value above n")
+  if (any(is.na(g$value) != (g$n > 0L & g$n_value == 0L))) e <- c(e, "fdi.groups: value NaN <=> projects without a disclosed value is violated")
+  tot <- tapply(g$share_n, paste(g$item, g$dest, g$basis), sum)
+  if (length(tot) && max(abs(tot - 1)) > 1e-9) e <- c(e, "fdi.groups.share_n does not sum to 1 per (item, dest, basis)")
+  for (b in unique(f$flows$basis)) {
+    if (sum(f$flows$n[f$flows$basis == b]) != sum(f$years$n[f$years$basis == b])) e <- c(e, paste("fdi: flows and years count different projects for basis", b))
+  }
+  if (sum(f$flows$n[f$flows$basis == "all"]) != nrow(p)) e <- c(e, "fdi.flows (basis all) does not count every project once")
   e
 }

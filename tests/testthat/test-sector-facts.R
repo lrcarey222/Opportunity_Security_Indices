@@ -96,6 +96,108 @@ test_that("EI zero-completions are nsr; zeros EI reports are zero; uranium zeros
   expect_identical(x$excluded$n[grepl("roll-up", x$excluded$reason)], 1L)
 })
 
+test_that("EIA-filled fuel production ships as observed with its EIA year and note; NA is nsr; Estonia's oil shale is noted", {
+  src_ei <- "Energy Institute Statistical Review of World Energy 2026"
+  src_eia <- paste0(src_ei, "; EIA International Energy Statistics")
+  pdm <- raw_tbl(
+    iso3c = c("USA", "JPN", "KOR", "EST", "NZL", "FRA"),
+    tech = c("Oil", "Oil", "Gas", "Coal", "Gas", "Gas"), supply_chain = "Upstream", variable = "production_latest",
+    value = c(20000, 7.37, 0, NA, 0.12, 0),
+    source = c(src_ei, src_eia, src_eia, src_ei, src_eia, src_ei)
+  )
+  ei_present <- tibble::tibble(ei_var = "oilprod_kbd", iso3 = "USA")
+  eia_cells <- tibble::tibble(iso3 = c("JPN", "KOR", "EST", "NZL", "FRA"), ei_var = c("oilprod_kbd", "gasprod_ej", "coalprod_ej", "gasprod_ej", "gasprod_ej"),
+                              year = 2025L, value = c(7.37, 0, NA, 0.12, 0.0004), eia_year = c(2025L, 2024L, NA, 2024L, 2024L),
+                              eia_basis = c("series", "series", "not_comparable", "series", "series"))
+  x <- sector_facts_production(pdm, ei_present, eia_cells = eia_cells)
+  f <- x$facts[x$facts$var == "production.fuels", ]
+  st <- stats::setNames(f$status, f$geo)
+  expect_identical(unname(st[c("USA", "JPN", "KOR", "EST", "NZL", "FRA")]), c("obs", "obs", "zero", "nsr", "obs", "nsr"))
+  expect_true(is.nan(f$value[f$geo == "EST"]))
+  # The EIA year where the value is EIA's (gas and coal a year behind); EI's own rows carry none.
+  expect_identical(stats::setNames(f$obs_year, f$geo)[c("USA", "JPN", "KOR", "NZL", "FRA")], c(USA = NA, JPN = 2025L, KOR = 2024L, NZL = 2024L, FRA = NA))
+  # FRA: a processed zero with neither an EI row nor EIA in its source is the zero-fill of an older table.
+  expect_identical(f$value[f$geo == "FRA"], 0)
+  nt <- stats::setNames(x$notes$note, x$notes$geo)
+  expect_identical(unname(nt[c("JPN", "KOR", "NZL", "EST")]), c("eia_production", "eia_production", "eia_production", "ei_oil_shale"))
+  expect_false("FRA" %in% x$notes$geo)
+  expect_false("EST" %in% x$ledger$geo)
+  ck <- sector_eia_check(x, eia_cells)
+  expect_identical(c(ck$n, ck$n_missing), c(3L, 0L))
+  expect_identical(ck$max_rel, 0)
+  expect_identical(ck$not_comparable, "EST Coal")
+  eia_cells$value[2] <- 0.5
+  expect_gt(sector_eia_check(x, eia_cells)$max_rel, 0.1)
+})
+
+test_that("balance and self-sufficiency: EIA production observed, unreported production assumed 0 and said so (user rule)", {
+  src_ei <- "EI 2026"
+  src_eia <- "EI 2026; EIA International Energy Statistics"
+  # EIA-filled table: NA where neither EI nor EIA reports the production (Estonia coal).
+  idp <- raw_tbl(
+    iso3c = rep(c("JPN", "EST", "AGO"), each = 8),
+    tech = rep(rep(c("Oil", "Gas", "Coal", "Fossil"), each = 2), 3),
+    variable = rep(c("Production surplus/deficit", "Self-sufficiency"), 12),
+    value = c(-6.49, 0.22, -3.19, 2.09, -4.35, 0.26, -14.03, 0.67,
+              -0.053, 0, -0.011, 0, NA, NA, -0.156, 0,
+              2.14, 922, 0.17, 478, 0, NA, 2.30, 858),
+    source = c(rep(src_eia, 4), rep(src_ei, 2), rep(src_eia, 2),
+               rep(src_eia, 4), rep(src_ei, 2), rep(src_eia, 2),
+               rep(src_eia, 8))
+  )
+  ei_present <- tibble::tibble(ei_var = c("coalprod_ej", "oil_tes_ej", "oil_tes_ej", "oilprod_kbd"), iso3 = c("JPN", "JPN", "EST", "AGO"))
+  eia_cells <- tibble::tibble(iso3 = c("EST", "EST", "EST"), ei_var = c("oilprod_kbd", "gasprod_ej", "coalprod_ej"), year = 2025L,
+                              value = c(0, 0, NA), eia_year = c(2025L, 2024L, NA), eia_basis = c("series", "series", "not_comparable"))
+  cons <- tibble::tibble(iso3 = "EST", tech = c("Oil", "Gas", "Coal", "Fossil"), value = c(0.053, 0.011, 0.0918, 0.1558))
+  x <- sector_facts_balance(idp, ei_present, eia_cells = eia_cells, consumption = cons)
+  f <- x$facts
+  key <- paste(f$var, f$item_key, f$geo)
+  get <- function(v, item, geo, col) f[[col]][key == paste(v, paste0("fuel:", item), geo)]
+  # Japan: oil and gas from EIA (observed), coal EI's.
+  expect_identical(get("consumption.balance", "oil", "JPN", "status"), "obs")
+  expect_identical(get("consumption.balance", "oil", "JPN", "value"), -6.49)
+  # Estonia coal: assumed zero, derived (D) from EI consumption: minus consumption and 0%.
+  expect_identical(get("consumption.balance", "coal", "EST", "status"), "nsr")
+  expect_identical(get("consumption.balance", "coal", "EST", "value"), -0.0918)
+  expect_identical(get("consumption.self_sufficiency", "coal", "EST", "value"), 0)
+  expect_identical(get("consumption.self_sufficiency", "coal", "EST", "status"), "nsr")
+  d <- x$ledger[x$ledger$prov == "D", ]
+  expect_identical(nrow(d), 2L)
+  expect_identical(d$formula_value[d$var == "consumption.balance"], -0.0918)
+  # Estonia fossil: reported in part (oil and gas EIA zeros), coal counted as 0.
+  expect_identical(get("consumption.balance", "fossil", "EST", "status"), "obs")
+  # Angola: coal self-sufficiency NA (consumes none) is not shipped; the balance 0 is a zero.
+  expect_length(get("consumption.self_sufficiency", "coal", "AGO", "value"), 0L)
+  expect_identical(get("consumption.balance", "coal", "AGO", "status"), "zero")
+  n <- x$notes
+  nk <- function(v, item, geo) sort(n$note[n$var == v & n$item_key == paste0("fuel:", item) & n$geo == geo])
+  expect_identical(nk("consumption.balance", "coal", "EST"), c("ei_oil_shale", "production_assumed_zero"))
+  expect_identical(nk("consumption.balance", "fossil", "EST"), c("ei_oil_shale", "eia_production", "fossil_assumed_zero"))
+  expect_identical(nk("consumption.balance", "oil", "JPN"), "eia_production")
+  expect_identical(nk("consumption.balance", "coal", "JPN"), character())
+  expect_identical(nk("consumption.balance", "oil", "AGO"), "eia_consumption")
+  expect_identical(nk("consumption.balance", "gas", "AGO"), c("eia_consumption", "eia_production"))
+  expect_identical(sum(x$excluded$n[grepl("D from EI consumption", x$excluded$reason)]), 2L)
+  expect_identical(x$excluded$n[x$excluded$reason == "NA (no consumption)"], 1L)
+  # Without a consumption figure the assumed-zero balance stays nsr NaN (counted).
+  y <- sector_facts_balance(idp, ei_present, eia_cells = eia_cells)
+  yb <- y$facts[y$facts$var == "consumption.balance" & y$facts$geo == "EST" & y$facts$item_key == "fuel:coal", ]
+  expect_identical(yb$status, "nsr")
+  expect_true(is.nan(yb$value))
+  expect_true(any(grepl("no EI consumption figure", y$excluded$reason)))
+})
+
+test_that("the EIA lookup cells and EI consumption come from EI's own rows", {
+  ei_values <- tibble::tibble(ei_var = c("oilprod_kbd", "oil_tes_ej", "gas_tes_ej", "oil_tes_ej", "coal_tes_ej", "gasprod_ej", "coalprod_ej"),
+                              iso3 = c("USA", "USA", "USA", "JPN", "JPN", "USA", "USA"), value = c(20000, 38, 33, 6.5, 4.4, 37, 10))
+  cells <- sector_eia_gap_cells(c("USA", "JPN", "JPN", NA), ei_values, 2025L)
+  expect_identical(paste(cells$iso3, cells$ei_var), paste("JPN", c("oilprod_kbd", "gasprod_ej", "coalprod_ej")))
+  expect_identical(cells$ei_consumption, c(6.5, NA, 4.4))
+  cons <- sector_ei_consumption(ei_values)
+  v <- stats::setNames(cons$value, paste(cons$iso3, cons$tech))
+  expect_identical(unname(v[c("JPN Gas", "JPN Coal", "JPN Fossil", "USA Coal", "USA Fossil")]), c(0, 4.4, 10.9, 0, 71))
+})
+
 test_that("self-sufficiency and the EV net-export ratio ship verbatim from their renamed processed variables", {
   idp <- raw_tbl(
     iso3c = c("USA", "USA", "JPN", "JPN", "SGP"), tech = c("Gas", "Gas", "Gas", "Gas", "Gas"),
@@ -110,17 +212,23 @@ test_that("self-sufficiency and the EV net-export ratio ship verbatim from their
   expect_identical(x$ledger$variable[x$ledger$var == "consumption.self_sufficiency"], c("Self-sufficiency", "Self-sufficiency"))
   expect_identical(x$excluded$n, 1L)
   expect_identical(x$facts$value[x$facts$var == "consumption.balance" & x$facts$geo == "JPN"], -3.6)
-  # Without an EI production row of the fuel, the pipeline's production is a zero-fill: both measures
-  # ship as nsr with NaN and are counted as an nsr reclassification (repair review 2026-10-11).
+  # Without an EI production row of the fuel (and no EIA value: a table built before the EIA fill),
+  # production is assumed to be 0 and the fact says so (user rule 2026-10-11): the zero-filled balance
+  # (minus consumption) and self-sufficiency (0%) ship verbatim as nsr with the note
+  # production_assumed_zero.
   ep <- tibble::tibble(ei_var = "gasprod_ej", iso3 = "USA")
   y <- sector_facts_balance(idp, ep)
   ys <- y$facts[y$facts$var == "consumption.self_sufficiency", ]
   expect_identical(ys$status, c("obs", "nsr"))
-  expect_true(is.nan(ys$value[2]))
+  expect_identical(ys$value, c(131.6, 0))
   yb <- y$facts[y$facts$var == "consumption.balance", ]
   expect_identical(yb$status, c("obs", "nsr"))
-  expect_false("JPN" %in% y$ledger$geo)
-  expect_identical(sum(y$excluded$n[grepl("^nsr reclassification", y$excluded$reason)]), 2L)
+  expect_identical(yb$value, c(5.77, -3.6))
+  expect_true(all(y$ledger$prov == "P"))
+  expect_identical(sort(y$ledger$geo[y$ledger$geo == "JPN"]), c("JPN", "JPN"))
+  expect_identical(y$notes$geo, c("JPN", "JPN"))
+  expect_true(all(y$notes$note == "production_assumed_zero"))
+  expect_identical(sum(y$excluded$n[grepl("assumed 0", y$excluded$reason)]), 2L)
 
   msm <- raw_tbl(
     iso3c = c("CHN", "CHN", "DEU", "FRA", "DEU", "FRA"), tech = "Electric Vehicles",

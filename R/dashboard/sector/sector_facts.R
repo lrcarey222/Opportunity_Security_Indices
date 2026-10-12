@@ -7,6 +7,8 @@
 #             source_value; D: identical() to formula_value = f(source values); X: within 1e-12 of
 #             formula_value (a cross-check with processed).
 #   excluded  (table, variable, reason, n): processed raw rows not shipped, by reason.
+# and, where a fact needs one, `notes` (var, item_key, geo, year, note): per-fact notes shipped in
+# facts.notes, `note` = a dict.caveats id (EIA provenance, production assumed 0, Estonia's oil shale).
 # Only data_type == "raw" rows are read; "Overall ..." variables never.
 
 sector_raw_rows <- function(tbl) {
@@ -27,12 +29,25 @@ sector_ledger_empty <- function() {
                  table = character(), variable = character(), key = character(), source_value = double(), formula_value = double())
 }
 sector_excluded_empty <- function() tibble::tibble(table = character(), variable = character(), reason = character(), n = integer())
+sector_notes_empty <- function() {
+  tibble::tibble(var = character(), item_key = character(), geo = character(), year = integer(), note = character())
+}
 
-# Bind a list of sector_result()s.
+# Bind a list of sector_result()s (and their per-fact notes, where any).
 sector_bind_results <- function(rs) {
   list(facts = dplyr::bind_rows(lapply(rs, `[[`, "facts")),
        ledger = dplyr::bind_rows(lapply(rs, `[[`, "ledger")),
-       excluded = dplyr::bind_rows(lapply(rs, `[[`, "excluded")))
+       excluded = dplyr::bind_rows(lapply(rs, `[[`, "excluded")),
+       notes = dplyr::bind_rows(c(list(sector_notes_empty()), lapply(rs, `[[`, "notes"))))
+}
+
+# Per-fact notes: one row per (fact, note) where `note` (a caveat id, or NA for none) applies.
+sector_fact_notes <- function(facts, note) {
+  note <- rep_len(as.character(note), nrow(facts))
+  hit <- !is.na(note) & nzchar(note)
+  if (!any(hit)) return(sector_notes_empty())
+  tibble::tibble(var = facts$var[hit], item_key = facts$item_key[hit], geo = facts$geo[hit], year = facts$year[hit],
+                 note = note[hit])
 }
 
 # Facts and their ledger rows at once. src: the processed value (P) shipped verbatim.
@@ -223,13 +238,96 @@ sector_facts_potential <- function(solar, wind, geo) {
   sector_bind_results(rs)
 }
 
+# ---- EIA International Energy Statistics (fossil production EI does not report) ----------------------
+#
+# Since 2026-10-11 the pipeline takes the oil, gas and coal production EI does not report for an
+# economy (none, or inside an EI "Other <region>" residual) from the EIA International Energy
+# Statistics (R/utils/eia_intl.R; import_dependence_tbl and production_depth_momentum_tbl), converted
+# to EI's units, and names EIA in the row's `source`. Such a value is observed data: the exporter
+# ships it as obs (or zero), with the EIA year as obs_year and a per-fact note (facts.notes:
+# eia_production). Where neither EI nor EIA gives a comparable value (2025: Estonia coal, where EI
+# counts oil shale as coal; note ei_oil_shale), the production fact is nsr with NaN, and the balance
+# and self-sufficiency follow the user rule of 2026-10-11: production is assumed to be 0 and the
+# fact says so (status nsr, note production_assumed_zero), so the net balance reads minus
+# consumption and self-sufficiency 0%. Tables built before the EIA fill (production zero-filled,
+# no EIA in `source`) take the same path: their zero-filled balance is already minus consumption.
+
+SECTOR_EIA_SOURCE <- "EIA International Energy Statistics"
+SECTOR_EI_PRODUCTION_VARS <- c(Oil = "oilprod_kbd", Gas = "gasprod_ej", Coal = "coalprod_ej")
+SECTOR_EI_CONSUMPTION_VARS <- c(Oil = "oil_tes_ej", Gas = "gas_tes_ej", Coal = "coal_tes_ej")
+# Per-fact notes (dict.caveats ids) whose var-level caveat is shown only where the build has such a
+# fact (sector_assemble()).
+SECTOR_DATA_CAVEATS <- c("eia_production", "eia_consumption", "production_assumed_zero", "fossil_assumed_zero", "ei_oil_shale")
+
+# Rows of a processed table whose source names the EIA International Energy Statistics.
+sector_cites_eia <- function(rows) {
+  if (!"source" %in% names(rows)) return(rep(FALSE, nrow(rows)))
+  !is.na(rows$source) & grepl(SECTOR_EIA_SOURCE, rows$source, fixed = TRUE)
+}
+
+# The cells to look up in the staged EIA extract: every (iso3, EI production variable) of `iso3`
+# without an EI row in `year`, with EI's consumption of the fuel (EJ, NA without an EI row) for the
+# comparability check of the pipeline's eia_intl_lookup(). ei_values: tibble(ei_var, iso3, value) of
+# EI's rows in `year` (value not NA).
+sector_eia_gap_cells <- function(iso3, ei_values, year) {
+  iso3 <- sort(unique(iso3[grepl("^[A-Z]{3}$", iso3)]))
+  cells <- tidyr::expand_grid(iso3 = iso3, ei_var = unname(SECTOR_EI_PRODUCTION_VARS))
+  have <- paste(ei_values$ei_var, ei_values$iso3)
+  cells <- cells[!paste(cells$ei_var, cells$iso3) %in% have, , drop = FALSE]
+  cons_var <- unname(SECTOR_EI_CONSUMPTION_VARS[match(cells$ei_var, SECTOR_EI_PRODUCTION_VARS)])
+  cells$year <- as.integer(year)
+  cells$ei_consumption <- ei_values$value[match(paste(cons_var, cells$iso3), have)]
+  cells
+}
+
+# EI's consumption of oil, gas, coal and fossil (their sum, a missing gas or coal row counting as 0,
+# as the pipeline does) in EJ: tibble(iso3, tech, value), for the balance of a fuel whose production
+# neither EI nor EIA reports (minus consumption). ei_values as for sector_eia_gap_cells(); economies
+# without an EI oil consumption row are left out (their consumption is EIA's, not EI's).
+sector_ei_consumption <- function(ei_values) {
+  get <- function(v) ei_values[ei_values$ei_var == v, c("iso3", "value"), drop = FALSE]
+  oil <- get("oil_tes_ej")
+  out <- list(tibble::tibble(iso3 = oil$iso3, tech = "Oil", value = as.double(oil$value)))
+  fossil <- as.double(oil$value)
+  for (f in c("Gas", "Coal")) {
+    x <- get(SECTOR_EI_CONSUMPTION_VARS[[f]])
+    v <- as.double(x$value[match(oil$iso3, x$iso3)])
+    v[is.na(v)] <- 0
+    out[[length(out) + 1]] <- tibble::tibble(iso3 = oil$iso3, tech = f, value = v)
+    fossil <- fossil + v
+  }
+  dplyr::bind_rows(c(out, list(tibble::tibble(iso3 = oil$iso3, tech = "Fossil", value = fossil))))
+}
+
+# The EIA-filled production facts against the staged extract: each fact the processed table took
+# from EIA must equal eia_intl_lookup()'s value (1e-12 relative). facts: the production.fuels facts
+# with their notes (sector_facts_production()); eia_cells: the lookup. Returns list(n, n_missing,
+# max_rel, not_comparable (keys "ISO3 fuel")).
+sector_eia_check <- function(prod, eia_cells) {
+  f <- prod$facts[prod$facts$var == "production.fuels", , drop = FALSE]
+  nk <- prod$notes[prod$notes$note == "eia_production", , drop = FALSE]
+  f <- f[paste(f$item_key, f$geo) %in% paste(nk$item_key, nk$geo), , drop = FALSE]
+  ev <- unname(SECTOR_EI_PRODUCTION_VARS[match(sub("^fuel:", "", f$item_key), tolower(names(SECTOR_EI_PRODUCTION_VARS)))])
+  ref <- eia_cells$value[match(paste(f$geo, ev), paste(eia_cells$iso3, eia_cells$ei_var))]
+  rel <- abs(f$value - ref) / pmax(abs(ref), 1e-300)
+  rel[f$value == 0 & ref %in% 0] <- 0
+  nc <- eia_cells[eia_cells$eia_basis %in% "not_comparable", , drop = FALSE]
+  list(n = nrow(f), n_missing = sum(is.na(ref)), max_rel = if (any(!is.na(rel))) max(rel, na.rm = TRUE) else 0,
+       not_comparable = paste(nc$iso3, names(SECTOR_EI_PRODUCTION_VARS)[match(nc$ei_var, SECTOR_EI_PRODUCTION_VARS)]))
+}
+
 # ---- Production -------------------------------------------------------------------------------------
 
 # production_depth_momentum_tbl production_latest: fuels (Upstream), generation (Downstream) and
 # uranium (Nuclear Upstream, 2024). ei_present: tibble(ei_var, iso3) of EI rows present in the raw
-# CSV for the latest year; a processed 0 without one is a zero-completion (nsr). Mineral Upstream
-# cells are a cross-mineral roll-up and are not shipped.
-sector_facts_production <- function(pdm, ei_present, latest_year = 2025L, uranium_year = 2024L) {
+# CSV for the latest year. A fuel value without an EI row is EIA's when the row's source names EIA
+# (obs or zero; obs_year = the EIA year from eia_cells, note eia_production), NA when neither gives
+# one (nsr, NaN), else the zero-fill of a table built before the EIA fill (nsr, 0); note ei_oil_shale
+# where EIA's value fails the comparability check (eia_cells eia_basis not_comparable). Generation EI does not report is still
+# the zero-fill (nsr). eia_cells: eia_intl_lookup() of sector_eia_gap_cells() (iso3, ei_var,
+# value, eia_year, eia_basis), or NULL. Mineral Upstream cells are a cross-mineral roll-up and are
+# not shipped.
+sector_facts_production <- function(pdm, ei_present, latest_year = 2025L, uranium_year = 2024L, eia_cells = NULL) {
   r <- sector_raw_rows(pdm)
   r <- r[r$variable == "production_latest", , drop = FALSE]
   cell <- paste(r$tech, r$supply_chain)
@@ -237,27 +335,39 @@ sector_facts_production <- function(pdm, ei_present, latest_year = 2025L, uraniu
   gen_map <- c("Solar Downstream" = "solar_twh", "Wind Downstream" = "wind_twh", "Nuclear Downstream" = "nuclear_twh",
                "Coal Downstream" = "electbyfuel_coal", "Gas Downstream" = "electbyfuel_gas", "Oil Downstream" = "electbyfuel_oil")
   pres <- paste(ei_present$ei_var, ei_present$iso3)
-  status_ei <- function(rr, ei_var) {
-    present <- paste(ei_var, rr$iso3c) %in% pres
-    ifelse(rr$value > 0, "obs", ifelse(present, "zero", "nsr"))
-  }
   out <- list()
   f <- r[cell %in% names(fuel_map), , drop = FALSE]
   sector_check_iso3(f$iso3c, "production_depth_momentum_tbl")
-  ev <- fuel_map[paste(f$tech, f$supply_chain)]
-  out[[1]] <- sector_fx("production.fuels", paste0("fuel:", tolower(f$tech)), f$iso3c, latest_year, f$value, status_ei(f, ev),
-                        "production_depth_momentum_tbl", "production_latest", key = paste(f$iso3c, f$tech, f$supply_chain))
+  ev <- unname(fuel_map[paste(f$tech, f$supply_chain)])
+  present <- paste(ev, f$iso3c) %in% pres
+  eia <- !present & !is.na(f$value) & sector_cites_eia(f)
+  ek <- if (is.null(eia_cells)) rep(NA_integer_, nrow(f)) else match(paste(f$iso3c, ev), paste(eia_cells$iso3, eia_cells$ei_var))
+  eia_year <- if (is.null(eia_cells)) rep(NA_integer_, nrow(f)) else as.integer(eia_cells$eia_year[ek])
+  not_comparable <- !present & !eia & (if (is.null(eia_cells)) FALSE else eia_cells$eia_basis[ek] %in% "not_comparable")
+  st <- ifelse(is.na(f$value), "nsr", ifelse(f$value > 0, "obs", ifelse(present | eia, "zero", "nsr")))
+  out[[1]] <- sector_fx("production.fuels", paste0("fuel:", tolower(f$tech)), f$iso3c, latest_year,
+                        ifelse(is.na(f$value), NaN, f$value), st,
+                        "production_depth_momentum_tbl", "production_latest", obs_year = ifelse(eia, eia_year, NA_integer_),
+                        key = paste(f$iso3c, f$tech, f$supply_chain))
+  notes <- sector_fact_notes(out[[1]]$facts, ifelse(eia, "eia_production", ifelse(not_comparable, "ei_oil_shale", NA_character_)))
   g <- r[cell %in% names(gen_map), , drop = FALSE]
   ev <- gen_map[paste(g$tech, g$supply_chain)]
-  out[[2]] <- sector_fx("production.generation", paste0("fuel:", tolower(g$tech)), g$iso3c, latest_year, g$value, status_ei(g, ev),
+  gp <- paste(ev, g$iso3c) %in% pres
+  out[[2]] <- sector_fx("production.generation", paste0("fuel:", tolower(g$tech)), g$iso3c, latest_year,
+                        ifelse(is.na(g$value), NaN, g$value),
+                        ifelse(is.na(g$value), "nsr", ifelse(g$value > 0, "obs", ifelse(gp, "zero", "nsr"))),
                         "production_depth_momentum_tbl", "production_latest", key = paste(g$iso3c, g$tech, g$supply_chain))
   u <- r[cell == "Nuclear Upstream", , drop = FALSE]
   sector_check_iso3(u$iso3c, "production_depth_momentum_tbl uranium")
   out[[3]] <- sector_fx("production.uranium", "cell:nuclear-upstream", u$iso3c, uranium_year, u$value,
                         ifelse(u$value > 0, "obs", "zero"), "production_depth_momentum_tbl", "production_latest", key = u$iso3c)
   roll <- !cell %in% c(names(fuel_map), names(gen_map), "Nuclear Upstream")
-  sector_result(dplyr::bind_rows(lapply(out, `[[`, "facts")), dplyr::bind_rows(lapply(out, `[[`, "ledger")),
-                sector_excl("production_depth_momentum_tbl", "production_latest", "mineral Upstream roll-up (not a quantity of one mineral)", sum(roll)))
+  c(sector_result(dplyr::bind_rows(lapply(out, `[[`, "facts")), dplyr::bind_rows(lapply(out, `[[`, "ledger")),
+                  dplyr::bind_rows(
+                    sector_excl("production_depth_momentum_tbl", "production_latest", "mineral Upstream roll-up (not a quantity of one mineral)", sum(roll)),
+                    sector_excl("production_depth_momentum_tbl", "production_latest (fuels)",
+                                "NA: neither EI nor EIA reports a comparable value (shipped as nsr, NaN)", sum(is.na(f$value))))),
+    list(notes = notes))
 }
 
 # critical_minerals_production_tbl: EI mine production of manganese, zinc and PGMs (2025). Zeros
@@ -315,45 +425,102 @@ sector_facts_consumption <- function(ea, ec, ei_present, year = 2025L) {
                                  sector_excl("energy_consumption_tbl", "Energy consumption per capita (+ growth)", "duplicate of energy_access_tbl", nrow(e))))
 }
 
-# import_dependence_tbl: net balance (EJ) and self-sufficiency (percent of consumption; NA dropped).
-# ei_present as for production: where EI has no production row of the fuel for the economy, the
-# pipeline's production is a zero-fill (production.fuels ships nsr), so the balance (-consumption)
-# and the self-sufficiency (0%) are not observations: both ship as nsr with NaN ("nsr
-# reclassification" in the validation report). Fossil is nsr when none of oil, gas and coal has an
-# EI production row.
-SECTOR_EI_PRODUCTION_VARS <- c(Oil = "oilprod_kbd", Gas = "gasprod_ej", Coal = "coalprod_ej")
-sector_facts_balance <- function(idp, ei_present = NULL, year = 2025L) {
+# import_dependence_tbl: net balance (EJ) and self-sufficiency (percent of consumption). Where the
+# production of a fuel is reported (an EI row in ei_present, or a value the pipeline took from EIA:
+# the row's source names EIA) both ship verbatim (obs / zero; notes eia_production where the
+# production, and eia_consumption where the consumption, is EIA's). Where neither EI nor EIA
+# reports it (inside an EI "Other" residual; Estonia coal), production is ASSUMED TO BE 0 and the
+# fact says so (user rule, 2026-10-11): status nsr ("not reported separately") with the value that
+# assumption gives, the balance minus consumption and self-sufficiency 0%, note
+# production_assumed_zero (+ ei_oil_shale where EIA's value failed the comparability check). A
+# table built before the EIA fill holds that value already (its production is a zero-fill: shipped
+# verbatim, P); a table built with it holds NA there, and the value is derived (D) from EI's
+# consumption (`consumption`: sector_ei_consumption(); left NaN when EI has no consumption row).
+# Fossil sums the fuels: nsr when none of oil, gas and coal has a production value, else obs with
+# the note fossil_assumed_zero where one of them counts as 0. Self-sufficiency NA because the
+# economy consumes none of the fuel is not shipped. ei_present = NULL ships every value as reported.
+sector_facts_balance <- function(idp, ei_present = NULL, year = 2025L, eia_cells = NULL, consumption = NULL) {
   r <- sector_raw_rows(idp)
   sector_check_iso3(r$iso3c, "import_dependence_tbl")
-  no_prod <- function(rr) {
-    if (is.null(ei_present)) return(rep(FALSE, nrow(rr)))
+  r <- r[r$variable %in% c("Production surplus/deficit", "Self-sufficiency"), , drop = FALSE]
+  if (!nrow(r)) return(c(sector_result(), list(notes = sector_notes_empty())))
+  fuels <- names(SECTOR_EI_PRODUCTION_VARS)
+  # Production source per (economy, fuel): ei, eia or none (neither reports it).
+  bal <- r[r$variable == "Production surplus/deficit", , drop = FALSE]
+  cites <- sector_cites_eia(bal)
+  src_of <- function(iso3, tech) {
+    if (is.null(ei_present)) return(rep("ei", length(iso3)))
     pres <- paste(ei_present$ei_var, ei_present$iso3)
-    has <- function(tech, iso3) paste(SECTOR_EI_PRODUCTION_VARS[tech], iso3) %in% pres
-    fuel <- rr$tech %in% names(SECTOR_EI_PRODUCTION_VARS)
-    fossil <- rr$tech == "Fossil"
-    out <- fuel & !has(rr$tech, rr$iso3c)
-    out[fossil] <- !(has("Oil", rr$iso3c[fossil]) | has("Gas", rr$iso3c[fossil]) | has("Coal", rr$iso3c[fossil]))
-    out
+    ei <- paste(SECTOR_EI_PRODUCTION_VARS[tech], iso3) %in% pres
+    k <- match(paste(iso3, tech), paste(bal$iso3c, bal$tech))
+    eia <- !ei & !is.na(k) & cites[k] & !is.na(bal$value[k])
+    ifelse(ei, "ei", ifelse(eia, "eia", "none"))
   }
-  b <- r[r$variable == "Production surplus/deficit" & !is.na(r$value), , drop = FALSE]
-  nb <- no_prod(b)
-  a <- sector_fx("consumption.balance", paste0("fuel:", tolower(b$tech)), b$iso3c, year, ifelse(nb, NaN, b$value),
-                 ifelse(nb, "nsr", ifelse(b$value == 0, "zero", "obs")),
-                 "import_dependence_tbl", "Production surplus/deficit", key = paste(b$iso3c, b$tech))
-  s <- r[r$variable == "Self-sufficiency", , drop = FALSE]
-  na <- is.na(s$value)
-  s <- s[!na, , drop = FALSE]
-  ns <- no_prod(s)
-  c2 <- sector_fx("consumption.self_sufficiency", paste0("fuel:", tolower(s$tech)), s$iso3c, year, ifelse(ns, NaN, s$value),
-                  ifelse(ns, "nsr", ifelse(s$value == 0, "zero", "obs")), "import_dependence_tbl", "Self-sufficiency",
-                  key = paste(s$iso3c, s$tech))
-  sector_result(dplyr::bind_rows(a$facts, c2$facts), dplyr::bind_rows(a$ledger, c2$ledger),
-                dplyr::bind_rows(
-                  sector_excl("import_dependence_tbl", "Self-sufficiency", "NA (no consumption)", sum(na)),
-                  sector_excl("import_dependence_tbl", "Production surplus/deficit",
-                              "nsr reclassification: no EI production row (shipped as nsr, NaN)", sum(nb)),
-                  sector_excl("import_dependence_tbl", "Self-sufficiency",
-                              "nsr reclassification: no EI production row (shipped as nsr, NaN)", sum(ns))))
+  nc_of <- function(iso3, tech) {
+    if (is.null(eia_cells)) return(rep(FALSE, length(iso3)))
+    paste(iso3, SECTOR_EI_PRODUCTION_VARS[tech]) %in%
+      paste(eia_cells$iso3, eia_cells$ei_var)[eia_cells$eia_basis %in% "not_comparable"]
+  }
+  fuel <- r$tech %in% fuels
+  fossil <- r$tech == "Fossil"
+  src <- matrix(vapply(fuels, function(f) src_of(r$iso3c, rep(f, nrow(r))), character(nrow(r))), nrow = nrow(r))
+  colnames(src) <- fuels
+  nc <- matrix(vapply(fuels, function(f) nc_of(r$iso3c, rep(f, nrow(r))), logical(nrow(r))), nrow = nrow(r))
+  own <- cbind(seq_len(nrow(r)), match(r$tech, fuels))
+  own_src <- ifelse(fuel, src[cbind(own[, 1], ifelse(fuel, own[, 2], 1L))], NA_character_)
+  none <- (fuel & own_src == "none") | (fossil & rowSums(src == "none") == length(fuels))
+  partial <- fossil & !none & rowSums(src == "none") > 0
+  eia_prod <- (fuel & own_src == "eia") | (fossil & rowSums(src == "eia") > 0)
+  shale <- ifelse(fuel, nc[cbind(own[, 1], ifelse(fuel, own[, 2], 1L))], fossil & rowSums(nc & src == "none") > 0)
+  eia_cons <- if (is.null(ei_present)) rep(FALSE, nrow(r)) else {
+    !paste("oil_tes_ej", r$iso3c) %in% paste(ei_present$ei_var, ei_present$iso3) & sector_cites_eia(r)
+  }
+  # The assumed-zero value where the table holds NA (its balance of the economy and fuel is NA:
+  # production unreported): minus consumption / 0%.
+  cons <- if (is.null(consumption)) rep(NA_real_, nrow(r)) else consumption$value[match(paste(r$iso3c, r$tech), paste(consumption$iso3, consumption$tech))]
+  is_bal <- r$variable == "Production surplus/deficit"
+  kb <- match(paste(r$iso3c, r$tech), paste(bal$iso3c, bal$tech))
+  prod_na <- !is.na(kb) & is.na(bal$value[kb])
+  derive <- none & prod_na & !is.na(cons) & (is_bal | cons > 0)
+  value <- ifelse(derive, ifelse(is_bal, -cons, 0), r$value)
+  # Not shipped: self-sufficiency of an economy that consumes none of the fuel (NA beside a balance,
+  # or an assumed-zero production with zero consumption). An assumed-zero value without a
+  # consumption figure ships as nsr NaN.
+  no_cons <- !is_bal & is.na(value) & (!prod_na | (!is.na(cons) & cons <= 0))
+  keep <- !no_cons
+  na_none <- keep & is.na(value) & none
+  na_other <- keep & is.na(value) & !none
+  status <- ifelse(none, "nsr", ifelse(value == 0, "zero", "obs"))
+  status[is.na(value)] <- "nsr"
+  var <- ifelse(is_bal, "consumption.balance", "consumption.self_sufficiency")
+  x <- sector_fx(var[keep], paste0("fuel:", tolower(r$tech[keep])), r$iso3c[keep], year,
+                 ifelse(is.na(value[keep]), NaN, value[keep]), status[keep], "import_dependence_tbl", r$variable[keep],
+                 prov = ifelse(derive[keep], "D", "P"), formula_value = ifelse(derive[keep], value[keep], NA_real_),
+                 key = paste(r$iso3c[keep], r$tech[keep]))
+  fx <- x$facts
+  notes <- dplyr::bind_rows(
+    sector_fact_notes(fx, ifelse(none[keep], "production_assumed_zero", NA_character_)),
+    sector_fact_notes(fx, ifelse(partial[keep], "fossil_assumed_zero", NA_character_)),
+    sector_fact_notes(fx, ifelse(shale[keep] & (none[keep] | partial[keep]), "ei_oil_shale", NA_character_)),
+    sector_fact_notes(fx, ifelse(eia_prod[keep], "eia_production", NA_character_)),
+    sector_fact_notes(fx, ifelse(eia_cons[keep], "eia_consumption", NA_character_))
+  )
+  n_by <- function(sel, v) sum(sel & r$variable == v)
+  ex <- list()
+  for (v in c("Production surplus/deficit", "Self-sufficiency")) {
+    what <- if (v == "Production surplus/deficit") "minus consumption" else "0%"
+    ex[[length(ex) + 1]] <- sector_excl("import_dependence_tbl", v,
+                                        paste0("production not reported separately: assumed 0, shipped as nsr (", what, "; verbatim zero-fill)"),
+                                        n_by(keep & none & !derive & !is.na(value), v))
+    ex[[length(ex) + 1]] <- sector_excl("import_dependence_tbl", v,
+                                        paste0("production not reported separately: assumed 0, shipped as nsr (", what, "; D from EI consumption)"),
+                                        n_by(derive, v))
+    ex[[length(ex) + 1]] <- sector_excl("import_dependence_tbl", v,
+                                        "production not reported separately and no EI consumption figure (shipped as nsr, NaN)", n_by(na_none, v))
+    ex[[length(ex) + 1]] <- sector_excl("import_dependence_tbl", v, "NA although production is reported (shipped as nsr, NaN)", n_by(na_other, v))
+  }
+  ex[[length(ex) + 1]] <- sector_excl("import_dependence_tbl", "Self-sufficiency", "NA (no consumption)", sum(no_cons))
+  c(sector_result(fx, x$ledger, dplyr::bind_rows(ex)), list(notes = notes))
 }
 
 # ---- Manufacturing and EV regions --------------------------------------------------------------------

@@ -81,6 +81,9 @@ units:
   - {id: usd_lb, short: "USD/lb", long: "US dollars per pound", unit_kind: price}
   - {id: price_tbc, short: "unit to confirm", long: "native IMF unit (unit to confirm)", unit_kind: price}
   - {id: native, short: "native unit", long: "native unit of each product", unit_kind: number}
+  - {id: count_projects, short: "projects", long: "number of projects", unit_kind: count}
+  - {id: usd_m_announced, short: "USD m", long: "US dollars, millions, current (announced or reported capital investment)", unit_kind: usd_m}
+  - {id: share_projects, short: "share", long: "share of the destination's foreign-invested projects (0-1)", unit_kind: share}
 
 # IMF series units come from energy_prices_pcps_units() (R/categories/energy_prices/energy_prices.R,
 # the IMF series metadata); this maps its unit text to a unit id. Text not listed -> price_tbc.
@@ -186,8 +189,19 @@ sources:
     licence: attribution
     attribution: "Source: Energy Institute Statistical Review of World Energy 2026."
     accessed: "2026-09"
-    transform: "Country rows as published; EI's EU row shipped as 'European Union'; regional residuals not shown as countries."
+    transform: "Country rows as published; EI's EU row shipped as 'European Union'; regional residuals not shown as countries. Oil, gas and coal production EI does not report for an economy comes from the EIA International Energy Statistics (source eia_intl), as in the pipeline."
     issues: "Lists some economies only inside regional residuals; proved reserves not updated after end-2020."
+  - id: eia_intl
+    short: "EIA International Energy Statistics"
+    citation: "U.S. Energy Information Administration, International Energy Statistics, bulk file INTL.zip: crude oil incl. lease condensate, NGPL, dry natural gas and coal production; petroleum and other liquids, dry natural gas and coal consumption"
+    publisher: "U.S. Energy Information Administration"
+    edition: "bulk file dated 2026-10-03 (oil production to 2025; gas and coal to 2024)"
+    url: "https://www.eia.gov/international/data/world"
+    licence: open
+    attribution: "Source: U.S. Energy Information Administration, International Energy Statistics (public domain)."
+    accessed: "2026-10-11"
+    transform: "Used only where EI does not report an economy's production of a fuel separately (and, for economies EI lists with production but no consumption, their consumption), converted to EI's units by the pipeline (R/utils/eia_intl.R): oil = crude oil incl. lease condensate + NGPL, thousand b/d; gas = dry gas, bcm x 0.036 EJ/bcm; coal = gross TJ x 0.95 to net EJ. Gas and coal, which EIA publishes a year after oil, from EIA's latest year within one year. A value whose fuel is not EI's (Estonia coal: EI counts oil shale) is not used."
+    issues: "Gross calorific values converted with a fixed net/gross factor; EI's own calorific values differ by producer (lignite especially)."
   - id: ei_minerals
     short: "EI Statistical Review (minerals)"
     citation: "Energy Institute, Statistical Review of World Energy 2026, mineral production sheets"
@@ -408,6 +422,17 @@ sources:
     accessed: "2026-07"
     transform: "Mean ideal point over sessions 74-78 (2019-2023), rescaled so China = 0 and the United States = 1, clamped to [0, 1]."
     issues: "Territories take their sovereign's position."
+  - id: cmfdi
+    short: "CM-FDI (Net Zero Industrial Policy Lab)"
+    citation: "Bandara, P. and the Net Zero Industrial Policy Lab. Cleantech Manufacturing FDI Dataset, edition 2026.10.05. Johns Hopkins University. https://cmfdi.netzeropolicylab.com"
+    publisher: "Net Zero Industrial Policy Lab, Johns Hopkins University"
+    edition: "2026.10.05"
+    url: "https://cmfdi.netzeropolicylab.com/"
+    licence: attribution
+    attribution: "Source: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05; licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Counts and sums by the authors."
+    accessed: "2026-10-11"
+    transform: "One row per project as published ({fdi_n} projects; {fdi_n_dest} destination and {fdi_n_home} home economies; {fdi_n_parents} parent companies; announced {fdi_years}). Country names to ISO3 (Czechia and Czech Republic as one); technology to its Midstream sector (Battery -> Batteries, EV -> Electric Vehicles, Solar, Wind); undisclosed capital investment kept as not disclosed, never zero; source cells verbatim with their http(s) links. Flows (home -> destination), parent-headquarters group splits and announcements by year are sums by the authors, over all projects and over the projects the Partnership indices use (config/partnership.yml cm_fdi)."
+    issues: "{fdi_n_undisclosed} of {fdi_n} projects disclose no capital investment; values are announced, not audited. Cross-border projects only: domestic investment is not covered."
 
 caveats:
   - {id: hs6_overlap, text: "Technology-attributed trade: {n_shared_codes} of the {n_codes} HS6 codes in the baskets count in more than one sector, so values are never added across technologies."}
@@ -433,6 +458,11 @@ caveats:
   - {id: wind_threshold_tbc, text: "The power-density threshold and hub height behind this share are not recorded in the source extract: unit to confirm."}
   - {id: geo_lcoe_currency, text: "LCOE per kWh in the currency of Franzmann et al. (2025), not yet verified: unit to confirm. No value means no tranche of that size."}
   - {id: ei_residual, text: "EI shows some economies only inside its regional residuals; they read 'not reported separately'."}
+  - {id: eia_production, text: "Where EI does not report an economy's production of a fuel separately (it counts it in an 'Other' regional total), production comes from the EIA International Energy Statistics, converted to EI's units: oil = crude oil incl. lease condensate plus NGPL (thousand b/d); gas = dry natural gas, bcm x 0.036 EJ/bcm; coal = gross TJ x 0.95 to net EJ. EIA publishes gas and coal a year after oil, so those values are for the year before (shown beside the value). An EIA zero is a reported zero."}
+  - {id: eia_consumption, text: "Where EI lists an economy's production but not its consumption (Angola, Libya, Nigeria, Guyana and others), its consumption comes from the EIA International Energy Statistics too (petroleum and other liquids, dry gas and coal, converted to EJ as production is), for EI's year or, where EIA has not published it yet, the year before."}
+  - {id: production_assumed_zero, text: "Where EI does not report an economy's production of a fuel separately (it counts it in an 'Other' regional total) and no EIA value is used, production is assumed to be 0 and the value is marked 'not reported separately': the net balance is then minus consumption and self-sufficiency 0%."}
+  - {id: fossil_assumed_zero, text: "Fossil sums oil, gas and coal; a fuel whose production is not reported separately counts as 0 in the sum."}
+  - {id: ei_oil_shale, text: "Estonia: EI counts oil shale, which Estonia mines itself, as coal, and EIA's coal series leave it out (EIA's coal consumption is under 1% of EI's), so EIA's coal production is not used. Estonia's coal production is not reported, and its coal and fossil balances read its oil-shale use as imports."}
   - {id: gross_generation, text: "Gross electricity generation."}
   - {id: iea_top6, text: "The IEA names the six largest producers of each mineral; the rest is 'Rest of world', so concentration is a lower bound."}
   - {id: projection_base_case, text: "2030-2040 values are IEA base-case projections."}
@@ -475,6 +505,12 @@ caveats:
   - {id: cim_capacity_status, text: "Operational is the 2025 snapshot and includes plants still ramping up ('operational yet to come online'); under construction, announced and paused are capacity planned to 2030."}
   - {id: cim_power, text: "Capacity additions in the year, GW."}
   - {id: imf_monthly_coal, text: "Coal is the monthly mean of the Australian and South African benchmarks."}
+  - {id: cmfdi_coverage, text: "Cross-border greenfield and expansion projects only (a parent investing outside its headquarters economy) in solar, wind, battery and EV manufacturing, announced {fdi_years}: domestic investment, including China's at home, is not in the dataset. {fdi_n_mfg} of the {fdi_n} projects are manufacturing; the rest are R&D, design, testing or logistics sites."}
+  - {id: cmfdi_status, text: "Every project status is listed. The projects the Partnership indices use ({fdi_n_index_use}) are manufacturing projects that are Announced, Under construction, Completed or Operational, {fdi_window}: Cancelled, Paused and Closed ones are dropped, as the CM-FDI working paper does, and so are {fdi_n_ceased} completed or listed plants CM-FDI marks as having ceased operations or paused. Announced projects may never be built."}
+  - {id: cmfdi_hq, text: "The investor is the economy where the parent company is headquartered, as CM-FDI records it, not its ultimate owner. Parents headquartered in {fdi_china_hq} count as Chinese, as in the Partnership indices (elsewhere in Sector Insights Hong Kong is in the rest of the world). Counts are raw: a joint venture ({fdi_n_jv} projects) counts wholly under its listed parent, while the indices attribute only part of it to the parent."}
+  - {id: cmfdi_undisclosed, text: "{fdi_n_undisclosed} of {fdi_n} projects disclose no capital investment: they are shown as 'not disclosed', never as zero, and value sums cover disclosed projects only (the CM-FDI explorer counts them as zero)."}
+  - {id: cmfdi_announced, text: "Announced or reported capital investment in current US dollars, as published: not audited spending and not adjusted for inflation. {fdi_n_fdimarkets} values cite fDi Markets (Financial Times); {fdi_n_unverified_amount} value sources are marked [UNVERIFIED] by CM-FDI."}
+  - {id: cmfdi_year_completed, text: "Year completed is the planned year for projects that are not yet complete."}
 
 themes:
   - {slug: trade, label: "Trade", order: 1, default_var: trade.exports, description: "Exports, imports, flows and concentration of each sector's HS6 basket, plus mineral exports."}
@@ -513,7 +549,7 @@ techs:
   - {slug: oil, tech_blurb: "Crude oil production, reserves and trade, refining and handling equipment, and oil use."}
   - {slug: solar, tech_blurb: "The minerals behind solar, polysilicon, wafers, cells, modules and inverters, and solar generation and resource."}
   - {slug: wind, tech_blurb: "The minerals behind wind, nacelles, blades, towers and cables, and wind generation and resource."}
-  - {slug: semiconductors, tech_blurb: "Non-headline basket: semiconductor devices and manufacturing equipment, Midstream trade only."}
+  - {slug: semiconductors, tech_blurb: "Non-headline basket, trade only: semiconductor devices and manufacturing equipment (Midstream) and, where the basket has them, the minor metals the industry uses (Upstream)."}
 
 cells:
   - {slug: batteries-upstream, cell_blurb: "Battery minerals: lithium, nickel, cobalt, graphite and manganese ores, concentrates and intermediates, mining and refining."}
@@ -549,6 +585,7 @@ cells:
   - {slug: wind-upstream, cell_blurb: "The materials behind wind: rare earths, copper, zinc and other minerals, mining and refining."}
   - {slug: wind-midstream, cell_blurb: "Nacelles, blades, towers, generators and cables, plus manufacturing investment and capacity."}
   - {slug: wind-downstream, cell_blurb: "Wind generation, deployment investment and the wind resource."}
+  - {slug: semiconductors-upstream, cell_blurb: "Non-headline basket: unwrought gallium, germanium and indium (with niobium and vanadium), their powders and scrap."}
   - {slug: semiconductors-midstream, cell_blurb: "Non-headline basket: semiconductor devices, wafers and manufacturing equipment."}
 
 vars:
@@ -576,7 +613,7 @@ vars:
     roster: comtrade_matrix
     licence: attribution
     caveats: [hs6_overlap, nominal_usd, mirror_factor, hkg_hub_matrix]
-    primary_for: [oil-midstream, gas-midstream, coal-midstream, nuclear-midstream, solar-midstream, wind-midstream, batteries-upstream, batteries-midstream, electric-vehicles-midstream, electric-grid-upstream, electric-grid-midstream, semiconductors-midstream]
+    primary_for: [oil-midstream, gas-midstream, coal-midstream, nuclear-midstream, solar-midstream, wind-midstream, batteries-upstream, batteries-midstream, electric-vehicles-midstream, electric-grid-upstream, electric-grid-midstream, semiconductors-upstream, semiconductors-midstream]
     section: trade
     stale_years: null
     min_base: null
@@ -1154,13 +1191,13 @@ vars:
     source: ei
     roster: ei
     licence: attribution
-    caveats: [ei_residual]
+    caveats: [eia_production, ei_residual, ei_oil_shale]
     primary_for: [oil-upstream, gas-upstream, coal-upstream]
     section: production
     link_stage: Upstream
     feeds: ["EO: Production"]
     prov: P
-    prov_detail: "production_depth_momentum_tbl, variable production_latest, Upstream Oil / Gas / Coal; series and world totals from the EI long CSV"
+    prov_detail: "production_depth_momentum_tbl, variable production_latest, Upstream Oil / Gas / Coal: EI's value or, where EI does not report the fuel, the EIA International Energy Statistics value the pipeline took (obs_year = the EIA year; note eia_production; checked against eia_intl_lookup() of data/raw/eia_intl_fossil_production.csv); NA where neither reports a comparable value (nsr). Series and world totals from the EI long CSV (EI economies only)"
     parity: {table: production_depth_momentum_tbl, variable: production_latest}
     phase: "1"
   - id: production.generation
@@ -1593,6 +1630,99 @@ vars:
     prov_detail: "GCIM_Investment_Capacity_aggregated.xlsx, electric power capacity additions"
     parity: {none: "no processed table carries capacity additions"}
     phase: "2"
+  # CM-FDI (Cleantech Manufacturing FDI Dataset): the sector-fdi chunk, not facts. `years` is set by
+  # scripts/87 from the announcement years in the data; the item is the Midstream cell of the
+  # project's technology; the economy (avail, rosters) is the destination.
+  - id: investment.fdi_projects
+    theme: investment
+    family: investment
+    label: "Cross-border clean-tech manufacturing projects"
+    short: "FDI projects"
+    definition: "Greenfield and expansion projects of parent companies headquartered in another economy, in solar, wind, battery and EV manufacturing (with some R&D, design and logistics sites), by investor (headquarters) and destination economy and the year announced."
+    unit: count_projects
+    data_year: "{fdi_years} (year announced)"
+    years: [2026]
+    year_field: false
+    native_level: dyad
+    item_axis: cell
+    agg: sum
+    world_basis: sum_listed
+    norms: [value, share]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: cmfdi
+    roster: cmfdi
+    licence: attribution
+    caveats: [cmfdi_coverage, cmfdi_status, cmfdi_hq]
+    primary_for: []
+    section: investment
+    feeds: ["Partners: investment ties in Solar, Wind, Batteries and EV Midstream", "Partners: Friendshore, Chinese-parent ownership exposure"]
+    prov: X
+    prov_detail: "cm_fdi_projects.csv via sector_fdi_clean(); counts by sector_fdi_tables()"
+    parity: {cross_check: "decoded sector-fdi projects identical() to the CSV after the documented cleaning; flows, group splits and years recomputed from the decoded projects (sector_fdi_parity())"}
+    phase: "1"
+  - id: investment.fdi_value
+    theme: investment
+    family: investment
+    label: "Announced capital investment of cross-border projects"
+    short: "FDI capital"
+    definition: "Capital investment announced or reported for each cross-border project, in current US dollars as published; sums cover projects that disclose a value."
+    unit: usd_m_announced
+    data_year: "{fdi_years} (year announced)"
+    years: [2026]
+    year_field: false
+    native_level: dyad
+    item_axis: cell
+    agg: sum
+    world_basis: sum_listed
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: cmfdi
+    roster: cmfdi
+    licence: attribution
+    caveats: [cmfdi_undisclosed, cmfdi_announced, cmfdi_status, cmfdi_year_completed]
+    primary_for: []
+    section: investment
+    feeds: ["Partners: investment ties in Solar, Wind, Batteries and EV Midstream", "Partners: Friendshore, Chinese-parent ownership exposure"]
+    prov: X
+    prov_detail: "cm_fdi_projects.csv, Capital Investment (US$m), via sector_fdi_clean(); sums of disclosed values by sector_fdi_tables()"
+    parity: {cross_check: "decoded sector-fdi values identical() to the CSV (blank = not disclosed, NaN with status nq); sums recomputed from the decoded projects (sector_fdi_parity())"}
+    phase: "1"
+  - id: investment.fdi_parent_share
+    theme: investment
+    family: investment
+    label: "Foreign-invested projects by parent's headquarters group"
+    short: "Parent HQ group"
+    definition: "Share of a destination's cross-border projects in the technology whose parent company is headquartered in China (with Hong Kong and Macao), a coalition core economy, a coalition partner or the rest of the world, by project count and by disclosed capital investment."
+    unit: share_projects
+    data_year: "{fdi_years} (year announced)"
+    years: [2026]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: ratio
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: cmfdi
+    roster: cmfdi
+    licence: attribution
+    caveats: [cmfdi_hq, cmfdi_status, cmfdi_undisclosed]
+    primary_for: []
+    section: investment
+    feeds: ["Partners: Friendshore, Chinese-parent ownership exposure (the indices' measure; this is its descriptive twin)"]
+    prov: X
+    prov_detail: "cm_fdi_projects.csv via sector_fdi_clean(); shares of the destination's projects by sector_fdi_tables()"
+    parity: {cross_check: "group counts and disclosed sums recomputed from the decoded projects identical() (sector_fdi_parity())"}
+    phase: "1"
   # ---- consumption --------------------------------------------------------------------------------
   - id: consumption.per_capita
     theme: consumption
@@ -1661,7 +1791,7 @@ vars:
     family: consumption
     label: "Net balance (production minus consumption)"
     short: "Net balance"
-    definition: "Production minus consumption of the fuel, in energy terms; 'fossil' sums oil, gas and coal."
+    definition: "Production minus consumption of the fuel, in energy terms; 'fossil' sums oil, gas and coal. Production not reported separately counts as 0."
     unit: ej
     data_year: "2025"
     years: [2025]
@@ -1678,13 +1808,13 @@ vars:
     source: ei
     roster: ei
     licence: attribution
-    caveats: [ei_residual]
+    caveats: [production_assumed_zero, eia_production, eia_consumption, fossil_assumed_zero, ei_oil_shale]
     primary_for: []
     section: demand
     link_stage: Upstream
     feeds: ["ES: Energy Imports"]
     prov: P
-    prov_detail: "import_dependence_tbl, variable Production surplus/deficit"
+    prov_detail: "import_dependence_tbl, variable Production surplus/deficit, verbatim (production EI's, or EIA's where EI does not report it: notes eia_production / eia_consumption). Where neither reports the production it is assumed 0 (user rule 2026-10-11; status nsr, note production_assumed_zero): a table built before the EIA fill holds that value (its zero-fill), one built with it holds NA and the value is minus EI's consumption (D)"
     parity: {table: import_dependence_tbl, variable: "Production surplus/deficit"}
     phase: "1"
   - id: consumption.self_sufficiency
@@ -1709,13 +1839,13 @@ vars:
     source: ei
     roster: ei
     licence: attribution
-    caveats: [self_sufficiency_ref]
+    caveats: [self_sufficiency_ref, production_assumed_zero, eia_production, eia_consumption, fossil_assumed_zero, ei_oil_shale]
     primary_for: []
     section: demand
     link_stage: Upstream
     feeds: []
     prov: P
-    prov_detail: "import_dependence_tbl, variable Self-sufficiency (percent); NA where consumption is zero"
+    prov_detail: "import_dependence_tbl, variable Self-sufficiency (percent), verbatim; not shipped where consumption is zero. Where neither EI nor EIA reports the production it is assumed 0 (status nsr, note production_assumed_zero): the zero-filled 0 verbatim, or 0 derived (D) where the table holds NA"
     parity: {table: import_dependence_tbl, variable: "Self-sufficiency"}
     phase: "1"
   - id: consumption.ev_sales

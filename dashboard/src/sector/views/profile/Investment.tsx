@@ -1,7 +1,9 @@
 // Profile S7 Investment (spec_sector.md 4.3), shown before production for a finance audience:
 // (i) annual investment by group 2018-2025 (Value | Share), (ii) the top investors table, (iii) small
 // multiples of the top 6; and, from sector-series, power capacity additions 2018-2025 (Solar, Wind and
-// Nuclear Downstream) in the same forms.
+// Nuclear Downstream) in the same forms. In the four Midstream cells CM-FDI covers (Solar, Wind,
+// Batteries, Electric Vehicles), a "Cross-border manufacturing projects" subsection follows (sector-fdi,
+// loaded when it mounts): see views/fdi/FdiBlock.tsx.
 
 import { useMemo, useState } from 'react';
 import * as Plot from '@observablehq/plot';
@@ -11,12 +13,15 @@ import { GROUP_COLOR, NEUTRAL_SERIES } from '../../../theme/palette.ts';
 import type { FactsIndex } from '../../data/facts.ts';
 import type { VarInfo } from '../../data/model.ts';
 import { growth } from '../../derive/concentration.ts';
+import { hasFdi } from '../../derive/fdi.ts';
 import { GROUP_SHORT, partOf } from '../../derive/groups.ts';
 import { groupArea, topLines } from '../../derive/series.ts';
 import { sectorCsv } from '../../derive/csv.ts';
 import { axisFormatter, fmtShare, fmtSignedPct, fmtValue } from '../../format.ts';
 import { ChunkGate, markGroup } from '../common.tsx';
-import { useSeries } from '../data.ts';
+import { useNear, useSeries } from '../data.ts';
+import { FdiBlock } from '../fdi/FdiBlock.tsx';
+import { useSectorUrl } from '../state.tsx';
 import { GroupArea, GroupLegend, LabelledLines, SectorChartCard, SmallMultiples } from '../kit.tsx';
 import { useCardCsv, useProfile } from './ctx.tsx';
 
@@ -186,6 +191,29 @@ function PowerAdditions() {
   );
 }
 
+/** The CM-FDI subsection of a covered Midstream cell (mounts, and loads sector-fdi, near the viewport). */
+function CrossBorderProjects() {
+  const { model, cell, highlight, tech, stage } = useProfile();
+  const { set, state, link } = useSectorUrl();
+  const [ref, near] = useNear<HTMLDivElement>(600);
+  return (
+    <div ref={ref} id="investment-projects" className="scroll-mt-[calc(var(--sector-bar-h,4.75rem)+4rem)] space-y-4 border-t hairline pt-6 xl:scroll-mt-[calc(var(--sector-bar-h,4.75rem)+1.5rem)]">
+      <h3 className="text-lg font-medium text-paper">Cross-border manufacturing projects (CM-FDI)</h3>
+      {near ? (
+        <FdiBlock
+          model={model}
+          item={cell}
+          highlight={highlight}
+          onPick={(g) => set({ c: g && g.code !== state.c ? g.code : null })}
+          geoHref={(g) => (g.kind === 'country' || g.kind === 'eu' ? link(`/sector/${tech}/${stage}/${g.code}`) : null)}
+        />
+      ) : (
+        <div style={{ minHeight: 240 }} aria-hidden="true" />
+      )}
+    </div>
+  );
+}
+
 export function InvestmentSection() {
   const { model, cell, facts } = useProfile();
   const v = model.varById.get('investment.annual');
@@ -194,6 +222,7 @@ export function InvestmentSection() {
     <div className="space-y-6">
       {has && v && facts && <AnnualBlock idx={facts} v={v} title="Annual investment" />}
       <PowerAdditions />
+      {hasFdi(model, cell) && <CrossBorderProjects key={cell.slug} />}
     </div>
   );
 }

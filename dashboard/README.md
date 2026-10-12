@@ -97,6 +97,7 @@ rows, and no licensed BNEF or BCG data.
 | `sector-policy.<h8>.osb` | Policy sections | IEA PAMS records (technology and stage masks) and Climate Action Tracker ratings |
 | `sector-policy-text.<h8>.osb` | the policy list | PAMS titles and links (with attribution) |
 | `sector-series.<h8>.osb` | series cards | EI 1965-2025, IMF monthly prices, IEA EV regions 2021-2024, CIM additions and manufacturing capacity |
+| `sector-fdi.<h8>.osb` | lazily, by the CM-FDI views only (Solar, Wind, Batteries and EV Midstream: profile Investment section, Explore, Country in sector, Sources download) | CM-FDI cross-border manufacturing projects (Net Zero Industrial Policy Lab, edition 2026.10.05, CC BY 4.0): every project with its source text and links per field, home -> destination flows, parent-HQ group splits and announcements by year, for all projects and for those the partnership indices use (`data/raw/cm_fdi_projects.csv`, or `--cmfdi <csv>`; `--no-fdi` leaves the chunk and its measures out) |
 
 Refresh after a pipeline rerun (scripts 10-25):
 

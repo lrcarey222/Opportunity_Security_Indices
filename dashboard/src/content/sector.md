@@ -67,10 +67,30 @@ bloc all sum this one matrix, so the cards on a page agree to the dollar.
   (communication equipment) is outside Electric Grid Midstream. Excluded codes are listed on each
   profile.
 
+## Cross-border manufacturing projects
+
+The Solar, Wind, Batteries and Electric Vehicles midstream pages also show the Cleantech Manufacturing
+FDI Dataset (CM-FDI) of the Net Zero Industrial Policy Lab, Johns Hopkins University (P. Bandara and the
+Net Zero Industrial Policy Lab, edition 2026.10.05, licensed under CC BY 4.0): one record per
+cross-border greenfield or expansion project, announced 1996-2026, with its parent company, the economy
+where the parent is headquartered, the destination, the status and a source link per field.
+
+* **What is counted.** Projects, and the capital a project announced where it is disclosed. An
+  undisclosed amount reads "not disclosed"; it is never counted as 0, and every sum says how many
+  projects it covers. A joint venture counts wholly under its listed parent in these counts.
+* **Parent groups.** Investors are coloured by where the parent is headquartered: China (Hong Kong and
+  Macao included), the coalition core, the coalition partners and the rest of the world.
+* **Two bases.** "All" projects, or those "used by the indices": the manufacturing projects that are
+  announced, under construction, completed or operational, without cancelled, paused or closed ones
+  (the projects the Strategic Insights partnership indices read). The share of a destination's projects
+  with Chinese parents is shown as a raw share, not as the index component built from it.
+* **Not a country total.** Domestic investment is not in CM-FDI.
+
 ## Money
 
 Comtrade trade is in current US dollars. Clean Investment Monitor investment is in billions of 2024
-US dollars. Nominal and real values are never put on one chart or in one ratio.
+US dollars. CM-FDI capital is in millions of US dollars as announced (nominal). Nominal and real values
+are never put on one chart or in one ratio.
 
 ## Value states
 
@@ -79,7 +99,7 @@ US dollars. Nominal and real values are never put on one chart or in one ratio.
 | Observed | the source reports a value |
 | Reported zero | the source reports 0 |
 | Not reported separately | the value sits inside the source's "Rest of world"; it is not a zero |
-| Listed without a figure | the source lists the economy but withholds the number, or reports it as under 1% |
+| Listed without a figure | the source lists the economy but withholds the number, or reports it as under 1%; for a CM-FDI project, capital "not disclosed" |
 | Mirror | built from partners' declarations |
 | Estimate | flagged by the source (the Clean Investment Monitor's 2025 includes an estimated fourth quarter) |
 | Base year zero | growth is not defined |

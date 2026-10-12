@@ -49,7 +49,11 @@ export const HEADLINE_TECH_SLUGS = [
   'solar',
   'wind',
 ] as const;
-/** Every technology slug: the headline techs, then Semiconductors (non-headline, Midstream trade only). */
+/**
+ * Every technology slug: the headline techs, then Semiconductors (non-headline, trade only: Midstream,
+ * and Upstream where the basket has it; the basket review of 2026-10-11 moved gallium, germanium and
+ * indium there; dims.items lists the Semiconductors stages the build has).
+ */
 export const TECH_SLUGS = [...HEADLINE_TECH_SLUGS, 'semiconductors'] as const;
 export type HeadlineTechSlug = (typeof HEADLINE_TECH_SLUGS)[number];
 export type TechSlug = (typeof TECH_SLUGS)[number];
@@ -228,10 +232,14 @@ export const FAMILY_SECTION: Readonly<Record<FamilyId, SectionId | null>> = {
 export const STATUS_CODES = ['obs', 'zero', 'nsr', 'nq', 'mirror', 'est', 'na_growth'] as const;
 export type StatusCode = (typeof STATUS_CODES)[number];
 /**
- * States whose value may be NaN by design; every other state carries a finite value. nsr may carry
- * the source's zero-fill (EI production) or NaN where the zero-fill would read as a figure: the
- * balance and self-sufficiency of an economy without an EI production row, and the EI series of
- * successor states before they exist (integrator change 2026-10-11, additive).
+ * States whose value may be NaN by design; every other state carries a finite value. nsr ("not
+ * reported separately") may carry the source's zero-fill (EI generation; fuel production in a table
+ * built before the EIA fill), a value derived from an assumed zero, or NaN: the EI series of
+ * successor states before they exist, and fuel production neither EI nor EIA reports (integrator
+ * change 2026-10-11, additive). Since the user rule of 2026-10-11 (sector-data track) the balance and
+ * self-sufficiency of a fuel whose production neither EI nor EIA reports carry the value production
+ * = 0 gives (minus consumption; 0%) with status nsr and the facts.notes id production_assumed_zero,
+ * instead of NaN: show the value (it is negative for the balance) and say it assumes zero production.
  */
 export const NAN_STATUS_CODES = ['nq', 'na_growth', 'nsr'] as const satisfies readonly StatusCode[];
 
@@ -278,8 +286,8 @@ export const TRADE_FLOW_STATUSES = ['importer', 'mirror', 'none'] as const;
 export const POLICY_TECH_SOURCES = ['iea', 'text'] as const;
 /** Bit i of policy.pams `stage_mask` is STAGE_LABELS[STAGE_SLUGS[i]]. */
 export const STAGE_MASK_ORDER = STAGE_SLUGS;
-/** Chunk families a measure's data can live in. */
-export const CHUNK_KINDS = ['meta', 'facts', 'trade', 'policy', 'series', 'atlas', 'dev'] as const;
+/** Chunk families a measure's data can live in (`fdi`: sector-fdi, integrator change 2026-10-11, additive). */
+export const CHUNK_KINDS = ['meta', 'facts', 'trade', 'policy', 'series', 'atlas', 'dev', 'fdi'] as const;
 export type ChunkKind = (typeof CHUNK_KINDS)[number];
 /**
  * Number formats by unit kind (3.9; src/sector/format.ts). Open vocabulary: an unknown kind is a
@@ -384,6 +392,12 @@ export const VAR_CATALOGUE = [
   // investment
   { id: 'investment.annual', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },
   { id: 'investment.power_additions', phase: '2', level: 'country', chunks: ['series'], scope: 'build' },
+  // CM-FDI cross-border projects (sector-fdi; integrator change 2026-10-11, additive): projects and
+  // their announced capital (home -> destination dyads) and the destination's split by the parent's
+  // headquarters group. Item = the Midstream cell of the project's technology. Not in facts.
+  { id: 'investment.fdi_projects', phase: '1', level: 'dyad', chunks: ['fdi'], scope: 'build' },
+  { id: 'investment.fdi_value', phase: '1', level: 'dyad', chunks: ['fdi'], scope: 'build' },
+  { id: 'investment.fdi_parent_share', phase: '1', level: 'country', chunks: ['fdi'], scope: 'build' },
   // consumption
   { id: 'consumption.per_capita', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },
   { id: 'consumption.pc_change', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },
@@ -563,6 +577,11 @@ export interface SectorManifest {
     policy_text: boolean;
     /** the sector-series chunk is present (added in phase 0 for the time-series scope) */
     series: boolean;
+    /**
+     * the sector-fdi chunk (CM-FDI) is present. Optional (integrator change 2026-10-11, additive): a
+     * manifest without the key has no sector-fdi chunk.
+     */
+    fdi?: boolean;
   };
   chunks: SectorChunkInfo[];
   headlines: SectorHeadline[];
@@ -586,6 +605,8 @@ export const SECTOR_BUDGET_GZ = {
   'sector-series': 900 * 1024,
   'sector-atlas': 1.3 * 1024 * 1024,
   'sector-dev': 1.2 * 1024 * 1024,
+  /** CM-FDI projects, sources and aggregates (integrator change 2026-10-11, additive) */
+  'sector-fdi': 300 * 1024,
   sector_total: 9 * 1024 * 1024,
   combined_total: 25 * 1024 * 1024,
 } as const;
@@ -618,6 +639,7 @@ export function sectorManifestProblems(x: unknown): string[] {
   else {
     if (f.include_restricted !== false) p.push('flags.include_restricted must be false (restricted data never ship)');
     for (const k of ['trade', 'atlas', 'policy_text', 'series']) if (typeof f[k] !== 'boolean') p.push(`flags.${k} must be a boolean`);
+    if (f.fdi !== undefined && typeof f.fdi !== 'boolean') p.push('flags.fdi must be a boolean when present');
   }
 
   if (!Array.isArray(x.chunks)) p.push('chunks must be an array');
@@ -644,6 +666,8 @@ export function sectorManifestProblems(x: unknown): string[] {
       if (f.policy_text === true && !names.has('sector-policy-text')) p.push('flags.policy_text is true but sector-policy-text is missing');
       if (f.atlas === true && !names.has('sector-atlas')) p.push('flags.atlas is true but sector-atlas is missing');
       if (f.trade === true && ![...names].some((n) => n.startsWith('sector-trade-'))) p.push('flags.trade is true but no sector-trade-<tech> chunk is listed');
+      if (f.fdi === true && !names.has('sector-fdi')) p.push('flags.fdi is true but sector-fdi is missing');
+      if (f.fdi !== true && names.has('sector-fdi')) p.push('sector-fdi is listed but flags.fdi is not true');
     }
   }
 
@@ -1008,11 +1032,37 @@ export const META_SPEC = {
   },
 } as const satisfies ChunkSpec;
 
-/** sector-facts: every cross-section and short-series fact, the slice index and the world totals. */
+/**
+ * sector-facts: every cross-section and short-series fact, the slice index and the world totals.
+ *
+ * facts.notes (optional; integrator change 2026-10-11, additive, sector-data track): per-fact notes,
+ * one row per (fact, note); every row names a facts.obs row (var, item, year, geo) and `note` is a
+ * dict.caveats id whose text is the note. Sorted like facts.obs. Show them with the fact (tooltip,
+ * table "Source note"); the measure's own caveat list carries the same ids only when the build has
+ * such a fact. Ids of this build:
+ *   eia_production           production (production.fuels; for consumption.balance /
+ *                            consumption.self_sufficiency the production behind them) from the EIA
+ *                            International Energy Statistics where EI does not report it separately:
+ *                            an observed value (obs / zero), obs_year = the EIA year (gas and coal
+ *                            2024 for 2025: EIA publishes them a year after oil);
+ *   eia_consumption          the economy's consumption is EIA's (EI lists its production only);
+ *   production_assumed_zero  neither EI nor EIA reports the production separately (inside an EI
+ *                            "Other" residual): assumed 0 (user rule 2026-10-11), status nsr with the
+ *                            value that gives: the balance = minus consumption, self-sufficiency 0;
+ *   fossil_assumed_zero      fossil sums the fuels; one of them is not reported and counts as 0;
+ *   ei_oil_shale             Estonia coal: EI counts oil shale as coal, EIA's coal series leave it out.
+ */
 export const FACTS_SPEC = {
   'facts.obs': OBS,
   'facts.index': INDEX,
   'facts.world': WORLD,
+  'facts.notes': {
+    kind: 'table',
+    optional: true,
+    cols: { var: VAR, item: ITEM, geo: GEO, year: IR, note: SR },
+    sorted: ['var', 'item', 'year', 'geo'],
+    unique: ['var', 'item', 'year', 'geo', 'note'],
+  },
 } as const satisfies ChunkSpec;
 
 /**
@@ -1161,6 +1211,175 @@ export const DEV_SPEC = {
   'dev.conduits': { kind: 'strv' },
 } as const satisfies ChunkSpec;
 
+// ---- sector-fdi: CM-FDI (integrator change 2026-10-11, additive) ---------------------------------
+//
+// The Cleantech Manufacturing FDI Dataset (CM-FDI): P. Bandara and the Net Zero Industrial Policy Lab,
+// Johns Hopkins University, https://cmfdi.netzeropolicylab.com, edition 2026.10.05, CC BY 4.0 (licence
+// `attribution`; the dict.sources row `cmfdi` holds the citation and attribution every view must show).
+// Cross-border greenfield and expansion projects in solar, wind, battery and EV manufacturing (plus a
+// few R&D, design and logistics sites), one row per project. Written by scripts/87
+// (R/dashboard/sector/sector_fdi.R); captions through the measures investment.fdi_projects,
+// investment.fdi_value and investment.fdi_parent_share (dictionary source `cmfdi`, caveats cmfdi_*).
+
+/** CM-FDI `Project Status`, verbatim. Open vocabulary (a new edition may add one; scripts/87 stops first). */
+export const FDI_PROJECT_STATUSES = ['Announced', 'Under Construction', 'Completed', 'Operational', 'Paused', 'Cancelled', 'Closed'] as const;
+/** CM-FDI `Operational`, verbatim (e.g. a Completed project that has since closed reads "Ceased operations"). */
+export const FDI_OPERATIONAL_STATES = ['Operational', 'Announced only', 'Under construction', 'Ceased operations', 'Paused'] as const;
+/** CM-FDI `Industry activity`, verbatim. The indices count "Manufacturing" only (CM-FDI's count of 974). */
+export const FDI_ACTIVITIES = [
+  'Manufacturing',
+  'R&D & Manufacturing',
+  'Research & Development',
+  'Design, Development & Testing',
+  'Logistics, Distribution & Transportation',
+] as const;
+/** fdi.sources `field`: CM-FDI's nine source columns, in the CSV's order. */
+export const FDI_SOURCE_FIELDS = ['parent', 'status', 'location', 'amount', 'ownership', 'announced', 'completed', 'activity', 'jv'] as const;
+export type FdiSourceField = (typeof FDI_SOURCE_FIELDS)[number];
+/** CM-FDI's own column headings of the source fields (for labels). */
+export const FDI_SOURCE_LABELS: Readonly<Record<FdiSourceField, string>> = {
+  parent: 'Parent company name and HQ',
+  status: 'Project status',
+  location: 'Project location, country and city',
+  amount: 'Amount',
+  ownership: 'Ownership share',
+  announced: 'Date announced',
+  completed: 'Date completed',
+  activity: 'Industry activity',
+  jv: 'Joint venture',
+};
+/**
+ * The project sets the aggregates are computed over: `all` = every project (all statuses and
+ * activities); `index_use` = the projects the Partnership indices use (fdi.projects.index_use; the
+ * rules of config/partnership.yml cm_fdi, shown in the dictionary caveat cmfdi_status).
+ */
+export const FDI_BASES = ['all', 'index_use'] as const;
+export type FdiBasis = (typeof FDI_BASES)[number];
+/**
+ * The investor's group (fdi.projects.home_group): `china` for a parent headquartered in mainland
+ * China, Hong Kong or Macao (config cm_fdi china_hq_iso3, as the indices' Chinese-parent exposure
+ * counts them; dictionary caveat cmfdi_hq), else the dims.geo group of the HQ economy. FDI views
+ * colour by home_group, not by dims.geo (where HKG is rest).
+ */
+export const FDI_GROUPS = ['china', 'core', 'partner', 'rest'] as const satisfies readonly GeoGroup[];
+/** Value states of a project's capital investment: obs = disclosed; nq = "Investment value not publicly disclosed" (NaN, never 0). */
+export const FDI_VALUE_STATUSES = ['obs', 'nq'] as const satisfies readonly StatusCode[];
+/** The measures whose data live in sector-fdi (VAR_CATALOGUE chunks ['fdi']). */
+export const FDI_VAR_IDS = VAR_CATALOGUE.filter((v) => (v.chunks as readonly ChunkKind[]).includes('fdi')).map((v) => v.id);
+
+/**
+ * sector-fdi (lazy; load it only for the CM-FDI views). Five tables:
+ *
+ * fdi.projects: one row per CM-FDI project, every status and activity, sorted by (item, year_announced,
+ *   pid); pid unique. `item` = the Midstream cell (Battery -> batteries-midstream, EV ->
+ *   electric-vehicles-midstream, Solar, Wind); `technology` = CM-FDI's own label. `home` = the parent's
+ *   HQ economy, `dest` = the destination (never equal). Text fields are the CSV's, trimmed (city,
+ *   phase, jv_company NA when blank). `year_completed` NA = "N/A" or blank; for projects not yet
+ *   complete it is the planned year. `value` = Capital Investment (US$m, current, as published; unit
+ *   usd_m_announced): NaN with value_status nq when not disclosed, else > 0 with obs. jv_local_state NA
+ *   = blank in CM-FDI. Flags by the indices' settings (config/partnership.yml cm_fdi):
+ *   `manufacturing` = activity in its manufacturing activities ("Manufacturing"); `active` = status
+ *   kept (Announced, Under Construction, Completed, Operational) and Operational not "Ceased
+ *   operations" or "Paused"; `index_use` = manufacturing, active and inside the announcement window
+ *   (every year by default): the projects the Partnership indices use. `home_group` (FDI_GROUPS) = the
+ *   parent's HQ group. Values are identical() to the CSV after this cleaning (scripts/87 checks it).
+ * fdi.sources: one row per non-empty CM-FDI source cell: `project` = 0-based row of fdi.projects,
+ *   `field` (FDI_SOURCE_FIELDS), `text` verbatim (may hold dates, "(year only)", "fDi Markets (FT)",
+ *   "Investment value not publicly disclosed"), `url` = the http(s) links found in it, pipe-joined (NA
+ *   when none; only http:// and https://, characters unsafe in an attribute percent-encoded: render
+ *   only these as links), `unverified` = the text carries CM-FDI's "[UNVERIFIED]" mark.
+ * fdi.flows: projects summed by (item, home, dest, basis): n projects, n_value with a disclosed value,
+ *   value = the sum of disclosed values (US$m; NaN when n_value = 0, never 0), year_min / year_max of
+ *   the announcement years.
+ * fdi.groups: per (item, dest, basis), the split of the destination's projects by home_group (raw
+ *   counts: a joint venture counts wholly under its listed parent, whereas the indices attribute a
+ *   share of it): one row per FDI_GROUPS entry (n = 0 rows included, so share_n sums to 1). dest = WLD is
+ *   every destination together. value = disclosed sum (0 when n = 0; NaN when n > 0 and nothing is
+ *   disclosed); share_n = n / the destination's n; share_value = value / the destination's disclosed
+ *   sum (NaN when either is NaN).
+ * fdi.years: announcements by (item, year announced, basis, group of the parent's HQ): n, n_value,
+ *   value as in fdi.flows; only rows with n >= 1 (a missing row = no project announced).
+ * Sums are taken over fdi.projects in table order; a view that re-sums the same projects in that order
+ * reproduces counts exactly and value sums and shares to within 1e-12 relative (R's sum() accumulates
+ * in long double: 17 of the 626 disclosed flow sums of the 2026-10-11 export differ from a double
+ * re-sum in the last bit).
+ */
+export const FDI_SPEC = {
+  'fdi.projects': {
+    kind: 'table',
+    cols: {
+      pid: SR,
+      item: ITEM,
+      technology: SR,
+      parent: SR,
+      home: GEO,
+      dest: GEO,
+      city: S,
+      status: { t: 'str', req: true, values: FDI_PROJECT_STATUSES, soft: true },
+      operational: { t: 'str', req: true, values: FDI_OPERATIONAL_STATES, soft: true },
+      activity: { t: 'str', req: true, values: FDI_ACTIVITIES, soft: true },
+      year_announced: IR,
+      year_completed: I,
+      value: F,
+      value_status: { t: 'str', req: true, values: FDI_VALUE_STATUSES },
+      expansion: BR,
+      phase: S,
+      jv: BR,
+      jv_local: BR,
+      jv_local_state: B,
+      jv_company: S,
+      manufacturing: BR,
+      active: BR,
+      index_use: BR,
+      home_group: { t: 'str', req: true, values: FDI_GROUPS },
+    },
+    sorted: ['item', 'year_announced'],
+    unique: ['pid'],
+  },
+  'fdi.sources': {
+    kind: 'table',
+    cols: { project: IR, field: { t: 'str', req: true, values: FDI_SOURCE_FIELDS }, text: SR, url: S, unverified: BR },
+    sorted: ['project'],
+    unique: ['project', 'field'],
+  },
+  'fdi.flows': {
+    kind: 'table',
+    cols: { item: ITEM, home: GEO, dest: GEO, basis: { t: 'str', req: true, values: FDI_BASES }, n: IR, n_value: IR, value: F, year_min: IR, year_max: IR },
+    sorted: ['item', 'home', 'dest'],
+    unique: ['item', 'home', 'dest', 'basis'],
+  },
+  'fdi.groups': {
+    kind: 'table',
+    cols: {
+      item: ITEM,
+      dest: GEO,
+      basis: { t: 'str', req: true, values: FDI_BASES },
+      group: { t: 'str', req: true, values: FDI_GROUPS },
+      n: IR,
+      n_value: IR,
+      value: F,
+      share_n: FR,
+      share_value: F,
+    },
+    sorted: ['item', 'dest'],
+    unique: ['item', 'dest', 'basis', 'group'],
+  },
+  'fdi.years': {
+    kind: 'table',
+    cols: {
+      item: ITEM,
+      year: IR,
+      basis: { t: 'str', req: true, values: FDI_BASES },
+      group: { t: 'str', req: true, values: FDI_GROUPS },
+      n: IR,
+      n_value: IR,
+      value: F,
+    },
+    sorted: ['item', 'year'],
+    unique: ['item', 'year', 'basis', 'group'],
+  },
+} as const satisfies ChunkSpec;
+
 export type SectorMetaChunk = ChunkOf<typeof META_SPEC>;
 export type SectorFactsChunk = ChunkOf<typeof FACTS_SPEC>;
 export type SectorTradeChunk = ChunkOf<typeof TRADE_SPEC>;
@@ -1169,6 +1388,12 @@ export type SectorPolicyTextChunk = ChunkOf<typeof POLICY_TEXT_SPEC>;
 export type SectorSeriesChunk = ChunkOf<typeof SERIES_SPEC>;
 export type SectorAtlasChunk = ChunkOf<typeof ATLAS_SPEC>;
 export type SectorDevChunk = ChunkOf<typeof DEV_SPEC>;
+export type SectorFdiChunk = ChunkOf<typeof FDI_SPEC>;
+export type FdiProjectTable = SectorFdiChunk['fdi.projects'];
+export type FdiSourceTable = SectorFdiChunk['fdi.sources'];
+export type FdiFlowTable = SectorFdiChunk['fdi.flows'];
+export type FdiGroupTable = SectorFdiChunk['fdi.groups'];
+export type FdiYearTable = SectorFdiChunk['fdi.years'];
 
 /** Row types of the most used tables, for derive signatures. */
 export type GeoTable = SectorMetaChunk['dims.geo'];
@@ -1188,7 +1413,8 @@ export type SectorChunkName =
   | 'sector-policy-text'
   | 'sector-series'
   | 'sector-atlas'
-  | 'sector-dev';
+  | 'sector-dev'
+  | 'sector-fdi';
 
 export type ChunkFor<N extends SectorChunkName> = N extends 'sector-meta'
   ? SectorMetaChunk
@@ -1204,7 +1430,9 @@ export type ChunkFor<N extends SectorChunkName> = N extends 'sector-meta'
             ? SectorSeriesChunk
             : N extends 'sector-atlas'
               ? SectorAtlasChunk
-              : SectorDevChunk;
+              : N extends 'sector-fdi'
+                ? SectorFdiChunk
+                : SectorDevChunk;
 
 export function tradeChunkName(tech: TradeTechSlug): SectorChunkName {
   return `sector-trade-${tech}`;
@@ -1212,7 +1440,7 @@ export function tradeChunkName(tech: TradeTechSlug): SectorChunkName {
 
 export function isSectorChunkName(s: string): s is SectorChunkName {
   if (s.startsWith('sector-trade-')) return isTradeTechSlug(s.slice('sector-trade-'.length));
-  return ['sector-meta', 'sector-facts', 'sector-policy', 'sector-policy-text', 'sector-series', 'sector-atlas', 'sector-dev'].includes(s);
+  return ['sector-meta', 'sector-facts', 'sector-policy', 'sector-policy-text', 'sector-series', 'sector-atlas', 'sector-dev', 'sector-fdi'].includes(s);
 }
 
 /** The object spec of a chunk name. */
@@ -1231,6 +1459,8 @@ export function chunkSpec(name: SectorChunkName): ChunkSpec {
       return SERIES_SPEC;
     case 'sector-atlas':
       return ATLAS_SPEC;
+    case 'sector-fdi':
+      return FDI_SPEC;
     default:
       return DEV_SPEC;
   }
@@ -1431,6 +1661,22 @@ function checkObsIndex(prefix: string, obs: unknown, index: unknown, out: ChunkC
   if (x.nrow === 0 && o.nrow > 0) out.errors.push(`${prefix}.index is empty but ${prefix}.obs has ${o.nrow} rows`);
 }
 
+/** facts.notes: every row names a facts.obs row, and the note id is not empty (dict.caveats ids are checked by scripts/87). */
+function checkFactNotes(obs: unknown, notes: unknown, out: ChunkCheck) {
+  const o = obs as SectorFactsChunk['facts.obs'];
+  const n = notes as NonNullable<SectorFactsChunk['facts.notes']>;
+  const keys = new Set<string>();
+  for (let i = 0; i < o.nrow; i++) keys.add(`${o.cols.var[i]}|${o.cols.item[i]}|${o.cols.year[i]}|${o.cols.geo[i]}`);
+  const orphan = new Tally();
+  const empty = new Tally();
+  for (let i = 0; i < n.nrow; i++) {
+    if (!keys.has(`${n.cols.var[i]}|${n.cols.item[i]}|${n.cols.year[i]}|${n.cols.geo[i]}`)) orphan.hit(i);
+    if (!n.cols.note[i]) empty.hit(i);
+  }
+  orphan.report(out.errors, 'facts.notes has rows without a facts.obs row');
+  empty.report(out.errors, 'facts.notes.note has empty ids');
+}
+
 function splitPipe(s: string | null): string[] {
   return s ? s.split('|').filter((v) => v !== '') : [];
 }
@@ -1488,7 +1734,9 @@ function checkMeta(m: SectorMetaChunk, out: ChunkCheck) {
   badCell.report(out.errors, 'dims.items cell rows need slug = cellSlug(tech, stage) of known labels, headline FALSE only for Semiconductors');
   badMineral.report(out.warnings, `dims.items mineral slugs outside MINERAL_SLUGS`);
   if (nHeadline !== HEADLINE_TECH_SLUGS.length * STAGE_SLUGS.length) out.warnings.push(`dims.items has ${nHeadline} headline cells, expected 33`);
-  if (nCells - nHeadline !== 1) out.warnings.push(`dims.items has ${nCells - nHeadline} non-headline cells, expected 1 (Semiconductors Midstream)`);
+  if (nCells - nHeadline < 1 || nCells - nHeadline > STAGE_SLUGS.length) {
+    out.warnings.push(`dims.items has ${nCells - nHeadline} non-headline cells, expected the Semiconductors stages of the basket (Midstream; Upstream since 2026-10-11)`);
+  }
 
   const vars = m['dict.vars'];
   const unitIds = new Set(m['dict.units'].cols.id);
@@ -1553,6 +1801,70 @@ function checkTrade(t: SectorTradeChunk, out: ChunkCheck) {
   none.report(out.errors, 'trade.flows has rows with no observed value in any year');
 }
 
+/** A link fdi.sources may carry: http(s), no white space, nothing unsafe in an attribute or a pipe list. */
+const FDI_URL_RE = /^https?:\/\/[^\s"<>|`\\]+$/;
+
+/** Cross-table rules of sector-fdi (FDI_SPEC); the R mirror is sector_check_fdi(). */
+function checkFdi(c: SectorFdiChunk, out: ChunkCheck) {
+  const p = c['fdi.projects'];
+  const valueState = new Tally();
+  const nonPositive = new Tally();
+  const badFlag = new Tally();
+  const sameGeo = new Tally();
+  for (let i = 0; i < p.nrow; i++) {
+    const v = p.cols.value[i];
+    if ((v !== v) !== (p.cols.value_status[i] === 'nq')) valueState.hit(i);
+    if (v === v && v <= 0) nonPositive.hit(i);
+    if (p.cols.index_use[i] === 1 && !(p.cols.manufacturing[i] === 1 && p.cols.active[i] === 1)) badFlag.hit(i);
+    if (p.cols.home[i] === p.cols.dest[i]) sameGeo.hit(i);
+  }
+  valueState.report(out.errors, 'fdi.projects: value is NaN exactly when value_status is "nq" is violated');
+  nonPositive.report(out.errors, 'fdi.projects.value has zero or negative values (an undisclosed value is NaN, never 0)');
+  badFlag.report(out.errors, 'fdi.projects: index_use without manufacturing and active');
+  sameGeo.report(out.errors, 'fdi.projects: home equals dest (CM-FDI projects are cross-border)');
+
+  const s = c['fdi.sources'];
+  const badProject = new Tally();
+  const badUrl = new Tally();
+  for (let i = 0; i < s.nrow; i++) {
+    if (s.cols.project[i] < 0 || s.cols.project[i] >= p.nrow) badProject.hit(i);
+    if (splitPipe(s.cols.url[i]).some((u) => !FDI_URL_RE.test(u))) badUrl.hit(i);
+  }
+  badProject.report(out.errors, `fdi.sources.project is not a row of fdi.projects (0..${p.nrow - 1})`);
+  badUrl.report(out.errors, 'fdi.sources.url holds a link that is not a clean http(s) URL');
+
+  const agg = (path: 'fdi.flows' | 'fdi.years') => {
+    const t = c[path];
+    const bad = new Tally();
+    for (let i = 0; i < t.nrow; i++) {
+      const n = t.cols.n[i];
+      const nv = t.cols.n_value[i];
+      const v = t.cols.value[i];
+      if (n < 1 || nv < 0 || nv > n || (v !== v) !== (nv === 0)) bad.hit(i);
+    }
+    bad.report(out.errors, `${path}: needs n >= 1, 0 <= n_value <= n, and value NaN exactly when n_value is 0`);
+  };
+  agg('fdi.flows');
+  agg('fdi.years');
+  const g = c['fdi.groups'];
+  const badGroup = new Tally();
+  const sums = new Map<string, number>();
+  for (let i = 0; i < g.nrow; i++) {
+    const n = g.cols.n[i];
+    const nv = g.cols.n_value[i];
+    const v = g.cols.value[i];
+    if (nv < 0 || nv > n || (v !== v) !== (n > 0 && nv === 0)) badGroup.hit(i);
+    const k = `${g.cols.item[i]}|${g.cols.dest[i]}|${g.cols.basis[i]}`;
+    sums.set(k, (sums.get(k) ?? 0) + g.cols.share_n[i]);
+  }
+  badGroup.report(out.errors, 'fdi.groups: needs 0 <= n_value <= n, and value NaN exactly when projects exist but none discloses a value');
+  const off = [...sums.values()].filter((x) => Math.abs(x - 1) > 1e-9).length;
+  if (off) out.errors.push(`fdi.groups.share_n does not sum to 1 for ${off} (item, dest, basis) splits`);
+  let nAll = 0;
+  for (let i = 0; i < c['fdi.flows'].nrow; i++) if (c['fdi.flows'].cols.basis[i] === 'all') nAll += c['fdi.flows'].cols.n[i];
+  if (c['fdi.flows'].nrow > 0 && nAll !== p.nrow) out.errors.push(`fdi.flows (basis all) counts ${nAll} projects, fdi.projects has ${p.nrow}`);
+}
+
 /**
  * Every way a decoded chunk falls short of the contract. `objects` is decoded.flat, decoded.objects
  * or the OsbDecoded itself (then the header's kind and name are checked too). `ref` (from the decoded
@@ -1598,9 +1910,14 @@ export function checkChunk(name: string, objects: OsbDecoded | Record<string, un
   const c = flat as Record<string, unknown>;
   const get = (p: string) => pick(c, p);
   if (name === 'sector-meta') checkMeta(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorMetaChunk, out);
-  else if (name === 'sector-facts') checkObsIndex('facts', get('facts.obs'), get('facts.index'), out);
+  else if (name === 'sector-facts') {
+    checkObsIndex('facts', get('facts.obs'), get('facts.index'), out);
+    const notes = get('facts.notes');
+    if (notes) checkFactNotes(get('facts.obs'), notes, out);
+  }
   else if (name === 'sector-series') checkObsIndex('series', get('series.obs'), get('series.index'), out);
   else if (name.startsWith('sector-trade-')) checkTrade(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorTradeChunk, out);
+  else if (name === 'sector-fdi') checkFdi(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorFdiChunk, out);
   return out;
 }
 

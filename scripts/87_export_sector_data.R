@@ -3,19 +3,23 @@
 #
 #   Rscript scripts/87_export_sector_data.R [--out-dir <dir>] [--phase 1|2] [--skip-trade]
 #                                           [--no-policy-text] [--no-series] [--synthetic <dir>]
-#                                           [--check-only]
+#                                           [--check-only] [--cmfdi <csv>] [--no-fdi]
 #
 # IO only: every rule lives in the pure helpers of R/dashboard/sector/ (sector_files()). It reads
 # config/sector_dictionary.yml, data/processed (raw rows only; never an index, weight or contribution
 # row, never the partner dyad tables or the partnership outputs RDS) and, through the pipeline's own
 # functions, the few data/raw files the processed tables do not carry (the Comtrade dyads, the IEA
 # Critical Minerals workbook, USGS MCS, the IEA EV and manufacturing extracts, the Red Book series,
-# IEA PAMS, CAT, the EI long CSV, IMF monthly prices and the CIM workbook). It writes
+# IEA PAMS, CAT, the EI long CSV, the staged EIA International Energy Statistics extract (the EIA
+# years and comparability of the fossil production the pipeline took from EIA), IMF monthly prices,
+# the CIM workbook and the CM-FDI projects, cm_fdi_projects.csv in data/raw, or the file given with
+# --cmfdi). It writes
 #
 #   <out-dir>/manifest.json            schema "osi-sector", headlines, coverage glyph, validation,
 #                                      sources, budget (served no-cache; written last)
 #   <out-dir>/sector-<name>.<h8>.osb   gzipped OSB1 chunks (R/dashboard/dash_osb.R, lossless):
-#                                      meta, facts, trade-<tech> x 10, policy, policy-text, series
+#                                      meta, facts, trade-<tech> x 10, policy, policy-text, series,
+#                                      fdi (CM-FDI; --no-fdi leaves it and its measures out)
 #   <processed_dir>/dashboard/sector_validation.csv   the full validation report (not deployed)
 #
 # <out-dir> defaults to <repo>/dashboard/public/data/sector. Every chunk is decoded again and must be
@@ -62,6 +66,8 @@ check_only <- arg_flag("--check-only")
 skip_trade <- arg_flag("--skip-trade")
 policy_text <- !arg_flag("--no-policy-text")
 with_series <- !arg_flag("--no-series")
+with_fdi <- !arg_flag("--no-fdi")
+cmfdi_arg <- arg_value("--cmfdi")
 phase <- as.integer(arg_value("--phase", "1"))
 if (!phase %in% 1:2) stop("--phase must be 1 or 2")
 step <- function(...) message(format(Sys.time(), "%H:%M:%S"), "  ", ...)
@@ -96,16 +102,19 @@ if (file.exists(contract_path)) {
   ct <- readLines(contract_path, warn = FALSE, encoding = "UTF-8")
   rows <- regmatches(ct, regexec("\\{ id: '([a-z_.0-9]+)', phase: '([^']+)', level: '([^']+)', chunks: \\[([^]]*)\\], scope: '([a-z]+)' \\}", ct))
   rows <- rows[lengths(rows) == 6]
-  catalogue <- tibble::tibble(id = vapply(rows, `[`, "", 2), scope = vapply(rows, `[`, "", 6))
+  catalogue <- tibble::tibble(id = vapply(rows, `[`, "", 2), chunks = vapply(rows, `[`, "", 5), scope = vapply(rows, `[`, "", 6))
   if (!nrow(catalogue)) stop("Could not read VAR_CATALOGUE from ", rel(contract_path))
 }
 step("Dictionary ", rel(dict_path))
 dict_raw <- yaml::read_yaml(dict_path)
 problems <- sector_dictionary_validate(dict_raw, var_ids = catalogue$id)
 if (length(problems)) stop("Dictionary problems:\n  ", paste(problems, collapse = "\n  "))
+# --no-fdi: the CM-FDI measures (contract chunks ['fdi']) leave this build with their chunk.
+fdi_var_ids <- if (!is.null(catalogue)) catalogue$id[grepl("'fdi'", catalogue$chunks, fixed = TRUE)] else SECTOR_FDI_VARS
+if (!with_fdi) dict_raw$vars <- Filter(function(v) !v$id %in% fdi_var_ids, dict_raw$vars)
 dict_ids <- vapply(dict_raw$vars, function(v) v$id, "")
 if (!is.null(catalogue)) {
-  build_ids <- catalogue$id[catalogue$scope == "build"]
+  build_ids <- catalogue$id[catalogue$scope == "build" & (with_fdi | !catalogue$id %in% fdi_var_ids)]
   missing_build <- setdiff(build_ids, dict_ids)
   if (length(missing_build)) stop("Measures of this build without a dictionary entry: ", paste(missing_build, collapse = ", "))
   extra <- setdiff(dict_ids, build_ids)
@@ -144,7 +153,7 @@ write_chunks <- function(chunks, out_dir, check_only) {
     if (nm == "sector-meta") meta_sizes <- list(geo = nrow(dec$objects$dims$geo), items = nrow(dec$objects$dims$items), vars = nrow(dec$objects$dict$vars))
     errs <- sector_check_chunk(nm, dec$objects, meta_sizes, var_ids)
     if (length(errs)) stop("Chunk ", nm, " breaks the contract:\n  ", paste(errs, collapse = "\n  "))
-    if (nm %in% c("sector-meta", "sector-facts", "sector-series")) decoded[[nm]] <- dec$objects
+    if (nm %in% c("sector-meta", "sector-facts", "sector-series", "sector-fdi")) decoded[[nm]] <- dec$objects
     rows[[nm]] <- tibble::tibble(name = nm, file = file_name, bytes = length(bytes), bytes_gz = file.size(tmp), md5 = md5, tmp = tmp)
     step(sprintf("  %-26s %8.1f kB, %7.1f kB gz; round trip identical; contract checks pass", nm, length(bytes) / 1024, file.size(tmp) / 1024))
   }
@@ -230,16 +239,32 @@ if (!is.null(synthetic_dir)) {
   unfilled <- sector_dictionary_unfilled(tabs)
   if (length(unfilled)) stop("Unfilled dictionary placeholders: ", paste(unfilled, collapse = ", "))
   parts <- sector_synthetic_parts(tabs)
+  if (!with_fdi) {
+    parts$fdi <- NULL
+    parts$roster_extra <- parts$roster_extra[parts$roster_extra$roster != "cmfdi_home", , drop = FALSE]
+  }
   # Ship the measures the fixture has data for (a measure without data would have no roster).
   have <- unique(sector_data_keys(parts, parts$geo)$var)
   bundle <- sector_assemble(parts, tabs, ship_vars = tabs$vars$id[tabs$vars$id %in% have])
   chunks <- sector_chunks(bundle)
   if (!policy_text) chunks$`sector-policy-text` <- NULL
   if (!with_series) chunks$`sector-series` <- NULL
+  if (!is.null(parts$fdi)) {
+    fp <- sector_fdi_problems(parts$fdi, parts$geo)
+    if (length(fp)) stop("CM-FDI (synthetic): ", paste(fp, collapse = "; "))
+  }
+  syn_post <- function(decoded) {
+    if (is.null(decoded$`sector-fdi`)) return(invisible())
+    pr <- sector_fdi_parity(decoded$`sector-fdi`, decoded$`sector-meta`, sector_synthetic_cmfdi_raw(), sector_synthetic_iso3)
+    for (i in seq_len(nrow(pr))) add_check(pr$check[i], pr$status[i], pr$n[i], pr$detail[i])
+    if (any(pr$status == "FAIL")) stop("CM-FDI parity FAIL: ", paste(pr$check[pr$status == "FAIL"], collapse = "; "))
+  }
   res <- finish(bundle, chunks, out_dir, created = "2026-10-10T00:00:00Z", git_commit = NA_character_, strategic_bundle_id = NA_character_,
                 processed_mtime_max = "synthetic", pipeline_marker = NA_character_,
                 flags = list(include_restricted = FALSE, trade = length(bundle$trade) > 0, atlas = FALSE,
-                             policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks)))
+                             policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks),
+                             fdi = "sector-fdi" %in% names(chunks)),
+                post_decode = syn_post)
   message(sprintf("Synthetic fixture: %d chunks, %.1f kB gz. %.0f s.", nrow(res$chunk_info), sum(res$chunk_info$bytes_gz) / 1024,
                   as.numeric(difftime(Sys.time(), t_script, units = "secs"))))
   quit(save = "no", status = 0)
@@ -337,12 +362,53 @@ ei_path <- file.path(raw_dir, "ei_stat_review_world_energy.csv")
 ei <- as.data.frame(data.table::fread(use_src(ei_path), select = c("Country", "Year", "ISO3166_alpha3", "Var", "Value"), showProgress = FALSE))
 ei_latest <- max(ei$Year[ei$Var == "oilprod_kbd"], na.rm = TRUE)
 ei_present <- unique(data.frame(ei_var = ei$Var, iso3 = ei$ISO3166_alpha3)[ei$Year == ei_latest & !is.na(ei$Value), ])
-results$production <- sector_facts_production(rd("production_depth_momentum_tbl"), ei_present, latest_year = as.integer(ei_latest))
+ei_values <- ei[ei$Year == ei_latest & !is.na(ei$Value) & grepl("^[A-Z]{3}$", ei$ISO3166_alpha3), c("Var", "ISO3166_alpha3", "Value")]
+names(ei_values) <- c("ei_var", "iso3", "value")
+# The fossil production EI does not report: the pipeline took it from the staged EIA International
+# Energy Statistics extract (R/utils/eia_intl.R; scripts/10 reads the same file the same way). The
+# lookup gives each such cell its EIA year and whether EIA's value failed the comparability check.
+eia_path <- file.path(raw_dir, "eia_intl_fossil_production.csv")
+if (!file.exists(eia_path)) {
+  stop("Missing ", eia_path, ": stage the EIA International Energy Statistics extract (Rscript scripts/fetchers/eia_intl.R, ",
+       "or copy eia_intl_fossil_production.csv from the SharePoint raw folder), as scripts/10 requires.")
+}
+eia_intl <- read.csv(use_src(eia_path), stringsAsFactors = FALSE, na.strings = "")
+# As the themes call it (import_dependence() and production_depth_momentum(), eia_max_lag = 1L).
+eia_max_lag <- 1L
+pdm_tbl <- rd("production_depth_momentum_tbl")
+idp_tbl <- rd("import_dependence_tbl")
+eia_gap <- sector_eia_gap_cells(c(pdm_tbl$iso3c, idp_tbl$iso3c), ei_values, ei_latest)
+eia_cells <- eia_intl_lookup(eia_gap, eia_intl, max_lag = eia_max_lag, ei_consumption = eia_gap$ei_consumption)
+rm(eia_intl, eia_gap)
+results$production <- sector_facts_production(pdm_tbl, ei_present, latest_year = as.integer(ei_latest), eia_cells = eia_cells)
+eia_chk <- sector_eia_check(results$production, eia_cells)
+add_check("parity X: fossil production the pipeline took from EIA = eia_intl_lookup() of the staged extract (1e-12 relative)",
+          if (eia_chk$n_missing == 0 && eia_chk$max_rel <= 1e-12) "PASS" else "FAIL", eia_chk$n,
+          sprintf("%d facts; %d without an EIA value; max relative difference %.3g", eia_chk$n, eia_chk$n_missing, eia_chk$max_rel))
+if (eia_chk$n_missing > 0 || eia_chk$max_rel > 1e-12) {
+  stop("EIA-filled production differs from eia_intl_lookup() of ", rel(eia_path), ": stage the extract scripts/10 read, or rerun scripts/10.")
+}
+# The caveat ei_oil_shale describes Estonia coal; any other fuel whose EIA value is not comparable needs its own text.
+nc_other <- setdiff(eia_chk$not_comparable, "EST Coal")
+add_check("EIA values not comparable with EI's fuel are Estonia coal only (caveat ei_oil_shale)", if (length(nc_other)) "WARN" else "PASS",
+          length(eia_chk$not_comparable), if (length(eia_chk$not_comparable)) paste(eia_chk$not_comparable, collapse = ", ") else NA_character_)
+if (length(nc_other)) notes <- c(notes, paste("EIA production not comparable with EI's fuel beyond Estonia coal (review caveat ei_oil_shale):", paste(nc_other, collapse = ", ")))
 mss <- rd("major_supplier_shares_tbl")
 results$mining_ei <- sector_facts_mining_ei(rd("critical_minerals_production_tbl"), mss, year = 2025L)
 worlds$mining_ei <- results$mining_ei$world
 results$consumption <- sector_facts_consumption(rd("energy_access_tbl"), rd("energy_consumption_tbl"), ei_present, year = as.integer(ei_latest))
-results$balance <- sector_facts_balance(rd("import_dependence_tbl"), ei_present, year = as.integer(ei_latest))
+results$balance <- sector_facts_balance(idp_tbl, ei_present, year = as.integer(ei_latest), eia_cells = eia_cells,
+                                       consumption = sector_ei_consumption(ei_values))
+rm(pdm_tbl, idp_tbl)
+fn_all <- dplyr::bind_rows(results$production$notes, results$balance$notes)
+fn_count <- function(v, note) sum(fn_all$var == v & fn_all$note == note)
+add_check("EI production gaps: from EIA (obs / zero, note eia_production) or assumed 0 (nsr, note production_assumed_zero; user rule 2026-10-11)",
+          "PASS", nrow(fn_all),
+          sprintf("production.fuels from EIA %d; balances with EIA production %d, with EIA consumption %d; assumed zero: balances %d, self-sufficiencies %d; fossil with a fuel counted as 0: %d",
+                  fn_count("production.fuels", "eia_production"), fn_count("consumption.balance", "eia_production"),
+                  fn_count("consumption.balance", "eia_consumption"), fn_count("consumption.balance", "production_assumed_zero"),
+                  fn_count("consumption.self_sufficiency", "production_assumed_zero"), fn_count("consumption.balance", "fossil_assumed_zero")))
+rm(fn_all)
 results$mfg <- sector_facts_mfg(rd("foreign_dependency_tbl"), mss, eu_members)
 worlds$mfg <- results$mfg$world
 results$ev <- sector_facts_ev_regions(rd("market_share_manufacturing_tbl"))
@@ -529,6 +595,50 @@ invisible(gc())
 pol$cat <- cat_tbl
 if (!policy_text) pol$text <- NULL
 
+# ---- CM-FDI ------------------------------------------------------------------------------------------
+
+fdi_clean <- NULL
+cmfdi_raw <- NULL
+# The Partnership indices' CM-FDI settings (project filter, cells, Chinese HQ economies): the
+# descriptive views describe the same projects.
+fdi_settings <- sector_fdi_settings(yaml::read_yaml(file.path(repo_root, "config", "partnership.yml"))$cm_fdi)
+if (with_fdi) {
+  cmfdi_path <- if (!is.null(cmfdi_arg)) abs_path(cmfdi_arg) else file.path(raw_dir, "cm_fdi_projects.csv")
+  if (!file.exists(cmfdi_path)) {
+    stop("CM-FDI input missing: stage data/raw/cm_fdi_projects.csv (Cleantech Manufacturing FDI Dataset), pass --cmfdi <csv>, ",
+         "or export without it (--no-fdi).")
+  }
+  step("CM-FDI projects ", rel(cmfdi_path))
+  # Every column as text, nothing converted on read: sector_fdi_clean() is the whole transformation.
+  cmfdi_raw <- utils::read.csv(use_src(cmfdi_path), colClasses = "character", check.names = FALSE, na.strings = character(),
+                               fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+  fdi_clean <- sector_fdi_clean(cmfdi_raw, iso3_of, fdi_settings)
+  add_check("guard: CM-FDI columns, vocabularies, years, flags and country names as reviewed (stops otherwise)", "PASS",
+            nrow(fdi_clean$projects),
+            sprintf("%d projects, %d manufacturing, %d used by the indices, %d without a disclosed value, %d source cells (%d links)",
+                    nrow(fdi_clean$projects), sum(fdi_clean$projects$manufacturing), sum(fdi_clean$projects$index_use),
+                    sum(is.na(fdi_clean$projects$value)), nrow(fdi_clean$sources),
+                    length(unlist(strsplit(stats::na.omit(fdi_clean$sources$url), "|", fixed = TRUE)))))
+  # Cross-check: the projects flagged index_use are the ones the pipeline's own reader flags
+  # (R/themes/partnership_strength/cm_fdi.R, when present).
+  cm_pipeline <- file.path(repo_root, "R", "themes", "partnership_strength", "cm_fdi.R")
+  if (file.exists(cm_pipeline)) {
+    source(cm_pipeline)
+    pset <- cm_fdi_resolve_settings(yaml::read_yaml(file.path(repo_root, "config", "partnership.yml"))$cm_fdi)
+    pfl <- cm_fdi_flag_index_use(cm_fdi_clean_projects(cmfdi_raw, pset$technologies), pset)
+    mine <- fdi_clean$projects
+    same_set <- setequal(pfl$project_id[pfl$index_use], mine$pid[mine$index_use]) &&
+      setequal(pfl$project_id[pfl$china_parent], mine$pid[mine$home %in% fdi_settings$china_hq_iso3])
+    add_check("parity X: CM-FDI projects used by the indices and Chinese parents = the pipeline's cm_fdi_flag_index_use()",
+              if (same_set) "PASS" else "FAIL", sum(mine$index_use),
+              if (same_set) NA_character_ else sprintf("pipeline %d, export %d", sum(pfl$index_use), sum(mine$index_use)))
+    if (!same_set) stop("CM-FDI: the export's index_use flags differ from the pipeline's cm_fdi_flag_index_use(); align sector_fdi_flags().")
+    rm(pfl, pset, mine)
+  }
+} else {
+  notes <- c(notes, "CM-FDI cross-border projects were not exported in this build (--no-fdi).")
+}
+
 # ---- Series -----------------------------------------------------------------------------------------
 
 series <- NULL
@@ -579,6 +689,7 @@ step("Assemble the bundle")
 all_res <- sector_bind_results(results)
 facts <- all_res$facts
 ledger <- all_res$ledger
+fact_notes <- all_res$notes
 world <- dplyr::bind_rows(worlds)
 world <- world[!duplicated(world[c("var", "item_key", "year")]), , drop = FALSE]
 # Series rows that are also facts must carry the identical value (contract rule).
@@ -595,7 +706,8 @@ if (!is.null(series)) {
   add_check("series: rows shared with facts carry identical values", "PASS", sum(hit))
 }
 
-data_codes <- unique(c(facts$geo, if (!skip_trade) econ, pol$pams$geo, pol$cat$geo, if (!is.null(series)) c(series$obs$geo, series$capacity$geo)))
+data_codes <- unique(c(facts$geo, if (!skip_trade) econ, pol$pams$geo, pol$cat$geo, if (!is.null(series)) c(series$obs$geo, series$capacity$geo),
+                       if (!is.null(fdi_clean)) c(fdi_clean$projects$home, fdi_clean$projects$dest)))
 data_codes <- data_codes[grepl("^[A-Z]{3}$", data_codes) & !data_codes %in% c("EUU", "WLD")]
 country_info <- read.csv(use_src(file.path(raw_dir, "wdi_country_info.csv")), stringsAsFactors = FALSE)
 extra <- tibble::tibble(code = data_codes, name = country_name_from_iso3(data_codes))
@@ -608,6 +720,17 @@ geo <- sector_geo(country_info, coal, ideal, hubs = hubs, extra = extra)
 unknown <- setdiff(data_codes, geo$code)
 if (length(unknown)) stop("Economies in the data without a dims.geo row: ", paste(unknown, collapse = ", "))
 region_members <- sector_region_members(geo, results$ev$region_of)
+fdi <- NULL
+if (!is.null(fdi_clean)) {
+  fdi <- sector_fdi_part(fdi_clean, geo, fdi_settings)
+  fp <- sector_fdi_problems(fdi, geo, fdi_settings)
+  if (length(fp)) stop("CM-FDI: ", paste(fp, collapse = "; "))
+  add_check("CM-FDI: flows, group splits and years count every project once per basis; shares sum to 1; links are clean http(s)", "PASS",
+            nrow(fdi$flows) + nrow(fdi$groups) + nrow(fdi$years),
+            sprintf("flows %d, groups %d, years %d rows; projects used by the indices %d; Chinese-HQ parents (%s) %d",
+                    nrow(fdi$flows), nrow(fdi$groups), nrow(fdi$years), sum(fdi$projects$index_use),
+                    paste(fdi_settings$china_hq_iso3, collapse = ", "), sum(fdi$projects$home_group == "china")))
+}
 
 minerals <- unique(c(sub("^mineral:", "", facts$item_key[startsWith(facts$item_key, "mineral:")]), mineral_demand$mineral))
 fuels <- unique(c(sub("^fuel:", "", facts$item_key[startsWith(facts$item_key, "fuel:")]),
@@ -621,6 +744,7 @@ fill <- list(n_shared_codes = n_shared, n_codes = n_codes, n_rca_reporters = n_r
              pams_export_date = format(file.mtime(pams_path), "%Y-%m-%d"), pams_year_max = max(pol$pams$year, na.rm = TRUE),
              trl_fallback_cells = paste(results$trl$fallback, collapse = ", "),
              pct_cross_cutting = round(100 * mean(pol$pams$cross_cutting)))
+fill <- c(fill, if (!is.null(fdi)) sector_fdi_fill(fdi, fdi_settings) else sector_fdi_fill_none())
 tabs <- sector_dictionary_tables(dict_raw, fill = fill)
 unfilled <- sector_dictionary_unfilled(tabs)
 if (length(unfilled)) stop("Unfilled dictionary placeholders: ", paste(unfilled, collapse = ", "))
@@ -657,9 +781,10 @@ parts <- list(
   item_units = item_units,
   roster_extra = dplyr::bind_rows(
     if (!skip_trade) tibble::tibble(roster = "comtrade_matrix", geo = econ),
-    tibble::tibble(roster = "ei", geo = unique(facts$geo[facts$var %in% c("production.fuels", "consumption.per_capita")]))
+    tibble::tibble(roster = "ei", geo = unique(facts$geo[facts$var %in% c("production.fuels", "consumption.per_capita")])),
+    if (!is.null(fdi)) tibble::tibble(roster = "cmfdi_home", geo = sort(unique(fdi$projects$home)))
   ),
-  facts = facts, world = world, series = series, trade = trade, eu_intra = eu_intra, policy = pol,
+  facts = facts, fact_notes = fact_notes, world = world, series = series, trade = trade, eu_intra = eu_intra, policy = pol, fdi = fdi,
   reported = if (!skip_trade) reported else NULL,
   licensed = tibble::tibble(item_key = paste0("cell:", c("solar-downstream", "wind-downstream", "gas-downstream", "coal-downstream", "batteries-downstream")),
                             family = "prices", sources = "BNEF LCOE"),
@@ -729,6 +854,12 @@ post <- function(decoded) {
   add_check("summary parity: recomputed from the decoded facts = meta.summary (1e-12)", if (d <= 1e-12) "PASS" else "FAIL", nrow(ms),
             sprintf("max relative difference %.3g", d))
   if (d > 1e-12) stop("Summary parity FAIL (", d, ")")
+  # CM-FDI parity: decoded projects identical() to the CSV after cleaning; aggregates recomputed.
+  if (!is.null(decoded$`sector-fdi`)) {
+    pf <- sector_fdi_parity(decoded$`sector-fdi`, meta, cmfdi_raw, iso3_of, fdi_settings)
+    for (i in seq_len(nrow(pf))) add_check(pf$check[i], pf$status[i], pf$n[i], pf$detail[i])
+    if (any(pf$status == "FAIL")) stop("CM-FDI parity FAIL:\n  ", paste(pf$check[pf$status == "FAIL"], pf$detail[pf$status == "FAIL"], collapse = "\n  "))
+  }
 }
 add_check("no index, weight or contribution rows: only data_type raw rows of data/processed are read", "PASS", nrow(ledger))
 
@@ -742,12 +873,19 @@ notes <- c(notes,
            "Trade on screen is the reconciled Comtrade matrix (importer-declared; exporters' reports x1.06 where an importer did not declare); Hong Kong is kept and tagged as a re-export hub.",
            "Hong Kong is out of the exporter-reported Comtrade measures (RCA and the reported side of the reconciliation), as in Strategic Insights.",
            "Critical-mineral reserves: USGS Mineral Commodity Summaries 2026.",
+           paste0("Fossil production EI does not report separately comes from the EIA International Energy Statistics where the pipeline took it ",
+                  "(converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 ",
+                  "and the net balance and self-sufficiency say so (marked 'not reported separately')."),
            "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.",
+           if (!is.null(fdi)) paste0("Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and ",
+                                     "the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; ",
+                                     "undisclosed capital investment is shown as not disclosed, never zero."),
            "Scenario dials apply to Strategic Insights only.")
 res <- finish(bundle, chunks, out_dir, created = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), git_commit = git_commit,
               strategic_bundle_id = strategic_bundle_id, processed_mtime_max = processed_mtime_max, pipeline_marker = pipeline_marker,
               flags = list(include_restricted = FALSE, trade = length(trade) > 0, atlas = FALSE,
-                           policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks)),
+                           policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks),
+                           fdi = "sector-fdi" %in% names(chunks)),
               validation_csv = file.path(processed_dir, "dashboard", "sector_validation.csv"), post_decode = post)
 
 # Reference values for the spec's Appendix B (recomputed on this data).
@@ -811,6 +949,21 @@ for (k in c("mineral:graphite", "mineral:lithium")) {
   f <- facts[facts$var == "production.refining" & facts$item_key == k & facts$year == 2025L & facts$geo == "CHN", , drop = FALSE]
   s <- pick("production.refining", k, 2025L)
   if (nrow(f) && nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("IEA refining 2025 %s: CHN %.0f of %.0f kt", k, f$value, s$W)
+}
+if (!is.null(fdi)) {
+  pr <- fdi$projects
+  ref_rows[[length(ref_rows) + 1]] <- sprintf(
+    "CM-FDI: %d projects (%d manufacturing; %d used by the indices), %d destinations, %d home economies, %d parents, announced %d-%d; %d without a disclosed value; disclosed total USD %.1f bn",
+    nrow(pr), sum(pr$manufacturing), sum(pr$index_use), length(unique(pr$dest)), length(unique(pr$home)),
+    length(unique(pr$parent)), min(pr$year_announced), max(pr$year_announced), sum(is.na(pr$value)), sum(pr$value, na.rm = TRUE) / 1e3)
+  gw <- fdi$groups[fdi$groups$dest == "WLD", , drop = FALSE]
+  for (b in SECTOR_FDI_BASES) for (ck in unique(gw$item_key)) {
+    x <- gw[gw$basis == b & gw$item_key == ck, , drop = FALSE]
+    ref_rows[[length(ref_rows) + 1]] <- sprintf(
+      "CM-FDI %s %s: %d projects; by parent HQ (count) china %.1f%% core %.1f%% partner %.1f%% rest %.1f%%; (disclosed value, USD %.1f bn) china %.1f%% core %.1f%% partner %.1f%% rest %.1f%%",
+      b, sub("^cell:", "", ck), sum(x$n), 100 * x$share_n[1], 100 * x$share_n[2], 100 * x$share_n[3], 100 * x$share_n[4],
+      sum(x$value, na.rm = TRUE) / 1e3, 100 * x$share_value[1], 100 * x$share_value[2], 100 * x$share_value[3], 100 * x$share_value[4])
+  }
 }
 message("\nReference values (Appendix B, recomputed):\n  ", paste(unlist(ref_rows), collapse = "\n  "))
 message("\nHeadlines:")

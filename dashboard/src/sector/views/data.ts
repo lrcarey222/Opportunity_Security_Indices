@@ -1,9 +1,11 @@
 // Chunk hooks for the views (spec_sector.md 8.10 lazy map): facts, trade per technology, policy,
-// policy text, series; the SectorBar status line; lazy section mounting (800 px from the viewport).
+// policy text, series, CM-FDI projects; the SectorBar status line; lazy section mounting (800 px from
+// the viewport).
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { isTradeTechSlug, TECH_LABELS, tradeChunkName, type SectorChunkName, type TechSlug } from '../contract.ts';
 import { factsIndexOf, seriesIndexOf, type FactsIndex } from '../data/facts.ts';
+import { fdiData, type FdiData } from '../derive/fdi.ts';
 import { useSectorChunk, useSectorStore, type ChunkHandle } from '../data/SectorDataProvider.tsx';
 import type { SectorTradeChunk } from '../contract.ts';
 import { fmtSize } from '../format.ts';
@@ -28,6 +30,17 @@ export function useTrade(tech: TechSlug | null | undefined, enabled = true): { t
   return { trade: h.data, h, has: !!name && (store.hasChunk(name) || store.manifestState().status !== 'ready') };
 }
 
+/**
+ * The CM-FDI projects (sector-fdi, lazy: only the investment-project views load it). `has` is false
+ * when the bundle lists no sector-fdi chunk (true until the manifest is known).
+ */
+export function useFdi(enabled = true): { fdi: FdiData | null; h: ChunkHandle<import('../contract.ts').SectorFdiChunk>; has: boolean } {
+  const store = useSectorStore();
+  const h = useSectorChunk('sector-fdi', enabled);
+  const fdi = useMemo(() => (h.data ? fdiData(h.data) : null), [h.data]);
+  return { fdi, h, has: store.hasChunk('sector-fdi') || store.manifestState().status !== 'ready' };
+}
+
 export function usePolicy(enabled = true) {
   return useSectorChunk('sector-policy', enabled);
 }
@@ -42,6 +55,7 @@ const CHUNK_WORDS: Record<string, string> = {
   'sector-policy': 'policy data',
   'sector-policy-text': 'policy titles',
   'sector-series': 'time series',
+  'sector-fdi': 'investment project data (CM-FDI)',
 };
 
 /** "trade data for Batteries" etc. */

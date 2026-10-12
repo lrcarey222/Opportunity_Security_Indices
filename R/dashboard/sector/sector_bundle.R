@@ -6,9 +6,11 @@
 # parts (long tables keyed by text; see sector_chunks.R):
 #   geo, region_members, items (+ text: running-text name), item_links (item_key, cell, weight),
 #   mineral_demand, eu_outside_coalition, item_units (var, item_key, unit), roster_extra (roster, geo),
-#   facts, world, series (list(obs, world, monthly, capacity) or NULL),
+#   facts, fact_notes (var, item_key, geo, year, note: per-fact notes, a dict.caveats id each; or NULL),
+#   world, series (list(obs, world, monthly, capacity) or NULL),
 #   trade (named by tech: list(flows, declared, codes, excluded)), eu_intra (item_key, year, intra),
-#   policy (list(pams, text, tags, cat)), reported (exporter-reported trade per cell, or NULL),
+#   policy (list(pams, text, tags, cat)), fdi (sector_fdi_part(): CM-FDI projects, sources, flows,
+#   groups, years; or NULL), reported (exporter-reported trade per cell, or NULL),
 #   licensed (item_key, family, sources) or NULL, headline_sources (named list), fill (placeholders).
 
 # Distinct (var, item_key, chunk, year, geo, geo_kind) of every chunk's data.
@@ -59,6 +61,7 @@ sector_data_keys <- function(parts, geo) {
     out <- c(out, list(tibble::tibble(var = "policy.cat", item_key = "none:none", chunk = "policy", year = NA_integer_,
                                       geo = pl$cat$geo, geo_kind = kind(pl$cat$geo))))
   }
+  if (!is.null(parts$fdi)) out <- c(out, list(sector_fdi_data_keys(parts$fdi, kind)))
   md <- parts$mineral_demand
   if (!is.null(md) && nrow(md)) {
     out <- c(out, list(tibble::tibble(var = "consumption.mineral_demand", item_key = paste0("mineral:", md$mineral), chunk = "meta",
@@ -123,6 +126,25 @@ sector_assemble <- function(parts, dict, ship_vars = NULL) {
     rng <- tapply(sw$year, sw$var, function(y) paste0(min(y), "-", max(y)))
     vars$series_window <- unname(rng[vars$id])
   }
+  # Measures that live only in sector-fdi: `years` = the announcement years with data (the
+  # dictionary cannot know them for a new CM-FDI edition).
+  fy <- data[data$chunk == "fdi" & !is.na(data$year), , drop = FALSE]
+  if (nrow(fy)) {
+    yrs <- tapply(fy$year, fy$var, function(y) paste(sort(unique(y)), collapse = "|"))
+    hit <- vars$id %in% names(yrs) & !vars$id %in% data$var[data$chunk != "fdi"]
+    vars$years[hit] <- unname(yrs[vars$id[hit]])
+  }
+  # Caveats that describe per-fact notes (SECTOR_DATA_CAVEATS: EIA provenance, production assumed 0,
+  # Estonia's oil shale) stay on a measure only when this build has such a fact for it.
+  fn <- parts$fact_notes
+  if (!is.null(vars$caveats)) {
+    vars$caveats <- vapply(seq_len(nrow(vars)), function(i) {
+      cv <- if (is.na(vars$caveats[i])) character() else strsplit(vars$caveats[i], "|", fixed = TRUE)[[1]]
+      used <- if (is.null(fn)) character() else unique(fn$note[fn$var == vars$id[i]])
+      cv <- cv[!cv %in% SECTOR_DATA_CAVEATS | cv %in% used]
+      if (length(cv)) paste(cv, collapse = "|") else NA_character_
+    }, character(1))
+  }
   dict$vars <- vars
 
   # A world row for every summarised slice (sum_all / sum_listed: the holders' sum; one: 1).
@@ -155,7 +177,8 @@ sector_assemble <- function(parts, dict, ship_vars = NULL) {
     mineral_demand = parts$mineral_demand, eu_outside_coalition = parts$eu_outside_coalition,
     dict = dict, item_units = item_units, rosters = rosters, coverage = coverage, avail = avail,
     summary = summary, reconcile = reconcile, facts = parts$facts, world = parts$world, series = parts$series,
-    trade = parts$trade, policy = parts$policy, headlines = headlines, glyph = glyph, cell_vars = cell_vars,
+    trade = parts$trade, policy = parts$policy, fdi = parts$fdi, fact_notes = parts$fact_notes, headlines = headlines, glyph = glyph,
+    cell_vars = cell_vars,
     world_missing = world_missing
   )
 }

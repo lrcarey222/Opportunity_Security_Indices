@@ -13,7 +13,7 @@ SECTOR_CHUNK_FILE_RE <- "^sector-[a-z-]+\\.[0-9a-f]{8}\\.osb$"
 SECTOR_BUDGET_GZ <- list(
   `sector-meta` = 150 * 1024, `sector-facts` = 600 * 1024, `sector-trade` = 450 * 1024,
   `sector-policy` = 250 * 1024, `sector-policy-text` = 700 * 1024, `sector-series` = 900 * 1024,
-  `sector-atlas` = 1.3 * 1024^2, `sector-dev` = 1.2 * 1024^2,
+  `sector-atlas` = 1.3 * 1024^2, `sector-dev` = 1.2 * 1024^2, `sector-fdi` = 300 * 1024,
   sector_total = 9 * 1024^2, combined_total = 25 * 1024^2
 )
 SECTOR_DICT_VAR_COLS <- c("id", "theme", "family", "label", "short", "definition", "unit", "data_year", "years",
@@ -60,6 +60,23 @@ sector_obs_tables <- function(obs, var_ids, item_keys, geo_codes) {
   index <- tibble::tibble(var = t$var[starts], item = t$item[starts], year = t$year[starts],
                           start = as.integer(starts - 1L), n = as.integer(n))
   list(obs = t, index = index)
+}
+
+# facts.notes (contract FACTS_SPEC, optional): per-fact notes, one row per (fact, note), sorted by
+# (var, item, year, geo) indices like facts.obs; NULL when there are none. Stops on a note whose fact
+# is not in `facts` or whose id is not in `caveat_ids` (dict.caveats).
+sector_notes_table <- function(notes, facts, var_ids, item_keys, geo_codes, caveat_ids) {
+  if (is.null(notes) || !nrow(notes)) return(NULL)
+  fk <- paste(facts$var, facts$item_key, facts$geo, facts$year, sep = "\r")
+  nk <- paste(notes$var, notes$item_key, notes$geo, notes$year, sep = "\r")
+  if (!all(nk %in% fk)) stop("sector_notes_table(): notes for facts that are not shipped: ", paste(utils::head(unique(nk[!nk %in% fk]), 3), collapse = "; "))
+  bad <- setdiff(unique(notes$note), caveat_ids)
+  if (length(bad)) stop("sector_notes_table(): note ids not in dict.caveats: ", paste(bad, collapse = ", "))
+  t <- tibble::tibble(var = sector_index(notes$var, var_ids, "var"), item = sector_index(notes$item_key, item_keys, "item"),
+                      geo = sector_index(notes$geo, geo_codes, "geo"), year = as.integer(notes$year), note = as.character(notes$note))
+  t <- t[order(t$var, t$item, t$year, t$geo, t$note, method = "radix"), , drop = FALSE]
+  if (anyDuplicated(t[c("var", "item", "year", "geo", "note")])) stop("sector_notes_table(): duplicate notes")
+  t
 }
 
 sector_world_table <- function(world, var_ids, item_keys) {
@@ -166,6 +183,8 @@ sector_chunks <- function(b) {
 
   fo <- sector_obs_tables(b$facts, var_ids, item_keys, geo_codes)
   out$`sector-facts` <- list(facts = list(obs = fo$obs, index = fo$index, world = sector_world_table(b$world, var_ids, item_keys)))
+  fnt <- sector_notes_table(b$fact_notes, b$facts, var_ids, item_keys, geo_codes, b$dict$caveats$id)
+  if (!is.null(fnt)) out$`sector-facts`$facts$notes <- fnt
 
   for (tech in names(b$trade)) {
     tr <- b$trade[[tech]]
@@ -225,7 +244,51 @@ sector_chunks <- function(b) {
     }
     out$`sector-series` <- list(series = ser)
   }
+
+  if (!is.null(b$fdi)) out$`sector-fdi` <- sector_fdi_chunk(b$fdi, gi, ii)
   out
+}
+
+# The sector-fdi chunk (contract FDI_SPEC; R/dashboard/sector/sector_fdi.R) from the text-keyed part.
+# gi / ii: geo / item code -> 0-based index. Projects sorted by (item, year announced, project id);
+# fdi.sources.project is a 0-based row of fdi.projects.
+sector_fdi_chunk <- function(fd, gi, ii) {
+  pr <- fd$projects
+  pr <- pr[order(ii(pr$item_key), pr$year_announced, pr$pid, method = "radix"), , drop = FALSE]
+  projects <- tibble::tibble(
+    pid = as.character(pr$pid), item = ii(pr$item_key), technology = as.character(pr$technology),
+    parent = as.character(pr$parent), home = gi(pr$home), dest = gi(pr$dest), city = as.character(pr$city),
+    status = as.character(pr$status), operational = as.character(pr$operational), activity = as.character(pr$activity),
+    year_announced = as.integer(pr$year_announced), year_completed = as.integer(pr$year_completed),
+    value = as.double(pr$value), value_status = as.character(pr$value_status), expansion = as.logical(pr$expansion),
+    phase = as.character(pr$phase), jv = as.logical(pr$jv), jv_local = as.logical(pr$jv_local),
+    jv_local_state = as.logical(pr$jv_local_state), jv_company = as.character(pr$jv_company),
+    manufacturing = as.logical(pr$manufacturing), active = as.logical(pr$active), index_use = as.logical(pr$index_use),
+    home_group = as.character(pr$home_group)
+  )
+  src <- fd$sources
+  row <- match(src$pid, pr$pid)
+  if (anyNA(row)) stop("sector_fdi_chunk(): sources of unknown projects")
+  sources <- tibble::tibble(project = as.integer(row - 1L), field = as.character(src$field), text = as.character(src$text),
+                            url = as.character(src$url), unverified = as.logical(src$unverified))
+  sources <- sources[order(sources$project, match(sources$field, names(SECTOR_FDI_SOURCE_FIELDS)), method = "radix"), , drop = FALSE]
+  fl <- fd$flows
+  flows <- tibble::tibble(item = ii(fl$item_key), home = gi(fl$home), dest = gi(fl$dest), basis = as.character(fl$basis),
+                          n = as.integer(fl$n), n_value = as.integer(fl$n_value), value = as.double(fl$value),
+                          year_min = as.integer(fl$year_min), year_max = as.integer(fl$year_max))
+  flows <- flows[order(flows$item, flows$home, flows$dest, match(flows$basis, SECTOR_FDI_BASES), method = "radix"), , drop = FALSE]
+  gr <- fd$groups
+  groups <- tibble::tibble(item = ii(gr$item_key), dest = gi(gr$dest), basis = as.character(gr$basis), group = as.character(gr$group),
+                           n = as.integer(gr$n), n_value = as.integer(gr$n_value), value = as.double(gr$value),
+                           share_n = as.double(gr$share_n), share_value = as.double(gr$share_value))
+  groups <- groups[order(groups$item, groups$dest, match(groups$basis, SECTOR_FDI_BASES), match(groups$group, SECTOR_FDI_GROUPS),
+                         method = "radix"), , drop = FALSE]
+  yr <- fd$years
+  years <- tibble::tibble(item = ii(yr$item_key), year = as.integer(yr$year), basis = as.character(yr$basis), group = as.character(yr$group),
+                          n = as.integer(yr$n), n_value = as.integer(yr$n_value), value = as.double(yr$value))
+  years <- years[order(years$item, years$year, match(years$basis, SECTOR_FDI_BASES), match(years$group, SECTOR_FDI_GROUPS),
+                       method = "radix"), , drop = FALSE]
+  list(fdi = list(projects = projects, sources = sources, flows = flows, groups = groups, years = years))
 }
 
 # The trade tech slug of a chunk name, or NA.

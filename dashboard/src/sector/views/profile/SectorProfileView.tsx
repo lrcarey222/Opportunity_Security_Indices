@@ -18,6 +18,7 @@ import type { FactsIndex } from '../../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
 import { countryVars, entityVars, isThin, measureItem, primaryMeasure, primaryVar, reasonText, shareVars, thinNotice } from '../../derive/cells.ts';
 import { GROUP_SHORT, isCoalition, partOf } from '../../derive/groups.ts';
+import { hasFdi } from '../../derive/fdi.ts';
 import { slice } from '../../derive/summary.ts';
 import { stateOf, stateShort } from '../../derive/states.ts';
 import { sectorCsv, type CsvInput } from '../../derive/csv.ts';
@@ -61,7 +62,7 @@ export function profileSections(model: SectorModel, cell: ItemInfo, hasPolicy: b
   if (countryVars(model, cell).length) out.push('leaders');
   if (cell.has_trade) out.push('trade');
   const inv = ['investment.annual', 'investment.power_additions'].map((id) => vOf(model, id)).some((v) => v && model.availOf(v, cell.idx).length);
-  if (inv) out.push('investment');
+  if (inv || hasFdi(model, cell)) out.push('investment');
   if (hasProduction(model, cell)) out.push('production');
   if (hasResources(model, cell)) out.push('resources');
   if (hasDemand(model, cell)) out.push('demand');

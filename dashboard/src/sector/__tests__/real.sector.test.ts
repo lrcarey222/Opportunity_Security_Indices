@@ -128,9 +128,12 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect(manifest.flags.trade).toBe(true);
       expect(manifest.flags.policy_text).toBe(true);
       expect(manifest.encoding.lossy).toBe(false);
-      // 15 chunks: meta, facts, 10 trade, policy, policy-text, series
-      expect(manifest.chunks.length).toBe(15);
+      // CM-FDI (2026-10-11): the lazy sector-fdi chunk ships with flags.fdi (an export with --no-fdi has neither)
+      expect(manifest.flags.fdi).toBe(true);
+      // 16 chunks: meta, facts, 10 trade, policy, policy-text, series, fdi
+      expect(manifest.chunks.length).toBe(16);
       expect(manifest.chunks.filter((c) => c.name.startsWith('sector-trade-')).length).toBe(10);
+      expect(manifest.chunks.filter((c) => c.name === 'sector-fdi').length).toBe(1);
       for (const s of manifest.sources) expect(s.path).not.toMatch(/^([a-zA-Z]:|[\\/]|~)/);
     });
 

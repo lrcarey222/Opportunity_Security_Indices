@@ -24,6 +24,7 @@ import { useModel, useSectorManifest, useSectorStore } from '../data/SectorDataP
 import type { SectorModel } from '../data/model.ts';
 import { reasonText } from '../derive/cells.ts';
 import { allDataFiles, coverageRows, dictionaryRows, flowsCsv, policyCsv, RESTRICTED_LINE, sourcesRows } from '../derive/downloads.ts';
+import { cmfdiSource, fdiData, projectsCsv } from '../derive/fdi.ts';
 import { safeUrl } from '../derive/policy.ts';
 import { fmtExportDate, fmtHhi, fmtShare, fmtSize, fmtUsd } from '../format.ts';
 import { ExternalLink, Section } from './common.tsx';
@@ -279,6 +280,13 @@ function Downloads() {
     const chunk = await store.load(tradeChunkName(t));
     downloadBlob(new Blob([withBom(flowsCsv(model, chunk as never))], { type: 'text/csv;charset=utf-8' }), `trade-flows-${t}.csv`);
   });
+  const hasFdiChunk = !!manifest.data?.chunks.some((c) => c.name === 'sector-fdi');
+  const fdiSrc = cmfdiSource(model);
+  const fdi = run('fdi', async () => {
+    const chunk = await store.load('sector-fdi');
+    const d = fdiData(chunk);
+    downloadBlob(new Blob([withBom(projectsCsv(model, d, d.projects))], { type: 'text/csv;charset=utf-8' }), 'cm-fdi-projects.csv');
+  });
   const policy = run('policy', async () => {
     const p = await store.load('sector-policy');
     const pt = manifest.data?.chunks.some((c) => c.name === 'sector-policy-text') ? await store.load('sector-policy-text') : null;
@@ -286,7 +294,7 @@ function Downloads() {
   });
   return (
     <div className="space-y-4">
-      <ul className="grid gap-4 md:grid-cols-3">
+      <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <li className="card flex flex-col p-5">
           <h3 className="text-base font-medium text-paper">All sector data (.zip)</h3>
           <p className="mt-1 flex-1 text-sm text-paper-dim">One CSV per measure family, dictionary.csv, sources.csv, coverage.csv and a README with citations, licences, the vintage and the status codes.{size('sector-facts')}</p>
@@ -315,6 +323,17 @@ function Downloads() {
             {busy === 'policy' ? 'Preparing…' : 'Download the policy list'}
           </button>
         </li>
+        {hasFdiChunk && (
+          <li className="card flex flex-col p-5">
+            <h3 className="text-base font-medium text-paper">Cross-border projects, CM-FDI (.csv)</h3>
+            <p className="mt-1 flex-1 text-sm text-paper-dim">
+              Every project of the Cleantech Manufacturing FDI Dataset{fdiSrc?.edition ? ` (edition ${fdiSrc.edition})` : ''}: parent, headquarters, destination, status, years, capital investment (or "not disclosed"), joint venture and the source links per field. Licensed CC BY 4.0: cite as {fdiSrc?.citation ?? 'the CM-FDI site specifies'}.{size('sector-fdi')}
+            </p>
+            <button type="button" className="btn btn-ghost btn-sm mt-3 self-start" disabled={busy !== null} onClick={fdi}>
+              {busy === 'fdi' ? 'Preparing…' : 'Download the projects'}
+            </button>
+          </li>
+        )}
       </ul>
       {err && <Notice kind="error" title="The download could not be prepared">{err}</Notice>}
       <p className="text-sm text-paper-mute">{RESTRICTED_LINE}</p>

@@ -1,7 +1,7 @@
 {
   "schema": "osi-sector",
   "schema_version": 1,
-  "bundle_id": "cd64c26fdb2338eca68847dfd10c1dd2",
+  "bundle_id": "21b224b0c4cc88b60078dbe6f2901bca",
   "created": "2026-10-10T00:00:00Z",
   "git_commit": null,
   "generator": "scripts/87_export_sector_data.R",
@@ -14,23 +14,24 @@
     "trade": true,
     "atlas": false,
     "policy_text": true,
-    "series": true
+    "series": true,
+    "fdi": true
   },
   "chunks": [
     {
       "name": "sector-meta",
-      "file": "sector-meta.30a43ccb.osb",
-      "bytes": 102608,
-      "bytes_gz": 27533,
-      "md5": "30a43ccb681aa2bd307d6fa31b92c493",
+      "file": "sector-meta.f0ff75e2.osb",
+      "bytes": 113088,
+      "bytes_gz": 30873,
+      "md5": "f0ff75e2d0ca8206c2a02d032e72d3d1",
       "tech": null
     },
     {
       "name": "sector-facts",
-      "file": "sector-facts.f394cc1b.osb",
-      "bytes": 25696,
-      "bytes_gz": 4690,
-      "md5": "f394cc1bf500f7791c225cf65f509750",
+      "file": "sector-facts.cd4669e2.osb",
+      "bytes": 26088,
+      "bytes_gz": 4810,
+      "md5": "cd4669e283fca620feb7efbaaaa4e2c3",
       "tech": null
     },
     {
@@ -67,10 +68,18 @@
     },
     {
       "name": "sector-series",
-      "file": "sector-series.5e491242.osb",
+      "file": "sector-series.18abbafc.osb",
       "bytes": 18960,
       "bytes_gz": 3536,
-      "md5": "5e491242a012c5dd8f19420f4f0a7a01",
+      "md5": "18abbafce3cce4c69441e41b43c1d80f",
+      "tech": null
+    },
+    {
+      "name": "sector-fdi",
+      "file": "sector-fdi.09dfd665.osb",
+      "bytes": 14912,
+      "bytes_gz": 2828,
+      "md5": "09dfd6650e20ed1bad84443377238485",
       "tech": null
     }
   ],
@@ -246,7 +255,7 @@
     {
       "tech": "electric-vehicles",
       "stage": "midstream",
-      "country_data": false
+      "country_data": true
     },
     {
       "tech": "electric-vehicles",
@@ -336,7 +345,7 @@
     {
       "tech": "solar",
       "stage": "midstream",
-      "country_data": false
+      "country_data": true
     },
     {
       "tech": "solar",
@@ -351,7 +360,7 @@
     {
       "tech": "wind",
       "stage": "midstream",
-      "country_data": false
+      "country_data": true
     },
     {
       "tech": "wind",
@@ -364,38 +373,68 @@
     {
       "check": "dictionary: valid, every measure of the build has an entry",
       "status": "PASS",
-      "n": 61,
+      "n": 64,
       "detail": null
     },
     {
       "check": "chunks: decode identical() to the encoded objects (NA patterns included)",
       "status": "PASS",
-      "n": 7,
+      "n": 8,
       "detail": null
     },
     {
       "check": "chunks: R mirror of the contract checks (types, NA, indices, sort, keys, slices)",
       "status": "PASS",
-      "n": 7,
+      "n": 8,
+      "detail": null
+    },
+    {
+      "check": "CM-FDI parity: every decoded project is a CSV row and every CSV row is exported once",
+      "status": "PASS",
+      "n": 14,
+      "detail": null
+    },
+    {
+      "check": "CM-FDI parity: project fields identical() to the CSV after cleaning (17 fields)",
+      "status": "PASS",
+      "n": 14,
+      "detail": null
+    },
+    {
+      "check": "CM-FDI parity: source cells identical() to the CSV (verbatim, trimmed)",
+      "status": "PASS",
+      "n": 100,
+      "detail": null
+    },
+    {
+      "check": "CM-FDI parity: project flags and parent HQ groups follow the settings (config/partnership.yml cm_fdi)",
+      "status": "PASS",
+      "n": 14,
+      "detail": null
+    },
+    {
+      "check": "CM-FDI parity: flows, group splits and years recomputed from the decoded projects identical()",
+      "status": "PASS",
+      "n": 3,
       "detail": null
     },
     {
       "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 25 MB gz)",
       "status": "PASS",
-      "n": 7,
-      "detail": "sector 40 kB gz"
+      "n": 8,
+      "detail": "sector 46 kB gz"
     }
   ],
   "sources": [
     {
       "path": "config/sector_dictionary.yml",
       "mtime": "synthetic",
-      "bytes": 101101,
-      "md5": "0cc762c41a6310ed2a82a30b9f6f514d"
+      "bytes": 113633,
+      "md5": "5175cf766a30eac900b275b22527b9c2"
     }
   ],
   "budget": {
-    "sector_gz": 40781,
+    "sector_gz": 47069,
     "combined_gz": null,
     "limit_sector_gz": 9437184,
     "limit_combined_gz": 26214400

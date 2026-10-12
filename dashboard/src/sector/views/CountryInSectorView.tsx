@@ -1,8 +1,9 @@
 // Country in sector /sector/:tech/:stage/:iso3 (spec_sector.md 4.4): one economy's position in one
 // sector. Position tiles per country-level measure (with the value states), its rank among peers (a
 // beeswarm of the primary measure), its trade partners (where imports come from, where exports go,
-// and its import mix 2020 vs 2024), its measures over time (separate small charts, never a dual axis),
-// its policies and its stage context.
+// and its import mix 2020 vs 2024), in the four CM-FDI cells its inbound and outbound cross-border
+// manufacturing projects (sector-fdi, loaded when the section nears the viewport), its measures over
+// time (separate small charts, never a dual axis), its policies and its stage context.
 
 import { useMemo } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
@@ -20,12 +21,14 @@ import { GROUP_LABEL, partOf } from '../derive/groups.ts';
 import { regionOf, stateOf, stateWords } from '../derive/states.ts';
 import { slice } from '../derive/summary.ts';
 import { blocFlows, flowsOf, partners, supplierMixes, type TradeYear } from '../derive/trade.ts';
+import { hasFdi } from '../derive/fdi.ts';
 import { sectorCsv } from '../derive/csv.ts';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { lc, fmtShare, fmtUsd, listText, logAxisFormatter, ordinal } from '../format.ts';
 import { rankSlice } from './cards.tsx';
 import { ChunkGate, fmtFact, markGroup } from './common.tsx';
-import { useFacts, usePolicy, useSeries, useTrade } from './data.ts';
+import { useFacts, useNear, usePolicy, useSeries, useTrade } from './data.ts';
+import { FdiCountry } from './fdi/FdiCountry.tsx';
 import { Beeswarm, Dumbbell, LabelledLines, LeagueBars, SectorChartCard, type BeeswarmPoint, type DumbbellRow, type LeagueRow } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
 import { baseYear } from './TechChainView.tsx';
@@ -166,6 +169,21 @@ function TradePartners({ trade, cell, g, eu }: { trade: SectorTradeChunk; cell: 
         </SectorChartCard>
       )}
     </div>
+  );
+}
+
+/** The CM-FDI section (mounts, and loads sector-fdi, near the viewport). */
+function CrossBorder({ cell, g, tech, stage }: { cell: ItemInfo; g: GeoInfo; tech: string; stage: string }) {
+  const model = useModel();
+  const { link } = useSectorUrl();
+  const [ref, near] = useNear<HTMLElement>(600);
+  return (
+    <section ref={ref} id="investment-projects" aria-labelledby="fdi-h">
+      <h2 id="fdi-h" className="rule-neis-sm mb-4 text-xl font-medium text-paper">
+        Cross-border projects
+      </h2>
+      {near ? <FdiCountry model={model} cell={cell} g={g} geoHref={(x) => (x.kind === 'country' || x.kind === 'eu' ? link(`/sector/${tech}/${stage}/${x.code}`) : null)} /> : <div style={{ minHeight: 240 }} aria-hidden="true" />}
+    </section>
   );
 }
 
@@ -346,6 +364,7 @@ export default function CountryInSectorView() {
                     </ChunkGate>
                   </section>
                 )}
+                {hasFdi(model, cell) && <CrossBorder key={`${cell.slug}|${geo.code}`} cell={cell} g={geo} tech={tech} stage={stage} />}
                 {facts && (
                   <section aria-labelledby="ot-h">
                     <h2 id="ot-h" className="rule-neis-sm mb-4 text-xl font-medium text-paper">

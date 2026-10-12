@@ -18,7 +18,7 @@ chunks <- sector_chunks(bundle)
 
 test_that("the synthetic bundle has every chunk of this build", {
   expect_setequal(names(chunks), c("sector-meta", "sector-facts", "sector-trade-batteries", "sector-trade-oil", "sector-policy",
-                                   "sector-policy-text", "sector-series"))
+                                   "sector-policy-text", "sector-series", "sector-fdi"))
   expect_true(all(c("monthly", "capacity") %in% names(chunks$`sector-series`$series)))
 })
 
@@ -74,6 +74,40 @@ test_that("the contract checks catch broken chunks", {
   ser <- dash_osb_decode(dash_osb_encode(chunks$`sector-series`, "s", "chunk"))$objects
   ser$series$capacity$cap_status[1] <- "ramping"
   expect_match(paste(sector_check_chunk("sector-series", ser, sizes), collapse = "\n"), "cap_status has values outside")
+})
+
+test_that("per-fact notes ship in facts.notes; their caveats stay on a measure only where it has such a fact", {
+  nt <- chunks$`sector-facts`$facts$notes
+  expect_false(is.null(nt))
+  meta <- chunks$`sector-meta`
+  vid <- meta$dict$vars$id
+  it <- meta$dims$items
+  got <- paste(vid[nt$var + 1L], paste0(it$axis, ":", it$slug)[nt$item + 1L], meta$dims$geo$code[nt$geo + 1L], nt$note)
+  expect_setequal(got, c("production.fuels fuel:gas JPN eia_production", "consumption.balance fuel:gas JPN eia_production",
+                         "consumption.balance fuel:oil EST production_assumed_zero"))
+  expect_true(all(nt$note %in% meta$dict$caveats$id))
+  cv <- stats::setNames(meta$dict$vars$caveats, vid)
+  expect_identical(cv[["consumption.balance"]], "production_assumed_zero|eia_production")
+  expect_identical(cv[["production.fuels"]], "eia_production|ei_residual")
+  expect_identical(cv[["consumption.self_sufficiency"]], "self_sufficiency_ref")
+  # The R mirror of the contract: a note without its fact is an error; an unknown note id stops the build.
+  m <- dash_osb_decode(dash_osb_encode(chunks$`sector-meta`, "m", "chunk"))$objects
+  sizes <- list(geo = nrow(m$dims$geo), items = nrow(m$dims$items), vars = nrow(m$dict$vars))
+  facts <- dash_osb_decode(dash_osb_encode(chunks$`sector-facts`, "f", "chunk"))$objects
+  expect_identical(sector_check_chunk("sector-facts", facts, sizes), character())
+  bad <- facts
+  bad$facts$notes$year[1] <- 1999L
+  expect_match(paste(sector_check_chunk("sector-facts", bad, sizes), collapse = "; "), "facts.notes has rows without a facts.obs row")
+  b2 <- bundle
+  b2$fact_notes$note[1] <- "no_such_caveat"
+  expect_error(sector_chunks(b2), "note ids not in dict.caveats")
+  b3 <- bundle
+  b3$fact_notes$geo[1] <- "HKG"
+  expect_error(sector_chunks(b3), "notes for facts that are not shipped")
+  # Without notes the optional table is left out.
+  b4 <- bundle
+  b4$fact_notes <- NULL
+  expect_null(sector_chunks(b4)$`sector-facts`$facts$notes)
 })
 
 test_that("observation tables are sorted, sliced and keyed by the dictionary order", {

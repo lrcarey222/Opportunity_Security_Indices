@@ -4,8 +4,8 @@
 // Year, or "latest available up to" for per-row years; Show as; Scale; Economies; on phones the last
 // four sit behind "More filters (n)"); the result line; then the layout of the measure's native level
 // (country, region, entity, world, cell_global, dyad) or its special form (policy, area-integrated
-// potential, mineral demand, manufacturing capacity), and the notes card. The default theme is trade;
-// an unknown theme goes to /sector/explore with a notice.
+// potential, mineral demand, manufacturing capacity, the CM-FDI cross-border projects), and the notes
+// card. The default theme is trade; an unknown theme goes to /sector/explore with a notice.
 
 import { useMemo } from 'react';
 import { Navigate, useParams } from 'react-router';
@@ -24,6 +24,7 @@ import { ThemeChips } from '../kit.tsx';
 import { useSectorUrl } from '../state.tsx';
 import { CountryLayout } from './CountryLayout.tsx';
 import { indexFor, type ExploreCtx } from './ctx.ts';
+import { FdiLayout } from './FdiLayout.tsx';
 import { FlowsLayout } from './Flows.tsx';
 import { CapacityLayout, CellGlobalLayout, EntityLayout, MineralDemandLayout, RegionLayout, ScatterLayout, WorldLayout } from './Layouts.tsx';
 import { NotesCard } from './Notes.tsx';
@@ -126,6 +127,8 @@ function Body({ c, layout }: { c: ExploreCtx; layout: ExploreLayout }) {
       return <MineralDemandLayout c={c} />;
     case 'capacity':
       return <CapacityLayout c={c} />;
+    case 'fdi':
+      return <FdiLayout c={c} />;
   }
 }
 
@@ -147,6 +150,8 @@ export default function ExploreView() {
   const years = useMemo(() => {
     if (!v || !item) return [];
     if (layout === 'dyad') return [...v.years];
+    // CM-FDI: every announcement year is in the cards (with their own window switch), no year select
+    if (layout === 'fdi') return [];
     return [...new Set([...(facts?.yearsOf(v.idx, item.idx) ?? []), ...(series?.yearsOf(v.idx, item.idx) ?? [])])].sort((a, z) => a - z);
   }, [v, item, layout, facts, series]);
   const year = v ? pickYear(v, years, state.y) : null;

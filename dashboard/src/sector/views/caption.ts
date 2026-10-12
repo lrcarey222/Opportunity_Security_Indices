@@ -5,6 +5,7 @@
 import type { CaptionInfo, CaptionResolver, VarRef } from '../charts/types.ts';
 import type { FactsIndex } from '../data/facts.ts';
 import type { ItemInfo, SectorModel, VarInfo } from '../data/model.ts';
+import { isFdiVar } from '../derive/fdi.ts';
 
 /** The item of a var ref (by slug on the var's item axis), or the var's only item. */
 export function refItem(model: SectorModel, v: VarInfo, slug: string | null | undefined): ItemInfo | null {
@@ -39,6 +40,25 @@ export function yearText(v: VarInfo, r: VarRef): string {
   return v.data_year;
 }
 
+/**
+ * The dictionary's data_year as a badge: as written when short, else the years it names ("to 2030",
+ * "2018 → 2025"), else the span of the measure's years; the full text stays in the sub line. (A badge
+ * does not wrap: the 82-character PAMS text pushed the Policy card 57 px past a 390 px screen.)
+ */
+export function dataYearBadge(v: VarInfo): string {
+  const t = v.data_year;
+  if (t.length <= 44) return t;
+  const ys = (t.match(/\b(?:19|20)\d{2}\b/g) ?? []).map(Number);
+  if (ys.length >= 2) return `${Math.min(...ys)} → ${Math.max(...ys)}`;
+  if (ys.length === 1) return /\bto\s+\d{4}\b/.test(t) ? `to ${ys[0]}` : String(ys[0]);
+  if (v.years.length) {
+    const lo = Math.min(...v.years);
+    const hi = Math.max(...v.years);
+    return lo === hi ? String(lo) : `${lo} → ${hi}`;
+  }
+  return `${t.slice(0, 40)}…`;
+}
+
 function badgeText(v: VarInfo, r: VarRef): string {
   if (r.window) return `${r.window[0]} → ${r.window[1]}`;
   if (/not updated/i.test(v.data_year)) return v.data_year;
@@ -48,7 +68,7 @@ function badgeText(v: VarInfo, r: VarRef): string {
     if (v.projection_from !== null && r.year >= v.projection_from) return `${r.year} · projection`;
     return v.year_field ? 'latest per economy' : String(r.year);
   }
-  return v.data_year;
+  return dataYearBadge(v);
 }
 
 /** Economies (kind country) with a value in a slice, or the avail count. */
@@ -84,7 +104,9 @@ export function makeCaptionResolver(model: SectorModel, getFacts: () => FactsInd
     const subs = xs.map(({ r, v }) => {
       const item = refItem(model, v, r.item);
       const unit = model.unitOf(v, item?.idx ?? null);
-      const n = v.native_level === 'country' ? nEconomies(model, facts, v, item, r.year) : null;
+      // CM-FDI cards filter the projects (basis, announcement window, economy): the build's destination
+      // count would not match them, so those cards state their own counts
+      const n = v.native_level === 'country' && !isFdiVar(v.id) ? nEconomies(model, facts, v, item, r.year) : null;
       const src = `${v.source.short}${v.source.edition ? ` ${v.source.edition}` : ''}`;
       return [v.label, unit.long || unit.short, yearText(v, r), src, n ? `${n} economies` : null].filter(Boolean).join(' · ');
     });
