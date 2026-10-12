@@ -41,6 +41,15 @@
 #     Upstream now holds the grid's copper and aluminium inputs (ore, blister, cathode;
 #     bauxite, alumina, unwrought aluminium), kept with that caveat; the Batteries rows of
 #     copper ore, bauxite and alumina stay excluded, so each code is in one basket.
+#   * No code sits in two stages of one technology. The Upstream baskets of Electric
+#     Vehicles, Solar, Wind, Nuclear and Semiconductors (user decision 2026-10-11) therefore
+#     moved the first traded form of a raw material out of Midstream rather than copying it:
+#     rare-earth compounds and metals (EV and Wind; the HS has no rare-earth ore code apart
+#     from monazite, 2612.20), natural uranium compounds (2844.10, how most mines ship
+#     yellowcake) and unwrought gallium, germanium and indium (8112.92, bridged to HS92
+#     8112.91, the same named minor metals). EV Upstream shares Batteries Upstream's ores
+#     and concentrates (a code in two technologies counts fully in each); Solar Upstream is
+#     silicon metal (2804.69).
 
 HS6_MASTER_COLUMNS <- c("tech", "supply_chain", "sub_sector", "hs6", "essential")
 

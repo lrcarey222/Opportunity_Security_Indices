@@ -393,3 +393,99 @@ test_that("the staged Comtrade pulls hold every Electric Grid Upstream code", {
     expect_true(all(basket %in% hs6_clean_code(trade$cmd_code[trade$flow_code == flow])), info = flow)
   }
 })
+
+test_that("no code sits in two stages of one technology", {
+  opsi_load_hs6()
+  long <- hs6_normalize_master(opsi_hs6_master())
+
+  # Stage follows the product, so a product has one stage in a technology's value chain. An Upstream
+  # basket takes a code out of the technology's Midstream rather than copying it (rare earths, natural
+  # uranium and the minor metals, 2026-10-11); a copy would count the same trade in two of its stages.
+  cells <- unique(long[, c("tech", "supply_chain", "hs6")])
+  expect_false(anyDuplicated(cells[, c("tech", "hs6")]) > 0)
+})
+
+UPSTREAM_2026_10_11 <- c("Electric Vehicles", "Solar", "Wind", "Nuclear", "Semiconductors")
+
+test_that("Electric Vehicles, Solar, Wind, Nuclear and Semiconductors have Upstream trade baskets", {
+  opsi_load_hs6()
+  master <- opsi_hs6_master()
+  skip_if_not("excluded" %in% names(master), "master predates the basket review")
+  long <- hs6_normalize_master(master)
+  codes_in <- function(t, s) sort(unique(long$hs6[long$tech == t & long$supply_chain == s]))
+
+  # User decision 2026-10-11: the five Upstream cells get a trade basket, by sub-component.
+  ree <- c("261220", "284690", "280530") # monazite, rare-earth compounds, rare-earth metals
+  battery_ores <- c("253090", "260400", "260500", "260200", "250410")
+  expect_setequal(codes_in("Electric Vehicles", "Upstream"), c(battery_ores, ree))
+  expect_setequal(codes_in("Wind", "Upstream"), ree)
+  expect_setequal(codes_in("Nuclear", "Upstream"), c("261210", "284410"))
+  expect_setequal(codes_in("Solar", "Upstream"), "280469")
+  expect_setequal(codes_in("Semiconductors", "Upstream"), c("811291", "811292"))
+  up <- long[long$supply_chain == "Upstream" & long$tech %in% UPSTREAM_2026_10_11, ]
+  expect_true(all(up$essential))
+  # One sub-component per code (Sector Insights shows the cells by sub-component).
+  expect_gte(length(unique(up$sub_sector[up$tech == "Electric Vehicles"])), 8)
+
+  # EV Upstream shares exactly Batteries Upstream's ores and concentrates. The battery recycling codes,
+  # the refined chemicals and intermediates (Batteries Midstream) and copper ore (Electric Grid) are
+  # not in it.
+  bat_up <- long[long$tech == "Batteries" & long$supply_chain == "Upstream", ]
+  expect_setequal(bat_up$hs6[bat_up$sub_sector == "Ores & Concentrates"], battery_ores)
+  expect_false(any(c("854913", "750300", "810530", "283691", "282520", "750110", "750120", "810520", "260300") %in%
+                     codes_in("Electric Vehicles", "Upstream")))
+
+  # The first traded form of each raw material moved out of Midstream; components stay there.
+  expect_false(any(c("280530", "284690") %in% c(codes_in("Electric Vehicles", "Midstream"), codes_in("Wind", "Midstream"))))
+  expect_true(all(c("850511", "850519") %in% codes_in("Wind", "Midstream")))
+  expect_true(all(c("850511", "850519") %in% codes_in("Electric Vehicles", "Midstream")))
+  expect_false("284410" %in% codes_in("Nuclear", "Midstream"))
+  expect_true(all(c("284420", "284450", "840110") %in% codes_in("Nuclear", "Midstream")))
+  expect_false("811292" %in% codes_in("Semiconductors", "Midstream"))
+  expect_true(all(c("280461", "282560", "381800", "811299") %in% codes_in("Semiconductors", "Midstream")))
+  expect_true(all(c("280461", "381800") %in% codes_in("Solar", "Midstream")))
+
+  # Left out, the reasons in the notes: thorium ores in Nuclear (monazite, sold for its rare earths),
+  # cerium compounds, quartz, silver, tellurium, arsenic, rare gases, fluorspar; copper stays Grid's.
+  expect_false("261220" %in% codes_in("Nuclear", "Upstream"))
+  expect_false(any(c("284610", "250610", "710691", "710610", "261610", "280450", "280480", "280429", "252921",
+                     "252922", "260300", "740311") %in% up$hs6))
+
+  # Only the HS92 bridge of 8112.92 is a legacy code, beside its successor.
+  expect_identical(sort(unique(up$hs6[up$legacy_hs])), "811291")
+
+  # Each row says why it is there (added or moved, with the decision), the caveat where the technology is
+  # not the dominant use, and its share of the cell's basket.
+  rows <- master[master$supply_chain == "Upstream" & master$tech %in% UPSTREAM_2026_10_11 & !as.logical(master$excluded), ]
+  expect_equal(nrow(rows), 16)
+  expect_true(all(grepl("user decision 2026-10-11", rows$note, fixed = TRUE)))
+  expect_true(all(grepl("^(added \\(basket review 2026-10|moved from Midstream \\(|legacy HS92)", rows$note)))
+  current <- rows[!as.logical(rows$legacy_hs), ]
+  expect_true(all(mapply(function(note, tech) grepl(paste0("% of the Comtrade 2024 ", tech, " Upstream basket"), note, fixed = TRUE),
+                         current$note, current$tech)))
+  caveat <- hs6_clean_code(rows$hs6) %in% c("280530", "284690", "253090", "260400", "260200", "284410", "280469", "811292", "811291")
+  expect_true(all(grepl("kept with caveat", rows$note[caveat], fixed = TRUE)))
+})
+
+test_that("the staged dyad pull holds every current basket code", {
+  opsi_load_hs6()
+  long <- hs6_normalize_master(opsi_hs6_master())
+  path <- file.path(opsi_hs6_root(), "data", "raw", "comtrade_energy_dyads_all.csv")
+  skip_if_not(file.exists(path), "comtrade_energy_dyads_all.csv not staged")
+  skip_if_not_installed("data.table")
+
+  # The partner themes, the network and Sector Insights read the bilateral pull; a code it lacks
+  # drops out of every cell without an error. Codes added after the main pull come from supplementary
+  # pulls (scripts/98, COMTRADE_DYADS_CODES), which the combine must name (COMTRADE_DYADS_COMBINE_DIRS).
+  d <- unique(data.table::fread(path, select = c("ref_year", "flow_code", "cmd_code"), colClasses = "character",
+                                showProgress = FALSE))
+  current <- unique(long$hs6[!long$legacy_hs])
+  new_up <- unique(long$hs6[!long$legacy_hs & long$supply_chain == "Upstream" & long$tech %in% UPSTREAM_2026_10_11])
+  for (flow in c("X", "M")) {
+    expect_identical(setdiff(current, hs6_clean_code(d$cmd_code[d$ref_year == "2024" & d$flow_code == flow])),
+                     character(), info = paste("2024", flow))
+    # 2020 lacks only codes HS2022 created; the new Upstream codes all predate it.
+    expect_identical(setdiff(new_up, hs6_clean_code(d$cmd_code[d$ref_year == "2020" & d$flow_code == flow])),
+                     character(), info = paste("2020", flow))
+  }
+})
