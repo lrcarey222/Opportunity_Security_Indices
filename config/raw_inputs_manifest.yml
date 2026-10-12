@@ -21,16 +21,18 @@ inputs:
   url: https://comtradeplus.un.org/
   cadence: annual
   owner: lcarey@rmi.org
-  vintage: 2020 and 2024; main pull 2026-10-07/08 (298 codes), supplement 2026-10-09
-    (740200 740311 760110 760120)
+  vintage: 2020 and 2024; main pull 2026-10-07/08 (298 codes), supplements 2026-10-09
+    (740200 740311 760110 760120) and 2026-10-12 UTC (261210 261220 280469 811291)
   staged_from: pipeline
   notes: Written by scripts/98_pull_comtrade_energy_dyads.R (chunked, resumable);
-    requires COMTRADE_API_KEY. Combined from two chunk directories with disjoint codes
-    - the main pull of the whole master (2026-10-07/08) and a supplementary pull of
-    the four Electric Grid Upstream codes the basket gained on 2026-10-09 (COMTRADE_DYADS_CODES,
-    14 calls, same getDA reporter lists, so 168 reporters in 2020 and 143 in 2024);
-    rebuild with COMTRADE_DYADS_STAGE=combine and COMTRADE_DYADS_COMBINE_DIRS naming
-    the supplementary directory.
+    requires COMTRADE_API_KEY. Combined from three chunk directories with disjoint codes
+    - the main pull of the whole master (2026-10-07/08) and supplementary pulls of the
+    codes the basket gained later (COMTRADE_DYADS_CODES, same getDA reporter lists, so
+    168 reporters in 2020 and 143 in 2024) - the four Electric Grid Upstream codes of
+    2026-10-09 (14 calls) and the four new codes of the Upstream baskets of 2026-10-11
+    (uranium ores, monazite, silicon metal and the HS92 bridge 8112.91, which has no
+    record; 14 calls on 2026-10-12 UTC); rebuild with COMTRADE_DYADS_STAGE=combine and
+    COMTRADE_DYADS_COMBINE_DIRS naming both supplementary directories.
   required_by:
   - scripts/15_build_partner_themes.R
   - scripts/30_build_allied_network_design.R
@@ -43,13 +45,16 @@ inputs:
   cadence: annual
   owner: lcarey@rmi.org
   vintage: 2024; World rows of the all-reporter dyad pull (main 2026-10-07/08, Electric
-    Grid Upstream supplement 2026-10-09), derived 2026-10-09
+    Grid Upstream supplement 2026-10-09, Upstream-basket supplement 2026-10-12 UTC),
+    derived 2026-10-09 and extended 2026-10-12 UTC
   staged_from: pipeline
   notes: Reporter x World totals of every basket code, 142 export and 143 import reporters
     (Taiwan, Comtrade's S19, as TWN). Written by scripts/98_pull_comtrade_energy_dyads.R
     (COMTRADE_DYADS_STAGE=energy_trade) from the World rows of the dyad chunks; it
     replaced the scripts/05 pull staged 2026-09-30, which lacked 60 of the 256 basket
-    codes and 13 reporters. The rows of four HS 4403 codes outside the basket (440321
+    codes and 13 reporters. The rerun of 2026-10-12 UTC with the third chunk directory
+    added the World rows of 261210, 261220 and 280469 (246 rows; every earlier row
+    unchanged, no TOTAL call). The rows of four HS 4403 codes outside the basket (440321
     440323 440324 440325) are kept from that pull. A scripts/05 run with downloads
     overwrites the file; rerun the energy_trade stage afterwards.
   required_by:
@@ -137,6 +142,36 @@ inputs:
   staged_from: pipeline
   required_by:
   - scripts/10_build_themes.R
+- id: eia_intl_fossil_production
+  path: eia_intl_fossil_production.csv
+  source_type: api
+  source_name: U.S. Energy Information Administration, International Energy Statistics
+    (bulk file INTL.zip), fossil fuel production and consumption by country
+  url: https://www.eia.gov/opendata/bulk/INTL.zip
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: downloaded (accessed) 2026-10-11; INTL.txt dated 2026-10-03 (24,153,479-byte
+    zip); oil production to 2025, gas and coal to 2024, oil consumption to 2024 (2025
+    for a few economies)
+  licence: US government work, public domain (no API key)
+  staged_from: sharepoint
+  notes: 'Written by scripts/fetchers/eia_intl.R (Rscript scripts/fetchers/eia_intl.R),
+    which downloads the zip into a new temporary directory, parses INTL.txt as data (one
+    JSON object per series) and keeps 8 annual series for ISO3 geographies, 2000 on:
+    production of crude oil incl. lease condensate (57, TBPD), NGPL (58, TBPD), dry natural
+    gas (26, BCM) and coal (7, TJ); consumption of petroleum and other liquids (5, TBPD
+    and TJ), dry natural gas (26, BCM) and coal (7, TJ). Tidy columns iso3, country, fuel,
+    flow, component, year, value, unit, series_id, value_note (EIA''s code where it gives
+    no number: --, NA, ie, w; the value is then missing, never 0), last_updated, fetched_on.
+    43,948 rows, 225 economies, 1,790 series. Supplies the oil, gas and coal production EI does not report
+    for an economy (import dependence and production themes; R/utils/eia_intl.R holds the
+    unit conversions, the year rule and the comparability check). fetch_policy is fallback:
+    EIA revises the series monthly, so the staged copy is kept until it is refetched on
+    purpose. Staged only in the worktree data/raw so far: copy it to the SharePoint raw
+    folder.'
+  required_by:
+  - scripts/10_build_themes.R
+  - scripts/40_build_index_vintages.R
 - id: ilo_earnings_by_activity
   path: ilo_earnings_by_activity.csv
   source_type: api
@@ -503,6 +538,34 @@ inputs:
     otherwise); also the Friendshore/Opportunity climate penalty.
   required_by:
   - scripts/10_build_themes.R
+  - scripts/15_build_partner_themes.R
+- id: cm_fdi_projects
+  path: cm_fdi_projects.csv
+  source_type: manual
+  source_name: Cleantech Manufacturing FDI Dataset (CM-FDI), Net Zero Industrial Policy
+    Lab, Johns Hopkins University; project-level CSV export
+  url: https://cmfdi.netzeropolicylab.com/
+  cadence: irregular
+  owner: lcarey@rmi.org
+  vintage: edition 2026.10.05; downloaded 2026-10-11 (cm-fdi-projects.csv, 861,911 bytes,
+    1,042 projects)
+  licence: CC-BY-4.0
+  staged_from: sharepoint
+  notes: 'Cite as (the site''s form): Bandara, P. and the Net Zero Industrial Policy Lab.
+    Cleantech Manufacturing FDI Dataset, edition 2026.10.05. Johns Hopkins University.
+    https://cmfdi.netzeropolicylab.com. Released under CC BY 4.0 (credit the source and
+    indicate changes). The site''s CSV export staged under this name, byte-identical
+    (UTF-8 with BOM, 28 columns): one row per cross-border greenfield or expansion project
+    in solar, wind, battery and EV manufacturing (parent company and its headquarters
+    economy, destination country and city, status, years announced and completed, technology,
+    industry activity, capital investment in US$ million with blanks for undisclosed amounts,
+    joint-venture fields, and a source link per field). Read by scripts/15 through
+    R/themes/partnership_strength/cm_fdi.R (settings in config/partnership.yml cm_fdi): the
+    Friendshore investment ties in (Solar, Wind, Batteries, EV) x Midstream and the
+    chinese_parent_exposure component. Refresh by downloading the CSV from the site and
+    replacing the file (update the edition here and in config/partnership.yml). Staged
+    only in the worktree data/raw so far: copy it to the SharePoint raw folder.'
+  required_by:
   - scripts/15_build_partner_themes.R
 - id: columbia_critmin_hs
   path: Columbia University Critical Minerals Dashboard/unique_comtrade.csv
