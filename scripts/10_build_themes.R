@@ -43,6 +43,7 @@ source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "utils", "iea_critical_minerals.R"))
 source(file.path(repo_root, "R", "utils", "iea_ev.R"))
+source(file.path(repo_root, "R", "utils", "eia_intl.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
@@ -137,6 +138,11 @@ raw_manifest <- read_raw_inputs_manifest(manifest_path)
 # without a code edit. `fallback` keeps the previously pinned name working when no
 # other candidate is present.
 raw_path <- file.path(raw_data_path, "ei_stat_review_world_energy.csv")
+# EIA International Energy Statistics fossil fuel production and consumption, staged by
+# scripts/fetchers/eia_intl.R (manifest id eia_intl_fossil_production). It supplies the oil, gas
+# and coal production EI does not report for an economy (R/utils/eia_intl.R; import dependence
+# and production themes).
+eia_intl_path <- file.path(raw_data_path, "eia_intl_fossil_production.csv")
 reserves_excel_path <- file.path(raw_data_path, "ei_stat_review_world_energy_wide.xlsx")
 # Critical-mineral reserves: USGS Mineral Commodity Summaries 2026, the commodity table of the
 # ScienceBase data release (doi:10.5066/P1WKQ63T) staged under this name. Pinned rather than
@@ -298,6 +304,7 @@ if (!file.exists(uranium_production_path)) {
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
   raw_path,
+  eia_intl_path,
   reserves_excel_path,
   usgs_mcs_path,
   critical_minerals_path,
@@ -346,6 +353,16 @@ if (investment_monitor_path %in% missing_files && !skip_data_downloads) {
   )
 }
 
+if (eia_intl_path %in% missing_files && !skip_data_downloads) {
+  stop(
+    "Missing the EIA International Energy Statistics extract at ", eia_intl_path, ". The import ",
+    "dependence and production themes take the oil, gas and coal production EI does not report ",
+    "from it. Stage it with `Rscript scripts/fetchers/eia_intl.R` (downloads ",
+    "https://www.eia.gov/opendata/bulk/INTL.zip, public, no key) or scripts/05_ingest_sources.R, ",
+    "or copy eia_intl_fossil_production.csv from the SharePoint raw folder."
+  )
+}
+
 if (length(missing_files) > 0 && !skip_data_downloads) {
   expected_list <- paste0("- ", missing_files, collapse = "\n")
   stop("Missing required raw data. Expected raw files:\n", expected_list)
@@ -375,6 +392,9 @@ country_info <- standardize_country_info(country_info)
 
 
   ei <- read.csv(raw_path)
+  # Fills the EI fuel production gaps of the import dependence and production themes. Only empty
+  # cells are missing: "NA" in value_note is EIA's own code for "not available".
+  eia_intl <- read.csv(eia_intl_path, stringsAsFactors = FALSE, na.strings = "")
   # Shared WDI country reference for multiple themes.
   gdp_data <- read.csv(wdi_gdp_path)
   country_reference <- foreign_dependency_build_country_reference(ei, year = 2025)
@@ -420,7 +440,11 @@ country_info <- standardize_country_info(country_info)
   write_processed_tbl(geothermal_potential_tbl, "geothermal_potential_tbl", processed_dir)
 
   # Theme: Import dependence (EI data).
-  import_dependence_tbl <- import_dependence(ei)
+  # Production EI does not report comes from EIA (same year; gas and coal, a year behind in EIA,
+  # from its latest year) and counts as observed. Exporters EI lists with production but no
+  # consumption row (Angola, Nigeria, Libya, Guyana, ...) take EIA consumption too
+  # (eia_fill_consumption, adopted 2026-10-11 with the production fill; README, ES "2) Energy Imports").
+  import_dependence_tbl <- import_dependence(ei, eia = eia_intl, eia_fill_consumption = TRUE)
   import_dependence_tbl <- standardize_theme_types(import_dependence_tbl, country_info = country_info)
   write_processed_tbl(import_dependence_tbl, "import_dependence_tbl", processed_dir)
 
@@ -830,7 +854,9 @@ country_info <- standardize_country_info(country_info)
     critical = critical,
     mineral_demand_clean = mineral_demand_clean,
     country_info = country_info,
-    uranium_production = uranium_production
+    uranium_production = uranium_production,
+    # Oil, gas and coal production EI does not report, from EIA (as for import dependence).
+    eia = eia_intl
   )
   production_depth_momentum_tbl <- standardize_theme_types(
     production_depth_momentum_tbl,

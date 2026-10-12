@@ -1,5 +1,27 @@
 # Production depth + momentum theme builder functions.
 
+# EI fuel production variables and the theme's cell labels; EIA fills these (see below).
+PRODUCTION_EI_FUEL_VARS <- c(
+  "Oil Upstream" = "oilprod_kbd",
+  "Gas Upstream" = "gasprod_ej",
+  "Coal Upstream" = "coalprod_ej"
+)
+
+# Every economy EI lists for any of `vars` in any of `years` is scored on every cell.
+#
+# Fuel production (Oil, Gas, Coal Upstream) EI does not report for one of them: with `eia` (the
+# staged EIA International Energy Statistics extract, R/utils/eia_intl.R) the cell takes the
+# EIA value of the same year in EI's units (gas and coal, which EIA publishes a year after oil,
+# the latest EIA year within `eia_max_lag` years), recorded in `eia_note` and `eia_used`; a cell
+# EIA has no value for, or one whose fuel is not EI's (EIA_INTL_COMPARABILITY: Estonia coal,
+# where EI counts oil shale), is NA and the pillar's missing-data rule fills its index. EI's production
+# tables list fewer economies than its consumption and generation tables and fold the rest into
+# "Other <region>" residuals, so an absent row is not a zero. Without `eia` (fixtures, older
+# callers) such a cell is 0, as before 2026-10-11.
+#
+# Generation (the Downstream cells) EI does not report is still 0, with or without `eia`: EI's
+# electricity-by-fuel table lists 31 of the 99 economies, and on 2026-10-11 EIA had positive net
+# generation for 35 (coal), 60 (gas) and 63 (oil) of the other 68 (scratch notes, fixes8).
 production_depth_momentum_clean_energy_production <- function(ei,
                                                               years = c(2015, 2020, 2025),
                                                               vars = c(
@@ -12,7 +34,9 @@ production_depth_momentum_clean_energy_production <- function(ei,
                                                                 "electbyfuel_coal",
                                                                 "electbyfuel_gas",
                                                                 "electbyfuel_oil"
-                                                              )) {
+                                                              ),
+                                                              eia = NULL,
+                                                              eia_max_lag = 1L) {
   require_columns(ei, c("Country", "Year", "Var", "Value"), label = "ei")
 
   # Reference the observation years by value rather than by literal column name so a new
@@ -22,7 +46,7 @@ production_depth_momentum_clean_energy_production <- function(ei,
   yr_base5 <- as.character(years[2])
   yr_latest <- as.character(years[length(years)])
 
-  ei %>%
+  long <- ei %>%
     dplyr::select(Country, Year, Var, Value) %>%
     # Standardized before ranking; "USSR" (EI's CIS aggregate) goes with the aggregates.
     dplyr::mutate(
@@ -51,12 +75,24 @@ production_depth_momentum_clean_energy_production <- function(ei,
       )
     ) %>%
     dplyr::group_by(Country, Year, Var) %>%
-    dplyr::summarize(Value = sum(Value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::summarize(Value = sum(Value, na.rm = TRUE), .groups = "drop")
+
+  eia_notes <- NULL
+  fuel_vars <- PRODUCTION_EI_FUEL_VARS[PRODUCTION_EI_FUEL_VARS %in% vars]
+  if (!is.null(eia) && length(fuel_vars) > 0) {
+    filled <- production_depth_momentum_fill_eia(long, ei, eia, fuel_vars, years, eia_max_lag)
+    # Explicit rows, NA where EIA has no value either, so complete() below leaves them alone.
+    long <- dplyr::bind_rows(long, dplyr::transmute(filled, Country, Year, Var, Value = value))
+    eia_notes <- production_depth_momentum_eia_notes(filled, yr_latest)
+  }
+
+  production <- long %>%
     tidyr::complete(
       Country,
       Year,
       Var,
-      fill = list(Value = 0)
+      fill = list(Value = 0),
+      explicit = FALSE
     ) %>%
     tidyr::pivot_wider(names_from = "Year", values_from = "Value") %>%
     dplyr::mutate(
@@ -75,6 +111,89 @@ production_depth_momentum_clean_energy_production <- function(ei,
       values_to = "value"
     ) %>%
     tidyr::pivot_wider(names_from = year, values_from = value)
+
+  if (!is.null(eia_notes)) {
+    production <- dplyr::left_join(production, eia_notes, by = c("Country", "Var"))
+  }
+  production
+}
+
+# The fuel cells (economy x year x Var label) of `long` EI does not report, with the EIA value
+# (eia_intl_lookup(): value, eia_year, series_id, eia_basis, eia_consumption_coverage). ISO3 codes
+# come from EI's own ISO3166_alpha3 column. Each value is checked against EI's consumption of the
+# fuel in the same year where EI has it (EIA_INTL_COMPARABILITY: Estonia coal fails, because EI
+# counts oil shale as coal).
+production_depth_momentum_fill_eia <- function(long, ei, eia, fuel_vars, years, max_lag = 1L) {
+  absent <- tidyr::crossing(Country = unique(long$Country), Year = as.integer(years), Var = names(fuel_vars)) %>%
+    dplyr::anti_join(dplyr::distinct(long, Country, Year, Var), by = c("Country", "Year", "Var"))
+  iso3 <- ei_iso3_lookup(ei)
+  consumption <- ei %>%
+    dplyr::filter(Var %in% EIA_INTL_CONSUMPTION_OF) %>%
+    dplyr::transmute(
+      Country = standardize_country_names(Country),
+      Year = as.integer(Year),
+      cons_var = Var,
+      ei_consumption = as.numeric(Value)
+    ) %>%
+    dplyr::filter(Year %in% as.integer(years), !is.na(Country)) %>%
+    dplyr::group_by(Country, Year, cons_var) %>%
+    dplyr::summarize(ei_consumption = sum(ei_consumption, na.rm = TRUE), .groups = "drop")
+  cells <- absent %>%
+    dplyr::mutate(
+      iso3 = iso3$iso3[match(Country, iso3$Country)],
+      ei_var = unname(fuel_vars[Var]),
+      year = Year,
+      cons_var = unname(EIA_INTL_CONSUMPTION_OF[ei_var])
+    ) %>%
+    dplyr::left_join(consumption, by = c("Country", "Year", "cons_var"))
+  eia_intl_lookup(cells, eia, max_lag = max_lag, ei_consumption = cells$ei_consumption) %>%
+    dplyr::select(Country, Year, Var, ei_var, value, eia_year, eia_basis, series_id, eia_consumption_coverage)
+}
+
+# One note per economy and fuel cell EI does not report in some year, for the explanation of its
+# rows: the years EIA supplies (from which EIA year, how converted) and the years left NA (no EIA
+# value, or one that fails the comparability check). `eia_used`: some year has an EIA value, so
+# the rows' source names EIA beside EI.
+production_depth_momentum_eia_notes <- function(filled, yr_latest) {
+  if (nrow(filled) == 0) {
+    return(tibble::tibble(Country = character(), Var = character(), eia_note = character(), eia_used = logical()))
+  }
+  filled %>%
+    dplyr::mutate(
+      fuel = sub(" Upstream$", "", Var),
+      used = !is.na(value),
+      not_comparable = eia_basis %in% "not_comparable",
+      year_txt = dplyr::case_when(
+        !used ~ as.character(Year),
+        eia_basis == "no_series" ~ paste0(Year, " (no EIA production series: 0)"),
+        eia_year != Year ~ paste0(Year, " (EIA ", eia_year, ", its latest year)"),
+        TRUE ~ as.character(Year)
+      )
+    ) %>%
+    dplyr::arrange(Country, Var, Year) %>%
+    dplyr::group_by(Country, Var) %>%
+    dplyr::summarize(
+      eia_used = any(used),
+      eia_note = paste0(
+        "EI does not report ", tolower(dplyr::first(fuel)), " production for this economy separately",
+        if (any(used)) {
+          paste0(
+            "; ", EIA_INTL_SOURCE, " for ", paste(year_txt[used], collapse = ", "), " (",
+            eia_intl_conversion_text(dplyr::first(ei_var)), ")"
+          )
+        } else "",
+        if (any(not_comparable)) {
+          paste0(
+            "; NA in ", paste(year_txt[not_comparable], collapse = ", "), ": ",
+            eia_intl_not_comparable_text(dplyr::first(fuel), eia_consumption_coverage[not_comparable])
+          )
+        } else "",
+        if (any(!used & !not_comparable)) {
+          paste0("; NA in ", paste(year_txt[!used & !not_comparable], collapse = ", "), " (no EIA value)")
+        } else ""
+      ),
+      .groups = "drop"
+    )
 }
 
 production_depth_momentum_build_energy_indices <- function(production_clean,
@@ -331,7 +450,11 @@ production_depth_momentum_build_combined <- function(production_growth,
       growth_abs_index,
       overall_production_index,
       block = "energy",
-      source = energy_source
+      source = energy_source,
+      # Set where EI does not report a fuel value (production_depth_momentum_clean_energy_production());
+      # eia_used where EIA supplied one.
+      eia_note = if ("eia_note" %in% names(production_growth)) eia_note else NA_character_,
+      eia_used = if ("eia_used" %in% names(production_growth)) eia_used %in% TRUE else FALSE
     )
   mineral_tbl <- mineral_production %>%
     dplyr::transmute(
@@ -373,6 +496,18 @@ production_depth_momentum_build_table <- function(production_combined,
   if (!"horizon_year" %in% names(production_combined)) {
     production_combined$horizon_year <- NA_integer_
   }
+  # A fuel cell with an EIA value names EIA beside EI in its source and says which years came
+  # from it; an EIA value is observed data, not an imputation.
+  if (!"eia_note" %in% names(production_combined)) {
+    production_combined$eia_note <- NA_character_
+  }
+  if (!"eia_used" %in% names(production_combined)) {
+    production_combined$eia_used <- !is.na(production_combined$eia_note)
+  }
+  from_eia <- production_combined$eia_used %in% TRUE
+  production_combined$source[from_eia] <- paste0(
+    production_combined$source[from_eia], "; EIA International Energy Statistics"
+  )
 
   production_combined %>%
     dplyr::filter(supply_chain != "Midstream") %>%
@@ -414,6 +549,11 @@ production_depth_momentum_build_table <- function(production_combined,
         metric_clean == "overall_production" ~
           glue::glue("Composite index: mean of size & growth indices, then min-max scaled for {tech}"),
         TRUE ~ metric_clean
+      ),
+      explanation = dplyr::if_else(
+        is.na(eia_note),
+        as.character(explanation),
+        paste0(explanation, ". ", eia_note)
       )
     ) %>%
     dplyr::transmute(
@@ -480,10 +620,16 @@ production_depth_momentum <- function(ei,
                                       year = 2025,
                                       mineral_year = iea_critical_minerals_base_year(critical),
                                       gamma = 0.5,
-                                      uranium_production = NULL) {
+                                      uranium_production = NULL,
+                                      eia = NULL,
+                                      eia_max_lag = 1L) {
+  # `eia`: the staged EIA International Energy Statistics extract, which supplies the fuel
+  # production EI does not report (production_depth_momentum_clean_energy_production()).
   production_clean <- production_depth_momentum_clean_energy_production(
     ei,
-    years = c(year - 10L, year - 5L, year)
+    years = c(year - 10L, year - 5L, year),
+    eia = eia,
+    eia_max_lag = eia_max_lag
   )
   production_growth <- production_depth_momentum_build_energy_indices(
     production_clean,

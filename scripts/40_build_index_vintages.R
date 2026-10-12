@@ -83,6 +83,7 @@ source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "utils", "theme_standardize.R"))
 source(file.path(repo_root, "R", "utils", "iea_critical_minerals.R"))
+source(file.path(repo_root, "R", "utils", "eia_intl.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "categories", "trade", "trade_core.R"))
 source(file.path(repo_root, "R", "categories", "energy_access", "energy_access_consumption.R"))
@@ -204,6 +205,17 @@ gdp_data <- read.csv(file.path(raw_data_path, "wdi_gdp.csv"))
 ei <- read.csv(file.path(raw_data_path, "ei_stat_review_world_energy.csv"))
 ei_years <- sort(unique(suppressWarnings(as.integer(ei$Year))))
 ei_years <- ei_years[!is.na(ei_years)]
+
+# EIA International Energy Statistics extract (scripts/fetchers/eia_intl.R): the oil, gas and
+# coal production EI does not report, as in scripts/10.
+eia_intl_path <- file.path(raw_data_path, "eia_intl_fossil_production.csv")
+if (!file.exists(eia_intl_path)) {
+  stop(
+    "Missing the EIA International Energy Statistics extract at ", eia_intl_path, ". Stage it with ",
+    "`Rscript scripts/fetchers/eia_intl.R` (public download, no key) before building the vintages."
+  )
+}
+eia_intl <- read.csv(eia_intl_path, stringsAsFactors = FALSE, na.strings = "")
 
 bnef_neo_path <- resolve_versioned_raw_input(
   raw_data_path,
@@ -351,7 +363,8 @@ build_varying_themes <- function(year) {
   ) %>%
     standardize_theme_types(country_info = country_info)
 
-  import_dependence_tbl <- import_dependence(ei, year = ei_year) %>%
+  # EI fuel production gaps filled from EIA for the vintage's own year, as in scripts/10.
+  import_dependence_tbl <- import_dependence(ei, year = ei_year, eia = eia_intl, eia_fill_consumption = TRUE) %>%
     standardize_theme_types(country_info = country_info)
 
   production_depth_momentum_tbl <- production_depth_momentum(
@@ -359,7 +372,8 @@ build_varying_themes <- function(year) {
     critical = critical,
     mineral_demand_clean = mineral_demand_clean,
     country_info = country_info,
-    year = ei_year
+    year = ei_year,
+    eia = eia_intl
   ) %>%
     standardize_theme_types(country_info = country_info)
 

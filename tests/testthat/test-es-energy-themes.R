@@ -18,6 +18,7 @@ source(file.path(repo_root, "R", "categories", "consumption", "energy_consumptio
 source(file.path(repo_root, "R", "categories", "energy_imports", "import_dependence.R"))
 source(file.path(repo_root, "R", "categories", "energy_access", "solar_pv_potential.R"))
 source(file.path(repo_root, "R", "categories", "energy_access", "wind_potential.R"))
+source(file.path(repo_root, "R", "indices", "index_builder_core.R"))
 
 withr::local_options(list(opportunity_security.index_definition = NULL))
 
@@ -64,7 +65,8 @@ test_that("import dependence drops USSR and keeps one row per economy", {
 })
 
 # import_dependence_clean_raw() output for a net exporter, a partial producer and two
-# economies that produce none of any fuel. 100 * (0 - 0.007) / 0.007 is -100.00000000000001
+# economies that report zero production of every fuel (a reported 0, as EI gives for Spain coal
+# in 2025, not an absent row). 100 * (0 - 0.007) / 0.007 is -100.00000000000001
 # while 100 * (0 - 0.1) / 0.1 is -100, which is how the former "Import share" split the last
 # two by rounding noise.
 import_balance_fixture <- function() {
@@ -103,7 +105,7 @@ test_that("self-sufficiency is production over consumption and replaces the inve
   expect_equal(index$Country[which.max(index$value)], "Exporter")
 })
 
-test_that("economies that produce none of a fuel tie exactly on self-sufficiency", {
+test_that("economies that report zero production of a fuel tie exactly on self-sufficiency", {
   built <- import_dependence_build_imports(import_balance_fixture())
   none <- built$Country %in% c("None A", "None B")
 
@@ -113,6 +115,121 @@ test_that("economies that produce none of a fuel tie exactly on self-sufficiency
     ranked <- median_scurve(ss)
     expect_identical(ranked[none][[1]], ranked[none][[2]], info = fuel)
   }
+})
+
+# EI long panel for 2025 with the production gaps of the real file: EI lists fewer producers
+# than consumers and folds the rest into "Other <region>" residuals. New Zealand has no gas
+# or oil production row (it produces gas, inside "Other Asia Pacific"), Spain reports coal
+# production of exactly 0, Singapore no production row at all, and Iceland no gas row of either
+# kind. Until 2026-10-11 every absent production row was read as 0.
+ei_production_gap_fixture <- function() {
+  rows <- tibble::tribble(
+    ~Country,             ~Var,          ~Value,
+    "Norway",             "oil_tes_ej",  0.4,
+    "Norway",             "oilcons_kbd", 200,
+    "Norway",             "oilprod_kbd", 2000,
+    "Norway",             "gas_tes_ej",  0.2,
+    "Norway",             "gasprod_ej",  4,
+    "Norway",             "coal_tes_ej", 0.03,
+    "Norway",             "coalprod_ej", 0.01,
+    "Netherlands",        "oil_tes_ej",  1.8,
+    "Netherlands",        "oilcons_kbd", 900,
+    "Netherlands",        "oilprod_kbd", 20,
+    "Netherlands",        "gas_tes_ej",  1.1,
+    "Netherlands",        "gasprod_ej",  0.4,
+    "Netherlands",        "coal_tes_ej", 0.2,
+    "New Zealand",        "oil_tes_ej",  0.32,
+    "New Zealand",        "oilcons_kbd", 160,
+    "New Zealand",        "gas_tes_ej",  0.1,
+    "New Zealand",        "coal_tes_ej", 0.04,
+    "New Zealand",        "coalprod_ej", 0.07,
+    "Spain",              "oil_tes_ej",  2.5,
+    "Spain",              "oilcons_kbd", 1250,
+    "Spain",              "gas_tes_ej",  1.2,
+    "Spain",              "coal_tes_ej", 0.1,
+    "Spain",              "coalprod_ej", 0,
+    "Singapore",          "oil_tes_ej",  3,
+    "Singapore",          "oilcons_kbd", 1500,
+    "Singapore",          "gas_tes_ej",  0.4,
+    "Singapore",          "coal_tes_ej", 0.02,
+    "Iceland",            "oil_tes_ej",  0.04,
+    "Iceland",            "oilcons_kbd", 20,
+    "Iceland",            "coal_tes_ej", 0.003,
+    "Other Asia Pacific", "oil_tes_ej",  1,
+    "Other Asia Pacific", "oilcons_kbd", 500,
+    "Other Asia Pacific", "gasprod_ej",  0.7
+  )
+  dplyr::mutate(rows, Year = 2025L, .after = Country)
+}
+
+test_that("an absent EI production row is missing, not zero; a reported zero stays zero", {
+  cleaned <- import_dependence_clean_raw(ei_production_gap_fixture(), year = 2025)
+  value <- function(country, col) cleaned[[col]][cleaned$Country == country]
+
+  expect_setequal(cleaned$Country, c("Norway", "Netherlands", "New Zealand", "Spain", "Singapore", "Iceland"))
+  expect_true(is.na(value("New Zealand", "gasprod_ej")))
+  expect_true(is.na(value("Singapore", "oilprod_kbd")))
+  expect_true(is.na(value("Netherlands", "coalprod_ej")))
+  expect_identical(value("Spain", "coalprod_ej"), 0)
+  # Consumption is still completed with zero (EI omits it only where it omits production too).
+  expect_identical(value("Iceland", "gas_tes_ej"), 0)
+})
+
+test_that("unreported production leaves balance, self-sufficiency and index NA, and says why", {
+  # With the index definition loaded, so the theme's overall row is built as in scripts/10.
+  out <- withr::with_options(
+    list(opportunity_security.index_definition = yaml::read_yaml(file.path(repo_root, "config", "index_definition.yml"))),
+    import_dependence(ei_production_gap_fixture(), year = 2025)
+  )
+  cell <- function(country, fuel, variable, data_type) {
+    out[out$Country == country & out$tech == fuel & out$variable == variable & out$data_type == data_type, ]
+  }
+
+  # New Zealand gas, 0% self-sufficient under the zero fill, is not reported separately.
+  nz_gas <- out[out$Country == "New Zealand" & out$tech == "Gas", ]
+  expect_equal(nrow(nz_gas), 4L)
+  expect_true(all(is.na(nz_gas$value)))
+  expect_false(any(is.nan(nz_gas$value)))
+  expect_true(all(grepl("Not reported separately: EI has no gas production row", nz_gas$explanation[nz_gas$variable != "Overall Energy Imports Index"])))
+  # Iceland neither produces nor consumes gas in EI: the balance is missing, not 0.
+  expect_true(is.na(cell("Iceland", "Gas", "Production surplus/deficit", "raw")$value))
+
+  # Reported values are unaffected, and a reported zero is still a 0% observation.
+  expect_equal(cell("New Zealand", "Coal", "Self-sufficiency", "raw")$value, 175)
+  expect_false(grepl("Not reported", cell("New Zealand", "Coal", "Self-sufficiency", "raw")$explanation))
+  expect_identical(cell("Spain", "Coal", "Self-sufficiency", "raw")$value, 0)
+  expect_equal(cell("Spain", "Coal", "Production surplus/deficit", "raw")$value, -0.1)
+
+  # The percent ranks run over the economies with a value: Coal over Norway, New Zealand and
+  # Spain (Spain lowest), Gas over Norway and the Netherlands only.
+  coal_index <- out[out$tech == "Coal" & out$variable == "Production surplus/deficit" & out$data_type == "index", ]
+  expect_setequal(coal_index$Country[!is.na(coal_index$value)], c("Norway", "New Zealand", "Spain"))
+  expect_equal(coal_index$Country[which.min(coal_index$value)], "Spain")
+  gas_index <- out[out$tech == "Gas" & out$variable == "Production surplus/deficit" & out$data_type == "index", ]
+  expect_equal(gas_index$value[gas_index$Country == "Norway"], 1)
+  expect_equal(gas_index$value[gas_index$Country == "Netherlands"], 0)
+
+  # Fossil sums the fuels EI reports (as the Sector Insights exporter does) and is NA only
+  # when it reports none: New Zealand = coal production / all fossil consumption.
+  expect_equal(cell("New Zealand", "Fossil", "Self-sufficiency", "raw")$value, 100 * 0.07 / (0.32 + 0.1 + 0.04))
+  expect_true(all(is.na(out$value[out$Country == "Singapore" & out$tech == "Fossil"])))
+  expect_true(grepl("no oil, gas or coal production row", cell("Singapore", "Fossil", "Self-sufficiency", "raw")$explanation))
+})
+
+test_that("an unreported fuel takes the pillar's missing-data rule and is flagged imputed", {
+  rules <- yaml::read_yaml(file.path(repo_root, "config", "missing_data.yml"))$energy_security
+  expect_identical(rules$import_dependence, "global_average")
+
+  index_rows <- import_dependence(ei_production_gap_fixture(), year = 2025) %>%
+    dplyr::filter(data_type == "index", variable == "Production surplus/deficit", tech == "Gas") %>%
+    dplyr::mutate(theme = "import_dependence")
+  filled <- apply_missing_policy(index_rows, parse_missing_policy(rules["import_dependence"], index_rows))
+
+  nz <- filled[filled$Country == "New Zealand", ]
+  expect_true(nz$imputed)
+  expect_identical(nz$missing_rule_applied, "global_average")
+  expect_equal(nz$value, mean(index_rows$value, na.rm = TRUE))
+  expect_false(any(filled$imputed[filled$Country %in% c("Norway", "Netherlands")]))
 })
 
 # ---- BNEF New Energy Outlook ---------------------------------------------------------------

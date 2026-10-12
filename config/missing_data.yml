@@ -1,5 +1,6 @@
 # Missing-data rules, keyed by theme (a variable or category name also works; variable >
-# category > theme). A rule fills a country the theme does not cover, within one
+# category > theme). A rule fills a country the theme does not cover, or covers with an NA
+# value (apply_missing_policy() treats the two alike), within one
 # (tech, stage, category, variable, theme) group, and only when the theme covers at least
 # one country in that group; otherwise the group stays NA. A theme with no rule stays NA.
 # NA components drop out of their overall's mean, and an NA category drops out of the
@@ -20,6 +21,8 @@ energy_security:
   energy_consumption: global_average
   energy_prices: global_average
   foreign_dependency: global_average
+  # Also fills an economy and fuel EI lists without a production row ("not reported
+  # separately"; the index is NA, not 0, since 2026-10-11; R/categories/energy_imports/).
   import_dependence: global_average
   trade_concentration: global_average
   investment_momentum: zero
