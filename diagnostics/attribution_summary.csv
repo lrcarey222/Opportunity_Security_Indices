@@ -1,0 +1,8 @@
+"step","n_cells","median_rho","min_rho","country_cells","moved_gt3","share_moved","max_move"
+"Task 1 keywords",21,0.9999,0.9981,1381,8,0.0058,7
+"Task 2 confidence",21,0.9974,0.9448,1381,72,0.0521,21
+"Task 3 geo + constant",21,0.9798,0.924,1381,192,0.139,24
+"Task 5 scale exposure",21,0.9979,0.9834,1381,44,0.0319,28
+"Task 6 m_scope firm_first",21,0.9973,0.9897,1381,26,0.0188,20
+"Task 9 crosscutting report_only",21,0.9991,0.9934,1003,21,0.0209,10
+"CUMULATIVE legacy -> new default",21,0.9689,0.8565,1003,337,0.336,43

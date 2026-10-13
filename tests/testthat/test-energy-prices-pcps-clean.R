@@ -1,4 +1,4 @@
-repo_root <- getwd()
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
 source(file.path(repo_root, "R", "categories", "energy_prices", "energy_prices.R"))
 source(file.path(repo_root, "tests", "testthat", "helper-fixtures.R"))
