@@ -1281,6 +1281,283 @@ test_that("clean_source_text is on by default and reversible", {
   expect_equal(legacy$Source, raw_nipo$Source)
 })
 
+# ==============================================================================
+# Allocation: cells come from the crosswalk's real pairs, not a cross product
+# ==============================================================================
+
+test_that("crosswalk_pairs keeps only cells the codes actually pair", {
+  # A policy whose codes are (Solar, Midstream) and (Wind, Upstream) must not
+  # also be allocated to Solar/Upstream and Wind/Midstream.
+  combos <- make_validated_combos(
+    techs = c("Solar", "Wind"),
+    scs = c("Midstream", "Upstream"),
+    allowed_pairs = NULL,
+    crosswalk_pairs = c("Solar||Midstream", "Wind||Upstream")
+  )
+  expect_equal(nrow(combos), 2)
+  expect_setequal(paste(combos$tech, combos$supply_chain, sep = "||"),
+                  c("Solar||Midstream", "Wind||Upstream"))
+})
+
+test_that("cross_product reproduces the legacy four-cell fan-out", {
+  combos <- make_validated_combos(
+    techs = c("Solar", "Wind"),
+    scs = c("Midstream", "Upstream"),
+    allowed_pairs = NULL,
+    crosswalk_pairs = c("Solar||Midstream", "Wind||Upstream"),
+    combo_mode = "cross_product"
+  )
+  expect_equal(nrow(combos), 4)
+})
+
+test_that("a policy is never dropped entirely by the pair filter", {
+  # If no cell survives, fall back to the full set rather than returning none.
+  combos <- make_validated_combos(
+    techs = "Solar", scs = "Midstream", allowed_pairs = NULL,
+    crosswalk_pairs = c("Nuclear||Upstream")
+  )
+  expect_equal(nrow(combos), 1)
+  expect_equal(combos$tech, "Solar")
+})
+
+test_that("absent crosswalk pairs fall back to the cross product", {
+  for (cw in list(NULL, character(0))) {
+    combos <- make_validated_combos(c("Solar", "Wind"), c("Midstream", "Upstream"),
+                                    allowed_pairs = NULL, crosswalk_pairs = cw)
+    expect_equal(nrow(combos), 4)
+  }
+})
+
+test_that("CPC validation still applies on top of the pair filter", {
+  combos <- make_validated_combos(
+    techs = c("Solar", "Wind"), scs = c("Midstream", "Upstream"),
+    allowed_pairs = c("Solar||Midstream"),
+    crosswalk_pairs = c("Solar||Midstream", "Wind||Upstream")
+  )
+  expect_equal(nrow(combos), 1)
+  expect_false(combos$cpc_validation_failed[1])
+})
+
+test_that("clean_nipo_raw records the pairs the codes imply", {
+  raw_nipo <- tibble::tibble(
+    `Product: HS 6-digit (2022)` = "111111, 222222",
+    `Implementing Jurisdiction` = "United States"
+  )
+  subcat_raw <- tibble::tibble(
+    HS6 = c("111111", "222222"),
+    Technology = c("Solar", "Wind"),
+    Value.Chain = c("Midstream", "Upstream"),
+    Sub.Sector = c("PV", "Turbines")
+  )
+
+  out <- clean_nipo_raw(raw_nipo, subcat_raw)
+  expect_true("tech_sc_pairs" %in% names(out))
+  expect_setequal(out$tech_sc_pairs[[1]], c("Solar||Midstream", "Wind||Upstream"))
+  # The independent lists are still there; the pairs are what disambiguates.
+  expect_setequal(out$Technology[[1]], c("Solar", "Wind"))
+  expect_setequal(out$`Value.Chain`[[1]], c("Midstream", "Upstream"))
+})
+
+# ==============================================================================
+# Memory: the allocation table sheds its list-columns
+# ==============================================================================
+
+test_that("allocate_policy_to_tech_sc drops list-columns by default", {
+  fixture <- make_policy_fixture(n = 1, partner_csv = "Brazil")
+  fixture$Technology <- list("Solar")
+  fixture$`Value.Chain` <- list("Midstream")
+  fixture$tech_sc_pairs <- list("Solar||Midstream")
+  fixture$hs6_codes <- list("854143")
+  fixture$cpc3_codes <- list("461")
+  fixture$cpc3_n <- 1L
+  fixture$allowed_pairs_cpc <- list(character(0))
+  fixture$Title <- "solar module plant"
+  fixture$source_text <- ""
+  fixture$Source <- ""
+
+  asof <- add_asof_flags(build_policy_base(fixture), as_of_date = as.Date("2026-06-30"))
+
+  wide <- allocate_policy_to_tech_sc(asof, drop_list_cols = FALSE)
+  narrow <- allocate_policy_to_tech_sc(asof)
+
+  expect_gt(sum(vapply(wide, is.list, logical(1))), 0)
+  expect_equal(sum(vapply(narrow, is.list, logical(1))), 0)
+
+  # Same rows and same allocation: this is a memory change, not a numbers one.
+  expect_equal(nrow(narrow), nrow(wide))
+  expect_equal(narrow$alloc, wide$alloc)
+  expect_equal(narrow$mapping_confidence, wide$mapping_confidence)
+
+  # And every column the aggregations read survives.
+  needed <- c("policy_id", "iso3", "country", "tech", "supply_chain", "alloc",
+              "scale_strength_pkg", "mapping_confidence", "is_active_asof")
+  expect_true(all(intersect(needed, names(wide)) %in% names(narrow)))
+})
+
+# ==============================================================================
+# strength_formula: a shorter chain for an explainable score
+# ==============================================================================
+
+test_that("simple drops only the uninformative terms", {
+  f <- make_policy_fixture(n = 1, partner_csv = "Brazil")
+  full <- build_policy_base(f)
+  simple <- build_policy_base(f, strength_formula = "simple")
+
+  # simple = instrument x status x jurisdiction x scope, then x scale.
+  expect_equal(
+    simple$bite_strength_base,
+    simple$w_tool * simple$w_status * simple$w_juris * simple$m_scope
+  )
+  expect_equal(simple$scale_strength_base,
+               simple$bite_strength_base * simple$m_scale)
+  expect_equal(simple$m_breadth_applied, 1)
+
+  # full keeps m_duration and m_breadth.
+  expect_equal(
+    full$bite_strength_base,
+    full$w_tool * full$w_status * full$w_juris * full$m_scope * full$m_duration
+  )
+  expect_equal(full$m_breadth_applied, full$m_breadth)
+})
+
+test_that("the dropped terms are the ones carrying no information", {
+  # m_duration is exactly 1 for every in-force measure, so dropping it changes
+  # nothing for them...
+  inforce <- build_policy_base(make_policy_fixture(
+    n = 2, partner_csv = rep("Brazil", 2),
+    impl_date = as.Date(c("2009-01-01", "2026-01-01")), removal_date = as.Date(c(NA, NA))
+  ))
+  expect_equal(inforce$m_duration, c(1, 1))
+
+  # ...and below 1 only for REMOVED ones, which is the perverse direction.
+  removed <- build_policy_base(make_policy_fixture(
+    n = 1, partner_csv = "Brazil",
+    impl_date = as.Date("2020-01-01"), removal_date = as.Date("2020-07-01")
+  ))
+  expect_lt(removed$m_duration, 1)
+})
+
+test_that("simple does not let unimplemented measures into the stock", {
+  # m_duration = 0 was what zeroed pending measures; is_active_asof is what
+  # actually keeps them out, so dropping the term is safe.
+  base <- add_asof_flags(
+    build_policy_base(make_policy_fixture(
+      n = 2, partner_csv = rep("Brazil", 2),
+      announce_date = as.Date(c("2020-01-01", "2020-01-01")),
+      impl_date = as.Date(c("2020-06-01", NA))
+    ), strength_formula = "simple"),
+    as_of_date = as.Date("2026-06-30")
+  )
+  expect_true(base$pending_implementation[2])
+  expect_false(base$is_active_asof[2])
+  expect_equal(sum(base$is_active_asof), 1)
+})
+
+test_that("strength_formula rejects an unknown value", {
+  expect_error(build_policy_base(make_policy_fixture(n = 1), strength_formula = "nope"))
+})
+
+# ==============================================================================
+# index_transform: plainer ways to say the same ordering
+# ==============================================================================
+
+test_that("the three transforms agree on ordering", {
+  x <- c(10, 8, 6, 2)
+  for (t in DIS_INDEX_TRANSFORMS) {
+    v <- dis_index_transform(x, t)
+    expect_equal(order(v, decreasing = TRUE), order(x, decreasing = TRUE),
+                 info = t)
+  }
+})
+
+test_that("percentile says what it means", {
+  x <- c(10, 8, 6, 2)
+  expect_equal(dis_index_transform(x, "percentile"), dplyr::percent_rank(x))
+})
+
+test_that("share is a share", {
+  x <- c(10, 8, 6, 2)
+  s <- dis_index_transform(x, "share")
+  expect_equal(sum(s), 1)
+  expect_equal(s, x / sum(x))
+})
+
+test_that("share floors negative scores rather than returning a signed share", {
+  # Inward liberalising measures make a cell's score negative; a share of a
+  # signed total is not interpretable.
+  s <- dis_index_transform(c(-5, 10, 10), "share")
+  expect_equal(s, c(0, 0.5, 0.5))
+  # A cell with no positive strength has no meaningful share.
+  expect_true(all(is.na(dis_index_transform(c(-1, -2), "share"))))
+})
+
+test_that("index_transform drives the index columns in add_dis_indices", {
+  tbl <- tibble::tibble(
+    iso3 = c("USA", "CHN", "DEU"), country = c("a", "b", "c"),
+    tech = rep("Solar", 3), supply_chain = rep("Midstream", 3),
+    score = c(10, 5, 1)
+  )
+  base_args <- list(score_col = "score", within_country_by = "iso3",
+                    xcountry_by = c("tech", "supply_chain"))
+
+  pct <- do.call(add_dis_indices, c(list(tbl), base_args,
+                                    list(index_transform = "percentile")))
+  shr <- do.call(add_dis_indices, c(list(tbl), base_args,
+                                    list(index_transform = "share")))
+
+  expect_equal(pct$domestic_intervention_index_xcountry,
+               dplyr::percent_rank(signed_log1p(tbl$score)))
+  expect_equal(sum(shr$domestic_intervention_index_xcountry), 1)
+
+  # The *_xcountry_pctile column stays a percentile in every mode: it exists to
+  # be one.
+  expect_equal(shr$domestic_intervention_index_xcountry_pctile,
+               pct$domestic_intervention_index_xcountry_pctile)
+})
+
+test_that("index_transform rejects an unknown value", {
+  expect_error(dis_index_transform(1:3, "nope"))
+})
+
+test_that("nipo_policy_outputs threads the mode arguments to every builder", {
+  # Regression guard. index_transform was correctly implemented, correctly
+  # defaulted, and correctly passed from each build_by_* to add_dis_indices -
+  # but nipo_policy_outputs never passed it to the builders at all, so every
+  # transform silently produced identical output. Unit tests on
+  # add_dis_indices() could not see that, because the break was in the wiring.
+  src <- readLines(file.path(repo_root, "R", "categories", "policy",
+                             "nipo_policy_index.R"))
+  i0 <- grep("^nipo_policy_outputs <- function", src)
+  expect_length(i0, 1)
+  body_src <- src[i0:length(src)]
+
+  call_block <- function(fn) {
+    starts <- grep(paste0("build_by_", fn, "\\($"), body_src)
+    if (length(starts) == 0) return(character(0))
+    s <- starts[1]
+    e <- s + which(grepl("^  \\)\\s*$", body_src[s:length(body_src)]))[1] - 1
+    body_src[s:e]
+  }
+
+  expectations <- list(
+    hs6 = "index_transform",
+    tech_sc = c("index_transform", "combo_mode", "crosscutting_mode"),
+    tech_sc_year = c("index_transform", "combo_mode", "crosscutting_mode"),
+    cpc = "index_transform"
+  )
+
+  for (fn in names(expectations)) {
+    blk <- paste(call_block(fn), collapse = " ")
+    expect_true(nzchar(blk), info = paste("no build_by_", fn, " call found"))
+    for (arg in expectations[[fn]]) {
+      expect_true(
+        grepl(paste0("\\b", arg, "\\s*="), blk),
+        info = paste0("build_by_", fn, "() is not passed ", arg)
+      )
+    }
+  }
+})
+
 test_that("neis_audit_keywords() reports hit rates in the documented shape", {
   txt <- c(
     "support for ai chip fabrication",

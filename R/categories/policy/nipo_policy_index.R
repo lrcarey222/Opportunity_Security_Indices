@@ -325,6 +325,44 @@ signed_log_blend <- function(strength_sum, strength_avg, alpha = 0.5) {
 # mechanism for spotting thin cells instead.
 DIS_SINGLETON_INDEX_VALUE <- 0.5
 
+# ---- How a cell's score becomes a 0-1 index -----------------------------------
+# The published default is median_scurve(signed_log1p(blend(sum, avg))). That is
+# defensible but takes four clauses to describe, which is a real cost when the
+# index has to be explained to a non-technical audience. Two plainer transforms
+# are offered; all three are monotone in the score, so they agree on ordering
+# and differ only in how the 0-1 value is spaced.
+#
+#   "median_scurve"  default. Robust-ish to outliers, hard to describe.
+#   "percentile"     plain percent rank within the comparison group. Says
+#                    exactly what it means: "higher than N% of the countries
+#                    active in this cell".
+#   "share"          the country's share of all policy strength in the cell:
+#                    "Germany accounts for 12% of solar midstream policy
+#                    strength". Not a rank at all, and the one most readers
+#                    actually expect. Negative scores (inward liberalising
+#                    measures) are floored at 0 first, since a share of a
+#                    signed total is not meaningful.
+DIS_INDEX_TRANSFORMS <- c("median_scurve", "percentile", "share")
+
+dis_index_transform <- function(x,
+                                index_transform = "median_scurve",
+                                singleton_value = DIS_SINGLETON_INDEX_VALUE) {
+  index_transform <- match.arg(index_transform, DIS_INDEX_TRANSFORMS)
+
+  switch(
+    index_transform,
+    median_scurve = safe_median_scurve(x, singleton_value = singleton_value),
+    percentile = pct_rank_safe(x, singleton_value = singleton_value),
+    share = {
+      v <- suppressWarnings(as.numeric(x))
+      pos <- pmax(0, v)
+      pos[!is.finite(pos)] <- NA_real_
+      tot <- sum(pos, na.rm = TRUE)
+      if (!is.finite(tot) || tot <= 0) rep(NA_real_, length(v)) else pos / tot
+    }
+  )
+}
+
 safe_median_scurve <- function(x, singleton_value = DIS_SINGLETON_INDEX_VALUE) {
   x <- suppressWarnings(as.numeric(x))
   x[!is.finite(x)] <- NA_real_
@@ -385,8 +423,10 @@ add_dis_indices <- function(tbl,
                             xcountry_by,
                             index_col = "domestic_intervention_index",
                             default = c("xcountry", "global", "within_country"),
-                            pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
+                            pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                            index_transform = DIS_INDEX_TRANSFORMS) {
   default <- match.arg(default)
+  index_transform <- match.arg(index_transform, DIS_INDEX_TRANSFORMS)
 
   within_name <- paste0(index_col, "_within_country")
   xcountry_name <- paste0(index_col, "_xcountry")
@@ -399,15 +439,16 @@ add_dis_indices <- function(tbl,
       dis_score_for_index = signed_log1p(.data[[score_col]])
     )
 
-  # NOTE: safe_median_scurve() keeps its own 0.5 default, which is what it
-  # already did. Only pct_rank_safe() changes behaviour, so only that call
-  # receives the threaded value.
+  # NOTE: the *_xcountry_pctile column is always a percent rank regardless of
+  # index_transform - it exists to BE a percentile. index_transform governs the
+  # three index columns only.
+  tf <- function(v) dis_index_transform(v, index_transform = index_transform,
+                                        singleton_value = pctile_singleton_value)
+
   if (length(within_country_by) > 0) {
     out <- out %>%
       dplyr::group_by(dplyr::across(dplyr::all_of(within_country_by))) %>%
-      dplyr::mutate(
-        "{within_name}" := safe_median_scurve(.data$dis_score_for_index)
-      ) %>%
+      dplyr::mutate("{within_name}" := tf(.data$dis_score_for_index)) %>%
       dplyr::ungroup()
   } else {
     out[[within_name]] <- NA_real_
@@ -417,7 +458,7 @@ add_dis_indices <- function(tbl,
     out <- out %>%
       dplyr::group_by(dplyr::across(dplyr::all_of(xcountry_by))) %>%
       dplyr::mutate(
-        "{xcountry_name}" := safe_median_scurve(.data$dis_score_for_index),
+        "{xcountry_name}" := tf(.data$dis_score_for_index),
         "{rank_name}" := dplyr::dense_rank(dplyr::desc(.data$dis_score_for_index)),
         "{pct_name}" := pct_rank_safe(.data$dis_score_for_index,
                                       singleton_value = pctile_singleton_value),
@@ -427,7 +468,7 @@ add_dis_indices <- function(tbl,
       ) %>%
       dplyr::ungroup()
   } else {
-    out[[xcountry_name]] <- safe_median_scurve(out$dis_score_for_index)
+    out[[xcountry_name]] <- tf(out$dis_score_for_index)
     out[[rank_name]] <- dplyr::dense_rank(dplyr::desc(out$dis_score_for_index))
     out[[pct_name]] <- pct_rank_safe(out$dis_score_for_index,
                                      singleton_value = pctile_singleton_value)
@@ -435,9 +476,7 @@ add_dis_indices <- function(tbl,
   }
 
   out <- out %>%
-    dplyr::mutate(
-      "{global_name}" := safe_median_scurve(.data$dis_score_for_index)
-    )
+    dplyr::mutate("{global_name}" := tf(.data$dis_score_for_index))
   
   default_name <- switch(
     default,
@@ -964,13 +1003,44 @@ build_tech_cpc_lookup <- function(tech_sc_cpc_lu) {
 }
 
 # ---- allocation helpers ------------------------------------------------------
-make_validated_combos <- function(techs, scs, allowed_pairs) {
+#' Build the tech x stage cells a policy may be allocated to.
+#'
+#' @param crosswalk_pairs the "Tech||Stage" pairs the policy's own HS6 codes
+#'   actually imply, from clean_nipo_raw(). Used when combo_mode is
+#'   "crosswalk_pairs".
+#' @param combo_mode
+#'   "crosswalk_pairs" (default) keeps only cells the crosswalk actually pairs.
+#'   "cross_product" is the legacy behaviour: every technology crossed with
+#'   every stage the policy's codes mention, independently.
+#'
+#' Why this changed. The technology and stage lists were collected separately
+#' and then crossed, so a policy whose codes are (Solar, Midstream) and
+#' (Wind, Upstream) was allocated to four cells, two of which its codes never
+#' supported. Only 14 of the 20 possible (Technology, Value.Chain) combinations
+#' occur in the crosswalk at all. CPC validation caught some of this, but only
+#' for policies carrying CPC codes, and it keeps ALL combos when no CPC pair
+#' matches, flagging cpc_validation_failed rather than filtering.
+make_validated_combos <- function(techs, scs, allowed_pairs,
+                                  crosswalk_pairs = NULL,
+                                  combo_mode = c("crosswalk_pairs", "cross_product")) {
+  combo_mode <- match.arg(combo_mode)
   techs <- safe_list_or_empty(techs)
   scs   <- safe_list_or_empty(scs)
   if (length(techs) == 0 || length(scs) == 0) {
     return(tibble::tibble(tech = character(0), supply_chain = character(0), cpc_validation_failed = logical(0)))
   }
   combos <- base::expand.grid(tech = techs, supply_chain = scs, stringsAsFactors = FALSE)
+
+  if (identical(combo_mode, "crosswalk_pairs")) {
+    cw <- safe_list_or_empty(crosswalk_pairs)
+    if (length(cw) > 0) {
+      keep <- paste(combos$tech, combos$supply_chain, sep = "||") %in% cw
+      # Fall back to the full set rather than returning nothing, so a policy is
+      # never dropped entirely by this filter.
+      if (any(keep)) combos <- combos[keep, , drop = FALSE]
+    }
+  }
+
   if (!is.null(allowed_pairs) && length(allowed_pairs) > 0) {
     pair <- paste(combos$tech, combos$supply_chain, sep = "||")
     keep <- pair %in% allowed_pairs
@@ -1486,9 +1556,20 @@ validation_weight <- function(tech, supply_chain, title, source,
 }
 
 
+#' @param drop_list_cols drop the list-columns from the returned allocation
+#'   table once they have been consumed. Defaults to TRUE. They are the single
+#'   largest contributor to the pipeline's peak memory and nothing downstream of
+#'   allocation reads them; see the note at the end of this function. Set FALSE
+#'   to get the historical full-width table.
+#' @param combo_mode passed to make_validated_combos(). "crosswalk_pairs"
+#'   (default) allocates a policy only to tech x stage cells its own HS6 codes
+#'   actually pair; "cross_product" is the legacy independent cross product.
 allocate_policy_to_tech_sc <- function(policy_tbl,
                                        tech_dict = TECH_KEYWORDS,
-                                       sc_dict = SUPPLY_CHAIN_KEYWORDS) {
+                                       sc_dict = SUPPLY_CHAIN_KEYWORDS,
+                                       drop_list_cols = TRUE,
+                                       combo_mode = c("crosswalk_pairs", "cross_product")) {
+  combo_mode <- match.arg(combo_mode)
   policy_shares <- policy_tbl %>%
     dplyr::mutate(
       mapped_share = dplyr::if_else(.data$hs6_n > 0,
@@ -1511,8 +1592,16 @@ allocate_policy_to_tech_sc <- function(policy_tbl,
     dplyr::filter(.data$mapped_share > 0) %>%
     dplyr::mutate(
       combos = purrr::pmap(
-        list(.data$tech_mapped, .data$sc_mapped, .data$allowed_pairs_cpc),
-        make_validated_combos
+        list(.data$tech_mapped, .data$sc_mapped, .data$allowed_pairs_cpc,
+             if ("tech_sc_pairs" %in% names(policy_shares)) {
+               .data$tech_sc_pairs
+             } else {
+               replicate(dplyr::n(), character(0), simplify = FALSE)
+             }),
+        function(te, sc, ap, cw) {
+          make_validated_combos(te, sc, ap, crosswalk_pairs = cw,
+                                combo_mode = combo_mode)
+        }
       ),
       n_combo = purrr::map_int(.data$combos, nrow)
     ) %>%
@@ -1567,7 +1656,37 @@ allocate_policy_to_tech_sc <- function(policy_tbl,
       mapping_confidence = CONFIDENCE_CROSSCUTTING
     )
   
-  dplyr::bind_rows(mapped_long, unmapped_long, cross_long)
+  out <- dplyr::bind_rows(mapped_long, unmapped_long, cross_long)
+
+  # ---- Memory: shed the list-columns once they have done their work ----------
+  # The allocation table is the largest object the pipeline builds: one row per
+  # policy x technology x stage, carrying every column of the policy table. The
+  # list-columns dominate it, because each CELL is a separate R vector with its
+  # own header, so a list-column of n rows costs n small allocations rather than
+  # one contiguous block.
+  #
+  # All of them have already been consumed by the time this returns:
+  #   Technology / Value.Chain / Sub.Sector  -> tech_mapped / sc_mapped -> combos
+  #   allowed_pairs_cpc                      -> make_validated_combos()
+  #   tech_mapped / sc_mapped                -> combos
+  #   hs6_codes / cpc3_codes                 -> used from policy_asof by
+  #                                             build_by_hs6() and build_by_cpc(),
+  #                                             never from this table
+  # Nothing downstream of allocation reads them: not build_by_tech_sc(), not
+  # build_by_tech_sc_year(), not build_by_policy()'s summary, and not any
+  # neis_* function, which work from scalar columns.
+  if (isTRUE(drop_list_cols)) {
+    drop_me <- c("Technology", "Value.Chain", "Sub.Sector", "allowed_pairs_cpc",
+                 "tech_mapped", "sc_mapped", "hs6_codes", "cpc3_codes",
+                 "tech_sc_pairs")
+    drop_me <- intersect(drop_me, names(out))
+    # Guard against dropping anything that is not actually a list-column, so a
+    # future rename cannot silently delete a scalar the aggregations need.
+    drop_me <- drop_me[vapply(out[drop_me], is.list, logical(1))]
+    if (length(drop_me) > 0) out <- dplyr::select(out, -dplyr::all_of(drop_me))
+  }
+
+  out
 }
 
 # ==============================================================================
@@ -1603,21 +1722,44 @@ clean_nipo_raw <- function(raw_nipo,
       .data$essential_for_tech_sc
     )
   
-  nipo_classified <- raw_nipo %>%
-    dplyr::mutate(
+  # ---- Explode HS6 on a NARROW table, then join the result back --------------
+  # This step used to separate_rows() the full 52-column export, join the
+  # crosswalk many-to-many onto all of it, and collapse back with
+  # across(everything_else, first). That carried every column through the row
+  # explosion and then ran first() over ~50 columns across 55,271 groups, for a
+  # peak of 9.7 GB - the largest spike in the whole pipeline, and the one that
+  # makes the run OOM on a machine with other work open.
+  #
+  # Exploding only (nipo_row_id, hs6_raw) and joining the per-policy summary
+  # back onto the original rows is EQUIVALENT: every column dropped from the
+  # explosion was constant within nipo_row_id, so first() was returning the
+  # original row's value and the join returns the same thing.
+  hs6_long <- raw_nipo %>%
+    dplyr::transmute(
       nipo_row_id = dplyr::row_number(),
       hs6_raw = .data$`Product: HS 6-digit (2022)`
     ) %>%
     tidyr::separate_rows(.data$hs6_raw, sep = "\\s*,\\s*") %>%
     dplyr::mutate(code = clean_code(.data$hs6_raw, width = 6)) %>%
-    dplyr::left_join(subcat_lu, by = "code", relationship = "many-to-many") %>%
+    dplyr::left_join(subcat_lu, by = "code", relationship = "many-to-many")
+
+  per_policy_hs6 <- hs6_long %>%
     dplyr::group_by(.data$nipo_row_id) %>%
     dplyr::summarise(
-      dplyr::across(
-        -c(.data$Technology, .data$`Value.Chain`, .data$Sub.Sector, .data$code, .data$hs6_raw),
-        dplyr::first,
-        .names = "{.col}"
-      ),
+      # COMPUTED FIRST, deliberately. summarise() lets later expressions see
+      # columns created by earlier ones, so if this sat below `Technology` it
+      # would paste the list-column built there rather than the character
+      # vectors from hs6_long, yielding one deparsed string per policy.
+      #
+      # These are the (Technology, Value.Chain) pairs this policy's codes
+      # ACTUALLY imply. Collecting the two lists independently and crossing them
+      # later invents cells: a policy whose codes are (Solar, Midstream) and
+      # (Wind, Upstream) would otherwise also be allocated to Solar/Upstream and
+      # Wind/Midstream. Only 14 of the 20 possible pairs occur in the crosswalk.
+      tech_sc_pairs = list({
+        ok <- !is.na(.data$Technology) & !is.na(.data$`Value.Chain`)
+        sort(unique(paste(.data$Technology[ok], .data$`Value.Chain`[ok], sep = "||")))
+      }),
       Technology    = list(sort(unique(na.omit(.data$Technology)))),
       `Value.Chain` = list(sort(unique(na.omit(.data$`Value.Chain`)))),
       Sub.Sector    = list(sort(unique(na.omit(.data$Sub.Sector)))),
@@ -1625,7 +1767,13 @@ clean_nipo_raw <- function(raw_nipo,
       total_hs6 = dplyr::n_distinct(.data$code[!is.na(.data$code) & nzchar(.data$code)]),
       matched_hs6 = dplyr::n_distinct(.data$code[!is.na(.data$Technology) & !is.na(.data$code) & nzchar(.data$code)]),
       .groups = "drop"
-    ) %>%
+    )
+
+  rm(hs6_long)
+
+  nipo_classified <- raw_nipo %>%
+    dplyr::mutate(nipo_row_id = dplyr::row_number()) %>%
+    dplyr::left_join(per_policy_hs6, by = "nipo_row_id") %>%
     dplyr::mutate(
       country = standardize_country_names(.data$`Implementing Jurisdiction`)
     )
@@ -1800,9 +1948,11 @@ build_policy_base <- function(nipo_country_tbl,
                               scope_mode = c("firm_first", "legacy"),
                               unclear_status_weight = STATUS_UNCLEAR_WEIGHT_DEFAULT,
                               unknown_status_weight = STATUS_UNKNOWN_WEIGHT_DEFAULT,
-                              neutral_status_weight = STATUS_NEUTRAL_WEIGHT_DEFAULT) {
+                              neutral_status_weight = STATUS_NEUTRAL_WEIGHT_DEFAULT,
+                              strength_formula = c("full", "simple")) {
   scale_mode <- match.arg(scale_mode)
   scope_mode <- match.arg(scope_mode)
+  strength_formula <- match.arg(strength_formula)
   check_required_columns(
     nipo_country_tbl,
     c(
@@ -2006,7 +2156,39 @@ build_policy_base <- function(nipo_country_tbl,
         none     = 1
       ),
 
-      bite_strength_base  = .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration,
+      # ---- strength_formula --------------------------------------------------
+      # "full" keeps every historical term. "simple" keeps only the terms that
+      # carry information, which makes the score explainable in one line:
+      #
+      #   what instrument x which direction x which level of government
+      #     x how targeted x how big
+      #
+      # Term inventory, measured on the July 2026 export:
+      #   w_tool      instrument family        0.30-1.00   informative
+      #   w_status    distortive/liberalising -0.20-1.00   informative, signed
+      #   w_juris     level of government      0.20-1.00   informative
+      #   m_scope     how targeted             0.40-1.00   informative
+      #   m_scale     trade covered / subsidy  1.00-3.00   informative
+      #   m_duration  time in force            EXACTLY 1.0 for all 38,311
+      #                                        in-force measures, and BELOW 1
+      #                                        only for measures that have been
+      #                                        removed, so a taper reads as
+      #                                        weakness. Carries no information
+      #                                        in the direction it claims to.
+      #   m_breadth   HS6 x CPC count          duplicates m_scale_exposure,
+      #                                        which is also a breadth measure
+      #
+      # "simple" therefore drops m_duration and m_breadth. It does NOT drop
+      # w_juris: without it a municipal measure and a national one score the
+      # same, which is a worse simplification than the one it buys.
+      #
+      # Dropping m_duration does not let unimplemented measures into the stock:
+      # they are excluded by is_active_asof, not by having been multiplied by 0.
+      bite_strength_base = if (identical(strength_formula, "simple")) {
+        .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope
+      } else {
+        .data$w_tool * .data$w_status * .data$w_juris * .data$m_scope * .data$m_duration
+      },
 
       # m_geo is excluded from the product by default: breadth of AFFECTED
       # jurisdictions measures who a measure is aimed at, not how hard the
@@ -2014,7 +2196,8 @@ build_policy_base <- function(nipo_country_tbl,
       # column, and Task 9 consumes the same field for inbound exposure and
       # rival-direction metrics. m_geo_applied records what was actually used.
       m_geo_applied = if (isTRUE(include_geo_in_strength)) .data$m_geo else 1,
-      scale_strength_base = .data$bite_strength_base * .data$m_breadth *
+      m_breadth_applied = if (identical(strength_formula, "simple")) 1 else .data$m_breadth,
+      scale_strength_base = .data$bite_strength_base * .data$m_breadth_applied *
         .data$m_geo_applied * strength_constant * .data$m_scale,
       
       # Clearer name. Keep policy_strength as a backward-compatible alias.
@@ -2169,15 +2352,27 @@ add_asof_flags <- function(policy_base_tbl,
 # 4) Output 1: policy-level table (country level)
 # ==============================================================================
 
+#' @param alloc_raw a pre-computed allocation table (BEFORE cross-cutting
+#'   expansion). Supplying it avoids recomputing the most expensive step in the
+#'   pipeline: nipo_policy_outputs() allocates once and shares the result with
+#'   build_by_tech_sc(), which used to allocate the same policy table a second
+#'   time for no benefit.
 build_by_policy <- function(policy_asof_tbl,
                             cpc_names,
                             tech_dict = TECH_KEYWORDS,
-                            sc_dict = SUPPLY_CHAIN_KEYWORDS) {
+                            sc_dict = SUPPLY_CHAIN_KEYWORDS,
+                            alloc_raw = NULL) {
 
   # Summarise tech × supply_chain mapping (and confidence) at the policy level
-  alloc_long <- allocate_policy_to_tech_sc(policy_asof_tbl,
-                                           tech_dict = tech_dict,
-                                           sc_dict = sc_dict) %>%
+  alloc_long <- (
+    if (is.null(alloc_raw)) {
+      allocate_policy_to_tech_sc(policy_asof_tbl,
+                                 tech_dict = tech_dict,
+                                 sc_dict = sc_dict)
+    } else {
+      alloc_raw
+    }
+  ) %>%
     dplyr::mutate(
       mapping_confidence = dplyr::coalesce(.data$mapping_confidence, 1)
     )
@@ -2249,7 +2444,8 @@ build_by_hs6 <- function(policy_asof_tbl,
                          hs6_name_lu = NULL,
                          split_across_hs6 = TRUE,
                          balance_alpha = 0.5,
-                         pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
+                         pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                         index_transform = DIS_INDEX_TRANSFORMS) {
   balance_alpha <- max(0, min(1, balance_alpha))
 
   hs6_long <- policy_asof_tbl %>%
@@ -2305,7 +2501,8 @@ build_by_hs6 <- function(policy_asof_tbl,
     xcountry_by = c("HS6"),
     index_col = "domestic_intervention_index",
     default = "xcountry",
-    pctile_singleton_value = pctile_singleton_value
+    pctile_singleton_value = pctile_singleton_value,
+    index_transform = index_transform
   )
   
   if (nrow(hs6_cpc_lu) > 0) {
@@ -2380,7 +2577,10 @@ build_by_tech_sc <- function(policy_asof_tbl,
                              tech_dict = TECH_KEYWORDS,
                              sc_dict = SUPPLY_CHAIN_KEYWORDS,
                              alloc_long = NULL,
+                             alloc_raw = NULL,
+                             combo_mode = c("crosswalk_pairs", "cross_product"),
                              pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                             index_transform = DIS_INDEX_TRANSFORMS,
                              crosscutting_mode = c("report_only", "sector_flagged",
                                                    "uniform")) {
 
@@ -2401,9 +2601,17 @@ build_by_tech_sc <- function(policy_asof_tbl,
   # dis_variant_stability() allocates once and reuses it across all four modes
   # instead of paying for the expansion four times.
   if (is.null(alloc_long)) {
-    tech_sc_long <- allocate_policy_to_tech_sc(policy_asof_tbl,
-                                               tech_dict = tech_dict,
-                                               sc_dict = sc_dict)
+    # alloc_raw lets the caller hand in an allocation that has already been
+    # computed (pre-expansion), so nipo_policy_outputs() pays for it once rather
+    # than once here and again in build_by_policy().
+    tech_sc_long <- if (is.null(alloc_raw)) {
+      allocate_policy_to_tech_sc(policy_asof_tbl,
+                                 tech_dict = tech_dict,
+                                 sc_dict = sc_dict,
+                                 combo_mode = match.arg(combo_mode))
+    } else {
+      alloc_raw
+    }
 
     tech_sc_long <- expand_cross_cutting_rows(
       tech_sc_long,
@@ -2500,7 +2708,8 @@ build_by_tech_sc <- function(policy_asof_tbl,
     xcountry_by = c("tech", "supply_chain"),
     index_col = "domestic_intervention_index",
     default = "xcountry",
-    pctile_singleton_value = pctile_singleton_value
+    pctile_singleton_value = pctile_singleton_value,
+    index_transform = index_transform
   )
   
   if (nrow(tech_sc_cpc_lu) > 0) {
@@ -2549,12 +2758,15 @@ build_by_tech_sc_year <- function(policy_base_tbl,
                                   tech_dict = TECH_KEYWORDS,
                                   sc_dict = SUPPLY_CHAIN_KEYWORDS,
                                   pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                                  index_transform = DIS_INDEX_TRANSFORMS,
                                   crosscutting_mode = c("report_only", "sector_flagged",
-                                                        "uniform")) {
+                                                        "uniform"),
+                                  combo_mode = c("crosswalk_pairs", "cross_product")) {
 
   balance_alpha <- max(0, min(1, balance_alpha))
   confidence_mode <- match.arg(confidence_mode, DIS_CONFIDENCE_MODES)
   crosscutting_mode <- match.arg(crosscutting_mode)
+  combo_mode <- match.arg(combo_mode)
   if (!isTRUE(expand_cross_cutting)) crosscutting_mode <- "report_only"
   if (!is.finite(rolling_window_years) || rolling_window_years < 1) rolling_window_years <- 1
   rolling_window_years <- as.integer(rolling_window_years)
@@ -2567,7 +2779,8 @@ build_by_tech_sc_year <- function(policy_base_tbl,
 
   tech_sc_long <- allocate_policy_to_tech_sc(tmp,
                                              tech_dict = tech_dict,
-                                             sc_dict = sc_dict)
+                                             sc_dict = sc_dict,
+                                             combo_mode = combo_mode)
 
   tech_sc_long <- expand_cross_cutting_rows(
     tech_sc_long,
@@ -2715,7 +2928,8 @@ build_by_tech_sc_year <- function(policy_base_tbl,
     xcountry_by = c("tech", "supply_chain", "announce_year"),
     index_col = "domestic_intervention_index_xs",
     default = "xcountry",
-    pctile_singleton_value = pctile_singleton_value
+    pctile_singleton_value = pctile_singleton_value,
+    index_transform = index_transform
   )
   
   if (nrow(tech_sc_cpc_lu) > 0) {
@@ -2741,7 +2955,8 @@ build_by_cpc <- function(policy_asof_tbl,
                          cpc_name_lu = NULL,
                          split_across_cpc = TRUE,
                          balance_alpha = 0.5,
-                         pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE) {
+                         pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                         index_transform = DIS_INDEX_TRANSFORMS) {
   balance_alpha <- max(0, min(1, balance_alpha))
 
   if (!("cpc3_codes" %in% names(policy_asof_tbl))) {
@@ -2815,7 +3030,8 @@ build_by_cpc <- function(policy_asof_tbl,
     xcountry_by = c("cpc3"),
     index_col = "domestic_intervention_index",
     default = "xcountry",
-    pctile_singleton_value = pctile_singleton_value
+    pctile_singleton_value = pctile_singleton_value,
+    index_transform = index_transform
   ) %>%
     dplyr::mutate(
       cpc3_codes_csv = .data$cpc3,
@@ -2972,17 +3188,23 @@ nipo_policy_outputs <- function(raw_nipo,
                                 unknown_status_weight = STATUS_UNKNOWN_WEIGHT_DEFAULT,
                                 neutral_status_weight = STATUS_NEUTRAL_WEIGHT_DEFAULT,
                                 pctile_singleton_value = DIS_SINGLETON_INDEX_VALUE,
+                                index_transform = DIS_INDEX_TRANSFORMS,
                                 crosscutting_mode = c("report_only", "sector_flagged",
                                                       "uniform"),
                                 eu_mode = c("both_flagged", "member_only", "eu_only"),
                                 include_neis_panel = TRUE,
                                 clamp_future_as_of = TRUE,
                                 clean_source_text = TRUE,
+                                combo_mode = c("crosswalk_pairs", "cross_product"),
+                                strength_formula = c("full", "simple"),
                                 dis_legacy_mode = FALSE) {
   crosscutting_mode <- match.arg(crosscutting_mode)
   eu_mode <- match.arg(eu_mode)
   scale_mode <- match.arg(scale_mode)
   scope_mode <- match.arg(scope_mode)
+  combo_mode <- match.arg(combo_mode)
+  strength_formula <- match.arg(strength_formula)
+  index_transform <- match.arg(index_transform, DIS_INDEX_TRANSFORMS)
   # dis_legacy_mode is a single switch that restores every pre-remediation
   # behaviour at once, for attributing a rank change to a specific fix. It
   # overrides the individual arguments rather than sitting alongside them.
@@ -3007,6 +3229,9 @@ nipo_policy_outputs <- function(raw_nipo,
     crosscutting_mode <- "uniform"
     clamp_future_as_of <- FALSE
     clean_source_text <- FALSE
+    combo_mode <- "cross_product"
+    strength_formula <- "full"
+    index_transform <- "median_scurve"
   } else {
     tech_dict <- TECH_KEYWORDS
     sc_dict <- SUPPLY_CHAIN_KEYWORDS
@@ -3073,9 +3298,10 @@ nipo_policy_outputs <- function(raw_nipo,
     scope_mode = scope_mode,
     unclear_status_weight = unclear_status_weight,
     unknown_status_weight = unknown_status_weight,
-    neutral_status_weight = neutral_status_weight
+    neutral_status_weight = neutral_status_weight,
+    strength_formula = strength_formula
   )
-  
+
   policy_asof <- add_asof_flags(
     policy_base_tbl = policy_base,
     as_of_date = as_of_date,
@@ -3083,15 +3309,29 @@ nipo_policy_outputs <- function(raw_nipo,
     clamp_future_as_of = clamp_future_as_of
   )
   
+  # Allocate ONCE and share it. build_by_policy() and build_by_tech_sc() both
+  # need the policy -> tech x stage allocation for the same policy_asof table,
+  # and each used to compute it independently. It is the most expensive step in
+  # the pipeline, so that was a straight doubling of the worst cost.
+  # build_by_tech_sc_year() still allocates separately because it works from
+  # policy_base with every measure forced active, which is a different input.
+  alloc_shared_raw <- allocate_policy_to_tech_sc(policy_asof,
+                                                 tech_dict = tech_dict,
+                                                 sc_dict = sc_dict,
+                                                 combo_mode = combo_mode)
+
   by_policy <- build_by_policy(policy_asof, cpc_names = cpc_names,
-                               tech_dict = tech_dict, sc_dict = sc_dict)
+                               tech_dict = tech_dict, sc_dict = sc_dict,
+                               alloc_raw = alloc_shared_raw)
   
   by_hs6 <- build_by_hs6(
     policy_asof,
     hs6_cpc_lu = hs6_cpc_lu,
     hs6_name_lu = hs6_name_lu,
     split_across_hs6 = split_across_hs6,
-    balance_alpha = balance_alpha
+    balance_alpha = balance_alpha,
+    pctile_singleton_value = pctile_singleton_value,
+    index_transform = index_transform
   )
   
   tech_sc_out <- build_by_tech_sc(
@@ -3108,8 +3348,16 @@ nipo_policy_outputs <- function(raw_nipo,
     tech_dict = tech_dict,
     sc_dict = sc_dict,
     pctile_singleton_value = pctile_singleton_value,
-    crosscutting_mode = crosscutting_mode
+    crosscutting_mode = crosscutting_mode,
+    combo_mode = combo_mode,
+    index_transform = index_transform,
+    alloc_raw = alloc_shared_raw
   )
+
+  # Released as soon as the last consumer has it: on the full export this object
+  # is several GB, and build_by_tech_sc_year() below allocates its own.
+  rm(alloc_shared_raw)
+  invisible(gc(verbose = FALSE))
 
   by_tech_sc <- tech_sc_out$data
   
@@ -3130,14 +3378,18 @@ nipo_policy_outputs <- function(raw_nipo,
     tech_dict = tech_dict,
     sc_dict = sc_dict,
     pctile_singleton_value = pctile_singleton_value,
-    crosscutting_mode = crosscutting_mode
+    crosscutting_mode = crosscutting_mode,
+    combo_mode = combo_mode,
+    index_transform = index_transform
   )
 
   by_cpc <- build_by_cpc(
     policy_asof_tbl = policy_asof,
     cpc_name_lu = cpc_names,
     split_across_cpc = TRUE,
-    balance_alpha = balance_alpha
+    balance_alpha = balance_alpha,
+    pctile_singleton_value = pctile_singleton_value,
+    index_transform = index_transform
   )
   
   # EU-wide measures are recorded once while member-state measures are counted
@@ -3192,6 +3444,9 @@ nipo_policy_outputs <- function(raw_nipo,
       eu_mode = eu_mode,
       clamp_future_as_of = isTRUE(clamp_future_as_of),
       clean_source_text = isTRUE(clean_source_text),
+      combo_mode = combo_mode,
+      strength_formula = strength_formula,
+      index_transform = index_transform,
       as_of_date = as.character(policy_asof$as_of_date[1]),
       dis_legacy_mode = isTRUE(dis_legacy_mode),
       keyword_dictionary = if (isTRUE(dis_legacy_mode)) "legacy" else "bounded"
