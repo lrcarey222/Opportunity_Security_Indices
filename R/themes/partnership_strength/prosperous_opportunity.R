@@ -114,8 +114,8 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       Country = partnership_strength_standardize_countries(Country),
       exporter_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
     dplyr::filter(!is.na(exporter_iso)) %>%
-    group_by(tech,supply_chain) %>%
-    mutate(value=median_scurve(Economic_Opportunity_Index)
+    dplyr::group_by(tech,supply_chain) %>%
+    dplyr::mutate(value=median_scurve(Economic_Opportunity_Index)
     ) %>%
     dplyr::transmute(exporter_iso, tech, supply_chain, econ_opp_raw = value)
 
@@ -124,8 +124,8 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       Country = partnership_strength_standardize_countries(Country),
       partner_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
     dplyr::filter(!is.na(partner_iso)) %>%
-    group_by(tech,supply_chain) %>%
-    mutate(value=median_scurve(Energy_Security_Index)
+    dplyr::group_by(tech,supply_chain) %>%
+    dplyr::mutate(value=median_scurve(Energy_Security_Index)
     ) %>%
     dplyr::transmute(partner_iso, tech, supply_chain, energy_sec_raw = 1 - value)
 

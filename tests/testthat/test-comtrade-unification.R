@@ -44,6 +44,8 @@ test_that("trade wrappers resolve the same comtrade year via shared option", {
 test_that("timeseries warns when requested end year is missing", {
   source(test_path("..", "..", "R", "charts", "trade_timeseries.R"), local = FALSE)
   source(test_path("..", "..", "scripts", "96_pull_trade_timeseries.R"), local = FALSE)
+  # Real client helpers (comtrade_max_year() and friends); the network calls are stubbed below.
+  source(test_path("..", "..", "scripts", "utils", "comtrade_client.R"), local = FALSE)
 
   repo_root <- normalizePath(test_path("..", ".."), winslash = "/")
   options(
@@ -64,9 +66,14 @@ test_that("timeseries warns when requested end year is missing", {
     },
     envir = .GlobalEnv
   )
+  # run_trade_timeseries_pull() force-reloads the real Comtrade client, which would
+  # overwrite the two stubs above; stub the loader too for the duration of the test.
+  real_client_loader <- get("ensure_comtrade_client_loaded", envir = .GlobalEnv)
+  assign("ensure_comtrade_client_loaded", function(force_reload = FALSE) invisible(TRUE), envir = .GlobalEnv)
   on.exit({
     rm("comtrade_set_key_from_env", envir = .GlobalEnv)
     rm("comtrade_fetch_requests", envir = .GlobalEnv)
+    assign("ensure_comtrade_client_loaded", real_client_loader, envir = .GlobalEnv)
   }, add = TRUE)
 
   hs_path <- tempfile(fileext = ".csv")

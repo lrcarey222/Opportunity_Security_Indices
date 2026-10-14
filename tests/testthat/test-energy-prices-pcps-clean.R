@@ -1,5 +1,12 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
+# energy_prices() relies on helpers that scripts/10_build_themes.R sources ahead of it:
+# median_scurve(), energy_security_add_overall_index() and, through it,
+# apply_overall_definitions().
+source(file.path(repo_root, "R", "utils", "scurve.R"))
+source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "categories", "energy_prices", "energy_prices.R"))
 source(file.path(repo_root, "tests", "testthat", "helper-fixtures.R"))
 
