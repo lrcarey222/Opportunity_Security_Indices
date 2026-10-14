@@ -109,7 +109,11 @@ standardize_theme_table <- function(tbl) {
       category = as.character(category),
       variable = as.character(variable),
       data_type = as.character(data_type),
-      Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$"))),
+      # First four-digit run, not one anchored to the end of the string. The anchored form
+      # could not match an ISO date, so a Year of "2022-01-01" parsed to NA and was later
+      # coerced to 0, losing to any real year in a latest-year filter. This matches
+      # normalize_year() in R/indices/index_builder_core.R, the parser the index builders use.
+      Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}"))),
       value = suppressWarnings(as.numeric(value)),
       source = as.character(source),
       explanation = as.character(explanation)
@@ -126,7 +130,8 @@ standardize_bind_rows_inputs <- function(tbl) {
   }
 
   if ("Year" %in% names(tbl)) {
-    tbl$Year <- suppressWarnings(as.integer(stringr::str_extract(as.character(tbl$Year), "\\d{4}$")))
+    # Same first-run rule as standardize_theme_table() above.
+    tbl$Year <- suppressWarnings(as.integer(stringr::str_extract(as.character(tbl$Year), "\\d{4}")))
   }
 
   if ("value" %in% names(tbl)) {
