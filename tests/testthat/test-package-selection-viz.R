@@ -3,26 +3,6 @@ repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRU
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "charts", "package_selection_viz.R"))
 
-# Shape of the strategic_index table scripts/20_build_indices.R writes, which
-# build_country_strategic_tbl() reads rather than recomputes.
-make_strategic_index_tbl <- function(country, tech, supply_chain, strategic_index) {
-  tibble::tibble(
-    Country = country,
-    tech = tech,
-    supply_chain = supply_chain,
-    eo = 0.5,
-    es = 0.5,
-    pol = 0.5,
-    trl_index = 0.5,
-    sc_weight = 0.5,
-    tech_weight = 0.5,
-    Economic_Opportunity_Index = 0.5,
-    Energy_Security_Index = 0.5,
-    strategic_index = strategic_index,
-    sector = paste(tech, supply_chain, sep = " - ")
-  )
-}
-
 test_that("build_country_strategic_tbl returns expected columns", {
   index_outputs <- list(
     strategic_index = dplyr::bind_rows(

@@ -688,10 +688,50 @@ country_info <- standardize_country_info(country_info)
 
   pams_raw <- readr::read_csv(iea_pams_path, show_col_types = FALSE)
   nipo_raw <- readxl::read_excel(nipo_policy_path, sheet = 1)
-  hs6_categories_essential <- readr::read_csv(file.path(
-    raw_data_path,"hs6_categories_with_essential.csv")) %>%
-    rename("Value.Chain"="Value Chain")
-  tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE) 
+
+  # ---- HS6 -> (Technology, Value Chain) crosswalk for NIPO --------------------
+  # This ONE table plays two roles in nipo_policy_outputs(), and both must be
+  # passed explicitly (see the call below):
+  #
+  #   subcat_raw        the crosswalk that maps a policy's HS6 codes to
+  #                     Technology x Value.Chain.
+  #   hs6_essential_tbl the `essential` flag, which decides WHICH codes are
+  #                     allowed to drive that classification. 382 of 482 rows
+  #                     are essential; the other 100 are generic inputs
+  #                     (plastics, steel, softwood) kept for context only.
+  #
+  # It is the same file for both because it carries the codes and the flag
+  # together. `hts_codes_categories_bolstered_final.csv` holds the identical
+  # (Technology, HS6) set without the flag, so nothing is lost by using this one.
+  #
+  # Two properties of this file to be aware of:
+  #   * 482 rows collapse to 466 distinct (Technology, Value.Chain, Sub.Sector,
+  #     HS6) keys. The 16 extras differ ONLY in `essential`, i.e. the same code
+  #     is flagged both TRUE and FALSE. TRUE wins, both via any() in
+  #     prepare_subcat_mapping() and via the filter in clean_nipo_raw(). Made
+  #     explicit here rather than left to those internals.
+  #   * An HS6 code deliberately maps to several technologies (71 codes map to
+  #     2, 47 to 3, 6 to 4). A static converter is filed under Electric Grid,
+  #     Solar, Wind and EVs. Technology totals therefore OVERLAP: describe them
+  #     as "X-attributed" policy, never as a self-contained sector.
+  hs6_categories_essential <- readr::read_csv(
+    file.path(raw_data_path, "hs6_categories_with_essential.csv"),
+    show_col_types = FALSE
+  ) %>%
+    rename("Value.Chain" = "Value Chain") %>%
+    # Resolve the duplicate-key conflict explicitly: a code is essential if ANY
+    # of its rows says so.
+    group_by(.data$Technology, .data$Value.Chain, .data$Sub.Sector, .data$HS6) %>%
+    summarise(essential = any(as.logical(.data$essential), na.rm = TRUE), .groups = "drop")
+
+  # Guard the assumption the de-duplication rests on: one (Technology, HS6) must
+  # not span two value chains or sub-sectors, or collapsing would lose a mapping.
+  stopifnot(
+    nrow(dplyr::distinct(hs6_categories_essential, .data$Technology, .data$HS6)) ==
+      nrow(hs6_categories_essential)
+  )
+
+  tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE)
   cat_policy_raw <- readr::read_csv(cat_policy_path, show_col_types = FALSE) %>%
     rename("Overall.rating"="Overall rating")
   dual_use_scores_raw <- readr::read_csv(dual_use_scores_path, show_col_types = FALSE)
@@ -703,56 +743,137 @@ country_info <- standardize_country_info(country_info)
     arrange(desc(year))
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
   
-  ally_iso3 <- c(
-    "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA", "ITA", "BRA", "SAU",
-    "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK", "ARG", "MAR", "CHL"
-  )
-
-  country_lookup <- country_info %>%
-    dplyr::transmute(
-      country = standardize_country_names(.data$country),
-      iso3c = toupper(as.character(.data$iso3c))
-    )
-
-  nipo_allies <- nipo_raw %>%
-    dplyr::mutate(
-      implementing_country = standardize_country_names(.data$`Implementing Jurisdiction`)
-    ) %>%
-    dplyr::left_join(country_lookup, by = c("implementing_country" = "country")) %>%
-    dplyr::rename(iso = .data$iso3c) %>%
-    dplyr::filter(.data$iso %in% ally_iso3)
-
-  
-  nipo_us<-nipo_raw %>%
-    filter(`Implementing Jurisdiction`=="United States of America")
-  
+  # ============================================================================
+  # Theme: NIPO Domestic Intervention Score (DIS)
+  # ----------------------------------------------------------------------------
+  # Method reference: R/categories/policy/NIPO Index.md
+  #
+  # Every argument below is passed BY NAME. The two crosswalk arguments in
+  # particular used to be positional, which read as though the essential-goods
+  # table were the only input; it is in fact doing double duty, and
+  # hs6_essential_tbl was being resolved through a global-variable side channel
+  # (resolve_hs6_essential_tbl() falls back to exists("hs6_categories_essential")).
+  # That worked only by name coincidence: rename the local and the essential
+  # filter would silently stop applying, letting all 100 generic codes drive
+  # tech classification. Passed explicitly now.
+  #
+  # The de-biasing arguments are stated explicitly even where they match the
+  # defaults, so a stored output records which methodology produced it. Set
+  # dis_legacy_mode = TRUE to reproduce the pre-remediation numbers exactly.
   nipo_policy_out <- nipo_domestic_intervention_outputs(
     raw_nipo = nipo_raw,
-    hs6_categories_essential,
+
+    # HS6 -> Technology x Value.Chain crosswalk, and the essential-goods flag
+    # that decides which codes may drive that mapping. Same table, two roles.
+    subcat_raw = hs6_categories_essential,
+    hs6_essential_tbl = hs6_categories_essential,
+
     country_info = country_info,
+
+    # as_of_date is inferred. clamp_future_as_of keeps that inference at or
+    # before today: 241 records carry implementation dates out to 2028-10-01
+    # (staged phase-ins of one EU sanctions package), which would otherwise set
+    # the stock date more than two years past the end of the data.
+    clamp_future_as_of = TRUE,
+
+    # --- Strength chain -------------------------------------------------------
+    # Affected-jurisdiction breadth is a directionality property, not domestic
+    # intensity, so it no longer multiplies strength; it is still reported, and
+    # the NEIS partner-side metrics use the same field. Removing it was the
+    # single largest correction to the cross-country ranking.
+    include_geo_in_strength = FALSE,
+    strength_constant = 1,          # was an undocumented bare 2
+
+    # Trade coverage rather than max(trade, subsidy): the two measure different
+    # things, and trade coverage is the more consistent series (44-56% of active
+    # policies populated in every year, against 16-35% for subsidy value).
+    scale_mode = "exposure",
+
+    # Firm-level test ordered above the named-beneficiary test, so a
+    # firm-specific measure scores as firm-targeted whether or not GTA recorded
+    # the beneficiary.
+    scope_mode = "firm_first",
+
+    # --- Mapping confidence ---------------------------------------------------
+    # Confidence is epistemic: how sure we are a policy belongs in a cell, not
+    # how interventionist it is. It is reported, not multiplied into strength.
+    confidence_mode = "none",
+
+    # --- Attribution ----------------------------------------------------------
+    # Policies with no HS6 codes (3,285, carrying 2.96% of strength) stay in
+    # their own Cross-cutting row instead of being smeared across all 39
+    # technology x stage cells, which conserved the total but invented the
+    # attribution and manufactured six otherwise-empty Upstream cells.
+    crosscutting_mode = "report_only",
+
+    # EU-wide and member-state rows are both labelled via eu_view rather than
+    # either being dropped. NOTE: EU acts are recorded once per member state,
+    # and 82.9% of EU-member strength sits in such replicated acts. That is
+    # intentional for a country-level index - EU policy a member has outsourced
+    # to Brussels is part of that member's stance - but it means EU and non-EU
+    # scores are not like-for-like. See NIPO Index.md, Structural limits.
+    eu_mode = "both_flagged",
+
+    # --- Aggregation (unchanged by the de-biasing work) -----------------------
     rolling_window_years = 3,
     balance_alpha = 0.5,
-    weight_by_active_fraction = TRUE
+    weight_by_active_fraction = TRUE,
+
+    include_neis_panel = TRUE
   )
 
+  # Record what the run actually applied, so a stored output is self-describing.
+  message(
+    "NIPO DIS settings: ",
+    paste(names(nipo_policy_out$dis_settings),
+          unlist(nipo_policy_out$dis_settings), sep = "=", collapse = ", ")
+  )
 
-  nipo_policy_all <- nipo_policy_out$by_policy%>% 
-    select(`Implementing Jurisdiction`,Title,domestic_intervention_index,
-           `Implementation Date`,`Removal Date`, bite_strength_base:policy_strength_pkg,
-           tech_csv,supply_chain_csv,mapping_confidence_mean,Source,URL) %>%
+  # ---- Outputs ---------------------------------------------------------------
+  # by_tech_sc is the ONLY table that reaches a composite: it becomes the
+  # "NIPO Policy Index" variable in policy_component_tbl, weighted 4 of 10 in
+  # the Overall Policy Index and 0.2 of the Strategic Index. Everything else
+  # here is diagnostic.
+  nipo_policy_index_tbl <- nipo_policy_out$by_tech_sc
+  nipo_tech_year <- nipo_policy_out$by_tech_sc_year
+
+  # Policy-level detail for inspection. mapping_confidence_mean is reported
+  # rather than applied (confidence_mode = "none"), so a low value now flags a
+  # weak mapping without having silently shrunk the score.
+  nipo_policy_all <- nipo_policy_out$by_policy %>%
+    select(
+      `Implementing Jurisdiction`, Title, domestic_intervention_index,
+      `Implementation Date`, `Removal Date`,
+      bite_strength_base:policy_strength_pkg,
+      tech_csv, supply_chain_csv, mapping_confidence_mean,
+      # Reported-only columns added by the de-biasing work: the two inputs to
+      # mapping_confidence, the scale terms kept separate, and the real duration
+      # signal that m_duration cannot express (it is exactly 1.0 for every
+      # in-force measure).
+      mapped_share, evidence_mean,
+      m_scale_exposure, m_scale_fiscal,
+      scale_exposure_available, scale_fiscal_available,
+      m_geo, m_geo_applied, partner_n,
+      pending_implementation, impl_lag_days,
+      observed_duration_days, exposure_days, duration_censored,
+      Source, URL
+    ) %>%
     arrange(desc(mapping_confidence_mean)) %>%
     arrange(desc(domestic_intervention_index))
-  
-  nipo_hs6 <- nipo_policy_out$by_hs6
-  nipo_tech_year <- nipo_policy_out$by_tech_sc_year
-  nipo_policy_cpc <- nipo_policy_out$by_cpc
-  nipo_policy_index_tbl <- nipo_policy_out$by_tech_sc
-  
+
+  # NEIS framework layers: motive structure, delivery conversion, taper profile,
+  # fence posture, inbound exposure and rival direction. Deliberately not a
+  # composite - each metric keeps its own column.
+  nipo_neis_panel <- nipo_policy_out$neis_panel$panel
+
   write_processed_tbl(nipo_tech_year, "nipo_tech_year", processed_dir)
   write_processed_tbl(nipo_policy_index_tbl, "nipo_policy_index_tbl", processed_dir)
   write_processed_tbl(nipo_policy_all, "nipo_policy_all", processed_dir)
-  
-  
+  if (!is.null(nipo_neis_panel)) {
+    write_processed_tbl(nipo_neis_panel, "nipo_neis_panel", processed_dir)
+  }
+
+
   policy_outputs <- list(
     policy_agg = iea_policy_outputs$outputs$policy_agg,
     policy_clean = iea_policy_outputs$outputs$policy_clean,
