@@ -29,9 +29,15 @@ This repository contains the scaffold for the **Opportunity Security Indices** p
 - [Quick start](#quick-start)
 - [Interactive explorer (Shiny)](#interactive-explorer-shiny)
 - [Outputs](#outputs)
+- [Comparing index vintages across years](#comparing-index-vintages-across-years)
 - [Testing and quality checks](#testing-and-quality-checks)
 - [Additional utilities and workflows](#additional-utilities-and-workflows)
-- [Data sources](#data-sources)
+- [Raw inputs and refresh](#raw-inputs-and-refresh)
+  - [API fetchers](#api-fetchers)
+  - [The HS6 crosswalk](#the-hs6-crosswalk)
+  - [When ingestion fails](#when-ingestion-fails)
+  - [How refresh works](#how-refresh-works)
+  - [Key external sources (cited)](#key-external-sources-cited)
 - [Known issues and to-dos](#known-issues-and-to-dos)
 - [Citation](#citation)
 - [License](#license)
@@ -146,7 +152,7 @@ This section is written to function as a **drop-in technical appendix inside the
 
 **Data sources:**
 - **IEA Critical Minerals Dataset** ([IEA-CM]) — mineral supply series used to compute market share + concentration proxies
-- **IEA Global EV Data Explorer** ([IEA-EV]) — EV market/production/import share inputs (as used in repo exports)
+- **IEA Global EV Outlook** ([IEA-EV]) — EV market/production/import share inputs (as used in repo exports)
 - **Energy Institute Statistical Review** ([EI-SR]) — country harmonization + EU mapping used for rollups/expansion (and associated energy stats)
 
 *(Note: some midstream capacity snapshots are sourced from IEA ETP exports; see `docs/sources.md` for provenance when the public landing page differs from the internal extract.)*
@@ -181,7 +187,7 @@ This section is written to function as a **drop-in technical appendix inside the
 
 **Data sources:**
 - **Energy Institute Statistical Review** ([EI-SR]) — fossil and mineral reserves tables used in the repo
-- **IEA Critical Minerals Dataset** ([IEA-CM]) — cleantech demand-by-tech shares used to roll mineral reserves into tech-weighted reserve indices
+- **IEA Critical Minerals Dataset** ([IEA-CM]) — energy demand-by-tech shares used to roll mineral reserves into tech-weighted reserve indices
 
 **Substantive rationale:** reserves proxy long-run domestic supply optionality and reduce risk of external supply squeeze.
 
@@ -356,7 +362,7 @@ This section is written to function as a **drop-in technical appendix inside the
 
 **Data sources (cited where applicable):**
 - **BloombergNEF New Energy Outlook** ([BNEF-NEO]) — region/country demand levels and growth (as used in repo extracts)
-- **IEA Global EV Data Explorer** ([IEA-EV]) — EV stock/sales/share and growth inputs (as used in repo extracts)
+- **IEA Global EV Outlook** ([IEA-EV]) — EV stock/sales/share and growth inputs (as used in repo extracts)
 
 *(Note: the repo also uses IEA WEO annex exports and BCG market sizing sheets; these are referenced in `docs/sources.md` where public landing pages differ from the internal extracts.)*
 
@@ -374,16 +380,18 @@ This section is written to function as a **drop-in technical appendix inside the
 **Overall variable construction (configured):** the category score uses `Overall Technological Readiness Index`, calculated as the **mean** of: `TRL Index`.
 
 **Data sources:**
-- **IEA ETP Clean Energy Technology Guide** ([IEA-CTG]) — TRL and technology classification inputs (as used in repo extracts)
+- **IEA ETP Clean Energy Technology Guide** ([IEA-CTG]) — TRL and technology classification inputs. The 2026 public dataset (`IEACleanTechGuidepublicdataset.csv`) carries `TRL.2020`–`TRL.2025`, so the current window is **2020 → 2025**.
 
 **Rationale:** readiness is strongest in a "Goldilocks" band (not too nascent, not fully mature), and technologies with improving TRL trajectories can represent rising opportunity.
 
 **Method notes:**
 - Mapping from IEA taxonomy to target technologies is token-based and config-driven via `config/iea_clean_tech_guide_tech_map.yml` (using taxonomy + supply-chain signals rather than brittle fixed sector positions).
-- The TRL theme now blends:
+- The theme reads the TRL window off whichever `TRL.YYYY` columns the release carries: the newest is the end year, the oldest opens the momentum window. Nothing is pinned, so a Guide release that adds a year moves the theme forward on its own.
+- Two IEA layouts are accepted. The 2026 public dataset uses `tech.final.name`, `category.1`–`category.4` and cross-cutting `*.cc` columns; the earlier hand-built extract used `name`, a comma-joined `sector` path and `supplyChain`. The builder normalizes the newer shape onto the older column names before mapping.
+- The TRL theme blends:
   - **TRL Level Index**: Goldilocks bell-curve score on end-year TRL.
-  - **TRL Momentum Index**: scaled positive TRL change from 2020 to 2023.
-  - **TRL Index**: weighted combination of level and momentum.
+  - **TRL Momentum Index**: scaled positive TRL change across the release's window.
+  - **TRL Index**: weighted combination of level and momentum. This is the variable `Overall Technological Readiness Index` is built from.
 - Fossil fuel technologies (**Coal**, **Oil**, **Gas**) are explicitly supported through taxonomy rules.
 
 **Implementation entry point:**
@@ -394,7 +402,9 @@ This section is written to function as a **drop-in technical appendix inside the
 #### 5) Cost Competitiveness
 **What it captures:** deployment/manufacturing cost position, including relative technology costs, LCOE competitiveness, and composite “input cost” competitiveness (labor + capital proxies).
 
-**Overall variable construction (configured):** the category score uses `Overall Input Cost Index`, calculated as the **mean** of: `lcoe_24`, `lcoe_50`, `Overall input cost index`, `Input Cost Index`, and `IEA Cost index`.
+**Overall variable construction (configured):** the category score uses `Overall Input Cost Index`, calculated as the **mean** of: `lcoe_<current year>`, `lcoe_50`, `Overall input cost index`, `Input Cost Index`, and `IEA Cost index`.
+
+The LCOE theme names its current-year variable after the reference year of the staged BNEF release — `lcoe_24` for the 2025 release, `lcoe_25` for the 2026 one, read from the workbook's "Key cost metrics (YYYY real)" banner. `config/index_definition.yml` lists both spellings; only the one matching the staged vintage is ever present in a build.
 
 **Data sources (cited where applicable):**
 - **IMF Data Explorer** ([IMF-DEX]) — lending rates and PPI series used as capital/input-cost proxies (as used in repo extracts)
@@ -402,6 +412,8 @@ This section is written to function as a **drop-in technical appendix inside the
 - **BloombergNEF New Energy Outlook** ([BNEF-NEO]) — used in some downstream competitiveness scaffolding (as used in repo extracts)
 
 *(Note: the repo also uses BNEF LCOE and IEA relative cost exports; see `docs/sources.md` for provenance and internal snapshot naming.)*
+
+*BNEF ships the LCOE Data Viewer as a macro workbook (`.xlsb`) from the 2026 release onward. No R package reads that container, so `scripts/utils/bnef_lcoe.R` flattens the "Raw LCOE data" sheet once through `scripts/utils/convert_xlsb_sheet.ps1` (Excel automation, Windows only) and caches the CSV under `data/raw_cache/bnef_lcoe/`, keyed on the source file's mtime. A `.csv` export of the same sheet is still read directly, so the 2025 release keeps working.*
 
 **Rationale:** opportunity depends not just on demand, but on **bankable cost competitiveness** — production + deployment happen where costs clear.
 
@@ -451,7 +463,7 @@ This section is written to function as a **drop-in technical appendix inside the
 
 **Data sources:**
 - **IEA Critical Minerals Dataset** ([IEA-CM])
-- **IEA Global EV Data Explorer** ([IEA-EV])
+- **IEA Global EV Outlook** ([IEA-EV])
 - **Energy Institute Statistical Review** ([EI-SR])
 
 **Implementation entry points:**
@@ -566,6 +578,16 @@ Each component is normalized using the median S-curve framework before weighted 
 - Core optimizer + helpers: `R/indices/allied_network_design.R`
 - Scripted run/output writer: `scripts/30_build_allied_network_design.R`
 
+`allied_network_design()` now supports configurable demand composition through `demand_mode` (`"need"`, `"size"`, `"mixed"`, `"equal"`).
+For backwards compatibility, the function default remains `demand_mode = "need"` (legacy need-only demand).
+The production runner (`scripts/30_build_allied_network_design.R`) now uses `demand_mode = "mixed"` with 50/50 need-size weights.
+
+Portfolio constraints can optionally cap how often a country appears in stage-level top-K producers.
+Caps are GDP-derived by default (`portfolio_min_cap = 2`, `portfolio_max_cap = 10`, `portfolio_top_k = 5`, log scaling), while leaving countries available as consumers.
+Portfolio enforcement is iterative and writes diagnostics for convergence and any residual violations.
+
+Runner outputs now include three additional diagnostics files: `allied_network_portfolio_caps.csv`, `allied_network_portfolio_counts.csv`, and `allied_network_topk_by_stage.csv`.
+
 </details>
 
 ---
@@ -582,6 +604,14 @@ charts/             # Chart builders (no file IO)
 themes/             # Theme grouping (incl. partnership_strength)
 
 scripts/              # Orchestration + IO (reads raw, writes processed/outputs)
+fetchers/           # One file per API source; registered, contract-validated
+utils/              # Bootstrap, manifest/sync helpers, fetcher framework
+
+data/
+reference/          # Project-authored crosswalks (version controlled)
+raw/                # Local raw inputs (gitignored; populated by ingestion)
+processed/          # Intermediate theme tables (gitignored)
+
 config/               # Config files (weights, missing data, index definitions)
 docs/                 # Methodology + data sources
 shiny/                # Interactive Shiny app (world map explorer)
@@ -651,6 +681,28 @@ For an end-to-end run, use:
 Rscript run_pipeline.R
 ```
 
+Run allied network only:
+
+```bash
+Rscript scripts/build_allied_network.R
+```
+
+Optional environment variables:
+
+- `OPSI_INSTALL_MILP_PKGS=true|false`
+- `OPSI_REQUIRE_MILP=true|false`
+- `OPSI_AUTO_PREREQS=true|false`
+- `OPSI_RUN_ALLIED_NETWORK=true|false`
+- `OPSI_FORCE_REFRESH=true|false` — recopy every staged raw input even when the local
+  copy looks current (see [Raw inputs and refresh](#raw-inputs-and-refresh))
+- `OPSI_PREFER_FETCH=true|false` — treat the API as authoritative for every input that
+  has a fetcher, overriding each entry's `fetch_policy` for one run
+- `OPSI_SKIP_FETCH=true|false` — disable API fetchers entirely
+- `OPSI_REQUIRE_FETCH=true|false` — make a failed fetch fatal instead of falling back to
+  the local file
+- `OPSI_IMF_START_YEAR=<year>` — earliest year kept by the IMF fetchers (default 1990;
+  on PPI and lending rates the window controls country coverage, not just recency, and on
+  commodity prices it must stay well behind the 20-year volatility window)
 
 When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under
 `data/raw/comtrade_chunks/...` and automatically combines them into final CSVs
@@ -701,6 +753,40 @@ See `scripts/20_build_indices.R` for the exact CSV outputs written.
 
 ---
 
+## Comparing index vintages across years
+
+The main pipeline produces one snapshot: every theme builder reaches for the newest observation its source carries, so `data/processed` holds a single vintage and cannot be re-cut into an earlier year after the fact. `scripts/40_build_index_vintages.R` builds the ES and EO pillars at a chosen set of years instead, so vintages can be compared:
+
+```bash
+Rscript scripts/40_build_index_vintages.R --years=2020,2025
+```
+
+Years can also be set with `OPSI_INDEX_YEARS=2015,2020,2025`. The default is `2020,2025`. Any number of years is accepted; the comparison table is built between the earliest and the latest.
+
+It works by slicing each **raw input** to the requested year and then running the same theme builders and the same v2 index builders the annual pipeline uses — the index construction itself is untouched. `scripts/10_build_themes.R` must have been run at least once first, because the themes with no time dimension are read from `data/processed` and reused unchanged across vintages, which keeps the fixed components identical between years.
+
+**What actually moves.** Only sources with a genuine time dimension can be re-cut. EI Statistical Review (energy access, imports, consumption, production), the Atlas of Economic Complexity (trade), IMF monthly prices and rates, ILO earnings, and GCIM investment all do. Resource potential, reserves, the IEA critical minerals release, BNEF demand and LCOE, overcapacity, and TRL are single snapshots or forward projections, so they are held fixed and contribute nothing to the year-on-year delta. In the current configuration that leaves **50% of scored Energy Security weight and 72% of scored Economic Opportunity weight** re-deriving per vintage. Every run writes the split it used.
+
+The trade themes run off the Atlas for *all* vintages rather than Comtrade, because the staged Comtrade extract is a single year — mixing a Comtrade numerator in one vintage with an Atlas one in another would show a source change as if it were real change. The Atlas stops at 2023, so a 2025 vintage uses Atlas 2023 and says so in `index_vintage_source_years.csv`.
+
+**Reading the results.** Every component is a cross-sectional percent rank, so an index value is a country's standing against its peers in that year, not an absolute level. A rise from 2020 to 2025 means the country gained ground on the field. Both level change and rank change are written out for that reason. As a sanity check, the 2025 vintage tracks the annual pipeline's headline index at r ≈ 0.98 (ES) and 0.99 (EO).
+
+Outputs land in `data/processed/vintages/`:
+
+| File | Contents |
+| --- | --- |
+| `energy_security_index_by_year.csv` | ES pillar index per country × tech × supply chain × vintage year, with `Energy_Security_Risk` as the complement |
+| `economic_opportunity_index_by_year.csv` | EO pillar index, same keys |
+| `index_category_scores_by_year.csv` | Category scores behind both pillars, so a delta can be attributed |
+| `energy_security_comparison_<a>_vs_<b>.csv` | Level and rank in each end year, plus `index_change` and `rank_change` |
+| `economic_opportunity_comparison_<a>_vs_<b>.csv` | Same for EO |
+| `index_vintage_theme_provenance.csv` | Per theme: whether it varies with the year, and why |
+| `index_vintage_weight_coverage.csv` | Share of each pillar's scored weight that re-derives per vintage |
+| `index_vintage_source_years.csv` | The year each source actually resolved to, per vintage |
+| `index_vintages.rds` | All of the above plus the full builder outputs per year |
+
+---
+
 ## Testing and quality checks
 
 This repository includes a `testthat` suite under `tests/testthat/` that covers core scoring behavior and integration-sensitive paths, including:
@@ -712,6 +798,8 @@ This repository includes a `testthat` suite under `tests/testthat/` that covers 
 * Package-selection visual outputs
 * Allied network design scaling
 * Shiny app load smoke test
+* Raw-input manifest drift (manifest vs. what `scripts/` actually reads, in both directions)
+* Raw-input sync and vintage resolution (mtime/size comparison, newest-release matching)
 
 Run tests from repo root with:
 
@@ -725,32 +813,152 @@ Rscript -e "testthat::test_dir('tests/testthat')"
 
 Beyond the main pipeline scripts, the repo includes supporting workflows:
 
-* `scripts/01_generate_raw_inputs_manifest.R` — generates/refreshes a raw-input inventory from configured requirements.
-* `config/raw_inputs_manifest.yml` — declarative manifest used to track expected raw datasets.
+* `scripts/01_generate_raw_inputs_manifest.R` — regenerates the raw-input inventory by scanning the active `scripts/` and `R/` code.
+* `scripts/02_render_sources_doc.R` — renders `docs/sources.md` from the manifest.
+* `scripts/03_check_raw_inputs.R` — read-only preflight: reports which raw inputs would block a build and where each is expected to come from. Run this first when ingestion fails.
+* `scripts/04_build_hs6_views.R` and `R/utils/hs6_crosswalk.R` — regenerate the HS6 crosswalk views from the master.
+* `config/raw_inputs_manifest.yml` — declarative manifest of every raw dataset, with provenance and refresh cadence.
+* `scripts/utils/raw_inputs.R` — shared helpers for manifest reading, staged-file sync, and vintage resolution.
+* `scripts/utils/fetchers.R` and `scripts/fetchers/*.R` — API fetchers and the contract-validated write path.
 * `scripts/30_build_allied_network_design.R` — builds allied network design outputs used for partnership analyses.
 * `scripts/90_build_package_selection_viz.R` — prepares package-selection visualization outputs.
 * `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — pull and visualize trade time series.
+* `R/charts/export_similarity.R` — Finger–Kreinin export similarity between the six major energy-technology exporters (CHN, DEU, FRA, JPN, KOR, USA), over the HS6 master basket. Produces an overall index plus a per-technology breakdown. Data is pulled at HS6 and aggregated to `ESI_LEVEL` (`hs6`/`hs4`/`hs2`/`tech`/`sub_sector`, default `hs4`) before scoring. The index rises mechanically with aggregation, so it is only comparable within a level — every output row records the level it was computed at.
 * `docs/data_dictionary.md` and `docs/comtrade_ingestion_and_timeseries.md` — implementation details for data fields and Comtrade workflows.
 
 For app-specific details (UI behavior, data-loading order, and deployment notes), see `shiny/README.md`.
 
 ---
 
-## Data sources
+## Raw inputs and refresh
 
-A curated list of sources (including links and expected provenance) is maintained in:
+`config/raw_inputs_manifest.yml` is the single inventory of every raw input the pipeline
+reads. Each entry records where the file comes from and how often it changes:
 
-* `docs/sources.md`
+| `source_type` | Meaning |
+| --- | --- |
+| `api` | Fetched automatically during ingestion (Comtrade, WDI, IMF PCPS) |
+| `manual` | Staged by hand into `sharepoint_raw_dir` before a run |
+| `derived` | Authored by the project — a crosswalk, not a fetched dataset |
+| `generated` | Written by the pipeline as bookkeeping |
+
+A second field, `staged_from`, says how each input reaches `data/raw/`: `sharepoint`
+(copied from your staging folder), `repo` (version controlled in `data/reference/`), or
+`pipeline` (written by an ingestion step).
+
+The manifest is generated **from the active pipeline**, so it cannot drift away from what
+`scripts/` actually reads:
+
+```bash
+Rscript scripts/01_generate_raw_inputs_manifest.R
+```
+
+Curated fields (`source_name`, `url`, `cadence`, `owner`, `vintage`) survive regeneration;
+`required_by` is refreshed from code. `tests/testthat/test-raw-inputs-manifest.R` fails if
+the manifest and the pipeline disagree in either direction.
+
+`docs/sources.md` is rendered from the manifest — edit the manifest, not the doc:
+
+```bash
+Rscript scripts/02_render_sources_doc.R
+```
+
+### API fetchers
+
+Inputs with a public API are fetched by `scripts/fetchers/*.R` and written in the same
+layout the pipeline already parses, so no downstream code changes:
+
+| Input | Source | Notes |
+| --- | --- | --- |
+| `wb_wdi.csv` | World Bank v2 API | 44 series, DataBank wide layout |
+| `wb_doingbusiness.csv` | World Bank v2 API | Archived series; reproduces 190 of 192 economies |
+| `imf_ppi.csv` | IMF SDMX 3.0 | Producer price index, Index transformation |
+| `imf_lending_rates.csv` | IMF SDMX 3.0 | The six rate types the theme scores |
+
+Three properties matter:
+
+- **A failed fetch never destroys a good file.** Every fetch is written to a temp path,
+  validated against a declared contract (required columns, minimum rows, minimum time
+  columns, and a uniqueness key), and only then swapped into place. On failure the
+  existing file is kept and a warning raised; `OPSI_REQUIRE_FETCH=true` makes it fatal.
+- **`fetch_policy` decides who wins.** `prefer` means the API is the authority and the
+  fetcher runs on the source's cadence. `fallback` (the default) means a staged file wins
+  and the fetcher only runs when no local copy exists. `OPSI_PREFER_FETCH=true` overrides
+  all entries for one run.
+- **Coverage differences are recorded, not hidden.** `imf_ppi` and `imf_lending_rates` are
+  `fallback` because the live flows no longer publish every country in the staged extracts —
+  see their `notes` in the manifest for the measured deltas. `imf_commodity_prices` is
+  `prefer`: PCPS is a world-level price panel with no country dimension, so that divergence
+  does not arise, and the fetched series match the staged export on 6842 of 6870 overlapping
+  observations.
+
+Not automatable, and marked `manual` for that reason: the Energy Institute download sits
+behind a Cloudflare challenge, and BNEF, BCG, GTA NIPO and the IEA extracts are
+subscription or licence-restricted.
+
+### When ingestion fails
+
+```bash
+Rscript scripts/03_check_raw_inputs.R
+```
+
+Reports, without writing anything, which inputs are blocking, which are absent but
+covered by a fetcher, and which are absent but optional. Optional inputs let the
+pipeline degrade rather than stop.
+
+### How refresh works
+
+- **Ingestion syncs rather than copies once.** `scripts/05_ingest_sources.R` compares size
+  and mtime, so replacing a file in the staging area with a newer vintage is enough for it
+  to reach `data/raw`. Force a full recopy with `OPSI_FORCE_REFRESH=true`.
+- **Vintage-bearing inputs resolve to the newest match.** Inputs whose file name carries a
+  release date (`GTA NIPO - <month> <year>.xlsx`, `WEO<year>_AnnexA_...`, `critmin_*_<year>.csv`,
+  the dated BNEF exports) are resolved by pattern, not pinned in code. Publishing a new
+  release into `data/raw` is all that is needed to pick it up.
+- **Each run stamps what it used.** `data/raw/raw_inputs_resolved.yml` records the file and
+  vintage behind every pattern-resolved input, alongside `data/raw/comtrade_vintage.yml`.
+
+### The HS6 crosswalk
+
+`data/reference/energy_hs6_master.csv` is the **single source of truth** for the
+HS6 → technology / supply-chain / sub-sector mapping, and the only HS6 file under
+version control. Its columns are `tech`, `supply_chain`, `sub_sector`, `hs6`, `essential`.
+
+Three legacy file names are regenerated from it as views during ingestion, so existing
+consumers keep working unchanged:
+
+| Generated view | Shape | Read by |
+| --- | --- | --- |
+| `hts_codes_categories_bolstered_final.csv` | `Technology, Value Chain, Sub.Sector, HS6` | Comtrade code list (`05`), ES/EO trade themes (`10`), `96`, `97` |
+| `consolidated_hs6_energy_tech_long.csv` | `tech, supply_chain, sub_sector, HS6` | `R/charts/35_trade_bloc_counterfactual.R` |
+| `hs6_categories_with_essential.csv` | as above plus `essential` | NIPO essential-goods override (`10`), `96`, `97` |
+
+```bash
+Rscript scripts/04_build_hs6_views.R
+```
+
+**To change the mapping, edit the master.** The views are overwritten on every ingest,
+and `tests/testthat/test-hs6-crosswalk.R` fails if they ever disagree with it.
+
+Before this consolidation the three files were staged independently and had drifted: on
+the codes they shared, only 60–81% agreed on the technology assignment, so ES/EO and PSI
+were scored on different baskets of HS codes for the same technologies.
+
+> **Other project-authored inputs** (the dual-use scores) also live in `data/reference/`
+> and are copied into `data/raw/` during ingestion, so a fresh clone builds without
+> access to anyone's OneDrive. Edit them there — a copy in `data/raw/` will be overwritten.
 
 Theme builders read raw inputs directly from your configured `raw_data_dir/...`.
 
-> **Tip:** `scripts/10_build_themes.R` and `scripts/15_build_partner_themes.R` are the authoritative “what files are required” inventory, because they list the expected raw file names and wire them into each theme builder.
+> **Tip:** `scripts/10_build_themes.R` and `scripts/15_build_partner_themes.R` remain the
+> authoritative “what files are required to run” inventory, because they fail fast on a
+> concrete list of paths. The manifest describes provenance for those same inputs.
 
 ### Key external sources (cited)
 
 * [IEA Critical Minerals Dataset][IEA-CM]
 * [IEA ETP Clean Energy Technology Guide][IEA-CTG]
-* [IEA Global EV Data Explorer][IEA-EV]
+* [IEA Global EV Outlook][IEA-EV]
 * [Energy Institute Statistical Review][EI-SR]
 * [UN Comtrade][COMTRADE]
 * [Harvard Atlas of Economic Complexity][AEC]
@@ -786,6 +994,11 @@ And record:
 * **EO Investment category is currently a placeholder** in the configured EO category list and may not yet represent a finalized production methodology.
 * **Supply-chain coupling implementation differs from the methodology text**: current code uses normalized interdependence edge strength with linear lambda mapping (rather than HHI-driven logistic mapping).
 * **Raw-input completeness is environment dependent**. If expected files are missing, use the manifest workflow and source documentation to reconcile gaps before running full builds.
+* **HS 854140 is no longer in the crosswalk.** The master uses the HS2022 codes `854142` (solar cells) and `854143` (solar modules), which replaced the pre-2022 `854140` for photovoltaic cells. That is correct for recent years, but Comtrade reporting for 2021 and earlier still uses `854140`, so historical Solar trade may be understated. Adding `854140` to `data/reference/energy_hs6_master.csv` as a legacy Solar/Midstream row would close the gap; it is left out pending a decision.
+* **`allies.csv` is the last uncommitted project-authored input.** It was not present locally when the other crosswalks moved into `data/reference/`, so it remains staged from SharePoint. It is optional — ingestion falls back to all valid WDI reporters — but committing it would make the allied dyad pull fully reproducible.
+* **Remaining automation candidates**: `imf_dip.csv` (the SDMX flow works but a full pull is ~6.5MB per reporter, so it needs a dimension-filtering strategy), `oecd_crs_api.csv` (the CRS dataflow is not exposed under the `OECD.DCD.FSD` agency the staged file names), and the Atlas of Economic Complexity extracts via Harvard Dataverse. See `docs/sources.md` for the current split.
+* **IMF fetchers are `fallback`, not `prefer`.** The live PPI and MFS_IR flows have dropped countries the staged extracts still carry (France, Chile, Finland, Greece for PPI; Spain for rates). Switching them to `prefer` would change index coverage.
+* **No input has a named owner.** Every manifest entry is `owner: unassigned`, so there is no one accountable for noticing a stale vintage.
 
 ---
 
@@ -801,7 +1014,7 @@ For contribution expectations and responsible disclosure guidance, see `CONTRIBU
 
 [IEA-CM]: https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset
 [IEA-CTG]: https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide
-[IEA-EV]: https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer
+[IEA-EV]: https://www.iea.org/data-and-statistics/data-product/global-ev-outlook-2026
 [EI-SR]: https://www.energyinst.org/statistical-review
 [COMTRADE]: https://comtrade.un.org/
 [AEC]: https://atlas.hks.harvard.edu/

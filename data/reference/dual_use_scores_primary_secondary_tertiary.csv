@@ -1,0 +1,34 @@
+technology,stage,stage_desc,dual_use_score_0_1,rationale,node
+Electric Vehicles,U,Commodities (primary),0.55,"Upstream metals/components matter, but defense linkage is less specific than for batteries or nuclear fuels.",Electric Vehicles_U
+Electric Vehicles,M,Manufacturing (secondary),0.7,Vehicle and powertrain manufacturing overlaps with defense vehicle industrial base; hybrid-electric tactical vehicles highlight relevance.,Electric Vehicles_M
+Electric Vehicles,D,Deployment/operations (tertiary),0.65,"Operational advantages (silent watch/exportable power) make adoption strategically relevant, though still emerging.",Electric Vehicles_D
+Nuclear,U,Commodities (primary),1.0,Uranium/HEU supply is directly linked to naval propulsion and the nuclear security enterprise.,Nuclear_U
+Nuclear,M,Manufacturing (secondary),0.95,Fuel-cycle and reactor manufacturing overlap with naval propulsion and national security nuclear programs.,Nuclear_M
+Nuclear,D,Deployment/operations (tertiary),0.85,Deployment of reactors/microreactors for bases and resilient power has explicit defense interest.,Nuclear_D
+Coal,U,Commodities (primary),0.3,Coal remains relevant for some installations/logistics in niche contexts; limited dual-use significance otherwise.,Coal_U
+Coal,M,Manufacturing (secondary),0.2,Processing/handling has limited direct defense relevance.,Coal_M
+Coal,D,Deployment/operations (tertiary),0.25,Coal use in power/heat has limited defense overlap today; mostly niche installation procurement.,Coal_D
+Batteries,U,Commodities (primary),0.85,Critical minerals and materials for advanced batteries are prioritized for defense supply-chain resilience.,Batteries_U
+Batteries,M,Manufacturing (secondary),0.9,"Cell/pack manufacturing is a direct dual-use input for UAS/drones, soldier power, and electrified platforms.",Batteries_M
+Batteries,D,Deployment/operations (tertiary),0.7,Deployed batteries support base microgrids/resilience and mobile power; less direct than manufacturing.,Batteries_D
+Green Hydrogen,U,Commodities (primary),0.7,Electrolyzers/fuel cells depend on PGMs and specialized materials with defense-relevant supply-chain attention.,Green Hydrogen_U
+Green Hydrogen,M,Manufacturing (secondary),0.8,"Electrolyzers and fuel cells have dual-use applications (UAVs, soldier systems, UUVs) and are policy-prioritized.",Green Hydrogen_M
+Green Hydrogen,D,Deployment/operations (tertiary),0.6,Deployment for defense energy resilience and quiet power is plausible/active but not yet universal.,Green Hydrogen_D
+Wind,U,Commodities (primary),0.6,Upstream rare earths/magnets are defense-critical and also used in wind turbines (shared strategic materials).,Wind_U
+Wind,M,Manufacturing (secondary),0.45,"Turbine manufacturing is heavy industry with some defense overlap, but less direct than grid/batteries.",Wind_M
+Wind,D,Deployment/operations (tertiary),0.35,Deployment has limited direct defense tie; mostly indirect via energy resilience.,Wind_D
+Oil,U,Commodities (primary),0.85,Crude supply is strategically important because liquid fuels underpin operations and readiness.,Oil_U
+Oil,M,Manufacturing (secondary),0.95,Refining/logistics for military fuels (jet/diesel) is directly tied to defense operations and global basing.,Oil_M
+Oil,D,Deployment/operations (tertiary),0.9,Operational fuel consumption is mission-critical across air/sea/ground forces.,Oil_D
+Solar,U,Commodities (primary),0.5,"PV upstream inputs are less uniquely defense-specific, but supply security is treated as strategic.",Solar_U
+Solar,M,Manufacturing (secondary),0.7,PV manufacturing is policy-prioritized for national security; defense uses PV in resilient microgrids.,Solar_M
+Solar,D,Deployment/operations (tertiary),0.55,Deployment supports base resilience/microgrids; generally enabling rather than weapon-system critical.,Solar_D
+Gas,U,Commodities (primary),0.6,Natural gas is an installation energy input; upstream is less defense-specific than oil but still relevant for assured supply.,Gas_U
+Gas,M,Manufacturing (secondary),0.55,Processing/pipeline/LNG infrastructure supports installation energy and national energy security; moderate dual-use.,Gas_M
+Gas,D,Deployment/operations (tertiary),0.55,Used for installation electricity/heat and grid reliability; defense relevance mainly via critical infrastructure.,Gas_D
+Geothermal,U,Commodities (primary),0.45,Subsurface/drilling capabilities overlap with strategic industrial skills; moderate defense interest as an assured resource.,Geothermal_U
+Geothermal,M,Manufacturing (secondary),0.4,Equipment/services overlap with oilfield services and infrastructure; moderate dual-use via resilience projects.,Geothermal_M
+Geothermal,D,Deployment/operations (tertiary),0.55,DoD is actively pursuing geothermal for mission assurance and resilient power at installations.,Geothermal_D
+Electric Grid,U,Commodities (primary),0.6,"Bulk materials are generic, but grid components depend on strategic materials and are critical infrastructure.",Electric Grid_U
+Electric Grid,M,Manufacturing (secondary),0.85,Transformers/grid components are explicitly treated as national security priorities; defense-grade equipment is a chokepoint.,Electric Grid_M
+Electric Grid,D,Deployment/operations (tertiary),0.9,Grid resilience and assured power for critical defense facilities is a core national security concern.,Electric Grid_D

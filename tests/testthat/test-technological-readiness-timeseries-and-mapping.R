@@ -1,8 +1,11 @@
-repo_root <- getwd()
+repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
-source(file.path(repo_root, "R", "utils", "assertions.R"))
 source(file.path(repo_root, "R", "categories", "technological_readiness", "technological_readiness.R"))
+
+# read_iea_tech_map_rules() finds config/ from the repo root; without this it would
+# resolve against tests/testthat.
+withr::local_options(opportunity_security.repo_root = repo_root, .local_envir = teardown_env())
 
 iea_timeseries_fixture <- function() {
   read_fixture_csv("iea_clean_tech_guide_subset_timeseries.csv")

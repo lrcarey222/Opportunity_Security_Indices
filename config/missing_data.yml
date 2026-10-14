@@ -11,6 +11,7 @@ energy_security:
   foreign_dependency: global_average
   import_dependence: global_average
   trade_concentration: global_average
+  investment_momentum: zero
 economic_opportunity:
   energy_access_consumption: global_average
   solar_pv_potential: global_average
@@ -26,3 +27,4 @@ economic_opportunity:
   cost_competitiveness: global_average
   production_depth_momentum: global_average
   overcapacity_premium: global_average
+  investment_momentum: zero

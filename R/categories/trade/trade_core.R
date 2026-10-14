@@ -12,7 +12,10 @@ trade_core_build_energy_codes <- function(subcat, include_sub_sector = FALSE) {
   tech_col <- pick_col(subcat, c("tech", "Technology", "technology"), "tech")
   supply_chain_col <- pick_col(
     subcat,
-    c("supply_chain", "Value.Chain", "value_chain", "Supply.Chain", "supply chain"),
+    # "Value Chain" with a space is the header the staged hts_codes_categories CSV
+    # actually carries. readr::read_csv() preserves it verbatim, so callers that hand
+    # the file over unrenamed reach here with the spaced spelling.
+    c("supply_chain", "Value.Chain", "Value Chain", "value_chain", "Supply.Chain", "supply chain"),
     "supply_chain"
   )
   sub_sector_col <- pick_col(subcat, c("sub_sector", "Sub.Sector", "subsector"), "sub_sector")
@@ -73,7 +76,7 @@ trade_core_build_aec_feasibility <- function(aec_4_data, energy_codes, year = 20
 
 trade_core_build_comtrade_trade <- function(comtrade_data,
                                             energy_codes,
-                                            year = 2025) {
+                                            year = 2024) {
   comtrade_data <- trade_core_filter_year(
     comtrade_data,
     year = year,
@@ -108,7 +111,7 @@ trade_core_build_comtrade_trade <- function(comtrade_data,
 
 trade_core_build_comtrade_rca <- function(comtrade_trade,
                                           comtrade_total_export,
-                                          year = 2025) {
+                                          year = 2024) {
   total_export <- trade_core_filter_year(
     comtrade_total_export,
     year = year,
@@ -150,7 +153,7 @@ trade_core_build_country_trade <- function(comtrade_trade,
                                            comtrade_total_export,
                                            market_share,
                                            feasibility,
-                                           year = 2025) {
+                                           year = 2024) {
   comtrade_rca <- trade_core_build_comtrade_rca(
     comtrade_trade = comtrade_trade,
     comtrade_total_export = comtrade_total_export,

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- never serve a stale engine while iterating on it -->
+  <meta http-equiv="Cache-Control" content="no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <title>Alliance Architect — engine tests</title>
+  <style>
+    body { background:#0a0507; color:#f6efe7; font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; padding:22px; }
+    h1 { font:600 18px/1.2 system-ui,sans-serif; letter-spacing:.5px; }
+    #out { white-space:pre-wrap; margin-top:14px; }
+    .pass { color:#6ee0ac; } .fail { color:#ff5f74; } .grp { color:#ffd23e; }
+  </style>
+</head>
+<body>
+  <h1>Alliance Architect — scoring engine tests</h1>
+  <div id="out">running…</div>
+
+  <!-- data.js gives the real ALLIES home-synergy table; the suite falls back to
+       its own fixtures when run under Node. -->
+  <script src="data.js"></script>
+  <script src="coord-scenarios.js"></script>
+  <script src="coord-model.js"></script>
+  <script src="coord-tests.js"></script>
+  <script>
+    const lines = [];
+    const res = COORD_TESTS.run((l) => lines.push(l));
+    const html = lines.map(l => l.trim().startsWith("✗")
+        ? `<span class="fail">${l}</span>`
+        : l.startsWith("•") ? `<span class="grp">${l}</span>` : l).join("\n");
+    document.getElementById("out").innerHTML =
+      `<b class="${res.fail ? "fail" : "pass"}">${res.pass} passed, ${res.fail} failed</b>\n\n` + html;
+    window.__RESULT__ = res;
+  </script>
+</body>
+</html>

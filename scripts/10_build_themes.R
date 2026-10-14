@@ -1,12 +1,48 @@
-# Build theme-level tables.
-if (!exists("repo_root")) {
-  repo_root <- resolve_repo_root()
-}
+source(local({
+  resolve_bootstrap_path <- function() {
+    candidate_starts <- character()
 
+    sf <- tryCatch(sys.frame(1)$ofile, error = function(e) "")
+    if (!is.null(sf) && nzchar(sf)) candidate_starts <- c(candidate_starts, dirname(sf))
+
+    frame_ofiles <- vapply(sys.frames(), function(fr) {
+      val <- tryCatch(fr$ofile, error = function(e) "")
+      if (is.null(val) || !nzchar(val)) "" else dirname(val)
+    }, character(1))
+    candidate_starts <- c(candidate_starts, frame_ofiles[nzchar(frame_ofiles)])
+
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) candidate_starts <- c(candidate_starts, dirname(sub("^--file=", "", fa[1])))
+
+    candidate_starts <- unique(c(candidate_starts, getwd()))
+
+    for (start in candidate_starts) {
+      d <- normalizePath(start, winslash = "/", mustWork = FALSE)
+      while (dirname(d) != d) {
+        bootstrap <- file.path(d, "scripts", "utils", "bootstrap.R")
+        if (file.exists(bootstrap)) return(bootstrap)
+
+        bootstrap <- file.path(d, "utils", "bootstrap.R")
+        if (file.exists(bootstrap)) return(bootstrap)
+
+        d <- dirname(d)
+      }
+    }
+
+    stop("Unable to resolve script path for bootstrap.")
+  }
+
+  resolve_bootstrap_path()
+}))
+
+source(file.path(repo_root, "scripts", "utils", "raw_inputs.R"))
+source(file.path(repo_root, "scripts", "utils", "bnef_lcoe.R"))
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "utils", "iea_critical_minerals.R"))
+source(file.path(repo_root, "R", "utils", "iea_ev.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
@@ -33,31 +69,14 @@ source(file.path(repo_root, "R", "categories", "energy_prices", "lcoe_competitiv
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "market_share_manufacturing.R"))
 source(file.path(repo_root, "R", "categories", "production", "production_depth_momentum.R"))
 source(file.path(repo_root, "R", "categories", "technology_demand", "overcapacity_premium.R"))
+source(file.path(repo_root, "R", "categories", "investment", "investment_momentum.R"))
 source(file.path(repo_root, "R", "categories", "economic opportunity", "cost_competitiveness.R"))
 source(file.path(repo_root, "R", "categories", "technological_readiness", "technological_readiness.R"))
 
-standardize_theme_types <- function(tbl, country_info = NULL) {
-  if (is.null(tbl)) {
-    return(tbl)
-  }
+# rebuild_theme_overall_indices() and standardize_theme_types() moved to R/utils so the
+# vintage builder (scripts/40_build_index_vintages.R) can reuse them.
+source(file.path(repo_root, "R", "utils", "theme_standardize.R"))
 
-  standardized <- tbl %>%
-    dplyr::mutate(
-      Country = as.character(Country),
-      tech = as.character(tech),
-      supply_chain = as.character(supply_chain),
-      sub_sector = if ("sub_sector" %in% names(tbl)) as.character(sub_sector) else NULL,
-      category = as.character(category),
-      variable = as.character(variable),
-      data_type = as.character(data_type),
-      Year = suppressWarnings(as.integer(stringr::str_extract(as.character(Year), "\\d{4}$"))),
-      value = suppressWarnings(as.numeric(value)),
-      source = as.character(source),
-      explanation = as.character(explanation)
-    )
-
-  standardize_country_table(standardized, country_info = country_info)
-}
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) {
@@ -106,62 +125,115 @@ if (is.null(raw_data_path)) {
   return()
 }
 
-manifest_path <- file.path(repo_root, "config", "raw_inputs_manifest.yml")
-if (!file.exists(manifest_path)) {
-  stop("Raw inputs manifest not found: ", manifest_path)
-}
-raw_manifest <- yaml::read_yaml(manifest_path)
-if (length(raw_manifest) == 0) {
-  stop("Raw inputs manifest is empty: ", manifest_path)
-}
-
-find_manifest_path <- function(pattern, label) {
-  hits <- vapply(raw_manifest, function(entry) {
-    is.character(entry$path) && stringr::str_detect(entry$path, pattern)
-  }, logical(1))
-  if (!any(hits)) {
-    stop(label, " not found in raw inputs manifest.")
-  }
-  if (sum(hits) > 1) {
-    stop("Multiple entries found for ", label, "; keep only one entry.")
-  }
-  raw_manifest[[which(hits)[1]]]$path
-}
+manifest_path <- raw_inputs_manifest_path(repo_root)
+raw_manifest <- read_raw_inputs_manifest(manifest_path)
 
 # Assemble required raw file paths for theme builders.
+#
+# Inputs whose file name carries a release vintage are resolved to the newest match in
+# data/raw rather than pinned to one release, so a new upstream publication flows in
+# without a code edit. `fallback` keeps the previously pinned name working when no
+# other candidate is present.
 raw_path <- file.path(raw_data_path, "ei_stat_review_world_energy.csv")
 reserves_excel_path <- file.path(raw_data_path, "ei_stat_review_world_energy_wide.xlsx")
-critical_minerals_path <- file.path(raw_data_path, "iea_criticalminerals_25.csv")
+critical_minerals_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  # Top-level alternation, no capture group: the manifest scanner in scripts/utils
+  # reads this call as source text and stops at the first closing bracket it finds.
+  pattern = "^IEA Critical Minerals Dataset \\d{4}\\.xlsx$|^iea_criticalminerals_\\d{2}\\.csv$",
+  fallback = "IEA Critical Minerals Dataset 2026.xlsx",
+  label = "IEA Critical Minerals Dataset"
+)
 cleantech_midstream_path <- file.path(raw_data_path, "iea_cleantech_Midstream.csv")
-iea_cleantech_guide_path <- file.path(raw_data_path, "IEA_Clean_Tech_Guide.csv")
+iea_cleantech_guide_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  # The 2026 public dataset ships under a new name and a new schema; the hand-built
+  # extract stays matchable so an older stage still builds. Neither name carries a
+  # vintage, so the newer file on disk wins, and the theme builder detects which
+  # layout it was handed. No brackets in this comment - the manifest scanner reads
+  # the call as source text and stops at the first closing bracket it finds.
+  pattern = "^IEACleanTechGuide.*\\.csv$|^IEA_Clean_Tech_Guide\\.csv$",
+  fallback = "IEACleanTechGuidepublicdataset.csv",
+  label = "IEA Clean Tech Guide"
+)
 ev_midstream_path <- file.path(raw_data_path, "ev_Midstream_capacity.csv")
 trade_codes_path <- file.path(raw_data_path, "consolidated_hs6_energy_tech_long.csv")
 trade_hs4_path <- file.path(raw_data_path, "hs92_country_product_year_4.csv")
 trade_hs6_path <- file.path(raw_data_path, "hs92_country_product_year_6.csv")
 comtrade_energy_trade_path <- file.path(raw_data_path, "comtrade_energy_trade.csv")
 comtrade_total_export_path <- file.path(raw_data_path, "comtrade_total_export.csv")
-bnef_neo_path <- file.path(raw_data_path, "2024-10-29 - New Energy Outlook 2024.csv")
+bnef_neo_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^\\d{4}-\\d{2}-\\d{2} - New Energy Outlook \\d{4}\\.csv$",
+  fallback = "2024-10-29 - New Energy Outlook 2024.csv",
+  label = "BNEF New Energy Outlook"
+)
 wdi_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
 wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")
-critmin_import_path <- file.path(raw_data_path, "critmin_import_2024.csv")
-critmin_export_path <- file.path(raw_data_path, "critmin_export_2024.csv")
-critmin_total_export_path <- file.path(raw_data_path, "critmin_total_export_2024.csv")
-energy_prices_lcoe_path <- file.path(raw_data_path, "2025-03-24 - 2025 LCOE Data Viewer Tool.csv")
-iea_weo_path <- file.path(raw_data_path, "WEO2025_AnnexA_Free_Dataset_World.csv")
-iea_ev_path <- file.path(raw_data_path, "IEA_EVDataExplorer2025.xlsx")
+critmin_import_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^critmin_import_\\d{4}\\.csv$",
+  fallback = "critmin_import_2024.csv",
+  label = "Comtrade critical minerals imports"
+)
+critmin_export_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^critmin_export_\\d{4}\\.csv$",
+  fallback = "critmin_export_2024.csv",
+  label = "Comtrade critical minerals exports"
+)
+critmin_total_export_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^critmin_total_export_\\d{4}\\.csv$",
+  fallback = "critmin_total_export_2024.csv",
+  label = "Comtrade critical minerals total exports"
+)
+energy_prices_lcoe_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  # BNEF stopped shipping a CSV export after the 2025 release and now stages the whole
+  # macro workbook as .xlsb. Top-level alternation with no capture group, because the
+  # manifest scanner reads this call as source text and stops at the first bracket.
+  pattern = "^\\d{4}-\\d{2}-\\d{2} - .*LCOE Data\\.xlsb$|^\\d{4}-\\d{2}-\\d{2} - \\d{4} LCOE Data Viewer Tool\\.csv$",
+  fallback = "2026-08-11 - LCOE Data.xlsb",
+  label = "BNEF LCOE Data Viewer"
+)
+iea_weo_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^WEO\\d{4}_AnnexA_Free_Dataset_World\\.csv$",
+  fallback = "WEO2025_AnnexA_Free_Dataset_World.csv",
+  label = "IEA WEO Annex A"
+)
+iea_ev_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  # The IEA published this extract as the EV Data Explorer workbook through the 2025
+  # release and as a flat CSV from Global EV Outlook 2026 onward; both names still
+  # resolve and R/utils/iea_ev.R reads either form. Top-level alternation with no capture
+  # group, because the manifest scanner reads this call as source text.
+  pattern = "^EV data by country \\d{4}\\.csv$|^IEA_EVDataExplorer\\d{4}\\.xlsx$",
+  fallback = "EV data by country 2026.csv",
+  label = "IEA Global EV Outlook"
+)
 bcg_future_demand_path <- file.path(raw_data_path, "Market Size for Technology and Supply Chain.xlsx")
-bnef_supply_chain_path <- file.path(raw_data_path, "BNEF_Energy Transition Supply Chains 2025.xlsx")
+bnef_supply_chain_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^BNEF_Energy Transition Supply Chains \\d{4}\\.xlsx$",
+  fallback = "BNEF_Energy Transition Supply Chains 2025.xlsx",
+  label = "BNEF Energy Transition Supply Chains"
+)
 relative_costs_iea_path <- file.path(raw_data_path, "Relative_Costs_IEA.csv")
 imf_lending_rates_path <- file.path(raw_data_path, "imf_lending_rates.csv")
 imf_ppi_path <- file.path(raw_data_path, "imf_ppi.csv")
-imf_commodity_prices_path <- file.path(raw_data_path, "imf_commodity_prices.csv")
 solar_pv_potential_path <- file.path(raw_data_path, "solar_potential_clean.csv")
 wind_potential_path <- file.path(raw_data_path, "wb_wind_country.csv")
 geothermal_potential_path <- file.path(raw_data_path, "geothermal_lcoe_mw.csv")
 iea_pams_path <- file.path(
   raw_data_path,"IEA_PAMS_Export.csv")
-nipo_policy_path <- file.path(
-  raw_data_path,"GTA NIPO - February 2026.xlsx")
+nipo_policy_path <- resolve_versioned_raw_input(
+  raw_data_path,
+  pattern = "^GTA NIPO - .*\\.xlsx$",
+  fallback = "GTA NIPO - February 2026.xlsx",
+  label = "GTA New Industrial Policy Observatory"
+)
 hs6_category_path <- file.path(
   raw_data_path,"hts_codes_categories_bolstered_final.csv")
 tech_ghg_path <- file.path(
@@ -170,6 +242,15 @@ cat_policy_path <- file.path(
   raw_data_path,"CAT_country ratings data.csv")
 dual_use_scores_path <- file.path(
   raw_data_path,"dual_use_scores_primary_secondary_tertiary.csv")
+investment_monitor_path <- file.path(
+  raw_data_path, "GCIM_Investment_Capacity_aggregated.xlsx")
+
+# Energy prices input: the wide IMF PCPS export, fetched from the SDMX API by
+# scripts/fetchers/imf_sdmx.R or hand-staged from the IMF Data Explorer. Both carry the
+# annual year-on-year series the theme reports alongside volatility.
+imf_price_path <- file.path(raw_data_path, "imf_commodity_prices.csv")
+
+
 
 # Fail fast (or skip) if required raw inputs are missing.
 missing_files <- c(
@@ -198,7 +279,7 @@ missing_files <- c(
   relative_costs_iea_path,
   imf_lending_rates_path,
   imf_ppi_path,
-  imf_commodity_prices_path,
+  imf_price_path,
   solar_pv_potential_path,
   geothermal_potential_path,
   iea_pams_path,
@@ -206,27 +287,55 @@ missing_files <- c(
   hs6_category_path,
   tech_ghg_path,
   cat_policy_path,
-  dual_use_scores_path
+  dual_use_scores_path,
+  investment_monitor_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
+
+if (investment_monitor_path %in% missing_files && !skip_data_downloads) {
+  stop(
+    "Missing GCIM investment monitor file at data/raw/GCIM_Investment_Capacity_aggregated.xlsx (resolved: ",
+    investment_monitor_path,
+    ")."
+  )
+}
 
 if (length(missing_files) > 0 && !skip_data_downloads) {
   expected_list <- paste0("- ", missing_files, collapse = "\n")
   stop("Missing required raw data. Expected raw files:\n", expected_list)
 }
 
+# Stamp which vintage each pattern-resolved input actually landed on, so an index run
+# can be replicated later even after newer releases arrive in data/raw.
+write_resolved_vintages(
+  list(
+    iea_critical_minerals = critical_minerals_path,
+    bnef_neo = bnef_neo_path,
+    bnef_lcoe_viewer = energy_prices_lcoe_path,
+    bnef_supply_chains = bnef_supply_chain_path,
+    critmin_import = critmin_import_path,
+    critmin_export = critmin_export_path,
+    critmin_total_export = critmin_total_export_path,
+    weo_annex_a = iea_weo_path,
+    iea_ev_outlook = iea_ev_path,
+    gta_nipo = nipo_policy_path,
+    energy_prices_input = imf_price_path
+  ),
+  raw_data_path
+)
+
 country_info <- read.csv(wdi_country_path)
 country_info <- standardize_country_info(country_info)
 
-if (length(missing_files) > 0 && skip_data_downloads) {
-  message("Skipping raw data lookup; missing file(s): ", paste(missing_files, collapse = ", "))
-  theme_outputs <- list()
-} else {
+
   ei <- read.csv(raw_path)
+  # Shared WDI country reference for multiple themes.
+  gdp_data <- read.csv(wdi_gdp_path)
+  country_reference <- foreign_dependency_build_country_reference(ei, year = 2025)
   
 
   # Theme: Energy access and consumption (EI data).
-  energy_access_tbl <- energy_access_consumption(ei)
+  energy_access_tbl <- energy_access_consumption(ei, country_info = country_info)
   energy_access_tbl <- standardize_theme_types(energy_access_tbl, country_info = country_info)
   write_processed_tbl(energy_access_tbl, "energy_access_tbl", processed_dir)
 
@@ -263,7 +372,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   write_processed_tbl(import_dependence_tbl, "import_dependence_tbl", processed_dir)
 
   # Theme: Foreign dependency inputs (critical minerals + IEA datasets).
-  critical <- read.csv(critical_minerals_path)
+  critical <- read_iea_critical_minerals(critical_minerals_path)
   mineral_demand_clean <- reserves_build_mineral_demand_clean(critical)
 
   reserve_inputs <- lapply(reserves_specs(), function(spec) {
@@ -274,6 +383,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   reserves_tbl <- reserves(ei, reserve_inputs, mineral_demand_clean)
   reserves_tbl <- standardize_theme_types(reserves_tbl, country_info = country_info)
   write_processed_tbl(reserves_tbl, "reserves_tbl", processed_dir)
+
   cleantech_midstream <- read.csv(cleantech_midstream_path)
   ev_midstream <- read.csv(ev_midstream_path)
   foreign_dependency_tbl <- foreign_dependency(
@@ -302,12 +412,12 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     processed_dir
   )
 
-  # Shared WDI country reference for multiple themes.
-  gdp_data <- read.csv(wdi_gdp_path)
-  country_reference <- foreign_dependency_build_country_reference(ei, year = 2024)
-
+  
   # Theme: Technological readiness (IEA Clean Tech Guide).
-  iea_cleantech_guide <- read.csv(iea_cleantech_guide_path)
+  # The 2026 public dataset ships with a UTF-8 BOM, which would otherwise land in the first
+  # column name and hide it from the layout check. The TRL window (2020-2025 for the 2026
+  # release) is read off whichever TRL columns the file carries.
+  iea_cleantech_guide <- read.csv(iea_cleantech_guide_path, fileEncoding = "UTF-8-BOM")
   technological_readiness_tbl <- technological_readiness(
     iea_cleantech_all = iea_cleantech_guide
   )
@@ -386,7 +496,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   write_processed_tbl(energy_consumption_tbl, "energy_consumption_tbl", processed_dir)
 
   # Theme: Energy prices (IMF PCPS data).
-  imf_commodity_prices <- read.csv(imf_commodity_prices_path)
+  imf_commodity_prices <- read.csv(imf_price_path)
   energy_prices_tbl <- energy_prices(
     imf_price = imf_commodity_prices,
     mineral_demand_clean = mineral_demand_clean,
@@ -396,8 +506,18 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   write_processed_tbl(energy_prices_tbl, "energy_prices_tbl", processed_dir)
 
   # Theme: LCOE competitiveness (BNEF data).
-  lcoe_bnef <- read.csv(energy_prices_lcoe_path, skip = 8)
-  lcoe_competitiveness_tbl <- lcoe_competitiveness(lcoe_bnef = lcoe_bnef)
+  # read_bnef_lcoe() flattens the .xlsb release to CSV once (cached under data/raw_cache)
+  # and attaches the release's reference year, which is the "current" year the theme scores
+  # against 2050. It moved from 2024 to 2025 with the 2026 release.
+  lcoe_bnef <- read_bnef_lcoe(energy_prices_lcoe_path, root_dir = repo_root)
+  lcoe_competitiveness_tbl <- lcoe_competitiveness(
+    lcoe_bnef = lcoe_bnef,
+    source_label = paste0(
+      "BNEF LCOE Data Viewer (",
+      sub("^(\\d{4}-\\d{2}-\\d{2}).*$", "\\1", basename(energy_prices_lcoe_path)),
+      ")"
+    )
+  )
   lcoe_competitiveness_tbl <- standardize_theme_types(
     lcoe_competitiveness_tbl,
     country_info = country_info
@@ -409,9 +529,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
   )
 
   # Theme: Trade concentration (Atlas data + WDI country reference).
-  subcat <- readr::read_csv(hs6_category_path, show_col_types = FALSE) %>%
-    rename("tech"="Technology",
-           "supply_chain" = "Value Chain")
+  subcat <- readr::read_csv(hs6_category_path, show_col_types = FALSE)
 
   aec_4_data <- read.csv(trade_hs4_path)
   aec_6_data <- read.csv(trade_hs6_path)
@@ -498,7 +616,7 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   # Theme: Future demand (IEA + BNEF + EV + BCG data).
   iea_weo <- read.csv(iea_weo_path)
-  iea_ev <- readxl::read_excel(iea_ev_path, sheet = 1)
+  iea_ev <- read_iea_ev(iea_ev_path)
   bcg <- readxl::read_excel(bcg_future_demand_path, sheet = 1)
 
   future_demand_tbl <- future_demand(
@@ -529,9 +647,24 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     processed_dir
   )
 
+  # Theme: Investment momentum + capacity (GCIM investment monitor).
+  investment_momentum_tbl <- investment_momentum_from_excel(
+    investment_monitor_path,
+    country_reference = country_reference$Country
+  )
+  investment_momentum_tbl <- standardize_theme_types(
+    investment_momentum_tbl,
+    country_info = country_info
+  )
+  write_processed_tbl(
+    investment_momentum_tbl,
+    "investment_momentum_tbl",
+    processed_dir
+  )
+
   # Theme: Cost competitiveness (IEA relative costs).
   iea_relative_costs <- read.csv(relative_costs_iea_path)
-  ilo_url <- "https://rplumber.ilo.org/data/indicator/?id=EAR_4MTH_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat&title=average-monthly-earnings-of-employees-by-sex-and-economic-activity-annual"
+  ilo_url <- "https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat&title=average-monthly-earnings-of-employees-by-sex-economic-activity-and-currency-annual"
   ilo_raw <- read.csv(ilo_url)
   imf_lending_rates <- read.csv(imf_lending_rates_path)
   imf_ppi <- read.csv(imf_ppi_path)
@@ -555,10 +688,50 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   pams_raw <- readr::read_csv(iea_pams_path, show_col_types = FALSE)
   nipo_raw <- readxl::read_excel(nipo_policy_path, sheet = 1)
-  hs6_categories_essential <- readr::read_csv(file.path(
-    raw_data_path,"hs6_categories_with_essential.csv")) %>%
-    rename("Value.Chain"="Value Chain")
-  tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE) 
+
+  # ---- HS6 -> (Technology, Value Chain) crosswalk for NIPO --------------------
+  # This ONE table plays two roles in nipo_policy_outputs(), and both must be
+  # passed explicitly (see the call below):
+  #
+  #   subcat_raw        the crosswalk that maps a policy's HS6 codes to
+  #                     Technology x Value.Chain.
+  #   hs6_essential_tbl the `essential` flag, which decides WHICH codes are
+  #                     allowed to drive that classification. 382 of 482 rows
+  #                     are essential; the other 100 are generic inputs
+  #                     (plastics, steel, softwood) kept for context only.
+  #
+  # It is the same file for both because it carries the codes and the flag
+  # together. `hts_codes_categories_bolstered_final.csv` holds the identical
+  # (Technology, HS6) set without the flag, so nothing is lost by using this one.
+  #
+  # Two properties of this file to be aware of:
+  #   * 482 rows collapse to 466 distinct (Technology, Value.Chain, Sub.Sector,
+  #     HS6) keys. The 16 extras differ ONLY in `essential`, i.e. the same code
+  #     is flagged both TRUE and FALSE. TRUE wins, both via any() in
+  #     prepare_subcat_mapping() and via the filter in clean_nipo_raw(). Made
+  #     explicit here rather than left to those internals.
+  #   * An HS6 code deliberately maps to several technologies (71 codes map to
+  #     2, 47 to 3, 6 to 4). A static converter is filed under Electric Grid,
+  #     Solar, Wind and EVs. Technology totals therefore OVERLAP: describe them
+  #     as "X-attributed" policy, never as a self-contained sector.
+  hs6_categories_essential <- readr::read_csv(
+    file.path(raw_data_path, "hs6_categories_with_essential.csv"),
+    show_col_types = FALSE
+  ) %>%
+    rename("Value.Chain" = "Value Chain") %>%
+    # Resolve the duplicate-key conflict explicitly: a code is essential if ANY
+    # of its rows says so.
+    group_by(.data$Technology, .data$Value.Chain, .data$Sub.Sector, .data$HS6) %>%
+    summarise(essential = any(as.logical(.data$essential), na.rm = TRUE), .groups = "drop")
+
+  # Guard the assumption the de-duplication rests on: one (Technology, HS6) must
+  # not span two value chains or sub-sectors, or collapsing would lose a mapping.
+  stopifnot(
+    nrow(dplyr::distinct(hs6_categories_essential, .data$Technology, .data$HS6)) ==
+      nrow(hs6_categories_essential)
+  )
+
+  tech_ghg_raw <- readr::read_csv(tech_ghg_path, show_col_types = FALSE)
   cat_policy_raw <- readr::read_csv(cat_policy_path, show_col_types = FALSE) %>%
     rename("Overall.rating"="Overall rating")
   dual_use_scores_raw <- readr::read_csv(dual_use_scores_path, show_col_types = FALSE)
@@ -570,56 +743,137 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     arrange(desc(year))
   iea_policy_index_tbl <- iea_policy_outputs$index_tbl
   
-  ally_iso3 <- c(
-    "USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA", "ITA", "BRA", "SAU",
-    "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK", "ARG", "MAR", "CHL"
-  )
-
-  country_lookup <- country_info %>%
-    dplyr::transmute(
-      country = standardize_country_names(.data$country),
-      iso3c = toupper(as.character(.data$iso3c))
-    )
-
-  nipo_allies <- nipo_raw %>%
-    dplyr::mutate(
-      implementing_country = standardize_country_names(.data$`Implementing Jurisdiction`)
-    ) %>%
-    dplyr::left_join(country_lookup, by = c("implementing_country" = "country")) %>%
-    dplyr::rename(iso = .data$iso3c) %>%
-    dplyr::filter(.data$iso %in% ally_iso3)
-
-  
-  nipo_us<-nipo_raw %>%
-    filter(`Implementing Jurisdiction`=="United States of America")
-  
+  # ============================================================================
+  # Theme: NIPO Domestic Intervention Score (DIS)
+  # ----------------------------------------------------------------------------
+  # Method reference: R/categories/policy/NIPO Index.md
+  #
+  # Every argument below is passed BY NAME. The two crosswalk arguments in
+  # particular used to be positional, which read as though the essential-goods
+  # table were the only input; it is in fact doing double duty, and
+  # hs6_essential_tbl was being resolved through a global-variable side channel
+  # (resolve_hs6_essential_tbl() falls back to exists("hs6_categories_essential")).
+  # That worked only by name coincidence: rename the local and the essential
+  # filter would silently stop applying, letting all 100 generic codes drive
+  # tech classification. Passed explicitly now.
+  #
+  # The de-biasing arguments are stated explicitly even where they match the
+  # defaults, so a stored output records which methodology produced it. Set
+  # dis_legacy_mode = TRUE to reproduce the pre-remediation numbers exactly.
   nipo_policy_out <- nipo_domestic_intervention_outputs(
     raw_nipo = nipo_raw,
-    hs6_categories_essential,
+
+    # HS6 -> Technology x Value.Chain crosswalk, and the essential-goods flag
+    # that decides which codes may drive that mapping. Same table, two roles.
+    subcat_raw = hs6_categories_essential,
+    hs6_essential_tbl = hs6_categories_essential,
+
     country_info = country_info,
+
+    # as_of_date is inferred. clamp_future_as_of keeps that inference at or
+    # before today: 241 records carry implementation dates out to 2028-10-01
+    # (staged phase-ins of one EU sanctions package), which would otherwise set
+    # the stock date more than two years past the end of the data.
+    clamp_future_as_of = TRUE,
+
+    # --- Strength chain -------------------------------------------------------
+    # Affected-jurisdiction breadth is a directionality property, not domestic
+    # intensity, so it no longer multiplies strength; it is still reported, and
+    # the NEIS partner-side metrics use the same field. Removing it was the
+    # single largest correction to the cross-country ranking.
+    include_geo_in_strength = FALSE,
+    strength_constant = 1,          # was an undocumented bare 2
+
+    # Trade coverage rather than max(trade, subsidy): the two measure different
+    # things, and trade coverage is the more consistent series (44-56% of active
+    # policies populated in every year, against 16-35% for subsidy value).
+    scale_mode = "exposure",
+
+    # Firm-level test ordered above the named-beneficiary test, so a
+    # firm-specific measure scores as firm-targeted whether or not GTA recorded
+    # the beneficiary.
+    scope_mode = "firm_first",
+
+    # --- Mapping confidence ---------------------------------------------------
+    # Confidence is epistemic: how sure we are a policy belongs in a cell, not
+    # how interventionist it is. It is reported, not multiplied into strength.
+    confidence_mode = "none",
+
+    # --- Attribution ----------------------------------------------------------
+    # Policies with no HS6 codes (3,285, carrying 2.96% of strength) stay in
+    # their own Cross-cutting row instead of being smeared across all 39
+    # technology x stage cells, which conserved the total but invented the
+    # attribution and manufactured six otherwise-empty Upstream cells.
+    crosscutting_mode = "report_only",
+
+    # EU-wide and member-state rows are both labelled via eu_view rather than
+    # either being dropped. NOTE: EU acts are recorded once per member state,
+    # and 82.9% of EU-member strength sits in such replicated acts. That is
+    # intentional for a country-level index - EU policy a member has outsourced
+    # to Brussels is part of that member's stance - but it means EU and non-EU
+    # scores are not like-for-like. See NIPO Index.md, Structural limits.
+    eu_mode = "both_flagged",
+
+    # --- Aggregation (unchanged by the de-biasing work) -----------------------
     rolling_window_years = 3,
     balance_alpha = 0.5,
-    weight_by_active_fraction = TRUE
+    weight_by_active_fraction = TRUE,
+
+    include_neis_panel = TRUE
   )
 
+  # Record what the run actually applied, so a stored output is self-describing.
+  message(
+    "NIPO DIS settings: ",
+    paste(names(nipo_policy_out$dis_settings),
+          unlist(nipo_policy_out$dis_settings), sep = "=", collapse = ", ")
+  )
 
-  nipo_policy_all <- nipo_policy_out$by_policy%>% 
-    select(`Implementing Jurisdiction`,Title,domestic_intervention_index,
-           `Implementation Date`,`Removal Date`, bite_strength_base:policy_strength_pkg,
-           tech_csv,supply_chain_csv,mapping_confidence_mean,Source,URL) %>%
+  # ---- Outputs ---------------------------------------------------------------
+  # by_tech_sc is the ONLY table that reaches a composite: it becomes the
+  # "NIPO Policy Index" variable in policy_component_tbl, weighted 4 of 10 in
+  # the Overall Policy Index and 0.2 of the Strategic Index. Everything else
+  # here is diagnostic.
+  nipo_policy_index_tbl <- nipo_policy_out$by_tech_sc
+  nipo_tech_year <- nipo_policy_out$by_tech_sc_year
+
+  # Policy-level detail for inspection. mapping_confidence_mean is reported
+  # rather than applied (confidence_mode = "none"), so a low value now flags a
+  # weak mapping without having silently shrunk the score.
+  nipo_policy_all <- nipo_policy_out$by_policy %>%
+    select(
+      `Implementing Jurisdiction`, Title, domestic_intervention_index,
+      `Implementation Date`, `Removal Date`,
+      bite_strength_base:policy_strength_pkg,
+      tech_csv, supply_chain_csv, mapping_confidence_mean,
+      # Reported-only columns added by the de-biasing work: the two inputs to
+      # mapping_confidence, the scale terms kept separate, and the real duration
+      # signal that m_duration cannot express (it is exactly 1.0 for every
+      # in-force measure).
+      mapped_share, evidence_mean,
+      m_scale_exposure, m_scale_fiscal,
+      scale_exposure_available, scale_fiscal_available,
+      m_geo, m_geo_applied, partner_n,
+      pending_implementation, impl_lag_days,
+      observed_duration_days, exposure_days, duration_censored,
+      Source, URL
+    ) %>%
     arrange(desc(mapping_confidence_mean)) %>%
     arrange(desc(domestic_intervention_index))
-  
-  nipo_hs6 <- nipo_policy_out$by_hs6
-  nipo_tech_year <- nipo_policy_out$by_tech_sc_year
-  nipo_policy_cpc <- nipo_policy_out$by_cpc
-  nipo_policy_index_tbl <- nipo_policy_out$by_tech_sc
-  
+
+  # NEIS framework layers: motive structure, delivery conversion, taper profile,
+  # fence posture, inbound exposure and rival direction. Deliberately not a
+  # composite - each metric keeps its own column.
+  nipo_neis_panel <- nipo_policy_out$neis_panel$panel
+
   write_processed_tbl(nipo_tech_year, "nipo_tech_year", processed_dir)
   write_processed_tbl(nipo_policy_index_tbl, "nipo_policy_index_tbl", processed_dir)
   write_processed_tbl(nipo_policy_all, "nipo_policy_all", processed_dir)
-  
-  
+  if (!is.null(nipo_neis_panel)) {
+    write_processed_tbl(nipo_neis_panel, "nipo_neis_panel", processed_dir)
+  }
+
+
   policy_outputs <- list(
     policy_agg = iea_policy_outputs$outputs$policy_agg,
     policy_clean = iea_policy_outputs$outputs$policy_clean,
@@ -646,23 +900,25 @@ if (length(missing_files) > 0 && skip_data_downloads) {
 
   nipo_policy_index_tbl <- nipo_policy_index_tbl %>%
     transmute(
-      Country=country,
+      Country = country,
       tech,
       supply_chain,
-      variable="NIPO Policy Index",
-      data_type="Index",
-      value=domestic_intervention_index,
-      Year=2026,
-      source="NIPO",
-      explanation="See README"
-    )
-  
+      variable = "NIPO Policy Index",
+      data_type = "Index",
+      value = domestic_intervention_index,
+      Year = 2026,
+      source = "NIPO",
+      explanation = "See README"
+    ) %>%
+    standardize_theme_types(country_info = country_info)
+
   policy_component_tbl <- dplyr::bind_rows(
     iea_policy_index_tbl,
     nipo_policy_index_tbl,
     cat_policy_index_tbl,
     dual_use_scores_tbl
-  )
+  ) %>%
+    standardize_theme_types(country_info = country_info)
   write_processed_tbl(policy_component_tbl, "policy_component_tbl", processed_dir)
   write_processed_tbl(policy_outputs, "policy_outputs", processed_dir)
 
@@ -687,14 +943,8 @@ if (length(missing_files) > 0 && skip_data_downloads) {
     lcoe_competitiveness = lcoe_competitiveness_tbl,
     market_share_manufacturing = market_share_manufacturing_tbl,
     production_depth_momentum = production_depth_momentum_tbl,
+    investment_momentum = investment_momentum_tbl,
     technological_readiness = technological_readiness_tbl,
     cost_competitiveness = cost_competitiveness_tbl
   )
-}
 
-invisible(theme_outputs)
-# build_themes (placeholder).
-# TODO: implement.
-build_themes_stub <- function() {
-  NULL
-}

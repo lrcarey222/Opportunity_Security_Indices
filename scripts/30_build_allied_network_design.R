@@ -1,10 +1,100 @@
-# --- FILE: scripts/30_build_allied_network_design.R --------------------------
-# Runs the allied network design module using existing pipeline outputs
-# and writes CSVs to outputs_dir.
+source(local({
+  resolve_bootstrap_path <- function() {
+    candidate_starts <- character()
 
-if (!exists("repo_root")) {
-  repo_root <- resolve_repo_root()
+    sf <- tryCatch(sys.frame(1)$ofile, error = function(e) "")
+    if (!is.null(sf) && nzchar(sf)) candidate_starts <- c(candidate_starts, dirname(sf))
+
+    frame_ofiles <- vapply(sys.frames(), function(fr) {
+      val <- tryCatch(fr$ofile, error = function(e) "")
+      if (is.null(val) || !nzchar(val)) "" else dirname(val)
+    }, character(1))
+    candidate_starts <- c(candidate_starts, frame_ofiles[nzchar(frame_ofiles)])
+
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) candidate_starts <- c(candidate_starts, dirname(sub("^--file=", "", fa[1])))
+
+    candidate_starts <- unique(c(candidate_starts, getwd()))
+
+    for (start in candidate_starts) {
+      d <- normalizePath(start, winslash = "/", mustWork = FALSE)
+      while (dirname(d) != d) {
+        bootstrap <- file.path(d, "scripts", "utils", "bootstrap.R")
+        if (file.exists(bootstrap)) return(bootstrap)
+
+        bootstrap <- file.path(d, "utils", "bootstrap.R")
+        if (file.exists(bootstrap)) return(bootstrap)
+
+        d <- dirname(d)
+      }
+    }
+
+    stop("Unable to resolve script path for bootstrap.")
+  }
+
+  resolve_bootstrap_path()
+}))
+
+ensure_cran_repo <- function() {
+  repos <- getOption("repos")
+  cran <- if (is.null(repos) || is.null(repos[["CRAN"]])) "" else repos[["CRAN"]]
+  if (is.null(repos) || identical(cran, "@CRAN@") || is.na(cran) || cran == "") {
+    options(repos = c(CRAN = "https://cloud.r-project.org"))
+  }
 }
+
+ensure_user_lib <- function() {
+  user_lib <- Sys.getenv("R_LIBS_USER")
+  if (!nzchar(user_lib)) {
+    user_lib <- file.path(
+      Sys.getenv("USERPROFILE"),
+      "Documents",
+      "R",
+      "win-library",
+      paste0(getRversion()[1, 1:2], collapse = ".")
+    )
+  }
+  if (!dir.exists(user_lib)) dir.create(user_lib, recursive = TRUE, showWarnings = FALSE)
+  .libPaths(c(user_lib, .libPaths()))
+  invisible(user_lib)
+}
+
+ensure_milp_pkgs <- function(install_if_missing = TRUE, require_milp = FALSE) {
+  milp_pkgs <- c("ompr", "ompr.roi", "ROI", "ROI.plugin.glpk")
+  missing <- milp_pkgs[!vapply(milp_pkgs, requireNamespace, logical(1), quietly = TRUE)]
+  if (length(missing) == 0) return(TRUE)
+
+  if (!install_if_missing) {
+    if (require_milp) stop("MILP required but missing packages: ", paste(missing, collapse = ", "))
+    return(FALSE)
+  }
+
+  ensure_cran_repo()
+  ensure_user_lib()
+  message("MILP packages missing; attempting install on Windows: ", paste(missing, collapse = ", "))
+  ok <- TRUE
+  tryCatch({
+    install.packages(missing, dependencies = TRUE)
+  }, error = function(e) {
+    ok <<- FALSE
+    message("Automatic install failed: ", conditionMessage(e))
+  })
+
+  missing2 <- milp_pkgs[!vapply(milp_pkgs, requireNamespace, logical(1), quietly = TRUE)]
+  if (length(missing2) == 0) return(TRUE)
+
+  msg <- paste0(
+    "MILP packages still missing after install attempt: ", paste(missing2, collapse = ", "), "\n",
+    "On Windows this usually means you need permissions to write to your R library or a build toolchain.\n",
+    "Try running R/RStudio as Administrator, or set a user library (R_LIBS_USER), or install Rtools if compilation is required."
+  )
+  if (require_milp) stop(msg) else message(msg)
+  FALSE
+}
+
+install_if_missing <- tolower(Sys.getenv("OPSI_INSTALL_MILP_PKGS", "true")) %in% c("1", "true", "yes")
+require_milp <- tolower(Sys.getenv("OPSI_REQUIRE_MILP", "false")) %in% c("1", "true", "yes")
+milp_available <- ensure_milp_pkgs(install_if_missing = install_if_missing, require_milp = require_milp)
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
@@ -14,7 +104,6 @@ source(file.path(repo_root, "R", "indices", "allied_network_design.R"))
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) stop("Config not loaded; run scripts/00_setup.R first.")
-
 processed_dir <- file.path(repo_root, config$processed_dir)
 if (!dir.exists(processed_dir)) stop("Processed data directory not found: ", processed_dir)
 
@@ -75,6 +164,59 @@ wdi_country_path <- file.path(raw_data_path, "wdi_country_info.csv")
 country_info <- read.csv(wdi_country_path)
 country_info <- standardize_country_info(country_info)
 
+load_country_size_tbl <- function(raw_data_path, country_info, iso3c_network) {
+  gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
+  if (!file.exists(gdp_path)) stop("GDP file not found: ", gdp_path)
+  gdp_raw <- read.csv(gdp_path, stringsAsFactors = FALSE)
+
+  lower_names <- tolower(names(gdp_raw))
+  year_col <- names(gdp_raw)[match(TRUE, lower_names %in% c("year"), nomatch = 0)]
+  country_col <- names(gdp_raw)[match(TRUE, lower_names %in% c("country", "country_name"), nomatch = 0)]
+  iso_col <- names(gdp_raw)[match(TRUE, lower_names %in% c("iso3c", "iso3", "iso_code"), nomatch = 0)]
+
+  gdp_col <- if ("NY.GDP.MKTP.CD" %in% names(gdp_raw)) {
+    "NY.GDP.MKTP.CD"
+  } else {
+    candidate <- names(gdp_raw)[vapply(gdp_raw, is.numeric, logical(1))]
+    candidate <- setdiff(candidate, c(year_col, "iso2c", "country", "Country", "iso3c"))
+    if (!length(candidate)) stop("No usable GDP numeric column found in wdi_gdp.csv")
+    candidate[[1]]
+  }
+
+  if (is.null(country_col) || !nzchar(country_col)) stop("Could not identify country column in wdi_gdp.csv")
+
+  gdp_tbl <- gdp_raw %>%
+    dplyr::transmute(
+      country = standardize_country_names(.data[[country_col]]),
+      iso3c = if (!is.null(iso_col) && nzchar(iso_col)) toupper(as.character(.data[[iso_col]])) else NA_character_,
+      year = if (!is.null(year_col) && nzchar(year_col)) suppressWarnings(as.numeric(.data[[year_col]])) else NA_real_,
+      gdp_usd = suppressWarnings(as.numeric(.data[[gdp_col]]))
+    ) %>%
+    dplyr::left_join(country_info %>% dplyr::transmute(country = standardize_country_names(country), iso3c_ref = toupper(as.character(iso3c))), by = "country") %>%
+    dplyr::mutate(iso3c = dplyr::coalesce(iso3c, iso3c_ref)) %>%
+    dplyr::select(-iso3c_ref) %>%
+    dplyr::filter(iso3c %in% iso3c_network) %>%
+    dplyr::group_by(iso3c) %>%
+    dplyr::arrange(dplyr::desc(year), .by_group = TRUE) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup()
+
+  med <- stats::median(gdp_tbl$gdp_usd[is.finite(gdp_tbl$gdp_usd)], na.rm = TRUE)
+  if (!is.finite(med)) med <- 1
+
+  tibble::tibble(iso3c = iso3c_network) %>%
+    dplyr::left_join(gdp_tbl, by = "iso3c") %>%
+    dplyr::left_join(country_info %>% dplyr::transmute(iso3c = toupper(as.character(iso3c)), country_ref = country), by = "iso3c") %>%
+    dplyr::mutate(
+      country = dplyr::coalesce(country, country_ref),
+      year = suppressWarnings(as.numeric(year)),
+      gdp_imputed = !is.finite(gdp_usd),
+      gdp_usd = dplyr::if_else(is.finite(gdp_usd), gdp_usd, med)
+    ) %>%
+    dplyr::select(iso3c, country, year, gdp_usd, gdp_imputed)
+}
+
+
 # Coalition definition (your list)
 iso3c_network <- c(
   "USA","CAN","JPN","AUS","IND","MEX","KOR","GBR","DEU","FRA","ITA","BRA","SAU",
@@ -82,6 +224,7 @@ iso3c_network <- c(
 )
 
 # Run
+country_size_tbl <- load_country_size_tbl(raw_data_path, country_info, iso3c_network)
 fmt_time <- function(seconds) {
   if (!is.finite(seconds) || is.na(seconds)) return("--:--")
   seconds <- max(0, round(seconds))
@@ -125,6 +268,13 @@ progress_callback <- function(info) {
   invisible(NULL)
 }
 
+
+if (milp_available) {
+  message("MILP solver stack detected (ompr/ROI/GLPK). method='auto' will use MILP (unless stage too large or solver errors).")
+} else {
+  message("MILP solver stack not detected. method='auto' will use greedy fallback.")
+}
+
 res <- allied_network_design(
   economic_opportunity_index = economic_opportunity_index,
   energy_security_index = energy_security_index,
@@ -146,7 +296,15 @@ res <- allied_network_design(
   w_dev = 0.0,
   progress_callback = progress_callback,
   auto_milp_max_nodes = 18,
-  milp_stage_time_limit_sec = 120
+  milp_stage_time_limit_sec = 120,
+  country_size_tbl = country_size_tbl,
+  demand_mode = "mixed",
+  demand_weights = list(need = 0.5, size = 0.5),
+  portfolio_enable = TRUE,
+  portfolio_top_k = 5,
+  portfolio_min_cap = 2,
+  portfolio_max_cap = 10,
+  portfolio_transform = "log"
 )
 
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
@@ -161,6 +319,12 @@ utils::write.csv(res$flows,          file.path(outputs_dir, "allied_network_flow
 utils::write.csv(res$diagnostics,    file.path(outputs_dir, "allied_network_diagnostics.csv"),   row.names = FALSE)
 if (!is.null(res$build_candidates)) {
   utils::write.csv(res$build_candidates, file.path(outputs_dir, "allied_network_build_candidates.csv"), row.names = FALSE)
+}
+
+if (!is.null(res$portfolio)) {
+  utils::write.csv(res$portfolio$caps, file.path(outputs_dir, "allied_network_portfolio_caps.csv"), row.names = FALSE)
+  utils::write.csv(res$portfolio$counts, file.path(outputs_dir, "allied_network_portfolio_counts.csv"), row.names = FALSE)
+  utils::write.csv(res$portfolio$topk, file.path(outputs_dir, "allied_network_topk_by_stage.csv"), row.names = FALSE)
 }
 
 message("Wrote allied network outputs to: ", outputs_dir)

@@ -1,7 +1,39 @@
-# Build partnership strength theme tables.
-if (!exists("repo_root")) {
-  repo_root <- resolve_repo_root()
-}
+source(local({
+  resolve_bootstrap_path <- function() {
+    candidate_starts <- character()
+
+    sf <- tryCatch(sys.frame(1)$ofile, error = function(e) "")
+    if (!is.null(sf) && nzchar(sf)) candidate_starts <- c(candidate_starts, dirname(sf))
+
+    frame_ofiles <- vapply(sys.frames(), function(fr) {
+      val <- tryCatch(fr$ofile, error = function(e) "")
+      if (is.null(val) || !nzchar(val)) "" else dirname(val)
+    }, character(1))
+    candidate_starts <- c(candidate_starts, frame_ofiles[nzchar(frame_ofiles)])
+
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) candidate_starts <- c(candidate_starts, dirname(sub("^--file=", "", fa[1])))
+
+    candidate_starts <- unique(c(candidate_starts, getwd()))
+
+    for (start in candidate_starts) {
+      d <- normalizePath(start, winslash = "/", mustWork = FALSE)
+      while (dirname(d) != d) {
+        bootstrap <- file.path(d, "scripts", "utils", "bootstrap.R")
+        if (file.exists(bootstrap)) return(bootstrap)
+
+        bootstrap <- file.path(d, "utils", "bootstrap.R")
+        if (file.exists(bootstrap)) return(bootstrap)
+
+        d <- dirname(d)
+      }
+    }
+
+    stop("Unable to resolve script path for bootstrap.")
+  }
+
+  resolve_bootstrap_path()
+}))
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
@@ -60,15 +92,10 @@ if (is.null(raw_data_dir)) {
 }
 sharepoint_raw_dir <- config$sharepoint_raw_dir
 
+source(file.path(repo_root, "scripts", "utils", "raw_inputs.R"))
+
 copy_raw_file <- function(source_path, dest_path) {
-  if (!file.exists(source_path)) {
-    return(FALSE)
-  }
-  dest_dir <- dirname(dest_path)
-  if (!dir.exists(dest_dir)) {
-    dir.create(dest_dir, recursive = TRUE)
-  }
-  file.copy(source_path, dest_path, overwrite = TRUE)
+  sync_raw_file(source_path, dest_path) != "missing"
 }
 
 resolve_raw_data_dir <- function(root_dir, raw_data_dir, skip_data_downloads = FALSE) {
@@ -91,7 +118,7 @@ if (is.null(raw_data_path)) {
 }
 
 comtrade_dyads_path <- file.path(raw_data_path, "allied_comtrade_energy_data.csv")
-subcat_path <- file.path(raw_data_path, "consolidated_hs6_energy_tech_long.csv")
+subcat_path <- file.path(raw_data_path, "energy_hs6_master.csv")
 fdi_path <- file.path(raw_data_path, "imf_dip.csv")
 tech_ghg_path <- file.path(raw_data_path, "ipcc_ghg_intensity.csv")
 cat_policy_path <- file.path(raw_data_path, "CAT_country ratings data.csv")
@@ -101,7 +128,8 @@ wb_doingbusiness_path <- file.path(raw_data_path, "wb_doingbusiness.csv")
 wb_wdi_path <- file.path(raw_data_path, "wb_wdi.csv")
 oecd_api_path <- file.path(raw_data_path, "oecd_crs_api.csv")
 
-if (!file.exists(oecd_api_path) && !is.null(sharepoint_raw_dir) && nzchar(sharepoint_raw_dir)) {
+if (!is.null(sharepoint_raw_dir) && nzchar(sharepoint_raw_dir)) {
+  # sync_raw_file() is a no-op when the staged copy has not moved ahead of the local one.
   copy_raw_file(file.path(sharepoint_raw_dir, "oecd_crs_api.csv"), oecd_api_path)
 }
 
@@ -278,4 +306,35 @@ write_processed_tbl(
   partner_development_top5_tbl,
   "partner_development_top5_tbl",
   processed_dir
+)
+
+
+
+outputs_rds_path <- Sys.getenv("OPSI_OUTPUTS_RDS", "")
+if (!nzchar(outputs_rds_path)) {
+  outputs_rds_path <- if (!is.null(config$outputs_rds) && nzchar(config$outputs_rds)) {
+    file.path(repo_root, config$outputs_rds)
+  } else {
+    file.path(outputs_dir, "partnership_index_outputs.rds")
+  }
+}
+
+outputs_rds_dir <- dirname(outputs_rds_path)
+if (!dir.exists(outputs_rds_dir)) {
+  dir.create(outputs_rds_dir, recursive = TRUE)
+}
+
+saveRDS(
+  list(
+    partner_friendshore_variable_tbl = partner_friendshore_variable_tbl,
+    partner_friendshore_contributions_tbl = partner_friendshore_contributions_tbl,
+    partner_friendshore_top5_tbl = partner_friendshore_top5_tbl,
+    partner_opportunity_contributions_tbl = partner_opportunity_contributions_tbl,
+    partner_opportunity_variable_tbl = partner_opportunity_variable_tbl,
+    partner_opportunity_top5_tbl = partner_opportunity_top5_tbl,
+    partner_development_variable_tbl = partner_development_variable_tbl,
+    partner_development_contributions_tbl = partner_development_contributions_tbl,
+    partner_development_top5_tbl = partner_development_top5_tbl
+  ),
+  outputs_rds_path
 )

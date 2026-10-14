@@ -1,129 +1,37 @@
-# Pipeline setup: load config, verify env vars, set options.
-resolve_repo_root <- function() {
-  # Prefer rprojroot if available (most robust)
-  if (requireNamespace("rprojroot", quietly = TRUE)) {
-    return(rprojroot::find_root(rprojroot::is_git_root))
-  }
-  
-  # Fallback: start from script path if we have it, otherwise from getwd()
-  args <- commandArgs(trailingOnly = FALSE)
-  file_arg <- grep("^--file=", args, value = TRUE)
-  
-  start <- if (length(file_arg) > 0) {
-    sub("^--file=", "", file_arg[1])
-  } else if (!is.null(sys.frame(1)$ofile)) {
-    sys.frame(1)$ofile
-  } else {
-    ""
-  }
-  
-  d <- if (nzchar(start)) {
-    dirname(normalizePath(start, winslash = "/", mustWork = FALSE))
-  } else {
-    normalizePath(getwd(), winslash = "/", mustWork = FALSE)
-  }
-  
-  # Walk up until we find a .git directory
-  while (!file.exists(file.path(d, ".git")) && dirname(d) != d) {
-    d <- dirname(d)
-  }
-  
-  if (!file.exists(file.path(d, ".git"))) {
-    stop("Could not locate repo root (no .git found). Run from the repo directory or set OPSI_CONFIG/OPSI_WEIGHTS.")
-  }
-  
-  d
-}
+source(local({
+  resolve_bootstrap_path <- function() {
+    candidate_starts <- character()
 
+    sf <- tryCatch(sys.frame(1)$ofile, error = function(e) "")
+    if (!is.null(sf) && nzchar(sf)) candidate_starts <- c(candidate_starts, dirname(sf))
 
-repo_root <- resolve_repo_root()
-config_path <- Sys.getenv("OPSI_CONFIG", file.path(repo_root, "config", "config.yml"))
-weights_path <- Sys.getenv("OPSI_WEIGHTS", file.path(repo_root, "config", "weights.yml"))
-missing_data_path <- Sys.getenv(
-  "OPSI_MISSING_DATA",
-  file.path(repo_root, "config", "missing_data.yml")
-)
-index_definition_path <- Sys.getenv(
-  "OPSI_INDEX_DEFINITION",
-  file.path(repo_root, "config", "index_definition.yml")
-)
+    frame_ofiles <- vapply(sys.frames(), function(fr) {
+      val <- tryCatch(fr$ofile, error = function(e) "")
+      if (is.null(val) || !nzchar(val)) "" else dirname(val)
+    }, character(1))
+    candidate_starts <- c(candidate_starts, frame_ofiles[nzchar(frame_ofiles)])
 
-if (!requireNamespace("yaml", quietly = TRUE)) {
-  stop("Package 'yaml' is required to load config files.")
-}
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) candidate_starts <- c(candidate_starts, dirname(sub("^--file=", "", fa[1])))
 
-packages <- c(
-  "dplyr",
-  "tidyr",
-  "stringr",
-  "readr",
-  "readxl",
-  "tibble",
-  "purrr",
-  "glue",
-  "rlang",
-  "yaml",
-  "rprojroot",
-  "countrycode",
-  "WDI",
-  "comtradr",
-  "magrittr",
-  "progress",
-  "lubridate"
-)
-missing_packages <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]
-if (length(missing_packages) > 0) {
-  stop("Missing required packages: ", paste(missing_packages, collapse = ", "))
-}
-invisible(lapply(packages, function(pkg) {
-  suppressPackageStartupMessages(library(pkg, character.only = TRUE))
+    candidate_starts <- unique(c(candidate_starts, getwd()))
+
+    for (start in candidate_starts) {
+      d <- normalizePath(start, winslash = "/", mustWork = FALSE)
+      while (dirname(d) != d) {
+        bootstrap <- file.path(d, "scripts", "utils", "bootstrap.R")
+        if (file.exists(bootstrap)) return(bootstrap)
+
+        bootstrap <- file.path(d, "utils", "bootstrap.R")
+        if (file.exists(bootstrap)) return(bootstrap)
+
+        d <- dirname(d)
+      }
+    }
+
+    stop("Unable to resolve script path for bootstrap.")
+  }
+
+  resolve_bootstrap_path()
 }))
-
-if (Sys.which("Rscript") == "") {
-  stop("Rscript not found on PATH. Install R to enable testing.")
-}
-
-if (!file.exists(config_path)) {
-  stop("Config file not found: ", config_path)
-}
-if (!file.exists(weights_path)) {
-  stop("Weights file not found: ", weights_path)
-}
-if (!file.exists(missing_data_path)) {
-  stop("Missing data config file not found: ", missing_data_path)
-}
-if (!file.exists(index_definition_path)) {
-  stop("Index definition config file not found: ", index_definition_path)
-}
-
-config <- yaml::read_yaml(config_path)
-weights <- yaml::read_yaml(weights_path)
-missing_data <- yaml::read_yaml(missing_data_path)
-index_definition <- yaml::read_yaml(index_definition_path)
-
-required_env_vars <- c()
-missing_env <- required_env_vars[Sys.getenv(required_env_vars) == ""]
-if (length(missing_env) > 0) {
-  stop("Missing required env vars: ", paste(missing_env, collapse = ", "))
-}
-
-if (is.null(config$raw_data_dir)) {
-  stop("Config is missing raw_data_dir.")
-}
-
-options(
-  opportunity_security.config = config,
-  opportunity_security.weights = weights,
-  opportunity_security.missing_data = missing_data,
-  opportunity_security.index_definition = index_definition,
-  opportunity_security.repo_root = repo_root
-)
-# setup (placeholder).
-# TODO: implement.
-setup_stub <- function() {
-  NULL
-}
-
-techs <- c("Electric Vehicles","Nuclear","Coal","Batteries","Green Hydrogen",
-           "Wind","Oil","Solar","Gas","Geothermal")
 

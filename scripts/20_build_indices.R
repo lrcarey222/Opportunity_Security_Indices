@@ -1,7 +1,39 @@
-# Build index-level tables.
-if (!exists("repo_root")) {
-  repo_root <- resolve_repo_root()
-}
+source(local({
+  resolve_bootstrap_path <- function() {
+    candidate_starts <- character()
+
+    sf <- tryCatch(sys.frame(1)$ofile, error = function(e) "")
+    if (!is.null(sf) && nzchar(sf)) candidate_starts <- c(candidate_starts, dirname(sf))
+
+    frame_ofiles <- vapply(sys.frames(), function(fr) {
+      val <- tryCatch(fr$ofile, error = function(e) "")
+      if (is.null(val) || !nzchar(val)) "" else dirname(val)
+    }, character(1))
+    candidate_starts <- c(candidate_starts, frame_ofiles[nzchar(frame_ofiles)])
+
+    fa <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+    if (length(fa) > 0) candidate_starts <- c(candidate_starts, dirname(sub("^--file=", "", fa[1])))
+
+    candidate_starts <- unique(c(candidate_starts, getwd()))
+
+    for (start in candidate_starts) {
+      d <- normalizePath(start, winslash = "/", mustWork = FALSE)
+      while (dirname(d) != d) {
+        bootstrap <- file.path(d, "scripts", "utils", "bootstrap.R")
+        if (file.exists(bootstrap)) return(bootstrap)
+
+        bootstrap <- file.path(d, "utils", "bootstrap.R")
+        if (file.exists(bootstrap)) return(bootstrap)
+
+        d <- dirname(d)
+      }
+    }
+
+    stop("Unable to resolve script path for bootstrap.")
+  }
+
+  resolve_bootstrap_path()
+}))
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
@@ -13,6 +45,24 @@ source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index_v2
 source(file.path(repo_root, "R", "indices", "build_indices.R"))
 source(file.path(repo_root, "R", "indices", "build_policy_index.R"))
 source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
+
+# Always reload runtime configs from repository YAML so this script is not
+# affected by option overrides from tests/interactive sessions.
+reload_runtime_configs <- function(repo_root) {
+  config_path <- Sys.getenv("OPSI_CONFIG", file.path(repo_root, "config", "config.yml"))
+  weights_path <- Sys.getenv("OPSI_WEIGHTS", file.path(repo_root, "config", "weights.yml"))
+  missing_data_path <- Sys.getenv("OPSI_MISSING_DATA", file.path(repo_root, "config", "missing_data.yml"))
+  index_definition_path <- Sys.getenv("OPSI_INDEX_DEFINITION", file.path(repo_root, "config", "index_definition.yml"))
+
+  options(
+    opportunity_security.config = yaml::read_yaml(config_path),
+    opportunity_security.weights = yaml::read_yaml(weights_path),
+    opportunity_security.missing_data = yaml::read_yaml(missing_data_path),
+    opportunity_security.index_definition = yaml::read_yaml(index_definition_path)
+  )
+}
+
+reload_runtime_configs(repo_root)
 
 techs <- c("Electric Vehicles",
            "Nuclear","Coal","Batteries","Green Hydrogen","Wind","Oil",                       
@@ -80,6 +130,7 @@ technological_readiness_tbl <- read_processed_tbl(
   "technological_readiness_tbl",
   processed_dir
 )
+investment_momentum_tbl <- read_processed_tbl("investment_momentum_tbl", processed_dir)
 policy_component_tbl <- read_processed_tbl("policy_component_tbl", processed_dir)
 policy_outputs <- read_processed_tbl("policy_outputs", processed_dir)
 nipo_tech_year<-read_processed_tbl("nipo_tech_year", processed_dir)
@@ -99,7 +150,8 @@ energy_security_inputs <- list(
   critical_minerals_trade = critical_minerals_trade_tbl,
   energy_consumption = energy_consumption_tbl,
   trade_concentration = trade_concentration_tbl,
-  energy_prices = energy_prices_tbl
+  energy_prices = energy_prices_tbl,
+  investment_momentum = investment_momentum_tbl
 )
 
 energy_security_outputs <- build_energy_security_index_v2(
@@ -124,14 +176,14 @@ economic_opportunity_inputs <- list(
   energy_consumption = energy_consumption_tbl,
   energy_prices = energy_prices_tbl,
   export_feasibility = export_feasibility_tbl,
-  foreign_dependency = foreign_dependency_tbl,
   future_demand = future_demand_tbl,
   lcoe_competitiveness = lcoe_competitiveness_tbl,
   market_share_manufacturing = market_share_manufacturing_tbl,
   cost_competitiveness = cost_competitiveness_tbl,
   production_depth_momentum = production_depth_momentum_tbl,
   overcapacity_premium = overcapacity_premium_tbl,
-  technological_readiness = technological_readiness_tbl
+  technological_readiness = technological_readiness_tbl,
+  investment_momentum = investment_momentum_tbl
 )
 
 economic_opportunity_outputs <- build_economic_opportunity_index_v2(
@@ -218,10 +270,6 @@ policy_index <- policy_components_clean %>%
     value, Year, source, explanation
   )
 
-economic_opportunity_index <- index_outputs$economic_opportunity_index
-energy_security_index <- index_outputs$energy_security_index
-policy_index <-index_outputs$policy_index
-
 strategic_index <- left_join(
   economic_opportunity_index,
   energy_security_index,
@@ -287,31 +335,20 @@ strategic_index <- left_join(
   filter(sector != "Geothermal - Midstream") %>%
   arrange(desc(strategic_index))
 
+allies<- country_info %>%
+  filter(iso3c %in% 
+           c("USA","CAN", "JPN","AUS", "IND","MEX","KOR","GBR","DEU","FRA","ITA","BRA","SAU", "ZAF", "IDN", "NOR", "UAE","VNM","KEN","DNK","ARG","MAR","CHL"))
 
+allied_index<-strategic_index %>%
+  filter(Country %in% allies$country,
+         supply_chain %in% c("Midstream","Upstream"),
+         !is.na(strategic_index),
+         !tech %in% c("Geothermal","Green Hydrogen")) %>%
+  group_by(Country) %>%
+  slice_max(order_by=strategic_index,n=1)
 
-
-
-if (exists("economic_opportunity_index")) {
-  interdependence_path <- file.path(
-    repo_root,
-    config$raw_data_dir,
-    "interdependence_edges_primary_secondary_tertiary.csv"
-  )
-  if (!file.exists(interdependence_path)) {
-    stop("Interdependence edges file not found: ", interdependence_path)
-  }
-  interdependence_edges <- utils::read.csv(interdependence_path, stringsAsFactors = FALSE)
-
-  economic_opportunity_index_coupled <- couple_pillar_scores_by_hhi(
-    pillar_tbl = economic_opportunity_index,
-    interdependence_tbl = interdependence_edges,
-    score_col = economic_opportunity_index,
-    include_sub_sector = include_sub_sector
-  )
-} else {
-  economic_opportunity_index_coupled <- NULL
-  warning("economic_opportunity_index not found; skipping interdependence coupling.")
-}
+write.csv(allied_index,"data/processed/charts/allied_strategic.csv")
+  
 
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
   file.path(repo_root, config$outputs_dir)
@@ -379,12 +416,12 @@ countries_export <- c("Japan", "India", "South Korea", "Viet Nam", "United State
 
 # Build the 4 data frames (and name sheets as requested)
 sheets <- list(
-  "Japan"   = strategic_index %>% filter(Country == "Japan"),
-  "India"   = strategic_index %>% filter(Country == "India"),
-  "Korea"   = strategic_index %>% filter(Country %in% c("Korea", "South Korea")),
-  "Viet Nam"= strategic_index %>% filter(Country == "Viet Nam"),
-  "USA"= strategic_index %>% filter(Country == "United States"),
-  "UK" = strategic_index %>% filter(Country=="United Kingdom")
+  "Japan"   = strategic_index %>% filter(Country == "Japan") %>% mutate(es=1-es),
+  "India"   = strategic_index %>% filter(Country == "India") %>% mutate(es=1-es),
+  "Korea"   = strategic_index %>% filter(Country %in% c("Korea", "South Korea")) %>% mutate(es=1-es),
+  "Viet Nam"= strategic_index %>% filter(Country == "Viet Nam") %>% mutate(es=1-es),
+  "USA"= strategic_index %>% filter(Country == "United States") %>% mutate(es=1-es),
+  "UK" = strategic_index %>% filter(Country=="United Kingdom") %>% mutate(es=1-es)
 )
 
 # Keep only requested columns, sort, and (optionally) rename for the sheet
@@ -485,5 +522,8 @@ ggplot(plot_df %>% filter(Country=="United Kingdom"), aes(x = sector_key, y = co
   scale_x_discrete(labels = function(x) sub("^.*\\|\\|", "", x)) +
   scale_fill_manual(values = rmi_palette) +
   labs(x = NULL, y = "Weighted contribution to strategic_index", fill = NULL) +
-  theme_minimal()
+  theme_minimal
 
+strategic_asia <- strategic_index %>%
+  inner_join(country_info %>%
+               filter(region=="East Asia & Pacific"),by=c("Country"="country"))

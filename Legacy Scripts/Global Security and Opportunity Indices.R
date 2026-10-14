@@ -1654,7 +1654,7 @@ trade_tidy <- trade_indices %>%
 
 #UN Comtrade--------------
 library(comtradr)
-set_primary_comtrade_key('2940653b9bbe4671b3f7fde2846d14be')
+set_primary_comtrade_key(Sys.getenv("COMTRADE_API_KEY"))
 
 crit_hs <- read.csv(paste0(raw_data,"Columbia University Critical Minerals Dashboard/unique_comtrade.csv"))
 

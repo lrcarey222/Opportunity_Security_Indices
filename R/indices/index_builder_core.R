@@ -39,7 +39,7 @@ normalize_sub_sector_or_keys <- function(base_cols, include_sub_sector) {
   }
 }
 
-parse_missing_policy <- function(missing_data, data_tbl) {
+parse_missing_policy <- function(missing_data, data_tbl, known_keys = NULL) {
   if (is.null(missing_data) || length(missing_data) == 0) {
     return(tibble::tibble())
   }
@@ -61,6 +61,7 @@ parse_missing_policy <- function(missing_data, data_tbl) {
   available_variables <- unique(data_tbl$variable)
   available_categories <- unique(data_tbl$category)
   available_themes <- unique(data_tbl$theme)
+  known_keys <- unique(c(known_keys, available_variables, available_categories, available_themes))
 
   rules_tbl <- rules_tbl %>%
     dplyr::mutate(
@@ -68,6 +69,7 @@ parse_missing_policy <- function(missing_data, data_tbl) {
         key %in% available_variables ~ "variable",
         key %in% available_categories ~ "category",
         key %in% available_themes ~ "theme",
+        key %in% known_keys ~ "known_but_absent",
         TRUE ~ "unknown"
       )
     )
@@ -110,7 +112,8 @@ apply_missing_policy <- function(tbl, rules_tbl, include_sub_sector = FALSE) {
   grid <- variable_groups %>%
     dplyr::left_join(
       country_groups,
-      by = normalize_sub_sector_or_keys(c("tech", "supply_chain"), include_sub_sector)
+      by = normalize_sub_sector_or_keys(c("tech", "supply_chain"), include_sub_sector),
+      relationship = "many-to-many"
     )
 
   completed <- grid %>%
@@ -167,15 +170,39 @@ apply_missing_policy <- function(tbl, rules_tbl, include_sub_sector = FALSE) {
     dplyr::select(-global_avg, -value_raw)
 }
 
+# Zero-row outputs carry the columns the v2 builders select and rename, so an index
+# definition with no matching overall variables yields no contributions rather than
+# a "column doesn't exist" error downstream.
+empty_overall_outputs <- function() {
+  keys <- tibble::tibble(
+    Country = character(),
+    tech = character(),
+    supply_chain = character(),
+    sub_sector = character(),
+    category = character(),
+    variable = character(),
+    value = numeric(),
+    imputed = logical(),
+    missing_rule_applied = character(),
+    component_count = integer()
+  )
+  list(
+    overall_scores = keys %>%
+      dplyr::mutate(theme = character(), data_type = character()),
+    component_contributions = keys %>%
+      dplyr::mutate(component_weight_within_overall = numeric())
+  )
+}
+
 compute_overall_scores <- function(tbl, index_definition, include_sub_sector = FALSE) {
   if (is.null(index_definition) || is.null(index_definition$overall_variables)) {
-    return(list(overall_scores = tibble::tibble(), component_contributions = tibble::tibble()))
+    return(empty_overall_outputs())
   }
 
   overall_defs <- index_definition$overall_variables
   overall_names <- names(overall_defs)
   if (is.null(overall_names) || length(overall_names) == 0) {
-    return(list(overall_scores = tibble::tibble(), component_contributions = tibble::tibble()))
+    return(empty_overall_outputs())
   }
 
   variable_levels <- index_definition$variable_levels
@@ -282,13 +309,21 @@ compute_overall_scores <- function(tbl, index_definition, include_sub_sector = F
         value = dplyr::if_else(is.nan(value), NA_real_, value)
       )
 
+    # Grouping drops sub_sector when it is not a key; restore it as "All", matching
+    # compute_category_scores(), so the builders can select it.
+    if (!"sub_sector" %in% group_cols) {
+      overall_tbl <- overall_tbl %>% dplyr::mutate(sub_sector = "All")
+      component_tbl <- component_tbl %>% dplyr::mutate(sub_sector = "All")
+    }
+
     overall_scores[[overall_name]] <- overall_tbl
     component_contributions[[overall_name]] <- component_tbl
   }
 
+  empty <- empty_overall_outputs()
   list(
-    overall_scores = dplyr::bind_rows(overall_scores),
-    component_contributions = dplyr::bind_rows(component_contributions)
+    overall_scores = dplyr::bind_rows(empty$overall_scores, overall_scores),
+    component_contributions = dplyr::bind_rows(empty$component_contributions, component_contributions)
   )
 }
 
@@ -327,9 +362,15 @@ compute_index_and_contributions <- function(category_scores,
 
   extra_config_categories <- setdiff(categories_in_weights, categories_in_data)
   if (length(extra_config_categories) > 0) {
-    warning(
-      pillar_label, " weights include categories not present in theme output: ",
+    extra_category_msg <- paste0(
+      pillar_label,
+      " weights include categories not present in theme output: ",
       paste(extra_config_categories, collapse = ", ")
+    )
+    warning(
+      extra_category_msg,
+      call. = FALSE,
+      immediate. = !isTRUE(allow_partial_categories)
     )
   }
 

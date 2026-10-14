@@ -211,7 +211,7 @@ check<-energy_codes_6 %>%
 
 #UN Comtrade--------------
 library(comtradr)
-set_primary_comtrade_key('2940653b9bbe4671b3f7fde2846d14be')
+set_primary_comtrade_key(Sys.getenv("COMTRADE_API_KEY"))
 
 #All Energy Trade Data Import from Comtrade-----------------------------------
 country_info_iso <- country_info %>%

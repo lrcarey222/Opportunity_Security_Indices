@@ -72,6 +72,11 @@ build_country_strategic_tbl <- function(index_outputs,
       dplyr::transmute(.data$Country, .data$tech, .data$supply_chain, trl_index = .data$category_score)
   }
 
+  # The strategic index itself is computed in scripts/20_build_indices.R.
+  if (is.null(index_outputs$strategic_index)) {
+    stop("index_outputs must include strategic_index (built by scripts/20_build_indices.R).")
+  }
+
   strategic_tbl <- index_outputs$strategic_index %>%
     dplyr::filter(.data$Country == country_name) %>%
     dplyr::rename("sector_label"="sector",

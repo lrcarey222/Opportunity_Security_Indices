@@ -8,6 +8,7 @@ energy_security:
   Energy Access: 4
   Consumption: 5
   Energy Prices: 2
+  Investment: 3
 
 economic_opportunity:
   Trade: 3
@@ -20,6 +21,7 @@ economic_opportunity:
   Foreign Dependency: 3
   Cost Competitiveness: 3
   Consumption: 3
+  Reserves: 2
 
 psi:
   friendshore: 0.4
@@ -27,14 +29,14 @@ psi:
   development: 0.2
 
 partnership_opportunity_components:
-  trade_index: 2
-  econ_opp_index: 4
+  trade_index: 3
+  econ_opp_index: 3
   energy_security_index: 1
   climate_policy_weight: 0.05
 
 partnership_friendshore_components:
   imp_trade_index: 2
   econ_opp_raw: 0
-  es_need: 3
-  eo_partner: 3
+  es_need: 2
+  eo_partner: 2
   outbound_index: 2

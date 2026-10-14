@@ -1,0 +1,483 @@
+tech,supply_chain,sub_sector,hs6,essential
+Electric Vehicles,Midstream,Charging Infrastructure,850440,TRUE
+Electric Vehicles,Midstream,Charging Infrastructure,850490,TRUE
+Electric Vehicles,Midstream,Charging Infrastructure,853669,TRUE
+Electric Vehicles,Midstream,Charging Infrastructure,853690,TRUE
+Electric Vehicles,Midstream,Charging Infrastructure,853710,TRUE
+Electric Vehicles,Midstream,Charging Infrastructure,853720,FALSE
+Electric Vehicles,Midstream,Charging Infrastructure,854442,TRUE
+Electric Vehicles,Midstream,Charging Infrastructure,854449,TRUE
+Electric Vehicles,Midstream,Charging Infrastructure,854460,TRUE
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850110,FALSE
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850120,FALSE
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850131,TRUE
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850132,TRUE
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850133,TRUE
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850134,TRUE
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850140,FALSE
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850151,TRUE
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850152,TRUE
+Electric Vehicles,Midstream,Electric Drive Units & Motors,850153,TRUE
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870124,TRUE
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870240,TRUE
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870340,TRUE
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870350,TRUE
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870360,TRUE
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870370,TRUE
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870380,TRUE
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870460,TRUE
+Electric Vehicles,Midstream,Electric Vehicle Assembly,870490,TRUE
+Electric Vehicles,Midstream,Electric Vehicle Assembly,871160,TRUE
+Electric Vehicles,Midstream,Motor & Generator Parts,850300,TRUE
+Electric Vehicles,Midstream,Permanent Magnets & Magnet Parts,850511,TRUE
+Electric Vehicles,Midstream,Permanent Magnets & Magnet Parts,850519,TRUE
+Electric Vehicles,Midstream,Permanent Magnets & Magnet Parts,850590,FALSE
+Electric Vehicles,Midstream,Rare Earth Separation & Compounds,280530,TRUE
+Electric Vehicles,Midstream,Rare Earth Separation & Compounds,284690,TRUE
+Electric Vehicles,Midstream,Vehicle Batteries & Packs,850760,TRUE
+Electric Vehicles,Midstream,Vehicle Batteries & Packs,850790,TRUE
+Electric Vehicles,Midstream,Vehicle Wiring Harnesses,854430,TRUE
+Nuclear,Midstream,Nuclear Fuel Cycle,284410,TRUE
+Nuclear,Midstream,Nuclear Fuel Cycle,284410,FALSE
+Nuclear,Midstream,Nuclear Fuel Cycle,284420,TRUE
+Nuclear,Midstream,Nuclear Fuel Cycle,284420,FALSE
+Nuclear,Midstream,Nuclear Fuel Cycle,284450,TRUE
+Nuclear,Midstream,Reactor Components,840110,TRUE
+Nuclear,Midstream,Reactor Components,840120,TRUE
+Nuclear,Midstream,Reactor Components,840130,TRUE
+Nuclear,Midstream,Reactor Components,840140,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840211,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840212,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840219,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840220,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840290,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840410,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840420,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840490,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840681,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840682,TRUE
+Nuclear,Midstream,Steam Cycle & Balance of Plant,840690,TRUE
+Coal,Upstream,Coal,270111,TRUE
+Coal,Upstream,Coal,270112,TRUE
+Coal,Upstream,Coal,270119,TRUE
+Coal,Upstream,Coal,270120,TRUE
+Coal,Upstream,Lignite,270210,TRUE
+Coal,Upstream,Lignite,270220,TRUE
+Coal,Midstream,Ash Handling,840290,TRUE
+Coal,Midstream,Ash Handling,840410,TRUE
+Coal,Midstream,Ash Handling,840420,TRUE
+Coal,Midstream,Ash Handling,840490,TRUE
+Coal,Midstream,Ash Handling,840510,TRUE
+Coal,Midstream,Ash Handling,840590,TRUE
+Coal,Midstream,Ash Handling,840681,TRUE
+Coal,Midstream,Ash Handling,840682,TRUE
+Coal,Midstream,Ash Handling,840690,TRUE
+Coal,Midstream,Ash Handling,841111,TRUE
+Coal,Midstream,Ash Handling,841112,TRUE
+Coal,Midstream,Ash Handling,841181,TRUE
+Coal,Midstream,Ash Handling,841182,TRUE
+Coal,Midstream,Ash Handling,841191,TRUE
+Coal,Midstream,Ash Handling,841199,TRUE
+Coal,Midstream,Boilers & Burners,840211,TRUE
+Coal,Midstream,Boilers & Burners,840212,TRUE
+Coal,Midstream,Boilers & Burners,840219,TRUE
+Coal,Midstream,Boilers & Burners,840220,TRUE
+Coal,Midstream,Boilers & Burners,840310,TRUE
+Coal,Midstream,Boilers & Burners,840390,TRUE
+Coal,Midstream,Coke and Semicoke,270400,TRUE
+Batteries,Midstream,Anode Materials,250410,TRUE
+Batteries,Midstream,Anode Materials,280300,TRUE
+Batteries,Midstream,Anode Materials,280461,TRUE
+Batteries,Midstream,Anode Materials,280461,FALSE
+Batteries,Midstream,Anode Materials,380110,TRUE
+Batteries,Midstream,Anode Materials,380190,TRUE
+Batteries,Midstream,Battery Cells,850760,TRUE
+Batteries,Midstream,Battery Cells,850760,FALSE
+Batteries,Midstream,"Battery Packs, Parts & BMS",850780,FALSE
+Batteries,Midstream,"Battery Packs, Parts & BMS",850790,TRUE
+Batteries,Midstream,Battery Recycling & Urban Mining,262019,TRUE
+Batteries,Midstream,Battery Recycling & Urban Mining,262019,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,262030,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,262040,TRUE
+Batteries,Midstream,Battery Recycling & Urban Mining,262040,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,262099,TRUE
+Batteries,Midstream,Battery Recycling & Urban Mining,262099,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,711230,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,711291,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,711292,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,711299,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,854913,TRUE
+Batteries,Midstream,Battery Recycling & Urban Mining,854914,TRUE
+Batteries,Midstream,Battery Recycling & Urban Mining,854919,TRUE
+Batteries,Midstream,Battery Recycling & Urban Mining,854921,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,854929,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,854931,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,854939,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,854991,FALSE
+Batteries,Midstream,Battery Recycling & Urban Mining,854999,FALSE
+Batteries,Midstream,Cathode Materials & Battery Precursors,260200,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,260800,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,261590,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,281700,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,282010,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,282090,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,282530,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,282690,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,283529,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,283699,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,284290,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,285390,TRUE
+Batteries,Midstream,Cathode Materials & Battery Precursors,750110,FALSE
+Batteries,Midstream,Cobalt & Nickel Refining,260400,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,260500,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,282200,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,282540,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,283324,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,283329,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,283329,FALSE
+Batteries,Midstream,Cobalt & Nickel Refining,750120,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,750120,FALSE
+Batteries,Midstream,Cobalt & Nickel Refining,750210,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,750300,FALSE
+Batteries,Midstream,Cobalt & Nickel Refining,750400,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,810520,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,810530,TRUE
+Batteries,Midstream,Cobalt & Nickel Refining,810530,FALSE
+Batteries,Midstream,Current Collectors & Foils,260300,TRUE
+Batteries,Midstream,Current Collectors & Foils,260600,TRUE
+Batteries,Midstream,Current Collectors & Foils,281820,TRUE
+Batteries,Midstream,Current Collectors & Foils,283322,TRUE
+Batteries,Midstream,Current Collectors & Foils,741011,TRUE
+Batteries,Midstream,Current Collectors & Foils,741012,TRUE
+Batteries,Midstream,Current Collectors & Foils,741021,TRUE
+Batteries,Midstream,Current Collectors & Foils,741022,TRUE
+Batteries,Midstream,Current Collectors & Foils,760711,TRUE
+Batteries,Midstream,Current Collectors & Foils,760719,TRUE
+Batteries,Midstream,Electrolyte Materials,282739,TRUE
+Batteries,Midstream,Electrolyte Materials,282739,FALSE
+Batteries,Midstream,Electrolyte Materials,292090,TRUE
+Batteries,Midstream,Electrolyte Materials,382499,TRUE
+Batteries,Midstream,Electrolyte Materials,382499,FALSE
+Batteries,Midstream,Lithium Chemicals,253090,TRUE
+Batteries,Midstream,Lithium Chemicals,253090,FALSE
+Batteries,Midstream,Lithium Chemicals,280519,TRUE
+Batteries,Midstream,Lithium Chemicals,282520,TRUE
+Batteries,Midstream,Lithium Chemicals,283691,TRUE
+Batteries,Midstream,Separator Materials,390110,TRUE
+Batteries,Midstream,Separator Materials,390120,TRUE
+Batteries,Midstream,Separator Materials,390210,TRUE
+Batteries,Midstream,Separator Materials,390469,TRUE
+Batteries,Midstream,Separator Materials,390469,FALSE
+Batteries,Midstream,Separator Materials,392010,TRUE
+Batteries,Midstream,Separator Materials,392020,TRUE
+Wind,Midstream,Array Cables & Collection Systems,281290,TRUE
+Wind,Midstream,Array Cables & Collection Systems,440311,FALSE
+Wind,Midstream,Array Cables & Collection Systems,440312,FALSE
+Wind,Midstream,Array Cables & Collection Systems,440321,FALSE
+Wind,Midstream,Array Cables & Collection Systems,440323,FALSE
+Wind,Midstream,Array Cables & Collection Systems,440324,FALSE
+Wind,Midstream,Array Cables & Collection Systems,440325,FALSE
+Wind,Midstream,Array Cables & Collection Systems,681510,TRUE
+Wind,Midstream,Array Cables & Collection Systems,731210,TRUE
+Wind,Midstream,Array Cables & Collection Systems,740811,FALSE
+Wind,Midstream,Array Cables & Collection Systems,740819,FALSE
+Wind,Midstream,Array Cables & Collection Systems,741300,TRUE
+Wind,Midstream,Array Cables & Collection Systems,761410,TRUE
+Wind,Midstream,Array Cables & Collection Systems,761490,TRUE
+Wind,Midstream,Array Cables & Collection Systems,853210,TRUE
+Wind,Midstream,Array Cables & Collection Systems,854420,TRUE
+Wind,Midstream,Array Cables & Collection Systems,854442,TRUE
+Wind,Midstream,Array Cables & Collection Systems,854449,TRUE
+Wind,Midstream,Array Cables & Collection Systems,854460,TRUE
+Wind,Midstream,Array Cables & Collection Systems,854470,FALSE
+Wind,Midstream,Array Cables & Collection Systems,854610,FALSE
+Wind,Midstream,Array Cables & Collection Systems,854620,TRUE
+Wind,Midstream,Nacelles & Drivetrains,848340,TRUE
+Wind,Midstream,Offshore Substructures,730511,TRUE
+Wind,Midstream,Permanent Magnets & Magnet Parts,850511,TRUE
+Wind,Midstream,Permanent Magnets & Magnet Parts,850519,TRUE
+Wind,Midstream,Permanent Magnets & Magnet Parts,850590,FALSE
+Wind,Midstream,Rare Earth Separation & Compounds,280530,TRUE
+Wind,Midstream,Rare Earth Separation & Compounds,284690,TRUE
+Wind,Midstream,Wind Blades,841290,TRUE
+Wind,Midstream,Wind Foundations,681091,TRUE
+Wind,Midstream,Wind Foundations,681099,TRUE
+Wind,Midstream,Wind Foundations,730840,FALSE
+Wind,Midstream,Wind Foundations,730890,TRUE
+Wind,Midstream,Wind Substations,850421,TRUE
+Wind,Midstream,Wind Substations,850422,TRUE
+Wind,Midstream,Wind Substations,850423,TRUE
+Wind,Midstream,Wind Substations,850431,TRUE
+Wind,Midstream,Wind Substations,850432,TRUE
+Wind,Midstream,Wind Substations,850433,TRUE
+Wind,Midstream,Wind Substations,850434,TRUE
+Wind,Midstream,Wind Substations,850490,TRUE
+Wind,Midstream,Wind Substations,853510,TRUE
+Wind,Midstream,Wind Substations,853521,TRUE
+Wind,Midstream,Wind Substations,853529,TRUE
+Wind,Midstream,Wind Substations,853530,TRUE
+Wind,Midstream,Wind Substations,853540,TRUE
+Wind,Midstream,Wind Substations,853590,TRUE
+Wind,Midstream,Wind Substations,853710,TRUE
+Wind,Midstream,Wind Substations,853720,TRUE
+Wind,Midstream,Wind Substations,902830,FALSE
+Wind,Midstream,Wind Substations,902890,FALSE
+Wind,Midstream,Wind Towers,730820,TRUE
+Wind,Midstream,Wind Turbines & Generators,850164,TRUE
+Wind,Midstream,Wind Turbines & Generators,850231,TRUE
+Wind,Midstream,Wind Turbines & Generators,850300,TRUE
+Oil,Upstream,Crude Oils,270900,TRUE
+Oil,Upstream,Fuel Oils: Heavy Oils,271019,TRUE
+Oil,Upstream,Fuel Oils: Light Oils,271012,TRUE
+Oil,Upstream,Petroleum Solids,271311,TRUE
+Oil,Upstream,Petroleum Solids,271312,TRUE
+Oil,Upstream,Petroleum Solids,271320,TRUE
+Oil,Upstream,Petroleum Solids,271390,TRUE
+Oil,Upstream,Waste Oils,271091,TRUE
+Oil,Upstream,Waste Oils,271099,TRUE
+Oil,Midstream,Drilling & Field Equipment,820713,TRUE
+Oil,Midstream,Drilling & Field Equipment,820719,TRUE
+Oil,Midstream,Drilling & Field Equipment,843041,TRUE
+Oil,Midstream,Drilling & Field Equipment,843049,TRUE
+Oil,Midstream,Drilling & Field Equipment,843139,TRUE
+Oil,Midstream,Drilling & Field Equipment,843143,TRUE
+Oil,Midstream,Drilling & Field Equipment,843149,TRUE
+Oil,Midstream,Drilling & Field Equipment,870520,TRUE
+Oil,Midstream,Drilling & Field Equipment,890520,TRUE
+Oil,Midstream,Drilling & Field Equipment,890590,TRUE
+Oil,Midstream,Metering Equipment,902810,TRUE
+Oil,Midstream,Pipelines,730411,FALSE
+Oil,Midstream,Pipelines,730419,FALSE
+Oil,Midstream,Pipelines,730422,FALSE
+Oil,Midstream,Pipelines,730423,FALSE
+Oil,Midstream,Pipelines,730424,FALSE
+Oil,Midstream,Pipelines,730429,FALSE
+Oil,Midstream,Pipelines,730511,FALSE
+Oil,Midstream,Pipelines,730512,FALSE
+Oil,Midstream,Pipelines,730519,FALSE
+Oil,Midstream,Pipelines,730520,FALSE
+Oil,Midstream,Pipelines,730611,FALSE
+Oil,Midstream,Pipelines,730619,FALSE
+Oil,Midstream,Pipelines,730621,FALSE
+Oil,Midstream,Pipelines,730629,FALSE
+Oil,Midstream,Prime Movers & Generator Sets,850131,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850132,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850133,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850134,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850161,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850162,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850163,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850164,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850211,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850212,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850213,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850220,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850239,TRUE
+Oil,Midstream,Prime Movers & Generator Sets,850300,TRUE
+Oil,Midstream,Processing & Separation Equipment,841960,TRUE
+Oil,Midstream,Processing & Separation Equipment,842129,TRUE
+Oil,Midstream,Processing & Separation Equipment,842890,TRUE
+Oil,Midstream,Processing & Separation Equipment,847410,TRUE
+Oil,Midstream,Processing & Separation Equipment,847420,TRUE
+Oil,Midstream,Processing & Separation Equipment,847490,FALSE
+Oil,Midstream,Processing & Separation Equipment,847982,TRUE
+Oil,Midstream,Processing & Separation Equipment,847989,TRUE
+Oil,Midstream,Pumps & Compressors,841350,TRUE
+Oil,Midstream,Pumps & Compressors,841360,TRUE
+Oil,Midstream,Pumps & Compressors,841382,TRUE
+Oil,Midstream,Pumps & Compressors,841392,TRUE
+Oil,Midstream,Storage & Transport Equipment,731100,FALSE
+Oil,Midstream,Storage & Transport Equipment,890120,TRUE
+Solar,Midstream,Inverters & Power Electronics,850440,TRUE
+Solar,Midstream,Inverters & Power Electronics,850490,TRUE
+Solar,Midstream,Inverters & Power Electronics,853710,TRUE
+Solar,Midstream,Inverters & Power Electronics,853720,TRUE
+Solar,Midstream,Inverters & Power Electronics,854129,TRUE
+Solar,Midstream,Inverters & Power Electronics,854130,TRUE
+Solar,Midstream,Inverters & Power Electronics,854190,TRUE
+Solar,Midstream,Polysilicon & Wafers,280461,TRUE
+Solar,Midstream,Polysilicon & Wafers,381800,TRUE
+Solar,Midstream,"Racking, Mounting & Trackers",730890,TRUE
+Solar,Midstream,"Racking, Mounting & Trackers",761090,TRUE
+Solar,Midstream,"Racking, Mounting & Trackers",850131,TRUE
+Solar,Midstream,"Racking, Mounting & Trackers",850132,TRUE
+Solar,Midstream,Solar Cabling & Connectors,281290,TRUE
+Solar,Midstream,Solar Cabling & Connectors,440311,FALSE
+Solar,Midstream,Solar Cabling & Connectors,440312,FALSE
+Solar,Midstream,Solar Cabling & Connectors,440321,FALSE
+Solar,Midstream,Solar Cabling & Connectors,440323,FALSE
+Solar,Midstream,Solar Cabling & Connectors,440324,FALSE
+Solar,Midstream,Solar Cabling & Connectors,440325,FALSE
+Solar,Midstream,Solar Cabling & Connectors,681510,TRUE
+Solar,Midstream,Solar Cabling & Connectors,731210,TRUE
+Solar,Midstream,Solar Cabling & Connectors,740811,TRUE
+Solar,Midstream,Solar Cabling & Connectors,740819,TRUE
+Solar,Midstream,Solar Cabling & Connectors,741300,TRUE
+Solar,Midstream,Solar Cabling & Connectors,761410,TRUE
+Solar,Midstream,Solar Cabling & Connectors,761490,TRUE
+Solar,Midstream,Solar Cabling & Connectors,853210,TRUE
+Solar,Midstream,Solar Cabling & Connectors,854420,TRUE
+Solar,Midstream,Solar Cabling & Connectors,854442,TRUE
+Solar,Midstream,Solar Cabling & Connectors,854449,TRUE
+Solar,Midstream,Solar Cabling & Connectors,854460,TRUE
+Solar,Midstream,Solar Cabling & Connectors,854470,FALSE
+Solar,Midstream,Solar Cabling & Connectors,854610,FALSE
+Solar,Midstream,Solar Cabling & Connectors,854620,TRUE
+Solar,Midstream,Solar Cabling & Connectors,902830,TRUE
+Solar,Midstream,Solar Cabling & Connectors,902890,FALSE
+Solar,Midstream,Solar Cell Manufacturing Equipment,848610,TRUE
+Solar,Midstream,Solar Cell Manufacturing Equipment,848620,TRUE
+Solar,Midstream,Solar Cell Manufacturing Equipment,848690,TRUE
+Solar,Midstream,Solar Cells,854142,TRUE
+Solar,Midstream,Solar Module Assembly & Inputs,700719,TRUE
+Solar,Midstream,Solar Module Assembly & Inputs,853690,TRUE
+Solar,Midstream,Solar Modules,850171,TRUE
+Solar,Midstream,Solar Modules,850172,TRUE
+Solar,Midstream,Solar Modules,850180,TRUE
+Solar,Midstream,Solar Modules,854143,TRUE
+Solar,Midstream,Transformers,850421,TRUE
+Solar,Midstream,Transformers,850422,TRUE
+Solar,Midstream,Transformers,850423,TRUE
+Solar,Midstream,Transformers,850431,TRUE
+Solar,Midstream,Transformers,850432,TRUE
+Solar,Midstream,Transformers,850433,TRUE
+Solar,Midstream,Transformers,850434,TRUE
+Gas,Upstream,Butadiene,271114,TRUE
+Gas,Upstream,Butane,271113,TRUE
+Gas,Upstream,Butane,271129,TRUE
+Gas,Upstream,Ethane,271119,TRUE
+Gas,Upstream,Natural Gas,271111,TRUE
+Gas,Upstream,Natural Gas,271121,TRUE
+Gas,Upstream,Propane,271112,TRUE
+Gas,Midstream,LNG/LPG Equipment,731100,FALSE
+Gas,Midstream,LNG/LPG Equipment,820713,TRUE
+Gas,Midstream,LNG/LPG Equipment,820719,TRUE
+Gas,Midstream,LNG/LPG Equipment,840211,TRUE
+Gas,Midstream,LNG/LPG Equipment,840212,TRUE
+Gas,Midstream,LNG/LPG Equipment,840219,TRUE
+Gas,Midstream,LNG/LPG Equipment,840220,TRUE
+Gas,Midstream,LNG/LPG Equipment,840290,TRUE
+Gas,Midstream,LNG/LPG Equipment,840310,TRUE
+Gas,Midstream,LNG/LPG Equipment,840390,TRUE
+Gas,Midstream,LNG/LPG Equipment,840410,TRUE
+Gas,Midstream,LNG/LPG Equipment,840420,TRUE
+Gas,Midstream,LNG/LPG Equipment,840490,TRUE
+Gas,Midstream,LNG/LPG Equipment,840510,TRUE
+Gas,Midstream,LNG/LPG Equipment,840590,TRUE
+Gas,Midstream,LNG/LPG Equipment,840681,TRUE
+Gas,Midstream,LNG/LPG Equipment,840682,TRUE
+Gas,Midstream,LNG/LPG Equipment,840690,TRUE
+Gas,Midstream,LNG/LPG Equipment,841111,TRUE
+Gas,Midstream,LNG/LPG Equipment,841112,TRUE
+Gas,Midstream,LNG/LPG Equipment,841181,TRUE
+Gas,Midstream,LNG/LPG Equipment,841182,TRUE
+Gas,Midstream,LNG/LPG Equipment,841191,TRUE
+Gas,Midstream,LNG/LPG Equipment,841199,TRUE
+Gas,Midstream,LNG/LPG Equipment,841350,TRUE
+Gas,Midstream,LNG/LPG Equipment,841360,TRUE
+Gas,Midstream,LNG/LPG Equipment,841382,TRUE
+Gas,Midstream,LNG/LPG Equipment,841392,TRUE
+Gas,Midstream,LNG/LPG Equipment,841960,TRUE
+Gas,Midstream,LNG/LPG Equipment,842129,TRUE
+Gas,Midstream,LNG/LPG Equipment,842890,TRUE
+Gas,Midstream,LNG/LPG Equipment,843041,TRUE
+Gas,Midstream,LNG/LPG Equipment,843049,TRUE
+Gas,Midstream,LNG/LPG Equipment,843139,TRUE
+Gas,Midstream,LNG/LPG Equipment,843143,TRUE
+Gas,Midstream,LNG/LPG Equipment,843149,TRUE
+Gas,Midstream,LNG/LPG Equipment,847410,TRUE
+Gas,Midstream,LNG/LPG Equipment,847420,TRUE
+Gas,Midstream,LNG/LPG Equipment,847490,FALSE
+Gas,Midstream,LNG/LPG Equipment,847982,TRUE
+Gas,Midstream,LNG/LPG Equipment,847989,TRUE
+Gas,Midstream,LNG/LPG Equipment,870520,TRUE
+Gas,Midstream,LNG/LPG Equipment,890120,TRUE
+Gas,Midstream,LNG/LPG Equipment,890520,TRUE
+Gas,Midstream,LNG/LPG Equipment,890590,TRUE
+Gas,Midstream,LNG/LPG Equipment,902810,TRUE
+Gas,Midstream,Pipelines,730411,FALSE
+Gas,Midstream,Pipelines,730419,FALSE
+Gas,Midstream,Pipelines,730422,FALSE
+Gas,Midstream,Pipelines,730423,FALSE
+Gas,Midstream,Pipelines,730424,FALSE
+Gas,Midstream,Pipelines,730429,FALSE
+Gas,Midstream,Pipelines,730511,FALSE
+Gas,Midstream,Pipelines,730512,FALSE
+Gas,Midstream,Pipelines,730519,FALSE
+Gas,Midstream,Pipelines,730520,FALSE
+Gas,Midstream,Pipelines,730611,FALSE
+Gas,Midstream,Pipelines,730619,FALSE
+Gas,Midstream,Pipelines,730621,FALSE
+Gas,Midstream,Pipelines,730629,FALSE
+Electric Grid,Upstream,Electricity,271600,TRUE
+Electric Grid,Midstream,Circuit Breakers,853521,TRUE
+Electric Grid,Midstream,Circuit Breakers,853529,TRUE
+Electric Grid,Midstream,Electrical Steel (GOES),722511,TRUE
+Electric Grid,Midstream,Electrical Steel (GOES),722519,TRUE
+Electric Grid,Midstream,Electrical Steel (GOES),722611,TRUE
+Electric Grid,Midstream,Electrical Steel (GOES),722619,TRUE
+Electric Grid,Midstream,Grid Automation & Control Equipment,851762,TRUE
+Electric Grid,Midstream,Grid Automation & Control Equipment,903289,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,281290,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,440311,FALSE
+Electric Grid,Midstream,Grid Cables & Accessories,440312,FALSE
+Electric Grid,Midstream,Grid Cables & Accessories,440321,FALSE
+Electric Grid,Midstream,Grid Cables & Accessories,440323,FALSE
+Electric Grid,Midstream,Grid Cables & Accessories,440324,FALSE
+Electric Grid,Midstream,Grid Cables & Accessories,440325,FALSE
+Electric Grid,Midstream,Grid Cables & Accessories,681510,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,731210,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,740811,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,740819,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,741300,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,761410,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,761490,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,854420,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,854442,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,854449,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,854460,TRUE
+Electric Grid,Midstream,Grid Cables & Accessories,854470,FALSE
+Electric Grid,Midstream,Grid Cables & Accessories,854610,FALSE
+Electric Grid,Midstream,Grid Cables & Accessories,854620,TRUE
+Electric Grid,Midstream,Grid Control Panels,853710,TRUE
+Electric Grid,Midstream,Grid Control Panels,853720,TRUE
+Electric Grid,Midstream,Grid Metering Equipment,902830,TRUE
+Electric Grid,Midstream,Grid Metering Equipment,902830,FALSE
+Electric Grid,Midstream,Grid Metering Equipment,902890,TRUE
+Electric Grid,Midstream,Grid Metering Equipment,902890,FALSE
+Electric Grid,Midstream,Other High-Voltage Apparatus,853590,TRUE
+Electric Grid,Midstream,Power Capacitors & Fuses,853210,TRUE
+Electric Grid,Midstream,Power Capacitors & Fuses,853510,TRUE
+Electric Grid,Midstream,Power Converters & Parts,850440,TRUE
+Electric Grid,Midstream,Power Converters & Parts,850490,TRUE
+Electric Grid,Midstream,Power Converters & Parts,854129,TRUE
+Electric Grid,Midstream,Power Converters & Parts,854130,TRUE
+Electric Grid,Midstream,Surge Arresters,853540,TRUE
+Electric Grid,Midstream,Switchgear,853530,TRUE
+Electric Grid,Midstream,Transformers,850421,TRUE
+Electric Grid,Midstream,Transformers,850422,TRUE
+Electric Grid,Midstream,Transformers,850423,TRUE
+Electric Grid,Midstream,Transformers,850431,TRUE
+Electric Grid,Midstream,Transformers,850432,TRUE
+Electric Grid,Midstream,Transformers,850433,TRUE
+Electric Grid,Midstream,Transformers,850434,TRUE
+Semiconductors,Midstream,Discrete Semiconductors,854110,TRUE
+Semiconductors,Midstream,Discrete Semiconductors,854121,TRUE
+Semiconductors,Midstream,Discrete Semiconductors,854129,TRUE
+Semiconductors,Midstream,Discrete Semiconductors,854130,TRUE
+Semiconductors,Midstream,Integrated Circuit Parts,854290,TRUE
+Semiconductors,Midstream,Integrated Circuits,854231,TRUE
+Semiconductors,Midstream,Integrated Circuits,854232,TRUE
+Semiconductors,Midstream,Integrated Circuits,854233,TRUE
+Semiconductors,Midstream,Integrated Circuits,854239,TRUE
+Semiconductors,Midstream,Piezoelectric Components,854160,TRUE
+Semiconductors,Midstream,Semiconductor Device Parts,854190,TRUE
+Semiconductors,Midstream,Semiconductor Equipment Parts,848690,TRUE
+Semiconductors,Midstream,Semiconductor Manufacturing Equipment,848610,TRUE
+Semiconductors,Midstream,Semiconductor Manufacturing Equipment,848620,TRUE
+Semiconductors,Midstream,Semiconductor Materials,280461,TRUE
+Semiconductors,Midstream,Semiconductor Materials,282560,TRUE
+Semiconductors,Midstream,Semiconductor Materials,381800,TRUE
+Semiconductors,Midstream,Semiconductor Materials,811269,FALSE
+Semiconductors,Midstream,Semiconductor Materials,811292,TRUE
+Semiconductors,Midstream,Semiconductor Materials,811299,FALSE

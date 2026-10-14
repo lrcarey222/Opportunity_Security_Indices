@@ -15,27 +15,66 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Matches credential values, not env-var names: Comtrade keys are 32 hex, Datawrapper tokens
+      # 64 alphanumerics, the rest fixed provider prefixes. No -i, and prefixes can't follow a base64
+      # char, because fantasy-draft's image data URIs contain "akia" + 16 letters by chance. Hits
+      # print as file:line only, to keep keys out of the public log; exit >1 is a grep error, not a
+      # clean tree. renv.lock hashes are quoted 32-hex; a Firebase web apiKey is public by design.
       - name: Secret scan
         run: |
-          pattern='(DATA'"'"'WRAPPER|api\\.data'"'"'wrapper|sk-[A-Za-z0-9]|Bea'"'"'rer [A-Za-z0-9]|OPENAI'"'"'_API_KEY)'
-          git grep -n -E "$pattern" -- . ':(exclude)Legacy Scripts/**'
+          status=0
+          hits=$(git grep -n -I -E \
+            -e "[\"'][0-9a-fA-F]{32}[\"']" \
+            -e "(key|Key|KEY|token|Token|TOKEN|secret|Secret|SECRET|auth|Auth|AUTH|passw|Passw|PASSW)[^\"']*[\"'][A-Za-z0-9]{32,}[\"']" \
+            -e '[Bb]earer [A-Za-z0-9._~+/=-]{20,}' \
+            -e '(^|[^A-Za-z0-9+/])(sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|AIza[0-9A-Za-z_-]{35})' \
+            -e '-----BEGIN ([A-Z]+ )?PRIVATE KEY-----' \
+            -- . ':(exclude)renv.lock' ':(exclude)fantasy-draft/firebase-config.js') || status=$?
+          if [ "$status" -gt 1 ]; then
+            echo "::error::git grep failed with exit $status, so the secret scan did not run"
+            exit "$status"
+          fi
+          if [ -n "$hits" ]; then
+            printf '%s\n' "$hits" | cut -d: -f1,2 | while IFS=: read -r file line; do
+              echo "::error file=$file,line=$line::Possible hard-coded credential"
+            done
+            echo "Move each value to an environment variable (e.g. in ~/.Renviron) and read it with Sys.getenv()."
+            exit 1
+          fi
+          echo "No literal credentials found."
 
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
+        with:
+          # See the note in r-tests.yml: source installs fail on this runner for want of
+          # libuv and libcurl headers, which cascades into testthat being unavailable.
+          use-public-rspm: true
 
       - name: Install dependencies (renv)
         if: ${{ hashFiles('renv.lock') != '' }}
         uses: r-lib/actions/setup-renv@v2
 
+      # Repo URL passed explicitly for the same reason as in r-tests.yml. Verified rather
+      # than trusted: install.packages() warns and exits 0 on failure.
       - name: Install dependencies (packages)
         if: ${{ hashFiles('renv.lock') == '' }}
         run: |
-          Rscript -e "install.packages(c('dplyr','tibble','stringr','testthat','yaml','purrr','tidyr','shiny','bslib','scales','countrycode'), repos='https://cloud.r-project.org')"
+          Rscript -e "packages <- c('dplyr','tibble','stringr','testthat','yaml','purrr','tidyr','shiny','bslib','scales','countrycode','readr','curl','jsonlite','readxl','writexl','withr','ggplot2','glue','rlang','rprojroot','WDI','comtradr','magrittr','progress','lubridate'); install.packages(packages, repos = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'); missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop('dependency install failed for: ', paste(missing, collapse = ', '))"
+
+      # tests/testthat/test-bootstrap-smoke.R and test-comtrade-unification.R source
+      # scripts/utils/bootstrap.R, which loads the core packages above and reads
+      # config/config.yml. That file is gitignored, so seed it from the example as r-ci.yml does.
+      - name: Seed CI config
+        run: |
+          if [ ! -f config/config.yml ]; then
+            cp config/config.example.yml config/config.yml
+          fi
 
       - name: Run unit tests
         run: |
           R -q -e 'testthat::test_dir("tests/testthat")'
 
+      # R/ code expects dplyr attached (bootstrap.R attaches it for the pipeline).
       - name: Run smoke test
         run: |
-          R -q -e 'source("R/utils/schema.R"); source("R/utils/levels.R"); source("R/indices/build_energy_security_index_v2.R"); index_definition <- yaml::read_yaml("tests/fixtures/index_definition.yml"); options(opportunity_security.index_definition = index_definition); theme_tbl <- read.csv("tests/fixtures/energy_security_theme.csv", stringsAsFactors = FALSE); theme_tbl <- theme_tbl[!is.na(theme_tbl$value), ]; outputs <- build_energy_security_index_v2(theme_tables = list(energy_access_consumption = theme_tbl), weights = list(`Energy Access` = 0.5, Reliability = 0.5), allow_partial_categories = TRUE, include_sub_sector = FALSE); stopifnot(nrow(outputs$energy_security_index) > 0)'
+          R -q -e 'suppressPackageStartupMessages(library(dplyr)); source("R/utils/schema.R"); source("R/utils/levels.R"); source("R/indices/build_energy_security_index_v2.R"); index_definition <- yaml::read_yaml("tests/fixtures/index_definition.yml"); options(opportunity_security.index_definition = index_definition); theme_tbl <- read.csv("tests/fixtures/energy_security_theme.csv", stringsAsFactors = FALSE); theme_tbl <- theme_tbl[!is.na(theme_tbl$value), ]; outputs <- build_energy_security_index_v2(theme_tables = list(energy_access_consumption = theme_tbl), weights = list(`Energy Access` = 0.5, Reliability = 0.5), allow_partial_categories = TRUE, include_sub_sector = FALSE); stopifnot(nrow(outputs$energy_security_index) > 0)'

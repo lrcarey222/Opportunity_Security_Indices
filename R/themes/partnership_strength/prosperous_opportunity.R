@@ -1,6 +1,6 @@
 # Prosperous opportunity theme (partner-level opportunity index).
 
-partnership_strength_clean_trade_data <- function(comtrade_dyads, subcat, years = 2021:2025) {
+partnership_strength_clean_trade_data <- function(comtrade_dyads, subcat, years = 2020:2024) {
   require_columns(
     comtrade_dyads,
     c("reporter_iso", "partner_iso"),
@@ -44,7 +44,7 @@ partnership_strength_clean_trade_data <- function(comtrade_dyads, subcat, years 
     dplyr::select(reporter_iso, partner_iso, period, flow_direction, tech, supply_chain, primary_value)
 }
 
-partnership_strength_build_dyad_series <- function(res_tech, flow = c("export", "import"), years = 2021:2025) {
+partnership_strength_build_dyad_series <- function(res_tech, flow = c("export", "import"), years = 2020:2024) {
   flow <- match.arg(flow)
 
   res_tech %>%
@@ -114,8 +114,8 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       Country = partnership_strength_standardize_countries(Country),
       exporter_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
     dplyr::filter(!is.na(exporter_iso)) %>%
-    group_by(tech,supply_chain) %>%
-    mutate(value=median_scurve(Economic_Opportunity_Index)
+    dplyr::group_by(tech,supply_chain) %>%
+    dplyr::mutate(value=median_scurve(Economic_Opportunity_Index)
     ) %>%
     dplyr::transmute(exporter_iso, tech, supply_chain, econ_opp_raw = value)
 
@@ -124,8 +124,8 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       Country = partnership_strength_standardize_countries(Country),
       partner_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
     dplyr::filter(!is.na(partner_iso)) %>%
-    group_by(tech,supply_chain) %>%
-    mutate(value=median_scurve(Energy_Security_Index)
+    dplyr::group_by(tech,supply_chain) %>%
+    dplyr::mutate(value=median_scurve(Energy_Security_Index)
     ) %>%
     dplyr::transmute(partner_iso, tech, supply_chain, energy_sec_raw = 1 - value)
 
@@ -145,7 +145,28 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
   default_ghg <- if (nrow(ghg_iso)) median(ghg_iso$ghg_index, na.rm = TRUE) else 0.5
   default_policy <- if (nrow(policy_iso)) median(policy_iso$climate_policy_index, na.rm = TRUE) else 0.5
 
-  trade_indices %>%
+  reporter_keys <- econ_opp_iso %>%
+    dplyr::distinct(reporter_iso = exporter_iso, tech, supply_chain)
+  partner_keys <- energy_sec_iso %>%
+    dplyr::distinct(partner_iso, tech, supply_chain)
+
+  dyad_backbone <- reporter_keys %>%
+    dplyr::inner_join(partner_keys, by = c("tech", "supply_chain"), relationship = "many-to-many")
+
+  dyad_backbone %>%
+    dplyr::left_join(trade_indices, by = c("reporter_iso", "partner_iso", "tech", "supply_chain")) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(
+      trade_index = dplyr::coalesce(
+        trade_index,
+        dplyr::if_else(
+          is.nan(mean(trade_index, na.rm = TRUE)),
+          0.5,
+          mean(trade_index, na.rm = TRUE)
+        )
+      )
+    ) %>%
+    dplyr::ungroup() %>%
     dplyr::left_join(econ_opp_iso, by = c("reporter_iso" = "exporter_iso", "tech", "supply_chain")) %>%
     dplyr::left_join(energy_sec_iso, by = c("partner_iso", "tech", "supply_chain")) %>%
     dplyr::left_join(ghg_iso, by = "tech") %>%
@@ -199,7 +220,7 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
 partnership_strength_build_opportunity_country <- function(opportunity_all,
                                                            country_info,
                                                            top_n = 3,
-                                                           year = 2025L) {
+                                                           year = 2024L) {
   opportunity_all %>%
     dplyr::filter(!is.na(opportunity_index)) %>%
     dplyr::group_by(partner_iso, tech, supply_chain) %>%
@@ -226,7 +247,7 @@ partnership_strength_build_opportunity_inputs_country <- function(opportunity_al
                                                                   country_info,
                                                                   component_weights,
                                                                   top_n = 3,
-                                                                  year = 2025L) {
+                                                                  year = 2024L) {
   component_weights_tbl <- tibble::tibble(
     component_key = c("trade_index", "econ_opp_index", "energy_security_index"),
     component_weight = c(
@@ -334,7 +355,7 @@ partnership_strength_build_opportunity_inputs_country <- function(opportunity_al
 partnership_strength_build_opportunity_dyads_table <- function(opportunity_all,
                                                                country_info,
                                                                component_weights,
-                                                               year = 2025L) {
+                                                               year = 2024L) {
   component_weights_tbl <- tibble::tibble(
     component_key = c("trade_index", "econ_opp_index", "energy_security_index"),
     component_weight = c(
@@ -416,7 +437,7 @@ prosperous_opportunity <- function(comtrade_dyads,
                                    policy,
                                    country_info,
                                    component_weights = NULL,
-                                   years = 2021:2025,
+                                   years = 2020:2024,
                                    top_n = 3) {
   res_tech <- partnership_strength_clean_trade_data(comtrade_dyads, subcat, years = years)
   ds_export <- partnership_strength_build_dyad_series(res_tech, flow = "export", years = years)

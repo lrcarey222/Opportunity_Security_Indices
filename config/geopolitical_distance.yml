@@ -1,0 +1,36 @@
+anchors:
+  us_iso3: USA
+  china_iso3: CHN
+specifications:
+  baseline_all_2021:
+    estimation_start: 1946
+    estimation_end: 2023
+    vote_filter: all
+    snapshot_year: 2021
+  all_2023:
+    estimation_start: 1946
+    estimation_end: 2023
+    vote_filter: all
+    snapshot_year: 2023
+  economic_2021:
+    estimation_start: 1971
+    estimation_end: 2023
+    vote_filter: economic
+    snapshot_year: 2021
+  post1990_all_2021:
+    estimation_start: 1990
+    estimation_end: 2023
+    vote_filter: all
+    snapshot_year: 2021
+normalization:
+  method: yearly_range
+exposure:
+  averaging_window: full_sample
+outputs:
+  ideal_points: data_processed/country_year_ideal_points.csv
+  ipd: data_processed/bilateral_ipd.csv
+  seg: data_processed/seg_scores.csv
+  blocs: data_processed/bloc_assignments.csv
+  pair_bloc: data_processed/pair_bloc_labels.csv
+  exposure: data_processed/exposure_country_year.csv
+  validation: output/geopolitical_distance/validation_checks.csv

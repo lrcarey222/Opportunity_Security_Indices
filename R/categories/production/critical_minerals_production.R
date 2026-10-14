@@ -5,34 +5,119 @@
 # into the canonical schema with demand-weighted rollups.
 
 # ---- Production sheet specifications ----
-# Each spec indicates where a mineral’s production series lives in the EI Excel
-# workbook so the IO layer can load the correct sheet.
+# Each spec says where a mineral's production series lives in the EI Excel workbook so the
+# IO layer can load the correct sheet.
+#
+# Sheets are addressed by name, not by position: the EI workbook adds and drops sheets
+# between releases (the 2026 edition inserted "Data Centre Demand" and "SAF prices" ahead of
+# the mineral block, shifting every mineral sheet four places), so positional indices
+# silently read the wrong sheet. The value column is resolved from the sheet for the same
+# reason — see critical_minerals_production_resolve_val_col().
+#
+# These are the same "P-R" (production and reserves) sheets reserves_specs() reads; the two
+# take different columns off them, so a rename upstream needs fixing in both places.
 critical_minerals_production_specs <- function() {
   list(
-    list(sheet = 83, skip = 2, nm_col = "Thousand tonnes", val_col = "2024...31", tech_name = "Cobalt", unit_desc = "Thousand tonnes"),
-    list(sheet = 84, skip = 2, nm_col = "Thousand tonnes of Lithium content", val_col = "2024...31", tech_name = "Lithium", unit_desc = "Thousand tonnes"),
-    list(sheet = 85, skip = 2, nm_col = "Thousand tonnes", val_col = "2024...31", tech_name = "Graphite", unit_desc = "Thousand tonnes"),
-    list(sheet = 86, skip = 2, nm_col = "Thousand tonnes1", val_col = "2024...31", tech_name = "Rare Earths", unit_desc = "Thousand tonnes"),
-    list(sheet = 87, skip = 2, nm_col = "Thousand tonnes", val_col = "2024...12", tech_name = "Copper", unit_desc = "Thousand tonnes"),
-    list(sheet = 88, skip = 2, nm_col = "Thousand tonnes", val_col = "2024...13", tech_name = "Manganese", unit_desc = "Thousand tonnes"),
-    list(sheet = 89, skip = 2, nm_col = "Thousand tonnes", val_col = "2024...13", tech_name = "Nickel", unit_desc = "Thousand tonnes"),
-    list(sheet = 90, skip = 2, nm_col = "Thousand tonnes", val_col = "2024...13", tech_name = "Zinc", unit_desc = "Thousand tonnes"),
-    list(sheet = 91, skip = 2, nm_col = "Thousand tonnes", val_col = "2024...12", tech_name = "PGMs", unit_desc = "Thousand tonnes")
+    list(sheet = "Cobalt P-R", skip = 2, nm_col = "Thousand tonnes", tech_name = "Cobalt", unit_desc = "Thousand tonnes"),
+    list(sheet = "Lithium P-R", skip = 2, nm_col = "Thousand tonnes of Lithium content", tech_name = "Lithium", unit_desc = "Thousand tonnes"),
+    list(sheet = "Natural Graphite P-R", skip = 2, nm_col = "Thousand tonnes", tech_name = "Graphite", unit_desc = "Thousand tonnes"),
+    list(sheet = "Rare Earth metals P-R", skip = 2, nm_col = "Thousand tonnes1", tech_name = "Rare Earths", unit_desc = "Thousand tonnes"),
+    list(sheet = "Copper P-R", skip = 2, nm_col = "Thousand tonnes", tech_name = "Copper", unit_desc = "Thousand tonnes"),
+    list(sheet = "Manganese P-R", skip = 2, nm_col = "Thousand tonnes", tech_name = "Manganese", unit_desc = "Thousand tonnes"),
+    list(sheet = "Nickel P-R", skip = 2, nm_col = "Thousand tonnes", tech_name = "Nickel", unit_desc = "Thousand tonnes"),
+    list(sheet = "Zinc P-R", skip = 2, nm_col = "Thousand tonnes", tech_name = "Zinc", unit_desc = "Thousand tonnes"),
+    list(
+      # Renamed from "Platinum Group Metals P-R" and restated in kilograms in the 2026
+      # edition. Units differ across minerals, which is harmless: each mineral's series is
+      # percent-ranked within itself before the techs are rolled up.
+      sheet = "PGM", skip = 2, nm_col = "Kilogram", tech_name = "PGMs", unit_desc = "Kilograms"
+    )
   )
+}
+
+# ---- Resolve the production column on a P-R sheet ----
+# Year columns on a mineral P-R sheet, as sheet name / year / position.
+#
+# The latest year appears three times — production level, growth rate, share — so readxl
+# disambiguates the duplicates by column position ("2025...12", "2025...13", "2025...15").
+# The leftmost column for a year is the production level; the others are derived from it.
+critical_minerals_production_year_columns <- function(sheet_data) {
+  matched <- stringr::str_match(names(sheet_data), "^((?:19|20)\\d{2})(?:\\.\\.\\.\\d+)?$")
+  keep <- which(!is.na(matched[, 1]))
+
+  tibble::tibble(
+    column = names(sheet_data)[keep],
+    year = as.integer(matched[keep, 2]),
+    position = keep
+  )
+}
+
+# Production column for `year`, falling back to the sheet's own latest year.
+#
+# Pinning the readxl position suffix is what went stale before: it moves whenever the
+# workbook gains a year or a column, so the name is derived from the sheet every run.
+critical_minerals_production_resolve_val_col <- function(sheet_data, year = NULL, sheet_id = NULL) {
+  year_cols <- critical_minerals_production_year_columns(sheet_data)
+  if (nrow(year_cols) == 0) {
+    stop(
+      "Production sheet ", sheet_id %||% "<unnamed>",
+      " has no year columns; the sheet layout or `skip` has changed."
+    )
+  }
+
+  target <- if (is.null(year)) max(year_cols$year) else as.integer(year)
+  hits <- year_cols[year_cols$year == target, ]
+
+  if (nrow(hits) == 0) {
+    target <- max(year_cols$year)
+    hits <- year_cols[year_cols$year == target, ]
+    message(
+      "Production sheet ", sheet_id %||% "<unnamed>", ": no ", year,
+      " column; using ", target, "."
+    )
+  }
+
+  hits$column[which.min(hits$position)]
+}
+
+# Latest production year published across the mineral sheets, so every mineral in the
+# theme is stamped with one year rather than drifting apart sheet by sheet.
+critical_minerals_production_latest_year <- function(production_inputs) {
+  years <- vapply(production_inputs, function(spec) {
+    year_cols <- critical_minerals_production_year_columns(spec$data)
+    if (nrow(year_cols) == 0) NA_integer_ else max(year_cols$year)
+  }, integer(1))
+
+  years <- years[!is.na(years)]
+  if (length(years) == 0) {
+    stop("No year columns found on any EI mineral production sheet.")
+  }
+  max(years)
 }
 
 # ---- Build a single mineral production table ----
 # Convert a raw EI sheet into raw + index values for one mineral.
 critical_minerals_production_build_table <- function(sheet_data,
                                                      nm_col,
-                                                     val_col,
                                                      tech_name,
                                                      unit_desc,
                                                      sheet_id,
                                                      country_reference,
-                                                     year = 2024,
+                                                     year = NULL,
+                                                     val_col = NULL,
                                                      gamma = 0.5) {
   country_names <- country_reference$Country
+
+  val_col <- val_col %||% critical_minerals_production_resolve_val_col(
+    sheet_data,
+    year = year,
+    sheet_id = sheet_id
+  )
+  # A sheet that lags the rest of the workbook resolves to its own latest year. The theme
+  # keeps one `Year` so the demand-weighted rollup does not fragment, and the raw row's
+  # explanation records the year the value actually came from.
+  value_year <- as.integer(stringr::str_extract(val_col, "^(19|20)\\d{2}"))
+  year <- year %||% value_year
 
   raw <- sheet_data %>%
     dplyr::rename(
@@ -79,9 +164,11 @@ critical_minerals_production_build_table <- function(sheet_data,
       variable = stringr::str_glue("{tech_name} Production"),
       data_type = dplyr::if_else(data_type == "raw_value", "raw", "index"),
       Year = year,
-      source = "EI Statistical Review of World Energy (2024)",
+      source = stringr::str_glue("EI Statistical Review of World Energy ({year})"),
       explanation = dplyr::case_when(
-        data_type == "raw" ~ stringr::str_glue("{tech_name} production ({unit_desc}) from sheet {sheet_id}"),
+        data_type == "raw" ~ stringr::str_glue(
+          "{tech_name} production in {value_year} ({unit_desc}) from sheet '{sheet_id}'"
+        ),
         data_type == "index" ~ "Percent-rank of production across reporting entities (countries + RoW)"
       )
     ) %>%
@@ -165,16 +252,18 @@ critical_minerals_production_build_weighted <- function(critical_min_production,
 }
 
 # === Public theme entrypoint ===
+# `year` defaults to the newest production year the workbook publishes, so a new EI release
+# flows through without a code edit. A sheet that lags behind falls back to its own latest
+# year and says so.
 critical_minerals_production <- function(production_inputs,
                                          mineral_demand_clean,
                                          country_reference,
-                                         year = 2024,
+                                         year = critical_minerals_production_latest_year(production_inputs),
                                          gamma = 0.5) {
   production_tables <- lapply(production_inputs, function(spec) {
     critical_minerals_production_build_table(
       sheet_data = spec$data,
       nm_col = spec$nm_col,
-      val_col = spec$val_col,
       tech_name = spec$tech_name,
       unit_desc = spec$unit_desc,
       sheet_id = spec$sheet,

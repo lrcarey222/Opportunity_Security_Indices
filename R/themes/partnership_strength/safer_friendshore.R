@@ -127,9 +127,10 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       Country = partnership_strength_standardize_countries(Country),
       iso3c = partnership_strength_country_to_iso(Country, country_info)) %>%
     dplyr::filter(!is.na(iso3c)) %>%
-    group_by(iso3c) %>%
-      mutate(value=median_scurve(Energy_Security_Index)
+    dplyr::group_by(iso3c) %>%
+      dplyr::mutate(value=median_scurve(Energy_Security_Index)
     ) %>%
+    dplyr::ungroup() %>%
     dplyr::transmute(reporter_iso = iso3c, tech, supply_chain, es_need = 1 - value)
 
   eo_partner_iso <- econ_opp_index %>%
@@ -137,9 +138,10 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       Country = partnership_strength_standardize_countries(Country),
       iso3c = partnership_strength_country_to_iso(Country, country_info)) %>%
     dplyr::filter(!is.na(iso3c)) %>%
-    group_by(tech,supply_chain) %>%
-    mutate(value=median_scurve(Economic_Opportunity_Index)
+    dplyr::group_by(tech,supply_chain) %>%
+    dplyr::mutate(value=median_scurve(Economic_Opportunity_Index)
     ) %>%
+    dplyr::ungroup() %>%
     dplyr::transmute(partner_iso = iso3c, tech, supply_chain, eo_partner = value)
 
   econ_opp_iso <- econ_opp_index %>%
@@ -147,9 +149,10 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       Country = partnership_strength_standardize_countries(Country),
       exporter_iso = partnership_strength_country_to_iso(Country, country_info)) %>%
     dplyr::filter(!is.na(exporter_iso)) %>%
-    group_by(exporter_iso) %>%
-    mutate(value=median_scurve(Economic_Opportunity_Index)
+    dplyr::group_by(exporter_iso) %>%
+    dplyr::mutate(value=median_scurve(Economic_Opportunity_Index)
     ) %>%
+    dplyr::ungroup() %>%
     dplyr::transmute(exporter_iso, tech, supply_chain, econ_opp_raw = value)
 
   ghg_iso <- tech_ghg %>%
@@ -168,7 +171,31 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
   default_ghg <- if (nrow(ghg_iso)) median(ghg_iso$ghg_index, na.rm = TRUE) else 0.5
   default_policy <- if (nrow(policy_iso)) median(policy_iso$climate_policy_index, na.rm = TRUE) else 0.5
 
-  import_indices %>%
+  reporter_keys <- dplyr::bind_rows(
+    es_iso %>% dplyr::distinct(reporter_iso, tech, supply_chain),
+    econ_opp_iso %>% dplyr::distinct(reporter_iso = exporter_iso, tech, supply_chain)
+  ) %>%
+    dplyr::distinct(reporter_iso, tech, supply_chain)
+  partner_keys <- eo_partner_iso %>%
+    dplyr::distinct(partner_iso, tech, supply_chain)
+
+  dyad_backbone <- reporter_keys %>%
+    dplyr::inner_join(partner_keys, by = c("tech", "supply_chain"), relationship = "many-to-many")
+
+  dyad_backbone %>%
+    dplyr::left_join(import_indices, by = c("reporter_iso", "partner_iso", "tech", "supply_chain")) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(
+      imp_trade_index = dplyr::coalesce(
+        imp_trade_index,
+        dplyr::if_else(
+          is.nan(mean(imp_trade_index, na.rm = TRUE)),
+          0.5,
+          mean(imp_trade_index, na.rm = TRUE)
+        )
+      )
+    ) %>%
+    dplyr::ungroup() %>%
     dplyr::left_join(es_iso, by = c("tech", "supply_chain", "reporter_iso")) %>%
     dplyr::left_join(econ_opp_iso, by = c("reporter_iso" = "exporter_iso", "tech", "supply_chain")) %>%
     dplyr::left_join(eo_partner_iso, by = c("tech", "supply_chain", "partner_iso")) %>%
@@ -226,7 +253,7 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
 partnership_strength_build_friendshore_country <- function(friendshore_all,
                                                            country_info,
                                                            top_n = 3,
-                                                           year = 2025L) {
+                                                           year = 2024L) {
   friendshore_all %>%
     dplyr::filter(!is.na(friendshore_index)) %>%
     dplyr::group_by(partner_iso, tech, supply_chain) %>%
@@ -253,7 +280,7 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
                                                                   country_info,
                                                                   component_weights,
                                                                   top_n = 3,
-                                                                  year = 2025L) {
+                                                                  year = 2024L) {
   component_weights_tbl <- tibble::tibble(
     component_key = c("imp_trade_index", "econ_opp_raw", "es_need", "eo_partner", "outbound_index"),
     component_weight = c(
@@ -367,7 +394,7 @@ partnership_strength_build_friendshore_inputs_country <- function(friendshore_al
 partnership_strength_build_friendshore_dyads_table <- function(friendshore_all,
                                                                country_info,
                                                                component_weights,
-                                                               year = 2025L) {
+                                                               year = 2024L) {
   component_weights_tbl <- tibble::tibble(
     component_key = c("imp_trade_index", "econ_opp_raw", "es_need", "eo_partner", "outbound_index"),
     component_weight = c(
@@ -455,7 +482,7 @@ safer_friendshore <- function(comtrade_dyads,
                               country_info,
                               gdp_data,
                               component_weights = NULL,
-                              years = 2021:2025,
+                              years = 2020:2024,
                               top_n = 3,
                               gdp_year = 2023) {
   res_tech <- partnership_strength_clean_trade_data(comtrade_dyads, subcat, years = years)
