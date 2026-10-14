@@ -1,6 +1,8 @@
 # R session / IDE
 .Rhistory
 .RData
+.RDataTmp*
+Rplots.pdf
 .Ruserdata
 *.Rproj.user/
 
