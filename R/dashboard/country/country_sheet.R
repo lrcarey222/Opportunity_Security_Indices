@@ -129,8 +129,9 @@ country_fact_sheet <- function(iso3, ctx) {
   psi_c <- country_of(ctx$psi_by, iso3)
   if (!nrow(es_c) && !nrow(eo_c) && (is.null(psi_c) || !nrow(psi_c))) return(NULL)
 
-  # cells: scores, percentiles, quadrants
-  cells <- country_cells_base(iso3, es_c, eo_c, ctx$stats, cells_tbl)
+  # cells: scores, percentiles, quadrants (ctx$quadrant_rule: COUNTRY_QUADRANT_RULES; scripts/88 builds a
+  # "sector_median" copy only to compare memos written under the earlier rule)
+  cells <- country_cells_base(iso3, es_c, eo_c, ctx$stats, cells_tbl, rule = ctx$quadrant_rule %||% "country_median")
   oo <- country_orders(cells)
   cells <- oo$cells
 
@@ -207,6 +208,7 @@ country_fact_sheet <- function(iso3, ctx) {
   placed <- Filter(function(c) isTRUE(c$placed), cells)
   qn <- function(q) sum(vapply(placed, function(c) identical(c$quadrant, q), TRUE))
   quads <- list(grow = qn("grow"), upgrade = qn("upgrade"), secure = qn("secure"), watch = qn("watch"))
+  cmed <- country_median_sector(cells)
   n_scored <- sum(vapply(cells, function(c) !is.null(c$es) && !is.null(c$eo), TRUE))
   ap <- if (!is.null(ctx$psi_partner)) ctx$psi_partner[ctx$psi_partner$partner_iso == iso3, , drop = FALSE] else NULL
   as_partner <- if (!is.null(ap) && nrow(ap)) {
@@ -217,6 +219,8 @@ country_fact_sheet <- function(iso3, ctx) {
   summary <- list(
     n_cells = country_fv(length(cells), "count"), n_scored = country_fv(n_scored, "count"), n_placed = country_fv(length(placed), "count"),
     quadrants = lapply(quads, function(v) country_fv(v, "count")),
+    # the dashed lines of the scatter: the country's median sector on each axis (A9.2)
+    country_median = list(es = country_fv(cmed$es, "pct"), eo = country_fv(cmed$eo, "pct")),
     n_insecure = country_fv(quads$upgrade + quads$secure, "count"), n_high_eo = country_fv(quads$grow + quads$upgrade, "count"),
     es_order = country_arr(oo$es_order), eo_order = country_arr(oo$eo_order), si_order = country_arr(si$si_order),
     top_si = si$top, psi_1 = psi_1, as_partner = as_partner

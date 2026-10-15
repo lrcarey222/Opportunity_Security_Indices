@@ -55,6 +55,13 @@ test_that("summary counts, orders and Strategic Index parts agree with the cells
     q <- vapply(placed, function(c) c$quadrant, "")
     for (k in c("grow", "upgrade", "secure", "watch")) expect_equal(s$summary$quadrants[[k]]$v, sum(q == k))
     expect_equal(s$summary$n_insecure$v, sum(q %in% c("upgrade", "secure")))
+    # the corners split at the country's median sector: the median of the plotted positions (2026-10-15)
+    for (pl in c("es", "eo")) {
+      pos <- vapply(placed, function(c) c[[pl]]$pos, 1)
+      if (!length(pos)) { expect_null(s$summary$country_median[[pl]]$v); next }
+      expect_equal(s$summary$country_median[[pl]]$v, stats::median(pos))
+      expect_equal(sum(pos >= stats::median(pos)), sum(q %in% (if (pl == "es") c("grow", "watch") else c("grow", "upgrade"))))
+    }
     pct <- vapply(s$summary$es_order, function(k) Filter(function(c) c$key == k, s$cells)[[1]]$es$pct$v, 1)
     expect_false(is.unsorted(pct))
     for (c in s$cells) if (isTRUE(c$si$in_sample)) expect_equal(sum(unlist(lapply(c$si$parts, function(p) p$v))), c$si$v, tolerance = 1e-9)
@@ -71,6 +78,7 @@ break_sheet <- function(s, op) {
   switch(op,
     quadrant_flip = { q <- s$cells[[placed]]$quadrant; s$cells[[placed]]$quadrant <- if (q == "grow") "watch" else "grow" },
     pos_wrong_side = { p <- s$cells[[placed]]$es; s$cells[[placed]]$es$pos <- if (p$v >= p$med$v) 10 else 90 },
+    country_median_off = { s$summary$country_median$es$v <- s$summary$country_median$es$v + 5 },
     si_parts_off = { s$cells[[ins]]$si$parts$eo$v <- s$cells[[ins]]$si$parts$eo$v + 0.1 },
     partner_rank_dup = { s$partners$rows[[ranked[2]]]$rank <- s$partners$rows[[ranked[1]]]$rank },
     reason_unknown = { s$partners$rows[[1]]$reason <- "xx" },
@@ -119,6 +127,20 @@ test_that("the manifest of the synthetic export passes its check; a broken one d
   expect_equal(country_check_manifest(back), character())
   back$countries[[1]]$file <- "facts-USA.json"
   expect_true(length(country_check_manifest(back)) > 0)
+  # a memo kept under the earlier quadrant rule (2026-10-15) carries its note and words, and is not stale
+  usa <- which(vapply(m$countries, function(c) c$iso3 == "USA", TRUE))
+  memo <- list(json = "memo-USA.0123abcd.json", pdf = NULL, docx = NULL, md = NULL, words = 900L, generated_at = "2026-10-14T18:00:00Z",
+               verified_at = "2026-10-14T18:00:00Z", facts_sha256 = "x", stale = FALSE, rule_note = COUNTRY_MEMO_RULE_NOTE,
+               rule_note_d = country_memo_rule_note_words(cfg, COUNTRY_MEMO_RULE_NOTE, "United States", "2026-10-14T18:00:00Z"))
+  m$countries[[usa]]$memo <- memo
+  ok <- jsonlite::fromJSON(as.character(country_json(m)), simplifyVector = FALSE)
+  expect_equal(country_check_manifest(ok), character())
+  bad <- ok
+  bad$countries[[usa]]$memo$rule_note_d <- NULL
+  expect_match(paste(country_check_manifest(bad), collapse = " | "), "rule_note_d")
+  bad <- ok
+  bad$countries[[usa]]$memo$stale <- TRUE
+  expect_match(paste(country_check_manifest(bad), collapse = " | "), "stale")
 })
 
 test_that("the placeholder memo carries the verbatim label and resolves its tokens", {

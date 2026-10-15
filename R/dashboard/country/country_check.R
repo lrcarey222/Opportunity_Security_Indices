@@ -1,6 +1,6 @@
 # The R mirror of the TypeScript runtime checks of dashboard/src/country/contract.ts
 # (checkFactSheet(), checkCountryManifest()): shapes, Fv values, enums, cell keys, quadrants re-derived
-# from the values and medians, SI parts summing to the SI, summary counts and order lists, partner
+# from the plotted positions and the country's median sector (A9.2), SI parts summing to the SI, summary counts and order lists, partner
 # ranks. Returns problem strings (empty when the sheet is valid). Pure. Works on the sheet as built in R
 # or as read back with jsonlite::fromJSON(simplifyVector = FALSE).
 
@@ -42,6 +42,7 @@ country_check_sheet <- function(s) {
   if (any(!keys %in% all_keys)) add("cells: unknown keys ", paste(setdiff(keys, all_keys), collapse = ", "))
   if (anyDuplicated(keys)) add("cells: duplicate keys")
   by <- stats::setNames(s$cells, keys)
+  cmed <- country_median_sector(s$cells)
   for (c in s$cells) {
     at <- paste0("cells.", c$key)
     for (pl in c("es", "eo")) {
@@ -58,8 +59,11 @@ country_check_sheet <- function(s) {
       if (is.null(c$es) || is.null(c$eo)) add(at, ": placed without both scores")
       else {
         if (!isTRUE(c$es$rankable) || !isTRUE(c$eo$rankable)) add(at, ": placed but a score is not rankable")
-        q <- country_quadrant(c$es$v, c$eo$v, c$es$med$v, c$eo$med$v)
-        if (!identical(c$quadrant, q)) add(at, ".quadrant: '", c$quadrant %||% "null", "' but the values give '", q, "'")
+        if (is.null(c$es$pos) || is.null(c$eo$pos)) add(at, ": placed without a position on both axes")
+        else {
+          q <- country_quadrant(c$es$pos, c$eo$pos, cmed$es, cmed$eo)
+          if (!identical(c$quadrant, q)) add(at, ".quadrant: '", c$quadrant %||% "null", "' but the positions and the country's median sector give '", q, "'")
+        }
         for (pl in c("es", "eo")) {
           x <- c[[pl]]
           if (!is.null(x$pos) && ((x$pos >= 50) != (x$v >= x$med$v))) add(at, ".", pl, ".pos: on the wrong side of 50")
@@ -94,6 +98,13 @@ country_check_sheet <- function(s) {
   sm <- s$summary
   placed <- Filter(function(c) isTRUE(c$placed), s$cells)
   if (!identical(sm$n_placed$v, as.numeric(length(placed))) && !identical(sm$n_placed$v, length(placed))) add("summary.n_placed: ", sm$n_placed$v, " but the cells give ", length(placed))
+  for (pl in c("es", "eo")) {
+    x <- sm$country_median[[pl]]
+    if (!country_is_fv(x)) add("summary.country_median.", pl, ": not an Fv {v, d}")
+    else if (!identical(is.null(x$v), !is.finite(cmed[[pl]])) || (!is.null(x$v) && abs(x$v - cmed[[pl]]) > 1e-9)) {
+      add("summary.country_median.", pl, ": ", x$v %||% "null", " but the placed cells give ", cmed[[pl]])
+    }
+  }
   for (q in COUNTRY_QUADRANT_IDS) {
     n <- sum(vapply(placed, function(c) identical(c$quadrant, q), TRUE))
     if ((sm$quadrants[[q]]$v %||% -1) != n) add("summary.quadrants.", q, ": ", sm$quadrants[[q]]$v, " but the cells give ", n)
@@ -179,6 +190,12 @@ country_check_manifest <- function(m) {
     if (identical(c$status, "no_data") && !is.null(c$file)) add(c$iso3, ": no data but a file")
     if (!identical(c$status, "no_data") && !grepl("^facts-[A-Z0-9]{3}\\.[0-9a-f]{8}\\.json$", c$file %||% "")) add(c$iso3, ": bad file name")
     if (!is.null(c$memo) && !identical(c$tier, "core")) add(c$iso3, ": memo for a non-core economy")
+    rn <- c$memo$rule_note %||% NULL
+    if (!is.null(rn)) {
+      if (!identical(rn, "quadrant_rule_2026_10_15")) add(c$iso3, ": memo.rule_note '", rn, "' is not a known rule note")
+      if (!is.character(c$memo$rule_note_d) || !nzchar(c$memo$rule_note_d %||% "")) add(c$iso3, ": memo.rule_note without its words (rule_note_d)")
+      if (isTRUE(c$memo$stale)) add(c$iso3, ": memo.rule_note on a stale memo")
+    }
   }
   p
 }

@@ -100,16 +100,18 @@ export default function CountryAboutView() {
 
       <H id="corners">Reading the four corners</H>
       <p className={p}>
-        For each sector (one technology at one supply-chain stage), the country is compared with every economy whose two scores can both be compared in that sector. The lines of the chart sit
-        at the <Term id="median" /> economy, the same rule as the Security vs opportunity view of Strategic Insights, so the two always agree. A sector is in the{' '}
-        <Term id="grow">Grow</Term> corner when both scores are at or above the middle economy, <Term id="upgrade">Upgrade</Term> when opportunity is high but energy security low,{' '}
-        <Term id="secure">Secure</Term> when both are low, and <Term id="watch">Watch</Term> when opportunity is low but energy security high. The RMI (2025) framework associates the corners
-        with export promotion, leapfrogging, friendshoring and alternative value creation; Country Insights uses those as descriptions, not instructions.
+        For each sector (one technology at one supply-chain stage), the country is compared with every economy whose two scores can both be compared in that sector. The chart plots each
+        sector at its <Term id="percentile">share of economies beaten</Term>: Economic Opportunity across, Energy Security up. So the axes compare the country with other economies.
       </p>
       <p className={p}>
-        The chart plots each sector at its <Term id="percentile">share of economies beaten</Term>, so one pair of lines at 50 serves every sector. Large economies are often strong across the board,
-        so many of their sectors fall in Grow: the comparison is with other economies, not with the country&apos;s own other sectors. The paper has no Energy Security score for geothermal upstream,
-        geothermal midstream and electric-grid downstream, so at most 30 of the 33 sectors can be placed.
+        The corners then sort the country&apos;s own sectors. The dashed lines sit at the country&apos;s <Term id="quadrant">median sector</Term> on each axis: the middle of its own sectors&apos;
+        positions. A sector is in the <Term id="grow">Grow</Term> corner when both positions are at or above that median (a sector exactly at the median counts as high),{' '}
+        <Term id="upgrade">Upgrade</Term> when opportunity is high but energy security low, <Term id="secure">Secure</Term> when both are low, and <Term id="watch">Watch</Term> when
+        opportunity is low but energy security high. So the corners show where a country is relatively strong or weak, and every country has sectors in more than one corner; the tooltips
+        and the table still say whether each score is above or below the sector&apos;s <Term id="median" /> economy. The Security vs opportunity view of Strategic Insights, which shows every
+        economy in one sector, splits at the sector&apos;s median economy instead. The RMI (2025) framework associates the corners with export promotion, leapfrogging, friendshoring and
+        alternative value creation; Country Insights uses those as descriptions, not instructions. The paper has no Energy Security score for geothermal upstream, geothermal midstream and
+        electric-grid downstream, so at most 30 of the 33 sectors can be placed.
       </p>
 
       <H id="priorities">How priorities are compared with policy</H>
@@ -157,7 +159,8 @@ export default function CountryAboutView() {
         For the {nCore} core coalition members, a short memo summarises the page. An AI writer drafts it from the country&apos;s fact sheet only, and every number, rank, corner and partner name in
         it is a reference to a fact-sheet field that the renderer fills in, so no figure is typed by hand. A machine check then rejects stray numbers, unsupported causal words and missing
         caveats, and a separate AI checker, which did not write it, signs off every claim and every sentence against the fact sheet. Each memo is labelled verbatim: &ldquo;
-        {manifest.label}&rdquo; The screen, the PDF and the Word file are rendered from the same document.
+        {manifest.label}&rdquo; The screen, the PDF and the Word file are rendered from the same document. The memos were written on 14 October 2026, when the corners split each
+        sector at its median economy; a memo whose corner statements may differ from today&apos;s chart says so at its top, and its other figures match the current data.
       </p>
       <MemoList />
 

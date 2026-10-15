@@ -1,7 +1,8 @@
 # Deterministic synthetic inputs for Country Insights (tests and the dashboard fixture; spec_country.md
 # A7.1 --synthetic). Ten economies chosen to exercise every path: DEU (core EU member with Upgrade
-# sectors and the EU's Climate Action Tracker rating), USA (core, only Grow and Watch sectors: the
-# top_si_fallback path), FRA, JPN, KOR (core), BRA (coalition partner), CHN, VNM (outside), NGA
+# sectors and the EU's Climate Action Tracker rating), USA (core, no Upgrade sector: the top_si_fallback
+# path; since the country-median quadrant rule of 2026-10-15 its two pillars share their random draws, so
+# its sectors rank alike on both), FRA, JPN, KOR (core), BRA (coalition partner), CHN, VNM (outside), NGA
 # (outside, no Strategic Index: no policy records), PRI (a territory: not sovereign, nothing placed,
 # alignment inherited from the United States). Pure: cfg and dict are passed in.
 
@@ -35,7 +36,7 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
   # ---- category scores -> pillar values (sum of weight x score is the pillar, as in the pipeline)
   es_cats <- c("Energy Imports", "Reserves", "Trade")
   eo_cats <- c("Investment", "Production", "Trade")
-  bias_es <- c(USA = 0.35, DEU = -0.25, FRA = -0.1, JPN = 0.1, KOR = -0.05, BRA = 0.05, CHN = 0.1, VNM = -0.1, NGA = 0, PRI = 0)
+  bias_es <- c(USA = 0.35, DEU = -0.1, FRA = -0.1, JPN = 0.1, KOR = -0.05, BRA = 0.05, CHN = 0.1, VNM = -0.1, NGA = 0, PRI = 0)
   bias_eo <- c(USA = 0.15, DEU = 0.25, FRA = 0.1, JPN = 0.15, KOR = 0.1, BRA = -0.05, CHN = 0.3, VNM = -0.1, NGA = -0.2, PRI = -0.1)
   clip <- function(x) pmin(0.98, pmax(0.02, x))
   cat_rows <- list(es = list(), eo = list())
@@ -43,12 +44,15 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
   pillar <- list(es = list(), eo = list())
   for (iso in isos) for (i in seq_len(nrow(cells))) {
     k <- cells$key[i]
+    u_es <- NULL
     for (pl in c("es", "eo")) {
       if (pl == "es" && k %in% COUNTRY_NO_ES_CELLS) next
       cats <- if (pl == "es") es_cats else eo_cats
       w <- c(0.4, 0.35, 0.25)
       base <- if (pl == "es") bias_es[[iso]] else bias_eo[[iso]]
-      sc <- clip(0.5 + base + stats::runif(3, -0.3, 0.3))
+      u <- stats::runif(3, -0.3, 0.3)
+      if (pl == "es") u_es <- u else if (iso == "USA" && !is.null(u_es)) u <- u_es
+      sc <- clip(0.5 + base + u)
       # the Trade category of ES carries a world-market variable (constant across economies)
       imp <- iso %in% c("NGA", "VNM") & c(FALSE, TRUE, FALSE)
       rule <- ifelse(imp, "global_average; zero", NA_character_)

@@ -45,6 +45,8 @@ export function quadrantLine(q: Record<Quadrant, number> | null | undefined, wor
 
 // ---- the scatter ---------------------------------------------------------------------------------
 
+/** One placed sector on the quadrant scatter: x = Economic Opportunity, y = Energy Security (the plotted
+ *  positions eo.pos and es.pos, 2026-10-15). */
 export interface ScatterPoint {
   key: string;
   label: string;
@@ -66,7 +68,7 @@ export function scatterPoints(sheet: FactSheet): ScatterPoint[] {
     if (!c.placed || !c.es || !c.eo || c.es.pos === null || c.eo.pos === null || !c.quadrant) continue;
     const st = c.stage === 'Upstream' ? 'Up' : c.stage === 'Midstream' ? 'Mid' : 'Down';
     out.push({
-      key: c.key, label: c.label, short: `${c.tech} · ${st}`, tech: c.tech, stage: c.stage, x: c.es.pos, y: c.eo.pos,
+      key: c.key, label: c.label, short: `${c.tech} · ${st}`, tech: c.tech, stage: c.stage, x: c.eo.pos, y: c.es.pos,
       quadrant: c.quadrant, top5: !!c.si?.top5, priority: prio.has(c.key), cell: c,
     });
   }

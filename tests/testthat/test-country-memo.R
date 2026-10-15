@@ -271,3 +271,55 @@ test_that("a cited figure with the eia_production note also credits the U.S. Ene
   cl <- Filter(function(c) identical(c$path, raw_tok), r2$claims)[[1]]
   expect_false(identical(cl$source, "eia_intl"))
 })
+
+# ---- Memos kept under an earlier quadrant rule (the user's decision of 2026-10-15) ---------------------------
+
+test_that("a memo written under the earlier quadrant rule stays published with a note when only quadrant claims changed", {
+  rt <- function(x) jsonlite::fromJSON(as.character(country_json(x)), simplifyVector = FALSE)
+  ctx_old <- ctx
+  ctx_old$quadrant_rule <- "sector_median"
+  old <- rt(country_fact_sheet("USA", ctx_old))
+  src <- good_src()
+  # the memo's claims.json as written on the earlier-rule sheet (token ids dropped, JSON round trip)
+  stored <- rt(list(claims = lapply(country_memo_reclaim(src, old, cfg_short), function(c) { c$token <- NULL; c })))$claims
+  moved <- country_quadrants_moved(sheet, old)
+  expect_true(length(moved) > 0)
+  st <- country_memo_rule_status(stored, country_memo_reclaim(src, sheet, cfg_short), country_memo_reclaim(src, old, cfg_short), moved)
+  expect_equal(st$status, "rule_note")
+  expect_length(st$other, 0)
+  expect_true(length(st$changed) > 0)
+  expect_true(all(grepl("quadrant|n_insecure|n_high_eo", st$changed)), info = paste(st$changed, collapse = ", "))
+  # the same memo on the sheet it was written against: nothing changed, no note
+  expect_equal(country_memo_rule_status(stored, country_memo_reclaim(src, old, cfg_short), country_memo_reclaim(src, old, cfg_short))$status, "current")
+  # the note's words
+  w <- country_memo_rule_note_words(cfg, COUNTRY_MEMO_RULE_NOTE, "United States", "2026-10-14T18:00:00Z")
+  expect_match(w, "^Written on 14 October 2026, when the Grow, Upgrade, Secure and Watch corners split each sector at the median economy")
+  expect_match(w, "the United States' own median sector", fixed = TRUE)
+})
+
+test_that("a memo with a changed claim that the quadrant rule does not explain still goes stale", {
+  rt <- function(x) jsonlite::fromJSON(as.character(country_json(x)), simplifyVector = FALSE)
+  ctx_old <- ctx
+  ctx_old$quadrant_rule <- "sector_median"
+  old <- rt(country_fact_sheet("USA", ctx_old))
+  src <- good_src()
+  stored <- rt(list(claims = lapply(country_memo_reclaim(src, old, cfg_short), function(c) { c$token <- NULL; c })))$claims
+  # new data: an Energy Security percentile the memo cites moved (in both the new sheet and its earlier-rule copy)
+  bump <- function(s) {
+    i <- which(vapply(s$cells, function(c) c$key == k1, TRUE))
+    s$cells[[i]]$es$pct <- list(v = 1, d = "1%")
+    s
+  }
+  st <- country_memo_rule_status(stored, country_memo_reclaim(src, bump(sheet), cfg_short), country_memo_reclaim(src, bump(old), cfg_short),
+                                 country_quadrants_moved(sheet, old))
+  expect_equal(st$status, "stale")
+  expect_true(paste0("cells.", k1, ".es.pct") %in% st$other)
+  # names on a re-resolved display string (a one-element agreement list) are not a change
+  named <- list(list(path = "partners.FRA.ties.agreements", filter = "list", element = "NATO", v = NULL, d = c(NATO = "NATO"), sentence_id = "s4.7"))
+  plain <- list(list(path = "partners.FRA.ties.agreements", filter = "list", element = "NATO", v = NULL, d = "NATO", sentence_id = "s4.7"))
+  expect_length(country_memo_claim_diff(plain, named), 0)
+  expect_equal(country_memo_claim_diff(plain, list(utils::modifyList(plain[[1]], list(d = "NATO and the EU")))), "partners.FRA.ties.agreements")
+  # a token that no longer resolves changes the structure: stale
+  st2 <- country_memo_rule_status(stored[-1], country_memo_reclaim(src, sheet, cfg_short), country_memo_reclaim(src, old, cfg_short))
+  expect_equal(st2$status, "stale")
+})

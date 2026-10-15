@@ -8,7 +8,7 @@ const SPEC_IDS = [
   'median', 'colour_scale', 'sector', 'stage', 'coalition', 'alignment', 'network', 'lambda', 'eu_node', 'allied_pick', 'endowment_screen', 'best_five',
   'hhi', 'effective_n', 'rca', 'feasibility', 'matrix', 'mirror', 'basket', 'sub_component', 'net_balance', 'self_sufficiency', 'cmfdi', 'chinese_parent',
   'investment_ties', 'trl', 'unattributed', 'paper_baseline', 'scenario', 'dials', 'hawkishness', 'bullishness', 'populism', 'greenness', 'grow',
-  'upgrade', 'secure', 'watch', 'priority_no_policy', 'ties_today', 'memo',
+  'upgrade', 'secure', 'watch', 'quadrant', 'priority_no_policy', 'ties_today', 'memo',
 ];
 
 describe('glossary content (C3.2)', () => {

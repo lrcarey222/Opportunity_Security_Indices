@@ -89,12 +89,14 @@ export const NO_ES_CELLS: readonly string[] = ['geothermal-upstream', 'geotherma
 // ---- Enums ----------------------------------------------------------------------------------------
 
 export type Quadrant = 'grow' | 'upgrade' | 'secure' | 'watch';
-/** Order and words of the four corners (A4.2 S2); the user's names and RMI (2025) postures. */
+/** Order and words of the four corners (A4.2 S2); the user's names and RMI (2025) postures. Since
+ *  2026-10-15 Economic Opportunity runs across and Energy Security up, and high / low are against the
+ *  country's own median sector (A9.2). */
 export const QUADRANTS: readonly { id: Quadrant; label: string; corner: 'top right' | 'top left' | 'bottom left' | 'bottom right'; meaning: string; posture: string }[] = [
   { id: 'grow', label: 'Grow', corner: 'top right', meaning: 'High opportunity, high energy security: build on strength', posture: 'export promotion' },
-  { id: 'upgrade', label: 'Upgrade', corner: 'top left', meaning: 'High opportunity, low energy security: build capability', posture: 'leapfrog' },
+  { id: 'upgrade', label: 'Upgrade', corner: 'bottom right', meaning: 'High opportunity, low energy security: build capability', posture: 'leapfrog' },
   { id: 'secure', label: 'Secure', corner: 'bottom left', meaning: 'Low opportunity, low energy security: secure supply through partners', posture: 'friendshore' },
-  { id: 'watch', label: 'Watch', corner: 'bottom right', meaning: 'Low opportunity, high energy security: look for value elsewhere', posture: 'alternative value creation' },
+  { id: 'watch', label: 'Watch', corner: 'top left', meaning: 'Low opportunity, high energy security: look for value elsewhere', posture: 'alternative value creation' },
 ];
 export const QUADRANT_IDS: readonly Quadrant[] = QUADRANTS.map((q) => q.id);
 
@@ -170,7 +172,16 @@ export interface MemoEntry {
   facts_sha256: string;
   /** a later fact sheet changed a claim: the UI hides the memo (B6.5) */
   stale: boolean;
+  /** kept under an earlier rule (scripts/88): only claims that rule decides changed, so the memo stays
+   *  published with a notice. 'quadrant_rule_2026_10_15': written when the corners split each sector at
+   *  its median economy (MEMO_RULE_NOTES). */
+  rule_note?: string | null;
+  /** the notice's words for this memo */
+  rule_note_d?: string | null;
 }
+
+/** The rule notes a kept memo may carry (scripts/88; the R COUNTRY_MEMO_RULE_NOTE). */
+export const MEMO_RULE_NOTES = ['quadrant_rule_2026_10_15'] as const;
 
 export interface CountryEntry {
   iso3: string;
@@ -280,6 +291,10 @@ export interface Summary {
   n_scored: Fv;
   n_placed: Fv;
   quadrants: Record<Quadrant, Fv>;
+  /** the country's median sector on each axis (2026-10-15): the median of the plotted positions (es.pos,
+   *  eo.pos) of its placed sectors; the scatter's dashed lines and the corners split here (high = at or
+   *  above). v null when nothing is placed. */
+  country_median: { es: Fv; eo: Fv };
   /** upgrade + secure (the two low-energy-security corners) */
   n_insecure: Fv;
   /** grow + upgrade */
@@ -833,6 +848,11 @@ export function checkCountryManifest(x: unknown): string[] {
           if (!isStr(m.json) || !/^memo-[A-Z0-9]{3}\.[0-9a-f]{8}\.json$/.test(m.json)) p.add(`${at}.memo.json: not a memo file name`);
           for (const k of ['pdf', 'docx', 'md']) p.str(m[k], `${at}.memo.${k}`, true);
           p.bool(m.stale, `${at}.memo.stale`);
+          if (m.rule_note !== null && m.rule_note !== undefined) {
+            if (!(MEMO_RULE_NOTES as readonly unknown[]).includes(m.rule_note)) p.add(`${at}.memo.rule_note: '${String(m.rule_note)}' is not a known rule note`);
+            if (!isStr(m.rule_note_d) || !m.rule_note_d) p.add(`${at}.memo.rule_note_d: a rule note needs its words`);
+            if (m.stale === true) p.add(`${at}.memo.rule_note: set on a stale memo`);
+          }
           if (c.tier !== 'core') p.add(`${at}.memo: memos are for core members only`);
         }
       }
@@ -847,11 +867,29 @@ export function checkCountryManifest(x: unknown): string[] {
   return p.list;
 }
 
-/** Recompute the quadrant of a placed cell from its values and medians (Space view regionOf()). */
+/** The corner from a position and the split on each axis: high = at or above the split (ties go high).
+ *  Country Insights passes the plotted positions (es.pos, eo.pos) and the country's median sector
+ *  (countryMedianOf()); the earlier rule passed the scores and the sector's median economy. */
 export function quadrantOf(es: number, esMed: number, eo: number, eoMed: number): Quadrant {
   const highEo = eo >= eoMed;
   const highEs = es >= esMed;
   return highEo ? (highEs ? 'grow' : 'upgrade') : highEs ? 'watch' : 'secure';
+}
+
+/** The median of a list (the mean of the two middle values when even); null when empty. */
+function medianOf(xs: number[]): number | null {
+  if (!xs.length) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+/** The country's median sector (A9.2, 2026-10-15): on each axis, the median of the plotted positions of
+ *  its placed sectors (the R country_median_sector()). */
+export function countryMedianOf(cells: readonly CellFacts[]): { es: number | null; eo: number | null } {
+  const placed = cells.filter((c) => c.placed);
+  const pos = (pl: 'es' | 'eo') => placed.map((c) => c[pl]?.pos).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  return { es: medianOf(pos('es')), eo: medianOf(pos('eo')) };
 }
 
 function checkPillar(p: Problems, x: unknown, path: string): x is PillarFacts {
@@ -975,6 +1013,8 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
   const byKey = new Map<string, Obj>();
   if (!Array.isArray(cells)) p.add('cells: not an array');
   else {
+    // the country's median sector, re-derived from the plotted positions (A9.2, 2026-10-15)
+    const cmed = countryMedianOf(cells.filter(isObj) as unknown as CellFacts[]);
     cells.forEach((c, i) => {
       const at = `cells[${i}]`;
       if (!isObj(c)) return p.add(`${at}: not an object`);
@@ -999,9 +1039,10 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
           const eo = c.eo as PillarFacts;
           if (!es.rankable || !eo.rankable) p.add(`${at}: placed but a score is not rankable`);
           if (es.v === null || eo.v === null || es.med.v === null || eo.med.v === null) p.add(`${at}: placed without values or medians`);
+          else if (es.pos === null || eo.pos === null || cmed.es === null || cmed.eo === null) p.add(`${at}: placed without a position on both axes`);
           else {
-            const q = quadrantOf(es.v, es.med.v, eo.v, eo.med.v);
-            if (c.quadrant !== q) p.add(`${at}.quadrant: '${String(c.quadrant)}' but the values give '${q}'`);
+            const q = quadrantOf(es.pos, cmed.es, eo.pos, cmed.eo);
+            if (c.quadrant !== q) p.add(`${at}.quadrant: '${String(c.quadrant)}' but the positions and the country's median sector give '${q}'`);
             for (const [pl, nm] of [[es, 'es'], [eo, 'eo']] as const) {
               if (pl.pos !== null && pl.v !== null && pl.med.v !== null && (pl.pos >= 50) !== (pl.v >= pl.med.v)) p.add(`${at}.${nm}.pos: on the wrong side of 50`);
               if (pl.side !== null && pl.v !== null && pl.med.v !== null && (pl.side === 'above') !== (pl.v >= pl.med.v)) p.add(`${at}.${nm}.side: wrong`);
@@ -1116,6 +1157,17 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
     expect(sm.n_cells, list.length, 'summary.n_cells');
     expect(sm.n_scored, scored.length, 'summary.n_scored');
     expect(sm.n_placed, placed.length, 'summary.n_placed');
+    const cm = countryMedianOf(list);
+    if (!isObj(sm.country_median)) p.add('summary.country_median: not an object');
+    else {
+      for (const pl of ['es', 'eo'] as const) {
+        const f = (sm.country_median as Obj)[pl];
+        if (!isFv(f)) p.add(`summary.country_median.${pl}: not an Fv`);
+        else if ((f.v === null) !== (cm[pl] === null) || (f.v !== null && cm[pl] !== null && Math.abs(f.v - (cm[pl] as number)) > 1e-9)) {
+          p.add(`summary.country_median.${pl}: ${String(f.v)} but the placed cells give ${String(cm[pl])}`);
+        }
+      }
+    }
     const qc: Record<Quadrant, number> = { grow: 0, upgrade: 0, secure: 0, watch: 0 };
     for (const c of placed) if (c.quadrant) qc[c.quadrant]++;
     if (!isObj(sm.quadrants)) p.add('summary.quadrants: not an object');

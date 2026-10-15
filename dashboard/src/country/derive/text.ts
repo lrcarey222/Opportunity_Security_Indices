@@ -65,7 +65,7 @@ export function ledeOf(sheet: FactSheet): string {
   const upgrade = s.quadrants.upgrade;
   const nUp = upgrade.v ?? 0;
   const howMany = nUp === 0 ? 'none' : dOf(upgrade);
-  let mid = `On the paper's baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security (the Upgrade corner)`;
+  let mid = `On the paper's baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the Upgrade corner, split at its own median sector)`;
   if (m.has_si && s.top_si) {
     const top = cellOf(sheet, s.top_si.cell);
     const nxt = cellOf(sheet, s.top_si.next);
@@ -180,7 +180,7 @@ export function whyIntro(sheet: FactSheet): string {
   const list = joinAnd(cells.map((c) => c.label_prose));
   switch (sheet.priority_rule) {
     case 'upgrade':
-      return `${cells.length === 1 ? 'One' : cap(numberWord(cells.length))} of ${poss(name)} sectors ${cells.length === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security and ${cells.length === 1 ? 'ranks' : 'rank'} high on the Strategic Index: ${list}. For each, the bars show which kinds of data pull Energy Security down and push Economic Opportunity up, compared with the middle economy in the same sector, with the figures behind them.`;
+      return `${cells.length === 1 ? 'One' : cap(numberWord(cells.length))} of ${poss(name)} sectors ${cells.length === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security (against ${poss(name)} own median sector) and ${cells.length === 1 ? 'ranks' : 'rank'} high on the Strategic Index: ${list}. For each, the bars show which kinds of data set each score apart from the middle economy in the same sector, with the figures behind them.`;
     case 'top_si_fallback':
       return `None of ${poss(name)} placed sectors is in the Upgrade corner, so this section explains its top Strategic Index sectors: ${list}. The bars show which kinds of data set each score apart from the middle economy in the same sector, with the figures behind them.`;
     case 'top_eo':

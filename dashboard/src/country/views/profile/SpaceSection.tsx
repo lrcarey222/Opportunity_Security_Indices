@@ -53,21 +53,22 @@ export function SpaceSection() {
       sheet.meta.as_of,
     ),
   });
-  const summary = `${pts.length} of ${poss(name)} sectors placed by Energy Security and Economic Opportunity percentiles: ${QUADRANTS.map((q) => `${q.label} ${byQ[q.id].length}`).join(', ')}.`;
+  const cm = sheet.summary.country_median;
+  const summary = `${pts.length} of ${poss(name)} sectors placed by Economic Opportunity and Energy Security percentiles, split at ${poss(name)} median sector (${cm?.eo.d ?? '–'} and ${cm?.es.d ?? '–'}): ${QUADRANTS.map((q) => `${q.label} ${byQ[q.id].length}`).join(', ')}.`;
   return (
     <Section
       id="space"
       title="Security and opportunity, sector by sector"
       intro={
         <>
-          Each sector is one technology at one stage of its supply chain. <Term id="es" /> asks how well {name} can rely on what it needs there; <Term id="eo" /> asks how well placed it is to create value there. Both compare {name} with every other economy scored in the same sector, so the chart shows the share of those economies it beats.
+          Each sector is one technology at one stage of its supply chain. <Term id="es" /> asks how well {name} can rely on what it needs there; <Term id="eo" /> asks how well placed it is to create value there. Both compare {name} with every other economy scored in the same sector, so the chart shows the share of those economies it beats. The four corners then sort {poss(name)} own sectors: the dashed lines are its median sector, so the corners show where {name} is relatively strong or weak.
         </>
       }
     >
       <ChartCard
         headingLevel={3}
         title="Security and opportunity, sector by sector"
-        sub={`Each dot is one of ${poss(name)} sectors: a technology at one stage of its supply chain. Across: Energy Security, shown as the share of other economies ${name} beats in that sector. Up: Economic Opportunity, read the same way. The dashed lines mark the middle economy, so each corner is a different situation.`}
+        sub={`Each dot is one of ${poss(name)} sectors: a technology at one stage of its supply chain. Across: Economic Opportunity, shown as the share of other economies ${name} beats in that sector. Up: Energy Security, read the same way. The dashed lines mark ${poss(name)} median sector on each axis (${cm?.eo.d ?? '–'} across, ${cm?.es.d ?? '–'} up), so the corners sort its relatively strong and weak sectors; the axes still compare ${name} with the other economies.`}
         summary={summary}
         table={() => <TableView rows={sheet.cells} cols={cols} caption={`${cap(name)}: Energy Security and Economic Opportunity by sector`} rowKey={(c) => c.key} onRowClick={(c) => setCell(c.key)} selectedKey={cell} pageSize={33} />}
         csv={csv}
@@ -110,7 +111,7 @@ function QuadrantList({ byQ }: { byQ: ReturnType<typeof cellsByQuadrant> }) {
         The four corners
       </h3>
       <p className="mt-1 text-sm text-paper-mute">
-        Each corner is a different situation. The descriptions in brackets are the postures the RMI (2025) framework associates with each corner; they describe, they do not prescribe.
+        Each corner is a different situation. High and low are against {poss(proseName(sheet.meta.country))} own median sector (a sector at the median counts as high), so the corners show its relatively strong and weak sectors. The descriptions in brackets are the postures the RMI (2025) framework associates with each corner; they describe, they do not prescribe.
       </p>
       <div className="relative mt-3 overflow-x-auto">
         <table className="data-table">

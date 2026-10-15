@@ -1,6 +1,6 @@
-// Opportunity-security space derivations (pure; shiny mod_space.R region_of() and the paper's
-// orientation: x = Energy Security, y = Economic Opportunity, split at the medians of the economies
-// shown). The four corners carry the names Country Insights uses (the user's decision, 2026-10-11:
+// Opportunity-security space derivations (pure; shiny mod_space.R region_of(); since 2026-10-15 the
+// user's orientation: x = Economic Opportunity, y = Energy Security, split at the medians of the
+// economies shown). The four corners carry the names Country Insights uses (the user's decision, 2026-10-11:
 // Upgrade, Grow, Secure, Watch; RMI 2025's leapfrog, export promotion, friendshore and alternative
 // value creation) beside their plain description.
 

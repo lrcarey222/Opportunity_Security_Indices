@@ -92,10 +92,44 @@ country_pos <- function(pct, x, med) {
   if (x >= med) max(pct, 50) else min(pct, 49.5)
 }
 
+# The corner from two positions and the split on each axis: high = at or above the split (ties go high).
+# Grow = high EO, high ES; Upgrade = high EO, low ES; Secure = low EO, low ES; Watch = low EO, high ES.
 country_quadrant <- function(es, eo, es_med, eo_med) {
   high_eo <- eo >= eo_med
   high_es <- es >= es_med
   ifelse(high_eo, ifelse(high_es, "grow", "upgrade"), ifelse(high_es, "watch", "secure"))
+}
+
+# The quadrant rules (A9.2). "country_median" (the user's rule of 2026-10-15): a sector is high on an axis
+# when its plotted position (es.pos / eo.pos, the share of economies the country beats in that sector) is
+# at or above the country's median sector, the median of those positions over its placed sectors; ties
+# go high. "sector_median" (the rule until 2026-10-14, kept only to compare memos written under it):
+# high = the score at or above the sector's median economy (equivalently, position >= 50).
+COUNTRY_QUADRANT_RULES <- c("country_median", "sector_median")
+
+# The country's median sector: list(es, eo), the medians of the plotted positions of its placed sectors
+# (NA when none is placed).
+country_median_sector <- function(cells) {
+  placed <- Filter(function(c) isTRUE(c$placed), cells)
+  m <- function(pl) {
+    x <- vapply(placed, function(c) as.numeric(c[[pl]]$pos %||% NA_real_), 1)
+    x <- x[is.finite(x)]
+    if (length(x)) stats::median(x) else NA_real_
+  }
+  list(es = m("es"), eo = m("eo"))
+}
+
+# Set the corner of every cell (NULL when not placed) under a rule. Returns list(cells, median).
+country_set_quadrants <- function(cells, rule = "country_median") {
+  rule <- match.arg(rule, COUNTRY_QUADRANT_RULES)
+  med <- country_median_sector(cells)
+  for (i in seq_along(cells)) {
+    c <- cells[[i]]
+    q <- if (!isTRUE(c$placed)) NULL else if (rule == "sector_median") country_quadrant(c$es$v, c$eo$v, c$es$med$v, c$eo$med$v)
+         else country_quadrant(c$es$pos, c$eo$pos, med$es, med$eo)
+    cells[[i]]["quadrant"] <- list(q)
+  }
+  list(cells = cells, median = med)
 }
 
 # Thirds over n ranked items (A9.4): k = round(n / 3); high = rank <= k; low = rank > n - k.

@@ -1,5 +1,5 @@
 # Country Insights derivation rules (spec_country.md A9, A12): percentiles and medians, the plotted
-# position, quadrants (the Space view's regionOf rule), Strategic Index level terms and the priority
+# position, quadrants (against the country's own median sector, 2026-10-15), Strategic Index level terms and the priority
 # without policy, thirds and agreement classes (ties, no variation), drivers (top selection,
 # constant-in-cell measures never top, combined missing-rule words, labels), IEA policy record counts
 # with expanded cross-cutting rows, the Climate Action Tracker EU-bloc scope, partner reasons and
@@ -39,11 +39,30 @@ test_that("the plotted position sits on the side of the median its value is on",
   expect_equal(country_pos(20, 1, 2), 20)
 })
 
-test_that("quadrants follow the Space view (>= the median is high)", {
+test_that("quadrants: at or above the split is high (ties go high)", {
   expect_equal(country_quadrant(0.5, 0.5, 0.5, 0.5), "grow")
   expect_equal(country_quadrant(0.4, 0.6, 0.5, 0.5), "upgrade")
   expect_equal(country_quadrant(0.4, 0.4, 0.5, 0.5), "secure")
   expect_equal(country_quadrant(0.6, 0.4, 0.5, 0.5), "watch")
+})
+
+test_that("corners split at the country's own median sector: the median of the plotted positions (2026-10-15)", {
+  cell <- function(k, es_pos, eo_pos, es_v = 0.5, es_med = 0.4, placed = TRUE) list(
+    key = k, placed = placed, quadrant = NULL,
+    es = list(v = es_v, pos = es_pos, med = list(v = es_med)), eo = list(v = 0.5, pos = eo_pos, med = list(v = 0.4)))
+  cells <- list(cell("a", 90, 80), cell("b", 70, 20), cell("c", 30, 60), cell("d", 10, 40), cell("e", 50, 50),
+                cell("x", 100, 100, placed = FALSE))
+  m <- country_median_sector(cells)
+  expect_equal(m, list(es = 50, eo = 50))                              # over the placed sectors only
+  q <- country_set_quadrants(cells)
+  expect_equal(vapply(q$cells[1:5], function(c) c$quadrant, ""), c("grow", "watch", "upgrade", "secure", "grow"))  # e ties: high on both
+  expect_null(q$cells[[6]]$quadrant)
+  expect_true("quadrant" %in% names(q$cells[[6]]))                     # kept as null for the JSON
+  # an even number of sectors: the mean of the two middle positions
+  expect_equal(country_median_sector(cells[1:4]), list(es = 50, eo = 50))
+  # the earlier rule (sector_median): the score against the sector's median economy, whatever the positions
+  expect_equal(vapply(country_set_quadrants(cells, "sector_median")$cells[1:5], function(c) c$quadrant, ""), rep("grow", 5))
+  expect_equal(country_median_sector(list(cell("x", 1, 1, placed = FALSE))), list(es = NA_real_, eo = NA_real_))
 })
 
 test_that("Strategic Index parts are the level terms and sum to the index; the S-curved columns are not used", {

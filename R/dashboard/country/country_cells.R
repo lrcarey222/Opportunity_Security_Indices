@@ -1,7 +1,7 @@
 # Energy Security and Economic Opportunity of one economy, sector by sector (spec_country.md A9.1-A9.2):
 # percentiles among the other economies whose two scores are both rankable in the sector (S_c, the
-# Space view's set), medians over S_c, the plotted position, the quadrant, and the reasons a sector is
-# not placed. Pure.
+# Space view's set), medians over S_c, the plotted position, the quadrant (against the country's own
+# median sector, country_set_quadrants()), and the reasons a sector is not placed. Pure.
 #
 # Pillar tables (es, eo): one row per economy x cell with columns iso3, key (cell key), value,
 # imputed_share, rankable, reason (the pipeline's rank_exclusion, NA when rankable).
@@ -61,31 +61,35 @@ country_pillar <- function(row, st, which, iso3) {
 }
 
 # The cell list of one economy (without SI, policy, trade and drivers, which other helpers add).
-# es_c, eo_c: the economy's rows of the pillar tables (any order); stats: country_cell_stats().
-country_cells_base <- function(iso3, es_c, eo_c, stats, cells = country_cells_tbl()) {
-  lapply(seq_len(nrow(cells)), function(i) {
+# es_c, eo_c: the economy's rows of the pillar tables (any order); stats: country_cell_stats(); rule: one
+# of COUNTRY_QUADRANT_RULES.
+country_cells_base <- function(iso3, es_c, eo_c, stats, cells = country_cells_tbl(), rule = "country_median") {
+  out <- lapply(seq_len(nrow(cells)), function(i) {
     k <- cells$key[i]
     st <- stats[[k]]
     er <- es_c[es_c$key == k, , drop = FALSE]
     orr <- eo_c[eo_c$key == k, , drop = FALSE]
     es <- if (k %in% COUNTRY_NO_ES_CELLS) NULL else country_pillar(er, st, "es", iso3)
     eo <- country_pillar(orr, st, "eo", iso3)
-    placed <- !is.null(es) && !is.null(eo) && isTRUE(es$rankable) && isTRUE(eo$rankable) && iso3 %in% st$iso3
+    # placed: both scores comparable and a position on both axes (at least one other economy to beat)
+    placed <- !is.null(es) && !is.null(eo) && isTRUE(es$rankable) && isTRUE(eo$rankable) && iso3 %in% st$iso3 &&
+      !is.null(es$pos) && !is.null(eo$pos)
     reasons <- character()
     if (is.null(es)) {
       reasons <- c(reasons, if (k %in% COUNTRY_NO_ES_CELLS) "no Energy Security score in the paper for this sector" else "no Energy Security score")
     } else if (!isTRUE(es$rankable)) reasons <- c(reasons, es$reason_d %||% "Energy Security not comparable")
     if (is.null(eo)) reasons <- c(reasons, "no Economic Opportunity score")
     else if (!isTRUE(eo$rankable)) reasons <- c(reasons, eo$reason_d %||% "Economic Opportunity not comparable")
-    q <- if (placed) country_quadrant(es$v, eo$v, st$es_med, st$eo_med) else NULL
+    if (!placed && !length(reasons)) reasons <- "no other economy to compare with"
     if (!is.null(es)) es$reason_d <- NULL
     if (!is.null(eo)) eo$reason_d <- NULL
     list(
       key = k, tech = cells$tech[i], stage = cells$stage[i], label = cells$label[i], label_prose = cells$label_prose[i],
-      es = es, eo = eo, placed = placed, quadrant = q,
+      es = es, eo = eo, placed = placed, quadrant = NULL,
       quadrant_reason = if (placed) NULL else paste(unique(reasons), collapse = "; ")
     )
   })
+  country_set_quadrants(out, rule)$cells
 }
 
 # Fill es.order / eo.order and return the order lists (A8.2 summary.es_order, eo_order): placed cells

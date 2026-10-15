@@ -97,14 +97,14 @@ function DialGlyph() {
   );
 }
 
-/** A static glyph of the four corners of Country Insights' scatter (decorative): Upgrade and Grow on
- *  top (high opportunity), Secure and Watch below; lower energy security on the left. */
+/** A static glyph of the four corners of Country Insights' scatter (decorative): Watch and Grow on
+ *  top (higher energy security), Secure and Upgrade below; lower economic opportunity on the left. */
 function QuadrantGlyph() {
   const cells: [string, string][] = [
-    ['U', 'Upgrade'],
+    ['W', 'Watch'],
     ['G', 'Grow'],
     ['S', 'Secure'],
-    ['W', 'Watch'],
+    ['U', 'Upgrade'],
   ];
   return (
     <span className="inline-grid grid-cols-2 gap-[3px]" aria-hidden="true" data-testid="quadrant-glyph">

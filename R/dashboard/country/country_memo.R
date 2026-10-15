@@ -148,3 +148,90 @@ country_memo_words <- function(doc) {
          unlist(lapply(doc$sections, function(s) unlist(lapply(s$blocks, function(b) if (identical(b$type, "ul")) vapply(b$items, item_text, "") else item_text(b))))))
   sum(lengths(regmatches(t, gregexpr("[^[:space:]]+", t))))
 }
+
+# ---- Memos kept under an earlier quadrant rule (the user's decision of 2026-10-15) -----------------------
+# The quadrant rule changed on 2026-10-15 (a sector's corner is set against the country's own median
+# sector, COUNTRY_QUADRANT_RULES); the 31 memos were written on 2026-10-14 under the earlier rule (the
+# sector's median economy). scripts/88 keeps such a memo published, with a note, when its claims differ
+# from the new fact sheet only where the quadrant rule decides them: every claim of claims.json must
+# resolve to the same value on a copy of the new sheet built under the earlier rule ("sector_median").
+
+COUNTRY_MEMO_RULE_NOTE <- "quadrant_rule_2026_10_15"
+
+# Re-resolve a memo's claims against a sheet with the memo tooling (parse, resolve, sentences, claims).
+country_memo_reclaim <- function(src, sheet, cfg) {
+  parsed <- country_memo_parse(src, cfg)
+  res <- country_memo_resolve(parsed, sheet, cfg)
+  sents <- country_memo_sentences(res)
+  country_memo_claims(res, sents, sheet, cfg)
+}
+
+# One entry per token occurrence of a claims list (claims.json$claims or country_memo_claims()): the
+# element claims of a |list token collapse into one entry with its elements. list(path, filter, d, v,
+# elements).
+country_memo_claim_tokens <- function(claims) {
+  # plain values only: a re-resolved display string can carry names (a one-element agreement list)
+  txt <- function(x) if (is.null(x)) NA_character_ else unname(as.character(x))[1]
+  out <- list()
+  for (c in claims) {
+    f <- txt(c$filter)
+    el <- if (is.null(c$element)) NULL else unname(as.character(unlist(c$element)))
+    p <- txt(c$path)
+    sid <- txt(c$sentence_id)
+    d <- txt(c$d)
+    n <- length(out)
+    if (n && identical(f, "list") && identical(out[[n]]$filter, "list") && identical(out[[n]]$sentence_id, sid) &&
+        identical(out[[n]]$path, p) && identical(out[[n]]$d, d) && !is.null(el) && !el %in% out[[n]]$elements) {
+      out[[n]]$elements <- c(out[[n]]$elements, el)
+      next
+    }
+    out[[n + 1]] <- list(path = p, filter = f, sentence_id = sid, d = d,
+                         v = if (is.null(c$v)) NA_real_ else suppressWarnings(as.numeric(unname(c$v)))[1], elements = if (is.null(el)) character() else el)
+  }
+  out
+}
+
+# The paths of the tokens whose value differs between two claims lists (stored = the memo's claims.json,
+# fresh = re-resolved). A different number of tokens (a token that no longer resolves) gives "(structure)".
+country_memo_claim_diff <- function(stored, fresh) {
+  a <- country_memo_claim_tokens(stored)
+  b <- country_memo_claim_tokens(fresh)
+  if (length(a) != length(b)) return("(structure)")
+  same_v <- function(x, y) (is.na(x) && is.na(y)) || (!is.na(x) && !is.na(y) && abs(x - y) <= 1e-9 * max(1, abs(x)))
+  bad <- vapply(seq_along(a), function(i) {
+    !identical(a[[i]]$path, b[[i]]$path) || !identical(a[[i]]$filter, b[[i]]$filter) || !identical(a[[i]]$d, b[[i]]$d) ||
+      !same_v(a[[i]]$v, b[[i]]$v) || !identical(a[[i]]$elements, b[[i]]$elements)
+  }, TRUE)
+  unique(vapply(a[bad], function(x) x$path, ""))
+}
+
+# The sectors whose corner differs between two sheets (the new rule and the earlier one).
+country_quadrants_moved <- function(sheet_new, sheet_old) {
+  q <- function(s) stats::setNames(vapply(s$cells, function(c) c$quadrant %||% "", ""), vapply(s$cells, function(c) c$key, ""))
+  a <- q(sheet_new)
+  b <- q(sheet_old)
+  k <- intersect(names(a), names(b))
+  k[a[k] != b[k]]
+}
+
+# The status of a published memo whose fact sheet changed. stored: claims.json$claims; fresh_new /
+# fresh_old: the claims re-resolved on the new sheet and on its copy under the earlier rule; moved:
+# country_quadrants_moved(). Returns list(status = "current" | "rule_note" | "stale", changed = token
+# paths that differ on the new sheet, other = token paths that differ even under the earlier rule).
+# "stale": some claim changed for another reason than the rule; "rule_note": only quadrant-derived claims
+# changed, or the country's corners moved (memo prose about corners may no longer match the chart);
+# "current": nothing the memo states changed.
+country_memo_rule_status <- function(stored, fresh_new, fresh_old, moved = character()) {
+  other <- country_memo_claim_diff(stored, fresh_old)
+  changed <- country_memo_claim_diff(stored, fresh_new)
+  status <- if (length(other)) "stale" else if (length(changed) || length(moved)) "rule_note" else "current"
+  list(status = status, changed = changed, other = other)
+}
+
+# The note's words for a memo kept under the earlier rule (config memo_rule_notes; {country}, {written}).
+country_memo_rule_note_words <- function(cfg, note, country, generated_at) {
+  tpl <- cfg$memo_rule_notes[[note]] %||% stop("config memo_rule_notes has no '", note, "'")
+  day <- tryCatch(as.Date(substr(generated_at %||% "", 1, 10)), error = function(e) NA)
+  written <- if (is.na(day)) "an earlier date" else paste(as.integer(format(day, "%d")), month.name[as.integer(format(day, "%m"))], format(day, "%Y"))
+  country_fill_caveat(tpl, list(country = country, written = written))
+}

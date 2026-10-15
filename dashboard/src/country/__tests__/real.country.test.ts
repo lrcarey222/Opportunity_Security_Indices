@@ -1,10 +1,12 @@
 // Country Insights on the real export (spec_country.md A12 "Real", C6.4): every fact sheet and drivers file
-// passes the contract; quadrants re-derive from values and medians and agree with the Space view's rule
-// on the Strategic core chunk for spot-checked sectors; for five economies the Energy Security, Economic
+// passes the contract; quadrants re-derive from the plotted positions and the country's own median sector
+// (2026-10-15), and each sector's above / below the median economy agrees with the Space view's medians on
+// the Strategic core chunk for spot-checked sectors; for five economies the Energy Security, Economic
 // Opportunity and Strategic Index values equal the Strategic core chunk's; for the United States, Japan
 // and Germany the Strategic engine's baseline Partners from the country's viewpoint gives the same top-10
 // partners and Partnership Strength values as the sheet (so "Open in Strategic Insights" shows the same);
-// every memo entry has its files and a matching facts_sha256.
+// every memo entry has its files and a facts_sha256 matching its sheet, or a rule note when it was kept
+// under the earlier quadrant rule.
 //
 // Runs with COUNTRY_REAL=1 (the integrator's vitest project `country-real`); skipped without the data.
 
@@ -15,9 +17,9 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { loadWebBundle } from '../../engine/__tests__/parity/harness.ts';
 import { runPartner } from '../../engine/engine.ts';
 import type { Bundle, Table } from '../../engine/types.ts';
-import { median, regionOf } from '../../views/Space/derive.ts';
+import { median } from '../../views/Space/derive.ts';
 import {
-  checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc, quadrantOf, type CountryManifest, type FactSheet,
+  checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc, countryMedianOf, quadrantOf, type CountryManifest, type FactSheet,
 } from '../contract.ts';
 
 const dataDir = fileURLToPath(new URL('../../../public/data/', import.meta.url));
@@ -63,18 +65,19 @@ describe.skipIf(!wanted || !hasData)('Country Insights on the real export', () =
     }
   });
 
-  it('quadrants re-derive from values and medians', () => {
+  it("quadrants re-derive from the plotted positions and the country's median sector", () => {
     let n = 0;
     for (const s of sheets.values()) {
+      const cm = countryMedianOf(s.cells);
       for (const c of s.cells.filter((x) => x.placed)) {
-        expect(c.quadrant, `${s.iso3} ${c.key}`).toBe(quadrantOf(c.es!.v!, c.es!.med.v!, c.eo!.v!, c.eo!.med.v!));
+        expect(c.quadrant, `${s.iso3} ${c.key}`).toBe(quadrantOf(c.es!.pos!, cm.es!, c.eo!.pos!, cm.eo!));
         n++;
       }
     }
     expect(n).toBeGreaterThan(1000);
   });
 
-  it('corners agree with the Space view rule on the Strategic core chunk (three sectors, every economy)', () => {
+  it("each sector's side of the median economy agrees with the Space view's medians on the Strategic core chunk (three sectors, every economy)", () => {
     const core = (bundle.baseline as Record<string, Record<string, Table>>).core;
     const es = core.es;
     const eo = core.eo;
@@ -100,8 +103,9 @@ describe.skipIf(!wanted || !hasData)('Country Insights on the real export', () =
       for (const p of pts) {
         const c = sheets.get(p.iso)?.cells.find((x) => x.key === cell);
         if (!c || !c.placed) continue;
-        // regionOf() returns the Space view's region label ("Grow: high opportunity, ...")
-        expect(c.quadrant, `${p.iso} ${cell}`).toBe((regionOf(p.es, p.eo, esMed, eoMed) ?? '').split(':')[0].toLowerCase());
+        // the cross-country context the tooltips keep: above or below the sector's median economy
+        expect(c.es!.side, `${p.iso} ${cell}`).toBe(p.es >= esMed ? 'above' : 'below');
+        expect(c.eo!.side, `${p.iso} ${cell}`).toBe(p.eo >= eoMed ? 'above' : 'below');
         n++;
       }
       expect(n, cell).toBeGreaterThan(30);
@@ -163,7 +167,11 @@ describe.skipIf(!wanted || !hasData)('Country Insights on the real export', () =
       for (const f of [memo.json, memo.pdf, memo.docx, memo.md]) if (f) expect(existsSync(join(countryDir, f)), f).toBe(true);
       const doc = readJson<{ facts_sha256: string }>(memo.json);
       expect(checkMemoDoc(doc, e.iso3)).toEqual([]);
-      if (!memo.stale) expect(doc.facts_sha256, e.iso3).toBe(sheets.get(e.iso3)!.checks.facts_sha256);
+      if (!memo.stale) {
+        expect(doc.facts_sha256, e.iso3).toBe(memo.facts_sha256);
+        // kept under the earlier quadrant rule (scripts/88): written on an earlier sheet, with its notice
+        if (doc.facts_sha256 !== sheets.get(e.iso3)!.checks.facts_sha256) expect(memo.rule_note, e.iso3).toBe('quadrant_rule_2026_10_15');
+      }
     }
   });
 });

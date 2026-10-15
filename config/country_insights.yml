@@ -59,12 +59,20 @@ words:
   # under this economy alone
   nipo_scope: {eu: "EU-wide", multi: "shared with other jurisdictions", national: "national"}
 
-# The four corners (A4.2 S2): the user's names, with RMI (2025) postures as descriptions.
+# The four corners (A4.2 S2): the user's names, with RMI (2025) postures as descriptions. Since 2026-10-15
+# (the user's decision) "high" and "low" are against the country's own median sector on each axis (A9.2),
+# so the corners show the country's relatively strong and weak sectors; the percentile axes still compare
+# it with the other economies.
 quadrants:
   grow: {meaning: "High opportunity, high energy security: build on strength", posture: "export promotion"}
   upgrade: {meaning: "High opportunity, low energy security: build capability", posture: "leapfrog"}
   secure: {meaning: "Low opportunity, low energy security: secure supply through partners", posture: "friendshore"}
   watch: {meaning: "Low opportunity, high energy security: look for value elsewhere", posture: "alternative value creation"}
+
+# Memos kept under an earlier rule (scripts/88; the manifest's memo.rule_note and memo.rule_note_d, shown by
+# the memo page and the profile's memo panel). {country}, {written} (the memo's writing date).
+memo_rule_notes:
+  quadrant_rule_2026_10_15: "Written on {written}, when the Grow, Upgrade, Secure and Watch corners split each sector at the median economy. This page now splits at {country}'s own median sector, so the memo's statements about corners may differ from the chart. Its other figures match the current data."
 
 # Missing-data rules (index_outputs missing_rule_applied) in words (A9.6); {country} is filled in.
 missing_rules:
@@ -371,7 +379,9 @@ path_meanings:
   - {path: "summary.n_cells", meaning: "number of technology-stage sectors in the paper"}
   - {path: "summary.n_scored", meaning: "number of {country}'s sectors with both an Energy Security and an Economic Opportunity score"}
   - {path: "summary.n_placed", meaning: "number of {country}'s sectors whose two scores can both be compared with other economies, so they sit in a corner"}
-  - {path: "summary.quadrants.*", meaning: "number of {country}'s placed sectors in the {q} corner"}
+  - {path: "summary.quadrants.*", meaning: "number of {country}'s placed sectors in the {q} corner (split at {country}'s own median sector)"}
+  - {path: "summary.country_median.es", meaning: "{country}'s median sector on Energy Security: the middle of the shares of economies it beats across its placed sectors (the corners split here)"}
+  - {path: "summary.country_median.eo", meaning: "{country}'s median sector on Economic Opportunity: the middle of the shares of economies it beats across its placed sectors (the corners split here)"}
   - {path: "summary.n_insecure", meaning: "number of {country}'s placed sectors in the two low-energy-security corners (Upgrade and Secure)"}
   - {path: "summary.n_high_eo", meaning: "number of {country}'s placed sectors in the two high-opportunity corners (Grow and Upgrade)"}
   - {path: "summary.es_order", meaning: "{country}'s placed sectors from the lowest Energy Security percentile up"}
@@ -392,7 +402,7 @@ path_meanings:
   - {path: "cells.*.label_prose", meaning: "the sector {label}"}
   - {path: "cells.*.tech", meaning: "the technology of the sector {label}"}
   - {path: "cells.*.stage", meaning: "the supply-chain stage of the sector {label}"}
-  - {path: "cells.*.quadrant", meaning: "the corner of {label} for {country} (Grow, Upgrade, Secure or Watch), from its Energy Security and Economic Opportunity against the sector's medians"}
+  - {path: "cells.*.quadrant", meaning: "the corner of {label} for {country} (Grow, Upgrade, Secure or Watch), from where it sits against {country}'s own median sector on Economic Opportunity and Energy Security"}
   - {path: "cells.*.es", meaning: "Energy Security score of {label} for {country}, 0 to 1, paper baseline (higher is more secure)"}
   - {path: "cells.*.es.pct", meaning: "share of the other {n_others} economies scored in {label} whose Energy Security is lower than {country}'s"}
   - {path: "cells.*.es.med", meaning: "Energy Security of the middle (median) economy in {label}"}

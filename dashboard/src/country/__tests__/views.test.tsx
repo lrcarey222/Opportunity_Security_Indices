@@ -2,7 +2,7 @@
 // renders (landing, a core profile, an EU core member without a memo, a coalition partner, an economy
 // without a Strategic Index, a territory, an economy without index data, the memo, About, an unknown
 // ISO3); the memo button and memo route follow the tier and memo state (core with a memo, core without,
-// stale, non-core); every chart card has its table twin; the URL state (cell, partner, all) round-trips
+// stale, kept under an earlier rule with its notice, non-core); every chart card has its table twin; the URL state (cell, partner, all) round-trips
 // through clicks; no bare acronym in headings, legends, column headers, buttons or labels (C3.4).
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -260,6 +260,23 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     await screen.findByRole('heading', { level: 2, name: 'Policy memo' }, { timeout: 30_000 });
     expect(screen.queryByRole('link', { name: 'GENERATE MEMO' })).toBeNull();
     expect(screen.getByText('The memo for the United States is being updated to the latest data.')).toBeTruthy();
+  });
+
+  it('a memo kept under the earlier quadrant rule is shown with its notice, on the memo page and in the profile', async () => {
+    const note = "Written on 14 October 2026, when the Grow, Upgrade, Secure and Watch corners split each sector at the median economy. This page now splits at the United States' own median sector, so the memo's statements about corners may differ from the chart. Its other figures match the current data.";
+    useSource((m) => {
+      const e = m.countries.find((c) => c.iso3 === 'USA')!;
+      e.memo = { ...e.memo!, stale: false, rule_note: 'quadrant_rule_2026_10_15', rule_note_d: note };
+    });
+    renderAt('/countries/USA/memo');
+    expect(await screen.findByText(note, undefined, { timeout: 30_000 })).toBeTruthy();
+    expect(screen.getByText('Written under an earlier corner rule')).toBeTruthy();
+    cleanup();
+    renderAt('/countries/USA');
+    expect(await h1('United States')).toBeTruthy();
+    await screen.findByRole('heading', { level: 2, name: 'Policy memo' }, { timeout: 30_000 });
+    expect(screen.getAllByRole('link', { name: 'GENERATE MEMO' }).length).toBe(2);
+    expect(screen.getByTestId('memo-rule-note').textContent).toBe(note);
   });
 
   it('about: the sections, the glossary and the sources', async () => {

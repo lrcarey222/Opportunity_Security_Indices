@@ -745,6 +745,46 @@ old_manifest <- if (file.exists(file.path(out_dir, "manifest.json"))) tryCatch(j
 old_memo <- list()
 if (!is.null(old_manifest)) for (c in old_manifest$countries) if (!is.null(c$memo)) old_memo[[c$iso3]] <- c$memo
 
+# Memos kept under an earlier quadrant rule (the user's decision of 2026-10-15; country_memo_rule_status()
+# in R/dashboard/country/country_memo.R). A published memo whose fact sheet changed is re-checked: its
+# claims (<memo-dir>/<ISO3>/claims.json) are re-resolved with the memo tooling on the new sheet and on a
+# copy of it built under the earlier rule (each sector split at its median economy). When every claim
+# matches the earlier-rule copy, only quadrant-derived claims can differ: the memo stays published with
+# memo.rule_note (and rule_note_d, the words of the UI's notice) if its claims or the country's corners
+# changed. Any other changed claim marks the memo stale, as before. Never writes in the memo directory.
+memo_dir <- abs_path(arg_value("--memo-dir", "dashboard/country-memos"))
+read_utf8 <- function(path) {
+  txt <- rawToChar(readBin(path, "raw", file.size(path)))
+  Encoding(txt) <- "UTF-8"
+  txt
+}
+sheet_with_drivers <- function(sheet_txt, drv_txt) {
+  sh <- jsonlite::fromJSON(sheet_txt, simplifyVector = FALSE)
+  if (!is.null(drv_txt)) sh <- country_merge_drivers(sh, jsonlite::fromJSON(drv_txt, simplifyVector = FALSE))
+  sh
+}
+memo_rule_check <- function(iso) {
+  dir <- file.path(memo_dir, iso)
+  if (!file.exists(file.path(dir, "memo.src.md")) || !file.exists(file.path(dir, "claims.json"))) {
+    return(list(status = "stale", changed = character(), other = "(no memo source or claims file)", moved = character()))
+  }
+  src <- read_utf8(file.path(dir, "memo.src.md"))
+  stored <- jsonlite::fromJSON(file.path(dir, "claims.json"), simplifyVector = FALSE)$claims
+  new <- sheet_with_drivers(texts[[iso]], drv_texts[[iso]])
+  ctx_old <- ctx
+  ctx_old$quadrant_rule <- "sector_median"
+  ctx_old$pick_fn <- NULL
+  ctx_old$dup_fn <- function(...) NULL
+  so <- country_fact_sheet(iso, ctx_old)
+  ex <- attr(so, "drivers_extra")
+  old <- sheet_with_drivers(as.character(country_json(so)), if (length(ex)) as.character(country_json(country_drivers_doc(so, ex))) else NULL)
+  moved <- country_quadrants_moved(new, old)
+  st <- country_memo_rule_status(stored, country_memo_reclaim(src, new, cfg), country_memo_reclaim(src, old, cfg), moved)
+  st$moved <- moved
+  st
+}
+memo_rule_log <- list()
+
 files <- list()
 entries <- list()
 for (i in seq_len(nrow(roster))) {
@@ -764,13 +804,37 @@ for (i in seq_len(nrow(roster))) {
     } else dfile <- NULL
     om <- old_memo[[iso]]
     if (!is.null(om) && identical(ro$tier, "core") && file.exists(file.path(out_dir, om$json))) {
-      om$stale <- !identical(om$facts_sha256, s$checks$facts_sha256) || isTRUE(om$stale)
+      if (identical(om$facts_sha256, s$checks$facts_sha256)) {
+        om$stale <- isTRUE(om$stale)
+      } else if (synthetic || (isTRUE(om$stale) && is.null(om$rule_note))) {
+        om$stale <- TRUE
+      } else {
+        st <- tryCatch(memo_rule_check(iso), error = function(e) list(status = "stale", changed = character(), other = paste("(error:", conditionMessage(e), ")"), moved = character()))
+        memo_rule_log[[iso]] <- st
+        keep <- identical(st$status, "rule_note")
+        om$stale <- identical(st$status, "stale")
+        om["rule_note"] <- list(if (keep) COUNTRY_MEMO_RULE_NOTE else NULL)
+        om["rule_note_d"] <- list(if (keep) country_memo_rule_note_words(cfg, COUNTRY_MEMO_RULE_NOTE, ro$name, om$generated_at) else NULL)
+      }
       memo <- om
     }
   }
   e <- country_manifest_entry(as.list(ro), s, file, bytes, memo)
   e$drivers <- if (!is.null(s)) dfile else NULL
   entries[[length(entries) + 1]] <- e
+}
+
+if (length(memo_rule_log)) {
+  for (iso in names(memo_rule_log)) {
+    st <- memo_rule_log[[iso]]
+    message(sprintf("  memo %s: %s (claims changed: %d%s; sectors that changed corner: %d%s)", iso, st$status, length(st$changed),
+                    if (length(st$changed)) paste0(" - ", paste(utils::head(st$changed, 4), collapse = ", ")) else "", length(st$moved),
+                    if (length(st$other)) paste0("; other changes: ", paste(utils::head(st$other, 4), collapse = ", ")) else ""))
+  }
+  n_st <- table(factor(vapply(memo_rule_log, function(x) x$status, ""), levels = c("current", "rule_note", "stale")))
+  add_check("memos: claims re-resolved on the new sheets (kept with the 2026-10-15 quadrant-rule note when only quadrant-derived claims changed)",
+            if (n_st[["stale"]] == 0) "PASS" else "WARN", length(memo_rule_log), NA,
+            sprintf("%d current, %d kept with the rule note, %d stale", n_st[["current"]], n_st[["rule_note"]], n_st[["stale"]]))
 }
 
 # the synthetic fixture: a placeholder memo for the United States (built against until the memo phase)

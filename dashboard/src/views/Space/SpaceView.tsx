@@ -1,5 +1,6 @@
-// View 3: the opportunity-security space (spec_react.md 8.6; paper section 7). Every economy's Energy
-// Security (x) and Economic Opportunity (y) in one technology and stage, coloured by coalition tier,
+// View 3: the opportunity-security space (spec_react.md 8.6; paper section 7). Every economy's Economic
+// Opportunity (x) and Energy Security (y; the user's orientation of 2026-10-15) in one technology and
+// stage, coloured by coalition tier,
 // with the medians, the four named corners (Upgrade, Grow, Secure, Watch: the names Country Insights
 // uses) and, in Change mode, arrows from the paper's position to the scenario's; the selected
 // economy's own sectors faceted by stage; and the corner counts.
@@ -60,8 +61,9 @@ export function spacePoints(esRows: ReturnType<typeof rowsOf>, eoRows: ReturnTyp
       x: null,
       y: null,
     };
-    p.x = mode === 'baseline' ? p.es_base : p.es;
-    p.y = mode === 'baseline' ? p.eo_base : p.eo;
+    // x = Economic Opportunity, y = Energy Security
+    p.x = mode === 'baseline' ? p.eo_base : p.eo;
+    p.y = mode === 'baseline' ? p.es_base : p.es;
     out.push(p);
   }
   return out;
@@ -87,7 +89,7 @@ export default function SpaceView() {
     () => all.filter((p) => p.tech === tech && p.stage === stage && p.x !== null && p.y !== null && (!view.rankable || (show === 'baseline' ? p.ok_base : p.ok))),
     [all, tech, stage, view.rankable, show],
   );
-  const med = useMemo(() => ({ es: median(pts.map((p) => p.x as number)), eo: median(pts.map((p) => p.y as number)) }), [pts]);
+  const med = useMemo(() => ({ es: median(pts.map((p) => p.y as number)), eo: median(pts.map((p) => p.x as number)) }), [pts]);
   const moved = pts.filter((p) => p.es_base !== null && p.eo_base !== null && (Math.abs((p.es as number) - p.es_base) > 1e-12 || Math.abs((p.eo as number) - p.eo_base) > 1e-12));
   const own = useMemo(() => all.filter((p) => p.iso3c === sel && p.x !== null && p.y !== null), [all, sel]);
 
@@ -111,31 +113,31 @@ export default function SpaceView() {
       const arrows = show === 'change' ? moved : [];
       const selP = pts.filter((p) => p.iso3c === sel);
       // fitted to the economies shown (and the paper's positions when arrows are drawn)
-      const xd = fitDomain([...pts.map((p) => p.x), ...arrows.map((p) => p.es_base)]);
-      const yd = fitDomain([...pts.map((p) => p.y), ...arrows.map((p) => p.eo_base)]);
+      const xd = fitDomain([...pts.map((p) => p.x), ...arrows.map((p) => p.eo_base)]);
+      const yd = fitDomain([...pts.map((p) => p.y), ...arrows.map((p) => p.es_base)]);
       return {
         width,
         height: Math.min(560, Math.max(380, width * 0.62)),
         marginLeft: 52,
         marginTop: 24,
         marginBottom: 44,
-        x: { domain: xd, label: 'Energy Security (right = more secure) →', grid: true },
-        y: { domain: yd, label: '↑ Economic Opportunity (up = bigger opening)', grid: true },
+        x: { domain: xd, label: 'Economic Opportunity (right = bigger opening) →', grid: true },
+        y: { domain: yd, label: '↑ Energy Security (up = more secure)', grid: true },
         color: { domain: ['core', 'partner', 'other'], range: [TIER_COLOR.core, TIER_COLOR.partner, TIER_COLOR.other] },
         marks: [
-          Plot.ruleX([med.es], { stroke: 'rgb(255 255 255 / 0.35)', strokeDasharray: '4,3' }),
-          Plot.ruleY([med.eo], { stroke: 'rgb(255 255 255 / 0.35)', strokeDasharray: '4,3' }),
-          Plot.text([{ x: med.es, y: (yd[0] + yd[1]) / 2, t: `median Energy Security ${fmtNum(med.es, 2)}` }], { x: 'x', y: 'y', text: 't', rotate: -90, dx: -8, fill: PAPER_MUTE, fontSize: 11 }),
-          Plot.text([{ x: xd[1], y: med.eo, t: `median Economic Opportunity ${fmtNum(med.eo, 2)}` }], { x: 'x', y: 'y', text: 't', textAnchor: 'end', dy: -6, fill: PAPER_MUTE, fontSize: 11 }),
+          Plot.ruleX([med.eo], { stroke: 'rgb(255 255 255 / 0.35)', strokeDasharray: '4,3' }),
+          Plot.ruleY([med.es], { stroke: 'rgb(255 255 255 / 0.35)', strokeDasharray: '4,3' }),
+          Plot.text([{ x: med.eo, y: (yd[0] + yd[1]) / 2, t: `median Economic Opportunity ${fmtNum(med.eo, 2)}` }], { x: 'x', y: 'y', text: 't', rotate: -90, dx: -8, fill: PAPER_MUTE, fontSize: 11 }),
+          Plot.text([{ x: xd[1], y: med.es, t: `median Energy Security ${fmtNum(med.es, 2)}` }], { x: 'x', y: 'y', text: 't', textAnchor: 'end', dy: -6, fill: PAPER_MUTE, fontSize: 11 }),
           ...(
             [
-              { x: xd[0], y: yd[1], t: width < 560 ? 'UPGRADE' : 'UPGRADE: high opportunity, low security', a: 'start', dy: 10 },
+              { x: xd[0], y: yd[1], t: width < 560 ? 'WATCH' : 'WATCH: low opportunity, high security', a: 'start', dy: 10 },
               { x: xd[1], y: yd[1], t: width < 560 ? 'GROW' : 'GROW: high opportunity, high security', a: 'end', dy: 10 },
               { x: xd[0], y: yd[0], t: width < 560 ? 'SECURE' : 'SECURE: low opportunity, low security', a: 'start', dy: -6 },
-              { x: xd[1], y: yd[0], t: width < 560 ? 'WATCH' : 'WATCH: low opportunity, high security', a: 'end', dy: -6 },
+              { x: xd[1], y: yd[0], t: width < 560 ? 'UPGRADE' : 'UPGRADE: high opportunity, low security', a: 'end', dy: -6 },
             ] as const
           ).map((q) => Plot.text([q], { x: 'x', y: 'y', text: 't', textAnchor: q.a, dy: q.dy, dx: q.a === 'start' ? 4 : -4, fill: '#d1d5db', fontSize: 11, fontWeight: 500 })),
-          Plot.arrow(arrows, { x1: 'es_base', y1: 'eo_base', x2: 'es', y2: 'eo', stroke: COMPARE_COLOR.baseline, strokeWidth: 1, headLength: 6 }),
+          Plot.arrow(arrows, { x1: 'eo_base', y1: 'es_base', x2: 'eo', y2: 'es', stroke: COMPARE_COLOR.baseline, strokeWidth: 1, headLength: 6 }),
           Plot.dot(pts, { x: 'x', y: 'y', fill: 'tier', r: 4.5, stroke: INK[800], strokeWidth: 1.5 }),
           Plot.dot(selP, { x: 'x', y: 'y', fill: 'tier', r: 6, stroke: SIGNAL, strokeWidth: 2.5 }),
           Plot.text(selP, { x: 'x', y: 'y', text: 'Country', dy: -14, fill: '#ffffff', fontSize: 12 }),
@@ -181,8 +183,8 @@ export default function SpaceView() {
         marginTop: M.top,
         marginBottom: M.bottom,
         fx: { domain: app.stages, label: null, axis: 'top', padding: pad },
-        x: { domain: xd, label: 'Energy Security →', grid: true, ticks: 4 },
-        y: { domain: yd, label: '↑ Economic Opportunity', grid: true, ticks: 4 },
+        x: { domain: xd, label: 'Economic Opportunity →', grid: true, ticks: 4 },
+        y: { domain: yd, label: '↑ Energy Security', grid: true, ticks: 4 },
         marks: [
           Plot.frame({ stroke: 'rgb(255 255 255 / 0.12)' }),
           Plot.dot(own, { fx: 'stage', x: 'x', y: 'y', r: 4.5, fill: (p: SpacePoint) => STAGE_COLOR[p.stage] ?? COMPARE_COLOR.scenario, stroke: INK[800], strokeWidth: 1.5 }),
@@ -196,12 +198,12 @@ export default function SpaceView() {
 
   const tip = (p: SpacePoint) => (
     <Tip
-      value={`Energy Security ${fmtNum(p.x, 3)} · Economic Opportunity ${fmtNum(p.y, 3)}`}
+      value={`Economic Opportunity ${fmtNum(p.x, 3)} · Energy Security ${fmtNum(p.y, 3)}`}
       title={`${p.Country} (${tierLabel(p.tier)})`}
       lines={[
         cellLabel(p.tech, p.stage),
-        regionOf(p.x, p.y, med.es, med.eo),
-        !isBaseline ? `paper: Energy Security ${fmtNum(p.es_base, 3)} · Economic Opportunity ${fmtNum(p.eo_base, 3)}` : null,
+        regionOf(p.y, p.x, med.es, med.eo),
+        !isBaseline ? `paper: Economic Opportunity ${fmtNum(p.eo_base, 3)} · Energy Security ${fmtNum(p.es_base, 3)}` : null,
       ]}
     />
   );
@@ -215,7 +217,7 @@ export default function SpaceView() {
         title="The opportunity–security space"
         lede={
           <>
-            Every economy in one sector, placed by <Term id="es" /> (across) and <Term id="eo" /> (up). The dashed lines are the middle economy. The upper left,
+            Every economy in one sector, placed by <Term id="eo" /> (across) and <Term id="es" /> (up). The dashed lines are the middle economy in this sector. The lower right,
             high opportunity with low security, is where building capacity would both meet a need and create value; Country Insights calls it{' '}
             <Term id="upgrade">Upgrade</Term>. The other corners are <Term id="grow">Grow</Term> (high opportunity, high security),{' '}
             <Term id="secure">Secure</Term> (low opportunity, low security) and <Term id="watch">Watch</Term> (low opportunity, high security). Pick a technology
@@ -237,7 +239,7 @@ export default function SpaceView() {
           <div className="grid gap-6 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <ChartCard
               title={`${cellLabel(tech, stage)}: Energy Security against Economic Opportunity`}
-              sub={`${showWord(show)} Each dot is one economy: further right is more secure in this sector, higher up is a bigger economic opening. The dashed lines are the medians of the economies shown, so each corner holds the economies above or below the middle on both scores. Colour shows the economy's place in the coalition.${show === 'change' ? " Arrows run from the paper's position to the scenario's." : ''} Click a dot to select the economy.`}
+              sub={`${showWord(show)} Each dot is one economy: further right is a bigger economic opening in this sector, higher up is more secure. The dashed lines are the medians of the economies shown, so each corner holds the economies above or below the middle on both scores. Colour shows the economy's place in the coalition.${show === 'change' ? " Arrows run from the paper's position to the scenario's." : ''} Click a dot to select the economy.`}
               updating={updating}
               summary={`Scatter of ${pts.length} economies; median Energy Security ${fmtNum(med.es, 2)}, median Economic Opportunity ${fmtNum(med.eo, 2)}.`}
               legend={
@@ -263,13 +265,13 @@ export default function SpaceView() {
                     { id: 'es_base', header: 'Energy Security, paper', value: (p) => p.es_base, cell: (p) => fmtNum(p.es_base, 3), num: true },
                     { id: 'eo', header: 'Economic Opportunity', value: (p) => p.eo, cell: (p) => fmtNum(p.eo, 3), num: true },
                     { id: 'eo_base', header: 'Economic Opportunity, paper', value: (p) => p.eo_base, cell: (p) => fmtNum(p.eo_base, 3), num: true },
-                    { id: 'region', header: 'Corner', value: (p) => regionOf(p.x, p.y, med.es, med.eo), minWidth: 260 },
+                    { id: 'region', header: 'Corner', value: (p) => regionOf(p.y, p.x, med.es, med.eo), minWidth: 260 },
                   ]}
                 />
               )}
               csv={() => ({
                 name: `space-${tech}-${stage}`,
-                text: rowsToCsv(pts.map((p) => ({ iso3c: p.iso3c, Country: p.Country, tier: p.tier, tech: p.tech, supply_chain: p.stage, es: p.es, es_base: p.es_base, eo: p.eo, eo_base: p.eo_base, region: regionOf(p.x, p.y, med.es, med.eo) }))),
+                text: rowsToCsv(pts.map((p) => ({ iso3c: p.iso3c, Country: p.Country, tier: p.tier, tech: p.tech, supply_chain: p.stage, es: p.es, es_base: p.es_base, eo: p.eo, eo_base: p.eo_base, region: regionOf(p.y, p.x, med.es, med.eo) }))),
               })}
             >
               {pts.length > 1 ? (
@@ -310,8 +312,8 @@ export default function SpaceView() {
                 cols={[
                   { id: 'tech', header: 'Technology', value: (p) => p.tech },
                   { id: 'stage', header: 'Stage', value: (p) => p.stage },
-                  { id: 'es', header: 'Energy Security', value: (p) => p.x, cell: (p) => fmtNum(p.x, 3), num: true },
-                  { id: 'eo', header: 'Economic Opportunity', value: (p) => p.y, cell: (p) => fmtNum(p.y, 3), num: true },
+                  { id: 'eo', header: 'Economic Opportunity', value: (p) => p.x, cell: (p) => fmtNum(p.x, 3), num: true },
+                  { id: 'es', header: 'Energy Security', value: (p) => p.y, cell: (p) => fmtNum(p.y, 3), num: true },
                   { id: 'ok', header: 'Ranked', value: (p) => (p.ok ? 'yes' : 'no') },
                 ]}
               />

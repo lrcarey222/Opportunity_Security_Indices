@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc, COUNTRY_CELL_KEYS, COUNTRY_FILE_RE, MEMO_LABEL_PREFIX, quadrantOf, type FactSheet, type Fv,
+  checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc, COUNTRY_CELL_KEYS, COUNTRY_FILE_RE, countryMedianOf, MEMO_LABEL_PREFIX, quadrantOf, type FactSheet, type Fv,
 } from '../contract.ts';
 import { haveFixture, readJson, readManifest, readSheet } from './fixture.ts';
 
@@ -30,6 +30,9 @@ export function breakSheet(sheet: FactSheet, op: string): AnyObj {
       c.quadrant = c.quadrant === 'grow' ? 'watch' : 'grow';
       break;
     }
+    case 'country_median_off':
+      s.summary.country_median.es.v += 5;
+      break;
     case 'pos_wrong_side': {
       const p = s.cells[placed].es;
       p.pos = p.v >= p.med.v ? 10 : 90;
@@ -126,11 +129,30 @@ describe.skipIf(!haveFixture())('Country contract on the synthetic fixture', () 
     }
   });
 
-  it('quadrants re-derive from values and medians (the Space view rule)', () => {
+  it("quadrants split at the country's own median sector: the median of the plotted positions (2026-10-15)", () => {
     for (const e of m.countries.filter((c) => c.file)) {
       const s = readJson<FactSheet>(e.file!);
-      for (const c of s.cells.filter((x) => x.placed)) expect(c.quadrant).toBe(quadrantOf(c.es!.v!, c.es!.med.v!, c.eo!.v!, c.eo!.med.v!));
+      const cm = countryMedianOf(s.cells);
+      expect(s.summary.country_median.es.v, e.iso3).toBe(cm.es);
+      expect(s.summary.country_median.eo.v, e.iso3).toBe(cm.eo);
+      for (const c of s.cells.filter((x) => x.placed)) expect(c.quadrant).toBe(quadrantOf(c.es!.pos!, cm.es!, c.eo!.pos!, cm.eo!));
     }
+  });
+
+  it('a memo kept under the earlier quadrant rule needs its words and cannot be stale', () => {
+    const mm = structuredClone(m) as AnyObj;
+    const usa = mm.countries.find((c: AnyObj) => c.iso3 === 'USA');
+    usa.memo.rule_note = 'quadrant_rule_2026_10_15';
+    usa.memo.rule_note_d = 'Written on 14 October 2026, when the corners split each sector at the median economy.';
+    expect(checkCountryManifest(mm)).toEqual([]);
+    usa.memo.rule_note_d = null;
+    expect(checkCountryManifest(mm).join(' | ')).toMatch(/rule_note_d/);
+    usa.memo.rule_note_d = 'x';
+    usa.memo.stale = true;
+    expect(checkCountryManifest(mm).join(' | ')).toMatch(/stale memo/);
+    usa.memo.stale = false;
+    usa.memo.rule_note = 'nope';
+    expect(checkCountryManifest(mm).join(' | ')).toMatch(/not a known rule note/);
   });
 
   it('the placeholder memo passes checkMemoDoc and carries the verbatim label', () => {

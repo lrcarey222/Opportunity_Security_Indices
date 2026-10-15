@@ -41,6 +41,11 @@ export function MemoCard() {
               </Link>
               <span className="text-sm text-paper-mute">AI-generated from the data and checked against it; paper baseline as of {manifest.as_of_label}.</span>
             </div>
+            {entry.memo?.rule_note && entry.memo.rule_note_d && (
+              <p className="mt-3 max-w-3xl text-xs text-paper-mute" data-testid="memo-rule-note">
+                {entry.memo.rule_note_d}
+              </p>
+            )}
           </>
         )}
       </div>

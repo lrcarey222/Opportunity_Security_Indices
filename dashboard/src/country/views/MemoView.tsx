@@ -1,7 +1,9 @@
 // The memo page /countries/:iso3/memo (spec_country.md A4.3): the pre-written, AI-generated policy memo of
 // a core coalition member, on screen with its PDF and Word downloads and the verbatim label. States: not a
 // core member -> the profile with a notice; a core member without a memo yet -> the profile's memo
-// section with a notice; a stale memo (a later fact sheet changed a claim) -> not shown, with a notice.
+// section with a notice; a stale memo (a later fact sheet changed a claim) -> not shown, with a notice; a
+// memo kept under an earlier rule (memo.rule_note, e.g. the quadrant rule of 2026-10-15) -> shown with its
+// notice (memo.rule_note_d).
 
 import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
@@ -98,6 +100,13 @@ export default function MemoView() {
           </span>
         </Notice>
       </div>
+      {entry.memo.rule_note && entry.memo.rule_note_d && (
+        <div className="mb-6 max-w-3xl" data-testid="memo-rule-note">
+          <Notice kind="warning" title="Written under an earlier corner rule">
+            {entry.memo.rule_note_d}
+          </Notice>
+        </div>
+      )}
       {doc.placeholder && (
         <div className="mb-6 max-w-3xl">
           <Notice kind="warning" title="Placeholder">
