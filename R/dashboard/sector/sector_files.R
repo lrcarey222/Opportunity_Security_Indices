@@ -15,13 +15,16 @@ sector_files <- function() {
     "R/dashboard/sector/sector_raw.R",
     "R/dashboard/sector/sector_series.R",
     "R/dashboard/sector/sector_fdi.R",
+    "R/dashboard/sector/sector_dev.R",
     "R/dashboard/sector/sector_synthetic.R"
   )
 }
 
 # Pipeline files the real export reuses (read only): the trade matrix, the PAMS cleaners, the IEA
 # critical-minerals reader, the USGS reserves, the coalition mineral links, the IMF units and the
-# EIA International Energy Statistics lookup (the EIA years and comparability of filled production).
+# EIA International Energy Statistics lookup (the EIA years and comparability of filled production),
+# and the Development Potential and Friendshore outbound builders (the WDI, Doing Business, CRS and
+# IMF DIP parsers behind Development & finance).
 sector_pipeline_files <- function() {
   c(
     "R/utils/schema.R",
@@ -29,6 +32,8 @@ sector_pipeline_files <- function() {
     "R/utils/iea_critical_minerals.R",
     "R/utils/eia_intl.R",
     "R/themes/partnership_strength/partnership_strength_helpers.R",
+    "R/themes/partnership_strength/stronger_development.R",
+    "R/themes/partnership_strength/safer_friendshore.R",
     "R/categories/policy/iea_policy_index.R",
     "R/categories/reserves/usgs_mcs.R",
     "R/categories/reserves/reserves.R",

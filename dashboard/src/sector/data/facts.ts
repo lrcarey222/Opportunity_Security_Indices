@@ -15,6 +15,8 @@ export interface FactRow {
   status: StatusCode;
   /** the per-row observation year (year_field vars), else null */
   obs_year: number | null;
+  /** the first year of a value averaged over years (development.wdi: obs_from..obs_year), else absent */
+  obs_from?: number | null;
   /** dict.caveats ids of the row's facts.notes (absent when it has none) */
   notes?: readonly string[];
 }
@@ -28,6 +30,12 @@ type ObsLike = SectorFactsChunk['facts.obs'];
 type IndexLike = SectorFactsChunk['facts.index'];
 type WorldLike = SectorFactsChunk['facts.world'];
 type NotesLike = NonNullable<SectorFactsChunk['facts.notes']>;
+
+/** `{ obs_from }` when the row averages a span of years, else nothing (most facts). */
+function fromOf(col: ArrayLike<number> | undefined, r: number): { obs_from?: number } {
+  const x = col ? col[r] : NA_INT;
+  return x === undefined || x === NA_INT ? {} : { obs_from: x };
+}
 
 /** Index over an obs / index / world triple (sector-facts or the annual part of sector-series). */
 export class FactsIndex {
@@ -120,7 +128,7 @@ export class FactsIndex {
     if (s) {
       const c = this.obs.cols;
       for (let r = s.start; r < s.start + s.n; r++) {
-        out.push(this.withNotes({ geo: c.geo[r], value: c.value[r], status: (c.status[r] ?? 'obs') as StatusCode, obs_year: c.obs_year[r] === NA_INT ? null : c.obs_year[r] }, v, item, year));
+        out.push(this.withNotes({ geo: c.geo[r], value: c.value[r], status: (c.status[r] ?? 'obs') as StatusCode, obs_year: c.obs_year[r] === NA_INT ? null : c.obs_year[r], ...fromOf(c.obs_from, r) }, v, item, year));
       }
     }
     this.rowCache.set(key, out);
@@ -138,12 +146,12 @@ export class FactsIndex {
     while (lo <= hi) {
       const mid = (lo + hi) >> 1;
       const g = c.geo[mid];
-      if (g === geo) return this.withNotes({ geo, value: c.value[mid], status: (c.status[mid] ?? 'obs') as StatusCode, obs_year: c.obs_year[mid] === NA_INT ? null : c.obs_year[mid] }, v, item, year);
+      if (g === geo) return this.withNotes({ geo, value: c.value[mid], status: (c.status[mid] ?? 'obs') as StatusCode, obs_year: c.obs_year[mid] === NA_INT ? null : c.obs_year[mid], ...fromOf(c.obs_from, mid) }, v, item, year);
       if (g < geo) lo = mid + 1;
       else hi = mid - 1;
     }
     // not sorted by geo (defensive): linear scan
-    for (let r = s.start; r < s.start + s.n; r++) if (c.geo[r] === geo) return this.withNotes({ geo, value: c.value[r], status: (c.status[r] ?? 'obs') as StatusCode, obs_year: c.obs_year[r] === NA_INT ? null : c.obs_year[r] }, v, item, year);
+    for (let r = s.start; r < s.start + s.n; r++) if (c.geo[r] === geo) return this.withNotes({ geo, value: c.value[r], status: (c.status[r] ?? 'obs') as StatusCode, obs_year: c.obs_year[r] === NA_INT ? null : c.obs_year[r], ...fromOf(c.obs_from, r) }, v, item, year);
     return null;
   }
 

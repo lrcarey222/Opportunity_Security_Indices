@@ -3,7 +3,7 @@
 #
 #   Rscript scripts/87_export_sector_data.R [--out-dir <dir>] [--phase 1|2] [--skip-trade]
 #                                           [--no-policy-text] [--no-series] [--synthetic <dir>]
-#                                           [--check-only] [--cmfdi <csv>] [--no-fdi]
+#                                           [--check-only] [--cmfdi <csv>] [--no-fdi] [--no-dev]
 #
 # IO only: every rule lives in the pure helpers of R/dashboard/sector/ (sector_files()). It reads
 # config/sector_dictionary.yml, data/processed (raw rows only; never an index, weight or contribution
@@ -13,13 +13,18 @@
 # IEA PAMS, CAT, the EI long CSV, the staged EIA International Energy Statistics extract (the EIA
 # years and comparability of the fossil production the pipeline took from EIA), IMF monthly prices,
 # the CIM workbook and the CM-FDI projects, cm_fdi_projects.csv in data/raw, or the file given with
-# --cmfdi). It writes
+# --cmfdi; and, for Development & finance, the raw inputs of Development Potential and of Friendshore's
+# outbound component: wb_wdi.csv, wb_doingbusiness.csv, oecd_crs_api.csv, imf_dip.csv (selected
+# columns) and wdi_gdp.csv, parsed with the builders' own functions; partner_development_tbl is read
+# only to check that the builder on these inputs reproduces its stored components). It writes
 #
 #   <out-dir>/manifest.json            schema "osi-sector", headlines, coverage glyph, validation,
 #                                      sources, budget (served no-cache; written last)
 #   <out-dir>/sector-<name>.<h8>.osb   gzipped OSB1 chunks (R/dashboard/dash_osb.R, lossless):
 #                                      meta, facts, trade-<tech> x 10, policy, policy-text, series,
-#                                      fdi (CM-FDI; --no-fdi leaves it and its measures out)
+#                                      fdi (CM-FDI; --no-fdi leaves it and its measures out),
+#                                      dev (CRS aid flows and IMF DIP positions; --no-dev leaves it and
+#                                      the Development & finance raw measures out)
 #   <processed_dir>/dashboard/sector_validation.csv   the full validation report (not deployed)
 #
 # <out-dir> defaults to <repo>/dashboard/public/data/sector. Every chunk is decoded again and must be
@@ -67,6 +72,7 @@ skip_trade <- arg_flag("--skip-trade")
 policy_text <- !arg_flag("--no-policy-text")
 with_series <- !arg_flag("--no-series")
 with_fdi <- !arg_flag("--no-fdi")
+with_dev <- !arg_flag("--no-dev")
 cmfdi_arg <- arg_value("--cmfdi")
 phase <- as.integer(arg_value("--phase", "1"))
 if (!phase %in% 1:2) stop("--phase must be 1 or 2")
@@ -112,9 +118,11 @@ if (length(problems)) stop("Dictionary problems:\n  ", paste(problems, collapse 
 # --no-fdi: the CM-FDI measures (contract chunks ['fdi']) leave this build with their chunk.
 fdi_var_ids <- if (!is.null(catalogue)) catalogue$id[grepl("'fdi'", catalogue$chunks, fixed = TRUE)] else SECTOR_FDI_VARS
 if (!with_fdi) dict_raw$vars <- Filter(function(v) !v$id %in% fdi_var_ids, dict_raw$vars)
+# --no-dev: the Development & finance raw measures (SECTOR_DEV_VARS) leave this build with sector-dev.
+if (!with_dev) dict_raw$vars <- Filter(function(v) !v$id %in% SECTOR_DEV_VARS, dict_raw$vars)
 dict_ids <- vapply(dict_raw$vars, function(v) v$id, "")
 if (!is.null(catalogue)) {
-  build_ids <- catalogue$id[catalogue$scope == "build" & (with_fdi | !catalogue$id %in% fdi_var_ids)]
+  build_ids <- catalogue$id[catalogue$scope == "build" & (with_fdi | !catalogue$id %in% fdi_var_ids) & (with_dev | !catalogue$id %in% SECTOR_DEV_VARS)]
   missing_build <- setdiff(build_ids, dict_ids)
   if (length(missing_build)) stop("Measures of this build without a dictionary entry: ", paste(missing_build, collapse = ", "))
   extra <- setdiff(dict_ids, build_ids)
@@ -153,7 +161,7 @@ write_chunks <- function(chunks, out_dir, check_only) {
     if (nm == "sector-meta") meta_sizes <- list(geo = nrow(dec$objects$dims$geo), items = nrow(dec$objects$dims$items), vars = nrow(dec$objects$dict$vars))
     errs <- sector_check_chunk(nm, dec$objects, meta_sizes, var_ids)
     if (length(errs)) stop("Chunk ", nm, " breaks the contract:\n  ", paste(errs, collapse = "\n  "))
-    if (nm %in% c("sector-meta", "sector-facts", "sector-series", "sector-fdi") || startsWith(nm, "sector-trade-")) decoded[[nm]] <- dec$objects
+    if (nm %in% c("sector-meta", "sector-facts", "sector-series", "sector-fdi", "sector-dev") || startsWith(nm, "sector-trade-")) decoded[[nm]] <- dec$objects
     rows[[nm]] <- tibble::tibble(name = nm, file = file_name, bytes = length(bytes), bytes_gz = file.size(tmp), md5 = md5, tmp = tmp)
     step(sprintf("  %-26s %8.1f kB, %7.1f kB gz; round trip identical; contract checks pass", nm, length(bytes) / 1024, file.size(tmp) / 1024))
   }
@@ -243,6 +251,10 @@ if (!is.null(synthetic_dir)) {
     parts$fdi <- NULL
     parts$roster_extra <- parts$roster_extra[parts$roster_extra$roster != "cmfdi_home", , drop = FALSE]
   }
+  if (!with_dev) {
+    parts$dev <- NULL
+    parts$facts <- parts$facts[!parts$facts$var %in% SECTOR_DEV_VARS, , drop = FALSE]
+  }
   # Ship the measures the fixture has data for (a measure without data would have no roster).
   have <- unique(sector_data_keys(parts, parts$geo)$var)
   bundle <- sector_assemble(parts, tabs, ship_vars = tabs$vars$id[tabs$vars$id %in% have])
@@ -254,6 +266,11 @@ if (!is.null(synthetic_dir)) {
     if (length(fp)) stop("CM-FDI (synthetic): ", paste(fp, collapse = "; "))
   }
   syn_post <- function(decoded) {
+    if (!is.null(decoded$`sector-dev`)) {
+      pd <- sector_dev_parity(decoded$`sector-dev`, decoded$`sector-meta`, parts$dev)
+      for (i in seq_len(nrow(pd))) add_check(pd$check[i], pd$status[i], pd$n[i], pd$detail[i])
+      if (any(pd$status == "FAIL")) stop("Development & finance parity FAIL: ", paste(pd$check[pd$status == "FAIL"], collapse = "; "))
+    }
     if (is.null(decoded$`sector-fdi`)) return(invisible())
     pr <- sector_fdi_parity(decoded$`sector-fdi`, decoded$`sector-meta`, sector_synthetic_cmfdi_raw(), sector_synthetic_iso3)
     for (i in seq_len(nrow(pr))) add_check(pr$check[i], pr$status[i], pr$n[i], pr$detail[i])
@@ -263,7 +280,7 @@ if (!is.null(synthetic_dir)) {
                 processed_mtime_max = "synthetic", pipeline_marker = NA_character_,
                 flags = list(include_restricted = FALSE, trade = length(bundle$trade) > 0, atlas = FALSE,
                              policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks),
-                             fdi = "sector-fdi" %in% names(chunks)),
+                             fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks)),
                 post_decode = syn_post)
   message(sprintf("Synthetic fixture: %d chunks, %.1f kB gz. %.0f s.", nrow(res$chunk_info), sum(res$chunk_info$bytes_gz) / 1024,
                   as.numeric(difftime(Sys.time(), t_script, units = "secs"))))
@@ -673,6 +690,93 @@ if (with_fdi) {
   notes <- c(notes, "CM-FDI cross-border projects were not exported in this build (--no-fdi).")
 }
 
+# ---- Development & finance ---------------------------------------------------------------------------
+# The raw data behind Development Potential (WDI, Doing Business, OECD CRS) and Friendshore's outbound
+# component (IMF DIP), read as scripts/15_build_partner_themes.R reads them and parsed with the
+# builders' own functions (R/dashboard/sector/sector_dev.R). Every shipped value is checked against
+# the builder on the same input; the builder on these inputs must reproduce the components stored in
+# data/processed. A missing input stops the export (stage it, or export with --no-dev).
+
+dev_part <- NULL
+dev_fill <- NULL
+dev_items <- NULL
+dev_ref <- NULL
+if (with_dev) {
+  step("Development & finance: WDI, Doing Business, OECD CRS, IMF DIP")
+  dev_files <- c(ci = "wdi_country_info.csv", gdp = "wdi_gdp.csv", wdi = "wb_wdi.csv", db = "wb_doingbusiness.csv",
+                 crs = "oecd_crs_api.csv", dip = "imf_dip.csv")
+  dev_paths <- stats::setNames(file.path(raw_dir, dev_files), names(dev_files))
+  miss <- dev_files[!file.exists(dev_paths)]
+  if (length(miss)) stop("Development & finance input missing in data/raw: ", paste(miss, collapse = ", "), " (stage it, or export with --no-dev).")
+  dev_ci <- standardize_country_info(read.csv(use_src(dev_paths[["ci"]])))
+  dev_iso <- dev_ci$iso3c
+  dev_gdp <- read.csv(use_src(dev_paths[["gdp"]]))
+  dev_ind <- sector_dev_indicators(dict_raw)
+  wdi_raw <- read.csv(use_src(dev_paths[["wdi"]]))
+  db_raw <- read.csv(use_src(dev_paths[["db"]]))
+  dev_wdi <- sector_dev_wdi(wdi_raw, dev_iso, dev_ind$code)
+  dev_db <- sector_dev_doing_business(db_raw, dev_iso)
+  crs_raw <- read.csv(use_src(dev_paths[["crs"]]))
+  dev_crs <- sector_dev_crs(crs_raw, dev_iso)
+  if (!identical(dev_crs$meta$BaseYear, "2023") || !identical(dev_crs$meta$UnitMult, "Millions") || !identical(dev_crs$meta$Currency, "US dollar")) {
+    stop("OECD CRS extract: prices of ", dev_crs$meta$BaseYear, ", ", dev_crs$meta$UnitMult, " ", dev_crs$meta$Currency,
+         "; the dictionary unit usd_m_2023 says constant 2023 US dollars, millions: update it.")
+  }
+  dev_stage <- sector_dev_crs_stage(crs_raw, dev_gdp, SECTOR_DEV_GDP_YEAR, dev_iso)
+  crs_builder <- partnership_strength_build_oecd_supplychain(crs_raw, dev_gdp, SECTOR_DEV_GDP_YEAR, valid_iso = dev_iso)
+  pc <- sector_dev_crs_parity(dev_stage, crs_builder, dev_crs$flows)
+  for (i in seq_len(nrow(pc))) add_check(pc$check[i], pc$status[i], pc$n[i], pc$detail[i])
+  if (any(pc$status == "FAIL")) stop("OECD CRS parity FAIL: ", paste(pc$check[pc$status == "FAIL"], collapse = "; "))
+  # The builder on these raw inputs reproduces the Development Potential components in data/processed.
+  dev_proc <- readRDS(use_src(file.path(processed_dir, "partner_development_tbl.rds")))
+  pp <- sector_dev_processed_parity(dev_proc, partnership_strength_build_development_indicators(wdi_raw, db_raw, valid_iso = dev_iso), crs_builder)
+  for (i in seq_len(nrow(pp))) add_check(pp$check[i], pp$status[i], pp$n[i], pp$detail[i])
+  if (any(pp$status == "FAIL")) stop("Development Potential: the builder on data/raw does not reproduce data/processed: ",
+                                     paste(pp$check[pp$status == "FAIL"], pp$detail[pp$status == "FAIL"], collapse = "; "))
+  wl <- partnership_strength_build_wdi_long(wdi_raw, valid_iso = dev_iso)
+  dbb <- partnership_strength_build_doing_business(db_raw, valid_iso = dev_iso)
+  dev_ref <- list(
+    wdi = tibble::tibble(key = paste(wl$Country.Code, wl$Series.Code), value = wl$value),
+    db = tibble::tibble(key = as.character(dbb$Country.Code), value = dbb$doingbusiness),
+    stage = dev_stage
+  )
+  rm(dev_proc, crs_raw, wl, dbb, crs_builder)
+  invisible(gc())
+  # IMF DIP: the columns the outbound builder uses (as scripts/15 read_imf_dip()).
+  dip_header <- names(data.table::fread(use_src(dev_paths[["dip"]]), nrows = 0))
+  dip_keep <- c(intersect(c("COUNTRY", "COUNTERPART_COUNTRY", "DV_TYPE", "INDICATOR"), dip_header), grep("^X?[0-9]{4}$", dip_header, value = TRUE))
+  dip_raw <- as.data.frame(data.table::fread(dev_paths[["dip"]], select = dip_keep, showProgress = FALSE))
+  pcfg <- yaml::read_yaml(file.path(repo_root, "config", "partnership.yml"))$outbound_fdi
+  dev_conduit <- partnership_strength_conduit_rule(rule = pcfg$conduit_rule %||% "conduits", scope = pcfg$conduit_scope %||% "both")
+  dev_centres <- partnership_strength_conduit_centres()
+  if (!all(dev_conduit$iso3 %in% dev_centres$iso3)) stop("IMF DIP: the configured conduit rule names economies outside partnership_strength_conduit_centres()")
+  dev_dip <- sector_dev_dip(dip_raw, dev_ci, SECTOR_DEV_DIP_YEARS, dev_centres$iso3)
+  dip_builder <- partnership_strength_build_outbound_edges(dip_raw, dev_ci, dev_gdp, gdp_year = SECTOR_DEV_GDP_YEAR, years = SECTOR_DEV_DIP_YEARS,
+                                                           conduit_iso = dev_conduit$iso3, conduit_scope = dev_conduit$scope)
+  rm(dip_raw)
+  invisible(gc())
+  # The index drops the conduit positions of the configured rule; the flag marks every centre.
+  pdp <- sector_dev_dip_parity(dev_dip, dip_builder, dev_gdp, SECTOR_DEV_GDP_YEAR, dev_conduit$scope, dev_conduit$iso3)
+  add_check(pdp$check, pdp$status, pdp$n, pdp$detail)
+  if (pdp$status == "FAIL") stop("IMF DIP parity FAIL: ", pdp$check)
+  rm(dip_builder)
+  # Years most donors had not reported yet: in the totals (as the builder counts them), not shown as years.
+  dev_inc <- sector_dev_crs_incomplete(dev_crs$flows)
+  dev_crs_ship <- sector_dev_crs_ship(dev_crs, dev_inc)
+  dev_part <- sector_dev_part(dev_crs_ship, dev_dip, dev_centres)
+  dev_fill <- sector_dev_fill(dev_wdi, dev_db, dev_crs, dev_dip, SECTOR_DEV_DIP_YEARS, dev_centres, dev_conduit$scope, dev_inc)
+  results$dev <- sector_dev_facts(dev_wdi$values, dev_db, dev_crs_ship, dev_stage, max(dev_wdi$values$year_max), max(dev_crs$flows$year))
+  add_check("Development & finance: raw inputs parsed with the builders' functions", "PASS",
+            nrow(dev_wdi$values) + nrow(dev_db) + nrow(dev_crs$flows) + nrow(dev_dip),
+            sprintf("WDI %d values (%d series; none in the window: %s); Doing Business %d; CRS %d dyad-years (%s donors, %s recipients, %s; years shown %s; incomplete: %s); DIP %d positions (%d with a conduit centre)",
+                    nrow(dev_wdi$values), length(unique(dev_wdi$values$code)), dev_fill$wdi_empty, nrow(dev_db), nrow(dev_crs$flows),
+                    dev_fill$crs_n_donors, dev_fill$crs_n_recipients, dev_fill$crs_years_total, dev_fill$crs_years, dev_fill$crs_incomplete,
+                    nrow(dev_dip), sum(dev_dip$conduit != "none")))
+  rm(wdi_raw, db_raw)
+} else {
+  notes <- c(notes, "Development & finance raw data (WDI, Doing Business, OECD CRS, IMF DIP) were not exported in this build (--no-dev).")
+}
+
 # ---- Series -----------------------------------------------------------------------------------------
 
 series <- NULL
@@ -741,7 +845,8 @@ if (!is.null(series)) {
 }
 
 data_codes <- unique(c(facts$geo, if (!skip_trade) econ, pol$pams$geo, pol$cat$geo, if (!is.null(series)) c(series$obs$geo, series$capacity$geo),
-                       if (!is.null(fdi_clean)) c(fdi_clean$projects$home, fdi_clean$projects$dest)))
+                       if (!is.null(fdi_clean)) c(fdi_clean$projects$home, fdi_clean$projects$dest),
+                       if (!is.null(dev_part)) c(dev_part$oda$donor, dev_part$oda$recipient, dev_part$dip$reporter, dev_part$dip$counterpart, dev_part$conduits$geo)))
 data_codes <- data_codes[grepl("^[A-Z]{3}$", data_codes) & !data_codes %in% c("EUU", "WLD")]
 country_info <- read.csv(use_src(file.path(raw_dir, "wdi_country_info.csv")), stringsAsFactors = FALSE)
 extra <- tibble::tibble(code = data_codes, name = country_name_from_iso3(data_codes))
@@ -772,6 +877,11 @@ fuels <- unique(c(sub("^fuel:", "", facts$item_key[startsWith(facts$item_key, "f
 items <- sector_items(basket_cells, minerals, fuels, commodities)
 cells <- items[items$axis == "cell", , drop = FALSE]
 item_links <- sector_item_links(mineral_links, price_techs, commodities, cells)
+if (!is.null(dev_part)) {
+  dev_items <- sector_dev_items(dev_ind, cells)
+  items <- dplyr::bind_rows(items, dev_items$items[names(items)])
+  item_links <- dplyr::bind_rows(item_links, dev_items$links)
+}
 mineral_demand <- mineral_demand[mineral_demand$mineral %in% items$slug[items$axis == "mineral"], , drop = FALSE]
 
 fill <- list(n_shared_codes = n_shared, n_codes = n_codes, n_rca_reporters = n_rca_reporters, critmin_year = critmin_year,
@@ -779,6 +889,7 @@ fill <- list(n_shared_codes = n_shared, n_codes = n_codes, n_rca_reporters = n_r
              trl_fallback_cells = paste(results$trl$fallback, collapse = ", "),
              pct_cross_cutting = round(100 * mean(pol$pams$cross_cutting)))
 fill <- c(fill, if (!is.null(fdi)) sector_fdi_fill(fdi, fdi_settings) else sector_fdi_fill_none())
+fill <- c(fill, if (!is.null(dev_fill)) dev_fill else sector_dev_fill_none())
 tabs <- sector_dictionary_tables(dict_raw, fill = fill)
 unfilled <- sector_dictionary_unfilled(tabs)
 if (length(unfilled)) stop("Unfilled dictionary placeholders: ", paste(unfilled, collapse = ", "))
@@ -806,6 +917,7 @@ if (nrow(usgs_dict)) {
   bad <- !is.na(src_unit) & (kind == "kt") != (src_unit == "thousand metric tons")
   if (any(bad)) stop("Dictionary item units disagree with the USGS scale: ", paste(usgs_dict$item_key[bad], collapse = ", "))
 }
+if (!is.null(dev_part)) item_units <- dplyr::bind_rows(item_units, sector_dev_item_units(dev_ind))
 item_units <- item_units[!duplicated(item_units[c("var", "item_key")]), , drop = FALSE]
 if (any(price_unit$unit == "price_tbc")) notes <- c(notes, paste("IMF price units to confirm:", paste(price_unit$sub_sector[price_unit$unit == "price_tbc"], collapse = ", ")))
 
@@ -819,6 +931,7 @@ parts <- list(
     if (!is.null(fdi)) tibble::tibble(roster = "cmfdi_home", geo = sort(unique(fdi$projects$home)))
   ),
   facts = facts, fact_notes = fact_notes, world = world, series = series, trade = trade, eu_intra = eu_intra, policy = pol, fdi = fdi,
+  dev = dev_part, dev_year = if (is.null(dev_part)) NA_integer_ else max(dev_part$dip$year_max),
   reported = if (!skip_trade) reported else NULL,
   licensed = tibble::tibble(item_key = paste0("cell:", c("solar-downstream", "wind-downstream", "gas-downstream", "coal-downstream", "batteries-downstream")),
                             family = "prices", sources = "BNEF LCOE"),
@@ -921,6 +1034,15 @@ post <- function(decoded) {
   add_check("trade by sub-component (decoded): trade.sub_summary = sector_summary() of the decoded trade.cty_sub (1e-12)",
             if (sum_d <= 1e-12) "PASS" else "FAIL", n_sub_rows, sprintf("max relative difference %.3g", sum_d))
   if (sub_rel > 1e-9 || sub_unmatched > 0 || sum_d > 1e-12) stop("Trade by sub-component FAIL on the decoded chunks")
+  # Development & finance: decoded flows and positions identical() to the parsed raw rows; decoded
+  # facts identical() to the builders' values (WDI, Doing Business, the CRS stage totals and ratios).
+  if (!is.null(decoded$`sector-dev`)) {
+    pd <- sector_dev_parity(decoded$`sector-dev`, meta, dev_part)
+    dv <- dfx[startsWith(dfx$var, "development.") & dfx$var != "development.alignment", , drop = FALSE]
+    pd <- dplyr::bind_rows(pd, sector_dev_facts_parity(dv, dev_ref))
+    for (i in seq_len(nrow(pd))) add_check(pd$check[i], pd$status[i], pd$n[i], pd$detail[i])
+    if (any(pd$status == "FAIL")) stop("Development & finance parity FAIL:\n  ", paste(pd$check[pd$status == "FAIL"], collapse = "\n  "))
+  }
   # CM-FDI parity: decoded projects identical() to the CSV after cleaning; aggregates recomputed.
   if (!is.null(decoded$`sector-fdi`)) {
     pf <- sector_fdi_parity(decoded$`sector-fdi`, meta, cmfdi_raw, iso3_of, fdi_settings)
@@ -955,7 +1077,7 @@ res <- finish(bundle, chunks, out_dir, created = format(Sys.time(), "%Y-%m-%dT%H
               strategic_bundle_id = strategic_bundle_id, processed_mtime_max = processed_mtime_max, pipeline_marker = pipeline_marker,
               flags = list(include_restricted = FALSE, trade = length(trade) > 0, atlas = FALSE,
                            policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks),
-                           fdi = "sector-fdi" %in% names(chunks)),
+                           fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks)),
               validation_csv = file.path(processed_dir, "dashboard", "sector_validation.csv"), post_decode = post)
 
 # Reference values for the spec's Appendix B (recomputed on this data).

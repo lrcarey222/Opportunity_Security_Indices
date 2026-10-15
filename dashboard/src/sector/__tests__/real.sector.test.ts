@@ -25,6 +25,7 @@ import {
   validateChunk,
   type HeadlineId,
   type SectorChunkName,
+  type SectorDevChunk,
   type SectorFactsChunk,
   type SectorManifest,
   type SectorMetaChunk,
@@ -35,7 +36,7 @@ import {
 } from '../contract.ts';
 import { factsIndexOf, seriesIndexOf, type FactsIndex } from '../data/facts.ts';
 import { modelOf, type ItemInfo, type SectorModel, type VarInfo } from '../data/model.ts';
-import { countryFamilies, primaryMeasure } from '../derive/cells.ts';
+import { countryFamilies, countryVars, primaryMeasure } from '../derive/cells.ts';
 import { growth } from '../derive/concentration.ts';
 import { ASSUMED_ZERO_WORDS, isAssumedZero, noteWords } from '../derive/notes.ts';
 import { countryTotals, flowsOf, league, matrixTotal } from '../derive/trade.ts';
@@ -132,8 +133,11 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect(manifest.encoding.lossy).toBe(false);
       // CM-FDI (2026-10-11): the lazy sector-fdi chunk ships with flags.fdi (an export with --no-fdi has neither)
       expect(manifest.flags.fdi).toBe(true);
-      // 16 chunks: meta, facts, 10 trade, policy, policy-text, series, fdi
-      expect(manifest.chunks.length).toBe(16);
+      // Development & finance (2026-10-15): the lazy sector-dev chunk ships with flags.dev (--no-dev has neither)
+      expect(manifest.flags.dev).toBe(true);
+      // 17 chunks: meta, facts, 10 trade, policy, policy-text, series, fdi, dev
+      expect(manifest.chunks.length).toBe(17);
+      expect(manifest.chunks.filter((c) => c.name === 'sector-dev').length).toBe(1);
       expect(manifest.chunks.filter((c) => c.name.startsWith('sector-trade-')).length).toBe(10);
       expect(manifest.chunks.filter((c) => c.name === 'sector-fdi').length).toBe(1);
       for (const s of manifest.sources) expect(s.path).not.toMatch(/^([a-zA-Z]:|[\\/]|~)/);
@@ -485,6 +489,31 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       }
       // the 2026-10-12 export: only Estonia coal (EI counts oil shale as coal)
       expect([...new Set(assumed.map((a) => a.split(' ').slice(1).join(' ')))]).toEqual(['coal 2025 EST']);
+    });
+
+    it('Development & finance: raw values with their builders\' checks; aid by stage on the cells; conduit centres flagged', () => {
+      for (const c of [
+        'parity X: decoded development.wdi identical() to partnership_strength_build_wdi_long()$value on wb_wdi.csv',
+        'parity X: CRS aid received 2013-2024 by stage, ranked as the Development Potential builder ranks it, reproduces its aid_index_supplychain identical()',
+      ]) expect(manifest.validation.find((x) => x.check === c)?.status).toBe('PASS');
+      expect(manifest.validation.some((x) => /^parity X: IMF DIP positions .* reproduce its outbound_index identical\(\)$/.test(x.check) && x.status === 'PASS')).toBe(true);
+      expect(manifest.validation.filter((x) => /^parity X: the builder on this export's raw inputs reproduces the stored /.test(x.check)).every((x) => x.status === 'PASS')).toBe(true);
+      // WDI: GDP per capita of the United States, in constant 2015 dollars, with its own unit
+      const gdp = I('indicator', 'ny-gdp-pcap-kd');
+      expect(model.unitOf(V('development.wdi'), gdp.idx).id).toBe('usd_pc_2015');
+      const us = facts.rows(V('development.wdi').idx, gdp.idx, facts.latestYear(V('development.wdi').idx, gdp.idx) as number).find((r) => r.geo === G('USA'));
+      expect(us && us.value > 50_000 && us.value < 80_000).toBe(true);
+      // aid for energy is a measure of every Downstream cell (the economy page and the profile's leaders)
+      const solarDown = I('cell', 'solar-downstream');
+      expect(countryVars(model, solarDown).map((v) => v.id)).toContain('development.oda_received');
+      expect(model.itemsOfCell(solarDown.idx, 'aid_sector').map((x) => x.item.slug)).toEqual(['energy']);
+      const dev = validateChunk('sector-dev', readChunkFile(manifest.chunks.find((c) => c.name === 'sector-dev')!.file), ref) as SectorDevChunk;
+      const conduit = new Set(Array.from(dev['dev.conduits'].cols.geo));
+      expect(conduit.has(G('NLD')) && conduit.has(G('LUX')) && conduit.has(G('HKG'))).toBe(true);
+      let flagged = 0;
+      for (let i = 0; i < dev['dev.dip'].nrow; i++) if (dev['dev.dip'].cols.conduit[i] !== 'none') flagged++;
+      expect(flagged).toBeGreaterThan(100);
+      expect(dev['dev.oda'].nrow).toBeGreaterThan(10_000);
     });
 
     it('every cell with a dictionary primary measure resolves it (the Snapshot is never empty); fuel Downstream: consumption per person', () => {

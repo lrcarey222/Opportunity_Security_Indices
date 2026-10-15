@@ -580,6 +580,13 @@ sector_synthetic_parts <- function(dict) {
   fdi_clean <- sector_fdi_clean(sector_synthetic_cmfdi_raw(), sector_synthetic_iso3)
   fdi <- sector_fdi_part(fdi_clean, geo)
 
+  # Development & finance (sector-dev and the development.* facts).
+  dev <- sector_dev_synthetic(cells)
+  items <- dplyr::bind_rows(items, dev$items[names(items)])
+  item_links <- dplyr::bind_rows(item_links, dev$links)
+  facts <- dplyr::bind_rows(facts, dev$facts)
+  item_units <- dplyr::bind_rows(item_units, dev$item_units)
+
   list(
     geo = geo,
     region_members = tibble::tribble(
@@ -600,6 +607,7 @@ sector_synthetic_parts <- function(dict) {
       tibble::tibble(roster = "cmfdi_home", geo = sort(unique(fdi$projects$home)))
     ),
     facts = facts, world = world, series = series, trade = trade, eu_intra = eu_intra, policy = policy, fdi = fdi,
+    dev = dev$part, dev_year = 2024L,
     # Per-fact notes (facts.notes): Japan's gas production as if from EIA, Estonia's oil balance assumed zero.
     fact_notes = tibble::tibble(
       var = c("production.fuels", "consumption.balance", "consumption.balance"),
@@ -624,7 +632,8 @@ sector_headline_sources <- function() {
 sector_synthetic_fill <- function() {
   c(list(n_shared_codes = 1, n_codes = 7, n_rca_reporters = 8, critmin_year = 2024, pams_export_date = "2026-01-22",
          pams_year_max = 2030, trl_fallback_cells = "Geothermal Upstream", pct_cross_cutting = 16),
-    sector_fdi_fill(sector_fdi_clean(sector_synthetic_cmfdi_raw(), sector_synthetic_iso3)))
+    sector_fdi_fill(sector_fdi_clean(sector_synthetic_cmfdi_raw(), sector_synthetic_iso3)),
+    sector_dev_synthetic(sector_synthetic_items()[0, ])$fill)
 }
 
 # Country names of the synthetic CM-FDI rows -> ISO3 (the real export uses country_name_to_iso3()).

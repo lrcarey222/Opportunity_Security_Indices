@@ -35,7 +35,7 @@ export type { Layer } from './params.ts';
 export { pillars, variableContrib } from './pillars.ts';
 export { policy } from './policy.ts';
 export { si, alliedSelection } from './si.ts';
-export { fsCells, poCells, keepCells, partnerTop5, psi, partnerDecompose } from './partner.ts';
+export { fsCells, poCells, keepCells, partnerTop5, psi, partnerDecompose, cellPartners } from './partner.ts';
 
 // Orchestration, comparisons, download tables, cache.
 export {

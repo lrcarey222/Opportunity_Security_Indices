@@ -16,7 +16,7 @@ SECTOR_LENS_FAMILIES <- c("exports", "production", "capacity", "reserves", "inve
 SECTOR_SECTIONS <- c("snapshot", "who", "leaders", "trade", "investment", "production", "resources",
                      "demand", "prices", "policy", "technology", "context", "countries")
 SECTOR_NATIVE_LEVELS <- c("country", "eu", "region", "entity", "world", "cell_global", "dyad")
-SECTOR_ITEM_AXES <- c("cell", "mineral", "fuel", "commodity", "activity", "policy_tag", "none")
+SECTOR_ITEM_AXES <- c("cell", "mineral", "fuel", "commodity", "activity", "policy_tag", "indicator", "aid_sector", "none")
 SECTOR_AGG_RULES <- c("sum", "ratio", "none")
 SECTOR_WORLD_BASES <- c("source_world", "sum_all", "one", "sum_listed", "none")
 SECTOR_LICENCES <- c("open", "attribution")
@@ -213,6 +213,7 @@ sector_dictionary_tables <- function(d, fill = list()) {
     )
   }))
   vars$data_year <- sector_fill_placeholders(vars$data_year, fill)
+  vars$definition <- sector_fill_placeholders(vars$definition, fill)
   units <- dplyr::bind_rows(lapply(d$units, function(u) tibble::tibble(id = u$id, short = u$short, long = u$long, unit_kind = u$unit_kind)))
   sources <- dplyr::bind_rows(lapply(d$sources, function(s) tibble::tibble(
     id = s$id, short = s$short, citation = s$citation, publisher = chr(s$publisher), edition = chr(s$edition),
@@ -251,6 +252,6 @@ sector_dictionary_tables <- function(d, fill = list()) {
 
 # Placeholders still unfilled in the tables (the export stops on any).
 sector_dictionary_unfilled <- function(tabs) {
-  sector_placeholders(c(tabs$vars$data_year, tabs$caveats$text, tabs$sources$citation, tabs$sources$edition,
+  sector_placeholders(c(tabs$vars$data_year, tabs$vars$definition, tabs$caveats$text, tabs$sources$citation, tabs$sources$edition,
                         tabs$sources$accessed, tabs$sources$transform, tabs$sources$issues))
 }

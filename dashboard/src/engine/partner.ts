@@ -670,6 +670,51 @@ export function partnerDecompose(
   return table(out, C);
 }
 
+/**
+ * One reporter's partners in one sector (cell c, 0-based; the Partners view's sector choice):
+ * Friendshore (the partner as a supplier) and Partnership Opportunity (the partner as an export
+ * market) under the scenario (`cells`) and at the baseline (`base`), with each partner's rank among
+ * the sovereign economies scored in that cell (1 = best; ties share the lowest rank, as
+ * rank(ties.method = "min") in dash_top_partners(); NA for non-sovereign economies). Rows: every
+ * other economy with a score on either side in either run, in U order.
+ */
+export function cellPartners(bundle: Pick<Bundle, 'partner'>, cells: PartnerCells, base: PartnerCells, reporterIso: string, c: number): Table {
+  const pa = requirePartner(bundle);
+  const U = pa.U.length;
+  const r = pa.U.indexOf(reporterIso);
+  if (r < 0) throw new EngineError('PARAMS', 'Unknown reporter ISO3.');
+  if (!Number.isInteger(c) || c < 0 || c >= pa.cells.nrow) throw new EngineError('PARAMS', `No sector ${c}.`);
+  const UU = U * U;
+  const slice = (a: Float64Array) => Float64Array.from({ length: U }, (_, p) => (a.length ? a[r + U * p + UU * c] : NaN));
+  const v = { fs: slice(cells.fs_index), fs_base: slice(base.fs_index), po: slice(cells.po_index), po_base: slice(base.po_index) };
+  const sov = pa.sovereign;
+  const ranks = (x: Float64Array) => {
+    const vals: number[] = [];
+    for (let p = 0; p < U; p++) if (p !== r && sov[p] === 1 && x[p] === x[p]) vals.push(x[p]);
+    return Int32Array.from({ length: U }, (_, p) => {
+      if (p === r || sov[p] !== 1 || x[p] !== x[p]) return NA_INT;
+      let k = 1;
+      for (const y of vals) if (y > x[p]) k++;
+      return k;
+    });
+  };
+  const rk = { fs: ranks(v.fs), fs_base: ranks(v.fs_base), po: ranks(v.po), po_base: ranks(v.po_base) };
+  const idx: number[] = [];
+  const any = (p: number) => v.fs[p] === v.fs[p] || v.fs_base[p] === v.fs_base[p] || v.po[p] === v.po[p] || v.po_base[p] === v.po_base[p];
+  for (let p = 0; p < U; p++) if (p !== r && any(p)) idx.push(p);
+  const f = (x: Float64Array) => Float64Array.from(idx, (p) => x[p]);
+  const i = (x: Int32Array) => Int32Array.from(idx, (p) => x[p]);
+  return table(
+    {
+      partner_iso: idx.map((p) => pa.U[p]),
+      sovereign: Uint8Array.from(idx, (p) => (sov[p] === 1 ? 1 : 0)),
+      fs: f(v.fs), fs_base: f(v.fs_base), fs_rank: i(rk.fs), fs_rank_base: i(rk.fs_base),
+      po: f(v.po), po_base: f(v.po_base), po_rank: i(rk.po), po_rank_base: i(rk.po_base),
+    },
+    idx.length,
+  );
+}
+
 /** Sum of a column restricted to rows (helper for summaries). */
 export function sumCol(x: Float64Array): number {
   return sumR(x, 0, x.length, true);

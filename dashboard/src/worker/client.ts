@@ -227,6 +227,11 @@ export class EngineClient {
     return this.request<Table>({ type: 'dyads', spec, reporter });
   }
 
+  /** One reporter's partners in one sector (cell index into dims.cells), scenario and baseline (partner chunk). */
+  cellPartners(spec: ScenarioSpec, reporter: string, cell: number): Promise<Table> {
+    return this.request<Table>({ type: 'cellPartners', spec, reporter, cell });
+  }
+
   /** The download tables of a scenario (dash_scenario_tables()). */
   tables(spec: ScenarioSpec, include: RunLayer[] = ['core']): Promise<Record<string, Table>> {
     return this.request<Record<string, Table>>({ type: 'tables', spec, include });

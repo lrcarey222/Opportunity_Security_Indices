@@ -12,7 +12,8 @@
 #   (sector_trade_sub_table()) and sub_intra; sector_assemble() adds sub_summary)),
 #   eu_intra (item_key, year, intra),
 #   policy (list(pams, text, tags, cat)), fdi (sector_fdi_part(): CM-FDI projects, sources, flows,
-#   groups, years; or NULL), reported (exporter-reported trade per cell, or NULL),
+#   groups, years; or NULL), dev (sector_dev_part(): CRS aid flows, IMF DIP positions, conduit
+#   centres; or NULL) with dev_year (the last year of the DIP window), reported (exporter-reported trade per cell, or NULL),
 #   licensed (item_key, family, sources) or NULL, headline_sources (named list), fill (placeholders).
 
 # Distinct (var, item_key, chunk, year, geo, geo_kind) of every chunk's data.
@@ -74,6 +75,7 @@ sector_data_keys <- function(parts, geo) {
                                       geo = pl$cat$geo, geo_kind = kind(pl$cat$geo))))
   }
   if (!is.null(parts$fdi)) out <- c(out, list(sector_fdi_data_keys(parts$fdi, kind)))
+  if (!is.null(parts$dev)) out <- c(out, list(sector_dev_data_keys(parts$dev, kind, parts$dev_year)))
   md <- parts$mineral_demand
   if (!is.null(md) && nrow(md)) {
     out <- c(out, list(tibble::tibble(var = "consumption.mineral_demand", item_key = paste0("mineral:", md$mineral), chunk = "meta",
@@ -138,12 +140,12 @@ sector_assemble <- function(parts, dict, ship_vars = NULL) {
     rng <- tapply(sw$year, sw$var, function(y) paste0(min(y), "-", max(y)))
     vars$series_window <- unname(rng[vars$id])
   }
-  # Measures that live only in sector-fdi: `years` = the announcement years with data (the
-  # dictionary cannot know them for a new CM-FDI edition).
-  fy <- data[data$chunk == "fdi" & !is.na(data$year), , drop = FALSE]
+  # Measures that live only in sector-fdi or sector-dev: `years` = the years with data (the
+  # dictionary cannot know them for a new CM-FDI edition or CRS / DIP extract).
+  fy <- data[data$chunk %in% c("fdi", "dev") & !is.na(data$year), , drop = FALSE]
   if (nrow(fy)) {
     yrs <- tapply(fy$year, fy$var, function(y) paste(sort(unique(y)), collapse = "|"))
-    hit <- vars$id %in% names(yrs) & !vars$id %in% data$var[data$chunk != "fdi"]
+    hit <- vars$id %in% names(yrs) & !vars$id %in% data$var[!data$chunk %in% c("fdi", "dev")]
     vars$years[hit] <- unname(yrs[vars$id[hit]])
   }
   # Caveats that describe per-fact notes (SECTOR_DATA_CAVEATS: EIA provenance, production assumed 0,
@@ -194,7 +196,7 @@ sector_assemble <- function(parts, dict, ship_vars = NULL) {
     mineral_demand = parts$mineral_demand, eu_outside_coalition = parts$eu_outside_coalition,
     dict = dict, item_units = item_units, rosters = rosters, coverage = coverage, avail = avail,
     summary = summary, reconcile = reconcile, facts = parts$facts, world = parts$world, series = parts$series,
-    trade = parts$trade, policy = parts$policy, fdi = parts$fdi, fact_notes = parts$fact_notes, headlines = headlines, glyph = glyph,
+    trade = parts$trade, policy = parts$policy, fdi = parts$fdi, dev = parts$dev, fact_notes = parts$fact_notes, headlines = headlines, glyph = glyph,
     cell_vars = cell_vars,
     world_missing = world_missing
   )

@@ -78,6 +78,8 @@ R pipeline (scripts/0x-4x)                 data/processed/...
 | `vars.<md5>.osb` | Country view (variable drill-down) | variable-level components |
 | `partner.<md5>.osb` | Partners, Network, PSI metric | Friendshore / Opportunity components, dyads, baseline best-five and PSI |
 | `network.<md5>.osb` | Network view | nodes, member weights, stage inputs, the baseline design |
+| `ties.<md5>.osb` | lazily, main thread: Partners view, Country partners section (never the engine) | IMF direct investment positions by partner (both directions, latest year, and the 2020-2024 mean Friendshore ranks; conduit centres flagged), CM-FDI factory-project flows by sector, Development Potential by sector, agreements, UN-vote alignment, top partners by best-five Friendshore / Partnership Opportunity (R/dashboard/dash_ties.R; scripts/85 checks the positions reproduce the investment tie bit for bit) |
+| `pcell-<slug>.<md5>.osb` | lazily, one sector: Country partners section | each economy's top 10 suppliers (Friendshore) and export markets (Partnership Opportunity) in that sector at the baseline, with the Partnership Strength rank; the Partners view ranks the sector in the worker instead (`cellPartners`, so the dials apply) |
 
 OSB is a small container (a JSON header and typed columns, gzipped) written by
 `R/dashboard/dash_osb.R` and read by `src/engine/codec.ts`. Chunk names carry their md5, so they can
@@ -100,6 +102,7 @@ rows, and no licensed BNEF or BCG data.
 | `sector-policy.<h8>.osb` | Policy sections | IEA PAMS records (technology and stage masks) and Climate Action Tracker ratings |
 | `sector-policy-text.<h8>.osb` | the policy list | PAMS titles and links (with attribution) |
 | `sector-series.<h8>.osb` | series cards | EI 1965-2025, IMF monthly prices, IEA EV regions 2021-2024, CIM additions and manufacturing capacity |
+| `sector-dev.<h8>.osb` | lazily, by the Development & finance flow layouts (Explore: aid flows, investment positions), the economy page's "Aid and investment partners" and Sources | OECD CRS official development assistance by aid sector, year, donor and recipient (USD m, constant 2023 prices; `data/raw/oecd_crs_api.csv`) and IMF Direct Investment Positions, outward debt instruments, the 2020-2024 mean per investor and destination with the conduit-centre flag (`data/raw/imf_dip.csv`), parsed with the Development Potential and Friendshore outbound builders' functions (R/dashboard/sector/sector_dev.R); the WDI and Doing Business values and the per-economy aid totals are in sector-facts. `--no-dev` leaves the chunk and its measures out |
 | `sector-fdi.<h8>.osb` | lazily, by the CM-FDI views only (Solar, Wind, Batteries and EV Midstream: profile Investment section, Explore, Country in sector, Sources download) | CM-FDI cross-border manufacturing projects (Net Zero Industrial Policy Lab, edition 2026.10.05, CC BY 4.0): every project with its source text and links per field, home -> destination flows, parent-HQ group splits and announcements by year, for all projects and for those the partnership indices use (`data/raw/cm_fdi_projects.csv`, or `--cmfdi <csv>`; `--no-fdi` leaves the chunk and its measures out) |
 
 Refresh after a pipeline rerun (scripts 10-25):

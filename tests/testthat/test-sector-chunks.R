@@ -18,7 +18,7 @@ chunks <- sector_chunks(bundle)
 
 test_that("the synthetic bundle has every chunk of this build", {
   expect_setequal(names(chunks), c("sector-meta", "sector-facts", "sector-trade-batteries", "sector-trade-oil", "sector-policy",
-                                   "sector-policy-text", "sector-series", "sector-fdi"))
+                                   "sector-policy-text", "sector-series", "sector-fdi", "sector-dev"))
   expect_true(all(c("monthly", "capacity") %in% names(chunks$`sector-series`$series)))
 })
 

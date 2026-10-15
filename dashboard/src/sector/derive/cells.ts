@@ -47,8 +47,11 @@ export function varsOfItem(model: SectorModel, item: ItemInfo, chunk?: string): 
   return out;
 }
 
-/** Item axes whose items stand for a cell's own measure (EI fuels: Oil Upstream production is fuel:oil). */
-const CELL_LINKED_AXES: ReadonlySet<string> = new Set(['fuel']);
+/**
+ * Item axes whose items stand for a cell's own measure (EI fuels: Oil Upstream production is fuel:oil;
+ * CRS aid sectors: energy aid is every Downstream cell's, through dims.item_links).
+ */
+const CELL_LINKED_AXES: ReadonlySet<string> = new Set(['fuel', 'aid_sector']);
 
 /** The var ids dict.cells.section_cards lists for a cell (scripts/87), or null when it lists none. */
 function cardVars(model: SectorModel, cell: ItemInfo): Set<string> | null {
@@ -95,7 +98,9 @@ export function cellMeasure(model: SectorModel, cell: ItemInfo, v: VarInfo | nul
 export function primaryVar(model: SectorModel, item: ItemInfo): VarInfo | null {
   const p = model.primaryVarsOf(item.slug).find((v) => measureItem(model, item, v) !== null);
   if (p) return p;
+  // development (aid received for the stage) describes the economy's finance, never a sector's lead measure
   for (const f of FAMILY_IDS) {
+    if (f === 'development') continue;
     const v = familyVar(model, item, f);
     if (v && v.native_level === 'country') return v;
   }

@@ -159,6 +159,20 @@ techs <- partnership_strength_headline_techs()
 stages <- DASH_STAGES
 country_info <- standardize_country_info(read_src(file.path(raw_dir, "wdi_country_info.csv"), read.csv))
 
+# IMF Direct Investment Positions for the ties chunk (section "Bilateral ties" below), read first while
+# the session is small: imf_dip.csv is ~1.9 GB, so only the columns the outbound builder reads (as
+# scripts/15 read_imf_dip()) plus SCALE, and only the reported rows of the four series shown.
+source(file.path(repo_root, "R", "dashboard", "dash_ties.R"))
+step("Reading IMF direct investment positions (column- and row-filtered)")
+dip_path <- read_src(file.path(raw_dir, "imf_dip.csv"), function(p) p)
+dip_hdr <- names(data.table::fread(dip_path, nrows = 0))
+dip_raw <- data.table::fread(
+  dip_path, select = c(intersect(c("COUNTRY", "COUNTERPART_COUNTRY", "DV_TYPE", "INDICATOR", "SCALE"), dip_hdr), grep("^X?[0-9]{4}$", dip_hdr, value = TRUE)),
+  showProgress = FALSE
+)
+dip_raw <- as.data.frame(dip_raw[dip_raw$DV_TYPE == "Reported official data" & dip_raw$INDICATOR %in% DASH_DIP_MEASURES, ])
+invisible(gc())
+
 # ---- Index outputs (pillars, policy, Strategic Index) ----------------------------------------------
 
 step("Reading ", rel(outputs_rds))
@@ -1087,6 +1101,112 @@ if (!skip_network_baseline) {
   }
 }
 
+# ---- Bilateral ties (Partners view, Country partners section) ------------------------------------
+#
+# Auxiliary chunks read by the browser on demand, never by the engine (R/dashboard/dash_ties.R):
+# `ties` (IMF direct investment positions by partner with the conduit centres, the CM-FDI factory
+# projects behind the investment tie, Development Potential by sector, agreements, UN-vote alignment,
+# top partners by the best-five summaries) and one `pcell-<slug>` per sector (each economy's top
+# suppliers and markets at the baseline). The positions are checked against the raw IMF file: the
+# pipeline's own builder on that file reproduces the bundle's investment tie, and so does ranking the
+# shipped positions (dash_dip_index()).
+
+step("Bilateral ties: IMF direct investment positions, CM-FDI flows, per-sector top partners")
+dip_scale <- if ("SCALE" %in% names(dip_raw)) sort(unique(dip_raw$SCALE)) else NA_character_
+# The window the pipeline averages the positions over (scripts/15 partner_trade_years) and its GDP
+# year (safer_friendshore() default): checked below, since the builder with these settings must
+# reproduce the bundle's investment tie.
+dip_years <- 2020:2024
+dip_gdp_year <- eval(formals(safer_friendshore)$gdp_year)
+conduit_cfg <- partnership_cfg$outbound_fdi
+conduit_rule <- partnership_strength_conduit_rule(rule = conduit_cfg$conduit_rule %||% "conduits", scope = conduit_cfg$conduit_scope %||% "both")
+gdp_dip <- read_src(file.path(raw_dir, "wdi_gdp.csv"), read.csv, stringsAsFactors = FALSE)
+U_p <- bundle$partner$U
+ob_bundle <- bundle$partner$fs$outbound
+if (is.null(ob_bundle)) ob_bundle <- matrix(NA_real_, length(U_p), length(U_p))
+edges_pipe <- partnership_strength_build_outbound_edges(
+  dip_raw[dip_raw$INDICATOR == DASH_DIP_MEASURES[["out_debt"]], , drop = FALSE], country_info, gdp_dip,
+  gdp_year = dip_gdp_year, years = dip_years, conduit_iso = conduit_rule$iso3, conduit_scope = conduit_rule$scope
+)
+cmp_num("IMF positions (raw file) -> investment tie (pipeline builder) == bundle", "ties", c(dash_dyad_matrix(edges_pipe, U_p)), c(ob_bundle), tol = 0,
+        note = paste0(basename(dip_path), "; mean of ", min(dip_years), "-", max(dip_years), "; GDP ", dip_gdp_year, "; conduit rule ", conduit_cfg$conduit_rule %||% "conduits"))
+dip_pos <- dash_dip_positions(dip_raw, country_info, index_years = dip_years)
+rm(dip_raw)
+invisible(gc())
+edges_ship <- dash_dip_index(dip_pos, gdp_dip, dip_gdp_year, conduit_rule$iso3, conduit_rule$scope)
+cmp_num("Shipped IMF positions, ranked -> investment tie == bundle", "ties", c(dash_dyad_matrix(edges_ship, U_p)), c(ob_bundle), tol = 0,
+        note = paste0(nrow(edges_ship), " dyads with a position in the index (", nrow(edges_pipe), " from the builder)"))
+add_check("IMF position unit", "ties", if (length(dip_scale) == 1 && grepl("^Millions$", dip_scale)) "PASS" else "FAIL", nrow(dip_pos), NA,
+          paste0("SCALE: ", paste(dip_scale, collapse = ", "), " (shipped as US$ millions)"))
+cmfdi_ties_tbl <- read_src(file.path(processed_dir, "partner_cm_fdi_ties_tbl.rds"))
+cmfdi_flows <- dash_cmfdi_flows(cmfdi_ties_tbl)
+rm(cmfdi_ties_tbl)
+cm_src <- bundle$partner$fs$outbound_source
+if (!is.null(cm_src) && any(cm_src == "cm_fdi") && !is.null(bundle$partner$fs$outbound_cmfdi)) {
+  cm_cells <- which(cm_src == "cm_fdi")
+  ck <- match(paste(cmfdi_flows$tech, cmfdi_flows$supply_chain), paste(bundle$partner$cells$tech, bundle$partner$cells$supply_chain)[cm_cells])
+  fr <- match(cmfdi_flows$investor_iso, U_p)
+  fp <- match(cmfdi_flows$destination_iso, U_p)
+  okf <- !is.na(ck) & !is.na(fr) & !is.na(fp)
+  # partnership_strength_cm_fdi_tie_index(): a reporter with a project in some partner of a cell has
+  # a tie with every partner of that cell (the partners without a project as one block below), and
+  # none (NA) without; so the reporter-cells with a tie are those with a shipped flow, and within
+  # them every partner with a flow scores above every partner without one
+  oc <- bundle$partner$fs$outbound_cmfdi
+  has_flow <- array(FALSE, dim(oc))
+  has_flow[cbind(fr[okf], fp[okf], ck[okf])] <- TRUE
+  rc_flow <- apply(has_flow, c(1, 3), any)
+  rc_tie <- apply(!is.na(oc), c(1, 3), any)
+  n_mis <- sum(rc_flow != rc_tie)
+  n_order <- 0L
+  for (ix in which(rc_tie & rc_flow)) {
+    r <- (ix - 1L) %% nrow(rc_tie) + 1L
+    k <- (ix - 1L) %/% nrow(rc_tie) + 1L
+    v <- oc[r, , k]
+    fl <- has_flow[r, , k]
+    if (any(!fl & !is.na(v)) && min(v[fl], na.rm = TRUE) <= max(v[!fl], na.rm = TRUE)) n_order <- n_order + 1L
+  }
+  add_check("CM-FDI flows shipped == the investment ties (reporter-cells with a tie; partners with a project above the rest)", "ties",
+            if (n_mis == 0 && n_order == 0) "PASS" else "FAIL", sum(rc_tie), NA,
+            paste0(nrow(cmfdi_flows), " flows (", sum(!okf), " outside the economies or cells); ", n_mis, " reporter-cells differ; ", n_order, " out of order"))
+  rm(oc, has_flow)
+}
+dev_tbl_p <- read_src(file.path(processed_dir, "partner_development_tbl.rds"))
+dp_cells <- dash_dp_cells(dev_tbl_p, bundle$partner$cells)
+rm(dev_tbl_p)
+add_check("Development Potential by sector: one value per partner and sector", "ties",
+          if (!anyDuplicated(paste(dp_cells$partner_iso, dp_cells$cell_id)) && all(unique(dp_cells$partner_iso) %in% bundle$partner$dp$partner_iso)) "PASS" else "FAIL",
+          nrow(dp_cells), NA, paste0(length(unique(dp_cells$partner_iso)), " partners x ", length(unique(dp_cells$cell_id)), " sectors"))
+agreements_ties <- read_src(file.path(repo_root, "data", "reference", "economic_security_agreements.csv"), read.csv, stringsAsFactors = FALSE)
+dy_res <- res$partner$psi$dyad
+top_all <- dplyr::bind_rows(
+  tibble::add_column(dash_top_partners(dash_dyad_matrix(dy_res, U_p, "friendshore"), U_p, bundle$partner$sovereign), side = "fs", .after = "reporter_iso"),
+  tibble::add_column(dash_top_partners(dash_dyad_matrix(dy_res, U_p, "opportunity"), U_p, bundle$partner$sovereign), side = "po", .after = "reporter_iso")
+)
+top_all$psi_rank <- dash_psi_rank_of(top_all, dy_res)
+conduits_ship <- partnership_strength_conduit_centres()
+conduits_ship$in_rule <- conduits_ship$iso3 %in% conduit_rule$iso3
+ties_meta <- list(
+  dip_years = I(dip_years), dip_gdp_year = dip_gdp_year, dip_unit = "US$ millions",
+  dip_source = "IMF, Direct Investment Positions (DIP), reported official data",
+  conduit_rule = conduit_cfg$conduit_rule %||% "conduits", conduit_scope = conduit_rule$scope, top_k = 10L
+)
+# the CC BY 4.0 attribution of CM-FDI, as the Sector module shows it (config/sector_dictionary.yml sources)
+sector_dict_ties <- maybe_src(file.path(repo_root, "config", "sector_dictionary.yml"), yaml::read_yaml)
+for (s_src in sector_dict_ties$sources %||% list()) if (identical(s_src$id, "cmfdi")) ties_meta$cmfdi_attribution <- s_src$attribution
+add_check("CM-FDI attribution in the ties chunk", "ties", if (is.character(ties_meta$cmfdi_attribution) && grepl("CC BY", ties_meta$cmfdi_attribution)) "PASS" else "FAIL",
+          NA, NA, "config/sector_dictionary.yml sources: cmfdi")
+rm(sector_dict_ties)
+ties_chunks <- c(
+  dash_ties_chunk(dip_pos, conduits_ship, cmfdi_flows, dp_cells, agreements_ties,
+                  if (!is.null(bundle$partner$geo_dyad)) bundle$partner$geo_dyad$alignment else NULL, top_all, U_p, ties_meta, bundle$partner$names),
+  dash_cell_chunks(res$partner$cells, dy_res, U_p, bundle$partner$sovereign, bundle$partner$cells, k = 10L)
+)
+add_check("Per-sector top partners: one chunk per sector", "ties", if (length(ties_chunks) == nrow(bundle$partner$cells) + 1) "PASS" else "FAIL",
+          length(ties_chunks) - 1, NA, "top 10 suppliers (Friendshore) and markets (Partnership Opportunity) per economy at the baseline")
+rm(dip_pos, edges_pipe, edges_ship, gdp_dip)
+invisible(gc())
+
 # ---- Write -----------------------------------------------------------------------------------------
 
 validation <- dplyr::bind_rows(val_rows)
@@ -1120,7 +1240,7 @@ dash_validate_bundle(bundle)
 
 # Web chunks: encode, gzip, name by md5, decode again and compare
 step("Web chunks -> ", out_dir)
-chunks <- dash_web_chunks(bundle, res)
+chunks <- c(dash_web_chunks(bundle, res), ties_chunks)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 chunk_rows <- list()
 for (nm in names(chunks)) {
@@ -1146,7 +1266,9 @@ for (nm in names(chunks)) {
 }
 chunk_info <- dplyr::bind_rows(chunk_rows)
 id_file <- tempfile(fileext = ".txt")
-writeBin(charToRaw(paste0(paste(sort(chunk_info$file), collapse = "\n"), "\n")), id_file)
+# the bundle id names the engine's data (core, vars, partner, network); the auxiliary chunks (ties,
+# pcell-*) are listed in the manifest but do not change it
+writeBin(charToRaw(paste0(paste(sort(chunk_info$file[chunk_info$name %in% c("core", "vars", "partner", "network")]), collapse = "\n"), "\n")), id_file)
 bundle_id <- unname(tools::md5sum(id_file))
 unlink(id_file)
 
@@ -1194,7 +1316,7 @@ if (any(over)) {
                budget$initial_gz / 2^20, budget$limit_initial_gz / 2^20, budget$all_gz / 2^20, budget$limit_all_gz / 2^20))
 }
 writeBin(charToRaw(enc2utf8(dash_json_text(web_manifest, pretty = TRUE))), file.path(out_dir, "manifest.json"))
-stale <- setdiff(list.files(out_dir, pattern = "^(core|vars|partner|network)\\.[0-9a-f]{8}\\.osb$"), chunk_info$file)
+stale <- setdiff(list.files(out_dir, pattern = "^(core|vars|partner|network|ties|pcell-[a-z0-9-]+)\\.[0-9a-f]{8}\\.osb$"), chunk_info$file)
 if (length(stale)) {
   file.remove(file.path(out_dir, stale))
   step("Removed ", length(stale), " stale chunk file(s)")

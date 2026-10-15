@@ -478,6 +478,38 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     short: "A short brief an AI model wrote from the country's fact sheet only. Software fills in every number from the data; automatic checks and a second AI model check every sentence against it.",
     modules: ['country'],
   },
+  // Development & finance raw data (Sector Insights; development data change 2026-10-15, additive)
+  {
+    id: 'oda',
+    term: 'Official development assistance',
+    short: 'Grants and concessional loans from donor governments to developing economies, as reported to the OECD Creditor Reporting System; shown by aid sector (energy, industry, mining) in constant 2023 US dollars.',
+    more: 'Bilateral donors only: multilateral lenders such as the World Bank and private flows are not in the data. Development Potential uses the aid an economy received for the stage over 2013-2024.',
+    modules: ['sector'],
+    related: ['dp'],
+  },
+  {
+    id: 'dip_position',
+    term: 'Direct-investment position',
+    short: "What firms in one economy hold in their related firms in another, from the IMF's Direct Investment Positions; here the debt part (loans between related firms), as the investing economy reports it.",
+    more: 'A stock, not a yearly flow: the mean of the years reported in 2020-2024. It is the investment tie behind Friendshore outside the four factory-project (CM-FDI) sectors.',
+    modules: ['sector'],
+    related: ['investment_ties', 'conduit_centre', 'fs'],
+  },
+  {
+    id: 'conduit_centre',
+    term: 'Conduit financial centre',
+    short: 'An economy through which investment passes on its way elsewhere, often via shell companies (the Netherlands, Luxembourg, Hong Kong, Singapore and others). Positions with one are flagged and left out of Friendshore.',
+    more: 'The list follows Damgaard, Elkjaer and Johannesen (IMF, 2019): ten economies host more than 85% of such pass-through investment; six other offshore centres are treated the same way.',
+    modules: ['sector'],
+    related: ['dip_position'],
+  },
+  {
+    id: 'wdi',
+    term: 'World Development Indicators',
+    short: "The World Bank's statistics on each economy's development: income, energy access and use, credit, debt, tariffs, governance and business regulation. Development Potential ranks them; Sector Insights shows the values.",
+    modules: ['sector'],
+    related: ['dp'],
+  },
 ];
 
 /** Fill {{placeholders}} (unknown keys are left as written, so a test can catch them). */

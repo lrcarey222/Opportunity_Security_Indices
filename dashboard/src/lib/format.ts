@@ -82,4 +82,22 @@ export const cellLabel = (tech: string, stage: string): string => `${tech} ${DAS
 export const stageSlug = (tech: string, stage: string): string =>
   `${tech}-${stage}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+const STAGE_ORDER = ['Upstream', 'Midstream', 'Downstream'];
+
+/**
+ * The options of a sector select, shared by the Strategic Partners view and the Country partners
+ * section: grouped by stage (Upstream, Midstream, Downstream), technologies alphabetical within each,
+ * labelled cellLabel() ("Solar – Midstream"). `value` gives each option's value.
+ */
+export function cellOptions<T extends { tech: string }>(
+  cells: readonly T[],
+  stageOf: (x: T) => string,
+  value: (x: T) => string,
+): { value: string; label: string; group: string }[] {
+  const rank = (s: string) => (STAGE_ORDER.includes(s) ? STAGE_ORDER.indexOf(s) : STAGE_ORDER.length);
+  return [...cells]
+    .sort((a, z) => rank(stageOf(a)) - rank(stageOf(z)) || a.tech.localeCompare(z.tech, 'en'))
+    .map((x) => ({ value: value(x), label: cellLabel(x.tech, stageOf(x)), group: stageOf(x) }));
+}
+
 export const tierLabel = (t: unknown): string => (t === 'core' ? 'Core' : t === 'partner' ? 'Partner' : 'Other');

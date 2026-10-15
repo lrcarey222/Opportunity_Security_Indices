@@ -1,9 +1,9 @@
 {
   "schema": "osi-sector",
   "schema_version": 1,
-  "bundle_id": "ae6bcf9dee6dabd88e6646f304584808",
-  "created": "2026-10-15T02:36:38Z",
-  "git_commit": "9afc1ea",
+  "bundle_id": "67e440a755c1d8a95fde6df667c0d38e",
+  "created": "2026-10-15T22:00:08Z",
+  "git_commit": "81d1bc5",
   "generator": "scripts/87_export_sector_data.R",
   "phase": 1,
   "strategic_bundle_id": "89d9af9a5fe8ef79f179cff95c5ba2a9",
@@ -15,111 +15,112 @@
     "atlas": false,
     "policy_text": true,
     "series": true,
-    "fdi": true
+    "fdi": true,
+    "dev": true
   },
   "chunks": [
     {
       "name": "sector-meta",
-      "file": "sector-meta.83a707d6.osb",
-      "bytes": 261176,
-      "bytes_gz": 79951,
-      "md5": "83a707d65105eed1e07dbf8d3b19d4f9",
+      "file": "sector-meta.becb9645.osb",
+      "bytes": 288032,
+      "bytes_gz": 85118,
+      "md5": "becb964543c00deb4b72355cc1eaea1e",
       "tech": null
     },
     {
       "name": "sector-facts",
-      "file": "sector-facts.f8a406fd.osb",
-      "bytes": 1644176,
-      "bytes_gz": 300846,
-      "md5": "f8a406fd14d942f7902854aeead2fa1a",
+      "file": "sector-facts.28d4afa8.osb",
+      "bytes": 2287912,
+      "bytes_gz": 388611,
+      "md5": "28d4afa88508fad75456c00ba0b106d2",
       "tech": null
     },
     {
       "name": "sector-trade-batteries",
-      "file": "sector-trade-batteries.25a8bb33.osb",
+      "file": "sector-trade-batteries.01296547.osb",
       "bytes": 664616,
       "bytes_gz": 207804,
-      "md5": "25a8bb3392a91a04ba20662a355146e4",
+      "md5": "01296547a7becd038c05fff28e6a1d98",
       "tech": "batteries"
     },
     {
       "name": "sector-trade-coal",
-      "file": "sector-trade-coal.7e3b99b0.osb",
+      "file": "sector-trade-coal.2e483a39.osb",
       "bytes": 349048,
       "bytes_gz": 108602,
-      "md5": "7e3b99b0e01916ed68f3459fed06d8fb",
+      "md5": "2e483a39a9a8e33072d92b28da638ded",
       "tech": "coal"
     },
     {
       "name": "sector-trade-electric-grid",
-      "file": "sector-trade-electric-grid.c8ddc926.osb",
+      "file": "sector-trade-electric-grid.bbc52683.osb",
       "bytes": 1024552,
-      "bytes_gz": 324722,
-      "md5": "c8ddc926f5f707fb7c43f2da193fea47",
+      "bytes_gz": 324719,
+      "md5": "bbc52683d957ee29c8c079e1daab55ba",
       "tech": "electric-grid"
     },
     {
       "name": "sector-trade-electric-vehicles",
-      "file": "sector-trade-electric-vehicles.03355207.osb",
+      "file": "sector-trade-electric-vehicles.4f34c2e4.osb",
       "bytes": 995464,
-      "bytes_gz": 308128,
-      "md5": "033552077333939374394f0c2e12ff85",
+      "bytes_gz": 308140,
+      "md5": "4f34c2e493103b518fd19f516f0abd9f",
       "tech": "electric-vehicles"
     },
     {
       "name": "sector-trade-gas",
-      "file": "sector-trade-gas.e8f1f2a6.osb",
+      "file": "sector-trade-gas.3c37263c.osb",
       "bytes": 638144,
-      "bytes_gz": 202324,
-      "md5": "e8f1f2a668358afbc4f8dcc8bdda09c1",
+      "bytes_gz": 202323,
+      "md5": "3c37263cf619eaeeec5310a2ff64e283",
       "tech": "gas"
     },
     {
       "name": "sector-trade-nuclear",
-      "file": "sector-trade-nuclear.a00fc605.osb",
+      "file": "sector-trade-nuclear.dfea8198.osb",
       "bytes": 241320,
-      "bytes_gz": 75294,
-      "md5": "a00fc605c1e70dcd8da0c8d55ab3e521",
+      "bytes_gz": 75292,
+      "md5": "dfea8198a52d19aa8881b7648c105b41",
       "tech": "nuclear"
     },
     {
       "name": "sector-trade-oil",
-      "file": "sector-trade-oil.bf65bb9b.osb",
+      "file": "sector-trade-oil.8280f451.osb",
       "bytes": 998264,
-      "bytes_gz": 319901,
-      "md5": "bf65bb9bf5626ae909a70c72b4dd624e",
+      "bytes_gz": 319899,
+      "md5": "8280f4519eec0d7e86648a64ace6f897",
       "tech": "oil"
     },
     {
       "name": "sector-trade-semiconductors",
-      "file": "sector-trade-semiconductors.446362a8.osb",
+      "file": "sector-trade-semiconductors.505fb803.osb",
       "bytes": 535136,
-      "bytes_gz": 166160,
-      "md5": "446362a84391b082986dbd2c86b454bc",
+      "bytes_gz": 166157,
+      "md5": "505fb8030d595daa4173d073ced7343c",
       "tech": "semiconductors"
     },
     {
       "name": "sector-trade-solar",
-      "file": "sector-trade-solar.eb2d1121.osb",
+      "file": "sector-trade-solar.9a1251b7.osb",
       "bytes": 839600,
-      "bytes_gz": 265672,
-      "md5": "eb2d11213ddf0f2c2d5ddd2f1ad5df7e",
+      "bytes_gz": 265670,
+      "md5": "9a1251b770626061086b2ac704bf1ac5",
       "tech": "solar"
     },
     {
       "name": "sector-trade-wind",
-      "file": "sector-trade-wind.195cab54.osb",
+      "file": "sector-trade-wind.f04e5991.osb",
       "bytes": 806768,
-      "bytes_gz": 254997,
-      "md5": "195cab54f1c613a96ff3c8c6661f9986",
+      "bytes_gz": 255005,
+      "md5": "f04e59919b6070a20b96cd955f5b7932",
       "tech": "wind"
     },
     {
       "name": "sector-policy",
-      "file": "sector-policy.f7a2bc1f.osb",
+      "file": "sector-policy.1bdc9b12.osb",
       "bytes": 567752,
-      "bytes_gz": 76953,
-      "md5": "f7a2bc1fdc1a593e21e74e95e555b545",
+      "bytes_gz": 76984,
+      "md5": "1bdc9b12b20e0174c905e09bc8d62f74",
       "tech": null
     },
     {
@@ -132,18 +133,26 @@
     },
     {
       "name": "sector-series",
-      "file": "sector-series.13e65d83.osb",
-      "bytes": 1891960,
-      "bytes_gz": 365501,
-      "md5": "13e65d8304f6fd8dc02a5f39329a066b",
+      "file": "sector-series.91226e59.osb",
+      "bytes": 1892024,
+      "bytes_gz": 365506,
+      "md5": "91226e5960bd7a0e16fb6e1f22313a28",
       "tech": null
     },
     {
       "name": "sector-fdi",
-      "file": "sector-fdi.731c9e63.osb",
+      "file": "sector-fdi.7e979cdd.osb",
       "bytes": 864128,
-      "bytes_gz": 213274,
-      "md5": "731c9e63add7761fc8d9ca6a8ef69408",
+      "bytes_gz": 213287,
+      "md5": "7e979cddcd7315db5761ad1bbd7c3777",
+      "tech": null
+    },
+    {
+      "name": "sector-dev",
+      "file": "sector-dev.6a759220.osb",
+      "bytes": 1578168,
+      "bytes_gz": 403412,
+      "md5": "6a75922079d6d1802a725bbb0e91632d",
       "tech": null
     }
   ],
@@ -437,7 +446,7 @@
     {
       "check": "dictionary: valid, every measure of the build has an entry",
       "status": "PASS",
-      "n": 67,
+      "n": 75,
       "detail": null
     },
     {
@@ -561,6 +570,66 @@
       "detail": null
     },
     {
+      "check": "parity X: CRS aid received 2013-2024 by stage, ranked as the Development Potential builder ranks it, reproduces its aid_index_supplychain identical()",
+      "status": "PASS",
+      "n": 383,
+      "detail": null
+    },
+    {
+      "check": "parity X: CRS aid received / GDP by stage, ranked as the builder ranks it, reproduces its aidgdp_index_supplychain identical()",
+      "status": "PASS",
+      "n": 383,
+      "detail": null
+    },
+    {
+      "check": "CRS dyads (donor -> recipient, sector, year) add up to the builder's stage totals (1e-9 relative)",
+      "status": "PASS",
+      "n": 383,
+      "detail": "max relative difference 0"
+    },
+    {
+      "check": "parity X: the builder on this export's raw inputs reproduces the stored development_index (data/processed partner_development_tbl) identical()",
+      "status": "PASS",
+      "n": 132,
+      "detail": "4356 stored rows compared; 0 stored values without a builder value"
+    },
+    {
+      "check": "parity X: the builder on this export's raw inputs reproduces the stored doingbusiness_index (data/processed partner_development_tbl) identical()",
+      "status": "PASS",
+      "n": 128,
+      "detail": "4224 stored rows compared; 0 stored values without a builder value"
+    },
+    {
+      "check": "parity X: the builder on this export's raw inputs reproduces the stored energy_use_index (data/processed partner_development_tbl) identical()",
+      "status": "PASS",
+      "n": 95,
+      "detail": "3135 stored rows compared; 0 stored values without a builder value"
+    },
+    {
+      "check": "parity X: the builder on this export's raw inputs reproduces the stored aid_index_supplychain (data/processed partner_development_tbl) identical()",
+      "status": "PASS",
+      "n": 383,
+      "detail": "4213 stored rows compared; 0 stored values without a builder value"
+    },
+    {
+      "check": "parity X: the builder on this export's raw inputs reproduces the stored aidgdp_index_supplychain (data/processed partner_development_tbl) identical()",
+      "status": "PASS",
+      "n": 366,
+      "detail": "4026 stored rows compared; 0 stored values without a builder value"
+    },
+    {
+      "check": "parity X: IMF DIP positions (conduit positions dropped as the index drops them), ranked as Friendshore's outbound builder ranks them, reproduce its outbound_index identical()",
+      "status": "PASS",
+      "n": 10237,
+      "detail": "11931 positions shipped, 1694 of them with a conduit centre"
+    },
+    {
+      "check": "Development & finance: raw inputs parsed with the builders' functions",
+      "status": "PASS",
+      "n": 68684,
+      "detail": "WDI 5043 values (40 series; none in the window: HD.HCI.OVRL); Doing Business 190; CRS 51520 dyad-years (44 donors, 131 recipients, 2013-2024; years shown 2013-2023; incomplete: 2024 (2 of 44 donors had reported)); DIP 11931 positions (1694 with a conduit centre)"
+    },
+    {
       "check": "EI series: successor states' zeros before they exist and the USSR's zeros after it ends are nsr (NaN)",
       "status": "PASS",
       "n": 666,
@@ -593,13 +662,13 @@
     {
       "check": "dictionary: every measure of the build has data",
       "status": "PASS",
-      "n": 67,
+      "n": 75,
       "detail": null
     },
     {
       "check": "native levels: region, entity, EU and world values never on a country geo",
       "status": "PASS",
-      "n": 50283,
+      "n": 62502,
       "detail": null
     },
     {
@@ -785,25 +854,25 @@
     {
       "check": "no index, weight or contribution rows: only data_type raw rows of data/processed are read",
       "status": "PASS",
-      "n": 23195,
+      "n": 35414,
       "detail": null
     },
     {
       "check": "chunks: decode identical() to the encoded objects (NA patterns included)",
       "status": "PASS",
-      "n": 16,
+      "n": 17,
       "detail": null
     },
     {
       "check": "chunks: R mirror of the contract checks (types, NA, indices, sort, keys, slices)",
       "status": "PASS",
-      "n": 16,
+      "n": 17,
       "detail": null
     },
     {
       "check": "parity: ledger rows present in the decoded chunk",
       "status": "PASS",
-      "n": 23195,
+      "n": 35414,
       "detail": null
     },
     {
@@ -1137,6 +1206,48 @@
       "detail": "max relative difference 0"
     },
     {
+      "check": "parity X: decoded aid flows (development.oda) identical() to the CRS rows as summed",
+      "status": "PASS",
+      "n": 51416,
+      "detail": null
+    },
+    {
+      "check": "parity X: decoded positions (development.fdi_out) identical() to the IMF DIP positions as parsed",
+      "status": "PASS",
+      "n": 11931,
+      "detail": null
+    },
+    {
+      "check": "parity X: decoded development.wdi identical() to partnership_strength_build_wdi_long()$value on wb_wdi.csv",
+      "status": "PASS",
+      "n": 5043,
+      "detail": null
+    },
+    {
+      "check": "decoded development.wdi: every value carries the span of years it averages (obs_from <= obs_year)",
+      "status": "PASS",
+      "n": 5043,
+      "detail": null
+    },
+    {
+      "check": "parity X: decoded development.doing_business identical() to partnership_strength_build_doing_business()$doingbusiness on wb_doingbusiness.csv",
+      "status": "PASS",
+      "n": 190,
+      "detail": null
+    },
+    {
+      "check": "parity X: decoded development.oda_received_total identical() to the builder's aid per recipient and stage (oecd_crs_api.csv)",
+      "status": "PASS",
+      "n": 383,
+      "detail": null
+    },
+    {
+      "check": "parity X: decoded development.oda_received_gdp identical() to the builder's aid / GDP per recipient and stage",
+      "status": "PASS",
+      "n": 366,
+      "detail": null
+    },
+    {
       "check": "CM-FDI parity: every decoded project is a CSV row and every CSV row is exported once",
       "status": "PASS",
       "n": 1042,
@@ -1169,16 +1280,16 @@
     {
       "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 25 MB gz)",
       "status": "PASS",
-      "n": 16,
-      "detail": "sector 3752 kB gz; combined 8.88 MB gz"
+      "n": 17,
+      "detail": "sector 4237 kB gz; combined 10.80 MB gz"
     }
   ],
   "sources": [
     {
       "path": "config/sector_dictionary.yml",
-      "mtime": "2026-10-15T02:33:18Z",
-      "bytes": 124305,
-      "md5": "2c20db81f3681d0e58ffe22caf4561e8"
+      "mtime": "2026-10-15T21:50:01Z",
+      "bytes": 147213,
+      "md5": "fa9bdfd94b4f00ee732e842214bb0ce2"
     },
     {
       "path": "data/processed/coalition_tbl.rds",
@@ -1379,6 +1490,48 @@
       "md5": "df921c9f97a4c5c2c56ad943873f3215"
     },
     {
+      "path": "data/raw/wdi_country_info.csv",
+      "mtime": "2026-09-30T14:19:50Z",
+      "bytes": 30739,
+      "md5": "ac6fd6a11572f3e146ef553cd4046f12"
+    },
+    {
+      "path": "data/raw/wdi_gdp.csv",
+      "mtime": "2026-09-30T14:19:48Z",
+      "bytes": 243968,
+      "md5": "51d400c1843f763fac4ba19fe794f2a4"
+    },
+    {
+      "path": "data/raw/wb_wdi.csv",
+      "mtime": "2026-09-30T14:19:45Z",
+      "bytes": 1466979,
+      "md5": "c593722a6a02c202674d3c07b250d260"
+    },
+    {
+      "path": "data/raw/wb_doingbusiness.csv",
+      "mtime": "2026-09-30T14:19:45Z",
+      "bytes": 100872,
+      "md5": "c16aed2b7e3af23ad7ef5e5478a3846f"
+    },
+    {
+      "path": "data/raw/oecd_crs_api.csv",
+      "mtime": "2026-09-30T14:19:48Z",
+      "bytes": 27748549,
+      "md5": "7bb6c0a41873e3568492c5601a626d1c"
+    },
+    {
+      "path": "data/processed/partner_development_tbl.rds",
+      "mtime": "2026-10-12T16:08:04Z",
+      "bytes": 157813,
+      "md5": "e18ea4c66d51fda21101ac5b557c8daa"
+    },
+    {
+      "path": "data/raw/imf_dip.csv",
+      "mtime": "2026-09-30T14:19:47Z",
+      "bytes": 1875803184,
+      "md5": "db5a478f170eedcb3342ca13b6b7e9fa"
+    },
+    {
       "path": "data/raw/ev_Midstream_capacity.csv",
       "mtime": "2026-09-30T14:19:48Z",
       "bytes": 1779,
@@ -1395,17 +1548,11 @@
       "mtime": "2026-09-30T14:19:50Z",
       "bytes": 5052025,
       "md5": "42f00ad80194ea4b33a595caf8b38a32"
-    },
-    {
-      "path": "data/raw/wdi_country_info.csv",
-      "mtime": "2026-09-30T14:19:50Z",
-      "bytes": 30739,
-      "md5": "ac6fd6a11572f3e146ef553cd4046f12"
     }
   ],
   "budget": {
-    "sector_gz": 3842156,
-    "combined_gz": 9315548,
+    "sector_gz": 4338556,
+    "combined_gz": 11320442,
     "limit_sector_gz": 9437184,
     "limit_combined_gz": 26214400
   },

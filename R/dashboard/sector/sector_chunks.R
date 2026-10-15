@@ -32,11 +32,12 @@ sector_index <- function(x, table, what) {
 }
 
 # An observation table (facts.obs / series.obs) and its slice index, sorted by (var, item, year,
-# geo) indices. obs: var, item_key, geo, year, value, status, obs_year.
+# geo) indices. obs: var, item_key, geo, year, value, status, obs_year (and, optionally, obs_from: the
+# first year of a value averaged over years, development.wdi; NA elsewhere).
 sector_obs_tables <- function(obs, var_ids, item_keys, geo_codes) {
   if (is.null(obs) || !nrow(obs)) {
     empty_obs <- tibble::tibble(var = integer(), item = integer(), geo = integer(), year = integer(), value = double(),
-                                status = character(), obs_year = integer())
+                                status = character(), obs_year = integer(), obs_from = integer())
     return(list(obs = empty_obs, index = tibble::tibble(var = integer(), item = integer(), year = integer(), start = integer(), n = integer())))
   }
   t <- tibble::tibble(
@@ -46,7 +47,8 @@ sector_obs_tables <- function(obs, var_ids, item_keys, geo_codes) {
     year = as.integer(obs$year),
     value = as.double(obs$value),
     status = as.character(obs$status),
-    obs_year = as.integer(if ("obs_year" %in% names(obs)) obs$obs_year else NA_integer_)
+    obs_year = as.integer(if ("obs_year" %in% names(obs)) obs$obs_year else NA_integer_),
+    obs_from = as.integer(if ("obs_from" %in% names(obs)) obs$obs_from else NA_integer_)
   )
   if (anyNA(t$year)) stop("sector_obs_tables(): NA year")
   if (anyNA(t$status) || length(setdiff(unique(t$status), SECTOR_STATUS_CODES))) stop("sector_obs_tables(): unknown status ", paste(setdiff(unique(t$status), SECTOR_STATUS_CODES), collapse = ", "))
@@ -283,6 +285,7 @@ sector_chunks <- function(b) {
   }
 
   if (!is.null(b$fdi)) out$`sector-fdi` <- sector_fdi_chunk(b$fdi, gi, ii)
+  if (!is.null(b$dev)) out$`sector-dev` <- sector_dev_chunk(b$dev, gi, ii)
   out
 }
 
@@ -444,7 +447,7 @@ sector_decoded_obs <- function(meta, obs) {
   it <- meta$dims$items
   tibble::tibble(var = meta$dict$vars$id[obs$var + 1L], item_key = paste0(it$axis, ":", it$slug)[obs$item + 1L],
                  geo = meta$dims$geo$code[obs$geo + 1L], year = obs$year, value = obs$value, status = obs$status,
-                 obs_year = obs$obs_year)
+                 obs_year = obs$obs_year, obs_from = if ("obs_from" %in% names(obs)) obs$obs_from else NA_integer_)
 }
 
 sector_decoded_world <- function(meta, world) {

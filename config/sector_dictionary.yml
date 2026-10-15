@@ -85,6 +85,73 @@ units:
   - {id: usd_m_announced, short: "USD m", long: "US dollars, millions, current (announced or reported capital investment)", unit_kind: usd_m}
   - {id: share_projects, short: "share", long: "share of the destination's foreign-invested projects (0-1)", unit_kind: share}
   - {id: index01, short: "0-1", long: "index from 0 (none) to 1 (all)", unit_kind: index01}
+  # Development & finance (development data change 2026-10-15): the World Bank series in their own
+  # units (dev_indicators below), the Doing Business score, OECD CRS aid and IMF DIP positions.
+  - {id: wdi_series, short: "unit of the series", long: "the World Bank's unit of each series (stated with the series)", unit_kind: number}
+  - {id: pct_gdp, short: "% of GDP", long: "percent of GDP", unit_kind: pct}
+  - {id: pct_gni, short: "% of GNI", long: "percent of gross national income", unit_kind: pct}
+  - {id: pct_pop, short: "% of population", long: "percent of the population", unit_kind: pct}
+  - {id: pct_firms, short: "% of firms", long: "percent of firms surveyed", unit_kind: pct}
+  - {id: pct_energy_use, short: "% of energy use", long: "percent of energy use", unit_kind: pct}
+  - {id: pct_exports_gsi, short: "% of exports", long: "percent of exports of goods, services and primary income", unit_kind: pct}
+  - {id: pct_mfg_exports, short: "% of manufactured exports", long: "percent of manufactured exports", unit_kind: pct}
+  - {id: usd_current, short: "USD", long: "US dollars, current", unit_kind: usd}
+  - {id: usd_pc_current, short: "USD per person", long: "US dollars per person, current", unit_kind: usd}
+  - {id: usd_pc_2015, short: "USD per person (2015$)", long: "US dollars per person, constant 2015 prices", unit_kind: usd}
+  - {id: kgoe_pc, short: "kgoe per person", long: "kilograms of oil equivalent per person", unit_kind: number}
+  - {id: pctile_rank, short: "percentile rank", long: "percentile rank among all economies (0 = lowest, 100 = highest)", unit_kind: number}
+  - {id: score100, short: "of 100", long: "score from 0 to 100 (100 = the best regulatory practice measured)", unit_kind: number}
+  - {id: scale01, short: "0-1", long: "World Bank scale from 0 to 1", unit_kind: number}
+  - {id: usd_m_2023, short: "USD m (2023$)", long: "US dollars, millions, constant 2023 prices (OECD DAC deflators)", unit_kind: usd_m}
+  - {id: pct_gdp_2023, short: "% of 2023 GDP", long: "percent of the recipient's 2023 GDP (World Bank, current US dollars)", unit_kind: pct}
+  - {id: usd_m_dip, short: "USD m", long: "US dollars, millions, current (end-of-year positions)", unit_kind: usd_m}
+
+# World Bank WDI series behind Development Potential (development.wdi, item axis `indicator`): every
+# series of data/raw/wb_wdi.csv that partnership_strength_build_development_indicators() ranks, plus
+# energy use per person (energy_use_index). `label` is the World Bank series name; `unit` a units id.
+# scripts/87 stops when the builder uses a series that is not listed here. In display order.
+dev_indicators:
+  - {code: NY.GDP.PCAP.KD, label: "GDP per capita (constant 2015 US$)", unit: usd_pc_2015}
+  - {code: NY.GDP.MKTP.KD.ZG, label: "GDP growth (annual %)", unit: pct_pa}
+  - {code: NV.IND.TOTL.KD.ZG, label: "Industry (including construction), value added (annual % growth)", unit: pct_pa}
+  - {code: EG.ELC.ACCS.ZS, label: "Access to electricity (% of population)", unit: pct_pop}
+  - {code: EG.USE.PCAP.KG.OE, label: "Energy use (kg of oil equivalent per capita)", unit: kgoe_pc}
+  - {code: EG.IMP.CONS.ZS, label: "Energy imports, net (% of energy use)", unit: pct_energy_use}
+  - {code: IC.ELC.OUTG.ZS, label: "Firms experiencing electrical outages (% of firms)", unit: pct_firms}
+  - {code: NE.GDI.TOTL.ZS, label: "Gross capital formation (% of GDP)", unit: pct_gdp}
+  - {code: BX.KLT.DINV.WD.GD.ZS, label: "Foreign direct investment, net inflows (% of GDP)", unit: pct_gdp}
+  - {code: NE.TRD.GNFS.ZS, label: "Trade (% of GDP)", unit: pct_gdp}
+  - {code: NE.RSB.GNFS.ZS, label: "External balance on goods and services (% of GDP)", unit: pct_gdp}
+  - {code: TX.VAL.TECH.MF.ZS, label: "High-technology exports (% of manufactured exports)", unit: pct_mfg_exports}
+  - {code: TM.TAX.MRCH.WM.AR.ZS, label: "Tariff rate, applied, weighted mean, all products (%)", unit: pct}
+  - {code: TM.TAX.MANF.WM.AR.ZS, label: "Tariff rate, applied, weighted mean, manufactured products (%)", unit: pct}
+  - {code: FS.AST.PRVT.GD.ZS, label: "Domestic credit to private sector (% of GDP)", unit: pct_gdp}
+  - {code: FD.AST.PRVT.GD.ZS, label: "Domestic credit to private sector by banks (% of GDP)", unit: pct_gdp}
+  - {code: FB.BNK.CAPA.ZS, label: "Bank capital to assets ratio (%)", unit: pct}
+  - {code: FD.RES.LIQU.AS.ZS, label: "Bank liquid reserves to bank assets ratio (%)", unit: pct}
+  - {code: FR.INR.DPST, label: "Deposit interest rate (%)", unit: pct}
+  - {code: GC.TAX.TOTL.GD.ZS, label: "Tax revenue (% of GDP)", unit: pct_gdp}
+  - {code: GC.DOD.TOTL.GD.ZS, label: "Central government debt, total (% of GDP)", unit: pct_gdp}
+  - {code: DT.DOD.DECT.GN.ZS, label: "External debt stocks (% of GNI)", unit: pct_gni}
+  - {code: DT.TDS.DECT.GN.ZS, label: "Total debt service (% of GNI)", unit: pct_gni}
+  - {code: DT.TDS.DPPF.XP.ZS, label: "Debt service, public and publicly guaranteed and IMF (% of exports of goods, services and primary income)", unit: pct_exports_gsi}
+  - {code: DT.ODA.ODAT.PC.ZS, label: "Net official development assistance received per capita (current US$)", unit: usd_pc_current}
+  - {code: DC.DAC.USAL.CD, label: "Net bilateral aid flows from the United States (DAC donor, current US$)", unit: usd_current}
+  - {code: GE.PER.RNK, label: "Government effectiveness (percentile rank)", unit: pctile_rank}
+  - {code: RL.PER.RNK, label: "Rule of law (percentile rank)", unit: pctile_rank}
+  - {code: CC.PER.RNK, label: "Control of corruption (percentile rank)", unit: pctile_rank}
+  - {code: PV.PER.RNK, label: "Political stability and absence of violence or terrorism (percentile rank)", unit: pctile_rank}
+  - {code: HD.HCI.OVRL, label: "Human Capital Index (World Bank, 0-1)", unit: scale01}
+  - {code: IC.BRE.BE.OS, label: "B-READY: business entry (score)", unit: score100}
+  - {code: IC.BRE.BL.OS, label: "B-READY: business location (score)", unit: score100}
+  - {code: IC.BRE.US.OS, label: "B-READY: utility services (score)", unit: score100}
+  - {code: IC.BRE.LB.OS, label: "B-READY: labour (score)", unit: score100}
+  - {code: IC.BRE.FS.OS, label: "B-READY: financial services (score)", unit: score100}
+  - {code: IC.BRE.IT.OS, label: "B-READY: international trade (score)", unit: score100}
+  - {code: IC.BRE.TX.OS, label: "B-READY: taxation (score)", unit: score100}
+  - {code: IC.BRE.DR.OS, label: "B-READY: dispute resolution (score)", unit: score100}
+  - {code: IC.BRE.MC.OS, label: "B-READY: market competition (score)", unit: score100}
+  - {code: IC.BRE.BI.OS, label: "B-READY: business insolvency (score)", unit: score100}
 
 # IMF series units come from energy_prices_pcps_units() (R/categories/energy_prices/energy_prices.R,
 # the IMF series metadata); this maps its unit text to a unit id. Text not listed -> price_tbc.
@@ -434,6 +501,53 @@ sources:
     accessed: "2026-10-11"
     transform: "One row per project as published ({fdi_n} projects; {fdi_n_dest} destination and {fdi_n_home} home economies; {fdi_n_parents} parent companies; announced {fdi_years}). Country names to ISO3 (Czechia and Czech Republic as one); technology to its Midstream sector (Battery -> Batteries, EV -> Electric Vehicles, Solar, Wind); undisclosed capital investment kept as not disclosed, never zero; source cells verbatim with their http(s) links. Flows (home -> destination), parent-headquarters group splits and announcements by year are counts and sums computed by the OSI authors, over all projects and over the projects the Partnership indices use (config/partnership.yml cm_fdi)."
     issues: "{fdi_n_undisclosed} of {fdi_n} projects disclose no capital investment; values are announced, not audited. Cross-border projects only: domestic investment is not covered."
+  # Development & finance (development data change 2026-10-15): the raw inputs of Development Potential
+  # (R/themes/partnership_strength/stronger_development.R) and of Friendshore's outbound component
+  # (safer_friendshore.R), read with the builders' own functions.
+  - id: wb_wdi
+    short: "World Bank WDI"
+    citation: "World Bank, World Development Indicators ({wdi_n_series} series used, {wdi_years}), with the Worldwide Governance Indicators and B-READY topic scores it carries"
+    publisher: "World Bank"
+    edition: "{wdi_years} extract"
+    url: "https://databank.worldbank.org/source/world-development-indicators"
+    licence: attribution
+    attribution: "Source: World Bank, World Development Indicators (CC BY 4.0)."
+    accessed: "2026-09"
+    transform: "partnership_strength_build_wdi_long() (Development Potential builder): countries of the WDI country list; per series and economy the mean of the years reported in {wdi_years}. Shown as published: no ranking, no inversion."
+    issues: "Coverage differs by series (B-READY: 50 economies, 2024). Series without values in the window: {wdi_empty}."
+  - id: wb_doingbusiness
+    short: "World Bank Doing Business"
+    citation: "World Bank, Doing Business 2020: ease of doing business score (DB17-20 methodology), {db_year} data"
+    publisher: "World Bank"
+    edition: "DB2020 (last edition)"
+    url: "https://archive.doingbusiness.org/en/doingbusiness"
+    licence: attribution
+    attribution: "Source: World Bank, Doing Business (CC BY 4.0)."
+    accessed: "2026-09"
+    transform: "partnership_strength_build_doing_business(): series IC.BUS.EASE.DFRN.XQ.DB1719, countries of the WDI country list."
+    issues: "Discontinued in 2021 after data irregularities; the 2019 scores are the last published."
+  - id: oecd_crs
+    short: "OECD Creditor Reporting System"
+    citation: "OECD, Creditor Reporting System (CRS), official development assistance, gross disbursements, constant {crs_base_year} US dollars, {crs_years_total}"
+    publisher: "OECD Development Co-operation Directorate"
+    edition: "OECD Data Explorer, DF_CRS 1.4 ({crs_years_total})"
+    url: "https://data-explorer.oecd.org/"
+    licence: attribution
+    attribution: "Source: OECD Creditor Reporting System (CC BY 4.0)."
+    accessed: "2026-09"
+    transform: "Rows by donor, recipient, CRS sector and year summed as read; the mining sector net of its coal and upstream oil-and-gas sub-rows; recipients restricted to the WDI country list ({crs_n_recipients} recipients, {crs_n_donors} donors). The Development Potential builder's total per stage (2013-2024, every donor) and its ratio to 2023 GDP rebuilt with partnership_strength_build_oecd_supplychain()'s steps."
+    issues: "Bilateral official donors only: multilateral lenders and private flows are not in the extract. Constant prices use the OECD DAC deflators of each donor."
+  - id: imf_dip
+    short: "IMF Direct Investment Positions"
+    citation: "International Monetary Fund, Direct Investment Positions by Counterpart Economy (formerly CDIS), outward positions, debt instruments, {dip_years}"
+    publisher: "International Monetary Fund"
+    edition: "{dip_years}"
+    url: "https://data.imf.org/"
+    licence: attribution
+    attribution: "Source: IMF Direct Investment Positions (DIP)."
+    accessed: "2026-09"
+    transform: "As partnership_strength_build_outbound_edges() (Friendshore): reported official data, outward debt-instrument positions of all entities; the mean of the years each pair reports in {dip_years}; IMF names to ISO3 with the pipeline's mapping; regional and unallocated counterparts dropped. Positions with a conduit financial centre are kept and flagged."
+    issues: "Positions as reported by the investing economy: an economy that does not report has no outward positions here. {dip_n_conduit} of {dip_n} positions involve a conduit centre."
 
 caveats:
   - {id: hs6_overlap, text: "Technology-attributed trade: {n_shared_codes} of the {n_codes} HS6 codes in the baskets count in more than one sector, so values are never added across technologies."}
@@ -512,6 +626,15 @@ caveats:
   - {id: policy_text_tags, text: "Where the IEA gives no technology, the tag comes from keyword rules on the text and is marked 'text-derived'."}
   - {id: cat_dated, text: "Each rating carries its own update date; the EU is rated as a bloc."}
   - {id: alignment_basis, text: "Territories without their own votes take their sovereign's position (basis 'inherited')."}
+  - {id: wdi_mean, text: "Each value is the mean of the years the economy reports in {wdi_years}, the value the Development Potential builder reads; the table gives the years averaged for each economy (one year where it reports only one). Series where a higher value means a weaker environment (debt, deposit rates, outages, tariffs, aid dependence) are shown as published, not inverted."}
+  - {id: wdi_empty, text: "Series of the extract without any value in {wdi_years}, so not shown: {wdi_empty}."}
+  - {id: db_discontinued, text: "The World Bank stopped Doing Business in 2021 after data irregularities; these {db_year} scores are its last. Its successor, B-READY (2024, 50 economies), is in the World Bank indicators of this theme."}
+  - {id: crs_scope, text: "Official development assistance from {crs_n_donors} bilateral donors (OECD DAC members and other reporting countries), gross disbursements, {crs_years}, constant {crs_base_year} US dollars (OECD DAC deflators). Multilateral lenders (World Bank, regional development banks, EU institutions) and private flows are not in the extract."}
+  - {id: crs_stage, text: "Aid sectors are CRS purpose codes, not technologies. They map to stages as in Development Potential: energy to Downstream, industry to Midstream, mineral resources and mining (less its coal and upstream oil and gas) to Upstream, so aid for energy counts on every Downstream sector. Mining aid net of its fossil sub-rows can be negative in a year."}
+  - {id: crs_gdp, text: "The {crs_years_total} total divided by one year's GDP (2023, World Bank, current US dollars), as the Development Potential builder divides it."}
+  - {id: crs_incomplete, text: "Years most donors had not yet reported when the extract was taken are counted in the totals, as Development Potential counts them, but not shown as years: {crs_incomplete}."}
+  - {id: dip_debt, text: "IMF Direct Investment Positions, outward, debt instruments only (loans and debt securities between related firms; equity is not in this measure), as reported by the investing economy: the mean of the years each pair reports in {dip_years}. A reported zero is a real zero; a pair not shown was not reported."}
+  - {id: dip_conduit, text: "{dip_n_conduit} of {dip_n} positions involve a conduit financial centre ({dip_conduits}): pass-through positions with little real activity behind them (Damgaard, Elkjaer and Johannesen, IMF 2019). They are shown and flagged; the Friendshore investment component treats positions {dip_conduit_scope} as not observed."}
   - {id: ei_eu_row, text: "The EU row is EI's own European Union total."}
   - {id: cim_capacity_units, text: "Units differ by product; products are never summed."}
   - {id: cim_capacity_status, text: "Operational is the 2025 snapshot and includes plants still ramping up ('operational yet to come online'); under construction, announced and paused are capacity planned to 2030."}
@@ -543,7 +666,7 @@ themes:
   - {slug: prices, label: "Prices & costs", order: 7, default_var: prices.latest, description: "Commodity prices and volatility, wages, lending rates and producer-price inflation."}
   - {slug: technology, label: "Technology & outlook", order: 8, default_var: technology.trl, description: "Technology readiness of each sector, from the IEA Clean Energy Technology Guide."}
   - {slug: policy, label: "Policy", order: 9, default_var: policy.records, description: "Recorded energy policies by economy, technology and year, and Climate Action Tracker ratings."}
-  - {slug: development, label: "Development & finance", order: 10, default_var: development.alignment, description: "Economies' positions on the US-China UN-vote axis."}
+  - {slug: development, label: "Development & finance", order: 10, default_var: development.wdi, description: "Development indicators from the World Bank, official development assistance (who funds whom, by aid sector), bilateral direct-investment positions (who invests where) and positions on the US-China UN-vote axis."}
 
 families:
   - {id: exports, label: "Trade", section: trade}
@@ -2647,6 +2770,253 @@ vars:
     parity: {none: "ordinal ratings"}
     phase: "1"
   # ---- development --------------------------------------------------------------------------------
+  # The raw data behind Development Potential and Friendshore's outbound component (development data
+  # change 2026-10-15): values as the builders read them from data/raw, never their rankings.
+  - id: development.wdi
+    theme: development
+    family: development
+    label: "World Bank development indicators"
+    short: "World Bank indicators"
+    definition: "A World Development Indicators series as Development Potential reads it: the mean of the years each economy reports in {wdi_years}. Choose the series in the list."
+    unit: wdi_series
+    data_year: "{wdi_years} (mean of the years reported)"
+    years: [2024]
+    year_field: true
+    native_level: country
+    item_axis: indicator
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: wb_wdi
+    roster: wb_wdi
+    licence: attribution
+    caveats: [wdi_mean, wdi_empty]
+    primary_for: []
+    section: null
+    link_stage: any
+    feeds: ["Partners: Development Potential (development level; energy use per person on its own)"]
+    prov: X
+    prov_detail: "wb_wdi.csv via partnership_strength_build_wdi_long() (R/themes/partnership_strength/stronger_development.R), column value"
+    parity: {none: "raw World Bank values, checked identical() to the builder's value column in scripts/87"}
+    phase: "2"
+  - id: development.doing_business
+    theme: development
+    family: development
+    label: "Ease of doing business score"
+    short: "Doing Business score"
+    definition: "The World Bank's ease of doing business score (DB17-20 methodology): 0 to 100, where 100 is the best regulatory practice measured."
+    unit: score100
+    data_year: "{db_year} (Doing Business 2020)"
+    years: [2019]
+    year_field: false
+    native_level: country
+    item_axis: none
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: wb_doingbusiness
+    roster: wb_doingbusiness
+    licence: attribution
+    caveats: [db_discontinued]
+    primary_for: []
+    section: null
+    feeds: ["Partners: Development Potential (business environment)"]
+    prov: X
+    prov_detail: "wb_doingbusiness.csv via partnership_strength_build_doing_business(), column doingbusiness"
+    parity: {none: "raw World Bank scores, checked identical() to the builder's doingbusiness column in scripts/87"}
+    phase: "2"
+  - id: development.oda_received
+    theme: development
+    family: development
+    label: "Official development assistance received"
+    short: "Aid received"
+    definition: "Official development assistance disbursed to the economy by bilateral donors in a year, by aid sector (OECD Creditor Reporting System), constant {crs_base_year} US dollars."
+    unit: usd_m_2023
+    data_year: "{crs_years}"
+    years: [2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023]
+    year_field: false
+    native_level: country
+    item_axis: aid_sector
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: oecd_crs
+    roster: oecd_crs_recipients
+    licence: attribution
+    caveats: [crs_scope, crs_stage, crs_incomplete]
+    primary_for: []
+    section: null
+    link_stage: any
+    feeds: ["Partners: Development Potential (aid received for the stage)"]
+    prov: X
+    prov_detail: "oecd_crs_api.csv: the rows of each recipient, aid sector and year summed over donors"
+    parity: {none: "raw CRS disbursements; the 2013-2024 stage totals are checked against the builder in scripts/87"}
+    phase: "2"
+  - id: development.oda_given
+    theme: development
+    family: development
+    label: "Official development assistance given"
+    short: "Aid given"
+    definition: "Official development assistance a bilateral donor disbursed to the recipients of the extract in a year, by aid sector (OECD Creditor Reporting System), constant {crs_base_year} US dollars."
+    unit: usd_m_2023
+    data_year: "{crs_years}"
+    years: [2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023]
+    year_field: false
+    native_level: country
+    item_axis: aid_sector
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: oecd_crs
+    roster: oecd_crs_donors
+    licence: attribution
+    caveats: [crs_scope, crs_stage, crs_incomplete]
+    primary_for: []
+    section: null
+    link_stage: any
+    feeds: ["Context: who funds development in the stage"]
+    prov: X
+    prov_detail: "oecd_crs_api.csv: the rows of each donor, aid sector and year summed over the WDI-country recipients"
+    parity: {none: "raw CRS disbursements summed by donor"}
+    phase: "2"
+  - id: development.oda
+    theme: development
+    family: development
+    label: "Aid flows from donors to recipients"
+    short: "Aid flows"
+    definition: "Official development assistance from each bilateral donor to each recipient, by aid sector and year (OECD Creditor Reporting System), constant {crs_base_year} US dollars: who funds whom."
+    unit: usd_m_2023
+    data_year: "{crs_years}"
+    years: [2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023]
+    year_field: false
+    native_level: dyad
+    item_axis: aid_sector
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: oecd_crs
+    roster: null
+    licence: attribution
+    caveats: [crs_scope, crs_stage, crs_incomplete]
+    primary_for: []
+    section: null
+    feeds: ["Partners: Development Potential (aid received)"]
+    prov: X
+    prov_detail: "oecd_crs_api.csv: rows by donor, recipient, aid sector and year (sector-dev dev.oda)"
+    parity: {none: "raw CRS disbursements; the dyads add up to the builder's stage totals (checked in scripts/87)"}
+    phase: "2"
+  - id: development.oda_received_total
+    theme: development
+    family: development
+    label: "Official development assistance received, total of all years"
+    short: "Aid received, all years"
+    definition: "The total official development assistance an economy received for a stage's aid sector over {crs_years_total} from every donor in the extract, floored at zero: the quantity Development Potential ranks."
+    unit: usd_m_2023
+    data_year: "{crs_years_total} total"
+    years: [2024]
+    year_field: false
+    native_level: country
+    item_axis: aid_sector
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: oecd_crs
+    roster: oecd_crs_recipients
+    licence: attribution
+    caveats: [crs_scope, crs_stage, crs_incomplete]
+    primary_for: []
+    section: null
+    link_stage: any
+    feeds: ["Partners: Development Potential (aid received for the stage)"]
+    prov: X
+    prov_detail: "oecd_crs_api.csv via the steps of partnership_strength_build_oecd_supplychain(), column aid"
+    parity: {none: "rebuilt with the builder's steps; ranked as the builder ranks it, it reproduces the builder's output identical() (scripts/87)"}
+    phase: "2"
+  - id: development.oda_received_gdp
+    theme: development
+    family: development
+    label: "Official development assistance received, total of all years, relative to GDP"
+    short: "Aid received / GDP"
+    definition: "The {crs_years_total} aid total for the stage divided by the recipient's 2023 GDP: the second quantity Development Potential ranks."
+    unit: pct_gdp_2023
+    data_year: "{crs_years_total} total / 2023 GDP"
+    years: [2024]
+    year_field: false
+    native_level: country
+    item_axis: aid_sector
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 100000000
+    source: oecd_crs
+    roster: oecd_crs_recipients
+    licence: attribution
+    caveats: [crs_scope, crs_stage, crs_gdp, crs_incomplete]
+    primary_for: []
+    section: null
+    link_stage: any
+    feeds: ["Partners: Development Potential (aid relative to the economy)"]
+    prov: X
+    prov_detail: "oecd_crs_api.csv and wdi_gdp.csv via the steps of partnership_strength_build_oecd_supplychain(), column aid_gdp (USD m / USD; shown as percent)"
+    parity: {none: "rebuilt with the builder's steps; ranked as the builder ranks it, it reproduces the builder's output identical() (scripts/87)"}
+    phase: "2"
+  - id: development.fdi_out
+    theme: development
+    family: development
+    label: "Bilateral direct-investment positions (debt instruments)"
+    short: "Investment positions"
+    definition: "What firms in one economy hold in debt claims on their related firms in another (IMF Direct Investment Positions, outward, debt instruments), as the investing economy reports it: who invests where."
+    unit: usd_m_dip
+    data_year: "{dip_years} (mean of the years reported)"
+    years: [2024]
+    year_field: false
+    native_level: dyad
+    item_axis: none
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: imf_dip
+    roster: null
+    licence: attribution
+    caveats: [dip_debt, dip_conduit]
+    primary_for: []
+    section: null
+    feeds: ["Partners: Friendshore investment tie (outside the CM-FDI cells)"]
+    prov: X
+    prov_detail: "imf_dip.csv via the steps of partnership_strength_build_outbound_edges() (R/themes/partnership_strength/safer_friendshore.R) before its conduit filter (sector-dev dev.dip)"
+    parity: {none: "raw IMF positions; with conduit positions dropped and ranked as the builder ranks them, they reproduce the builder's output identical() (scripts/87)"}
+    phase: "2"
   - id: development.alignment
     theme: development
     family: development

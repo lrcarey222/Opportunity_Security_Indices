@@ -9,6 +9,8 @@ const SPEC_IDS = [
   'hhi', 'effective_n', 'rca', 'feasibility', 'matrix', 'mirror', 'basket', 'sub_component', 'net_balance', 'self_sufficiency', 'cmfdi', 'chinese_parent',
   'investment_ties', 'trl', 'unattributed', 'paper_baseline', 'scenario', 'dials', 'hawkishness', 'bullishness', 'populism', 'greenness', 'grow',
   'upgrade', 'secure', 'watch', 'quadrant', 'priority_no_policy', 'ties_today', 'memo',
+  // Development & finance raw data (Sector Insights, 2026-10-15)
+  'oda', 'dip_position', 'conduit_centre', 'wdi',
 ];
 
 describe('glossary content (C3.2)', () => {

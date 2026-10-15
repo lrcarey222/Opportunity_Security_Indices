@@ -12,7 +12,7 @@ import {
 } from '../engine/network/index.ts';
 import { EngineError, NA_BOOL, NA_INT, yieldNow } from '../engine/numeric.ts';
 import { dialReadout, isBaseline, makeParams, paramsKey } from '../engine/params.ts';
-import { fsCells, partnerDecompose, partnerTop5, poCells, psi } from '../engine/partner.ts';
+import { cellPartners, fsCells, partnerDecompose, partnerTop5, poCells, psi } from '../engine/partner.ts';
 import { variableContrib } from '../engine/pillars.ts';
 import { selfCheckCore, selfCheckNetwork, selfCheckPartner } from '../engine/selfcheck.ts';
 import type {
@@ -129,6 +129,9 @@ export class EngineHost {
           break;
         case 'dyads':
           await this.dyads(msg.id, msg.spec, msg.reporter);
+          break;
+        case 'cellPartners':
+          await this.cellPartners(msg.id, msg.spec, msg.reporter, msg.cell);
           break;
         case 'tables':
           await this.tables(msg.id, msg.spec, msg.include);
@@ -647,6 +650,15 @@ export class EngineHost {
     const shipped = this.shippedBaselinePartner(b);
     const cur = isBaseline(params, b) ? shipped.psi : (await this.partnerState(null, b, params)).state.psi;
     this.reply(id, compareDyads(cur, shipped.psi, reporter));
+  }
+
+  private async cellPartners(id: number, spec: ScenarioSpec, reporter: string, cell: number): Promise<void> {
+    await this.ensureChunk('partner');
+    const b = this.bundle as Bundle;
+    const params = makeParams(spec, b);
+    const base = this.baselineCells(b);
+    const cells = isBaseline(params, b) ? base : (await this.partnerState(null, b, params)).state.cells;
+    this.reply(id, cellPartners(b, cells, base, reporter, cell));
   }
 
   private async tables(id: number, spec: ScenarioSpec, include: RunLayer[]): Promise<void> {

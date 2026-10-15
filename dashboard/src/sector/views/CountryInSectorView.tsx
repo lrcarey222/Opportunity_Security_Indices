@@ -2,8 +2,10 @@
 // sector. Position tiles per country-level measure (with the value states), its rank among peers (a
 // beeswarm of the primary measure), its trade partners (where imports come from, where exports go,
 // and its import mix 2020 vs 2024), in the four CM-FDI cells its inbound and outbound cross-border
-// manufacturing projects (sector-fdi, loaded when the section nears the viewport), its measures over
-// time (separate small charts, never a dual axis), its policies and its stage context.
+// manufacturing projects (sector-fdi, loaded when the section nears the viewport), its aid and
+// investment partners (sector-dev: aid for the stage's aid sector, bilateral direct-investment
+// positions; loaded near the viewport), its measures over time (separate small charts, never a dual
+// axis), its policies and its stage context.
 
 import { useMemo } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
@@ -27,10 +29,12 @@ import { hasFdi } from '../derive/fdi.ts';
 import { sectorCsv } from '../derive/csv.ts';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { lc, fmtShare, fmtUsd, listText, logAxisFormatter, ordinal } from '../format.ts';
+import { factYearText, periodText } from './caption.ts';
 import { rankSlice } from './cards.tsx';
 import { ChunkGate, fmtFact, HowToRead, markGroup } from './common.tsx';
 import { useFacts, useNear, usePolicy, useSeries, useTrade } from './data.ts';
 import { FdiCountry } from './fdi/FdiCountry.tsx';
+import { DevCountry } from './dev/DevCountry.tsx';
 import { Beeswarm, Dumbbell, LabelledLines, LeagueBars, SectorChartCard, type BeeswarmPoint, type DumbbellRow, type LeagueRow } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
 import { baseYear } from './TechChainView.tsx';
@@ -47,6 +51,17 @@ interface Position {
   n: number;
   /** ranked within its sign (net importers / exporters): not a "top 10" position */
   signed?: boolean;
+}
+
+/**
+ * A measure in the lead sentence: one over a span of years says so ("aid received over 2013–2024"),
+ * a yearly development measure names its year ("aid received in 2023"), so the two read apart.
+ */
+function leadLabel(v: VarInfo, year: number): string {
+  const base = lc(v.short.replace(/, all years$/, ''));
+  const period = periodText(v, 'short');
+  if (period) return `${base} over ${period.replace(/ (total|average)$/, '')}`;
+  return v.family === 'development' ? `${base} in ${year}` : base;
 }
 
 /** The plural noun of one side of a signed measure ("net importers", "falling"). */
@@ -88,7 +103,7 @@ function positions(model: SectorModel, facts: FactsIndex, cell: ItemInfo, g: Geo
         v,
         year,
         text: `${fmtFact(model, v, it, row.value)}${st.assumed ? ` ${ASSUMED_MARK}` : ''}`,
-        sub: [!signed && pos?.share !== null && pos?.share !== undefined ? `${fmtShare(pos.share)} ${basisWords(c.basis, v.source.short)}` : null, rankText, String(row.obs_year ?? year), noteLine(model, v.id, row) || null].filter(Boolean).join(' · '),
+        sub: [!signed && pos?.share !== null && pos?.share !== undefined ? `${fmtShare(pos.share)} ${basisWords(c.basis, v.source.short)}` : null, rankText, factYearText(v, row, year), noteLine(model, v.id, row) || null].filter(Boolean).join(' · '),
         rank,
         n,
         signed,
@@ -188,6 +203,21 @@ function CrossBorder({ cell, g, tech, stage }: { cell: ItemInfo; g: GeoInfo; tec
         Cross-border projects
       </h2>
       {near ? <FdiCountry model={model} cell={cell} g={g} geoHref={(x) => (x.kind === 'country' || x.kind === 'eu' ? link(`/sector/${tech}/${stage}/${x.code}`) : null)} /> : <div style={{ minHeight: 240 }} aria-hidden="true" />}
+    </section>
+  );
+}
+
+/** Aid and investment partners (sector-dev; mounts, and loads it, near the viewport). */
+function DevPartnersSection({ cell, g }: { cell: ItemInfo; g: GeoInfo }) {
+  const model = useModel();
+  const [ref, near] = useNear<HTMLElement>(600);
+  if (!model.vars.some((v) => v.id === 'development.fdi_out' || v.id === 'development.oda')) return null;
+  return (
+    <section ref={ref} id="aid-investment" aria-labelledby="dev-h">
+      <h2 id="dev-h" className="rule-neis-sm mb-4 text-xl font-medium text-paper">
+        Aid and investment partners
+      </h2>
+      {near ? <DevCountry model={model} cell={cell} g={g} /> : <div style={{ minHeight: 240 }} aria-hidden="true" />}
     </section>
   );
 }
@@ -311,7 +341,7 @@ export default function CountryInSectorView() {
   if (!stage || !cell) return <Navigate to={`/sector/${tech}`} replace state={{ notice: `No stage called '${rawS}'; showing the whole ${TECH_LABELS[tech]} chain.` }} />;
   if (!geo) return <Navigate to={link(`/sector/${tech}/${stage}`)} replace state={{ notice: `No economy '${rawC}' in the sector data; showing the sector.` }} />;
 
-  const top10 = pos.filter((p) => !p.signed && p.rank !== null && p.rank <= 10).map((p) => `${ordinal(p.rank as number)} in ${lc(p.v.short)}`);
+  const top10 = pos.filter((p) => !p.signed && p.rank !== null && p.rank <= 10).map((p) => `${ordinal(p.rank as number)} in ${leadLabel(p.v, p.year)}`);
   const lede = top10.length ? `${geo.name} ranks ${listText(top10)} in ${model.cellLabel(cell)}.` : `${geo.name} does not rank in the top 10 on any country-level measure of ${model.cellLabel(cell)}.`;
   return (
     <ProfileProvider value={{ model, cell, tech, stage, facts, highlight: geo, eu: state.eu }}>
@@ -377,6 +407,7 @@ export default function CountryInSectorView() {
                   </section>
                 )}
                 {hasFdi(model, cell) && <CrossBorder key={`${cell.slug}|${geo.code}`} cell={cell} g={geo} tech={tech} stage={stage} />}
+                {(geo.kind === 'country' || geo.kind === 'eu') && <DevPartnersSection key={`dev|${cell.slug}|${geo.code}`} cell={cell} g={geo} />}
                 {facts && (
                   <section aria-labelledby="ot-h">
                     <h2 id="ot-h" className="rule-neis-sm mb-4 text-xl font-medium text-paper">

@@ -8,7 +8,7 @@ SECTOR_V <- list(
   kind = c("country", "eu", "world", "region", "entity", "residual"),
   tier = c("core", "partner", "none"),
   group = c("china", "core", "partner", "rest", "na"),
-  axis = c("cell", "mineral", "fuel", "commodity", "activity", "policy_tag", "none"),
+  axis = c("cell", "mineral", "fuel", "commodity", "activity", "policy_tag", "indicator", "aid_sector", "none"),
   level = c("country", "eu", "region", "entity", "world", "cell_global", "dyad"),
   agg = c("sum", "ratio", "none"),
   basis = c("source_world", "sum_all", "one", "sum_listed", "none"),
@@ -33,7 +33,8 @@ SECTOR_V <- list(
   fdi_value_status = c("obs", "nq"),
   fdi_field = c("parent", "status", "location", "amount", "ownership", "announced", "completed", "activity", "jv"),
   fdi_basis = c("all", "index_use"),
-  fdi_group = c("china", "core", "partner", "rest")
+  fdi_group = c("china", "core", "partner", "rest"),
+  dev_conduit = c("none", "counterpart", "investor", "both")
 )
 
 sector_tbl_spec <- function(cols, sorted = NULL, unique = NULL, values = list(), optional = FALSE) {
@@ -41,7 +42,7 @@ sector_tbl_spec <- function(cols, sorted = NULL, unique = NULL, values = list(),
 }
 
 sector_chunk_specs <- function() {
-  obs <- sector_tbl_spec(c(var = "i!@vars", item = "i!@items", geo = "i!@geo", year = "i!", value = "f", status = "s!", obs_year = "i"),
+  obs <- sector_tbl_spec(c(var = "i!@vars", item = "i!@items", geo = "i!@geo", year = "i!", value = "f", status = "s!", obs_year = "i", obs_from = "i"),
                          sorted = c("var", "item", "year", "geo"), unique = c("var", "item", "year", "geo"),
                          values = list(status = SECTOR_V$status))
   index <- sector_tbl_spec(c(var = "i!@vars", item = "i!@items", year = "i!", start = "i!", n = "i!"),
@@ -165,6 +166,15 @@ sector_chunk_specs <- function() {
       `fdi.years` = sector_tbl_spec(c(item = "i!@items", year = "i!", basis = "s!", group = "s!", n = "i!", n_value = "i!", value = "f"),
                                     sorted = c("item", "year"), unique = c("item", "year", "basis", "group"),
                                     values = list(basis = SECTOR_V$fdi_basis, group = SECTOR_V$fdi_group))
+    ),
+    dev = list(
+      `dev.oda` = sector_tbl_spec(c(item = "i!@items", year = "i!", donor = "i!@geo", recipient = "i!@geo", value = "f!"),
+                                  sorted = c("item", "year", "donor", "recipient"), unique = c("item", "year", "donor", "recipient")),
+      `dev.dip` = sector_tbl_spec(c(reporter = "i!@geo", counterpart = "i!@geo", value = "f!", year_min = "i!", year_max = "i!",
+                                    n_years = "i!", conduit = "s!"),
+                                  sorted = c("reporter", "counterpart"), unique = c("reporter", "counterpart"),
+                                  values = list(conduit = SECTOR_V$dev_conduit)),
+      `dev.conduits` = sector_tbl_spec(c(geo = "i!@geo", dej_top10 = "b!"), sorted = "geo", unique = "geo")
     )
   )
 }
@@ -173,7 +183,7 @@ sector_spec_of <- function(name) {
   s <- sector_chunk_specs()
   if (startsWith(name, "sector-trade-")) return(s$trade)
   switch(name, `sector-meta` = s$meta, `sector-facts` = s$facts, `sector-policy` = s$policy,
-         `sector-policy-text` = s$policy_text, `sector-series` = s$series, `sector-fdi` = s$fdi, stop("no spec for ", name))
+         `sector-policy-text` = s$policy_text, `sector-series` = s$series, `sector-fdi` = s$fdi, `sector-dev` = s$dev, stop("no spec for ", name))
 }
 
 # A dotted path of a nested list.
@@ -288,6 +298,7 @@ sector_check_chunk <- function(name, objects, sizes = list(), var_ids = NULL) {
   }
   if (name == "sector-series") e <- c(e, sector_check_obs_index("series", objects$series$obs, objects$series$index))
   if (name == "sector-fdi") e <- c(e, sector_check_fdi(objects$fdi))
+  if (name == "sector-dev") e <- c(e, sector_check_dev(objects$dev))
   if (startsWith(name, "sector-trade-")) {
     f <- objects$trade$flows
     for (y in SECTOR_TRADE_YEARS) {

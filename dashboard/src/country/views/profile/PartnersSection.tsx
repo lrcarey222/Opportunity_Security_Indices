@@ -1,7 +1,11 @@
 // S5 of the Country profile (spec_country.md A4.2, "Partners"): the partners the Partnership Strength
 // Index rates highest from the country's viewpoint beside whom it trades with today (PartnerSlope), the
 // partner-by-partner table (reasons, components, trade, factory projects, agreements, UN votes, match),
-// who supplies the country in each sector, and its role in the allied network design.
+// who supplies the country in each sector, the top suppliers and export markets of one sector (or all
+// sectors) at the paper baseline with the pair's ties, its bilateral direct investment (IMF positions;
+// factory projects in the four CM-FDI sectors), and its role in the allied network design. The
+// sector-level data come from the Strategic bundle's auxiliary chunks (views/Partners/ties.ts), not
+// the fact sheet.
 
 import { useMemo } from 'react';
 import { Link } from 'react-router';
@@ -11,10 +15,11 @@ import { TableView, type Col } from '../../../components/TableView.tsx';
 import { cellOf, type PartnerRow } from '../../contract.ts';
 import { PartnerSlope } from '../../charts/PartnerSlope.tsx';
 import { SupplierMatrix } from '../../charts/SupplierMatrix.tsx';
-import { networkLink, partnersLink } from '../../derive/links.ts';
+import { devDataLink, networkLink, partnersLink } from '../../derive/links.ts';
 import { GROUP_WORD, partnerTableRows, slopeModel, supplierModel } from '../../derive/model.ts';
 import { agreementsText, alignmentText, matchText, networkSentence, partnerReason, proseName, poss, cap } from '../../derive/text.ts';
 import { csvWithSource, LinkRow, Section, useProfile } from './common.tsx';
+import { PartnersBySector } from './PartnersBySector.tsx';
 
 type Row = PartnerRow & { extra: boolean };
 
@@ -43,6 +48,7 @@ export function PartnersSection() {
       ) : (
         <p className="text-sm text-paper-mute">{cap(name)} has no partner rows in the Partnership Strength Index.</p>
       )}
+      <PartnersBySector />
       <NetworkCard />
       <LinkRow>
         <Link className="link" to={partnersLink(sheet.iso3)}>
@@ -95,7 +101,8 @@ function SlopeCard() {
 }
 
 function PartnerTable() {
-  const { sheet, partner, setPartner } = useProfile();
+  const { sheet, cell, partner, setPartner } = useProfile();
+  const pc = partner ? cellOf(sheet, cell) : null;
   const name = proseName(sheet.meta.country);
   const rows = useMemo(() => partnerTableRows(sheet), [sheet]);
   const cols: Col<Row>[] = [
@@ -133,6 +140,18 @@ function PartnerTable() {
       sub={`The top 15 partners by Partnership Strength from ${poss(name)} viewpoint, plus any of its ten largest trade partners not among them (marked "trade partner"). Development Potential is scored only for middle- and lower-income partners. Factory projects are cross-border clean-tech manufacturing projects (solar, wind, batteries, electric vehicles). Click a row to select the partner.`}
       summary={`${cap(name)}: ${rows.length} partners with their Partnership Strength, components and today's ties.`}
       csv={csv}
+      notes={
+        <span className="text-sm" data-testid="dev-data-link">
+          <Link className="link" to={devDataLink(partner ?? null, pc ? { tech: pc.tech, stage: pc.stage } : null)}>
+            The development data behind this &rarr;
+          </Link>
+          <span className="text-paper-mute">
+            {pc && partner
+              ? ` the selected partner's aid received and given, and its direct-investment positions, in Sector Insights (${pc.label})`
+              : ' World Bank development indicators, OECD aid flows and IMF direct-investment positions behind Development Potential, in Sector Insights'}
+          </span>
+        </span>
+      }
     >
       <TableView<Row> rows={rows} cols={cols} caption={`${cap(name)}: partners by Partnership Strength`} rowKey={(r) => r.iso3} onRowClick={(r) => setPartner(r.iso3)} selectedKey={partner} search pageSize={15} initialSort={{ id: 'rank' }} />
     </ChartCard>

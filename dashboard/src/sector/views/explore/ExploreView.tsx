@@ -25,6 +25,10 @@ import { useSectorUrl } from '../state.tsx';
 import { CountryLayout } from './CountryLayout.tsx';
 import { indexFor, type ExploreCtx } from './ctx.ts';
 import { FdiLayout } from './FdiLayout.tsx';
+import { periodText } from '../caption.ts';
+import { DevFlowsLayout } from './DevFlowsLayout.tsx';
+
+const cap1 = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 import { FlowsLayout } from './Flows.tsx';
 import { CapacityLayout, CellGlobalLayout, EntityLayout, MineralDemandLayout, RegionLayout, ScatterLayout, WorldLayout } from './Layouts.tsx';
 import { NotesCard } from './Notes.tsx';
@@ -32,7 +36,7 @@ import { PolicyExplore } from './PolicyExplore.tsx';
 
 const FACTS_LAYOUTS: ReadonlySet<ExploreLayout> = new Set(['country', 'region', 'entity', 'world', 'cell_global', 'scatter']);
 
-const AXIS_WORDS: Record<string, string> = { mineral: 'Mineral', fuel: 'Fuel', commodity: 'Commodity', activity: 'Activity', policy_tag: 'Policy tag', cell: 'Sector' };
+const AXIS_WORDS: Record<string, string> = { mineral: 'Mineral', fuel: 'Fuel', commodity: 'Commodity', activity: 'Activity', policy_tag: 'Policy tag', cell: 'Sector', indicator: 'Series', aid_sector: 'Aid sector' };
 
 /** The 11 x 3 picker of cells (>= 1024 px): options without data disabled, the current one outlined. */
 function CellPicker({ v, item, onPick }: { v: VarInfo; item: ItemInfo | null; onPick: (it: ItemInfo) => void }) {
@@ -129,6 +133,8 @@ function Body({ c, layout }: { c: ExploreCtx; layout: ExploreLayout }) {
       return <CapacityLayout c={c} />;
     case 'fdi':
       return <FdiLayout c={c} />;
+    case 'devflows':
+      return <DevFlowsLayout c={c} />;
   }
 }
 
@@ -149,7 +155,7 @@ export default function ExploreView() {
   const { series } = useSeries(needSeries);
   const years = useMemo(() => {
     if (!v || !item) return [];
-    if (layout === 'dyad') return [...v.years];
+    if (layout === 'dyad' || layout === 'devflows') return [...v.years];
     // CM-FDI: every announcement year is in the cards (with their own window switch), no year select
     if (layout === 'fdi') return [];
     return [...new Set([...(facts?.yearsOf(v.idx, item.idx) ?? []), ...(series?.yearsOf(v.idx, item.idx) ?? [])])].sort((a, z) => a - z);
@@ -243,7 +249,7 @@ export default function ExploreView() {
             />
             <MeasureTip v={v} />
             <ItemPicker v={v} item={item} onPick={ctx.setItem} />
-            {v.year_field && year !== null && <p className="pb-1 text-sm text-paper-dim">Latest available up to {year}</p>}
+            {v.year_field && year !== null && <p className="pb-1 text-sm text-paper-dim">{periodText(v, 'long') ? `${cap1(periodText(v, 'long') as string)} (each economy's own years in the table)` : `Latest available up to ${year}`}</p>}
             {phone && extra.length > 0 ? (
               <div className="w-full">
                 <Disclosure summary={`More filters (${nChanged})`}>

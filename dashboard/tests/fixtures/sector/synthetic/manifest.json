@@ -1,7 +1,7 @@
 {
   "schema": "osi-sector",
   "schema_version": 1,
-  "bundle_id": "ffbae12bbc2aa945e44b74b4583389d6",
+  "bundle_id": "cc91ca2f9c9eee0c737998d610c674bb",
   "created": "2026-10-10T00:00:00Z",
   "git_commit": null,
   "generator": "scripts/87_export_sector_data.R",
@@ -15,23 +15,24 @@
     "atlas": false,
     "policy_text": true,
     "series": true,
-    "fdi": true
+    "fdi": true,
+    "dev": true
   },
   "chunks": [
     {
       "name": "sector-meta",
-      "file": "sector-meta.9e5aca15.osb",
-      "bytes": 122128,
-      "bytes_gz": 33713,
-      "md5": "9e5aca1589019cb1f20c435279cf2bd5",
+      "file": "sector-meta.a440a0ed.osb",
+      "bytes": 139240,
+      "bytes_gz": 37792,
+      "md5": "a440a0ed057a5f353cf1f724babf42c1",
       "tech": null
     },
     {
       "name": "sector-facts",
-      "file": "sector-facts.46cb6b6a.osb",
-      "bytes": 26704,
-      "bytes_gz": 4907,
-      "md5": "46cb6b6a80c4e29bef0bbbcdebf823f6",
+      "file": "sector-facts.d36c8bee.osb",
+      "bytes": 34080,
+      "bytes_gz": 5573,
+      "md5": "d36c8beed548468d97938c3f21c666f5",
       "tech": null
     },
     {
@@ -68,10 +69,10 @@
     },
     {
       "name": "sector-series",
-      "file": "sector-series.1835584f.osb",
-      "bytes": 18960,
-      "bytes_gz": 3534,
-      "md5": "1835584fe5eeb3fbc23f08bb2cc720a3",
+      "file": "sector-series.1d26ee18.osb",
+      "bytes": 19024,
+      "bytes_gz": 3541,
+      "md5": "1d26ee185b933a7dcbac59086a96dab8",
       "tech": null
     },
     {
@@ -80,6 +81,14 @@
       "bytes": 14912,
       "bytes_gz": 2828,
       "md5": "09dfd6650e20ed1bad84443377238485",
+      "tech": null
+    },
+    {
+      "name": "sector-dev",
+      "file": "sector-dev.df4852d3.osb",
+      "bytes": 3736,
+      "bytes_gz": 912,
+      "md5": "df4852d356d788b2a423af48bbc00e7c",
       "tech": null
     }
   ],
@@ -373,19 +382,31 @@
     {
       "check": "dictionary: valid, every measure of the build has an entry",
       "status": "PASS",
-      "n": 67,
+      "n": 75,
       "detail": null
     },
     {
       "check": "chunks: decode identical() to the encoded objects (NA patterns included)",
       "status": "PASS",
-      "n": 8,
+      "n": 9,
       "detail": null
     },
     {
       "check": "chunks: R mirror of the contract checks (types, NA, indices, sort, keys, slices)",
       "status": "PASS",
-      "n": 8,
+      "n": 9,
+      "detail": null
+    },
+    {
+      "check": "parity X: decoded aid flows (development.oda) identical() to the CRS rows as summed",
+      "status": "PASS",
+      "n": 96,
+      "detail": null
+    },
+    {
+      "check": "parity X: decoded positions (development.fdi_out) identical() to the IMF DIP positions as parsed",
+      "status": "PASS",
+      "n": 11,
       "detail": null
     },
     {
@@ -421,20 +442,20 @@
     {
       "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 25 MB gz)",
       "status": "PASS",
-      "n": 8,
-      "detail": "sector 53 kB gz"
+      "n": 9,
+      "detail": "sector 58 kB gz"
     }
   ],
   "sources": [
     {
       "path": "config/sector_dictionary.yml",
       "mtime": "synthetic",
-      "bytes": 124239,
-      "md5": "b296e7ef46058cce7ebec35a2bb029a0"
+      "bytes": 147213,
+      "md5": "fa9bdfd94b4f00ee732e842214bb0ce2"
     }
   ],
   "budget": {
-    "sector_gz": 54218,
+    "sector_gz": 59882,
     "combined_gz": null,
     "limit_sector_gz": 9437184,
     "limit_combined_gz": 26214400

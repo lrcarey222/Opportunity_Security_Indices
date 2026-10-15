@@ -460,6 +460,12 @@ export default function CountryView() {
             title={`The data behind ${cellLabel(tech, stage)}`}
             sub="Each row is one measure inside a category: its value after ranking against the other economies in the sector (0 to 1, higher is better for the score), its weight inside the category and how much it adds to the score. Values the paper filled in where data were missing are flagged."
             tools={
+              <>
+              {app.Uindex.has(iso) && (
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => goto(`/partners/${iso}`, { tech, stage })} title={`${c.country}'s suppliers and export markets in ${cellLabel(tech, stage)}`}>
+                  Partners in this sector
+                </button>
+              )}
               <Segmented
                 label="Pillar"
                 hideLabel
@@ -470,6 +476,7 @@ export default function CountryView() {
                 ]}
                 onChange={setVarPillar}
               />
+              </>
             }
             updating={!!vars && vars.key !== varsKey}
             csv={vars?.table ? () => ({ name: `variables-${varPillar}-${iso}-${tech}-${stage}`, text: tableToCsv(vars.table as Table) }) : undefined}

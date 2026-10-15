@@ -19,10 +19,24 @@ export function strategicLink(path: string, set: Record<string, string> = {}): s
 
 export const strategicCountryLink = (iso3: string) => strategicLink(`/strategic/${iso3}`);
 export const countryScoresLink = (iso3: string) => strategicLink(`/country/${iso3}`);
-export const partnersLink = (iso3: string) => strategicLink(`/partners/${iso3}`);
+/** The Partners view of an economy; with a sector, that sector's partners (`tech`, `stage`). */
+export const partnersLink = (iso3: string, c?: { tech: string; stage: string } | null) =>
+  strategicLink(`/partners/${iso3}`, c ? { tech: c.tech, stage: c.stage } : {});
 export const spaceLink = (c: CellFacts | null) => strategicLink('/space', c ? { tech: c.tech, stage: c.stage } : {});
 /** The network view of one stage (its path segment is the cell key, lib/format.ts stageSlug()). */
 export const networkLink = (c: CellFacts | null) => strategicLink(c ? `/network/${c.key}` : '/network');
 
 /** Sector Insights with the country highlighted. */
 export const sectorCountryLink = (iso3: string) => `/sector?c=${iso3}`;
+
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+/**
+ * The raw development data behind Development Potential (World Bank indicators, OECD aid flows, IMF
+ * direct-investment positions) in Sector Insights: with a sector, the partner's page in that sector at
+ * its "Aid and investment partners" section; else the World Bank indicators with the partner highlighted.
+ */
+export const devDataLink = (iso3: string | null, c?: { tech: string; stage: string } | null) =>
+  c && iso3
+    ? `/sector/${slug(c.tech)}/${slug(c.stage)}/${iso3}#aid-investment`
+    : `/sector/explore/development?m=development.wdi${iso3 ? `&c=${iso3}` : ''}`;

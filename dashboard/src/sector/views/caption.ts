@@ -16,12 +16,46 @@ export function refItem(model: SectorModel, v: VarInfo, slug: string | null | un
 }
 
 /**
+ * A measure stored under one nominal year whose values average or sum a span of years (dictionary
+ * data_year "2022-2024 (mean of the years reported)" / "2013-2024 total ..."): its period words, else
+ * null. short: "2022–2024 average" / "2013–2024 total" (titles, tiles); long: "average of the years
+ * reported, 2022–2024" / "2013–2024 total / 2023 GDP" (caption sub lines and badges).
+ */
+export function periodText(v: Pick<VarInfo, 'data_year'>, form: 'short' | 'long'): string | null {
+  const m = /^(\d{4})\s*[-–]\s*(\d{4})\s+(\(mean of the years reported\)|total\b)/.exec(v.data_year ?? '');
+  if (!m) return null;
+  const span = `${m[1]}–${m[2]}`;
+  if (m[3].startsWith('(')) return form === 'short' ? `${span} average` : `average of the years reported, ${span}`;
+  return form === 'short' ? `${span} total` : v.data_year.replace(/^\d{4}\s*[-–]\s*\d{4}/, span);
+}
+
+/**
+ * The year words of one fact: "2022–2023 average" for a value averaging several reported years
+ * (obs_from < obs_year), the year itself for one year, else the measure's period ("2013–2024
+ * total") or the stored year.
+ */
+export function factYearText(v: Pick<VarInfo, 'data_year'>, row: { obs_year: number | null; obs_from?: number | null } | null | undefined, year: number | null | undefined): string {
+  const oy = row?.obs_year ?? null;
+  const from = row?.obs_from ?? null;
+  if (oy !== null && from !== null && from < oy) return `${from}–${oy} average`;
+  if (oy !== null) return String(oy);
+  return periodText(v, 'short') ?? (year !== null && year !== undefined ? String(year) : '');
+}
+
+/** A title's year: the measure's period ("2022–2024 average") or the year. */
+export function titleYear(v: Pick<VarInfo, 'data_year'>, year: number | null | undefined): string {
+  return periodText(v, 'short') ?? (year !== null && year !== undefined ? String(year) : '');
+}
+
+/**
  * The dictionary's data_year in place of the stored year key (8.1.4: the processed Year is never
  * shown) for a single-year measure whose year is static ("static (2025 dataset)"), unconfirmed
  * ("current (year to confirm)") or qualified ("2025 operational; ... planned to 2030").
  */
 export function dataYearOverride(v: VarInfo, year: number | null | undefined): string | null {
   if (!v.data_year || year === null || year === undefined || v.years.length !== 1 || v.years[0] !== year) return null;
+  const period = periodText(v, 'long');
+  if (period) return period;
   if (/^static|year to confirm/i.test(v.data_year)) return v.data_year;
   if (v.data_year.startsWith(`${year} `) && /operational|planned/i.test(v.data_year)) return v.data_year;
   return null;
@@ -63,7 +97,7 @@ function badgeText(v: VarInfo, r: VarRef): string {
   if (r.window) return `${r.window[0]} → ${r.window[1]}`;
   if (/not updated/i.test(v.data_year)) return v.data_year;
   const override = dataYearOverride(v, r.year);
-  if (override) return /^static/i.test(override) ? 'static' : /year to confirm/i.test(override) ? 'year to confirm' : String(r.year);
+  if (override) return /^static/i.test(override) ? 'static' : /year to confirm/i.test(override) ? 'year to confirm' : (periodText(v, 'long') ?? String(r.year));
   if (r.year !== null && r.year !== undefined) {
     if (v.projection_from !== null && r.year >= v.projection_from) return `${r.year} · projection`;
     return v.year_field ? 'latest per economy' : String(r.year);

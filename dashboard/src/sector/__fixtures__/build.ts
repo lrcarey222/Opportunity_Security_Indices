@@ -296,6 +296,7 @@ interface Fact {
   value: number;
   status?: Status;
   obs_year?: number;
+  obs_from?: number;
 }
 
 /** Trade flows of the fixture: [item, exporter, importer, v2020, v2024, s2020, s2024]. */
@@ -527,7 +528,7 @@ function worldRowsOf(facts: Fact[]): { v: string; item: number; year: number; va
 
 function obsAndIndex(facts: Fact[]) {
   const rows = facts
-    .map((x) => ({ var: vi(x.v), item: x.item, geo: gi(x.geo), year: x.year, value: x.value, status: x.status ?? (x.value === 0 ? 'zero' : 'obs'), obs_year: x.obs_year ?? null }))
+    .map((x) => ({ var: vi(x.v), item: x.item, geo: gi(x.geo), year: x.year, value: x.value, status: x.status ?? (x.value === 0 ? 'zero' : 'obs'), obs_year: x.obs_year ?? null, obs_from: x.obs_from ?? null }))
     .sort((a, z) => a.var - z.var || a.item - z.item || a.year - z.year || a.geo - z.geo);
   const index: RowObj[] = [];
   rows.forEach((r, i) => {
@@ -916,7 +917,7 @@ export function buildSectorFixture(): SectorFixture {
 
   // series ------------------------------------------------------------------------------------------
   const sRows = sFacts
-    .map((x) => ({ var: vi(x.v), item: x.item, geo: gi(x.geo), year: x.year, value: x.value, status: x.status ?? 'obs', obs_year: null }))
+    .map((x) => ({ var: vi(x.v), item: x.item, geo: gi(x.geo), year: x.year, value: x.value, status: x.status ?? 'obs', obs_year: null, obs_from: null }))
     .sort((a, z) => a.var - z.var || a.item - z.item || a.year - z.year || a.geo - z.geo);
   const sIndex: RowObj[] = [];
   sRows.forEach((r, i) => {

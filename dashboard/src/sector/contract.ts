@@ -258,7 +258,12 @@ export type GeoGroup = (typeof GEO_GROUPS)[number];
 export const SPLIT_PARTS = ['china', 'core', 'partner', 'rest', 'unattributed'] as const;
 export type SplitPart = (typeof SPLIT_PARTS)[number];
 
-export const ITEM_AXES = ['cell', 'mineral', 'fuel', 'commodity', 'activity', 'policy_tag', 'none'] as const;
+/**
+ * Item axes. `indicator`: the World Bank WDI series of development.wdi; `aid_sector`: the OECD CRS
+ * sectors of the aid measures (all sectors, energy, industry, mining), linked to the cells of the
+ * stage the Development Potential builder maps them to (development data change 2026-10-15, additive).
+ */
+export const ITEM_AXES = ['cell', 'mineral', 'fuel', 'commodity', 'activity', 'policy_tag', 'indicator', 'aid_sector', 'none'] as const;
 export type ItemAxis = (typeof ITEM_AXES)[number];
 export const NATIVE_LEVELS = ['country', 'eu', 'region', 'entity', 'world', 'cell_global', 'dyad'] as const;
 export type NativeLevel = (typeof NATIVE_LEVELS)[number];
@@ -442,9 +447,20 @@ export const VAR_CATALOGUE = [
   { id: 'policy.cat', phase: '1', level: 'country', chunks: ['policy'], scope: 'build' },
   // development
   { id: 'development.alignment', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },
+  // The raw data behind Development Potential and Friendshore's outbound component (development data
+  // change 2026-10-15): World Bank WDI series (item axis indicator) and the Doing Business score, per
+  // economy; OECD CRS official development assistance received and given per aid sector and year, and
+  // the builder's 2013-2024 total per stage (and per GDP); the donor -> recipient flows (sector-dev
+  // dev.oda) and the IMF bilateral direct-investment positions, conduit centres flagged (dev.dip).
+  { id: 'development.wdi', phase: '2', level: 'country', chunks: ['facts'], scope: 'build' },
+  { id: 'development.doing_business', phase: '2', level: 'country', chunks: ['facts'], scope: 'build' },
+  { id: 'development.oda_received', phase: '2', level: 'country', chunks: ['facts'], scope: 'build' },
+  { id: 'development.oda_given', phase: '2', level: 'country', chunks: ['facts'], scope: 'build' },
+  { id: 'development.oda_received_total', phase: '2', level: 'country', chunks: ['facts'], scope: 'build' },
+  { id: 'development.oda_received_gdp', phase: '2', level: 'country', chunks: ['facts'], scope: 'build' },
   { id: 'development.gdp', phase: '2', level: 'country', chunks: ['dev'], scope: 'later' },
-  { id: 'development.oda', phase: '2', level: 'dyad', chunks: ['dev'], scope: 'later' },
-  { id: 'development.fdi_out', phase: '2', level: 'dyad', chunks: ['dev'], scope: 'later' },
+  { id: 'development.oda', phase: '2', level: 'dyad', chunks: ['dev'], scope: 'build' },
+  { id: 'development.fdi_out', phase: '2', level: 'dyad', chunks: ['dev'], scope: 'build' },
   { id: 'development.ideal_series', phase: '2', level: 'country', chunks: ['dev'], scope: 'later' },
 ] as const satisfies readonly VarEntry[];
 
@@ -592,6 +608,11 @@ export interface SectorManifest {
      * manifest without the key has no sector-fdi chunk.
      */
     fdi?: boolean;
+    /**
+     * the sector-dev chunk (CRS aid flows, IMF DIP positions) is present. Optional (development data
+     * change 2026-10-15, additive): a manifest without the key has no sector-dev chunk.
+     */
+    dev?: boolean;
   };
   chunks: SectorChunkInfo[];
   headlines: SectorHeadline[];
@@ -650,6 +671,7 @@ export function sectorManifestProblems(x: unknown): string[] {
     if (f.include_restricted !== false) p.push('flags.include_restricted must be false (restricted data never ship)');
     for (const k of ['trade', 'atlas', 'policy_text', 'series']) if (typeof f[k] !== 'boolean') p.push(`flags.${k} must be a boolean`);
     if (f.fdi !== undefined && typeof f.fdi !== 'boolean') p.push('flags.fdi must be a boolean when present');
+    if (f.dev !== undefined && typeof f.dev !== 'boolean') p.push('flags.dev must be a boolean when present');
   }
 
   if (!Array.isArray(x.chunks)) p.push('chunks must be an array');
@@ -678,6 +700,8 @@ export function sectorManifestProblems(x: unknown): string[] {
       if (f.trade === true && ![...names].some((n) => n.startsWith('sector-trade-'))) p.push('flags.trade is true but no sector-trade-<tech> chunk is listed');
       if (f.fdi === true && !names.has('sector-fdi')) p.push('flags.fdi is true but sector-fdi is missing');
       if (f.fdi !== true && names.has('sector-fdi')) p.push('sector-fdi is listed but flags.fdi is not true');
+      if (f.dev === true && !names.has('sector-dev')) p.push('flags.dev is true but sector-dev is missing');
+      if (f.dev !== true && names.has('sector-dev')) p.push('sector-dev is listed but flags.dev is not true');
     }
   }
 
@@ -799,7 +823,7 @@ const STATUS = { t: 'str', req: true, values: STATUS_CODES } as const;
 /** facts.obs / series.obs (one fact per row). */
 const OBS = {
   kind: 'table',
-  cols: { var: VAR, item: ITEM, geo: GEO, year: IR, value: F, status: STATUS, obs_year: I },
+  cols: { var: VAR, item: ITEM, geo: GEO, year: IR, value: F, status: STATUS, obs_year: I, obs_from: I },
   sorted: ['var', 'item', 'year', 'geo'],
   unique: ['var', 'item', 'year', 'geo'],
 } as const satisfies TableSpec;
@@ -1296,11 +1320,39 @@ export const ATLAS_SPEC = {
   'atlas.match': { kind: 'table', cols: { item: ITEM, k: IR, n: IR }, unique: ['item'] },
 } as const satisfies ChunkSpec;
 
-/** sector-dev (phase 2; not in this build). */
+/** Which side of a DIP position is a conduit financial centre (dev.dip `conduit`). */
+export const DEV_CONDUIT = ['none', 'counterpart', 'investor', 'both'] as const;
+export type DevConduit = (typeof DEV_CONDUIT)[number];
+
+/**
+ * sector-dev (development data change 2026-10-15; R/dashboard/sector/sector_dev.R). Optional chunk
+ * (manifest flags.dev), loaded only by the Development & finance flow layouts and the Sources page.
+ *   dev.oda: OECD CRS official development assistance, gross disbursements, USD millions at constant
+ *     prices of the CRS base year (development.oda; dict source oecd_crs), one row per (aid-sector
+ *     item, year, donor, recipient): the sum of the extract's rows, the mining item net of its coal and
+ *     oil-and-gas (upstream) sub-rows, so a value can be negative. Recipients are WDI countries.
+ *   dev.dip: IMF Direct Investment Positions, the reporter's outward debt-instrument position in the
+ *     counterpart (USD millions, current), the mean of the years reported in the window
+ *     (development.fdi_out; dict source imf_dip). `conduit` says which side is a conduit financial
+ *     centre (dev.conduits): the Friendshore measure treats those positions as unobserved; they ship,
+ *     flagged. A reported zero is a real zero; an absent pair was not reported.
+ *   dev.conduits: the conduit financial centres (dej_top10: among the ten economies that host more
+ *     than 85% of phantom FDI, Damgaard, Elkjaer and Johannesen 2019).
+ */
 export const DEV_SPEC = {
-  'dev.oda': { kind: 'table', cols: { donor: GEO, recipient: GEO, sector: ITEM, year: IR, value: F } },
-  'dev.dip': { kind: 'table', cols: { reporter: GEO, counterpart: GEO, year: IR, value: F, indicator: SR, status: S } },
-  'dev.conduits': { kind: 'strv' },
+  'dev.oda': {
+    kind: 'table',
+    cols: { item: ITEM, year: IR, donor: GEO, recipient: GEO, value: FR },
+    sorted: ['item', 'year', 'donor', 'recipient'],
+    unique: ['item', 'year', 'donor', 'recipient'],
+  },
+  'dev.dip': {
+    kind: 'table',
+    cols: { reporter: GEO, counterpart: GEO, value: FR, year_min: IR, year_max: IR, n_years: IR, conduit: { t: 'str', req: true, values: DEV_CONDUIT } },
+    sorted: ['reporter', 'counterpart'],
+    unique: ['reporter', 'counterpart'],
+  },
+  'dev.conduits': { kind: 'table', cols: { geo: GEO, dej_top10: BR }, sorted: ['geo'], unique: ['geo'] },
 } as const satisfies ChunkSpec;
 
 // ---- sector-fdi: CM-FDI (integrator change 2026-10-11, additive) ---------------------------------
@@ -1930,6 +1982,33 @@ function checkTrade(t: SectorTradeChunk, out: ChunkCheck) {
 /** A link fdi.sources may carry: http(s), no white space, nothing unsafe in an attribute or a pipe list. */
 const FDI_URL_RE = /^https?:\/\/[^\s"<>|`\\]+$/;
 
+/** Cross-table rules of sector-dev (DEV_SPEC); the R mirror is sector_check_dev(). */
+function checkDev(c: SectorDevChunk, out: ChunkCheck) {
+  const o = c['dev.oda'];
+  const selfAid = new Tally();
+  for (let i = 0; i < o.nrow; i++) if (o.cols.donor[i] === o.cols.recipient[i]) selfAid.hit(i);
+  selfAid.report(out.errors, 'dev.oda: a donor funding itself');
+  const d = c['dev.dip'];
+  const cg = new Set<number>(Array.from(c['dev.conduits'].cols.geo));
+  const selfPos = new Tally();
+  const badYears = new Tally();
+  const badFlag = new Tally();
+  for (let i = 0; i < d.nrow; i++) {
+    const r = d.cols.reporter[i];
+    const k = d.cols.counterpart[i];
+    if (r === k) selfPos.hit(i);
+    const y0 = d.cols.year_min[i];
+    const y1 = d.cols.year_max[i];
+    const n = d.cols.n_years[i];
+    if (y0 > y1 || n < 1 || n > y1 - y0 + 1) badYears.hit(i);
+    const want = cg.has(k) && cg.has(r) ? 'both' : cg.has(k) ? 'counterpart' : cg.has(r) ? 'investor' : 'none';
+    if (d.cols.conduit[i] !== want) badFlag.hit(i);
+  }
+  selfPos.report(out.errors, 'dev.dip: a position in the reporter itself');
+  badYears.report(out.errors, 'dev.dip: years out of order (year_min <= year_max, 1 <= n_years <= the window)');
+  badFlag.report(out.errors, 'dev.dip.conduit disagrees with dev.conduits');
+}
+
 /** Cross-table rules of sector-fdi (FDI_SPEC); the R mirror is sector_check_fdi(). */
 function checkFdi(c: SectorFdiChunk, out: ChunkCheck) {
   const p = c['fdi.projects'];
@@ -2044,6 +2123,7 @@ export function checkChunk(name: string, objects: OsbDecoded | Record<string, un
   else if (name === 'sector-series') checkObsIndex('series', get('series.obs'), get('series.index'), out);
   else if (name.startsWith('sector-trade-')) checkTrade(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorTradeChunk, out);
   else if (name === 'sector-fdi') checkFdi(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorFdiChunk, out);
+  else if (name === 'sector-dev') checkDev(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorDevChunk, out);
   return out;
 }
 

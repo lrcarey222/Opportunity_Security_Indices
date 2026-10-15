@@ -21,6 +21,8 @@ export type ToWorker =
   | { type: 'variables'; id: number; spec: ScenarioSpec; pillar: 'es' | 'eo'; country: string; tech?: string; stage?: string }
   | { type: 'decompose'; id: number; spec: ScenarioSpec; reporter: string; partner: string }
   | { type: 'dyads'; id: number; spec: ScenarioSpec; reporter: string }
+  /** one reporter's partners in one sector (cell index into dims.cells): engine.cellPartners() */
+  | { type: 'cellPartners'; id: number; spec: ScenarioSpec; reporter: string; cell: number }
   | { type: 'tables'; id: number; spec: ScenarioSpec; include: Array<RunLayer> }
   | { type: 'cancel'; id: number };
 

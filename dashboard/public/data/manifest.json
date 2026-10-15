@@ -2,8 +2,8 @@
   "schema": "osi-dashboard",
   "schema_version": 1,
   "bundle_id": "89d9af9a5fe8ef79f179cff95c5ba2a9",
-  "created": "2026-10-14T20:41:10Z",
-  "git_commit": "3122cea",
+  "created": "2026-10-15T21:03:17Z",
+  "git_commit": "81d1bc5",
   "osi_branch": "fix/allied-base-paper",
   "generator": "scripts/85_export_dashboard_data.R",
   "r": {
@@ -595,7 +595,7 @@
       "status": "PASS",
       "n": 22,
       "max_abs_diff": null,
-      "note": "12.7 s; 184 producer slots"
+      "note": "9.5 s; 184 producer slots"
     },
     {
       "check": "Precomputed portfolio caps == engine",
@@ -620,6 +620,62 @@
       "n": 22,
       "max_abs_diff": 0.14499999999999999,
       "note": "0 of 22 stages with the same producers and shares; median HHI greedy 0.1603, stored 0.152"
+    },
+    {
+      "check": "IMF positions (raw file) -> investment tie (pipeline builder) == bundle",
+      "layer": "ties",
+      "status": "PASS",
+      "n": 47961,
+      "max_abs_diff": 0,
+      "note": "imf_dip.csv; mean of 2020-2024; GDP 2023; conduit rule conduits"
+    },
+    {
+      "check": "Shipped IMF positions, ranked -> investment tie == bundle",
+      "layer": "ties",
+      "status": "PASS",
+      "n": 47961,
+      "max_abs_diff": 0,
+      "note": "10237 dyads with a position in the index (10237 from the builder)"
+    },
+    {
+      "check": "IMF position unit",
+      "layer": "ties",
+      "status": "PASS",
+      "n": 60777,
+      "max_abs_diff": null,
+      "note": "SCALE: Millions (shipped as US$ millions)"
+    },
+    {
+      "check": "CM-FDI flows shipped == the investment ties (reporter-cells with a tie; partners with a project above the rest)",
+      "layer": "ties",
+      "status": "PASS",
+      "n": 62,
+      "max_abs_diff": null,
+      "note": "348 flows (0 outside the economies or cells); 0 reporter-cells differ; 0 out of order"
+    },
+    {
+      "check": "Development Potential by sector: one value per partner and sector",
+      "layer": "ties",
+      "status": "PASS",
+      "n": 4356,
+      "max_abs_diff": null,
+      "note": "132 partners x 33 sectors"
+    },
+    {
+      "check": "CM-FDI attribution in the ties chunk",
+      "layer": "ties",
+      "status": "PASS",
+      "n": null,
+      "max_abs_diff": null,
+      "note": "config/sector_dictionary.yml sources: cmfdi"
+    },
+    {
+      "check": "Per-sector top partners: one chunk per sector",
+      "layer": "ties",
+      "status": "PASS",
+      "n": 33,
+      "max_abs_diff": null,
+      "note": "top 10 suppliers (Friendshore) and markets (Partnership Opportunity) per economy at the baseline"
     }
   ],
   "sources": [
@@ -628,6 +684,12 @@
       "mtime": "2026-09-30T14:19:50Z",
       "size": 30739,
       "md5": "ac6fd6a11572f3e146ef553cd4046f12"
+    },
+    {
+      "path": "data/raw/imf_dip.csv",
+      "mtime": "2026-09-30T14:19:47Z",
+      "size": 1875803184,
+      "md5": "db5a478f170eedcb3342ca13b6b7e9fa"
     },
     {
       "path": "data/processed/outputs/index_outputs.rds",
@@ -826,6 +888,30 @@
       "mtime": "2026-10-12T16:04:10Z",
       "size": 19036,
       "md5": "d26ae6c2eb2f8a5f0407358a953c74d1"
+    },
+    {
+      "path": "data/processed/partner_cm_fdi_ties_tbl.rds",
+      "mtime": "2026-10-12T16:06:49Z",
+      "size": 3092,
+      "md5": "ffe963f6495787a4a22a5a9e813b3ade"
+    },
+    {
+      "path": "data/processed/partner_development_tbl.rds",
+      "mtime": "2026-10-12T16:08:04Z",
+      "size": 157813,
+      "md5": "e18ea4c66d51fda21101ac5b557c8daa"
+    },
+    {
+      "path": "data/reference/economic_security_agreements.csv",
+      "mtime": "2026-10-08T17:24:24Z",
+      "size": 61304,
+      "md5": "a8b39da1440389561725e79f92fcf57f"
+    },
+    {
+      "path": "config/sector_dictionary.yml",
+      "mtime": "2026-10-15T20:36:58Z",
+      "size": 146831,
+      "md5": "4fd5f453b7ec7b2f2d084856145a4c94"
     }
   ],
   "sources_params": {
@@ -1171,11 +1257,283 @@
       "bytes_gz": 475293,
       "md5": "1a3afe1504efa8bfcadfbc321e77207d",
       "initial": false
+    },
+    {
+      "name": "ties",
+      "file": "ties.a6383ce1.osb",
+      "bytes": 1614160,
+      "bytes_gz": 320011,
+      "md5": "a6383ce176242b88c05e008ecf1080d3",
+      "initial": false
+    },
+    {
+      "name": "pcell-electric-vehicles-upstream",
+      "file": "pcell-electric-vehicles-upstream.9f951509.osb",
+      "bytes": 160968,
+      "bytes_gz": 40983,
+      "md5": "9f9515095e95a3f3239070221a51e965",
+      "initial": false
+    },
+    {
+      "name": "pcell-electric-vehicles-midstream",
+      "file": "pcell-electric-vehicles-midstream.8a97d342.osb",
+      "bytes": 158944,
+      "bytes_gz": 45755,
+      "md5": "8a97d342e23c57b8e179cc183073ddc2",
+      "initial": false
+    },
+    {
+      "name": "pcell-electric-vehicles-downstream",
+      "file": "pcell-electric-vehicles-downstream.d174fd0b.osb",
+      "bytes": 150376,
+      "bytes_gz": 31192,
+      "md5": "d174fd0b89365212aebb5e8f54741f7e",
+      "initial": false
+    },
+    {
+      "name": "pcell-nuclear-upstream",
+      "file": "pcell-nuclear-upstream.b45573fa.osb",
+      "bytes": 157928,
+      "bytes_gz": 39104,
+      "md5": "b45573fa44bc2d7cbe56744251e0ce70",
+      "initial": false
+    },
+    {
+      "name": "pcell-nuclear-midstream",
+      "file": "pcell-nuclear-midstream.fd224136.osb",
+      "bytes": 156648,
+      "bytes_gz": 43963,
+      "md5": "fd224136edb80bb9c6470f1474e22082",
+      "initial": false
+    },
+    {
+      "name": "pcell-nuclear-downstream",
+      "file": "pcell-nuclear-downstream.a26a47bc.osb",
+      "bytes": 152768,
+      "bytes_gz": 32906,
+      "md5": "a26a47bcf3164bbf202dcf61f3f6db18",
+      "initial": false
+    },
+    {
+      "name": "pcell-coal-upstream",
+      "file": "pcell-coal-upstream.ff174507.osb",
+      "bytes": 160160,
+      "bytes_gz": 40175,
+      "md5": "ff174507eb1ff8afae135f664b7429b9",
+      "initial": false
+    },
+    {
+      "name": "pcell-coal-midstream",
+      "file": "pcell-coal-midstream.6c754bed.osb",
+      "bytes": 156696,
+      "bytes_gz": 43880,
+      "md5": "6c754bed016ba20923b26cea40fb52e0",
+      "initial": false
+    },
+    {
+      "name": "pcell-coal-downstream",
+      "file": "pcell-coal-downstream.4bb8dc21.osb",
+      "bytes": 157792,
+      "bytes_gz": 38198,
+      "md5": "4bb8dc211fb3c44201b6cbab9c7bd320",
+      "initial": false
+    },
+    {
+      "name": "pcell-batteries-upstream",
+      "file": "pcell-batteries-upstream.bb478c32.osb",
+      "bytes": 160208,
+      "bytes_gz": 41350,
+      "md5": "bb478c3249d3212bef89bd000e404202",
+      "initial": false
+    },
+    {
+      "name": "pcell-batteries-midstream",
+      "file": "pcell-batteries-midstream.d1b3126e.osb",
+      "bytes": 156728,
+      "bytes_gz": 44661,
+      "md5": "d1b3126e72bd081a8cc80a23c6676201",
+      "initial": false
+    },
+    {
+      "name": "pcell-batteries-downstream",
+      "file": "pcell-batteries-downstream.18647503.osb",
+      "bytes": 146680,
+      "bytes_gz": 25529,
+      "md5": "186475033a791f1bc6ce17c905cce9a6",
+      "initial": false
+    },
+    {
+      "name": "pcell-green-hydrogen-upstream",
+      "file": "pcell-green-hydrogen-upstream.e2024036.osb",
+      "bytes": 143704,
+      "bytes_gz": 21786,
+      "md5": "e202403621175b231f901f214729d25b",
+      "initial": false
+    },
+    {
+      "name": "pcell-green-hydrogen-midstream",
+      "file": "pcell-green-hydrogen-midstream.f433a12e.osb",
+      "bytes": 140240,
+      "bytes_gz": 21587,
+      "md5": "f433a12ecca5115d33f34be542d18f89",
+      "initial": false
+    },
+    {
+      "name": "pcell-green-hydrogen-downstream",
+      "file": "pcell-green-hydrogen-downstream.f972e0e3.osb",
+      "bytes": 144256,
+      "bytes_gz": 22731,
+      "md5": "f972e0e32a0916bb42f8e81b40c6fd5e",
+      "initial": false
+    },
+    {
+      "name": "pcell-wind-upstream",
+      "file": "pcell-wind-upstream.b390293b.osb",
+      "bytes": 159792,
+      "bytes_gz": 41475,
+      "md5": "b390293b4f92cdbdb160ec6de6d5bbdc",
+      "initial": false
+    },
+    {
+      "name": "pcell-wind-midstream",
+      "file": "pcell-wind-midstream.fa3fa7c2.osb",
+      "bytes": 156728,
+      "bytes_gz": 45321,
+      "md5": "fa3fa7c2eb9e111c694709e54545c04a",
+      "initial": false
+    },
+    {
+      "name": "pcell-wind-downstream",
+      "file": "pcell-wind-downstream.026fc13a.osb",
+      "bytes": 157968,
+      "bytes_gz": 38381,
+      "md5": "026fc13a95e5bc0a503d8ccee2c25994",
+      "initial": false
+    },
+    {
+      "name": "pcell-oil-upstream",
+      "file": "pcell-oil-upstream.94b06c39.osb",
+      "bytes": 160328,
+      "bytes_gz": 42617,
+      "md5": "94b06c3957247e4b0d4c12940e1f8a1c",
+      "initial": false
+    },
+    {
+      "name": "pcell-oil-midstream",
+      "file": "pcell-oil-midstream.746b7801.osb",
+      "bytes": 156712,
+      "bytes_gz": 45587,
+      "md5": "746b7801e82d542a8e55d14617ad977f",
+      "initial": false
+    },
+    {
+      "name": "pcell-oil-downstream",
+      "file": "pcell-oil-downstream.251837e8.osb",
+      "bytes": 155928,
+      "bytes_gz": 36105,
+      "md5": "251837e8ebfdc67da0d2e6ec4d204fc8",
+      "initial": false
+    },
+    {
+      "name": "pcell-solar-upstream",
+      "file": "pcell-solar-upstream.2ce475dc.osb",
+      "bytes": 160128,
+      "bytes_gz": 38936,
+      "md5": "2ce475dc00217711e69da14ac9752e49",
+      "initial": false
+    },
+    {
+      "name": "pcell-solar-midstream",
+      "file": "pcell-solar-midstream.37bfc146.osb",
+      "bytes": 156736,
+      "bytes_gz": 45465,
+      "md5": "37bfc14640d08786640ad5305e77e562",
+      "initial": false
+    },
+    {
+      "name": "pcell-solar-downstream",
+      "file": "pcell-solar-downstream.2d508289.osb",
+      "bytes": 159752,
+      "bytes_gz": 35245,
+      "md5": "2d50828952426af8d935f6a272867a15",
+      "initial": false
+    },
+    {
+      "name": "pcell-gas-upstream",
+      "file": "pcell-gas-upstream.5b051c4b.osb",
+      "bytes": 160296,
+      "bytes_gz": 41665,
+      "md5": "5b051c4ba5642eca8f3c00b3f6e0d3d0",
+      "initial": false
+    },
+    {
+      "name": "pcell-gas-midstream",
+      "file": "pcell-gas-midstream.8f1a92b9.osb",
+      "bytes": 156712,
+      "bytes_gz": 45173,
+      "md5": "8f1a92b9764341d2cd167a16373c6073",
+      "initial": false
+    },
+    {
+      "name": "pcell-gas-downstream",
+      "file": "pcell-gas-downstream.76b625d0.osb",
+      "bytes": 156896,
+      "bytes_gz": 37675,
+      "md5": "76b625d075c2a25aee7e64771bb207cd",
+      "initial": false
+    },
+    {
+      "name": "pcell-geothermal-upstream",
+      "file": "pcell-geothermal-upstream.202c3324.osb",
+      "bytes": 62376,
+      "bytes_gz": 11542,
+      "md5": "202c332446066440aee57c91aed96fc8",
+      "initial": false
+    },
+    {
+      "name": "pcell-geothermal-midstream",
+      "file": "pcell-geothermal-midstream.ecdc25a0.osb",
+      "bytes": 62296,
+      "bytes_gz": 11455,
+      "md5": "ecdc25a065ccba9c46792ec65e046dc1",
+      "initial": false
+    },
+    {
+      "name": "pcell-geothermal-downstream",
+      "file": "pcell-geothermal-downstream.14a14ba0.osb",
+      "bytes": 158888,
+      "bytes_gz": 39128,
+      "md5": "14a14ba0ecb0fac154b2ef3bfe4d77c2",
+      "initial": false
+    },
+    {
+      "name": "pcell-electric-grid-upstream",
+      "file": "pcell-electric-grid-upstream.62e135a6.osb",
+      "bytes": 160184,
+      "bytes_gz": 41571,
+      "md5": "62e135a6feb48519d0e38987a849ba1f",
+      "initial": false
+    },
+    {
+      "name": "pcell-electric-grid-midstream",
+      "file": "pcell-electric-grid-midstream.a66f2ab6.osb",
+      "bytes": 156744,
+      "bytes_gz": 45759,
+      "md5": "a66f2ab6de86df42e7eb3abe448b555d",
+      "initial": false
+    },
+    {
+      "name": "pcell-electric-grid-downstream",
+      "file": "pcell-electric-grid-downstream.def4a3ae.osb",
+      "bytes": 62480,
+      "bytes_gz": 11583,
+      "md5": "def4a3aeeb9f5b45c5d3e87e65c01df2",
+      "initial": false
     }
   ],
   "budget": {
-    "initial_gz": 776996,
-    "all_gz": 5473392,
+    "initial_gz": 778985,
+    "all_gz": 6981886,
     "limit_initial_gz": 3145728,
     "limit_all_gz": 26214400,
     "initial_files": ["manifest.json", "core.c21ac219.osb"],

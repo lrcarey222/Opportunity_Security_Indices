@@ -10,6 +10,7 @@ import type { FactRow } from '../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, SummaryInfo, VarInfo } from '../data/model.ts';
 import type { GeoScope } from '../url.ts';
 import { concentration, type Concentration } from './concentration.ts';
+import { isDevFlowVar } from './dev.ts';
 import { isFdiVar } from './fdi.ts';
 import { isCoalition, partOf } from './groups.ts';
 import { stateOf, type StateOf } from './states.ts';
@@ -37,7 +38,9 @@ export type ExploreLayout =
   /** CIM manufacturing capacity by product (series.capacity; native units, never summed) */
   | 'capacity'
   /** CM-FDI cross-border projects (sector-fdi): destinations, flows, parent groups, years, projects */
-  | 'fdi';
+  | 'fdi'
+  /** Development & finance flows (sector-dev): CRS aid donor -> recipient, IMF DIP investor -> destination */
+  | 'devflows';
 
 /** Area-integrated potentials and the quality measure they are plotted against (3.2: scatter only). */
 export const SCATTER_PAIRS: Readonly<Record<string, string>> = {
@@ -50,6 +53,7 @@ export function layoutOf(v: VarInfo): ExploreLayout {
   if (v.id === 'consumption.mineral_demand') return 'mineral_demand';
   if (v.id === 'manufacturing.capacity') return 'capacity';
   if (isFdiVar(v.id)) return 'fdi';
+  if (isDevFlowVar(v.id)) return 'devflows';
   if (v.theme === 'policy' || v.id.startsWith('policy.')) return 'policy';
   switch (v.native_level) {
     case 'region':
@@ -84,6 +88,10 @@ export function layoutBanner(v: VarInfo): string | null {
       return 'Area-integrated potential is the mean quality times land area, so it ranks mostly by size: shown against quality, never ranked.';
     case 'fdi':
       return 'Project-level data: cross-border manufacturing projects by the parent company’s headquarters and the destination, counted as published (capital where disclosed). Not a country total: domestic investment is not covered.';
+    case 'devflows':
+      return v.id === 'development.oda'
+        ? 'Bilateral flows: official development assistance from each donor government to each recipient, by aid sector. Multilateral lenders are not in the data.'
+        : 'Bilateral positions: what firms in one economy lend to their related firms in another, as the investing economy reports it. Positions with a conduit financial centre are flagged.';
     default:
       return null;
   }
@@ -240,6 +248,8 @@ export interface ExploreRow {
   rank: number | null;
   /** the observation year (per-row years) or the slice year */
   year: number | null;
+  /** the first year of a value averaged over years (development.wdi), else null */
+  obs_from?: number | null;
   /** the fact's notes in words (facts.notes; the assumed-zero note), "" when none */
   note: string;
 }
@@ -260,7 +270,7 @@ export function exploreRows(model: SectorModel, v: VarInfo, rows: readonly FactR
   const out: ExploreRow[] = scoped.map((r) => {
     const g = model.geos[r.geo];
     const p = pos.get(r.geo);
-    return { g, value: Number.isFinite(r.value) ? r.value : null, status: r.status, state: stateOf(r, g, v, roster, year ?? undefined), share: p?.share ?? null, rank: p?.rank ?? null, year: r.obs_year ?? year, note: noteLine(model, v.id, r) };
+    return { g, value: Number.isFinite(r.value) ? r.value : null, status: r.status, state: stateOf(r, g, v, roster, year ?? undefined), share: p?.share ?? null, rank: p?.rank ?? null, year: r.obs_year ?? year, obs_from: r.obs_from ?? null, note: noteLine(model, v.id, r) };
   });
   if (absent) {
     const seen = new Set(scoped.map((r) => r.geo));

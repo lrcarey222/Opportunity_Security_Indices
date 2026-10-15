@@ -37,6 +37,7 @@ import {
 } from '../kit.tsx';
 import { indexFor, timeIndex, type ExploreCtx } from './ctx.ts';
 import { useSectorUrl } from '../state.tsx';
+import { factYearText, periodText, titleYear } from '../caption.ts';
 
 const SHARE_UNIT = { short: 'share', long: 'share of world', unit_kind: 'share' };
 
@@ -83,7 +84,7 @@ function KpiStrip({ c, rows, world }: { c: ExploreCtx; rows: FactRow[]; world: {
     <section aria-label="Key figures" className="space-y-3">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" role="list" aria-label="Key figures">
         {tiles.map((t) => (
-          <div key={t.key} role="listitem" title={`${v.label} · ${model.unitOf(v, item?.idx ?? null).long} · ${year ?? ''} · ${v.source.short}`}>
+          <div key={t.key} role="listitem" title={`${v.label} · ${model.unitOf(v, item?.idx ?? null).long} · ${titleYear(v, year)} · ${v.source.short}`}>
             <StatTile label={t.label} value={<span className="font-medium">{t.value}</span>} sub={t.sub} chip={t.chip} />
           </div>
         ))}
@@ -128,7 +129,7 @@ function MapRanking({ c, rows, mapRows, world, conc, mode, inherited, sub }: { c
   const nAssumed = assumedCount(v.id, scoped);
   return (
     <SectorChartCard
-      title={`${v.short}${item && item.axis !== 'none' ? `: ${item.axis === 'cell' ? model.cellLabel(item) : item.label}` : ''}${sub ? ` (${sub})` : ''}, ${year ?? ''}`}
+      title={`${v.short}${item && item.axis !== 'none' ? `: ${item.axis === 'cell' ? model.cellLabel(item) : item.label}` : ''}${sub ? ` (${sub})` : ''}, ${titleYear(v, year)}`}
       vars={[{ var: v.id, item: item?.slug ?? null, year }]}
       subExtra={<HowToRead>{diverging ? MAP_READING_SIGNED : MAP_READING} The bars rank the largest; colours there show the group (China, coalition core, partners, rest).</HowToRead>}
       table={() => <ExploreTableBody c={c} rows={rows} world={world} absent={false} />}
@@ -472,10 +473,11 @@ function ExploreTableBody({ c, rows, world, absent }: { c: ExploreCtx; rows: Fac
   const { model, v, item, year, scope, highlight } = c;
   const data = useMemo(() => exploreRows(model, v, rows, world, year, scope, absent), [model, v, rows, world, year, scope, absent]);
   const unit = model.unitOf(v, item?.idx ?? null);
+  const averaged = periodText(v, 'short')?.endsWith('average') ?? false;
   return (
     <TableView
       rows={data}
-      caption={`${v.label}${year ? `, ${year}` : ''}`}
+      caption={`${v.label}${year ? `, ${titleYear(v, year)}` : ''}`}
       search
       pageSize={25}
       rowKey={(r) => r.g.code}
@@ -488,7 +490,10 @@ function ExploreTableBody({ c, rows, world, absent }: { c: ExploreCtx; rows: Fac
         { id: 'v', header: `Value (${unit.short || unit.long})`, value: (r) => r.value, cell: (r) => (r.value !== null ? fmtValue(r.value, unit, { scale: v.display_scale, ctx: 'table' }) : stateShort(r.state, v)), num: true },
         ...(v.world_basis !== 'none' ? [{ id: 's', header: 'Share', value: (r: ExploreRow) => r.share, cell: (r: ExploreRow) => fmtShare(r.share), num: true }] : []),
         { id: 'r', header: 'Rank', value: (r) => r.rank, cell: (r) => fmtRank(r.rank), num: true },
-        { id: 'y', header: 'Year', value: (r) => r.year, num: true },
+        // a value averaging the years an economy reports (development.wdi): the years averaged, not one year
+        averaged
+          ? { id: 'y', header: 'Years averaged', value: (r) => (r.value !== null ? factYearText(v, { obs_year: r.year, obs_from: r.obs_from }, year) : null) }
+          : { id: 'y', header: 'Year', value: (r) => r.year, num: true },
         { id: 'st', header: 'State', value: (r) => stateShort(r.state, v) },
         { id: 'f', header: 'Source note', value: (r) => [r.g.re_export_hub ? 're-export hub' : r.status === 'mirror' ? "partners' declarations" : r.status === 'est' ? 'includes an estimate' : '', r.note].filter(Boolean).join('; ') || null },
       ]}

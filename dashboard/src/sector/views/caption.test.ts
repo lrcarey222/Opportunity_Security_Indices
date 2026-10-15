@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { SectorModel, VarInfo } from '../data/model.ts';
-import { dataYearBadge, makeCaptionResolver } from './caption.ts';
+import { dataYearBadge, factYearText, makeCaptionResolver, periodText, titleYear } from './caption.ts';
 
 const v = (data_year: string, years: number[] = []) => ({ data_year, years }) as unknown as VarInfo;
 
@@ -41,5 +41,30 @@ describe('caption sub line: the economy count', () => {
   it('omits it for CM-FDI measures and keeps it for the others', () => {
     expect(resolve([{ var: 'investment.fdi_parent_share', item: item.slug, window: [2006, 2026] }]).sub).not.toMatch(/economies/);
     expect(resolve([{ var: 'trade.exports', item: item.slug, year: 2024 }]).sub).toMatch(/34 economies/);
+  });
+});
+
+// A value averaged or summed over a span of years is labelled as such, never as one year (repair
+// 2026-10-15: World Bank indicators read "…, 2024" and "2023" for a 2022-2023 mean).
+describe('periodText / factYearText / titleYear', () => {
+  const wdi = v('2022-2024 (mean of the years reported)', [2024]);
+  const total = v('2013-2024 total / 2023 GDP', [2024]);
+  const annual = v('2017-2024', [2024]);
+  it('names the averaging window or the total', () => {
+    expect(periodText(wdi, 'short')).toBe('2022–2024 average');
+    expect(periodText(wdi, 'long')).toBe('average of the years reported, 2022–2024');
+    expect(periodText(total, 'short')).toBe('2013–2024 total');
+    expect(periodText(total, 'long')).toBe('2013–2024 total / 2023 GDP');
+    expect(periodText(annual, 'short')).toBeNull();
+  });
+  it('gives each fact the years it averages', () => {
+    expect(factYearText(wdi, { obs_year: 2023, obs_from: 2022 }, 2024)).toBe('2022–2023 average');
+    expect(factYearText(wdi, { obs_year: 2023, obs_from: 2023 }, 2024)).toBe('2023');
+    expect(factYearText(total, { obs_year: null }, 2024)).toBe('2013–2024 total');
+    expect(factYearText(annual, { obs_year: null }, 2024)).toBe('2024');
+  });
+  it('puts the window in titles instead of the nominal year', () => {
+    expect(titleYear(wdi, 2024)).toBe('2022–2024 average');
+    expect(titleYear(annual, 2021)).toBe('2021');
   });
 });

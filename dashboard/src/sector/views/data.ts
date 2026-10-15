@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { isTradeTechSlug, TECH_LABELS, tradeChunkName, type SectorChunkName, type TechSlug } from '../contract.ts';
 import { factsIndexOf, seriesIndexOf, type FactsIndex } from '../data/facts.ts';
 import { fdiData, type FdiData } from '../derive/fdi.ts';
+import type { SectorDevChunk } from '../contract.ts';
 import { useSectorChunk, useSectorStore, type ChunkHandle } from '../data/SectorDataProvider.tsx';
 import type { SectorTradeChunk } from '../contract.ts';
 import { fmtSize } from '../format.ts';
@@ -41,6 +42,17 @@ export function useFdi(enabled = true): { fdi: FdiData | null; h: ChunkHandle<im
   return { fdi, h, has: store.hasChunk('sector-fdi') || store.manifestState().status !== 'ready' };
 }
 
+/**
+ * The Development & finance flows (sector-dev: CRS aid flows, IMF DIP positions; lazy: only the flow
+ * layouts, the economy page's finance section and the Sources page load it). `has` is false when the
+ * bundle lists no sector-dev chunk (true until the manifest is known).
+ */
+export function useDev(enabled = true): { dev: SectorDevChunk | null; h: ChunkHandle<SectorDevChunk>; has: boolean } {
+  const store = useSectorStore();
+  const h = useSectorChunk('sector-dev', enabled);
+  return { dev: h.data, h, has: store.hasChunk('sector-dev') || store.manifestState().status !== 'ready' };
+}
+
 export function usePolicy(enabled = true) {
   return useSectorChunk('sector-policy', enabled);
 }
@@ -56,6 +68,7 @@ const CHUNK_WORDS: Record<string, string> = {
   'sector-policy-text': 'policy titles',
   'sector-series': 'time series',
   'sector-fdi': 'investment project data (CM-FDI)',
+  'sector-dev': 'aid flows and investment positions',
 };
 
 /** "trade data for Batteries" etc. */
