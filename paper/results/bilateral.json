@@ -1,0 +1,3446 @@
+{
+  "climate_penalty": {
+    "n_rated_economies": 65,
+    "cpi_default_unrated": 0.75
+  },
+  "comtrade": {
+    "file": "data/raw/comtrade_energy_dyads_all.csv",
+    "rows": 2048670,
+    "years": [2020, 2024],
+    "reporters_by_year": {
+      "2020": 168,
+      "2024": 143
+    },
+    "economies_in_file": 208,
+    "cif_fob_factor": 1.06,
+    "observed_flow_cells": 773204,
+    "share_last_year_observed_from_mirror": 0.221,
+    "share_last_year_observed_positive_from_mirror": 0.1347,
+    "cells_with_trade_codes": 20,
+    "importers_reporting_last_year": 143
+  },
+  "checks": {
+    "fs_long_rows": 10760570,
+    "fs_duplicate_keys": 0,
+    "fs_rebuilt_max_abs_dev": 7.48e-06,
+    "fs_rebuilt_mean_abs_dev": 9.76e-12,
+    "fs_rebuilt_rows_dev_gt_1e9": 2,
+    "fs_trade_observed_max_abs_dev": 0,
+    "fs_trade_imputed_equals_cell_mean_max_abs_dev": 0,
+    "fs_trade_status_counts_match_coverage_tbl": true,
+    "po_duplicate_keys": 0,
+    "po_rebuilt_max_abs_dev": 0,
+    "po_rebuilt_mean_abs_dev": 0,
+    "po_trade_observed_max_abs_dev": 0,
+    "po_trade_imputed_vs_mean_of_kept_observed_max_abs_dev": 0,
+    "best5_T_FS_rebuilt_max_abs_dev": 0,
+    "best5_T_PO_rebuilt_max_abs_dev": 0,
+    "psi_core_view_rebuilt_max_abs_dev": 3.33e-16
+  },
+  "coverage": {
+    "friendshore": {
+      "reporters": 219,
+      "partners": 219,
+      "pairs": 47742,
+      "cells": 1534002,
+      "tech_stage_cells": 33,
+      "tech_stage_cells_with_trade_codes": 18,
+      "trade_cells_by_stage": {
+        "Upstream": 9,
+        "Midstream": 9,
+        "Downstream": 0
+      },
+      "trade_cells": ["Batteries Midstream", "Batteries Upstream", "Coal Midstream", "Coal Upstream", "Electric Grid Midstream", "Electric Grid Upstream", "Electric Vehicles Midstream", "Electric Vehicles Upstream", "Gas Midstream", "Gas Upstream", "Nuclear Midstream", "Nuclear Upstream", "Oil Midstream", "Oil Upstream", "Solar Midstream", "Solar Upstream", "Wind Midstream", "Wind Upstream"],
+      "cells_in_trade_cells": 833878,
+      "share_trade_observed": 0.7701,
+      "share_trade_positive": 0.1735,
+      "share_trade_recorded_zero": 0.5966,
+      "share_trade_imputed": 0.2299,
+      "share_observed_from_mirror": 0.2193,
+      "share_trade_imputed_without_mirror": 0.3988,
+      "core_reporters": {
+        "share_trade_imputed": 0.0519,
+        "share_observed_from_mirror": 0.0033,
+        "share_trade_imputed_without_mirror": 0.055
+      },
+      "noncore_reporters": {
+        "share_trade_imputed": 0.2598,
+        "share_trade_imputed_without_mirror": 0.4565
+      },
+      "reporters_with_observed_trade": 208,
+      "reporters_with_own_import_declarations": 143,
+      "reporters_filing_dip": 62,
+      "pairs_with_dip_position": 9171,
+      "share_cells_with_investment": 0.1805,
+      "share_dip_cells_with_investment": 0.1951,
+      "share_cmfdi_cells_with_investment_tie": 0.0725,
+      "share_cmfdi_cells_with_chinese_parent_exposure": 0.124,
+      "cmfdi_cells": ["Batteries Midstream", "Electric Vehicles Midstream", "Solar Midstream", "Wind Midstream"],
+      "core_reporters_filing_dip": ["AUT", "BEL", "BGR", "CAN", "CZE", "DEU", "DNK", "ESP", "FIN", "FRA", "GBR", "GRC", "HRV", "HUN", "ITA", "JPN", "KOR", "NOR", "POL", "PRT", "SVK", "SWE", "USA"],
+      "core_reporters_not_filing_dip": ["AUS", "IRL", "ISR", "LUX", "NLD", "NZL", "ROU", "UKR"],
+      "share_cells_need_missing": 0.1246,
+      "cells_need_missing_for_every_reporter": ["Electric Grid Downstream", "Geothermal Midstream", "Geothermal Upstream"],
+      "share_cells_alignment_missing": 0,
+      "economies_with_assigned_alignment": 47,
+      "share_cells_alignment_assigned": 0.2083,
+      "conduit_centres_excluded": ["NLD", "LUX", "HKG", "VGB", "BMU", "SGP", "CYM", "CHE", "IRL", "MUS", "BHS", "BRB", "TCA", "IMN", "GGY", "CYP"]
+    },
+    "opportunity": {
+      "reporters": 219,
+      "partners": 219,
+      "pairs": 47742,
+      "cells": 1342942,
+      "tech_stage_cells": 30,
+      "tech_stage_cells_with_trade_codes": 18,
+      "share_trade_observed": 0.7745,
+      "share_trade_imputed": 0.2255,
+      "share_observed_from_mirror": 0.2184,
+      "share_trade_imputed_without_mirror": 0.3946,
+      "core_reporters": {
+        "share_trade_imputed": 0.0633,
+        "share_observed_from_mirror": 0.3312,
+        "share_trade_imputed_without_mirror": 0.3735
+      },
+      "share_fewer_cells_than_fs": 0.125
+    },
+    "development": {
+      "partners": 132,
+      "cells": 4356,
+      "partners_with_stage_aid": {
+        "Downstream": 131,
+        "Midstream": 131,
+        "Upstream": 121
+      }
+    },
+    "psi": {
+      "partners": 219,
+      "dyads": 47742
+    }
+  },
+  "imputation": {
+    "tau": 0.5,
+    "fs_dyad_share_all": {
+      "n": 47742,
+      "mean": 0.4372,
+      "sd": 0.2406,
+      "p10": 0.1283,
+      "p25": 0.2657,
+      "median": 0.4175,
+      "p75": 0.5606,
+      "p90": 0.8399,
+      "min": 0,
+      "max": 0.9929
+    },
+    "fs_dyad_share_core_reporters": {
+      "n": 6758,
+      "mean": 0.3104,
+      "sd": 0.2371,
+      "p10": 0.0522,
+      "p25": 0.1124,
+      "median": 0.2553,
+      "p75": 0.4583,
+      "p90": 0.5833,
+      "min": 0,
+      "max": 0.9794
+    },
+    "po_dyad_share_core_reporters": {
+      "n": 6758,
+      "mean": 0.2047,
+      "sd": 0.1638,
+      "p10": 0.0258,
+      "p25": 0.0659,
+      "median": 0.1875,
+      "p75": 0.2944,
+      "p90": 0.386,
+      "min": 0,
+      "max": 0.9377
+    },
+    "dp_partner_share": {
+      "n": 132,
+      "mean": 0.168,
+      "sd": 0.1289,
+      "p10": 0.0603,
+      "p25": 0.0857,
+      "median": 0.1237,
+      "p75": 0.2273,
+      "p90": 0.3085,
+      "min": 0.0102,
+      "max": 0.709
+    },
+    "psi_core_view_share_rankable": {
+      "n": 192,
+      "mean": 0.1994,
+      "sd": 0.0917,
+      "p10": 0.0786,
+      "p25": 0.1176,
+      "median": 0.2016,
+      "p75": 0.2725,
+      "p90": 0.3187,
+      "min": 0.0236,
+      "max": 0.4193
+    },
+    "psi_core_view_ranked": 192,
+    "psi_core_view_scored": 219,
+    "psi_core_view_not_sovereign": 24,
+    "psi_core_view_sovereign_over_tau": ["LIE", "MCO", "XKX"],
+    "psi_core_view_unranked_top_by_value": [
+      {
+        "iso3": "GUM",
+        "name": "Guam",
+        "psi": 0.819,
+        "share": 0.695,
+        "reason": "not a sovereign economy and imputed weight share above 0.5"
+      },
+      {
+        "iso3": "NCL",
+        "name": "New Caledonia",
+        "psi": 0.818,
+        "share": 0.401,
+        "reason": "not a sovereign economy"
+      },
+      {
+        "iso3": "MAF",
+        "name": "St. Martin (French part)",
+        "psi": 0.817,
+        "share": 0.809,
+        "reason": "not a sovereign economy and imputed weight share above 0.5"
+      },
+      {
+        "iso3": "IMN",
+        "name": "Isle of Man",
+        "psi": 0.815,
+        "share": 0.814,
+        "reason": "not a sovereign economy and imputed weight share above 0.5"
+      },
+      {
+        "iso3": "PYF",
+        "name": "French Polynesia",
+        "psi": 0.815,
+        "share": 0.519,
+        "reason": "not a sovereign economy and imputed weight share above 0.5"
+      }
+    ],
+    "psi_core_view_rank_if_ranked_highest_unranked": 46
+  },
+  "counterfactual_no_mirror": {
+    "variant": "trade components from importers' own declarations only",
+    "n": 192,
+    "spearman_psi": 0.997,
+    "spearman_C_FS": 1,
+    "spearman_C_PO": 0.816,
+    "median_abs_rank_change": 1,
+    "max_abs_rank_change": 35,
+    "top15": ["USA", "DEU", "NLD", "GBR", "FRA", "ITA", "ESP", "BEL", "POL", "CZE", "AUT", "SWE", "CAN", "KOR", "IRL"],
+    "top15_overlap_with_headline": 15,
+    "top15_entering": [],
+    "top15_leaving": [],
+    "largest_gains": [
+      {
+        "iso3": "BTN",
+        "name": "Bhutan",
+        "rank": 119,
+        "rank_x": 104
+      },
+      {
+        "iso3": "SLB",
+        "name": "Solomon Islands",
+        "rank": 116,
+        "rank_x": 102
+      },
+      {
+        "iso3": "DMA",
+        "name": "Dominica",
+        "rank": 111,
+        "rank_x": 99
+      },
+      {
+        "iso3": "KIR",
+        "name": "Kiribati",
+        "rank": 109,
+        "rank_x": 97
+      },
+      {
+        "iso3": "TON",
+        "name": "Tonga",
+        "rank": 85,
+        "rank_x": 73
+      },
+      {
+        "iso3": "KNA",
+        "name": "St. Kitts and Nevis",
+        "rank": 112,
+        "rank_x": 101
+      }
+    ],
+    "largest_losses": [
+      {
+        "iso3": "ARE",
+        "name": "UAE",
+        "rank": 91,
+        "rank_x": 126
+      },
+      {
+        "iso3": "RUS",
+        "name": "Russia",
+        "rank": 105,
+        "rank_x": 117
+      },
+      {
+        "iso3": "VNM",
+        "name": "Viet Nam",
+        "rank": 64,
+        "rank_x": 76
+      },
+      {
+        "iso3": "CMR",
+        "name": "Cameroon",
+        "rank": 106,
+        "rank_x": 112
+      },
+      {
+        "iso3": "KAZ",
+        "name": "Kazakhstan",
+        "rank": 108,
+        "rank_x": 114
+      },
+      {
+        "iso3": "TUN",
+        "name": "Tunisia",
+        "rank": 102,
+        "rank_x": 108
+      }
+    ],
+    "members_median_rank": 32,
+    "members_median_rank_x": 31,
+    "core_median_rank": 16,
+    "core_median_rank_x": 16,
+    "core_in_top25": 24,
+    "core_in_top25_x": 24,
+    "key": {
+      "CHN": {
+        "rank": 44,
+        "rank_x": 44,
+        "rank_C_FS": 57,
+        "rank_C_FS_x": 57
+      },
+      "TWN": {
+        "rank": 47,
+        "rank_x": 47,
+        "rank_C_FS": 55,
+        "rank_C_FS_x": 55
+      },
+      "CHE": {
+        "rank": 51,
+        "rank_x": 51,
+        "rank_C_FS": 60,
+        "rank_C_FS_x": 60
+      },
+      "IND": {
+        "rank": 39,
+        "rank_x": 39,
+        "rank_C_FS": 40,
+        "rank_C_FS_x": 40
+      },
+      "VNM": {
+        "rank": 64,
+        "rank_x": 76,
+        "rank_C_FS": 97,
+        "rank_C_FS_x": 97
+      },
+      "IDN": {
+        "rank": 62,
+        "rank_x": 62,
+        "rank_C_FS": 86,
+        "rank_C_FS_x": 86
+      },
+      "RUS": {
+        "rank": 105,
+        "rank_x": 117,
+        "rank_C_FS": 96,
+        "rank_C_FS_x": 96
+      }
+    },
+    "cell_level_fs_spearman_mean_within_cell_noncore_reporters": 0.995,
+    "cell_level_po_spearman_mean_within_cell_core_reporters": 0.914
+  },
+  "counterfactual_no_alignment": {
+    "variant": "geo_alignment weight set to 0",
+    "n": 192,
+    "spearman_psi": 0.869,
+    "spearman_C_FS": 0.716,
+    "spearman_C_PO": 1,
+    "median_abs_rank_change": 17,
+    "max_abs_rank_change": 81,
+    "top15": ["USA", "DEU", "CHN", "GBR", "NLD", "FRA", "ITA", "ESP", "POL", "BEL", "CZE", "AUT", "SAU", "CAN", "IDN"],
+    "top15_overlap_with_headline": 12,
+    "top15_entering": ["CHN", "SAU", "IDN"],
+    "top15_leaving": ["SWE", "KOR", "IRL"],
+    "largest_gains": [
+      {
+        "iso3": "OMN",
+        "name": "Oman",
+        "rank": 140,
+        "rank_x": 59
+      },
+      {
+        "iso3": "ARE",
+        "name": "UAE",
+        "rank": 91,
+        "rank_x": 21
+      },
+      {
+        "iso3": "SEN",
+        "name": "Senegal",
+        "rank": 135,
+        "rank_x": 65
+      },
+      {
+        "iso3": "JOR",
+        "name": "Jordan",
+        "rank": 138,
+        "rank_x": 72
+      },
+      {
+        "iso3": "EGY",
+        "name": "Egypt",
+        "rank": 131,
+        "rank_x": 66
+      },
+      {
+        "iso3": "MLI",
+        "name": "Mali",
+        "rank": 154,
+        "rank_x": 94
+      }
+    ],
+    "largest_losses": [
+      {
+        "iso3": "AND",
+        "name": "Andorra",
+        "rank": 57,
+        "rank_x": 136
+      },
+      {
+        "iso3": "FSM",
+        "name": "Micronesia",
+        "rank": 69,
+        "rank_x": 145
+      },
+      {
+        "iso3": "UKR",
+        "name": "Ukraine",
+        "rank": 60,
+        "rank_x": 123
+      },
+      {
+        "iso3": "MDA",
+        "name": "Moldova",
+        "rank": 59,
+        "rank_x": 118
+      },
+      {
+        "iso3": "ISL",
+        "name": "Iceland",
+        "rank": 42,
+        "rank_x": 89
+      },
+      {
+        "iso3": "MNE",
+        "name": "Montenegro",
+        "rank": 48,
+        "rank_x": 92
+      }
+    ],
+    "members_median_rank": 32,
+    "members_median_rank_x": 32,
+    "core_median_rank": 16,
+    "core_median_rank_x": 22,
+    "core_in_top25": 24,
+    "core_in_top25_x": 19,
+    "key": {
+      "CHN": {
+        "rank": 44,
+        "rank_x": 3,
+        "rank_C_FS": 57,
+        "rank_C_FS_x": 2
+      },
+      "TWN": {
+        "rank": 47,
+        "rank_x": 26,
+        "rank_C_FS": 55,
+        "rank_C_FS_x": 44
+      },
+      "CHE": {
+        "rank": 51,
+        "rank_x": 34,
+        "rank_C_FS": 60,
+        "rank_C_FS_x": 51
+      },
+      "IND": {
+        "rank": 39,
+        "rank_x": 16,
+        "rank_C_FS": 40,
+        "rank_C_FS_x": 7
+      },
+      "VNM": {
+        "rank": 64,
+        "rank_x": 20,
+        "rank_C_FS": 97,
+        "rank_C_FS_x": 21
+      },
+      "IDN": {
+        "rank": 62,
+        "rank_x": 15,
+        "rank_C_FS": 86,
+        "rank_C_FS_x": 12
+      },
+      "RUS": {
+        "rank": 105,
+        "rank_x": 47,
+        "rank_C_FS": 96,
+        "rank_C_FS_x": 16
+      }
+    },
+    "cell_level_spearman_mean_within_cell": 0.707
+  },
+  "counterfactual_investment_missing_lowest": {
+    "variant": "absent outward-investment record scored as the lowest rank (0)",
+    "n": 192,
+    "spearman_psi": 0.994,
+    "spearman_C_FS": 0.988,
+    "spearman_C_PO": 1,
+    "median_abs_rank_change": 3,
+    "max_abs_rank_change": 34,
+    "top15": ["DEU", "USA", "GBR", "FRA", "ITA", "ESP", "BEL", "CZE", "POL", "SWE", "AUT", "KOR", "NLD", "CAN", "PRT"],
+    "top15_overlap_with_headline": 14,
+    "top15_entering": "PRT",
+    "top15_leaving": "IRL",
+    "largest_gains": [
+      {
+        "iso3": "ARE",
+        "name": "UAE",
+        "rank": 91,
+        "rank_x": 74
+      },
+      {
+        "iso3": "RUS",
+        "name": "Russia",
+        "rank": 105,
+        "rank_x": 90
+      },
+      {
+        "iso3": "SYC",
+        "name": "Seychelles",
+        "rank": 122,
+        "rank_x": 108
+      },
+      {
+        "iso3": "SLE",
+        "name": "Sierra Leone",
+        "rank": 115,
+        "rank_x": 104
+      },
+      {
+        "iso3": "KNA",
+        "name": "St. Kitts and Nevis",
+        "rank": 112,
+        "rank_x": 102
+      },
+      {
+        "iso3": "OMN",
+        "name": "Oman",
+        "rank": 140,
+        "rank_x": 130
+      }
+    ],
+    "largest_losses": [
+      {
+        "iso3": "BHS",
+        "name": "Bahamas",
+        "rank": 77,
+        "rank_x": 111
+      },
+      {
+        "iso3": "BRB",
+        "name": "Barbados",
+        "rank": 88,
+        "rank_x": 119
+      },
+      {
+        "iso3": "IRL",
+        "name": "Ireland",
+        "rank": 15,
+        "rank_x": 34
+      },
+      {
+        "iso3": "LUX",
+        "name": "Luxembourg",
+        "rank": 27,
+        "rank_x": 44
+      },
+      {
+        "iso3": "MUS",
+        "name": "Mauritius",
+        "rank": 68,
+        "rank_x": 85
+      },
+      {
+        "iso3": "FSM",
+        "name": "Micronesia",
+        "rank": 69,
+        "rank_x": 84
+      }
+    ],
+    "members_median_rank": 32,
+    "members_median_rank_x": 35,
+    "core_median_rank": 16,
+    "core_median_rank_x": 16,
+    "core_in_top25": 24,
+    "core_in_top25_x": 24,
+    "key": {
+      "CHN": {
+        "rank": 44,
+        "rank_x": 37,
+        "rank_C_FS": 57,
+        "rank_C_FS_x": 56
+      },
+      "TWN": {
+        "rank": 47,
+        "rank_x": 40,
+        "rank_C_FS": 55,
+        "rank_C_FS_x": 53
+      },
+      "CHE": {
+        "rank": 51,
+        "rank_x": 63,
+        "rank_C_FS": 60,
+        "rank_C_FS_x": 87
+      },
+      "IND": {
+        "rank": 39,
+        "rank_x": 35,
+        "rank_C_FS": 40,
+        "rank_C_FS_x": 34
+      },
+      "VNM": {
+        "rank": 64,
+        "rank_x": 62,
+        "rank_C_FS": 97,
+        "rank_C_FS_x": 90
+      },
+      "IDN": {
+        "rank": 62,
+        "rank_x": 55,
+        "rank_C_FS": 86,
+        "rank_C_FS_x": 77
+      },
+      "RUS": {
+        "rank": 105,
+        "rank_x": 90,
+        "rank_C_FS": 96,
+        "rank_C_FS_x": 80
+      }
+    },
+    "us_top10_headline": ["GBR", "DEU", "CAN", "NLD", "IRL", "AUS", "FRA", "SVK", "EST", "LTU"],
+    "us_top10_variant": ["DEU", "GBR", "CAN", "FRA", "AUS", "ESP", "JPN", "POL", "KOR", "BEL"],
+    "us_top10_headline_without_investment_in_best5": ["NLD", "IRL", "SVK", "EST", "LTU"]
+  },
+  "counterfactual_alignment_continuous": {
+    "variant": "continuous alignment p_i = s_i",
+    "n": 192,
+    "spearman_psi": 0.916,
+    "spearman_C_FS": 0.843,
+    "spearman_C_PO": 1,
+    "median_abs_rank_change": 15,
+    "max_abs_rank_change": 71,
+    "top15": ["USA", "DEU", "GBR", "FRA", "ITA", "NLD", "POL", "ESP", "CZE", "CHN", "BEL", "AUT", "CAN", "SWE", "DNK"],
+    "top15_overlap_with_headline": 13,
+    "top15_entering": ["CHN", "DNK"],
+    "top15_leaving": ["KOR", "IRL"],
+    "largest_gains": [
+      {
+        "iso3": "OMN",
+        "name": "Oman",
+        "rank": 140,
+        "rank_x": 69
+      },
+      {
+        "iso3": "JOR",
+        "name": "Jordan",
+        "rank": 138,
+        "rank_x": 80
+      },
+      {
+        "iso3": "SEN",
+        "name": "Senegal",
+        "rank": 135,
+        "rank_x": 77
+      },
+      {
+        "iso3": "EGY",
+        "name": "Egypt",
+        "rank": 131,
+        "rank_x": 78
+      },
+      {
+        "iso3": "MLI",
+        "name": "Mali",
+        "rank": 154,
+        "rank_x": 101
+      },
+      {
+        "iso3": "KEN",
+        "name": "Kenya",
+        "rank": 148,
+        "rank_x": 96
+      }
+    ],
+    "largest_losses": [
+      {
+        "iso3": "AND",
+        "name": "Andorra",
+        "rank": 57,
+        "rank_x": 115
+      },
+      {
+        "iso3": "FSM",
+        "name": "Micronesia",
+        "rank": 69,
+        "rank_x": 105
+      },
+      {
+        "iso3": "MDA",
+        "name": "Moldova",
+        "rank": 59,
+        "rank_x": 93
+      },
+      {
+        "iso3": "AGO",
+        "name": "Angola",
+        "rank": 147,
+        "rank_x": 179
+      },
+      {
+        "iso3": "BLZ",
+        "name": "Belize",
+        "rank": 146,
+        "rank_x": 176
+      },
+      {
+        "iso3": "MWI",
+        "name": "Malawi",
+        "rank": 144,
+        "rank_x": 174
+      }
+    ],
+    "members_median_rank": 32,
+    "members_median_rank_x": 33,
+    "core_median_rank": 16,
+    "core_median_rank_x": 17,
+    "core_in_top25": 24,
+    "core_in_top25_x": 22,
+    "key": {
+      "CHN": {
+        "rank": 44,
+        "rank_x": 10,
+        "rank_C_FS": 57,
+        "rank_C_FS_x": 11
+      },
+      "TWN": {
+        "rank": 47,
+        "rank_x": 29,
+        "rank_C_FS": 55,
+        "rank_C_FS_x": 39
+      },
+      "CHE": {
+        "rank": 51,
+        "rank_x": 39,
+        "rank_C_FS": 60,
+        "rank_C_FS_x": 45
+      },
+      "IND": {
+        "rank": 39,
+        "rank_x": 22,
+        "rank_C_FS": 40,
+        "rank_C_FS_x": 20
+      },
+      "VNM": {
+        "rank": 64,
+        "rank_x": 34,
+        "rank_C_FS": 97,
+        "rank_C_FS_x": 43
+      },
+      "IDN": {
+        "rank": 62,
+        "rank_x": 25,
+        "rank_C_FS": 86,
+        "rank_C_FS_x": 32
+      },
+      "RUS": {
+        "rank": 105,
+        "rank_x": 53,
+        "rank_C_FS": 96,
+        "rank_C_FS_x": 37
+      }
+    }
+  },
+  "counterfactual_alignment_terciles": {
+    "variant": "tercile blocs (p_i = 1 above the upper tercile of s, 0 below the lower)",
+    "n": 192,
+    "spearman_psi": 0.949,
+    "spearman_C_FS": 0.901,
+    "spearman_C_PO": 1,
+    "median_abs_rank_change": 4,
+    "max_abs_rank_change": 63,
+    "top15": ["USA", "DEU", "NLD", "GBR", "FRA", "ITA", "ESP", "POL", "BEL", "CZE", "AUT", "SWE", "CAN", "IRL", "KOR"],
+    "top15_overlap_with_headline": 15,
+    "top15_entering": [],
+    "top15_leaving": [],
+    "largest_gains": [
+      {
+        "iso3": "GTM",
+        "name": "Guatemala",
+        "rank": 126,
+        "rank_x": 77
+      },
+      {
+        "iso3": "HTI",
+        "name": "Haiti",
+        "rank": 156,
+        "rank_x": 110
+      },
+      {
+        "iso3": "WSM",
+        "name": "Samoa",
+        "rank": 114,
+        "rank_x": 68
+      },
+      {
+        "iso3": "NRU",
+        "name": "Nauru",
+        "rank": 99,
+        "rank_x": 56
+      },
+      {
+        "iso3": "PLW",
+        "name": "Palau",
+        "rank": 95,
+        "rank_x": 54
+      },
+      {
+        "iso3": "PNG",
+        "name": "Papua New Guinea",
+        "rank": 110,
+        "rank_x": 69
+      }
+    ],
+    "largest_losses": [
+      {
+        "iso3": "BHR",
+        "name": "Bahrain",
+        "rank": 72,
+        "rank_x": 135
+      },
+      {
+        "iso3": "NPL",
+        "name": "Nepal",
+        "rank": 94,
+        "rank_x": 153
+      },
+      {
+        "iso3": "DJI",
+        "name": "Djibouti",
+        "rank": 100,
+        "rank_x": 158
+      },
+      {
+        "iso3": "KWT",
+        "name": "Kuwait",
+        "rank": 67,
+        "rank_x": 125
+      },
+      {
+        "iso3": "BFA",
+        "name": "Burkina Faso",
+        "rank": 103,
+        "rank_x": 159
+      },
+      {
+        "iso3": "NER",
+        "name": "Niger",
+        "rank": 107,
+        "rank_x": 161
+      }
+    ],
+    "members_median_rank": 32,
+    "members_median_rank_x": 32,
+    "core_median_rank": 16,
+    "core_median_rank_x": 16,
+    "core_in_top25": 24,
+    "core_in_top25_x": 23,
+    "key": {
+      "CHN": {
+        "rank": 44,
+        "rank_x": 48,
+        "rank_C_FS": 57,
+        "rank_C_FS_x": 69
+      },
+      "TWN": {
+        "rank": 47,
+        "rank_x": 53,
+        "rank_C_FS": 55,
+        "rank_C_FS_x": 67
+      },
+      "CHE": {
+        "rank": 51,
+        "rank_x": 24,
+        "rank_C_FS": 60,
+        "rank_C_FS_x": 32
+      },
+      "IND": {
+        "rank": 39,
+        "rank_x": 42,
+        "rank_C_FS": 40,
+        "rank_C_FS_x": 48
+      },
+      "VNM": {
+        "rank": 64,
+        "rank_x": 70,
+        "rank_C_FS": 97,
+        "rank_C_FS_x": 94
+      },
+      "IDN": {
+        "rank": 62,
+        "rank_x": 67,
+        "rank_C_FS": 86,
+        "rank_C_FS_x": 86
+      },
+      "RUS": {
+        "rank": 105,
+        "rank_x": 102,
+        "rank_C_FS": 96,
+        "rank_C_FS_x": 92
+      }
+    },
+    "tercile_cuts_s": [0.164, 0.305],
+    "blocs_own_votes": {
+      "us_leaning": 65,
+      "china_leaning": 65,
+      "nonaligned": 63
+    }
+  },
+  "alignment": {
+    "weight": 2,
+    "weight_share_when_all_present": 0.182,
+    "nominal_components_positive": ["imp_trade_index", "es_need", "eo_partner", "outbound_index", "geo_alignment", "chinese_parent_exposure"],
+    "mean_contribution_all_cells": 0.125,
+    "mean_share_of_composite_all_cells": 0.241,
+    "mean_contribution_core_reporters": 0.123,
+    "core_reporters_bloc": "U.S.-leaning (all 31)",
+    "value_distribution_core_reporters": {
+      "0": 52173,
+      "0.5": 100254,
+      "1": 67611
+    },
+    "partners_by_bloc": {
+      "Nonaligned": 98,
+      "U.S.-leaning": 70,
+      "China-leaning": 51
+    },
+    "coalition_partner_tier_by_bloc": {
+      "Nonaligned": 23,
+      "China-leaning": 3
+    },
+    "mean_contribution_core_reporters_by_partner_bloc": {
+      "U.S.-leaning": 0.231,
+      "Nonaligned": 0.115,
+      "China-leaning": 0
+    }
+  },
+  "heatmap": {
+    "Batteries_Midstream": {
+      "cell": "Batteries Midstream",
+      "n_dyads": 930,
+      "share_observed_trade": 1,
+      "n_imputed_trade": 0,
+      "supplier_mean_fs": {
+        "USA": 0.952,
+        "POL": 0.918,
+        "CAN": 0.918,
+        "FIN": 0.898,
+        "DEU": 0.891,
+        "FRA": 0.889,
+        "HUN": 0.888,
+        "ITA": 0.87,
+        "NLD": 0.868,
+        "JPN": 0.863,
+        "ESP": 0.863,
+        "SVK": 0.86,
+        "SWE": 0.855,
+        "BEL": 0.854,
+        "GBR": 0.854,
+        "AUT": 0.853,
+        "PRT": 0.849,
+        "ROU": 0.848,
+        "BGR": 0.846,
+        "GRC": 0.841,
+        "LUX": 0.835,
+        "CZE": 0.835,
+        "AUS": 0.833,
+        "NOR": 0.832,
+        "HRV": 0.825,
+        "DNK": 0.825,
+        "IRL": 0.821,
+        "ISR": 0.807,
+        "KOR": 0.797,
+        "NZL": 0.726,
+        "UKR": 0.673
+      },
+      "importer_mean_fs": {
+        "AUT": 0.904,
+        "UKR": 0.902,
+        "DNK": 0.9,
+        "ISR": 0.895,
+        "ROU": 0.885,
+        "CZE": 0.883,
+        "IRL": 0.882,
+        "HRV": 0.882,
+        "NZL": 0.878,
+        "ITA": 0.877,
+        "GRC": 0.871,
+        "LUX": 0.87,
+        "BGR": 0.869,
+        "ESP": 0.864,
+        "POL": 0.851,
+        "PRT": 0.845,
+        "AUS": 0.842,
+        "BEL": 0.842,
+        "NLD": 0.831,
+        "USA": 0.831,
+        "SWE": 0.826,
+        "DEU": 0.819,
+        "SVK": 0.817,
+        "HUN": 0.814,
+        "JPN": 0.812,
+        "KOR": 0.806,
+        "FRA": 0.805,
+        "NOR": 0.802,
+        "FIN": 0.798,
+        "CAN": 0.798,
+        "GBR": 0.788
+      },
+      "sd_supplier_means": 0.052,
+      "sd_importer_means": 0.036,
+      "spearman_fs_ij_fs_ji": -0.396,
+      "n_unordered_pairs": 465,
+      "mean_abs_fs_ij_minus_fs_ji": 0.087,
+      "china_mean_fs_from_core": 0.613,
+      "china_min_fs_from_core": 0.5,
+      "china_max_fs_from_core": 0.736,
+      "china_rank_among_core_plus_china": 32,
+      "china_mean_components": {
+        "trade": 0.959,
+        "capability": 1,
+        "alignment": 0,
+        "need": 0.556,
+        "chinese_parent_scored": 0
+      },
+      "core_supplier_mean_capability": 0.745,
+      "china_mean_fs_no_alignment": 0.825
+    },
+    "Solar_Midstream": {
+      "cell": "Solar Midstream",
+      "n_dyads": 930,
+      "share_observed_trade": 1,
+      "n_imputed_trade": 0,
+      "supplier_mean_fs": {
+        "USA": 0.93,
+        "DEU": 0.926,
+        "ITA": 0.912,
+        "ESP": 0.902,
+        "FRA": 0.897,
+        "BGR": 0.893,
+        "POL": 0.892,
+        "NLD": 0.889,
+        "PRT": 0.887,
+        "CZE": 0.874,
+        "ROU": 0.873,
+        "SWE": 0.865,
+        "HUN": 0.865,
+        "AUT": 0.862,
+        "FIN": 0.851,
+        "JPN": 0.85,
+        "BEL": 0.847,
+        "DNK": 0.845,
+        "SVK": 0.842,
+        "HRV": 0.838,
+        "CAN": 0.835,
+        "IRL": 0.829,
+        "GBR": 0.828,
+        "GRC": 0.824,
+        "NOR": 0.823,
+        "KOR": 0.819,
+        "ISR": 0.812,
+        "LUX": 0.81,
+        "NZL": 0.78,
+        "AUS": 0.758,
+        "UKR": 0.683
+      },
+      "importer_mean_fs": {
+        "AUS": 0.933,
+        "CZE": 0.878,
+        "UKR": 0.876,
+        "LUX": 0.874,
+        "GRC": 0.872,
+        "SVK": 0.87,
+        "HUN": 0.869,
+        "NOR": 0.867,
+        "DNK": 0.867,
+        "BGR": 0.867,
+        "PRT": 0.867,
+        "GBR": 0.867,
+        "POL": 0.865,
+        "NZL": 0.865,
+        "FIN": 0.865,
+        "IRL": 0.864,
+        "SWE": 0.86,
+        "ISR": 0.858,
+        "CAN": 0.856,
+        "BEL": 0.855,
+        "HRV": 0.855,
+        "ROU": 0.854,
+        "FRA": 0.839,
+        "NLD": 0.805,
+        "USA": 0.804,
+        "AUT": 0.803,
+        "ITA": 0.802,
+        "JPN": 0.801,
+        "DEU": 0.798,
+        "KOR": 0.794,
+        "ESP": 0.791
+      },
+      "sd_supplier_means": 0.051,
+      "sd_importer_means": 0.033,
+      "spearman_fs_ij_fs_ji": -0.413,
+      "n_unordered_pairs": 465,
+      "mean_abs_fs_ij_minus_fs_ji": 0.082,
+      "china_mean_fs_from_core": 0.605,
+      "china_min_fs_from_core": 0.529,
+      "china_max_fs_from_core": 0.704,
+      "china_rank_among_core_plus_china": 32,
+      "china_mean_components": {
+        "trade": 0.942,
+        "capability": 1,
+        "alignment": 0,
+        "need": 0.55,
+        "chinese_parent_scored": 0
+      },
+      "core_supplier_mean_capability": 0.722,
+      "china_mean_fs_no_alignment": 0.818
+    },
+    "asymmetry_core_pooled": {
+      "n": 15345,
+      "spearman_fs_ij_fs_ji": 0.026,
+      "mean_within_cell_spearman": -0.14
+    }
+  },
+  "fs_components": {
+    "USA": {
+      "ranking_basis": "T_FS among partners that are sovereign and whose Friendshore dyad imputed weight share <= 0.5",
+      "n_partners_ranked": 158,
+      "n_partners_scored": 218,
+      "top10": [
+        {
+          "iso3": "GBR",
+          "name": "United Kingdom",
+          "rank": 1,
+          "T_FS": 0.968,
+          "fs_dyad_imputed_share": 0.098,
+          "composite_pre_penalty": 0.794,
+          "contrib_trade": 0.126,
+          "contrib_need": 0.144,
+          "contrib_capability": 0.124,
+          "contrib_investment": 0.2,
+          "contrib_alignment": 0.2,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.01,
+          "best5_cells_observed_trade": 2,
+          "best5_cells_without_trade_codes": 3,
+          "best5_cells_with_investment": 5,
+          "best5_cells": "Green Hydrogen Midstream; Nuclear Downstream; Nuclear Midstream; Electric Grid Midstream; Wind Downstream"
+        },
+        {
+          "iso3": "DEU",
+          "name": "Germany",
+          "rank": 2,
+          "T_FS": 0.967,
+          "fs_dyad_imputed_share": 0.024,
+          "composite_pre_penalty": 0.823,
+          "contrib_trade": 0.153,
+          "contrib_need": 0.136,
+          "contrib_capability": 0.174,
+          "contrib_investment": 0.145,
+          "contrib_alignment": 0.196,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0.018,
+          "best5_cells_with_chinese_parent": 1,
+          "penalty": 0.023,
+          "best5_cells_observed_trade": 4,
+          "best5_cells_without_trade_codes": 1,
+          "best5_cells_with_investment": 5,
+          "best5_cells": "Wind Midstream; Electric Vehicles Midstream; Green Hydrogen Midstream; Nuclear Midstream; Electric Grid Midstream"
+        },
+        {
+          "iso3": "CAN",
+          "name": "Canada",
+          "rank": 3,
+          "T_FS": 0.963,
+          "fs_dyad_imputed_share": 0.039,
+          "composite_pre_penalty": 0.811,
+          "contrib_trade": 0.163,
+          "contrib_need": 0.117,
+          "contrib_capability": 0.163,
+          "contrib_investment": 0.153,
+          "contrib_alignment": 0.196,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0.018,
+          "best5_cells_with_chinese_parent": 1,
+          "penalty": 0.014,
+          "best5_cells_observed_trade": 4,
+          "best5_cells_without_trade_codes": 1,
+          "best5_cells_with_investment": 5,
+          "best5_cells": "Nuclear Upstream; Electric Grid Midstream; Wind Downstream; Electric Vehicles Midstream; Nuclear Midstream"
+        },
+        {
+          "iso3": "NLD",
+          "name": "Netherlands",
+          "rank": 4,
+          "T_FS": 0.951,
+          "fs_dyad_imputed_share": 0.35,
+          "composite_pre_penalty": 0.779,
+          "contrib_trade": 0.154,
+          "contrib_need": 0.184,
+          "contrib_capability": 0.191,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.25,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.039,
+          "best5_cells_observed_trade": 2,
+          "best5_cells_without_trade_codes": 3,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Nuclear Midstream; Green Hydrogen Midstream; Electric Grid Midstream; Coal Downstream; Nuclear Downstream"
+        },
+        {
+          "iso3": "IRL",
+          "name": "Ireland",
+          "rank": 5,
+          "T_FS": 0.951,
+          "fs_dyad_imputed_share": 0.41,
+          "composite_pre_penalty": 0.793,
+          "contrib_trade": 0.159,
+          "contrib_need": 0.127,
+          "contrib_capability": 0.224,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.283,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.012,
+          "best5_cells_observed_trade": 1,
+          "best5_cells_without_trade_codes": 4,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Green Hydrogen Midstream; Electric Grid Midstream; Geothermal Midstream; Geothermal Upstream; Nuclear Downstream"
+        },
+        {
+          "iso3": "AUS",
+          "name": "Australia",
+          "rank": 6,
+          "T_FS": 0.948,
+          "fs_dyad_imputed_share": 0.018,
+          "composite_pre_penalty": 0.788,
+          "contrib_trade": 0.126,
+          "contrib_need": 0.116,
+          "contrib_capability": 0.172,
+          "contrib_investment": 0.173,
+          "contrib_alignment": 0.2,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.016,
+          "best5_cells_observed_trade": 2,
+          "best5_cells_without_trade_codes": 3,
+          "best5_cells_with_investment": 5,
+          "best5_cells": "Wind Downstream; Solar Downstream; Batteries Upstream; Electric Vehicles Upstream; Batteries Downstream"
+        },
+        {
+          "iso3": "FRA",
+          "name": "France",
+          "rank": 7,
+          "T_FS": 0.948,
+          "fs_dyad_imputed_share": 0.018,
+          "composite_pre_penalty": 0.796,
+          "contrib_trade": 0.139,
+          "contrib_need": 0.148,
+          "contrib_capability": 0.174,
+          "contrib_investment": 0.121,
+          "contrib_alignment": 0.196,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0.018,
+          "best5_cells_with_chinese_parent": 1,
+          "penalty": 0.01,
+          "best5_cells_observed_trade": 3,
+          "best5_cells_without_trade_codes": 2,
+          "best5_cells_with_investment": 5,
+          "best5_cells": "Wind Midstream; Nuclear Midstream; Nuclear Downstream; Electric Grid Midstream; Green Hydrogen Midstream"
+        },
+        {
+          "iso3": "SVK",
+          "name": "Slovakia",
+          "rank": 8,
+          "T_FS": 0.94,
+          "fs_dyad_imputed_share": 0.33,
+          "composite_pre_penalty": 0.78,
+          "contrib_trade": 0.157,
+          "contrib_need": 0.186,
+          "contrib_capability": 0.188,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.25,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.011,
+          "best5_cells_observed_trade": 3,
+          "best5_cells_without_trade_codes": 2,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Nuclear Downstream; Green Hydrogen Midstream; Electric Grid Midstream; Nuclear Midstream; Solar Upstream"
+        },
+        {
+          "iso3": "EST",
+          "name": "Estonia",
+          "rank": 9,
+          "T_FS": 0.936,
+          "fs_dyad_imputed_share": 0.331,
+          "composite_pre_penalty": 0.774,
+          "contrib_trade": 0.153,
+          "contrib_need": 0.17,
+          "contrib_capability": 0.201,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.25,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.039,
+          "best5_cells_observed_trade": 3,
+          "best5_cells_without_trade_codes": 2,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Green Hydrogen Midstream; Coal Downstream; Wind Upstream; Electric Grid Midstream; Nuclear Midstream"
+        },
+        {
+          "iso3": "LTU",
+          "name": "Lithuania",
+          "rank": 10,
+          "T_FS": 0.931,
+          "fs_dyad_imputed_share": 0.389,
+          "composite_pre_penalty": 0.761,
+          "contrib_trade": 0.143,
+          "contrib_need": 0.149,
+          "contrib_capability": 0.202,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.267,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.011,
+          "best5_cells_observed_trade": 1,
+          "best5_cells_without_trade_codes": 4,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Green Hydrogen Midstream; Electric Grid Midstream; Wind Downstream; Nuclear Downstream; Geothermal Upstream"
+        }
+      ],
+      "top10_mean_share_of_composite": {
+        "trade": 0.187,
+        "need": 0.187,
+        "capability": 0.23,
+        "investment": 0.099,
+        "alignment": 0.291,
+        "chinese_parent": 0.007
+      },
+      "top10_bloc": {
+        "U.S.-leaning": 10
+      },
+      "top10_mean_penalty": 0.0183,
+      "top10_mean_composite_pre_penalty": 0.79,
+      "top10_cells_observed_trade_of_50": 25,
+      "top10_cells_without_trade_codes_of_50": 25,
+      "top10_cells_with_investment_of_50": 25,
+      "china_rank": 70,
+      "china_T_FS": 0.71,
+      "china_rank_without_alignment": 10,
+      "top10_without_alignment": ["GBR", "DEU", "MEX", "CAN", "FRA", "TCD", "MYS", "VNM", "AUS", "CHN"],
+      "unranked_partners_above_10th": {},
+      "reporter_files_dip": true
+    },
+    "JPN": {
+      "ranking_basis": "T_FS among partners that are sovereign and whose Friendshore dyad imputed weight share <= 0.5",
+      "n_partners_ranked": 170,
+      "n_partners_scored": 218,
+      "top10": [
+        {
+          "iso3": "USA",
+          "name": "United States",
+          "rank": 1,
+          "T_FS": 0.978,
+          "fs_dyad_imputed_share": 0,
+          "composite_pre_penalty": 0.855,
+          "contrib_trade": 0.17,
+          "contrib_need": 0.109,
+          "contrib_capability": 0.18,
+          "contrib_investment": 0.134,
+          "contrib_alignment": 0.194,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0.068,
+          "best5_cells_with_chinese_parent": 4,
+          "penalty": 0.032,
+          "best5_cells_observed_trade": 5,
+          "best5_cells_without_trade_codes": 0,
+          "best5_cells_with_investment": 4,
+          "best5_cells": "Batteries Midstream; Solar Midstream; Gas Upstream; Electric Vehicles Midstream; Wind Midstream"
+        },
+        {
+          "iso3": "PRT",
+          "name": "Portugal",
+          "rank": 2,
+          "T_FS": 0.952,
+          "fs_dyad_imputed_share": 0.371,
+          "composite_pre_penalty": 0.79,
+          "contrib_trade": 0.153,
+          "contrib_need": 0.101,
+          "contrib_capability": 0.237,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.278,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0.022,
+          "best5_cells_with_chinese_parent": 1,
+          "penalty": 0.012,
+          "best5_cells_observed_trade": 1,
+          "best5_cells_without_trade_codes": 4,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Geothermal Midstream; Geothermal Upstream; Green Hydrogen Upstream; Wind Midstream; Solar Downstream"
+        },
+        {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": 3,
+          "T_FS": 0.945,
+          "fs_dyad_imputed_share": 0.352,
+          "composite_pre_penalty": 0.807,
+          "contrib_trade": 0.172,
+          "contrib_need": 0.181,
+          "contrib_capability": 0.203,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.25,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.024,
+          "best5_cells_observed_trade": 3,
+          "best5_cells_without_trade_codes": 2,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Solar Downstream; Wind Upstream; Electric Vehicles Upstream; Green Hydrogen Upstream; Electric Grid Upstream"
+        },
+        {
+          "iso3": "POL",
+          "name": "Poland",
+          "rank": 4,
+          "T_FS": 0.938,
+          "fs_dyad_imputed_share": 0.291,
+          "composite_pre_penalty": 0.784,
+          "contrib_trade": 0.153,
+          "contrib_need": 0.165,
+          "contrib_capability": 0.199,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.244,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0.022,
+          "best5_cells_with_chinese_parent": 1,
+          "penalty": 0.04,
+          "best5_cells_observed_trade": 3,
+          "best5_cells_without_trade_codes": 2,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Solar Downstream; Wind Midstream; Coal Upstream; Green Hydrogen Upstream; Electric Grid Upstream"
+        },
+        {
+          "iso3": "CAN",
+          "name": "Canada",
+          "rank": 5,
+          "T_FS": 0.935,
+          "fs_dyad_imputed_share": 0.041,
+          "composite_pre_penalty": 0.796,
+          "contrib_trade": 0.158,
+          "contrib_need": 0.121,
+          "contrib_capability": 0.159,
+          "contrib_investment": 0.129,
+          "contrib_alignment": 0.193,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0.036,
+          "best5_cells_with_chinese_parent": 2,
+          "penalty": 0.091,
+          "best5_cells_observed_trade": 5,
+          "best5_cells_without_trade_codes": 0,
+          "best5_cells_with_investment": 5,
+          "best5_cells": "Batteries Midstream; Gas Upstream; Electric Vehicles Midstream; Oil Upstream; Coal Upstream"
+        },
+        {
+          "iso3": "IRL",
+          "name": "Ireland",
+          "rank": 6,
+          "T_FS": 0.93,
+          "fs_dyad_imputed_share": 0.444,
+          "composite_pre_penalty": 0.764,
+          "contrib_trade": 0.142,
+          "contrib_need": 0.107,
+          "contrib_capability": 0.232,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.283,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.013,
+          "best5_cells_observed_trade": 0,
+          "best5_cells_without_trade_codes": 5,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Green Hydrogen Upstream; Geothermal Midstream; Geothermal Upstream; Solar Downstream; Batteries Downstream"
+        },
+        {
+          "iso3": "THA",
+          "name": "Thailand",
+          "rank": 7,
+          "T_FS": 0.93,
+          "fs_dyad_imputed_share": 0.054,
+          "composite_pre_penalty": 0.764,
+          "contrib_trade": 0.159,
+          "contrib_need": 0.14,
+          "contrib_capability": 0.165,
+          "contrib_investment": 0.2,
+          "contrib_alignment": 0.1,
+          "alignment_value": 0.5,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.052,
+          "best5_cells_observed_trade": 5,
+          "best5_cells_without_trade_codes": 0,
+          "best5_cells_with_investment": 5,
+          "best5_cells": "Oil Upstream; Coal Upstream; Wind Upstream; Gas Upstream; Solar Upstream"
+        },
+        {
+          "iso3": "CZE",
+          "name": "Czechia",
+          "rank": 8,
+          "T_FS": 0.925,
+          "fs_dyad_imputed_share": 0.425,
+          "composite_pre_penalty": 0.773,
+          "contrib_trade": 0.155,
+          "contrib_need": 0.114,
+          "contrib_capability": 0.221,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.283,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.012,
+          "best5_cells_observed_trade": 1,
+          "best5_cells_without_trade_codes": 4,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Wind Upstream; Green Hydrogen Upstream; Solar Downstream; Geothermal Midstream; Geothermal Upstream"
+        },
+        {
+          "iso3": "EST",
+          "name": "Estonia",
+          "rank": 9,
+          "T_FS": 0.924,
+          "fs_dyad_imputed_share": 0.373,
+          "composite_pre_penalty": 0.778,
+          "contrib_trade": 0.164,
+          "contrib_need": 0.171,
+          "contrib_capability": 0.193,
+          "contrib_investment": 0,
+          "contrib_alignment": 0.25,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0,
+          "best5_cells_with_chinese_parent": 0,
+          "penalty": 0.023,
+          "best5_cells_observed_trade": 2,
+          "best5_cells_without_trade_codes": 3,
+          "best5_cells_with_investment": 0,
+          "best5_cells": "Wind Upstream; Solar Downstream; Electric Vehicles Upstream; Green Hydrogen Upstream; Wind Downstream"
+        },
+        {
+          "iso3": "DEU",
+          "name": "Germany",
+          "rank": 10,
+          "T_FS": 0.918,
+          "fs_dyad_imputed_share": 0.021,
+          "composite_pre_penalty": 0.763,
+          "contrib_trade": 0.159,
+          "contrib_need": 0.122,
+          "contrib_capability": 0.17,
+          "contrib_investment": 0.086,
+          "contrib_alignment": 0.206,
+          "alignment_value": 1,
+          "contrib_chinese_parent": 0.018,
+          "best5_cells_with_chinese_parent": 1,
+          "penalty": 0.032,
+          "best5_cells_observed_trade": 4,
+          "best5_cells_without_trade_codes": 1,
+          "best5_cells_with_investment": 4,
+          "best5_cells": "Wind Midstream; Solar Downstream; Gas Upstream; Solar Upstream; Electric Vehicles Midstream"
+        }
+      ],
+      "top10_mean_share_of_composite": {
+        "trade": 0.201,
+        "need": 0.169,
+        "capability": 0.249,
+        "investment": 0.069,
+        "alignment": 0.29,
+        "chinese_parent": 0.021
+      },
+      "top10_bloc": {
+        "U.S.-leaning": 9,
+        "Nonaligned": 1
+      },
+      "top10_mean_penalty": 0.0331,
+      "top10_mean_composite_pre_penalty": 0.788,
+      "top10_cells_observed_trade_of_50": 29,
+      "top10_cells_without_trade_codes_of_50": 21,
+      "top10_cells_with_investment_of_50": 18,
+      "china_rank": 75,
+      "china_T_FS": 0.71,
+      "china_rank_without_alignment": 8,
+      "top10_without_alignment": ["THA", "USA", "VNM", "IDN", "CMR", "TCD", "TWN", "CHN", "QAT", "CAN"],
+      "unranked_partners_above_10th": {},
+      "reporter_files_dip": true
+    }
+  },
+  "counterfactual_no_chinese_parent_exposure": {
+    "variant": "chinese_parent_exposure weight set to 0",
+    "n": 192,
+    "spearman_psi": 1,
+    "spearman_C_FS": 1,
+    "spearman_C_PO": 1,
+    "median_abs_rank_change": 0,
+    "max_abs_rank_change": 4,
+    "top15": ["USA", "DEU", "NLD", "GBR", "FRA", "ITA", "ESP", "BEL", "POL", "CZE", "AUT", "SWE", "KOR", "CAN", "IRL"],
+    "top15_overlap_with_headline": 15,
+    "top15_entering": [],
+    "top15_leaving": [],
+    "largest_gains": [
+      {
+        "iso3": "HUN",
+        "name": "Hungary",
+        "rank": 20,
+        "rank_x": 16
+      },
+      {
+        "iso3": "EGY",
+        "name": "Egypt",
+        "rank": 131,
+        "rank_x": 128
+      },
+      {
+        "iso3": "SVK",
+        "name": "Slovakia",
+        "rank": 21,
+        "rank_x": 18
+      },
+      {
+        "iso3": "KHM",
+        "name": "Cambodia",
+        "rank": 159,
+        "rank_x": 157
+      },
+      {
+        "iso3": "LTU",
+        "name": "Lithuania",
+        "rank": 30,
+        "rank_x": 28
+      },
+      {
+        "iso3": "AND",
+        "name": "Andorra",
+        "rank": 57,
+        "rank_x": 56
+      }
+    ],
+    "largest_losses": [
+      {
+        "iso3": "DNK",
+        "name": "Denmark",
+        "rank": 17,
+        "rank_x": 20
+      },
+      {
+        "iso3": "FIN",
+        "name": "Finland",
+        "rank": 18,
+        "rank_x": 21
+      },
+      {
+        "iso3": "BRA",
+        "name": "Brazil",
+        "rank": 83,
+        "rank_x": 85
+      },
+      {
+        "iso3": "GRC",
+        "name": "Greece",
+        "rank": 28,
+        "rank_x": 30
+      },
+      {
+        "iso3": "ISL",
+        "name": "Iceland",
+        "rank": 42,
+        "rank_x": 44
+      },
+      {
+        "iso3": "AFG",
+        "name": "Afghanistan",
+        "rank": 128,
+        "rank_x": 129
+      }
+    ],
+    "members_median_rank": 32,
+    "members_median_rank_x": 32,
+    "core_median_rank": 16,
+    "core_median_rank_x": 16,
+    "core_in_top25": 24,
+    "core_in_top25_x": 24,
+    "key": {
+      "CHN": {
+        "rank": 44,
+        "rank_x": 43,
+        "rank_C_FS": 57,
+        "rank_C_FS_x": 55
+      },
+      "TWN": {
+        "rank": 47,
+        "rank_x": 47,
+        "rank_C_FS": 55,
+        "rank_C_FS_x": 57
+      },
+      "CHE": {
+        "rank": 51,
+        "rank_x": 51,
+        "rank_C_FS": 60,
+        "rank_C_FS_x": 59
+      },
+      "IND": {
+        "rank": 39,
+        "rank_x": 39,
+        "rank_C_FS": 40,
+        "rank_C_FS_x": 40
+      },
+      "VNM": {
+        "rank": 64,
+        "rank_x": 64,
+        "rank_C_FS": 97,
+        "rank_C_FS_x": 97
+      },
+      "IDN": {
+        "rank": 62,
+        "rank_x": 62,
+        "rank_C_FS": 86,
+        "rank_C_FS_x": 85
+      },
+      "RUS": {
+        "rank": 105,
+        "rank_x": 105,
+        "rank_C_FS": 96,
+        "rank_C_FS_x": 96
+      }
+    },
+    "cell_level_spearman_mean_within_cmfdi_cell": 0.99
+  },
+  "cm_fdi": {
+    "source": "CM-FDI, Net Zero Industrial Policy Lab, Johns Hopkins University (CC BY 4.0); data/processed/cm_fdi_projects_tbl.rds",
+    "settings": {
+      "investment_ties": true,
+      "chinese_parent_exposure": true,
+      "min_projects": 2,
+      "jv_parent_share": 0.5,
+      "stage": "Midstream",
+      "weight": 1,
+      "weight_share_when_all_present": 0.091
+    },
+    "projects_in_file": 1042,
+    "projects_used": 905,
+    "projects_used_china_parent": 406,
+    "projects_used_by_tech": {
+      "Batteries": 282,
+      "Electric Vehicles": 237,
+      "Solar": 234,
+      "Wind": 152
+    },
+    "coverage_by_cell": {
+      "Batteries": {
+        "dyad_cells": 45156,
+        "cells_with_tie": 4240,
+        "reporters_with_tie": 20,
+        "cells_with_exposure": 5088,
+        "partners_with_exposure": 24
+      },
+      "Electric Vehicles": {
+        "dyad_cells": 46440,
+        "cells_with_tie": 2580,
+        "reporters_with_tie": 12,
+        "cells_with_exposure": 6020,
+        "partners_with_exposure": 28
+      },
+      "Solar": {
+        "dyad_cells": 45156,
+        "cells_with_tie": 3392,
+        "reporters_with_tie": 16,
+        "cells_with_exposure": 5936,
+        "partners_with_exposure": 28
+      },
+      "Wind": {
+        "dyad_cells": 45156,
+        "cells_with_tie": 2968,
+        "reporters_with_tie": 14,
+        "cells_with_exposure": 5512,
+        "partners_with_exposure": 26
+      }
+    },
+    "partners_with_exposure_any_cell": 47,
+    "partners_with_exposure_excl_china_hq": 44,
+    "coalition_members_with_exposure": ["ARG", "BGR", "BRA", "CAN", "CZE", "DEU", "DNK", "ESP", "FIN", "FRA", "GBR", "HUN", "IDN", "IND", "ITA", "KOR", "MAR", "MEX", "MYS", "OMN", "PHL", "POL", "PRT", "SAU", "SVK", "SWE", "THA", "TUR", "USA", "VNM", "ZAF"],
+    "n_coalition_members_with_exposure": 31,
+    "nonmembers_with_exposure": ["ARE", "AZE", "EGY", "ETH", "KAZ", "KHM", "LAO", "NGA", "PAK", "RUS", "SRB", "TWN", "UZB"],
+    "share_distribution_excl_china_hq": {
+      "n": 94,
+      "mean": 0.4816,
+      "sd": 0.3825,
+      "p10": 0,
+      "p25": 0.042,
+      "median": 0.5,
+      "p75": 0.8472,
+      "p90": 1,
+      "min": 0,
+      "max": 1
+    },
+    "share_by_tech_median_excl_china_hq": {
+      "Solar": 0.75,
+      "Wind": 0,
+      "Batteries": 0.493,
+      "Electric Vehicles": 0.5
+    },
+    "cells_with_share_ge_0_5": 48,
+    "cells_excl_china_hq": 94,
+    "cells_share_zero": 19,
+    "highest_exposures": [
+      {
+        "iso3": "EGY",
+        "name": "Egypt",
+        "tech": "Solar",
+        "share": 1,
+        "n_projects": 6.5,
+        "n_china": 6.5,
+        "basis": "blend",
+        "tier": "none"
+      },
+      {
+        "iso3": "VNM",
+        "name": "Viet Nam",
+        "tech": "Electric Vehicles",
+        "share": 1,
+        "n_projects": 6.5,
+        "n_china": 6.5,
+        "basis": "blend",
+        "tier": "partner"
+      },
+      {
+        "iso3": "SAU",
+        "name": "Saudi Arabia",
+        "tech": "Solar",
+        "share": 1,
+        "n_projects": 5,
+        "n_china": 5,
+        "basis": "blend",
+        "tier": "partner"
+      },
+      {
+        "iso3": "SRB",
+        "name": "Serbia",
+        "tech": "Electric Vehicles",
+        "share": 1,
+        "n_projects": 5,
+        "n_china": 5,
+        "basis": "blend",
+        "tier": "none"
+      },
+      {
+        "iso3": "OMN",
+        "name": "Oman",
+        "tech": "Solar",
+        "share": 1,
+        "n_projects": 4,
+        "n_china": 4,
+        "basis": "blend",
+        "tier": "partner"
+      },
+      {
+        "iso3": "KHM",
+        "name": "Cambodia",
+        "tech": "Solar",
+        "share": 1,
+        "n_projects": 3.5,
+        "n_china": 3.5,
+        "basis": "blend",
+        "tier": "none"
+      },
+      {
+        "iso3": "EGY",
+        "name": "Egypt",
+        "tech": "Electric Vehicles",
+        "share": 1,
+        "n_projects": 3,
+        "n_china": 3,
+        "basis": "blend",
+        "tier": "none"
+      },
+      {
+        "iso3": "UZB",
+        "name": "Uzbekistan",
+        "tech": "Wind",
+        "share": 1,
+        "n_projects": 3,
+        "n_china": 3,
+        "basis": "blend",
+        "tier": "none"
+      },
+      {
+        "iso3": "AZE",
+        "name": "Azerbaijan",
+        "tech": "Solar",
+        "share": 1,
+        "n_projects": 2,
+        "n_china": 2,
+        "basis": "count",
+        "tier": "none"
+      },
+      {
+        "iso3": "PAK",
+        "name": "Pakistan",
+        "tech": "Solar",
+        "share": 1,
+        "n_projects": 2,
+        "n_china": 2,
+        "basis": "count",
+        "tier": "none"
+      }
+    ],
+    "coalition_exposure": {
+      "ARG": {
+        "Wind": 0
+      },
+      "BGR": {
+        "Solar": 0
+      },
+      "BRA": {
+        "Batteries": 0.045,
+        "Electric Vehicles": 0.25,
+        "Solar": 0.821,
+        "Wind": 0.197
+      },
+      "CAN": {
+        "Batteries": 0,
+        "Electric Vehicles": 0.016,
+        "Wind": 0
+      },
+      "CZE": {
+        "Batteries": 0.551,
+        "Electric Vehicles": 0.041
+      },
+      "DEU": {
+        "Batteries": 0.532,
+        "Electric Vehicles": 0
+      },
+      "DNK": {
+        "Wind": 0
+      },
+      "ESP": {
+        "Batteries": 0.493,
+        "Electric Vehicles": 0.174,
+        "Wind": 0
+      },
+      "FIN": {
+        "Batteries": 0
+      },
+      "FRA": {
+        "Batteries": 0.414,
+        "Electric Vehicles": 0.27,
+        "Wind": 0
+      },
+      "GBR": {
+        "Batteries": 0.378,
+        "Electric Vehicles": 0.583,
+        "Wind": 0
+      },
+      "HUN": {
+        "Batteries": 0.549,
+        "Electric Vehicles": 0.637
+      },
+      "IDN": {
+        "Batteries": 0.686,
+        "Electric Vehicles": 0.595,
+        "Solar": 0.852
+      },
+      "IND": {
+        "Batteries": 0.143,
+        "Electric Vehicles": 0.025,
+        "Solar": 0.499,
+        "Wind": 0.211
+      },
+      "ITA": {
+        "Solar": 0.175
+      },
+      "KOR": {
+        "Batteries": 0.908,
+        "Electric Vehicles": 0.165,
+        "Solar": 0.667,
+        "Wind": 1
+      },
+      "MAR": {
+        "Batteries": 0.892,
+        "Electric Vehicles": 0.035,
+        "Wind": 0.673
+      },
+      "MEX": {
+        "Batteries": 0,
+        "Electric Vehicles": 0.346,
+        "Solar": 0.282,
+        "Wind": 0
+      },
+      "MYS": {
+        "Batteries": 0.687,
+        "Electric Vehicles": 0.898,
+        "Solar": 0.733
+      },
+      "OMN": {
+        "Solar": 1
+      },
+      "PHL": {
+        "Solar": 0.5
+      },
+      "POL": {
+        "Batteries": 0.157,
+        "Electric Vehicles": 0.373,
+        "Wind": 0
+      },
+      "PRT": {
+        "Solar": 0,
+        "Wind": 0
+      },
+      "SAU": {
+        "Solar": 1,
+        "Wind": 1
+      },
+      "SVK": {
+        "Electric Vehicles": 0.608
+      },
+      "SWE": {
+        "Batteries": 0.4
+      },
+      "THA": {
+        "Batteries": 0.968,
+        "Electric Vehicles": 0.88,
+        "Solar": 0.714
+      },
+      "TUR": {
+        "Batteries": 1,
+        "Electric Vehicles": 0.816,
+        "Solar": 0.974,
+        "Wind": 0.632
+      },
+      "USA": {
+        "Batteries": 0.152,
+        "Electric Vehicles": 0.041,
+        "Solar": 0.265,
+        "Wind": 0
+      },
+      "VNM": {
+        "Batteries": 0.8,
+        "Electric Vehicles": 1,
+        "Solar": 0.791,
+        "Wind": 0.143
+      },
+      "ZAF": {
+        "Electric Vehicles": 0.5,
+        "Solar": 1
+      }
+    },
+    "china_hq_share": 1,
+    "mean_contribution_in_covered_cells": 0.051,
+    "mean_share_of_composite_in_covered_cells": 0.081,
+    "share_covered_cells_with_component": 0.124,
+    "core_view_cell_effect": {
+      "n_supplier_cells": 106,
+      "spearman_share_vs_fs_change": -0.931,
+      "mean_fs_change_share_ge_0_5": -0.063,
+      "mean_fs_change_share_lt_0_2": 0.043,
+      "china_fs_change": {
+        "Batteries": -0.093,
+        "Electric Vehicles": -0.085,
+        "Solar": -0.087,
+        "Wind": -0.095
+      },
+      "largest_losses": [
+        {
+          "iso3": "PAK",
+          "name": "Pakistan",
+          "tech": "Solar",
+          "share": 1,
+          "fs": 0.435,
+          "fs_without": 0.559
+        },
+        {
+          "iso3": "SAU",
+          "name": "Saudi Arabia",
+          "tech": "Solar",
+          "share": 1,
+          "fs": 0.442,
+          "fs_without": 0.564
+        },
+        {
+          "iso3": "SAU",
+          "name": "Saudi Arabia",
+          "tech": "Wind",
+          "share": 1,
+          "fs": 0.457,
+          "fs_without": 0.576
+        },
+        {
+          "iso3": "ZAF",
+          "name": "South Africa",
+          "tech": "Solar",
+          "share": 1,
+          "fs": 0.49,
+          "fs_without": 0.604
+        },
+        {
+          "iso3": "VNM",
+          "name": "Viet Nam",
+          "tech": "Electric Vehicles",
+          "share": 1,
+          "fs": 0.448,
+          "fs_without": 0.561
+        },
+        {
+          "iso3": "KHM",
+          "name": "Cambodia",
+          "tech": "Solar",
+          "share": 1,
+          "fs": 0.29,
+          "fs_without": 0.397
+        }
+      ]
+    },
+    "investment_ties": {
+      "pairs_with_tie": 234,
+      "investors": 29,
+      "destinations": 62,
+      "core_investors": ["AUS", "AUT", "BEL", "CAN", "DEU", "DNK", "ESP", "FIN", "FRA", "GBR", "ITA", "JPN", "KOR", "NLD", "NOR", "SVK", "SWE", "USA"],
+      "ties_by_tech": {
+        "Batteries": 89,
+        "Solar": 82,
+        "Wind": 79,
+        "Electric Vehicles": 98
+      }
+    },
+    "aib_link": "operationalises the common-mode / parent-company dependence upgrade of the AIB concept paper",
+    "figure_rows": ["KOR", "SVK", "HUN", "SWE", "GBR", "CZE", "DEU", "FRA", "ESP", "POL", "ITA", "USA", "CAN", "BGR", "DNK", "FIN", "PRT", "OMN", "SAU", "TUR", "THA", "MYS", "ZAF", "IDN", "VNM", "MAR", "PHL", "BRA", "IND", "MEX", "ARG", "AZE", "KHM", "KAZ", "PAK", "UZB", "EGY", "ARE", "NGA", "ETH", "SRB", "LAO", "RUS", "TWN"],
+    "panel_b_core_mean_fs": {
+      "ARE": {
+        "with_component": 0.336,
+        "without_component": 0.405
+      },
+      "ARG": {
+        "with_component": 0.501,
+        "without_component": 0.357
+      },
+      "AZE": {
+        "with_component": 0.07,
+        "without_component": 0.112
+      },
+      "BGR": {
+        "with_component": 0.893,
+        "without_component": 0.853
+      },
+      "BRA": {
+        "with_component": 0.598,
+        "without_component": 0.58
+      },
+      "CAN": {
+        "with_component": 0.881,
+        "without_component": 0.845
+      },
+      "CZE": {
+        "with_component": 0.873,
+        "without_component": 0.872
+      },
+      "DEU": {
+        "with_component": 0.922,
+        "without_component": 0.919
+      },
+      "DNK": {
+        "with_component": 0.916,
+        "without_component": 0.893
+      },
+      "EGY": {
+        "with_component": 0.323,
+        "without_component": 0.386
+      },
+      "ESP": {
+        "with_component": 0.905,
+        "without_component": 0.901
+      },
+      "ETH": {
+        "with_component": 0.221,
+        "without_component": 0.214
+      },
+      "FIN": {
+        "with_component": 0.898,
+        "without_component": 0.858
+      },
+      "FRA": {
+        "with_component": 0.902,
+        "without_component": 0.897
+      },
+      "GBR": {
+        "with_component": 0.852,
+        "without_component": 0.856
+      },
+      "HUN": {
+        "with_component": 0.876,
+        "without_component": 0.909
+      },
+      "IDN": {
+        "with_component": 0.484,
+        "without_component": 0.533
+      },
+      "IND": {
+        "with_component": 0.787,
+        "without_component": 0.767
+      },
+      "ITA": {
+        "with_component": 0.912,
+        "without_component": 0.899
+      },
+      "KAZ": {
+        "with_component": 0.192,
+        "without_component": 0.266
+      },
+      "KHM": {
+        "with_component": 0.29,
+        "without_component": 0.397
+      },
+      "KOR": {
+        "with_component": 0.821,
+        "without_component": 0.87
+      },
+      "LAO": {
+        "with_component": 0.278,
+        "without_component": 0.243
+      },
+      "MAR": {
+        "with_component": 0.625,
+        "without_component": 0.647
+      },
+      "MEX": {
+        "with_component": 0.747,
+        "without_component": 0.709
+      },
+      "MYS": {
+        "with_component": 0.667,
+        "without_component": 0.72
+      },
+      "NGA": {
+        "with_component": 0.114,
+        "without_component": 0.123
+      },
+      "OMN": {
+        "with_component": 0.193,
+        "without_component": 0.268
+      },
+      "PAK": {
+        "with_component": 0.475,
+        "without_component": 0.586
+      },
+      "PHL": {
+        "with_component": 0.69,
+        "without_component": 0.7
+      },
+      "POL": {
+        "with_component": 0.907,
+        "without_component": 0.897
+      },
+      "PRT": {
+        "with_component": 0.894,
+        "without_component": 0.861
+      },
+      "RUS": {
+        "with_component": 0.4,
+        "without_component": 0.255
+      },
+      "SAU": {
+        "with_component": 0.449,
+        "without_component": 0.57
+      },
+      "SRB": {
+        "with_component": 0.626,
+        "without_component": 0.639
+      },
+      "SVK": {
+        "with_component": 0.856,
+        "without_component": 0.895
+      },
+      "SWE": {
+        "with_component": 0.855,
+        "without_component": 0.862
+      },
+      "THA": {
+        "with_component": 0.663,
+        "without_component": 0.73
+      },
+      "TUR": {
+        "with_component": 0.624,
+        "without_component": 0.695
+      },
+      "TWN": {
+        "with_component": 0.75,
+        "without_component": 0.693
+      },
+      "USA": {
+        "with_component": 0.943,
+        "without_component": 0.926
+      },
+      "UZB": {
+        "with_component": 0.149,
+        "without_component": 0.21
+      },
+      "VNM": {
+        "with_component": 0.497,
+        "without_component": 0.542
+      },
+      "ZAF": {
+        "with_component": 0.57,
+        "without_component": 0.631
+      }
+    }
+  },
+  "psi_views": {
+    "reporters_averaged": {
+      "core": 31,
+      "full_coalition": 57,
+      "world": 218
+    },
+    "n_ranked": {
+      "core": 192,
+      "full_coalition": 192,
+      "world": 188
+    },
+    "world_view_unranked_sovereign": ["LIE", "MCO", "NRU", "PLW", "PRK", "VCT", "XKX"],
+    "spearman": {
+      "core_vs_full_coalition": {
+        "rho": 0.981,
+        "n": 192,
+        "median_abs_rank_change": 5
+      },
+      "core_vs_world": {
+        "rho": 0.881,
+        "n": 188,
+        "median_abs_rank_change": 17
+      },
+      "full_coalition_vs_world": {
+        "rho": 0.948,
+        "n": 188,
+        "median_abs_rank_change": 11
+      }
+    },
+    "top10": {
+      "core": [
+        {
+          "rank": 1,
+          "iso3": "USA",
+          "name": "United States",
+          "psi": 0.936
+        },
+        {
+          "rank": 2,
+          "iso3": "DEU",
+          "name": "Germany",
+          "psi": 0.934
+        },
+        {
+          "rank": 3,
+          "iso3": "NLD",
+          "name": "Netherlands",
+          "psi": 0.922
+        },
+        {
+          "rank": 4,
+          "iso3": "GBR",
+          "name": "United Kingdom",
+          "psi": 0.919
+        },
+        {
+          "rank": 5,
+          "iso3": "FRA",
+          "name": "France",
+          "psi": 0.917
+        },
+        {
+          "rank": 6,
+          "iso3": "ITA",
+          "name": "Italy",
+          "psi": 0.914
+        },
+        {
+          "rank": 7,
+          "iso3": "ESP",
+          "name": "Spain",
+          "psi": 0.908
+        },
+        {
+          "rank": 8,
+          "iso3": "BEL",
+          "name": "Belgium",
+          "psi": 0.906
+        },
+        {
+          "rank": 9,
+          "iso3": "POL",
+          "name": "Poland",
+          "psi": 0.906
+        },
+        {
+          "rank": 10,
+          "iso3": "CZE",
+          "name": "Czechia",
+          "psi": 0.904
+        }
+      ],
+      "full_coalition": [
+        {
+          "rank": 1,
+          "iso3": "USA",
+          "name": "United States",
+          "psi": 0.893
+        },
+        {
+          "rank": 2,
+          "iso3": "DEU",
+          "name": "Germany",
+          "psi": 0.879
+        },
+        {
+          "rank": 3,
+          "iso3": "FRA",
+          "name": "France",
+          "psi": 0.868
+        },
+        {
+          "rank": 4,
+          "iso3": "NLD",
+          "name": "Netherlands",
+          "psi": 0.864
+        },
+        {
+          "rank": 5,
+          "iso3": "ESP",
+          "name": "Spain",
+          "psi": 0.861
+        },
+        {
+          "rank": 6,
+          "iso3": "GBR",
+          "name": "United Kingdom",
+          "psi": 0.857
+        },
+        {
+          "rank": 7,
+          "iso3": "ITA",
+          "name": "Italy",
+          "psi": 0.854
+        },
+        {
+          "rank": 8,
+          "iso3": "KOR",
+          "name": "South Korea",
+          "psi": 0.852
+        },
+        {
+          "rank": 9,
+          "iso3": "CHN",
+          "name": "China",
+          "psi": 0.85
+        },
+        {
+          "rank": 10,
+          "iso3": "BEL",
+          "name": "Belgium",
+          "psi": 0.848
+        }
+      ],
+      "world": [
+        {
+          "rank": 1,
+          "iso3": "CHN",
+          "name": "China",
+          "psi": 0.813
+        },
+        {
+          "rank": 2,
+          "iso3": "IND",
+          "name": "India",
+          "psi": 0.787
+        },
+        {
+          "rank": 3,
+          "iso3": "FRA",
+          "name": "France",
+          "psi": 0.783
+        },
+        {
+          "rank": 4,
+          "iso3": "USA",
+          "name": "United States",
+          "psi": 0.782
+        },
+        {
+          "rank": 5,
+          "iso3": "DEU",
+          "name": "Germany",
+          "psi": 0.78
+        },
+        {
+          "rank": 6,
+          "iso3": "IDN",
+          "name": "Indonesia",
+          "psi": 0.768
+        },
+        {
+          "rank": 7,
+          "iso3": "NLD",
+          "name": "Netherlands",
+          "psi": 0.764
+        },
+        {
+          "rank": 8,
+          "iso3": "KOR",
+          "name": "South Korea",
+          "psi": 0.761
+        },
+        {
+          "rank": 9,
+          "iso3": "ESP",
+          "name": "Spain",
+          "psi": 0.76
+        },
+        {
+          "rank": 10,
+          "iso3": "GBR",
+          "name": "United Kingdom",
+          "psi": 0.757
+        }
+      ]
+    },
+    "top15": {
+      "core": ["USA", "DEU", "NLD", "GBR", "FRA", "ITA", "ESP", "BEL", "POL", "CZE", "AUT", "SWE", "CAN", "KOR", "IRL"],
+      "full_coalition": ["USA", "DEU", "FRA", "NLD", "ESP", "GBR", "ITA", "KOR", "CHN", "BEL", "CAN", "POL", "CZE", "AUT", "IND"],
+      "world": ["CHN", "IND", "FRA", "USA", "DEU", "IDN", "NLD", "KOR", "ESP", "GBR", "ITA", "VNM", "CAN", "AUT", "MYS"]
+    },
+    "top15_overlap": {
+      "core_full": 13,
+      "core_world": 10,
+      "full_world": 12
+    },
+    "top15_core_members": {
+      "core": 15,
+      "full_coalition": 13,
+      "world": 10
+    },
+    "top15_world_not_in_core": ["CHN", "IND", "IDN", "VNM", "MYS"],
+    "top15_core_not_in_world": ["BEL", "POL", "CZE", "SWE", "IRL"],
+    "top15_full_not_in_core": ["CHN", "IND"],
+    "key_ranks": {
+      "CHN": {
+        "core": 44,
+        "full_coalition": 9,
+        "world": 1
+      },
+      "TWN": {
+        "core": 47,
+        "full_coalition": 31,
+        "world": 27
+      },
+      "CHE": {
+        "core": 51,
+        "full_coalition": 49,
+        "world": 34
+      },
+      "IND": {
+        "core": 39,
+        "full_coalition": 15,
+        "world": 2
+      },
+      "IDN": {
+        "core": 62,
+        "full_coalition": 32,
+        "world": 6
+      },
+      "VNM": {
+        "core": 64,
+        "full_coalition": 46,
+        "world": 12
+      },
+      "USA": {
+        "core": 1,
+        "full_coalition": 1,
+        "world": 4
+      },
+      "JPN": {
+        "core": 24,
+        "full_coalition": 16,
+        "world": 29
+      }
+    }
+  },
+  "psi": {
+    "view": "core members (headline)",
+    "n_ranked": 192,
+    "top10": [
+      {
+        "rank": 1,
+        "iso3": "USA",
+        "name": "United States",
+        "psi": 0.936,
+        "C_FS": 0.974,
+        "C_PO": 0.898,
+        "C_DP": "NA",
+        "tier": "core"
+      },
+      {
+        "rank": 2,
+        "iso3": "DEU",
+        "name": "Germany",
+        "psi": 0.934,
+        "C_FS": 0.956,
+        "C_PO": 0.911,
+        "C_DP": "NA",
+        "tier": "core"
+      },
+      {
+        "rank": 3,
+        "iso3": "NLD",
+        "name": "Netherlands",
+        "psi": 0.922,
+        "C_FS": 0.945,
+        "C_PO": 0.9,
+        "C_DP": "NA",
+        "tier": "core"
+      },
+      {
+        "rank": 4,
+        "iso3": "GBR",
+        "name": "United Kingdom",
+        "psi": 0.919,
+        "C_FS": 0.931,
+        "C_PO": 0.907,
+        "C_DP": "NA",
+        "tier": "core"
+      },
+      {
+        "rank": 5,
+        "iso3": "FRA",
+        "name": "France",
+        "psi": 0.917,
+        "C_FS": 0.942,
+        "C_PO": 0.892,
+        "C_DP": "NA",
+        "tier": "core"
+      },
+      {
+        "rank": 6,
+        "iso3": "ITA",
+        "name": "Italy",
+        "psi": 0.914,
+        "C_FS": 0.937,
+        "C_PO": 0.891,
+        "C_DP": "NA",
+        "tier": "core"
+      },
+      {
+        "rank": 7,
+        "iso3": "ESP",
+        "name": "Spain",
+        "psi": 0.908,
+        "C_FS": 0.94,
+        "C_PO": 0.876,
+        "C_DP": "NA",
+        "tier": "core"
+      },
+      {
+        "rank": 8,
+        "iso3": "BEL",
+        "name": "Belgium",
+        "psi": 0.906,
+        "C_FS": 0.924,
+        "C_PO": 0.887,
+        "C_DP": "NA",
+        "tier": "core"
+      },
+      {
+        "rank": 9,
+        "iso3": "POL",
+        "name": "Poland",
+        "psi": 0.906,
+        "C_FS": 0.95,
+        "C_PO": 0.861,
+        "C_DP": "NA",
+        "tier": "core"
+      },
+      {
+        "rank": 10,
+        "iso3": "CZE",
+        "name": "Czechia",
+        "psi": 0.904,
+        "C_FS": 0.932,
+        "C_PO": 0.876,
+        "C_DP": "NA",
+        "tier": "core"
+      }
+    ],
+    "core_in_top25": 24,
+    "first_noncore": {
+      "iso3": "SVN",
+      "name": "Slovenia",
+      "rank": 25
+    },
+    "member_ranks": {
+      "USA": 1,
+      "DEU": 2,
+      "NLD": 3,
+      "GBR": 4,
+      "FRA": 5,
+      "ITA": 6,
+      "ESP": 7,
+      "BEL": 8,
+      "POL": 9,
+      "CZE": 10,
+      "AUT": 11,
+      "SWE": 12,
+      "CAN": 13,
+      "KOR": 14,
+      "IRL": 15,
+      "PRT": 16,
+      "DNK": 17,
+      "FIN": 18,
+      "NOR": 19,
+      "HUN": 20,
+      "SVK": 21,
+      "AUS": 22,
+      "ROU": 23,
+      "JPN": 24,
+      "BGR": 26,
+      "LUX": 27,
+      "GRC": 28,
+      "ISR": 29,
+      "HRV": 32,
+      "SAU": 38,
+      "IND": 39,
+      "NZL": 41,
+      "TUR": 43,
+      "SGP": 49,
+      "MYS": 50,
+      "MEX": 53,
+      "ZAF": 54,
+      "QAT": 55,
+      "MAR": 56,
+      "THA": 58,
+      "UKR": 60,
+      "IDN": 62,
+      "CHL": 63,
+      "VNM": 64,
+      "COL": 65,
+      "PER": 71,
+      "NAM": 73,
+      "PHL": 80,
+      "BRA": 83,
+      "ARG": 101,
+      "COD": 117,
+      "CRI": 125,
+      "GTM": 126,
+      "DOM": 137,
+      "GHA": 139,
+      "OMN": 140,
+      "GAB": 141
+    },
+    "core_median_rank": 16,
+    "partner_tier_median_rank": 64.5,
+    "partner_tier_best": {
+      "iso3": ["SAU", "IND", "TUR"],
+      "rank": [38, 39, 43]
+    },
+    "partner_tier_worst": {
+      "iso3": ["GAB", "OMN", "GHA"],
+      "rank": [141, 140, 139]
+    },
+    "partner_tier_by_bloc_median_rank": {
+      "Nonaligned": "65 (n=23)",
+      "China-leaning": "64 (n=3)"
+    },
+    "nonmember_top10": [
+      {
+        "rank": 25,
+        "iso3": "SVN",
+        "name": "Slovenia",
+        "psi": 0.873
+      },
+      {
+        "rank": 30,
+        "iso3": "LTU",
+        "name": "Lithuania",
+        "psi": 0.866
+      },
+      {
+        "rank": 31,
+        "iso3": "MLT",
+        "name": "Malta",
+        "psi": 0.865
+      },
+      {
+        "rank": 33,
+        "iso3": "MKD",
+        "name": "North Macedonia",
+        "psi": 0.858
+      },
+      {
+        "rank": 34,
+        "iso3": "EST",
+        "name": "Estonia",
+        "psi": 0.857
+      },
+      {
+        "rank": 35,
+        "iso3": "LVA",
+        "name": "Latvia",
+        "psi": 0.848
+      },
+      {
+        "rank": 36,
+        "iso3": "CYP",
+        "name": "Cyprus",
+        "psi": 0.848
+      },
+      {
+        "rank": 37,
+        "iso3": "MHL",
+        "name": "Marshall Islands",
+        "psi": 0.843
+      },
+      {
+        "rank": 40,
+        "iso3": "GEO",
+        "name": "Georgia",
+        "psi": 0.837
+      },
+      {
+        "rank": 42,
+        "iso3": "ISL",
+        "name": "Iceland",
+        "psi": 0.826
+      }
+    ],
+    "psi_range_ranked": [0.458, 0.936],
+    "psi_range_members": [0.644, 0.936],
+    "psi_range_core": [0.784, 0.936],
+    "mean_psi_by_income_group": {
+      "Other WB income group": "0.672 (n=130)",
+      "High income": "0.827 (n=61)",
+      "Not on WB list": "0.816 (n=1)"
+    },
+    "mean_C_FS_C_PO_by_income_group": {
+      "Other WB income group": 0.687,
+      "High income": 0.827,
+      "Not on WB list": 0.816
+    },
+    "sd_categories": {
+      "C_FS": 0.1903,
+      "C_PO": 0.0305,
+      "C_DP": 0.1898,
+      "n_DP": 130
+    },
+    "mean_categories": {
+      "C_FS": 0.64,
+      "C_PO": 0.825,
+      "C_DP": 0.61
+    },
+    "spearman_C_FS_C_PO": {
+      "spearman": 0.586,
+      "n": 192
+    },
+    "spearman_C_FS_C_DP": {
+      "spearman": 0.314,
+      "n": 130
+    },
+    "spearman_C_PO_C_DP": {
+      "spearman": 0.287,
+      "n": 130
+    },
+    "variance_share_dp_eligible": {
+      "friendshore": 0.638,
+      "opportunity": 0.055,
+      "development": 0.307,
+      "n": 130,
+      "nominal": {
+        "friendshore": 0.4,
+        "opportunity": 0.4,
+        "development": 0.2
+      }
+    },
+    "variance_share_no_dp": {
+      "friendshore": 0.855,
+      "opportunity": 0.145,
+      "n": 62,
+      "nominal": {
+        "friendshore": 0.5,
+        "opportunity": 0.5
+      }
+    },
+    "top10_coalition_pairs_psi_ij": [
+      {
+        "reporter": "CAN",
+        "partner": "USA",
+        "psi_ij": 0.981,
+        "T_FS": 0.998,
+        "T_PO": 0.964
+      },
+      {
+        "reporter": "ESP",
+        "partner": "PRT",
+        "psi_ij": 0.976,
+        "T_FS": 0.992,
+        "T_PO": 0.96
+      },
+      {
+        "reporter": "USA",
+        "partner": "GBR",
+        "psi_ij": 0.972,
+        "T_FS": 0.968,
+        "T_PO": 0.975
+      },
+      {
+        "reporter": "AUT",
+        "partner": "DEU",
+        "psi_ij": 0.971,
+        "T_FS": 0.964,
+        "T_PO": 0.977
+      },
+      {
+        "reporter": "CZE",
+        "partner": "DEU",
+        "psi_ij": 0.97,
+        "T_FS": 0.97,
+        "T_PO": 0.97
+      },
+      {
+        "reporter": "PRT",
+        "partner": "ESP",
+        "psi_ij": 0.968,
+        "T_FS": 0.966,
+        "T_PO": 0.971
+      },
+      {
+        "reporter": "FRA",
+        "partner": "BEL",
+        "psi_ij": 0.968,
+        "T_FS": 0.974,
+        "T_PO": 0.961
+      },
+      {
+        "reporter": "USA",
+        "partner": "CAN",
+        "psi_ij": 0.967,
+        "T_FS": 0.963,
+        "T_PO": 0.972
+      },
+      {
+        "reporter": "AUT",
+        "partner": "USA",
+        "psi_ij": 0.966,
+        "T_FS": 0.971,
+        "T_PO": 0.96
+      },
+      {
+        "reporter": "FRA",
+        "partner": "USA",
+        "psi_ij": 0.965,
+        "T_FS": 0.97,
+        "T_PO": 0.96
+      }
+    ],
+    "psi_dyad_rankable": 37260,
+    "psi_dyad_n": 47742,
+    "key_partners": {
+      "CHN": {
+        "name": "China",
+        "rank_psi": 44,
+        "psi": 0.823,
+        "C_FS": 0.733,
+        "rank_C_FS": 57,
+        "C_PO": 0.864,
+        "rank_C_PO": 21,
+        "C_DP": 0.919,
+        "bloc": "China-leaning",
+        "mean_T_FS_core": 0.733,
+        "mean_T_PO_core": 0.864
+      },
+      "TWN": {
+        "name": "Taiwan",
+        "rank_psi": 47,
+        "psi": 0.816,
+        "C_FS": 0.749,
+        "rank_C_FS": 55,
+        "C_PO": 0.883,
+        "rank_C_PO": 8,
+        "C_DP": "NA",
+        "bloc": "Nonaligned",
+        "mean_T_FS_core": 0.749,
+        "mean_T_PO_core": 0.883
+      },
+      "CHE": {
+        "name": "Switzerland",
+        "rank_psi": 51,
+        "psi": 0.801,
+        "C_FS": 0.73,
+        "rank_C_FS": 60,
+        "C_PO": 0.872,
+        "rank_C_PO": 16,
+        "C_DP": "NA",
+        "bloc": "Nonaligned",
+        "mean_T_FS_core": 0.73,
+        "mean_T_PO_core": 0.872
+      },
+      "IND": {
+        "name": "India",
+        "rank_psi": 39,
+        "psi": 0.839,
+        "C_FS": 0.825,
+        "rank_C_FS": 40,
+        "C_PO": 0.857,
+        "rank_C_PO": 30,
+        "C_DP": 0.834,
+        "bloc": "Nonaligned",
+        "mean_T_FS_core": 0.825,
+        "mean_T_PO_core": 0.857
+      },
+      "IDN": {
+        "name": "Indonesia",
+        "rank_psi": 62,
+        "psi": 0.778,
+        "C_FS": 0.66,
+        "rank_C_FS": 86,
+        "C_PO": 0.869,
+        "rank_C_PO": 19,
+        "C_DP": 0.834,
+        "bloc": "China-leaning",
+        "mean_T_FS_core": 0.66,
+        "mean_T_PO_core": 0.869
+      },
+      "VNM": {
+        "name": "Viet Nam",
+        "rank_psi": 64,
+        "psi": 0.767,
+        "C_FS": 0.629,
+        "rank_C_FS": 97,
+        "C_PO": 0.843,
+        "rank_C_PO": 46,
+        "C_DP": 0.889,
+        "bloc": "China-leaning",
+        "mean_T_FS_core": 0.629,
+        "mean_T_PO_core": 0.843
+      },
+      "RUS": {
+        "name": "Russia",
+        "rank_psi": 105,
+        "psi": 0.7,
+        "C_FS": 0.636,
+        "rank_C_FS": 96,
+        "C_PO": 0.763,
+        "rank_C_PO": 189,
+        "C_DP": "NA",
+        "bloc": "China-leaning",
+        "mean_T_FS_core": 0.636,
+        "mean_T_PO_core": 0.763
+      },
+      "USA": {
+        "name": "United States",
+        "rank_psi": 1,
+        "psi": 0.936,
+        "C_FS": 0.974,
+        "rank_C_FS": 1,
+        "C_PO": 0.898,
+        "rank_C_PO": 4,
+        "C_DP": "NA",
+        "bloc": "U.S.-leaning",
+        "mean_T_FS_core": 0.974,
+        "mean_T_PO_core": 0.898
+      }
+    },
+    "china_as_market": {
+      "core_exporters_observed_cells": 558,
+      "share_from_mirror": 0,
+      "mean_export_trade_component_core": 0.727,
+      "rank_mean_export_trade_component_core": 8,
+      "mean_partner_need_eta": 0.146
+    },
+    "market_need_and_C_PO": {
+      "spearman_C_PO_vs_mean_eta": -0.539,
+      "spearman_C_PO_vs_core_observed_tau_x": 0.818,
+      "spearman_C_FS_vs_mean_eta": -0.489,
+      "n": 192,
+      "n_with_tau_x": 192
+    },
+    "strong_supplier_weak_market": [
+      {
+        "iso3": "SMR",
+        "name": "San Marino",
+        "rank_C_FS": 37,
+        "rank_C_PO": 165
+      },
+      {
+        "iso3": "AND",
+        "name": "Andorra",
+        "rank_C_FS": 49,
+        "rank_C_PO": 171
+      },
+      {
+        "iso3": "TCD",
+        "name": "Chad",
+        "rank_C_FS": 63,
+        "rank_C_PO": 176
+      },
+      {
+        "iso3": "ALB",
+        "name": "Albania",
+        "rank_C_FS": 39,
+        "rank_C_PO": 149
+      },
+      {
+        "iso3": "FSM",
+        "name": "Micronesia",
+        "rank_C_FS": 43,
+        "rank_C_PO": 144
+      },
+      {
+        "iso3": "NER",
+        "name": "Niger",
+        "rank_C_FS": 72,
+        "rank_C_PO": 167
+      }
+    ],
+    "strong_market_weak_supplier": [
+      {
+        "iso3": "UGA",
+        "name": "Uganda",
+        "rank_C_FS": 190,
+        "rank_C_PO": 71
+      },
+      {
+        "iso3": "ARE",
+        "name": "UAE",
+        "rank_C_FS": 132,
+        "rank_C_PO": 17
+      },
+      {
+        "iso3": "SEN",
+        "name": "Senegal",
+        "rank_C_FS": 155,
+        "rank_C_PO": 43
+      },
+      {
+        "iso3": "LBR",
+        "name": "Liberia",
+        "rank_C_FS": 140,
+        "rank_C_PO": 31
+      },
+      {
+        "iso3": "GNQ",
+        "name": "Equatorial Guinea",
+        "rank_C_FS": 166,
+        "rank_C_PO": 60
+      },
+      {
+        "iso3": "KAZ",
+        "name": "Kazakhstan",
+        "rank_C_FS": 135,
+        "rank_C_PO": 32
+      }
+    ],
+    "figure_rows": {
+      "nonmembers": ["SVN", "LTU", "MLT", "MKD", "EST", "LVA", "CYP", "MHL", "GEO", "ISL", "CHN", "TWN", "CHE"],
+      "unranked": ["GUM", "NCL", "MAF", "IMN", "PYF"]
+    }
+  },
+  "fs_vs_po": {
+    "definition": "FS(c<-p): reporter c (importer) rates partner p (supplier); PO(p->c): reporter p (exporter) rates partner c (market); both rate the supply edge p->c",
+    "n_matched_cells_all": 1342942,
+    "spearman_cell_level_all": 0.624,
+    "n_matched_cells_coalition": 95312,
+    "spearman_cell_level_coalition": 0.715,
+    "spearman_cell_level_core": 0.764,
+    "n_coalition_ordered_pairs": 3192,
+    "spearman_dyad_mean_coalition": 0.733,
+    "matched_cells_per_coalition_pair": {
+      "Min.": 28,
+      "1st Qu.": 30,
+      "Median": 30,
+      "Mean": 29.859649,
+      "3rd Qu.": 30,
+      "Max.": 30
+    },
+    "spearman_by_stage_coalition": {
+      "Downstream": 0.616,
+      "Midstream": 0.76,
+      "Upstream": 0.743
+    },
+    "mean_within_cell_spearman": 0.712,
+    "mean_within_cell_spearman_trade_cells": 0.756,
+    "mean_within_cell_spearman_no_trade_cells": 0.645,
+    "within_cell_spearman_range": [0.545, 0.819],
+    "shared_inputs": {
+      "mean_within_cell_spearman_e_p_vs_eps_p": 1,
+      "spearman_tau_m_vs_tau_x_both_observed_coalition": 0.807,
+      "n_both_observed_coalition": 56559,
+      "spearman_nu_c_vs_eta_c_coalition": 0.404,
+      "mean_within_cell_partial_spearman_given_e_p": 0.437,
+      "alignment_enters_fs_only": true
+    },
+    "batteries_midstream": {
+      "n": 3192,
+      "spearman": 0.741,
+      "spearman_both_trade_observed": 0.74,
+      "n_both_trade_observed": 3188,
+      "spearman_by_alignment": {
+        "0": 0.763,
+        "0.5": 0.836,
+        "1": 0.538
+      },
+      "mean_fs_minus_po_by_alignment": {
+        "0": -0.286,
+        "0.5": -0.032,
+        "1": 0.046
+      },
+      "share_abs_diff_gt_0_25": 0.054
+    },
+    "share_coalition_cells_abs_diff_gt_0_25": 0.131,
+    "dyad_mean_fs_minus_po_by_alignment": {
+      "0": "-0.24 (n=186)",
+      "0.5": "0.016 (n=2070)",
+      "1": "0.157 (n=936)"
+    },
+    "most_supplier_view_favoured": [
+      {
+        "supplier": "UKR",
+        "consumer": "GRC",
+        "FS": 0.696,
+        "PO": 0.232
+      },
+      {
+        "supplier": "UKR",
+        "consumer": "SWE",
+        "FS": 0.689,
+        "PO": 0.248
+      },
+      {
+        "supplier": "UKR",
+        "consumer": "HUN",
+        "FS": 0.753,
+        "PO": 0.318
+      },
+      {
+        "supplier": "UKR",
+        "consumer": "BGR",
+        "FS": 0.725,
+        "PO": 0.3
+      },
+      {
+        "supplier": "UKR",
+        "consumer": "SVK",
+        "FS": 0.745,
+        "PO": 0.322
+      }
+    ],
+    "most_market_view_favoured": [
+      {
+        "supplier": "LUX",
+        "consumer": "OMN",
+        "FS": 0.372,
+        "PO": 0.71
+      },
+      {
+        "supplier": "IDN",
+        "consumer": "CAN",
+        "FS": 0.424,
+        "PO": 0.745
+      },
+      {
+        "supplier": "IRL",
+        "consumer": "OMN",
+        "FS": 0.345,
+        "PO": 0.658
+      },
+      {
+        "supplier": "OMN",
+        "consumer": "GBR",
+        "FS": 0.286,
+        "PO": 0.599
+      },
+      {
+        "supplier": "IDN",
+        "consumer": "FRA",
+        "FS": 0.444,
+        "PO": 0.756
+      }
+    ],
+    "best5_spearman_T_FS_cp_vs_T_PO_pc": {
+      "coalition": 0.703,
+      "n_coalition": 3192,
+      "core": 0.664,
+      "all": 0.58,
+      "n_all": 47742
+    }
+  },
+  "outbound": {
+    "USA": {
+      "n_counterparts_with_position": 44,
+      "top10": ["GBR", "AUS", "TWN", "MYS", "CAN", "BEL", "MEX", "CHL", "ARE", "PAN"],
+      "top10_conduit_centres": 0
+    },
+    "JPN": {
+      "n_counterparts_with_position": 26,
+      "top10": ["THA", "TWN", "VNM", "BEL", "PHL", "MYS", "GBR", "USA", "IDN", "DEU"],
+      "top10_conduit_centres": 0
+    }
+  },
+  "development": {
+    "n_scored": 132,
+    "n_ranked": 125,
+    "top10": [
+      {
+        "rank": 1,
+        "iso3": "GEO",
+        "name": "Georgia",
+        "T_DP": 1
+      },
+      {
+        "rank": 1,
+        "iso3": "MNG",
+        "name": "Mongolia",
+        "T_DP": 1
+      },
+      {
+        "rank": 1,
+        "iso3": "MUS",
+        "name": "Mauritius",
+        "T_DP": 1
+      },
+      {
+        "rank": 4,
+        "iso3": "TUV",
+        "name": "Tuvalu",
+        "T_DP": 0.935
+      },
+      {
+        "rank": 5,
+        "iso3": "CHN",
+        "name": "China",
+        "T_DP": 0.919
+      },
+      {
+        "rank": 6,
+        "iso3": "SRB",
+        "name": "Serbia",
+        "T_DP": 0.901
+      },
+      {
+        "rank": 7,
+        "iso3": "RWA",
+        "name": "Rwanda",
+        "T_DP": 0.889
+      },
+      {
+        "rank": 7,
+        "iso3": "VNM",
+        "name": "Viet Nam",
+        "T_DP": 0.889
+      },
+      {
+        "rank": 9,
+        "iso3": "MKD",
+        "name": "North Macedonia",
+        "T_DP": 0.88
+      },
+      {
+        "rank": 10,
+        "iso3": "MRT",
+        "name": "Mauritania",
+        "T_DP": 0.872
+      }
+    ],
+    "top10_best5_stage_shares": {
+      "Upstream": 0.4,
+      "Midstream": 0.26,
+      "Downstream": 0.34
+    },
+    "top10_best5_aid_share_of_composite": 0.437,
+    "aid_nominal_share": 0.35
+  },
+  "meta": {
+    "script": "scripts/paper/fig_bilateral.R",
+    "build": "final rerun of 2026-10-12 (scripts 04 10 12 13 20 15 25, 30, 40)",
+    "inputs": ["data/processed/partner_friendshore_tbl.rds", "data/processed/partner_opportunity_tbl.rds", "data/processed/partner_development_tbl.rds", "data/processed/partner_*_top5_tbl.rds", "data/processed/partner_trade_coverage_tbl.rds", "data/processed/psi_tbl.rds", "data/processed/psi_full_coalition_tbl.rds", "data/processed/psi_world_tbl.rds", "data/processed/psi_dyad_tbl.rds", "data/processed/coalition_tbl.rds", "data/processed/geo_alignment_tbl.rds", "data/processed/partner_cm_fdi_exposure_tbl.rds", "data/processed/partner_cm_fdi_ties_tbl.rds", "data/processed/partner_cm_fdi_coverage_tbl.rds", "data/processed/cm_fdi_projects_tbl.rds", "data/raw/comtrade_energy_dyads_all.csv", "data/raw/energy_hs6_master.csv", "data/raw/ipcc_ghg_intensity.csv", "data/raw/CAT_country ratings data.csv", "data/raw/wdi_country_info.csv", "config/weights.yml", "config/partnership.yml", "config/rankability.yml"],
+    "weights": {
+      "friendshore": {
+        "imp_trade_index": 2,
+        "econ_opp_raw": 0,
+        "es_need": 2,
+        "eo_partner": 2,
+        "outbound_index": 2,
+        "geo_alignment": 2,
+        "chinese_parent_exposure": 1
+      },
+      "opportunity": {
+        "trade_index": 3,
+        "econ_opp_index": 3,
+        "partner_es_need": 1
+      },
+      "opportunity_climate_weight": 0.05,
+      "friendshore_penalty_coefficient": 0.1,
+      "psi": {
+        "friendshore": 0.4,
+        "opportunity": 0.4,
+        "development": 0.2
+      }
+    },
+    "core_members": ["AUS", "AUT", "BEL", "BGR", "CAN", "CZE", "DEU", "DNK", "ESP", "FIN", "FRA", "GBR", "GRC", "HRV", "HUN", "IRL", "ISR", "ITA", "JPN", "KOR", "LUX", "NLD", "NOR", "NZL", "POL", "PRT", "ROU", "SVK", "SWE", "UKR", "USA"],
+    "partner_tier": ["ARG", "BRA", "CHL", "COD", "COL", "CRI", "DOM", "GAB", "GHA", "GTM", "IDN", "IND", "MAR", "MEX", "MYS", "NAM", "OMN", "PER", "PHL", "QAT", "SAU", "SGP", "THA", "TUR", "VNM", "ZAF"],
+    "correlations": "Spearman rank correlations throughout",
+    "rankings": "PSI ranks are the pipeline's (psi_*_tbl rank / rankable: sovereign and imputed weight share <= 0.5); supplier lists rank partners that are sovereign and whose Friendshore dyad imputed weight share <= 0.5"
+  }
+}

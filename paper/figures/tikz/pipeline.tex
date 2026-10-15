@@ -1,0 +1,156 @@
+% Figure 1 (Section 2, fig:pipeline): layered architecture of the Opportunity Security Indices.
+% Depends only on code and config, not on any pipeline output:
+%   config/weights.yml (ES and EO category weights; partnership and PSI weights),
+%   R/utils/scurve.R (gamma = 0.5), config/missing_data.yml (imputation rules),
+%   R/indices/build_policy_index.R (Policy weights 4/3/2/1),
+%   R/indices/build_indices.R (Strategic Index weights and stage weights),
+%   scripts/10_build_themes.R (OPSI_SKIP_NIPO: stored February 2026 NIPO component),
+%   scripts/30_build_allied_network_design.R (network parameters).
+% Input inside a figure environment: \input{figures/tikz/pipeline}
+% Libraries used: arrows.meta, fit (both loaded in main.tex). Style names avoid TikZ keys
+% (for example `out`, which is a to-path key and cannot be used as a style name).
+% Layout (cm): columns Policy [0,2.7], ES [3.05,7.2], EO [7.65,11.8], bilateral [13.0,15.9];
+% rows y = 0 (sources), -1.9 (theme layer), -3.6 (categories), -6.0 (cell-level indices),
+% -8.75 (reported composites), -11.35 (network design).
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  >={Stealth[length=2mm]},
+  srcbox/.style={draw=osigray, fill=osilight, rounded corners=2pt, align=center,
+                 font=\sffamily\scriptsize, inner sep=3pt, minimum height=1.3cm},
+  stepbox/.style={draw=osigray, fill=white, rounded corners=2pt, align=center,
+                  inner sep=3pt},
+  compbox/.style={draw=#1, fill=#1!7, rounded corners=2pt, align=center, inner sep=3pt},
+  idxbox/.style={draw=#1, fill=#1!14, very thick, rounded corners=3pt, align=center,
+                 inner sep=3pt},
+  repbox/.style={draw=osiink!80, fill=white, very thick, rounded corners=3pt, align=center,
+                 inner sep=3pt},
+  flow/.style={->, draw=osiink!70, line width=0.55pt},
+  lbl/.style={font=\sffamily\scriptsize, text=osiink!75, align=center},
+  hdr/.style={font=\sffamily\footnotesize\bfseries, align=center}
+]
+
+% ------------------------------------------------------------------ column headers
+\node[hdr, text=osiaqua!65!osiink] at (1.35, 1.05)  {Policy sources};
+\node[hdr, text=osiink]            at (7.425, 1.05)
+  {(0) Raw variables $x_{itsv}$: sources of the two pillars};
+\node[hdr, text=osiviolet]         at (14.45, 1.05) {Bilateral sources};
+
+% ------------------------------------------------------------------ row 0: sources
+\node[srcbox, text width=2.49cm] (polsrc) at (1.35, 0)
+  {GTA NIPO (Feb.\ 2026);\\ IEA PAMS; Climate\\ Action Tracker; IPCC AR5;\\ dual-use scores};
+\node[srcbox, text width=2.64cm] (srcA) at (4.375, 0)
+  {IEA: critical minerals,\\ WEO, ETP, Global EV\\ Outlook, Clean Energy\\ Technology Guide};
+\node[srcbox, text width=2.64cm] (srcB) at (7.425, 0)
+  {Energy Institute\\ Statistical Review;\\ UN Comtrade; Growth Lab Atlas};
+\node[srcbox, text width=2.64cm] (srcC) at (10.475, 0)
+  {BloombergNEF; BCG;\\ Clean Investment Monitor;\\ IMF; ILO; resource atlases};
+\node[srcbox, text width=2.89cm] (bilsrc) at (14.45, 0)
+  {UN Comtrade dyads;\\ IMF direct investment;\\ OECD CRS; World Bank WDI;\\ Doing Business};
+
+% ------------------------------------------------------------------ row 1: theme layer
+\node[compbox=osiaqua, text width=2.49cm] (polcomp) at (1.35, -1.9)
+  {Policy components\\[1pt]
+   {\scriptsize NIPO, PAMS by $(i,t,s)$;\\ CAT by $(i,t)$; dual-use\\ by $(t,s)$}};
+\node[stepbox, text width=8.74cm] (theme) at (7.425, -1.9)
+  {\textbf{(1) Theme indices}\quad $\tilde x_{itsv}=\Scurve(r_{itsv})$,\ \ $\gamma=0.5$\\[1pt]
+   {\scriptsize percentile rank $r$ within a comparison set, usually the economies of $(t,s)$;
+   oriented so that higher means more secure ($\ES$) or more opportunity ($\EO$)}};
+\node[compbox=osiviolet, text width=2.89cm] (bilcomp) at (14.45, -1.9)
+  {Dyadic components\\[1pt]
+   {\scriptsize trade $\tau^{M}_{ijts}$, $\tau^{X}_{ijts}$; outward\\ investment $o_{ij}$; partner
+   aid\\ and enabling environment}};
+
+% ------------------------------------------------------------------ row 2: categories
+\node[stepbox, text width=8.74cm] (cat) at (7.425, -3.6)
+  {\textbf{(2) Overall and category scores}\quad $c_{itsk}$\\[1pt]
+   {\scriptsize mean of observed components; imputation (zero or cross-country mean) only by
+   explicit rule, and only in groups in which some economy is observed}};
+
+% ------------------------------------------------------------------ row 3: cell-level indices
+\node[idxbox=osiaqua, text width=2.49cm, minimum height=2.3cm] (pol) at (1.35, -6.0)
+  {\textbf{(4) Policy}\\[1pt] $\POL_{its}$\\[3pt]
+   {\scriptsize\begin{tabular}{@{}l@{\ }r@{\hspace{6pt}}l@{\ }r@{}}
+     NIPO & 4 & PAMS & 3\\ CAT & 2 & Dual-use & 1
+   \end{tabular}}};
+\node[idxbox=osiblue, text width=4.14cm, minimum height=2.3cm] (es) at (5.125, -6.0)
+  {\textbf{(3) Energy Security}\ \ $\ES_{its}$\\[2pt]
+   {\scriptsize\begin{tabular}{@{}l@{\ }r@{\hspace{7pt}}l@{\ }r@{}}
+     Foreign dep. & 6 & Reserves & 4\\
+     Production & 6 & Trade & 4\\
+     Consumption & 5 & Minerals trade & 4\\
+     Energy imports & 4 & Energy access & 4\\
+     Investment & 3 & Energy prices & 2
+   \end{tabular}}};
+\node[idxbox=osiorange, text width=4.14cm, minimum height=2.3cm] (eo) at (9.725, -6.0)
+  {\textbf{(3) Economic Opportunity}\ \ $\EO_{its}$\\[2pt]
+   {\scriptsize\begin{tabular}{@{}l@{\ }r@{\hspace{7pt}}l@{\ }r@{}}
+     Tech.\ demand & 4 & Cost compet. & 3\\
+     Trade & 3 & Investment & 3\\
+     Production & 3 & Energy access & 3\\
+     Energy prices & 3 & Foreign dep. & 3\\
+     Consumption & 3 & Tech.\ readiness & 2
+   \end{tabular}}};
+\node[fit=(pol)(es)(eo), draw=osigray, dashed, rounded corners=4pt, inner sep=5pt] (cell) {};
+% Short label: it sits between the two category arrows at x = 5.125 and x = 9.725.
+\coordinate (xmid) at (7.425, 0);
+\node[lbl, text=osigray, anchor=south, inner sep=1.5pt] at (xmid |- cell.north)
+  {cell level $(i,t,s)$};
+
+\node[idxbox=osiviolet, text width=2.89cm, minimum height=2.3cm] (dyad) at (14.45, -6.0)
+  {\textbf{(6) Dyadic indices}\\[2pt]
+   $\FS_{ijts}$\ {\scriptsize $j$ as supplier to $i$}\\[1pt]
+   $\PO_{ijts}$\ {\scriptsize $j$ as market for $i$}\\[1pt]
+   $\DP_{jts}$\ {\scriptsize partner $j$ not}\\ {\scriptsize high income}};
+
+% ------------------------------------------------------------------ row 4: reported composites
+\node[repbox, text width=7.6cm] (si) at (3.9, -8.75)
+  {\textbf{(5) Strategic Index}\ \ {\scriptsize(reported output)}\\[2pt]
+   $\SI_{its}=0.2\,\POL^{*}_{its}+0.3\,\EO_{its}+0.3\,(1-\ES_{its})
+     +0.1\,\lambda_s+0.1\,g_t$\\[2pt]
+   {\scriptsize $\POL^{*}$ ranked within country; security enters as need;
+   cells lacking $\EO$, $\ES$ or $\POL$ are excluded, not imputed}};
+\node[idxbox=osiviolet, text width=2.09cm] (psi) at (14.85, -8.75)
+  {\textbf{(6) PSI}\ \ $\PSI_j$\\[1pt]
+   {\scriptsize best-five means of\\ $\FS$, $\PO$, $\DP$; weights\\ $0.4/0.4/0.2$ over\\ observed
+   (reported)}};
+
+% ------------------------------------------------------------------ row 5: network design
+\node[idxbox=osiyellow, text width=13.3cm] (net) at (6.75, -11.35)
+  {\textbf{(7) Allied network design}: one mixed-integer program per $(t,s)$ over the
+   23 coalition members $\Coalition$\\[2pt]
+   $\max\ \sum_{p,c} f_{pc}\,(a_p+0.5\,W_{pc})$\quad s.t.\ $\sum_p f_{pc}=d_c$;\
+   producer shares in $[0.05,\,0.40]$;\ at least 3 producers;\\
+   at least 2 suppliers per consumer, each supplying $\ge 10\%$ of its demand\\[2pt]
+   {\scriptsize $a_p=0.5\,\tilde{\EO}_p+0.3\,\tilde{\POL}_p+0.2\,\tilde{\ES}_p$
+   (S-curves within the coalition);\quad $d_c$: $0.5$ need $+\,0.5$ size;\quad
+   $W_{pc}=0.5\,\FS_{cp}+0.5\,\PO_{pc}$;\quad caps on leading-producer positions across
+   pairs $(t,s)$}};
+
+% ------------------------------------------------------------------ arrows: sources -> theme layer
+\draw[flow] (polsrc.south) -- (polcomp.north);
+\draw[flow] (srcA.south) -- (srcA.south |- theme.north);
+\draw[flow] (srcB.south) -- (srcB.south |- theme.north);
+\draw[flow] (srcC.south) -- (srcC.south |- theme.north);
+\draw[flow] (bilsrc.south) -- (bilcomp.north);
+
+% ------------------------------------------------------------------ arrows: theme -> categories -> pillars
+\draw[flow] (theme.south) -- (cat.north);
+\draw[flow] (es.north |- cat.south) -- (es.north);
+\draw[flow] (eo.north |- cat.south) -- (eo.north);
+\draw[flow] (polcomp.south) -- (pol.north);
+\draw[flow] (bilcomp.south) -- (dyad.north);
+
+% ------------------------------------------------------------------ arrows: cell level -> dyadic, SI, network
+\coordinate (xnet) at (9.9, 0);
+\coordinate (xedge) at (13.3, 0);
+\draw[flow] (cell.east |- dyad.west) -- node[lbl, above, inner sep=1.5pt] {$\ES,\EO$} (dyad.west);
+\draw[flow] (si.north |- cell.south) -- (si.north);
+\draw[flow] (xnet |- cell.south) -- (xnet |- net.north);
+\node[lbl, anchor=west] at (10.0, -8.75) {nodes and\\ demand:\\ $\EO$, $\POL$, $\ES$};
+\draw[flow] (dyad.south -| psi.north) -- (psi.north);
+\draw[flow] (xedge |- dyad.south) -- (xedge |- net.north);
+\node[lbl, anchor=east] at (13.2, -8.75) {edges:\\ $\FS$, $\PO$};
+
+\end{tikzpicture}%
+}

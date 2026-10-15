@@ -1,0 +1,108 @@
+% Four-layer architecture of the Opportunity Security Indices (Section 1, Figure fig:intro_layers).
+% Depends only on the code and config: config/weights.yml, config/index_definition.yml,
+% R/utils/scurve.R, R/indices/index_builder_core.R, R/indices/build_policy_index.R,
+% R/indices/build_indices.R, R/indices/build_partnership_strength_index.R,
+% R/indices/allied_network_design.R, scripts/30_build_allied_network_design.R.
+% Input inside a figure environment: \input{figures/tikz/intro_layers}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\scriptsize,
+  >={Stealth[length=2.0mm]},
+  src/.style={draw=osigray, fill=osilight, rounded corners=2pt, align=flush center,
+              text width=17.3cm, inner sep=4pt},
+  proc/.style={draw=osigray, fill=white, rounded corners=2pt, align=flush center,
+               text width=17.3cm, inner sep=4pt},
+  pillar/.style={draw=#1, fill=#1!12, very thick, rounded corners=3pt, align=flush center,
+                 text width=5.3cm, minimum height=1.7cm, inner sep=4pt, anchor=north},
+  layer/.style={draw=#1, fill=#1!8, very thick, rounded corners=3pt, align=flush center,
+                text width=5.3cm, minimum height=2.9cm, inner sep=4pt, anchor=north},
+  flow/.style={->, draw=osiink!70, line width=0.55pt},
+  bus/.style={draw=osiink!70, line width=0.9pt},
+  lab/.style={font=\tiny, text=osiink!85, align=center, fill=white, inner sep=1.5pt},
+  note/.style={font=\tiny, text=osigray, align=flush center, text width=5.3cm, anchor=north},
+  side/.style={font=\scriptsize\bfseries, text=osiink, rotate=90, align=center}
+]
+
+% ---------------------------------------------------------------- inputs and normalisation
+\node[src] (src) at (8.4, 0) {%
+  \textbf{Inputs} by economy, technology and stage: IEA critical minerals, WEO, Clean Technology
+  Guide, EV Outlook, Policies and Measures;\\
+  EI Statistical Review; UN Comtrade (HS6); Atlas of Economic Complexity; BloombergNEF; Clean
+  Investment Monitor;\\
+  World Bank WDI; IMF prices and investment positions; OECD aid; GTA NIPO; Climate Action
+  Tracker; IPCC lifecycle emissions};
+
+\node[proc, below=3mm of src] (norm) {%
+  Each variable: percentile rank $r$ across economies within $(t,s)$, then
+  $\Scurve(r)=r^{\gamma}/[r^{\gamma}+(1-r)^{\gamma}]$ with $\gamma=0.5$;\\
+  category score $=$ mean of its variables; missing values filled only by explicit rules, and
+  only in groups with an observed economy};
+\draw[flow] (src) -- (norm);
+
+% ---------------------------------------------------------------- layer 1
+\node[pillar=osiblue] (es) at ($(norm.south)+(-6.0,-0.6)$) {%
+  \textbf{Energy Security} $\ES_{its}$\\[2pt]
+  10 categories, weights 2 to 6;\\
+  weighted mean of observed categories;\\
+  higher $=$ more secure};
+\node[pillar=osiorange] (eo) at ($(norm.south)+(0,-0.6)$) {%
+  \textbf{Economic Opportunity} $\EO_{its}$\\[2pt]
+  10 categories, weights 2 to 4;\\
+  weighted mean of observed categories};
+\node[pillar=osiaqua] (pol) at ($(norm.south)+(6.0,-0.6)$) {%
+  \textbf{Policy} $\POL_{its}$\\[2pt]
+  NIPO 4, PAMS 3, CAT 2, dual use 1;\\
+  renormalised over observed components;\\
+  a country needs all four sources};
+\foreach \n in {es, eo, pol} {
+  \draw[flow] (norm.south -| \n.north) -- (\n.north);
+}
+\node[side] at ($(es.west)+(-0.4,0)$) {Layer 1};
+
+% ---------------------------------------------------------------- bus (horizontal)
+\coordinate (busL) at ($(es.south)+(-2.2,-0.4)$);
+\coordinate (busR) at ($(pol.south |- busL)+(2.2,0)$);
+\draw[bus] (busL) -- (busR);
+\foreach \n in {es, eo, pol} {
+  \draw[bus] (\n.south) -- (\n.south |- busL);
+}
+
+% ---------------------------------------------------------------- layers 2-4
+\node[layer=osiviolet] (si) at ($(es.south |- busL)+(0,-0.75)$) {%
+  \textbf{Layer 2: Strategic Index}, cell $\cell$\\[3pt]
+  $\SI_{its}=0.2\,\mathrm{pol}_{its}+0.3\,\EO_{its}$\\
+  $+\,0.3\,(1-\ES_{its})+0.1\,\lambda_s+0.1\,g_t$\\[3pt]
+  $\mathrm{pol}$: within-country S-curve of $\POL$;\\
+  $\lambda_s$: Mid 0.75, Up 0.50, Down 0.25;\\
+  $g_t$: falls with lifecycle emissions};
+\node[layer=osiyellow] (bil) at ($(eo.south |- busL)+(0,-0.75)$) {%
+  \textbf{Layer 3: partnership indices}\\[3pt]
+  $\FS_{ijts}$: partner $j$ as supplier to $i$\\
+  $\PO_{ijts}$: partner $j$ as market for $i$\\
+  $\DP_{jts}$: non-high-income partner $j$\\[3pt]
+  $\PSI=0.4\,\FS+0.4\,\PO+0.2\,\DP$\\
+  on best-five means, renormalised};
+\node[layer=osigray] (net) at ($(pol.south |- busL)+(0,-0.75)$) {%
+  \textbf{Layer 4: network design}, each $(t,s)$\\[3pt]
+  $\max\ \sum_{p,c}f_{pc}\,(a_p+0.5\,W_{pc})$ over $\Coalition$\\[3pt]
+  $a_p$: $\EO$ 0.5, $\POL$ 0.3, $\ES$ 0.2\\
+  $W_{pc}=0.5\,\FS_{cp}+0.5\,\PO_{pc}$\\[3pt]
+  shares in $[0.05,0.40]$; at least 3 producers;\\
+  $\ge 2$ suppliers per consumer, each $\ge 10\%$};
+
+\draw[flow] (es.south |- busL)  -- node[lab, pos=0.42] {$\EO$, $\ES$, $\POL$} (si.north);
+\draw[flow] (eo.south |- busL)  -- node[lab, pos=0.42] {$\EO$, $\ES$} (bil.north);
+\draw[flow] (pol.south |- busL) -- node[lab, pos=0.42] {$\EO$, $\POL$, $\ES$} (net.north);
+\draw[flow] (bil.east) -- (bil.east -| net.west);
+\node[side] at ($(si.west)+(-0.4,0)$) {Layers 2--4};
+
+% ---------------------------------------------------------------- outputs
+\node[note] at ($(si.south)+(0,-0.12)$)  {within-country ranking of cells;\\
+  coalition members only};
+\node[note] at ($(bil.south)+(0,-0.12)$) {dyad and partner rankings;\\
+  $\FS$, $\PO$ feed Layer 4; $\PSI$ reported only};
+\node[note] at ($(net.south)+(0,-0.12)$) {producers $y_p$, shares and flows $f_{pc}$;\\
+  portfolio caps across stages};
+
+\end{tikzpicture}%
+}

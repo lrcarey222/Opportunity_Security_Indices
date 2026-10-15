@@ -1,0 +1,287 @@
+% Results fragment for Section 8 (Policy index and Strategic Index), subsection "Results".
+% Generated numbers: paper/results/strategic.json; figures and table: scripts/paper/fig_strategic.R
+% (final rerun of 2026-10-12; the script recomputes the Policy index, the Strategic Index, the
+% endowment flag and the allied selection from the stored inputs with the pipeline's functions
+% and stops unless all four equal the stored outputs and data/processed/charts/allied_strategic.csv).
+% Figures: strategic_policy, strategic_heatmap, strategic_decomp, strategic_screen, strategic_sign.
+% Table: tables/strategic_allied.tex (tab:strategic_allied).
+% All correlations are Spearman rank correlations. Every Strategic Index cell requires rankable
+% EO and ES cells (rankable == TRUE), so every ranking below is over rankable cells only.
+
+\paragraph{Coverage of the Policy index.} The Policy index combines two components: the record of
+national policies and measures in the IEA Policies and Measures database \citep{iea2026pams}
+(weight 3), which is required, and the Climate Action Tracker rating \citep{cat2026ratings}
+(weight 2), which is added where the Tracker rates the country; the industrial-policy measures of
+the New Industrial Policy Observatory and the dual-use score are not part of the composite. The
+IEA database covers 215 economies, and all 215 receive a Policy index
+(Figure~\ref{fig:strategic_policy}, panel a). The Tracker rates 65 of them, 39 with a national
+rating and 26 EU members through the rating of the Union, so 65 economies are scored on both
+components and 150 on the IEA database alone; the basis is recorded for every country. All 57
+coalition members have a Policy index: 46 on both components and 11 on the IEA database alone, two
+of them core members (Israel and Ukraine) and nine partners (the Democratic Republic of the Congo,
+the Dominican Republic, Gabon, Ghana, Guatemala, Malaysia, Namibia, Oman and Qatar). Under the
+earlier rule that required both components, only the 65 economies with a Tracker rating would be
+eligible, and these 11 members would have neither a Strategic Index nor an allied pick. The index
+covers 6,762 cells; 203 economies have it in all 33 technology--stage cells and 12 territories in
+some cells only.
+
+The two components measure different things, and the composite inherits the difference
+(Figure~\ref{fig:strategic_policy}, panel b). Over the 65 economies scored on both, the Spearman
+rank correlation of the two components is $-0.05$ across cells and $-0.23$ across country means,
+and within a country it has a median of $-0.02$. The Tracker's rating is one economy-wide grade
+that varies across a country's cells only through the fixed technology greenhouse-gas index $g_t$
+of the climate term: a rating of ``insufficient'' or better tilts the country's cells toward
+low-emission technologies, ``highly insufficient'' leaves them untilted, and ``critically
+insufficient'' tilts them toward high-emission technologies. Within a country the composite
+therefore follows the Tracker component closely (median Spearman 0.79) and the IEA component only
+partly (median 0.48, interquartile range 0.41--0.57). Ranking these countries' cells on the IEA
+component alone instead of the composite gives a median within-country Spearman of 0.48 over all
+their policy cells and 0.44 over their Strategic Index cells. The basis is thus not innocuous for a
+country's internal ranking of sectors, and a cross-country comparison of the policy level must keep
+the two bases apart: the mean Policy index is 0.64 for the economies scored on both components and
+0.39 for those scored on the IEA database alone. The Strategic Index uses the Policy index only
+through within-country ranks, so the difference in levels does not move one country's index
+against another's; the difference in composition does change which sectors a country ranks first.
+For the countries the Tracker rates, the within-country policy rank correlates with the technology
+weight $g_t$ at a median Spearman of 0.82 among the 40 rated ``insufficient'' and $-0.92$ among the
+nine rated ``critically insufficient''; for the countries on the IEA database alone the median is
+0.12. Part of what the policy term contributes to the Strategic Index of a rated country is
+therefore the Tracker's grade applied to the emission index that the climate term already carries.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{strategic_policy}
+  \caption{The basis of the Policy index. Panel (a): number of economies by the components of
+  their Policy index, for all economies with an index (215), the economies with at least one
+  Strategic Index cell (174) and the coalition members (57). ``IEA PAMS + CAT'' combines the IEA
+  Policies and Measures database (weight 3) with the Climate Action Tracker rating (weight 2),
+  national or, for EU members, the rating of the Union; ``IEA PAMS only'' marks economies the
+  Tracker does not rate, scored on the IEA database alone. Panel (b): Spearman rank correlations
+  among the two components and the composite over the 33 headline technology--stage cells of the
+  65 economies scored on both: the median, interquartile range and range of the within-country
+  correlations (59 economies whose Tracker component varies across cells), the correlation pooled
+  over cells and the correlation of country means. Source: \texttt{policy\_component\_tbl} and
+  \texttt{policy\_index} in \texttt{index\_outputs.rds}.}
+  \label{fig:strategic_policy}
+\end{figure}
+
+\paragraph{Sample of the Strategic Index.} The Strategic Index is defined for 3,154 cells of 174
+countries in 30 sectors. A cell enters only if the country has a Policy index and both of its
+pillar cells are rankable, that is, the economy is sovereign and at most half of the index weight
+of each pillar cell is imputed. Of the 6,476 cells of policy-eligible countries, 1,000 are excluded
+because the Economic Opportunity cell alone is not rankable, 721 because the Energy Security cell
+alone is not rankable, 979 because neither is, and 622 because the Energy Security cell is missing;
+a further 442 cells belong to countries without a Policy index. Geothermal Midstream is excluded by
+rule, because its Energy Security pillar is constant, and no further sector is degenerate; of the
+32 reported sectors, Electric Grid Downstream and Geothermal Upstream have no scored cell. The
+sample is smaller than the 192 countries of the last intermediate run, because the new Upstream
+trade baskets add an imputed Trade category to the Upstream cells of small economies and push their
+imputed weight share above the threshold. Of the 174 countries, 65 are scored on both policy
+components and 109 on the IEA database alone. Every coalition member has Strategic Index cells,
+1,500 in all, with a median of 29 sectors per member (from 9 to 30).
+
+\paragraph{Distribution and the dominant pattern.} The index has mean 0.535, standard deviation
+0.082 and median 0.542, from 0.273 (Australia, Coal Upstream) to 0.761 (Togo, Nuclear Upstream).
+It is organised by sector far more than by country. Sector fixed effects explain 72.6 percent of
+its variance, technology fixed effects alone 67.5 percent, and country fixed effects 4.4 percent;
+the median standard deviation of a sector's index across countries is 0.039. The ordering of
+sectors follows the two fixed terms. Solar Upstream (mean 0.634), Batteries Upstream (0.631),
+Nuclear Upstream (0.620), Batteries Midstream (0.618) and Batteries Downstream (0.606) rank highest
+on average, and the three coal stages and Oil Upstream and Downstream lowest (0.410--0.441), the
+order of the technology weights $g_t$, which run from 0 for oil and 0.02 for coal to 0.999 for
+nuclear and wind. Upstream cells have the highest mean index (0.560, against 0.521 Midstream and
+0.527 Downstream), because their mean security need $1-\ES$ is highest (0.677, against 0.513 and
+0.552): most countries import the resources that are extracted. The highest cells in the sample
+are Nuclear Upstream cells of small low-income economies (Togo, Burkina Faso, South Sudan,
+Afghanistan, Sudan, Timor-Leste and the Dominican Republic, 0.748--0.761). They combine the largest
+technology weight with an Energy Security cell at the floor of its sector: 86 of the 174 countries
+scored in Nuclear Upstream share one value, 0.172, that of an economy without uranium resources or
+production. Nuclear Upstream is the highest sector of 62 countries, 43 of them at that floor and 55
+without any recorded uranium resources or production. This is a construction effect of the need
+reading at a floor of the Energy Security pillar, not evidence of an opportunity, and it is the
+reason for the endowment screen of the allied pick. Four other sectors have more than a quarter of
+their countries at one Energy Security value: Green Hydrogen Midstream (34 of 40 at 0.256), Green
+Hydrogen Downstream (45 of 158), Nuclear Downstream (19 of 67) and Batteries Downstream (38 of
+138). No allied pick lies in a floor cell.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{strategic_heatmap}
+  \caption{The Strategic Index across the coalition. Rows are the 57 coalition members (31 core
+  members, then 26 partners), columns the 33 headline technology--stage cells grouped by stage;
+  colour is $\SI_{its}$ (equation~\eqref{eq:si}). Grey cells are not scored (no rankable
+  Economic Opportunity or Energy Security cell, a missing Energy Security cell, or Geothermal
+  Midstream, excluded by rule). A dot marks an Upstream cell in which the member has no recorded
+  reserves or production of the stage's resources: the endowment screen bars it from the allied
+  pick, but its index value is unchanged. The outlined cell in each row is the member's allied
+  pick (equation~\eqref{eq:si_allied}) with the screen. Source: \texttt{strategic\_index} in
+  \texttt{index\_outputs.rds}; \texttt{allied\_strategic.csv}.}
+  \label{fig:strategic_heatmap}
+\end{figure}
+
+\paragraph{Decomposition.} Averaged over the 167 countries with at least five cells, the five
+weighted terms account for 18.8 percent (policy), 27.6 percent (Economic Opportunity), 32.4
+percent (security need), 9.3 percent (stage weight) and 11.9 percent (technology weight) of the
+index level. Their contributions to the within-country variance, measured as covariance shares
+that sum to one, are very different: on average across countries, 40.7 percent for the technology
+weight, 34.1 percent for the need term and 32.0 percent for the policy term, against $-1.4$ percent
+for Economic Opportunity and $-5.4$ percent for the stage weight. The within-country Spearman
+correlation of the index with each term has a median of 0.72 for the technology weight, 0.66 for
+policy and 0.57 for need, but $-0.08$ for Economic Opportunity. Economic Opportunity carries the
+second largest weight and almost none of the within-country variation because, within a country,
+it moves against the need term: the median within-country Spearman correlation between $\EO$ and
+$1-\ES$ is $-0.47$, negative in 164 of 167 countries. A country's strongest opportunities tend to
+be the sectors in which it is already secure, so the two terms largely offset each other, and the
+ranking of a country's sectors is set by the technology weight, the need for security and the
+policy rank. The coalition gives the same picture (technology weight 40.2 percent, need 34.8
+percent and policy 25.9 percent of the within-country variance; median
+$\mathrm{corr}(\EO,1-\ES)=-0.49$, negative for every member). Figure~\ref{fig:strategic_decomp}
+shows the five terms for the five highest sectors of six members. The Downstream sectors that head
+the lists of Japan, Korea, Australia, Germany and India rank first on policy in those countries,
+and most of the Upstream sectors that follow for Japan, Korea and Germany are sectors in which they
+hold no resources, which the endowment screen bars from the pick.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{strategic_decomp}
+  \caption{Decomposition of the Strategic Index for the five highest-ranked sectors of six
+  coalition members. Each bar stacks the weighted terms of equation~\eqref{eq:si}:
+  $0.2\,\POL^{*}_{its}$ (the within-country S-curve of the Policy index), $0.3\,\EO_{its}$,
+  $0.3\,(1-\ES_{its})$, $0.1\,\lambda_s$ (Upstream 0.5, Midstream 0.75, Downstream 0.25) and
+  $0.1\,g_t$; the bar length is $\SI_{its}$. (U), (M) and (D) mark the stage; an asterisk marks the
+  member's allied pick and a circle an Upstream sector barred from the pick by the endowment
+  screen. Source: \texttt{strategic\_index} in \texttt{index\_outputs.rds}.}
+  \label{fig:strategic_decomp}
+\end{figure}
+
+\paragraph{Allied picks.} Every one of the 57 coalition members has an allied pick, the highest
+Upstream or Midstream sector outside Geothermal and Green Hydrogen among the sectors it may pick,
+and none has a tie (Table~\ref{tab:strategic_allied}). Batteries Midstream is the pick of 27
+members (18 core members and nine partners, among them the United States, Germany, Korea, India,
+Australia, France, the United Kingdom, Brazil and Mexico), Nuclear Midstream of nine (Costa Rica,
+Czechia, the Dominican Republic, Guatemala, Hungary, Indonesia, Namibia, Qatar and Slovakia),
+Nuclear Upstream of eight (Chile, the Democratic Republic of the Congo, Finland, Gabon, Greece,
+Japan, Saudi Arabia and Sweden, all with identified uranium resources), Batteries Upstream of four
+(Argentina, Norway, Peru and Ukraine), Electric Grid Midstream of four (Canada, Colombia, Morocco
+and Oman), Solar Midstream of three (Israel, New Zealand and Singapore) and Wind Upstream of two
+(Ghana and Poland); 43 picks are Midstream and 14 Upstream. The 11 members scored on the IEA
+database alone all have picks, four of them in Nuclear Midstream. Within a member's eligible
+sectors (a median of 11, from 2 to 18), the pick ranks first on the policy term for 22 members
+and on the need term for 23, but first on Economic Opportunity for none and among the top three on
+it for only seven: the picks are sectors a member needs and supports with policy rather than
+sectors in which it is already competitive. Averaged over members, the pick exceeds its runner-up
+mainly through the need term (0.011) and the technology weight (0.008).
+
+The picks are not stable to small changes. The median margin between the pick and its runner-up is
+0.015; it is below 0.005 for 10 members (17.5 percent: the United Kingdom, Hungary, Indonesia,
+Luxembourg, Morocco, Oman, Portugal, Qatar, Ukraine and South Africa) and below 0.01 for 21 (36.8
+percent), with a minimum of 0.0005 (Luxembourg). These margins are small against the index's
+within-country standard deviation, 0.080 on average, so for a third of the members the pick is a
+choice between two nearly equal sectors, and Table~\ref{tab:strategic_allied} reports the runner-up
+beside it. The distribution of picks also moved during the final data revisions. In the run of 8
+October, with the screen, Electric Grid Midstream was the pick of 17 members and Batteries
+Midstream of 11; completing the energy-trade file filled the missing codes of the grid basket, and
+the two sectors now account for four and 27 picks.
+
+The Nuclear Midstream picks of the small partners call for a specific reading. Costa Rica, the
+Dominican Republic and Guatemala each have four sectors they may pick, the Midstream stages of
+nuclear, oil, gas and coal; Namibia has the same four and Nuclear Upstream. Their other Midstream
+cells are not rankable, and their Upstream cells are either not rankable or barred by the screen.
+Among these sectors nuclear has by far the largest technology weight ($g_t=0.999$, against 0.42 for
+gas, 0.02 for coal and 0 for oil), which separates the pick from the runner-up by 0.058 (Costa Rica
+and the Dominican Republic) and 0.100 (Guatemala), more than any other term. Nuclear Midstream
+Energy Security is compressed around its median (interquartile range 0.095 across the 154
+countries scored, against 0.12--0.15 in the fossil Midstream sectors) and somewhat lower (median
+0.48, against 0.51--0.57), so the need term adds a smaller premium (0.020--0.042). These picks are
+therefore not an Energy Security floor effect: they are what the technology weight selects when a
+member's choice set holds only the fuel-processing stages. Without the screen, Costa Rica, the
+Dominican Republic and Guatemala would pick Nuclear Upstream instead, at an index higher by 0.085
+to 0.216, on Energy Security cells at the uranium floor.
+
+\input{tables/strategic_allied}
+
+\paragraph{The endowment screen.} The screen makes an Upstream extraction stage eligible for a
+member's pick only if the member has recorded reserves or production of the stage's resources; it
+leaves every index value unchanged. Of the 998 scored Upstream cells in the ten screened
+technologies, 669 have no recorded resource base, 306 of the coalition's 509. The screen changes
+the pick of 41 of the 57 members (Figure~\ref{fig:strategic_screen}). Without it, 47 picks would be
+Upstream (Nuclear Upstream 17, Batteries Upstream 12, Solar Upstream 12 and Wind Upstream 5), many
+of them in members without the resource, such as Nuclear Upstream for France, the United Kingdom,
+the Netherlands, Denmark, Ireland and Luxembourg and Solar Upstream for Germany, Saudi Arabia and
+T\"urkiye. With it, 43 picks are Midstream, and the eight Nuclear Upstream picks that remain all
+rest on identified uranium resources. The index forgone by the switch is small for most members
+(median 0.026, interquartile range 0.016--0.040) and largest for the Dominican Republic (0.216) and
+Colombia (0.128). Seven members move to the Midstream stage of the same technology (three each in
+batteries and nuclear, one in solar). The screen is a rule of the pick, not of the index: it encodes
+the judgement that an economy cannot become an allied supplier of a mined resource it does not
+have, whatever its need for it.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{strategic_screen}
+  \caption{Allied picks with and without the endowment screen. Panel (a): number of the 57
+  coalition members whose pick is each sector, with the screen (filled markers, the headline) and
+  without it (open markers); colour is the stage. Panel (b): the transition between the two
+  selections; each tile counts the members whose pick without the screen is the row and with the
+  screen the column, and outlined tiles on the diagonal are unchanged picks (16 members). The
+  screen bars an Upstream stage from a member's pick unless the member has recorded reserves or
+  production of the stage's resources; index values are the same in both selections, and the
+  screened selection equals \texttt{allied\_strategic.csv}. Source: \texttt{strategic\_index} in
+  \texttt{index\_outputs.rds}; selections recomputed with
+  \texttt{select\_allied\_strategic\_sectors()}, \texttt{require\_resource\_base} TRUE and FALSE.}
+  \label{fig:strategic_screen}
+\end{figure}
+
+\paragraph{Robustness to the security sign and to the other normative choices.} The Strategic
+Index reads security as need: a sector scores higher where the country is less secure. Reading it
+as strength, with $\ES$ in place of $1-\ES$ and every other term unchanged, gives an index that
+agrees only weakly with the headline (Figure~\ref{fig:strategic_sign}). Within members the median
+Spearman correlation of the two readings is 0.36 (interquartile range 0.17--0.48); it is 0.38 for
+core members and 0.24 for partners, and it is negative for ten partners (Argentina, Indonesia,
+Mexico, Namibia, Oman, Qatar, Saudi Arabia, Thailand, T\"urkiye and Viet Nam), whose most secure
+sectors are their fuel and processing industries. Only 5 of the 57 picks survive the change of
+sign, and for 12 members the headline pick is among the top three of the strength reading, whose
+picks move to Nuclear Midstream (28), Gas Midstream (10) and Electric Grid Midstream (7). Without
+the stage and technology weights the two readings are unrelated (median within-member correlation
+0.01, one pick in common). The sign of the security term is therefore the most consequential
+normative choice in the index, and it is a choice: the need reading asks where an economy should
+build capability to reduce its exposure, the strength reading where it can build on capability it
+has.
+
+The other choices matter less for the ordering of a member's sectors but more for its single top
+pick. Dropping the stage and technology weights keeps the need reading close to the headline
+(median within-member Spearman 0.90) but keeps only 31 of the 57 picks, although the headline pick
+stays among the variant's top three for 49 members. Ranking Economic Opportunity and need within
+the country, like the policy term, gives a median of 0.89, 20 identical picks and 49 in the top
+three. Dropping the policy term gives 0.88, 30 identical picks and 55 in the top three, and moves
+picks toward Nuclear Upstream (20) and Electric Grid Midstream (13). For the 46 members scored on
+both policy components, building the policy term from the IEA database alone gives 0.89 and 34
+identical picks. Adding back the industrial-policy measures of the New Industrial Policy
+Observatory \citep{gta2026nipo}, from the October 2026 run (77 jurisdictions, measures in force on
+5 October 2026), with the weights 4, 3 and 2 that the Observatory, the IEA component and the
+Tracker carried before October 2026, gives 0.96 for the 50 members with Observatory data, 27
+identical picks and 44 in the top three. Requiring both policy components, the rule before October
+2026, leaves 65 eligible countries and 1,666 Strategic Index cells whose values and picks are
+identical to the headline; it only removes the 11 members scored on the IEA database alone. The
+ranking of sectors within a member is thus robust to the treatment of policy and of the fixed
+weights over the whole list, but the top pick is not: it changes for between a quarter and two
+thirds of the members under each of these variants, as the small margins imply.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{strategic_sign}
+  \caption{Sensitivity of the Strategic Index to its normative choices, coalition members. Panel
+  (a): within-member Spearman rank correlation between the headline index, which reads security as
+  need ($1-\ES$), and the index with security as strength ($\ES$), all other terms unchanged; one
+  point per member, by tier, with the median marked. Panel (b): within-member Spearman correlation
+  of each variant with the headline (median, interquartile range and range): security as strength;
+  strength without the stage and technology weights; need without those weights; Economic
+  Opportunity and need ranked within the country; no policy term; the policy term from the IEA
+  Policies and Measures database alone (46 members scored on both components); the October 2026
+  component of the New Industrial Policy Observatory added back to the policy composite (50
+  members with Observatory data). Panel (c): share of members whose allied pick is unchanged
+  (filled) and whose headline pick is among the variant's top three sectors (open). All variants
+  keep the endowment screen and the cells of the headline index. Source:
+  \texttt{index\_outputs.rds}; the Observatory component of the October 2026 run.}
+  \label{fig:strategic_sign}
+\end{figure}

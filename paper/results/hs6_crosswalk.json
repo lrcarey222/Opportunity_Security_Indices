@@ -1,0 +1,1820 @@
+{
+  "source": "data/reference/energy_hs6_master.csv",
+  "review": "basket review 2026-10: rows failing the dominant-use test kept with excluded = TRUE; Electric Grid Upstream given a copper and aluminium input basket (rows noted 'added'); Upstream baskets for Electric Vehicles, Solar, Wind, Nuclear and Semiconductors (user decision 2026-10-11; rows noted 'added', and rows noted 'moved from Midstream (...)' that the pre-review basket puts back in Midstream)",
+  "master_rows": 507,
+  "rows_in_basket": 415,
+  "rows_excluded": 92,
+  "rows_added": 17,
+  "rows_moved": 6,
+  "pairs_moved_out": 6,
+  "codes_moved_between_stages": ["280530", "284410", "284690", "811292"],
+  "baskets_new_in_review": ["Electric Vehicles Upstream", "Nuclear Upstream", "Semiconductors Upstream", "Solar Upstream", "Wind Upstream"],
+  "rows_kept_with_caveat": 67,
+  "codes_kept_with_caveat": 40,
+  "pairs_excluded": 92,
+  "pairs_added": 23,
+  "codes_excluded_somewhere": 69,
+  "codes_dropped_entirely": 47,
+  "codes_new_to_master": 8,
+  "added_codes_moved_from_other_baskets": ["250410", "253090", "260200", "260300", "260400", "260500", "260600", "280530", "281820", "284410", "284690", "811292"],
+  "pre_review": {
+    "rows": 490,
+    "distinct_codes": 298,
+    "basket_pairs": 490
+  },
+  "distinct_codes": 259,
+  "basket_pairs": 415,
+  "current_codes": 242,
+  "legacy_codes": 17,
+  "legacy_rows": 32,
+  "legacy_codes_excluded": ["711210", "711220", "711290"],
+  "technologies": ["Batteries", "Coal", "Electric Grid", "Electric Vehicles", "Gas", "Nuclear", "Oil", "Semiconductors", "Solar", "Wind"],
+  "stages": ["Midstream", "Upstream"],
+  "codes_by_stage": {
+    "Midstream": 210,
+    "Upstream": 49
+  },
+  "sub_sectors": 92,
+  "essential_codes": 227,
+  "codes_by_number_of_baskets": {
+    "1": 154,
+    "2": 63,
+    "3": 33,
+    "4": 9
+  },
+  "codes_in_more_than_one_basket": 105,
+  "share_codes_in_more_than_one_basket": 0.405405,
+  "codes_by_number_of_technologies": {
+    "1": 154,
+    "2": 63,
+    "3": 33,
+    "4": 9
+  },
+  "max_baskets_per_code": 4,
+  "codes_in_max_baskets": ["850490", "853710", "853720", "854441", "854442", "854449", "854451", "854459", "854460"],
+  "gas_midstream": {
+    "codes": 51,
+    "shared": 46,
+    "shared_with_oil_midstream": 34
+  },
+  "top_chapters": {
+    "85": 76,
+    "84": 36,
+    "28": 26,
+    "27": 23,
+    "73": 22
+  },
+  "headline_upstream_midstream_stages_with_basket": 18,
+  "headline_upstream_midstream_stages_without_basket": ["Geothermal Upstream", "Geothermal Midstream", "Green Hydrogen Upstream", "Green Hydrogen Midstream"],
+  "electric_grid": {
+    "upstream_pre_review_code": "271600",
+    "upstream_pre_review_trade_usd_bn": 61.921932,
+    "upstream_post_review_codes": ["260300", "260600", "281820", "740200", "740311", "760110", "760120"],
+    "upstream_post_review_trade_usd_bn": 320.9921,
+    "midstream_removed_share": 0.342841,
+    "hs851762_trade_usd_bn": 219.357088,
+    "hs851762_share_of_pre_review_midstream": 0.32059
+  },
+  "trade": {
+    "source": "data/raw/comtrade_energy_dyads_all.csv, reconciled by partnership_strength_build_trade_cells()",
+    "year": 2024,
+    "cif_fob_factor": 1.06,
+    "note": "technology-attributed: a code in several baskets counts in each; removed_share = trade of the excluded codes / pre-review basket trade (NA for a basket the review created; codes moved to another stage are not removals); moved_share = trade of the codes moved out of the basket / pre-review basket trade; added_share_post = trade of the added (incl. moved-in) codes / post-review basket trade"
+  },
+  "by_cell": [
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "codes_current": 11,
+      "codes_legacy": 1,
+      "codes_shared": 5,
+      "codes_essential": 11,
+      "codes_added": 0,
+      "codes_excluded": 20,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 5,
+      "sub_sectors": 2,
+      "codes_total": 12,
+      "new_basket": false,
+      "removed_share": 0.887969,
+      "moved_share": 0,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 21.220881,
+      "trade_pre_usd_bn": 189.419853,
+      "mirror_share_post": 0.011256
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "codes_current": 34,
+      "codes_legacy": 0,
+      "codes_shared": 2,
+      "codes_essential": 32,
+      "codes_added": 0,
+      "codes_excluded": 11,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 3,
+      "sub_sectors": 9,
+      "codes_total": 34,
+      "new_basket": false,
+      "removed_share": 0.484048,
+      "moved_share": 0,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 202.72217,
+      "trade_pre_usd_bn": 392.908823,
+      "mirror_share_post": 0.041366
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Upstream",
+      "codes_current": 6,
+      "codes_legacy": 0,
+      "codes_shared": 0,
+      "codes_essential": 6,
+      "codes_added": 0,
+      "codes_excluded": 0,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 0,
+      "sub_sectors": 2,
+      "codes_total": 6,
+      "new_basket": false,
+      "removed_share": 0,
+      "moved_share": 0,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 192.488564,
+      "trade_pre_usd_bn": 192.488564,
+      "mirror_share_post": 0.037688
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "codes_current": 14,
+      "codes_legacy": 1,
+      "codes_shared": 12,
+      "codes_essential": 15,
+      "codes_added": 0,
+      "codes_excluded": 8,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 0,
+      "sub_sectors": 3,
+      "codes_total": 15,
+      "new_basket": false,
+      "removed_share": 0.918723,
+      "moved_share": 0,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 20.478662,
+      "trade_pre_usd_bn": 251.9617,
+      "mirror_share_post": 0.058768
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Upstream",
+      "codes_current": 7,
+      "codes_legacy": 0,
+      "codes_shared": 0,
+      "codes_essential": 7,
+      "codes_added": 7,
+      "codes_excluded": 1,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 7,
+      "sub_sectors": 3,
+      "codes_total": 7,
+      "new_basket": false,
+      "removed_share": 1,
+      "moved_share": 0,
+      "added_share_post": 1,
+      "trade_post_usd_bn": 320.9921,
+      "trade_pre_usd_bn": 61.921932,
+      "mirror_share_post": 0.033947
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Midstream",
+      "codes_current": 41,
+      "codes_legacy": 6,
+      "codes_shared": 36,
+      "codes_essential": 43,
+      "codes_added": 0,
+      "codes_excluded": 4,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 8,
+      "sub_sectors": 12,
+      "codes_total": 47,
+      "new_basket": false,
+      "removed_share": 0.342841,
+      "moved_share": 0,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 449.647165,
+      "trade_pre_usd_bn": 684.228525,
+      "mirror_share_post": 0.049216
+    },
+    {
+      "tech": "Electric Vehicles",
+      "supply_chain": "Upstream",
+      "codes_current": 8,
+      "codes_legacy": 0,
+      "codes_shared": 8,
+      "codes_essential": 8,
+      "codes_added": 8,
+      "codes_excluded": 0,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 5,
+      "sub_sectors": 8,
+      "codes_total": 8,
+      "new_basket": true,
+      "added_share_post": 1,
+      "trade_post_usd_bn": 21.313985,
+      "mirror_share_post": 0.022257
+    },
+    {
+      "tech": "Electric Vehicles",
+      "supply_chain": "Midstream",
+      "codes_current": 36,
+      "codes_legacy": 5,
+      "codes_shared": 17,
+      "codes_essential": 36,
+      "codes_added": 0,
+      "codes_excluded": 0,
+      "codes_moved_out": 2,
+      "codes_kept_with_caveat": 10,
+      "sub_sectors": 7,
+      "codes_total": 41,
+      "new_basket": false,
+      "removed_share": 0,
+      "moved_share": 0.00285,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 1003.17701,
+      "trade_pre_usd_bn": 1006.036677,
+      "mirror_share_post": 0.041684
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Upstream",
+      "codes_current": 6,
+      "codes_legacy": 0,
+      "codes_shared": 0,
+      "codes_essential": 6,
+      "codes_added": 0,
+      "codes_excluded": 1,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 0,
+      "sub_sectors": 4,
+      "codes_total": 6,
+      "new_basket": false,
+      "removed_share": 0.003948,
+      "moved_share": 0,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 445.311894,
+      "trade_pre_usd_bn": 447.076835,
+      "mirror_share_post": 0.01985
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "codes_current": 46,
+      "codes_legacy": 5,
+      "codes_shared": 46,
+      "codes_essential": 32,
+      "codes_added": 0,
+      "codes_excluded": 14,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 2,
+      "sub_sectors": 2,
+      "codes_total": 51,
+      "new_basket": false,
+      "removed_share": 0.690878,
+      "moved_share": 0,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 151.569993,
+      "trade_pre_usd_bn": 490.324417,
+      "mirror_share_post": 0.107613
+    },
+    {
+      "tech": "Nuclear",
+      "supply_chain": "Upstream",
+      "codes_current": 2,
+      "codes_legacy": 0,
+      "codes_shared": 0,
+      "codes_essential": 2,
+      "codes_added": 2,
+      "codes_excluded": 0,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 1,
+      "sub_sectors": 2,
+      "codes_total": 2,
+      "new_basket": true,
+      "added_share_post": 1,
+      "trade_post_usd_bn": 11.40488,
+      "mirror_share_post": 0.259738
+    },
+    {
+      "tech": "Nuclear",
+      "supply_chain": "Midstream",
+      "codes_current": 17,
+      "codes_legacy": 1,
+      "codes_shared": 12,
+      "codes_essential": 18,
+      "codes_added": 0,
+      "codes_excluded": 0,
+      "codes_moved_out": 1,
+      "codes_kept_with_caveat": 0,
+      "sub_sectors": 3,
+      "codes_total": 18,
+      "new_basket": false,
+      "removed_share": 0,
+      "moved_share": 0.31415,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 24.639691,
+      "trade_pre_usd_bn": 34.492409,
+      "mirror_share_post": 0.039578
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Upstream",
+      "codes_current": 9,
+      "codes_legacy": 1,
+      "codes_shared": 0,
+      "codes_essential": 10,
+      "codes_added": 0,
+      "codes_excluded": 0,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 0,
+      "sub_sectors": 5,
+      "codes_total": 10,
+      "new_basket": false,
+      "removed_share": 0,
+      "moved_share": 0,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 2211.043042,
+      "trade_pre_usd_bn": 2211.043042,
+      "mirror_share_post": 0.030959
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "codes_current": 39,
+      "codes_legacy": 4,
+      "codes_shared": 35,
+      "codes_essential": 24,
+      "codes_added": 0,
+      "codes_excluded": 14,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 3,
+      "sub_sectors": 7,
+      "codes_total": 43,
+      "new_basket": false,
+      "removed_share": 0.597514,
+      "moved_share": 0,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 127.091618,
+      "trade_pre_usd_bn": 315.766725,
+      "mirror_share_post": 0.130153
+    },
+    {
+      "tech": "Semiconductors",
+      "supply_chain": "Upstream",
+      "codes_current": 1,
+      "codes_legacy": 1,
+      "codes_shared": 0,
+      "codes_essential": 2,
+      "codes_added": 2,
+      "codes_excluded": 0,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 2,
+      "sub_sectors": 1,
+      "codes_total": 2,
+      "new_basket": true,
+      "added_share_post": 1,
+      "trade_post_usd_bn": 1.063089,
+      "mirror_share_post": 0.002229
+    },
+    {
+      "tech": "Semiconductors",
+      "supply_chain": "Midstream",
+      "codes_current": 19,
+      "codes_legacy": 0,
+      "codes_shared": 8,
+      "codes_essential": 17,
+      "codes_added": 0,
+      "codes_excluded": 0,
+      "codes_moved_out": 1,
+      "codes_kept_with_caveat": 0,
+      "sub_sectors": 8,
+      "codes_total": 19,
+      "new_basket": false,
+      "removed_share": 0,
+      "moved_share": 0.000788,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 1348.052477,
+      "trade_pre_usd_bn": 1349.11554,
+      "mirror_share_post": 0.053465
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Upstream",
+      "codes_current": 1,
+      "codes_legacy": 0,
+      "codes_shared": 0,
+      "codes_essential": 1,
+      "codes_added": 1,
+      "codes_excluded": 0,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 1,
+      "sub_sectors": 1,
+      "codes_total": 1,
+      "new_basket": true,
+      "added_share_post": 1,
+      "trade_post_usd_bn": 3.75297,
+      "mirror_share_post": 0.045627
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "codes_current": 42,
+      "codes_legacy": 4,
+      "codes_shared": 38,
+      "codes_essential": 44,
+      "codes_added": 0,
+      "codes_excluded": 9,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 10,
+      "sub_sectors": 9,
+      "codes_total": 46,
+      "new_basket": false,
+      "removed_share": 0.054596,
+      "moved_share": 0,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 711.543763,
+      "trade_pre_usd_bn": 752.634822,
+      "mirror_share_post": 0.044148
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Upstream",
+      "codes_current": 3,
+      "codes_legacy": 0,
+      "codes_shared": 3,
+      "codes_essential": 3,
+      "codes_added": 3,
+      "codes_excluded": 0,
+      "codes_moved_out": 0,
+      "codes_kept_with_caveat": 2,
+      "sub_sectors": 3,
+      "codes_total": 3,
+      "new_basket": true,
+      "added_share_post": 1,
+      "trade_post_usd_bn": 3.022287,
+      "mirror_share_post": 0.091312
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "codes_current": 41,
+      "codes_legacy": 3,
+      "codes_shared": 39,
+      "codes_essential": 38,
+      "codes_added": 0,
+      "codes_excluded": 10,
+      "codes_moved_out": 2,
+      "codes_kept_with_caveat": 8,
+      "sub_sectors": 8,
+      "codes_total": 44,
+      "new_basket": false,
+      "removed_share": 0.094313,
+      "moved_share": 0.006297,
+      "added_share_post": 0,
+      "trade_post_usd_bn": 409.495319,
+      "trade_pre_usd_bn": 455.295405,
+      "mirror_share_post": 0.053197
+    }
+  ],
+  "top_excluded_codes": [
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "382499",
+      "value_usd_bn": 47.814599,
+      "reason": "residual heading (chemical products and preparations n.e.s.); battery electrolyte is a minor part of it. $43.1bn, 12.1% of the Comtrade 2024 Batteries Midstream basket"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "390120",
+      "value_usd_bn": 29.928382,
+      "reason": "polyethylene or polypropylene in primary forms: commodity resins used mainly for packaging and consumer plastics, not battery separators. The three codes were $68.9bn, 19.4% of the Comtrade 2024 basket (Atlas 2023: 20.3%)"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "390210",
+      "value_usd_bn": 26.936501,
+      "reason": "polyethylene or polypropylene in primary forms: commodity resins used mainly for packaging and consumer plastics, not battery separators. The three codes were $68.9bn, 19.4% of the Comtrade 2024 basket (Atlas 2023: 20.3%)"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "260300",
+      "value_usd_bn": 106.420931,
+      "reason": "copper ores: copper goes mainly into wiring, construction and equipment, batteries are a minor use. It was 77.7% of the Comtrade 2024 Batteries Upstream basket (Atlas 2023: 55.2%), so the cell measured copper mining"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "711291",
+      "value_usd_bn": 15.020979,
+      "reason": "precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "260800",
+      "value_usd_bn": 12.263576,
+      "reason": "zinc ores: zinc goes mainly into galvanising; not a lithium-ion input"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "841191",
+      "value_usd_bn": 107.066319,
+      "reason": "turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "841112",
+      "value_usd_bn": 84.695531,
+      "reason": "turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "841199",
+      "value_usd_bn": 25.779216,
+      "reason": "gas turbines and their parts, fired by gas or oil; not coal-plant equipment (kept in Gas)"
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Midstream",
+      "hs6": "851762",
+      "value_usd_bn": 219.357088,
+      "reason": "switching and routing apparatus (network switches, routers, modems): telecommunications and data-networking equipment whose grid use (substation and control-centre communications) is minor, like the coaxial and optical-fibre cables already excluded. It was the cell's largest code, $177.8bn, 28.4% of the Comtrade 2024 Electric Grid Midstream basket, with Hong Kong (re-exports) its third exporter. It has no HS92 code, so the Atlas market share never held it; its heading 8517 leaves the cell's feasibility mean. User decision 2026-10-09"
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Midstream",
+      "hs6": "854470",
+      "value_usd_bn": 9.053928,
+      "reason": "optical fibre cables: telecommunications"
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Midstream",
+      "hs6": "854420",
+      "value_usd_bn": 6.169441,
+      "reason": "coaxial cable: telecommunications and broadcasting"
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Upstream",
+      "hs6": "271600",
+      "value_usd_bn": 61.921932,
+      "reason": "electrical energy: the commodity the grid carries, not an input to building it. Cross-border power trade ($66.6bn, Atlas 2023) ranked net power exporters as grid suppliers. The cell keeps its minerals categories; its trade basket is now the copper and aluminium material inputs (added 2026-10-09)"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "841191",
+      "value_usd_bn": 107.066319,
+      "reason": "turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "841112",
+      "value_usd_bn": 84.695531,
+      "reason": "turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "847989",
+      "value_usd_bn": 53.468762,
+      "reason": "residual heading (machines with individual functions n.e.s.), general industrial machinery"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Upstream",
+      "hs6": "271114",
+      "value_usd_bn": 1.773613,
+      "reason": "liquefied ethylene, propylene, butylene and butadiene: petrochemical olefins, not natural gas"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "847989",
+      "value_usd_bn": 53.468762,
+      "reason": "residual heading (machines with individual functions n.e.s.), general industrial machinery"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "843149",
+      "value_usd_bn": 29.259634,
+      "reason": "parts of cranes and earth-moving machinery (8426, 8429, 8430 other than boring machinery, whose parts are 8431.43): construction and mining"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "850300",
+      "value_usd_bn": 24.142371,
+      "reason": "parts of electric motors and generators: general electrical machinery"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "850131",
+      "value_usd_bn": 14.552761,
+      "reason": "DC electric motors: general-purpose (appliances, vehicles); tracker drives are a minor use"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "854470",
+      "value_usd_bn": 9.053928,
+      "reason": "optical fibre cables: telecommunications"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "731210",
+      "value_usd_bn": 8.072594,
+      "reason": "stranded steel wire and ropes: lifting, construction and mining"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "854470",
+      "value_usd_bn": 9.053928,
+      "reason": "optical fibre cables: telecommunications"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "731210",
+      "value_usd_bn": 8.072594,
+      "reason": "stranded steel wire and ropes: lifting, construction and mining"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "730840",
+      "value_usd_bn": 6.39436,
+      "reason": "scaffolding, shuttering and propping equipment: construction"
+    }
+  ],
+  "excluded_detail": [
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "382499",
+      "legacy_hs": false,
+      "value_usd_bn": 47.814599,
+      "reason": "residual heading (chemical products and preparations n.e.s.); battery electrolyte is a minor part of it. $43.1bn, 12.1% of the Comtrade 2024 Batteries Midstream basket"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "390120",
+      "legacy_hs": false,
+      "value_usd_bn": 29.928382,
+      "reason": "polyethylene or polypropylene in primary forms: commodity resins used mainly for packaging and consumer plastics, not battery separators. The three codes were $68.9bn, 19.4% of the Comtrade 2024 basket (Atlas 2023: 20.3%)"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "390210",
+      "legacy_hs": false,
+      "value_usd_bn": 26.936501,
+      "reason": "polyethylene or polypropylene in primary forms: commodity resins used mainly for packaging and consumer plastics, not battery separators. The three codes were $68.9bn, 19.4% of the Comtrade 2024 basket (Atlas 2023: 20.3%)"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "390110",
+      "legacy_hs": false,
+      "value_usd_bn": 25.842231,
+      "reason": "polyethylene or polypropylene in primary forms: commodity resins used mainly for packaging and consumer plastics, not battery separators. The three codes were $68.9bn, 19.4% of the Comtrade 2024 basket (Atlas 2023: 20.3%)"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "392010",
+      "legacy_hs": false,
+      "value_usd_bn": 18.819857,
+      "reason": "polyethylene or polypropylene film and sheet, mainly packaging film; separator film is a small part. Same reason as the 3901/3902 resins"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "281820",
+      "legacy_hs": false,
+      "value_usd_bn": 18.120572,
+      "reason": "aluminium oxide (alumina), used mainly for aluminium smelting"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "392020",
+      "legacy_hs": false,
+      "value_usd_bn": 11.309051,
+      "reason": "polyethylene or polypropylene film and sheet, mainly packaging film; separator film is a small part. Same reason as the 3901/3902 resins"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "280300",
+      "legacy_hs": false,
+      "value_usd_bn": 6.744066,
+      "reason": "carbon black, used mainly to reinforce rubber (tyres); conductive-additive use is minor"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "280461",
+      "legacy_hs": false,
+      "value_usd_bn": 3.640385,
+      "reason": "polysilicon (>= 99.99% Si), used mainly for PV and semiconductors; kept in the Solar and Semiconductors baskets"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "281700",
+      "legacy_hs": false,
+      "value_usd_bn": 1.496015,
+      "reason": "zinc oxide, used mainly in rubber and ceramics; not a lithium-ion cathode material"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Midstream",
+      "hs6": "283322",
+      "legacy_hs": false,
+      "value_usd_bn": 0.161709,
+      "reason": "aluminium sulphate, used mainly in water treatment and papermaking"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "260300",
+      "legacy_hs": false,
+      "value_usd_bn": 106.420931,
+      "reason": "copper ores: copper goes mainly into wiring, construction and equipment, batteries are a minor use. It was 77.7% of the Comtrade 2024 Batteries Upstream basket (Atlas 2023: 55.2%), so the cell measured copper mining"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "711291",
+      "legacy_hs": false,
+      "value_usd_bn": 15.020979,
+      "reason": "precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "260800",
+      "legacy_hs": false,
+      "value_usd_bn": 12.263576,
+      "reason": "zinc ores: zinc goes mainly into galvanising; not a lithium-ion input"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "260600",
+      "legacy_hs": false,
+      "value_usd_bn": 12.174628,
+      "reason": "bauxite: feedstock for alumina and aluminium"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "711299",
+      "legacy_hs": false,
+      "value_usd_bn": 11.188042,
+      "reason": "precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "711292",
+      "legacy_hs": false,
+      "value_usd_bn": 6.03854,
+      "reason": "precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "711230",
+      "legacy_hs": false,
+      "value_usd_bn": 1.649557,
+      "reason": "precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "854929",
+      "legacy_hs": false,
+      "value_usd_bn": 1.181984,
+      "reason": "general electronic waste; battery waste is 8549.11-19, which stays"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "262019",
+      "legacy_hs": false,
+      "value_usd_bn": 0.880578,
+      "reason": "slag and ash containing mainly zinc, copper or aluminium: not battery metals"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "261590",
+      "legacy_hs": false,
+      "value_usd_bn": 0.606813,
+      "reason": "niobium, tantalum and vanadium ores: used mainly in steel alloys and capacitors"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "262030",
+      "legacy_hs": false,
+      "value_usd_bn": 0.544552,
+      "reason": "slag and ash containing mainly zinc, copper or aluminium: not battery metals"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "262040",
+      "legacy_hs": false,
+      "value_usd_bn": 0.391648,
+      "reason": "slag and ash containing mainly zinc, copper or aluminium: not battery metals"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "854921",
+      "legacy_hs": false,
+      "value_usd_bn": 0.295464,
+      "reason": "general electronic waste; battery waste is 8549.11-19, which stays"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "854999",
+      "legacy_hs": false,
+      "value_usd_bn": 0.14831,
+      "reason": "general electronic waste; battery waste is 8549.11-19, which stays"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "854939",
+      "legacy_hs": false,
+      "value_usd_bn": 0.050983,
+      "reason": "general electronic waste; battery waste is 8549.11-19, which stays"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "854931",
+      "legacy_hs": false,
+      "value_usd_bn": 0.017436,
+      "reason": "general electronic waste; battery waste is 8549.11-19, which stays"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "854991",
+      "legacy_hs": false,
+      "value_usd_bn": 0.012591,
+      "reason": "general electronic waste; battery waste is 8549.11-19, which stays"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "711210",
+      "legacy_hs": true,
+      "value_usd_bn": 0,
+      "reason": "precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "711220",
+      "legacy_hs": true,
+      "value_usd_bn": 0,
+      "reason": "precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials"
+    },
+    {
+      "tech": "Batteries",
+      "supply_chain": "Upstream",
+      "hs6": "711290",
+      "legacy_hs": true,
+      "value_usd_bn": 0,
+      "reason": "precious-metal (gold, silver, platinum) waste, scrap and ash: not battery materials"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "841191",
+      "legacy_hs": false,
+      "value_usd_bn": 107.066319,
+      "reason": "turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "841112",
+      "legacy_hs": false,
+      "value_usd_bn": 84.695531,
+      "reason": "turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "841199",
+      "legacy_hs": false,
+      "value_usd_bn": 25.779216,
+      "reason": "gas turbines and their parts, fired by gas or oil; not coal-plant equipment (kept in Gas)"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "841182",
+      "legacy_hs": false,
+      "value_usd_bn": 4.886281,
+      "reason": "gas turbines and their parts, fired by gas or oil; not coal-plant equipment (kept in Gas)"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "840310",
+      "legacy_hs": false,
+      "value_usd_bn": 4.253661,
+      "reason": "central-heating boilers for buildings (the heading excludes the 8402 steam boilers of power plants), mainly gas- and oil-fired"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "841181",
+      "legacy_hs": false,
+      "value_usd_bn": 3.048289,
+      "reason": "gas turbines and their parts, fired by gas or oil; not coal-plant equipment (kept in Gas)"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "840390",
+      "legacy_hs": false,
+      "value_usd_bn": 2.11657,
+      "reason": "central-heating boilers for buildings (the heading excludes the 8402 steam boilers of power plants), mainly gas- and oil-fired"
+    },
+    {
+      "tech": "Coal",
+      "supply_chain": "Midstream",
+      "hs6": "841111",
+      "legacy_hs": false,
+      "value_usd_bn": 1.218989,
+      "reason": "turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Midstream",
+      "hs6": "851762",
+      "legacy_hs": false,
+      "value_usd_bn": 219.357088,
+      "reason": "switching and routing apparatus (network switches, routers, modems): telecommunications and data-networking equipment whose grid use (substation and control-centre communications) is minor, like the coaxial and optical-fibre cables already excluded. It was the cell's largest code, $177.8bn, 28.4% of the Comtrade 2024 Electric Grid Midstream basket, with Hong Kong (re-exports) its third exporter. It has no HS92 code, so the Atlas market share never held it; its heading 8517 leaves the cell's feasibility mean. User decision 2026-10-09"
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Midstream",
+      "hs6": "854470",
+      "legacy_hs": false,
+      "value_usd_bn": 9.053928,
+      "reason": "optical fibre cables: telecommunications"
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Midstream",
+      "hs6": "854420",
+      "legacy_hs": false,
+      "value_usd_bn": 6.169441,
+      "reason": "coaxial cable: telecommunications and broadcasting"
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Midstream",
+      "hs6": "681510",
+      "legacy_hs": false,
+      "value_usd_bn": 0.000962,
+      "reason": "non-electrical articles of graphite or carbon (carbon fibre until HS2022): no grid use (kept in Wind for blades)"
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Upstream",
+      "hs6": "271600",
+      "legacy_hs": false,
+      "value_usd_bn": 61.921932,
+      "reason": "electrical energy: the commodity the grid carries, not an input to building it. Cross-border power trade ($66.6bn, Atlas 2023) ranked net power exporters as grid suppliers. The cell keeps its minerals categories; its trade basket is now the copper and aluminium material inputs (added 2026-10-09)"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "841191",
+      "legacy_hs": false,
+      "value_usd_bn": 107.066319,
+      "reason": "turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "841112",
+      "legacy_hs": false,
+      "value_usd_bn": 84.695531,
+      "reason": "turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "847989",
+      "legacy_hs": false,
+      "value_usd_bn": 53.468762,
+      "reason": "residual heading (machines with individual functions n.e.s.), general industrial machinery"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "843149",
+      "legacy_hs": false,
+      "value_usd_bn": 29.259634,
+      "reason": "parts of cranes and earth-moving machinery (8426, 8429, 8430 other than boring machinery, whose parts are 8431.43): construction and mining"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "842890",
+      "legacy_hs": false,
+      "value_usd_bn": 16.145673,
+      "reason": "lifting and handling machinery n.e.s.: general materials handling"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "842129",
+      "legacy_hs": false,
+      "value_usd_bn": 12.965708,
+      "reason": "filtering or purifying machinery for liquids n.e.s.: water treatment and general process industry"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "843139",
+      "legacy_hs": false,
+      "value_usd_bn": 11.526017,
+      "reason": "parts of lifting, handling and conveying machinery (heading 8428: lifts, conveyors)"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "847490",
+      "legacy_hs": false,
+      "value_usd_bn": 9.198319,
+      "reason": "parts of machines for sorting, crushing or grinding earth, stone and ores: mining, quarrying and construction"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "847982",
+      "legacy_hs": false,
+      "value_usd_bn": 6.877179,
+      "reason": "mixing, kneading and crushing machinery: general process industry"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "847420",
+      "legacy_hs": false,
+      "value_usd_bn": 4.085117,
+      "reason": "machines for crushing or grinding earth, stone and ores: mining, quarrying and construction"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "847410",
+      "legacy_hs": false,
+      "value_usd_bn": 2.765897,
+      "reason": "machines for sorting, screening or washing earth, stone and ores: mining, quarrying and construction"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "841111",
+      "legacy_hs": false,
+      "value_usd_bn": 1.218989,
+      "reason": "turbo-jets and parts of turbo-jets or turbo-propellers, i.e. aircraft engines"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "840510",
+      "legacy_hs": false,
+      "value_usd_bn": 0.727182,
+      "reason": "producer-gas, water-gas and acetylene generators and parts: coal or biomass gasification, not natural gas"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Midstream",
+      "hs6": "840590",
+      "legacy_hs": false,
+      "value_usd_bn": 0.283827,
+      "reason": "producer-gas, water-gas and acetylene generators and parts: coal or biomass gasification, not natural gas"
+    },
+    {
+      "tech": "Gas",
+      "supply_chain": "Upstream",
+      "hs6": "271114",
+      "legacy_hs": false,
+      "value_usd_bn": 1.773613,
+      "reason": "liquefied ethylene, propylene, butylene and butadiene: petrochemical olefins, not natural gas"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "847989",
+      "legacy_hs": false,
+      "value_usd_bn": 53.468762,
+      "reason": "residual heading (machines with individual functions n.e.s.), general industrial machinery"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "843149",
+      "legacy_hs": false,
+      "value_usd_bn": 29.259634,
+      "reason": "parts of cranes and earth-moving machinery (8426, 8429, 8430 other than boring machinery, whose parts are 8431.43): construction and mining"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "850300",
+      "legacy_hs": false,
+      "value_usd_bn": 24.142371,
+      "reason": "parts of electric motors and generators: general electrical machinery"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "842890",
+      "legacy_hs": false,
+      "value_usd_bn": 16.145673,
+      "reason": "lifting and handling machinery n.e.s.: general materials handling"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "850131",
+      "legacy_hs": false,
+      "value_usd_bn": 14.552761,
+      "reason": "DC electric motors: general-purpose motors, not oil-sector prime movers"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "842129",
+      "legacy_hs": false,
+      "value_usd_bn": 12.965708,
+      "reason": "filtering or purifying machinery for liquids n.e.s.: water treatment and general process industry"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "843139",
+      "legacy_hs": false,
+      "value_usd_bn": 11.526017,
+      "reason": "parts of lifting, handling and conveying machinery (heading 8428: lifts, conveyors)"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "847490",
+      "legacy_hs": false,
+      "value_usd_bn": 9.198319,
+      "reason": "parts of machines for sorting, crushing or grinding earth, stone and ores: mining, quarrying and construction"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "847982",
+      "legacy_hs": false,
+      "value_usd_bn": 6.877179,
+      "reason": "mixing, kneading and crushing machinery: general process industry"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "847420",
+      "legacy_hs": false,
+      "value_usd_bn": 4.085117,
+      "reason": "machines for crushing or grinding earth, stone and ores: mining, quarrying and construction"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "850132",
+      "legacy_hs": false,
+      "value_usd_bn": 2.802048,
+      "reason": "DC electric motors: general-purpose motors, not oil-sector prime movers"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "847410",
+      "legacy_hs": false,
+      "value_usd_bn": 2.765897,
+      "reason": "machines for sorting, screening or washing earth, stone and ores: mining, quarrying and construction"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "850133",
+      "legacy_hs": false,
+      "value_usd_bn": 0.537229,
+      "reason": "DC electric motors: general-purpose motors, not oil-sector prime movers"
+    },
+    {
+      "tech": "Oil",
+      "supply_chain": "Midstream",
+      "hs6": "850134",
+      "legacy_hs": false,
+      "value_usd_bn": 0.353792,
+      "reason": "DC electric motors: general-purpose motors, not oil-sector prime movers"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "850131",
+      "legacy_hs": false,
+      "value_usd_bn": 14.552761,
+      "reason": "DC electric motors: general-purpose (appliances, vehicles); tracker drives are a minor use"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "854470",
+      "legacy_hs": false,
+      "value_usd_bn": 9.053928,
+      "reason": "optical fibre cables: telecommunications"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "731210",
+      "legacy_hs": false,
+      "value_usd_bn": 8.072594,
+      "reason": "stranded steel wire and ropes: lifting, construction and mining"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "854420",
+      "legacy_hs": false,
+      "value_usd_bn": 6.169441,
+      "reason": "coaxial cable: telecommunications and broadcasting"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "850132",
+      "legacy_hs": false,
+      "value_usd_bn": 2.802048,
+      "reason": "DC electric motors: general-purpose (appliances, vehicles); tracker drives are a minor use"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "440311",
+      "legacy_hs": false,
+      "value_usd_bn": 0.380967,
+      "reason": "preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "440312",
+      "legacy_hs": false,
+      "value_usd_bn": 0.07341,
+      "reason": "preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "440310",
+      "legacy_hs": true,
+      "value_usd_bn": 0.00433,
+      "reason": "preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid"
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Midstream",
+      "hs6": "681510",
+      "legacy_hs": false,
+      "value_usd_bn": 0.000962,
+      "reason": "non-electrical articles of graphite or carbon (carbon fibre until HS2022): no solar use (kept in Wind for blades)"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "854470",
+      "legacy_hs": false,
+      "value_usd_bn": 9.053928,
+      "reason": "optical fibre cables: telecommunications"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "731210",
+      "legacy_hs": false,
+      "value_usd_bn": 8.072594,
+      "reason": "stranded steel wire and ropes: lifting, construction and mining"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "730840",
+      "legacy_hs": false,
+      "value_usd_bn": 6.39436,
+      "reason": "scaffolding, shuttering and propping equipment: construction"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "854420",
+      "legacy_hs": false,
+      "value_usd_bn": 6.169441,
+      "reason": "coaxial cable: telecommunications and broadcasting"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "681099",
+      "legacy_hs": false,
+      "value_usd_bn": 5.309955,
+      "reason": "precast concrete components and other concrete articles: construction"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "730511",
+      "legacy_hs": false,
+      "value_usd_bn": 4.678666,
+      "reason": "line pipe of a kind used for oil or gas pipelines, by the heading's own wording; kept in Oil and Gas"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "681091",
+      "legacy_hs": false,
+      "value_usd_bn": 2.836618,
+      "reason": "precast concrete components and other concrete articles: construction"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "440311",
+      "legacy_hs": false,
+      "value_usd_bn": 0.380967,
+      "reason": "preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "440312",
+      "legacy_hs": false,
+      "value_usd_bn": 0.07341,
+      "reason": "preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Midstream",
+      "hs6": "440310",
+      "legacy_hs": true,
+      "value_usd_bn": 0.00433,
+      "reason": "preservative-treated wood in the rough (poles): a distribution-grid item, kept in Electric Grid"
+    }
+  ],
+  "added_detail": [
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Upstream",
+      "sub_sector": "Ores & Concentrates",
+      "hs6": "260300",
+      "moved_in": false,
+      "value_usd_bn": 106.420931,
+      "share_of_basket_code_level": 0.331538,
+      "reason": "copper ores and concentrates, the mining stage of grid copper."
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Upstream",
+      "sub_sector": "Copper Smelting & Refining",
+      "hs6": "740311",
+      "moved_in": false,
+      "value_usd_bn": 92.760248,
+      "share_of_basket_code_level": 0.28898,
+      "reason": "refined copper cathodes, the refining stage of grid copper and the feedstock of the wire rod in Electric Grid Midstream (7408.11). Other unwrought refined copper (7403.12/13/19: wire-bars, billets, other cast shapes; 5% of refined unwrought copper trade, leaders swinging from COD to PAK between 2020 and 2023) and copper waste and scrap (7404, exported by scrap generators) are left out."
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Upstream",
+      "sub_sector": "Alumina & Primary Aluminium",
+      "hs6": "760120",
+      "moved_in": false,
+      "value_usd_bn": 39.912972,
+      "share_of_basket_code_level": 0.124343,
+      "reason": "unwrought aluminium alloys: smelters cast much of their output as alloy billet and slab (leaders ARE, CAN, NOR, MYS, BHR). Aluminium waste and scrap (7602) is left out: its exporters are scrap generators (USA, DEU), not suppliers of metal."
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Upstream",
+      "sub_sector": "Alumina & Primary Aluminium",
+      "hs6": "760110",
+      "moved_in": false,
+      "value_usd_bn": 36.467504,
+      "share_of_basket_code_level": 0.113609,
+      "reason": "unwrought aluminium, not alloyed: primary smelter metal (conductor grades are unalloyed)."
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Upstream",
+      "sub_sector": "Alumina & Primary Aluminium",
+      "hs6": "281820",
+      "moved_in": false,
+      "value_usd_bn": 18.120572,
+      "share_of_basket_code_level": 0.056452,
+      "reason": "aluminium oxide (alumina), the refining stage of grid aluminium; smelting takes most of it."
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Upstream",
+      "sub_sector": "Copper Smelting & Refining",
+      "hs6": "740200",
+      "moved_in": false,
+      "value_usd_bn": 17.974527,
+      "share_of_basket_code_level": 0.055997,
+      "reason": "unrefined copper and copper anodes (blister), the smelting stage of grid copper."
+    },
+    {
+      "tech": "Electric Grid",
+      "supply_chain": "Upstream",
+      "sub_sector": "Ores & Concentrates",
+      "hs6": "260600",
+      "moved_in": false,
+      "value_usd_bn": 12.174628,
+      "share_of_basket_code_level": 0.037928,
+      "reason": "bauxite, the mining stage of grid aluminium."
+    },
+    {
+      "tech": "Nuclear",
+      "supply_chain": "Upstream",
+      "sub_sector": "Natural Uranium & Compounds",
+      "hs6": "284410",
+      "moved_in": true,
+      "value_usd_bn": 10.835774,
+      "share_of_basket_code_level": 0.9501,
+      "reason": "natural uranium and its compounds, the heading under which most uranium ore concentrate is shipped (U3O8, yellowcake: Kazakhstan, Canada, Uzbekistan). An ore concentrate is a raw material, so the code sits Upstream (the master's stage rule) and uranium miners no longer rank as fuel-cycle manufacturers; Nuclear Midstream keeps enriched uranium (2844.20), spent fuel (2844.50) and the reactor and steam-plant hardware."
+    },
+    {
+      "tech": "Electric Vehicles",
+      "supply_chain": "Upstream",
+      "sub_sector": "Manganese Ores & Concentrates",
+      "hs6": "260200",
+      "moved_in": false,
+      "value_usd_bn": 6.840165,
+      "share_of_basket_code_level": 0.320924,
+      "reason": "a battery mineral shared with Batteries Upstream (the code counts fully in both cells)."
+    },
+    {
+      "tech": "Electric Vehicles",
+      "supply_chain": "Upstream",
+      "sub_sector": "Lithium Minerals (Spodumene)",
+      "hs6": "253090",
+      "moved_in": false,
+      "value_usd_bn": 6.528723,
+      "share_of_basket_code_level": 0.306312,
+      "reason": "Electric Vehicles Upstream is the battery minerals and the magnet rare earths of the traction motor. The battery minerals are Batteries Upstream's ores and concentrates, shared with that cell (each code counts fully in both, as the cells and packs both Midstreams hold); the recycling codes stay in Batteries only. Refined chemicals and intermediates stay in Batteries Midstream, so lithium carbonate (Chile), nickel matte and mixed hydroxide (Indonesia) and cobalt hydroxide (DR Congo) are not in this cell, and copper is in Electric Grid Upstream only."
+    },
+    {
+      "tech": "Electric Vehicles",
+      "supply_chain": "Upstream",
+      "sub_sector": "Nickel Ores & Concentrates",
+      "hs6": "260400",
+      "moved_in": false,
+      "value_usd_bn": 4.374586,
+      "share_of_basket_code_level": 0.205245,
+      "reason": "a battery mineral shared with Batteries Upstream (the code counts fully in both cells)."
+    },
+    {
+      "tech": "Solar",
+      "supply_chain": "Upstream",
+      "sub_sector": "Silicon Metal",
+      "hs6": "280469",
+      "moved_in": false,
+      "value_usd_bn": 3.75297,
+      "share_of_basket_code_level": 1,
+      "reason": "silicon with less than 99.99% Si, i.e. metallurgical-grade silicon metal, the feedstock of polysilicon (2804.61, Solar Midstream)."
+    },
+    {
+      "tech": "Electric Vehicles",
+      "supply_chain": "Upstream",
+      "sub_sector": "Rare-Earth Compounds",
+      "hs6": "284690",
+      "moved_in": true,
+      "value_usd_bn": 2.356287,
+      "share_of_basket_code_level": 0.110551,
+      "reason": "compounds of rare-earth metals (oxides, carbonates, chlorides). The HS has no ore code for bastnaesite or ion-adsorption clays, so mined concentrates and mixed carbonates trade here (Myanmar, the United States, Laos) beside the separated oxides (China, Malaysia, Japan): the heading is the rare-earth raw material, Upstream as copper cathode is in Electric Grid Upstream, and Midstream starts at the permanent magnet (8505.11). Cerium compounds (2846.10: polishing powders and catalysts, not magnet rare earths) are left out."
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Upstream",
+      "sub_sector": "Rare-Earth Compounds",
+      "hs6": "284690",
+      "moved_in": true,
+      "value_usd_bn": 2.356287,
+      "share_of_basket_code_level": 0.779637,
+      "reason": "compounds of rare-earth metals (oxides, carbonates, chlorides). The HS has no ore code for bastnaesite or ion-adsorption clays, so mined concentrates and mixed carbonates trade here (Myanmar, the United States, Laos) beside the separated oxides (China, Malaysia, Japan): the heading is the rare-earth raw material, Upstream as copper cathode is in Electric Grid Upstream, and Midstream starts at the permanent magnet (8505.11). Cerium compounds (2846.10: polishing powders and catalysts, not magnet rare earths) are left out."
+    },
+    {
+      "tech": "Semiconductors",
+      "supply_chain": "Upstream",
+      "sub_sector": "Gallium, Germanium & Indium",
+      "hs6": "811292",
+      "moved_in": true,
+      "value_usd_bn": 1.063089,
+      "share_of_basket_code_level": 1,
+      "reason": "unwrought gallium, germanium and indium (with niobium and vanadium), their powders and scrap: the semiconductor industry's minor metals as primary metal, Upstream by the master's stage rule; Midstream keeps polysilicon, germanium oxides, wafers and the wrought articles (8112.99). Semiconductors is not a headline technology: the cell is descriptive and its HHI index is placed against the headline cells. Left out: silicon metal (2804.69, in Solar Upstream; electronics take a few percent of it), arsenic (2804.80: lead alloys lead its use), rare gases (2804.29: helium leads its trade), fluorspar (2529.21/22: hydrofluoric acid for refrigerants and aluminium) and high-purity quartz (no code of its own)."
+    },
+    {
+      "tech": "Nuclear",
+      "supply_chain": "Upstream",
+      "sub_sector": "Uranium Ores & Concentrates",
+      "hs6": "261210",
+      "moved_in": false,
+      "value_usd_bn": 0.569132,
+      "share_of_basket_code_level": 0.049902,
+      "reason": "uranium ores and concentrates, the mining stage of nuclear fuel; Namibia, Australia, Niger and Canada file their concentrate here, others under 2844.10. Thorium ores (2612.20) are left out of Nuclear: there is no commercial thorium fuel cycle, and the heading's trade is monazite sold for its rare earths (in Wind and Electric Vehicles Upstream). 11.0% of the Comtrade 2024 Nuclear Upstream basket (Atlas 2023: 10.7%)"
+    },
+    {
+      "tech": "Electric Vehicles",
+      "supply_chain": "Upstream",
+      "sub_sector": "Natural Graphite",
+      "hs6": "250410",
+      "moved_in": false,
+      "value_usd_bn": 0.551271,
+      "share_of_basket_code_level": 0.025864,
+      "reason": "natural graphite powder and flakes, the anode raw material; a battery mineral shared with Batteries Upstream (the code counts fully in both cells). 2.8% of the Comtrade 2024 Electric Vehicles Upstream basket (Atlas 2023: 1.7%)"
+    },
+    {
+      "tech": "Electric Vehicles",
+      "supply_chain": "Upstream",
+      "sub_sector": "Rare-Earth Metals",
+      "hs6": "280530",
+      "moved_in": true,
+      "value_usd_bn": 0.510993,
+      "share_of_basket_code_level": 0.023975,
+      "reason": "rare-earth metals, scandium and yttrium, reduced from the separated oxides as the feedstock of magnet alloys (China, Thailand, Viet Nam, Japan): the metallic form of the magnet rare earths, Upstream with their compounds."
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Upstream",
+      "sub_sector": "Rare-Earth Metals",
+      "hs6": "280530",
+      "moved_in": true,
+      "value_usd_bn": 0.510993,
+      "share_of_basket_code_level": 0.169075,
+      "reason": "rare-earth metals, scandium and yttrium, reduced from the separated oxides as the feedstock of magnet alloys (China, Thailand, Viet Nam, Japan): the metallic form of the magnet rare earths, Upstream with their compounds."
+    },
+    {
+      "tech": "Electric Vehicles",
+      "supply_chain": "Upstream",
+      "sub_sector": "Rare-Earth Ores (Monazite)",
+      "hs6": "261220",
+      "moved_in": false,
+      "value_usd_bn": 0.155283,
+      "share_of_basket_code_level": 0.007286,
+      "reason": "thorium ores and concentrates, the HS heading of monazite, a rare-earth phosphate ore from heavy-mineral sands (Nigeria, Thailand, Madagascar) sold to separators for its neodymium and praseodymium; its thorium has no commercial use, so the code is not in Nuclear. 0.2% of the Comtrade 2024 Electric Vehicles Upstream basket (Atlas 2023: 0.5%)"
+    },
+    {
+      "tech": "Wind",
+      "supply_chain": "Upstream",
+      "sub_sector": "Rare-Earth Ores (Monazite)",
+      "hs6": "261220",
+      "moved_in": false,
+      "value_usd_bn": 0.155283,
+      "share_of_basket_code_level": 0.051379,
+      "reason": "thorium ores and concentrates, the HS heading of monazite, a rare-earth phosphate ore from heavy-mineral sands (Nigeria, Thailand, Madagascar) sold to separators for its neodymium and praseodymium; its thorium has no commercial use, so the code is not in Nuclear. 1.3% of the Comtrade 2024 Wind Upstream basket (Atlas 2023: 3.8%)"
+    },
+    {
+      "tech": "Electric Vehicles",
+      "supply_chain": "Upstream",
+      "sub_sector": "Cobalt Ores & Concentrates",
+      "hs6": "260500",
+      "moved_in": false,
+      "value_usd_bn": 0.039202,
+      "share_of_basket_code_level": 0.001839,
+      "reason": "a battery mineral shared with Batteries Upstream (the code counts fully in both cells). 0.1% of the Comtrade 2024 Electric Vehicles Upstream basket (Atlas 2023: 0.3%)"
+    },
+    {
+      "tech": "Semiconductors",
+      "supply_chain": "Upstream",
+      "sub_sector": "Gallium, Germanium & Indium",
+      "hs6": "811291",
+      "moved_in": false,
+      "value_usd_bn": 0,
+      "share_of_basket_code_level": 0,
+      "reason": "legacy HS92 8112.91 (other base metals n.e.s.: unwrought, waste and scrap, powders), renumbered 8112.92 in HS2002; the bridge lets the HS92 Atlas panel see the cell. An upper bound: the older heading also held thallium, hafnium and rhenium, which later revisions coded separately. Added with 8112.92 (user decision 2026-10-11)."
+    }
+  ],
+  "moved_out_detail": [
+    {
+      "tech": "Electric Vehicles",
+      "from_stage": "Midstream",
+      "hs6": "284690",
+      "value_usd_bn": 2.356287
+    },
+    {
+      "tech": "Electric Vehicles",
+      "from_stage": "Midstream",
+      "hs6": "280530",
+      "value_usd_bn": 0.510993
+    },
+    {
+      "tech": "Nuclear",
+      "from_stage": "Midstream",
+      "hs6": "284410",
+      "value_usd_bn": 10.835774
+    },
+    {
+      "tech": "Semiconductors",
+      "from_stage": "Midstream",
+      "hs6": "811292",
+      "value_usd_bn": 1.063089
+    },
+    {
+      "tech": "Wind",
+      "from_stage": "Midstream",
+      "hs6": "284690",
+      "value_usd_bn": 2.356287
+    },
+    {
+      "tech": "Wind",
+      "from_stage": "Midstream",
+      "hs6": "280530",
+      "value_usd_bn": 0.510993
+    }
+  ],
+  "source_coverage": {
+    "atlas_hs92": {
+      "product_list": "data/raw/hs92_product_year_6.csv (all years)",
+      "codes_unmatched": 54,
+      "unmatched_current_codes": 54,
+      "unmatched_legacy_codes": 0,
+      "current_codes_bridged": 25,
+      "current_codes_unbridged": 29,
+      "current_codes_unbridged_scored_baskets": 24,
+      "unbridged_codes": ["285390", "810520", "810530", "811269", "820713", "820719", "848610", "848620", "848690", "850171", "850172", "850180", "850231", "850239", "850760", "854231", "854232", "854233", "854239", "854913", "854914", "854919", "870124", "870240", "870340", "870350", "870360", "870370", "870460"],
+      "added_codes_in_hs92": ["250410", "253090", "260200", "260300", "260400", "260500", "260600", "261210", "261220", "280469", "280530", "281820", "284410", "284690", "740200", "740311", "760110", "760120", "811291"],
+      "by_cell": [
+        {
+          "tech": "Batteries",
+          "supply_chain": "Midstream",
+          "unmatched": 3,
+          "bridged_unmatched": 0,
+          "unbridged": 3
+        },
+        {
+          "tech": "Coal",
+          "supply_chain": "Midstream",
+          "unmatched": 2,
+          "bridged_unmatched": 2,
+          "unbridged": 0
+        },
+        {
+          "tech": "Electric Grid",
+          "supply_chain": "Midstream",
+          "unmatched": 7,
+          "bridged_unmatched": 7,
+          "unbridged": 0
+        },
+        {
+          "tech": "Electric Vehicles",
+          "supply_chain": "Midstream",
+          "unmatched": 11,
+          "bridged_unmatched": 3,
+          "unbridged": 8
+        },
+        {
+          "tech": "Gas",
+          "supply_chain": "Midstream",
+          "unmatched": 14,
+          "bridged_unmatched": 12,
+          "unbridged": 2
+        },
+        {
+          "tech": "Nuclear",
+          "supply_chain": "Midstream",
+          "unmatched": 2,
+          "bridged_unmatched": 2,
+          "unbridged": 0
+        },
+        {
+          "tech": "Oil",
+          "supply_chain": "Midstream",
+          "unmatched": 13,
+          "bridged_unmatched": 10,
+          "unbridged": 3
+        },
+        {
+          "tech": "Semiconductors",
+          "supply_chain": "Midstream",
+          "unmatched": 8,
+          "bridged_unmatched": 0,
+          "unbridged": 8
+        },
+        {
+          "tech": "Solar",
+          "supply_chain": "Midstream",
+          "unmatched": 9,
+          "bridged_unmatched": 3,
+          "unbridged": 6
+        },
+        {
+          "tech": "Wind",
+          "supply_chain": "Midstream",
+          "unmatched": 2,
+          "bridged_unmatched": 1,
+          "unbridged": 1
+        },
+        {
+          "tech": "Batteries",
+          "supply_chain": "Upstream",
+          "unmatched": 5,
+          "bridged_unmatched": 1,
+          "unbridged": 4
+        },
+        {
+          "tech": "Semiconductors",
+          "supply_chain": "Upstream",
+          "unmatched": 1,
+          "bridged_unmatched": 1,
+          "unbridged": 0
+        }
+      ]
+    },
+    "comtrade_energy_trade": {
+      "file": "data/raw/comtrade_energy_trade.csv (country-level trade themes; rebuilt from the dyad pull's World rows)",
+      "years": 2024,
+      "partners": "W00",
+      "export_reporters_by_year": {
+        "2024": 142
+      },
+      "reporters_by_year": {
+        "2024": 143
+      },
+      "codes_absent": 13,
+      "current_codes_absent": 0,
+      "current_codes_absent_list": [],
+      "legacy_codes_absent": 13,
+      "legacy_codes_present": ["440310", "854140", "870390", "871190"],
+      "codes_present_not_in_basket": 48
+    },
+    "comtrade_dyads": {
+      "file": "data/raw/comtrade_energy_dyads_all.csv (bilateral and network layers)",
+      "years": [2020, 2024],
+      "reporters": {
+        "2020": {
+          "reporters_any_flow": 168,
+          "reporters_imports": 168,
+          "reporters_exports": 168
+        },
+        "2024": {
+          "reporters_any_flow": 143,
+          "reporters_imports": 143,
+          "reporters_exports": 142
+        }
+      },
+      "codes_absent": 13,
+      "current_codes_absent": 0,
+      "current_codes_absent_list": [],
+      "legacy_codes_absent": 13,
+      "legacy_codes_present": ["440310", "854140", "870390", "871190"]
+    }
+  }
+}

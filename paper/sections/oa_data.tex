@@ -1,0 +1,132 @@
+% Online Appendix to Section 3 (sec:data). Specification: scripts/utils/raw_inputs.R
+% (resolve_versioned_raw_input), config/raw_inputs_manifest.yml, data/raw/raw_inputs_resolved.yml,
+% R/utils/country.R, R/utils/eia_intl.R, scripts/98_pull_comtrade_energy_dyads.R,
+% scripts/40_build_index_vintages.R, docs/methodology.md. Final rerun of 12 October 2026.
+\section{Data: releases, harmonisation and years}\label{oa:data}
+
+\paragraph{The release rule.} Inputs that are published in successive releases are staged under
+a file-name pattern, and the run selects one release by rule rather than by hand. Let $F_P$ be the
+staged files matching the pattern of input $P$, $k(f)$ the vintage key parsed from a file's name
+(a date or a year), $m(f)$ its modification time and $R(f)$ the number of distinct reporters in a
+tabular extract. The release used is
+\begin{equation}\label{eq:data_resolve}
+  f^{*}_{P}=\operatorname*{lex\,max}_{f\in F_P:\ R(f)\ge\underline R_P}\ \bigl(k(f),\,m(f)\bigr),
+\end{equation}
+the newest declared vintage, with the modification time breaking ties and ordering unversioned
+names, among the files that meet the coverage floor $\underline R_P$. The floor is 50 reporters for
+the Comtrade critical-minerals extracts and absent elsewhere. Comtrade publishes a year's data as
+reporters file, so the newest file can be a stub: the 2025 critical-minerals extracts have three
+reporters each and are skipped in favour of the 2024 extracts (130 import, 128 export and 130
+total-export reporters). Every run writes the releases it resolved, with their reporter counts, to
+a vintage stamp (\texttt{data/raw/raw\_inputs\_resolved.yml}); Appendix~\ref{app:sources} reports
+them. Inputs that are not pattern-resolved (the Comtrade dyads, the Red Book and USGS tables, the
+EIA bulk file, CM-FDI, the ideal points and the project-authored lists) are single staged files
+whose access dates are recorded in the input manifest.
+
+\paragraph{Harmonisation of economies.} Every source is put on one canonical name per economy
+before anything is ranked: the World Development Indicators name of the economy's ISO3 code,
+matched through the \texttt{countrycode} package and a curated table of spellings. Taiwan, which the
+World Bank's country table does not list, is added under its own code, including to the rosters of
+the trade themes; Kosovo is carried as XKX. World, regional, income-group and residual rows
+(``Other Asia Pacific'', ``Rest of world'') and historical entities are dropped from every theme
+table, so that no aggregate is imputed or averaged as if it were an economy; theme builders also
+remove aggregates from their comparison sets before ranking, while keeping them in world
+denominators where the source defines the world total. Keys that two spellings of one economy
+share are collapsed, with a warning if both carry different non-missing values. Sovereignty, which
+the rankability rule uses, follows the Correlates of War state-system list \citep{cow2024state}:
+195 states in 2024, the 193 UN members plus Kosovo and Taiwan.
+
+\paragraph{Fossil production from EIA.} The Statistical Review lists fewer producers than consumers
+and counts the rest in regional ``Other'' residuals. Where it has no production row for an economy
+and fuel, the value is taken from the EIA International Energy Statistics \citep{eia2026international}
+(bulk file of 3 October 2026) in the Review's units: oil as crude oil including lease condensate
+plus natural-gas plant liquids, in thousand barrels a day; gas as dry gas in billion cubic metres
+times 0.036 EJ; coal as terajoules (gross calorific value) times $0.95\times10^{-6}$ EJ. On economies
+both sources report, the median ratio of the Review's value to the converted EIA value is 1.006 to
+1.011 for oil, 0.97 to 0.99 for gas and 0.99 to 1.05 for coal. An EIA value is not used when EIA's
+consumption of the fuel covers less than a tenth of the Review's, since the Review then counts under
+the fuel something EIA excludes; in 2015--2025 this affects only Estonian coal (oil shale), which
+stays missing. Where EIA's latest production year precedes the Review's consumption year (2025 gas
+and coal from EIA 2024), self-sufficiency is computed with consumption of the same year and carried
+forward. EIA values are observations, not imputations.
+
+\paragraph{Reserves and uranium.} The USGS Mineral Commodity Summaries 2026 data release
+\citep{usgs2026mcs} gives country reserves at end-2025; the report's version 1.3 erratum puts
+Brazil's rare-earth reserves at 11~Mt (the Statistical Review's mineral sheet, an older USGS copy,
+gives 21~Mt). A reported zero scores 0; a holder listed without a figure (NA, W or s) is missing in
+its mineral variable, scored 0 and counted as imputed, and counts as zero in the technology
+roll-ups, so world shares are measured on quantified holdings. ``Other countries'' and world-total
+rows are never holders. The Red Book \citep{oecdnea2026uranium} supplies identified recoverable
+resources (reasonably assured plus inferred) below USD 260/kgU at 1 January 2025 (Table 1.2a of
+\emph{Uranium 2026}) and mine production (Table 1.18; \emph{Uranium 2026} for 2022--2024, earlier
+editions for 2019--2021), completed with observed zeros over the economies of the Statistical
+Review and the World Development Indicators.
+
+\paragraph{Bilateral trade.} The all-reporter dyad file was pulled on 7--8 October 2026 for the
+pre-review product list, with supplements on 9 October (the copper and aluminium inputs of the grid)
+and 12 October (the new upstream codes). Comtrade's partner S19 (``Other Asia, n.e.s.'') is mapped
+to Taiwan. Liberia, Mali and S\~ao Tom\'e and Pr\'incipe filed 2024 data after the pull and enter
+through their partners' declarations. The country-level energy-trade file is derived from the
+pull's World rows; an earlier direct extract, with 129--130 reporters, lacked 60 basket codes and
+Qatar's exports of liquefied natural gas. Critical-minerals exports of non-reporting economies are
+measured from partners' imports, moved from CIF to FOB with an HS-chapter ratio estimated on
+importers that file both values.
+
+\paragraph{Regional and staged inputs.} The IEA's 2035 announced manufacturing-capacity shares and
+its electric-vehicle production and sales are regional for Europe, so EU members carry the EU's
+value; economies outside the IEA's named regions take its ``Rest of world'' values. ILOSTAT
+earnings are read from a copy staged on 30 September 2026, since the ILO's interface returns empty
+responses to scripted requests. In the IMF lending-rate series a zero reading in a lending-type
+rate is a placeholder and is dropped with the averages that include it: New Zealand's lending series
+carries only zeros after January 2017, so its last genuine reading (4.76 percent) is used. Commodity
+prices are in the units of the IMF series metadata.
+
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{Years of the inputs in the final run}\label{tab:oa_data_years}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{5.2cm} >{\raggedright\arraybackslash}X@{}}
+\toprule
+Source & Years used\\
+\midrule
+EI Statistical Review 2026 & Consumption and production to 2025 (growth 2020--2025); fossil
+  reserves end-2020\\
+EIA International Energy Statistics & Oil production to 2025; gas and coal to 2024\\
+USGS Mineral Commodity Summaries 2026 & Reserves end-2025\\
+Red Book (Uranium 2026) & Resources at 1 January 2025; production 2019--2024\\
+IEA Critical Minerals Dataset 2026 & Base year and 2035 (Stated Policies)\\
+IEA ETP 2024 capacity; IEA EV regional data & Announced capacity to 2035; EV production and sales
+  2024\\
+UN Comtrade dyads; energy-trade file & 2020 and 2024; 2024\\
+Comtrade critical-minerals extracts & 2024 (2025 below the floor)\\
+Atlas of Economic Complexity (HS92) & 2023\\
+IEA WEO 2025; Global EV Outlook 2026 & 2024 and 2035; 2022, 2025 and 2035\\
+BNEF New Energy Outlook 2024; Supply Chains 2025 & 2024 and 2035; 2025\\
+IEA Clean Energy Technology Guide 2026 & Readiness 2020--2025\\
+BNEF LCOE; IEA relative costs & 2025 and 2050; 2023\\
+ILOSTAT; IMF lending rates, PPI, PCPS & Latest within ten years; to October, September and
+  December 2025\\
+Clean Investment Monitor & Investment 2018--2025; capacity 2025\\
+IEA PAMS; Climate Action Tracker & Export of 22 January 2026; ratings of May 2022--June 2025\\
+IMF Direct Investment Positions; CM-FDI & Mean of 2020--2024; edition of 5 October 2026\\
+WDI; Doing Business; OECD CRS & 2022--2024 (GDP to 2025); 2019; 2013--2024\\
+UNGA ideal points (Dataverse V39) & Sessions 74--78 (2019--2023)\\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item \textit{Notes:} Each component enters at the latest year its source reports
+(equation~\eqref{eq:latest_year}). Appendix~\ref{app:sources} gives the releases.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\paragraph{Index vintages.} The headline indices are a single snapshot. A separate build re-cuts
+each raw input to a requested year and reruns the same theme and pillar builders, so that the
+pillars can be compared across years (Section~\ref{sec:robustness}). Only sources with a genuine
+time dimension move: the Statistical Review, the Atlas trade data, IMF prices and rates, ILOSTAT
+earnings and Clean Investment Monitor investment. Resource potential, reserves, the IEA critical
+minerals release, BloombergNEF demand and costs, overcapacity and technology readiness are
+snapshots or projections and are held fixed; a 2025 vintage uses Atlas 2023. The build records,
+for each vintage, the share of each pillar's scored weight that re-derives and the year to which
+each source resolved.

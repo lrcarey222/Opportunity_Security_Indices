@@ -1,0 +1,394 @@
+% Results for Section 7 (the opportunity-security space), to be pasted into
+% \subsection{Results}\label{subsec:joint_results} of sections/07_joint_space.tex.
+% Generated numbers: paper/results/joint.json; figures and table: scripts/paper/fig_joint.R
+% (final rerun of 2026-10-12: cells rankable on both pillars only, two-tier coalition of 57
+% members, Strategic Index with the IEA PAMS-required policy basis and the endowment screen on
+% the allied picks, upstream trade baskets for EV, Wind, Nuclear, Solar and the grid).
+% Figures: joint_scatter, joint_corr, joint_quadrants, joint_members. Table: tables/joint_stage.tex.
+% Label mapping: fig:joint_scatter and fig:joint_quadrants REPLACE the two placeholder figure
+% environments of Section 7 (same labels); fig:joint_corr, fig:joint_members and tab:joint_stage
+% are new. The five \tbd paragraphs of the Section 7 Results subsection are superseded by this
+% fragment.
+
+\paragraph{Sample.} Both pillars score 6{,}232 country cells in the eleven headline technologies,
+for 219 economies. Cross-country comparisons use only the cells that are rankable on both pillars
+(Section~\ref{subsec:norm_diagnostics}): the economy is sovereign and at most half of the
+pillar's weight in the cell is imputed. This leaves 3{,}157 cells for 175 economies. Of the
+3{,}075 cells set aside, 607 belong to territories and 2{,}468 to sovereign economies whose
+imputed weight share exceeds one half in Energy Security only (721), in Economic Opportunity only
+(1{,}006) or in both (741). The cells fall in 30 of the 33 technology-stage pairs; Energy
+Security does not score downstream grid or upstream and midstream geothermal, and neither
+pillar's diagnostics flag any remaining pair as constant or unscored. The number of rankable
+economies per pair ranges from 40 in midstream green hydrogen to 175 in upstream nuclear. Both
+pillars are built from ranks within technology-stage pairs, but their levels differ
+systematically across pairs: technology-stage fixed effects account for 41.9 per cent of the
+variance of $\ES_{its}$ and 53.4 per cent of the variance of $\EO_{its}$ in this sample. All
+statements below are therefore made within pairs unless they concern a country's own sectors.
+Correlations across economies are Spearman rank correlations within a pair, and the four regions
+of the space are defined by the within-pair medians of the two pillars over the rankable cells, a
+cell at the median counting as low. All 57 members of the coalition $\Coalition$ of
+Section~\ref{sec:coalition}, 31 in the core and 26 partners, have rankable cells: 1{,}500 in all,
+903 for the core and 597 for the partners. The six European Union members that enter the allied
+network only through the EU node are not counted as members here.
+
+\paragraph{Security and opportunity move together, increasingly so along the chain.} Across the
+30 pairs, the median within-pair Spearman correlation between $\ES_{its}$ and $\EO_{its}$ is
+0.59, with an interquartile range of 0.45 to 0.77 (Table~\ref{tab:joint_stage}). It exceeds 0.5
+in 19 pairs and is negative in one, midstream green hydrogen ($-0.21$). The highest value is
+0.94, in midstream electric vehicles. A Spearman correlation computed by pooling all cells on
+pillar levels, 0.48, understates the within-pair association (0.57 when the within-pair
+percentile ranks are pooled), because it mixes the association within pairs with differences in
+pillar levels across pairs. The dominant pattern is a gradient by stage, visible in the three
+panels of Figure~\ref{fig:joint_scatter}: the median correlation is 0.44 upstream, 0.58
+midstream and 0.78 downstream. The gradient also appears within most technologies, so it is not
+only a matter of which technologies are scored at which stage: for wind the correlation is 0.37
+upstream, 0.72 midstream and 0.89 downstream, for nuclear 0.16, 0.49 and 0.89, for coal 0.35,
+0.56 and 0.79, for gas 0.40, 0.54 and 0.78, and for oil 0.50, 0.55 and 0.75. Three technologies
+depart from it. In solar (0.48, 0.78 and 0.58) and electric vehicles (0.60, 0.94 and 0.80) the
+correlation peaks midstream. In green hydrogen the midstream correlation ($-0.21$) lies below the
+upstream one (0.03), in a pair with only 40 rankable economies whose security score takes few
+distinct values. In batteries the correlation falls along the chain, from 0.63 upstream to 0.61
+midstream and 0.40 downstream. Across technologies, the median over a technology's pairs ranges
+from 0.03 for green hydrogen to 0.80 for electric vehicles.
+
+Upstream, the correlation is positive in all ten pairs, and its size follows what the two
+pillars' trade measures have in common. The upstream trade baskets of the final data give the
+opportunity pillar a Trade category in every upstream pair except green hydrogen. In the five
+mineral pairs with a trade basket on both sides (batteries 0.63, grid 0.60, electric vehicles
+0.60, solar 0.48 and wind 0.37), the opportunity side's Trade score and the security side's Minerals Trade score
+measure exports of overlapping materials (the grid basket, for instance, consists of copper ores,
+blister copper, anodes and cathodes, bauxite, alumina and unwrought aluminium), and their
+within-pair rank correlations lie between 0.70 and 0.85. The fossil-fuel pairs follow, oil
+(0.50), gas (0.40) and coal (0.35). The two lowest are nuclear (0.16), in which half of the
+rankable economies share one value of $\ES_{its}$ (see below), and green hydrogen (0.03), the
+only upstream pair without a trade basket: there security rests on the platinum-group and other
+mineral endowments while opportunity draws on cost, demand, readiness and production components
+that do not depend on them.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{joint_scatter}
+  \caption{The opportunity-security space. Each point is a country cell $(i,t,s)$ that is
+  rankable on both pillars (a sovereign economy with at most half of the pillar's weight
+  imputed), plotted at its percentile rank across the rankable economies of its technology-stage
+  pair on $\ES_{its}$ (horizontal) and on $\EO_{its}$ (vertical); ranks are mid-ranks scaled to
+  the unit interval. Panels are supply-chain stages. Coalition members
+  (Section~\ref{sec:coalition}) are shown in violet (the 31 core members) and pink (the 26
+  partners), other economies in gray; the six EU members that belong only to the network's EU
+  node count as other economies. The solid lines at rank 0.5 mark the within-pair medians and
+  divide the four regions: opportunity without security (top left), leaders (top right),
+  laggards (bottom left) and security without opportunity (bottom right). The percentage above or
+  below each corner of a panel is the share of the stage's cells in that region, a cell at the
+  median counting as low; the upstream panel names the regions, with ``opportunity only'' and
+  ``security only'' standing for the two off-diagonal ones. Panel headers give the number of
+  pairs, the median across them of the within-pair Spearman correlation between the two pillars,
+  and the same median computed from the non-shared parts of the pillars, $B^{\ES}$ and $B^{\EO}$
+  of equation~\eqref{eq:joint_cov} (renormalised); downstream the latter is defined in only three
+  pairs, because in the other seven every component of $\ES_{its}$ is shared. Labels mark, in each
+  stage, the two coalition cells with the largest excess of the opportunity rank over the security
+  rank. Columns of points arise where many economies share one value of a pillar: the densest
+  column in the upstream panel, just left of the security median, is upstream nuclear, in which 87 of the 175
+  rankable economies, all without identified uranium resources or mine production, share the
+  value 0.172 of $\ES_{its}$, which is also the pair's median. A tied cell is plotted at the mean
+  rank of its tie group, so 29 cells (0.9 per cent), tied at the median of $\ES_{its}$ in
+  downstream green hydrogen and batteries, appear at security ranks between 0.53 and 0.55, just
+  to the right of the line, although they are counted on its low side. Sample: 3{,}157 cells, 175
+  economies, 30 technology-stage pairs (Table~\ref{tab:joint_stage}). Source:
+  \texttt{energy\_security\_index} and \texttt{economic\_opportunity\_index} in
+  \texttt{index\_outputs.rds}; \texttt{scripts/paper/fig\_joint.R}.}
+  \label{fig:joint_scatter}
+\end{figure}
+
+\paragraph{How much of the association is mechanical.} The stage gradient follows from what the
+two pillars share (Section~\ref{subsec:eo_shared}, Table~\ref{tab:shared_signals}). We classify a
+component as shared when the other pillar contains a component of the same category whose
+observed values are identical. On this definition every component of Consumption, Energy Access,
+Investment and Energy Prices is shared, as are two of the three Energy Security and two of the
+five Economic Opportunity components of Trade (the world market share and the concentration of
+world exports) and five of the six components of Foreign Dependency in each pillar; no Production
+component is shared. Shared components carry on average 61 per cent of the effective weight of
+$\ES_{its}$ but only 28 per cent of that of $\EO_{its}$, and their share in $\ES$ rises along the
+chain, from 25 per cent upstream to 62 per cent midstream and 91 per cent downstream. In seven of
+the ten downstream pairs (batteries, coal, electric vehicles, gas, green hydrogen, nuclear and
+oil) every component of $\ES_{its}$ is a deployment or demand signal that also enters
+$\EO_{its}$ with identical values: the security score in these pairs is a reweighting of part of
+the opportunity score, which is why downstream green hydrogen (0.92) and nuclear (0.89) show some
+of the highest correlations of all pairs. Recomputing both pillars from their non-shared
+components only, which is possible in the remaining 23 pairs, lowers the median within-pair
+correlation from 0.55 to 0.30 (interquartile range 0.20 to 0.40), a reduction of 45 per cent. In
+the seven fully shared downstream pairs the co-movement is mechanical by construction.
+
+The decomposition of equation~\eqref{eq:joint_cov}, applied to the pillar levels within each pair
+and pooled over pairs, gives the same picture in cardinal terms (Table~\ref{tab:joint_stage}).
+The level covariance is positive in all 30 pairs, including midstream green hydrogen, whose rank
+correlation is negative. The shared term $\operatorname{Cov}(A^{\ES},A^{\EO})$ accounts for 61
+per cent of the pooled within-pair covariance of $\ES_{its}$ and $\EO_{its}$, the two cross terms
+for 24 per cent and the covariance of the non-shared parts $\operatorname{Cov}(B^{\ES},B^{\EO})$
+for 16 per cent. The shared term's share is 7 per cent upstream, 42 per cent midstream and 87 per
+cent downstream, where the non-shared term contributes nothing; upstream the non-shared term
+carries 58 per cent. The pooled shares weight each pair by the size of its covariance, which is
+largest in the downstream pairs; in the median pair the shared term accounts for 19 per cent. The
+cross terms are not definitional: they measure how the inputs common to both pillars co-move with
+the other pillar's own inputs. They do, however, run through inputs that the two pillars share.
+
+What remains once the shared inputs are removed runs mainly through trade. The median non-shared
+rank correlation is 0.37 midstream and 0.30 upstream. The pillars' distinctive trade components,
+net imports relative to GDP and, upstream, the minerals-trade measures on the security side, and
+revealed comparative advantage, export size and feasibility on the opportunity side, all reward
+economies that export the stage's basket; removing the opportunity side's trade components as
+well lowers the midstream median to 0.15 and the upstream median to 0.02. This link is not
+definitional, since the components are different variables, but it reflects the weight that both
+pillars give to export performance, and the upstream baskets of the final data have extended it
+to the mineral pairs. In the three downstream pairs in which the non-shared correlation can be
+computed (geothermal, solar and wind) it is $-0.04$. Net of shared inputs, security and
+opportunity are close to unrelated across economies except where a country's exports reveal both.
+
+\input{tables/joint_stage}
+
+\paragraph{Which categories carry the association.} Figure~\ref{fig:joint_corr} reports the
+average within-pair Spearman correlation between every pair of categories that vary within
+pairs. The cross-pillar block (bottom left) is the informative part. The three categories that
+enter both pillars with identical components, Consumption, Energy Access and Investment, have a
+correlation of one with their counterparts. Trade, which shares two components, has 0.62;
+Production, built from different sources and transformations of the same physical quantity, has
+0.27; and Foreign Dependency, whose shared components are missing for many economies and imputed
+under different rules in the two pillars, has 0.04. Between categories with different names the
+median cross-pillar correlation is 0.14 over the 47 category pairs that co-occur in at least one
+technology-stage pair with 20 or more rankable economies; the largest is 0.76, between the
+security pillar's Minerals Trade and the opportunity pillar's Trade in the five upstream mineral
+pairs discussed above. The two categories that are distinctive to opportunity, Technology Demand
+and Cost Competitiveness, are nearly orthogonal to every category of security: their absolute
+correlations are at most 0.12 and 0.17, the most negative being $-0.17$, between Cost
+Competitiveness and Reserves. The matrix also exposes a redundancy within $\ES$. Across the
+seven upstream pairs in which both are scored, the average rank correlation between Production
+and Reserves is 0.79. In the six pairs built on critical minerals (batteries, grid, electric
+vehicles, green hydrogen, solar and wind) it ranges from 0.72 to 0.91: both are zero-anchored
+indices over the technology's mineral basket (Sections~\ref{subsec:es_production}
+and~\ref{subsec:es_reserves}), between 62 and 85 per cent of the rankable economies record zero
+on both and tie at the bottom, and the ranks of the holders largely coincide, so that upstream
+the security pillar counts mineral endowment twice over much of its range. Upstream nuclear,
+scored on the identified resources and the mine production of the OECD-NEA and IAEA Red Book, has
+the lowest value (0.61), because many holders of uranium resources do not mine them. Energy
+Prices in both pillars and Technological Readiness in $\EO$ do not vary across economies within
+any pair and so cannot affect within-pair rankings; they are omitted from the figure.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{joint_corr}
+  \caption{Correlation among the categories of the two pillars. Each tile is the average, over
+  the technology-stage pairs in which both categories are present and vary across economies (at
+  least 20 rankable economies), of the Spearman correlation between the two category scores
+  across economies within a pair; the number of pairs behind a tile ranges from two to 22.
+  Categories are labelled by pillar; the black lines separate the block of cross-pillar
+  correlations (bottom left) from the two within-pillar blocks. Numbers are printed for
+  correlations of at least 0.5 in absolute value and, in bold, for categories that enter both
+  pillars under the same name. A dash marks category pairs that never occur together in a
+  technology-stage pair. Energy Prices (both pillars) and Technological Readiness ($\EO$) are
+  constant within every pair and are omitted. Diverging scale centred at zero. Sample: the 3{,}157
+  rankable cells of Figure~\ref{fig:joint_scatter}. Source: category scores in
+  \texttt{index\_outputs.rds}; \texttt{scripts/paper/fig\_joint.R}.}
+  \label{fig:joint_corr}
+\end{figure}
+
+\paragraph{Regions of the space.} Pooling all pairs, 15.1 per cent of cells combine above-median
+opportunity with security at or below the median, 34.6 per cent are leaders on both, 13.2 per
+cent combine above-median security with opportunity at or below the median, and 37.1 per cent
+are low on both. Laggards outnumber leaders because cells tied at a median are counted as low,
+and ties are common where a pillar rests on a zero-anchored component; counting tied cells as
+high instead gives 12.6, 37.7, 15.3 and 34.4 per cent, and leaders then outnumber laggards. The
+shares are largely the rank correlation restated. Under independence each region would hold a
+quarter of the cells; a bivariate normal copula with each pair's observed Spearman correlation
+implies an average off-diagonal share of 14.6 per cent, against 14.2 per cent observed, and
+across pairs the observed share of opportunity without security tracks the implied one closely
+(correlation 0.90). The off-diagonal regions are accordingly largest upstream, where the pillars
+are least related (19.5 and 17.2 per cent), and smallest downstream (12.4 and 10.2 per cent).
+Across technologies the share of cells with opportunity but not security ranges from 9.5 per
+cent in electric vehicles to 20.2 per cent in green hydrogen and nuclear.
+
+Among pairs (Figure~\ref{fig:joint_quadrants}), the share is highest in midstream green hydrogen
+(45 per cent) and upstream nuclear (28 per cent), and in both it is largely an artefact of ties.
+In midstream green hydrogen, 34 of the 40 rankable economies share the lowest value of
+$\ES_{its}$, which is therefore also the median. In upstream nuclear, 87 of the 175 rankable
+economies share the value 0.172, Energy Prices plus an imputed Trade category; all of them have
+neither identified uranium resources nor mine production, and the common value is the pair's
+median. A cell is thus above the security median only if the economy holds or mines uranium or
+has an observed uranium trade that scores above the imputed value, and 37 of the 49 cells in the
+region of opportunity without security are economies at the common value whose opportunity is
+above the median. Counting tied cells as high empties the region in midstream green hydrogen and
+lowers it to 6.9 per cent in upstream nuclear, and excluding the two pairs lowers the pooled
+share from 15.1 to 14.0 per cent. The next pairs, upstream green hydrogen (24 per cent),
+upstream coal (22 per cent) and downstream batteries (21 per cent), have few or no ties at the
+security median, and their shares are near what the normal copula implies for their
+correlations.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{joint_quadrants}
+  \caption{Regions of the opportunity-security space, by technology and stage. Each bar divides
+  the rankable economies of one technology-stage pair among the four regions of
+  Figure~\ref{fig:joint_scatter}, which are defined by the within-pair medians of $\ES_{its}$ and
+  $\EO_{its}$ over the rankable economies, a cell at the median counting as low. Panels are
+  stages; within a panel, pairs are ordered by the share with opportunity but not security. The
+  number to the right of a bar is the pair's count of rankable economies. Orange and blue are the
+  colours of the Economic Opportunity and Energy Security pillars and mark the regions in which
+  only that pillar is above its median; the darker gray marks leaders (both above) and the
+  lighter gray laggards (neither). Ties at the median of $\ES_{its}$, which count as low, make the
+  two longest orange segments: in midstream green hydrogen 34 of 40 economies share the lowest
+  value of $\ES_{its}$, and in upstream nuclear 87 of 175 economies without identified uranium
+  resources or mine production share the median value. The three pairs that Energy Security does
+  not score (downstream grid, upstream and midstream geothermal) are absent. Source: as
+  Figure~\ref{fig:joint_scatter}.}
+  \label{fig:joint_quadrants}
+\end{figure}
+
+\paragraph{The posture of the coalition.} The coalition members sit mostly in the leaders'
+region: 49.3 per cent of their 1{,}500 rankable cells are above both medians, 14.3 per cent have
+security without opportunity, 23.6 per cent are low on both, and 12.8 per cent have opportunity
+without security, below the 15.1 per cent of all rankable cells (Figure~\ref{fig:joint_members}).
+The two tiers differ. The core members have 55.1 per cent of their cells among the leaders and
+16.4 per cent with opportunity but not security, slightly above the share among all rankable
+cells. The partners, many of which enter the coalition as major suppliers of upstream or
+midstream inputs, have 40.4 per cent among the leaders, 21.4 per cent with security but not
+opportunity and only 7.4 per cent with opportunity but not security. The concentration among
+leaders is partly mechanical. Several components of both pillars rise with the scale of an
+economy, among them world market shares, export size, investment and installed capacity, and the
+core consists of economies with GDP of at least USD 100 billion, which therefore tend to sit above
+both medians; the United States is a leader in 29 of its 30 rankable pairs. The median core
+member has 16.7 per cent of its rankable pairs in the opportunity-without-security region, the
+median partner 6.9 per cent.
+
+The members with the most such pairs are European core economies whose security scores, which
+reward domestic resources and production and low import exposure, are below the median in many
+pairs while their opportunity scores are above it: Austria, Portugal and Luxembourg with 11 of 30
+pairs each, Ireland with 10 and Croatia with 9. Their counts fall only to 9, 10, 10, 8 and 7 when
+the two pairs dominated by ties are left out, so they do not rest on the tie artefact. Among
+partners the largest counts are five, for Thailand and the Philippines (of 29 pairs each),
+followed by four for Malaysia (of 29), Viet Nam and Qatar (of 26 each). Thirteen members have no
+pair in the region, five in the core (Canada, Japan, the United Kingdom, Australia and Ukraine)
+and eight partners (T\"urkiye, Brazil, Argentina, the Democratic Republic of the Congo, the
+Dominican Republic, Gabon, Namibia and Ghana). The members with the most pairs of security
+without opportunity are Brazil (19 of 29), Peru (17 of 28) and T\"urkiye (16 of 29): resource
+holders whose reserves and production secure supply while their opportunity scores are below the
+median. Brazil, which qualifies as a partner on its share of world mineral reserves alone
+(Section~\ref{sec:coalition}), is the clearest case. Across members, the pairs most often in the
+opportunity-without-security region are upstream gas, upstream oil and midstream green hydrogen
+(14 members each), upstream coal (13), downstream solar (12), upstream nuclear (11) and upstream
+grid (10). Two of these, upstream nuclear and midstream green hydrogen, are the tie artefacts
+described above; without them the coalition's share in the region falls from 12.8 to 11.8 per
+cent. The number of rankable pairs differs across members, from 22 to 30 in the core (median 30)
+and from 9 to 29 among partners (median 27), so the shares of small partners such as Costa Rica,
+Gabon and Namibia (9 pairs each), Guatemala (10), the Dominican Republic and Ghana (11 each) rest
+on few cells.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{joint_members}
+  \caption{The coalition in the opportunity-security space. Each bar divides one coalition
+  member's rankable technology-stage pairs among the four regions of
+  Figure~\ref{fig:joint_scatter}, which are defined by the within-pair medians of $\ES_{its}$ and
+  $\EO_{its}$ over all rankable economies, a cell at the median counting as low. Left: the 31
+  core members; right: the 26 partners (Section~\ref{sec:coalition}). Members are ordered within
+  each tier by the share of their pairs with opportunity but not security; the fraction to the
+  right of a bar is the count of such pairs over the member's rankable pairs, which number from 9
+  to 30. The vertical line marks the share of all rankable cells in that region (15 per cent).
+  Colours as in Figure~\ref{fig:joint_quadrants}. Upstream nuclear and midstream green hydrogen,
+  in which many economies tie at the median of $\ES_{its}$, account for 25 of the 192 coalition
+  pairs in the orange segments. Source: as Figure~\ref{fig:joint_scatter}.}
+  \label{fig:joint_members}
+\end{figure}
+
+\paragraph{The within-country view.} The Strategic Index compares the sectors of one country, and
+by equation~\eqref{eq:joint_var} what matters there is the joint distribution of the pillar
+levels across those sectors. We compute it over the Strategic Index cells of each country. Of the
+174 countries with a Strategic Index, 7 have fewer than five such cells (six of them one) and
+are left out; the remaining 167 have between 5 and 30, with a median of 22, and 50 of them have
+fewer than ten. The Pearson correlation of $\EO_{its}$ and $\ES_{its}$ averages 0.46 (median
+0.48) and is positive for 164 of the 167 countries, ranging from $-0.56$ for the Maldives to 0.84
+for Iran; the Spearman correlation averages 0.47, and the correlation of $\EO_{its}$ with the need
+term $1-\ES_{its}$ is its negative (Spearman mean $-0.47$, from $-0.86$ for the Lao PDR to 0.70
+for the Maldives). None of the three countries with a negative correlation (Afghanistan, Bhutan
+and the Maldives) is a coalition member. Among the 57 coalition members the Pearson correlation
+averages 0.52, from 0.27 for New Zealand to 0.77 for Viet Nam. Security varies more than
+opportunity across a country's sectors (mean standard deviations of 0.15 and 0.07), and the
+covariance term of equation~\eqref{eq:joint_var} removes on average 36 per cent of
+$\operatorname{Var}_i(\EO)+\operatorname{Var}_i(\ES)$ from the variance of the gap; for coalition
+members the average is 42 per cent, from 16.5 per cent for Ghana to 66 per cent for India. The
+standard deviation of $\Delta_{its}$ across a country's sectors is accordingly 0.13 on average
+(from 0.068 for the Lao PDR to 0.26 for the Gambia), so that the pillar part of the index,
+$0.3\,\Delta_{its}$, varies with a standard deviation of about 0.04. This compression is not
+simply the differences between technology-stage pairs that are common to every country: the
+pairs' mean values of the two pillars are only weakly related across the 30 pairs (Pearson
+correlation 0.33), and after the pair means over all rankable economies are subtracted the
+within-country correlation rises to an average of 0.67 (median 0.73). Subtracting the pair means
+lowers the average standard deviation of $\Delta_{its}$ from 0.13 to 0.08, so part of the spread
+of the gap across a country's sectors is the gap between the pillars' pair means, which is the
+same for every country.
+
+\paragraph{The regions and the Strategic Index.} The Strategic Index of equation~\eqref{eq:si}
+adds $0.3\,\EO_{its}$ to $0.3\,(1-\ES_{its})$ and so rewards opportunity without security. Every
+one of its 3{,}154 cells, for 174 countries, lies in the sample of this section, since the index
+requires rankable values of both pillars. On average it does favour the region: the mean index is
+0.563 there, against 0.545 among laggards, 0.522 among leaders and 0.511 where security exceeds
+opportunity. A country's highest-ranked sector, over all stages and before any eligibility rule,
+lies in the region for 47 of the 174 countries (27.0 per cent; 15 of the 57 coalition members),
+whereas 15.2 per cent of all index cells do. Much of this is upstream nuclear, the top sector of
+62 countries, 43 of which share the common value of $\ES_{its}$ described above: that value gives
+them a large need term whichever side of the opportunity median they fall, and the median split
+places 23 of the 62 in the region and 30 among the laggards. The endowment screen of
+Section~\ref{subsec:si_allied}, which removes upstream extraction stages without a recorded
+resource base from the eligible set, leaves 169 countries with at least one cell it does not flag,
+and for 35 of them (20.7 per cent) the highest-ranked such cell lies in the region.
+
+The allied picks apply the screen and also confine the choice to upstream and midstream sectors
+other than geothermal and green hydrogen. All 57 members have one, 43 of them midstream. Eight
+lie in the region of opportunity without security: Austria, Belgium, Italy, the Netherlands,
+Romania and Viet Nam in midstream batteries, and Indonesia and Slovakia in midstream nuclear. Of
+the rest, 21 are among the leaders, 14 have security without opportunity and 14 are among the
+laggards. The eight are 14.0 per cent of the picks, against 6.7 per cent of the 646 eligible
+sectors of the same members, of which 61.0 per cent are leaders, so the picks lean towards the
+region without being confined to it. None of the eight upstream nuclear picks lies in the region:
+all eight members hold or mine uranium, three are leaders and five have security without
+opportunity. Four of the nine midstream nuclear picks come from small partners with few eligible
+sectors: Costa Rica, the Dominican Republic and Guatemala have four each, the midstream stages of
+nuclear, oil, gas and coal, and Namibia five, the same four and upstream nuclear, in which its
+uranium output gives it a high security score and so a small need. This is not an effect of a
+security floor. In midstream nuclear $\ES_{its}$ is built from the Trade category alone and is
+compressed around its median (quartiles 0.435, 0.482 and 0.530), so the four partners' security
+ranks of 0.50 to 0.71 place them at or above it (Costa Rica among the laggards, the other
+three with security without opportunity), and among the midstream candidates the technology
+weight $g_t$ of equation~\eqref{eq:si}, 0.999 for nuclear against 0.422 for gas, 0.024 for coal
+and zero for oil, favours nuclear. The index is thus not organised by the regions. It combines
+pillar levels, which carry the large differences across technology-stage pairs, with the stage
+and technology weights, whereas the regions are defined by positions within pairs: across a
+country's sectors the index has a median Spearman correlation of 0.63 with the level gap
+$\EO_{its}-\ES_{its}$ but of only 0.19 with the gap between the two within-pair percentile ranks.
+A country's sector ranking under the Strategic Index therefore reflects which technology-stage
+pairs have high opportunity and low security scores for everyone at least as much as where the
+country stands relative to other economies; Section~\ref{sec:strategic} discusses this property
+of the index.
+
+\paragraph{Caveats.} Five features of the construction qualify these results. First, percentile
+ranks discard distances, and the median split turns small differences near the median into
+differences of region; the shares should be read as descriptions of rank positions, not of
+magnitudes. Where many economies tie at a median, the convention that a tied cell counts as low
+decides the region of the whole tie group. This matters mainly upstream, through the common
+value of upstream nuclear: counting ties as high lowers the upstream share of opportunity
+without security from 19.5 to 15.5 per cent and the coalition's share from 12.8 to 10.8 per cent,
+and it leaves the ordering of the stages unchanged. Second, the regions are defined relative to
+the rankable economies of each pair, from 40 to 175 of them. The rankability rule removes
+territories and economies whose scores rest mostly on imputation, so the comparison set leans
+towards economies with good statistical coverage, and ``below the median'' means below the median
+of that set. Third, the share of the association that is mechanical is measured on ranks only in
+the 23 pairs in which both pillars retain a component of their own; in the other seven the
+question does not arise, because security there is a subset of opportunity. The covariance
+decomposition covers all 30 pairs but is a statement about levels, and its pooled shares are
+dominated by the pairs with the largest covariances. Fourth, the within-country statistics are
+computed over at most 30 sectors whose pillar values are weighted means over category sets that
+differ across pairs (Section~\ref{subsec:norm_pillar}), so they compare bundles that are not
+identical, and for the 50 countries with fewer than ten Strategic Index cells they rest on few
+observations. Fifth, the endowment screen is a rule for the allied picks, not part of either
+pillar or of the index; the regions and correlations above are computed without it. More
+generally, the overlap of inputs is the familiar difficulty of composite indices that share
+components, whose implied trade-offs are hard to see in the aggregate
+\citep{ravallion2012mashup}; inspecting the correlation structure among indicators, as
+recommended by \citet{oecd2008handbook}, is what reveals it here.

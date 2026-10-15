@@ -1,0 +1,134 @@
+% Online Appendix to Appendix D (app:corrections). Item-level detail of the corrections listed in
+% Table tab:corrections_index: defect, symptom in the shipped release, correction, and the
+% pre-rerun effect measured by the audit on the shipped inputs (not a result of the paper).
+% Sources: the audit's fix logs and reviews, git log of branch fix/allied-base-paper, README
+% changelog, and the corrected code in R/, scripts/, config/.
+\section{Corrections to the shipped release: item detail}\label{oa:corrections}
+
+This appendix gives, for each item of Table~\ref{tab:corrections_index}, the defect, its symptom in
+the shipped release of September 2026, the correction and, where the audit measured it, the
+\emph{pre-rerun effect}: the change the correction makes when applied alone to the theme tables and
+inputs saved with the shipped release. Pre-rerun effects isolate one correction on inputs that
+still embed the other defects; they are not results of the paper.
+
+\paragraph{Aggregation (A1--A7).} A1: an unobserved category kept its weight in the denominator and
+counted as zero, and a cell with no observed category scored zero; 1{,}809 of 2{,}773 headline ES
+Reserves rows were unobserved. The available-case rule alone changes 1{,}682 Upstream cells and
+raises mean Upstream ES by 0.139 (Oil), 0.112 (Gas) and 0.104 (Coal). Because the same commit gives
+Reserves a zero rule (the reserve tables list every material holder, so absence means none), the two
+changes offset on the shipped tables; the rule matters for categories without a missing-data rule
+and for the PSI (B4). A2: a zero or global-average rule filled groups in which no country was
+observed; it now fills only groups with an observed country and reports the rest. A3:
+\texttt{any(isTRUE(x))} is \texttt{FALSE} for vectors longer than one, so the diagnostics reported
+11.9 and 29.5 percent of ES and EO category scores as imputed against 37.0 and 69.2 percent in fact;
+the final run has 38.4 and 45.0 percent. A4: Energy Prices was configured on a variable no theme
+produced and dropped from both pillars without warning, because the guard compared the join keys with
+themselves; it re-enters ten Upstream cells as a world price series that shifts cell levels and
+leaves within-cell order unchanged (Spearman 1.000 in every varying cell). A second guard now warns
+when a theme's own composite is scored in place of a configured overall. A5: an EO Reserves weight
+of 2 for a category EO does not have let resource-potential rows create 88 fully imputed EO cells
+(the Holy See, the Pitcairn Islands); EO falls from 6{,}923 to 6{,}835 headline cells. A6: the
+variable-contribution table divided by the number of components including missing ones; both
+decompositions now reconcile to the index (largest error $1.1\times10^{-16}$). A7: a development
+commit made \texttt{bind\_rows()} read a named list of tables as one row; a rerun from that revision
+would have removed every overall-based category.
+
+\paragraph{Country universe (C1--C3).} C1: the standardiser attached ISO3 codes but did not rename
+rows, so the shipped ES, EO, Strategic and Policy tables carried 272 strings for 237 economies, with
+30 codes under two or three spellings (Viet Nam and Vietnam, Korea and South Korea, the two Congos).
+Each spelling took its own rank in every S-curve with a partly observed, often imputed profile.
+Every variant now maps to the WDI name of its code \citep{worldbank2026wdi}; territories with their
+own code stay separate. C2: the EI ``USSR'' series, a CIS aggregate, was coded RUS, ``Northern
+Cyprus'' CYP, and a pseudo-country ``Global'' carried readiness values (128 rows); aggregates,
+residuals and historical entities are now dropped, not merged into successors. C3: the 2025
+critical-minerals Comtrade pulls hold three reporters against about 130 in 2024; a vintage needs 50.
+
+\paragraph{Energy Security themes (E1--E12).} E1: graphite and rare earths fell out of every join
+because the IEA and EI name them differently; with harmonised names the rare earths carry about 79
+percent of Wind's Mineral Supply weight. E2: the stage recode mapped refining to the Upstream under
+both branches; refining now scores the Midstream. E3: listed non-producers (Germany, Japan) tied at
+0.441 just below the Congo at 0.473 in Batteries Upstream while unlisted economies scored zero; zero
+supply now maps to zero for every economy and suppliers rank above it. E4: the reserves roll-up
+averaged only over listed minerals, so Chile scored 1.000 on Wind Reserves on copper alone. E5: BNEF
+onshore and offshore wind were never recoded, so Wind had no Consumption category; growth was ranked
+across technologies; Viet Nam's rows fall from 160 to 63 once each country receives one regional
+value. E6: Minerals Trade kept only the market-share index; it is now the mean of a demand-weighted
+market share and a concentration index $\Scurve(-\HHI_m)$. E7: critical-minerals investment was
+copied in full to Batteries and EV Upstream (79.8 each; now 9.2 and 70.6), and stage completion
+manufactured zero Investment cells in Nuclear Upstream and Midstream and Geothermal Upstream and
+Midstream, which made those cells constant across countries and gave Nuclear Upstream the maximum
+security need for every country. E8: electrolyser capacity was filed outside the headline
+technologies. E9: mineral Upstream production depth was an unweighted mean of different minerals'
+kilotonnes; it is now a demand-weighted share of world mined supply, with growth as an absolute
+change (EO moves by up to 0.067 in six cells, within-cell Spearman 0.955--0.992). E10: a placeholder
+region dropped the eight non-EU European EI economies from EV Midstream. E11: the EI ``Import
+share'' (a self-sufficiency ratio) and the EV ``import\_share'' (a net-export ratio) are renamed for
+what they measure, and non-producers now tie exactly in Energy Imports. E12: an economy without its
+own EI production row (EI counts it in a regional residual) was read as producing nothing, so New
+Zealand counted as importing all its gas; production then comes from EIA International Energy
+Statistics \citep{eia2026international}, flagged and counted as observed, paired with consumption of
+the same year (Estonia coal stays missing because EI counts oil shale). On the inputs of 10 October
+2026 this moves 605 ES Upstream fossil cells and no allied pick.
+
+\paragraph{Trade and Economic Opportunity (T1--T13).} T1: the ES and EO trade themes were identical
+tables and the ES deficit term was never computed; ES Trade is now concentration, basket share and
+net basket imports over GDP, EO Trade share, RCA \citep{balassa1965trade}, export size, feasibility
+and concentration (earlier--corrected Spearman 0.54--0.91 across cells). T2: export size and
+feasibility were ranked within reporter, so Moldova and Samoa ranked beside China in Solar
+Midstream. T3: market share was the export-weighted mean of product-level world shares; the Congo
+had 0.862 against a basket share of 0.0074 in Batteries Midstream. T4: ores, slag and scrap were
+filed under Batteries Midstream, untreated softwood logs under three grid and renewable baskets, and
+16 keys appeared twice. T5: 73 crosswalk codes had no HS92 counterpart, so the Atlas EV Midstream
+basket contained no cars; 19 predecessor codes bridge them. T6: the levelised cost entered Cost
+Competitiveness four times (0.78 of the category's weight where quoted). T7: readiness was written for
+a pseudo-country and reached real economies only by imputation. T8: Technology Demand listed
+composites beside their own sub-indices and ranked a zero addressable market as the smallest. T9: the
+export-concentration index was ranked across every basket, so unscored baskets (Semiconductors)
+moved scored cells; it is now ranked over the headline cells. T10: the Comtrade energy-trade file
+lacked 60 basket codes and 13 reporters, among them Qatar's LNG (USD 56.9bn in 2024); it is rebuilt
+from the World rows of the all-reporter dyad pull. T11--T13: duplicate WEO and BNEF demand keys,
+IEA 2035 manufacturing shares taken without the ``Other'' row (China's 2035 solar share 0.90 rather
+than 0.80), zero lending-rate stubs (New Zealand 0.0 percent, now 4.76) and mislabelled IMF price
+units \citep{imf2026pcps}; only the lending rates move an index value.
+
+\paragraph{Policy and Strategic indices (P1--P9).} P1: the NIPO module's jurisdiction weights
+overwrote the IEA module's, so international IEA policies were weighted 0.20 instead of 0.66. P2:
+Upstream stage tags matched substrings (``ore'' in ``more'', ``Korea'', ``Singapore''), tagging 36.9
+percent of IEA policies Upstream; whole-word rules tag 12.5 percent. P3: name mismatches left South
+Korea, the United Arab Emirates (coded ``UAE''), France, Italy and Denmark without a Policy index;
+EU members without a national CAT rating now take the EU's \citep{cat2026ratings}. P4: the policy
+block had stopped before writing its table since 6~February 2026, so the September Strategic Index
+combined September pillars with February policy components. P5: NIPO's default as-of date was the
+latest announcement or implementation date (1~October 2028 in every 2026 extract), counting
+scheduled measures as in force; it is now the extract's last announcement, capped at the release
+month and run date. NIPO is no longer in the composite; the robustness variant uses the October 2026
+extract as of 5~October 2026. P6: the strategic table overwrote the security column with $1-\ES$; it
+now carries security and need under their own names (no value changes). P7: missing pillar or policy
+values were filled with country means (51 of 571 shipped cells); a cell now needs all three. P8:
+sectors with a constant pillar were not detected; Nuclear Upstream, constant at zero, was the top
+pick of 8 of 18 shipped allies. P9: the staged oil lifecycle emissions (720 g CO$_2$eq/kWh) appear in
+no IPCC table; the SRREN median of 840 \citep{moomaw2011annex} replaces it next to the AR5 values of
+the other technologies \citep{schlomer2014annex}, so the oil weight falls from 0.12 to 0 and coal's
+rises from 0 to 0.02.
+
+\paragraph{Bilateral indices (B1--B5).} B1: grouped \texttt{transmute()} calls, name keys and a
+self-crossed backbone duplicated the Friendshore table (17.5 million rows for 1.44 million cells),
+so a dyad's best-five mean weighted its top cells 2, 2 and 1. B2: \texttt{mean(a:b)} returned
+\texttt{a}, so outward investment was the rank of the level only; 99 of 259 IMF counterpart names did
+not match, so China and the Netherlands scored zero from every reporter. B3: development potential,
+a partner-level construct, was stored per reporter with donor fan-out up to 38 rows, with 56
+aggregates and mis-oriented WDI series. B4: a high-income partner's undefined development score kept
+its weight, capping its PSI at 0.8 and placing the United States 185th of 218. B5: an opportunity
+column named for security held the partner's need, and the tables covered 18 to 20 pseudo-technologies
+rather than the eleven headline ones.
+
+\paragraph{Network (N1--N7).} N1: the dyadic development table joined the node table without
+aggregation, so each node was copied per reporter; the greedy solver then filled every producer slot
+with copies of one country (606{,}866 specialisation rows, 2{,}339 distinct). N2: duplicated edges
+doubled the edge term (connectivity up to 1.53, above the largest edge weight). N3: both halves of the
+edge were read with the reporter as producer, transposing Friendshore; with the correct orientation
+the two halves correlate 0.54 instead of 0.01. N4: caps and producer counts were computed over rows
+(portfolio counts of $10^4$--$10^5$ against caps of 2--10). N5: the code ``UAE'' matched no table, so
+the shipped coalition had 22 effective members. N6: the MILP was used only up to 18 nodes, fewer than
+the coalition, while the parameters reported ``milp''. N7: a node missing any component had no score,
+and stages without signal were filled alphabetically.

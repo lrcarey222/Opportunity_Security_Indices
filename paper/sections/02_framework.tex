@@ -1,0 +1,415 @@
+% ===========================================================================
+% Section 2. Conceptual framework (input by main.tex; no preamble).
+% Framing: NEIS working paper on the Allied Industrial Base (neis2026allied): definition, the
+% Severity -> Coordination -> Specialization logic and the five analytical layers (its Sections
+% 2, 7 and 8), paraphrased and cited.
+% Specification (code is the specification): config/weights.yml, config/rankability.yml,
+%   R/utils/scurve.R, R/indices/index_builder_core.R, R/indices/build_policy_index.R,
+%   R/indices/build_indices.R (Strategic Index, endowment screen, allied pick),
+%   R/geopolitical_distance/*.R and scripts/12 (alignment), R/indices/coalition.R and scripts/13
+%   (tiers, EU node), R/themes/partnership_strength/*.R (FS, PO, DP, PSI),
+%   R/indices/allied_network_design.R and scripts/30 (network; lambda = 0.78, node policy term off).
+% Figure fig:framework_architecture is drawn inline (TikZ) so that it matches the final method.
+% ===========================================================================
+\section{Conceptual framework}\label{sec:framework}
+
+This section places the paper within the analytical architecture proposed for an Allied
+Industrial Base \citep{neis2026allied}, states which parts of that architecture the paper
+measures and which it leaves aside, and then defines the objects used in the rest of the paper.
+Figure~\ref{fig:framework_architecture} summarises the construction and Table~\ref{tab:notation}
+collects the notation.
+
+% ---------------------------------------------------------------------------
+\subsection{The allied industrial base as a design problem}\label{subsec:framework_aib}
+
+The working paper defines an Allied Industrial Base by its purpose: trusted economies coordinate
+strategically important capabilities so that, together, they reach a resilience and scale that
+none could reach efficiently alone \citep{neis2026allied}. The object is
+the network: a capability should exist at sufficient scale somewhere among trusted partners, not
+in every member. The unit of policy is the \emph{node}, a step such as mineral refining or
+component manufacture, because one supply chain can warrant different treatment at different
+steps. And the problem is one of allocation: which capabilities should be domestic, duplicated,
+specialised among partners or left to global markets.
+
+The working paper orders the decision in three steps. \emph{Severity} asks how damaging a
+disruption would be and how hard substitution or recovery would be; \emph{coordination}, whether
+the problem needs international action rather than private diversification or national policy;
+and \emph{specialization}, where the capability should reside and what should be duplicated. The
+evidence is organised in five analytical layers: node criticality and severity, country
+capability and opportunity, partner complementarity and reciprocity, systemic bankability, and
+network robustness under stress. The object is a combination of capabilities, not a ranking: a
+partner that ranks low in isolation can be indispensable if it supplies what the network lacks.
+
+Table~\ref{tab:framework_layers} maps the layers onto this paper. We measure each economy's
+relative exposure within a node by the need term $1-\ES$ (rank-based, so it does not compare
+severity across nodes) and, for extraction, apply the endowment screen; capability by
+$\EO$, with the Policy index recording where governments already concentrate their effort;
+complementarity, alignment and part of reciprocity by the coalition and the bilateral indices;
+and robustness only in part, by the diversification penalty and multi-sourcing constraints of the
+network design. Systemic bankability \citep{spokas2025systemic}, common-mode risk (beyond a first
+measure of the Chinese ownership of suppliers' foreign-invested plants), dynamic option value,
+reciprocal obligations, resilience floors and stress tests are not modelled.
+
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{The analytical layers of an Allied Industrial Base and their counterparts in this paper}
+\label{tab:framework_layers}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.7cm}
+  >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X@{}}
+\toprule
+Layer & Measured here (section) & Not measured\\
+\midrule
+1. Node criticality and severity &
+  Country-relative exposure within each technology--stage pair, $1-\ES_{its}$ (import
+  dependence, supplier concentration, reserves; \ref{sec:es}); endowment screen on extraction
+  stages (\ref{sec:strategic}) &
+  Severity compared across nodes; disruption horizons, inventories, qualification and build times, end-use criticality\\[2pt]
+2. Country capability and opportunity &
+  $\EO_{its}$ by cell (\ref{sec:eo}); Policy index and Strategic Index (\ref{sec:strategic}) &
+  Plant-level cost curves, pipeline capacity, workforce, tacit know-how\\[2pt]
+3. Complementarity and reciprocity &
+  Coalition rule from UN-vote alignment, agreements and supply shares (\ref{sec:coalition});
+  Friendshore, Partnership Opportunity and Development Potential (\ref{sec:bilateral}); network
+  edges (\ref{sec:network}) &
+  Reciprocal obligations, export-restriction risk, market-access commitments\\[2pt]
+4. Systemic bankability & --- &
+  Offtake, price risk, permitting, enabling infrastructure, insurance, delivery capacity\\[2pt]
+5. Network robustness &
+  Concave penalty on the Herfindahl index of designed shares, share bounds and multi-sourcing
+  constraints, calibrated on observed concentration (\ref{sec:network}); Chinese-parent exposure in
+  four Midstream cells (\ref{sec:bilateral}) &
+  Stress tests, common-mode failure through shared inputs, logistics or equipment, stockpiles,
+  recovery time, dynamic option value\\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item \textit{Notes:} Layers and their content follow \citet{neis2026allied}; numbers in
+parentheses refer to sections of this paper.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+Two simplifications matter. First, our cell, a technology--stage pair, is coarser than the
+working paper's node: Batteries Midstream, for example, groups mineral refining, electrode
+materials and cell manufacture. It is the finest level at which both pillars can be scored for
+most economies from public data. Second, the coordination step is assumed rather than tested: the
+22 traded Upstream and Midstream stages are all treated as candidates, while Downstream
+deployment, largely non-traded, enters the Strategic Index but not the network design.
+
+% ---------------------------------------------------------------------------
+\subsection{Cells, pillars and rankability}\label{subsec:framework_unit}
+
+The unit of analysis is the cell $\cell$: an economy $i\in\Countries$, a technology
+$t\in\Techs$ and a stage $s\in\Stages$, where Upstream is the extraction of fuels and minerals,
+Midstream their processing and the manufacture of components and equipment, and Downstream
+deployment and end use. $\Techs$ holds the eleven headline technologies, fossil fuels included,
+so an economy has at most 33 cells, and $\Countries$ holds 219 economies after harmonisation,
+195 sovereign states and 24 territories (Section~\ref{sec:data}).
+
+Energy Security $\ES_{its}$ measures how secure $i$'s supply of technology $t$ at stage $s$ is,
+higher values being more secure. It combines exposure (import dependence, the concentration of
+supplying markets) with resilience (reserves, production, consumption, access and investment).
+Economic Opportunity $\EO_{its}$ measures how well placed $i$ is to capture value as a producer,
+from comparative advantage, export feasibility, demand, cost, technological readiness and
+investment. Security describes an economy as a user and opportunity as a producer, so the two can
+diverge: a fuel importer with a strong manufacturing base can be insecure Upstream and well
+placed Midstream. Shared components make part of their association mechanical
+(Section~\ref{sec:joint}).
+
+Both pillars are built in the same way (Section~\ref{sec:normalization}). Each raw variable
+$x_{itsv}$, oriented so that higher is better, is replaced by the S-curve of its percent rank
+within a comparison set $g$, usually the economies observed in the pair $(t,s)$,
+\begin{equation}\label{eq:fw_scurve}
+  \tilde x_{itsv}=\Scurve\bigl(r_{itsv}\bigr),\qquad
+  \Scurve(r)=\frac{r^{\gamma}}{r^{\gamma}+(1-r)^{\gamma}},\qquad
+  r_{itsv}=\frac{\rank_g\bigl(x_{itsv}\bigr)-1}{n_g-1},\qquad \gamma=0.5 ,
+\end{equation}
+the probability-weighting function of \citet{karmarkar1978subjectively}, which stretches the tails
+of a distribution relative to its middle. A category averages the components observed, or filled
+by an explicit missing-data rule, for the cell,
+\begin{equation}\label{eq:fw_category}
+  c_{itsk}=\frac{1}{|\mathcal{V}^{*}_{itsk}|}\sum_{v\in\mathcal{V}^{*}_{itsk}}\hat x_{itsv},
+\end{equation}
+and the pillar is the weighted mean over the categories $\Cats^{P}_{its}$ observed for the cell,
+\begin{equation}\label{eq:fw_pillar}
+  P_{its}=\frac{\sum_{k\in\Cats^{P}_{its}}w^{P}_{k}\,c_{itsk}}{\sum_{k\in\Cats^{P}_{its}}w^{P}_{k}},
+  \qquad P\in\{\ES,\EO\},
+\end{equation}
+with ten categories and fixed weights per pillar (2 to 6 for $\ES$, 2 to 4 for $\EO$). An
+unobserved category drops out with its weight rather than counting as zero, and each pillar
+decomposes exactly into category and variable contributions. A cell enters a ranking, a top-$N$
+list or the Strategic Index only if it is \emph{rankable}: the economy is sovereign and at most
+half of the cell's index weight is imputed (equation~\eqref{eq:rankable}). This holds for 4,163
+of 6,232 scored $\ES$ cells and 4,301 of 7,131 $\EO$ cells.
+
+% ---------------------------------------------------------------------------
+\subsection{Policy and the Strategic Index}\label{subsec:framework_si}
+
+The Policy index $\POL_{its}$ records where a government directs its policy. It is the weighted
+mean of an index of the measures in the IEA Policies and Measures database tagged to the cell
+(weight 3, required) and a component that interacts the country's Climate Action Tracker rating
+with the technology's emission intensity (weight 2, where the country is rated). It covers 215
+economies, 65 on both components and 150 on the IEA component alone, and the basis matters
+(Section~\ref{sec:strategic}). Measures from the New Industrial Policy Observatory enter only as a
+robustness variant (Section~\ref{sec:robustness}). The Strategic Index ranks the sectors of each
+country by the case for building there,
+\begin{equation}\label{eq:fw_si}
+  \SI_{its}=0.2\,\POL^{*}_{its}+0.3\,\EO_{its}+0.3\,\bigl(1-\ES_{its}\bigr)
+  +0.1\,\lambda_s+0.1\,g_t ,
+\end{equation}
+where $\POL^{*}_{its}$ is the S-curve of $\POL$ across $i$'s own scored sectors, the pillars enter
+at their cross-country levels, $\lambda_s$ is a stage weight (Midstream 0.75, Upstream 0.5,
+Downstream 0.25) and $g_t\in[0,1]$ rises as lifecycle greenhouse-gas intensity falls. A cell is
+scored only if the country has a Policy index and both pillar cells are rankable; nothing is
+imputed.
+
+Security enters as \emph{need}, for a reason of marginal value. Let $V_i$ be the value to $i$ of
+supply security in a sector, increasing and concave, and $\rho_i$ the probability that an effort
+to build capacity there succeeds, increasing in opportunity and in existing policy commitment. An
+effort that raises security by $\Delta$ is worth about
+\begin{equation}\label{eq:fw_marginal}
+  \rho_i\bigl(\EO_{its},\POL_{its}\bigr)\,V_i'\bigl(\ES_{its}\bigr)\,\Delta ,
+\end{equation}
+which rises with opportunity and policy and falls with the security already attained. The index
+linearises this ranking, so sectors in which a country is exposed but capable rank first; reading
+security as strength would rank existing strengths first, which $\EO$ already describes.
+Equation~\eqref{eq:fw_marginal} motivates the signs, not the additive form or the weights, which
+are normative \citep{decancq2013weights}; Section~\ref{sec:robustness} reports the strength
+reading.
+
+Each coalition member's \emph{allied pick} is its highest-scoring Upstream or Midstream sector
+outside geothermal and green hydrogen. Read as need, $\ES$ gives an economy without a resource
+its largest need at the extraction stage, so an \emph{endowment screen} admits an Upstream stage
+to the pick only if the member has recorded reserves or production of the stage's resources. The
+screen is a selection rule, not part of the index: values are unchanged, and 669 of the 998 scored
+Upstream cells lack a resource base. The network design uses neither the index nor the picks.
+
+% ---------------------------------------------------------------------------
+\subsection{Coalition, bilateral indices and network design}\label{subsec:framework_layers}
+
+\paragraph{The coalition.} The coalition $\Coalition$ is derived by rule
+(Section~\ref{sec:coalition}). Each voting economy is placed on a U.S.--China axis
+$s_i\in[0,1]$ from its UN General Assembly ideal point (equation~\eqref{eq:coalition_axis}), and
+quartiles of $s_i$ define U.S.-leaning, nonaligned and China-leaning blocs. The 31 \emph{core}
+members are the U.S.-leaning economies with GDP of at least USD 100 billion. The 26
+\emph{partners} are members of a U.S. free-trade agreement, the Indo-Pacific Economic Framework,
+the Minerals Security Partnership, the G7 or NATO above the same GDP floor, and major suppliers
+outside the China-leaning bloc without a GDP floor: at least 5 percent of world production,
+refining, manufacturing capacity or exports in an Upstream or Midstream stage, or at least 10
+percent of world reserves of a headline mineral, fuel or uranium. With the six EU members below
+the GDP floor the coalition spans 63 economies; the network treats the EU-27 as one node with
+stage-weighted member inputs, which gives 37 nodes. The dyadic alignment $A_{ij}$
+(equation~\eqref{eq:coalition_dyadic}), the probability that two economies fall on the same side
+of the divide, links the coalition to the bilateral layer.
+
+\paragraph{Bilateral indices.} For a reporter $i$, a partner $j\neq i$ and a pair $(t,s)$,
+Friendshore $\FS_{ijts}$ rates $j$ as a supplier to $i$ from $i$'s imports from $j$, $i$'s need,
+$j$'s opportunity, $i$'s outward investment in $j$, the alignment $A_{ij}$ and, in four
+manufacturing stages, the share of $j$'s foreign-invested plants without Chinese parents, less a
+climate-policy penalty (equation~\eqref{eq:fs_index}). Partnership Opportunity $\PO_{ijts}$ rates
+$j$ as a market for $i$'s exports, and Development Potential $\DP_{jts}$ scores partners that are
+not high-income economies. The Partnership Strength Index combines best-five summaries of the
+three with weights 0.4, 0.4 and 0.2, those of the partnership score of \citet{carey2025secure};
+the headline averages the views of the 31 core members. Table~\ref{tab:roles} shows how security
+and opportunity enter each index.
+
+\paragraph{Network design.} For each of the 22 Upstream and Midstream stages, a mixed-integer
+program over the 37 nodes chooses producers ($y_p\in\{0,1\}$), supplier links
+($\ell_{pc}\in\{0,1\}$) and flows $f_{pc}\ge0$, the share of the network's unit demand that $p$
+supplies to $c$, with production shares $x_p=\sum_c f_{pc}$:
+\begin{equation}\label{eq:fw_network}
+  \max_{y,\ell,f}\ \sum_{p}\sum_{c}f_{pc}\bigl(a_p+0.5\,W_{pc}\bigr)-\lambda\sum_{p}x_p^{2}
+  \quad\text{s.t.}\quad \sum_{p}f_{pc}=d_c,\quad 0.05\,y_p\le x_p\le0.40\,y_p .
+\end{equation}
+The producer score $a_p$ weights the S-curves of $\EO$ and $\ES$ across the nodes by $5/7$ and
+$2/7$, without a policy term; the edge weight $W_{pc}=0.5\,\FS_{cpts}+0.5\,\PO_{pcts}$ reads each
+directed index from the end of the relationship it describes; and the demand weight $d_c$ mixes
+the consumer's need and economic size. At least three nodes produce, and every consumer draws on
+at least two suppliers, each providing at least 10 percent of its demand. The penalty on the
+Herfindahl index of production shares makes the program spread production among nodes rather than
+rank them, a first step toward optimising combinations. Because the penalty treats each node as an
+independent source, it does not register that producers sharing a bloc, a region or a parent company
+diversify less; Section~\ref{sec:discussion} discusses a correlated-risk version. Its weight is calibrated:
+$\lambda=0.78$ is the smallest value at which the median designed Herfindahl index across stages
+does not exceed the median observed export concentration of the nodes, a knife-edge choice that
+Section~\ref{sec:network} discloses. An outer loop caps, by the logarithm of GDP, the number of
+stages in which a node is among the five largest producers.
+
+\begin{figure}[tbp]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    font=\scriptsize,
+    >={Stealth[length=1.8mm]},
+    box/.style={draw=#1, fill=#1!10, thick, rounded corners=2pt, align=center, inner sep=3pt,
+                anchor=north},
+    flow/.style={->, draw=osiink!75, line width=0.6pt},
+    bus/.style={draw=osiink!75, line width=0.9pt},
+    lab/.style={font=\scriptsize, text=osiink, fill=white, inner sep=1.2pt, align=center}
+  ]
+  \node[box=osigray, text width=15.4cm] (src) at (8, 0) {%
+    {\footnotesize\bfseries Sources} by economy, technology and stage: IEA, Energy Institute,
+    EIA, USGS, OECD-NEA Red Book, UN Comtrade (HS6 baskets, all-reporter dyads), Atlas of
+    Economic Complexity, BloombergNEF, World Bank, IMF, CM-FDI;\\ IEA Policies and Measures,
+    Climate Action Tracker; UN General Assembly ideal points; trade and security agreements};
+  \node[box=osiaqua, text width=3.5cm, minimum height=2.5cm] (pol)
+    at ($(src.south)+(-6,-0.5)$) {%
+    {\footnotesize\bfseries Policy}\\ $\POL_{its}$\\[1pt] IEA PAMS (3, required)\\
+    $+$ CAT (2) where rated;\\ 215 economies};
+  \node[box=osiblue, text width=3.5cm, minimum height=2.5cm] (es)
+    at ($(src.south)+(-2,-0.5)$) {%
+    {\footnotesize\bfseries Energy Security}\\ $\ES_{its}$\\[1pt] 10 categories;\\
+    higher $=$ more secure;\\ rankable if $\iota_{its}\le0.5$};
+  \node[box=osiorange, text width=3.5cm, minimum height=2.5cm] (eo)
+    at ($(src.south)+(2,-0.5)$) {%
+    {\footnotesize\bfseries Economic Opportunity}\\ $\EO_{its}$\\[1pt] 10 categories;\\
+    rankable if $\iota_{its}\le0.5$};
+  \node[box=osiviolet, text width=3.5cm, minimum height=2.5cm] (coal)
+    at ($(src.south)+(6,-0.5)$) {%
+    {\footnotesize\bfseries Coalition}\\ $\Coalition$\\[1pt] UN-vote alignment,\\
+    agreements, supply shares;\\ 31 core $+$ 26 partners;\\ EU-27 as one: 37 nodes};
+  \coordinate (busy) at ($(src.south)+(0,-3.35)$);
+  \draw[bus] ($(busy)+(-7.7,0)$) -- ($(busy)+(7.7,0)$);
+  \foreach \n in {pol, es, eo, coal} {\draw[bus] (\n.south) -- (\n.south |- busy);}
+  \node[box=osiviolet, text width=6.5cm, minimum height=2.2cm] (si)
+    at ($(busy)+(-4.2,-0.6)$) {%
+    {\footnotesize\bfseries Strategic Index}\\[1pt]
+    $\SI_{its}=0.2\,\POL^{*}_{its}+0.3\,\EO_{its}+0.3\,(1-\ES_{its})+0.1\,\lambda_s+0.1\,g_t$\\
+    rankable cells only; endowment screen on Upstream picks\\
+    $\Rightarrow$ each member's allied pick (reported)};
+  \node[box=osiyellow, text width=6.5cm, minimum height=2.2cm] (bil)
+    at ($(busy)+(4.2,-0.6)$) {%
+    {\footnotesize\bfseries Bilateral indices}\\[1pt]
+    $\FS_{ijts}$: $j$ as supplier to $i$ (with $A_{ij}$ and Chinese-parent exposure)\\
+    $\PO_{ijts}$: $j$ as market for $i$;\quad $\DP_{jts}$: development partner\\
+    $\Rightarrow$ $\PSI_j=0.4\,\FS+0.4\,\PO+0.2\,\DP$, core view (reported)};
+  \draw[flow] (si.north |- busy) -- node[lab, pos=0.45] {$\POL$, $\ES$, $\EO$} (si.north);
+  \draw[flow] (bil.north |- busy) -- node[lab, pos=0.45] {$\ES$, $\EO$, $A_{ij}$} (bil.north);
+  \node[box=osigray, text width=15.4cm] (net) at ($(busy)+(0,-4.3)$) {%
+    {\footnotesize\bfseries Allied network design}: each of 22 Upstream and Midstream stages over
+    37 nodes,\quad $\max\ \sum_{p,c}f_{pc}\,(a_p+0.5\,W_{pc})-\lambda\sum_p x_p^2$\\[1pt]
+    $a_p$ from $\EO$ and $\ES$ (no policy term);\quad $W_{pc}=0.5\,\FS_{cp}+0.5\,\PO_{pc}$;\quad
+    $d_c$ from need and size;\quad shares in $\{0\}\cup[0.05,0.40]$;\quad $\ge2$ suppliers per
+    consumer;\\ $\lambda=0.78$ calibrated on the nodes' observed export concentration;\quad
+    GDP-log portfolio caps};
+  \draw[flow] (busy) -- node[lab, pos=0.5] {$\ES$, $\EO$,\\ nodes} (net.north);
+  \draw[flow] (bil.south) -- node[lab, pos=0.45] {$\FS$, $\PO$} (bil.south |- net.north);
+  \end{tikzpicture}%
+  }
+  \caption{Architecture of the analysis. Sources feed four cell- or economy-level constructs:
+  the Policy index, the two pillars, and the coalition, derived from alignment in the UN General
+  Assembly, agreements and supply shares. The Strategic Index ranks each country's sectors and
+  yields the allied picks; the bilateral indices rate partners as suppliers and markets and are
+  summarised in the Partnership Strength Index. The network design allocates production among
+  the coalition's nodes. In the terms of \citet{neis2026allied}, the pillars, the Policy index and
+  the Strategic Index address relative exposure and capability, the coalition and the bilateral indices
+  complementarity, and the network design specialisation and, in part, robustness. $\iota_{its}$
+  is the imputed share of a cell's index weight; the Strategic Index and the Partnership Strength
+  Index are not inputs to the network design.}
+  \label{fig:framework_architecture}
+\end{figure}
+
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{How security and opportunity enter each index}
+\label{tab:roles}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.7cm}
+  >{\raggedright\arraybackslash}p{2.4cm} >{\raggedright\arraybackslash}X
+  >{\raggedright\arraybackslash}X@{}}
+\toprule
+Index & Whose position & Energy security enters as & Economic opportunity enters as\\
+\midrule
+Strategic Index $\SI_{its}$ & country $i$, deciding where to build &
+  need of $i$: $1-\ES_{its}$ (level), weight 0.3 &
+  capability of $i$: $\EO_{its}$ (level), weight 0.3\\[2pt]
+Friendshore $\FS_{ijts}$ & importer $i$, supplier $j$ &
+  need of the importer, ranked across $i$'s own cells, weight 2 of 11 &
+  capability of the supplier, ranked across economies in $(t,s)$, weight 2 of 11\\[2pt]
+Partnership Opportunity $\PO_{ijts}$ & exporter $i$, market $j$ &
+  need of the market, ranked across markets, weight 1 of 7 &
+  capability of the exporter, ranked across economies, weight 3 of 7\\[2pt]
+Development Potential $\DP_{jts}$ & partner $j$, not high income &
+  need of the partner, weight 1 of 10 & opportunity of the partner, weight 1.5 of 10\\[2pt]
+Network producer score $a_p$ & node $p$ as producer &
+  security of the producer, S-curve across nodes, weight 2/7 &
+  capability of the producer, S-curve across nodes, weight 5/7\\[2pt]
+Network demand $d_c$ & node $c$ as consumer &
+  need of the consumer, weight 0.5 (with size, 0.5) & ---\\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item \textit{Notes:} Weights are nominal, before renormalisation over the components observed.
+Security enters as need wherever it describes the party that would gain from new supply, and as
+security only in the producer score of the network design, where a node's own security in a
+stage proxies its reliability as a supplier. Sections~\ref{sec:strategic}, \ref{sec:bilateral}
+and~\ref{sec:network} give the full definitions.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{Notation}
+\label{tab:notation}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.9cm}
+  >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{2.7cm}@{}}
+\toprule
+Symbol & Meaning & Defined in\\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Sets and indices}}\\
+$\Countries$ & the 219 economies after harmonisation & Sec.~\ref{sec:data}\\
+$\Techs$, $\Stages$ & eleven headline technologies; \{Upstream, Midstream, Downstream\} &
+  Sec.~\ref{subsec:framework_unit}\\
+$\Coalition$ & the 57 coalition members (31 core, 26 partners); 37 network nodes &
+  Sec.~\ref{sec:coalition}\\
+$i,j$; $t,s$; $k,v$ & economy (reporter), partner; technology, stage; category, variable & \\
+$p,c$ & network node as producer; as consumer & Sec.~\ref{sec:network}\\
+$\cell$, $\dyad$ & cell; directed dyad with reporter $i$ and partner $j\neq i$ &
+  Secs.~\ref{subsec:framework_unit}, \ref{sec:bilateral}\\[2pt]
+\multicolumn{3}{@{}l}{\textit{Normalisation and pillars}}\\
+$x_{itsv}$, $r$ & raw variable; percent rank within comparison set $g$ & Eq.~\eqref{eq:fw_scurve}\\
+$\Scurve$, $\gamma$ & S-curve; curvature, $\gamma=0.5$; ${\Scurve}[\cdot]_g$ ranks within $g$ &
+  Eq.~\eqref{eq:fw_scurve}\\
+$\tilde x_{itsv}$, $\hat x_{itsv}$ & theme index; after the missing-data rule &
+  Eqs.~\eqref{eq:fw_scurve}, \eqref{eq:fw_category}\\
+$c_{itsk}$, $w^{P}_k$ & category score; weight of category $k$ in pillar $P$ &
+  Eqs.~\eqref{eq:fw_category}, \eqref{eq:fw_pillar}\\
+$\ES_{its}$, $\EO_{its}$ & Energy Security and Economic Opportunity pillars, in $[0,1]$ &
+  Eq.~\eqref{eq:fw_pillar}\\
+$\iota_{its}$ & imputed share of the cell's index weight; rankable if $\iota_{its}\le0.5$ &
+  Eq.~\eqref{eq:rankable}\\[2pt]
+\multicolumn{3}{@{}l}{\textit{Policy and Strategic Index}}\\
+$\POL_{its}$, $\POL^{*}_{its}$ & Policy index; its S-curve across $i$'s scored sectors &
+  Eqs.~\eqref{eq:pol_composite}, \eqref{eq:si_pol}\\
+$\lambda_s$, $g_t$ & stage weight; technology emissions weight (1 = cleanest) &
+  Eqs.~\eqref{eq:fw_si}, \eqref{eq:ghg_index}\\
+$\SI_{its}$ & Strategic Index & Eq.~\eqref{eq:fw_si}\\[2pt]
+\multicolumn{3}{@{}l}{\textit{Alignment and bilateral indices}}\\
+$s_i$, $A_{ij}$ & position on the U.S.--China axis; dyadic alignment &
+  Eqs.~\eqref{eq:coalition_axis}, \eqref{eq:coalition_dyadic}\\
+$\FS_{ijts}$, $\PO_{ijts}$, $\DP_{jts}$ & Friendshore; Partnership Opportunity; Development
+  Potential & Eqs.~\eqref{eq:fs_index}, \eqref{eq:po_index}, \eqref{eq:dp_index}\\
+$\PSI_j$ & Partnership Strength Index & Eq.~\eqref{eq:psi}\\[2pt]
+\multicolumn{3}{@{}l}{\textit{Network design}}\\
+$a_p$, $W_{pc}$, $d_c$ & producer score; edge weight; demand weight ($\sum_c d_c=1$) &
+  Eq.~\eqref{eq:fw_network}\\
+$y_p$, $\ell_{pc}$, $f_{pc}$, $x_p$ & producer selection; supplier link; flow share; production
+  share & Eq.~\eqref{eq:fw_network}\\
+$\lambda$, $\HHI$ & diversification weight; Herfindahl--Hirschman index & Eq.~\eqref{eq:fw_network}\\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item \textit{Notes:} The stage weight $\lambda_s$ carries a subscript and the diversification
+weight $\lambda$ none; the axis position $s_i$ carries an economy subscript and the stage $s$
+none. The production share $x_p$ and the policy components $x^{v}_{its}$ of
+Section~\ref{sec:strategic} are distinct from the raw variable $x_{itsv}$. Later sections
+introduce further symbols where they are needed.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

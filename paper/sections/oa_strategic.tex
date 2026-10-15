@@ -1,0 +1,92 @@
+% Online Appendix to Section 8 (sec:strategic). Numbers: paper/results/strategic.json and
+% si_fixed_inputs.json (final rerun of 2026-10-12). Specification: R/categories/policy/
+% iea_policy_index.R, cat_policy_index.R, R/indices/build_policy_index.R, R/indices/build_indices.R.
+\section{The Policy index and the Strategic Index: further detail}\label{oa:strategic}
+
+\paragraph{Tagging and strength of IEA policies.} Each policy of the IEA Policies and Measures
+database \citep{iea2026pams} is assigned to technologies first from its own technology list and,
+failing that, from keyword rules applied to its title and text; a policy matched to no technology
+is cross-cutting and counted in every technology. Stages are assigned by keyword rules on the text:
+Upstream on whole words for mining, mines, exploration, extraction, ores, leases, concessions and
+drilling; Midstream on processing, refining, smelting, manufacturing, factories, plants, components,
+supply chains and domestic content; Downstream on deployment, installation, consumers, end use,
+adoption, efficiency, demand, charging, grid connection, power plants and generation. A policy that
+matches no stage is cross-cutting across the three. Its strength is
+$\sigma_h=w_{\mathrm{type}}\,w_{\mathrm{status}}\,w_{\mathrm{juris}}\,w_{\mathrm{tech}}\,w_{\mathrm{stage}}$
+with type weights 0.85 (financial incentives), 0.70 (public procurement), 0.50 (regulations and
+standards; research, development and demonstration), 0.20 (information and labelling; other) and
+0.10 (voluntary and coordination measures); status weights 1 (in force), 0.60 (planned), 0.50
+(proposed), 0.20 (expired or unknown) and 0 (ended); jurisdiction weights 1 (national), 0.66
+(international), 0.50 (subnational, state, provincial or regional), 0.30 (unknown) and 0.25 (local);
+a technology discount of 0.70 for a cross-cutting policy and 0.30 for a technology found only in the
+text; and a stage discount of 0.75 for a cross-cutting stage. A policy counted in several cells
+carries its full strength in each. Upstream words are matched as whole words, because as substrings
+``ore'' and ``mine'' match ``more'', ``Korea'' and ``determine''.
+
+\paragraph{The Climate Action Tracker component.} The Tracker rates 65 economies in the final build:
+39 in their own right and 26 EU members through the Union's rating. Forty are rated insufficient,
+nine critically insufficient, six highly insufficient and ten almost sufficient; among the 46 rated
+coalition members the counts are 31, 7, 4 and 4. Because the component varies across a country's
+cells only through $g_t$, it tilts the within-country policy ranking. Within the Strategic Index
+sample the median within-country Spearman correlation between $\POL^{*}_{its}$ and $g_t$ is 0.82
+for the 40 countries rated insufficient and 0.86 for those rated almost sufficient, $-0.92$ for the
+nine rated critically insufficient, and 0.12 for the 103 countries scored on the IEA component alone.
+The IEA component itself is uncorrelated with $g_t$ within a country (median $-0.07$ for the 65
+countries rated by the Tracker). The mean Policy index is 0.64 for the economies scored on both
+components and 0.39 for those scored on the IEA component alone; the IEA component distinguishes
+a median of 31 values among the 33 cells of the first group and 11 among those of the second. The
+index enters the Strategic Index only through within-country ranks, so these level differences do
+not move one country against another.
+
+\paragraph{Technology weight.} The lifecycle medians are 820 gCO$_2$e/kWh for pulverised coal, 490
+for gas combined cycle, 48 and 41 for utility and rooftop photovoltaics, 27 for concentrated solar,
+38 for geothermal, 12 for nuclear and 11 and 12 for onshore and offshore wind
+\citep{schlomer2014annex}; oil-fired generation takes the SRREN median of 840 \citep{moomaw2011annex}
+in place of the 720 of the input file, because AR5 reports no oil row. Technologies without a row
+take proxies: batteries the solar value, the grid the mean of solar and wind, green hydrogen the mean
+of gas and solar, and electric vehicles the mean of six generation technologies. The resulting
+$g_t$ is 0 (oil), 0.024 (coal), 0.422 (gas), 0.569 (electric vehicles), 0.694 (green hydrogen),
+0.967 (solar, batteries and geothermal), 0.983 (grid), 0.999 (nuclear and wind). The sector prior
+$0.1\lambda_s+0.1g_t$ spans 0.025 to 0.175; the gap between oil and wind in the technology term
+(0.100) is twice the gap between adjacent stages (0.025 to 0.05).
+
+\paragraph{Sample.} Of the 6,918 country--sector rows of the output, 442 belong to countries
+without a Policy index and 6,476 to policy-eligible countries. Among the latter, 1,000 fail because
+the Economic Opportunity cell is not rankable, 721 because the Energy Security cell is not
+rankable, 979 because neither is, and 622 because the Energy Security cell is missing; 3,154 are
+scored. Before the Upstream trade baskets were added on 11 October 2026 the index covered 192 countries;
+the new Trade category of the Upstream cells is imputed for many small economies and pushes their
+cells over the imputed-share threshold, which leaves 174. Sector fixed effects explain 72.6 percent
+of the variance, technology fixed effects 67.5 percent, stage fixed effects 4.2 percent and country
+fixed effects 4.4 percent. The highest sector means are Solar Upstream (0.634), Batteries Upstream
+(0.631), Nuclear Upstream (0.620) and Batteries Midstream (0.618), the lowest the coal and oil
+stages (0.410--0.441). Upstream cells have the highest mean need (0.677, against 0.513 Midstream and
+0.552 Downstream).
+
+\paragraph{The endowment screen.} An Upstream cell carries a resource base if the technology-level
+variable of the Reserves or of the Production category of the Energy Security pillar (for instance
+the uranium resources and mine production behind Nuclear Upstream) is positive for the country;
+every technology with such a variable is screened. Unquantified USGS holdings count as zero in
+these technology roll-ups. Cells without a resource base carry \texttt{resource\_base} FALSE and the
+pick exclusion ``no resource base'' in the output; their index values are unchanged. Of the 41
+picks the screen changes, the forgone index has median 0.026 (interquartile range 0.016--0.040);
+16 picks are unchanged. Every Nuclear Upstream pick under the screen lies in a member with
+identified uranium resources (Chile, the Democratic Republic of the Congo, Finland, Gabon, Greece,
+Japan, Saudi Arabia and Sweden).
+
+\paragraph{Variants of the Strategic Index.} Each variant recomputes the index over the headline
+cells with the endowment screen kept. Within-member Spearman correlation with the headline (median),
+identical picks and members whose headline pick is in the variant's top three:
+security as strength 0.36, 5 and 12 of 57 (core 0.38, partners 0.24, negative for ten partners);
+strength without the fixed weights 0.01, 1 and 9; need without the fixed weights 0.90, 31 and 49;
+opportunity and need ranked within the country 0.89, 20 and 49; no policy term 0.88, 30 and 55;
+policy from the IEA component alone (the 46 members scored on both) 0.89, 34 and 42; the October
+2026 NIPO component added back (50 members) 0.96, 27 and 44. The NIPO variant uses a GTA NIPO
+extract of October 2026 (measures in force on 5 October 2026, refreshed on 13 October with the
+debiased strength measure), built exactly as the pipeline builds the NIPO Policy Index rows: 77
+jurisdictions with EU members individually, 939 rows in the headline technologies, all of them
+economies that already have a Policy index; NIPO enters with weight 4 beside IEA PAMS (3) and CAT
+(2), renormalised over the components present. The component stored with the February 2026 data
+covered only 23 economies. Requiring both policy components (\texttt{OPSI\_POLICY\_REQUIRE\_ALL=1})
+leaves 65 eligible countries and 1,666 Strategic Index cells, identical to the headline in value;
+46 members keep their pick and the 11 scored on the IEA component alone have none.

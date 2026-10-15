@@ -1,0 +1,46 @@
+\begin{table}[htbp]
+  \centering
+  \begin{threeparttable}
+  \caption{Coverage of the headline tables: shipped and final release}
+  \label{tab:reconcile_coverage}
+  \small
+  \begin{tabular}{@{}l r r@{}}
+    \toprule
+    & Shipped release & Final release \\
+    \midrule
+    \multicolumn{3}{@{}l}{\emph{Energy Security}} \\
+    Rows (country--technology--stage cells) & 5{,}746 & 6{,}232 \\
+    \quad rankable & -- & 4{,}163 \\
+    Distinct country strings & 270 & 219 \\
+    \quad non-country units dropped (rows) & 17 & -- \\
+    \quad merged spellings (rows) & 162 & -- \\
+    Economies after harmonisation & 237 & 219 \\
+    Technology--stage pairs scored & 31 & 30 \\
+    Cells in both releases & 5{,}522 & 5{,}522 \\
+    \quad rankable in the final release & -- & 3{,}731 \\
+    Cells in one release only & 45 & 710 \\
+    \addlinespace
+    \multicolumn{3}{@{}l}{\emph{Economic Opportunity}} \\
+    Rows (country--technology--stage cells) & 6{,}923 & 7{,}131 \\
+    \quad rankable & -- & 4{,}301 \\
+    Distinct country strings & 272 & 219 \\
+    \quad non-country units dropped (rows) & 56 & -- \\
+    \quad merged spellings (rows) & 234 & -- \\
+    Economies after harmonisation & 237 & 219 \\
+    Technology--stage pairs scored & 33 & 33 \\
+    Cells in both releases & 6{,}598 & 6{,}598 \\
+    \quad rankable in the final release & -- & 4{,}290 \\
+    Cells in one release only & 35 & 533 \\
+    \addlinespace
+    \multicolumn{3}{@{}l}{\emph{Strategic Index}} \\
+    Scored cells & 571 & 3{,}154 \\
+    Countries & 18 & 174 \\
+    Sectors & 32 & 30 \\
+    Cells in both releases & 477 & 477 \\
+    \bottomrule
+  \end{tabular}
+  \begin{tablenotes}[flushleft]\footnotesize
+    \item \emph{Notes:} Headline tables of the eleven technologies. Shipped release: \texttt{index\_outputs.rds} of 3~September 2026; final release: the same file of the final 12~October 2026 run. Shipped country names are mapped to canonical names with \texttt{standardize\_country\_names()} (item C1); units without an ISO3 code (``Global'', ``USSR'', ``Northern Cyprus'') are dropped (item C2) and, where two spellings give the same cell, the record under the canonical spelling is kept. ``Rankable'': the economy is sovereign and at most half of the cell's index weight is imputed (\texttt{config/rankability.yml}); the shipped release had no such rule. ``Cells in one release only'' counts shipped cells absent from the final release (first column) and final cells absent from the shipped release (second column). A Strategic Index cell of the final release requires a Policy index (IEA PAMS, combined with CAT where CAT rates the country) and a rankable EO and ES value; a shipped cell required the four-component Policy index of February 2026 and imputed missing pillar values (item P7).
+  \end{tablenotes}
+  \end{threeparttable}
+\end{table}

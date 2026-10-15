@@ -1,0 +1,433 @@
+% -----------------------------------------------------------------------------
+% Results fragment, theme "method": structure and diagnostics of the pillar indices, the
+% rankability rule, the Policy index and the trade inputs. Feeds Section 3 (coverage after
+% harmonisation, trade inputs), Section 4 (composition, weights, imputation, diagnostics,
+% rankability), Section 8 (Policy index coverage) and Appendix A. Every number is in
+% paper/results/method.json and is produced, with the five figures and the four tables
+% (tab:method_rankability, tab:method_imputation, tab:method_policy; tables/method_hs6_baskets.tex
+% is still written but not input here, since tab:hs6_counts of the misc theme, input in Section 3,
+% carries the same counts with trade values), by
+% scripts/paper/fig_method.R from the final rerun of 12 October 2026
+% (data/processed/outputs/index_outputs.rds, the Comtrade dyad and energy-trade files and the
+% HS6 master). "Pair" is a technology-stage pair (t,s) and "cell" a country-technology-stage
+% cell (i,t,s); the sample is the eleven headline technologies unless stated otherwise.
+% -----------------------------------------------------------------------------
+
+\paragraph{Coverage after harmonisation.} Once names have been mapped to one canonical name
+per code (Section~\ref{subsec:data_countries}), the headline pillars cover 219 economies, each
+with a distinct ISO3 code. The universe is the same for the two pillars: every economy with an
+$\ES$ score in a headline technology also has an $\EO$ score, and conversely. Classified by the
+Correlates of War state-system list, 195 of the 219 are sovereign states (the 193 members of the
+United Nations, Kosovo and Taiwan) and 24 are dependent or overseas territories, the special
+administrative regions of Hong Kong and Macau, and the West Bank and Gaza. Taiwan, which the
+World Bank's country table does not list, is carried as an economy of its own throughout,
+including the trade themes and the bilateral trade matrix; it has an $\ES$ value in 28 headline
+cells and an $\EO$ value in 33. The two pillars score 6,232 and 7,131 country--technology--stage
+cells in 30 and 33 headline pairs, and every $\ES$ cell has an $\EO$ value. The grids of both
+pillars span almost the whole universe at every stage: 219, 215 and 219 economies at the
+upstream, midstream and downstream stages in $\ES$, and 219, 216 and 219 in $\EO$. That width is
+set by the most widely distributed theme of each pair rather than by the sources that measure an
+economy's own position, a point taken up below. Territories are kept as separate units, but
+their scores rest more heavily on imputation: imputed components carry on average 0.48 of the
+weight of a territory's headline $\ES$ cell, against 0.29 for a sovereign state, and 0.67 against
+0.40 in $\EO$ (the imputed weight share $\iota_{its}$ is defined in
+Section~\ref{subsec:norm_diagnostics}). The critical-minerals trade variables use the 2024
+Comtrade extracts, with 130 reporters for imports, 128 for exports and 130 for total exports;
+the 2025 extracts staged with them have three reporters each, below the floor of 50 in
+rule~\eqref{eq:data_resolve}, and were skipped.
+
+\paragraph{Which cells are ranked.} Every cell the sources reach is scored, and every score
+enters the decompositions, but a cell enters a cross-country ranking, a top-$N$ list or the
+Strategic Index only if it is \emph{rankable}: the economy is a sovereign state and at most
+$\tau=0.5$ of the cell's index weight rests on imputed components, $\iota_{its}\le\tau$
+(\texttt{config/rankability.yml}). Imputed components here include the zero fills that record
+absence from a register, not only the cross-country fills. Figure~\ref{fig:method_rankability} and
+Table~\ref{tab:method_rankability} show what the rule keeps. Of the 6,232 scored headline $\ES$
+cells, 4,163 (67 percent) are rankable; 607 belong to territories and 1,462 to sovereign states
+whose imputed share exceeds the threshold. In $\EO$, 4,301 of 7,131 cells (60 percent) are
+rankable, with 718 territory cells and 2,112 sovereign cells over the threshold. Counted over
+sovereign cells only, the rule keeps 74 percent in $\ES$ and 67 percent in $\EO$. Its bite
+follows the imputation burden described below. In $\ES$ it is heaviest upstream, where only 52
+percent of the cells are rankable against 70 percent at the midstream stage and 80 percent
+downstream, because the reserve and production registers that dominate upstream $\ES$ cover a
+minority of economies and record the others through the zero rule. In $\EO$ it is heaviest at the
+midstream and downstream stages (56 and 55 percent, against 70 percent upstream), where the
+technology-demand terms are imputed for most economies. The narrowest pairs still keep a usable
+comparison set: Green Hydrogen midstream keeps 40 rankable $\EO$ cells (19 percent of those
+scored), and Nuclear downstream, the narrowest $\ES$ pair, keeps 68 (32 percent). Every one of
+the 195 sovereign states keeps at least one rankable $\ES$ cell, but 17 keep no rankable $\EO$
+cell: Liechtenstein and Monaco, and fifteen small island and low-income states (Djibouti,
+Dominica, Eritrea, Haiti, Kiribati, the Marshall Islands, Micronesia, Nauru, North Korea, Palau,
+S\~ao Tom\'e and Pr\'incipe, Somalia, St Kitts and Nevis, St Vincent and the Grenadines and
+Tuvalu). Their only rankable $\EO$ cells were upstream, in pairs without a traded-goods basket; the
+upstream baskets added in the final pass bring a Trade category to four of those pairs, whose
+export-size and comparative-advantage terms are imputed for economies absent from the Comtrade
+reporter file, and this lifts their imputed weight share just over the threshold. Taiwan keeps 19 rankable $\ES$ cells and 18 rankable $\EO$ cells.
+
+The rule is not neutral with respect to the level of the indices. Rankable sovereign cells score
+higher on average than sovereign cells over the threshold in every pillar and stage, most
+markedly in midstream $\ES$ (0.46 against 0.30) and midstream $\EO$ (0.49 against 0.37). The
+reason is mechanical. The cells over the threshold are mostly those of economies absent from the
+registers, and the zero rule scores that absence at the bottom of the comparison set, so the
+excluded cells lean insecure and less opportune. In the Strategic Index the rule therefore
+removes cells with a high measured need: of the 5,854 candidate cells of the policy-scored
+economies that have both pillar values in a reported sector, 3,154 (54 percent) are kept, in 174
+of 203 economies. The 2,700 cells removed have a mean security need $1-\ES$ of 0.68 and a mean
+$\EO$ of 0.44, against 0.58 and 0.49 for the cells kept. The 29 economies that lose every cell
+are nine territories and special administrative regions (among them Hong Kong, Macau and the
+West Bank and Gaza) and 20 sovereign states: the 17 without a rankable $\EO$ cell, Andorra, the
+Central African Republic and Grenada. The rule should be read as a
+statement about what the data can support rather than as a correction of the index: an economy's
+excluded cells keep their values, and the ranking of the cells that remain is unaffected by their
+removal, since the pillars are built before the rule is applied.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{method_rankability}
+  \caption{Rankability of the scored cells by technology--stage pair. Each bar divides the scored
+  country--technology--stage cells of a pair into three exclusive groups: rankable cells (the
+  economy is a sovereign state and the imputed weight share $\iota_{its}$ is at most
+  $\tau=0.5$); cells of sovereign states with $\iota_{its}>0.5$; and cells of territories,
+  special administrative regions and the West Bank and Gaza, which are scored but never ranked
+  whatever their imputed share. The ``All technologies'' row pools the pairs of the stage, and its
+  label gives the rankable share. Sovereignty follows the Correlates of War state-system list (195
+  states: the 193 members of the United Nations, Kosovo and Taiwan). ``No ES score'' marks the
+  three pairs without an $\ES$ value. Sample: the eleven headline technologies, 6,232 $\ES$ and
+  7,131 $\EO$ cells. Source: \texttt{energy\_security\_index} and
+  \texttt{economic\_opportunity\_index} in \texttt{data/processed/outputs/index\_outputs.rds};
+  \texttt{config/rankability.yml}; \texttt{scripts/paper/fig\_method.R}.}
+  \label{fig:method_rankability}
+\end{figure}
+
+\input{tables/method_rankability}
+
+\paragraph{Composition differs across pairs, not within them.}
+Figure~\ref{fig:method_category_sets} shows which categories enter each pillar in each of the 33
+headline technology--stage pairs. Two features stand out. First, within every pair all scored
+economies share one category set. This holds in all 30 pairs with an $\ES$ score and in all 33
+with an $\EO$ score. It is the outcome anticipated in Section~\ref{subsec:norm_pillar}: every
+theme except the levelised-cost theme carries a missing-data rule, so a category observed for
+one economy of a pair is completed for all of them. Cross-country comparisons within a pair are
+therefore comparisons of one construct. Second, composition varies widely across pairs. The 30
+$\ES$ pairs use 16 distinct category sets and the 33 $\EO$ pairs use 18. No pair observes all ten
+categories of either pillar. The number of observed categories ranges from one to seven in $\ES$
+(median three) and from two to seven in $\EO$ (median six). Counted over cells rather than pairs
+the medians are the same; 21 percent of $\ES$ cells (1,279 of 6,232) are scored on a single
+category, whereas no $\EO$ cell has fewer than two.
+
+The variation is mainly structural: it follows the stage at which each category is defined. The
+median $\ES$ pair has 5.5 categories upstream, 1.5 at the midstream stage and two downstream.
+Only Trade, Foreign Dependency and Investment exist at the midstream stage, and only Consumption,
+Energy Access, Investment and, for the three renewable technologies with a resource-potential
+series, Reserves exist downstream. In seven of the 30 $\ES$ pairs the pillar consists of a single
+category, so $\ES_{its}$ simply is that category's score: Trade in the coal, gas, nuclear and oil
+midstream pairs; Foreign Dependency in Green Hydrogen midstream; Investment in Electric Vehicles
+downstream; and Consumption in Green Hydrogen downstream. Nuclear upstream, which the uranium
+data of the OECD Nuclear Energy Agency and the International Atomic Energy Agency now inform, is
+scored on Production, Reserves, Trade and Energy Prices; its Trade category, like that of the
+Electric Vehicles, Solar and Wind upstream pairs in both pillars, comes from the upstream trade
+baskets described below. The $\EO$ pillar is broader in every pair. Its
+narrowest pair, Electric Grid downstream, has only Cost Competitiveness and Technological
+Readiness, and the second of these is a technology-level constant. The figure also marks the
+categories whose score is identical for every economy in a pair. These are Energy Prices in the
+ten upstream pairs that have a price series (in both pillars), Technological Readiness in all 33
+$\EO$ pairs, and Technology Demand in five $\EO$ pairs (Batteries upstream and midstream, and
+Geothermal at all three stages), where no regional demand outlook separates economies. Such a
+category cannot rank economies within its pair. By equation~\eqref{eq:affine_constant}, it shifts
+the pair's level and scales down its dispersion.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{method_category_sets}
+  \caption{Category composition of the pillars by technology--stage pair. Each column is one of
+  the 33 headline technology--stage pairs, grouped by stage. Each row is a category of the
+  Energy Security pillar (upper block) or the Economic Opportunity pillar (lower block), ordered
+  by nominal weight as in Table~\ref{tab:category_weights}. Dark blue: the category is observed
+  in the pair and its score varies across economies. Light blue: the category is observed but
+  takes the same score for every economy of the pair (a world- or technology-level input).
+  Gray: the category is not observed in the pair. The number above each column is the number
+  of observed categories, which is the same for every economy of the pair. ``Pair not scored''
+  marks the three pairs without an $\ES$ value. Sample: the country--technology--stage cells of
+  the eleven headline technologies that have a pillar value (6,232 for $\ES$, 7,131 for $\EO$).
+  Source: category contributions in \texttt{data/processed/outputs/index\_outputs.rds};
+  \texttt{scripts/paper/fig\_method.R}.}
+  \label{fig:method_category_sets}
+\end{figure}
+
+\paragraph{Effective weights.} Figure~\ref{fig:method_weights} compares the nominal shares of
+Table~\ref{tab:category_weights} with the effective weights $\omega_{kits}$ of
+equation~\eqref{eq:effective_weight}, averaged over the scored headline cells of each stage and
+set to zero where a category is not observed. The category set is common within a pair, so the
+effective weight is a property of the pair: averaging over cells instead of pairs changes the
+stage means by at most 0.032. The available-case rule hands the nominal weight of the categories
+absent from a pair to those present, in proportion to their nominal weights. Because the median
+pair observes only three of the ten categories in $\ES$ and five in $\EO$, the effective weights
+depart a long way from the nominal ones. The mean absolute gap between effective and nominal
+share is 0.11 in $\ES$ and 0.08 in $\EO$, and the largest gap is 0.49.
+
+In $\ES$, Trade has a nominal share of 0.095 but a mean weight of 0.59 at the midstream stage,
+and Consumption (nominal share 0.119) carries 0.49 downstream. Upstream the weight is spread more
+evenly, led by Reserves (0.20), Trade (0.18) and Production (0.18); Energy Prices, nominally the
+smallest $\ES$ category (0.048), carries 0.10. In $\EO$ the redistribution favours the categories
+observed at every stage: Technology Demand (0.20 to 0.25, against a nominal 0.133), Cost
+Competitiveness (0.19 to 0.24, against 0.100) and Technological Readiness (0.12 to 0.16, against
+0.067). The
+nominal weights are therefore a poor guide to the composition of any particular cell. This is the
+gap between nominal weights and effective importance that \citet{paruolo2013ratings} and
+\citet{becker2017weights} emphasise, arising here from which categories are observed rather than
+from correlations among indicators.
+
+Inputs that are identical for every economy of a pair take a large share of the $\EO$ weight.
+Categories that are constant within the pair (Energy Prices, Technological Readiness and the five
+constant Technology Demand pairs) take a mean of 0.34 of the weight of an upstream $\EO$ cell,
+0.22 at the midstream stage and 0.18 downstream. Adding the constant components inside categories
+that do vary, namely the world export concentration in Trade and the addressable-market,
+global-demand and overcapacity terms of Technology Demand, each of which takes one value for
+every economy of the pair whether observed or filled, raises these shares to 0.46, 0.39 and
+0.27. The corresponding component-level shares in $\ES$ are 0.16, 0.20 and 0. The midstream
+$\ES$ figure is the world export concentration term of Trade, which carries a mean weight of
+0.20 in nine of the ten midstream pairs; since the export-concentration index is ranked across
+the cells of the eleven headline technologies, it sets a pair-level offset rather than a
+country-level signal. These shares are a product of the construction, not of the data. They move
+pillar levels across pairs without reordering economies within a pair, so they matter for the
+within-country comparisons of the Strategic Index (Section~\ref{sec:strategic}) and not for the
+within-pair rankings.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{method_weights}
+  \caption{Nominal and effective category weights. Black ticks: nominal share
+  $w_k/\sum_{k'}w_{k'}$ over the ten categories of the pillar (\texttt{config/weights.yml};
+  Table~\ref{tab:category_weights}). Dots: mean effective weight $\omega_{kits}$
+  (equation~\eqref{eq:effective_weight}) over the scored cells of the eleven headline
+  technologies at each stage, with $\omega_{kits}=0$ where the category is not observed. A dot
+  at zero marks a category that is never observed at that stage. The effective weights of a
+  stage, like the nominal shares, sum to one over the categories. A dot to the right of the
+  tick means that the available-case rule gives the category more weight than its nominal share.
+  Cells: 2,181, 2,002 and 2,049 for $\ES$ and 2,394, 2,346 and 2,391 for $\EO$ (upstream,
+  midstream, downstream). Source: category contributions in
+  \texttt{data/processed/outputs/index\_outputs.rds}; \texttt{scripts/paper/fig\_method.R}.}
+  \label{fig:method_weights}
+\end{figure}
+
+\paragraph{Imputation burden.} Figure~\ref{fig:method_imputation} and
+Table~\ref{tab:method_imputation} report the mean imputed share of each category by stage and the
+mean imputed weight share $\iota_{its}$ of equation~\eqref{eq:imputed_share}. On average, imputed
+components carry 31 percent of the weight of an $\ES$ cell and 43 percent of the weight of an
+$\EO$ cell (medians 0.26 and 0.44), and 28 percent of $\ES$ cells and 39 percent of $\EO$ cells
+exceed the rankability threshold of one half. In $\ES$ the burden is heaviest upstream, at 0.41
+against 0.23 at the midstream stage and 0.27 downstream. Upstream, Reserves is imputed at 0.84 on
+average and alone accounts for 0.17 of the stage mean of 0.41. Its values come from the zero rule,
+which records absence from the reserve registers (the U.S. Geological Survey's mineral reserves,
+the Energy Institute's fuel reserves and the uranium resources of the Red Book) as no reserves.
+Energy Imports (0.55), Foreign Dependency (0.50) and Production (0.43) also cover only part of
+the upstream grid, and the new upstream Trade category is imputed at 0.19. In $\EO$ the burden is
+flat across stages (0.41, 0.44 and 0.43) and is led by
+Technology Demand, whose score is imputed at 0.73 to 0.86 on average. Three of its terms cover
+only part of the grid. The addressable-market term is a market-level value observed for one
+market per pair, so it counts as imputed for every other economy; it supplies 0.37 to 0.48 of the
+category's mean imputed share. The regional demand outlook, the category's only country-varying
+term, is observed for a median of 12 economies per pair and supplies 0.22 to 0.33. The
+global-demand term is a world-level series recorded for 108 economies and filled with the same
+value for the others: it is identical for every economy, yet it counts as imputed in about half
+of the cells and supplies 0.11 to 0.13. Technology Demand contributes between 0.16 and 0.19 to
+each stage mean of $\iota_{its}$. Investment, which enters both pillars, is heavily imputed at
+every stage of each (0.64 to 0.83): where the category is defined, its components are observed
+for only a minority of the economies in the pair's grid.
+
+Categories built from world-level series show almost no imputation: less than 0.01 for Energy
+Prices and at most 0.04 for Technological Readiness. This illustrates the point of
+Section~\ref{subsec:norm_diagnostics} that $\iota_{its}$ records how a value was obtained, not
+whether it is specific to the economy, and it qualifies the rankability rule, which can admit a
+cell whose observed weight is largely world-level. No $\ES$ cell rests entirely on imputed
+components. In $\EO$, 24 cells do, all in three small economies: the Isle of Man (14 cells),
+Puerto Rico (8) and Liechtenstein (2). Nineteen of the 24 are at the midstream stage. These cells
+are kept and flagged but are never ranked. At the other extreme, 2,055 $\ES$ cells (33 percent)
+and 407 $\EO$ cells (6 percent) contain no imputed component.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{method_imputation}
+  \caption{Imputation burden by category and stage. Category rows: the mean, over the headline
+  cells in which the category is observed, of the share of the category score carried by
+  imputed components, $\sum_v\lambda_{vkits}\1[\tilde x_{itsv}\text{ imputed}]$. Pillar row
+  (with values): the mean imputed weight share $\iota_{its}$ of
+  equation~\eqref{eq:imputed_share} over all scored cells of the stage, which weights the
+  category rows by the effective weights. Dashes mark categories that are not observed at a
+  stage. A component counts as imputed when a missing-data rule of
+  Table~\ref{tab:missing_rules} supplied it, zero fills included; world-level series copied to
+  every economy count as observed. All values are given in Table~\ref{tab:method_imputation}.
+  Source: variable contributions and pillar diagnostics in
+  \texttt{data/processed/outputs/index\_outputs.rds}; \texttt{scripts/paper/fig\_method.R}.}
+  \label{fig:method_imputation}
+\end{figure}
+
+\input{tables/method_imputation}
+
+\paragraph{Coverage, country-specific information, floors and pair status.}
+Figure~\ref{fig:method_coverage} plots two counts for each pair. The first is the number of
+economies scored. The second is the number of those economies with at least one positively
+weighted, non-imputed component that is country-specific, meaning that it takes different
+observed values across the economies of the pair. The gap between the two is the number of
+economies whose score in the pair rests only on imputed values and on world-level series. In
+$\ES$ there is no gap at the midstream and downstream stages: in all 20 of those pairs every
+scored economy has country-specific data. Upstream, where the commodity-price series copied to
+every economy sets the grid, every pair except Nuclear has a gap, from four economies in Electric
+Vehicles to 38 in Coal, where 180 of 218 economies have country-specific $\ES$ data. Nuclear
+upstream has none: every one of its 218 economies has a country-specific value once absence from
+the uranium registers is recorded as zero production and zero resources. In $\EO$, every pair
+except Nuclear upstream has at least one scored economy without country-specific data. The share
+with such data is lowest in Electric Grid downstream (143 of 213 economies, 0.67), followed by
+the upstream and midstream geothermal pairs (144 of 213 each), Green Hydrogen midstream (148 of
+213) and Green Hydrogen upstream (150 of 218). Every economy in
+the upstream grids has a country-specific upstream component in at least one pair of each pillar.
+
+The economies without country-specific data share one value within their pair, which shows up
+as a mass point: in five $\EO$ pairs (Electric Grid downstream, Green Hydrogen upstream and
+midstream, and Geothermal upstream and midstream) between 65 and 70 economies, close to a third of
+those scored, sit at a single interior value. None of these tied cells is rankable, so the rule
+of the previous paragraph removes them from every ranking. A second kind of mass point is
+produced by observed zeros, which the rule does not remove. In $\ES$, 98 of the 109 economies
+scored in Green Hydrogen midstream share the pair's minimum value (0.256), and 95 of these cells
+are rankable. In Nuclear upstream, 127 of the 218 economies share one value (0.172), 105 of them
+rankable; the tie is no longer the pair's minimum, because the uranium Trade category places some
+economies below it. Such a tie records a real absence of production or resources, but it gives
+many economies the same low security score; with the security-need reading of the Strategic
+Index it becomes a uniform, sector-wide need (Section~\ref{sec:strategic}).
+
+All 30 headline pairs with an $\ES$ score and all 33 with an $\EO$ score have status ok; none is
+constant and none is unscored. Over every technology, including those outside the headline set,
+all 45 $\ES$ pairs and all 40 $\EO$ pairs are ok. Nuclear upstream, which was constant before the
+uranium data were added, now varies across economies. Three pairs, Electric Grid downstream and
+Geothermal upstream and midstream, have no observed $\ES$ category and so no $\ES$ score. The
+Strategic Index is therefore computed over 30 sectors: the degenerate-sector rule of
+Section~\ref{subsec:si_sample} removes none, Geothermal midstream is left out by rule, and
+Electric Grid downstream and Geothermal upstream have no $\ES$ value.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{method_coverage}
+  \caption{Economies scored and economies with country-specific data, by technology--stage pair.
+  Filled dots: the number of economies with a pillar value in the pair. Hollow circles: the
+  number of those economies for which at least one positively weighted, non-imputed component is
+  country-specific, that is, takes at least two distinct observed values across the economies of
+  the pair. World-level series copied to every economy, such as commodity-price volatility, world
+  export concentration and technology readiness, do not count as country-specific. The segment
+  between the two marks is the number of economies whose value rests only on imputed components
+  and world-level series. Where the two counts coincide the marks appear as a ringed dot. ``No ES
+  score'' marks the pairs without an $\ES$ value. Every pair has status ok (no pair is constant or
+  unscored). The axis starts at 100 economies. Sample: the eleven headline technologies. Source:
+  variable contributions and pillar diagnostics in
+  \texttt{data/processed/outputs/index\_outputs.rds}; \texttt{scripts/paper/fig\_method.R}.}
+  \label{fig:method_coverage}
+\end{figure}
+
+\paragraph{The Policy index.} Table~\ref{tab:method_policy} summarises the composite used in
+the final run. It has two components, the IEA Policies and Measures database
+\citep{iea2026pams} with weight 3 and the Climate Action Tracker ratings \citep{cat2026ratings}
+with weight 2. The New Industrial Policy Observatory component \citep{gta2026nipo} is excluded
+and survives only in a robustness variant, built from the October 2026 release of the Observatory
+(interventions in force on 5 October 2026) in the same way as the pipeline builds the component;
+it covers 77 jurisdictions, with the EU members scored individually. The dual-use score is
+excluded because it takes one value for every economy of a pair and so cannot rank economies. IEA PAMS is required and CAT is added where it
+rates the economy, with the weights renormalised over the components present. IEA PAMS reaches
+215 economies, and all 215 receive a Policy index: 65 on both components (39 with a rating of
+their own and 26 EU members that take the EU's rating) and 150 on IEA PAMS alone. Every one of
+the 57 coalition members is scored, 11 of them on IEA PAMS alone (Israel and Ukraine in the core;
+the Democratic Republic of the Congo, the Dominican Republic, Gabon, Ghana, Guatemala, Malaysia,
+Namibia, Oman and Qatar among the partners). Requiring both components, the rule of earlier
+drafts, leaves 65 economies and is kept as a robustness variant.
+
+The basis on which an economy is scored matters for the within-country comparisons that the
+Strategic Index makes. For the 65 economies scored on both components, the within-country
+Spearman correlation between the IEA PAMS component alone and the composite, computed over each
+economy's headline cells, has a median of 0.48 and an interquartile range of 0.41 to 0.57; it is
+below one half for 37 of the 65. Over the cells that enter the Strategic Index the median is
+0.44. The two components carry largely independent information: across the cells of these 65
+economies their Spearman correlation is $-0.05$. Adding CAT therefore reorders an economy's
+sectors substantially, and the 109 economies of the Strategic Index scored on IEA PAMS alone,
+which hold 1,488 of its 3,154 cells, are ordered on a different basis from the 65 that hold the
+other 1,666. The comparison is within economies, so the two groups are not mixed in any single
+ranking of the policy term, but the difference in basis should be kept in mind when the
+Strategic Index of a member scored on IEA PAMS alone is compared with that of a member scored on
+both.
+
+\input{tables/method_policy}
+
+\paragraph{Trade inputs: baskets, bilateral flows and conduits.}
+Table~\ref{tab:hs6_counts} in Section~\ref{sec:data} gives the HS6 baskets after the basket review
+of October 2026.
+The baskets hold 259 distinct codes, 242 of the current HS revision and 17 legacy codes that
+bridge the HS 1992 nomenclature of the Atlas panels; 105 codes belong to more than one basket. Of
+the 33 headline pairs, 18 upstream and midstream pairs have a basket; only the Geothermal and Green
+Hydrogen upstream and midstream pairs have none, and no basket exists for the downstream stage.
+Four of the eighteen are upstream baskets added in the final pass, which feed the Trade categories
+of both pillars: Electric Vehicles (eight codes: the ores of the battery minerals and the rare
+earths of permanent magnets), Wind (three codes: rare earths), Nuclear (two codes: uranium ores
+and natural uranium compounds, the heading of most traded ore concentrate, which moved from the
+midstream basket) and Solar (one code: silicon
+metal). A Semiconductors upstream basket (gallium, germanium and indium) is carried for
+description only. The review took 92 rows out of the master,
+each with its reason recorded: 47 codes leave every basket and 22 stay in another technology's
+basket. It removed general-purpose goods whose main use lies outside the technology (aircraft
+engines and building boilers from coal and gas midstream, commodity resins and packaging film
+from batteries midstream, general machinery from oil and gas midstream, telecommunication cables
+from the grid, solar and wind baskets) and two items with direct consequences for the results.
+Electricity (HS 271600) is no longer in the Electric Grid upstream basket: the commodity the grid
+carries is not an input to building it, and with it in the basket, net power exporters ranked as
+grid suppliers. The pair's basket is now the copper and aluminium material inputs, seven codes
+from copper ores, blister and cathodes to bauxite, alumina and unwrought aluminium. Switching and
+routing apparatus (HS 851762), which is telecommunication and data-networking equipment, is no
+longer in Electric Grid midstream.
+
+Bilateral flows come from an all-reporter pull of Comtrade dyads \citep{uncomtrade} for 2020 and
+2024, in which 173 economies report in at least one of the two years (168 in 2020; 142 for
+exports and 143 for imports in 2024) and 208 appear as reporter or partner; Taiwan, which Comtrade
+records as ``Other Asia, n.e.s.'', is mapped to its own code. Each exporter--importer flow is the
+importer's declaration where it exists and otherwise the exporter's declaration scaled by a
+CIF/FOB factor of 1.06. Of the 701,214 exporter--importer--technology--stage cells observed in
+2024, 22 percent come from mirror declarations; they are 13 percent of the cells with positive
+trade and 4 percent of the value, because large traders report. Thirty importers that reported in
+2020 did not report in 2024, among them Russia, Iran, the United Arab Emirates and Viet Nam, and
+65 of the 208 importers enter the 2024 matrix only through their partners' declarations. Their
+imports are therefore measured from the exporters' side, which omits flows from exporters that do
+not report either. The country-level trade themes of the pillars read a file of exports and
+imports by reporter and code that is rebuilt from the World rows of the same pull. It covers 142
+exporting and 143 importing reporters in 2024 and every basket code of the current HS revision
+(the thirteen codes absent from it are legacy codes); among others it restores Qatar's exports of
+liquefied natural gas, USD 56.9 billion in 2024. Hong Kong is left out of the Comtrade export
+measures (export size, revealed comparative advantage and export concentration) because its
+exports are mostly re-exports of goods made elsewhere, which the producers' own exports already
+count; its Atlas-based variables are kept. In the outbound direct-investment component of the
+bilateral indices, positions with 16 conduit financial centres are treated as unobserved: the ten
+largest conduits identified by Damgaard, Elkjaer and Johannesen (the Netherlands, Luxembourg,
+Hong Kong, the British Virgin Islands, Bermuda, Singapore, the Cayman Islands, Switzerland,
+Ireland and Mauritius) and six further offshore centres (the Bahamas, Barbados, the Turks and
+Caicos Islands, the Isle of Man, Guernsey and Cyprus).
+
+\paragraph{Exactness of the decompositions and mixing of vintages.} The decompositions of
+equations~\eqref{eq:cat_decomp} and~\eqref{eq:var_decomp} hold to machine precision. Over all
+7,794 $\ES$ cells and 7,661 $\EO$ cells, covering every technology, the largest absolute
+difference between the index and the sum of its category contributions is zero, as it must be,
+since the builders compute the index as that sum; the check confirms that the stored
+contributions are the ones that produced the index. The largest difference between the index
+and the sum of its variable contributions is $1.1\times10^{-16}$, a rounding error. In every
+cell the realised category weights sum to one, as do the variable weights
+$\omega_{kits}\lambda_{vkits}$. Rebuilding $\iota_{its}$ from the variable table reproduces the
+builders' diagnostic to within $1.1\times10^{-16}$. The attributions in
+Sections~\ref{sec:energy_security} and~\ref{sec:economic_opportunity} are therefore exact rather
+than approximate, and they hold for every scored cell, rankable or not.
+
+The latest-year rule of equation~\eqref{eq:latest_year} mixes vintages within cells. In $\ES$,
+60 percent of cells combine components from more than one year, at most three, all between 2023
+and 2025 apart from the 2035 horizon of the announced manufacturing-capacity shares. In $\EO$ the
+share is 92 percent, and a cell can contain up to six distinct years. Part of the $\EO$ mixing
+reflects the 2030 and 2035 projection horizons of the outlook series rather than data vintages.
+Counting only years up to 2026, 91 percent of $\EO$ cells still combine more than one vintage,
+with at most four years and a median spread of three years among the cells that mix. The extreme
+case is the input-cost index of Papua New Guinea, whose latest observation is for 1980 and which enters all 33 of that economy's $\EO$ cells through Cost Competitiveness.
+The 2035 manufacturing-capacity shares carry a limitation of their own. The IEA reports the
+announced capacity for Europe as a region, so every EU member takes the EU's regional share in the
+market-share terms of midstream Foreign Dependency (and of the corresponding $\EO$ variable);
+these terms therefore do not separate the EU members from one another, and an EU member's share
+of planned capacity is overstated where the EU's capacity is located elsewhere in the Union.

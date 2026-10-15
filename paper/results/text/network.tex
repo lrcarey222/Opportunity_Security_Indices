@@ -1,0 +1,423 @@
+% ---------------------------------------------------------------------------
+% Results fragment for Section 10 (allied network design), Results subsection
+% (subsec:network_results), and for Appendix C (calibration and robustness).
+% Final design: 2026-10-12 full rerun, scripts/30 at lambda = 0.78, 37 network nodes (the EU-27 as
+% one node), the 22 Upstream and Midstream stages, GDP-log portfolio caps on, node policy term off.
+% Floats (label = file name). The placeholders of 10_network.tex map as follows:
+%   fig:specialization -> fig:network_specialization   fig:concentration -> fig:network_concentration
+%   fig:portfolio      -> fig:network_portfolio        fig:network_map   (unchanged)
+%   new: fig:network_frontier, fig:network_robustness, tab:network_producers, tab:network_eu_split,
+%        tab:network_frontier, tab:network_robustness (tables in paper/tables/, \input below)
+% Numbers: paper/results/network.json (scripts/paper/fig_network.R),
+% paper/results/network_frontier.json (scripts/paper/fig_network_frontier.R) and
+% paper/results/network_robustness.json (scripts/paper/fig_network_robustness.R).
+% Citations still to be added to references.bib are marked "% CITE:".
+% ---------------------------------------------------------------------------
+
+\paragraph{Coverage and solution.} The production design covers the 57 coalition members (31 core
+members and 26 partners) and the six EU member states that belong to the coalition only through
+the EU node (Cyprus, Estonia, Latvia, Lithuania, Malta and Slovenia): 63 economies, which form
+37 network nodes once the EU-27 is bundled into one. It solves the 22 Upstream and Midstream
+technology--stage programs; Downstream deployment is not part of the allied division of labour.
+Every node enters every stage with a producer score, which since the policy term was switched off
+rests on $\EO$ and $\ES$ alone. In two stages, Geothermal Upstream and Midstream, no node has an
+$\ES$ value, so all 37 producer scores rest on $\EO$; in Green Hydrogen Midstream five small
+partners (Costa Rica, the Dominican Republic, Ghana, Guatemala and Namibia) lack $\ES$. Without
+an $\ES$ value demand rests on size alone, so Namibia, the smallest node, has zero demand in these
+three stages (its S-curved size is zero); it remains a potential producer in them. The inputs arrive with one record per key: for each of the five
+collapsed inputs (2{,}079 $\EO$ and 1{,}881 $\ES$ records, 726 development-potential records and
+128{,}898 friendshore and 116{,}622 opportunity dyads among the 63 economies) the number of rows
+read equals the number of keys kept, so the collapse rules of Section~\ref{subsec:network_sets}
+act as guards only. All 22 programs are solved by the MILP and none falls back to the greedy
+heuristic. The tangent approximation of the Herfindahl term, on a share grid of 0.01, has a
+largest error of $2.5\times10^{-5}$ per producer, its theoretical bound. The portfolio loop
+converges after seven passes with no violation remaining. On a shared desktop workstation
+(R~4.4.1, GLPK through \texttt{ompr} and \texttt{ROI}) the production design takes 462 seconds
+of wall-clock time for 62 stage solves, 22 in the first pass and 40 re-solves in the portfolio
+loop; a first-pass stage solve takes 5.9 to 8.6 seconds (median 7.2, slowest Wind Midstream) and
+no solve exceeds 10.6 seconds, far inside the 300-second stage limit.
+
+\paragraph{Who produces what.} Figure~\ref{fig:network_specialization} and
+Table~\ref{tab:network_producers} show the designed division of labour. The 22 stages have 201
+producer roles, between seven producers (Nuclear Upstream) and ten (eight stages), with a median
+of nine in both Upstream and Midstream. The Herfindahl index of designed production shares,
+$\HHI^{\mathrm{D}}_{ts}$, ranges from 0.126 (Oil Midstream) to 0.209 (Nuclear Upstream) with a
+median of 0.152, or 6.58 equally sized producers (4.78 to 7.96). The largest single share is
+0.325 (Indonesia in Green Hydrogen Upstream and Canada in Nuclear Upstream), the largest share of
+a stage is at most 0.30 in 18 of the 22 stages, and no share reaches the cap $\bar s=0.40$;
+61 of the 201 shares (30\%) sit at the floor $\underline s=0.05$. This is the work of the
+diversification term. In the linear design ($\lambda=0$) two producers sit at the 0.40 cap in
+most stages and the median stage has three producers and an index of 0.345
+(Figure~\ref{fig:network_frontier}); the concave penalty moves the solution off these corners, so
+shares are interior and set jointly by the node scores, the edges and the penalty.
+
+Twenty-nine of the 37 nodes produce somewhere; eight never do (Turkey, New Zealand, Ukraine, the
+Dominican Republic, Guatemala, Ghana, Costa Rica and Gabon). Canada has the most roles (16, nine
+of them Upstream), followed by the EU node (15), the United States and Indonesia (13 each), India
+and Japan (12 each), and Thailand and Mexico (11 each). Eight nodes produce only Upstream, all of
+them resource economies (Australia, Chile, Saudi Arabia, Peru, Argentina, Oman, Namibia and the
+Democratic Republic of the Congo); Japan takes ten of its twelve roles and Korea nine of its ten
+in Midstream. Across nodes the Spearman rank correlation between the number of roles and the
+portfolio cap is 0.75 (0.74 with GDP), so the breadth of a node's portfolio is largely a matter
+of size, through the caps, while which stages it takes follows its scores. The 22 nodes outside
+the high-income group carry 47\% of designed Upstream production and 43\% of Midstream
+production, and the partner tier 58\% and 45\%.
+
+Three patterns in the producer map arise from the construction rather than from observed
+capacity, and the reader should weigh them accordingly. First, Indonesia leads six Upstream
+stages (Batteries, Coal, Electric Vehicles, Green Hydrogen, Solar and Wind, with shares of 0.225
+to 0.325) and Oil Midstream. Indonesia is China-leaning by its UN votes and enters the coalition
+through IPEF (Section~\ref{sec:coalition}); the producer score carries no alignment term, and
+alignment reaches the design only through the friendshore edges, so a partner with strong $\EO$
+and $\ES$ is selected on capability, whatever its alignment. Second, Thailand leads both
+Geothermal stages, in which the producer score rests on $\EO$ alone and, as shown below, the
+edges lack their opportunity component: these are the stages in which the design rests on the
+least information. Third, the design applies no endowment screen of the kind used for the
+allied picks of the Strategic Index (Section~\ref{sec:strategic}), so a node can be a designed
+Upstream producer without recorded reserves or production of the stage's resources. Applying the
+screen's rule after the fact (technology-level reserves or production above zero; the EU node
+counts as endowed when any member is), 21 of the 90 designed roles in the ten screened Upstream
+stages (all but Geothermal) are held by nodes without a recorded resource base. They carry a
+median of 11\% of a screened stage's production: none in Electric Vehicles, Gas and Oil Upstream,
+5\% in Batteries Upstream (the United Kingdom), 10\% in Nuclear Upstream (Israel and Thailand at
+the floor), 12.5\% in Coal Upstream (Peru and the Philippines), 23.5\% in Wind Upstream (Japan,
+Israel, Korea and Singapore), 27.5\% in Electric Grid Upstream (five nodes at or near the floor),
+28\% in Green Hydrogen Upstream (Thailand 0.145, Israel and the United Kingdom) and 36\% in Solar
+Upstream (the United Kingdom, Norway, South Africa and Singapore). These nodes score on the stage
+through its trade basket, readiness and the other categories of $\EO$ and $\ES$, not through a
+domestic resource. A reader who equates Upstream production with extraction should read their
+shares as supply that the node would have to source through trade or overseas equity; the screen
+is a rule for the Strategic Index picks, and we do not impose it on the design.
+
+\input{tables/network_producers}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{network_specialization}
+  \caption{Designed division of labour across the allied network. Rows are the 37 network nodes
+  (the EU-27 as one node), ordered by the number of stages in which they produce (in
+  parentheses) and then by their summed production share; columns are the eleven headline
+  technologies within the Upstream and Midstream stages. Shading is the designed production
+  share $x_{p,ts}$, the share of the network's unit demand in the stage that the node supplies,
+  on a sequential scale from the floor 0.05 to the largest share, 0.325; light grey cells are
+  stages in which the node does not produce. A cross marks a stage from which the portfolio-cap
+  loop barred the node in its final pass. Production design: 37 nodes, diversification weight
+  $\lambda=0.78$, GDP-log portfolio caps, node policy term off, all 22 stages solved by the MILP.
+  Source: \texttt{allied\_network\_specialization.csv} and
+  \texttt{allied\_network\_diagnostics.csv}.}
+  \label{fig:network_specialization}
+\end{figure}
+
+\paragraph{The EU node.} The EU node produces in 15 of the 22 stages (six Upstream, nine
+Midstream), with shares from 0.05 to 0.215 and a median of 0.105. It is the second-largest
+producer in Green Hydrogen Midstream (0.215) and Nuclear Midstream (0.205), and its 0.205 in Coal
+Midstream equals Japan's leading share, but it is the sole largest producer in no stage. It is a top-5 producer in ten stages, exactly its cap of ten, and the
+portfolio loop bars it from five (Electric Grid Upstream, Electric Vehicles Midstream, Nuclear
+Upstream, Solar Midstream and Wind Upstream), so Electric Vehicles and Solar are the two
+Midstream stages without EU production. By its observed extra-EU exports the EU is the largest
+exporting node in nine of the 18 stages with a trade basket, all of them Midstream. The design
+sees the EU differently from the trade data in two ways. Its producer score is the stage-weighted
+mean of 27 members' $\EO$ and $\ES$, so strong and weak members are averaged, and intra-EU trade,
+which the extra-EU benchmark leaves out, is internal to the node. And its demand is
+rank-compressed: demand mixes S-curved ranks of need and size, so the EU, with 24.6\% of the
+nodes' GDP, has a median demand weight of 0.035 across stages (0.029 to 0.046), the third largest
+of the nodes, against a largest weight of any node in any stage of 0.054; the United States, with
+35.6\% of the nodes' GDP, has 0.033. In the design the EU therefore consumes about as much as
+the United States and not much more than a mid-sized node.
+Table~\ref{tab:network_eu_split} splits the EU's designed shares back to its members in
+proportion to the stage weights that aggregate their inputs; summed over stages, Germany (0.41),
+France (0.24), Poland (0.19) and Italy (0.16) carry the largest derived shares. These member
+figures are derived, not designed: the program never sees the members separately.
+
+\input{tables/network_eu_split}
+
+\paragraph{Designed flows.} Figure~\ref{fig:network_map} shows the flows of three Midstream
+stages. In Batteries Midstream the United States carries 0.295 of production, India and Malaysia
+0.135 each, Canada 0.114 and the EU 0.105, with four more nodes near the floor; in Solar
+Midstream India (0.275), the United States (0.205), Viet Nam (0.135) and Thailand (0.125) lead;
+in Wind Midstream India (0.275), the United States (0.250) and the EU (0.155). Across all 22
+stages the redundancy constraints bind exactly. Of the 811 consumer--stage pairs, 793 draw on
+exactly $m_S=2$ suppliers and 18 on three, and in every stage the weakest active link carries
+exactly $\varepsilon=10\%$ of its consumer's demand. Self-supply is negligible: it is positive in
+two stages only (0.8\% of demand in Electric Grid Upstream and 0.2\% in Electric Vehicles
+Midstream), because a node's own edge is worth the median edge \eqref{eq:net_self_edge} while the
+edges to its best partners lie above it. Routing is not regional: in the three mapped stages 15
+to 28\% of the flow stays within a World Bank region.
+
+Routing follows the strongest partnerships. Over flows between distinct nodes the flow-weighted
+mean edge weight is 0.874 in the median stage (0.385 to 0.910). The low end is Geothermal: every
+ordered node pair has the friendshore component in all 22 stages, but the opportunity component
+is complete in 19 stages only, covers 86.5\% of the pairs in Green Hydrogen Midstream (the five
+nodes without $\ES$ have no opportunity dyads as consumers) and is absent in both Geothermal
+stages. A missing component enters the edge weight as zero, so the Geothermal edges enter at no
+more than half weight and their flow-weighted weight is 0.385 to 0.387, against 0.73 to 0.75 in
+the two Green Hydrogen stages and 0.85 to 0.91 elsewhere. Across the 22 stages,
+90.3\% of the 29{,}304 stage-specific ordered pairs of distinct nodes carry both
+components and 9.7\% the friendshore component only (the two Geothermal stages and the five Green
+Hydrogen Midstream consumers without $\ES$); no pair lacks both. The design routes its flows to
+the stronger pairs: the unweighted mean edge weight over these pairs is 0.58 in the median stage,
+against the flow-weighted 0.874, and the flow-weighted mean is the higher of the two in all 22
+stages. The EU node's edges aggregate its members' edges, weighted by the members' 2024
+basket trade with the partner where it exists (76\% of the EU edges) and by the stage weights
+otherwise; edges between two EU members are internal to the node and dropped.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{network_map}
+  \caption{Designed flows in three Midstream stages. In each panel, producers sit on the left,
+  sized by their production share $x_p$ (printed next to the code; EU = the EU-27 node), and
+  every one of the 37 nodes sits on the right as a consumer, in the same order in every panel:
+  by World Bank region (shaded bands, labelled at the right) and by GDP within region. A line is a
+  flow $f_{pc}$ from producer $p$ to consumer $c$, with width increasing in the flow measured as
+  a share of the stage's unit demand. Consumers that also produce in the stage are in bold.
+  Producers are placed at the flow-weighted mean position of their consumers (the barycentre step
+  of a two-layer layout) so that few lines cross. Panel titles give the number of producers and
+  $\HHI^{\mathrm{D}}_{ts}$. Self-supply is zero in all three stages. Production design
+  ($\lambda=0.78$, portfolio caps, MILP). Source: \texttt{allied\_network\_flows.csv} and
+  \texttt{allied\_network\_specialization.csv}; layout computed with \texttt{igraph}.}
+  % CITE: csardi2006igraph
+  \label{fig:network_map}
+\end{figure}
+
+\paragraph{Concentration.} Figure~\ref{fig:network_concentration} compares the designed
+concentration with two observed benchmarks in the 18 stages that have an HS6 trade basket (all
+but the Geothermal and Green Hydrogen stages): the export Herfindahl index of the 37 nodes
+themselves, $\HHI^{\mathrm{N}}_{ts}$, from the reconciled 2024 Comtrade matrix with the EU
+counting only its extra-EU exports, and that of world exports, $\HHI^{\mathrm{W}}_{ts}$, over all
+reporters \citep{uncomtrade}. The calibration of $\lambda$ targets the median of the first
+(0.1556, or 6.43 equivalent exporters), and the design meets it in the median by construction
+(0.1520, 6.58 equivalent producers). Stage by stage, however, the designed and the observed
+concentration are unrelated: the design is less concentrated than the nodes' exports in 10 of
+the 18 stages and more concentrated in eight, and the Spearman correlation of
+$\HHI^{\mathrm{D}}_{ts}$ with $\HHI^{\mathrm{N}}_{ts}$ across the 18 stages is $-0.07$. The
+design compresses the spread of concentration: $\HHI^{\mathrm{N}}_{ts}$ runs from 0.095 to 0.355,
+$\HHI^{\mathrm{D}}_{ts}$ from 0.126 to 0.209. Where the nodes' exports are most concentrated, in
+Nuclear Upstream (Canada 54\% of the nodes' exports), Coal Upstream (Australia 41\%) and Nuclear
+Midstream (the EU 48\%), the design spreads production; where exports are already dispersed, as
+in Batteries Midstream ($\HHI^{\mathrm{N}}=0.095$), it concentrates it on the highest-scoring
+producers. The largest designed share is below the largest node's export share in 13 of the 18
+stages, and the designed and observed leaders coincide in four. Measured against world exports
+the design is more concentrated in 13 of the 18 stages (median $\HHI^{\mathrm{W}}=0.101$, 9.9
+equivalent exporters), but so are the nodes' own exports in 16: a closed network of 37 nodes
+cannot match the dispersion of a world market with up to 139 reporters.
+
+What the network changes is the identity of the suppliers. China is the largest world exporter
+in ten of the 18 basket stages: eight of the nine Midstream stages with a basket (Nuclear
+Midstream, led by France, is the exception) and the Solar and Wind Upstream baskets (silicon
+metal, 38\%, and magnet rare earths, 30\%), with shares from 20 to 43\% (Batteries Midstream).
+Kazakhstan leads Nuclear Upstream (44\%). In the median basket stage the 37 nodes account for
+74\% of world exports (54 to 97\%), so the closed design replaces, by assumption, between 3 and
+46\% of observed world supply. Whether the designated nodes could supply that volume, at what
+cost and over what horizon, lies outside the model (Section~\ref{subsec:network_limitations}).
+Two caveats apply to the benchmarks. Economies that do not report to Comtrade enter the matrix
+only through their partners' mirror declarations, and the number of exporters behind each index
+differs (34 to 139 world reporters, at most 37 nodes, seven to ten designed producers), so part of
+any difference reflects the number of units.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{network_concentration}
+  \caption{Designed versus observed concentration by technology and stage. Panel~(a): Herfindahl
+  index of the designed production shares, $\HHI^{\mathrm{D}}_{ts}$ (filled circles coloured by
+  stage); of the 2024 basket exports of the 37 network nodes, $\HHI^{\mathrm{N}}_{ts}$ (grey;
+  shares within the nodes, the EU-27 as one exporter counting only extra-EU exports; reconciled
+  Comtrade matrix, importer report else the exporter's mirror $\times1.06$); and of world exports
+  across all reporters, $\HHI^{\mathrm{W}}_{ts}$ (open circles). A grey segment joins the nodes'
+  observed value to the design. The vertical line is the calibration target, the median of
+  $\HHI^{\mathrm{N}}_{ts}$ over the 18 stages with a basket (0.156). Panel~(b): the largest
+  single share in each case. The codes at the right name the world's largest exporter of the
+  stage's basket, in bold where it is outside the network; Geothermal and Green Hydrogen have no
+  basket and show the design only. Production design ($\lambda=0.78$, caps on). Sources:
+  \texttt{allied\_network\_diagnostics.csv}, \texttt{allied\_network\_observed\_hhi.csv} and the
+  trade-concentration theme, from UN Comtrade \citep{uncomtrade}.}
+  \label{fig:network_concentration}
+\end{figure}
+
+\paragraph{Design versus current exporters.} The design does not reproduce the ranking of current
+exporters, and is not meant to. In the median basket stage 66\% of designed production goes to
+nodes outside the three largest exporting nodes (42 to 92\%); all three leaders are designed
+producers in eight of the 18 stages and at least one is in every stage. Across the 37 nodes the
+Spearman correlation between designed production share and observed export share has a median of
+0.53 over the stages (0.27 to 0.74). Part of the gap is mechanical: export performance enters the
+producer score only through the trade category of $\EO$, alongside production, demand, readiness,
+costs and the other categories, and through $\ES$. Part is the design's purpose. A program that
+maximises the network's score subject to redundancy and a diversification penalty selects
+combinations of producers, not the top of a ranking, which is the sense in which the AIB concept
+paper asks that an allied design ``optimize combinations, not rankings''. % CITE: neis2026aib
+The lowest correlations, in Batteries and Electric Vehicles Upstream (0.27 and 0.29),
+illustrate it: in Batteries Upstream the design places Indonesia (0.235) level with Australia, the
+largest exporter, and gives Canada and Chile 0.12 each, while South Africa and the Philippines,
+the second and third exporters, receive 0.05 and 0.06.
+
+\paragraph{Portfolio caps.} The GDP-log caps \eqref{eq:net_cap} range from two (Gabon and Namibia)
+to ten (the United States and the EU) and sum to 218, against the 110 top-5 appearances that the
+22 stages create. Eight nodes end at their cap (the United States, the EU, India, Canada,
+Indonesia, Thailand, Viet Nam and Malaysia), and eleven have no top-5 appearance. The final pass
+bars 49 (node, stage) combinations in 17 stages, most of them for Thailand and the United States
+(nine each), Indonesia and Malaysia (eight each). Figure~\ref{fig:network_portfolio} shows what
+the caps prevent. Solved without them at the same $\lambda$ (the no-caps run of the calibration
+study, whose inputs match the production design to $5\times10^{-16}$), six nodes exceed their cap:
+the United States would be a top-5 producer in 17 stages against a cap of ten, Indonesia in 12
+(cap seven), India in ten (eight), Thailand and Malaysia in ten (six each) and Canada in eight
+(seven). The caps pass these appearances chiefly to Japan and Mexico (from three to six each),
+the Philippines (from none to four), South Africa (one to four) and Israel (two to four). They do
+not reduce the number of nodes without any role, eight with and without caps, and they cost 1.9\%
+of the summed stage objective (at most 5.9\% in a stage; 17 stages lose). They also raise
+concentration: without caps the median $\HHI^{\mathrm{D}}_{ts}$ at $\lambda=0.78$ is 0.139,
+below the 0.152 of the capped design, so the calibrated $\lambda$ is specific to the capped
+configuration. Top-5 membership is decided by a strict rank; four
+Upstream stages (Coal, Green Hydrogen, Nuclear and Solar) have a tie at fifth place.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.75\textwidth]{network_portfolio}
+  \caption{Portfolio caps and realised top-5 appearances. For each of the 37 network nodes (ISO3
+  codes; EU = the EU-27 node), ordered by GDP with the largest at the top, the vertical tick is
+  the cap $\kappa_i$ of \eqref{eq:net_cap} (GDP-log rule, between two and ten), the filled circle
+  the number of stages in which the node is a top-5 producer \eqref{eq:net_topk} in the production
+  design, and the open circle the same count in the design solved without portfolio caps and
+  otherwise unchanged ($\lambda=0.78$); a segment joins the two where they differ. Counts are over
+  the 22 Upstream and Midstream stages. GDP is the latest finite WDI value in current US dollars
+  \citep{worldbank2026wdi}, summed over the 27 members for the EU. Source:
+  \texttt{allied\_network\_portfolio\_caps.csv}, \texttt{allied\_network\_portfolio\_counts.csv}
+  and the no-caps run of the calibration study.}
+  \label{fig:network_portfolio}
+\end{figure}
+
+\paragraph{Build candidates.} Ranked by the build priority \eqref{eq:net_build} and restricted to
+the 22 nodes with an observed development potential, the ten leading candidates are India in
+Solar Midstream (priority 0.76), Wind Midstream (0.75), Gas Midstream (0.72) and Nuclear
+Midstream (0.69); Indonesia in Electric Vehicles Upstream and Coal Upstream (0.74 each), Batteries
+Upstream (0.71), Solar Upstream (0.69) and Wind Upstream (0.68); and Viet Nam in Solar Midstream
+(0.67). All ten are already designed producers. This follows from the construction: the priority
+multiplies development potential by a weighted mean of the producer score and connectivity, the
+quantities on which the program itself selects producers, so the list shows where the design
+already relies on an emerging economy rather than where new capacity would add a producer.
+
+\paragraph{Calibration of the diversification weight.} Figure~\ref{fig:network_frontier} and
+Table~\ref{tab:network_frontier} document the rule that sets $\lambda$: the smallest value on a
+grid at which the median $\HHI^{\mathrm{D}}_{ts}$ over the 22 stages is at most the median export
+Herfindahl index of the nodes themselves over the 18 basket stages, 0.1556. The grid has 36
+points (0, 0.5, every 0.01 from 0.70 to 1.00, then 1.1, 1.2 and 1.5), each a full re-solve of the
+production configuration. The rule picks $\lambda=0.78$, at which the median is 0.1520; the run
+at the pick is the stored production design (largest share difference $5\times10^{-16}$). The
+pick is knife-edge in three respects. The margin is small: at 0.77 the median is 0.1558 and
+misses the target by 0.0002, at 0.76 it is 0.1583. The median is not monotone in $\lambda$: it
+rises in eight of the 35 grid steps, among them from 0.1485 at 0.79 to 0.1502 at 0.80, because
+interior shares move top-5 membership and the portfolio loop then bars different nodes; no grid
+point above the pick falls back above the target. And the pick moved with every revision of the
+inputs during the final data corrections, which is why the rule, not the number, is the
+specification, and why it is re-applied on the inputs of each full rerun. Every grid run up to
+$\lambda=0.91$ solves all 22 stages by the MILP; four runs above it (0.92, 0.93, 0.95 and 0.99)
+end Nuclear Upstream on the greedy fallback after the 300-second limit, and the portfolio loop
+converges in every run (four to eight passes). Diversification has a price in the score: at the
+pick the summed node and edge terms of the 22 programs are 5.8\% below their value at $\lambda=0$,
+and 10.6\% below at $\lambda=1.5$, where the median index is 0.095 (10.6 effective producers).
+These are differences in an index score, not in resource costs; they rank designs without pricing
+them, but they make the trade-off between score and dispersion explicit in the way the AIB concept
+paper asks of an allied portfolio objective, as a frontier rather than a single weighted
+number. % CITE: neis2026aib
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{network_frontier}
+  \caption{Calibration of the diversification weight $\lambda$. Panel~(a): median over the 22
+  Upstream and Midstream stages of the Herfindahl index of designed production shares, for each of
+  the 36 grid values of $\lambda$ (production configuration: 37 nodes, portfolio caps on, MILP,
+  300-second stage limit); the horizontal line is the target, the median export Herfindahl index
+  of the nodes over the 18 basket stages (0.1556); the large marker is the pick, $\lambda=0.78$;
+  the open circle the same design without portfolio caps; the shaded band the range of
+  panel~(b). Panel~(b): the neighbourhood of the pick, $0.70\le\lambda\le0.90$; open markers are
+  grid points above the target, filled markers points that meet it, and orange segments the steps
+  at which the median rises although $\lambda$ increases. Panel~(c): the summed node and edge terms
+  of the 22 stage objectives (without the Herfindahl penalty), in percent of their value at
+  $\lambda=0$. Source: calibration study on the inputs of the final rerun of 12 October 2026
+  (\texttt{lambda\_study\_g37.csv}, \texttt{lambda\_study\_nc37.csv} and the runs behind them).}
+  \label{fig:network_frontier}
+\end{figure}
+
+\input{tables/network_frontier}
+
+\paragraph{Robustness of the design.} Figure~\ref{fig:network_robustness} and
+Table~\ref{tab:network_robustness} re-solve the production design with one setting changed at a
+time, on inputs assembled exactly as the production script assembles them; the re-run of the
+production configuration reproduces the stored design to $5\times10^{-16}$, and the re-runs
+without caps and at $\lambda=0.77$ and 0.79 reproduce the corresponding runs of the calibration
+study exactly. Two measures compare each variant with the production design stage by stage: the
+Jaccard overlap of the producer sets, which treats a producer at the floor like a leading one,
+and the share of production reassigned, $\tfrac12\sum_p|x^{\mathrm{alt}}_{p,ts}-x_{p,ts}|$, which
+weights each change by its size. No stage has the same producer set in all eight variants, and
+none changes in all of them.
+
+The neighbours of the calibrated $\lambda$ leave the design almost unchanged. At $\lambda=0.77$,
+21 of the 22 producer sets are identical and 0.5\% of production is reassigned in the mean stage
+(Thailand leaves Oil Upstream); at 0.79, 19 sets are identical and 1.1\% is reassigned (Norway
+replaces Thailand in Nuclear Upstream, Indonesia enters Batteries Midstream and Israel Electric
+Grid Midstream). The pick of $\lambda$ is knife-edge in the sense of the calibration rule, since
+the median index crosses the target between these points (0.1558 at 0.77, 0.1520 at 0.78, 0.1485
+at 0.79), but the design it selects is not: the step from one grid point to the next moves a
+floor share or two, not the division of labour. The demand specification matters as little.
+Demand from need alone changes one stage (Singapore enters Coal Midstream at the floor), demand
+from size alone changes seven and reassigns 3.4\% of production in the mean stage (at most 15\% in
+Geothermal Upstream). Demand enters the choice of producers only through the edge term and the
+redundancy constraints, and the S-curved demand weights are rank-compressed (the largest weight
+of any node in any stage is 0.054; Section~\ref{subsec:network_demand}), so the producer map is
+insensitive to how demand is measured.
+
+The edge weight and the portfolio caps matter more. Without the edge term ($w_E=0$) the mean
+Jaccard overlap is 0.84 and 8.4\% of production is reassigned; with an edge term as heavy as the
+node term ($w_E=1$) the overlap is 0.83 and 10.8\% is reassigned. The direction is systematic: a
+heavier edge term concentrates production on the best-connected producers (median
+$\HHI^{\mathrm{D}}_{ts}$ 0.157 at $w_E=1$ against 0.146 at $w_E=0$; largest share 0.355 against
+0.295), so the calibrated $\lambda$ is specific to $w_E=0.5$ as well as to the caps. The stages
+that move most are Electric Grid Upstream when the edges are dropped (Canada, the EU and the
+United States replace the United Kingdom, Japan and Norway) and Electric Vehicles Midstream when
+they are doubled (India, Malaysia and Thailand replace the United Kingdom, Viet Nam and South
+Africa). Removing the caps is the largest change: five producer sets are unchanged, the mean
+overlap is 0.69 (0.29 in Electric Grid Upstream) and 18.5\% of production is reassigned in the
+mean stage (46.5\% in Electric Grid Upstream). Without caps the design has 214 producer roles
+instead of 201, 49 roles enter and 36 leave; the entrants are chiefly the large and high-scoring
+nodes that the caps restrain (Thailand and the United States nine each, Indonesia and Malaysia
+eight each) and the leavers the nodes to which the caps pass their appearances (Israel five, the
+United Kingdom and Japan four each). The same eight nodes have no role with and without caps.
+
+The MILP also matters. Solved by the greedy heuristic, with the caps on, the design keeps a mean
+overlap of 0.84 but only two identical producer sets, is more concentrated (median
+$\HHI^{\mathrm{D}}_{ts}$ 0.160, above the calibration target; largest share 0.346) and scores
+2.5\% lower in the summed stage objective. On identical eligible sets, without caps, the MILP
+objective is at least the greedy one in all 22 stages, by 2.4\% in the median stage and at most
+4.0\%, and the greedy design's median index is 0.154 against the MILP's 0.139. The greedy fallback
+is therefore a safeguard, not an equivalent: had it been triggered, the design would be more
+concentrated and lower-scoring. It is not triggered in the production design or in any variant
+solved by the MILP. Across all variants, the least stable stages are Solar Upstream, Electric
+Vehicles Midstream, Coal Midstream and Wind Upstream (11 to 14\% of production reassigned in the
+mean variant), the most stable Gas Upstream, Geothermal Midstream, Oil Midstream and Batteries
+Upstream (2 to 3\%). The variants change one setting at a time; interactions between them, the
+node weights of the producer score and the redundancy parameters $m_S$ and $\varepsilon$ are not
+explored here. These tests concern the stability of the design to its specification. They do not
+test the robustness of the designed network to shocks in the sense of the AIB concept paper's
+network-robustness layer (common-mode failure, logistics chokepoints, surge capacity and recovery
+time), which the program does not model beyond the redundancy floor of $m_S=2$ suppliers per
+consumer. % CITE: neis2026aib
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{network_robustness}
+  \caption{Robustness of the network design, by stage and variant. Each column re-solves the 22
+  Upstream and Midstream stage programs on the 37 network nodes with one setting of the production
+  design changed: no portfolio caps; the greedy heuristic instead of the MILP (caps on); edge
+  weight $w_E=0$ or $w_E=1$ instead of 0.5; demand from need only or from size only instead of
+  their equal mix; and the neighbouring grid values of the diversification weight, $\lambda=0.77$
+  and 0.79, instead of 0.78. Panel~(a): share of the producer set that changes, one minus the
+  Jaccard overlap $|A\cap B|/|A\cup B|$ of the stage's producer sets in the variant and the
+  production design. Panel~(b): share of the stage's production assigned to different nodes,
+  $\tfrac12\sum_p|x^{\mathrm{alt}}_{p,ts}-x_{p,ts}|$. Both are 0 when the stage is unchanged
+  (marked by a dot) and 1 when the producer sets are disjoint; darker cells change more.
+  Production design: $\lambda=0.78$, GDP-log portfolio caps, $w_E=0.5$, mixed demand, MILP.
+  Source: \texttt{scripts/paper/fig\_network\_robustness.R}, which re-runs the design with the
+  inputs of the final rerun of 12 October 2026.}
+  \label{fig:network_robustness}
+\end{figure}
+
+\input{tables/network_robustness}
+

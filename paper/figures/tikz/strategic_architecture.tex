@@ -1,0 +1,103 @@
+% Construction of the Policy index and the Strategic Index (Section 8).
+% Depends only on the code: R/categories/policy/*.R, R/indices/build_policy_index.R,
+% R/indices/build_indices.R, the policy block of scripts/10_build_themes.R and
+% scripts/20_build_indices.R.
+% Input inside a figure environment: \input{figures/tikz/strategic_architecture}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >={Stealth[length=2.2mm]},
+  data/.style={draw=osigray, fill=osilight, rounded corners=2pt, align=center,
+               text width=2.45cm, minimum height=1.0cm, inner sep=3pt},
+  comp/.style={draw=#1, fill=#1!8, rounded corners=2pt, align=left,
+               text width=3.7cm, minimum height=1.0cm, inner sep=3pt},
+  pillar/.style={draw=#1, fill=#1!18, very thick, rounded corners=3pt, align=center,
+                 text width=2.9cm, minimum height=1.0cm, inner sep=3pt},
+  fixed/.style={draw=osigray, fill=white, rounded corners=2pt, align=center,
+                text width=2.7cm, minimum height=0.9cm, inner sep=3pt},
+  comb/.style={draw=osiviolet, fill=osiviolet!12, very thick, rounded corners=3pt,
+               align=center, text width=3.1cm, minimum height=1.3cm, inner sep=3pt},
+  rule/.style={draw=osiink!60, fill=white, dashed, rounded corners=2pt, align=left,
+               text width=3.3cm, minimum height=1.0cm, inner sep=3pt},
+  flow/.style={->, draw=osiink!70, line width=0.5pt},
+  colhead/.style={font=\footnotesize\bfseries, text=osiink, align=center}
+]
+
+% ---------------------------------------------------------------- column 1: sources
+\node[data] (nipo) at (0, 4.8) {GTA NIPO entries\\ (HS6, CPC, dates)};
+\node[data] (iea)  at (0, 3.2) {IEA PAMS policies\\ (text, status)};
+\node[data] (cat)  at (0, 1.6) {CAT rating $\kappa_i$;\\ IPCC AR5 index $g_t$};
+\node[data] (du)   at (0, 0.0) {Dual-use table\\ (LLM-assisted)};
+
+% ---------------------------------------------------------------- column 2: components
+\node[comp=osiblue] (xnipo) at (3.85, 4.8) {%
+  \textbf{NIPO} (weight 4)\\
+  strength $\times$ allocation, stock on $\tau$;\\
+  $\Scurve[\cdot]_{ts}$ across countries\\
+  \textit{stored Feb.\ 2026 build: within country}};
+\node[comp=osiblue] (xiea) at (3.85, 3.2) {%
+  \textbf{IEA PAMS} (weight 3)\\
+  $\sum_h\sigma_h$ by keyword tags;\\
+  $\Scurve[\log(1+\cdot)]_{\mathrm{all}}$ over all cells};
+\node[comp=osiaqua] (xcat) at (3.85, 1.6) {%
+  \textbf{CAT} (weight 2)\\
+  $\kappa_ig_t+(1-\kappa_i)(1-g_t)$;\\
+  EU bloc rating for unrated members};
+\node[comp=osiyellow] (xdu) at (3.85, 0.0) {%
+  \textbf{Dual-use} (weight 1)\\
+  score by $(t,s)$,\\
+  same for every country};
+
+% ---------------------------------------------------------------- column 3: Policy index
+\node[comb] (pol) at (7.75, 2.4) {%
+  $\POL_{its}$\\[1pt]
+  weighted mean 4/3/2/1,\\ renormalised per cell;\\
+  all four sources\\ observed somewhere};
+\node[pillar=osiviolet] (polstar) at (7.75, 0.15) {$\POL^{*}_{its}=\Scurve[\POL]_{i}$:\\
+  within country, over its sample};
+
+% ---------------------------------------------------------------- column 4: Strategic Index
+\node[pillar=osiblue]   (eo) at (12.0, 5.35) {$\EO_{its}$ pillar level};
+\node[pillar=osiorange] (es) at (12.0, 4.05) {need $1-\ES_{its}$};
+\node[comb, text width=3.3cm] (si) at (12.0, 1.55) {%
+  $\SI_{its}=0.2\,\POL^{*}+0.3\,\EO$\\ $+\,0.3\,(1-\ES)$\\ $+\,0.1\,\lambda_s+0.1\,g_t$};
+\node[fixed] (ghg) at (10.45, -1.3) {$g_t$: lifecycle GHG\\ index (1 = cleanest)};
+\node[fixed] (lam) at (13.75, -1.3) {$\lambda_s$: U 0.50, M 0.75,\\ D 0.25};
+
+% ---------------------------------------------------------------- column 5: rules and selection
+\node[rule] (rules) at (16.1, 3.0) {%
+  \textbf{Sample rules}\\
+  no imputation; reason recorded;\\
+  drop Geothermal--Midstream;\\
+  drop sectors with a constant\\ pillar and rebuild};
+\node[pillar=osiaqua, text width=3.3cm] (allied) at (16.1, 0.2) {%
+  \textbf{Allied selection}\\[1pt]
+  top Upstream or Midstream\\ sector per coalition member\\
+  (no geothermal, green H$_2$)};
+
+% ---------------------------------------------------------------- arrows
+\draw[flow] (nipo) -- (xnipo);
+\draw[flow] (iea)  -- (xiea);
+\draw[flow] (cat)  -- (xcat);
+\draw[flow] (du)   -- (xdu);
+\draw[flow] (xnipo.east) -- (pol.west);
+\draw[flow] (xiea.east)  -- (pol.west);
+\draw[flow] (xcat.east)  -- (pol.west);
+\draw[flow] (xdu.east)   -- (pol.west);
+\draw[flow] (pol) -- (polstar);
+\draw[flow] (polstar.east) -- ([yshift=-4pt]si.west);
+\draw[flow] (eo.west) -- ++(-0.3,0) |- ([yshift=4pt]si.west);
+\draw[flow] (es) -- (si);
+\draw[flow] (ghg.north) -- ([xshift=-12pt]si.south);
+\draw[flow] (lam.north) -- ([xshift=12pt]si.south);
+\draw[flow] (si.east) to[out=0, in=180] (rules.west);
+\draw[flow] (rules) -- (allied);
+
+% ---------------------------------------------------------------- column heads
+\node[colhead] at (0, 6.25)     {Sources};
+\node[colhead] at (3.85, 6.25)  {Components $x^{v}_{its}$};
+\node[colhead] at (7.75, 6.25)  {Policy index};
+\node[colhead] at (12.0, 6.25)  {Strategic Index};
+\node[colhead] at (16.1, 6.25)  {Sample and selection};
+\end{tikzpicture}%
+}

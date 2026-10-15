@@ -1,0 +1,371 @@
+% =============================================================================
+% Section 6 results fragment: the Economic Opportunity pillar (final run).
+% Numbers: paper/results/eo.json; figures, numbers and the two tables built by
+% scripts/paper/fig_eo.R from data/processed/outputs/index_outputs.rds (final rerun of
+% 2026-10-12). Every cross-country statistic (distribution, fixed effects, contributions, ranks,
+% leaders, coalition positions, top tens) uses rankable cells only (config/rankability.yml:
+% sovereign economy and at most half of the cell's index weight imputed); rank correlations are
+% Spearman.
+% Figures (file -> label): eo_distribution -> fig:eo_distribution, eo_contrib -> fig:eo_contrib,
+% eo_heatmap -> fig:eo_heatmap, eo_top -> fig:eo_top. This fragment replaces the four \tbd
+% paragraphs and the four placeholder floats of subsec:eo_results (the placeholder label
+% fig:eo_category_contrib becomes fig:eo_contrib). Tables: tables/eo_weight_split.tex
+% (tab:eo_weight_split) and tables/eo_leaders.tex (tab:eo_leaders), written by fig_eo.R.
+% =============================================================================
+
+\paragraph{Coverage and rankability.} Among the eleven headline technologies the pillar is scored
+for 7{,}131 country-technology-stage cells, which cover 219 economies (195 sovereign economies and
+24 territories) and all 33 technology-stage pairs; each pair scores between 213 and 219 economies.
+All 33 pairs have status \emph{ok} in the diagnostics of Section~\ref{subsec:norm_diagnostics}: none
+is constant across economies and none is unscored. Within each pair every economy is scored on the
+same set of categories, so a comparison within a pair is a comparison of one construct; the number
+of categories per cell is between three and seven upstream, three and six midstream and two and
+seven downstream. Twenty-four cells rest entirely on imputed components ($\iota_{its}=1$ in
+equation~\eqref{eq:imputed_share}), all of them in two territories and one microstate: the Isle of
+Man (14 cells), Puerto Rico (8) and Liechtenstein (2). Short of that extreme, imputation is
+pervasive: the mean imputed weight share is 0.43 (0.41 upstream, 0.44 midstream and 0.43
+downstream), and 45.3 per cent of the category scores contain at least one imputed component.
+Because each component is taken at the latest year recorded for it
+(Section~\ref{subsec:norm_latest}), 92.1 per cent of the scored cells combine index components from
+more than one year, and a cell combines up to six. Both decompositions of
+Section~\ref{subsec:norm_decomposition} reconcile: the largest absolute gap between $\EO_{its}$ and
+the sum of its category contributions is zero, and between $\EO_{its}$ and the sum of its variable
+contributions it is $1.1\times10^{-16}$.
+
+The rankability rule of Section~\ref{subsec:norm_diagnostics} admits 4{,}301 of the 7{,}131 cells
+(60.3 per cent), for 178 economies, to the cross-country comparisons that follow. Of the 2{,}830
+cells it sets aside, 2{,}112 carry more than half of their weight on imputed components, 74 belong
+to territories, and 644 fail on both counts. The rule bites hardest where the pillar's
+country-specific sources are thinnest: 70.2 per cent of upstream cells are rankable, against 55.7
+per cent midstream and 54.9 per cent downstream, and the number of rankable economies per pair
+ranges from 40 (green hydrogen midstream) and 54 (batteries midstream) to 175 (nuclear upstream),
+with a median of 142. In the clean-technology midstream pairs the rule leaves mainly the economies with recorded manufacturing capacity or investment: in batteries 42 of the 54
+rankable economies have an observed Foreign Dependency or Investment input, in green hydrogen 30
+of 40. The mean imputed weight share of the rankable cells is 0.29 (0.32 upstream, 0.28 midstream
+and 0.25 downstream). The excluded cells would mostly have ranked low. Ranked among all scored
+economies of their pair, the cells excluded for imputation alone have a mean percentile of 0.43
+and 63.4 per cent of them lie below the pair median; territory cells have 0.42 and 63.8 per cent,
+against 0.55 and 41.9 per cent for the rankable cells. Of the 330 top-ten places computed over all
+scored economies, only three, and none of the first places, belong to cells the rule excludes. The
+rule therefore changes the composition of the lower half of each pair far more than its top.
+
+Technological Readiness is mapped to stages: each item of the IEA Clean Technology Guide is
+assigned to a technology and a stage, and a stage without items takes the technology-wide value.
+The TRL Index takes the same value for every economy in a pair, but it differs across the three
+stages of ten of the eleven technologies (wind keeps one value), with component values from 0.31
+(geothermal downstream) to 0.72 (gas downstream) and a median range across a technology's stages
+of 0.16. It therefore moves the level of a cell relative to the other stages of the same
+technology, which matters for the within-country Strategic Index, but it cannot reorder economies
+within a pair.
+
+\paragraph{Distribution.} Figure~\ref{fig:eo_distribution} shows the pillar by technology within
+each stage, over the rankable economies of each pair. The stages are alike in level: the median
+rankable cell scores 0.500 upstream, 0.501 midstream and 0.488 downstream (means 0.487, 0.489 and
+0.489), with pooled interquartile ranges of 0.434 to 0.542, 0.427 to 0.561 and 0.427 to 0.551.
+The similarity is partly the rule's doing. Over all scored cells the midstream median is 0.454 and
+its lower quartile 0.328, because the zero rule places the many economies with no recorded
+manufacturing capacity or investment at the bottom of the clean-technology midstream pairs, and
+those economies, which carry most of their weight on filled inputs, are the ones the rule removes.
+The figure is dominated by differences between technologies rather than between economies. Pair
+medians range from 0.367 (coal) to 0.585 (electric grid) upstream, from 0.351 (wind) to 0.579
+(oil) midstream and from 0.363 (geothermal) to 0.546 (oil) downstream, whereas the mean
+interquartile range across economies within a pair is 0.037 upstream, 0.082 midstream and 0.072
+downstream. Four of the five clean-technology midstream pairs, wind, electric vehicles, solar and
+batteries, have the lowest midstream medians (0.351 to 0.426); green hydrogen (0.460) sits next to
+coal (0.457), and the oil, geothermal, gas, nuclear and electric-grid pairs lie between 0.50 and
+0.58. The ordering is a construction effect rather than a finding about the technologies. The four
+low pairs carry Foreign Dependency and Investment under the zero rule, so even among the rankable
+economies those without recorded capacity or investment score zero on up to two categories,
+whereas the other midstream pairs are scored on Trade, Technology Demand, Technological Readiness
+and Cost Competitiveness, none of which carries the zero rule.
+
+The upstream boxes are the narrowest because the upstream pairs carry the largest weight on inputs
+that do not vary across economies (Table~\ref{tab:eo_weight_split}). The widest boxes owe their
+width to one category each. In electric vehicles midstream (interquartile range 0.144), Foreign
+Dependency, the electric-vehicle production position, is observed for 97 of the 145 rankable
+economies and zero for the rest; it accounts for 46 per cent of the pair's variance, and with it
+held at its pair mean the interquartile range would be 0.053. In green hydrogen downstream (0.122)
+the Consumption category accounts for 94 per cent of the variance (interquartile range 0.017
+without it), and in wind downstream (0.117) Investment, observed for 61 of the 95 rankable
+economies, accounts for 46 per cent (0.063 without it).
+
+\paragraph{Variance decomposition.} Pooled over the 4{,}301 rankable cells, technology-stage fixed
+effects explain 57.9 per cent of the variance of $\EO_{its}$. Technology effects alone explain 27.8
+per cent and stage effects alone almost nothing (0.01 per cent), so the level of a pair is set by
+its specific composition, which categories it carries and under which missing-data rules, rather
+than by the stage as such. Country fixed effects alone explain 17.7 per cent; together with the
+pair effects they explain 77.2 per cent, so country effects account for 45.8 per cent of the
+variance that remains within pairs. On the same definition the energy-security pillar
+(Section~\ref{subsec:es_results}), over its 4{,}163 rankable cells in 30 pairs, has a pair share of
+44.4 per cent and a within-pair country share of 27.8 per cent. Over all 7{,}131 scored cells the
+pair share of $\EO$ is 71.5 per cent, higher in part because the zero-filled cells that the rule
+removes pull the clean-technology midstream pairs down. The large pair share is anticipated by
+construction. Technological Readiness, Energy Prices and most of Technology Demand are constants of
+the pair, and by equation~\eqref{eq:affine_constant} such a category shifts the level of a pair
+and compresses the spread within it without reordering its economies. Comparisons of $\EO$ levels
+across pairs, such as those the within-country Strategic Index makes (Section~\ref{sec:strategic}),
+therefore compare mostly pair effects; what the pillar measures about economies is chiefly their
+order within a pair.
+
+That order is persistent across the supply chain, and the large within-pair country share has a
+common source. Across the 159 economies rankable at all three stages, the Spearman rank correlation
+between an economy's mean within-pair percentile rank (equation~\eqref{eq:pct_rank}, ties averaged)
+at two stages is 0.86 for upstream and midstream, 0.70 for upstream and downstream and 0.79 for
+midstream and downstream. Part of this common factor is mechanical. The Input Cost Index, the one
+component of Cost Competitiveness defined in every technology and stage, is a country-level index
+of wages and capital costs whose stage variation comes only from the activity used for wages and
+from the factor shares of Table~\ref{tab:eo_factor_shares}. Across the 178 economies with a
+rankable cell, the Spearman correlation between an economy's mean within-pair percentile on $\EO$
+and its mean within-pair percentile on the Cost Competitiveness category is 0.77, and 0.82 across
+the 57 coalition members.
+
+\paragraph{What drives the pillar.} Figure~\ref{fig:eo_contrib} reports, by stage, the mean share
+of each category in the level of the pillar, from the category decomposition of
+equation~\eqref{eq:cat_decomp}, and its mean share of the variance of $\EO_{its}$ across the
+rankable economies of a pair, $\mathrm{cov}(\omega_{kits}c_{kits},\EO_{its})/\mathrm{var}(\EO_{its})$,
+which sums to one over categories. The two panels tell different stories. In the level, the
+largest shares are Cost Competitiveness (21.9 per cent), Technology Demand (17.3), Production
+(16.5) and Energy Prices (16.2) upstream; Cost Competitiveness (29.2), Technology Demand (24.7) and
+Trade (24.6) midstream; and Cost Competitiveness (27.5), Technology Demand (19.7) and Technological
+Readiness (18.0) downstream. The three categories that are wholly or largely constant within a
+pair, Technology Demand, Technological Readiness and Energy Prices, carry a combined mean effective
+weight (equation~\eqref{eq:effective_weight}) of 48.5 per cent upstream, 42.2 per cent midstream
+and 35.2 per cent downstream. In the variance across economies, Technological Readiness and Energy
+Prices contribute exactly nothing and Technology Demand between 1.9 and 5.7 per cent, its only
+country-varying components being the BNEF regional composite, observed for at most twelve
+economies, and the EV-market composite. The categories that order economies are Cost
+Competitiveness (39.2 per cent of the within-pair variance upstream, 37.6 midstream and 21.7
+downstream), Trade (26.9) and Production (22.4) upstream, Trade (25.5) and Foreign Dependency
+(22.2) midstream, and Consumption (23.8) and Investment (22.2) downstream. Upstream, Trade
+orders economies in the nine pairs with a trade basket, among them the electric-vehicle, wind,
+solar and nuclear pairs, whose baskets of battery-mineral ores, rare earths, silicon metal and
+uranium the final basket review added. Investment illustrates the difference between the two
+measures: it contributes 0.3, 1.2 and 4.2 per cent of the level upstream, midstream and
+downstream, but 8.3, 12.7 and 22.2 per cent of the within-pair variance, because under the zero
+rule the economies with recorded investment stand far above those with none, which are the
+majority of the rankable economies in 9 of the 12 pairs that carry the category.
+
+\input{tables/eo_weight_split}
+
+Table~\ref{tab:eo_weight_split} makes the point at the level of variables. Six variables are
+constant across economies in every pair in which they appear: the stage-mapped TRL Index, the WEO
+global-demand composite, the BCG addressable market (recorded for the United States and copied to
+every other economy by the global-average rule), the overcapacity index, the world-market
+concentration term of Trade (ranked across the cells of the eleven headline technologies only) and
+commodity-price volatility. Together they carry 38.9 per cent of the effective weight of the
+average rankable cell and contribute 38.7 per cent of its level; their weight is 46.3 per cent
+upstream, where price volatility (15.9), the TRL Index (12.5) and the addressable market (10.1)
+are the largest, 40.4 per cent midstream and 27.9 per cent downstream. Country-varying components
+that are imputed for the economy in question carry a further 17.5 per cent, so that in the average
+rankable cell 43.6 per cent of the weight rests on country-specific information observed for that
+economy, from 33.9 per cent upstream to 54.7 per cent downstream. Over all scored cells, before the
+rankability rule, the observed country-specific share is only 32.3 per cent and the imputed share
+30.1 per cent. Even after the rule, the pillar's cross-country content is thinner than its ten
+categories suggest, and it is thinnest upstream.
+
+\input{tables/eo_leaders}
+
+\paragraph{Leaders.} Table~\ref{tab:eo_leaders} lists the three highest-scoring rankable economies
+in each pair and the best-placed coalition member. China leads 22 of the 33 pairs, the United
+States five, Chad three, and Canada, Indonesia and Saudi Arabia one each; there are no ties at the
+top. Classifying as emerging economies those the World Bank places in the low, lower-middle or
+upper-middle income groups, 26 of the 33 leaders are emerging economies, but the count is almost
+entirely China's. The four other emerging leaders are Indonesia in coal upstream and Chad in
+geothermal upstream, geothermal midstream and electric-grid downstream. Chad's three pairs are
+precisely those in which Cost Competitiveness is the only category that varies across economies,
+so that $\EO$ there is a ranking of the Input Cost Index. Chad combines low recorded wages (a mean
+percentile of 0.12 among the economies reporting earnings) with a recorded lending rate of 2.45 per
+cent, a 2017 observation that is the joint fifth lowest of the 144 rates in the cost theme and sits
+at the floor of the rescaled rate $R_i$ of equation~\eqref{eq:eo_capital}. The runner-up in all
+three pairs is Cameroon, which records the same rate (in 2018), so the two economies differ only in
+wages and producer-price inflation; Chad's margins over it are 0.0020, 0.0005 and 0.0011. These
+three leads are artefacts of pairs with almost no country-specific content and should not be read
+as evidence of opportunity. Canada leads nuclear upstream (0.65, ahead of China and Kazakhstan),
+and China leads electric-grid upstream (0.71) ahead of Chile (0.65), the pair whose trade category
+is built on the copper and aluminium input basket. Margins at the top are generally small: the
+median gap between the leader and the second economy is 0.043 (0.058 where China leads), and it is
+below 0.01 in seven pairs. The largest gaps are China's in green hydrogen midstream (0.202 over
+Germany), wind midstream (0.201 over Poland), solar midstream (0.149 over India) and batteries
+midstream (0.138 over the United States), together with that of the United States in geothermal
+downstream (0.153 over Indonesia). Below the first place the picture is more mixed: across the top
+ten of all 33 pairs, emerging economies hold 46.4 per cent of the 330 places (41.0 per cent of the
+places not held by China) and coalition members 69.1 per cent; China is in the top ten of 30 pairs
+and the United States of 20.
+
+The United States ranks in the bottom half of only one pair, and the reason is again
+construction: it is 109th of 141 in electric-grid downstream, a pair in which Cost
+Competitiveness is the only category that varies across economies and in which its Input Cost
+Index sits at a within-pair percentile of 0.23. In the mineral-based upstream pairs, where mined
+production is scored as a demand-weighted share of world mined supply and its growth as an
+absolute change, it ranks between third (wind) and 62nd (green hydrogen). China's one low rank, 98th of 104
+in oil downstream, comes from its Consumption category, on which it ranks last in the pair, and
+from the growth component of its Production category (within-pair percentile 0.04).
+
+\paragraph{The coalition.} Figure~\ref{fig:eo_heatmap} shows, for the 31 core members and 26
+partners of the coalition (Section~\ref{sec:coalition}) and for China, each economy's percentile
+rank within each pair among the pair's rankable economies. The coalition stands above the rest of
+the world but well below China, and its two tiers differ. Over their rankable cells, the core
+members have a mean within-pair percentile of 0.66 and a mean $\EO$ of 0.510, the partners 0.49
+and 0.485, the 120 other rankable economies 0.44 and 0.479, and China 0.96 and 0.659. The core is
+strongest midstream (mean percentile 0.73, against 0.64 upstream and 0.59 downstream), whereas the
+partners stay near the middle of their pairs at every stage (0.48, 0.47 and 0.51). In most pairs
+some member ranks high: the best-placed member is the world leader in 8 pairs and in the top three
+in 30, with a median rank of 2. The three exceptions are the cost-only pairs that Chad leads, where
+the best member ranks fourth (Portugal, in both geothermal pairs) and eleventh (Thailand,
+electric-grid downstream). In 14 pairs the best-placed member is a partner (Indonesia in seven,
+India and Thailand in two each), and upstream the partners supply the strongest member candidate
+in seven of the eleven pairs: Indonesia ranks second behind China in five mineral pairs and first
+in coal, and Chile second in electric grid, while the best core member ranks between third and
+seventh in these pairs.
+
+Among the core members, the United States (mean percentile 0.89), Portugal (0.84), Poland (0.84),
+the Czech Republic (0.81) and Spain (0.80) rank highest, and the United Kingdom (0.57), Romania
+(0.52), Australia (0.46), New Zealand (0.34) and Ukraine (0.11) lowest; among the partners,
+Thailand (0.82), Indonesia (0.80), Malaysia (0.79), India (0.78) and Saudi Arabia (0.66) rank
+highest, and the Dominican Republic (0.26), Brazil (0.23), Argentina (0.19), the Democratic
+Republic of the Congo (0.13) and Ghana (0.10) lowest. Both ends of the list are largely a cost
+effect. Four members, T\"urkiye, Brazil, Argentina and Ghana, record nominal lending rates (39.0,
+46.0, 59.7 and 27.0 per cent, the 141st, 142nd, 143rd and 139th of the 144 rates in the cost
+theme) that sit at the winsorisation ceiling of the rescaled rate $R_i$
+(equation~\eqref{eq:eo_capital}); since the Input Cost Index enters every pair, the rate depresses
+each of them across the board. With the Cost Competitiveness contribution replaced by its pair mean
+over the rankable economies, T\"urkiye's mean percentile would be 0.73 rather than 0.30, Brazil's
+0.61 rather than 0.23, Argentina's 0.45 rather than 0.19 and Ghana's 0.39 rather than 0.10;
+Ukraine, whose recorded rate of 18.9 per cent is the 130th of 144, would move from 0.11 to 0.50.
+Six members gain more than 0.2 in this way. At the top the same category works in the other
+direction: neutralising it would lower Portugal from 0.84 to 0.62, Thailand from 0.82 to 0.64 and
+Ireland from 0.71 to 0.51, while the United States (0.89 to 0.87) barely moves. A second
+construction effect comes from the BNEF regional composite of Technology Demand, which is observed
+for at most twelve economies; the global-average rule gives every other economy their mean, so an
+economy that BNEF models but whose value lies below that mean ranks below the many economies it
+does not model. Australia's value lies below the mean in all 18 pairs in which it is observed, the
+United Kingdom's in 14 of 18 and France's in 15 of 21; with Technology Demand at its pair mean,
+Australia's mean percentile would be 0.52 rather than 0.46, the United Kingdom's 0.65 rather than
+0.57 and France's 0.80 rather than 0.76, while Viet Nam and India, whose modelled values lie mostly
+above the mean, would fall from 0.63 to 0.57 and from 0.78 to 0.76. Readers who regard nominal
+rates in high-inflation economies or market-rate wage levels as poor guides to the cost of new
+capacity, or who doubt that an economy modelled by BNEF should rank below those it does not model,
+should discount these positions accordingly.
+
+Coverage differs between the tiers. Of the core members' 1{,}023 scored cells 1{,}002 are
+rankable, against 716 of the partners' 858; the cells set aside are member cells with more than
+half of their weight imputed, shown as dotted gray cells in Figure~\ref{fig:eo_heatmap}. Gabon has
+only 9 rankable cells, Oman 21, Saudi Arabia and Singapore 22 each and Morocco, Namibia and Costa
+Rica 23, so their mean positions rest on a minority or a bare majority of the pairs. Among the
+rankable cells the mean imputed weight share is 0.20 for the core, 0.27 for the partners, 0.33 for
+the other economies and 0.10 for China, and it is zero for the United States, partly because the
+BCG addressable market is recorded for the United States alone. Imputation and rank remain related
+within pairs: the median, across the 33 pairs, of the within-pair Spearman correlation between
+$\EO_{its}$ and $\iota_{its}$ over the rankable economies is $-0.28$ (range $-0.94$ to $0.17$).
+Under the global-average rule an uncovered economy is placed at the mean of the covered ones and
+under the zero rule at the bottom, so the more heavily imputed of the rankable economies still tend
+to sit lower in their pairs.
+
+\paragraph{Illustrative pairs.} Figure~\ref{fig:eo_top} decomposes the scores of the ten
+highest-ranked economies in upstream oil, midstream batteries, midstream solar and downstream
+electric vehicles. The first three are the pairs of Figure~\ref{fig:es_top}; upstream oil is,
+after nuclear upstream (175 economies), the upstream pair with the most rankable economies (166).
+In each panel the gray segment, the sum of the technology-level constants, has the same length for
+every economy (0.250 in oil, 0.202 in batteries, 0.181 in solar and 0.088 in electric vehicles),
+so the order is set entirely by the coloured segments. Upstream oil is led by the United States
+(0.659), China (0.644), Canada (0.637), Saudi Arabia (0.622) and Norway (0.607), with four
+coalition members in the top ten. The differences among them come from Production, Trade and Cost
+Competitiveness, whose contributions span 0.051, 0.039 and 0.027 across the ten: the United States
+has the largest Production (0.167) and Trade (0.114) contributions, China the largest Cost
+Competitiveness contribution (0.122). Saudi Arabia, Iraq, Iran, Kuwait and the United Arab
+Emirates, five of the ten, have the same Cost Competitiveness contribution, 0.095, the smallest in
+the panel and equal to its largest imputed country-varying contribution, and they carry between 32
+and 38 per cent of their weight on imputed components; their places rest on production and trade.
+In midstream batteries, where only 54 economies are rankable, China (0.771) leads the United States
+(0.633) by 0.138, a gap that comes from Foreign Dependency (0.167 against 0.106, China's share of
+world manufacturing capacity) and Cost Competitiveness (0.142 against 0.073); the Investment
+contribution of the United States (0.143) exceeds China's (0.134). Nine of the ten are coalition
+members, six of them core members. Midstream solar shows the same structure: China (0.788) is
+followed at a distance by India (0.640) and the United States (0.635), five Southeast Asian
+partners, Viet Nam, Thailand, Indonesia, Malaysia and the Philippines, take five of the remaining
+seven places, and France and Germany are eighth and ninth. Emerging economies are most numerous at
+the top of downstream electric vehicles, where they take eight of the ten places (against seven in
+midstream solar, four in midstream batteries and three in upstream oil): China (0.755), Viet Nam
+(0.731), Thailand (0.705) and T\"urkiye (0.702) lead. The pair's largest segment is the EV-market
+composite of Technology Demand, which contributes between 0.21 and 0.33 to the top ten and half of
+whose twelve indices are growth rates of EV stock, sales and sales share
+(equation~\eqref{eq:eo_ev}). The composite therefore rewards markets that are growing fast from a
+small base as well as large ones: T\"urkiye, Viet Nam and the Philippines receive larger Technology
+Demand contributions than China (0.333, 0.295 and 0.281 against 0.271), so the pair measures market
+momentum at least as much as market scale. T\"urkiye reaches fourth place despite the smallest Cost
+Competitiveness contribution of the ten (0.057), the mark of its recorded lending rate.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{eo_distribution}
+  \caption{Distribution of the Economic Opportunity pillar by technology and supply-chain stage.
+  Each panel is one stage; each box summarises $\EO_{its}$ across the rankable economies of one
+  technology-stage pair (their number in parentheses, 40 to 175), showing the median and the
+  interquartile range, with whiskers to the most extreme economy within 1.5 times the
+  interquartile range of the box and the remaining economies as dots. A cell is rankable if the
+  economy is sovereign and at most half of the cell's index weight is imputed
+  (\texttt{config/rankability.yml}). Technologies are ordered by their median within each panel.
+  The score lies in $[0,1]$, and higher values mean more opportunity. All 33 pairs have status
+  \emph{ok} (none is constant across economies or unscored). Sample: the 4{,}301 rankable cells
+  of the eleven headline technologies (of 7{,}131 scored). Source:
+  \texttt{economic\_opportunity\_index} in \texttt{data/processed/outputs/index\_outputs.rds};
+  \texttt{scripts/paper/fig\_eo.R}.}
+  \label{fig:eo_distribution}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{eo_contrib}
+  \caption{What the Economic Opportunity pillar is made of, by supply-chain stage. Left: the mean
+  share of each category in the level of the pillar, $\omega_{kits}c_{kits}/\EO_{its}$ from the
+  category decomposition of equation~\eqref{eq:cat_decomp}, averaged over the rankable cells of the
+  stage (a category absent from a cell counts as zero). Right: the mean share of each category in
+  the variance of the pillar across the rankable economies of a technology-stage pair,
+  $\mathrm{cov}(\omega_{kits}c_{kits},\EO_{its})/\mathrm{var}(\EO_{its})$, averaged over the eleven
+  pairs of the stage. Bar colour is the stage; the bars of one colour sum to 100 per cent within
+  a panel. Categories marked * (Technological Readiness, Energy Prices) are constant across
+  economies in every pair and so contribute nothing to the right panel; Technology Demand is
+  constant except for its BNEF regional and EV-market composites. Categories in the order of
+  Table~\ref{tab:eo_structure}. Sample: the 4{,}301 rankable cells of the eleven headline
+  technologies. Source: \texttt{economic\_opportunity\_category\_contributions} in
+  \texttt{data/processed/outputs/index\_outputs.rds}; \texttt{scripts/paper/fig\_eo.R}.}
+  \label{fig:eo_contrib}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{eo_heatmap}
+  \caption{Position of the coalition members and China in every technology-stage pair of the
+  Economic Opportunity pillar. Rows are the 31 core members and 26 partners of the coalition
+  (Section~\ref{sec:coalition}), each tier ordered by its members' mean percentile across their
+  rankable cells, and China as a reference; columns are the eleven headline technologies within
+  each stage. Colour is the economy's percentile rank of $\EO_{its}$ among the rankable economies
+  of the pair (equation~\eqref{eq:pct_rank}, ties averaged; 1 is the top economy, 0 the bottom).
+  Percentile ranks rather than levels are shown because technology-stage fixed effects account for
+  58 per cent of the variance of the level, which would otherwise dominate the colours (levels are
+  in Figure~\ref{fig:eo_distribution} and Table~\ref{tab:eo_leaders}). Gray cells with a dot are
+  scored but not ranked: every member is sovereign, so these are cells in which more than half of
+  the economy's index weight rests on imputed components ($\iota_{its}>0.5$,
+  equation~\eqref{eq:imputed_share}). All 33 pairs have status \emph{ok}. Source:
+  \texttt{economic\_opportunity\_index} and \texttt{coalition\_members} in
+  \texttt{data/processed/outputs/index\_outputs.rds}; \texttt{scripts/paper/fig\_eo.R}.}
+  \label{fig:eo_heatmap}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{eo_top}
+  \caption{The ten rankable economies with the highest Economic Opportunity score in four
+  technology-stage pairs: upstream oil, midstream batteries, midstream solar and downstream
+  electric vehicles ($n$ is the number of rankable economies in the pair). Each bar's length is
+  $\EO_{its}$, stacked by the exact variable decomposition of equation~\eqref{eq:var_decomp}; here
+  colour identifies the category, not the stage. The gray segment sums the technology-level
+  constants (the stage-mapped TRL Index, WEO global demand, BCG addressable market, overcapacity,
+  world-market concentration and commodity-price volatility, whichever the pair carries) and is the
+  same for every economy in a pair; the coloured segments are the categories' country-varying
+  components, including those filled by a missing-data rule. Coalition members (core and partners)
+  are in bold. Source: \texttt{economic\_opportunity\_index} and
+  \texttt{economic\_opportunity\_variable\_contributions} in
+  \texttt{data/processed/outputs/index\_outputs.rds}; \texttt{scripts/paper/fig\_eo.R}.}
+  \label{fig:eo_top}
+\end{figure}

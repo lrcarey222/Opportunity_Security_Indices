@@ -1,0 +1,111 @@
+% Construction of the bilateral partnership indices (Section 9).
+% Depends only on the code: R/themes/partnership_strength/*.R,
+% R/indices/build_partnership_strength_index.R, scripts/15 and scripts/25, config/weights.yml.
+% Input inside a figure environment: \input{figures/tikz/psi_architecture}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >={Stealth[length=2.2mm]},
+  data/.style={draw=osigray, fill=osilight, rounded corners=2pt, align=center,
+               text width=2.55cm, minimum height=0.9cm, inner sep=3pt},
+  comp/.style={draw=#1, fill=#1!8, rounded corners=2pt, align=left,
+               text width=3.55cm, minimum height=0.9cm, inner sep=3pt},
+  pillar/.style={draw=#1, fill=#1!18, very thick, rounded corners=3pt, align=center,
+                 text width=2.65cm, minimum height=1.1cm, inner sep=3pt},
+  summ/.style={draw=#1, fill=white, rounded corners=2pt, align=center,
+               text width=2.75cm, minimum height=1.0cm, inner sep=3pt},
+  comb/.style={draw=osiviolet, fill=osiviolet!12, very thick, rounded corners=3pt,
+               align=center, text width=2.7cm, minimum height=1.2cm, inner sep=3pt},
+  flow/.style={->, draw=osiink!70, line width=0.5pt},
+  pen/.style={->, draw=osiorange!80!osiink, dashed, line width=0.6pt},
+  colhead/.style={font=\footnotesize\bfseries, text=osiink, align=center}
+]
+
+% ---------------------------------------------------------------- column 1: data
+\node[data] (ctm) at (0, 6.3)  {UN Comtrade HS6\\ dyadic imports};
+\node[data] (ese) at (0, 4.75) {ES and EO\\ country indices $(i,t,s)$};
+\node[data] (dip) at (0, 3.2)  {IMF DIP outward\\ debt positions};
+\node[data] (ghg) at (0, 1.65) {IPCC lifecycle GHG;\\ CAT ratings};
+\node[data] (ctx) at (0, 0.1)  {UN Comtrade HS6\\ dyadic exports};
+\node[data] (wdi) at (0, -1.6) {WDI; Doing Business;\\ OECD CRS aid};
+
+% ---------------------------------------------------------------- column 2: components
+\node[comp=osiblue] (fsc) at (4.05, 5.25) {%
+  \textbf{FS components} (weight)\\[1pt]
+  $\tau^{M}_{ijts}$ imports from $j$ (2)\\
+  $\nu_{its}$ reporter need (2)\\
+  $e_{jts}$ partner EO rank (2)\\
+  $o_{ij}$ outbound investment (2)\\
+  reporter EO rank (0)};
+\node[comp=osiorange] (pen) at (4.05, 2.55) {%
+  \textbf{Climate penalty}\\[1pt]
+  FS: $0.10(1-g_t)(\mathrm{CPI}_i+\mathrm{CPI}_j)$\\
+  PO: $0.05(1-g_t)\,\mathrm{CPI}_j$};
+\node[comp=osiorange] (poc) at (4.05, 0.75) {%
+  \textbf{PO components} (weight)\\[1pt]
+  $\tau^{X}_{ijts}$ exports to $j$ (3)\\
+  $\varepsilon_{its}$ reporter EO rank (3)\\
+  $\eta_{jts}$ partner ES need (1)};
+\node[comp=osiaqua] (dpc) at (4.05, -1.6) {%
+  \textbf{DP components}: eight partner\\
+  attributes (Table~\ref{tab:dp_components})};
+
+% ---------------------------------------------------------------- column 3: pillar indices
+\node[pillar=osiblue]   (fs) at (8.05, 4.75) {$\FS_{ijts}$\\[1pt] $\Scurve[\max(0,\tilde F-\pi^{\FS})]_{ts}$};
+\node[pillar=osiorange] (po) at (8.05, 1.25) {$\PO_{ijts}$\\[1pt] $\Scurve[\max(0,\tilde P-\pi^{\PO})]_{ts}$};
+\node[pillar=osiaqua]   (dp) at (8.05, -1.6) {$\DP_{jts}$\\[1pt] $\Scurve[\widetilde{D}]_{ts}$, non-HI $j$};
+
+% ---------------------------------------------------------------- column 4: best-five summaries
+\node[summ=osiblue]   (tfs) at (11.35, 4.75) {$T^{\FS}_{ij}$: mean of the\\ dyad's 5 best $(t,s)$};
+\node[summ=osiorange] (tpo) at (11.35, 1.25) {$T^{\PO}_{ij}$: mean of the\\ dyad's 5 best $(t,s)$};
+\node[summ=osiaqua]   (tdp) at (11.35, -1.6) {$T^{\DP}_{j}$: mean of the\\ partner's 5 best $(t,s)$};
+
+% ---------------------------------------------------------------- column 5: composites
+\node[comb] (psij)  at (14.75, 3.0)  {$\PSI_j$ (partner)\\[1pt] $C^{k}_j=\mean_i T^{k}_{ij}$;\\ $0.4/0.4/0.2$, renormalized};
+\node[comb] (psiij) at (14.75, -0.35) {$\PSI_{ij}$ (dyad)\\[1pt] $0.4/0.4/0.2$ on\\ $T^{\FS}_{ij},T^{\PO}_{ij},T^{\DP}_{j}$};
+
+% ---------------------------------------------------------------- column headers
+\node[colhead] at (0, 7.45)     {Inputs};
+\node[colhead] at (4.05, 7.45)  {Components};
+\node[colhead] at (8.05, 7.45)  {Pillar indices};
+\node[colhead] at (11.35, 7.45) {Best-five summaries};
+\node[colhead] at (14.75, 7.45) {Composites};
+
+% ---------------------------------------------------------------- edges: data -> components
+\draw[flow] (ctm.east) -- (fsc.west |- ctm.east);
+\draw[flow] (ese.east) -- (fsc.west |- ese.east);
+\draw[flow] (dip.east) -- ++(0.35,0) |- ([yshift=-14pt]fsc.west);
+\draw[flow] (ese.east) ++(0.2,0) |- ([yshift=8pt]poc.west);
+\draw[flow] (ese.east) ++(0.2,0) |- ([yshift=6pt]dpc.west);
+\draw[flow] (ghg.east) -- (pen.west |- ghg.east);
+\draw[flow] (ctx.east) -- (poc.west |- ctx.east);
+\draw[flow] (wdi.east) -- (dpc.west);
+
+% ---------------------------------------------------------------- edges: components -> pillars
+\draw[flow] (fsc.east) -- (fs.west);
+\draw[flow] (poc.east) -- (po.west);
+\draw[flow] (dpc.east) -- (dp.west);
+\draw[pen]  (pen.east) -- ++(0.45,0) |- ([yshift=-10pt]fs.west);
+\draw[pen]  (pen.east) -- ++(0.45,0) |- ([yshift=10pt]po.west);
+
+% ---------------------------------------------------------------- edges: pillars -> summaries
+\draw[flow] (fs.east) -- (tfs.west);
+\draw[flow] (po.east) -- (tpo.west);
+\draw[flow] (dp.east) -- (tdp.west);
+
+% ---------------------------------------------------------------- edges: summaries -> composites
+\draw[flow] (tfs.east) -- ++(0.3,0) |- ([yshift=8pt]psij.west);
+\draw[flow] (tpo.east) -- ++(0.3,0) |- ([yshift=-2pt]psij.west);
+\draw[flow] (tdp.east) -- ++(0.45,0) |- ([yshift=-12pt]psij.west);
+\draw[flow] (tfs.east) ++(0.3,0) |- ([yshift=10pt]psiij.west);
+\draw[flow] (tpo.east) ++(0.3,0) |- ([yshift=0pt]psiij.west);
+\draw[flow] (tdp.east) ++(0.45,0) |- ([yshift=-10pt]psiij.west);
+
+% ---------------------------------------------------------------- level annotations
+\node[font=\scriptsize, text=osigray, align=center] at (8.05, 6.35) {dyad $(i,j,t,s)$};
+\node[font=\scriptsize, text=osigray, align=center] at (8.05, -2.75) {partner $(j,t,s)$};
+\node[font=\scriptsize, text=osigray, align=center] at (11.35, -2.75) {collapses $(t,s)$};
+\node[font=\scriptsize, text=osigray, align=center] at (14.75, -2.75) {collapses reporters ($\PSI_j$)};
+
+\end{tikzpicture}%
+}

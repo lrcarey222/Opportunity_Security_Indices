@@ -53,3 +53,14 @@ archive/site/
 # verification records stay version controlled)
 dashboard/country-memos/*/memo.ast.json
 dashboard/country-memos/*/memo.print.html
+
+# Working paper: LaTeX build files, the duplicate build PDF, stale previews and agent notes
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.out
+paper/*.toc
+paper/*.synctex.gz
+paper/main.pdf
+paper/*_PREVIEW.pdf
+paper/notes/

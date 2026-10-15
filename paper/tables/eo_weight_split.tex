@@ -1,0 +1,27 @@
+% Written by scripts/paper/fig_eo.R from the objects saved in paper/results/eo.json (keys: input_weights, coverage).
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{Effective weight of the Economic Opportunity pillar by type of input}
+\label{tab:eo_weight_split}
+\small
+\begin{tabular}{@{}l S[table-format=2.1] S[table-format=2.1] S[table-format=2.1] S[table-format=2.1]@{}}
+\toprule
+ & \multicolumn{3}{c}{Mean effective weight (per cent)} & {Constants' share}\\
+\cmidrule(lr){2-4}
+ & {Technology-level} & {Imputed,} & {Observed,} & {of the level}\\
+ & {constants} & {country-varying} & {country-varying} & {(per cent)}\\
+\midrule
+Upstream & 46.3 & 19.7 & 33.9 & 44.0\\
+Midstream & 40.4 & 14.6 & 45.0 & 40.2\\
+Downstream & 27.9 & 17.4 & 54.7 & 30.4\\
+\addlinespace
+All rankable cells & 38.9 & 17.5 & 43.6 & 38.7\\
+All scored cells & 37.7 & 30.1 & 32.3 & 39.5\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item \textit{Notes:} The effective weight of variable $v$ in cell $(i,t,s)$ is the renormalised category weight times the variable's weight within its category, $\omega_{kits}\lambda_{vkits}$ (equation~\eqref{eq:var_decomp}); it sums to one in every cell. Technology-level constants are the variables whose value has zero range across all scored economies of the pair: the TRL Index (one value per technology and stage), the WEO global-demand composite, the BCG addressable market, the overcapacity index, the world-market concentration term of Trade and commodity-price volatility. Imputed components are those filled by a missing-data rule (global average or zero) for the economy in question. The first three columns sum to 100 within a row, up to rounding. The last column is the mean share of $\EO_{its}$ contributed by the constants. Rows by stage and ``All rankable cells'': means over the 1{,}681 upstream, 1{,}307 midstream and 1{,}313 downstream rankable cells of the eleven headline technologies (a sovereign economy with at most half of the cell's weight imputed); ``All scored cells'': means over all 7{,}131 scored cells. Source: \texttt{economic\_opportunity\_variable\_contributions} in \texttt{data/processed/outputs/index\_outputs.rds}; \texttt{scripts/paper/fig\_eo.R}.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

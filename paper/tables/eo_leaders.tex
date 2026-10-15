@@ -1,0 +1,56 @@
+% Written by scripts/paper/fig_eo.R from the objects saved in paper/results/eo.json (key: leaders).
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{Leading economies in each technology-stage pair of the Economic Opportunity pillar (rankable cells)}
+\label{tab:eo_leaders}
+\footnotesize
+\begin{tabular}{@{}lrlllcrr@{}}
+\toprule
+Technology & $n$ & First & Second & Third & Best member (rank) & USA & CHN \\
+\midrule
+\multicolumn{8}{@{}l}{\textit{Upstream}}\\
+Batteries & 120 & CHN 0.65 & IDN 0.59 & AUS 0.57 & IDN (2) & 7 & 1 \\
+Coal & 157 & IDN 0.52 & CHN 0.51 & IND 0.48 & IDN (1) & 7 & 2 \\
+Electric Grid & 163 & CHN 0.71 & CHL 0.65 & RUS 0.65 & CHL (2) & 27 & 1 \\
+Electric Vehicles & 153 & CHN 0.68 & IDN 0.62 & AUS 0.57 & IDN (2) & 4 & 1 \\
+Gas & 165 & USA 0.61 & CHN 0.60 & CAN 0.57 & USA (1) & 1 & 2 \\
+Geothermal & 141 & TCD 0.48 & CMR 0.48 & COG 0.48 & PRT (4) & 68 & 6 \\
+Green Hydrogen & 146 & CHN 0.62 & IDN 0.62 & ZMB 0.57 & IDN (2) & 62 & 1 \\
+Nuclear & 175 & CAN 0.65 & CHN 0.62 & KAZ 0.62 & CAN (1) & 6 & 2 \\
+Oil & 166 & USA 0.66 & CHN 0.64 & CAN 0.64 & USA (1) & 1 & 2 \\
+Solar & 153 & CHN 0.70 & IDN 0.66 & THA 0.61 & IDN (2) & 23 & 1 \\
+Wind & 142 & CHN 0.70 & IDN 0.59 & USA 0.58 & IDN (2) & 3 & 1 \\
+\addlinespace
+\multicolumn{8}{@{}l}{\textit{Midstream}}\\
+Batteries & 54 & CHN 0.77 & USA 0.63 & HUN 0.55 & USA (2) & 2 & 1 \\
+Coal & 155 & CHN 0.59 & POL 0.57 & IDN 0.56 & POL (2) & 14 & 1 \\
+Electric Grid & 162 & CHN 0.68 & THA 0.64 & POL 0.62 & THA (2) & 14 & 1 \\
+Electric Vehicles & 145 & CHN 0.74 & ESP 0.64 & USA 0.63 & ESP (2) & 3 & 1 \\
+Gas & 156 & CHN 0.71 & IND 0.67 & ITA 0.65 & IND (2) & 5 & 1 \\
+Geothermal & 141 & TCD 0.64 & CMR 0.64 & COG 0.64 & PRT (4) & 58 & 5 \\
+Green Hydrogen & 40 & CHN 0.71 & DEU 0.50 & USA 0.50 & DEU (2) & 3 & 1 \\
+Nuclear & 154 & CHN 0.65 & FRA 0.65 & IND 0.62 & FRA (2) & 21 & 1 \\
+Oil & 156 & CHN 0.72 & AUT 0.67 & ITA 0.66 & AUT (2) & 11 & 1 \\
+Solar & 79 & CHN 0.79 & IND 0.64 & USA 0.63 & IND (2) & 3 & 1 \\
+Wind & 65 & CHN 0.74 & POL 0.54 & IND 0.52 & POL (2) & 4 & 1 \\
+\addlinespace
+\multicolumn{8}{@{}l}{\textit{Downstream}}\\
+Batteries & 140 & CHN 0.75 & USA 0.67 & ITA 0.63 & USA (2) & 2 & 1 \\
+Coal & 104 & CHN 0.68 & IDN 0.66 & IND 0.66 & IDN (2) & 15 & 1 \\
+Electric Grid & 141 & TCD 0.68 & CMR 0.68 & TGO 0.67 & THA (11) & 109 & 20 \\
+Electric Vehicles & 105 & CHN 0.75 & VNM 0.73 & THA 0.70 & VNM (2) & 29 & 1 \\
+Gas & 104 & USA 0.72 & SAU 0.71 & CHN 0.68 & USA (1) & 1 & 3 \\
+Geothermal & 128 & USA 0.61 & IDN 0.46 & PRT 0.42 & USA (1) & 1 & 16 \\
+Green Hydrogen & 158 & USA 0.65 & DEU 0.60 & THA 0.60 & USA (1) & 1 & 4 \\
+Nuclear & 86 & CHN 0.72 & FRA 0.67 & JPN 0.64 & FRA (2) & 15 & 1 \\
+Oil & 104 & SAU 0.71 & IRN 0.69 & QAT 0.68 & SAU (1) & 8 & 98 \\
+Solar & 148 & CHN 0.75 & USA 0.67 & IND 0.67 & USA (2) & 2 & 1 \\
+Wind & 95 & CHN 0.70 & USA 0.61 & CAN 0.60 & USA (2) & 2 & 1 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item \textit{Notes:} $\EO_{its}$ for the eleven headline technologies. Only rankable cells enter: a sovereign economy with at most half of the cell's index weight imputed (\texttt{config/rankability.yml}). Economies are identified by ISO3 code and followed by their score; $n$ is the number of rankable economies in the pair (40 to 175). ``Best member'' is the highest-ranked of the 57 coalition members (31 core, 26 partners), with its rank in parentheses; the USA and CHN columns give the ranks of the United States and China. A rank is one plus the number of rankable economies with a strictly higher score. All 33 pairs are scored and none is constant across economies. In geothermal upstream and midstream and electric-grid downstream, Cost Competitiveness is the only category that varies across economies. Codes: AUS Australia, AUT Austria, CAN Canada, CHL Chile, CMR Cameroon, COG Congo, DEU Germany, ESP Spain, FRA France, HUN Hungary, IDN Indonesia, IND India, IRN Iran, ITA Italy, JPN Japan, KAZ Kazakhstan, POL Poland, PRT Portugal, QAT Qatar, RUS Russia, SAU Saudi Arabia, TCD Chad, TGO Togo, THA Thailand, VNM Viet Nam, ZMB Zambia, USA United States, CHN China. Source: \texttt{economic\_opportunity\_index} in \texttt{data/processed/outputs/index\_outputs.rds}; \texttt{scripts/paper/fig\_eo.R}.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

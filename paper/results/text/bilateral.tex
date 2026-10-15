@@ -1,0 +1,282 @@
+% ---------------------------------------------------------------------------
+% Results fragment for Section 9 (bilateral partnership indices), subsection "Results"
+% (subsec:bilateral_results). Numbers: paper/results/bilateral.json; figures and tables:
+% scripts/paper/fig_bilateral.R (final rerun of 2026-10-12). The script rebuilds the Friendshore and
+% Opportunity indices, the best-five summaries and the core-view PSI from the stored components with
+% the pipeline's functions and stops unless they reproduce the stored tables.
+% Figures: bilateral_fs_heatmap, bilateral_fs_components, bilateral_cmfdi_exposure,
+% bilateral_psi_rank, bilateral_fs_po. Tables: tables/bilateral_coverage.tex,
+% tables/bilateral_psi_views.tex.
+% All correlations are Spearman rank correlations. Rankings of partners use the pipeline's
+% rankability rule (sovereign, imputed weight share at most 0.5): psi_*_tbl rank / rankable.
+% Citations needed but not in references.bib: the CM-FDI database (Net Zero Industrial Policy Lab,
+% Johns Hopkins University) and the NEIS Allied Industrial Base working paper (October 2026); both
+% are named in the prose without a citation command.
+% ---------------------------------------------------------------------------
+
+\input{tables/bilateral_coverage}
+
+\paragraph{Coverage and the trade matrix.} Table~\ref{tab:bilateral_coverage} reports the coverage
+of the three pillars. Friendshore and Partnership Opportunity rate every ordered pair of the 219
+economies, 47,742 pairs, in 33 and 30 technology--stage cells respectively; Development Potential
+rates the 132 partners that are not high-income. The trade components rest on the all-reporter
+Comtrade dyads for 2020 and 2024 \citep{uncomtrade}: 168 economies report imports in 2020 and 143 in
+2024, and 208 economies appear as reporter or partner. A flow is taken from the importer's own
+declaration where the importer reports, and otherwise from the exporter's mirror declaration times
+the CIF/FOB factor 1.06. Over the dyad cells of the 18 technology--stage cells that have an HS6
+basket (nine Upstream and nine Midstream; no Downstream stage has one), 77.0 percent of the
+Friendshore trade components are observed, 17.4 percent as positive flows and 59.7 percent as
+recorded zeros, and 23.0 percent are imputed at the cell mean. Mirror declarations supply 21.9
+percent of the observed values; without them 39.9 percent of the trade components would be imputed.
+The mirror rule matters for reporters that do not declare their own imports, which enter the matrix
+only through their partners' declarations. It matters little for the core members, whose imports
+are almost all self-declared (0.3 percent of their observed import components come from mirrors and
+5.2 percent are imputed). Dropping the mirror fill and re-running every later step leaves the
+headline ranking almost unchanged (Spearman 0.997 with the headline $\PSI_j$ over the 192 ranked
+partners; median rank change 1, the same top fifteen), but it moves $C^{\PO}_j$ (Spearman 0.816),
+because a third of the core exporters' observed export flows to their markets are mirrors of the
+markets' own import declarations; the largest losers would be the United Arab Emirates (rank 91 to
+126) and Russia (105 to 117).
+
+The outward-investment component has two sources. In 29 of the 33 cells it is the reporter's IMF
+outward direct-investment position in the partner, with 16 conduit financial centres (among them
+the Netherlands, Luxembourg, Ireland, Singapore, Switzerland, Hong Kong and Cyprus) excluded as
+counterparts and as reporters; 62 economies report positions, 23 of them core members, covering
+9,171 pairs. In Batteries, Electric Vehicles, Solar and Wind Midstream it is instead the
+reporter's cross-border manufacturing projects in the partner recorded in the CM-FDI database of
+the Net Zero Industrial Policy Lab at Johns Hopkins University: 905 of its 1,042 projects, those
+in manufacturing that are announced, under construction, completed or operating (cancelled, paused
+and closed plants are dropped), give 234 investor--destination
+pairs from 29 investing economies, 18 of them core members. Because the ties are sparse, 7.2 percent
+of the dyad cells in these four sectors carry an investment component, against 19.5 percent of the
+cells elsewhere. Reporter need is missing in 12.5 percent of the Friendshore cells, among them every cell of
+Electric Grid Downstream and the two Geothermal stages. Of the 219 partners, 192 are ranked in the
+headline view: 24 are not sovereign, and Liechtenstein, Monaco and Kosovo have more than half of
+their index weight imputed. The median imputed weight share of a Friendshore dyad is 0.42 over all
+reporters and 0.26 over the core members, whose trade and investment data are the most complete.
+
+\paragraph{The coalition Friendshore matrix.} Figure~\ref{fig:bilateral_fs_heatmap} shows
+$\FS_{ijts}$ among the 31 core members in Batteries Midstream and Solar Midstream, with China as a
+further supplier. Every one of the 930 core dyads in each cell has an observed import component.
+Supplier identity matters more than importer identity: the standard deviation of the suppliers'
+mean ratings is 0.052 and 0.051, that of the importers' 0.036 and 0.033. The matrix is strongly
+asymmetric. The Spearman correlation of $\FS_{ijts}$ with $\FS_{jits}$ over the 465 unordered core
+pairs is $-0.40$ in Batteries Midstream and $-0.41$ in Solar Midstream, and $-0.14$ on average
+within cells. The asymmetry is built into the index: the reporter's need and the partner's
+capability enter with positive weight, so a capable, secure economy rates its partners low on
+their capability and is itself rated high, and the reverse holds for a needy importer. China is
+rated by the core members at 0.613 in Batteries Midstream and 0.605 in Solar Midstream on average,
+last among the 32 suppliers shown in both cells, although its trade component (0.96 and 0.94) and
+capability (1.00) are the highest. The alignment component, zero between China and every core member, and the
+Chinese-parent component, zero for China by construction, account for the gap: without the alignment component China's mean rating would be 0.825 and 0.818.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{bilateral_fs_heatmap}
+  \caption{Friendshore index among the core members, (a) Batteries Midstream and (b) Solar
+  Midstream. Rows are importers $i$, columns suppliers $j$; colour is $\FS_{ijts}$
+  (equation~\eqref{eq:fs_index}), the within-cell S-curve of the weighted mean of the seven
+  components less the climate penalty. Rows and columns are the 31 core coalition members ordered
+  by their mean rating as suppliers; the last column is China as a supplier to each core member.
+  The diagonal is empty. Every dyad shown has an observed import component (importer's declaration
+  or mirror). Source: \texttt{partner\_friendshore\_tbl.rds}.}
+  \label{fig:bilateral_fs_heatmap}
+\end{figure}
+
+\paragraph{What makes a top supplier.} Figure~\ref{fig:bilateral_fs_components} decomposes the
+Friendshore composite of the ten highest-ranked suppliers of the United States and of Japan, over
+the five cells behind each dyad's best-five summary $T^{\FS}_{ij}$. Suppliers are ranked among the
+partners that are sovereign and whose Friendshore dyad has at most half of its weight imputed (158
+partners for the United States, 170 for Japan). The leading suppliers of the United States are the
+United Kingdom, Germany, Canada, the Netherlands, Ireland, Australia, France, Slovakia, Estonia and
+Lithuania, and those of Japan the United States, Portugal, Austria, Poland, Canada, Ireland,
+Thailand, Czechia, Estonia and Germany; all are U.S.-leaning except Thailand. Alignment is the
+largest single contribution to their composites (29.1 percent for the United States' top ten and
+29.0 percent for Japan's), followed by partner capability (23.0 and 24.9 percent), imports (18.7 and
+20.1 percent) and reporter need (18.7 and 16.9 percent); outward investment contributes 9.9 and 6.9
+percent and the Chinese-parent component 0.7 and 2.1 percent, because few of these dyads' best cells
+are among the four cells the component covers. The climate penalty is small (0.018 and 0.033 on
+average). Half of the best cells of these dyads have no HS6 basket, so the ranking of top suppliers
+rests largely on the components that are defined everywhere: need, capability and alignment. China
+ranks 70th among the suppliers of the United States and 75th among those of Japan ($T^{\FS}=0.71$);
+without the alignment component it would rank 10th and 8th. None of the ten largest outward-investment
+counterparts of the two reporters is a conduit centre, since these are excluded; the United States'
+largest are the United Kingdom, Australia, Taiwan, Malaysia and Canada.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{bilateral_fs_components}
+  \caption{Composition of the Friendshore composite for the ten highest-ranked suppliers of the
+  United States (left) and Japan (right). Each bar is the mean, over the five technology--stage
+  cells behind the dyad's best-five summary $T^{\FS}_{ij}$ (in parentheses), of the weighted
+  component contributions $w_c x_c/\sum_{c'\,\mathrm{obs}}w_{c'}$, which sum to the pre-penalty
+  composite; the climate penalty is the negative segment. Components and weights: imports from $j$
+  (2), reporter need (2), partner capability (2), outward investment in $j$ (2; IMF positions, or
+  CM-FDI projects in Batteries, Electric Vehicles, Solar and Wind Midstream), UNGA bloc alignment
+  (2) and Chinese-parent exposure scored as $1-$share (1, defined only in those four cells); the
+  zero-weight reporter capability term is omitted. Suppliers are ranked among partners that are
+  sovereign and whose Friendshore dyad has an imputed weight share of at most 0.5. Source:
+  \texttt{partner\_friendshore\_tbl.rds}, \texttt{partner\_friendshore\_top5\_tbl.rds}; penalty
+  recomputed from the technology emission index and the Climate Action Tracker ratings.}
+  \label{fig:bilateral_fs_components}
+\end{figure}
+
+\paragraph{The alignment component.} UNGA bloc alignment carries weight 2 of a total of 11, 18.2
+percent when every component is present, but a larger share of the composite in practice: on
+average 0.125, or 24.1 percent of the pre-penalty composite. For a core reporter its contribution
+is 0.231 for a U.S.-leaning partner, 0.115 for a nonaligned partner and zero for a China-leaning
+one. Setting its weight to zero and re-running every later step changes the headline ranking more
+than any other single choice examined here: the Spearman correlation of $\PSI_j$ with the headline
+is 0.869 and that of $C^{\FS}_j$ 0.716, the median partner moves 17 places and the largest move is
+81. China would rise from 44th to 3rd, India from 39th to 16th, Indonesia from 62nd to 15th, Viet
+Nam from 64th to 20th, Russia from 105th to 47th, the United Arab Emirates from 91st to 21st and
+Oman from 140th to 59th; 19 rather than 24 core members would be in the top 25. Among the top
+fifteen, China, Saudi Arabia and Indonesia would replace Sweden, Korea and Ireland. In the headline
+the core members occupy 24 of the top 25 places; the first non-member is Slovenia (25th), a member of
+the EU node. The headline ranking is therefore in large part a statement about political alignment
+with the United States, by construction, and readers who prefer a purely economic reading of
+supplier strength should use the variant without it.
+
+\paragraph{Chinese-parent exposure.} The seventh Friendshore component measures how much of a
+supplier's foreign-invested manufacturing in a technology is owned by parents headquartered in
+China, Hong Kong or Macao, from the 905 CM-FDI projects used, 406 of which have such a parent. The
+share blends capital-weighted shares among projects with disclosed capital and project counts
+among the rest, attributes half of a joint venture to each parent, and is defined only where the
+supplier hosts at least two foreign-invested projects in the technology; China, Hong Kong and Macao
+take the value one. It is defined for 24 to 28 suppliers per covered cell, 47 economies in all, 31
+of them coalition members (Figure~\ref{fig:bilateral_cmfdi_exposure}). Over the 94 supplier--technology
+cells outside China, Hong Kong and Macao the median share is 0.50; 48 cells are at 0.5 or above and
+19 at zero. Exposure is highest in solar (median 0.75) and lowest in wind (median 0). Several
+partners whose supply the coalition relies on are heavily exposed: Türkiye (batteries 1.00, solar
+0.97, electric vehicles 0.82), Thailand (batteries 0.97, electric vehicles 0.88), Malaysia
+(electric vehicles 0.90), Viet Nam (electric vehicles 1.00), Indonesia (solar 0.85) and Saudi
+Arabia and Oman (solar 1.00), and among the core Korea (batteries 0.91, wind 1.00), Hungary
+(electric vehicles 0.64, batteries 0.55) and Slovakia (electric vehicles 0.61). The United States
+(at most 0.27, in solar), Canada and Mexico (zero in batteries) are among the least exposed.
+
+The component operationalises one of the upgrades that the NEIS working paper on the Allied
+Industrial Base proposes for indices of this kind: two suppliers in two countries do not diversify
+a buyer's supply if both depend on the same parent company. Its weight is deliberately modest and
+its coverage narrow, so its effect on the headline is small: the component contributes 0.051 to
+the composite on average where it is defined (8.1 percent), the Spearman correlation of $\FS$ with
+and without it within the four cells is 0.99, and the headline $\PSI_j$ ranking is unchanged up to
+four places (Hungary would rise from 20th to 16th without it; Denmark and Finland would fall three
+places). Its effect is concentrated where it should be. In the core members' ratings of a supplier
+in a covered cell, the change in $\FS$ due to the component correlates at $-0.93$ with the
+Chinese-parent share; suppliers with a share of at least one half lose 0.063 on average, those
+below 0.2 gain 0.043, and China loses between 0.085 and 0.095 in each of the four cells. The
+measure captures ownership of foreign-invested plants only; it does not see domestic firms'
+dependence on Chinese equipment, precursors or licences, the other channels of common-mode risk.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{bilateral_cmfdi_exposure}
+  \caption{Chinese-parent ownership exposure of suppliers. Panel (a): for each economy hosting at
+  least two foreign-invested manufacturing projects in a technology, the share of those projects
+  owned by parents headquartered in China, Hong Kong or Macao (capital-weighted where capital is
+  disclosed, by count otherwise; joint ventures attribute half to each parent), in the Midstream
+  cells of batteries, electric vehicles, solar and wind; grey cells are undefined (fewer than two
+  projects). Rows are grouped by coalition tier and ordered by the mean share; China, Hong Kong and
+  Macao, set to one by construction, are omitted. Panel (b): the mean Friendshore rating of the
+  economy by the 31 core members over its covered cells, with the component (filled) and with its
+  weight set to zero and every later step re-run (open). Source: CM-FDI database, Net Zero
+  Industrial Policy Lab, Johns Hopkins University (CC BY 4.0), 905 of 1,042 projects;
+  \texttt{partner\_cm\_fdi\_exposure\_tbl.rds}, \texttt{partner\_friendshore\_tbl.rds}.}
+  \label{fig:bilateral_cmfdi_exposure}
+\end{figure}
+
+\paragraph{The partner-level PSI.} Figure~\ref{fig:bilateral_psi_rank} reports the headline
+$\PSI_j$, averaged over the 31 core members' views, and its three category scores. The United
+States (0.936), Germany (0.934), the Netherlands, the United Kingdom, France, Italy, Spain,
+Belgium, Poland and Czechia (0.904) are the ten highest; the core members hold 24 of the top 25
+places (median rank 16; New Zealand is 41st and Ukraine 60th), and the first non-members are
+mostly EU members outside the core, which enter the network through the EU node: Slovenia (25th),
+Lithuania, Malta, Estonia, Latvia and Cyprus, with North Macedonia among them. Partners rank lower (median 64.5), from Saudi Arabia (38th), India (39th) and Türkiye (43rd)
+to Ghana, Oman and Gabon (139th to 141st). Among non-members China ranks 44th, Taiwan 47th and
+Switzerland 51st. China is a strong market and a weak supplier in this view: it ranks 21st on
+$C^{\PO}_j$ and 57th on $C^{\FS}_j$. Taiwan is 8th on $C^{\PO}_j$ and 55th on $C^{\FS}_j$. The
+dispersion of the category scores differs widely: the standard deviation across ranked partners
+is 0.190 for $C^{\FS}_j$, 0.031 for $C^{\PO}_j$ and 0.190 for $C^{\DP}_j$, so the Opportunity
+score, nominally 40 percent of the index, accounts for only 5.5 percent of the variance of
+$\PSI_j$ among the 130 partners with all three categories (Friendshore 63.8 percent, Development
+30.7 percent) and 14.5 percent among the 62 without Development. The categories carry distinct
+information: their Spearman correlations are 0.59 ($C^{\FS}$ and $C^{\PO}$, 192 partners), 0.31
+($C^{\FS}$ and $C^{\DP}$) and 0.29 ($C^{\PO}$ and $C^{\DP}$, 130 partners). High-income partners
+average 0.827 and the other partners on the World Bank list 0.672. The market score follows the core members' observed exports to the market (Spearman 0.82) and
+correlates negatively with the market's own security need (Spearman $-0.54$), although need enters
+it with a positive weight: the economies most in need of supply are mostly small importers. The strongest supplier--weak market contrasts are small
+European states and some low-income suppliers (San Marino, Andorra, Albania, Chad, Niger); the
+reverse are markets such as the United Arab Emirates (17th on $C^{\PO}_j$, 132nd on $C^{\FS}_j$),
+Kazakhstan, Liberia and Uganda.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{bilateral_psi_rank}
+  \caption{Partnership Strength Index in the headline view. Diamonds are $\PSI_j$
+  (equation~\eqref{eq:psi}) with $C^{\FS}_j$ and $C^{\PO}_j$ averaged over the 31 core coalition
+  members as reporters; dots are the three category scores, Friendshore $C^{\FS}_j$, Partnership
+  Opportunity $C^{\PO}_j$ and Development Potential $C^{\DP}_j$ (partners that are not high-income
+  only). Panels: the 31 core members, the 26 partners, the ten highest-ranked non-members with
+  China, Taiwan and Switzerland, and the five highest-scoring partners that are not ranked. Ranks
+  in parentheses are among the 192 rankable partners (sovereign, imputed weight share at most 0.5);
+  open diamonds and ``n.r.'' mark partners without a rank. Source: \texttt{psi\_tbl.rds}.}
+  \label{fig:bilateral_psi_rank}
+\end{figure}
+
+\paragraph{Views of the index.} The headline averages the categories over the core members. Two
+alternatives average over the full coalition (57 reporters) and over every reporter (the world
+view, 218 per partner); 192, 192 and 188 partners are ranked in the three views
+(Table~\ref{tab:bilateral_psi_views}). The core and full-coalition views agree closely (Spearman
+0.981 over 192 partners, median rank change 5, 13 of the top fifteen in common); the core and world
+views less so (0.881 over 188, median change 17, ten in common), and the full-coalition and world
+views lie in between (0.948). The views differ mainly in how they place the large non-aligned and
+China-leaning economies. China is 44th in the core view, 9th in the full-coalition view and first in
+the world view; India 39th, 15th and 2nd; Indonesia 62nd, 32nd and 6th; Viet Nam 64th, 46th and
+12th. The world view's top fifteen add China, India, Indonesia, Viet Nam and Malaysia and drop
+Belgium, Poland, Czechia, Sweden and Ireland. The partners whose rating depends on who is asking
+are thus exactly those whose alignment differs from that of the core; the choice of the core
+members' view as the headline is a choice to rate partners from the vantage point of the economies
+that anchor the coalition.
+
+\input{tables/bilateral_psi_views}
+
+\paragraph{Supplier and market views of the same edge.} Figure~\ref{fig:bilateral_fs_po} compares,
+for the coalition, the importer's Friendshore rating of a supplier, $\FS_{cp}$, with the
+supplier's Opportunity rating of that importer as a market, $\PO_{pc}$. The two pillars rate the
+same supply edge from its two ends and share inputs: the partner capability term of Friendshore and
+the reporter capability term of Opportunity are the same Economic Opportunity cell (within-cell
+Spearman 1.0), and the imports of $c$ from $p$ and the exports of $p$ to $c$ are the same flow
+where both are observed (0.81). They agree to a degree, with a cell-level Spearman of 0.715 over
+95,312 matched coalition cells (0.764 among core members), 0.733 for the mean over the matched cells
+of the 3,192 ordered coalition pairs and 0.703 for the best-five summaries; given the shared
+capability term, the mean within-cell partial correlation is 0.44. Alignment separates them, since it
+enters Friendshore only: for pairs in the same bloc Friendshore exceeds Opportunity by 0.157 on
+average, for pairs in opposite blocs it falls short by 0.24, and for the 2,070 pairs with a
+nonaligned member the two agree on average (0.016). The pairs the market view favours most are
+pairs in opposite blocs, such as Luxembourg supplying Oman ($\FS=0.37$ against $\PO=0.71$) and
+Indonesia supplying Canada (0.42 against 0.75); those the supplier view favours most have Ukraine as
+the supplier, to Greece (0.70 against 0.23) and Sweden. At the dyad level the coalition pairs with
+the highest $\PSI_{ij}$ are Canada's rating of the United States (0.981), Spain's of Portugal, the
+United States' of the United Kingdom, and Austria's and Czechia's of Germany (0.970--0.976).
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{bilateral_fs_po}
+  \caption{Supplier and market ratings of the same supply edge, coalition members. Horizontal:
+  $\FS_{cp}$, member $c$'s Friendshore rating of member $p$ as a supplier; vertical: $\PO_{pc}$,
+  $p$'s Opportunity rating of $c$ as a market. Panel (a): Batteries Midstream, one point per ordered
+  pair of the 57 members (3,192 pairs). Panel (b): mean over the technology--stage cells rated by
+  both pillars (28 to 30 per pair). Colour is the pair's dyadic UNGA alignment (1 same bloc, 0.5 when
+  either is nonaligned, 0 opposite blocs); the line is the diagonal; the three pairs most favoured by
+  each view are labelled. Source: \texttt{partner\_friendshore\_tbl.rds},
+  \texttt{partner\_opportunity\_tbl.rds}.}
+  \label{fig:bilateral_fs_po}
+\end{figure}
+
+\paragraph{Development potential.} Among the 125 partners ranked on Development Potential, the
+highest best-five summaries belong to Georgia, Mongolia and Mauritius (1.00), Tuvalu, China
+(0.919), Serbia, Rwanda, Viet Nam, North Macedonia and Mauritania (0.872). Their best cells are
+spread over the stages (40 percent Upstream, 26 percent Midstream, 34 percent Downstream), and the
+two aid components, 35 percent of the nominal weight, account for 43.7 percent of the composite in
+those cells. China's high score is a reminder that the pillar rates a partner's development
+indicators and capacity to absorb supply-chain investment, not its alignment.

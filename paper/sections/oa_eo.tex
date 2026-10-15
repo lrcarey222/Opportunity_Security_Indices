@@ -1,0 +1,153 @@
+% =============================================================================
+% Online Appendix to Section 6 (Economic Opportunity): construction details and further results.
+% Numbers: paper/results/eo.json (scripts/paper/fig_eo.R) and eo_transforms.json
+% (scripts/paper/fig_eo_transforms.R), final rerun of 2026-10-12. Statistics over rankable cells
+% (config/rankability.yml) unless stated.
+% =============================================================================
+\section{Economic Opportunity: construction details and further results}\label{oa:eo}
+
+\subsection{Construction details}
+
+\paragraph{Trade.} Revealed comparative advantage complements market share: a small economy can be
+highly specialised in a basket without a large share of the world market, and specialisation is
+what the complexity literature reads as revealed capability. Basket export value is a second
+measure of scale from a source with different coverage and year. Feasibility is the forward-looking
+element: a country with no exports of a basket can score well if it exports products that require
+similar capabilities. An economy that does not report to Comtrade is scored on its two Atlas
+components and the world-market term. The net-import term of the ES category is not used in EO.
+
+\paragraph{Production.} Absolute growth rewards large producers whose output expands by the most
+units, relative growth rewards fast growth from a small base, and the composite balances the two;
+level and change each enter the category twice, directly and through the composite. In the mineral
+block, tonnes of different minerals cannot be added, so each mineral enters as a share of world
+supply weighted by the technology's share of the mineral's demand; the horizon level is divided by
+base-year world supply, so the change is a change in quantity, not in market share. A country the
+IEA supply table does not name for a mineral counts as zero there. Uranium mine output from the Red
+Book is scored like oil, gas and coal.
+
+\paragraph{Technology Demand.} Growth in the World Energy Outlook composite is absolute because a
+relative measure ranked across fuels would put hydrogen's near-zero base at the top; the value is a
+property of the technology, the same at every stage and for every economy. The BCG addressable
+market is ranked across the 26 cells it sizes and copied to every economy by the global-average
+rule. Coverage is uneven: the electric grid has no input in any source and so no Technology Demand
+category, electric vehicles have it only downstream, downstream batteries lack it because BCG does
+not size that cell, and geothermal is scored on the BCG entry alone.
+
+\paragraph{Technological Readiness.} The bell rises over four steps and falls over five, so an
+item at TRL 9 keeps a level score of $\cos(3\pi/10)\approx0.59$ and one at TRL 3 scores
+$\cos(3\pi/8)\approx0.38$; the concave momentum term gives the first step of progress the largest
+increment. Of the 253 mapped items, 9 map to more than one cell; 98 carry a post-TRL-9 adoption
+stage, 43 per cent sit at TRL 9 or above, and the 26 items that are commercial in many markets score
+zero on level. Of the items with a 2020 reading, 54 per cent did not move. Ten of the 33 headline
+cells take their technology's value because no item maps to the stage; the index differs across the
+three stages of ten of the eleven technologies (wind keeps one value), with a median range across a
+technology's stages of 0.16. The parameters (bounds 2 and 11, peak 6, momentum weight 0.3, cap of
+three steps, exponent 1/2) are the theme builder's defaults.
+
+\paragraph{Overcapacity.} Of the four midstream technologies the BloombergNEF supply-chain data
+cover, solar ($\rho=2.3$, index 0.20), batteries and wind ($\rho=3.0$, 0.13 each) sit on the steep
+part of the curve, and green hydrogen ($\rho=18.2$) is effectively at zero.
+
+\paragraph{Cost Competitiveness.} Wages are converted at market exchange rates rather than
+purchasing-power parities because the price-level difference that PPP conversion removes is the
+cost advantage being measured. The lending rate is winsorised at its 5th and 95th cross-country
+percentiles before min-max rescaling; producer-price inflation enters as a rate because each
+country's price index has its own base year. Stale observations and gaps are filled from regional
+and income-group peers. The Input Cost Index carries the category wherever the LCOE and equipment
+cost components are absent and half of it where one is present; counting each source once avoids
+giving BNEF three of four votes wherever it covers a market.
+
+\subsection{Further results}
+
+\paragraph{Rankability.} Of the 2{,}830 cells the rule sets aside, 2{,}112 carry more than half of
+their weight on imputed components, 74 belong to territories and 644 fail on both counts. The rule
+bites hardest where country-specific sources are thinnest: 70.2 per cent of upstream cells are
+rankable, against 55.7 per cent midstream and 54.9 per cent downstream. In Batteries midstream 42
+of the 54 rankable economies have an observed Foreign Dependency or Investment input, in Green
+Hydrogen midstream 30 of 40. The mean imputed weight share of rankable cells is 0.29. Ranked among
+all scored economies of their pair, cells excluded for imputation alone have a mean percentile of
+0.43 (63.4 per cent below the median) and territory cells 0.42, against 0.55 for rankable cells.
+Both decompositions reconcile exactly (largest gaps 0 and $1.1\times10^{-16}$); 45.3 per cent of
+category scores contain an imputed component.
+
+\paragraph{Distribution.} Over all scored cells the midstream median is 0.454 and its lower
+quartile 0.328, because the zero rule places economies without recorded capacity or investment at
+the bottom of the clean-technology midstream pairs, and the rule removes most of them. Four of the
+five clean-technology midstream pairs (wind, electric vehicles, solar, batteries) have the lowest
+midstream medians (0.351 to 0.426). The widest boxes owe their width to one category each: in EV
+midstream (interquartile range 0.144) Foreign Dependency, observed for 97 of 145 rankable
+economies, accounts for 46 per cent of the variance (0.053 without it); in Green Hydrogen
+downstream (0.122) Consumption accounts for 94 per cent; in Wind downstream (0.117) Investment
+accounts for 46 per cent.
+
+\paragraph{Variance and persistence.} Technology effects alone explain 27.8 per cent of the
+variance and stage effects almost nothing (0.01 per cent), so a pair's level is set by its
+composition rather than its stage. Over all scored cells the pair share is 71.5 per cent. Across
+the 159 economies rankable at all three stages, the Spearman correlation of mean within-pair
+percentiles is 0.86 between upstream and midstream, 0.70 between upstream and downstream and 0.79
+between midstream and downstream. Part of this common factor is the Input Cost Index, a
+country-level index whose stage variation comes only from the wage activity and the factor shares:
+across the 178 economies with a rankable cell, mean EO percentile and mean Cost Competitiveness
+percentile correlate at 0.77 (0.82 across the 57 coalition members).
+
+\paragraph{Drivers.} Level shares: upstream Cost Competitiveness 21.9 per cent, Technology Demand
+17.3, Production 16.5 and Energy Prices 16.2; midstream Cost Competitiveness 29.2, Technology Demand
+24.7 and Trade 24.6; downstream Cost Competitiveness 27.5, Technology Demand 19.7 and Technological
+Readiness 18.0. Within-pair variance shares: upstream Trade 26.9 and Production 22.4; midstream
+Trade 25.5 and Foreign Dependency 22.2; downstream Consumption 23.8 and Investment 22.2. Investment
+contributes 0.3, 1.2 and 4.2 per cent of the level by stage but 8.3, 12.7 and 22.2 per cent of the
+within-pair variance, because under the zero rule the few economies with recorded investment stand
+far above the majority without it (in 9 of the 12 pairs that carry the category). The upstream
+constants are led by price volatility (15.9 per cent of effective weight), the TRL Index (12.5) and
+the addressable market (10.1). Before the rankability rule the observed country-specific share is
+32.3 per cent and the imputed share 30.1 per cent.
+
+\paragraph{Leaders.} Chad combines low recorded wages with a 2017 lending rate of 2.45 per cent, the
+joint fifth lowest of the 144 rates in the cost theme; the runner-up in its three pairs is Cameroon,
+with the same rate (2018), and Chad's margins are 0.0020, 0.0005 and 0.0011. Canada leads nuclear
+upstream (0.65) and China electric-grid upstream (0.71, ahead of Chile at 0.65), the pair built on
+the copper and aluminium basket. The leader's margin is below 0.01 in seven pairs; the United States
+has the largest non-Chinese margin (0.153 over Indonesia in geothermal downstream). Coalition
+members hold 69.1 per cent of the 330 top-ten places; China is in the top ten of 30 pairs and the
+United States of 20. The United States ranks in the bottom half of one pair only, 109th of 141 in
+electric-grid downstream, a cost-only pair; in the mineral-based upstream pairs it ranks between
+third (wind) and 62nd (green hydrogen). China's one low rank, 98th of 104 in oil downstream, comes
+from Consumption and the growth component of Production.
+
+\paragraph{The coalition.} Among core members the United States (0.89), Portugal (0.84), Poland
+(0.84), the Czech Republic (0.81) and Spain (0.80) rank highest and the United Kingdom (0.57),
+Romania (0.52), Australia (0.46), New Zealand (0.34) and Ukraine (0.11) lowest; among partners,
+Thailand (0.82), Indonesia (0.80), Malaysia (0.79), India (0.78) and Saudi Arabia (0.66) rank highest
+and the Dominican Republic (0.26), Brazil (0.23), Argentina (0.19), the Democratic Republic of the
+Congo (0.13) and Ghana (0.10) lowest. T\"urkiye, Brazil, Argentina and Ghana record nominal lending
+rates of 39.0, 46.0, 59.7 and 27.0 per cent, at the winsorisation ceiling; with the Cost
+Competitiveness contribution set to its pair mean their mean percentiles would be 0.73, 0.61, 0.45
+and 0.39 rather than 0.30, 0.23, 0.19 and 0.10, and Ukraine's (rate 18.9 per cent) 0.50 rather than
+0.11; six members gain more than 0.2. At the top the same change would lower Portugal from 0.84 to
+0.62, Thailand from 0.82 to 0.64 and Ireland from 0.71 to 0.51, while the United States barely
+moves. The BNEF regional composite of Technology Demand is observed for at most twelve economies
+and the global-average rule gives the others their mean, so a modelled economy below that mean
+ranks below many unmodelled ones: Australia's value is below the mean in all 18 pairs in which it is
+observed, the United Kingdom's in 14 of 18 and France's in 15 of 21; with Technology Demand at its
+pair mean their mean percentiles would be 0.52, 0.65 and 0.80 rather than 0.46, 0.57 and 0.76.
+
+Of the core members' 1{,}023 scored cells 1{,}002 are rankable, against 716 of the partners' 858.
+Gabon has only 9 rankable cells, Oman 21, Saudi Arabia and Singapore 22 each, and Morocco, Namibia
+and Costa Rica 23. The mean imputed weight share of rankable cells is 0.20 for the core, 0.27 for
+the partners, 0.33 for other economies and zero for the United States, partly because the BCG
+addressable market is recorded for the United States alone. Within pairs the median Spearman
+correlation between $\EO_{its}$ and the imputed share is $-0.28$.
+
+\paragraph{Illustrative pairs.} Oil upstream is led by the United States (0.659), China (0.644),
+Canada (0.637), Saudi Arabia (0.622) and Norway (0.607); Saudi Arabia, Iraq, Iran, Kuwait and the
+United Arab Emirates share the smallest Cost Competitiveness contribution (0.095, an imputed value)
+and owe their places to production and trade. In Batteries midstream China (0.771) leads the United
+States (0.633) on Foreign Dependency (0.167 against 0.106) and Cost Competitiveness (0.142 against
+0.073), while the United States' Investment contribution (0.143) exceeds China's (0.134); nine of
+the ten are coalition members. In Solar midstream China (0.788) is followed by India (0.640) and
+the United States (0.635), then Viet Nam, Thailand, Indonesia, Malaysia and the Philippines, with
+France and Germany eighth and ninth. In EV downstream emerging economies take eight of the ten
+places: China (0.755), Viet Nam (0.731), Thailand (0.705) and T\"urkiye (0.702) lead, because the
+EV-market composite, half of whose indices are growth rates (equation~\eqref{eq:eo_ev}), rewards
+markets growing fast from a small base; T\"urkiye, Viet Nam and the Philippines receive larger
+Technology Demand contributions than China.

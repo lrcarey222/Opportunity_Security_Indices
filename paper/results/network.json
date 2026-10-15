@@ -1,0 +1,3302 @@
+{
+  "description": "Allied network design, production configuration of scripts/30 (37 nodes with the EU-27 as one node, Upstream and Midstream, diversification lambda = 0.78, GDP-log portfolio caps, MILP), read from data/processed/outputs/allied_network_*.csv.",
+  "coverage": {
+    "lambda": 0.78,
+    "n_members": 57,
+    "n_core": 31,
+    "n_partner": 26,
+    "n_node_only_eu": 6,
+    "node_only_eu": ["CYP", "EST", "LTU", "LVA", "MLT", "SVN"],
+    "n_economies": 63,
+    "n_nodes": 37,
+    "eu_members": 27,
+    "n_stages": 22,
+    "stages_by_supply_chain": {
+      "Midstream": 11,
+      "Upstream": 11
+    },
+    "methods": {
+      "milp": 22
+    },
+    "n_fallback": 0,
+    "n_nodes_per_stage": [37],
+    "n_nodes_no_score": 0,
+    "node_policy_term": "off (producer score = EO and ES)",
+    "stages_nodes_scored_on_eo_only": [
+      {
+        "stage": "Geothermal Midstream",
+        "n_eo_only": 37,
+        "nodes_eo_only": "ARG AUS BRA CAN CHL COD COL CRI DOM EU GAB GBR GHA GTM IDN IND ISR JPN KOR MAR MEX MYS NAM NOR NZL OMN PER PHL QAT SAU SGP THA TUR UKR USA VNM ZAF"
+      },
+      {
+        "stage": "Geothermal Upstream",
+        "n_eo_only": 37,
+        "nodes_eo_only": "ARG AUS BRA CAN CHL COD COL CRI DOM EU GAB GBR GHA GTM IDN IND ISR JPN KOR MAR MEX MYS NAM NOR NZL OMN PER PHL QAT SAU SGP THA TUR UKR USA VNM ZAF"
+      },
+      {
+        "stage": "Green Hydrogen Midstream",
+        "n_eo_only": 5,
+        "nodes_eo_only": "CRI DOM GHA GTM NAM"
+      }
+    ],
+    "stages_with_zero_demand_node": [
+      {
+        "stage": "Geothermal Midstream",
+        "zero_demand": "NAM"
+      },
+      {
+        "stage": "Geothermal Upstream",
+        "zero_demand": "NAM"
+      },
+      {
+        "stage": "Green Hydrogen Midstream",
+        "zero_demand": "NAM"
+      }
+    ],
+    "hhi_tangent_max_error": 0.000025,
+    "hhi_tangent_error_bound": 0.000025,
+    "input_checks": [
+      {
+        "input": "economic_opportunity_index",
+        "rows_in": 2079,
+        "keys_out": 2079,
+        "dup_keys": 0,
+        "multivalued_keys": 0
+      },
+      {
+        "input": "energy_security_index",
+        "rows_in": 1881,
+        "keys_out": 1881,
+        "dup_keys": 0,
+        "multivalued_keys": 0
+      },
+      {
+        "input": "partner_development_country_tbl",
+        "rows_in": 726,
+        "keys_out": 726,
+        "dup_keys": 0,
+        "multivalued_keys": 0
+      },
+      {
+        "input": "partner_friendshore_tbl",
+        "rows_in": 128898,
+        "keys_out": 128898,
+        "dup_keys": 0,
+        "multivalued_keys": 0
+      },
+      {
+        "input": "partner_opportunity_tbl",
+        "rows_in": 116622,
+        "keys_out": 116622,
+        "dup_keys": 0,
+        "multivalued_keys": 0
+      }
+    ],
+    "input_checks_all_unique": true
+  },
+  "producers": {
+    "n_producer_slots": 201,
+    "n_producers_dist": {
+      "7": 1,
+      "8": 3,
+      "9": 10,
+      "10": 8
+    },
+    "n_producers_median": 9,
+    "n_producers_min": 7,
+    "n_producers_max": 10,
+    "n_producers_median_by_supply_chain": {
+      "Midstream": 9,
+      "Upstream": 9
+    },
+    "hhi_min": 0.125625,
+    "hhi_median": 0.15195,
+    "hhi_max": 0.2092,
+    "hhi_median_by_supply_chain": {
+      "Midstream": 0.15195,
+      "Upstream": 0.15195
+    },
+    "effective_producers_median": 6.581112,
+    "effective_producers_min": 4.780115,
+    "effective_producers_max": 7.960217,
+    "stage_hhi_min": [
+      {
+        "stage": "Oil Midstream",
+        "hhi": 0.125625
+      }
+    ],
+    "stage_hhi_max": [
+      {
+        "stage": "Nuclear Upstream",
+        "hhi": 0.2092
+      },
+      {
+        "stage": "Electric Vehicles Midstream",
+        "hhi": 0.194032
+      }
+    ],
+    "max_share_all": 0.325,
+    "max_share_stage": [
+      {
+        "stage": "Green Hydrogen Upstream",
+        "top_producer": "IDN",
+        "max_production_share": 0.325
+      },
+      {
+        "stage": "Nuclear Upstream",
+        "top_producer": "CAN",
+        "max_production_share": 0.325
+      }
+    ],
+    "max_share_median": 0.252361,
+    "n_stages_max_share_le_030": 18,
+    "n_shares_at_cap_040": 0,
+    "n_shares_at_floor_005": 61,
+    "pct_shares_at_floor_005": 30.348259,
+    "n_shares_on_breakpoint_grid": 173,
+    "by_stage": [
+      {
+        "tech": "Batteries",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 9,
+        "hhi": 0.159207,
+        "effective_producers": 6.281128,
+        "max_production_share": 0.295,
+        "top_producer": "USA",
+        "barred": "IDN",
+        "objective": 1.131579,
+        "objective_node": 0.813076,
+        "objective_edge": 0.442575,
+        "diversity_penalty": 0.124182,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Batteries",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 9,
+        "hhi": 0.15195,
+        "effective_producers": 6.581112,
+        "max_production_share": 0.235,
+        "top_producer": "IDN",
+        "barred": "USA",
+        "objective": 1.110936,
+        "objective_node": 0.796564,
+        "objective_edge": 0.432776,
+        "diversity_penalty": 0.118521,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 9,
+        "hhi": 0.141907,
+        "effective_producers": 7.04685,
+        "max_production_share": 0.205,
+        "top_producer": "JPN",
+        "barred": "IDN IND THA USA",
+        "objective": 1.053033,
+        "objective_node": 0.723483,
+        "objective_edge": 0.440124,
+        "diversity_penalty": 0.110688,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 10,
+        "hhi": 0.136,
+        "effective_producers": 7.352941,
+        "max_production_share": 0.255,
+        "top_producer": "IDN",
+        "barred": "USA",
+        "objective": 1.106698,
+        "objective_node": 0.757608,
+        "objective_edge": 0.455014,
+        "diversity_penalty": 0.10608,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Electric Grid",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 10,
+        "hhi": 0.129762,
+        "effective_producers": 7.706411,
+        "max_production_share": 0.225,
+        "top_producer": "THA",
+        "barred": "",
+        "objective": 1.108309,
+        "objective_node": 0.776143,
+        "objective_edge": 0.433272,
+        "diversity_penalty": 0.101214,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Electric Grid",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 10,
+        "hhi": 0.157218,
+        "effective_producers": 6.360591,
+        "max_production_share": 0.305055,
+        "top_producer": "CHL",
+        "barred": "CAN EUU IDN IND MYS THA USA",
+        "objective": 1.070164,
+        "objective_node": 0.764311,
+        "objective_edge": 0.428405,
+        "diversity_penalty": 0.12263,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Electric Vehicles",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 8,
+        "hhi": 0.194032,
+        "effective_producers": 5.153784,
+        "max_production_share": 0.315,
+        "top_producer": "USA",
+        "barred": "EUU IDN IND MYS THA",
+        "objective": 1.116068,
+        "objective_node": 0.823716,
+        "objective_edge": 0.443594,
+        "diversity_penalty": 0.151345,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Electric Vehicles",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 9,
+        "hhi": 0.15805,
+        "effective_producers": 6.327112,
+        "max_production_share": 0.245,
+        "top_producer": "IDN",
+        "barred": "CAN",
+        "objective": 1.134102,
+        "objective_node": 0.814468,
+        "objective_edge": 0.442796,
+        "diversity_penalty": 0.123279,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Gas",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 10,
+        "hhi": 0.1442,
+        "effective_producers": 6.934813,
+        "max_production_share": 0.245,
+        "top_producer": "IND",
+        "barred": "CAN MYS THA",
+        "objective": 1.093245,
+        "objective_node": 0.767762,
+        "objective_edge": 0.437882,
+        "diversity_penalty": 0.112476,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Gas",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 10,
+        "hhi": 0.138615,
+        "effective_producers": 7.214219,
+        "max_production_share": 0.249722,
+        "top_producer": "USA",
+        "barred": "",
+        "objective": 1.147778,
+        "objective_node": 0.805895,
+        "objective_edge": 0.449932,
+        "diversity_penalty": 0.10812,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 10,
+        "hhi": 0.13935,
+        "effective_producers": 7.176175,
+        "max_production_share": 0.255,
+        "top_producer": "THA",
+        "barred": "",
+        "objective": 0.903062,
+        "objective_node": 0.818079,
+        "objective_edge": 0.193559,
+        "diversity_penalty": 0.108693,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Geothermal",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 10,
+        "hhi": 0.139247,
+        "effective_producers": 7.181502,
+        "max_production_share": 0.256607,
+        "top_producer": "THA",
+        "barred": "",
+        "objective": 0.902195,
+        "objective_node": 0.818114,
+        "objective_edge": 0.192605,
+        "diversity_penalty": 0.108612,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 9,
+        "hhi": 0.16042,
+        "effective_producers": 6.233655,
+        "max_production_share": 0.265,
+        "top_producer": "USA",
+        "barred": "CAN IDN IND MYS THA",
+        "objective": 0.970356,
+        "objective_node": 0.719119,
+        "objective_edge": 0.376254,
+        "diversity_penalty": 0.125127,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Green Hydrogen",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 8,
+        "hhi": 0.17995,
+        "effective_producers": 5.557099,
+        "max_production_share": 0.325,
+        "top_producer": "IDN",
+        "barred": "USA",
+        "objective": 1.009766,
+        "objective_node": 0.787107,
+        "objective_edge": 0.362903,
+        "diversity_penalty": 0.140361,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 9,
+        "hhi": 0.15195,
+        "effective_producers": 6.581112,
+        "max_production_share": 0.245,
+        "top_producer": "IND",
+        "barred": "CAN THA USA",
+        "objective": 1.100148,
+        "objective_node": 0.78115,
+        "objective_edge": 0.437402,
+        "diversity_penalty": 0.118521,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 7,
+        "hhi": 0.2092,
+        "effective_producers": 4.780115,
+        "max_production_share": 0.325,
+        "top_producer": "CAN",
+        "barred": "EUU IDN USA",
+        "objective": 1.094205,
+        "objective_node": 0.832958,
+        "objective_edge": 0.424345,
+        "diversity_penalty": 0.163176,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Oil",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 10,
+        "hhi": 0.125625,
+        "effective_producers": 7.960217,
+        "max_production_share": 0.205,
+        "top_producer": "IDN",
+        "barred": "USA",
+        "objective": 1.102459,
+        "objective_node": 0.758135,
+        "objective_edge": 0.4422,
+        "diversity_penalty": 0.097987,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Oil",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 9,
+        "hhi": 0.14819,
+        "effective_producers": 6.74811,
+        "max_production_share": 0.235,
+        "top_producer": "USA",
+        "barred": "",
+        "objective": 1.148022,
+        "objective_node": 0.812099,
+        "objective_edge": 0.451411,
+        "diversity_penalty": 0.115588,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Solar",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 9,
+        "hhi": 0.1651,
+        "effective_producers": 6.056935,
+        "max_production_share": 0.275,
+        "top_producer": "IND",
+        "barred": "EUU IDN MYS",
+        "objective": 1.123936,
+        "objective_node": 0.820291,
+        "objective_edge": 0.432345,
+        "diversity_penalty": 0.128778,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 9,
+        "hhi": 0.139632,
+        "effective_producers": 7.161693,
+        "max_production_share": 0.245,
+        "top_producer": "IDN",
+        "barred": "MYS THA USA",
+        "objective": 1.056841,
+        "objective_node": 0.729181,
+        "objective_edge": 0.43642,
+        "diversity_penalty": 0.108913,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Wind",
+        "supply_chain": "Midstream",
+        "method": "milp",
+        "n_producers": 8,
+        "hhi": 0.184052,
+        "effective_producers": 5.433247,
+        "max_production_share": 0.275,
+        "top_producer": "IND",
+        "barred": "IDN MYS THA",
+        "objective": 1.114008,
+        "objective_node": 0.820471,
+        "objective_edge": 0.437026,
+        "diversity_penalty": 0.143561,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      },
+      {
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "method": "milp",
+        "n_producers": 9,
+        "hhi": 0.16125,
+        "effective_producers": 6.20155,
+        "max_production_share": 0.225,
+        "top_producer": "IDN",
+        "barred": "EUU IND MYS THA",
+        "objective": 1.082184,
+        "objective_node": 0.769737,
+        "objective_edge": 0.438106,
+        "diversity_penalty": 0.125775,
+        "min_suppliers_realized": 2,
+        "min_supplier_share_realized": 0.1
+      }
+    ]
+  },
+  "node_roles": {
+    "roles": [
+      {
+        "iso3c": "CAN",
+        "name": "Canada",
+        "tier": "core",
+        "n_roles": 16,
+        "n_up": 9,
+        "n_mid": 7,
+        "total_share": 1.675947,
+        "max_share": 0.325,
+        "portfolio_cap": 7,
+        "topk_count": 7,
+        "stages": "Batteries Midstream (0.114); Batteries Upstream (0.125); Coal Midstream (0.075); Coal Upstream (0.065); Electric Grid Midstream (0.050); Electric Vehicles Midstream (0.054); Gas Upstream (0.145); Geothermal Midstream (0.055); Geothermal Upstream (0.050); Green Hydrogen Upstream (0.135); Nuclear Upstream (0.325); Oil Midstream (0.050); Oil Upstream (0.174); Solar Midstream (0.050); Solar Upstream (0.155); Wind Upstream (0.055)"
+      },
+      {
+        "iso3c": "EU",
+        "name": "European Union (EU-27)",
+        "tier": "core",
+        "n_roles": 15,
+        "n_up": 6,
+        "n_mid": 9,
+        "total_share": 1.72,
+        "max_share": 0.215,
+        "portfolio_cap": 10,
+        "topk_count": 10,
+        "stages": "Batteries Midstream (0.105); Batteries Upstream (0.055); Coal Midstream (0.205); Coal Upstream (0.050); Electric Grid Midstream (0.095); Electric Vehicles Upstream (0.050); Gas Midstream (0.135); Geothermal Midstream (0.070); Geothermal Upstream (0.085); Green Hydrogen Midstream (0.215); Green Hydrogen Upstream (0.125); Nuclear Midstream (0.205); Oil Midstream (0.055); Solar Upstream (0.115); Wind Midstream (0.155)"
+      },
+      {
+        "iso3c": "USA",
+        "name": "United States",
+        "tier": "core",
+        "n_roles": 13,
+        "n_up": 5,
+        "n_mid": 8,
+        "total_share": 2.575,
+        "max_share": 0.315,
+        "portfolio_cap": 10,
+        "topk_count": 10,
+        "stages": "Batteries Midstream (0.295); Electric Grid Midstream (0.085); Electric Vehicles Midstream (0.315); Electric Vehicles Upstream (0.165); Gas Midstream (0.185); Gas Upstream (0.250); Geothermal Midstream (0.050); Geothermal Upstream (0.050); Green Hydrogen Midstream (0.265); Oil Upstream (0.235); Solar Midstream (0.205); Wind Midstream (0.250); Wind Upstream (0.225)"
+      },
+      {
+        "iso3c": "IDN",
+        "name": "Indonesia",
+        "tier": "partner",
+        "n_roles": 13,
+        "n_up": 9,
+        "n_mid": 4,
+        "total_share": 2.055946,
+        "max_share": 0.325,
+        "portfolio_cap": 7,
+        "topk_count": 7,
+        "stages": "Batteries Upstream (0.235); Coal Upstream (0.255); Electric Grid Midstream (0.050); Electric Vehicles Upstream (0.245); Gas Midstream (0.050); Gas Upstream (0.053); Geothermal Midstream (0.050); Geothermal Upstream (0.068); Green Hydrogen Upstream (0.325); Oil Midstream (0.205); Oil Upstream (0.050); Solar Upstream (0.245); Wind Upstream (0.225)"
+      },
+      {
+        "iso3c": "IND",
+        "name": "India",
+        "tier": "partner",
+        "n_roles": 12,
+        "n_up": 5,
+        "n_mid": 7,
+        "total_share": 1.865,
+        "max_share": 0.275,
+        "portfolio_cap": 8,
+        "topk_count": 8,
+        "stages": "Batteries Midstream (0.135); Coal Upstream (0.155); Electric Grid Midstream (0.050); Gas Midstream (0.245); Gas Upstream (0.050); Nuclear Midstream (0.245); Nuclear Upstream (0.165); Oil Midstream (0.145); Oil Upstream (0.050); Solar Midstream (0.275); Solar Upstream (0.075); Wind Midstream (0.275)"
+      },
+      {
+        "iso3c": "JPN",
+        "name": "Japan",
+        "tier": "core",
+        "n_roles": 12,
+        "n_up": 2,
+        "n_mid": 10,
+        "total_share": 1.064794,
+        "max_share": 0.205,
+        "portfolio_cap": 8,
+        "topk_count": 6,
+        "stages": "Batteries Midstream (0.050); Coal Midstream (0.205); Electric Grid Midstream (0.126); Electric Grid Upstream (0.050); Electric Vehicles Midstream (0.085); Gas Midstream (0.050); Green Hydrogen Midstream (0.050); Nuclear Midstream (0.135); Oil Midstream (0.085); Solar Midstream (0.050); Wind Midstream (0.094); Wind Upstream (0.085)"
+      },
+      {
+        "iso3c": "THA",
+        "name": "Thailand",
+        "tier": "partner",
+        "n_roles": 11,
+        "n_up": 6,
+        "n_mid": 5,
+        "total_share": 1.408975,
+        "max_share": 0.256607,
+        "portfolio_cap": 6,
+        "topk_count": 6,
+        "stages": "Batteries Midstream (0.061); Coal Upstream (0.065); Electric Grid Midstream (0.225); Electric Vehicles Upstream (0.050); Geothermal Midstream (0.255); Geothermal Upstream (0.257); Green Hydrogen Upstream (0.145); Nuclear Upstream (0.050); Oil Midstream (0.126); Oil Upstream (0.050); Solar Midstream (0.125)"
+      },
+      {
+        "iso3c": "MEX",
+        "name": "Mexico",
+        "tier": "partner",
+        "n_roles": 11,
+        "n_up": 4,
+        "n_mid": 7,
+        "total_share": 0.963898,
+        "max_share": 0.205,
+        "portfolio_cap": 7,
+        "topk_count": 6,
+        "stages": "Coal Midstream (0.050); Electric Grid Midstream (0.155); Electric Grid Upstream (0.140); Electric Vehicles Midstream (0.205); Gas Midstream (0.060); Geothermal Midstream (0.050); Geothermal Upstream (0.054); Green Hydrogen Upstream (0.085); Nuclear Midstream (0.050); Solar Upstream (0.050); Wind Midstream (0.065)"
+      },
+      {
+        "iso3c": "KOR",
+        "name": "Korea",
+        "tier": "core",
+        "n_roles": 10,
+        "n_up": 1,
+        "n_mid": 9,
+        "total_share": 0.906694,
+        "max_share": 0.186076,
+        "portfolio_cap": 7,
+        "topk_count": 4,
+        "stages": "Batteries Midstream (0.055); Coal Midstream (0.125); Electric Vehicles Midstream (0.186); Gas Midstream (0.125); Green Hydrogen Midstream (0.056); Nuclear Midstream (0.065); Oil Midstream (0.145); Solar Midstream (0.050); Wind Midstream (0.050); Wind Upstream (0.050)"
+      },
+      {
+        "iso3c": "NOR",
+        "name": "Norway",
+        "tier": "core",
+        "n_roles": 10,
+        "n_up": 5,
+        "n_mid": 5,
+        "total_share": 0.879098,
+        "max_share": 0.141867,
+        "portfolio_cap": 6,
+        "topk_count": 5,
+        "stages": "Electric Grid Upstream (0.050); Gas Midstream (0.050); Gas Upstream (0.142); Geothermal Midstream (0.105); Geothermal Upstream (0.127); Green Hydrogen Midstream (0.085); Nuclear Midstream (0.060); Oil Midstream (0.050); Oil Upstream (0.115); Solar Upstream (0.095)"
+      },
+      {
+        "iso3c": "ISR",
+        "name": "Israel",
+        "tier": "core",
+        "n_roles": 9,
+        "n_up": 4,
+        "n_mid": 5,
+        "total_share": 0.665,
+        "max_share": 0.135,
+        "portfolio_cap": 6,
+        "topk_count": 4,
+        "stages": "Coal Midstream (0.065); Gas Midstream (0.050); Geothermal Midstream (0.135); Geothermal Upstream (0.105); Green Hydrogen Midstream (0.050); Green Hydrogen Upstream (0.085); Nuclear Midstream (0.075); Nuclear Upstream (0.050); Wind Upstream (0.050)"
+      },
+      {
+        "iso3c": "MYS",
+        "name": "Malaysia",
+        "tier": "partner",
+        "n_roles": 8,
+        "n_up": 2,
+        "n_mid": 6,
+        "total_share": 0.869428,
+        "max_share": 0.155,
+        "portfolio_cap": 6,
+        "topk_count": 6,
+        "stages": "Batteries Midstream (0.135); Coal Midstream (0.050); Electric Grid Midstream (0.114); Gas Upstream (0.095); Geothermal Midstream (0.155); Geothermal Upstream (0.155); Nuclear Midstream (0.115); Oil Midstream (0.050)"
+      },
+      {
+        "iso3c": "ZAF",
+        "name": "South Africa",
+        "tier": "partner",
+        "n_roles": 8,
+        "n_up": 7,
+        "n_mid": 1,
+        "total_share": 0.57,
+        "max_share": 0.135,
+        "portfolio_cap": 6,
+        "topk_count": 4,
+        "stages": "Batteries Upstream (0.050); Coal Upstream (0.075); Electric Grid Upstream (0.050); Electric Vehicles Midstream (0.050); Electric Vehicles Upstream (0.050); Nuclear Upstream (0.135); Solar Upstream (0.095); Wind Upstream (0.065)"
+      },
+      {
+        "iso3c": "GBR",
+        "name": "United Kingdom",
+        "tier": "core",
+        "n_roles": 8,
+        "n_up": 4,
+        "n_mid": 4,
+        "total_share": 0.465,
+        "max_share": 0.115,
+        "portfolio_cap": 8,
+        "topk_count": 1,
+        "stages": "Batteries Midstream (0.050); Batteries Upstream (0.050); Electric Grid Upstream (0.050); Electric Vehicles Midstream (0.050); Gas Midstream (0.050); Green Hydrogen Upstream (0.050); Nuclear Midstream (0.050); Solar Upstream (0.115)"
+      },
+      {
+        "iso3c": "VNM",
+        "name": "Viet Nam",
+        "tier": "partner",
+        "n_roles": 7,
+        "n_up": 1,
+        "n_mid": 6,
+        "total_share": 0.659442,
+        "max_share": 0.135,
+        "portfolio_cap": 6,
+        "topk_count": 6,
+        "stages": "Coal Midstream (0.080); Coal Upstream (0.115); Electric Vehicles Midstream (0.055); Green Hydrogen Midstream (0.135); Oil Midstream (0.089); Solar Midstream (0.135); Wind Midstream (0.050)"
+      },
+      {
+        "iso3c": "PHL",
+        "name": "Philippines",
+        "tier": "partner",
+        "n_roles": 7,
+        "n_up": 5,
+        "n_mid": 2,
+        "total_share": 0.45,
+        "max_share": 0.075,
+        "portfolio_cap": 6,
+        "topk_count": 4,
+        "stages": "Batteries Upstream (0.065); Coal Upstream (0.050); Electric Grid Upstream (0.075); Electric Vehicles Upstream (0.075); Green Hydrogen Midstream (0.075); Green Hydrogen Upstream (0.050); Solar Midstream (0.060)"
+      },
+      {
+        "iso3c": "AUS",
+        "name": "Australia",
+        "tier": "core",
+        "n_roles": 5,
+        "n_up": 5,
+        "n_mid": 0,
+        "total_share": 0.73,
+        "max_share": 0.22,
+        "portfolio_cap": 7,
+        "topk_count": 3,
+        "stages": "Batteries Upstream (0.220); Electric Grid Upstream (0.050); Electric Vehicles Upstream (0.215); Gas Upstream (0.050); Wind Upstream (0.195)"
+      },
+      {
+        "iso3c": "QAT",
+        "name": "Qatar",
+        "tier": "partner",
+        "n_roles": 4,
+        "n_up": 3,
+        "n_mid": 1,
+        "total_share": 0.315,
+        "max_share": 0.115,
+        "portfolio_cap": 5,
+        "topk_count": 2,
+        "stages": "Gas Upstream (0.115); Geothermal Midstream (0.075); Geothermal Upstream (0.050); Oil Upstream (0.075)"
+      },
+      {
+        "iso3c": "SGP",
+        "name": "Singapore",
+        "tier": "partner",
+        "n_roles": 4,
+        "n_up": 2,
+        "n_mid": 2,
+        "total_share": 0.223904,
+        "max_share": 0.068904,
+        "portfolio_cap": 6,
+        "topk_count": 0,
+        "stages": "Green Hydrogen Midstream (0.069); Solar Midstream (0.050); Solar Upstream (0.055); Wind Upstream (0.050)"
+      },
+      {
+        "iso3c": "CHL",
+        "name": "Chile",
+        "tier": "partner",
+        "n_roles": 3,
+        "n_up": 3,
+        "n_mid": 0,
+        "total_share": 0.505055,
+        "max_share": 0.305055,
+        "portfolio_cap": 5,
+        "topk_count": 3,
+        "stages": "Batteries Upstream (0.115); Electric Grid Upstream (0.305); Electric Vehicles Upstream (0.085)"
+      },
+      {
+        "iso3c": "SAU",
+        "name": "Saudi Arabia",
+        "tier": "partner",
+        "n_roles": 3,
+        "n_up": 3,
+        "n_mid": 0,
+        "total_share": 0.275,
+        "max_share": 0.175,
+        "portfolio_cap": 7,
+        "topk_count": 1,
+        "stages": "Gas Upstream (0.050); Nuclear Upstream (0.050); Oil Upstream (0.175)"
+      },
+      {
+        "iso3c": "COL",
+        "name": "Colombia",
+        "tier": "partner",
+        "n_roles": 2,
+        "n_up": 1,
+        "n_mid": 1,
+        "total_share": 0.24,
+        "max_share": 0.145,
+        "portfolio_cap": 6,
+        "topk_count": 2,
+        "stages": "Coal Midstream (0.145); Coal Upstream (0.095)"
+      },
+      {
+        "iso3c": "PER",
+        "name": "Peru",
+        "tier": "partner",
+        "n_roles": 2,
+        "n_up": 2,
+        "n_mid": 0,
+        "total_share": 0.19,
+        "max_share": 0.115,
+        "portfolio_cap": 5,
+        "topk_count": 1,
+        "stages": "Coal Upstream (0.075); Electric Grid Upstream (0.115)"
+      },
+      {
+        "iso3c": "ARG",
+        "name": "Argentina",
+        "tier": "partner",
+        "n_roles": 2,
+        "n_up": 2,
+        "n_mid": 0,
+        "total_share": 0.15,
+        "max_share": 0.085,
+        "portfolio_cap": 6,
+        "topk_count": 1,
+        "stages": "Batteries Upstream (0.085); Electric Vehicles Upstream (0.065)"
+      },
+      {
+        "iso3c": "OMN",
+        "name": "Oman",
+        "tier": "partner",
+        "n_roles": 2,
+        "n_up": 2,
+        "n_mid": 0,
+        "total_share": 0.126319,
+        "max_share": 0.076319,
+        "portfolio_cap": 4,
+        "topk_count": 1,
+        "stages": "Gas Upstream (0.050); Oil Upstream (0.076)"
+      },
+      {
+        "iso3c": "NAM",
+        "name": "Namibia",
+        "tier": "partner",
+        "n_roles": 1,
+        "n_up": 1,
+        "n_mid": 0,
+        "total_share": 0.225,
+        "max_share": 0.225,
+        "portfolio_cap": 2,
+        "topk_count": 1,
+        "stages": "Nuclear Upstream (0.225)"
+      },
+      {
+        "iso3c": "COD",
+        "name": "DR Congo",
+        "tier": "partner",
+        "n_roles": 1,
+        "n_up": 1,
+        "n_mid": 0,
+        "total_share": 0.115,
+        "max_share": 0.115,
+        "portfolio_cap": 4,
+        "topk_count": 1,
+        "stages": "Electric Grid Upstream (0.115)"
+      },
+      {
+        "iso3c": "BRA",
+        "name": "Brazil",
+        "tier": "partner",
+        "n_roles": 1,
+        "n_up": 0,
+        "n_mid": 1,
+        "total_share": 0.0605,
+        "max_share": 0.0605,
+        "portfolio_cap": 7,
+        "topk_count": 0,
+        "stages": "Wind Midstream (0.061)"
+      },
+      {
+        "iso3c": "MAR",
+        "name": "Morocco",
+        "tier": "partner",
+        "n_roles": 1,
+        "n_up": 0,
+        "n_mid": 1,
+        "total_share": 0.05,
+        "max_share": 0.05,
+        "portfolio_cap": 5,
+        "topk_count": 0,
+        "stages": "Electric Grid Midstream (0.050)"
+      },
+      {
+        "iso3c": "TUR",
+        "name": "Turkiye",
+        "tier": "partner",
+        "n_roles": 0,
+        "n_up": 0,
+        "n_mid": 0,
+        "total_share": 0,
+        "max_share": 0,
+        "portfolio_cap": 7,
+        "topk_count": 0
+      },
+      {
+        "iso3c": "NZL",
+        "name": "New Zealand",
+        "tier": "core",
+        "n_roles": 0,
+        "n_up": 0,
+        "n_mid": 0,
+        "total_share": 0,
+        "max_share": 0,
+        "portfolio_cap": 5,
+        "topk_count": 0
+      },
+      {
+        "iso3c": "UKR",
+        "name": "Ukraine",
+        "tier": "core",
+        "n_roles": 0,
+        "n_up": 0,
+        "n_mid": 0,
+        "total_share": 0,
+        "max_share": 0,
+        "portfolio_cap": 5,
+        "topk_count": 0
+      },
+      {
+        "iso3c": "DOM",
+        "name": "Dominican Republic",
+        "tier": "partner",
+        "n_roles": 0,
+        "n_up": 0,
+        "n_mid": 0,
+        "total_share": 0,
+        "max_share": 0,
+        "portfolio_cap": 4,
+        "topk_count": 0
+      },
+      {
+        "iso3c": "GTM",
+        "name": "Guatemala",
+        "tier": "partner",
+        "n_roles": 0,
+        "n_up": 0,
+        "n_mid": 0,
+        "total_share": 0,
+        "max_share": 0,
+        "portfolio_cap": 4,
+        "topk_count": 0
+      },
+      {
+        "iso3c": "GHA",
+        "name": "Ghana",
+        "tier": "partner",
+        "n_roles": 0,
+        "n_up": 0,
+        "n_mid": 0,
+        "total_share": 0,
+        "max_share": 0,
+        "portfolio_cap": 4,
+        "topk_count": 0
+      },
+      {
+        "iso3c": "CRI",
+        "name": "Costa Rica",
+        "tier": "partner",
+        "n_roles": 0,
+        "n_up": 0,
+        "n_mid": 0,
+        "total_share": 0,
+        "max_share": 0,
+        "portfolio_cap": 4,
+        "topk_count": 0
+      },
+      {
+        "iso3c": "GAB",
+        "name": "Gabon",
+        "tier": "partner",
+        "n_roles": 0,
+        "n_up": 0,
+        "n_mid": 0,
+        "total_share": 0,
+        "max_share": 0,
+        "portfolio_cap": 2,
+        "topk_count": 0
+      }
+    ],
+    "n_nodes_selected": 29,
+    "nodes_never_selected": ["TUR", "NZL", "UKR", "DOM", "GTM", "GHA", "CRI", "GAB"],
+    "nodes_most_roles": [
+      {
+        "iso3c": "CAN",
+        "n_roles": 16
+      },
+      {
+        "iso3c": "EU",
+        "n_roles": 15
+      },
+      {
+        "iso3c": "USA",
+        "n_roles": 13
+      },
+      {
+        "iso3c": "IDN",
+        "n_roles": 13
+      }
+    ],
+    "n_nodes_upstream_only": 8,
+    "nodes_upstream_only": ["AUS", "CHL", "SAU", "PER", "ARG", "OMN", "NAM", "COD"],
+    "n_nodes_midstream_only": 2,
+    "nodes_midstream_only": ["BRA", "MAR"],
+    "spearman_roles_vs_cap": 0.747627,
+    "spearman_roles_vs_gdp": 0.744542,
+    "tech_spread": [
+      {
+        "tech": "Geothermal",
+        "n_distinct_producers": 10,
+        "n_roles": 20
+      },
+      {
+        "tech": "Green Hydrogen",
+        "n_distinct_producers": 14,
+        "n_roles": 17
+      },
+      {
+        "tech": "Nuclear",
+        "n_distinct_producers": 14,
+        "n_roles": 16
+      },
+      {
+        "tech": "Oil",
+        "n_distinct_producers": 14,
+        "n_roles": 19
+      },
+      {
+        "tech": "Wind",
+        "n_distinct_producers": 14,
+        "n_roles": 17
+      },
+      {
+        "tech": "Batteries",
+        "n_distinct_producers": 15,
+        "n_roles": 18
+      },
+      {
+        "tech": "Coal",
+        "n_distinct_producers": 15,
+        "n_roles": 19
+      },
+      {
+        "tech": "Electric Vehicles",
+        "n_distinct_producers": 15,
+        "n_roles": 17
+      },
+      {
+        "tech": "Solar",
+        "n_distinct_producers": 15,
+        "n_roles": 18
+      },
+      {
+        "tech": "Gas",
+        "n_distinct_producers": 16,
+        "n_roles": 20
+      },
+      {
+        "tech": "Electric Grid",
+        "n_distinct_producers": 18,
+        "n_roles": 20
+      }
+    ],
+    "income_share_by_supply_chain": [
+      {
+        "supply_chain": "Midstream",
+        "share_production_non_high_income": 0.432431,
+        "share_production_partner_tier": 0.450058,
+        "n_stages": 11
+      },
+      {
+        "supply_chain": "Upstream",
+        "share_production_non_high_income": 0.465132,
+        "share_production_partner_tier": 0.578893,
+        "n_stages": 11
+      }
+    ],
+    "n_non_high_income_nodes": 22,
+    "tier_counts": {
+      "core": 11,
+      "partner": 26
+    }
+  },
+  "eu_node": {
+    "n_members": 27,
+    "gdp_usd": 21243212570163.301,
+    "portfolio_cap": 10,
+    "topk_count": 10,
+    "n_stages_selected": 15,
+    "n_up": 6,
+    "n_mid": 9,
+    "share_median": 0.105,
+    "share_min": 0.05,
+    "share_max": 0.215,
+    "stages": [
+      {
+        "stage": "Green Hydrogen Midstream",
+        "production_share": 0.215,
+        "rank_in_stage": 2
+      },
+      {
+        "stage": "Nuclear Midstream",
+        "production_share": 0.205,
+        "rank_in_stage": 2
+      },
+      {
+        "stage": "Coal Midstream",
+        "production_share": 0.205,
+        "rank_in_stage": 2
+      },
+      {
+        "stage": "Wind Midstream",
+        "production_share": 0.155,
+        "rank_in_stage": 3
+      },
+      {
+        "stage": "Gas Midstream",
+        "production_share": 0.135,
+        "rank_in_stage": 3
+      },
+      {
+        "stage": "Green Hydrogen Upstream",
+        "production_share": 0.125,
+        "rank_in_stage": 4
+      },
+      {
+        "stage": "Solar Upstream",
+        "production_share": 0.115,
+        "rank_in_stage": 3
+      },
+      {
+        "stage": "Batteries Midstream",
+        "production_share": 0.105,
+        "rank_in_stage": 4
+      },
+      {
+        "stage": "Electric Grid Midstream",
+        "production_share": 0.095,
+        "rank_in_stage": 5
+      },
+      {
+        "stage": "Geothermal Upstream",
+        "production_share": 0.085,
+        "rank_in_stage": 5
+      },
+      {
+        "stage": "Geothermal Midstream",
+        "production_share": 0.07,
+        "rank_in_stage": 6
+      },
+      {
+        "stage": "Batteries Upstream",
+        "production_share": 0.055,
+        "rank_in_stage": 7
+      },
+      {
+        "stage": "Oil Midstream",
+        "production_share": 0.055,
+        "rank_in_stage": 7
+      },
+      {
+        "stage": "Coal Upstream",
+        "production_share": 0.05,
+        "rank_in_stage": 9
+      },
+      {
+        "stage": "Electric Vehicles Upstream",
+        "production_share": 0.05,
+        "rank_in_stage": 7
+      }
+    ],
+    "n_stages_top5": 10,
+    "n_stages_top_producer": 0,
+    "barred_stages": ["Electric Grid Upstream", "Electric Vehicles Midstream", "Nuclear Upstream", "Solar Midstream", "Wind Upstream"],
+    "midstream_stages_not_selected": ["Electric Vehicles Midstream", "Solar Midstream"],
+    "member_split_by_stage": [
+      {
+        "tech": "Batteries",
+        "supply_chain": "Midstream",
+        "node_share": 0.105,
+        "weight_basis": "exports",
+        "top_members": "POL 0.023, HUN 0.022, DEU 0.020",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Batteries",
+        "supply_chain": "Upstream",
+        "node_share": 0.055,
+        "weight_basis": "exports",
+        "top_members": "DEU 0.016, FRA 0.006, FIN 0.005",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Midstream",
+        "node_share": 0.205,
+        "weight_basis": "exports",
+        "top_members": "POL 0.082, DEU 0.032, ITA 0.022",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Upstream",
+        "node_share": 0.05,
+        "weight_basis": "production",
+        "top_members": "POL 0.025, DEU 0.014, CZE 0.006",
+        "n_members_positive": 7
+      },
+      {
+        "tech": "Electric Grid",
+        "supply_chain": "Midstream",
+        "node_share": 0.095,
+        "weight_basis": "exports",
+        "top_members": "DEU 0.031, ITA 0.008, FRA 0.006",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Electric Vehicles",
+        "supply_chain": "Upstream",
+        "node_share": 0.05,
+        "weight_basis": "exports",
+        "top_members": "FIN 0.014, DEU 0.007, NLD 0.007",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Gas",
+        "supply_chain": "Midstream",
+        "node_share": 0.135,
+        "weight_basis": "exports",
+        "top_members": "DEU 0.038, ITA 0.025, FRA 0.010",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "node_share": 0.07,
+        "weight_basis": "gdp",
+        "top_members": "DEU 0.017, FRA 0.011, ITA 0.008",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Geothermal",
+        "supply_chain": "Upstream",
+        "node_share": 0.085,
+        "weight_basis": "gdp",
+        "top_members": "DEU 0.020, FRA 0.013, ITA 0.010",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "node_share": 0.215,
+        "weight_basis": "gdp",
+        "top_members": "DEU 0.051, FRA 0.034, ITA 0.026",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Green Hydrogen",
+        "supply_chain": "Upstream",
+        "node_share": 0.125,
+        "weight_basis": "gdp",
+        "top_members": "DEU 0.030, FRA 0.020, ITA 0.015",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "node_share": 0.205,
+        "weight_basis": "exports",
+        "top_members": "FRA 0.058, DEU 0.054, NLD 0.028",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Oil",
+        "supply_chain": "Midstream",
+        "node_share": 0.055,
+        "weight_basis": "exports",
+        "top_members": "DEU 0.016, ITA 0.008, FRA 0.004",
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "node_share": 0.115,
+        "weight_basis": "exports",
+        "top_members": "FRA 0.053, DEU 0.020, NLD 0.012",
+        "n_members_positive": 25
+      },
+      {
+        "tech": "Wind",
+        "supply_chain": "Midstream",
+        "node_share": 0.155,
+        "weight_basis": "exports",
+        "top_members": "DEU 0.045, ITA 0.016, POL 0.012",
+        "n_members_positive": 27
+      }
+    ],
+    "member_split_weight_basis_counts": {
+      "exports": 405,
+      "gdp": 108,
+      "production": 81
+    },
+    "member_summed_derived_share_top": [
+      {
+        "iso3c": "DEU",
+        "sum_derived_share": 0.409366
+      },
+      {
+        "iso3c": "FRA",
+        "sum_derived_share": 0.240907
+      },
+      {
+        "iso3c": "POL",
+        "sum_derived_share": 0.190959
+      },
+      {
+        "iso3c": "ITA",
+        "sum_derived_share": 0.161553
+      },
+      {
+        "iso3c": "NLD",
+        "sum_derived_share": 0.119955
+      },
+      {
+        "iso3c": "ESP",
+        "sum_derived_share": 0.102522
+      },
+      {
+        "iso3c": "CZE",
+        "sum_derived_share": 0.061781
+      },
+      {
+        "iso3c": "SWE",
+        "sum_derived_share": 0.058249
+      }
+    ],
+    "observed_top_exporter_stages": ["Batteries Midstream", "Coal Midstream", "Electric Grid Midstream", "Electric Vehicles Midstream", "Gas Midstream", "Nuclear Midstream", "Oil Midstream", "Solar Midstream", "Wind Midstream"],
+    "n_observed_top_exporter": 9,
+    "observed_share_median": 0.271779,
+    "gdp_share_of_nodes": 0.245679,
+    "demand_weight": {
+      "median": 0.035217,
+      "min": 0.02938,
+      "max": 0.046238
+    },
+    "demand_weight_rank_median": 3,
+    "usa_demand_weight_median": 0.033288,
+    "usa_gdp_share_of_nodes": 0.355853,
+    "demand_weight_max_any_node": 0.054054,
+    "size_idx": 0.855409,
+    "split_table": [
+      {
+        "tech": "Green Hydrogen",
+        "supply_chain": "Upstream",
+        "node_share": 0.125,
+        "basis": "gdp",
+        "top3": "DEU~.030, FRA~.020, ITA~.015",
+        "top3_weight": 0.516344,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "node_share": 0.115,
+        "basis": "exports",
+        "top3": "FRA~.053, DEU~.020, NLD~.012",
+        "top3_weight": 0.740536,
+        "n_members_positive": 25
+      },
+      {
+        "tech": "Geothermal",
+        "supply_chain": "Upstream",
+        "node_share": 0.085,
+        "basis": "gdp",
+        "top3": "DEU~.020, FRA~.013, ITA~.010",
+        "top3_weight": 0.516344,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Batteries",
+        "supply_chain": "Upstream",
+        "node_share": 0.055,
+        "basis": "exports",
+        "top3": "DEU~.016, FRA~.006, FIN~.005",
+        "top3_weight": 0.491924,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Upstream",
+        "node_share": 0.05,
+        "basis": "production",
+        "top3": "POL~.025, DEU~.014, CZE~.006",
+        "top3_weight": 0.909248,
+        "n_members_positive": 7
+      },
+      {
+        "tech": "Electric Vehicles",
+        "supply_chain": "Upstream",
+        "node_share": 0.05,
+        "basis": "exports",
+        "top3": "FIN~.014, DEU~.007, NLD~.007",
+        "top3_weight": 0.540969,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "node_share": 0.215,
+        "basis": "gdp",
+        "top3": "DEU~.051, FRA~.034, ITA~.026",
+        "top3_weight": 0.516344,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "node_share": 0.205,
+        "basis": "exports",
+        "top3": "FRA~.058, DEU~.054, NLD~.028",
+        "top3_weight": 0.679573,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Midstream",
+        "node_share": 0.205,
+        "basis": "exports",
+        "top3": "POL~.082, DEU~.032, ITA~.022",
+        "top3_weight": 0.663488,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Wind",
+        "supply_chain": "Midstream",
+        "node_share": 0.155,
+        "basis": "exports",
+        "top3": "DEU~.045, ITA~.016, POL~.012",
+        "top3_weight": 0.46506,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Gas",
+        "supply_chain": "Midstream",
+        "node_share": 0.135,
+        "basis": "exports",
+        "top3": "DEU~.038, ITA~.025, FRA~.010",
+        "top3_weight": 0.536911,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Batteries",
+        "supply_chain": "Midstream",
+        "node_share": 0.105,
+        "basis": "exports",
+        "top3": "POL~.023, HUN~.022, DEU~.020",
+        "top3_weight": 0.617122,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Electric Grid",
+        "supply_chain": "Midstream",
+        "node_share": 0.095,
+        "basis": "exports",
+        "top3": "DEU~.031, ITA~.008, FRA~.006",
+        "top3_weight": 0.474419,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "node_share": 0.07,
+        "basis": "gdp",
+        "top3": "DEU~.017, FRA~.011, ITA~.008",
+        "top3_weight": 0.516344,
+        "n_members_positive": 27
+      },
+      {
+        "tech": "Oil",
+        "supply_chain": "Midstream",
+        "node_share": 0.055,
+        "basis": "exports",
+        "top3": "DEU~.016, ITA~.008, FRA~.004",
+        "top3_weight": 0.51456,
+        "n_members_positive": 27
+      }
+    ]
+  },
+  "flows": {
+    "n_flows_total": 1640,
+    "n_flows_per_stage_min": 72,
+    "n_flows_per_stage_max": 76,
+    "suppliers_per_consumer": {
+      "2": 793,
+      "3": 18
+    },
+    "n_consumer_stage_pairs": 811,
+    "min_suppliers_realized_all": 2,
+    "min_supplier_share_realized_range": [0.1, 0.1],
+    "n_stages_epsilon_binding": 22,
+    "n_stages_with_self_flow": 2,
+    "self_flow": [
+      {
+        "stage": "Electric Grid Upstream",
+        "self_share": 0.008265
+      },
+      {
+        "stage": "Electric Vehicles Midstream",
+        "self_share": 0.002187
+      }
+    ],
+    "flow_weighted_edge_weight_offdiag_median": 0.874428,
+    "flow_weighted_edge_weight_offdiag_range": [0.38521, 0.910029],
+    "by_stage": [
+      {
+        "tech": "Batteries",
+        "supply_chain": "Midstream",
+        "n_flows": 75,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.88515,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Batteries",
+        "supply_chain": "Upstream",
+        "n_flows": 74,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.865553,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Midstream",
+        "n_flows": 76,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.880248,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Upstream",
+        "n_flows": 75,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.910029,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Electric Grid",
+        "supply_chain": "Midstream",
+        "n_flows": 74,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.866544,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Electric Grid",
+        "supply_chain": "Upstream",
+        "n_flows": 75,
+        "self_share": 0.008265,
+        "flow_weighted_edge_weight_offdiag": 0.85875
+      },
+      {
+        "tech": "Electric Vehicles",
+        "supply_chain": "Midstream",
+        "n_flows": 74,
+        "self_share": 0.002187,
+        "flow_weighted_edge_weight_offdiag": 0.88763
+      },
+      {
+        "tech": "Electric Vehicles",
+        "supply_chain": "Upstream",
+        "n_flows": 74,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.885591,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Gas",
+        "supply_chain": "Midstream",
+        "n_flows": 75,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.875763,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Gas",
+        "supply_chain": "Upstream",
+        "n_flows": 76,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.899864,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "n_flows": 73,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.387118,
+        "share_flow_both_components": 0
+      },
+      {
+        "tech": "Geothermal",
+        "supply_chain": "Upstream",
+        "n_flows": 72,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.38521,
+        "share_flow_both_components": 0
+      },
+      {
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "n_flows": 72,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.752507,
+        "share_flow_both_components": 0.934103
+      },
+      {
+        "tech": "Green Hydrogen",
+        "supply_chain": "Upstream",
+        "n_flows": 75,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.725807,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "n_flows": 76,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.874804,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "n_flows": 74,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.848691,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Oil",
+        "supply_chain": "Midstream",
+        "n_flows": 76,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.8844,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Oil",
+        "supply_chain": "Upstream",
+        "n_flows": 75,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.902823,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Solar",
+        "supply_chain": "Midstream",
+        "n_flows": 76,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.86469,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "n_flows": 75,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.87284,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Wind",
+        "supply_chain": "Midstream",
+        "n_flows": 74,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.874051,
+        "share_flow_both_components": 1
+      },
+      {
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "n_flows": 74,
+        "self_share": 0,
+        "flow_weighted_edge_weight_offdiag": 0.876212,
+        "share_flow_both_components": 1
+      }
+    ]
+  },
+  "edges": {
+    "n_offdiag_pairs_per_stage": 1332,
+    "n_stages_friendshore_complete": 22,
+    "opportunity_share_of_pairs": [
+      {
+        "stage": "Batteries Midstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Batteries Upstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Coal Midstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Coal Upstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Electric Grid Midstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Electric Grid Upstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Electric Vehicles Midstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Electric Vehicles Upstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Gas Midstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Gas Upstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Geothermal Midstream",
+        "friendshore": 1,
+        "opportunity": 0
+      },
+      {
+        "stage": "Geothermal Upstream",
+        "friendshore": 1,
+        "opportunity": 0
+      },
+      {
+        "stage": "Green Hydrogen Midstream",
+        "friendshore": 1,
+        "opportunity": 0.864865
+      },
+      {
+        "stage": "Green Hydrogen Upstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Nuclear Midstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Nuclear Upstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Oil Midstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Oil Upstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Solar Midstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Solar Upstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Wind Midstream",
+        "friendshore": 1,
+        "opportunity": 1
+      },
+      {
+        "stage": "Wind Upstream",
+        "friendshore": 1,
+        "opportunity": 1
+      }
+    ],
+    "stages_without_opportunity": ["Geothermal Midstream", "Geothermal Upstream"],
+    "n_eu_edges": 3019,
+    "eu_edges_trade_weighted_share": 0.762504,
+    "n_stages_eu_edges_all_trade_weighted": 7,
+    "intra_eu_member_edges_dropped": [
+      {
+        "component": "friendshore",
+        "intra_node_member_edges_dropped": 23166
+      },
+      {
+        "component": "opportunity",
+        "intra_node_member_edges_dropped": 21034
+      }
+    ],
+    "share_pair_stages_both_components": 0.902948,
+    "share_pair_stages_friendshore_only": 0.097052,
+    "n_stages_opportunity_complete": 19
+  },
+  "concentration": {
+    "description": "HHI_D = Herfindahl index of designed production shares (allied_network_diagnostics.csv, 22 stages). HHI_N = Herfindahl index of the network nodes' 2024 basket exports (allied_network_observed_hhi.csv: reconciled Comtrade matrix, importer report else exporter mirror x 1.06; shares within the 37 nodes; the EU-27 node counts extra-EU exports only), 18 stages with an HS6 basket. HHI_W = Herfindahl index of 2024 exports of the basket across all reporters of the trade theme (trade_concentration_tbl, variable exports, raw; equal to its stored raw HHI; Hong Kong is not among the exporters, as a re-export hub). network_share_of_world = share of world exports of the 63 network economies ( 57 members + 6 EU members outside the tiers; gross, incl. intra-EU).",
+    "comtrade_year": 2024,
+    "n_stages_with_observed": 18,
+    "stages_without_basket": ["Geothermal Midstream", "Geothermal Upstream", "Green Hydrogen Midstream", "Green Hydrogen Upstream"],
+    "calibration_target_median_HHI_N": 0.15555,
+    "calibration_target_equivalent_exporters": 6.428791,
+    "HHI_D_median_22": 0.15195,
+    "HHI_D_equivalent_22": 6.581112,
+    "margin_target_minus_design": 0.0036,
+    "HHI_D_basket": {
+      "min": 0.125625,
+      "median": 0.15195,
+      "max": 0.2092
+    },
+    "HHI_N": {
+      "min": 0.095214,
+      "median": 0.15555,
+      "max": 0.354921
+    },
+    "HHI_W": {
+      "min": 0.05457,
+      "median": 0.100866,
+      "max": 0.329695
+    },
+    "equivalent": {
+      "design_basket": 6.581112,
+      "nodes": 6.428791,
+      "world": 9.91411
+    },
+    "n_stages_HHI_D_below_HHI_N": 10,
+    "stages_HHI_D_above_HHI_N": [
+      {
+        "stage": "Batteries Midstream",
+        "HHI_D": 0.159207,
+        "HHI_N": 0.095214
+      },
+      {
+        "stage": "Electric Grid Midstream",
+        "HHI_D": 0.129762,
+        "HHI_N": 0.121367
+      },
+      {
+        "stage": "Electric Grid Upstream",
+        "HHI_D": 0.157218,
+        "HHI_N": 0.107611
+      },
+      {
+        "stage": "Electric Vehicles Midstream",
+        "HHI_D": 0.194032,
+        "HHI_N": 0.133967
+      },
+      {
+        "stage": "Oil Upstream",
+        "HHI_D": 0.14819,
+        "HHI_N": 0.100021
+      },
+      {
+        "stage": "Solar Midstream",
+        "HHI_D": 0.1651,
+        "HHI_N": 0.123173
+      },
+      {
+        "stage": "Wind Midstream",
+        "HHI_D": 0.184052,
+        "HHI_N": 0.13775
+      },
+      {
+        "stage": "Wind Upstream",
+        "HHI_D": 0.16125,
+        "HHI_N": 0.157633
+      }
+    ],
+    "n_stages_HHI_D_below_HHI_W": 5,
+    "n_stages_HHI_N_above_HHI_W": 16,
+    "spearman_HHI_D_vs_HHI_N": -0.071244,
+    "max_share_D_basket": {
+      "min": 0.205,
+      "median": 0.245,
+      "max": 0.325
+    },
+    "top_share_N": {
+      "min": 0.158603,
+      "median": 0.278221,
+      "max": 0.542571
+    },
+    "world_leader_share": {
+      "min": 0.136344,
+      "median": 0.23711,
+      "max": 0.443537
+    },
+    "n_stages_design_max_below_node_top": 13,
+    "n_stages_top_design_equals_top_node": 4,
+    "observed_top_node_counts": {
+      "AUS": 3,
+      "BRA": 1,
+      "CAN": 1,
+      "CHL": 1,
+      "EU": 9,
+      "MYS": 1,
+      "USA": 2
+    },
+    "n_stages_china_leads_world": 10,
+    "stages_china_leads_world": [
+      {
+        "stage": "Batteries Midstream",
+        "china_share": 0.434228
+      },
+      {
+        "stage": "Coal Midstream",
+        "china_share": 0.211434
+      },
+      {
+        "stage": "Electric Grid Midstream",
+        "china_share": 0.233572
+      },
+      {
+        "stage": "Electric Vehicles Midstream",
+        "china_share": 0.242232
+      },
+      {
+        "stage": "Gas Midstream",
+        "china_share": 0.201413
+      },
+      {
+        "stage": "Oil Midstream",
+        "china_share": 0.268021
+      },
+      {
+        "stage": "Solar Midstream",
+        "china_share": 0.243052
+      },
+      {
+        "stage": "Solar Upstream",
+        "china_share": 0.383018
+      },
+      {
+        "stage": "Wind Midstream",
+        "china_share": 0.224926
+      },
+      {
+        "stage": "Wind Upstream",
+        "china_share": 0.298706
+      }
+    ],
+    "china_share_when_leading": {
+      "min": 0.201413,
+      "median": 0.242642,
+      "max": 0.434228
+    },
+    "n_stages_world_leader_outside_network": 11,
+    "world_leaders_outside_network": {
+      "CHN": 10,
+      "KAZ": 1
+    },
+    "network_share_of_world": {
+      "min": 0.537164,
+      "median": 0.740069,
+      "max": 0.970243
+    },
+    "n_reporters_range": [34, 139],
+    "semiconductors_note": "trade theme also has Semiconductors Midstream, not a network technology; excluded",
+    "by_stage": [
+      {
+        "tech": "Batteries",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.159207,
+        "max_share_D": 0.295,
+        "n_producers": 9,
+        "HHI_N": 0.095214,
+        "top_node": "EUU",
+        "top_share_N": 0.158603,
+        "effective_exporters": 10.50265,
+        "n_nodes_exporting": 37,
+        "n_reporters": 133,
+        "HHI_W": 0.205728,
+        "world_leader": "CHN",
+        "world_leader_share": 0.434228,
+        "world_leader_in_network": false,
+        "top3_world": "CHN USA IDN",
+        "china_rank": 1,
+        "china_share": 0.434228,
+        "network_share_of_world": 0.537164
+      },
+      {
+        "tech": "Batteries",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.15195,
+        "max_share_D": 0.235,
+        "n_producers": 9,
+        "HHI_N": 0.157514,
+        "top_node": "AUS",
+        "top_share_N": 0.258547,
+        "effective_exporters": 6.34865,
+        "n_nodes_exporting": 37,
+        "n_reporters": 121,
+        "HHI_W": 0.109624,
+        "world_leader": "AUS",
+        "world_leader_share": 0.218283,
+        "world_leader_in_network": true,
+        "top3_world": "AUS ZAF PHL",
+        "china_rank": 9,
+        "china_share": 0.026939,
+        "network_share_of_world": 0.873342
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.141907,
+        "max_share_D": 0.205,
+        "n_producers": 9,
+        "HHI_N": 0.169914,
+        "top_node": "EUU",
+        "top_share_N": 0.33192,
+        "effective_exporters": 5.885342,
+        "n_nodes_exporting": 37,
+        "n_reporters": 124,
+        "HHI_W": 0.090096,
+        "world_leader": "CHN",
+        "world_leader_share": 0.211434,
+        "world_leader_in_network": false,
+        "top3_world": "CHN POL IDN",
+        "china_rank": 1,
+        "china_share": 0.211434,
+        "network_share_of_world": 0.75028
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.136,
+        "max_share_D": 0.255,
+        "n_producers": 10,
+        "HHI_N": 0.283212,
+        "top_node": "AUS",
+        "top_share_N": 0.411675,
+        "effective_exporters": 3.530928,
+        "n_nodes_exporting": 34,
+        "n_reporters": 85,
+        "HHI_W": 0.266737,
+        "world_leader": "AUS",
+        "world_leader_share": 0.414397,
+        "world_leader_in_network": true,
+        "top3_world": "AUS IDN USA",
+        "china_rank": 8,
+        "china_share": 0.009333,
+        "network_share_of_world": 0.970243
+      },
+      {
+        "tech": "Electric Grid",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.129762,
+        "max_share_D": 0.225,
+        "n_producers": 10,
+        "HHI_N": 0.121367,
+        "top_node": "EUU",
+        "top_share_N": 0.271779,
+        "effective_exporters": 8.23948,
+        "n_nodes_exporting": 37,
+        "n_reporters": 139,
+        "HHI_W": 0.083655,
+        "world_leader": "CHN",
+        "world_leader_share": 0.233572,
+        "world_leader_in_network": false,
+        "top3_world": "CHN DEU USA",
+        "china_rank": 1,
+        "china_share": 0.233572,
+        "network_share_of_world": 0.723
+      },
+      {
+        "tech": "Electric Grid",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.157218,
+        "max_share_D": 0.305055,
+        "n_producers": 10,
+        "HHI_N": 0.107611,
+        "top_node": "CHL",
+        "top_share_N": 0.23816,
+        "effective_exporters": 9.292747,
+        "n_nodes_exporting": 37,
+        "n_reporters": 116,
+        "HHI_W": 0.06779,
+        "world_leader": "CHL",
+        "world_leader_share": 0.181815,
+        "world_leader_in_network": true,
+        "top3_world": "CHL COD PER",
+        "china_rank": 11,
+        "china_share": 0.023535,
+        "network_share_of_world": 0.856214
+      },
+      {
+        "tech": "Electric Vehicles",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.194032,
+        "max_share_D": 0.315,
+        "n_producers": 8,
+        "HHI_N": 0.133967,
+        "top_node": "EUU",
+        "top_share_N": 0.26681,
+        "effective_exporters": 7.464544,
+        "n_nodes_exporting": 37,
+        "n_reporters": 139,
+        "HHI_W": 0.096329,
+        "world_leader": "CHN",
+        "world_leader_share": 0.242232,
+        "world_leader_in_network": false,
+        "top3_world": "CHN DEU JPN",
+        "china_rank": 1,
+        "china_share": 0.242232,
+        "network_share_of_world": 0.72675
+      },
+      {
+        "tech": "Electric Vehicles",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.15805,
+        "max_share_D": 0.245,
+        "n_producers": 9,
+        "HHI_N": 0.167358,
+        "top_node": "AUS",
+        "top_share_N": 0.273935,
+        "effective_exporters": 5.975231,
+        "n_nodes_exporting": 37,
+        "n_reporters": 117,
+        "HHI_W": 0.129883,
+        "world_leader": "AUS",
+        "world_leader_share": 0.240648,
+        "world_leader_in_network": true,
+        "top3_world": "AUS ZAF PHL",
+        "china_rank": 4,
+        "china_share": 0.061086,
+        "network_share_of_world": 0.832962
+      },
+      {
+        "tech": "Gas",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.1442,
+        "max_share_D": 0.245,
+        "n_producers": 10,
+        "HHI_N": 0.153587,
+        "top_node": "EUU",
+        "top_share_N": 0.282507,
+        "effective_exporters": 6.510981,
+        "n_nodes_exporting": 37,
+        "n_reporters": 137,
+        "HHI_W": 0.076684,
+        "world_leader": "CHN",
+        "world_leader_share": 0.201413,
+        "world_leader_in_network": false,
+        "top3_world": "CHN USA DEU",
+        "china_rank": 1,
+        "china_share": 0.201413,
+        "network_share_of_world": 0.761608
+      },
+      {
+        "tech": "Gas",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.138615,
+        "max_share_D": 0.249722,
+        "n_producers": 10,
+        "HHI_N": 0.171565,
+        "top_node": "USA",
+        "top_share_N": 0.302537,
+        "effective_exporters": 5.828707,
+        "n_nodes_exporting": 36,
+        "n_reporters": 107,
+        "HHI_W": 0.10115,
+        "world_leader": "USA",
+        "world_leader_share": 0.169751,
+        "world_leader_in_network": true,
+        "top3_world": "USA QAT NOR",
+        "china_rank": 17,
+        "china_share": 0.009158,
+        "network_share_of_world": 0.823212
+      },
+      {
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.13935,
+        "max_share_D": 0.255,
+        "n_producers": 10
+      },
+      {
+        "tech": "Geothermal",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.139247,
+        "max_share_D": 0.256607,
+        "n_producers": 10
+      },
+      {
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.16042,
+        "max_share_D": 0.265,
+        "n_producers": 9
+      },
+      {
+        "tech": "Green Hydrogen",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.17995,
+        "max_share_D": 0.325,
+        "n_producers": 8
+      },
+      {
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.15195,
+        "max_share_D": 0.245,
+        "n_producers": 9,
+        "HHI_N": 0.282187,
+        "top_node": "EUU",
+        "top_share_N": 0.478869,
+        "effective_exporters": 3.543747,
+        "n_nodes_exporting": 37,
+        "n_reporters": 120,
+        "HHI_W": 0.105429,
+        "world_leader": "FRA",
+        "world_leader_share": 0.19107,
+        "world_leader_in_network": true,
+        "top3_world": "FRA CHN DEU",
+        "china_rank": 2,
+        "china_share": 0.144071,
+        "network_share_of_world": 0.827836
+      },
+      {
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.2092,
+        "max_share_D": 0.325,
+        "n_producers": 7,
+        "HHI_N": 0.354921,
+        "top_node": "CAN",
+        "top_share_N": 0.542571,
+        "effective_exporters": 2.817525,
+        "n_nodes_exporting": 18,
+        "n_reporters": 34,
+        "HHI_W": 0.329695,
+        "world_leader": "KAZ",
+        "world_leader_share": 0.443537,
+        "world_leader_in_network": false,
+        "top3_world": "KAZ CAN NAM",
+        "network_share_of_world": 0.556447
+      },
+      {
+        "tech": "Oil",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.125625,
+        "max_share_D": 0.205,
+        "n_producers": 10,
+        "HHI_N": 0.128671,
+        "top_node": "EUU",
+        "top_share_N": 0.260514,
+        "effective_exporters": 7.771765,
+        "n_nodes_exporting": 37,
+        "n_reporters": 137,
+        "HHI_W": 0.100583,
+        "world_leader": "CHN",
+        "world_leader_share": 0.268021,
+        "world_leader_in_network": false,
+        "top3_world": "CHN USA KOR",
+        "china_rank": 1,
+        "china_share": 0.268021,
+        "network_share_of_world": 0.699451
+      },
+      {
+        "tech": "Oil",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.14819,
+        "max_share_D": 0.235,
+        "n_producers": 9,
+        "HHI_N": 0.100021,
+        "top_node": "USA",
+        "top_share_N": 0.18493,
+        "effective_exporters": 9.997913,
+        "n_nodes_exporting": 37,
+        "n_reporters": 138,
+        "HHI_W": 0.05457,
+        "world_leader": "USA",
+        "world_leader_share": 0.136344,
+        "world_leader_in_network": true,
+        "top3_world": "USA SAU CAN",
+        "china_rank": 12,
+        "china_share": 0.024942,
+        "network_share_of_world": 0.754982
+      },
+      {
+        "tech": "Solar",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.1651,
+        "max_share_D": 0.275,
+        "n_producers": 9,
+        "HHI_N": 0.123173,
+        "top_node": "EUU",
+        "top_share_N": 0.260654,
+        "effective_exporters": 8.118668,
+        "n_nodes_exporting": 37,
+        "n_reporters": 138,
+        "HHI_W": 0.089392,
+        "world_leader": "CHN",
+        "world_leader_share": 0.243052,
+        "world_leader_in_network": false,
+        "top3_world": "CHN DEU USA",
+        "china_rank": 1,
+        "china_share": 0.243052,
+        "network_share_of_world": 0.716989
+      },
+      {
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.139632,
+        "max_share_D": 0.245,
+        "n_producers": 9,
+        "HHI_N": 0.200655,
+        "top_node": "BRA",
+        "top_share_N": 0.294704,
+        "effective_exporters": 4.983679,
+        "n_nodes_exporting": 30,
+        "n_reporters": 66,
+        "HHI_W": 0.195431,
+        "world_leader": "CHN",
+        "world_leader_share": 0.383018,
+        "world_leader_in_network": false,
+        "top3_world": "CHN NOR BRA",
+        "china_rank": 1,
+        "china_share": 0.383018,
+        "network_share_of_world": 0.583345
+      },
+      {
+        "tech": "Wind",
+        "supply_chain": "Midstream",
+        "HHI_D": 0.184052,
+        "max_share_D": 0.275,
+        "n_producers": 8,
+        "HHI_N": 0.13775,
+        "top_node": "EUU",
+        "top_share_N": 0.298898,
+        "effective_exporters": 7.259517,
+        "n_nodes_exporting": 37,
+        "n_reporters": 139,
+        "HHI_W": 0.079318,
+        "world_leader": "CHN",
+        "world_leader_share": 0.224926,
+        "world_leader_in_network": false,
+        "top3_world": "CHN DEU USA",
+        "china_rank": 1,
+        "china_share": 0.224926,
+        "network_share_of_world": 0.729859
+      },
+      {
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "HHI_D": 0.16125,
+        "max_share_D": 0.225,
+        "n_producers": 9,
+        "HHI_N": 0.157633,
+        "top_node": "MYS",
+        "top_share_N": 0.287142,
+        "effective_exporters": 6.343855,
+        "n_nodes_exporting": 29,
+        "n_reporters": 55,
+        "HHI_W": 0.184964,
+        "world_leader": "CHN",
+        "world_leader_share": 0.298706,
+        "world_leader_in_network": false,
+        "top3_world": "CHN MYS USA",
+        "china_rank": 1,
+        "china_share": 0.298706,
+        "network_share_of_world": 0.688737
+      }
+    ]
+  },
+  "design_vs_exporters": {
+    "description": "Per basket stage: share of designed production assigned to nodes outside the three largest exporting nodes (2024 reconciled basket trade, EU counting extra-EU exports, the calibration reference) and the Spearman rank correlation across the 37 nodes between designed production share and observed export share (zeros included).",
+    "n_stages": 18,
+    "share_outside_top3": {
+      "median": 0.6625,
+      "min": 0.416319,
+      "max": 0.915
+    },
+    "n_stages_all_top3_designed": 8,
+    "n_stages_no_top3_designed": 0,
+    "n_top3_designed_dist": {
+      "1": 2,
+      "2": 8,
+      "3": 8
+    },
+    "spearman_share_vs_exports": {
+      "median": 0.533032,
+      "min": 0.271305,
+      "max": 0.744768
+    },
+    "by_stage": [
+      {
+        "tech": "Batteries",
+        "supply_chain": "Midstream",
+        "share_design_outside_top3": 0.84,
+        "n_design_producers": 9,
+        "n_top3_designed": 2,
+        "top3_exporters": "EU KOR IDN",
+        "spearman_share_vs_exports": 0.528966
+      },
+      {
+        "tech": "Batteries",
+        "supply_chain": "Upstream",
+        "share_design_outside_top3": 0.665,
+        "n_design_producers": 9,
+        "n_top3_designed": 3,
+        "top3_exporters": "AUS ZAF PHL",
+        "spearman_share_vs_exports": 0.271305
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Midstream",
+        "share_design_outside_top3": 0.65,
+        "n_design_producers": 9,
+        "n_top3_designed": 2,
+        "top3_exporters": "EU IDN COL",
+        "spearman_share_vs_exports": 0.515999
+      },
+      {
+        "tech": "Coal",
+        "supply_chain": "Upstream",
+        "share_design_outside_top3": 0.745,
+        "n_design_producers": 10,
+        "n_top3_designed": 1,
+        "top3_exporters": "AUS IDN USA",
+        "spearman_share_vs_exports": 0.608748
+      },
+      {
+        "tech": "Electric Grid",
+        "supply_chain": "Midstream",
+        "share_design_outside_top3": 0.665,
+        "n_design_producers": 10,
+        "n_top3_designed": 3,
+        "top3_exporters": "EU USA MEX",
+        "spearman_share_vs_exports": 0.674524
+      },
+      {
+        "tech": "Electric Grid",
+        "supply_chain": "Upstream",
+        "share_design_outside_top3": 0.464945,
+        "n_design_producers": 10,
+        "n_top3_designed": 3,
+        "top3_exporters": "CHL COD PER",
+        "spearman_share_vs_exports": 0.518964
+      },
+      {
+        "tech": "Electric Vehicles",
+        "supply_chain": "Midstream",
+        "share_design_outside_top3": 0.6,
+        "n_design_producers": 8,
+        "n_top3_designed": 2,
+        "top3_exporters": "EU JPN USA",
+        "spearman_share_vs_exports": 0.622206
+      },
+      {
+        "tech": "Electric Vehicles",
+        "supply_chain": "Upstream",
+        "share_design_outside_top3": 0.66,
+        "n_design_producers": 9,
+        "n_top3_designed": 3,
+        "top3_exporters": "AUS ZAF PHL",
+        "spearman_share_vs_exports": 0.293599
+      },
+      {
+        "tech": "Gas",
+        "supply_chain": "Midstream",
+        "share_design_outside_top3": 0.555,
+        "n_design_producers": 10,
+        "n_top3_designed": 3,
+        "top3_exporters": "EU USA KOR",
+        "spearman_share_vs_exports": 0.663031
+      },
+      {
+        "tech": "Gas",
+        "supply_chain": "Upstream",
+        "share_design_outside_top3": 0.585278,
+        "n_design_producers": 10,
+        "n_top3_designed": 3,
+        "top3_exporters": "USA QAT AUS",
+        "spearman_share_vs_exports": 0.744768
+      },
+      {
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "share_design_outside_top3": 0.745,
+        "n_design_producers": 9,
+        "n_top3_designed": 2,
+        "top3_exporters": "EU GBR USA",
+        "spearman_share_vs_exports": 0.537099
+      },
+      {
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "share_design_outside_top3": 0.45,
+        "n_design_producers": 7,
+        "n_top3_designed": 2,
+        "top3_exporters": "CAN USA NAM",
+        "spearman_share_vs_exports": 0.372235
+      },
+      {
+        "tech": "Oil",
+        "supply_chain": "Midstream",
+        "share_design_outside_top3": 0.8,
+        "n_design_producers": 10,
+        "n_top3_designed": 2,
+        "top3_exporters": "EU USA KOR",
+        "spearman_share_vs_exports": 0.527408
+      },
+      {
+        "tech": "Oil",
+        "supply_chain": "Upstream",
+        "share_design_outside_top3": 0.416319,
+        "n_design_producers": 9,
+        "n_top3_designed": 3,
+        "top3_exporters": "USA SAU CAN",
+        "spearman_share_vs_exports": 0.54278
+      },
+      {
+        "tech": "Solar",
+        "supply_chain": "Midstream",
+        "share_design_outside_top3": 0.745,
+        "n_design_producers": 9,
+        "n_top3_designed": 2,
+        "top3_exporters": "EU USA JPN",
+        "spearman_share_vs_exports": 0.587882
+      },
+      {
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "share_design_outside_top3": 0.79,
+        "n_design_producers": 9,
+        "n_top3_designed": 2,
+        "top3_exporters": "BRA NOR EU",
+        "spearman_share_vs_exports": 0.470374
+      },
+      {
+        "tech": "Wind",
+        "supply_chain": "Midstream",
+        "share_design_outside_top3": 0.529722,
+        "n_design_producers": 8,
+        "n_top3_designed": 3,
+        "top3_exporters": "EU USA MEX",
+        "spearman_share_vs_exports": 0.660889
+      },
+      {
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "share_design_outside_top3": 0.915,
+        "n_design_producers": 9,
+        "n_top3_designed": 1,
+        "top3_exporters": "MYS VNM JPN",
+        "spearman_share_vs_exports": 0.409091
+      }
+    ]
+  },
+  "portfolio": {
+    "caps": {
+      "USA": 10,
+      "EU": 10,
+      "JPN": 8,
+      "GBR": 8,
+      "IND": 8,
+      "CAN": 7,
+      "BRA": 7,
+      "KOR": 7,
+      "MEX": 7,
+      "AUS": 7,
+      "TUR": 7,
+      "IDN": 7,
+      "SAU": 7,
+      "ARG": 6,
+      "ISR": 6,
+      "SGP": 6,
+      "THA": 6,
+      "NOR": 6,
+      "VNM": 6,
+      "PHL": 6,
+      "MYS": 6,
+      "COL": 6,
+      "ZAF": 6,
+      "CHL": 5,
+      "PER": 5,
+      "NZL": 5,
+      "QAT": 5,
+      "UKR": 5,
+      "MAR": 5,
+      "DOM": 4,
+      "GTM": 4,
+      "GHA": 4,
+      "OMN": 4,
+      "CRI": 4,
+      "COD": 4,
+      "GAB": 2,
+      "NAM": 2
+    },
+    "caps_sum": 218,
+    "caps_range": [2, 10],
+    "required_min": 66,
+    "count_capped_sum": 110,
+    "n_nodes_at_cap": 8,
+    "nodes_at_cap": ["USA", "EU", "IND", "CAN", "IDN", "THA", "VNM", "MYS"],
+    "n_nodes_zero_top5": 11,
+    "converged": true,
+    "passes": 7,
+    "violations_remaining": 0,
+    "n_exclusions_final": 49,
+    "n_stages_with_exclusions": 17,
+    "exclusions_by_node": [
+      {
+        "iso3c": "THA",
+        "n_barred": 9
+      },
+      {
+        "iso3c": "USA",
+        "n_barred": 9
+      },
+      {
+        "iso3c": "IDN",
+        "n_barred": 8
+      },
+      {
+        "iso3c": "MYS",
+        "n_barred": 8
+      },
+      {
+        "iso3c": "CAN",
+        "n_barred": 5
+      },
+      {
+        "iso3c": "EU",
+        "n_barred": 5
+      },
+      {
+        "iso3c": "IND",
+        "n_barred": 5
+      }
+    ],
+    "uncapped_source": "nc37_l0.78.rds",
+    "uncapped_inputs_max_abs_diff": 4.996004e-16,
+    "count_uncapped": {
+      "USA": 17,
+      "EU": 10,
+      "JPN": 3,
+      "GBR": 0,
+      "IND": 10,
+      "CAN": 8,
+      "BRA": 0,
+      "KOR": 3,
+      "MEX": 3,
+      "AUS": 3,
+      "TUR": 0,
+      "IDN": 12,
+      "SAU": 1,
+      "ARG": 0,
+      "ISR": 2,
+      "SGP": 0,
+      "THA": 10,
+      "NOR": 4,
+      "VNM": 3,
+      "PHL": 0,
+      "MYS": 10,
+      "COL": 2,
+      "ZAF": 1,
+      "CHL": 3,
+      "PER": 1,
+      "NZL": 0,
+      "QAT": 2,
+      "UKR": 0,
+      "MAR": 0,
+      "DOM": 0,
+      "GTM": 0,
+      "GHA": 0,
+      "OMN": 1,
+      "CRI": 0,
+      "COD": 0,
+      "GAB": 0,
+      "NAM": 1
+    },
+    "n_nodes_over_cap_uncapped": 6,
+    "nodes_over_cap_uncapped": [
+      {
+        "iso3c": "USA",
+        "count_uncapped": 17,
+        "portfolio_cap": 10
+      },
+      {
+        "iso3c": "IND",
+        "count_uncapped": 10,
+        "portfolio_cap": 8
+      },
+      {
+        "iso3c": "CAN",
+        "count_uncapped": 8,
+        "portfolio_cap": 7
+      },
+      {
+        "iso3c": "IDN",
+        "count_uncapped": 12,
+        "portfolio_cap": 7
+      },
+      {
+        "iso3c": "THA",
+        "count_uncapped": 10,
+        "portfolio_cap": 6
+      },
+      {
+        "iso3c": "MYS",
+        "count_uncapped": 10,
+        "portfolio_cap": 6
+      }
+    ],
+    "n_nodes_zero_top5_uncapped": 15,
+    "n_nodes_no_role_uncapped": 8,
+    "n_nodes_no_role_capped": 8,
+    "hhi_median_uncapped": 0.139298,
+    "objective_sum_capped": 23.679094,
+    "objective_sum_uncapped": 24.137796,
+    "objective_loss_pct": 1.900346,
+    "objective_loss_pct_stage_max": 5.949745,
+    "n_stages_objective_lower": 17,
+    "n_stages_tied_at_fifth_place": 4,
+    "stages_tied_at_fifth_place": ["Coal Upstream", "Green Hydrogen Upstream", "Nuclear Upstream", "Solar Upstream"],
+    "gdp_note": "GDP: WDI NY.GDP.MKTP.CD, latest finite year per member; the EU node sums its 27 members"
+  },
+  "build_candidates": {
+    "nodes_with_observed_dp": ["ARG", "BRA", "COD", "COL", "CRI", "DOM", "GAB", "GHA", "GTM", "IDN", "IND", "MAR", "MEX", "MYS", "NAM", "PER", "PHL", "THA", "TUR", "UKR", "VNM", "ZAF"],
+    "top10": [
+      {
+        "iso3c": "IND",
+        "tech": "Solar",
+        "supply_chain": "Midstream",
+        "dev_potential": 0.820285,
+        "producer_score": 1,
+        "connectivity_out": 0.825712,
+        "build_priority": 0.763098,
+        "selected": true,
+        "production_share": 0.275
+      },
+      {
+        "iso3c": "IND",
+        "tech": "Wind",
+        "supply_chain": "Midstream",
+        "dev_potential": 0.820285,
+        "producer_score": 0.958688,
+        "connectivity_out": 0.835989,
+        "build_priority": 0.746138,
+        "selected": true,
+        "production_share": 0.275
+      },
+      {
+        "iso3c": "IDN",
+        "tech": "Electric Vehicles",
+        "supply_chain": "Upstream",
+        "dev_potential": 0.833886,
+        "producer_score": 0.958688,
+        "connectivity_out": 0.790639,
+        "build_priority": 0.743383,
+        "selected": true,
+        "production_share": 0.245
+      },
+      {
+        "iso3c": "IDN",
+        "tech": "Coal",
+        "supply_chain": "Upstream",
+        "dev_potential": 0.808018,
+        "producer_score": 0.94423,
+        "connectivity_out": 0.863506,
+        "build_priority": 0.736865,
+        "selected": true,
+        "production_share": 0.255
+      },
+      {
+        "iso3c": "IND",
+        "tech": "Gas",
+        "supply_chain": "Midstream",
+        "dev_potential": 0.808018,
+        "producer_score": 0.92537,
+        "connectivity_out": 0.846807,
+        "build_priority": 0.722324,
+        "selected": true,
+        "production_share": 0.245
+      },
+      {
+        "iso3c": "IDN",
+        "tech": "Batteries",
+        "supply_chain": "Upstream",
+        "dev_potential": 0.820285,
+        "producer_score": 0.92537,
+        "connectivity_out": 0.767307,
+        "build_priority": 0.707204,
+        "selected": true,
+        "production_share": 0.235
+      },
+      {
+        "iso3c": "IND",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "dev_potential": 0.776711,
+        "producer_score": 0.933811,
+        "connectivity_out": 0.834617,
+        "build_priority": 0.694483,
+        "selected": true,
+        "production_share": 0.245
+      },
+      {
+        "iso3c": "IDN",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "dev_potential": 0.820285,
+        "producer_score": 0.911709,
+        "connectivity_out": 0.742939,
+        "build_priority": 0.692485,
+        "selected": true,
+        "production_share": 0.245
+      },
+      {
+        "iso3c": "IDN",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "dev_potential": 0.820285,
+        "producer_score": 0.900477,
+        "connectivity_out": 0.724963,
+        "build_priority": 0.681059,
+        "selected": true,
+        "production_share": 0.225
+      },
+      {
+        "iso3c": "VNM",
+        "tech": "Solar",
+        "supply_chain": "Midstream",
+        "dev_potential": 0.867233,
+        "producer_score": 0.785946,
+        "connectivity_out": 0.760277,
+        "build_priority": 0.672694,
+        "selected": true,
+        "production_share": 0.135
+      }
+    ],
+    "n_top10_selected": 10
+  },
+  "endowment": {
+    "description": "Designed Upstream producers checked against the SI endowment screen (technology-level Reserves or Production > 0; EU node endowed if any member is). Technologies without reserves or production records are not screened.",
+    "screened_techs": ["Batteries", "Coal", "Cobalt", "Copper", "Electric Grid", "Electric Vehicles", "Gas", "Graphite", "Green Hydrogen", "Lithium", "Manganese", "Nickel", "Nuclear", "Oil", "PGMs", "Rare Earths", "Solar", "Wind", "Zinc"],
+    "n_upstream_roles": 100,
+    "n_upstream_roles_screened": 90,
+    "n_upstream_roles_no_base": 21,
+    "share_upstream_production_no_base_by_stage": [
+      {
+        "stage": "Batteries Upstream",
+        "share_no_base": 0.05,
+        "n_no_base": 1,
+        "n_producers": 9
+      },
+      {
+        "stage": "Coal Upstream",
+        "share_no_base": 0.125,
+        "n_no_base": 2,
+        "n_producers": 10
+      },
+      {
+        "stage": "Electric Grid Upstream",
+        "share_no_base": 0.275,
+        "n_no_base": 5,
+        "n_producers": 10
+      },
+      {
+        "stage": "Electric Vehicles Upstream",
+        "share_no_base": 0,
+        "n_no_base": 0,
+        "n_producers": 9
+      },
+      {
+        "stage": "Gas Upstream",
+        "share_no_base": 0,
+        "n_no_base": 0,
+        "n_producers": 10
+      },
+      {
+        "stage": "Green Hydrogen Upstream",
+        "share_no_base": 0.28,
+        "n_no_base": 3,
+        "n_producers": 8
+      },
+      {
+        "stage": "Nuclear Upstream",
+        "share_no_base": 0.1,
+        "n_no_base": 2,
+        "n_producers": 7
+      },
+      {
+        "stage": "Oil Upstream",
+        "share_no_base": 0,
+        "n_no_base": 0,
+        "n_producers": 9
+      },
+      {
+        "stage": "Solar Upstream",
+        "share_no_base": 0.36,
+        "n_no_base": 4,
+        "n_producers": 9
+      },
+      {
+        "stage": "Wind Upstream",
+        "share_no_base": 0.235,
+        "n_no_base": 4,
+        "n_producers": 9
+      }
+    ],
+    "roles_no_base": [
+      {
+        "stage": "Batteries Upstream",
+        "node": "GBR",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Coal Upstream",
+        "node": "PER",
+        "production_share": 0.075
+      },
+      {
+        "stage": "Coal Upstream",
+        "node": "PHL",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Electric Grid Upstream",
+        "node": "PHL",
+        "production_share": 0.075
+      },
+      {
+        "stage": "Electric Grid Upstream",
+        "node": "GBR",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Electric Grid Upstream",
+        "node": "JPN",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Electric Grid Upstream",
+        "node": "NOR",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Electric Grid Upstream",
+        "node": "ZAF",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Green Hydrogen Upstream",
+        "node": "THA",
+        "production_share": 0.145
+      },
+      {
+        "stage": "Green Hydrogen Upstream",
+        "node": "ISR",
+        "production_share": 0.085
+      },
+      {
+        "stage": "Green Hydrogen Upstream",
+        "node": "GBR",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Nuclear Upstream",
+        "node": "ISR",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Nuclear Upstream",
+        "node": "THA",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Solar Upstream",
+        "node": "GBR",
+        "production_share": 0.115
+      },
+      {
+        "stage": "Solar Upstream",
+        "node": "NOR",
+        "production_share": 0.095
+      },
+      {
+        "stage": "Solar Upstream",
+        "node": "ZAF",
+        "production_share": 0.095
+      },
+      {
+        "stage": "Solar Upstream",
+        "node": "SGP",
+        "production_share": 0.055
+      },
+      {
+        "stage": "Wind Upstream",
+        "node": "JPN",
+        "production_share": 0.085
+      },
+      {
+        "stage": "Wind Upstream",
+        "node": "ISR",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Wind Upstream",
+        "node": "KOR",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Wind Upstream",
+        "node": "SGP",
+        "production_share": 0.05
+      }
+    ],
+    "median_stage_share_no_base": 0.1125
+  },
+  "network_map": {
+    "stages": ["Batteries midstream\n9 producers, HHI 0.159", "Solar midstream\n9 producers, HHI 0.165", "Wind midstream\n8 producers, HHI 0.184"],
+    "consumer_order": ["USA", "CAN", "BRA", "MEX", "ARG", "COL", "CHL", "PER", "DOM", "GTM", "CRI", "EU", "GBR", "TUR", "NOR", "UKR", "SAU", "ISR", "QAT", "MAR", "OMN", "ZAF", "GHA", "COD", "GAB", "NAM", "IND", "JPN", "KOR", "AUS", "IDN", "SGP", "THA", "VNM", "PHL", "MYS", "NZL"],
+    "self_flow_share": {
+      "Batteries": 0,
+      "Solar": 0,
+      "Wind": 0
+    },
+    "min_suppliers_per_consumer": {
+      "Batteries": 2,
+      "Solar": 2,
+      "Wind": 2
+    },
+    "n_flows": {
+      "Batteries": 75,
+      "Solar": 76,
+      "Wind": 74
+    },
+    "producers": [
+      {
+        "stage": "Batteries",
+        "iso3c": "USA",
+        "production_share": 0.295
+      },
+      {
+        "stage": "Batteries",
+        "iso3c": "IND",
+        "production_share": 0.135
+      },
+      {
+        "stage": "Batteries",
+        "iso3c": "MYS",
+        "production_share": 0.135
+      },
+      {
+        "stage": "Batteries",
+        "iso3c": "CAN",
+        "production_share": 0.113668
+      },
+      {
+        "stage": "Batteries",
+        "iso3c": "EU",
+        "production_share": 0.105
+      },
+      {
+        "stage": "Batteries",
+        "iso3c": "THA",
+        "production_share": 0.061332
+      },
+      {
+        "stage": "Batteries",
+        "iso3c": "KOR",
+        "production_share": 0.055
+      },
+      {
+        "stage": "Batteries",
+        "iso3c": "JPN",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Batteries",
+        "iso3c": "GBR",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Solar",
+        "iso3c": "IND",
+        "production_share": 0.275
+      },
+      {
+        "stage": "Solar",
+        "iso3c": "USA",
+        "production_share": 0.205
+      },
+      {
+        "stage": "Solar",
+        "iso3c": "VNM",
+        "production_share": 0.135
+      },
+      {
+        "stage": "Solar",
+        "iso3c": "THA",
+        "production_share": 0.125
+      },
+      {
+        "stage": "Solar",
+        "iso3c": "PHL",
+        "production_share": 0.06
+      },
+      {
+        "stage": "Solar",
+        "iso3c": "SGP",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Solar",
+        "iso3c": "CAN",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Solar",
+        "iso3c": "KOR",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Solar",
+        "iso3c": "JPN",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Wind",
+        "iso3c": "IND",
+        "production_share": 0.275
+      },
+      {
+        "stage": "Wind",
+        "iso3c": "USA",
+        "production_share": 0.250278
+      },
+      {
+        "stage": "Wind",
+        "iso3c": "EU",
+        "production_share": 0.155
+      },
+      {
+        "stage": "Wind",
+        "iso3c": "JPN",
+        "production_share": 0.094222
+      },
+      {
+        "stage": "Wind",
+        "iso3c": "MEX",
+        "production_share": 0.065
+      },
+      {
+        "stage": "Wind",
+        "iso3c": "BRA",
+        "production_share": 0.0605
+      },
+      {
+        "stage": "Wind",
+        "iso3c": "VNM",
+        "production_share": 0.05
+      },
+      {
+        "stage": "Wind",
+        "iso3c": "KOR",
+        "production_share": 0.05
+      }
+    ],
+    "flows_same_region": [
+      {
+        "stage": "Batteries midstream",
+        "share_flow_same_region": 0.165178
+      },
+      {
+        "stage": "Solar midstream",
+        "share_flow_same_region": 0.153446
+      },
+      {
+        "stage": "Wind midstream",
+        "share_flow_same_region": 0.284552
+      }
+    ]
+  },
+  "unit_tests": {
+    "description": "testthat::test_file(stop_on_failure = FALSE) on tests/testthat/test-allied-network-*.R",
+    "design_code_md5": "38995298fecb552eeaa440f9802b3dce",
+    "n_files": 6,
+    "tests": 43,
+    "expectations_passed": 443,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "warnings": 2,
+    "warning_messages": ["Producer forbiddance reduced feasible producers for stage; using eligible maximum."],
+    "by_file": [
+      {
+        "file": "test-allied-network-demand-mixed.R",
+        "tests": 3,
+        "expectations_passed": 7,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "warnings": 0
+      },
+      {
+        "file": "test-allied-network-design-scaled.R",
+        "tests": 2,
+        "expectations_passed": 6,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "warnings": 0
+      },
+      {
+        "file": "test-allied-network-diversification.R",
+        "tests": 10,
+        "expectations_passed": 149,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "warnings": 0
+      },
+      {
+        "file": "test-allied-network-eu-node.R",
+        "tests": 8,
+        "expectations_passed": 112,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "warnings": 0
+      },
+      {
+        "file": "test-allied-network-integrity.R",
+        "tests": 19,
+        "expectations_passed": 166,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "warnings": 0
+      },
+      {
+        "file": "test-allied-network-portfolio-constraints.R",
+        "tests": 1,
+        "expectations_passed": 3,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "warnings": 2
+      }
+    ]
+  }
+}

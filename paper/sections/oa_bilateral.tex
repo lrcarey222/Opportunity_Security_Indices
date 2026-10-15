@@ -1,0 +1,174 @@
+% Online Appendix to Section 9 (sec:bilateral). Numbers: paper/results/bilateral.json (final rerun of
+% 2026-10-12). Specification: R/themes/partnership_strength/*.R, R/indices/
+% build_partnership_strength_index.R, scripts/15 and 25, config/weights.yml, config/partnership.yml.
+\section{Bilateral partnership indices: further detail}\label{oa:bilateral}
+
+\paragraph{Trade components.} The reconciled flow matrix holds, for each exporter, importer and
+technology--stage cell, the flow in 2020 and 2024: the importer's declaration where the importer
+reports the cell in that year, and otherwise the exporter's declaration times 1.06, the conventional
+CIF/FOB margin. An economy that reports a cell but no flow with a partner records a zero; a pair in
+which neither side reports is unobserved. The growth term is defined only where both years are
+observed and the 2020 flow is positive; a dyad that trades only in 2024 is scored on its level. The
+first-stage ranking runs over dyads with a positive flow in either year, and the second ranks them
+within the reporter, with recorded zeros as one tie block below every trading partner (so they take
+the block's mid-rank). A dyad without an observed 2024 flow takes the mean of the observed values in
+its cell and counts as imputed in the rankability measure; in the 15 cells without an HS6 basket
+(every Downstream cell and the Upstream and Midstream stages of Geothermal and Green Hydrogen) every
+dyad carries the constant 0.5, which ranks nothing and is left out of the imputed-share measure. The
+Comtrade dyads have 168 reporters in 2020 and 143 in 2024, and 208 economies appear as reporter or
+partner. Core members' imports are almost all self-declared (0.3 percent of their observed import
+components are mirrors; 5.2 percent of their components are imputed). Dropping the mirror fill and
+re-running every later step leaves the headline $\PSI_j$ almost unchanged (Spearman 0.997, median
+rank change 1, largest 35, the same top fifteen) but moves $C^{\PO}_j$ (Spearman 0.816), because a
+third of the core exporters' observed export flows are mirrors of their markets' own import
+declarations; the United Arab Emirates (91st to 126th) and Russia (105th to 117th) would lose most.
+
+\paragraph{Outward investment.} The IMF indicator is outward direct investment, assets (gross), debt
+instruments, all entities, reported official data. A position is a stock, so the reported years are
+averaged; an absent record is missing, while a reported zero is a real zero and joins a tie block
+below every positive position before the within-reporter ranking. The 16 conduit centres are the
+ten economies that host more than 85 percent of phantom FDI according to \citet{damgaard2024real}
+(the Netherlands, Luxembourg, Hong Kong, the British Virgin Islands, Bermuda, Singapore, the Cayman
+Islands, Switzerland, Ireland and Mauritius) and six offshore centres excluded before (the Bahamas,
+Barbados, the Turks and Caicos Islands, the Isle of Man, Guernsey and Cyprus); positions in which a
+centre is reporter or counterpart are unobserved. Before the list was extended the Netherlands and
+Singapore were the second and third Friendshore partners of the United States on the strength of
+pass-through positions. The United States' largest outward counterparts are now the United Kingdom,
+Australia, Taiwan, Malaysia and Canada. In the four CM-FDI cells the tie is built from the projects
+used by the index measures \citep{bandara2026cmfdi}: manufacturing projects that are announced,
+under construction, completed or operating (cancelled, paused and closed plants are dropped), with a
+home economy other than the destination; a joint venture attributes half of the project to the
+listed parent. Attributed counts and disclosed capital are ranked within the cell over the dyads
+with a project and averaged, then ranked within the reporter with partners without a project as one
+tie block below; a reporter with no project in the cell has the component missing. Because the ties
+are sparse, 7.2 percent of the dyad cells in these four cells carry an investment component, against
+19.5 percent elsewhere (18.1 percent overall); 29 economies invest (18 of them core members). Reporter
+need is missing in 12.5 percent of Friendshore cells, among them every cell of Electric Grid
+Downstream and the two Geothermal stages.
+
+\paragraph{Chinese-parent exposure by supplier.} Among the heavily exposed suppliers are T\"urkiye
+(batteries 1.00, solar 0.97, electric vehicles 0.82), Thailand (batteries 0.97, electric vehicles
+0.88), Malaysia (electric vehicles 0.90), Viet Nam (electric vehicles 1.00), Indonesia (solar 0.85),
+Saudi Arabia and Oman (solar 1.00), and among the core Korea (batteries 0.91, wind 1.00), Hungary
+(electric vehicles 0.64, batteries 0.55) and Slovakia (electric vehicles 0.61). The United States
+(at most 0.27, in solar), Canada and Mexico (zero in batteries) are among the least exposed. Of the
+94 supplier--technology cells outside China, Hong Kong and Macao, 48 are at 0.5 or above and 19 at
+zero. Where defined, the component contributes 0.051 to the composite on average (8.1 percent).
+Suppliers with a share of at least one half lose 0.063 of their core-view Friendshore rating on
+average, those below 0.2 gain 0.043. Without the component Hungary would rise from 20th to 16th in
+the headline $\PSI_j$, and Denmark and Finland would fall three places.
+
+\paragraph{Climate penalty.} The Tracker rates 65 economies (39 national ratings and the EU's
+rating for 26 members). Forty of them are rated insufficient, so the median rating given to every
+unrated economy is 0.75, and the penalty is a common value, $0.15(1-g_t)$ for Friendshore and
+$0.0375(1-g_t)$ for Opportunity, for every dyad of unrated or insufficient parties; the within-cell
+ranking removes it. The largest penalties, for parties rated almost sufficient, are 0.200 and 0.050
+for oil, 0.195 and 0.049 for coal, 0.116 and 0.029 for gas, 0.086 and 0.022 for electric vehicles
+and 0.061 and 0.015 for green hydrogen; for the clean technologies they are below 0.01. Among the
+ten leading suppliers of the United States and Japan the penalty averages 0.018 and 0.033.
+
+\paragraph{Development Potential inputs.} The development index $d^{(1)}$ averages, over the series
+observed for each economy, the S-curves across economies of 2022--2024 means of a 40-series WDI
+basket \citep{worldbank2026wdi} (Table~\ref{tab:wdi_basket}), with 13 series inverted, and ranks the
+mean. Coverage is uneven: the ten B-READY series are observed for 50 economies, central-government
+debt for 51 and electrical outages for nine, against more than 200 for GDP per capita or the
+governance percentiles; the human capital index has no observation in the window. The business
+environment uses the Doing Business score of 2019 \citep{worldbank2020doing}, the last release with
+broad coverage, although the series was discontinued \citep{worldbank2021discontinue}. Aid is the
+sum over donors and the years 2013--2023 of constant-price ODA disbursements from the OECD Creditor
+Reporting System \citep{oecd2026crs} (44 official donors),
+\begin{equation}\label{eq:dp_aid}
+  A_{js}=\max\Bigl(0,\ \sum_{d}\sum_{y}\Bigl[\sum_{\sigma\in\Sigma^{+}_{s}}a^{\sigma}_{dj,y}
+  -\sum_{\sigma\in\Sigma^{-}_{s}}a^{\sigma}_{dj,y}\Bigr]\Bigr),
+\end{equation}
+with $\Sigma^{+}_{s}$ the stage's sector (industry for Midstream, energy for Downstream, mineral
+resources and mining for Upstream) and $\Sigma^{-}_{s}$ the coal and upstream oil-and-gas sub-rows
+for Upstream; $d^{(6)}$ and $d^{(7)}$ rank $A_{js}$ and $A_{js}/Y_j$ within each stage. Stage aid is
+observed for 121 (Upstream), 131 (Midstream) and 131 (Downstream) of the 132 partners. Several
+orientations are choices: high bank capital and liquidity ratios are read as under-intermediation;
+ODA received is inverted inside $d^{(1)}$ (aid dependence) but enters positively in $d^{(6)}$ and
+$d^{(7)}$ (existing engagement); energy use per capita is read as the depth of the energy system.
+The donor is not matched to the reporter, so $\DP$ is not reporter-specific.
+
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{WDI series in the development basket and their orientation}
+\label{tab:wdi_basket}
+\scriptsize
+\begin{tabularx}{\textwidth}{@{}p{2.1cm} >{\raggedright\arraybackslash}X@{}}
+\toprule
+Orientation & Series (WDI code)\\
+\midrule
+Higher is better (27) &
+Access to electricity (\texttt{EG.ELC.ACCS.ZS}); ten B-READY pillar scores: business entry,
+business insolvency, business location, dispute resolution, financial services, international
+trade, labor, market competition, taxation, utility services (\texttt{IC.BRE.*.OS}); control of
+corruption, government effectiveness, political stability, rule of law (percentile ranks,
+\texttt{CC/GE/PV/RL.PER.RNK}); domestic credit to the private sector, total and by banks
+(\texttt{FS.AST.PRVT.GD.ZS}, \texttt{FD.AST.PRVT.GD.ZS}); external balance on goods and services
+(\texttt{NE.RSB.GNFS.ZS}); FDI net inflows (\texttt{BX.KLT.DINV.WD.GD.ZS}); GDP growth
+(\texttt{NY.GDP.MKTP.KD.ZG}); GDP per capita (\texttt{NY.GDP.PCAP.KD}); gross capital formation
+(\texttt{NE.GDI.TOTL.ZS}); high-technology exports (\texttt{TX.VAL.TECH.MF.ZS}); human capital index
+(\texttt{HD.HCI.OVRL}; no observation in 2022--2024); industry value-added growth
+(\texttt{NV.IND.TOTL.KD.ZG}); tax revenue (\texttt{GC.TAX.TOTL.GD.ZS}); trade openness
+(\texttt{NE.TRD.GNFS.ZS}).\\[2pt]
+Inverted (13) &
+Bank liquid reserves to assets (\texttt{FD.RES.LIQU.AS.ZS}); bank capital to assets
+(\texttt{FB.BNK.CAPA.ZS}); deposit interest rate (\texttt{FR.INR.DPST}); net energy imports
+(\texttt{EG.IMP.CONS.ZS}); external debt stocks (\texttt{DT.DOD.DECT.GN.ZS}); total debt service
+(\texttt{DT.TDS.DECT.GN.ZS}); public and publicly guaranteed debt service (\texttt{DT.TDS.DPPF.XP.ZS});
+central government debt (\texttt{GC.DOD.TOTL.GD.ZS}); firms experiencing electrical outages
+(\texttt{IC.ELC.OUTG.ZS}); net bilateral aid from the United States (\texttt{DC.DAC.USAL.CD}); net
+ODA received per capita (\texttt{DT.ODA.ODAT.PC.ZS}); applied tariff rates, all and manufactured
+products (\texttt{TM.TAX.MRCH.WM.AR.ZS}, \texttt{TM.TAX.MANF.WM.AR.ZS}).\\[2pt]
+Excluded (4) &
+Consumer price index (\texttt{FP.CPI.TOTL}); net foreign assets in local currency
+(\texttt{FM.AST.NFRG.CN}); net trade in goods, current US\$ (\texttt{BN.GSR.MRCH.CD}); energy use per
+capita (\texttt{EG.USE.PCAP.KG.OE}, used as $d^{(8)}$).\\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item \textit{Notes:} Series as in \texttt{data/raw/wb\_wdi.csv}; orientation and exclusions as in
+\texttt{partnership\_strength\_build\_development\_indicators()}. Series are averaged over
+2022--2024 and S-curved across economies before inversion and averaging.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\paragraph{Rankability of partners.} A cell's imputed weight share is the share of its partner- and
+pair-specific component weight resting on imputed or missing inputs: a trade component imputed at
+the cell mean, a missing investment position, an alignment assigned rather than read from both
+countries' own votes, a missing development indicator, and, for components read off the partner's
+pillar cells, those cells' own imputed share. The reporter's own attributes, the trade component of
+cells without a basket and the penalties are left out. A dyad's share is the mean over the five
+cells of its best-five summary, and the $\PSI$ averages and weights the shares as it does the scores.
+The median Friendshore dyad share is 0.42 over all reporters and 0.26 over the core members. In the
+core view the ranked partners' shares have median 0.20 (maximum 0.42); the highest-scoring unranked
+partners are territories such as Guam.
+
+\paragraph{Further results.} The market score $C^{\PO}_j$ follows the core members' observed exports
+to the market (Spearman 0.82) and correlates negatively with the market's own security need
+($-0.54$), although need enters it with a positive weight, because the economies most in need of
+supply are mostly small importers. The strongest supplier--weak market contrasts are small European
+states and some low-income suppliers (San Marino, Andorra, Albania, Chad, Niger); the reverse are
+markets such as the United Arab Emirates (17th on $C^{\PO}_j$, 132nd on $C^{\FS}_j$), Kazakhstan,
+Liberia and Uganda. The Spearman correlations among the category scores are 0.59 ($C^{\FS}$ and
+$C^{\PO}$, 192 partners), 0.31 ($C^{\FS}$ and $C^{\DP}$) and 0.29 ($C^{\PO}$ and $C^{\DP}$, 130
+partners); Opportunity accounts for 14.5 percent of the variance of $\PSI_j$ among the 62 ranked
+partners without Development. High-income partners average 0.827 and the other partners on the
+World Bank list 0.672. Without the alignment component, 19 rather than 24 core members would be in
+the top 25, and China, Saudi Arabia and Indonesia would replace Sweden, Korea and Ireland in the top
+fifteen; Viet Nam would rise from 64th to 20th, the United Arab Emirates from 91st to 21st and Oman
+from 140th to 59th. The world view's top fifteen add China, India, Indonesia, Viet Nam and Malaysia
+and drop Belgium, Poland, Czechia, Sweden and Ireland; in the full-coalition view China is 9th and
+India 15th. Comparing supplier and market views, the pair means agree at 0.733 over 3,192 ordered
+coalition pairs, and the mean within-cell partial correlation given the shared capability term is
+0.44; for the 2,070 pairs with a nonaligned member the two agree on average (0.016). The pairs the
+market view favours most are in opposite blocs, such as Luxembourg supplying Oman ($\FS=0.37$
+against $\PO=0.71$) and Indonesia supplying Canada (0.42 against 0.75); those the supplier view
+favours most have Ukraine as supplier, to Greece (0.70 against 0.23) and Sweden. After Canada's
+rating of the United States, the highest dyadic $\PSI_{ij}$ are Spain's of Portugal, the United
+States' of the United Kingdom, and Austria's and Czechia's of Germany (0.970--0.976). The Development
+leaders after China are Serbia, Rwanda, Viet Nam, North Macedonia and Mauritania (0.872), with best
+cells 40 percent Upstream, 26 percent Midstream and 34 percent Downstream.

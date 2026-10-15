@@ -1,0 +1,666 @@
+% =============================================================================
+% Section 11 results fragment: robustness and validation of the pillars, the Strategic Index,
+% the allied picks and the PSI. Every number below is written to paper/results/robustness.json
+% by scripts/paper/fig_robustness.R, which also draws the seven figures (robustness_*.pdf) and
+% writes the six tables (paper/tables/robustness_*.tex). Inputs: the FINAL full rerun of
+% 2026-10-12 (index_outputs.rds, theme tables, vintages, psi_*_tbl.rds), the October 2026 NIPO
+% component (<scratch>/nipo_oct), the vertical-complementarity study (<scratch>/vertical) and the
+% CM-FDI integration study (<scratch>/fixes7, inputs of 2026-10-11; not recomputed).
+% Rank statistics are Spearman rank correlations. Cross-country rankings are taken within the
+% technology-stage pairs of the eleven headline technologies over RANKABLE cells only
+% (rankable == TRUE: sovereign, imputed weight share <= tau = 0.5).
+% Labels defined here: tab:robustness_summary, tab:robustness_importance,
+%   tab:robustness_rankability, tab:robustness_picks, tab:robustness_data,
+%   tab:robustness_vertical (via \input of paper/tables/), eq:variance_share,
+%   fig:robustness_variants, fig:robustness_vintage, fig:robustness_ranks, fig:robustness_loo,
+%   fig:robustness_si, fig:robustness_picks_data, fig:robustness_psi_views.
+% Table placement: tab:robustness_vertical is the appendix sensitivity table of the
+%   vertical-complementarity study (user decision of 2026-10-12: paper only); it is input at the
+%   end of this fragment and may be moved to an appendix by the integrating section.
+% Section label: the integrating sections/11_robustness.tex must define \label{sec:robustness},
+%   which Sections 1, 2, 4, 8, 9, 10 and Appendix D cite.
+% External references: fig:strategic_sign, fig:strategic_screen (results/text/strategic.tex),
+%   fig:method_rankability (results/text/method.tex), sec:network, sec:bilateral, eq:si,
+%   eq:si_allied, eq:affine_constant, eq:scurve_logit, eq:scurve_zero, eq:impute,
+%   eq:imputed_share, eq:cat_decomp, eq:effective_weight, eq:pillar, eq:psi.
+% =============================================================================
+
+\paragraph{Design of the analysis.} The pillars, the Strategic Index and the partnership
+index are composites, and the uncertainty analysis asks how far the rankings they produce
+depend on choices made in building them rather than on the data
+\citep{saisana2005uncertainty, oecd2008handbook, saltelli2008global}. We vary one element at a
+time, holding the others at the configuration of the final run: the vintage of the time-varying
+sources, the category weights, the curvature $\gamma$ of the S-curve, the imputation rules, the
+presence of each category, the rankability threshold $\tau$, the weights and terms of the
+Strategic Index, the composition and eligibility rule of the Policy index, the rule that
+screens Upstream picks for a resource base, the data choices made in the last revision of the
+inputs, two candidate terms for vertical complementarities between stages, and the viewpoint
+from which the partnership index is averaged. The comparison that matters for the pillars is the
+ranking of countries within a technology--stage pair, so the main statistic is the Spearman rank
+correlation between the baseline and the variant, computed within each pair and summarised
+across pairs. Every comparison is made over the baseline's rankable cells
+(Figure~\ref{fig:method_rankability}): $\ES$ is scored in 30 headline pairs, with 4{,}163
+rankable cells of 6{,}232 scored, and $\EO$ in 33 pairs, with 4{,}301 rankable cells of 7{,}131.
+Every variant is recomputed from the stored inputs rather than approximated from the published
+indices. The weighting experiments use a re-implementation of the available-case mean of
+equation~\eqref{eq:pillar} on the stored category scores, which reproduces the stored indices
+at the configured weights to within $10^{-15}$; the curvature, imputation and data-choice
+experiments rebuild both pillars from the theme tables with the builders and configuration of
+the pipeline, which reproduce the stored indices exactly at the baseline settings; and the
+Strategic Index and Policy index are rebuilt with the pipeline's own functions, which reproduce
+the stored values exactly. Table~\ref{tab:robustness_summary} and
+Figure~\ref{fig:robustness_variants} collect the results for the pillars.
+
+\input{tables/robustness_summary}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{robustness_variants}
+  \caption{Stability of within-pair country rankings under alternative constructions of the
+  pillars. Each row is one variant; for each technology--stage pair we compute the Spearman
+  rank correlation across countries between the baseline pillar and the variant, over the
+  baseline's rankable cells (sovereign economies with at most half of the index weight
+  imputed), and the row summarises these correlations across pairs: open circle, median; thick
+  bar, interquartile range; thin line, minimum to maximum. For the Dirichlet weight draws the
+  per-pair value is the median over 1{,}000 draws. ``Equal category weights'' gives every
+  observed category the same weight. The S-curve rows rebuild both pillars from the theme tables
+  with every component index re-curved to $\gamma=0.25$, 1 (the percent rank itself) or 2,
+  against the baseline $\gamma=0.5$. ``No imputation'' removes every global-average rule of
+  \texttt{config/missing\_data.yml}, so that uncovered countries drop the component by the
+  available-case rule; ``Zero'' fills them with 0 instead. The last row compares the 2020 and
+  2025 vintages of the pillars, in which only the time-varying sources differ. Sample: the
+  eleven headline technologies; 30 $\ES$ pairs (4{,}163 rankable cells) and 33 $\EO$ pairs
+  (4{,}301 rankable cells). Source: \texttt{index\_outputs.rds}, theme tables and
+  \texttt{data/processed/vintages} of the final run; \texttt{scripts/paper/fig\_robustness.R}.}
+  \label{fig:robustness_variants}
+\end{figure}
+
+\paragraph{Vintages.} The pillars are a cross-section in which each component takes the latest
+year its source records (Section~\ref{subsec:norm_latest}). A separate build re-derives both
+pillars as of 2020 and 2025 by slicing the time-varying sources (the EI Statistical Review, the
+Atlas of Economic Complexity, GCIM investment, and the IMF and ILO price, rate and earnings
+series) to each year and holding the themes without a time dimension (resource potential,
+reserves, the IEA critical-mineral and clean-technology tables, the mineral production sheets,
+BNEF demand, levelised costs and overcapacity, and technology readiness) identical. In this
+build the Trade category is measured on the Atlas basis (HS92, annual) rather than on the
+reconciled Comtrade pull of the headline. The comparison therefore measures how much the
+rankings move with the information that can move; it is neither a measure of the total change
+in countries' positions nor a validation. By the build's own classification, categories carrying
+52 per cent of the nominal $\ES$ weight and 70 per cent of the $\EO$ weight are time-varying.
+Not all of them change in practice: Consumption, in both pillars, and the $\EO$ Trade category
+have identical scores in the two vintages, so the categories whose scores differ in at least one
+per cent of their cells carry 40 per cent of the $\ES$ weight and 50 per cent of the $\EO$
+weight. Because the weights are renormalised over the categories observed in each cell, the
+share of a cell's weight that re-derives is lower still, 34 per cent in the average $\ES$ cell
+and 36 per cent in the average $\EO$ cell, and 32 and 31 per cent once the Energy Prices
+category is set aside, which is constant within every pair and so cannot reorder countries
+(equation~\eqref{eq:affine_constant}).
+
+Figure~\ref{fig:robustness_vintage} plots the 2025 against the 2020 value of each rankable
+cell observed in both vintages (4{,}139 in $\ES$, 4{,}301 in $\EO$). $\ES$ moves little. The
+median within-pair Spearman correlation is 0.99 (interquartile range 0.95 to 1.00), the mean
+absolute change in the index is 0.015, 31 per cent of cells do not change at all, and a
+country's percentile position in its pair moves by 3.8 points on average. Most of the visible
+dispersion of the Upstream points is a parallel shift of whole pairs: 77 per cent of the sum of
+squared Upstream changes is the common change of the pair, against 3 per cent Midstream and
+4 per cent Downstream. Because the components are percent ranks, whose mean over a pair barely
+moves, such a shift comes mainly from the category that is constant within the pair, Energy
+Prices, whose world price-volatility series moves every economy of a pair by the same amount;
+it changes levels and leaves ranks intact. $\EO$ moves more. The median within-pair
+correlation is 0.87 (0.79 to 0.93), the mean absolute change is 0.030, no cell is unchanged,
+and the mean percentile shift is 10.8 points. The difference between the pillars is a property
+of the construction. Cost Competitiveness is scored in every $\EO$ pair and re-derives in all
+its cells from the annual earnings, lending-rate and producer-price series, whereas the $\ES$
+Upstream pairs are dominated by registers of reserves, production and mineral trade that the
+vintage build holds fixed. In both pillars the lowest correlations are Downstream: Oil
+Downstream is the minimum in each (0.68 in $\ES$, 0.49 in $\EO$), followed by Solar (0.69) and
+Electric Vehicles (0.76) Downstream in $\ES$ and Gas (0.58) and Coal (0.69) Downstream in
+$\EO$. The largest single moves occur where a pair rests on one flow variable. In Electric
+Vehicles Downstream $\ES$ has a single category, Investment, built from annual GCIM flows, and
+Viet Nam moves from 94th of 101 rankable economies to 3rd, and T\"urkiye from 39th to 1st. In
+$\EO$ the largest coalition moves are Ukraine in Solar Downstream (42nd to 147th of 148) and Viet Nam in Electric Vehicles Downstream (41st to 2nd
+of 105).
+
+The 2025 vintage is close to, but not identical with, the headline index. Its category scores
+coincide with the headline ones except in Trade, which the vintage build measures on the Atlas
+basis, and its median within-pair correlation with the headline index is 1.00 in $\ES$ and
+1.00 in $\EO$, with minima of 0.87 ($\ES$, Nuclear Midstream) and 0.79 ($\EO$, Nuclear
+Upstream), two pairs whose trade baskets the final revision changed when it moved the uranium codes from the Midstream to the Upstream basket. Three limits
+follow. Because only about a third of the average cell's weight re-derives, the vintage
+comparison is likely to understate the instability of the rankings over time; because the
+country lists of some sources differ slightly between years, part of what moves is coverage
+rather than change; and the vintage years are nominal for two sources, whose nearest available
+years are 2023 for the Atlas of Economic Complexity in the 2025 vintage and 2021 for the IMF
+producer prices in the 2020 vintage.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{robustness_vintage}
+  \caption{The 2020 and 2025 vintages of the pillars. Each point is a rankable country cell
+  of the eleven headline technologies observed in both vintages (4{,}139 in $\ES$, 4{,}301 in
+  $\EO$), coloured by supply-chain stage; the line is the 45-degree line. Both vintages are
+  built by \texttt{scripts/40\_build\_index\_vintages.R} with the same theme builders, index
+  builders and configuration as the headline run; only the time-varying sources (EI
+  Statistical Review, Atlas of Economic Complexity, GCIM investment, IMF commodity prices,
+  lending rates and producer prices, ILO earnings) are sliced to the vintage year, the Trade
+  category is measured on the Atlas basis, and every other theme is held identical. Index
+  values are on the unit interval; the indices are relative standings within each year's
+  comparison sets, not absolute levels. Source:
+  \texttt{data/processed/vintages/*\_comparison\_2020\_vs\_2025.csv};
+  \texttt{scripts/paper/fig\_robustness.R}.}
+  \label{fig:robustness_vintage}
+\end{figure}
+
+\paragraph{Category weights.} The weights of \texttt{config/weights.yml} are expert choices
+\citep{decancq2013weights}. We draw 1{,}000 weight vectors from a Dirichlet distribution centred
+on the configured shares, $w\sim\mathrm{Dir}(c\,\bar w)$, so that $E[w_k]=\bar w_k$ and the
+coefficient of variation of $w_k$ is $\sqrt{(1-\bar w_k)/[\bar w_k(c+1)]}$. The concentration
+$c=99$ for the ten categories of each pillar sets the coefficient of variation of a category of
+average weight to 0.3; categories with a larger nominal weight vary less and smaller ones more.
+For each draw both pillars are recomputed from the stored category scores with the
+available-case rule. Within-pair rankings are almost insensitive to these perturbations. The
+median over pairs of the within-pair Spearman correlation with the baseline has a median over
+draws of 0.997 in $\ES$ (5th to 95th percentile over draws, 0.992 to 0.999) and 0.988 in
+$\EO$ (0.960 to 0.997). Equal category weights give median within-pair correlations of
+1.000 in both pillars, because the configured weights are themselves close to equal.
+
+The insensitivity is largely a property of the construction rather than evidence that the
+categories agree. Within every pair all scored countries observe the same category set
+(Section~\ref{subsec:norm_pillar}), so by equation~\eqref{eq:affine_constant} a category that
+is constant across them moves every country's index by the same affine map, and the ranking
+depends only on the relative weights of the categories that vary. The median pair has three
+varying categories in $\ES$ and four in $\EO$. In seven $\ES$ pairs and three $\EO$ pairs a
+single category varies, and there the ranking does not depend on the weights at all; on
+average 3 per cent of the observed weight of an $\ES$ pair and 25 per cent of an $\EO$ pair
+sits on categories that are constant within it, among them Energy Prices and, in $\EO$,
+Technological Readiness. Restricted to the pairs with two or more varying categories (23 in
+$\ES$, 30 in $\EO$), the median correlation over pair--draws is still 0.996 in $\ES$ and 0.987
+in $\EO$, but the minimum over pair--draws falls to 0.77 and 0.30.
+
+A high average correlation can hide large moves of individual countries, which matter for
+statements about coalition members. For each of the 57 members and each pair in which it is
+rankable we record the 5th and 95th percentiles of its rank over the draws. In percentile
+points of the pair, the median width of this 90 per cent band is 2.8 in $\ES$ (3 ranks, over
+1{,}606 member cells) and 9.6 in $\EO$ (11 ranks, over 1{,}718); 79 per cent of member cells in
+$\ES$ and 52 per cent in $\EO$ have a band narrower than ten points, but the 90th percentile of
+the width is 18 points in $\ES$ and 31 in $\EO$. Wide bands arise where a member sits among
+large blocks of tied scores. In $\ES$ Batteries Downstream, South Korea ranks 69th of 186 at the
+configured weights, and its 90 per cent band runs from 15th to 186th, the widest in the sample.
+In $\EO$ the widest bands are Upstream: Brazil in Nuclear Upstream (163rd of 175, band 21st to
+174th) and in the oil and battery-mineral pairs, and Germany in Nuclear Upstream.
+Figure~\ref{fig:robustness_ranks} shows the bands of the core members for one pair.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{robustness_ranks}
+  \caption{Rank uncertainty of the core coalition members under perturbed category weights,
+  Batteries Midstream. For each core member (ISO3 code) with a rankable cell in the pair (31 in
+  $\ES$, 28 in $\EO$) the dot is its percentile position among the pair's rankable cells at the
+  configured weights (100 = highest index) and the bar spans the 5th to 95th percentiles of that
+  position over 1{,}000 Dirichlet draws of the category weights centred on the configured
+  shares (coefficient of variation 0.3 for a category of average weight). Members are ordered by
+  their baseline $\EO$ position; members without a rankable $\EO$ cell are placed at the
+  bottom. A short bar means the member's standing does not depend on the weights within that
+  range. Source: category scores in \texttt{index\_outputs.rds};
+  \texttt{scripts/paper/fig\_robustness.R}.}
+  \label{fig:robustness_ranks}
+\end{figure}
+
+\paragraph{Curvature of the S-curve.} Most component indices are an S-curve of a percent
+rank, $\phi_{0.5}(r)$, and by equation~\eqref{eq:scurve_logit} $\operatorname{logit}\phi_\gamma(r)=
+\gamma\operatorname{logit}r$. Such a component at another curvature $\gamma'$ can therefore be
+obtained from the stored value without the raw data,
+$\phi_{\gamma'}(r)=\operatorname{logistic}\bigl((\gamma'/0.5)\operatorname{logit}\phi_{0.5}(r)
+\bigr)$, a map that also sends the anchored zeros of equation~\eqref{eq:scurve_zero} to zero.
+We apply it to every index row of every theme table and rebuild both pillars for
+$\gamma'\in\{0.25,1,2\}$. The value $\gamma'=1$ is the plain percent rank, and $\gamma'=2$ is
+an S-shape that stretches the middle of the distribution and compresses the tails, the opposite
+of the baseline \citep{karmarkar1978subjectively}. The map is exact for a component that is a
+single S-curve of a rank. For components that a theme forms as a mean of several S-curves, or
+by another transform, it re-curves the mean rather than its parts and is an approximation. We
+classify each component by inverting $\phi_{0.5}$ and testing whether the implied ranks lie on a
+rank grid. Of the 57 components that enter a scored category, 46 pass; they carry on average
+84 per cent of the weight of an $\ES$ cell and 63 per cent of an $\EO$ cell. The exceptions are
+the input-cost and levelised-cost terms of Cost Competitiveness, the technology-readiness and
+overcapacity terms, the production surplus or deficit of Energy Imports, the mineral-supply and
+overall-production shares of Foreign Dependency, the two minerals-trade terms, and the
+geothermal and wind potential indices.
+
+Within pairs the rankings are stable under the stronger inverse-S curve and under the plain
+percent rank, and less so under the S-shape. The median within-pair correlation with the
+baseline is 0.997 in $\ES$ and 0.992 in $\EO$ at $\gamma'=0.25$, 0.989 and 0.991 at
+$\gamma'=1$, and 0.964 and 0.965 at $\gamma'=2$, where the minima are 0.74 ($\ES$, Batteries
+Downstream) and 0.90 ($\EO$, Electric Vehicles Midstream). Because the map is monotone, a pair
+whose ranking rests on a single varying component is unaffected; the curvature matters only
+through the implicit weighting among components, a larger $\gamma$ giving more weight to
+differences near the median and less to differences in the tails. Levels move more than ranks:
+the mean absolute change of $\ES$ is 0.03, 0.04 and 0.08 for the three curvatures.
+
+\paragraph{Imputation rules.} Nine $\ES$ themes and twelve $\EO$ themes fill uncovered countries
+with the observed mean of their component group (equation~\eqref{eq:impute}). In the baseline,
+components filled in this way carry on average 7 per cent of the weight of an $\ES$ cell and
+25 per cent of an $\EO$ cell. In $\EO$ two thirds of that weight is in Technology Demand and
+most of the rest in Production and Cost Competitiveness (16 and 10 per cent), categories whose
+country-specific sources cover only part of the economies in each pair; in $\ES$ it is mainly in
+Energy Access and Foreign Dependency (70 and 17 per cent). We rebuild both pillars with every
+global-average rule removed, so that an uncovered country drops the component under the
+available-case rule, and with every such rule replaced by zero. Over the rankable cells $\ES$ is
+robust to the rule in most pairs: the median within-pair correlation is 1.00 without imputation
+and 0.98 with zeros, with minima of 0.62 (Nuclear Upstream) and 0.58 (Coal Downstream). $\EO$ is
+not robust to it. Without imputation its median within-pair correlation is 0.97 but the pooled
+correlation 0.85 and the minimum 0.29 (Coal Midstream); with zeros the median falls to 0.77,
+with a pooled correlation of 0.62. Zero-filling a narrow source places every uncovered economy
+at or below every covered one on that component, so that within a pair the variant ranks
+countries partly by whether a source covers them. Removing the rule scores an uncovered economy
+on the components it does have, so that its index rests on a different and smaller set of
+measurements than its neighbours'. The global-average rule places it at the mean of the covered
+economies on the missing component, which compresses the differences that component would
+make. Neither is neutral, and the configuration chooses between them theme by theme
+(Section~\ref{subsec:norm_missing}). What the experiment shows is that the $\EO$ rankings,
+outside the economies the narrow sources cover, depend on that choice; this is the reason the
+rankability rule withholds from cross-country rankings the cells whose index rests mostly on
+imputed components (equation~\eqref{eq:imputed_share}).
+
+\paragraph{The rankability threshold.} A cell enters cross-country rankings, top-$N$ lists and
+the Strategic Index only if the economy is sovereign and at most a share $\tau=0.5$ of its index
+weight is imputed. Table~\ref{tab:robustness_rankability} varies $\tau$. Because the rule
+filters cells and does not change values, the order of any two cells that are rankable under
+two thresholds is the same, and what $\tau$ changes is the sample. The sample is sensitive to
+it, $\EO$ more than $\ES$: at $\tau=0.3$ the rankable cells fall to 3{,}147 in $\ES$ (56 per
+cent of the sovereign scored cells, against 74 per cent at the headline threshold) and to
+1{,}967 in $\EO$ (31 against 67 per cent), and at $\tau=0.7$ they rise to 5{,}350 and 5{,}974
+(95 and 93 per cent). The threshold also governs how far the rankings depend on the imputation
+rule. At $\tau=0.3$ the median within-pair correlation of $\EO$ with its zero-filled variant is
+0.94; at the headline threshold it is 0.77 and at $\tau=0.7$ 0.68. The headline lists are
+stable to a stricter threshold in $\ES$ (the top ten of 27 of the 30 pairs are identical at
+$\tau=0.3$) but not in $\EO$, where 15 of the 33 top-ten lists are identical and the mean
+overlap is 77 per cent, because the stricter threshold removes economies whose $\EO$ rests on
+regional demand outlooks and cost terms imputed from group means. The Strategic Index, which
+needs rankable $\ES$ and $\EO$, shrinks from 3{,}154 cells for 174 countries to 1{,}577 cells for
+107 countries at $\tau=0.3$, where 48 of the 57 coalition members keep a pick and 29 of them the
+baseline one; at $\tau=0.7$ it has 5{,}156 cells for 194 countries and 42 of the 57 members
+keep the baseline pick. The threshold is thus a substantive choice for the allied selection, which
+we report with the headline value and these alternatives rather than treat as settled.
+
+\input{tables/robustness_rankability}
+
+\paragraph{Leaving out one category.} Setting one category's weight to zero and renormalising
+the others measures how much of the within-pair ranking each category carries
+(Figure~\ref{fig:robustness_loo}). We report the correlation only over the pairs in which the
+category is observed, since elsewhere dropping it changes nothing. In $\ES$ the ranking depends
+most on Consumption (median within-pair correlation 0.74 over the eight pairs in which it is
+observed alongside other categories; minimum 0.46 in Batteries Downstream) and on Minerals Trade
+(0.79 over six pairs). Energy Access, Energy Imports, Investment, Trade and Reserves follow, with
+medians between 0.89 and 0.94; Trade has the widest range (minimum 0.40 in Electric Grid
+Midstream, whose basket the completed trade file filled), and in the four Midstream fossil and nuclear pairs it is the
+only category, so that dropping it leaves the pair unscored. Dropping Production or Foreign
+Dependency, which share the largest nominal $\ES$ weight, changes almost nothing (medians 0.995
+and 0.998): Production, observed in seven pairs, separates a few large producers from the rest,
+and a rank correlation over some two hundred economies barely registers the reordering of a few
+leaders. Energy Prices, constant within every pair, changes nothing at
+all. In $\EO$ three categories carry most of the ranking: Foreign Dependency (median 0.75 over
+its five pairs), Cost Competitiveness (0.76 over the 30 pairs in which other categories vary)
+and Trade (0.79 over 18 pairs). Technological Readiness and Energy Prices are cell constants and
+leave every ranking unchanged, and Technology Demand, the category with the largest nominal
+$\EO$ weight, changes the median ranking almost not at all (0.99). As in other composite
+indicators, nominal weights and effective importance diverge
+\citep{paruolo2013ratings, becker2017weights}: the categories with the largest nominal weights
+are not the ones that rank countries within a pair.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{robustness_loo}
+  \caption{Leave-one-category-out sensitivity of within-pair rankings. Each row drops one
+  category (weight set to zero, the remaining observed categories renormalised by the
+  available-case rule) and reports the Spearman rank correlation across countries between the
+  baseline pillar and the reduced pillar, computed within each technology--stage pair in which
+  the category is observed, over the baseline's rankable cells: open circle, median over those
+  pairs; thick bar, interquartile range; thin line, minimum to maximum. The label gives the
+  category's nominal weight share and the number of headline pairs in which it is observed.
+  Pairs in which the dropped category is the only varying one are omitted, because the reduced
+  pillar is then constant or unscored (four $\ES$ pairs for Trade, three $\EO$ pairs for Cost
+  Competitiveness, one $\ES$ pair each for Consumption, Foreign Dependency and Investment). Rows
+  are ordered by the median. Source: category scores in \texttt{index\_outputs.rds};
+  \texttt{scripts/paper/fig\_robustness.R}.}
+  \label{fig:robustness_loo}
+\end{figure}
+
+\paragraph{Nominal and effective importance.} The leave-one-out correlations measure how much
+of the ranking a category carries. A complementary measure, a linear and exact counterpart of
+the main effects that \citet{paruolo2013ratings} propose as the effective importance of an
+indicator, is the share of the cross-country variance of a pillar within a pair for which each
+category accounts. Because the pillar is the sum of its category contributions
+$C_{kits}=\omega_{kits}c_{kits}$ (equation~\eqref{eq:cat_decomp}), its variance across the
+rankable countries of a pair splits exactly into covariance shares,
+\begin{equation}\label{eq:variance_share}
+  S_{kts}=\frac{\operatorname{Cov}_i\bigl(C_{kits},\,\ES_{its}\bigr)}
+               {\operatorname{Var}_i\bigl(\ES_{its}\bigr)},
+  \qquad \sum_{k\in\Cats^{P}}S_{kts}=1,
+\end{equation}
+and likewise for $\EO$. A category that is constant within the pair has $S_{kts}=0$ whatever
+its weight. Table~\ref{tab:robustness_importance} compares, for each category, the nominal
+weight share, the effective weight $\omega_{kits}$ of equation~\eqref{eq:effective_weight} and
+the variance share, the last two averaged over the headline pairs with zero where the category
+is not observed, so that each column sums to one within a pillar.
+
+The three measures differ considerably. Half the sum of the absolute differences between the
+nominal shares and the mean variance shares, the share of weight that would have to be moved
+for the two to coincide, is 0.32 in $\ES$ and 0.37 in $\EO$, but the gap has different sources
+in the two pillars. In $\ES$ it is largely a matter of coverage, of which categories are
+observed in which pairs: the corresponding distance between the effective weights and the
+variance shares is 0.19. Trade, the only category of the four Midstream fossil and nuclear
+pairs and now observed in 18 of the 30 pairs (the new Upstream baskets added four), has
+9.5 per cent of the nominal weight but 24.9 per cent of the mean effective weight and 21.5 per
+cent of the variance, while Production and Energy Imports, observed only in seven and three
+pairs, fall from nominal shares of 14.3 and 9.5 per cent to variance shares of 10.0 and
+2.8 per cent. In $\EO$ the gap arises within pairs, and the distance between effective weights
+and variance shares is 0.38. Technology Demand and Technological Readiness hold 21.8 and 14.6
+per cent of the mean effective weight but 3.6 and 0.0 per cent of the variance, because the
+readiness score is a technology-level constant and the only country-varying components of
+Technology Demand are the regional demand outlooks, whereas Cost Competitiveness, observed in
+every pair, holds 21.9 per cent of the effective weight and 32.8 per cent of the variance. Which
+categories matter therefore depends on the question: the variance shares describe what
+separates the leaders of a pair from the rest, the leave-one-out correlations what orders the
+bulk of the distribution.
+
+\input{tables/robustness_importance}
+
+\paragraph{Strategic Index: weights and specification.} The same Dirichlet design applied to
+the five weights of equation~\eqref{eq:si} (concentration 43.4, so that the coefficient of
+variation is 0.30 for the policy weight, 0.23 for the two pillar weights and 0.45 for the two
+sector priors) leaves the ordering of each country's sectors close to the baseline: over the
+3{,}154 cells of the 174 countries with a Strategic Index, the median over countries of the
+within-country Spearman correlation has a median of 0.96 over draws (5th to 95th percentile
+0.88 to 0.99). The allied pick, a single arg max per member over its eligible Upstream and
+Midstream sectors (equation~\eqref{eq:si_allied}), is more fragile
+(Figure~\ref{fig:robustness_si}, panel a). On average a member keeps its baseline pick in 73
+per cent of the draws (median 82 per cent); 16 of the 57 members keep it in at least 90 per cent
+and 10 in fewer than half, the least stable being Indonesia (15 per cent), whose two leading
+sectors differ by 0.0007. Retention is close to a monotone function of the baseline margin
+between the first and second eligible sectors (Spearman correlation 0.84 across members). The
+margins are small: their median is 0.015 (interquartile range 0.006 to 0.024), and the margin is
+below 0.005 for 10 of the 57 members, below 0.01 for 21 and below 0.02 for 37. They differ by
+sector. The four Electric Grid Midstream picks have a median margin of 0.003 and the nine
+Nuclear Midstream picks 0.007, against 0.014 for the 27 Batteries Midstream picks and 0.024 for
+the eight Nuclear Upstream picks, so the picks that most depend on fine margins are the grid and
+Midstream nuclear ones.
+
+The members with the largest margins are not those with the clearest comparative advantage. Costa
+Rica, the Dominican Republic and Guatemala, whose Nuclear Midstream picks keep their place in
+nearly every draw, have only four eligible sectors each (the Midstream stages of nuclear, oil,
+gas and coal), and among these the technology greenhouse-gas prior favours nuclear; without the
+two sector priors the Dominican Republic and Guatemala move to Oil Midstream. Their picks are
+therefore a consequence of a narrow rankable sample and of the prior, not of an $\ES$ floor or of
+a measured nuclear capability, and we read them as such.
+
+Panel (b) of Figure~\ref{fig:robustness_si} and Panel A of Table~\ref{tab:robustness_picks}
+report the discrete variants (see also Figure~\ref{fig:strategic_sign}). Reading security as
+strength rather than need is the most consequential choice: the pooled Spearman correlation with
+the baseline is 0.33, the median within-country correlation 0.32, and the allied pick survives
+for only 5 of the 57 members; 28 members then pick Nuclear Midstream and 10 Gas Midstream.
+The other specification variants preserve the ordering of sectors much better, with median
+within-country correlations of 0.86 without the sector priors, 0.85 with $\EO$ and $1-\ES$
+S-curved within country like the policy term, 0.85 without the policy term and 0.92 with equal
+weights on the five terms, but keep only 31, 20, 30 and 39 of the 57 picks. The direction of the
+changes is informative. Without the priors, ten picks move to Oil Midstream, the sector that the
+technology prior penalises most; without the policy term, 20 members pick Nuclear Upstream
+instead of 8, so that for many members with recorded uranium resources the pillars alone point
+to uranium extraction and the policy term pulls the pick elsewhere. The ordering of a member's sectors is thus robust to moderate changes in the
+weights, while the identity of its single top sector, which typically turns on margins of one or
+two hundredths, is robust only where that margin is large.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{robustness_si}
+  \caption{Robustness of the allied picks. Each row is a coalition member (ISO3 code), its
+  baseline pick, the Upstream or Midstream sector (excluding Geothermal and Green Hydrogen, and
+  Upstream sectors without a recorded resource base) with the highest Strategic Index
+  (equation~\eqref{eq:si_allied}), and in brackets the margin of its Strategic Index over the
+  member's second eligible sector. Panel (a): share of 1{,}000 Dirichlet draws of the five
+  Strategic Index weights, centred on $(0.2,0.3,0.3,0.1,0.1)$ with concentration 43.4, under
+  which the member's pick is unchanged; colour gives the stage of the baseline pick. Panel (b):
+  filled circle, the pick is unchanged under the variant; open circle, it changes; cross, the
+  member has no pick under the variant; the count at the foot of each column is the number of
+  unchanged picks. Variants: security $\ES_{its}$ in place of need $1-\ES_{its}$; without the
+  stage and technology priors; $\EO_{its}$ and $1-\ES_{its}$ replaced by their within-country
+  S-curves; without the policy term; both Policy components required
+  (\texttt{OPSI\_POLICY\_REQUIRE\_ALL=1}), under which the 11 members scored on IEA PAMS alone
+  have no Policy index and so no pick; CAT dropped for every country (IEA PAMS only); the October
+  2026 NIPO component added back to the Policy index with weight 4 (IEA PAMS 3, CAT 2); the
+  endowment screen switched off; and the Trade category of both pillars measured on the Atlas
+  basis of the 2025 vintage. Sample: 3{,}154 Strategic Index cells of 174 countries; 57 coalition
+  members, all with a baseline pick. Source: \texttt{strategic\_index}, \texttt{policy\_component\_tbl}
+  and category scores in \texttt{index\_outputs.rds}; \texttt{<scratch>/nipo\_oct};
+  \texttt{scripts/paper/fig\_robustness.R}.}
+  \label{fig:robustness_si}
+\end{figure}
+
+\paragraph{The endowment screen.} An Upstream extraction stage is eligible for a member's pick
+only if the country has recorded reserves or production of that stage's resources; the screen
+leaves the Strategic Index itself unchanged and marks 669 of the 998 scored Upstream cells as
+having no resource base. Switching it off changes 41 of the 57 picks: the Upstream picks rise
+from 14 to 47, Nuclear Upstream from 8 to 17 and Solar Upstream from none to 12, and members
+with no uranium, among them Luxembourg, the Netherlands, Ireland and Denmark, would pick Nuclear
+Upstream. The reason is a floor in the security pillar. In several sectors a large share of
+countries share one $\ES$ value, because the categories that vary are observed only for
+producers: 34 of the 40 countries in Green Hydrogen Midstream, 86 of 174 in Nuclear Upstream,
+45 of 158 in Green Hydrogen Downstream, 19 of 67 in Nuclear Downstream and 38 of 138 in
+Batteries Downstream sit at their sector's modal value. In Nuclear Upstream that common value,
+0.17, is close to the pair's minimum of 0.14: a country without uranium scores zero on the
+reserve and production terms, so it receives a low $\ES$ and a high security need $1-\ES$, and with the
+nuclear technology prior this makes Nuclear Upstream the top Upstream sector of many countries
+that could not supply it. The screen is a rule of eligibility for the pick, not part of the index,
+and the comparison shows that without it the Upstream picks would largely reflect that floor.
+
+\input{tables/robustness_picks}
+
+\paragraph{The Policy index.} Since 9 October 2026 the Policy index requires IEA PAMS and adds
+CAT where it rates the country, so that 215 countries are scored, 65 on both components and
+150 on IEA PAMS alone, among them 11 of the 57 coalition members. Three variants test this
+choice (Table~\ref{tab:robustness_data} and Panel A of Table~\ref{tab:robustness_picks}). First,
+requiring both components (\texttt{OPSI\_POLICY\_REQUIRE\_ALL=1}, the earlier rule) leaves 65
+countries with a Policy index and a Strategic Index of 1{,}666 cells. Because the composite is
+renormalised over the components present in each cell, a country with both components has the
+same Policy index under either rule, and its Strategic Index is identical; the 46 members with a
+CAT rating therefore keep their picks exactly, and the 11 members scored on IEA PAMS alone lose
+theirs. The rule decides who has a pick, not what the pick is. Second, the basis matters for
+the values: for the 65 countries with both components, the within-country Spearman correlation
+between the policy values on IEA PAMS alone and on the composite has a median of 0.48
+(interquartile range 0.41 to 0.57). Dropping CAT for every country nevertheless keeps the
+Strategic Index ordering largely intact (median within-country correlation 1.00, interquartile
+range 0.91 to 1.00, minimum 0.30) and 45 of the 57 picks, because policy carries a fifth of
+the index. Third, the NIPO component of the Global Trade Alert, which the headline excludes,
+is added back from the October 2026 run (as of 5 October 2026, with the debiased strength
+measure; 1{,}070 rows for 77 jurisdictions, EU members individually) with the weight the
+composite gave it before (NIPO 4, IEA PAMS 3, CAT 2), IEA PAMS still required. NIPO is observed
+in Upstream and Midstream cells only, in 841 of the Strategic Index cells (27 per cent). For
+the jurisdictions it covers, it changes the policy term substantially: the within-country
+Spearman correlation between the policy ranks with and without it has a median of 0.88 and
+ranges from 0.00 (Taiwan) to 1.00. The Strategic Index absorbs much of this (pooled correlation
+0.97, median within-country correlation 1.00), but the allied picks do not: 34 of the 57 picks
+are unchanged, 27 of the 50 among members with a NIPO score, and the picks shift from Batteries
+Midstream (27 to 15) towards Nuclear Upstream (8 to 14). A policy term built from announced
+industrial-policy measures thus points to different sectors than one built from deployment
+policies and climate ratings; the headline excludes it (Section~\ref{subsec:policy_nipo}).
+
+\paragraph{Data choices of the final build and stability of the picks.} The last revision of
+the inputs (11 and 12 October 2026) filled the fossil production that the Energy Institute does
+not report from EIA International Energy Statistics, added Upstream trade baskets for Electric
+Vehicles, Wind, Nuclear and Solar, rebuilt the energy-trade file from the all-reporter Comtrade
+pull, and introduced the CM-FDI project data into Friendshore. Table~\ref{tab:robustness_data}
+and Figure~\ref{fig:robustness_picks_data} report what these choices do. Setting the EIA-filled
+production to zero, the earlier rule (the headline carries 807 EIA-sourced rows in the
+import-dependence theme and 656 in the production theme), barely moves the pillars: the
+within-pair correlations in Oil, Gas and Coal Upstream are between 0.97 and 0.98 in $\ES$ and
+0.95 and 0.96 in $\EO$, and all 57 picks are unchanged. Removing the Trade category from the
+four Upstream cells whose baskets are new moves those pairs more (median within-pair
+correlations of 0.94 in $\ES$ and 0.73 in $\EO$, with a minimum of 0.58 in Solar Upstream $\EO$),
+returns the Strategic Index to 192 countries, because the newly imputed Trade category had pushed
+small economies over the rankability threshold, and changes 4 of the 57 picks, three of them to
+Nuclear Upstream. Switching off the CM-FDI parts of Friendshore is not re-run on the final
+outputs, because the dyad tables do not fit the memory budget of the replication; in the CM-FDI
+integration study, on the inputs of 11 October 2026, the core-view PSI without them has a
+Spearman correlation of 0.9998 with the CM-FDI build over 192 ranked partners, the largest rank
+change is 5 places and the top 15 are the same, and switching off the Chinese-parent exposure
+component or the CM-FDI investment ties alone gives correlations of 0.9999.
+
+The revision of the energy-trade file could not be undone here, because the superseded file is
+not kept, but the allied picks recorded at two interim builds show how much it mattered. On
+8 October 2026, before the trade file was completed, 45 of the 56 members then in the coalition
+had a pick, 17 of them Electric Grid Midstream and 11 Batteries Midstream; on 10 October, after
+it, the corresponding counts were 4 and 26 of 57, and in the final build they are 4 and 27. The
+shift is attributable mainly to the completed file, which filled the missing Electric Grid
+Midstream codes. The category-drop
+variants confirm that Trade is the input on which the picks rest most: without it 29 of the 54
+members that keep a pick keep the baseline one, Electric Grid Midstream picks rise to 10 and
+Batteries Midstream falls to 13, and measuring Trade on the Atlas basis instead keeps 49 of 57.
+Technological Readiness, a technology-level constant that cannot reorder countries within a pair
+but shifts a country's sectors against one another, comes next (32 of 57 unchanged; Electric
+Grid Midstream would take 27 picks), followed by Technology Demand (41) and Foreign Dependency
+(44). Taking both pillars from the 2025 vintage keeps 48 picks and from the 2020 vintage 44.
+These comparisons say that the allied pick is an informative but fragile summary: it is stable
+to the fill rules and the basket additions of the final revision, and sensitive to how trade is
+measured and to which categories enter.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{robustness_picks_data}
+  \caption{Stability of the allied picks under the data inputs. Each point is the number of
+  coalition members, of 57, whose pick is the baseline one when the Strategic Index takes pillars
+  rebuilt under a variant. Upper panel: one category dropped from the pillars that score it, the
+  remaining categories renormalised (without Trade three members have no eligible rankable
+  sector, so 29 of the 54 with a pick keep it). Lower panel: alternative inputs, namely both
+  pillars from the 2020 or 2025 vintage build, the Trade category on the Atlas basis of the 2025
+  vintage, the Trade category removed from the four Upstream cells whose trade baskets were added
+  on 11 October 2026, and the fossil production that the Energy Institute does not report set to
+  zero instead of the EIA value. Blue marks inputs revised in the final data fixes of
+  11--12 October 2026. The Policy index and the endowment screen are the headline ones. The
+  vertical line marks all 57 members. Source: category scores in \texttt{index\_outputs.rds},
+  theme tables, \texttt{data/processed/vintages}; \texttt{scripts/paper/fig\_robustness.R}.}
+  \label{fig:robustness_picks_data}
+\end{figure}
+
+\input{tables/robustness_data}
+
+\paragraph{Vertical complementarities.} The pillars score each stage of a technology's supply
+chain separately. Supply shocks can propagate downstream along input--output links
+\citep{acemoglu2012network, baqaee2019macroeconomic, carvalho2021supply}, and productive
+capabilities in one activity can make related activities easier to enter
+\citep{hidalgo2007product}, so a stage's opportunity might depend on the economy's capability in
+the adjacent stage, and a stage's security on the security of its inputs. A companion study
+tested both channels before any coupling of the stages was considered. For opportunity it used
+the Atlas of Economic Complexity panel for 172 economies (1995--2023) and regressed the
+five-year change in a stage's S-curved world market share, and entry into revealed comparative
+advantage \citep{balassa1965trade}, on the adjacent stage's market-share index, with
+country--year and technology--year fixed effects and standard errors clustered by country. The
+cross-sectional association is positive and precisely estimated (0.046, standard error 0.007,
+for Midstream on Upstream; 0.102, standard error 0.015, for the reverse), but it is a persistent
+co-location rather than evidence of propagation: it is concentrated in fossil fuels and nuclear
+power (0.062 and 0.151) and close to zero for the clean-technology chains (0.012 and 0.028, both
+insignificant); with country--technology fixed effects it is a precisely estimated zero
+($-0.001$, standard error 0.005, and 0.004, standard error 0.015); lags of the stage's own
+capability absorb about a third of it (0.030 and 0.067); and it does not improve out-of-sample
+prediction (the within-cell AUC for Midstream entry is 0.800 without the term and 0.794 with it,
+and 0.739 and 0.741 for Upstream). The 2023 co-location lift, the ratio of the joint to the
+independent probability of comparative advantage in both stages, is 4.4 for nuclear and 2.7 for
+coal but 0.97 for wind and below one for gas, electric vehicles and the grid. For security the
+study built a sourcing-weighted input-security measure, the domestic share times the economy's
+own supply security plus the import-share-weighted security of its suppliers (half the
+supplier's $\ES$ in the input stage, half the dyadic alignment). Its 2020 value does not predict
+import shortfalls in 2021--22 (coefficient 0.10, standard error 0.31) or Midstream export growth
+after 2020 (0.02, standard error 0.19), whereas the concentration of sourcing does (negative,
+$p=0.035$); and the post-2022 shift of Upstream input trade towards aligned suppliers, 0.58 log
+points (standard error 0.11) over all inputs, falls to 0.07 (standard error 0.06) once Russia
+is excluded.
+
+Table~\ref{tab:robustness_vertical} reports what the two terms would do to the indices if they
+were added at the weights the evidence supports, each next to a placebo. The $\EO$ linkage term
+is the adjacent stage's S-curved Atlas market share minus the economy's mean of that measure over
+the nine basketed headline technologies, S-curved within the cell, so that it rewards an economy
+for being relatively strong in the adjacent stage of this technology rather than for being a
+large exporter overall; at the evidence weights (0.07 $\EO$ weight points in Midstream and 0.23
+in Upstream, 0.6 and 1.5 per cent of a cell's mean observed weight) it leaves the within-pair
+rankings practically unchanged (median correlation 0.999, minimum 0.987) and moves one pick,
+Luxembourg's, whose margin is the smallest in the coalition; a placebo with the scores permuted
+within each cell moves between none and one (5th to 95th percentile over 200 draws). The $\ES$ input-security term at a 15 per cent share moves the
+rankings more (median within-pair correlation 0.92 in Midstream and 0.91 in Downstream, minimum
+0.56 in Batteries Downstream) and changes 10 picks, but a placebo with the same scores permuted
+within each cell changes 11 (5th to 95th percentile over 200 draws, 8 to 16), and a constant
+placebo, which only rescales the other categories, changes 3. The term thus moves picks no more
+than noise of the same size would. We therefore keep both pillars as uncoupled stage scores. The
+evidence identifies co-location, not propagation; the weights it would justify are at most 1.5 per
+cent of a cell's weight; and an adjacent-stage term in levels largely measures the overall size
+of an economy's exports. Four extensions could change this conclusion and are left for future
+work: plant-level co-location from the CM-FDI and BNEF project data; input shares weighted by
+input--output coefficients rather than trade baskets; a test of the sourcing-concentration
+measure on the 2023 export controls on graphite and gallium; and a co-location term in the
+network design of Section~\ref{sec:network} rather than in the node scores.
+
+\paragraph{Partnership index: the viewpoint.} The headline PSI averages the dyadic index over the
+viewpoints of the 31 core members (equation~\eqref{eq:psi}); the full
+coalition (57 reporters) and the world (218 reporters) are alternatives
+(Figure~\ref{fig:robustness_psi_views}). With the rankability rule applied to the PSI, the
+core and full-coalition views rank 192 of 219 partners and the world view 188. The full
+coalition gives practically the same ranking as the core (Spearman correlation 0.98 over the 192
+partners ranked in both, with 13 of the top 15 in common); its top 15 adds China and India and
+drops Ireland and Sweden, and China moves from 44th to 9th, a move consistent with the higher
+dyadic alignment between China and several of the partners the full coalition adds. The world view
+differs more (0.88 over 188 partners, with 10 of the top 15 in common, and a median absolute rank
+change of 17 places): China, India, Indonesia, Viet Nam and Malaysia enter its top 15, and
+Belgium, the Czech Republic, Ireland, Poland and Sweden leave it. The full-coalition and world
+views correlate at 0.95. The choice of viewpoint is thus a choice about whose interests the index
+represents rather than a technical detail; the core view is the headline because the network
+design and the allied picks are built for the coalition, and Section~\ref{sec:bilateral}
+reports both alternatives. The rankability threshold matters more for the world view than for
+the core: at $\tau=0.3$ the world view ranks 102 partners and the core view 159.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{robustness_psi_views}
+  \caption{The partnership index from three viewpoints. Each point is a partner ranked in both
+  views (rankable under $\tau=0.5$), placed by its percentile position in the core-coalition
+  view, the headline average over the 31 core members' ratings (horizontal), and in an
+  alternative view (vertical): left, the full coalition of 57 reporters; right, the world of
+  218 reporters. Blue marks the top 15 of the core view; the labelled points are the three of
+  them with the lowest position in the alternative view. The panel titles give the Spearman rank
+  correlation with the core view and the number of core-view top-15 partners that are also in the
+  alternative top 15. The line is the 45-degree line. Source: \texttt{psi\_tbl.rds},
+  \texttt{psi\_full\_coalition\_tbl.rds}, \texttt{psi\_world\_tbl.rds};
+  \texttt{scripts/paper/fig\_robustness.R}.}
+  \label{fig:robustness_psi_views}
+\end{figure}
+
+\paragraph{What the analysis does and does not establish.} Within the ranges explored, the
+within-pair rankings of $\ES$ are robust to the category weights, the curvature and, over the
+rankable cells, the imputation rules, and those of $\EO$ to the weights and the curvature but
+not to the imputation rules; the Strategic Index orders a country's sectors stably, while the
+allied pick, a single arg max, is robust only where its margin is large, and it turns on how
+trade is measured, on the rankability threshold, on the composition of the policy term and on
+the endowment screen. Several limits qualify this. First, there is no external validation of the
+headline indices: we have no outcome series, such as realised supply disruptions for $\ES$ or
+subsequent export or investment growth for $\EO$, against which to test whether the pillars
+measure what they are meant to measure; the only outcome tests in the paper are those of the
+vertical-complementarity study, which concern candidate terms rather than the pillars. Stability
+shows that the rankings are determined by the data and the construction rather than by fine
+choices of parameters, not that they are right \citep{ravallion2012mashup}. Second, much of the
+stability is mechanical. Within a pair only a few categories vary, neither a constant category
+nor a monotone re-curving of a single varying component can reorder countries, and the cell
+constants (Energy Prices, the world-concentration terms, technological readiness) are inert by
+construction; robustness of this kind says little about the constant categories, which matter
+for comparisons across cells and hence for the Strategic Index. Third, the perturbations are
+local: the Dirichlet draws are centred on the configured weights and vary them by about 30 per
+cent, and the other experiments vary one element at a time. Fourth, the vintage comparison
+covers only the time-varying sources, which carry about a third of the average cell's weight, so
+it cannot say how stable the full index is over time. Fifth, some data choices are not varied
+here: the exclusion of electricity from the grid basket, the exclusion of Hong Kong's
+re-exports from the Comtrade export measures, the treatment of non-reporting economies through
+their partners' mirror declarations, the rank compression of the EU demand weight, the regional
+IEA shares that every EU member inherits in the foreign-dependency and market-share variables,
+and the zero counted for unquantified USGS holdings; and the CM-FDI comparison rests on the
+inputs of 11 October 2026 rather than on the final run. Finally, the sensitivity of the network
+design to its own settings, including the calibration of the diversification weight $\lambda$,
+which sits on a knife edge, is reported with the design in Section~\ref{sec:network}.
+
+% Appendix sensitivity table of the vertical-complementarity study (user decision 2026-10-12:
+% paper only, no index change). The integrating section may move this \input to an appendix.
+\input{tables/robustness_vertical}

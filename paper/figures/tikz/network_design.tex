@@ -1,0 +1,62 @@
+% Allied Industrial Base network design: data flow from the indices to the
+% stage programs and the cross-stage portfolio loop. Depends only on the code
+% in R/indices/allied_network_design.R and scripts/30_build_allied_network_design.R.
+% \input inside a figure environment (Section 10).
+\begin{tikzpicture}[
+  font=\footnotesize,
+  node distance=7mm and 4mm,
+  box/.style={draw=osigray, rounded corners=2pt, align=center, inner sep=3pt,
+              text width=#1, minimum height=11mm},
+  box/.default=31mm,
+  input/.style={box, fill=osilight},
+  derived/.style={box, fill=osiblue!10, draw=osiblue},
+  arr/.style={-{Stealth[length=1.8mm]}, draw=osiink!70, semithick},
+  lab/.style={font=\scriptsize, text=osiink!75, align=center}
+]
+% ---- inputs -----------------------------------------------------------------
+\node[input] (cells) {Cell indices\\ $\EO_{pts}$, $\ES_{pts}$, $\POL_{pts}$};
+\node[input, right=of cells] (gdp) {GDP, current US\$\\ (latest finite year)};
+\node[input, right=of gdp] (dyads) {Dyadic indices\\ $\FS_{cpts}$, $\PO_{pcts}$};
+\node[input, right=of dyads] (dev) {Development\\ potential $\DP_{pts}$};
+
+% ---- derived node and edge quantities ----------------------------------------
+\node[derived, below=of cells] (score) {Producer score $a_p$\\ eq.~\eqref{eq:net_producer_score}};
+\node[derived, below=of gdp] (demand) {Demand weight $d_c$\\ eq.~\eqref{eq:net_demand}};
+\node[derived, below=of dyads] (edge) {Edge weight $W_{pc}$\\ eq.~\eqref{eq:net_edge}};
+\node[derived, below=of dev] (delta) {$\delta_p$, objective\\ weight $w_D=0$};
+
+\draw[arr] (cells) -- (score);
+\draw[arr] (cells.south east) -- node[lab, above, sloped, pos=0.6] {$1-\widetilde{\ES}$} (demand.north west);
+\draw[arr] (gdp) -- (demand);
+\draw[arr] (dyads) -- (edge);
+\draw[arr] (dev) -- (delta);
+
+% ---- stage program (spans the first three columns) -------------------------
+\node[box=103mm, fill=osiorange!10, draw=osiorange, minimum height=14mm,
+      anchor=north west] (stage) at ([yshift=-8mm]score.south west)
+  {\textbf{Stage program for each $(t,s)$}, solved independently:\\
+   MILP \eqref{eq:net_milp} with GLPK, 120\,s limit per stage;
+   greedy heuristic (Algorithm~\ref{alg:greedy}) if the MILP is unavailable or fails};
+\draw[arr] (score.south) -- (score.south |- stage.north);
+\draw[arr] (demand.south) -- (demand.south |- stage.north);
+\draw[arr] (edge.south) -- (edge.south |- stage.north);
+
+% ---- portfolio loop --------------------------------------------------------
+\node[box=62mm, fill=osiaqua!10, draw=osiaqua, anchor=north east] (port)
+  at ([yshift=-8mm]stage.south east)
+  {\textbf{Portfolio caps across stages}: count $A_i$ \eqref{eq:net_topk};
+   where $A_i>\kappa_i$ \eqref{eq:net_cap}, exclude $i$ as a producer in the
+   stages with the lowest $x_{i}a_{i}$};
+\draw[arr] (stage.south -| port.north) -- (port.north);
+\draw[arr] (port.west) -| node[lab, left, pos=0.75] {re-solve\\ affected stages}
+  ($(port.west |- stage.south)+(-12mm,0)$);
+
+% ---- outputs (span all four columns) ---------------------------------------
+\node[box=147mm, fill=osiviolet!8, draw=osiviolet, anchor=north west] (out)
+  at ([yshift=-9mm]cells.west |- port.south)
+  {\textbf{Outputs}: selection $y_p$, production shares $x_{p}$ and flows $f_{pc}$ per stage;
+   diagnostics (method, $\HHI^{\mathrm{D}}$, realised maximum share and redundancy, coverage flags,
+   portfolio convergence); build-candidate priorities $b_p$ \eqref{eq:net_build}};
+\draw[arr] (port.south) -- node[lab, right] {no violation, or 10 passes} (port.south |- out.north);
+\draw[arr, dashed] (delta.south) -- node[lab, right, pos=0.5] {build\\ list} (delta.south |- out.north);
+\end{tikzpicture}

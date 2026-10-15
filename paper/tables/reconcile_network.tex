@@ -1,0 +1,28 @@
+\begin{table}[htbp]
+  \centering
+  \begin{threeparttable}
+  \caption{Allied network diagnostics: shipped and final release}
+  \label{tab:reconcile_network}
+  \small
+  \begin{tabular}{@{}l c c@{}}
+    \toprule
+    & Shipped release & Final release \\
+    \midrule
+    Network nodes & 22 & 37 \\
+    Stages designed & 33 (all three stages) & 22 (Upstream, Midstream) \\
+    Solver used (stages) & greedy (33) & MILP (22) \\
+    Stages with $n_{\text{producers}}=k^2$ and $\HHI=1$ & 14 & 0 \\
+    Reported producers per stage & 3--193{,}600 & 7--10 (median 9) \\
+    $\HHI$ of designed shares & 0.333--1.000 & 0.126--0.209 (median 0.1520) \\
+    Diversification weight $\lambda$ & -- & 0.78 \\
+    Policy term in node scores & yes & no \\
+    Portfolio loop converged & no & yes \\
+    Portfolio passes & 10 (limit) & 7 \\
+    Members above their portfolio cap at exit & 12 & 0 \\
+    \bottomrule
+  \end{tabular}
+  \begin{tablenotes}[flushleft]\footnotesize
+    \item \emph{Notes:} Shipped release: \texttt{allied\_network\_diagnostics.csv} written on 23~February 2026, the only shipped network artefact read here; it designed every stage of the hand-picked list's 22 effective members (the United Arab Emirates was coded ``UAE'', item N5). In 14 shipped stages a single country was selected with $k^2$ rows of share $1/k$, so the producer count was $k^2$ (with $k$ from 16 to 440) and the Herfindahl index summed over the rows was exactly one (item N1, equation~\eqref{eq:corr_fanout}). Final release: the same file of the final run of 12~October 2026, 37 nodes (the EU-27 as one node), Upstream and Midstream stages only, MILP with the concave diversification term ($\lambda=0.78$, the smallest value on the calibration grid whose median designed $\HHI$ does not exceed the observed one) and portfolio caps, and no policy term in the node scores; the median designed $\HHI$ compares with a median observed export $\HHI$ of the nodes of 0.1556 over the 18 stages with an HS6 basket. The portfolio loop runs over all stages jointly, so it has one outcome per release; the last row counts the members that, when the loop stops, are a top producer in more stages than their cap allows.
+  \end{tablenotes}
+  \end{threeparttable}
+\end{table}

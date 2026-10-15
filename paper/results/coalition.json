@@ -1,0 +1,1865 @@
+{
+  "source": {
+    "series": "All",
+    "source_file": "IdealpointsJuly2025.tab",
+    "dataset_version": "V39.0 (2026-07-30)",
+    "window_sessions": "74,75,76,77,78",
+    "window_years": "2019,2020,2021,2022,2023",
+    "sessions": 5,
+    "bloc_rule": "quartile",
+    "bloc_quantile": 0.25,
+    "tau": 0,
+    "neutral_p": 0.5,
+    "inputs_mtime": {
+      "geo_ideal_points_tbl": "2026-10-12 09:03:39",
+      "coalition_tbl": "2026-10-12 09:03:45",
+      "allied_network_nodes": "2026-10-12 10:12:33"
+    }
+  },
+  "coverage": {
+    "n_own_votes": 193,
+    "n_inherited": 44,
+    "n_neutral": 3,
+    "neutral": ["TWN", "PSE", "XKX"],
+    "n_alignment_rows": 240,
+    "n_with_alignment": 240,
+    "inherit_sovereign_counts": {
+      "AUS": 3,
+      "CHN": 2,
+      "DNK": 2,
+      "FIN": 1,
+      "FRA": 11,
+      "GBR": 13,
+      "NLD": 4,
+      "NOR": 1,
+      "NZL": 1,
+      "USA": 6
+    },
+    "beyond_anchor_clamped": ["CUB", "IRN", "NIC", "PRK", "SYR", "VEN", "ZWE"],
+    "beyond_anchor_side": {
+      "CHN": 7
+    },
+    "fewer_sessions": "VEN",
+    "fewer_sessions_n": {
+      "VEN": 3
+    },
+    "theta_usa": 2.339,
+    "theta_chn": -1.019
+  },
+  "blocs": {
+    "counts": {
+      "China-leaning": 49,
+      "Nonaligned": 95,
+      "U.S.-leaning": 49
+    },
+    "s_us_cut": 0.511,
+    "s_china_cut": 0.142,
+    "median_s": 0.22,
+    "mean_s": 0.302,
+    "share_s_below_half": 0.736,
+    "n_s_below_half": 142,
+    "n_s_above_half": 51,
+    "near_us_cut": [
+      {
+        "iso3": "AUT",
+        "s": 0.551,
+        "bloc": "U.S.-leaning"
+      },
+      {
+        "iso3": "JPN",
+        "s": 0.545,
+        "bloc": "U.S.-leaning"
+      },
+      {
+        "iso3": "AND",
+        "s": 0.539,
+        "bloc": "U.S.-leaning"
+      },
+      {
+        "iso3": "SMR",
+        "s": 0.533,
+        "bloc": "U.S.-leaning"
+      },
+      {
+        "iso3": "MLT",
+        "s": 0.532,
+        "bloc": "U.S.-leaning"
+      },
+      {
+        "iso3": "IRL",
+        "s": 0.532,
+        "bloc": "U.S.-leaning"
+      },
+      {
+        "iso3": "MDA",
+        "s": 0.531,
+        "bloc": "U.S.-leaning"
+      },
+      {
+        "iso3": "CYP",
+        "s": 0.528,
+        "bloc": "U.S.-leaning"
+      },
+      {
+        "iso3": "LIE",
+        "s": 0.525,
+        "bloc": "U.S.-leaning"
+      },
+      {
+        "iso3": "NZL",
+        "s": 0.519,
+        "bloc": "U.S.-leaning"
+      },
+      {
+        "iso3": "CHE",
+        "s": 0.508,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "BIH",
+        "s": 0.508,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "TUR",
+        "s": 0.482,
+        "bloc": "Nonaligned"
+      }
+    ],
+    "near_china_cut": [
+      {
+        "iso3": "NPL",
+        "s": 0.162,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "PAK",
+        "s": 0.159,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "NER",
+        "s": 0.153,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "DJI",
+        "s": 0.152,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "YEM",
+        "s": 0.152,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "NAM",
+        "s": 0.152,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "SAU",
+        "s": 0.152,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "MOZ",
+        "s": 0.152,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "CAF",
+        "s": 0.152,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "ZAF",
+        "s": 0.148,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "GIN",
+        "s": 0.145,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "BHR",
+        "s": 0.144,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "MYS",
+        "s": 0.142,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "BFA",
+        "s": 0.142,
+        "bloc": "Nonaligned"
+      },
+      {
+        "iso3": "COM",
+        "s": 0.142,
+        "bloc": "China-leaning"
+      },
+      {
+        "iso3": "KEN",
+        "s": 0.142,
+        "bloc": "China-leaning"
+      },
+      {
+        "iso3": "SUR",
+        "s": 0.139,
+        "bloc": "China-leaning"
+      },
+      {
+        "iso3": "SEN",
+        "s": 0.138,
+        "bloc": "China-leaning"
+      },
+      {
+        "iso3": "TUN",
+        "s": 0.138,
+        "bloc": "China-leaning"
+      },
+      {
+        "iso3": "NGA",
+        "s": 0.136,
+        "bloc": "China-leaning"
+      },
+      {
+        "iso3": "SOM",
+        "s": 0.132,
+        "bloc": "China-leaning"
+      },
+      {
+        "iso3": "ARE",
+        "s": 0.132,
+        "bloc": "China-leaning"
+      },
+      {
+        "iso3": "BGD",
+        "s": 0.131,
+        "bloc": "China-leaning"
+      },
+      {
+        "iso3": "LBY",
+        "s": 0.128,
+        "bloc": "China-leaning"
+      },
+      {
+        "iso3": "BRN",
+        "s": 0.126,
+        "bloc": "China-leaning"
+      }
+    ],
+    "s_selected": {
+      "ARG": 0.28,
+      "AUS": 0.705,
+      "BRA": 0.309,
+      "CAN": 0.693,
+      "CHN": 0,
+      "FRA": 0.758,
+      "DEU": 0.698,
+      "IND": 0.218,
+      "IDN": 0.087,
+      "ITA": 0.658,
+      "JPN": 0.545,
+      "KOR": 0.577,
+      "MEX": 0.292,
+      "RUS": 0.056,
+      "SAU": 0.152,
+      "ZAF": 0.148,
+      "TUR": 0.482,
+      "GBR": 0.829,
+      "USA": 1,
+      "VNM": 0.087,
+      "ISR": 0.85,
+      "UKR": 0.681,
+      "NZL": 0.519,
+      "CHE": 0.508,
+      "ARE": 0.132,
+      "KEN": 0.142,
+      "KAZ": 0.074,
+      "IRN": 0,
+      "PRK": 0,
+      "COD": 0.204,
+      "CHL": 0.295,
+      "QAT": 0.174,
+      "VEN": 0,
+      "IRL": 0.532,
+      "SGP": 0.218,
+      "MYS": 0.142,
+      "OMN": 0.122,
+      "THA": 0.182,
+      "PHL": 0.172,
+      "GHA": 0.193,
+      "NAM": 0.152,
+      "GAB": 0.164,
+      "MAR": 0.19,
+      "LUX": 0.661,
+      "HUN": 0.712
+    },
+    "bloc_selected": {
+      "ARG": "Nonaligned",
+      "AUS": "U.S.-leaning",
+      "BRA": "Nonaligned",
+      "CAN": "U.S.-leaning",
+      "CHN": "China-leaning",
+      "FRA": "U.S.-leaning",
+      "DEU": "U.S.-leaning",
+      "IND": "Nonaligned",
+      "IDN": "China-leaning",
+      "ITA": "U.S.-leaning",
+      "JPN": "U.S.-leaning",
+      "KOR": "U.S.-leaning",
+      "MEX": "Nonaligned",
+      "RUS": "China-leaning",
+      "SAU": "Nonaligned",
+      "ZAF": "Nonaligned",
+      "TUR": "Nonaligned",
+      "GBR": "U.S.-leaning",
+      "USA": "U.S.-leaning",
+      "VNM": "China-leaning",
+      "ISR": "U.S.-leaning",
+      "UKR": "U.S.-leaning",
+      "NZL": "U.S.-leaning",
+      "CHE": "Nonaligned",
+      "ARE": "China-leaning",
+      "KEN": "China-leaning",
+      "KAZ": "China-leaning",
+      "IRN": "China-leaning",
+      "PRK": "China-leaning",
+      "COD": "Nonaligned",
+      "CHL": "Nonaligned",
+      "QAT": "Nonaligned",
+      "VEN": "China-leaning",
+      "OMN": "China-leaning",
+      "JOR": "China-leaning",
+      "EGY": "China-leaning",
+      "KWT": "Nonaligned",
+      "BHR": "Nonaligned"
+    },
+    "us_leaning_below_floor": ["ALB", "AND", "CYP", "EST", "FSM", "GEO", "ISL", "LIE", "LTU", "LVA", "MCO", "MDA", "MHL", "MKD", "MLT", "MNE", "SMR", "SVN"],
+    "us_leaning_n_members": 31
+  },
+  "dyadic": {
+    "values": [1, 0.5, 0],
+    "n_units": 39,
+    "node_pairs": 666,
+    "node_pair_counts": {
+      "same": 58,
+      "nonaligned": 575,
+      "opposite": 33
+    },
+    "node_pair_shares": {
+      "same": 0.087,
+      "nonaligned": 0.863,
+      "opposite": 0.05
+    },
+    "member_pairs": 1596,
+    "member_pair_shares": {
+      "same": 0.293,
+      "nonaligned": 0.648,
+      "opposite": 0.058
+    },
+    "core_pairs_all_same": true,
+    "n_core_pairs": 465,
+    "partner_mean_A_with_core": {
+      "ARG": 0.5,
+      "BRA": 0.5,
+      "CHL": 0.5,
+      "COD": 0.5,
+      "COL": 0.5,
+      "CRI": 0.5,
+      "DOM": 0.5,
+      "GAB": 0.5,
+      "GHA": 0.5,
+      "GTM": 0.5,
+      "IDN": 0,
+      "IND": 0.5,
+      "MAR": 0.5,
+      "MEX": 0.5,
+      "MYS": 0.5,
+      "NAM": 0.5,
+      "OMN": 0,
+      "PER": 0.5,
+      "PHL": 0.5,
+      "QAT": 0.5,
+      "SAU": 0.5,
+      "SGP": 0.5,
+      "THA": 0.5,
+      "TUR": 0.5,
+      "VNM": 0,
+      "ZAF": 0.5
+    },
+    "partner_A_with_core_by_bloc": {
+      "China-leaning": {
+        "0": 3,
+        "0.5": 0
+      },
+      "Nonaligned": {
+        "0": 0,
+        "0.5": 23
+      }
+    },
+    "eu_node_s_gdp_weighted": 0.677,
+    "eu_members_s_range": [0.528, 0.758],
+    "fs_weight_geo_alignment": 2,
+    "fs_weight_total": 11,
+    "fs_share_geo_alignment": 0.182,
+    "fs_components_nonzero": ["imp_trade_index", "es_need", "eo_partner", "outbound_index", "geo_alignment", "chinese_parent_exposure"]
+  },
+  "coalition": {
+    "gdp_floor_usd": 100000000000,
+    "supplier_share": 0.05,
+    "supplier_reserves_share": 0.1,
+    "partner_agreements": ["U.S. FTA", "IPEF", "MSP", "G7", "NATO"],
+    "sensitivity_agreements": "MSP Forum",
+    "n_members": 57,
+    "n_core": 31,
+    "n_partners": 26,
+    "n_economies_with_node_only": 63,
+    "core": ["USA", "DEU", "JPN", "GBR", "FRA", "ITA", "CAN", "ESP", "KOR", "AUS", "NLD", "POL", "BEL", "IRL", "SWE", "ISR", "AUT", "NOR", "DNK", "ROU", "CZE", "PRT", "FIN", "GRC", "NZL", "HUN", "UKR", "SVK", "BGR", "HRV", "LUX"],
+    "partners": ["IND", "BRA", "MEX", "TUR", "IDN", "SAU", "ARG", "SGP", "THA", "VNM", "PHL", "MYS", "COL", "ZAF", "CHL", "PER", "QAT", "MAR", "DOM", "GTM", "GHA", "OMN", "CRI", "COD", "GAB", "NAM"],
+    "partner_blocs": {
+      "China-leaning": 3,
+      "Nonaligned": 23
+    },
+    "partners_agreement_only": ["TUR", "IDN", "SGP", "THA", "VNM", "MAR", "DOM", "GTM", "OMN", "CRI"],
+    "partners_supplier_only": ["BRA", "SAU", "ARG", "ZAF", "QAT", "GHA", "COD", "GAB", "NAM"],
+    "partners_both": ["IND", "MEX", "PHL", "MYS", "COL", "CHL", "PER"],
+    "n_agreement_route": 17,
+    "n_supplier_route": 16,
+    "members_by_qualifying_agreement": {
+      "U.S. FTA": 14,
+      "IPEF": 12,
+      "MSP": 13,
+      "G7": 7,
+      "NATO": 24
+    },
+    "china_leaning_partners": [
+      {
+        "iso3": "IDN",
+        "s": 0.087,
+        "agreements": "IPEF"
+      },
+      {
+        "iso3": "VNM",
+        "s": 0.087,
+        "agreements": "IPEF"
+      },
+      {
+        "iso3": "OMN",
+        "s": 0.122,
+        "agreements": "U.S. FTA"
+      }
+    ],
+    "core_with_supplier_route": ["AUS", "CAN", "DEU", "FIN", "FRA", "GBR", "ITA", "JPN", "KOR", "NLD", "NOR", "POL", "USA"],
+    "core_with_agreement": 28,
+    "core_without_agreement": ["AUT", "IRL", "UKR"],
+    "excluded_suppliers": [
+      {
+        "iso3": "CHN",
+        "s": 0,
+        "top_flow": "Batteries Midstream: graphite refining 94.4%",
+        "top_reserves": "Electric Vehicles Upstream: rare earth reserves 58.4%",
+        "reserves_qualifying": {
+          "Rare earth": 0.584,
+          "Graphite": 0.323,
+          "Zinc": 0.249,
+          "Manganese": 0.145,
+          "Coal": 0.133,
+          "Lithium": 0.124
+        },
+        "n_cells": 17
+      },
+      {
+        "iso3": "RUS",
+        "s": 0.056,
+        "top_flow": "Green Hydrogen Upstream: pgms mining 28.7%",
+        "top_reserves": "Gas Upstream: gas proved reserves 19.9%",
+        "reserves_qualifying": {
+          "Gas": 0.199,
+          "Coal": 0.151,
+          "PGMs": 0.144,
+          "Zinc": 0.12
+        },
+        "n_cells": 7
+      },
+      {
+        "iso3": "IRN",
+        "s": 0,
+        "top_flow": "Gas Upstream: production 6.3%",
+        "top_reserves": "Gas Upstream: gas proved reserves 17.1%",
+        "reserves_qualifying": {
+          "Gas": 0.171
+        },
+        "n_cells": 2
+      },
+      {
+        "iso3": "KAZ",
+        "s": 0.074,
+        "top_flow": "Nuclear Upstream: exports 45.1%",
+        "top_reserves": "Nuclear Upstream: uranium resources 10.9%",
+        "reserves_qualifying": {
+          "Uranium": 0.109
+        },
+        "n_cells": 1
+      },
+      {
+        "iso3": "DZA",
+        "s": 0.038,
+        "top_flow": "Gas Upstream: exports 5.1%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 1
+      },
+      {
+        "iso3": "UZB",
+        "s": 0.1,
+        "top_flow": "Nuclear Upstream: uranium mining 8.4%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 1
+      },
+      {
+        "iso3": "VEN",
+        "s": 0,
+        "top_flow": null,
+        "top_reserves": "Oil Upstream: oil proved reserves 17.5%",
+        "reserves_qualifying": {
+          "Oil": 0.175
+        },
+        "n_cells": 1
+      },
+      {
+        "iso3": "MMR",
+        "s": 0.112,
+        "top_flow": "Wind Upstream: exports 31.0%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 2
+      },
+      {
+        "iso3": "ZWE",
+        "s": 0,
+        "top_flow": "Batteries Upstream: lithium mining 9.2%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 3
+      }
+    ],
+    "excluded_reserves_only": "VEN",
+    "supplier_test": {
+      "n_economies": 40,
+      "by_bloc": {
+        "U.S.-leaning": 13,
+        "Nonaligned": 16,
+        "China-leaning": 11,
+        "none": 0
+      },
+      "by_tier": {
+        "core": 13,
+        "partner": 18,
+        "none": 9
+      },
+      "n_flow_only": 24,
+      "n_reserves_only": 1,
+      "n_both_legs": 15,
+      "reserves_only": "VEN",
+      "non_members_not_china_leaning": []
+    },
+    "excluded_in_via_agreement": ["IDN", "VNM"],
+    "supplier_partner_top_cells": [
+      {
+        "iso3": "BRA",
+        "label": "Solar Up 18% (+3)",
+        "top_flow": "Solar Upstream: exports 18.4%",
+        "top_reserves": "Batteries Upstream: graphite reserves 23.9%",
+        "reserves_qualifying": {
+          "Graphite": 0.239,
+          "Manganese": 0.167,
+          "Rare earth": 0.146,
+          "Nickel": 0.114
+        },
+        "n_cells": 4
+      },
+      {
+        "iso3": "SAU",
+        "label": "Oil Up 13%",
+        "top_flow": "Oil Upstream: exports 12.6%",
+        "top_reserves": "Oil Upstream: oil proved reserves 17.2%",
+        "reserves_qualifying": {
+          "Oil": 0.172
+        },
+        "n_cells": 1
+      },
+      {
+        "iso3": "ARG",
+        "label": "Batteries Up 6% (+1)",
+        "top_flow": "Batteries Upstream: lithium mining 6.2%",
+        "top_reserves": "Batteries Upstream: lithium reserves 11.9%",
+        "reserves_qualifying": {
+          "Lithium": 0.119
+        },
+        "n_cells": 2
+      },
+      {
+        "iso3": "ZAF",
+        "label": "Hydrogen Up 52% (+3)",
+        "top_flow": "Green Hydrogen Upstream: pgms mining 52.4%",
+        "top_reserves": "Green Hydrogen Upstream: pgms reserves 82.7%",
+        "reserves_qualifying": {
+          "PGMs": 0.827,
+          "Manganese": 0.306
+        },
+        "n_cells": 4
+      },
+      {
+        "iso3": "QAT",
+        "label": "Gas Up 14%",
+        "top_flow": "Gas Upstream: exports 13.6%",
+        "top_reserves": "Gas Upstream: gas proved reserves 13.1%",
+        "reserves_qualifying": {
+          "Gas": 0.131
+        },
+        "n_cells": 1
+      },
+      {
+        "iso3": "GHA",
+        "label": "Batteries Up 10% (+2)",
+        "top_flow": "Batteries Upstream: manganese mining 9.9%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 3
+      },
+      {
+        "iso3": "COD",
+        "label": "Batteries Up 66% (+9)",
+        "top_flow": "Batteries Upstream: cobalt mining 65.5%",
+        "top_reserves": "Batteries Upstream: cobalt reserves 50.0%",
+        "reserves_qualifying": {
+          "Cobalt": 0.5
+        },
+        "n_cells": 10
+      },
+      {
+        "iso3": "GAB",
+        "label": "Batteries Up 25% (+2)",
+        "top_flow": "Batteries Upstream: manganese mining 24.8%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 3
+      },
+      {
+        "iso3": "NAM",
+        "label": "Nuclear Up 12%",
+        "top_flow": "Nuclear Upstream: uranium mining 11.8%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 1
+      },
+      {
+        "iso3": "IND",
+        "label": "Coal Up 10% (+2)",
+        "top_flow": "Coal Upstream: production 9.9%",
+        "top_reserves": "Coal Upstream: coal proved reserves 10.3%",
+        "reserves_qualifying": {
+          "Coal": 0.103
+        },
+        "n_cells": 3
+      },
+      {
+        "iso3": "MEX",
+        "label": "Solar Up 6% (+3)",
+        "top_flow": "Solar Upstream: zinc mining 6.1%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 4
+      },
+      {
+        "iso3": "PHL",
+        "label": "Batteries Up 11% (+2)",
+        "top_flow": "Batteries Upstream: nickel mining 11.5%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 3
+      },
+      {
+        "iso3": "MYS",
+        "label": "Wind Up 13% (+2)",
+        "top_flow": "Wind Upstream: exports 13.2%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 3
+      },
+      {
+        "iso3": "COL",
+        "label": "Coal Mid 6%",
+        "top_flow": "Coal Midstream: exports 5.6%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 1
+      },
+      {
+        "iso3": "CHL",
+        "label": "Batteries Up 24% (+9)",
+        "top_flow": "Batteries Upstream: copper mining 23.6%",
+        "top_reserves": "Batteries Upstream: lithium reserves 24.9%",
+        "reserves_qualifying": {
+          "Lithium": 0.249,
+          "Copper": 0.184
+        },
+        "n_cells": 10
+      },
+      {
+        "iso3": "PER",
+        "label": "Solar Up 12% (+4)",
+        "top_flow": "Solar Upstream: zinc mining 11.8%",
+        "top_reserves": null,
+        "reserves_qualifying": [],
+        "n_cells": 5
+      }
+    ],
+    "reserves": {
+      "partners_by_reserves_only": [],
+      "partners_by_reserves_only_detail": [],
+      "members_passing_reserves": ["USA", "AUS", "IND", "BRA", "SAU", "ARG", "ZAF", "CHL", "QAT", "COD"],
+      "n_members_passing_reserves": 10,
+      "near_misses_5_to_10": [
+        {
+          "iso3": "MDG",
+          "bloc": "Nonaligned",
+          "resource": "Graphite",
+          "max_reserves_share": 0.087,
+          "max_supply_share": 0.039
+        },
+        {
+          "iso3": "IRQ",
+          "bloc": "China-leaning",
+          "resource": "Oil",
+          "max_reserves_share": 0.084,
+          "max_supply_share": 0.046
+        },
+        {
+          "iso3": "MOZ",
+          "bloc": "Nonaligned",
+          "resource": "Graphite",
+          "max_reserves_share": 0.081,
+          "max_supply_share": 0.037
+        },
+        {
+          "iso3": "TKM",
+          "bloc": "China-leaning",
+          "resource": "Gas",
+          "max_reserves_share": 0.072,
+          "max_supply_share": 0.02
+        },
+        {
+          "iso3": "KWT",
+          "bloc": "Nonaligned",
+          "resource": "Oil",
+          "max_reserves_share": 0.059,
+          "max_supply_share": 0.028
+        },
+        {
+          "iso3": "TZA",
+          "bloc": "Nonaligned",
+          "resource": "Graphite",
+          "max_reserves_share": 0.058,
+          "max_supply_share": 0.035
+        },
+        {
+          "iso3": "NER",
+          "bloc": "Nonaligned",
+          "resource": "Uranium",
+          "max_reserves_share": 0.057,
+          "max_supply_share": 0.024
+        },
+        {
+          "iso3": "ARE",
+          "bloc": "China-leaning",
+          "resource": "Oil",
+          "max_reserves_share": 0.056,
+          "max_supply_share": 0.042
+        },
+        {
+          "iso3": "NCL",
+          "bloc": "U.S.-leaning",
+          "resource": "Nickel",
+          "max_reserves_share": 0.051,
+          "max_supply_share": 0.033
+        }
+      ]
+    },
+    "agreement_members_below_floor": [
+      {
+        "iso3": "LTU",
+        "bloc": "U.S.-leaning",
+        "gdp_usd_bn": 95.2,
+        "agreements": "NATO",
+        "eu_member": true
+      },
+      {
+        "iso3": "PAN",
+        "bloc": "Nonaligned",
+        "gdp_usd_bn": 90.5,
+        "agreements": "U.S. FTA",
+        "eu_member": false
+      },
+      {
+        "iso3": "SVN",
+        "bloc": "U.S.-leaning",
+        "gdp_usd_bn": 79.6,
+        "agreements": "NATO",
+        "eu_member": true
+      },
+      {
+        "iso3": "JOR",
+        "bloc": "China-leaning",
+        "gdp_usd_bn": 61.6,
+        "agreements": "U.S. FTA",
+        "eu_member": false
+      },
+      {
+        "iso3": "BHR",
+        "bloc": "Nonaligned",
+        "gdp_usd_bn": 49,
+        "agreements": "U.S. FTA",
+        "eu_member": false
+      },
+      {
+        "iso3": "LVA",
+        "bloc": "U.S.-leaning",
+        "gdp_usd_bn": 48.6,
+        "agreements": "NATO",
+        "eu_member": true
+      },
+      {
+        "iso3": "EST",
+        "bloc": "U.S.-leaning",
+        "gdp_usd_bn": 47,
+        "agreements": "MSP; NATO",
+        "eu_member": true
+      },
+      {
+        "iso3": "HND",
+        "bloc": "Nonaligned",
+        "gdp_usd_bn": 39.6,
+        "agreements": "U.S. FTA",
+        "eu_member": false
+      },
+      {
+        "iso3": "ISL",
+        "bloc": "U.S.-leaning",
+        "gdp_usd_bn": 38.6,
+        "agreements": "NATO",
+        "eu_member": false
+      },
+      {
+        "iso3": "SLV",
+        "bloc": "Nonaligned",
+        "gdp_usd_bn": 36.7,
+        "agreements": "U.S. FTA",
+        "eu_member": false
+      },
+      {
+        "iso3": "ALB",
+        "bloc": "U.S.-leaning",
+        "gdp_usd_bn": 30.5,
+        "agreements": "NATO",
+        "eu_member": false
+      },
+      {
+        "iso3": "NIC",
+        "bloc": "China-leaning",
+        "gdp_usd_bn": 22.2,
+        "agreements": "U.S. FTA",
+        "eu_member": false
+      },
+      {
+        "iso3": "MKD",
+        "bloc": "U.S.-leaning",
+        "gdp_usd_bn": 19.1,
+        "agreements": "NATO",
+        "eu_member": false
+      },
+      {
+        "iso3": "BRN",
+        "bloc": "China-leaning",
+        "gdp_usd_bn": 15,
+        "agreements": "IPEF",
+        "eu_member": false
+      },
+      {
+        "iso3": "MNE",
+        "bloc": "U.S.-leaning",
+        "gdp_usd_bn": 9.2,
+        "agreements": "NATO",
+        "eu_member": false
+      },
+      {
+        "iso3": "FJI",
+        "bloc": "Nonaligned",
+        "gdp_usd_bn": 6.2,
+        "agreements": "IPEF",
+        "eu_member": false
+      }
+    ],
+    "large_non_members": [
+      {
+        "iso3": "CHN",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 19498,
+        "max_supplier_share": 0.944,
+        "max_reserves_share": 0.584
+      },
+      {
+        "iso3": "RUS",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 2561.3,
+        "max_supplier_share": 0.287,
+        "max_reserves_share": 0.199
+      },
+      {
+        "iso3": "CHE",
+        "bloc": "Nonaligned",
+        "basis": "own_votes",
+        "gdp_usd_bn": 1043.5,
+        "max_supplier_share": 0.011,
+        "max_reserves_share": "NA"
+      },
+      {
+        "iso3": "ARE",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 552.3,
+        "max_supplier_share": 0.042,
+        "max_reserves_share": 0.056
+      },
+      {
+        "iso3": "BGD",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 456.3,
+        "max_supplier_share": 0.004,
+        "max_reserves_share": 0.001
+      },
+      {
+        "iso3": "HKG",
+        "bloc": "China-leaning",
+        "basis": "inherited",
+        "gdp_usd_bn": 427.3,
+        "max_supplier_share": 0.013,
+        "max_reserves_share": "NA"
+      },
+      {
+        "iso3": "PAK",
+        "bloc": "Nonaligned",
+        "basis": "own_votes",
+        "gdp_usd_bn": 407.3,
+        "max_supplier_share": 0.006,
+        "max_reserves_share": 0.003
+      },
+      {
+        "iso3": "EGY",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 365.3,
+        "max_supplier_share": 0.01,
+        "max_reserves_share": 0.011
+      },
+      {
+        "iso3": "IRN",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 362.7,
+        "max_supplier_share": 0.063,
+        "max_reserves_share": 0.171
+      },
+      {
+        "iso3": "KAZ",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 306.2,
+        "max_supplier_share": 0.451,
+        "max_reserves_share": 0.109
+      },
+      {
+        "iso3": "NGA",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 290.8,
+        "max_supplier_share": 0.022,
+        "max_reserves_share": 0.029
+      },
+      {
+        "iso3": "DZA",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 287,
+        "max_supplier_share": 0.051,
+        "max_reserves_share": 0.012
+      },
+      {
+        "iso3": "IRQ",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 254.4,
+        "max_supplier_share": 0.046,
+        "max_reserves_share": 0.084
+      },
+      {
+        "iso3": "KWT",
+        "bloc": "Nonaligned",
+        "basis": "own_votes",
+        "gdp_usd_bn": 157.2,
+        "max_supplier_share": 0.028,
+        "max_reserves_share": 0.059
+      },
+      {
+        "iso3": "UZB",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 147,
+        "max_supplier_share": 0.084,
+        "max_reserves_share": 0.01
+      },
+      {
+        "iso3": "KEN",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 135.9,
+        "max_supplier_share": 0,
+        "max_reserves_share": "NA"
+      },
+      {
+        "iso3": "ECU",
+        "bloc": "Nonaligned",
+        "basis": "own_votes",
+        "gdp_usd_bn": 130.3,
+        "max_supplier_share": 0.006,
+        "max_reserves_share": 0.001
+      },
+      {
+        "iso3": "PRI",
+        "bloc": "U.S.-leaning",
+        "basis": "inherited",
+        "gdp_usd_bn": 129.4,
+        "max_supplier_share": "NA",
+        "max_reserves_share": "NA"
+      },
+      {
+        "iso3": "ETH",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 126.4,
+        "max_supplier_share": 0,
+        "max_reserves_share": "NA"
+      },
+      {
+        "iso3": "AGO",
+        "bloc": "Nonaligned",
+        "basis": "own_votes",
+        "gdp_usd_bn": 122.2,
+        "max_supplier_share": 0.016,
+        "max_reserves_share": 0.004
+      },
+      {
+        "iso3": "LKA",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 108.8,
+        "max_supplier_share": 0,
+        "max_reserves_share": 0.005
+      },
+      {
+        "iso3": "CUB",
+        "bloc": "China-leaning",
+        "basis": "own_votes",
+        "gdp_usd_bn": 107.4,
+        "max_supplier_share": 0.001,
+        "max_reserves_share": 0.042
+      }
+    ],
+    "msp_forum_sensitivity_adds": [
+      {
+        "iso3": "KAZ",
+        "bloc": "China-leaning",
+        "s": 0.074
+      },
+      {
+        "iso3": "UZB",
+        "bloc": "China-leaning",
+        "s": 0.1
+      },
+      {
+        "iso3": "ECU",
+        "bloc": "Nonaligned",
+        "s": 0.249
+      }
+    ],
+    "switzerland": {
+      "s": 0.508,
+      "bloc": "Nonaligned",
+      "max_supplier_share": 0.011,
+      "max_reserves_share": null,
+      "gdp_usd_bn": 1043.5,
+      "agreements": null,
+      "reason": "Nonaligned; GDP USD 1,043.5bn (2025) >= USD 100.0bn"
+    },
+    "taiwan": {
+      "basis": "neutral",
+      "p_us": 0.5,
+      "max_supplier_share": 0.015,
+      "top_cell": "Solar Midstream: exports 1.5%",
+      "gdp_usd": null,
+      "agreements": null,
+      "reason": "Nonaligned (no own UN vote); no WDI GDP < USD 100.0bn"
+    },
+    "gdp_years": {
+      "2025": 57
+    },
+    "gdp_share_world": {
+      "members": 0.734,
+      "core": 0.577,
+      "partners": 0.157,
+      "network_economies": 0.737,
+      "china": 0.166
+    }
+  },
+  "network_nodes": {
+    "n_nodes": 37,
+    "n_core_nodes": 11,
+    "n_partner_nodes": 26,
+    "eu_code": "EUU",
+    "eu_members_in_node": 27,
+    "eu_members_core": 21,
+    "eu_node_only": ["LTU", "SVN", "LVA", "EST", "CYP", "MLT"],
+    "eu_node_only_gdp_share_of_eu": 0.016,
+    "eu_node_only_max_weight": {
+      "iso3": "EST",
+      "cell": "Wind Upstream",
+      "weight": 0.255
+    },
+    "eu_node_gdp_usd_bn": 21243.2,
+    "eu_node_gdp_rank_among_nodes": 2,
+    "usa_gdp_usd_bn": 30769.7,
+    "core_nodes": ["AUS", "EUU", "CAN", "GBR", "ISR", "JPN", "KOR", "NOR", "NZL", "UKR", "USA"],
+    "partner_nodes": ["ARG", "BRA", "CHL", "COD", "COL", "CRI", "DOM", "GAB", "GHA", "GTM", "IDN", "IND", "MAR", "MEX", "MYS", "NAM", "OMN", "PER", "PHL", "QAT", "SAU", "SGP", "THA", "TUR", "VNM", "ZAF"]
+  },
+  "eu_weights": {
+    "n_cells": 22,
+    "basis_counts": {
+      "exports": 15,
+      "gdp": 4,
+      "production": 3
+    },
+    "min_coverage": 0.5,
+    "min_eu_world_share": 0.001,
+    "cells_by_basis": {
+      "exports": ["Batteries Midstream", "Batteries Upstream", "Coal Midstream", "Electric Grid Midstream", "Electric Grid Upstream", "Electric Vehicles Midstream", "Electric Vehicles Upstream", "Gas Midstream", "Nuclear Midstream", "Nuclear Upstream", "Oil Midstream", "Solar Midstream", "Solar Upstream", "Wind Midstream", "Wind Upstream"],
+      "gdp": ["Geothermal Midstream", "Geothermal Upstream", "Green Hydrogen Midstream", "Green Hydrogen Upstream"],
+      "production": ["Coal Upstream", "Gas Upstream", "Oil Upstream"]
+    },
+    "gdp_weights_top": {
+      "DEU": 0.238,
+      "FRA": 0.158,
+      "ITA": 0.12,
+      "ESP": 0.09,
+      "NLD": 0.063
+    },
+    "max_weight_by_cell": [
+      {
+        "cell": "Batteries Midstream",
+        "basis": "exports",
+        "iso3": "POL",
+        "weight": 0.22
+      },
+      {
+        "cell": "Batteries Upstream",
+        "basis": "exports",
+        "iso3": "DEU",
+        "weight": 0.292
+      },
+      {
+        "cell": "Coal Midstream",
+        "basis": "exports",
+        "iso3": "POL",
+        "weight": 0.399
+      },
+      {
+        "cell": "Coal Upstream",
+        "basis": "production",
+        "iso3": "POL",
+        "weight": 0.496
+      },
+      {
+        "cell": "Electric Grid Midstream",
+        "basis": "exports",
+        "iso3": "DEU",
+        "weight": 0.323
+      },
+      {
+        "cell": "Electric Grid Upstream",
+        "basis": "exports",
+        "iso3": "POL",
+        "weight": 0.12
+      },
+      {
+        "cell": "Electric Vehicles Midstream",
+        "basis": "exports",
+        "iso3": "DEU",
+        "weight": 0.389
+      },
+      {
+        "cell": "Electric Vehicles Upstream",
+        "basis": "exports",
+        "iso3": "FIN",
+        "weight": 0.274
+      },
+      {
+        "cell": "Gas Midstream",
+        "basis": "exports",
+        "iso3": "DEU",
+        "weight": 0.278
+      },
+      {
+        "cell": "Gas Upstream",
+        "basis": "production",
+        "iso3": "ROU",
+        "weight": 0.295
+      },
+      {
+        "cell": "Geothermal Midstream",
+        "basis": "gdp",
+        "iso3": "DEU",
+        "weight": 0.238
+      },
+      {
+        "cell": "Geothermal Upstream",
+        "basis": "gdp",
+        "iso3": "DEU",
+        "weight": 0.238
+      },
+      {
+        "cell": "Green Hydrogen Midstream",
+        "basis": "gdp",
+        "iso3": "DEU",
+        "weight": 0.238
+      },
+      {
+        "cell": "Green Hydrogen Upstream",
+        "basis": "gdp",
+        "iso3": "DEU",
+        "weight": 0.238
+      },
+      {
+        "cell": "Nuclear Midstream",
+        "basis": "exports",
+        "iso3": "FRA",
+        "weight": 0.281
+      },
+      {
+        "cell": "Nuclear Upstream",
+        "basis": "exports",
+        "iso3": "FRA",
+        "weight": 0.979
+      },
+      {
+        "cell": "Oil Midstream",
+        "basis": "exports",
+        "iso3": "DEU",
+        "weight": 0.291
+      },
+      {
+        "cell": "Oil Upstream",
+        "basis": "production",
+        "iso3": "ITA",
+        "weight": 0.385
+      },
+      {
+        "cell": "Solar Midstream",
+        "basis": "exports",
+        "iso3": "DEU",
+        "weight": 0.318
+      },
+      {
+        "cell": "Solar Upstream",
+        "basis": "exports",
+        "iso3": "FRA",
+        "weight": 0.465
+      },
+      {
+        "cell": "Wind Midstream",
+        "basis": "exports",
+        "iso3": "DEU",
+        "weight": 0.288
+      },
+      {
+        "cell": "Wind Upstream",
+        "basis": "exports",
+        "iso3": "FRA",
+        "weight": 0.261
+      }
+    ],
+    "hhi_by_basis": {
+      "exports": 0.139,
+      "gdp": 0.117,
+      "production": 0.34
+    },
+    "hhi_range": [0.081, 0.959],
+    "largest_weight_count_by_member": {
+      "DEU": 11,
+      "FRA": 4,
+      "POL": 4,
+      "FIN": 1,
+      "ITA": 1,
+      "ROU": 1
+    },
+    "max_weight_overall": 0.979,
+    "eu_world_share_exports_range": [0.034, 0.415],
+    "production_coverage": [
+      {
+        "cell": "Coal Upstream",
+        "eu_world_share": 0.016,
+        "coverage": 0.954
+      },
+      {
+        "cell": "Gas Upstream",
+        "eu_world_share": 0.008,
+        "coverage": 0.889
+      },
+      {
+        "cell": "Oil Upstream",
+        "eu_world_share": 0.003,
+        "coverage": 0.644
+      }
+    ]
+  },
+  "supply_cover": {
+    "years": {
+      "atlas_export_share": 2023,
+      "ei_mineral_mining": 2025,
+      "ei_production": 2025,
+      "ei_reserves": 2020,
+      "iea_manufacturing_capacity": 2024,
+      "iea_mineral_mining": 2025,
+      "iea_mineral_refining": 2025,
+      "uranium_mine_production": 2024,
+      "uranium_resources": 2025,
+      "usgs_reserves": 2025
+    },
+    "note": "World shares of the 63 network economies (57 members + 6 EU node-only), China, and the 8 other China-leaning major suppliers kept out, by Upstream/Midstream cell.",
+    "exports": {
+      "n_cells": 18,
+      "coalition_median": 0.707,
+      "coalition_range": [0.452, 0.884],
+      "china_median": 0.176,
+      "china_range": [0, 0.409],
+      "excluded_other_median": 0.034,
+      "n_cells_coalition_above_china": 18,
+      "cells": [
+        {
+          "cell": "Batteries Midstream",
+          "mineral": null,
+          "coalition": 0.54,
+          "china": 0.409,
+          "excluded_other": 0.015
+        },
+        {
+          "cell": "Solar Upstream",
+          "mineral": null,
+          "coalition": 0.58,
+          "china": 0.384,
+          "excluded_other": 0.002
+        },
+        {
+          "cell": "Solar Midstream",
+          "mineral": null,
+          "coalition": 0.651,
+          "china": 0.281,
+          "excluded_other": 0.003
+        },
+        {
+          "cell": "Coal Midstream",
+          "mineral": null,
+          "coalition": 0.681,
+          "china": 0.248,
+          "excluded_other": 0.024
+        },
+        {
+          "cell": "Oil Midstream",
+          "mineral": null,
+          "coalition": 0.71,
+          "china": 0.226,
+          "excluded_other": 0.012
+        },
+        {
+          "cell": "Electric Grid Midstream",
+          "mineral": null,
+          "coalition": 0.707,
+          "china": 0.223,
+          "excluded_other": 0.005
+        },
+        {
+          "cell": "Wind Midstream",
+          "mineral": null,
+          "coalition": 0.716,
+          "china": 0.213,
+          "excluded_other": 0.005
+        },
+        {
+          "cell": "Electric Vehicles Midstream",
+          "mineral": null,
+          "coalition": 0.767,
+          "china": 0.186,
+          "excluded_other": 0.001
+        },
+        {
+          "cell": "Wind Upstream",
+          "mineral": null,
+          "coalition": 0.452,
+          "china": 0.181,
+          "excluded_other": 0.313
+        },
+        {
+          "cell": "Gas Midstream",
+          "mineral": null,
+          "coalition": 0.764,
+          "china": 0.171,
+          "excluded_other": 0.011
+        },
+        {
+          "cell": "Nuclear Midstream",
+          "mineral": null,
+          "coalition": 0.677,
+          "china": 0.136,
+          "excluded_other": 0.17
+        },
+        {
+          "cell": "Electric Vehicles Upstream",
+          "mineral": null,
+          "coalition": 0.823,
+          "china": 0.039,
+          "excluded_other": 0.091
+        },
+        {
+          "cell": "Oil Upstream",
+          "mineral": null,
+          "coalition": 0.67,
+          "china": 0.024,
+          "excluded_other": 0.109
+        },
+        {
+          "cell": "Electric Grid Upstream",
+          "mineral": null,
+          "coalition": 0.753,
+          "china": 0.016,
+          "excluded_other": 0.079
+        },
+        {
+          "cell": "Batteries Upstream",
+          "mineral": null,
+          "coalition": 0.884,
+          "china": 0.015,
+          "excluded_other": 0.045
+        },
+        {
+          "cell": "Gas Upstream",
+          "mineral": null,
+          "coalition": 0.707,
+          "china": 0.009,
+          "excluded_other": 0.141
+        },
+        {
+          "cell": "Coal Upstream",
+          "mineral": null,
+          "coalition": 0.788,
+          "china": 0.006,
+          "excluded_other": 0.146
+        },
+        {
+          "cell": "Nuclear Upstream",
+          "mineral": null,
+          "coalition": 0.5,
+          "china": 0,
+          "excluded_other": 0.476
+        }
+      ]
+    },
+    "minerals": [
+      {
+        "measure": "iea_mineral_mining",
+        "mineral": "Cobalt",
+        "coalition": 0.819,
+        "china": 0.023,
+        "excluded_other": 0.024
+      },
+      {
+        "measure": "iea_mineral_mining",
+        "mineral": "Copper",
+        "coalition": 0.545,
+        "china": 0.079,
+        "excluded_other": 0.049
+      },
+      {
+        "measure": "iea_mineral_mining",
+        "mineral": "Graphite",
+        "coalition": 0.036,
+        "china": 0.804,
+        "excluded_other": 0.016
+      },
+      {
+        "measure": "iea_mineral_mining",
+        "mineral": "Lithium",
+        "coalition": 0.6,
+        "china": 0.231,
+        "excluded_other": 0.092
+      },
+      {
+        "measure": "iea_mineral_mining",
+        "mineral": "Nickel",
+        "coalition": 0.794,
+        "china": 0.035,
+        "excluded_other": 0.046
+      },
+      {
+        "measure": "iea_mineral_mining",
+        "mineral": "Rare Earths",
+        "coalition": 0.143,
+        "china": 0.586,
+        "excluded_other": 0.163
+      },
+      {
+        "measure": "iea_mineral_refining",
+        "mineral": "Cobalt",
+        "coalition": 0.174,
+        "china": 0.756,
+        "excluded_other": 0
+      },
+      {
+        "measure": "iea_mineral_refining",
+        "mineral": "Copper",
+        "coalition": 0.232,
+        "china": 0.468,
+        "excluded_other": 0.035
+      },
+      {
+        "measure": "iea_mineral_refining",
+        "mineral": "Graphite",
+        "coalition": 0.055,
+        "china": 0.944,
+        "excluded_other": 0
+      },
+      {
+        "measure": "iea_mineral_refining",
+        "mineral": "Lithium",
+        "coalition": 0.246,
+        "china": 0.737,
+        "excluded_other": 0
+      },
+      {
+        "measure": "iea_mineral_refining",
+        "mineral": "Nickel",
+        "coalition": 0.557,
+        "china": 0.311,
+        "excluded_other": 0.033
+      },
+      {
+        "measure": "iea_mineral_refining",
+        "mineral": "Rare Earths",
+        "coalition": 0.126,
+        "china": 0.839,
+        "excluded_other": 0
+      }
+    ],
+    "reserves": [
+      {
+        "measure": "usgs_reserves",
+        "resource": "Cobalt",
+        "coalition": 0.758,
+        "china": 0.013,
+        "excluded_other": 0.067
+      },
+      {
+        "measure": "usgs_reserves",
+        "resource": "Copper",
+        "coalition": 0.62,
+        "china": 0.042,
+        "excluded_other": 0.102
+      },
+      {
+        "measure": "usgs_reserves",
+        "resource": "Graphite",
+        "coalition": 0.357,
+        "china": 0.323,
+        "excluded_other": 0.045
+      },
+      {
+        "measure": "usgs_reserves",
+        "resource": "Lithium",
+        "coalition": 0.773,
+        "china": 0.124,
+        "excluded_other": 0.014
+      },
+      {
+        "measure": "usgs_reserves",
+        "resource": "Manganese",
+        "coalition": 0.855,
+        "china": 0.145,
+        "excluded_other": 0
+      },
+      {
+        "measure": "usgs_reserves",
+        "resource": "Nickel",
+        "coalition": 0.788,
+        "china": 0.031,
+        "excluded_other": 0.059
+      },
+      {
+        "measure": "ei_reserves",
+        "resource": "Coal",
+        "coalition": 0.661,
+        "china": 0.133,
+        "excluded_other": 0.177
+      },
+      {
+        "measure": "usgs_reserves",
+        "resource": "Rare earth",
+        "coalition": 0.333,
+        "china": 0.584,
+        "excluded_other": 0.05
+      },
+      {
+        "measure": "ei_reserves",
+        "resource": "Gas",
+        "coalition": 0.308,
+        "china": 0.045,
+        "excluded_other": 0.434
+      },
+      {
+        "measure": "usgs_reserves",
+        "resource": "PGMs",
+        "coalition": 0.839,
+        "china": 0,
+        "excluded_other": 0.161
+      },
+      {
+        "measure": "uranium_resources",
+        "resource": "Uranium",
+        "coalition": 0.624,
+        "china": 0.043,
+        "excluded_other": 0.203
+      },
+      {
+        "measure": "ei_reserves",
+        "resource": "Oil",
+        "coalition": 0.357,
+        "china": 0.015,
+        "excluded_other": 0.353
+      },
+      {
+        "measure": "usgs_reserves",
+        "resource": "Zinc",
+        "coalition": 0.496,
+        "china": 0.249,
+        "excluded_other": 0.151
+      }
+    ]
+  },
+  "policy": {
+    "n_policy_eligible": 215,
+    "policy_basis_counts": {
+      "IEA PAMS + CAT": 65,
+      "IEA PAMS only": 150
+    },
+    "members_with_policy_index": 57,
+    "members_without_policy_index": [],
+    "members_iea_pams_only": ["COD", "DOM", "GAB", "GHA", "GTM", "ISR", "MYS", "NAM", "OMN", "QAT", "UKR"],
+    "n_members_iea_pams_only": 11
+  },
+  "old_list": {
+    "n_old": 23,
+    "old": ["USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA", "ITA", "BRA", "SAU", "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK", "ARG", "MAR", "CHL"],
+    "kept": ["ARG", "AUS", "BRA", "CAN", "CHL", "DEU", "DNK", "FRA", "GBR", "IDN", "IND", "ITA", "JPN", "KOR", "MAR", "MEX", "NOR", "SAU", "USA", "VNM", "ZAF"],
+    "n_kept": 21,
+    "left": [
+      {
+        "iso3": "ARE",
+        "bloc": "China-leaning",
+        "s": 0.132,
+        "gdp_usd_bn": 552.3,
+        "agreements": null,
+        "max_supplier_share": 0.042,
+        "max_reserves_share": 0.056
+      },
+      {
+        "iso3": "KEN",
+        "bloc": "China-leaning",
+        "s": 0.142,
+        "gdp_usd_bn": 135.9,
+        "agreements": null,
+        "max_supplier_share": 0,
+        "max_reserves_share": "NA"
+      }
+    ],
+    "joined": ["AUT", "BEL", "BGR", "COD", "COL", "CRI", "CZE", "DOM", "ESP", "FIN", "GAB", "GHA", "GRC", "GTM", "HRV", "HUN", "IRL", "ISR", "LUX", "MYS", "NAM", "NLD", "NZL", "OMN", "PER", "PHL", "POL", "PRT", "QAT", "ROU", "SGP", "SVK", "SWE", "THA", "TUR", "UKR"],
+    "n_joined": 36,
+    "kept_by_tier": {
+      "core": 11,
+      "partner": 10
+    },
+    "kept_partners": ["ARG", "BRA", "CHL", "IDN", "IND", "MAR", "MEX", "SAU", "VNM", "ZAF"],
+    "kept_routes": {
+      "USA": "core; agreement; supplier; supplier: reserves",
+      "CAN": "core; agreement; supplier",
+      "JPN": "core; agreement; supplier",
+      "AUS": "core; agreement; supplier; supplier: reserves",
+      "IND": "agreement; supplier; supplier: reserves",
+      "MEX": "agreement; supplier",
+      "KOR": "core; agreement; supplier",
+      "GBR": "core; agreement; supplier",
+      "DEU": "core; agreement; supplier",
+      "FRA": "core; agreement; supplier",
+      "ITA": "core; agreement; supplier",
+      "BRA": "supplier; supplier: reserves",
+      "SAU": "supplier; supplier: reserves",
+      "ZAF": "supplier; supplier: reserves",
+      "IDN": "agreement",
+      "NOR": "core; agreement; supplier",
+      "VNM": "agreement",
+      "DNK": "core; agreement",
+      "ARG": "supplier; supplier: reserves",
+      "MAR": "agreement",
+      "CHL": "agreement; supplier; supplier: reserves"
+    },
+    "old_nodes": 23,
+    "new_nodes": 37,
+    "joined_by_tier": {
+      "core": 20,
+      "partner": 16
+    },
+    "joined_eu": ["AUT", "BEL", "BGR", "CZE", "ESP", "FIN", "GRC", "HRV", "HUN", "IRL", "LUX", "NLD", "POL", "PRT", "ROU", "SVK", "SWE"],
+    "joined_non_eu": ["COD", "COL", "CRI", "DOM", "GAB", "GHA", "GTM", "ISR", "MYS", "NAM", "NZL", "OMN", "PER", "PHL", "QAT", "SGP", "THA", "TUR", "UKR"]
+  },
+  "robustness": {
+    "all_2023": {
+      "spec": "all_2023",
+      "label": "All votes, session 78 (2023)",
+      "sessions": "78",
+      "years": "2023",
+      "n_countries": 192,
+      "n_common": 192,
+      "spearman_s": 0.966,
+      "pearson_s": 0.98,
+      "cuts": {
+        "us": 0.584,
+        "china": 0.212
+      },
+      "same_bloc_share": 0.891,
+      "n_bloc_changes": 21,
+      "bloc_changes_members": ["IND: Nonaligned -> China-leaning", "NZL: U.S.-leaning -> Nonaligned", "SAU: Nonaligned -> China-leaning"],
+      "n_members": 57,
+      "n_core": 30,
+      "n_partner": 27,
+      "core_entering": [],
+      "core_leaving": "NZL",
+      "members_entering": "MMR",
+      "members_leaving": "SAU",
+      "core_to_partner": "NZL",
+      "s_selected": {
+        "s": {
+          "RUS": 0,
+          "KAZ": 0.206,
+          "MMR": 0.312,
+          "SAU": 0.183,
+          "IND": 0.199,
+          "NZL": 0.583,
+          "MYS": 0.228,
+          "TUR": 0.519,
+          "CHE": 0.573,
+          "BRA": 0.288
+        },
+        "bloc": {
+          "RUS": "China-leaning",
+          "KAZ": "China-leaning",
+          "MMR": "Nonaligned",
+          "SAU": "China-leaning",
+          "IND": "China-leaning",
+          "NZL": "Nonaligned",
+          "MYS": "Nonaligned",
+          "TUR": "Nonaligned",
+          "CHE": "Nonaligned",
+          "BRA": "Nonaligned"
+        }
+      },
+      "bloc_counts": {
+        "China-leaning": 49,
+        "Nonaligned": 94,
+        "U.S.-leaning": 49
+      }
+    },
+    "fp_5": {
+      "spec": "fp_5",
+      "label": "Final-passage votes, latest five sessions",
+      "sessions": "76,77,78,79,80",
+      "years": "2021,2022,2023,2024,2025",
+      "n_countries": 193,
+      "n_common": 193,
+      "spearman_s": 0.965,
+      "pearson_s": 0.982,
+      "cuts": {
+        "us": 0.446,
+        "china": 0.055
+      },
+      "same_bloc_share": 0.896,
+      "n_bloc_changes": 20,
+      "bloc_changes_members": ["MYS: Nonaligned -> China-leaning", "RUS: China-leaning -> Nonaligned"],
+      "n_members": 60,
+      "n_core": 31,
+      "n_partner": 29,
+      "core_entering": [],
+      "core_leaving": [],
+      "members_entering": ["KAZ", "MMR", "RUS"],
+      "members_leaving": [],
+      "core_to_partner": [],
+      "s_selected": {
+        "s": {
+          "RUS": 0.117,
+          "KAZ": 0.056,
+          "MMR": 0.163,
+          "SAU": 0.065,
+          "IND": 0.168,
+          "NZL": 0.456,
+          "MYS": 0.045,
+          "TUR": 0.405,
+          "CHE": 0.444,
+          "BRA": 0.169
+        },
+        "bloc": {
+          "RUS": "Nonaligned",
+          "KAZ": "Nonaligned",
+          "MMR": "Nonaligned",
+          "SAU": "Nonaligned",
+          "IND": "Nonaligned",
+          "NZL": "U.S.-leaning",
+          "MYS": "China-leaning",
+          "TUR": "Nonaligned",
+          "CHE": "Nonaligned",
+          "BRA": "Nonaligned"
+        }
+      },
+      "bloc_counts": {
+        "China-leaning": 49,
+        "Nonaligned": 95,
+        "U.S.-leaning": 49
+      }
+    }
+  },
+  "figures": ["coalition_axis", "coalition_routes", "coalition_alignment_matrix", "coalition_eu_weights"],
+  "tables": "coalition_composition"
+}

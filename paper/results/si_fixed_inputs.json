@@ -1,0 +1,138 @@
+{
+  "ghg_index": {
+    "Oil": 0,
+    "Coal": 0.024125,
+    "Gas": 0.422195,
+    "Electric Vehicles": 0.568523,
+    "Green Hydrogen": 0.694411,
+    "Solar": 0.966626,
+    "Batteries": 0.966626,
+    "Geothermal": 0.967431,
+    "Electric Grid": 0.983012,
+    "Nuclear": 0.998794,
+    "Wind": 0.999397
+  },
+  "ghg_intensity_inputs_g_per_kwh": {
+    "Coal (pulverised)": 820,
+    "Natural-gas combined cycle": 490,
+    "Oil-fired steam": 720,
+    "Biomass (dedicated)": 230,
+    "Solar PV – utility scale": 48,
+    "Solar PV – rooftop": 41,
+    "Concentrated solar power": 27,
+    "Geothermal": 38,
+    "Hydropower (typical reservoir)": 24,
+    "Wind – onshore": 11,
+    "Wind – offshore": 12,
+    "Nuclear (light-water)": 12
+  },
+  "oil_intensity_used_g_per_kwh": 840,
+  "oil_intensity_in_input_file": 720,
+  "supply_chain_weights": {
+    "Upstream": 0.5,
+    "Midstream": 0.75,
+    "Downstream": 0.25
+  },
+  "strategic_index_weights": {
+    "policy": 0.2,
+    "economic_opportunity": 0.3,
+    "energy_security_need": 0.3,
+    "supply_chain": 0.1,
+    "technology": 0.1
+  },
+  "excluded_sectors": "Geothermal - Midstream",
+  "sector_prior": {
+    "Batteries - Downstream": 0.121663,
+    "Batteries - Midstream": 0.171663,
+    "Batteries - Upstream": 0.146663,
+    "Coal - Downstream": 0.027413,
+    "Coal - Midstream": 0.077413,
+    "Coal - Upstream": 0.052413,
+    "Electric Grid - Downstream": 0.123301,
+    "Electric Grid - Midstream": 0.173301,
+    "Electric Grid - Upstream": 0.148301,
+    "Electric Vehicles - Downstream": 0.081852,
+    "Electric Vehicles - Midstream": 0.131852,
+    "Electric Vehicles - Upstream": 0.106852,
+    "Gas - Downstream": 0.06722,
+    "Gas - Midstream": 0.11722,
+    "Gas - Upstream": 0.09222,
+    "Geothermal - Downstream": 0.121743,
+    "Geothermal - Upstream": 0.146743,
+    "Green Hydrogen - Downstream": 0.094441,
+    "Green Hydrogen - Midstream": 0.144441,
+    "Green Hydrogen - Upstream": 0.119441,
+    "Nuclear - Downstream": 0.124879,
+    "Nuclear - Midstream": 0.174879,
+    "Nuclear - Upstream": 0.149879,
+    "Oil - Downstream": 0.025,
+    "Oil - Midstream": 0.075,
+    "Oil - Upstream": 0.05,
+    "Solar - Downstream": 0.121663,
+    "Solar - Midstream": 0.171663,
+    "Solar - Upstream": 0.146663,
+    "Wind - Downstream": 0.12494,
+    "Wind - Midstream": 0.17494,
+    "Wind - Upstream": 0.14994
+  },
+  "sector_prior_range": [0.025, 0.17494],
+  "sector_prior_min_sector": "Oil - Downstream",
+  "sector_prior_max_sector": "Wind - Midstream",
+  "technology_term_gap_oil_wind": 0.09994,
+  "stage_term_gap_mid_down": 0.05,
+  "nuclear_midstream_prior_lead": {
+    "over_gas": 0.05766,
+    "over_coal": 0.097467,
+    "over_oil": 0.099879
+  },
+  "si_bounds": [0.025, 0.97494],
+  "cat_slope_by_rating": {
+    "Critically insufficient": -0.5,
+    "Highly insufficient": 0,
+    "Insufficient": 0.5,
+    "Almost sufficient": 1
+  },
+  "cat_ratings_final_build": {
+    "countries_rated": 65,
+    "coalition_members_rated": 46,
+    "coalition_members": 57,
+    "by_rating": [
+      {
+        "rating": "Critically insufficient",
+        "kappa": 0.25,
+        "rated": 9,
+        "members": 7
+      },
+      {
+        "rating": "Highly insufficient",
+        "kappa": 0.5,
+        "rated": 6,
+        "members": 4
+      },
+      {
+        "rating": "Insufficient",
+        "kappa": 0.75,
+        "rated": 40,
+        "members": 31
+      },
+      {
+        "rating": "Almost sufficient",
+        "kappa": 1,
+        "rated": 10,
+        "members": 4
+      }
+    ],
+    "members_by_rating": {
+      "Critically insufficient": ["ARG", "IDN", "MEX", "SAU", "THA", "TUR", "VNM"],
+      "Highly insufficient": ["IND", "KOR", "NZL", "SGP"],
+      "Insufficient": ["AUS", "AUT", "BEL", "BGR", "BRA", "CAN", "COL", "CZE", "DEU", "DNK", "ESP", "FIN", "FRA", "GBR", "GRC", "HRV", "HUN", "IRL", "ITA", "JPN", "LUX", "NLD", "PER", "PHL", "POL", "PRT", "ROU", "SVK", "SWE", "USA", "ZAF"],
+      "Almost sufficient": ["CHL", "CRI", "MAR", "NOR"]
+    },
+    "members_without_cat": ["COD", "DOM", "GAB", "GHA", "GTM", "ISR", "MYS", "NAM", "OMN", "QAT", "UKR"],
+    "eu_members_given_bloc_rating": 26
+  },
+  "si_final_build": {
+    "cells": 3154,
+    "countries": 174
+  }
+}

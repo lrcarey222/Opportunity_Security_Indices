@@ -1,0 +1,42 @@
+\begin{table}[htbp]
+  \centering
+  \begin{threeparttable}
+  \caption{Allied pick per member of the shipped list: shipped and final release}
+  \label{tab:reconcile_allied}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{@{}l >{\raggedright\arraybackslash}p{1.15in} c >{\raggedright\arraybackslash}p{1.15in} c >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    & \multicolumn{2}{c}{Shipped release} & \multicolumn{2}{c}{Final release} & \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+    Member & Pick & $\SI$ & Pick & $\SI$ & Status or cause of change \\
+    \midrule
+    Argentina & Electric Vehicles, Midstream & 0.624 & Batteries, Upstream & 0.551 & reordered by the policy term \\
+    Australia & Nuclear, Upstream & 0.656 & Batteries, Midstream & 0.610 & reordered by the security-need term \\
+    Brazil & Nuclear, Upstream & 0.613 & Batteries, Midstream & 0.606 & reordered by the security-need term \\
+    Canada & Nuclear, Upstream & 0.638 & Electric Grid, Midstream & 0.615 & reordered by the security-need term \\
+    Chile & Nuclear, Upstream & 0.626 & Nuclear, Upstream & 0.645 & unchanged \\
+    Denmark & -- & -- & Batteries, Midstream & 0.636 & new \\
+    France & -- & -- & Batteries, Midstream & 0.642 & new \\
+    Germany & Batteries, Upstream & 0.712 & Batteries, Midstream & 0.623 & shipped pick screened: no resource base \\
+    India & Nuclear, Upstream & 0.643 & Batteries, Midstream & 0.628 & reordered by the security-need term \\
+    Indonesia & Electric Vehicles, Midstream & 0.642 & Nuclear, Midstream & 0.568 & reordered by the policy term \\
+    Italy & -- & -- & Batteries, Midstream & 0.639 & new \\
+    Japan & Batteries, Upstream & 0.657 & Nuclear, Upstream & 0.620 & shipped pick screened: no resource base \\
+    Kenya & Batteries, Upstream & 0.701 & \emph{not a member} & -- & not in final coalition \\
+    Mexico & Nuclear, Upstream & 0.624 & Batteries, Midstream & 0.564 & reordered by the security-need term \\
+    Morocco & Solar, Upstream & 0.683 & Electric Grid, Midstream & 0.609 & shipped pick screened: no resource base \\
+    Norway & Nuclear, Upstream & 0.729 & Batteries, Upstream & 0.618 & shipped pick screened: no resource base \\
+    Saudi Arabia & Batteries, Upstream & 0.688 & Nuclear, Upstream & 0.567 & shipped pick not scored: EO not rankable \\
+    South Africa & Electric Grid, Midstream & 0.679 & Batteries, Midstream & 0.620 & reordered by the policy term \\
+    South Korea & -- & -- & Batteries, Midstream & 0.635 & new \\
+    United Arab Emirates & -- & -- & \emph{not a member} & -- & not in final coalition \\
+    United Kingdom & Batteries, Upstream & 0.690 & Batteries, Midstream & 0.617 & shipped pick not scored: EO not rankable \\
+    United States & Nuclear, Upstream & 0.613 & Batteries, Midstream & 0.632 & reordered by the security-need term \\
+    Viet Nam & Batteries, Upstream & 0.698 & Batteries, Midstream & 0.606 & reordered by the policy term \\
+    \bottomrule
+  \end{tabularx}
+  \begin{tablenotes}[flushleft]\footnotesize
+    \item \emph{Notes:} The pick is the member's Upstream or Midstream sector with the highest Strategic Index; Geothermal and Green Hydrogen are excluded by rule of the selection. Shipped release: the Strategic Index of 3~September 2026 over its hand-picked list of 23 economies, of which 18 had a pick. Final release: \texttt{data/processed/charts/allied\_strategic.csv}, over the derived coalition of 57 members, with the endowment screen (an Upstream extraction stage is eligible only where the member has recorded reserves or production of its resources). The comparison is on the 21 members the two lists share; 2 economies of the shipped list are not in the final coalition. ``new'': a pick only in the final release. Cause of a change: the shipped pick is no longer scored (its exclusion), is barred by the endowment screen, or is outscored, in which case the term of the index that contributes most to the reversal of the two sectors' order is named (an exact split of the reversal into the five weighted terms). The picks of the other 36 final members are reported in Section~\ref{sec:strategic}.
+  \end{tablenotes}
+  \end{threeparttable}
+\end{table}

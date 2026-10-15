@@ -1,0 +1,261 @@
+% ---------------------------------------------------------------------------
+% Section 1: Introduction (input by main.tex; no preamble).
+% Framing: the NEIS working paper on the Allied Industrial Base (neis2026allied; text in
+% integration/aib_concept_review.md), paraphrased and cited, not copied.
+% Numbers: final rerun of 2026-10-12, read from paper/results/*.json (method, es, eo, joint,
+% coalition, strategic, bilateral, network, network_robustness, robustness).
+% ---------------------------------------------------------------------------
+\section{Introduction}\label{sec:intro}
+
+Energy security used to be a matter of fuels: reserves, import routes and stocks of oil and gas.
+As solar panels, batteries, grids and power electronics absorb a growing share of energy
+investment, it is increasingly a matter of manufactured systems and of the minerals and components
+they are made from \citep{carey2025secure, iea2024etp}. A country can now be secure in fuels and
+exposed in transformers, battery materials or magnets. These manufacturing chains are
+concentrated. In the trade data used in this paper, China is the largest world exporter in ten of
+the 18 upstream and midstream technology--stage baskets that have a product definition, with
+shares between 20 and 43 percent, and the refining of rare earths and the manufacture of magnets
+and battery anode material are concentrated in China at shares close to or above 90 percent
+\citep{iea2025gcmo, iea2026etp}. Concentration is not in itself a market failure; it reflects
+scale economies, learning and geology. But it determines how far a disruption travels through
+production networks \citep{acemoglu2012network, carvalho2021supply, baqaee2019macroeconomic},
+and it turns trade into leverage. \citet{hirschman1945national} made the point for bilateral trade
+dependence, and \citet{farrell2019weaponized} show that states with jurisdiction over the central
+nodes of global networks can observe, restrict or deny access to them.
+
+The response so far has been national. Governments have returned to industrial policy on a scale
+not seen for decades \citep{juhasz2024new, evenett2024return}, often with sourcing rules that tie
+subsidies to where minerals are processed and components made \citep{bown2023industrial}. National
+programmes are meeting economic and political limits. Several economies have targeted the same
+manufacturing segments without the demand or cost position to fill the plants, and announced
+capacity has been cancelled as prices fell \citep{iea2026etp}; subsidy competition reaches allies
+\citep{clausing2023carbon}; and tighter public finances make it implausible for every large
+economy to fund a complete green-industrial agenda \citep{ladislaw2025evolution}. Smaller
+economies cannot replicate the demand-led strategies of the largest ones at all
+\citep{albertone2025regional}. Autarky is the expensive alternative. Simulations of broad
+relocalisation find large losses of trade and output without consistent gains in resilience, and
+diversification usually does more for resilience than reshoring \citep{oecd2025supply,
+thakurweigold2024promoting}. Deep fragmentation into blocs is costly too, most of all for small
+economies \citep{aiyar2023geoeconomic, javorcik2024economic}.
+
+These observations underpin the proposition of an Allied Industrial Base
+\citep{campbell2025underestimating, neis2026allied}. Matching China's scale across the
+electro-industrial supply chains is beyond any one allied economy. The premise is that allied
+economies jointly hold the markets, capital, resources and know-how that none holds alone, but
+deploy them through competing national strategies \citep{campbell2025underestimating,
+neis2026allied}. The working paper accordingly frames the policy goal as \emph{managed
+interdependence}: each strategically important capability should be available at scale from some
+trusted member, with redundancy where a failure would be very costly, specialisation where scale
+economies and learning dominate, and open global sourcing where the risk is small
+\citep{neis2026allied}. Implementing it requires answers to questions
+that the literature mostly leaves open: which nodes of
+which supply chains are severe enough to coordinate, who counts as a trusted partner, and which
+member should produce what \citep[Section 5]{neis2026allied}.
+
+This paper asks how a coalition of economies could allocate energy-technology supply chains
+among its members, technology by technology and stage by stage, and builds the measurements that
+such an allocation needs. The unit of analysis is a cell $\cell$: an economy, one of eleven
+technologies (batteries, coal, electric grid, electric vehicles, gas, geothermal, green hydrogen,
+nuclear, oil, solar and wind) and one of three stages (upstream extraction, midstream processing
+and manufacturing, downstream deployment). Two pillars score the cells of 219 economies: Energy
+Security ($\ES$), how secure an economy's supply is, and Economic Opportunity ($\EO$), how well
+placed it is to compete as a producer. Both are built from rank-based S-curves of public data,
+among them the IEA, the Energy Institute, the U.S. Geological Survey, UN Comtrade and the Atlas
+of Economic Complexity (Section~\ref{sec:data}), and a cell
+enters a ranking only if the economy is sovereign and observed data carry at least half of its
+weight. A Strategic Index combines the pillars with a policy index into a within-country ranking
+of sectors in which security enters as \emph{need}, favouring sectors where a country is exposed
+but capable; an endowment screen keeps an extraction stage out of a member's priority unless the
+member has the resource. The coalition is derived rather than chosen: from ideal points estimated
+from UN General Assembly votes \citep{bailey2017estimating}, membership of U.S. trade and security
+agreements, and shares of world supply. It has 31 core members on the U.S.-leaning side of the
+Assembly with GDP of at least USD 100 billion and 26 partners admitted through agreements or as
+major suppliers; with the European Union as one node, the network has 37 nodes. Bilateral indices
+rate each partner as a supplier and as a market, taking account of alignment and, in four
+manufacturing stages, of the Chinese ownership of the partner's foreign-invested plants. Finally,
+a mixed-integer program allocates production among the 37 nodes in each of 22 upstream and
+midstream stages. It rewards producers' opportunity and security and strong bilateral ties and
+penalises concentration, with the penalty weight calibrated so that designed concentration
+matches the concentration of the members' exports today. Figure~\ref{fig:framework_architecture}
+sets out the architecture.
+
+The paper makes four contributions. The first is measurement at the level of the supply-chain
+node. Security and opportunity are scored jointly, on a common scale and with a common variable
+architecture, for each stage of each technology; the scores decompose exactly into category and
+variable contributions, and a rankability rule keeps cells that rest mostly on imputation out of
+every ranking. Existing energy-security indices describe an energy system or a fuel, and
+green-complexity measures describe products \citep{mealy2022economic, growthlab2024greenplexity};
+neither pairs exposure with capability in the same cell. The second turns the pillars into
+priorities while keeping the normative choices visible: the need reading of security, the
+endowment screen, the basis of the policy index and the margin of each member's priority over its
+runner-up are reported with the results. The third is a rule-based coalition and bilateral layer.
+Alignment is measured from Assembly votes rather than asserted, the coalition and its tiers
+follow from stated thresholds, and the bilateral indices carry both alignment and a first measure
+of the common-mode risk that arises when suppliers in different countries share Chinese parents.
+The fourth links the indices to an explicit allocation through network design in the
+facility-location tradition. A concave diversification penalty, calibrated on observed export
+concentration, sets the rate at which the design trades capability against concentration, so that
+the design spreads production among nodes rather than ranking them, a first step toward the
+working paper's aim of optimising combinations \citep{neis2026allied}; because the penalty treats
+each node as an independent source, it does not yet register that producers sharing a bloc, a
+region or a parent company diversify less. The pipeline is open and configuration-driven, and the
+corrections made during an end-to-end audit of an earlier version are documented in
+Appendix~\ref{app:corrections}.
+
+Five sets of results stand out. First, the coalition is stronger on security than on opportunity.
+A coalition member leads 16 of the 30 security pairs and is in the top three of all 30, but the
+best-placed member leads only 8 of the 33 opportunity pairs, against 22 for China. The two
+pillars are correlated within pairs (median Spearman 0.59), largely through shared components:
+on the 23 pairs in which both pillars keep components of their own, the median falls from 0.55
+to 0.30 when only the non-shared components are used. About 15 percent of
+the cells rankable on both pillars combine above-median opportunity with below-median security,
+the region the Strategic Index favours. Second, members' priorities concentrate on manufacturing.
+The index scores 3,154 cells in 174 countries, and every one of the 57 members has an allied
+pick: 43 are midstream, and battery midstream alone is the pick of 27. The endowment screen
+changes 41 picks, mostly away from upstream stages in which a member has a need but no resource.
+The picks are fragile: the median margin over the runner-up is 0.015, 21 picks lie within 0.01,
+and only five survive if security is read as strength rather than need. Third, alignment shapes
+the partnership rankings. Viewed from the 31 core members, the United States and Germany are the
+strongest partners and core members hold 24 of the top 25 places; giving the alignment component
+zero weight would lift China from 44th to 3rd. Fourth, the calibrated network is diversified but
+does not replicate current trade. At the calibrated diversification weight, $\lambda=0.78$, the
+median designed Herfindahl index (0.152, or 6.6 equivalent producers) matches the members'
+observed export concentration (0.156). Each stage has seven to ten producers, no share exceeds
+0.325, and 29 of the 37 nodes produce somewhere. Non-high-income
+nodes carry 47 percent of upstream and 43 percent of midstream production, and in the median
+traded stage two-thirds of production goes to nodes other than the three that export most today.
+The calibration is knife-edge ($\lambda=0.77$ misses the target by 0.0002), but the design is not:
+either neighbouring value reassigns at most about one percent of production in the mean stage.
+Fifth, rankings are more robust than allocations. Country rankings within pairs barely move under
+random category weights (median within-pair Spearman 0.997 for security and 0.988 for
+opportunity), and an empirical test of vertical complementarities finds no out-of-sample gain
+from rewarding a stage for capability at adjacent stages; removing the portfolio caps, by
+contrast, reassigns 18.5 percent of production in the mean stage.
+
+The results speak to some open questions of the working paper
+\citep[Section 10]{neis2026allied} but not to others. The design answers the question of how much
+duplication is enough only conditionally, by anchoring designed concentration to the
+concentration of the members' exports today; within that anchor, it gives non-high-income
+members 43 to 47 percent of production, so a diversified allied network need not be a
+rich-country club. The paper does not test the hypotheses that allied specialisation reaches a
+resilience target at lower public cost than parallel national programmes, that demand coordination matters more than subsidy coordination, or that fencing
+nodes dominates excluding sectors: these need cost, revenue and bankability data that the indices
+do not contain (Section~\ref{sec:discussion}).
+
+The rest of the paper is organised as follows. Section~\ref{sec:framework} sets out the
+conceptual framework and notation and Section~\ref{sec:data} the data.
+Section~\ref{sec:normalization} presents the normalisation, imputation and rankability rules.
+Sections~\ref{sec:es} and~\ref{sec:eo} construct the Energy Security and Economic Opportunity
+pillars, and Section~\ref{sec:joint} studies the joint space they define.
+Section~\ref{sec:coalition} measures geopolitical alignment and derives the coalition,
+Section~\ref{sec:strategic} builds the Policy and Strategic indices, Section~\ref{sec:bilateral}
+the bilateral indices, and Section~\ref{sec:network} the allied network design.
+Section~\ref{sec:robustness} reports robustness analyses, and Section~\ref{sec:discussion}
+discusses the results, next steps and limitations.
+
+% ---------------------------------------------------------------------------
+\subsection{Related literature}\label{subsec:literature}
+
+The Allied Industrial Base lies where several literatures meet that are usually read separately
+\citep{neis2026allied}. We organise them by the streams that bear on its design and then turn to
+the measurement literatures on which the indices build.
+
+\paragraph{Industrial policy and capabilities.} \citet{rodrik2004industrial} recast industrial
+policy as a process of discovery and strategic collaboration rather than the selection of
+winners, and \citet{juhasz2024new} review a new empirical literature that is more favourable to it
+while stressing context, measurement and governance; text-based and intervention-level data now
+make policy measurable \citep{juhasz2022who, evenett2024return}. The green variant rests on
+learning, coordination and environmental externalities \citep{rodrik2014green}, and its current
+form ties support to location \citep{bown2023industrial, bistline2023economic}. This literature
+studies the relation between a state and its firms. The coordination failures it identifies, such
+as uncertain demand, missing suppliers and first-mover costs, do not stop at borders, and the
+governance of industrial interdependence among several states remains thinly studied. Our Policy
+index records the presence and density of policy by sector; it does not measure effectiveness.
+
+\paragraph{Supply-chain resilience and economic security.} Production-network models show that
+shocks to central suppliers need not average out \citep{acemoglu2012network,
+carvalho2019production, baqaee2019macroeconomic}, that disruptions propagate along supply chains
+\citep{carvalho2021supply}, and that private sourcing decisions can leave networks fragile
+\citep{elliott2022supply}. \citet{grossman2023supply} analyse the choice between diversification
+and reshoring, and \citet{baldwin2022risks} separate exposure from resilience. Policy work defines
+a critical dependency as the combination of high disruption risk, high importance and limited
+substitutability \citep{oecd2025economic}, and finds diversification generally more effective
+than relocalisation \citep{oecd2025supply, thakurweigold2024promoting}. These results motivate
+scoring by stage, separating exposure ($\ES$) from capability ($\EO$), and imposing redundancy in
+the network design. Our indices do not model shock propagation, and the bilateral indices capture
+direct exposure only, not the indirect dependence that \citet{freund2024us} document.
+
+\paragraph{Weaponized interdependence and allied scale.} \citet{farrell2019weaponized} show how
+the hubs of global networks confer coercive power, which shifts attention from national market
+shares to network position, a modern form of the concern of \citet{hirschman1945national}.
+\citet{campbell2025underestimating} argue that only a coalition can match China's productive
+scale and that alliances must pool capacity, not only political support. Friend-shoring
+\citep{yellen2022remarks} and the evidence on fragmentation give this argument empirical content:
+trade and investment between geopolitical blocs have weakened relative to flows within them
+\citep{gopinath2025changing}, U.S. sourcing has moved away from China toward economies that are
+themselves integrated with Chinese supply chains \citep{alfaro2023global, freund2024us}, and
+confining trade to aligned partners carries welfare costs \citep{goes2022impact,
+javorcik2024economic, aiyar2023geoeconomic}.
+
+\paragraph{Regional industrial policy and historical coordination.}
+\citet{albertone2025regional} show, for ASEAN, that cross-border industrial strategy must manage
+competition as well as cooperation, and that coordination without integration needs mechanisms
+that reveal synergies and monitor commitments. Historical cases point the same way. The Combined
+Boards of 1942--45 pooled the raw materials and production of the United States, the United
+Kingdom and Canada and allocated scarce output against total requirements
+\citep{usdos1942combined, uswpb1944war}. Airbus combined national specialisation with shared
+demand and public risk-taking \citep{ec2022industrial, imf2024industrial}. The European Coal and
+Steel Community placed strategic sectors under common rules \citep{eu1951ecsc}. Each worked
+around a concrete objective, clear roles and benefits reciprocal enough to sustain it.
+
+\paragraph{Systemic bankability.} \citet{spokas2025systemic} show that infrastructure
+technologies stall when any part of the surrounding system (offtake, permitting, enabling
+infrastructure, insurance, supply chains, delivery capacity) is missing, so that a designated
+capability is not a capability until it is bankable. Our indices do not measure bankability,
+which is the main reason the network design is a benchmark rather than a plan.
+
+\paragraph{Competing schools.} The policy debate divides into three schools
+\citep{neis2026allied}. The first defends multilateral openness and stresses the costs of
+fragmentation \citep{aiyar2023geoeconomic, oecd2025supply}. The second, closest to the Allied
+Industrial Base, accepts selective de-risking within managed interdependence. The third proposes
+a reciprocal bloc that conditions market access on balanced obligations and the exclusion of
+China \citep{cass2025grand}. Our coalition rule belongs with the second: it admits nonaligned and
+even China-leaning economies through agreements or supply shares, and it fences off no sector as
+a whole.
+
+\paragraph{Measurement.} Four measurement literatures supply the building blocks. Energy-security
+indicators organise availability, dependence, diversity and affordability
+\citep{kruyt2009indicators, sovacool2011conceptualizing, ang2015energy, jewell2011iea} and define
+security as the low vulnerability of vital systems \citep{cherp2014concept,
+winzer2012conceptualizing}; mineral criticality combines supply risk with vulnerability
+\citep{graedel2012methodology, nassar2020evaluating, kowalski2023raw}. Most such indices describe
+an energy system or a fuel, whereas $\ES$ applies their logic to each stage of each technology.
+Economic complexity treats exports as revealing capabilities \citep{balassa1965trade,
+hidalgo2007product, hausmann2006structural, hidalgo2009building, hausmann2014atlas}, with
+relatedness predicting future specialisation \citep{hausmann2022implied} and applications to
+green products \citep{mealy2022economic, growthlab2024greenplexity}; $\EO$ combines these signals
+with demand, cost, readiness and investment. The composite-indicator literature disciplines
+normalisation, weighting and uncertainty analysis \citep{oecd2008handbook, saisana2005uncertainty,
+paruolo2013ratings}, and our S-curve is the probability-weighting function of
+\citet{karmarkar1978subjectively}. Alignment is measured with UN-vote ideal points
+\citep{bailey2017estimating, voeten2009unga}, in the tradition of foreign-policy similarity
+measures \citep{signorino1999taub} and with the bloc definitions of \citet{gopinath2025changing}.
+The network layer belongs to capacitated facility location and supply-chain network design
+\citep{geoffrion1974multicommodity, owen1998strategic, melo2009facility, daskin2013network}, with
+disruption-aware sourcing \citep{tomlin2006value, snyder2016orms} and the portfolio logic of
+diversification \citep{markowitz1952portfolio}. It departs from that tradition by maximising an
+index-based score rather than minimising cost.
+
+\paragraph{The gap.} Read together, these literatures diagnose the problem better than they
+allocate a response \citep[Section 5]{neis2026allied}: they establish why capabilities and
+concentrated dependencies matter, why allied scale can offset national limits and why autarky is
+costly, but not who should produce what, or how much duplication suffices. Nor do they offer a
+common measurement architecture that connects sector priorities, partner capabilities and
+performance. The indices of \citet{carey2025secure} were a
+first step. They score eleven technologies across commodities, manufacturing and deployment on
+energy-security risk and economic opportunity, read the joint space as four strategic postures,
+and rate partners as safer, stronger or more prosperous with weights 0.4, 0.2 and 0.4. This paper
+takes them from rankings to network design. It rebuilds the pillars at the level of the cell with
+a rankability rule, derives the coalition from observed alignment and supply, rates every
+directed partnership, and adds an optimisation layer that turns the scores into a division of
+labour whose trade-offs are explicit and whose calibration is disclosed.

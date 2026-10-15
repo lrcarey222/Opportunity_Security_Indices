@@ -1,0 +1,366 @@
+% Results fragment for Section "Geopolitical alignment and the allied coalition"
+% (sections/075_alignment_coalition.tex, \label{sec:coalition}, between the opportunity-security
+% space and the Strategic Index). It is meant to become most of that section: method (ideal
+% points, axis, blocs, inheritance, dyadic alignment, tiers, EU node) and results.
+% Generated numbers: paper/results/coalition.json; figures and table: scripts/paper/fig_coalition.R
+% (final rerun of 2026-10-12: 57 members = 31 core + 26 partners, 6 EU node-only members,
+% 63 economies, 37 network nodes).
+% Figures: coalition_axis, coalition_routes, coalition_alignment_matrix, coalition_eu_weights.
+% Table: tables/coalition_composition.tex (tab:coalition_composition).
+% Citations needed but not in references.bib: USGS Mineral Commodity Summaries 2026, the NEIS Allied
+% Industrial Base working paper (October 2026) and the
+% OECD-NEA/IAEA Red Book (Uranium 2026); all three are named in the prose without a citation command.
+
+\subsection{Ideal points and the U.S.--China axis}\label{subsec:coalition_axis}
+
+Political alignment is measured from recorded votes in the United Nations General Assembly
+(UNGA). We use the ideal points of \citet{bailey2017estimating}, which place every voting state
+on one dimension of revealed foreign-policy preference in each session and are estimated with
+bridging resolutions that keep positions comparable over time. The headline series is the
+all-votes series of the current release \citep[Harvard Dataverse, V39.0, July 2026;][]{voeten2009unga},
+estimated from all recorded votes, including votes on separate paragraphs and amendments; the
+final-passage series of the same release is used as a check at the end of this section. The
+ideal point $\theta_i$ of economy $i$ is its mean over the five latest sessions of the series,
+sessions 74 to 78 (2019--2023). The window covers 193 economies that vote in their own right;
+Venezuela has ideal points for three of the five sessions and every other economy for all five.
+
+Each economy is placed on the segment between the two anchors,
+\begin{equation}\label{eq:coalition_axis}
+  s_i \;=\; \min\Bigl\{1,\;\max\Bigl\{0,\;
+  \frac{\theta_i-\theta_{\mathrm{CHN}}}{\theta_{\mathrm{USA}}-\theta_{\mathrm{CHN}}}\Bigr\}\Bigr\},
+\end{equation}
+so that $s_i=0$ is China's position and $s_i=1$ that of the United States
+($\theta_{\mathrm{USA}}=2.34$, $\theta_{\mathrm{CHN}}=-1.02$ in the window). Seven economies vote
+further from the United States than China does (Cuba, Iran, Nicaragua, North Korea, Syria,
+Venezuela and Zimbabwe) and are set to $s_i=0$; none lies beyond the United States. The axis
+records where an economy's revealed preferences sit relative to the two anchors. It is not a
+measure of alliance, of security commitments or of any bilateral relationship with either anchor.
+
+Economies are grouped into blocs by quartiles of the axis, following \citet{gopinath2025changing}.
+The U.S.-leaning bloc is the quarter of voting economies closest to the United States
+($s_i\geq 0.511$, the 75th percentile of $s$ over the voting economies other than the United
+States), the China-leaning bloc the quarter closest to China ($s_i\leq 0.142$), and the half in
+between is nonaligned; the blocs have 49, 95 and 49 members. Membership is hard: the probability
+$p_i$ that economy $i$ is on the U.S. side of the divide is 1 in the U.S.-leaning bloc, 0 in the
+China-leaning bloc and $\tfrac12$ for a nonaligned economy. The distribution of $s$ is skewed
+toward China. The median voting economy sits at $s=0.22$, and 142 of the 193 (73.6 percent) are
+closer to China than to the United States. This is a property of the Assembly's voting
+arithmetic, not of the economies' economic ties: the United States votes in small minorities on
+many recorded resolutions, so its anchor lies at the edge of the distribution. The choice of rule
+matters mainly on the China side. A midpoint rule ($p_i=1$ for $s_i>\tfrac12$) would give a
+U.S.-leaning group of a similar size, 51 economies, but would classify 142 economies as
+China-leaning; the quartile rule keeps the China-leaning bloc to the quarter of the Assembly that
+votes most closely with China.
+
+Economies without a vote of their own receive an alignment from a reference map, applied after
+the cuts are set so that they do not move the quartiles. Forty-four territories and special
+administrative regions inherit their sovereign's bloc (13 from the United Kingdom, 11 from
+France, six from the United States, four from the Netherlands, three from Australia, two each
+from China and Denmark, and one each from Finland, Norway and New Zealand), and Taiwan, Palestine
+and Kosovo are neutral, $p_i=\tfrac12$. All 240 economies of the country universe therefore have
+an alignment. Inherited and neutral positions are used only in the bilateral indices; an economy
+without its own vote cannot enter the core of the coalition defined below.
+
+For a pair of economies the dyadic alignment is
+\begin{equation}\label{eq:coalition_dyadic}
+  A_{ij} \;=\; p_i\,p_j + (1-p_i)(1-p_j),
+\end{equation}
+the probability that $i$ and $j$ fall on the same side of the U.S.--China divide if each is on
+the U.S. side independently with probability $p$. With hard blocs $A_{ij}$ takes three values:
+1 for two economies in the same bloc, 0 for economies in opposite blocs and $\tfrac12$ whenever
+either economy is nonaligned. Two nonaligned economies also have $A_{ij}=\tfrac12$: the measure
+concerns the U.S.--China cleavage only, not the similarity of two voting records in general.
+Alignment enters the rest of the analysis in two places. $A_{ij}$ is one of the seven components
+of the Friendshore index, with weight 2 of a total component weight of 11, that is 18.2 percent
+(Section~\ref{subsec:friendshore}); through Friendshore it also enters the edge term of the
+network design (Section~\ref{sec:network}). And the blocs define the coalition $\Coalition$.
+Figure~\ref{fig:coalition_axis} shows the axis for every voting economy, by coalition tier.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{coalition_axis}
+  \caption{Positions on the U.S.--China axis and coalition tiers. Each point is one of the 193
+  economies with their own votes in the United Nations General Assembly, at its position
+  $s_i$ of equation~\eqref{eq:coalition_axis}: the mean all-votes ideal point of
+  \citet{bailey2017estimating} over sessions 74--78 (2019--2023), projected on the segment from
+  China ($s=0$) to the United States ($s=1$) and clamped to $[0,1]$. Vertical lines are the
+  quartile cuts that define the blocs ($s\leq 0.142$ China-leaning, $s\geq 0.511$ U.S.-leaning;
+  49, 95 and 49 economies). Rows are coalition tiers: the 31 core members, the 26 partners, the
+  six EU members that belong to the network only through the EU node, and the 130 other voting
+  economies; within a row, points are stacked to avoid overlap and the vertical position carries
+  no information. Filled markers are major suppliers (at least 5 percent of world supply in one
+  measure of an Upstream or Midstream stage of a headline technology, or at least 10 percent of
+  world reserves of a headline mineral, fuel or uranium), whatever their bloc. G20 economies and
+  selected other cases are labelled. Territories, which inherit their sovereign's bloc, and
+  Taiwan, Palestine and Kosovo, which are neutral, have no vote of their own and are not shown.
+  Source: \texttt{geo\_ideal\_points\_tbl.rds}, \texttt{coalition\_tbl.rds},
+  \texttt{major\_supplier\_shares\_tbl.rds}.}
+  \label{fig:coalition_axis}
+\end{figure}
+
+\subsection{A coalition in two tiers}\label{subsec:coalition_tiers}
+
+The coalition $\Coalition$ is derived by rule rather than chosen. Its core is the U.S.-leaning
+bloc restricted to economies with their own UN votes and a latest GDP of at least USD 100 billion
+\citep[current dollars, 2025 for every member;][]{worldbank2026wdi}. It has 31 members, and every
+U.S.-leaning economy above the GDP floor belongs to it. The 18 U.S.-leaning economies below the
+floor include six EU members (Cyprus, Estonia, Latvia, Lithuania, Malta and Slovenia) and small
+European and Pacific states. Puerto Rico inherits the U.S. position and its GDP exceeds the floor,
+but it has no vote of its own and is not a member.
+
+An economy outside the core is a partner if it qualifies by either of two routes. The agreement
+route admits members of a U.S. free trade agreement, the Indo-Pacific Economic Framework (IPEF),
+the Minerals Security Partnership (MSP), the G7 or NATO whose GDP is at least USD 100 billion,
+whatever their bloc. The supplier route admits, without a GDP floor, any economy that is not
+China-leaning and is a major supplier of an Upstream or Midstream stage of a headline technology:
+it holds at least 5 percent of world supply in one measure of the stage, or at least 10 percent
+of world reserves of a resource the stage extracts. The supply measures are exports of the
+stage's HS6 basket \citep[2023;][]{growthlab2019trade}, oil, gas and coal production
+\citep[2025;][]{ei2026statistical}, uranium mine production (2024), mine production and refining
+of the minerals a technology uses \citep[2025;][with manganese, zinc and platinum-group metals
+from the Energy Institute]{iea2026cmdata} and clean-technology manufacturing capacity (2024). The
+reserves are the critical-mineral reserves of the U.S. Geological Survey's \emph{Mineral
+Commodity Summaries 2026} at the end of 2025, proved oil, gas and coal reserves at the end of 2020
+\citep{ei2026statistical} and identified uranium resources recoverable below USD 260/kgU from the
+OECD-NEA/IAEA \emph{Uranium 2026} (the Red Book). The reserves bar is twice the supply bar because
+a stock is not yet supply. The route uses the same reserves data as the Reserves category of the
+Energy Security pillar (Section~\ref{subsec:es_reserves}), with one consequence worth stating:
+holders whose reserves USGS does not quantify (entries NA, W or s) count as zero, so their shares,
+and the coalition's, are measured on the quantified holdings only.
+
+Twenty-six economies are partners: ten qualify through agreements only, nine as suppliers only and
+seven by both routes (Table~\ref{tab:coalition_composition}, Figure~\ref{fig:coalition_routes}).
+Twenty-three partners are nonaligned and three are China-leaning: Indonesia and Viet Nam, members
+of IPEF, and Oman, a U.S. free-trade partner. The agreement route has no bloc condition; Indonesia
+and Viet Nam also pass the supplier test, which their bloc would not let them use. No partner is
+U.S.-leaning, since every U.S.-leaning economy above the floor is already in the core. NATO is the
+most frequent qualifying agreement among the members (24), followed by the U.S. free trade
+agreements (14), the MSP (13), IPEF (12) and the G7 (7). Twenty-eight of the 31 core members
+belong to at least one of them (Austria, Ireland and Ukraine to none), and 13 core members also
+pass the supplier test. Sixteen members of the five agreements fall below the GDP floor and are
+not partners; the largest are Lithuania (USD 95 billion), which enters the network through the EU
+node, and Panama (USD 91 billion). Together the 57 members account for 73.4 percent of world GDP
+(57.7 percent the core and 15.7 percent the partners), and 73.7 percent with the six EU members
+that enter only through the EU node; China accounts for 16.6 percent.
+
+Forty economies pass the supplier test: 13 U.S.-leaning, 16 nonaligned and 11 China-leaning.
+Every one of them that is not China-leaning is a member. The nine China-leaning major suppliers
+are kept out: China, Russia, Iran, Kazakhstan, Algeria, Uzbekistan, Venezuela, Myanmar and
+Zimbabwe. Their largest qualifying shares range from 94.4 percent of world graphite refining
+(China) and 45.1 percent of the exports of the Nuclear Upstream basket of uranium ores and
+concentrates (Kazakhstan) to 5.1 percent of the exports of the Gas Upstream basket (Algeria);
+Myanmar qualifies through 31.0 percent of the exports of the Wind Upstream basket of rare-earth
+compounds, and Venezuela through its oil reserves alone, 17.5 percent of the world's proved
+reserves. Ten members hold at least 10 percent of world reserves of some resource (the United
+States, Australia, India, Brazil, Saudi Arabia, Argentina, South Africa, Chile, Qatar and the
+Democratic Republic of the Congo), but for none of them is the reserves leg decisive: each also
+passes a supply measure. Brazil, the case that motivated the leg, holds 23.9 percent of world
+graphite reserves, 16.7 percent of manganese, 14.6 percent of rare earths and 11.4 percent of
+nickel, and since silicon metal entered the Solar Upstream basket it also supplies 18.4 percent
+of world exports of that basket. Among all economies the reserves leg is decisive only for
+Venezuela, which is kept out. The bar binds for a small group of holders. Six economies that are
+not China-leaning hold between 5 and 10 percent of a world reserve without qualifying otherwise:
+Madagascar (8.7 percent of graphite), Mozambique (8.1 percent of graphite), Kuwait (5.9 percent of
+oil), Tanzania (5.8 percent of graphite), Niger (5.7 percent of uranium) and New Caledonia (5.1
+percent of nickel); Iraq, Turkmenistan and the United Arab Emirates fall in the same range but are
+China-leaning. Admitting the Forum of the MSP as a further agreement, a sensitivity, adds
+Kazakhstan and Uzbekistan, both China-leaning, and Ecuador, which is nonaligned.
+
+\input{tables/coalition_composition}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{coalition_routes}
+  \caption{Routes into the coalition. Rows are the 31 core members (left) and the 26 partners
+  (right), ordered by GDP. Gray tiles mark membership of the five agreements of the agreement
+  route (a U.S. free trade agreement, IPEF, the Minerals Security Partnership, the G7 and NATO).
+  Coloured tiles mark the supplier test: at least 5 percent of world supply in one measure of an
+  Upstream (blue) or Midstream (orange) stage of a headline technology, or at least 10 percent of
+  world reserves of a headline mineral, fuel or uranium (light blue). Outlined tiles mark
+  economies that pass the test but are China-leaning ($\dagger$) and so cannot use the supplier
+  route; Indonesia and Viet Nam enter through IPEF and Oman through its U.S. free trade agreement.
+  The core requires neither route: its tiles show which core members would also qualify as
+  partners. The text to the right gives the largest qualifying share, as the technology--stage
+  cell of a supply measure or, where only reserves qualify, the resource, with the number of
+  further qualifying technology--stage cells in parentheses. Supply measures: Atlas export shares
+  of the stage's HS6 basket (2023), EI production (2025), uranium mine production (2024), IEA and
+  EI mineral mining and refining (2025), IEA manufacturing capacity (2024); reserves: USGS (end
+  of 2025), EI (end of 2020), identified uranium resources below USD 260/kgU. Source:
+  \texttt{coalition\_tbl.rds}, \texttt{major\_supplier\_shares\_tbl.rds},
+  \texttt{economic\_security\_agreements.csv}.}
+  \label{fig:coalition_routes}
+\end{figure}
+
+Two economies that a reader might expect to find in the coalition are not members. Switzerland
+is nonaligned, at $s=0.508$, three thousandths below the U.S.-leaning cut; it belongs to none of
+the five agreements, and its largest share of world supply in any Upstream or Midstream measure
+is 1.1 percent. Before the review of the HS6 baskets it qualified as a supplier through its
+exports of electrical energy, which are no longer part of the Electric Grid basket
+(Section~\ref{subsec:data_crosswalk}). Taiwan has no UN vote and is therefore neutral; it appears
+in none of the agreement lists, has no World Bank GDP, and its largest share in any measure is
+1.5 percent, of the exports of the Solar Midstream basket. Its strength in semiconductors lies
+outside the energy baskets. Both remain in the country universe and in the bilateral indices,
+where they are rated as partners of the coalition, but neither is a node of the network.
+
+The coalition's command of supply differs sharply between extraction and processing. Across the
+18 Upstream and Midstream stages that have an HS6 basket, the 63 economies of the network account
+for a median 70.7 percent of world exports, from 45.2 percent in Wind Upstream, where Myanmar's
+rare-earth exports weigh, to 88.4 percent in Batteries Upstream, and China for a median 17.6
+percent, with a maximum of 40.9 percent in Batteries Midstream. The coalition's share exceeds
+China's in every one of the 18 stages, but in two Upstream stages the excluded China-leaning
+suppliers other than China hold large shares: 31.3 percent of Wind Upstream exports, against the
+coalition's 45.2 percent, and 47.6 percent of Nuclear Upstream exports, against 50.0 percent. Export shares
+flatter the coalition, because they count trade among its members, intra-EU trade included, and
+re-exports. Mineral production data show the division more clearly. Coalition economies mine 81.9 percent of the world's cobalt, 79.4 percent
+of its nickel, 60.0 percent of its lithium and 54.5 percent of its copper, but 3.6 percent of its
+graphite and 14.3 percent of its rare earths; they refine 17.4 percent of cobalt, 23.2 percent of
+copper, 24.6 percent of lithium, 5.5 percent of graphite and 12.6 percent of rare earths, against
+China's 75.6, 46.8, 73.7, 94.4 and 83.9 percent \citep{iea2026cmdata}. Nickel is the exception,
+with 55.7 percent of refining in the coalition. Reserves follow extraction: coalition economies
+hold 75.8 percent of quantified world cobalt reserves, 77.3 percent of lithium, 85.5 percent of
+manganese, 78.8 percent of nickel and 83.9 percent of platinum-group metals, but 33.3 percent of
+rare earths (China 58.4 percent) and 35.7 percent of graphite (China 32.3 percent). In oil and gas
+the excluded China-leaning suppliers other than China hold almost as much as the coalition or more
+(35.3 against 35.7 percent of oil reserves, 43.4 against 30.8 percent of gas). These are
+descriptive shares of world totals, not the network design's inputs; they indicate where an
+allied industrial base built from this coalition is long, in mining, and where it is short, in
+mineral processing.
+
+\subsection{Network nodes and the European Union}\label{subsec:coalition_nodes}
+
+The EU-27 enters the network design as a single node, because the Union conducts a common
+commercial policy and its members' supply chains are integrated in a single market. Twenty-one EU
+members are core members in their own right; the six below the GDP floor belong to the network
+only through the EU node. They account for 1.6 percent of EU GDP; the largest weight any of them
+carries in a stage is Estonia's 25.5 percent of the EU's Wind Upstream exports. The network therefore has 37
+nodes representing 63 economies: 11 core nodes (the United States, the EU, Japan, the United
+Kingdom, Canada, Korea, Australia, Israel, Norway, New Zealand and Ukraine) and 26 partner nodes.
+The EU node's GDP, USD 21.2 trillion, is the second largest after that of the United States.
+How the node's demand enters the design, where it is based on ranks and is therefore compressed
+relative to the EU's share of coalition GDP, is set out in Section~\ref{subsec:network_demand}.
+
+The members' inputs are aggregated into the node with stage-specific weights
+(Figure~\ref{fig:coalition_eu_weights}). For each of the 22 Upstream and Midstream cells, the
+weights are the members' shares in the first usable basis: production (Energy Institute) for
+Coal, Gas and Oil Upstream (3 cells), exports of the stage's HS6 basket for 15 cells, and GDP for
+the remaining 4 (Geothermal and Green Hydrogen, Upstream and Midstream), the stages without a
+basket. A basis is usable only if it lists the members individually and covers at least half of
+the EU total, and only if the EU holds at least 0.1 percent of the world total; the IEA
+manufacturing and mineral data, which report the EU as a bloc or list only leading producers, do
+not qualify. The GDP basis is therefore a fallback that carries no information about the stage.
+Weights are concentrated. Germany carries the largest weight in 11 of the 22 cells (23.8 percent
+in the GDP-weighted cells, 38.9 percent of the Electric Vehicles Midstream basket exports), France
+and Poland in four each, and Finland (Electric Vehicles Upstream, 27.4 percent), Italy (Oil
+Upstream, 38.5 percent) and Romania (Gas Upstream, 29.5 percent) in one each. The new Upstream
+baskets concentrate the weights most: France, which mines no uranium, accounts for 97.9 percent
+of the EU's exports of uranium ores and concentrates (Nuclear Upstream), trade that reflects its
+conversion and trading activity rather than mine output, and for 46.5 percent of silicon-metal
+exports (Solar Upstream);
+Estonia, a member below the GDP floor, carries 25.5 percent of the Wind Upstream basket of
+rare-earth compounds. The median Herfindahl index of the weights is 0.34 under the production
+basis, 0.139 under the export basis and 0.117 under the GDP basis, with a range from 0.081 to
+0.959 across cells. The production weights rest on small totals: the EU produces 1.6, 0.8 and 0.3
+percent of world coal, gas and oil, and the listed members cover 95, 89 and 64 percent of the
+EU's own totals.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{coalition_eu_weights}
+  \caption{Member weights within the EU network node. Columns are the 27 EU members, ordered by
+  GDP; an asterisk marks the six members below the GDP floor, which enter the network only through
+  the node. Rows are the 22 Upstream and Midstream technology--stage cells, grouped by the basis
+  of the weights: members' production (Energy Institute; 3 cells), members' shares of world
+  exports of the stage's HS6 basket (Atlas, 2023; 15 cells) or, for the four stages without a
+  basket, GDP shares (Geothermal and Green Hydrogen, Upstream and Midstream; Germany 0.238, France 0.158, Italy
+  0.120, Spain 0.090, the Netherlands 0.063). Weights in a row sum to one; weights of at least
+  0.15 under the production and export bases are printed. Source:
+  \texttt{eu\_stage\_weights\_tbl.rds}.}
+  \label{fig:coalition_eu_weights}
+\end{figure}
+
+\subsection{Alignment within the coalition}\label{subsec:coalition_dyadic}
+
+Because the blocs are hard, alignment within the coalition takes a simple form
+(Figure~\ref{fig:coalition_alignment_matrix}). Of the 666 pairs of network nodes, 8.7 percent
+have $A_{ij}=1$: the 55 pairs of core nodes and the three pairs among the China-leaning partners.
+A further 86.3 percent have $A_{ij}=\tfrac12$, because one of the two is a nonaligned partner,
+and 5.0 percent have $A_{ij}=0$: each of the 11 core nodes paired with Indonesia, Viet Nam or
+Oman. Counting the EU members individually, the 1,596 pairs of members split 29.3, 64.8 and 5.8
+percent. Every pair of core members has $A_{ij}=1$, every nonaligned partner has $A_{ij}=\tfrac12$
+with every core member, and the three China-leaning partners have $A_{ij}=0$ with the core and
+$A_{ij}=1$ with China and Russia. Within the coalition the alignment component of Friendshore
+therefore separates core suppliers from partner suppliers and penalises the three China-leaning
+partners as suppliers to the core, but it does not distinguish among the 23 nonaligned partners.
+Variation among them in Friendshore comes from the other six components.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{coalition_alignment_matrix}
+  \caption{Dyadic alignment among the network nodes. Each cell is $A_{ij}=p_ip_j+(1-p_i)(1-p_j)$
+  of equation~\eqref{eq:coalition_dyadic} for the row and column economies, where $p_i$ is 1 in
+  the U.S.-leaning bloc, $\tfrac12$ for a nonaligned economy and 0 in the China-leaning bloc; with
+  hard blocs $A_{ij}$ is 1 for the same bloc, 0 for opposite blocs and $\tfrac12$ when either
+  economy is nonaligned. The 37 network nodes, 11 core and 26 partner, are followed by Russia and
+  China for reference; nodes are ordered by tier and, within a tier, by $s$ (for the EU node, the
+  GDP-weighted mean of its members, 0.677; all 27 members are U.S.-leaning, so the node's
+  alignment with any other economy equals that of each of its members). Source:
+  \texttt{geo\_alignment\_tbl.rds}, \texttt{allied\_network\_nodes.csv}.}
+  \label{fig:coalition_alignment_matrix}
+\end{figure}
+
+\subsection{Sensitivity of the alignment and comparison with the hand-picked list}\label{subsec:coalition_sensitivity}
+
+Two alternative series test the axis. Using only the latest session of the all-votes series
+(session 78, 2023), the Spearman rank correlation of $s$ with the headline five-session mean is
+0.966 over 192 economies, and 89.1 percent of economies stay in the same bloc. The coalition
+keeps 57 members but changes at the margin: New Zealand falls just below the U.S.-leaning cut
+($s=0.583$ against 0.584) and becomes a partner through IPEF, Saudi Arabia becomes China-leaning
+and loses its supplier route, and Myanmar becomes nonaligned and enters as a supplier. India also
+becomes China-leaning but remains a partner through IPEF and the MSP. Using the final-passage
+series over its latest five sessions (76--80, 2021--2025), the Spearman rank correlation is 0.965
+over 193 economies and 89.6 percent stay in the same bloc. The core is unchanged. The cuts,
+however, move to 0.446 and 0.055: China-leaning economies cluster more tightly around China in
+final-passage votes, and Russia ($s=0.117$), Kazakhstan (0.056) and Myanmar (0.163) leave the
+China-leaning quartile and would enter the coalition as major suppliers, for 60 members; Malaysia
+becomes China-leaning but stays through IPEF. The core, defined by the U.S.-leaning quartile and
+the GDP floor, is robust to the choice of series. The exclusion of China-leaning suppliers is the
+fragile element of the rule, and Russia's exclusion in particular depends on using all recorded
+votes rather than final passage only.
+
+The derived coalition replaces the 23 members fixed by hand in the previous draft. Twenty-one of
+them remain members, 11 in the core (the United States, Canada, Japan, Australia, Korea, the
+United Kingdom, Germany, France, Italy, Norway and Denmark) and 10 as partners (India, Mexico,
+Brazil, Saudi Arabia, South Africa, Indonesia, Viet Nam, Argentina, Morocco and Chile). Two leave:
+the United Arab Emirates and Kenya, both China-leaning ($s=0.132$ and 0.142), in none of the five
+agreements and without a qualifying share (the Emirates' largest supply share is 4.2 percent and
+its oil reserves are 5.6 percent of the world's; Kenya has none). Brazil, which is nonaligned and
+belongs to none of the five agreements, remains a member through the supplier route, on both its
+reserves and its silicon-metal exports. Thirty-six economies join: 17 EU members, which with Denmark, France,
+Germany and Italy form the EU node; Israel, New Zealand and Ukraine in the core; and 16 partners
+(Colombia, Costa Rica, the Democratic Republic of the Congo, the Dominican Republic, Gabon, Ghana,
+Guatemala, Malaysia, Namibia, Oman, Peru, the Philippines, Qatar, Singapore, Thailand and
+T\"urkiye). Every member has a Policy index, so every member can carry a Strategic Index pick
+(Section~\ref{sec:strategic}): 215 economies are eligible, 65 on both the IEA policy database and
+the Climate Action Tracker rating and 150 on the IEA database alone, and 11 members are scored on
+the IEA database alone (Israel, Ukraine, the Democratic Republic of the Congo, the Dominican
+Republic, Gabon, Ghana, Guatemala, Malaysia, Namibia, Oman and Qatar). Under a rule that required
+both components these 11 members would have no Policy index and no pick.
+
+\paragraph{The rule and a functional definition of the coalition.} The working paper on the Allied
+Industrial Base of the New Energy Industrial Strategy programme (October 2026) argues that
+``allied'' is better treated as a functional than as a treaty category: partners would be assessed
+on reliability and contractual performance, economic complementarity, strategic alignment,
+willingness to share burdens, technology-security requirements and contribution to the resilience
+of the system, and membership could vary from one sector compact to another. The derived coalition
+implements part of that programme. The axis measures strategic alignment, the supplier route
+measures a partner's contribution to world supply and reserves in the stages the network designs,
+and the agreement route admits economies whose economic-security ties with the United States are
+already institutionalised, whatever their bloc. The rule does not measure reliability, the rule of
+law, burden sharing or technology-security requirements, for which no comparable cross-country
+measures enter the pipeline, and it defines one coalition for all 22 Upstream and Midstream stages
+rather than one for each. The supplier route nonetheless gives the boundary a sectoral margin, since
+nine partners qualify only as suppliers of particular stages (Figure~\ref{fig:coalition_routes}),
+and the sensitivity analyses above show that the boundary moves mainly among the China-leaning
+suppliers. A coalition defined stage by stage, which could admit a resource holder to a minerals
+compact without admitting it to a compact on sensitive grid equipment, is a natural extension that
+the network design could accommodate, and we leave it to future work.

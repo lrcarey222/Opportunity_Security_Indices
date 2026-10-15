@@ -1,0 +1,381 @@
+% =============================================================================
+% Section 5 results fragment: the Energy Security pillar, final run.
+% Every number below is written to paper/results/es.json by scripts/paper/fig_es.R,
+% which also draws the five figures and paper/tables/es_leaders.tex.
+% Sample: the eleven headline technologies of energy_security_index in index_outputs.rds
+% (final rerun of 2026-10-12). Rankings, distributions, fixed-effect decompositions,
+% correlations, contribution averages and coalition averages use the rankable cells only
+% (sovereign economy, imputed weight share at most 0.5; config/rankability.yml).
+% =============================================================================
+
+\paragraph{Coverage and rankability.} The pillar is scored for 6{,}232
+country-technology-stage cells of the eleven headline technologies. They cover 219 economies,
+195 sovereign states and 24 territories, and 30 of the 33 technology-stage pairs, ten at each
+stage; Geothermal upstream and midstream and Electric Grid downstream have no Energy Security
+category. No pair is constant across economies or unscored, and no cell rests entirely on
+imputed components. The mean imputed weight share of equation~\eqref{eq:imputed_share} is 0.41
+upstream, 0.23 midstream and 0.27 downstream, and 38 per cent of the category scores contain at
+least one imputed component. Every ranking and summary below uses the rankable cells only: a
+cell is rankable if its economy is sovereign and at most $\tau=0.5$ of its index weight is
+imputed. The rule keeps 4{,}163 of the 6{,}232 cells. It removes the 607 cells of the 24
+territories and 1{,}462 cells of sovereign economies whose score rests mainly on imputation, and
+it bites hardest upstream, where 1{,}124 of 2{,}181 cells are rankable, against 1{,}397 of 2{,}002
+midstream and 1{,}642 of 2{,}049 downstream. The reason is the grid rule of
+Section~\ref{subsec:norm_missing}: the world-level price series places every economy of the
+World Bank list in the upstream grid of each technology with a price series, while the
+country-specific mineral and fossil-fuel sources cover far fewer economies. Among the rankable
+cells the mean imputed weight share falls to 0.18 upstream, 0.08 midstream and 0.22 downstream.
+A pair holds between 68 rankable economies (Nuclear downstream) and 195 (Nuclear upstream).
+Within each pair every scored economy observes the same set of categories, so a cross-country
+comparison within a pair compares one construct; across pairs the bundle ranges from four to
+seven categories upstream, one to three midstream and one to four downstream
+(Table~\ref{tab:es_structure}). The upstream trade baskets of the final data release give Trade
+categories to Electric Vehicles (battery-mineral ores and magnet rare earths), Wind (rare
+earths), Solar (silicon metal) and Nuclear (uranium ores and concentrates) upstream, so that nine
+of the ten upstream pairs carry a Trade category; Green Hydrogen upstream is the exception.
+
+\paragraph{Distribution across cells.} Figure~\ref{fig:es_distribution} shows the pillar by
+technology within each stage. The stages differ in level and in shape. The median rankable cell
+scores 0.28 upstream, 0.46 midstream and 0.44 downstream, with interquartile ranges of 0.19 to
+0.37, 0.36 to 0.53 and 0.35 to 0.52, and the upstream distribution is strongly right-skewed
+(skewness 1.24, against 0.40 midstream and 0.09 downstream). In most upstream pairs the bulk of
+economies sits in a narrow band near the bottom while a few lie far above it: in Electric Grid,
+Solar and Green Hydrogen upstream the interquartile range is narrower than 0.05. This is an
+endowment pattern, filtered through the construction. Upstream, Reserves, Production, Minerals
+Trade and Investment are registers of holders, producers, exporters and investors that carry
+the zero rule and the zero-anchored S-curve of equation~\eqref{eq:scurve_zero}; in the median
+upstream pair, 71 per cent of the rankable economies score zero on Reserves and 84 per cent on
+Production. The few economies with mineral or fossil resources therefore separate sharply from
+the rest, and the pair medians run from 0.17 in nuclear, where more than half of the economies
+share one value discussed below, and 0.20 in batteries and electric vehicles to 0.47 in oil.
+Midstream and downstream, the pillar rests mainly on median-centred S-curves
+(equation~\eqref{eq:scurve}), which place the median covered economy near 0.5 by construction;
+the four midstream pairs scored on the Trade category alone (gas, coal, oil and nuclear) have
+medians between 0.48 and 0.56. Two pairs depart from this pattern for reasons of construction.
+Green Hydrogen midstream, scored on Foreign Dependency alone, gives 90 per cent of its 106
+rankable economies the same value, 0.26, so that its box collapses to a line; Green Hydrogen
+downstream, scored on Consumption alone, is bimodal, with an interquartile range from 0.10 to
+0.72. The level of a pair is thus partly a property of its category bundle rather than of the
+security of the economies in it, and comparisons of levels across pairs should be read with
+Section~\ref{subsec:norm_pillar} in mind.
+
+A variance decomposition over the 4{,}163 rankable cells makes the same point.
+Technology-stage fixed effects explain 44 per cent of the variance of $\ES_{its}$, country fixed
+effects alone 12 per cent, and the two together 60 per cent; country effects account for 28 per
+cent of the variance that remains within pairs (the partial $R^2$ of country effects given pair
+effects). Within stages, pair effects explain 33, 50 and 22 per cent of the upstream, midstream
+and downstream variance, and country effects 51, 65 and 29 per cent of the within-pair
+remainder. The pair effects are not an artefact of the cell-constant inputs: subtracting the
+contributions of Energy Prices and of the world-concentration terms of Trade and Minerals Trade
+from each cell leaves the pair-effect $R^2$ at 48 per cent. They reflect the different category
+bundles, and in particular the weight of zero-rule registers in a pair. A cross-country ranking
+of the pillar is therefore meaningful within a pair, and a comparison of one economy's levels
+across pairs, which the Strategic Index makes, mixes economic content with the construction of
+each pair.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{es_distribution}
+  \caption{Distribution of the Energy Security pillar by technology and supply-chain stage,
+  rankable cells. Each row summarises $\ES_{its}$ across the rankable economies of one
+  technology-stage pair (between 68 and 195 economies; a cell is rankable if its economy is
+  sovereign and at most half of its index weight is imputed). The box spans the interquartile
+  range with the median marked, and the whiskers reach the most extreme value within 1.5
+  interquartile ranges. Small gray dots are economies outside the coalition and coloured dots
+  coalition members, in the stage colour (blue upstream, orange midstream, aqua downstream),
+  both jittered vertically; the triangle marks the United States and the diamond China. Rows are
+  ordered by their median within each stage. In Nuclear upstream, 137 of the 195 rankable
+  economies have neither identified uranium resources nor mine production; the 105 of them
+  whose trade in uranium ores and concentrates is not observed share one value, 0.172 (Energy
+  Prices plus an imputed Trade category), and the other 32 lie between 0.145 and 0.201. In Green
+  Hydrogen midstream 90 per cent of the economies share one value, 0.26, and the box collapses
+  to a line. Geothermal upstream and midstream and Electric Grid downstream have no Energy
+  Security score. The score lies in $[0,1]$, and higher values indicate a more secure position.
+  Source: \texttt{energy\_security\_index} in \texttt{index\_outputs.rds}, final run;
+  \texttt{scripts/paper/fig\_es.R}.}
+  \label{fig:es_distribution}
+\end{figure}
+
+\paragraph{What drives the score.} Figure~\ref{fig:es_category_contrib} uses the exact category
+decomposition of equation~\eqref{eq:cat_decomp} to show the mean share of each category in the
+pillar, by stage, together with its mean effective weight. Upstream, Trade supplies 31 per cent
+of the average score, Energy Prices 20 per cent, Minerals Trade 16 per cent and Foreign
+Dependency 13 per cent, while Reserves and Production contribute 7.2 and 3.1 per cent against
+mean effective weights of 20 and 19.5 per cent. The gap between share and weight is the zero
+rule at work: for the typical economy the register categories are zero and add nothing, while
+for the few holders and producers they are what places them at the top. Trade, by contrast,
+gives almost every economy a positive score, and the upstream baskets extend it to four more
+pairs, which makes it the largest upstream contributor. The upstream shares of Energy Prices and
+Trade are raised further by Nuclear upstream, where the two together make the whole score of
+every economy without uranium; without that pair they are 15 and 28 per cent. Midstream, Trade
+supplies 73 per cent of the score and Foreign Dependency 26 per cent, that is, an economy's
+share of world exports of the basket, its net import position, and its shares of refined mineral
+supply and manufacturing capacity. Investment, defined midstream only for batteries, electric
+vehicles, solar and wind, supplies 1.4 per cent against a mean effective weight of 7.0 per cent,
+because the investment monitor records neither manufacturing investment nor capacity for most
+economies (72 per cent of the rankable economies score zero in the median of these four pairs).
+Downstream, Consumption (56 per cent) and Energy Access (24 per cent) dominate, with resource
+potential, scored under Reserves, at 10 per cent and Investment at 9.8 per cent against a weight
+of 19 per cent; the downstream pillar is mainly a measure of the depth and growth of domestic
+deployment and use.
+
+Part of every upstream score, and of every midstream score except those of Green Hydrogen, does
+not vary across economies. Energy Prices is a world-level series, and the world-concentration
+term of Trade takes one value per pair; the concentration term of Minerals Trade is constant for
+all economies except two outside the World Bank list, Taiwan and R\'eunion. These cell-constant
+inputs carry a mean effective weight of 0.21 upstream and 0.22 midstream, and none downstream,
+but because the country-varying categories score low for most economies they supply on average
+36 per cent of an upstream cell's score and 26 per cent of a midstream cell's score. They shift
+the level of a pair without reordering the economies in it. Energy Prices illustrates the point:
+its score ranges from 0.19 for gas to 0.81 for the electric grid, and it raises every economy's
+upstream score by between 0.025 (batteries) and 0.088 (nuclear), leaving every within-pair rank
+unchanged.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{es_category_contrib}
+  \caption{Average composition of the Energy Security pillar by stage, rankable cells. For each
+  cell the weighted category contributions $\omega_{kits}c_{kits}$ sum exactly to $\ES_{its}$
+  (equation~\eqref{eq:cat_decomp}). Bars show the mean, across the rankable cells of a stage, of
+  each category's share of the score, $\omega_{kits}c_{kits}/\ES_{its}$; the vertical tick shows
+  the category's mean effective weight $\omega_{kits}$. A category absent from a cell counts as
+  zero in both means, and a category with neither bar nor tick is not defined at that stage. A
+  bar longer than its tick indicates a category whose score tends to exceed the cell's overall
+  score; a bar much shorter than its tick, as for Reserves and Production upstream, indicates a
+  category on which most economies score zero. The upstream Energy Prices and Trade shares
+  include Nuclear upstream, where the two categories make the entire score of the 137 rankable
+  economies without uranium (15 and 28 per cent without that pair). Labels give shares of at
+  least 10 per cent. Sample: 1{,}124 upstream, 1{,}397 midstream and 1{,}637 downstream rankable
+  cells (the five downstream cells with $\ES_{its}=0$ are dropped). Source:
+  \texttt{energy\_security\_outputs\$category\_contributions} in \texttt{index\_outputs.rds};
+  \texttt{scripts/paper/fig\_es.R}.}
+  \label{fig:es_category_contrib}
+\end{figure}
+
+\paragraph{Uranium.} Nuclear upstream is scored on four categories: Energy Prices (the
+volatility of the uranium price), Trade (the upstream basket of uranium ores and concentrates and
+natural uranium compounds, HS 261210 and 284410, the latter moved from the midstream basket in
+the final basket review), Reserves (identified recoverable uranium resources at a cost below
+USD 260/kgU in the OECD-NEA/IAEA Red Book) and Production (uranium mine output from the same
+source), with effective weights of one eighth, one quarter, one quarter and three eighths.
+Figure~\ref{fig:es_nuclear_upstream} shows how the score is built. Of the 195 rankable
+economies, 58 hold identified resources and 18 of these also produce. An economy with neither
+scores the Energy Prices contribution, $0.704/8=0.088$, plus its Trade category. For the 105
+economies whose uranium trade is not observed, Trade is imputed from the observed economies and
+the score is one common value, 0.172; these economies, 54 per cent of the rankable set, share
+rank 67. The other 32 economies without uranium have an observed Trade category and score
+between 0.145 (Trinidad and Tobago) and 0.201 (Norway). The zeros on Reserves and Production and
+an imputed Trade category give the economies without uranium imputed weight shares between one
+quarter and one half, so all of them remain rankable. Because Production carries three eighths
+of the weight and only producers score on it, the producers dominate the top of the ranking,
+though no longer all of it: T\"urkiye, which holds resources but reports no mine output, ranks
+18th (0.34), and the lowest-ranked producer is 26th. Kazakhstan leads (0.84), ahead of Canada
+(0.74), Namibia (0.72) and Australia (0.72); China ranks 10th (0.56) and the United States 11th
+(0.53), and 9 of the 15 highest-ranked economies are coalition members. Of the 57 members, 31
+hold identified resources and 26 (46 per cent) do not, among them France, the United Kingdom,
+South Korea, the Netherlands, Norway and Poland. The pair therefore separates uranium holders and
+producers clearly but orders the economies without uranium only by their trade in uranium ores
+and compounds, and most of them not at all. That matters for the Strategic Index: read as a
+need, $1-\ES_{its}$, the common value becomes a uniform need of 0.83 for the 105 economies that
+share it, a measurement of absence rather than of a gap that domestic supply could close. In the
+Strategic Index sample, 86 of the 174 countries with a Nuclear upstream cell share that value,
+and Section~\ref{subsec:si_allied} restricts allied upstream picks to economies with recorded
+reserves or production of the stage's resources for this reason.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{es_nuclear_upstream}
+  \caption{Composition of the Energy Security score in Nuclear upstream, rankable cells. Rows are
+  the 15 highest-ranked of the 195 rankable economies, with their rank; coalition members are in
+  bold. Each bar is $\ES_{its}$ split into its weighted category contributions
+  (equation~\eqref{eq:cat_decomp}), which sum exactly to the score: Energy Prices (uranium price
+  volatility, effective weight $1/8$, the same 0.088 for every economy), Trade (export share and
+  net imports of uranium ores, concentrates and natural uranium compounds, HS 261210 and 284410,
+  and the concentration of world exports; weight $1/4$), Reserves (identified recoverable
+  resources below USD 260/kgU, OECD-NEA/IAEA Red Book; weight $1/4$) and Production (uranium mine
+  output; weight $3/8$). The bottom row, below a hairline, stands for the 105 rankable economies
+  with neither identified resources nor mine production whose uranium trade is not observed:
+  their score is Energy Prices plus an imputed Trade category, 0.172. The other 32 rankable
+  economies without uranium score between 0.145 and 0.201. Source:
+  \texttt{energy\_security\_index} and
+  \texttt{energy\_security\_outputs\$category\_contributions} in \texttt{index\_outputs.rds};
+  \texttt{scripts/paper/fig\_es.R}.}
+  \label{fig:es_nuclear_upstream}
+\end{figure}
+
+\paragraph{Correlation among categories.} Within pairs the categories are positively but far
+from perfectly related. The median within-pair Spearman rank correlation between two categories
+is 0.42 upstream, where only one of 78 pair-specific correlations is negative ($-0.01$), 0.33
+midstream and 0.11 downstream. Upstream, the strongest link is between Reserves and Production,
+with a median of 0.84 over the seven pairs that carry both; among the economies with a positive
+score on both (a median of 16 per pair) it is still 0.87. The two categories, which carry mean
+upstream effective weights of 20 and 19.5 per cent, describe nearly the same ordering of the
+same small set of mining economies. Foreign Dependency correlates with Production at 0.76 and
+with Reserves at 0.69. Midstream, Foreign Dependency and Trade correlate at a median of only
+0.28, with a range across pairs from $-0.23$ to 0.48: the economies with large shares of
+refined supply and manufacturing capacity are not always those with large export shares and
+small net imports of the basket. Downstream the categories are close to unrelated: Energy Access
+and Consumption correlate at 0.12, and resource potential correlates negatively with
+Consumption ($-0.11$), so that the economies with the richest solar, wind and geothermal
+resources are not those with the deepest installed base. Within a pair the ranking of the pillar
+follows Energy Imports (median Spearman correlation with $\ES_{its}$ of 0.80), Minerals Trade
+(0.79) and Reserves (0.79) upstream, Trade (0.94) midstream, and Investment (0.76) and
+Consumption (0.74) downstream.
+
+\paragraph{Leaders.} Table~\ref{tab:es_leaders} lists the three highest-scoring rankable
+economies in each pair, the best-placed coalition member and the ranks of the United States and
+China. China leads 11 of the 30 pairs: Batteries, Electric Vehicles and Wind upstream, where its
+shares of world mineral supply, production and trade dominate the mineral categories; Batteries,
+Electric Grid, Electric Vehicles, Solar and Wind midstream, where its shares of world
+manufacturing capacity, refined supply and exports are largest \citep{iea2024etp,iea2025gcmo};
+and Batteries, Nuclear and Wind downstream. No other economy leads more than two. Upstream, the
+other leaders follow resource endowments: Saudi Arabia in oil, Qatar in gas, Australia in coal,
+Kazakhstan in nuclear, South Africa in green hydrogen, whose mineral weights are dominated by the
+platinum-group metals, and Chile in the electric grid and solar, in which copper carries most of
+the demand weight among the minerals with reserve and production tables. In Electric Grid
+upstream, whose trade basket holds copper and aluminium inputs rather than electricity, the
+Democratic Republic of the Congo and Peru follow Chile. Midstream, the four pairs scored on
+Trade alone are led by economies with large export shares of the basket and small net imports
+relative to GDP: Poland in coal, South Korea in gas and oil, and Russia in nuclear, whose basket
+now holds enriched uranium, reactor components and steam-cycle equipment rather than natural
+uranium. Green Hydrogen midstream, in which 95 of the 106 rankable economies share one value, is
+led by Indonesia. Downstream the leaders follow domestic deployment and resource potential: Qatar
+in oil, Kuwait in gas, Indonesia in coal, Saudi Arabia in solar power, the United States in
+geothermal power and green hydrogen, and T\"urkiye in electric vehicles, a pair that rests on the
+Investment category alone and ranks 121 economies. A coalition member is first in 16 of the 30
+pairs and in the top three of all 30.
+
+Figure~\ref{fig:es_top} shows the ten highest-ranked rankable economies in three illustrative
+pairs. In Oil upstream Saudi Arabia leads (0.81) among the large net exporters with large proved
+reserves; two coalition members, Saudi Arabia and Canada, are in the top ten, the United States
+is 12th (0.71) and China, a large net importer, 34th (0.55). Every economy of the pair receives
+0.16 from the cell-constant inputs, which therefore account for none of the gap between the mean
+score of the top ten and the mean over all 97 rankable economies; Reserves accounts for 58 per
+cent of that gap, Energy Imports for 28 per cent and the country-varying part of Trade for 13
+per cent. China's position is that of an importer: its Reserves and Trade scores (0.64 and 0.79)
+are not far from those of the United States (0.69 and 0.87), but its Energy Imports score is
+0.25 against 0.68. In the two midstream pairs China leads by a wide margin, with 0.77 in
+batteries against 0.56 for the second-placed United States, and 0.82 in solar against 0.67 for
+India, and coalition members fill all nine remaining top-ten places of each pair, among them the
+Southeast Asian manufacturing economies that the supplier and agreement routes bring into the
+coalition (Indonesia and Malaysia in batteries; Thailand, Malaysia, Viet Nam and Indonesia in
+solar). Investment accounts for 62 per cent of the gap between the top ten and all rankable
+economies in batteries and 58 per cent in solar. It is a zero-rule category on which the mean
+economy scores 0.13 and 0.09 and the top ten 0.61 and 0.58: the economies near the top are those
+that the investment monitor records as investing in, operating or building manufacturing
+capacity. China's lead over the second-placed economy comes from Foreign Dependency, that is,
+from its shares of refined mineral supply and of manufacturing capacity (a weighted contribution
+of 0.37 in batteries against 0.21 for the United States, and 0.40 in solar against 0.28 for
+India); on Investment the United States scores higher than China in batteries (0.86 against
+0.80).
+
+\input{tables/es_leaders}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{es_top}
+  \caption{The ten highest-ranked economies in three illustrative technology-stage pairs, Oil
+  upstream, Batteries midstream and Solar midstream, rankable cells. Each dot is the economy's
+  $\ES_{its}$ (scale 0 to 1), and the number before its name is its rank among the rankable
+  economies of the pair, one plus the number of economies with a strictly higher score.
+  Coalition members are in bold and drawn in the stage colour; other economies are gray; the
+  triangle marks the United States and the diamond China, which are appended below a hairline
+  with their rank when they fall outside the top ten. The vertical line is the median over the
+  rankable economies of the pair (97, 106 and 106 economies). The shaded band from zero is the
+  cell-constant part of the score, the same for every economy of the pair: Energy Prices and the
+  world-concentration term of Trade in Oil upstream (0.16), the latter alone in the two midstream
+  pairs (0.03 and 0.06). Ties are listed alphabetically. Source:
+  \texttt{energy\_security\_index} and
+  \texttt{energy\_security\_outputs\$variable\_contributions} in \texttt{index\_outputs.rds};
+  \texttt{scripts/paper/fig\_es.R}.}
+  \label{fig:es_top}
+\end{figure}
+
+\paragraph{The coalition.} The 57 coalition members of Section~\ref{sec:coalition} score above
+the other economies at every stage: their mean $\ES_{its}$ over the rankable cells is 0.34
+upstream, 0.49 midstream and 0.48 downstream, against 0.29, 0.44 and 0.42 for non-members, and
+their mean within-pair percentile rank is 0.59, 0.72 and 0.62, against 0.47, 0.41 and 0.50. The
+two tiers differ by stage. The partners, several of which enter the coalition as major
+suppliers, have the higher upstream mean percentile (0.63 against 0.56 for the core), while the
+core is ahead midstream (0.78 against 0.64) and downstream (0.64 against 0.59). The 21 EU members
+of the coalition are weaker upstream than the other members (mean percentile 0.50 against 0.64)
+and stronger midstream (0.79 against 0.67). The coalition's advantage is unsurprising, since it
+consists mainly of large or resource-rich economies, and it says nothing about whether members'
+strengths complement one another, which Section~\ref{sec:network} takes up.
+
+Figure~\ref{fig:es_heatmap} shows the members' scores across all pairs. Ordered by mean
+within-pair percentile over their rankable pairs, the United States (0.95), Canada (0.89),
+Australia (0.82), India (0.79) and Poland (0.77) lead, and Qatar (0.44), Ghana (0.45), Gabon
+(0.46), Namibia (0.46) and Luxembourg (0.47) trail. The upstream columns separate the resource
+holders, with the United States, Australia, Canada, Indonesia and the Democratic Republic of the
+Congo the members with the highest upstream mean percentiles, from the industrial economies.
+Midstream the ordering changes: Japan has the highest midstream mean percentile of any member
+(0.95), ahead of Germany, the United States, India and South Korea, which reflects manufacturing
+and export positions rather than endowments. Downstream the ordering is less systematic, as the
+low partial $R^2$ of country effects downstream and the weak correlation among the downstream
+categories would lead one to expect. Of the 1{,}710 member cells in the 30 scored pairs,
+1{,}606 are rankable, 96 are scored but not rankable and 8 are not scored. The non-rankable
+cells concentrate in five partners, Namibia, Costa Rica, the Dominican Republic, Guatemala and
+Ghana, which are rankable in only 13 to 15 of their 28 or 29 scored pairs, and in Canada (23 of
+29), so that their rows rest on fewer comparisons than the others.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{es_heatmap}
+  \caption{Energy Security pillar of the 57 coalition members across the 33 technology-stage
+  sectors. Rows are grouped into the ten core members outside the European Union, the 21 core
+  members in the EU, which the network of Section~\ref{sec:network} treats as one node together
+  with six smaller EU economies that are not members in their own right, and the 26 partners;
+  within each group, rows are ordered by the member's mean within-pair percentile rank over its
+  rankable pairs (highest at the top). China is shown below for reference. Columns are grouped
+  by stage. Colour gives $\ES_{its}$ on a sequential scale from 0 to 1, darker meaning more
+  secure, for rankable cells; gray cells are scored but not rankable (a sovereign economy with
+  more than half of the cell's index weight imputed); a cross marks a member with no score in a
+  pair; the three sectors without an Energy Security score (Geothermal upstream and midstream,
+  Electric Grid downstream) are left blank. Source: \texttt{energy\_security\_index} and
+  \texttt{coalition\_members} in \texttt{index\_outputs.rds}; \texttt{scripts/paper/fig\_es.R}.}
+  \label{fig:es_heatmap}
+\end{figure}
+
+\paragraph{The United States, China and Taiwan.} The two largest economies rank near the top of
+most pairs, but for different reasons. The United States has the highest mean percentile rank
+of any coalition member, 0.95, with a place in the top ten in 22 of the 30 pairs; it leads two,
+Geothermal and Green Hydrogen downstream. Its upstream position rests on fossil and mineral
+resources (second in coal, third in gas and wind upstream), and its weakest positions are 30th
+in Nuclear midstream, 23rd in Oil downstream, 22nd in Electric Grid midstream and 17th in
+Nuclear downstream. China's mean percentile rank is 0.92, but it is in the top ten in 25 pairs
+and first in 11, and its midstream mean percentile is 0.99, with a place in the top ten of
+every midstream pair. Its weak positions are those of a large fossil-fuel importer, 33rd in gas
+and 34th in oil upstream and 24th in gas downstream, and two downstream pairs in which the
+deployment data place it low: 63rd in green hydrogen and last of 186 in oil. In the oil pair
+Consumption carries five-ninths of the weight, no rankable economy has a lower projected growth
+of oil-fired capacity, and only one a lower current level; the measure rewards a large and
+expanding domestic oil-fired fleet. The United States ranks above China in 8 of the 30 pairs,
+all of them upstream or downstream fossil-fuel and resource pairs (coal, gas, green hydrogen and
+oil upstream; gas, geothermal, green hydrogen and oil downstream) and none of them midstream.
+The contrast is only partly one between an endowment-based and a manufacturing-based position,
+since China also leads three upstream mineral pairs; it mirrors, rather than explains, the
+change in the pillar's leaders from stage to stage that follows from the different category
+bundles of the stages. Taiwan, which the trade themes now carry, is scored in 28 cells and
+rankable in 19. Its profile is that of a manufacturing economy without resources: a mean
+within-pair percentile of 0.75 across the ten midstream pairs, with ranks between 27th and 61st
+on the Trade category, against 0.01 across its seven rankable upstream pairs, near the bottom of
+each, and no place in the top ten of any pair.
+
+\paragraph{Caveats.} Five features of the construction qualify these results. First,
+technology-stage effects dominate the variance of the pillar, so it is a cross-country measure
+within pairs and only partly comparable across them. Second, the cell-constant inputs supply on
+average more than a third of an upstream cell's score and about a quarter of a midstream cell's
+score without informing any ranking. Third, several pairs rank few distinct values. In Green
+Hydrogen midstream the rank of 12 that the United States holds is shared with 94 other
+economies, and in Green Hydrogen downstream 49 economies share third place at 0.72. In the
+Strategic Index sample five sectors have at least a quarter of their countries at one Energy
+Security value: Green Hydrogen midstream (34 of 40 countries), Nuclear upstream (86 of 174),
+Green Hydrogen downstream (45 of 158), Nuclear downstream (19 of 67) and Batteries downstream
+(38 of 138). Under the need reading of the Strategic Index such a mass point turns into a
+uniformly high need for every country at it (Section~\ref{sec:strategic}). Fourth, the register
+categories count as zero any holder or producer that a source does not quantify: holders that
+the USGS Mineral Commodity Summaries list without a figure (not available, withheld or small)
+score zero in the technology roll-ups of Reserves. Fifth, the downstream pillar treats a deeper
+and faster-growing domestic use of a carrier as security; a reader who regards high consumption
+of a fuel as exposure would reverse the downstream reading for the fossil fuels.

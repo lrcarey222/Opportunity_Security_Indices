@@ -1,0 +1,76 @@
+% Figure (Section 3, fig:data_country_rule): harmonisation of economy names.
+% Depends only on code: R/utils/country.R (standardize_country_names(), country_recode_map(),
+% country_canonical_names(), is_aggregate_or_residual(), country_iso3_custom_match()) and
+% R/utils/theme_standardize.R (drop_aggregate_country_rows(),
+% collapse_country_spelling_duplicates()).
+% Input inside a figure environment: \input{figures/tikz/country_harmonisation}
+% Libraries used: arrows.meta, positioning, shapes.geometric (all loaded in main.tex).
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  >={Stealth[length=2mm]},
+  box/.style={draw=osigray, fill=white, rounded corners=2pt, align=center, inner sep=3pt,
+              text width=#1},
+  box/.default=3.0cm,
+  src/.style={draw=osigray, fill=osilight, rounded corners=2pt, align=center, inner sep=3pt,
+              text width=#1},
+  src/.default=2.6cm,
+  test/.style={draw=osiblue, fill=osiblue!7, diamond, aspect=2.2, align=center,
+               inner sep=1pt, font=\sffamily\scriptsize, text width=1.9cm},
+  keep/.style={draw=osiaqua, fill=osiaqua!10, rounded corners=2pt, align=center, inner sep=3pt,
+               text width=#1},
+  keep/.default=2.6cm,
+  drop/.style={draw=osiorange, fill=osiorange!10, rounded corners=2pt, align=center,
+               inner sep=3pt, text width=#1},
+  drop/.default=2.6cm,
+  stage/.style={draw=osiink!80, fill=white, very thick, rounded corners=3pt, align=center,
+                inner sep=4pt, text width=#1},
+  flow/.style={->, draw=osiink!70, line width=0.55pt},
+  lab/.style={font=\sffamily\scriptsize, text=osiink!75}
+]
+
+% ------------------------------------------------------------------ name map
+\node[src] (x) at (0, 0) {Source string $x$\\[1pt]{\scriptsize any country column}};
+\node[box=3.1cm, right=0.6cm of x] (clean)
+  {Clean: whitespace, footnote digit (``Brazil1''), curated recodes $\Rightarrow\bar x$};
+\node[test, right=0.6cm of clean] (canon) {$\bar x\in\mathcal{C}$?\\{\tiny WDI names + Taiwan}};
+\node[test, below=0.9cm of canon] (agg) {$\bar x\in\mathcal{A}$?\\{\tiny list, pattern,\\ WDI aggregate code}};
+\node[test, below=0.9cm of agg] (iso) {ISO3 $\iota(\bar x)$\\ defined?};
+
+\node[keep, right=0.9cm of canon] (k1) {Keep $\bar x$};
+\node[drop, right=0.9cm of agg] (k2)
+  {Flag as aggregate:\\ kept while the theme is built};
+\node[keep, right=0.9cm of iso] (k3) {Rename to $\nu(\iota(\bar x))$};
+\node[box=2.6cm, below=0.7cm of iso] (k4) {Keep $\bar x$ (no code)};
+
+\draw[flow] (x) -- (clean);
+\draw[flow] (clean) -- (canon);
+\draw[flow] (canon) -- node[lab, above] {yes} (k1);
+\draw[flow] (canon) -- node[lab, right] {no} (agg);
+\draw[flow] (agg) -- node[lab, above] {yes} (k2);
+\draw[flow] (agg) -- node[lab, right] {no} (iso);
+\draw[flow] (iso) -- node[lab, above] {yes} (k3);
+\draw[flow] (iso) -- node[lab, right] {no} (k4);
+
+% ------------------------------------------------------------------ theme-level steps
+\node[stage=3.6cm, right=1.3cm of k2] (theme)
+  {\textbf{End of each theme}\\[2pt]
+   {\scriptsize (i) drop flagged rows (unless the table is technology-level only)\\[1pt]
+   (ii) keys shared by two spellings of one economy: keep one spelling (non-missing value
+   $>$ canonical $>$ more rows $>$ alphabetical); conflicting values are reported}};
+\node[stage=3.6cm, below=0.8cm of theme] (rank)
+  {\textbf{Before ranking}\\[2pt]
+   {\scriptsize builders restrict comparison sets to the WDI roster (trade, cost, LCOE) or the
+   WDI and Energy Institute rosters (solar, wind)}};
+
+% Every non-dropped path merges at junction j and enters the theme-level box once.
+\coordinate (j) at ([xshift=-0.45cm]theme.west);
+\draw[draw=osiink!70, line width=0.55pt] (k1.east) -| (j);
+\draw[draw=osiink!70, line width=0.55pt] (k3.east) -| (j);
+\draw[draw=osiink!70, line width=0.55pt] (k4.east) -| (j);
+\draw[flow] (k2.east) -- (theme.west);
+\draw[flow, dashed] (rank.north) -- node[lab, right, align=left] {applied inside\\ the builder}
+  (theme.south);
+
+\end{tikzpicture}%
+}

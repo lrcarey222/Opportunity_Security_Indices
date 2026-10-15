@@ -1,0 +1,373 @@
+% =============================================================================
+% Appendix B: Data sources
+% Specification sources: config/raw_inputs_manifest.yml (publisher, url, cadence, vintage,
+% licence), docs/sources.md, data/raw/raw_inputs_resolved.yml (releases resolved by the final run
+% of 12 October 2026), scripts/10, 12, 13, 15 and 98 (which builder reads what), config/partnership.yml
+% (conduit list), config/rankability.yml (sovereignty list).
+% Coverage figures describe the staged release files; they are properties of the inputs, not
+% pipeline outputs. File names are printed with \path so they break at underscores.
+% =============================================================================
+
+\section{Data sources}\label{app:sources}
+
+Table~\ref{tab:sources} lists every source the indices read, grouped as in
+Table~\ref{tab:data_families}. For each it gives the dataset and the staged file, the publisher,
+the coverage of the staged release, the release used by the final run and the themes and
+categories it feeds. Releases of pattern-resolved inputs are those selected by the rule of
+equation~\eqref{eq:data_resolve} (Online Appendix~\ref{oa:data}) and recorded in the run's vintage
+stamp (\texttt{data/raw/raw\_inputs\_resolved.yml}); single staged files carry the access date
+recorded in the input manifest. Theme names are those of the processed tables
+(\texttt{data/processed/<theme>\_tbl.rds}); ES and EO denote the Energy Security and Economic
+Opportunity pillars, FS, PO and DP the Friendshore, Partnership Opportunity and Development
+Potential indices. Licensed inputs are marked $^{\dagger}$ (subscription) and $^{\ddagger}$
+(proprietary). Where a dataset has no bibliographic entry, the publisher's landing page recorded in
+the manifest is given.
+
+\begin{landscape}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{4.0cm}
+  >{\raggedright\arraybackslash}p{3.3cm} >{\raggedright\arraybackslash}p{4.5cm}
+  >{\raggedright\arraybackslash}p{3.4cm} >{\raggedright\arraybackslash}p{5.6cm}@{}}
+\caption{Data sources, coverage, releases used and categories fed}\label{tab:sources}\\
+\toprule
+Dataset (staged file) & Publisher & Coverage of the staged release & Release used & Themes
+  $\rightarrow$ categories fed\\
+\midrule
+\endfirsthead
+\multicolumn{5}{@{}l}{\textit{Table~\ref{tab:sources} (continued)}}\\
+\toprule
+Dataset (staged file) & Publisher & Coverage of the staged release & Release used & Themes
+  $\rightarrow$ categories fed\\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r@{}}{\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+%
+\multicolumn{5}{@{}l}{\textbf{Energy statistics}}\\[2pt]
+Statistical Review of World Energy, long format (\path{ei_stat_review_world_energy.csv}) &
+  Energy Institute, with Ember, Kearney and KPMG \citep{ei2026statistical} &
+  90 annual variables, 1965--2025; 142 country and region names (regional totals and the USSR
+  dropped) &
+  2026 (75th) edition; latest year 2025 &
+  energy\_access $\rightarrow$ Energy Access (ES, EO); energy\_consumption $\rightarrow$
+  Consumption, Energy Access (ES, EO); import\_dependence $\rightarrow$ Energy Imports (ES);
+  production\_depth\_momentum $\rightarrow$ Production (EO); coalition supplier test; EU node
+  weights\\
+Statistical Review of World Energy, workbook (\path{ei_stat_review_world_energy_wide.xlsx}) &
+  Energy Institute &
+  Proved reserves of oil, gas and coal (end-2020); mine production of cobalt, lithium, graphite,
+  rare earths, copper, manganese, nickel, zinc and PGMs &
+  2026 edition &
+  reserves $\rightarrow$ Reserves (ES, fossil fuels); critical\_minerals\_production
+  $\rightarrow$ Production (ES); coalition supplier and reserves tests\\
+International Energy Statistics, bulk file (\path{eia_intl_fossil_production.csv}) &
+  U.S. Energy Information Administration \citep{eia2026international} &
+  Fossil-fuel production and consumption by country; oil production to 2025, gas and coal to
+  2024 &
+  INTL.zip of 3 Oct.\ 2026, accessed 11 Oct.\ 2026 &
+  Oil, gas and coal production where the Statistical Review has no row, as observations:
+  import\_dependence (ES), production\_depth\_momentum (EO)\\[3pt]
+%
+\multicolumn{5}{@{}l}{\textbf{Reserves and uranium}}\\[2pt]
+Mineral Commodity Summaries 2026, world data (\path{MCS2026_World_Data.csv}) &
+  U.S. Geological Survey \citep{usgs2026mcs}, doi:\,\path{10.5066/P1WKQ63T} &
+  Country reserves and mine production of the nine critical minerals; holders without a figure
+  (NA, W, s) counted as zero in roll-ups &
+  MCS 2026, reserves at end-2025; v1.3 erratum (Brazil rare earths 11~Mt) applied &
+  reserves $\rightarrow$ Reserves (ES, minerals); coalition reserves test\\
+Uranium Resources, Production and Demand, Table 1.2a (\path{uranium_resources.csv}) &
+  OECD Nuclear Energy Agency and IAEA \citep{oecdnea2026uranium} &
+  Identified recoverable resources by cost category; 59 economies below USD 260/kgU &
+  \emph{Uranium 2026} (NEA No.\ 7770), resources at 1 Jan.\ 2025 &
+  reserves $\rightarrow$ Reserves (ES, Nuclear Upstream); coalition reserves test\\
+Uranium Resources, Production and Demand, Table 1.18 (\path{uranium_production.csv}) &
+  OECD Nuclear Energy Agency and IAEA \citep{oecdnea2026uranium} &
+  Mine production by economy, 2019--2024; 18 producers in 2024 &
+  \emph{Uranium 2026} for 2022--2024, earlier editions for 2019--2021 &
+  critical\_minerals\_production $\rightarrow$ Production (ES); production\_depth\_momentum
+  $\rightarrow$ Production (EO); coalition supplier test\\[3pt]
+%
+\multicolumn{5}{@{}l}{\textbf{Trade}}\\[2pt]
+UN Comtrade, all-reporter reporter--partner dyads in the crosswalk's products
+  (\path{comtrade_energy_dyads_all.csv}) &
+  UN Statistics Division \citep{uncomtrade} &
+  173 reporters in either year (168 in 2020; 142 exporting and 143 importing in 2024); 208
+  economies as reporter or partner; partner S19 mapped to Taiwan &
+  2020 and 2024; main pull 7--8 Oct.\ 2026, supplements 9 and 12 Oct.\ 2026 &
+  Reconciled flow matrix (importer first, else exporter $\times1.06$) $\rightarrow$ FS imports, PO
+  exports, network edges and observed export concentration\\
+UN Comtrade, energy-technology HS6 exports and imports with the world
+  (\path{comtrade_energy_trade.csv}) &
+  UN Statistics Division \citep{uncomtrade} &
+  World rows of the dyad pull: 142 exporting and 143 importing reporters; every current basket
+  code (the 13 absent codes are legacy codes) &
+  2024; derived 9 and 12 Oct.\ 2026 &
+  trade\_concentration $\rightarrow$ Trade (ES); export\_feasibility $\rightarrow$ Trade (EO):
+  export size, Balassa RCA, export concentration (Hong Kong excluded as a re-export hub)\\
+UN Comtrade, total exports (\path{comtrade_total_export.csv}) &
+  UN Statistics Division \citep{uncomtrade} &
+  All-product exports by reporter &
+  2024; pulled 9 Oct.\ 2026 &
+  Denominator of RCA\\
+Atlas of Economic Complexity, HS92 six-digit country--product--year
+  (\path{hs92_country_product_year_6.csv}) &
+  Growth Lab at Harvard University \citep{growthlab2019trade,hausmann2014atlas} &
+  1995--2023; exporter and importer reports reconciled &
+  Latest year in the panel (2023) &
+  World market share of the basket (ES, EO); net basket imports relative to GDP (ES); coalition
+  supplier test; EU node weights; the vintage build\\
+Atlas of Economic Complexity, HS92 four-digit (\path{hs92_country_product_year_4.csv}) &
+  Growth Lab at Harvard University \citep{growthlab2019trade} &
+  1995--2023; product-space distance by economy and product &
+  Latest year with distance (2023) &
+  Feasibility $\rightarrow$ Trade (EO)\\[3pt]
+%
+\multicolumn{5}{@{}l}{\textbf{Critical minerals}}\\[2pt]
+Critical Minerals Dataset (\texttt{IEA Critical Minerals Dataset 2026.xlsx}) &
+  International Energy Agency \citep{iea2026cmdata} &
+  Supply by economy for copper, cobalt, lithium, nickel, graphite and magnet rare earths (mining,
+  refining), base year and projections; demand by technology, Stated Policies &
+  2026 edition &
+  Mineral weights by technology; foreign\_dependency, critical\_minerals\_processing
+  $\rightarrow$ Foreign Dependency (ES); production\_depth\_momentum $\rightarrow$ Production
+  (EO); coalition supplier test\\
+UN Comtrade, critical-minerals imports, exports and total exports
+  (\path{critmin_import_2024.csv}, \path{critmin_export_2024.csv},
+  \path{critmin_total_export_2024.csv}) and partner-reported imports from non-reporters
+  (\path{critmin_mirror_import.csv}) &
+  UN Statistics Division \citep{uncomtrade} &
+  130, 128 and 130 reporters; 110 HS codes &
+  2024; the 2025 pulls (3 reporters) fall below the 50-reporter floor &
+  critical\_minerals\_trade $\rightarrow$ Minerals Trade (ES)\\[3pt]
+%
+\multicolumn{5}{@{}l}{\textbf{Manufacturing capacity}}\\[2pt]
+Clean-technology midstream manufacturing capacity (\path{iea_cleantech_Midstream.csv}) &
+  International Energy Agency, Energy Technology Perspectives 2024 \citep{iea2024etp} &
+  Shares of current and announced capacity for solar PV, wind, batteries and electrolysers;
+  China, Viet Nam, India, EU, United States and ``Other''; Europe reported as a region &
+  ETP 2024 &
+  foreign\_dependency $\rightarrow$ Foreign Dependency (ES); market\_share\_manufacturing
+  $\rightarrow$ Foreign Dependency (EO); coalition supplier test\\
+Electric-vehicle production and sales by region (\path{ev_Midstream_capacity.csv}) &
+  International Energy Agency (Global EV Data Explorer) &
+  China, EU, North America, other Asia-Pacific, rest of world; 2021--2024 &
+  Staged extract &
+  foreign\_dependency (ES) and market\_share\_manufacturing (EO), Electric Vehicles Midstream\\[3pt]
+%
+\multicolumn{5}{@{}l}{\textbf{Demand and technology}}\\[2pt]
+World Energy Outlook Annex~A free dataset, World
+  (\path{WEO2025_AnnexA_Free_Dataset_World.csv}) &
+  International Energy Agency \citep{iea2025weo} &
+  World totals by fuel and flow; historical and Stated Policies series &
+  WEO 2025 &
+  future\_demand $\rightarrow$ Technology Demand (EO)\\
+Global EV Outlook country data (\texttt{EV data by country 2026.csv}) &
+  International Energy Agency \citep{iea2026gevo} &
+  73 economies and regions, 2010--2035; Stated Policies used &
+  Global EV Outlook 2026 &
+  future\_demand $\rightarrow$ Technology Demand (EO)\\
+New Energy Outlook (\texttt{2024-10-29 - New Energy Outlook 2024.csv})$^{\dagger}$ &
+  BloombergNEF \citep{bnef2024neo} &
+  Regional projections of demand, capacity and generation; Economic Transition Scenario &
+  NEO 2024 (data file of 29 Oct.\ 2024) &
+  energy\_consumption $\rightarrow$ Consumption (ES, EO); future\_demand $\rightarrow$
+  Technology Demand (EO)\\
+Energy Transition Supply Chains
+  (\texttt{BNEF\_Energy Transition Supply Chains 2025.xlsx})$^{\dagger}$ &
+  BloombergNEF, \url{https://about.bnef.com/} &
+  Ratio of manufacturing capacity to demand by component; batteries, solar, wind, hydrogen &
+  2025 &
+  overcapacity\_premium $\rightarrow$ Technology Demand (EO)\\
+Market Size for Technology and Supply Chain
+  (\texttt{Market Size for Technology and Supply Chain.xlsx})$^{\ddagger}$ &
+  Boston Consulting Group (consultancy extract) &
+  Serviceable addressable market, United States, by technology and stage &
+  Undated extract &
+  future\_demand $\rightarrow$ Technology Demand (EO)\\
+ETP Clean Energy Technology Guide, public dataset (\path{IEACleanTechGuide}\allowbreak\path{publicdataset.csv}) &
+  International Energy Agency \citep{iea2026cleantechguide} &
+  Readiness levels 2020--2025 for 634 designs and components; no country dimension &
+  2026 release &
+  technological\_readiness $\rightarrow$ Technological Readiness (EO), by stage\\[3pt]
+%
+\multicolumn{5}{@{}l}{\textbf{Costs and prices}}\\[2pt]
+LCOE Data Viewer (\texttt{2026-08-11 - LCOE Data.xlsb})$^{\dagger}$ &
+  BloombergNEF, \url{https://about.bnef.com/} &
+  LCOE by market and technology; reference year and 2050; Mid scenario &
+  Release of 11 Aug.\ 2026; reference year 2025 &
+  lcoe\_competitiveness $\rightarrow$ Cost Competitiveness (EO)\\
+Relative technology costs (\path{Relative_Costs_IEA.csv}) &
+  International Energy Agency, Energy Technology Perspectives 2024 \citep{iea2024etp} &
+  Equipment costs relative to China for six regions, 2023 &
+  2023 &
+  cost\_competitiveness $\rightarrow$ Cost Competitiveness (EO)\\
+Average monthly earnings of employees by economic activity (ILOSTAT
+  \path{EAR_EMTA_SEX_ECO_CUR_NB_A}; \path{ilo_earnings_by_activity.csv}) &
+  International Labour Organization &
+  Economies, annual &
+  Staged copy downloaded 30 Sep.\ 2026 &
+  cost\_competitiveness (labour cost) $\rightarrow$ Cost Competitiveness (EO)\\
+Lending rates, monetary and financial statistics (\path{imf_lending_rates.csv}) &
+  International Monetary Fund, \url{https://data.imf.org/en/Data-Explorer} &
+  Economies, monthly to Oct.\ 2025; placeholder zero readings dropped &
+  Staged extract &
+  cost\_competitiveness (capital cost) $\rightarrow$ Cost Competitiveness (EO)\\
+Producer price indices (\path{imf_ppi.csv}) &
+  International Monetary Fund, \url{https://data.imf.org/en/Data-Explorer} &
+  Economies, 2021 to Sep.\ 2025 &
+  Staged extract &
+  cost\_competitiveness (input prices) $\rightarrow$ Cost Competitiveness (EO)\\
+Primary Commodity Price System (\path{imf_commodity_prices.csv}) &
+  International Monetary Fund \citep{imf2026pcps} &
+  World prices, monthly, to Dec.\ 2025; units from the series metadata &
+  API, staged copy as fallback &
+  energy\_prices $\rightarrow$ Energy Prices (ES, EO)\\[3pt]
+%
+\multicolumn{5}{@{}l}{\textbf{Resource potential and investment}}\\[2pt]
+Global Solar Atlas, country potential (\path{solar_potential_clean.csv}) &
+  World Bank Group (ESMAP) with Solargis, \url{https://globalsolaratlas.info} &
+  241 territories; photovoltaic output potential &
+  No time dimension &
+  solar\_pv\_potential $\rightarrow$ Reserves (ES)\\
+Global Wind Atlas, country potential (\path{wb_wind_country.csv}) &
+  Technical University of Denmark and World Bank Group (ESMAP),
+  \url{https://globalwindatlas.info} &
+  225 territories; wind power density &
+  No time dimension &
+  wind\_potential $\rightarrow$ Reserves (ES)\\
+Enhanced geothermal technical potential and LCOE (\path{geothermal_lcoe_mw.csv}) &
+  Franzmann, Heinrichs and Stolten (2025), Mendeley Data, version~2,
+  doi:\,\path{10.17632/sbs8k66bwf.2} &
+  175 economies; LCOE for 500~MW and 5~GW resources; technical potential &
+  Version 2 &
+  geothermal\_potential $\rightarrow$ Reserves (ES)\\
+Clean Investment Monitor, investment and capacity
+  (\path{GCIM_Investment_Capacity_aggregated.xlsx}) &
+  Rhodium Group and MIT Center for Energy and Environmental Policy Research \citep{cim2026} &
+  Annual investment 2018--2025 by technology and segment; capacity pipeline &
+  2026 first-quarter release &
+  investment\_momentum $\rightarrow$ Investment (ES, EO)\\[3pt]
+%
+\multicolumn{5}{@{}l}{\textbf{Policy}}\\[2pt]
+Policies and Measures database export (\path{IEA_PAMS_Export.csv}) &
+  International Energy Agency \citep{iea2026pams} &
+  Policies by country, jurisdiction, status, type and sector &
+  Export of 22 Jan.\ 2026 &
+  IEA PAMS component $\rightarrow$ Policy index (required; 215 economies)\\
+Country ratings (\texttt{CAT\_country ratings data.csv}) &
+  Climate Action Tracker (Climate Analytics and NewClimate Institute) \citep{cat2026ratings} &
+  40 ratings (39 countries and the EU), transcribed from the country pages &
+  Ratings last updated May 2022--June 2025 &
+  CAT component $\rightarrow$ Policy index where rated (EU members without a rating take the
+  bloc's; 65 economies); climate penalty of FS and PO\\
+Lifecycle greenhouse-gas intensities (\path{ipcc_ghg_intensity.csv}) &
+  IPCC Fifth Assessment Report, WGIII, Annex~III, Table~A.III.2 \citep{schlomer2014annex} &
+  12 generating technologies, g\,CO$_2$-eq/kWh; oil from the SRREN Annex~II &
+  AR5 (2014) medians &
+  Technology weight $g_t$ of the Strategic Index; CAT component; climate penalty of FS and PO\\
+New Industrial Policy Observatory (\texttt{GTA NIPO - October 2026.xlsx})$^{\dagger}$ &
+  Global Trade Alert, St.~Gallen Endowment for Prosperity through Trade \citep{gta2026nipo} &
+  Interventions by implementing jurisdiction, with dates and affected products; in force on
+  5 Oct.\ 2026 &
+  October 2026 run; 1,070 component rows, 77 jurisdictions &
+  Robustness only: the ``NIPO added back'' variant of the Policy index (not in the composite)\\[3pt]
+%
+\multicolumn{5}{@{}l}{\textbf{Bilateral, alignment and coalition}}\\[2pt]
+Direct Investment Positions by counterpart economy (\path{imf_dip.csv}) &
+  International Monetary Fund, \url{https://data.imf.org/en/Data-Explorer} &
+  Outward positions in debt instruments, gross assets, by reporter and counterpart &
+  Mean of reported years 2020--2024; 16 conduit centres excluded &
+  FS outbound investment (cells without CM-FDI ties)\\
+Cleantech Manufacturing FDI Dataset (\path{cm_fdi_projects.csv}) &
+  Net Zero Industrial Policy Lab, Johns Hopkins University \citep{bandara2026cmfdi}; CC BY 4.0 &
+  1,042 cross-border solar, wind, battery and EV manufacturing projects; 905 used &
+  Edition 2026.10.05, downloaded 11 Oct.\ 2026 &
+  FS investment tie and Chinese-parent exposure, Batteries, EV, Solar and Wind Midstream\\
+UN General Assembly ideal points, all-votes series (\path{un_ga_ideal_points_all.csv}) &
+  \citet{bailey2017estimating}; Harvard Dataverse \citep{voeten2009unga} &
+  Sessions 1--78 (1946--2023) &
+  Dataverse V39.0; sessions 74--78 averaged &
+  Alignment axis, blocs, $A_{ij}$ (FS); coalition core and China-leaning screen\\
+UN General Assembly ideal points, final-passage series (\path{un_ga_ideal_points.csv}) &
+  As above &
+  Sessions 1--80 (1946--2025) &
+  Dataverse V39.0 &
+  Sensitivity of the blocs and the coalition only\\
+Economic-security agreement memberships (\path{economic_security_agreements.csv}) &
+  Project-authored from the official lists (USTR, IPEF, MSP, G7, NATO) &
+  U.S. FTA partners, IPEF, Minerals Security Partnership and MSP Forum, G7, NATO &
+  Accessed 8 Oct.\ 2026 &
+  Coalition partner route (MSP Forum as sensitivity)\\
+Territory and non-voting economy map (\path{territory_sovereign_map.csv}) &
+  Project-authored &
+  Economies without a UN vote and the alignment each takes &
+  Version of 8 Oct.\ 2026 &
+  Territories inherit their sovereign's bloc; Taiwan, the West Bank and Gaza and Kosovo neutral\\
+World Development Indicators, development panel (\path{wb_wdi.csv}) &
+  World Bank \citep{worldbank2026wdi} &
+  Economies; 2022--2024 values used &
+  API &
+  DP (enabling environment, energy use)\\
+Doing Business indicators, historical (\path{wb_doingbusiness.csv}) &
+  World Bank \citep{worldbank2020doing}; discontinued \citep{worldbank2021discontinue} &
+  190 economies; ease-of-doing-business score, 2019 &
+  Doing Business 2020 release &
+  DP (business environment)\\
+Creditor Reporting System, aid flows (\path{oecd_crs_api.csv}) &
+  OECD, \url{https://data-explorer.oecd.org/} &
+  ODA disbursements by donor, recipient and sector, 2013--2024 &
+  Staged extract; summed over years &
+  DP (aid by stage)\\
+World Development Indicators, GDP in current US dollars, \texttt{NY.GDP.MKTP.CD}
+  (\path{wdi_gdp.csv}) &
+  World Bank \citep{worldbank2026wdi} &
+  2007--2025 &
+  Pulled at ingestion &
+  Net imports relative to GDP (ES Trade); coalition GDP floor; scaling of investment and aid in
+  the bilateral indices; demand weights and portfolio caps of the network\\
+WDI country reference table (\path{wdi_country_info.csv}) &
+  World Bank \citep{worldbank2026wdi} &
+  217 economies and 79 aggregate codes; Taiwan added by the pipeline &
+  Pulled at ingestion &
+  Canonical economy names; comparison sets of the trade, cost and LCOE themes
+  (Section~\ref{subsec:data_countries})\\
+State System Membership List &
+  Correlates of War Project \citep{cow2024state} &
+  195 states in 2024 (UN members, Kosovo, Taiwan) &
+  v2024, accessed 7 Oct.\ 2026 &
+  Sovereignty condition of the rankability rule\\[3pt]
+%
+\multicolumn{5}{@{}l}{\textbf{Project-authored crosswalks and lists}}\\[2pt]
+Energy HS6 master catalogue (\path{data/reference/energy_hs6_master.csv}) and its generated
+  views &
+  Project-authored &
+  259 HS6 codes in 415 basket rows (17 legacy bridge codes); Upstream and Midstream; excluded
+  rows kept with their reasons &
+  Repository version after the October 2026 review &
+  Trade baskets of both trade themes, the bilateral trade components and the network
+  (Section~\ref{subsec:data_crosswalk})\\
+Conduit financial centres (\path{config/partnership.yml}) &
+  Project-authored after \citet{damgaard2024real} &
+  16 economies: 10 pass-through economies and 6 offshore centres &
+  Repository version &
+  Exclusion from the IMF outward-investment measure of FS\\
+\end{longtable}
+\end{landscape}
+
+\paragraph{Notes to Table~\ref{tab:sources}.} Coverage describes the staged release files, before
+harmonisation; the number of economies scored after harmonisation is reported in
+Figure~\ref{fig:method_coverage}. Two bookkeeping files complete the manifest: the Comtrade
+retrieval stamp and the vintage stamp of resolved releases. Inputs that the final indices do not
+read are not listed: the dual-use scores, which are excluded from the Policy index because they
+take one value for every economy of a technology--stage pair; the February, June and July 2026
+NIPO extracts (the October 2026 run is used for the robustness variant); the earlier direct
+Comtrade extract of energy-technology trade and the 22-reporter allied dyad pull, both replaced by
+the all-reporter pull; a USGS Mineral Commodity Summaries 2025 file; and staged releases of
+pattern-resolved inputs that the rule does not select. The IPCC values are those of the Fifth
+Assessment Report, except the oil-fired value, which is taken from the Annex~II of the Special
+Report on Renewable Energy Sources.

@@ -1,0 +1,174 @@
+% -----------------------------------------------------------------------------
+% Results fragment, theme "misc": the small method figures. Four blocks, each tagged with the
+% section it belongs to. Numbers: paper/results/scurve.json (scripts/paper/fig_scurve.R),
+% eo_transforms.json (fig_eo_transforms.R), hs6_crosswalk.json (fig_hs6_crosswalk.R, which also
+% writes tables/misc_hs6_counts.tex, Table tab:hs6_counts) and si_fixed_inputs.json
+% (fig_si_fixed_inputs.R). Inputs: the final rerun of 12 October 2026 (data/processed), the HS6
+% master data/reference/energy_hs6_master.csv after the October 2026 basket review and the
+% Upstream baskets of 11 October, and the all-reporter Comtrade dyads of 2024.
+% -----------------------------------------------------------------------------
+
+% === section: normalization (Section 4, the S-curve transform) ===============
+\paragraph{The S-curve in numbers.} With $\gamma=0.5$ the transform of
+equation~\eqref{eq:scurve} maps the tenth and ninetieth percent ranks to 0.25 and 0.75 and the
+quartiles to 0.366 and 0.634, so the middle half of a distribution occupies 0.27 of the unit
+interval, against 0.5 under the plain percent rank. Its slope at the median is $\gamma=0.5$, half
+that of the percent rank, and the slope rises without bound towards either end. Over a large
+uniform grid of ranks the standard deviation of the transformed values tends to 0.19, against
+0.29 for the percent rank and 0.38 for $\gamma=2$. In panel (b) of Figure~\ref{fig:scurve}, a
+lognormal draw of 40 observations, min-max rescaling puts 29 of the 40 below 0.1 and spreads the
+top four over 0.79 of the scale; the percent rank gives every group of four the same spread of
+0.077; the S-curve gives the bottom four and the top four 0.22 each and the middle four 0.04.
+The transform therefore keeps the order of the percent rank and its insensitivity to outliers,
+and it reallocates resolution from the middle of the distribution to its ends. The small-sample
+edge cases follow from the percent rank: a single observation scores 0, two score 0 and 1, a
+fully tied set scores 0.5, and tied zeros below a positive value share 0.41.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{fig_scurve}
+  \caption{The median-centred S-curve. Panel (a): $\Scurve(r)=r^{\gamma}/[r^{\gamma}+(1-r)^{\gamma}]$
+  against the percent rank $r$ for $\gamma\in\{0.25,0.5,1,2\}$. The highlighted curve is
+  $\gamma=0.5$, the value used for every component of the indices, and the marked points are
+  $\Scurve(0.1)=0.25$, $\Scurve(0.5)=0.5$ and $\Scurve(0.9)=0.75$; $\gamma=1$ is the percent rank
+  itself. Panel (b): 40 draws of a right-skewed variable (lognormal, log-mean 0, log-standard
+  deviation 1, fixed seed) under three normalisations, with each observation joined across the
+  rows: a min-max rescaling of the raw value, the percent rank $r$ of
+  equation~\eqref{eq:pct_rank}, and the S-curved index of equation~\eqref{eq:scurve} computed by
+  the pipeline's own function. The four lowest and four highest observations are highlighted, and
+  the brackets give the span the S-curve assigns to each group. No pipeline data are used.
+  Source: \texttt{scripts/paper/fig\_scurve.R}.}
+  \label{fig:scurve}
+\end{figure}
+
+% === section: normalization (cardinal EO transforms; the float sits in Section 6) =========
+\paragraph{The cardinal transformations of the opportunity pillar.} Three $\EO$ inputs are
+cardinal scores rather than S-curved ranks (Figure~\ref{fig:eo_transforms}). The technology
+readiness score rests on the 2026 IEA Clean Energy Technology Guide \citep{iea2026cleantechguide}:
+of its 634 items, 253 map to a headline technology, and 9 of these to more than one
+technology--stage cell. The Guide stops at TRL 9 and grades the items at that level by an
+adoption stage, which the theme reads back onto an eleven-step scale; 98 items carry such a
+stage, and 43 percent of the mapped items sit at TRL 9 or above. Because the level score is a bell
+that peaks at TRL 6 and falls to zero at TRL 11, the 26 items that are commercial in many markets
+score zero on level: the score rewards technologies that are proven but not yet mature, the
+window in which entry is still open. The momentum score is concave in the TRL change over
+2020--2025 and is capped at three steps; 54 percent of the items with a start-year reading did
+not move. Where no item maps to a stage, the cell takes its technology's value: 10 of the 33
+headline cells are scored this way, and the resulting index ranges from 0.31 (Geothermal
+downstream) to 0.72 (Gas downstream), median 0.51. The overcapacity index $2^{-\rho}$ halves
+with each unit of the capacity-to-demand ratio $\rho$. Of the four midstream technologies the
+BloombergNEF supply-chain data cover, solar ($\rho=2.3$, index 0.20), batteries and wind ($\rho=3.0$,
+index 0.13 each) sit on the steep part of the curve, and green hydrogen ($\rho=18.2$) is
+effectively at zero. These scores take one value per technology--stage cell, so they move
+pillar levels across cells but do not reorder economies within a cell.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{fig_eo_transforms}
+  \caption{The three cardinal transformations of the Economic Opportunity pillar. Panel (a): the
+  level score $b(x)$ of equation~\eqref{eq:eo_trl_bell} against the end-year technology readiness
+  level $x$ (2025); circles sit on the curve at each level, with area proportional to the number
+  of IEA Clean Energy Technology Guide items mapped to a headline technology at that level (253
+  items). TRL 9 to 11 are the Guide's post-TRL-9 adoption stages: awaiting adoption (AA, 9),
+  building momentum (BM, 10) and commercial in many markets (CM, 11). Panel (b): the momentum
+  score $\psi(\Delta)$ against the change in TRL between 2020 and 2025, capped at three steps,
+  with circles for the items that have a 2020 reading. Panel (c): the overcapacity index
+  $2^{-\rho}$ of equation~\eqref{eq:eo_overcap} against the ratio $\rho$ of midstream
+  manufacturing capacity to forecast demand, with the four technologies of the BloombergNEF
+  supply-chain data at their values in the final build (green hydrogen, at $\rho=18.2$, lies off
+  the scale). Parameters are the theme builders' own defaults. Source: \texttt{data/raw} (the
+  Guide), \texttt{data/processed/technological\_readiness\_tbl.rds} and
+  \texttt{overcapacity\_premium\_tbl.rds}; \texttt{scripts/paper/fig\_eo\_transforms.R}.}
+  \label{fig:eo_transforms}
+\end{figure}
+
+% === section: data (Section 3, the HS6 crosswalk; replaces the pre-review table there) =====
+\paragraph{The basket review.} Table~\ref{tab:hs6_counts} and Figure~\ref{fig:hs6_crosswalk}
+describe the crosswalk after the October 2026 review. The review tested each code for dominant
+use: a code stays in a technology's basket only if that technology is a main use of the product.
+Ninety-two basket rows, touching 69 distinct codes, failed the test; 47 of these codes left every
+basket and the others stay in another technology's basket. The rows are kept in the master with
+the reason, so the review is reproducible and reversible. The review added 17 rows and moved six
+from a midstream to an upstream basket, and the crosswalk went from 298 distinct codes in 490
+basket rows to 259 codes in 415 rows: 242 of the current nomenclature and 17 legacy bridge codes,
+49 upstream and 210 midstream. The mapping remains many-to-many: 105 codes (41 percent) belong to
+more than one basket, 63 to two, 33 to three and 9, the transformer, switchgear and cable
+headings, to four.
+
+The exclusions matter most where general-purpose goods dominated a basket's trade. Measured on
+the reconciled 2024 Comtrade matrix, the excluded codes carried 92 percent of the pre-review
+coal midstream basket, 89 percent of the batteries upstream basket (copper ores alone, which now
+belong to the grid's material basket, were USD 106 billion), 69 percent of gas midstream, 60
+percent of oil midstream and 48 percent of batteries midstream, against 5 and 9 percent for the
+solar and wind midstream baskets. Two changes redefine a basket. Electric Grid upstream held
+only electrical energy (HS 2716.00, USD 61.9 billion in 2024), which made net power exporters
+the grid's leading suppliers; it now holds seven copper and aluminium inputs, from ores and
+bauxite to cathodes and unwrought aluminium, worth USD 321 billion. Switching and routing
+apparatus (HS 8517.62), USD 219 billion and 32 percent of the pre-review Electric Grid midstream
+basket, is telecommunication equipment and left it. Five upstream baskets are new: Electric
+Vehicles (eight codes, the battery minerals and the rare earths of permanent magnets), Wind
+(three, rare earths), Nuclear (two, uranium ores and natural uranium compounds), Solar (one,
+silicon metal) and Semiconductors (gallium, germanium and indium, carried for description only).
+The four that are scored trade little, from USD 3.0 billion (wind) to USD 21.3 billion (electric
+vehicles) in 2024, and in uranium 26 percent of the value rests on exporters' declarations because
+the importer did not report. Every scored upstream and midstream pair now has a basket
+except those of Geothermal and Green Hydrogen.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{fig_hs6_crosswalk}
+  \caption{The HS6 baskets after the October 2026 review. Panel (a): distinct HS6 codes in each
+  technology--stage basket, split into codes of that basket only, current codes shared with at
+  least one other basket (the many-to-many part of the mapping), legacy HS bridge codes, and codes
+  added by the review (codes moved from a technology's midstream basket count as added to its
+  upstream basket); left of zero, the codes the review excluded from the basket and the codes it
+  moved to the upstream stage. Panel (b): share of the pre-review basket's 2024 trade value carried
+  by the excluded codes; ``new'' marks a basket the review created. Trade is the reconciled
+  all-reporter Comtrade matrix (the importer's declaration, else the exporter's declaration
+  $\times1.06$), summed over exporter--importer pairs; a code in several baskets counts in each.
+  Green hydrogen, geothermal and the downstream stage have no basket; semiconductors are carried
+  in the master but not scored. Source: \texttt{data/reference/energy\_hs6\_master.csv},
+  \texttt{data/raw/comtrade\_energy\_dyads\_all.csv}; \texttt{scripts/paper/fig\_hs6\_crosswalk.R}.}
+  \label{fig:hs6_crosswalk}
+\end{figure}
+
+\input{tables/misc_hs6_counts}
+
+% === section: strategic (Section 8, the country-invariant inputs of the SI) ================
+\paragraph{The fixed inputs of the Strategic Index.} Two of the five terms of the Strategic Index
+take the same value for every country, and they set a sector prior
+(Figure~\ref{fig:si_fixed_inputs}, panel b). The stage term gives midstream sectors 0.05 more
+than downstream ones; the technology term, $0.1\,g_t$ with $g_t$ the clean-technology weight
+built from IPCC life-cycle emissions, separates oil ($g_t=0$) from wind ($g_t=0.999$) by 0.10.
+The prior thus runs from 0.025 (Oil downstream) to 0.175 (Wind midstream), out of a possible range
+of the index of 0.025 to 0.975. The prior is a stated preference for clean, midstream
+activity, not a measurement, and its weight is visible when the country-varying terms are flat.
+For a country whose only rankable sectors are the coal, gas, nuclear and oil midstream pairs, the
+prior alone puts nuclear 0.058 ahead of gas, 0.097 ahead of coal and 0.100 ahead of oil; with
+midstream nuclear security compressed around its median, this lead, rather than a floor in
+security, is what places nuclear midstream at the top of such countries' Strategic Index
+(Section~\ref{sec:strategic}). The Climate Action Tracker component of the
+Policy index (panel a) uses the same weight $g_t$: a country's rating $\kappa_i$ sets the slope
+$2\kappa_i-1$, so a rating of ``insufficient'' or better favours clean technologies and a rating of
+``critically insufficient'' favours fossil ones. In the final build CAT rates 65 countries, 26 of
+them EU members through the EU's rating, and 46 of the 57 coalition members; 31 members are
+rated ``insufficient'', 7 ``critically insufficient'', 4 ``highly insufficient'' and 4 ``almost
+sufficient''.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{fig_si_fixed_inputs}
+  \caption{The country-invariant inputs of the Strategic Index. Panel (a): the Climate Action
+  Tracker component of the Policy index, $x^{\mathrm{CAT}}_{its}=\kappa_ig_t+(1-\kappa_i)(1-g_t)$,
+  against the technology weight $g_t$ (IPCC life-cycle emissions, 1 = cleanest) for the four CAT
+  ratings, with the eleven technologies marked on each line; the slope is $2\kappa_i-1$. The
+  legend counts the countries CAT rates in each category in the final build (65 in all, 26 of
+  them EU members through the EU's rating) and the coalition members among them (46 of 57).
+  Panel (b): the sector prior $0.1\lambda_s+0.1g_t$ that the stage weights $\lambda_s$ (upstream
+  0.5, midstream 0.75, downstream 0.25) and the technology weights add to the Strategic Index of
+  every country; Geothermal midstream is not a reported sector. Source: the pipeline's own
+  functions and \texttt{data/raw/ipcc\_ghg\_intensity.csv}, with the CAT ratings of
+  \texttt{policy\_component\_tbl} in \texttt{data/processed/outputs/index\_outputs.rds};
+  \texttt{scripts/paper/fig\_si\_fixed\_inputs.R}.}
+  \label{fig:si_fixed_inputs}
+\end{figure}

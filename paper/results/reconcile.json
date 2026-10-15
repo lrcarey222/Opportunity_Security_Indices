@@ -1,0 +1,5356 @@
+{
+  "sources": {
+    "shipped_index_outputs": "data/processed/outputs/index_outputs.rds of the main checkout",
+    "shipped_index_outputs_mtime": "2026-09-03 13:58:35",
+    "shipped_network_diagnostics_mtime": "2026-02-23 12:04:48",
+    "corrected_index_outputs": "data/processed/outputs/index_outputs.rds",
+    "corrected_index_outputs_mtime": "2026-10-12 09:04:19",
+    "headline_techs": ["Batteries", "Coal", "Electric Grid", "Electric Vehicles", "Gas", "Geothermal", "Green Hydrogen", "Nuclear", "Oil", "Solar", "Wind"],
+    "shipped_list_iso3": ["USA", "CAN", "JPN", "AUS", "IND", "MEX", "KOR", "GBR", "DEU", "FRA", "ITA", "BRA", "SAU", "ZAF", "IDN", "NOR", "ARE", "VNM", "KEN", "DNK", "ARG", "MAR", "CHL"],
+    "final_coalition_iso3": ["ARG", "AUS", "AUT", "BEL", "BGR", "BRA", "CAN", "CHL", "COD", "COL", "CRI", "CZE", "DEU", "DNK", "DOM", "ESP", "FIN", "FRA", "GAB", "GBR", "GHA", "GRC", "GTM", "HRV", "HUN", "IDN", "IND", "IRL", "ISR", "ITA", "JPN", "KOR", "LUX", "MAR", "MEX", "MYS", "NAM", "NLD", "NOR", "NZL", "OMN", "PER", "PHL", "POL", "PRT", "QAT", "ROU", "SAU", "SGP", "SVK", "SWE", "THA", "TUR", "UKR", "USA", "VNM", "ZAF"],
+    "final_coalition_tiers": {
+      "core": 31,
+      "partner": 26
+    },
+    "note": "Cells matched on canonical country x technology x stage (SI: country x sector); constant cells (zero range across countries in either release) excluded from correlations and rank shifts; rank statistics over cells rankable in the final release (agreement), all matched cells in agreement_all; Spearman unless labelled pearson."
+  },
+  "data_changes": {
+    "basket_review": {
+      "codes_excluded": 92,
+      "codes_kept_with_caveat": 44,
+      "codes_added": 16,
+      "stages_with_added_codes": ["Electric Grid Upstream", "Electric Vehicles Upstream", "Nuclear Upstream", "Solar Upstream", "Wind Upstream"],
+      "stages_revised": ["Batteries Midstream", "Batteries Upstream", "Coal Midstream", "Electric Grid Midstream", "Electric Grid Upstream", "Gas Midstream", "Gas Upstream", "Oil Midstream", "Solar Midstream", "Wind Midstream"],
+      "electric_grid_upstream_codes_kept": 7
+    },
+    "import_reporters_2024": 143,
+    "coalition_nonreporters_2024": ["GAB", "VNM"]
+  },
+  "coverage": {
+    "es": {
+      "shipped_rows": 5746,
+      "shipped_country_strings": 270,
+      "shipped_noncountry_rows": 17,
+      "shipped_noncountry_units": ["Northern Cyprus", "USSR"],
+      "shipped_merged_spelling_rows": 162,
+      "shipped_split_economies": ["Bosnia / Bosnia and Herzegovina", "Brunei / Brunei Darussalam", "Cabo Verde / Republic of Cabo Verde", "Congo / Republic of Congo / Republic of the Congo", "Cote d'Ivoire / Côte d'Ivoire", "Congo, Democratic Republic of the / Democratic Republic of Congo / Democratic Republic of the Congo", "Eswatini / Kingdom of eSwatini", "Faeroe Islands / Faroe Islands", "French Polynesia / Tahiti", "Gambia / The Gambia", "China Hong Kong SAR / Hong Kong", "Kyrgyz Republic / Kyrgyzstan", "Lao PDR / Laos", "Macao / Macau", "Federated States of Micronesia / Micronesia", "Dem. Rep. Korea / North Korea", "Sao Tome and Principe / São Tomé and Principe", "Sint Maarten / Sint Maarten (Dutch part)", "Slovak Republic / Slovakia", "Saint Kitts and Nevis / St. Kitts and Nevis", "Saint Lucia / St. Lucia", "Saint Vincent and the Grenadines / St. Vincent and the Grenadines", "Syria / Syrian Arab Republic", "Taiwan / Taiwan, Province of China", "Tanzania / Tanzania, United Republic of", "Trinidad & Tobago / Trinidad and Tobago", "Viet Nam / Vietnam", "United States Virgin Islands / Virgin Islands (U.S.)", "Palestine / West Bank and Gaza"],
+      "shipped_keys_after_harmonisation": 5567,
+      "shipped_economies_after_harmonisation": 237,
+      "shipped_tech_stage_pairs": 31,
+      "corrected_rows": 6232,
+      "corrected_rankable_rows": 4163,
+      "corrected_rank_exclusion": {
+        "imputed weight share above 0.5": 1462,
+        "not a sovereign economy": 301,
+        "not a sovereign economy and imputed weight share above 0.5": 306
+      },
+      "corrected_economies": 219,
+      "corrected_economies_with_a_rankable_cell": 195,
+      "corrected_tech_stage_pairs": 30,
+      "economies_only_in_shipped": ["Åland Islands", "Anguilla", "British Indian Ocean Territory", "Cook Islands", "Falkland Islands", "Guernsey", "Jersey", "Montserrat", "Niue", "Norfolk Island", "Pitcairn Islands", "South Georgia & South Sandwich Islands", "St. Barthélemy", "St. Helena", "St. Pierre & Miquelon", "Vatican City", "Wallis & Futuna", "Western Sahara"],
+      "economies_only_in_corrected": [],
+      "matched_cells_all": 5522,
+      "matched_cells_rankable": 3731,
+      "matched_cells_not_rankable_by_reason": {
+        "imputed weight share above 0.5": 1305,
+        "not a sovereign economy": 238,
+        "not a sovereign economy and imputed weight share above 0.5": 248
+      },
+      "matched_cells_nonconstant": 5305,
+      "matched_cells_nonconstant_rankable": 3537,
+      "removed_cells": 45,
+      "removed_by_reason": {
+        "economy absent from the corrected pillar": 35,
+        "technology-stage cell no longer scored": 10
+      },
+      "removed_top_cells": [
+        {
+          "cell": "Solar Downstream",
+          "reason": "economy absent from the corrected pillar",
+          "n": 18
+        },
+        {
+          "cell": "Wind Downstream",
+          "reason": "economy absent from the corrected pillar",
+          "n": 17
+        },
+        {
+          "cell": "Geothermal Midstream",
+          "reason": "technology-stage cell no longer scored",
+          "n": 5
+        },
+        {
+          "cell": "Geothermal Upstream",
+          "reason": "technology-stage cell no longer scored",
+          "n": 5
+        }
+      ],
+      "added_cells": 710,
+      "added_cells_rankable": 432,
+      "added_by_reason": {
+        "country newly scored in an existing cell": 601,
+        "technology-stage cell newly scored": 109
+      },
+      "added_top_cells": [
+        {
+          "cell": "Green Hydrogen Midstream",
+          "reason": "technology-stage cell newly scored",
+          "n": 109
+        },
+        {
+          "cell": "Electric Grid Midstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 80
+        },
+        {
+          "cell": "Gas Midstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 80
+        },
+        {
+          "cell": "Oil Midstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 80
+        },
+        {
+          "cell": "Coal Midstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 79
+        },
+        {
+          "cell": "Batteries Midstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 76
+        }
+      ],
+      "added_median_imputed_weight_share": 0,
+      "excluded_constant_cells": [
+        {
+          "tech": "Geothermal",
+          "supply_chain": "Midstream",
+          "constant_in": "shipped",
+          "shipped_n": 5,
+          "shipped_value": 0
+        },
+        {
+          "tech": "Geothermal",
+          "supply_chain": "Upstream",
+          "constant_in": "shipped",
+          "shipped_n": 5,
+          "shipped_value": 0
+        },
+        {
+          "tech": "Nuclear",
+          "supply_chain": "Upstream",
+          "constant_in": "shipped",
+          "shipped_n": 217,
+          "shipped_value": 0,
+          "corrected_n": 218,
+          "corrected_value": 0.172158
+        }
+      ],
+      "excluded_constant_country_cells_matched": 217
+    },
+    "eo": {
+      "shipped_rows": 6923,
+      "shipped_country_strings": 272,
+      "shipped_noncountry_rows": 56,
+      "shipped_noncountry_units": ["Global", "Northern Cyprus", "USSR"],
+      "shipped_merged_spelling_rows": 234,
+      "shipped_split_economies": ["Bosnia / Bosnia and Herzegovina", "Brunei / Brunei Darussalam", "Cabo Verde / Republic of Cabo Verde", "China / China (Mainland)", "Congo / Republic of Congo / Republic of the Congo", "Cote d'Ivoire / Côte d'Ivoire", "Congo, Democratic Republic of the / Democratic Republic of Congo / Democratic Republic of the Congo", "Eswatini / Kingdom of eSwatini", "Faeroe Islands / Faroe Islands", "French Polynesia / Tahiti", "Gambia / The Gambia", "China Hong Kong SAR / Hong Kong", "Kyrgyz Republic / Kyrgyzstan", "Lao PDR / Laos", "Macao / Macau", "Federated States of Micronesia / Micronesia", "Dem. Rep. Korea / North Korea", "Sao Tome and Principe / São Tomé and Principe", "Sint Maarten / Sint Maarten (Dutch part)", "Slovak Republic / Slovakia", "Saint Kitts and Nevis / St. Kitts and Nevis", "Saint Lucia / St. Lucia", "Saint Vincent and the Grenadines / St. Vincent and the Grenadines", "Syria / Syrian Arab Republic", "Taiwan / Taiwan, Province of China", "Tanzania / Tanzania, United Republic of", "Trinidad & Tobago / Trinidad and Tobago", "Viet Nam / Vietnam", "United States Virgin Islands / Virgin Islands (U.S.)", "Palestine / West Bank and Gaza"],
+      "shipped_keys_after_harmonisation": 6633,
+      "shipped_economies_after_harmonisation": 237,
+      "shipped_tech_stage_pairs": 33,
+      "corrected_rows": 7131,
+      "corrected_rankable_rows": 4301,
+      "corrected_rank_exclusion": {
+        "imputed weight share above 0.5": 2112,
+        "not a sovereign economy": 74,
+        "not a sovereign economy and imputed weight share above 0.5": 644
+      },
+      "corrected_economies": 219,
+      "corrected_economies_with_a_rankable_cell": 178,
+      "corrected_tech_stage_pairs": 33,
+      "economies_only_in_shipped": ["Åland Islands", "Anguilla", "British Indian Ocean Territory", "Cook Islands", "Falkland Islands", "Guernsey", "Jersey", "Montserrat", "Niue", "Norfolk Island", "Pitcairn Islands", "South Georgia & South Sandwich Islands", "St. Barthélemy", "St. Helena", "St. Pierre & Miquelon", "Vatican City", "Wallis & Futuna", "Western Sahara"],
+      "economies_only_in_corrected": [],
+      "matched_cells_all": 6598,
+      "matched_cells_rankable": 4290,
+      "matched_cells_not_rankable_by_reason": {
+        "imputed weight share above 0.5": 1751,
+        "not a sovereign economy": 73,
+        "not a sovereign economy and imputed weight share above 0.5": 484
+      },
+      "matched_cells_nonconstant": 6598,
+      "matched_cells_nonconstant_rankable": 4290,
+      "removed_cells": 35,
+      "removed_by_reason": {
+        "economy absent from the corrected pillar": 35
+      },
+      "removed_top_cells": [
+        {
+          "cell": "Solar Downstream",
+          "reason": "economy absent from the corrected pillar",
+          "n": 18
+        },
+        {
+          "cell": "Wind Downstream",
+          "reason": "economy absent from the corrected pillar",
+          "n": 17
+        }
+      ],
+      "added_cells": 533,
+      "added_cells_rankable": 11,
+      "added_by_reason": {
+        "country newly scored in an existing cell": 533
+      },
+      "added_top_cells": [
+        {
+          "cell": "Green Hydrogen Midstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 105
+        },
+        {
+          "cell": "Geothermal Upstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 50
+        },
+        {
+          "cell": "Electric Grid Downstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 49
+        },
+        {
+          "cell": "Geothermal Midstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 48
+        },
+        {
+          "cell": "Electric Grid Midstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 39
+        },
+        {
+          "cell": "Batteries Midstream",
+          "reason": "country newly scored in an existing cell",
+          "n": 37
+        }
+      ],
+      "added_median_imputed_weight_share": 0.683333,
+      "excluded_constant_cells": [],
+      "excluded_constant_country_cells_matched": 0
+    }
+  },
+  "agreement": {
+    "es": {
+      "n_cells": 3537,
+      "n_economies": 194,
+      "pearson": 0.806918,
+      "spearman": 0.806594,
+      "mean_change": 0.020613,
+      "mean_abs_change": 0.077947,
+      "share_abs_change_gt_0_1": 0.305061,
+      "share_abs_change_gt_0_2": 0.063896,
+      "sample": "matched non-constant cells that are rankable in the corrected release",
+      "n_tech_stage_cells": 28,
+      "by_stage": {
+        "Upstream": {
+          "n_cells": 929,
+          "n_economies": 107,
+          "pearson": 0.894349,
+          "spearman": 0.834016,
+          "mean_change": 0.080647,
+          "mean_abs_change": 0.096455,
+          "share_abs_change_gt_0_1": 0.415501,
+          "share_abs_change_gt_0_2": 0.087191
+        },
+        "Midstream": {
+          "n_cells": 966,
+          "n_economies": 151,
+          "pearson": 0.570081,
+          "spearman": 0.552925,
+          "mean_change": 0.00995,
+          "mean_abs_change": 0.094735,
+          "share_abs_change_gt_0_1": 0.399586,
+          "share_abs_change_gt_0_2": 0.097308
+        },
+        "Downstream": {
+          "n_cells": 1642,
+          "n_economies": 193,
+          "pearson": 0.839218,
+          "spearman": 0.80048,
+          "mean_change": -0.007079,
+          "mean_abs_change": 0.057599,
+          "share_abs_change_gt_0_1": 0.186967,
+          "share_abs_change_gt_0_2": 0.03106
+        }
+      },
+      "within_cell_spearman": {
+        "n_cells": 28,
+        "n_cells_too_small": 0,
+        "median": 0.832798,
+        "q25": 0.738412,
+        "q75": 0.907513,
+        "min": 0.57557,
+        "min_cell": "Electric Grid Upstream",
+        "max": 0.994438,
+        "max_cell": "Electric Vehicles Downstream",
+        "n_cells_below_0_8": 11,
+        "n_cells_below_0_5": 0,
+        "by_stage": {
+          "Upstream": {
+            "n_cells": 9,
+            "median": 0.842399,
+            "min": 0.57557,
+            "max": 0.920051
+          },
+          "Midstream": {
+            "n_cells": 9,
+            "median": 0.696092,
+            "min": 0.58702,
+            "max": 0.906801
+          },
+          "Downstream": {
+            "n_cells": 10,
+            "median": 0.898543,
+            "min": 0.779777,
+            "max": 0.994438
+          }
+        }
+      },
+      "share_rank_shift_gt_10": 0.454905,
+      "share_rank_shift_gt_10pct_of_cell": 0.411648,
+      "median_abs_rank_shift": 9,
+      "cell_size_range": [68, 191],
+      "shipped_exact_zero_cells": {
+        "n": 89,
+        "by_stage": {
+          "Upstream": 89,
+          "Midstream": 0,
+          "Downstream": 0
+        },
+        "n_economies": 21,
+        "top_cells": [
+          {
+            "cell": "Solar Upstream",
+            "n": 21
+          },
+          {
+            "cell": "Wind Upstream",
+            "n": 20
+          },
+          {
+            "cell": "Green Hydrogen Upstream",
+            "n": 19
+          },
+          {
+            "cell": "Batteries Upstream",
+            "n": 18
+          },
+          {
+            "cell": "Electric Vehicles Upstream",
+            "n": 11
+          }
+        ],
+        "corrected_mean": 0.20055
+      },
+      "mean_change_by_stage": {
+        "Upstream": 0.080647,
+        "Midstream": 0.00995,
+        "Downstream": -0.007079
+      }
+    },
+    "eo": {
+      "n_cells": 4290,
+      "n_economies": 178,
+      "pearson": 0.685486,
+      "spearman": 0.666933,
+      "mean_change": 0.012115,
+      "mean_abs_change": 0.056966,
+      "share_abs_change_gt_0_1": 0.172261,
+      "share_abs_change_gt_0_2": 0.00303,
+      "sample": "matched non-constant cells that are rankable in the corrected release",
+      "n_tech_stage_cells": 33,
+      "by_stage": {
+        "Upstream": {
+          "n_cells": 1679,
+          "n_economies": 178,
+          "pearson": 0.541053,
+          "spearman": 0.499579,
+          "mean_change": 0.020832,
+          "mean_abs_change": 0.070646,
+          "share_abs_change_gt_0_1": 0.220965,
+          "share_abs_change_gt_0_2": 0.004169
+        },
+        "Midstream": {
+          "n_cells": 1300,
+          "n_economies": 165,
+          "pearson": 0.672266,
+          "spearman": 0.656134,
+          "mean_change": 0.008913,
+          "mean_abs_change": 0.062348,
+          "share_abs_change_gt_0_1": 0.236154,
+          "share_abs_change_gt_0_2": 0.004615
+        },
+        "Downstream": {
+          "n_cells": 1311,
+          "n_economies": 169,
+          "pearson": 0.86612,
+          "spearman": 0.877229,
+          "mean_change": 0.004126,
+          "mean_abs_change": 0.034112,
+          "share_abs_change_gt_0_1": 0.046529,
+          "share_abs_change_gt_0_2": 0
+        }
+      },
+      "within_cell_spearman": {
+        "n_cells": 33,
+        "n_cells_too_small": 0,
+        "median": 0.768512,
+        "q25": 0.611091,
+        "q75": 0.884511,
+        "min": -0.550514,
+        "min_cell": "Green Hydrogen Midstream",
+        "max": 0.95255,
+        "max_cell": "Electric Vehicles Downstream",
+        "n_cells_below_0_8": 20,
+        "n_cells_below_0_5": 4,
+        "by_stage": {
+          "Upstream": {
+            "n_cells": 11,
+            "median": 0.608465,
+            "min": 0.343263,
+            "max": 0.768512
+          },
+          "Midstream": {
+            "n_cells": 11,
+            "median": 0.804949,
+            "min": -0.550514,
+            "max": 0.897946
+          },
+          "Downstream": {
+            "n_cells": 11,
+            "median": 0.884511,
+            "min": 0.608142,
+            "max": 0.95255
+          }
+        }
+      },
+      "share_rank_shift_gt_10": 0.562005,
+      "share_rank_shift_gt_10pct_of_cell": 0.483217,
+      "median_abs_rank_shift": 13,
+      "cell_size_range": [40, 175],
+      "shipped_exact_zero_cells": {
+        "n": 0,
+        "by_stage": {
+          "Upstream": 0,
+          "Midstream": 0,
+          "Downstream": 0
+        },
+        "n_economies": 0,
+        "top_cells": [],
+        "corrected_mean": "NA"
+      },
+      "mean_change_by_stage": {
+        "Upstream": 0.020832,
+        "Midstream": 0.008913,
+        "Downstream": 0.004126
+      }
+    },
+    "si": {
+      "n_cells": 477,
+      "n_economies": 18,
+      "pearson": 0.763872,
+      "spearman": 0.742807,
+      "mean_change": 0.001077,
+      "mean_abs_change": 0.040856,
+      "share_abs_change_gt_0_1": 0.044025,
+      "share_abs_change_gt_0_2": 0,
+      "shipped_cells": 571,
+      "shipped_countries": 18,
+      "shipped_sectors": 32,
+      "corrected_cells": 3154,
+      "corrected_countries": 174,
+      "corrected_sectors": 30,
+      "shipped_countries_not_scored_in_corrected": [],
+      "sectors_only_in_shipped": ["Electric Grid - Downstream", "Geothermal - Upstream"],
+      "sectors_only_in_corrected": [],
+      "shipped_cells_not_in_corrected": 94,
+      "shipped_cells_not_in_corrected_by_reason": {
+        "EO or ES not rankable": 60,
+        "no ES value": 34
+      },
+      "shipped_cells_not_in_corrected_by_sector": {
+        "Electric Grid - Downstream": 17,
+        "Geothermal - Upstream": 16,
+        "Green Hydrogen - Midstream": 9,
+        "Geothermal - Downstream": 8,
+        "Nuclear - Downstream": 5,
+        "Batteries - Upstream": 4,
+        "Solar - Midstream": 4,
+        "Wind - Midstream": 4,
+        "Green Hydrogen - Upstream": 3,
+        "Batteries - Midstream": 2,
+        "Coal - Downstream": 2,
+        "Electric Grid - Midstream": 2,
+        "Electric Vehicles - Downstream": 2,
+        "Gas - Downstream": 2,
+        "Oil - Downstream": 2,
+        "Batteries - Downstream": 1,
+        "Coal - Upstream": 1,
+        "Electric Grid - Upstream": 1,
+        "Electric Vehicles - Midstream": 1,
+        "Electric Vehicles - Upstream": 1,
+        "Gas - Upstream": 1,
+        "Green Hydrogen - Downstream": 1,
+        "Nuclear - Midstream": 1,
+        "Oil - Upstream": 1,
+        "Solar - Upstream": 1,
+        "Wind - Downstream": 1,
+        "Wind - Upstream": 1
+      },
+      "matched_countries": 18,
+      "matched_countries_list": ["Argentina", "Australia", "Brazil", "Canada", "Chile", "Germany", "India", "Indonesia", "Japan", "Kenya", "Mexico", "Morocco", "Norway", "Saudi Arabia", "South Africa", "United Kingdom", "United States", "Viet Nam"],
+      "within_country_spearman": {
+        "n_countries": 18,
+        "median": 0.737073,
+        "min": 0.417241,
+        "min_country": "Argentina",
+        "max": 0.915152,
+        "max_country": "Kenya"
+      },
+      "corrected_unscored_cells": {
+        "n": 3764,
+        "not_policy_eligible": 442,
+        "eo_not_rankable": 2758,
+        "es_not_rankable": 2069,
+        "missing_es": 686,
+        "policy_eligible_but_pillar": 3322
+      },
+      "structure": {
+        "sector_r2_shipped": 0.66028,
+        "sector_r2_corrected": 0.663546,
+        "within_sector_spearman": 0.669098,
+        "sc_weight_max_abs_diff": 0,
+        "tech_weight_max_abs_diff": 0.123609,
+        "tech_weight_spearman": 0.983645,
+        "tech_weight_by_tech": [
+          {
+            "tech": "Batteries",
+            "tw_old": 0.965801,
+            "tw_new": 0.966626
+          },
+          {
+            "tech": "Coal",
+            "tw_old": 0,
+            "tw_new": 0.024125
+          },
+          {
+            "tech": "Electric Grid",
+            "tw_old": 0.982592,
+            "tw_new": 0.983012
+          },
+          {
+            "tech": "Electric Vehicles",
+            "tw_old": 0.582578,
+            "tw_new": 0.568523
+          },
+          {
+            "tech": "Gas",
+            "tw_old": 0.407911,
+            "tw_new": 0.422195
+          },
+          {
+            "tech": "Geothermal",
+            "tw_old": 0.965801,
+            "tw_new": 0.967431
+          },
+          {
+            "tech": "Green Hydrogen",
+            "tw_old": 0.686856,
+            "tw_new": 0.694411
+          },
+          {
+            "tech": "Nuclear",
+            "tw_old": 0.998764,
+            "tw_new": 0.998794
+          },
+          {
+            "tech": "Oil",
+            "tw_old": 0.123609,
+            "tw_new": 0
+          },
+          {
+            "tech": "Solar",
+            "tw_old": 0.965801,
+            "tw_new": 0.966626
+          },
+          {
+            "tech": "Wind",
+            "tw_old": 0.999382,
+            "tw_new": 0.999397
+          }
+        ],
+        "pol_spearman": 0.614653,
+        "pol_pearson": 0.587555,
+        "matched_countries_policy_basis": {
+          "IEA PAMS + CAT": 18
+        },
+        "shipped_policy_components": ["CAT Policy Index", "Dual-use policy score", "IEA PAMS Policy Index", "NIPO Policy Index"],
+        "final_policy_index_components": ["IEA PAMS Policy Index", "CAT Policy Index"],
+        "final_policy_index_weights": {
+          "IEA PAMS Policy Index": 3,
+          "CAT Policy Index": 2
+        },
+        "term_share_of_abs_change": {
+          "policy": 0.404886,
+          "eo": 0.216123,
+          "need": 0.352461,
+          "weights": 0.026531
+        },
+        "mean_term_change": {
+          "policy": 0.002347,
+          "eo": 0.002415,
+          "need": -0.002711,
+          "weights": -0.000973
+        },
+        "mean_abs_term_change": {
+          "policy": 0.029984,
+          "eo": 0.016005,
+          "need": 0.026102,
+          "weights": 0.001965
+        }
+      }
+    }
+  },
+  "agreement_all_matched": {
+    "es": {
+      "n_cells": 5305,
+      "n_economies": 219,
+      "pearson": 0.83854,
+      "spearman": 0.841877,
+      "mean_change": 0.024531,
+      "mean_abs_change": 0.078718,
+      "share_abs_change_gt_0_1": 0.318944,
+      "share_abs_change_gt_0_2": 0.050895,
+      "by_stage": {
+        "Upstream": {
+          "n_cells": 1963,
+          "n_economies": 219,
+          "pearson": 0.903356,
+          "spearman": 0.861711,
+          "mean_change": 0.083711,
+          "mean_abs_change": 0.092169,
+          "share_abs_change_gt_0_1": 0.414162,
+          "share_abs_change_gt_0_2": 0.051452
+        },
+        "Midstream": {
+          "n_cells": 1301,
+          "n_economies": 202,
+          "pearson": 0.593936,
+          "spearman": 0.556722,
+          "mean_change": -0.015162,
+          "mean_abs_change": 0.095242,
+          "share_abs_change_gt_0_1": 0.412759,
+          "share_abs_change_gt_0_2": 0.083782
+        },
+        "Downstream": {
+          "n_cells": 2041,
+          "n_economies": 219,
+          "pearson": 0.840071,
+          "spearman": 0.80913,
+          "mean_change": -0.007086,
+          "mean_abs_change": 0.055249,
+          "share_abs_change_gt_0_1": 0.167565,
+          "share_abs_change_gt_0_2": 0.029397
+        }
+      }
+    },
+    "eo": {
+      "n_cells": 6598,
+      "n_economies": 219,
+      "pearson": 0.71886,
+      "spearman": 0.711249,
+      "mean_change": 0.005655,
+      "mean_abs_change": 0.053543,
+      "share_abs_change_gt_0_1": 0.131707,
+      "share_abs_change_gt_0_2": 0.00197,
+      "by_stage": {
+        "Upstream": {
+          "n_cells": 2343,
+          "n_economies": 219,
+          "pearson": 0.518369,
+          "spearman": 0.485361,
+          "mean_change": 0.01831,
+          "mean_abs_change": 0.068387,
+          "share_abs_change_gt_0_1": 0.179257,
+          "share_abs_change_gt_0_2": 0.002988
+        },
+        "Midstream": {
+          "n_cells": 1959,
+          "n_economies": 206,
+          "pearson": 0.755969,
+          "spearman": 0.767455,
+          "mean_change": -0.007058,
+          "mean_abs_change": 0.06126,
+          "share_abs_change_gt_0_1": 0.196018,
+          "share_abs_change_gt_0_2": 0.003063
+        },
+        "Downstream": {
+          "n_cells": 2296,
+          "n_economies": 219,
+          "pearson": 0.864739,
+          "spearman": 0.883511,
+          "mean_change": 0.003587,
+          "mean_abs_change": 0.03181,
+          "share_abs_change_gt_0_1": 0.02831,
+          "share_abs_change_gt_0_2": 0
+        }
+      }
+    }
+  },
+  "coalition": {
+    "es": {
+      "n_members": 57,
+      "n_matched_cells": 1618,
+      "n_matched_cells_not_rankable": 93,
+      "not_rankable_members": ["Australia", "Bulgaria", "Canada", "Costa Rica", "Democratic Republic of Congo", "Dominican Republic", "Finland", "Gabon", "Ghana", "Guatemala", "Indonesia", "Israel", "Malaysia", "Namibia", "Philippines", "Qatar", "Singapore", "Thailand", "Viet Nam"],
+      "not_rankable_by_reason": {
+        "imputed weight share above 0.5": 93
+      },
+      "n_rankable_nonconstant": 1468,
+      "share_abs_change_gt_0_1": 0.28406,
+      "spearman": 0.82444,
+      "mover_pool": 1525,
+      "mover_pool_const_shipped": 57
+    },
+    "eo": {
+      "n_members": 57,
+      "n_matched_cells": 1861,
+      "n_matched_cells_not_rankable": 145,
+      "not_rankable_members": ["Argentina", "Australia", "Brazil", "Canada", "Chile", "Colombia", "Costa Rica", "Democratic Republic of Congo", "Dominican Republic", "France", "Gabon", "Ghana", "Guatemala", "India", "Israel", "Mexico", "Morocco", "Namibia", "New Zealand", "Norway", "Oman", "Peru", "Qatar", "Saudi Arabia", "Singapore", "South Africa", "South Korea", "Turkiye", "Ukraine", "United Kingdom", "Viet Nam"],
+      "not_rankable_by_reason": {
+        "imputed weight share above 0.5": 145
+      },
+      "n_rankable_nonconstant": 1716,
+      "share_abs_change_gt_0_1": 0.181235,
+      "spearman": 0.676659,
+      "mover_pool": 1716,
+      "mover_pool_const_shipped": 0
+    },
+    "si": {
+      "n_cells": 467,
+      "n_members": 17,
+      "members": ["Argentina", "Australia", "Brazil", "Canada", "Chile", "Germany", "India", "Indonesia", "Japan", "Mexico", "Morocco", "Norway", "Saudi Arabia", "South Africa", "United Kingdom", "United States", "Viet Nam"],
+      "spearman": 0.740487,
+      "share_abs_change_gt_0_1": 0.042827
+    }
+  },
+  "within_cell_spearman_by_cell": {
+    "es": [
+      {
+        "cell": "Electric Grid Upstream",
+        "n": 106,
+        "spearman": 0.57557,
+        "mean_change": 0.112842,
+        "mean_abs_change": 0.120874,
+        "share_rank_shift_gt_10": 0.679245,
+        "level_driver": "Foreign Dependency",
+        "level_driver_mean": 0.050983,
+        "reorder_driver": "Foreign Dependency",
+        "reorder_driver_sd": 0.055618
+      },
+      {
+        "cell": "Nuclear Midstream",
+        "n": 130,
+        "spearman": 0.58702,
+        "mean_change": 0.240033,
+        "mean_abs_change": 0.240033,
+        "share_rank_shift_gt_10": 0.730769,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.21095,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.068278
+      },
+      {
+        "cell": "Gas Midstream",
+        "n": 125,
+        "spearman": 0.649862,
+        "mean_change": -0.023159,
+        "mean_abs_change": 0.06534,
+        "share_rank_shift_gt_10": 0.664,
+        "level_driver": "Trade",
+        "level_driver_mean": -0.023159,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.077743
+      },
+      {
+        "cell": "Oil Midstream",
+        "n": 125,
+        "spearman": 0.656694,
+        "mean_change": 0.055614,
+        "mean_abs_change": 0.080761,
+        "share_rank_shift_gt_10": 0.712,
+        "level_driver": "Trade",
+        "level_driver_mean": 0.055614,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.079316
+      },
+      {
+        "cell": "Solar Midstream",
+        "n": 104,
+        "spearman": 0.686701,
+        "mean_change": 0.0039,
+        "mean_abs_change": 0.023481,
+        "share_rank_shift_gt_10": 0.576923,
+        "level_driver": "Investment",
+        "level_driver_mean": -0.050491,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.023404
+      },
+      {
+        "cell": "Coal Midstream",
+        "n": 125,
+        "spearman": 0.696092,
+        "mean_change": 0.027004,
+        "mean_abs_change": 0.06595,
+        "share_rank_shift_gt_10": 0.68,
+        "level_driver": "Trade",
+        "level_driver_mean": 0.027004,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.075606
+      },
+      {
+        "cell": "Electric Grid Midstream",
+        "n": 80,
+        "spearman": 0.724402,
+        "mean_change": -0.055613,
+        "mean_abs_change": 0.072172,
+        "share_rank_shift_gt_10": 0.55,
+        "level_driver": "(composition)",
+        "level_driver_mean": -0.121036,
+        "reorder_driver": "(composition)",
+        "reorder_driver_sd": 0.053055
+      },
+      {
+        "cell": "Solar Upstream",
+        "n": 106,
+        "spearman": 0.743082,
+        "mean_change": 0.172863,
+        "mean_abs_change": 0.173147,
+        "share_rank_shift_gt_10": 0.443396,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.093287,
+        "reorder_driver": "Foreign Dependency",
+        "reorder_driver_sd": 0.053664
+      },
+      {
+        "cell": "Wind Upstream",
+        "n": 107,
+        "spearman": 0.764407,
+        "mean_change": 0.154754,
+        "mean_abs_change": 0.159762,
+        "share_rank_shift_gt_10": 0.476636,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.101398,
+        "reorder_driver": "Foreign Dependency",
+        "reorder_driver_sd": 0.053934
+      },
+      {
+        "cell": "Wind Midstream",
+        "n": 88,
+        "spearman": 0.765391,
+        "mean_change": -0.111146,
+        "mean_abs_change": 0.111148,
+        "share_rank_shift_gt_10": 0.386364,
+        "level_driver": "Foreign Dependency",
+        "level_driver_mean": -0.090126,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.023428
+      },
+      {
+        "cell": "Batteries Downstream",
+        "n": 186,
+        "spearman": 0.779777,
+        "mean_change": -0.099678,
+        "mean_abs_change": 0.099678,
+        "share_rank_shift_gt_10": 0.419355,
+        "level_driver": "Consumption",
+        "level_driver_mean": -0.075914,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.052719
+      },
+      {
+        "cell": "Batteries Midstream",
+        "n": 84,
+        "spearman": 0.80812,
+        "mean_change": -0.117688,
+        "mean_abs_change": 0.117688,
+        "share_rank_shift_gt_10": 0.416667,
+        "level_driver": "Foreign Dependency",
+        "level_driver_mean": -0.06726,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.028882
+      },
+      {
+        "cell": "Geothermal Downstream",
+        "n": 146,
+        "spearman": 0.820177,
+        "mean_change": -0.008919,
+        "mean_abs_change": 0.039638,
+        "share_rank_shift_gt_10": 0.527397,
+        "level_driver": "Consumption",
+        "level_driver_mean": -0.007875,
+        "reorder_driver": "Consumption",
+        "reorder_driver_sd": 0.04564
+      },
+      {
+        "cell": "Coal Upstream",
+        "n": 96,
+        "spearman": 0.823198,
+        "mean_change": 0.038084,
+        "mean_abs_change": 0.042892,
+        "share_rank_shift_gt_10": 0.395833,
+        "level_driver": "Trade",
+        "level_driver_mean": 0.042949,
+        "reorder_driver": "Energy Imports",
+        "reorder_driver_sd": 0.028886
+      },
+      {
+        "cell": "Green Hydrogen Upstream",
+        "n": 106,
+        "spearman": 0.842399,
+        "mean_change": 0.064128,
+        "mean_abs_change": 0.09182,
+        "share_rank_shift_gt_10": 0.339623,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.031125,
+        "reorder_driver": "Foreign Dependency",
+        "reorder_driver_sd": 0.051507
+      },
+      {
+        "cell": "Oil Downstream",
+        "n": 186,
+        "spearman": 0.842726,
+        "mean_change": 0.095596,
+        "mean_abs_change": 0.095596,
+        "share_rank_shift_gt_10": 0.790323,
+        "level_driver": "Consumption",
+        "level_driver_mean": 0.096223,
+        "reorder_driver": "Consumption",
+        "reorder_driver_sd": 0.041767
+      },
+      {
+        "cell": "Solar Downstream",
+        "n": 191,
+        "spearman": 0.861502,
+        "mean_change": -0.035274,
+        "mean_abs_change": 0.039656,
+        "share_rank_shift_gt_10": 0.539267,
+        "level_driver": "Consumption",
+        "level_driver_mean": -0.015272,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.033713
+      },
+      {
+        "cell": "Oil Upstream",
+        "n": 97,
+        "spearman": 0.867744,
+        "mean_change": 0.037958,
+        "mean_abs_change": 0.043519,
+        "share_rank_shift_gt_10": 0.402062,
+        "level_driver": "Trade",
+        "level_driver_mean": 0.033393,
+        "reorder_driver": "Energy Imports",
+        "reorder_driver_sd": 0.029585
+      },
+      {
+        "cell": "Green Hydrogen Downstream",
+        "n": 186,
+        "spearman": 0.887419,
+        "mean_change": -0.033953,
+        "mean_abs_change": 0.116859,
+        "share_rank_shift_gt_10": 0.44086,
+        "level_driver": "Consumption",
+        "level_driver_mean": -0.033953,
+        "reorder_driver": "Consumption",
+        "reorder_driver_sd": 0.123538
+      },
+      {
+        "cell": "Electric Vehicles Upstream",
+        "n": 107,
+        "spearman": 0.893012,
+        "mean_change": 0.058836,
+        "mean_abs_change": 0.086796,
+        "share_rank_shift_gt_10": 0.373832,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.057335,
+        "reorder_driver": "Foreign Dependency",
+        "reorder_driver_sd": 0.03983
+      },
+      {
+        "cell": "Electric Vehicles Midstream",
+        "n": 105,
+        "spearman": 0.906801,
+        "mean_change": -0.050619,
+        "mean_abs_change": 0.056391,
+        "share_rank_shift_gt_10": 0.238095,
+        "level_driver": "Foreign Dependency",
+        "level_driver_mean": -0.041951,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.028332
+      },
+      {
+        "cell": "Gas Upstream",
+        "n": 98,
+        "spearman": 0.909649,
+        "mean_change": 0.005169,
+        "mean_abs_change": 0.035912,
+        "share_rank_shift_gt_10": 0.285714,
+        "level_driver": "(composition)",
+        "level_driver_mean": -0.033185,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.028461
+      },
+      {
+        "cell": "Gas Downstream",
+        "n": 186,
+        "spearman": 0.909667,
+        "mean_change": -0.013945,
+        "mean_abs_change": 0.023742,
+        "share_rank_shift_gt_10": 0.263441,
+        "level_driver": "Consumption",
+        "level_driver_mean": -0.013132,
+        "reorder_driver": "Consumption",
+        "reorder_driver_sd": 0.029749
+      },
+      {
+        "cell": "Batteries Upstream",
+        "n": 106,
+        "spearman": 0.920051,
+        "mean_change": 0.067358,
+        "mean_abs_change": 0.098748,
+        "share_rank_shift_gt_10": 0.311321,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.056306,
+        "reorder_driver": "Foreign Dependency",
+        "reorder_driver_sd": 0.042381
+      },
+      {
+        "cell": "Wind Downstream",
+        "n": 186,
+        "spearman": 0.920365,
+        "mean_change": 0.001155,
+        "mean_abs_change": 0.042057,
+        "share_rank_shift_gt_10": 0.462366,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.018175,
+        "reorder_driver": "(composition)",
+        "reorder_driver_sd": 0.036677
+      },
+      {
+        "cell": "Nuclear Downstream",
+        "n": 68,
+        "spearman": 0.953336,
+        "mean_change": 0.001173,
+        "mean_abs_change": 0.029961,
+        "share_rank_shift_gt_10": 0.073529,
+        "level_driver": "Consumption",
+        "level_driver_mean": 0.003825,
+        "reorder_driver": "Consumption",
+        "reorder_driver_sd": 0.034275
+      },
+      {
+        "cell": "Coal Downstream",
+        "n": 186,
+        "spearman": 0.974927,
+        "mean_change": 0.03862,
+        "mean_abs_change": 0.03921,
+        "share_rank_shift_gt_10": 0.247312,
+        "level_driver": "Consumption",
+        "level_driver_mean": 0.039039,
+        "reorder_driver": "Consumption",
+        "reorder_driver_sd": 0.014536
+      },
+      {
+        "cell": "Electric Vehicles Downstream",
+        "n": 121,
+        "spearman": 0.994438,
+        "mean_change": -0.011514,
+        "mean_abs_change": 0.013139,
+        "share_rank_shift_gt_10": 0.016529,
+        "level_driver": "Investment",
+        "level_driver_mean": -0.011514,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.049591
+      }
+    ],
+    "eo": [
+      {
+        "cell": "Green Hydrogen Midstream",
+        "n": 40,
+        "spearman": -0.550514,
+        "mean_change": 0.089459,
+        "mean_abs_change": 0.161824,
+        "share_rank_shift_gt_10": 0.675,
+        "level_driver": "Cost Competitiveness",
+        "level_driver_mean": 0.059351,
+        "reorder_driver": "(composition)",
+        "reorder_driver_sd": 0.085012
+      },
+      {
+        "cell": "Green Hydrogen Upstream",
+        "n": 146,
+        "spearman": 0.343263,
+        "mean_change": 0.072674,
+        "mean_abs_change": 0.073928,
+        "share_rank_shift_gt_10": 0.821918,
+        "level_driver": "Technology Demand",
+        "level_driver_mean": 0.045885,
+        "reorder_driver": "(composition)",
+        "reorder_driver_sd": 0.029434
+      },
+      {
+        "cell": "Electric Grid Upstream",
+        "n": 163,
+        "spearman": 0.358529,
+        "mean_change": 0.008331,
+        "mean_abs_change": 0.028163,
+        "share_rank_shift_gt_10": 0.797546,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.05737,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.034771
+      },
+      {
+        "cell": "Solar Upstream",
+        "n": 153,
+        "spearman": 0.384626,
+        "mean_change": 0.082907,
+        "mean_abs_change": 0.082907,
+        "share_rank_shift_gt_10": 0.830065,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.098663,
+        "reorder_driver": "(composition)",
+        "reorder_driver_sd": 0.019548
+      },
+      {
+        "cell": "Wind Upstream",
+        "n": 142,
+        "spearman": 0.560787,
+        "mean_change": 0.091577,
+        "mean_abs_change": 0.091577,
+        "share_rank_shift_gt_10": 0.725352,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.120926,
+        "reorder_driver": "(composition)",
+        "reorder_driver_sd": 0.017802
+      },
+      {
+        "cell": "Nuclear Upstream",
+        "n": 175,
+        "spearman": 0.561085,
+        "mean_change": 0.137605,
+        "mean_abs_change": 0.137605,
+        "share_rank_shift_gt_10": 0.72,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.14495,
+        "reorder_driver": "(composition)",
+        "reorder_driver_sd": 0.027624
+      },
+      {
+        "cell": "Geothermal Downstream",
+        "n": 128,
+        "spearman": 0.608142,
+        "mean_change": -0.042875,
+        "mean_abs_change": 0.043286,
+        "share_rank_shift_gt_10": 0.773438,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": -0.032655,
+        "reorder_driver": "Consumption",
+        "reorder_driver_sd": 0.023523
+      },
+      {
+        "cell": "Coal Upstream",
+        "n": 157,
+        "spearman": 0.608465,
+        "mean_change": -0.051702,
+        "mean_abs_change": 0.052139,
+        "share_rank_shift_gt_10": 0.713376,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": -0.026734,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.016993
+      },
+      {
+        "cell": "Electric Vehicles Upstream",
+        "n": 153,
+        "spearman": 0.611091,
+        "mean_change": -0.037447,
+        "mean_abs_change": 0.045982,
+        "share_rank_shift_gt_10": 0.69281,
+        "level_driver": "Investment",
+        "level_driver_mean": -0.0347,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.029186
+      },
+      {
+        "cell": "Green Hydrogen Downstream",
+        "n": 158,
+        "spearman": 0.664947,
+        "mean_change": 0.039843,
+        "mean_abs_change": 0.045444,
+        "share_rank_shift_gt_10": 0.765823,
+        "level_driver": "Technology Demand",
+        "level_driver_mean": 0.045524,
+        "reorder_driver": "Consumption",
+        "reorder_driver_sd": 0.030122
+      },
+      {
+        "cell": "Gas Upstream",
+        "n": 165,
+        "spearman": 0.69161,
+        "mean_change": -0.078451,
+        "mean_abs_change": 0.078451,
+        "share_rank_shift_gt_10": 0.660606,
+        "level_driver": "(composition)",
+        "level_driver_mean": -0.058494,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.01901
+      },
+      {
+        "cell": "Batteries Upstream",
+        "n": 120,
+        "spearman": 0.699352,
+        "mean_change": -0.041648,
+        "mean_abs_change": 0.043926,
+        "share_rank_shift_gt_10": 0.583333,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": -0.020272,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.019365
+      },
+      {
+        "cell": "Batteries Downstream",
+        "n": 140,
+        "spearman": 0.720841,
+        "mean_change": 0.068419,
+        "mean_abs_change": 0.070635,
+        "share_rank_shift_gt_10": 0.55,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.122396,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.037542
+      },
+      {
+        "cell": "Electric Grid Midstream",
+        "n": 156,
+        "spearman": 0.756252,
+        "mean_change": -0.059505,
+        "mean_abs_change": 0.060967,
+        "share_rank_shift_gt_10": 0.641026,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": -0.066003,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.031128
+      },
+      {
+        "cell": "Geothermal Midstream",
+        "n": 140,
+        "spearman": 0.760509,
+        "mean_change": 0.122169,
+        "mean_abs_change": 0.122169,
+        "share_rank_shift_gt_10": 0.435714,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.142426,
+        "reorder_driver": "Cost Competitiveness",
+        "reorder_driver_sd": 0.024993
+      },
+      {
+        "cell": "Oil Upstream",
+        "n": 166,
+        "spearman": 0.763033,
+        "mean_change": -0.044773,
+        "mean_abs_change": 0.045561,
+        "share_rank_shift_gt_10": 0.656627,
+        "level_driver": "(composition)",
+        "level_driver_mean": -0.014883,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.016637
+      },
+      {
+        "cell": "Geothermal Upstream",
+        "n": 139,
+        "spearman": 0.768512,
+        "mean_change": 0.089646,
+        "mean_abs_change": 0.089646,
+        "share_rank_shift_gt_10": 0.460432,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.103248,
+        "reorder_driver": "Cost Competitiveness",
+        "reorder_driver_sd": 0.023202
+      },
+      {
+        "cell": "Oil Midstream",
+        "n": 156,
+        "spearman": 0.771111,
+        "mean_change": 0.005317,
+        "mean_abs_change": 0.023109,
+        "share_rank_shift_gt_10": 0.589744,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": 0.009473,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.0208
+      },
+      {
+        "cell": "Coal Midstream",
+        "n": 155,
+        "spearman": 0.78271,
+        "mean_change": 0.005328,
+        "mean_abs_change": 0.023559,
+        "share_rank_shift_gt_10": 0.625806,
+        "level_driver": "Trade",
+        "level_driver_mean": 0.018286,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.021267
+      },
+      {
+        "cell": "Electric Grid Downstream",
+        "n": 139,
+        "spearman": 0.795129,
+        "mean_change": -0.02559,
+        "mean_abs_change": 0.032804,
+        "share_rank_shift_gt_10": 0.417266,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": -0.023441,
+        "reorder_driver": "Cost Competitiveness",
+        "reorder_driver_sd": 0.037175
+      },
+      {
+        "cell": "Gas Midstream",
+        "n": 156,
+        "spearman": 0.804949,
+        "mean_change": -0.038045,
+        "mean_abs_change": 0.040037,
+        "share_rank_shift_gt_10": 0.589744,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": -0.029862,
+        "reorder_driver": "Trade",
+        "reorder_driver_sd": 0.020206
+      },
+      {
+        "cell": "Nuclear Midstream",
+        "n": 154,
+        "spearman": 0.810162,
+        "mean_change": 0.117451,
+        "mean_abs_change": 0.117451,
+        "share_rank_shift_gt_10": 0.623377,
+        "level_driver": "(composition)",
+        "level_driver_mean": 0.100132,
+        "reorder_driver": "Cost Competitiveness",
+        "reorder_driver_sd": 0.017789
+      },
+      {
+        "cell": "Batteries Midstream",
+        "n": 54,
+        "spearman": 0.827406,
+        "mean_change": -0.012157,
+        "mean_abs_change": 0.024997,
+        "share_rank_shift_gt_10": 0.166667,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": -0.007131,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.017896
+      },
+      {
+        "cell": "Solar Downstream",
+        "n": 148,
+        "spearman": 0.861952,
+        "mean_change": -0.02545,
+        "mean_abs_change": 0.029135,
+        "share_rank_shift_gt_10": 0.459459,
+        "level_driver": "Investment",
+        "level_driver_mean": -0.007839,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.024339
+      },
+      {
+        "cell": "Oil Downstream",
+        "n": 104,
+        "spearman": 0.884511,
+        "mean_change": 0.019336,
+        "mean_abs_change": 0.021498,
+        "share_rank_shift_gt_10": 0.307692,
+        "level_driver": "Consumption",
+        "level_driver_mean": 0.028098,
+        "reorder_driver": "Consumption",
+        "reorder_driver_sd": 0.014335
+      },
+      {
+        "cell": "Wind Downstream",
+        "n": 95,
+        "spearman": 0.889724,
+        "mean_change": -0.035003,
+        "mean_abs_change": 0.038543,
+        "share_rank_shift_gt_10": 0.326316,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": -0.020355,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.029035
+      },
+      {
+        "cell": "Electric Vehicles Midstream",
+        "n": 145,
+        "spearman": 0.892412,
+        "mean_change": -0.03839,
+        "mean_abs_change": 0.050055,
+        "share_rank_shift_gt_10": 0.455172,
+        "level_driver": "Investment",
+        "level_driver_mean": -0.032142,
+        "reorder_driver": "Foreign Dependency",
+        "reorder_driver_sd": 0.028723
+      },
+      {
+        "cell": "Nuclear Downstream",
+        "n": 86,
+        "spearman": 0.89345,
+        "mean_change": 0.004206,
+        "mean_abs_change": 0.01312,
+        "share_rank_shift_gt_10": 0.267442,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": 0.01006,
+        "reorder_driver": "Consumption",
+        "reorder_driver_sd": 0.011492
+      },
+      {
+        "cell": "Solar Midstream",
+        "n": 79,
+        "spearman": 0.896811,
+        "mean_change": -0.047855,
+        "mean_abs_change": 0.050143,
+        "share_rank_shift_gt_10": 0.227848,
+        "level_driver": "Investment",
+        "level_driver_mean": -0.03414,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.016708
+      },
+      {
+        "cell": "Wind Midstream",
+        "n": 65,
+        "spearman": 0.897946,
+        "mean_change": -0.055639,
+        "mean_abs_change": 0.058543,
+        "share_rank_shift_gt_10": 0.123077,
+        "level_driver": "Investment",
+        "level_driver_mean": -0.031979,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.01787
+      },
+      {
+        "cell": "Gas Downstream",
+        "n": 104,
+        "spearman": 0.92143,
+        "mean_change": 0.009892,
+        "mean_abs_change": 0.01343,
+        "share_rank_shift_gt_10": 0.240385,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": 0.020966,
+        "reorder_driver": "Cost Competitiveness",
+        "reorder_driver_sd": 0.010425
+      },
+      {
+        "cell": "Coal Downstream",
+        "n": 104,
+        "spearman": 0.940791,
+        "mean_change": 0.028493,
+        "mean_abs_change": 0.028547,
+        "share_rank_shift_gt_10": 0.211538,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": 0.013426,
+        "reorder_driver": "Cost Competitiveness",
+        "reorder_driver_sd": 0.00924
+      },
+      {
+        "cell": "Electric Vehicles Downstream",
+        "n": 105,
+        "spearman": 0.95255,
+        "mean_change": -0.006594,
+        "mean_abs_change": 0.017595,
+        "share_rank_shift_gt_10": 0.12381,
+        "level_driver": "Technological Readiness",
+        "level_driver_mean": -0.009146,
+        "reorder_driver": "Investment",
+        "reorder_driver_sd": 0.025301
+      }
+    ]
+  },
+  "decomposition": {
+    "note": "Two-factor Shapley split of final minus shipped over the rankable matched non-constant cells: score effect of each common category and the composition effect (categories entering or leaving, weight renormalisation). share = share of the summed absolute effects.",
+    "es_overall": [
+      {
+        "driver": "(composition)",
+        "abs_sum": 91.19041,
+        "share": 0.254671
+      },
+      {
+        "driver": "Consumption",
+        "abs_sum": 76.090251,
+        "share": 0.2125
+      },
+      {
+        "driver": "Trade",
+        "abs_sum": 67.363252,
+        "share": 0.188128
+      },
+      {
+        "driver": "Foreign Dependency",
+        "abs_sum": 56.642812,
+        "share": 0.158188
+      },
+      {
+        "driver": "Investment",
+        "abs_sum": 31.321554,
+        "share": 0.087473
+      },
+      {
+        "driver": "Minerals Trade",
+        "abs_sum": 18.651547,
+        "share": 0.052089
+      },
+      {
+        "driver": "Reserves",
+        "abs_sum": 8.630449,
+        "share": 0.024103
+      },
+      {
+        "driver": "Energy Imports",
+        "abs_sum": 5.852045,
+        "share": 0.016343
+      },
+      {
+        "driver": "Production",
+        "abs_sum": 1.21911,
+        "share": 0.003405
+      },
+      {
+        "driver": "Energy Access",
+        "abs_sum": 1.110224,
+        "share": 0.003101
+      }
+    ],
+    "eo_overall": [
+      {
+        "driver": "(composition)",
+        "abs_sum": 163.670509,
+        "share": 0.40265
+      },
+      {
+        "driver": "Technological Readiness",
+        "abs_sum": 71.182233,
+        "share": 0.175117
+      },
+      {
+        "driver": "Cost Competitiveness",
+        "abs_sum": 46.871689,
+        "share": 0.11531
+      },
+      {
+        "driver": "Technology Demand",
+        "abs_sum": 37.451948,
+        "share": 0.092136
+      },
+      {
+        "driver": "Trade",
+        "abs_sum": 35.512429,
+        "share": 0.087365
+      },
+      {
+        "driver": "Investment",
+        "abs_sum": 25.09415,
+        "share": 0.061735
+      },
+      {
+        "driver": "Consumption",
+        "abs_sum": 18.129435,
+        "share": 0.044601
+      },
+      {
+        "driver": "Production",
+        "abs_sum": 6.183937,
+        "share": 0.015213
+      },
+      {
+        "driver": "Foreign Dependency",
+        "abs_sum": 1.882975,
+        "share": 0.004632
+      },
+      {
+        "driver": "Energy Access",
+        "abs_sum": 0.504496,
+        "share": 0.001241
+      }
+    ],
+    "es_reorder_driver_by_stage": [
+      {
+        "supply_chain": "Downstream",
+        "reorder_driver": "(composition)",
+        "n": 1
+      },
+      {
+        "supply_chain": "Downstream",
+        "reorder_driver": "Consumption",
+        "n": 6
+      },
+      {
+        "supply_chain": "Downstream",
+        "reorder_driver": "Investment",
+        "n": 3
+      },
+      {
+        "supply_chain": "Midstream",
+        "reorder_driver": "(composition)",
+        "n": 1
+      },
+      {
+        "supply_chain": "Midstream",
+        "reorder_driver": "Investment",
+        "n": 2
+      },
+      {
+        "supply_chain": "Midstream",
+        "reorder_driver": "Trade",
+        "n": 6
+      },
+      {
+        "supply_chain": "Upstream",
+        "reorder_driver": "Energy Imports",
+        "n": 2
+      },
+      {
+        "supply_chain": "Upstream",
+        "reorder_driver": "Foreign Dependency",
+        "n": 6
+      },
+      {
+        "supply_chain": "Upstream",
+        "reorder_driver": "Trade",
+        "n": 1
+      }
+    ],
+    "eo_reorder_driver_by_stage": [
+      {
+        "supply_chain": "Downstream",
+        "reorder_driver": "Consumption",
+        "n": 4
+      },
+      {
+        "supply_chain": "Downstream",
+        "reorder_driver": "Cost Competitiveness",
+        "n": 3
+      },
+      {
+        "supply_chain": "Downstream",
+        "reorder_driver": "Investment",
+        "n": 4
+      },
+      {
+        "supply_chain": "Midstream",
+        "reorder_driver": "(composition)",
+        "n": 1
+      },
+      {
+        "supply_chain": "Midstream",
+        "reorder_driver": "Cost Competitiveness",
+        "n": 2
+      },
+      {
+        "supply_chain": "Midstream",
+        "reorder_driver": "Foreign Dependency",
+        "n": 1
+      },
+      {
+        "supply_chain": "Midstream",
+        "reorder_driver": "Investment",
+        "n": 3
+      },
+      {
+        "supply_chain": "Midstream",
+        "reorder_driver": "Trade",
+        "n": 4
+      },
+      {
+        "supply_chain": "Upstream",
+        "reorder_driver": "(composition)",
+        "n": 4
+      },
+      {
+        "supply_chain": "Upstream",
+        "reorder_driver": "Cost Competitiveness",
+        "n": 1
+      },
+      {
+        "supply_chain": "Upstream",
+        "reorder_driver": "Investment",
+        "n": 2
+      },
+      {
+        "supply_chain": "Upstream",
+        "reorder_driver": "Trade",
+        "n": 4
+      }
+    ],
+    "es_level_driver_by_stage": [
+      {
+        "supply_chain": "Downstream",
+        "level_driver": "(composition)",
+        "n": 1
+      },
+      {
+        "supply_chain": "Downstream",
+        "level_driver": "Consumption",
+        "n": 8
+      },
+      {
+        "supply_chain": "Downstream",
+        "level_driver": "Investment",
+        "n": 1
+      },
+      {
+        "supply_chain": "Midstream",
+        "level_driver": "(composition)",
+        "n": 2
+      },
+      {
+        "supply_chain": "Midstream",
+        "level_driver": "Foreign Dependency",
+        "n": 3
+      },
+      {
+        "supply_chain": "Midstream",
+        "level_driver": "Investment",
+        "n": 1
+      },
+      {
+        "supply_chain": "Midstream",
+        "level_driver": "Trade",
+        "n": 3
+      },
+      {
+        "supply_chain": "Upstream",
+        "level_driver": "(composition)",
+        "n": 6
+      },
+      {
+        "supply_chain": "Upstream",
+        "level_driver": "Foreign Dependency",
+        "n": 1
+      },
+      {
+        "supply_chain": "Upstream",
+        "level_driver": "Trade",
+        "n": 2
+      }
+    ],
+    "eo_level_driver_by_stage": [
+      {
+        "supply_chain": "Downstream",
+        "level_driver": "(composition)",
+        "n": 1
+      },
+      {
+        "supply_chain": "Downstream",
+        "level_driver": "Consumption",
+        "n": 1
+      },
+      {
+        "supply_chain": "Downstream",
+        "level_driver": "Investment",
+        "n": 1
+      },
+      {
+        "supply_chain": "Downstream",
+        "level_driver": "Technological Readiness",
+        "n": 7
+      },
+      {
+        "supply_chain": "Downstream",
+        "level_driver": "Technology Demand",
+        "n": 1
+      },
+      {
+        "supply_chain": "Midstream",
+        "level_driver": "(composition)",
+        "n": 2
+      },
+      {
+        "supply_chain": "Midstream",
+        "level_driver": "Cost Competitiveness",
+        "n": 1
+      },
+      {
+        "supply_chain": "Midstream",
+        "level_driver": "Investment",
+        "n": 3
+      },
+      {
+        "supply_chain": "Midstream",
+        "level_driver": "Technological Readiness",
+        "n": 4
+      },
+      {
+        "supply_chain": "Midstream",
+        "level_driver": "Trade",
+        "n": 1
+      },
+      {
+        "supply_chain": "Upstream",
+        "level_driver": "(composition)",
+        "n": 7
+      },
+      {
+        "supply_chain": "Upstream",
+        "level_driver": "Investment",
+        "n": 1
+      },
+      {
+        "supply_chain": "Upstream",
+        "level_driver": "Technological Readiness",
+        "n": 2
+      },
+      {
+        "supply_chain": "Upstream",
+        "level_driver": "Technology Demand",
+        "n": 1
+      }
+    ]
+  },
+  "movers": {
+    "n": 12,
+    "per_cell_cap": 2,
+    "es_uncapped_top": {
+      "cells": {
+        "Nuclear Upstream": 10,
+        "Nuclear Midstream": 2
+      },
+      "members": ["CAN Nuclear Upstream", "NAM Nuclear Upstream", "AUS Nuclear Upstream", "UKR Nuclear Upstream", "ZAF Nuclear Upstream", "USA Nuclear Upstream", "IND Nuclear Upstream", "BRA Nuclear Upstream", "CZE Nuclear Upstream", "HUN Nuclear Upstream", "DEU Nuclear Midstream", "HRV Nuclear Midstream"],
+      "change_range": [0.376509, 0.740707]
+    },
+    "eo_uncapped_top": {
+      "cells": {
+        "Nuclear Upstream": 6,
+        "Green Hydrogen Midstream": 5,
+        "Electric Vehicles Midstream": 1
+      },
+      "members": ["CAN Nuclear Upstream", "NAM Nuclear Upstream", "SVK Electric Vehicles Midstream", "DEU Green Hydrogen Midstream", "BRA Nuclear Upstream", "USA Nuclear Upstream", "ZAF Nuclear Upstream", "PRT Green Hydrogen Midstream", "AUS Green Hydrogen Midstream", "ROU Nuclear Upstream", "IRL Green Hydrogen Midstream", "CZE Green Hydrogen Midstream"],
+      "change_range": [-0.200429, 0.249139]
+    },
+    "es": [
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "iso3": "CAN",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "shipped": 0,
+        "corrected": 0.740707,
+        "change": 0.740707,
+        "const_shipped": true,
+        "composition_effect": 0.740707,
+        "score_effect_total": 0,
+        "categories_removed": "Investment",
+        "categories_added": "Energy Prices, Production, Reserves, Trade",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7); uranium Reserves and Production added (Red Book); Energy Prices added (A4); Trade added (T1–T5; all-reporter dyads)"
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "iso3": "NAM",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "shipped": 0,
+        "corrected": 0.716052,
+        "change": 0.716052,
+        "const_shipped": true,
+        "composition_effect": 0.716052,
+        "score_effect_total": 0,
+        "categories_removed": "Investment",
+        "categories_added": "Energy Prices, Production, Reserves, Trade",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7); uranium Reserves and Production added (Red Book); Energy Prices added (A4); Trade added (T1–T5; all-reporter dyads)"
+      },
+      {
+        "rank": 3,
+        "Country": "Germany",
+        "iso3": "DEU",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "shipped": 0.344814,
+        "corrected": 0.729206,
+        "change": 0.384392,
+        "const_shipped": false,
+        "composition_effect": 0.285564,
+        "score_effect_total": 0.098828,
+        "top_score_category": "Trade",
+        "top_score_effect": 0.098828,
+        "categories_removed": "Investment",
+        "categories_added": "",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7)"
+      },
+      {
+        "rank": 4,
+        "Country": "Croatia",
+        "iso3": "HRV",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "shipped": 0.288326,
+        "corrected": 0.664834,
+        "change": 0.376509,
+        "const_shipped": false,
+        "composition_effect": 0.250587,
+        "score_effect_total": 0.125922,
+        "top_score_category": "Trade",
+        "top_score_effect": 0.125922,
+        "categories_removed": "Investment",
+        "categories_added": "",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7) + Trade rebuilt (T1–T5; all-reporter dyads)"
+      },
+      {
+        "rank": 5,
+        "Country": "Turkiye",
+        "iso3": "TUR",
+        "tech": "Oil",
+        "supply_chain": "Downstream",
+        "shipped": 0.467908,
+        "corrected": 0.786618,
+        "change": 0.31871,
+        "const_shipped": false,
+        "composition_effect": 0,
+        "score_effect_total": 0.31871,
+        "top_score_category": "Consumption",
+        "top_score_effect": 0.319882,
+        "categories_removed": "",
+        "categories_added": "",
+        "spelling_merged": false,
+        "primary_driver": "Consumption",
+        "cause": "Consumption rebuilt (E5)"
+      },
+      {
+        "rank": 6,
+        "Country": "Thailand",
+        "iso3": "THA",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "shipped": 0.112478,
+        "corrected": 0.415314,
+        "change": 0.302836,
+        "const_shipped": false,
+        "composition_effect": 0.127324,
+        "score_effect_total": 0.175512,
+        "top_score_category": "Production",
+        "top_score_effect": 0.12291,
+        "categories_removed": "Investment",
+        "categories_added": "Energy Prices, Trade",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7); Energy Prices added (A4); Trade added (T1–T5; all-reporter dyads) + Production rebuilt (E1, E3)"
+      },
+      {
+        "rank": 7,
+        "Country": "Ghana",
+        "iso3": "GHA",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "shipped": 0.017767,
+        "corrected": 0.296124,
+        "change": 0.278357,
+        "const_shipped": false,
+        "composition_effect": 0.105366,
+        "score_effect_total": 0.172991,
+        "top_score_category": "Minerals Trade",
+        "top_score_effect": 0.087893,
+        "categories_removed": "Investment",
+        "categories_added": "Energy Prices, Trade",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7); Energy Prices added (A4); Trade added (T1–T5; all-reporter dyads) + Minerals Trade observed, was imputed (E6)"
+      },
+      {
+        "rank": 8,
+        "Country": "Turkiye",
+        "iso3": "TUR",
+        "tech": "Batteries",
+        "supply_chain": "Downstream",
+        "shipped": 0.579868,
+        "corrected": 0.3125,
+        "change": -0.267368,
+        "const_shipped": false,
+        "composition_effect": 0,
+        "score_effect_total": -0.267368,
+        "top_score_category": "Investment",
+        "top_score_effect": -0.164626,
+        "categories_removed": "",
+        "categories_added": "",
+        "spelling_merged": false,
+        "primary_driver": "Investment",
+        "cause": "Investment zero-filled (E7) + Consumption rebuilt (E5)"
+      },
+      {
+        "rank": 9,
+        "Country": "Gabon",
+        "iso3": "GAB",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "shipped": 0,
+        "corrected": 0.262891,
+        "change": 0.262891,
+        "const_shipped": false,
+        "composition_effect": 0.104503,
+        "score_effect_total": 0.158388,
+        "top_score_category": "Foreign Dependency",
+        "top_score_effect": 0.086454,
+        "categories_removed": "Investment",
+        "categories_added": "Energy Prices, Trade",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7); Energy Prices added (A4); Trade added (T1–T5; all-reporter dyads, mirror imports) + Foreign Dependency rebuilt (E2–E3)"
+      },
+      {
+        "rank": 10,
+        "Country": "Oman",
+        "iso3": "OMN",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "shipped": 0,
+        "corrected": 0.261725,
+        "change": 0.261725,
+        "const_shipped": false,
+        "composition_effect": 0.089817,
+        "score_effect_total": 0.171908,
+        "top_score_category": "Foreign Dependency",
+        "top_score_effect": 0.086454,
+        "categories_removed": "Investment",
+        "categories_added": "Energy Prices, Trade",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7); Energy Prices added (A4); Trade added (T1–T5; all-reporter dyads) + Foreign Dependency rebuilt (E2–E3)"
+      },
+      {
+        "rank": 11,
+        "Country": "Czech Republic",
+        "iso3": "CZE",
+        "tech": "Batteries",
+        "supply_chain": "Downstream",
+        "shipped": 0.579868,
+        "corrected": 0.330995,
+        "change": -0.248872,
+        "const_shipped": false,
+        "composition_effect": 0,
+        "score_effect_total": -0.248872,
+        "top_score_category": "Investment",
+        "top_score_effect": -0.164626,
+        "categories_removed": "",
+        "categories_added": "",
+        "spelling_merged": false,
+        "primary_driver": "Investment",
+        "cause": "Investment zero-filled (E7) + Consumption rebuilt (E5)"
+      },
+      {
+        "rank": 12,
+        "Country": "New Zealand",
+        "iso3": "NZL",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Downstream",
+        "shipped": 0.450544,
+        "corrected": 0.212404,
+        "change": -0.238141,
+        "const_shipped": false,
+        "composition_effect": 0,
+        "score_effect_total": -0.238141,
+        "top_score_category": "Consumption",
+        "top_score_effect": -0.238141,
+        "categories_removed": "",
+        "categories_added": "",
+        "spelling_merged": false,
+        "primary_driver": "Consumption",
+        "cause": "Consumption rebuilt (E5)"
+      }
+    ],
+    "eo": [
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "iso3": "CAN",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "shipped": 0.397896,
+        "corrected": 0.647035,
+        "change": 0.249139,
+        "const_shipped": false,
+        "composition_effect": 0.26593,
+        "score_effect_total": -0.016791,
+        "top_score_category": "Technology Demand",
+        "top_score_effect": -0.015302,
+        "categories_removed": "Investment",
+        "categories_added": "Energy Prices, Production, Trade",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7); Energy Prices added (A4); Production added (E1, E3; uranium, Red Book); Trade added (T1–T5; all-reporter dyads)"
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "iso3": "NAM",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "shipped": 0.379216,
+        "corrected": 0.616187,
+        "change": 0.236971,
+        "const_shipped": false,
+        "composition_effect": 0.257115,
+        "score_effect_total": -0.020145,
+        "top_score_category": "Cost Competitiveness",
+        "top_score_effect": -0.016434,
+        "categories_removed": "Investment",
+        "categories_added": "Energy Prices, Production, Trade",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7); Energy Prices added (A4); Production added (E1, E3; uranium, Red Book); Trade added (T1–T5; all-reporter dyads)"
+      },
+      {
+        "rank": 3,
+        "Country": "Slovak Republic",
+        "iso3": "SVK",
+        "tech": "Electric Vehicles",
+        "supply_chain": "Midstream",
+        "shipped": 0.357747,
+        "corrected": 0.590582,
+        "change": 0.232835,
+        "const_shipped": false,
+        "composition_effect": 5.551115e-17,
+        "score_effect_total": 0.232835,
+        "top_score_category": "Foreign Dependency",
+        "top_score_effect": 0.148164,
+        "categories_removed": "",
+        "categories_added": "",
+        "spelling_merged": true,
+        "primary_driver": "Foreign Dependency",
+        "cause": "Spellings merged (C1); Foreign Dependency observed + Investment observed"
+      },
+      {
+        "rank": 4,
+        "Country": "Germany",
+        "iso3": "DEU",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "shipped": 0.277904,
+        "corrected": 0.503477,
+        "change": 0.225573,
+        "const_shipped": false,
+        "composition_effect": 0.066258,
+        "score_effect_total": 0.159315,
+        "top_score_category": "Cost Competitiveness",
+        "top_score_effect": 0.098469,
+        "categories_removed": "",
+        "categories_added": "Foreign Dependency",
+        "spelling_merged": false,
+        "primary_driver": "Cost Competitiveness",
+        "cause": "Cost Competitiveness rebuilt (T6) + Foreign Dependency added (E8)"
+      },
+      {
+        "rank": 5,
+        "Country": "Portugal",
+        "iso3": "PRT",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "shipped": 0.277904,
+        "corrected": 0.478581,
+        "change": 0.200677,
+        "const_shipped": false,
+        "composition_effect": 0.070408,
+        "score_effect_total": 0.130269,
+        "top_score_category": "Cost Competitiveness",
+        "top_score_effect": 0.118034,
+        "categories_removed": "",
+        "categories_added": "Foreign Dependency",
+        "spelling_merged": false,
+        "primary_driver": "Cost Competitiveness",
+        "cause": "Cost Competitiveness rebuilt (T6) + Foreign Dependency added (E8)"
+      },
+      {
+        "rank": 6,
+        "Country": "United States",
+        "iso3": "USA",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "shipped": 0.397229,
+        "corrected": 0.58369,
+        "change": 0.186461,
+        "const_shipped": false,
+        "composition_effect": 0.163716,
+        "score_effect_total": 0.022745,
+        "top_score_category": "Production",
+        "top_score_effect": 0.064131,
+        "categories_removed": "Investment",
+        "categories_added": "Energy Prices, Trade",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7); Energy Prices added (A4); Trade added (T1–T5; all-reporter dyads)"
+      },
+      {
+        "rank": 7,
+        "Country": "United States",
+        "iso3": "USA",
+        "tech": "Electric Grid",
+        "supply_chain": "Upstream",
+        "shipped": 0.426731,
+        "corrected": 0.608354,
+        "change": 0.181623,
+        "const_shipped": false,
+        "composition_effect": 0.069469,
+        "score_effect_total": 0.112154,
+        "top_score_category": "Trade",
+        "top_score_effect": 0.078844,
+        "categories_removed": "",
+        "categories_added": "Energy Prices",
+        "spelling_merged": false,
+        "primary_driver": "Trade",
+        "cause": "Trade rebuilt (T1–T5; all-reporter dyads, basket review) + Production rebuilt (E1, E3)"
+      },
+      {
+        "rank": 8,
+        "Country": "Viet Nam",
+        "iso3": "VNM",
+        "tech": "Coal",
+        "supply_chain": "Downstream",
+        "shipped": 0.465399,
+        "corrected": 0.639766,
+        "change": 0.174366,
+        "const_shipped": false,
+        "composition_effect": 0,
+        "score_effect_total": 0.174366,
+        "top_score_category": "Production",
+        "top_score_effect": 0.052094,
+        "categories_removed": "",
+        "categories_added": "",
+        "spelling_merged": true,
+        "primary_driver": "Production",
+        "cause": "Spellings merged (C1); Production observed + Consumption rescored"
+      },
+      {
+        "rank": 9,
+        "Country": "France",
+        "iso3": "FRA",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "shipped": 0.474443,
+        "corrected": 0.646645,
+        "change": 0.172202,
+        "const_shipped": false,
+        "composition_effect": 0.12397,
+        "score_effect_total": 0.048232,
+        "top_score_category": "Trade",
+        "top_score_effect": 0.034298,
+        "categories_removed": "Investment",
+        "categories_added": "",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7)"
+      },
+      {
+        "rank": 10,
+        "Country": "Colombia",
+        "iso3": "COL",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "shipped": 0.339589,
+        "corrected": 0.510774,
+        "change": 0.171186,
+        "const_shipped": false,
+        "composition_effect": 0.093526,
+        "score_effect_total": 0.07766,
+        "top_score_category": "Trade",
+        "top_score_effect": 0.044306,
+        "categories_removed": "Investment",
+        "categories_added": "",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7)"
+      },
+      {
+        "rank": 11,
+        "Country": "Norway",
+        "iso3": "NOR",
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "shipped": 0.433759,
+        "corrected": 0.602128,
+        "change": 0.16837,
+        "const_shipped": false,
+        "composition_effect": 0.147559,
+        "score_effect_total": 0.02081,
+        "top_score_category": "Cost Competitiveness",
+        "top_score_effect": 0.037863,
+        "categories_removed": "Investment",
+        "categories_added": "",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7)"
+      },
+      {
+        "rank": 12,
+        "Country": "Colombia",
+        "iso3": "COL",
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "shipped": 0.388781,
+        "corrected": 0.556548,
+        "change": 0.167768,
+        "const_shipped": false,
+        "composition_effect": 0.134365,
+        "score_effect_total": 0.033402,
+        "top_score_category": "Cost Competitiveness",
+        "top_score_effect": 0.050455,
+        "categories_removed": "Investment",
+        "categories_added": "",
+        "spelling_merged": false,
+        "primary_driver": "(composition)",
+        "cause": "Zero Investment cell removed (E7)"
+      }
+    ],
+    "es_category_rows": [
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 1,
+        "imputed_old": true,
+        "rule_old": "zero"
+      },
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Energy Prices",
+        "c_new": 0.704316,
+        "w_new": 0.125,
+        "imputed_new": false
+      },
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Production",
+        "c_new": 0.804806,
+        "w_new": 0.375,
+        "imputed_new": false
+      },
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Reserves",
+        "c_new": 0.842235,
+        "w_new": 0.25,
+        "imputed_new": false
+      },
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Trade",
+        "c_new": 0.561225,
+        "w_new": 0.25,
+        "imputed_new": false
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 1,
+        "imputed_old": true,
+        "rule_old": "zero"
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Energy Prices",
+        "c_new": 0.704316,
+        "w_new": 0.125,
+        "imputed_new": false
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Production",
+        "c_new": 0.738796,
+        "w_new": 0.375,
+        "imputed_new": false
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Reserves",
+        "c_new": 0.7876,
+        "w_new": 0.25,
+        "imputed_new": false
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Trade",
+        "c_new": 0.616257,
+        "w_new": 0.25,
+        "imputed_new": false
+      },
+      {
+        "rank": 3,
+        "Country": "Germany",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.428571,
+        "imputed_old": true,
+        "rule_old": "zero"
+      },
+      {
+        "rank": 3,
+        "Country": "Germany",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Trade",
+        "c_old": 0.603425,
+        "unobserved_old": false,
+        "w_old": 0.571429,
+        "imputed_old": false,
+        "c_new": 0.729206,
+        "w_new": 1,
+        "imputed_new": false,
+        "score_effect": 0.098828
+      },
+      {
+        "rank": 4,
+        "Country": "Croatia",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.428571,
+        "imputed_old": true,
+        "rule_old": "zero"
+      },
+      {
+        "rank": 4,
+        "Country": "Croatia",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Trade",
+        "c_old": 0.50457,
+        "unobserved_old": false,
+        "w_old": 0.571429,
+        "imputed_old": false,
+        "c_new": 0.664834,
+        "w_new": 1,
+        "imputed_new": false,
+        "score_effect": 0.125922
+      },
+      {
+        "rank": 5,
+        "Country": "Turkiye",
+        "tech": "Oil",
+        "supply_chain": "Downstream",
+        "category": "Consumption",
+        "c_old": 0.424212,
+        "unobserved_old": false,
+        "w_old": 0.555556,
+        "imputed_old": false,
+        "c_new": 1,
+        "w_new": 0.555556,
+        "imputed_new": false,
+        "score_effect": 0.319882
+      },
+      {
+        "rank": 5,
+        "Country": "Turkiye",
+        "tech": "Oil",
+        "supply_chain": "Downstream",
+        "category": "Energy Access",
+        "c_old": 0.522528,
+        "unobserved_old": false,
+        "w_old": 0.444444,
+        "imputed_old": false,
+        "c_new": 0.519889,
+        "w_new": 0.444444,
+        "imputed_new": false,
+        "score_effect": -0.001173
+      },
+      {
+        "rank": 6,
+        "Country": "Thailand",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Foreign Dependency",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.26087,
+        "imputed_old": false,
+        "c_new": 0.243125,
+        "w_new": 0.230769,
+        "imputed_new": false,
+        "score_effect": 0.059765
+      },
+      {
+        "rank": 6,
+        "Country": "Thailand",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.130435,
+        "imputed_old": false
+      },
+      {
+        "rank": 6,
+        "Country": "Thailand",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Minerals Trade",
+        "c_old": 0.646749,
+        "unobserved_old": false,
+        "w_old": 0.173913,
+        "imputed_old": false,
+        "c_new": 0.603044,
+        "w_new": 0.153846,
+        "imputed_new": false,
+        "score_effect": -0.007162
+      },
+      {
+        "rank": 6,
+        "Country": "Thailand",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Production",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.26087,
+        "imputed_old": false,
+        "c_new": 0.5,
+        "w_new": 0.230769,
+        "imputed_new": false,
+        "score_effect": 0.12291
+      },
+      {
+        "rank": 6,
+        "Country": "Thailand",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Reserves",
+        "c_old": 0,
+        "unobserved_old": true,
+        "w_old": 0.173913,
+        "imputed_old": false,
+        "c_new": 0,
+        "w_new": 0.153846,
+        "imputed_new": true,
+        "rule_new": "zero",
+        "score_effect": 0
+      },
+      {
+        "rank": 6,
+        "Country": "Thailand",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Energy Prices",
+        "c_new": 0.634046,
+        "w_new": 0.076923,
+        "imputed_new": false
+      },
+      {
+        "rank": 6,
+        "Country": "Thailand",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Trade",
+        "c_new": 0.664786,
+        "w_new": 0.153846,
+        "imputed_new": false
+      },
+      {
+        "rank": 7,
+        "Country": "Ghana",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Foreign Dependency",
+        "c_old": 0.068106,
+        "unobserved_old": false,
+        "w_old": 0.26087,
+        "imputed_old": true,
+        "rule_old": "global_average; zero",
+        "c_new": 0.128573,
+        "w_new": 0.230769,
+        "imputed_new": true,
+        "rule_new": "global_average; zero",
+        "score_effect": 0.014864
+      },
+      {
+        "rank": 7,
+        "Country": "Ghana",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.130435,
+        "imputed_old": true,
+        "rule_old": "zero"
+      },
+      {
+        "rank": 7,
+        "Country": "Ghana",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Minerals Trade",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.173913,
+        "imputed_old": true,
+        "rule_old": "zero",
+        "c_new": 0.536325,
+        "w_new": 0.153846,
+        "imputed_new": false,
+        "score_effect": 0.087893
+      },
+      {
+        "rank": 7,
+        "Country": "Ghana",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Production",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.26087,
+        "imputed_old": true,
+        "rule_old": "zero",
+        "c_new": 0,
+        "w_new": 0.230769,
+        "imputed_new": true,
+        "rule_new": "zero",
+        "score_effect": 0
+      },
+      {
+        "rank": 7,
+        "Country": "Ghana",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Reserves",
+        "c_old": 0,
+        "unobserved_old": true,
+        "w_old": 0.173913,
+        "imputed_old": false,
+        "c_new": 0.428571,
+        "w_new": 0.153846,
+        "imputed_new": false,
+        "score_effect": 0.070234
+      },
+      {
+        "rank": 7,
+        "Country": "Ghana",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Energy Prices",
+        "c_new": 0.634046,
+        "w_new": 0.076923,
+        "imputed_new": false
+      },
+      {
+        "rank": 7,
+        "Country": "Ghana",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Trade",
+        "c_new": 0.450024,
+        "w_new": 0.153846,
+        "imputed_new": false
+      },
+      {
+        "rank": 8,
+        "Country": "Turkiye",
+        "tech": "Batteries",
+        "supply_chain": "Downstream",
+        "category": "Consumption",
+        "c_old": 0.664387,
+        "unobserved_old": false,
+        "w_old": 0.625,
+        "imputed_old": false,
+        "c_new": 0.5,
+        "w_new": 0.625,
+        "imputed_new": false,
+        "score_effect": -0.102742
+      },
+      {
+        "rank": 8,
+        "Country": "Turkiye",
+        "tech": "Batteries",
+        "supply_chain": "Downstream",
+        "category": "Investment",
+        "c_old": 0.439001,
+        "unobserved_old": false,
+        "w_old": 0.375,
+        "imputed_old": false,
+        "c_new": 0,
+        "w_new": 0.375,
+        "imputed_new": true,
+        "rule_new": "zero",
+        "score_effect": -0.164626
+      },
+      {
+        "rank": 9,
+        "Country": "Gabon",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Foreign Dependency",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.26087,
+        "imputed_old": false,
+        "c_new": 0.351698,
+        "w_new": 0.230769,
+        "imputed_new": false,
+        "score_effect": 0.086454
+      },
+      {
+        "rank": 9,
+        "Country": "Gabon",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.130435,
+        "imputed_old": false
+      },
+      {
+        "rank": 9,
+        "Country": "Gabon",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Minerals Trade",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.173913,
+        "imputed_old": true,
+        "rule_old": "zero",
+        "c_new": 0.438943,
+        "w_new": 0.153846,
+        "imputed_new": false,
+        "score_effect": 0.071934
+      },
+      {
+        "rank": 9,
+        "Country": "Gabon",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Production",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.26087,
+        "imputed_old": false,
+        "c_new": 0,
+        "w_new": 0.230769,
+        "imputed_new": false,
+        "score_effect": 0
+      },
+      {
+        "rank": 9,
+        "Country": "Gabon",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Reserves",
+        "c_old": 0,
+        "unobserved_old": true,
+        "w_old": 0.173913,
+        "imputed_old": false,
+        "c_new": 0,
+        "w_new": 0.153846,
+        "imputed_new": true,
+        "rule_new": "zero",
+        "score_effect": 0
+      },
+      {
+        "rank": 9,
+        "Country": "Gabon",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Energy Prices",
+        "c_new": 0.576805,
+        "w_new": 0.076923,
+        "imputed_new": false
+      },
+      {
+        "rank": 9,
+        "Country": "Gabon",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Trade",
+        "c_new": 0.453901,
+        "w_new": 0.153846,
+        "imputed_new": false
+      },
+      {
+        "rank": 10,
+        "Country": "Oman",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Foreign Dependency",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.26087,
+        "imputed_old": false,
+        "c_new": 0.351698,
+        "w_new": 0.230769,
+        "imputed_new": false,
+        "score_effect": 0.086454
+      },
+      {
+        "rank": 10,
+        "Country": "Oman",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.130435,
+        "imputed_old": false
+      },
+      {
+        "rank": 10,
+        "Country": "Oman",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Minerals Trade",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.173913,
+        "imputed_old": true,
+        "rule_old": "zero",
+        "c_new": 0.521444,
+        "w_new": 0.153846,
+        "imputed_new": false,
+        "score_effect": 0.085454
+      },
+      {
+        "rank": 10,
+        "Country": "Oman",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Production",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.26087,
+        "imputed_old": false,
+        "c_new": 0,
+        "w_new": 0.230769,
+        "imputed_new": false,
+        "score_effect": 0
+      },
+      {
+        "rank": 10,
+        "Country": "Oman",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Reserves",
+        "c_old": 0,
+        "unobserved_old": true,
+        "w_old": 0.173913,
+        "imputed_old": false,
+        "c_new": 0,
+        "w_new": 0.153846,
+        "imputed_new": true,
+        "rule_new": "zero",
+        "score_effect": 0
+      },
+      {
+        "rank": 10,
+        "Country": "Oman",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Energy Prices",
+        "c_new": 0.576805,
+        "w_new": 0.076923,
+        "imputed_new": false
+      },
+      {
+        "rank": 10,
+        "Country": "Oman",
+        "tech": "Solar",
+        "supply_chain": "Upstream",
+        "category": "Trade",
+        "c_new": 0.363821,
+        "w_new": 0.153846,
+        "imputed_new": false
+      },
+      {
+        "rank": 11,
+        "Country": "Czech Republic",
+        "tech": "Batteries",
+        "supply_chain": "Downstream",
+        "category": "Consumption",
+        "c_old": 0.664387,
+        "unobserved_old": false,
+        "w_old": 0.625,
+        "imputed_old": false,
+        "c_new": 0.529593,
+        "w_new": 0.625,
+        "imputed_new": false,
+        "score_effect": -0.084247
+      },
+      {
+        "rank": 11,
+        "Country": "Czech Republic",
+        "tech": "Batteries",
+        "supply_chain": "Downstream",
+        "category": "Investment",
+        "c_old": 0.439001,
+        "unobserved_old": false,
+        "w_old": 0.375,
+        "imputed_old": false,
+        "c_new": 0,
+        "w_new": 0.375,
+        "imputed_new": true,
+        "rule_new": "zero",
+        "score_effect": -0.164626
+      },
+      {
+        "rank": 12,
+        "Country": "New Zealand",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Downstream",
+        "category": "Consumption",
+        "c_old": 0.450544,
+        "unobserved_old": false,
+        "w_old": 1,
+        "imputed_old": false,
+        "c_new": 0.212404,
+        "w_new": 1,
+        "imputed_new": false,
+        "score_effect": -0.238141
+      }
+    ],
+    "eo_category_rows": [
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0.654228,
+        "unobserved_old": false,
+        "w_old": 0.25,
+        "imputed_old": false,
+        "c_new": 0.591011,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": -0.01317
+      },
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.25,
+        "imputed_old": true,
+        "rule_old": "zero"
+      },
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Technological Readiness",
+        "c_old": 0.477367,
+        "unobserved_old": false,
+        "w_old": 0.166667,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.561475,
+        "w_new": 0.111111,
+        "imputed_new": false,
+        "score_effect": 0.011682
+      },
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Technology Demand",
+        "c_old": 0.464332,
+        "unobserved_old": false,
+        "w_old": 0.333333,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.409243,
+        "w_new": 0.222222,
+        "imputed_new": true,
+        "rule_new": "global_average",
+        "score_effect": -0.015302
+      },
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Energy Prices",
+        "c_new": 0.704316,
+        "w_new": 0.166667,
+        "imputed_new": false
+      },
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Production",
+        "c_new": 0.978764,
+        "w_new": 0.166667,
+        "imputed_new": false
+      },
+      {
+        "rank": 1,
+        "Country": "Canada",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Trade",
+        "c_new": 0.688143,
+        "w_new": 0.166667,
+        "imputed_new": false
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0.579077,
+        "unobserved_old": false,
+        "w_old": 0.25,
+        "imputed_old": false,
+        "c_new": 0.500196,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": -0.016434
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.25,
+        "imputed_old": true,
+        "rule_old": "zero"
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Technological Readiness",
+        "c_old": 0.477367,
+        "unobserved_old": false,
+        "w_old": 0.166667,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.561475,
+        "w_new": 0.111111,
+        "imputed_new": false,
+        "score_effect": 0.011682
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Technology Demand",
+        "c_old": 0.464658,
+        "unobserved_old": false,
+        "w_old": 0.333333,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.409243,
+        "w_new": 0.222222,
+        "imputed_new": true,
+        "rule_new": "global_average",
+        "score_effect": -0.015393
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Energy Prices",
+        "c_new": 0.704316,
+        "w_new": 0.166667,
+        "imputed_new": false
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Production",
+        "c_new": 0.920121,
+        "w_new": 0.166667,
+        "imputed_new": false
+      },
+      {
+        "rank": 2,
+        "Country": "Namibia",
+        "tech": "Nuclear",
+        "supply_chain": "Upstream",
+        "category": "Trade",
+        "c_new": 0.652513,
+        "w_new": 0.166667,
+        "imputed_new": false
+      },
+      {
+        "rank": 3,
+        "Country": "Slovak Republic",
+        "tech": "Electric Vehicles",
+        "supply_chain": "Midstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0.551602,
+        "unobserved_old": false,
+        "w_old": 0.214286,
+        "imputed_old": false,
+        "c_new": 0.532992,
+        "w_new": 0.214286,
+        "imputed_new": false,
+        "score_effect": -0.003988
+      },
+      {
+        "rank": 3,
+        "Country": "Slovak Republic",
+        "tech": "Electric Vehicles",
+        "supply_chain": "Midstream",
+        "category": "Foreign Dependency",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.214286,
+        "imputed_old": true,
+        "rule_old": "zero",
+        "c_new": 0.69143,
+        "w_new": 0.214286,
+        "imputed_new": false,
+        "score_effect": 0.148164
+      },
+      {
+        "rank": 3,
+        "Country": "Slovak Republic",
+        "tech": "Electric Vehicles",
+        "supply_chain": "Midstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.214286,
+        "imputed_old": true,
+        "rule_old": "zero",
+        "c_new": 0.508486,
+        "w_new": 0.214286,
+        "imputed_new": false,
+        "score_effect": 0.108961
+      },
+      {
+        "rank": 3,
+        "Country": "Slovak Republic",
+        "tech": "Electric Vehicles",
+        "supply_chain": "Midstream",
+        "category": "Technological Readiness",
+        "c_old": 0.581834,
+        "unobserved_old": false,
+        "w_old": 0.142857,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.420743,
+        "w_new": 0.142857,
+        "imputed_new": false,
+        "score_effect": -0.023013
+      },
+      {
+        "rank": 3,
+        "Country": "Slovak Republic",
+        "tech": "Electric Vehicles",
+        "supply_chain": "Midstream",
+        "category": "Trade",
+        "c_old": 0.729995,
+        "unobserved_old": false,
+        "w_old": 0.214286,
+        "imputed_old": false,
+        "c_new": 0.742646,
+        "w_new": 0.214286,
+        "imputed_new": false,
+        "score_effect": 0.002711
+      },
+      {
+        "rank": 4,
+        "Country": "Germany",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.333333,
+        "imputed_old": false,
+        "c_new": 0.337606,
+        "w_new": 0.25,
+        "imputed_new": false,
+        "score_effect": 0.098469
+      },
+      {
+        "rank": 4,
+        "Country": "Germany",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "category": "Technological Readiness",
+        "c_old": 0.648581,
+        "unobserved_old": false,
+        "w_old": 0.222222,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.674034,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": 0.004949
+      },
+      {
+        "rank": 4,
+        "Country": "Germany",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "category": "Technology Demand",
+        "c_old": 0.300993,
+        "unobserved_old": false,
+        "w_old": 0.444444,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.444728,
+        "w_new": 0.333333,
+        "imputed_new": true,
+        "rule_new": "global_average",
+        "score_effect": 0.055897
+      },
+      {
+        "rank": 4,
+        "Country": "Germany",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "category": "Foreign Dependency",
+        "c_new": 0.633975,
+        "w_new": 0.25,
+        "imputed_new": false
+      },
+      {
+        "rank": 5,
+        "Country": "Portugal",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.333333,
+        "imputed_old": false,
+        "c_new": 0.404688,
+        "w_new": 0.25,
+        "imputed_new": false,
+        "score_effect": 0.118034
+      },
+      {
+        "rank": 5,
+        "Country": "Portugal",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "category": "Technological Readiness",
+        "c_old": 0.648581,
+        "unobserved_old": false,
+        "w_old": 0.222222,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.674034,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": 0.004949
+      },
+      {
+        "rank": 5,
+        "Country": "Portugal",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "category": "Technology Demand",
+        "c_old": 0.300993,
+        "unobserved_old": false,
+        "w_old": 0.444444,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.319728,
+        "w_new": 0.333333,
+        "imputed_new": true,
+        "rule_new": "global_average",
+        "score_effect": 0.007286
+      },
+      {
+        "rank": 5,
+        "Country": "Portugal",
+        "tech": "Green Hydrogen",
+        "supply_chain": "Midstream",
+        "category": "Foreign Dependency",
+        "c_new": 0.633975,
+        "w_new": 0.25,
+        "imputed_new": false
+      },
+      {
+        "rank": 6,
+        "Country": "United States",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0.560845,
+        "unobserved_old": false,
+        "w_old": 0.2,
+        "imputed_old": false,
+        "c_new": 0.500516,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": -0.01106
+      },
+      {
+        "rank": 6,
+        "Country": "United States",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.2,
+        "imputed_old": false
+      },
+      {
+        "rank": 6,
+        "Country": "United States",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Production",
+        "c_old": 0.382037,
+        "unobserved_old": false,
+        "w_old": 0.2,
+        "imputed_old": false,
+        "c_new": 0.731845,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": 0.064131
+      },
+      {
+        "rank": 6,
+        "Country": "United States",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Technological Readiness",
+        "c_old": 0.618404,
+        "unobserved_old": false,
+        "w_old": 0.133333,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.421116,
+        "w_new": 0.111111,
+        "imputed_new": false,
+        "score_effect": -0.024113
+      },
+      {
+        "rank": 6,
+        "Country": "United States",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Technology Demand",
+        "c_old": 0.473245,
+        "unobserved_old": false,
+        "w_old": 0.266667,
+        "imputed_old": false,
+        "c_new": 0.447829,
+        "w_new": 0.222222,
+        "imputed_new": false,
+        "score_effect": -0.006213
+      },
+      {
+        "rank": 6,
+        "Country": "United States",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Energy Prices",
+        "c_new": 0.634046,
+        "w_new": 0.166667,
+        "imputed_new": false
+      },
+      {
+        "rank": 6,
+        "Country": "United States",
+        "tech": "Wind",
+        "supply_chain": "Upstream",
+        "category": "Trade",
+        "c_new": 0.757885,
+        "w_new": 0.166667,
+        "imputed_new": false
+      },
+      {
+        "rank": 7,
+        "Country": "United States",
+        "tech": "Electric Grid",
+        "supply_chain": "Upstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0.537625,
+        "unobserved_old": false,
+        "w_old": 0.272727,
+        "imputed_old": false,
+        "c_new": 0.474856,
+        "w_new": 0.214286,
+        "imputed_new": false,
+        "score_effect": -0.015285
+      },
+      {
+        "rank": 7,
+        "Country": "United States",
+        "tech": "Electric Grid",
+        "supply_chain": "Upstream",
+        "category": "Production",
+        "c_old": 0.224022,
+        "unobserved_old": false,
+        "w_old": 0.272727,
+        "imputed_old": false,
+        "c_new": 0.540435,
+        "w_new": 0.214286,
+        "imputed_new": false,
+        "score_effect": 0.077049
+      },
+      {
+        "rank": 7,
+        "Country": "United States",
+        "tech": "Electric Grid",
+        "supply_chain": "Upstream",
+        "category": "Technological Readiness",
+        "c_old": 0.577777,
+        "unobserved_old": false,
+        "w_old": 0.181818,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.402497,
+        "w_new": 0.142857,
+        "imputed_new": false,
+        "score_effect": -0.028455
+      },
+      {
+        "rank": 7,
+        "Country": "United States",
+        "tech": "Electric Grid",
+        "supply_chain": "Upstream",
+        "category": "Trade",
+        "c_old": 0.417849,
+        "unobserved_old": false,
+        "w_old": 0.272727,
+        "imputed_old": false,
+        "c_new": 0.741634,
+        "w_new": 0.214286,
+        "imputed_new": false,
+        "score_effect": 0.078844
+      },
+      {
+        "rank": 7,
+        "Country": "United States",
+        "tech": "Electric Grid",
+        "supply_chain": "Upstream",
+        "category": "Energy Prices",
+        "c_new": 0.813726,
+        "w_new": 0.214286,
+        "imputed_new": false
+      },
+      {
+        "rank": 8,
+        "Country": "Viet Nam",
+        "tech": "Coal",
+        "supply_chain": "Downstream",
+        "category": "Consumption",
+        "c_old": 0.40995,
+        "unobserved_old": false,
+        "w_old": 0.166667,
+        "imputed_old": false,
+        "c_new": 0.65045,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": 0.040083
+      },
+      {
+        "rank": 8,
+        "Country": "Viet Nam",
+        "tech": "Coal",
+        "supply_chain": "Downstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0.576455,
+        "unobserved_old": false,
+        "w_old": 0.166667,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.562357,
+        "w_new": 0.166667,
+        "imputed_new": true,
+        "rule_new": "global_average",
+        "score_effect": -0.00235
+      },
+      {
+        "rank": 8,
+        "Country": "Viet Nam",
+        "tech": "Coal",
+        "supply_chain": "Downstream",
+        "category": "Energy Access",
+        "c_old": 0.500514,
+        "unobserved_old": false,
+        "w_old": 0.166667,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.698781,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": 0.033045
+      },
+      {
+        "rank": 8,
+        "Country": "Viet Nam",
+        "tech": "Coal",
+        "supply_chain": "Downstream",
+        "category": "Production",
+        "c_old": 0.503582,
+        "unobserved_old": false,
+        "w_old": 0.166667,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.816144,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": 0.052094
+      },
+      {
+        "rank": 8,
+        "Country": "Viet Nam",
+        "tech": "Coal",
+        "supply_chain": "Downstream",
+        "category": "Technological Readiness",
+        "c_old": 0.552126,
+        "unobserved_old": false,
+        "w_old": 0.111111,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.672963,
+        "w_new": 0.111111,
+        "imputed_new": false,
+        "score_effect": 0.013426
+      },
+      {
+        "rank": 8,
+        "Country": "Viet Nam",
+        "tech": "Coal",
+        "supply_chain": "Downstream",
+        "category": "Technology Demand",
+        "c_old": 0.325359,
+        "unobserved_old": false,
+        "w_old": 0.222222,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.496665,
+        "w_new": 0.222222,
+        "imputed_new": true,
+        "rule_new": "global_average",
+        "score_effect": 0.038068
+      },
+      {
+        "rank": 9,
+        "Country": "France",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0.657275,
+        "unobserved_old": false,
+        "w_old": 0.2,
+        "imputed_old": false,
+        "c_new": 0.744618,
+        "w_new": 0.25,
+        "imputed_new": false,
+        "score_effect": 0.019652
+      },
+      {
+        "rank": 9,
+        "Country": "France",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.2,
+        "imputed_old": false
+      },
+      {
+        "rank": 9,
+        "Country": "France",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Technological Readiness",
+        "c_old": 0.477367,
+        "unobserved_old": false,
+        "w_old": 0.133333,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.522025,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": 0.006699
+      },
+      {
+        "rank": 9,
+        "Country": "France",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Technology Demand",
+        "c_old": 0.523358,
+        "unobserved_old": false,
+        "w_old": 0.266667,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.481969,
+        "w_new": 0.333333,
+        "imputed_new": true,
+        "rule_new": "global_average",
+        "score_effect": -0.012417
+      },
+      {
+        "rank": 9,
+        "Country": "France",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Trade",
+        "c_old": 0.698885,
+        "unobserved_old": false,
+        "w_old": 0.2,
+        "imputed_old": false,
+        "c_new": 0.851322,
+        "w_new": 0.25,
+        "imputed_new": false,
+        "score_effect": 0.034298
+      },
+      {
+        "rank": 10,
+        "Country": "Colombia",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0.41573,
+        "unobserved_old": false,
+        "w_old": 0.2,
+        "imputed_old": false,
+        "c_new": 0.584327,
+        "w_new": 0.25,
+        "imputed_new": false,
+        "score_effect": 0.037934
+      },
+      {
+        "rank": 10,
+        "Country": "Colombia",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.2,
+        "imputed_old": true,
+        "rule_old": "zero"
+      },
+      {
+        "rank": 10,
+        "Country": "Colombia",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Technological Readiness",
+        "c_old": 0.477367,
+        "unobserved_old": false,
+        "w_old": 0.133333,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.522025,
+        "w_new": 0.166667,
+        "imputed_new": false,
+        "score_effect": 0.006699
+      },
+      {
+        "rank": 10,
+        "Country": "Colombia",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Technology Demand",
+        "c_old": 0.482043,
+        "unobserved_old": false,
+        "w_old": 0.266667,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.444444,
+        "w_new": 0.333333,
+        "imputed_new": true,
+        "rule_new": "global_average",
+        "score_effect": -0.01128
+      },
+      {
+        "rank": 10,
+        "Country": "Colombia",
+        "tech": "Nuclear",
+        "supply_chain": "Midstream",
+        "category": "Trade",
+        "c_old": 0.321245,
+        "unobserved_old": false,
+        "w_old": 0.2,
+        "imputed_old": false,
+        "c_new": 0.518161,
+        "w_new": 0.25,
+        "imputed_new": false,
+        "score_effect": 0.044306
+      },
+      {
+        "rank": 11,
+        "Country": "Norway",
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0.592596,
+        "unobserved_old": false,
+        "w_old": 0.25,
+        "imputed_old": false,
+        "c_new": 0.722412,
+        "w_new": 0.333333,
+        "imputed_new": false,
+        "score_effect": 0.037863
+      },
+      {
+        "rank": 11,
+        "Country": "Norway",
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.25,
+        "imputed_old": true,
+        "rule_old": "zero"
+      },
+      {
+        "rank": 11,
+        "Country": "Norway",
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "category": "Technological Readiness",
+        "c_old": 0.555988,
+        "unobserved_old": false,
+        "w_old": 0.166667,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.483103,
+        "w_new": 0.222222,
+        "imputed_new": false,
+        "score_effect": -0.014172
+      },
+      {
+        "rank": 11,
+        "Country": "Norway",
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "category": "Technology Demand",
+        "c_old": 0.578835,
+        "unobserved_old": false,
+        "w_old": 0.333333,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.571429,
+        "w_new": 0.444444,
+        "imputed_new": true,
+        "rule_new": "global_average",
+        "score_effect": -0.00288
+      },
+      {
+        "rank": 12,
+        "Country": "Colombia",
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "category": "Cost Competitiveness",
+        "c_old": 0.412684,
+        "unobserved_old": false,
+        "w_old": 0.25,
+        "imputed_old": false,
+        "c_new": 0.585672,
+        "w_new": 0.333333,
+        "imputed_new": false,
+        "score_effect": 0.050455
+      },
+      {
+        "rank": 12,
+        "Country": "Colombia",
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "category": "Investment",
+        "c_old": 0,
+        "unobserved_old": false,
+        "w_old": 0.25,
+        "imputed_old": true,
+        "rule_old": "zero"
+      },
+      {
+        "rank": 12,
+        "Country": "Colombia",
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "category": "Technological Readiness",
+        "c_old": 0.555988,
+        "unobserved_old": false,
+        "w_old": 0.166667,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.483103,
+        "w_new": 0.222222,
+        "imputed_new": false,
+        "score_effect": -0.014172
+      },
+      {
+        "rank": 12,
+        "Country": "Colombia",
+        "tech": "Geothermal",
+        "supply_chain": "Midstream",
+        "category": "Technology Demand",
+        "c_old": 0.578835,
+        "unobserved_old": false,
+        "w_old": 0.333333,
+        "imputed_old": true,
+        "rule_old": "global_average",
+        "c_new": 0.571429,
+        "w_new": 0.444444,
+        "imputed_new": true,
+        "rule_new": "global_average",
+        "score_effect": -0.00288
+      }
+    ],
+    "es_cells": {
+      "Batteries Downstream": 2,
+      "Green Hydrogen Downstream": 1,
+      "Nuclear Midstream": 2,
+      "Nuclear Upstream": 2,
+      "Oil Downstream": 1,
+      "Solar Upstream": 2,
+      "Wind Upstream": 2
+    },
+    "eo_cells": {
+      "Coal Downstream": 1,
+      "Electric Grid Upstream": 1,
+      "Electric Vehicles Midstream": 1,
+      "Geothermal Midstream": 2,
+      "Green Hydrogen Midstream": 2,
+      "Nuclear Midstream": 2,
+      "Nuclear Upstream": 2,
+      "Wind Upstream": 1
+    },
+    "es_primary_driver": {
+      "(composition)": 8,
+      "Consumption": 2,
+      "Investment": 2
+    },
+    "eo_primary_driver": {
+      "(composition)": 7,
+      "Cost Competitiveness": 2,
+      "Foreign Dependency": 1,
+      "Production": 1,
+      "Trade": 1
+    },
+    "es_pool": {
+      "n_cells": 1525,
+      "n_abs_change_gt_0_1": 474,
+      "primary_driver_of_changes_gt_0_1": {
+        "(composition)": 205,
+        "Foreign Dependency": 93,
+        "Consumption": 67,
+        "Trade": 48,
+        "Investment": 32,
+        "Reserves": 14,
+        "Minerals Trade": 10,
+        "Energy Imports": 2,
+        "Production": 2,
+        "Energy Access": 1
+      },
+      "trade_driven_with_basket_review": 48,
+      "trade_driven_mirror_imports": 0,
+      "cause_mentions_among_changes_gt_0_1": {
+        "uranium_red_book": 57,
+        "usgs_reserves": 15,
+        "basket_review": 71,
+        "mirror_imports": 11,
+        "all_reporter_dyads": 213,
+        "zero_investment_removed": 183,
+        "spellings_merged": 21
+      },
+      "cells_of_changes_gt_0_1_top": {
+        "Nuclear Upstream": 57,
+        "Nuclear Midstream": 51,
+        "Wind Upstream": 41,
+        "Green Hydrogen Downstream": 40,
+        "Wind Midstream": 38,
+        "Solar Upstream": 37,
+        "Batteries Midstream": 34,
+        "Batteries Downstream": 33
+      },
+      "nuclear_upstream": {
+        "n": 57,
+        "change_range": [0.147113, 0.740707]
+      }
+    },
+    "eo_pool": {
+      "n_cells": 1716,
+      "n_abs_change_gt_0_1": 311,
+      "primary_driver_of_changes_gt_0_1": {
+        "(composition)": 244,
+        "Cost Competitiveness": 34,
+        "Technology Demand": 14,
+        "Investment": 10,
+        "Trade": 3,
+        "Foreign Dependency": 2,
+        "Production": 2,
+        "Technological Readiness": 2
+      },
+      "trade_driven_with_basket_review": 3,
+      "trade_driven_mirror_imports": 0,
+      "cause_mentions_among_changes_gt_0_1": {
+        "uranium_red_book": 52,
+        "usgs_reserves": 0,
+        "basket_review": 3,
+        "mirror_imports": 0,
+        "all_reporter_dyads": 118,
+        "zero_investment_removed": 213,
+        "spellings_merged": 8
+      },
+      "cells_of_changes_gt_0_1_top": {
+        "Nuclear Upstream": 52,
+        "Nuclear Midstream": 47,
+        "Geothermal Midstream": 38,
+        "Solar Upstream": 31,
+        "Wind Upstream": 30,
+        "Green Hydrogen Midstream": 28,
+        "Geothermal Upstream": 15,
+        "Green Hydrogen Downstream": 12
+      },
+      "nuclear_upstream": {
+        "n": 57,
+        "change_range": [0.078695, 0.249139]
+      }
+    }
+  },
+  "si_movers": [
+    {
+      "rank": 1,
+      "Country": "United States",
+      "iso3": "USA",
+      "sector": "Batteries - Downstream",
+      "shipped": 0.459365,
+      "corrected": 0.628689,
+      "change": 0.169324,
+      "d_pol": 0.087298,
+      "d_eo": 0.035655,
+      "d_need": 0.046288,
+      "d_weights": 0.000083,
+      "pol_old": 0.563508,
+      "pol_new": 1,
+      "main_term": "policy"
+    },
+    {
+      "rank": 2,
+      "Country": "Australia",
+      "iso3": "AUS",
+      "sector": "Nuclear - Upstream",
+      "shipped": 0.655966,
+      "corrected": 0.493087,
+      "change": -0.162878,
+      "d_pol": 0.022042,
+      "d_eo": 0.029657,
+      "d_need": -0.21458,
+      "d_weights": 2.982133e-06,
+      "pol_old": 0.436492,
+      "pol_new": 0.5467,
+      "main_term": "need"
+    },
+    {
+      "rank": 3,
+      "Country": "United States",
+      "iso3": "USA",
+      "sector": "Oil - Midstream",
+      "shipped": 0.560822,
+      "corrected": 0.407926,
+      "change": -0.152896,
+      "d_pol": -0.149289,
+      "d_eo": 0.010507,
+      "d_need": -0.001753,
+      "d_weights": -0.012361,
+      "pol_old": 1,
+      "pol_new": 0.253555,
+      "main_term": "policy"
+    },
+    {
+      "rank": 4,
+      "Country": "Viet Nam",
+      "iso3": "VNM",
+      "sector": "Batteries - Upstream",
+      "shipped": 0.698142,
+      "corrected": 0.548326,
+      "change": -0.149817,
+      "d_pol": -0.069098,
+      "d_eo": -0.02425,
+      "d_need": -0.056551,
+      "d_weights": 0.000083,
+      "pol_old": 0.649325,
+      "pol_new": 0.303832,
+      "main_term": "policy"
+    },
+    {
+      "rank": 5,
+      "Country": "United States",
+      "iso3": "USA",
+      "sector": "Oil - Downstream",
+      "shipped": 0.52193,
+      "corrected": 0.376035,
+      "change": -0.145895,
+      "d_pol": -0.112405,
+      "d_eo": 0.005527,
+      "d_need": -0.026656,
+      "d_weights": -0.012361,
+      "pol_old": 0.847741,
+      "pol_new": 0.285714,
+      "main_term": "policy"
+    },
+    {
+      "rank": 6,
+      "Country": "Norway",
+      "iso3": "NOR",
+      "sector": "Batteries - Downstream",
+      "shipped": 0.513966,
+      "corrected": 0.655783,
+      "change": 0.141817,
+      "d_pol": 0.060172,
+      "d_eo": 0.006901,
+      "d_need": 0.074662,
+      "d_weights": 0.000083,
+      "pol_old": 0.699139,
+      "pol_new": 1,
+      "main_term": "need"
+    },
+    {
+      "rank": 7,
+      "Country": "Germany",
+      "iso3": "DEU",
+      "sector": "Green Hydrogen - Midstream",
+      "shipped": 0.502062,
+      "corrected": 0.642504,
+      "change": 0.140442,
+      "d_pol": -0.016158,
+      "d_eo": 0.067672,
+      "d_need": 0.088172,
+      "d_weights": 0.000755,
+      "pol_old": 0.699139,
+      "pol_new": 0.618348,
+      "main_term": "need"
+    },
+    {
+      "rank": 8,
+      "Country": "India",
+      "iso3": "IND",
+      "sector": "Nuclear - Upstream",
+      "shipped": 0.643401,
+      "corrected": 0.509974,
+      "change": -0.133426,
+      "d_pol": -0.032622,
+      "d_eo": 0.055158,
+      "d_need": -0.155965,
+      "d_weights": 2.982133e-06,
+      "pol_old": 0.3245,
+      "pol_new": 0.16139,
+      "main_term": "need"
+    },
+    {
+      "rank": 9,
+      "Country": "United States",
+      "iso3": "USA",
+      "sector": "Solar - Upstream",
+      "shipped": 0.41944,
+      "corrected": 0.549446,
+      "change": 0.130006,
+      "d_pol": 0.105186,
+      "d_eo": 0.040428,
+      "d_need": -0.015691,
+      "d_weights": 0.000083,
+      "pol_old": 0,
+      "pol_new": 0.525932,
+      "main_term": "policy"
+    },
+    {
+      "rank": 10,
+      "Country": "Japan",
+      "iso3": "JPN",
+      "sector": "Batteries - Downstream",
+      "shipped": 0.511207,
+      "corrected": 0.639062,
+      "change": 0.127856,
+      "d_pol": 0.049321,
+      "d_eo": 0.007908,
+      "d_need": 0.070544,
+      "d_weights": 0.000083,
+      "pol_old": 0.753394,
+      "pol_new": 1,
+      "main_term": "need"
+    },
+    {
+      "rank": 11,
+      "Country": "Argentina",
+      "iso3": "ARG",
+      "sector": "Nuclear - Midstream",
+      "shipped": 0.557271,
+      "corrected": 0.431642,
+      "change": -0.125629,
+      "d_pol": -0.076964,
+      "d_eo": 0.027859,
+      "d_need": -0.076527,
+      "d_weights": 2.982133e-06,
+      "pol_old": 0.384821,
+      "pol_new": 0,
+      "main_term": "policy"
+    },
+    {
+      "rank": 12,
+      "Country": "United States",
+      "iso3": "USA",
+      "sector": "Electric Grid - Upstream",
+      "shipped": 0.428609,
+      "corrected": 0.546439,
+      "change": 0.117831,
+      "d_pol": 0.057233,
+      "d_eo": 0.054487,
+      "d_need": 0.006069,
+      "d_weights": 0.000042,
+      "pol_old": 0.205213,
+      "pol_new": 0.491377,
+      "main_term": "policy"
+    }
+  ],
+  "si_movers_main_term": {
+    "need": 5,
+    "policy": 7
+  },
+  "allied": {
+    "shipped_list_n": 23,
+    "final_coalition_n": 57,
+    "overlap_n": 21,
+    "shipped_list_not_in_final": ["Kenya", "United Arab Emirates"],
+    "shipped_list_not_in_final_shipped_picks": {
+      "Kenya": "Batteries - Upstream",
+      "United Arab Emirates": null
+    },
+    "shipped_picks_n": 18,
+    "overlap_shipped_scored": 17,
+    "overlap_corrected_scored": 21,
+    "overlap_added": ["Denmark", "France", "Italy", "South Korea"],
+    "overlap_scored_in_both": 17,
+    "overlap_changed": 16,
+    "overlap_unchanged": 1,
+    "changed": ["Argentina", "Australia", "Brazil", "Canada", "Germany", "India", "Indonesia", "Japan", "Mexico", "Morocco", "Norway", "Saudi Arabia", "South Africa", "United Kingdom", "United States", "Viet Nam"],
+    "unchanged": "Chile",
+    "changed_cause_kind": {
+      "exclusion": 2,
+      "reordered": 10,
+      "screen": 4
+    },
+    "changed_causes": {
+      "reordered by the policy term": 4,
+      "reordered by the security-need term": 6,
+      "shipped pick not scored: EO not rankable": 2,
+      "shipped pick screened: no resource base": 4
+    },
+    "changed_by_cause": {
+      "reordered by the policy term": ["Argentina", "Indonesia", "South Africa", "Viet Nam"],
+      "reordered by the security-need term": ["Australia", "Brazil", "Canada", "India", "Mexico", "United States"],
+      "shipped pick not scored: EO not rankable": ["Saudi Arabia", "United Kingdom"],
+      "shipped pick screened: no resource base": ["Germany", "Japan", "Morocco", "Norway"]
+    },
+    "changed_reordered_by_term": {
+      "need": 6,
+      "pol": 4
+    },
+    "shipped_nuclear_upstream_picks": 8,
+    "shipped_nuclear_upstream_pickers": ["Australia", "Brazil", "Canada", "Chile", "India", "Mexico", "Norway", "United States"],
+    "shipped_nuclear_upstream_pickers_in_overlap": ["Australia", "Brazil", "Canada", "Chile", "India", "Mexico", "Norway", "United States"],
+    "shipped_nuclear_upstream_resource_base_now": {
+      "Australia": true,
+      "Brazil": true,
+      "Canada": true,
+      "Chile": true,
+      "India": true,
+      "Mexico": true,
+      "Norway": false,
+      "United States": true
+    },
+    "shipped_pick_counts": {
+      "Nuclear - Upstream": 8,
+      "Batteries - Upstream": 6,
+      "Electric Vehicles - Midstream": 2,
+      "Electric Grid - Midstream": 1,
+      "Solar - Upstream": 1
+    },
+    "overlap_shipped_pick_counts": {
+      "Nuclear - Upstream": 8,
+      "Batteries - Upstream": 5,
+      "Electric Vehicles - Midstream": 2,
+      "Electric Grid - Midstream": 1,
+      "Solar - Upstream": 1
+    },
+    "overlap_corrected_pick_counts": {
+      "Batteries - Midstream": 13,
+      "Nuclear - Upstream": 3,
+      "Batteries - Upstream": 2,
+      "Electric Grid - Midstream": 2,
+      "Nuclear - Midstream": 1
+    },
+    "overlap_unscreened_pick_counts": {
+      "Batteries - Midstream": 6,
+      "Solar - Upstream": 6,
+      "Nuclear - Upstream": 4,
+      "Batteries - Upstream": 2,
+      "Electric Grid - Midstream": 1,
+      "Electric Grid - Upstream": 1,
+      "Nuclear - Midstream": 1
+    },
+    "overlap_screen_changes_pick": ["Argentina", "Brazil", "Denmark", "France", "Germany", "Italy", "Japan", "Morocco", "Norway", "Saudi Arabia", "South Africa", "United Kingdom"],
+    "final_coalition_picked": 57,
+    "final_coalition_unpicked": [],
+    "final_coalition_pick_counts": {
+      "Batteries - Midstream": 27,
+      "Nuclear - Midstream": 9,
+      "Nuclear - Upstream": 8,
+      "Batteries - Upstream": 4,
+      "Electric Grid - Midstream": 4,
+      "Solar - Midstream": 3,
+      "Wind - Upstream": 2
+    },
+    "final_coalition_unscreened_pick_counts": {
+      "Nuclear - Upstream": 17,
+      "Batteries - Upstream": 12,
+      "Solar - Upstream": 12,
+      "Batteries - Midstream": 7,
+      "Wind - Upstream": 5,
+      "Nuclear - Midstream": 2,
+      "Electric Grid - Midstream": 1,
+      "Electric Grid - Upstream": 1
+    },
+    "final_coalition_nuclear_upstream_picks": 8,
+    "final_coalition_nuclear_upstream_picks_unscreened": 17,
+    "corrected_selection_matches_allied_strategic_csv": true,
+    "shipped_selection_matches_shipped_allied_strategic_csv": true,
+    "table": [
+      {
+        "Country": "Argentina",
+        "in_final_coalition": true,
+        "shipped_sector": "Electric Vehicles - Midstream",
+        "shipped_si": 0.624169,
+        "corrected_sector": "Batteries - Upstream",
+        "corrected_si": 0.551113,
+        "unscreened_sector": "Solar - Upstream",
+        "tier": "partner",
+        "status": "changed",
+        "cause": "reordered by the policy term",
+        "cause_kind": "reordered",
+        "reversal_gap": 0.055446,
+        "si_of_shipped_pick_now": 0.529925
+      },
+      {
+        "Country": "Australia",
+        "in_final_coalition": true,
+        "shipped_sector": "Nuclear - Upstream",
+        "shipped_si": 0.655966,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.609924,
+        "unscreened_sector": "Batteries - Midstream",
+        "tier": "core",
+        "status": "changed",
+        "cause": "reordered by the security-need term",
+        "cause_kind": "reordered",
+        "reversal_gap": 0.205805,
+        "si_of_shipped_pick_now": 0.493087,
+        "resource_base_of_shipped_pick": true
+      },
+      {
+        "Country": "Brazil",
+        "in_final_coalition": true,
+        "shipped_sector": "Nuclear - Upstream",
+        "shipped_si": 0.612914,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.605949,
+        "unscreened_sector": "Electric Grid - Upstream",
+        "tier": "partner",
+        "status": "changed",
+        "cause": "reordered by the security-need term",
+        "cause_kind": "reordered",
+        "reversal_gap": 0.130665,
+        "si_of_shipped_pick_now": 0.554527,
+        "resource_base_of_shipped_pick": true
+      },
+      {
+        "Country": "Canada",
+        "in_final_coalition": true,
+        "shipped_sector": "Nuclear - Upstream",
+        "shipped_si": 0.638453,
+        "corrected_sector": "Electric Grid - Midstream",
+        "corrected_si": 0.614614,
+        "unscreened_sector": "Electric Grid - Midstream",
+        "tier": "core",
+        "status": "changed",
+        "cause": "reordered by the security-need term",
+        "cause_kind": "reordered",
+        "reversal_gap": 0.138559,
+        "si_of_shipped_pick_now": 0.533856,
+        "resource_base_of_shipped_pick": true
+      },
+      {
+        "Country": "Chile",
+        "in_final_coalition": true,
+        "shipped_sector": "Nuclear - Upstream",
+        "shipped_si": 0.625652,
+        "corrected_sector": "Nuclear - Upstream",
+        "corrected_si": 0.64496,
+        "unscreened_sector": "Nuclear - Upstream",
+        "tier": "partner",
+        "status": "unchanged",
+        "si_of_shipped_pick_now": 0.64496,
+        "resource_base_of_shipped_pick": true
+      },
+      {
+        "Country": "Denmark",
+        "in_final_coalition": true,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.635633,
+        "unscreened_sector": "Nuclear - Upstream",
+        "tier": "core",
+        "status": "added"
+      },
+      {
+        "Country": "France",
+        "in_final_coalition": true,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.642003,
+        "unscreened_sector": "Nuclear - Upstream",
+        "tier": "core",
+        "status": "added"
+      },
+      {
+        "Country": "Germany",
+        "in_final_coalition": true,
+        "shipped_sector": "Batteries - Upstream",
+        "shipped_si": 0.712461,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.623335,
+        "unscreened_sector": "Solar - Upstream",
+        "tier": "core",
+        "status": "changed",
+        "cause": "shipped pick screened: no resource base",
+        "cause_kind": "screen",
+        "si_of_shipped_pick_now": 0.612928,
+        "resource_base_of_shipped_pick": false
+      },
+      {
+        "Country": "India",
+        "in_final_coalition": true,
+        "shipped_sector": "Nuclear - Upstream",
+        "shipped_si": 0.643401,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.628247,
+        "unscreened_sector": "Batteries - Midstream",
+        "tier": "partner",
+        "status": "changed",
+        "cause": "reordered by the security-need term",
+        "cause_kind": "reordered",
+        "reversal_gap": 0.172457,
+        "si_of_shipped_pick_now": 0.509974,
+        "resource_base_of_shipped_pick": true
+      },
+      {
+        "Country": "Indonesia",
+        "in_final_coalition": true,
+        "shipped_sector": "Electric Vehicles - Midstream",
+        "shipped_si": 0.641605,
+        "corrected_sector": "Nuclear - Midstream",
+        "corrected_si": 0.567717,
+        "unscreened_sector": "Nuclear - Midstream",
+        "tier": "partner",
+        "status": "changed",
+        "cause": "reordered by the policy term",
+        "cause_kind": "reordered",
+        "reversal_gap": 0.076371,
+        "si_of_shipped_pick_now": 0.549557
+      },
+      {
+        "Country": "Italy",
+        "in_final_coalition": true,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.639333,
+        "unscreened_sector": "Batteries - Upstream",
+        "tier": "core",
+        "status": "added"
+      },
+      {
+        "Country": "Japan",
+        "in_final_coalition": true,
+        "shipped_sector": "Batteries - Upstream",
+        "shipped_si": 0.656514,
+        "corrected_sector": "Nuclear - Upstream",
+        "corrected_si": 0.620229,
+        "unscreened_sector": "Batteries - Upstream",
+        "tier": "core",
+        "status": "changed",
+        "cause": "shipped pick screened: no resource base",
+        "cause_kind": "screen",
+        "si_of_shipped_pick_now": 0.627379,
+        "resource_base_of_shipped_pick": false
+      },
+      {
+        "Country": "Kenya",
+        "in_final_coalition": false,
+        "shipped_sector": "Batteries - Upstream",
+        "shipped_si": 0.70124,
+        "status": "not in final coalition",
+        "resource_base_of_shipped_pick": false
+      },
+      {
+        "Country": "Mexico",
+        "in_final_coalition": true,
+        "shipped_sector": "Nuclear - Upstream",
+        "shipped_si": 0.62429,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.56405,
+        "unscreened_sector": "Batteries - Midstream",
+        "tier": "partner",
+        "status": "changed",
+        "cause": "reordered by the security-need term",
+        "cause_kind": "reordered",
+        "reversal_gap": 0.157029,
+        "si_of_shipped_pick_now": 0.532544,
+        "resource_base_of_shipped_pick": true
+      },
+      {
+        "Country": "Morocco",
+        "in_final_coalition": true,
+        "shipped_sector": "Solar - Upstream",
+        "shipped_si": 0.683382,
+        "corrected_sector": "Electric Grid - Midstream",
+        "corrected_si": 0.608926,
+        "unscreened_sector": "Solar - Upstream",
+        "tier": "partner",
+        "status": "changed",
+        "cause": "shipped pick screened: no resource base",
+        "cause_kind": "screen",
+        "si_of_shipped_pick_now": 0.663793,
+        "resource_base_of_shipped_pick": false
+      },
+      {
+        "Country": "Norway",
+        "in_final_coalition": true,
+        "shipped_sector": "Nuclear - Upstream",
+        "shipped_si": 0.728704,
+        "corrected_sector": "Batteries - Upstream",
+        "corrected_si": 0.618446,
+        "unscreened_sector": "Solar - Upstream",
+        "tier": "core",
+        "status": "changed",
+        "cause": "shipped pick screened: no resource base",
+        "cause_kind": "screen",
+        "si_of_shipped_pick_now": 0.648701,
+        "resource_base_of_shipped_pick": false
+      },
+      {
+        "Country": "Saudi Arabia",
+        "in_final_coalition": true,
+        "shipped_sector": "Batteries - Upstream",
+        "shipped_si": 0.688047,
+        "corrected_sector": "Nuclear - Upstream",
+        "corrected_si": 0.566543,
+        "unscreened_sector": "Solar - Upstream",
+        "tier": "partner",
+        "status": "changed",
+        "cause": "shipped pick not scored: EO not rankable",
+        "cause_kind": "exclusion",
+        "resource_base_of_shipped_pick": false
+      },
+      {
+        "Country": "South Africa",
+        "in_final_coalition": true,
+        "shipped_sector": "Electric Grid - Midstream",
+        "shipped_si": 0.679359,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.619895,
+        "unscreened_sector": "Solar - Upstream",
+        "tier": "partner",
+        "status": "changed",
+        "cause": "reordered by the policy term",
+        "cause_kind": "reordered",
+        "reversal_gap": 0.175068,
+        "si_of_shipped_pick_now": 0.613629
+      },
+      {
+        "Country": "South Korea",
+        "in_final_coalition": true,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.635373,
+        "unscreened_sector": "Batteries - Midstream",
+        "tier": "core",
+        "status": "added"
+      },
+      {
+        "Country": "United Arab Emirates",
+        "in_final_coalition": false,
+        "status": "not in final coalition"
+      },
+      {
+        "Country": "United Kingdom",
+        "in_final_coalition": true,
+        "shipped_sector": "Batteries - Upstream",
+        "shipped_si": 0.690333,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.616564,
+        "unscreened_sector": "Nuclear - Upstream",
+        "tier": "core",
+        "status": "changed",
+        "cause": "shipped pick not scored: EO not rankable",
+        "cause_kind": "exclusion",
+        "resource_base_of_shipped_pick": false
+      },
+      {
+        "Country": "United States",
+        "in_final_coalition": true,
+        "shipped_sector": "Nuclear - Upstream",
+        "shipped_si": 0.613269,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.631768,
+        "unscreened_sector": "Batteries - Midstream",
+        "tier": "core",
+        "status": "changed",
+        "cause": "reordered by the security-need term",
+        "cause_kind": "reordered",
+        "reversal_gap": 0.126896,
+        "si_of_shipped_pick_now": 0.567891,
+        "resource_base_of_shipped_pick": true
+      },
+      {
+        "Country": "Viet Nam",
+        "in_final_coalition": true,
+        "shipped_sector": "Batteries - Upstream",
+        "shipped_si": 0.698142,
+        "corrected_sector": "Batteries - Midstream",
+        "corrected_si": 0.606446,
+        "unscreened_sector": "Batteries - Midstream",
+        "tier": "partner",
+        "status": "changed",
+        "cause": "reordered by the policy term",
+        "cause_kind": "reordered",
+        "reversal_gap": 0.196778,
+        "si_of_shipped_pick_now": 0.548326,
+        "resource_base_of_shipped_pick": true
+      }
+    ],
+    "pick_cause_detail": {
+      "Argentina": {
+        "cause": "reordered by the policy term",
+        "kind": "reordered",
+        "term": "pol",
+        "gap": 0.055446,
+        "contrib": {
+          "pol": 0.047439,
+          "eo": -0.009389,
+          "need": 0.015909,
+          "weights": 0.001488
+        }
+      },
+      "Australia": {
+        "cause": "reordered by the security-need term",
+        "kind": "reordered",
+        "term": "need",
+        "gap": 0.205805,
+        "contrib": {
+          "pol": 0.013016,
+          "eo": -0.055643,
+          "need": 0.248352,
+          "weights": 0.00008
+        }
+      },
+      "Brazil": {
+        "cause": "reordered by the security-need term",
+        "kind": "reordered",
+        "term": "need",
+        "gap": 0.130665,
+        "contrib": {
+          "pol": 0.023074,
+          "eo": -0.08881,
+          "need": 0.19632,
+          "weights": 0.00008
+        }
+      },
+      "Canada": {
+        "cause": "reordered by the security-need term",
+        "kind": "reordered",
+        "term": "need",
+        "gap": 0.138559,
+        "contrib": {
+          "pol": -0.033057,
+          "eo": -0.08063,
+          "need": 0.252208,
+          "weights": 0.000039
+        }
+      },
+      "Germany": {
+        "cause": "shipped pick screened: no resource base",
+        "kind": "screen",
+        "term": null,
+        "gap": "NA"
+      },
+      "India": {
+        "cause": "reordered by the security-need term",
+        "kind": "reordered",
+        "term": "need",
+        "gap": 0.172457,
+        "contrib": {
+          "pol": 0.049737,
+          "eo": -0.058421,
+          "need": 0.181062,
+          "weights": 0.00008
+        }
+      },
+      "Indonesia": {
+        "cause": "reordered by the policy term",
+        "kind": "reordered",
+        "term": "pol",
+        "gap": 0.076371,
+        "contrib": {
+          "pol": 0.06285,
+          "eo": 0.048484,
+          "need": -0.036371,
+          "weights": 0.001408
+        }
+      },
+      "Japan": {
+        "cause": "shipped pick screened: no resource base",
+        "kind": "screen",
+        "term": null,
+        "gap": "NA"
+      },
+      "Mexico": {
+        "cause": "reordered by the security-need term",
+        "kind": "reordered",
+        "term": "need",
+        "gap": 0.157029,
+        "contrib": {
+          "pol": 0.082799,
+          "eo": -0.045445,
+          "need": 0.119595,
+          "weights": 0.00008
+        }
+      },
+      "Morocco": {
+        "cause": "shipped pick screened: no resource base",
+        "kind": "screen",
+        "term": null,
+        "gap": "NA"
+      },
+      "Norway": {
+        "cause": "shipped pick screened: no resource base",
+        "kind": "screen",
+        "term": null,
+        "gap": "NA"
+      },
+      "Saudi Arabia": {
+        "cause": "shipped pick not scored: EO not rankable",
+        "kind": "exclusion",
+        "term": null,
+        "gap": "NA",
+        "exclusion": "economic opportunity not rankable (imputed weight share above 0.5)"
+      },
+      "South Africa": {
+        "cause": "reordered by the policy term",
+        "kind": "reordered",
+        "term": "pol",
+        "gap": 0.175068,
+        "contrib": {
+          "pol": 0.143711,
+          "eo": -0.005879,
+          "need": 0.037195,
+          "weights": 0.000041
+        }
+      },
+      "United Kingdom": {
+        "cause": "shipped pick not scored: EO not rankable",
+        "kind": "exclusion",
+        "term": null,
+        "gap": "NA",
+        "exclusion": "economic opportunity not rankable (imputed weight share above 0.5)"
+      },
+      "United States": {
+        "cause": "reordered by the security-need term",
+        "kind": "reordered",
+        "term": "need",
+        "gap": 0.126896,
+        "contrib": {
+          "pol": -0.011948,
+          "eo": -0.064594,
+          "need": 0.203359,
+          "weights": 0.00008
+        }
+      },
+      "Viet Nam": {
+        "cause": "reordered by the policy term",
+        "kind": "reordered",
+        "term": "pol",
+        "gap": 0.196778,
+        "contrib": {
+          "pol": 0.084947,
+          "eo": 0.028778,
+          "need": 0.083054,
+          "weights": 0
+        }
+      }
+    }
+  },
+  "network": {
+    "shipped": {
+      "n_stages": 33,
+      "stages_by_supply_chain": {
+        "Downstream": 11,
+        "Midstream": 11,
+        "Upstream": 11
+      },
+      "method_counts": {
+        "greedy": 33
+      },
+      "n_stages_hhi_one_square_producers": 14,
+      "square_roots_k": [16, 19, 20, 21, 22, 22, 60, 81, 108, 110, 273, 357, 374, 440],
+      "n_producers_artefact_range": [256, 193600],
+      "n_producers_range": [3, 193600],
+      "hhi_range": [0.333333, 1],
+      "n_stages_three_producers": 18,
+      "hhi_range_three_producer_stages": [0.333333, 0.338795],
+      "upstream_midstream_stages": 22,
+      "upstream_midstream_artefact_stages": 14,
+      "portfolio_converged": 0,
+      "portfolio_iters": 10,
+      "portfolio_violations_remaining": 12,
+      "file_mtime": "2026-02-23"
+    },
+    "corrected": {
+      "n_stages": 22,
+      "stages_by_supply_chain": {
+        "Midstream": 11,
+        "Upstream": 11
+      },
+      "method_counts": {
+        "milp": 22
+      },
+      "n_fallbacks": 0,
+      "n_nodes": 37,
+      "diversity_lambda": 0.78,
+      "node_policy_term": false,
+      "n_producers_range": [7, 10],
+      "n_producers_median": 9,
+      "hhi_min": 0.125625,
+      "hhi_max": 0.2092,
+      "hhi_median": 0.15195,
+      "effective_producers_median": 6.581112,
+      "max_production_share": 0.325,
+      "hhi_tangent_max_error": 0.000025,
+      "observed_export_hhi_median": 0.15555,
+      "observed_export_hhi_stages": 18,
+      "observed_effective_exporters_median": 6.428791,
+      "portfolio_converged": 22,
+      "portfolio_iters": 7,
+      "portfolio_violations_remaining": 0,
+      "n_policy_imputed_max": 0
+    }
+  },
+  "psi": {
+    "note": "Earlier PSI reconstructed from the shipped March 2026 top-five tables with the earlier code's logic (a mean over all reporters, i.e. a world view); matched on ISO3 to the final core view (psi_tbl, headline) and world view (psi_world_tbl); rank statistics over partners rankable in the final release; Spearman unless labelled pearson.",
+    "shipped_top5_mtime": {
+      "friendshore": "2026-03-24",
+      "opportunity": "2026-03-24",
+      "development": "2026-03-24"
+    },
+    "shipped_units": 218,
+    "shipped_unnamed_pool": 1,
+    "shipped_unnamed_pool_n_partners": 19,
+    "shipped_unnamed_pool_includes_taiwan": true,
+    "shipped_units_with_iso3": 217,
+    "shipped_mean_dev_scored": 0.598274,
+    "shipped_mean_dev_not_scored": 0.502296,
+    "shipped_rank_usa": 185,
+    "shipped_rank_jpn": 156,
+    "shipped_rank_chn": 22,
+    "shipped_rank_n": 218,
+    "corrected_partners": 219,
+    "corrected_rankable_core": 192,
+    "corrected_rankable_world": 188,
+    "core_view": {
+      "n_partners_matched": 217,
+      "n_partners_rankable": 191,
+      "spearman_all": -0.380557,
+      "pearson_all": -0.460413,
+      "spearman": -0.333658,
+      "pearson": -0.479564,
+      "spearman_dev_scored": 0.47139,
+      "n_dev_scored": 130,
+      "spearman_dev_not_scored": 0.134955,
+      "n_dev_not_scored": 61,
+      "coalition_n": 57,
+      "coalition_spearman": -0.683757,
+      "usa": {
+        "shipped": 170,
+        "corrected": 1,
+        "corrected_published": 1,
+        "n": 191
+      },
+      "jpn": {
+        "shipped": 144,
+        "corrected": 24,
+        "corrected_published": 24,
+        "n": 191
+      },
+      "chn": {
+        "shipped": 22,
+        "corrected": 44,
+        "corrected_published": 44,
+        "n": 191
+      },
+      "deu": {
+        "shipped": 137,
+        "corrected": 2,
+        "corrected_published": 2,
+        "n": 191
+      }
+    },
+    "world_view": {
+      "n_partners_matched": 217,
+      "n_partners_rankable": 187,
+      "spearman_all": -0.017734,
+      "pearson_all": -0.141316,
+      "spearman": -0.089254,
+      "pearson": -0.221231,
+      "spearman_dev_scored": 0.685137,
+      "n_dev_scored": 128,
+      "spearman_dev_not_scored": 0.285272,
+      "n_dev_not_scored": 59,
+      "coalition_n": 57,
+      "coalition_spearman": -0.142598,
+      "usa": {
+        "shipped": 168,
+        "corrected": 4,
+        "corrected_published": 4,
+        "n": 187
+      },
+      "jpn": {
+        "shipped": 142,
+        "corrected": 28,
+        "corrected_published": 29,
+        "n": 187
+      },
+      "chn": {
+        "shipped": 22,
+        "corrected": 1,
+        "corrected_published": 1,
+        "n": 187
+      },
+      "deu": {
+        "shipped": 135,
+        "corrected": 5,
+        "corrected_published": 5,
+        "n": 187
+      }
+    }
+  },
+  "construction": {
+    "note": "Category composition of the cells behind the largest changes: n countries, mean and sd of the category score across countries, mean normalised weight, share imputed (imputed flag or a recorded missing-data rule).",
+    "es_nuclear_upstream_shipped": [
+      {
+        "category": "Investment",
+        "n": 218,
+        "mean": 0,
+        "sd": 0,
+        "weight": 1,
+        "imputed_share": 0.876147
+      }
+    ],
+    "es_nuclear_upstream_corrected": [
+      {
+        "category": "Energy Prices",
+        "n": 218,
+        "mean": 0.704316,
+        "sd": 0,
+        "weight": 0.125,
+        "imputed_share": 0.004587
+      },
+      {
+        "category": "Production",
+        "n": 218,
+        "mean": 0.043578,
+        "sd": 0.156354,
+        "weight": 0.375,
+        "imputed_share": 0
+      },
+      {
+        "category": "Reserves",
+        "n": 218,
+        "mean": 0.137618,
+        "sd": 0.247185,
+        "weight": 0.25,
+        "imputed_share": 0.729358
+      },
+      {
+        "category": "Trade",
+        "n": 218,
+        "mean": 0.336476,
+        "sd": 0.055512,
+        "weight": 0.25,
+        "imputed_share": 0.701835
+      }
+    ],
+    "es_nuclear_upstream_corrected_n": 218,
+    "es_nuclear_upstream_corrected_modal_value": 0.172158,
+    "es_nuclear_upstream_corrected_n_at_mode": 127,
+    "es_nuclear_upstream_corrected_rankable": 195,
+    "es_nuclear_upstream_coalition": {
+      "n": 57,
+      "at_floor": 6,
+      "range": [0.147113, 0.740707],
+      "with_recorded_uranium": 31,
+      "without_recorded_uranium": 26
+    },
+    "es_grid_upstream_shipped": [
+      {
+        "category": "Foreign Dependency",
+        "n": 226,
+        "mean": 0.111185,
+        "sd": 0.184934,
+        "weight": 0.25,
+        "imputed_share": 0.517699
+      },
+      {
+        "category": "Minerals Trade",
+        "n": 226,
+        "mean": 0.288712,
+        "sd": 0.286997,
+        "weight": 0.166667,
+        "imputed_share": 0.424779
+      },
+      {
+        "category": "Production",
+        "n": 226,
+        "mean": 0.015487,
+        "sd": 0.100741,
+        "weight": 0.25,
+        "imputed_share": 0.517699
+      },
+      {
+        "category": "Reserves",
+        "n": 226,
+        "mean": 0.5,
+        "sd": 0.312961,
+        "weight": 0.166667,
+        "imputed_share": 0
+      },
+      {
+        "category": "Trade",
+        "n": 226,
+        "mean": 0.75,
+        "sd": 0.059251,
+        "weight": 0.166667,
+        "imputed_share": 0.637168
+      }
+    ],
+    "es_grid_upstream_corrected": [
+      {
+        "category": "Energy Prices",
+        "n": 218,
+        "mean": 0.813726,
+        "sd": 0,
+        "weight": 0.076923,
+        "imputed_share": 0.004587
+      },
+      {
+        "category": "Foreign Dependency",
+        "n": 218,
+        "mean": 0.275666,
+        "sd": 0.102873,
+        "weight": 0.230769,
+        "imputed_share": 0.5
+      },
+      {
+        "category": "Minerals Trade",
+        "n": 218,
+        "mean": 0.599197,
+        "sd": 0.123309,
+        "weight": 0.153846,
+        "imputed_share": 0.041284
+      },
+      {
+        "category": "Production",
+        "n": 218,
+        "mean": 0.018349,
+        "sd": 0.10825,
+        "weight": 0.230769,
+        "imputed_share": 0.504587
+      },
+      {
+        "category": "Reserves",
+        "n": 218,
+        "mean": 0.0344,
+        "sd": 0.141179,
+        "weight": 0.153846,
+        "imputed_share": 0.93578
+      },
+      {
+        "category": "Trade",
+        "n": 218,
+        "mean": 0.600941,
+        "sd": 0.094586,
+        "weight": 0.153846,
+        "imputed_share": 0.105505
+      }
+    ],
+    "eo_grid_upstream_shipped": [
+      {
+        "category": "Cost Competitiveness",
+        "n": 218,
+        "mean": 0.566073,
+        "sd": 0.099204,
+        "weight": 0.272727,
+        "imputed_share": 0.362385
+      },
+      {
+        "category": "Production",
+        "n": 218,
+        "mean": 0.506037,
+        "sd": 0.037305,
+        "weight": 0.272727,
+        "imputed_share": 0.972477
+      },
+      {
+        "category": "Technological Readiness",
+        "n": 218,
+        "mean": 0.577777,
+        "sd": 0,
+        "weight": 0.181818,
+        "imputed_share": 0.995413
+      },
+      {
+        "category": "Trade",
+        "n": 218,
+        "mean": 0.64304,
+        "sd": 0.075413,
+        "weight": 0.272727,
+        "imputed_share": 0.623853
+      }
+    ],
+    "eo_grid_upstream_corrected": [
+      {
+        "category": "Cost Competitiveness",
+        "n": 218,
+        "mean": 0.54529,
+        "sd": 0.08887,
+        "weight": 0.214286,
+        "imputed_share": 0.33945
+      },
+      {
+        "category": "Energy Prices",
+        "n": 218,
+        "mean": 0.813726,
+        "sd": 0,
+        "weight": 0.214286,
+        "imputed_share": 0.004587
+      },
+      {
+        "category": "Production",
+        "n": 218,
+        "mean": 0.510403,
+        "sd": 0.037033,
+        "weight": 0.214286,
+        "imputed_share": 0.866972
+      },
+      {
+        "category": "Technological Readiness",
+        "n": 218,
+        "mean": 0.402497,
+        "sd": 0,
+        "weight": 0.142857,
+        "imputed_share": 0.036697
+      },
+      {
+        "category": "Trade",
+        "n": 218,
+        "mean": 0.561815,
+        "sd": 0.108511,
+        "weight": 0.214286,
+        "imputed_share": 0.353211
+      }
+    ],
+    "es_nuclear_midstream_shipped": [
+      {
+        "category": "Investment",
+        "n": 135,
+        "mean": 0,
+        "sd": 0,
+        "weight": 0.428571,
+        "imputed_share": 0.8
+      },
+      {
+        "category": "Trade",
+        "n": 135,
+        "mean": 0.470759,
+        "sd": 0.094782,
+        "weight": 0.571429,
+        "imputed_share": 0.044444
+      }
+    ],
+    "es_nuclear_midstream_corrected": [
+      {
+        "category": "Trade",
+        "n": 206,
+        "mean": 0.487156,
+        "sd": 0.091886,
+        "weight": 1,
+        "imputed_share": 0.014563
+      }
+    ],
+    "eo_green_hydrogen_midstream_shipped": [
+      {
+        "category": "Cost Competitiveness",
+        "n": 110,
+        "mean": 0.306122,
+        "sd": 0.220553,
+        "weight": 0.333333,
+        "imputed_share": 0.554545
+      },
+      {
+        "category": "Technological Readiness",
+        "n": 110,
+        "mean": 0.648581,
+        "sd": 0,
+        "weight": 0.222222,
+        "imputed_share": 0.990909
+      },
+      {
+        "category": "Technology Demand",
+        "n": 110,
+        "mean": 0.300993,
+        "sd": 0,
+        "weight": 0.444444,
+        "imputed_share": 0.990909
+      }
+    ],
+    "eo_green_hydrogen_midstream_corrected": [
+      {
+        "category": "Cost Competitiveness",
+        "n": 213,
+        "mean": 0.394926,
+        "sd": 0.086585,
+        "weight": 0.25,
+        "imputed_share": 0.835681
+      },
+      {
+        "category": "Foreign Dependency",
+        "n": 213,
+        "mean": 0.087004,
+        "sd": 0.219757,
+        "weight": 0.25,
+        "imputed_share": 0.859155
+      },
+      {
+        "category": "Technological Readiness",
+        "n": 213,
+        "mean": 0.674034,
+        "sd": 0,
+        "weight": 0.166667,
+        "imputed_share": 0.014085
+      },
+      {
+        "category": "Technology Demand",
+        "n": 213,
+        "mean": 0.319728,
+        "sd": 0.014761,
+        "weight": 0.333333,
+        "imputed_share": 0.995305
+      }
+    ],
+    "eo_nuclear_upstream_shipped": [
+      {
+        "category": "Cost Competitiveness",
+        "n": 227,
+        "mean": 0.58339,
+        "sd": 0.11405,
+        "weight": 0.25,
+        "imputed_share": 0.387665
+      },
+      {
+        "category": "Investment",
+        "n": 227,
+        "mean": 0,
+        "sd": 0,
+        "weight": 0.25,
+        "imputed_share": 0.881057
+      },
+      {
+        "category": "Technological Readiness",
+        "n": 227,
+        "mean": 0.477367,
+        "sd": 0,
+        "weight": 0.166667,
+        "imputed_share": 0.995595
+      },
+      {
+        "category": "Technology Demand",
+        "n": 227,
+        "mean": 0.464588,
+        "sd": 0.016297,
+        "weight": 0.333333,
+        "imputed_share": 0.995595
+      }
+    ],
+    "eo_nuclear_upstream_corrected": [
+      {
+        "category": "Cost Competitiveness",
+        "n": 218,
+        "mean": 0.565799,
+        "sd": 0.103785,
+        "weight": 0.166667,
+        "imputed_share": 0.33945
+      },
+      {
+        "category": "Energy Prices",
+        "n": 218,
+        "mean": 0.704316,
+        "sd": 0,
+        "weight": 0.166667,
+        "imputed_share": 0.004587
+      },
+      {
+        "category": "Production",
+        "n": 218,
+        "mean": 0.505034,
+        "sd": 0.092798,
+        "weight": 0.166667,
+        "imputed_share": 0
+      },
+      {
+        "category": "Technological Readiness",
+        "n": 218,
+        "mean": 0.561475,
+        "sd": 0,
+        "weight": 0.111111,
+        "imputed_share": 0.036697
+      },
+      {
+        "category": "Technology Demand",
+        "n": 218,
+        "mean": 0.409243,
+        "sd": 0.017763,
+        "weight": 0.222222,
+        "imputed_share": 0.995413
+      },
+      {
+        "category": "Trade",
+        "n": 218,
+        "mean": 0.405965,
+        "sd": 0.065414,
+        "weight": 0.166667,
+        "imputed_share": 0.779817
+      }
+    ]
+  },
+  "rerun_facts": {
+    "si_headline_sectors": 33,
+    "si_sectors_in_corrected_table": 32,
+    "si_sectors_not_in_corrected_table": "Geothermal - Midstream",
+    "si_sectors_scored": 30,
+    "si_sectors_in_table_without_score": ["Electric Grid - Downstream", "Geothermal - Upstream"],
+    "si_cells": 3154,
+    "si_countries": 174,
+    "policy_eligible_countries": 215,
+    "policy_eligibility_rows": 215,
+    "policy_component_table_variables": ["CAT Policy Index", "Dual-use policy score", "IEA PAMS Policy Index", "NIPO Policy Index"],
+    "policy_index_components": ["IEA PAMS Policy Index", "CAT Policy Index"],
+    "policy_index_weights": {
+      "IEA PAMS Policy Index": 3,
+      "CAT Policy Index": 2
+    },
+    "policy_excluded_components": ["NIPO Policy Index", "Dual-use policy score"],
+    "policy_basis_counts": {
+      "IEA PAMS + CAT": 65,
+      "IEA PAMS only": 150
+    },
+    "coalition_members_by_policy_basis": {
+      "IEA PAMS + CAT": 46,
+      "IEA PAMS only": 11
+    },
+    "coalition_members_iea_pams_only": ["COD", "DOM", "GAB", "GHA", "GTM", "ISR", "MYS", "NAM", "OMN", "QAT", "UKR"],
+    "shipped_list_members_by_policy_basis": {
+      "IEA PAMS + CAT": 23
+    },
+    "coalition_members_policy_eligible": 57,
+    "coalition_members_not_policy_eligible": [],
+    "coalition_members_not_policy_eligible_missing": [],
+    "shipped_list_members_policy_eligible": 23,
+    "es_category_scores_imputed_share": 0.383783,
+    "eo_category_scores_imputed_share": 0.450222,
+    "es_diagnostics_imputed_share": 0.383783,
+    "eo_diagnostics_imputed_share": 0.450222,
+    "es_constant_cells_corrected": [],
+    "eo_constant_cells_corrected": [],
+    "network_policy_imputed_max": 0,
+    "network_node_policy_term": false,
+    "coalition_nonreporters_2024": ["GAB", "VNM"],
+    "import_reporters_2024": 143
+  }
+}

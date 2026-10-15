@@ -1,0 +1,50 @@
+\begingroup
+  \singlespacing\scriptsize
+  \setlength{\tabcolsep}{3pt}
+  \setlength{\LTcapwidth}{\textwidth}
+  \begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.75in} >{\raggedright\arraybackslash}p{0.95in} c c c >{\raggedright\arraybackslash}p{1.05in} >{\raggedright\arraybackslash}p{1.9in}@{}}
+  \caption{Largest pillar changes among coalition members and their attribution}
+  \label{tab:reconcile_movers}\\
+    \toprule
+    Member & Cell & Shipped & Final & \makecell{Composition\\effect} & Largest score effect & Attributed cause \\
+    \midrule
+  \endfirsthead
+    \multicolumn{7}{@{}l}{\small\textbf{Table \thetable:} continued}\\
+    \toprule
+    Member & Cell & Shipped & Final & \makecell{Composition\\effect} & Largest score effect & Attributed cause \\
+    \midrule
+  \endhead
+    \bottomrule
+  \endfoot
+    \multicolumn{7}{@{}l}{\emph{Energy Security}} \\
+    Canada & Nuclear Upstream & 0.000 & 0.741 & +0.741 & -- & Zero Investment cell removed (E7); uranium Reserves and Production added (Red Book); Energy Prices added (A4); Trade added (T1--T5; all-reporter dyads) \\
+    Namibia & Nuclear Upstream & 0.000 & 0.716 & +0.716 & -- & Zero Investment cell removed (E7); uranium Reserves and Production added (Red Book); Energy Prices added (A4); Trade added (T1--T5; all-reporter dyads) \\
+    Germany & Nuclear Midstream & 0.345 & 0.729 & +0.286 & Trade +0.099 & Zero Investment cell removed (E7) \\
+    Croatia & Nuclear Midstream & 0.288 & 0.665 & +0.251 & Trade +0.126 & Zero Investment cell removed (E7) + Trade rebuilt (T1--T5; all-reporter dyads) \\
+    Turkiye & Oil Downstream & 0.468 & 0.787 & +0.000 & Consumption +0.320 & Consumption rebuilt (E5) \\
+    Thailand & Wind Upstream & 0.112 & 0.415 & +0.127 & Production +0.123 & Zero Investment cell removed (E7); Energy Prices added (A4); Trade added (T1--T5; all-reporter dyads) + Production rebuilt (E1, E3) \\
+    Ghana & Wind Upstream & 0.018 & 0.296 & +0.105 & Minerals Trade +0.088 & Zero Investment cell removed (E7); Energy Prices added (A4); Trade added (T1--T5; all-reporter dyads) + Minerals Trade observed, was imputed (E6) \\
+    Turkiye & Batteries Downstream & 0.580 & 0.312 & +0.000 & Investment $-$0.165 & Investment zero-filled (E7) + Consumption rebuilt (E5) \\
+    Gabon & Solar Upstream & 0.000 & 0.263 & +0.105 & Foreign Dependency +0.086 & Zero Investment cell removed (E7); Energy Prices added (A4); Trade added (T1--T5; all-reporter dyads, mirror imports) + Foreign Dependency rebuilt (E2--E3) \\
+    Oman & Solar Upstream & 0.000 & 0.262 & +0.090 & Foreign Dependency +0.086 & Zero Investment cell removed (E7); Energy Prices added (A4); Trade added (T1--T5; all-reporter dyads) + Foreign Dependency rebuilt (E2--E3) \\
+    Czech Republic & Batteries Downstream & 0.580 & 0.331 & +0.000 & Investment $-$0.165 & Investment zero-filled (E7) + Consumption rebuilt (E5) \\
+    New Zealand & Green Hydrogen Downstream & 0.451 & 0.212 & +0.000 & Consumption $-$0.238 & Consumption rebuilt (E5) \\
+    \addlinespace
+    \multicolumn{7}{@{}l}{\emph{Economic Opportunity}} \\
+    Canada & Nuclear Upstream & 0.398 & 0.647 & +0.266 & Technology Demand $-$0.015 & Zero Investment cell removed (E7); Energy Prices added (A4); Production added (E1, E3; uranium, Red Book); Trade added (T1--T5; all-reporter dyads) \\
+    Namibia & Nuclear Upstream & 0.379 & 0.616 & +0.257 & Cost Competitiveness $-$0.016 & Zero Investment cell removed (E7); Energy Prices added (A4); Production added (E1, E3; uranium, Red Book); Trade added (T1--T5; all-reporter dyads) \\
+    Slovak Republic & Electric Vehicles Midstream & 0.358 & 0.591 & +0.000 & Foreign Dependency +0.148 & Spellings merged (C1); Foreign Dependency observed + Investment observed \\
+    Germany & Green Hydrogen Midstream & 0.278 & 0.503 & +0.066 & Cost Competitiveness +0.098 & Cost Competitiveness rebuilt (T6) + Foreign Dependency added (E8) \\
+    Portugal & Green Hydrogen Midstream & 0.278 & 0.479 & +0.070 & Cost Competitiveness +0.118 & Cost Competitiveness rebuilt (T6) + Foreign Dependency added (E8) \\
+    United States & Wind Upstream & 0.397 & 0.584 & +0.164 & Production +0.064 & Zero Investment cell removed (E7); Energy Prices added (A4); Trade added (T1--T5; all-reporter dyads) \\
+    United States & Electric Grid Upstream & 0.427 & 0.608 & +0.069 & Trade +0.079 & Trade rebuilt (T1--T5; all-reporter dyads, basket review) + Production rebuilt (E1, E3) \\
+    Viet Nam & Coal Downstream & 0.465 & 0.640 & +0.000 & Production +0.052 & Spellings merged (C1); Production observed + Consumption rescored \\
+    France & Nuclear Midstream & 0.474 & 0.647 & +0.124 & Trade +0.034 & Zero Investment cell removed (E7) \\
+    Colombia & Nuclear Midstream & 0.340 & 0.511 & +0.094 & Trade +0.044 & Zero Investment cell removed (E7) \\
+    Norway & Geothermal Midstream & 0.434 & 0.602 & +0.148 & Cost Competitiveness +0.038 & Zero Investment cell removed (E7) \\
+    Colombia & Geothermal Midstream & 0.389 & 0.557 & +0.134 & Cost Competitiveness +0.050 & Zero Investment cell removed (E7) \\
+  \end{longtable}
+  \vspace{-6pt}\footnotesize\noindent
+    \emph{Notes:} The 12 largest absolute changes, final minus shipped release, of $\ES_{its}$ and of $\EO_{its}$ among the 57 members of the final coalition, at most 2 per technology--stage cell, over the headline cells present in both releases that the final release ranks (sovereign economy, at most half of the index weight imputed); cells that were constant across countries in the shipped release are included. The change is split by a two-factor Shapley decomposition of the weighted category mean: the score effect of a category present in both releases is $\tfrac12(\omega^{\text{shipped}}_k+\omega^{\text{final}}_k)(c^{\text{final}}_k-c^{\text{shipped}}_k)$, with $\omega_k$ the normalised category weight and an unobserved shipped category counted as $c_k=0$ (item A1); the composition effect is the remainder, due to categories that enter or leave and to the renormalisation of the weights. The cause names the largest effect, and the second when it is at least half as large; item codes refer to Table~\ref{tab:corrections_index}. Data changes: ``uranium, Red Book'' = identified recoverable resources and mine production of the OECD-NEA/IAEA Red Book; ``USGS MCS 2026'' = critical-mineral reserves of the USGS Mineral Commodity Summaries 2026; ``all-reporter dyads'' = trade rebuilt from all-reporter Comtrade dyads (importer report first, else the exporter's declaration $\times 1.06$) and the energy-trade file rebuilt from the same pull; ``basket review'' = a stage whose HS6 basket the October 2026 review changed; ``mirror imports'' = an economy that did not report 2024 imports, whose imports come from partners' declarations; ``TRL by stage'' = technology readiness mapped by stage from the IEA Clean Technology Guide. Source: \texttt{category\_contributions} of the two \texttt{index\_outputs.rds}.\par
+\endgroup
+\medskip

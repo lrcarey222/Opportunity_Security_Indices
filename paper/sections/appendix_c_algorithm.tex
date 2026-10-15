@@ -1,0 +1,428 @@
+% ===========================================================================
+% Appendix C. Network design algorithms
+% Specification: R/indices/allied_network_design.R and scripts/30_build_allied_network_design.R
+% (production settings). Lambda study: final calibration of 2026-10-12 on the 37-node set
+% (scratch_final/network/lambda_study_g37.csv, lambda_study_nc37.csv; paper/results/
+% network_frontier.json). Notation as in Section 10.
+% ===========================================================================
+\section{Network design algorithms}
+\label{app:algorithm}
+
+This appendix states the algorithms behind the allied network design of Section~\ref{sec:network},
+proves the properties used there, and documents the calibration of the diversification weight.
+Notation follows Section~\ref{sec:network}: $\mathcal{V}$ is the set of 37 network nodes,
+$a_p$ the producer score, $d_c$ the demand weight, $W_{pc}$ the edge weight, $\delta_p$ the
+development potential, $\mathcal{X}_{ts}$ the nodes barred from stage $(t,s)$ by the portfolio caps
+and $\mathcal{E}_{ts}$ the eligible producers. The functions of
+\texttt{R/indices/allied\_network\_design.R} read and write no files; all input and output is in
+\texttt{scripts/30\_build\_allied\_network\_design.R}. Table~\ref{tab:alg_params} lists the
+production settings.
+
+\begin{table}[htbp]
+\centering
+\begin{threeparttable}
+\caption{Parameters of the allied network design (production configuration)}
+\label{tab:alg_params}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}l l l X@{}}
+\toprule
+Symbol & Code argument & Value & Role \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Nodes, demand and edges}}\\
+-- & \texttt{network\_members} & 57 + 6, 37 nodes & Coalition members and EU-only members; the EU-27 as node \texttt{EUU} \\
+-- & \texttt{supply\_chains} & Up, Mid & The 22 stages solved \\
+$\gamma$ & -- & 0.5 & S-curve exponent of node components \\
+$\omega_{\EO},\omega_{\ES}$ & \texttt{node\_weights} & 0.5, 0.2 & Producer score, eq.~\eqref{eq:net_producer_score} \\
+-- & \texttt{node\_policy} & \texttt{FALSE} & Policy term off \\
+-- & \texttt{demand\_mode} & \texttt{mixed} (0.5, 0.5) & Need and size, eq.~\eqref{eq:net_demand} \\
+$\beta_{\FS},\beta_{\PO}$ & \texttt{edge\_weights} & 0.5, 0.5 & Edge weight, eq.~\eqref{eq:net_edge} \\
+\multicolumn{4}{@{}l}{\emph{Stage program}}\\
+$w_N,w_E,w_D$ & \texttt{w\_node}, \texttt{w\_edge}, \texttt{w\_dev} & 1, 0.5, 0 & Objective weights, eq.~\eqref{eq:net_obj} \\
+$\lambda$ & \texttt{diversity\_lambda} & 0.78 & Diversification weight (calibrated) \\
+$h$ & \texttt{diversity\_breakpoint\_step} & 0.01 & Share grid of the tangent cuts \\
+$\bar s,\underline s$ & \texttt{max\_share}, \texttt{min\_share} & 0.40, 0.05 & Share bounds \\
+$m_P,m_S$ & \texttt{min\_producers}, \texttt{min\_suppliers\_per\_consumer} & 3, 2 & Producers per stage, suppliers per consumer \\
+$\varepsilon$ & \texttt{epsilon\_supplier\_share} & 0.10 & Smallest share of a consumer's demand on an active link \\
+\multicolumn{4}{@{}l}{\emph{Solver and portfolio caps}}\\
+-- & \texttt{auto\_milp\_max\_nodes} & 60 & Largest stage sent to the MILP \\
+$T$ & \texttt{milp\_stage\_time\_limit\_sec} & 300 & Time limit per stage solve (s) \\
+$K$ & \texttt{portfolio\_top\_k} & 5 & Top-$K$ rule, eq.~\eqref{eq:net_topk} \\
+$\kappa_{\min},\kappa_{\max}$ & \texttt{portfolio\_min\_cap}, \texttt{portfolio\_max\_cap} & 2, 10 & Caps, eq.~\eqref{eq:net_cap}, log-GDP scale \\
+$I_{\max}$ & \texttt{portfolio\_max\_iters} & 30 & Largest number of cap passes \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]\footnotesize
+\item \emph{Notes:} Values set in \texttt{scripts/30\_build\_allied\_network\_design.R} or, where the
+script passes none, the defaults of \texttt{allied\_network\_design()}. Component weights are
+renormalised over the components observed; objective weights are used as given.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\subsection{Overview and network nodes}
+\label{subsec:alg_overview}
+
+Algorithm~\ref{alg:network_design} gives the top level. The stage programs are solved one at a time
+and independently; the only link between stages is the portfolio loop, which changes the exclusion
+sets and re-solves the stages it affects.
+
+\begin{algorithm}[htbp]
+\caption{Allied network design (top level)}
+\label{alg:network_design}
+\begin{algorithmic}[1]
+\Require cell indices $\EO,\ES$; directed partner indices $\FS,\PO$; development table; GDP; members
+  and their nodes; EU stage weights; 2024 basket trade among members; parameters of
+  Table~\ref{tab:alg_params}
+\State collapse every input to one record per key; \textbf{assert} uniqueness
+\State aggregate the members of the EU node (rules below); every other member is its own node
+\State for each stage, S-curve $\EO$ and $\ES$ across the nodes; compute $a_p$, $d_c$, $W_{pc}$
+\State $\kappa_i\gets$ eq.~\eqref{eq:net_cap} for every node; \ $\mathcal{X}_{ts}\gets\emptyset$
+\ForAll{stages $(t,s)$}
+  \State $R_{ts}\gets$ \textit{SolveStage}$(t,s,\mathcal{X}_{ts})$\Comment{Algorithm~\ref{alg:stage}}
+\EndFor
+\State $(R,\mathcal{X})\gets$ \textit{PortfolioCaps}$(R,\mathcal{X},\kappa)$\Comment{Algorithm~\ref{alg:portfolio}}
+\State split each EU share to the members by stage weight; rank build candidates by
+  eq.~\eqref{eq:net_build}
+\State \Return designs, diagnostics, caps and counts, member shares, build list, input checks
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{The EU node.} The design is solved over nodes, and the members of the EU node are
+aggregated before anything is ranked, so that the node is one point in each within-stage S-curve.
+The member weights $\mu_{m,ts}$ are the stage weights of Section~\ref{sec:coalition} (members'
+production shares for Coal, Gas and Oil Upstream, their basket-export shares where the stage has a
+basket, their GDP shares otherwise), renormalised over the members. A producer input of the node
+($\EO$, $\ES$, development potential) is the $\mu$-weighted mean over the members that have a value,
+the weights renormalised over them. Demand uses the members' summed GDP for size, and for need the
+GDP-weighted mean of the members' raw security, which is then S-curved across nodes like any other
+node's. An edge component ($\FS$ or $\PO$) between the node and a partner is the mean of the member
+edges, weighted by the members' 2024 basket trade on that edge (the members' imports from the
+producer when the EU consumes, their exports to the consumer when it produces) or, without trade, by
+the stage weights; components are averaged before the missing-component zero is applied. Edges
+between two members are dropped, and the node's self-supply edge follows eq.~\eqref{eq:net_self_edge}.
+The portfolio cap uses the summed GDP. The node's designed share is split back to the members in
+proportion to $\mu_{m,ts}$; these member shares are derived, not designed.
+
+% ---------------------------------------------------------------------------
+\subsection{The stage MILP with the diversification term}
+\label{subsec:alg_milp}
+
+The quadratic penalty of eq.~\eqref{eq:net_obj} is carried into the mixed-integer linear program by
+an outer approximation. Let $\mathcal{B}=\{0,h,2h,\dots,\bar s\}$ be the breakpoints of the share
+grid ($h=0.01$, 41 points). Each producer gets an auxiliary variable $\tau_p\ge0$ and the cuts
+\begin{equation}\label{eq:alg_tangent}
+  \tau_p\ \ge\ 2b\,x_p-b^{2}\,y_p\qquad \forall b\in\mathcal{B},
+\end{equation}
+and the objective subtracts $\lambda\sum_p\tau_p$ instead of $\lambda\sum_px_p^2$. With $y_p=1$
+the cuts are the tangents of $x^2$ at the breakpoints; with $y_p=0$, so that $x_p=0$, they reduce
+to $\tau_p\ge0$. Because the program maximises, $\tau_p$ settles on the upper envelope of the
+tangents.
+
+\paragraph{Approximation error.} For $x\in[b,b+h]$ the envelope is $\max\{2bx-b^2,\,2(b+h)x-(b+h)^2\}$,
+and $x^2$ minus the envelope is largest where the two tangents meet, at $x=b+h/2$, where it equals
+$(h/2)^2$. The envelope therefore under-states $x_p^2$ by at most $h^2/4=2.5\times10^{-5}$ per
+producer, and by at most $5\times10^{-4}$ of the Herfindahl index even with the largest feasible
+number of producers (20); unselected nodes contribute no error. The diagnostics record the realised error; in the production design it equals
+the bound in every stage, because an interior optimal share sits on a kink of the envelope, at a
+midpoint $b+h/2$ of the grid, unless a bound or a linking constraint binds. Designed shares such as
+0.325, 0.275 or 0.135 are of this kind, which is why ties are frequent and the top-$K$ rule uses a
+strict rank.
+
+\paragraph{Perspective form.} Written with $y_p$ multiplying $b^2$, the cuts are the perspective of
+the tangents. They leave the integer solutions and their objective values unchanged but tighten the
+linear relaxation: with plain tangents $\tau_p\ge2bx_p-b^2$, a fractional $y_p$ could hold a share
+below $\underline s$ at almost no penalty. On a Nuclear Upstream stage with near-tied candidates
+the perspective form cut GLPK's solution time from 875 to 51 seconds with the same solution.
+
+\paragraph{Size.} With $n$ nodes the program has $n^2$ flows, $n$ selection and $n^2$ link binaries,
+and $2n$ share and auxiliary variables: $2n^2+3n$ variables, $n^2+n$ of them binary. It has $n$
+demand constraints, $2n$ share bounds, one producer-count constraint, $3n^2$ linking constraints,
+$n$ redundancy constraints, $n$ share definitions and $|\mathcal{B}|\,n$ tangent cuts, plus one
+equality per barred node. For $n=37$ this is 2{,}849 variables (1{,}406 binary) and 5{,}810
+constraints.
+
+\paragraph{Solution and fallback.} Algorithm~\ref{alg:stage} solves one stage. A stage is sent to
+the MILP when the solver packages are installed and the stage has at most 60 nodes, which every
+stage satisfies. GLPK receives its own time limit of $T=300$ seconds, an R-level limit guards the
+model build, and only a solution with optimal status is accepted; a time-limited or infeasible run
+falls back to the greedy heuristic, and the diagnostics record the method and the solver's message.
+
+\begin{algorithm}[htbp]
+\caption{Solving one stage (\textit{SolveStage})}
+\label{alg:stage}
+\begin{algorithmic}[1]
+\Require stage $(t,s)$; exclusion set $\mathcal{X}_{ts}$; node and edge data of the stage
+\State $C\gets$ the nodes of the stage; \textbf{if} $|C|<3$ or no $a_p$ is defined \textbf{then
+  return} skipped
+\State complete $W$: a missing component is $0$; $W_{pp}\gets$ eq.~\eqref{eq:net_self_edge}
+\State $\mathcal{E}\gets C\setminus\mathcal{X}_{ts}$, restricted to nodes with a defined $a_p$ if at
+  least $\max\{m_P,\lceil1/\bar s\rceil,m_S\}$ remain
+\If{the MILP packages are installed \textbf{and} $|C|\le60$}
+  \State build \eqref{eq:net_milp} with the cuts \eqref{eq:alg_tangent} and $y_p=0$ for
+    $p\notin\mathcal{E}$; solve with GLPK under the limit $T$
+  \If{the build or solve fails, or the status is not optimal}
+    \State record the message; $R\gets$ \textit{Greedy}$(C,\mathcal{E})$\Comment{Algorithm~\ref{alg:greedy}}
+  \Else
+    \State $R\gets$ the optimal $(y,f)$ with $x_p=\sum_cf_{pc}$
+  \EndIf
+\Else
+  \State $R\gets$ \textit{Greedy}$(C,\mathcal{E})$
+\EndIf
+\State record the method, producers, $J$ with the exact penalty $\lambda\sum_px_p^2$, $\HHI$,
+  $\max_px_p$, realised redundancy and the tangent error
+\State \Return $R$
+\end{algorithmic}
+\end{algorithm}
+
+% ---------------------------------------------------------------------------
+\subsection{Properties of the stage program}
+\label{subsec:alg_properties}
+
+Throughout, self-supply is allowed, $d_c\ge0$ and $\sum_cd_c=1$.
+
+\paragraph{Feasibility.} At the production values the program is feasible if and only if
+$|\mathcal{E}_{ts}|\ge3$. \emph{Proof.} Summing the demand constraints gives $\sum_px_p=1$, and
+$x_p\le\bar s$ requires at least $\lceil1/\bar s\rceil=3$ selected nodes, all eligible. Conversely,
+select any three eligible nodes, link each to every consumer and set $f_{pc}=d_c/3$: shares of $1/3$
+lie in $[\underline s,\bar s]$, each link carries $d_c/3\ge\varepsilon d_c$, and every consumer has
+three suppliers. The penalty does not affect feasibility. $\square$
+
+\paragraph{Concentration bounds.} Any feasible design satisfies eq.~\eqref{eq:net_hhi_bounds}.
+\emph{Proof.} With $k$ producers, each with $x_p\ge\underline s$, $k\le\lfloor1/\underline s\rfloor$
+and $k\le|\mathcal{E}|$, and $\sum_px_p^2\ge1/k$ by the Cauchy--Schwarz inequality. The Herfindahl
+index is convex, so its maximum over $\{x:\sum_px_p=1,\,0\le x_p\le\bar s\}$ is attained at a vertex,
+where $\lfloor1/\bar s\rfloor$ shares equal $\bar s$ and one equals the remainder, here
+$(0.4,0.4,0.2)$ and 0.36. $\square$
+
+\paragraph{Redundancy.} Every consumer with $d_c>0$ has between $m_S=2$ and
+$\lfloor1/\varepsilon\rfloor=10$ suppliers, and at least $\varepsilon d_c$ of its demand comes from
+another node, because an active link carries at least $\varepsilon d_c$ and at least two links are
+active.
+
+\paragraph{Interior shares.} Fix the producer set $S$ and write $v_p$ for the marginal value of a
+unit of $p$'s share (its node score plus the edge value of the marginal flow). Maximising
+$\sum_{p\in S}v_px_p-\lambda\sum_{p\in S}x_p^2$ subject to $\sum_px_p=1$ and
+$\underline s\le x_p\le\bar s$ gives, by the Karush--Kuhn--Tucker conditions,
+\begin{equation}\label{eq:alg_waterfill}
+  x_p=\min\Big\{\bar s,\ \max\Big\{\underline s,\ \frac{v_p-\mu}{2\lambda}\Big\}\Big\},
+\end{equation}
+with the level $\mu$ set so that the shares sum to one. Two interior shares therefore differ by
+$(v_p-v_q)/(2\lambda)$, and as $\lambda\to0$ the shares move to the bounds, the corner solutions of
+the linear design. Equation~\eqref{eq:alg_waterfill} is the water-filling rule of the greedy
+fallback.
+
+\paragraph{Monotonicity.} Holding the eligible set, scores, demand and edges fixed, the optimal value
+is weakly decreasing in the stringency of each resilience parameter (lower $\bar s$, higher
+$\underline s$, $m_P$, $m_S$ or $\varepsilon$), because each parameter enters one family of
+constraints and a more stringent value only removes feasible points. It is also weakly decreasing in
+$\lambda$. The portfolio loop can produce different exclusion sets at different parameter values, so
+the property holds stage by stage for given exclusions, not for the design as a whole; the
+non-monotone median Herfindahl index of the calibration grid arises in this way.
+
+% ---------------------------------------------------------------------------
+\subsection{Greedy fallback}
+\label{subsec:alg_greedy}
+
+The heuristic (Algorithm~\ref{alg:greedy}) replaces the joint choice of producers, shares and flows
+by three steps. It ranks the eligible nodes on $g_p=w_Na_p+w_E\bar W_p+w_D\delta_p$, where
+$\bar W_p=\sum_cW_{pc}d_c$ is the demand-weighted connectivity, with ties broken by $a_p$, then
+$\bar W_p$, then the code, so that the selection never depends on row order; nodes with no positive
+edge to a consumer with demand go last. For each $k\ge m_P$ it water-fills the first $k$ nodes with
+eq.~\eqref{eq:alg_waterfill}, using $v_p=g_p$ (the edge term as if $p$ served every consumer in
+proportion to demand) and finding $\mu$ by bisection, and keeps the $k$ with the highest penalised
+value. For candidates in value order and without a development bonus this is the exact optimum of the
+node part. Flows are then fitted to the target shares and to demand by biproportional (RAS) scaling
+of the edge matrix, $f_{pc}=r_pW_{pc}k_c$, which splits each consumer's demand in proportion to edge
+quality and minimises the Kullback--Leibler divergence from the edge matrix among the matrices with
+the required margins. Links below $\varepsilon$ of a consumer's demand are then pruned one at a time
+and the fit repeated, but only where the consumer keeps $m_S$ suppliers and the refit still meets
+the share targets: the share cap is a hard constraint, redundancy a soft one.
+
+\begin{algorithm}[htbp]
+\caption{Greedy fallback with water-filling (\textit{Greedy})}
+\label{alg:greedy}
+\begin{algorithmic}[1]
+\Require nodes $C$, eligible set $\mathcal{E}$; $a,d,\delta$; complete edge matrix $W$; $\lambda>0$
+\State $\bar W_p\gets\sum_cW_{pc}d_c$; \ $g_p\gets w_Na_p+w_E\bar W_p+w_D\delta_p$ ($a_p=0$ if undefined)
+\State order $\mathcal{E}$ by $g_p$, $a_p$, $\bar W_p$ (decreasing) and code; move nodes that reach
+  no consumer with demand to the end
+\For{$k=m_P,\dots,|\mathcal{E}|$}
+  \State $x^{(k)}\gets$ water-filling \eqref{eq:alg_waterfill} of the first $k$ nodes with
+    $v_p=g_p$ (bisection on $\mu$)
+  \State $V_k\gets\sum_pg_px^{(k)}_p+w_D\sum_p\delta_p-\lambda\sum_p(x^{(k)}_p)^2$
+\EndFor
+\State $k^\ast\gets\argmax_kV_k$; \ $S\gets$ the first $k^\ast$ nodes; \ $\sigma\gets x^{(k^\ast)}$
+\State $f\gets$ RAS fit of $W_{S\times C}$ to row sums $\sigma$ and column sums $d$
+  (at most 2{,}000 iterations, tolerance $10^{-12}$)
+\State prune links with $f_{pc}<\varepsilon d_c$ one at a time where the consumer keeps $m_S$
+  suppliers; refit; reject a refit that misses $\sigma$ or $d$ by more than $10^{-6}$
+\State \Return $S$, $x=\sum_cf_{pc}$, $f$ and $J$ evaluated with eq.~\eqref{eq:net_obj}
+\end{algorithmic}
+\end{algorithm}
+
+A greedy design that satisfies every constraint of the MILP is feasible for it, so an optimal MILP
+solution scores at least as high. In the production configuration without caps the MILP objective
+is at least the greedy one in all 22 stages, by 2.4\% in the median stage and 4.0\% at most, and the
+greedy design is more concentrated (median index 0.154 against 0.139); with the caps on, solving
+every stage greedily gives a median index of 0.160, above the calibration target, and a summed
+objective 2.5\% lower. The fallback is a safeguard, not an equivalent; it is not triggered in the
+production design.
+
+% ---------------------------------------------------------------------------
+\subsection{Portfolio caps}
+\label{subsec:alg_portfolio}
+
+Algorithm~\ref{alg:portfolio} enforces the caps of eq.~\eqref{eq:net_cap}. The caps are computed
+once: GDP (latest finite WDI year, the coalition median if none) is transformed to
+$\log(1+\mathrm{GDP})$, scaled to $[0,1]$ over the nodes, mapped linearly to $[2,10]$, rounded and
+clamped, and the largest economy is set to ten. An appearance requires a positive share and a strict
+rank of at most $K$, ties broken by producer score and then by code; with shares on the midpoints of
+the tangent grid a dense rank would count every tied producer and let one stage contribute more than
+$K$ appearances.
+
+\begin{algorithm}[htbp]
+\caption{Portfolio caps across stages (\textit{PortfolioCaps})}
+\label{alg:portfolio}
+\begin{algorithmic}[1]
+\Require stage results $R$; exclusion sets $\mathcal{X}$; caps $\kappa$; $K=5$; $I_{\max}=30$
+\For{$\iota=1,\dots,I_{\max}$}
+  \State in every stage, $\rho_{i,ts}\gets$ strict rank of $x_{i,ts}$ (decreasing; ties by $a$, then code)
+  \State $A_i\gets|\{(t,s):x_{i,ts}>0,\ \rho_{i,ts}\le K\}|$\Comment{eq.~\eqref{eq:net_topk}}
+  \State $O\gets\{i:A_i>\kappa_i\}$; \textbf{if} $O=\emptyset$ \textbf{then} converged; \textbf{break}
+  \ForAll{$i\in O$}\Comment{all offenders use the same snapshot of $R$}
+    \State bar $i$ from the $A_i-\kappa_i$ counted stages with the smallest $x_{i,ts}\,a_{i,ts}$:
+      $\mathcal{X}_{ts}\gets\mathcal{X}_{ts}\cup\{i\}$
+  \EndFor
+  \State re-solve every stage whose exclusion set changed\Comment{Algorithm~\ref{alg:stage}}
+\EndFor
+\State \Return $R$, $\mathcal{X}$, $(\kappa_i,A_i)_i$, convergence status, passes, violations left
+\end{algorithmic}
+\end{algorithm}
+
+Exclusion sets only grow and a barred node remains a consumer, so at most $(1+I_{\max})$ times the
+number of stages are solved. Within a pass the offenders' exclusions are chosen from one snapshot and
+do not depend on the order in which offenders are visited; across passes the outcome is
+path-dependent, because barring a node can promote another into a stage's top $K$. Compliance
+requires $\sum_i\kappa_i\ge3S^\ast$ for $S^\ast$ solved stages, since every stage has at least three
+producers within its top $K$; here $\sum_i\kappa_i=218\ge66$. In the production design the loop
+converges after seven passes (62 stage solves) with no violation, and every run of the calibration
+grid converges, in four to eight passes. A joint program with the linear constraints
+$\sum_{(t,s)}y_{i,ts}\le\kappa_i$ would optimise the stages together, at the cost of a program 22
+times as large; it is left for future work.
+
+% ---------------------------------------------------------------------------
+\subsection{Calibration of the diversification weight}
+\label{subsec:alg_calibration}
+
+\paragraph{Target.} For each stage with an HS6 basket, the nodes' observed export concentration is
+$\HHI^{\mathrm{N}}_{ts}=\sum_{j\in\mathcal{V}}\big(X_{jts}/\sum_{k\in\mathcal{V}}X_{kts}\big)^2$,
+where $X_{jts}$ are node $j$'s 2024 basket exports in the reconciled Comtrade matrix (importer
+reports, else the exporter's mirror declaration $\times1.06$; unobserved cells count as zero). A
+single-country node counts its exports to every other economy; the EU node counts only exports to
+importers outside the EU, because trade among its members is internal to the node, as a country's
+domestic sales are, and would otherwise make the EU the leading exporter of nearly every stage. The
+target is the median over the 18 basket stages, 0.1556; the stage values range from 0.095
+(Batteries Midstream) to 0.355.
+
+\paragraph{Procedure.} For each $\lambda$ on the grid, the full production configuration is
+re-solved: 37 nodes, 22 stages, caps on, MILP with the 300-second limit, up to 30 cap passes, and the
+inputs assembled exactly as \texttt{scripts/30} assembles them. The rule selects the smallest grid
+value whose median $\HHI^{\mathrm{D}}_{ts}$ over the 22 stages is at most the target. The run at the
+selected value reproduces the stored production design to $5\times10^{-16}$ in every share, and the
+production script warns if the designed median exceeds the observed one on its own inputs, so a
+change of inputs that breaks the rule cannot pass unnoticed. Table~\ref{tab:alg_lambda_grid} lists
+the 36 grid points.
+
+\begin{table}[htbp]
+\centering
+\begin{threeparttable}
+\caption{The calibration grid of the diversification weight}
+\label{tab:alg_lambda_grid}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}l r r r r r r r@{\hspace{14pt}}l r r r r r r r@{}}
+\toprule
+$\lambda$ & $\widetilde{\HHI}$ & Eff. & Max. & Roles & Floor & $\Delta$ & M &
+$\lambda$ & $\widetilde{\HHI}$ & Eff. & Max. & Roles & Floor & $\Delta$ & M \\
+\midrule
+0    & .3450 & 2.90 & .400 &  79 &  6 &   0.00 & 22 & 0.86 & .1480 & 6.76 & .305 & 209 & 56 &  $-$6.39 & 22 \\
+0.5  & .2156 & 4.64 & .400 & 149 & 35 &  $-$2.71 & 22 & 0.87 & .1493 & 6.70 & .305 & 209 & 54 &  $-$6.44 & 22 \\
+0.70 & .1640 & 6.10 & .355 & 190 & 54 &  $-$5.02 & 22 & 0.88 & .1469 & 6.81 & .305 & 211 & 54 &  $-$6.54 & 22 \\
+0.71 & .1630 & 6.14 & .345 & 192 & 54 &  $-$5.17 & 22 & 0.89 & .1414 & 7.07 & .302 & 212 & 54 &  $-$6.62 & 22 \\
+0.72 & .1622 & 6.16 & .335 & 193 & 51 &  $-$5.27 & 22 & 0.90 & .1411 & 7.09 & .302 & 214 & 59 &  $-$6.70 & 22 \\
+0.73 & .1630 & 6.14 & .335 & 194 & 53 &  $-$5.36 & 22 & 0.91 & .1423 & 7.03 & .295 & 213 & 55 &  $-$6.71 & 22 \\
+0.74 & .1620 & 6.17 & .335 & 197 & 57 &  $-$5.50 & 22 & 0.92 & .1347 & 7.43 & .310 & 216 & 58 &  $-$6.86 & 21 \\
+0.75 & .1593 & 6.28 & .335 & 197 & 58 &  $-$5.55 & 22 & 0.93 & .1323 & 7.56 & .309 & 217 & 61 &  $-$6.99 & 21 \\
+0.76 & .1583 & 6.32 & .331 & 199 & 62 &  $-$5.66 & 22 & 0.94 & .1340 & 7.46 & .285 & 221 & 64 &  $-$7.07 & 22 \\
+0.77 & .1558 & 6.42 & .325 & 200 & 61 &  $-$5.72 & 22 & 0.95 & .1331 & 7.51 & .305 & 221 & 62 &  $-$7.18 & 21 \\
+\textbf{0.78} & \textbf{.1520} & 6.58 & .325 & 201 & 61 &  $-$5.80 & 22 & 0.96 & .1326 & 7.54 & .285 & 225 & 70 &  $-$7.28 & 22 \\
+0.79 & .1485 & 6.74 & .325 & 203 & 63 &  $-$5.90 & 22 & 0.97 & .1343 & 7.45 & .282 & 225 & 66 &  $-$7.39 & 22 \\
+0.80 & .1502 & 6.66 & .320 & 205 & 63 &  $-$6.03 & 22 & 0.98 & .1310 & 7.63 & .276 & 227 & 65 &  $-$7.44 & 22 \\
+0.81 & .1500 & 6.66 & .315 & 205 & 54 &  $-$6.09 & 22 & 0.99 & .1288 & 7.77 & .300 & 226 & 65 &  $-$7.53 & 21 \\
+0.82 & .1500 & 6.66 & .315 & 206 & 53 &  $-$6.14 & 22 & 1.00 & .1291 & 7.74 & .275 & 230 & 70 &  $-$7.58 & 22 \\
+0.83 & .1492 & 6.70 & .315 & 205 & 55 &  $-$6.16 & 22 & 1.1  & .1196 & 8.36 & .257 & 238 & 63 &  $-$8.17 & 22 \\
+0.84 & .1487 & 6.73 & .305 & 208 & 58 &  $-$6.26 & 22 & 1.2  & .1126 & 8.88 & .245 & 251 & 77 &  $-$8.96 & 22 \\
+0.85 & .1501 & 6.66 & .305 & 207 & 56 &  $-$6.29 & 22 & 1.5  & .0945 & 10.58 & .215 & 280 & 92 & $-$10.64 & 22 \\
+\addlinespace
+\multicolumn{16}{@{}l}{\emph{Without portfolio caps:} $\lambda=0.78$: $\widetilde{\HHI}=.1393$, Eff.\ 7.18, Max.\ .312, Roles 214, Floor 57, $\Delta=-5.14$, M 22.}\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item \emph{Notes:} Each row re-solves the production configuration (37 nodes, 22 Upstream and
+Midstream stages, portfolio caps on, MILP with a 300-second stage limit) at one value of $\lambda$.
+$\widetilde{\HHI}$: median over the 22 stages of the Herfindahl index of designed shares; the rule
+selects the smallest $\lambda$ with $\widetilde{\HHI}\le0.1556$, the median observed export
+Herfindahl index of the nodes over the 18 basket stages (bold), and every row from 0.78 on meets
+it. Eff.: median effective number of producers. Max.: largest designed share. Roles: producer roles
+summed over stages. Floor: shares at $\underline s=0.05$. $\Delta$: summed node and edge terms of the
+22 stage objectives (without the penalty), in percent of their value at $\lambda=0$ with caps. M:
+stages solved by the MILP in the final pass; in the four runs with 21 (0.92, 0.93, 0.95, 0.99),
+Nuclear Upstream reached the time limit and was solved by the greedy fallback. The
+portfolio loop converged in every run (four to eight passes). Source: lambda study on the inputs of
+the final rerun of 12 October 2026.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\paragraph{Results.} Without the penalty the median stage has three producers, two at the cap, and an
+index of 0.345; at $\lambda=0.5$ it is still 0.216. Between 0.70 and 0.77 the median lies within
+0.009 of the target and above it, and the rule selects 0.78 (0.1520, a margin of 0.0036). The median
+rises in eight of the 35 grid steps (at 0.72--0.73, 0.79--0.80, 0.84--0.85, 0.86--0.87, 0.90--0.91,
+0.93--0.94, 0.96--0.97 and 0.99--1.00), by at most 0.0017, and is flat between 0.81 and 0.82; no
+point above the pick returns above the target. Every run up to $\lambda=0.91$ solves all 22 stages
+by the MILP in every pass. The score cost of diversification grows smoothly, from 5.8\% at the pick
+to 7.6\% at $\lambda=1$ and 10.6\% at 1.5, while the number of producer roles rises from 201 to 280.
+Without caps, the same $\lambda$ gives a median of 0.139, so the calibrated value is specific to the
+capped configuration, as it is to the edge weight $w_E=0.5$ (Section~\ref{sec:robustness}).
+
+% ---------------------------------------------------------------------------
+\subsection{Implementation, verification and options not used}
+\label{subsec:alg_tests}
+
+The stage MILP is written with \texttt{ompr} \citep{schumacher2023ompr} and passed through
+\texttt{ompr.roi} and the ROI plug-in to GLPK \citep{makhorin2020glpk}. The production script writes
+the tables \texttt{allied\_network\_*.csv} (specialization, flows, diagnostics, input checks, nodes,
+edges, member shares, observed concentration, portfolio and build candidates); in the flow and edge tables
+the reporter is always the producer and the partner the consumer, and the friendshore column holds
+$\FS_{cp}$, the consumer's rating of the producer. The six test files of the design
+(\texttt{tests/testthat/test-allied-network-*.R}), on synthetic fixtures only, run 43 tests with
+443 passing expectations and no failure. They check the uniqueness and orientation of nodes and
+edges, the sums of shares, demand and flows, the share bounds and redundancy rules, the tangent
+approximation and its error bound, the water-filling fallback, the aggregation of the EU node and the
+split of its shares, the strict top-$K$ count, the portfolio loop and the deterministic treatment of
+ties.
+
+\paragraph{Options not used in production.} Two options are retained in the code for other callers
+and are not used for any result in the paper. The first is the three-component producer score with
+the Policy index (node weights 0.5, 0.3 and 0.2 on $\EO$, policy and $\ES$), in which a node without
+a policy value receives the stage median of the observed values before the S-curve,
+\begin{equation}\label{eq:net_policy_impute}
+  \POL_{pts}\ \leftarrow\ \operatorname{median}\{\POL_{qts}:\ q\in\mathcal{V},\ \POL_{qts}\
+  \text{observed}\}\quad\text{if } \POL_{pts}\ \text{is missing};
+\end{equation}
+the production design switches the policy term off, so nothing is imputed. The second is a
+capacity-denominated variant, in which flows are in US dollars against a stage target, producers have
+existing and maximum capacities and capacity builds carry a cost that development potential can
+lower. It needs stage targets and capacity data that do not exist at the resolution of the indices,
+and its solvers lack the deterministic tie rule and the input checks of the share-based ones.

@@ -1,0 +1,357 @@
+% ---------------------------------------------------------------------------
+% Results fragment for Appendix D, closing subsection "Reconciliation with the earlier
+% release" (subsec:corr_reconciliation). It follows Table~\ref{tab:corrections_reconciliation}
+% and the "After the rerun, ..." paragraph (both filled from this theme's tbd fills) and adds no
+% float with a label that already exists in the sections. New labels:
+%   fig:reconcile_scatter   -> figures/reconcile_scatter.pdf
+%   fig:reconcile_cells     -> figures/reconcile_cells.pdf
+%   fig:reconcile_movers    -> figures/reconcile_movers.pdf
+%   fig:reconcile_si_terms  -> figures/reconcile_si_terms.pdf
+%   tab:reconcile_coverage  -> tables/reconcile_coverage.tex (\input below)
+%   tab:reconcile_movers    -> tables/reconcile_movers.tex   (\input below)
+%   tab:reconcile_allied    -> tables/reconcile_allied.tex   (\input below)
+%   tab:reconcile_network   -> tables/reconcile_network.tex  (\input below)
+% Numbers: paper/results/reconcile.json, written by scripts/paper/fig_reconcile.R from the
+% shipped release of 3 September 2026 (main checkout, read only) and the final rerun of
+% 12 October 2026 (network at lambda = 0.78). "Shipped" is the September 2026 release, "final"
+% the rerun. Rank statistics are over cells rankable in the final release unless stated.
+% ---------------------------------------------------------------------------
+
+\paragraph{Matching and coverage.} The comparison uses the headline tables of the two releases,
+which cover the eleven technologies of the paper. Every country name of the shipped release is
+mapped to its canonical name with the corrected standardiser (item C1), units without an ISO3
+code are dropped (item C2), and where two spellings of one economy give the same
+country--technology--stage key the record under the canonical spelling is kept. Pillar cells are
+matched on (country, technology, stage) and Strategic Index cells on (country, sector).
+Table~\ref{tab:reconcile_coverage} reports the counts. Harmonisation alone reduces the shipped
+Energy Security table from 270 country strings to 237 economies: it drops 17 rows of two units
+without a code (Northern Cyprus and the USSR) and merges 162 rows of 29 economies that appeared
+under two or three spellings, such as Viet Nam and Vietnam or Slovakia and the Slovak Republic.
+The shipped Economic Opportunity table loses 56 rows of three such units, among them ``Global'',
+and merges 234 rows. The final release scores 219 economies in each pillar, each under one name.
+
+Of the harmonised $\ES$ cells, 5{,}522 are in both releases, 45 only in the shipped one and 710
+only in the final one. The 45 are the Solar and Wind downstream cells of 18 small territories
+outside the World Bank country list, such as the Falkland Islands, Jersey and Vatican City (35
+cells), and the Geothermal upstream and midstream cells of five economies, pairs that are no
+longer scored in $\ES$ (10 cells). The 710 are new coverage, not relabelled cells: 109 fill Green
+Hydrogen midstream, which the shipped $\ES$ did not score, and 601 add economies to existing
+cells, most of them midstream cells reached by the rebuilt trade themes (items T1--T5); 432 of
+the 710 are rankable. For $\EO$, 6{,}598 cells are in both releases, the same 35 territory cells
+are lost, and 533 cells are added, all of them economies newly scored in cells the shipped
+release already scored. These additions rest mostly on imputed values (the median imputed weight
+share is 0.68), and only 11 of them are rankable. They enlarge the population of each cell more
+than they add information about the economies they bring in.
+
+\input{tables/reconcile_coverage}
+
+Three rules apply to every pillar statistic below. First, a technology--stage cell in which a
+pillar is constant across countries in either release carries no information on the ordering of
+countries and is excluded. This removes $\ES$ in Nuclear upstream, which was zero for all 217
+economies in the shipped release, whose only category was a manufactured zero Investment cell
+(item E7), and the shipped Geothermal upstream and midstream cells, also constant at zero. In the
+final release Nuclear upstream varies, being scored on uranium resources and production from the
+Red Book of the OECD Nuclear Energy Agency and the International Atomic Energy Agency, Trade and
+Energy Prices. No $\EO$ cell is constant in either
+release. Second, rank statistics are computed over the cells that are rankable in the final
+release (Section~\ref{subsec:norm_diagnostics}): 3{,}537 of the 5{,}305 matched non-constant
+$\ES$ cells and 4{,}290 of the 6{,}598 $\EO$ cells; the shipped release had no such rule, and the
+statistics over all matched cells are reported alongside. Third, correlations are Spearman rank
+correlations unless they are labelled Pearson.
+
+\paragraph{Agreement of the pillars.} Figure~\ref{fig:reconcile_scatter} plots the final value
+of each cell against the shipped one. Over the 3{,}537 rankable $\ES$ cells of 194 economies the
+Spearman correlation is 0.81 (Pearson 0.81); over the 4{,}290 rankable $\EO$ cells of 178
+economies it is 0.67 (Pearson 0.69). Over all matched cells the correlations are 0.84 and 0.71.
+Agreement differs by stage, and in opposite directions for the two pillars. For $\ES$ it is
+highest upstream (0.83) and downstream (0.80) and lowest at the midstream stage (0.55); for
+$\EO$ it is lowest upstream (0.50) and highest downstream (0.88), with the midstream stage at
+0.66. The decomposition reported below locates the source of the weak stages: in the $\ES$
+midstream the reordering comes mainly from the Trade category, which items T1--T5 rebuilt from
+all-reporter Comtrade dyads and the reviewed baskets; in the $\EO$ upstream it comes from
+categories that enter the cell, among them the Trade category of the new upstream baskets, and
+from the rebuilt Trade and Investment inputs.
+
+Levels moved as well as ranks. The mean change, final minus shipped, is $+0.021$ in $\ES$ and
+$+0.012$ in $\EO$, but $+0.081$ in the $\ES$ upstream. Part of that shift comes from the 89
+upstream cells of 21 economies that were exactly zero in the shipped release, the vertical stripe
+at the left edge of the first panel: the shipped aggregation counted an unobserved category as
+zero at full weight (item A1), so a cell whose categories were all unobserved or zero scored zero;
+the same cells average 0.20 in the final release. The other vertical stripes are groups of
+economies that shared one shipped value because they shared imputed category values. A change of
+more than 0.1 in absolute value affects 31 percent of the rankable $\ES$ cells (40 percent at the
+midstream stage) and 17 percent of the $\EO$ cells (22 percent upstream, 5 percent downstream);
+a change of more than 0.2 affects 6.4 and 0.3 percent.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{reconcile_scatter}
+  \caption{Shipped release against final release, cell by cell. Each point is a
+  country--technology--stage cell (Energy Security, Economic Opportunity) or a country--sector
+  cell (Strategic Index) present in both releases, with the shipped value (3~September 2026) on
+  the horizontal axis and the final value on the vertical axis; points above the 45-degree line
+  gained. Colour marks the supply-chain stage of cells that are rankable in the final release
+  (sovereign economy, at most half of the index weight imputed); grey points are matched cells
+  that are not rankable. Energy Security: 5{,}305 matched cells of 219 economies, 3{,}537 of
+  them rankable; Economic Opportunity: 6{,}598 and 4{,}290; Strategic Index: the 477 cells of the
+  18 members of the shipped hand-picked list that are scored in both releases. Energy Security is
+  oriented so that higher values are more secure in both releases. Cells of technology--stage
+  pairs in which a pillar is constant across countries in either release (Energy Security in
+  Nuclear upstream, and in the shipped Geothermal upstream and midstream) are excluded. Spearman
+  correlations over rankable cells: Energy Security 0.81, Economic Opportunity 0.67, Strategic
+  Index 0.74. Shipped country names are mapped to canonical names before matching (item C1).
+  Sources: \texttt{index\_outputs.rds} of the two releases; \texttt{scripts/paper/fig\_reconcile.R}.}
+  \label{fig:reconcile_scatter}
+\end{figure}
+
+\paragraph{Level shifts and reorderings.} A pooled correlation mixes shifts in the level of a
+whole technology--stage cell with reorderings of countries within it.
+Figure~\ref{fig:reconcile_cells} separates the two: for each cell it plots the mean change
+against the Spearman correlation, across the rankable economies present in both releases, of the
+shipped and final values. The median within-cell correlation is 0.83 for $\ES$ (interquartile
+range 0.74--0.91) and 0.77 for $\EO$ (0.61--0.88); 11 of the 28 $\ES$ cells and 20 of the 33
+$\EO$ cells fall below 0.8, and four $\EO$ cells below 0.5. Measured by positions rather than
+correlations, 45 percent of $\ES$ values and 56 percent of $\EO$ values move by more than ten
+places in the ranking of their cell, and 41 and 48 percent by more than a tenth of the economies
+ranked in it; the median move is 9 places for $\ES$ and 13 for $\EO$, in cells of 68 to 191 and 40
+to 175 rankable economies. The ordering of economies within a cell is therefore not preserved
+closely enough for a shipped ranking to stand in for a final one.
+
+To attribute the changes, write a cell's pillar value as $\sum_k \omega_k c_k$, with $c_k$ the
+score of category $k$ and $\omega_k$ its normalised weight, an unobserved shipped category
+counting as $c_k=0$ at full weight, which is how the shipped value was computed (item A1). A
+two-factor Shapley decomposition splits the change into a \emph{score effect} for each category
+present in both releases,
+$\tfrac12(\omega_k^{\text{shipped}}+\omega_k^{\text{final}})(c_k^{\text{final}}-c_k^{\text{shipped}})$,
+and a \emph{composition effect}, the remainder, which comes from categories that enter or leave
+the cell and from the renormalisation of the weights. The decomposition reconstructs both
+releases' values exactly in every matched cell. Composition effects account for 25 percent of the
+summed absolute change in $\ES$ and 40 percent in $\EO$. Among score effects, Consumption (21
+percent), Trade (19 percent) and Foreign Dependency (16 percent) dominate in $\ES$, and
+Technological Readiness (18 percent), Cost Competitiveness (12 percent), Technology Demand and
+Trade (9 percent each) in $\EO$. The two kinds of effect play different roles, and the difference
+follows from the construction. When the category that enters or leaves is constant within a
+cell, such as the zero Investment cells, Energy Prices or Technological Readiness, its entry or
+exit applies one increasing affine transformation to the values of the countries that share the
+cell's category set, so it moves the level of the cell and leaves the ordering within it
+unchanged. The composition effect is the largest mean effect in 6 of the 9 $\ES$ upstream cells
+and 7 of the 11 $\EO$ upstream cells, and Technological Readiness, now mapped by stage (item T7),
+sets the level in 7 of the 11 $\EO$ downstream cells. The category whose effect varies most across
+countries, which is what reorders them, is instead a rebuilt input: Foreign Dependency in 6 of the
+9 $\ES$ upstream cells, Trade in 6 of the 9 $\ES$ midstream cells and in 4 of the 11 $\EO$
+upstream and midstream cells each, and Consumption or Investment in 9 of the 10 $\ES$ downstream
+cells.
+
+At the bottom of Figure~\ref{fig:reconcile_cells} lie cells in which the ranking rests heavily on
+imputed values in at least one release. The extreme case is $\EO$ in Green Hydrogen midstream,
+where the within-cell correlation over its 40 rankable economies is $-0.55$. In the shipped
+release only Cost Competitiveness varied across economies in this cell, and it was imputed in 55
+percent of its 110 records. In the final release Foreign Dependency enters, measured by
+electrolyser capacity (item E8), but it is imputed for 86 percent of the 213 economies scored and
+Cost Competitiveness for 84 percent. Neither ranking in this cell should be read as a measurement
+of the economies' positions. The next lowest cells are $\EO$ in Green Hydrogen upstream (0.34),
+Electric Grid upstream (0.36), where the review replaced electricity with a copper and aluminium
+basket, and Solar upstream (0.39), which gained the Trade category of the silicon-metal basket.
+In $\ES$ the lowest is Electric Grid upstream (0.58). $\ES$ in Nuclear midstream combines the
+largest level shift, a mean gain of 0.24, with a within-cell correlation of 0.59: the shift comes
+from the removal of the zero Investment category, so that the cell's $\ES$ is now its Trade score,
+and the reordering from the rebuilt Trade category itself.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{reconcile_cells}
+  \caption{Level shift and rank agreement by technology--stage cell. Each point is one
+  technology--stage cell. Horizontal axis: mean change of the pillar across the economies that
+  are scored in the cell in both releases and rankable in the final release (final minus shipped,
+  unit-interval scale). Vertical axis: Spearman correlation, across the same economies, of the
+  shipped and final values. Colour marks the stage. Labels name the three cells with the lowest
+  correlation and the three with the largest absolute mean change in each panel. Energy Security:
+  28 cells (Nuclear upstream was constant in the shipped release and is excluded; Geothermal
+  upstream and midstream and Electric Grid downstream have no final score; Green Hydrogen
+  midstream had no shipped one); Economic Opportunity: all 33 cells. A point far from zero on the
+  horizontal axis but high on the vertical axis is a level shift that left the ordering of
+  economies largely intact. Sources: as in Figure~\ref{fig:reconcile_scatter}.}
+  \label{fig:reconcile_cells}
+\end{figure}
+
+\paragraph{Largest changes among coalition members.} Restricted to the 57 members of the final
+coalition, the rankable matched cells number 1{,}468 for $\ES$ and 1{,}716 for $\EO$, with
+Spearman correlations of 0.82 and 0.68 and changes larger than 0.1 in 28 and 18 percent of cells,
+close to the full-sample figures. Figure~\ref{fig:reconcile_movers} shows the twelve largest
+absolute changes in each pillar, with at most two per technology--stage cell so that one
+cell-wide change does not fill the list, and Table~\ref{tab:reconcile_movers} gives their
+decomposition. Uncapped, the twelve largest $\ES$ changes are all nuclear cells, ten of them in
+Nuclear upstream, with gains of 0.38 to 0.74. The two largest, Canada and Namibia in Nuclear
+upstream, rise from zero to 0.74 and 0.72: the shipped cell held only the zero Investment
+category, and the final cell scores the uranium resources and production of the Red Book, which
+place both among the leading holders and producers, together with Trade and Energy Prices.
+Germany and Croatia in Nuclear midstream gain 0.38 because the zero Investment category, with a
+weight of 0.43, has gone. The other movers trace the rebuilt themes: Türkiye in Oil downstream
+($+0.32$) and New Zealand in Green Hydrogen downstream ($-0.24$) through the consumption rebuild
+(item E5); Türkiye and Czechia in Batteries downstream ($-0.27$ and $-0.25$) through an
+Investment value that is now zero-filled (item E7) and the consumption rebuild; Thailand and
+Ghana in Wind upstream and Gabon and Oman in Solar upstream (gains of 0.26 to 0.30) through the
+removal of the zero Investment category, the entry of Energy Prices and of the Trade category of
+the new upstream baskets, and a rebuilt Production or Foreign Dependency score. Gabon did not
+report imports in 2024, so its new Trade category rests on its partners' mirror declarations. In
+$\EO$ the largest changes are smaller ($-0.20$ to $+0.25$ uncapped): Canada and Namibia in
+Nuclear upstream again ($+0.25$ and $+0.24$, from the Red Book production data, the entry of
+Energy Prices and Trade and the removal of the zero Investment category); Slovakia in Electric
+Vehicles midstream ($+0.23$), whose records were split between two spellings (item C1) and whose
+Foreign Dependency and Investment categories are now observed; Germany and Portugal in Green
+Hydrogen midstream ($+0.23$ and $+0.20$, item T6 and the new Foreign Dependency category, item
+E8); and the United States in Electric Grid upstream ($+0.18$), where the reviewed copper and
+aluminium basket rebuilt Trade. Eight of the twelve $\ES$ changes and seven of the twelve $\EO$
+changes are driven mainly by the composition effect. The largest changes among the members are
+thus mostly level shifts of whole cells, caused by the removal of manufactured zeros and the
+entry of new categories and data. They matter most for comparisons across the cells of one
+country, which is what the Strategic Index makes, and less for comparisons of countries within a
+cell.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{reconcile_movers}
+  \caption{The twelve largest changes among coalition members, by pillar, with at most two per
+  technology--stage cell. Each row is one member's technology--stage cell, labelled by ISO3 code.
+  Hollow circles mark the shipped value (3~September 2026) and filled circles the final value,
+  coloured by stage; the segment spans the change. The text at the right names the attributed
+  cause in compact form: the largest effect in a two-factor Shapley decomposition of the change
+  into category score effects and a composition effect (categories entering or leaving the cell
+  and the renormalisation of the weights), followed by the second largest when it is at least half
+  as large, with the data change behind it (``Red Book uranium'': OECD-NEA/IAEA uranium resources
+  and production; ``mirror'': trade measured from partners' declarations). Item codes refer to
+  Table~\ref{tab:corrections_index}; the full decomposition is in
+  Table~\ref{tab:reconcile_movers}. Sample: the 57 members of the final coalition, cells present in
+  both releases and rankable in the final release, constant cells excluded (Energy Security in
+  Nuclear upstream, constant at zero in the shipped release, is included as a mover). Sources:
+  \texttt{category\_contributions} of the two \texttt{index\_outputs.rds}.}
+  \label{fig:reconcile_movers}
+\end{figure}
+
+\input{tables/reconcile_movers}
+
+\paragraph{Strategic Index.} The shipped Strategic Index scored 571 cells of 18 economies of its
+hand-picked list in 32 sectors; the final one scores 3{,}154 cells of 174 countries in 30 sectors,
+because the Policy index now reaches 215 economies and the rankability rule decides which pillar
+cells may enter. On the 477 cells of the 18 economies scored in both releases the Spearman
+correlation is 0.74 (Pearson 0.76), the mean absolute change is 0.041 and 4.4 percent of cells
+change by more than 0.1. Across sectors within a country the median Spearman correlation is 0.74,
+ranging from 0.42 for Argentina to 0.92 for Kenya. Of the 94 shipped cells of these economies
+without a final value, 34 lack a final $\ES$ value, most of them in Electric Grid downstream (17)
+and Geothermal upstream (16), sectors the shipped release had filled with country means (item
+P7), and 60 are excluded because their $\EO$ or $\ES$ cell is not rankable.
+
+The policy term changed most. The shipped Policy index combined four components (IEA PAMS, CAT,
+the February 2026 NIPO component and the dual-use score); the final one combines IEA PAMS, which
+is required, and CAT where CAT rates the country, and every one of the 18 economies has both.
+Between releases the within-country policy term has a Spearman correlation of only 0.61 (Pearson
+0.59), and it accounts for 40 percent of the summed absolute change of the index, against 35
+percent for the security-need term, 22 percent for $\EO$ and 3 percent for the stage and
+technology weights, which differ only through the technology weight of oil (0.12 shipped, 0 final)
+and coal (0 and 0.02). Figure~\ref{fig:reconcile_si_terms} splits the twelve largest changes
+exactly into the five weighted terms; the policy term is the largest contributor in seven of them
+and the security-need term in five. The United States illustrates the policy effect: its policy
+term rises from 0.56 to 1 in Batteries downstream and falls from 1 to 0.25 in Oil midstream,
+moving the index by $+0.17$ and $-0.15$. The security-need effect is clearest in Nuclear
+upstream, where the shipped $\ES$ of zero gave every country the maximum need: with the Red Book
+data Australia's index falls by 0.16 and India's by 0.13. Sector means explain 66 percent of the
+variance of the index in both releases, and the Spearman correlation within sectors is 0.67, so
+the agreement of the Strategic Index owes much to the sector structure that the stage and
+technology weights impose on both releases (Section~\ref{sec:strategic}).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{reconcile_si_terms}
+  \caption{The twelve largest changes in the Strategic Index among the economies scored in both
+  releases, split into the weighted terms of
+  $\SI=0.2\,\POL+0.3\,\EO+0.3\,(1-\ES)+0.1\,\lambda_s+0.1\,g_t$. Each bar is one country--sector
+  cell; the segments are the changes of the policy term, the $\EO$ term, the security-need term
+  and the two fixed weights (combined), and the diamond is the net change (final minus shipped),
+  which the segments sum to exactly. The shipped policy term is the within-country S-curve of the
+  four-component Policy index of February 2026 (IEA PAMS, CAT, NIPO and dual use); the final one
+  is that of IEA PAMS and CAT. Sample: the 477 country--sector cells of the 18 members of the
+  shipped hand-picked list scored in both releases. Sources: \texttt{strategic\_index} of the two
+  \texttt{index\_outputs.rds}; \texttt{scripts/paper/fig\_reconcile.R}.}
+  \label{fig:reconcile_si_terms}
+\end{figure}
+
+\paragraph{The allied picks.} The pick that feeds the allied network is each member's top
+upstream or midstream sector, Geothermal and Green Hydrogen excluded by rule of the selection
+(Table~\ref{tab:reconcile_allied}). The shipped release made it over a hand-picked list of 23
+economies; the final coalition is derived (Section~\ref{sec:coalition}) and has 57 members, so
+the comparison is confined to the 21 members the two lists share. Kenya and the United Arab
+Emirates are not in the final coalition, and Denmark, France, Italy and South Korea had no
+shipped pick because they lacked a Policy index (item P3). Of the 17 members with a pick in both
+releases, 16 change it; only Chile keeps Nuclear upstream. The causes separate cleanly. Six
+changes (Australia, Brazil, Canada, India, Mexico and the United States) are reorderings driven
+by the security-need term: all six picked Nuclear upstream, where the shipped $\ES$ was zero for
+every country, and the Red Book data now record uranium for all six, which lowers their need.
+Four (Argentina, Indonesia, South Africa and Viet Nam) are reorderings driven by the policy term.
+Four (Germany, Japan, Morocco and Norway) are barred by the endowment screen, because the shipped
+pick is an upstream stage for which the member has no recorded reserves or production. Two (Saudi
+Arabia and the United Kingdom) are no longer scored, because the $\EO$ cell of the shipped pick
+is not rankable. On these 21 members the picks move from Nuclear upstream (8 shipped picks) and
+Batteries upstream (5) to Batteries midstream (13 final picks), with Nuclear upstream (3),
+Batteries upstream and Electric Grid midstream (2 each) and Nuclear midstream (1). Over the whole
+coalition every one of the 57 members has a pick: Batteries midstream 27, Nuclear midstream 9,
+Nuclear upstream 8, Batteries upstream and Electric Grid midstream 4 each, Solar midstream 3 and
+Wind upstream 2. Without the endowment screen Nuclear upstream would be the pick of 17 members.
+
+\input{tables/reconcile_allied}
+
+\paragraph{Allied network.} The shipped network outputs are not comparable with the final ones
+(Table~\ref{tab:reconcile_network}). The shipped diagnostics, the only shipped network artefact
+read here, record a greedy solution in all 33 stages over the 22 effective members of the
+hand-picked list, and in 14 of them a reported producer count that is a perfect square, $k^2$
+with $k$ between 16 and 440 (up to 193{,}600 producers), together with a Herfindahl index of
+designed shares equal to one. Both are artefacts of the development join fan-out (item N1): a
+single country was selected with $k^2$ rows of share $1/k$, so the row count was $k^2$ and the
+Herfindahl index summed over the rows equalled one \eqref{eq:corr_fanout}. The portfolio loop,
+which runs over all stages jointly, stopped at its limit of ten passes with twelve members still a
+top producer in more stages than their cap allows. The final design covers the 22 upstream and
+midstream stages over 37 nodes, with the EU-27 as one node, and is solved by the MILP in every
+stage with no fallback. It selects 7 to 10 producers per stage (median 9), with a designed
+Herfindahl index between 0.13 and 0.21 (median 0.152, 6.6 effective producers) and no producer
+above a share of 0.325, under the concave diversification term with $\lambda=0.78$; the median
+observed export Herfindahl index of the nodes over the 18 stages with an HS6 basket is 0.156. The
+portfolio loop converges after seven passes with no member above its cap, and the node scores
+carry no policy term, so no member's policy is imputed.
+
+\input{tables/reconcile_network}
+
+\paragraph{Partnership Strength.} The shipped release did not write the PSI to disk (item B4).
+It is reconstructed here from the March 2026 top-five partner tables with the earlier code's
+logic: the unit is the partner name, so Taiwan and the 18 small territories that leave the
+pillar tables, none of which has a World Bank name, pool into one unnamed unit; a category score
+is the mean over all reporters and all variables of the category; and a development score that
+is undefined keeps its weight of 0.2 but contributes nothing. The reconstruction reproduces the
+audit's figures, a mean PSI of 0.598 for partners with a development score and 0.502 for the
+others. The shipped PSI averaged over every reporter, so the like-for-like comparison is with the
+final world view. Over the 187 partners matched and rankable in that view the Spearman correlation
+is $-0.09$ (Pearson $-0.22$); over the 191 of the headline core view, which averages the
+viewpoints of the 31 core members, it is $-0.33$. The shipped ordering does not survive the
+corrections, for two reasons. The denominator defect placed the partners without a development
+score, mostly high-income economies, below those with one, so correcting it moves that group up
+as a block. Within the two groups agreement is uneven: in the world view the Spearman correlation
+is 0.69 among the 128 partners with a development score and 0.29 among the 59 without one, whose
+shipped score rested on friendshore and opportunity alone, the two categories that items B1, B2
+and B5 changed. The United States moves from 168th to 4th of 187 in the world view and to 1st of
+191 in the core view; Germany from 135th to 5th; China from 22nd to 1st in the world view and to
+44th in the core view, whose Friendshore scores rate China from the core members' viewpoints,
+alignment included.
+
+\paragraph{Using numbers from the shipped release.} Three conclusions follow for a reader who
+holds numbers from the shipped release. First, within a technology--stage cell, shipped pillar
+rankings are a rough guide in the $\ES$ and $\EO$ downstream, where the median within-cell
+correlations are 0.90 and 0.88, and at the $\EO$ midstream stage (0.80). They are a poor guide at
+the $\ES$ midstream stage (0.70) and the $\EO$ upstream stage (0.61), and they carry no
+information for $\EO$ in Green Hydrogen midstream ($-0.55$). Second, comparisons across cells,
+and therefore the shipped Strategic Index and its allied picks, inherit the level shifts
+documented above as well as a different Policy index, and the shipped picks should be replaced by
+those of Table~\ref{tab:reconcile_allied} and Section~\ref{sec:strategic}. Third, the shipped
+network outputs and any PSI computed from the shipped partner tables should not be used. The
+general lesson is the one the composite-indicator literature draws from uncertainty and
+sensitivity analysis \citep{saisana2005uncertainty,saltelli2007composite}: the ordering a
+composite produces can depend on construction choices as much as on the data. Here, however, the
+large changes come from defects in the construction and from new data rather than from
+defensible alternative choices, so they are corrections rather than a measure of uncertainty.
