@@ -11,6 +11,7 @@ import type { CategoricalInputId, InputId, NumericInputId } from '../engine/inde
 import { layerOf, withLayer } from '../state/assessment.ts';
 import { useYards, type Evaluation } from '../state/YardsContext.tsx';
 import { ComponentStack } from '../components/ComponentStack.tsx';
+import { InputTip } from '../components/InfoTip.tsx';
 import { Completeness, ConfidencePill, ProvBadge, SectionHead, YardBadge, yardClass } from '../components/kit.tsx';
 import { PAGE } from '../FenceLayout.tsx';
 import { NoAssessment } from './ResultView.tsx';
@@ -57,9 +58,12 @@ function NumericControl({ e, id }: { e: Evaluation; id: NumericInputId }) {
   return (
     <div className={`border-b hairline py-3 last:border-b-0 ${changed ? 'yf-flip' : ''}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <label htmlFor={uid} className="text-sm text-paper">
-          {def.label}
-        </label>
+        <span className="flex items-center">
+          <label htmlFor={uid} className="text-sm text-paper">
+            {def.label}
+          </label>
+          <InputTip id={id} />
+        </span>
         <span className="flex items-center gap-2 text-sm">
           <span className="tabular text-paper">{cur.value === UNKNOWN ? 'Unknown' : formatNumber(nm.unit, v)}</span>
           <ProvBadge p={cur.provenance} />
@@ -106,15 +110,21 @@ function CategoricalControl({ e, id }: { e: Evaluation; id: CategoricalInputId }
   const changed = cur.provenance === 'scenario' || (cur.value === UNKNOWN && base.provenance !== 'unknown');
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b hairline py-2 last:border-b-0">
-      <label htmlFor={uid} className="min-w-[10rem] flex-1 text-sm text-paper-dim">
-        {def.label}
-        <span className="block text-xs text-paper-mute">
+      <div className="min-w-[10rem] flex-1">
+        <span className="flex items-center">
+          <label htmlFor={uid} className="text-sm text-paper-dim">
+            {def.label}
+          </label>
+          <InputTip id={id} />
+        </span>
+        <span id={`${uid}-base`} className="block text-xs text-paper-mute">
           Baseline: {optionLabel(id, base.value as string)} · <ProvBadge p={base.provenance} />
         </span>
-      </label>
+      </div>
       <span className="flex items-center gap-2">
         <select
           id={uid}
+          aria-describedby={`${uid}-base`}
           className="field field-sm w-44"
           value={String(cur.value)}
           onChange={(ev) => set(id, ev.target.value === String(base.value) && base.provenance !== 'unknown' ? undefined : ev.target.value)}

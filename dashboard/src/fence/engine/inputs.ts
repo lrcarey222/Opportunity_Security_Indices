@@ -224,6 +224,65 @@ export const INPUT_DEFS: Record<InputId, InputDef> = {
   },
 };
 
+/** What each assumption means, in plain language, for a general reader: what it is, how to think
+ *  about it, and why it matters for the yard. Shown as a tooltip wherever the assumption appears and
+ *  as a glossary on the Methodology page. Keyed by every input, so none can be left out. */
+export const INPUT_EXPLAIN: Record<InputId, string> = {
+  consequence:
+    'How bad it would be if supply stopped, or a foreign actor took control. Severe means a threat to life and safety, defence readiness, the power grid or another essential function; low means inconvenience or higher prices. Only high or severe consequences can justify a high fence.',
+  timeHorizon:
+    'How quickly the damage would become unacceptable. Grid controls that are switched off matter within hours; a material that factories keep in stock may take months to bite. The engine compares this with how long it would take to restore supply.',
+  digitallyActive:
+    'Whether the item contains software, firmware, communications or remote updates: something that can be commanded. A steel frame or a battery cell is passive; an inverter or a battery-management system is digitally active.',
+  remoteControl:
+    'Whether someone outside (a vendor, a foreign government or an attacker) could send commands, push updates, switch the item off or read sensitive operating data. Limited means some access exists but is tightly constrained, as with isolated safety systems.',
+  separability:
+    'Whether the risky software or communications layer can be split off and replaced with a trusted version without replacing the whole product. If it can, the fence only needs to surround that layer; if not, the whole product needs trusted sourcing until it can.',
+  substitutability:
+    'How easily users could switch to a different material, design or technology if supply stopped. Easy: many interchangeable options, such as steel racking. Impossible today: nothing else does the job, such as enriched uranium for today’s reactors. Hard substitution is one of the three conditions for a physical chokepoint.',
+  qualificationTime:
+    'How long before a new, trusted supplier’s product is approved for critical uses: testing, certification and customer sign-off. Even when other suppliers exist, switching to them can take months or years.',
+  reconstitutionTime:
+    'How long it would take to build or restart enough trusted production to replace what was lost: new plants, equipment, permits and skilled workers.',
+  stockpile:
+    'How long existing inventories (company stocks and government reserves) could keep critical users supplied after a cutoff. Stockpiles buy time to qualify or build alternatives.',
+  surgeCapacity:
+    'Whether trusted producers, at home or in allied countries, could quickly raise output to cover the lost supply. If they could, the only delay is qualifying their products.',
+  processKnowledge:
+    'Whether making the product here builds manufacturing know-how (how to run, tune and improve the process) that would be lost if production moved abroad.',
+  workforceSuppliers:
+    'Whether production sustains specialised workers, equipment makers and suppliers that would be hard to rebuild once gone. Researchers call this the industrial commons.',
+  adjacentInnovation:
+    'Whether making this helps the country innovate in related or next-generation technologies, for example today’s battery lines as a base for solid-state batteries.',
+  complementaryCapabilities:
+    'Whether the country already has related strengths to build on (research, neighbouring industries, skilled workers, demand) that make competing realistic rather than a standing start.',
+  costPerfAdvantage:
+    'Whether the new technology is meaningfully cheaper or better in ways customers value, not merely new.',
+  incumbentVulnerable:
+    'Whether today’s leading technology could be displaced, so a newcomer could win without first matching the incumbent’s scale and cost.',
+  scalePathway:
+    'Whether there is a credible route from pilots to a first commercial plant to full scale, with the financing, suppliers and buyers each step needs.',
+  beyondNovelty:
+    'Whether there is real evidence the technology works and could compete (pilot results, falling costs, signed buyers) rather than promise alone.',
+  maturity:
+    'How established the technology is. Mature, commoditised goods compete mainly on price; emerging ones still change fast and reward learning by doing.',
+  nonAlliedTopShare:
+    'The share of world supply held by the single largest supplier outside the trusted coalition of allies and partners. Above half, that supplier could plausibly use its position as leverage. Outside the coalition is not the same as hostile.',
+  topSupplierShare: 'The share of world supply held by the single largest supplier of any kind, ally or not.',
+  hhi:
+    'A standard measure of how concentrated a market is (the Herfindahl-Hirschman index), from near 0 for many small suppliers to 10,000 for a single one. Above about 1,800 a market is usually called highly concentrated. It describes the market; on its own it is not a security risk.',
+  alliedShare:
+    'The share of world supply already held by trusted allies and partners: a sense of how much trusted capacity exists to diversify toward.',
+  homeShare:
+    'The country’s own share of world supply on the measure used: a rough sign of whether it has a competitive position worth defending.',
+  trl:
+    'Technology readiness level, from 1 (basic research) to 9 (proven in commercial use), averaged across the stage’s technologies worldwide. It says how mature the technology is, not who leads in it.',
+  premium:
+    'How much more buyers would pay for domestic rather than world-market supply, through tariffs, content rules or higher-cost local production. A high premium slows deployment, so it needs a real security or capability benefit to justify it.',
+};
+
+export const explainOf = (id: InputId): string => INPUT_EXPLAIN[id];
+
 export const CATEGORICAL_IDS = Object.keys(DOMAINS) as CategoricalInputId[];
 export const ALL_INPUT_IDS: InputId[] = [...CATEGORICAL_IDS, ...NUMERIC_IDS];
 

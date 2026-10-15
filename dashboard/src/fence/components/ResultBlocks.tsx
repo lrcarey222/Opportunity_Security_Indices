@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { optionLabel, YARD_NAME } from '../engine/index.ts';
 import type { DecisionNode, InputRef, YardResult } from '../engine/index.ts';
 import { TOOLKITS } from '../content/policy.ts';
+import { InputTip } from './InfoTip.tsx';
 import { Completeness, ConfidencePill, ProvBadge, YARD_COPY, YardBadge, yardClass } from './kit.tsx';
 
 export function ResultHeadline({ title, result, context }: { title: string; result: YardResult; context?: ReactNode }) {
@@ -97,7 +98,10 @@ function InputChips({ inputs }: { inputs: InputRef[] }) {
     <ul className="mt-2 flex flex-wrap gap-2">
       {inputs.map((i) => (
         <li key={i.id} className="tag gap-2">
-          <span>{labelOf(i)}</span>
+          <span className="inline-flex items-center">
+            {labelOf(i)}
+            <InputTip id={i.id} />
+          </span>
           <ProvBadge p={i.provenance} />
         </li>
       ))}
@@ -189,7 +193,10 @@ export function EvidenceGaps({ result, onFill }: { result: YardResult; onFill?: 
       {result.missingEvidence.map((m) => (
         <li key={m.input} className={`border-l-2 pl-3 ${m.pivotal ? 'border-signal' : 'border-ink-600'}`}>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-paper">{m.label}</span>
+            <span className="inline-flex items-center text-sm font-medium text-paper">
+              {m.label}
+              <InputTip id={m.input} />
+            </span>
             {m.pivotal ? <span className="tag tag-framework">pivotal</span> : <span className="tag">confidence only</span>}
             {onFill && (
               <button type="button" className="link text-xs" onClick={() => onFill(m.input)}>

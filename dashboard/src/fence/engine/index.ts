@@ -2,7 +2,7 @@
 
 export * from './types.ts';
 export { RULES } from './rules.ts';
-export { INPUT_DEFS, ALL_INPUT_IDS, CATEGORICAL_IDS, emptyInputs, formatNumber, isNumericId, optionLabel, PROVENANCE_LABEL } from './inputs.ts';
+export { INPUT_DEFS, INPUT_EXPLAIN, explainOf, ALL_INPUT_IDS, CATEGORICAL_IDS, emptyInputs, formatNumber, isNumericId, optionLabel, PROVENANCE_LABEL } from './inputs.ts';
 export type { GateKey, InputDef } from './inputs.ts';
 export { and3, or3, evaluateGates, evaluateLargeYard, evaluateMediumYard, evaluateSmallYard } from './gates.ts';
 export { calculateEvidenceCompleteness, classify, generateDecisionPath, possibleYards, withValue, YARD_NAME } from './classify.ts';

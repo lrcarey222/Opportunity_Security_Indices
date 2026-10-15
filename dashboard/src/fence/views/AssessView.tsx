@@ -5,15 +5,16 @@
 //   protection   -> Result
 //
 // The framework's questions lead; a quiet context note beside each gate carries the few measured
-// facts that inform it (figures and sources one click away). Analyst mode asks every question; Quick mode asks
-// the few that matter most and leaves the rest at their curated (or Unknown) values. Both share the
-// same state and engine.
+// facts that inform it (figures and sources one click away). Analyst mode asks every question, with the
+// evidence; Quick mode asks the few that matter most, hides the evidence notes, and lists the questions it
+// skipped with the values they keep (curated, an earlier answer, or Unknown). Both share the same state and
+// engine.
 
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Segmented, Select } from '../../components/ui.tsx';
 import { useTitle } from '../title.ts';
-import { INPUT_DEFS, UNKNOWN } from '../engine/index.ts';
+import { INPUT_DEFS, optionLabel, UNKNOWN } from '../engine/index.ts';
 import type { CategoricalInputId, InputId, Strategy, Tri } from '../engine/index.ts';
 import { digitalApplies, physicalApplies } from '../engine/gates.ts';
 import { baselineValue, componentById, recordsFor, stageScopeId } from '../data/adapter.ts';
@@ -22,14 +23,15 @@ import { stageKey, STAGES, withLayer, type AssessState, type PremiumWhy } from '
 import { useYards, type Evaluation } from '../state/YardsContext.tsx';
 import { PathCards, PremiumConsequences, PremiumSlider, Question } from '../components/Controls.tsx';
 import { ContextNote } from '../components/Context.tsx';
+import { InputTip } from '../components/InfoTip.tsx';
 import { Completeness, ConfidencePill, ProvBadge, SectionHead, YardBadge } from '../components/kit.tsx';
 import { PAGE } from '../FenceLayout.tsx';
 
-const STEPS = ['What are you assessing?', 'Acute harm?', 'Where does the vulnerability sit?', 'A capability worth building?', 'The cost of protection'];
-const QUICK_STEPS = [0, 1, 2, 3, 4];
+const QUICK_COUNT = (Object.keys(INPUT_DEFS) as InputId[]).filter((id) => INPUT_DEFS[id].quick).length;
 
-function ProgressRail({ step, quick, onGo, canLeave0 }: { step: number; quick: boolean; onGo: (i: number) => void; canLeave0: boolean }) {
-  const steps = STEPS.map((t, i) => ({ t, i })).filter((s) => !quick || QUICK_STEPS.includes(s.i));
+const STEPS = ['What are you assessing?', 'Acute harm?', 'Where does the vulnerability sit?', 'A capability worth building?', 'The cost of protection'];
+function ProgressRail({ step, onGo, canLeave0 }: { step: number; onGo: (i: number) => void; canLeave0: boolean }) {
+  const steps = STEPS.map((t, i) => ({ t, i }));
   return (
     <nav aria-label="Assessment progress" className="yf-no-print">
       <ol className="yf-rail flex flex-wrap gap-x-1 gap-y-2">
@@ -248,6 +250,32 @@ function Q({ e, id, hint, quick }: { e: Evaluation; id: CategoricalInputId; hint
   return <Question id={id} iv={e.baseline.inputs[id]} baseline={baselineValue(e.subject, e.evidence, id)} onChange={(v) => setAnswer(id, v)} hint={hint} />;
 }
 
+/** Quick mode: the questions a panel skipped, the values they keep, and a way back to all of them. */
+function Skipped({ e, ids, quick }: { e: Evaluation; ids: CategoricalInputId[]; quick: boolean }) {
+  const { update } = useYards();
+  const skipped = quick ? ids.filter((id) => !INPUT_DEFS[id].quick) : [];
+  if (!skipped.length) return null;
+  const one = skipped.length === 1;
+  return (
+    <div className="border-t hairline py-3 text-xs text-paper-mute">
+      <p>
+        Quick mode skips {one ? 'one question' : `${skipped.length} questions`} here and keeps {one ? 'its' : 'their'} current {one ? 'value' : 'values'}:
+      </p>
+      <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+        {skipped.map((id) => (
+          <li key={id} className="inline-flex items-center">
+            {INPUT_DEFS[id].label}: <span className="ml-1 text-paper-dim">{optionLabel(id, e.baseline.inputs[id].value as string | number)}</span>
+            <InputTip id={id} />
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="link mt-2 text-xs" onClick={() => update((s) => ({ ...s, mode: 'analyst' }))}>
+        Answer all questions (Analyst mode)
+      </button>
+    </div>
+  );
+}
+
 /** A record on the component's own scope and engine measure. */
 function prim(e: Evaluation, metric: string): YFEvidenceRecord | undefined {
   return e.evidence.primaryRecords.find((r) => r.metricId === metric && r.measure === e.evidence.engineMeasure);
@@ -270,6 +298,7 @@ function Gate1({ e, quick }: { e: Evaluation; quick: boolean }) {
       <div className="panel px-5">
         <Q e={e} id="consequence" quick={quick} />
         <Q e={e} id="timeHorizon" quick={quick} />
+        <Skipped e={e} ids={['consequence', 'timeHorizon']} quick={quick} />
       </div>
     </div>
   );
@@ -318,6 +347,7 @@ function Gate2({ e, quick }: { e: Evaluation; quick: boolean }) {
               {e.subject.component?.layer !== 'control' && <Q e={e} id="digitallyActive" quick={quick} />}
               <Q e={e} id="remoteControl" quick={quick} />
               <Q e={e} id="separability" quick={quick} />
+              <Skipped e={e} ids={e.subject.component?.layer !== 'control' ? ['digitallyActive', 'remoteControl', 'separability'] : ['remoteControl', 'separability']} quick={quick} />
             </div>
             <ScopePreview e={e} />
           </div>
@@ -331,14 +361,16 @@ function Gate2({ e, quick }: { e: Evaluation; quick: boolean }) {
           <p className="mt-1 max-w-3xl text-sm text-paper-dim">
             Concentration becomes a small-yard problem only when a potentially coercive supplier holds most of supply, substitutes are poor, and trusted supply could not be restored before harm becomes intolerable.
           </p>
-          <div className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <div className={quick ? 'mt-3' : 'mt-3 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]'}>
             <div className="panel px-5">
               <Q e={e} id="substitutability" quick={quick} />
               <Q e={e} id="qualificationTime" quick={quick} />
               <Q e={e} id="reconstitutionTime" quick={quick} />
               <Q e={e} id="stockpile" quick={quick} />
               <Q e={e} id="surgeCapacity" quick={quick} />
+              <Skipped e={e} ids={['substitutability', 'qualificationTime', 'reconstitutionTime', 'stockpile', 'surgeCapacity']} quick={quick} />
             </div>
+            {!quick && (
             <ContextNote
               records={share.provenance === 'assessment' ? [] : [prim(e, 'non_coalition_top'), prim(e, 'coalition_share')]}
               empty="No measured supplier shares isolate this component, so the concentration test stays Unknown unless you set it in the scenario lab."
@@ -349,6 +381,7 @@ function Gate2({ e, quick }: { e: Evaluation; quick: boolean }) {
                 </p>
               )}
             </ContextNote>
+            )}
           </div>
         </section>
       )}
@@ -368,14 +401,15 @@ function Gate3({ e, quick }: { e: Evaluation; quick: boolean }) {
       <SectionHead eyebrow="Decision gate 3" title="Is this a capability worth building or preserving?">
         A capability belongs in the medium yard if there is a present position worth defending, production carries learning that matters for what comes next, or a successor technology offers a credible leap. Market size alone is not a reason.
       </SectionHead>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className={quick ? '' : 'grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]'}>
         <div className="panel px-5">
           <Q e={e} id="processKnowledge" quick={quick} />
           <Q e={e} id="workforceSuppliers" quick={quick} />
           <Q e={e} id="adjacentInnovation" quick={quick} />
           <Q e={e} id="complementaryCapabilities" quick={quick} />
+          <Skipped e={e} ids={['processKnowledge', 'workforceSuppliers', 'adjacentInnovation', 'complementaryCapabilities']} quick={quick} />
         </div>
-        <ContextNote records={[home, rec('home_investment_growth')]} />
+        {!quick && <ContextNote records={[home, rec('home_investment_growth')]} />}
       </div>
       <section aria-labelledby="yf-paths">
         <h3 id="yf-paths" className="mb-3 text-lg font-medium text-paper">
@@ -417,7 +451,7 @@ const WHY_OPTS: { value: PremiumWhy | 'unknown'; label: string }[] = [
   { value: 'unknown', label: 'Unknown' },
 ];
 
-function Gate4({ e }: { e: Evaluation }) {
+function Gate4({ e, quick }: { e: Evaluation; quick: boolean }) {
   const { setAnswer, setWhy } = useLayerActions(e);
   const { data } = useYards();
   const stage = recordsFor(data.bundle, stageScopeId(e.subject.technology, e.subject.stage));
@@ -429,6 +463,7 @@ function Gate4({ e }: { e: Evaluation }) {
       <SectionHead eyebrow="Decision gate 4" title="Would insisting on domestic production cost more than the strategic benefit it creates?">
         Where neither the acute-security case nor the industrial-capability case is strong, the default is the Large Yard. Make the cost of protection explicit.
       </SectionHead>
+      {!quick && (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <fieldset className="panel p-5">
         <legend className="text-[0.9375rem] font-medium text-paper">What strategic benefit would justify paying more for domestic production?</legend>
@@ -443,6 +478,7 @@ function Gate4({ e }: { e: Evaluation }) {
       </fieldset>
       <ContextNote records={[rec('trl'), rec('osi_addressable_market')]} />
       </div>
+      )}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="panel p-5">
           <PremiumSlider iv={p} onChange={(v) => setAnswer('premium', v)} />
@@ -466,7 +502,7 @@ export default function AssessView() {
   const quick = state.mode === 'quick';
   const step = Math.min(state.step, STEPS.length - 1);
   const e = useMemo(() => (focus ? evaluate(focus) : null), [focus, evaluate]);
-  const order = quick ? QUICK_STEPS : STEPS.map((_, i) => i);
+  const order = STEPS.map((_, i) => i);
   const idx = Math.max(0, order.indexOf(step));
   // steps replace the history entry, like answers do: browser Back leaves the assessment rather than
   // returning to a URL that lacks the answers given since (the in-page Back button moves between steps)
@@ -478,17 +514,22 @@ export default function AssessView() {
   return (
     <div className={PAGE}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <ProgressRail step={step} quick={quick} onGo={goStep} canLeave0={!!state.sel} />
-        <Segmented<'analyst' | 'quick'>
-          label="Depth"
-          hideLabel
-          value={state.mode}
-          options={[
-            { value: 'analyst', label: 'Analyst', title: 'Every question, with the evidence' },
-            { value: 'quick', label: 'Quick', title: 'About five questions; the rest keep their curated or Unknown values' },
-          ]}
-          onChange={(m) => update((s) => ({ ...s, mode: m }))}
-        />
+        <ProgressRail step={step} onGo={goStep} canLeave0={!!state.sel} />
+        <div className="flex flex-col items-start gap-1.5 sm:items-end">
+          <Segmented<'analyst' | 'quick'>
+            label="Depth"
+            hideLabel
+            value={state.mode}
+            options={[
+              { value: 'analyst', label: 'Analyst' },
+              { value: 'quick', label: 'Quick' },
+            ]}
+            onChange={(m) => update((s) => ({ ...s, mode: m }))}
+          />
+          <p className="max-w-[20rem] text-xs text-paper-mute sm:text-right" aria-live="polite">
+            {quick ? `Quick: ${QUICK_COUNT} key questions, no evidence notes. Skipped questions keep their current values.` : 'Analyst: every question, with the evidence beside it.'}
+          </p>
+        </div>
       </div>
 
       <div className={step === 0 ? '' : 'grid gap-8 lg:grid-cols-[minmax(0,1fr)_17rem]'}>
@@ -504,7 +545,7 @@ export default function AssessView() {
           {step === 1 && e && <Gate1 e={e} quick={quick} />}
           {step === 2 && e && <Gate2 e={e} quick={quick} />}
           {step === 3 && e && <Gate3 e={e} quick={quick} />}
-          {step === 4 && e && <Gate4 e={e} />}
+          {step === 4 && e && <Gate4 e={e} quick={quick} />}
           <div className="yf-no-print mt-10 flex flex-wrap items-center gap-3 border-t hairline pt-5">
             {idx > 0 && (
               <button type="button" className="btn btn-ghost" onClick={prev}>

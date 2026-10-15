@@ -5,7 +5,9 @@ import {
   evaluatePolicyFit,
   evaluateSmallYard,
   evaluateStack,
+  explainOf,
   explainTransition,
+  INPUT_DEFS,
   stackOutcome,
   withValue,
 } from './index.ts';
@@ -343,5 +345,16 @@ describe('scenario transitions and change conditions', () => {
   });
   it('is deterministic', () => {
     expect(JSON.stringify(classify(make(batteryCells)))).toBe(JSON.stringify(classify(make(batteryCells))));
+  });
+});
+
+describe('plain-language explanations', () => {
+  it('every assumption has one, and none just restates its label', () => {
+    for (const id of Object.keys(INPUT_DEFS) as InputId[]) {
+      const text = explainOf(id);
+      expect(text, id).toBeTruthy();
+      expect(text.length, id).toBeGreaterThan(60);
+      expect(text.toLowerCase().trim(), id).not.toBe(INPUT_DEFS[id].label.toLowerCase());
+    }
   });
 });

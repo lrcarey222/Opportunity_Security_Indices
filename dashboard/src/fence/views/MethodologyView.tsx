@@ -4,10 +4,20 @@
 
 import { useTitle } from '../title.ts';
 import { Disclosure } from '../../components/ui.tsx';
-import { RULES } from '../engine/index.ts';
+import { ALL_INPUT_IDS, explainOf, INPUT_DEFS, RULES } from '../engine/index.ts';
+import type { InputDef } from '../engine/index.ts';
 import { useYards } from '../state/YardsContext.tsx';
 import { SectionHead, YardBadge, ProvBadge } from '../components/kit.tsx';
 import { METHOD_STATEMENT, PAGE } from '../FenceLayout.tsx';
+
+const GLOSSARY: { gate: InputDef['gate']; title: string }[] = [
+  { gate: 'gate1', title: 'Gate 1 · Acute harm' },
+  { gate: 'digital', title: 'Gate 2A · Digitally active systems' },
+  { gate: 'physical', title: 'Gate 2B · Physical chokepoints' },
+  { gate: 'capability', title: 'Gate 3 · Capability worth building' },
+  { gate: 'leap', title: 'Gate 3 · Is a leap ahead credible?' },
+  { gate: 'cost', title: 'Gate 4 · The cost of protection' },
+];
 
 const SAFEGUARDS = [
   'Headline Energy Security and Economic Opportunity scores are never mapped to yards.',
@@ -74,6 +84,27 @@ export default function MethodologyView() {
           <li className="text-sm text-paper-dim"><ProvBadge p="scenario" /> an assumption set in the scenario lab; never part of the observed baseline.</li>
           <li className="text-sm text-paper-dim"><ProvBadge p="unknown" /> evidence is insufficient; bracketed, not guessed.</li>
         </ul>
+      </section>
+
+      <section className="mt-10" aria-labelledby="yf-glossary">
+        <SectionHead id="yf-glossary" title="Glossary of assumptions">
+          What each question means, in plain language. The same explanations sit behind the <span className="yf-info pointer-events-none">i</span> beside every assumption across the tool.
+        </SectionHead>
+        <div className="grid gap-x-10 gap-y-8 lg:grid-cols-2">
+          {GLOSSARY.map((g) => (
+            <div key={g.gate}>
+              <h3 className="eyebrow mb-3">{g.title}</h3>
+              <dl className="space-y-3">
+                {ALL_INPUT_IDS.filter((id) => INPUT_DEFS[id].gate === g.gate).map((id) => (
+                  <div key={id} id={`term-${id}`}>
+                    <dt className="text-sm font-medium text-paper">{INPUT_DEFS[id].label}</dt>
+                    <dd className="mt-0.5 text-sm leading-relaxed text-paper-dim">{explainOf(id)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="mt-10" aria-labelledby="yf-thresholds">

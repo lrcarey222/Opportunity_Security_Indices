@@ -135,6 +135,50 @@ describe('Draw the Fence', () => {
     expect(within(ctx).getByText('Show the figures and sources')).toBeTruthy();
   });
 
+  it('Quick mode skips questions and evidence, says which values they keep, and Analyst brings them back', async () => {
+    const s = state({ sel: { tech: 'Testtech', stage: 'Midstream', component: 'syn-cells' }, focus: 'syn-cells', mode: 'quick', step: 2 });
+    renderAt(`/assess${stateSearch(s)}`);
+    expect(await screen.findByRole('radiogroup', { name: 'Substitutability' }, { timeout: 20_000 })).toBeTruthy();
+    expect(screen.queryByRole('radiogroup', { name: 'Supplier qualification time' })).toBeNull();
+    expect(screen.queryByRole('complementary', { name: /Context from the Opportunity & Security Indices/ })).toBeNull();
+    expect(screen.getByText(/Quick mode skips 3 questions here/)).toBeTruthy();
+    expect(screen.getByText(/^Quick: \d+ key questions/)).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('radio', { name: 'Analyst' }));
+    });
+    expect(await screen.findByRole('radiogroup', { name: 'Supplier qualification time' })).toBeTruthy();
+    expect(screen.getByRole('complementary', { name: /Context from the Opportunity & Security Indices/ })).toBeTruthy();
+    expect(screen.queryByText(/Quick mode skips/)).toBeNull();
+    expect(screen.getByText(/^Analyst: every question/)).toBeTruthy();
+  });
+
+  it('each assumption explains itself in plain language on hover, focus or tap', async () => {
+    const s = state({ sel: { tech: 'Testtech', stage: 'Midstream', component: 'syn-cells' }, focus: 'syn-cells', step: 2 });
+    renderAt(`/assess${stateSearch(s)}`);
+    const btn = await screen.findByRole('button', { name: 'What is “Substitutability”?' }, { timeout: 20_000 });
+    expect(screen.queryByRole('tooltip')).toBeNull();
+    await act(async () => {
+      fireEvent.focus(btn);
+    });
+    const tip = screen.getByRole('tooltip');
+    expect(tip.textContent).toMatch(/switch to a different material, design or technology/);
+    expect(btn.getAttribute('aria-describedby')).toBe(tip.id);
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    });
+    expect(screen.queryByRole('tooltip')).toBeNull();
+    // a tap opens it (after hover and focus, it must not close again), a tap elsewhere closes it
+    await act(async () => {
+      fireEvent.mouseEnter(btn);
+      fireEvent.click(btn);
+    });
+    expect(screen.getByRole('tooltip')).toBeTruthy();
+    await act(async () => {
+      fireEvent.pointerDown(document.body);
+    });
+    expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+
   it('the system badge agrees with the engine (mixed or undecided systems are never shown as one layer’s yard)', async () => {
     const s = state({ sel: { tech: 'Testtech', stage: 'Midstream', stack: 'syn-stack' }, focus: 'syn-control' });
     renderAt(`/result${stateSearch(s)}`);
@@ -156,6 +200,9 @@ describe('Draw the Fence', () => {
     renderAt('/methodology');
     expect(await screen.findByText('Thresholds and why they exist', {}, { timeout: 20_000 })).toBeTruthy();
     expect(screen.getAllByText(/OSI metrics describe observed economic/).length).toBeGreaterThan(0);
+    // the glossary explains every assumption
+    expect(screen.getByRole('heading', { name: 'Glossary of assumptions' })).toBeTruthy();
+    expect(screen.getByText(/Hard substitution is one of the three conditions for a physical chokepoint/)).toBeTruthy();
   });
 
   it('shows the module’s "No data" screen when the bundle is missing', async () => {

@@ -4,6 +4,7 @@
 import { useId, type ReactNode } from 'react';
 import { DOMAINS, INPUT_DEFS, optionLabel, UNKNOWN } from '../engine/index.ts';
 import type { CategoricalInputId, InputValue, Strategy } from '../engine/index.ts';
+import { InputTip } from './InfoTip.tsx';
 import { ProvBadge } from './kit.tsx';
 
 export function Question({
@@ -28,8 +29,9 @@ export function Question({
     <fieldset className={`min-w-0 ${compact ? 'py-3' : 'py-4'} border-b hairline last:border-b-0`} aria-describedby={def.help ? helpId : undefined}>
       <legend className="sr-only">{def.question}</legend>
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <p aria-hidden="true" className="max-w-3xl text-[0.9375rem] font-medium leading-snug text-paper">
-          {def.question}
+        <p className="max-w-3xl text-[0.9375rem] font-medium leading-snug text-paper">
+          <span aria-hidden="true">{def.question}</span>
+          <InputTip id={id} />
         </p>
         <ProvBadge p={iv.provenance} />
       </div>
@@ -113,9 +115,12 @@ export function PremiumSlider({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label htmlFor={id} className="label mb-0">
-          {label}
-        </label>
+        <span className="flex items-center">
+          <label htmlFor={id} className="label mb-0">
+            {label}
+          </label>
+          <InputTip id="premium" />
+        </span>
         <span className="flex items-center gap-2">
           <span className="tabular text-2xl font-medium text-paper" aria-live="polite">
             {known ? `${Math.round(v)}%` : 'Unknown'}

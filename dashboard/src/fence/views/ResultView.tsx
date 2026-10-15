@@ -13,6 +13,7 @@ import { ComponentStack } from '../components/ComponentStack.tsx';
 import { ChangeConditions, DecisionTree, EvidenceGaps, PolicyPosture, Reasons, ResultHeadline, Warnings } from '../components/ResultBlocks.tsx';
 import { ProvBadge, SectionHead, YardBadge } from '../components/kit.tsx';
 import { EvidencePanel } from '../components/EvidencePanel.tsx';
+import { InputTip } from '../components/InfoTip.tsx';
 import { Disclosure } from '../../components/ui.tsx';
 import { PAGE } from '../FenceLayout.tsx';
 
@@ -64,6 +65,7 @@ function Assumptions({ e }: { e: Evaluation }) {
             <tr key={id} className="border-b hairline align-top last:border-b-0">
               <th scope="row" className="py-2 pr-3 text-left font-normal text-paper-dim">
                 {INPUT_DEFS[id].label}
+                <InputTip id={id} />
               </th>
               <td className="py-2 pr-3 text-paper">
                 {optionLabel(id, iv.value as string | number)}
