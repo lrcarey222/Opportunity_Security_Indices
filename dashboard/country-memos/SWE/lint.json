@@ -1,0 +1,55 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "SWE",
+  "src_sha256": "1384f9db92bcf63c566ebf2d0c990b47b9593aaf875a65279b9dd839210a8821",
+  "facts_sha256": "a7d89dc6f2a0afa526e44ab6a99ced85ab29024628e225176ec02a4e67cd02a8",
+  "claims_sha256": "ae54bcee0919e796dd1eff463e8fe7b0efd3e6c0029ff10440b0ebab1b2dc920",
+  "n_errors": 0,
+  "n_warnings": 4,
+  "words": {
+    "total": 1300,
+    "summary": 140,
+    "sections": [
+      308,
+      174,
+      246,
+      257,
+      175
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 1,
+      "sentence_id": null,
+      "detail": "section 1: 308 words (target 220-300)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "words",
+      "section": 2,
+      "sentence_id": null,
+      "detail": "section 2: 174 words (target 180-260)"
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 175 words (target 80-150)"
+    },
+    {
+      "id": "l4",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.5",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates Finland highest for Sweden, as a reliable supplier; it is also Sweden's 3rd trade partner, while China, its 4th, ranks 44th on Partnership Strength.\""
+    }
+  ]
+}

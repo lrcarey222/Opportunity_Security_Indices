@@ -1,0 +1,47 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "PRT",
+  "src_sha256": "db02b485a99c6b903990b1718de946a7bfac48a32c896865dfc8bdfedb5cef25",
+  "facts_sha256": "ae87e4acbe54a97e171b86ef2e0ef788e403c478b9f4a4c026d14fd49cba74ee",
+  "claims_sha256": "6e1bbf9408d3a0437670e2306e5789cb0553852a858cf627b9e80a1e341f38ba",
+  "n_errors": 0,
+  "n_warnings": 3,
+  "words": {
+    "total": 1292,
+    "summary": 128,
+    "sections": [
+      299,
+      209,
+      270,
+      214,
+      172
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "imputed_driver", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 3,
+      "sentence_id": null,
+      "detail": "section 3: 270 words (target 180-260)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 172 words (target 80-150)"
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.6",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates Spain highest for Portugal, as a reliable supplier; it is also its 1st trade partner.\""
+    }
+  ]
+}

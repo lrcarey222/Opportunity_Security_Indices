@@ -1,0 +1,22 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "HRV",
+  "src_sha256": "0b0de7e9a7dd58e5798645256f910ea07955edaa9b8f436415e851e64dc5c122",
+  "facts_sha256": "f3d3a683945d32840919c3f35538198a59d2e77f0396710d39cb82114eafe625",
+  "claims_sha256": "ed5a45f69ab89836136565593afc8c932566939f764a4af473681c64ebdcbe18",
+  "n_errors": 0,
+  "n_warnings": 0,
+  "words": {
+    "total": 1254,
+    "summary": 138,
+    "sections": [
+      270,
+      200,
+      260,
+      237,
+      149
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records"],
+  "items": []
+}

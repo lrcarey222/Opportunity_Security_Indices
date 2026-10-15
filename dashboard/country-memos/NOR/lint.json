@@ -1,0 +1,55 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "NOR",
+  "src_sha256": "f241d6731588d767eaa1b2e8f58190ce459f6d7cda18c58f30a463f45ac6664c",
+  "facts_sha256": "421a29a5a50af0718e85c600782861f6830a0007330f49e35e07fdec8a9b10e1",
+  "claims_sha256": "2b58ba36d1a701065e39211716b33fc6f6d145f76839c379b080c4903918072d",
+  "n_errors": 0,
+  "n_warnings": 4,
+  "words": {
+    "total": 1268,
+    "summary": 134,
+    "sections": [
+      272,
+      218,
+      264,
+      230,
+      150
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "rankability", "near_tie", "pick_stability", "nipo_context"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 3,
+      "sentence_id": null,
+      "detail": "section 3: 264 words (target 180-260)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "order",
+      "section": 1,
+      "sentence_id": "s1.6",
+      "detail": "order word(s) highest with no sectors cited: the verifier checks it: \"Its high-priority sectors are the high-opportunity, low-energy-security sectors that the Strategic Index ranks highest.\""
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "number_word",
+      "section": 3,
+      "sentence_id": "s3.5",
+      "detail": "'first' (often not a count; check): \"Norway's allied pick, its first upstream or midstream sector on the Strategic Index after a resource-base screen, is upstream batteries, ranked 6th and almost tied with upstream electric grid (0.000 apart).\""
+    },
+    {
+      "id": "l4",
+      "severity": "warning",
+      "check": "sentence_length",
+      "section": 5,
+      "sentence_id": "s5.2",
+      "detail": "143 words: \"Scores compare Norway with other economies in the same sector; they are not measures of risk or profit in absolute terms. All index values are the paper's baseline as of 12 October 2026; Strategic Insights recomputes them under other weightings. Some of Norway's sectors are not placed: a score is compared with other economies only when the economy is sovereign and at most half of the score rests on filled-in data. Strategic Index scores within 0.01 of each other are almost tied: small changes in the data or the weights can swap their order. Many allied picks are close calls: in the paper, 37% of them are within 0.01 of the runner-up. Industrial-policy measures from the Global Trade Alert, New Industrial Policy Observatory, October 2026 extract (as of 5 October 2026) are context only, outside the Policy index. Country Insights shows the detail.\""
+    }
+  ]
+}

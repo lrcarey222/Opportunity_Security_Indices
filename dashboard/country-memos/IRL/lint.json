@@ -1,0 +1,47 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "IRL",
+  "src_sha256": "c0fd503bec7a200d71789c0f9ca6194dcb5a84141718163f601f4bd377fd7fbb",
+  "facts_sha256": "cabc910bf64b510465752185cbae654b29df9f13b9120c77eae341df12b5259f",
+  "claims_sha256": "fed250815b17b490222e133460457880f007f1f29e7e3d1efb1de54da7c06506",
+  "n_errors": 0,
+  "n_warnings": 3,
+  "words": {
+    "total": 1295,
+    "summary": 136,
+    "sections": [
+      301,
+      201,
+      255,
+      227,
+      175
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 1,
+      "sentence_id": null,
+      "detail": "section 1: 301 words (target 220-300)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 175 words (target 80-150)"
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.6",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates the United States highest for Ireland, as a reliable supplier; it is also Ireland's 2nd trade partner, while China, its 7th, ranks 52nd on Partnership Strength.\""
+    }
+  ]
+}

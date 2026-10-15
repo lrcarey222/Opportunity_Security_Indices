@@ -1,0 +1,31 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "SVK",
+  "src_sha256": "10d7c28aaca098dfca9d234cbe24e6454c228a545cfcf52c625a70b4cdcf62da",
+  "facts_sha256": "a80b892149aa1fcd44a51f736763915992adaaca17d02164eebc51db726a1edb",
+  "claims_sha256": "0f117936bedcc4d918c9f15f568845b43eea7a34e3267019f6859408c6dffee6",
+  "n_errors": 0,
+  "n_warnings": 1,
+  "words": {
+    "total": 1288,
+    "summary": 140,
+    "sections": [
+      265,
+      197,
+      251,
+      255,
+      180
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "imputed_driver", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 180 words (target 80-150)"
+    }
+  ]
+}

@@ -1,0 +1,993 @@
+{
+  "iso3": "AUT",
+  "status": "pass",
+  "verifier": "AI verifier agent (memo verifier ISR/AUT/NOR; fresh context, not the writer)",
+  "writer": "AI writer agent (memo writer ISR/AUT/NOR)",
+  "verified_at": "2026-10-14T15:50:04Z",
+  "src_sha256": "5442a5ea0a7b8063dbf960e6f34096fd50acfde782a3378eaa86828fd050ef67",
+  "facts_sha256": "f9879397d6c5f663ea3a37aad4b693838c12ceba3478de293facd8799238365e",
+  "claims_sha256": "9b4af83da8fb74df617d61946eb61fa56ef24a7ca34a84ac7770852431a35e0c",
+  "claims_checked": [
+    {
+      "id": "c1",
+      "verdict": "ok"
+    },
+    {
+      "id": "c2",
+      "verdict": "ok"
+    },
+    {
+      "id": "c3",
+      "verdict": "ok"
+    },
+    {
+      "id": "c4",
+      "verdict": "ok"
+    },
+    {
+      "id": "c5",
+      "verdict": "ok"
+    },
+    {
+      "id": "c6",
+      "verdict": "ok"
+    },
+    {
+      "id": "c7",
+      "verdict": "ok"
+    },
+    {
+      "id": "c8",
+      "verdict": "ok"
+    },
+    {
+      "id": "c9",
+      "verdict": "ok"
+    },
+    {
+      "id": "c10",
+      "verdict": "ok"
+    },
+    {
+      "id": "c11",
+      "verdict": "ok"
+    },
+    {
+      "id": "c12",
+      "verdict": "ok"
+    },
+    {
+      "id": "c13",
+      "verdict": "ok"
+    },
+    {
+      "id": "c14",
+      "verdict": "ok"
+    },
+    {
+      "id": "c15",
+      "verdict": "ok"
+    },
+    {
+      "id": "c16",
+      "verdict": "ok"
+    },
+    {
+      "id": "c17",
+      "verdict": "ok"
+    },
+    {
+      "id": "c18",
+      "verdict": "ok"
+    },
+    {
+      "id": "c19",
+      "verdict": "ok"
+    },
+    {
+      "id": "c20",
+      "verdict": "ok"
+    },
+    {
+      "id": "c21",
+      "verdict": "ok"
+    },
+    {
+      "id": "c22",
+      "verdict": "ok"
+    },
+    {
+      "id": "c23",
+      "verdict": "ok"
+    },
+    {
+      "id": "c24",
+      "verdict": "ok"
+    },
+    {
+      "id": "c25",
+      "verdict": "ok"
+    },
+    {
+      "id": "c26",
+      "verdict": "ok"
+    },
+    {
+      "id": "c27",
+      "verdict": "ok"
+    },
+    {
+      "id": "c28",
+      "verdict": "ok"
+    },
+    {
+      "id": "c29",
+      "verdict": "ok"
+    },
+    {
+      "id": "c30",
+      "verdict": "ok"
+    },
+    {
+      "id": "c31",
+      "verdict": "ok"
+    },
+    {
+      "id": "c32",
+      "verdict": "ok"
+    },
+    {
+      "id": "c33",
+      "verdict": "ok"
+    },
+    {
+      "id": "c34",
+      "verdict": "ok"
+    },
+    {
+      "id": "c35",
+      "verdict": "ok"
+    },
+    {
+      "id": "c36",
+      "verdict": "ok"
+    },
+    {
+      "id": "c37",
+      "verdict": "ok"
+    },
+    {
+      "id": "c38",
+      "verdict": "ok"
+    },
+    {
+      "id": "c39",
+      "verdict": "ok"
+    },
+    {
+      "id": "c40",
+      "verdict": "ok"
+    },
+    {
+      "id": "c41",
+      "verdict": "ok"
+    },
+    {
+      "id": "c42",
+      "verdict": "ok"
+    },
+    {
+      "id": "c43",
+      "verdict": "ok"
+    },
+    {
+      "id": "c44",
+      "verdict": "ok"
+    },
+    {
+      "id": "c45",
+      "verdict": "ok"
+    },
+    {
+      "id": "c46",
+      "verdict": "ok"
+    },
+    {
+      "id": "c47",
+      "verdict": "ok"
+    },
+    {
+      "id": "c48",
+      "verdict": "ok"
+    },
+    {
+      "id": "c49",
+      "verdict": "ok"
+    },
+    {
+      "id": "c50",
+      "verdict": "ok"
+    },
+    {
+      "id": "c51",
+      "verdict": "ok"
+    },
+    {
+      "id": "c52",
+      "verdict": "ok"
+    },
+    {
+      "id": "c53",
+      "verdict": "ok"
+    },
+    {
+      "id": "c54",
+      "verdict": "ok"
+    },
+    {
+      "id": "c55",
+      "verdict": "ok"
+    },
+    {
+      "id": "c56",
+      "verdict": "ok"
+    },
+    {
+      "id": "c57",
+      "verdict": "ok"
+    },
+    {
+      "id": "c58",
+      "verdict": "ok"
+    },
+    {
+      "id": "c59",
+      "verdict": "ok"
+    },
+    {
+      "id": "c60",
+      "verdict": "ok"
+    },
+    {
+      "id": "c61",
+      "verdict": "ok"
+    },
+    {
+      "id": "c62",
+      "verdict": "ok"
+    },
+    {
+      "id": "c63",
+      "verdict": "ok"
+    },
+    {
+      "id": "c64",
+      "verdict": "ok"
+    },
+    {
+      "id": "c65",
+      "verdict": "ok"
+    },
+    {
+      "id": "c66",
+      "verdict": "ok"
+    },
+    {
+      "id": "c67",
+      "verdict": "ok"
+    },
+    {
+      "id": "c68",
+      "verdict": "ok"
+    },
+    {
+      "id": "c69",
+      "verdict": "ok"
+    },
+    {
+      "id": "c70",
+      "verdict": "ok"
+    },
+    {
+      "id": "c71",
+      "verdict": "ok"
+    },
+    {
+      "id": "c72",
+      "verdict": "ok"
+    },
+    {
+      "id": "c73",
+      "verdict": "ok"
+    },
+    {
+      "id": "c74",
+      "verdict": "ok"
+    },
+    {
+      "id": "c75",
+      "verdict": "ok"
+    },
+    {
+      "id": "c76",
+      "verdict": "ok"
+    },
+    {
+      "id": "c77",
+      "verdict": "ok"
+    },
+    {
+      "id": "c78",
+      "verdict": "ok"
+    },
+    {
+      "id": "c79",
+      "verdict": "ok"
+    },
+    {
+      "id": "c80",
+      "verdict": "ok"
+    },
+    {
+      "id": "c81",
+      "verdict": "ok"
+    },
+    {
+      "id": "c82",
+      "verdict": "ok"
+    },
+    {
+      "id": "c83",
+      "verdict": "ok"
+    },
+    {
+      "id": "c84",
+      "verdict": "ok"
+    },
+    {
+      "id": "c85",
+      "verdict": "ok"
+    },
+    {
+      "id": "c86",
+      "verdict": "ok"
+    },
+    {
+      "id": "c87",
+      "verdict": "ok"
+    },
+    {
+      "id": "c88",
+      "verdict": "ok"
+    },
+    {
+      "id": "c89",
+      "verdict": "ok"
+    },
+    {
+      "id": "c90",
+      "verdict": "ok"
+    },
+    {
+      "id": "c91",
+      "verdict": "ok"
+    },
+    {
+      "id": "c92",
+      "verdict": "ok"
+    },
+    {
+      "id": "c93",
+      "verdict": "ok"
+    },
+    {
+      "id": "c94",
+      "verdict": "ok"
+    },
+    {
+      "id": "c95",
+      "verdict": "ok"
+    },
+    {
+      "id": "c96",
+      "verdict": "ok"
+    },
+    {
+      "id": "c97",
+      "verdict": "ok"
+    },
+    {
+      "id": "c98",
+      "verdict": "ok"
+    },
+    {
+      "id": "c99",
+      "verdict": "ok"
+    },
+    {
+      "id": "c100",
+      "verdict": "ok"
+    },
+    {
+      "id": "c101",
+      "verdict": "ok"
+    },
+    {
+      "id": "c102",
+      "verdict": "ok"
+    },
+    {
+      "id": "c103",
+      "verdict": "ok"
+    },
+    {
+      "id": "c104",
+      "verdict": "ok"
+    },
+    {
+      "id": "c105",
+      "verdict": "ok"
+    },
+    {
+      "id": "c106",
+      "verdict": "ok"
+    },
+    {
+      "id": "c107",
+      "verdict": "ok"
+    },
+    {
+      "id": "c108",
+      "verdict": "ok"
+    },
+    {
+      "id": "c109",
+      "verdict": "ok"
+    },
+    {
+      "id": "c110",
+      "verdict": "ok"
+    },
+    {
+      "id": "c111",
+      "verdict": "ok"
+    },
+    {
+      "id": "c112",
+      "verdict": "ok"
+    },
+    {
+      "id": "c113",
+      "verdict": "ok"
+    },
+    {
+      "id": "c114",
+      "verdict": "ok"
+    },
+    {
+      "id": "c115",
+      "verdict": "ok"
+    },
+    {
+      "id": "c116",
+      "verdict": "ok"
+    },
+    {
+      "id": "c117",
+      "verdict": "ok"
+    },
+    {
+      "id": "c118",
+      "verdict": "ok"
+    },
+    {
+      "id": "c119",
+      "verdict": "ok"
+    },
+    {
+      "id": "c120",
+      "verdict": "ok"
+    },
+    {
+      "id": "c121",
+      "verdict": "ok"
+    },
+    {
+      "id": "c122",
+      "verdict": "ok"
+    },
+    {
+      "id": "c123",
+      "verdict": "ok"
+    },
+    {
+      "id": "c124",
+      "verdict": "ok"
+    },
+    {
+      "id": "c125",
+      "verdict": "ok"
+    },
+    {
+      "id": "c126",
+      "verdict": "ok"
+    },
+    {
+      "id": "c127",
+      "verdict": "ok"
+    },
+    {
+      "id": "c128",
+      "verdict": "ok"
+    },
+    {
+      "id": "c129",
+      "verdict": "ok"
+    },
+    {
+      "id": "c130",
+      "verdict": "ok"
+    },
+    {
+      "id": "c131",
+      "verdict": "ok"
+    },
+    {
+      "id": "c132",
+      "verdict": "ok"
+    },
+    {
+      "id": "c133",
+      "verdict": "ok"
+    },
+    {
+      "id": "c134",
+      "verdict": "ok"
+    },
+    {
+      "id": "c135",
+      "verdict": "ok"
+    },
+    {
+      "id": "c136",
+      "verdict": "ok"
+    },
+    {
+      "id": "c137",
+      "verdict": "ok"
+    },
+    {
+      "id": "c138",
+      "verdict": "ok"
+    },
+    {
+      "id": "c139",
+      "verdict": "ok"
+    },
+    {
+      "id": "c140",
+      "verdict": "ok"
+    },
+    {
+      "id": "c141",
+      "verdict": "ok"
+    },
+    {
+      "id": "c142",
+      "verdict": "ok"
+    },
+    {
+      "id": "c143",
+      "verdict": "ok"
+    },
+    {
+      "id": "c144",
+      "verdict": "ok"
+    },
+    {
+      "id": "c145",
+      "verdict": "ok"
+    },
+    {
+      "id": "c146",
+      "verdict": "ok"
+    },
+    {
+      "id": "c147",
+      "verdict": "ok"
+    },
+    {
+      "id": "c148",
+      "verdict": "ok"
+    },
+    {
+      "id": "c149",
+      "verdict": "ok"
+    },
+    {
+      "id": "c150",
+      "verdict": "ok"
+    },
+    {
+      "id": "c151",
+      "verdict": "ok"
+    },
+    {
+      "id": "c152",
+      "verdict": "ok"
+    },
+    {
+      "id": "c153",
+      "verdict": "ok"
+    },
+    {
+      "id": "c154",
+      "verdict": "ok"
+    },
+    {
+      "id": "c155",
+      "verdict": "ok"
+    },
+    {
+      "id": "c156",
+      "verdict": "ok"
+    },
+    {
+      "id": "c157",
+      "verdict": "ok"
+    },
+    {
+      "id": "c158",
+      "verdict": "ok"
+    },
+    {
+      "id": "c159",
+      "verdict": "ok"
+    },
+    {
+      "id": "c160",
+      "verdict": "ok"
+    },
+    {
+      "id": "c161",
+      "verdict": "ok"
+    },
+    {
+      "id": "c162",
+      "verdict": "ok"
+    },
+    {
+      "id": "c163",
+      "verdict": "ok"
+    },
+    {
+      "id": "c164",
+      "verdict": "ok"
+    },
+    {
+      "id": "c165",
+      "verdict": "ok"
+    },
+    {
+      "id": "c166",
+      "verdict": "ok"
+    },
+    {
+      "id": "c167",
+      "verdict": "ok"
+    },
+    {
+      "id": "c168",
+      "verdict": "ok"
+    },
+    {
+      "id": "c169",
+      "verdict": "ok"
+    },
+    {
+      "id": "c170",
+      "verdict": "ok"
+    },
+    {
+      "id": "c171",
+      "verdict": "ok"
+    },
+    {
+      "id": "c172",
+      "verdict": "ok"
+    },
+    {
+      "id": "c173",
+      "verdict": "ok"
+    },
+    {
+      "id": "c174",
+      "verdict": "ok"
+    },
+    {
+      "id": "c175",
+      "verdict": "ok"
+    }
+  ],
+  "sentences_checked": [
+    {
+      "id": "s0.1",
+      "verdict": "ok"
+    },
+    {
+      "id": "s0.2",
+      "verdict": "ok"
+    },
+    {
+      "id": "s0.3",
+      "verdict": "ok"
+    },
+    {
+      "id": "s0.4",
+      "verdict": "ok"
+    },
+    {
+      "id": "s0.5",
+      "verdict": "ok"
+    },
+    {
+      "id": "s0.6",
+      "verdict": "ok"
+    },
+    {
+      "id": "s0.7",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.1",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.2",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.3",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.4",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.5",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.6",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.7",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.8",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.9",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.10",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.11",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.12",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.13",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.14",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.15",
+      "verdict": "ok"
+    },
+    {
+      "id": "s1.16",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.1",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.2",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.3",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.4",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.5",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.6",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.7",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.8",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.9",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.10",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.11",
+      "verdict": "ok"
+    },
+    {
+      "id": "s2.12",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.1",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.2",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.3",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.4",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.5",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.6",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.7",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.8",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.9",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.10",
+      "verdict": "ok"
+    },
+    {
+      "id": "s3.11",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.1",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.2",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.3",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.4",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.5",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.6",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.7",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.8",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.9",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.10",
+      "verdict": "ok"
+    },
+    {
+      "id": "s4.11",
+      "verdict": "ok"
+    },
+    {
+      "id": "s5.1",
+      "verdict": "ok"
+    },
+    {
+      "id": "s5.2",
+      "verdict": "ok"
+    }
+  ],
+  "warnings_cleared": [
+    {
+      "lint_id": "l1",
+      "note": "Section above its target band but inside the hard bound (section 5 at most 180, section 3 at most 300): section 5 is the machine-triggered caveats plus the required as-of opener; section 3 carries the policy-basis, pick and class statements the coverage rules require. Cleared. (section 5: 177 words (target 80-150))"
+    },
+    {
+      "lint_id": "l2",
+      "note": "'ranks highest' defines the high-priority sectors: the sheet's priority_sectors are the top-3 Strategic Index sectors of the Upgrade corner (priority_rule 'upgrade'); checked on the sheet. Cleared. (order word(s) highest with no sectors cited: the verifier checks it: \"Its high-priority se)"
+    },
+    {
+      "lint_id": "l3",
+      "note": "'first' is the allied-pick definition (the first upstream or midstream sector on the Strategic Index after the resource-base screen), true on the sheet (network.pick and pick exclusions checked). Not a count. Cleared. ('first' (often not a count; check): \"Austria's allied pick, its first upstream or midstrea)"
+    },
+    {
+      "lint_id": "l4",
+      "note": "The renderer counts the run of generated caveat sentences in section 5 as one sentence; each caveat sentence is well under 35 words. Cleared. (170 words: \"Scores compare Austria with other economies in the same sector; they are not m)"
+    }
+  ],
+  "issues": [
+    {
+      "id": "i1",
+      "section": 0,
+      "sentence_id": "s0.5",
+      "claim_id": "c14",
+      "rule": "5 corners and priorities / 9 plain language",
+      "severity": "note",
+      "detail": "'Top priority meets the most policy activity in ...' followed the Strategic Index sentence; the classes use priority without the policy term (upstream nuclear, 1st on the Strategic Index, is in the middle policy third and so not listed). Same wording as ISR/NOR for consistency.",
+      "suggested_fix": "applied: 'Top data-based priority meets the most policy activity in ...' (+1 word)"
+    },
+    {
+      "id": "i2",
+      "section": 0,
+      "sentence_id": "s0.2",
+      "claim_id": "c5",
+      "rule": "6 sources",
+      "severity": "note",
+      "detail": "Summary bullet 1 cites coal production minus consumption with source [2] (Energy Institute) only; the production side is the U.S. Energy Information Administration's (raw.note eia_production). The body sentence prints the note in words, so the memo text is right; the generated source list has no EIA entry. Not a memo-text fix: country builder (source mapping of note eia_production), already posted by the writer in build_log 04:25.",
+      "suggested_fix": "country builder: add the U.S. Energy Information Administration to the sources of note eia_production"
+    }
+  ],
+  "caveats_added": [],
+  "notes": "Every claim resolved on facts/AUT.json (04:08 build) and read in its sentence; every sentence checked for order/rank words, corners, priority sectors, agreement classes, pick and exclusions, causal words (top drivers and signs), partner ranks/reasons/match/agreements/UN alignment, trade shares and context framing. Sample against data/processed (final rerun 10-12): ES category contributions, strategic_index, psi_dyad_tbl ranks and Friendshore. Earlier verifier corrections (10-13) survived. Issues are notes, all applied in memo.src.md except the source-list item.",
+  "reused_for": ["5bb2f6e076339006fb9dc604b714e7f8d98bc8b359b8e646cf272b9f9e8060ae", "01276c8e1d023d4f537fba6d9ba96fc873849b4b80d96ddc2bbf2090af11b181"]
+}

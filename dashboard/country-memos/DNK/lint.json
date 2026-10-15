@@ -1,0 +1,47 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "DNK",
+  "src_sha256": "6107f1c4540ba4d0aa2097a640d9a596c5a19912b20985f7a71f78c0f176a0e2",
+  "facts_sha256": "d7e4c33cbfb24294dd9b4d575dca29f3c53eeeb9ded00deedc2b7518795613d4",
+  "claims_sha256": "b6f8086205f99d361e627ce29e14f98a1e7d7d77340e33495d87322fe0f2bdc8",
+  "n_errors": 0,
+  "n_warnings": 3,
+  "words": {
+    "total": 1282,
+    "summary": 133,
+    "sections": [
+      274,
+      212,
+      257,
+      235,
+      171
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records", "eu_region_share"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 171 words (target 80-150)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.5",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates Sweden highest for Denmark, above all as an export market, and it is also Denmark's 1st trade partner.\""
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "sentence_length",
+      "section": 5,
+      "sentence_id": "s5.2",
+      "detail": "161 words: \"Scores compare Denmark with other economies in the same sector; they are not measures of risk or profit in absolute terms. All index values are the paper's baseline as of 12 October 2026; Strategic Insights recomputes them under other weightings. Strategic Index scores within 0.01 of each other are almost tied: small changes in the data or the weights can swap their order. Many allied picks are close calls: in the paper, 37% of them are within 0.01 of the runner-up. In the allied network design the European Union is one producer; Denmark's shares are derived from its weight within the EU. The Climate Action Tracker rates the EU as a whole; Denmark carries the EU's rating. Denmark's counts leave out the EU's own 438 International Energy Agency policy records. Trade figures count trade with other EU members. Each EU member carries the EU's announced 2035 manufacturing-capacity shares and electric-vehicle figures. The Country Insights page shows the data behind each figure.\""
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "ROU",
+  "src_sha256": "53efa26895ee4aed4ee63f607c980f679a0c9a721e83ef8345d32aae776565a9",
+  "facts_sha256": "99da2cb5ec01aaa759e79a52feb23c85467f23203142e2692f1d4d0bc7ec6d8f",
+  "claims_sha256": "d500b7d51c594b6c37dc7fa645a072d84dcee1e5e5e77cafd1f644585ba54ed4",
+  "n_errors": 0,
+  "n_warnings": 3,
+  "words": {
+    "total": 1296,
+    "summary": 138,
+    "sections": [
+      281,
+      224,
+      251,
+      236,
+      166
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records", "eu_region_share"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 166 words (target 80-150)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.5",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates Germany highest for Romania, above all as a reliable supplier, and it is also Romania's 1st trade partner.\""
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "sentence_length",
+      "section": 5,
+      "sentence_id": "s5.2",
+      "detail": "161 words: \"Scores compare Romania with other economies in the same sector; they are not measures of risk or profit in absolute terms. All index values are the paper's baseline as of 12 October 2026; Strategic Insights recomputes them under other weightings. Strategic Index scores within 0.01 of each other are almost tied: small changes in the data or the weights can swap their order. Many allied picks are close calls: in the paper, 37% of them are within 0.01 of the runner-up. In the allied network design the European Union is one producer; Romania's shares are derived from its weight within the EU. The Climate Action Tracker rates the EU as a whole; Romania carries the EU's rating. Romania's counts leave out the EU's own 438 International Energy Agency policy records. Trade figures count trade with other EU members. Each EU member carries the EU's announced 2035 manufacturing-capacity shares and electric-vehicle figures. The Country Insights page shows the data behind each figure.\""
+    }
+  ]
+}

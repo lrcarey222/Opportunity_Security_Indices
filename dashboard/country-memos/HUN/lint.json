@@ -1,0 +1,39 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "HUN",
+  "src_sha256": "66e72e9fcf1ae628befc49b671c833b7dca552478b7f8bb68f2e437296085d7a",
+  "facts_sha256": "566eec26eda80b7c0a2c405e4ec8b3824ab3754dfab4b0c1dd85f3c6e26f2761",
+  "claims_sha256": "a4dba2ecbaa9080e63b4a3d55a2236b4fadb0bdf0d943afc7dcd70ff32f102cc",
+  "n_errors": 0,
+  "n_warnings": 2,
+  "words": {
+    "total": 1226,
+    "summary": 132,
+    "sections": [
+      279,
+      199,
+      233,
+      207,
+      176
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "imputed_driver", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 176 words (target 80-150)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "number_word",
+      "section": 3,
+      "sentence_id": "s3.5",
+      "detail": "'first' (often not a count; check): \"The pick is Hungary's first upstream or midstream sector on the Strategic Index after a resource-base screen.\""
+    }
+  ]
+}

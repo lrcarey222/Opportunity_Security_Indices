@@ -1,0 +1,39 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "NLD",
+  "src_sha256": "31bfb7e9ef85e5934b0eb136b1058b9d15997d079ac8de655854aa9de171ae82",
+  "facts_sha256": "3f744e5c510914cc107a26672c5922441c6d182dbea6e0cece15006288c22d11",
+  "claims_sha256": "8851be022224b96c7fd466e9d6c17974e9f3abca33ad5a0cff5cb588c39656d7",
+  "n_errors": 0,
+  "n_warnings": 2,
+  "words": {
+    "total": 1256,
+    "summary": 139,
+    "sections": [
+      252,
+      219,
+      260,
+      224,
+      162
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "eu_policy_records", "nipo_context"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 162 words (target 80-150)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.6",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates Spain highest for the Netherlands, as a reliable supplier; it is also the Netherlands' 6th trade partner.\""
+    }
+  ]
+}

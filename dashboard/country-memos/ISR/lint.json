@@ -1,0 +1,55 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "ISR",
+  "src_sha256": "a77c19e912be65df1c7a2a2c103c8d4ba4b1ab17578c888f57e9ae82f38efb13",
+  "facts_sha256": "9dc0fb3503d3cb904a8481ec6e3546c49650f74ef043a9c80fc5ac10102c666c",
+  "claims_sha256": "0be5ee25fbfe91f309e0f5cd05bc6f3c4a1c47b1e20b4033baf92535cbabfc2e",
+  "n_errors": 0,
+  "n_warnings": 4,
+  "words": {
+    "total": 1299,
+    "summary": 132,
+    "sections": [
+      289,
+      231,
+      250,
+      240,
+      157
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "rankability", "policy_pams_only", "near_tie", "pick_stability"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 157 words (target 80-150)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "order",
+      "section": 1,
+      "sentence_id": "s1.6",
+      "detail": "order word(s) highest with no sectors cited: the verifier checks it: \"Its high-priority sectors are the high-opportunity, low-energy-security sectors that the Strategic Index ranks highest.\""
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "number_word",
+      "section": 3,
+      "sentence_id": "s3.5",
+      "detail": "'first' (often not a count; check): \"Israel's allied pick, its first upstream or midstream sector on the Strategic Index after a resource-base screen, is midstream solar.\""
+    },
+    {
+      "id": "l4",
+      "severity": "warning",
+      "check": "sentence_length",
+      "section": 5,
+      "sentence_id": "s5.2",
+      "detail": "150 words: \"Scores compare Israel with other economies in the same sector; they are not measures of risk or profit in absolute terms. All index values are the paper's baseline as of 12 October 2026; Strategic Insights recomputes them under other weightings. Some of Israel's sectors are not placed: a score is compared with other economies only when the economy is sovereign and at most half of the score rests on filled-in data. The Climate Action Tracker does not rate Israel, so its policy activity rests on International Energy Agency Policies and Measures records alone; its policy levels compare only with economies on the same basis. Strategic Index scores within 0.01 of each other are almost tied: small changes in the data or the weights can swap their order. Many allied picks are close calls: in the paper, 37% of them are within 0.01 of the runner-up. Country Insights shows the detail.\""
+    }
+  ]
+}

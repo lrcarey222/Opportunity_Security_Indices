@@ -1,0 +1,39 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "ITA",
+  "src_sha256": "9584dc0ca2047cc86d706b74c1c3dc017064f09cd4727c5dedd7aac01025fa59",
+  "facts_sha256": "c20a89e183335b9dd3dbe6334c1ffba05f9b5c34bd4e96ca7facfab19ff50e3a",
+  "claims_sha256": "caddb3014c240b9e39baacb22022acd139318f02db2028d51627c728e4f35ff4",
+  "n_errors": 0,
+  "n_warnings": 2,
+  "words": {
+    "total": 1298,
+    "summary": 136,
+    "sections": [
+      300,
+      228,
+      259,
+      225,
+      150
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.7",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates Germany highest for Italy, an export market and its 1st trade partner.\""
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "order",
+      "section": 1,
+      "sentence_id": "s1.12",
+      "detail": "order word(s) highest with no sectors cited: the verifier checks it: \"Its high-priority sectors are the high-opportunity, low-energy-security ones that the Strategic Index ranks highest.\""
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "NZL",
+  "src_sha256": "7e233008a0a3464bb6ee9d51d201ee81e12caaa83485572d8a9db2e080bf2284",
+  "facts_sha256": "f74c42b6bee6f0896582d449b3f24532d9d9cc33363a8a33a74459888d7d52a9",
+  "claims_sha256": "4395d6abf1b687073a54f8ebde44b9186448706772a0a033e99fcf65ad6b06a6",
+  "n_errors": 0,
+  "n_warnings": 3,
+  "words": {
+    "total": 1270,
+    "summary": 126,
+    "sections": [
+      272,
+      213,
+      271,
+      237,
+      151
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "rankability", "near_tie", "pick_stability", "nipo_context"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 3,
+      "sentence_id": null,
+      "detail": "section 3: 271 words (target 180-260)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 151 words (target 80-150)"
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "number_word",
+      "section": 3,
+      "sentence_id": "s3.6",
+      "detail": "'first' (often not a count; check): \"The pick is New Zealand's first upstream or midstream sector on the Strategic Index after a resource-base screen.\""
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "POL",
+  "src_sha256": "f34c476880b9c5a6772751f18a2ed5eda09484175719f49dff48a09a548b41be",
+  "facts_sha256": "5d1aaf2aaa44a99c69a70f4cc371b790bcc94db9018afcee60fa5b7f985d5e0c",
+  "claims_sha256": "b54361006dcf26ab52ff6991e7764061e51e53c1adf6d2410bab1a21969268a7",
+  "n_errors": 0,
+  "n_warnings": 3,
+  "words": {
+    "total": 1297,
+    "summary": 137,
+    "sections": [
+      236,
+      216,
+      283,
+      254,
+      171
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "eu_policy_records", "nipo_context", "eu_region_share"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 3,
+      "sentence_id": null,
+      "detail": "section 3: 283 words (target 180-260)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 171 words (target 80-150)"
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.6",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates Germany highest for Poland, as an export market; it is also Poland's 1st trade partner.\""
+    }
+  ]
+}

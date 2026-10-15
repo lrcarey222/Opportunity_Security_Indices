@@ -1,0 +1,39 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "BEL",
+  "src_sha256": "fbfa007d2e776f02bbb9034457fac564482fc1279dbe97779c2bfb4c64e04bc4",
+  "facts_sha256": "470398734f75fdb2c192cf604bc5e41c445afcaffcdefcb20a5491f0fbac5e07",
+  "claims_sha256": "0037a662fe039084655a9f189cc9850c3cb0fce76dfd65d7409f086f115e1746",
+  "n_errors": 0,
+  "n_warnings": 2,
+  "words": {
+    "total": 1298,
+    "summary": 140,
+    "sections": [
+      274,
+      227,
+      237,
+      245,
+      175
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "imputed_driver", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 175 words (target 80-150)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.5",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates France highest for Belgium, as a reliable supplier; it is also Belgium's 3rd trade partner, while China, its 8th, ranks 35th on Partnership Strength.\""
+    }
+  ]
+}

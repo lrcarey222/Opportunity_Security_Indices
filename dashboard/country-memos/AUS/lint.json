@@ -1,0 +1,31 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "AUS",
+  "src_sha256": "827d4a4fcf16df517043d6bee6b556fe077aac3dfc917cce2b1ad5b039e7e87d",
+  "facts_sha256": "f7ac4a6d13f8fe2d0a70eca81b2ac81fcbb9cd645a6e6cda1d5549ecaa27eb9d",
+  "claims_sha256": "89496bf8eacc8e1a796d1576d066c0a697d8e167a5a81ff5e0d7f54f02825f20",
+  "n_errors": 0,
+  "n_warnings": 1,
+  "words": {
+    "total": 1276,
+    "summary": 139,
+    "sections": [
+      259,
+      218,
+      260,
+      253,
+      147
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "cmfdi_coverage", "nipo_context"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.6",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates South Korea highest for Australia, as an export market; it is also Australia's 4th trade partner.\""
+    }
+  ]
+}

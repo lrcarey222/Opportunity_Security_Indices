@@ -1,0 +1,39 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "FRA",
+  "src_sha256": "561a7545aaef0cc7a685143e24d6eb61340c6435c651c1151d0a79d538b2f905",
+  "facts_sha256": "b5aa46e6d9492f37e885d6e0479c0c792397484637aaa9498076aa963c7953cc",
+  "claims_sha256": "97bdb2a0974ca201f18a6e6742c2267e255ef5e87b8d17952387e81eba08c7dc",
+  "n_errors": 0,
+  "n_warnings": 2,
+  "words": {
+    "total": 1295,
+    "summary": 128,
+    "sections": [
+      297,
+      211,
+      260,
+      222,
+      177
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "imputed_driver", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 177 words (target 80-150)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.6",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates Belgium highest for France, a reliable supplier and its 3rd trade partner.\""
+    }
+  ]
+}

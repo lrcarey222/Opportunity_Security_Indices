@@ -1,0 +1,47 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "FIN",
+  "src_sha256": "319deba484060254f2ff8f7e984b3cde280705739a2b5e98546ef2e0a910e336",
+  "facts_sha256": "f59ef6e3038f6910e52d26d4227cc43c23251f88d37ab5d27cafdf7b2f4e98bf",
+  "claims_sha256": "35a66d9eee397da2c3180ed2804fa3a7f0db072db1870eeaf39be9dadb89f92f",
+  "n_errors": 0,
+  "n_warnings": 3,
+  "words": {
+    "total": 1273,
+    "summary": 132,
+    "sections": [
+      285,
+      200,
+      277,
+      221,
+      158
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "eu_node", "cat_eu_bloc", "intra_eu", "pick_stability", "eu_policy_records", "eu_region_share"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 3,
+      "sentence_id": null,
+      "detail": "section 3: 277 words (target 180-260)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 158 words (target 80-150)"
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.7",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates Sweden highest for Finland, as a reliable supplier; it is also its 1st trade partner.\""
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "KOR",
+  "src_sha256": "fcd8b2c615e9aba43cca5ccbce341fcd623f8fdb9cb3c108393e0cc61624056a",
+  "facts_sha256": "00f46590a340724ccf81f0d25985e7788a186ae7aa5a081cb562c1bdc5600b6c",
+  "claims_sha256": "80a90c3228ca79e5f7c79d832c43e8c4c37fda154d34d1a3ae1618c273d27fdb",
+  "n_errors": 0,
+  "n_warnings": 0,
+  "words": {
+    "total": 1298,
+    "summary": 140,
+    "sections": [
+      295,
+      209,
+      259,
+      245,
+      150
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "rankability", "imputed_driver", "near_tie", "pick_stability"],
+  "items": []
+}

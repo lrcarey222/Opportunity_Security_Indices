@@ -1,0 +1,22 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "CAN",
+  "src_sha256": "895367b3a9e4a2a61434df46c7415fbd01e9f9e9509c5e9936850d76dfab6627",
+  "facts_sha256": "62b7ca8ea25c13a211cdc0583b69e252e5a40861a4d2ab984b5b7dfd27bd5aab",
+  "claims_sha256": "4ec4fa801d2cc298e7db224ded742cc8fe8def4b518f1a0928c04874cbf5f104",
+  "n_errors": 0,
+  "n_warnings": 0,
+  "words": {
+    "total": 1239,
+    "summary": 126,
+    "sections": [
+      271,
+      202,
+      246,
+      246,
+      148
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "rankability", "imputed_driver", "near_tie", "pick_stability"],
+  "items": []
+}

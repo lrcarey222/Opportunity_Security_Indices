@@ -1,0 +1,31 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "GBR",
+  "src_sha256": "fb17c809975428025ddbdfdee760728916e617fa50761a4d9bc0bca4f3155688",
+  "facts_sha256": "a1fa710678797fd2409dc3161bdbd715022650c42f573bdf1e78d70bafc35c3d",
+  "claims_sha256": "09ca44d5480a71f07652a9c3262be094f42d809a779aa0fd490db951578f0545",
+  "n_errors": 0,
+  "n_warnings": 1,
+  "words": {
+    "total": 1294,
+    "summary": 138,
+    "sections": [
+      297,
+      216,
+      259,
+      234,
+      150
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "imputed_driver", "near_tie", "trade_mirror", "pick_stability"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "order",
+      "section": 0,
+      "sentence_id": "s0.6",
+      "detail": "order word(s) highest with several possible orders (psi, tie): the verifier checks it: \"The Partnership Strength Index rates the United States highest for the United Kingdom, a reliable supplier and its 1st trade partner.\""
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "JPN",
+  "src_sha256": "8aa13270dbb72935553bf370fb5efab133f547e1673fd169b234eb922c38eef5",
+  "facts_sha256": "67ed5f8c2c95c6ae6163c47452c8229c249a41abbf6695c951cd3beb5e6422dd",
+  "claims_sha256": "02d1b14c1eb181b11527d745cc9205fcbd264392c7292ecb560322cc12551845",
+  "n_errors": 0,
+  "n_warnings": 1,
+  "words": {
+    "total": 1222,
+    "summary": 133,
+    "sections": [
+      252,
+      184,
+      259,
+      228,
+      166
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "imputed_driver", "near_tie", "cmfdi_coverage", "pick_stability"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 166 words (target 80-150)"
+    }
+  ]
+}

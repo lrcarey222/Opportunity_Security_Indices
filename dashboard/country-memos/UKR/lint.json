@@ -1,0 +1,39 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "UKR",
+  "src_sha256": "9858f6117871590c4d429530cb0a52130030bb52fc2d6d2e9e0fe20fb63b4428",
+  "facts_sha256": "74db6cb2b9bbc3999bf3f810a1ce6cfb7f9b11ad8afceb584814c513a2fa910f",
+  "claims_sha256": "04394dde50c92f379f30bf28f391cdfbb3f44a3b6e9db34fcfccf2549fd1c1b2",
+  "n_errors": 0,
+  "n_warnings": 2,
+  "words": {
+    "total": 1206,
+    "summary": 120,
+    "sections": [
+      260,
+      215,
+      257,
+      202,
+      152
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "imputed_driver", "policy_pams_only", "near_tie", "pick_stability"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 152 words (target 80-150)"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "number_word",
+      "section": 3,
+      "sentence_id": "s3.6",
+      "detail": "'first' (often not a count; check): \"The pick is Ukraine's first upstream or midstream sector on the Strategic Index after a resource-base screen.\""
+    }
+  ]
+}

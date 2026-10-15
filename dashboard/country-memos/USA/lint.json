@@ -1,0 +1,31 @@
+{
+  "schema": "osi-country-memo-lint",
+  "iso3": "USA",
+  "src_sha256": "5cfc7377ac768d2efee35ef25eac9fa90dc367a98dd767ca64163193c34de026",
+  "facts_sha256": "7c200504c1e821fef3f34c73a509a7b17b0647be56499b24d6ef1dfbd81d3556",
+  "claims_sha256": "8594c01e21c540e1a966012b42ed42bc26f2bed6ed0e2404007da817ef0171ff",
+  "n_errors": 0,
+  "n_warnings": 1,
+  "words": {
+    "total": 1242,
+    "summary": 137,
+    "sections": [
+      265,
+      193,
+      250,
+      233,
+      164
+    ]
+  },
+  "triggered_caveats": ["relative_scores", "baseline", "near_tie", "cmfdi_coverage", "pick_stability", "nipo_context"],
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "section": 5,
+      "sentence_id": null,
+      "detail": "section 5: 164 words (target 80-150)"
+    }
+  ]
+}

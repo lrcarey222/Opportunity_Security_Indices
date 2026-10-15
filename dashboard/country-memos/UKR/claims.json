@@ -1,0 +1,5395 @@
+{
+  "schema": "osi-country-memo-claims",
+  "iso3": "UKR",
+  "claims": [
+    {
+      "id": "c1",
+      "section": 0,
+      "sentence_id": "s0.1",
+      "sentence": "17 of Ukraine's 28 placed sectors sit in the two low-energy-security corners; against other economies, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind.",
+      "path": "summary.n_insecure",
+      "filter": null,
+      "element": null,
+      "v": 17,
+      "d": "17",
+      "source": "osi_indices",
+      "meaning": "number of Ukraine's placed sectors in the two low-energy-security corners (Upgrade and Secure)",
+      "context": []
+    },
+    {
+      "id": "c2",
+      "section": 0,
+      "sentence_id": "s0.1",
+      "sentence": "17 of Ukraine's 28 placed sectors sit in the two low-energy-security corners; against other economies, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c3",
+      "section": 0,
+      "sentence_id": "s0.1",
+      "sentence": "17 of Ukraine's 28 placed sectors sit in the two low-energy-security corners; against other economies, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind.",
+      "path": "summary.n_placed",
+      "filter": null,
+      "element": null,
+      "v": 28,
+      "d": "28",
+      "source": "osi_indices",
+      "meaning": "number of Ukraine's sectors whose two scores can both be compared with other economies, so they sit in a corner",
+      "context": []
+    },
+    {
+      "id": "c4",
+      "section": 0,
+      "sentence_id": "s0.1",
+      "sentence": "17 of Ukraine's 28 placed sectors sit in the two low-energy-security corners; against other economies, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind.",
+      "path": "cells.solar-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Downstream",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c5",
+      "section": 0,
+      "sentence_id": "s0.1",
+      "sentence": "17 of Ukraine's 28 placed sectors sit in the two low-energy-security corners; against other economies, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind.",
+      "path": "cells.nuclear-midstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "midstream nuclear",
+      "source": null,
+      "meaning": "the sector Nuclear — Midstream",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c6",
+      "section": 0,
+      "sentence_id": "s0.1",
+      "sentence": "17 of Ukraine's 28 placed sectors sit in the two low-energy-security corners; against other economies, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind.",
+      "path": "cells.wind-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream wind",
+      "source": null,
+      "meaning": "the sector Wind — Downstream",
+      "context": {
+        "cell": {
+          "key": "wind-downstream",
+          "label": "Wind — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "18%",
+          "eo_pct": "0%",
+          "es_order": 3,
+          "eo_order": 28,
+          "si_order": 11,
+          "si_rank": "11th",
+          "margin_next": 0.004465,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c7",
+      "section": 0,
+      "sentence_id": "s0.2",
+      "sentence": "Openings are scarce: only 1 placed sector sits in the two high-opportunity corners, and its Economic Opportunity is highest in downstream green hydrogen and downstream nuclear.",
+      "path": "summary.n_high_eo",
+      "filter": null,
+      "element": null,
+      "v": 1,
+      "d": "1",
+      "source": "osi_indices",
+      "meaning": "number of Ukraine's placed sectors in the two high-opportunity corners (Grow and Upgrade)",
+      "context": []
+    },
+    {
+      "id": "c8",
+      "section": 0,
+      "sentence_id": "s0.2",
+      "sentence": "Openings are scarce: only 1 placed sector sits in the two high-opportunity corners, and its Economic Opportunity is highest in downstream green hydrogen and downstream nuclear.",
+      "path": "cells.green-hydrogen-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream green hydrogen",
+      "source": null,
+      "meaning": "the sector Green Hydrogen — Downstream",
+      "context": {
+        "cell": {
+          "key": "green-hydrogen-downstream",
+          "label": "Green Hydrogen — Downstream",
+          "placed": true,
+          "quadrant": "grow",
+          "es_pct": "85%",
+          "eo_pct": "64%",
+          "es_order": 26,
+          "eo_order": 1,
+          "si_order": 22,
+          "si_rank": "22nd",
+          "margin_next": 0.000286,
+          "priority_third": "low",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": "consumption",
+          "top_eo": "consumption"
+        }
+      }
+    },
+    {
+      "id": "c9",
+      "section": 0,
+      "sentence_id": "s0.2",
+      "sentence": "Openings are scarce: only 1 placed sector sits in the two high-opportunity corners, and its Economic Opportunity is highest in downstream green hydrogen and downstream nuclear.",
+      "path": "cells.nuclear-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream nuclear",
+      "source": null,
+      "meaning": "the sector Nuclear — Downstream",
+      "context": {
+        "cell": {
+          "key": "nuclear-downstream",
+          "label": "Nuclear — Downstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "74%",
+          "eo_pct": "44%",
+          "es_order": 24,
+          "eo_order": 2,
+          "si_order": 15,
+          "si_rank": "15th",
+          "margin_next": 0.022849,
+          "priority_third": "middle",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c10",
+      "section": 0,
+      "sentence_id": "s0.3",
+      "sentence": "The Strategic Index ranks upstream solar 1st among Ukraine's own sectors.",
+      "path": "cells.solar-upstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "upstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Upstream",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c11",
+      "section": 0,
+      "sentence_id": "s0.3",
+      "sentence": "The Strategic Index ranks upstream solar 1st among Ukraine's own sectors.",
+      "path": "cells.solar-upstream.si.rank",
+      "filter": null,
+      "element": null,
+      "v": 1,
+      "d": "1st",
+      "source": "osi_indices",
+      "meaning": "rank of Solar — Upstream among Ukraine's own sectors on the Strategic Index",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c12",
+      "section": 0,
+      "sentence_id": "s0.3",
+      "sentence": "The Strategic Index ranks upstream solar 1st among Ukraine's own sectors.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c13",
+      "section": 0,
+      "sentence_id": "s0.4",
+      "sentence": "When data-based priority is set against policy activity, upstream solar, upstream batteries and midstream solar combine top priority with the most policy, while 6 sectors combine top priority with the least policy.",
+      "path": "policy.agreement.by_class.aligned_high",
+      "filter": "list",
+      "element": "solar-upstream",
+      "v": null,
+      "d": "upstream solar, upstream batteries and midstream solar",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the most policy'",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c14",
+      "section": 0,
+      "sentence_id": "s0.4",
+      "sentence": "When data-based priority is set against policy activity, upstream solar, upstream batteries and midstream solar combine top priority with the most policy, while 6 sectors combine top priority with the least policy.",
+      "path": "policy.agreement.by_class.aligned_high",
+      "filter": "list",
+      "element": "batteries-upstream",
+      "v": null,
+      "d": "upstream solar, upstream batteries and midstream solar",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the most policy'",
+      "context": {
+        "cell": {
+          "key": "batteries-upstream",
+          "label": "Batteries — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "67%",
+          "eo_pct": "7%",
+          "es_order": 22,
+          "eo_order": 9,
+          "si_order": 3,
+          "si_rank": "3rd",
+          "margin_next": 0.001834,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "production"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c15",
+      "section": 0,
+      "sentence_id": "s0.4",
+      "sentence": "When data-based priority is set against policy activity, upstream solar, upstream batteries and midstream solar combine top priority with the most policy, while 6 sectors combine top priority with the least policy.",
+      "path": "policy.agreement.by_class.aligned_high",
+      "filter": "list",
+      "element": "solar-midstream",
+      "v": null,
+      "d": "upstream solar, upstream batteries and midstream solar",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the most policy'",
+      "context": {
+        "cell": {
+          "key": "solar-midstream",
+          "label": "Solar — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "38%",
+          "eo_pct": "12%",
+          "es_order": 14,
+          "eo_order": 7,
+          "si_order": 4,
+          "si_rank": "4th",
+          "margin_next": 0.034441,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c16",
+      "section": 0,
+      "sentence_id": "s0.4",
+      "sentence": "When data-based priority is set against policy activity, upstream solar, upstream batteries and midstream solar combine top priority with the most policy, while 6 sectors combine top priority with the least policy.",
+      "path": "cells.solar-upstream.policy.class",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "top priority with the most policy",
+      "source": "osi_indices",
+      "meaning": "how Solar — Upstream's data-based priority third and its policy-activity third compare",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c17",
+      "section": 0,
+      "sentence_id": "s0.4",
+      "sentence": "When data-based priority is set against policy activity, upstream solar, upstream batteries and midstream solar combine top priority with the most policy, while 6 sectors combine top priority with the least policy.",
+      "path": "policy.agreement.by_class.gap",
+      "filter": "n",
+      "element": null,
+      "v": 6,
+      "d": "6",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the least policy'",
+      "context": []
+    },
+    {
+      "id": "c18",
+      "section": 0,
+      "sentence_id": "s0.4",
+      "sentence": "When data-based priority is set against policy activity, upstream solar, upstream batteries and midstream solar combine top priority with the most policy, while 6 sectors combine top priority with the least policy.",
+      "path": "cells.wind-upstream.policy.class",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "top priority with the least policy",
+      "source": "osi_indices",
+      "meaning": "how Wind — Upstream's data-based priority third and its policy-activity third compare",
+      "context": {
+        "cell": {
+          "key": "wind-upstream",
+          "label": "Wind — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "28%",
+          "eo_pct": "8%",
+          "es_order": 6,
+          "eo_order": 8,
+          "si_order": 7,
+          "si_rank": "7th",
+          "margin_next": 0.000266,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "minerals-trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c19",
+      "section": 0,
+      "sentence_id": "s0.5",
+      "sentence": "The Partnership Strength Index rates Austria highest for Ukraine, as an export market.",
+      "path": "partners.AUT.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Austria",
+      "source": "osi_indices",
+      "meaning": "the partner Austria",
+      "context": {
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c20",
+      "section": 0,
+      "sentence_id": "s0.5",
+      "sentence": "The Partnership Strength Index rates Austria highest for Ukraine, as an export market.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c21",
+      "section": 0,
+      "sentence_id": "s0.5",
+      "sentence": "The Partnership Strength Index rates Austria highest for Ukraine, as an export market.",
+      "path": "partners.AUT.reason",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "export market",
+      "source": "osi_indices",
+      "meaning": "the part of Partnership Strength where Austria ranks highest among Ukraine's partners",
+      "context": {
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c22",
+      "section": 0,
+      "sentence_id": "s0.6",
+      "sentence": "China, its 1st trade partner, ranks 38th on Partnership Strength.",
+      "path": "partners.CHN.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "China",
+      "source": "osi_indices",
+      "meaning": "the partner China",
+      "context": {
+        "partner": {
+          "iso3": "CHN",
+          "name": "China",
+          "rank": "38th",
+          "psi_order": null,
+          "tie_order": 1,
+          "reason": "dp",
+          "match": "ties_lower_priority",
+          "in_psi_top": false,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c23",
+      "section": 0,
+      "sentence_id": "s0.6",
+      "sentence": "China, its 1st trade partner, ranks 38th on Partnership Strength.",
+      "path": "partners.CHN.ties.tie_rank",
+      "filter": null,
+      "element": null,
+      "v": 1,
+      "d": "1st",
+      "source": "comtrade_matrix",
+      "meaning": "rank of China among Ukraine's trade partners by average share across its energy-goods baskets, 2024",
+      "context": {
+        "partner": {
+          "iso3": "CHN",
+          "name": "China",
+          "rank": "38th",
+          "psi_order": null,
+          "tie_order": 1,
+          "reason": "dp",
+          "match": "ties_lower_priority",
+          "in_psi_top": false,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c24",
+      "section": 0,
+      "sentence_id": "s0.6",
+      "sentence": "China, its 1st trade partner, ranks 38th on Partnership Strength.",
+      "path": "partners.CHN.rank",
+      "filter": null,
+      "element": null,
+      "v": 38,
+      "d": "38th",
+      "source": "osi_indices",
+      "meaning": "rank of China among Ukraine's partners by Partnership Strength, from Ukraine's own viewpoint",
+      "context": {
+        "partner": {
+          "iso3": "CHN",
+          "name": "China",
+          "rank": "38th",
+          "psi_order": null,
+          "tie_order": 1,
+          "reason": "dp",
+          "match": "ties_lower_priority",
+          "in_psi_top": false,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c25",
+      "section": 1,
+      "sentence_id": "s1.1",
+      "sentence": "17 of Ukraine's 28 placed sectors, those whose scores can both be compared with other economies, sit in the two low-energy-security corners.",
+      "path": "summary.n_insecure",
+      "filter": null,
+      "element": null,
+      "v": 17,
+      "d": "17",
+      "source": "osi_indices",
+      "meaning": "number of Ukraine's placed sectors in the two low-energy-security corners (Upgrade and Secure)",
+      "context": []
+    },
+    {
+      "id": "c26",
+      "section": 1,
+      "sentence_id": "s1.1",
+      "sentence": "17 of Ukraine's 28 placed sectors, those whose scores can both be compared with other economies, sit in the two low-energy-security corners.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c27",
+      "section": 1,
+      "sentence_id": "s1.1",
+      "sentence": "17 of Ukraine's 28 placed sectors, those whose scores can both be compared with other economies, sit in the two low-energy-security corners.",
+      "path": "summary.n_placed",
+      "filter": null,
+      "element": null,
+      "v": 28,
+      "d": "28",
+      "source": "osi_indices",
+      "meaning": "number of Ukraine's sectors whose two scores can both be compared with other economies, so they sit in a corner",
+      "context": []
+    },
+    {
+      "id": "c28",
+      "section": 1,
+      "sentence_id": "s1.2",
+      "sentence": "The Secure corner, which pairs low energy security with low opportunity, holds all 17 of them.",
+      "path": "summary.quadrants.secure",
+      "filter": null,
+      "element": null,
+      "v": 17,
+      "d": "17",
+      "source": "osi_indices",
+      "meaning": "number of Ukraine's placed sectors in the Secure corner",
+      "context": []
+    },
+    {
+      "id": "c29",
+      "section": 1,
+      "sentence_id": "s1.4",
+      "sentence": "Against other economies in the same sector, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind.",
+      "path": "cells.solar-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Downstream",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c30",
+      "section": 1,
+      "sentence_id": "s1.4",
+      "sentence": "Against other economies in the same sector, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind.",
+      "path": "cells.nuclear-midstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "midstream nuclear",
+      "source": null,
+      "meaning": "the sector Nuclear — Midstream",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c31",
+      "section": 1,
+      "sentence_id": "s1.4",
+      "sentence": "Against other economies in the same sector, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind.",
+      "path": "cells.wind-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream wind",
+      "source": null,
+      "meaning": "the sector Wind — Downstream",
+      "context": {
+        "cell": {
+          "key": "wind-downstream",
+          "label": "Wind — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "18%",
+          "eo_pct": "0%",
+          "es_order": 3,
+          "eo_order": 28,
+          "si_order": 11,
+          "si_rank": "11th",
+          "margin_next": 0.004465,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c32",
+      "section": 1,
+      "sentence_id": "s1.5",
+      "sentence": "It scores 0.36, 0.39 and 0.38 there, higher than only 4%, 9% and 18% of the other economies scored in each sector.",
+      "path": "cells.solar-downstream.es",
+      "filter": null,
+      "element": null,
+      "v": 0.36087275309989225,
+      "d": "0.36",
+      "source": "osi_indices",
+      "meaning": "Energy Security score of Solar — Downstream for Ukraine, 0 to 1, paper baseline (higher is more secure)",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c33",
+      "section": 1,
+      "sentence_id": "s1.5",
+      "sentence": "It scores 0.36, 0.39 and 0.38 there, higher than only 4%, 9% and 18% of the other economies scored in each sector.",
+      "path": "cells.nuclear-midstream.es",
+      "filter": null,
+      "element": null,
+      "v": 0.39074028203131195,
+      "d": "0.39",
+      "source": "osi_indices",
+      "meaning": "Energy Security score of Nuclear — Midstream for Ukraine, 0 to 1, paper baseline (higher is more secure)",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c34",
+      "section": 1,
+      "sentence_id": "s1.5",
+      "sentence": "It scores 0.36, 0.39 and 0.38 there, higher than only 4%, 9% and 18% of the other economies scored in each sector.",
+      "path": "cells.wind-downstream.es",
+      "filter": null,
+      "element": null,
+      "v": 0.38124077233022363,
+      "d": "0.38",
+      "source": "osi_indices",
+      "meaning": "Energy Security score of Wind — Downstream for Ukraine, 0 to 1, paper baseline (higher is more secure)",
+      "context": {
+        "cell": {
+          "key": "wind-downstream",
+          "label": "Wind — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "18%",
+          "eo_pct": "0%",
+          "es_order": 3,
+          "eo_order": 28,
+          "si_order": 11,
+          "si_rank": "11th",
+          "margin_next": 0.004465,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c35",
+      "section": 1,
+      "sentence_id": "s1.5",
+      "sentence": "It scores 0.36, 0.39 and 0.38 there, higher than only 4%, 9% and 18% of the other economies scored in each sector.",
+      "path": "cells.solar-downstream.es.pct",
+      "filter": null,
+      "element": null,
+      "v": 4.08,
+      "d": "4%",
+      "source": "osi_indices",
+      "meaning": "share of the other 147 economies scored in Solar — Downstream whose Energy Security is lower than Ukraine's",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c36",
+      "section": 1,
+      "sentence_id": "s1.5",
+      "sentence": "It scores 0.36, 0.39 and 0.38 there, higher than only 4%, 9% and 18% of the other economies scored in each sector.",
+      "path": "cells.nuclear-midstream.es.pct",
+      "filter": null,
+      "element": null,
+      "v": 9.15,
+      "d": "9%",
+      "source": "osi_indices",
+      "meaning": "share of the other 153 economies scored in Nuclear — Midstream whose Energy Security is lower than Ukraine's",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c37",
+      "section": 1,
+      "sentence_id": "s1.5",
+      "sentence": "It scores 0.36, 0.39 and 0.38 there, higher than only 4%, 9% and 18% of the other economies scored in each sector.",
+      "path": "cells.wind-downstream.es.pct",
+      "filter": null,
+      "element": null,
+      "v": 18.48,
+      "d": "18%",
+      "source": "osi_indices",
+      "meaning": "share of the other 92 economies scored in Wind — Downstream whose Energy Security is lower than Ukraine's",
+      "context": {
+        "cell": {
+          "key": "wind-downstream",
+          "label": "Wind — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "18%",
+          "eo_pct": "0%",
+          "es_order": 3,
+          "eo_order": 28,
+          "si_order": 11,
+          "si_rank": "11th",
+          "margin_next": 0.004465,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c38",
+      "section": 1,
+      "sentence_id": "s1.6",
+      "sentence": "Each of them sits in the Secure corner.",
+      "path": "cells.solar-downstream.quadrant",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Secure",
+      "source": "osi_indices",
+      "meaning": "the corner of Solar — Downstream for Ukraine (Grow, Upgrade, Secure or Watch), from its Energy Security and Economic Opportunity against the sector's medians",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c39",
+      "section": 1,
+      "sentence_id": "s1.7",
+      "sentence": "With no sector in the Upgrade corner, Country Insights takes Ukraine's top Strategic Index sectors as high-priority: upstream solar, downstream solar and upstream batteries.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c40",
+      "section": 1,
+      "sentence_id": "s1.7",
+      "sentence": "With no sector in the Upgrade corner, Country Insights takes Ukraine's top Strategic Index sectors as high-priority: upstream solar, downstream solar and upstream batteries.",
+      "path": "priority_sectors",
+      "filter": "list",
+      "element": "solar-upstream",
+      "v": null,
+      "d": "upstream solar, downstream solar and upstream batteries",
+      "source": "osi_indices",
+      "meaning": "Ukraine's high-priority sectors (the Upgrade corner ranked by the Strategic Index, or the fallback rule)",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c41",
+      "section": 1,
+      "sentence_id": "s1.7",
+      "sentence": "With no sector in the Upgrade corner, Country Insights takes Ukraine's top Strategic Index sectors as high-priority: upstream solar, downstream solar and upstream batteries.",
+      "path": "priority_sectors",
+      "filter": "list",
+      "element": "solar-downstream",
+      "v": null,
+      "d": "upstream solar, downstream solar and upstream batteries",
+      "source": "osi_indices",
+      "meaning": "Ukraine's high-priority sectors (the Upgrade corner ranked by the Strategic Index, or the fallback rule)",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c42",
+      "section": 1,
+      "sentence_id": "s1.7",
+      "sentence": "With no sector in the Upgrade corner, Country Insights takes Ukraine's top Strategic Index sectors as high-priority: upstream solar, downstream solar and upstream batteries.",
+      "path": "priority_sectors",
+      "filter": "list",
+      "element": "batteries-upstream",
+      "v": null,
+      "d": "upstream solar, downstream solar and upstream batteries",
+      "source": "osi_indices",
+      "meaning": "Ukraine's high-priority sectors (the Upgrade corner ranked by the Strategic Index, or the fallback rule)",
+      "context": {
+        "cell": {
+          "key": "batteries-upstream",
+          "label": "Batteries — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "67%",
+          "eo_pct": "7%",
+          "es_order": 22,
+          "eo_order": 9,
+          "si_order": 3,
+          "si_rank": "3rd",
+          "margin_next": 0.001834,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "production"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c43",
+      "section": 1,
+      "sentence_id": "s1.8",
+      "sentence": "In downstream solar, the score is pulled down mainly by investment and energy access.",
+      "path": "cells.solar-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Downstream",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c44",
+      "section": 1,
+      "sentence_id": "s1.9",
+      "sentence": "Its investment score is 0.00, against a median of 0.40: annual investment scores 0.00, and growth in investment is not reported by the source, which the index counts as zero.",
+      "path": "cells.solar-downstream.drivers.es.investment.score",
+      "filter": null,
+      "element": null,
+      "v": 0,
+      "d": "0.00",
+      "source": "osi_indices",
+      "meaning": "Ukraine's score on the Investment category of Energy Security in Solar — Downstream, 0 to 1",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        },
+        "driver": {
+          "pillar": "es",
+          "category": "Investment",
+          "top": true,
+          "impact_sign": -1,
+          "imputed": true,
+          "rule": "zero"
+        }
+      }
+    },
+    {
+      "id": "c45",
+      "section": 1,
+      "sentence_id": "s1.9",
+      "sentence": "Its investment score is 0.00, against a median of 0.40: annual investment scores 0.00, and growth in investment is not reported by the source, which the index counts as zero.",
+      "path": "cells.solar-downstream.drivers.es.investment.median",
+      "filter": null,
+      "element": null,
+      "v": 0.3987,
+      "d": "0.40",
+      "source": "osi_indices",
+      "meaning": "the median score on the Investment category of Energy Security among the economies compared in Solar — Downstream",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        },
+        "driver": {
+          "pillar": "es",
+          "category": "Investment",
+          "top": true,
+          "impact_sign": -1,
+          "imputed": true,
+          "rule": "zero"
+        }
+      }
+    },
+    {
+      "id": "c46",
+      "section": 1,
+      "sentence_id": "s1.9",
+      "sentence": "Its investment score is 0.00, against a median of 0.40: annual investment scores 0.00, and growth in investment is not reported by the source, which the index counts as zero.",
+      "path": "cells.solar-downstream.drivers.es.investment.vars.annual-investment-index.score",
+      "filter": null,
+      "element": null,
+      "v": 0,
+      "d": "0.00",
+      "source": "osi_indices",
+      "meaning": "Ukraine's score on Annual investment in Solar — Downstream, 0 to 1, oriented so that higher means more secure",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        },
+        "driver": {
+          "pillar": "es",
+          "category": "Investment",
+          "top": true,
+          "impact_sign": -1,
+          "imputed": true,
+          "rule": "zero"
+        },
+        "variable": {
+          "key": "annual-investment-index",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c47",
+      "section": 1,
+      "sentence_id": "s1.10",
+      "sentence": "Its solar consumption was 0.557 GJ per person in 2025, higher than only 18% of the other economies on that measure.",
+      "path": "cells.solar-downstream.drivers.es.energy-access.vars.energy-consumption-per-capita.raw",
+      "filter": null,
+      "element": null,
+      "v": 0.000557013149385732,
+      "d": "0.557 GJ per person",
+      "source": "ei",
+      "meaning": "the raw figure for Consumption per person: Ukraine, Solar — Downstream, 2025 (EI Statistical Review)",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        },
+        "driver": {
+          "pillar": "es",
+          "category": "Energy Access",
+          "top": true,
+          "impact_sign": -1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "energy-consumption-per-capita",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c48",
+      "section": 1,
+      "sentence_id": "s1.10",
+      "sentence": "Its solar consumption was 0.557 GJ per person in 2025, higher than only 18% of the other economies on that measure.",
+      "path": "cells.solar-downstream.drivers.es.energy-access.vars.energy-consumption-per-capita.raw.year",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "2025",
+      "source": "ei",
+      "meaning": "the data year of the raw figure for Consumption per person (Ukraine, Solar — Downstream)",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        },
+        "driver": {
+          "pillar": "es",
+          "category": "Energy Access",
+          "top": true,
+          "impact_sign": -1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "energy-consumption-per-capita",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c49",
+      "section": 1,
+      "sentence_id": "s1.10",
+      "sentence": "Its solar consumption was 0.557 GJ per person in 2025, higher than only 18% of the other economies on that measure.",
+      "path": "cells.solar-downstream.drivers.es.energy-access.vars.energy-consumption-per-capita.pct",
+      "filter": null,
+      "element": null,
+      "v": 18.37,
+      "d": "18%",
+      "source": "osi_indices",
+      "meaning": "share of the other economies in Solar — Downstream that Ukraine scores higher than on Consumption per person (higher means more secure)",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        },
+        "driver": {
+          "pillar": "es",
+          "category": "Energy Access",
+          "top": true,
+          "impact_sign": -1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "energy-consumption-per-capita",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c50",
+      "section": 1,
+      "sentence_id": "s1.11",
+      "sentence": "In midstream nuclear, trade is the only category behind the score, and it pulls the score down: its trade deficit in these goods was 0.1% of GDP in 2023.",
+      "path": "cells.nuclear-midstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "midstream nuclear",
+      "source": null,
+      "meaning": "the sector Nuclear — Midstream",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c51",
+      "section": 1,
+      "sentence_id": "s1.11",
+      "sentence": "In midstream nuclear, trade is the only category behind the score, and it pulls the score down: its trade deficit in these goods was 0.1% of GDP in 2023.",
+      "path": "cells.nuclear-midstream.drivers.es.trade.vars.deficit-gdp.raw",
+      "filter": null,
+      "element": null,
+      "v": 0.0013394943042901598,
+      "d": "0.1% of GDP",
+      "source": "atlas",
+      "meaning": "the raw figure for Trade deficit in these goods, share of GDP: Ukraine, Nuclear — Midstream, 2023 (Harvard Atlas of Economic Complexity)",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "driver": {
+          "pillar": "es",
+          "category": "Trade",
+          "top": true,
+          "impact_sign": -1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "deficit-gdp",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c52",
+      "section": 1,
+      "sentence_id": "s1.11",
+      "sentence": "In midstream nuclear, trade is the only category behind the score, and it pulls the score down: its trade deficit in these goods was 0.1% of GDP in 2023.",
+      "path": "cells.nuclear-midstream.drivers.es.trade.vars.deficit-gdp.raw.year",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "2023",
+      "source": "atlas",
+      "meaning": "the data year of the raw figure for Trade deficit in these goods, share of GDP (Ukraine, Nuclear — Midstream)",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "driver": {
+          "pillar": "es",
+          "category": "Trade",
+          "top": true,
+          "impact_sign": -1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "deficit-gdp",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c53",
+      "section": 1,
+      "sentence_id": "s1.12",
+      "sentence": "On that measure it scores higher than only 1% of the other economies.",
+      "path": "cells.nuclear-midstream.drivers.es.trade.vars.deficit-gdp.pct",
+      "filter": null,
+      "element": null,
+      "v": 0.65,
+      "d": "1%",
+      "source": "osi_indices",
+      "meaning": "share of the other economies in Nuclear — Midstream that Ukraine scores higher than on Trade deficit in these goods, share of GDP (higher means more secure)",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "driver": {
+          "pillar": "es",
+          "category": "Trade",
+          "top": true,
+          "impact_sign": -1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "deficit-gdp",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c54",
+      "section": 1,
+      "sentence_id": "s1.13",
+      "sentence": "For context, Sweden supplied 91.1% of its imports of these goods in 2024.",
+      "path": "cells.nuclear-midstream.trade.sources.0.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Sweden",
+      "source": "comtrade_matrix",
+      "meaning": "the first largest source of Ukraine's Nuclear — Midstream imports in 2024",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "trade": {
+          "side": "imports",
+          "position": 1,
+          "party": "SWE",
+          "status": "importer",
+          "total": "USD 374 m"
+        }
+      }
+    },
+    {
+      "id": "c55",
+      "section": 1,
+      "sentence_id": "s1.13",
+      "sentence": "For context, Sweden supplied 91.1% of its imports of these goods in 2024.",
+      "path": "cells.nuclear-midstream.trade.sources.0.share",
+      "filter": null,
+      "element": null,
+      "v": 0.911118,
+      "d": "91.1%",
+      "source": "comtrade_matrix",
+      "meaning": "Sweden's share of Ukraine's Nuclear — Midstream imports in 2024",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "trade": {
+          "side": "imports",
+          "position": 1,
+          "party": "SWE",
+          "status": "importer",
+          "total": "USD 374 m"
+        }
+      }
+    },
+    {
+      "id": "c56",
+      "section": 1,
+      "sentence_id": "s1.13",
+      "sentence": "For context, Sweden supplied 91.1% of its imports of these goods in 2024.",
+      "path": "meta.trade_year",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "2024",
+      "source": null,
+      "meaning": "the year of the trade figures",
+      "context": []
+    },
+    {
+      "id": "c57",
+      "section": 2,
+      "sentence_id": "s2.1",
+      "sentence": "Openings are scarce: only 1 of Ukraine's placed sectors, downstream green hydrogen, sits in the two high-opportunity corners.",
+      "path": "summary.n_high_eo",
+      "filter": null,
+      "element": null,
+      "v": 1,
+      "d": "1",
+      "source": "osi_indices",
+      "meaning": "number of Ukraine's placed sectors in the two high-opportunity corners (Grow and Upgrade)",
+      "context": []
+    },
+    {
+      "id": "c58",
+      "section": 2,
+      "sentence_id": "s2.1",
+      "sentence": "Openings are scarce: only 1 of Ukraine's placed sectors, downstream green hydrogen, sits in the two high-opportunity corners.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c59",
+      "section": 2,
+      "sentence_id": "s2.1",
+      "sentence": "Openings are scarce: only 1 of Ukraine's placed sectors, downstream green hydrogen, sits in the two high-opportunity corners.",
+      "path": "cells.green-hydrogen-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream green hydrogen",
+      "source": null,
+      "meaning": "the sector Green Hydrogen — Downstream",
+      "context": {
+        "cell": {
+          "key": "green-hydrogen-downstream",
+          "label": "Green Hydrogen — Downstream",
+          "placed": true,
+          "quadrant": "grow",
+          "es_pct": "85%",
+          "eo_pct": "64%",
+          "es_order": 26,
+          "eo_order": 1,
+          "si_order": 22,
+          "si_rank": "22nd",
+          "margin_next": 0.000286,
+          "priority_third": "low",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": "consumption",
+          "top_eo": "consumption"
+        }
+      }
+    },
+    {
+      "id": "c60",
+      "section": 2,
+      "sentence_id": "s2.3",
+      "sentence": "Against other economies in the same sector, its Economic Opportunity is highest in downstream green hydrogen (Grow corner), downstream nuclear (Watch) and downstream oil (Secure).",
+      "path": "cells.green-hydrogen-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream green hydrogen",
+      "source": null,
+      "meaning": "the sector Green Hydrogen — Downstream",
+      "context": {
+        "cell": {
+          "key": "green-hydrogen-downstream",
+          "label": "Green Hydrogen — Downstream",
+          "placed": true,
+          "quadrant": "grow",
+          "es_pct": "85%",
+          "eo_pct": "64%",
+          "es_order": 26,
+          "eo_order": 1,
+          "si_order": 22,
+          "si_rank": "22nd",
+          "margin_next": 0.000286,
+          "priority_third": "low",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": "consumption",
+          "top_eo": "consumption"
+        }
+      }
+    },
+    {
+      "id": "c61",
+      "section": 2,
+      "sentence_id": "s2.3",
+      "sentence": "Against other economies in the same sector, its Economic Opportunity is highest in downstream green hydrogen (Grow corner), downstream nuclear (Watch) and downstream oil (Secure).",
+      "path": "cells.green-hydrogen-downstream.quadrant",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Grow",
+      "source": "osi_indices",
+      "meaning": "the corner of Green Hydrogen — Downstream for Ukraine (Grow, Upgrade, Secure or Watch), from its Energy Security and Economic Opportunity against the sector's medians",
+      "context": {
+        "cell": {
+          "key": "green-hydrogen-downstream",
+          "label": "Green Hydrogen — Downstream",
+          "placed": true,
+          "quadrant": "grow",
+          "es_pct": "85%",
+          "eo_pct": "64%",
+          "es_order": 26,
+          "eo_order": 1,
+          "si_order": 22,
+          "si_rank": "22nd",
+          "margin_next": 0.000286,
+          "priority_third": "low",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": "consumption",
+          "top_eo": "consumption"
+        }
+      }
+    },
+    {
+      "id": "c62",
+      "section": 2,
+      "sentence_id": "s2.3",
+      "sentence": "Against other economies in the same sector, its Economic Opportunity is highest in downstream green hydrogen (Grow corner), downstream nuclear (Watch) and downstream oil (Secure).",
+      "path": "cells.nuclear-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream nuclear",
+      "source": null,
+      "meaning": "the sector Nuclear — Downstream",
+      "context": {
+        "cell": {
+          "key": "nuclear-downstream",
+          "label": "Nuclear — Downstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "74%",
+          "eo_pct": "44%",
+          "es_order": 24,
+          "eo_order": 2,
+          "si_order": 15,
+          "si_rank": "15th",
+          "margin_next": 0.022849,
+          "priority_third": "middle",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c63",
+      "section": 2,
+      "sentence_id": "s2.3",
+      "sentence": "Against other economies in the same sector, its Economic Opportunity is highest in downstream green hydrogen (Grow corner), downstream nuclear (Watch) and downstream oil (Secure).",
+      "path": "cells.nuclear-downstream.quadrant",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Watch",
+      "source": "osi_indices",
+      "meaning": "the corner of Nuclear — Downstream for Ukraine (Grow, Upgrade, Secure or Watch), from its Energy Security and Economic Opportunity against the sector's medians",
+      "context": {
+        "cell": {
+          "key": "nuclear-downstream",
+          "label": "Nuclear — Downstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "74%",
+          "eo_pct": "44%",
+          "es_order": 24,
+          "eo_order": 2,
+          "si_order": 15,
+          "si_rank": "15th",
+          "margin_next": 0.022849,
+          "priority_third": "middle",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c64",
+      "section": 2,
+      "sentence_id": "s2.3",
+      "sentence": "Against other economies in the same sector, its Economic Opportunity is highest in downstream green hydrogen (Grow corner), downstream nuclear (Watch) and downstream oil (Secure).",
+      "path": "cells.oil-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream oil",
+      "source": null,
+      "meaning": "the sector Oil — Downstream",
+      "context": {
+        "cell": {
+          "key": "oil-downstream",
+          "label": "Oil — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "45%",
+          "eo_pct": "40%",
+          "es_order": 16,
+          "eo_order": 3,
+          "si_order": 21,
+          "si_rank": "21st",
+          "margin_next": 0.000486,
+          "priority_third": "low",
+          "policy_third": "high",
+          "policy_class": "policy_ahead",
+          "top_es": "energy-access",
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c65",
+      "section": 2,
+      "sentence_id": "s2.3",
+      "sentence": "Against other economies in the same sector, its Economic Opportunity is highest in downstream green hydrogen (Grow corner), downstream nuclear (Watch) and downstream oil (Secure).",
+      "path": "cells.oil-downstream.quadrant",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Secure",
+      "source": "osi_indices",
+      "meaning": "the corner of Oil — Downstream for Ukraine (Grow, Upgrade, Secure or Watch), from its Energy Security and Economic Opportunity against the sector's medians",
+      "context": {
+        "cell": {
+          "key": "oil-downstream",
+          "label": "Oil — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "45%",
+          "eo_pct": "40%",
+          "es_order": 16,
+          "eo_order": 3,
+          "si_order": 21,
+          "si_rank": "21st",
+          "margin_next": 0.000486,
+          "priority_third": "low",
+          "policy_third": "high",
+          "policy_class": "policy_ahead",
+          "top_es": "energy-access",
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c66",
+      "section": 2,
+      "sentence_id": "s2.4",
+      "sentence": "Its scores there are higher than 64%, 44% and 40% of the other economies scored.",
+      "path": "cells.green-hydrogen-downstream.eo.pct",
+      "filter": null,
+      "element": null,
+      "v": 64.33,
+      "d": "64%",
+      "source": "osi_indices",
+      "meaning": "share of the other 157 economies scored in Green Hydrogen — Downstream whose Economic Opportunity is lower than Ukraine's",
+      "context": {
+        "cell": {
+          "key": "green-hydrogen-downstream",
+          "label": "Green Hydrogen — Downstream",
+          "placed": true,
+          "quadrant": "grow",
+          "es_pct": "85%",
+          "eo_pct": "64%",
+          "es_order": 26,
+          "eo_order": 1,
+          "si_order": 22,
+          "si_rank": "22nd",
+          "margin_next": 0.000286,
+          "priority_third": "low",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": "consumption",
+          "top_eo": "consumption"
+        }
+      }
+    },
+    {
+      "id": "c67",
+      "section": 2,
+      "sentence_id": "s2.4",
+      "sentence": "Its scores there are higher than 64%, 44% and 40% of the other economies scored.",
+      "path": "cells.nuclear-downstream.eo.pct",
+      "filter": null,
+      "element": null,
+      "v": 43.94,
+      "d": "44%",
+      "source": "osi_indices",
+      "meaning": "share of the other 66 economies scored in Nuclear — Downstream whose Economic Opportunity is lower than Ukraine's",
+      "context": {
+        "cell": {
+          "key": "nuclear-downstream",
+          "label": "Nuclear — Downstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "74%",
+          "eo_pct": "44%",
+          "es_order": 24,
+          "eo_order": 2,
+          "si_order": 15,
+          "si_rank": "15th",
+          "margin_next": 0.022849,
+          "priority_third": "middle",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c68",
+      "section": 2,
+      "sentence_id": "s2.4",
+      "sentence": "Its scores there are higher than 64%, 44% and 40% of the other economies scored.",
+      "path": "cells.oil-downstream.eo.pct",
+      "filter": null,
+      "element": null,
+      "v": 39.8,
+      "d": "40%",
+      "source": "osi_indices",
+      "meaning": "share of the other 98 economies scored in Oil — Downstream whose Economic Opportunity is lower than Ukraine's",
+      "context": {
+        "cell": {
+          "key": "oil-downstream",
+          "label": "Oil — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "45%",
+          "eo_pct": "40%",
+          "es_order": 16,
+          "eo_order": 3,
+          "si_order": 21,
+          "si_rank": "21st",
+          "margin_next": 0.000486,
+          "priority_third": "low",
+          "policy_third": "high",
+          "policy_class": "policy_ahead",
+          "top_es": "energy-access",
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c69",
+      "section": 2,
+      "sentence_id": "s2.5",
+      "sentence": "In downstream green hydrogen, consumption pushes the score up: on use per person today it scores higher than 83% of the other economies, and on expected growth in use per person higher than 81%.",
+      "path": "cells.green-hydrogen-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream green hydrogen",
+      "source": null,
+      "meaning": "the sector Green Hydrogen — Downstream",
+      "context": {
+        "cell": {
+          "key": "green-hydrogen-downstream",
+          "label": "Green Hydrogen — Downstream",
+          "placed": true,
+          "quadrant": "grow",
+          "es_pct": "85%",
+          "eo_pct": "64%",
+          "es_order": 26,
+          "eo_order": 1,
+          "si_order": 22,
+          "si_rank": "22nd",
+          "margin_next": 0.000286,
+          "priority_third": "low",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": "consumption",
+          "top_eo": "consumption"
+        }
+      }
+    },
+    {
+      "id": "c70",
+      "section": 2,
+      "sentence_id": "s2.5",
+      "sentence": "In downstream green hydrogen, consumption pushes the score up: on use per person today it scores higher than 83% of the other economies, and on expected growth in use per person higher than 81%.",
+      "path": "cells.green-hydrogen-downstream.drivers.eo.consumption.vars.installed-cap-index.pct",
+      "filter": null,
+      "element": null,
+      "v": 83.44,
+      "d": "83%",
+      "source": "osi_indices",
+      "meaning": "share of the other economies in Green Hydrogen — Downstream that Ukraine scores higher than on Use per person today (power capacity, or hydrogen use) (higher means more opportunity)",
+      "context": {
+        "cell": {
+          "key": "green-hydrogen-downstream",
+          "label": "Green Hydrogen — Downstream",
+          "placed": true,
+          "quadrant": "grow",
+          "es_pct": "85%",
+          "eo_pct": "64%",
+          "es_order": 26,
+          "eo_order": 1,
+          "si_order": 22,
+          "si_rank": "22nd",
+          "margin_next": 0.000286,
+          "priority_third": "low",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": "consumption",
+          "top_eo": "consumption"
+        },
+        "driver": {
+          "pillar": "eo",
+          "category": "Consumption",
+          "top": true,
+          "impact_sign": 1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "installed-cap-index",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c71",
+      "section": 2,
+      "sentence_id": "s2.5",
+      "sentence": "In downstream green hydrogen, consumption pushes the score up: on use per person today it scores higher than 83% of the other economies, and on expected growth in use per person higher than 81%.",
+      "path": "cells.green-hydrogen-downstream.drivers.eo.consumption.vars.elec-growth-index.pct",
+      "filter": null,
+      "element": null,
+      "v": 80.89,
+      "d": "81%",
+      "source": "osi_indices",
+      "meaning": "share of the other economies in Green Hydrogen — Downstream that Ukraine scores higher than on Growth in use per person to 2035 (higher means more opportunity)",
+      "context": {
+        "cell": {
+          "key": "green-hydrogen-downstream",
+          "label": "Green Hydrogen — Downstream",
+          "placed": true,
+          "quadrant": "grow",
+          "es_pct": "85%",
+          "eo_pct": "64%",
+          "es_order": 26,
+          "eo_order": 1,
+          "si_order": 22,
+          "si_rank": "22nd",
+          "margin_next": 0.000286,
+          "priority_third": "low",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": "consumption",
+          "top_eo": "consumption"
+        },
+        "driver": {
+          "pillar": "eo",
+          "category": "Consumption",
+          "top": true,
+          "impact_sign": 1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "elec-growth-index",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c72",
+      "section": 2,
+      "sentence_id": "s2.6",
+      "sentence": "In downstream nuclear, investment pushes the score up: on annual investment it scores higher than 92% of the other economies.",
+      "path": "cells.nuclear-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream nuclear",
+      "source": null,
+      "meaning": "the sector Nuclear — Downstream",
+      "context": {
+        "cell": {
+          "key": "nuclear-downstream",
+          "label": "Nuclear — Downstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "74%",
+          "eo_pct": "44%",
+          "es_order": 24,
+          "eo_order": 2,
+          "si_order": 15,
+          "si_rank": "15th",
+          "margin_next": 0.022849,
+          "priority_third": "middle",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c73",
+      "section": 2,
+      "sentence_id": "s2.6",
+      "sentence": "In downstream nuclear, investment pushes the score up: on annual investment it scores higher than 92% of the other economies.",
+      "path": "cells.nuclear-downstream.drivers.eo.investment.vars.annual-investment-index.pct",
+      "filter": null,
+      "element": null,
+      "v": 92.42,
+      "d": "92%",
+      "source": "osi_indices",
+      "meaning": "share of the other economies in Nuclear — Downstream that Ukraine scores higher than on Annual investment (higher means more opportunity)",
+      "context": {
+        "cell": {
+          "key": "nuclear-downstream",
+          "label": "Nuclear — Downstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "74%",
+          "eo_pct": "44%",
+          "es_order": 24,
+          "eo_order": 2,
+          "si_order": 15,
+          "si_rank": "15th",
+          "margin_next": 0.022849,
+          "priority_third": "middle",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        },
+        "driver": {
+          "pillar": "eo",
+          "category": "Investment",
+          "top": true,
+          "impact_sign": 1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "annual-investment-index",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c74",
+      "section": 2,
+      "sentence_id": "s2.7",
+      "sentence": "Cost competitiveness pulls it down: on input costs for labour and capital it scores higher than only 5%.",
+      "path": "cells.nuclear-downstream.drivers.eo.cost-competitiveness.vars.input-cost-index.pct",
+      "filter": null,
+      "element": null,
+      "v": 4.55,
+      "d": "5%",
+      "source": "osi_indices",
+      "meaning": "share of the other economies in Nuclear — Downstream that Ukraine scores higher than on Input costs: labour and capital (higher means more opportunity)",
+      "context": {
+        "cell": {
+          "key": "nuclear-downstream",
+          "label": "Nuclear — Downstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "74%",
+          "eo_pct": "44%",
+          "es_order": 24,
+          "eo_order": 2,
+          "si_order": 15,
+          "si_rank": "15th",
+          "margin_next": 0.022849,
+          "priority_third": "middle",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        },
+        "driver": {
+          "pillar": "eo",
+          "category": "Cost Competitiveness",
+          "top": true,
+          "impact_sign": -1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "input-cost-index",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c75",
+      "section": 2,
+      "sentence_id": "s2.8",
+      "sentence": "In downstream oil, production pushes the score up: power generation from oil was 0.842 TWh in 2025, and on growth in production it scores higher than 91% of the other economies.",
+      "path": "cells.oil-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream oil",
+      "source": null,
+      "meaning": "the sector Oil — Downstream",
+      "context": {
+        "cell": {
+          "key": "oil-downstream",
+          "label": "Oil — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "45%",
+          "eo_pct": "40%",
+          "es_order": 16,
+          "eo_order": 3,
+          "si_order": 21,
+          "si_rank": "21st",
+          "margin_next": 0.000486,
+          "priority_third": "low",
+          "policy_third": "high",
+          "policy_class": "policy_ahead",
+          "top_es": "energy-access",
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c76",
+      "section": 2,
+      "sentence_id": "s2.8",
+      "sentence": "In downstream oil, production pushes the score up: power generation from oil was 0.842 TWh in 2025, and on growth in production it scores higher than 91% of the other economies.",
+      "path": "cells.oil-downstream.drivers.eo.production.vars.size.raw",
+      "filter": null,
+      "element": null,
+      "v": 0.842340755,
+      "d": "0.842 TWh",
+      "source": "ei",
+      "meaning": "the raw figure for Production: Ukraine, Oil — Downstream, 2025 (EI Statistical Review)",
+      "context": {
+        "cell": {
+          "key": "oil-downstream",
+          "label": "Oil — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "45%",
+          "eo_pct": "40%",
+          "es_order": 16,
+          "eo_order": 3,
+          "si_order": 21,
+          "si_rank": "21st",
+          "margin_next": 0.000486,
+          "priority_third": "low",
+          "policy_third": "high",
+          "policy_class": "policy_ahead",
+          "top_es": "energy-access",
+          "top_eo": ["cost-competitiveness", "production"]
+        },
+        "driver": {
+          "pillar": "eo",
+          "category": "Production",
+          "top": true,
+          "impact_sign": 1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "size",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c77",
+      "section": 2,
+      "sentence_id": "s2.8",
+      "sentence": "In downstream oil, production pushes the score up: power generation from oil was 0.842 TWh in 2025, and on growth in production it scores higher than 91% of the other economies.",
+      "path": "cells.oil-downstream.drivers.eo.production.vars.size.raw.year",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "2025",
+      "source": "ei",
+      "meaning": "the data year of the raw figure for Production (Ukraine, Oil — Downstream)",
+      "context": {
+        "cell": {
+          "key": "oil-downstream",
+          "label": "Oil — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "45%",
+          "eo_pct": "40%",
+          "es_order": 16,
+          "eo_order": 3,
+          "si_order": 21,
+          "si_rank": "21st",
+          "margin_next": 0.000486,
+          "priority_third": "low",
+          "policy_third": "high",
+          "policy_class": "policy_ahead",
+          "top_es": "energy-access",
+          "top_eo": ["cost-competitiveness", "production"]
+        },
+        "driver": {
+          "pillar": "eo",
+          "category": "Production",
+          "top": true,
+          "impact_sign": 1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "size",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c78",
+      "section": 2,
+      "sentence_id": "s2.8",
+      "sentence": "In downstream oil, production pushes the score up: power generation from oil was 0.842 TWh in 2025, and on growth in production it scores higher than 91% of the other economies.",
+      "path": "cells.oil-downstream.drivers.eo.production.vars.growth-abs.pct",
+      "filter": null,
+      "element": null,
+      "v": 90.82,
+      "d": "91%",
+      "source": "osi_indices",
+      "meaning": "share of the other economies in Oil — Downstream that Ukraine scores higher than on Growth in production (higher means more opportunity)",
+      "context": {
+        "cell": {
+          "key": "oil-downstream",
+          "label": "Oil — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "45%",
+          "eo_pct": "40%",
+          "es_order": 16,
+          "eo_order": 3,
+          "si_order": 21,
+          "si_rank": "21st",
+          "margin_next": 0.000486,
+          "priority_third": "low",
+          "policy_third": "high",
+          "policy_class": "policy_ahead",
+          "top_es": "energy-access",
+          "top_eo": ["cost-competitiveness", "production"]
+        },
+        "driver": {
+          "pillar": "eo",
+          "category": "Production",
+          "top": true,
+          "impact_sign": 1,
+          "imputed": false,
+          "rule": null
+        },
+        "variable": {
+          "key": "growth-abs",
+          "imputed": false,
+          "rule": null,
+          "note": null
+        }
+      }
+    },
+    {
+      "id": "c79",
+      "section": 2,
+      "sentence_id": "s2.9",
+      "sentence": "The paper's framework associates the Grow corner with export promotion, and the Watch corner, where 10 of its sectors sit, with creating value elsewhere in the chain.",
+      "path": "summary.quadrants.watch",
+      "filter": null,
+      "element": null,
+      "v": 10,
+      "d": "10",
+      "source": "osi_indices",
+      "meaning": "number of Ukraine's placed sectors in the Watch corner",
+      "context": []
+    },
+    {
+      "id": "c80",
+      "section": 3,
+      "sentence_id": "s3.2",
+      "sentence": "Among Ukraine's own sectors, it ranks upstream solar 1st (0.64), downstream solar 2nd and upstream batteries 3rd.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c81",
+      "section": 3,
+      "sentence_id": "s3.2",
+      "sentence": "Among Ukraine's own sectors, it ranks upstream solar 1st (0.64), downstream solar 2nd and upstream batteries 3rd.",
+      "path": "cells.solar-upstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "upstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Upstream",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c82",
+      "section": 3,
+      "sentence_id": "s3.2",
+      "sentence": "Among Ukraine's own sectors, it ranks upstream solar 1st (0.64), downstream solar 2nd and upstream batteries 3rd.",
+      "path": "cells.solar-upstream.si.rank",
+      "filter": null,
+      "element": null,
+      "v": 1,
+      "d": "1st",
+      "source": "osi_indices",
+      "meaning": "rank of Solar — Upstream among Ukraine's own sectors on the Strategic Index",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c83",
+      "section": 3,
+      "sentence_id": "s3.2",
+      "sentence": "Among Ukraine's own sectors, it ranks upstream solar 1st (0.64), downstream solar 2nd and upstream batteries 3rd.",
+      "path": "cells.solar-upstream.si",
+      "filter": null,
+      "element": null,
+      "v": 0.6435020891135997,
+      "d": "0.64",
+      "source": "osi_indices",
+      "meaning": "Strategic Index score of Solar — Upstream, 0 to 1, among Ukraine's own sectors",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c84",
+      "section": 3,
+      "sentence_id": "s3.2",
+      "sentence": "Among Ukraine's own sectors, it ranks upstream solar 1st (0.64), downstream solar 2nd and upstream batteries 3rd.",
+      "path": "cells.solar-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Downstream",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c85",
+      "section": 3,
+      "sentence_id": "s3.2",
+      "sentence": "Among Ukraine's own sectors, it ranks upstream solar 1st (0.64), downstream solar 2nd and upstream batteries 3rd.",
+      "path": "cells.solar-downstream.si.rank",
+      "filter": null,
+      "element": null,
+      "v": 2,
+      "d": "2nd",
+      "source": "osi_indices",
+      "meaning": "rank of Solar — Downstream among Ukraine's own sectors on the Strategic Index",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c86",
+      "section": 3,
+      "sentence_id": "s3.2",
+      "sentence": "Among Ukraine's own sectors, it ranks upstream solar 1st (0.64), downstream solar 2nd and upstream batteries 3rd.",
+      "path": "cells.batteries-upstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "upstream batteries",
+      "source": null,
+      "meaning": "the sector Batteries — Upstream",
+      "context": {
+        "cell": {
+          "key": "batteries-upstream",
+          "label": "Batteries — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "67%",
+          "eo_pct": "7%",
+          "es_order": 22,
+          "eo_order": 9,
+          "si_order": 3,
+          "si_rank": "3rd",
+          "margin_next": 0.001834,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "production"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c87",
+      "section": 3,
+      "sentence_id": "s3.2",
+      "sentence": "Among Ukraine's own sectors, it ranks upstream solar 1st (0.64), downstream solar 2nd and upstream batteries 3rd.",
+      "path": "cells.batteries-upstream.si.rank",
+      "filter": null,
+      "element": null,
+      "v": 3,
+      "d": "3rd",
+      "source": "osi_indices",
+      "meaning": "rank of Batteries — Upstream among Ukraine's own sectors on the Strategic Index",
+      "context": {
+        "cell": {
+          "key": "batteries-upstream",
+          "label": "Batteries — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "67%",
+          "eo_pct": "7%",
+          "es_order": 22,
+          "eo_order": 9,
+          "si_order": 3,
+          "si_rank": "3rd",
+          "margin_next": 0.001834,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "production"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c88",
+      "section": 3,
+      "sentence_id": "s3.3",
+      "sentence": "The scores of downstream solar and upstream batteries are almost tied, 0.006 apart, and upstream batteries is almost tied with midstream solar (4th).",
+      "path": "cells.solar-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Downstream",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c89",
+      "section": 3,
+      "sentence_id": "s3.3",
+      "sentence": "The scores of downstream solar and upstream batteries are almost tied, 0.006 apart, and upstream batteries is almost tied with midstream solar (4th).",
+      "path": "cells.batteries-upstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "upstream batteries",
+      "source": null,
+      "meaning": "the sector Batteries — Upstream",
+      "context": {
+        "cell": {
+          "key": "batteries-upstream",
+          "label": "Batteries — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "67%",
+          "eo_pct": "7%",
+          "es_order": 22,
+          "eo_order": 9,
+          "si_order": 3,
+          "si_rank": "3rd",
+          "margin_next": 0.001834,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "production"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c90",
+      "section": 3,
+      "sentence_id": "s3.3",
+      "sentence": "The scores of downstream solar and upstream batteries are almost tied, 0.006 apart, and upstream batteries is almost tied with midstream solar (4th).",
+      "path": "cells.solar-downstream.si.margin_next",
+      "filter": null,
+      "element": null,
+      "v": 0.006432,
+      "d": "0.006",
+      "source": "osi_indices",
+      "meaning": "how much higher Solar — Downstream scores on the Strategic Index than Ukraine's next-ranked sector (below 0.01: almost tied)",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c91",
+      "section": 3,
+      "sentence_id": "s3.3",
+      "sentence": "The scores of downstream solar and upstream batteries are almost tied, 0.006 apart, and upstream batteries is almost tied with midstream solar (4th).",
+      "path": "cells.batteries-upstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "upstream batteries",
+      "source": null,
+      "meaning": "the sector Batteries — Upstream",
+      "context": {
+        "cell": {
+          "key": "batteries-upstream",
+          "label": "Batteries — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "67%",
+          "eo_pct": "7%",
+          "es_order": 22,
+          "eo_order": 9,
+          "si_order": 3,
+          "si_rank": "3rd",
+          "margin_next": 0.001834,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "production"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c92",
+      "section": 3,
+      "sentence_id": "s3.3",
+      "sentence": "The scores of downstream solar and upstream batteries are almost tied, 0.006 apart, and upstream batteries is almost tied with midstream solar (4th).",
+      "path": "cells.solar-midstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "midstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Midstream",
+      "context": {
+        "cell": {
+          "key": "solar-midstream",
+          "label": "Solar — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "38%",
+          "eo_pct": "12%",
+          "es_order": 14,
+          "eo_order": 7,
+          "si_order": 4,
+          "si_rank": "4th",
+          "margin_next": 0.034441,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c93",
+      "section": 3,
+      "sentence_id": "s3.3",
+      "sentence": "The scores of downstream solar and upstream batteries are almost tied, 0.006 apart, and upstream batteries is almost tied with midstream solar (4th).",
+      "path": "cells.solar-midstream.si.rank",
+      "filter": null,
+      "element": null,
+      "v": 4,
+      "d": "4th",
+      "source": "osi_indices",
+      "meaning": "rank of Solar — Midstream among Ukraine's own sectors on the Strategic Index",
+      "context": {
+        "cell": {
+          "key": "solar-midstream",
+          "label": "Solar — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "38%",
+          "eo_pct": "12%",
+          "es_order": 14,
+          "eo_order": 7,
+          "si_order": 4,
+          "si_rank": "4th",
+          "margin_next": 0.034441,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c94",
+      "section": 3,
+      "sentence_id": "s3.4",
+      "sentence": "The rank of downstream solar reflects its policy term of 0.200, the full weight of that term.",
+      "path": "cells.solar-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Downstream",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c95",
+      "section": 3,
+      "sentence_id": "s3.4",
+      "sentence": "The rank of downstream solar reflects its policy term of 0.200, the full weight of that term.",
+      "path": "cells.solar-downstream.si.parts.pol",
+      "filter": null,
+      "element": null,
+      "v": 0.2,
+      "d": "0.200",
+      "source": "osi_indices",
+      "meaning": "the policy term of Solar — Downstream's Strategic Index: 0.2 x its policy activity ranked within Ukraine",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c96",
+      "section": 3,
+      "sentence_id": "s3.5",
+      "sentence": "Ukraine's allied pick in the network design is upstream batteries (0.62), almost tied with the runner-up, midstream solar (0.002 apart).",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c97",
+      "section": 3,
+      "sentence_id": "s3.5",
+      "sentence": "Ukraine's allied pick in the network design is upstream batteries (0.62), almost tied with the runner-up, midstream solar (0.002 apart).",
+      "path": "network.pick.cell",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "upstream batteries",
+      "source": "network",
+      "meaning": "Ukraine's allied pick: its top upstream or midstream sector on the Strategic Index after the endowment screen",
+      "context": {
+        "cell": {
+          "key": "batteries-upstream",
+          "label": "Batteries — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "67%",
+          "eo_pct": "7%",
+          "es_order": 22,
+          "eo_order": 9,
+          "si_order": 3,
+          "si_rank": "3rd",
+          "margin_next": 0.001834,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "production"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "margin": 0.001834,
+        "near_tie": true
+      }
+    },
+    {
+      "id": "c98",
+      "section": 3,
+      "sentence_id": "s3.5",
+      "sentence": "Ukraine's allied pick in the network design is upstream batteries (0.62), almost tied with the runner-up, midstream solar (0.002 apart).",
+      "path": "network.pick.si",
+      "filter": null,
+      "element": null,
+      "v": 0.623650532520262,
+      "d": "0.62",
+      "source": "network",
+      "meaning": "Strategic Index score of Ukraine's allied pick",
+      "context": {
+        "cell": {
+          "key": "batteries-upstream",
+          "label": "Batteries — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "67%",
+          "eo_pct": "7%",
+          "es_order": 22,
+          "eo_order": 9,
+          "si_order": 3,
+          "si_rank": "3rd",
+          "margin_next": 0.001834,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "production"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "margin": 0.001834,
+        "near_tie": true
+      }
+    },
+    {
+      "id": "c99",
+      "section": 3,
+      "sentence_id": "s3.5",
+      "sentence": "Ukraine's allied pick in the network design is upstream batteries (0.62), almost tied with the runner-up, midstream solar (0.002 apart).",
+      "path": "network.pick.runner_up",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "midstream solar",
+      "source": "network",
+      "meaning": "the runner-up to Ukraine's allied pick",
+      "context": {
+        "cell": {
+          "key": "solar-midstream",
+          "label": "Solar — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "38%",
+          "eo_pct": "12%",
+          "es_order": 14,
+          "eo_order": 7,
+          "si_order": 4,
+          "si_rank": "4th",
+          "margin_next": 0.034441,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "margin": 0.001834,
+        "near_tie": true
+      }
+    },
+    {
+      "id": "c100",
+      "section": 3,
+      "sentence_id": "s3.5",
+      "sentence": "Ukraine's allied pick in the network design is upstream batteries (0.62), almost tied with the runner-up, midstream solar (0.002 apart).",
+      "path": "network.pick.margin",
+      "filter": null,
+      "element": null,
+      "v": 0.001834,
+      "d": "0.002",
+      "source": "network",
+      "meaning": "how much higher Ukraine's allied pick scores than its runner-up (below 0.01: almost tied)",
+      "context": {
+        "cell": {
+          "key": "batteries-upstream",
+          "label": "Batteries — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "67%",
+          "eo_pct": "7%",
+          "es_order": 22,
+          "eo_order": 9,
+          "si_order": 3,
+          "si_rank": "3rd",
+          "margin_next": 0.001834,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "production"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "margin": 0.001834,
+        "near_tie": true
+      }
+    },
+    {
+      "id": "c101",
+      "section": 3,
+      "sentence_id": "s3.6",
+      "sentence": "The pick is Ukraine's first upstream or midstream sector on the Strategic Index after a resource-base screen.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c102",
+      "section": 3,
+      "sentence_id": "s3.7",
+      "sentence": "The upstream sector ranked above it, upstream solar, is screened out because no resource base is recorded for it.",
+      "path": "cells.solar-upstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "upstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Upstream",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c103",
+      "section": 3,
+      "sentence_id": "s3.9",
+      "sentence": "On that comparison, upstream solar, upstream batteries and midstream solar combine top priority with the most policy.",
+      "path": "policy.agreement.by_class.aligned_high",
+      "filter": "list",
+      "element": "solar-upstream",
+      "v": null,
+      "d": "upstream solar, upstream batteries and midstream solar",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the most policy'",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c104",
+      "section": 3,
+      "sentence_id": "s3.9",
+      "sentence": "On that comparison, upstream solar, upstream batteries and midstream solar combine top priority with the most policy.",
+      "path": "policy.agreement.by_class.aligned_high",
+      "filter": "list",
+      "element": "batteries-upstream",
+      "v": null,
+      "d": "upstream solar, upstream batteries and midstream solar",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the most policy'",
+      "context": {
+        "cell": {
+          "key": "batteries-upstream",
+          "label": "Batteries — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "67%",
+          "eo_pct": "7%",
+          "es_order": 22,
+          "eo_order": 9,
+          "si_order": 3,
+          "si_rank": "3rd",
+          "margin_next": 0.001834,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "production"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c105",
+      "section": 3,
+      "sentence_id": "s3.9",
+      "sentence": "On that comparison, upstream solar, upstream batteries and midstream solar combine top priority with the most policy.",
+      "path": "policy.agreement.by_class.aligned_high",
+      "filter": "list",
+      "element": "solar-midstream",
+      "v": null,
+      "d": "upstream solar, upstream batteries and midstream solar",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the most policy'",
+      "context": {
+        "cell": {
+          "key": "solar-midstream",
+          "label": "Solar — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "38%",
+          "eo_pct": "12%",
+          "es_order": 14,
+          "eo_order": 7,
+          "si_order": 4,
+          "si_rank": "4th",
+          "margin_next": 0.034441,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c106",
+      "section": 3,
+      "sentence_id": "s3.9",
+      "sentence": "On that comparison, upstream solar, upstream batteries and midstream solar combine top priority with the most policy.",
+      "path": "cells.solar-upstream.policy.class",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "top priority with the most policy",
+      "source": "osi_indices",
+      "meaning": "how Solar — Upstream's data-based priority third and its policy-activity third compare",
+      "context": {
+        "cell": {
+          "key": "solar-upstream",
+          "label": "Solar — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "27%",
+          "eo_pct": "3%",
+          "es_order": 5,
+          "eo_order": 19,
+          "si_order": 1,
+          "si_rank": "1st",
+          "margin_next": 0.013419,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": ["minerals-trade", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c107",
+      "section": 3,
+      "sentence_id": "s3.10",
+      "sentence": "By contrast, upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles combine top priority with the least policy.",
+      "path": "policy.agreement.by_class.gap",
+      "filter": "list",
+      "element": "wind-upstream",
+      "v": null,
+      "d": "upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the least policy'",
+      "context": {
+        "cell": {
+          "key": "wind-upstream",
+          "label": "Wind — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "28%",
+          "eo_pct": "8%",
+          "es_order": 6,
+          "eo_order": 8,
+          "si_order": 7,
+          "si_rank": "7th",
+          "margin_next": 0.000266,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "minerals-trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c108",
+      "section": 3,
+      "sentence_id": "s3.10",
+      "sentence": "By contrast, upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles combine top priority with the least policy.",
+      "path": "policy.agreement.by_class.gap",
+      "filter": "list",
+      "element": "electric-grid-upstream",
+      "v": null,
+      "d": "upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the least policy'",
+      "context": {
+        "cell": {
+          "key": "electric-grid-upstream",
+          "label": "Electric Grid — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "39%",
+          "eo_pct": "2%",
+          "es_order": 15,
+          "eo_order": 22,
+          "si_order": 9,
+          "si_rank": "9th",
+          "margin_next": 0.004023,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "minerals-trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c109",
+      "section": 3,
+      "sentence_id": "s3.10",
+      "sentence": "By contrast, upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles combine top priority with the least policy.",
+      "path": "policy.agreement.by_class.gap",
+      "filter": "list",
+      "element": "green-hydrogen-upstream",
+      "v": null,
+      "d": "upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the least policy'",
+      "context": {
+        "cell": {
+          "key": "green-hydrogen-upstream",
+          "label": "Green Hydrogen — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "36%",
+          "eo_pct": "5%",
+          "es_order": 12,
+          "eo_order": 15,
+          "si_order": 6,
+          "si_rank": "6th",
+          "margin_next": 0.01894,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "minerals-trade",
+          "top_eo": "cost-competitiveness"
+        }
+      }
+    },
+    {
+      "id": "c110",
+      "section": 3,
+      "sentence_id": "s3.10",
+      "sentence": "By contrast, upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles combine top priority with the least policy.",
+      "path": "policy.agreement.by_class.gap",
+      "filter": "list",
+      "element": "nuclear-midstream",
+      "v": null,
+      "d": "upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the least policy'",
+      "context": {
+        "cell": {
+          "key": "nuclear-midstream",
+          "label": "Nuclear — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "9%",
+          "eo_pct": "5%",
+          "es_order": 2,
+          "eo_order": 13,
+          "si_order": 8,
+          "si_rank": "8th",
+          "margin_next": 0.010359,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c111",
+      "section": 3,
+      "sentence_id": "s3.10",
+      "sentence": "By contrast, upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles combine top priority with the least policy.",
+      "path": "policy.agreement.by_class.gap",
+      "filter": "list",
+      "element": "electric-grid-midstream",
+      "v": null,
+      "d": "upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the least policy'",
+      "context": {
+        "cell": {
+          "key": "electric-grid-midstream",
+          "label": "Electric Grid — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "37%",
+          "eo_pct": "4%",
+          "es_order": 13,
+          "eo_order": 17,
+          "si_order": 14,
+          "si_rank": "14th",
+          "margin_next": 0.006364,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c112",
+      "section": 3,
+      "sentence_id": "s3.10",
+      "sentence": "By contrast, upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles combine top priority with the least policy.",
+      "path": "policy.agreement.by_class.gap",
+      "filter": "list",
+      "element": "electric-vehicles-upstream",
+      "v": null,
+      "d": "upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'top priority with the least policy'",
+      "context": {
+        "cell": {
+          "key": "electric-vehicles-upstream",
+          "label": "Electric Vehicles — Upstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "63%",
+          "eo_pct": "3%",
+          "es_order": 19,
+          "eo_order": 20,
+          "si_order": 18,
+          "si_rank": "18th",
+          "margin_next": 0.008769,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": ["production", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c113",
+      "section": 3,
+      "sentence_id": "s3.10",
+      "sentence": "By contrast, upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles combine top priority with the least policy.",
+      "path": "cells.wind-upstream.policy.class",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "top priority with the least policy",
+      "source": "osi_indices",
+      "meaning": "how Wind — Upstream's data-based priority third and its policy-activity third compare",
+      "context": {
+        "cell": {
+          "key": "wind-upstream",
+          "label": "Wind — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "28%",
+          "eo_pct": "8%",
+          "es_order": 6,
+          "eo_order": 8,
+          "si_order": 7,
+          "si_rank": "7th",
+          "margin_next": 0.000266,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "minerals-trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c114",
+      "section": 3,
+      "sentence_id": "s3.11",
+      "sentence": "At the other end, downstream oil and downstream coal combine bottom priority with the most policy.",
+      "path": "policy.agreement.by_class.policy_ahead",
+      "filter": "list",
+      "element": "oil-downstream",
+      "v": null,
+      "d": "downstream oil and downstream coal",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'bottom priority with the most policy'",
+      "context": {
+        "cell": {
+          "key": "oil-downstream",
+          "label": "Oil — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "45%",
+          "eo_pct": "40%",
+          "es_order": 16,
+          "eo_order": 3,
+          "si_order": 21,
+          "si_rank": "21st",
+          "margin_next": 0.000486,
+          "priority_third": "low",
+          "policy_third": "high",
+          "policy_class": "policy_ahead",
+          "top_es": "energy-access",
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c115",
+      "section": 3,
+      "sentence_id": "s3.11",
+      "sentence": "At the other end, downstream oil and downstream coal combine bottom priority with the most policy.",
+      "path": "policy.agreement.by_class.policy_ahead",
+      "filter": "list",
+      "element": "coal-downstream",
+      "v": null,
+      "d": "downstream oil and downstream coal",
+      "source": "osi_indices",
+      "meaning": "Ukraine's sectors whose data-based priority third and policy-activity third fall in the class 'bottom priority with the most policy'",
+      "context": {
+        "cell": {
+          "key": "coal-downstream",
+          "label": "Coal — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "29%",
+          "eo_pct": "3%",
+          "es_order": 7,
+          "eo_order": 21,
+          "si_order": 25,
+          "si_rank": "25th",
+          "margin_next": 0.001375,
+          "priority_third": "low",
+          "policy_third": "high",
+          "policy_class": "policy_ahead",
+          "top_es": "energy-access",
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c116",
+      "section": 3,
+      "sentence_id": "s3.11",
+      "sentence": "At the other end, downstream oil and downstream coal combine bottom priority with the most policy.",
+      "path": "cells.oil-downstream.policy.class",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "bottom priority with the most policy",
+      "source": "osi_indices",
+      "meaning": "how Oil — Downstream's data-based priority third and its policy-activity third compare",
+      "context": {
+        "cell": {
+          "key": "oil-downstream",
+          "label": "Oil — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "45%",
+          "eo_pct": "40%",
+          "es_order": 16,
+          "eo_order": 3,
+          "si_order": 21,
+          "si_rank": "21st",
+          "margin_next": 0.000486,
+          "priority_third": "low",
+          "policy_third": "high",
+          "policy_class": "policy_ahead",
+          "top_es": "energy-access",
+          "top_eo": ["cost-competitiveness", "production"]
+        }
+      }
+    },
+    {
+      "id": "c117",
+      "section": 3,
+      "sentence_id": "s3.12",
+      "sentence": "The Climate Action Tracker does not rate Ukraine, so its policy basis is International Energy Agency Policies and Measures records only.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c118",
+      "section": 3,
+      "sentence_id": "s3.12",
+      "sentence": "The Climate Action Tracker does not rate Ukraine, so its policy basis is International Energy Agency Policies and Measures records only.",
+      "path": "meta.policy_basis",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "International Energy Agency Policies and Measures records only",
+      "source": "osi_indices",
+      "meaning": "what Ukraine's Policy index rests on: IEA Policies and Measures records, with or without the Climate Action Tracker rating",
+      "context": []
+    },
+    {
+      "id": "c119",
+      "section": 3,
+      "sentence_id": "s3.13",
+      "sentence": "Ukraine has 85 such records, 42 of which name a technology.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c120",
+      "section": 3,
+      "sentence_id": "s3.13",
+      "sentence": "Ukraine has 85 such records, 42 of which name a technology.",
+      "path": "policy.pams_total",
+      "filter": null,
+      "element": null,
+      "v": 85,
+      "d": "85",
+      "source": "iea_pams",
+      "meaning": "Ukraine's IEA Policies and Measures records, all jurisdiction levels",
+      "context": []
+    },
+    {
+      "id": "c121",
+      "section": 3,
+      "sentence_id": "s3.13",
+      "sentence": "Ukraine has 85 such records, 42 of which name a technology.",
+      "path": "policy.pams_tech_specific",
+      "filter": null,
+      "element": null,
+      "v": 42,
+      "d": "42",
+      "source": "iea_pams",
+      "meaning": "Ukraine's IEA Policies and Measures records that name a technology",
+      "context": []
+    },
+    {
+      "id": "c122",
+      "section": 3,
+      "sentence_id": "s3.14",
+      "sentence": "For context, 15 records name downstream solar specifically, against 0 for upstream wind.",
+      "path": "cells.solar-downstream.policy.records_specific",
+      "filter": null,
+      "element": null,
+      "v": 15,
+      "d": "15",
+      "source": "iea_pams",
+      "meaning": "IEA Policies and Measures records of Ukraine that name both Solar — Downstream's technology and its stage",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c123",
+      "section": 3,
+      "sentence_id": "s3.14",
+      "sentence": "For context, 15 records name downstream solar specifically, against 0 for upstream wind.",
+      "path": "cells.solar-downstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "downstream solar",
+      "source": null,
+      "meaning": "the sector Solar — Downstream",
+      "context": {
+        "cell": {
+          "key": "solar-downstream",
+          "label": "Solar — Downstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "4%",
+          "eo_pct": "1%",
+          "es_order": 1,
+          "eo_order": 24,
+          "si_order": 2,
+          "si_rank": "2nd",
+          "margin_next": 0.006432,
+          "priority_third": "middle",
+          "policy_third": "high",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        }
+      }
+    },
+    {
+      "id": "c124",
+      "section": 3,
+      "sentence_id": "s3.14",
+      "sentence": "For context, 15 records name downstream solar specifically, against 0 for upstream wind.",
+      "path": "cells.wind-upstream.policy.records_specific",
+      "filter": null,
+      "element": null,
+      "v": 0,
+      "d": "0",
+      "source": "iea_pams",
+      "meaning": "IEA Policies and Measures records of Ukraine that name both Wind — Upstream's technology and its stage",
+      "context": {
+        "cell": {
+          "key": "wind-upstream",
+          "label": "Wind — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "28%",
+          "eo_pct": "8%",
+          "es_order": 6,
+          "eo_order": 8,
+          "si_order": 7,
+          "si_rank": "7th",
+          "margin_next": 0.000266,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "minerals-trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c125",
+      "section": 3,
+      "sentence_id": "s3.14",
+      "sentence": "For context, 15 records name downstream solar specifically, against 0 for upstream wind.",
+      "path": "cells.wind-upstream.label_prose",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "upstream wind",
+      "source": null,
+      "meaning": "the sector Wind — Upstream",
+      "context": {
+        "cell": {
+          "key": "wind-upstream",
+          "label": "Wind — Upstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "28%",
+          "eo_pct": "8%",
+          "es_order": 6,
+          "eo_order": 8,
+          "si_order": 7,
+          "si_rank": "7th",
+          "margin_next": 0.000266,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "minerals-trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        }
+      }
+    },
+    {
+      "id": "c126",
+      "section": 4,
+      "sentence_id": "s4.2",
+      "sentence": "It rates Austria highest for Ukraine (0.80), as an export market, strongest in midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid.",
+      "path": "partners.AUT.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Austria",
+      "source": "osi_indices",
+      "meaning": "the partner Austria",
+      "context": {
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c127",
+      "section": 4,
+      "sentence_id": "s4.2",
+      "sentence": "It rates Austria highest for Ukraine (0.80), as an export market, strongest in midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c128",
+      "section": 4,
+      "sentence_id": "s4.2",
+      "sentence": "It rates Austria highest for Ukraine (0.80), as an export market, strongest in midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid.",
+      "path": "partners.AUT.psi",
+      "filter": null,
+      "element": null,
+      "v": 0.8028660728144139,
+      "d": "0.80",
+      "source": "osi_indices",
+      "meaning": "Partnership Strength of Austria for Ukraine, 0 to 1",
+      "context": {
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c129",
+      "section": 4,
+      "sentence_id": "s4.2",
+      "sentence": "It rates Austria highest for Ukraine (0.80), as an export market, strongest in midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid.",
+      "path": "partners.AUT.reason",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "export market",
+      "source": "osi_indices",
+      "meaning": "the part of Partnership Strength where Austria ranks highest among Ukraine's partners",
+      "context": {
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c130",
+      "section": 4,
+      "sentence_id": "s4.2",
+      "sentence": "It rates Austria highest for Ukraine (0.80), as an export market, strongest in midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid.",
+      "path": "partners.AUT.po_best5",
+      "filter": "list",
+      "element": "electric-vehicles-midstream",
+      "v": null,
+      "d": "midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid",
+      "source": "osi_indices",
+      "meaning": "the five sectors where Austria scores highest as a market for Ukraine (Partnership Opportunity)",
+      "context": {
+        "cell": {
+          "key": "electric-vehicles-midstream",
+          "label": "Electric Vehicles — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "32%",
+          "eo_pct": "13%",
+          "es_order": 8,
+          "eo_order": 6,
+          "si_order": 16,
+          "si_rank": "16th",
+          "margin_next": 0.012434,
+          "priority_third": "middle",
+          "policy_third": "low",
+          "policy_class": "partial",
+          "top_es": "foreign-dependency",
+          "top_eo": ["cost-competitiveness", "foreign-dependency"]
+        },
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c131",
+      "section": 4,
+      "sentence_id": "s4.2",
+      "sentence": "It rates Austria highest for Ukraine (0.80), as an export market, strongest in midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid.",
+      "path": "partners.AUT.po_best5",
+      "filter": "list",
+      "element": "wind-midstream",
+      "v": null,
+      "d": "midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid",
+      "source": "osi_indices",
+      "meaning": "the five sectors where Austria scores highest as a market for Ukraine (Partnership Opportunity)",
+      "context": {
+        "cell": {
+          "key": "wind-midstream",
+          "label": "Wind — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "34%",
+          "eo_pct": "5%",
+          "es_order": 10,
+          "eo_order": 16,
+          "si_order": 10,
+          "si_rank": "10th",
+          "margin_next": 0.000836,
+          "priority_third": "middle",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": ["foreign-dependency", "trade"],
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c132",
+      "section": 4,
+      "sentence_id": "s4.2",
+      "sentence": "It rates Austria highest for Ukraine (0.80), as an export market, strongest in midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid.",
+      "path": "partners.AUT.po_best5",
+      "filter": "list",
+      "element": "solar-midstream",
+      "v": null,
+      "d": "midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid",
+      "source": "osi_indices",
+      "meaning": "the five sectors where Austria scores highest as a market for Ukraine (Partnership Opportunity)",
+      "context": {
+        "cell": {
+          "key": "solar-midstream",
+          "label": "Solar — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "38%",
+          "eo_pct": "12%",
+          "es_order": 14,
+          "eo_order": 7,
+          "si_order": 4,
+          "si_rank": "4th",
+          "margin_next": 0.034441,
+          "priority_third": "high",
+          "policy_third": "high",
+          "policy_class": "aligned_high",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c133",
+      "section": 4,
+      "sentence_id": "s4.2",
+      "sentence": "It rates Austria highest for Ukraine (0.80), as an export market, strongest in midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid.",
+      "path": "partners.AUT.po_best5",
+      "filter": "list",
+      "element": "nuclear-downstream",
+      "v": null,
+      "d": "midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid",
+      "source": "osi_indices",
+      "meaning": "the five sectors where Austria scores highest as a market for Ukraine (Partnership Opportunity)",
+      "context": {
+        "cell": {
+          "key": "nuclear-downstream",
+          "label": "Nuclear — Downstream",
+          "placed": true,
+          "quadrant": "watch",
+          "es_pct": "74%",
+          "eo_pct": "44%",
+          "es_order": 24,
+          "eo_order": 2,
+          "si_order": 15,
+          "si_rank": "15th",
+          "margin_next": 0.022849,
+          "priority_third": "middle",
+          "policy_third": "middle",
+          "policy_class": "partial",
+          "top_es": ["energy-access", "investment"],
+          "top_eo": ["cost-competitiveness", "investment"]
+        },
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c134",
+      "section": 4,
+      "sentence_id": "s4.2",
+      "sentence": "It rates Austria highest for Ukraine (0.80), as an export market, strongest in midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid.",
+      "path": "partners.AUT.po_best5",
+      "filter": "list",
+      "element": "electric-grid-midstream",
+      "v": null,
+      "d": "midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid",
+      "source": "osi_indices",
+      "meaning": "the five sectors where Austria scores highest as a market for Ukraine (Partnership Opportunity)",
+      "context": {
+        "cell": {
+          "key": "electric-grid-midstream",
+          "label": "Electric Grid — Midstream",
+          "placed": true,
+          "quadrant": "secure",
+          "es_pct": "37%",
+          "eo_pct": "4%",
+          "es_order": 13,
+          "eo_order": 17,
+          "si_order": 14,
+          "si_rank": "14th",
+          "margin_next": 0.006364,
+          "priority_third": "high",
+          "policy_third": "low",
+          "policy_class": "gap",
+          "top_es": "trade",
+          "top_eo": ["cost-competitiveness", "trade"]
+        },
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c135",
+      "section": 4,
+      "sentence_id": "s4.3",
+      "sentence": "Germany (2nd, also 0.80), the Czech Republic (3rd) and Poland (4th) follow, each scoring best as a reliable supplier.",
+      "path": "partners.DEU.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Germany",
+      "source": "osi_indices",
+      "meaning": "the partner Germany",
+      "context": {
+        "partner": {
+          "iso3": "DEU",
+          "name": "Germany",
+          "rank": "2nd",
+          "psi_order": 2,
+          "tie_order": 5,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c136",
+      "section": 4,
+      "sentence_id": "s4.3",
+      "sentence": "Germany (2nd, also 0.80), the Czech Republic (3rd) and Poland (4th) follow, each scoring best as a reliable supplier.",
+      "path": "partners.DEU.rank",
+      "filter": null,
+      "element": null,
+      "v": 2,
+      "d": "2nd",
+      "source": "osi_indices",
+      "meaning": "rank of Germany among Ukraine's partners by Partnership Strength, from Ukraine's own viewpoint",
+      "context": {
+        "partner": {
+          "iso3": "DEU",
+          "name": "Germany",
+          "rank": "2nd",
+          "psi_order": 2,
+          "tie_order": 5,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c137",
+      "section": 4,
+      "sentence_id": "s4.3",
+      "sentence": "Germany (2nd, also 0.80), the Czech Republic (3rd) and Poland (4th) follow, each scoring best as a reliable supplier.",
+      "path": "partners.DEU.psi",
+      "filter": null,
+      "element": null,
+      "v": 0.8025274788581261,
+      "d": "0.80",
+      "source": "osi_indices",
+      "meaning": "Partnership Strength of Germany for Ukraine, 0 to 1",
+      "context": {
+        "partner": {
+          "iso3": "DEU",
+          "name": "Germany",
+          "rank": "2nd",
+          "psi_order": 2,
+          "tie_order": 5,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c138",
+      "section": 4,
+      "sentence_id": "s4.3",
+      "sentence": "Germany (2nd, also 0.80), the Czech Republic (3rd) and Poland (4th) follow, each scoring best as a reliable supplier.",
+      "path": "partners.CZE.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Czech Republic",
+      "source": "osi_indices",
+      "meaning": "the partner Czech Republic",
+      "context": {
+        "partner": {
+          "iso3": "CZE",
+          "name": "Czech Republic",
+          "rank": "3rd",
+          "psi_order": 3,
+          "tie_order": 3,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c139",
+      "section": 4,
+      "sentence_id": "s4.3",
+      "sentence": "Germany (2nd, also 0.80), the Czech Republic (3rd) and Poland (4th) follow, each scoring best as a reliable supplier.",
+      "path": "partners.CZE.rank",
+      "filter": null,
+      "element": null,
+      "v": 3,
+      "d": "3rd",
+      "source": "osi_indices",
+      "meaning": "rank of Czech Republic among Ukraine's partners by Partnership Strength, from Ukraine's own viewpoint",
+      "context": {
+        "partner": {
+          "iso3": "CZE",
+          "name": "Czech Republic",
+          "rank": "3rd",
+          "psi_order": 3,
+          "tie_order": 3,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c140",
+      "section": 4,
+      "sentence_id": "s4.3",
+      "sentence": "Germany (2nd, also 0.80), the Czech Republic (3rd) and Poland (4th) follow, each scoring best as a reliable supplier.",
+      "path": "partners.POL.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Poland",
+      "source": "osi_indices",
+      "meaning": "the partner Poland",
+      "context": {
+        "partner": {
+          "iso3": "POL",
+          "name": "Poland",
+          "rank": "4th",
+          "psi_order": 4,
+          "tie_order": 2,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c141",
+      "section": 4,
+      "sentence_id": "s4.3",
+      "sentence": "Germany (2nd, also 0.80), the Czech Republic (3rd) and Poland (4th) follow, each scoring best as a reliable supplier.",
+      "path": "partners.POL.rank",
+      "filter": null,
+      "element": null,
+      "v": 4,
+      "d": "4th",
+      "source": "osi_indices",
+      "meaning": "rank of Poland among Ukraine's partners by Partnership Strength, from Ukraine's own viewpoint",
+      "context": {
+        "partner": {
+          "iso3": "POL",
+          "name": "Poland",
+          "rank": "4th",
+          "psi_order": 4,
+          "tie_order": 2,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c142",
+      "section": 4,
+      "sentence_id": "s4.3",
+      "sentence": "Germany (2nd, also 0.80), the Czech Republic (3rd) and Poland (4th) follow, each scoring best as a reliable supplier.",
+      "path": "partners.DEU.reason",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "reliable supplier",
+      "source": "osi_indices",
+      "meaning": "the part of Partnership Strength where Germany ranks highest among Ukraine's partners",
+      "context": {
+        "partner": {
+          "iso3": "DEU",
+          "name": "Germany",
+          "rank": "2nd",
+          "psi_order": 2,
+          "tie_order": 5,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c143",
+      "section": 4,
+      "sentence_id": "s4.4",
+      "sentence": "Georgia ranks 5th, scoring best as a development partner, with a Development Potential of 1.00.",
+      "path": "partners.GEO.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Georgia",
+      "source": "osi_indices",
+      "meaning": "the partner Georgia",
+      "context": {
+        "partner": {
+          "iso3": "GEO",
+          "name": "Georgia",
+          "rank": "5th",
+          "psi_order": 5,
+          "tie_order": null,
+          "reason": "dp",
+          "match": "priority_weak_ties",
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c144",
+      "section": 4,
+      "sentence_id": "s4.4",
+      "sentence": "Georgia ranks 5th, scoring best as a development partner, with a Development Potential of 1.00.",
+      "path": "partners.GEO.rank",
+      "filter": null,
+      "element": null,
+      "v": 5,
+      "d": "5th",
+      "source": "osi_indices",
+      "meaning": "rank of Georgia among Ukraine's partners by Partnership Strength, from Ukraine's own viewpoint",
+      "context": {
+        "partner": {
+          "iso3": "GEO",
+          "name": "Georgia",
+          "rank": "5th",
+          "psi_order": 5,
+          "tie_order": null,
+          "reason": "dp",
+          "match": "priority_weak_ties",
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c145",
+      "section": 4,
+      "sentence_id": "s4.4",
+      "sentence": "Georgia ranks 5th, scoring best as a development partner, with a Development Potential of 1.00.",
+      "path": "partners.GEO.reason",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "development partner",
+      "source": "osi_indices",
+      "meaning": "the part of Partnership Strength where Georgia ranks highest among Ukraine's partners",
+      "context": {
+        "partner": {
+          "iso3": "GEO",
+          "name": "Georgia",
+          "rank": "5th",
+          "psi_order": 5,
+          "tie_order": null,
+          "reason": "dp",
+          "match": "priority_weak_ties",
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c146",
+      "section": 4,
+      "sentence_id": "s4.4",
+      "sentence": "Georgia ranks 5th, scoring best as a development partner, with a Development Potential of 1.00.",
+      "path": "partners.GEO.dp",
+      "filter": null,
+      "element": null,
+      "v": 1,
+      "d": "1.00",
+      "source": "osi_indices",
+      "meaning": "Development Potential of Georgia: how good a place it is to build supply chains together, 0 to 1 (not scored for high-income partners)",
+      "context": {
+        "partner": {
+          "iso3": "GEO",
+          "name": "Georgia",
+          "rank": "5th",
+          "psi_order": 5,
+          "tie_order": null,
+          "reason": "dp",
+          "match": "priority_weak_ties",
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c147",
+      "section": 4,
+      "sentence_id": "s4.6",
+      "sentence": "On average across its energy-goods baskets, Poland is Ukraine's 2nd trade partner, the Czech Republic its 3rd and Germany its 5th.",
+      "path": "partners.POL.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Poland",
+      "source": "osi_indices",
+      "meaning": "the partner Poland",
+      "context": {
+        "partner": {
+          "iso3": "POL",
+          "name": "Poland",
+          "rank": "4th",
+          "psi_order": 4,
+          "tie_order": 2,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c148",
+      "section": 4,
+      "sentence_id": "s4.6",
+      "sentence": "On average across its energy-goods baskets, Poland is Ukraine's 2nd trade partner, the Czech Republic its 3rd and Germany its 5th.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c149",
+      "section": 4,
+      "sentence_id": "s4.6",
+      "sentence": "On average across its energy-goods baskets, Poland is Ukraine's 2nd trade partner, the Czech Republic its 3rd and Germany its 5th.",
+      "path": "partners.POL.ties.tie_rank",
+      "filter": null,
+      "element": null,
+      "v": 2,
+      "d": "2nd",
+      "source": "comtrade_matrix",
+      "meaning": "rank of Poland among Ukraine's trade partners by average share across its energy-goods baskets, 2024",
+      "context": {
+        "partner": {
+          "iso3": "POL",
+          "name": "Poland",
+          "rank": "4th",
+          "psi_order": 4,
+          "tie_order": 2,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c150",
+      "section": 4,
+      "sentence_id": "s4.6",
+      "sentence": "On average across its energy-goods baskets, Poland is Ukraine's 2nd trade partner, the Czech Republic its 3rd and Germany its 5th.",
+      "path": "partners.CZE.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Czech Republic",
+      "source": "osi_indices",
+      "meaning": "the partner Czech Republic",
+      "context": {
+        "partner": {
+          "iso3": "CZE",
+          "name": "Czech Republic",
+          "rank": "3rd",
+          "psi_order": 3,
+          "tie_order": 3,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c151",
+      "section": 4,
+      "sentence_id": "s4.6",
+      "sentence": "On average across its energy-goods baskets, Poland is Ukraine's 2nd trade partner, the Czech Republic its 3rd and Germany its 5th.",
+      "path": "partners.CZE.ties.tie_rank",
+      "filter": null,
+      "element": null,
+      "v": 3,
+      "d": "3rd",
+      "source": "comtrade_matrix",
+      "meaning": "rank of Czech Republic among Ukraine's trade partners by average share across its energy-goods baskets, 2024",
+      "context": {
+        "partner": {
+          "iso3": "CZE",
+          "name": "Czech Republic",
+          "rank": "3rd",
+          "psi_order": 3,
+          "tie_order": 3,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c152",
+      "section": 4,
+      "sentence_id": "s4.6",
+      "sentence": "On average across its energy-goods baskets, Poland is Ukraine's 2nd trade partner, the Czech Republic its 3rd and Germany its 5th.",
+      "path": "partners.DEU.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Germany",
+      "source": "osi_indices",
+      "meaning": "the partner Germany",
+      "context": {
+        "partner": {
+          "iso3": "DEU",
+          "name": "Germany",
+          "rank": "2nd",
+          "psi_order": 2,
+          "tie_order": 5,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c153",
+      "section": 4,
+      "sentence_id": "s4.6",
+      "sentence": "On average across its energy-goods baskets, Poland is Ukraine's 2nd trade partner, the Czech Republic its 3rd and Germany its 5th.",
+      "path": "partners.DEU.ties.tie_rank",
+      "filter": null,
+      "element": null,
+      "v": 5,
+      "d": "5th",
+      "source": "comtrade_matrix",
+      "meaning": "rank of Germany among Ukraine's trade partners by average share across its energy-goods baskets, 2024",
+      "context": {
+        "partner": {
+          "iso3": "DEU",
+          "name": "Germany",
+          "rank": "2nd",
+          "psi_order": 2,
+          "tie_order": 5,
+          "reason": "fs",
+          "match": "priority_strong_ties",
+          "in_psi_top": true,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c154",
+      "section": 4,
+      "sentence_id": "s4.7",
+      "sentence": "Austria is only its 13th and Georgia its 28th.",
+      "path": "partners.AUT.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Austria",
+      "source": "osi_indices",
+      "meaning": "the partner Austria",
+      "context": {
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c155",
+      "section": 4,
+      "sentence_id": "s4.7",
+      "sentence": "Austria is only its 13th and Georgia its 28th.",
+      "path": "partners.AUT.ties.tie_rank",
+      "filter": null,
+      "element": null,
+      "v": 13,
+      "d": "13th",
+      "source": "comtrade_matrix",
+      "meaning": "rank of Austria among Ukraine's trade partners by average share across its energy-goods baskets, 2024",
+      "context": {
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c156",
+      "section": 4,
+      "sentence_id": "s4.7",
+      "sentence": "Austria is only its 13th and Georgia its 28th.",
+      "path": "partners.GEO.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Georgia",
+      "source": "osi_indices",
+      "meaning": "the partner Georgia",
+      "context": {
+        "partner": {
+          "iso3": "GEO",
+          "name": "Georgia",
+          "rank": "5th",
+          "psi_order": 5,
+          "tie_order": null,
+          "reason": "dp",
+          "match": "priority_weak_ties",
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c157",
+      "section": 4,
+      "sentence_id": "s4.7",
+      "sentence": "Austria is only its 13th and Georgia its 28th.",
+      "path": "partners.GEO.ties.tie_rank",
+      "filter": null,
+      "element": null,
+      "v": 28,
+      "d": "28th",
+      "source": "comtrade_matrix",
+      "meaning": "rank of Georgia among Ukraine's trade partners by average share across its energy-goods baskets, 2024",
+      "context": {
+        "partner": {
+          "iso3": "GEO",
+          "name": "Georgia",
+          "rank": "5th",
+          "psi_order": 5,
+          "tie_order": null,
+          "reason": "dp",
+          "match": "priority_weak_ties",
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c158",
+      "section": 4,
+      "sentence_id": "s4.8",
+      "sentence": "China is its 1st trade partner, with 27.4% of its imports on average, but ranks 38th on Partnership Strength, a strong tie today that the index ranks lower.",
+      "path": "partners.CHN.name",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "China",
+      "source": "osi_indices",
+      "meaning": "the partner China",
+      "context": {
+        "partner": {
+          "iso3": "CHN",
+          "name": "China",
+          "rank": "38th",
+          "psi_order": null,
+          "tie_order": 1,
+          "reason": "dp",
+          "match": "ties_lower_priority",
+          "in_psi_top": false,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c159",
+      "section": 4,
+      "sentence_id": "s4.8",
+      "sentence": "China is its 1st trade partner, with 27.4% of its imports on average, but ranks 38th on Partnership Strength, a strong tie today that the index ranks lower.",
+      "path": "partners.CHN.ties.tie_rank",
+      "filter": null,
+      "element": null,
+      "v": 1,
+      "d": "1st",
+      "source": "comtrade_matrix",
+      "meaning": "rank of China among Ukraine's trade partners by average share across its energy-goods baskets, 2024",
+      "context": {
+        "partner": {
+          "iso3": "CHN",
+          "name": "China",
+          "rank": "38th",
+          "psi_order": null,
+          "tie_order": 1,
+          "reason": "dp",
+          "match": "ties_lower_priority",
+          "in_psi_top": false,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c160",
+      "section": 4,
+      "sentence_id": "s4.8",
+      "sentence": "China is its 1st trade partner, with 27.4% of its imports on average, but ranks 38th on Partnership Strength, a strong tie today that the index ranks lower.",
+      "path": "partners.CHN.ties.imp_mean",
+      "filter": null,
+      "element": null,
+      "v": 0.274078,
+      "d": "27.4%",
+      "source": "comtrade_matrix",
+      "meaning": "China's share of Ukraine's imports, averaged across Ukraine's import baskets, 2024",
+      "context": {
+        "partner": {
+          "iso3": "CHN",
+          "name": "China",
+          "rank": "38th",
+          "psi_order": null,
+          "tie_order": 1,
+          "reason": "dp",
+          "match": "ties_lower_priority",
+          "in_psi_top": false,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c161",
+      "section": 4,
+      "sentence_id": "s4.8",
+      "sentence": "China is its 1st trade partner, with 27.4% of its imports on average, but ranks 38th on Partnership Strength, a strong tie today that the index ranks lower.",
+      "path": "partners.CHN.rank",
+      "filter": null,
+      "element": null,
+      "v": 38,
+      "d": "38th",
+      "source": "osi_indices",
+      "meaning": "rank of China among Ukraine's partners by Partnership Strength, from Ukraine's own viewpoint",
+      "context": {
+        "partner": {
+          "iso3": "CHN",
+          "name": "China",
+          "rank": "38th",
+          "psi_order": null,
+          "tie_order": 1,
+          "reason": "dp",
+          "match": "ties_lower_priority",
+          "in_psi_top": false,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c162",
+      "section": 4,
+      "sentence_id": "s4.8",
+      "sentence": "China is its 1st trade partner, with 27.4% of its imports on average, but ranks 38th on Partnership Strength, a strong tie today that the index ranks lower.",
+      "path": "partners.CHN.match",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "a strong tie today that the index ranks lower",
+      "source": "osi_indices",
+      "meaning": "how China's Partnership Strength rank compares with its trade rank today",
+      "context": {
+        "partner": {
+          "iso3": "CHN",
+          "name": "China",
+          "rank": "38th",
+          "psi_order": null,
+          "tie_order": 1,
+          "reason": "dp",
+          "match": "ties_lower_priority",
+          "in_psi_top": false,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c163",
+      "section": 4,
+      "sentence_id": "s4.9",
+      "sentence": "In UN votes they sit in opposite blocs, while the partners named above vote in the same bloc as Ukraine.",
+      "path": "partners.CHN.ties.alignment_d",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "opposite blocs",
+      "source": "un_votes",
+      "meaning": "UN-vote alignment of Ukraine and China in words",
+      "context": {
+        "partner": {
+          "iso3": "CHN",
+          "name": "China",
+          "rank": "38th",
+          "psi_order": null,
+          "tie_order": 1,
+          "reason": "dp",
+          "match": "ties_lower_priority",
+          "in_psi_top": false,
+          "in_tie_top": true
+        }
+      }
+    },
+    {
+      "id": "c164",
+      "section": 4,
+      "sentence_id": "s4.9",
+      "sentence": "In UN votes they sit in opposite blocs, while the partners named above vote in the same bloc as Ukraine.",
+      "path": "partners.AUT.ties.alignment_d",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "same bloc",
+      "source": "un_votes",
+      "meaning": "UN-vote alignment of Ukraine and Austria in words",
+      "context": {
+        "partner": {
+          "iso3": "AUT",
+          "name": "Austria",
+          "rank": "1st",
+          "psi_order": 1,
+          "tie_order": 13,
+          "reason": "po",
+          "match": null,
+          "in_psi_top": true,
+          "in_tie_top": false
+        }
+      }
+    },
+    {
+      "id": "c165",
+      "section": 4,
+      "sentence_id": "s4.9",
+      "sentence": "In UN votes they sit in opposite blocs, while the partners named above vote in the same bloc as Ukraine.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c166",
+      "section": 4,
+      "sentence_id": "s4.10",
+      "sentence": "As a partner to the coalition, Ukraine ranks 60th of 192 economies.",
+      "path": "meta.country",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Ukraine",
+      "source": null,
+      "meaning": "the memo's own country",
+      "context": []
+    },
+    {
+      "id": "c167",
+      "section": 4,
+      "sentence_id": "s4.10",
+      "sentence": "As a partner to the coalition, Ukraine ranks 60th of 192 economies.",
+      "path": "summary.as_partner.rank",
+      "filter": null,
+      "element": null,
+      "v": 60,
+      "d": "60th",
+      "source": "osi_indices",
+      "meaning": "Ukraine's rank as a partner to the coalition, by Partnership Strength averaged over the core members' viewpoints",
+      "context": []
+    },
+    {
+      "id": "c168",
+      "section": 4,
+      "sentence_id": "s4.10",
+      "sentence": "As a partner to the coalition, Ukraine ranks 60th of 192 economies.",
+      "path": "summary.as_partner.n",
+      "filter": null,
+      "element": null,
+      "v": 192,
+      "d": "192",
+      "source": "osi_indices",
+      "meaning": "number of economies ranked as partners to the coalition",
+      "context": []
+    },
+    {
+      "id": "c169",
+      "section": 4,
+      "sentence_id": "s4.11",
+      "sentence": "In the allied network design it is a member with no production share in any of the 22 upstream and midstream stages.",
+      "path": "network.n_stages",
+      "filter": null,
+      "element": null,
+      "v": 22,
+      "d": "22",
+      "source": "network",
+      "meaning": "number of upstream and midstream stages in the allied network design",
+      "context": []
+    },
+    {
+      "id": "c170",
+      "section": 5,
+      "sentence_id": "s5.1",
+      "sentence": "Values are as of 12 October 2026; Country Insights has more.",
+      "path": "meta.as_of_label",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "12 October 2026",
+      "source": null,
+      "meaning": "the date of the paper baseline the memo reports",
+      "context": []
+    },
+    {
+      "id": "c171",
+      "section": 5,
+      "sentence_id": "",
+      "sentence": null,
+      "path": "caveats.relative_scores",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Scores compare Ukraine with other economies in the same sector; they are not measures of risk or profit in absolute terms.",
+      "source": null,
+      "meaning": "a data caveat (relative_scores)",
+      "context": []
+    },
+    {
+      "id": "c172",
+      "section": 5,
+      "sentence_id": "",
+      "sentence": null,
+      "path": "caveats.baseline",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "All index values are the paper's baseline as of 12 October 2026; Strategic Insights recomputes them under other weightings.",
+      "source": null,
+      "meaning": "a data caveat (baseline)",
+      "context": []
+    },
+    {
+      "id": "c173",
+      "section": 5,
+      "sentence_id": "",
+      "sentence": null,
+      "path": "caveats.policy_pams_only",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "The Climate Action Tracker does not rate Ukraine, so its policy activity rests on International Energy Agency Policies and Measures records alone; its policy levels compare only with economies on the same basis.",
+      "source": null,
+      "meaning": "a data caveat (policy_pams_only)",
+      "context": []
+    },
+    {
+      "id": "c174",
+      "section": 5,
+      "sentence_id": "",
+      "sentence": null,
+      "path": "caveats.imputed_driver",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Some figures behind these scores are filled in where the source has no value: with zero where a source lists every holder, otherwise with the world average.",
+      "source": null,
+      "meaning": "a data caveat (imputed_driver)",
+      "context": []
+    },
+    {
+      "id": "c175",
+      "section": 5,
+      "sentence_id": "",
+      "sentence": null,
+      "path": "caveats.near_tie",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Strategic Index scores within 0.01 of each other are almost tied: small changes in the data or the weights can swap their order.",
+      "source": null,
+      "meaning": "a data caveat (near_tie)",
+      "context": []
+    },
+    {
+      "id": "c176",
+      "section": 5,
+      "sentence_id": "",
+      "sentence": null,
+      "path": "caveats.pick_stability",
+      "filter": null,
+      "element": null,
+      "v": null,
+      "d": "Many allied picks are close calls: in the paper, 37% of them are within 0.01 of the runner-up.",
+      "source": null,
+      "meaning": "a data caveat (pick_stability)",
+      "context": []
+    }
+  ],
+  "sentences": [
+    {
+      "id": "s0.1",
+      "section": 0,
+      "text": "17 of Ukraine's 28 placed sectors sit in the two low-energy-security corners; against other economies, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind."
+    },
+    {
+      "id": "s0.2",
+      "section": 0,
+      "text": "Openings are scarce: only 1 placed sector sits in the two high-opportunity corners, and its Economic Opportunity is highest in downstream green hydrogen and downstream nuclear."
+    },
+    {
+      "id": "s0.3",
+      "section": 0,
+      "text": "The Strategic Index ranks upstream solar 1st among Ukraine's own sectors."
+    },
+    {
+      "id": "s0.4",
+      "section": 0,
+      "text": "When data-based priority is set against policy activity, upstream solar, upstream batteries and midstream solar combine top priority with the most policy, while 6 sectors combine top priority with the least policy."
+    },
+    {
+      "id": "s0.5",
+      "section": 0,
+      "text": "The Partnership Strength Index rates Austria highest for Ukraine, as an export market."
+    },
+    {
+      "id": "s0.6",
+      "section": 0,
+      "text": "China, its 1st trade partner, ranks 38th on Partnership Strength."
+    },
+    {
+      "id": "s1.1",
+      "section": 1,
+      "text": "17 of Ukraine's 28 placed sectors, those whose scores can both be compared with other economies, sit in the two low-energy-security corners."
+    },
+    {
+      "id": "s1.2",
+      "section": 1,
+      "text": "The Secure corner, which pairs low energy security with low opportunity, holds all 17 of them."
+    },
+    {
+      "id": "s1.3",
+      "section": 1,
+      "text": "Energy Security measures how well a country can rely on what it needs in a sector, from own production and reserves to import needs; higher means more secure."
+    },
+    {
+      "id": "s1.4",
+      "section": 1,
+      "text": "Against other economies in the same sector, its Energy Security is lowest in downstream solar, midstream nuclear and downstream wind."
+    },
+    {
+      "id": "s1.5",
+      "section": 1,
+      "text": "It scores 0.36, 0.39 and 0.38 there, higher than only 4%, 9% and 18% of the other economies scored in each sector."
+    },
+    {
+      "id": "s1.6",
+      "section": 1,
+      "text": "Each of them sits in the Secure corner."
+    },
+    {
+      "id": "s1.7",
+      "section": 1,
+      "text": "With no sector in the Upgrade corner, Country Insights takes Ukraine's top Strategic Index sectors as high-priority: upstream solar, downstream solar and upstream batteries."
+    },
+    {
+      "id": "s1.8",
+      "section": 1,
+      "text": "In downstream solar, the score is pulled down mainly by investment and energy access."
+    },
+    {
+      "id": "s1.9",
+      "section": 1,
+      "text": "Its investment score is 0.00, against a median of 0.40: annual investment scores 0.00, and growth in investment is not reported by the source, which the index counts as zero."
+    },
+    {
+      "id": "s1.10",
+      "section": 1,
+      "text": "Its solar consumption was 0.557 GJ per person in 2025, higher than only 18% of the other economies on that measure."
+    },
+    {
+      "id": "s1.11",
+      "section": 1,
+      "text": "In midstream nuclear, trade is the only category behind the score, and it pulls the score down: its trade deficit in these goods was 0.1% of GDP in 2023."
+    },
+    {
+      "id": "s1.12",
+      "section": 1,
+      "text": "On that measure it scores higher than only 1% of the other economies."
+    },
+    {
+      "id": "s1.13",
+      "section": 1,
+      "text": "For context, Sweden supplied 91.1% of its imports of these goods in 2024."
+    },
+    {
+      "id": "s2.1",
+      "section": 2,
+      "text": "Openings are scarce: only 1 of Ukraine's placed sectors, downstream green hydrogen, sits in the two high-opportunity corners."
+    },
+    {
+      "id": "s2.2",
+      "section": 2,
+      "text": "Economic Opportunity measures how well placed a country is to create value in a sector, from exports and market share to investment, costs, demand and related capabilities."
+    },
+    {
+      "id": "s2.3",
+      "section": 2,
+      "text": "Against other economies in the same sector, its Economic Opportunity is highest in downstream green hydrogen (Grow corner), downstream nuclear (Watch) and downstream oil (Secure)."
+    },
+    {
+      "id": "s2.4",
+      "section": 2,
+      "text": "Its scores there are higher than 64%, 44% and 40% of the other economies scored."
+    },
+    {
+      "id": "s2.5",
+      "section": 2,
+      "text": "In downstream green hydrogen, consumption pushes the score up: on use per person today it scores higher than 83% of the other economies, and on expected growth in use per person higher than 81%."
+    },
+    {
+      "id": "s2.6",
+      "section": 2,
+      "text": "In downstream nuclear, investment pushes the score up: on annual investment it scores higher than 92% of the other economies."
+    },
+    {
+      "id": "s2.7",
+      "section": 2,
+      "text": "Cost competitiveness pulls it down: on input costs for labour and capital it scores higher than only 5%."
+    },
+    {
+      "id": "s2.8",
+      "section": 2,
+      "text": "In downstream oil, production pushes the score up: power generation from oil was 0.842 TWh in 2025, and on growth in production it scores higher than 91% of the other economies."
+    },
+    {
+      "id": "s2.9",
+      "section": 2,
+      "text": "The paper's framework associates the Grow corner with export promotion, and the Watch corner, where 10 of its sectors sit, with creating value elsewhere in the chain."
+    },
+    {
+      "id": "s3.1",
+      "section": 3,
+      "text": "The Strategic Index ranks a country's own sectors by opportunity, security need, policy activity, stage and low-emission value."
+    },
+    {
+      "id": "s3.2",
+      "section": 3,
+      "text": "Among Ukraine's own sectors, it ranks upstream solar 1st (0.64), downstream solar 2nd and upstream batteries 3rd."
+    },
+    {
+      "id": "s3.3",
+      "section": 3,
+      "text": "The scores of downstream solar and upstream batteries are almost tied, 0.006 apart, and upstream batteries is almost tied with midstream solar (4th)."
+    },
+    {
+      "id": "s3.4",
+      "section": 3,
+      "text": "The rank of downstream solar reflects its policy term of 0.200, the full weight of that term."
+    },
+    {
+      "id": "s3.5",
+      "section": 3,
+      "text": "Ukraine's allied pick in the network design is upstream batteries (0.62), almost tied with the runner-up, midstream solar (0.002 apart)."
+    },
+    {
+      "id": "s3.6",
+      "section": 3,
+      "text": "The pick is Ukraine's first upstream or midstream sector on the Strategic Index after a resource-base screen."
+    },
+    {
+      "id": "s3.7",
+      "section": 3,
+      "text": "The upstream sector ranked above it, upstream solar, is screened out because no resource base is recorded for it."
+    },
+    {
+      "id": "s3.8",
+      "section": 3,
+      "text": "Country Insights splits the sectors into thirds by data-based priority (the Strategic Index without its policy term) and again by policy activity."
+    },
+    {
+      "id": "s3.9",
+      "section": 3,
+      "text": "On that comparison, upstream solar, upstream batteries and midstream solar combine top priority with the most policy."
+    },
+    {
+      "id": "s3.10",
+      "section": 3,
+      "text": "By contrast, upstream wind, upstream electric grid, upstream green hydrogen, midstream nuclear, midstream electric grid and upstream electric vehicles combine top priority with the least policy."
+    },
+    {
+      "id": "s3.11",
+      "section": 3,
+      "text": "At the other end, downstream oil and downstream coal combine bottom priority with the most policy."
+    },
+    {
+      "id": "s3.12",
+      "section": 3,
+      "text": "The Climate Action Tracker does not rate Ukraine, so its policy basis is International Energy Agency Policies and Measures records only."
+    },
+    {
+      "id": "s3.13",
+      "section": 3,
+      "text": "Ukraine has 85 such records, 42 of which name a technology."
+    },
+    {
+      "id": "s3.14",
+      "section": 3,
+      "text": "For context, 15 records name downstream solar specifically, against 0 for upstream wind."
+    },
+    {
+      "id": "s4.1",
+      "section": 4,
+      "text": "The Partnership Strength Index scores partners in energy supply chains as reliable suppliers (Friendshore), export markets (Partnership Opportunity) and development partners (Development Potential)."
+    },
+    {
+      "id": "s4.2",
+      "section": 4,
+      "text": "It rates Austria highest for Ukraine (0.80), as an export market, strongest in midstream electric vehicles, midstream wind, midstream solar, downstream nuclear and midstream electric grid."
+    },
+    {
+      "id": "s4.3",
+      "section": 4,
+      "text": "Germany (2nd, also 0.80), the Czech Republic (3rd) and Poland (4th) follow, each scoring best as a reliable supplier."
+    },
+    {
+      "id": "s4.4",
+      "section": 4,
+      "text": "Georgia ranks 5th, scoring best as a development partner, with a Development Potential of 1.00."
+    },
+    {
+      "id": "s4.5",
+      "section": 4,
+      "text": "Today's trade matches part of this ranking."
+    },
+    {
+      "id": "s4.6",
+      "section": 4,
+      "text": "On average across its energy-goods baskets, Poland is Ukraine's 2nd trade partner, the Czech Republic its 3rd and Germany its 5th."
+    },
+    {
+      "id": "s4.7",
+      "section": 4,
+      "text": "Austria is only its 13th and Georgia its 28th."
+    },
+    {
+      "id": "s4.8",
+      "section": 4,
+      "text": "China is its 1st trade partner, with 27.4% of its imports on average, but ranks 38th on Partnership Strength, a strong tie today that the index ranks lower."
+    },
+    {
+      "id": "s4.9",
+      "section": 4,
+      "text": "In UN votes they sit in opposite blocs, while the partners named above vote in the same bloc as Ukraine."
+    },
+    {
+      "id": "s4.10",
+      "section": 4,
+      "text": "As a partner to the coalition, Ukraine ranks 60th of 192 economies."
+    },
+    {
+      "id": "s4.11",
+      "section": 4,
+      "text": "In the allied network design it is a member with no production share in any of the 22 upstream and midstream stages."
+    },
+    {
+      "id": "s5.1",
+      "section": 5,
+      "text": "Values are as of 12 October 2026; Country Insights has more."
+    }
+  ],
+  "triggered_caveats": ["relative_scores", "baseline", "imputed_driver", "policy_pams_only", "near_tie", "pick_stability"]
+}
