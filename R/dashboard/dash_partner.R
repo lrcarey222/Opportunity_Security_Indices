@@ -8,7 +8,16 @@
 #
 #   FS (reporter r = importer rating partner p as a supplier):
 #     raw   = weighted mean of imp_trade[r,p,c], econ_opp_raw[r,c], es_need[r,c], eo_partner[p,c],
-#             outbound[r,p], geo_alignment[r,p] over the components present (weights renormalised)
+#             outbound[r,p,c], geo_alignment[r,p] and 1 - chinese_parent_exposure[p,c] over the
+#             components present (weights renormalised)
+#     outbound[r,p,c] is the IMF direct-investment position outbound[r,p] in every cell, except in
+#             the cells CM-FDI covers (outbound_source "cm_fdi": Solar, Wind, Batteries and Electric
+#             Vehicles Midstream), where it is the CM-FDI investment tie outbound_cmfdi[r,p,k] of
+#             the k-th such cell (NA where reporter r's parents have no project in the cell, so the
+#             component drops out, as in partnership_strength_apply_cm_fdi())
+#     chinese_parent_exposure[p,c] is the share of partner p's foreign-invested manufacturing in
+#             the cell owned by China-headquartered parents (CM-FDI), a risk scored 1 - share;
+#             NA (dropped, never 0) outside the CM-FDI cells and below two projects
 #     adj   = max(0, raw - ((1 - g_c) cpi_r k + (1 - g_c) cpi_p k)),  k = 0.10 x greenness
 #     index = median S-curve of adj over every world dyad of the cell
 #   PO (reporter r = exporter rating market p):
@@ -23,7 +32,9 @@
 #
 # bundle$partner (scripts/85): U (ISO3), names (partner display names by U), sovereign (by U),
 # cells = tibble(cell_id, tech, supply_chain); fs = list(imp_trade [U,U,C], econ_opp_raw [U,C],
-# es_need [U,C], eo_partner [U,C], outbound [U,U], geo [U,U], mask [U,U,C], cpi [U], gh [C]);
+# es_need [U,C], eo_partner [U,C], outbound [U,U], outbound_source [C] ("imf_dip" / "cm_fdi"; absent
+# = IMF everywhere), outbound_cmfdi [U,U,K] (the K "cm_fdi" cells in cell order), cpe [U,C]
+# (chinese_parent_exposure by partner; absent = none), geo [U,U], mask [U,U,C], cpi [U], gh [C]);
 # po = list(trade [U,U,C], econ_opp_index [U,C], partner_es_need [U,C], mask [U,U,C], cpi [U],
 # gh [C]); dp = tibble(partner_iso, development, imputed_weight_share); top5_share = list(fs [U,U],
 # po [U,U]) (the baseline best-five imputed share per dyad, NA when the build has none);
@@ -62,6 +73,27 @@ dash_scurve_cells <- function(adj, mask) {
   out
 }
 
+# Which measure each cell's outbound component holds: "imf_dip" (the IMF position) or "cm_fdi" (the
+# CM-FDI investment tie); a bundle without the vector predates CM-FDI (IMF everywhere).
+dash_fs_outbound_source <- function(fs, C = length(fs$gh)) {
+  if (is.null(fs$outbound_source)) rep("imf_dip", C) else as.character(fs$outbound_source)
+}
+
+# Friendshore's outbound-investment component as an array [r, p, c]: the IMF position outbound[r, p]
+# in the "imf_dip" cells, the CM-FDI tie outbound_cmfdi[r, p, k] in the k-th "cm_fdi" cell. NULL
+# when the bundle has neither.
+dash_fs_outbound <- function(fs, U, C) {
+  cm <- which(dash_fs_outbound_source(fs, C) == "cm_fdi")
+  if (is.null(fs$outbound) && !length(cm)) return(NULL)
+  out <- if (is.null(fs$outbound)) array(NA_real_, c(U, U, C)) else dash_bcast_rp(fs$outbound, C)
+  if (length(cm)) out[, , cm] <- fs$outbound_cmfdi
+  out
+}
+
+# The Friendshore score of a risk component (chinese_parent_exposure): 1 - share
+# (partnership_strength_friendshore_score()).
+dash_fs_risk_score <- function(x) 1 - x
+
 dash_fs_adj <- function(fs, w, coef) {
   U <- length(fs$cpi)
   C <- length(fs$gh)
@@ -70,8 +102,9 @@ dash_fs_adj <- function(fs, w, coef) {
     econ_opp_raw = if (isTRUE(w$econ_opp_raw > 0)) dash_bcast_r(fs$econ_opp_raw, U) else NULL,
     es_need = if (isTRUE(w$es_need > 0)) dash_bcast_r(fs$es_need, U) else NULL,
     eo_partner = if (isTRUE(w$eo_partner > 0)) dash_bcast_p(fs$eo_partner, U) else NULL,
-    outbound_index = if (isTRUE(w$outbound_index > 0)) dash_bcast_rp(fs$outbound, C) else NULL,
-    geo_alignment = if (isTRUE(w$geo_alignment > 0) && !is.null(fs$geo) && any(!is.na(fs$geo))) dash_bcast_rp(fs$geo, C) else NULL
+    outbound_index = if (isTRUE(w$outbound_index > 0)) dash_fs_outbound(fs, U, C) else NULL,
+    geo_alignment = if (isTRUE(w$geo_alignment > 0) && !is.null(fs$geo) && any(!is.na(fs$geo))) dash_bcast_rp(fs$geo, C) else NULL,
+    chinese_parent_exposure = if (isTRUE(w$chinese_parent_exposure > 0) && !is.null(fs$cpe)) dash_fs_risk_score(dash_bcast_p(fs$cpe, U)) else NULL
   )
   wts <- lapply(names(comps), function(k) w[[k]])
   raw <- dash_row_wmean(comps, wts)
@@ -322,17 +355,26 @@ dash_partner_decompose <- function(bundle, params, cells, reporter_iso, partner_
   wf <- params$partner$fs_weights
   wp <- params$partner$po_weights
   C <- nrow(pb$cells)
+  ob_src <- dash_fs_outbound_source(fs, C)
+  ob <- rep(if (is.null(fs$outbound)) NA_real_ else fs$outbound[r, p], C)
+  cm <- which(ob_src == "cm_fdi")
+  if (length(cm)) ob[cm] <- fs$outbound_cmfdi[r, p, ]
+  # component values as stored (chinese_parent_exposure: the share); the scores entering the mean
+  # (score_fs) differ only for the risk component (1 - share)
   comp_fs <- list(
     imp_trade_index = fs$imp_trade[r, p, ],
     econ_opp_raw = fs$econ_opp_raw[r, ],
     es_need = fs$es_need[r, ],
     eo_partner = fs$eo_partner[p, ],
-    outbound_index = rep(fs$outbound[r, p], C),
-    geo_alignment = rep(if (is.null(fs$geo)) NA_real_ else fs$geo[r, p], C)
+    outbound_index = ob,
+    geo_alignment = rep(if (is.null(fs$geo)) NA_real_ else fs$geo[r, p], C),
+    chinese_parent_exposure = if (is.null(fs$cpe)) rep(NA_real_, C) else fs$cpe[p, ]
   )
+  score_fs <- comp_fs
+  score_fs$chinese_parent_exposure <- dash_fs_risk_score(comp_fs$chinese_parent_exposure)
   wfs <- lapply(names(comp_fs), function(k) if (is.null(wf[[k]])) 0 else wf[[k]])
   den_fs <- Reduce(`+`, Map(function(x, wk) (!is.na(x)) * wk, comp_fs, wfs))
-  fs_raw <- dash_row_wmean(comp_fs, wfs)
+  fs_raw <- dash_row_wmean(score_fs, wfs)
   pen_r <- ((1 - fs$gh) * fs$cpi[r]) * params$partner$fs_penalty
   pen_p <- ((1 - fs$gh) * fs$cpi[p]) * params$partner$fs_penalty
   fs_adj <- pmax(0, fs_raw - (pen_r + pen_p))
@@ -366,8 +408,9 @@ dash_partner_decompose <- function(bundle, params, cells, reporter_iso, partner_
   )
   for (k in names(comp_fs)) {
     out[[paste0("fs_", k)]] <- comp_fs[[k]]
-    out[[paste0("fs_", k, "_share")]] <- ifelse(is.na(comp_fs[[k]]) | den_fs == 0, NA_real_, comp_fs[[k]] * wfs[[match(k, names(comp_fs))]] / den_fs)
+    out[[paste0("fs_", k, "_share")]] <- ifelse(is.na(comp_fs[[k]]) | den_fs == 0, NA_real_, score_fs[[k]] * wfs[[match(k, names(comp_fs))]] / den_fs)
   }
+  out$fs_outbound_source <- ob_src
   out$fs_penalty_reporter <- pen_r
   out$fs_penalty_partner <- pen_p
   out$fsi_raw <- fs_raw

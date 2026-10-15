@@ -1,7 +1,7 @@
 // The shared footer (spec_sector.md 2.1 item 6, 2.5): citation, the data vintage of each module
 // when known (from buildInfo; never forces a load), and the links to Methods (Strategic), Sources
-// & data (Sector) and neiscenter.org. Strategic links carry the scenario of the last Strategic
-// location, as the old footer carried navQuery.
+// & data (Sector), About Country Insights, the shared Glossary and neiscenter.org. Strategic links
+// carry the scenario of the last Strategic location, as the old footer carried navQuery.
 
 import { Link, useLocation } from 'react-router';
 import { fmtDate } from '../lib/format.ts';
@@ -50,7 +50,7 @@ export function Footer() {
               )}
             </p>
           )}
-          <p>Strategic Insights results are model outputs for exploration, not forecasts. Sector Insights shows measured values in their sources&rsquo; own units and years.</p>
+          <p>Strategic Insights results are model outputs for exploration, not forecasts. Sector Insights shows measured values in their sources&rsquo; own units and years. Country Insights shows the paper&rsquo;s baseline beside the raw data behind it.</p>
         </div>
         <div className="flex flex-wrap items-start gap-x-5 gap-y-2 lg:justify-end">
           <Link className="link" to={`/methods${sq}`}>
@@ -61,6 +61,12 @@ export function Footer() {
           </Link>
           <Link className="link" to={`/sector/sources${cq}`}>
             Sources &amp; data
+          </Link>
+          <Link className="link" to="/countries/about">
+            About Country Insights
+          </Link>
+          <Link className="link" to="/glossary">
+            Glossary
           </Link>
           <a className="link" href="https://neiscenter.org">
             neiscenter.org

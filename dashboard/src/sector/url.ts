@@ -29,13 +29,15 @@ export interface SectorUrlState {
   stage: string | null;
   /** item slug */
   item: string | null;
+  /** a trade sub-component of the cell (a trade.codes.sub_sector name); null = the whole basket */
+  sub: string | null;
   as: ShowAs;
   /** null = the dictionary's default */
   scale: ScaleParam | null;
   geo: GeoScope;
 }
 
-export const SECTOR_KEY_ORDER = ['c', 'eu', 'lens', 'fam', 'm', 'y', 'tdir', 'xc', 'tech', 'stage', 'item', 'as', 'scale', 'geo'] as const;
+export const SECTOR_KEY_ORDER = ['c', 'eu', 'lens', 'fam', 'm', 'y', 'tdir', 'xc', 'tech', 'stage', 'item', 'sub', 'as', 'scale', 'geo'] as const;
 export type SectorKey = (typeof SECTOR_KEY_ORDER)[number];
 /** Keys kept when navigating between Sector views. */
 export const SECTOR_NAV_KEYS: readonly SectorKey[] = ['c', 'eu'];
@@ -56,6 +58,7 @@ export const SECTOR_DEFAULTS: SectorUrlState = {
   tech: null,
   stage: null,
   item: null,
+  sub: null,
   as: 'value',
   scale: null,
   geo: 'all',
@@ -155,6 +158,11 @@ export function parseSectorSearch(search: string, ctx: SectorUrlCtx = {}): Secto
         else if (ctx.items && !ctx.items.has(v)) bad(k, raw, 'not an item in the sector data');
         else state.item = v;
         break;
+      case 'sub':
+        // checked against the cell's sub-components by the view (an unknown name shows the whole basket)
+        if (!v || v.length > 120 || /[\u0000-\u001f]/.test(v)) bad(k, raw, 'not a sub-component name');
+        else state.sub = v;
+        break;
       case 'as':
         if (v === 'share') state.as = 'share';
         else if (v === 'gdp' && ctx.gdp) state.as = 'gdp';
@@ -218,6 +226,9 @@ export function writeSectorSearch(state: Partial<SectorUrlState>): string {
       case 'item':
         if (s.item) put(k, s.item);
         break;
+      case 'sub':
+        if (s.sub) put(k, s.sub);
+        break;
       case 'as':
         if (s.as !== 'value') put(k, s.as);
         break;
@@ -246,8 +257,8 @@ export function sectorHref(path: string, state: Partial<SectorUrlState>, view: P
   return `${path}${s ? `?${s}` : ''}${hash ? `#${hash}` : ''}`;
 }
 
-/** Keys whose change replaces the history entry (year, show-as, scale, item); the rest push. */
-export const REPLACE_KEYS: readonly SectorKey[] = ['y', 'as', 'scale', 'item'];
+/** Keys whose change replaces the history entry (year, show-as, scale, item, sub-component); the rest push. */
+export const REPLACE_KEYS: readonly SectorKey[] = ['y', 'as', 'scale', 'item', 'sub'];
 
 /** True when a patch touches only replace-keys. */
 export function patchReplaces(patch: Partial<SectorUrlState>): boolean {

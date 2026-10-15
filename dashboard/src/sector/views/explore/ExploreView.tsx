@@ -18,7 +18,7 @@ import type { GeoInfo, ItemInfo, VarInfo } from '../../data/model.ts';
 import { itemsOf, layoutBanner, layoutOf, pickItem, pickVar, pickYear, resultLine, SCOPE_LABEL, shareLegal, themeVars, type ExploreLayout } from '../../derive/explore.ts';
 import { slice } from '../../derive/summary.ts';
 import { GEO_SCOPES, type GeoScope, type ScaleParam, type ShowAs } from '../../url.ts';
-import { ChunkGate, useHighlight } from '../common.tsx';
+import { ChunkGate, MeasureTip, useHighlight } from '../common.tsx';
 import { useFacts, useSeries } from '../data.ts';
 import { ThemeChips } from '../kit.tsx';
 import { useSectorUrl } from '../state.tsx';
@@ -174,7 +174,7 @@ export default function ExploreView() {
         as: state.as === 'share' && shareLegal(v) ? 'share' : 'value',
         scale: state.scale,
         setYear: (y) => set({ y }, { replace: true }),
-        setItem: (it) => (it.axis === 'cell' ? set({ tech: it.tech, stage: it.stage, item: null }, { replace: true }) : set({ item: it.slug, tech: null, stage: null }, { replace: true })),
+        setItem: (it) => (it.axis === 'cell' ? set({ tech: it.tech, stage: it.stage, item: null, sub: null }, { replace: true }) : set({ item: it.slug, tech: null, stage: null, sub: null }, { replace: true })),
         setHighlight: (g: GeoInfo | null) => set({ c: g ? g.code : null }),
       }
     : null;
@@ -224,7 +224,7 @@ export default function ExploreView() {
 
   return (
     <div className="space-y-6">
-      <PageHead eyebrow="SECTOR INSIGHTS · EXPLORE" title={themeInfo?.label ?? 'Explore'} lede={themeInfo?.description ?? 'One measure across every country and every sector.'}>
+      <PageHead eyebrow="SECTOR INSIGHTS · EXPLORE" title={themeInfo?.label ?? 'Explore'} lede={`One measure across every economy and every sector: a map, a ranking, the spread of values and the trend. Pick a theme and a measure.${themeInfo?.description ? ` This theme: ${themeInfo.description.charAt(0).toLowerCase()}${themeInfo.description.slice(1)}` : ''}`}>
         <div className="mt-4">
           <ThemeChips themes={model.themes.map((t) => ({ slug: t.slug, label: t.label, href: link(`/sector/explore/${t.slug}`) }))} active={theme} />
         </div>
@@ -241,6 +241,7 @@ export default function ExploreView() {
               onChange={(id) => set({ m: id, y: null, as: 'value', scale: null })}
               className="min-w-[14rem]"
             />
+            <MeasureTip v={v} />
             <ItemPicker v={v} item={item} onPick={ctx.setItem} />
             {v.year_field && year !== null && <p className="pb-1 text-sm text-paper-dim">Latest available up to {year}</p>}
             {phone && extra.length > 0 ? (
@@ -257,6 +258,11 @@ export default function ExploreView() {
               extra.map((x) => <div key={x.key}>{x.node}</div>)
             )}
           </FilterRow>
+          {/* heading order h1 -> h2 -> h3 (the cards are h3): the results heading for screen readers */}
+          <h2 className="sr-only">
+            Results: {v.label}
+            {item && item.axis !== 'none' ? `, ${item.axis === 'cell' ? model.cellLabel(item) : item.label}` : ''}
+          </h2>
           {banner && <Notice kind="info">{banner}</Notice>}
           {FACTS_LAYOUTS.has(layout) ? (
             <ChunkGate h={fh} name="sector-facts">

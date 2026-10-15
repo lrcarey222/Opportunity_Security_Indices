@@ -5,12 +5,16 @@
 // Additive for Sector Insights (spec_sector.md 3.5, 5.2): a cell may be an observed zero ('zero',
 // solid ink-600), carry an orange `outline` (the highlighted economy) and be `dim` (40% opacity,
 // out of the selected scope).
+// Additive for the three-colour scale (spec_country.md C1.4): `ringStyle="double"` draws the selected,
+// outlined and hovered countries with an ink-under-white double ring instead of the orange outline
+// (orange is the low end of the scale and would vanish there). Default 'orange': nothing else changes.
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { geoEqualEarth, geoPath, type GeoProjection } from 'd3';
 import { loadWorld, type World } from './world.ts';
 import { INK, SIGNAL, ZERO_FILL } from '../theme/palette.ts';
 import { Loading } from '../components/ui.tsx';
+import { ringLayers, type RingKind } from './rings.ts';
 
 export interface MapCell {
   /** a colour, 'hatch' for missing / excluded, or 'zero' for an observed zero */
@@ -71,9 +75,11 @@ export interface WorldMapProps {
   /** tooltip of an overlay element, managed by the caller */
   overlayTip?: { x: number; y: number; content: ReactNode } | null;
   land?: string;
+  /** 'orange' (default): the orange outline; 'double': the ink + white ring of three-colour maps */
+  ringStyle?: 'orange' | 'double';
 }
 
-export function WorldMap({ cells, ariaLabel, onSelect, selected, overlay, overlayTip, land = INK[700] }: WorldMapProps) {
+export function WorldMap({ cells, ariaLabel, onSelect, selected, overlay, overlayTip, land = INK[700], ringStyle = 'orange' }: WorldMapProps) {
   const { world, error } = useWorld();
   const [hostRef, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<{ key: string; x: number; y: number } | null>(null);
@@ -101,6 +107,9 @@ export function WorldMap({ cells, ariaLabel, onSelect, selected, overlay, overla
   const tip = overlayTip ?? (hover && hoverCell ? { x: hover.x, y: hover.y, content: hoverCell.tip } : null);
   const flip = tip ? tip.x > width * 0.6 : false;
   const selectedN3 = selected ? [...cells.entries()].find(([, c]) => c.iso3c === selected)?.[0] : undefined;
+  // the outline layers of a set of country paths (one orange stroke, or ink under white)
+  const ring = (ps: { id: string; d: string }[], kind: RingKind, key: string) =>
+    ringLayers(ringStyle, kind, SIGNAL).flatMap((l, j) => ps.map((p, i) => <path key={`${key}-${j}-${i}`} d={p.d} fill="none" stroke={l.stroke} strokeWidth={l.width} strokeLinejoin="round" />));
   const outlined = useMemo(() => new Set([...cells.entries()].filter(([k, c]) => c.outline && k !== selectedN3).map(([k]) => k)), [cells, selectedN3]);
 
   return (
@@ -136,30 +145,18 @@ export function WorldMap({ cells, ariaLabel, onSelect, selected, overlay, overla
             })}
           </g>
           {outlined.size > 0 && (
-            <g pointerEvents="none">
-              {geo.paths
-                .filter((p) => outlined.has(p.id))
-                .map((p, i) => (
-                  <path key={`out-${i}`} d={p.d} fill="none" stroke={SIGNAL} strokeWidth={1.5} />
-                ))}
+            <g pointerEvents="none" data-ring="outline">
+              {ring(geo.paths.filter((p) => outlined.has(p.id)), 'selected', 'out')}
             </g>
           )}
           {selectedN3 && (
-            <g pointerEvents="none">
-              {geo.paths
-                .filter((p) => p.id === selectedN3)
-                .map((p, i) => (
-                  <path key={`sel-${i}`} d={p.d} fill="none" stroke={SIGNAL} strokeWidth={1.5} />
-                ))}
+            <g pointerEvents="none" data-ring="selected">
+              {ring(geo.paths.filter((p) => p.id === selectedN3), 'selected', 'sel')}
             </g>
           )}
           {hover && (
-            <g pointerEvents="none">
-              {geo.paths
-                .filter((p) => p.id === hover.key)
-                .map((p, i) => (
-                  <path key={`hov-${i}`} d={p.d} fill="none" stroke={SIGNAL} strokeWidth={1.5} />
-                ))}
+            <g pointerEvents="none" data-ring="hover">
+              {ring(geo.paths.filter((p) => p.id === hover.key), 'hover', 'hov')}
             </g>
           )}
           {overlay?.(geo.projection, width, height)}

@@ -55,6 +55,45 @@
   [headers.values]
     Cache-Control = "no-cache"
 
+# Country Insights data (scripts/88; spec_country.md A10): the manifest names the current fact sheets and
+# memo files; the memo downloads get their media types (Word as a download).
+[[headers]]
+  for = "/data/country/manifest.json"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# fact sheets, drivers files and memo files are content-addressed (<kind>-<ISO3>.<hash>.<ext>)
+[[headers]]
+  for = "/data/country/facts-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/data/country/drivers-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/data/country/memo-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/data/country/*.pdf"
+  [headers.values]
+    Content-Type = "application/pdf"
+
+[[headers]]
+  for = "/data/country/*.docx"
+  [headers.values]
+    Content-Type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    Content-Disposition = "attachment"
+
+[[headers]]
+  for = "/data/country/*.md"
+  [headers.values]
+    Content-Type = "text/markdown; charset=utf-8"
+
 # 'unsafe-inline' styles: Observable Plot's scoped <style> elements and KaTeX's inline styles.
 # No inline scripts, no third-party requests (fonts and the world map are self-hosted).
 [[headers]]

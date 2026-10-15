@@ -3,6 +3,9 @@
 //   * prefetchStrategic(): on pointer-enter, focus or touchstart on the Strategic card or the
 //     STRATEGIC INSIGHTS tab, load the StrategicLayout chunk and start the engine worker. The
 //     engine is never prefetched on idle.
+//   * prefetchCountry(): on pointer-enter, focus or touchstart on the Country card or the COUNTRY
+//     INSIGHTS tab, and on Home's idle (spec_country.md A2.3): load the CountryLayout chunk and the
+//     Country manifest into the module's own store (never a fact sheet).
 //   * onIdle(): requestIdleCallback with a 1.5 s fallback; returns a cancel function.
 //   * saveData(): the reader asked the browser to save data (no idle prefetch then).
 
@@ -18,6 +21,26 @@ export function prefetchStrategic(): void {
     .catch(() => {
       strategic = null;
     });
+}
+
+let country: Promise<void> | null = null;
+
+export function prefetchCountry(): void {
+  if (country) return;
+  country = Promise.all([
+    import('../country/CountryLayout.tsx'),
+    import('../country/data/store.ts').then((m) => m.countryStore().manifest()),
+  ])
+    .then(() => undefined)
+    .catch(() => {
+      country = null;
+    });
+}
+
+/** Forget the prefetches (tests). */
+export function resetPrefetch(): void {
+  strategic = null;
+  country = null;
 }
 
 type IdleWindow = Window & {

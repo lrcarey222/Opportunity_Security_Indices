@@ -145,6 +145,8 @@ export function fmtNumber(x: number, kind: string, ctx: FormatContext = 'tile'):
       return fmtGrouped(Math.round(x), 0);
     case 'ratio':
       return minus(x.toFixed(2));
+    case 'index01':
+      return x.toFixed(2);
     case 'trl':
       return minus(x.toFixed(1));
     case 'ordinal':
@@ -192,8 +194,11 @@ export function fmtValue(v: unknown, unit: UnitSpec, opts: { scale?: number; ctx
       return fmtGrouped(Math.round(x), 0);
     case 'ratio':
       return `${minus(x.toFixed(2))}${unitSuffix(unit).replace(/ ratio$/i, '')}`.trim();
+    case 'index01':
+      // a bounded 0-1 index (trade.feasibility): two decimals, the range said in headers, not after each number
+      return x.toFixed(2);
     case 'trl':
-      return `TRL ${minus(x.toFixed(1))}`;
+      return `level ${minus(x.toFixed(1))}`;
     default: {
       const num = fmtNumber(x, kind, ctx);
       return `${num}${unitSuffix(unit)}`;
@@ -252,7 +257,7 @@ export function axisFormatter(values: Iterable<number>, unit: UnitSpec, scale = 
     return (v) => `${minus((v * scale * 100).toFixed(decimals))}%`;
   }
   if (kind === 'pct') return (v) => `${minus((v * scale).toFixed(maxAbs < 10 ? 1 : 0))}%`;
-  if (kind === 'hhi') return (v) => (v * scale).toFixed(2);
+  if (kind === 'hhi' || kind === 'index01') return (v) => (v * scale).toFixed(2);
   if (QUANTITY_KINDS.has(kind) || kind === 'gj_pc' || kind === 'price' || kind === 'count') {
     if (maxAbs >= 1e6) return (v) => `${minus(((v * scale) / 1e6).toFixed(maxAbs >= 1e7 ? 0 : 1))}M`;
     if (maxAbs >= 1e4) return (v) => `${minus(((v * scale) / 1e3).toFixed(0))}k`;

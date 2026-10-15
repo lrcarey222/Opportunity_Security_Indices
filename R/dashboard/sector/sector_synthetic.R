@@ -119,6 +119,32 @@ sector_fixed_links <- function(cells) {
   dplyr::bind_rows(act, pol)
 }
 
+# HS6-level dyads (the shape of partnership_strength_standardize_comtrade()) that reproduce a
+# synthetic matrix: each observed positive flow split over the cell's codes by fixed fractions (the
+# k-th code of a cell with n codes gets weight k / sum(1:n)), declared by the importer (source
+# "importer") or by the exporter at value / 1.06 (source "mirror").
+sector_synthetic_dyads <- function(tc, basket, cif_fob_factor = 1.06) {
+  rows <- list()
+  for (yi in seq_along(SECTOR_TRADE_YEARS)) {
+    v <- if (yi == 1) tc$value_first else tc$value_last
+    src <- if (yi == 1) tc$source_first else tc$source_last
+    ok <- !is.na(v) & v > 0
+    cell <- sector_cell_slug(tc$tech, tc$supply_chain)
+    for (i in which(ok)) {
+      codes <- basket$hs6[basket$cell == cell[i]]
+      w <- seq_along(codes) / sum(seq_along(codes))
+      imp <- src[i] == "importer"
+      rows[[length(rows) + 1]] <- tibble::tibble(
+        reporter_iso = if (imp) tc$importer_iso[i] else tc$exporter_iso[i],
+        partner_iso = if (imp) tc$exporter_iso[i] else tc$importer_iso[i],
+        period = SECTOR_TRADE_YEARS[yi], flow_direction = if (imp) "import" else "export",
+        cmd_code = codes, primary_value = if (imp) v[i] * w else v[i] / cif_fob_factor * w
+      )
+    }
+  }
+  dplyr::bind_rows(rows)
+}
+
 # A synthetic matrix in the shape partnership_strength_build_trade_cells() returns.
 sector_synthetic_trade_cells <- function() {
   econ <- c("BRA", "CHN", "DEU", "EST", "HKG", "IDN", "JPN", "POL", "RUS", "USA")
@@ -212,6 +238,12 @@ sector_synthetic_parts <- function(dict) {
                         note = "excluded (basket review 2026-10): primary lithium cells are not rechargeable storage")
   codes_all <- sector_trade_codes(basket[basket$cell != "electric-grid-midstream", ], desc)
   excl_all <- sector_trade_excluded(ref, cells$slug)
+  eu_members <- geo$code[geo$eu_member]
+  eu_intra <- sector_eu_intra(tc, eu_members)
+  # Trade by sub-component: the real helpers on HS6-level dyads that reproduce the synthetic matrix.
+  basket_m <- basket[basket$cell %in% unique(sector_cell_slug(tc$tech, tc$supply_chain)), , drop = FALSE]
+  sub <- sector_trade_sub(sector_synthetic_dyads(tc, basket_m), basket_m, declared, eu_members)
+  cty_sub <- sector_trade_sub_table(sub, country)
   trade <- list()
   for (tech in c("batteries", "oil")) {
     ck <- paste0("cell:", cells$slug[startsWith(cells$slug, paste0(tech, "-"))])
@@ -219,11 +251,11 @@ sector_synthetic_parts <- function(dict) {
       flows = flows[flows$item_key %in% ck, , drop = FALSE],
       declared = declared[declared$item_key %in% ck, , drop = FALSE],
       codes = codes_all[codes_all$item_key %in% ck, , drop = FALSE],
-      excluded = excl_all[excl_all$item_key %in% ck, , drop = FALSE]
+      excluded = excl_all[excl_all$item_key %in% ck, , drop = FALSE],
+      cty_sub = cty_sub[cty_sub$item_key %in% ck, , drop = FALSE],
+      sub_intra = sub$intra[sub$intra$item_key %in% ck, , drop = FALSE]
     )
   }
-  eu_members <- geo$code[geo$eu_member]
-  eu_intra <- sector_eu_intra(tc, eu_members)
 
   bm <- "cell:batteries-midstream"
   # trade.rca (exporter-reported; HKG excluded; RUS did not report; small exporters nq).
@@ -231,6 +263,9 @@ sector_synthetic_parts <- function(dict) {
       c(3.1, 4.2, 0.9, 1.1, 0.3, NaN, NaN, NaN), c("obs", "obs", "obs", "obs", "obs", "nq", "nq", "nq"))
   add("trade.atlas_share", bm, econ, 2023,
       c(0.0005, 0.409, 0.044, 0.0004, 0.003, 0.01, 0.04, 0.05, 0.001, 0.03))
+  # Export feasibility (Atlas relatedness, 0-1); HKG has none (not in the Atlas HS4 panel here).
+  add("trade.feasibility", bm, setdiff(econ, "HKG"), 2023, c(0.071, 0.513, 0.412, 0.205, 0.188, 0.397, 0.371, 0.096, 0.402))
+  add("trade.feasibility", "cell:batteries-upstream", setdiff(econ, "HKG"), 2023, c(0.144, 0.162, 0.083, 0.051, 0.122, 0.064, 0.077, 0.139, 0.095))
   addw("trade.atlas_share", bm, 2023, 1, "one")
   add("trade.critmin_exports", "mineral:lithium", c("CHN", "BRA", "USA", "IDN", "RUS", "HKG"), 2024,
       c(2.3e9, 0.4e9, 0.1e9, 0, 0.05e9, 0.02e9), c("obs", "obs", "obs", "zero", "mirror", "obs"))

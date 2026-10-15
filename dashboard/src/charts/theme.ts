@@ -25,12 +25,14 @@ export function plotBase(width: number, height: number): PlotOptions {
   };
 }
 
-/** Sequential scale (low dim -> high bright); reverse for ranks (rank 1 brightest). */
+/** Sequential scale (low dim -> high bright); reverse for ranks (rank 1 brightest).
+ *  @deprecated Superseded by the three-colour scale (charts/scale.ts triScale, spec_country.md C1); views may not import it (charts/noLegacyRamps.test.ts). */
 export function seqScale(domain: [number, number], reverse = false) {
   return { type: 'linear' as const, domain, range: reverse ? [...SEQ].reverse() : SEQ, interpolate: 'rgb' as const, clamp: true };
 }
 
-/** Diverging scale symmetric around zero (decrease red, increase blue, neutral gray midpoint). */
+/** Diverging scale symmetric around zero (decrease red, increase blue, neutral gray midpoint).
+ *  @deprecated Superseded by the three-colour scale (charts/scale.ts triScale, spec_country.md C1); views may not import it (charts/noLegacyRamps.test.ts). */
 export function divScale(limit: number) {
   const L = limit > 0 && Number.isFinite(limit) ? limit : 1;
   const n = DIV_RANGE.length;
@@ -52,6 +54,7 @@ export function colorFn(domain: number[], range: string[]): (v: number) => strin
   };
 }
 
+/** @deprecated Superseded by the three-colour scale (charts/scale.ts triScale, spec_country.md C1); views may not import it (charts/noLegacyRamps.test.ts). */
 export function seqColor(lo: number, hi: number, reverse = false): (v: number) => string {
   const range = reverse ? [...SEQ].reverse() : SEQ;
   const n = range.length;
@@ -59,6 +62,7 @@ export function seqColor(lo: number, hi: number, reverse = false): (v: number) =
   return colorFn(range.map((_, i) => lo + (span * i) / (n - 1)), range);
 }
 
+/** @deprecated Superseded by the three-colour scale (charts/scale.ts triScale, spec_country.md C1); views may not import it (charts/noLegacyRamps.test.ts). */
 export function divColor(limit: number): (v: number) => string {
   const s = divScale(limit);
   return colorFn(s.domain, s.range);

@@ -6,6 +6,7 @@
 import type { StatusCode } from '../contract.ts';
 import type { FactRow } from '../data/facts.ts';
 import type { GeoInfo, SectorModel, VarInfo } from '../data/model.ts';
+import { ASSUMED_ZERO_WORDS, isAssumedZero } from './notes.ts';
 
 export type ValueState = StatusCode | 'not_covered' | 'none' | 'regional';
 
@@ -15,6 +16,8 @@ export interface StateOf {
   old: boolean;
   /** the per-row year when it differs from the slice year */
   obsYear: number | null;
+  /** nsr with the value an assumed zero production gives (net balance, self-sufficiency): drawn as a value */
+  assumed?: boolean;
 }
 
 export const STATE_LABEL: Record<ValueState | 'old', string> = {
@@ -51,7 +54,9 @@ export function stateOf(row: FactRow | null | undefined, geo: GeoInfo, v: VarInf
   // "Reported zero" belongs to additive measures; a 0 of a bounded or ratio measure (a UN-vote position
   // of 0 = China's) is an observation like any other value
   const state = row.status === 'zero' && v.agg !== 'sum' ? 'obs' : row.status;
-  return { state, old, obsYear: obsYear !== null && obsYear !== ref ? obsYear : null };
+  const out: StateOf = { state, old, obsYear: obsYear !== null && obsYear !== ref ? obsYear : null };
+  if (isAssumedZero(v.id, row)) out.assumed = true;
+  return out;
 }
 
 /** Tooltip words of a state (3.5). */
@@ -66,7 +71,7 @@ export function stateWords(s: StateOf, v: VarInfo, model: SectorModel, geo?: Geo
       text = 'Reported zero';
       break;
     case 'nsr':
-      text = `Not reported separately by ${src} (in its Rest of world)`;
+      text = s.assumed ? ASSUMED_ZERO_WORDS : `Not reported separately by ${src} (in its Rest of world)`;
       break;
     case 'nq':
       text = /usgs/i.test(v.source.id + src) ? 'Listed by USGS without a figure (withheld or not available)' : `Listed by ${src} without a figure (under 1% or not reported)`;
@@ -105,7 +110,7 @@ export function stateShort(s: StateOf, v: VarInfo): string {
     case 'nq':
       return /usgs/i.test(v.source.id + v.source.short) ? 'withheld' : '< 1% or n.r.';
     case 'nsr':
-      return 'not separately reported';
+      return s.assumed ? 'production assumed 0' : 'not separately reported';
     case 'na_growth':
       return 'new';
     case 'not_covered':

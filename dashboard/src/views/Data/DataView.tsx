@@ -24,12 +24,12 @@ const TABLE_LABEL: Record<string, string> = {
   allied_selection: 'Allied strategic selection',
   energy_security: 'Energy Security',
   economic_opportunity: 'Economic Opportunity',
-  es_contributions: 'ES category contributions',
-  eo_contributions: 'EO category contributions',
-  policy_index: 'Policy index',
-  psi_partner: 'PSI (partners)',
-  psi_dyad: 'PSI (dyads)',
-  network_specialization: 'Network specialization',
+  es_contributions: 'Energy Security: what drives it (category contributions)',
+  eo_contributions: 'Economic Opportunity: what drives it (category contributions)',
+  policy_index: 'Policy activity',
+  psi_partner: 'Partnership Strength as a partner',
+  psi_dyad: 'Partnership Strength of every pair',
+  network_specialization: 'Allied network: who produces what',
   network_flows: 'Network flows',
   network_diagnostics: 'Network diagnostics',
   network_member_shares: 'Network member shares',
@@ -153,7 +153,7 @@ export default function DataView() {
 
   return (
     <div>
-      <PageHead eyebrow="Downloads and provenance" title="Data" lede="Download what you are looking at, share the scenario, and check the export's validation." />
+      <PageHead eyebrow="Downloads and provenance" title="Data" lede="Download the numbers behind every view, for the paper's baseline or your scenario, and see how this export was checked." />
       <div className="flex flex-col gap-6">
         <div className="grid gap-6 xl:grid-cols-2">
           <section className="card p-5">

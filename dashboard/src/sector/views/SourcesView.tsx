@@ -8,11 +8,12 @@
 // the validation summary.
 
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { marked } from 'marked';
 import sectorMd from '../../content/sector.md?raw';
 import { TableView } from '../../components/TableView.tsx';
 import { KeyValue, Notice, PageHead, Select } from '../../components/ui.tsx';
+import { Term } from '../../components/Term.tsx';
 import { withBom } from '../../lib/csv.ts';
 import { downloadBlob } from '../../lib/download.ts';
 import { rowsToCsv } from '../../lib/csv.ts';
@@ -23,11 +24,11 @@ import { factsIndexOf, seriesIndexOf } from '../data/facts.ts';
 import { useModel, useSectorManifest, useSectorStore } from '../data/SectorDataProvider.tsx';
 import type { SectorModel } from '../data/model.ts';
 import { reasonText } from '../derive/cells.ts';
-import { allDataFiles, coverageRows, dictionaryRows, flowsCsv, policyCsv, RESTRICTED_LINE, sourcesRows } from '../derive/downloads.ts';
+import { allDataFiles, CMFDI_ZIP_LINE, coverageRows, dictionaryRows, flowsCsv, policyCsv, RESTRICTED_LINE, sourcesRows } from '../derive/downloads.ts';
 import { cmfdiSource, fdiData, projectsCsv } from '../derive/fdi.ts';
 import { safeUrl } from '../derive/policy.ts';
-import { fmtExportDate, fmtHhi, fmtShare, fmtSize, fmtUsd } from '../format.ts';
-import { ExternalLink, Section } from './common.tsx';
+import { fmtExportDate, fmtHhi, fmtShare, fmtSize, fmtUsd, listText } from '../format.ts';
+import { ExternalLink, HowToRead, Section } from './common.tsx';
 import { useScrollToHash } from './data.ts';
 import { HeatTable, SectorChartCard, type HeatRow } from './kit.tsx';
 
@@ -52,7 +53,7 @@ function Dictionary() {
   const rows = useMemo(() => dictionaryRows(model), [model]);
   return (
     <SectorChartCard
-      title="Variable dictionary"
+      title="Every measure: unit, years, source and caveats"
       vars={model.vars.slice(0, 1).map((v) => ({ var: v.id }))}
       caption={{ sub: `${model.vars.length} measures in this data build: label, unit, data year, level, how it adds up, source, licence and caveats.`, badge: null, caveats: [], coverage: null, spanNote: null }}
       csv={() => ({ name: 'sector-dictionary', text: rowsToCsv(rows) })}
@@ -86,7 +87,7 @@ function Sources() {
   const rows = [...model.sources.values()];
   return (
     <SectorChartCard
-      title="Sources"
+      title="Every source: edition, licence and attribution"
       vars={model.vars.slice(0, 1).map((v) => ({ var: v.id }))}
       caption={{ sub: `${rows.length} sources, with how this export transforms each one and its known issues.`, badge: null, caveats: [], coverage: null, spanNote: null }}
       csv={() => ({ name: 'sector-sources', text: rowsToCsv(sourcesRows(model)) })}
@@ -176,7 +177,7 @@ function Coverage() {
             <ul className="list-disc space-y-0.5 pl-5">
               {missing.map((x) => (
                 <li key={x.c.roster}>
-                  {x.c.label} does not cover {x.miss.map((g) => g.code).join(', ')}.
+                  {x.c.label} does not cover {listText(x.miss.map((g) => g.name))}.
                 </li>
               ))}
             </ul>
@@ -210,12 +211,13 @@ function Reconciliation() {
     <SectorChartCard
       title="Trade basis: the matrix and the exporters' reports"
       vars={[{ var: 'trade.exports' }, { var: 'trade.rca' }]}
+      subExtra={<HowToRead>Each row compares one sector and year on two bases: the reconciled matrix this module shows (what importers declare, and partners&apos; reports where an importer is silent) and the exporters&apos; own reports. Close numbers mean the choice of basis does not change the story; WARN marks rows where China&apos;s share differs by more than 3 points.</HowToRead>}
       caption={{ coverage: `${rows.length} sector-years; ${warn} marked WARN (China's shares differ by more than 3 points).` }}
       csv={() => ({ name: 'trade-basis-reconciliation', text: rowsToCsv(rows.map((r) => ({ item: model.items[r.item]?.slug, year: r.year, matrix_total_usd: r.matrix_total, reported_total_usd: r.reported_total, matrix_china_share: r.matrix_china, reported_china_share: r.reported_china, matrix_hhi: r.matrix_hhi, reported_hhi: r.reported_hhi, n_reporters: r.n_reporters, warn: r.warn }))) })}
       notes={
         <p>
           The gap has three reasons: importers declare cost, insurance and freight while exporters declare free on board; economies that do not report are seen in the matrix through their partners; Hong Kong's
-          re-exports are out of the exporter-reported basis. Strategic Insights ranks the exporter-reported HHI.
+          re-exports are out of the exporter-reported basis. Strategic Insights ranks the exporter-reported <Term id="hhi">concentration index (HHI)</Term>.
         </p>
       }
       summary={`${rows.length} sector-years compared; ${warn} differ in China's share by more than 3 points.`}
@@ -232,8 +234,8 @@ function Reconciliation() {
           { id: 'rt', header: 'Exporter-reported total', value: (r) => r.reported_total, cell: (r) => fmtUsd(r.reported_total, 'table'), num: true },
           { id: 'mc', header: 'China (matrix)', value: (r) => r.matrix_china, cell: (r) => fmtShare(r.matrix_china), num: true },
           { id: 'rc', header: 'China (reported)', value: (r) => r.reported_china, cell: (r) => fmtShare(r.reported_china), num: true },
-          { id: 'mh', header: 'HHI (matrix)', value: (r) => r.matrix_hhi, cell: (r) => fmtHhi(r.matrix_hhi), num: true },
-          { id: 'rh', header: 'HHI (reported)', value: (r) => r.reported_hhi, cell: (r) => fmtHhi(r.reported_hhi), num: true },
+          { id: 'mh', header: 'Concentration (HHI), matrix', value: (r) => r.matrix_hhi, cell: (r) => fmtHhi(r.matrix_hhi), num: true },
+          { id: 'rh', header: 'Concentration (HHI), reported', value: (r) => r.reported_hhi, cell: (r) => fmtHhi(r.reported_hhi), num: true },
           { id: 'n', header: 'Reporters', value: (r) => r.n_reporters, num: true },
           { id: 'w', header: 'Check', value: (r) => (r.warn ? 'WARN' : 'ok'), cell: (r) => (r.warn ? <span className="tag" style={{ borderColor: 'var(--color-signal)', color: 'var(--color-paper)' }}>WARN</span> : 'ok') },
         ]}
@@ -270,7 +272,11 @@ function Downloads() {
   const all = run('all', async () => {
     const f = await store.load('sector-facts');
     const s = manifest.data?.chunks.some((c) => c.name === 'sector-series') ? await store.load('sector-series') : null;
-    const files = allDataFiles(model, manifest.data, factsIndexOf(f), s ? seriesIndexOf(s) : null, `${window.location.origin}${loc.pathname}`);
+    // the CM-FDI projects travel in the ZIP too (C5.8), with their attribution line in the README
+    const fdiChunk = manifest.data?.chunks.some((c) => c.name === 'sector-fdi') ? await store.load('sector-fdi') : null;
+    const fd = fdiChunk ? fdiData(fdiChunk) : null;
+    const extra = fd ? { files: { 'cm-fdi-projects.csv': projectsCsv(model, fd, fd.projects) }, readme: [CMFDI_ZIP_LINE] } : null;
+    const files = allDataFiles(model, manifest.data, factsIndexOf(f), s ? seriesIndexOf(s) : null, `${window.location.origin}${loc.pathname}`, extra);
     const withBoms = Object.fromEntries(Object.entries(files).map(([k, v]) => [k, k.endsWith('.csv') ? withBom(v) : v]));
     const { zipTexts } = await import('../../lib/zip.ts');
     downloadBlob(new Blob([zipTexts(withBoms) as BlobPart], { type: 'application/zip' }), 'sector-data.zip');
@@ -297,7 +303,7 @@ function Downloads() {
       <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <li className="card flex flex-col p-5">
           <h3 className="text-base font-medium text-paper">All sector data (.zip)</h3>
-          <p className="mt-1 flex-1 text-sm text-paper-dim">One CSV per measure family, dictionary.csv, sources.csv, coverage.csv and a README with citations, licences, the vintage and the status codes.{size('sector-facts')}</p>
+          <p className="mt-1 flex-1 text-sm text-paper-dim">One CSV per measure family, dictionary.csv, sources.csv, coverage.csv{hasFdiChunk ? ', the CM-FDI projects' : ''} and a README with citations, licences, the vintage and the status codes.{size('sector-facts')}</p>
           <button type="button" className="btn btn-ghost btn-sm mt-3 self-start" disabled={busy !== null} onClick={all}>
             {busy === 'all' ? 'Preparing…' : 'Download all sector data'}
           </button>
@@ -325,9 +331,9 @@ function Downloads() {
         </li>
         {hasFdiChunk && (
           <li className="card flex flex-col p-5">
-            <h3 className="text-base font-medium text-paper">Cross-border projects, CM-FDI (.csv)</h3>
+            <h3 className="text-base font-medium text-paper">Factory projects (CM-FDI), every cross-border project (.csv)</h3>
             <p className="mt-1 flex-1 text-sm text-paper-dim">
-              Every project of the Cleantech Manufacturing FDI Dataset{fdiSrc?.edition ? ` (edition ${fdiSrc.edition})` : ''}: parent, headquarters, destination, status, years, capital investment (or "not disclosed"), joint venture and the source links per field. Licensed CC BY 4.0: cite as {fdiSrc?.citation ?? 'the CM-FDI site specifies'}.{size('sector-fdi')}
+              Every project of the Cleantech Manufacturing FDI Dataset{fdiSrc?.edition ? ` (edition ${fdiSrc.edition})` : ''}: parent, headquarters, destination, status, years, capital investment (or "not disclosed"), joint venture and the source links per field. Licensed CC BY 4.0: cite as {fdiSrc?.citation ?? 'the dataset’s site specifies'}.{size('sector-fdi')}
             </p>
             <button type="button" className="btn btn-ghost btn-sm mt-3 self-start" disabled={busy !== null} onClick={fdi}>
               {busy === 'fdi' ? 'Preparing…' : 'Download the projects'}
@@ -373,8 +379,8 @@ function Build() {
   const warns = m.validation.filter((x) => x.status === 'WARN');
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <section className="card p-5" aria-labelledby="build-h">
-        <h3 id="build-h" className="rule-neis-sm mb-3 text-base font-medium text-paper">
+      <section className="card p-5" aria-labelledby="build-card-h">
+        <h3 id="build-card-h" className="rule-neis-sm mb-3 text-base font-medium text-paper">
           This data build
         </h3>
         <KeyValue
@@ -428,10 +434,15 @@ export default function SourcesView() {
   useScrollToHash(loc.hash, true);
   return (
     <div className="space-y-10">
-      <PageHead eyebrow="SECTOR INSIGHTS · SOURCES" title="Sources & data" lede="Where every number comes from, how the export handles it, what each source covers, and the downloads." />
+      <PageHead eyebrow="SECTOR INSIGHTS · SOURCES" title="Sources & data" lede="Where every number comes from, how the trade figures are reconciled, and the full data as downloads." />
       <Section id="about" title="About Sector Insights">
         {/* the content is this app's own Markdown, filled with counts from the data build */}
         <article className="prose-neis max-w-4xl" dangerouslySetInnerHTML={{ __html: html }} />
+        <p className="mt-4 text-sm">
+          <Link className="link" to="/glossary">
+            Glossary: every term used in the three modules, in plain words →
+          </Link>
+        </p>
       </Section>
       <Section id="dictionary" title="Variable dictionary">
         <Dictionary />

@@ -25,9 +25,10 @@ import {
   shareLines, shareScatter, summaryYears, techsOfMineral,
 } from '../../derive/minerals.ts';
 import { slice } from '../../derive/summary.ts';
+import { scenarioWords } from '../../derive/text.ts';
 import { lc, fmtHhi, fmtShare, fmtSig, listText, ordinal } from '../../format.ts';
 import { LeagueCard } from '../cards.tsx';
-import { ChunkGate, fmtFact, measureConc, Section, SPLIT_COLUMNS, shareSplitRow, SplitTable, useHighlight } from '../common.tsx';
+import { ChunkGate, fmtFact, HowToRead, measureConc, Section, SPLIT_COLUMNS, SPLIT_READING, shareSplitRow, SplitTable, useHighlight } from '../common.tsx';
 import { useFacts, useScrollToHash } from '../data.ts';
 import { Dumbbell, GroupLegend, LabelledLines, SectorChartCard, ShareSplitChart, type DumbbellRow, type ShareSplitRow } from '../kit.tsx';
 import { MonthlyPrices, PriceBoard } from '../profile/Prices.tsx';
@@ -66,7 +67,7 @@ function Snapshot({ model, item, facts, highlight, eu }: Ctx) {
     tiles.push({ key: 'top3m', label: 'Top-3 mining share', value: fmtShare(topMining.top3_share), sub: `${topMining.top1_geo !== null ? `largest ${model.geoName(topMining.top1_geo)} · ` : ''}${topMiningV.source.short}, ${topMining.year}`, title: cap(topMiningV, topMining.year) });
   }
   if (ref && refV) {
-    tiles.push({ key: 'top3r', label: 'Top-3 refining share', value: fmtShare(ref.top3_share), sub: `HHI ${fmtHhi(ref.hhi, ref.hhi_lower_bound)} · ${refV.source.short}, ${ref.year}`, title: cap(refV, ref.year) });
+    tiles.push({ key: 'top3r', label: 'Top-3 refining share', value: fmtShare(ref.top3_share), sub: `concentration index ${fmtHhi(ref.hhi, ref.hhi_lower_bound)} · ${refV.source.short}, ${ref.year}`, title: cap(refV, ref.year) });
     // China's output and the world total in the source's unit ("235 of 319 kt"; spec 12.3)
     const chinaOf = ref.china > 0 && Number.isFinite(ref.W) ? `${fmtSig(ref.china * ref.W * (refV.display_scale || 1))} of ${fmtFact(model, refV, item, ref.W)} · ` : '';
     tiles.push({ key: 'chnr', label: "China's refining share", value: fmtShare(ref.china), sub: `${chinaOf}${refV.source.short}, ${ref.year}`, title: cap(refV, ref.year) });
@@ -117,6 +118,7 @@ function YearSplit({ model, item, facts, highlight, eu, v, words }: Ctx & { v: V
     <SectorChartCard
       title={`${words[0].toUpperCase()}${words.slice(1)}, ${first === last ? first : `${first}-${last}`}`}
       vars={[{ var: v.id, item: item.slug, window: first === last ? null : [first, last], year: first === last ? first : null }]}
+      subExtra={<HowToRead>{SPLIT_READING} One row per year; later rows are the IEA&apos;s projections, so you can see whether the split is expected to change.</HowToRead>}
       table={() => <SplitTable rows={rows} caption={`${item.label} ${words} by year`} />}
       csv={() => ({ name: `${item.slug}-${words}-by-year`, text: rowsToCsv(rows.map((r) => ({ mineral: item.slug, var_id: v.id, year: r.cols.year, projection: !!r.projection, ...Object.fromEntries(Object.entries(r.parts).map(([k, x]) => [`share_${k}`, x])), top1: r.cols.top1, top3: r.cols.top3, hhi: r.cols.hhi, source: r.cols.source }))) })}
       legend={<GroupLegend projection={rows.some((r) => r.projection)} highlight={highlight?.name ?? null} />}
@@ -145,6 +147,7 @@ function Slope(c: Ctx & { vars: VarInfo[] }) {
     <SectorChartCard
       title={`The largest holders' shares of ${words}, ${first} → ${last}`}
       vars={[{ var: v.id, item: item.slug, window: [first, last] }]}
+      subExtra={<HowToRead>Each line is one of the largest holders: its share of world {words}, year by year, observed and then projected. A rising line means the economy is expected to hold more of the world total.</HowToRead>}
       tools={
         vars.length > 1 ? (
           <Segmented label="Stage" hideLabel value={v.id} options={vars.map((x) => ({ value: x.id, label: x.id === REFINING_VAR ? 'Refining' : 'Mining' }))} onChange={setWhich} />
@@ -220,6 +223,7 @@ function Scatter({ model, item, facts, highlight, eu, prod, res }: Ctx & { prod:
     <SectorChartCard
       title="Share of reserves against share of production"
       vars={[{ var: prod.id, item: item.slug, year: yp }, { var: res.id, item: item.slug, year: yr }]}
+      subExtra={<HowToRead>Each dot is one economy: further right, a larger share of world mine production; higher, a larger share of world reserves. Dots above the diagonal hold more of the reserves than they mine today (room to grow); dots below mine more than their share of reserves.</HowToRead>}
       table={() => (
         <TableView rows={pts} caption="Shares of world production and reserves" search cols={[{ id: 'e', header: 'Economy', value: (p) => p.name }, { id: 'x', header: `Share of mine production, ${yp}`, value: (p) => p.x, cell: (p) => fmtShare(p.x), num: true }, { id: 'y', header: `Share of reserves, end-${yr}`, value: (p) => p.y, cell: (p) => fmtShare(p.y), num: true }]} />
       )}
@@ -293,7 +297,7 @@ function Trade({ model, item, facts, highlight, eu }: Ctx) {
         <div className="space-y-1">
           {m && (
             <p>
-              HHI {fmtHhi(m.conc.hhi, m.conc.hhi_lower_bound)} · coalition {fmtShare(m.conc.split.core + m.conc.split.partner)} · China {fmtShare(m.conc.split.china)}
+              concentration index {fmtHhi(m.conc.hhi, m.conc.hhi_lower_bound)} · coalition {fmtShare(m.conc.split.core + m.conc.split.partner)} · China {fmtShare(m.conc.split.china)}
               {mirror ? ` · ${mirror} exporters seen only through partners' declarations ("mirror")` : ''}.
             </p>
           )}
@@ -326,7 +330,7 @@ function WhoUses({ model, item }: Ctx) {
     a: r.projected,
     b: r.observed,
     group: 'neutral',
-    aLabel: Number.isFinite(r.projected) ? `${kt(r.projected)} (${r.projectedYear} ${r.scenario}, projection)` : '–',
+    aLabel: Number.isFinite(r.projected) ? `${kt(r.projected)} (${r.projectedYear} ${scenarioWords(r.scenario)} projection)` : '–',
     bLabel: `${kt(r.observed)} (${r.observedYear})${r.share !== null ? ` · ${fmtShare(r.share)} of clean-energy demand` : ''}`,
     href: r.tech ? link(`/sector/${r.tech}`) : undefined,
   }));
@@ -334,7 +338,7 @@ function WhoUses({ model, item }: Ctx) {
     <SectorChartCard
       title={`Who uses ${lc(item.label)}`}
       vars={[{ var: 'consumption.mineral_demand', item: item.slug, window: projYear ? [obsYear, projYear] : null, year: projYear ? null : obsYear }]}
-      subExtra="IEA clean-energy demand by technology, kt: the observed year (filled) against the STEPS projection (hollow). Rows link to the technology chains."
+      subExtra={<HowToRead>Each row is one technology; the filled dot is how many kilotonnes of {lc(item.label)} it used in the latest observed year, the hollow dot the IEA projection under today’s stated policies (the Stated Policies Scenario), not a forecast. The further right, the more it uses. Click a row for that technology’s supply chain.</HowToRead>}
       table={() => (
         <TableView
           rows={rows}
@@ -342,16 +346,16 @@ function WhoUses({ model, item }: Ctx) {
           cols={[
             { id: 't', header: 'Technology', value: (r) => r.label, cell: (r) => (r.tech ? <Link className="link" to={link(`/sector/${r.tech}`)}>{r.label}</Link> : r.label) },
             { id: 'o', header: `Demand ${obsYear}, kt`, value: (r) => r.observed, num: true },
-            { id: 'p', header: projYear ? `Demand ${projYear} ${scenario} (projection), kt` : 'Projection, kt', value: (r) => (Number.isFinite(r.projected) ? r.projected : null), num: true },
+            { id: 'p', header: projYear ? `Demand ${projYear}, ${scenarioWords(scenario)} projection, kt` : 'Projection, kt', value: (r) => (Number.isFinite(r.projected) ? r.projected : null), num: true },
             { id: 's', header: 'Share of clean-energy demand', value: (r) => r.share, cell: (r) => fmtShare(r.share), num: true },
           ]}
         />
       )}
       csv={() => ({ name: `${item.slug}-demand-by-technology`, text: rowsToCsv(rows.map((r) => ({ mineral: item.slug, technology: r.label, tech_slug: r.tech, observed_year: r.observedYear, observed_kt: r.observed, projected_year: r.projectedYear, scenario: r.scenario, projected_kt: Number.isFinite(r.projected) ? r.projected : null, share_of_clean_demand: r.share, source: 'IEA Critical Minerals Dataset' }))) })}
-      notes={total ? <p>Total clean-energy demand {kt(total.observed)} in {total.observedYear}{Number.isFinite(total.projected) ? `; ${kt(total.projected)} in ${total.projectedYear} (${total.scenario}, projection)` : ''}.</p> : undefined}
+      notes={total ? <p>Total clean-energy demand {kt(total.observed)} in {total.observedYear}{Number.isFinite(total.projected) ? `; ${kt(total.projected)} in ${total.projectedYear} (${scenarioWords(total.scenario)} projection)` : ''}.</p> : undefined}
       summary={`${rows[0].label} uses the most ${lc(item.label)} among clean technologies (${kt(rows[0].observed)} in ${obsYear}).`}
     >
-      <Dumbbell rows={dumb} xLabel="Demand, kt" aName={projYear ? `${projYear} ${scenario} (projection)` : 'Projection'} bName={String(obsYear)} ariaLabel={`Demand for ${lc(item.label)} by technology`} onSelect={(r) => r.href && navigate(r.href)} />
+      <Dumbbell rows={dumb} xLabel="Demand, kt" aName={projYear ? `${projYear} ${scenarioWords(scenario)} projection` : 'Projection'} bName={String(obsYear)} ariaLabel={`Demand for ${lc(item.label)} by technology`} onSelect={(r) => r.href && navigate(r.href)} />
     </SectorChartCard>
   );
 }
@@ -370,7 +374,7 @@ function Body(c: Ctx) {
       <Section id="snapshot" title="Snapshot">
         <Snapshot {...c} />
       </Section>
-      <Section id="mining-refining" title="Mining and refining" sub="IEA base case: the observed year and the projections. IEA lists the six largest producers, so the rest is not attributed and the HHI is a lower bound.">
+      <Section id="mining-refining" title="Mining and refining" sub="IEA base case: the observed year and the projections. IEA lists the six largest producers, so the rest is not attributed and the concentration index (HHI) is a lower bound.">
         <MiningRefining {...c} />
       </Section>
       <Section id="reserves" title="Reserves and production" sub="USGS Mineral Commodity Summaries: reserves and mine production by country, each against the USGS world total.">
@@ -381,8 +385,8 @@ function Body(c: Ctx) {
       </Section>
       {hasPrice && commodity && (
         <Section id="prices" title="Prices" sub="World prices: the same for every country.">
-          <PriceBoard items={[commodity]} title="Price" />
           <MonthlyPrices items={[commodity]} />
+          <PriceBoard items={[commodity]} title="Price" />
         </Section>
       )}
       <Section id="uses" title="Who uses it">

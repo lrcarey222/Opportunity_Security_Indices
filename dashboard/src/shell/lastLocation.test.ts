@@ -1,12 +1,14 @@
-// Module-tab and Home-button targets (spec_sector.md 2.5, 2.6): pure functions over a location and
-// the remembered last locations.
+// Module-tab and Home-button targets (spec_sector.md 2.5, 2.6; spec_country.md A2.1, A2.2): pure
+// functions over a location and the remembered last locations.
 
 import { afterEach, describe, expect, it } from 'vitest';
 import {
-  lastLocations, moduleResumeHref, rememberLocation, resetLastLocations, sectorCarry, sectorProfileHref, sectorTabHref, strategicCarry,
-  strategicCountry, strategicTabHref,
+  countryProfileHref, countryTabHref, lastLocations, moduleResumeHref, rememberLocation, resetLastLocations, sectorCarry, sectorCountry,
+  sectorProfileHref, sectorTabHref, strategicCarry, strategicCountry, strategicTabHref,
 } from './lastLocation.ts';
-import { isSectorProfilePath, placeOf, sectorCellOfPath, sectorNavKeyOf, strategicNavOf } from './modules.ts';
+import {
+  COUNTRY_NAV, countryIsoOfPath, countryNavKeyOf, isSectorProfilePath, MODULES, placeOf, sectorCellOfPath, sectorNavKeyOf, STRATEGIC_NAV, strategicNavOf,
+} from './modules.ts';
 import { isLegacyStrategicSearch } from './HomeOrLegacy.tsx';
 import { pageTitle } from './title.ts';
 import { RESERVED_SEGMENTS, STAGE_SLUGS, TECH_LABELS, TECH_SLUGS, techSlugOf } from '../sector/contract.ts';
@@ -14,7 +16,7 @@ import { SHELL_RESERVED_SEGMENTS, SHELL_STAGE_SLUGS, SHELL_TECH_SLUGS } from './
 
 afterEach(() => resetLastLocations());
 
-const none = { strategic: null, sector: null, sectorCell: null };
+const none = { strategic: null, sector: null, sectorCell: null, country: null, countryIso: null };
 
 describe('places and nav keys', () => {
   it('classifies paths', () => {
@@ -24,6 +26,39 @@ describe('places and nav keys', () => {
     for (const p of ['/overview', '/country/USA', '/space', '/strategic', '/partners/CAN', '/network/batteries-midstream', '/methods', '/data']) expect(placeOf(p)).toBe('strategic');
     expect(placeOf('/sectors')).toBeNull();
     expect(placeOf('/nothing')).toBeNull();
+    // Country Insights lives at /countries; the Strategic "Country scores" view keeps /country
+    for (const p of ['/countries', '/countries/about', '/countries/JPN', '/countries/usa/memo']) expect(placeOf(p)).toBe('country');
+    expect(placeOf('/country')).toBe('strategic');
+    expect(placeOf('/glossary')).toBeNull();
+  });
+  it("three modules in the user's order; the Strategic nav labels spell their views out", () => {
+    expect(MODULES.map((m) => [m.id, m.label, m.tag, m.home])).toEqual([
+      ['sector', 'Sector Insights', 'DESCRIPTIVE DATA', '/sector'],
+      ['strategic', 'Strategic Insights', 'NORMATIVE PRIORITISATION', '/overview'],
+      ['country', 'Country Insights', 'COUNTRY BRIEFING', '/countries'],
+    ]);
+    expect(STRATEGIC_NAV.map((n) => n.label)).toEqual(['Overview', 'Country scores', 'Security vs opportunity', 'Strategic Index', 'Partners', 'Allied network', 'Methods', 'Data']);
+    expect(STRATEGIC_NAV.map((n) => n.to)).toEqual(['/overview', '/country', '/space', '/strategic', '/partners', '/network', '/methods', '/data']);
+    expect(COUNTRY_NAV).toEqual([
+      { key: 'countries', to: '/countries', label: 'Countries' },
+      { key: 'profile', to: '/countries/USA', label: 'Country profile' },
+      { key: 'about', to: '/countries/about', label: 'About & data' },
+    ]);
+  });
+  it('Country paths: the ISO3 of a profile or memo, and the nav entry', () => {
+    expect(countryIsoOfPath('/countries/JPN')).toBe('JPN');
+    expect(countryIsoOfPath('/countries/jpn/memo')).toBe('JPN');
+    expect(countryIsoOfPath('/countries/JPN/other')).toBeNull();
+    expect(countryIsoOfPath('/countries/about')).toBeNull();
+    expect(countryIsoOfPath('/countries/JAPAN')).toBeNull();
+    expect(countryIsoOfPath('/countries')).toBeNull();
+    expect(countryIsoOfPath('/country/JPN')).toBeNull();
+    expect(countryNavKeyOf('/countries')).toBe('countries');
+    expect(countryNavKeyOf('/countries/about')).toBe('about');
+    expect(countryNavKeyOf('/countries/DEU')).toBe('profile');
+    expect(countryNavKeyOf('/countries/DEU/memo')).toBe('profile');
+    expect(countryNavKeyOf('/countries/1234')).toBeNull();
+    expect(countryNavKeyOf('/overview')).toBeNull();
   });
   it('maps Sector paths to their nav entry', () => {
     expect(sectorNavKeyOf('/sector')).toBe('sectors');
@@ -55,6 +90,8 @@ describe('places and nav keys', () => {
     expect(pageTitle('')).toBe('Allied Industrial Base Explorer | NEIS Center');
     expect(pageTitle('Overview')).toBe('Overview | Allied Industrial Base Explorer | NEIS Center');
     expect(pageTitle('Batteries — Midstream', 'Sector Insights')).toBe('Batteries — Midstream | Sector Insights | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('Japan', 'country')).toBe('Japan | Country Insights | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('', 'Country Insights')).toBe('Country Insights | Allied Industrial Base Explorer | NEIS Center');
   });
   it("the shell's slug copies equal the contract's", () => {
     expect(SHELL_TECH_SLUGS).toEqual([...TECH_SLUGS]);
@@ -115,9 +152,10 @@ describe('tab targets (2.6)', () => {
     rememberLocation('/overview', '?h=80');
     rememberLocation('/', '');
     rememberLocation('/nothing', '?x=1');
+    rememberLocation('/glossary', '?module=country');
     rememberLocation('/sector/solar/upstream/CHN', '?c=CHN');
     rememberLocation('/sector/explore/trade', '');
-    expect(lastLocations()).toEqual({ strategic: '/overview?h=80', sector: '/sector/explore/trade', sectorCell: '/sector/solar/upstream' });
+    expect(lastLocations()).toEqual({ strategic: '/overview?h=80', sector: '/sector/explore/trade', sectorCell: '/sector/solar/upstream', country: null, countryIso: null });
     expect(moduleResumeHref('strategic')).toBe('/overview?h=80');
     expect(moduleResumeHref('sector')).toBe('/sector/explore/trade');
     expect(sectorProfileHref()).toBe('/sector/solar/upstream');
@@ -125,5 +163,50 @@ describe('tab targets (2.6)', () => {
     expect(moduleResumeHref('sector')).toBe('/sector');
     expect(moduleResumeHref('strategic')).toBe('/overview');
     expect(sectorProfileHref()).toBe('/sector/batteries/midstream');
+  });
+});
+
+describe('Country Insights tab targets (A2.2)', () => {
+  it('Strategic -> COUNTRY: the country of /country, /strategic or /partners; else the last Country location; else /countries', () => {
+    expect(countryTabHref('/country/USA', '?h=80', none)).toBe('/countries/USA');
+    expect(countryTabHref('/strategic/jpn', '', none)).toBe('/countries/JPN');
+    expect(countryTabHref('/partners/DEU', '?h=80', none)).toBe('/countries/DEU');
+    expect(countryTabHref('/overview', '?h=80', none)).toBe('/countries');
+    expect(countryTabHref('/overview', '', { ...none, country: '/countries/KOR?x=1', countryIso: 'KOR' })).toBe('/countries/KOR?x=1');
+  });
+  it('Sector -> COUNTRY: the highlighted country (path or c, never the EU aggregate)', () => {
+    expect(countryTabHref('/sector/batteries/midstream/CHN', '', none)).toBe('/countries/CHN');
+    expect(countryTabHref('/sector/explore/trade', '?c=USA&m=trade.exports', none)).toBe('/countries/USA');
+    expect(countryTabHref('/sector', '?c=EUU', none)).toBe('/countries');
+    expect(countryTabHref('/sector/minerals/lithium', '', { ...none, country: '/countries/about' })).toBe('/countries/about');
+    expect(sectorCountry('/sector/batteries/midstream/fra', '')).toBe('FRA');
+    expect(sectorCountry('/sector/minerals/lithium', '?c=xx')).toBeNull();
+  });
+  it('inside Country the tab is its landing; Home resumes; PROFILE follows the country on screen, else the last one, else USA', () => {
+    expect(countryTabHref('/countries/JPN', '', none)).toBe('/countries');
+    expect(countryTabHref('/', '', none)).toBe('/countries');
+    expect(countryProfileHref('/countries/DEU/memo', none)).toBe('/countries/DEU');
+    expect(countryProfileHref('/countries', { ...none, countryIso: 'JPN' })).toBe('/countries/JPN');
+    expect(countryProfileHref('/countries/about', none)).toBe('/countries/USA');
+  });
+  it('Country -> SECTOR adds the profile country as the highlight; Country -> STRATEGIC resumes unchanged', () => {
+    expect(sectorTabHref('/countries/JPN', '', none)).toBe('/sector?c=JPN');
+    expect(sectorTabHref('/countries/JPN/memo', '', { ...none, sector: '/sector/solar/midstream?c=USA' })).toBe('/sector/solar/midstream?c=JPN');
+    expect(sectorTabHref('/countries', '', { ...none, sector: '/sector/explore/trade' })).toBe('/sector/explore/trade');
+    expect(sectorTabHref('/countries/about', '', none)).toBe('/sector');
+    expect(strategicTabHref('/countries/JPN', '', { ...none, strategic: '/partners/CAN?h=80' })).toBe('/partners/CAN?h=80');
+    expect(strategicTabHref('/countries/JPN', '', none)).toBe('/overview');
+  });
+  it('remembers the last Country location and profile', () => {
+    rememberLocation('/countries/JPN', '');
+    rememberLocation('/countries/about', '');
+    expect(lastLocations().country).toBe('/countries/about');
+    expect(lastLocations().countryIso).toBe('JPN');
+    expect(moduleResumeHref('country')).toBe('/countries/about');
+    expect(countryProfileHref('/countries')).toBe('/countries/JPN');
+    rememberLocation('/countries/deu/memo', '');
+    expect(lastLocations().countryIso).toBe('DEU');
+    resetLastLocations();
+    expect(moduleResumeHref('country')).toBe('/countries');
   });
 });

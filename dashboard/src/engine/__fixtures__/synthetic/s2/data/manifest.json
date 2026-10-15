@@ -1,7 +1,7 @@
 {
   "schema": "osi-dashboard",
   "schema_version": 1,
-  "bundle_id": "268551cb03cae1010858d4f30acc3d7b",
+  "bundle_id": "bb6ab1b52bc749b5d9b960fcc7cdc4df",
   "created": "2026-01-01T00:00:00Z",
   "git_commit": null,
   "osi_branch": null,
@@ -13,6 +13,7 @@
   "flags": {
     "pillar_rule": true,
     "geo_alignment_in_fs": true,
+    "fs_cmfdi": true,
     "partner_pillar_consistent": false,
     "network_aggregation": true,
     "network_consistent": false,
@@ -66,7 +67,8 @@
       "es_need": 2,
       "eo_partner": 2,
       "outbound_index": 2,
-      "geo_alignment": 2
+      "geo_alignment": 2,
+      "chinese_parent_exposure": 1
     },
     "fs_penalty": 0.10000000000000001,
     "po_weights": {
@@ -206,7 +208,8 @@
         "es_need": 2,
         "eo_partner": 2,
         "outbound_index": 2,
-        "geo_alignment": 2
+        "geo_alignment": 2,
+        "chinese_parent_exposure": 1
       },
       "fs_penalty": 0.10000000000000001,
       "po_weights": {
@@ -282,10 +285,10 @@
   "chunks": [
     {
       "name": "core",
-      "file": "core.fef6ad56.osb",
+      "file": "core.258fac79.osb",
       "bytes": 49392,
-      "bytes_gz": 9749,
-      "md5": "fef6ad560d2ed8846ab336199eff636e",
+      "bytes_gz": 9745,
+      "md5": "258fac79a625e497ea68995a51a4b146",
       "initial": true
     },
     {
@@ -298,27 +301,27 @@
     },
     {
       "name": "partner",
-      "file": "partner.5589151d.osb",
-      "bytes": 13280,
-      "bytes_gz": 5864,
-      "md5": "5589151d4cdaaaa4952407b2a2d07fe9",
+      "file": "partner.afb8ccea.osb",
+      "bytes": 14256,
+      "bytes_gz": 6082,
+      "md5": "afb8cceac15fda729ed01d5eae420ff7",
       "initial": false
     },
     {
       "name": "network",
-      "file": "network.948e00ee.osb",
+      "file": "network.d581cf5a.osb",
       "bytes": 26968,
-      "bytes_gz": 7373,
-      "md5": "948e00ee3f0809805893885dac02a733",
+      "bytes_gz": 7378,
+      "md5": "d581cf5aa98d5ae4d72be336f2527822",
       "initial": false
     }
   ],
   "budget": {
-    "initial_gz": 14876,
-    "all_gz": 32324,
+    "initial_gz": 14900,
+    "all_gz": 32543,
     "limit_initial_gz": 3145728,
     "limit_all_gz": 26214400,
-    "initial_files": ["manifest.json", "core.fef6ad56.osb"],
+    "initial_files": ["manifest.json", "core.258fac79.osb"],
     "note": "initial = manifest.json + the initial chunks; npm run budget adds the app's JS, CSS and fonts"
   },
   "encoding": {

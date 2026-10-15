@@ -15,6 +15,7 @@
 // `--sector-bar-h` on :root, so sticky elements below it (the profile's section nav) stick under it.
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { CountrySelect, type CountryOption } from '../../components/CountrySelect.tsx';
 import { Select, Switch, type Option } from '../../components/ui.tsx';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
@@ -110,6 +111,11 @@ function Controls({ picker, highlight, eu, idBase }: Pick<SectorBarProps, 'picke
           <button type="button" className="btn-quiet mb-1" onClick={() => highlight.onChange(null)} aria-label={`Clear the highlight (${name})`}>
             Clear
           </button>
+        )}
+        {highlight.value && highlight.value !== 'EUU' && (
+          <Link className="link mb-1.5 ml-2 whitespace-nowrap text-sm" to={`/countries/${highlight.value}`}>
+            {name} in Country Insights →
+          </Link>
         )}
       </div>
       <div className="pb-1.5">

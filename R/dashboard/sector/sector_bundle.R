@@ -8,7 +8,9 @@
 #   mineral_demand, eu_outside_coalition, item_units (var, item_key, unit), roster_extra (roster, geo),
 #   facts, fact_notes (var, item_key, geo, year, note: per-fact notes, a dict.caveats id each; or NULL),
 #   world, series (list(obs, world, monthly, capacity) or NULL),
-#   trade (named by tech: list(flows, declared, codes, excluded)), eu_intra (item_key, year, intra),
+#   trade (named by tech: list(flows, declared, codes, excluded, and optionally cty_sub
+#   (sector_trade_sub_table()) and sub_intra; sector_assemble() adds sub_summary)),
+#   eu_intra (item_key, year, intra),
 #   policy (list(pams, text, tags, cat)), fdi (sector_fdi_part(): CM-FDI projects, sources, flows,
 #   groups, years; or NULL), reported (exporter-reported trade per cell, or NULL),
 #   licensed (item_key, family, sources) or NULL, headline_sources (named list), fill (placeholders).
@@ -40,6 +42,16 @@ sector_data_keys <- function(parts, geo) {
                      geo_kind = kind(fl$exporter[ok]))
     })
     out <- c(out, yrs)
+    # Trade by sub-component (trade.cty_sub): economies with a value on the side (WLD rows excluded).
+    cs <- parts$trade[[tech]]$cty_sub
+    if (!is.null(cs) && nrow(cs)) {
+      for (side in c("exports", "imports")) {
+        ok <- cs$geo != "WLD" & !is.na(cs[[side]])
+        if (!any(ok)) next
+        out <- c(out, list(tibble::tibble(var = paste0("trade.sub_", side), item_key = cs$item_key[ok], chunk = "trade",
+                                          year = as.integer(cs$year[ok]), geo = cs$geo[ok], geo_kind = kind(cs$geo[ok]))))
+      }
+    }
   }
   pl <- parts$policy
   if (!is.null(pl$pams) && nrow(pl$pams)) {
@@ -157,6 +169,11 @@ sector_assemble <- function(parts, dict, ship_vars = NULL) {
     world_missing <- c(world_missing, sw$missing)
   }
   summary <- sector_summary(parts$facts, parts$world, geo, vars, parts$eu_intra)
+  # trade.sub_summary: the same rules per sub-component of each trade cell.
+  for (tech in names(parts$trade)) {
+    tr <- parts$trade[[tech]]
+    if (!is.null(tr$cty_sub) && nrow(tr$cty_sub)) parts$trade[[tech]]$sub_summary <- sector_trade_sub_summary(tr$cty_sub, tr$sub_intra, geo, vars)
+  }
   # top1_geo stays a dims.geo row number here; sector_chunks() makes it 0-based.
   coverage <- sector_coverage(items, vars, cell_vars, data, rbind(parts$item_links[c("item_key", "cell")],
                                                                   tibble::tibble(item_key = "none:none", cell = cells$slug)),

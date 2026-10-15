@@ -5,7 +5,8 @@ import { defineConfig } from 'vitest/config';
 // Sector contract, derivations and formats), ui (jsdom; the app shell, every view, the Sector views
 // and chart kit), parity-synthetic (committed fixtures, CI), parity-real (local real fixtures from
 // scripts/86; skipped when absent) and sector-real (the integrator's parity of the decoded real Sector
-// bundle with Appendix B and meta.summary; skipped when public/data/sector/manifest.json is absent).
+// bundle with Appendix B and meta.summary; skipped when public/data/sector/manifest.json is absent) and
+// country-real (the real Country bundle: contract on every sheet, values against the Strategic chunks, memo files).
 export default defineConfig({
   test: {
     passWithNoTests: true,
@@ -15,7 +16,7 @@ export default defineConfig({
           name: 'unit',
           environment: 'node',
           include: ['src/**/*.test.ts'],
-          exclude: ['src/**/*.parity.test.ts', 'src/**/*.sector.test.ts', 'node_modules/**'],
+          exclude: ['src/**/*.parity.test.ts', 'src/**/*.sector.test.ts', 'src/**/*.country.test.ts', 'node_modules/**'],
           testTimeout: 60_000,
         },
       },
@@ -55,6 +56,18 @@ export default defineConfig({
           environment: 'node',
           pool: 'forks',
           include: ['src/sector/__tests__/real.sector.test.ts'],
+          testTimeout: 600_000,
+          hookTimeout: 600_000,
+        },
+      },
+      {
+        // the Country builder's checks of the real Country bundle (public/data/country/; skipped without it)
+        test: {
+          name: 'country-real',
+          environment: 'node',
+          pool: 'forks',
+          include: ['src/country/__tests__/real.country.test.ts'],
+          env: { COUNTRY_REAL: '1' },
           testTimeout: 600_000,
           hookTimeout: 600_000,
         },

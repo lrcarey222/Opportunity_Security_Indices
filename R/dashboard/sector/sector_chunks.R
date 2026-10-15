@@ -152,6 +152,18 @@ sector_chunks <- function(b) {
     techs = d$techs[c("slug", "label", "tech_blurb")],
     item_units = tibble::tibble(var = vi(b$item_units$var), item = ii(b$item_units$item_key), unit = as.character(b$item_units$unit))
   )
+  # Optional (sector_data change 2026-10-12): the cells' basket notes and the HHI reference thresholds.
+  cc <- d$cell_caveats
+  if (!is.null(cc) && nrow(cc)) {
+    if (length(setdiff(cc$slug, d$cells$slug))) stop("sector_chunks(): cell caveats for cells not in dict.cells")
+    dict$cell_caveats <- tibble::tibble(slug = as.character(cc$slug), caveat = as.character(cc$caveat))
+  }
+  hr <- d$hhi_refs
+  if (!is.null(hr) && nrow(hr)) {
+    dict$hhi_refs <- tibble::tibble(id = as.character(hr$id), value = as.double(hr$value), points = as.integer(hr$points),
+                                    side = as.character(hr$side), label = as.character(hr$label), authority = as.character(hr$authority),
+                                    document = as.character(hr$document), year = as.integer(hr$year))
+  }
   sm <- b$summary
   meta <- list(
     dims = dims,
@@ -205,6 +217,31 @@ sector_chunks <- function(b) {
       excluded = tibble::tibble(item = ii(tr$excluded$item_key), sub_sector = as.character(tr$excluded$sub_sector),
                                 hs6 = as.character(tr$excluded$hs6), reason = as.character(tr$excluded$reason))
     ))
+    # Trade by sub-component (optional tables; sector_data change 2026-10-12).
+    tt <- out[[paste0("sector-trade-", tech)]]$trade
+    if (!is.null(tr$cty_sub) && nrow(tr$cty_sub)) {
+      cs <- tibble::tibble(item = ii(tr$cty_sub$item_key), sub_sector = as.character(tr$cty_sub$sub_sector), geo = gi(tr$cty_sub$geo),
+                           year = as.integer(tr$cty_sub$year), exports = as.double(tr$cty_sub$exports), imports = as.double(tr$cty_sub$imports))
+      tt$cty_sub <- cs[order(cs$item, cs$sub_sector, cs$geo, cs$year, method = "radix"), , drop = FALSE]
+    }
+    if (!is.null(tr$sub_intra) && nrow(tr$sub_intra)) {
+      si <- tibble::tibble(item = ii(tr$sub_intra$item_key), sub_sector = as.character(tr$sub_intra$sub_sector),
+                           year = as.integer(tr$sub_intra$year), intra = as.double(tr$sub_intra$intra))
+      tt$sub_intra <- si[order(si$item, si$sub_sector, si$year, method = "radix"), , drop = FALSE]
+    }
+    ss <- tr$sub_summary
+    if (!is.null(ss) && nrow(ss)) {
+      st <- tibble::tibble(
+        item = ii(ss$item_key), sub_sector = as.character(ss$sub_sector), var = vi(ss$var), year = as.integer(ss$year),
+        eu_mode = as.character(ss$eu_mode), W = as.double(ss$W), n = as.integer(ss$n), top1_geo = as.integer(ss$top1_geo - 1L),
+        top1_share = as.double(ss$top1_share), top3_share = as.double(ss$top3_share), hhi = as.double(ss$hhi),
+        hhi_lower_bound = as.logical(ss$hhi_lower_bound), eff_n = as.double(ss$eff_n), china = as.double(ss$china),
+        core = as.double(ss$core), partner = as.double(ss$partner), rest = as.double(ss$rest),
+        unattributed = as.double(ss$unattributed), growth = as.double(ss$growth)
+      )
+      tt$sub_summary <- st[order(st$item, st$sub_sector, st$var, st$year, match(st$eu_mode, c("members", "bloc")), method = "radix"), , drop = FALSE]
+    }
+    out[[paste0("sector-trade-", tech)]]$trade <- tt
   }
 
   pl <- b$policy

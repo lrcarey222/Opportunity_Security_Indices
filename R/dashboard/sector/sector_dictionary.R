@@ -147,6 +147,23 @@ sector_dictionary_validate <- function(d, var_ids = NULL) {
     probe <- probe[!is.na(probe)]
     if (any(grepl(SECTOR_NORMATIVE_RE, probe, ignore.case = TRUE))) add(where, "names an index, weight or contribution")
   }
+  # Cell-level basket notes (dict.cell_caveats) and the competition-authority HHI thresholds
+  # (dict.hhi_refs), both optional.
+  for (cl in d$cells) {
+    bad <- setdiff(unlist(cl$caveats), caveat_ids)
+    if (length(bad)) add("cells ", cl$slug, ": caveats not in caveats: ", paste(bad, collapse = ", "))
+  }
+  hr_ids <- character()
+  for (h in d$hhi_refs %||% list()) {
+    for (f in c("id", "value", "points", "side", "label", "authority", "document", "year")) {
+      if (is.null(h[[f]]) || (is.character(h[[f]]) && !nzchar(h[[f]]))) add("hhi_refs ", sector_null_to_na(h$id), ": no ", f)
+    }
+    if (!is.null(h$value) && (!is.numeric(h$value) || h$value <= 0 || h$value >= 1)) add("hhi_refs ", h$id, ": value must be in (0, 1)")
+    if (!is.null(h$value) && !is.null(h$points) && abs(h$value * 10000 - h$points) > 1e-9) add("hhi_refs ", h$id, ": points must be value x 10,000")
+    if (!is.null(h$side) && !h$side %in% c("above", "below")) add("hhi_refs ", h$id, ": side must be above or below")
+    hr_ids <- c(hr_ids, sector_null_to_na(h$id))
+  }
+  if (anyDuplicated(hr_ids)) add("hhi_refs: duplicate id ", paste(unique(hr_ids[duplicated(hr_ids)]), collapse = ", "))
   default_vars <- vapply(d$themes, function(t) sector_null_to_na(t$default_var), character(1))
   if (length(setdiff(default_vars, var_ids_seen))) add("themes: default_var not in vars: ", paste(setdiff(default_vars, var_ids_seen), collapse = ", "))
   for (iu in d$item_units %||% list()) {
@@ -167,7 +184,8 @@ sector_pipe <- function(x) {
 }
 
 # The dictionary as tables. `fill`: named values for {placeholders}. Returns list(vars, units,
-# sources, caveats, themes, families, techs, cells, item_units, price_unit_ids). `vars` carries the
+# sources, caveats, themes, families, techs, cells, cell_caveats (slug, caveat: the cells' `caveats`
+# lists, dictionary order), hhi_refs (or NULL), item_units, price_unit_ids). `vars` carries the
 # contract columns of dict.vars plus internal ones (link_stage, parity_*), which the chunk builder
 # drops.
 sector_dictionary_tables <- function(d, fill = list()) {
@@ -212,11 +230,23 @@ sector_dictionary_tables <- function(d, fill = list()) {
   techs <- dplyr::bind_rows(lapply(d$techs, function(t) tibble::tibble(slug = t$slug, label = unname(SECTOR_TECH_LABELS[t$slug]), tech_blurb = chr(t$tech_blurb))))
   techs <- techs[match(SECTOR_TECH_SLUGS, techs$slug), , drop = FALSE]
   cells <- dplyr::bind_rows(lapply(d$cells, function(c) tibble::tibble(slug = c$slug, cell_blurb = chr(c$cell_blurb), section_cards = chr(c$section_cards))))
+  cell_caveats <- dplyr::bind_rows(lapply(d$cells, function(c) {
+    cv <- unlist(c$caveats)
+    if (!length(cv)) return(NULL)
+    tibble::tibble(slug = c$slug, caveat = as.character(cv))
+  }))
+  if (!nrow(cell_caveats)) cell_caveats <- tibble::tibble(slug = character(), caveat = character())
+  hhi_refs <- dplyr::bind_rows(lapply(d$hhi_refs %||% list(), function(h) tibble::tibble(
+    id = h$id, value = as.double(h$value), points = as.integer(h$points), side = h$side, label = h$label,
+    authority = h$authority, document = h$document, year = as.integer(h$year)
+  )))
+  if (!nrow(hhi_refs)) hhi_refs <- NULL
   item_units <- dplyr::bind_rows(lapply(d$item_units %||% list(), function(u) tibble::tibble(var = u$var, axis = u$axis, item = u$item, unit = u$unit)))
   if (!nrow(item_units)) item_units <- tibble::tibble(var = character(), axis = character(), item = character(), unit = character())
   price_unit_ids <- unlist(d$price_unit_ids %||% list())
   list(vars = vars, units = units, sources = sources, caveats = caveats, themes = themes, families = families,
-       techs = techs, cells = cells, item_units = item_units, price_unit_ids = price_unit_ids)
+       techs = techs, cells = cells, cell_caveats = cell_caveats, hhi_refs = hhi_refs, item_units = item_units,
+       price_unit_ids = price_unit_ids)
 }
 
 # Placeholders still unfilled in the tables (the export stops on any).

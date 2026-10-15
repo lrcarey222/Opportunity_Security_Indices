@@ -1,8 +1,9 @@
 // The shared header (spec_sector.md 2.2).
 //
 //   Tier 1 (every page): the NEIS logo (neiscenter.org), a hairline, the eyebrow "Allied Industrial
-//          Base Explorer" linking to Home, and the module tabs <nav aria-label="Modules"> (active:
-//          white, 2 px orange underline, aria-current="true"; none on Home).
+//          Base Explorer" linking to Home, and the three module tabs <nav aria-label="Modules">
+//          (Sector, Strategic, Country; active: white, 2 px orange underline, aria-current="true";
+//          none on Home or the shared Glossary).
 //   Tier 2 (inside a module, >= 1024 px): <nav aria-label="{module} views"> with the links the module
 //          registered (ModuleNav.tsx), or the static fallback until it does.
 //   Below 1024 px: the logo and a Menu button; the panel pushes the content down and lists the
@@ -13,16 +14,19 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Logo } from '../components/Logo.tsx';
 import { useMediaQuery } from './useMediaQuery.ts';
-import { MODULES, placeOf, SECTOR_NAV, sectorCellOfPath, sectorNavKeyOf, STRATEGIC_NAV, strategicNavOf, type ModuleId } from './modules.ts';
+import { COUNTRY_NAV, countryNavKeyOf, MODULES, placeOf, SECTOR_NAV, sectorCellOfPath, sectorNavKeyOf, STRATEGIC_NAV, strategicNavOf, type ModuleId } from './modules.ts';
 import { useModuleNav, type ModuleNavItem } from './ModuleNav.tsx';
-import { sectorCarry, sectorProfileHref, sectorTabHref, strategicCarry, strategicTabHref } from './lastLocation.ts';
-import { prefetchStrategic } from './prefetch.ts';
+import { countryProfileHref, countryTabHref, sectorCarry, sectorProfileHref, sectorTabHref, strategicCarry, strategicTabHref } from './lastLocation.ts';
+import { prefetchCountry, prefetchStrategic } from './prefetch.ts';
 
 /** The tier-2 links of a module: the registered ones, else the static list; `active` filled in. */
 export function moduleItems(module: ModuleId, registered: { module: ModuleId | null; items: readonly ModuleNavItem[] }, pathname: string, search: string): ModuleNavItem[] {
   let items: ModuleNavItem[];
   if (registered.module === module && registered.items.length) items = registered.items.map((i) => ({ ...i }));
-  else if (module === 'strategic') {
+  else if (module === 'country') {
+    const profile = countryProfileHref(pathname);
+    items = COUNTRY_NAV.map((n) => ({ key: n.key, label: n.label, to: n.key === 'profile' ? profile : n.to }));
+  } else if (module === 'strategic') {
     const q = strategicCarry(search);
     items = STRATEGIC_NAV.map((n) => ({ key: n.to, label: n.label, to: n.to + q }));
   } else {
@@ -32,14 +36,23 @@ export function moduleItems(module: ModuleId, registered: { module: ModuleId | n
     const profile = cell ? `/sector/${cell.tech}/${cell.stage}` : sectorProfileHref();
     items = SECTOR_NAV.map((n) => ({ key: n.key, label: n.label, to: (n.key === 'profile' ? profile : n.to) + q }));
   }
-  const current = module === 'strategic' ? strategicNavOf(pathname) : sectorNavKeyOf(pathname);
+  const current = module === 'strategic' ? strategicNavOf(pathname) : module === 'country' ? countryNavKeyOf(pathname) : sectorNavKeyOf(pathname);
   return items.map((i) => ({ ...i, active: i.active ?? i.key === current }));
 }
 
-const VIEWS_LABEL: Record<ModuleId, string> = { sector: 'Sector Insights views', strategic: 'Strategic Insights views' };
+const VIEWS_LABEL: Record<ModuleId, string> = { sector: 'Sector Insights views', strategic: 'Strategic Insights views', country: 'Country Insights views' };
 
 function prefetchProps(id: ModuleId) {
-  return id === 'strategic' ? { onPointerEnter: prefetchStrategic, onFocus: prefetchStrategic, onTouchStart: prefetchStrategic } : {};
+  if (id === 'strategic') return { onPointerEnter: prefetchStrategic, onFocus: prefetchStrategic, onTouchStart: prefetchStrategic };
+  if (id === 'country') return { onPointerEnter: prefetchCountry, onFocus: prefetchCountry, onTouchStart: prefetchCountry };
+  return {};
+}
+
+/** The href of a module tab from the current location. */
+function tabHref(id: ModuleId, pathname: string, search: string): string {
+  if (id === 'sector') return sectorTabHref(pathname, search);
+  if (id === 'country') return countryTabHref(pathname, search);
+  return strategicTabHref(pathname, search);
 }
 
 export function Header({ pathname, search }: { pathname: string; search: string }) {
@@ -47,11 +60,11 @@ export function Header({ pathname, search }: { pathname: string; search: string 
   const [open, setOpen] = useState(false);
   const registered = useModuleNav();
   const place = placeOf(pathname);
-  const module: ModuleId | null = place === 'sector' || place === 'strategic' ? place : null;
+  const module: ModuleId | null = place === 'sector' || place === 'strategic' || place === 'country' ? place : null;
   const items = module ? moduleItems(module, registered, pathname, search) : [];
   const tabs = MODULES.map((m) => ({
     ...m,
-    href: m.id === 'sector' ? sectorTabHref(pathname, search) : strategicTabHref(pathname, search),
+    href: tabHref(m.id, pathname, search),
     current: m.id === module,
   }));
 

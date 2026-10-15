@@ -1,6 +1,7 @@
 // SmallMultiples (spec_sector.md 4.3 S7 iii, S10 c, 4.6 4b, 5.3): a CSS grid of memoised PlotFigures,
 // one per panel, with one shared y domain (the default) or independent scales. A panel without data
-// is a quiet tile with its reason, not left out. One y axis per panel, never two.
+// is a quiet tile with its reason, not left out. One y axis per panel, never two. `columns` fixes the
+// column count (1 = full-width panels, spec_country.md C5.7 monthly prices).
 
 import { memo, useCallback, useMemo } from 'react';
 import { PlotFigure } from '../../charts/PlotFigure.tsx';
@@ -54,10 +55,11 @@ function PanelInner<R>({ panel, yDomain, height, render, ariaLabel, tooltip }: P
 
 const Panel = memo(PanelInner) as typeof PanelInner;
 
-export function SmallMultiples<R>({ panels, shared, yValue, render, height = 140, minPanelWidth = 220, ariaLabel, tooltip }: SmallMultiplesProps<R>) {
+export function SmallMultiples<R>({ panels, shared, yValue, render, height = 140, minPanelWidth = 220, ariaLabel, tooltip, columns }: SmallMultiplesProps<R>) {
   const domain = useMemo(() => (shared ? sharedDomain(panels, yValue) : null), [shared, panels, yValue]);
+  const template = columns && columns > 0 ? `repeat(${Math.floor(columns)}, minmax(0, 1fr))` : `repeat(auto-fill, minmax(min(100%, ${minPanelWidth}px), 1fr))`;
   return (
-    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${minPanelWidth}px), 1fr))` }} data-testid="small-multiples">
+    <div className="grid gap-3" style={{ gridTemplateColumns: template }} data-testid="small-multiples">
       {panels.map((p) => (
         <Panel key={p.id} panel={p} yDomain={domain} height={height} render={render} ariaLabel={ariaLabel(p)} tooltip={tooltip} />
       ))}

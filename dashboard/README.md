@@ -54,6 +54,9 @@ R pipeline (scripts/0x-4x)                 data/processed/...
   -> scripts/87_export_sector_data.R       dashboard/public/data/sector/  Sector Insights: manifest.json
                                            + lazy chunks (pure helpers in R/dashboard/sector/; the
                                            hand-checked config/sector_dictionary.yml)
+  -> scripts/88_export_country_data.R      dashboard/public/data/country/  Country Insights: manifest.json,
+                                           a fact sheet per economy, drivers files and the policy memos
+                                           (pure helpers in R/dashboard/country/; config/country_insights.yml)
 ```
 
 * `R/dashboard/` is the reference engine: at the baseline it reproduces the pipeline bit for bit.
@@ -109,6 +112,36 @@ Rscript scripts/87_export_sector_data.R --synthetic dashboard/tests/fixtures/sec
 
 Without `public/data/sector/manifest.json` the Sector module says "No sector data" and points here;
 Strategic Insights is unaffected.
+
+### Country data (`public/data/country/`)
+
+Written only by `scripts/88_export_country_data.R`, after scripts/85 and 87 (it reads their published
+manifests and chunks and checks every Energy Security, Economic Opportunity, Strategic Index and
+Partnership Strength value against them and `data/processed`). It also reads `nipo_policy_all.rds`,
+`nipo_policy_index_tbl.rds` and the Global Trade Alert NIPO extracts in `data/raw` (vintage check),
+`policy_outputs.rds`, `index_outputs.rds`, the partner tables, `charts/allied_strategic.csv`,
+`outputs/allied_network_member_shares.csv`, `wdi_country_info.csv` and `economic_security_agreements.csv`.
+
+| File | Loaded | Content |
+|---|---|---|
+| `manifest.json` | Country pages (no-cache) | roster, tiers, quadrant counts, memo entries, sources, validation |
+| `facts-<ISO3>.<h8>.json` | a Country profile | the economy's fact sheet (scores, drivers of the first sectors, policy, partners, network) |
+| `drivers-<ISO3>.<h8>.json` | the profile's "why" panel for other sectors | the remaining driver details |
+| `memo-<ISO3>.<h8>.{json,pdf,docx,md}` | the memo panel and its downloads | the verified AI-written policy memo of a core member (spec_country.md part B) |
+
+```bash
+Rscript scripts/88_export_country_data.R                    # writes dashboard/public/data/country/
+Rscript scripts/88_export_country_data.R --check-only       # every check, writes nothing
+Rscript scripts/88_export_country_data.R --facts-dir <dir>  # also writes the memo writers' fact sheets
+Rscript scripts/88_export_country_data.R --render-memos [--iso3 USA,JPN] [--lint-only]
+Rscript scripts/88_export_country_data.R --synthetic        # the test fixture (src/country/__fixtures__/synthetic/)
+```
+
+`--render-memos` lints each `dashboard/country-memos/<ISO3>/memo.src.md` against the published fact sheet,
+requires a complete passing `verify.json` from the independent verifier (a later fact sheet whose claims are
+unchanged keeps the sign-off), and publishes the memo JSON, PDF (headless Edge or Chrome) and Word file
+(Python with python-docx and pypdf; local only). `--iso3` limits a run; `--save-ctx` / `--load-ctx` reuse
+the inputs of an earlier run for debugging. Real-data checks: `npm run test:country-real`.
 
 ## Refresh the data
 

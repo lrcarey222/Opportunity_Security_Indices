@@ -185,6 +185,50 @@ dash_bundle_dyads <- function(long_tbl, U, techs, spec, index_variable, stages =
   out
 }
 
+# Friendshore's CM-FDI investment ties in its long table (commit 78be8b5, safer_friendshore.R): in
+# the cells CM-FDI covers (Solar, Wind, Batteries and Electric Vehicles Midstream) every
+# outbound_index row holds the CM-FDI tie of the reporter's parents to the partner, and its `source`
+# names the Cleantech Manufacturing FDI Dataset ("(CM-FDI)"); every other cell keeps the IMF
+# position. Relabels the outbound rows of those cells "outbound_index_cmfdi", so that the IMF rows
+# stay one [U, U] matrix (shape "rp", constant over cells) and the ties fill an array [U, U, C].
+# cmfdi_row: TRUE for the rows whose source is CM-FDI (default: read from the `source` column; FALSE
+# everywhere without one). Returns list(long = the relabelled table without `source`, cells = the
+# CM-FDI cell ids in cell order, outbound_source = "imf_dip" / "cm_fdi" by cell, n_rows = the
+# CM-FDI outbound rows, n_mixed = outbound rows in a CM-FDI cell whose source is not CM-FDI, which
+# a pipeline build never has).
+dash_bundle_fs_cmfdi <- function(long_tbl, techs, stages = DASH_STAGES, cmfdi_row = NULL) {
+  require_columns(long_tbl, c("tech", "supply_chain", "variable"), label = "Friendshore dyad table")
+  ob <- which(long_tbl$variable == "outbound_index")
+  if (is.null(cmfdi_row)) {
+    cm_ob <- if ("source" %in% names(long_tbl)) grepl("(CM-FDI)", long_tbl$source[ob], fixed = TRUE) else rep(FALSE, length(ob))
+  } else {
+    cm_ob <- cmfdi_row[ob] %in% TRUE
+  }
+  ci <- (match(long_tbl$tech[ob], techs) - 1L) * length(stages) + match(long_tbl$supply_chain[ob], stages)
+  cells <- sort(unique(ci[cm_ob & !is.na(ci)]))
+  in_cell <- ci %in% cells
+  outbound_source <- rep("imf_dip", length(techs) * length(stages))
+  outbound_source[cells] <- "cm_fdi"
+  long_tbl$variable[ob[in_cell]] <- "outbound_index_cmfdi"
+  long_tbl$source <- NULL
+  list(long = long_tbl, cells = as.integer(cells), outbound_source = outbound_source,
+       n_rows = sum(cm_ob), n_mixed = sum(in_cell & !cm_ob))
+}
+
+# The bundle's CM-FDI parts of Friendshore from dash_bundle_dyads() output `fsb` (spec with
+# outbound_index_cmfdi = "rpc" and chinese_parent_exposure = "pc") and dash_bundle_fs_cmfdi()
+# output `cm`: outbound_source [C], outbound_cmfdi [U, U, K] (the K CM-FDI cells, NULL when none)
+# and cpe [U, C] (chinese_parent_exposure by partner, NULL when the table has none).
+dash_bundle_fs_cmfdi_parts <- function(fsb, cm) {
+  K <- length(cm$cells)
+  if (K > 0 && is.null(fsb$outbound_index_cmfdi)) stop("dash_bundle_fs_cmfdi_parts(): CM-FDI cells without outbound_index_cmfdi rows.")
+  list(
+    outbound_source = cm$outbound_source,
+    outbound_cmfdi = if (K > 0) fsb$outbound_index_cmfdi[, , cm$cells, drop = FALSE] else NULL,
+    cpe = fsb$chinese_parent_exposure
+  )
+}
+
 # Best-five table (reporter_iso, partner_iso, variable, value [, imputed_weight_share]) -> value
 # and share matrices [U, U] for the index variable.
 dash_bundle_top5 <- function(top5_tbl, U, index_variable) {

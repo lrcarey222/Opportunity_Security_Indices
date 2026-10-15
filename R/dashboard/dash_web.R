@@ -10,9 +10,10 @@
 #                       the exact baseline L1-L3 results; the baseline partner-level PSI and a
 #                       summary of the baseline network
 #   vars     (lazy)     pillar variable rows and the baseline category contributions
-#   partner  (lazy)     Friendshore / Opportunity components (lossless), masks, CPI / GHG,
-#                       Development, PSI reporters, alignment; baseline best-five matrices and the
-#                       baseline PSI dyads
+#   partner  (lazy)     Friendshore / Opportunity components (lossless; Friendshore's CM-FDI parts:
+#                       outbound_source by cell, the CM-FDI investment ties outbound_cmfdi, the
+#                       Chinese-parent ownership cpe), masks, CPI / GHG, Development, PSI reporters,
+#                       alignment; baseline best-five matrices and the baseline PSI dyads
 #   network  (lazy)     members, member-level node inputs, member weights / node sizes / portfolio
 #                       caps (precomputed: not dials), basket trade of the bundled node(s), the
 #                       stored scripts/30 design (when it matches the bundle) and the greedy baseline
@@ -172,7 +173,8 @@ dash_web_chunks <- function(bundle, baseline_result, network_baseline = NULL) {
   )
   partner <- list(
     partner = list(
-      fs = pa$fs[intersect(c("imp_trade", "econ_opp_raw", "es_need", "eo_partner", "outbound", "geo", "mask", "cpi", "gh"), names(pa$fs))],
+      fs = pa$fs[intersect(c("imp_trade", "econ_opp_raw", "es_need", "eo_partner", "outbound", "outbound_source", "outbound_cmfdi",
+                             "cpe", "geo", "mask", "cpi", "gh"), names(pa$fs))],
       po = pa$po[c("trade", "econ_opp_index", "partner_es_need", "mask", "cpi", "gh")],
       dp = pa$dp,
       top5_share = pa$top5_share,

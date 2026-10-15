@@ -176,11 +176,11 @@ function Context() {
           { id: 'c', header: 'Economy', value: (r) => r.g.name, minWidth: 150 },
           { id: 'w', header: `Monthly earnings, ${act?.label.toLowerCase() ?? 'stage activity'} (USD; year)`, value: (r) => r.wage?.value ?? null, cell: (r) => cell3(w, r.wage), num: true },
           { id: 'r', header: 'Lending rate (% a year; year)', value: (r) => r.rate?.value ?? null, cell: (r) => cell3(lr, r.rate), num: true },
-          { id: 'p', header: 'PPI (% y/y; year)', value: (r) => r.ppi?.value ?? null, cell: (r) => cell3(ppi, r.ppi), num: true },
+          { id: 'p', header: 'Producer prices (% change on a year earlier; year)', value: (r) => r.ppi?.value ?? null, cell: (r) => cell3(ppi, r.ppi), num: true },
         ]}
       />
       <div className="mt-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-1 text-xs text-paper-mute">
-        <span className="min-w-0 flex-1 basis-56">A table, not a chart: the years differ by country. Earnings: ILO, older than {w?.stale_years ?? 5} years marked "old"; lending rate: IMF (China: PBoC LPR); PPI: levels are never compared.</span>
+        <span className="min-w-0 flex-1 basis-56">A table, not a chart: the years differ by country. Earnings: ILO, older than {w?.stale_years ?? 5} years marked "old"; lending rate: IMF (China: the People’s Bank of China loan prime rate); producer prices: the yearly change only, levels are never compared.</span>
         <button type="button" className="btn-quiet shrink-0" onClick={() => { const c = csv(); if (c) downloadBlob(new Blob([withBom(c.text)], { type: 'text/csv;charset=utf-8' }), `${c.name}.csv`); }}>
           Download CSV
         </button>
@@ -326,8 +326,8 @@ export function sectorZipFiles(model: SectorModel, manifest: SectorManifest | nu
     `Sector data bundle: ${manifest?.bundle_id ?? 'unknown'} (export ${manifest?.created ?? 'unknown'})`,
     '',
     'Measured values in each source’s own units and years; no index, weight or score values.',
-    'Columns: iso3c, economy, group, tier, eu_member, var_id, measure, item, year, value, unit, status, share_of_world, world_basis, rank, source, licence.',
-    'Status codes: obs observed; zero reported zero; nsr not reported separately (in the source residual); nq listed without a figure; mirror from partners’ declarations (x1.06); est estimate; na_growth base year zero.',
+    'Columns: iso3c, economy, group, tier, eu_member, var_id, measure, item, year, value, unit, status, share_of_world, world_basis, rank, source, licence, note.',
+    'Status codes: obs observed; zero reported zero; nsr not reported separately (in the source residual; a net balance or self-sufficiency with nsr and a value assumes production 0, said in note); nq listed without a figure; mirror from partners’ declarations (x1.06); est estimate; na_growth base year zero.',
     'Licences: see sources.csv. Attribution is required for sources marked "attribution". Licensed data (BNEF, BCG) are not part of the public explorer.',
     '',
   ].join('\r\n');
@@ -415,9 +415,10 @@ function SourcesOnPage() {
 function Header({ cell, tech, stage }: { cell: ItemInfo; tech: TechSlug; stage: StageSlug }) {
   const model = useModel();
   const { link } = useSectorUrl();
-  const blurb = model.cellText.get(cell.slug)?.cell_blurb ?? `${model.cellLabel(cell)}: measured values from the sources listed below.`;
+  const blurb = model.cellText.get(cell.slug)?.cell_blurb ?? null;
+  const lede = `${model.cellLabel(cell)}: who produces, holds, trades, invests in and regulates it.${blurb ? ` ${blurb.replace(/\.?$/, '.')}` : ''} Every number is in its source's own unit and year; nothing here is a score.`;
   return (
-    <PageHead eyebrow={`SECTOR INSIGHTS · ${STAGE_LABELS[stage].toUpperCase()}`} title={model.cellLabel(cell)} lede={blurb}>
+    <PageHead eyebrow={`SECTOR INSIGHTS · ${STAGE_LABELS[stage].toUpperCase()}`} title={model.cellLabel(cell)} lede={lede}>
       <div className="mt-4 space-y-3">
         <CoverageChips chips={chipsOf(model, cell, (section) => `#${section}`)} ariaLabel={`Coverage of ${model.cellLabel(cell)}`} />
         <div className="flex flex-wrap items-center gap-4">

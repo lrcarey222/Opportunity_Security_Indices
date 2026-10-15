@@ -2,6 +2,7 @@
 #
 #   Rscript scripts/85_export_dashboard_data.R [--out-dir <dir>] [--r-out <dir>] [--network-dir <dir>]
 #                                              [--skip-network-baseline] [--skip-trade] [--paper]
+#                                              [--allow-fail]
 #
 # The ONE place the dashboard reads the pipeline's outputs. It reads data/processed (and the few
 # raw files the partner and network layers need; the reserves and production themes for the
@@ -33,6 +34,18 @@
 # dashboard/public/paper/ (off by default: publishing the preview is the authors' decision). Each
 # chunk is decoded again and must be identical() to what was encoded; the export stops above the
 # budget (initial <= 3 MB gz, all chunks <= 25 MB gz).
+#
+# Every baseline check is PASS, INFO or FAIL. A FAIL stops the export before anything is published
+# (validation_report.csv is still written to <r-out>); --allow-fail publishes anyway, for diagnosis
+# only, with a warning.
+#
+# Friendshore's CM-FDI parts (commit 78be8b5; R/themes/partnership_strength/cm_fdi.R): the cells
+# whose outbound rows name CM-FDI as their source (Solar, Wind, Batteries and Electric Vehicles
+# Midstream) carry the CM-FDI investment tie in place of the IMF position, and the
+# chinese_parent_exposure rows the ownership component; both reach the bundle as
+# partner$fs$outbound_source / outbound_cmfdi / cpe (dash_bundle_fs_cmfdi()) and are checked against
+# config/partnership.yml cm_fdi, the stored exposure table and, through the Friendshore index array,
+# bit for bit against the pipeline.
 
 source(local({
   resolve_bootstrap_path <- function() {
@@ -71,6 +84,7 @@ arg_value <- function(flag, default = NULL) {
 }
 skip_network_baseline <- arg_flag("--skip-network-baseline")
 skip_trade <- arg_flag("--skip-trade")
+allow_fail <- arg_flag("--allow-fail")
 copy_paper <- arg_flag("--paper") && !arg_flag("--no-paper")
 step <- function(...) message(format(Sys.time(), "%H:%M:%S"), "  ", ...)
 
@@ -85,6 +99,7 @@ source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "safer_friendshore.R"))
+source(file.path(repo_root, "R", "themes", "partnership_strength", "cm_fdi.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "prosperous_opportunity.R"))
 source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
 source(file.path(repo_root, "R", "indices", "index_builder_core.R"))
@@ -127,6 +142,15 @@ val_rows <- list()
 add_check <- function(check, layer, status, n = NA_integer_, max_abs_diff = NA_real_, note = NA_character_) {
   val_rows[[length(val_rows) + 1]] <<- tibble::tibble(check = check, layer = layer, status = status, n = as.integer(n),
                                                       max_abs_diff = as.numeric(max_abs_diff), note = as.character(note))
+}
+cmp_num <- function(check, layer, a, b, tol = 1e-10, note = NA_character_, fail = "FAIL") {
+  na_mis <- sum(xor(is.na(a), is.na(b)))
+  d <- suppressWarnings(max(abs(a - b), na.rm = TRUE))
+  if (!is.finite(d)) d <- 0
+  status <- if (na_mis == 0 && d <= tol) "PASS" else fail
+  add_check(check, layer, status, length(a), d,
+            if (na_mis > 0) paste0(na_mis, " NA mismatches", if (!is.na(note)) paste0("; ", note) else "") else note)
+  invisible(status)
 }
 notes <- character()
 sources_params <- list()
@@ -280,28 +304,76 @@ if (!si_resource_screen) notes <- c(notes, "OPSI_SI_RESOURCE_SCREEN=0: the basel
 
 # ---- Partner dyads --------------------------------------------------------------------------------
 
-read_long <- function(name) {
+read_long <- function(name, extra = character()) {
   x <- read_src(file.path(processed_dir, paste0(name, ".rds")))
-  x <- as.data.frame(x)[c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable", "value")]
+  x <- as.data.frame(x)[c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable", "value", intersect(extra, names(x)))]
   x
 }
 step("Friendshore dyads")
-fs_long <- read_long("partner_friendshore_tbl")
+fs_long <- read_long("partner_friendshore_tbl", extra = "source")
 po_keys_U <- NULL
 U_fs <- unique(c(fs_long$reporter_iso, fs_long$partner_iso))
 fs_dup <- sum(duplicated(fs_long[c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable")]))
 if (fs_dup > 0) stop("partner_friendshore_tbl has ", fs_dup, " duplicate rows per (dyad, cell, variable).")
 fs_vars <- unique(fs_long$variable)
 geo_in_fs <- "geo_alignment" %in% fs_vars
+# CM-FDI (commit 78be8b5): the cells whose outbound rows name CM-FDI as their source hold the
+# investment tie instead of the IMF position; their rows become outbound_index_cmfdi, so the IMF
+# rows stay one [U, U] matrix (dash_bundle_fs_cmfdi()). chinese_parent_exposure rows exist only where
+# the component is defined.
+step("Friendshore CM-FDI parts")
+cm_split <- dash_bundle_fs_cmfdi(fs_long, techs, stages)
+fs_long <- cm_split$long
+cpe_in_fs <- "chinese_parent_exposure" %in% fs_vars
+pcells_cm <- dash_partner_cells_tbl(techs, stages)
+partnership_cfg_path <- file.path(repo_root, "config", "partnership.yml")
+partnership_cfg <- if (file.exists(partnership_cfg_path)) read_src(partnership_cfg_path, yaml::read_yaml) else list()
+cm_settings <- cm_fdi_resolve_settings(partnership_cfg$cm_fdi)
+cfg_cells <- if (isTRUE(cm_settings$investment_ties)) {
+  cc <- cm_fdi_cells(cm_settings)
+  which(paste(pcells_cm$tech, pcells_cm$supply_chain) %in% paste(cc$tech, cc$supply_chain))
+} else integer()
+cell_names <- function(ids) if (length(ids)) paste(pcells_cm$tech[ids], pcells_cm$supply_chain[ids], collapse = ", ") else "none"
+add_check("CM-FDI investment-tie cells == config/partnership.yml cm_fdi", "friendshore",
+          if (identical(as.integer(cm_split$cells), as.integer(cfg_cells))) "PASS" else "FAIL", cm_split$n_rows, NA,
+          paste0("stored table: ", cell_names(cm_split$cells), "; config: ", cell_names(cfg_cells),
+                 " (investment_ties ", isTRUE(cm_settings$investment_ties), ")"))
+add_check("CM-FDI cells: every outbound row names CM-FDI", "friendshore", if (cm_split$n_mixed == 0) "PASS" else "FAIL",
+          cm_split$n_rows, NA, paste0(cm_split$n_mixed, " outbound rows in a CM-FDI cell with another source"))
+add_check("chinese_parent_exposure in the Friendshore table", "friendshore",
+          if (cpe_in_fs == isTRUE(cm_settings$chinese_parent_exposure)) "PASS" else "FAIL", NA, NA,
+          paste0("rows present ", cpe_in_fs, "; config chinese_parent_exposure ", isTRUE(cm_settings$chinese_parent_exposure)))
+sources_params$fs_cmfdi <- paste0("partner_friendshore_tbl source column (CM-FDI rows) and chinese_parent_exposure rows; config/partnership.yml cm_fdi: ",
+                                  cell_names(cm_split$cells))
 step("Opportunity dyads (keys)")
 po_long <- read_long("partner_opportunity_tbl")
 U <- sort(unique(c(U_fs, po_long$reporter_iso, po_long$partner_iso)), method = "radix")
 U <- U[!is.na(U)]
 fs_spec <- c(imp_trade_index = "rpc", econ_opp_raw = "rc", es_need = "rc", eo_partner = "pc", outbound_index = "rp")
 if (geo_in_fs) fs_spec <- c(fs_spec, geo_alignment = "rp")
+if (length(cm_split$cells)) fs_spec <- c(fs_spec, outbound_index_cmfdi = "rpc")
+if (cpe_in_fs) fs_spec <- c(fs_spec, chinese_parent_exposure = "pc")
 fsb <- dash_bundle_dyads(fs_long, U, techs, fs_spec, "Friendshore Index", stages)
 rm(fs_long)
 invisible(gc())
+cm_parts <- dash_bundle_fs_cmfdi_parts(fsb, cm_split)
+fsb$outbound_index_cmfdi <- NULL
+# The ownership values against the pipeline's own exposure table (destination x cell)
+cm_exposure_tbl <- maybe_src(file.path(processed_dir, "partner_cm_fdi_exposure_tbl.rds"))
+if (!is.null(cm_parts$cpe)) {
+  nz <- which(!is.na(cm_parts$cpe), arr.ind = TRUE)
+  if (!is.null(cm_exposure_tbl)) {
+    ke <- match(paste(U[nz[, 1]], pcells_cm$tech[nz[, 2]], pcells_cm$supply_chain[nz[, 2]], sep = "\r"),
+                paste(cm_exposure_tbl$destination_iso, cm_exposure_tbl$tech, cm_exposure_tbl$supply_chain, sep = "\r"))
+    n_unused <- sum(cm_exposure_tbl$destination_iso %in% U) - nrow(nz)
+    cmp_num("chinese_parent_exposure == partner_cm_fdi_exposure_tbl", "friendshore", cm_parts$cpe[nz],
+            as.numeric(cm_exposure_tbl$chinese_parent_exposure[ke]), 0,
+            paste0(nrow(nz), " partner cells; ", length(unique(nz[, 1])), " partners; ", n_unused,
+                   " stored destination cells of world economies without a Friendshore dyad there"))
+  } else {
+    add_check("chinese_parent_exposure == partner_cm_fdi_exposure_tbl", "friendshore", "INFO", nrow(nz), NA, "no stored exposure table")
+  }
+}
 po_dup <- sum(duplicated(po_long[c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable")]))
 if (po_dup > 0) stop("partner_opportunity_tbl has ", po_dup, " duplicate rows per (dyad, cell, variable).")
 po_spec <- c(trade_index = "rpc", econ_opp_index = "rc", partner_es_need = "pc")
@@ -365,7 +437,8 @@ pick_gh <- function(adj_fun, comp, w, coef, stored_idx, mask, label) {
   best
 }
 fs_comp <- list(imp_trade = fsb$imp_trade_index, econ_opp_raw = fsb$econ_opp_raw, es_need = fsb$es_need, eo_partner = fsb$eo_partner,
-                outbound = fsb$outbound_index, geo = if (geo_in_fs) fsb$geo_alignment else matrix(NA_real_, length(U), length(U)),
+                outbound = fsb$outbound_index, outbound_source = cm_parts$outbound_source, outbound_cmfdi = cm_parts$outbound_cmfdi,
+                cpe = cm_parts$cpe, geo = if (geo_in_fs) fsb$geo_alignment else matrix(NA_real_, length(U), length(U)),
                 mask = fsb$mask, cpi = cpi)
 po_comp <- list(trade = pob$trade_index, econ_opp_index = pob$econ_opp_index, partner_es_need = pob$partner_es_need, mask = pob$mask, cpi = cpi)
 step("Validating the dyad indices against the stored ones")
@@ -441,7 +514,8 @@ partner_bundle <- list(
   sovereign = sovereign_U,
   cells = pcells,
   fs = list(imp_trade = fs_comp$imp_trade, econ_opp_raw = fs_comp$econ_opp_raw, es_need = fs_comp$es_need,
-            eo_partner = fs_comp$eo_partner, outbound = fs_comp$outbound, geo = if (geo_in_fs) fs_comp$geo else NULL,
+            eo_partner = fs_comp$eo_partner, outbound = fs_comp$outbound, outbound_source = fs_comp$outbound_source,
+            outbound_cmfdi = fs_comp$outbound_cmfdi, cpe = fs_comp$cpe, geo = if (geo_in_fs) fs_comp$geo else NULL,
             mask = fs_comp$mask, cpi = cpi, gh = fs_comp$gh),
   po = list(trade = po_comp$trade, econ_opp_index = po_comp$econ_opp_index, partner_es_need = po_comp$partner_es_need,
             mask = po_comp$mask, cpi = cpi, gh = po_comp$gh),
@@ -717,6 +791,8 @@ manifest <- list(
   flags = list(
     pillar_rule = pillar_rule,
     geo_alignment_in_fs = geo_in_fs,
+    # Friendshore's CM-FDI parts (investment ties in the CM-FDI cells, Chinese-parent ownership)
+    fs_cmfdi = length(cm_split$cells) > 0 || cpe_in_fs,
     partner_pillar_consistent = FALSE,
     network_aggregation = any(members_net$network_node != members_net$iso3c),
     network_consistent = FALSE,
@@ -753,15 +829,6 @@ t0 <- Sys.time()
 res <- dash_run(bundle, params)
 step("  dash_run: ", format(round(as.numeric(difftime(Sys.time(), t0, units = "secs")), 2)), " s")
 
-cmp_num <- function(check, layer, a, b, tol = 1e-10, note = NA_character_, fail = "FAIL") {
-  na_mis <- sum(xor(is.na(a), is.na(b)))
-  d <- suppressWarnings(max(abs(a - b), na.rm = TRUE))
-  if (!is.finite(d)) d <- 0
-  status <- if (na_mis == 0 && d <= tol) "PASS" else fail
-  add_check(check, layer, status, length(a), d,
-            if (na_mis > 0) paste0(na_mis, " NA mismatches", if (!is.na(note)) paste0("; ", note) else "") else note)
-  invisible(status)
-}
 key3 <- function(x) paste(x$Country, x$tech, x$supply_chain, sep = "\r")
 
 # Pillars
@@ -861,7 +928,8 @@ fs_eng <- res$partner$cells$fs_index
 po_eng <- res$partner$cells$po_index
 cmp_num("Friendshore index array", "partner", as.vector(fs_eng), as.vector(stored_fs_index), 1e-12, paste0("gh: ", fs_pick$name))
 cmp_num("Opportunity index array", "partner", as.vector(po_eng), as.vector(stored_po_index), 1e-12, paste0("gh: ", po_pick$name))
-add_check("Friendshore index bit-identical", "partner", if (isTRUE(identical(unname(fs_eng), unname(stored_fs_index)))) "PASS" else "INFO", length(fs_eng))
+add_check("Friendshore index bit-identical", "partner", if (isTRUE(identical(unname(fs_eng), unname(stored_fs_index)))) "PASS" else "FAIL", length(fs_eng),
+          NA, paste0("CM-FDI cells: ", cell_names(cm_split$cells), "; ownership component ", if (cpe_in_fs) "on" else "off"))
 fsm <- res$partner$top5$fs
 pom <- res$partner$top5$po
 cmp_num("Friendshore best-five", "partner", fsm[fs_top5$exists], fs_top5$value[fs_top5$exists], 1e-12)
@@ -1022,6 +1090,18 @@ if (!skip_network_baseline) {
 # ---- Write -----------------------------------------------------------------------------------------
 
 validation <- dplyr::bind_rows(val_rows)
+# A FAIL stops the export before anything is published (--allow-fail: diagnosis only)
+n_fail <- sum(validation$status == "FAIL")
+if (n_fail > 0) {
+  dir.create(r_out_dir, recursive = TRUE, showWarnings = FALSE)
+  utils::write.csv(validation, file.path(r_out_dir, "validation_report.csv"), row.names = FALSE)
+  message("\nFailing baseline checks:")
+  print(as.data.frame(validation[validation$status == "FAIL", c("check", "layer", "n", "max_abs_diff", "note")]), row.names = FALSE)
+  if (!allow_fail) {
+    stop(n_fail, " baseline check(s) FAIL; nothing was published. See ", file.path(r_out_dir, "validation_report.csv"),
+         " (rerun with --allow-fail to publish anyway, for diagnosis only).", call. = FALSE)
+  }
+}
 bundle$manifest$validation <- validation
 bundle$manifest$notes <- unique(notes)
 bundle$manifest$sources_params <- sources_params
@@ -1151,7 +1231,7 @@ print(as.data.frame(validation[c("check", "layer", "status", "n", "max_abs_diff"
 if (any(validation$status == "FAIL")) {
   warning("Some baseline checks FAIL (", sum(validation$status == "FAIL"), "); see ", file.path(r_out_dir, "validation_report.csv"), call. = FALSE)
 }
-message("\nWeb bundle ", bundle_id, " in ", rel(out_dir), ":")
+message("\nWeb bundle ", substr(bundle_id, 1, 8), " in ", rel(out_dir), ":") # an 8-character prefix: never print a full 32-hex id
 print(data.frame(file = chunk_info$file, MB = round(chunk_info$bytes / 2^20, 2), MB_gz = round(chunk_info$bytes_gz / 2^20, 3),
                  initial = chunk_info$initial), row.names = FALSE)
 message(sprintf("Initial load (manifest + core) %.2f MB gz of %.0f; all chunks %.2f MB gz of %.0f. Network baseline: %s. %.0f s.",

@@ -3,6 +3,7 @@
 .RData
 .RDataTmp*
 Rplots.pdf
+testthat-problems.rds
 .Ruserdata
 *.Rproj.user/
 

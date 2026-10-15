@@ -1,9 +1,11 @@
-// Home (spec_sector.md 2.1): what each module is for, the fastest ways in, then out of the way.
-// It renders with no data request before idle and never touches the engine:
+// Home (spec_sector.md 2.1; spec_country.md A2.3): what each of the three modules is for, the fastest
+// ways in, then out of the way. It renders with no data request before idle and never touches the
+// engine:
 //   * on idle (1.5 s fallback; skipped under Save-Data) it fetches data/sector/manifest.json (the
-//     question facts and the coverage glyph) and prefetches sector-meta;
+//     question facts and the coverage glyph), prefetches sector-meta, and loads the Country manifest
+//     and layout chunk (so the Country landing is instant; never a fact sheet);
 //   * pointer-enter, focus or touch on the Strategic card prefetches the Strategic chunk and starts
-//     the engine worker (prefetch.ts); nothing else does.
+//     the engine worker (prefetch.ts); on the Country card, the Country chunk and manifest.
 // A failed prefetch is silent: the questions show without facts and the glyph is omitted.
 
 import { useEffect, useId, useState } from 'react';
@@ -15,7 +17,7 @@ import {
   type MineralSlug, type SectorManifest, type StageSlug, type TechSlug,
 } from '../sector/contract.ts';
 import { moduleResumeHref } from './lastLocation.ts';
-import { onIdle, prefetchStrategic, saveData } from './prefetch.ts';
+import { onIdle, prefetchCountry, prefetchStrategic, saveData } from './prefetch.ts';
 import { loadSectorManifest, peekSectorManifest, prefetchSectorChunk } from './sectorManifest.ts';
 import { useTitle } from './title.ts';
 
@@ -46,6 +48,7 @@ function useIdleSectorManifest(): SectorManifest | null {
     if (m || saveData()) return;
     let live = true;
     const cancel = onIdle(() => {
+      prefetchCountry();
       loadSectorManifest().then(
         (man) => {
           if (live) setM(man);
@@ -94,8 +97,28 @@ function DialGlyph() {
   );
 }
 
+/** A static glyph of the four corners of Country Insights' scatter (decorative): Upgrade and Grow on
+ *  top (high opportunity), Secure and Watch below; lower energy security on the left. */
+function QuadrantGlyph() {
+  const cells: [string, string][] = [
+    ['U', 'Upgrade'],
+    ['G', 'Grow'],
+    ['S', 'Secure'],
+    ['W', 'Watch'],
+  ];
+  return (
+    <span className="inline-grid grid-cols-2 gap-[3px]" aria-hidden="true" data-testid="quadrant-glyph">
+      {cells.map(([l, t]) => (
+        <span key={l} title={t} className="flex h-4 w-4 items-center justify-center border border-ink-500 text-[0.625rem] font-medium leading-none text-paper-mute">
+          {l}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 interface CardSpec {
-  id: 'sector' | 'strategic';
+  id: 'sector' | 'strategic' | 'country';
   tag: string;
   title: string;
   question: string;
@@ -132,26 +155,55 @@ const STRATEGIC_CARD: CardSpec = {
   button: 'Open Strategic Insights',
 };
 
+const COUNTRY_CARD: CardSpec = {
+  id: 'country',
+  tag: 'COUNTRY BRIEFING',
+  title: 'Country Insights',
+  question: 'What should one country know about its energy security, its opportunities and its partners?',
+  lede: "For any economy: where its energy supply chains are secure or exposed, where it has economic openings, which sectors the paper's Strategic Index puts first and how that compares with its current policies, and which partners the indices point to compared with whom it trades with today. Policy memos for the 31 core coalition members.",
+  links: [
+    { to: '/countries/JPN', label: 'Japan' },
+    { to: '/countries/DEU', label: 'Germany' },
+    { to: '/countries/USA/memo', label: 'United States: policy memo' },
+  ],
+  button: 'Open Country Insights',
+};
+
+/** The three module cards, in the order the user numbered the modules. */
+export const MODULE_CARDS: readonly CardSpec[] = [SECTOR_CARD, STRATEGIC_CARD, COUNTRY_CARD];
+
+function cardPrefetch(id: CardSpec['id']) {
+  if (id === 'strategic') return { onPointerEnter: prefetchStrategic, onFocus: prefetchStrategic, onTouchStart: prefetchStrategic };
+  if (id === 'country') return { onPointerEnter: prefetchCountry, onFocus: prefetchCountry, onTouchStart: prefetchCountry };
+  return {};
+}
+
 function ModuleCard({ spec, manifest }: { spec: CardSpec; manifest: SectorManifest | null }) {
   const id = useId();
-  const strategic = spec.id === 'strategic';
-  const prefetch = strategic ? { onPointerEnter: prefetchStrategic, onFocus: prefetchStrategic, onTouchStart: prefetchStrategic } : {};
+  const prefetch = cardPrefetch(spec.id);
   const nCells = manifest ? manifest.coverage_glyph.filter((g) => g.country_data).length : 0;
   return (
     <article className="card flex flex-col p-6" aria-labelledby={`${id}-t`} {...prefetch}>
-      <div className="flex items-start justify-between gap-4">
+      {/* the tag sits above the title: with three cards side by side a long tag beside the title
+          wrapped "Strategic / Insights" onto two lines and put the cards' questions out of line */}
+      <div className="flex flex-col items-start gap-3">
+        <span className="tag uppercase tracking-wider">{spec.tag}</span>
         <h2 id={`${id}-t`} className="text-2xl font-medium text-paper">
           {spec.title}
         </h2>
-        <span className="tag shrink-0 uppercase tracking-wider">{spec.tag}</span>
       </div>
       <p className="mt-3 text-base text-paper">{spec.question}</p>
       <p className="mt-2 text-sm leading-relaxed text-paper-dim">{spec.lede}</p>
       <div className="mt-5 flex min-h-11 items-center gap-4">
-        {strategic ? (
+        {spec.id === 'strategic' ? (
           <>
             <DialGlyph />
             <span className="text-xs text-paper-mute">Paper baseline + your scenario, computed in your browser</span>
+          </>
+        ) : spec.id === 'country' ? (
+          <>
+            <QuadrantGlyph />
+            <span className="text-xs text-paper-mute">Quadrants, priorities, partners and a memo</span>
           </>
         ) : (
           manifest && (
@@ -276,13 +328,14 @@ export default function Home() {
         <div className="eyebrow mb-3">NEIS Center · Allied Industrial Base Explorer</div>
         <h1 className="rule-neis text-3xl font-medium text-paper sm:text-[2.25rem] sm:leading-tight">Allied Industrial Base Explorer</h1>
         <p className="mt-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">
-          Two ways into the data behind <em>Opportunity, Security, and the Allied Industrial Base</em>. Sector Insights shows what the data say about each energy technology&rsquo;s supply chain. Strategic Insights turns the same data into priorities for a coalition, under weights you choose.
+          Three ways into the data behind <em>Opportunity, Security, and the Allied Industrial Base</em>. Sector Insights shows what the data say about each energy technology&rsquo;s supply chain. Strategic Insights turns the same data into priorities for a coalition, under weights you choose. Country Insights brings both together for one country, on the paper&rsquo;s baseline.
         </p>
       </header>
 
-      <section aria-label="Modules" className="grid gap-6 md:grid-cols-2">
-        <ModuleCard spec={SECTOR_CARD} manifest={manifest} />
-        <ModuleCard spec={STRATEGIC_CARD} manifest={manifest} />
+      <section aria-label="Modules" className="grid gap-6 lg:grid-cols-3">
+        {MODULE_CARDS.map((c) => (
+          <ModuleCard key={c.id} spec={c} manifest={manifest} />
+        ))}
       </section>
 
       <section aria-labelledby="home-questions" className="mt-12">
@@ -308,12 +361,20 @@ export default function Home() {
 
       <section aria-labelledby="home-fit" className="panel mt-12 p-5">
         <h2 id="home-fit" className="mb-3 text-base font-medium text-paper">
-          How the two fit together
+          How the modules fit together
         </h2>
-        <div className="grid gap-4 text-sm leading-relaxed text-paper-dim md:grid-cols-2">
+        <div className="grid gap-4 text-sm leading-relaxed text-paper-dim lg:grid-cols-3">
           <p>Sector Insights shows measured values in their own units: who holds what, and how concentrated it is. It has no weights and no scores.</p>
           <p>Strategic Insights converts the same inputs into within-sector ranks and weighs them under the priorities you set. It ranks and weighs; Sector Insights shows the measured data those rankings start from.</p>
+          <p>Country Insights reads the paper&rsquo;s baseline values for one country, puts them next to the raw data behind them, and compares them with the country&rsquo;s current policies and partnerships. To try other weightings, open the same country in Strategic Insights.</p>
         </div>
+        <p className="mt-4 text-sm text-paper-mute">
+          New to the terms? The{' '}
+          <Link className="link" to="/glossary">
+            glossary
+          </Link>{' '}
+          explains every index, category and measure in plain words.
+        </p>
       </section>
     </div>
   );

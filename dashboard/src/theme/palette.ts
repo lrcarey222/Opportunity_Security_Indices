@@ -1,7 +1,9 @@
 // Fixed entity colours and scales (spec_react.md 8.7), from shiny/R/theme.R and validated on the dark
 // surface #1f2937 with the dataviz validator (scratch_dash/pal): stage and tier pairs pass CVD and the
 // normal-vision floor as adjacent pairs; Upstream and Downstream are never two colour series in one
-// panel (charts facet by stage instead). Orange is chrome only (and the selected / hovered outline).
+// panel (charts facet by stage instead). Orange is chrome (and the selected / hovered outline), except
+// as the low end of the user's three-colour data scale (TRI, 2026-10-11), which overrides that rule
+// for data visuals.
 
 export const INK = {
   900: '#111827',
@@ -37,7 +39,31 @@ export const tierKey = (t: unknown): 'core' | 'partner' | 'other' => (t === 'cor
 
 export const COMPARE_COLOR = { scenario: '#1889b0', baseline: '#9ca3af', observed: '#8b9d17' } as const;
 
-/** Sequential, low -> high (dim -> bright on the dark ground). */
+/**
+ * The three-colour magnitude scale (user edit 1a, spec_country C1.1), low -> high: NEIS orange, white at
+ * the median of the values shown, NEIS blue. Each arm is interpolated in OKLab between white and its end
+ * (four steps each). Validated 2026-10-12 with the dataviz validator, dark mode, surface #1f2937
+ * (scratch_dash/country/p_work/val_tri.out):
+ *   orange arm "#f58229,#fba36b,#ffc39e,#ffe1cf" --ordinal  -> ALL PASS (end 5.67:1 on the surface)
+ *   blue arm   "#1889b0,#62a6c4,#98c4d8,#cbe1ec" --ordinal  -> ALL PASS (end 3.67:1)
+ *   ends "#f58229,#1889b0" --pairs all -> CVD dE 20.0 (protan), normal 30.8: PASS
+ * The two steps next to white are close (CVD dE 4.8): near the median the side is never carried by
+ * colour alone (tooltips and tables say "above / below the median"; TriLegend names both ends).
+ * Use it through charts/scale.ts (triScale), never by indexing these stops in a view.
+ */
+export const TRI = ['#f58229', '#fba36b', '#ffc39e', '#ffe1cf', '#ffffff', '#cbe1ec', '#98c4d8', '#62a6c4', '#1889b0'] as const;
+export const TRI_LOW = TRI[0];
+export const TRI_MID = TRI[4];
+export const TRI_HIGH = TRI[8];
+/** The selection ring on three-colour visuals (orange would vanish on the low end): ink under white. */
+export const RING_OUTER = '#111827';
+export const RING_INNER = '#ffffff';
+
+/**
+ * Superseded by TRI for magnitude encodings (spec_country C1.5); kept for the Home glyphs and any
+ * legacy caller until every view has migrated (a palette test then forbids view imports).
+ * Sequential, low -> high (dim -> bright on the dark ground).
+ */
 export const SEQ = ['#016787', '#007da3', '#2792ba', '#43a8d0', '#5cbfe8', '#75d5fe', '#b4e7fe'];
 
 /** Diverging: decrease arm (bright = large decrease) | neutral | increase arm (dim -> bright). */

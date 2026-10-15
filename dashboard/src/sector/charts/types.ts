@@ -262,6 +262,8 @@ export interface SmallMultiplesProps<R> {
   height?: number;
   /** minimum panel width before the grid wraps (default 220) */
   minPanelWidth?: number;
+  /** a fixed number of columns (1: every panel spans the card's width, e.g. monthly prices); default auto-fill */
+  columns?: number;
   ariaLabel: (panel: SmallMultiplePanel<R>) => string;
   tooltip?: (d: R) => ReactNode;
 }
@@ -302,9 +304,15 @@ export interface HeatTableProps {
   cell: (rowKey: string, colKey: string) => HeatCellValue;
   /** cells are buttons when given */
   onCell?: (rowKey: string, colKey: string) => void;
-  /** shading domain (default [0, 1]) */
+  /**
+   * the three-colour scale of the cell fills (charts/scale.ts triScale over the values the caller
+   * shows; spec_country.md C1.5). Default: triScale over every cell value of the table (rows and their
+   * sub-rows, so opening a row never repaints the others), white = their median.
+   */
+  scale?: import('../../charts/scale.ts').TriScale;
+  /** @deprecated ignored since the three-colour scale (2026-10-12): pass `scale` */
   domain?: [number, number];
-  /** reverse the ramp (e.g. effective n: smaller = more concentrated) */
+  /** reverse the default scale (e.g. effective n: smaller = more concentrated); ignored with `scale` */
   reverse?: boolean;
   caption: string;
   /** header of the first column */

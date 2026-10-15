@@ -76,7 +76,7 @@ describe.skipIf(!haveSynthetic())('CM-FDI views on the R synthetic bundle', () =
       expect(within(block).getByRole('heading', { level: 3, name: t })).toBeTruthy();
     }
     // the caption: measure, unit, announcement years, source and edition; the basis
-    expect(within(block).getAllByText(/Cross-border clean-tech manufacturing projects · number of projects · 2016-2025 · CM-FDI \(Net Zero Industrial Policy Lab\) 2026\.10\.05/).length).toBeGreaterThan(0);
+    expect(within(block).getAllByText(/Cross-border clean-tech manufacturing projects · number of projects · 2016-2025 · Cleantech Manufacturing FDI \(CM-FDI\), Net Zero Industrial Policy Lab 2026\.10\.05/).length).toBeGreaterThan(0);
     expect(within(block).getAllByText(/all 5 projects \(every status and activity\)/).length).toBeGreaterThan(0);
     // the group split states its own destination count; no build-wide "n economies" that ignores the basis
     expect(within(block).getAllByText(/· \d+ destinations? · share of the projects/).length).toBe(1);
@@ -158,7 +158,7 @@ describe.skipIf(!haveSynthetic())('CM-FDI views on the R synthetic bundle', () =
 
   it('Sources: the CM-FDI projects download with its licence', async () => {
     renderAt('/sector/sources');
-    expect(await screen.findByRole('heading', { name: 'Cross-border projects, CM-FDI (.csv)' }, { timeout: 30_000 })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Factory projects (CM-FDI), every cross-border project (.csv)' }, { timeout: 30_000 })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Download the projects' })).toBeTruthy();
     expect(screen.getAllByText(/Licensed CC BY 4\.0: cite as Bandara, P\. and the Net Zero Industrial Policy Lab/).length).toBe(1);
   });

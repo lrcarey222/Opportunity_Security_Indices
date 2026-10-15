@@ -15,7 +15,7 @@ import type { SectorTradeChunk } from '../../contract.ts';
 import { blocNote } from '../../derive/groups.ts';
 import { blocFlows, countryTotals, declaredImporters, flowsOf, importGroupShares, matrixTotal, OTHER_EXPORTERS, OTHER_IMPORTERS, pairState, partners, sankeyLinks, type TradeYear } from '../../derive/trade.ts';
 import { fmtShare, fmtUsd } from '../../format.ts';
-import { ChunkGate, markGroup } from '../common.tsx';
+import { ChunkGate, HowToRead, markGroup } from '../common.tsx';
 import { useTrade } from '../data.ts';
 import { BlocBar, GroupLegend, HeatTable, SectorChartCard, TopFlowsList } from '../kit.tsx';
 import type { ExploreCtx } from './ctx.ts';
@@ -60,6 +60,7 @@ function FlowsBody({ c, trade }: { c: ExploreCtx; trade: SectorTradeChunk }) {
       <SectorChartCard
         title={`Who supplies whom: ${cellName}, ${year}`}
         vars={[{ var: v.id, item: item.slug, year }]}
+        subExtra={<HowToRead>Bands run from the exporters (left) to the importers (right); the wider the band, the larger the trade between the two. Colours show the exporter&apos;s group. Small flows fold into &quot;Other&quot;; the table lists every flow.</HowToRead>}
         tools={yearTool}
         table={() => (
           <TableView rows={[...flows].sort((a, z) => z.v - a.v)} caption="Bilateral flows" search pageSize={25} cols={[
@@ -102,6 +103,7 @@ function FlowsBody({ c, trade }: { c: ExploreCtx; trade: SectorTradeChunk }) {
         <SectorChartCard
           title={`${highlight.name}: where its imports come from, ${year}`}
           vars={[{ var: v.id, item: item.slug, year }]}
+          subExtra={<HowToRead>The bar splits what {highlight.name} buys by where the goods come from: China, the coalition core, coalition partners or the rest of the world. A long single segment means a dependence on one group of suppliers.</HowToRead>}
           csv={() => ({ name: `${highlight.code}-${item.slug}-import-partners-${year}`, text: rowsToCsv(own.map((p) => ({ importer: highlight.code, exporter: geos[p.geo].code, exporter_name: geos[p.geo].name, group: geos[p.geo].group, var_id: v.id, item: item.slug, year, value: p.value, unit: 'USD', share_of_its_imports: p.share, status: p.mirror ? 'mirror' : 'obs', source: v.source.short, licence: v.licence }))) })}
           table={() => <TableView rows={own} caption="Import partners" cols={[{ id: 'p', header: 'Partner', value: (p) => geos[p.geo].name }, { id: 'v', header: 'Value (USD)', value: (p) => p.value, cell: (p) => usd(p.value), num: true }, { id: 's', header: 'Share of its imports', value: (p) => p.share, cell: (p) => fmtShare(p.share), num: true }, { id: 'm', header: 'Source', value: (p) => (p.mirror ? 'partner mirror ×1.06' : 'importer reported') }]} />}
           notes={!declared.has(highlight.idx) && highlight.kind === 'country' ? <p>{highlight.name} did not declare its {year} imports; its flows come from partner reports.</p> : undefined}

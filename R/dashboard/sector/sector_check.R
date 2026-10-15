@@ -81,6 +81,10 @@ sector_chunk_specs <- function() {
       `dict.families` = sector_tbl_spec(c(id = "s!", label = "s!", section = "s"), unique = "id",
                                         values = list(id = SECTOR_V$family, section = SECTOR_V$section)),
       `dict.cells` = sector_tbl_spec(c(slug = "s!", cell_blurb = "s", section_cards = "s"), unique = "slug"),
+      `dict.cell_caveats` = sector_tbl_spec(c(slug = "s!", caveat = "s!"), unique = c("slug", "caveat"), optional = TRUE),
+      `dict.hhi_refs` = sector_tbl_spec(c(id = "s!", value = "f!", points = "i!", side = "s!", label = "s!", authority = "s!",
+                                          document = "s!", year = "i!"), unique = "id", values = list(side = c("above", "below")),
+                                        optional = TRUE),
       `dict.techs` = sector_tbl_spec(c(slug = "s!", label = "s!", tech_blurb = "s"), unique = "slug"),
       `dict.item_units` = sector_tbl_spec(c(var = "i!@vars", item = "i!@items", unit = "s!"), unique = c("var", "item")),
       rosters = sector_tbl_spec(c(roster = "s!", geo = "i!@geo"), unique = c("roster", "geo")),
@@ -108,7 +112,17 @@ sector_chunk_specs <- function() {
                                          unique = c("item", "geo", "year")),
       `trade.codes` = sector_tbl_spec(c(item = "i!@items", sub_sector = "s!", hs6 = "s!", description = "s", shared_n = "i!", caveat = "s"),
                                       unique = c("item", "hs6")),
-      `trade.excluded` = sector_tbl_spec(c(item = "i!@items", sub_sector = "s", hs6 = "s!", reason = "s!"))
+      `trade.excluded` = sector_tbl_spec(c(item = "i!@items", sub_sector = "s", hs6 = "s!", reason = "s!")),
+      `trade.cty_sub` = sector_tbl_spec(c(item = "i!@items", sub_sector = "s!", geo = "i!@geo", year = "i!", exports = "f", imports = "f"),
+                                        sorted = "item", unique = c("item", "sub_sector", "geo", "year"), optional = TRUE),
+      `trade.sub_intra` = sector_tbl_spec(c(item = "i!@items", sub_sector = "s!", year = "i!", intra = "f!"),
+                                          unique = c("item", "sub_sector", "year"), optional = TRUE),
+      `trade.sub_summary` = sector_tbl_spec(c(item = "i!@items", sub_sector = "s!", var = "i!@vars", year = "i!", eu_mode = "s!", W = "f",
+                                              n = "i!", top1_geo = "i@geo", top1_share = "f", top3_share = "f", hhi = "f",
+                                              hhi_lower_bound = "b", eff_n = "f", china = "f", core = "f", partner = "f", rest = "f",
+                                              unattributed = "f", growth = "f"),
+                                            sorted = "item", unique = c("item", "sub_sector", "var", "year", "eu_mode"),
+                                            values = list(eu_mode = SECTOR_V$eu_mode), optional = TRUE)
     ),
     policy = list(
       `policy.pams` = sector_tbl_spec(c(id = "i!", geo = "i!@geo", year = "i", status = "s", jurisdiction = "s", type = "s", tech_mask = "i!",
@@ -283,6 +297,14 @@ sector_check_chunk <- function(name, objects, sizes = list(), var_ids = NULL) {
       if (any(!is.na(v) & v <= 0)) e <- c(e, paste0("trade.flows.v", y, " has zero or negative values"))
     }
     if (any(f$s2020 == "none" & f$s2024 == "none")) e <- c(e, "trade.flows has rows with no observed value")
+    cs <- objects$trade$cty_sub
+    if (!is.null(cs) && nrow(cs)) {
+      if (any(cs$exports < 0 | cs$imports < 0, na.rm = TRUE)) e <- c(e, "trade.cty_sub has negative values")
+      pos <- (!is.na(cs$exports) & cs$exports > 0) | (!is.na(cs$imports) & cs$imports > 0)
+      if (!all(pos)) e <- c(e, "trade.cty_sub has rows with neither exports nor imports above 0")
+      cd <- objects$trade$codes
+      if (!all(paste(cs$item, cs$sub_sector) %in% paste(cd$item, cd$sub_sector))) e <- c(e, "trade.cty_sub.sub_sector is not a trade.codes sub-sector of the item")
+    }
   }
   if (name == "sector-meta") {
     g <- objects$dims$geo
@@ -307,6 +329,10 @@ sector_check_chunk <- function(name, objects, sizes = list(), var_ids = NULL) {
     if (length(setdiff(dv$source, objects$dict$sources$id))) e <- c(e, "dict.vars.source not in dict.sources")
     cv <- unlist(strsplit(stats::na.omit(dv$caveats), "|", fixed = TRUE))
     if (length(setdiff(cv, objects$dict$caveats$id))) e <- c(e, "dict.vars.caveats not in dict.caveats")
+    cc <- objects$dict$cell_caveats
+    if (!is.null(cc) && (length(setdiff(cc$caveat, objects$dict$caveats$id)) || length(setdiff(cc$slug, objects$dict$cells$slug)))) {
+      e <- c(e, "dict.cell_caveats names a cell missing from dict.cells or a caveat missing from dict.caveats")
+    }
     if (length(setdiff(objects$dict$item_units$unit, objects$dict$units$id))) e <- c(e, "dict.item_units.unit not in dict.units")
     if (!setequal(objects$dict$themes$slug, SECTOR_V$theme)) e <- c(e, "dict.themes must hold the 10 themes")
     if (length(setdiff(objects$dict$themes$default_var, dv$id))) e <- c(e, "dict.themes.default_var not in dict.vars")

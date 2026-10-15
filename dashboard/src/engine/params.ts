@@ -230,6 +230,10 @@ export function makeParams(spec: ScenarioSpec | null | undefined, bundle: Pick<B
 
   const fsWeights: NumRecord = { ...bi.fs_weights };
   if (fsWeights.geo_alignment !== undefined && fsWeights.geo_alignment !== null) fsWeights.geo_alignment = fsWeights.geo_alignment * mH;
+  // the ownership component (CM-FDI) is a security component like alignment: w0 x mH
+  if (fsWeights.chinese_parent_exposure !== undefined && fsWeights.chinese_parent_exposure !== null) {
+    fsWeights.chinese_parent_exposure = fsWeights.chinese_parent_exposure * mH;
+  }
   const psiWeights: NumRecord = { ...bi.psi_weights };
   psiWeights.friendshore = psiWeights.friendshore * mH;
   psiWeights.opportunity = psiWeights.opportunity * mB;
@@ -413,29 +417,31 @@ export function dialReadout(params: Params, bundle: Pick<Bundle, 'baselineInputs
     return w[v] / sumList(Object.values(w));
   };
   const stageRatio = (p: Params, s: string) => p.si.stage_weights[s] / p.si.stage_weights.Midstream;
+  // Labels spell out every index (no bare acronyms): the dial panel prints them as they are.
   const rows: ReadoutRow[] = [
-    ['hawkishness', 'si_need', 'SI weight on security need', (p) => p.si.weights.energy_security_need, true],
-    ['hawkishness', 'psi_fs_share', 'Friendshore share of the PSI', (p) => share(p.partner.psi_weights, 'friendshore'), true],
-    ['hawkishness', 'edge_fs_share', 'Friendshore share of network edges', (p) => share(p.network.edge_weights, 'friendshore'), false],
-    ['hawkishness', 'fs_geo_share', 'Alignment share of Friendshore', (p) => share(p.partner.fs_weights, 'geo_alignment'), false],
-    ['hawkishness', 'lambda', 'Network diversification lambda', (p) => p.network.diversity_lambda, true],
-    ['hawkishness', 'demand_need_share', 'Need share of network demand', (p) => share(p.network.demand_weights, 'need'), false],
-    ['hawkishness', 'node_resilience', 'Resilience weight in producer score', (p) => effNode(p, 'resilience'), false],
-    ['bullishness', 'si_eo', 'SI weight on economic opportunity', (p) => p.si.weights.economic_opportunity, true],
-    ['bullishness', 'psi_po_share', 'Opportunity share of the PSI', (p) => share(p.partner.psi_weights, 'opportunity'), true],
-    ['bullishness', 'edge_po_share', 'Opportunity share of network edges', (p) => share(p.network.edge_weights, 'opportunity'), true],
-    ['bullishness', 'node_eo', 'EO weight in producer score', (p) => effNode(p, 'eo'), false],
-    ['bullishness', 'demand_size_share', 'Size share of network demand', (p) => share(p.network.demand_weights, 'size'), false],
-    ['populism', 'si_policy', 'SI weight on policy', (p) => p.si.weights.policy, true],
-    ['populism', 'policy_iea_share', 'IEA PAMS share of the Policy index', (p) => polShare(p, bi.policy_iea_var), false],
+    ['hawkishness', 'si_need', 'Strategic Index weight on security need', (p) => p.si.weights.energy_security_need, true],
+    ['hawkishness', 'psi_fs_share', 'Friendshore share of Partnership Strength', (p) => share(p.partner.psi_weights, 'friendshore'), true],
+    ['hawkishness', 'edge_fs_share', 'Friendshore share of network links', (p) => share(p.network.edge_weights, 'friendshore'), false],
+    ['hawkishness', 'fs_geo_share', 'UN-vote alignment share of Friendshore', (p) => share(p.partner.fs_weights, 'geo_alignment'), false],
+    ['hawkishness', 'fs_cpe_share', 'Chinese-parent ownership share of Friendshore', (p) => share(p.partner.fs_weights, 'chinese_parent_exposure'), false],
+    ['hawkishness', 'lambda', 'Diversification weight of the network design', (p) => p.network.diversity_lambda, true],
+    ['hawkishness', 'demand_need_share', 'Security-need share of network demand', (p) => share(p.network.demand_weights, 'need'), false],
+    ['hawkishness', 'node_resilience', 'Own-security weight in the producer score', (p) => effNode(p, 'resilience'), false],
+    ['bullishness', 'si_eo', 'Strategic Index weight on Economic Opportunity', (p) => p.si.weights.economic_opportunity, true],
+    ['bullishness', 'psi_po_share', 'Partnership Opportunity share of Partnership Strength', (p) => share(p.partner.psi_weights, 'opportunity'), true],
+    ['bullishness', 'edge_po_share', 'Partnership Opportunity share of network links', (p) => share(p.network.edge_weights, 'opportunity'), true],
+    ['bullishness', 'node_eo', 'Economic Opportunity weight in the producer score', (p) => effNode(p, 'eo'), false],
+    ['bullishness', 'demand_size_share', 'Market-size share of network demand', (p) => share(p.network.demand_weights, 'size'), false],
+    ['populism', 'si_policy', 'Strategic Index weight on policy activity', (p) => p.si.weights.policy, true],
+    ['populism', 'policy_iea_share', 'IEA policy-record share of policy activity', (p) => polShare(p, bi.policy_iea_var), false],
     ['populism', 'stage_up_ratio', 'Upstream / Midstream stage weight', (p) => stageRatio(p, 'Upstream'), true],
     ['populism', 'stage_down_ratio', 'Downstream / Midstream stage weight', (p) => stageRatio(p, 'Downstream'), false],
-    ['populism', 'node_policy', 'Policy weight in producer score', (p) => effNode(p, 'policy'), false],
-    ['populism', 'home_bias', 'Home-bias multiplier on self-supply', (p) => p.network.self_multiplier, true],
-    ['greenness', 'si_tech', 'SI weight on technology (GHG)', (p) => p.si.weights.technology, true],
-    ['greenness', 'policy_cat_share', 'CAT share of the Policy index', (p) => polShare(p, bi.policy_cat_var), false],
+    ['populism', 'node_policy', 'Policy weight in the producer score', (p) => effNode(p, 'policy'), false],
+    ['populism', 'home_bias', 'Home-supply multiplier in the network', (p) => p.network.self_multiplier, true],
+    ['greenness', 'si_tech', 'Strategic Index weight on low-emission technology', (p) => p.si.weights.technology, true],
+    ['greenness', 'policy_cat_share', 'Climate Action Tracker share of policy activity', (p) => polShare(p, bi.policy_cat_var), false],
     ['greenness', 'fs_penalty', 'Friendshore climate penalty (per side)', (p) => p.partner.fs_penalty, true],
-    ['greenness', 'po_penalty', 'Opportunity climate penalty', (p) => p.partner.po_penalty, false],
+    ['greenness', 'po_penalty', 'Partnership Opportunity climate penalty', (p) => p.partner.po_penalty, false],
     ['greenness', 'fossil', 'Fossil technologies excluded', (p) => (p.si.fossil_excluded ? 1 : 0), true],
   ];
   const n = rows.length;

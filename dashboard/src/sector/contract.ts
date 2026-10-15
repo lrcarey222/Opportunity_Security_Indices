@@ -327,6 +327,8 @@ export const UNIT_KINDS = [
   'potential',
   'lcoe',
   'number',
+  // a bounded 0-1 index printed with two decimals (trade.feasibility; sector_data change 2026-10-12, additive)
+  'index01',
 ] as const;
 
 // ---- Measure catalogue (3.2) -------------------------------------------------------------------
@@ -357,8 +359,16 @@ export const VAR_CATALOGUE = [
   // exports below the dictionary min_base (USD 50 m; caveat rca_small).
   { id: 'trade.rca', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },
   { id: 'trade.atlas_share', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },
+  // Export feasibility (Harvard Atlas relatedness: 1 - mean product-space distance over the basket's
+  // HS4 headings), country x cell, a 0-1 index (unit kind index01). sector_data change 2026-10-12.
+  { id: 'trade.feasibility', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },
   { id: 'trade.atlas_exports', phase: '2', level: 'country', chunks: ['atlas'], scope: 'later' },
-  { id: 'trade.sub_exports', phase: '2', level: 'country', chunks: ['trade'], scope: 'later' },
+  // Trade by sub-component (trade.cty_sub of the trade chunks; never in facts): exports and imports of
+  // the HS6 codes of one sub-component of a cell, on the cell's reconciled basis, so a cell's
+  // sub-components add up to its trade.exports / trade.imports. sector_data change 2026-10-12: scope
+  // later -> build, and trade.sub_imports added.
+  { id: 'trade.sub_exports', phase: '2', level: 'country', chunks: ['trade'], scope: 'build' },
+  { id: 'trade.sub_imports', phase: '2', level: 'country', chunks: ['trade'], scope: 'build' },
   { id: 'trade.critmin_exports', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },
   { id: 'trade.critmin_dependence', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },
   // resources
@@ -833,6 +843,16 @@ const WORLD = {
  *   cell's stage (or is `any`) and that have data for an item linked to the cell in dims.item_links.
  * avail: one row per (var, item, chunk) with data: the year range and the number of country-kind
  *   economies with a row, so views know what exists before facts or series load.
+ * dict.cell_caveats (optional; sector_data change 2026-10-12, additive): the notes on a cell's HS6
+ *   basket as a whole (what it holds and leaves out, codes moved between stages in the 2026-10 basket
+ *   review), one row per (cell slug, dict.caveats id), in dictionary order. Show them with the
+ *   cell's trade cards and in its data notes. Per-code notes stay in trade.codes.caveat.
+ * dict.hhi_refs (optional; sector_data change 2026-10-12, additive): concentration thresholds that
+ *   competition authorities use for mergers, as context for the HHI explainer (C5.3): `value` on the
+ *   0-1 scale of meta.summary.hhi, `points` the same on the authorities' 0-10,000 scale, `label` what
+ *   the document calls a market at or above it (or below it, for `side` "below"), `authority`,
+ *   `document` (with section) and `year`. They are written for markets of firms, not for world trade
+ *   between economies: show them as context (caveat hhi_refs_context), never as a verdict.
  */
 export const META_SPEC = {
   'dims.geo': {
@@ -960,6 +980,22 @@ export const META_SPEC = {
     unique: ['id'],
   },
   'dict.cells': { kind: 'table', cols: { slug: SR, cell_blurb: S, section_cards: S }, unique: ['slug'] },
+  'dict.cell_caveats': { kind: 'table', optional: true, cols: { slug: SR, caveat: SR }, unique: ['slug', 'caveat'] },
+  'dict.hhi_refs': {
+    kind: 'table',
+    optional: true,
+    cols: {
+      id: SR,
+      value: FR,
+      points: IR,
+      side: { t: 'str', req: true, values: ['above', 'below'] },
+      label: SR,
+      authority: SR,
+      document: SR,
+      year: IR,
+    },
+    unique: ['id'],
+  },
   'dict.techs': { kind: 'table', cols: { slug: { t: 'str', req: true, values: TECH_SLUGS }, label: SR, tech_blurb: S }, unique: ['slug'] },
   'dict.item_units': { kind: 'table', cols: { var: VAR, item: ITEM, unit: SR }, unique: ['var', 'item'] },
   rosters: { kind: 'table', cols: { roster: SR, geo: GEO }, unique: ['roster', 'geo'] },
@@ -1102,12 +1138,68 @@ export const TRADE_SPEC = {
     kind: 'table',
     cols: { item: ITEM, sub_sector: S, hs6: SR, reason: SR },
   },
-  /** phase 2 (not in this build) */
+  /**
+   * Trade by sub-component (measures trade.sub_exports / trade.sub_imports; shipped since the
+   * sector_data change of 2026-10-12, additive; optional so that a chunk without a basket still
+   * validates). `sub_sector` = a trade.codes.sub_sector of the same item (the names and their HS6
+   * codes are in trade.codes; no dims table). Values on the reconciled matrix of the cell: for each
+   * (pair, year) the cell's own source (the importer's declaration when the importer declared the
+   * cell that year, else the exporter's x1.06), summed over the sub-component's HS6 codes, so a
+   * cell's sub-components add up to its facts trade.exports / trade.imports for every (geo, year)
+   * (scripts/87 checks it within 1e-9 relative). A code sits in one sub-component per cell, so they
+   * never overlap within a cell; codes shared with other cells count in each cell. Rows: years 2020
+   * and 2024; an economy has a row where its exports or imports of the sub-component are > 0; the
+   * other side is 0 when the economy's cell total on that side was observed that year and NaN when
+   * not; geo WLD rows hold the world totals (exports = imports = the sum of all flows). Sorted by item.
+   */
   'trade.cty_sub': {
     kind: 'table',
     optional: true,
     cols: { item: ITEM, sub_sector: SR, geo: GEO, year: IR, exports: F, imports: F },
+    sorted: ['item'],
     unique: ['item', 'sub_sector', 'geo', 'year'],
+  },
+  /**
+   * Intra-EU flows of each sub-component and year (both sides EU members; absent = 0), for the EU
+   * bloc mode of meta.summary's trade rule: EUU = sum(members) - intra, W = W - intra.
+   */
+  'trade.sub_intra': {
+    kind: 'table',
+    optional: true,
+    cols: { item: ITEM, sub_sector: SR, year: IR, intra: FR },
+    unique: ['item', 'sub_sector', 'year'],
+  },
+  /**
+   * meta.summary per sub-component (the same rules, R sector_summary(), on trade.cty_sub): one row per
+   * (item, sub_sector, var = trade.sub_exports | trade.sub_imports, year, eu_mode). W = the WLD row;
+   * holders = the country rows; growth pct_2020_2024 on the 2024 rows.
+   */
+  'trade.sub_summary': {
+    kind: 'table',
+    optional: true,
+    cols: {
+      item: ITEM,
+      sub_sector: SR,
+      var: VAR,
+      year: IR,
+      eu_mode: { t: 'str', req: true, values: EU_MODES },
+      W: F,
+      n: IR,
+      top1_geo: { t: 'i32', ref: 'dims.geo' },
+      top1_share: F,
+      top3_share: F,
+      hhi: F,
+      hhi_lower_bound: B,
+      eff_n: F,
+      china: F,
+      core: F,
+      partner: F,
+      rest: F,
+      unattributed: F,
+      growth: F,
+    },
+    sorted: ['item'],
+    unique: ['item', 'sub_sector', 'var', 'year', 'eu_mode'],
   },
 } as const satisfies ChunkSpec;
 
@@ -1404,6 +1496,12 @@ export type ObsTable = SectorFactsChunk['facts.obs'];
 export type IndexTable = SectorFactsChunk['facts.index'];
 export type WorldTable = SectorFactsChunk['facts.world'];
 export type FlowTable = SectorTradeChunk['trade.flows'];
+/** Trade by sub-component and its summaries (optional trade tables; sector_data change 2026-10-12). */
+export type CtySubTable = NonNullable<SectorTradeChunk['trade.cty_sub']>;
+export type SubIntraTable = NonNullable<SectorTradeChunk['trade.sub_intra']>;
+export type SubSummaryTable = NonNullable<SectorTradeChunk['trade.sub_summary']>;
+export type HhiRefTable = NonNullable<SectorMetaChunk['dict.hhi_refs']>;
+export type CellCaveatTable = NonNullable<SectorMetaChunk['dict.cell_caveats']>;
 
 export type SectorChunkName =
   | 'sector-meta'
@@ -1765,6 +1863,13 @@ function checkMeta(m: SectorMetaChunk, out: ChunkCheck) {
   badSource.report(out.errors, 'dict.vars.source is not a dict.sources id');
   badCaveat.report(out.errors, 'dict.vars.caveats names an id missing from dict.caveats');
   badRoster.report(out.warnings, 'dict.vars.roster names a roster missing from rosters');
+  const cc = m['dict.cell_caveats'];
+  if (cc) {
+    const cellSlugs = new Set(m['dict.cells'].cols.slug);
+    const badCc = new Tally();
+    for (let i = 0; i < cc.nrow; i++) if (!caveatIds.has(cc.cols.caveat[i]) || !cellSlugs.has(cc.cols.slug[i])) badCc.hit(i);
+    badCc.report(out.errors, 'dict.cell_caveats names a cell missing from dict.cells or a caveat missing from dict.caveats');
+  }
   const iu = m['dict.item_units'];
   const badIu = new Tally();
   for (let i = 0; i < iu.nrow; i++) if (!unitIds.has(iu.cols.unit[i])) badIu.hit(i);
@@ -1799,6 +1904,27 @@ function checkTrade(t: SectorTradeChunk, out: ChunkCheck) {
   const none = new Tally();
   for (let i = 0; i < f.nrow; i++) if (f.cols.s2020[i] === 'none' && f.cols.s2024[i] === 'none') none.hit(i);
   none.report(out.errors, 'trade.flows has rows with no observed value in any year');
+  // trade.cty_sub (optional): no negative values; a row has a positive value on at least one side;
+  // sub-components are trade.codes sub-sectors of the same item.
+  const cs = t['trade.cty_sub'];
+  if (cs) {
+    const subs = new Set<string>();
+    const codes = t['trade.codes'];
+    for (let i = 0; i < codes.nrow; i++) subs.add(`${codes.cols.item[i]}|${codes.cols.sub_sector[i]}`);
+    const neg = new Tally();
+    const empty = new Tally();
+    const unknown = new Tally();
+    for (let i = 0; i < cs.nrow; i++) {
+      const x = cs.cols.exports[i];
+      const m = cs.cols.imports[i];
+      if (x < 0 || m < 0) neg.hit(i);
+      if (!(x > 0) && !(m > 0)) empty.hit(i);
+      if (!subs.has(`${cs.cols.item[i]}|${cs.cols.sub_sector[i]}`)) unknown.hit(i);
+    }
+    neg.report(out.errors, 'trade.cty_sub has negative values');
+    empty.report(out.errors, 'trade.cty_sub has rows with neither exports nor imports above 0');
+    unknown.report(out.errors, 'trade.cty_sub.sub_sector is not a trade.codes sub-sector of the item');
+  }
 }
 
 /** A link fdi.sources may carry: http(s), no white space, nothing unsafe in an attribute or a pipe list. */

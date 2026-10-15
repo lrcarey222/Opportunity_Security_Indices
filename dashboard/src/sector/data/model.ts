@@ -180,6 +180,61 @@ export const splitPipe = (s: string | null | undefined): string[] => (s ? s.spli
 const FALLBACK_UNIT: UnitInfo = { id: '', short: '', long: '', unit_kind: 'number' };
 const FALLBACK_SOURCE: SourceInfo = { id: '', short: 'source', citation: '', publisher: null, edition: null, url: null, licence: 'open', attribution: null, accessed: null, transform: null, issues: null };
 
+/** A competition-authority concentration threshold (dict.hhi_refs): context, never a verdict. */
+export interface HhiRef {
+  id: string;
+  /** on the 0-1 scale of the summaries */
+  value: number;
+  /** the same on the authorities' 0-10,000 scale */
+  points: number;
+  /** the label describes markets above (or below) the value */
+  side: 'above' | 'below';
+  label: string;
+  authority: string;
+  document: string;
+  year: number;
+}
+
+/**
+ * Short names that would print a bare acronym in a title, axis, header or caption (acronym policy,
+ * spec_country.md C3.1): the dictionary's text is kept everywhere else (labels, definitions), and the
+ * display short is spelled out here, once, for every view.
+ */
+export const PLAIN_SHORT: Readonly<Record<string, string>> = {
+  RCA: 'Comparative advantage',
+  TRL: 'Readiness',
+  'TRL change': 'Change in readiness',
+  'ΔTRL': 'Change in readiness',
+  'CAT rating': 'Climate Action Tracker rating',
+  'EGS potential': 'Enhanced geothermal potential',
+  'EGS LCOE (500 MW)': 'Enhanced geothermal cost (500 MW)',
+  'EGS LCOE (5 GW)': 'Enhanced geothermal cost (5 GW)',
+  'PPI y/y': 'Producer prices, yearly change',
+  'FDI projects': 'Cross-border projects',
+  'FDI capital': 'Cross-border capital',
+  'Parent HQ group': 'Parent headquarters group',
+};
+
+/** Unit shorts that are acronyms ("1.35 RCA", "(TRL)" in a header): the long name says the rest. */
+export const PLAIN_UNIT_SHORT: Readonly<Record<string, string>> = {
+  RCA: 'ratio',
+  TRL: 'level',
+  'TRL points': 'levels',
+};
+
+/** Labels spelled out the same way (the label shows in the Explore measure list and in result headings). */
+export const PLAIN_LABEL: Readonly<Record<string, string>> = {
+  'Enhanced geothermal LCOE, cheapest 500 MW': 'Enhanced geothermal: levelised cost of electricity, cheapest 500 MW',
+  'Enhanced geothermal LCOE, cheapest 5 GW': 'Enhanced geothermal: levelised cost of electricity, cheapest 5 GW',
+  'World energy supply (WEO, Stated Policies)': 'World energy supply (IEA World Energy Outlook, stated policies)',
+};
+
+/** Source short names spelled out the same way (the full name first, the acronym in parentheses). */
+export const PLAIN_SOURCE_SHORT: Readonly<Record<string, string>> = {
+  'CM-FDI (Net Zero Industrial Policy Lab)': 'Cleantech Manufacturing FDI (CM-FDI), Net Zero Industrial Policy Lab',
+  'Franzmann et al. 2025 (EGS)': 'Franzmann et al. 2025 (enhanced geothermal)',
+};
+
 export class SectorModel {
   readonly meta: SectorMetaChunk;
   readonly geos: GeoInfo[];
@@ -202,6 +257,10 @@ export class SectorModel {
   readonly families: Map<FamilyId, { label: string; section: string | null }>;
   readonly cellText: Map<string, { cell_blurb: string | null; section_cards: string[] }>;
   readonly techText: Map<string, { label: string; tech_blurb: string | null }>;
+  /** dict.cell_caveats: cell slug -> the dict.caveats ids of its basket notes (optional table; [] when absent) */
+  readonly cellCaveatIds: Map<string, string[]>;
+  /** dict.hhi_refs: competition-authority HHI thresholds (context for the HHI explainer; [] when absent) */
+  readonly hhiRefs: HhiRef[];
   readonly itemUnits: Map<string, UnitInfo>;
   readonly rosters: Map<string, Set<number>>;
   readonly coverage: Map<string, CoverageInfo>;
@@ -271,7 +330,7 @@ export class SectorModel {
     this.units = new Map();
     for (let i = 0; i < meta['dict.units'].nrow; i++) {
       const id = u.id[i] ?? '';
-      this.units.set(id, { id, short: u.short[i] ?? '', long: u.long[i] ?? u.short[i] ?? '', unit_kind: u.unit_kind[i] ?? 'number' });
+      this.units.set(id, { id, short: PLAIN_UNIT_SHORT[u.short[i] ?? ''] ?? u.short[i] ?? '', long: u.long[i] ?? u.short[i] ?? '', unit_kind: u.unit_kind[i] ?? 'number' });
     }
     const s = meta['dict.sources'].cols;
     this.sources = new Map();
@@ -279,7 +338,7 @@ export class SectorModel {
       const id = s.id[i] ?? '';
       this.sources.set(id, {
         id,
-        short: s.short[i] ?? id,
+        short: PLAIN_SOURCE_SHORT[s.short[i] ?? ''] ?? s.short[i] ?? id,
         citation: s.citation[i] ?? '',
         publisher: s.publisher[i],
         edition: s.edition[i],
@@ -305,8 +364,8 @@ export class SectorModel {
         id: v.id[i] ?? '',
         theme: v.theme[i] ?? '',
         family: (v.family[i] ?? 'context') as FamilyId,
-        label: v.label[i] ?? '',
-        short: v.short[i] ?? v.label[i] ?? '',
+        label: PLAIN_LABEL[v.label[i] ?? ''] ?? v.label[i] ?? '',
+        short: PLAIN_SHORT[v.short[i] ?? ''] ?? v.short[i] ?? v.label[i] ?? '',
         definition: v.definition[i],
         unit: this.units.get(v.unit[i] ?? '') ?? { ...FALLBACK_UNIT, id: v.unit[i] ?? '' },
         data_year: v.data_year[i] ?? '',
@@ -354,6 +413,22 @@ export class SectorModel {
     const dc = meta['dict.cells'].cols;
     this.cellText = new Map();
     for (let i = 0; i < meta['dict.cells'].nrow; i++) this.cellText.set(dc.slug[i] ?? '', { cell_blurb: dc.cell_blurb[i], section_cards: splitPipe(dc.section_cards[i]) });
+    this.cellCaveatIds = new Map();
+    const cc = meta['dict.cell_caveats'];
+    if (cc) {
+      for (let i = 0; i < cc.nrow; i++) {
+        const slug = cc.cols.slug[i] ?? '';
+        const l = this.cellCaveatIds.get(slug) ?? [];
+        l.push(cc.cols.caveat[i] ?? '');
+        this.cellCaveatIds.set(slug, l);
+      }
+    }
+    const hr = meta['dict.hhi_refs'];
+    this.hhiRefs = [];
+    if (hr) {
+      for (let i = 0; i < hr.nrow; i++) this.hhiRefs.push({ id: hr.cols.id[i] ?? '', value: hr.cols.value[i], points: hr.cols.points[i], side: (hr.cols.side[i] ?? 'above') as 'above' | 'below', label: hr.cols.label[i] ?? '', authority: hr.cols.authority[i] ?? '', document: hr.cols.document[i] ?? '', year: hr.cols.year[i] });
+      this.hhiRefs.sort((a, z) => a.value - z.value);
+    }
     const dt = meta['dict.techs'].cols;
     this.techText = new Map();
     for (let i = 0; i < meta['dict.techs'].nrow; i++) this.techText.set(dt.slug[i] ?? '', { label: dt.label[i] ?? '', tech_blurb: dt.tech_blurb[i] });
@@ -383,7 +458,8 @@ export class SectorModel {
         status: (cv.status[i] ?? 'none') as CoverageInfo['status'],
         n_geo: cv.n_geo[i],
         reason: cv.reason[i],
-        sources: splitPipe(cv.sources[i]),
+        // the coverage rows name sources by their short text: spelled out like the dictionary's (acronym policy)
+        sources: splitPipe(cv.sources[i]).map((x) => PLAIN_SOURCE_SHORT[x] ?? x),
       };
       this.coverage.set(`${row.item}|${row.family}`, row);
     }
@@ -535,6 +611,11 @@ export class SectorModel {
   }
 
   /** Caveat texts of a var (dictionary wording). */
+  /** The basket notes of a cell (dict.cell_caveats), as caveat texts. */
+  cellCaveats(slug: string): { id: string; text: string }[] {
+    return (this.cellCaveatIds.get(slug) ?? []).map((id) => ({ id, text: this.caveats.get(id) ?? '' })).filter((x) => x.text);
+  }
+
   caveatTexts(v: VarInfo): string[] {
     return v.caveats.map((c) => this.caveats.get(c)).filter((x): x is string => !!x);
   }

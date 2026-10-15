@@ -1,7 +1,8 @@
 // Profile S1 Snapshot, S2 Who holds the market, S3 Rank the countries (spec_sector.md 4.3).
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { StatTile, Select } from '../../../components/ui.tsx';
+import { InfoTip } from '../../../components/InfoTip.tsx';
 import { TableView } from '../../../components/TableView.tsx';
 import { rowsToCsv } from '../../../lib/csv.ts';
 import type { FamilyId } from '../../contract.ts';
@@ -10,9 +11,11 @@ import { countryVars, entityVars, measureItem, primaryMeasure, primaryVar, share
 import { basisWords, growth, growthWords, isWorldBasis, type Concentration } from '../../derive/concentration.ts';
 import { blocNote } from '../../derive/groups.ts';
 import { slice } from '../../derive/summary.ts';
+import { subComponents, subSlice, validSub } from '../../derive/subs.ts';
 import { lc, fmtShare, fmtHhi, fmtSignedPct, ordinal } from '../../format.ts';
 import { LeagueCard } from '../cards.tsx';
-import { fmtFact, measureConc, SPLIT_COLUMNS, shareSplitRow } from '../common.tsx';
+import { fmtFact, HowToRead, MeasureTip, measureConc, SPLIT_COLUMNS, SPLIT_READING, shareSplitRow } from '../common.tsx';
+import { Term } from '../../../components/Term.tsx';
 import { useTrade } from '../data.ts';
 import { GroupLegend, SectorChartCard, ShareSplitChart, type ShareSplitRow, type VarRef } from '../kit.tsx';
 import { useSectorUrl } from '../state.tsx';
@@ -120,7 +123,7 @@ export function Snapshot() {
   const y0 = s?.growth_kind === 'pct_2020_2024' ? 2020 : s?.growth_kind === 'cagr_2018_2025' ? 2018 : null;
   const hRow = highlight ? c.rows.find((r) => r.geo === highlight.idx) : null;
   const caption = `${v.label} · ${model.unitOf(v, it.idx).long} · ${yr} · ${v.source.short}`;
-  const tiles: { key: string; label: string; value: string; sub: string; title: string }[] = [];
+  const tiles: { key: string; label: string; value: string; sub: string; title: string; chip?: ReactNode }[] = [];
   // the size tile, labelled by family and basis; none when the measure is itself a share
   if (!isShareUnit(v)) {
     tiles.push({
@@ -141,13 +144,13 @@ export function Snapshot() {
       key: 'inv',
       label: 'Investment',
       value: fmtFact(model, inv, cell, wN),
-      sub: `${inv.short} ${invYear}${c18?.value !== null && c18 ? ` · CAGR 2018-25 ${fmtSignedPct(c18.value)}` : ''}${c22?.value !== null && c22 ? `; 2022-25 ${fmtSignedPct(c22.value)}` : ''}`,
+      sub: `${inv.short} ${invYear}${c18?.value !== null && c18 ? ` · growth ${fmtSignedPct(c18.value)} a year 2018-25` : ''}${c22?.value !== null && c22 ? `, ${fmtSignedPct(c22.value)} a year 2022-25` : ''}`,
       title: `${inv.label} · ${inv.unit.long} · ${invYear} · ${inv.source.short}`,
     });
   }
   tiles.push(
     { key: 'top', label: 'Largest player', value: top ? `${top.name} ${fmtShare(c.top1?.share)}` : '–', sub: isWorldBasis(c.basis) ? `of world ${lc(v.short)} ${yr}` : `${bw} · ${lc(v.short)} ${yr}`, title: caption },
-    { key: 'hhi', label: 'Concentration', value: `HHI ${fmtHhi(c.hhi, c.hhi_lower_bound)}`, sub: `≈ ${Number.isFinite(c.eff_n) ? c.eff_n.toFixed(1) : '–'} effective ${actorNoun(v)} · top-3 ${fmtShare(c.top3_share)}`, title: caption },
+    { key: 'hhi', label: 'Concentration (HHI)', value: fmtHhi(c.hhi, c.hhi_lower_bound), sub: `like ${Number.isFinite(c.eff_n) ? c.eff_n.toFixed(1) : '–'} equal-sized ${actorNoun(v)} · top three ${fmtShare(c.top3_share)}`, title: caption, chip: <InfoTip id="hhi" term="concentration index (HHI)" /> },
     { key: 'coal', label: 'Coalition', value: fmtShare(c.split.core + c.split.partner), sub: `core ${fmtShare(c.split.core)} · partners ${fmtShare(c.split.partner)}${eu === 'bloc' ? ' · EU-27 counted as one' : ''}`, title: caption },
   );
   if (highlight) {
@@ -163,7 +166,7 @@ export function Snapshot() {
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" role="list" aria-label="Snapshot">
       {tiles.map((t) => (
         <div key={t.key} role="listitem" title={t.title}>
-          <StatTile label={t.label} value={<span className="font-medium">{t.value}</span>} sub={t.sub} />
+          <StatTile label={t.label} value={<span className="font-medium">{t.value}</span>} sub={t.sub} chip={t.chip} />
         </div>
       ))}
     </div>
@@ -206,8 +209,9 @@ export function Who() {
   if (!rows.length && !entity.length) return null;
   return (
     <SectorChartCard
-      title="Who holds the market"
+      title="Shares of the largest holders, measure by measure"
       vars={[...refs, ...entityRefs]}
+      subExtra={<HowToRead>{SPLIT_READING}</HowToRead>}
       table={() => (
         <TableView
           rows={[...rows, ...entity]}
@@ -220,7 +224,7 @@ export function Who() {
             { id: 'rest', header: 'Rest', value: (r) => r.parts.rest ?? null, cell: (r) => fmtShare(r.parts.rest), num: true },
             { id: 'un', header: 'Not attributed', value: (r) => r.parts.unattributed ?? null, cell: (r) => fmtShare(r.parts.unattributed), num: true },
             { id: 'top1', header: 'Top-1', value: (r) => r.cols.top1 },
-            { id: 'hhi', header: 'HHI', value: (r) => r.cols.hhi, num: true },
+            { id: 'hhi', header: 'Concentration (HHI)', value: (r) => r.cols.hhi, num: true },
             { id: 'src', header: 'Source', value: (r) => r.cols.source },
           ]}
         />
@@ -229,6 +233,7 @@ export function Who() {
       legend={<GroupLegend highlight={highlight?.name ?? null} projection={entity.some((r) => r.projection)} euBloc={eu === 'bloc'} mixed={entityRefs.some((r) => model.varById.get(r.var)?.native_level === 'region')} />}
       notes={
         <>
+          <p>The part a source does not assign to any economy is shown as <Term id="unattributed">not attributed</Term>.</p>
           <p>Shares are within each measure; rows differ in source and year and do not add up.</p>
           {cell.has_trade && <p>Exports are technology-attributed: some HS6 codes also count in other sectors.</p>}
           {eu === 'bloc' && <p>{blocNote(model)}</p>}
@@ -258,13 +263,21 @@ export function Leaders() {
   const primary = primaryVar(model, cell);
   const v: VarInfo | null = (state.m && vars.find((x) => x.id === state.m)) || (primary && vars.includes(primary) ? primary : vars[0]) || null;
   const it = (v && measureItem(model, cell, v)) || cell;
-  const { trade } = useTrade(tech, !!v && eu === 'bloc' && v.id.startsWith('trade.') && cell.has_trade);
+  // a trade sub-component (C5.4) re-scopes exports and imports to one group of the basket's codes
+  const subWanted = !!v && (v.id === 'trade.exports' || v.id === 'trade.imports') && !!state.sub && cell.has_trade;
+  const { trade } = useTrade(tech, (!!v && eu === 'bloc' && v.id.startsWith('trade.') && cell.has_trade) || subWanted);
+  const sub = subWanted && trade ? validSub(subComponents(trade, model, cell.idx), state.sub) : null;
   const years = v && facts ? facts.yearsOf(v.idx, it.idx) : [];
   const yearOk = state.y !== null && years.includes(state.y);
   const year = yearOk ? (state.y as number) : v ? baseYear(model, facts, v, it, eu) : null;
-  const sl = useMemo(() => (v && facts && year !== null ? slice(model, facts, v, it.idx, year, eu, trade) : null), [v, facts, year, model, it, eu, trade]);
+  const sl = useMemo(() => {
+    if (!v || !facts || year === null) return null;
+    if (sub && trade) return { ...subSlice(trade, model, cell.idx, sub, year, v.id === 'trade.imports' ? 'imports' : 'exports', eu), basis: 'sum_all' as const };
+    return slice(model, facts, v, it.idx, year, eu, trade);
+  }, [v, facts, year, model, it, eu, trade, sub, cell]);
+  const vShown = (sub && v && model.varById.get(v.id === 'trade.imports' ? 'trade.sub_imports' : 'trade.sub_exports')) || v;
   const change = useMemo(() => {
-    if (!v || !facts || year === null || years.length < 2) return undefined;
+    if (!v || !facts || year === null || years.length < 2 || sub) return undefined;
     const y0 = years[0];
     if (y0 === year) return undefined;
     const m = new Map<number, string>();
@@ -276,18 +289,18 @@ export function Leaders() {
       m.set(r.geo, g.isNew ? 'new' : g.value !== null ? `${fmtSignedPct(g.value)} since ${y0}` : '–');
     }
     return m;
-  }, [v, facts, year, years, it]);
-  if (!v) return null;
+  }, [v, facts, year, years, it, sub]);
+  if (!v || !vShown) return null;
   const groups = (f: FamilyId) => model.families.get(f)?.label ?? f;
   return (
     <LeagueCard
       model={model}
-      v={v}
+      v={vShown}
       item={it}
       year={year}
       rows={sl?.rows ?? []}
       world={sl?.world}
-      title={`Rank the countries: ${lc(v.short)}`}
+      title={`Rank the countries: ${lc(v.short)}${sub ? ` (${sub})` : ''}`}
       highlight={highlight}
       map
       change={change}
@@ -295,10 +308,17 @@ export function Leaders() {
       tools={
         <>
           <Select label="Measure" value={v.id} options={vars.map((x) => { const xi = measureItem(model, cell, x); return { value: x.id, label: xi && xi !== cell ? `${x.short} (${lc(xi.label)})` : x.short, group: groups(x.family) }; })} onChange={(id) => set({ m: id, y: null })} className="min-w-[10rem]" />
+          <MeasureTip v={v} />
           {years.length > 1 && <Select label="Year" value={String(year)} options={years.map((y) => ({ value: String(y), label: String(y) }))} onChange={(y) => set({ y: Number(y) })} className="min-w-[6rem]" />}
         </>
       }
-      notes={eu === 'bloc' && sl?.mode === 'undefined' ? <p>Not defined for the EU as a bloc: shown per member.</p> : eu === 'bloc' && sl?.mode === 'needs_trade' ? <p>EU as one bloc needs the trade data; member rows shown until it loads.</p> : null}
+      notes={
+        <>
+          {eu === 'bloc' && sl?.mode === 'undefined' && <p>Not defined for the EU as a bloc: shown per member.</p>}
+          {eu === 'bloc' && sl?.mode === 'needs_trade' && <p>EU as one bloc needs the trade data; member rows shown until it loads.</p>}
+          {sub && <p>One sub-component of the basket ({sub}); choose "Whole basket" in the Trade section to rank the whole basket.</p>}
+        </>
+      }
     />
   );
 }

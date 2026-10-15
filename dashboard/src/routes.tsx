@@ -4,7 +4,11 @@
 //   * a pathless lazy StrategicLayout (engine, scenario, runs, dials) around the eight Strategic
 //     views, with their paths and titles unchanged;
 //   * sectorRoute (src/sector/routes.tsx, builder C) at /sector;
-//   * aliases /sector-insights and /strategic-insights; unknown paths go Home with a notice;
+//   * countryRoute (src/country/routes.tsx, the country builder) at /countries (spec_country.md A2.1);
+//     the Strategic "Country scores" view keeps /country/:iso3;
+//   * the shared glossary page /glossary (shell/GlossaryView.tsx, spec_country.md C3.3);
+//   * aliases /sector-insights, /strategic-insights and the Country module's (/country-insights);
+//     unknown paths go Home with a notice;
 //   * route errors (a lazy chunk that fails to load) show a notice with Reload under the header.
 // Every view is a lazy route chunk, so the Strategic first load does not carry Home or Sector code.
 
@@ -14,6 +18,7 @@ import { HomeOrLegacy } from './shell/HomeOrLegacy.tsx';
 import { BootScreen } from './shell/screens.tsx';
 import { RootError, RouteError } from './shell/RouteError.tsx';
 import { sectorRoute } from './sector/routes.tsx';
+import { COUNTRY_ALIASES, countryRoute } from './country/routes.tsx';
 
 const view = (load: () => Promise<{ default: React.ComponentType }>) => async () => ({ Component: (await load()).default });
 
@@ -45,8 +50,11 @@ export const routes: RouteObject[] = [
       { id: 'strategic', lazy: view(() => import('./shell/StrategicLayout.tsx')), errorElement: <RouteError />, children: STRATEGIC_ROUTES },
       // a failing Sector chunk shows the notice under the shared header (the module's own errorElement wins)
       { errorElement: <RouteError />, ...sectorRoute },
+      { errorElement: <RouteError />, ...countryRoute },
+      { path: 'glossary', lazy: view(() => import('./shell/GlossaryView.tsx')), errorElement: <RouteError /> },
       { path: 'sector-insights', element: <Alias to="/sector" /> },
       { path: 'strategic-insights', element: <Alias to="/overview" /> },
+      ...COUNTRY_ALIASES.map((a) => ({ path: a.path, element: <Alias to={a.to} /> })),
       { path: '*', element: <ToHome notice="That page does not exist; showing the home page." /> },
     ],
   },

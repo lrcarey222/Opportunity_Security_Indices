@@ -37,6 +37,7 @@ import { factsIndexOf, seriesIndexOf, type FactsIndex } from '../data/facts.ts';
 import { modelOf, type ItemInfo, type SectorModel, type VarInfo } from '../data/model.ts';
 import { countryFamilies, primaryMeasure } from '../derive/cells.ts';
 import { growth } from '../derive/concentration.ts';
+import { ASSUMED_ZERO_WORDS, isAssumedZero, noteWords } from '../derive/notes.ts';
 import { countryTotals, flowsOf, league, matrixTotal } from '../derive/trade.ts';
 import { summaryFromFacts, summaryParity } from '../derive/summary.ts';
 
@@ -53,13 +54,14 @@ function readChunkFile(file: string): OsbDecoded {
 }
 
 /** Bytes on disk under a directory (the .osb files are stored gzipped, as served). */
-function dirBytes(dir: string, recurse: boolean): number {
+/** Bytes on disk under `dir`; `skip` names top-level folders left out (the Country Insights bundle has its own budget, A10). */
+function dirBytes(dir: string, recurse: boolean, skip: readonly string[] = []): number {
   let n = 0;
   for (const f of readdirSync(dir)) {
     const p = join(dir, f);
     const s = statSync(p);
     if (s.isDirectory()) {
-      if (recurse) n += dirBytes(p, true);
+      if (recurse && !skip.includes(f)) n += dirBytes(p, true);
     } else n += s.size;
   }
   return n;
@@ -161,7 +163,8 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
         expect(statSync(join(SECTOR_DIR, c.file)).size, c.name).toBe(c.bytes_gz);
       }
       const sector = dirBytes(SECTOR_DIR, false);
-      const all = dirBytes(DATA_DIR, true);
+      // Strategic + Sector only: public/data/country (Country Insights fact sheets and memos) is budgeted separately
+      const all = dirBytes(DATA_DIR, true, ['country']);
       console.info(`data on disk (gz): sector ${(sector / 2 ** 20).toFixed(2)} MB, Strategic + Sector ${(all / 2 ** 20).toFixed(2)} MB`);
       expect(sector).toBeLessThanOrEqual(SECTOR_BUDGET_GZ.sector_total);
       expect(all).toBeLessThanOrEqual(SECTOR_BUDGET_GZ.combined_total);
@@ -195,7 +198,7 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
     });
   });
 
-  describe('Appendix B reference values (final data, 2026-10-10)', () => {
+  describe('Appendix B reference values (final data, 2026-10-10; recomputed on the 2026-10-12 export)', () => {
     it('Batteries Midstream, matrix 2024', () => {
       const s = S('trade.exports', 'cell', 'batteries-midstream', 2024);
       expect(r1(s.W / 1e9)).toBe(202.7);
@@ -241,13 +244,20 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
     it('other cells, matrix 2024 (W USD bn, top-1, HHI)', () => {
       const rows: [string, number, string, number, number][] = [
         ['solar-midstream', 711.5, 'CHN', 24.6, 0.088],
-        ['electric-vehicles-midstream', 1006.0, 'CHN', 25.3, 0.098],
+        ['electric-vehicles-midstream', 1003.2, 'CHN', 25.3, 0.098],
         ['electric-grid-midstream', 449.6, 'CHN', 24.7, 0.085],
-        ['wind-midstream', 412.4, 'CHN', 22.8, 0.078],
+        ['wind-midstream', 409.5, 'CHN', 22.9, 0.079],
         ['oil-upstream', 2211.0, 'USA', 10.4, 0.048],
         ['gas-upstream', 445.3, 'USA', 19.1, 0.083],
         ['coal-upstream', 192.5, 'AUS', 32.8, 0.196],
-        ['semiconductors-midstream', 1349.1, 'TWN', 25.8, 0.133],
+        ['semiconductors-midstream', 1348.1, 'TWN', 25.8, 0.133],
+        // the Upstream baskets of 0fc5b73 (C5.1) and Nuclear Midstream without uranium ores (2026-10-12 export)
+        ['electric-vehicles-upstream', 21.3, 'AUS', 20.2, 0.098],
+        ['solar-upstream', 3.8, 'CHN', 42.8, 0.224],
+        ['wind-upstream', 3.0, 'MMR', 27.1, 0.135],
+        ['nuclear-upstream', 11.4, 'KAZ', 38.6, 0.255],
+        ['semiconductors-upstream', 1.1, 'CHN', 25.4, 0.14],
+        ['nuclear-midstream', 24.6, 'RUS', 17.2, 0.09],
       ];
       for (const [cell, W, top, share, hhi] of rows) {
         const s = S('trade.exports', 'cell', cell, 2024);
@@ -330,7 +340,7 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect(r3(facts.value(v.idx, bm.idx, 2023, G('CHN'))!.value)).toBe(0.409);
     });
 
-    it('basket: 255 codes, 99 in more than one cell (max 4); Batteries Midstream 34 codes, 2 shared, 9 sub-sectors', () => {
+    it('basket: 259 codes, 105 in more than one cell (max 4); Batteries Midstream 34 codes, 2 shared, 9 sub-sectors', () => {
       const cells = new Map<string, Set<number>>();
       let excluded = 0;
       for (const t of trades.values()) {
@@ -342,8 +352,8 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
         }
         excluded += t['trade.excluded'].nrow;
       }
-      expect(cells.size).toBe(255);
-      expect([...cells.values()].filter((s) => s.size > 1).length).toBe(99);
+      expect(cells.size).toBe(259);
+      expect([...cells.values()].filter((s) => s.size > 1).length).toBe(105);
       expect(Math.max(...[...cells.values()].map((s) => s.size))).toBe(4);
       const bm = I('cell', 'batteries-midstream');
       const t = tradeOf(bm.idx)!['trade.codes'];
@@ -366,7 +376,8 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect(dep.values.total_usd).toBeCloseTo(ev.W, 0);
       const inv = h('investment');
       expect([Math.round(inv.values.total_bn), pct1(inv.values.china), pct1(inv.values.coalition)]).toEqual([1875, 44.2, 52.3]);
-      expect([h('concentration').values.n, h('concentration').values.n_total]).toEqual([5, 31]);
+      // 36 cells with a trade basket since the five Upstream baskets (C5.1)
+      expect([h('concentration').values.n, h('concentration').values.n_total]).toEqual([5, 36]);
       const res = h('reserves');
       expect([res.labels.geo, res.labels.item, pct1(res.values.share)]).toEqual(['ZAF', 'pgms', 82.7]);
       const en = h('energy');
@@ -448,16 +459,32 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       }
     });
 
-    it('self-sufficiency and the balance are not reported where EI has no production row', () => {
+    it('self-sufficiency and the balance where EI has no production row: EIA fill, else production assumed 0 and drawn with the note (C5.5)', () => {
       const ss = V('consumption.self_sufficiency');
       const bal = V('consumption.balance');
       const gas = I('fuel', 'gas');
       const y = facts.latestYear(ss.idx, gas.idx) as number;
+      // New Zealand gas: no EI production row; the EIA production of the same year fills it (e373ece)
       const nzl = facts.value(ss.idx, gas.idx, y, G('NZL'));
-      expect(nzl?.status).toBe('nsr');
-      expect(Number.isNaN(nzl?.value)).toBe(true);
-      const nb = facts.value(bal.idx, gas.idx, facts.latestYear(bal.idx, gas.idx) as number, G('NZL'));
-      if (nb) expect(nb.status).toBe('nsr');
+      expect(nzl?.status).toBe('obs');
+      expect(Number.isFinite(nzl?.value)).toBe(true);
+      expect(facts.notesOf(ss.idx, gas.idx, y, G('NZL'))).toContain('eia_production');
+      // what is left unreported is drawn as a value with the assumed-zero note: an nsr fact with a value
+      const assumed: string[] = [];
+      for (const v of [ss, bal]) {
+        for (const it of model.items.filter((x) => x.axis === 'fuel')) {
+          const ly = facts.latestYear(v.idx, it.idx);
+          if (ly == null) continue;
+          for (const r of facts.rows(v.idx, it.idx, ly)) {
+            if (r.status !== 'nsr' || !Number.isFinite(r.value)) continue;
+            expect(isAssumedZero(v.id, r)).toBe(true);
+            expect(noteWords(model, v.id, r)[0]).toBe(ASSUMED_ZERO_WORDS);
+            assumed.push(`${v.id} ${it.slug} ${ly} ${model.geos[r.geo].code}`);
+          }
+        }
+      }
+      // the 2026-10-12 export: only Estonia coal (EI counts oil shale as coal)
+      expect([...new Set(assumed.map((a) => a.split(' ').slice(1).join(' ')))]).toEqual(['coal 2025 EST']);
     });
 
     it('every cell with a dictionary primary measure resolves it (the Snapshot is never empty); fuel Downstream: consumption per person', () => {

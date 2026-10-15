@@ -4,6 +4,7 @@
 // line, the table rows (with the roster's absentees as "not covered") and the across-sectors rows.
 // Nothing here is a weight or a score.
 
+import { noteLine } from './notes.ts';
 import { stageSlugOf, STAGE_SLUGS, techSlugOf, type StageSlug } from '../contract.ts';
 import type { FactRow } from '../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, SummaryInfo, VarInfo } from '../data/model.ts';
@@ -88,16 +89,23 @@ export function layoutBanner(v: VarInfo): string | null {
   }
 }
 
-/** Vars of a theme that ship data in this bundle (dictionary order). */
+/**
+ * Trade by sub-component (spec_country C5.4) is a view of exports / imports ("View by: Sub-component"),
+ * not a measure of its own: these vars are never offered in the measure select, and a link naming one
+ * opens its whole-basket measure.
+ */
+export const SUB_VAR_BASE: Readonly<Record<string, string>> = { 'trade.sub_exports': 'trade.exports', 'trade.sub_imports': 'trade.imports' };
+
+/** Vars of a theme that ship data in this bundle (dictionary order), without the sub-component views. */
 export function themeVars(model: SectorModel, theme: string): VarInfo[] {
-  return model.varsOfTheme(theme).filter((v) => (model.availByVar.get(v.idx) ?? []).length > 0);
+  return model.varsOfTheme(theme).filter((v) => !Object.hasOwn(SUB_VAR_BASE, v.id) && (model.availByVar.get(v.idx) ?? []).length > 0);
 }
 
-/** The measure: `m` when it belongs to the theme and has data, else the theme default, else the first. */
+/** The measure: `m` when it belongs to the theme and has data (a sub-component var: its whole-basket var), else the theme default, else the first. */
 export function pickVar(model: SectorModel, theme: string, m: string | null): VarInfo | null {
   const vars = themeVars(model, theme);
   const byId = (id: string | null | undefined) => (id ? (vars.find((v) => v.id === id) ?? null) : null);
-  return byId(m) ?? byId(model.themes.find((t) => t.slug === theme)?.default_var) ?? vars[0] ?? null;
+  return byId(m) ?? byId(m && Object.hasOwn(SUB_VAR_BASE, m) ? SUB_VAR_BASE[m] : null) ?? byId(model.themes.find((t) => t.slug === theme)?.default_var) ?? vars[0] ?? null;
 }
 
 /** Items with data for a var, in item order. */
@@ -232,6 +240,8 @@ export interface ExploreRow {
   rank: number | null;
   /** the observation year (per-row years) or the slice year */
   year: number | null;
+  /** the fact's notes in words (facts.notes; the assumed-zero note), "" when none */
+  note: string;
 }
 
 /**
@@ -250,13 +260,13 @@ export function exploreRows(model: SectorModel, v: VarInfo, rows: readonly FactR
   const out: ExploreRow[] = scoped.map((r) => {
     const g = model.geos[r.geo];
     const p = pos.get(r.geo);
-    return { g, value: Number.isFinite(r.value) ? r.value : null, status: r.status, state: stateOf(r, g, v, roster, year ?? undefined), share: p?.share ?? null, rank: p?.rank ?? null, year: r.obs_year ?? year };
+    return { g, value: Number.isFinite(r.value) ? r.value : null, status: r.status, state: stateOf(r, g, v, roster, year ?? undefined), share: p?.share ?? null, rank: p?.rank ?? null, year: r.obs_year ?? year, note: noteLine(model, v.id, r) };
   });
   if (absent) {
     const seen = new Set(scoped.map((r) => r.geo));
     for (const g of model.countries) {
       if (seen.has(g.idx) || !inScope(g, scope)) continue;
-      out.push({ g, value: null, status: '', state: stateOf(null, g, v, roster, year ?? undefined), share: null, rank: null, year });
+      out.push({ g, value: null, status: '', state: stateOf(null, g, v, roster, year ?? undefined), share: null, rank: null, year, note: '' });
     }
   }
   return out.sort((a, z) => (a.rank ?? Infinity) - (z.rank ?? Infinity) || a.g.name.localeCompare(z.g.name, 'en'));

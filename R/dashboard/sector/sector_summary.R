@@ -26,9 +26,12 @@ SECTOR_GROWTH_RULES <- tibble::tribble(
   ~var, ~growth_kind, ~y0, ~y1,
   "trade.exports", "pct_2020_2024", 2020L, 2024L,
   "trade.imports", "pct_2020_2024", 2020L, 2024L,
-  "investment.annual", "cagr_2018_2025", 2018L, 2025L
+  "investment.annual", "cagr_2018_2025", 2018L, 2025L,
+  # trade.sub_summary (sector_trade_sub_summary(): the same rules per sub-component of a cell)
+  "trade.sub_exports", "pct_2020_2024", 2020L, 2024L,
+  "trade.sub_imports", "pct_2020_2024", 2020L, 2024L
 )
-SECTOR_EU_TRADE_VARS <- c("trade.exports", "trade.imports")
+SECTOR_EU_TRADE_VARS <- c("trade.exports", "trade.imports", "trade.sub_exports", "trade.sub_imports")
 SECTOR_SUMMARY_LEVEL_KIND <- c(country = "country", region = "region", entity = "entity")
 
 # Concentration of one slice. x: holder values (>= 0, finite), in dims.geo order; geo_idx: their

@@ -3,11 +3,13 @@
 // data build filled in; panels for the data vintage and the paper.
 
 import { useMemo } from 'react';
+import { Link } from 'react-router';
 import { marked } from 'marked';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import methodsMd from '../../content/methods.md?raw';
 import { useTitle } from '../../App.tsx';
+import { GlossaryList } from '../../components/GlossaryList.tsx';
 import { KeyValue, PageHead } from '../../components/ui.tsx';
 import { DASH, fmtDate, yesNo } from '../../lib/format.ts';
 import { useApp, useEngine } from '../../state/EngineProvider.tsx';
@@ -37,10 +39,25 @@ export default function MethodsView() {
   const paper = m.paper;
   return (
     <div>
-      <PageHead eyebrow="How it works" title="Methods" lede="What each dial means, the exact formulas the explorer recomputes, and what stays fixed." />
+      <PageHead eyebrow="How it works" title="Methods" lede="How the indices, the dials and the network design are built, with the formulas, and a glossary of every term." />
       <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* the content is this app's own Markdown, filled with numbers from the data build */}
-        <article className="prose-neis min-w-0" dangerouslySetInnerHTML={{ __html: html }} />
+        <div className="min-w-0">
+          <article className="prose-neis min-w-0" dangerouslySetInnerHTML={{ __html: html }} />
+          <section className="mt-10" aria-labelledby="methods-glossary">
+            <h2 id="methods-glossary" className="rule-neis-sm mb-2 text-xl font-medium text-paper">
+              Glossary
+            </h2>
+            <p className="mb-4 text-sm text-paper-dim">
+              Every term on the Strategic Insights pages in plain words. The glossary of all three modules is on the{' '}
+              <Link className="link" to="/glossary">
+                Glossary page
+              </Link>
+              .
+            </p>
+            <GlossaryList module="strategic" />
+          </section>
+        </div>
         <aside className="flex flex-col gap-6 self-start">
           <section className="card p-5">
             <h2 className="rule-neis-sm mb-3 text-base font-medium text-paper">Data vintage</h2>
@@ -53,6 +70,7 @@ export default function MethodsView() {
                 ['Engine', state.engine ?? DASH],
                 ['Stored pillars apply the rankability rule', yesNo(fl.pillar_rule)],
                 ['Friendshore includes geopolitical alignment', yesNo(fl.geo_alignment_in_fs)],
+                ['Friendshore reads factory projects (CM-FDI) and Chinese-parent ownership', yesNo(fl.fs_cmfdi)],
                 ['Partnerships recompute with scenario pillars', yesNo(fl.partner_pillar_consistent)],
                 ['Stored exact network matches these inputs', yesNo(fl.network_consistent)],
                 ['Baseline network is the exact (MILP) design', yesNo(fl.milp_baseline)],
@@ -70,10 +88,10 @@ export default function MethodsView() {
             <h2 className="rule-neis-sm mb-3 text-base font-medium text-paper">The paper</h2>
             <p className="text-sm text-paper-dim">{paper?.title ?? 'Opportunity, Security, and the Allied Industrial Base'}</p>
             <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-paper-mute">
-              <li>Section 2: the framework and the equations for the pillars, the SI, the PSI and the network</li>
+              <li>Section 2: the framework and the equations for Energy Security, Economic Opportunity, the Strategic Index, the Partnership Strength Index and the network</li>
               <li>Section 7: the opportunity&ndash;security space</li>
-              <li>Section 8: the Policy and Strategic indices</li>
-              <li>Section 9: the bilateral indices</li>
+              <li>Section 8: Policy activity and the Strategic Index</li>
+              <li>Section 9: the partnership indices</li>
               <li>Section 10: the network design</li>
             </ul>
             {(paper?.url || paper?.pdf) && (

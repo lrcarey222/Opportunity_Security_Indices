@@ -5,22 +5,50 @@
 // Arrays are [reporter, partner, cell] over the world economies U and the C cells, column-major:
 // element (r, p, c) at r + U * (p + U * c). The weighted mean accumulates the components in the
 // pipeline's order with the same operations, so the cells are bit-identical to R's.
+//
+// Friendshore's CM-FDI parts (since October 2026): in the cells whose outbound_source is 'cm_fdi'
+// (Solar, Wind, Batteries and Electric Vehicles Midstream) the outbound component is the CM-FDI
+// investment tie outbound_cmfdi[r, p, k] instead of the IMF position outbound[r, p] (NA where the
+// reporter's parents have no project there: the component drops out), and chinese_parent_exposure
+// [p, c] enters the mean as 1 - share (a risk; NA = undefined, dropped, never 0).
 
 import { cmpC, EngineError, formatR7, LdAcc, ldDivToDouble, medianScurve, NA_INT, orderBy, rankMin, sumR } from './numeric.ts';
 import { matchIdx, num, str, table } from './table.ts';
-import type { Bundle, Params, PartnerCells, PartnerInputs, PsiResult, PsiView, Str, Table, Top5Result } from './types.ts';
+import type { Bundle, NDArray, Params, PartnerCells, PartnerInputs, PsiResult, PsiView, Str, Table, Top5Result } from './types.ts';
 
 function requirePartner(bundle: Pick<Bundle, 'partner'>): PartnerInputs {
   if (!bundle.partner) throw new EngineError('CHUNK', 'The partner chunk is not loaded.');
   return bundle.partner;
 }
 
-const FS_COMPONENTS = ['imp_trade_index', 'econ_opp_raw', 'es_need', 'eo_partner', 'outbound_index', 'geo_alignment'] as const;
+export const FS_COMPONENTS = [
+  'imp_trade_index', 'econ_opp_raw', 'es_need', 'eo_partner', 'outbound_index', 'geo_alignment', 'chinese_parent_exposure',
+] as const;
+/** Friendshore components stored as risks (higher = worse supplier), scored 1 - value. */
+export const FS_RISK_COMPONENTS: readonly string[] = ['chinese_parent_exposure'];
 const PO_COMPONENTS = ['trade_index', 'econ_opp_index', 'partner_es_need'] as const;
 
 function weightOf(w: Record<string, number | null | undefined>, k: string): number {
   const v = w[k];
   return v === undefined || v === null ? NaN : v;
+}
+
+/** dash_fs_outbound_source(): 'imf_dip' / 'cm_fdi' by cell ('imf_dip' everywhere without the vector). */
+export function fsOutboundSource(fs: PartnerInputs['fs'], C: number): string[] {
+  const s = fs.outbound_source;
+  return Array.from({ length: C }, (_, c) => (s && s[c] === 'cm_fdi' ? 'cm_fdi' : 'imf_dip'));
+}
+
+/** The slab k of outbound_cmfdi for each cell (-1: an IMF cell). */
+function cmfdiSlot(fs: PartnerInputs['fs'], C: number): Int32Array {
+  const src = fsOutboundSource(fs, C);
+  const out = new Int32Array(C).fill(-1);
+  let k = 0;
+  for (let c = 0; c < C; c++) if (src[c] === 'cm_fdi') out[c] = k++;
+  if (k > 0 && (!fs.outbound_cmfdi || fs.outbound_cmfdi.shape[2] !== k)) {
+    throw new EngineError('BUNDLE', 'partner.fs.outbound_cmfdi does not match outbound_source.');
+  }
+  return out;
 }
 
 /** Median S-curve of each cell's slice over the mask-true dyads with a value (in place on adj). */
@@ -60,20 +88,25 @@ export function fsCells(bundle: Pick<Bundle, 'partner'>, params: Params, onCell?
     return v !== undefined && v !== null && v > 0;
   };
   const geoOk = !!fs.geo && Array.prototype.some.call(fs.geo.data, (v: number) => v === v);
-  // component list in the pipeline's order; null = absent; weight 0 / NA = skipped
-  const comps: { kind: 'rpc' | 'rc' | 'pc' | 'rp'; data: Float64Array; w: number }[] = [];
-  const add = (k: string, kind: 'rpc' | 'rc' | 'pc' | 'rp', data: Float64Array | undefined) => {
+  const slot = cmfdiSlot(fs, C);
+  const anyCm = slot.some((k) => k >= 0);
+  // component list in the pipeline's order; null = absent; weight 0 / NA = skipped. 'ob': the
+  // outbound component (IMF [r, p] or the CM-FDI slab of the cell); 'pcr': a [p, c] risk, 1 - value
+  type Kind = 'rpc' | 'rc' | 'pc' | 'rp' | 'ob' | 'pcr';
+  const comps: { kind: Kind; data: Float64Array; data2?: Float64Array; w: number }[] = [];
+  const add = (k: string, kind: Kind, data: Float64Array | undefined, data2?: Float64Array) => {
     const wk = weightOf(w, k);
     if (!data || wk !== wk || wk === 0) return;
-    comps.push({ kind, data, w: wk });
+    comps.push({ kind, data, data2, w: wk });
   };
+  const noImf = new Float64Array(0);
   add('imp_trade_index', 'rpc', fs.imp_trade.data);
   if (pos('econ_opp_raw')) add('econ_opp_raw', 'rc', fs.econ_opp_raw?.data);
   if (pos('es_need')) add('es_need', 'rc', fs.es_need?.data);
   if (pos('eo_partner')) add('eo_partner', 'pc', fs.eo_partner?.data);
-  if (pos('outbound_index')) add('outbound_index', 'rp', fs.outbound?.data);
+  if (pos('outbound_index') && (fs.outbound || anyCm)) add('outbound_index', 'ob', fs.outbound?.data ?? noImf, fs.outbound_cmfdi?.data);
   if (pos('geo_alignment') && geoOk) add('geo_alignment', 'rp', fs.geo?.data);
-  void FS_COMPONENTS;
+  if (pos('chinese_parent_exposure') && fs.cpe) add('chinese_parent_exposure', 'pcr', fs.cpe.data);
   const adj = new Float64Array(UU * C);
   const cpi = fs.cpi;
   const gh = fs.gh;
@@ -98,6 +131,14 @@ export function fsCells(bundle: Pick<Bundle, 'partner'>, params: Params, onCell?
             case 'pc':
               x = cp.data[p + U * c];
               break;
+            case 'pcr':
+              x = 1 - cp.data[p + U * c];
+              break;
+            case 'ob': {
+              const k = slot[c];
+              x = k >= 0 ? (cp.data2 as Float64Array)[r + U * p + UU * k] : cp.data.length ? cp.data[r + U * p] : NaN;
+              break;
+            }
             default:
               x = cp.data[r + U * p];
           }
@@ -513,14 +554,23 @@ export function partnerDecompose(
   const C = pa.cells.nrow;
   const UU = U * U;
   const col = (f: (c: number) => number) => Float64Array.from({ length: C }, (_, c) => f(c));
+  const obSrc = fsOutboundSource(fs, C);
+  const slot = cmfdiSlot(fs, C);
+  // component values as stored (chinese_parent_exposure: the share); scoreFs, the values entering
+  // the mean, differ only for the risk component (1 - share)
   const compFs: Record<string, Float64Array> = {
     imp_trade_index: col((c) => fs.imp_trade.data[r + U * p + UU * c]),
     econ_opp_raw: col((c) => (fs.econ_opp_raw ? fs.econ_opp_raw.data[r + U * c] : NaN)),
     es_need: col((c) => (fs.es_need ? fs.es_need.data[r + U * c] : NaN)),
     eo_partner: col((c) => (fs.eo_partner ? fs.eo_partner.data[p + U * c] : NaN)),
-    outbound_index: col(() => (fs.outbound ? fs.outbound.data[r + U * p] : NaN)),
+    outbound_index: col((c) =>
+      slot[c] >= 0 ? (fs.outbound_cmfdi as NDArray<Float64Array>).data[r + U * p + UU * slot[c]] : fs.outbound ? fs.outbound.data[r + U * p] : NaN,
+    ),
     geo_alignment: col(() => (fs.geo ? fs.geo.data[r + U * p] : NaN)),
+    chinese_parent_exposure: col((c) => (fs.cpe ? fs.cpe.data[p + U * c] : NaN)),
   };
+  const scoreFs: Record<string, Float64Array> = { ...compFs };
+  for (const k of FS_RISK_COMPONENTS) scoreFs[k] = Float64Array.from(compFs[k], (x) => 1 - x);
   const wfs = Object.keys(compFs).map((k) => (wf[k] === undefined || wf[k] === null ? 0 : wf[k]));
   const rowWmean = (comps: Float64Array[], ws: number[]) => {
     const out = new Float64Array(C);
@@ -552,7 +602,7 @@ export function partnerDecompose(
     });
   const fsList = Object.values(compFs);
   const denFs = denOf(fsList, wfs);
-  const fsRaw = rowWmean(fsList, wfs);
+  const fsRaw = rowWmean(Object.keys(compFs).map((k) => scoreFs[k]), wfs);
   const penR = col((c) => (1 - fs.gh[c]) * fs.cpi[r] * params.partner.fs_penalty);
   const penP = col((c) => (1 - fs.gh[c]) * fs.cpi[p] * params.partner.fs_penalty);
   const fsAdj = col((c) => {
@@ -595,9 +645,11 @@ export function partnerDecompose(
   };
   Object.keys(compFs).forEach((k, q) => {
     const x = compFs[k];
+    const sc = scoreFs[k];
     out[`fs_${k}`] = x;
-    out[`fs_${k}_share`] = col((c) => (x[c] !== x[c] || denFs[c] === 0 ? NaN : (x[c] * wfs[q]) / denFs[c]));
+    out[`fs_${k}_share`] = col((c) => (x[c] !== x[c] || denFs[c] === 0 ? NaN : (sc[c] * wfs[q]) / denFs[c]));
   });
+  out.fs_outbound_source = obSrc;
   out.fs_penalty_reporter = penR;
   out.fs_penalty_partner = penP;
   out.fsi_raw = fsRaw;

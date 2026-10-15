@@ -58,13 +58,13 @@ function StatusStrip({ onOpenDials, showDialButton }: { onOpenDials: () => void;
   }
   const adv = (label: string, f: (a: ReturnType<typeof cloneAdvanced>) => void) =>
     chips.push({ label, title: `Reset ${label.toLowerCase()} to the paper's setting`, reset: () => setAdvanced((a) => { f(a); return a; }) });
-  if (ch.es) adv('ES weights', (a) => (a.es_weights = { ...d.es_weights }));
-  if (ch.eo) adv('EO weights', (a) => (a.eo_weights = { ...d.eo_weights }));
-  if (ch.sample) adv(scenario.advanced.tau === null ? 'Rankability off' : `Rankability tau ${scenario.advanced.tau}`, (a) => (a.tau = d.tau));
+  if (ch.es) adv('Energy Security weights', (a) => (a.es_weights = { ...d.es_weights }));
+  if (ch.eo) adv('Economic Opportunity weights', (a) => (a.eo_weights = { ...d.eo_weights }));
+  if (ch.sample) adv(scenario.advanced.tau === null ? 'Rankable rule off' : `Rankable rule ${scenario.advanced.tau}`, (a) => (a.tau = d.tau));
   if (ch.fossil) adv(`Fossil ${scenario.advanced.fossil}`, (a) => (a.fossil = d.fossil));
   // the endowment screen of the allied picks (URL key `screen`); the chip names the moved state
   if (ch.screen) adv(scenario.advanced.require_resource_base ? 'Endowment screen on' : 'Endowment screen off', (a) => (a.require_resource_base = d.require_resource_base));
-  if (ch.psi) adv(`PSI view ${scenario.advanced.psi_view}`, (a) => (a.psi_view = d.psi_view));
+  if (ch.psi) adv(`Partnership Strength viewpoint: ${scenario.advanced.psi_view === 'world' ? 'all reporters' : 'coalition reporters'}`, (a) => (a.psi_view = d.psi_view));
   if (ch.net) adv('Network settings', (a) => (a.network = { ...d.network }));
   const notes = app.manifest.notes ?? [];
   return (

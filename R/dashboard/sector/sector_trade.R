@@ -158,14 +158,14 @@ sector_trade_country <- function(trade_cells, declared, years = SECTOR_TRADE_YEA
     dec <- paste(declared$item_key, declared$geo, declared$year)[declared$imports_declared]
     im_status <- ifelse(paste0("cell:", im$cell, " ", im$geo, " ", y) %in% dec, "obs", "mirror")
     ex_rows <- tibble::tibble(var = "trade.exports", item_key = paste0("cell:", ex$cell), geo = ex$geo, year = as.integer(y),
-                              value = ex$value, status = ifelse(ex$value == 0, "zero", "obs"))
+                              value = ex$value, status = as.character(ifelse(ex$value == 0, "zero", "obs")))
     im_rows <- tibble::tibble(var = "trade.imports", item_key = paste0("cell:", im$cell), geo = im$geo, year = as.integer(y),
-                              value = im$value, status = ifelse(im$value == 0, "zero", im_status))
+                              value = im$value, status = as.character(ifelse(im$value == 0, "zero", im_status)))
     both <- merge(ex, im, by = c("cell", "geo"), suffixes = c("_x", "_m"))
     net_status <- ifelse(paste0("cell:", both$cell, " ", both$geo, " ", y) %in% dec, "obs", "mirror")
     net <- both$value_x - both$value_m
     net_rows <- tibble::tibble(var = "trade.net", item_key = paste0("cell:", both$cell), geo = both$geo, year = as.integer(y),
-                               value = net, status = ifelse(net == 0, "zero", net_status))
+                               value = net, status = as.character(ifelse(net == 0, "zero", net_status)))
     out[[length(out) + 1]] <- dplyr::bind_rows(ex_rows, im_rows, net_rows)
   }
   dplyr::bind_rows(out)
@@ -193,6 +193,164 @@ sector_eu_intra <- function(trade_cells, eu_members, years = SECTOR_TRADE_YEARS)
     out[[yi]] <- tibble::tibble(item_key = a$item_key, year = as.integer(years[yi]), intra = a$intra)
   }
   dplyr::bind_rows(out)
+}
+
+# ---- Trade by sub-component (trade.cty_sub, trade.sub_intra, trade.sub_summary) ---------------------
+#
+# A cell's sub-components are the sub_sector groups of its HS6 basket (sector_trade_basket() stops
+# when a code sits in two sub-sectors of one cell, so they partition the cell's codes). Their values
+# follow the cell's own source rule, decided per (importer, cell, year) as in
+# partnership_strength_build_trade_cells(): when the importer declared imports of the CELL that year
+# (trade.declared), its declarations are used (summed over the sub-component's codes); otherwise the
+# exporter's declarations x cif_fob_factor. So the sub-components of a cell add up to the cell's
+# matrix value for every pair, and to its trade.exports / trade.imports facts for every economy.
+
+# Pair-level sub-component flows aggregated to economies. std: the standardised dyads
+# (partnership_strength_standardize_comtrade()); basket: sector_trade_basket(); declared:
+# sector_trade_declared(). One cell at a time (only that cell's rows are copied, so memory stays near
+# the size of the largest cell): the declarations of a (pair, year, sub-component) are summed first and
+# the exporter's then multiplied by cif_fob_factor, as the matrix does for the cell. Returns
+# list(country = (item_key, sub_sector, geo, year, exports, imports; NA where the economy has no flow on
+# that side), intra = (item_key, sub_sector, year, intra), world = (item_key, sub_sector, year, total)).
+sector_trade_sub <- function(std, basket, declared, eu_members = character(), cif_fob_factor = 1.06,
+                             years = SECTOR_TRADE_YEARS) {
+  map <- unique(tibble::tibble(cmd_code = basket$hs6, cell = basket$cell, sub_sector = basket$sub_sector))
+  imp_keys <- paste(declared$item_key, declared$geo, declared$year)[declared$imports_declared]
+  in_years <- std$period %in% years
+  total <- function(x, by, name) {
+    a <- dplyr::summarise(dplyr::group_by(x, dplyr::across(dplyr::all_of(by))), v = sum(value), .groups = "drop")
+    names(a)[names(a) == "v"] <- name
+    a
+  }
+  country <- list()
+  intra <- list()
+  world <- list()
+  for (cl in sort(unique(map$cell))) {
+    m <- map[map$cell == cl, , drop = FALSE]
+    r <- which(in_years & std$cmd_code %in% m$cmd_code)
+    if (!length(r)) next
+    own <- std$flow_direction[r] == "import"
+    d <- tibble::tibble(
+      exporter = ifelse(own, std$partner_iso[r], std$reporter_iso[r]),
+      importer = ifelse(own, std$reporter_iso[r], std$partner_iso[r]),
+      year = as.integer(std$period[r]), sub_sector = m$sub_sector[match(std$cmd_code[r], m$cmd_code)],
+      own = own, value = as.double(std$primary_value[r])
+    )
+    # The cell's source rule: the importer's declarations when it declared the cell that year, else
+    # the exporter's declarations x cif_fob_factor.
+    d <- d[d$own | !paste0("cell:", cl, " ", d$importer, " ", d$year) %in% imp_keys, , drop = FALSE]
+    fl <- dplyr::summarise(dplyr::group_by(d, exporter, importer, year, sub_sector, own), value = sum(value), .groups = "drop")
+    rm(d)
+    fl$value <- ifelse(fl$own, fl$value, fl$value * cif_fob_factor)
+    ex <- total(dplyr::rename(fl, geo = exporter), c("sub_sector", "geo", "year"), "exports")
+    im <- total(dplyr::rename(fl, geo = importer), c("sub_sector", "geo", "year"), "imports")
+    cty <- dplyr::full_join(ex, im, by = c("sub_sector", "geo", "year"))
+    eu <- total(fl[fl$exporter %in% eu_members & fl$importer %in% eu_members, , drop = FALSE], c("sub_sector", "year"), "intra")
+    w <- total(fl, c("sub_sector", "year"), "total")
+    country[[cl]] <- tibble::tibble(item_key = paste0("cell:", cl), sub_sector = cty$sub_sector, geo = cty$geo,
+                                    year = as.integer(cty$year), exports = as.double(cty$exports), imports = as.double(cty$imports))
+    intra[[cl]] <- tibble::tibble(item_key = rep(paste0("cell:", cl), nrow(eu)), sub_sector = eu$sub_sector,
+                                  year = as.integer(eu$year), intra = as.double(eu$intra))
+    world[[cl]] <- tibble::tibble(item_key = paste0("cell:", cl), sub_sector = w$sub_sector, year = as.integer(w$year),
+                                  total = as.double(w$total))
+  }
+  empty <- list(
+    country = tibble::tibble(item_key = character(), sub_sector = character(), geo = character(), year = integer(),
+                             exports = double(), imports = double()),
+    intra = tibble::tibble(item_key = character(), sub_sector = character(), year = integer(), intra = double()),
+    world = tibble::tibble(item_key = character(), sub_sector = character(), year = integer(), total = double())
+  )
+  list(country = dplyr::bind_rows(c(list(empty$country), unname(country))),
+       intra = dplyr::bind_rows(c(list(empty$intra), unname(intra))),
+       world = dplyr::bind_rows(c(list(empty$world), unname(world))))
+}
+
+# trade.cty_sub rows from sector_trade_sub(): the side an economy has no flow on reads 0 when its cell
+# total on that side was observed that year (a trade.exports / trade.imports fact exists in
+# `country_facts`, the rows of sector_trade_country()) and NaN otherwise; rows where neither side is
+# above 0 are dropped; WLD rows carry the world total on both sides. Sorted by (item_key, sub_sector,
+# geo, year).
+sector_trade_sub_table <- function(sub, country_facts) {
+  ck <- function(v) paste(country_facts$item_key, country_facts$geo, country_facts$year)[country_facts$var == v]
+  k <- paste(sub$country$item_key, sub$country$geo, sub$country$year)
+  x <- sub$country$exports
+  m <- sub$country$imports
+  x[is.na(x)] <- ifelse(k[is.na(x)] %in% ck("trade.exports"), 0, NaN)
+  m[is.na(m)] <- ifelse(k[is.na(m)] %in% ck("trade.imports"), 0, NaN)
+  keep <- (!is.na(x) & x > 0) | (!is.na(m) & m > 0)
+  out <- tibble::tibble(item_key = sub$country$item_key[keep], sub_sector = sub$country$sub_sector[keep], geo = sub$country$geo[keep],
+                        year = sub$country$year[keep], exports = x[keep], imports = m[keep])
+  w <- sub$world[sub$world$total > 0, , drop = FALSE]
+  out <- dplyr::bind_rows(out, tibble::tibble(item_key = w$item_key, sub_sector = w$sub_sector, geo = "WLD", year = w$year,
+                                              exports = w$total, imports = w$total))
+  out[order(out$item_key, out$sub_sector, out$geo, out$year, method = "radix"), , drop = FALSE]
+}
+
+# The sub-components add up to the cell: for every (cell, economy, year) and side, the sum over
+# sub-components of trade.cty_sub equals the trade.exports / trade.imports fact (relative difference;
+# a fact with no sub-component row must be 0, a sub-component row needs a fact), and the WLD rows add
+# up to the cell's world total. Returns list(n, max_rel, n_unmatched, examples).
+sector_trade_sub_check <- function(cty_sub, country_facts, world) {
+  out <- list(n = 0L, max_rel = 0, n_unmatched = 0L, examples = character())
+  note <- function(msg) if (length(out$examples) < 5) out$examples <<- c(out$examples, msg)
+  cs <- cty_sub[cty_sub$geo != "WLD", , drop = FALSE]
+  for (side in c("exports", "imports")) {
+    v <- paste0("trade.", side)
+    f <- country_facts[country_facts$var == v & country_facts$item_key %in% unique(cty_sub$item_key), , drop = FALSE]
+    val <- cs[[side]]
+    ok <- !is.na(val)
+    s <- tapply(val[ok], paste(cs$item_key, cs$geo, cs$year)[ok], sum)
+    fk <- paste(f$item_key, f$geo, f$year)
+    got <- unname(s[fk])
+    got[is.na(got)] <- 0
+    # Relative to the fact; a zero fact must have no sub-component value at all.
+    rel <- ifelse(f$value != 0, abs(got - f$value) / abs(f$value), abs(got))
+    out$n <- out$n + length(rel)
+    out$max_rel <- max(out$max_rel, rel)
+    if (any(rel > 1e-9)) note(paste(side, fk[which.max(rel)]))
+    extra <- setdiff(names(s)[s > 0], fk)
+    out$n_unmatched <- out$n_unmatched + length(extra)
+    if (length(extra)) note(paste(side, "without a fact:", extra[1]))
+    w <- cty_sub[cty_sub$geo == "WLD", , drop = FALSE]
+    ws <- tapply(w[[side]], paste(w$item_key, w$year), sum)
+    wf <- world[world$var == v & world$item_key %in% unique(cty_sub$item_key), , drop = FALSE]
+    wk <- paste(wf$item_key, wf$year)
+    wgot <- unname(ws[wk])
+    wgot[is.na(wgot)] <- 0
+    wrel <- ifelse(wf$value != 0, abs(wgot - wf$value) / abs(wf$value), abs(wgot))
+    out$n <- out$n + length(wrel)
+    out$max_rel <- max(out$max_rel, wrel)
+    if (any(wrel > 1e-9)) note(paste(side, "world", wk[which.max(wrel)]))
+  }
+  out
+}
+
+# trade.sub_summary: sector_summary() (the meta.summary rules) per sub-component, on the trade.cty_sub
+# rows of the cells in `cty_sub` (measures trade.sub_exports / trade.sub_imports, W = the WLD row,
+# intra-EU flows from `intra` in bloc mode). geo: dims.geo; vars: the dictionary vars.
+sector_trade_sub_summary <- function(cty_sub, intra, geo, vars) {
+  if (is.null(cty_sub) || !nrow(cty_sub)) return(NULL)
+  key <- paste0(cty_sub$item_key, "\t", cty_sub$sub_sector)
+  cty <- cty_sub$geo != "WLD"
+  facts <- dplyr::bind_rows(lapply(c(exports = "trade.sub_exports", imports = "trade.sub_imports"), function(v) {
+    side <- if (v == "trade.sub_exports") "exports" else "imports"
+    x <- cty_sub[[side]]
+    ok <- cty & !is.na(x)
+    tibble::tibble(var = v, item_key = key[ok], geo = cty_sub$geo[ok], year = cty_sub$year[ok], value = x[ok], status = "obs")
+  }))
+  w <- !cty
+  world <- dplyr::bind_rows(
+    tibble::tibble(var = "trade.sub_exports", item_key = key[w], year = cty_sub$year[w], value = cty_sub$exports[w], basis = "sum_all"),
+    tibble::tibble(var = "trade.sub_imports", item_key = key[w], year = cty_sub$year[w], value = cty_sub$imports[w], basis = "sum_all")
+  )
+  eu_intra <- if (is.null(intra) || !nrow(intra)) NULL else
+    tibble::tibble(item_key = paste0(intra$item_key, "\t", intra$sub_sector), year = intra$year, intra = intra$intra)
+  s <- sector_summary(facts, world, geo, vars, eu_intra)
+  if (!nrow(s)) return(NULL)
+  parts <- strsplit(s$item_key, "\t", fixed = TRUE)
+  s$sub_sector <- vapply(parts, `[`, "", 2)
+  s$item_key <- vapply(parts, `[`, "", 1)
+  s[order(s$item_key, s$sub_sector, s$var, s$year, s$eu_mode, method = "radix"), , drop = FALSE]
 }
 
 # meta.reconcile: per trade cell, the matrix W, China share and HHI (members mode, from the

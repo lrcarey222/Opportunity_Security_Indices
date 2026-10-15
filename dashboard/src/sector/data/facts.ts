@@ -4,13 +4,19 @@
 import type { SectorFactsChunk, SectorSeriesChunk, StatusCode, WorldBasis } from '../contract.ts';
 import { NA_INT } from '../../engine/numeric.ts';
 
-/** One fact of a slice. `value` is NaN for nq / na_growth (and nsr where a zero-fill would read as a figure). */
+/**
+ * One fact of a slice. `value` is NaN for nq / na_growth (and nsr where a zero-fill would read as a
+ * figure); an nsr row of the net balance or self-sufficiency may carry the value that an assumed zero
+ * production gives (contract: facts.notes `production_assumed_zero`).
+ */
 export interface FactRow {
   geo: number;
   value: number;
   status: StatusCode;
   /** the per-row observation year (year_field vars), else null */
   obs_year: number | null;
+  /** dict.caveats ids of the row's facts.notes (absent when it has none) */
+  notes?: readonly string[];
 }
 
 export interface WorldRow {
@@ -21,6 +27,7 @@ export interface WorldRow {
 type ObsLike = SectorFactsChunk['facts.obs'];
 type IndexLike = SectorFactsChunk['facts.index'];
 type WorldLike = SectorFactsChunk['facts.world'];
+type NotesLike = NonNullable<SectorFactsChunk['facts.notes']>;
 
 /** Index over an obs / index / world triple (sector-facts or the annual part of sector-series). */
 export class FactsIndex {
@@ -30,9 +37,23 @@ export class FactsIndex {
   private readonly itemsByVar = new Map<number, number[]>();
   private readonly worlds = new Map<string, WorldRow>();
   private readonly rowCache = new Map<string, FactRow[]>();
+  /** facts.notes by `var|item|year|geo` */
+  private readonly noteMap = new Map<string, string[]>();
 
-  constructor(obs: ObsLike, index: IndexLike, world: WorldLike) {
+  constructor(obs: ObsLike, index: IndexLike, world: WorldLike, notes?: NotesLike | null) {
     this.obs = obs;
+    if (notes) {
+      const n = notes.cols;
+      for (let i = 0; i < notes.nrow; i++) {
+        const id = n.note[i];
+        if (!id) continue;
+        const k = `${n.var[i]}|${n.item[i]}|${n.year[i]}|${n.geo[i]}`;
+        const xs = this.noteMap.get(k);
+        if (xs) {
+          if (!xs.includes(id)) xs.push(id);
+        } else this.noteMap.set(k, [id]);
+      }
+    }
     const x = index.cols;
     for (let s = 0; s < index.nrow; s++) {
       const v = x.var[s];
@@ -73,6 +94,22 @@ export class FactsIndex {
     return this.slices.has(`${v}|${item}|${year}`);
   }
 
+  /** The facts.notes ids of one fact (dict.caveats ids), or an empty list. */
+  notesOf(v: number, item: number, year: number, geo: number): readonly string[] {
+    return this.noteMap.get(`${v}|${item}|${year}|${geo}`) ?? NO_NOTES;
+  }
+
+  /** Does the chunk carry any facts.notes row? */
+  get hasNotes(): boolean {
+    return this.noteMap.size > 0;
+  }
+
+  private withNotes(row: FactRow, v: number, item: number, year: number): FactRow {
+    if (!this.noteMap.size) return row;
+    const ns = this.noteMap.get(`${v}|${item}|${year}|${row.geo}`);
+    return ns ? { ...row, notes: ns } : row;
+  }
+
   /** The facts of one (var, item, year), sorted by geo index (the obs order). Cached per slice. */
   rows(v: number, item: number, year: number): FactRow[] {
     const key = `${v}|${item}|${year}`;
@@ -83,7 +120,7 @@ export class FactsIndex {
     if (s) {
       const c = this.obs.cols;
       for (let r = s.start; r < s.start + s.n; r++) {
-        out.push({ geo: c.geo[r], value: c.value[r], status: (c.status[r] ?? 'obs') as StatusCode, obs_year: c.obs_year[r] === NA_INT ? null : c.obs_year[r] });
+        out.push(this.withNotes({ geo: c.geo[r], value: c.value[r], status: (c.status[r] ?? 'obs') as StatusCode, obs_year: c.obs_year[r] === NA_INT ? null : c.obs_year[r] }, v, item, year));
       }
     }
     this.rowCache.set(key, out);
@@ -101,12 +138,12 @@ export class FactsIndex {
     while (lo <= hi) {
       const mid = (lo + hi) >> 1;
       const g = c.geo[mid];
-      if (g === geo) return { geo, value: c.value[mid], status: (c.status[mid] ?? 'obs') as StatusCode, obs_year: c.obs_year[mid] === NA_INT ? null : c.obs_year[mid] };
+      if (g === geo) return this.withNotes({ geo, value: c.value[mid], status: (c.status[mid] ?? 'obs') as StatusCode, obs_year: c.obs_year[mid] === NA_INT ? null : c.obs_year[mid] }, v, item, year);
       if (g < geo) lo = mid + 1;
       else hi = mid - 1;
     }
     // not sorted by geo (defensive): linear scan
-    for (let r = s.start; r < s.start + s.n; r++) if (c.geo[r] === geo) return { geo, value: c.value[r], status: (c.status[r] ?? 'obs') as StatusCode, obs_year: c.obs_year[r] === NA_INT ? null : c.obs_year[r] };
+    for (let r = s.start; r < s.start + s.n; r++) if (c.geo[r] === geo) return this.withNotes({ geo, value: c.value[r], status: (c.status[r] ?? 'obs') as StatusCode, obs_year: c.obs_year[r] === NA_INT ? null : c.obs_year[r] }, v, item, year);
     return null;
   }
 
@@ -126,12 +163,14 @@ export class FactsIndex {
   }
 }
 
+const NO_NOTES: readonly string[] = Object.freeze([]) as readonly string[];
+
 const factsCache = new WeakMap<object, FactsIndex>();
 
 export function factsIndexOf(chunk: SectorFactsChunk): FactsIndex {
   let f = factsCache.get(chunk);
   if (!f) {
-    f = new FactsIndex(chunk['facts.obs'], chunk['facts.index'], chunk['facts.world']);
+    f = new FactsIndex(chunk['facts.obs'], chunk['facts.index'], chunk['facts.world'], chunk['facts.notes'] ?? null);
     factsCache.set(chunk, f);
   }
   return f;

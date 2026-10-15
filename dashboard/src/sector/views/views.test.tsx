@@ -121,7 +121,8 @@ describe('Sector routes render on the fixture', () => {
   it('CSV of the Atlas', async () => {
     renderAt('/sector');
     await h1('Energy supply chains, measured');
-    expect(SECTOR_CSV_HEADER.split(',')).toHaveLength(17);
+    expect(SECTOR_CSV_HEADER.split(',')).toHaveLength(18);
+    expect(SECTOR_CSV_HEADER.endsWith(',note')).toBe(true);
   });
 
   it('the phone SectorBar opens a dialog that traps focus and closes on Escape', async () => {
@@ -189,7 +190,8 @@ describe('Sector profile', () => {
   });
 
   it('unknown stage goes to the chain; the chain renders', async () => {
-    const r = renderAt('/sector/semiconductors/upstream');
+    // Semiconductors has Upstream and Midstream cells (the Upstream basket since the 2026-10 review), no Downstream
+    const r = renderAt('/sector/semiconductors/downstream');
     await waitFor(() => expect(r.state.location.pathname).toBe('/sector/semiconductors'), { timeout: 10_000 });
     expect(await h1('Semiconductors: the supply chain')).toBeTruthy();
   });
@@ -268,7 +270,7 @@ describe('Concentration', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Every sector and measure' })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3, name: 'Exporter concentration, 2020 and 2024' })).toBeTruthy();
     // lens -> URL
-    fireEvent.click(screen.getByRole('radio', { name: 'HHI' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Concentration (HHI)' }));
     await waitFor(() => expect(r.state.location.search).toBe('?lens=hhi'));
     // rendered from sector-meta alone
     expect(source.calls.some((c) => c.startsWith('sector-facts'))).toBe(false);
@@ -416,7 +418,8 @@ describe('Sources & data', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'What Sector Insights shows' })).toBeTruthy();
     expect(screen.getByText(/Strategic Insights ranks and weighs; Sector Insights shows the measured data those rankings start from\./)).toBeTruthy();
     expect(screen.queryByText(/\{members_n\}|\{core_n\}/)).toBeNull();
-    for (const name of ['Variable dictionary', 'Sources', 'Coverage by sector and measure family', 'Coalition coverage', "Trade basis: the matrix and the exporters' reports"]) {
+    // the cards inside the Dictionary and Sources sections have their own names (unique landmarks, C5.8)
+    for (const name of ['Every measure: unit, years, source and caveats', 'Every source: edition, licence and attribution', 'Coverage by sector and measure family', 'Coalition coverage', "Trade basis: the matrix and the exporters' reports"]) {
       expect(screen.getByRole('heading', { level: 3, name })).toBeTruthy();
     }
     expect(screen.getByRole('heading', { level: 3, name: 'All sector data (.zip)' })).toBeTruthy();

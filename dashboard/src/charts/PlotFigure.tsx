@@ -61,9 +61,10 @@ export function PlotFigure<T>({ build, height, ariaLabel, tooltip, onSelect, min
     const fig = Plot.plot({ ...base, ...opts, style: { ...(base.style as object), ...((opts.style as object) ?? {}) } }) as Figure;
     fig.setAttribute('aria-label', ariaLabel);
     fig.setAttribute('role', 'img');
-    // Plot labels its mark groups (<g aria-label="bar">); inside role="img" they are presentational,
-    // and ARIA prohibits aria-label on a <g> without a role (axe: aria-prohibited-attr).
-    fig.querySelectorAll('g[aria-label]:not([role])').forEach((g) => g.removeAttribute('aria-label'));
+    // Plot labels its mark groups (<g aria-label="bar">) and single-element marks (the frame's
+    // <rect aria-label="frame">); inside role="img" they are presentational, and ARIA prohibits
+    // aria-label on an element without a role (axe: aria-prohibited-attr).
+    fig.querySelectorAll('g[aria-label]:not([role]), rect[aria-label]:not([role])').forEach((g) => g.removeAttribute('aria-label'));
     const onInput = () => {
       const v = fig.value as T | null | undefined;
       setHover(v === null || v === undefined ? null : { d: v, x: pos.current.x, y: pos.current.y });

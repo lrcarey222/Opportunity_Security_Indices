@@ -2,7 +2,7 @@
 // residual ("Not attributed", hatched); StateLegend lists only the value states present, in words and
 // texture (meaning never rests on colour alone).
 
-import { GROUP_COLOR, HATCH_STYLE, SEQ, SIGNAL, ZERO_FILL } from '../../theme/palette.ts';
+import { GROUP_COLOR, HATCH_STYLE, SIGNAL, TRI, ZERO_FILL } from '../../theme/palette.ts';
 import { groupLabel, SPLIT_ORDER } from './color.ts';
 import type { GroupLegendProps, StateLegendProps, ValueState } from './types.ts';
 
@@ -15,7 +15,14 @@ function Key({ kind, color }: { kind: Swatch; color?: string }) {
     case 'zero':
       return <span className="inline-block h-2.5 w-3.5" style={{ background: ZERO_FILL }} />;
     case 'ramp':
-      return <span className="inline-block h-2.5 w-5" style={{ background: `linear-gradient(to right, ${SEQ.join(', ')})` }} />;
+      // the three-colour scale as hard steps (orange low, white median, blue high)
+      return (
+        <span className="inline-flex h-2.5 w-9">
+          {TRI.map((c) => (
+            <span key={c} className="block h-full flex-1" style={{ background: c }} />
+          ))}
+        </span>
+      );
     case 'hollow':
       return <span className="inline-block h-2.5 w-2.5 rounded-full border-2" style={{ borderColor: color ?? '#d1d5db' }} />;
     case 'outline':

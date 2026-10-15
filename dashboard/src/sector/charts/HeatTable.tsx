@@ -1,18 +1,37 @@
-// HeatTable (spec_sector.md 4.7a, 4.8 coverage, 4.6 dyad OD matrix, 5.3): an HTML table with a
-// sequential cell fill (SEQ on the domain; reversed for "smaller = more", e.g. effective n) and the
-// numbers printed in the cells (text colour by contrast), no-data cells hatched, a sticky first
-// column, rows with sub-rows behind a disclosure chevron, and cells as buttons when interactive (the
-// current one outlined orange). Wide tables scroll inside their card.
+// HeatTable (spec_sector.md 4.7a, 4.8 coverage, 4.6 dyad OD matrix, 5.3): an HTML table with the
+// three-colour cell fill (spec_country.md C1.5: orange low, white at the median of the values shown,
+// blue high; the caller's `scale`, else one over every cell of the table) and the numbers printed in
+// the cells (text colour by contrast: ink or black, never white on orange), no-data cells hatched, a
+// sticky first column, rows with sub-rows behind a disclosure chevron, and cells as buttons when
+// interactive (the current one ringed ink under white, C1.4). Wide tables scroll inside their card.
 
-import { Fragment, useState, type CSSProperties } from 'react';
-import { HATCH_STYLE, SIGNAL, STAGE_COLOR } from '../../theme/palette.ts';
-import { seqStep, textOn } from './color.ts';
+import { Fragment, useMemo, useState, type CSSProperties } from 'react';
+import { HATCH_STYLE, RING_INNER, RING_OUTER, STAGE_COLOR } from '../../theme/palette.ts';
+import { triScale, triText } from '../../charts/scale.ts';
 import type { HeatCol, HeatRow, HeatTableProps } from './types.ts';
 
 const STAGE_NAME: Record<string, string> = { upstream: 'Upstream', midstream: 'Midstream', downstream: 'Downstream' };
 
-export function HeatTable({ rows, cols, cell, onCell, domain = [0, 1], reverse, caption, rowHeader = '' }: HeatTableProps) {
+/** Every cell value of the table, sub-rows included (the default scale's values). */
+function allValues(rows: readonly HeatRow[], cols: readonly HeatCol[], cell: HeatTableProps['cell']): number[] {
+  const out: number[] = [];
+  const walk = (rs: readonly HeatRow[]) => {
+    for (const r of rs) {
+      for (const c of cols) {
+        const v = cell(r.key, c.key).value;
+        if (v !== null && Number.isFinite(v)) out.push(v as number);
+      }
+      if (r.children?.length) walk(r.children);
+    }
+  };
+  walk(rows);
+  return out;
+}
+
+export function HeatTable({ rows, cols, cell, onCell, scale, reverse, caption, rowHeader = '' }: HeatTableProps) {
   const [open, setOpen] = useState<Set<string>>(() => new Set());
+  const own = useMemo(() => (scale ? null : triScale(allValues(rows, cols, cell), { reverse })), [scale, rows, cols, cell, reverse]);
+  const s = scale ?? own;
   const toggle = (k: string) =>
     setOpen((s) => {
       const n = new Set(s);
@@ -43,12 +62,14 @@ export function HeatTable({ rows, cols, cell, onCell, domain = [0, 1], reverse, 
           {cols.map((c) => {
             const v = cell(r.key, c.key);
             const has = v.value !== null && Number.isFinite(v.value);
-            const bg = has ? seqStep(v.value as number, domain[0], domain[1], reverse) : null;
+            const bg = has && s ? s.color(v.value as number) : null;
             const style: CSSProperties = {
               ...(bg ? { backgroundColor: bg } : HATCH_STYLE),
-              color: bg ? textOn(bg) : '#ffffff',
-              outline: v.selected ? `2px solid ${SIGNAL}` : undefined,
+              color: bg ? triText(bg) : '#ffffff',
+              // the selected cell: white at the edge over ink inside (orange would vanish on the low end)
+              outline: v.selected ? `2px solid ${RING_INNER}` : undefined,
               outlineOffset: -2,
+              boxShadow: v.selected ? `inset 0 0 0 4px ${RING_OUTER}` : undefined,
               transition: 'background-color 300ms ease',
             };
             // on a hatched (no-data) cell the words sit on a solid chip: text over the stripes had a

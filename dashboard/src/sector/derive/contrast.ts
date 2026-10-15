@@ -1,48 +1,40 @@
-// Atlas tile text colour per sequential step (spec_sector.md 4.1, 7): ink-900 on the light steps,
-// white on the dark ones, chosen by WCAG contrast so every step reaches 4.5:1 (unit-tested). Pure.
+// Tile colours on the three-colour scale (user edit 1a; spec_country.md C1.5): a tile's background is
+// its value's colour on a TriScale built from the tiles shown (orange lower, white the median, blue
+// higher), its text ink-900, white or black, whichever reads at >= 4.5:1 (palette triText; unit-
+// tested). Tiles also carry the side of the median in words, because the two steps next to white are
+// close in colour. Pure.
 
-import { INK, PAPER, SEQ } from '../../theme/palette.ts';
+import { contrast as wcag, triScale, triText, type TriOptions, type TriScale } from '../../charts/scale.ts';
 
-function channel(c: number): number {
-  const s = c / 255;
-  return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+export { wcag as contrast };
+
+/** The text colour (ink-900, white or black) with the better contrast on a background. */
+export const textOn = triText;
+
+export interface TriTile {
+  bg: string;
+  fg: string;
+  /** 0..8, the nearest TRI stop */
+  step: number;
+  side: 'below' | 'median' | 'above';
 }
 
-function rgb(color: string): [number, number, number] {
-  const m = /^rgb\((\d+)\s+(\d+)\s+(\d+)\)$/.exec(color);
-  if (m) return [Number(m[1]), Number(m[2]), Number(m[3])];
-  const h = color.replace('#', '');
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+/** Background, text colour, step and side of a tile value on a three-colour scale, or null (no colour: hatch). */
+export function triTile(s: TriScale, v: number | null | undefined): TriTile | null {
+  const bg = s.color(v);
+  const step = s.step(v);
+  const side = s.side(v);
+  if (!bg || step === null || side === null) return null;
+  return { bg, fg: triText(bg), step, side };
 }
 
-export function luminance(color: string): number {
-  const [r, g, b] = rgb(color);
-  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+/** A three-colour scale over the finite values of a set of tiles (the values that define it are the tiles shown). */
+export function tileScale(values: Iterable<number | null | undefined>, opts?: TriOptions): TriScale {
+  return triScale(values, opts);
 }
 
-export function contrast(a: string, b: string): number {
-  const la = luminance(a);
-  const lb = luminance(b);
-  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-}
-
-/** The text colour (ink-900 or white) with the higher contrast on a background. */
-export function textOn(bg: string): string {
-  return contrast(bg, INK[900]) >= contrast(bg, PAPER) ? INK[900] : PAPER;
-}
-
-/** The SEQ step (0..6) of a value in [lo, hi] (tiles use discrete steps so the text colour is tested). */
-export function seqStep(v: number, lo = 0, hi = 1): number {
-  if (!Number.isFinite(v)) return -1;
-  const t = hi > lo ? (v - lo) / (hi - lo) : 0;
-  return Math.max(0, Math.min(SEQ.length - 1, Math.floor(t * SEQ.length - 1e-12)));
-}
-
-/** Background and text colour of a lens value on SEQ (reverse for effective n). */
-export function seqTile(v: number, lo = 0, hi = 1, reverse = false): { bg: string; fg: string; step: number } | null {
-  const s = seqStep(v, lo, hi);
-  if (s < 0) return null;
-  const step = reverse ? SEQ.length - 1 - s : s;
-  const bg = SEQ[step];
-  return { bg, fg: textOn(bg), step };
+/** "above the median of the 33 tiles shown" (tooltips and aria-labels say the side in words). */
+export function sideWords(side: TriTile['side'] | null, n: number, noun = 'tiles'): string {
+  if (!side) return '';
+  return side === 'median' ? `at the median of the ${n} ${noun} shown` : `${side} the median of the ${n} ${noun} shown`;
 }

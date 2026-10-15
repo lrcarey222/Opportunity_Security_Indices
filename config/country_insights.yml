@@ -1,0 +1,538 @@
+# Country Insights (dashboard/, third module) and its policy memos (spec: scratch_dash/country/
+# spec_country.md, parts A and B). Read only by scripts/88_export_country_data.R and the pure helpers in
+# R/dashboard/country/; the pipeline does not read it. Editorial facts only: words, thresholds, caveat
+# texts and triggers, the raw-figure map of the "why" panels, and the memo rules. No weights: every index
+# value comes from data/processed (paper baseline).
+
+version: 1
+
+# The verbatim label of every memo (screen, PDF, Word); {as_of_label} is the baseline date.
+label: "AI-generated from the data and checked against it; paper baseline as of {as_of_label}."
+
+trade_year: 2024
+n_top_partners: 15
+n_top_lists: 10
+n_order: 25
+n_priority_sectors: 3
+n_supplier_rows: 12
+n_trade_parties: 5
+near_tie: 0.01
+# The allied-pick rule in words (network.pick.rule_d, 2026-10-14; {excluded} = COUNTRY_PICK_EXCLUDED_TECHS of
+# R/dashboard/country/country_network.R in lower case).
+pick_rule: "its top upstream or midstream sector on the Strategic Index, leaving out {excluded} (excluded from allied picks by rule) and sectors with no recorded resource base"
+few_economies: 10
+max_vars_per_category: 4
+
+# enum -> display words (the fact sheet's `words`; tokens and the UI print enums through it)
+words:
+  quadrant: {grow: "Grow", upgrade: "Upgrade", secure: "Secure", watch: "Watch"}
+  third: {high: "top third", middle: "middle third", low: "bottom third"}
+  policy_third: {high: "most policy", middle: "middle", low: "least policy"}
+  class:
+    aligned_high: "top priority with the most policy"
+    gap: "top priority with the least policy"
+    policy_ahead: "bottom priority with the most policy"
+    aligned_low: "bottom priority with the least policy"
+    partial: "in between"
+  reason: {fs: "reliable supplier", po: "export market", dp: "development partner"}
+  match:
+    priority_strong_ties: "a priority partner with strong ties today"
+    priority_weak_ties: "a priority partner with few ties today"
+    ties_lower_priority: "a strong tie today that the index ranks lower"
+  alignment: {"1": "same bloc", "0.5": "one nonaligned", "0": "opposite blocs"}
+  tier: {core: "core member", partner: "coalition partner", none: "outside the coalition"}
+  group: {china: "China", core: "core member", partner: "coalition partner", rest: "other economy"}
+  agreement:
+    G7: "the G7"
+    NATO: "NATO"
+    IPEF: "the Indo-Pacific Economic Framework"
+    MSP: "the Minerals Security Partnership"
+    MSP Forum: "the Minerals Security Partnership Forum"
+    U.S. FTA: "a U.S. free-trade agreement"
+  stage: {Upstream: "upstream", Midstream: "midstream", Downstream: "downstream"}
+  # meta.policy_basis (2026-10-14: printed through words, so the sheet's codes never reach a memo as bare acronyms)
+  policy_basis:
+    "IEA PAMS + CAT": "International Energy Agency Policies and Measures records and the Climate Action Tracker rating"
+    "IEA PAMS only": "International Energy Agency Policies and Measures records only"
+  # policy.nipo.policies[].scope (2026-10-14): eu = an EU-level measure (EU title prefix) that Global Trade Alert records
+  # under several EU members; multi = a measure recorded under several implementing jurisdictions; national = recorded
+  # under this economy alone
+  nipo_scope: {eu: "EU-wide", multi: "shared with other jurisdictions", national: "national"}
+
+# The four corners (A4.2 S2): the user's names, with RMI (2025) postures as descriptions.
+quadrants:
+  grow: {meaning: "High opportunity, high energy security: build on strength", posture: "export promotion"}
+  upgrade: {meaning: "High opportunity, low energy security: build capability", posture: "leapfrog"}
+  secure: {meaning: "Low opportunity, low energy security: secure supply through partners", posture: "friendshore"}
+  watch: {meaning: "Low opportunity, high energy security: look for value elsewhere", posture: "alternative value creation"}
+
+# Missing-data rules (index_outputs missing_rule_applied) in words (A9.6); {country} is filled in.
+missing_rules:
+  zero: "not reported by the source: counted as zero"
+  global_average: "missing for {country}: filled with the world average"
+
+# Sources whose figures never ship (licences; as Sector Insights). A raw row from one of them is shown as
+# "Index component; no single raw figure".
+restricted_sources: ["BNEF", "Bloomberg", "BCG"]
+
+# Raw figures behind the drivers (A9.6). One entry per (pillar, category, variable) of the index
+# contributions; `table` / `raw_variable` name the processed raw row; `raw_tech` is `cell` (the cell's
+# technology) or `mineral` (the mineral named in the variable, "Lithium Reserves" -> Lithium); `dict`
+# names the config/sector_dictionary.yml entry whose label, unit, display scale, data year and source the
+# figure uses (and the Sector Insights link); `constant: true` marks world-market measures that are the
+# same for every economy in a sector (never a driver). A variable not listed here shows "Index
+# component; no single raw figure". `eu_region` (2026-10-14) marks a regional figure that the pipeline
+# copies to every EU member (IEA ETP 2035 manufacturing-capacity shares; IEA EV-region figures): an EU
+# member whose value equals the one value the EU members share gets the raw note `eu_region_share`, with
+# these words as `note_d` (the page and the memos say it; caveat eu_region_share when a memo cites it).
+raw_tables:
+  - {pillar: es, category: "Energy Imports", variable: "Production surplus/deficit", table: import_dependence_tbl, raw_variable: "Production surplus/deficit", raw_tech: cell, dict: consumption.balance, item: fuel, label: "Production minus consumption"}
+  - {pillar: es, category: "Energy Access", variable: "Energy consumption per capita", table: energy_access_tbl, raw_variable: "Energy consumption per capita", raw_tech: cell, dict: consumption.per_capita, item: fuel, label: "Consumption per person"}
+  - {pillar: es, category: "Energy Access", variable: "Energy consumption per capita growth", table: energy_access_tbl, raw_variable: "Energy consumption per capita growth", raw_tech: cell, dict: consumption.pc_change, item: fuel, label: "Change in consumption per person"}
+  - {pillar: eo, category: "Energy Access", variable: "Energy consumption per capita", table: energy_access_tbl, raw_variable: "Energy consumption per capita", raw_tech: cell, dict: consumption.per_capita, item: fuel, label: "Consumption per person"}
+  - {pillar: eo, category: "Energy Access", variable: "Energy consumption per capita growth", table: energy_access_tbl, raw_variable: "Energy consumption per capita growth", raw_tech: cell, dict: consumption.pc_change, item: fuel, label: "Change in consumption per person"}
+  - {pillar: es, category: "Reserves", variable: "Oil Reserves", table: reserves_tbl, raw_variable: "Oil Reserves", raw_tech: cell, dict: resources.fuel_reserves, item: fuel, label: "Proved oil reserves"}
+  - {pillar: es, category: "Reserves", variable: "Gas Reserves", table: reserves_tbl, raw_variable: "Gas Reserves", raw_tech: cell, dict: resources.fuel_reserves, item: fuel, label: "Proved gas reserves"}
+  - {pillar: es, category: "Reserves", variable: "Coal Reserves", table: reserves_tbl, raw_variable: "Coal Reserves", raw_tech: cell, dict: resources.fuel_reserves, item: fuel, label: "Proved coal reserves"}
+  - {pillar: es, category: "Reserves", variable: "Nuclear Reserves", table: reserves_tbl, raw_variable: "Nuclear Reserves", raw_tech: cell, dict: resources.uranium_resources, item: cell, label: "Identified uranium resources"}
+  - {pillar: es, category: "Reserves", variable: "Lithium Reserves", table: reserves_tbl, raw_variable: "Lithium Reserves", raw_tech: mineral, dict: resources.mineral_reserves, item: mineral, label: "Lithium reserves"}
+  - {pillar: es, category: "Reserves", variable: "Cobalt Reserves", table: reserves_tbl, raw_variable: "Cobalt Reserves", raw_tech: mineral, dict: resources.mineral_reserves, item: mineral, label: "Cobalt reserves"}
+  - {pillar: es, category: "Reserves", variable: "Nickel Reserves", table: reserves_tbl, raw_variable: "Nickel Reserves", raw_tech: mineral, dict: resources.mineral_reserves, item: mineral, label: "Nickel reserves"}
+  - {pillar: es, category: "Reserves", variable: "Graphite Reserves", table: reserves_tbl, raw_variable: "Graphite Reserves", raw_tech: mineral, dict: resources.mineral_reserves, item: mineral, label: "Graphite reserves"}
+  - {pillar: es, category: "Reserves", variable: "Copper Reserves", table: reserves_tbl, raw_variable: "Copper Reserves", raw_tech: mineral, dict: resources.mineral_reserves, item: mineral, label: "Copper reserves"}
+  - {pillar: es, category: "Reserves", variable: "Manganese Reserves", table: reserves_tbl, raw_variable: "Manganese Reserves", raw_tech: mineral, dict: resources.mineral_reserves, item: mineral, label: "Manganese reserves"}
+  - {pillar: es, category: "Reserves", variable: "Rare Earths Reserves", table: reserves_tbl, raw_variable: "Rare Earths Reserves", raw_tech: mineral, dict: resources.mineral_reserves, item: mineral, label: "Rare-earth reserves"}
+  - {pillar: es, category: "Reserves", variable: "Zinc Reserves", table: reserves_tbl, raw_variable: "Zinc Reserves", raw_tech: mineral, dict: resources.mineral_reserves, item: mineral, label: "Zinc reserves"}
+  - {pillar: es, category: "Reserves", variable: "PGMs Reserves", table: reserves_tbl, raw_variable: "PGMs Reserves", raw_tech: mineral, dict: resources.mineral_reserves, item: mineral, label: "Platinum-group-metal reserves"}
+  - {pillar: es, category: "Production", variable: "Lithium Production", table: critical_minerals_production_tbl, raw_variable: "Lithium Production", raw_tech: mineral, dict: production.mining_ei, item: mineral, label: "Lithium production"}
+  - {pillar: es, category: "Production", variable: "Cobalt Production", table: critical_minerals_production_tbl, raw_variable: "Cobalt Production", raw_tech: mineral, dict: production.mining_ei, item: mineral, label: "Cobalt production"}
+  - {pillar: es, category: "Production", variable: "Nickel Production", table: critical_minerals_production_tbl, raw_variable: "Nickel Production", raw_tech: mineral, dict: production.mining_ei, item: mineral, label: "Nickel production"}
+  - {pillar: es, category: "Production", variable: "Graphite Production", table: critical_minerals_production_tbl, raw_variable: "Graphite Production", raw_tech: mineral, dict: production.mining_ei, item: mineral, label: "Graphite production"}
+  - {pillar: es, category: "Production", variable: "Copper Production", table: critical_minerals_production_tbl, raw_variable: "Copper Production", raw_tech: mineral, dict: production.mining_ei, item: mineral, label: "Copper production"}
+  - {pillar: es, category: "Production", variable: "Manganese Production", table: critical_minerals_production_tbl, raw_variable: "Manganese Production", raw_tech: mineral, dict: production.mining_ei, item: mineral, label: "Manganese production"}
+  - {pillar: es, category: "Production", variable: "Rare Earths Production", table: critical_minerals_production_tbl, raw_variable: "Rare Earths Production", raw_tech: mineral, dict: production.mining_ei, item: mineral, label: "Rare-earth production"}
+  - {pillar: es, category: "Production", variable: "Zinc Production", table: critical_minerals_production_tbl, raw_variable: "Zinc Production", raw_tech: mineral, dict: production.mining_ei, item: mineral, label: "Zinc production"}
+  - {pillar: es, category: "Production", variable: "PGMs Production", table: critical_minerals_production_tbl, raw_variable: "PGMs Production", raw_tech: mineral, dict: production.mining_ei, item: mineral, label: "Platinum-group-metal production", unit: "kg", unit_kind: kg}
+  - {pillar: es, category: "Production", variable: "Nuclear Production", table: critical_minerals_production_tbl, raw_variable: "Nuclear Production", raw_tech: cell, dict: production.uranium, item: cell, label: "Uranium mine production"}
+  - {pillar: es, category: "Minerals Trade", variable: "critmin_market_share", table: critical_minerals_trade_tbl, raw_variable: "critmin_market_share", raw_tech: cell, dict: null, label: "Share of world exports of the technology's minerals", unit: "share", unit_kind: share, source: comtrade_critmin}
+  - {pillar: es, category: "Minerals Trade", variable: "critmin_hhi", table: critical_minerals_trade_tbl, raw_variable: "critmin_hhi", raw_tech: cell, dict: null, label: "How concentrated world exports of the technology's minerals are", unit: "", unit_kind: hhi, source: comtrade_critmin, constant: true}
+  - {pillar: es, category: "Trade", variable: "deficit_gdp", table: trade_concentration_tbl, raw_variable: "deficit_gdp", raw_tech: cell, dict: null, label: "Trade deficit in these goods, share of GDP", unit: "of GDP", unit_kind: share, source: atlas}
+  - {pillar: es, category: "Trade", variable: "market_share", table: trade_concentration_tbl, raw_variable: "market_share", raw_tech: cell, dict: trade.atlas_share, item: cell, label: "Share of world exports"}
+  - {pillar: es, category: "Trade", variable: "HHI", table: trade_concentration_tbl, raw_variable: "HHI", raw_tech: cell, dict: null, label: "How concentrated world exports of these goods are", unit: "", unit_kind: hhi, source: comtrade_reported, constant: true}
+  - {pillar: es, category: "Foreign Dependency", variable: "Market Share", table: foreign_dependency_tbl, raw_variable: "Market Share", raw_tech: cell, dict: manufacturing.share_2035, item: cell, label: "Share of world manufacturing capacity, 2035 (announced)", eu_region: "the EU's announced share, carried by each EU member"}
+  - {pillar: es, category: "Foreign Dependency", variable: "market_share", table: foreign_dependency_tbl, raw_variable: "market_share", raw_tech: cell, dict: null, label: "Region's share of world electric-vehicle production", unit: "", unit_kind: share, source: iea_ev, eu_region: "the EU's share, carried by each EU member"}
+  - {pillar: es, category: "Foreign Dependency", variable: "net_export", table: foreign_dependency_tbl, raw_variable: "net_export_ratio", raw_tech: cell, dict: manufacturing.ev_net_export_ratio, item: cell, label: "Region's electric-vehicle net export ratio", eu_region: "the EU's ratio, carried by each EU member"}
+  - {pillar: es, category: "Foreign Dependency", variable: "production", table: foreign_dependency_tbl, raw_variable: "Domestic.Production", raw_tech: cell, dict: null, label: "Region's electric-vehicle production", unit: "million vehicles", unit_kind: mvehicles, source: iea_ev, eu_region: "the EU's figure, carried by each EU member"}
+  - {pillar: es, category: "Foreign Dependency", variable: "sales", table: foreign_dependency_tbl, raw_variable: "Domestic.sales", raw_tech: cell, dict: null, label: "Region's electric-vehicle sales", unit: "million vehicles", unit_kind: mvehicles, source: iea_ev, eu_region: "the EU's figure, carried by each EU member"}
+  - {pillar: eo, category: "Foreign Dependency", variable: "Overall Market Share", table: market_share_manufacturing_tbl, raw_variable: "Overall Market Share", raw_tech: cell, dict: null, label: "Share of world manufacturing capacity, 2035 (announced)", unit: "", unit_kind: share, source: iea_etp, eu_region: "the EU's announced share, carried by each EU member"}
+  - {pillar: eo, category: "Foreign Dependency", variable: "market_share", table: foreign_dependency_tbl, raw_variable: "market_share", raw_tech: cell, dict: null, label: "Region's share of world electric-vehicle production", unit: "", unit_kind: share, source: iea_ev, eu_region: "the EU's share, carried by each EU member"}
+  - {pillar: eo, category: "Foreign Dependency", variable: "net_export", table: foreign_dependency_tbl, raw_variable: "net_export_ratio", raw_tech: cell, dict: manufacturing.ev_net_export_ratio, item: cell, label: "Region's electric-vehicle net export ratio", eu_region: "the EU's ratio, carried by each EU member"}
+  - {pillar: eo, category: "Foreign Dependency", variable: "production", table: foreign_dependency_tbl, raw_variable: "Domestic.Production", raw_tech: cell, dict: null, label: "Region's electric-vehicle production", unit: "million vehicles", unit_kind: mvehicles, source: iea_ev, eu_region: "the EU's figure, carried by each EU member"}
+  - {pillar: eo, category: "Foreign Dependency", variable: "sales", table: foreign_dependency_tbl, raw_variable: "Domestic.sales", raw_tech: cell, dict: null, label: "Region's electric-vehicle sales", unit: "million vehicles", unit_kind: mvehicles, source: iea_ev, eu_region: "the EU's figure, carried by each EU member"}
+  - {pillar: eo, category: "Trade", variable: "export_size", table: export_feasibility_tbl, raw_variable: "exports", raw_tech: cell, dict: null, label: "Exports of these goods", unit: "USD", unit_kind: usd, source: comtrade_reported}
+  - {pillar: eo, category: "Trade", variable: "feas", table: export_feasibility_tbl, raw_variable: "feasibility", raw_tech: cell, dict: null, label: "Export feasibility (related capabilities)", unit: "", unit_kind: index01, source: atlas, year: "2023"}
+  - {pillar: eo, category: "Trade", variable: "market_share", table: export_feasibility_tbl, raw_variable: "market_share", raw_tech: cell, dict: trade.atlas_share, item: cell, label: "Share of world exports"}
+  - {pillar: eo, category: "Trade", variable: "rca", table: export_feasibility_tbl, raw_variable: "export_rca", raw_tech: cell, dict: trade.rca, item: cell, label: "Revealed comparative advantage"}
+  - {pillar: eo, category: "Trade", variable: "HHI", table: export_feasibility_tbl, raw_variable: "HHI", raw_tech: cell, dict: null, label: "How concentrated world exports of these goods are", unit: "", unit_kind: hhi, source: comtrade_reported, constant: true}
+  - {pillar: eo, category: "Production", variable: "size", table: production_depth_momentum_tbl, raw_variable: "production_latest", raw_tech: cell, dict: null, label: "Production", unit_by_cell: {oil-upstream: ["kb/d", kbd], gas-upstream: ["EJ", ej], coal-upstream: ["EJ", ej], coal-downstream: ["TWh", twh], gas-downstream: ["TWh", twh], oil-downstream: ["TWh", twh], nuclear-downstream: ["TWh", twh], solar-downstream: ["TWh", twh], wind-downstream: ["TWh", twh]}, source: ei}
+
+# Plain labels of the index components that have no single raw figure (the "What's behind it" list
+# prints "Index component; no single raw figure" beside them). First match wins: `variable` exact, or
+# `pattern` (a regular expression); `category` narrows the match when given. `eu_region_mean` (2026-10-14):
+# an index made only of regional figures the pipeline copies to every EU member; on an EU member whose
+# sibling raw figures all carry the note eu_region_share it gets that note too, with these words.
+var_labels:
+  - {category: "Consumption", variable: "installed_cap_index", label: "Use per person today (power capacity, or hydrogen use)"}
+  - {category: "Consumption", variable: "elec_growth_index", label: "Growth in use per person to 2035"}
+  - {category: "Cost Competitiveness", variable: "IEA Cost index", label: "Production cost, IEA cost data"}
+  - {category: "Cost Competitiveness", variable: "Input Cost Index", label: "Input costs: labour and capital"}
+  - {category: "Cost Competitiveness", variable: "LCOE Index", label: "Cost of generating electricity, today and in 2050"}
+  - {category: "Foreign Dependency", variable: "Overall Production", label: "Share of world manufacturing output", eu_region_mean: "the EU's index, carried by each EU member"}
+  - {category: "Foreign Dependency", variable: "Mineral Supply", label: "Share of world supply of the technology's minerals (mined or refined)"}
+  - {category: "Investment", variable: "Annual Investment Index", label: "Annual investment"}
+  - {category: "Investment", variable: "Investment Momentum Index", label: "Growth in investment"}
+  - {category: "Investment", variable: "Operating Capacity Index", label: "Capacity operating today"}
+  - {category: "Investment", variable: "Pipeline Capacity Index", label: "Capacity under construction or planned"}
+  - {category: "Production", variable: "Overall Production", label: "Production: size and growth combined"}
+  - {category: "Production", variable: "growth_abs", label: "Growth in production"}
+  - {category: "Production", pattern: "^.* Production$", label: "Mined supply of the technology's minerals"}
+  - {category: "Technology Demand", variable: "Overall Addressable Market", label: "Market the technology can address to 2050"}
+  - {category: "Technology Demand", variable: "Overall Demand", label: "Domestic demand to 2035: size and growth"}
+  - {category: "Technology Demand", variable: "Overall Global Demand", label: "World demand to 2035"}
+  - {category: "Technology Demand", variable: "Overall Overcapacity", label: "World manufacturing overcapacity"}
+  - {category: "Reserves", variable: "Overall Geothermal Potential Index", label: "Geothermal resource potential"}
+  - {category: "Reserves", variable: "Overall Solar PV Potential Index", label: "Solar resource potential"}
+  - {category: "Reserves", variable: "Overall Wind Potential Index", label: "Wind resource potential"}
+  - {category: "Reserves", pattern: "^.* Reserves$", label: "Reserves of the technology's minerals"}
+
+# Raw-figure notes in plain words (the raw value's `note_d`; 2026-10-14). The notes come from the Sector
+# facts chunk (production_assumed_zero, eia_production) or from raw_tables `eu_region` (eu_region_share,
+# whose words are the entry's own; the line below is the fallback).
+raw_note_words:
+  production_assumed_zero: "no source reports this production separately, so it is taken as zero"
+  eia_production: "production from the U.S. Energy Information Administration's international statistics, as the Energy Institute does not report it separately"
+  eia_consumption: "consumption from the U.S. Energy Information Administration's international statistics, as the Energy Institute does not report it"
+  fossil_assumed_zero: "a fuel whose production is not reported separately counts as zero in this sum"
+  eu_region_share: "the EU's figure, carried by each EU member"
+
+# A raw-figure note that names another source (2026-10-14): the sheet lists that source and the memo's
+# source list credits it beside the figure's own (production minus consumption: production from the EIA).
+raw_note_sources:
+  eia_production: eia_intl
+  eia_consumption: eia_intl
+
+# Industrial-policy measures of the Global Trade Alert New Industrial Policy Observatory (user addition
+# 2026-10-12): the top active measures per sector from data/processed/nipo_policy_all.rds, ranked by the
+# package-adjusted strength (policy_strength_pkg). Context only: NIPO is not in the Policy index.
+nipo:
+  n_top: 5
+  # 2026-10-14: a measure mapped to this many technologies or more (sanctions, most-favoured-nation
+  # revocations, export controls) is economy-wide: listed in a sector after its sector-specific measures.
+  economy_wide_min_techs: 9
+  measure: policy_strength_pkg
+  # not_removed (the user's rule, 2026-10-12): active = no removal date or one after the baseline date;
+  # measures not yet implemented on that date (announced, scheduled or without a date) are listed, marked
+  # as such, and counted (n_not_in_force). in_force: also implemented on or before the baseline date, the
+  # NIPO pipeline's own active rule (add_asof_flags()); announced or scheduled measures are then counted,
+  # not listed.
+  active_rule: not_removed
+  # The extract of the latest completed NIPO run: the October 2026 refresh (data/processed/
+  # nipo_refresh_manifest.txt: GTA NIPO - October 2026.xlsx, as of 2026-10-05, run 2026-10-13 with the
+  # debiased strength and lower-memory pipeline of PR #333). scripts/88 checks it: every title of the run
+  # must be in this extract (data/raw), and lists how many are missing from the other extracts on disk.
+  vintage: "2026-10"
+  extract_file: "GTA NIPO - October 2026.xlsx"
+  vintage_label: "Global Trade Alert, New Industrial Policy Observatory, October 2026 extract (as of 5 October 2026)"
+  # EU-wide and shared measures (2026-10-14): Global Trade Alert records an EU-level measure under every EU member
+  # it applies to (title prefix "EU:", "EC:", ...). A measure recorded under more than one implementing
+  # jurisdiction in the run is shared (scope multi), and EU-wide (scope eu) when a part of its title prefix (split
+  # on "-", ",", "&" and " and ") is one of these names; a measure recorded under this economy alone is national,
+  # whatever its prefix (an "EC:" state-aid approval of a national scheme). The sheet counts them
+  # (n_active_eu, n_active_shared, n_listed, n_listed_eu, n_listed_shared) and marks each listed measure.
+  eu_prefixes: ["EU", "EC", "European Union", "EU Countries", "European Commission", "EU-27", "EU27"]
+  # an EU-prefixed title recorded under fewer jurisdictions than this is "shared", not EU-wide (a joint scheme of a few members)
+  eu_min_jurisdictions: 5
+  strength_words: "Strength scores a measure by the bite of its instrument (a grant, loan, local-content rule or import ban counts more than monitoring), whether Global Trade Alert judges it to favour domestic firms, how widely it applies (a whole sector counts more than one named firm) and the money or trade it covers; measures that are part of a package of several instrument types count up to 60% more."
+  confidence_words: "Mapping confidence says how firmly the measure's product list and text tie it to energy sectors (averaged over the sectors it maps to): 0.10 when none of its listed products are energy-sector goods, 0.25 for a measure without a product list, from 0.75 up when its products fall in these sectors, and up to 2 when its title, source and Global Trade Alert's sector flags corroborate the mapping."
+
+# Generated caveats (A8.4), one sentence each. Placeholders: {country}, {as_of_label}, {share}, {n},
+# {few}, {sovereign}. `trigger` is the machine rule the memo renderer evaluates over the cited claims.
+caveats:
+  relative_scores: {trigger: always, text: "Scores compare {country} with other economies in the same sector; they are not measures of risk or profit in absolute terms."}
+  baseline: {trigger: always, text: "All index values are the paper's baseline as of {as_of_label}; Strategic Insights recomputes them under other weightings."}
+  rankability: {trigger: cited_unplaced, text: "Some of {country}'s sectors are not placed: a score is compared with other economies only when the economy is sovereign and at most half of the score rests on filled-in data."}
+  imputed_driver: {trigger: cited_imputed_driver, text: "Some figures behind these scores are filled in where the source has no value: with zero where a source lists every holder, otherwise with the world average."}
+  policy_pams_only: {trigger: policy_token_pams_only, text: "The Climate Action Tracker does not rate {country}, so its policy activity rests on International Energy Agency Policies and Measures records alone; its policy levels compare only with economies on the same basis."}
+  no_si: {trigger: no_si, text: "{country} has no Strategic Index because it has no International Energy Agency Policies and Measures records."}
+  near_tie: {trigger: near_tie, text: "Strategic Index scores within 0.01 of each other are almost tied: small changes in the data or the weights can swap their order."}
+  eu_node: {trigger: network_token_eu, text: "In the allied network design the European Union is one producer; {country}'s shares are derived from its weight within the EU."}
+  inherited_alignment: {trigger: alignment_token_inherited, text: "{country} has no UN votes of its own; its alignment is {sovereign}'s."}
+  assumed_zero_production: {trigger: cited_raw_note_production_assumed_zero, text: "Where no source reports a country's production of a fuel separately, it is taken as zero, so the balance of production and consumption equals minus consumption."}
+  cmfdi_coverage: {trigger: fdi_token, text: "Factory projects are cross-border solar, wind, battery and electric-vehicle manufacturing projects only, announced projects included, which may never be built; domestic investment is not covered (Cleantech Manufacturing FDI Dataset, edition {cmfdi_edition}, CC BY 4.0; counts by the authors, a joint venture counted under its listed parent)."}
+  trade_mirror: {trigger: cited_mirror_flow, text: "Where {country} or a partner did not report a flow, it is read from the other side's report, raised by 6% to value it like imports."}
+  few_economies: {trigger: cited_few_economies, text: "Some sectors have fewer than {few} economies with comparable scores, so their percentiles move in large steps."}
+  cat_eu_bloc: {trigger: cat_token_eu_bloc, text: "The Climate Action Tracker rates the EU as a whole; {country} carries the EU's rating."}
+  intra_eu: {trigger: eu_trade_token, text: "Trade figures count trade with other EU members."}
+  hkg_reexport: {trigger: hkg_cited, text: "Hong Kong's trade is largely re-exports."}
+  pick_stability: {trigger: pick_token, text: "Many allied picks are close calls: in the paper, {share} of them are within 0.01 of the runner-up."}
+  ownership_parent: {trigger: china_token, text: "A parent's home is where it is headquartered, not its ultimate owner."}
+  eu_policy_records: {trigger: eu_policy_token, text: "{country}'s counts leave out the EU's own {n} International Energy Agency policy records."}
+  # 2026-10-14: shortened from 43 to 26 words (section 5 budget); the extract and its as-of date stay in {nipo_vintage}
+  nipo_context: {trigger: nipo_token, text: "Industrial-policy measures from the {nipo_vintage} are context only, outside the Policy index."}
+  # 2026-10-14: a cited driver whose raw figure is the EU's regional value (raw note eu_region_share)
+  eu_region_share: {trigger: cited_raw_note_eu_region_share, text: "Each EU member carries the EU's announced 2035 manufacturing-capacity shares and electric-vehicle figures."}
+
+# Sources the sheet cites besides the Sector dictionary's (merged by id; the dictionary wins for its own).
+sources:
+  - {id: osi_indices, label: "Energy Security, Economic Opportunity, Strategic Index and Partnership Strength Index, paper baseline (Opportunity Security Indices pipeline)", licence: "CC BY 4.0 (the paper's indices)", url: null}
+  - {id: agreements, label: "Economic-security agreements: G7, NATO, Indo-Pacific Economic Framework, Minerals Security Partnership (and Forum), U.S. free-trade agreements (compiled by the authors from official membership lists)", licence: null, url: null}
+  - {id: wdi, label: "World Bank, World Development Indicators: country region and income group", licence: "CC BY 4.0", url: "https://datacatalog.worldbank.org/"}
+  - {id: network, label: "Allied network design (the paper's model design of coalition production shares)", licence: null, url: null}
+  - {id: iea_etp, label: "International Energy Agency, Energy Technology Perspectives 2024: manufacturing capacity shares", licence: "International Energy Agency terms of use", url: "https://www.iea.org/"}
+  # edition: the extract of nipo.vintage_label (keep the two together)
+  - {id: gta_nipo, label: "Global Trade Alert, New Industrial Policy Observatory: industrial-policy interventions, strength scored by the authors", edition: "October 2026 extract (as of 5 October 2026)", licence: "subscription (titles, dates and links only)", url: "https://www.globaltradealert.org/"}
+
+# Source names spelled out where the Sector dictionary abbreviates them (2026-10-14: no bare "IEA" in the
+# sheet's source list or raw-figure source lines). `label` replaces the citation, `short` the short name;
+# edition, licence and url stay the dictionary's.
+source_names:
+  iea_pams: {label: "International Energy Agency, Policies and Measures Database", short: "International Energy Agency Policies and Measures"}
+  iea_ev: {label: "International Energy Agency, Global EV Outlook: electric-vehicle production and sales by region, 2021-2024", short: "International Energy Agency Global EV Outlook (regions)"}
+  iea_etp: {short: "International Energy Agency Energy Technology Perspectives"}
+  iea_cm: {label: "International Energy Agency (2026), Critical Minerals Dataset 2026, Paris", short: "International Energy Agency Critical Minerals Dataset"}
+  iea_gevo: {label: "International Energy Agency (2026), Global EV Outlook 2026, electric-vehicle data by country (cars)", short: "International Energy Agency Global EV Outlook 2026"}
+  iea_weo: {label: "International Energy Agency (2025), World Energy Outlook 2025, Annex A (Stated Policies Scenario, world)", short: "International Energy Agency World Energy Outlook 2025"}
+  iea_ctg: {label: "International Energy Agency (2026), Energy Technology Perspectives Clean Energy Technology Guide, public dataset", short: "International Energy Agency Clean Energy Technology Guide"}
+
+# Token path prefixes -> source ids (longest prefix wins; A8.2 src_map, B4).
+src_map:
+  - {prefix: "summary", src: osi_indices}
+  - {prefix: "cells.*.es", src: osi_indices}
+  - {prefix: "cells.*.eo", src: osi_indices}
+  - {prefix: "cells.*.si", src: osi_indices}
+  - {prefix: "cells.*.quadrant", src: osi_indices}
+  - {prefix: "cells.*.priority", src: osi_indices}
+  - {prefix: "cells.*.drivers", src: osi_indices}
+  - {prefix: "cells.*.policy", src: iea_pams}
+  - {prefix: "cells.*.policy.index", src: osi_indices}
+  - {prefix: "cells.*.policy.pol", src: osi_indices}
+  - {prefix: "cells.*.policy.third", src: osi_indices}
+  - {prefix: "cells.*.policy.class", src: osi_indices}
+  - {prefix: "cells.*.trade", src: comtrade_matrix}
+  - {prefix: "cells.*.fdi", src: cmfdi}
+  - {prefix: "priority_sectors", src: osi_indices}
+  - {prefix: "policy.cat", src: cat}
+  - {prefix: "policy.pams", src: iea_pams}
+  - {prefix: "policy.coverage", src: iea_pams}
+  - {prefix: "policy.agreement", src: osi_indices}
+  - {prefix: "policy.nipo", src: gta_nipo}
+  - {prefix: "partners.*.rank", src: osi_indices}
+  - {prefix: "partners.*.psi", src: osi_indices}
+  - {prefix: "partners.*.fs", src: osi_indices}
+  - {prefix: "partners.*.po", src: osi_indices}
+  - {prefix: "partners.*.dp", src: osi_indices}
+  - {prefix: "partners.*.reason", src: osi_indices}
+  - {prefix: "partners.*.match", src: osi_indices}
+  - {prefix: "partners.*.ties", src: comtrade_matrix}
+  - {prefix: "partners.*.ties.fdi_", src: cmfdi}
+  - {prefix: "partners.*.ties.agreements", src: agreements}
+  - {prefix: "partners.*.ties.alignment", src: un_votes}
+  - {prefix: "partners.*.ties.bloc", src: un_votes}
+  - {prefix: "partners.*.name", src: osi_indices}
+  - {prefix: "partners.psi_order", src: osi_indices}
+  - {prefix: "partners.tie_order", src: comtrade_matrix}
+  - {prefix: "partners.n_", src: osi_indices}
+  - {prefix: "network", src: network}
+  - {prefix: "meta.agreements", src: agreements}
+  - {prefix: "meta.bloc", src: un_votes}
+  - {prefix: "meta.alignment", src: un_votes}
+  - {prefix: "meta.region", src: wdi}
+  - {prefix: "meta.income_group", src: wdi}
+  - {prefix: "meta.policy_basis", src: osi_indices}
+
+# ---- Memo (part B) ---------------------------------------------------------------------------------
+
+memo:
+  title: "{country}: energy security, economic opportunity and partnership priorities"
+  subtitle: "Policy memo · Country Insights · Allied Industrial Base Explorer · NEIS Center"
+  footer: "Allied Industrial Base Explorer, Country Insights: {country}"
+  sections:
+    - "Energy security risks and why"
+    - "Economic opportunities and why"
+    - "Sectoral priorities and the existing policy posture"
+    - "Partnership priorities and why"
+    - "Data notes and caveats"
+  words_total: [900, 1300]
+  words_summary: [90, 140]
+  summary_bullets: [4, 5]
+  words_sections_target: [[220, 300], [180, 260], [180, 260], [180, 260], [80, 150]]
+  words_sections_hard: [[180, 340], [150, 300], [150, 300], [150, 300], [60, 180]]
+  sentence_words_max: 35
+  page_size: Letter
+
+# Lint word lists (B4-B6)
+number_words: ["two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety", "hundred", "hundreds", "thousand", "thousands", "million", "millions", "billion", "billions", "dozen", "dozens", "half", "halves", "quarter", "quarters", "twice", "double", "doubled", "triple", "tripled", "majority", "minority", "second", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"]
+number_words_fraction: ["third", "thirds"]
+number_warnings: ["one", "first"]
+number_phrases: ["the four corners", "best five", "both scores", "three-colour", "one of", "second-largest", "into thirds", "in thirds", "both pillars", "the two low-energy-security corners", "the two high-opportunity corners", "the two scores"]
+# Source names that contain an acronym and may stand in plain text (B4: the glossary's source names).
+acronym_phrases: ["IEA Policies and Measures", "UN Comtrade", "UN General Assembly"]
+causal_words: ["because", "mainly", "driven by", "due to", "pulls", "pull", "pushes", "push", "reflects", "reflect", "explains", "explain", "owing to", "as a result of"]
+order_words: ["lowest", "highest", "top", "largest", "strongest", "weakest", "leading", "main", "biggest", "smallest"]
+tone_words: ["should", "must", "need to", "needs to", "recommend", "urge", "crisis", "dangerous", "vulnerable", "critical"]
+banned_labels: ["secure sector", "secure sectors", "insecure sector", "insecure sectors", "secure stage", "secure stages", "insecure stage", "insecure stages", "secure corner", "insecure", "is secure", "are secure"]
+# RMI is an organisation's name (the framework's postures are attributed to "RMI (2025)"), not an abbreviation.
+allowed_acronyms: ["EU", "UN", "G7", "NATO", "RMI"]
+corner_words: ["Grow", "Upgrade", "Secure", "Watch"]
+capital_allowlist: ["Global Trade Alert", "New Industrial Policy Observatory", "Energy Security", "Economic Opportunity", "Strategic Index", "Partnership Strength Index", "Partnership Strength", "Friendshore", "Partnership Opportunity", "Development Potential", "Policy activity", "Climate Action Tracker", "IEA", "International Energy Agency", "Policies and Measures", "UN Comtrade", "Country Insights", "Strategic Insights", "Sector Insights", "Allied Industrial Base Explorer", "RMI", "European Union", "United Nations", "Grow", "Upgrade", "Secure", "Watch", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "Cleantech Manufacturing", "Harvard Atlas", "Atlas of Economic Complexity", "World Bank", "The", "This", "Its", "It", "For", "On", "In", "A", "An", "Where", "When", "Both", "These", "Those", "Among", "Across", "Against", "Compared", "By", "With", "Of", "As", "At", "No", "None", "Scores", "Values", "Trade", "Factory", "Upstream", "Midstream", "Downstream"]
+# Names that count as economy names for the "no outside economy names" check (besides the roster).
+name_aliases: ["America", "Britain", "UK", "U.S.", "US", "USA", "PRC", "Korea", "Russia", "Taiwan", "Hong Kong", "Macao", "Macau", "Europe"]
+
+# The meaning of every token path (B4): one line per path pattern, filled from the sheet for the claims
+# file, so the verifier reads what each number is. `*` matches one path segment (a trailing `*` inside a
+# segment matches its rest); the first match wins. Placeholders: {country}, {label} (the sector),
+# {name} (the partner), {party} (a trade party), {i} (an ordinal position), {pillar}, {category},
+# {variable}, {direction}, {year}, {source}, {n_others}, {trade_year}, {q} (a corner), {class}, {key},
+# {scope}.
+path_meanings:
+  - {path: "meta.country", meaning: "the memo's own country"}
+  - {path: "meta.as_of_label", meaning: "the date of the paper baseline the memo reports"}
+  - {path: "meta.trade_year", meaning: "the year of the trade figures"}
+  - {path: "meta.un_window", meaning: "the years of UN General Assembly votes behind the alignment scores"}
+  - {path: "meta.cmfdi_edition", meaning: "the edition of the CM-FDI cross-border factory-project data"}
+  - {path: "meta.rank_threshold", meaning: "the largest share of a score's weight that may rest on filled-in data for the score to be compared with other economies"}
+  - {path: "meta.region", meaning: "the World Bank region of {country}"}
+  - {path: "meta.income_group", meaning: "the World Bank income group of {country}"}
+  - {path: "meta.policy_basis", meaning: "what {country}'s Policy index rests on: IEA Policies and Measures records, with or without the Climate Action Tracker rating"}
+  - {path: "meta.agreements", meaning: "economic-security agreements {country} belongs to"}
+  - {path: "meta.bloc", meaning: "{country}'s bloc in UN General Assembly votes"}
+  - {path: "meta.alignment_s", meaning: "{country}'s position on the UN-vote axis, 0 China-leaning to 1 U.S.-leaning"}
+  - {path: "meta.tier", meaning: "{country}'s place in the allied coalition"}
+  - {path: "summary.n_cells", meaning: "number of technology-stage sectors in the paper"}
+  - {path: "summary.n_scored", meaning: "number of {country}'s sectors with both an Energy Security and an Economic Opportunity score"}
+  - {path: "summary.n_placed", meaning: "number of {country}'s sectors whose two scores can both be compared with other economies, so they sit in a corner"}
+  - {path: "summary.quadrants.*", meaning: "number of {country}'s placed sectors in the {q} corner"}
+  - {path: "summary.n_insecure", meaning: "number of {country}'s placed sectors in the two low-energy-security corners (Upgrade and Secure)"}
+  - {path: "summary.n_high_eo", meaning: "number of {country}'s placed sectors in the two high-opportunity corners (Grow and Upgrade)"}
+  - {path: "summary.es_order", meaning: "{country}'s placed sectors from the lowest Energy Security percentile up"}
+  - {path: "summary.eo_order", meaning: "{country}'s placed sectors from the highest Economic Opportunity percentile down"}
+  - {path: "summary.si_order", meaning: "{country}'s sectors in the Strategic Index sample, by Strategic Index rank"}
+  - {path: "summary.top_si.si", meaning: "Strategic Index score of {country}'s top sector, 0 to 1, among its own sectors"}
+  - {path: "summary.top_si.margin", meaning: "how much higher {country}'s top Strategic Index sector scores than its second (below 0.01: almost tied)"}
+  - {path: "summary.top_si.next*", meaning: "{country}'s second Strategic Index sector"}
+  - {path: "summary.top_si.*", meaning: "{country}'s top Strategic Index sector"}
+  - {path: "summary.psi_1.psi", meaning: "Partnership Strength of the partner rated highest for {country}, 0 to 1, from {country}'s viewpoint"}
+  - {path: "summary.psi_1.n_ranked", meaning: "number of partners ranked for {country} by Partnership Strength"}
+  - {path: "summary.psi_1.*", meaning: "the partner the Partnership Strength Index rates highest for {country}"}
+  - {path: "summary.as_partner.rank", meaning: "{country}'s rank as a partner to the coalition, by Partnership Strength averaged over the core members' viewpoints"}
+  - {path: "summary.as_partner.n", meaning: "number of economies ranked as partners to the coalition"}
+  - {path: "summary.as_partner.psi", meaning: "{country}'s Partnership Strength as a partner to the coalition, averaged over the core members' viewpoints, 0 to 1"}
+  - {path: "summary.as_partner.view", meaning: "the viewpoint of the coalition partner ranking"}
+  - {path: "cells.*.label", meaning: "the sector {label}"}
+  - {path: "cells.*.label_prose", meaning: "the sector {label}"}
+  - {path: "cells.*.tech", meaning: "the technology of the sector {label}"}
+  - {path: "cells.*.stage", meaning: "the supply-chain stage of the sector {label}"}
+  - {path: "cells.*.quadrant", meaning: "the corner of {label} for {country} (Grow, Upgrade, Secure or Watch), from its Energy Security and Economic Opportunity against the sector's medians"}
+  - {path: "cells.*.es", meaning: "Energy Security score of {label} for {country}, 0 to 1, paper baseline (higher is more secure)"}
+  - {path: "cells.*.es.pct", meaning: "share of the other {n_others} economies scored in {label} whose Energy Security is lower than {country}'s"}
+  - {path: "cells.*.es.med", meaning: "Energy Security of the middle (median) economy in {label}"}
+  - {path: "cells.*.es.n", meaning: "number of economies whose two scores are comparable in {label}"}
+  - {path: "cells.*.es.n_others", meaning: "number of other economies {country} is compared with in {label}"}
+  - {path: "cells.*.es.order", meaning: "position of {label} among {country}'s placed sectors, counted from the lowest Energy Security percentile"}
+  - {path: "cells.*.es.imputed_share", meaning: "share of the weight of {country}'s Energy Security in {label} that rests on filled-in data"}
+  - {path: "cells.*.eo", meaning: "Economic Opportunity score of {label} for {country}, 0 to 1, paper baseline (higher is more opportunity)"}
+  - {path: "cells.*.eo.pct", meaning: "share of the other {n_others} economies scored in {label} whose Economic Opportunity is lower than {country}'s"}
+  - {path: "cells.*.eo.med", meaning: "Economic Opportunity of the middle (median) economy in {label}"}
+  - {path: "cells.*.eo.n", meaning: "number of economies whose two scores are comparable in {label}"}
+  - {path: "cells.*.eo.n_others", meaning: "number of other economies {country} is compared with in {label}"}
+  - {path: "cells.*.eo.order", meaning: "position of {label} among {country}'s placed sectors, counted from the highest Economic Opportunity percentile"}
+  - {path: "cells.*.eo.imputed_share", meaning: "share of the weight of {country}'s Economic Opportunity in {label} that rests on filled-in data"}
+  - {path: "cells.*.si", meaning: "Strategic Index score of {label}, 0 to 1, among {country}'s own sectors"}
+  - {path: "cells.*.si.rank", meaning: "rank of {label} among {country}'s own sectors on the Strategic Index"}
+  - {path: "cells.*.si.n", meaning: "number of {country}'s sectors in the Strategic Index sample"}
+  - {path: "cells.*.si.margin_next", meaning: "how much higher {label} scores on the Strategic Index than {country}'s next-ranked sector (below 0.01: almost tied)"}
+  - {path: "cells.*.si.parts.eo", meaning: "the opportunity term of {label}'s Strategic Index: 0.3 x its Economic Opportunity"}
+  - {path: "cells.*.si.parts.need", meaning: "the security-need term of {label}'s Strategic Index: 0.3 x (1 - its Energy Security)"}
+  - {path: "cells.*.si.parts.pol", meaning: "the policy term of {label}'s Strategic Index: 0.2 x its policy activity ranked within {country}"}
+  - {path: "cells.*.si.parts.stage", meaning: "the stage term of {label}'s Strategic Index: 0.1 x the stage weight (the same for every country)"}
+  - {path: "cells.*.si.parts.tech", meaning: "the technology term of {label}'s Strategic Index: 0.1 x the technology's low-emission weight (the same for every country)"}
+  - {path: "cells.*.priority.v", meaning: "{label}'s Strategic Index without its policy term"}
+  - {path: "cells.*.priority.rank", meaning: "rank of {label} among {country}'s sectors on the Strategic Index without its policy term"}
+  - {path: "cells.*.priority.third", meaning: "the third of {country}'s sectors that {label} falls in on the Strategic Index without its policy term"}
+  - {path: "cells.*.policy.index", meaning: "Policy index of {label} for {country}, 0 to 1 (IEA records and, where it rates the country, the Climate Action Tracker read against the technology)"}
+  - {path: "cells.*.policy.pol", meaning: "policy activity of {label} ranked within {country}, 0 to 1"}
+  - {path: "cells.*.policy.rank", meaning: "rank of {label} among {country}'s sectors on policy activity"}
+  - {path: "cells.*.policy.third", meaning: "the third of {country}'s sectors that {label} falls in on policy activity"}
+  - {path: "cells.*.policy.class", meaning: "how {label}'s data-based priority third and its policy-activity third compare"}
+  - {path: "cells.*.policy.records_specific", meaning: "IEA Policies and Measures records of {country} that name both {label}'s technology and its stage"}
+  - {path: "cells.*.policy.records_tech", meaning: "IEA Policies and Measures records of {country} that name the technology of {label}, at any stage"}
+  - {path: "cells.*.policy.records_all", meaning: "IEA Policies and Measures records counted in {label}, including records that name no technology or no stage"}
+  - {path: "cells.*.policy.latest_year", meaning: "year of the latest IEA record specific to {label} (future years are planned end or review dates)"}
+  - {path: "cells.*.trade.imports", meaning: "{country}'s imports of the {label} basket of goods in {trade_year} (UN Comtrade, reconciled)"}
+  - {path: "cells.*.trade.exports", meaning: "{country}'s exports of the {label} basket of goods in {trade_year} (UN Comtrade, reconciled)"}
+  - {path: "cells.*.trade.year", meaning: "the year of the trade figures"}
+  - {path: "cells.*.trade.sources.*.name", meaning: "the {i} largest source of {country}'s {label} imports in {trade_year}"}
+  - {path: "cells.*.trade.sources.*.share", meaning: "{party}'s share of {country}'s {label} imports in {trade_year}"}
+  - {path: "cells.*.trade.sources.*.value", meaning: "value of {country}'s {label} imports from {party} in {trade_year}"}
+  - {path: "cells.*.trade.sources.*.*", meaning: "the {i} largest source of {country}'s {label} imports in {trade_year} ({party}): {key}"}
+  - {path: "cells.*.trade.markets.*.name", meaning: "the {i} largest market for {country}'s {label} exports in {trade_year}"}
+  - {path: "cells.*.trade.markets.*.share", meaning: "{party}'s share of {country}'s {label} exports in {trade_year}"}
+  - {path: "cells.*.trade.markets.*.value", meaning: "value of {country}'s {label} exports to {party} in {trade_year}"}
+  - {path: "cells.*.trade.markets.*.*", meaning: "the {i} largest market for {country}'s {label} exports in {trade_year} ({party}): {key}"}
+  - {path: "cells.*.fdi.in_n", meaning: "cross-border factory projects in {country} in {label} (CM-FDI)"}
+  - {path: "cells.*.fdi.in_china_n", meaning: "cross-border factory projects in {country} in {label} whose parent is headquartered in China, Hong Kong or Macao (CM-FDI)"}
+  - {path: "cells.*.fdi.out_n", meaning: "cross-border factory projects by {country}'s firms abroad in {label} (CM-FDI)"}
+  - {path: "cells.*.drivers.*.*.vars.*.raw.year", meaning: "the data year of the raw figure for {variable} ({country}, {label})"}
+  - {path: "cells.*.drivers.*.*.vars.*.raw.unit", meaning: "the unit of the raw figure for {variable}"}
+  - {path: "cells.*.drivers.*.*.vars.*.raw.note_d", meaning: "a note on the raw figure for {variable} ({country}, {label}), in words"}
+  - {path: "cells.*.drivers.*.*.vars.*.raw", meaning: "the raw figure for {variable}: {country}, {label}, {year} ({source})"}
+  - {path: "cells.*.drivers.*.*.vars.*.score", meaning: "{country}'s score on {variable} in {label}, 0 to 1, oriented so that higher means more {direction}"}
+  - {path: "cells.*.drivers.*.*.vars.*.pct", meaning: "share of the other economies in {label} that {country} scores higher than on {variable} (higher means more {direction})"}
+  - {path: "cells.*.drivers.*.*.vars.*.median", meaning: "median score on {variable} among the economies compared in {label}"}
+  - {path: "cells.*.drivers.*.*.vars.*.weight", meaning: "the weight of {variable} within the {category} category"}
+  - {path: "cells.*.drivers.*.*.vars.*.label", meaning: "the measure {variable} ({category}, {pillar}, {label})"}
+  - {path: "cells.*.drivers.*.*.score", meaning: "{country}'s score on the {category} category of {pillar} in {label}, 0 to 1"}
+  - {path: "cells.*.drivers.*.*.median", meaning: "the median score on the {category} category of {pillar} among the economies compared in {label}"}
+  - {path: "cells.*.drivers.*.*.weight", meaning: "the {category} category's share of the weight of {pillar} in {label}"}
+  - {path: "cells.*.drivers.*.*.impact", meaning: "how far {category} moves {country}'s {pillar} in {label} from the middle economy: weight x (score - median)"}
+  - {path: "cells.*.drivers.*.*.category", meaning: "the {category} category of {pillar} in {label}"}
+  - {path: "priority_sectors", meaning: "{country}'s high-priority sectors (the Upgrade corner ranked by the Strategic Index, or the fallback rule)"}
+  - {path: "policy.cat.overall", meaning: "the Climate Action Tracker overall rating that {country} carries ({scope})"}
+  - {path: "policy.cat.date_label", meaning: "when the Climate Action Tracker last updated the rating {country} carries"}
+  - {path: "policy.cat.sub.*", meaning: "a Climate Action Tracker sub-rating that {country} carries ({key})"}
+  - {path: "policy.pams_total", meaning: "{country}'s IEA Policies and Measures records, all jurisdiction levels"}
+  - {path: "policy.pams_tech_specific", meaning: "{country}'s IEA Policies and Measures records that name a technology"}
+  - {path: "policy.pams_no_tech", meaning: "{country}'s IEA Policies and Measures records that name no technology"}
+  - {path: "policy.pams_critical_minerals", meaning: "{country}'s IEA Policies and Measures records tagged critical minerals"}
+  - {path: "policy.pams_by_status.*", meaning: "{country}'s IEA Policies and Measures records with the status {key}"}
+  - {path: "policy.pams_eu_records", meaning: "the EU's own IEA Policies and Measures records, not added to {country}'s counts"}
+  - {path: "policy.agreement.by_class.*", meaning: "{country}'s sectors whose data-based priority third and policy-activity third fall in the class '{class}'"}
+  - {path: "policy.agreement.matrix.*", meaning: "{country}'s sectors in one cell of the priority x policy-activity matrix ({key})"}
+  - {path: "policy.nipo.vintage_label", meaning: "the industrial-policy data shown as context (not part of the Policy index)"}
+  - {path: "policy.nipo.n_active", meaning: "number of {country}'s active industrial-policy measures in the Global Trade Alert run (context only)"}
+  - {path: "policy.nipo.n_not_in_force", meaning: "number of {country}'s active industrial-policy measures not yet implemented on the baseline date (context only)"}
+  - {path: "policy.nipo.n_by_cell.*", meaning: "number of {country}'s active industrial-policy measures tied to {label} (context only)"}
+  - {path: "policy.nipo.n_active_eu", meaning: "how many of {country}'s active industrial-policy measures are EU-wide (EU-level measures Global Trade Alert records under each EU member; context only)"}
+  - {path: "policy.nipo.n_active_shared", meaning: "how many of {country}'s active industrial-policy measures Global Trade Alert records under more than one jurisdiction, EU-wide ones included (context only)"}
+  - {path: "policy.nipo.n_listed", meaning: "number of distinct industrial-policy measures listed for {country} (the five strongest per sector; context only)"}
+  - {path: "policy.nipo.n_listed_eu", meaning: "how many of the industrial-policy measures listed for {country} are EU-wide (context only)"}
+  - {path: "policy.nipo.n_listed_shared", meaning: "how many of the industrial-policy measures listed for {country} are recorded under more than one jurisdiction, EU-wide ones included (context only)"}
+  - {path: "policy.nipo.policies.*.scope", meaning: "whether a listed industrial-policy measure is EU-wide, shared with other jurisdictions or national (context only)"}
+  - {path: "policy.nipo.policies.*.n_jurisdictions", meaning: "how many implementing jurisdictions Global Trade Alert records a listed measure under (context only)"}
+  - {path: "policy.nipo.policies.*.economy_wide", meaning: "whether a listed industrial-policy measure maps to almost every technology (economy-wide, such as sanctions or export controls; listed after sector-specific measures; context only)"}
+  - {path: "policy.nipo.policies.*.removal_label", meaning: "the date a listed industrial-policy measure is scheduled to end (context only)"}
+  - {path: "policy.nipo.*", meaning: "industrial-policy measures of {country} recorded by Global Trade Alert (context only, not part of the Policy index)"}
+  - {path: "partners.n_scored", meaning: "number of partners with a Partnership Strength score for {country}"}
+  - {path: "partners.n_ranked", meaning: "number of partners ranked for {country} by Partnership Strength"}
+  - {path: "partners.psi_order", meaning: "{country}'s partners by Partnership Strength from its own viewpoint, strongest first"}
+  - {path: "partners.tie_order", meaning: "{country}'s partners by average trade share across its energy-goods baskets, largest first"}
+  - {path: "partners.n_import_cells", meaning: "number of {country}'s energy-goods baskets with imports in {trade_year}"}
+  - {path: "partners.n_export_cells", meaning: "number of {country}'s energy-goods baskets with exports in {trade_year}"}
+  - {path: "partners.*.name", meaning: "the partner {name}"}
+  - {path: "partners.*.rank", meaning: "rank of {name} among {country}'s partners by Partnership Strength, from {country}'s own viewpoint"}
+  - {path: "partners.*.psi", meaning: "Partnership Strength of {name} for {country}, 0 to 1"}
+  - {path: "partners.*.fs", meaning: "Friendshore score of {name} for {country}: how reliable a supplier it is, 0 to 1"}
+  - {path: "partners.*.po", meaning: "Partnership Opportunity score of {name} for {country}: how good a market it is for {country}'s exports, 0 to 1"}
+  - {path: "partners.*.dp", meaning: "Development Potential of {name}: how good a place it is to build supply chains together, 0 to 1 (not scored for high-income partners)"}
+  - {path: "partners.*.reason", meaning: "the part of Partnership Strength where {name} ranks highest among {country}'s partners"}
+  - {path: "partners.*.reason_d", meaning: "the part of Partnership Strength where {name} ranks highest among {country}'s partners"}
+  - {path: "partners.*.match", meaning: "how {name}'s Partnership Strength rank compares with its trade rank today"}
+  - {path: "partners.*.group", meaning: "{name}'s group (China, core member, coalition partner or other)"}
+  - {path: "partners.*.tier", meaning: "{name}'s place in the allied coalition"}
+  - {path: "partners.*.income_group", meaning: "{name}'s World Bank income group"}
+  - {path: "partners.*.fs_best5", meaning: "the five sectors where {name} scores highest as a supplier to {country} (Friendshore)"}
+  - {path: "partners.*.po_best5", meaning: "the five sectors where {name} scores highest as a market for {country} (Partnership Opportunity)"}
+  - {path: "partners.*.ties.imp_mean", meaning: "{name}'s share of {country}'s imports, averaged across {country}'s import baskets, {trade_year}"}
+  - {path: "partners.*.ties.exp_mean", meaning: "{name}'s share of {country}'s exports, averaged across {country}'s export baskets, {trade_year}"}
+  - {path: "partners.*.ties.tie", meaning: "the mean of {name}'s average import and export shares for {country}, {trade_year}"}
+  - {path: "partners.*.ties.tie_rank", meaning: "rank of {name} among {country}'s trade partners by average share across its energy-goods baskets, {trade_year}"}
+  - {path: "partners.*.ties.top3_import_cells", meaning: "number of {country}'s import baskets where {name} is among the three largest suppliers, {trade_year}"}
+  - {path: "partners.*.ties.n_import_cells", meaning: "number of {country}'s import baskets {name} supplies, {trade_year}"}
+  - {path: "partners.*.ties.fdi_in", meaning: "cross-border factory projects by firms headquartered in {name} in {country} (CM-FDI, four clean-tech manufacturing sectors)"}
+  - {path: "partners.*.ties.fdi_out", meaning: "cross-border factory projects by {country}'s firms in {name} (CM-FDI, four clean-tech manufacturing sectors)"}
+  - {path: "partners.*.ties.agreements", meaning: "economic-security agreements {country} and {name} both belong to"}
+  - {path: "partners.*.ties.alignment", meaning: "UN-vote alignment of {country} and {name}: 1 same bloc, 0.5 one nonaligned, 0 opposite blocs"}
+  - {path: "partners.*.ties.alignment_d", meaning: "UN-vote alignment of {country} and {name} in words"}
+  - {path: "partners.*.ties.bloc", meaning: "{name}'s bloc in UN General Assembly votes"}
+  - {path: "network.n_stages", meaning: "number of upstream and midstream stages in the allied network design"}
+  - {path: "network.producer.*.share", meaning: "{country}'s share of the coalition's designed production in {label} (allied network design)"}
+  - {path: "network.producer.*.cell", meaning: "a stage where {country} is a producer in the allied network design ({label})"}
+  - {path: "network.pick.si", meaning: "Strategic Index score of {country}'s allied pick"}
+  - {path: "network.pick.margin", meaning: "how much higher {country}'s allied pick scores than its runner-up (below 0.01: almost tied)"}
+  - {path: "network.pick.runner_up", meaning: "the runner-up to {country}'s allied pick"}
+  - {path: "network.pick.rule_d", meaning: "the rule that chooses {country}'s allied pick, in words: it leaves out geothermal and green hydrogen and sectors with no recorded resource base"}
+  - {path: "network.pick.excluded", meaning: "technologies left out of every allied pick by rule"}
+  - {path: "network.pick.cell", meaning: "{country}'s allied pick: its top upstream or midstream sector on the Strategic Index after the endowment screen"}
+  - {path: "network.node", meaning: "the node of the allied network {country} belongs to"}
+  - {path: "caveats.*", meaning: "a data caveat ({key})"}
+
+# Fields each memo section may use (B3); a token outside its section's list is a warning for the
+# verifier. `*` matches one path segment, and a final `.*` the rest of the path; `common` is allowed in
+# every section and in the summary.
+section_fields:
+  common: ["meta.*", "summary.n_*", "summary.quadrants.*", "cells.*.label", "cells.*.label_prose", "cells.*.tech", "cells.*.stage", "cells.*.quadrant", "priority_sectors"]
+  "1": ["summary.*", "cells.*.es", "cells.*.es.*", "cells.*.drivers.es.*", "cells.*.trade.sources.*", "cells.*.trade.imports", "cells.*.fdi.*"]
+  "2": ["summary.*", "cells.*.eo", "cells.*.eo.*", "cells.*.drivers.eo.*", "cells.*.trade.markets.*", "cells.*.trade.exports"]
+  "3": ["summary.top_si.*", "summary.si_order", "cells.*.si", "cells.*.si.*", "cells.*.priority.*", "cells.*.policy.*", "policy.*", "network.pick.*"]
+  "4": ["partners.*", "summary.as_partner.*", "summary.psi_1.*", "network.*"]
+  "5": ["caveats.*"]

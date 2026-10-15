@@ -3,9 +3,11 @@
 // Web Worker. Every view renders without an error at the baseline and in a scenario; the dial panel
 // writes the URL (keyboard and pointer), the status strip and reset follow.
 //
-// The shell (spec_sector.md 2, 10.3): Home renders without an engine client and without a request
-// before idle; legacy root links redirect; unknown paths go Home with a notice; aliases; the module
-// tabs restore the last Strategic URL with its scenario; Sector renders while the engine never starts.
+// The shell (spec_sector.md 2, 10.3; spec_country.md A2): Home renders without an engine client and
+// without a request before idle; legacy root links redirect; unknown paths go Home with a notice;
+// aliases; the module tabs restore the last Strategic URL with its scenario and carry the country to
+// Country Insights; Sector and Country render while the engine never starts; the shared /glossary page.
+// No Strategic page (view, header, footer, dial panel, status strip) shows a bare acronym (C3.4).
 
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -19,6 +21,9 @@ import { resetLastLocations } from './shell/lastLocation.ts';
 import { resetBuildInfo } from './shell/buildInfo.ts';
 import { resetSectorManifestCache } from './shell/sectorManifest.ts';
 import { sectorManifestFixture } from './shell/__tests__/manifestFixture.ts';
+import { resetPrefetch } from './shell/prefetch.ts';
+import { bareAcronyms } from './components/testing/acronyms.ts';
+import { CountryLoadError, CountryStore, setCountryStoreForTests } from './country/data/store.ts';
 import { EngineClient, type WorkerLike } from './worker/client.ts';
 import { EngineHost, type FetchBytes } from './worker/host.ts';
 import type { FromWorker, ToWorker } from './worker/protocol.ts';
@@ -126,10 +131,20 @@ async function settle(ms = 50) {
   });
 }
 
+/** A whole Strategic page (C3.4): the shell's header and footer, and <main> (the view, the status strip
+ *  and the dial panel). The shell's header is the first <header>, its footer the last <footer>. */
+function pageAcronyms(): string[] {
+  const headers = document.querySelectorAll('header');
+  const footers = document.querySelectorAll('footer');
+  const parts = [headers[0], footers[footers.length - 1], document.querySelector('main')].filter((e): e is HTMLElement => !!e);
+  return [...new Set(parts.flatMap((el) => bareAcronyms(el)))];
+}
+
+// (the Strategic builder owns the view titles; the old and the new wording both pass)
 const VIEWS: [string, RegExp][] = [
   ['/overview', /^Overview$/],
-  ['/country', /^Country profile/],
-  ['/space', /opportunity.security space/i],
+  ['/country', /^Country (scores|profile)/],
+  ['/space', /opportunity.security space|security vs opportunity/i],
   ['/strategic', /^Strategic Index$/],
   ['/partners', /^Partners$/],
   ['/network', /^Allied network$/],
@@ -146,13 +161,17 @@ describe('every view renders', () => {
         expect(await screen.findByRole('heading', { level: 1, name: title }, { timeout: 20_000 })).toBeTruthy();
         // let the run, the lazy chunks and the per-view requests finish
         await waitFor(() => expect(screen.getByRole('main').querySelector('.chart-updating')).toBeNull(), { timeout: 30_000 });
+        // the charts drew (Plot and the d3 maps render into the jsdom document); under CPU load the
+        // partner and network layers finish late, so wait on the figures rather than a fixed pause
+        if (!/methods|data|strategic/.test(path)) {
+          await waitFor(() => expect(screen.getByRole('main').querySelectorAll('figure svg').length).toBeGreaterThan(0), { timeout: 30_000 });
+        }
         await settle(200);
         expect(screen.queryByText(/This view failed to render/)).toBeNull();
         expect(screen.queryByText(/Recomputed values differ from the export/)).toBeNull();
-        // the charts drew (Plot and the d3 maps render into the jsdom document)
         if (process.env.UI_TEST_VERBOSE) console.log(path, screen.getByRole('main').textContent?.slice(0, 1500));
-        if (!/methods|data|strategic/.test(path)) expect(screen.getByRole('main').querySelectorAll('figure svg').length).toBeGreaterThan(0);
         expect(screen.getByText(q ? 'Scenario' : 'Paper baseline', { selector: '.tag' })).toBeTruthy();
+        expect(pageAcronyms()).toEqual([]);
         expect(errors).toEqual([]);
       }, 60_000);
     }
@@ -178,6 +197,11 @@ describe('dial panel and status strip', () => {
 
     const chips = await screen.findByRole('list', { name: 'Changed settings' });
     expect(within(chips).getByText(/HAWKISHNESS 80/)).toBeTruthy();
+    // every dial explains itself: an info button beside its name (the glossary's definition)
+    fireEvent.click(screen.getByRole('button', { name: 'What is Hawkishness?' }));
+    expect(screen.getByRole('dialog', { name: 'Hawkishness' }).textContent).toMatch(/Security first/);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Hawkishness' })).toBeNull();
     // Show is enabled away from the baseline
     const change = screen.getByRole('radio', { name: 'Change' }) as HTMLInputElement;
     expect(change.disabled).toBe(false);
@@ -269,6 +293,7 @@ const pathOf = (router: ReturnType<typeof renderAt>) => router.state.location.pa
 describe('home and the shell', () => {
   it('bare / renders Home: no engine client, no request before idle; the idle prefetch fills the facts', async () => {
     setEngineClient(null);
+    resetPrefetch();
     const create = vi.spyOn(EngineClient, 'create');
     const idle: (() => void)[] = [];
     const w = window as unknown as { requestIdleCallback?: (cb: () => void) => number; cancelIdleCallback?: (id: number) => void };
@@ -288,12 +313,23 @@ describe('home and the shell', () => {
       expect(await screen.findByRole('heading', { level: 1, name: 'Allied Industrial Base Explorer' }, { timeout: 20_000 })).toBeTruthy();
       expect(pathOf(router)).toBe('/');
       expect(document.title).toBe('Allied Industrial Base Explorer | NEIS Center');
-      // module cards, six questions, the jump picker; no tab is current on Home
-      expect(screen.getByRole('heading', { level: 2, name: 'Sector Insights' })).toBeTruthy();
-      expect(screen.getByRole('heading', { level: 2, name: 'Strategic Insights' })).toBeTruthy();
+      // three module cards (Sector, Strategic, Country), six questions, the jump picker; no tab is current on Home
+      const cards = screen.getByRole('region', { name: 'Modules' });
+      expect(within(cards).getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights']);
       expect(screen.getAllByRole('heading', { level: 3 }).length).toBe(6);
       const tabs = screen.getByRole('navigation', { name: 'Modules' });
+      expect(within(tabs).getAllByRole('link').map((a) => a.textContent)).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights']);
       expect(within(tabs).getAllByRole('link').filter((a) => a.getAttribute('aria-current')).length).toBe(0);
+      // the Country card (A2.3): its question, entry links and the button
+      expect(screen.getByText('What should one country know about its energy security, its opportunities and its partners?')).toBeTruthy();
+      expect(screen.getByRole('link', { name: 'Japan' }).getAttribute('href')).toBe('/countries/JPN');
+      expect(screen.getByRole('link', { name: 'Germany' }).getAttribute('href')).toBe('/countries/DEU');
+      expect(screen.getByRole('link', { name: 'United States: policy memo' }).getAttribute('href')).toBe('/countries/USA/memo');
+      expect(screen.getByRole('link', { name: 'Open Country Insights' }).getAttribute('href')).toBe('/countries');
+      expect(screen.getByTestId('quadrant-glyph').getAttribute('aria-hidden')).toBe('true');
+      expect(screen.getByText(/^Three ways into the data behind/)).toBeTruthy();
+      expect(screen.getByRole('link', { name: 'glossary' }).getAttribute('href')).toBe('/glossary');
+      expect(bareAcronyms(document.body)).toEqual([]);
       await settle(300);
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(create).not.toHaveBeenCalled();
@@ -305,8 +341,11 @@ describe('home and the shell', () => {
         idle[0]();
         await new Promise((r) => setTimeout(r, 50));
       });
-      expect(String(fetchSpy.mock.calls[0][0])).toMatch(/\/data\/sector\/manifest\.json$/);
-      expect(fetchSpy.mock.calls[0][1]).toEqual({ cache: 'no-cache' });
+      const sectorCall = fetchSpy.mock.calls.find((c) => /\/data\/sector\/manifest\.json$/.test(String(c[0])));
+      expect(sectorCall?.[1]).toEqual({ cache: 'no-cache' });
+      // the Country manifest is prefetched on idle too (A2.3), never a fact sheet
+      await waitFor(() => expect(fetchSpy.mock.calls.some((c) => /\/data\/country\/manifest\.json$/.test(String(c[0])))).toBe(true), { timeout: 20_000 });
+      expect(fetchSpy.mock.calls.some((c) => /\/data\/country\/facts-/.test(String(c[0])))).toBe(false);
       await waitFor(() => expect(fetchSpy.mock.calls.some((c) => /sector-meta\.0123abcd\.osb$/.test(String(c[0])))).toBe(true), { timeout: 20_000 });
       expect(await screen.findByText("China refines 74% of the world's lithium")).toBeTruthy();
       expect(screen.getByText('IEA Critical Minerals Dataset 2026, 2025')).toBeTruthy();
@@ -327,6 +366,7 @@ describe('home and the shell', () => {
       create.mockRestore();
       resetSectorManifestCache();
       resetBuildInfo();
+      resetPrefetch();
       setEngineClient(client);
     }
   }, 60_000);
@@ -370,7 +410,7 @@ describe('home and the shell', () => {
 
   it('/country/USA still renders the Country view', async () => {
     const router = renderAt('/country/USA');
-    expect(await screen.findByRole('heading', { level: 1, name: /^Country profile/ }, { timeout: 20_000 })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 1, name: /^Country (scores|profile)/ }, { timeout: 20_000 })).toBeTruthy();
     expect(pathOf(router)).toBe('/country/USA');
     const tabs = screen.getByRole('navigation', { name: 'Modules' });
     expect(within(tabs).getByRole('link', { name: 'Strategic Insights' }).getAttribute('aria-current')).toBe('true');
@@ -432,8 +472,10 @@ describe('home and the shell', () => {
     await act(async () => {
       await router.navigate('/country/USA?h=80');
     });
-    expect(await screen.findByRole('heading', { level: 1, name: /^Country profile/ }, { timeout: 20_000 })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 1, name: /^Country (scores|profile)/ }, { timeout: 20_000 })).toBeTruthy();
     expect(within(tabs()).getByRole('link', { name: 'Sector Insights' }).getAttribute('href')).toBe('/sector/batteries/midstream?c=USA');
+    // ... and Country Insights opens the same country (A2.2)
+    expect(within(tabs()).getByRole('link', { name: 'Country Insights' }).getAttribute('href')).toBe('/countries/USA');
     fireEvent.click(screen.getByRole('link', { name: 'Allied Industrial Base Explorer' }));
     await waitFor(() => expect(pathOf(router)).toBe('/'), { timeout: 20_000 });
     expect((await screen.findByRole('link', { name: 'Open Strategic Insights' }, { timeout: 20_000 })).getAttribute('href')).toBe('/country/USA?h=80');
@@ -445,7 +487,8 @@ describe('home and the shell', () => {
     expect(await screen.findByRole('heading', { level: 1, name: /opportunity.security space/i }, { timeout: 20_000 })).toBeTruthy();
     const views = screen.getByRole('navigation', { name: 'Strategic Insights views' });
     expect(within(views).getByRole('link', { name: 'Methods' }).getAttribute('href')).toBe('/methods?h=80');
-    expect(within(views).getByRole('link', { name: 'Space' }).getAttribute('aria-current')).toBe('page');
+    expect(within(views).getByRole('link', { name: 'Security vs opportunity' }).getAttribute('aria-current')).toBe('page');
+    expect(within(views).getAllByRole('link').map((a) => a.textContent)).toEqual(['Overview', 'Country scores', 'Security vs opportunity', 'Strategic Index', 'Partners', 'Allied network', 'Methods', 'Data']);
     await settle(300);
   }, 60_000);
 
@@ -467,6 +510,73 @@ describe('home and the shell', () => {
       expect(within(screen.getByRole('navigation', { name: 'Modules' })).getByRole('link', { name: 'Strategic Insights' }).getAttribute('aria-current')).toBe('true');
       expect(screen.getByRole('navigation', { name: 'Strategic Insights views' })).toBeTruthy();
       expect(screen.getByRole('contentinfo')).toBeTruthy();
+    } finally {
+      setEngineClient(client);
+    }
+  }, 60_000);
+
+  it('Country Insights: the alias, the third tab and its views nav; the engine never starts; tabs carry the country', async () => {
+    const stuck = neverReadyClient();
+    setEngineClient(stuck);
+    // no country data in this test: the module shows its "No country data" notice under the shell
+    setCountryStoreForTests(
+      new CountryStore({
+        manifest: async () => {
+          throw new CountryLoadError('NO_DATA', 'data/country/manifest.json does not exist (HTTP 404).');
+        },
+        json: async () => {
+          throw new CountryLoadError('NETWORK', 'no file');
+        },
+        url: (f) => `/data/country/${f}`,
+      }),
+    );
+    try {
+      const router = renderAt('/country-insights');
+      await waitFor(() => expect(pathOf(router)).toBe('/countries'), { timeout: 20_000 });
+      const tabs = () => screen.getByRole('navigation', { name: 'Modules' });
+      await waitFor(() => expect(within(tabs()).getByRole('link', { name: 'Country Insights' }).getAttribute('aria-current')).toBe('true'), { timeout: 20_000 });
+      expect(within(tabs()).getByRole('link', { name: 'Country Insights' }).getAttribute('href')).toBe('/countries');
+      expect(await screen.findByText('No country data', {}, { timeout: 20_000 })).toBeTruthy();
+      const views = screen.getByRole('navigation', { name: 'Country Insights views' });
+      expect(within(views).getAllByRole('link').map((a) => a.textContent)).toEqual(['Countries', 'Country profile', 'About & data']);
+      expect(within(views).getByRole('link', { name: 'Countries' }).getAttribute('aria-current')).toBe('page');
+      expect(stuck.getSnapshot().status).toBe('starting');
+      // a profile: PROFILE is current; SECTOR carries the country; STRATEGIC resumes (nothing yet: /overview)
+      await act(async () => {
+        await router.navigate('/countries/jpn');
+      });
+      await waitFor(() => expect(within(screen.getByRole('navigation', { name: 'Country Insights views' })).getByRole('link', { name: 'Country profile' }).getAttribute('aria-current')).toBe('page'));
+      expect(within(screen.getByRole('navigation', { name: 'Country Insights views' })).getByRole('link', { name: 'Country profile' }).getAttribute('href')).toBe('/countries/JPN');
+      expect(within(tabs()).getByRole('link', { name: 'Sector Insights' }).getAttribute('href')).toBe('/sector?c=JPN');
+      expect(within(tabs()).getByRole('link', { name: 'Strategic Insights' }).getAttribute('href')).toBe('/overview');
+      // Sector with a highlighted country -> the Country tab opens that country
+      await act(async () => {
+        await router.navigate('/sector?c=DEU');
+      });
+      await waitFor(() => expect(within(tabs()).getByRole('link', { name: 'Country Insights' }).getAttribute('href')).toBe('/countries/DEU'));
+      expect(bareAcronyms(screen.getByRole('banner'))).toEqual([]);
+      expect(stuck.getSnapshot().status).toBe('starting');
+    } finally {
+      setCountryStoreForTests(null);
+      setEngineClient(client);
+    }
+  }, 60_000);
+
+  it('/glossary: a shell page reachable from the footer, no module current, no engine', async () => {
+    setEngineClient(null);
+    try {
+      const router = renderAt('/sector');
+      const footer = await screen.findByRole('contentinfo', {}, { timeout: 20_000 });
+      expect(within(footer).getByRole('link', { name: 'About Country Insights' }).getAttribute('href')).toBe('/countries/about');
+      fireEvent.click(within(footer).getByRole('link', { name: 'Glossary' }));
+      await waitFor(() => expect(pathOf(router)).toBe('/glossary'), { timeout: 20_000 });
+      expect(await screen.findByRole('heading', { level: 1, name: 'Glossary' }, { timeout: 20_000 })).toBeTruthy();
+      expect(document.title).toBe('Glossary | Allied Industrial Base Explorer | NEIS Center');
+      const tabs = screen.getByRole('navigation', { name: 'Modules' });
+      expect(within(tabs).getAllByRole('link').filter((a) => a.getAttribute('aria-current')).length).toBe(0);
+      expect(document.getElementById('term-psi')).toBeTruthy();
+      expect(bareAcronyms(document.body)).toEqual([]);
+      expect(peekEngineClient()).toBeNull();
     } finally {
       setEngineClient(client);
     }

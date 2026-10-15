@@ -46,6 +46,8 @@ function owned(ctx: Ctx, dial: keyof Dials, d: number): Record<string, 1 | -1 | 
         'partner.psi_weights.friendshore': 1, 'network.edge_weights.friendshore': 1, 'network.demand_weights.need': 1,
         'network.node_weights.resilience': 1, 'network.diversity_lambda': 1,
         ...(bi.fs_weights.geo_alignment != null && bi.fs_weights.geo_alignment > 0 ? { 'partner.fs_weights.geo_alignment': 1 as const } : {}),
+        // the CM-FDI ownership component of Friendshore scales with hawkishness like alignment (spec_country.md C4.1)
+        ...(bi.fs_weights.chinese_parent_exposure != null && bi.fs_weights.chinese_parent_exposure > 0 ? { 'partner.fs_weights.chinese_parent_exposure': 1 as const } : {}),
       };
     case 'bullishness':
       return {

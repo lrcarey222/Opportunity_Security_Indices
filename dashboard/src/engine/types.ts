@@ -238,6 +238,14 @@ export interface PartnerInputs {
     es_need?: NDArray<Float64Array>;
     eo_partner?: NDArray<Float64Array>;
     outbound?: NDArray<Float64Array>;
+    /** which measure each cell's outbound component holds: 'imf_dip' (the IMF position `outbound`) or
+     * 'cm_fdi' (the CM-FDI investment tie); absent = IMF everywhere (a build before CM-FDI) */
+    outbound_source?: Str;
+    /** CM-FDI investment ties [U, U, K] of the K 'cm_fdi' cells, in cell order */
+    outbound_cmfdi?: NDArray<Float64Array>;
+    /** chinese_parent_exposure [U (partner), C]: the share of the partner's foreign-invested
+     * manufacturing owned by China-headquartered parents, a risk scored 1 - share; NA = undefined */
+    cpe?: NDArray<Float64Array>;
     geo?: NDArray<Float64Array>;
     mask: NDArray<Uint8Array>;
     cpi: Float64Array;

@@ -1,12 +1,20 @@
 // Opportunity-security space derivations (pure; shiny mod_space.R region_of() and the paper's
-// orientation: x = ES, y = EO, split at the medians of the economies shown).
+// orientation: x = Energy Security, y = Economic Opportunity, split at the medians of the economies
+// shown). The four corners carry the names Country Insights uses (the user's decision, 2026-10-11:
+// Upgrade, Grow, Secure, Watch; RMI 2025's leapfrog, export promotion, friendshore and alternative
+// value creation) beside their plain description.
 
 export const REGIONS = [
-  'High opportunity, low security',
-  'High opportunity, high security',
-  'Low opportunity, low security',
-  'Low opportunity, high security',
+  'Upgrade: high opportunity, low energy security',
+  'Grow: high opportunity, high energy security',
+  'Secure: low opportunity, low energy security',
+  'Watch: low opportunity, high energy security',
 ] as const;
+
+/** The corner names alone, in REGIONS order. */
+export const CORNERS = ['Upgrade', 'Grow', 'Secure', 'Watch'] as const;
+/** The glossary id of each corner, in REGIONS order. */
+export const CORNER_TERM = ['upgrade', 'grow', 'secure', 'watch'] as const;
 
 /** shiny mod_space.R region_of(). */
 export function regionOf(es: number | null, eo: number | null, esMed: number, eoMed: number): string | null {

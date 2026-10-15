@@ -3,7 +3,9 @@
 // economy gets a 2 px orange stroke and a bold label; end labels ("USD 88.7 bn · 43.7%") when they
 // fit; the top N rows, then a gap row "…" and the pinned rows (the highlight). Bars have 4 px rounded
 // data ends. Rows without a finite value (withheld, not covered) show their text and no bar.
-// `diverging` draws a signed measure around zero in the diverging palette with the poles in words.
+// `diverging` draws a signed measure around zero in the ends of the three-colour scale (negative
+// orange, positive blue) with the poles in words; its selection and hover rings are ink under white
+// (spec_country.md C1.4: an orange outline would vanish on the orange bars).
 // `log` (Explore's Scale = Log): bars start at the decade below the smallest value (a log axis has no
 // zero, and Plot's implicit x1 = 0 maps to -infinity, which drew no bars at all); ticks and grid lines
 // at the decades only, each labelled with its own SI step.
@@ -12,7 +14,8 @@ import { useCallback, useMemo } from 'react';
 import * as Plot from '@observablehq/plot';
 import { PlotFigure, Tip } from '../../charts/PlotFigure.tsx';
 import { compactSi, fitLabel, labelMargin, logTicks, textWidth } from '../../charts/theme.ts';
-import { DIV_NEG, DIV_POS, PAPER, PAPER_DIM, PAPER_MUTE, SIGNAL, ZERO_RULE } from '../../theme/palette.ts';
+import { PAPER, PAPER_DIM, PAPER_MUTE, RING_INNER, RING_OUTER, SIGNAL, TRI_HIGH, TRI_LOW, ZERO_RULE } from '../../theme/palette.ts';
+import { RING_WIDTHS } from '../../charts/rings.ts';
 import { groupColor, groupLabel } from './color.ts';
 import type { LeagueBarsProps, LeagueRow } from './types.ts';
 
@@ -81,13 +84,23 @@ export function LeagueBars({ rows, axisLabel, selected, onSelect, top = 20, dive
           : { type: 'linear', label: axisLabel, grid: true, tickFormat, nice: true, domain: [Math.min(0, ...xs), Math.max(0, ...xs) || 1] };
       // a bar from the base (log) or from zero (linear: Plot's implicit x1 = 0)
       const bar = log ? { x1: base, x2: 'value' } : { x: 'value' };
-      const fill = (r: LeagueRow) => (diverging ? (r.value >= 0 ? DIV_POS[2] : DIV_NEG[1]) : groupColor(r.group));
+      // signed bars: the ends of the three-colour scale (negative orange, positive blue; spec_country C1.5)
+      const fill = (r: LeagueRow) => (diverging ? (r.value >= 0 ? TRI_HIGH : TRI_LOW) : groupColor(r.group));
       const sel = data.filter((r) => r.id === selected);
       const labelled = shown.filter((r) => r.id !== selected);
       const selLabel = shown.filter((r) => r.id === selected);
       const pos = data.filter((r) => r.value >= 0);
       const neg = data.filter((r) => r.value < 0);
       const end = { x: 'value', y: 'id', text: 'display', fill: PAPER_DIM, fontSize: 11 } as const;
+      // the outline of a bar: orange on group colours; ink under white on the signed (three-colour) bars
+      const outline = (kind: 'selected' | 'hover', rows: LeagueRow[]): Plot.Markish[] => {
+        const base = { ...bar, y: 'id', fill: 'none', insetTop: 3, insetBottom: 3, rx2: 4 };
+        const layers: [string, number][] = diverging ? [[RING_OUTER, RING_WIDTHS[kind][0]], [RING_INNER, RING_WIDTHS[kind][1]]] : [[SIGNAL, 2]];
+        return layers.map(([stroke, strokeWidth]) => {
+          const o = { ...base, stroke, strokeWidth } as Plot.BarXOptions;
+          return kind === 'hover' ? Plot.barX(rows, Plot.pointerY(o)) : Plot.barX(rows, o);
+        });
+      };
       return {
         marginLeft: ml,
         marginRight: mr,
@@ -101,13 +114,13 @@ export function LeagueBars({ rows, axisLabel, selected, onSelect, top = 20, dive
           Plot.text(labelled, { y: 'id', text: (r: LeagueRow) => fitLabel(rowLabel(r), ml - 10), frameAnchor: 'left', dx: -8, textAnchor: 'end', fill: PAPER_DIM, fontSize: 12 }),
           Plot.text(selLabel, { y: 'id', text: (r: LeagueRow) => fitLabel(rowLabel(r), ml - 10), frameAnchor: 'left', dx: -8, textAnchor: 'end', fill: PAPER, fontSize: 12, fontWeight: 700 }),
           Plot.barX(data, { ...bar, y: 'id', fill, insetTop: 4, insetBottom: 4, rx2: 4 }),
-          sel.length ? Plot.barX(sel, { ...bar, y: 'id', fill: 'none', stroke: SIGNAL, strokeWidth: 2, insetTop: 3, insetBottom: 3, rx2: 4 }) : null,
+          ...(sel.length ? outline('selected', sel) : []),
           log ? null : Plot.ruleX([0], { stroke: ZERO_RULE }),
           showEnd ? Plot.text(pos, { ...end, dx: 5, textAnchor: 'start' }) : null,
           showEnd ? Plot.text(neg, { ...end, dx: -5, textAnchor: 'end' }) : null,
           // rows without a value: their words where the bar would start
           Plot.text(blank, { y: 'id', text: (r: LeagueRow) => r.display || (r.state ? STATE_WORDS[r.state] : ''), frameAnchor: 'left', dx: 5, textAnchor: 'start', fill: PAPER_MUTE, fontSize: 11 }),
-          Plot.barX(data, Plot.pointerY({ ...bar, y: 'id', fill: 'none', stroke: SIGNAL, strokeWidth: 2, insetTop: 3, insetBottom: 3, rx2: 4 })),
+          ...outline('hover', data),
         ],
       };
     },

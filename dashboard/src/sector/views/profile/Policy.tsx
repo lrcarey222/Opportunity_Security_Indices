@@ -17,7 +17,7 @@ import { STAGE_LABELS, TECH_LABELS } from '../../contract.ts';
 import type { GeoInfo, SectorModel } from '../../data/model.ts';
 import { countsByCountry, countsByInstrument, countsByYear, INSTRUMENTS, policyRecords, policyTexts, safeUrl, scopePolicies, tagBit, type PolicyRecord } from '../../derive/policy.ts';
 import { useSectorManifest } from '../../data/SectorDataProvider.tsx';
-import { ChunkGate, ExternalLink, markGroup } from '../common.tsx';
+import { ChunkGate, ExternalLink, HowToRead, markGroup } from '../common.tsx';
 import { usePolicy, usePolicyText } from '../data.ts';
 import { LeagueBars, SectorChartCard, SmallMultiples, type LeagueRow } from '../kit.tsx';
 import { useSectorUrl } from '../state.tsx';
@@ -54,7 +54,7 @@ export function PolicyList({ records, model, title }: { records: PolicyRecord[];
       {open && (
         <ChunkGate h={text} name="sector-policy-text" minHeight={60}>
           {() => (
-            <SectorChartCard title="Policy list" vars={[{ var: 'policy.records' }]} csv={csv} summary={`${rows.length} recorded policies.`}>
+            <SectorChartCard title="Policy list" vars={[{ var: 'policy.records' }]} subExtra={<HowToRead>Each row is one policy in the IEA Policies and Measures database, newest first; the title links to the IEA page. “Tag source” says how it was matched to this technology: the IEA’s own tag, a keyword rule on the text (“text-derived”) or an economy-wide measure (“cross-cutting”).</HowToRead>} csv={csv} summary={`${rows.length} recorded policies.`}>
               <TableView
                 rows={rows}
                 caption="Policy list"
@@ -115,6 +115,7 @@ export function ByYear({ records, from }: { records: PolicyRecord[]; from: numbe
     <SectorChartCard
       title={`New policies by year, ${FROM}-${TO}`}
       vars={[{ var: 'policy.records', window: [FROM, TO] }]}
+      subExtra={<HowToRead>Each bar is one year: how many policies in scope were introduced that year. Taller bars mean more new policies, not stronger ones; hatched bars are years still to come, policies announced or planned.</HowToRead>}
       table={() => <TableView rows={data} caption="New policies by year" cols={[{ id: 'y', header: 'Year', value: (d) => d.year }, { id: 'n', header: 'Records', value: (d) => d.n, num: true }, { id: 'a', header: 'Announced or planned', value: (d) => (d.announced ? 'yes' : 'no') }]} />}
       csv={() => ({ name: 'policies-by-year', text: rowsToCsv(data.map((d) => ({ year: d.year, records: d.n, announced_or_planned: d.announced, source: 'IEA Policies and Measures' }))) })}
       notes={<p>Years from {from} are hatched and labelled "announced or planned".</p>}
@@ -131,6 +132,7 @@ export function ByInstrument({ records }: { records: PolicyRecord[] }) {
     <SectorChartCard
       title="What kind of policy"
       vars={[{ var: 'policy.records', window: [FROM, TO] }]}
+      subExtra={<HowToRead>One panel per kind of instrument (financial incentives, regulations and standards, research and development, other): each bar is the number of new policies of that type in one year. The panels share one vertical scale, so taller bars mean that kind of instrument is used more often.</HowToRead>}
       table={() => <TableView rows={data[INSTRUMENTS[0]].map((d) => d.year)} caption="Records by instrument and year" cols={[{ id: 'y', header: 'Year', value: (y) => y }, ...INSTRUMENTS.map((k) => ({ id: k, header: k, value: (y: number) => data[k].find((d) => d.year === y)?.n ?? 0, num: true }))]} />}
       csv={() => ({ name: 'policies-by-instrument', text: rowsToCsv(INSTRUMENTS.flatMap((k) => data[k].map((d) => ({ instrument: k, year: d.year, records: d.n })))) })}
       notes={<p>Types are not groups, so the panels share one hue and one y scale.</p>}
@@ -199,6 +201,7 @@ export function PolicyBody({ chunk, scopeGeo }: { chunk: SectorPolicyChunk; scop
         <SectorChartCard
           title="Policies by country"
           vars={[{ var: 'policy.records' }]}
+          subExtra={<HowToRead>Each bar is one economy: how many policies the IEA has recorded for it in scope, longest first; the label splits them into still in force and ended. A count measures how active policy is, not how strong or well funded it is. Click a bar to highlight the economy.</HowToRead>}
           table={() => <TableView rows={byC} caption="Policies by country" search cols={[{ id: 'c', header: 'Jurisdiction', value: (c) => model.geos[c.geo]?.name ?? '' }, { id: 'n', header: 'Records', value: (c) => c.n, num: true }, { id: 'f', header: 'In force', value: (c) => c.inForce, num: true }, { id: 'e', header: 'Ended', value: (c) => c.ended, num: true }]} />}
           csv={() => ({ name: `${cell.slug}-policies-by-country`, text: rowsToCsv(byC.map((c) => ({ iso3c: model.geos[c.geo]?.code, jurisdiction: model.geos[c.geo]?.name, var_id: 'policy.records', item: cell.slug, records: c.n, in_force: c.inForce, ended: c.ended, source: 'IEA Policies and Measures', licence: 'attribution' }))) })}
           summary={byC[0] ? `${model.geos[byC[0].geo]?.name} has the most recorded policies in scope: ${byC[0].n}.` : 'No records in scope.'}

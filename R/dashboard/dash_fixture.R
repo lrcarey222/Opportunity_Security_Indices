@@ -2,7 +2,10 @@
 # territory; two members sharing the network node "XEU"), 3 technologies (one fossil) x 3 stages,
 # 4 ES categories (one never observed) and 3 EO categories with 2 variables each, three policy
 # components (IEA PAMS, CAT and a stale NIPO), Friendshore / Opportunity dyad components with gaps,
-# Development for half the partners and a 6-member network (5 nodes) over 2 technologies, and the
+# Friendshore's CM-FDI parts (Solar and Wind Midstream are CM-FDI cells: investment ties with
+# reporters that have no project there, and Chinese-parent ownership defined for some partners only,
+# 1 for CHN and HKG, undefined for JPN), Development for half the partners and a 6-member network
+# (5 nodes) over 2 technologies, and the
 # endowment screen of the allied picks over two Upstream stages (Coal, Solar; explicit FALSE rows and
 # countries without a row). The policy components' pipeline order (bundle$policy$components) is
 # IEA PAMS, CAT, NIPO (not alphabetical), so the policy_basis labels exercise the reordering. The
@@ -254,6 +257,37 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
                                   top_share = c(0.45, 0.6), effective_exporters = 1 / c(0.31, 0.45))
   )
 
+  # ---- Friendshore's CM-FDI parts (drawn last, so the other synthetic inputs keep their values) ----
+  # In the CM-FDI cells the outbound rows are investment ties (NA for a reporter whose parents have no
+  # project in the cell: FRA in Solar Midstream, IND in both) and their source names CM-FDI;
+  # chinese_parent_exposure rows exist only where it is defined, as in the pipeline's long table.
+  cm_cells <- cells$cell_id[cells$tech %in% c("Solar", "Wind") & cells$supply_chain == "Midstream"]
+  tie <- array(rnd(Un * Un * length(cm_cells), 0.3), c(Un, Un, length(cm_cells)))
+  tie[match("FRA", U), , 1] <- NA_real_
+  tie[match("IND", U), , ] <- NA_real_
+  cpe <- matrix(NA_real_, Un, Cn)
+  cpe[, cm_cells] <- rnd(Un * length(cm_cells), 0.25)
+  cpe[match(c("CHN", "HKG"), U), cm_cells] <- 1
+  cpe[match("JPN", U), cm_cells] <- NA_real_
+  fs_long$source <- "Author calculation"
+  ci_long <- (match(fs_long$tech, techs) - 1L) * length(stages) + match(fs_long$supply_chain, stages)
+  ob_cm <- fs_long$variable == "outbound_index" & ci_long %in% cm_cells
+  fs_long$value[ob_cm] <- tie[cbind(match(fs_long$reporter_iso[ob_cm], U), match(fs_long$partner_iso[ob_cm], U),
+                                    match(ci_long[ob_cm], cm_cells))]
+  fs_long$source[ob_cm] <- "Cleantech Manufacturing FDI Dataset (CM-FDI); author calculation"
+  cpe_rows <- fs_long[fs_long$variable == "imp_trade_index" & ci_long %in% cm_cells, c("reporter_iso", "partner_iso", "tech", "supply_chain")]
+  cpe_rows$variable <- "chinese_parent_exposure"
+  cpe_rows$value <- cpe[cbind(match(cpe_rows$partner_iso, U), (match(cpe_rows$tech, techs) - 1L) * length(stages) + match(cpe_rows$supply_chain, stages))]
+  cpe_rows$source <- "Cleantech Manufacturing FDI Dataset (CM-FDI); author calculation"
+  fs_long <- dplyr::bind_rows(fs_long, cpe_rows[!is.na(cpe_rows$value), ])
+  cm <- dash_bundle_fs_cmfdi(fs_long, techs, stages)
+  fs_spec <- c(fs_spec, outbound_index_cmfdi = "rpc", chinese_parent_exposure = "pc")
+  fsb <- dash_bundle_dyads(cm$long, U, techs, fs_spec, "Friendshore Index", stages)
+  cm_parts <- dash_bundle_fs_cmfdi_parts(fsb, cm)
+  partner$fs <- list(imp_trade = fsb$imp_trade_index, econ_opp_raw = fsb$econ_opp_raw, es_need = fsb$es_need, eo_partner = fsb$eo_partner,
+                     outbound = fsb$outbound_index, outbound_source = cm_parts$outbound_source, outbound_cmfdi = cm_parts$outbound_cmfdi,
+                     cpe = cm_parts$cpe, geo = fsb$geo_alignment, mask = fsb$mask, cpi = cpi, gh = gh)
+
   # ---- Dims and manifest ----
   node_tbl <- net_members %>%
     dplyr::group_by(.data$network_node) %>%
@@ -287,7 +321,8 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
     require_resource_base = TRUE,
     fossil_techs = "Coal",
     fossil_threshold = 90,
-    fs_weights = list(imp_trade_index = 2, econ_opp_raw = 0, es_need = 2, eo_partner = 2, outbound_index = 2, geo_alignment = 2),
+    fs_weights = list(imp_trade_index = 2, econ_opp_raw = 0, es_need = 2, eo_partner = 2, outbound_index = 2, geo_alignment = 2,
+                      chinese_parent_exposure = 1),
     fs_penalty = 0.10,
     po_weights = list(trade_index = 3, econ_opp_index = 3, partner_es_need = 1),
     po_penalty = 0.05,
@@ -326,7 +361,7 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
     osi_branch = NA_character_,
     fixture = TRUE,
     sources = tibble::tibble(path = character(), mtime = as.POSIXct(character()), size = numeric(), md5 = character()),
-    flags = list(pillar_rule = TRUE, geo_alignment_in_fs = TRUE, partner_pillar_consistent = FALSE,
+    flags = list(pillar_rule = TRUE, geo_alignment_in_fs = TRUE, fs_cmfdi = TRUE, partner_pillar_consistent = FALSE,
                  network_aggregation = TRUE, network_consistent = FALSE, milp_baseline = FALSE),
     baseline_inputs = baseline_inputs,
     validation = tibble::tibble(check = character(), layer = character(), status = character(), n = integer(),
@@ -339,7 +374,7 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
     country_tbl = country_tbl, policy_component_tbl = policy_component_tbl, tech_ghg = tech_ghg, trl = trl,
     resource_base = resource_base,
     fs_long = fs_long, po_long = po_long, tech_ghg_partner = tech_ghg_partner, cpi_tbl = cpi_tbl,
-    fs_checks = fsb$checks, po_checks = pob$checks
+    fs_checks = fsb$checks, po_checks = pob$checks, cm_fdi = cm[c("cells", "outbound_source", "n_rows", "n_mixed")]
   )
   bundle
 }

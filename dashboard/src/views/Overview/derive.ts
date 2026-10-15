@@ -23,12 +23,32 @@ export interface MetricRow {
 }
 
 export const METRIC_LABEL: Record<Metric, string> = {
-  es: 'Energy Security (ES)',
-  eo: 'Economic Opportunity (EO)',
-  si_rank: 'Strategic Index: rank within country',
-  si: 'Strategic Index: level',
-  policy: 'Policy index',
-  psi: 'Partnership Strength Index (as a partner)',
+  es: 'Energy Security',
+  eo: 'Economic Opportunity',
+  si_rank: 'Strategic Index: rank within the economy',
+  si: 'Strategic Index: score',
+  policy: 'Policy activity',
+  psi: 'Partnership Strength (as a partner)',
+};
+
+/** The measure as a noun phrase for running text ("each cell is the member's {noun} in that sector"). */
+export const METRIC_NOUN: Record<Metric, string> = {
+  es: 'Energy Security',
+  eo: 'Economic Opportunity',
+  si_rank: 'rank on the Strategic Index',
+  si: 'Strategic Index score',
+  policy: 'Policy activity',
+  psi: 'Partnership Strength as a partner',
+};
+
+/** The glossary id of each metric (the first use on a page carries its InfoTip). */
+export const METRIC_TERM: Record<Metric, string> = {
+  es: 'es',
+  eo: 'eo',
+  si_rank: 'si',
+  si: 'si',
+  policy: 'policy_index',
+  psi: 'psi',
 };
 
 export const isRankMetric = (m: Metric): boolean => m === 'si_rank';
@@ -114,17 +134,36 @@ export function cellRows(rows: MetricRow[], metric: Metric, tech: string, stage:
   return rows.filter((r) => r.tech === tech && r.supply_chain === stage);
 }
 
-/** Colour domain of the shown values: fixed [0, 1] for the bounded indices; ranks reversed. */
-export function colorDomain(rows: MetricRow[], metric: Metric, mode: ShowMode): { kind: 'seq' | 'div'; lo: number; hi: number; reverse: boolean } {
-  const vals = rows.filter((r) => r.shown_ok && r.shown !== null).map((r) => r.shown as number);
+/**
+ * The three-colour scale's options for a metric and Show mode (spec_country.md C1.5): white at the
+ * median of the values shown, orange lower, blue higher; changes centre on zero (orange fell, blue
+ * rose; for ranks a positive change is a move up the economy's own list); ranks reverse, so rank 1
+ * (an economy's top sector) is blue.
+ */
+export function triOptions(metric: Metric, mode: ShowMode): { center: 'median' | 'zero'; reverse: boolean } {
+  if (mode === 'change') return { center: 'zero', reverse: false };
+  return { center: 'median', reverse: metric === 'si_rank' };
+}
+
+/** The values that define a chart's scale: the rows drawn (shown, and rankable when "Rankable only"). */
+export function scaleValues(rows: MetricRow[], rankableOnly: boolean): number[] {
+  return rows.filter((r) => r.shown !== null && (r.shown_ok || !rankableOnly)).map((r) => r.shown as number);
+}
+
+/**
+ * Where a value sits on a three-colour scale, in words (the side of the median is never carried by
+ * colour alone near the middle: tooltips and tables say it). `side` is TriScale.side(v); `mid` the
+ * median as printed; `noun` what the median is taken over ("economies shown").
+ */
+export function sideWords(side: 'below' | 'median' | 'above' | null, metric: Metric, mode: ShowMode, mid: string, noun: string): string | null {
+  if (side === null) return null;
   if (mode === 'change') {
-    const L = vals.reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1;
-    return { kind: 'div', lo: -L, hi: L, reverse: false };
+    if (metric === 'si_rank') return side === 'above' ? 'moved up its own list' : side === 'below' ? 'moved down its own list' : 'no change in rank';
+    return side === 'above' ? 'rose against the paper' : side === 'below' ? 'fell against the paper' : 'no change';
   }
-  if (metric === 'si_rank') return { kind: 'seq', lo: 1, hi: Math.max(2, ...vals), reverse: true };
-  if (metric === 'es' || metric === 'eo' || metric === 'policy') return { kind: 'seq', lo: 0, hi: 1, reverse: false };
-  if (!vals.length) return { kind: 'seq', lo: 0, hi: 1, reverse: false };
-  const lo = Math.min(...vals);
-  const hi = Math.max(...vals);
-  return { kind: 'seq', lo: metric === 'si' ? 0 : lo, hi: hi > lo ? hi : lo + 1e-9, reverse: false };
+  if (metric === 'si_rank') {
+    if (side === 'median') return `at the median rank of the ${noun} (${mid})`;
+    return side === 'below' ? `nearer the top of its own list than the median of the ${noun} (rank ${mid})` : `further down its own list than the median of the ${noun} (rank ${mid})`;
+  }
+  return side === 'median' ? `at the median of the ${noun} (${mid})` : `${side} the median of the ${noun} (${mid})`;
 }

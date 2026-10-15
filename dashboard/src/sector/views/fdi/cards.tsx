@@ -12,8 +12,9 @@ import { useNavigate } from 'react-router';
 import { PlotFigure, Tip } from '../../../charts/PlotFigure.tsx';
 import { SankeyChart, type SankeyFlow } from '../../../charts/Sankey.tsx';
 import { WorldMap, type MapCell } from '../../../charts/WorldMap.tsx';
-import { Legend, RampLegend, type LegendItem } from '../../../charts/legends.tsx';
-import { seqColor } from '../../../charts/theme.ts';
+import { Legend, TriLegend, type LegendItem } from '../../../charts/legends.tsx';
+import { Term } from '../../../components/Term.tsx';
+import { triScale } from '../../../charts/scale.ts';
 import { TableView, type Col } from '../../../components/TableView.tsx';
 import { Segmented, Select, StatTile } from '../../../components/ui.tsx';
 import { useMediaQuery } from '../../../shell/useMediaQuery.ts';
@@ -26,7 +27,7 @@ import {
   type FdiData, type FdiFrom, type FdiGeoRow, type FdiGroup, type FdiGroupSplit, type FdiProject, type FdiShow,
 } from '../../derive/fdi.ts';
 import { fmtShare } from '../../format.ts';
-import { ExternalLink, markGroup } from '../common.tsx';
+import { ExternalLink, HowToRead, markGroup } from '../common.tsx';
 import { BlocBar, LeagueBars, SectorChartCard, ShareSplitChart, type LeagueRow, type ShareSplitRow } from '../kit.tsx';
 import { useCardCsv } from '../profile/ctx.tsx';
 
@@ -171,7 +172,7 @@ export function FdiTiles({ s }: { s: FdiScope }) {
     { k: 'd', label: 'Destinations', value: String(t.dests), sub: 'economies receiving a project' },
     { k: 'h', label: 'Investor economies', value: String(t.homes), sub: `${t.parents.toLocaleString('en-US')} parent companies` },
     { k: 'v', label: 'Disclosed capital', value: fmtUsdM(t.value), sub: `${t.nValue} of ${projectsWord(t.n)} disclose a value` },
-    { k: 'c', label: 'Chinese parents', value: fmtShare(split.parts.china.shareN), sub: `${split.parts.china.n} of ${projectsWord(t.n)} (HQ in China, Hong Kong or Macao)` },
+    { k: 'c', label: 'Chinese parents', value: fmtShare(split.parts.china.shareN), sub: `${split.parts.china.n} of ${projectsWord(t.n)} (headquartered in China, Hong Kong or Macao)` },
     { k: 'k', label: 'Coalition parents', value: fmtShare(split.parts.core.shareN + split.parts.partner.shareN), sub: `core ${fmtShare(split.parts.core.shareN)} · partners ${fmtShare(split.parts.partner.shareN)}` },
   ];
   return (
@@ -221,11 +222,11 @@ function GeoTable({ model, rows, side, caption }: { model: SectorModel; rows: Fd
       rowKey={(r) => model.geos[r.geo]?.code ?? String(r.geo)}
       cols={[
         { id: 'e', header: side === 'dest' ? 'Destination' : 'Parent headquarters', value: (r) => model.geos[r.geo]?.name ?? '', minWidth: 140 },
-        { id: 'g', header: side === 'dest' ? 'Group' : 'Parent HQ group', value: (r) => FDI_GROUP_SHORT[side === 'home' && r.homeGroup ? r.homeGroup : markGroup(model.geos[r.geo])] },
+        { id: 'g', header: side === 'dest' ? 'Group' : 'Parent headquarters group', value: (r) => FDI_GROUP_SHORT[side === 'home' && r.homeGroup ? r.homeGroup : markGroup(model.geos[r.geo])] },
         { id: 'n', header: 'Projects', value: (r) => r.n, num: true },
         { id: 'nv', header: 'Disclosing a value', value: (r) => r.nValue, num: true },
         { id: 'v', header: 'Disclosed capital (US$ m)', value: (r) => r.value, cell: (r) => (r.value === null ? NOT_DISCLOSED : fmtUsdM(r.value, 'table')), num: true },
-        ...FDI_GROUP_ORDER.map((g) => ({ id: g, header: `Parent HQ: ${FDI_GROUP_SHORT[g]}`, value: (r: FdiGeoRow) => r.groups[g], num: true })),
+        ...FDI_GROUP_ORDER.map((g) => ({ id: g, header: `Parent headquarters: ${FDI_GROUP_SHORT[g]}`, value: (r: FdiGeoRow) => r.groups[g], num: true })),
       ]}
     />
   );
@@ -240,10 +241,9 @@ export function DestinationsCard({ s, title = 'Where the projects go' }: { s: Fd
   const rows = useMemo(() => fdiByGeo(s.projects, 'dest', show), [s.projects, show]);
   const w = windowOf(s);
   const map = useMemo(() => {
-    const vals = rows.map((r) => shown(r, show)).filter((x): x is number => x !== null && x > 0).map((x) => Math.log10(x));
-    const lo = vals.length ? Math.min(...vals) : 0;
-    const hi = vals.length ? Math.max(...vals) : 1;
-    const color = seqColor(lo, hi === lo ? lo + 1 : hi);
+    // three-colour scale over the destinations with at least one project (white = their median; C1.5)
+    const scale = triScale(rows.filter((r) => model.geos[r.geo]?.kind === 'country').map((r) => shown(r, show)).filter((x): x is number => x !== null && x > 0));
+    const fmt = (x: number) => (show === 'n' ? String(Math.round(x * 10) / 10) : usdAxis(x));
     const cells = new Map<string, MapCell>();
     for (const r of rows) {
       const g = model.geos[r.geo];
@@ -251,12 +251,13 @@ export function DestinationsCard({ s, title = 'Where the projects go' }: { s: Fd
       const v = shown(r, show);
       cells.set(g.iso_n3, {
         iso3c: g.code,
-        fill: v === null ? 'hatch' : color(Math.log10(v)),
+        fill: v === null ? 'hatch' : (scale.color(v) ?? 'hatch'),
         outline: highlight?.idx === g.idx,
         tip: (
           <div className="space-y-0.5">
             <div className="text-sm font-semibold text-paper">{shownText(r, show)}</div>
             <div className="text-paper-dim">{g.name}</div>
+            {v !== null && scale.n > 1 && <div className="text-paper-mute">{scale.side(v) === 'above' ? 'Above' : scale.side(v) === 'below' ? 'Below' : 'At'} the median of the {scale.n} destinations shown ({fmt(scale.mid)})</div>}
             <div className="text-paper-mute">{show === 'n' ? `disclosed capital: ${disclosedWords(r)}` : `${projectsWord(r.n)}; sums of the projects that disclose a value`}</div>
           </div>
         ),
@@ -265,7 +266,7 @@ export function DestinationsCard({ s, title = 'Where the projects go' }: { s: Fd
     if (highlight?.iso_n3 && !cells.has(highlight.iso_n3)) {
       cells.set(highlight.iso_n3, { iso3c: highlight.code, fill: INK[700], outline: true, tip: <div className="text-paper-dim">{highlight.name}: no project recorded</div> });
     }
-    return { cells, lo, hi };
+    return { cells, scale, fmt };
   }, [rows, show, model, highlight]);
   const top = wide ? 15 : 10;
   const league = geoLeague(model, rows, show, top, highlight, (r) => markGroup(model.geos[r.geo]));
@@ -282,13 +283,18 @@ export function DestinationsCard({ s, title = 'Where the projects go' }: { s: Fd
     <SectorChartCard
       title={title}
       vars={refs(s, 'show', w)}
-      subExtra={basisSub(s)}
+      subExtra={
+        <>
+          {basisSub(s)}
+          <HowToRead>Each bar, or each country on the map, is one destination: {show === 'n' ? 'how many cross-border factory projects it attracted' : 'the capital its cross-border factory projects disclose'}. Bars take the destination’s group colour; on the map orange means fewer than most destinations shown, white the middle one, blue more. Click one to highlight it.</HowToRead>
+        </>
+      }
       tools={!tablet ? <Segmented label="View" hideLabel value={view} options={[{ value: 'bars', label: 'Bars' }, { value: 'map', label: 'Map' }]} onChange={(x) => setView(x as 'bars' | 'map')} /> : undefined}
       table={() => <GeoTable model={model} rows={rows} side="dest" caption="Projects by destination" />}
       csv={csv}
       legend={
         <div className="space-y-2">
-          {showMap && <RampLegend kind="seq" min={map.lo} max={map.hi} label={`${show === 'n' ? 'Projects' : 'Disclosed capital, US$ m'} (log scale)`} format={(x) => (show === 'n' ? String(Math.round(Math.pow(10, x))) : usdAxis(Math.pow(10, x)))} />}
+          {showMap && <TriLegend scale={map.scale} label={`Map colour: ${show === 'n' ? 'projects' : 'disclosed capital, US$ m'}`} format={map.fmt} noun="destinations" missing={show === 'value' ? 'Projects disclose no value' : undefined} />}
           <DestLegend highlight={highlight?.name ?? null} />
         </div>
       }
@@ -314,7 +320,7 @@ export function DestinationsCard({ s, title = 'Where the projects go' }: { s: Fd
         <div className={tablet ? 'grid gap-6 lg:grid-cols-5' : ''}>
           {showMap && (
             <div className={tablet ? 'lg:col-span-3' : ''}>
-              <WorldMap cells={map.cells} ariaLabel={`Map of ${show === 'n' ? 'cross-border projects' : 'disclosed capital'} by destination, ${model.cellLabel(s.item)}`} selected={highlight?.code ?? null} onSelect={pick} />
+              <WorldMap cells={map.cells} ringStyle="double" ariaLabel={`Map of ${show === 'n' ? 'cross-border projects' : 'disclosed capital'} by destination, ${model.cellLabel(s.item)}`} selected={highlight?.code ?? null} onSelect={pick} />
             </div>
           )}
           {showBars && (
@@ -342,7 +348,12 @@ export function InvestorsCard({ s, title = 'Who invests: the parents’ headquar
     <SectorChartCard
       title={title}
       vars={refs(s, 'show', w)}
-      subExtra={basisSub(s)}
+      subExtra={
+        <>
+          {basisSub(s)}
+          <HowToRead>Each bar is one economy where parent companies have their headquarters: {show === 'n' ? 'how many factory projects they announced in other economies' : 'the capital those projects disclose'}, largest first, in the investor’s group colour (China here includes Hong Kong and Macao).</HowToRead>
+        </>
+      }
       table={() => <GeoTable model={model} rows={rows} side="home" caption="Projects by the parent's headquarters" />}
       csv={csv}
       legend={<FdiGroupLegend highlight={highlight?.name ?? null} />}
@@ -386,7 +397,12 @@ export function FlowsCard({ s, title = 'From headquarters to destination' }: { s
     <SectorChartCard
       title={title}
       vars={refs(s, 'show', w)}
-      subExtra={basisSub(s)}
+      subExtra={
+        <>
+          {basisSub(s)}
+          <HowToRead>Each band runs from where the parent company has its headquarters (left) to where the project goes (right); the wider the band, the more {show === 'n' ? 'projects' : 'disclosed capital'}. Bands and the left side take the investor’s group colour, the right side the destination’s; smaller economies are pooled as “Other”.</HowToRead>
+        </>
+      }
       table={() => (
         <TableView
           rows={tableRows}
@@ -395,7 +411,7 @@ export function FlowsCard({ s, title = 'From headquarters to destination' }: { s
           pageSize={20}
           cols={[
             { id: 'h', header: 'Parent headquarters', value: (f) => model.geos[f.home]?.name ?? '' },
-            { id: 'g', header: 'Parent HQ group', value: (f) => FDI_GROUP_SHORT[f.homeGroup] },
+            { id: 'g', header: 'Parent headquarters group', value: (f) => FDI_GROUP_SHORT[f.homeGroup] },
             { id: 'd', header: 'Destination', value: (f) => model.geos[f.dest]?.name ?? '' },
             { id: 'n', header: 'Projects', value: (f) => f.n, num: true },
             { id: 'nv', header: 'Disclosing a value', value: (f) => f.nValue, num: true },
@@ -427,7 +443,7 @@ export function FlowsCard({ s, title = 'From headquarters to destination' }: { s
           valueFormat={(v) => `${fmt(v)} · ${fmtShare(sank.total > 0 ? v / sank.total : NaN)}`}
           nodeColor={(c, side) => (side === 'consumer' ? destColor(c) : homeColor(c))}
           linkColor={(f) => `${homeColor(f.producer)}8c`}
-          sideLabels={{ left: 'PARENT HQ', right: 'DESTINATION' }}
+          sideLabels={{ left: 'PARENT HEADQUARTERS', right: 'DESTINATION' }}
           tipNote={show === 'n' ? 'of the projects' : 'of the disclosed capital'}
         />
       ) : (
@@ -492,7 +508,12 @@ export function ParentGroupsCard({ s, title = 'Whose parents: projects by the pa
       title={title}
       // value view: the shares are of the disclosed capital (US$ m), not the dictionary's share of projects
       vars={refs(s, show === 'n' ? 'share' : 'value', w)}
-      subExtra={`${basisSub(s)} · ${rows.length - 1} destination${rows.length === 2 ? '' : 's'} · share of ${show === 'n' ? 'the projects' : 'the disclosed capital'}`}
+      subExtra={
+        <>
+          {`${basisSub(s)} · ${rows.length - 1} destination${rows.length === 2 ? '' : 's'} · share of ${show === 'n' ? 'the projects' : 'the disclosed capital'}`}
+          <HowToRead>Each bar is one destination (the first, all destinations together), split by where the parent companies have their headquarters: China (with Hong Kong and Macao), the coalition core, coalition partners and the rest of the world. The longer a segment, the larger that group’s share of {show === 'n' ? 'the projects' : 'the disclosed capital'} there.</HowToRead>
+        </>
+      }
       table={() => (
         <TableView
           rows={rows}
@@ -568,7 +589,12 @@ export function YearsCard({ s, title = 'Announcements by year' }: { s: FdiScope;
     <SectorChartCard
       title={title}
       vars={refs(s, 'show', w)}
-      subExtra={basisSub(s)}
+      subExtra={
+        <>
+          {basisSub(s)}
+          <HowToRead>Each bar is one year: {show === 'n' ? 'the projects announced that year' : 'the capital disclosed by the projects announced that year'}, stacked by where the parent companies have their headquarters. A taller bar means more announcements, which are plans: some are never built.</HowToRead>
+        </>
+      }
       table={() => (
         <TableView
           rows={bars}
@@ -635,7 +661,7 @@ export function ProjectSources({ data, p }: { data: FdiData; p: FdiProject }) {
               </span>
             ))}
             {c.note && <span className="text-paper-dim"> {c.urls.length ? `(${c.note.replace(/^\((.*)\)$/, '$1')})` : c.note}</span>}
-            {c.unverified && <span className="tag ml-1 px-1 py-0 text-[10px]">unverified in CM-FDI</span>}
+            {c.unverified && <span className="tag ml-1 px-1 py-0 text-[10px]">unverified in the dataset</span>}
           </li>
         ))}
       </ul>
@@ -705,7 +731,12 @@ export function ProjectsCard({ s, title = 'The projects', direction }: { s: FdiS
     <SectorChartCard
       title={title}
       vars={[{ var: FDI_VARS.n, item: s.item.slug, window: w }, { var: FDI_VARS.value, item: s.item.slug, window: w }]}
-      subExtra={basisSub(s)}
+      subExtra={
+        <>
+          {basisSub(s)}
+          <HowToRead>Each row is one project as the dataset lists it: the parent company and its headquarters, the destination, status, years and capital (“not disclosed” where the source gives none). Filter by status or activity; the links open the pages the dataset cites.</HowToRead>
+        </>
+      }
       csv={csv}
       notes={
         <>
@@ -742,7 +773,7 @@ export function FdiIntro({ model, children }: { model: SectorModel; children?: R
   return (
     <div className="max-w-3xl space-y-2 text-sm text-paper-dim">
       <p>
-        Cross-border greenfield and expansion projects of parent companies headquartered in another economy, from the Cleantech Manufacturing FDI Dataset (CM-FDI{src?.edition ? `, edition ${src.edition}` : ''}). Counts and disclosed capital as published: nothing is scored or weighted, and domestic investment is not covered.
+        <Term id="cmfdi">Factory projects</Term>: cross-border greenfield and expansion projects of parent companies headquartered in another economy, from the Cleantech Manufacturing FDI Dataset (CM-FDI{src?.edition ? `, edition ${src.edition}` : ''}). Counts and disclosed capital as published: nothing is scored or weighted, and domestic investment is not covered. Announced projects are included and may never be built.
       </p>
       {children}
     </div>

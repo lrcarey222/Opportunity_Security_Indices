@@ -4,7 +4,7 @@ import { refSizes, validateChunk, type SectorTradeChunk } from '../contract.ts';
 import { haveSynthetic, readSyntheticChunk, readSyntheticFile, readSyntheticManifest } from '../__fixtures__/__tests__/synthetic.ts';
 import { factsIndexOf, type FactRow } from '../data/facts.ts';
 import { modelOf, type GeoInfo } from '../data/model.ts';
-import { basisWords, concentration, growth, growthWords, isWorldBasis } from './concentration.ts';
+import { basisWords, concentration, growth, growthKindWords, growthWords, isWorldBasis } from './concentration.ts';
 import { summaryFromFacts, summaryParity } from './summary.ts';
 
 const geo = (idx: number, group: GeoInfo['group'], kind: GeoInfo['kind'] = 'country'): GeoInfo => ({
@@ -89,6 +89,9 @@ describe('concentration (3.6) on hand-computed cases', () => {
     expect(growth('pct_2020_2024', 0.001, 5)).toEqual({ value: null, isNew: true });
     expect(growthWords(growth('pct_2020_2024', 0, 5))).toBe('new');
     expect(growthWords(growth('pct_2020_2024', 100, 204))).toBe('+104.0%');
+    expect(growthKindWords('cagr_2018_2025')).toBe('a year on average, 2018-2025');
+    expect(growthKindWords('pct_2020_2024')).toBe('change 2020-2024');
+    expect(growthKindWords(null)).toBe('');
   });
 });
 

@@ -172,6 +172,17 @@ export function growth(kind: GrowthKind, base: number, current: number): { value
   return { value: Number.isFinite(v) ? v : null, isNew: false };
 }
 
+/**
+ * The period of a growth kind in words, never "CAGR" (acronym policy): "a year on average, 2018-2025"
+ * for compound rates, "change 2020-2024" for percent changes; the raw kind when it is unknown.
+ */
+export function growthKindWords(kind: string | null | undefined): string {
+  if (!kind) return '';
+  const g = GROWTH_YEARS[kind as GrowthKind] as [number, number, 'pct' | 'cagr'] | undefined;
+  if (!g) return kind;
+  return g[2] === 'cagr' ? `a year on average, ${g[0]}-${g[1]}` : `change ${g[0]}-${g[1]}`;
+}
+
 /** Growth text: "+104%", "new", "n/a". */
 export function growthWords(g: { value: number | null; isNew: boolean }): string | null {
   if (g.isNew) return 'new';

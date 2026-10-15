@@ -7,7 +7,8 @@
 
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { RampLegend } from '../../charts/legends.tsx';
+import { TriLegend } from '../../charts/legends.tsx';
+import { triScale } from '../../charts/scale.ts';
 import { TableView } from '../../components/TableView.tsx';
 import { Notice, PageHead, Segmented, Select } from '../../components/ui.tsx';
 import { rowsToCsv } from '../../lib/csv.ts';
@@ -21,9 +22,11 @@ import { blocNote } from '../derive/groups.ts';
 import { LENS_LABEL, lensText, lensValue } from '../derive/text.ts';
 import { lc, fmtEffN, fmtHhi, fmtShare } from '../format.ts';
 import { LENSES, type FamKey, type Lens } from '../url.ts';
-import { concFromSummary, fmtFact, itemLabel, SPLIT_COLUMNS, shareSplitRow, SplitTable } from './common.tsx';
+import { concFromSummary, fmtFact, HowToRead, itemLabel, SPLIT_COLUMNS, SPLIT_READING, shareSplitRow, SplitTable } from './common.tsx';
 import { Dumbbell, GroupLegend, HeatTable, SectorChartCard, ShareSplitChart, type DumbbellRow, type HeatRow, type ShareSplitRow, type VarRef } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
+import { HhiExplainer } from './HhiExplainer.tsx';
+import { Term } from '../../components/Term.tsx';
 import { yearText } from './caption.ts';
 
 /** The year words of a tile: the year, or the dictionary's static / unconfirmed year (never the processed Year of a static dataset). */
@@ -46,7 +49,7 @@ const FAM_WORDS: Record<FamChoice, string> = {
   development: 'Development',
 };
 
-const LENS_SHORT: Record<Lens, string> = { china: 'China share', top1: 'Top-1', top3: 'Top-3', hhi: 'HHI', coalition: 'Coalition share' };
+const LENS_SHORT: Record<Lens, string> = { china: 'China share', top1: 'Largest holder', top3: 'Top three', hhi: 'Concentration (HHI)', coalition: 'Coalition share' };
 
 /** The lens value as printed in a tile ("43.7%", "0.207", "≥ 0.21"). */
 function lensDisplay(lens: Lens, s: SummaryInfo): string {
@@ -66,7 +69,7 @@ function tileWords(model: SectorModel, board: Board, row: string, rowLabel: stri
   const t = boardTile(board, row, colKey);
   if (!t) return `${rowLabel}, ${col?.label ?? colKey}: no data`;
   const s = t.s;
-  return `${rowLabel}, ${col?.label ?? colKey}: ${lc(t.v.short)}${t.item.axis === 'cell' ? '' : ` of ${lc(t.item.label)}`}, ${t.v.source.short} ${tileYear(t.v, t.item, s.year)}. ${lensText(lens, s, model)}; top-1 ${model.geoName(s.top1_geo) || '–'} ${fmtShare(s.top1_share)}; top-3 ${fmtShare(s.top3_share)}; HHI ${fmtHhi(s.hhi, s.hhi_lower_bound)}; coalition ${fmtShare(s.core + s.partner)}.`;
+  return `${rowLabel}, ${col?.label ?? colKey}: ${lc(t.v.short)}${t.item.axis === 'cell' ? '' : ` of ${lc(t.item.label)}`}, ${t.v.source.short} ${tileYear(t.v, t.item, s.year)}. ${lensText(lens, s, model)}; largest holder ${model.geoName(s.top1_geo) || '–'} ${fmtShare(s.top1_share)}; top three ${fmtShare(s.top3_share)}; concentration index ${fmtHhi(s.hhi, s.hhi_lower_bound)}; coalition ${fmtShare(s.core + s.partner)}.`;
 }
 
 function BoardCard({ board, lens }: { board: Board; lens: Lens }) {
@@ -80,6 +83,9 @@ function BoardCard({ board, lens }: { board: Board; lens: Lens }) {
     for (const t of board.tiles.values()) if (!seen.has(t.v.id)) seen.set(t.v.id, { var: t.v.id });
     return [...seen.values()];
   }, [board]);
+  // the three-colour scale over the lens values of every tile on the board (sub-rows included, so
+  // opening a row never repaints the others): white = their median (spec_country.md C1.5)
+  const scale = useMemo(() => triScale([...board.tiles.values()].map((t) => lensValue(lens, t.s))), [board, lens]);
   const label = (key: string) => {
     const r = flat.find((x) => x.key === key);
     return r ? (r.mineral ? `${r.label} (${board.rows.find((p) => p.key === r.tech)?.label ?? ''})` : r.label) : key;
@@ -89,7 +95,7 @@ function BoardCard({ board, lens }: { board: Board; lens: Lens }) {
       headingLevel={2}
       title="Concentration board"
       vars={refs}
-      caption={{ badge: 'latest year of each source', sub: `${refs.length} measures from ${new Set([...board.tiles.values()].map((t) => t.v.source.id)).size} sources. Each tile: ${lc(LENS_LABEL[lens])} of one measure in its latest year; the second line names the largest holder. Rows expand to the minerals each technology uses; tiles open the profile section or the mineral page.`, caveats: [], spanNote: null, coverage: null }}
+      caption={{ badge: 'latest year of each source', sub: `${refs.length} measures from ${new Set([...board.tiles.values()].map((t) => t.v.source.id)).size} sources. Each tile is one measure of one sector in its latest year, coloured by its ${lc(LENS_LABEL[lens])}: orange lower than most tiles, white the middle one, blue higher. The second line names the largest holder. Rows open to the minerals each technology uses; a tile opens the profile section or the mineral page.`, caveats: [], spanNote: null, coverage: null }}
       table={() => (
         <TableView
           rows={flat}
@@ -142,14 +148,14 @@ function BoardCard({ board, lens }: { board: Board; lens: Lens }) {
       })}
       legend={
         <div className="space-y-2">
-          {/* SEQ runs dark (low) to light (high): lighter tiles hold a larger value */}
-          <RampLegend kind="seq" min={0} max={1} label={`${LENS_LABEL[lens]} of each measure: lighter = larger`} format={(x) => (lens === 'hhi' ? x.toFixed(1) : `${Math.round(x * 100)}%`)} />
-          <p className="text-xs text-paper-mute">Hatched: no data for this measure. "≥": the HHI is a lower bound because the source does not split its rest of world.</p>
+          <TriLegend scale={scale} label={`Tile colour: ${LENS_LABEL[lens]} of each measure`} format={(x) => (lens === 'hhi' ? x.toFixed(2) : `${Math.round(x * 100)}%`)} noun="tiles" lowWord={lens === 'hhi' ? 'more spread out' : 'lower'} highWord={lens === 'hhi' ? 'more concentrated' : 'higher'} missing="No data for this measure" />
+          <p className="text-xs text-paper-mute">Hatched: no data for this measure. "≥": the concentration index is a lower bound, because the source does not say who holds part of the world total.</p>
         </div>
       }
       summary={`${board.tiles.size} measures across ${board.rows.length} technologies and their minerals, shaded by ${lc(LENS_LABEL[lens])}.`}
     >
       <HeatTable
+        scale={scale}
         rows={heatRows}
         cols={board.cols.map((c) => ({ key: c.key, label: c.label, stage: c.stage }))}
         rowHeader="Technology"
@@ -204,6 +210,7 @@ function SplitCard({ lens }: { lens: Lens }) {
       headingLevel={2}
       title="Share split by sector"
       vars={refs}
+      subExtra={<HowToRead>{SPLIT_READING} Click a row for the sector’s profile.</HowToRead>}
       table={() => <SplitTable rows={rows} caption="Share split by sector" />}
       tools={<Select label="Measure family" value={fam} options={choices.map((f) => ({ value: f, label: FAM_WORDS[f] }))} onChange={(f) => set({ fam: f as FamKey })} className="min-w-[11rem]" />}
       caption={{ badge: 'latest year of each source', sub: `One row per sector: ${lc(FAM_WORDS[fam])}, the latest year of its source (named in each row), sorted by ${lc(LENS_LABEL[lens])} within each stage.`, caveats: [], spanNote: null, coverage: null }}
@@ -230,6 +237,7 @@ function SummaryTable() {
       title="Every sector and measure"
       vars={[...new Map(rows.map((s) => [v(s).id, { var: v(s).id } as VarRef])).values()]}
       caption={{ badge: null, sub: `${rows.length} sector and measure pairs, each in the latest year of its source (Year and Source columns).`, caveats: [], spanNote: null, coverage: null }}
+      subExtra={<HowToRead>Each row is one measure of one sector: the world total, the largest holder and its share, the share of the three largest, the concentration index with the number of equal-sized holders it behaves like, and the group shares. Sort by any column to find the most concentrated supply chains.</HowToRead>}
       csv={() => ({
         name: `concentration-table-${state.eu}`,
         text: rowsToCsv(rows.map((s) => ({ item: it(s).slug, item_axis: it(s).axis, family: v(s).family, var_id: v(s).id, measure: v(s).label, year: s.year, eu_mode: s.eu_mode, world_total: s.W * v(s).display_scale, unit: model.unitOf(v(s), s.item).short, world_basis: s.basis, n: s.n, top1: model.geos[s.top1_geo ?? -1]?.code ?? null, top1_share: s.top1_share, top3_share: s.top3_share, hhi: s.hhi, hhi_lower_bound: s.hhi_lower_bound, eff_n: s.eff_n, china: s.china, core: s.core, partner: s.partner, rest: s.rest, unattributed: s.unattributed, source: v(s).source.short }))),
@@ -250,7 +258,7 @@ function SummaryTable() {
           { id: 'top1', header: 'Top-1', value: (s) => model.geoName(s.top1_geo) || null },
           { id: 'top1s', header: 'Top-1 share', value: (s) => s.top1_share, cell: (s) => fmtShare(s.top1_share), num: true },
           { id: 'top3', header: 'Top-3', value: (s) => s.top3_share, cell: (s) => fmtShare(s.top3_share), num: true },
-          { id: 'hhi', header: 'HHI', value: (s) => s.hhi, cell: (s) => fmtHhi(s.hhi, s.hhi_lower_bound), num: true },
+          { id: 'hhi', header: 'Concentration (HHI)', value: (s) => s.hhi, cell: (s) => fmtHhi(s.hhi, s.hhi_lower_bound), num: true },
           { id: 'effn', header: 'Effective n', value: (s) => s.eff_n, cell: (s) => fmtEffN(s.eff_n), num: true },
           { id: 'china', header: 'China', value: (s) => s.china, cell: (s) => fmtShare(s.china), num: true },
           { id: 'core', header: 'Core', value: (s) => s.core, cell: (s) => fmtShare(s.core), num: true },
@@ -283,7 +291,7 @@ function TrendCard({ rows, title, metric, refs, aName, bName, xLabel, notes, hre
   const navigate = useNavigate();
   if (!rows.length) return null;
   const val = (s: SummaryInfo) => (metric === 'hhi' ? s.hhi : s.top3_share);
-  const txt = (s: SummaryInfo) => (metric === 'hhi' ? `HHI ${fmtHhi(s.hhi, s.hhi_lower_bound)}` : `top-3 ${fmtShare(s.top3_share)}`);
+  const txt = (s: SummaryInfo) => (metric === 'hhi' ? `concentration index ${fmtHhi(s.hhi, s.hhi_lower_bound)}` : `top three ${fmtShare(s.top3_share)}`);
   const proj = (r: TrendRow, s: SummaryInfo) => r.v.projection_from !== null && s.year >= r.v.projection_from;
   const dumb: DumbbellRow[] = rows.map((r) => ({ id: `${r.item.slug}|${r.v.id}`, label: r.words, a: val(r.a), b: val(r.b), group: 'neutral', aLabel: `${txt(r.a)} (${r.a.year}${proj(r, r.a) ? ', projection' : ''})`, bLabel: `${txt(r.b)} (${r.b.year})`, href: hrefOf(r) }));
   const higher = rows.filter((r) => val(r.b) > val(r.a)).length;
@@ -291,6 +299,7 @@ function TrendCard({ rows, title, metric, refs, aName, bName, xLabel, notes, hre
     <SectorChartCard
       title={title}
       vars={refs}
+      subExtra={<HowToRead>Each row is one sector; its two dots are the {metric === 'hhi' ? 'concentration index' : 'share of the three largest holders'} in {aName} and in {bName}. A line running to the right means supply became more concentrated; to the left, more spread out. Click a row for the sector.</HowToRead>}
       table={() => (
         <TableView
           rows={rows}
@@ -304,7 +313,7 @@ function TrendCard({ rows, title, metric, refs, aName, bName, xLabel, notes, hre
       )}
       csv={() => ({ name: `concentration-trend-${metric}`, text: rowsToCsv(rows.map((r) => ({ item: r.item.slug, var_id: r.v.id, year_a: r.a.year, value_a: val(r.a), year_b: r.b.year, value_b: val(r.b), metric, eu_mode: r.a.eu_mode, source: r.v.source.short }))) })}
       notes={notes ? <p>{notes}</p> : undefined}
-      summary={`${rows.length} ${words}; in ${higher} of them the ${metric === 'hhi' ? 'HHI' : 'top-3 share'} is higher in ${rows[0].b.year} than in ${rows[0].a.year}.`}
+      summary={`${rows.length} ${words}; in ${higher} of them the ${metric === 'hhi' ? 'concentration index' : 'top-three share'} is higher in ${rows[0].b.year} than in ${rows[0].a.year}.`}
     >
       <Dumbbell rows={dumb} xLabel={xLabel} aName={aName} bName={bName} ariaLabel={title} tickFormat={(x) => (metric === 'hhi' ? x.toFixed(2) : `${Math.round(x * 100)}%`)} onSelect={(r) => r.href && navigate(r.href)} />
     </SectorChartCard>
@@ -332,7 +341,7 @@ function Trends() {
           refs={[{ var: 'trade.exports', year: 2020 }, { var: 'trade.exports', year: 2024 }]}
           aName="2020"
           bName="2024"
-          xLabel="HHI of exporters (reconciled matrix)"
+          xLabel="Concentration (HHI) of exporters, reconciled matrix"
           notes="Nominal US dollars; 2020 was a COVID trough."
           hrefOf={(r) => link(`/sector/${r.item.techSlug}/${r.item.stageSlug}`, {}, 'trade')}
           words="trade cells"
@@ -365,19 +374,24 @@ export default function ConcentrationView() {
       <PageHead
         eyebrow="SECTOR INSIGHTS · CONCENTRATION"
         title="Concentration across sectors"
-        lede="Where each supply chain is concentrated, one measure at a time: the largest holder, the top three, the HHI and the shares of China and the coalition, from reserves to deployment."
+        lede={
+          <>
+            How concentrated each supply chain is, from reserves to deployment, one measure at a time: the share of the largest holder, of the top three, and the <Term id="hhi">concentration index (HHI)</Term>, which is 1 when one economy holds everything and falls as supply spreads out. The shares held by China and by the allied coalition are shown beside them. Pick a lens: the board colours every sector by it.
+          </>
+        }
       >
         <div className="mt-4 flex flex-wrap items-end gap-4">
           <Segmented<Lens> label="Lens" value={lens} options={LENSES.map((l) => ({ value: l, label: LENS_SHORT[l] }))} onChange={(l) => set({ lens: l })} />
         </div>
       </PageHead>
+      <HhiExplainer model={model} noun="holders" of="the world total" />
       <p className="text-sm text-paper-dim">{CONCENTRATION_NOTE}</p>
       {state.eu === 'bloc' && <Notice kind="info">EU-27 as one raises measured concentration where members are large.</Notice>}
       {board.tiles.size > 0 ? <BoardCard board={board} lens={lens} /> : <Notice kind="info">No concentration statistics in this build.</Notice>}
       <SplitCard lens={lens} />
       <SummaryTable />
       <Trends />
-      <p className="text-xs text-paper-mute">No thresholds are drawn: concentration is described, not graded.</p>
+      <p className="text-xs text-paper-mute">No thresholds are drawn on the charts: concentration is described, not graded.</p>
     </div>
   );
 }

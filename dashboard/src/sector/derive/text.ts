@@ -40,7 +40,7 @@ export function lensText(lens: string, s: { top1_share: number; top3_share: numb
     case 'top3':
       return `Top-3 ${fmtShare(s.top3_share)}`;
     case 'hhi':
-      return `HHI ${s.hhi_lower_bound ? `≥ ${s.hhi.toFixed(2)}` : Number.isFinite(s.hhi) ? s.hhi.toFixed(3) : '–'}`;
+      return `concentration index ${s.hhi_lower_bound ? `≥ ${s.hhi.toFixed(2)}` : Number.isFinite(s.hhi) ? s.hhi.toFixed(3) : '–'}`;
     case 'coalition':
       return `Coalition ${fmtShare(s.core + s.partner)}`;
     default:
@@ -68,6 +68,21 @@ export const LENS_LABEL: Record<string, string> = {
   china: 'China share',
   top1: 'Top-1 share',
   top3: 'Top-3 share',
-  hhi: 'HHI',
+  hhi: 'Concentration (HHI)',
   coalition: 'Coalition share',
 };
+
+const SCENARIOS: Record<string, string> = {
+  STEPS: 'stated-policies',
+  APS: 'announced-pledges',
+  NZE: 'net-zero',
+};
+
+/**
+ * An IEA scenario code in words for titles, legends and headers (acronym policy): "STEPS" ->
+ * "stated-policies"; used as "2040 stated-policies projection". An unknown code is returned as is.
+ */
+export function scenarioWords(code: string | null | undefined): string {
+  if (!code) return SCENARIOS.STEPS;
+  return SCENARIOS[code] ?? code;
+}

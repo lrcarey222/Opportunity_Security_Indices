@@ -153,7 +153,7 @@ write_chunks <- function(chunks, out_dir, check_only) {
     if (nm == "sector-meta") meta_sizes <- list(geo = nrow(dec$objects$dims$geo), items = nrow(dec$objects$dims$items), vars = nrow(dec$objects$dict$vars))
     errs <- sector_check_chunk(nm, dec$objects, meta_sizes, var_ids)
     if (length(errs)) stop("Chunk ", nm, " breaks the contract:\n  ", paste(errs, collapse = "\n  "))
-    if (nm %in% c("sector-meta", "sector-facts", "sector-series", "sector-fdi")) decoded[[nm]] <- dec$objects
+    if (nm %in% c("sector-meta", "sector-facts", "sector-series", "sector-fdi") || startsWith(nm, "sector-trade-")) decoded[[nm]] <- dec$objects
     rows[[nm]] <- tibble::tibble(name = nm, file = file_name, bytes = length(bytes), bytes_gz = file.size(tmp), md5 = md5, tmp = tmp)
     step(sprintf("  %-26s %8.1f kB, %7.1f kB gz; round trip identical; contract checks pass", nm, length(bytes) / 1024, file.size(tmp) / 1024))
   }
@@ -320,6 +320,18 @@ reported <- sector_reported_trade(tc)
 rm(tc)
 ef <- rd("export_feasibility_tbl")
 results$rca <- sector_facts_rca(ef)
+# Export feasibility (Atlas relatedness): its data year is the Atlas HS4 year the rows' explanation
+# names in brackets, not the table's Year column (the Comtrade year); it must be the dictionary's.
+feas_year <- sector_feasibility_year(ef)
+feas_dict_year <- as.integer(unlist(Filter(function(v) identical(v$id, "trade.feasibility"), dict_raw$vars)[[1]]$years))
+if (!identical(feas_year, feas_dict_year)) {
+  stop("export_feasibility_tbl feasibility is Atlas ", feas_year, " data; the dictionary entry trade.feasibility says ",
+       paste(feas_dict_year, collapse = ", "), ": update its years and data_year.")
+}
+results$feasibility <- sector_facts_feasibility(ef, feas_year)
+add_check(paste0("export feasibility: Atlas HS4 data year ", feas_year, " (explanation) = the dictionary's; every basket cell covered"),
+          if (length(unique(results$feasibility$facts$item_key)) >= 18) "PASS" else "WARN", nrow(results$feasibility$facts),
+          sprintf("%d cells, %d economies", length(unique(results$feasibility$facts$item_key)), length(unique(results$feasibility$facts$geo))))
 ef_raw <- sector_raw_rows(ef)
 n_rca_reporters <- length(unique(ef_raw$iso3c[ef_raw$variable == "exports"]))
 rm(ef, ef_raw)
@@ -531,14 +543,18 @@ if (!skip_trade) {
   add_check(paste0("guard: Comtrade dyads have at least 100 importer reporters in ", max(SECTOR_TRADE_YEARS)), "PASS", n_imp)
   std <- partnership_strength_standardize_comtrade(td, years = SECTOR_TRADE_YEARS)
   reporters <- sector_trade_reporters(std, basket)
-  rm(std)
-  invisible(gc())
+  declared <- sector_trade_declared(reporters)
   pcfg <- yaml::read_yaml(file.path(repo_root, "config", "partnership.yml"))
   cif <- if (is.null(pcfg$trade$cif_fob_factor)) PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR else as.numeric(pcfg$trade$cif_fob_factor)
+  # Trade by sub-component (trade.cty_sub): the same dyads summed over each sub-component's codes with
+  # the cell's source rule, checked below to add up to the cell totals.
+  step("Trade by sub-component")
+  sub <- sector_trade_sub(std, basket, declared, eu_members, cif_fob_factor = cif)
+  rm(std)
+  invisible(gc())
   trade_cells <- partnership_strength_build_trade_cells(td, hs6_raw, years = SECTOR_TRADE_YEARS, cif_fob_factor = cif)
   rm(td)
   invisible(gc())
-  declared <- sector_trade_declared(reporters)
   # The importer rule of the matrix agrees with the declared table.
   imp_rows <- unique(paste0("cell:", sector_cell_slug(trade_cells$tech, trade_cells$supply_chain), " ", trade_cells$importer_iso, " ",
                             ifelse(trade_cells$source_last %in% "importer", SECTOR_TRADE_YEARS[2], NA)))
@@ -559,6 +575,16 @@ if (!skip_trade) {
   rm(ex24, chk, ce)
   results$trade <- sector_result(country)
   worlds$trade <- sector_trade_world(country)
+  cty_sub <- sector_trade_sub_table(sub, country)
+  sc <- sector_trade_sub_check(cty_sub, country, worlds$trade)
+  add_check("trade by sub-component: sub-components add up to the cell's exports and imports for every economy and year, and to the world total (1e-9 relative)",
+            if (sc$max_rel <= 1e-9 && sc$n_unmatched == 0) "PASS" else "FAIL", sc$n,
+            sprintf("max relative difference %.3g; %d sub-component totals without a cell fact%s", sc$max_rel, sc$n_unmatched,
+                    if (length(sc$examples)) paste0("; e.g. ", paste(sc$examples, collapse = "; ")) else ""))
+  if (sc$max_rel > 1e-9 || sc$n_unmatched > 0) stop("Trade by sub-component does not add up to the cell totals: ", paste(sc$examples, collapse = "; "))
+  sub_intra <- sub$intra
+  n_sub <- unique(cty_sub[c("item_key", "sub_sector")])
+  rm(sub, sc)
   eu_intra <- sector_eu_intra(trade_cells, eu_members)
   flows <- sector_trade_flows(trade_cells)
   econ <- sort(unique(c(trade_cells$exporter_iso, trade_cells$importer_iso)))
@@ -575,9 +601,17 @@ if (!skip_trade) {
   for (tech in sort(unique(tech_of_cell))) {
     ck <- paste0("cell:", basket_cells[tech_of_cell == tech])
     trade[[tech]] <- list(flows = flows[flows$item_key %in% ck, , drop = FALSE], declared = declared[declared$item_key %in% ck, , drop = FALSE],
-                          codes = codes[codes$item_key %in% ck, , drop = FALSE], excluded = excluded[excluded$item_key %in% ck, , drop = FALSE])
+                          codes = codes[codes$item_key %in% ck, , drop = FALSE], excluded = excluded[excluded$item_key %in% ck, , drop = FALSE],
+                          cty_sub = cty_sub[cty_sub$item_key %in% ck, , drop = FALSE],
+                          sub_intra = sub_intra[sub_intra$item_key %in% ck, , drop = FALSE])
   }
-  rm(flows, declared, codes)
+  # Every sub-component of trade.cty_sub is a trade.codes sub-sector of its cell.
+  ck_codes <- unique(paste(codes$item_key, codes$sub_sector))
+  ck_sub <- unique(paste(n_sub$item_key, n_sub$sub_sector))
+  add_check("trade by sub-component: sub-components are the basket's sub-sectors (trade.codes)", if (all(ck_sub %in% ck_codes)) "PASS" else "FAIL",
+            length(ck_sub), sprintf("%d of %d basket sub-sectors traded in 2020 or 2024; cells with one sub-component: %d", length(ck_sub), length(ck_codes),
+                                     sum(table(unique(codes[c("item_key", "sub_sector")])$item_key) == 1)))
+  rm(flows, declared, codes, cty_sub, sub_intra)
 } else {
   notes <- c(notes, "Trade flows were not exported in this build (--skip-trade).")
 }
@@ -854,6 +888,39 @@ post <- function(decoded) {
   add_check("summary parity: recomputed from the decoded facts = meta.summary (1e-12)", if (d <= 1e-12) "PASS" else "FAIL", nrow(ms),
             sprintf("max relative difference %.3g", d))
   if (d > 1e-12) stop("Summary parity FAIL (", d, ")")
+  # Trade by sub-component on the decoded chunks: the sums equal the decoded facts and
+  # trade.sub_summary equals sector_summary() recomputed from the decoded trade.cty_sub.
+  geo_codes <- meta$dims$geo$code
+  it_keys <- paste0(it$axis, ":", it$slug)
+  sub_rel <- 0
+  sub_unmatched <- 0L
+  sum_d <- 0
+  n_sub_rows <- 0L
+  for (nm in grep("^sector-trade-", names(decoded), value = TRUE)) {
+    tr <- decoded[[nm]]$trade
+    if (is.null(tr$cty_sub)) next
+    cs <- tibble::tibble(item_key = it_keys[tr$cty_sub$item + 1L], sub_sector = tr$cty_sub$sub_sector, geo = geo_codes[tr$cty_sub$geo + 1L],
+                         year = tr$cty_sub$year, exports = tr$cty_sub$exports, imports = tr$cty_sub$imports)
+    n_sub_rows <- n_sub_rows + nrow(cs)
+    ch <- sector_trade_sub_check(cs, dfx[dfx$var %in% c("trade.exports", "trade.imports"), , drop = FALSE], dw)
+    sub_rel <- max(sub_rel, ch$max_rel)
+    sub_unmatched <- sub_unmatched + ch$n_unmatched
+    si <- if (is.null(tr$sub_intra)) NULL else
+      tibble::tibble(item_key = it_keys[tr$sub_intra$item + 1L], sub_sector = tr$sub_intra$sub_sector, year = tr$sub_intra$year, intra = tr$sub_intra$intra)
+    re <- sector_trade_sub_summary(cs, si, meta$dims$geo, bundle$dict$vars)
+    ss <- tr$sub_summary
+    got <- tibble::tibble(item_key = paste0(it_keys[ss$item + 1L], "|", ss$sub_sector), var = meta$dict$vars$id[ss$var + 1L], year = ss$year,
+                          eu_mode = ss$eu_mode, W = ss$W, n = ss$n, top1_geo = ss$top1_geo + 1L, top1_share = ss$top1_share,
+                          top3_share = ss$top3_share, hhi = ss$hhi, eff_n = ss$eff_n, china = ss$china, core = ss$core, partner = ss$partner,
+                          rest = ss$rest, unattributed = ss$unattributed, growth = ss$growth)
+    re$item_key <- paste0(re$item_key, "|", re$sub_sector)
+    sum_d <- max(sum_d, sector_summary_diff(re, got))
+  }
+  add_check("trade by sub-component (decoded): sums equal the decoded facts and world totals (1e-9 relative)",
+            if (sub_rel <= 1e-9 && sub_unmatched == 0) "PASS" else "FAIL", n_sub_rows, sprintf("max relative difference %.3g", sub_rel))
+  add_check("trade by sub-component (decoded): trade.sub_summary = sector_summary() of the decoded trade.cty_sub (1e-12)",
+            if (sum_d <= 1e-12) "PASS" else "FAIL", n_sub_rows, sprintf("max relative difference %.3g", sum_d))
+  if (sub_rel > 1e-9 || sub_unmatched > 0 || sum_d > 1e-12) stop("Trade by sub-component FAIL on the decoded chunks")
   # CM-FDI parity: decoded projects identical() to the CSV after cleaning; aggregates recomputed.
   if (!is.null(decoded$`sector-fdi`)) {
     pf <- sector_fdi_parity(decoded$`sector-fdi`, meta, cmfdi_raw, iso3_of, fdi_settings)
@@ -879,7 +946,10 @@ notes <- c(notes,
            "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.",
            if (!is.null(fdi)) paste0("Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and ",
                                      "the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; ",
+                                     "project counts and sums of disclosed capital computed by the OSI authors, no record altered; ",
                                      "undisclosed capital investment is shown as not disclosed, never zero."),
+           paste0("Trade baskets cover Electric Vehicles, Solar, Wind, Nuclear and Semiconductors Upstream since the 2026-10 basket review; ",
+                  "trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total."),
            "Scenario dials apply to Strategic Insights only.")
 res <- finish(bundle, chunks, out_dir, created = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), git_commit = git_commit,
               strategic_bundle_id = strategic_bundle_id, processed_mtime_max = processed_mtime_max, pipeline_marker = pipeline_marker,
@@ -894,7 +964,8 @@ geo_code <- function(i) bundle$geo$code[i]
 pick <- function(v, it, y, mode = "members") sm[sm$var == v & sm$item_key == it & sm$year == y & sm$eu_mode == mode, , drop = FALSE]
 ref_rows <- list()
 for (cl in c("batteries-midstream", "solar-midstream", "electric-vehicles-midstream", "electric-grid-midstream", "wind-midstream",
-             "oil-upstream", "gas-upstream", "coal-upstream", "semiconductors-midstream")) {
+             "oil-upstream", "gas-upstream", "coal-upstream", "semiconductors-midstream", "electric-vehicles-upstream", "solar-upstream",
+             "wind-upstream", "nuclear-upstream", "semiconductors-upstream", "nuclear-midstream")) {
   s <- pick("trade.exports", paste0("cell:", cl), 2024L)
   if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("%s matrix 2024: W USD %.1f bn; %s %.1f%%; top-3 %.1f%%; HHI %.3f; eff n %.1f; n %d; core %.1f%%, partners %.1f%%; growth since 2020 %+.0f%%",
                                                           cl, s$W / 1e9, geo_code(s$top1_geo), 100 * s$top1_share, 100 * s$top3_share, s$hhi, s$eff_n, s$n,
@@ -963,6 +1034,26 @@ if (!is.null(fdi)) {
       "CM-FDI %s %s: %d projects; by parent HQ (count) china %.1f%% core %.1f%% partner %.1f%% rest %.1f%%; (disclosed value, USD %.1f bn) china %.1f%% core %.1f%% partner %.1f%% rest %.1f%%",
       b, sub("^cell:", "", ck), sum(x$n), 100 * x$share_n[1], 100 * x$share_n[2], 100 * x$share_n[3], 100 * x$share_n[4],
       sum(x$value, na.rm = TRUE) / 1e3, 100 * x$share_value[1], 100 * x$share_value[2], 100 * x$share_value[3], 100 * x$share_value[4])
+  }
+}
+for (tech in names(bundle$trade)) {
+  ss <- bundle$trade[[tech]]$sub_summary
+  if (is.null(ss)) next
+  ss <- ss[ss$var == "trade.sub_exports" & ss$year == 2024L & ss$eu_mode == "members", , drop = FALSE]
+  for (ck in unique(ss$item_key)) {
+    x <- ss[ss$item_key == ck, , drop = FALSE]
+    x <- x[order(-x$W), , drop = FALSE]
+    ref_rows[[length(ref_rows) + 1]] <- paste0(sub("^cell:", "", ck), " sub-components 2024 (W USD bn, top-1 share): ",
+                                               paste(sprintf("%s %.2f (%s %.0f%%)", x$sub_sector, x$W / 1e9, geo_code(x$top1_geo), 100 * x$top1_share), collapse = "; "))
+  }
+}
+fe <- facts[facts$var == "trade.feasibility", , drop = FALSE]
+if (nrow(fe)) {
+  for (ck in c("cell:batteries-midstream", "cell:solar-upstream", "cell:semiconductors-upstream")) {
+    x <- fe[fe$item_key == ck, , drop = FALSE]
+    x <- x[order(-x$value), , drop = FALSE]
+    ref_rows[[length(ref_rows) + 1]] <- sprintf("Export feasibility %d %s: %d economies; top %s; median %.3f", feas_year, sub("^cell:", "", ck), nrow(x),
+                                                paste(sprintf("%s %.3f", utils::head(x$geo, 3), utils::head(x$value, 3)), collapse = ", "), stats::median(x$value))
   }
 }
 message("\nReference values (Appendix B, recomputed):\n  ", paste(unlist(ref_rows), collapse = "\n  "))

@@ -13,8 +13,13 @@
 # when some multiplier differs from 1, and the stage-weight contrast is skipped at mP = 1.
 #
 # HAWKISHNESS (mH): SI weight on security need (1 - ES); Friendshore weight in the PSI; Friendshore
-#   weight of network edges; geo_alignment weight inside Friendshore; network diversification
-#   lambda; need weight of network demand; resilience (own ES) weight of the producer score.
+#   weight of network edges; the weights of Friendshore's two security components, geo_alignment
+#   (UN-vote alignment) and chinese_parent_exposure (CM-FDI Chinese-parent ownership, scored
+#   1 - share; since October 2026), both w0 x mH; network diversification lambda; need weight of
+#   network demand; resilience (own ES) weight of the producer score. The CM-FDI investment tie
+#   replaces the IMF position inside the outbound component (Solar, Wind, Batteries, EV Midstream)
+#   and keeps that component's weight, which no dial owns. The robustness switch that drops the
+#   ownership component (config/partnership.yml cm_fdi chinese_parent_exposure: false) is not a dial.
 # BULLISHNESS (mB): SI weight on EO; Opportunity weight in the PSI and of network edges; EO weight
 #   of the producer score; size weight of network demand.
 # POPULISM (mP): SI policy weight; IEA PAMS weight in the Policy composite; stage weights
@@ -231,6 +236,7 @@ dash_params <- function(dials = dash_default_dials(), advanced = NULL, bundle) {
 
   fs_weights <- bi$fs_weights
   if (!is.null(fs_weights$geo_alignment)) fs_weights$geo_alignment <- fs_weights$geo_alignment * mH
+  if (!is.null(fs_weights$chinese_parent_exposure)) fs_weights$chinese_parent_exposure <- fs_weights$chinese_parent_exposure * mH
   psi_weights <- bi$psi_weights
   psi_weights[["friendshore"]] <- psi_weights[["friendshore"]] * mH
   psi_weights[["opportunity"]] <- psi_weights[["opportunity"]] * mB
@@ -383,29 +389,31 @@ dash_dial_readout <- function(params, bundle) {
     w[[var]] / sum(w)
   }
   stage_ratio <- function(p, s) p$si$stage_weights[[s]] / p$si$stage_weights[["Midstream"]]
+  # Labels spell out every index (no bare acronyms): the dial panel prints them as they are.
   rows <- list(
-    list("hawkishness", "si_need", "SI weight on security need", function(p) p$si$weights[["energy_security_need"]], TRUE),
-    list("hawkishness", "psi_fs_share", "Friendshore share of the PSI", function(p) share(p$partner$psi_weights, "friendshore"), TRUE),
-    list("hawkishness", "edge_fs_share", "Friendshore share of network edges", function(p) share(p$network$edge_weights, "friendshore"), FALSE),
-    list("hawkishness", "fs_geo_share", "Alignment share of Friendshore", function(p) share(p$partner$fs_weights, "geo_alignment"), FALSE),
-    list("hawkishness", "lambda", "Network diversification lambda", function(p) p$network$diversity_lambda, TRUE),
-    list("hawkishness", "demand_need_share", "Need share of network demand", function(p) share(p$network$demand_weights, "need"), FALSE),
-    list("hawkishness", "node_resilience", "Resilience weight in producer score", function(p) eff_node(p, "resilience"), FALSE),
-    list("bullishness", "si_eo", "SI weight on economic opportunity", function(p) p$si$weights[["economic_opportunity"]], TRUE),
-    list("bullishness", "psi_po_share", "Opportunity share of the PSI", function(p) share(p$partner$psi_weights, "opportunity"), TRUE),
-    list("bullishness", "edge_po_share", "Opportunity share of network edges", function(p) share(p$network$edge_weights, "opportunity"), TRUE),
-    list("bullishness", "node_eo", "EO weight in producer score", function(p) eff_node(p, "eo"), FALSE),
-    list("bullishness", "demand_size_share", "Size share of network demand", function(p) share(p$network$demand_weights, "size"), FALSE),
-    list("populism", "si_policy", "SI weight on policy", function(p) p$si$weights[["policy"]], TRUE),
-    list("populism", "policy_iea_share", "IEA PAMS share of the Policy index", function(p) pol_share(p, bi$policy_iea_var), FALSE),
+    list("hawkishness", "si_need", "Strategic Index weight on security need", function(p) p$si$weights[["energy_security_need"]], TRUE),
+    list("hawkishness", "psi_fs_share", "Friendshore share of Partnership Strength", function(p) share(p$partner$psi_weights, "friendshore"), TRUE),
+    list("hawkishness", "edge_fs_share", "Friendshore share of network links", function(p) share(p$network$edge_weights, "friendshore"), FALSE),
+    list("hawkishness", "fs_geo_share", "UN-vote alignment share of Friendshore", function(p) share(p$partner$fs_weights, "geo_alignment"), FALSE),
+    list("hawkishness", "fs_cpe_share", "Chinese-parent ownership share of Friendshore", function(p) share(p$partner$fs_weights, "chinese_parent_exposure"), FALSE),
+    list("hawkishness", "lambda", "Diversification weight of the network design", function(p) p$network$diversity_lambda, TRUE),
+    list("hawkishness", "demand_need_share", "Security-need share of network demand", function(p) share(p$network$demand_weights, "need"), FALSE),
+    list("hawkishness", "node_resilience", "Own-security weight in the producer score", function(p) eff_node(p, "resilience"), FALSE),
+    list("bullishness", "si_eo", "Strategic Index weight on Economic Opportunity", function(p) p$si$weights[["economic_opportunity"]], TRUE),
+    list("bullishness", "psi_po_share", "Partnership Opportunity share of Partnership Strength", function(p) share(p$partner$psi_weights, "opportunity"), TRUE),
+    list("bullishness", "edge_po_share", "Partnership Opportunity share of network links", function(p) share(p$network$edge_weights, "opportunity"), TRUE),
+    list("bullishness", "node_eo", "Economic Opportunity weight in the producer score", function(p) eff_node(p, "eo"), FALSE),
+    list("bullishness", "demand_size_share", "Market-size share of network demand", function(p) share(p$network$demand_weights, "size"), FALSE),
+    list("populism", "si_policy", "Strategic Index weight on policy activity", function(p) p$si$weights[["policy"]], TRUE),
+    list("populism", "policy_iea_share", "IEA policy-record share of policy activity", function(p) pol_share(p, bi$policy_iea_var), FALSE),
     list("populism", "stage_up_ratio", "Upstream / Midstream stage weight", function(p) stage_ratio(p, "Upstream"), TRUE),
     list("populism", "stage_down_ratio", "Downstream / Midstream stage weight", function(p) stage_ratio(p, "Downstream"), FALSE),
-    list("populism", "node_policy", "Policy weight in producer score", function(p) eff_node(p, "policy"), FALSE),
-    list("populism", "home_bias", "Home-bias multiplier on self-supply", function(p) p$network$self_multiplier, TRUE),
-    list("greenness", "si_tech", "SI weight on technology (GHG)", function(p) p$si$weights[["technology"]], TRUE),
-    list("greenness", "policy_cat_share", "CAT share of the Policy index", function(p) pol_share(p, bi$policy_cat_var), FALSE),
+    list("populism", "node_policy", "Policy weight in the producer score", function(p) eff_node(p, "policy"), FALSE),
+    list("populism", "home_bias", "Home-supply multiplier in the network", function(p) p$network$self_multiplier, TRUE),
+    list("greenness", "si_tech", "Strategic Index weight on low-emission technology", function(p) p$si$weights[["technology"]], TRUE),
+    list("greenness", "policy_cat_share", "Climate Action Tracker share of policy activity", function(p) pol_share(p, bi$policy_cat_var), FALSE),
     list("greenness", "fs_penalty", "Friendshore climate penalty (per side)", function(p) p$partner$fs_penalty, TRUE),
-    list("greenness", "po_penalty", "Opportunity climate penalty", function(p) p$partner$po_penalty, FALSE),
+    list("greenness", "po_penalty", "Partnership Opportunity climate penalty", function(p) p$partner$po_penalty, FALSE),
     list("greenness", "fossil", "Fossil technologies excluded", function(p) as.numeric(isTRUE(p$si$fossil_excluded)), TRUE)
   )
   out <- lapply(rows, function(r) {

@@ -9,6 +9,7 @@ import { useMemo } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
 import { TableView } from '../../components/TableView.tsx';
 import { PageHead, StatTile } from '../../components/ui.tsx';
+import { Term } from '../../components/Term.tsx';
 import { useTitle } from '../../shell/title.ts';
 import { isStageSlug, isTechSlug, TECH_LABELS, type SectorTradeChunk } from '../contract.ts';
 import { useModel } from '../data/SectorDataProvider.tsx';
@@ -19,6 +20,7 @@ import { basisWords } from '../derive/concentration.ts';
 import { isDiverging } from '../derive/explore.ts';
 import { GROUP_LABEL, partOf } from '../derive/groups.ts';
 import { regionOf, stateOf, stateWords } from '../derive/states.ts';
+import { ASSUMED_MARK, noteLine } from '../derive/notes.ts';
 import { slice } from '../derive/summary.ts';
 import { blocFlows, flowsOf, partners, supplierMixes, type TradeYear } from '../derive/trade.ts';
 import { hasFdi } from '../derive/fdi.ts';
@@ -26,7 +28,7 @@ import { sectorCsv } from '../derive/csv.ts';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { lc, fmtShare, fmtUsd, listText, logAxisFormatter, ordinal } from '../format.ts';
 import { rankSlice } from './cards.tsx';
-import { ChunkGate, fmtFact, markGroup } from './common.tsx';
+import { ChunkGate, fmtFact, HowToRead, markGroup } from './common.tsx';
 import { useFacts, useNear, usePolicy, useSeries, useTrade } from './data.ts';
 import { FdiCountry } from './fdi/FdiCountry.tsx';
 import { Beeswarm, Dumbbell, LabelledLines, LeagueBars, SectorChartCard, type BeeswarmPoint, type DumbbellRow, type LeagueRow } from './kit.tsx';
@@ -85,14 +87,14 @@ function positions(model: SectorModel, facts: FactsIndex, cell: ItemInfo, g: Geo
       out.push({
         v,
         year,
-        text: fmtFact(model, v, it, row.value),
-        sub: [!signed && pos?.share !== null && pos?.share !== undefined ? `${fmtShare(pos.share)} ${basisWords(c.basis, v.source.short)}` : null, rankText, String(row.obs_year ?? year)].filter(Boolean).join(' · '),
+        text: `${fmtFact(model, v, it, row.value)}${st.assumed ? ` ${ASSUMED_MARK}` : ''}`,
+        sub: [!signed && pos?.share !== null && pos?.share !== undefined ? `${fmtShare(pos.share)} ${basisWords(c.basis, v.source.short)}` : null, rankText, String(row.obs_year ?? year), noteLine(model, v.id, row) || null].filter(Boolean).join(' · '),
         rank,
         n,
         signed,
       });
     } else {
-      out.push({ v, year, text: st.state === 'zero' ? 'Reported zero' : '–', sub: stateWords(st, v, model, g), rank: null, n: c.n });
+      out.push({ v, year, text: st.state === 'zero' ? 'Reported zero' : '–', sub: [stateWords(st, v, model, g), noteLine(model, v.id, row) || null].filter(Boolean).join(' · '), rank: null, n: c.n });
     }
   }
   // region-native measures: the economy's region value
@@ -141,9 +143,10 @@ function TradePartners({ trade, cell, g, eu }: { trade: SectorTradeChunk; cell: 
         <SectorChartCard
           title="Where its imports come from"
           vars={[{ var: 'trade.flow', item: cell.slug, year: 2024 }]}
+          subExtra={<HowToRead>Each bar is one supplier, largest first: what {g.name} bought from it in 2024 and that supplier&apos;s share of {g.name}&apos;s imports of these goods. Colours show the supplier&apos;s group. One large bar means a dependence on one source.</HowToRead>}
           table={twin(imp, `${g.name}: import sources, 2024`, 'Supplier')}
           csv={() => (vFlow ? { name: `${g.code}-${cell.slug}-import-sources`, text: sectorCsv(model, imp.map((p) => ({ geo: model.geos[p.geo], v: vFlow, item: cell, year: 2024, value: p.value, status: p.mirror ? 'mirror' : 'obs', share: p.share }))) } : null)}
-          notes={m24 ? <p>China share {fmtShare(m24.china)}; supplier HHI {m24.hhi.toFixed(3)}.</p> : undefined}
+          notes={m24 ? <p>China share {fmtShare(m24.china)}; <Term id="hhi">concentration</Term> of its suppliers (HHI) {m24.hhi.toFixed(3)}.</p> : undefined}
           summary={imp[0] ? `${model.geos[imp[0].geo].name} supplies ${fmtShare(imp[0].share)} of ${g.name}'s imports.` : `No imports recorded for ${g.name}.`}
         >
           {imp.length ? <LeagueBars rows={rowsOf(imp)} axisLabel="US dollars, 2024" ariaLabel={`${g.name}: import sources`} top={10} tickFormat={(v) => fmtUsd(v).replace('USD ', '')} /> : <p className="text-sm text-paper-mute">No imports recorded.</p>}
@@ -151,6 +154,7 @@ function TradePartners({ trade, cell, g, eu }: { trade: SectorTradeChunk; cell: 
         <SectorChartCard
           title="Where its exports go"
           vars={[{ var: 'trade.flow', item: cell.slug, year: 2024 }]}
+          subExtra={<HowToRead>Each bar is one buyer, largest first: what it bought from {g.name} in 2024 and its share of {g.name}&apos;s exports of these goods. Colours show the buyer&apos;s group.</HowToRead>}
           table={twin(exp, `${g.name}: export destinations, 2024`, 'Destination')}
           csv={() => (vFlow ? { name: `${g.code}-${cell.slug}-export-destinations`, text: sectorCsv(model, exp.map((p) => ({ geo: model.geos[p.geo], v: vFlow, item: cell, year: 2024, value: p.value, status: p.mirror ? 'mirror' : 'obs', share: p.share }))) } : null)}
           summary={exp[0] ? `${model.geos[exp[0].geo].name} takes ${fmtShare(exp[0].share)} of ${g.name}'s exports.` : `No exports recorded for ${g.name}.`}
@@ -162,6 +166,7 @@ function TradePartners({ trade, cell, g, eu }: { trade: SectorTradeChunk; cell: 
         <SectorChartCard
           title="Its imports by supplier group, 2020 and 2024"
           vars={[{ var: 'trade.flow', item: cell.slug, year: 2020 }, { var: 'trade.flow', item: cell.slug, year: 2024 }]}
+          subExtra={<HowToRead>Each row is one group of suppliers; its two dots are that group&apos;s share of {g.name}&apos;s imports in 2020 and in 2024. A line running to the right means the group supplies a larger share than before.</HowToRead>}
           table={() => <TableView rows={dumb} caption="Import shares by supplier group" cols={[{ id: 'g', header: 'Supplier group', value: (d) => d.label }, { id: 'a', header: '2020', value: (d) => d.a, cell: (d) => fmtShare(d.a), num: true }, { id: 'b', header: '2024', value: (d) => d.b, cell: (d) => fmtShare(d.b), num: true }]} />}
           csv={() => ({ name: `${g.code}-${cell.slug}-supplier-groups`, text: rowsToCsv(dumb.map((d) => ({ iso3c: g.code, economy: g.name, item: cell.slug, supplier_group: d.id, share_2020: Number.isFinite(d.a) ? d.a : null, share_2024: Number.isFinite(d.b) ? d.b : null, var_id: 'trade.flow', source: vFlow?.source.short ?? 'UN Comtrade' }))) })}
           summary={`China supplied ${fmtShare(m20?.china)} of ${g.name}'s imports in 2020 and ${fmtShare(m24?.china)} in 2024.`}>
@@ -223,6 +228,7 @@ function OverTime({ cell, g, facts }: { cell: ItemInfo; g: GeoInfo; facts: Facts
             key={v.id}
             title={`${v.short}${it !== cell ? ` (${lc(it.label)})` : ''}, ${y0}-${y1}`}
             vars={[{ var: v.id, item: it.slug, window: [y0, y1] }]}
+            subExtra={<HowToRead>The line follows {g.name}&apos;s {lc(v.short)} year by year, in the source&apos;s own unit; higher means more.</HowToRead>}
             table={() => <TableView rows={pts} caption={`${g.name}: ${v.short}`} cols={[{ id: 'y', header: 'Year', value: (p) => p.year }, { id: 'v', header: `${v.short} (${u.short})`, value: (p) => p.value, cell: (p) => fmtFact(model, v, it, p.value, 'table'), num: true }, { id: 's', header: 'State', value: (p) => (p.status === 'est' ? 'estimate' : p.status === 'obs' ? 'observed' : p.status) }]} />}
             csv={() => ({ name: `${g.code}-${v.id}-${it.slug}-series`, text: sectorCsv(model, pts.map((p) => ({ geo: g, v, item: it, year: p.year, value: p.value, status: p.status }))) })}
             summary={`${g.name}: ${lc(v.short)} from ${fmtFact(model, v, it, pts[0].value)} in ${y0} to ${fmtFact(model, v, it, pts[pts.length - 1].value)} in ${y1}.`}
@@ -321,6 +327,11 @@ export default function CountryInSectorView() {
               <Link className="link ml-2 text-sm" to={link(`/sector/${tech}/${stage}`, { c: geo.code })}>
                 Back to {model.cellLabel(cell)}
               </Link>
+              {geo.kind === 'country' && (
+                <Link className="link ml-2 text-sm" to={`/countries/${geo.code}`}>
+                  {geo.name} in Country Insights →
+                </Link>
+              )}
             </div>
           </PageHead>
           <ChunkGate h={h} name="sector-facts">
@@ -347,6 +358,7 @@ export default function CountryInSectorView() {
                     headingLevel={2}
                     title="Rank among peers"
                     vars={[{ var: beeswarm.v.id, item: beeswarm.it.slug, year: beeswarm.y }]}
+                    subExtra={<HowToRead>Each dot is one economy, placed by its {lc(beeswarm.v.short)} in {beeswarm.y}: further right is more. {geo.name} is ringed; the tick marks the median, the economy in the middle.</HowToRead>}
                     table={() => <TableView rows={[...beeswarm.points].sort((x, z) => z.value - x.value)} caption="Rank among peers" search rowKey={(p) => p.id} selectedKey={geo.code} cols={[{ id: 'r', header: 'Rank', value: (p) => [...beeswarm.points].sort((x, z) => z.value - x.value).indexOf(p) + 1, num: true }, { id: 'e', header: 'Economy', value: (p) => p.label }, { id: 'v', header: `${beeswarm.v.short} (${model.unitOf(beeswarm.v, beeswarm.it.idx).short})`, value: (p) => p.value, cell: (p) => p.display, num: true }]} />}
                     csv={() => ({ name: `${geo.code}-${cell.slug}-peers`, text: sectorCsv(model, beeswarm.points.map((p) => ({ geo: model.geoByCode.get(p.id) ?? null, v: beeswarm.v, item: beeswarm.it, year: beeswarm.y, value: p.value, status: 'obs' }))) })}
                     summary={`${geo.name} among ${beeswarm.points.length} economies with ${lc(beeswarm.v.short)} in ${beeswarm.y}.`}

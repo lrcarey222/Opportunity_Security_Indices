@@ -23,8 +23,8 @@
 version: 1
 
 units:
-  - {id: usd_cif, short: "USD", long: "US dollars, current (importer-declared, CIF)", unit_kind: usd}
-  - {id: usd_fob, short: "USD", long: "US dollars, current (FOB)", unit_kind: usd}
+  - {id: usd_cif, short: "USD", long: "US dollars, current (importer-declared, including cost, insurance and freight)", unit_kind: usd}
+  - {id: usd_fob, short: "USD", long: "US dollars, current (free on board)", unit_kind: usd}
   - {id: usd_bn_2024, short: "USD bn (2024$)", long: "US dollars, billions, 2024 prices", unit_kind: usd_bn_real}
   - {id: usd_month, short: "USD/month", long: "US dollars per month, market exchange rate", unit_kind: usd_month}
   - {id: share, short: "share", long: "share (0-1)", unit_kind: share}
@@ -84,6 +84,7 @@ units:
   - {id: count_projects, short: "projects", long: "number of projects", unit_kind: count}
   - {id: usd_m_announced, short: "USD m", long: "US dollars, millions, current (announced or reported capital investment)", unit_kind: usd_m}
   - {id: share_projects, short: "share", long: "share of the destination's foreign-invested projects (0-1)", unit_kind: share}
+  - {id: index01, short: "0-1", long: "index from 0 (none) to 1 (all)", unit_kind: index01}
 
 # IMF series units come from energy_prices_pcps_units() (R/categories/energy_prices/energy_prices.R,
 # the IMF series metadata); this maps its unit text to a unit id. Text not listed -> price_tbc.
@@ -429,9 +430,9 @@ sources:
     edition: "2026.10.05"
     url: "https://cmfdi.netzeropolicylab.com/"
     licence: attribution
-    attribution: "Source: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05; licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Counts and sums by the authors."
+    attribution: "Source: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: project counts and sums of disclosed capital computed by the OSI authors; no record altered."
     accessed: "2026-10-11"
-    transform: "One row per project as published ({fdi_n} projects; {fdi_n_dest} destination and {fdi_n_home} home economies; {fdi_n_parents} parent companies; announced {fdi_years}). Country names to ISO3 (Czechia and Czech Republic as one); technology to its Midstream sector (Battery -> Batteries, EV -> Electric Vehicles, Solar, Wind); undisclosed capital investment kept as not disclosed, never zero; source cells verbatim with their http(s) links. Flows (home -> destination), parent-headquarters group splits and announcements by year are sums by the authors, over all projects and over the projects the Partnership indices use (config/partnership.yml cm_fdi)."
+    transform: "One row per project as published ({fdi_n} projects; {fdi_n_dest} destination and {fdi_n_home} home economies; {fdi_n_parents} parent companies; announced {fdi_years}). Country names to ISO3 (Czechia and Czech Republic as one); technology to its Midstream sector (Battery -> Batteries, EV -> Electric Vehicles, Solar, Wind); undisclosed capital investment kept as not disclosed, never zero; source cells verbatim with their http(s) links. Flows (home -> destination), parent-headquarters group splits and announcements by year are counts and sums computed by the OSI authors, over all projects and over the projects the Partnership indices use (config/partnership.yml cm_fdi)."
     issues: "{fdi_n_undisclosed} of {fdi_n} projects disclose no capital investment; values are announced, not audited. Cross-border projects only: domestic investment is not covered."
 
 caveats:
@@ -444,6 +445,17 @@ caveats:
   - {id: rca_small, text: "Shown only where exporter-reported basket exports reach USD 50 m; smaller exporters read 'too small to compare'."}
   - {id: hkg_excluded, text: "Hong Kong is excluded from the exporter-reported measures as a re-export hub."}
   - {id: atlas_source, text: "Harvard Atlas 2023: a different source and year from the Comtrade 2024 matrix, so it is shown in its own card."}
+  - {id: feasibility_reading, text: "Export feasibility is the Atlas of Economic Complexity's relatedness (also called density: 1 minus its 'distance'). For each four-digit product heading in the sector's basket it measures how much of the know-how the product needs the economy already shows: of all other products, each weighted by how often economies export it together with this one (its 'proximity'), the share the economy already exports with a revealed comparative advantage. The sector's value is the average over its headings, each counted once: 0 means none of the related capabilities are in place, 1 means all of them. It describes capabilities, not costs, demand or policy, and it is not a forecast."}
+  - {id: sub_component_rule, text: "Sub-components are the groups of HS6 codes the sector's basket is built from (listed with their codes). Each flow uses the same source as the whole sector (the importer's declaration where it reported the sector that year, otherwise the exporter's x1.06), so a sector's sub-components add up to its total. Within one sector each code sits in one sub-component; a code shared with another sector counts in both sectors, so sub-components are never added across sectors."}
+  - {id: hhi_reading, text: "Concentration (HHI): take each holder's share of the world total, square it and add up the squares. If one economy held everything the index would be 1; ten equal holders give 0.10 and four give 0.25. One divided by the index is the 'effective number' of equal-sized holders the market behaves like: 0.25 behaves like 4. Where part of the world total is not attributed to any economy, the index is a lower bound ('at least')."}
+  - {id: hhi_refs_context, text: "Competition authorities screen mergers with HHI thresholds, usually quoted on a 0-10,000 scale (shares in percent: 1,800 there is 0.18 here). They were written for markets of competing firms, not for trade between whole economies, so they are a yardstick, not a verdict: an economy's exports come from many firms, which may compete with each other."}
+  - {id: basket_ev_upstream, text: "Electric Vehicles Upstream trade (a basket since the 2026-10 review) is the battery minerals as ores and concentrates (lithium minerals, nickel, cobalt and manganese ores, natural graphite), codes it shares with Batteries Upstream, plus the magnet rare earths of the traction motor (rare-earth compounds and metals, monazite ore), codes it shares with Wind Upstream. Each code counts fully in every sector that lists it. Steel is the larger use of nickel and manganese ore, and the lithium heading also holds other minerals."}
+  - {id: basket_solar_upstream, text: "Solar Upstream trade is silicon metal only (HS 2804.69), the feedstock of polysilicon. Aluminium alloys and silicones use as much silicon metal as solar or more, so most traded silicon metal serves other uses. Silver, quartz, tellurium and copper are left out (copper is in Electric Grid Upstream)."}
+  - {id: basket_wind_upstream, text: "Wind Upstream trade is the raw material of the magnet rare earths: rare-earth compounds (HS 2846.90), rare-earth metals (2805.30) and monazite ore (2612.20), the same codes as in Electric Vehicles Upstream. Magnets also go into electronics and industrial motors, and the compounds heading also holds lanthanum and cerium for catalysts and glass."}
+  - {id: basket_nuclear_upstream, text: "Nuclear Upstream trade is uranium ores and concentrates (HS 2612.10) and natural uranium and its compounds (2844.10, the heading under which most yellowcake is shipped), moved from Nuclear Midstream in the 2026-10 basket review. The 2844.10 heading also holds natural uranium hexafluoride from conversion, a Midstream step with no code of its own."}
+  - {id: basket_nuclear_midstream, text: "Since the 2026-10 basket review Nuclear Midstream no longer includes uranium ores and yellowcake (now in Nuclear Upstream): it keeps enriched uranium, spent fuel, and reactor and steam-plant hardware."}
+  - {id: basket_semis_upstream, text: "Semiconductors Upstream trade is unwrought gallium, germanium and indium, their powders and scrap (HS 8112.92, which also holds niobium and vanadium); the Atlas sees it through the older code 8112.91. Semiconductors and LEDs take most gallium, but germanium goes mainly into fibre and infrared optics and indium into display coatings."}
+  - {id: basket_ree_moved, text: "Rare-earth compounds and metals moved to the Upstream baskets in the 2026-10 basket review, so this sector's trade starts at the permanent magnet (HS 8505.11)."}
   - {id: critmin_basket, text: "Mineral labels come from HS descriptions: zinc includes galvanized steel, copper includes wire and scrap, silicon includes silicones, graphite includes artificial graphite."}
   - {id: critmin_no_ree_pgm, text: "The Comtrade mineral pull has no rare-earth or PGM codes."}
   - {id: critmin_hkg, text: "Hong Kong is kept in the mineral trade data and tagged as a re-export hub."}
@@ -512,12 +524,21 @@ caveats:
   - {id: cmfdi_announced, text: "Announced or reported capital investment in current US dollars, as published: not audited spending and not adjusted for inflation. {fdi_n_fdimarkets} values cite fDi Markets (Financial Times); {fdi_n_unverified_amount} value sources are marked [UNVERIFIED] by CM-FDI."}
   - {id: cmfdi_year_completed, text: "Year completed is the planned year for projects that are not yet complete."}
 
+# Concentration thresholds competition authorities use for mergers (dict.hhi_refs), context for the
+# HHI explainer only (caveat hhi_refs_context). `value` on the 0-1 scale of the summaries, `points` on
+# the authorities' 0-10,000 scale; `side`: the label describes markets above (or below) the value.
+hhi_refs:
+  - {id: eu_2004_unlikely, value: 0.10, points: 1000, side: below, label: "concentration concerns unlikely", authority: "European Commission", document: "Guidelines on the assessment of horizontal mergers (2004/C 31/03), paragraph 19", year: 2004}
+  - {id: us_2010_moderate, value: 0.15, points: 1500, side: above, label: "moderately concentrated (to 0.25)", authority: "US Department of Justice and Federal Trade Commission", document: "Horizontal Merger Guidelines (2010), section 5.3", year: 2010}
+  - {id: us_2023_high, value: 0.18, points: 1800, side: above, label: "highly concentrated", authority: "US Department of Justice and Federal Trade Commission", document: "Merger Guidelines (2023), Guideline 1", year: 2023}
+  - {id: us_2010_high, value: 0.25, points: 2500, side: above, label: "highly concentrated (2010 guidelines)", authority: "US Department of Justice and Federal Trade Commission", document: "Horizontal Merger Guidelines (2010), section 5.3", year: 2010}
+
 themes:
   - {slug: trade, label: "Trade", order: 1, default_var: trade.exports, description: "Exports, imports, flows and concentration of each sector's HS6 basket, plus mineral exports."}
   - {slug: resources, label: "Reserves & resources", order: 2, default_var: resources.mineral_reserves, description: "Fuel and mineral reserves, uranium resources, and solar, wind and geothermal potential."}
   - {slug: production, label: "Production", order: 3, default_var: production.fuels, description: "Fuel, power, mineral and uranium production, and EV production by region."}
   - {slug: consumption, label: "Consumption & dependence", order: 4, default_var: consumption.per_capita, description: "Energy use per person, net balances, self-sufficiency, EV sales and the world outlook."}
-  - {slug: investment, label: "Investment", order: 5, default_var: investment.annual, description: "Clean-technology investment by economy and sector, 2018-2025, and power capacity additions."}
+  - {slug: investment, label: "Investment", order: 5, default_var: investment.annual, description: "Clean-technology investment by economy and sector, 2018-2025, power capacity additions, and cross-border manufacturing projects (CM-FDI)."}
   - {slug: manufacturing, label: "Manufacturing capacity", order: 6, default_var: manufacturing.share_now, description: "Shares of global manufacturing capacity, now and announced for 2035, and capacity by product."}
   - {slug: prices, label: "Prices & costs", order: 7, default_var: prices.latest, description: "Commodity prices and volatility, wages, lending rates and producer-price inflation."}
   - {slug: technology, label: "Technology & outlook", order: 8, default_var: technology.trl, description: "Technology readiness of each sector, from the IEA Clean Energy Technology Guide."}
@@ -561,8 +582,8 @@ cells:
   - {slug: electric-grid-upstream, cell_blurb: "Copper and aluminium: ores, concentrates, cathodes and unwrought metal for grid equipment."}
   - {slug: electric-grid-midstream, cell_blurb: "Cables, transformers, switchgear, converters and other grid equipment."}
   - {slug: electric-grid-downstream, cell_blurb: "Grid deployment: little country-level data exists; see Grid Midstream."}
-  - {slug: electric-vehicles-upstream, cell_blurb: "The battery minerals EVs use; critical-minerals investment (shared with Batteries Upstream)."}
-  - {slug: electric-vehicles-midstream, cell_blurb: "Electric and hybrid vehicles, components and charging equipment, and EV production by region."}
+  - {slug: electric-vehicles-upstream, cell_blurb: "The battery minerals EVs use and the magnet rare earths of the traction motor: trade in their ores and concentrates, and critical-minerals investment (shared with Batteries Upstream).", caveats: [basket_ev_upstream]}
+  - {slug: electric-vehicles-midstream, cell_blurb: "Electric and hybrid vehicles, components and charging equipment, and EV production by region.", caveats: [basket_ree_moved]}
   - {slug: electric-vehicles-downstream, cell_blurb: "Electric-car sales, stock and sales share, and consumer purchases."}
   - {slug: gas-upstream, cell_blurb: "Natural gas production, reserves and trade, including LNG."}
   - {slug: gas-midstream, cell_blurb: "Pipes, compressors, liquefaction and regasification equipment."}
@@ -573,19 +594,19 @@ cells:
   - {slug: green-hydrogen-upstream, cell_blurb: "The minerals behind electrolysers: nickel and platinum-group metals."}
   - {slug: green-hydrogen-midstream, cell_blurb: "Electrolyser manufacturing capacity, reported by the IEA for five economies and the EU."}
   - {slug: green-hydrogen-downstream, cell_blurb: "Hydrogen use: little country-level data exists."}
-  - {slug: nuclear-upstream, cell_blurb: "Uranium resources and mine production."}
-  - {slug: nuclear-midstream, cell_blurb: "Uranium compounds, fuel elements, reactors and their parts."}
+  - {slug: nuclear-upstream, cell_blurb: "Uranium resources, mine production and trade in uranium ores and concentrates (yellowcake).", caveats: [basket_nuclear_upstream]}
+  - {slug: nuclear-midstream, cell_blurb: "Enriched uranium and spent fuel, reactors and their parts, and steam-plant hardware.", caveats: [basket_nuclear_midstream]}
   - {slug: nuclear-downstream, cell_blurb: "Nuclear generation and investment in nuclear power."}
   - {slug: oil-upstream, cell_blurb: "Crude oil production, reserves and trade."}
   - {slug: oil-midstream, cell_blurb: "Refining and handling equipment, pipes and tanks."}
   - {slug: oil-downstream, cell_blurb: "Oil use and oil-fired electricity."}
-  - {slug: solar-upstream, cell_blurb: "The materials behind solar: silicon, silver, copper and other minerals, mining and refining."}
+  - {slug: solar-upstream, cell_blurb: "The materials behind solar: trade in silicon metal, the feedstock of polysilicon, and the mining and refining of silicon, silver, copper and other minerals.", caveats: [basket_solar_upstream]}
   - {slug: solar-midstream, cell_blurb: "Polysilicon, wafers, cells, modules, inverters and related equipment, plus manufacturing investment and capacity."}
   - {slug: solar-downstream, cell_blurb: "Solar generation, deployment investment and the solar resource."}
-  - {slug: wind-upstream, cell_blurb: "The materials behind wind: rare earths, copper, zinc and other minerals, mining and refining."}
-  - {slug: wind-midstream, cell_blurb: "Nacelles, blades, towers, generators and cables, plus manufacturing investment and capacity."}
+  - {slug: wind-upstream, cell_blurb: "The materials behind wind: trade in the rare-earth compounds, metals and ores that magnets are made from, and the mining and refining of rare earths, copper, zinc and other minerals.", caveats: [basket_wind_upstream]}
+  - {slug: wind-midstream, cell_blurb: "Nacelles, blades, towers, generators and cables, plus manufacturing investment and capacity.", caveats: [basket_ree_moved]}
   - {slug: wind-downstream, cell_blurb: "Wind generation, deployment investment and the wind resource."}
-  - {slug: semiconductors-upstream, cell_blurb: "Non-headline basket: unwrought gallium, germanium and indium (with niobium and vanadium), their powders and scrap."}
+  - {slug: semiconductors-upstream, cell_blurb: "Non-headline basket: unwrought gallium, germanium and indium (with niobium and vanadium), their powders and scrap.", caveats: [basket_semis_upstream]}
   - {slug: semiconductors-midstream, cell_blurb: "Non-headline basket: semiconductor devices, wafers and manufacturing equipment."}
 
 vars:
@@ -593,7 +614,7 @@ vars:
   - id: trade.exports
     theme: trade
     family: exports
-    label: "Exports of the HS6 basket"
+    label: "Exports of the sector's traded goods"
     short: "Exports"
     definition: "Value of the economy's exports of the cell's HS6 codes to the world, from importers' declarations (exporters' reports x1.06 where an importer did not declare)."
     unit: usd_cif
@@ -613,7 +634,7 @@ vars:
     roster: comtrade_matrix
     licence: attribution
     caveats: [hs6_overlap, nominal_usd, mirror_factor, hkg_hub_matrix]
-    primary_for: [oil-midstream, gas-midstream, coal-midstream, nuclear-midstream, solar-midstream, wind-midstream, batteries-upstream, batteries-midstream, electric-vehicles-midstream, electric-grid-upstream, electric-grid-midstream, semiconductors-upstream, semiconductors-midstream]
+    primary_for: [oil-midstream, gas-midstream, coal-midstream, nuclear-midstream, solar-upstream, solar-midstream, wind-upstream, wind-midstream, batteries-upstream, batteries-midstream, electric-vehicles-upstream, electric-vehicles-midstream, electric-grid-upstream, electric-grid-midstream, semiconductors-upstream, semiconductors-midstream]
     section: trade
     stale_years: null
     min_base: null
@@ -625,7 +646,7 @@ vars:
   - id: trade.imports
     theme: trade
     family: exports
-    label: "Imports of the HS6 basket"
+    label: "Imports of the sector's traded goods"
     short: "Imports"
     definition: "Value of the economy's imports of the cell's HS6 codes from the world, as the importer declared them (exporters' reports x1.06 where it did not declare)."
     unit: usd_cif
@@ -712,6 +733,66 @@ vars:
     prov_detail: "partnership_strength_build_trade_cells(); positive flows in either year"
     parity: {none: "record-level matrix"}
     phase: "1"
+  - id: trade.sub_exports
+    theme: trade
+    family: exports
+    label: "Exports by sub-component"
+    short: "Exports (sub-component)"
+    definition: "Value of the economy's exports of one group of the sector's HS6 codes (a sub-component, such as battery cells within Batteries Midstream), on the same reconciled basis as the sector's exports, so a sector's sub-components add up to its total."
+    unit: usd_cif
+    data_year: "2024"
+    years: [2020, 2024]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: comtrade_matrix
+    roster: comtrade_matrix
+    licence: attribution
+    caveats: [sub_component_rule, nominal_usd, mirror_factor, hkg_hub_matrix]
+    primary_for: []
+    section: trade
+    feeds: []
+    prov: X
+    prov_detail: "the standardised Comtrade dyads (partnership_strength_standardize_comtrade()) summed over each sub-component's HS6 codes with the cell's source rule (trade.declared); in the trade chunks as trade.cty_sub, never in facts"
+    parity: {none: "the sub-components of a cell add up to its trade.exports facts for every economy and year (scripts/87 checks it within 1e-9 relative)"}
+    phase: "2"
+  - id: trade.sub_imports
+    theme: trade
+    family: exports
+    label: "Imports by sub-component"
+    short: "Imports (sub-component)"
+    definition: "Value of the economy's imports of one group of the sector's HS6 codes (a sub-component), as the importer declared them (exporters' reports x1.06 where it did not declare the sector), so a sector's sub-components add up to its total imports."
+    unit: usd_cif
+    data_year: "2024"
+    years: [2020, 2024]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_all
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: comtrade_matrix
+    roster: comtrade_matrix
+    licence: attribution
+    caveats: [sub_component_rule, nominal_usd, mirror_factor, fob_importers]
+    primary_for: []
+    section: trade
+    feeds: []
+    prov: X
+    prov_detail: "as trade.sub_exports, summed over exporters; in the trade chunks as trade.cty_sub, never in facts"
+    parity: {none: "the sub-components of a cell add up to its trade.imports facts for every economy and year (scripts/87 checks it within 1e-9 relative)"}
+    phase: "2"
   - id: trade.rca
     theme: trade
     family: exports
@@ -772,6 +853,36 @@ vars:
     prov: P
     prov_detail: "trade_concentration_tbl, variable market_share"
     parity: {table: trade_concentration_tbl, variable: market_share}
+    phase: "1"
+  - id: trade.feasibility
+    theme: trade
+    family: exports
+    label: "Export feasibility (related capabilities)"
+    short: "Export feasibility"
+    definition: "How close the sector's products are to what the economy already exports well: 1 minus the average Harvard Atlas product-space distance over the basket's HS4 headings. Higher means the needed capabilities are nearer at hand."
+    unit: index01
+    data_year: "2023"
+    years: [2023]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: none
+    world_basis: none
+    norms: [value]
+    scale: linear
+    higher_is: neutral
+    sign_note: "0 = none of the related capabilities are in place; 1 = all of them."
+    display_scale: 1
+    source: atlas
+    roster: atlas
+    licence: attribution
+    caveats: [feasibility_reading, atlas_source]
+    primary_for: []
+    section: trade
+    feeds: ["EO: Trade"]
+    prov: P
+    prov_detail: "export_feasibility_tbl, variable feasibility (1 - mean Atlas product-space distance over the basket's HS4 headings, each heading once)"
+    parity: {table: export_feasibility_tbl, variable: feasibility}
     phase: "1"
   - id: trade.critmin_exports
     theme: trade
@@ -1593,7 +1704,7 @@ vars:
     roster: cim
     licence: attribution
     caveats: [cim_estimate, cim_ev_purchases, cim_split, cim_geothermal]
-    primary_for: [batteries-downstream, electric-vehicles-upstream]
+    primary_for: [batteries-downstream]
     section: investment
     feeds: ["ES: Investment", "EO: Investment"]
     prov: P
@@ -2500,7 +2611,7 @@ vars:
     primary_for: []
     section: policy
     link_stage: any
-    feeds: ["Policy: IEA PAMS (required)"]
+    feeds: ["Policy: IEA Policies and Measures (required)"]
     prov: X
     prov_detail: "IEA_PAMS_Export.csv via clean_pams_raw() and build_policy_table(), before expand_cross_cutting()"
     parity: {none: "record-level policy table"}

@@ -2,9 +2,21 @@
 
 Sector Insights shows the measured data that the Strategic Insights rankings start from: who produces,
 holds, trades, invests in and regulates each energy technology, from raw materials (Upstream) through
-manufacturing (Midstream) to deployment (Downstream). Every number is shown in its source's own unit and
-year, with the source, the coverage and the caveats beside it. Nothing here is an index, a weight or a
-score, and nothing moves with the Strategic Insights dials.
+manufacturing and processing (Midstream) to deployment and use (Downstream). Eleven technologies at
+three stages make 33 sectors; Semiconductors are shown as well, outside the paper's headline set.
+Every number is shown in its source's own unit and year, with the source, the coverage and the caveats
+beside it. Nothing here is an index, a weight or a score, and nothing moves with the Strategic Insights
+dials.
+
+## Reading the colours
+
+Maps, tiles and heat tables use one three-colour scale: **orange** for the lower values, **white** for
+the middle one (the median of the values shown), **blue** for the higher values. Colours follow the
+rank among the values on screen, so a map of a very uneven measure still shows the differences between
+the middle economies instead of painting almost everything one shade. For a measure that can be below
+zero (a net balance, net trade, a change), white is zero: orange below, blue above. Hatching means there
+is no value to colour; hover or open the table for the reason. Groups of economies keep their own
+colours everywhere: China, the coalition core, the coalition partners and the rest of the world.
 
 Strategic Insights ranks and weighs; Sector Insights shows the measured data those rankings start from.
 
@@ -20,17 +32,25 @@ year. Values from different sources or years are never added or compared on one 
   called "of the economies listed by" that source, never a world share.
 * **Not attributed.** The part of the world total that the source does not assign to a named economy
   (its "Rest of world" or "Other"). It is drawn as a hatched band and labelled.
-* **Top-1 and top-3.** The share of the largest holder, and the combined share of the three largest.
-* **HHI.** The Herfindahl-Hirschman index: the sum of the squared shares, from near 0 (spread across
-  many holders) to 1 (one holder). When more than 5% of the total is not attributed, the residual cannot
-  be split, so the HHI is a lower bound and is written "at least" (for example "≥ 0.21").
-* **Effective number.** One divided by the HHI: the number of equal-sized holders that would give the
-  same concentration.
+* **Largest holder and top three.** The share of the largest holder, and the combined share of the
+  three largest.
+* **Concentration index (HHI).** The Herfindahl-Hirschman index: take each holder's share of the world
+  total, square it and add up the squares. If one economy held everything, the index would be 1; ten
+  equal holders give 0.10 and four give 0.25, so lower means more spread out. When more than 5% of the
+  total is not attributed, the residual cannot be split, so the index is a lower bound and is written
+  "at least" (for example "≥ 0.21").
+* **Effective number.** One divided by the concentration index: the number of equal-sized holders
+  that would give the same concentration. An index of 0.25 behaves like four equal holders, however many
+  small ones there are.
 * **Coalition share.** The combined share of the coalition's {members_n} members: {core_n} core members
   and {partner_n} partners. China, the coalition core, the coalition partners and the rest of the world
   always keep the same colours.
 
-Concentration is described, not graded: no thresholds are drawn and no colour means "good" or "bad".
+Concentration is described, not graded: no thresholds are drawn on the charts and no colour means
+"good" or "bad". The explainer on each Trade section quotes the thresholds competition authorities use
+for mergers (for example "highly concentrated" above 0.18 in the 2023 US merger guidelines) as a
+yardstick only: they were written for firms competing in one market, not for trade between whole
+economies.
 
 ## The EU as one bloc
 
@@ -66,6 +86,24 @@ bloc all sum this one matrix, so the cards on a page agree to the dollar.
 * **Baskets.** The Electric Grid Upstream basket is the copper and aluminium basket; HS 851762
   (communication equipment) is outside Electric Grid Midstream. Excluded codes are listed on each
   profile.
+* **Upstream baskets (2026-10 review).** Electric Vehicles, Solar, Wind, Nuclear and Semiconductors
+  Upstream now have trade baskets: the battery minerals and magnet rare earths as ores and concentrates
+  (Electric Vehicles), silicon metal (Solar), rare-earth compounds, metals and ore (Wind), uranium ores
+  and natural uranium compounds, moved from Nuclear Midstream (Nuclear), and gallium, germanium and
+  indium (Semiconductors). Each profile states what its basket holds and leaves out. Rare-earth
+  compounds and metals moved from the Electric Vehicles and Wind Midstream baskets to these Upstream
+  baskets.
+* **Sub-components.** A basket is built from groups of codes, such as cells and modules in solar.
+  Every Trade section can be viewed by sub-component: the exporter, net-trade and 2020-2024 cards and
+  the ranking then show one group, on the same reconciled basis, so a sector's sub-components add up to
+  its total. Bilateral flows stay whole-basket. A code shared with another sector counts in both, so
+  sub-components are never added across sectors.
+* **Export feasibility.** From the Harvard Atlas of Economic Complexity (2023): how much of the
+  know-how a sector's products need an economy already shows in what it exports well (the Atlas's
+  "relatedness", 1 minus its product-space "distance", averaged over the sector's four-digit headings).
+  0 means none of the related capabilities are in place, 1 means all of them. It is a different source
+  and year from the Comtrade matrix, so it has its own card; it describes capabilities, not costs,
+  demand or policy, and it is not a forecast.
 
 ## Cross-border manufacturing projects
 
@@ -98,7 +136,7 @@ are never put on one chart or in one ratio.
 |---|---|
 | Observed | the source reports a value |
 | Reported zero | the source reports 0 |
-| Not reported separately | the value sits inside the source's "Rest of world"; it is not a zero |
+| Not reported separately | the value sits inside the source's "Rest of world"; it is not a zero. One exception: where no source reports an economy's production of a fuel separately (EI's "Other", no EIA value), production is assumed to be 0, so its net balance is minus its consumption and its self-sufficiency 0%. Those values are drawn like any other, marked † "Production not reported separately; assumed 0" |
 | Listed without a figure | the source lists the economy but withholds the number, or reports it as under 1%; for a CM-FDI project, capital "not disclosed" |
 | Mirror | built from partners' declarations |
 | Estimate | flagged by the source (the Clean Investment Monitor's 2025 includes an estimated fourth quarter) |
@@ -107,7 +145,8 @@ are never put on one chart or in one ratio.
 | Regional value | the value belongs to a region or entity, not to the country |
 | Old | the latest observation is older than the measure allows |
 
-Maps hatch the states without a value; tables and tooltips say each state in words.
+Maps hatch the states without a value; tables and tooltips say each state in words, and the "Source
+note" column of every table carries the fact's own notes (an assumed-zero production, an EIA value).
 
 ## What this module does not show, and why
 
@@ -120,7 +159,8 @@ Maps hatch the states without a value; tables and tooltips say each state in wor
   reconciliation table.
 * **Area-integrated solar and wind potential as a ranking.** It ranks land area; it appears only in a
   scatter against resource quality.
-* **Zero-fills as zeros.** Values a source does not report separately are marked as such.
+* **Zero-fills as zeros.** Values a source does not report separately are marked as such; the one
+  assumed zero (production no source reports, in the net balance) is drawn as a value and labelled.
 * **Growth from zero or tiny bases.** Shown as "new" or "n/a".
 * **Mixed units.** Manufacturing capacity is never summed across products; the six Energy Institute
   fuels are not shown as an energy mix.

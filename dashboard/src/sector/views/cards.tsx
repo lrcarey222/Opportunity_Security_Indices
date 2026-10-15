@@ -3,9 +3,7 @@
 // SectorChartCard, so the caption contract (unit, year, source) is always rendered.
 
 import { useMemo, useState, type ReactNode } from 'react';
-import { RampLegend } from '../../charts/legends.tsx';
 import { WorldMap } from '../../charts/WorldMap.tsx';
-import { divColor } from '../../charts/theme.ts';
 import { TableView, type Col } from '../../components/TableView.tsx';
 import { Segmented } from '../../components/ui.tsx';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
@@ -14,9 +12,10 @@ import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../data/model.ts';
 import { concentration, type Concentration } from '../derive/concentration.ts';
 import { GROUP_SHORT, partOf } from '../derive/groups.ts';
 import { stateOf, stateShort } from '../derive/states.ts';
+import { assumedCount, assumedNote, noteLine } from '../derive/notes.ts';
 import { concentrationSummary } from '../derive/text.ts';
 import { lc, axisFormatter, fmtShare, fmtValue } from '../format.ts';
-import { concentrationCsv, fmtFact, leagueRows, mapCells, statesPresent } from './common.tsx';
+import { BARS_READING, concentrationCsv, fmtFact, HowToRead, leagueRows, MAP_READING, MAP_READING_SIGNED, mapCells, SliceMapLegend, statesPresent } from './common.tsx';
 import { GroupLegend, LeagueBars, SectorChartCard, StateLegend, type VarRef } from './kit.tsx';
 import { useCardCsv } from './profile/ctx.tsx';
 import { useSectorUrl } from './state.tsx';
@@ -67,11 +66,6 @@ export function LeagueCard(p: LeagueCardProps) {
   const phone = !useMediaQuery('(min-width: 768px)');
   const [view, setView] = useState<'bars' | 'map'>('bars');
   const conc = useMemo(() => rankSlice(model, v, rows, p.world, p.scope), [model, v, rows, p.world, p.scope]);
-  const values = conc.rows.map((r) => r.value).filter((x) => Number.isFinite(x) && x > 0).sort((a, z) => a - z);
-  const median = values.length ? values[Math.floor(values.length / 2)] : 0;
-  const heavy = values.length > 2 && median > 0 && values[values.length - 1] / median > 100;
-  const [scaleLocal, setScale] = useState<'linear' | 'log' | null>(null);
-  const scale = scaleLocal ?? state.scale ?? (heavy ? 'log' : (v.scale ?? 'linear'));
   const unit = model.unitOf(v, item?.idx ?? null);
   const league = useMemo(() => leagueRows(model, v, item, conc, { top: p.top ?? (phone ? 10 : 20), highlight, rows }), [model, v, item, conc, p.top, phone, highlight, rows]);
   const fmtAxis = useMemo(() => axisFormatter(conc.rows.map((r) => r.value), unit, v.display_scale), [conc, unit, v.display_scale]);
@@ -79,9 +73,8 @@ export function LeagueCard(p: LeagueCardProps) {
   const csv = useCardCsv(() => ({ name: p.csvName ?? `${v.id}-${item?.slug ?? 'all'}-${year ?? ''}`, text: concentrationCsv(model, v, item, year, conc, rows) }), [v.id]);
   const map = useMemo(() => {
     if (!p.map || view !== 'map') return null;
-    const div = p.diverging ? divColor(Math.max(...conc.rows.map((r) => Math.abs(r.value)).filter(Number.isFinite), 1e-9)) : undefined;
-    return mapCells(model, v, item, rows, { log: scale === 'log' && !p.diverging, highlight, year: year ?? undefined, diverging: div, dimOut: p.scope ? (g) => !p.scope!(g) : undefined });
-  }, [p.map, view, model, v, item, rows, scale, highlight, year, p.diverging, conc, p.scope]);
+    return mapCells(model, v, item, rows, { highlight, year: year ?? undefined, diverging: !!p.diverging, dimOut: p.scope ? (g) => !p.scope!(g) : undefined });
+  }, [p.map, view, model, v, item, rows, highlight, year, p.diverging, p.scope]);
   const roster = model.rosterOf(v);
   // "recorded" = a value > 0 (observed, mirror or estimate); a reported zero is "none recorded" (spec
   // 4.3 S3: "198 economies with recorded 2024 exports · 10 with none recorded")
@@ -115,23 +108,34 @@ export function LeagueCard(p: LeagueCardProps) {
         return f ? stateShort(stateOf(f, model.geos[r.geo], v, null, year ?? undefined), v) : 'observed';
       },
     },
-    { id: 'note', header: 'Source note', value: (r) => (model.geos[r.geo]?.re_export_hub ? 're-export hub' : rows.find((x) => x.geo === r.geo)?.status === 'mirror' ? "partners' declarations" : null) },
+    {
+      id: 'note',
+      header: 'Source note',
+      value: (r) => {
+        const f = rows.find((x) => x.geo === r.geo);
+        const words = [model.geos[r.geo]?.re_export_hub ? 're-export hub' : f?.status === 'mirror' ? "partners' declarations" : '', noteLine(model, v.id, f)].filter(Boolean).join('; ');
+        return words || null;
+      },
+    },
   ];
+  const nAssumed = assumedCount(v.id, rows.filter((r) => model.geos[r.geo]?.kind === 'country'));
   const summary = concentrationSummary(conc, model, v, highlight);
   return (
     <SectorChartCard
       headingLevel={p.headingLevel ?? 3}
       title={p.title}
       vars={[{ var: v.id, item: item?.slug ?? null, year }, ...(p.extraVars ?? [])]}
-      subExtra={p.sub}
+      subExtra={
+        <>
+          {p.sub}
+          <HowToRead>{view === 'map' ? (p.diverging ? MAP_READING_SIGNED : MAP_READING) : p.diverging ? `Bars to the right: ${p.diverging.posLabel.replace(/[←→]/g, '').trim()}; to the left: ${p.diverging.negLabel.replace(/[←→]/g, '').trim()}. The longer the bar, the larger the amount.` : BARS_READING}</HowToRead>
+        </>
+      }
       tools={
         <>
           {p.tools}
           {p.map && (
             <Segmented label="View" hideLabel value={view} options={[{ value: 'bars', label: 'Bars' }, { value: 'map', label: 'Map' }]} onChange={(x) => setView(x)} />
-          )}
-          {p.map && view === 'map' && !p.diverging && heavy && (
-            <Segmented label="Scale" hideLabel value={scale} options={[{ value: 'linear', label: 'Linear' }, { value: 'log', label: 'Log' }]} onChange={(x) => setScale(x)} />
           )}
         </>
       }
@@ -146,6 +150,7 @@ export function LeagueCard(p: LeagueCardProps) {
       notes={
         <>
           {p.notes}
+          {nAssumed > 0 && <p>{assumedNote(v.id, nAssumed)}</p>}
           {footnote && <p>{footnote}</p>}
           {phone && p.map && <p>Bars are easier to read on a small screen.</p>}
         </>
@@ -154,12 +159,10 @@ export function LeagueCard(p: LeagueCardProps) {
     >
       {view === 'map' && map ? (
         <div>
-          <WorldMap cells={map.cells} ariaLabel={`Map of ${v.label}${year ? `, ${year}` : ''}`} selected={highlight?.code ?? null} onSelect={(iso) => { const g = model.geoByCode.get(iso); if (g) pick(g); }} />
-          {!p.diverging && (
-            <div className="mt-2">
-              <RampLegend kind="seq" min={map.lo} max={map.hi} label={`${unit.short || unit.long}${year ? `, ${year}` : ''}${scale === 'log' ? ' (log scale)' : ''}`} format={(x) => fmtValue(scale === 'log' ? Math.pow(10, x) : x, unit, { scale: v.display_scale })} />
-            </div>
-          )}
+          <WorldMap cells={map.cells} ringStyle="double" ariaLabel={`Map of ${v.label}${year ? `, ${year}` : ''}`} selected={highlight?.code ?? null} onSelect={(iso) => { const g = model.geoByCode.get(iso); if (g) pick(g); }} />
+          <div className="mt-2">
+            <SliceMapLegend model={model} v={v} item={item} year={year} scale={map.scale} poles={p.diverging} hatched={map.hatched > 0} zero={[...map.cells.values()].some((c) => c.fill === 'zero')} />
+          </div>
         </div>
       ) : league.length ? (
         <LeagueBars

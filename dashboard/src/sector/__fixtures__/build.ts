@@ -102,11 +102,12 @@ interface It {
   has_trade?: boolean;
 }
 
-const TRADE_CELLS = new Set(['batteries-midstream', 'batteries-upstream', 'oil-upstream', 'semiconductors-midstream']);
+// solar-upstream and semiconductors-upstream: the Upstream baskets of the 2026-10 review (C5.1)
+const TRADE_CELLS = new Set(['batteries-midstream', 'batteries-upstream', 'oil-upstream', 'semiconductors-midstream', 'solar-upstream', 'semiconductors-upstream']);
 const ITEMS: It[] = [];
 for (const t of TECH_SLUGS) {
   for (const s of STAGE_SLUGS) {
-    if (t === 'semiconductors' && s !== 'midstream') continue;
+    if (t === 'semiconductors' && s === 'downstream') continue;
     const slug = cellSlug(t, s);
     ITEMS.push({ axis: 'cell', slug, label: `${TECH_LABELS[t]} ${STAGE_LABELS[s]}`, tech: t, stage: s, has_trade: TRADE_CELLS.has(slug) });
   }
@@ -159,6 +160,7 @@ const UNITS = [
   { id: 'gwh', short: 'GWh', long: 'gigawatt-hours', unit_kind: 'gwh' },
   { id: 'twh', short: 'TWh', long: 'terawatt-hours', unit_kind: 'twh' },
   { id: 'index01', short: '0-1', long: 'position, 0 = China', unit_kind: 'ratio' },
+  { id: 'feas01', short: '0-1', long: 'index from 0 (none) to 1 (all)', unit_kind: 'index01' },
 ];
 
 const SOURCES = [
@@ -190,6 +192,15 @@ const CAVEATS = [
   { id: 'est_q4', text: '2025 includes estimated Q4 construction starts.' },
   { id: 'exporter_reported', text: 'Exporter-reported basis (142 reporters, Hong Kong excluded); not comparable with the matrix.' },
   { id: 'unit_to_confirm', text: 'Unit to confirm.' },
+  { id: 'production_assumed_zero', text: "Where EI does not report an economy's production of a fuel separately and no EIA value is used, production is assumed to be 0: the net balance is then minus consumption and self-sufficiency 0%." },
+  { id: 'eia_production', text: "Where EI does not report an economy's production of a fuel separately, production comes from the EIA International Energy Statistics." },
+  { id: 'feasibility_reading', text: "Export feasibility is the Atlas of Economic Complexity's relatedness (also called density). 0 means none of the related capabilities are in place, 1 means all of them." },
+  { id: 'atlas_source', text: 'Harvard Atlas 2023: a different source and year from the Comtrade 2024 matrix, so it is shown in its own card.' },
+  { id: 'sub_component_rule', text: "Sub-components are the groups of HS6 codes the sector's basket is built from; a sector's sub-components add up to its total." },
+  { id: 'hhi_reading', text: "Concentration (HHI): take each holder's share of the world total, square it and add up the squares." },
+  { id: 'hhi_refs_context', text: 'Competition authorities screen mergers with HHI thresholds; they were written for markets of competing firms, not for trade between whole economies, so they are a yardstick, not a verdict.' },
+  { id: 'basket_solar_upstream', text: 'Solar Upstream trade is silicon metal only (HS 2804.69), the feedstock of polysilicon.' },
+  { id: 'basket_semis_upstream', text: 'Semiconductors Upstream trade is unwrought gallium, germanium and indium (HS 8112.92).' },
 ];
 
 interface VarDef {
@@ -220,11 +231,14 @@ interface VarDef {
 }
 
 const VARS: VarDef[] = [
-  { id: 'trade.exports', family: 'exports', label: 'Exports of the HS6 basket', short: 'Exports', unit: 'usd', data_year: '2024', years: [2020, 2024], level: 'country', axis: 'cell', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', roster: 'comtrade_matrix', caveats: ['hs6_overlap', 'nominal_usd', 'hkg_hub', 'mirror_factor'], primary_for: ['batteries-midstream', 'batteries-upstream', 'semiconductors-midstream'], section: 'trade', scale: 'log', prov: 'X', feeds: ['ES:Trade', 'EO:Trade'], definition: 'Value of the economy’s exports of the basket.' },
-  { id: 'trade.imports', family: 'exports', label: 'Imports of the HS6 basket', short: 'Imports', unit: 'usd', data_year: '2024', years: [2020, 2024], level: 'country', axis: 'cell', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', roster: 'comtrade_matrix', caveats: ['hs6_overlap', 'nominal_usd'], section: 'trade', scale: 'log', prov: 'X' },
+  { id: 'trade.exports', family: 'exports', label: 'Exports of the sector’s traded goods', short: 'Exports', unit: 'usd', data_year: '2024', years: [2020, 2024], level: 'country', axis: 'cell', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', roster: 'comtrade_matrix', caveats: ['hs6_overlap', 'nominal_usd', 'hkg_hub', 'mirror_factor'], primary_for: ['batteries-midstream', 'batteries-upstream', 'semiconductors-midstream', 'solar-upstream', 'semiconductors-upstream'], section: 'trade', scale: 'log', prov: 'X', feeds: ['ES:Trade', 'EO:Trade'], definition: 'Value of the economy’s exports of the basket.' },
+  { id: 'trade.imports', family: 'exports', label: 'Imports of the sector’s traded goods', short: 'Imports', unit: 'usd', data_year: '2024', years: [2020, 2024], level: 'country', axis: 'cell', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', roster: 'comtrade_matrix', caveats: ['hs6_overlap', 'nominal_usd'], section: 'trade', scale: 'log', prov: 'X' },
   { id: 'trade.net', family: 'exports', label: 'Net trade (exports − imports)', short: 'Net trade', unit: 'usd', data_year: '2024', years: [2024], level: 'country', axis: 'cell', agg: 'sum', basis: 'none', source: 'comtrade_matrix', roster: 'comtrade_matrix', section: 'trade', prov: 'D' },
   { id: 'trade.flow', family: 'exports', label: 'Bilateral flow', short: 'Flow', unit: 'usd', data_year: '2020, 2024', years: [2020, 2024], level: 'dyad', axis: 'cell', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', section: 'trade', prov: 'X' },
   { id: 'trade.rca', family: 'exports', label: 'Revealed comparative advantage', short: 'RCA', unit: 'ratio', data_year: '2024', years: [2024], level: 'country', axis: 'cell', agg: 'none', basis: 'none', source: 'comtrade_reported', caveats: ['exporter_reported'], section: 'trade', prov: 'P' },
+  { id: 'trade.sub_exports', family: 'exports', label: 'Exports by sub-component', short: 'Exports (sub-component)', unit: 'usd', data_year: '2024', years: [2020, 2024], level: 'country', axis: 'cell', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', roster: 'comtrade_matrix', caveats: ['sub_component_rule', 'nominal_usd'], section: 'trade', scale: 'log', prov: 'X' },
+  { id: 'trade.sub_imports', family: 'exports', label: 'Imports by sub-component', short: 'Imports (sub-component)', unit: 'usd', data_year: '2024', years: [2020, 2024], level: 'country', axis: 'cell', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', roster: 'comtrade_matrix', caveats: ['sub_component_rule', 'nominal_usd'], section: 'trade', scale: 'log', prov: 'X' },
+  { id: 'trade.feasibility', family: 'exports', label: 'Export feasibility (related capabilities)', short: 'Export feasibility', unit: 'feas01', data_year: '2023', years: [2023], level: 'country', axis: 'cell', agg: 'none', basis: 'none', source: 'atlas', roster: 'atlas', caveats: ['feasibility_reading', 'atlas_source'], section: 'trade', prov: 'P', feeds: ['EO: Trade'], definition: 'How close the sector’s products are to what the economy already exports well: 1 minus the average Harvard Atlas product-space distance over the basket’s HS4 headings. Higher means the needed capabilities are nearer at hand.' },
   { id: 'trade.atlas_share', family: 'exports', label: 'Share of world exports (Atlas)', short: 'Atlas share', unit: 'share', data_year: '2023', years: [2023], level: 'country', axis: 'cell', agg: 'sum', basis: 'one', source: 'atlas', section: 'trade', prov: 'P' },
   { id: 'trade.critmin_exports', family: 'exports', label: 'Mineral exports', short: 'Mineral exports', unit: 'usd', data_year: '2024', years: [2024], level: 'country', axis: 'mineral', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', roster: 'comtrade_matrix', prov: 'P' },
   { id: 'resources.mineral_reserves', family: 'reserves', label: 'Reserves', short: 'Reserves', unit: 'kt', data_year: 'end-2025', years: [2025], level: 'country', axis: 'mineral', agg: 'sum', basis: 'source_world', source: 'usgs', roster: 'usgs', section: 'resources', prov: 'P' },
@@ -242,8 +256,8 @@ const VARS: VarDef[] = [
   { id: 'production.generation', family: 'production', label: 'Electricity generation', short: 'Generation', unit: 'twh', data_year: '2025', years: [2025], level: 'country', axis: 'cell', agg: 'sum', basis: 'source_world', source: 'ei', roster: 'ei', primary_for: ['solar-downstream'], prov: 'P' },
   { id: 'consumption.per_capita', family: 'consumption', label: 'Consumption per person', short: 'Per person', unit: 'gj_pc', data_year: '2025', years: [2025], level: 'country', axis: 'fuel', agg: 'ratio', basis: 'none', source: 'ei', roster: 'ei', prov: 'P' },
   { id: 'consumption.pc_change', family: 'consumption', label: 'Change in consumption per person', short: 'Change', unit: 'pct', data_year: '2020→2025', years: [2025], level: 'country', axis: 'fuel', agg: 'none', basis: 'none', source: 'ei', roster: 'ei', prov: 'P' },
-  { id: 'consumption.balance', family: 'consumption', label: 'Net balance (production − consumption)', short: 'Net balance', unit: 'ej', data_year: '2025', years: [2025], level: 'country', axis: 'fuel', agg: 'sum', basis: 'none', source: 'ei', roster: 'ei', prov: 'P' },
-  { id: 'consumption.self_sufficiency', family: 'consumption', label: 'Self-sufficiency (production as % of consumption)', short: 'Self-sufficiency', unit: 'pct', data_year: '2025', years: [2025], level: 'country', axis: 'fuel', agg: 'ratio', basis: 'none', source: 'ei', roster: 'ei', prov: 'P', scale: 'log' },
+  { id: 'consumption.balance', family: 'consumption', label: 'Net balance (production − consumption)', short: 'Net balance', unit: 'ej', data_year: '2025', years: [2025], level: 'country', axis: 'fuel', agg: 'sum', basis: 'none', source: 'ei', roster: 'ei', prov: 'P', caveats: ['production_assumed_zero'] },
+  { id: 'consumption.self_sufficiency', family: 'consumption', label: 'Self-sufficiency (production as % of consumption)', short: 'Self-sufficiency', unit: 'pct', data_year: '2025', years: [2025], level: 'country', axis: 'fuel', agg: 'ratio', basis: 'none', source: 'ei', roster: 'ei', prov: 'P', scale: 'log', caveats: ['production_assumed_zero'] },
   { id: 'consumption.ev_sales', family: 'consumption', label: 'EV sales', short: 'EV sales', unit: 'veh', data_year: '2025', years: [2025], level: 'country', axis: 'cell', agg: 'sum', basis: 'sum_listed', source: 'iea_ev', roster: 'iea_ev', primary_for: ['electric-vehicles-downstream'], prov: 'P' },
   { id: 'consumption.total_ej', family: 'consumption', label: 'Primary energy consumption', short: 'Consumption', unit: 'ej', data_year: '1965-2025', years: [2025], level: 'country', axis: 'fuel', agg: 'sum', basis: 'source_world', source: 'ei', series_window: '2015-2025', prov: 'X' },
   { id: 'prices.latest', family: 'prices', label: 'Commodity price', short: 'Price', unit: 'usd_bbl', data_year: 'Dec 2025', years: [2025], level: 'world', axis: 'commodity', agg: 'none', basis: 'none', source: 'imf', prov: 'P' },
@@ -324,7 +338,31 @@ const FLOWS: FlowDef[] = [
   ['semiconductors-midstream', 'KOR', 'CHN', 50 * B, 60 * B, 'importer', 'importer'],
   ['semiconductors-midstream', 'CHN', 'HKG', 30 * B, 40 * B, 'importer', 'importer'],
   ['semiconductors-midstream', 'JPN', 'CHN', 20 * B, 22 * B, 'importer', 'importer'],
+  // solar-upstream: silicon metal only (one sub-component)
+  ['solar-upstream', 'CHN', 'JPN', 0.8 * B, 1.1 * B, 'importer', 'importer'],
+  ['solar-upstream', 'CHN', 'KOR', 0.5 * B, 0.7 * B, 'importer', 'importer'],
+  ['solar-upstream', 'BRA', 'USA', 0.3 * B, 0.4 * B, 'importer', 'importer'],
+  ['solar-upstream', 'RUS', 'DEU', 0.2 * B, 0.1 * B, 'importer', 'importer'],
+  ['solar-upstream', 'FRA', 'DEU', 0.1 * B, 0.12 * B, 'importer', 'importer'],
+  // semiconductors-upstream: gallium, germanium and indium (non-headline)
+  ['semiconductors-upstream', 'CHN', 'JPN', 0.2 * B, 0.25 * B, 'importer', 'importer'],
+  ['semiconductors-upstream', 'CHN', 'USA', 0.1 * B, 0.05 * B, 'importer', 'importer'],
+  ['semiconductors-upstream', 'JPN', 'KOR', 0.03 * B, 0.04 * B, 'importer', 'importer'],
 ];
+
+/**
+ * The sub-components of each trade cell (trade.codes.sub_sector): [name, hs6, description, share of the
+ * cell's flows]. A cell's sub-components add up to the cell (shares sum to 1); oil and the two Upstream
+ * baskets have a single group, so the views hide the selector there.
+ */
+const CELL_SUBS: Record<string, [string, string, string, number][]> = {
+  'batteries-midstream': [['Cells and packs', '850760', 'Lithium-ion accumulators', 0.7], ['Materials', '282520', 'Lithium oxide and hydroxide', 0.3]],
+  'batteries-upstream': [['Lithium minerals', '253090', 'Mineral substances n.e.s. (lithium minerals)', 0.6], ['Cobalt ores', '260500', 'Cobalt ores and concentrates', 0.4]],
+  'oil-upstream': [['Crude oil', '270900', 'Crude petroleum oils', 1]],
+  'semiconductors-midstream': [['Devices', '854231', 'Processors and controllers', 0.8], ['Wafers', '381800', 'Doped chemical elements in discs (wafers)', 0.2]],
+  'solar-upstream': [['Silicon metal', '280469', 'Silicon, under 99.99% pure', 1]],
+  'semiconductors-upstream': [['Gallium, germanium and indium', '811292', 'Unwrought gallium, germanium, indium; powders', 1]],
+};
 /** Importers that did not declare (non-reporters): their flows are mirrors. */
 const NON_DECLARERS = new Set(['VNM']);
 
@@ -333,6 +371,8 @@ const TRADE_TECH_OF: Record<string, TradeTechSlug> = {
   'batteries-upstream': 'batteries',
   'oil-upstream': 'oil',
   'semiconductors-midstream': 'semiconductors',
+  'solar-upstream': 'solar',
+  'semiconductors-upstream': 'semiconductors',
 };
 
 function tradeFacts(): Fact[] {
@@ -367,6 +407,9 @@ function otherFacts(): Fact[] {
   const bm = cell('batteries-midstream');
   // RCA (exporter-reported; HKG excluded)
   add('trade.rca', bm, 2024, [['CHN', 3.1], ['KOR', 2.4], ['JPN', 1.2], ['USA', 0.4], ['DEU', 0.9], ['VNM', 1.6]]);
+  // export feasibility (Atlas relatedness, 0-1), 2023
+  add('trade.feasibility', bm, 2023, [['CHN', 0.82], ['KOR', 0.71], ['JPN', 0.69], ['DEU', 0.66], ['USA', 0.58], ['FRA', 0.55], ['VNM', 0.47], ['IDN', 0.31], ['BRA', 0.29], ['RUS', 0.22]]);
+  add('trade.feasibility', cell('solar-upstream'), 2023, [['CHN', 0.74], ['BRA', 0.41], ['USA', 0.52], ['DEU', 0.5]]);
   add('trade.atlas_share', bm, 2023, [['CHN', 0.409], ['KOR', 0.08], ['JPN', 0.07], ['USA', 0.06], ['DEU', 0.09], ['FRA', 0.02], ['VNM', 0.03]]);
   // investment 2018-2025 (est in 2025)
   const inv: Record<string, number[]> = {
@@ -417,8 +460,9 @@ function otherFacts(): Fact[] {
   add('resources.fuel_reserves', oil, 2020, [['RUS', 107000], ['USA', 69000], ['CHN', 26000], ['BRA', 12000]]);
   add('consumption.per_capita', oil, 2025, [['USA', 120.4], ['CHN', 28.1], ['DEU', 61.0], ['FRA', 52.3], ['JPN', 61.8], ['KOR', 110.2], ['BRA', 33.1], ['EUU', 50.2]]);
   add('consumption.pc_change', oil, 2025, [['USA', -2.1], ['CHN', 12.4], ['DEU', -8.0], ['VNM', NaN, 'na_growth']]);
-  add('consumption.balance', gas, 2025, [['USA', 5.2], ['RUS', 8.1], ['CHN', -6.0], ['DEU', -3.0], ['JPN', -3.6], ['KOR', -2.0], ['EUU', -11.0]]);
-  add('consumption.self_sufficiency', gas, 2025, [['USA', 115.8], ['RUS', 151.0], ['CHN', 58.6], ['DEU', 6.3], ['JPN', 0, 'zero']]);
+  // Viet Nam's gas production sits in EI's "Other": assumed 0 (user rule 2026-10-11), nsr WITH the value
+  add('consumption.balance', gas, 2025, [['USA', 5.2], ['RUS', 8.1], ['CHN', -6.0], ['DEU', -3.0], ['JPN', -3.6], ['KOR', -2.0], ['VNM', -0.4, 'nsr'], ['EUU', -11.0]]);
+  add('consumption.self_sufficiency', gas, 2025, [['USA', 115.8], ['RUS', 151.0], ['CHN', 58.6], ['DEU', 6.3], ['JPN', 0, 'zero'], ['VNM', 0, 'nsr']]);
   // generation (solar downstream cell)
   add('production.generation', cell('solar-downstream'), 2025, [['CHN', 1100], ['USA', 330], ['DEU', 75], ['JPN', 110], ['BRA', 60], ['RES:ei', 500]]);
   add('investment.annual', cell('solar-downstream'), 2025, [['CHN', 120, 'est'], ['USA', 40, 'est'], ['DEU', 15, 'est']]);
@@ -622,6 +666,7 @@ export function buildSectorFixture(): SectorFixture {
     iea_cm: ['BRA', 'CHN', 'USA', 'RUS', 'KOR', 'JPN'],
     cim: ['CHN', 'USA', 'DEU', 'KOR', 'IDN', 'VNM', 'JPN'],
     iea_ev: ['CHN', 'USA', 'DEU', 'FRA', 'KOR', 'JPN'],
+    atlas: ['CHN', 'KOR', 'JPN', 'DEU', 'USA', 'FRA', 'VNM', 'IDN', 'BRA', 'RUS'],
   };
   for (const [r, gs] of Object.entries(rosterOf)) for (const g of gs) rosterRows.push({ roster: r, geo: gi(g) });
 
@@ -658,6 +703,10 @@ export function buildSectorFixture(): SectorFixture {
       cov(s, 'technology', 'global', 0, null, ['iea_trl']);
       cov(s, 'exports', 'none', 0, 'no_basket', []);
     } else if (s === 'semiconductors-midstream') {
+      cov(s, 'exports', 'country', 4, null, ['comtrade_matrix']);
+    } else if (s === 'solar-upstream') {
+      cov(s, 'exports', 'country', 7, null, ['comtrade_matrix']);
+    } else if (s === 'semiconductors-upstream') {
       cov(s, 'exports', 'country', 4, null, ['comtrade_matrix']);
     } else if (s === 'nuclear-upstream') {
       cov(s, 'production', 'country', 4, null, ['redbook']);
@@ -748,6 +797,16 @@ export function buildSectorFixture(): SectorFixture {
       { slug: 'oil-upstream', cell_blurb: 'Crude oil production, reserves and trade.', section_cards: 'trade.exports|trade.imports|trade.net|trade.flow|resources.fuel_reserves|production.fuels|consumption.balance|prices.latest|prices.yoy|prices.monthly|prices.lending_rate|technology.trl|policy.records' },
       { slug: 'oil-downstream', cell_blurb: 'Refined products and oil-fired power: consumption and generation.', section_cards: 'consumption.per_capita|consumption.pc_change|prices.lending_rate|policy.records' },
       { slug: 'gas-upstream', cell_blurb: 'Natural gas production, reserves and trade.', section_cards: 'resources.fuel_reserves|production.fuels|consumption.balance|consumption.self_sufficiency' },
+      { slug: 'solar-upstream', cell_blurb: 'The materials behind solar: trade in silicon metal, the feedstock of polysilicon.', section_cards: 'trade.exports|trade.imports|trade.net|trade.flow|trade.feasibility' },
+      { slug: 'semiconductors-upstream', cell_blurb: 'Non-headline basket: unwrought gallium, germanium and indium, their powders and scrap.', section_cards: 'trade.exports|trade.imports|trade.net|trade.flow' },
+    ]),
+    'dict.cell_caveats': table(META_SPEC['dict.cell_caveats'], [
+      { slug: 'semiconductors-upstream', caveat: 'basket_semis_upstream' },
+      { slug: 'solar-upstream', caveat: 'basket_solar_upstream' },
+    ]),
+    'dict.hhi_refs': table(META_SPEC['dict.hhi_refs'], [
+      { id: 'eu_2004_unlikely', value: 0.1, points: 1000, side: 'below', label: 'concentration concerns unlikely', authority: 'European Commission', document: 'Guidelines on the assessment of horizontal mergers (2004/C 31/03), paragraph 19', year: 2004 },
+      { id: 'us_2023_high', value: 0.18, points: 1800, side: 'above', label: 'highly concentrated', authority: 'US Department of Justice and Federal Trade Commission', document: 'Merger Guidelines (2023), Guideline 1', year: 2023 },
     ]),
     'dict.techs': table(META_SPEC['dict.techs'], TECH_SLUGS.map((t) => ({ slug: t, label: TECH_LABELS[t], tech_blurb: `${TECH_LABELS[t]}: from raw materials to deployment.` }))),
     'dict.item_units': table(META_SPEC['dict.item_units'], [
@@ -766,10 +825,17 @@ export function buildSectorFixture(): SectorFixture {
   };
 
   // facts -------------------------------------------------------------------------------------------
+  // facts.notes: the assumed-zero balance of Viet Nam gas, and an EIA-filled German gas production
+  const noteRows = [
+    { var: vi('consumption.balance'), item: ii('fuel', 'gas'), geo: gi('VNM'), year: 2025, note: 'production_assumed_zero' },
+    { var: vi('consumption.self_sufficiency'), item: ii('fuel', 'gas'), geo: gi('VNM'), year: 2025, note: 'production_assumed_zero' },
+    { var: vi('production.fuels'), item: ii('fuel', 'gas'), geo: gi('DEU'), year: 2025, note: 'eia_production' },
+  ].sort((a, z) => a.var - z.var || a.item - z.item || a.year - z.year || a.geo - z.geo);
   const factsChunk: Record<string, unknown> = {
     'facts.obs': table(FACTS_SPEC['facts.obs'], obsRows),
     'facts.index': table(FACTS_SPEC['facts.index'], index),
     'facts.world': table(FACTS_SPEC['facts.world'], worldRows),
+    'facts.notes': table(FACTS_SPEC['facts.notes'], noteRows),
   };
 
   // trade -------------------------------------------------------------------------------------------
@@ -783,16 +849,42 @@ export function buildSectorFixture(): SectorFixture {
     for (const c of cells) for (const y of [2020, 2024]) for (const g of COUNTRIES) declaredRows.push({ item: cell(c), geo: gi(g), year: y, imports_declared: !NON_DECLARERS.has(g), exports_declared: !NON_DECLARERS.has(g) && g !== 'HKG' });
     const codes: RowObj[] = [];
     const excluded: RowObj[] = [];
+    const ctySub: RowObj[] = [];
+    const subIntra: RowObj[] = [];
+    const isEu = (g: string) => !!GEOS[gi(g)].eu;
     for (const c of cells) {
-      codes.push({ item: cell(c), sub_sector: 'Cells', hs6: c === 'oil-upstream' ? '270900' : '850760', description: c === 'oil-upstream' ? 'Crude petroleum oils' : 'Lithium-ion accumulators', shared_n: 0, caveat: null });
-      codes.push({ item: cell(c), sub_sector: 'Materials', hs6: c === 'oil-upstream' ? '271011' : '282520', description: 'Lithium oxide and hydroxide', shared_n: 2, caveat: 'kept with caveat' });
+      for (const [sub, hs6, description, w] of CELL_SUBS[c]) {
+        codes.push({ item: cell(c), sub_sector: sub, hs6, description, shared_n: sub === 'Materials' || sub === 'Lithium minerals' ? 2 : 0, caveat: sub === 'Materials' ? 'kept with caveat' : null });
+        // trade.cty_sub: the cell's flows times the sub-component's share (so they add up to the cell)
+        for (const [year, k, sk] of [[2020, 3, 5], [2024, 4, 6]] as const) {
+          const ex = new Map<string, number>();
+          const im = new Map<string, number>();
+          let W = 0;
+          let intra = 0;
+          for (const f of FLOWS) {
+            if (f[0] !== c) continue;
+            const v = f[k] as number | null;
+            if (v === null || f[sk] === 'none') continue;
+            ex.set(f[1], (ex.get(f[1]) ?? 0) + v * w);
+            im.set(f[2], (im.get(f[2]) ?? 0) + v * w);
+            W += v * w;
+            if (isEu(f[1]) && isEu(f[2])) intra += v * w;
+          }
+          for (const g of [...new Set([...ex.keys(), ...im.keys()])].sort()) ctySub.push({ item: cell(c), sub_sector: sub, geo: gi(g), year, exports: ex.get(g) ?? 0, imports: im.get(g) ?? 0 });
+          if (W > 0) ctySub.push({ item: cell(c), sub_sector: sub, geo: gi('WLD'), year, exports: W, imports: W });
+          if (intra > 0) subIntra.push({ item: cell(c), sub_sector: sub, year, intra });
+        }
+      }
       excluded.push({ item: cell(c), sub_sector: 'Parts', hs6: '851762', reason: 'General-purpose communication equipment' });
     }
+    ctySub.sort((a, z) => (a.item as number) - (z.item as number));
     tradeChunks[`sector-trade-${tech}`] = {
       'trade.flows': table(TRADE_SPEC['trade.flows'], flows),
       'trade.declared': table(TRADE_SPEC['trade.declared'], declaredRows),
       'trade.codes': table(TRADE_SPEC['trade.codes'], codes),
       'trade.excluded': table(TRADE_SPEC['trade.excluded'], excluded),
+      'trade.cty_sub': table(TRADE_SPEC['trade.cty_sub'], ctySub),
+      'trade.sub_intra': table(TRADE_SPEC['trade.sub_intra'], subIntra),
     };
   }
 

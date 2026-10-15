@@ -1,19 +1,23 @@
-// The last location per module (spec_sector.md 2.5, 2.6): an in-memory { strategic, sector } of
-// pathname + search, updated by a route-change effect in AppRoot. No storage: a reload starts from
-// the URL. Module tabs and Home's buttons link through these helpers. Pure apart from the store.
+// The last location per module (spec_sector.md 2.5, 2.6; spec_country.md A2.1, A2.2): an in-memory
+// { strategic, sector, country } of pathname + search, updated by a route-change effect in AppRoot. No
+// storage: a reload starts from the URL. Module tabs and Home's buttons link through these helpers.
+// Pure apart from the store.
 
 import { SCENARIO_KEYS, SHARED_VIEW_KEYS } from '../state/url.ts';
 import { isShellStageSlug, isShellTechSlug } from './sectorSlugs.ts';
-import { placeOf, sectorCellOfPath, SECTOR_NAV } from './modules.ts';
+import { COUNTRY_DEFAULT_ISO, countryIsoOfPath, placeOf, sectorCellOfPath, SECTOR_NAV } from './modules.ts';
 
 export interface LastLocations {
   strategic: string | null;
   sector: string | null;
   /** the last Sector profile cell, "/sector/batteries/midstream" (PROFILE's target) */
   sectorCell: string | null;
+  country: string | null;
+  /** the ISO3 of the last Country Insights profile (the Country PROFILE target) */
+  countryIso: string | null;
 }
 
-const store: LastLocations = { strategic: null, sector: null, sectorCell: null };
+const store: LastLocations = { strategic: null, sector: null, sectorCell: null, country: null, countryIso: null };
 
 /** Record a location (called on every route change). Home and unknown paths are not recorded. */
 export function rememberLocation(pathname: string, search: string): void {
@@ -23,6 +27,10 @@ export function rememberLocation(pathname: string, search: string): void {
     store.sector = pathname + search;
     const cell = sectorCellOfPath(pathname);
     if (cell) store.sectorCell = `/sector/${cell.tech}/${cell.stage}`;
+  } else if (place === 'country') {
+    store.country = pathname + search;
+    const iso = countryIsoOfPath(pathname);
+    if (iso) store.countryIso = iso;
   }
 }
 
@@ -35,6 +43,8 @@ export function resetLastLocations(): void {
   store.strategic = null;
   store.sector = null;
   store.sectorCell = null;
+  store.country = null;
+  store.countryIso = null;
 }
 
 const CARRY = new Set<string>([...SCENARIO_KEYS, ...SHARED_VIEW_KEYS]);
@@ -100,6 +110,11 @@ export function sectorTabHref(pathname: string, search: string, last: Readonly<L
   const place = placeOf(pathname);
   if (place === 'sector') return `/sector${sectorCarry(search)}`;
   let c: string | null = null;
+  if (place === 'country') {
+    // a Country profile adds its country as the highlight (to the last Sector location if any)
+    c = countryIsoOfPath(pathname);
+    if (c && !last.sector) return `/sector?c=${c}`;
+  }
   if (place === 'strategic') {
     c = strategicCountry(pathname);
     const q = new URLSearchParams(search);
@@ -121,9 +136,42 @@ export function strategicTabHref(pathname: string, search: string, last: Readonl
   return last.strategic ?? '/overview';
 }
 
+/** The country a Sector location highlights: /sector/:tech/:stage/:iso3 or ?c=ISO3 (not the EU aggregate). */
+export function sectorCountry(pathname: string, search: string): string | null {
+  const s = pathname.split('/').filter(Boolean);
+  let iso: string | null = null;
+  if (s[0] === 'sector' && s.length === 4 && sectorCellOfPath(pathname)) iso = s[3].toUpperCase();
+  else {
+    const c = new URLSearchParams(search).get('c');
+    iso = c ? c.toUpperCase() : null;
+  }
+  return iso && ISO3.test(iso) && iso !== 'EUU' ? iso : null;
+}
+
+/**
+ * Where the COUNTRY INSIGHTS tab goes (spec_country.md A2.2):
+ *   * inside Country: the Country landing;
+ *   * from Strategic on /country/:iso3, /strategic/:iso3 or /partners/:iso3: /countries/:iso3;
+ *   * from Sector with a highlighted country (/sector/:t/:s/:iso3 or ?c=ISO3, not EUU): /countries/:iso3;
+ *   * else the last Country location, else /countries.
+ */
+export function countryTabHref(pathname: string, search: string, last: Readonly<LastLocations> = store): string {
+  const place = placeOf(pathname);
+  if (place === 'country') return '/countries';
+  const iso = place === 'strategic' ? strategicCountry(pathname) : place === 'sector' ? sectorCountry(pathname, search) : null;
+  if (iso) return `/countries/${iso}`;
+  return last.country ?? '/countries';
+}
+
 /** Home's OPEN buttons: the last location of the module, else its landing. */
-export function moduleResumeHref(id: 'sector' | 'strategic', last: Readonly<LastLocations> = store): string {
+export function moduleResumeHref(id: 'sector' | 'strategic' | 'country', last: Readonly<LastLocations> = store): string {
+  if (id === 'country') return last.country ?? '/countries';
   return id === 'sector' ? (last.sector ?? '/sector') : (last.strategic ?? '/overview');
+}
+
+/** PROFILE in the Country nav: the country on screen, else the last visited one, else the United States. */
+export function countryProfileHref(pathname = '', last: Readonly<LastLocations> = store): string {
+  return `/countries/${countryIsoOfPath(pathname) ?? last.countryIso ?? COUNTRY_DEFAULT_ISO}`;
 }
 
 /** PROFILE in the Sector nav: the last visited cell, else Batteries — Midstream. */

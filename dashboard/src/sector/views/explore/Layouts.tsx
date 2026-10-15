@@ -10,17 +10,18 @@ import { useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as Plot from '@observablehq/plot';
 import { PlotFigure, Tip } from '../../../charts/PlotFigure.tsx';
+import { TriLegend } from '../../../charts/legends.tsx';
 import { TableView } from '../../../components/TableView.tsx';
 import { rowsToCsv } from '../../../lib/csv.ts';
 import { GROUP_COLOR, SIGNAL } from '../../../theme/palette.ts';
 import { STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, TECH_SLUGS } from '../../contract.ts';
-import { seqTile } from '../../derive/contrast.ts';
+import { sideWords, tileScale, triTile } from '../../derive/contrast.ts';
 import { sectorCsv } from '../../derive/csv.ts';
 import { fallbackCells, geoMark, SCATTER_PAIRS } from '../../derive/explore.ts';
 import { demandByTech } from '../../derive/minerals.ts';
 import { regionOf } from '../../derive/states.ts';
 import { lc, fmtShare, fmtValue } from '../../format.ts';
-import { ChunkGate } from '../common.tsx';
+import { ChunkGate, HowToRead } from '../common.tsx';
 import { useSeries } from '../data.ts';
 import { CellGrid, Dumbbell, GroupLegend, LeagueBars, SectorChartCard, type CellGridTech, type DumbbellRow, type LeagueRow } from '../kit.tsx';
 import { MonthlyPrices, PriceBoard } from '../profile/Prices.tsx';
@@ -45,6 +46,7 @@ export function RegionLayout({ c }: { c: ExploreCtx }) {
     <SectorChartCard
       title={`${v.short} by region, ${year}`}
       vars={[{ var: v.id, item: item.slug, year }]}
+      subExtra={<HowToRead>Each bar is one region as the source reports it, largest first. Countries inside a region share its value, so they are not ranked one by one; the table lists each region&apos;s members.</HowToRead>}
       table={() => <TableView rows={rows} caption="Regions" rowKey={(r) => model.geos[r.geo].code} selectedKey={hlRegion?.code ?? null} cols={[{ id: 'r', header: 'Region', value: (r) => model.geos[r.geo].name }, { id: 'v', header: `Value (${unit.short})`, value: (r) => r.value, num: true }, { id: 'm', header: 'Members', value: (r) => (model.regionMembers.get(r.geo) ?? []).map((m) => model.geos[m]?.code).join(', ') || null }]} />}
       csv={() => ({ name: `${v.id}-${item.slug}-regions-${year}`, text: sectorCsv(model, rows.map((r) => ({ geo: null, economy: model.geos[r.geo].name, v, item, year, value: r.value, status: r.status }))) })}
       notes={hlRegion ? <p>{highlight?.name} is part of {hlRegion.name}.</p> : undefined}
@@ -73,15 +75,15 @@ export function WorldLayout({ c }: { c: ExploreCtx }) {
     const sel = item && items.some((x) => x.idx === item.idx) ? item : items[0];
     return (
       <div className="space-y-6">
-        <PriceBoard items={items} title="Price board" />
         {sel && (
           <div>
             <p className="mb-2 text-sm text-paper-dim">
-              Detail: <span className="text-paper">{sel.label}</span> (pick another commodity with Item above).
+              Monthly prices of <span className="text-paper">{sel.label}</span> (pick another commodity with Item above).
             </p>
             <MonthlyPrices items={[sel]} />
           </div>
         )}
+        <PriceBoard items={items} title="Price board" />
       </div>
     );
   }
@@ -100,6 +102,7 @@ export function WorldLayout({ c }: { c: ExploreCtx }) {
     <SectorChartCard
       title={`${v.label}`}
       vars={[{ var: v.id, window: years.length > 1 ? [years[0], years[years.length - 1]] : null, year: years.length === 1 ? years[0] : null }]}
+      subExtra={<HowToRead>{dumb.length ? `One world value per item, the same for every country. Each row's two dots are the latest observed year and the source's projection for ${y1}: a line running to the right means the value is expected to rise.` : 'One world value per item, the same for every country: the table lists them.'}</HowToRead>}
       table={() => <TableView rows={items} caption={v.label} cols={[{ id: 'i', header: 'Item', value: (it) => it.label }, ...years.map((y) => ({ id: String(y), header: proj(y) ? `${y} (projection)` : String(y), value: (it: (typeof items)[number]) => val(it, y), cell: (it: (typeof items)[number]) => fmtValue(val(it, y), unit(it), { scale: v.display_scale, ctx: 'table' }), num: true }))]} />}
       csv={() => ({ name: `${v.id}-world`, text: sectorCsv(model, items.flatMap((it) => years.map((y) => ({ geo: wld, v, item: it, year: y, value: val(it, y), status: proj(y) ? 'projection' : 'obs' })))) })}
       summary={`${v.label} for ${items.length} items.`}
@@ -132,14 +135,18 @@ export function CellGlobalLayout({ c }: { c: ExploreCtx }) {
   const techs: CellGridTech[] = TECH_SLUGS.filter((t) => model.cells.some((x) => x.techSlug === t)).map((t) => ({ slug: t, label: TECH_LABELS[t], headline: t !== 'semiconductors' }));
   const rows = model.cells.filter((x) => vals.has(x.slug));
   const year = Math.max(...[...vals.values()].map((x) => x.year));
+  // three-colour tiles: white = the median of the sectors shown (spec_country.md C1.5)
+  const scale = tileScale(xs);
   return (
     <SectorChartCard
       title={`${v.label} by sector, ${year}`}
       vars={[{ var: v.id, year }]}
+      subExtra={<HowToRead>Each tile is one sector (a technology at one supply-chain stage) with its global value, the same in every country. Tile colour: orange lower than most sectors shown, white the middle one, blue higher.</HowToRead>}
       table={() => <TableView rows={rows} caption={v.label} cols={[{ id: 'c', header: 'Sector', value: (x) => model.cellLabel(x) }, { id: 'v', header: `${v.short} (${unit.short})`, value: (x) => vals.get(x.slug)?.value ?? null, cell: (x) => fmtValue(vals.get(x.slug)?.value, unit, { scale: v.display_scale, ctx: 'table' }), num: true }, { id: 'f', header: 'Technology-wide value', value: (x) => (fb.has(x.slug) ? 'yes' : '') }]} />}
       csv={() => ({ name: `${v.id}-by-cell`, text: sectorCsv(model, rows.map((x) => ({ geo: wld, v, item: x, year: vals.get(x.slug)?.year ?? null, value: vals.get(x.slug)?.value ?? null, status: fb.has(x.slug) ? 'fallback' : 'obs' }))) })}
       notes={fb.size ? <p>† The technology-wide value: the IEA Guide has no items of its own for this cell.</p> : undefined}
       summary={`${v.label} of ${rows.length} sectors, from ${fmtValue(lo, unit, { scale: v.display_scale })} to ${fmtValue(hi, unit, { scale: v.display_scale })}.`}
+      legend={<TriLegend scale={scale} label={`Tile colour: ${v.short}, ${unit.short || unit.long}`} format={(x) => fmtValue(x, unit, { scale: v.display_scale })} noun="sectors" />}
     >
       <CellGrid
         techs={techs}
@@ -150,9 +157,9 @@ export function CellGlobalLayout({ c }: { c: ExploreCtx }) {
           if (!cell) return <div className="min-h-[64px]" aria-hidden="true" />;
           const x = vals.get(cell.slug);
           if (!x) return <div className="min-h-[64px] border hairline p-2 text-xs text-paper-mute">no value</div>;
-          const shade = seqTile(x.value, lo, hi === lo ? lo + 1 : hi);
+          const shade = triTile(scale, x.value);
           return (
-            <Link to={link(`/sector/${t.slug}/${stage}`, {}, 'technology')} className="block min-h-[64px] p-2 text-sm font-medium" style={{ background: shade?.bg, color: shade?.fg }} aria-label={`${model.cellLabel(cell)}: ${v.short} ${fmtValue(x.value, unit, { scale: v.display_scale })}${fb.has(cell.slug) ? ', technology-wide value' : ''}`}>
+            <Link to={link(`/sector/${t.slug}/${stage}`, {}, 'technology')} className="block min-h-[64px] p-2 text-sm font-medium" style={{ background: shade?.bg, color: shade?.fg }} aria-label={`${model.cellLabel(cell)}: ${v.short} ${fmtValue(x.value, unit, { scale: v.display_scale })}${shade ? `, ${sideWords(shade.side, scale.n, 'sectors')}` : ''}${fb.has(cell.slug) ? ', technology-wide value' : ''}`}>
               {fmtValue(x.value, unit, { scale: v.display_scale })}
               {fb.has(cell.slug) && <span aria-hidden="true"> †</span>}
             </Link>
@@ -201,6 +208,7 @@ export function ScatterLayout({ c }: { c: ExploreCtx }) {
     <SectorChartCard
       title={`${v.short} against ${lc(q.short)}`}
       vars={[{ var: v.id, item: item.slug }, { var: q.id, item: item.slug }]}
+      subExtra={<HowToRead>Each dot is one economy: further right is more {lc(v.short)}, higher is better {lc(q.short)}. Large economies sit far right because the potential adds up over land area, so the chart compares quality and size rather than ranking.</HowToRead>}
       table={() => <TableView rows={data} caption="Potential and quality" search cols={[{ id: 'c', header: 'Economy', value: (d) => d.name }, { id: 'y', header: q.short, value: (d) => d.y, num: true }, { id: 'x', header: v.short, value: (d) => d.x, num: true }]} />}
       csv={() => ({ name: `${v.id}-scatter`, text: rowsToCsv(data.map((d) => ({ iso3c: d.code, economy: d.name, [v.id]: d.x, [q.id]: d.y, source: v.source.short }))) })}
       legend={<GroupLegend groups={['china', 'core', 'partner', 'rest']} highlight={highlight?.name ?? null} />}
@@ -226,6 +234,7 @@ export function MineralDemandLayout({ c }: { c: ExploreCtx }) {
     <SectorChartCard
       title={`Clean-energy demand for ${lc(sel.label)} by technology`}
       vars={[{ var: 'consumption.mineral_demand', item: sel.slug, window: projYear ? [rows[0].observedYear, projYear] : null }]}
+      subExtra={<HowToRead>Each row is one technology; its two dots are the {lc(sel.label)} it used in {rows[0].observedYear} and the IEA&apos;s projection{projYear ? ` for ${projYear}` : ''}, in thousand tonnes. A line running to the right means demand is expected to grow. Click a row for the technology.</HowToRead>}
       table={() => <TableView rows={rows} caption="Demand by technology" cols={[{ id: 't', header: 'Technology', value: (r) => r.label }, { id: 'o', header: `Observed ${rows[0].observedYear}, kt`, value: (r) => r.observed, num: true }, { id: 'p', header: projYear ? `${projYear} (projection), kt` : 'Projection, kt', value: (r) => (Number.isFinite(r.projected) ? r.projected : null), num: true }, { id: 's', header: 'Share', value: (r) => r.share, cell: (r) => fmtShare(r.share), num: true }]} />}
       csv={() => ({ name: `mineral-demand-${sel.slug}`, text: rowsToCsv(rows.map((r) => ({ mineral: sel.slug, technology: r.label, observed_year: r.observedYear, observed_kt: r.observed, projected_year: r.projectedYear, scenario: r.scenario, projected_kt: Number.isFinite(r.projected) ? r.projected : null, share: r.share, source: 'IEA Critical Minerals Dataset' }))) })}
       notes={total ? <p>Total clean-energy demand {kt(total.observed)} ({total.observedYear}). <Link className="link" to={link(`/sector/minerals/${sel.slug}`)}>The {lc(sel.label)} page</Link>.</p> : undefined}

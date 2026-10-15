@@ -17,8 +17,8 @@ import { hasFdi } from '../../derive/fdi.ts';
 import { GROUP_SHORT, partOf } from '../../derive/groups.ts';
 import { groupArea, topLines } from '../../derive/series.ts';
 import { sectorCsv } from '../../derive/csv.ts';
-import { axisFormatter, fmtShare, fmtSignedPct, fmtValue } from '../../format.ts';
-import { ChunkGate, markGroup } from '../common.tsx';
+import { axisFormatter, fmtShare, fmtSignedPct, fmtValue, lc } from '../../format.ts';
+import { AREA_READING, ChunkGate, HowToRead, markGroup } from '../common.tsx';
 import { useNear, useSeries } from '../data.ts';
 import { FdiBlock } from '../fdi/FdiBlock.tsx';
 import { useSectorUrl } from '../state.tsx';
@@ -76,6 +76,7 @@ function AnnualBlock({ idx, v, title, kindNote }: { idx: FactsIndex; v: VarInfo;
       <SectorChartCard
         title={`${title} by group, ${years[0]}-${last}`}
         vars={[{ var: v.id, item: cell.slug, window: [years[0], last] }]}
+        subExtra={<HowToRead>{AREA_READING}</HowToRead>}
         tools={<Segmented label="Show" hideLabel value={norm ? 'share' : 'value'} options={[{ value: 'value', label: 'Value' }, { value: 'share', label: 'Share' }]} onChange={(x) => setNorm(x === 'share')} />}
         table={() => (
           <TableView
@@ -98,8 +99,9 @@ function AnnualBlock({ idx, v, title, kindNote }: { idx: FactsIndex; v: VarInfo;
         <GroupArea series={area} normalize={norm} yLabel={norm ? 'Share of the total' : `${unit.long || unit.short}`} ariaLabel={`${title} by group`} yTickFormat={norm ? (x) => `${Math.round(x * 100)}%` : yFmt} valueFormat={norm ? (x) => fmtShare(x) : fmt} />
       </SectorChartCard>
       <SectorChartCard
-        title={`Top ${title.toLowerCase().startsWith('investment') ? 'investors' : 'economies'}`}
+        title={`Top economies: ${lc(title)}`}
         vars={[{ var: v.id, item: cell.slug, window: [years[0], last] }]}
+        subExtra={<HowToRead>Each row is one economy, largest in {last} first: the amount in the last two years, how fast it grew a year on average since 2018 and since 2022 (compound growth), and its share of the world total.</HowToRead>}
         csv={csv}
         summary={`${rows.length} economies with ${title.toLowerCase()} in ${last}.`}
       >
@@ -115,16 +117,17 @@ function AnnualBlock({ idx, v, title, kindNote }: { idx: FactsIndex; v: VarInfo;
             { id: 'g', header: 'Group', value: (r) => GROUP_SHORT[partOf(model.geos[r.geo])] },
             { id: 'l', header: `${last} (${unit.short})`, value: (r) => r.last, cell: (r) => fmtValue(r.last, unit, { scale: v.display_scale, ctx: 'table' }), num: true },
             { id: 'p', header: `${last - 1} (${unit.short})`, value: (r) => r.prev, cell: (r) => (r.prev === null ? '–' : fmtValue(r.prev, unit, { scale: v.display_scale, ctx: 'table' })), num: true },
-            { id: 'c18', header: 'CAGR 2018-25', value: (r) => r.c18, cell: (r) => fmtSignedPct(r.c18), num: true },
-            { id: 'c22', header: 'CAGR 2022-25', value: (r) => r.c22, cell: (r) => fmtSignedPct(r.c22), num: true },
+            { id: 'c18', header: 'Growth a year, 2018-25', value: (r) => r.c18, cell: (r) => fmtSignedPct(r.c18), num: true },
+            { id: 'c22', header: 'Growth a year, 2022-25', value: (r) => r.c22, cell: (r) => fmtSignedPct(r.c22), num: true },
             { id: 's', header: `Share ${last}`, value: (r) => r.share, cell: (r) => fmtShare(r.share), num: true },
           ]}
         />
       </SectorChartCard>
       {top6.length > 1 && (
         <SectorChartCard
-          title={`The top ${top6.length}, ${years[0]}-${last}`}
+          title={`The top ${top6.length} year by year: ${lc(title)}, ${years[0]}-${last}`}
           vars={[{ var: v.id, item: cell.slug, window: [years[0], last] }]}
+          subExtra={<HowToRead>One small chart per economy, year by year, in its group colour; the higher the line, the larger the amount. With “Shared scale” the panels can be compared with each other; “Independent scales” shows each economy’s own trend more clearly.</HowToRead>}
           tools={<Segmented label="Scales" hideLabel value={indep ? 'indep' : 'shared'} options={[{ value: 'shared', label: 'Shared scale' }, { value: 'indep', label: 'Independent scales' }]} onChange={(x) => setIndep(x === 'indep')} />}
           table={() => (
             <TableView rows={top6} caption="Top economies by year" cols={[{ id: 'c', header: 'Economy', value: (r) => model.geos[r.geo].name }, ...years.map((y) => ({ id: String(y), header: String(y), value: (r: InvRow) => r.values.get(y) ?? null, cell: (r: InvRow) => fmt(r.values.get(y) ?? NaN), num: true }))]} />
@@ -168,10 +171,11 @@ function PowerAdditions() {
         const u = model.unitOf(v, cell.idx);
         return (
           <div className="space-y-6">
-            <AnnualBlock idx={series} v={v} title="Power capacity additions" kindNote="Capacity added each year, gigawatts (CIM)." />
+            <AnnualBlock idx={series} v={v} title="Power capacity additions" kindNote="Capacity added each year, gigawatts (Clean Investment Monitor)." />
             <SectorChartCard
               title="Additions of the largest builders"
               vars={[{ var: v.id, item: cell.slug, window: [yrs[0], yrs[yrs.length - 1]] }]}
+              subExtra={<HowToRead>Each line is one of the largest builders: the capacity it added each year, in gigawatts; the higher the line, the more it built that year.</HowToRead>}
               table={() => <TableView rows={yrs} caption="Additions by economy and year" cols={[{ id: 'y', header: 'Year', value: (y) => y }, ...lines.map((l) => ({ id: l.id, header: `${l.label} (${u.short})`, value: (y: number) => l.points.find((p) => p.x === y)?.y ?? null, num: true }))]} />}
               csv={() => ({ name: `${cell.slug}-power-additions-builders`, text: sectorCsv(model, lines.flatMap((l) => l.points.map((p) => ({ geo: l.geo !== null ? model.geos[l.geo] : null, economy: l.geo === null ? l.label : undefined, v, item: cell, year: p.x, value: p.y, status: p.est ? 'est' : 'obs' })))) })}
               summary="Annual capacity additions of the largest builders, with the rest of the world as a neutral line."

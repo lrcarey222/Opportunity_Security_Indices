@@ -17,7 +17,7 @@ import {
   type FdiData, type FdiGroupSplit, type FdiProject,
 } from '../../derive/fdi.ts';
 import { fmtShare } from '../../format.ts';
-import { ChunkGate } from '../common.tsx';
+import { ChunkGate, HowToRead } from '../common.tsx';
 import { useFdi } from '../data.ts';
 import { SectorChartCard, ShareSplitChart, type ShareSplitRow } from '../kit.tsx';
 import { useCardCsv } from '../profile/ctx.tsx';
@@ -87,7 +87,12 @@ function InboundGroups({ model, cell, g, inbound, all, basis }: { model: SectorM
     <SectorChartCard
       title={`Whose parents invest in ${g.name}`}
       vars={[{ var: FDI_VARS.share, item: cell.slug, window: w }]}
-      subExtra={` · by year announced · ${basis === 'all' ? 'every status and activity' : 'the projects the Partnership indices use'}`}
+      subExtra={
+        <>
+          {` · by year announced · ${basis === 'all' ? 'every status and activity' : 'the projects the Partnership indices use'}`}
+          <HowToRead>Two bars: the projects in {g.name} and in all destinations together, each split by where the parent companies have their headquarters. Compare the two to see whether {g.name} draws more of its projects from one group than the world does.</HowToRead>
+        </>
+      }
       table={() => (
         <TableView
           rows={rows}

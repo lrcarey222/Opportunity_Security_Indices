@@ -3,6 +3,7 @@
 // dictionary.csv, sources.csv, coverage.csv, README.txt (citations, licences, vintage, status codes),
 // the policy list and the bilateral flows of one technology. UTF-8 BOM is added at download time.
 
+import { noteLine } from './notes.ts';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { FAMILY_IDS, type SectorManifest, type SectorPolicyChunk, type SectorTradeChunk } from '../contract.ts';
 import type { FactsIndex } from '../data/facts.ts';
@@ -67,7 +68,7 @@ export function coverageRows(model: SectorModel): Record<string, unknown>[] {
 }
 
 /** README.txt of the "All sector data" ZIP. */
-export function readmeText(model: SectorModel, manifest: SectorManifest | null, url: string): string {
+export function readmeText(model: SectorModel, manifest: SectorManifest | null, url: string, extraLines: readonly string[] = []): string {
   const cites = [...model.sources.values()].map((s) => `  - ${s.short}${s.edition ? ` (${s.edition})` : ''}: ${s.citation}${s.licence === 'attribution' && s.attribution ? ` Attribution: ${s.attribution}` : ''}`);
   return [
     'Allied Industrial Base Explorer: Sector Insights, all sector data',
@@ -75,8 +76,10 @@ export function readmeText(model: SectorModel, manifest: SectorManifest | null, 
     `Sector data bundle: ${manifest?.bundle_id ?? 'unknown'} (export ${manifest?.created ?? 'unknown'}${manifest?.git_commit ? `, git ${manifest.git_commit.slice(0, 10)}` : ''})`,
     '',
     'Measured values in each source’s own units and years. No index, weight or score values.',
-    'One CSV per measure family; columns: iso3c, economy, group, tier, eu_member, var_id, measure, item, year, value, unit, status, share_of_world, world_basis, rank, source, licence. NA is empty.',
+    'One CSV per measure family; columns: iso3c, economy, group, tier, eu_member, var_id, measure, item, year, value, unit, status, share_of_world, world_basis, rank, source, licence, note. NA is empty.',
+    'note: the fact’s own notes, e.g. "Production not reported separately; assumed 0" (a net balance or self-sufficiency with status nsr and a value: the production no source reports separately counts as 0) or "EIA International Energy Statistics, 2024".',
     'dictionary.csv: every measure (unit, data year, level, source, licence, caveats). sources.csv: every source. coverage.csv: items x families.',
+    ...extraLines,
     '',
     'Status codes:',
     ...Object.entries(STATUS_WORDS).map(([k, w]) => `  ${k}: ${w}`),
@@ -91,7 +94,7 @@ export function readmeText(model: SectorModel, manifest: SectorManifest | null, 
 
 /**
  * One CSV per family: every fact row (and every series row in a year the facts do not hold), in the
- * 17 sector columns. Returns { "trade.csv": text, ... } for families with rows.
+ * 18 sector columns. Returns { "trade.csv": text, ... } for families with rows.
  */
 export function familyCsvs(model: SectorModel, facts: FactsIndex, series: FactsIndex | null): Record<string, string> {
   const byFam = new Map<string, CsvInput[]>();
@@ -102,7 +105,7 @@ export function familyCsvs(model: SectorModel, facts: FactsIndex, series: FactsI
     const w = idx.world(v.idx, it, year);
     for (const r of idx.rows(v.idx, it, year)) {
       const g = model.geos[r.geo] ?? null;
-      list.push({ geo: g && g.kind !== 'residual' ? g : null, economy: g && g.kind === 'residual' ? g.name : undefined, v, item, year: r.obs_year ?? year, value: Number.isFinite(r.value) ? r.value : null, status: r.status, share: w && Number.isFinite(r.value) && w.value > 0 ? r.value / w.value : null });
+      list.push({ geo: g && g.kind !== 'residual' ? g : null, economy: g && g.kind === 'residual' ? g.name : undefined, v, item, year: r.obs_year ?? year, value: Number.isFinite(r.value) ? r.value : null, status: r.status, share: w && Number.isFinite(r.value) && w.value > 0 ? r.value / w.value : null, note: noteLine(model, v.id, r) });
     }
   };
   for (const v of model.vars) {
@@ -114,14 +117,21 @@ export function familyCsvs(model: SectorModel, facts: FactsIndex, series: FactsI
   return out;
 }
 
-/** The files of "All sector data (.zip)". */
-export function allDataFiles(model: SectorModel, manifest: SectorManifest | null, facts: FactsIndex, series: FactsIndex | null, url: string): Record<string, string> {
+/** The README line of the CM-FDI projects file in the ZIP (C5.8: CC BY, changes indicated). */
+export const CMFDI_ZIP_LINE = 'cm-fdi-projects.csv: every cross-border clean-tech manufacturing project of the Cleantech Manufacturing FDI dataset (CM-FDI) as published, one row per project (CC BY 4.0; changes: project counts and sums of disclosed capital elsewhere in this explorer were computed by the OSI authors; no record altered).';
+
+/**
+ * The files of "All sector data (.zip)". `extra` adds files built from other chunks (the CM-FDI
+ * projects CSV) with their README lines.
+ */
+export function allDataFiles(model: SectorModel, manifest: SectorManifest | null, facts: FactsIndex, series: FactsIndex | null, url: string, extra: { files: Record<string, string>; readme: string[] } | null = null): Record<string, string> {
   return {
     ...familyCsvs(model, facts, series),
+    ...(extra?.files ?? {}),
     'dictionary.csv': rowsToCsv(dictionaryRows(model)),
     'sources.csv': rowsToCsv(sourcesRows(model)),
     'coverage.csv': rowsToCsv(coverageRows(model)),
-    'README.txt': readmeText(model, manifest, url),
+    'README.txt': readmeText(model, manifest, url, extra?.readme ?? []),
   };
 }
 

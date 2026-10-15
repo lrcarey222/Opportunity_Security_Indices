@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { TableView } from '../../../components/TableView.tsx';
 import { PageHead } from '../../../components/ui.tsx';
+import { Term } from '../../../components/Term.tsx';
 import { rowsToCsv } from '../../../lib/csv.ts';
 import { useTitle } from '../../../shell/title.ts';
 import { useModel } from '../../data/SectorDataProvider.tsx';
@@ -14,7 +15,7 @@ import type { SectorModel, SummaryInfo, VarInfo } from '../../data/model.ts';
 import { MINE_VAR, MINING_VAR, mineralIndexRows, REFINING_VAR, type MineralIndexRow } from '../../derive/minerals.ts';
 import { lensText } from '../../derive/text.ts';
 import { lc, fmtShare, listText } from '../../format.ts';
-import { concFromSummary, fmtFact, SPLIT_COLUMNS, shareSplitRow, SplitTable } from '../common.tsx';
+import { concFromSummary, fmtFact, HowToRead, SPLIT_COLUMNS, SPLIT_READING, shareSplitRow, SplitTable } from '../common.tsx';
 import { GroupLegend, SectorChartCard, ShareSplitChart, type ShareSplitRow, type VarRef } from '../kit.tsx';
 import { MicroBar } from '../SectorHomeView.tsx';
 import { useSectorUrl } from '../state.tsx';
@@ -83,13 +84,14 @@ function SplitByMineral({ rows }: { rows: MineralIndexRow[] }) {
       headingLevel={2}
       title="Who mines and who refines, by mineral"
       vars={refs}
+      subExtra={<HowToRead>{SPLIT_READING} Each mineral has two rows, mining and refining, so you can see where one economy controls the processing step even when mining is spread out. Click a row for the mineral.</HowToRead>}
       table={() => <SplitTable rows={split} caption="Mining and refining by mineral" />}
       csv={() => ({
         name: 'minerals-mining-refining-split',
         text: rowsToCsv(split.map((r) => ({ mineral: r.label, measure: r.section, ...Object.fromEntries(Object.entries(r.parts).map(([k, x]) => [`share_${k}`, x])), top1: r.cols.top1, top3: r.cols.top3, hhi: r.cols.hhi, n: r.cols.n, source: r.cols.source, year: r.cols.year }))),
       })}
       legend={<GroupLegend />}
-      notes={<p>IEA lists the six largest producers of each mineral, so the rest is the not-attributed band and the HHI is a lower bound ("≥").</p>}
+      notes={<p>IEA lists the six largest producers of each mineral, so the rest is the not-attributed band and the <Term id="hhi">concentration index (HHI)</Term> is a lower bound ("≥").</p>}
       summary={`Group shares of mining and refining for ${split.length / Math.max(1, sections.length)} minerals.`}
     >
       <ShareSplitChart rows={split} columns={SPLIT_COLUMNS} sections={sections} ariaLabel="Mining and refining shares by mineral" onRowClick={(r) => r.href && navigate(r.href)} />
@@ -110,6 +112,7 @@ function MineralTable({ rows }: { rows: MineralIndexRow[] }) {
       headingLevel={2}
       title="Every mineral"
       vars={refs}
+      subExtra={<HowToRead>One row per mineral: how much is mined, how much of mining and of refining the three largest economies hold, China&apos;s and the coalition&apos;s shares, and the technologies that use it. Click a mineral for its page.</HowToRead>}
       csv={() => ({
         name: 'minerals',
         text: rowsToCsv(
@@ -179,7 +182,7 @@ export default function MineralIndexView() {
   const rows = useMemo(() => mineralIndexRows(model, state.eu).sort((a, z) => (Number.isFinite(z.demand) ? z.demand : -1) - (Number.isFinite(a.demand) ? a.demand : -1) || a.item.sort - z.item.sort), [model, state.eu]);
   const withRefining = rows.filter((r) => r.refining);
   const lede = rows.length
-    ? `Clean-energy technologies are measured upstream per mineral: who mines, refines, holds reserves of and exports each of ${rows.length} minerals. ${withRefining.length ? `The IEA reports refining for ${listText(withRefining.map((r) => lc(r.item.label)))}.` : ''}`
+    ? `The minerals behind clean-energy technologies: who mines them, who refines them, who holds the reserves, and who exports them (${rows.length} minerals). ${withRefining.length ? `The IEA reports refining for ${listText(withRefining.map((r) => lc(r.item.label)))}.` : ''}`
     : 'No mineral data in this build.';
   return (
     <div className="space-y-8">

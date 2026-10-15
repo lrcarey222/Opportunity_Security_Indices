@@ -7,7 +7,7 @@ import { StatTile } from '../../../components/ui.tsx';
 import { TableView } from '../../../components/TableView.tsx';
 import type { ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
 import { lc, fmtSignedValue, fmtValue } from '../../format.ts';
-import { markGroup } from '../common.tsx';
+import { dumbbellReading, HowToRead, markGroup } from '../common.tsx';
 import { Dumbbell, SectorChartCard, type DumbbellRow } from '../kit.tsx';
 import { useSectorUrl } from '../state.tsx';
 import { baseYear } from '../TechChainView.tsx';
@@ -41,8 +41,9 @@ function WorldOutlook({ fuel }: { fuel: ItemInfo }) {
   const proj = v.projection_from !== null && ys[ys.length - 1] >= v.projection_from;
   return (
     <SectorChartCard
-      title={`World ${lc(fuel.label)} supply: ${ys[0]} and ${ys[ys.length - 1]}${proj ? ' (STEPS projection)' : ''}`}
+      title={`World ${lc(fuel.label)} supply: ${ys[0]} and ${ys[ys.length - 1]}${proj ? ' (stated-policies projection)' : ''}`}
       vars={[{ var: v.id, item: fuel.slug, year: ys[0] }, { var: v.id, item: fuel.slug, year: ys[ys.length - 1] }]}
+      subExtra={<HowToRead>World supply of {lc(fuel.label)} in the first and the last year shown{proj ? ', the last one an IEA projection under today’s stated policies (the Stated Policies Scenario), not a forecast of what will happen' : ''}; the change is printed under the second figure.</HowToRead>}
       table={() => <TableView rows={ys.map((y) => ({ y, v: facts.value(v.idx, fuel.idx, y, model.world!.idx)?.value ?? NaN }))} caption="World outlook" cols={[{ id: 'y', header: 'Year', value: (r) => r.y }, { id: 'v', header: u.short, value: (r) => r.v, num: true }]} />}
       csv={() => ({ name: `weo-${fuel.slug}`, text: sectorCsv(model, ys.map((y) => { const f = facts.value(v.idx, fuel.idx, y, model.world!.idx); return { geo: model.world, v, item: fuel, year: y, value: f?.value ?? null, status: v.projection_from !== null && y >= v.projection_from ? 'projection' : (f?.status ?? 'obs') }; })) })}
       summary={`World supply moves from ${fmtValue(a.value, u)} to ${fmtValue(b.value, u)}.`}
@@ -81,6 +82,7 @@ function EvGrowth({ v }: { v: VarInfo }) {
     <SectorChartCard
       title={`${v.short}, ${y0} and ${y1}`}
       vars={[{ var: v.id, item: cell.slug, year: y0 }, { var: v.id, item: cell.slug, year: y1 }]}
+      subExtra={<HowToRead>{dumbbellReading(String(y0), String(y1))}</HowToRead>}
       table={() => <TableView rows={rows} caption={`${v.short}, ${y0} and ${y1}`} cols={[{ id: 'e', header: 'Economy', value: (r) => r.label }, { id: 'a', header: `${y0} (${u.short})`, value: (r) => r.a, cell: (r) => fmtValue(r.a, u, { ctx: 'table', scale: v.display_scale }), num: true }, { id: 'b', header: `${y1} (${u.short})`, value: (r) => r.b, cell: (r) => fmtValue(r.b, u, { ctx: 'table', scale: v.display_scale }), num: true }]} />}
       csv={() => ({ name: `${cell.slug}-${v.id}-${y0}-${y1}`, text: sectorCsv(model, rows.flatMap((r) => { const g = model.geoByCode.get(r.id) ?? null; return [{ geo: g, v, item: cell, year: y0, value: Number.isFinite(r.a) ? r.a : null, status: 'obs' }, { geo: g, v, item: cell, year: y1, value: r.b, status: 'obs' }]; })) })}
       summary={`${v.short} of the top ${rows.length} economies in ${y0} and ${y1}.`}
@@ -99,9 +101,8 @@ function EvProjection({ v }: { v: VarInfo }) {
   const u = model.unitOf(v, cell.idx);
   const rows = facts.rows(v.idx, cell.idx, y).filter((r) => Number.isFinite(r.value)).sort((a, z) => z.value - a.value);
   return (
-    <SectorChartCard title={`${v.short}: ${y} projection (STEPS)`} vars={[{ var: v.id, item: cell.slug, year: y }]} csv={() => ({ name: `${cell.slug}-${v.id}-${y}-projection`, text: sectorCsv(model, rows.map((r) => ({ geo: model.geos[r.geo], v, item: cell, year: y, value: r.value, status: 'projection' }))) })} summary={`IEA projects ${lc(v.short)} for ${rows.length} countries in ${y}.`}>
+    <SectorChartCard title={`${v.short}: ${y} projection under stated policies`} vars={[{ var: v.id, item: cell.slug, year: y }]} subExtra={<HowToRead>Each row is one country, largest first: the IEA projection for {y} under today’s stated policies (the Stated Policies Scenario), not a forecast. The IEA gives it for these countries only; projections are outlined in the charts above.</HowToRead>} csv={() => ({ name: `${cell.slug}-${v.id}-${y}-projection`, text: sectorCsv(model, rows.map((r) => ({ geo: model.geos[r.geo], v, item: cell, year: y, value: r.value, status: 'projection' }))) })} summary={`IEA projects ${lc(v.short)} for ${rows.length} countries in ${y}.`}>
       <TableView rows={rows} caption={`${v.short} ${y} projection`} cols={[{ id: 'c', header: 'Economy', value: (r) => model.geos[r.geo]?.name ?? '' }, { id: 'v', header: `${y} projection (${u.short})`, value: (r) => r.value, cell: (r) => fmtValue(r.value, u, { ctx: 'table', scale: v.display_scale }), num: true }]} />
-      <p className="mt-2 text-xs text-paper-mute">Projection (STEPS): outlined in charts and labelled; IEA gives it for these countries only.</p>
     </SectorChartCard>
   );
 }

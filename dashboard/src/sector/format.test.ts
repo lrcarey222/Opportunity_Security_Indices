@@ -47,7 +47,7 @@ describe('format (3.9)', () => {
     expect(fmtValue(33000, U('price', 'USD/t'))).toBe('USD 33,000 /t');
     expect(fmtValue(1234.4, U('count', 'records'))).toBe('1,234');
     expect(fmtValue(3.14159, U('ratio', 'ratio'))).toBe('3.14');
-    expect(fmtValue(8.5, U('trl', 'TRL'))).toBe('TRL 8.5');
+    expect(fmtValue(8.5, U('trl', 'TRL'))).toBe('level 8.5');
     expect(fmtValue(4.36, U('pct', '%'))).toBe('4.4%');
   });
 

@@ -18,10 +18,10 @@ describe('sector url (2.7)', () => {
   it('round-trips every key in the fixed order', () => {
     const s: SectorUrlState = {
       c: 'USA', eu: 'bloc', lens: 'hhi', fam: 'exports', m: 'trade.exports', y: 2024, tdir: 'imports', xc: true,
-      tech: 'Batteries', stage: 'Midstream', item: 'lithium', as: 'share', scale: 'log', geo: 'coalition',
+      tech: 'Batteries', stage: 'Midstream', item: 'lithium', sub: 'Cells and packs', as: 'share', scale: 'log', geo: 'coalition',
     };
     const q = writeSectorSearch(s);
-    expect(q).toBe('c=USA&eu=bloc&lens=hhi&fam=exports&m=trade.exports&y=2024&tdir=imports&xc=1&tech=Batteries&stage=Midstream&item=lithium&as=share&scale=log&geo=coalition');
+    expect(q).toBe('c=USA&eu=bloc&lens=hhi&fam=exports&m=trade.exports&y=2024&tdir=imports&xc=1&tech=Batteries&stage=Midstream&item=lithium&sub=Cells%20and%20packs&as=share&scale=log&geo=coalition');
     expect(q.split('&').map((p) => p.split('=')[0])).toEqual([...SECTOR_KEY_ORDER]);
     const back = parseSectorSearch(`?${q}`, ctx);
     expect(back.problems).toEqual([]);
@@ -64,6 +64,15 @@ describe('sector url (2.7)', () => {
     expect(navSectorSearch({ ...SECTOR_DEFAULTS })).toBe('');
     expect(navSectorSearch({ ...SECTOR_DEFAULTS, c: 'EUU', eu: 'members' })).toBe('');
     expect(sectorHref('/sector/batteries/midstream', { c: 'USA' }, { m: 'trade.exports' }, 'leaders')).toBe('/sector/batteries/midstream?c=USA&m=trade.exports#leaders');
+  });
+
+  it('a sub-component name round-trips with commas and is dropped when empty', () => {
+    const q = writeSectorSearch({ sub: 'Gallium, germanium and indium' });
+    expect(parseSectorSearch(q).state.sub).toBe('Gallium, germanium and indium');
+    const r = parseSectorSearch('sub=');
+    expect(r.state.sub).toBeNull();
+    expect(r.problems).toHaveLength(1);
+    expect(patchReplaces({ sub: 'Devices' })).toBe(true);
   });
 
   it('year, show-as, scale and item replace history; the rest push', () => {

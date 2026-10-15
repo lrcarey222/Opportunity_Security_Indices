@@ -200,6 +200,20 @@ dash_validate_bundle <- function(bundle) {
   need(identical(dim(pa$po$trade), c(U, U, C)), "partner$po$trade has the wrong shape")
   need(identical(dim(pa$po$mask), c(U, U, C)), "partner$po$mask has the wrong shape")
   need(length(pa$fs$cpi) == U && length(pa$fs$gh) == C, "partner$fs cpi / gh lengths")
+  # Friendshore's CM-FDI parts (dash_fs_outbound(), dash_fs_adj()): absent in a build before them
+  src <- pa$fs$outbound_source
+  if (!is.null(src)) {
+    need(is.character(src) && length(src) == C && all(src %in% c("imf_dip", "cm_fdi")), "partner$fs$outbound_source must be imf_dip / cm_fdi by cell")
+    K <- sum(src == "cm_fdi")
+    need(if (K > 0) identical(dim(pa$fs$outbound_cmfdi), c(U, U, K)) else is.null(pa$fs$outbound_cmfdi),
+         "partner$fs$outbound_cmfdi must be [U, U, number of cm_fdi cells]")
+  } else {
+    need(is.null(pa$fs$outbound_cmfdi), "partner$fs$outbound_cmfdi without outbound_source")
+  }
+  if (!is.null(pa$fs$cpe)) {
+    need(identical(dim(pa$fs$cpe), c(U, C)), "partner$fs$cpe must be [U, C]")
+    need(all(is.na(pa$fs$cpe) | (pa$fs$cpe >= 0 & pa$fs$cpe <= 1)), "partner$fs$cpe must lie in [0, 1]")
+  }
   need(length(pa$po$cpi) == U && length(pa$po$gh) == C, "partner$po cpi / gh lengths")
   need(is.data.frame(bundle$network$members) && nrow(bundle$network$members) > 0, "network$members empty")
   need(is.data.frame(bundle$network$node_raw_member), "network$node_raw_member missing")

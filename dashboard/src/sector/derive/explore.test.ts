@@ -37,6 +37,13 @@ describe('explore: measures, items, years', () => {
     expect(themeVars(model, 'trade').every((x) => model.availOf(x).length > 0)).toBe(true);
   });
 
+  it('sub-component trade is a view of exports / imports, not a measure (C5.4)', () => {
+    expect(themeVars(model, 'trade').map((x) => x.id)).not.toContain('trade.sub_exports');
+    expect(themeVars(model, 'trade').map((x) => x.id)).not.toContain('trade.sub_imports');
+    expect(pickVar(model, 'trade', 'trade.sub_imports')?.id).toBe('trade.imports');
+    expect(pickVar(model, 'trade', 'trade.sub_exports')?.id).toBe('trade.exports');
+  });
+
   it('cell items come from tech + stage (Strategic vocabulary); others from the item slug; else the default', () => {
     const ex = v('trade.exports');
     expect(pickItem(model, ex, { tech: 'Oil', stage: 'Upstream', item: null })?.slug).toBe('oil-upstream');

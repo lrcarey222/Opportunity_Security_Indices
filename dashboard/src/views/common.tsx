@@ -2,6 +2,7 @@
 // economy options and small derivations.
 
 import { useMemo } from 'react';
+import { Link } from 'react-router';
 import { toRows } from '../engine/table.ts';
 import type { Table } from '../engine/types.ts';
 import { useApp, useScenario } from '../state/EngineProvider.tsx';
@@ -76,18 +77,50 @@ export function shownValue(value: number | null, base: number | null, mode: Show
 
 /** The core payload's notes in reader-facing words. */
 export function noteText(n: string): string {
-  if (/fossil/i.test(n)) return 'Coal, oil and gas are excluded from the Strategic Index, the best-five summaries and the network.';
+  if (/fossil/i.test(n)) return 'Coal, oil and gas are excluded from the Strategic Index, the partnership best-five summaries and the allied network.';
   if (/endowment screen off/i.test(n)) return 'The endowment screen is off: an upstream sector can be a member’s allied pick without recorded reserves or production of its resources.';
-  if (/baseline pillars/i.test(n)) return "Partnership and network layers keep the paper's pillars (category weights move the pillars and the Strategic Index only).";
-  if (/Policy index/i.test(n)) return 'The network producer score includes the scenario Policy index (populism above 50).';
+  if (/baseline pillars/i.test(n)) return "Partnerships and the allied network keep the paper's Energy Security and Economic Opportunity (category weights move those two scores and the Strategic Index only).";
+  if (/Policy index/i.test(n)) return "The allied network's producer score includes the scenario's Policy activity (populism above 50).";
   return n;
 }
 
-/** What a Policy index rests on (policy_basis), in reader-facing words. */
+/** What an economy's Policy activity rests on (policy_basis), in reader-facing words. */
 export function policyBasisText(basis: string | null | undefined): string {
-  if (!basis) return 'no Policy index';
-  if (basis === 'IEA PAMS only') return 'IEA PAMS only (no Climate Action Tracker rating)';
-  return basis.replace(/\bCAT\b/, 'Climate Action Tracker');
+  if (!basis) return 'no Policy activity score';
+  if (basis === 'IEA PAMS only') return 'IEA Policies and Measures only (no Climate Action Tracker rating)';
+  if (basis === 'IEA PAMS + CAT') return 'IEA Policies and Measures and the Climate Action Tracker';
+  return basis.replace(/\bIEA PAMS\b/, 'IEA Policies and Measures').replace(/\bCAT\b/, 'Climate Action Tracker');
+}
+
+/** A short name of a policy basis for tables and tiles (no bare acronyms). */
+export function policyBasisShort(basis: string | null | undefined): string | null {
+  if (!basis) return null;
+  if (basis === 'IEA PAMS only') return 'IEA records only';
+  if (basis === 'IEA PAMS + CAT') return 'IEA records + Climate Action Tracker';
+  return basis.replace(/\bIEA PAMS\b/, 'IEA records').replace(/\bCAT\b/, 'Climate Action Tracker');
+}
+
+/** Reader-facing names of the Policy activity components (config keys of the policy weights). */
+export function policyComponentName(key: string): string {
+  if (/iea/i.test(key)) return 'IEA Policies and Measures records';
+  if (/(^|[^a-z])cat([^a-z]|$)|climate action/i.test(key)) return 'Climate Action Tracker rating';
+  return key;
+}
+
+/**
+ * The bridge from a Strategic view to the same economy in Country Insights (spec_country.md A2.2): one
+ * quiet link, "{Country} in Country Insights ->", to /countries/ISO3 (the paper's baseline there; the
+ * Strategic scenario is not carried, Country Insights always shows the paper).
+ */
+export function CountryInsightsLink({ iso3, country }: { iso3: string; country: string }) {
+  return (
+    <p className="mt-3 text-sm">
+      <Link className="link" to={`/countries/${iso3}`}>
+        {country} in Country Insights &rarr;
+      </Link>
+      <span className="text-paper-mute"> (a plain-language briefing on the paper&rsquo;s baseline)</span>
+    </p>
+  );
 }
 
 /** The endowment screen of a cell (resource_base): true / false in a screened upstream sector, null elsewhere. */

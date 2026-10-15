@@ -1,19 +1,24 @@
 // View 6: Allied network (spec_react.md 8.6; paper section 10). For each upstream and midstream
 // stage the design chooses which coalition nodes produce and who supplies whom. Scenarios are
 // re-designed in the browser with the greedy solver; the paper's exact (MILP) design is shipped for
-// the baseline when the export found it consistent with the current inputs.
+// the baseline when the export found it consistent with the current inputs. The specialization matrix
+// uses the three-colour scale over the positive designed shares (spec_country.md C1.5; 0 = "not a
+// producer", ink); concentration is named "Concentration (HHI)" with its effective number of producers.
 
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router';
 import * as Plot from '@observablehq/plot';
 import { useTitle } from '../../App.tsx';
 import { ChartCard } from '../../charts/ChartCard.tsx';
-import { Legend, RampLegend } from '../../charts/legends.tsx';
+import { Legend, TriLegend } from '../../charts/legends.tsx';
 import { PlotFigure, Tip } from '../../charts/PlotFigure.tsx';
+import { ringMarks } from '../../charts/rings.ts';
 import { SankeyChart } from '../../charts/Sankey.tsx';
-import { divScale, labelMargin, seqScale, textWidth } from '../../charts/theme.ts';
+import { triScale } from '../../charts/scale.ts';
+import { labelMargin, textWidth } from '../../charts/theme.ts';
 import { WorldMap, type MapCell } from '../../charts/WorldMap.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
+import { Term } from '../../components/Term.tsx';
 import { EmptyState, FilterRow, Loading, Notice, PageHead, ProgressBar, Segmented, Select, Tag } from '../../components/ui.tsx';
 import { rowsToCsv, tableToCsv } from '../../lib/csv.ts';
 import { cellLabel, DASH, fmtDelta, fmtMs, fmtNum, fmtPct, fmtSigned, stageSlug } from '../../lib/format.ts';
@@ -21,7 +26,7 @@ import { nodeLabel } from '../../state/appData.ts';
 import { useApp, useNetwork, useRun, useScenario } from '../../state/EngineProvider.tsx';
 import { useGoto } from '../../state/nav.ts';
 import type { CmpMode } from '../../state/url.ts';
-import { COMPARE_COLOR, FLOW, INK, SIGNAL } from '../../theme/palette.ts';
+import { COMPARE_COLOR, FLOW, INK, RING_INNER, RING_OUTER, SIGNAL } from '../../theme/palette.ts';
 import { numOr, rowsOf, strOr } from '../common.tsx';
 import {
   compareSpecs, designGap, flowRows, specRows, stageId, stagesOf, workerCompare, type FlowRow, type NodeCompareRow, type StageCompareRow, type StageRef,
@@ -85,9 +90,9 @@ export default function NetworkView() {
     ? null
     : isBaseline
       ? method === 'milp'
-        ? "The paper's network: the exact (MILP) design."
-        : `Greedy design at the paper's settings${consistent ? '' : ' (the stored exact design predates the current inputs)'}, ${nStages} stages.`
-      : `Scenario: fast greedy design, ${nStages} stages${network.data.elapsed_ms ? `, ${fmtMs(network.data.elapsed_ms)}` : ''}.`;
+        ? "The paper's network: the exact design (solved as a mixed-integer program)."
+        : `Fast approximate design at the paper's settings${consistent ? '' : ' (the stored exact design predates the current inputs)'}, ${nStages} sectors.`
+      : `Scenario: fast approximate design, ${nStages} sectors${network.data.elapsed_ms ? `, ${fmtMs(network.data.elapsed_ms)}` : ''}.`;
   const gap = useMemo(() => {
     if (!network.data || !isBaseline || method !== 'milp' || !network.data.compare) return null;
     const w = workerCompare(network.data.compare);
@@ -213,16 +218,24 @@ export default function NetworkView() {
         data.push({ stage: stageShort(s), stageRef: s, node: n, label: nodeLabel(app, n), share: cur, ref: refShare, delta: cur - refShare, shown });
       }
     }
-    return { data, stages: stagesCur.map(stageShort), labels: nodes.map((n) => nodeLabel(app, n)) };
+    // the scale: positive designed shares (0 = not a producer, ink); Change: every cell with a producer
+    // in either design, centred on zero
+    const colored = (d: { share: number; ref: number; shown: number }) => (show === 'change' ? d.share > 0 || d.ref > 0 : d.shown > 0);
+    const scale = triScale(data.filter(colored).map((d) => d.shown), { center: show === 'change' ? 'zero' : 'median' });
+    return { data, stages: stagesCur.map(stageShort), labels: nodes.map((n) => nodeLabel(app, n)), scale, colored };
   }, [allStages, curIds, ref, spec, app, nodeTotals, show]);
+  const matrixSide = (v: number) => {
+    const sd = matrix.scale.side(v);
+    if (show === 'change') return sd === 'above' ? 'larger share than in the comparison design' : sd === 'below' ? 'smaller share than in the comparison design' : 'no change';
+    return sd === 'median' ? `at the median producer share (${fmtPct(matrix.scale.mid, 1)})` : `${sd} the median producer share (${fmtPct(matrix.scale.mid, 1)})`;
+  };
   const matrixHeight = 120 + 15 * matrix.labels.length;
   const buildMatrix = useCallback(
     (width: number): Plot.PlotOptions | null => {
       if (!matrix.data.length) return null;
-      const change = show === 'change';
-      const L = Math.max(1e-6, ...matrix.data.map((d) => Math.abs(d.delta)));
-      const hi = Math.max(0.01, ...matrix.data.map((d) => d.shown));
+      const s = matrix.scale;
       const curLabel = stage ? stageShort(stage) : '';
+      const cellCh = { x: 'stage', y: 'label', inset: 0.5 };
       return {
         width,
         height: matrixHeight,
@@ -232,18 +245,13 @@ export default function NetworkView() {
         padding: 0,
         x: { domain: matrix.stages, label: null, tickRotate: -55, tickSize: 0 },
         y: { domain: matrix.labels, label: null, tickSize: 0 },
-        color: change ? divScale(L) : seqScale([0, hi]),
         marks: [
-          Plot.cell(
-            matrix.data.filter((d) => change || d.shown > 0),
-            { x: 'stage', y: 'label', fill: 'shown', inset: 0.5 },
-          ),
-          Plot.cell(matrix.data.filter((d) => !change && d.shown <= 0), { x: 'stage', y: 'label', fill: INK[700], inset: 0.5 }),
-          Plot.cell(
-            matrix.data.filter((d) => d.stage === curLabel),
-            { x: 'stage', y: 'label', fill: 'none', stroke: SIGNAL, strokeWidth: 1, inset: 0 },
-          ),
-          Plot.cell(matrix.data, Plot.pointer({ x: 'stage', y: 'label', fill: 'none', stroke: SIGNAL, strokeWidth: 2, maxRadius: 10 })),
+          Plot.cell(matrix.data.filter(matrix.colored), { ...cellCh, fill: (d: { shown: number }) => s.color(d.shown) ?? 'none' }),
+          Plot.cell(matrix.data.filter((d) => !matrix.colored(d)), { ...cellCh, fill: INK[700] }),
+          // the selected stage: an ink-under-white outline around its whole column (visible on every fill)
+          Plot.cell([curLabel], { x: (d: string) => d, fill: 'none', stroke: RING_OUTER, strokeWidth: 3, inset: 0 }),
+          Plot.cell([curLabel], { x: (d: string) => d, fill: 'none', stroke: RING_INNER, strokeWidth: 1, inset: 0 }),
+          ...ringMarks(matrix.data, { ...cellCh, maxRadius: 10 }, 'hover', 'cell'),
         ],
       };
     },
@@ -283,7 +291,7 @@ export default function NetworkView() {
         width,
         height: 40 + conc.length * 20,
         marginLeft: labelMargin(conc.map((c) => `▸ ${c.label}`), { min: 110, max: 200 }),
-        x: { label: 'Herfindahl index of production shares (lower = more diversified)', grid: true, nice: true, domain: [0, Math.max(0.1, ...conc.flatMap((c) => [c.hhi ?? 0, c.hhi_ref ?? 0, c.hhi_obs ?? 0])) * 1.05] },
+        x: { label: 'Concentration (HHI) of production shares: lower = more spread out →', grid: true, nice: true, domain: [0, Math.max(0.1, ...conc.flatMap((c) => [c.hhi ?? 0, c.hhi_ref ?? 0, c.hhi_obs ?? 0])) * 1.05] },
         y: { domain: conc.map((c) => c.label), label: null, tickSize: 0, tickFormat: (t: string) => (t === curLabel ? `▸ ${t}` : t) },
         marks: [
           Plot.ruleY(conc, { y: 'label', x1: 0, x2: (c: ConcRow) => Math.max(c.hhi ?? 0, c.hhi_ref ?? 0, c.hhi_obs ?? 0), stroke: 'rgb(255 255 255 / 0.06)' }),
@@ -318,7 +326,7 @@ export default function NetworkView() {
         marginBottom: Math.ceil(0.82 * Math.max(...counts.map((c) => textWidth(c.label)))) + 16,
         marginLeft: 40,
         x: { domain: counts.map((c) => c.label), label: null, tickRotate: -55, tickSize: 0 },
-        y: { label: '↑ Stages among the top five producers', grid: true, nice: true },
+        y: { label: '↑ Sectors among the five largest producers', grid: true, nice: true },
         marks: [
           Plot.barY(counts, { x: 'label', y: 'count', fill: COMPARE_COLOR.scenario, insetLeft: inset, insetRight: inset }),
           Plot.tickY(counts.filter((c) => c.cap !== null), { x: 'label', y: 'cap', stroke: '#d1d5db', strokeWidth: 2 }),
@@ -360,10 +368,10 @@ export default function NetworkView() {
     { id: 'stage', header: 'Stage', value: (r) => cellLabel(r.tech, r.supply_chain), minWidth: 170 },
     { id: 'in', header: 'In', value: (r) => r.producers_added || null, minWidth: 110 },
     { id: 'out', header: 'Out', value: (r) => r.producers_removed || null, minWidth: 110 },
-    { id: 'jaccard', header: 'Jaccard', value: (r) => r.jaccard, cell: (r) => fmtNum(r.jaccard, 2), num: true, title: 'Overlap of the producer sets (1 = identical)' },
-    { id: 'hhi_delta', header: 'HHI change', value: (r) => r.hhi_delta, cell: (r) => fmtSigned(r.hhi_delta, 3), num: true },
-    { id: 'max', header: 'Max |share change|', value: (r) => r.max_abs_share_delta, cell: (r) => fmtNum(r.max_abs_share_delta, 3), num: true },
-    { id: 'turn', header: 'Flow turnover', value: (r) => r.flow_turnover, cell: (r) => fmtNum(r.flow_turnover, 3), num: true },
+    { id: 'jaccard', header: 'Overlap of producers (Jaccard)', value: (r) => r.jaccard, cell: (r) => fmtNum(r.jaccard, 2), num: true, title: 'Overlap of the producer sets (1 = identical)' },
+    { id: 'hhi_delta', header: 'Change in concentration (HHI)', value: (r) => r.hhi_delta, cell: (r) => fmtSigned(r.hhi_delta, 3), num: true },
+    { id: 'max', header: 'Largest share change', value: (r) => r.max_abs_share_delta, cell: (r) => fmtNum(r.max_abs_share_delta, 3), num: true },
+    { id: 'turn', header: 'Flow turnover', value: (r) => r.flow_turnover, cell: (r) => fmtNum(r.flow_turnover, 3), num: true, title: 'Share of the flows that moved to other supplier-buyer pairs' },
   ];
 
   const stageOptions = allStages.map((s) => ({
@@ -371,23 +379,30 @@ export default function NetworkView() {
     label: `${cellLabel(s.tech, s.supply_chain)}${network.data && !curIds.has(stageId(s)) ? ' (excluded by greenness)' : ''}`,
     disabled: !!network.data && !curIds.has(stageId(s)),
   }));
-  const refName = cmp === 'paper' ? "the paper's exact design" : "the greedy design at the paper's settings";
+  const refName = cmp === 'paper' ? "the paper's exact design" : "the approximate design at the paper's settings";
 
   return (
     <div>
       <PageHead
         eyebrow="Network design"
         title="Allied network"
-        lede="For each upstream and midstream stage, the network design chooses which coalition members produce and who supplies whom, maximising producer quality and partnership strength while penalising concentration. Move the dials and the network is re-designed."
+        lede={
+          <>
+            A model design of which <Term id="coalition">coalition</Term> members would produce how much in each upstream and midstream sector, so that supply is
+            spread across members rather than concentrated, favouring capable, secure producers and strong partnerships. How hard it pushes to spread production
+            is set by the <Term id="lambda">diversification weight</Term>; the EU counts as <Term id="eu_node">one producer</Term>. The paper&rsquo;s design is
+            solved exactly; scenario designs are recomputed in your browser with a fast approximation.
+          </>
+        }
       />
       <FilterRow>
-        <Select label="Stage" value={stage ? stageSlug(stage.tech, stage.supply_chain) : ''} options={stageOptions} onChange={(v) => goto(`/network/${v}`, { cmp: view.cmp })} className="min-w-[16rem]" />
+        <Select label="Sector" value={stage ? stageSlug(stage.tech, stage.supply_chain) : ''} options={stageOptions} onChange={(v) => goto(`/network/${v}`, { cmp: view.cmp })} className="min-w-[16rem]" />
         {!isBaseline && (
           <Segmented<CmpMode>
             label="Compare with"
             value={cmp}
             options={[
-              { value: 'greedy', label: "Greedy at the paper's settings" },
+              { value: 'greedy', label: "Approximate design at the paper's settings" },
               { value: 'paper', label: "The paper's exact design", disabled: !paperIsMilp, title: paperIsMilp ? undefined : 'The exact design shipped with this build predates the current inputs' },
             ]}
             onChange={(v) => setView({ cmp: v })}
@@ -397,7 +412,7 @@ export default function NetworkView() {
       <div className="mb-6 space-y-3">
         {solverLine && (
           <p className="flex flex-wrap items-center gap-2 text-sm text-paper-dim">
-            <Tag accent>{isBaseline ? (method === 'milp' ? 'Exact design' : 'Greedy design') : 'Designed live'}</Tag>
+            <Tag accent>{isBaseline ? (method === 'milp' ? 'Exact design' : 'Approximate design') : 'Designed live'}</Tag>
             {solverLine} {!isBaseline && `Comparisons are against ${refName}.`}
           </p>
         )}
@@ -411,11 +426,12 @@ export default function NetworkView() {
           </div>
         )}
         <Notice kind="info">
-          Exact re-solves of scenarios are not available in the browser; scenarios use the fast greedy solver, which is close to the exact design at the paper&rsquo;s settings.
-          {gap && ` At the paper's settings the greedy design differs from the exact one by a mean absolute share difference of ${fmtNum(gap.meanAbs, 3)}, with a median producer-set overlap (Jaccard) of ${fmtNum(gap.medianJaccard, 2)}.`}
-          {!consistent && ' The exact design stored with this build predates the current inputs, so the paper baseline here is the greedy design at the paper’s settings.'}
+          Your browser cannot re-solve the design exactly (that takes minutes per sector); scenarios use a fast approximation that fills each sector with the best
+          remaining producer step by step (a greedy solver), which comes close to the exact design at the paper&rsquo;s settings.
+          {gap && ` At the paper's settings the two differ by ${fmtNum(gap.meanAbs, 3)} in production share on average, and their producer sets overlap by a median of ${fmtNum(gap.medianJaccard, 2)} (1 = the same producers).`}
+          {!consistent && ' The exact design stored with this build predates the current inputs, so the paper baseline here is the approximate design at the paper’s settings.'}
         </Notice>
-        {stageExcluded && <Notice kind="warning">This stage is not in the current design: fossil technologies are dropped at greenness 90 or above (or by the advanced setting).</Notice>}
+        {stageExcluded && <Notice kind="warning">This sector is not in the current design: coal, oil and gas are dropped at greenness 90 or above (or by the advanced setting).</Notice>}
       </div>
       {!network.data ? (
         <Loading label={solving && progress ? `Designing the network: stage ${progress.current + 1} of ${progress.total}` : 'Loading network data'} />
@@ -424,7 +440,7 @@ export default function NetworkView() {
           <div className="grid gap-6">
             <ChartCard
               title={stage ? `${cellLabel(stage.tech, stage.supply_chain)}: designed flows` : 'Designed flows'}
-              sub="Coalition nodes at their location (the EU is one node). Filled circles produce, sized by production share; hollow circles only consume. Lines carry the designed flows, thicker = larger. The map always shows the scenario design."
+              sub="Each circle is a coalition member at its location (the EU is one node). Filled circles produce in this sector, sized by their share of the coalition's production; hollow circles only buy. Lines are the designed supply flows: thicker carries more. The map always shows the scenario design."
               updating={!network.fresh}
               summary={`Flow map with ${stageFlows.length} flows and ${stageSpec.filter((r) => r.share > 0).length} producers.`}
               legend={
@@ -459,7 +475,7 @@ export default function NetworkView() {
             </ChartCard>
             <ChartCard
               title="Who supplies whom"
-              sub="Producers (left) to consumers (right); band width = share of the stage's coalition demand."
+              sub="Producers on the left supply buyers on the right; the width of each band is its share of the coalition's demand in this sector."
               updating={!network.fresh}
               summary={`Sankey of ${stageFlows.length} flows.`}
               legend={<Legend items={[{ label: 'Producer', color: COMPARE_COLOR.scenario }, { label: 'Consumer', color: '#6b7280' }, { label: 'Flow (hovered: orange)', kind: 'line', color: FLOW }]} />}
@@ -473,33 +489,38 @@ export default function NetworkView() {
           </div>
 
           <ChartCard
-            title="Specialization matrix"
-            sub={`Production share of each node in every stage${show === 'change' ? `; Change maps the difference from ${refName}` : show === 'baseline' ? `; Baseline shows ${refName}` : ''}. The selected stage is outlined; click a column to select its stage.`}
+            title="Who produces what: the specialization matrix"
+            sub={`Each row is a coalition member (the EU as one), each column a sector; a cell is the member's share of the coalition's production in that sector${
+              show === 'change'
+                ? `, compared with ${refName}: orange is a smaller share, white no change, blue a larger share`
+                : `${show === 'baseline' ? ` in ${refName}` : ''}: orange is a smaller share than most producers, white the middle, blue a larger share`
+            }. Dark gray: not a producer. The selected sector is outlined; click a column to select it.`}
             updating={!network.fresh}
-            summary={`Matrix of ${matrix.labels.length} nodes by ${matrix.stages.length} stages.`}
+            summary={`Matrix of ${matrix.labels.length} members by ${matrix.stages.length} sectors.`}
             legend={
               <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
-                <RampLegend
-                  kind={show === 'change' ? 'div' : 'seq'}
-                  min={show === 'change' ? -Math.max(1e-6, ...matrix.data.map((d) => Math.abs(d.delta))) : 0}
-                  max={show === 'change' ? Math.max(1e-6, ...matrix.data.map((d) => Math.abs(d.delta))) : Math.max(0.01, ...matrix.data.map((d) => d.shown))}
-                  label={show === 'change' ? 'Share change (increase = blue)' : 'Production share'}
-                  format={(v) => fmtPct(v, 0)}
+                <TriLegend
+                  scale={matrix.scale}
+                  label={show === 'change' ? `Change in production share against ${refName}` : 'Production share (of the coalition, per sector)'}
+                  format={(v) => (show === 'change' ? fmtDelta(v, 1, true) : fmtPct(v, 0))}
+                  noun="producer shares"
+                  {...(show === 'change' ? { lowWord: 'smaller share', highWord: 'larger share' } : { lowWord: 'smaller', highWord: 'larger' })}
                 />
-                {show !== 'change' && <Legend items={[{ label: 'Not producing', color: INK[700] }]} />}
+                <Legend items={[{ label: show === 'change' ? 'Not a producer in either design' : 'Not a producer', color: INK[700] }]} />
               </div>
             }
             table={() => (
               <TableView
                 rows={matrix.data.filter((d) => d.share > 0 || d.ref > 0)}
-                caption="Specialization"
+                caption="Who produces what"
                 search
                 cols={[
-                  { id: 'label', header: 'Node', value: (d) => d.label, minWidth: 130 },
-                  { id: 'stage', header: 'Stage', value: (d) => cellLabel(d.stageRef.tech, d.stageRef.supply_chain), minWidth: 160 },
+                  { id: 'label', header: 'Member', value: (d) => d.label, minWidth: 130 },
+                  { id: 'stage', header: 'Sector', value: (d) => cellLabel(d.stageRef.tech, d.stageRef.supply_chain), minWidth: 160 },
                   { id: 'share', header: 'Share', value: (d) => d.share, cell: (d) => fmtPct(d.share, 1), num: true },
                   { id: 'ref', header: 'Comparison', value: (d) => d.ref, cell: (d) => fmtPct(d.ref, 1), num: true },
                   { id: 'delta', header: 'Change', value: (d) => d.delta, cell: (d) => fmtDelta(d.delta, 1, true), num: true },
+                  { id: 'side', header: 'Colour', value: (d) => (matrix.colored(d) ? matrixSide(d.shown) : 'not a producer'), minWidth: 220 },
                 ]}
               />
             )}
@@ -510,12 +531,12 @@ export default function NetworkView() {
                 build={buildMatrix}
                 height={matrixHeight}
                 minWidth={720}
-                ariaLabel="Specialization matrix"
+                ariaLabel="Who produces what: the specialization matrix"
                 tooltip={(d) => (
                   <Tip
                     value={show === 'change' ? fmtDelta(d.delta, 1, true) : fmtPct(d.shown, 1)}
                     title={`${d.label}: ${cellLabel(d.stageRef.tech, d.stageRef.supply_chain)}`}
-                    lines={[`scenario ${fmtPct(d.share, 1)} · comparison ${fmtPct(d.ref, 1)}`]}
+                    lines={[matrix.colored(d) ? matrixSide(d.shown) : 'not a producer', `scenario ${fmtPct(d.share, 1)} · comparison ${fmtPct(d.ref, 1)}`]}
                   />
                 )}
                 onSelect={(d) => goto(`/network/${stageSlug(d.stageRef.tech, d.stageRef.supply_chain)}`, { cmp: view.cmp })}
@@ -526,7 +547,13 @@ export default function NetworkView() {
           <div className="grid gap-6 2xl:grid-cols-2">
             <ChartCard
               title="Concentration: designed against observed"
-              sub="Herfindahl index of production shares per stage (lower = more diversified); hover for the equivalent number of producers. The selected stage is marked with a triangle."
+              sub={
+                <>
+                  Each row is a sector; the dots show how concentrated its production is, as the <Term id="hhi" />: 1 means one producer has everything, 0.25
+                  is like four equal producers, lower is more spread out. Hover for the <Term id="effective_n">effective number of producers</Term>. The square is
+                  today&rsquo;s exports from the same members, where the sector has a trade basket. The selected sector is marked with a triangle.
+                </>
+              }
               updating={!network.fresh}
               summary={`Concentration of ${conc.length} stages.`}
               legend={
@@ -534,7 +561,7 @@ export default function NetworkView() {
                   items={[
                     { label: show === 'baseline' ? 'Comparison design' : 'Scenario design', kind: 'dot', color: COMPARE_COLOR.scenario },
                     ...(show !== 'baseline' && !isBaseline ? [{ label: 'Comparison design', kind: 'hollow' as const, color: COMPARE_COLOR.baseline }] : []),
-                    { label: 'Observed exports (stages with a basket)', kind: 'rect' as const, color: COMPARE_COLOR.observed },
+                    { label: "Today's exports (sectors with a trade basket)", kind: 'rect' as const, color: COMPARE_COLOR.observed },
                   ]}
                 />
               }
@@ -543,12 +570,13 @@ export default function NetworkView() {
                   rows={conc}
                   caption="Concentration"
                   cols={[
-                    { id: 'stage', header: 'Stage', value: (c) => cellLabel(c.tech, c.supply_chain), minWidth: 160 },
-                    { id: 'hhi', header: 'HHI scenario', value: (c) => c.hhi_scenario, cell: (c) => fmtNum(c.hhi_scenario, 3), num: true },
-                    { id: 'hhi_ref', header: 'HHI comparison', value: (c) => c.hhi_ref, cell: (c) => fmtNum(c.hhi_ref, 3), num: true },
-                    { id: 'hhi_obs', header: 'HHI observed', value: (c) => c.hhi_obs, cell: (c) => fmtNum(c.hhi_obs, 3), num: true },
+                    { id: 'stage', header: 'Sector', value: (c) => cellLabel(c.tech, c.supply_chain), minWidth: 160 },
+                    { id: 'hhi', header: 'Concentration (HHI), scenario', value: (c) => c.hhi_scenario, cell: (c) => fmtNum(c.hhi_scenario, 3), num: true },
+                    { id: 'eff', header: 'Effective number of producers', value: (c) => (c.hhi_scenario ? 1 / c.hhi_scenario : null), cell: (c) => (c.hhi_scenario ? (1 / c.hhi_scenario).toFixed(1) : DASH), num: true },
+                    { id: 'hhi_ref', header: 'Concentration (HHI), comparison', value: (c) => c.hhi_ref, cell: (c) => fmtNum(c.hhi_ref, 3), num: true },
+                    { id: 'hhi_obs', header: 'Concentration (HHI), observed exports', value: (c) => c.hhi_obs, cell: (c) => fmtNum(c.hhi_obs, 3), num: true },
                     { id: 'n', header: 'Producers', value: (c) => c.n, num: true },
-                    { id: 'top', header: 'Top node', value: (c) => (c.top_node ? `${nodeLabel(app, c.top_node)} ${fmtPct(c.top_share, 0)}` : null) },
+                    { id: 'top', header: 'Largest producer', value: (c) => (c.top_node ? `${nodeLabel(app, c.top_node)} ${fmtPct(c.top_share, 0)}` : null) },
                   ]}
                 />
               )}
@@ -560,12 +588,12 @@ export default function NetworkView() {
                 ariaLabel="Concentration by stage"
                 tooltip={(c) => (
                   <Tip
-                    value={`HHI ${fmtNum(c.hhi, 3)}`}
+                    value={`Concentration (HHI) ${fmtNum(c.hhi, 3)}`}
                     title={cellLabel(c.tech, c.supply_chain)}
                     lines={[
-                      c.hhi ? `equivalent to ${(1 / c.hhi).toFixed(1)} equal producers` : null,
-                      c.hhi_ref !== null ? `comparison ${fmtNum(c.hhi_ref, 3)}` : null,
-                      c.hhi_obs !== null ? `observed exports ${fmtNum(c.hhi_obs, 3)} (${(1 / (c.hhi_obs as number)).toFixed(1)} equivalent exporters)` : 'no observed basket',
+                      c.hhi ? `effective number of producers: ${(1 / c.hhi).toFixed(1)}` : null,
+                      c.hhi_ref !== null ? `comparison design ${fmtNum(c.hhi_ref, 3)}` : null,
+                      c.hhi_obs !== null ? `today's exports ${fmtNum(c.hhi_obs, 3)} (${(1 / (c.hhi_obs as number)).toFixed(1)} effective exporters)` : 'no trade basket for this sector',
                     ]}
                   />
                 )}
@@ -574,7 +602,7 @@ export default function NetworkView() {
             </ChartCard>
             <ChartCard
               title={stage ? `Producers in ${cellLabel(stage.tech, stage.supply_chain)}` : 'Producers'}
-              sub="Production share by member; members of a multi-country node (the EU) carry a share derived from the node's share and their weight, labelled 'derived'."
+              sub="Each member's share of the coalition's production in this sector. EU members carry a share derived from the EU's share and their weight within it, labelled 'derived'."
               updating={!network.fresh}
               csv={() => ({ name: `network-members-${stage?.tech}-${stage?.supply_chain}`, text: rowsToCsv(members as unknown as Record<string, unknown>[]) })}
             >
@@ -598,7 +626,7 @@ export default function NetworkView() {
 
           <ChartCard
             title="What changed"
-            sub={`Per stage, against ${refName}: producers that enter or leave, the overlap of the producer sets (Jaccard), the change in concentration and the flow turnover. Then the nodes with the largest share gains and losses (in percentage points).`}
+            sub={`For each sector, against ${refName}: producers that enter or leave, how much the producer sets overlap (1 = the same), the change in concentration and the share of flows that moved. Then the members with the largest gains and losses of production share (in percentage points).`}
             updating={!network.fresh}
             csv={() => ({ name: 'network-changes', text: rowsToCsv(changesStage as unknown as Record<string, unknown>[]) })}
           >
@@ -627,7 +655,7 @@ export default function NetworkView() {
 
           <ChartCard
             title="Portfolio caps"
-            sub="Number of stages in which each node is among the five largest producers, against its cap (2 to 10, rising with log GDP). Nodes over their cap are labelled."
+            sub="How many sectors each member is among the five largest producers in, against its cap (2 to 10, larger economies get more). The cap stops a few large members from taking every sector; members over their cap are labelled."
             updating={!network.fresh}
             legend={<Legend items={[{ label: 'Top-five stages', color: COMPARE_COLOR.scenario }, { label: 'Cap', kind: 'tick', color: '#d1d5db' }]} />}
             table={() => (

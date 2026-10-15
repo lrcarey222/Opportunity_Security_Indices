@@ -64,8 +64,14 @@ export function methodsValues(bi: BaselineInputs, manifest: Pick<Manifest, 'flag
   const lam = bi.lambda;
   const geo = bi.fs_weights?.geo_alignment;
   const geoIn = manifest.flags?.geo_alignment_in_fs === true;
+  // the CM-FDI ownership component of Friendshore (scaled by hawkishness like alignment)
+  const cpe = bi.fs_weights?.chinese_parent_exposure;
+  const cpeIn = typeof cpe === 'number' && Number.isFinite(cpe) && cpe > 0 && manifest.flags?.fs_cmfdi !== false;
   return {
     geo_weight: geo === undefined || geo === null ? 'not in this build' : geoIn ? fmtw(geo) : `${fmtw(geo)} (no effect: this build's Friendshore has no alignment component)`,
+    cpe_weight: cpeIn ? fmtw(cpe) : 'not in this build',
+    cpe_lo: cpeIn ? fmtw((cpe as number) * 0.25) : DASH,
+    cpe_hi: cpeIn ? fmtw((cpe as number) * 4) : DASH,
     lambda0: fmtw(lam),
     lambda_lo: fmtw(lam * 0.25),
     lambda_hi: fmtw(lam * 4),

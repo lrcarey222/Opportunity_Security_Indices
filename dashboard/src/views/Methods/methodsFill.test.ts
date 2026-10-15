@@ -15,7 +15,7 @@ const md = readFileSync(fileURLToPath(new URL('../../content/methods.md', import
 const bi = {
   policy_weights: { 'CAT Policy Index': 2, 'IEA PAMS Policy Index': 3 },
   lambda: 0.94,
-  fs_weights: { geo_alignment: 1 },
+  fs_weights: { geo_alignment: 1, chinese_parent_exposure: 1 },
   fs_penalty: 0.1,
   po_penalty: 0.2,
   tau: 0.5,
@@ -70,12 +70,19 @@ describe('Methods placeholders', () => {
     const v = methodsValues(bi, { flags: {} }, facts);
     expect(v.lambda0).toBe('0.94');
     expect(v.screen_default).toBe('on');
+    // the ownership component's weight and its hawkishness range (x 0.25 / x 4)
+    expect([v.cpe_weight, v.cpe_lo, v.cpe_hi]).toEqual(['1', '0.25', '4']);
+    expect(methodsValues({ ...bi, fs_weights: { geo_alignment: 1 } } as BaselineInputs, { flags: {} }).cpe_weight).toBe('not in this build');
+    expect(methodsValues(bi, { flags: { fs_cmfdi: false } }).cpe_weight).toBe('not in this build');
     expect(methodsValues({ ...bi, require_resource_base: false } as BaselineInputs, { flags: {} }).screen_default).toBe('off (this build)');
   });
 
   it('the method facts of the final build are in the text', () => {
     for (const s of ['IEA PAMS is required', 'IEA PAMS + CAT', 'IEA PAMS only', 'endowment screen', 'Mineral Commodity Summaries 2026',
-      'copper and aluminium', 'HS 851762', 'Hong Kong', '11 headline technologies', 'adds Brazil']) {
+      'copper and aluminium', 'HS 851762', 'Hong Kong', '11 headline technologies', 'adds Brazil',
+      // the final run (12 October 2026) and the CM-FDI parts of Friendshore (spec_country.md C4.4)
+      '## In plain words', '18 stages with a trade basket', '259 six-digit basket codes', 'EIA International Energy Statistics',
+      'Chinese-parent ownership weight inside Friendshore', '{{cpe_weight}}', 'Semiconductors (gallium, germanium and indium']) {
       expect(md).toContain(s);
     }
   });

@@ -1,6 +1,8 @@
 // The dial panel (spec_react.md 8.5): four NEIS sliders with readouts, presets, reset to the paper
 // baseline, and the advanced settings. Every change writes the URL (drags replace the history entry;
 // discrete actions push); releasing a slider flushes the debounced run.
+// Copy (spec_country.md C3.5): every control names its index in full (no bare acronyms); each dial
+// has an info button with the glossary's plain-language definition.
 
 import { useId, useMemo, type CSSProperties, type KeyboardEvent } from 'react';
 import { dialMultiplier, dialReadout, makeParams, presets } from '../engine/params.ts';
@@ -10,12 +12,13 @@ import { useAdvancedChanged, useApp, useRun, useScenario } from '../state/Engine
 import { toSpec } from '../state/url.ts';
 import { fmtMult, TIMES } from '../lib/format.ts';
 import { ChangedDot, Disclosure, Segmented, Switch, Checkbox } from './ui.tsx';
+import { InfoTip } from './InfoTip.tsx';
 
 export const DIAL_SPECS: { key: DialName; label: string; help: string }[] = [
-  { key: 'hawkishness', label: 'Hawkishness', help: 'Security first: weight countries’ supply need, trusted suppliers and diversification.' },
-  { key: 'bullishness', label: 'Bullishness', help: 'Opportunity first: weight economic opportunity, export markets and economic size.' },
-  { key: 'populism', label: 'Populism', help: 'Policy signals and onshoring: weight industrial policy, midstream manufacturing and self-supply.' },
-  { key: 'greenness', label: 'Greenness', help: 'Climate first: reward clean technologies and climate ambition; at 90+ drop coal, oil and gas.' },
+  { key: 'hawkishness', label: 'Hawkishness', help: 'Security first: weight on exposure, trusted suppliers and spreading production.' },
+  { key: 'bullishness', label: 'Bullishness', help: 'Opportunity first: weight on opportunity, export markets and market size.' },
+  { key: 'populism', label: 'Populism', help: 'Policy signals and home manufacturing.' },
+  { key: 'greenness', label: 'Greenness', help: 'Climate first: low-emission technologies; at 90 and above coal, oil and gas drop out.' },
 ];
 
 interface ReadoutRow {
@@ -69,9 +72,12 @@ export function DialSlider({
   return (
     <div className="py-3">
       <div className="flex items-baseline justify-between gap-2">
-        <label htmlFor={id} className="label mb-0">
-          {spec.label.toUpperCase()}
-        </label>
+        <span className="inline-flex items-center gap-1">
+          <label htmlFor={id} className="label mb-0">
+            {spec.label.toUpperCase()}
+          </label>
+          <InfoTip id={spec.key} term={spec.label} />
+        </span>
         <span className={`text-sm tabular ${moved ? 'text-paper' : 'text-paper-mute'}`} aria-hidden="true">
           {valueText}
         </span>
@@ -181,7 +187,7 @@ function CategoryWeights({
   const positive = (next: Record<string, number>) => cats.some((c) => next[c] > 0);
   return (
     <Disclosure summary={title} badge={changed ? <ChangedDot /> : undefined}>
-      <p className="mb-1 text-xs text-paper-mute">Weights are relative; the pillar is recomputed exactly from the category scores.</p>
+      <p className="mb-1 text-xs text-paper-mute">Weights are relative: what counts is each category&rsquo;s share of the total. The score is recomputed exactly from the category scores.</p>
       {changed && !app.manifest.flags?.partner_pillar_consistent && (
         <p className="mb-1 text-xs text-paper">Partnership and network layers keep the paper&rsquo;s pillars.</p>
       )}
@@ -232,19 +238,19 @@ export function AdvancedPanel() {
         <span className="eyebrow flex-1">Advanced</span>
         {ch.any && <ChangedDot />}
       </summary>
-      <CategoryWeights which="es_weights" title="Energy Security category weights" cats={app.urlCtx.esCategories} />
-      <CategoryWeights which="eo_weights" title="Economic Opportunity category weights" cats={app.urlCtx.eoCategories} />
-      <Disclosure summary="Rankability" badge={ch.sample ? <ChangedDot /> : undefined}>
+      <CategoryWeights which="es_weights" title="Energy Security: category weights" cats={app.urlCtx.esCategories} />
+      <CategoryWeights which="eo_weights" title="Economic Opportunity: category weights" cats={app.urlCtx.eoCategories} />
+      <Disclosure summary="Which scores are ranked" badge={ch.sample ? <ChangedDot /> : undefined}>
         <Switch
-          label="Apply the rule"
-          hint="A cell is rankable when the economy is sovereign and at most tau of its weight is imputed."
+          label="Apply the rankable rule"
+          hint="A score is ranked only when the economy is sovereign and at most this share of the score's weight rests on filled-in data."
           checked={a.tau !== null}
           onChange={(on) => set((x) => ({ ...x, tau: on ? (d.tau ?? DEFAULT_TAU) : null }))}
         />
         <div className="mt-2">
           <div className="flex justify-between text-xs">
             <label htmlFor="adv-tau" className="text-paper-dim">
-              Max imputed weight share (tau)
+              Largest filled-in share (&tau;)
             </label>
             <span className="tabular text-paper-mute">{a.tau === null ? 'rule off' : a.tau}</span>
           </div>
@@ -266,7 +272,7 @@ export function AdvancedPanel() {
             onKeyUp={flush}
           />
         </div>
-        {d.tau === null && <p className="mt-1 text-xs text-paper-mute">The paper&rsquo;s stored pillars predate the rule, so it is off at the baseline.</p>}
+        {d.tau === null && <p className="mt-1 text-xs text-paper-mute">The paper&rsquo;s stored scores predate the rule, so it is off at the baseline.</p>}
       </Disclosure>
       <Disclosure summary="Fossil technologies" badge={ch.fossil ? <ChangedDot /> : undefined}>
         <Segmented
@@ -292,9 +298,9 @@ export function AdvancedPanel() {
           The Strategic Index values do not change; only the allied selection does. The paper applies the screen{d.require_resource_base ? '' : ' (off in this build)'}.
         </p>
       </Disclosure>
-      <Disclosure summary="Partnership viewpoint" badge={ch.psi ? <ChangedDot /> : undefined}>
+      <Disclosure summary="Partnership Strength viewpoint" badge={ch.psi ? <ChangedDot /> : undefined}>
         <Segmented
-          label="Partner-level PSI averaged over"
+          label="Partner-level Partnership Strength averaged over"
           value={a.psi_view}
           options={[
             { value: 'coalition', label: 'Coalition reporters' },
@@ -302,19 +308,21 @@ export function AdvancedPanel() {
           ]}
           onChange={(v) => set((x) => ({ ...x, psi_view: v }))}
         />
-        <p className="mt-1.5 text-xs text-paper-mute">The paper&rsquo;s view is {d.psi_view === 'world' ? 'all reporters (world)' : 'the coalition reporters'}.</p>
+        <p className="mt-1.5 text-xs text-paper-mute">
+          A partner&rsquo;s headline Partnership Strength averages how strong a partner it is for each reporting economy. The paper averages over {d.psi_view === 'world' ? 'all reporters (world)' : 'the coalition reporters'}.
+        </p>
       </Disclosure>
       <Disclosure summary="Network design" badge={ch.net ? <ChangedDot /> : undefined}>
         <Switch
-          label="Override lambda"
-          hint={`From the hawkishness dial: ${lambdaDial.toFixed(2)}`}
+          label="Set the diversification weight (λ) by hand"
+          hint={`How strongly the design penalises concentrating a sector in few members. From the hawkishness dial: ${lambdaDial.toFixed(2)}`}
           checked={a.network.lambda !== null}
           onChange={(on) => set((x) => ({ ...x, network: { ...x.network, lambda: on ? Number(lambdaDial.toFixed(1)) : null } }))}
         />
         <div className="mt-2">
           <div className="flex justify-between text-xs">
             <label htmlFor="adv-lambda" className="text-paper-dim">
-              Diversification lambda
+              Diversification weight (&lambda;)
             </label>
             <span className="tabular text-paper-mute">{a.network.lambda ?? 'from dial'}</span>
           </div>
@@ -339,7 +347,7 @@ export function AdvancedPanel() {
         <div className="mt-2">
           <div className="flex justify-between text-xs">
             <label htmlFor="adv-maxshare" className="text-paper-dim">
-              Max producer share
+              Largest share for one producer
             </label>
             <span className="tabular text-paper-mute">{a.network.max_share}</span>
           </div>
@@ -362,7 +370,7 @@ export function AdvancedPanel() {
         </div>
         <div className="mt-3 flex items-center justify-between gap-2 text-xs">
           <span className="text-paper-dim" id="adv-minprod-label">
-            Min producers per stage
+            Fewest producers per sector
           </span>
           <div className="flex items-center gap-1" role="group" aria-labelledby="adv-minprod-label">
             <button
@@ -389,7 +397,7 @@ export function AdvancedPanel() {
           </div>
         </div>
         <Checkbox
-          label="Portfolio caps (top-5 stages per member)"
+          label="Portfolio caps: limit how many sectors each member leads"
           checked={a.network.portfolio_enable}
           onChange={(v) => set((x) => ({ ...x, network: { ...x.network, portfolio_enable: v } }))}
         />

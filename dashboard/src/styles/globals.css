@@ -55,6 +55,19 @@
   --color-div-pos-3: #3fa5cd;
   --color-div-pos-4: #62c5ee;
 
+  /* The three-colour magnitude scale (spec_country C1.1): NEIS orange (low) ->
+     white (the median of the values shown) -> NEIS blue (high); OKLab arms,
+     validated on #1f2937. Mirrors TRI in src/theme/palette.ts. */
+  --color-tri-1: #f58229;
+  --color-tri-2: #fba36b;
+  --color-tri-3: #ffc39e;
+  --color-tri-4: #ffe1cf;
+  --color-tri-5: #ffffff;
+  --color-tri-6: #cbe1ec;
+  --color-tri-7: #98c4d8;
+  --color-tri-8: #62a6c4;
+  --color-tri-9: #1889b0;
+
   /* Zeroing the radius scale squares off every `rounded-*` utility at once.
      `rounded-full` is not a theme token, so status dots stay circular. */
   --radius-xs: 0px;
@@ -639,6 +652,10 @@ p .link {
 .data-table tbody tr[aria-selected="true"] td {
   background: var(--color-ink-700);
 }
+/* muted text is 4.05:1 on the selected row's ink-700 (axe color-contrast needs 4.5:1): use the dim tone */
+.data-table tbody tr[aria-selected="true"] .text-paper-mute {
+  color: var(--color-paper-dim);
+}
 .data-table tbody tr[aria-selected="true"] td:first-child {
   box-shadow: inset 2px 0 0 var(--color-signal);
 }
@@ -750,6 +767,45 @@ p .link {
 
 .plot-host svg {
   overflow: visible;
+}
+
+/* InfoTip (spec_country C3.3): a 14 px "i" in a 24 px hit area; the popover
+   is an ink-850 panel with the strong hairline and the half NEIS rule. */
+.infotip-btn {
+  /* a 20 x 20 px button around the 14 px icon (spec C3.3); the hit area is 24 px (the ::after), so the
+     icon sits close to the words and the punctuation around it */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: -2px -1px;
+  color: var(--color-paper-mute);
+  vertical-align: middle;
+  cursor: pointer;
+}
+.infotip-btn::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+}
+.infotip-btn:hover,
+.infotip-btn[aria-expanded="true"] {
+  color: var(--color-paper);
+}
+.infotip-pop {
+  z-index: 60;
+  display: block;
+  max-width: 20rem;
+  padding: 0.75rem 0.875rem;
+  background: var(--color-ink-850);
+  border: 1px solid var(--hairline-strong);
+  text-align: left;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: normal;
 }
 
 .skip-link {

@@ -13,7 +13,7 @@ import { GROUP_COLOR, SIGNAL } from '../../../theme/palette.ts';
 import type { ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
 import { sectorCsv } from '../../derive/csv.ts';
 import { fmtValue, listText } from '../../format.ts';
-import { markGroup, measureConc, SPLIT_COLUMNS, shareSplitRow, SplitTable, splitRowsCsv } from '../common.tsx';
+import { HowToRead, markGroup, measureConc, SPLIT_COLUMNS, SPLIT_READING, shareSplitRow, SplitTable, splitRowsCsv } from '../common.tsx';
 import { Dumbbell, GroupLegend, SectorChartCard, ShareSplitChart, type DumbbellRow, type ShareSplitRow } from '../kit.tsx';
 import { useSectorUrl } from '../state.tsx';
 import { baseYear } from '../TechChainView.tsx';
@@ -75,6 +75,7 @@ function MineralReserves() {
     <SectorChartCard
       title={`Reserves of the minerals ${cell.tech} uses`}
       vars={rows.map((r) => ({ var: v.id, item: r.id, year }))}
+      subExtra={<HowToRead>{SPLIT_READING} Reserves are deposits known and economic to mine today, so they show where future supply could come from, not where it comes from now. Click a row for the mineral’s page.</HowToRead>}
       table={() => <SplitTable rows={rows} caption="Reserves by mineral" />}
       csv={() => ({ name: `${cell.slug}-mineral-reserves`, text: splitRowsCsv(rows) })}
       legend={<GroupLegend highlight={highlight?.name ?? null} />}
@@ -128,6 +129,7 @@ function QualityScatter({ q, area }: { q: VarInfo; area: VarInfo }) {
     <SectorChartCard
       title={`${q.short} against area-integrated potential`}
       vars={[{ var: q.id, item: iq?.slug ?? null }, { var: area.id, item: ia?.slug ?? null }]}
+      subExtra={<HowToRead>Each dot is one economy. Higher means a better resource on average (more power from each solar panel, or stronger wind over each square metre); further right means more potential in total, the average times land area, so it mostly reflects how large the country is. A dot high and to the left is a small country with an excellent resource. Click a dot to highlight the economy.</HowToRead>}
       table={() => <TableView rows={data} caption="Quality and potential" search cols={[{ id: 'c', header: 'Economy', value: (d) => d.name }, { id: 'y', header: `${q.short} (${uq.short})`, value: (d) => d.y, num: true }, { id: 'x', header: `${area.short} (${ua.short})`, value: (d) => d.x, num: true }]} />}
       csv={() => ({ name: `${cell.slug}-quality-potential`, text: sectorCsv(model, data.flatMap((d) => { const g = model.geoByCode.get(d.code) ?? null; return [{ geo: g, v: q, item: iq, year: null, value: d.y / q.display_scale, status: 'obs' }, { geo: g, v: area, item: ia, year: null, value: d.x / area.display_scale, status: 'obs' }]; })) })}
       legend={<GroupLegend groups={['china', 'core', 'partner', 'rest']} highlight={highlight?.name ?? null} />}
@@ -170,14 +172,15 @@ function GeoLcoe() {
   if (!rows.length) return null;
   return (
     <SectorChartCard
-      title="Enhanced geothermal LCOE: 500 MW against 5 GW"
+      title="Enhanced geothermal: cost of electricity at 500 MW against 5 GW"
       vars={[{ var: v5.id, item: i5.slug }, { var: v50.id, item: i50.slug }]}
-      table={() => <TableView rows={rows} caption="Geothermal LCOE" cols={[{ id: 'c', header: 'Economy', value: (r) => r.label }, { id: 'a', header: '500 MW', value: (r) => r.aLabel }, { id: 'b', header: '5 GW', value: (r) => r.bLabel }]} />}
+      subExtra={<HowToRead>Each row is one economy, cheapest first; the two dots are the estimated levelised cost of electricity (the average cost per unit of power over a plant’s life) of the first 500 MW of enhanced geothermal and of a 5 GW build-out. Further left is cheaper; a line running to the right means costs rise as the best sites are used up.</HowToRead>}
+      table={() => <TableView rows={rows} caption="Geothermal cost of electricity" cols={[{ id: 'c', header: 'Economy', value: (r) => r.label }, { id: 'a', header: '500 MW', value: (r) => r.aLabel }, { id: 'b', header: '5 GW', value: (r) => r.bLabel }]} />}
       csv={() => ({ name: 'geothermal-lcoe', text: sectorCsv(model, rows.flatMap((r) => { const g = model.geoByCode.get(r.id) ?? null; return [{ geo: g, v: v5, item: i5, year: null, value: Number.isFinite(r.a) ? r.a : null, status: Number.isFinite(r.a) ? 'obs' : null }, { geo: g, v: v50, item: i50, year: null, value: Number.isFinite(r.b) ? r.b : null, status: Number.isFinite(r.b) ? 'obs' : null }]; })) })}
       notes={<p>The unit reads "per kWh, currency as published (unverified)": unit to confirm. "No 5 GW tranche" is shown as text, not as a value.</p>}
-      summary={`${rows[0].label} has the lowest LCOE at 500 MW.`}
+      summary={`${rows[0].label} has the lowest cost of electricity at 500 MW.`}
     >
-      <Dumbbell rows={rows} xLabel={`LCOE (${u.short || u.long})`} aName="500 MW" bName="5 GW" ariaLabel="Geothermal LCOE at 500 MW and 5 GW" selected={highlight?.code ?? null} />
+      <Dumbbell rows={rows} xLabel={`Levelised cost of electricity (${u.short || u.long})`} aName="500 MW" bName="5 GW" ariaLabel="Geothermal cost of electricity at 500 MW and 5 GW" selected={highlight?.code ?? null} />
     </SectorChartCard>
   );
 }

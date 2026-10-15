@@ -2,7 +2,8 @@
 // Show-mode values, colour domains, regions, network comparisons, chart helpers, formats and CSV.
 
 import { describe, expect, it } from 'vitest';
-import { cellRows, colorDomain, withShown, type MetricRow } from './Overview/derive.ts';
+import { cellRows, scaleValues, sideWords, triOptions, withShown, type MetricRow } from './Overview/derive.ts';
+import { triScale } from '../charts/scale.ts';
 import { fitDomain, median, regionOf, REGIONS } from './Space/derive.ts';
 import { compareSpecs, designGap, hhi, type SpecRow } from './Network/derive.ts';
 import { declutter, fitLabel, labelMargin, symDomain } from '../charts/theme.ts';
@@ -31,14 +32,28 @@ describe('Overview: Show modes and colour domains', () => {
     expect(ch.map((r) => r.shown_ok)).toEqual([true, false, false]);
   });
 
-  it('bounded indices use [0, 1]; ranks reverse; changes are symmetric', () => {
-    const rows = withShown([row({ value: 3, value_base: 5, delta: 2 }), row({ value: 7, value_base: 6, delta: -1 })], 'scenario');
-    expect(colorDomain(rows, 'es', 'scenario')).toEqual({ kind: 'seq', lo: 0, hi: 1, reverse: false });
-    expect(colorDomain(rows, 'si_rank', 'scenario')).toEqual({ kind: 'seq', lo: 1, hi: 7, reverse: true });
-    const ch = withShown([row({ delta: -0.3 }), row({ delta: 0.1 })], 'change');
-    expect(colorDomain(ch, 'es', 'change')).toEqual({ kind: 'div', lo: -0.3, hi: 0.3, reverse: false });
-    // nothing moved: a unit domain, never a zero-width one
-    expect(colorDomain(withShown([row({ delta: 0 })], 'change'), 'es', 'change').hi).toBe(1);
+  it('three-colour options: median centre, ranks reversed (rank 1 blue), changes centred on zero', () => {
+    expect(triOptions('es', 'scenario')).toEqual({ center: 'median', reverse: false });
+    expect(triOptions('si_rank', 'baseline')).toEqual({ center: 'median', reverse: true });
+    expect(triOptions('si_rank', 'change')).toEqual({ center: 'zero', reverse: false });
+    expect(triOptions('psi', 'change')).toEqual({ center: 'zero', reverse: false });
+    // rank 1 is the blue end, the largest rank the orange end
+    const s = triScale([1, 2, 3, 4, 5], triOptions('si_rank', 'scenario'));
+    expect(s.pos(1)).toBe(1);
+    expect(s.pos(5)).toBe(0);
+    expect(s.pos(3)).toBe(0.5);
+  });
+
+  it('scale values follow the rankable switch; side words name the median', () => {
+    const rows = withShown([row({}), row({ iso3c: 'BBB', ok: false, value: 0.9 }), row({ iso3c: 'CCC', value: null })], 'scenario');
+    expect(scaleValues(rows, true)).toEqual([0.5]);
+    expect(scaleValues(rows, false)).toEqual([0.5, 0.9]);
+    expect(sideWords('above', 'es', 'scenario', '0.42', 'economies shown')).toBe('above the median of the economies shown (0.42)');
+    expect(sideWords('median', 'eo', 'baseline', '0.42', 'economies shown')).toBe('at the median of the economies shown (0.42)');
+    expect(sideWords('below', 'si_rank', 'scenario', '7', 'economies shown')).toMatch(/^nearer the top of its own list/);
+    expect(sideWords('above', 'si_rank', 'change', '0', 'economies shown')).toBe('moved up its own list');
+    expect(sideWords('below', 'es', 'change', '0', 'economies shown')).toBe('fell against the paper');
+    expect(sideWords(null, 'es', 'scenario', '0', 'x')).toBeNull();
   });
 
   it('selects one technology and stage (PSI has one row per partner)', () => {

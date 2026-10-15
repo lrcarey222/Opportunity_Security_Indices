@@ -218,6 +218,13 @@ export function thinNotice(model: SectorModel, item: ItemInfo): string {
   const label = model.cellLabel(item);
   if (item.techSlug === 'geothermal' && item.stageSlug !== 'downstream') return `Little country-level data exists for ${label}. The resource and cost data sit in Geothermal — Downstream.`;
   if (item.techSlug === 'electric-grid' && item.stageSlug === 'downstream') return `Little country-level data exists for ${label}. The equipment trade sits in Electric Grid — Midstream.`;
-  if (item.stageSlug === 'upstream') return `Little country-level data exists for ${label}. The materials behind ${item.tech} are measured per mineral: see the minerals below.`;
+  if (item.stageSlug === 'upstream') {
+    // the Upstream baskets of 2026-10-11 (EV, Solar, Wind, Nuclear, Semiconductors) give these cells trade
+    const minerals = model.itemsOfCell(item.idx, 'mineral').length > 0;
+    const tech = (item.tech ?? '').toLowerCase();
+    if (item.has_trade) return `Beyond trade in its basket of goods (see Trade), little country-level data exists for ${label}.${minerals ? ` The materials behind ${tech} are also measured mineral by mineral: see the minerals below.` : ''}`;
+    return `Little country-level data exists for ${label}.${minerals ? ` The materials behind ${tech} are measured mineral by mineral: see the minerals below.` : ''}`;
+  }
+  if (item.has_trade) return `Beyond trade in its basket of goods (see Trade), little country-level data exists for ${label}.`;
   return `Little country-level data exists for ${label}.`;
 }

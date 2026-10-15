@@ -48,7 +48,7 @@ dash_fixture_scenarios <- function(bundle) {
   }
   list(
     sc("S00", "Paper baseline", d(), exercises = "the baseline; also checked against the shipped baseline tables"),
-    sc("S01", "Hawkishness 0", d(H = 0), exercises = "SI need weight, PSI / edge FS shares, geo weight, lambda, demand need, resilience (down)"),
+    sc("S01", "Hawkishness 0", d(H = 0), exercises = "SI need weight, PSI / edge FS shares, geo and Chinese-parent ownership weights, lambda, demand need, resilience (down)"),
     sc("S02", "Hawkishness 100", d(H = 100), exercises = "the same, up (lambda x4)"),
     sc("S03", "Bullishness 0", d(B = 0), exercises = "SI EO weight, PSI / edge PO shares, node EO, demand size (down)"),
     sc("S04", "Bullishness 100", d(B = 100), exercises = "the same, up"),
@@ -82,7 +82,7 @@ dash_fixture_tie_bundle <- function(bundle, digits = 1) {
   }
   for (p in c("es", "eo")) bundle$pillars[[p]]$score <- rnd(bundle$pillars[[p]]$score)
   bundle$policy$values <- rnd(bundle$policy$values)
-  for (k in c("imp_trade", "econ_opp_raw", "es_need", "eo_partner", "outbound", "geo")) bundle$partner$fs[[k]] <- rnd(bundle$partner$fs[[k]])
+  for (k in c("imp_trade", "econ_opp_raw", "es_need", "eo_partner", "outbound", "outbound_cmfdi", "cpe", "geo")) bundle$partner$fs[[k]] <- rnd(bundle$partner$fs[[k]])
   for (k in c("trade", "econ_opp_index", "partner_es_need")) bundle$partner$po[[k]] <- rnd(bundle$partner$po[[k]])
   bundle$partner$dp$development <- rnd(bundle$partner$dp$development)
   nr <- bundle$network$node_raw_member

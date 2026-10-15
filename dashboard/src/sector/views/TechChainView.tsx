@@ -15,9 +15,9 @@ import { useModel } from '../data/SectorDataProvider.tsx';
 import type { ItemInfo, SectorModel, VarInfo } from '../data/model.ts';
 import type { FactsIndex } from '../data/facts.ts';
 import { countryFamilies, coverageChips, familyMeasure, primaryMeasure } from '../derive/cells.ts';
-import { growthWords } from '../derive/concentration.ts';
+import { growthKindWords, growthWords } from '../derive/concentration.ts';
 import { lc, fmtShare, listText } from '../format.ts';
-import { fmtFact, markGroup, measureConc, SPLIT_COLUMNS, shareSplitRow, useHighlight } from './common.tsx';
+import { fmtFact, HowToRead, markGroup, measureConc, SPLIT_COLUMNS, SPLIT_READING, shareSplitRow, useHighlight } from './common.tsx';
 import { useFacts } from './data.ts';
 import { CoverageChips, Dumbbell, GroupLegend, SectorChartCard, ShareSplitChart, type CoverageChip, type DumbbellRow, type ShareSplitRow, type VarRef } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
@@ -131,7 +131,7 @@ function StageCard({ tech, stage, facts }: { tech: TechSlug; stage: StageSlug; f
           <div className="text-xl font-medium text-paper">{fmtFact(model, v, item, m.conc.W)}</div>
           <div className="text-xs text-paper-mute">
             {year} · {v.source.short}
-            {s && Number.isFinite(s.growth) ? ` · ${growthWords({ value: s.growth, isNew: false })} (${(s.growth_kind ?? '').replace('pct_', '').replace('cagr_', 'CAGR ').replace('_', '-')})` : ''}
+            {s && Number.isFinite(s.growth) ? ` · ${growthWords({ value: s.growth, isNew: false })} (${growthKindWords(s.growth_kind)})` : ''}
           </div>
           {top3.length > 0 && (
             <ol className="mt-2 space-y-0.5 text-sm">
@@ -194,9 +194,10 @@ function MineralsUsed({ tech }: { tech: TechSlug }) {
   if (!rows.length) return null;
   return (
     <SectorChartCard
+      headingLevel={2}
       title={`Minerals ${label} uses`}
       vars={[{ var: 'consumption.mineral_demand' }]}
-      subExtra="IEA clean-energy demand, kt: the observed year (filled) against 2040 STEPS (hollow, projection). Rows link to the mineral pages."
+      subExtra={<HowToRead>Each row is one mineral; the filled dot is how many kilotonnes {label} used in the latest observed year, the hollow dot the IEA projection for 2040 under today’s stated policies (the Stated Policies Scenario), not a forecast. The further right, the more it uses. Click a row for that mineral’s page.</HowToRead>}
       table={() => (
         <TableView
           rows={rows}
@@ -204,7 +205,7 @@ function MineralsUsed({ tech }: { tech: TechSlug }) {
           cols={[
             { id: 'm', header: 'Mineral', value: (r) => r.label },
             { id: 'b', header: 'Demand (observed), kt', value: (r) => r.b, num: true },
-            { id: 'a', header: 'Demand 2040 STEPS (projection), kt', value: (r) => (Number.isFinite(r.a) ? r.a : null), num: true },
+            { id: 'a', header: 'Demand 2040, stated-policies projection, kt', value: (r) => (Number.isFinite(r.a) ? r.a : null), num: true },
             { id: 's', header: 'Share of clean-energy demand', value: (r) => r.share, cell: (r) => fmtShare(r.share), num: true },
           ]}
         />
@@ -212,7 +213,7 @@ function MineralsUsed({ tech }: { tech: TechSlug }) {
       csv={() => ({ name: `${tech}-minerals-demand`, text: rowsToCsv(rows.map((r) => ({ mineral: r.id, demand_observed_kt: r.b, demand_2040_steps_kt: Number.isFinite(r.a) ? r.a : null, share_of_clean_demand: r.share, source: 'IEA Critical Minerals Dataset' }))) })}
       summary={`${label} uses ${listText(rows.slice(0, 4).map((r) => lc(r.label)))}; ${lc(rows[0].label)} has the largest demand.`}
     >
-      <Dumbbell rows={rows} xLabel="Demand, kt" aName="2040 STEPS (projection)" bName="Observed" ariaLabel={`Mineral demand of ${label}`} onSelect={(r) => r.href && navigate(r.href)} />
+      <Dumbbell rows={rows} xLabel="Demand, kt" aName="2040 stated-policies projection" bName="Observed" ariaLabel={`Mineral demand of ${label}`} onSelect={(r) => r.href && navigate(r.href)} />
     </SectorChartCard>
   );
 }
@@ -238,8 +239,10 @@ export default function TechChainView() {
     <div className="space-y-8">
       <PageHead eyebrow="SECTOR INSIGHTS · TECHNOLOGY" title={`${TECH_LABELS[tech]}: the supply chain`} lede={blurb} />
       <SectorChartCard
+        headingLevel={2}
         title="Where concentration sits along the chain"
         vars={ladder.map((r) => r.ref)}
+        subExtra={<HowToRead>{SPLIT_READING} Rows run from raw materials (upstream) to use (downstream), so the chart shows at which step one economy holds the most. Click a row for that sector.</HowToRead>}
         table={() => (
           <TableView
             rows={ladder}
@@ -249,7 +252,7 @@ export default function TechChainView() {
               { id: 'm', header: 'Measure', value: (r) => r.row.label },
               { id: 'top1', header: 'Top-1', value: (r) => r.row.cols.top1 },
               { id: 'top3', header: 'Top-3', value: (r) => r.row.cols.top3, num: true },
-              { id: 'hhi', header: 'HHI', value: (r) => r.row.cols.hhi, num: true },
+              { id: 'hhi', header: 'Concentration (HHI)', value: (r) => r.row.cols.hhi, num: true },
               { id: 'china', header: 'China', value: (r) => r.china, cell: (r) => fmtShare(r.china), num: true },
               { id: 'y', header: 'Year', value: (r) => r.row.cols.year },
               { id: 's', header: 'Source', value: (r) => r.row.cols.source },
@@ -278,7 +281,10 @@ export default function TechChainView() {
           <p className="text-sm text-paper-mute">No country-level measures with a world total for this technology.</p>
         )}
       </SectorChartCard>
-      <section aria-label="Stages">
+      <section aria-labelledby="stages-h">
+        <h2 id="stages-h" className="sr-only">
+          The stages of the chain
+        </h2>
         <div className="grid gap-4 lg:grid-cols-3">
           {stages.map((s) => (
             <StageCard key={s} tech={tech} stage={s} facts={facts} />

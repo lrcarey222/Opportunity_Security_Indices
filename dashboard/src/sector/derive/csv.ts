@@ -1,5 +1,5 @@
-// CSV of every Sector card (spec_sector.md 4.0): the same 17 columns everywhere, UTF-8 with BOM (added
-// at download), NA empty. Values are written after the dictionary's display_scale, in the unit named in
+// CSV of every Sector card (spec_sector.md 4.0): the same 18 columns everywhere (the 17 of 4.0 plus
+// `note`, the fact's facts.notes in words, 2026-10-12), UTF-8 with BOM (added at download), NA empty. Values are written after the dictionary's display_scale, in the unit named in
 // the `unit` column. Pure.
 
 import { rowsToCsv } from '../../lib/csv.ts';
@@ -23,6 +23,7 @@ export const SECTOR_CSV_COLUMNS = [
   'rank',
   'source',
   'licence',
+  'note',
 ] as const;
 
 export type SectorCsvRow = Record<(typeof SECTOR_CSV_COLUMNS)[number], string | number | boolean | null>;
@@ -40,6 +41,8 @@ export interface CsvInput {
   unit?: UnitInfo;
   /** an economy label for non-geo rows ("Other exporters", "World") */
   economy?: string;
+  /** the fact's notes in words (derive/notes.ts noteLine), e.g. "Production not reported separately; assumed 0" */
+  note?: string | null;
 }
 
 const num = (x: number | null | undefined): number | null => (typeof x === 'number' && Number.isFinite(x) ? x : null);
@@ -65,6 +68,7 @@ export function csvRow(model: SectorModel, r: CsvInput): SectorCsvRow {
     rank: num(r.rank),
     source: r.v.source.short + (r.v.source.edition ? ` ${r.v.source.edition}` : ''),
     licence: r.v.licence,
+    note: r.note ? r.note : null,
   };
 }
 

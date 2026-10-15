@@ -1,7 +1,7 @@
 {
   "schema": "osi-sector",
   "schema_version": 1,
-  "bundle_id": "21b224b0c4cc88b60078dbe6f2901bca",
+  "bundle_id": "ffbae12bbc2aa945e44b74b4583389d6",
   "created": "2026-10-10T00:00:00Z",
   "git_commit": null,
   "generator": "scripts/87_export_sector_data.R",
@@ -20,34 +20,34 @@
   "chunks": [
     {
       "name": "sector-meta",
-      "file": "sector-meta.f0ff75e2.osb",
-      "bytes": 113088,
-      "bytes_gz": 30873,
-      "md5": "f0ff75e2d0ca8206c2a02d032e72d3d1",
+      "file": "sector-meta.9e5aca15.osb",
+      "bytes": 122128,
+      "bytes_gz": 33713,
+      "md5": "9e5aca1589019cb1f20c435279cf2bd5",
       "tech": null
     },
     {
       "name": "sector-facts",
-      "file": "sector-facts.cd4669e2.osb",
-      "bytes": 26088,
-      "bytes_gz": 4810,
-      "md5": "cd4669e283fca620feb7efbaaaa4e2c3",
+      "file": "sector-facts.46cb6b6a.osb",
+      "bytes": 26704,
+      "bytes_gz": 4907,
+      "md5": "46cb6b6a80c4e29bef0bbbcdebf823f6",
       "tech": null
     },
     {
       "name": "sector-trade-batteries",
-      "file": "sector-trade-batteries.409e5bec.osb",
-      "bytes": 7800,
-      "bytes_gz": 2200,
-      "md5": "409e5bec40b529786890c7b2b0098411",
+      "file": "sector-trade-batteries.e5659ea4.osb",
+      "bytes": 18760,
+      "bytes_gz": 5238,
+      "md5": "e5659ea4f9df06e6cf898f0a4f44aa27",
       "tech": "batteries"
     },
     {
       "name": "sector-trade-oil",
-      "file": "sector-trade-oil.eeee273c.osb",
-      "bytes": 3776,
-      "bytes_gz": 1226,
-      "md5": "eeee273c722b61d68be9457e2f6e8818",
+      "file": "sector-trade-oil.6288d9bb.osb",
+      "bytes": 6928,
+      "bytes_gz": 2402,
+      "md5": "6288d9bba99390fb22b5ef70a5ca0ec6",
       "tech": "oil"
     },
     {
@@ -68,10 +68,10 @@
     },
     {
       "name": "sector-series",
-      "file": "sector-series.18abbafc.osb",
+      "file": "sector-series.1835584f.osb",
       "bytes": 18960,
-      "bytes_gz": 3536,
-      "md5": "18abbafce3cce4c69441e41b43c1d80f",
+      "bytes_gz": 3534,
+      "md5": "1835584fe5eeb3fbc23f08bb2cc720a3",
       "tech": null
     },
     {
@@ -373,7 +373,7 @@
     {
       "check": "dictionary: valid, every measure of the build has an entry",
       "status": "PASS",
-      "n": 64,
+      "n": 67,
       "detail": null
     },
     {
@@ -422,19 +422,19 @@
       "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 25 MB gz)",
       "status": "PASS",
       "n": 8,
-      "detail": "sector 46 kB gz"
+      "detail": "sector 53 kB gz"
     }
   ],
   "sources": [
     {
       "path": "config/sector_dictionary.yml",
       "mtime": "synthetic",
-      "bytes": 113633,
-      "md5": "5175cf766a30eac900b275b22527b9c2"
+      "bytes": 124239,
+      "md5": "b296e7ef46058cce7ebec35a2bb029a0"
     }
   ],
   "budget": {
-    "sector_gz": 47069,
+    "sector_gz": 54218,
     "combined_gz": null,
     "limit_sector_gz": 9437184,
     "limit_combined_gz": 26214400

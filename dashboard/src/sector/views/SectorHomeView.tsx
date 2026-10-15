@@ -5,9 +5,10 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { ChartCard } from '../../charts/ChartCard.tsx';
-import { RampLegend } from '../../charts/legends.tsx';
+import { TriLegend } from '../../charts/legends.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
 import { PageHead, Segmented, Select } from '../../components/ui.tsx';
+import { InfoTip } from '../../components/InfoTip.tsx';
 import { QUESTIONS } from '../../content/questions.ts';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { useTitle } from '../../shell/title.ts';
@@ -16,7 +17,7 @@ import { STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, TECH_SLUGS, type FamilyId, type
 import { useModel, useSectorManifest } from '../data/SectorDataProvider.tsx';
 import type { ItemInfo, SectorModel, SummaryInfo, VarInfo } from '../data/model.ts';
 import { cellMeasure, familyVar, isThin, primaryVar, type CellMeasure } from '../derive/cells.ts';
-import { seqTile } from '../derive/contrast.ts';
+import { sideWords, tileScale, triTile } from '../derive/contrast.ts';
 import { GROUP_ORDER } from '../derive/groups.ts';
 import { slice } from '../derive/summary.ts';
 import { concentration } from '../derive/concentration.ts';
@@ -83,6 +84,9 @@ function Atlas() {
     return m;
   }, [model, fam, eu]);
   const withData = [...tiles.values()].filter((t) => t.s).length;
+  // the three-colour scale over the lens values of the tiles shown: white = their median
+  const scale = useMemo(() => tileScale([...tiles.values()].map((t) => (t.s ? lensValue(lens, t.s) : NaN))), [tiles, lens]);
+  const lensFmt = (x: number) => (lens === 'hhi' ? x.toFixed(2) : `${Math.round(x * 100)}%`);
 
   const position = (item: ItemInfo, v: VarInfo | null, s: SummaryInfo | null): string | null => {
     if (!highlight || !facts || !v || !s) return null;
@@ -101,7 +105,7 @@ function Atlas() {
     { id: 'W', header: 'World total', value: (t) => t.s?.W ?? null, cell: (t) => (t.s && t.v ? fmtFact(model, t.v, t.item, t.s.W) : '–'), num: true },
     { id: 'top1', header: 'Top-1', value: (t) => (t.s?.top1_geo !== null && t.s ? `${model.geoName(t.s.top1_geo)} ${fmtShare(t.s.top1_share)}` : null) },
     { id: 'top3', header: 'Top-3', value: (t) => t.s?.top3_share ?? null, cell: (t) => fmtShare(t.s?.top3_share), num: true },
-    { id: 'hhi', header: 'HHI', value: (t) => t.s?.hhi ?? null, cell: (t) => fmtHhi(t.s?.hhi, t.s?.hhi_lower_bound), num: true },
+    { id: 'hhi', header: 'Concentration (HHI)', value: (t) => t.s?.hhi ?? null, cell: (t) => fmtHhi(t.s?.hhi, t.s?.hhi_lower_bound), num: true },
     { id: 'china', header: 'China', value: (t) => t.s?.china ?? null, cell: (t) => fmtShare(t.s?.china), num: true },
     { id: 'coal', header: 'Coalition', value: (t) => (t.s ? t.s.core + t.s.partner : null), cell: (t) => fmtShare(t.s ? t.s.core + t.s.partner : NaN), num: true },
     { id: 'source', header: 'Source', value: (t) => t.v?.source.short ?? null },
@@ -139,11 +143,12 @@ function Atlas() {
   return (
     <ChartCard
       headingLevel={3}
-      title={`All ${model.cells.length} supply-chain cells`}
-      sub={`Colour: ${LENS_LABEL[lens]} of each cell's ${fam === 'primary' ? 'primary measure' : `${lc(FAM_LABEL[fam])} measure`}; latest year of each source. Shares are within one measure and never added across cells.`}
+      title={`All ${model.cells.length} sectors`}
+      sub={`Each tile is one sector (a technology at one stage of its supply chain), coloured by the ${lc(LENS_LABEL[lens])} of its ${fam === 'primary' ? 'main measure' : `${lc(FAM_LABEL[fam])} measure`} in the source's latest year: orange lower than most sectors, white the middle one, blue higher. The tile names the largest holder. Shares are within one measure and never added across sectors.${model.cells.some((c) => !c.headline) ? ` The ${model.cells.filter((c) => c.headline).length} energy sectors come first; semiconductors, a technology the energy sectors depend on, are shown for context.` : ''}`}
       tools={
         <>
-          <Segmented<Lens> label="Colour by" value={lens} options={LENSES.filter((l) => l !== 'top1').map((l) => ({ value: l, label: l === 'china' ? 'China share' : l === 'top3' ? 'Top-3' : l === 'hhi' ? 'HHI' : 'Coalition share' }))} onChange={(l) => set({ lens: l })} />
+          <Segmented<Lens> label="Colour by" value={lens} options={LENSES.filter((l) => l !== 'top1').map((l) => ({ value: l, label: l === 'china' ? 'China share' : l === 'top3' ? 'Top-3 share' : l === 'hhi' ? 'Concentration (HHI)' : 'Coalition share' }))} onChange={(l) => set({ lens: l })} />
+          {lens === 'hhi' && <span className="pb-1.5"><InfoTip id="hhi" term="concentration index (HHI)" /></span>}
           <Select label="Measure" value={fam} options={FAM_KEYS.map((f) => ({ value: f, label: FAM_LABEL[f] }))} onChange={(f) => set({ fam: f as FamKey })} className="min-w-[9rem]" />
         </>
       }
@@ -151,15 +156,14 @@ function Atlas() {
       csv={csv}
       legend={
         <div className="space-y-2">
-          {/* the tile shade: SEQ runs dark (low) to light (high) */}
-          <RampLegend kind="seq" min={0} max={1} label={`Tile shade: ${LENS_LABEL[lens]} of the ${fam === 'primary' ? 'primary measure' : `${lc(FAM_LABEL[fam])} measure`} (lighter = larger)`} format={(x) => (lens === 'hhi' ? x.toFixed(1) : `${Math.round(x * 100)}%`)} />
+          <TriLegend scale={scale} label={`Tile colour: ${LENS_LABEL[lens]} of the ${fam === 'primary' ? 'primary measure' : `${lc(FAM_LABEL[fam])} measure`}`} format={lensFmt} noun="sectors" missing="No data for this measure" />
           <GroupLegend euBloc={eu === 'bloc'} />
         </div>
       }
       summary={`Grid of ${model.cells.length} technology and stage cells; ${withData} have data for this measure.`}
     >
       <p className="mb-3 text-sm text-paper-mute" role="status">
-        Showing {withData} of {model.cells.length} cells with data for this measure.
+        Showing {withData} of {model.cells.length} sectors with data for this measure.
       </p>
       <CellGrid
         techs={techs}
@@ -172,7 +176,7 @@ function Atlas() {
           const { cell, v, item, s } = tile;
           const thin = isThin(model, cell);
           const val = s ? lensValue(lens, s) : NaN;
-          const shade = s && Number.isFinite(val) ? seqTile(val) : null;
+          const shade = s && Number.isFinite(val) ? triTile(scale, val) : null;
           const famLabel = v ? lc(model.families.get(v.family)?.label ?? v.family) : lc(FAM_LABEL[fam]);
           const pos = position(item, v, s);
           const cov = model.coverageOf(cell.idx);
@@ -185,7 +189,7 @@ function Atlas() {
           const shareUnit = v ? v.unit.unit_kind === 'share' || v.unit.unit_kind === 'pct' : false;
           const yr = s && v ? yearText(v, { var: v.id, item: item.slug, year: s.year }) : '';
           const aria = s && v
-            ? `${model.cellLabel(cell)}: ${lc(v.short)}${shareUnit ? '' : ` ${fmtFact(model, v, item, s.W)}`} ${yr}, ${lensText(lens, s, model)}, top three ${fmtShare(s.top3_share)}, HHI ${fmtHhi(s.hhi, s.hhi_lower_bound)}${pos ? `, ${pos}` : ''}`
+            ? `${model.cellLabel(cell)}: ${lc(v.short)}${shareUnit ? '' : ` ${fmtFact(model, v, item, s.W)}`} ${yr}, ${lensText(lens, s, model)}${shade ? ` (${sideWords(shade.side, scale.n, 'cells')})` : ''}, top three ${fmtShare(s.top3_share)}, concentration index ${fmtHhi(s.hhi, s.hhi_lower_bound)}${pos ? `, ${pos}` : ''}`
             : noShare && v
               ? `${model.cellLabel(cell)}: ${lc(v.short)}, ${noShare.n} economies, ${noShare.year}; no shares (no world total)`
               : `${model.cellLabel(cell)}: no ${famLabel} data${thin ? ', thin' : ''}`;
@@ -195,7 +199,7 @@ function Atlas() {
               aria-label={aria}
               className={`block min-h-[112px] p-3 text-xs ${thin ? 'border border-dashed border-white/30' : 'border hairline'} focus:outline-2 focus:outline-signal`}
               style={{ background: shade ? shade.bg : s || noShare ? undefined : HATCH_CSS, color: shade ? shade.fg : undefined }}
-              title={s && v ? `Top-1 ${model.geoName(s.top1_geo)} ${fmtShare(s.top1_share)} · top-3 ${fmtShare(s.top3_share)} · HHI ${fmtHhi(s.hhi, s.hhi_lower_bound)} · ≈ ${Number.isFinite(s.eff_n) ? s.eff_n.toFixed(1) : '–'} effective · China ${fmtShare(s.china)} · coalition ${fmtShare(s.core + s.partner)} · ${v.source.short} ${s.year}` : undefined}
+              title={s && v ? `Largest ${model.geoName(s.top1_geo)} ${fmtShare(s.top1_share)} · top three ${fmtShare(s.top3_share)} · concentration (HHI) ${fmtHhi(s.hhi, s.hhi_lower_bound)}, like ${Number.isFinite(s.eff_n) ? s.eff_n.toFixed(1) : '–'} equal holders · China ${fmtShare(s.china)} · coalition ${fmtShare(s.core + s.partner)} · ${v.source.short} ${s.year}${shade ? ` · ${sideWords(shade.side, scale.n, 'cells')}` : ''}` : undefined}
             >
               {s && v ? (
                 <>
@@ -345,7 +349,7 @@ export default function SectorHomeView() {
       <PageHead
         eyebrow="SECTOR INSIGHTS · DESCRIPTIVE DATA"
         title="Energy supply chains, measured"
-        lede="Who produces, holds, trades, invests in and regulates each of 11 energy technologies, upstream to downstream, in each source's own units and years. No indices and no weights: the numbers the Strategic module starts from."
+        lede="Eleven energy technologies, each from raw materials (upstream) through manufacturing (midstream) to use (downstream): 33 sectors. Each tile shows who holds the most of that sector's main measure. Pick a tile for the full picture: trade, production, reserves, investment, prices and policy, in each source's own units and year. No indices and no weights: these are the numbers Strategic Insights starts from."
       />
       <section aria-labelledby="questions-h" className="mb-10">
         <h2 id="questions-h" className="eyebrow rule-neis-sm mb-4">

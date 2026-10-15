@@ -1,6 +1,7 @@
-// View 2: Country profile (spec_react.md 8.6). Stat tiles, ES and EO per cell (faceted by stage),
-// category contributions of a chosen cell, the variable drill-down (vars chunk) and the economy's
-// top Strategic Index sectors.
+// View 2: Country scores (spec_react.md 8.6; nav label "Country scores", spec_country.md C3.5). Stat
+// tiles, Energy Security and Economic Opportunity per sector (faceted by stage; click a dot to pick
+// the sector), the category contributions of the chosen sector, the variable drill-down (vars chunk)
+// and the economy's top Strategic Index sectors; a bridge to the same economy in Country Insights.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
@@ -12,6 +13,7 @@ import { PlotFigure, Tip } from '../../charts/PlotFigure.tsx';
 import { labelMargin, symDomain } from '../../charts/theme.ts';
 import { CountrySelect } from '../../components/CountrySelect.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
+import { Term } from '../../components/Term.tsx';
 import { EmptyState, FilterRow, Loading, Notice, PageHead, RankChip, Segmented, StatTile } from '../../components/ui.tsx';
 import type { Table } from '../../engine/types.ts';
 import { rowsToCsv, tableToCsv } from '../../lib/csv.ts';
@@ -21,7 +23,7 @@ import { useApp, useCore, useEngine, useNetwork, usePartner, useScenario } from 
 import { useGoto } from '../../state/nav.ts';
 import { toSpec, type ShowMode } from '../../state/url.ts';
 import { COMPARE_COLOR, INK, PILLAR_COLOR, SIGNAL } from '../../theme/palette.ts';
-import { noteText, numOr, policyBasisText, resourceBaseText, rowsOf, showWord, strOr, TechStageFilters, useCountryOptions, useTechStage, type Row } from '../common.tsx';
+import { CountryInsightsLink, noteText, numOr, policyBasisShort, policyBasisText, resourceBaseText, rowsOf, showWord, strOr, TechStageFilters, useCountryOptions, useTechStage, type Row } from '../common.tsx';
 
 interface PillarPoint {
   pillar: 'Energy Security' | 'Economic Opportunity';
@@ -46,11 +48,11 @@ export interface ContribBar {
 }
 
 export const SI_TERMS: [string, string][] = [
-  ['contrib_es_need', 'Need (1 − ES)'],
-  ['contrib_eo', 'EO'],
-  ['contrib_policy', 'Policy*'],
+  ['contrib_es_need', 'Security need'],
+  ['contrib_eo', 'Economic Opportunity'],
+  ['contrib_policy', 'Policy activity'],
   ['contrib_sc', 'Stage'],
-  ['contrib_ghg', 'Technology'],
+  ['contrib_ghg', 'Technology (low-emission)'],
 ];
 
 /** Contributions of one cell, with the paper's weight shares recomputed over the same categories
@@ -87,7 +89,7 @@ function ContribChart({ bars, color, title, showMode }: { bars: ContribBar[]; co
         height,
         marginLeft: labelMargin(bars.map((b) => b.category), { min: 80, max: 170 }),
         marginRight: 56,
-        x: { label: 'Contribution (score × weight share)', grid: true, domain: [0, hi * 1.1] },
+        x: { label: 'Adds to the score (category score × its weight share) →', grid: true, domain: [0, hi * 1.1] },
         y: { domain: order, label: null, tickSize: 0 },
         marks: [
           Plot.barX(bars, { y: 'category', x: val, fill: color, insetTop: 5, insetBottom: 5 }),
@@ -115,7 +117,7 @@ function ContribChart({ bars, color, title, showMode }: { bars: ContribBar[]; co
           lines={[
             `score ${fmtNum(b.score, 3)} × weight share ${fmtPct(b.weight, 1)}`,
             `paper: ${fmtNum(b.contribution_base, 3)} (weight share ${fmtPct(b.weight_base, 1)})`,
-            b.imputed ? `imputed${b.rule ? `: ${b.rule}` : ''}` : null,
+            b.imputed ? `rests on filled-in data${b.rule ? `: ${b.rule}` : ''}` : null,
           ]}
         />
       )}
@@ -124,7 +126,7 @@ function ContribChart({ bars, color, title, showMode }: { bars: ContribBar[]; co
 }
 
 export default function CountryView() {
-  useTitle('Country profile');
+  useTitle('Country scores');
   const app = useApp();
   const { client } = useEngine();
   const params = useParams();
@@ -133,6 +135,11 @@ export default function CountryView() {
   const iso = params.iso3 && app.byIso.has(params.iso3) ? params.iso3 : app.defaultCountry;
   const c = app.byIso.get(iso) ?? app.countries[0];
   const { tech, stage } = useTechStage();
+  const { setView } = useScenario();
+  const pickSector = useCallback(
+    (t: string, s: string) => setView({ tech: t === app.defaultTech ? null : t, stage: s === app.defaultStage ? null : s }, { replace: true }),
+    [setView, app.defaultTech, app.defaultStage],
+  );
   const core = useCore({ contrib: true });
   const partner = usePartner(false);
   const network = useNetwork(false);
@@ -147,6 +154,12 @@ export default function CountryView() {
     for (const r of rowsOf(app.baseline.pillars.eo)) if (r.iso3c === iso) return String(r.Country);
     return c.country;
   }, [app.baseline, iso, c.country]);
+
+  // sectors without any Energy Security score in the paper (the lede says how many)
+  const nNoEs = useMemo(() => {
+    const has = new Set(rowsOf(app.baseline.pillars.es).filter((r) => numOr(r.value) !== null).map((r) => `${r.tech}|${r.supply_chain}`));
+    return app.cells.filter((cl) => !has.has(`${cl.tech}|${cl.supply_chain}`)).length;
+  }, [app]);
 
   const pillars = useMemo(() => {
     if (!core.data) return null;
@@ -250,7 +263,7 @@ export default function CountryView() {
         fx: { domain: app.stages, label: null, axis: 'top', padding: 0.12 },
         x: {
           domain: dom,
-          label: change ? 'Change against the paper' : 'Pillar value (0-1)',
+          label: change ? 'Change against the paper' : 'Score (0 to 1; right = higher) →',
           grid: true,
           nice: !narrow,
           ticks: narrow ? (change ? [dom[0], 0, dom[1]] : [0, 0.5, 1]) : 4,
@@ -277,7 +290,7 @@ export default function CountryView() {
   const siCols: Col<Row>[] = [
     { id: 'rank', header: 'Rank', value: (r) => numOr(r.rank_in_country), num: true },
     { id: 'sector', header: 'Sector', value: (r) => strOr(r.sector), minWidth: 180 },
-    { id: 'si', header: 'SI', value: (r) => numOr(r.strategic_index), cell: (r) => fmtNum(r.strategic_index, 3), num: true },
+    { id: 'si', header: 'Strategic Index', value: (r) => numOr(r.strategic_index), cell: (r) => fmtNum(r.strategic_index, 3), num: true },
     ...SI_TERMS.map(([k, label]) => ({ id: k, header: label, value: (r: Row) => numOr(r[k]), cell: (r: Row) => fmtNum(r[k], 3), num: true })),
     { id: 'chg', header: 'Rank change', value: (r) => numOr(r.rank_delta), cell: (r) => <RankChip change={numOr(r.rank_delta)} isNew={r.in_sample_base !== true} /> },
     { id: 'rb', header: 'Resource base', value: (r) => resourceBaseText(r.resource_base, r.resource_evidence) },
@@ -285,10 +298,10 @@ export default function CountryView() {
   const varCols: Col<Row>[] = [
     { id: 'category', header: 'Category', value: (r) => strOr(r.category), minWidth: 140 },
     { id: 'variable', header: 'Variable', value: (r) => strOr(r.variable), minWidth: 160 },
-    { id: 'component_value', header: 'Value', value: (r) => numOr(r.component_value), cell: (r) => fmtNum(r.component_value, 3), num: true },
+    { id: 'component_value', header: 'Ranked value (0 to 1)', value: (r) => numOr(r.component_value), cell: (r) => fmtNum(r.component_value, 3), num: true },
     { id: 'w', header: 'Weight in category', value: (r) => numOr(r.component_weight_within_overall), cell: (r) => fmtPct(r.component_weight_within_overall, 1), num: true },
-    { id: 'contrib', header: 'Contribution', value: (r) => numOr(r.weighted_variable_contribution), cell: (r) => fmtNum(r.weighted_variable_contribution, 3), num: true },
-    { id: 'imputed', header: 'Imputed', value: (r) => (r.imputed === true ? `imputed${r.missing_rule_applied ? `: ${r.missing_rule_applied}` : ''}` : '') },
+    { id: 'contrib', header: 'Adds to the score', value: (r) => numOr(r.weighted_variable_contribution), cell: (r) => fmtNum(r.weighted_variable_contribution, 3), num: true },
+    { id: 'imputed', header: 'Filled in', value: (r) => (r.imputed === true ? `filled in${r.missing_rule_applied ? `: ${r.missing_rule_applied}` : ''}` : '') },
   ];
 
   const updating = !core.fresh;
@@ -296,13 +309,22 @@ export default function CountryView() {
   return (
     <div>
       <PageHead
-        eyebrow="Profile"
-        title={`Country profile: ${c.country}`}
-        lede="One economy's Energy Security and Economic Opportunity across technologies and stages, what drives them, and where its Strategic Index points."
-      />
+        eyebrow="Country scores"
+        title={`Country scores: ${c.country}`}
+        lede={
+          <>
+            One economy&rsquo;s scores across the {app.cells.length} sectors ({app.techs.length} technologies at {app.stages.length} supply-chain stages; the paper
+            has no Energy Security score for {nNoEs === 1 ? 'one of them' : `${nNoEs} of them`}): <Term id="es" />, <Term id="eo" />, what drives them, and its top
+            sectors on the <Term id="si" />. Pick an economy and click a sector to see which data move its scores. For a plain-language briefing on the
+            paper&rsquo;s baseline, open Country Insights.
+          </>
+        }
+      >
+        <CountryInsightsLink iso3={iso} country={c.country} />
+      </PageHead>
       <FilterRow>
         <CountrySelect label="Economy" value={iso} options={options} onChange={(v) => goto(`/country/${v}`)} />
-        <TechStageFilters techLabel="Technology (for contributions)" />
+        <TechStageFilters techLabel="Sector for the drivers: technology" />
       </FilterRow>
       {!core.data ? (
         <Loading label="Computing" />
@@ -311,25 +333,25 @@ export default function CountryView() {
           {core.data.notes.length > 0 && <Notice kind="info">{core.data.notes.map(noteText).join(' ')}</Notice>}
           <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 ${updating ? 'chart-updating' : ''}`}>
             <StatTile label="Coalition tier" value={c.tier === 'none' ? 'Not a member' : tierLabel(c.tier)} sub={c.eu_member ? 'EU member (the EU is one network node)' : (c.region ?? undefined)} />
-            <StatTile label="Rankable cells" value={`${rankableBoth} of ${cellKeys.size}`} sub="both pillars rankable" />
-            <StatTile label="Mean ES" value={fmtNum(mean(es.map((p) => p.value)), 2)} sub={`over ${es.length} scored cells${!isBaseline ? `; paper ${fmtNum(mean(es.map((p) => p.value_base)), 2)}` : ''}`} />
-            <StatTile label="Mean EO" value={fmtNum(mean(eo.map((p) => p.value)), 2)} sub={`over ${eo.length} scored cells${!isBaseline ? `; paper ${fmtNum(mean(eo.map((p) => p.value_base)), 2)}` : ''}`} />
+            <StatTile label="Ranked sectors" value={`${rankableBoth} of ${cellKeys.size}`} sub="both scores ranked against other economies" />
+            <StatTile label="Average Energy Security" value={fmtNum(mean(es.map((p) => p.value)), 2)} sub={`over ${es.length} scored sectors (0 to 1)${!isBaseline ? `; paper ${fmtNum(mean(es.map((p) => p.value_base)), 2)}` : ''}`} />
+            <StatTile label="Average Economic Opportunity" value={fmtNum(mean(eo.map((p) => p.value)), 2)} sub={`over ${eo.length} scored sectors (0 to 1)${!isBaseline ? `; paper ${fmtNum(mean(eo.map((p) => p.value_base)), 2)}` : ''}`} />
             <StatTile
-              label="Top SI sector"
+              label="Top Strategic Index sector"
               value={<span className="text-base">{top ? String(top.sector) : DASH}</span>}
               chip={top && !isBaseline ? <RankChip change={numOr(top.rank_delta)} isNew={top.in_sample_base !== true} /> : undefined}
-              sub={top ? `SI ${fmtNum(top.strategic_index, 3)}` : 'no in-sample sector'}
+              sub={top ? `Strategic Index ${fmtNum(top.strategic_index, 3)}` : 'no sector in the Strategic Index'}
             />
             <StatTile
-              label="PSI rank as a partner"
+              label="Partnership Strength rank as a partner"
               value={psiRow && psiRow.rank !== null ? String(psiRow.rank) : DASH}
               chip={psiRow && psiRow.change !== null && !isBaseline ? <RankChip change={psiRow.change} /> : undefined}
               sub={psiRow ? psiRow.src : 'not rated'}
             />
-            <StatTile label="Network producer stages" value={<span className="text-base">{netTile.value}</span>} sub={netTile.sub} />
+            <StatTile label="Allied network: producer stages" value={<span className="text-base">{netTile.value}</span>} sub={netTile.sub} />
             <StatTile
-              label="Policy index basis"
-              value={<span className="text-base">{policyRow?.eligible === true ? strOr(policyRow.policy_basis) ?? DASH : 'None'}</span>}
+              label="Policy activity rests on"
+              value={<span className="text-base">{policyRow?.eligible === true ? policyBasisShort(strOr(policyRow.policy_basis)) ?? DASH : 'None'}</span>}
               sub={
                 policyRow?.eligible === true
                   ? `${policyBasisText(strOr(policyRow.policy_basis))}${
@@ -338,19 +360,19 @@ export default function CountryView() {
                         : ''
                     }`
                   : policyRow
-                    ? `no Policy index: lacks ${strOr(policyRow.missing_required) ?? 'a required component'}, so no Strategic Index`
-                    : 'no policy data: no Strategic Index'
+                    ? `no Policy activity score: lacks ${strOr(policyRow.missing_required) ?? 'a required component'}, so no Strategic Index`
+                    : 'no policy data, so no Strategic Index'
               }
             />
           </div>
 
           <ChartCard
-            title="Pillars by technology and stage"
-            sub={`${showWord(show)} Energy Security (higher = more secure) and Economic Opportunity per cell. Hollow rings mark the paper's value where the scenario differs (only the advanced category weights move the pillars).${
-              !isBaseline && !pillarsMoved ? " In this scenario no cell moves: the four dials leave the pillars at the paper's values." : ''
+            title="Energy Security and Economic Opportunity by sector"
+            sub={`${showWord(show)} Each row is a technology and each panel a supply-chain stage. The circle is Energy Security (further right = more secure) and the diamond Economic Opportunity (further right = a bigger opening); both run from 0 to 1 and compare the economy with every other economy in the same sector. Click a dot to see what drives that sector's scores below. Hollow rings mark the paper's value where the scenario differs (only the advanced category weights move these scores).${
+              !isBaseline && !pillarsMoved ? " In this scenario no sector moves: the four dials leave both scores at the paper's values." : ''
             }`}
             updating={updating}
-            summary={`Dot plot of ${es.length} Energy Security and ${eo.length} Economic Opportunity cells for ${c.country}, faceted by stage.`}
+            summary={`Dot plot of ${es.length} Energy Security and ${eo.length} Economic Opportunity scores for ${c.country}, faceted by stage.`}
             legend={
               <Legend
                 items={[
@@ -363,15 +385,15 @@ export default function CountryView() {
             table={() => (
               <TableView
                 rows={pillars ?? []}
-                caption={`Pillars of ${c.country}`}
+                caption={`Energy Security and Economic Opportunity of ${c.country}`}
                 search
                 cols={[
-                  { id: 'pillar', header: 'Pillar', value: (p) => p.pillar },
+                  { id: 'pillar', header: 'Score', value: (p) => p.pillar },
                   { id: 'tech', header: 'Technology', value: (p) => p.tech },
                   { id: 'stage', header: 'Stage', value: (p) => p.stage },
                   { id: 'value', header: 'Scenario', value: (p) => p.value, cell: (p) => fmtNum(p.value, 3), num: true },
                   { id: 'value_base', header: 'Paper', value: (p) => p.value_base, cell: (p) => fmtNum(p.value_base, 3), num: true },
-                  { id: 'rankable', header: 'Rankable', value: (p) => (p.rankable ? 'yes' : `no${p.reason ? `: ${p.reason}` : ''}`) },
+                  { id: 'rankable', header: 'Ranked', value: (p) => (p.rankable ? 'yes' : `no${p.reason ? `: ${p.reason}` : ''}`) },
                 ]}
               />
             )}
@@ -384,17 +406,18 @@ export default function CountryView() {
               <PlotFigure<PillarPoint>
                 build={buildDots}
                 height={dotsHeight}
-                ariaLabel={`Pillars of ${c.country}`}
+                ariaLabel={`Energy Security and Economic Opportunity of ${c.country}`}
+                onSelect={(p) => pickSector(p.tech, p.stage)}
                 tooltip={(p) => (
                   <Tip
                     value={fmtNum(p.shown, 3)}
                     title={`${p.pillar}: ${cellLabel(p.tech, p.stage)}`}
-                    lines={[!isBaseline ? `scenario ${fmtNum(p.value, 3)} · paper ${fmtNum(p.value_base, 3)}` : null, !p.rankable ? `not rankable${p.reason ? `: ${p.reason}` : ''}` : null]}
+                    lines={[!isBaseline ? `scenario ${fmtNum(p.value, 3)} · paper ${fmtNum(p.value_base, 3)}` : null, !p.rankable ? `not ranked${p.reason ? `: ${p.reason}` : ''}` : null, 'click for what drives it']}
                   />
                 )}
               />
             ) : (
-              <EmptyState>No pillar data for this economy.</EmptyState>
+              <EmptyState>No Energy Security or Economic Opportunity scores for this economy.</EmptyState>
             )}
           </ChartCard>
 
@@ -407,8 +430,8 @@ export default function CountryView() {
             ).map(([name, bars, color]) => (
               <ChartCard
                 key={name}
-                title={`${name} – ${tech}, ${stage}`}
-                sub="Contribution of each category = score × weight share. Change adds the paper's contribution as an outline."
+                title={`${name}: what drives it in ${tech} ${DASH} ${stage}`}
+                sub={`Each bar is one category of data (for example trade, reserves or prices): its score times its share of the weight, so the bars add up to the sector's ${name}. The longest bars are the categories that lift the score most.${show === 'change' ? " The outline is the paper's value." : ''}`}
                 updating={updating}
                 summary={`${name} category contributions for ${c.country}, ${cellLabel(tech, stage)}.`}
                 legend={show === 'change' ? <Legend items={[{ label: 'Scenario', color }, { label: 'Paper baseline', kind: 'outline', color: COMPARE_COLOR.baseline }]} /> : undefined}
@@ -422,7 +445,7 @@ export default function CountryView() {
                       { id: 'weight', header: 'Weight share', value: (b) => b.weight, cell: (b) => fmtPct(b.weight, 1), num: true },
                       { id: 'contribution', header: 'Contribution', value: (b) => b.contribution, cell: (b) => fmtNum(b.contribution, 3), num: true },
                       { id: 'contribution_base', header: 'Paper', value: (b) => b.contribution_base, cell: (b) => fmtNum(b.contribution_base, 3), num: true },
-                      { id: 'imputed', header: 'Imputed', value: (b) => (b.imputed ? 'imputed' : '') },
+                      { id: 'imputed', header: 'Filled in', value: (b) => (b.imputed ? 'rests on filled-in data' : '') },
                     ]}
                   />
                 )}
@@ -434,8 +457,8 @@ export default function CountryView() {
           </div>
 
           <ChartCard
-            title={`Variables behind ${cellLabel(tech, stage)}`}
-            sub="Component values and their weighted contribution to the pillar under the scenario's category weights; imputed values are flagged in words."
+            title={`The data behind ${cellLabel(tech, stage)}`}
+            sub="Each row is one measure inside a category: its value after ranking against the other economies in the sector (0 to 1, higher is better for the score), its weight inside the category and how much it adds to the score. Values the paper filled in where data were missing are flagged."
             tools={
               <Segmented
                 label="Pillar"
@@ -462,7 +485,7 @@ export default function CountryView() {
 
           <ChartCard
             title="Strategic Index: top sectors"
-            sub="The economy's ten highest-ranked in-sample sectors under the scenario, with the five weighted terms."
+            sub="The economy's ten highest-ranked sectors on the Strategic Index under the scenario, with the five weighted parts that add up to it: security need, Economic Opportunity, Policy activity, the stage and the technology's low-emission value."
             updating={updating}
             tools={
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => goto(`/strategic/${iso}`)}>
@@ -474,7 +497,7 @@ export default function CountryView() {
             {topSi.length ? (
               <TableView rows={topSi} cols={siCols} caption="Top Strategic Index sectors" pageSize={10} />
             ) : (
-              <EmptyState>This economy has no sectors in the Strategic Index sample (it needs ES, EO and a Policy value).</EmptyState>
+              <EmptyState>This economy has no sectors in the Strategic Index (it needs Energy Security, Economic Opportunity and a Policy activity score).</EmptyState>
             )}
           </ChartCard>
         </div>

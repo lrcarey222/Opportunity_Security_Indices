@@ -17,7 +17,13 @@ function serveDir(server: ViteDevServer, prefix: string, root: string): void {
       res.end('not found');
       return;
     }
-    res.setHeader('Content-Type', file.endsWith('.json') ? 'application/json' : 'application/octet-stream');
+    const types: Record<string, string> = {
+      '.json': 'application/json',
+      '.pdf': 'application/pdf',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.md': 'text/markdown; charset=utf-8',
+    };
+    res.setHeader('Content-Type', types[file.slice(file.lastIndexOf('.'))] ?? 'application/octet-stream');
     res.setHeader('Cache-Control', 'no-cache');
     createReadStream(file).pipe(res);
     void next;
@@ -26,10 +32,12 @@ function serveDir(server: ViteDevServer, prefix: string, root: string): void {
 
 // `npm run dev:fixture`: serve the committed synthetic bundles instead of public/data/, so the app
 // runs without the real exports: the Strategic one (scripts/86) at <base>data/ and the Sector one
-// (scripts/87 --synthetic, tests/fixtures/sector/synthetic/) at <base>data/sector/.
+// (scripts/87 --synthetic, tests/fixtures/sector/synthetic/) at <base>data/sector/, and the Country one
+// (scripts/88 --synthetic, src/country/__fixtures__/synthetic/data/country/) at <base>data/country/.
 function fixtureData(): Plugin {
   const root = resolve(here, 'src/engine/__fixtures__/synthetic/s1/data');
   const sectorRoot = resolve(here, 'tests/fixtures/sector/synthetic');
+  const countryRoot = resolve(here, 'src/country/__fixtures__/synthetic/data/country');
   return {
     name: 'osi-fixture-data',
     apply: 'serve',
@@ -37,6 +45,7 @@ function fixtureData(): Plugin {
       const base = server.config.base.endsWith('/') ? server.config.base : `${server.config.base}/`;
       // the more specific prefix first: connect matches mounts in order
       serveDir(server, `${base}data/sector`, sectorRoot);
+      serveDir(server, `${base}data/country`, countryRoot);
       serveDir(server, `${base}data`, root);
     },
   };

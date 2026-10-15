@@ -16,6 +16,8 @@ import { GROUP_COLOR, GROUP_ORDINAL, SEQ, SIGNAL, VOLATILITY_ORDINAL } from '../
 import * as Plot from '@observablehq/plot';
 import { compactSi, logTicks } from '../../charts/theme.ts';
 import { lineDashes, spreadLabels } from './LabelledLines.tsx';
+import { RING_INNER, RING_OUTER, TRI, TRI_HIGH, TRI_LOW, TRI_MID } from '../../theme/palette.ts';
+import { triScale } from '../../charts/scale.ts';
 
 let width = 1440;
 /** an element width override (a chart wider than the 900 px default) */
@@ -526,3 +528,100 @@ describe('chrome', () => {
   });
 });
 
+describe('three-colour scale in the kit (spec_country.md C1.4, C1.5)', () => {
+  const rgb = (hex: string) => {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+  };
+  const cellOf = (table: HTMLElement, text: string) => within(table).getByText(text).closest('td') as HTMLElement;
+
+  it('HeatTable: by default orange at the lowest cell, white at the median, blue at the highest; readable text', () => {
+    const values: Record<string, number> = { a: 0.1, b: 0.2, c: 0.3, d: 0.6, e: 0.9 };
+    render(
+      <HeatTable
+        caption="Tri table"
+        rowHeader="Row"
+        rows={Object.keys(values).map((k) => ({ key: k, label: k.toUpperCase() }))}
+        cols={[{ key: 'v', label: 'Value', stage: 'midstream' }]}
+        cell={(r) => ({ value: values[r], display: `v${values[r]}`, selected: r === 'a' })}
+      />,
+    );
+    const table = screen.getByRole('table', { name: 'Tri table' });
+    expect(cellOf(table, 'v0.1').style.background).toBe(rgb(TRI_LOW));
+    expect(cellOf(table, 'v0.3').style.background).toBe(rgb(TRI_MID));
+    expect(cellOf(table, 'v0.9').style.background).toBe(rgb(TRI_HIGH));
+    // text: never white on the orange or the white end
+    expect(cellOf(table, 'v0.1').style.color).not.toBe('rgb(255, 255, 255)');
+    expect(cellOf(table, 'v0.3').style.color).not.toBe('rgb(255, 255, 255)');
+    // the selected cell: white edge over ink (an orange outline would vanish on the low end)
+    const sel = cellOf(table, 'v0.1');
+    const either = (css: string, hex: string) => css.includes(hex) || css.includes(rgb(hex));
+    expect(either(sel.style.outline, RING_INNER)).toBe(true);
+    expect(either(sel.style.boxShadow, RING_OUTER)).toBe(true);
+  });
+
+  it("HeatTable: the caller's scale wins (signed values centred on zero; reverse for ranks)", () => {
+    const vals: Record<string, number> = { a: -4, b: 0, c: 2 };
+    const s = triScale(Object.values(vals), { center: 'zero' });
+    render(
+      <HeatTable
+        caption="Signed table"
+        rowHeader="Row"
+        rows={Object.keys(vals).map((k) => ({ key: k, label: k }))}
+        cols={[{ key: 'v', label: 'Change', stage: 'upstream' }]}
+        cell={(r) => ({ value: vals[r], display: `c${vals[r]}` })}
+        scale={s}
+      />,
+    );
+    const table = screen.getByRole('table', { name: 'Signed table' });
+    expect(cellOf(table, 'c-4').style.background).toBe(rgb(TRI[0]));
+    expect(cellOf(table, 'c0').style.background).toBe(rgb(TRI_MID));
+    expect(cellOf(table, 'c2').style.background).toBe(rgb(TRI[8]));
+    cleanup();
+    render(
+      <HeatTable
+        caption="Rank table"
+        rows={[{ key: 'x', label: 'x' }, { key: 'y', label: 'y' }, { key: 'z', label: 'z' }]}
+        cols={[{ key: 'r', label: 'Rank', stage: 'upstream' }]}
+        cell={(r) => ({ value: { x: 1, y: 2, z: 3 }[r] as number, display: `r${r}` })}
+        reverse
+      />,
+    );
+    const ranks = screen.getByRole('table', { name: 'Rank table' });
+    expect(cellOf(ranks, 'rx').style.background).toBe(rgb(TRI_HIGH));
+    expect(cellOf(ranks, 'rz').style.background).toBe(rgb(TRI_LOW));
+  });
+
+  it('LeagueBars: signed bars in the scale ends, the selected bar ringed ink under white', () => {
+    const rows = [
+      { id: 'USA', label: 'United States', group: 'core' as const, value: 5e9, display: 'USD 5.0 bn' },
+      { id: 'JPN', label: 'Japan', group: 'core' as const, value: -3e9, display: '−USD 3.0 bn' },
+    ];
+    const { container } = render(<LeagueBars rows={rows} selected="JPN" axisLabel="Net trade, US dollars" ariaLabel="Signed league" diverging={{ negLabel: 'net importer ←', posLabel: '→ net exporter' }} />);
+    const svg = container.querySelector('svg[aria-label="Signed league"]') as SVGSVGElement;
+    // (bars with rounded data ends are paths; a constant stroke sits on the mark's group)
+    const html = svg.innerHTML;
+    expect(html).toContain(`fill="${TRI_HIGH}"`);
+    expect(html).toContain(`fill="${TRI_LOW}"`);
+    expect(html).toContain(`stroke="${RING_OUTER}"`);
+    expect(html).toContain(`stroke="${RING_INNER}"`);
+    expect(html).not.toContain(`stroke="${SIGNAL}"`);
+  });
+
+  it('SmallMultiples: columns = 1 gives full-width panels', () => {
+    render(
+      <SmallMultiples
+        panels={[
+          { id: 'a', title: 'Brent', rows: [{ x: 1, y: 2 }] },
+          { id: 'b', title: 'Henry Hub', rows: [{ x: 1, y: 3 }] },
+        ]}
+        shared={false}
+        columns={1}
+        yValue={(r) => r.y}
+        render={(p) => ({ marks: [Plot.lineY(p.rows, { x: 'x', y: 'y' })] })}
+        ariaLabel={(p) => `${p.title} monthly`}
+      />,
+    );
+    expect(screen.getByTestId('small-multiples').style.gridTemplateColumns).toBe('repeat(1, minmax(0, 1fr))');
+  });
+});
