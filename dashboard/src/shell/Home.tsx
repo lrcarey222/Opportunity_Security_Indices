@@ -95,7 +95,7 @@ function DialGlyph() {
 }
 
 interface CardSpec {
-  id: 'sector' | 'strategic' | 'yards';
+  id: 'sector' | 'strategic';
   tag: string;
   title: string;
   question: string;
@@ -132,34 +132,6 @@ const STRATEGIC_CARD: CardSpec = {
   button: 'Open Strategic Insights',
 };
 
-const YARDS_CARD: CardSpec = {
-  id: 'yards',
-  tag: 'DECISION TOOL',
-  title: 'Draw the Fence',
-  question: 'What does America need to secure, where should it compete, and where is openness an advantage?',
-  lede: 'The NEIS Yards & Fences framework as a guided policy lab: diagnose the problem, see the evidence, place the technology or component in a small, medium or large yard, then test policy packages and other assumptions against the diagnosis.',
-  links: [
-    { to: '/yards-fences/examples', label: 'Grid control, magnets, battery cells, solar modules' },
-    { to: '/yards-fences/assess', label: 'Start an assessment' },
-    { to: '/yards-fences/methodology', label: 'How the tool decides' },
-  ],
-  button: 'Open Draw the Fence',
-};
-
-/** A static glyph of three yards: small with a high fence, medium, large with a low fence. */
-function YardsGlyph() {
-  return (
-    <svg viewBox="0 0 96 44" className="h-11 w-24" aria-hidden="true">
-      <rect x="2" y="30" width="16" height="10" fill="none" stroke="#c96a5a" strokeWidth="2" />
-      <path d="M2 30V12M10 30V12M18 30V12M2 16H18" stroke="#c96a5a" strokeWidth="2" />
-      <rect x="26" y="26" width="26" height="14" fill="none" stroke="#d4a944" strokeWidth="2" />
-      <path d="M26 26V18M34 26V18M44 26V18M52 26V18M26 21H31M37 21H52" stroke="#d4a944" strokeWidth="2" />
-      <rect x="60" y="22" width="34" height="18" fill="none" stroke="#4fb3a9" strokeWidth="2" />
-      <path d="M60 22V18M72 22V18M84 22V18M94 22V18" stroke="#4fb3a9" strokeWidth="2" />
-    </svg>
-  );
-}
-
 function ModuleCard({ spec, manifest }: { spec: CardSpec; manifest: SectorManifest | null }) {
   const id = useId();
   const strategic = spec.id === 'strategic';
@@ -176,12 +148,7 @@ function ModuleCard({ spec, manifest }: { spec: CardSpec; manifest: SectorManife
       <p className="mt-3 text-base text-paper">{spec.question}</p>
       <p className="mt-2 text-sm leading-relaxed text-paper-dim">{spec.lede}</p>
       <div className="mt-5 flex min-h-11 items-center gap-4">
-        {spec.id === 'yards' ? (
-          <>
-            <YardsGlyph />
-            <span className="text-xs text-paper-mute">Evidence from the indices, judgments from you, rules in the open</span>
-          </>
-        ) : strategic ? (
+        {strategic ? (
           <>
             <DialGlyph />
             <span className="text-xs text-paper-mute">Paper baseline + your scenario, computed in your browser</span>
@@ -309,14 +276,13 @@ export default function Home() {
         <div className="eyebrow mb-3">NEIS Center · Allied Industrial Base Explorer</div>
         <h1 className="rule-neis text-3xl font-medium text-paper sm:text-[2.25rem] sm:leading-tight">Allied Industrial Base Explorer</h1>
         <p className="mt-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">
-          Three ways into the data behind <em>Opportunity, Security, and the Allied Industrial Base</em>. Sector Insights shows what the data say about each energy technology&rsquo;s supply chain. Strategic Insights turns the same data into priorities for a coalition, under weights you choose. Draw the Fence helps decide what to do about it: what to secure, where to compete, and where openness is an advantage.
+          Two ways into the data behind <em>Opportunity, Security, and the Allied Industrial Base</em>. Sector Insights shows what the data say about each energy technology&rsquo;s supply chain. Strategic Insights turns the same data into priorities for a coalition, under weights you choose.
         </p>
       </header>
 
-      <section aria-label="Modules" className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <section aria-label="Modules" className="grid gap-6 md:grid-cols-2">
         <ModuleCard spec={SECTOR_CARD} manifest={manifest} />
         <ModuleCard spec={STRATEGIC_CARD} manifest={manifest} />
-        <ModuleCard spec={YARDS_CARD} manifest={manifest} />
       </section>
 
       <section aria-labelledby="home-questions" className="mt-12">

@@ -1,19 +1,19 @@
-// /yards-fences/examples: one-click demonstrations that the framework gives different answers for
+// /examples: one-click demonstrations that the framework gives different answers for
 // different problems. Each is computed live by the engine from curated inputs and the data.
 
 import { useMemo } from 'react';
 import { Link } from 'react-router';
-import { useTitle } from '../../shell/title.ts';
+import { useTitle } from '../title.ts';
 import { EXAMPLES } from '../content/examples.ts';
 import { stateSearch } from '../state/assessment.ts';
 import { subjectsOf, useYards } from '../state/YardsContext.tsx';
 import { evaluateStack } from '../engine/index.ts';
 import { buildAssessment, evidenceFor } from '../data/adapter.ts';
 import { SectionHead, YardBadge } from '../components/kit.tsx';
-import { PAGE } from '../YardsLayout.tsx';
+import { PAGE } from '../FenceLayout.tsx';
 
 export default function ExamplesView() {
-  useTitle('Examples', 'Draw the Fence');
+  useTitle('Examples');
   const { data } = useYards();
   const outcomes = useMemo(
     () =>
@@ -58,10 +58,10 @@ export default function ExamplesView() {
               <p className="mt-4 text-sm leading-relaxed text-paper-dim">{ex.summary}</p>
               <p className="mt-2 text-sm text-paper-mute">Shows: {ex.shows}</p>
               <div className="mt-auto flex flex-wrap gap-3 pt-5">
-                <Link className="btn btn-primary btn-sm" to={`/yards-fences/${ex.view}${stateSearch(st)}`}>
+                <Link className="btn btn-primary btn-sm" to={`/${ex.view}${stateSearch(st)}`}>
                   Open
                 </Link>
-                <Link className="btn btn-ghost btn-sm" to={`/yards-fences/assess${stateSearch({ ...st, step: 1 })}`}>
+                <Link className="btn btn-ghost btn-sm" to={`/assess${stateSearch({ ...st, step: 1 })}`}>
                   Walk through it
                 </Link>
               </div>

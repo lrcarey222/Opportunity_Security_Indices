@@ -1,18 +1,18 @@
-// /yards-fences/fence: "Build your fence". Choose instruments and intensities; the package is
+// /fence: "Build your fence". Choose instruments and intensities; the package is
 // compared with the diagnosis by explicit rules (engine/policy.ts): under-fencing, over-fencing,
 // mismatch, closed gates, missing exits. No model or AI decides fit.
 
 import { useId, useMemo } from 'react';
 import { Link } from 'react-router';
 import { Segmented } from '../../components/ui.tsx';
-import { useTitle } from '../../shell/title.ts';
+import { useTitle } from '../title.ts';
 import { evaluatePolicyFit, POLICIES, successMetrics, YARD_NAME } from '../engine/index.ts';
 import type { Intensity, PolicyId, Purpose } from '../engine/index.ts';
 import { layerOf, withLayer, type PolicyState } from '../state/assessment.ts';
 import { useYards } from '../state/YardsContext.tsx';
 import { FenceDiagram } from '../components/ComponentStack.tsx';
 import { ProvBadge, SectionHead, YardBadge } from '../components/kit.tsx';
-import { PAGE } from '../YardsLayout.tsx';
+import { PAGE } from '../FenceLayout.tsx';
 import { NoAssessment } from './ResultView.tsx';
 
 const LEVELS: { v: Intensity; label: string }[] = [
@@ -54,7 +54,7 @@ function PolicyRow({ id, label, description, level, onChange }: { id: PolicyId; 
 }
 
 export default function FenceView() {
-  useTitle('Build your fence', 'Draw the Fence');
+  useTitle('Build your fence');
   const { state, subjects, focus, evaluate, update, href } = useYards();
   const e = useMemo(() => (focus ? evaluate(focus) : null), [focus, evaluate]);
   if (!state.sel || !focus || !e) return <NoAssessment />;

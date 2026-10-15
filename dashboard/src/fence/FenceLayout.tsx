@@ -1,11 +1,13 @@
-// Draw the Fence layout: loads the Yards & Fences bundle for the assessed country, provides the
-// assessment context, and shows a slim bar with what is being assessed, the methodology drawer,
-// copy-link and print. A missing bundle shows the module's "No data" screen.
+// Draw the Fence layout: the site's header and footer around a view; it loads the Yards & Fences
+// bundle for the assessed country, provides the assessment context, and shows a slim bar with what
+// is being assessed, the methodology drawer and copy-link. A missing bundle shows "No data".
 
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useSearchParams } from 'react-router';
 import { Loading, Notice } from '../components/ui.tsx';
-import { useTitle } from '../shell/title.ts';
+import { useTitle } from './title.ts';
+import { Footer, Header, NavLinks } from './shell/Header.tsx';
+import { useMediaQuery } from '../shell/useMediaQuery.ts';
 import { decodeState } from './state/assessment.ts';
 import { useYFData } from './data/store.ts';
 import { useYards, YardsProvider } from './state/YardsContext.tsx';
@@ -57,8 +59,10 @@ function MethodDrawer({ open, onClose }: { open: boolean; onClose: () => void })
   );
 }
 
+/** The second header row: the views (wide screens), what is being assessed, and the actions. */
 function YardsBar() {
   const { state, subjects, focus, data } = useYards();
+  const wide = useMediaQuery('(min-width: 1024px)');
   const [method, setMethod] = useState(false);
   const [copied, setCopied] = useState(false);
   const scenarioCount = subjects.reduce((n, s) => n + Object.keys(state.layers[s.key]?.scenario ?? {}).length, 0);
@@ -77,22 +81,26 @@ function YardsBar() {
     }
   };
   return (
-    <div className="yf-no-print border-b hairline bg-ink-850">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 text-sm sm:px-6 lg:px-8">
-        <span className="eyebrow">Yards &amp; Fences · NEIS Center</span>
+    <div className="yf-no-print border-b hairline">
+      <div className="mx-auto flex min-h-10 max-w-7xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-1 text-sm sm:px-6 lg:px-8">
+        {wide && <NavLinks />}
         {what && (
-          <span className="min-w-0 truncate text-paper-dim">
-            Assessing: <span className="text-paper">{what}</span> · {data.bundle.country.name}
+          <span className={`min-w-0 truncate text-xs text-paper-mute ${wide ? 'hidden max-w-[16rem] 2xl:inline' : ''}`} title={`${what} · ${data.bundle.country.name}`}>
+            Assessing: <span className="text-paper-dim">{what}</span>
           </span>
         )}
-        {scenarioCount > 0 && <span className="yf-prov yf-prov-scenario">Scenario active: {scenarioCount} assumption{scenarioCount > 1 ? 's' : ''} changed</span>}
-        <span className="ml-auto flex items-center gap-2">
+        {scenarioCount > 0 && (
+          <span className="yf-prov yf-prov-scenario" title={`${scenarioCount} scenario assumption${scenarioCount > 1 ? 's' : ''} changed`}>
+            Scenario · {scenarioCount}
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-1">
           <button type="button" className="btn btn-quiet btn-sm" onClick={() => setMethod(true)}>
-            Methodology
+            How it decides
           </button>
           {state.sel && (
             <button type="button" className="btn btn-quiet btn-sm" onClick={copy} aria-live="polite">
-              {copied ? 'Link copied' : 'Copy assessment link'}
+              {copied ? 'Link copied' : 'Copy link'}
             </button>
           )}
         </span>
@@ -102,34 +110,47 @@ function YardsBar() {
   );
 }
 
-export default function YardsLayout() {
-  useTitle('', 'Draw the Fence');
+function Body() {
   const [params] = useSearchParams();
   const country = decodeState(params.get('a')).country;
   const load = useYFData(country);
   if (load.status === 'loading')
     return (
-      <div className={PAGE}>
-        <Loading label="Loading the Yards & Fences evidence" />
-      </div>
+      <main id="main" className={PAGE}>
+        <Loading label="Loading Draw the Fence" />
+      </main>
     );
   if (load.status === 'error')
     return (
-      <div className={PAGE}>
+      <main id="main" className={PAGE}>
         <Notice kind="info" title="No Yards & Fences data">
           <p>{load.message}</p>
           <p className="mt-2 text-paper-mute">
             Build it from the repository root after scripts/85 and 87: <code>Rscript scripts/89_export_yards_fences_data.R</code>
           </p>
         </Notice>
-      </div>
+      </main>
     );
   return (
     <YardsProvider data={load.data}>
-      <div className="yf">
-        <YardsBar />
+      <YardsBar />
+      <main id="main">
         <Outlet />
-      </div>
+      </main>
+      <Footer vintage={load.data.manifest.inputs.sector_created.slice(0, 10)} />
     </YardsProvider>
+  );
+}
+
+export default function FenceLayout() {
+  useTitle('');
+  return (
+    <div className="yf min-h-screen">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-ink-800 focus:p-2">
+        Skip to content
+      </a>
+      <Header />
+      <Body />
+    </div>
   );
 }

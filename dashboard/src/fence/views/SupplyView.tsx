@@ -1,16 +1,17 @@
-// /yards-fences/diversify: can trusted diversification solve the problem? Current supply (who holds
+// /supply: can trusted diversification solve the problem? Current supply (who holds
 // world supply, where the home country buys) against the paper's allied network design for the same
 // technology-stage, and three strategies side by side. Reducing vulnerability does not have to mean
 // recreating every supply chain at home.
 
 import { useMemo } from 'react';
-import { useTitle } from '../../shell/title.ts';
+import { useTitle } from '../title.ts';
 import { optionLabel, UNKNOWN } from '../engine/index.ts';
 import { stageScopeId } from '../data/adapter.ts';
 import type { YFNetworkView, YFSupplier, YFSupplyView } from '../data/contract.ts';
 import { useYards } from '../state/YardsContext.tsx';
 import { ProvBadge, SectionHead } from '../components/kit.tsx';
-import { PAGE } from '../YardsLayout.tsx';
+import { Disclosure } from '../../components/ui.tsx';
+import { PAGE } from '../FenceLayout.tsx';
 import { NoAssessment } from './ResultView.tsx';
 
 const TIER: Record<string, string> = { core: 'coalition core', partner: 'coalition partner', none: 'outside the coalition' };
@@ -91,8 +92,8 @@ function NetworkCard({ n, home }: { n: YFNetworkView; home: string }) {
   );
 }
 
-export default function DiversifyView() {
-  useTitle('Diversify', 'Draw the Fence');
+export default function SupplyView() {
+  useTitle('Trusted supply');
   const { state, focus, evaluate, data } = useYards();
   const e = useMemo(() => (focus ? evaluate(focus) : null), [focus, evaluate]);
   if (!state.sel || !focus || !e) return <NoAssessment />;
@@ -120,41 +121,43 @@ export default function DiversifyView() {
     ['Domestic capability built', 'most', homeInDesign ? `some (${home} ${pct(homeInDesign)} of the design)` : 'little', 'least'],
   ];
 
+  const r = e.scenarioResult;
+  const fit =
+    r.yard === 'indeterminate' || r.yard === 'mixed'
+      ? 'The diagnosis is not settled yet, so no strategy follows from it: fill the pivotal gaps first.'
+      : r.variant === 'small-input' || r.variant === 'small-both'
+        ? 'Your diagnosis is a physical chokepoint. Trusted diversification with stockpiles is the default remedy; domestic production is one tool among several, and self-sufficiency is warranted only where trusted capacity could not be qualified in time.'
+        : r.yard === 'small'
+          ? 'Your diagnosis is a control-layer problem. Trusted sourcing applies to the control layer; the hardware can come from the lowest-cost reliable supplier.'
+          : r.yard === 'medium'
+            ? 'Your diagnosis is a capability case. Domestic production and trusted diversification can coexist: the medium fence sets how much capability is built at home, with gates for foreign technology that speeds learning.'
+            : 'Your diagnosis is the large yard. Lowest-cost sourcing is the default, with diversification toward trusted producers where supply is concentrated.';
+  const STRATEGIES: [string, string][] = [
+    ['Domestic self-sufficiency', 'Removes foreign leverage, but concentrates supply in one country’s plants, takes longest and costs most. Justified only when nothing else would survive a cutoff.'],
+    ['Trusted diversification', 'Spreads supply across trusted producers, home among them, qualified in advance. Usually removes coercive leverage faster and more cheaply than self-sufficiency.'],
+    ['Lowest-cost global sourcing', 'Cheapest and fastest for deployment. Acceptable when no supplier could exert coercive leverage, or the good is easily substituted.'],
+  ];
+
   return (
     <div className={PAGE}>
-      <SectionHead eyebrow="Allied diversification" title="Can trusted diversification solve the problem?">
-        Reducing a vulnerability does not necessarily mean recreating the supply chain at home. Compare today’s supply with a trusted network built from producer capacity, readiness, partnership strength and diversification.
+      <SectionHead eyebrow="Trusted supply" title="Can trusted diversification solve the problem?">
+        Reducing a vulnerability does not have to mean rebuilding the whole supply chain at home. The question is which strategy removes the leverage at a cost worth paying.
       </SectionHead>
-      <p className="mb-6 text-sm text-paper-mute">
-        {focus.label} · supply data for {primSupply ? (e.evidence.primaryRecords[0]?.scopeLabel ?? primSupply.scopeId) : `${focus.technology} — ${focus.stage}`}
-        {focus.component && !primSupply && ' (the whole stage: no measured scope isolates this component)'}
-      </p>
+      <p className="mb-6 text-sm text-paper-mute">For {focus.label}.</p>
 
-      <h2 className="mb-3 text-lg font-medium text-paper">Current supply</h2>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {primSupply && <SupplyCard v={primSupply} title="Who holds world supply of this component" />}
-        {stageSupply && <SupplyCard v={stageSupply} title={`Who holds world supply: ${focus.technology} — ${focus.stage} (whole stage)`} />}
-        {stageSupply?.homeImports && (
-          <section className="panel p-4">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="text-sm font-medium text-paper">Where {b.country.name} buys (whole stage)</h3>
-              <ProvBadge p="data" />
-            </div>
-            <p className="mt-0.5 text-xs text-paper-mute">Share of {b.country.name} imports of the HS6 basket, {stageSupply.homeImports.year} · UN Comtrade, reconciled matrix</p>
-            <div className="mt-3">
-              <Bars rows={sup(stageSupply.homeImports.sources)} />
-            </div>
-            <p className="mt-3 text-sm text-paper-dim">Import sources {hhiTxt(stageSupply.homeImports.hhi)}</p>
-          </section>
-        )}
-      </div>
-
-      <h2 className="mb-3 mt-10 text-lg font-medium text-paper">A diversified trusted network</h2>
-      {net ? <NetworkCard n={net} home={home} /> : <p className="text-sm text-paper-mute">The allied network has no design for this stage.</p>}
+      <section aria-label="Three strategies" className="grid gap-4 md:grid-cols-3">
+        {STRATEGIES.map(([title, text]) => (
+          <article key={title} className="panel p-5">
+            <h2 className="text-base font-semibold uppercase tracking-[0.1em] text-paper">{title}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-paper-dim">{text}</p>
+          </article>
+        ))}
+      </section>
+      <p className="block-interpretation mt-6 max-w-3xl text-[0.9375rem] leading-relaxed">{fit}</p>
 
       <section aria-labelledby="yf-strat" className="mt-10">
-        <SectionHead id="yf-strat" title="Three strategies">
-          Values come from the data where they exist and from your answers where they do not; directions are shown where no estimate exists.
+        <SectionHead id="yf-strat" title="How the three compare for this assessment">
+          From your answers, with measured figures where they exist; directions where no estimate does.
         </SectionHead>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[40rem] text-sm">
@@ -188,25 +191,32 @@ export default function DiversifyView() {
         </div>
       </section>
 
-      {b.partners.length > 0 && (
-        <section aria-labelledby="yf-psi" className="mt-10">
-          <SectionHead id="yf-psi" title={`${b.country.name}'s strongest partners`}>
-            Partnership Strength (PSI) is a country-level dyad measure from the indices: an attribute of partners, never a yard input.
-          </SectionHead>
-          <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            {b.partners.map((p) => (
-              <li key={p.iso3} className="panel p-3 text-sm">
-                <span className="text-paper">
-                  {p.rank}. {p.name}
-                </span>
-                <span className="block text-xs text-paper-mute">
-                  PSI {p.psi.toFixed(2)} · {TIER[p.tier] ?? p.tier}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
+      <div className="mt-10">
+        <Disclosure summary="The data behind it: who supplies today, where the country buys, and the allied network design">
+          <p className="mb-4 text-sm text-paper-mute">
+            Supply data for {primSupply ? (e.evidence.primaryRecords[0]?.scopeLabel ?? primSupply.scopeId) : `${focus.technology} — ${focus.stage}`}
+            {focus.component && !primSupply && ' (the whole stage: no measured scope isolates this component)'}.
+          </p>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {primSupply && <SupplyCard v={primSupply} title="Who holds world supply of this component" />}
+            {stageSupply && <SupplyCard v={stageSupply} title={`Who holds world supply: ${focus.technology} — ${focus.stage} (whole stage)`} />}
+            {stageSupply?.homeImports && (
+              <section className="panel p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-sm font-medium text-paper">Where {b.country.name} buys (whole stage)</h3>
+                  <ProvBadge p="data" />
+                </div>
+                <p className="mt-0.5 text-xs text-paper-mute">Share of {b.country.name} imports of the HS6 basket, {stageSupply.homeImports.year} · UN Comtrade, reconciled matrix</p>
+                <div className="mt-3">
+                  <Bars rows={sup(stageSupply.homeImports.sources)} />
+                </div>
+                <p className="mt-3 text-sm text-paper-dim">Import sources {hhiTxt(stageSupply.homeImports.hhi)}</p>
+              </section>
+            )}
+            {net ? <NetworkCard n={net} home={home} /> : <p className="text-sm text-paper-mute">The allied network has no design for this stage.</p>}
+          </div>
+        </Disclosure>
+      </div>
     </div>
   );
 }

@@ -4,7 +4,6 @@
 //   * a pathless lazy StrategicLayout (engine, scenario, runs, dials) around the eight Strategic
 //     views, with their paths and titles unchanged;
 //   * sectorRoute (src/sector/routes.tsx, builder C) at /sector;
-//   * yardsRoute (src/yards/routes.tsx) at /yards-fences: Draw the Fence, the Yards & Fences tool;
 //   * aliases /sector-insights and /strategic-insights; unknown paths go Home with a notice;
 //   * route errors (a lazy chunk that fails to load) show a notice with Reload under the header.
 // Every view is a lazy route chunk, so the Strategic first load does not carry Home or Sector code.
@@ -15,7 +14,6 @@ import { HomeOrLegacy } from './shell/HomeOrLegacy.tsx';
 import { BootScreen } from './shell/screens.tsx';
 import { RootError, RouteError } from './shell/RouteError.tsx';
 import { sectorRoute } from './sector/routes.tsx';
-import { yardsRoute } from './yards/routes.tsx';
 
 const view = (load: () => Promise<{ default: React.ComponentType }>) => async () => ({ Component: (await load()).default });
 
@@ -47,7 +45,6 @@ export const routes: RouteObject[] = [
       { id: 'strategic', lazy: view(() => import('./shell/StrategicLayout.tsx')), errorElement: <RouteError />, children: STRATEGIC_ROUTES },
       // a failing Sector chunk shows the notice under the shared header (the module's own errorElement wins)
       { errorElement: <RouteError />, ...sectorRoute },
-      { errorElement: <RouteError />, ...yardsRoute },
       { path: 'sector-insights', element: <Alias to="/sector" /> },
       { path: 'strategic-insights', element: <Alias to="/overview" /> },
       { path: '*', element: <ToHome notice="That page does not exist; showing the home page." /> },

@@ -1,26 +1,39 @@
 # Draw the Fence: the Yards & Fences decision tool
 
-*Draw the Fence* is a module of the Allied Industrial Base Explorer (`dashboard/`, routes under
-`/yards-fences`). It turns the NEIS Center paper *Clean Energy Industrial Strategy: Three Yards for
-Three Different Problems* (discussion draft, October 2026) into an interactive policy lab:
+*Draw the Fence* is a standalone NEIS Center site, separate from the Allied Industrial Base Explorer
+but built from the same package (`dashboard/`), so it shares the Explorer's look, design tokens, UI
+primitives, fonts and data without copying them. It turns the NEIS Center paper *Clean Energy
+Industrial Strategy: Three Yards for Three Different Problems* (discussion draft, October 2026) into an
+interactive policy lab:
 
 > OSI tells you what the world looks like. Yards & Fences helps you decide what to do about it.
 
 The tool runs **Problem → Evidence → Yard → Fence → Policy → Metrics → Reassessment**. It never runs
 technology → score → label: there is no aggregate score, and no headline index is mapped to a yard.
 
+The framework and the decision engine lead. Data from the Opportunity & Security Indices and the
+allied network appear as context: a short note of one to three plain sentences beside the gate they
+inform, with the figures and sources one click away, and in collapsed sections on the result and
+trusted-supply pages. They inform the reader's answers and never decide the yard.
+
+```bash
+cd dashboard
+npm run dev:fence       # http://localhost:5173 (or --port)
+npm run build:fence     # fence/dist/, a site of its own (fence/netlify.toml)
+```
+
 ## Pages
 
 | Path | What it does |
 |---|---|
-| `/yards-fences` | The framework in one screen: three yards as three problems, the sequence, the examples |
-| `/yards-fences/assess` | The guided assessment: what is assessed → what the data tell us → Gate 1 (acute harm) → Gate 2 (2A control layers, 2B physical chokepoints) → Gate 3 (capability; preserve / catch up / leap ahead) → Gate 4 (cost of protection). Analyst and Quick modes share one state and engine |
-| `/yards-fences/result` | The result: yard, posture, confidence, evidence completeness, why (and what did *not* drive it), the decision tree, evidence gaps, what would change the answer, the policy posture, the curated notes and every input with its provenance. For a system, the component stack first. Print / Save as PDF |
-| `/yards-fences/scenario` | Test another world: change observed data or assumptions; baseline and scenario side by side; the change of yard explained by the gate that changed |
-| `/yards-fences/fence` | Build your fence: 13 instruments × Off/Low/Medium/High and the scope of security measures; rule-based findings (under-fencing, over-fencing, mismatch, closed gate, no exit, …), the two fences drawn side by side, and how we will know it worked |
-| `/yards-fences/diversify` | Can trusted diversification solve the problem? Current supply, home import sources, the paper's allied network design for the stage (with Partnership Strength), and three strategies compared |
-| `/yards-fences/examples` | Six one-click assessments, computed live |
-| `/yards-fences/methodology` | The rules (rendered from `engine/rules.ts`), the data and vintages, the build's validation, the metric map, the curated table |
+| `/` | The framework in one screen: three yards as three problems, how the engine decides (the four gates), the sequence, the examples |
+| `/assess` | The guided assessment: what is assessed → Gate 1 (acute harm) → Gate 2 (2A control layers, 2B physical chokepoints) → Gate 3 (capability; preserve / catch up / leap ahead) → Gate 4 (cost of protection), each with a context note. Analyst and Quick modes share one state and engine |
+| `/result` | The result: yard, posture, confidence, evidence completeness, why (and what did *not* drive it), the decision tree, evidence gaps, what would change the answer, the policy posture and the curated notes; every input with its provenance and the data behind it in collapsed sections. For a system, the component stack first. Print / Save as PDF |
+| `/scenario` | Test another world: change the framework's assumptions first, then the cost of protection, then market conditions; baseline and scenario side by side; the change of yard explained by the gate that changed |
+| `/fence` | Build your fence: 13 instruments × Off/Low/Medium/High and the scope of security measures; rule-based findings (under-fencing, over-fencing, mismatch, closed gate, no exit, …), the two fences drawn side by side, and how we will know it worked |
+| `/supply` | Trusted supply: can trusted diversification solve the problem? The three strategies and what the diagnosis implies for them, compared for this assessment; current supply, import sources and the allied network design in a collapsed section |
+| `/examples` | Six one-click assessments, computed live |
+| `/methodology` | The rules (rendered from `engine/rules.ts`), the data and vintages, the build's validation, the metric map, the curated table |
 
 The whole assessment travels in the URL (`?a=`, base64url JSON), so *Copy assessment link* reproduces
 it exactly. Nothing is stored anywhere else.
@@ -31,13 +44,18 @@ it exactly. Nothing is stored anywhere else.
 config/yards_fences_metric_map.yml          which published measures become evidence; labels; engine inputs; stacks
 data/reference/yards_fences_assessments.csv the curated component table (what OSI cannot measure)
 R/dashboard/yards_fences/yf_build.R         pure helpers (no IO)
-scripts/89_export_yards_fences_data.R       IO: reads the published bundles, writes dashboard/public/data/yards-fences/
-dashboard/src/yards/
+scripts/89_export_yards_fences_data.R       IO: reads the published bundles, writes dashboard/fence/public/data/yards-fences/
+dashboard/vite.fence.config.ts              the site's build (root fence/, code src/fence/; `/src/` aliased to the package)
+dashboard/fence/                            index.html, public/ (favicon, data), netlify.toml, dist/ (built)
+dashboard/src/fence/
+  main.tsx, routes.tsx, nav.ts, title.ts, FenceLayout.tsx, fence.css (imports styles/globals.css)
+  shell/         Header (brand row, views row, Menu below 1024 px) and Footer
   engine/        the decision engine: pure TypeScript, no IO, unit-tested (engine.test.ts)
   data/          contract.ts (the bundle's shape), store.ts (fetch + cache), adapter.ts (evidence -> engine inputs)
   state/         assessment.ts (state + URL codec), YardsContext.tsx (provider, memoised engine runs)
-  components/    kit (yard glyphs, provenance badges, EvidenceMetric), Controls, EvidencePanel,
-                 ResultBlocks (decision tree, gaps, change conditions), ComponentStack, FenceDiagram
+  components/    kit (yard glyphs, provenance badges, EvidenceMetric), Controls, Context (the context
+                 notes), EvidencePanel, ResultBlocks (decision tree, gaps, change conditions),
+                 ComponentStack, FenceDiagram
   content/       examples, policy toolkits
   views/         one lazy route chunk per page
 ```
@@ -110,37 +128,40 @@ is settled.
 inputs that can matter for each move, and says so when a result is robust to any one or two changes.
 The paper's generic reassessment conditions are always listed too.
 
-Every threshold lives in `dashboard/src/yards/engine/rules.ts` with its reason; the Methodology page
+Every threshold lives in `dashboard/src/fence/engine/rules.ts` with its reason; the Methodology page
 renders that object.
 
 ### Tests
 
-* `dashboard/src/yards/engine/engine.test.ts`: the brief's cases A–H (concentration alone is not small;
+* `dashboard/src/fence/engine/engine.test.ts`: the brief's cases A–H (concentration alone is not small;
   control-layer small; physical chokepoint; medium; large; unknowns lower confidence and are never
   filled; a mixed system; over- and under-fencing), transitions, change conditions, determinism.
-* `dashboard/src/yards/data/adapter.test.ts`: scope and measure selection, provenance, no cross-scope
+* `dashboard/src/fence/data/adapter.test.ts`: scope and measure selection, provenance, no cross-scope
   borrowing, curated overrides, the URL codec.
-* `dashboard/src/yards/views/yards.test.tsx`: the module through the real router on a synthetic bundle.
-* `dashboard/src/yards/shell.test.ts`: the module in the shared header, nav and last-location memory.
+* `dashboard/src/fence/views/fence.test.tsx`: the site through its own router on a synthetic bundle: the landing page, a system result, the sandbox, the scenario lab, the guided flow (context notes beside the gates), trusted supply and methodology, the No data screen.
 * `tests/testthat/test-yards-fences-build.R`: the curated table, the build helpers, unlisted home
   shares, the metric map's safeguards, JSON array serialisation.
 
-The module's tests (50 in vitest, 29 R expectations) pass. In the full dashboard suite, Strategic views
+The site's tests (47 in vitest, 29 R expectations) pass. In the full dashboard suite, Strategic views
 in `src/app.test.tsx` (`/network`, `/overview`) fail intermittently under load and pass on re-run;
-they are outside this module.
+they are outside this site.
 
 ```bash
-cd dashboard && npx vitest run --project unit --project ui src/yards
+cd dashboard && npx vitest run --project unit --project ui src/fence
 Rscript -e "testthat::test_file('tests/testthat/test-yards-fences-build.R')"
 ```
 
 ## Decisions taken without asking
 
-* **Where it lives.** The current OSI dashboard is the React app on `fix/allied-base-paper`, so the
-  tool is a third module of it (branch `feat/yards-fences`), not of the older static `dashboard/` on
-  `main`. It shares the app's design tokens, header, primitives and URL conventions; module code is
-  isolated under `src/yards/`, and the shared shell changes are small (`modules.ts`, `Header.tsx`,
-  `lastLocation.ts`, `Home.tsx`, `routes.tsx`).
+* **Where it lives.** A site of its own, separate from the Allied Industrial Base Explorer (which
+  neither imports nor links to it), on branch `feat/yards-fences` off `fix/allied-base-paper`. It is
+  built from the Explorer's package so that both share one design system and one data pipeline: its
+  own entry (`fence/index.html`), router, header, footer, title and build output (`fence/dist/`).
+  The Explorer's own files are unchanged apart from three npm scripts (`dev:fence`, `build:fence`,
+  `preview:fence`) and the new config in `tsconfig.node.json`.
+* **Data as context.** The framework's questions lead every gate; measured facts sit beside them as
+  a short context note. The separate "what the data tell us" stage of the first version was folded into
+  these notes; the full evidence panel stays available, collapsed, on the result page.
 * **Inputs are the published bundles**, not a second reading of `data/processed`, for parity with
   the other modules (as scripts/88 does).
 * **Coercive concentration** is measured as the largest supplier *outside the 57-economy coalition*,

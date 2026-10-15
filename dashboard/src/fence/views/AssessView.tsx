@@ -1,17 +1,18 @@
-// /yards-fences/assess: the guided assessment.
+// /assess: the guided assessment.
 //
-//   0 What are you assessing?   1 What the data tell us   2 Gate 1: acute harm
-//   3 Gate 2: where the vulnerability sits (2A digital, 2B physical)
-//   4 Gate 3: a capability worth building?   5 Gate 4: the cost of protection   -> Result
+//   0 What are you assessing?   1 Gate 1: acute harm   2 Gate 2: where the vulnerability sits
+//   (2A digital, 2B physical)   3 Gate 3: a capability worth building?   4 Gate 4: the cost of
+//   protection   -> Result
 //
-// Evidence comes before judgment at every gate. Analyst mode asks every question; Quick mode asks
+// The framework's questions lead; a quiet context note beside each gate carries the few measured
+// facts that inform it (figures and sources one click away). Analyst mode asks every question; Quick mode asks
 // the few that matter most and leaves the rest at their curated (or Unknown) values. Both share the
 // same state and engine.
 
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Segmented, Select } from '../../components/ui.tsx';
-import { useTitle } from '../../shell/title.ts';
+import { useTitle } from '../title.ts';
 import { INPUT_DEFS, UNKNOWN } from '../engine/index.ts';
 import type { CategoricalInputId, InputId, Strategy, Tri } from '../engine/index.ts';
 import { digitalApplies, physicalApplies } from '../engine/gates.ts';
@@ -20,12 +21,12 @@ import type { Stage, YFEvidenceRecord } from '../data/contract.ts';
 import { stageKey, STAGES, withLayer, type AssessState, type PremiumWhy } from '../state/assessment.ts';
 import { useYards, type Evaluation } from '../state/YardsContext.tsx';
 import { PathCards, PremiumConsequences, PremiumSlider, Question } from '../components/Controls.tsx';
-import { EvidencePanel } from '../components/EvidencePanel.tsx';
-import { Completeness, ConfidencePill, EvidenceMetric, ProvBadge, SectionHead, YardBadge } from '../components/kit.tsx';
-import { PAGE } from '../YardsLayout.tsx';
+import { ContextNote } from '../components/Context.tsx';
+import { Completeness, ConfidencePill, ProvBadge, SectionHead, YardBadge } from '../components/kit.tsx';
+import { PAGE } from '../FenceLayout.tsx';
 
-const STEPS = ['What are you assessing?', 'What the data tell us', 'Acute harm?', 'Where does the vulnerability sit?', 'A capability worth building?', 'The cost of protection'];
-const QUICK_STEPS = [0, 2, 3, 4, 5];
+const STEPS = ['What are you assessing?', 'Acute harm?', 'Where does the vulnerability sit?', 'A capability worth building?', 'The cost of protection'];
+const QUICK_STEPS = [0, 1, 2, 3, 4];
 
 function ProgressRail({ step, quick, onGo, canLeave0 }: { step: number; quick: boolean; onGo: (i: number) => void; canLeave0: boolean }) {
   const steps = STEPS.map((t, i) => ({ t, i })).filter((s) => !quick || QUICK_STEPS.includes(s.i));
@@ -247,12 +248,12 @@ function Q({ e, id, hint, quick }: { e: Evaluation; id: CategoricalInputId; hint
   return <Question id={id} iv={e.baseline.inputs[id]} baseline={baselineValue(e.subject, e.evidence, id)} onChange={(v) => setAnswer(id, v)} hint={hint} />;
 }
 
-function DataLine({ e, metric }: { e: Evaluation; metric: string }) {
-  const r = e.evidence.primaryRecords.find((x) => x.metricId === metric && (x.measure === e.evidence.engineMeasure || !e.evidence.engineMeasure));
-  return r ? <EvidenceMetric r={r} compact /> : null;
+/** A record on the component's own scope and engine measure. */
+function prim(e: Evaluation, metric: string): YFEvidenceRecord | undefined {
+  return e.evidence.primaryRecords.find((r) => r.metricId === metric && r.measure === e.evidence.engineMeasure);
 }
 
-// ── Steps 2-5 ────────────────────────────────────────────────────────────────────────────────────
+// ── Gates 1-4 ────────────────────────────────────────────────────────────────────────────────────
 
 function Gate1({ e, quick }: { e: Evaluation; quick: boolean }) {
   const comp = e.subject.component;
@@ -327,36 +328,27 @@ function Gate2({ e, quick }: { e: Evaluation; quick: boolean }) {
           <h3 id="yf-2b" className="text-lg font-medium text-paper">
             2B · Physical chokepoints
           </h3>
-          <div className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-            <div className="panel p-4">
-              <div className="eyebrow">What the data establish</div>
+          <p className="mt-1 max-w-3xl text-sm text-paper-dim">
+            Concentration becomes a small-yard problem only when a potentially coercive supplier holds most of supply, substitutes are poor, and trusted supply could not be restored before harm becomes intolerable.
+          </p>
+          <div className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <div className="panel px-5">
+              <Q e={e} id="substitutability" quick={quick} />
+              <Q e={e} id="qualificationTime" quick={quick} />
+              <Q e={e} id="reconstitutionTime" quick={quick} />
+              <Q e={e} id="stockpile" quick={quick} />
+              <Q e={e} id="surgeCapacity" quick={quick} />
+            </div>
+            <ContextNote
+              records={share.provenance === 'assessment' ? [] : [prim(e, 'non_coalition_top'), prim(e, 'coalition_share')]}
+              empty="No measured supplier shares isolate this component, so the concentration test stays Unknown unless you set it in the scenario lab."
+            >
               {share.provenance === 'assessment' && (
-                <div className="border-b hairline py-3 text-sm text-paper-dim">
-                  <div className="flex items-center justify-between gap-2">
-                    <span>Largest non-coalition supplier</span>
-                    <ProvBadge p="assessment" />
-                  </div>
-                  <div className="mt-1 text-lg font-medium text-paper">
-                    {Math.round(Number(share.value) * 100)}% <span className="text-sm font-normal">{share.subject}</span>
-                  </div>
-                  <p className="mt-1 text-xs text-paper-mute">{share.note}</p>
-                </div>
+                <p className="text-sm leading-relaxed text-paper-dim">
+                  <ProvBadge p="assessment" className="mr-1" /> {share.subject} is assessed to hold about {Math.round(Number(share.value) * 100)}% of supply. {share.note}
+                </p>
               )}
-              <DataLine e={e} metric="non_coalition_top" />
-              <DataLine e={e} metric="hhi" />
-              <DataLine e={e} metric="coalition_share" />
-              {!e.evidence.engineMeasure && share.provenance !== 'assessment' && <p className="py-3 text-sm text-paper-mute">No supplier-share data for this scope: coercive concentration stays Unknown.</p>}
-            </div>
-            <div>
-              <p className="mb-2 text-sm text-paper-dim">The indices cannot establish these. Answer from expertise, or leave them Unknown.</p>
-              <div className="panel px-5">
-                <Q e={e} id="substitutability" quick={quick} />
-                <Q e={e} id="qualificationTime" quick={quick} />
-                <Q e={e} id="reconstitutionTime" quick={quick} />
-                <Q e={e} id="stockpile" quick={quick} />
-                <Q e={e} id="surgeCapacity" quick={quick} />
-              </div>
-            </div>
+            </ContextNote>
           </div>
         </section>
       )}
@@ -369,26 +361,21 @@ function Gate3({ e, quick }: { e: Evaluation; quick: boolean }) {
   const { data } = useYards();
   const stage = recordsFor(data.bundle, stageScopeId(e.subject.technology, e.subject.stage));
   const rec = (id: string): YFEvidenceRecord | undefined => stage.find((r) => r.metricId === id);
-  const home = e.evidence.primaryRecords.find((r) => r.metricId === 'home_share' && r.measure === e.evidence.engineMeasure);
-  const evidence = [home, rec('home_rca'), rec('home_investment_growth'), rec('osi_addressable_market'), rec('trl_change')].filter((r): r is YFEvidenceRecord => !!r);
+  const home = e.evidence.primaryRecords.find((r) => r.metricId === 'home_share' && r.measure === e.evidence.homeMeasure);
   const leap = e.baseline.strategies.includes('leapAhead');
   return (
     <div className="space-y-8">
       <SectionHead eyebrow="Decision gate 3" title="Is this a capability worth building or preserving?">
-        The evidence below informs the answer; it does not decide it. The headline Economic Opportunity score is not used.
+        A capability belongs in the medium yard if there is a present position worth defending, production carries learning that matters for what comes next, or a successor technology offers a credible leap. Market size alone is not a reason.
       </SectionHead>
-      {!quick && (
-        <div className="panel grid gap-x-6 px-4 md:grid-cols-2">
-          {evidence.map((r) => (
-            <EvidenceMetric key={r.metricId + r.scopeId} r={r} compact scopeNote={r.scope === 'stage' && e.subject.component ? 'whole stage' : undefined} />
-          ))}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div className="panel px-5">
+          <Q e={e} id="processKnowledge" quick={quick} />
+          <Q e={e} id="workforceSuppliers" quick={quick} />
+          <Q e={e} id="adjacentInnovation" quick={quick} />
+          <Q e={e} id="complementaryCapabilities" quick={quick} />
         </div>
-      )}
-      <div className="panel px-5">
-        <Q e={e} id="processKnowledge" quick={quick} />
-        <Q e={e} id="workforceSuppliers" quick={quick} />
-        <Q e={e} id="adjacentInnovation" quick={quick} />
-        <Q e={e} id="complementaryCapabilities" quick={quick} />
+        <ContextNote records={[home, rec('home_investment_growth')]} />
       </div>
       <section aria-labelledby="yf-paths">
         <h3 id="yf-paths" className="mb-3 text-lg font-medium text-paper">
@@ -398,8 +385,9 @@ function Gate3({ e, quick }: { e: Evaluation; quick: boolean }) {
           value={e.baseline.strategies}
           onChange={setStrategies}
           notes={{
-            preserve: home ? `Present position: ${home.explanation}` : undefined,
-            leapAhead: rec('trl_change') ? `Readiness and momentum inform but never decide leap-ahead status: ${rec('trl_change')?.explanation}` : undefined,
+            preserve: 'Needs a position worth defending, and a reason it matters for what comes next.',
+            catchUp: 'Usually depends on learning from the frontier: keep a gate open for licensing and joint ventures.',
+            leapAhead: 'Needs an advantage customers value, evidence beyond novelty and a path to scale. Readiness data inform it; they never decide it.',
           }}
         />
       </section>
@@ -434,8 +422,6 @@ function Gate4({ e }: { e: Evaluation }) {
   const { data } = useYards();
   const stage = recordsFor(data.bundle, stageScopeId(e.subject.technology, e.subject.stage));
   const rec = (id: string, measure?: string) => stage.find((r) => r.metricId === id && (!measure || r.measure === measure));
-  const prim = (id: string) => e.evidence.primaryRecords.find((r) => r.metricId === id && r.measure === e.evidence.engineMeasure);
-  const show = [rec('trl'), prim('coalition_share'), prim('hhi'), rec('osi_input_cost'), rec('osi_addressable_market'), rec('home_share', 'mfg_pipeline')].filter((r): r is YFEvidenceRecord => !!r);
   const p = e.baseline.inputs.premium;
   const why = e.baseline.premiumJustification;
   return (
@@ -443,14 +429,7 @@ function Gate4({ e }: { e: Evaluation }) {
       <SectionHead eyebrow="Decision gate 4" title="Would insisting on domestic production cost more than the strategic benefit it creates?">
         Where neither the acute-security case nor the industrial-capability case is strong, the default is the Large Yard. Make the cost of protection explicit.
       </SectionHead>
-      <div className="panel grid gap-x-6 px-4 md:grid-cols-2">
-        {show.map((r) => (
-          <EvidenceMetric key={r.metricId + r.scopeId + r.measure} r={r} compact scopeNote={r.scope === 'stage' && e.subject.component ? 'whole stage' : undefined} />
-        ))}
-        <div className="py-3 text-sm text-paper-dim">
-          Substitutability: <span className="text-paper">{String(e.baseline.inputs.substitutability.value)}</span> <ProvBadge p={e.baseline.inputs.substitutability.provenance} />
-        </div>
-      </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <fieldset className="panel p-5">
         <legend className="text-[0.9375rem] font-medium text-paper">What strategic benefit would justify paying more for domestic production?</legend>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -462,6 +441,8 @@ function Gate4({ e }: { e: Evaluation }) {
           ))}
         </div>
       </fieldset>
+      <ContextNote records={[rec('trl'), rec('osi_addressable_market')]} />
+      </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="panel p-5">
           <PremiumSlider iv={p} onChange={(v) => setAnswer('premium', v)} />
@@ -480,7 +461,7 @@ function Gate4({ e }: { e: Evaluation }) {
 // ── Page ─────────────────────────────────────────────────────────────────────────────────────────
 
 export default function AssessView() {
-  useTitle('Assess', 'Draw the Fence');
+  useTitle('Assess');
   const { state, update, focus, evaluate, go, data } = useYards();
   const quick = state.mode === 'quick';
   const step = Math.min(state.step, STEPS.length - 1);
@@ -506,7 +487,7 @@ export default function AssessView() {
             { value: 'analyst', label: 'Analyst', title: 'Every question, with the evidence' },
             { value: 'quick', label: 'Quick', title: 'About five questions; the rest keep their curated or Unknown values' },
           ]}
-          onChange={(m) => update((s) => ({ ...s, mode: m, step: m === 'quick' && !QUICK_STEPS.includes(s.step) ? 2 : s.step }))}
+          onChange={(m) => update((s) => ({ ...s, mode: m }))}
         />
       </div>
 
@@ -520,18 +501,10 @@ export default function AssessView() {
             </p>
           )}
           {step === 0 && <ChooseStep />}
-          {step === 1 && e && (
-            <div>
-              <SectionHead eyebrow="Stage 2" title="What the data tell us">
-                Measured evidence comes first. Each figure shows its raw value, its standing, year and source, and whether it describes this component or the wider stage.
-              </SectionHead>
-              <EvidencePanel subject={e.subject} ev={e.evidence} reference={data.reference} />
-            </div>
-          )}
-          {step === 2 && e && <Gate1 e={e} quick={quick} />}
-          {step === 3 && e && <Gate2 e={e} quick={quick} />}
-          {step === 4 && e && <Gate3 e={e} quick={quick} />}
-          {step === 5 && e && <Gate4 e={e} />}
+          {step === 1 && e && <Gate1 e={e} quick={quick} />}
+          {step === 2 && e && <Gate2 e={e} quick={quick} />}
+          {step === 3 && e && <Gate3 e={e} quick={quick} />}
+          {step === 4 && e && <Gate4 e={e} />}
           <div className="yf-no-print mt-10 flex flex-wrap items-center gap-3 border-t hairline pt-5">
             {idx > 0 && (
               <button type="button" className="btn btn-ghost" onClick={prev}>

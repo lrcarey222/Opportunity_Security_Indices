@@ -3,9 +3,9 @@
 # Inputs are the decoded, published Sector and Strategic bundles (scripts/87 and 85), the allied
 # network CSVs, config/yards_fences_metric_map.yml and data/reference/yards_fences_assessments.csv.
 # Outputs are plain lists that scripts/89 serialises to dashboard/public/data/yards-fences/ in the
-# shape of dashboard/src/yards/data/contract.ts.
+# shape of dashboard/src/fence/data/contract.ts.
 
-# Answer domains of the curated assessments (mirror of DOMAINS in dashboard/src/yards/engine/types.ts).
+# Answer domains of the curated assessments (mirror of DOMAINS in dashboard/src/fence/engine/types.ts).
 YF_DOMAINS <- list(
   consequence = c("low", "moderate", "high", "severe"),
   time_horizon = c("years", "months", "weeks", "days"),

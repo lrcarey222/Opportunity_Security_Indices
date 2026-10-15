@@ -1,5 +1,5 @@
-# Export the data of Draw the Fence, the Yards & Fences decision tool of the Allied Industrial Base
-# Explorer (dashboard/src/yards/; contract: dashboard/src/yards/data/contract.ts).
+# Export the data of Draw the Fence, the standalone Yards & Fences decision tool (app:
+# dashboard/fence/ + dashboard/src/fence/; contract: dashboard/src/fence/data/contract.ts).
 #
 #   Rscript scripts/89_export_yards_fences_data.R [--data-dir <dir>] [--out-dir <dir>]
 #                                                 [--processed-dir <dir>] [--country USA[,JPN...]]
@@ -15,7 +15,7 @@
 #   config/yards_fences_metric_map.yml                             (which measures, labels, engine inputs)
 #   data/reference/yards_fences_assessments.csv                    (curated component assessments)
 #
-# and writes, to <out-dir> (default <data-dir>/yards-fences):
+# and writes, to <out-dir> (default dashboard/fence/public/data/yards-fences, the site's own data):
 #
 #   reference.<h8>.json        metric map, components, stacks, sources, HHI reference points
 #   evidence-<ISO3>.<h8>.json  one country's evidence records, supply views, network and partners
@@ -61,7 +61,7 @@ source(file.path(repo_root, "R", "dashboard", "dash_osb.R"))
 source(file.path(repo_root, "R", "dashboard", "yards_fences", "yf_build.R"))
 
 data_dir <- abs_path(arg_value("--data-dir", file.path("dashboard", "public", "data")))
-out_dir <- abs_path(arg_value("--out-dir", file.path(data_dir, "yards-fences")))
+out_dir <- abs_path(arg_value("--out-dir", file.path("dashboard", "fence", "public", "data", "yards-fences")))
 processed_dir <- abs_path(arg_value("--processed-dir", config$processed_dir))
 countries <- strsplit(arg_value("--country", "USA"), ",")[[1]]
 check_only <- arg_flag("--check-only")

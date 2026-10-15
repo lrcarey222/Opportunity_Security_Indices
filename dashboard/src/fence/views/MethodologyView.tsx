@@ -1,13 +1,13 @@
-// /yards-fences/methodology: the framework, the rules (rendered from engine/rules.ts, so the page
+// /methodology: the framework, the rules (rendered from engine/rules.ts, so the page
 // cannot drift from the code), the data and its vintages, the validation the build ran, the metric
 // map and the curated component table with sources and confidence.
 
-import { useTitle } from '../../shell/title.ts';
+import { useTitle } from '../title.ts';
 import { Disclosure } from '../../components/ui.tsx';
 import { RULES } from '../engine/index.ts';
 import { useYards } from '../state/YardsContext.tsx';
 import { SectionHead, YardBadge, ProvBadge } from '../components/kit.tsx';
-import { METHOD_STATEMENT, PAGE } from '../YardsLayout.tsx';
+import { METHOD_STATEMENT, PAGE } from '../FenceLayout.tsx';
 
 const SAFEGUARDS = [
   'Headline Energy Security and Economic Opportunity scores are never mapped to yards.',
@@ -22,7 +22,7 @@ const SAFEGUARDS = [
 ];
 
 export default function MethodologyView() {
-  useTitle('Methodology', 'Draw the Fence');
+  useTitle('Methodology');
   const { data } = useYards();
   const m = data.manifest;
   const ref = data.reference;

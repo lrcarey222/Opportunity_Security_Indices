@@ -12,7 +12,7 @@ export interface Example {
   /** what the example is meant to show (not a forced result: the engine decides) */
   shows: string;
   state: () => AssessState;
-  view: 'result' | 'fence' | 'diversify' | 'scenario';
+  view: 'result' | 'fence' | 'supply' | 'scenario';
 }
 
 const layer = (l: Partial<LayerState>): LayerState => ({ answers: {}, scenario: {}, strategies: [], ...l });
@@ -23,7 +23,7 @@ const base = (sel: AssessState['sel'], layers: AssessState['layers'], focus?: st
   focus,
   mode: 'analyst',
   layers,
-  step: 6,
+  step: 4,
   example,
 });
 

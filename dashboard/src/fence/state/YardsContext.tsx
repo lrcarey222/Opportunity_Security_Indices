@@ -68,7 +68,7 @@ export function YardsProvider({ data, children }: { data: YFData; children: Reac
     [setParams],
   );
 
-  const href = useCallback((view: string, next?: AssessState) => `/yards-fences${view ? `/${view}` : ''}${stateSearch(next ?? state)}`, [state]);
+  const href = useCallback((view: string, next?: AssessState) => `/${view}${stateSearch(next ?? state)}`, [state]);
   const go = useCallback(
     (view: string, next?: AssessState) => {
       navigate(href(view, next));

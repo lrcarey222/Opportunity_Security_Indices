@@ -1,9 +1,9 @@
-// /yards-fences/result: the result and the reasoning. For a system, the component stack first, then
+// /result: the result and the reasoning. For a system, the component stack first, then
 // the layer in focus. Everything a printed or shared brief needs is on this page.
 
 import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
-import { useTitle } from '../../shell/title.ts';
+import { useTitle } from '../title.ts';
 import { ALL_INPUT_IDS, INPUT_DEFS, optionLabel, stackOutcome, UNKNOWN, YARD_NAME } from '../engine/index.ts';
 import type { InputId } from '../engine/index.ts';
 import { isRelevant } from '../engine/gates.ts';
@@ -12,7 +12,9 @@ import { useYards, type Evaluation } from '../state/YardsContext.tsx';
 import { ComponentStack } from '../components/ComponentStack.tsx';
 import { ChangeConditions, DecisionTree, EvidenceGaps, PolicyPosture, Reasons, ResultHeadline, Warnings } from '../components/ResultBlocks.tsx';
 import { ProvBadge, SectionHead, YardBadge } from '../components/kit.tsx';
-import { PAGE } from '../YardsLayout.tsx';
+import { EvidencePanel } from '../components/EvidencePanel.tsx';
+import { Disclosure } from '../../components/ui.tsx';
+import { PAGE } from '../FenceLayout.tsx';
 
 const STRAT_LABEL = { preserve: 'Preserve', catchUp: 'Catch up', leapAhead: 'Leap ahead' } as const;
 
@@ -82,11 +84,11 @@ function Assumptions({ e }: { e: Evaluation }) {
 /** The assessment step that asks about an input. */
 export function stepOfInput(id: InputId): number {
   const g = INPUT_DEFS[id].gate;
-  return g === 'gate1' ? 2 : g === 'digital' || g === 'physical' ? 3 : g === 'capability' || g === 'leap' ? 4 : 5;
+  return g === 'gate1' ? 1 : g === 'digital' || g === 'physical' ? 2 : g === 'capability' || g === 'leap' ? 3 : 4;
 }
 
 export function FullResult({ e }: { e: Evaluation }) {
-  const { href, go, state } = useYards();
+  const { href, go, state, data } = useYards();
   const r = e.scenarioResult;
   const comp = e.subject.component;
   return (
@@ -152,18 +154,20 @@ export function FullResult({ e }: { e: Evaluation }) {
           )}
         </section>
       )}
-      <section aria-labelledby="yf-assume">
-        <SectionHead id="yf-assume" title="Evidence and assumptions">
-          Data, curated assessments and your judgments, kept apart.
-        </SectionHead>
-        <Assumptions e={e} />
+      <section aria-label="Inputs and data" className="space-y-3">
+        <Disclosure summary="Every input and where it came from (data, assessment, your judgment)">
+          <Assumptions e={e} />
+        </Disclosure>
+        <Disclosure summary="The data behind this assessment (context from the Opportunity & Security Indices)">
+          <EvidencePanel subject={e.subject} ev={e.evidence} reference={data.reference} compact />
+        </Disclosure>
       </section>
     </div>
   );
 }
 
 export default function ResultView() {
-  useTitle('Result', 'Draw the Fence');
+  useTitle('Result');
   const { state, subjects, focus, evaluate, update, href, data } = useYards();
   const evals = useMemo(() => subjects.map((s) => evaluate(s)), [subjects, evaluate]);
   // closed <details> do not print: open every one of them for the printout
@@ -224,8 +228,8 @@ export default function ResultView() {
         <Link className="btn btn-ghost" to={href('fence')}>
           Build your fence
         </Link>
-        <Link className="btn btn-ghost" to={href('diversify')}>
-          Can trusted diversification solve it?
+        <Link className="btn btn-ghost" to={href('supply')}>
+          Trusted supply
         </Link>
         <button type="button" className="btn btn-quiet ml-auto" onClick={() => window.print()}>
           Print / Save as PDF

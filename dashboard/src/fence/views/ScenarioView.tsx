@@ -1,10 +1,10 @@
-// /yards-fences/scenario: "Test another world". Change observed data or curated assumptions and see
+// /scenario: "Test another world". Change observed data or curated assumptions and see
 // the result move. Scenario values are kept apart from the observed baseline (SCENARIO badges), and
 // a change of yard is explained by the gate that changed and the inputs that fed it.
 
 import { useId, useMemo } from 'react';
 import { Link } from 'react-router';
-import { useTitle } from '../../shell/title.ts';
+import { useTitle } from '../title.ts';
 import { DOMAINS, explainTransition, formatNumber, INPUT_DEFS, optionLabel, UNKNOWN, YARD_NAME } from '../engine/index.ts';
 import { digitalApplies, physicalApplies } from '../engine/gates.ts';
 import type { CategoricalInputId, InputId, NumericInputId } from '../engine/index.ts';
@@ -12,10 +12,11 @@ import { layerOf, withLayer } from '../state/assessment.ts';
 import { useYards, type Evaluation } from '../state/YardsContext.tsx';
 import { ComponentStack } from '../components/ComponentStack.tsx';
 import { Completeness, ConfidencePill, ProvBadge, SectionHead, YardBadge, yardClass } from '../components/kit.tsx';
-import { PAGE } from '../YardsLayout.tsx';
+import { PAGE } from '../FenceLayout.tsx';
 import { NoAssessment } from './ResultView.tsx';
 
-const NUMERIC: NumericInputId[] = ['nonAlliedTopShare', 'alliedShare', 'hhi', 'homeShare', 'premium', 'trl'];
+/** Observed market conditions the tests read (shares and concentration), after the framework's own assumptions. */
+const MARKET: NumericInputId[] = ['nonAlliedTopShare', 'homeShare', 'hhi'];
 function groupsFor(e: Evaluation): { title: string; ids: CategoricalInputId[] }[] {
   const dig = digitalApplies(e.scenario);
   const phys = physicalApplies(e.scenario);
@@ -150,7 +151,7 @@ function ResultCard({ title, r, badge }: { title: string; r: Evaluation['baselin
 }
 
 export default function ScenarioView() {
-  useTitle('Test another world', 'Draw the Fence');
+  useTitle('Test another world');
   const { state, subjects, focus, evaluate, update, href, data } = useYards();
   const evals = useMemo(() => subjects.map((s) => evaluate(s)), [subjects, evaluate]);
   if (!state.sel || !focus) return <NoAssessment />;
@@ -164,7 +165,7 @@ export default function ScenarioView() {
   return (
     <div className={PAGE}>
       <SectionHead eyebrow="Scenario lab" title="Test another world">
-        Change what the world looks like, or what you assume about it, and watch the diagnosis respond. Observed values stay as they are; every change here is a scenario assumption.
+        Change what you assume about the world and watch the diagnosis respond: harsher consequences, faster or slower replacement, weaker learning, a costlier fence, a more or less concentrated market. Observed values stay as they are; every change here is a scenario assumption.
       </SectionHead>
 
       {stack && (
@@ -188,14 +189,6 @@ export default function ScenarioView() {
               Reset to observed data
             </button>
           </div>
-          <section className="panel px-5 py-2" aria-labelledby="yf-sc-data">
-            <h3 id="yf-sc-data" className="eyebrow pt-3">
-              Observed data and the premium
-            </h3>
-            {NUMERIC.map((id) => (
-              <NumericControl key={id} e={e} id={id} />
-            ))}
-          </section>
           {groupsFor(e).map((g) => (
             <section key={g.title} className="panel px-5 py-2" aria-label={`${g.title} assumptions`}>
               <h3 className="eyebrow pt-3">{g.title} assumptions</h3>
@@ -204,6 +197,20 @@ export default function ScenarioView() {
               ))}
             </section>
           ))}
+          <section className="panel px-5 py-2" aria-labelledby="yf-sc-cost">
+            <h3 id="yf-sc-cost" className="eyebrow pt-3">
+              Cost of protection
+            </h3>
+            <NumericControl e={e} id="premium" />
+          </section>
+          <section className="panel px-5 py-2" aria-labelledby="yf-sc-data">
+            <h3 id="yf-sc-data" className="eyebrow pt-3">
+              Market conditions (observed data you can change)
+            </h3>
+            {MARKET.map((id) => (
+              <NumericControl key={id} e={e} id={id} />
+            ))}
+          </section>
         </div>
         <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
           <ResultCard title="Observed baseline" r={e.baselineResult} badge="data" />
