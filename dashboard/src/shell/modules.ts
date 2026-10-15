@@ -1,10 +1,10 @@
-// The two modules and their view lists (spec_sector.md 2.2, 5.2). Dependency-free (the Sector slugs
+// The modules and their view lists (spec_sector.md 2.2, 5.2). Dependency-free (the Sector slugs
 // are the shell's copies), so the entry imports neither the engine nor the Sector contract;
 // src/state/nav.ts re-exports STRATEGIC_NAV (alias NAV_ITEMS) and MODULES for the Strategic views.
 
 import { isShellReservedSegment, isShellStageSlug, isShellTechSlug } from './sectorSlugs.ts';
 
-export type ModuleId = 'sector' | 'strategic';
+export type ModuleId = 'sector' | 'strategic' | 'yards';
 /** Where a path belongs: a module, Home, or nothing (an unknown path, about to redirect). */
 export type Place = ModuleId | 'home' | null;
 
@@ -21,6 +21,7 @@ export interface ModuleInfo {
 export const MODULES: readonly ModuleInfo[] = [
   { id: 'sector', label: 'Sector Insights', tag: 'DESCRIPTIVE DATA', home: '/sector' },
   { id: 'strategic', label: 'Strategic Insights', tag: 'NORMATIVE PRIORITISATION', home: '/overview' },
+  { id: 'yards', label: 'Draw the Fence', tag: 'DECISION TOOL', home: '/yards-fences' },
 ];
 
 export const moduleInfo = (id: ModuleId): ModuleInfo => MODULES.find((m) => m.id === id) as ModuleInfo;
@@ -52,6 +53,26 @@ export const SECTOR_NAV: { key: SectorNavKey; to: string; label: string }[] = [
   { key: 'sources', to: '/sector/sources', label: 'Sources & data' },
 ];
 
+/** Draw the Fence (Yards & Fences) views, in nav order. The assessment state travels in `a`. */
+export const YARDS_SEGMENT = 'yards-fences';
+export const YARDS_NAV: { key: string; to: string; label: string }[] = [
+  { key: 'home', to: '/yards-fences', label: 'Overview' },
+  { key: 'assess', to: '/yards-fences/assess', label: 'Assess' },
+  { key: 'result', to: '/yards-fences/result', label: 'Result' },
+  { key: 'scenario', to: '/yards-fences/scenario', label: 'Test another world' },
+  { key: 'fence', to: '/yards-fences/fence', label: 'Build your fence' },
+  { key: 'diversify', to: '/yards-fences/diversify', label: 'Diversify' },
+  { key: 'examples', to: '/yards-fences/examples', label: 'Examples' },
+  { key: 'methodology', to: '/yards-fences/methodology', label: 'Methodology' },
+];
+
+/** The Draw the Fence view a pathname shows. */
+export function yardsNavKeyOf(pathname: string): string | null {
+  const s = segments(pathname);
+  if (s[0] !== YARDS_SEGMENT) return null;
+  return s.length === 1 ? 'home' : (YARDS_NAV.find((n) => n.key === s[1])?.key ?? null);
+}
+
 const segments = (pathname: string): string[] => pathname.split('/').filter(Boolean);
 
 /** Which module (or Home) a pathname belongs to. */
@@ -60,6 +81,7 @@ export function placeOf(pathname: string): Place {
   if (s.length === 0) return 'home';
   if (s[0] === 'sector') return 'sector';
   if (STRATEGIC_SEGMENTS.includes(s[0])) return 'strategic';
+  if (s[0] === YARDS_SEGMENT) return 'yards';
   return null;
 }
 

@@ -13,9 +13,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Logo } from '../components/Logo.tsx';
 import { useMediaQuery } from './useMediaQuery.ts';
-import { MODULES, placeOf, SECTOR_NAV, sectorCellOfPath, sectorNavKeyOf, STRATEGIC_NAV, strategicNavOf, type ModuleId } from './modules.ts';
+import { MODULES, placeOf, SECTOR_NAV, sectorCellOfPath, sectorNavKeyOf, STRATEGIC_NAV, strategicNavOf, YARDS_NAV, yardsNavKeyOf, type ModuleId } from './modules.ts';
 import { useModuleNav, type ModuleNavItem } from './ModuleNav.tsx';
-import { sectorCarry, sectorProfileHref, sectorTabHref, strategicCarry, strategicTabHref } from './lastLocation.ts';
+import { sectorCarry, sectorProfileHref, sectorTabHref, strategicCarry, strategicTabHref, yardsTabHref } from './lastLocation.ts';
 import { prefetchStrategic } from './prefetch.ts';
 
 /** The tier-2 links of a module: the registered ones, else the static list; `active` filled in. */
@@ -25,6 +25,9 @@ export function moduleItems(module: ModuleId, registered: { module: ModuleId | n
   else if (module === 'strategic') {
     const q = strategicCarry(search);
     items = STRATEGIC_NAV.map((n) => ({ key: n.to, label: n.label, to: n.to + q }));
+  } else if (module === 'yards') {
+    const a = new URLSearchParams(search).get('a');
+    items = YARDS_NAV.map((n) => ({ key: n.key, label: n.label, to: n.to + (a ? `?a=${encodeURIComponent(a)}` : '') }));
   } else {
     const q = sectorCarry(search);
     // PROFILE: the cell on screen, else the last visited one (the store updates after this render)
@@ -32,11 +35,11 @@ export function moduleItems(module: ModuleId, registered: { module: ModuleId | n
     const profile = cell ? `/sector/${cell.tech}/${cell.stage}` : sectorProfileHref();
     items = SECTOR_NAV.map((n) => ({ key: n.key, label: n.label, to: (n.key === 'profile' ? profile : n.to) + q }));
   }
-  const current = module === 'strategic' ? strategicNavOf(pathname) : sectorNavKeyOf(pathname);
+  const current = module === 'strategic' ? strategicNavOf(pathname) : module === 'yards' ? yardsNavKeyOf(pathname) : sectorNavKeyOf(pathname);
   return items.map((i) => ({ ...i, active: i.active ?? i.key === current }));
 }
 
-const VIEWS_LABEL: Record<ModuleId, string> = { sector: 'Sector Insights views', strategic: 'Strategic Insights views' };
+const VIEWS_LABEL: Record<ModuleId, string> = { sector: 'Sector Insights views', strategic: 'Strategic Insights views', yards: 'Draw the Fence views' };
 
 function prefetchProps(id: ModuleId) {
   return id === 'strategic' ? { onPointerEnter: prefetchStrategic, onFocus: prefetchStrategic, onTouchStart: prefetchStrategic } : {};
@@ -47,11 +50,11 @@ export function Header({ pathname, search }: { pathname: string; search: string 
   const [open, setOpen] = useState(false);
   const registered = useModuleNav();
   const place = placeOf(pathname);
-  const module: ModuleId | null = place === 'sector' || place === 'strategic' ? place : null;
+  const module: ModuleId | null = place === 'sector' || place === 'strategic' || place === 'yards' ? place : null;
   const items = module ? moduleItems(module, registered, pathname, search) : [];
   const tabs = MODULES.map((m) => ({
     ...m,
-    href: m.id === 'sector' ? sectorTabHref(pathname, search) : strategicTabHref(pathname, search),
+    href: m.id === 'sector' ? sectorTabHref(pathname, search) : m.id === 'yards' ? yardsTabHref(pathname, search) : strategicTabHref(pathname, search),
     current: m.id === module,
   }));
 

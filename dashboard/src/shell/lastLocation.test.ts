@@ -14,7 +14,7 @@ import { SHELL_RESERVED_SEGMENTS, SHELL_STAGE_SLUGS, SHELL_TECH_SLUGS } from './
 
 afterEach(() => resetLastLocations());
 
-const none = { strategic: null, sector: null, sectorCell: null };
+const none = { strategic: null, sector: null, sectorCell: null, yards: null };
 
 describe('places and nav keys', () => {
   it('classifies paths', () => {
@@ -117,7 +117,7 @@ describe('tab targets (2.6)', () => {
     rememberLocation('/nothing', '?x=1');
     rememberLocation('/sector/solar/upstream/CHN', '?c=CHN');
     rememberLocation('/sector/explore/trade', '');
-    expect(lastLocations()).toEqual({ strategic: '/overview?h=80', sector: '/sector/explore/trade', sectorCell: '/sector/solar/upstream' });
+    expect(lastLocations()).toEqual({ strategic: '/overview?h=80', sector: '/sector/explore/trade', sectorCell: '/sector/solar/upstream', yards: null });
     expect(moduleResumeHref('strategic')).toBe('/overview?h=80');
     expect(moduleResumeHref('sector')).toBe('/sector/explore/trade');
     expect(sectorProfileHref()).toBe('/sector/solar/upstream');

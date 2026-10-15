@@ -8,6 +8,7 @@ page (`/`) leads into two modules that share one header:
 |---|---|---|
 | **Sector Insights** (descriptive data) | `/sector/...` | measured values in their sources' own units and years: who produces, holds, trades, invests in and regulates each energy technology's supply chain, upstream to downstream. No indices, no weights, no dials |
 | **Strategic Insights** (normative prioritisation) | `/overview`, `/country`, `/space`, `/strategic`, `/partners`, `/network`, `/methods`, `/data` | the paper's model, recomputed in the browser under four preference dials |
+| **Draw the Fence** (decision tool) | `/yards-fences/...` | the NEIS Yards & Fences framework as a guided policy lab: evidence from the published bundles, explicit judgments, a rule-based engine (no score), scenarios and a policy sandbox. See `docs/yards_fences.md` |
 
 In Strategic Insights readers move four preference dials (and an advanced panel) and the explorer
 recomputes, in their browser, the Energy Security and Economic Opportunity pillars, the Policy and
@@ -109,6 +110,19 @@ Rscript scripts/87_export_sector_data.R --synthetic dashboard/tests/fixtures/sec
 
 Without `public/data/sector/manifest.json` the Sector module says "No sector data" and points here;
 Strategic Insights is unaffected.
+
+### Draw the Fence data (`public/data/yards-fences/`)
+
+Written only by `scripts/89_export_yards_fences_data.R`, after scripts/85 and 87 (it reads their
+published bundles, the allied network outputs, `config/yards_fences_metric_map.yml` and
+`data/reference/yards_fences_assessments.csv`): `manifest.json`, `reference.<h8>.json` and one
+`evidence-<ISO3>.<h8>.json` per country (plain JSON, about 65 kB gzipped). Without the manifest the
+module shows "No Yards & Fences data". Method, contract and tests: `docs/yards_fences.md`.
+
+```bash
+Rscript scripts/89_export_yards_fences_data.R              # writes dashboard/public/data/yards-fences/
+Rscript scripts/89_export_yards_fences_data.R --check-only # every check, writes nothing
+```
 
 ## Refresh the data
 

@@ -11,9 +11,11 @@ export interface LastLocations {
   sector: string | null;
   /** the last Sector profile cell, "/sector/batteries/midstream" (PROFILE's target) */
   sectorCell: string | null;
+  /** the last Draw the Fence location */
+  yards: string | null;
 }
 
-const store: LastLocations = { strategic: null, sector: null, sectorCell: null };
+const store: LastLocations = { strategic: null, sector: null, sectorCell: null, yards: null };
 
 /** Record a location (called on every route change). Home and unknown paths are not recorded. */
 export function rememberLocation(pathname: string, search: string): void {
@@ -23,7 +25,7 @@ export function rememberLocation(pathname: string, search: string): void {
     store.sector = pathname + search;
     const cell = sectorCellOfPath(pathname);
     if (cell) store.sectorCell = `/sector/${cell.tech}/${cell.stage}`;
-  }
+  } else if (place === 'yards') store.yards = pathname + search;
 }
 
 export function lastLocations(): Readonly<LastLocations> {
@@ -35,6 +37,7 @@ export function resetLastLocations(): void {
   store.strategic = null;
   store.sector = null;
   store.sectorCell = null;
+  store.yards = null;
 }
 
 const CARRY = new Set<string>([...SCENARIO_KEYS, ...SHARED_VIEW_KEYS]);
@@ -122,8 +125,19 @@ export function strategicTabHref(pathname: string, search: string, last: Readonl
 }
 
 /** Home's OPEN buttons: the last location of the module, else its landing. */
-export function moduleResumeHref(id: 'sector' | 'strategic', last: Readonly<LastLocations> = store): string {
+export function moduleResumeHref(id: 'sector' | 'strategic' | 'yards', last: Readonly<LastLocations> = store): string {
+  if (id === 'yards') return last.yards ?? '/yards-fences';
   return id === 'sector' ? (last.sector ?? '/sector') : (last.strategic ?? '/overview');
+}
+
+/** Where the DRAW THE FENCE tab goes: inside the module, its overview with the assessment kept;
+ *  elsewhere the last location in it, else its overview. */
+export function yardsTabHref(pathname: string, search: string, last: Readonly<LastLocations> = store): string {
+  if (placeOf(pathname) === 'yards') {
+    const a = new URLSearchParams(search).get('a');
+    return a ? `/yards-fences?a=${encodeURIComponent(a)}` : '/yards-fences';
+  }
+  return last.yards ?? '/yards-fences';
 }
 
 /** PROFILE in the Sector nav: the last visited cell, else Batteries — Midstream. */
