@@ -470,7 +470,7 @@ export default function AssessView() {
   const idx = Math.max(0, order.indexOf(step));
   // steps replace the history entry, like answers do: browser Back leaves the assessment rather than
   // returning to a URL that lacks the answers given since (the in-page Back button moves between steps)
-  const goStep = (i: number) => update((s) => ({ ...s, step: i }));
+  const goStep = (i: number) => update((s) => ({ ...s, step: i }), { resetScroll: true });
   const next = () => (idx < order.length - 1 ? goStep(order[idx + 1]) : go('result'));
   const prev = () => idx > 0 && goStep(order[idx - 1]);
   const comp = focus?.component ?? componentById(data.reference, state.sel?.component);

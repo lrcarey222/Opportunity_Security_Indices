@@ -3,7 +3,7 @@
 // is being assessed, the methodology drawer and copy-link. A missing bundle shows "No data".
 
 import { useEffect, useRef, useState } from 'react';
-import { Link, Outlet, useSearchParams } from 'react-router';
+import { Link, Outlet, ScrollRestoration, useSearchParams } from 'react-router';
 import { Loading, Notice } from '../components/ui.tsx';
 import { useTitle } from './title.ts';
 import { Footer, Header, NavLinks } from './shell/Header.tsx';
@@ -151,6 +151,8 @@ export default function FenceLayout() {
       </a>
       <Header />
       <Body />
+      {/* a new page opens at the top (after its lazy chunk loads); Back and Forward restore the position */}
+      <ScrollRestoration />
     </div>
   );
 }

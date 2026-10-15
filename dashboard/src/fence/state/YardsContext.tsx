@@ -22,7 +22,8 @@ export interface Evaluation {
 interface Ctx {
   data: YFData;
   state: AssessState;
-  update: (f: (s: AssessState) => AssessState, opts?: { push?: boolean }) => void;
+  /** write the assessment to the URL; `resetScroll` for a change that is a new screen (an assessment step) */
+  update: (f: (s: AssessState) => AssessState, opts?: { push?: boolean; resetScroll?: boolean }) => void;
   go: (view: string, next?: AssessState) => void;
   href: (view: string, next?: AssessState) => string;
   subjects: Subject[];
@@ -57,13 +58,13 @@ export function YardsProvider({ data, children }: { data: YFData; children: Reac
   const state = useMemo(() => decodeState(raw), [raw]);
 
   const update = useCallback(
-    (f: (s: AssessState) => AssessState, opts?: { push?: boolean }) => {
+    (f: (s: AssessState) => AssessState, opts?: { push?: boolean; resetScroll?: boolean }) => {
       // read the router's current params (not window.location), so a memory router behaves the same
       setParams((p) => {
         const q = new URLSearchParams(p);
         q.set('a', encodeState(f(decodeState(p.get('a')))));
         return q;
-      }, { replace: !opts?.push, preventScrollReset: true });
+      }, { replace: !opts?.push, preventScrollReset: !opts?.resetScroll });
     },
     [setParams],
   );
@@ -72,7 +73,6 @@ export function YardsProvider({ data, children }: { data: YFData; children: Reac
   const go = useCallback(
     (view: string, next?: AssessState) => {
       navigate(href(view, next));
-      window.scrollTo?.({ top: 0 });
     },
     [navigate, href],
   );
