@@ -1,5 +1,6 @@
 // A small "i" button that explains a term in plain language. It opens on hover, on keyboard focus
-// and on tap (touch screens), closes on Escape, blur, scroll or a tap elsewhere, and is fixed-positioned
+// and on tap (touch screens), closes on Escape, blur, a tap elsewhere or when its button scrolls out of
+// view (otherwise it follows the button), and is fixed-positioned
 // in a portal on <body>, so neither a scrolling table nor an animated (transformed) ancestor can clip or
 // shift it. Screen readers get the text through aria-describedby.
 
@@ -25,22 +26,30 @@ export function InfoTip({ label, children, className = '' }: { label: string; ch
   }, []);
   const close = useCallback(() => setPos(null), []);
 
+  const isOpen = pos !== null;
   useEffect(() => {
-    if (!pos) return;
+    if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
     // a tap anywhere else closes it (touch browsers do not always move focus off a tapped button)
     const onDown = (e: PointerEvent) => !btn.current?.contains(e.target as Node) && close();
+    // a scroll moves the tip with its button (including the scroll a browser makes to bring a
+    // Tab-focused button into view); it closes once the button has left the viewport
+    const onScroll = () => {
+      const b = btn.current?.getBoundingClientRect();
+      if (!b || b.bottom < 0 || b.top > window.innerHeight) close();
+      else open();
+    };
     window.addEventListener('keydown', onKey);
     window.addEventListener('pointerdown', onDown);
-    window.addEventListener('scroll', close, true);
+    window.addEventListener('scroll', onScroll, true);
     window.addEventListener('resize', close);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('resize', close);
     };
-  }, [pos, close]);
+  }, [isOpen, open, close]);
 
   // a tooltip that would run off the bottom opens above the button instead
   const tip = useRef<HTMLSpanElement>(null);

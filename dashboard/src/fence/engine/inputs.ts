@@ -211,8 +211,8 @@ export const INPUT_DEFS: Record<InputId, InputDef> = {
     id: 'trl',
     gate: 'cost',
     label: 'Technology readiness (TRL)',
-    question: 'Technology readiness level (1-9, global)',
-    numeric: { min: 1, max: 9, step: 0.1, unit: 'trl' },
+    question: 'Technology readiness level (1-11, IEA scale, global)',
+    numeric: { min: 1, max: 11, step: 0.1, unit: 'trl' },
   },
   premium: {
     id: 'premium',
@@ -231,13 +231,13 @@ export const INPUT_EXPLAIN: Record<InputId, string> = {
   consequence:
     'How bad it would be if supply stopped, or a foreign actor took control. Severe means a threat to life and safety, defence readiness, the power grid or another essential function; low means inconvenience or higher prices. Only high or severe consequences can justify a high fence.',
   timeHorizon:
-    'How quickly the damage would become unacceptable. Grid controls that are switched off matter within hours; a material that factories keep in stock may take months to bite. The engine compares this with how long it would take to restore supply.',
+    'How soon the harm would become unacceptable once supply stops or control is lost, leaving stockpiles aside (they have their own question, so counting them here would count them twice). Grid controls that are switched off matter within hours; a missing factory input may matter within weeks. The engine adds stockpile cover to this and compares the total with the time needed to restore supply. Answering Years also rules out the control-layer route to a Small Yard.',
   digitallyActive:
-    'Whether the item contains software, firmware, communications or remote updates: something that can be commanded. A steel frame or a battery cell is passive; an inverter or a battery-management system is digitally active.',
+    'Whether the item contains software, firmware, communications or remote updates: something that can be commanded. A steel frame or a battery cell is passive; battery-management firmware or an inverter’s firmware is digitally active. Where a product is split into a hardware layer and a firmware layer (as with inverters), the hardware is judged passive and the firmware is assessed as its own control layer.',
   remoteControl:
-    'Whether someone outside (a vendor, a foreign government or an attacker) could send commands, push updates, switch the item off or read sensitive operating data. Limited means some access exists but is tightly constrained, as with isolated safety systems.',
+    'Whether someone outside (a vendor, a foreign government or an attacker) could send commands, push updates, switch the item off or read sensitive operating data. Limited means some access exists but is tightly constrained, as with isolated safety systems; it still counts as a way in, though a borderline one that lowers confidence. Choose No only if there is no such path at all.',
   separability:
-    'Whether the risky software or communications layer can be split off and replaced with a trusted version without replacing the whole product. If it can, the fence only needs to surround that layer; if not, the whole product needs trusted sourcing until it can.',
+    'Whether the risky software or communications layer can be split off and replaced with a trusted version without replacing the whole product. Yes: the fence only needs to surround that layer. Partly: the fence also covers the hardware the layer is tied to. No: the whole product needs trusted sourcing until the layer can be separated.',
   substitutability:
     'How easily users could switch to a different material, design or technology if supply stopped. Easy: many interchangeable options, such as steel racking. Impossible today: nothing else does the job, such as enriched uranium for today’s reactors. Hard substitution is one of the three conditions for a physical chokepoint.',
   qualificationTime:
@@ -255,28 +255,28 @@ export const INPUT_EXPLAIN: Record<InputId, string> = {
   adjacentInnovation:
     'Whether making this helps the country innovate in related or next-generation technologies, for example today’s battery lines as a base for solid-state batteries.',
   complementaryCapabilities:
-    'Whether the country already has related strengths to build on (research, neighbouring industries, skilled workers, demand) that make competing realistic rather than a standing start.',
+    'Whether the country already has related strengths to build on (research, neighbouring industries, skilled workers, demand) that make competing realistic rather than a standing start. It decides whether a small share of world supply (3-10%) counts as a foothold worth defending, and it is one of the three supports a leap-ahead case needs two of.',
   costPerfAdvantage:
-    'Whether the new technology is meaningfully cheaper or better in ways customers value, not merely new.',
+    'Whether the new technology is meaningfully cheaper or better in ways customers value, not merely new. A leap-ahead case needs a clear Yes here; Partly is not enough.',
   incumbentVulnerable:
     'Whether today’s leading technology could be displaced, so a newcomer could win without first matching the incumbent’s scale and cost.',
   scalePathway:
     'Whether there is a credible route from pilots to a first commercial plant to full scale, with the financing, suppliers and buyers each step needs.',
   beyondNovelty:
-    'Whether there is real evidence the technology works and could compete (pilot results, falling costs, signed buyers) rather than promise alone.',
+    'Whether there is real evidence the technology works and could compete (pilot results, falling costs, signed buyers) rather than promise alone. A leap-ahead case needs a clear Yes here; Partly is not enough.',
   maturity:
-    'How established the technology is. Mature, commoditised goods compete mainly on price; emerging ones still change fast and reward learning by doing.',
+    'How established the technology is. Mature, commoditised goods compete mainly on price; emerging ones still change fast and reward learning by doing. Context only: no test reads it, so changing it does not change the yard.',
   nonAlliedTopShare:
     'The share of world supply held by the single largest supplier outside the trusted coalition of allies and partners. Above half, that supplier could plausibly use its position as leverage. Outside the coalition is not the same as hostile.',
   topSupplierShare: 'The share of world supply held by the single largest supplier of any kind, ally or not.',
   hhi:
-    'A standard measure of how concentrated a market is (the Herfindahl-Hirschman index), from near 0 for many small suppliers to 10,000 for a single one. Above about 1,800 a market is usually called highly concentrated. It describes the market; on its own it is not a security risk.',
+    'A standard measure of how concentrated a market is (the Herfindahl-Hirschman index). Here it runs from near 0 for many small suppliers to 1 for a single one; some panels show the same number multiplied by 10,000, so 0.18 appears as 1,800. Above about 0.18 a market is usually called highly concentrated. It describes the market; on its own it is not a security risk.',
   alliedShare:
     'The share of world supply already held by trusted allies and partners: a sense of how much trusted capacity exists to diversify toward.',
   homeShare:
     'The country’s own share of world supply on the measure used: a rough sign of whether it has a competitive position worth defending.',
   trl:
-    'Technology readiness level, from 1 (basic research) to 9 (proven in commercial use), averaged across the stage’s technologies worldwide. It says how mature the technology is, not who leads in it.',
+    'Technology readiness level, from 1 (basic research) to 9 (proven in commercial use), averaged across the stage’s technologies worldwide. The IEA scale used here continues to 11 for technologies already commercial and scaling, so an average can sit above 9. It says how mature the technology is, not who leads in it.',
   premium:
     'How much more buyers would pay for domestic rather than world-market supply, through tariffs, content rules or higher-cost local production. A high premium slows deployment, so it needs a real security or capability benefit to justify it.',
 };

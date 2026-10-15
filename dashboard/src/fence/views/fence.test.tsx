@@ -163,6 +163,11 @@ describe('Draw the Fence', () => {
     const tip = screen.getByRole('tooltip');
     expect(tip.textContent).toMatch(/switch to a different material, design or technology/);
     expect(btn.getAttribute('aria-describedby')).toBe(tip.id);
+    // a scroll (such as the one that brings a Tab-focused button into view) moves it, not closes it
+    await act(async () => {
+      fireEvent.scroll(window);
+    });
+    expect(screen.getByRole('tooltip')).toBeTruthy();
     await act(async () => {
       fireEvent.keyDown(window, { key: 'Escape' });
     });

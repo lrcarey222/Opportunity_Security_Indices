@@ -357,11 +357,11 @@ function leapPredicate(a: Assessment): Predicate {
     'Credible leap-ahead case',
     state,
     state === 'yes'
-      ? 'A successor technology offers a real advantage, with evidence beyond novelty and a path to scale.'
+      ? 'A successor technology offers a real advantage, with evidence beyond novelty and at least two of: a displaceable incumbent, complementary strengths, a path to scale.'
       : state === 'no'
         ? val(a, 'beyondNovelty') !== 'yes'
           ? 'Promising, but there is not yet evidence beyond novelty.'
-          : 'The successor technology lacks a clear advantage or a credible path to scale.'
+          : 'The successor technology lacks a clear advantage, or has fewer than two of: a displaceable incumbent, complementary strengths, a path to scale.'
         : 'The leap-ahead tests are not fully answered.',
     inputs,
     { marginal: state === 'yes' && partly },

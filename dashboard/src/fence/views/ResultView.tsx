@@ -125,7 +125,7 @@ export function FullResult({ e }: { e: Evaluation }) {
           <SectionHead id="yf-gaps" title="Evidence gaps">
             Unknown is a valid answer. Pivotal gaps could change the yard; the rest only the confidence.
           </SectionHead>
-          <EvidenceGaps result={r} onFill={(input) => go('assess', { ...state, focus: e.subject.key, step: stepOfInput(input as InputId) })} />
+          <EvidenceGaps result={r} onFill={(input) => go('assess', { ...state, mode: INPUT_DEFS[input as InputId].quick ? state.mode : 'analyst', focus: e.subject.key, step: stepOfInput(input as InputId) })} />
         </section>
         <section aria-labelledby="yf-change">
           <SectionHead id="yf-change" title="What would change the answer?" />

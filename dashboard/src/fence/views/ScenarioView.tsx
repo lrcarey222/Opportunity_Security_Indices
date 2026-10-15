@@ -22,7 +22,8 @@ function groupsFor(e: Evaluation): { title: string; ids: CategoricalInputId[] }[
   const dig = digitalApplies(e.scenario);
   const phys = physicalApplies(e.scenario);
   const security: CategoricalInputId[] = ['consequence', 'timeHorizon'];
-  if (dig) security.push(...(e.subject.component?.layer === 'control' ? [] : (['digitallyActive'] as CategoricalInputId[])), 'remoteControl', 'separability');
+  if (e.subject.component?.layer !== 'control') security.push('digitallyActive');
+  if (dig) security.push('remoteControl', 'separability');
   if (phys) security.push('substitutability', 'qualificationTime', 'reconstitutionTime', 'stockpile', 'surgeCapacity');
   const out = [
     { title: 'Security', ids: security },

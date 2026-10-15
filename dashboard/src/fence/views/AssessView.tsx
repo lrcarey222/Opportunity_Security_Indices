@@ -27,7 +27,15 @@ import { InputTip } from '../components/InfoTip.tsx';
 import { Completeness, ConfidencePill, ProvBadge, SectionHead, YardBadge } from '../components/kit.tsx';
 import { PAGE } from '../FenceLayout.tsx';
 
-const QUICK_COUNT = (Object.keys(INPUT_DEFS) as InputId[]).filter((id) => INPUT_DEFS[id].quick).length;
+const QUICK_IDS = (Object.keys(INPUT_DEFS) as InputId[]).filter((id) => INPUT_DEFS[id].quick);
+/** The Quick questions this subject shows: 2A drops out when nothing is digitally active, 2B for a pure control layer. */
+function quickCount(e: Evaluation | null): number {
+  if (!e) return QUICK_IDS.length;
+  return QUICK_IDS.filter((id) => {
+    const g = INPUT_DEFS[id].gate;
+    return g === 'digital' ? digitalApplies(e.baseline) : g === 'physical' ? physicalApplies(e.baseline) : true;
+  }).length;
+}
 
 const STEPS = ['What are you assessing?', 'Acute harm?', 'Where does the vulnerability sit?', 'A capability worth building?', 'The cost of protection'];
 function ProgressRail({ step, onGo, canLeave0 }: { step: number; onGo: (i: number) => void; canLeave0: boolean }) {
@@ -331,28 +339,32 @@ function Gate2({ e, quick }: { e: Evaluation; quick: boolean }) {
   const a = e.baseline;
   const dig = digitalApplies(a);
   const phys = physicalApplies(a);
+  const nonControl = e.subject.component?.layer !== 'control';
   const share = a.inputs.nonAlliedTopShare;
   return (
     <div className="space-y-8">
       <SectionHead eyebrow="Decision gate 2" title="Where does the vulnerability sit?">
         A control layer an outsider could command is a different problem from a physical input that could be withheld.
       </SectionHead>
-      {dig && (
-        <section aria-labelledby="yf-2a">
-          <h3 id="yf-2a" className="text-lg font-medium text-paper">
-            2A · Digitally active systems
-          </h3>
-          <div className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-            <div className="panel px-5">
-              {e.subject.component?.layer !== 'control' && <Q e={e} id="digitallyActive" quick={quick} />}
-              <Q e={e} id="remoteControl" quick={quick} />
-              <Q e={e} id="separability" quick={quick} />
-              <Skipped e={e} ids={e.subject.component?.layer !== 'control' ? ['digitallyActive', 'remoteControl', 'separability'] : ['remoteControl', 'separability']} quick={quick} />
-            </div>
-            <ScopePreview e={e} />
+      <section aria-labelledby="yf-2a">
+        <h3 id="yf-2a" className="text-lg font-medium text-paper">
+          2A · Digitally active systems
+        </h3>
+        <div className={dig ? 'mt-3 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]' : 'mt-3'}>
+          <div className="panel px-5">
+            {nonControl && <Q e={e} id="digitallyActive" quick={quick} />}
+            {dig && <Q e={e} id="remoteControl" quick={quick} />}
+            {dig && <Q e={e} id="separability" quick={quick} />}
+            {!dig && <p className="py-3 text-sm text-paper-dim">Passive: no software, firmware or remote access to exploit, so the control-layer test does not apply.</p>}
+            <Skipped
+              e={e}
+              ids={[...(nonControl ? (['digitallyActive'] as CategoricalInputId[]) : []), ...(dig ? (['remoteControl', 'separability'] as CategoricalInputId[]) : [])]}
+              quick={quick}
+            />
           </div>
-        </section>
-      )}
+          {dig && <ScopePreview e={e} />}
+        </div>
+      </section>
       {phys && (
         <section aria-labelledby="yf-2b">
           <h3 id="yf-2b" className="text-lg font-medium text-paper">
@@ -421,7 +433,7 @@ function Gate3({ e, quick }: { e: Evaluation; quick: boolean }) {
           notes={{
             preserve: 'Needs a position worth defending, and a reason it matters for what comes next.',
             catchUp: 'Usually depends on learning from the frontier: keep a gate open for licensing and joint ventures.',
-            leapAhead: 'Needs an advantage customers value, evidence beyond novelty and a path to scale. Readiness data inform it; they never decide it.',
+            leapAhead: 'Needs an advantage customers value and evidence beyond novelty, plus at least two of: a displaceable incumbent, complementary strengths, a path to scale. Readiness data inform it; they never decide it.',
           }}
         />
       </section>
@@ -453,7 +465,7 @@ const WHY_OPTS: { value: PremiumWhy | 'unknown'; label: string }[] = [
 
 function Gate4({ e, quick }: { e: Evaluation; quick: boolean }) {
   const { setAnswer, setWhy } = useLayerActions(e);
-  const { data } = useYards();
+  const { data, update } = useYards();
   const stage = recordsFor(data.bundle, stageScopeId(e.subject.technology, e.subject.stage));
   const rec = (id: string, measure?: string) => stage.find((r) => r.metricId === id && (!measure || r.measure === measure));
   const p = e.baseline.inputs.premium;
@@ -478,6 +490,17 @@ function Gate4({ e, quick }: { e: Evaluation; quick: boolean }) {
       </fieldset>
       <ContextNote records={[rec('trl'), rec('osi_addressable_market')]} />
       </div>
+      )}
+      {quick && (
+        <div className="border-y hairline py-3 text-xs text-paper-mute">
+          <p>
+            Quick mode skips one question here and keeps its current value: what strategic benefit would justify paying more for domestic production?{' '}
+            <span className="text-paper-dim">{WHY_OPTS.find((o) => o.value === (why ?? 'unknown'))?.label ?? 'Unknown'}</span>
+          </p>
+          <button type="button" className="link mt-2 text-xs" onClick={() => update((s) => ({ ...s, mode: 'analyst' }))}>
+            Answer all questions (Analyst mode)
+          </button>
+        </div>
       )}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="panel p-5">
@@ -527,7 +550,7 @@ export default function AssessView() {
             onChange={(m) => update((s) => ({ ...s, mode: m }))}
           />
           <p className="max-w-[20rem] text-xs text-paper-mute sm:text-right" aria-live="polite">
-            {quick ? `Quick: ${QUICK_COUNT} key questions, no evidence notes. Skipped questions keep their current values.` : 'Analyst: every question, with the evidence beside it.'}
+            {quick ? `Quick: ${quickCount(e)} key questions (plus the leap-ahead checks if you choose that path), no evidence notes. Skipped questions keep their current values.` : 'Analyst: every question, with the evidence beside it.'}
           </p>
         </div>
       </div>
