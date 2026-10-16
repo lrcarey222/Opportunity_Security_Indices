@@ -1,0 +1,121 @@
+sector,stage,supply_chain,tech,method,note
+Solar,*,Downstream,Solar,direct,
+Solar,Transmission & Distribution,Downstream,Electric Grid,direct,
+Wind,*,Downstream,Wind,direct,
+Wind,Transmission & Distribution,Downstream,Electric Grid,direct,Offshore wind export cables and transmission assets
+Wind and Solar,*,Downstream,Solar,direct,Split equally between solar and wind
+Wind and Solar,*,Downstream,Wind,direct,Split equally between solar and wind
+"Solar,Batteries",*,Downstream,Solar,direct,Split equally between solar and batteries
+"Solar,Batteries",*,Downstream,Batteries,direct,Split equally between solar and batteries
+Geothermal,*,Downstream,Geothermal,direct,
+Nuclear,*,Downstream,Nuclear,direct,
+Coal,*,Downstream,Coal,direct,Power plants
+Coal,Extraction,Upstream,Coal,direct,
+Coal,Exploration/Extraction,Upstream,Coal,direct,
+Oil,Extraction,Upstream,Oil,direct,
+Oil,Exploration,Upstream,Oil,direct,
+Oil,Exploration/Extraction,Upstream,Oil,direct,
+Oil,Refining,Midstream,Oil,direct,
+Oil,Petrochemical,Midstream,Oil,direct,
+Oil,Transportation,Midstream,Oil,direct,Pipelines and tankers
+Oil,Storage,Midstream,Oil,direct,
+Oil,Transmission & Distribution,Midstream,Oil,direct,
+Oil,Electricity Production,Downstream,Oil,direct,
+Oil,*,Upstream,Oil,pooled,Stage unclear: pro rata to the partner's direct oil finance across stages
+Oil,*,Midstream,Oil,pooled,
+Oil,*,Downstream,Oil,pooled,
+Natural Gas,Extraction,Upstream,Gas,direct,
+Natural Gas,Exploration,Upstream,Gas,direct,
+Natural Gas,Exploration/Extraction,Upstream,Gas,direct,
+Natural Gas,Refining,Midstream,Gas,direct,Gas processing and liquefaction
+Natural Gas,Petrochemical,Midstream,Gas,direct,
+Natural Gas,Transportation,Midstream,Gas,direct,"Pipelines, LNG carriers and terminals"
+Natural Gas,Storage,Midstream,Gas,direct,
+Natural Gas,Transmission & Distribution,Midstream,Gas,direct,Gas transmission pipelines
+Natural Gas,Electricity Production,Downstream,Gas,direct,
+Natural Gas,CHP,Downstream,Gas,direct,
+Natural Gas,Point of Use,Downstream,Gas,direct,
+Natural Gas,Heating,Downstream,Gas,direct,
+Natural Gas,*,Upstream,Gas,pooled,Stage unclear (mostly integrated LNG projects): pro rata to the partner's direct gas finance upstream and midstream
+Natural Gas,*,Midstream,Gas,pooled,
+Oil and Gas,Extraction,Upstream,Oil,direct,Split equally between oil and gas
+Oil and Gas,Extraction,Upstream,Gas,direct,Split equally between oil and gas
+Oil and Gas,Exploration,Upstream,Oil,direct,Split equally between oil and gas
+Oil and Gas,Exploration,Upstream,Gas,direct,Split equally between oil and gas
+Oil and Gas,Exploration/Extraction,Upstream,Oil,direct,Split equally between oil and gas
+Oil and Gas,Exploration/Extraction,Upstream,Gas,direct,Split equally between oil and gas
+Oil and Gas,Refining,Midstream,Oil,direct,Split equally between oil and gas
+Oil and Gas,Refining,Midstream,Gas,direct,Split equally between oil and gas
+Oil and Gas,Petrochemical,Midstream,Oil,direct,Split equally between oil and gas
+Oil and Gas,Petrochemical,Midstream,Gas,direct,Split equally between oil and gas
+Oil and Gas,Transportation,Midstream,Oil,direct,Split equally between oil and gas
+Oil and Gas,Transportation,Midstream,Gas,direct,Split equally between oil and gas
+Oil and Gas,Storage,Midstream,Oil,direct,Split equally between oil and gas
+Oil and Gas,Storage,Midstream,Gas,direct,Split equally between oil and gas
+Oil and Gas,Transmission & Distribution,Midstream,Oil,direct,Split equally between oil and gas
+Oil and Gas,Transmission & Distribution,Midstream,Gas,direct,Split equally between oil and gas
+Oil and Gas,Electricity Production,Downstream,Oil,direct,Split equally between oil and gas
+Oil and Gas,Electricity Production,Downstream,Gas,direct,Split equally between oil and gas
+Oil and Gas,*,Upstream,Oil,pooled,Stage unclear: pro rata to the partner's direct oil and gas finance upstream and midstream
+Oil and Gas,*,Upstream,Gas,pooled,
+Oil and Gas,*,Midstream,Oil,pooled,
+Oil and Gas,*,Midstream,Gas,pooled,
+Batteries,Extraction,Upstream,Batteries,direct,Lithium and other battery minerals
+Batteries,Exploration/Extraction,Upstream,Batteries,direct,
+Batteries,Electric Vehicles,Midstream,Batteries,direct,EV battery gigafactories
+Batteries,Transmission & Distribution,Downstream,Batteries,direct,Grid-connected storage
+Batteries,*,Midstream,Batteries,pooled,Storage stage mixes gigafactories and grid storage: pro rata to the partner's direct battery finance
+Batteries,*,Downstream,Batteries,pooled,
+Hydrogen - Clean,*,Downstream,Green Hydrogen,direct,
+Fuel Cells + Hydrogen,*,Downstream,Green Hydrogen,direct,
+Critical Minerals,*,Upstream,Batteries,direct,"Split equally between the mineral baskets of batteries, grids and EVs"
+Critical Minerals,*,Upstream,Electric Grid,direct,"Split equally between the mineral baskets of batteries, grids and EVs"
+Critical Minerals,*,Upstream,Electric Vehicles,direct,"Split equally between the mineral baskets of batteries, grids and EVs"
+Mixed or unclear - Other,Transmission & Distribution,Downstream,Electric Grid,direct,Grids and interconnectors
+Mixed or unclear - Clean,Transmission & Distribution,Downstream,Electric Grid,direct,
+Efficiency - Other,Transmission & Distribution,Downstream,Electric Grid,direct,
+Efficiency - Clean,Transmission & Distribution,Downstream,Electric Grid,direct,
+Mixed or unclear - Other,Electric Vehicles,,,exclude,"Metro and rail lines (e.g. JICA's Mumbai-Ahmedabad high-speed rail), not EVs"
+Mixed or unclear - Other,Transportation,,,exclude,Transport infrastructure
+Mixed or unclear - Clean,Electric Vehicles,,,exclude,Metro and rail lines
+Mixed or unclear - Clean,Transportation,,,exclude,Transport infrastructure
+Efficiency - Clean,Transportation,,,exclude,Transport infrastructure
+Renewables - Clean,*,Downstream,Solar,pooled,Allocated pro rata to the partner's direct solar / wind / geothermal finance
+Renewables - Clean,*,Downstream,Wind,pooled,
+Renewables - Clean,*,Downstream,Geothermal,pooled,
+Mixed or unclear - Fossil,*,Downstream,Coal,pooled,Allocated pro rata to the partner's direct coal / oil / gas finance
+Mixed or unclear - Fossil,*,Downstream,Oil,pooled,
+Mixed or unclear - Fossil,*,Downstream,Gas,pooled,
+Mixed or unclear - Clean,*,Downstream,Solar,pooled,Clean energy programmes: pro rata to the partner's direct clean Downstream finance
+Mixed or unclear - Clean,*,Downstream,Wind,pooled,
+Mixed or unclear - Clean,*,Downstream,Geothermal,pooled,
+Mixed or unclear - Clean,*,Downstream,Nuclear,pooled,
+Mixed or unclear - Clean,*,Downstream,Electric Grid,pooled,
+Mixed or unclear - Clean,*,Downstream,Electric Vehicles,pooled,
+Mixed or unclear - Other,*,Downstream,Solar,pooled,Mixed energy finance: pro rata to the partner's direct Downstream finance
+Mixed or unclear - Other,*,Downstream,Wind,pooled,
+Mixed or unclear - Other,*,Downstream,Geothermal,pooled,
+Mixed or unclear - Other,*,Downstream,Nuclear,pooled,
+Mixed or unclear - Other,*,Downstream,Coal,pooled,
+Mixed or unclear - Other,*,Downstream,Oil,pooled,
+Mixed or unclear - Other,*,Downstream,Gas,pooled,
+Mixed or unclear - Other,*,Downstream,Electric Grid,pooled,
+Mixed or unclear - Other,*,Downstream,Electric Vehicles,pooled,
+Efficiency - Clean,*,Downstream,Solar,pooled,Efficiency: pro rata to the partner's direct Downstream finance (as CRS code 23183)
+Efficiency - Clean,*,Downstream,Wind,pooled,
+Efficiency - Clean,*,Downstream,Geothermal,pooled,
+Efficiency - Clean,*,Downstream,Nuclear,pooled,
+Efficiency - Clean,*,Downstream,Electric Grid,pooled,
+Efficiency - Clean,*,Downstream,Electric Vehicles,pooled,
+Efficiency - Other,*,Downstream,Solar,pooled,
+Efficiency - Other,*,Downstream,Wind,pooled,
+Efficiency - Other,*,Downstream,Geothermal,pooled,
+Efficiency - Other,*,Downstream,Nuclear,pooled,
+Efficiency - Other,*,Downstream,Coal,pooled,
+Efficiency - Other,*,Downstream,Oil,pooled,
+Efficiency - Other,*,Downstream,Gas,pooled,
+Efficiency - Other,*,Downstream,Electric Grid,pooled,
+Efficiency - Other,*,Downstream,Electric Vehicles,pooled,
+Efficiency - Fossil,*,Downstream,Coal,pooled,
+Efficiency - Fossil,*,Downstream,Oil,pooled,
+Efficiency - Fossil,*,Downstream,Gas,pooled,

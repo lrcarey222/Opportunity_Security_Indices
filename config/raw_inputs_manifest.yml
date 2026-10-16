@@ -873,14 +873,94 @@ inputs:
 - id: oecd_crs_api
   path: oecd_crs_api.csv
   source_type: manual
-  source_name: OECD Creditor Reporting System aid flows
+  source_name: OECD Creditor Reporting System aid flows (3-digit sectors)
   url: https://data-explorer.oecd.org/
   cadence: annual
   owner: lcarey@rmi.org
   staged_from: sharepoint
-  notes: OECD publishes an SDMX API; the filename is aspirational, not automated.
+  notes: SDMX extract of DF_CRS 1.4 (ODA, gross disbursements, constant 2023 USD, 3-digit
+    sectors; 2024 holds 108 rows only). Shipped by the dashboard's Development & finance
+    chunk; since October 2026 Development Potential reads oecd_crs_purpose.csv instead.
+    Kept with retain because scripts/87 builds its input paths from a named vector, which the reference
+    scan does not read.
+  retain: yes
+  required_by:
+  - scripts/87_export_sector_data.R
+- id: oecd_crs_purpose
+  path: oecd_crs_purpose.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: OECD Creditor Reporting System, bilateral official finance by purpose code
+  url: https://webfs-dcd.oecd.org/files/dotStat/DSD_CRS/CRS-reduced.parquet
+  cadence: annual
+  owner: lcarey@rmi.org
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/oecd_crs.R from the CRS bulk file and the DAC-CRS
+    code lists (needs the arrow and readxl packages). ODA, OOF and PSI of country
+    donors to recipient countries, purpose codes 23xxx / 321xx / 322xx, summed by year,
+    donor, recipient, purpose code and measure; USD millions at constant prices of
+    price_base_year. Incomplete years are left out (2025 in the October 2026 file). The
+    SDMX data endpoint of DF_CRS returned HTTP 500 on 2026-10-16, hence the bulk file.
   required_by:
   - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
+- id: oci_energy_finance
+  path: oci_energy_finance.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Oil Change International, Public Finance for Energy Database (international
+    transactions)
+  url: https://energyfinance.org/
+  cadence: quarterly
+  owner: lcarey@rmi.org
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/oci_energy_finance.R from https://energyfinance.org/dataset.csv.
+    Energy transactions of G20 export credit agencies, development finance institutions,
+    national development banks and MDBs, one row per transaction and recipient country
+    (multi-country deals split equally), amounts in current USD as committed. Licence CC BY-NC
+    4.0 (attribution to Oil Change International). Supplies the export-credit and lender
+    finance the CRS lacks (JBIC, NEXI, JOGMEC, US EXIM, KEXIM, Hermes, KfW IPEX-Bank, UKEF, ...).
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
+- id: oci_energy_finance_institutions
+  path: oci_energy_finance_institutions.csv
+  source_type: derived
+  source_name: OCI institutions counted in Development Potential (CRS overlap table)
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  staged_from: repo
+  notes: Project-authored. One row per OCI bilateral or export-credit institution, source oci
+    (not in the CRS; counted) or crs (reports to the CRS; not counted twice), and the CRS
+    measure an institution replaces (Korea OOF for KEXIM).
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
+- id: oci_energy_finance_crosswalk
+  path: oci_energy_finance_crosswalk.csv
+  source_type: derived
+  source_name: OCI sector and stage to technology and supply-chain stage crosswalk
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  staged_from: repo
+  notes: Project-authored. Keyed by OCI sector and value-chain stage ("*" for the stages a sector
+    does not list); direct, pooled or exclude, as the CRS purpose crosswalk.
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
+- id: oecd_crs_purpose_crosswalk
+  path: oecd_crs_purpose_crosswalk.csv
+  source_type: derived
+  source_name: CRS purpose code to technology and supply-chain stage crosswalk
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  staged_from: repo
+  notes: Project-authored. Direct codes name the technologies they fund (split equally
+    when several); pooled (cross-cutting) codes are spread pro rata to the partner's
+    direct aid (partnership_strength_allocate_crs_purposes()).
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
 - id: solar_potential
   path: solar_potential_clean.csv
   source_type: manual
