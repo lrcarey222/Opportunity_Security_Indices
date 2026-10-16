@@ -39,6 +39,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
   - [Allied coalition: two tiers and the EU node](#allied-coalition-two-tiers-and-the-eu-node)
   - [Partnership Strength Index (PSI)](#partnership-strength-index-psi)
   - [Allied network design](#allied-network-design)
+  - [Allied Industrial Base and Sectoral Compacts](#allied-industrial-base-and-sectoral-compacts)
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
 - [Interactive explorer](#interactive-explorer)
@@ -71,9 +72,11 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Partner themes | `scripts/15_build_partner_themes.R` | `partner_{friendshore,opportunity,development}_*_tbl.rds`, `partner_trade_coverage_tbl.rds`, `cm_fdi_projects_tbl.rds`, `partner_cm_fdi_{ties,exposure,coverage}_tbl.rds` |
 | PSI | `scripts/25_build_partner_indices.R` | `psi_tbl.rds` (core-coalition view, headline), `psi_full_coalition_tbl.rds`, `psi_world_tbl.rds`, `psi_dyad_tbl.rds` and category contributions |
 | Allied network | `scripts/30_build_allied_network_design.R` | `outputs/allied_network_*.csv` |
+| Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path}.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}` |
 | Vintages | `scripts/40_build_index_vintages.R` | `vintages/*` (ES and EO at several years) |
 | Dashboard: Strategic Insights | `scripts/85_export_dashboard_data.R`, `scripts/86_export_dashboard_fixtures.R` | `dashboard/validation_report.csv`; the app's bundle goes to the repo's `dashboard/public/data/` and the engine's parity fixtures to `dashboard/src/engine/__fixtures__/` |
 | Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them) |
+| Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v1) |
 | Dashboard: Country Insights | `scripts/88_export_country_data.R` | the app's Country data go to the repo's `dashboard/public/data/country/` (manifest, a fact sheet per economy, drivers files; `--render-memos` publishes the verified policy memos of the 31 core members as JSON, PDF, Word and Markdown) |
 
 Every index keeps its decomposition (category and variable contributions reconcile to the index value), and every country-cell carries how much of its weight rests on imputed inputs.
@@ -544,6 +547,44 @@ with x_p the production share, w_node = 1, w_edge = 0.5, w_dev = 0. **Diversific
 
 ---
 
+### Allied Industrial Base and Sectoral Compacts
+
+**What it captures:** the Allied Industrial Base as an emergent network of bilateral trade and
+investment relationships, and the Sectoral Compacts that would coordinate groups of them. It sits
+beside the indices and the allied network design and changes neither. Full method:
+[`docs/aib_methodology.md`](docs/aib_methodology.md); settings: `config/aib.yml`; code: `R/aib/`.
+
+- **Grain:** sub-sector nodes of the HS6 master (Technology > stage > sub-sector > HS6; 91 nodes are
+  optimized on the 2026-10 data), with every metric recomputed from flows summed to the node.
+- **Stress tests:** China removed, China halved, and the largest supplier removed at sub-sector,
+  stage or technology level, on the observed 2024 bilateral flows (importer's declaration first).
+  Two supply scenarios (conservative: only supply the shock frees moves; reallocation: exporters can
+  redirect their observed global exports) and three states (static; existing relationships;
+  optimized partnerships). `coordination_dividend = optimized - existing coverage`. Observed exports
+  are revealed tradable capability, not spare capacity.
+- **Trade optimization:** lexicographic (demand served; then the smallest cut to surviving trade;
+  then revealed specialization by RCA; then Export Opportunity; then revealed policy/climate
+  compatibility), with a maximum supplier share run at 25/40/60/100% as a
+  specialization-resilience frontier. No composite score.
+- **Investment partnership prioritization:** a marginal capacity simulation on nodes with a residual
+  gap: a standardized 5/10/20% increment at each capable host, ordered by resilience gain,
+  diversification, host capability, Friendshore, then compatibility.
+- **Emergent network and compacts:** directed trade and investment edges aggregated over nodes and
+  shocks; nodes classified COORDINATE / BUILD / MANAGE SPECIALIZATION / LOW INTERVENTION and grouped
+  into compacts only when they are supply-chain coherent, share or complement partners and need
+  similar instruments; each compact gets a greedy minimum sufficient coalition at 90/95/99% of its
+  anchors' demand, model-derived roles, an archetype and a node table for Gates & Fences.
+
+```
+Rscript scripts/31_build_aib_trade_network.R [--raw-dir DIR] [--processed-dir DIR] [--out-dir DIR]
+Rscript scripts/32_build_aib_partnerships.R [--out-dir DIR] [--nodes id1,id2] [--skip-investment]
+Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR]
+```
+
+`run_pipeline.R` runs 31 and 32 after the allied network (`OPSI_RUN_AIB=false` skips them).
+
+---
+
 ## Repository layout
 
 ```
@@ -551,6 +592,7 @@ R/                    # Pure functions (no IO)
   utils/              # Helpers: schema, theme standardization, country harmonisation, HS6 crosswalk
   categories/         # Theme builders by category
   indices/            # ES/EO builders, Policy index, Strategic Index, coalition, PSI, allied network
+  aib/                # Allied Industrial Base: trade network, shocks, LP, investment, network, compacts
   geopolitical_distance/  # UNGA ideal points and alignment
   themes/             # Bilateral partnership themes (Friendshore, Opportunity, Development)
   charts/             # Chart builders (no file IO)

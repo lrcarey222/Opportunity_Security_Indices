@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 
 export const APP_TITLE = 'Allied Industrial Base Explorer | NEIS Center';
 
-const MODULE_LABEL: Record<string, string> = { sector: 'Sector Insights', strategic: 'Strategic Insights', country: 'Country Insights' };
+const MODULE_LABEL: Record<string, string> = { sector: 'Sector Insights', strategic: 'Strategic Insights', country: 'Country Insights', aib: 'Sectoral Compacts' };
 
 /** The document title of a view (empty view = the app title alone, as on Home). */
 export function pageTitle(view: string, module?: string): string {

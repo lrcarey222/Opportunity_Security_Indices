@@ -2,12 +2,14 @@
 
 An interactive companion to the NEIS Center paper *Opportunity, Security, and the Allied Industrial
 Base: A Quantitative Network Approach to Coalition Supply Chains for Energy Technologies*. A Home
-page (`/`) leads into two modules that share one header:
+page (`/`) leads into four modules that share one header:
 
 | Module | Paths | What it is |
 |---|---|---|
 | **Sector Insights** (descriptive data) | `/sector/...` | measured values in their sources' own units and years: who produces, holds, trades, invests in and regulates each energy technology's supply chain, upstream to downstream. No indices, no weights, no dials |
 | **Strategic Insights** (normative prioritisation) | `/overview`, `/country`, `/space`, `/strategic`, `/partners`, `/network`, `/methods`, `/data` | the paper's model, recomputed in the browser under four preference dials |
+| **Country Insights** (country briefing) | `/countries`, `/countries/:iso3`, `/countries/about` | the paper's baseline for one economy beside the raw data behind it, with policy memos |
+| **Sectoral Compacts** (coordination design) | `/compacts`, `/compacts/:id`, `/compacts/about` | the Allied Industrial Base trade and investment model (scripts/31, 32): which supply chains need coalitions to coordinate trade, build capacity or manage specialization under a supply shock, and which economies each compact needs |
 
 In Strategic Insights readers move four preference dials (and an advanced panel) and the explorer
 recomputes, in their browser, the Energy Security and Economic Opportunity pillars, the Policy and
@@ -146,6 +148,21 @@ unchanged keeps the sign-off), and publishes the memo JSON, PDF (headless Edge o
 (Python with python-docx and pypdf; local only). `--iso3` limits a run; `--save-ctx` / `--load-ctx` reuse
 the inputs of an earlier run for debugging. Real-data checks: `npm run test:country-real`.
 
+### Sectoral Compacts data (`public/data/aib/`)
+
+Written only by `scripts/84_export_aib_data.R` (builder in `R/dashboard/aib/aib_export.R`) from
+scripts/32's `aib_results.rds`: plain JSON, every array field wrapped in `I()`, the manifest written last.
+
+| File | Loaded | Content |
+|---|---|---|
+| `manifest.json` | every Sectoral Compacts page (no-cache) | schema `osi-aib` v1, created, universe, headline shock and scenario, the document's file name |
+| `compacts.<md5_8>.json` | every Sectoral Compacts page (immutable) | meta (trade year, shocks, scenarios, classes, coverage targets, classification thresholds), country names, the compacts (nodes, coalition and its path, roles, metrics with the global optimum and the demand anchors' coverage under fragmented action and under the compact, class mix, policy needs, trade and investment relationships) and every classified sub-sector node (with its supplier-limit frontier: coverage, coverage after a second shock, specialization) |
+
+The contract (types and the runtime checks `checkAibManifest()` / `checkCompactsDoc()`) is
+`src/aib/contract.ts`. Without `public/data/aib/manifest.json` the module says "No compacts data";
+the other modules are unaffected. Real-data checks: `npm run test:aib-real`; the view tests also run on
+the real bundle with `AIB_DATA_DIR=public/data/aib npx vitest run --project ui src/aib`.
+
 ## Refresh the data
 
 From the repository root, after a pipeline rerun:
@@ -176,7 +193,8 @@ npm ci
 npm run dev           # http://localhost:5173, serves public/data/
 npm run dev:fixture   # the same app on the small synthetic bundles (no export needed): the
                       # Strategic one at data/, the Sector one (tests/fixtures/sector/synthetic/)
-                      # at data/sector/
+                      # at data/sector/, the Country one at data/country/ and the Sectoral Compacts
+                      # one (src/aib/__fixtures__/synthetic/data/aib/) at data/aib/
 ```
 
 Without `public/data/` the Strategic pages say so ("No data") and point here; Home and Sector
@@ -193,6 +211,9 @@ src/
   worker/      Web Worker protocol, host and the main-thread client
   state/       URL state (url.ts), engine provider, runs, navigation
   views/       Strategic: Overview, Country, Space, Strategic, Partners, Network, Methods, Data
+  aib/         Sectoral Compacts: contract.ts (the data contract with scripts/84), data/ (store, hooks),
+               derive/ (pure helpers: classes, coverage, nodes, flows, coalition, roles), charts/,
+               views/ (index, compact, about), AibLayout, routes, nav
   sector/      Sector Insights: contract.ts (the data contract with scripts/87), data/ (store),
                derive/ (pure derivations), views/, charts/ (the Sector chart kit), chrome/
                (SectorBar, SectionRail, BottomSheet, ThemeChips), url.ts, format.ts
@@ -214,6 +235,8 @@ npm run test:sector-real  # the decoded real Sector bundle: the reference values
                           # meta.summary = the client recomputation, every chunk against the
                           # contract, headlines, validation (no FAIL; WARNs listed) and the data
                           # budgets (skipped without public/data/sector/manifest.json)
+npm run test:aib-real     # the real Sectoral Compacts bundle against its contract (skipped without
+                          # public/data/aib/manifest.json)
 ```
 
 The Sector route smoke tests and the summary parity also run on any Sector bundle directory:
@@ -274,6 +297,8 @@ Browsers: current Chrome, Edge, Firefox and Safari. Gzip is decoded natively whe
 | `public/data/sector/` | `scripts/87` | as `public/data/` |
 | `tests/fixtures/sector/synthetic/` | `scripts/87 --synthetic` | yes (small; the Sector tests and `dev:fixture`) |
 | `src/engine/__fixtures__/synthetic/` | `scripts/86` | yes (CI parity tests) |
+| `public/data/aib/` | `scripts/84` | as `public/data/` |
+| `src/aib/__fixtures__/synthetic/` | by hand (invented economies and numbers) | yes (small; the Sectoral Compacts tests and `dev:fixture`) |
 | `src/engine/__fixtures__/real/` | `scripts/86 --set real` | no (gitignored, ~30 MB) |
 | `public/paper/` | `scripts/85 --paper` | no (gitignored) |
 | `dist/`, `node_modules/` | npm | no |

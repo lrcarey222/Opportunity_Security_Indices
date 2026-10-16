@@ -1,0 +1,21 @@
+# Dependabot version updates: the dashboard's npm packages and the CI workflows' actions.
+# Minor and patch bumps are grouped into one weekly PR per ecosystem to keep the noise down;
+# major bumps come as their own PRs. R packages are not covered by Dependabot.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/dashboard"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      dashboard-minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns: ["*"]

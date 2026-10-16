@@ -1,6 +1,7 @@
-// The shared header with three modules (spec_country.md A2.1): the desktop tabs and the tier-2 nav of
-// Country Insights (the static fallback before the module registers its links), and the phone menu
-// that lists the three modules with the current one marked. No bare acronym in the header (C3.4).
+// The shared header with four modules (spec_country.md A2.1; Sectoral Compacts fourth): the desktop tabs
+// and the tier-2 nav of Country Insights (the static fallback before the module registers its links),
+// and the phone menu that lists the four modules with the current one marked. No bare acronym in the
+// header (C3.4).
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
@@ -52,12 +53,12 @@ function renderAt(path: string) {
 }
 
 describe('Header with Country Insights', () => {
-  it('desktop: three tabs, Country current, and the Country views nav with PROFILE on the country shown', () => {
+  it('desktop: four tabs, Country current, and the Country views nav with PROFILE on the country shown', () => {
     renderAt('/countries/JPN/memo');
     const tabs = screen.getByRole('navigation', { name: 'Modules' });
     const links = within(tabs).getAllByRole('link');
-    expect(links.map((a) => a.textContent)).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights']);
-    expect(links.map((a) => a.getAttribute('aria-current'))).toEqual([null, null, 'true']);
+    expect(links.map((a) => a.textContent)).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights', 'Sectoral Compacts']);
+    expect(links.map((a) => a.getAttribute('aria-current'))).toEqual([null, null, 'true', null]);
     expect(links[0].getAttribute('href')).toBe('/sector?c=JPN');
     const views = screen.getByRole('navigation', { name: 'Country Insights views' });
     const items = within(views).getAllByRole('link');
@@ -80,7 +81,7 @@ describe('Header with Country Insights', () => {
     expect(within(views).getByRole('link', { name: 'Security vs opportunity' })).toBeTruthy();
   });
 
-  it('phone: the menu lists the three modules (current marked) and the module views', () => {
+  it('phone: the menu lists the four modules (current marked) and the module views', () => {
     wide = false;
     renderAt('/countries');
     expect(screen.queryByRole('navigation', { name: 'Modules' })).toBeNull();
@@ -89,7 +90,7 @@ describe('Header with Country Insights', () => {
     fireEvent.click(menu);
     const mods = screen.getByRole('navigation', { name: 'Modules' });
     const links = within(mods).getAllByRole('link');
-    expect(links.map((a) => a.textContent?.replace('current', '').trim())).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights']);
+    expect(links.map((a) => a.textContent?.replace('current', '').trim())).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights', 'Sectoral Compacts']);
     expect(links[2].getAttribute('aria-current')).toBe('true');
     const views = screen.getByRole('navigation', { name: 'Country Insights views' });
     expect(within(views).getByRole('link', { name: 'Countries' }).getAttribute('aria-current')).toBe('page');

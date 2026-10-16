@@ -1,11 +1,12 @@
-// Home (spec_sector.md 2.1; spec_country.md A2.3): what each of the three modules is for, the fastest
+// Home (spec_sector.md 2.1; spec_country.md A2.3): what each of the four modules is for, the fastest
 // ways in, then out of the way. It renders with no data request before idle and never touches the
 // engine:
 //   * on idle (1.5 s fallback; skipped under Save-Data) it fetches data/sector/manifest.json (the
 //     question facts and the coverage glyph), prefetches sector-meta, and loads the Country manifest
 //     and layout chunk (so the Country landing is instant; never a fact sheet);
 //   * pointer-enter, focus or touch on the Strategic card prefetches the Strategic chunk and starts
-//     the engine worker (prefetch.ts); on the Country card, the Country chunk and manifest.
+//     the engine worker (prefetch.ts); on the Country card, the Country chunk and manifest; on the
+//     Sectoral Compacts card, its chunk and manifest (never the compacts document).
 // A failed prefetch is silent: the questions show without facts and the glyph is omitted.
 
 import { useEffect, useId, useState } from 'react';
@@ -17,7 +18,7 @@ import {
   type MineralSlug, type SectorManifest, type StageSlug, type TechSlug,
 } from '../sector/contract.ts';
 import { moduleResumeHref } from './lastLocation.ts';
-import { onIdle, prefetchCountry, prefetchStrategic, saveData } from './prefetch.ts';
+import { onIdle, prefetchAib, prefetchCountry, prefetchStrategic, saveData } from './prefetch.ts';
 import { loadSectorManifest, peekSectorManifest, prefetchSectorChunk } from './sectorManifest.ts';
 import { useTitle } from './title.ts';
 
@@ -117,8 +118,22 @@ function QuadrantGlyph() {
   );
 }
 
+/** A static glyph of a compact's coverage steps (decorative): the shock, existing relationships, the
+ *  trade compact and the trade + investment response, each restoring more of the lost supply. */
+function CoverageStepsGlyph() {
+  const steps = [0.35, 0.55, 0.8, 0.92];
+  return (
+    <svg viewBox="0 0 64 28" className="h-7 w-16" aria-hidden="true" data-testid="compacts-glyph">
+      <rect x="0" y="1" width="64" height="1" fill="#4b5563" />
+      {steps.map((v, i) => (
+        <rect key={i} x={i * 16 + 2} y={28 - 26 * v} width="12" height={26 * v} fill={i === 0 ? '#6b7280' : '#1889b0'} />
+      ))}
+    </svg>
+  );
+}
+
 interface CardSpec {
-  id: 'sector' | 'strategic' | 'country';
+  id: 'sector' | 'strategic' | 'country' | 'aib';
   tag: string;
   title: string;
   question: string;
@@ -169,12 +184,27 @@ const COUNTRY_CARD: CardSpec = {
   button: 'Open Country Insights',
 };
 
-/** The three module cards, in the order the user numbered the modules. */
-export const MODULE_CARDS: readonly CardSpec[] = [SECTOR_CARD, STRATEGIC_CARD, COUNTRY_CARD];
+const AIB_CARD: CardSpec = {
+  id: 'aib',
+  tag: 'COORDINATION DESIGN',
+  title: 'Sectoral Compacts',
+  question: 'Where would joint action by a coalition restore more supply than countries acting alone?',
+  lede: "If a major supplier's exports were lost, which supply chains could existing partners make up for, which need coordinated new trade, which need new capacity, and which economies would each coalition need? Compacts come out of the trade and investment model; none is fixed in advance.",
+  links: [
+    { to: '/compacts', label: 'The compacts and how every sub-sector is classified' },
+    { to: '/compacts#nodes', label: 'Which supply chains need coordination, capacity or neither?' },
+    { to: '/compacts/about', label: 'How compacts are derived' },
+  ],
+  button: 'Open Sectoral Compacts',
+};
+
+/** The four module cards, in the order the user numbered the modules (Sectoral Compacts fourth). */
+export const MODULE_CARDS: readonly CardSpec[] = [SECTOR_CARD, STRATEGIC_CARD, COUNTRY_CARD, AIB_CARD];
 
 function cardPrefetch(id: CardSpec['id']) {
   if (id === 'strategic') return { onPointerEnter: prefetchStrategic, onFocus: prefetchStrategic, onTouchStart: prefetchStrategic };
   if (id === 'country') return { onPointerEnter: prefetchCountry, onFocus: prefetchCountry, onTouchStart: prefetchCountry };
+  if (id === 'aib') return { onPointerEnter: prefetchAib, onFocus: prefetchAib, onTouchStart: prefetchAib };
   return {};
 }
 
@@ -184,7 +214,7 @@ function ModuleCard({ spec, manifest }: { spec: CardSpec; manifest: SectorManife
   const nCells = manifest ? manifest.coverage_glyph.filter((g) => g.country_data).length : 0;
   return (
     <article className="card flex flex-col p-6" aria-labelledby={`${id}-t`} {...prefetch}>
-      {/* the tag sits above the title: with three cards side by side a long tag beside the title
+      {/* the tag sits above the title: with the cards side by side a long tag beside the title
           wrapped "Strategic / Insights" onto two lines and put the cards' questions out of line */}
       <div className="flex flex-col items-start gap-3">
         <span className="tag uppercase tracking-wider">{spec.tag}</span>
@@ -204,6 +234,11 @@ function ModuleCard({ spec, manifest }: { spec: CardSpec; manifest: SectorManife
           <>
             <QuadrantGlyph />
             <span className="text-xs text-paper-mute">Quadrants, priorities, partners and a memo</span>
+          </>
+        ) : spec.id === 'aib' ? (
+          <>
+            <CoverageStepsGlyph />
+            <span className="text-xs text-paper-mute">Coalitions, roles and node-by-node treatments</span>
           </>
         ) : (
           manifest && (
@@ -328,11 +363,11 @@ export default function Home() {
         <div className="eyebrow mb-3">NEIS Center · Allied Industrial Base Explorer</div>
         <h1 className="rule-neis text-3xl font-medium text-paper sm:text-[2.25rem] sm:leading-tight">Allied Industrial Base Explorer</h1>
         <p className="mt-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">
-          Three ways into the data behind <em>Opportunity, Security, and the Allied Industrial Base</em>. Sector Insights shows what the data say about each energy technology&rsquo;s supply chain. Strategic Insights turns the same data into priorities for a coalition, under weights you choose. Country Insights brings both together for one country, on the paper&rsquo;s baseline.
+          Four ways into the data behind <em>Opportunity, Security, and the Allied Industrial Base</em>. Sector Insights shows what the data say about each energy technology&rsquo;s supply chain. Strategic Insights turns the same data into priorities for a coalition, under weights you choose. Country Insights brings both together for one country, on the paper&rsquo;s baseline. Sectoral Compacts asks which supply chains need coalitions to act together, and who would take part.
         </p>
       </header>
 
-      <section aria-label="Modules" className="grid gap-6 lg:grid-cols-3">
+      <section aria-label="Modules" className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {MODULE_CARDS.map((c) => (
           <ModuleCard key={c.id} spec={c} manifest={manifest} />
         ))}
@@ -363,10 +398,11 @@ export default function Home() {
         <h2 id="home-fit" className="mb-3 text-base font-medium text-paper">
           How the modules fit together
         </h2>
-        <div className="grid gap-4 text-sm leading-relaxed text-paper-dim lg:grid-cols-3">
+        <div className="grid gap-4 text-sm leading-relaxed text-paper-dim lg:grid-cols-2 xl:grid-cols-4">
           <p>Sector Insights shows measured values in their own units: who holds what, and how concentrated it is. It has no weights and no scores.</p>
           <p>Strategic Insights converts the same inputs into within-sector ranks and weighs them under the priorities you set. It ranks and weighs; Sector Insights shows the measured data those rankings start from.</p>
           <p>Country Insights reads the paper&rsquo;s baseline values for one country, puts them next to the raw data behind them, and compares them with the country&rsquo;s current policies and partnerships. To try other weightings, open the same country in Strategic Insights.</p>
+          <p>Sectoral Compacts models a supply shock on the observed trade network and asks how much of the lost supply existing relationships, coordinated trade and new investment could restore. Where joint action does better than countries acting alone, it groups the supply chains into compacts and names the economies each would need.</p>
         </div>
         <p className="mt-4 text-sm text-paper-mute">
           New to the terms? The{' '}

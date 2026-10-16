@@ -6,7 +6,8 @@ import { defineConfig } from 'vitest/config';
 // and chart kit), parity-synthetic (committed fixtures, CI), parity-real (local real fixtures from
 // scripts/86; skipped when absent) and sector-real (the integrator's parity of the decoded real Sector
 // bundle with Appendix B and meta.summary; skipped when public/data/sector/manifest.json is absent) and
-// country-real (the real Country bundle: contract on every sheet, values against the Strategic chunks, memo files).
+// country-real (the real Country bundle: contract on every sheet, values against the Strategic chunks, memo files)
+// and aib-real (the real Sectoral Compacts bundle against its contract; skipped without public/data/aib/manifest.json).
 export default defineConfig({
   test: {
     passWithNoTests: true,
@@ -16,7 +17,7 @@ export default defineConfig({
           name: 'unit',
           environment: 'node',
           include: ['src/**/*.test.ts'],
-          exclude: ['src/**/*.parity.test.ts', 'src/**/*.sector.test.ts', 'src/**/*.country.test.ts', 'node_modules/**'],
+          exclude: ['src/**/*.parity.test.ts', 'src/**/*.sector.test.ts', 'src/**/*.country.test.ts', 'src/**/*.aib.test.ts', 'node_modules/**'],
           testTimeout: 60_000,
         },
       },
@@ -70,6 +71,15 @@ export default defineConfig({
           env: { COUNTRY_REAL: '1' },
           testTimeout: 600_000,
           hookTimeout: 600_000,
+        },
+      },
+      {
+        // the real Sectoral Compacts bundle (public/data/aib/, scripts/84) against the contract; skipped without it
+        test: {
+          name: 'aib-real',
+          environment: 'node',
+          include: ['src/aib/__tests__/real.aib.test.ts'],
+          testTimeout: 120_000,
         },
       },
     ],

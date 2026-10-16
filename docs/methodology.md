@@ -238,6 +238,13 @@ A partner is **rankable** if it is sovereign and its PSI imputed weight share �
 - **Solver:** MILP (ompr/ROI/GLPK) for every stage with ≤ 60 nodes, 300 s per stage; greedy fallback (water-filled shares under the same objective) recorded in diagnostics.
 - **Calibration of lambda:** the smallest λ on the grid at which the median designed HHI over the 22 stages is at most the median observed export HHI of the network's nodes over the 18 stages with an HS6 basket (14 before 2026-10-11; 2024 reconciled trade, shares within the nodes, the EU counting extra-EU exports only; `allied_network_observed_hhi.csv`). Pick on the 37-node set of the final rerun (2026-10-12): λ = 0.78 (target 0.1556 over the 18 basket stages; designed median 0.1520; 0.77 gives 0.1558). The Upstream baskets of 2026-10-11 raise the target on that node set to 0.1556 over 18 stages, so λ is recalibrated on the rerun. The rule must be re-applied on each full rerun; `scripts/30` warns when it fails.
 
+## 10a. Allied Industrial Base and Sectoral Compacts
+
+A separate layer on the observed bilateral trade (sub-sector nodes, shocks, existing vs optimized
+partnerships, a specialization-resilience frontier, a marginal capacity simulation, the emergent
+network and Sectoral Compact formation). It changes no index and no allied-network output. Method,
+settings and outputs: `docs/aib_methodology.md`.
+
 ## 11. Pipeline stages
 
 1. **Ingest** (`scripts/05`): sync staged inputs, run API fetchers; HS6 views (`scripts/04`).

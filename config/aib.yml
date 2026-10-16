@@ -1,0 +1,332 @@
+# Allied Industrial Base (AIB) module: trade partnership network, investment partnership
+# prioritization, emergent AIB network and Sectoral Compact formation (docs/aib_methodology.md).
+# Read by scripts/31_build_aib_trade_network.R, scripts/32_build_aib_partnerships.R and
+# scripts/84_export_aib_data.R; the functions are in R/aib/ (pure). Every threshold below is a
+# setting, not a finding: the outputs record which values produced them.
+#
+# The module sits beside the OSI indices and the allied network design (scripts/30); it reads
+# their inputs but changes neither. It builds no composite score and fixes no alliance in advance:
+# the candidate universe is a setting and defaults to every economy in the trade data.
+
+# ---- Observed trade network -----------------------------------------------------------------
+trade:
+  # Reference year of the bilateral flows (the latest all-reporter pull with HS2022 codes) and the
+  # earlier year used only for the time-series check in the data-quality flags.
+  year: 2024
+  history_year: 2020
+  # Importer's declaration first, else the exporter's at the CIF/FOB factor (config/partnership.yml).
+  cif_fob_factor: 1.06
+  # A flow below this (USD) is noise, not a relationship (rounding, samples, re-imports).
+  min_flow_usd: 10000
+  # An exporter is a candidate partner in a node when its observed exports reach both bars (the
+  # larger one binds); smaller exporters keep their current shipments but are not re-optimized.
+  candidate_min_exports_usd: 1.0e+6
+  candidate_min_world_share: 0.0005
+  # Shipments that trade hubs re-export are attributed to the origin they re-export for the
+  # country shocks (Hong Kong and Macao for China). The hubs stay in the network otherwise.
+  reexport_hubs:
+    CHN: [HKG, MAC]
+  # Open ship registries: vessels (HS 89) "trade" through the flag they fly, so these economies show
+  # up as large importers and exporters of tankers and platforms. They are kept out of the candidate
+  # universe (no demand to restore, no partner); their shipments stay as observed.
+  exclude_from_universe: [LBR, MHL, PAN, BHS]
+
+# Sub-sector nodes are the (tech, stage, sub_sector) cells of data/reference/energy_hs6_master.csv.
+# Cells with an identical HS6 set in several technologies (magnets in EV and Wind, transformers in
+# Grid and Solar, pipelines in Oil and Gas) are one physical node, counted once. `splits` refines a
+# master sub-sector into finer nodes where its HS6 codes allow it.
+nodes:
+  splits:
+    - tech: Solar
+      supply_chain: Midstream
+      sub_sector: Polysilicon & Wafers
+      into:
+        - sub_sector: Polysilicon
+          hs6: ["280461"]
+        - sub_sector: Wafers
+          hs6: ["381800"]
+
+# ---- Candidate universe ---------------------------------------------------------------------
+# global: every economy in the trade data. coalition: the core and partner tiers of
+# data/processed/coalition_tbl.rds (a sensitivity, not the definition of the AIB). A list of ISO3
+# codes is also accepted. The universe is both the demand scope (importers whose supply is being
+# restored) and the set of candidate partners.
+universe: global
+
+# ---- Shocks ---------------------------------------------------------------------------------
+# type country: the listed exporters lose `fraction` of their exports in every node.
+# type largest_supplier: the largest exporter of the node (level subsector), of the node's stage
+# (level stage) or of its technology (level technology) loses `fraction` of its exports.
+# shocked_demand: release (default) means the shocked economy's purchases fall by the same
+# fraction, so exports headed to it are freed; hold keeps its purchases (a pure export cut).
+shocks:
+  - id: china_100
+    label: China supply removed
+    type: country
+    countries: [CHN]
+    fraction: 1.0
+  - id: china_50
+    label: China supply halved
+    type: country
+    countries: [CHN]
+    fraction: 0.5
+  - id: largest_subsector
+    label: Largest supplier of the sub-sector removed
+    type: largest_supplier
+    level: subsector
+    fraction: 1.0
+  - id: largest_stage
+    label: Largest supplier of the stage removed
+    type: largest_supplier
+    level: stage
+    fraction: 1.0
+  - id: largest_technology
+    label: Largest supplier of the technology removed
+    type: largest_supplier
+    level: technology
+    fraction: 1.0
+shocked_demand: release
+# The shock the compact layer, the investment simulation and the dashboard lead with.
+headline_shock: china_100
+
+# ---- Supply scenarios -----------------------------------------------------------------------
+# conservative: every surviving shipment to the universe stays where it is; only the supply the
+#   shock frees (exports that were headed to the shocked economy) can move.
+# reallocation: an exporter can redirect any of its observed global exports, including those to
+#   markets outside the universe and to the shocked economy, toward importers in the universe.
+# Observed exports are revealed tradable capability, not spare physical capacity.
+scenarios: [conservative, reallocation]
+headline_scenario: reallocation
+
+# ---- Trade optimization ---------------------------------------------------------------------
+optimization:
+  # Lexicographic objectives (each later one only among solutions within the tolerance of the
+  # earlier optimum): 1 demand served; 2 revealed specialization (capped RCA, ties by world
+  # export share); 3 Export Opportunity (exporter -> market); 4 revealed policy/climate
+  # compatibility. Tolerances are relative to the earlier optimum.
+  # Coverage is held within 0.05% of its maximum: a wider band lets the tie-breaks of state B (an
+  # incomplete graph) buy Export Opportunity with coverage and fakes a coordination dividend.
+  tolerance_coverage: 0.0005
+  # The stability rule (objective 1b, cut surviving shipments as little as possible) sits between
+  # coverage and specialization; it is a module addition, not one of the four spec objectives.
+  tolerance_stability: 1.0e-6
+  tolerance_specialization: 0.02
+  tolerance_opportunity: 0.02
+  # RCA above this counts as fully specialized in objective 2.
+  rca_cap: 4
+  # A country may keep its own exports at home to replace lost imports (domestic retention).
+  allow_domestic_retention: true
+  # State B (existing-network adaptation): an observed relationship may grow to at most
+  # (1 + this) times its 2024 size. Without a bound any USD 10k relationship could carry unlimited
+  # volume and "existing relationships" would be as flexible as new ones (on the first full run,
+  # 2026-10-15, the coordination dividend was ~0 in 89 of 91 nodes for that reason). .inf = unbounded.
+  existing_relationship_growth: 1.0
+  # Maximum share of the universe's post-shock supply any one candidate exporter may provide.
+  # 1 means no constraint; the frontier runs every value.
+  max_supplier_share: [0.25, 0.40, 0.60, 1.00]
+  headline_max_supplier_share: 1.00
+  # The minimum sufficient diversification of a node is the tightest share whose optimized
+  # coverage stays within this many points of the unconstrained optimum.
+  frontier_coverage_tolerance: 0.02
+  # Minimum required diversification: the loosest supplier limit at which coverage stays at or
+  # above this even if the optimized allocation then loses its largest supplier as well.
+  frontier_acceptable_coverage: 0.80
+  # Missing Export Opportunity or compatibility scores count as neutral in the tie-breaks.
+  neutral_score: 0.5
+
+# Revealed policy/climate compatibility (objective 4 and the investment tie-break): similarity of
+# the two economies' IEA PAMS policy intensity in the node's technology and stage, and of their
+# Climate Action Tracker ratings. No geopolitical alignment score enters by default.
+compatibility:
+  components: [pams, cat]
+
+# ---- Investment partnership prioritization (marginal capacity simulation) --------------------
+investment:
+  # Shocks and scenarios simulated. Nodes whose optimized residual gap (share of universe demand)
+  # reaches min_residual_gap under a shock enter the simulation for it.
+  shocks: [china_100, largest_subsector]
+  scenarios: [reallocation, conservative]
+  min_residual_gap: 0.05
+  # Eligible hosts simulated per node, the most capable first (capability tier, then value).
+  max_hosts_per_node: 20
+  # Synthetic capacity added at one host, as a share of the node's universe demand.
+  increments: [0.05, 0.10, 0.20]
+  headline_increment: 0.10
+  # A host must show revealed capability: RCA >= host_min_rca in the node, or a world export
+  # share >= host_min_world_share in the node, or RCA >= host_min_rca in a node linked to it in
+  # the supply chain (same stage of the same technology, or a material link below), or a
+  # production share >= host_min_production_share. Friendshore cannot qualify a host.
+  host_min_rca: 1.0
+  host_min_world_share: 0.005
+  host_min_production_share: 0.01
+  # RCA counts only on material exports: at least this much (USD) or this share of the node's
+  # world trade, whichever bar is lower (tiny economies otherwise get huge RCAs).
+  host_min_exports_usd: 5.0e+7
+  host_min_material_share: 0.01
+  # The resilience gain is also reported with this supplier-share limit in force, where capacity
+  # at an already dominant supplier adds little.
+  diversified_max_supplier_share: 0.40
+  # Gains within these margins count as ties in the ordering (resilience, then diversification).
+  tie_resilience: 0.005
+  tie_hhi: 0.005
+  # Hosts listed per node in the partnership table.
+  top_hosts: 5
+  # Never hosts: open ship registries, whose vessel "exports" are flag transfers, not shipbuilding.
+  exclude_hosts: [LBR, MHL, PAN, BHS]
+
+# ---- Node classification (policy interpretations of the continuous results) ------------------
+classification:
+  # Shock exposure (lost share of universe demand) below this is LOW INTERVENTION.
+  low_exposure: 0.15
+  # Existing relationships already restore demand to at least this coverage: LOW INTERVENTION.
+  adequate_coverage: 0.90
+  # BUILD: optimized residual gap at least this share of demand.
+  build_gap: 0.10
+  # COORDINATE: coordination dividend at least this.
+  coordinate_dividend: 0.05
+  # Order: low exposure -> LOW; residual gap -> BUILD; concentration -> MANAGE SPECIALIZATION;
+  # adequate existing resilience -> LOW; coordination dividend -> COORDINATE; otherwise LOW.
+  # MANAGE SPECIALIZATION: the optimized solution's largest supplier holds at least this share,
+  # or diversifying to `manage_cap` costs at least `manage_coverage_loss` of coverage.
+  manage_largest_share: 0.40
+  # ... or the three largest optimized suppliers hold at least this share ("a few suppliers").
+  manage_top3_share: 0.75
+  manage_cap: 0.40
+  manage_coverage_loss: 0.05
+  # Severity bands of shock exposure for the network counts.
+  high_severity: 0.40
+
+# ---- Sectoral compact formation -------------------------------------------------------------
+compacts:
+  # Partner-network overlap or complementarity: cosine similarity of the nodes' country roles.
+  min_partner_similarity: 0.35
+  # Policy coherence: cosine similarity of the nodes' policy-need profiles.
+  min_policy_similarity: 0.50
+  # Demand anchors: the importers that together hold this share of the compact's lost supply.
+  anchor_share: 0.60
+  max_anchors: 6
+  # A member is an anchor of one node when it holds at least this share of that node's lost supply
+  # (used for the bridge-partner role: supplies one node, depends on another).
+  node_anchor_share: 0.10
+  # The investment response in the compact coverage comparison: the headline increment at this
+  # many of the compact's leading hosts in each BUILD node.
+  investment_hosts_per_node: 2
+  # Coverage targets for the minimum sufficient coalition (share of the anchors' demand).
+  coverage_targets: [0.90, 0.95, 0.99]
+  # Synthetic capacity one eligible member host may add in the coalition test.
+  coalition_increment: 0.10
+  # A compact of fewer countries than this is a bilateral arrangement, not a compact.
+  min_countries: 3
+  # A role is assigned when a member supplies at least this share of a node's restored supply.
+  role_min_share: 0.05
+  # Archetype: a class holding at least this share of the compact's lost supply sets it.
+  archetype_dominance: 0.60
+  # Every class holding at least this share keeps its instruments in key_policy_needs (and the
+  # second one is reported as secondary_class).
+  policy_need_floor: 0.20
+  # A group is a compact only if its coalition improves the anchors' coverage over what their
+  # existing relationships give them (fragmented action) by at least this much.
+  min_compact_gain: 0.05
+
+# Supply-chain links between sub-sectors (material flows) used for supply-chain coherence.
+# Nodes in the same stage of one technology are coherent by default; these add the links that
+# cross stages or technologies. Names are master sub-sectors (or split nodes).
+material_links:
+  - [Rare-Earth Ores (Monazite), Rare-Earth Compounds]
+  - [Rare-Earth Compounds, Rare-Earth Metals]
+  - [Rare-Earth Metals, Permanent Magnets & Magnet Parts]
+  - [Rare-Earth Compounds, Permanent Magnets & Magnet Parts]
+  - [Permanent Magnets & Magnet Parts, Electric Drive Units & Motors]
+  - [Permanent Magnets & Magnet Parts, Wind Turbines & Generators]
+  - [Natural Graphite, Anode Materials]
+  - [Lithium Minerals (Spodumene), Lithium Chemicals]
+  - [Ores & Concentrates, Lithium Chemicals]
+  - [Cobalt Ores & Concentrates, Cobalt & Nickel Refining]
+  - [Nickel Ores & Concentrates, Cobalt & Nickel Refining]
+  - [Ores & Concentrates, Cobalt & Nickel Refining]
+  - [Lithium Chemicals, Cathode Materials & Battery Precursors]
+  - [Cobalt & Nickel Refining, Cathode Materials & Battery Precursors]
+  - [Battery Cells, Vehicle Batteries & Packs]
+  - [Battery Cells, Battery Packs, Parts & BMS]
+  - [Silicon Metal, Polysilicon]
+  - [Polysilicon, Wafers]
+  - [Wafers, Solar Cells]
+  - [Solar Cells, Solar Modules]
+  - [Copper Smelting & Refining, Grid Cables & Accessories]
+  - [Alumina & Primary Aluminium, Grid Cables & Accessories]
+  - [Electrical Steel (GOES), Transformers]
+  - [Uranium Ores & Concentrates, Natural Uranium & Compounds]
+  - [Natural Uranium & Compounds, Nuclear Fuel Cycle]
+  - [Gallium, Germanium & Indium, Semiconductor Materials]
+
+# ---- Data-quality guardrails ----------------------------------------------------------------
+data_quality:
+  # Insufficient for optimization below any of these.
+  min_world_trade_usd: 5.0e+7
+  min_material_exporters: 3
+  min_material_importers: 5
+  # A material exporter/importer trades at least this much in the node (USD).
+  material_flow_usd: 1.0e+6
+  # Usable with caution at or above these.
+  caution_mirror_share: 0.30
+  caution_missing_rca_share: 0.20
+  caution_nonessential_share: 0.50
+  # Insufficient sub-sectors of one technology stage are merged into one aggregated node; an
+  # aggregate that still fails stays out of the optimization (reported, not solved).
+  aggregate_insufficient: true
+
+# Production or capacity shares used as host capability (and reported beside RCA). Each entry maps
+# a node to a measure of data/processed/major_supplier_shares_tbl.rds (mineral as recorded there)
+# or to a GCIM manufacturing product (data/raw/GCIM_Investment_Capacity_aggregated.xlsx).
+production_proxies:
+  - sub_sector: Rare-Earth Compounds
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: Rare Earths
+  - sub_sector: Rare-Earth Metals
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: Rare Earths
+  - sub_sector: Anode Materials
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: Graphite
+  - sub_sector: Natural Graphite
+    source: major_supplier_shares
+    measure: iea_mineral_mining
+    mineral: Graphite
+  - sub_sector: Lithium Chemicals
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: Lithium
+  - sub_sector: Cobalt & Nickel Refining
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: Cobalt
+  - sub_sector: Polysilicon
+    source: gcim
+    technology: Solar
+    product: Polysilicon
+  - sub_sector: Wafers
+    source: gcim
+    technology: Solar
+    product: Wafers
+  - sub_sector: Solar Cells
+    source: gcim
+    technology: Solar
+    product: Cells
+  - sub_sector: Solar Modules
+    source: gcim
+    technology: Solar
+    product: Modules
+  - sub_sector: Battery Cells
+    source: gcim
+    technology: Batteries
+    product: Cells
+
+# Validation cases checked by hand before the full taxonomy (scripts/32 writes their chains).
+validation_cases:
+  - Permanent Magnets & Magnet Parts
+  - Rare-Earth Compounds
+  - Anode Materials
+  - Wafers
