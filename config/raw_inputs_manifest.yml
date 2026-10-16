@@ -36,7 +36,23 @@ inputs:
   required_by:
   - scripts/15_build_partner_themes.R
   - scripts/30_build_allied_network_design.R
+  - scripts/31_build_aib_trade_network.R
   - scripts/98_pull_comtrade_energy_dyads.R
+- id: comtrade_bulk_annual_totals
+  path: comtrade_bulk/comtrade_bulk_annual_totals.csv
+  source_type: api
+  source_name: UN Comtrade bulk annual totals (TOTAL commodity code, World partner)
+  url: https://comtradeplus.un.org/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: 2020-2025 (2025 a stub of 8 reporters)
+  staged_from: pipeline
+  notes: Written by scripts/97_bulk_comtrade_downloads.R. The AIB module reads the latest
+    year <= its trade year of each economy that is not a reporter in comtrade_total_export.csv
+    (Viet Nam and the United Arab Emirates report 2023, not 2024) as the RCA denominator, and
+    records the year it used.
+  required_by:
+  - scripts/31_build_aib_trade_network.R
 - id: comtrade_energy_trade
   path: comtrade_energy_trade.csv
   source_type: api
@@ -78,6 +94,7 @@ inputs:
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
+  - scripts/31_build_aib_trade_network.R
   - scripts/98_pull_comtrade_energy_dyads.R
 - id: critmin_export
   path: critmin_export_2024.csv
@@ -342,6 +359,7 @@ inputs:
   - scripts/15_build_partner_themes.R
   - scripts/20_build_indices.R
   - scripts/30_build_allied_network_design.R
+  - scripts/31_build_aib_trade_network.R
   - scripts/40_build_index_vintages.R
   - scripts/98_pull_comtrade_energy_dyads.R
 - id: wdi_gdp
@@ -539,6 +557,7 @@ inputs:
   required_by:
   - scripts/10_build_themes.R
   - scripts/15_build_partner_themes.R
+  - scripts/31_build_aib_trade_network.R
 - id: cm_fdi_projects
   path: cm_fdi_projects.csv
   source_type: manual
@@ -658,6 +677,7 @@ inputs:
     so a relabelled release needs no code change.
   required_by:
   - scripts/10_build_themes.R
+  - scripts/31_build_aib_trade_network.R
   - scripts/40_build_index_vintages.R
 - id: geothermal_lcoe
   path: geothermal_lcoe_mw.csv

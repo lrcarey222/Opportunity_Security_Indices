@@ -21,6 +21,7 @@
     "test:parity": "vitest run --project parity-real",
     "test:sector-real": "vitest run --project sector-real",
     "test:country-real": "vitest run --project country-real",
+    "test:aib-real": "vitest run --project aib-real",
     "budget": "node scripts/check-budget.mjs",
     "bench:engine": "vitest run --project parity-real -t performance"
   },

@@ -17,7 +17,10 @@
 //   Country memo view       entry + CountryLayout + memo view + the largest memo JSON          <= 450 kB
 //   each Country file       fact sheet 40 kB, manifest 20 kB, memo JSON 25 kB / PDF 400 kB / DOCX 100 kB
 //   Country data            public/data/country/** (every file)                                <= 11 MB
-//   All data                Strategic + Sector + Country                                       <= 25 MB
+//   Compacts landing        entry + AibLayout + the compacts index view + manifest + document  <= 700 kB
+//   Compact view            entry + AibLayout + the compact view + manifest + document         <= 900 kB
+//   Compacts data           public/data/aib/* (manifest + the compacts document)               <= 2 MB
+//   All data                Strategic + Sector + Country + Compacts                            <= 25 MB
 //
 // Fails above a limit, when a manifest lists a chunk file that does not exist, or when a route chunk
 // the figures need cannot be found in the build. A data bundle that is absent (CI without the
@@ -37,6 +40,8 @@ const dataDir = join(root, 'public', 'data');
 const sectorDir = process.env.BUDGET_SECTOR_DIR ? resolve(root, process.env.BUDGET_SECTOR_DIR) : join(dataDir, 'sector');
 // BUDGET_COUNTRY_DIR: another Country bundle (e.g. src/country/__fixtures__/synthetic/data/country)
 const countryDir = process.env.BUDGET_COUNTRY_DIR ? resolve(root, process.env.BUDGET_COUNTRY_DIR) : join(dataDir, 'country');
+// BUDGET_AIB_DIR: another Sectoral Compacts bundle (e.g. src/aib/__fixtures__/synthetic/data/aib)
+const aibDir = process.env.BUDGET_AIB_DIR ? resolve(root, process.env.BUDGET_AIB_DIR) : join(dataDir, 'aib');
 
 const KB = 1024;
 const MB = 1024 * 1024;
@@ -51,6 +56,9 @@ const LIMITS = {
   countryMemo: 450 * KB,
   // 10 MB until 2026-10-14; 11 MB once the 31 memos (PDF, Word, Markdown, JSON) were published (10.23 MB)
   countryData: 11 * MB,
+  aibLanding: 700 * KB,
+  aibCompact: 900 * KB,
+  aibData: 2 * MB,
   allData: 25 * MB,
 };
 // spec_country.md A10 (the same numbers as COUNTRY_BUDGET_GZ in src/country/contract.ts)
@@ -150,6 +158,11 @@ const keys = {
   countryHome: routeKey('the Country landing view', /src\/country\/views\/CountryHomeView\.tsx$/, 'CountryHomeView'),
   countryProfile: routeKey('the Country profile view', /src\/country\/views\/CountryProfileView\.tsx$/, 'CountryProfileView'),
   countryMemo: routeKey('the Country memo view', /src\/country\/views\/MemoView\.tsx$/, 'MemoView'),
+  // Sectoral Compacts (src/aib/); optional, so a build without the module still checks the others
+  aibLayout: routeKey('AibLayout', /src\/aib\/AibLayout\.tsx$/, 'AibLayout', false),
+  aibIndex: routeKey('the compacts index view', /src\/aib\/views\/CompactsIndexView\.tsx$/, 'CompactsIndexView', false),
+  aibCompact: routeKey('the compact view', /src\/aib\/views\/CompactView\.tsx$/, 'CompactView', false),
+  aibAbout: routeKey('the compacts about view', /src\/aib\/views\/AibAboutView\.tsx$/, 'AibAboutView', false),
 };
 
 const codeSize = (files) => [...files].reduce((s, f) => s + gz(join(dist, f)), 0);
@@ -294,7 +307,32 @@ for (const m of countryMemos) {
 }
 const countryData = countryFiles.reduce((s, f) => s + countryWire(f), 0);
 if (countryManifest) figure('Country data', [['manifest + sheets + drivers + memos', countryData]], LIMITS.countryData);
-figure('All data', [['Strategic', strategicData], ['Sector', sectorData], ['Country', countryData]], LIMITS.allData);
+
+// Sectoral Compacts (scripts/84): the manifest and the one document it names, both JSON (gzipped on the wire)
+const aibManifest = readManifest(join(aibDir, 'manifest.json'));
+const aibManifestSize = aibManifest ? gz(join(aibDir, 'manifest.json')) : 0;
+let aibDocSize = 0;
+if (aibManifest) {
+  const f = aibManifest.files?.compacts ? join(aibDir, aibManifest.files.compacts) : null;
+  if (!f || !existsSync(f)) fail(`Compacts document ${aibManifest.files?.compacts ?? '(none)'} is listed in its manifest but missing`);
+  else aibDocSize = gz(f);
+}
+const aibNote = aibManifest ? '' : 'Compacts data absent (scripts/84): code only';
+figure(
+  'Compacts landing /compacts',
+  [['code', codeSize(closure([entryKey, keys.aibLayout, keys.aibIndex].filter(Boolean)))], ['font', fontSize], ['compacts manifest + document', aibManifestSize + aibDocSize]],
+  LIMITS.aibLanding,
+  aibNote,
+);
+figure(
+  'Compact view',
+  [['code', codeSize(closure([entryKey, keys.aibLayout, keys.aibCompact].filter(Boolean)))], ['font', fontSize], ['compacts manifest + document', aibManifestSize + aibDocSize]],
+  LIMITS.aibCompact,
+  aibNote,
+);
+const aibData = aibManifestSize + aibDocSize;
+if (aibManifest) figure('Compacts data', [['manifest + document', aibData]], LIMITS.aibData);
+figure('All data', [['Strategic', strategicData], ['Sector', sectorData], ['Country', countryData], ['Compacts', aibData]], LIMITS.allData);
 
 // ---- report ------------------------------------------------------------------------------------------
 console.log('Data chunks');
@@ -319,6 +357,8 @@ if (countryManifest) {
       `median ${size(sheets[Math.floor(sheets.length / 2)] ?? 0)}); ${countryMemos.length} memos (largest JSON ${largest('json')}, PDF ${largest('pdf')}, DOCX ${largest('docx')})`,
   );
 } else console.log('  (public/data/country/manifest.json not found: export the Country bundle with scripts/88)');
+if (aibManifest) console.log(`  data/aib/: manifest ${size(aibManifestSize)}, ${aibManifest.files.compacts} ${size(aibDocSize)}`);
+else console.log('  (public/data/aib/manifest.json not found: export the Sectoral Compacts bundle with scripts/84)');
 console.log('');
 console.log('Figures');
 for (const f of figures) {
@@ -328,6 +368,13 @@ for (const f of figures) {
 }
 console.log('');
 console.log(`app shell JS + CSS (entry): ${kb(app)}  (target ${kb(TARGET_APP)})`);
+// the Sectoral Compacts route chunks beyond the entry (shared chunks such as Plot counted once per route)
+const aibRoutes = [['AibLayout', keys.aibLayout], ['compacts index view', keys.aibIndex], ['compact view', keys.aibCompact], ['about view', keys.aibAbout]].filter(([, k]) => k);
+if (aibRoutes.length) {
+  const own = (k) => codeSize(new Set([vm[k].file, ...(vm[k].css ?? [])]));
+  const beyond = (k) => codeSize(new Set([...closure([k])].filter((f) => !entryFiles.has(f))));
+  console.log(`Sectoral Compacts route chunks: ${aibRoutes.map(([n, k]) => `${n} ${kb(own(k))} (with its imports ${kb(beyond(k))})`).join('; ')}`);
+}
 if (app > TARGET_APP) console.warn(`budget: warning, the app's entry JS + CSS (${kb(app)}) is above the ${kb(TARGET_APP)} target`);
 if (!keys.sectorLayout) console.log('budget: note, no SectorLayout chunk in this build (the Sector module is a stub or eagerly bundled): the Sector figures count the entry only');
 if (failed) process.exit(1);

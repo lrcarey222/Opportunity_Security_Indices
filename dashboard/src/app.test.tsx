@@ -313,12 +313,12 @@ describe('home and the shell', () => {
       expect(await screen.findByRole('heading', { level: 1, name: 'Allied Industrial Base Explorer' }, { timeout: 20_000 })).toBeTruthy();
       expect(pathOf(router)).toBe('/');
       expect(document.title).toBe('Allied Industrial Base Explorer | NEIS Center');
-      // three module cards (Sector, Strategic, Country), six questions, the jump picker; no tab is current on Home
+      // four module cards (Sector, Strategic, Country, Sectoral Compacts), six questions, the jump picker; no tab is current on Home
       const cards = screen.getByRole('region', { name: 'Modules' });
-      expect(within(cards).getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights']);
+      expect(within(cards).getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights', 'Sectoral Compacts']);
       expect(screen.getAllByRole('heading', { level: 3 }).length).toBe(6);
       const tabs = screen.getByRole('navigation', { name: 'Modules' });
-      expect(within(tabs).getAllByRole('link').map((a) => a.textContent)).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights']);
+      expect(within(tabs).getAllByRole('link').map((a) => a.textContent)).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights', 'Sectoral Compacts']);
       expect(within(tabs).getAllByRole('link').filter((a) => a.getAttribute('aria-current')).length).toBe(0);
       // the Country card (A2.3): its question, entry links and the button
       expect(screen.getByText('What should one country know about its energy security, its opportunities and its partners?')).toBeTruthy();
@@ -327,7 +327,7 @@ describe('home and the shell', () => {
       expect(screen.getByRole('link', { name: 'United States: policy memo' }).getAttribute('href')).toBe('/countries/USA/memo');
       expect(screen.getByRole('link', { name: 'Open Country Insights' }).getAttribute('href')).toBe('/countries');
       expect(screen.getByTestId('quadrant-glyph').getAttribute('aria-hidden')).toBe('true');
-      expect(screen.getByText(/^Three ways into the data behind/)).toBeTruthy();
+      expect(screen.getByText(/^Four ways into the data behind/)).toBeTruthy();
       expect(screen.getByRole('link', { name: 'glossary' }).getAttribute('href')).toBe('/glossary');
       expect(bareAcronyms(document.body)).toEqual([]);
       await settle(300);

@@ -6,6 +6,8 @@
 //   * prefetchCountry(): on pointer-enter, focus or touchstart on the Country card or the COUNTRY
 //     INSIGHTS tab, and on Home's idle (spec_country.md A2.3): load the CountryLayout chunk and the
 //     Country manifest into the module's own store (never a fact sheet).
+//   * prefetchAib(): on pointer-enter, focus or touchstart on the Sectoral Compacts card or tab: load
+//     the AibLayout chunk and the compacts manifest into the module's own store (never the document).
 //   * onIdle(): requestIdleCallback with a 1.5 s fallback; returns a cancel function.
 //   * saveData(): the reader asked the browser to save data (no idle prefetch then).
 
@@ -37,10 +39,22 @@ export function prefetchCountry(): void {
     });
 }
 
+let aib: Promise<void> | null = null;
+
+export function prefetchAib(): void {
+  if (aib) return;
+  aib = Promise.all([import('../aib/AibLayout.tsx'), import('../aib/data/store.ts').then((m) => m.aibStore().manifest())])
+    .then(() => undefined)
+    .catch(() => {
+      aib = null;
+    });
+}
+
 /** Forget the prefetches (tests). */
 export function resetPrefetch(): void {
   strategic = null;
   country = null;
+  aib = null;
 }
 
 type IdleWindow = Window & {

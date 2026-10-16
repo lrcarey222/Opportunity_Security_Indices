@@ -35,4 +35,12 @@ source(file.path(repo_root, "scripts", "25_build_partner_indices.R"))
 run_allied <- tolower(Sys.getenv("OPSI_RUN_ALLIED_NETWORK", "true")) %in% c("1", "true", "yes")
 if (run_allied) source(file.path(repo_root, "scripts", "30_build_allied_network_design.R"))
 
+# Allied Industrial Base: trade partnership network, investment prioritization, emergent network
+# and Sectoral Compacts (docs/aib_methodology.md). Reads the partner indices and the coalition table.
+run_aib <- tolower(Sys.getenv("OPSI_RUN_AIB", "true")) %in% c("1", "true", "yes")
+if (run_aib) {
+  source(file.path(repo_root, "scripts", "31_build_aib_trade_network.R"))
+  source(file.path(repo_root, "scripts", "32_build_aib_partnerships.R"))
+}
+
 source(file.path(repo_root, "scripts", "80_write_outputs.R"))

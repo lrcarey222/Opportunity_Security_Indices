@@ -1,0 +1,11 @@
+{
+  "schema": "osi-aib",
+  "version": 1,
+  "created": "2026-10-15T00:00:00Z",
+  "universe": "global",
+  "headlineShock": "zzz_100",
+  "headlineScenario": "reallocation",
+  "files": {
+    "compacts": "compacts.4f12d169.json"
+  }
+}

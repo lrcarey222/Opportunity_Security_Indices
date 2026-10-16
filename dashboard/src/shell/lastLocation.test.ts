@@ -31,11 +31,12 @@ describe('places and nav keys', () => {
     expect(placeOf('/country')).toBe('strategic');
     expect(placeOf('/glossary')).toBeNull();
   });
-  it("three modules in the user's order; the Strategic nav labels spell their views out", () => {
+  it("four modules in the user's order; the Strategic nav labels spell their views out", () => {
     expect(MODULES.map((m) => [m.id, m.label, m.tag, m.home])).toEqual([
       ['sector', 'Sector Insights', 'DESCRIPTIVE DATA', '/sector'],
       ['strategic', 'Strategic Insights', 'NORMATIVE PRIORITISATION', '/overview'],
       ['country', 'Country Insights', 'COUNTRY BRIEFING', '/countries'],
+      ['aib', 'Sectoral Compacts', 'COORDINATION DESIGN', '/compacts'],
     ]);
     expect(STRATEGIC_NAV.map((n) => n.label)).toEqual(['Overview', 'Country scores', 'Security vs opportunity', 'Strategic Index', 'Partners', 'Allied network', 'Methods', 'Data']);
     expect(STRATEGIC_NAV.map((n) => n.to)).toEqual(['/overview', '/country', '/space', '/strategic', '/partners', '/network', '/methods', '/data']);

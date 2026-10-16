@@ -94,6 +94,19 @@
   [headers.values]
     Content-Type = "text/markdown; charset=utf-8"
 
+# Sectoral Compacts data (scripts/84): the manifest names the current document; the document is
+# content-addressed (compacts.<md5_8>.json). The immutable rule names the document pattern rather than
+# /data/aib/*.json, which would also match manifest.json and merge both Cache-Control values on it.
+[[headers]]
+  for = "/data/aib/manifest.json"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/data/aib/compacts.*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
 # 'unsafe-inline' styles: Observable Plot's scoped <style> elements and KaTeX's inline styles.
 # No inline scripts, no third-party requests (fonts and the world map are self-hosted).
 [[headers]]

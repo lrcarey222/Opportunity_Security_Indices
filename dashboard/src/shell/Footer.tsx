@@ -1,6 +1,6 @@
 // The shared footer (spec_sector.md 2.1 item 6, 2.5): citation, the data vintage of each module
 // when known (from buildInfo; never forces a load), and the links to Methods (Strategic), Sources
-// & data (Sector), About Country Insights, the shared Glossary and neiscenter.org. Strategic links
+// & data (Sector), About Country Insights, About Sectoral Compacts, the shared Glossary and neiscenter.org. Strategic links
 // carry the scenario of the last Strategic location, as the old footer carried navQuery.
 
 import { Link, useLocation } from 'react-router';
@@ -64,6 +64,9 @@ export function Footer() {
           </Link>
           <Link className="link" to="/countries/about">
             About Country Insights
+          </Link>
+          <Link className="link" to="/compacts/about">
+            About Sectoral Compacts
           </Link>
           <Link className="link" to="/glossary">
             Glossary

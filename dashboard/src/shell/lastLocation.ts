@@ -1,5 +1,5 @@
 // The last location per module (spec_sector.md 2.5, 2.6; spec_country.md A2.1, A2.2): an in-memory
-// { strategic, sector, country } of pathname + search, updated by a route-change effect in AppRoot. No
+// { strategic, sector, country, aib } of pathname + search, updated by a route-change effect in AppRoot. No
 // storage: a reload starts from the URL. Module tabs and Home's buttons link through these helpers.
 // Pure apart from the store.
 
@@ -15,6 +15,8 @@ export interface LastLocations {
   country: string | null;
   /** the ISO3 of the last Country Insights profile (the Country PROFILE target) */
   countryIso: string | null;
+  /** the last Sectoral Compacts location (absent until one is visited) */
+  aib?: string | null;
 }
 
 const store: LastLocations = { strategic: null, sector: null, sectorCell: null, country: null, countryIso: null };
@@ -31,7 +33,7 @@ export function rememberLocation(pathname: string, search: string): void {
     store.country = pathname + search;
     const iso = countryIsoOfPath(pathname);
     if (iso) store.countryIso = iso;
-  }
+  } else if (place === 'aib') store.aib = pathname + search;
 }
 
 export function lastLocations(): Readonly<LastLocations> {
@@ -45,6 +47,7 @@ export function resetLastLocations(): void {
   store.sectorCell = null;
   store.country = null;
   store.countryIso = null;
+  delete store.aib;
 }
 
 const CARRY = new Set<string>([...SCENARIO_KEYS, ...SHARED_VIEW_KEYS]);
@@ -163,9 +166,19 @@ export function countryTabHref(pathname: string, search: string, last: Readonly<
   return last.country ?? '/countries';
 }
 
+/**
+ * Where the SECTORAL COMPACTS tab goes: inside the module, its landing; elsewhere the last Sectoral
+ * Compacts location, else /compacts. (No other module names a compact, so nothing is carried.)
+ */
+export function aibTabHref(pathname: string, last: Readonly<LastLocations> = store): string {
+  if (placeOf(pathname) === 'aib') return '/compacts';
+  return last.aib ?? '/compacts';
+}
+
 /** Home's OPEN buttons: the last location of the module, else its landing. */
-export function moduleResumeHref(id: 'sector' | 'strategic' | 'country', last: Readonly<LastLocations> = store): string {
+export function moduleResumeHref(id: 'sector' | 'strategic' | 'country' | 'aib', last: Readonly<LastLocations> = store): string {
   if (id === 'country') return last.country ?? '/countries';
+  if (id === 'aib') return last.aib ?? '/compacts';
   return id === 'sector' ? (last.sector ?? '/sector') : (last.strategic ?? '/overview');
 }
 
