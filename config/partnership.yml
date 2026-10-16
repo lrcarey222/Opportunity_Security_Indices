@@ -107,3 +107,25 @@ cm_fdi:
   # construction (one Chinese battery plant in Japan would read as full exposure). 1 keeps every
   # destination with a project (robustness).
   min_projects: 2
+
+# Official development finance received (Development Potential aid_index_supplychain and
+# aidgdp_index_supplychain; partnership_strength_build_oecd_tech() in
+# R/themes/partnership_strength/stronger_development.R). Source: data/raw/oecd_crs_purpose.csv
+# (OECD CRS bulk file, bilateral flows of country donors by purpose code; scripts/fetchers/oecd_crs.R),
+# allocated to (tech, stage) by data/reference/oecd_crs_purpose_crosswalk.csv. Before October 2026
+# the index summed ODA disbursements of 2013-2024 by 3-digit sector (oecd_crs_api.csv), one value
+# for every technology of a stage.
+development_aid:
+  # [first, last] CRS year; aid is the annual mean over the years of the window in the extract.
+  # 2020-2024 is the last five complete years of the October 2026 file (2025 holds early reports
+  # only and is left out by the fetcher). Before 2018 the extract has no OOF rows.
+  years: [2020, 2024]
+  # CRS measures counted: ODA (category 10), OOF (21, non-export-credit Other Official Flows) and
+  # PSI (60, private sector instruments). OOF and PSI carry the non-concessional lending of the
+  # official development finance institutions (JBIC, KfW, DFC, ...); in the 2026 file their energy
+  # flows move from OOF to PSI in 2023, so the two belong together. [ODA] is the aid-only
+  # sensitivity.
+  measures: [ODA, OOF, PSI]
+  # disbursement (gross, what reached the partner) or commitment (what was pledged; leads
+  # disbursement by the project's life).
+  flow: disbursement

@@ -123,3 +123,23 @@ test_that("the synthetic sector-dev chunk passes the contract checks and decodes
   links <- dev$links
   expect_setequal(unique(links$item_key), c("aid_sector:energy", "aid_sector:industry", "aid_sector:mining"))
 })
+
+test_that("the stored aid components are checked per tech and stage against the purpose-code builder", {
+  aid <- tibble::tibble(
+    iso3c = c("BRA", "BRA", "IDN", "IDN"), tech = c("Solar", "Wind", "Solar", "Wind"), supply_chain = "Downstream",
+    aid_index_supplychain = c(0.9, 0.1, 0.1, 0.9), aidgdp_index_supplychain = c(0.8, 0.2, 0.2, 0.8)
+  )
+  indicators <- tibble::tibble(iso3c = c("BRA", "IDN"), development_index = c(0.4, 0.6), doingbusiness_index = c(0.5, 0.5), energy_use_index = c(0.3, 0.7))
+  stored <- tidyr::pivot_longer(
+    dplyr::left_join(aid, indicators, by = "iso3c"),
+    c(aid_index_supplychain, aidgdp_index_supplychain, development_index, doingbusiness_index, energy_use_index),
+    names_to = "variable", values_to = "value"
+  ) %>%
+    dplyr::transmute(partner_iso = iso3c, tech, supply_chain, variable, value, data_type = "index")
+  pp <- sector_dev_processed_parity(stored, indicators, aid)
+  expect_true(all(pp$status == "PASS"))
+  # A stored aid value that differs by technology from the builder fails.
+  stored$value[stored$partner_iso == "BRA" & stored$tech == "Wind" & stored$variable == "aid_index_supplychain"] <- 0.9
+  pp <- sector_dev_processed_parity(stored, indicators, aid)
+  expect_equal(pp$status[grepl("stored aid_index_supplychain", pp$check)], "FAIL")
+})

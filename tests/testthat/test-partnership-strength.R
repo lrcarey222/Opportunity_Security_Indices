@@ -349,6 +349,7 @@ test_that("development is partner-level: no reporter, no donor fan-out, non-high
   )
   gdp_data <- tibble::tibble(iso3c = ci$iso3c, year = 2023, NY.GDP.MKTP.CD = c(27, 4, 18, 3.5, 0.4) * 1e12)
 
+  # The 3-digit stage builder (the dashboard export's) sums donors and nets the fossil sub-rows.
   up <- partnership_strength_build_oecd_supplychain(oecd, gdp_data, 2023, valid_iso = ci$iso3c)
   expect_false(anyDuplicated(up[c("iso3c", "supply_chain")]) > 0)
   expect_false("LDC" %in% up$iso3c)
@@ -356,7 +357,30 @@ test_that("development is partner-level: no reporter, no donor fan-out, non-high
   up_stage <- up %>% dplyr::filter(supply_chain == "Upstream")
   expect_gt(up_stage$aid_index_supplychain[up_stage$iso3c == "IND"], up_stage$aid_index_supplychain[up_stage$iso3c == "CHN"])
 
-  dev <- stronger_development(ci, gdp_data, eo, es, wb_wdi, wb_db, oecd)
+  # The index reads the CRS by purpose code: two donors to India's solar and energy policy, Chinese
+  # mining aid that is mostly oil and gas, and a regional recipient code that is not a country.
+  crs <- tibble::tibble(
+    year = 2022L,
+    donor_iso3 = c("USA", "JPN", "JPN", "USA", "USA", "USA"),
+    recipient_iso3 = c("IND", "IND", "CHN", "CHN", "IND", "LDC"),
+    purpose_code = c(23230L, 23110L, 32264L, 32262L, 32264L, 23230L),
+    measure = "ODA",
+    usd_commitment = 0,
+    usd_disbursement = c(10, 5, 15, 80, 20, 1000)
+  )
+  crosswalk <- read.csv(file.path(repo_root, "data", "reference", "oecd_crs_purpose_crosswalk.csv"))
+  aid <- partnership_strength_build_oecd_tech(crs, crosswalk, gdp_data, tibble::tibble(tech = "Solar", supply_chain = c("Upstream", "Downstream")), valid_iso = ci$iso3c)
+  expect_false("LDC" %in% aid$iso3c)
+  # Solar Upstream has no purpose code: the stage proxy, without the oil and gas code: IND 20 > CHN 15.
+  sol_up <- aid[aid$supply_chain == "Upstream", ]
+  expect_equal(unique(sol_up$aid_basis), "stage")
+  expect_gt(sol_up$aid_index_supplychain[sol_up$iso3c == "IND"], sol_up$aid_index_supplychain[sol_up$iso3c == "CHN"])
+  # India's energy policy aid follows its direct (solar) aid; China has no Downstream aid: 0.
+  sol_down <- aid[aid$supply_chain == "Downstream", ]
+  expect_equal(sol_down$aid[sol_down$iso3c == "IND"], 15)
+  expect_equal(sol_down$aid[sol_down$iso3c == "CHN"], 0)
+
+  dev <- stronger_development(ci, gdp_data, eo, es, wb_wdi, wb_db, crs, crosswalk)
 
   expect_false("reporter_iso" %in% names(dev$variable))
   expect_false(anyDuplicated(dev$variable[c("partner_iso", "tech", "supply_chain", "variable")]) > 0)

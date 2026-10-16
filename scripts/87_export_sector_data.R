@@ -14,9 +14,11 @@
 # years and comparability of the fossil production the pipeline took from EIA), IMF monthly prices,
 # the CIM workbook and the CM-FDI projects, cm_fdi_projects.csv in data/raw, or the file given with
 # --cmfdi; and, for Development & finance, the raw inputs of Development Potential and of Friendshore's
-# outbound component: wb_wdi.csv, wb_doingbusiness.csv, oecd_crs_api.csv, imf_dip.csv (selected
-# columns) and wdi_gdp.csv, parsed with the builders' own functions; partner_development_tbl is read
-# only to check that the builder on these inputs reproduces its stored components). It writes
+# outbound component: wb_wdi.csv, wb_doingbusiness.csv, oecd_crs_api.csv (the shipped 3-digit aid
+# flows), oecd_crs_purpose.csv with data/reference/oecd_crs_purpose_crosswalk.csv (the aid components
+# per tech and stage), imf_dip.csv (selected columns) and wdi_gdp.csv, parsed with the builders' own
+# functions; partner_development_tbl is read only to check that the builders on these inputs
+# reproduce its stored components). It writes
 #
 #   <out-dir>/manifest.json            schema "osi-sector", headlines, coverage glyph, validation,
 #                                      sources, budget (served no-cache; written last)
@@ -704,7 +706,7 @@ dev_ref <- NULL
 if (with_dev) {
   step("Development & finance: WDI, Doing Business, OECD CRS, IMF DIP")
   dev_files <- c(ci = "wdi_country_info.csv", gdp = "wdi_gdp.csv", wdi = "wb_wdi.csv", db = "wb_doingbusiness.csv",
-                 crs = "oecd_crs_api.csv", dip = "imf_dip.csv")
+                 crs = "oecd_crs_api.csv", crs_purpose = "oecd_crs_purpose.csv", dip = "imf_dip.csv")
   dev_paths <- stats::setNames(file.path(raw_dir, dev_files), names(dev_files))
   miss <- dev_files[!file.exists(dev_paths)]
   if (length(miss)) stop("Development & finance input missing in data/raw: ", paste(miss, collapse = ", "), " (stage it, or export with --no-dev).")
@@ -727,9 +729,20 @@ if (with_dev) {
   pc <- sector_dev_crs_parity(dev_stage, crs_builder, dev_crs$flows)
   for (i in seq_len(nrow(pc))) add_check(pc$check[i], pc$status[i], pc$n[i], pc$detail[i])
   if (any(pc$status == "FAIL")) stop("OECD CRS parity FAIL: ", paste(pc$check[pc$status == "FAIL"], collapse = "; "))
-  # The builder on these raw inputs reproduces the Development Potential components in data/processed.
+  # The builders on these raw inputs reproduce the Development Potential components in data/processed:
+  # the aid components per (tech, stage) from the CRS purpose-code extract and crosswalk, with the
+  # settings scripts/15 reads (config/partnership.yml development_aid).
   dev_proc <- readRDS(use_src(file.path(processed_dir, "partner_development_tbl.rds")))
-  pp <- sector_dev_processed_parity(dev_proc, partnership_strength_build_development_indicators(wdi_raw, db_raw, valid_iso = dev_iso), crs_builder)
+  crs_purpose <- read.csv(use_src(dev_paths[["crs_purpose"]]))
+  crs_crosswalk <- read.csv(use_src(file.path(repo_root, "data", "reference", "oecd_crs_purpose_crosswalk.csv")))
+  aid_settings <- partnership_strength_development_aid_settings(
+    yaml::read_yaml(file.path(repo_root, "config", "partnership.yml"))$development_aid
+  )
+  aid_builder <- partnership_strength_build_oecd_tech(
+    crs_purpose, crs_crosswalk, dev_gdp,
+    cells = unique(dev_proc[c("tech", "supply_chain")]), settings = aid_settings, valid_iso = dev_iso
+  )
+  pp <- sector_dev_processed_parity(dev_proc, partnership_strength_build_development_indicators(wdi_raw, db_raw, valid_iso = dev_iso), aid_builder)
   for (i in seq_len(nrow(pp))) add_check(pp$check[i], pp$status[i], pp$n[i], pp$detail[i])
   if (any(pp$status == "FAIL")) stop("Development Potential: the builder on data/raw does not reproduce data/processed: ",
                                      paste(pp$check[pp$status == "FAIL"], pp$detail[pp$status == "FAIL"], collapse = "; "))
@@ -740,7 +753,7 @@ if (with_dev) {
     db = tibble::tibble(key = as.character(dbb$Country.Code), value = dbb$doingbusiness),
     stage = dev_stage
   )
-  rm(dev_proc, crs_raw, wl, dbb, crs_builder)
+  rm(dev_proc, crs_raw, wl, dbb, crs_builder, crs_purpose, crs_crosswalk, aid_builder)
   invisible(gc())
   # IMF DIP: the columns the outbound builder uses (as scripts/15 read_imf_dip()).
   dip_header <- names(data.table::fread(use_src(dev_paths[["dip"]]), nrows = 0))

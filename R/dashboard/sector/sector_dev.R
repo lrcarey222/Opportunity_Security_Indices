@@ -15,10 +15,13 @@
 #     2023 US dollars, millions, by donor, recipient, CRS sector and year. The stage rule is
 #     partnership_strength_build_oecd_supplychain()'s, applied here row by row: Energy -> Downstream,
 #     Industry -> Midstream, Mineral resources and mining less its coal and oil-and-gas (upstream)
-#     sub-rows -> Upstream; recipients restricted to the WDI countries. The builder's own quantity
-#     (the 2013-2024 total over every donor per recipient and stage, and that total / 2023 GDP) is
-#     rebuilt with the same steps by sector_dev_crs_stage() and checked against the builder's
-#     ranking (sector_dev_crs_parity()).
+#     sub-rows -> Upstream; recipients restricted to the WDI countries. Its stage totals (2013-2024
+#     over every donor per recipient and stage, and that total / 2023 GDP) are rebuilt with the same
+#     steps by sector_dev_crs_stage() and checked against that builder (sector_dev_crs_parity()).
+#     Since October 2026 Development Potential no longer ranks these totals: its aid components come
+#     from oecd_crs_purpose.csv by purpose code, per (tech, stage)
+#     (partnership_strength_build_oecd_tech()), and sector_dev_processed_parity() checks the stored
+#     components against that builder.
 #   * IMF Direct Investment Positions (imf_dip.csv, column-selected): the outward position of the
 #     reporter in each counterpart, the same indicator, reporting basis, year window, name matching
 #     and duplicate rule as partnership_strength_build_outbound_edges() (safer_friendshore.R), i.e.
@@ -85,19 +88,20 @@ sector_dev_indicators <- function(dict_raw) {
 }
 
 # The Development Potential components stored in data/processed (partner_development_tbl: one row per
-# partner, tech, stage and variable) against the builder run on the raw inputs of this export
-# (partnership_strength_build_development_indicators() and partnership_strength_build_oecd_supplychain()):
-# the stored value must be identical() wherever the builder has one. Shows that the raw values shipped
-# are the ones behind the stored indices. Returns tibble(check, status, n, detail).
-sector_dev_processed_parity <- function(processed, indicators, supply) {
+# partner, tech, stage and variable) against the builders run on the raw inputs of this export
+# (partnership_strength_build_development_indicators() for the partner-level components and
+# partnership_strength_build_oecd_tech() for the aid components, per tech and stage): the stored value
+# must be identical() wherever the builder has one. Shows that the raw values shipped are the ones
+# behind the stored indices. Returns tibble(check, status, n, detail).
+sector_dev_processed_parity <- function(processed, indicators, aid) {
   out <- list()
-  p <- processed[processed$data_type == "index", c("partner_iso", "supply_chain", "variable", "value"), drop = FALSE]
+  p <- processed[processed$data_type == "index", c("partner_iso", "tech", "supply_chain", "variable", "value"), drop = FALSE]
   for (v in c("development_index", "doingbusiness_index", "energy_use_index", "aid_index_supplychain", "aidgdp_index_supplychain")) {
     pv <- p[p$variable == v, , drop = FALSE]
-    by_stage <- v %in% c("aid_index_supplychain", "aidgdp_index_supplychain")
-    ref_tbl <- if (by_stage) supply else indicators
-    rk <- if (by_stage) paste(ref_tbl$iso3c, ref_tbl$supply_chain) else ref_tbl$iso3c
-    pk <- if (by_stage) paste(pv$partner_iso, pv$supply_chain) else pv$partner_iso
+    by_cell <- v %in% c("aid_index_supplychain", "aidgdp_index_supplychain")
+    ref_tbl <- if (by_cell) aid else indicators
+    rk <- if (by_cell) paste(ref_tbl$iso3c, ref_tbl$tech, ref_tbl$supply_chain) else ref_tbl$iso3c
+    pk <- if (by_cell) paste(pv$partner_iso, pv$tech, pv$supply_chain) else pv$partner_iso
     ref <- ref_tbl[[v]][match(pk, rk)]
     hit <- !is.na(ref) & !is.na(pv$value)
     # one stored value per key (the table repeats partner-level values for every tech and stage)

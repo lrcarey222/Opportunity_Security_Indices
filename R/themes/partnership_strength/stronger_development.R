@@ -2,10 +2,11 @@
 #
 # Level: partner country x (tech, stage). The index describes partner j alone (its enabling
 # environment from WDI and Doing Business, its energy-security need, its economic opportunity
-# and the ODA it receives); no reporter characteristic enters. It is therefore built and written
-# once per (partner_iso, tech, supply_chain). It used to be copied to every reporter with any
-# Comtrade trade with j and fanned out once per OECD donor (up to 38 rows per dyad cell), which
-# is what corrupted the allied-network node join.
+# and the official development finance it receives for the technology and stage); no reporter
+# characteristic enters. It is therefore built and written once per (partner_iso, tech,
+# supply_chain). It used to be copied to every reporter with any Comtrade trade with j and fanned
+# out once per OECD donor (up to 38 rows per dyad cell), which is what corrupted the
+# allied-network node join.
 #
 # Defined only for partners that are not World Bank high-income economies: the development pillar
 # scores emerging and developing markets. High-income partners have no development value; the
@@ -240,122 +241,216 @@ partnership_strength_build_development_indicators <- function(wb_wdi,
     dplyr::left_join(energy_use_index, by = "iso3c")
 }
 
-partnership_strength_build_oecd_sector <- function(oecd_raw, gdp_data, gdp_year = 2023) {
-  donor_col <- partnership_strength_pick_column(
-    oecd_raw,
-    c("Donor", "donor"),
-    "oecd donor"
-  )
-  recipient_iso_col <- partnership_strength_pick_column(
-    oecd_raw,
-    c("RECIPIENT", "RecipientISO", "recipient_iso", "recipient_iso3"),
-    "oecd recipient iso"
-  )
-  recipient_col <- partnership_strength_pick_column(
-    oecd_raw,
-    c("Recipient", "recipient"),
-    "oecd recipient"
-  )
-  sector_col <- partnership_strength_pick_column(
-    oecd_raw,
-    c("Sector", "sector"),
-    "oecd sector"
-  )
-  value_col <- partnership_strength_pick_column(
-    oecd_raw,
-    c("OBS_VALUE", "Value", "value", "aid"),
-    "oecd value"
-  )
-  measure_col <- intersect(c("Measure", "measure"), names(oecd_raw))
+# Settings of the aid components (config/partnership.yml development_aid; the code defaults are
+# used where it is silent): the window of CRS years averaged, the CRS measures counted and the
+# flow (gross disbursements or commitments). Returns list(years = integer vector, measures, flow).
+partnership_strength_development_aid_settings <- function(cfg = NULL) {
+  years <- if (is.null(cfg$years)) c(2020L, 2024L) else as.integer(unlist(cfg$years))
+  measures <- if (is.null(cfg$measures)) c("ODA", "OOF", "PSI") else as.character(unlist(cfg$measures))
+  flow <- if (is.null(cfg$flow)) "disbursement" else as.character(cfg$flow)[1]
+  if (length(years) != 2 || anyNA(years) || years[1] > years[2]) {
+    stop("development_aid years must be [first, last] with first <= last.")
+  }
+  bad <- setdiff(measures, c("ODA", "OOF", "PSI"))
+  if (!length(measures) || length(bad)) {
+    stop("development_aid measures must be among ODA, OOF, PSI; got ", paste(measures, collapse = ", "))
+  }
+  if (!flow %in% c("disbursement", "commitment")) {
+    stop("development_aid flow must be disbursement or commitment; got ", flow)
+  }
+  list(years = seq.int(years[1], years[2]), measures = unique(measures), flow = flow)
+}
 
-  group_vars <- c(donor_col, recipient_iso_col, recipient_col, sector_col)
-  if (length(measure_col) > 0) {
-    group_vars <- c(group_vars, measure_col[[1]])
+# CRS amounts per recipient and purpose code -> (tech, stage), with the purpose crosswalk
+# (data/reference/oecd_crs_purpose_crosswalk.csv: purpose_code, supply_chain, tech, method):
+#   - direct codes name the technologies they fund; a code naming several splits equally;
+#   - pooled (cross-cutting) codes, such as energy policy or renewables "multiple technologies",
+#     are spread over the technologies they list pro rata to the recipient's direct aid to them,
+#     else pro rata to every recipient's direct aid to them, else equally;
+#   - a (tech, stage) with no direct code anywhere in the crosswalk (Batteries Downstream, Green
+#     Hydrogen, Geothermal / Nuclear / Solar / Wind Upstream, ...) takes the recipient's stage
+#     proxy: everything the stage allocates, less the codes that fund only coal, oil and gas.
+#     aid_basis says which: "purpose" or "stage".
+# `amounts`: recipient_iso3, purpose_code, amount (codes outside the crosswalk are ignored);
+# `cells`: tibble(tech, supply_chain) to return; `recipients`: the recipients to return, every
+# cell filled (0 where the recipient has no aid there). Returns recipient_iso3, tech,
+# supply_chain, aid, aid_basis.
+partnership_strength_allocate_crs_purposes <- function(amounts,
+                                                       crosswalk,
+                                                       cells,
+                                                       recipients = unique(amounts$recipient_iso3),
+                                                       fossil_techs = c("Coal", "Oil", "Gas")) {
+  require_columns(amounts, c("recipient_iso3", "purpose_code", "amount"), label = "CRS amounts")
+  # Evaluated before `amounts` is filtered below (a lazy default would see the filtered table).
+  recipients <- unique(as.character(recipients))
+  require_columns(crosswalk, c("purpose_code", "supply_chain", "tech", "method"), label = "CRS purpose crosswalk")
+  require_columns(cells, c("tech", "supply_chain"), label = "development cells")
+
+  cw <- tibble::as_tibble(crosswalk[c("purpose_code", "supply_chain", "tech", "method")])
+  cw$purpose_code <- as.integer(cw$purpose_code)
+  bad_method <- setdiff(unique(cw$method), c("direct", "pooled"))
+  if (length(bad_method)) stop("CRS purpose crosswalk: unknown method(s) ", paste(bad_method, collapse = ", "))
+  if (anyDuplicated(cw[c("purpose_code", "supply_chain", "tech")])) {
+    stop("CRS purpose crosswalk: duplicate (purpose_code, supply_chain, tech) rows.")
+  }
+  mixed <- dplyr::distinct(cw, purpose_code, method)
+  if (anyDuplicated(mixed$purpose_code)) {
+    stop("CRS purpose crosswalk: purpose code(s) with both direct and pooled rows: ",
+         paste(unique(mixed$purpose_code[duplicated(mixed$purpose_code)]), collapse = ", "))
   }
 
-  oecd <- oecd_raw %>%
-    dplyr::distinct() %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) %>%
-    dplyr::summarize(aid = sum(as.numeric(.data[[value_col]]), na.rm = TRUE), .groups = "drop")
-
-  oecd_sector <- oecd %>%
-    dplyr::filter(.data[[sector_col]] != "Energy") %>%
-    dplyr::mutate(
-      sector_clean = dplyr::case_when(
-        stringr::str_detect(.data[[sector_col]], "Nuclear") ~ "Nuclear",
-        stringr::str_detect(.data[[sector_col]], "Solar") ~ "Solar",
-        stringr::str_detect(.data[[sector_col]], "Wind") ~ "Wind",
-        stringr::str_detect(.data[[sector_col]], "Geothermal") ~ "Geothermal",
-        stringr::str_detect(.data[[sector_col]], "Coal") ~ "Coal",
-        TRUE ~ .data[[sector_col]]
-      )
-    ) %>%
-    dplyr::mutate(
-      sector_clean = dplyr::recode(
-        sector_clean,
-        "Energy distribution" = "Electric Grid",
-        "Energy generation, non-renewable sources" = "Fossil Generation",
-        "Energy generation, renewable sources" = "Renewable Generation",
-        "Electric power transmission and distribution (centralised grids)" = "Electric Grid",
-        "Energy generation, renewable sources - multiple technologies" = "Renewable Generation",
-        "Natural gas-fired electric power plants" = "Gas",
-        "Electric power transmission and distribution (isolated mini-grids)" = "Electric Grid",
-        "Hydro-electric power plants" = "Renewable Generation"
-      )
-    ) %>%
-    dplyr::mutate(
-      tech = dplyr::case_when(
-        stringr::str_detect(sector_clean, stringr::regex("^Fossil Generation$", TRUE)) ~ "Coal,Gas",
-        stringr::str_detect(sector_clean, stringr::regex("^Renewable Generation$", TRUE)) ~ "Solar,Wind,Batteries",
-        stringr::str_detect(sector_clean, stringr::regex("^Electric Grid$", TRUE)) ~ "Electric Grid",
-        stringr::str_detect(sector_clean, stringr::regex("non[- ]renewable", TRUE)) ~ "Coal,Gas",
-        stringr::str_detect(sector_clean, stringr::regex("^Solar$", TRUE)) ~ "Solar",
-        stringr::str_detect(sector_clean, stringr::regex("^Wind$", TRUE)) ~ "Wind",
-        stringr::str_detect(sector_clean, stringr::regex("^Nuclear$", TRUE)) ~ "Nuclear",
-        stringr::str_detect(sector_clean, stringr::regex("^Gas$", TRUE)) ~ "Gas",
-        stringr::str_detect(sector_clean, stringr::regex("^Coal$", TRUE)) ~ "Coal",
-        TRUE ~ NA_character_
-      )
-    ) %>%
-    tidyr::separate_rows(tech, sep = ",") %>%
-    dplyr::mutate(supply_chain = "Downstream")
-
-  iso_col <- partnership_strength_pick_column(
-    gdp_data,
-    c("iso3c", "iso3", "Country.Code", "country_code"),
-    "gdp iso"
+  amounts <- tibble::tibble(
+    recipient_iso3 = as.character(amounts$recipient_iso3),
+    purpose_code = as.integer(amounts$purpose_code),
+    amount = as.numeric(amounts$amount)
   )
-  year_col <- partnership_strength_pick_column(
-    gdp_data,
-    c("year", "Year"),
-    "gdp year"
-  )
-  gdp_col <- partnership_strength_pick_column(
-    gdp_data,
-    c("NY.GDP.MKTP.CD", "gdp", "GDP"),
-    "gdp value"
-  )
+  amounts <- amounts[amounts$purpose_code %in% cw$purpose_code, , drop = FALSE]
 
-  gdp_tbl <- gdp_data %>%
-    dplyr::filter(.data[[year_col]] == gdp_year) %>%
-    dplyr::transmute(iso3c = .data[[iso_col]], gdp = .data[[gdp_col]])
+  direct_cw <- cw %>%
+    dplyr::filter(method == "direct") %>%
+    dplyr::group_by(purpose_code) %>%
+    dplyr::mutate(share = 1 / dplyr::n()) %>%
+    dplyr::ungroup()
+  direct <- amounts %>%
+    dplyr::inner_join(direct_cw, by = "purpose_code", relationship = "many-to-many") %>%
+    dplyr::transmute(recipient_iso3, purpose_code, supply_chain, tech, aid = amount * share)
 
-  oecd_sector %>%
-    dplyr::left_join(
-      gdp_tbl,
-      by = stats::setNames("iso3c", recipient_iso_col)
-    ) %>%
-    dplyr::mutate(aid_gdp = aid / gdp) %>%
+  direct_tot <- direct %>%
+    dplyr::group_by(recipient_iso3, supply_chain, tech) %>%
+    dplyr::summarise(d = sum(aid), .groups = "drop")
+  global_tot <- direct_tot %>%
+    dplyr::group_by(supply_chain, tech) %>%
+    dplyr::summarise(g = sum(d), .groups = "drop")
+
+  pooled <- amounts %>%
+    dplyr::inner_join(dplyr::filter(cw, method == "pooled"), by = "purpose_code", relationship = "many-to-many") %>%
+    dplyr::left_join(direct_tot, by = c("recipient_iso3", "supply_chain", "tech")) %>%
+    dplyr::left_join(global_tot, by = c("supply_chain", "tech")) %>%
+    dplyr::mutate(d = dplyr::coalesce(pmax(d, 0), 0), g = dplyr::coalesce(pmax(g, 0), 0)) %>%
+    dplyr::group_by(recipient_iso3, purpose_code) %>%
     dplyr::mutate(
-      aid_index_sector = partnership_strength_safe_scurve(aid),
-      aidgdp_index_sector = partnership_strength_safe_scurve(aid_gdp)
+      w = if (sum(d) > 0) d / sum(d) else if (sum(g) > 0) g / sum(g) else 1 / dplyr::n(),
+      aid = amount * w
     ) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(recipient_iso3, purpose_code, supply_chain, tech, aid)
+
+  allocated <- dplyr::bind_rows(direct, pooled)
+  fossil_only <- cw %>%
+    dplyr::group_by(purpose_code) %>%
+    dplyr::summarise(fossil = all(tech %in% fossil_techs), .groups = "drop") %>%
+    dplyr::filter(fossil) %>%
+    dplyr::pull(purpose_code)
+
+  tech_aid <- allocated %>%
+    dplyr::group_by(recipient_iso3, supply_chain, tech) %>%
+    dplyr::summarise(aid = sum(aid), .groups = "drop")
+  stage_proxy <- allocated %>%
+    dplyr::filter(!purpose_code %in% fossil_only) %>%
+    dplyr::group_by(recipient_iso3, supply_chain) %>%
+    dplyr::summarise(proxy = sum(aid), .groups = "drop")
+  coded <- dplyr::distinct(direct_cw, supply_chain, tech) %>% dplyr::mutate(coded = TRUE)
+
+  tidyr::expand_grid(
+    recipient_iso3 = recipients,
+    dplyr::distinct(tibble::as_tibble(cells[c("tech", "supply_chain")]))
+  ) %>%
+    dplyr::left_join(coded, by = c("supply_chain", "tech")) %>%
+    dplyr::left_join(tech_aid, by = c("recipient_iso3", "supply_chain", "tech")) %>%
+    dplyr::left_join(stage_proxy, by = c("recipient_iso3", "supply_chain")) %>%
+    dplyr::mutate(
+      coded = dplyr::coalesce(coded, FALSE),
+      aid_basis = dplyr::if_else(coded, "purpose", "stage"),
+      aid = pmax(0, dplyr::if_else(coded, dplyr::coalesce(aid, 0), dplyr::coalesce(proxy, 0)))
+    ) %>%
+    dplyr::select(recipient_iso3, tech, supply_chain, aid, aid_basis)
+}
+
+# Official development finance received by partner j per (tech, stage), from the CRS extract
+# data/raw/oecd_crs_purpose.csv (scripts/fetchers/oecd_crs.R: bilateral flows of country donors,
+# by purpose code, USD millions at constant prices) and the purpose crosswalk
+# (partnership_strength_allocate_crs_purposes()). The settings
+# (partnership_strength_development_aid_settings()) pick the CRS measures, the flow and the window
+# of years; aid is the annual mean over the window's years in the extract, summed over donors, and
+# aid_gdp that mean / the recipient's mean GDP over the years of the window it has (USD m / USD).
+# aid_index_supplychain and aidgdp_index_supplychain are their S-curves across recipients within
+# each (tech, stage); the names predate the tech dimension and are kept for the weights, the index
+# definition and the dashboard.
+#
+# Every recipient in the window gets every cell, 0 where it received nothing there: the CRS is
+# the census of its reporting donors' activities, so no recorded aid is an observed zero. A
+# partner that received none of the extract's official finance in the window is missing (NA).
+#
+# This replaces the 3-digit stage totals of partnership_strength_build_oecd_supplychain(), which
+# gave all eleven technologies of a stage the same value (median rank correlation 0.99 of the
+# Development Potential Index across technologies within a stage in the October 2026 build).
+partnership_strength_build_oecd_tech <- function(oecd_crs,
+                                                 crosswalk,
+                                                 gdp_data,
+                                                 cells,
+                                                 settings = partnership_strength_development_aid_settings(),
+                                                 valid_iso = NULL) {
+  require_columns(
+    oecd_crs,
+    c("year", "recipient_iso3", "purpose_code", "measure", "usd_commitment", "usd_disbursement"),
+    label = "OECD CRS extract"
+  )
+  amount_col <- if (identical(settings$flow, "commitment")) "usd_commitment" else "usd_disbursement"
+
+  crs <- oecd_crs[oecd_crs$year %in% settings$years & oecd_crs$measure %in% settings$measures, , drop = FALSE]
+  if (!is.null(valid_iso)) crs <- crs[crs$recipient_iso3 %in% valid_iso, , drop = FALSE]
+  years_present <- sort(unique(as.integer(crs$year)))
+  if (!length(years_present)) {
+    stop("OECD CRS extract has no ", paste(settings$measures, collapse = "/"), " rows in ",
+         min(settings$years), "-", max(settings$years), ".")
+  }
+  absent <- setdiff(settings$years, years_present)
+  if (length(absent)) {
+    warning("OECD CRS extract has no rows for ", paste(absent, collapse = ", "),
+            "; aid is the annual mean over ", paste(range(years_present), collapse = "-"), ".", call. = FALSE)
+  }
+
+  amounts <- crs %>%
+    dplyr::group_by(recipient_iso3, purpose_code) %>%
+    dplyr::summarise(amount = pmax(0, sum(.data[[amount_col]], na.rm = TRUE)) / length(years_present), .groups = "drop")
+  aid <- partnership_strength_allocate_crs_purposes(
+    amounts,
+    crosswalk,
+    cells,
+    recipients = unique(as.character(crs$recipient_iso3))
+  )
+
+  iso_col <- partnership_strength_pick_column(gdp_data, c("iso3c", "iso3", "Country.Code", "country_code"), "gdp iso")
+  year_col <- partnership_strength_pick_column(gdp_data, c("year", "Year"), "gdp year")
+  gdp_col <- partnership_strength_pick_column(gdp_data, c("NY.GDP.MKTP.CD", "gdp", "GDP"), "gdp value")
+  gdp_tbl <- tibble::tibble(
+    iso3c = as.character(gdp_data[[iso_col]]),
+    year = suppressWarnings(as.integer(gdp_data[[year_col]])),
+    gdp = suppressWarnings(as.numeric(gdp_data[[gdp_col]]))
+  ) %>%
+    dplyr::filter(year %in% settings$years, !is.na(gdp), gdp > 0) %>%
+    dplyr::distinct(iso3c, year, .keep_all = TRUE) %>%
+    dplyr::group_by(iso3c) %>%
+    dplyr::summarise(gdp = mean(gdp), .groups = "drop")
+
+  aid %>%
+    dplyr::left_join(gdp_tbl, by = c("recipient_iso3" = "iso3c")) %>%
+    dplyr::mutate(aid_gdp = dplyr::if_else(!is.na(gdp), aid / gdp, NA_real_)) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(
+      aid_index_supplychain = partnership_strength_safe_scurve(aid),
+      aidgdp_index_supplychain = partnership_strength_safe_scurve(aid_gdp)
+    ) %>%
+    dplyr::ungroup() %>%
     dplyr::transmute(
-      iso3c = .data[[recipient_iso_col]],
+      iso3c = recipient_iso3,
       tech,
       supply_chain,
-      aid_index_sector,
-      aidgdp_index_sector
+      aid,
+      aid_gdp,
+      aid_basis,
+      aid_index_supplychain,
+      aidgdp_index_supplychain
     )
 }
 
@@ -368,6 +463,11 @@ partnership_strength_build_oecd_sector <- function(oecd_raw, gdp_data, gdp_year 
 # The donor dimension is summed here. It used to be dropped without aggregating, leaving one row
 # per donor that the partner join then multiplied; the donor was never matched to the reporter,
 # so the index was never dyadic.
+#
+# Since October 2026 the index reads partnership_strength_build_oecd_tech() instead. This builder
+# stays for the Development & finance chunk of the dashboard export (scripts/87,
+# R/dashboard/sector/sector_dev.R), which ships the 3-digit CRS flows of oecd_crs_api.csv and
+# checks its stage totals against it.
 partnership_strength_build_oecd_supplychain <- function(oecd_api_raw,
                                                         gdp_data,
                                                         gdp_year = 2023,
@@ -450,14 +550,16 @@ partnership_strength_build_oecd_supplychain <- function(oecd_api_raw,
 
 partnership_strength_build_development_index <- function(energy_security_index,
                                                          economic_opportunity_index,
-                                                         oecd_api_raw,
+                                                         oecd_crs,
+                                                         oecd_crosswalk,
                                                          wb_wdi,
                                                          wb_doingbusiness,
                                                          country_info,
                                                          gdp_data,
-                                                         gdp_year = 2023,
+                                                         aid_settings = NULL,
                                                          component_weights = NULL,
                                                          techs = NULL) {
+  if (is.null(aid_settings)) aid_settings <- partnership_strength_development_aid_settings()
   component_weights <- partnership_strength_resolve_weights(
     component_weights,
     partnership_strength_development_default_weights(),
@@ -487,12 +589,6 @@ partnership_strength_build_development_index <- function(energy_security_index,
 
   valid_iso <- country_info$iso3c
 
-  oecd_supplychain <- partnership_strength_build_oecd_supplychain(
-    oecd_api_raw,
-    gdp_data,
-    gdp_year = gdp_year,
-    valid_iso = valid_iso
-  )
 
   development_indicators <- partnership_strength_build_development_indicators(
     wb_wdi,
@@ -511,10 +607,20 @@ partnership_strength_build_development_index <- function(energy_security_index,
     by = c("iso3c", "tech", "supply_chain")
   )
 
+  oecd_tech <- partnership_strength_build_oecd_tech(
+    oecd_crs,
+    oecd_crosswalk,
+    gdp_data,
+    cells = dplyr::distinct(base_tbl, tech, supply_chain),
+    settings = aid_settings,
+    valid_iso = valid_iso
+  ) %>%
+    dplyr::select(iso3c, tech, supply_chain, aid_basis, aid_index_supplychain, aidgdp_index_supplychain)
+
   component_names <- names(partnership_strength_development_default_weights())
 
   dev_potential_index <- base_tbl %>%
-    dplyr::left_join(oecd_supplychain, by = c("iso3c", "supply_chain")) %>%
+    dplyr::left_join(oecd_tech, by = c("iso3c", "tech", "supply_chain")) %>%
     dplyr::left_join(development_indicators, by = "iso3c") %>%
     dplyr::filter(iso3c %in% eme_iso$iso3c)
   require_columns(dev_potential_index, component_names, label = "development components")
@@ -569,10 +675,11 @@ stronger_development <- function(country_info,
                                  energy_security_index,
                                  wb_wdi,
                                  wb_doingbusiness,
-                                 oecd_api_raw,
+                                 oecd_crs,
+                                 oecd_crosswalk,
                                  component_weights = NULL,
+                                 aid_settings = NULL,
                                  year = 2024L,
-                                 gdp_year = 2023,
                                  techs = NULL) {
   component_weights <- partnership_strength_resolve_weights(
     component_weights,
@@ -584,12 +691,13 @@ stronger_development <- function(country_info,
   dev_potential_index <- partnership_strength_build_development_index(
     energy_security_index = energy_security_index,
     economic_opportunity_index = economic_opportunity_index,
-    oecd_api_raw = oecd_api_raw,
+    oecd_crs = oecd_crs,
+    oecd_crosswalk = oecd_crosswalk,
     wb_wdi = wb_wdi,
     wb_doingbusiness = wb_doingbusiness,
     country_info = country_info,
     gdp_data = gdp_data,
-    gdp_year = gdp_year,
+    aid_settings = aid_settings,
     component_weights = component_weights,
     techs = techs
   )

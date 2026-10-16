@@ -535,7 +535,7 @@ sources:
     licence: attribution
     attribution: "Source: OECD Creditor Reporting System (CC BY 4.0)."
     accessed: "2026-09"
-    transform: "Rows by donor, recipient, CRS sector and year summed as read; the mining sector net of its coal and upstream oil-and-gas sub-rows; recipients restricted to the WDI country list ({crs_n_recipients} recipients, {crs_n_donors} donors). The Development Potential builder's total per stage (2013-2024, every donor) and its ratio to 2023 GDP rebuilt with partnership_strength_build_oecd_supplychain()'s steps."
+    transform: "Rows by donor, recipient, CRS sector and year summed as read; the mining sector net of its coal and upstream oil-and-gas sub-rows; recipients restricted to the WDI country list ({crs_n_recipients} recipients, {crs_n_donors} donors). Per stage, the 2013-2024 total over every donor and its ratio to 2023 GDP, rebuilt with partnership_strength_build_oecd_supplychain()'s steps: the aid Development Potential ranked until October 2026. It now reads the CRS bulk file by purpose code, per technology and stage (oecd_crs_purpose.csv; partnership_strength_build_oecd_tech())."
     issues: "Bilateral official donors only: multilateral lenders and private flows are not in the extract. Constant prices use the OECD DAC deflators of each donor."
   - id: imf_dip
     short: "IMF Direct Investment Positions"
@@ -630,9 +630,9 @@ caveats:
   - {id: wdi_empty, text: "Series of the extract without any value in {wdi_years}, so not shown: {wdi_empty}."}
   - {id: db_discontinued, text: "The World Bank stopped Doing Business in 2021 after data irregularities; these {db_year} scores are its last. Its successor, B-READY (2024, 50 economies), is in the World Bank indicators of this theme."}
   - {id: crs_scope, text: "Official development assistance from {crs_n_donors} bilateral donors (OECD DAC members and other reporting countries), gross disbursements, {crs_years}, constant {crs_base_year} US dollars (OECD DAC deflators). Multilateral lenders (World Bank, regional development banks, EU institutions) and private flows are not in the extract."}
-  - {id: crs_stage, text: "Aid sectors are CRS purpose codes, not technologies. They map to stages as in Development Potential: energy to Downstream, industry to Midstream, mineral resources and mining (less its coal and upstream oil and gas) to Upstream, so aid for energy counts on every Downstream sector. Mining aid net of its fossil sub-rows can be negative in a year."}
-  - {id: crs_gdp, text: "The {crs_years_total} total divided by one year's GDP (2023, World Bank, current US dollars), as the Development Potential builder divides it."}
-  - {id: crs_incomplete, text: "Years most donors had not yet reported when the extract was taken are counted in the totals, as Development Potential counts them, but not shown as years: {crs_incomplete}."}
+  - {id: crs_stage, text: "Aid sectors are CRS purpose codes, not technologies. They map to stages by the rule Development Potential used until October 2026: energy to Downstream, industry to Midstream, mineral resources and mining (less its coal and upstream oil and gas) to Upstream, so aid for energy counts on every Downstream sector. Mining aid net of its fossil sub-rows can be negative in a year."}
+  - {id: crs_gdp, text: "The {crs_years_total} total divided by one year's GDP (2023, World Bank, current US dollars), as the Development Potential builder divided it until October 2026."}
+  - {id: crs_incomplete, text: "Years most donors had not yet reported when the extract was taken are counted in the totals but not shown as years: {crs_incomplete}."}
   - {id: dip_debt, text: "IMF Direct Investment Positions, outward, debt instruments only (loans and debt securities between related firms; equity is not in this measure), as reported by the investing economy: the mean of the years each pair reports in {dip_years}. A reported zero is a real zero; a pair not shown was not reported."}
   - {id: dip_conduit, text: "{dip_n_conduit} of {dip_n} positions involve a conduit financial centre ({dip_conduits}): pass-through positions with little real activity behind them (Damgaard, Elkjaer and Johannesen, IMF 2019). They are shown and flagged; the Friendshore investment component treats positions {dip_conduit_scope} as not observed."}
   - {id: ei_eu_row, text: "The EU row is EI's own European Union total."}
@@ -2859,7 +2859,7 @@ vars:
     primary_for: []
     section: null
     link_stage: any
-    feeds: ["Partners: Development Potential (aid received for the stage)"]
+    feeds: ["Context: aid received by aid sector (Development Potential reads the CRS by purpose code, per technology and stage)"]
     prov: X
     prov_detail: "oecd_crs_api.csv: the rows of each recipient, aid sector and year summed over donors"
     parity: {none: "raw CRS disbursements; the 2013-2024 stage totals are checked against the builder in scripts/87"}
@@ -2920,7 +2920,7 @@ vars:
     caveats: [crs_scope, crs_stage, crs_incomplete]
     primary_for: []
     section: null
-    feeds: ["Partners: Development Potential (aid received)"]
+    feeds: ["Context: who funds whom (Development Potential reads the CRS by purpose code, per technology and stage)"]
     prov: X
     prov_detail: "oecd_crs_api.csv: rows by donor, recipient, aid sector and year (sector-dev dev.oda)"
     parity: {none: "raw CRS disbursements; the dyads add up to the builder's stage totals (checked in scripts/87)"}
@@ -2930,7 +2930,7 @@ vars:
     family: development
     label: "Official development assistance received, total of all years"
     short: "Aid received, all years"
-    definition: "The total official development assistance an economy received for a stage's aid sector over {crs_years_total} from every donor in the extract, floored at zero: the quantity Development Potential ranks."
+    definition: "The total official development assistance an economy received for a stage's aid sector over {crs_years_total} from every donor in the extract, floored at zero: the quantity Development Potential ranked until October 2026, when it moved to the CRS by purpose code, per technology and stage."
     unit: usd_m_2023
     data_year: "{crs_years_total} total"
     years: [2024]
@@ -2951,7 +2951,7 @@ vars:
     primary_for: []
     section: null
     link_stage: any
-    feeds: ["Partners: Development Potential (aid received for the stage)"]
+    feeds: ["Context: aid received by aid sector (Development Potential reads the CRS by purpose code, per technology and stage)"]
     prov: X
     prov_detail: "oecd_crs_api.csv via the steps of partnership_strength_build_oecd_supplychain(), column aid"
     parity: {none: "rebuilt with the builder's steps; ranked as the builder ranks it, it reproduces the builder's output identical() (scripts/87)"}
@@ -2961,7 +2961,7 @@ vars:
     family: development
     label: "Official development assistance received, total of all years, relative to GDP"
     short: "Aid received / GDP"
-    definition: "The {crs_years_total} aid total for the stage divided by the recipient's 2023 GDP: the second quantity Development Potential ranks."
+    definition: "The {crs_years_total} aid total for the stage divided by the recipient's 2023 GDP: the second quantity Development Potential ranked until October 2026."
     unit: pct_gdp_2023
     data_year: "{crs_years_total} total / 2023 GDP"
     years: [2024]
@@ -2982,7 +2982,7 @@ vars:
     primary_for: []
     section: null
     link_stage: any
-    feeds: ["Partners: Development Potential (aid relative to the economy)"]
+    feeds: ["Context: aid relative to the economy (Development Potential reads the CRS by purpose code, per technology and stage)"]
     prov: X
     prov_detail: "oecd_crs_api.csv and wdi_gdp.csv via the steps of partnership_strength_build_oecd_supplychain(), column aid_gdp (USD m / USD; shown as percent)"
     parity: {none: "rebuilt with the builder's steps; ranked as the builder ranks it, it reproduces the builder's output identical() (scripts/87)"}
