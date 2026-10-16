@@ -180,7 +180,7 @@ function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected,
         <>
           How this feeds the index: Friendshore&apos;s investment tie ranks {name}&apos;s outward debt-instrument position in each partner, averaged over {yrs}, together
           with that position relative to the partner&apos;s economy and to both economies ({m ? `GDP of ${m.dip_gdp_year}` : 'GDP'}); a larger position makes the
-          partner a more trusted supplier. Conduit centres are left out on both sides, so they neither gain nor lose. In Solar, Wind, Batteries and Electric
+          partner a stronger friendshoring opportunity. Conduit centres are left out on both sides, so they neither gain nor lose. In Solar, Wind, Batteries and Electric
           Vehicles Midstream the tie is the factory projects instead (choose one of those sectors). Positions are the stock at the end of the year, as reported to
           the IMF by {name}{yearsOut.length ? ` (${yearsOut.sort().join(', ')})` : ''}; where {name} reports nothing for a pair, the partner&apos;s report is used and
           marked. Source: {m?.dip_source ?? 'IMF, Direct Investment Positions'}.
@@ -230,7 +230,7 @@ function ProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, selected,
     <ChartCard
       headingLevel={headingLevel}
       title={`Factory projects in ${label}: ${name} and its partners`}
-      sub={`Cross-border manufacturing projects in ${label} (announced, under construction or operating). Right: projects by ${name}'s firms in the partner (${+nOut.toFixed(1)}). Left: projects by the partner's firms in ${name} (${+nIn.toFixed(1)}). A joint venture counts as a share for each parent's home economy, so counts can be fractions. In this sector these projects, not the IMF positions, are Friendshore's investment tie: a partner where ${name}'s firms have built or announced factories scores higher as a supplier.`}
+      sub={`Cross-border manufacturing projects in ${label} (announced, under construction or operating). Right: projects by ${name}'s firms in the partner (${+nOut.toFixed(1)}). Left: projects by the partner's firms in ${name} (${+nIn.toFixed(1)}). A joint venture counts as a share for each parent's home economy, so counts can be fractions. In this sector these projects, not the IMF positions, are Friendshore's investment tie: a partner where ${name}'s firms have built or announced factories scores higher as a friendshoring opportunity.`}
       summary={`${name}, ${label}: ${+nOut.toFixed(1)} factory projects abroad and ${+nIn.toFixed(1)} at home by foreign firms, across ${rows.length} partners.`}
       legend={
         <Legend

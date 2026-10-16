@@ -1,5 +1,5 @@
 // S5 of the Country profile, partners by sector (spec_country.md A4.2 "Partners", 2026-10-15): the top
-// suppliers (Friendshore) and export markets (Partnership Opportunity) of one sector (or all sectors)
+// friendshoring opportunities (Friendshore) and export markets (Partnership Opportunity) of one sector (or all sectors)
 // at the paper baseline with the ties each pair has today, then the country's bilateral direct
 // investment (IMF positions; factory projects in the four CM-FDI sectors). The data come from the
 // Strategic bundle's auxiliary chunks (views/Partners/ties.ts), not the fact sheet.
@@ -81,11 +81,11 @@ export function PartnersBySector() {
   const label = c ? c.label : "all sectors (average of each partner's five strongest)";
   const options = [{ value: '', label: 'All sectors' }, ...cellOptions(sheet.cells, (x) => x.stage, (x) => x.key)];
   const side = (sd: 'fs' | 'po') => items.filter((r) => r.side === sd).sort((a, b) => a.k - b.k);
-  const asWord = (r: TopItem) => (r.side === 'fs' ? 'supplier (Friendshore)' : 'market (Partnership Opportunity)');
+  const asWord = (r: TopItem) => (r.side === 'fs' ? 'friendshoring opportunity (Friendshore)' : 'market (Partnership Opportunity)');
   const list = (sd: 'fs' | 'po') => (
     <div>
-      <h4 className="mb-2 text-sm font-medium text-paper">{sd === 'fs' ? 'Top suppliers (Friendshore)' : 'Top export markets (Partnership Opportunity)'}</h4>
-      <ol className="space-y-1.5" aria-label={sd === 'fs' ? 'Top suppliers' : 'Top export markets'}>
+      <h4 className="mb-2 text-sm font-medium text-paper">{sd === 'fs' ? 'Friendshoring opportunities (Friendshore)' : 'Top export markets (Partnership Opportunity)'}</h4>
+      <ol className="space-y-1.5" aria-label={sd === 'fs' ? 'Friendshoring opportunities' : 'Top export markets'}>
         {side(sd).map((r) => {
           const notes = [
             sd === 'fs' && r.share !== null ? `${(100 * r.share).toFixed(1)}% of ${poss(name)} imports in this sector` : null,
@@ -120,9 +120,9 @@ export function PartnersBySector() {
     <>
       <ChartCard
         headingLevel={3}
-        title={`Top suppliers and markets: ${c ? c.label : 'all sectors'}`}
-        sub={`The partners the index rates highest for ${name} in ${label}, at the paper baseline: as suppliers it can rely on (Friendshore, 0 to 1) and as markets for its exports (Partnership Opportunity, 0 to 1), with the ties each pair has today where they exist. The sector starts on the one selected above; choose another here. Click a partner to select it.`}
-        summary={`${cap(name)}, ${label}: top ${side('fs').length} suppliers and top ${side('po').length} export markets.`}
+        title={`Friendshoring opportunities and export markets: ${c ? c.label : 'all sectors'}`}
+        sub={`The partners the index rates highest for ${name} in ${label}, at the paper baseline: as friendshoring opportunities (Friendshore, 0 to 1: partners where ${poss(name)} security need meets the partner's economic opportunity, on existing trade and investment ties) and as markets for its exports (Partnership Opportunity, 0 to 1), with the ties each pair has today where they exist. Within one sector ${poss(name)} own need is the same for every partner, so the Friendshore ranking there turns on the partner's opportunity, the ties, UN-vote alignment and ownership; the import shares show who supplies it today. The sector starts on the one selected above; choose another here. Click a partner to select it.`}
+        summary={`${cap(name)}, ${label}: top ${side('fs').length} friendshoring opportunities and top ${side('po').length} export markets.`}
         tools={<Select label="Sector" value={c ? c.key : ''} options={options} onChange={(v) => setPick(v || null)} className="min-w-[14rem]" />}
         table={() => (
           <TableView<TopItem>

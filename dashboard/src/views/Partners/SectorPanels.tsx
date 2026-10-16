@@ -1,5 +1,5 @@
 // The Partners view with one sector chosen: the selected economy's partners in that technology and
-// stage, as suppliers (Friendshore) and as export markets (Partnership Opportunity), side by side, from
+// stage, as friendshoring opportunities (Friendshore) and as export markets (Partnership Opportunity), side by side, from
 // the engine's per-sector scores under the scenario (engine.cellPartners()), with Development Potential
 // in that sector and the Partnership Strength rank (all sectors) as context.
 
@@ -86,11 +86,15 @@ export function SectorBars({ rows, side, sector, rName, show, isBaseline, updati
     },
     [top, side, change, isBaseline],
   );
-  const what = side === 'fs' ? `suppliers ${rName} can rely on` : `export markets for ${rName}`;
+  const tick = !isBaseline && !change ? "; the gray tick is the paper's value" : '';
+  const what =
+    side === 'fs'
+      ? `The 15 strongest friendshoring opportunities for ${rName} in ${sector} alone, by Friendshore in this sector (0 to 1)${tick}: partners where ${rName}'s security need meets the partner's economic opportunity, on existing trade and investment ties. ${rName}'s own need is the same for every partner here; the ranking turns on the partner's opportunity, the trade and investment ties, UN-vote alignment and ownership.`
+      : `The 15 strongest export markets for ${rName} in ${sector} alone, by Partnership Opportunity in this sector (0 to 1)${tick}.`;
   return (
     <ChartCard
-      title={side === 'fs' ? `Best suppliers in ${sector}` : `Best export markets in ${sector}`}
-      sub={`${showWord(show)} The 15 strongest ${what} in ${sector} alone, by ${SIDE_NAME[side]} in this sector (0 to 1)${!isBaseline && !change ? "; the gray tick is the paper's value" : ''}. Colour shows the partner's place in the coalition. Click a bar to see the pair sector by sector.`}
+      title={side === 'fs' ? `Friendshoring opportunities in ${sector}` : `Best export markets in ${sector}`}
+      sub={`${showWord(show)} ${what} Colour shows the partner's place in the coalition. Click a bar to see the pair sector by sector.`}
       updating={updating}
       summary={`${rName}, ${sector}: the ${top.length} strongest partners by ${SIDE_NAME[side]}.`}
       legend={
@@ -140,8 +144,8 @@ export function sectorCols(sector: string): Col<SectorRow>[] {
   return [
     { id: 'Country', header: 'Partner', value: (r) => r.Country, minWidth: 150 },
     { id: 'tier', header: 'Tier', value: (r) => tierLabel(r.tier) },
-    { id: 'fs', header: `Friendshore, ${sector}`, title: 'How good a supplier the partner is in this sector (0 to 1)', value: (r) => r.fs, cell: (r) => fmtNum(r.fs, 3), num: true },
-    { id: 'fs_rank', header: 'Supplier rank', value: (r) => r.fs_rank, num: true },
+    { id: 'fs', header: `Friendshore, ${sector}`, title: 'How strong a friendshoring opportunity the partner is in this sector (0 to 1)', value: (r) => r.fs, cell: (r) => fmtNum(r.fs, 3), num: true },
+    { id: 'fs_rank', header: 'Friendshore rank', value: (r) => r.fs_rank, num: true },
     { id: 'po', header: `Partnership Opportunity, ${sector}`, title: 'How good a market the partner is for exports in this sector (0 to 1)', value: (r) => r.po, cell: (r) => fmtNum(r.po, 3), num: true },
     { id: 'po_rank', header: 'Market rank', value: (r) => r.po_rank, num: true },
     { id: 'dp', header: `Development Potential, ${sector}`, title: 'Paper baseline; scored for middle- and lower-income partners only', value: (r) => r.dp, cell: (r) => (r.dp === null ? 'not scored' : fmtNum(r.dp, 3)), num: true, minWidth: 120 },

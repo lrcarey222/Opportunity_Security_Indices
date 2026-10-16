@@ -1,5 +1,5 @@
 // View 5: Partners (spec_react.md 8.6; paper section 9). How a reporting economy rates every partner
-// as a trusted supplier (Friendshore), an export market (Partnership Opportunity) and a development
+// as a friendshoring opportunity (Friendshore), an export market (Partnership Opportunity) and a development
 // partner (Development Potential), summarised by the Partnership Strength Index; the pair drill-down
 // (with the CM-FDI investment tie and the Chinese-parent ownership component, spec_country.md C4.1);
 // the partner-level Partnership Strength on the three-colour scale (C1.5). No bare acronyms (C3.1).
@@ -425,7 +425,7 @@ export default function PartnersView() {
     { id: 'rankable', header: 'Ranked', value: (r) => (r.rankable ? 'yes' : `no${r.reason ? `: ${r.reason}` : ''}`), minWidth: 300 },
   ];
 
-  // the pair's components per sector: Friendshore (supplier) parts first, then Partnership Opportunity (market)
+  // the pair's components per sector: Friendshore (friendshoring) parts first, then Partnership Opportunity (market)
   const decCols: Col<Row>[] = [
     { id: 'cell', header: 'Sector', value: (r) => cellLabel(String(r.tech), String(r.supply_chain)), minWidth: 170 },
     { id: 'fs', header: 'Friendshore', value: (r) => numOr(r.friendshore_index), cell: (r) => fmtNum(r.friendshore_index, 3), num: true },
@@ -463,7 +463,7 @@ export default function PartnersView() {
         lede={
           <>
             How strong a partner each economy is for the one you pick, across energy supply chains. The <Term id="psi" /> combines{' '}
-            <Term id="fs" /> (a supplier it can rely on: it already buys from it, the supplier is competitive, aligned and linked by investment),{' '}
+            <Term id="fs" /> (a friendshoring opportunity: a partner where it could invest and source to meet its own security need in a sector, because the partner has an economic opportunity there, the two already trade and invest with each other and they are aligned in UN votes),{' '}
             <Term id="po" /> (a market for its exports) and, for middle- and lower-income partners, <Term id="dp" />. Each pair is summarised by its{' '}
             <Term id="best_five">five strongest sectors</Term>.
           </>
@@ -478,7 +478,9 @@ export default function PartnersView() {
       {sector && (
         <p className="-mt-3 mb-5 max-w-3xl text-sm text-paper-dim" data-testid="sector-note">
           Showing <strong className="text-paper">{sector.label}</strong> only: {rName}&apos;s partners ranked on <Term id="fs" /> and <Term id="po" /> in this one
-          sector (the dials apply), not on the five-sector summaries. Development Potential is shown for this sector at the paper baseline; the Partnership
+          sector (the dials apply), not on the five-sector summaries. {rName}&apos;s own security need is the same for every partner in one sector: it sets how much the
+          sector matters to {rName}, so the Friendshore ranking turns on the partner&apos;s Economic Opportunity, the trade and investment ties, UN-vote alignment and
+          ownership. Development Potential is shown for this sector at the paper baseline; the Partnership
           Strength rank is across all sectors. Choose &ldquo;All sectors&rdquo; for the Partnership Strength ranking.{' '}
           <Link className="link" to={devDataLink(sel, sector)} data-testid="dev-data-link">
             The development data behind this &rarr;
@@ -526,7 +528,7 @@ export default function PartnersView() {
             )}
             <ChartCard
               title={sector ? `UN-vote alignment and Friendshore in ${sector.label}` : 'UN-vote alignment and Friendshore'}
-              sub={`${sector && show === 'change' ? 'Scenario values.' : ''} Each dot is one partner: across, its bloc in UN General Assembly votes (dots are spread within each band so they do not overlap); up, how good a supplier it is for ${rName} (${sector ? `Friendshore in ${sector.label}` : 'Friendshore, average of its five strongest sectors'}). Colour shows the partner's place in the coalition.`}
+              sub={`${sector && show === 'change' ? 'Scenario values.' : ''} Each dot is one partner: across, its bloc in UN General Assembly votes (dots are spread within each band so they do not overlap); up, how strong a friendshoring opportunity it is for ${rName} (${sector ? `Friendshore in ${sector.label}` : 'Friendshore, average of its five strongest sectors'}). Colour shows the partner's place in the coalition.`}
               updating={dyUpdating}
               summary={`${blocPts.length} partners by voting bloc and Friendshore.`}
               legend={
@@ -563,7 +565,7 @@ export default function PartnersView() {
           {sector ? (
             <ChartCard
               title={`${rName}: every partner in ${sector.label}`}
-              sub={`${rName}'s partners in ${sector.label}: Friendshore (as a supplier) and Partnership Opportunity (as an export market) in this sector under the scenario, with their ranks among sovereign economies, Development Potential in this sector (paper baseline) and the Partnership Strength rank across all sectors. Select a row to see the pair sector by sector.`}
+              sub={`${rName}'s partners in ${sector.label}: Friendshore (as a friendshoring opportunity: where ${rName}'s security need meets the partner's economic opportunity, on existing trade and investment ties) and Partnership Opportunity (as an export market) in this sector under the scenario, with their ranks among sovereign economies, Development Potential in this sector (paper baseline) and the Partnership Strength rank across all sectors. Select a row to see the pair sector by sector.`}
               updating={!partner.fresh || (!!cellTab && cellTab.key !== cpKey)}
               notes={<DevDataNote iso3={sel} name={selRow?.Country ?? null} sector={sector} />}
               csv={secRows ? () => ({ name: `partners-${reporter}-${stageSlug(sector.tech, sector.stage)}`, text: rowsToCsv(secRows.map((r) => ({ ...r, sector: sector.label })) as unknown as Record<string, unknown>[]) }) : undefined}
@@ -592,7 +594,7 @@ export default function PartnersView() {
 
           <ChartCard
             title={selRow ? `${rName} and ${selRow.Country}, sector by sector` : 'The pair, sector by sector'}
-            sub={`For each sector: Friendshore (how good a supplier ${selRow?.Country ?? 'the partner'} is for ${rName}) and Partnership Opportunity (how good a market it is for ${rName}'s exports), both 0 to 1. Stars mark the five sectors that make up each summary. The table lists every part of both scores, including the investment tie (factory projects in Solar, Wind, Batteries and Electric Vehicles manufacturing, IMF direct investment elsewhere) and the Chinese-parent share of the partner's foreign-owned factories.`}
+            sub={`For each sector: Friendshore (how strong a friendshoring opportunity ${selRow?.Country ?? 'the partner'} is for ${rName}: where ${rName}'s security need meets the partner's economic opportunity, on their trade and investment ties) and Partnership Opportunity (how good a market it is for ${rName}'s exports), both 0 to 1. Stars mark the five sectors that make up each summary. The table lists every part of both scores, including the investment tie (factory projects in Solar, Wind, Batteries and Electric Vehicles manufacturing, IMF direct investment elsewhere) and the Chinese-parent share of the partner's foreign-owned factories.`}
             updating={!!dec && dec.key !== decKey}
             legend={
               <Legend

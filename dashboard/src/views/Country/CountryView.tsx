@@ -462,7 +462,7 @@ export default function CountryView() {
             tools={
               <>
               {app.Uindex.has(iso) && (
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => goto(`/partners/${iso}`, { tech, stage })} title={`${c.country}'s suppliers and export markets in ${cellLabel(tech, stage)}`}>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => goto(`/partners/${iso}`, { tech, stage })} title={`${c.country}'s friendshoring opportunities and export markets in ${cellLabel(tech, stage)}`}>
                   Partners in this sector
                 </button>
               )}

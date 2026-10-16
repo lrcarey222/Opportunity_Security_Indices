@@ -16,7 +16,7 @@ and the allied network design.
 
 | Dial | Weighs up |
 |---|---|
-| Hawkishness | security: supply need, trusted suppliers, diversification of the network |
+| Hawkishness | security: supply need, aligned partners, diversification of the network |
 | Bullishness | opportunity: economic opportunity, export markets, economic size |
 | Populism | policy signals and onshoring: industrial policy, midstream stages, self-supply |
 | Greenness | climate: clean technologies and climate ambition (coal, oil and gas dropped at 90+) |
@@ -79,7 +79,7 @@ R pipeline (scripts/0x-4x)                 data/processed/...
 | `partner.<md5>.osb` | Partners, Network, PSI metric | Friendshore / Opportunity components, dyads, baseline best-five and PSI |
 | `network.<md5>.osb` | Network view | nodes, member weights, stage inputs, the baseline design |
 | `ties.<md5>.osb` | lazily, main thread: Partners view, Country partners section (never the engine) | IMF direct investment positions by partner (both directions, latest year, and the 2020-2024 mean Friendshore ranks; conduit centres flagged), CM-FDI factory-project flows by sector, Development Potential by sector, agreements, UN-vote alignment, top partners by best-five Friendshore / Partnership Opportunity (R/dashboard/dash_ties.R; scripts/85 checks the positions reproduce the investment tie bit for bit) |
-| `pcell-<slug>.<md5>.osb` | lazily, one sector: Country partners section | each economy's top 10 suppliers (Friendshore) and export markets (Partnership Opportunity) in that sector at the baseline, with the Partnership Strength rank; the Partners view ranks the sector in the worker instead (`cellPartners`, so the dials apply) |
+| `pcell-<slug>.<md5>.osb` | lazily, one sector: Country partners section | each economy's top 10 friendshoring opportunities (Friendshore) and export markets (Partnership Opportunity) in that sector at the baseline, with the Partnership Strength rank; the Partners view ranks the sector in the worker instead (`cellPartners`, so the dials apply) |
 
 OSB is a small container (a JSON header and typed columns, gzipped) written by
 `R/dashboard/dash_osb.R` and read by `src/engine/codec.ts`. Chunk names carry their md5, so they can

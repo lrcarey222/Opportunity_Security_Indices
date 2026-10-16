@@ -92,7 +92,7 @@ afterAll(() => {
 });
 
 describe('Partners view: the sector choice', () => {
-  it('starts on all sectors; choosing a sector writes the URL and ranks suppliers and markets in that sector', async () => {
+  it('starts on all sectors; choosing a sector writes the URL and ranks friendshoring opportunities and export markets in that sector', async () => {
     const router = createMemoryRouter(routes, { initialEntries: ['/partners'] });
     render(<RouterProvider router={router} />);
     const select = (await screen.findByLabelText('Sector', {}, { timeout: 20_000 })) as HTMLSelectElement;
@@ -105,7 +105,7 @@ describe('Partners view: the sector choice', () => {
     await waitFor(() => expect(router.state.location.search).toMatch(/tech=.+&stage=/));
     const label = opt.textContent as string;
     expect(screen.getByTestId('sector-note').textContent).toContain(label);
-    expect(await screen.findByRole('heading', { name: `Best suppliers in ${label}` }, { timeout: 30_000 })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: `Friendshoring opportunities in ${label}` }, { timeout: 30_000 })).toBeTruthy();
     expect(screen.getByRole('heading', { name: `Best export markets in ${label}` })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: /its 20 strongest partners$/ })).toBeNull();
     // the sector's own scores reach the charts (engine.cellPartners through the worker)

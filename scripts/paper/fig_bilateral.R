@@ -99,7 +99,7 @@ trade_years <- 2020:2024
 
 # Labels of the positively weighted Friendshore components (econ_opp_raw has weight zero).
 fs_comp_lab <- c(imp_trade_index = "Imports from j", es_need = "Reporter need",
-                 eo_partner = "Partner capability (EO rank)", outbound_index = "Outward investment in j",
+                 eo_partner = "Partner opportunity (EO rank)", outbound_index = "Outward investment in j",
                  geo_alignment = "UNGA bloc alignment",
                  chinese_parent_exposure = "Chinese-parent exposure (1 - share)")
 stopifnot(identical(partnership_strength_friendshore_risk_components(), "chinese_parent_exposure"))
@@ -659,7 +659,7 @@ heat_panel <- function(t, s) {
                          name = expression(FS[ijts]),
                          guide = guide_colourbar(title.position = "left", title.vjust = 0.9)) +
     coord_equal() +
-    labs(x = paste0(t, " ", s, ": supplier j"), y = "Importer i") +
+    labs(x = paste0(t, " ", s, ": partner j"), y = "Economy i") +
     theme_paper(base_size = 8, grid = "none") +
     theme(axis.text.x.top = element_text(angle = 90, vjust = 0.5, hjust = 0, size = 6.2),
           axis.text.y = element_text(size = 6.2),
@@ -1287,7 +1287,7 @@ sc_panel <- function(d, xlab, ylab, sub) {
     guides(colour = guide_legend(override.aes = list(size = 2.2, alpha = 1))) +
     sc_theme
 }
-p_a <- sc_panel(bm, expression(FS[cp] ~ "(c sources from p)"), expression(PO[pc] ~ "(p exports to c)"),
+p_a <- sc_panel(bm, expression(FS[cp] ~ "(c friend-shores with p)"), expression(PO[pc] ~ "(p exports to c)"),
                 "(a) Batteries Midstream, one point per ordered pair")
 p_b <- sc_panel(dm, expression("Mean " * FS[cp] * " over matched cells"), expression("Mean " * PO[pc] * " over matched cells"),
                 "(b) Mean over the cells rated by both pillars")

@@ -398,7 +398,7 @@ export default function NetworkView() {
       <FilterRow>
         <Select label="Sector" value={stage ? stageSlug(stage.tech, stage.supply_chain) : ''} options={stageOptions} onChange={(v) => goto(`/network/${v}`, { cmp: view.cmp })} className="min-w-[16rem]" />
         {stage && (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => goto('/partners', { tech: stage.tech, stage: stage.supply_chain })} title={`Each economy's suppliers and export markets in ${cellLabel(stage.tech, stage.supply_chain)}`}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => goto('/partners', { tech: stage.tech, stage: stage.supply_chain })} title={`Each economy's friendshoring opportunities and export markets in ${cellLabel(stage.tech, stage.supply_chain)}`}>
             Partners in this sector
           </button>
         )}

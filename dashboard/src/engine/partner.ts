@@ -672,7 +672,7 @@ export function partnerDecompose(
 
 /**
  * One reporter's partners in one sector (cell c, 0-based; the Partners view's sector choice):
- * Friendshore (the partner as a supplier) and Partnership Opportunity (the partner as an export
+ * Friendshore (the partner as a friendshoring opportunity) and Partnership Opportunity (the partner as an export
  * market) under the scenario (`cells`) and at the baseline (`base`), with each partner's rank among
  * the sovereign economies scored in that cell (1 = best; ties share the lowest rank, as
  * rank(ties.method = "min") in dash_top_partners(); NA for non-sovereign economies). Rows: every

@@ -1,7 +1,7 @@
 // S5 of the Country profile (spec_country.md A4.2, "Partners"): the partners the Partnership Strength
 // Index rates highest from the country's viewpoint beside whom it trades with today (PartnerSlope), the
 // partner-by-partner table (reasons, components, trade, factory projects, agreements, UN votes, match),
-// who supplies the country in each sector, the top suppliers and export markets of one sector (or all
+// who supplies the country in each sector, the top friendshoring opportunities and export markets of one sector (or all
 // sectors) at the paper baseline with the pair's ties, its bilateral direct investment (IMF positions;
 // factory projects in the four CM-FDI sectors), and its role in the allied network design. The
 // sector-level data come from the Strategic bundle's auxiliary chunks (views/Partners/ties.ts), not
@@ -33,7 +33,7 @@ export function PartnersSection() {
       title="Partners"
       intro={
         <>
-          The <Term id="psi" /> rates every other economy as a partner for {name} in energy supply chains: as a supplier it can rely on (<Term id="fs" />), as a market for
+          The <Term id="psi" /> rates every other economy as a partner for {name} in energy supply chains: as a friendshoring opportunity, a partner where {name} could invest and source to meet its security need (<Term id="fs" />), as a market for
           its exports (<Term id="po" />) and, for middle- and lower-income partners, as a place to build supply chains together (<Term id="dp" />). This section sets the
           partners the index points to beside the ties {name} has today.
         </>

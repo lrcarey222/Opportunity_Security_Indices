@@ -15,7 +15,7 @@ import { ChangedDot, Disclosure, Segmented, Switch, Checkbox } from './ui.tsx';
 import { InfoTip } from './InfoTip.tsx';
 
 export const DIAL_SPECS: { key: DialName; label: string; help: string }[] = [
-  { key: 'hawkishness', label: 'Hawkishness', help: 'Security first: weight on exposure, trusted suppliers and spreading production.' },
+  { key: 'hawkishness', label: 'Hawkishness', help: 'Security first: weight on exposure, aligned partners and spreading production.' },
   { key: 'bullishness', label: 'Bullishness', help: 'Opportunity first: weight on opportunity, export markets and market size.' },
   { key: 'populism', label: 'Populism', help: 'Policy signals and home manufacturing.' },
   { key: 'greenness', label: 'Greenness', help: 'Climate first: low-emission technologies; at 90 and above coal, oil and gas drop out.' },

@@ -138,7 +138,7 @@ export default function OverviewView() {
       ) : isPsi ? (
         <>
           Each economy is coloured by its {term} as a partner: how strongly the {partner.data?.psi.reporters.length ?? 0}{' '}
-          {partner.data?.psi.view === 'world' ? 'reporting economies' : 'core coalition members'}, on average, rate it as a supplier, a market and a development
+          {partner.data?.psi.view === 'world' ? 'reporting economies' : 'core coalition members'}, on average, rate it as a friendshoring opportunity, an export market and a development
           partner. Orange is weaker than most economies shown, white the middle, blue stronger.
         </>
       ) : (

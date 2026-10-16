@@ -5,7 +5,7 @@
 //                 centres, the CM-FDI factory-project flows behind Friendshore's investment tie,
 //                 Development Potential by sector, agreements, UN-vote alignment and each economy's top
 //                 partners by Friendshore / Partnership Opportunity (best five sectors)
-//   pcell-<slug>  one per sector: each economy's top 10 suppliers (Friendshore) and export markets
+//   pcell-<slug>  one per sector: each economy's top 10 friendshoring opportunities (Friendshore) and export markets
 //                 (Partnership Opportunity) at the paper baseline, with their Partnership Strength rank
 //
 // The loaders cache one promise per file; the derive functions below are pure (unit-tested).

@@ -47,7 +47,7 @@ $\EO$, with the Policy index recording where governments already concentrate the
 complementarity, alignment and part of reciprocity by the coalition and the bilateral indices;
 and robustness only in part, by the diversification penalty and multi-sourcing constraints of the
 network design. Systemic bankability \citep{spokas2025systemic}, common-mode risk (beyond a first
-measure of the Chinese ownership of suppliers' foreign-invested plants), dynamic option value,
+measure of the Chinese ownership of partners' foreign-invested plants), dynamic option value,
 reciprocal obligations, resilience floors and stress tests are not modelled.
 
 \begin{table}[tbp]
@@ -205,10 +205,12 @@ stage-weighted member inputs, which gives 37 nodes. The dyadic alignment $A_{ij}
 of the divide, links the coalition to the bilateral layer.
 
 \paragraph{Bilateral indices.} For a reporter $i$, a partner $j\neq i$ and a pair $(t,s)$,
-Friendshore $\FS_{ijts}$ rates $j$ as a supplier to $i$ from $i$'s imports from $j$, $i$'s need,
-$j$'s opportunity, $i$'s outward investment in $j$, the alignment $A_{ij}$ and, in four
-manufacturing stages, the share of $j$'s foreign-invested plants without Chinese parents, less a
-climate-policy penalty (equation~\eqref{eq:fs_index}). Partnership Opportunity $\PO_{ijts}$ rates
+Friendshore $\FS_{ijts}$ scores $j$ as a friendshoring opportunity for $i$: a partner in which $i$
+could invest and from which it could source to meet its security need in $(t,s)$. It combines
+$i$'s need, $j$'s economic opportunity, $i$'s imports from $j$, $i$'s outward investment in $j$, the
+alignment $A_{ij}$ and, in four manufacturing stages, the share of $j$'s foreign-invested plants
+without Chinese parents, less a climate-policy penalty (equation~\eqref{eq:fs_index}); it describes
+where investment and sourcing could go, not today's leading suppliers. Partnership Opportunity $\PO_{ijts}$ rates
 $j$ as a market for $i$'s exports, and Development Potential $\DP_{jts}$ scores partners that are
 not high-income economies. The Partnership Strength Index combines best-five summaries of the
 three with weights 0.4, 0.4 and 0.2, those of the partnership score of \citet{carey2025secure};
@@ -282,7 +284,7 @@ stages in which a node is among the five largest producers.
   \node[box=osiyellow, text width=6.5cm, minimum height=2.2cm] (bil)
     at ($(busy)+(4.2,-0.6)$) {%
     {\footnotesize\bfseries Bilateral indices}\\[1pt]
-    $\FS_{ijts}$: $j$ as supplier to $i$ (with $A_{ij}$ and Chinese-parent exposure)\\
+    $\FS_{ijts}$: $j$ as friendshoring opportunity for $i$ (with $A_{ij}$, Chinese-parent exposure)\\
     $\PO_{ijts}$: $j$ as market for $i$;\quad $\DP_{jts}$: development partner\\
     $\Rightarrow$ $\PSI_j=0.4\,\FS+0.4\,\PO+0.2\,\DP$, core view (reported)};
   \draw[flow] (si.north |- busy) -- node[lab, pos=0.45] {$\POL$, $\ES$, $\EO$} (si.north);
@@ -301,7 +303,8 @@ stages in which a node is among the five largest producers.
   \caption{Architecture of the analysis. Sources feed four cell- or economy-level constructs:
   the Policy index, the two pillars, and the coalition, derived from alignment in the UN General
   Assembly, agreements and supply shares. The Strategic Index ranks each country's sectors and
-  yields the allied picks; the bilateral indices rate partners as suppliers and markets and are
+  yields the allied picks; the bilateral indices score partners as friendshoring opportunities and
+  export markets and are
   summarised in the Partnership Strength Index. The network design allocates production among
   the coalition's nodes. In the terms of \citet{neis2026allied}, the pillars, the Policy index and
   the Strategic Index address relative exposure and capability, the coalition and the bilateral indices
@@ -326,9 +329,9 @@ Index & Whose position & Energy security enters as & Economic opportunity enters
 Strategic Index $\SI_{its}$ & country $i$, deciding where to build &
   need of $i$: $1-\ES_{its}$ (level), weight 0.3 &
   capability of $i$: $\EO_{its}$ (level), weight 0.3\\[2pt]
-Friendshore $\FS_{ijts}$ & importer $i$, supplier $j$ &
-  need of the importer, ranked across $i$'s own cells, weight 2 of 11 &
-  capability of the supplier, ranked across economies in $(t,s)$, weight 2 of 11\\[2pt]
+Friendshore $\FS_{ijts}$ & economy $i$, partner $j$ as friendshoring opportunity &
+  need of $i$, ranked across $i$'s own cells (the same for every partner in $(t,s)$), weight 2 of 11 &
+  opportunity of the partner, ranked across economies in $(t,s)$, weight 2 of 11\\[2pt]
 Partnership Opportunity $\PO_{ijts}$ & exporter $i$, market $j$ &
   need of the market, ranked across markets, weight 1 of 7 &
   capability of the exporter, ranked across economies, weight 3 of 7\\[2pt]

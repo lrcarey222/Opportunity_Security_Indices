@@ -133,8 +133,10 @@ export default function CountryAboutView() {
 
       <H id="partners">How partners are compared with today&apos;s ties</H>
       <p className={p}>
-        The Partnership Strength Index is read from the country&apos;s own viewpoint: how good a partner each other economy is for it as a supplier (<Term id="fs" />), a market (
-        <Term id="po" />) and, for middle- and lower-income partners, a place to build supply chains together (<Term id="dp" />). Strategic Insights&apos; headline instead averages the viewpoints of the{' '}
+        The Partnership Strength Index is read from the country&apos;s own viewpoint: how good a partner each other economy is for it as a friendshoring opportunity, where it could invest and source to meet its own security need (<Term id="fs" />), a market (
+        <Term id="po" />) and, for middle- and lower-income partners, a place to build supply chains together (<Term id="dp" />). Friendshore is about where investment and sourcing could go, not a ranking of today&apos;s suppliers (the import shares show those): the country&apos;s own need
+        is the same for every partner within a sector, so the partner ranking there turns on the partner&apos;s Economic Opportunity, the trade and investment ties, UN-vote
+        alignment and ownership. Strategic Insights&apos; headline instead averages the viewpoints of the{' '}
         {nCore} core members; both are named wherever a rank appears.
       </p>
       <p className={p}>
