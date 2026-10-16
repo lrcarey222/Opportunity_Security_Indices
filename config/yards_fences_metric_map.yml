@@ -1,0 +1,229 @@
+# Yards & Fences evidence map. Read only by scripts/89_export_yards_fences_data.R.
+#
+# It says which published OSI measures become Yards & Fences evidence, under which concept, with what
+# label and one-sentence interpretation, and which of them may feed the decision engine. Everything
+# else in the tool is a curated assessment (data/reference/yards_fences_assessments.csv) or the
+# reader's judgment.
+#
+# Rules this map follows (the Y&F build checks them):
+#   * Raw, interpretable measures (shares, HHI, USD, RCA, TRL) only feed the engine. Normalised OSI
+#     components are shown as relative evidence (`normalized: true`) and never feed it.
+#   * No headline index (Energy Security, Economic Opportunity, Strategic Index, PSI composite) is
+#     mapped to a yard. PSI appears only as a partner attribute in the diversification view.
+#   * No licensed BNEF or BCG data: inputs are the published Sector and Strategic bundles, which
+#     already exclude them (manifest flag include_restricted = false; checked on every build).
+#   * Technology-stage evidence is labelled as such; it is never presented as component-level.
+#   * Templates may use {country} {subject} {value} {rank} {n} {pct} {year} {measure}.
+
+version: 1
+
+# Measures a concentration summary is computed on. `var` is a Sector Insights measure id;
+# `year` is the cross-section used.
+measures:
+  exports:      {var: trade.exports,          year: 2024, scope: stage,        label: "world exports of the HS6 basket"}
+  sub_exports:  {var: trade.sub_exports,      year: 2024, scope: subcomponent, label: "world exports of this sub-component"}
+  mfg_capacity: {var: manufacturing.share_now, year: 2024, scope: stage,       label: "global manufacturing capacity"}
+  mfg_pipeline: {var: manufacturing.share_2035, year: 2035, scope: stage,      label: "announced manufacturing capacity (pipeline to 2035)"}
+  refining:     {var: production.refining,     year: 2025, scope: mineral,     label: "world refined production"}
+  mining:       {var: production.mining,       year: 2025, scope: mineral,     label: "world mine production"}
+  reserves:     {var: resources.mineral_reserves, year: 2025, scope: mineral,  label: "world reserves"}
+
+# The measure whose concentration feeds the engine, in order of preference, by scope type.
+engine_measure_priority:
+  stage: [mfg_capacity, exports]
+  subcomponent: [sub_exports]
+  mineral: [refining, mining]
+
+metrics:
+  # ── concentration family (computed on every measure above that has data for the scope) ─────────
+  - id: top_share
+    concept: supplier_concentration
+    label: "Largest supplier's share of {measure}"
+    unit: share
+    engine_input: topSupplierShare
+    explanation: "{subject} holds {value} of {measure} ({year})."
+  - id: hhi
+    concept: supplier_concentration
+    label: "Supplier concentration (HHI), {measure}"
+    unit: hhi
+    engine_input: hhi
+    percentile_basis: scopes
+    explanation: "HHI {value}: more concentrated than {pct} of comparable markets in this tool. A description of the market, not a measure of leverage."
+  - id: non_coalition_top
+    concept: coercive_share
+    label: "Largest supplier outside the coalition, {measure}"
+    unit: share
+    engine_input: nonAlliedTopShare
+    explanation: "{subject}, outside the 57-economy coalition, holds {value} of {measure} ({year}). Outside the coalition is not the same as adversarial."
+  - id: china_share
+    concept: coercive_share
+    label: "China's share of {measure}"
+    unit: share
+    explanation: "China holds {value} of {measure} ({year})."
+  - id: coalition_share
+    concept: allied_alternatives
+    label: "Coalition share of {measure}"
+    unit: share
+    engine_input: alliedShare
+    explanation: "Coalition core members and partners together hold {value} of {measure} ({year})."
+  - id: home_share
+    concept: domestic_position
+    concept_by_measure: {refining: production_depth, mining: production_depth, reserves: resource_optionality, mfg_pipeline: production_momentum}
+    label: "{country} share of {measure}"
+    unit: share
+    engine_input: homeShare
+    engine_measures: [exports, sub_exports, mfg_capacity, refining, mining]
+    percentile_basis: economies
+    explanation: "{country} holds {value} of {measure} ({year}), rank {rank} of {n}."
+
+  # ── home-country trade and investment (stage scope) ─────────────────────────────────────────────
+  - id: home_imports
+    concept: foreign_dependency
+    label: "{country} imports of the HS6 basket"
+    unit: usd
+    source_var: trade.imports
+    year: 2024
+    percentile_basis: economies
+    explanation: "{country} imported {value} in {year}, rank {rank} of {n} importers."
+  - id: home_net_trade
+    concept: foreign_dependency
+    label: "{country} net trade in the HS6 basket"
+    unit: usd
+    source_var: trade.net
+    year: 2024
+    explanation: "Net trade of {value} in {year}: imports are {ratio} exports. Trade balance, not a share of domestic consumption."
+  - id: home_rca
+    concept: trade_competitiveness
+    label: "{country} revealed comparative advantage"
+    unit: rca
+    source_var: trade.rca
+    year: 2024
+    percentile_basis: economies
+    explanation: "RCA {value} (1 = world average), rank {rank} of {n}."
+  - id: home_feasibility
+    concept: trade_competitiveness
+    label: "{country} export feasibility (related capabilities)"
+    unit: index01
+    source_var: trade.feasibility
+    year: 2023
+    percentile_basis: economies
+    explanation: "Harvard Atlas feasibility {value}: how close {country}'s existing exports are to this basket. Rank {rank} of {n}."
+  - id: home_export_growth
+    concept: production_momentum
+    label: "{country} export growth, 2020-2024"
+    unit: pct_change
+    source_var: trade.exports
+    years: [2020, 2024]
+    explanation: "{country} exports changed by {value} between 2020 and 2024 (nominal USD)."
+  - id: home_investment
+    concept: investment
+    label: "{country} annual clean-manufacturing investment"
+    unit: usd_bn
+    source_var: investment.annual
+    latest: true
+    percentile_basis: economies
+    explanation: "{value} invested in {year} (Clean Investment Monitor), rank {rank} of {n}."
+  - id: home_investment_growth
+    concept: production_momentum
+    label: "{country} investment growth, 2018-2025"
+    unit: pct_pa
+    source_var: investment.annual
+    years: [2018, 2025]
+    explanation: "Investment grew {value} a year between {first} and {last}."
+
+  # ── technology (global values; the same for every country) ─────────────────────────────────────
+  - id: trl
+    concept: technology_readiness
+    label: "Technology readiness level (global)"
+    unit: trl
+    engine_input: trl
+    source_var: technology.trl
+    year: 2025
+    explanation: "Average TRL {value} across the stage's technologies (IEA Clean Energy Technology Guide). A global figure: it says how mature the technology is, not whether {country} leads."
+  - id: trl_change
+    concept: technology_momentum
+    label: "Change in readiness, 2020-2025 (global)"
+    unit: trl_points
+    source_var: technology.trl_change
+    year: 2025
+    explanation: "Readiness rose {value} TRL points since 2020. Movement, not leadership."
+
+  # ── normalised OSI components (relative only; never feed the engine) ────────────────────────────
+  - id: osi_addressable_market
+    concept: future_demand
+    label: "Addressable market (OSI component)"
+    unit: index01
+    normalized: true
+    pillar: eo
+    category: Technology Demand
+    variable: Overall Addressable Market
+    percentile_basis: economies
+    explanation: "Normalised OSI component, {value} on 0-1 (higher means a larger addressable market): rank {rank} of {n} economies. Compare ranks, not levels."
+  - id: osi_input_cost
+    concept: cost_competitiveness
+    label: "Input-cost competitiveness (OSI component)"
+    unit: index01
+    normalized: true
+    pillar: eo
+    category: Cost Competitiveness
+    variable: Input Cost Index
+    percentile_basis: economies
+    explanation: "Normalised OSI component, {value} on 0-1 (higher favours opportunity, as in the Economic Opportunity pillar): rank {rank} of {n} economies on labour, capital and energy input costs."
+
+concepts:
+  supplier_concentration: {label: "Supplier concentration", family: security}
+  coercive_share: {label: "Potentially coercive share", family: security}
+  allied_alternatives: {label: "Trusted alternatives", family: security}
+  foreign_dependency: {label: "Foreign dependency", family: security}
+  production_depth: {label: "Domestic production depth", family: security}
+  resource_optionality: {label: "Resource optionality", family: security}
+  domestic_position: {label: "Present competitive position", family: opportunity}
+  trade_competitiveness: {label: "Trade competitiveness", family: opportunity}
+  production_momentum: {label: "Production momentum", family: opportunity}
+  investment: {label: "Investment", family: opportunity}
+  future_demand: {label: "Future demand", family: opportunity}
+  cost_competitiveness: {label: "Cost competitiveness", family: opportunity}
+  technology_readiness: {label: "Technology readiness", family: technology}
+  technology_momentum: {label: "Technology momentum", family: technology}
+
+# Multi-layer systems shown as a stack. Layers run top (control) to bottom (passive structure).
+stacks:
+  - id: battery-storage
+    label: Utility-scale battery storage
+    technology: Batteries
+    stage: Midstream
+    description: "Control software, cells, materials, power electronics and balance of system, each judged on its own."
+    layers: [bess-control, bess-comms, bess-cells, bess-cathode, bess-anode, bess-pcs, bess-enclosure]
+  - id: grid-equipment
+    label: Grid-connected inverters and grid control
+    technology: Electric Grid
+    stage: Midstream
+    description: "Where the security risk in grid equipment sits, and where it does not."
+    layers: [grid-scada, grid-inverter-firmware, bess-pcs, grid-transformers, grid-cables]
+  - id: rare-earth-magnets
+    label: Rare-earth permanent magnets
+    technology: Wind
+    stage: Midstream
+    description: "From separated rare earths to the motors and generators that use them."
+    layers: [ree-separation, ree-magnets, ev-motors]
+  - id: solar-pv
+    label: Solar PV
+    technology: Solar
+    stage: Midstream
+    description: "Solar is the paper's hard case: reasonable people can disagree, layer by layer."
+    layers: [grid-inverter-firmware, pv-nextgen, pv-cells-wafers, pv-modules, pv-racking]
+  - id: nuclear-fuel
+    label: Nuclear fuel and controls
+    technology: Nuclear
+    stage: Midstream
+    description: "Reactor controls, HALEU and LEU enrichment face different tests."
+    layers: [nuc-reactor-controls, nuc-haleu, nuc-leu]
+
+# Partners (diversification view): which network outputs are read.
+network:
+  files:
+    member_shares: outputs/allied_network_member_shares.csv
+    diagnostics: outputs/allied_network_diagnostics.csv
+    observed_hhi: outputs/allied_network_observed_hhi.csv
+  top_suppliers: 6
+  top_partners: 10

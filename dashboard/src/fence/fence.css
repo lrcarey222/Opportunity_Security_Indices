@@ -1,0 +1,7 @@
+/* Draw the Fence: the NEIS design tokens and primitives of the Explorer (one source of truth), plus
+   this site's own styles (yards.css, imported by the layout). The Vite root is fence/, so the
+   sources Tailwind scans are named here. */
+@import "../styles/globals.css";
+@source "./";
+@source "../components/ui.tsx";
+@source "../components/Logo.tsx";
