@@ -5,7 +5,7 @@ library(httr)
 library(jsonlite)
 library(DatawRappr)
 library(rdwd)
-datawrapper_auth(api_key = "D9oxBZAhXR7y9CWWWmF5iGmK7Y53cyPTnWj2QwiYENkbsv8ZL7yWKMYbybErNi2p", overwrite = TRUE)
+datawrapper_auth(api_key = Sys.getenv("DATAWRAPPER_API_KEY"), overwrite = TRUE)
 Sys.setenv(DATAWRAPPER_API_KEY = DatawRappr::dw_get_api_key())
 
 publish_datawrapper_chart <- function(

@@ -2,7 +2,7 @@
 library(DatawRappr)
 library(rdwd)
 
-Sys.setenv(DATAWRAPPER_TOKEN = "FARkk5iDkLAsKNRn9jZDf2ZPRJQvFX4CsxvFd5VBfxLaFk0VNvkOZrH2ZTv0tEYN")
+# DATAWRAPPER_API_KEY is read from the environment (e.g. ~/.Renviron); never hard-code it here.
 
 # set the token
 datawrapper_auth <- function(api_key, overwrite = FALSE) {
@@ -61,9 +61,8 @@ datawrapper_auth <- function(api_key, overwrite = FALSE) {
   
 }
 
-datawrapper_auth(api_key = Sys.getenv("DATAWRAPPER_TOKEN"), overwrite = TRUE)
-Sys.setenv(DATAWRAPPER_API_KEY = "FARkk5iDkLAsKNRn9jZDf2ZPRJQvFX4CsxvFd5VBfxLaFk0VNvkOZrH2ZTv0tEYN")
-api_key = "FARkk5iDkLAsKNRn9jZDf2ZPRJQvFX4CsxvFd5VBfxLaFk0VNvkOZrH2ZTv0tEYN"
+datawrapper_auth(api_key = Sys.getenv("DATAWRAPPER_API_KEY"), overwrite = TRUE)
+api_key = Sys.getenv("DATAWRAPPER_API_KEY")
 
 # Helper function to create a Datawrapper chart
 create_datawrapper_chart <- function(title, type, folder_id, theme) {
