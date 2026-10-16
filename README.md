@@ -798,6 +798,7 @@ Inputs with a public API are fetched by `scripts/fetchers/*.R` and written in th
 | `critmin_mirror_import.csv` | UN Comtrade public preview API (keyless) | Partner-level critical-mineral imports from non-reporters, plus late reporters' own exports (optional) |
 | `eia_intl_fossil_production.csv` | EIA International Energy Statistics bulk file `INTL.zip` (keyless, public domain) | Oil, gas and coal production and consumption by country, 2000 on; fills the fuel production EI does not report. Staged copy kept (`fallback`; EIA revises monthly); refetch with `Rscript scripts/fetchers/eia_intl.R` |
 | `oecd_crs_purpose.csv` | OECD CRS bulk file `CRS-reduced.parquet` and the DAC-CRS code lists (keyless, CC BY 4.0) | Bilateral ODA, OOF and PSI of country donors by recipient, purpose code and year (2013 on, complete years only); Development Potential's aid per technology and stage. Needs `arrow` and `readxl`; refetch with `Rscript scripts/fetchers/oecd_crs.R` |
+| `oci_energy_finance.csv` | Oil Change International, Public Finance for Energy Database (`energyfinance.org/dataset.csv`, keyless, CC BY-NC 4.0) | International energy transactions of G20 export credit agencies and development lenders; adds the finance the CRS lacks (JBIC, NEXI, JOGMEC, US EXIM, KEXIM, Hermes, KfW IPEX-Bank, UKEF, ...) to Development Potential's aid. Refetch with `Rscript scripts/fetchers/oci_energy_finance.R` |
 
 Three properties matter:
 

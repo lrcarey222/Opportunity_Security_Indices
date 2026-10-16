@@ -19,9 +19,9 @@
 #     over every donor per recipient and stage, and that total / 2023 GDP) are rebuilt with the same
 #     steps by sector_dev_crs_stage() and checked against that builder (sector_dev_crs_parity()).
 #     Since October 2026 Development Potential no longer ranks these totals: its aid components come
-#     from oecd_crs_purpose.csv by purpose code, per (tech, stage)
-#     (partnership_strength_build_oecd_tech()), and sector_dev_processed_parity() checks the stored
-#     components against that builder.
+#     from oecd_crs_purpose.csv by purpose code and oci_energy_finance.csv (export-credit and lender
+#     energy finance the CRS lacks), per (tech, stage) (partnership_strength_build_oecd_tech()), and
+#     sector_dev_processed_parity() checks the stored components against that builder.
 #   * IMF Direct Investment Positions (imf_dip.csv, column-selected): the outward position of the
 #     reporter in each counterpart, the same indicator, reporting basis, year window, name matching
 #     and duplicate rule as partnership_strength_build_outbound_edges() (safer_friendshore.R), i.e.

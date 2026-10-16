@@ -884,6 +884,50 @@ inputs:
   required_by:
   - scripts/15_build_partner_themes.R
   - scripts/87_export_sector_data.R
+- id: oci_energy_finance
+  path: oci_energy_finance.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Oil Change International, Public Finance for Energy Database (international
+    transactions)
+  url: https://energyfinance.org/
+  cadence: quarterly
+  owner: lcarey@rmi.org
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/oci_energy_finance.R from https://energyfinance.org/dataset.csv.
+    Energy transactions of G20 export credit agencies, development finance institutions,
+    national development banks and MDBs, one row per transaction and recipient country
+    (multi-country deals split equally), amounts in current USD as committed. Licence CC BY-NC
+    4.0 (attribution to Oil Change International). Supplies the export-credit and lender
+    finance the CRS lacks (JBIC, NEXI, JOGMEC, US EXIM, KEXIM, Hermes, KfW IPEX-Bank, UKEF, ...).
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
+- id: oci_energy_finance_institutions
+  path: oci_energy_finance_institutions.csv
+  source_type: derived
+  source_name: OCI institutions counted in Development Potential (CRS overlap table)
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  staged_from: repo
+  notes: Project-authored. One row per OCI bilateral or export-credit institution, source oci
+    (not in the CRS; counted) or crs (reports to the CRS; not counted twice), and the CRS
+    measure an institution replaces (Korea OOF for KEXIM).
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
+- id: oci_energy_finance_crosswalk
+  path: oci_energy_finance_crosswalk.csv
+  source_type: derived
+  source_name: OCI sector and stage to technology and supply-chain stage crosswalk
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  staged_from: repo
+  notes: Project-authored. Keyed by OCI sector and value-chain stage ("*" for the stages a sector
+    does not list); direct, pooled or exclude, as the CRS purpose crosswalk.
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
 - id: oecd_crs_purpose_crosswalk
   path: oecd_crs_purpose_crosswalk.csv
   source_type: derived

@@ -4,7 +4,7 @@
      Regenerate with: Rscript scripts/02_render_sources_doc.R
      Edit config/raw_inputs_manifest.yml instead. -->
 
-Every raw input the pipeline reads, grouped by how it arrives. There are 62 inputs in total.
+Every raw input the pipeline reads, grouped by how it arrives. There are 65 inputs in total.
 
 - **api** — fetched automatically during ingestion; no human step.
 - **manual** — staged by hand into `sharepoint_raw_dir` before a run.
@@ -22,6 +22,7 @@ Fetched programmatically; no human step. Comtrade requires `COMTRADE_API_KEY`. E
 | [IMF Primary Commodity Price System (wide export, includes annual YoY series)](https://www.imf.org/en/research/commodity-prices) | `imf_commodity_prices.csv`<br>fetch: prefer (API wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [IMF producer price indices (PPI)](https://data.imf.org/en/Data-Explorer) | `imf_ppi.csv`<br>fetch: fallback (staged copy wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [OECD Creditor Reporting System, bilateral official finance by purpose code](https://webfs-dcd.oecd.org/files/dotStat/DSD_CRS/CRS-reduced.parquet) | `oecd_crs_purpose.csv`<br>fetch: prefer (API wins) | annual | — | lcarey@rmi.org | `15_build_partner_themes.R`, `87_export_sector_data.R` |
+| [Oil Change International, Public Finance for Energy Database (international transactions)](https://energyfinance.org/) | `oci_energy_finance.csv`<br>fetch: prefer (API wins) | quarterly | — | lcarey@rmi.org | `15_build_partner_themes.R`, `87_export_sector_data.R` |
 | [U.S. Energy Information Administration, International Energy Statistics (bulk file INTL.zip), fossil fuel production and consumption by country](https://www.eia.gov/opendata/bulk/INTL.zip) | `eia_intl_fossil_production.csv`<br>fetch: fallback (staged copy wins) | monthly | downloaded (accessed) 2026-10-11; INTL.txt dated 2026-10-03 (24,153,479-byte zip); oil production to 2025, gas and coal to 2024, oil consumption to 2024 (2025 for a few economies) | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [UN Comtrade (all-reporter energy HS6 reporter-partner dyads)](https://comtradeplus.un.org/) | `comtrade_energy_dyads_all.csv` | annual | 2020 and 2024; main pull 2026-10-07/08 (298 codes), supplements 2026-10-09 (740200 740311 760110 760120) and 2026-10-12 UTC (261210 261220 280469 811291) | lcarey@rmi.org | `15_build_partner_themes.R`, `30_build_allied_network_design.R`, `98_pull_comtrade_energy_dyads.R` |
 | [UN Comtrade (allied reporter-partner dyads)](https://comtradeplus.un.org/) | `allied_comtrade_energy_data.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R` |
@@ -91,6 +92,8 @@ Maintained by the team rather than fetched. Entries marked `staged_from: repo` l
 | HS6 to technology / supply-chain view (Technology, Value Chain, Sub.Sector, HS6) | `hts_codes_categories_bolstered_final.csv` | ad-hoc | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `40_build_index_vintages.R`, `96_pull_trade_timeseries.R`, `97_bulk_comtrade_downloads.R` |
 | HS6 view carrying the essential-goods flag (Technology, Value Chain, Sub.Sector, HS6, essential) | `hs6_categories_with_essential.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R`, `96_pull_trade_timeseries.R`, `97_bulk_comtrade_downloads.R` |
 | Master energy HS6 catalogue | `energy_hs6_master.csv` | ad-hoc | — | lcarey@rmi.org | `trade_charts.R`, `04_build_hs6_views.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R`, `98_pull_comtrade_energy_dyads.R` |
+| OCI institutions counted in Development Potential (CRS overlap table) | `oci_energy_finance_institutions.csv` | ad-hoc | — | lcarey@rmi.org | `15_build_partner_themes.R`, `87_export_sector_data.R` |
+| OCI sector and stage to technology and supply-chain stage crosswalk | `oci_energy_finance_crosswalk.csv` | ad-hoc | — | lcarey@rmi.org | `15_build_partner_themes.R`, `87_export_sector_data.R` |
 
 ### Pipeline bookkeeping (generated)
 

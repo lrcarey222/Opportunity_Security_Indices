@@ -535,7 +535,7 @@ sources:
     licence: attribution
     attribution: "Source: OECD Creditor Reporting System (CC BY 4.0)."
     accessed: "2026-09"
-    transform: "Rows by donor, recipient, CRS sector and year summed as read; the mining sector net of its coal and upstream oil-and-gas sub-rows; recipients restricted to the WDI country list ({crs_n_recipients} recipients, {crs_n_donors} donors). Per stage, the 2013-2024 total over every donor and its ratio to 2023 GDP, rebuilt with partnership_strength_build_oecd_supplychain()'s steps: the aid Development Potential ranked until October 2026. It now reads the CRS bulk file by purpose code, per technology and stage (oecd_crs_purpose.csv; partnership_strength_build_oecd_tech())."
+    transform: "Rows by donor, recipient, CRS sector and year summed as read; the mining sector net of its coal and upstream oil-and-gas sub-rows; recipients restricted to the WDI country list ({crs_n_recipients} recipients, {crs_n_donors} donors). Per stage, the 2013-2024 total over every donor and its ratio to 2023 GDP, rebuilt with partnership_strength_build_oecd_supplychain()'s steps: the aid Development Potential ranked until October 2026. It now reads the CRS bulk file by purpose code and OCI's Public Finance for Energy Database for the export-credit and lender finance the CRS lacks, per technology and stage (oecd_crs_purpose.csv, oci_energy_finance.csv; partnership_strength_build_oecd_tech())."
     issues: "Bilateral official donors only: multilateral lenders and private flows are not in the extract. Constant prices use the OECD DAC deflators of each donor."
   - id: imf_dip
     short: "IMF Direct Investment Positions"
@@ -2859,7 +2859,7 @@ vars:
     primary_for: []
     section: null
     link_stage: any
-    feeds: ["Context: aid received by aid sector (Development Potential reads the CRS by purpose code, per technology and stage)"]
+    feeds: ["Context: aid received by aid sector (Development Potential reads CRS purpose codes and OCI export-credit and lender energy finance, per technology and stage)"]
     prov: X
     prov_detail: "oecd_crs_api.csv: the rows of each recipient, aid sector and year summed over donors"
     parity: {none: "raw CRS disbursements; the 2013-2024 stage totals are checked against the builder in scripts/87"}
@@ -2920,7 +2920,7 @@ vars:
     caveats: [crs_scope, crs_stage, crs_incomplete]
     primary_for: []
     section: null
-    feeds: ["Context: who funds whom (Development Potential reads the CRS by purpose code, per technology and stage)"]
+    feeds: ["Context: who funds whom (Development Potential reads CRS purpose codes and OCI export-credit and lender energy finance, per technology and stage)"]
     prov: X
     prov_detail: "oecd_crs_api.csv: rows by donor, recipient, aid sector and year (sector-dev dev.oda)"
     parity: {none: "raw CRS disbursements; the dyads add up to the builder's stage totals (checked in scripts/87)"}
@@ -2930,7 +2930,7 @@ vars:
     family: development
     label: "Official development assistance received, total of all years"
     short: "Aid received, all years"
-    definition: "The total official development assistance an economy received for a stage's aid sector over {crs_years_total} from every donor in the extract, floored at zero: the quantity Development Potential ranked until October 2026, when it moved to the CRS by purpose code, per technology and stage."
+    definition: "The total official development assistance an economy received for a stage's aid sector over {crs_years_total} from every donor in the extract, floored at zero: the quantity Development Potential ranked until October 2026, when it moved to CRS purpose codes and OCI export-credit and lender energy finance, per technology and stage."
     unit: usd_m_2023
     data_year: "{crs_years_total} total"
     years: [2024]
@@ -2951,7 +2951,7 @@ vars:
     primary_for: []
     section: null
     link_stage: any
-    feeds: ["Context: aid received by aid sector (Development Potential reads the CRS by purpose code, per technology and stage)"]
+    feeds: ["Context: aid received by aid sector (Development Potential reads CRS purpose codes and OCI export-credit and lender energy finance, per technology and stage)"]
     prov: X
     prov_detail: "oecd_crs_api.csv via the steps of partnership_strength_build_oecd_supplychain(), column aid"
     parity: {none: "rebuilt with the builder's steps; ranked as the builder ranks it, it reproduces the builder's output identical() (scripts/87)"}
@@ -2982,7 +2982,7 @@ vars:
     primary_for: []
     section: null
     link_stage: any
-    feeds: ["Context: aid relative to the economy (Development Potential reads the CRS by purpose code, per technology and stage)"]
+    feeds: ["Context: aid relative to the economy (Development Potential reads CRS purpose codes and OCI export-credit and lender energy finance, per technology and stage)"]
     prov: X
     prov_detail: "oecd_crs_api.csv and wdi_gdp.csv via the steps of partnership_strength_build_oecd_supplychain(), column aid_gdp (USD m / USD; shown as percent)"
     parity: {none: "rebuilt with the builder's steps; ranked as the builder ranks it, it reproduces the builder's output identical() (scripts/87)"}

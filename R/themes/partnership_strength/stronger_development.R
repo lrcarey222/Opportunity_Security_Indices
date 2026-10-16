@@ -242,8 +242,10 @@ partnership_strength_build_development_indicators <- function(wb_wdi,
 }
 
 # Settings of the aid components (config/partnership.yml development_aid; the code defaults are
-# used where it is silent): the window of CRS years averaged, the CRS measures counted and the
-# flow (gross disbursements or commitments). Returns list(years = integer vector, measures, flow).
+# used where it is silent): the window of CRS years averaged, the CRS measures counted, the flow
+# (gross disbursements or commitments) and energy_finance, the OCI export-credit and lender
+# finance merged in (include, mechanisms, exclude_lender_countries). Returns list(years = integer
+# vector, measures, flow, energy_finance).
 partnership_strength_development_aid_settings <- function(cfg = NULL) {
   years <- if (is.null(cfg$years)) c(2020L, 2024L) else as.integer(unlist(cfg$years))
   measures <- if (is.null(cfg$measures)) c("ODA", "OOF", "PSI") else as.character(unlist(cfg$measures))
@@ -258,7 +260,13 @@ partnership_strength_development_aid_settings <- function(cfg = NULL) {
   if (!flow %in% c("disbursement", "commitment")) {
     stop("development_aid flow must be disbursement or commitment; got ", flow)
   }
-  list(years = seq.int(years[1], years[2]), measures = unique(measures), flow = flow)
+  ef <- cfg$energy_finance
+  energy_finance <- list(
+    include = if (is.null(ef$include)) TRUE else isTRUE(ef$include),
+    mechanisms = if (is.null(ef$mechanisms)) c("Loan", "Equity", "Grant") else as.character(unlist(ef$mechanisms)),
+    exclude_lender_countries = if (is.null(ef$exclude_lender_countries)) "CHN" else as.character(unlist(ef$exclude_lender_countries))
+  )
+  list(years = seq.int(years[1], years[2]), measures = unique(measures), flow = flow, energy_finance = energy_finance)
 }
 
 # CRS amounts per recipient and purpose code -> (tech, stage), with the purpose crosswalk
@@ -271,15 +279,19 @@ partnership_strength_development_aid_settings <- function(cfg = NULL) {
 #     Hydrogen, Geothermal / Nuclear / Solar / Wind Upstream, ...) takes the recipient's stage
 #     proxy: everything the stage allocates, less the codes that fund only coal, oil and gas.
 #     aid_basis says which: "purpose" or "stage".
-# `amounts`: recipient_iso3, purpose_code, amount (codes outside the crosswalk are ignored);
+# `amounts`: recipient_iso3, purpose_code, amount (codes outside the crosswalk are ignored; codes
+# are compared as text, so CRS purpose codes and OCI "oci|sector|stage" keys can share a table);
 # `cells`: tibble(tech, supply_chain) to return; `recipients`: the recipients to return, every
-# cell filled (0 where the recipient has no aid there). Returns recipient_iso3, tech,
+# cell filled (0 where the recipient has no aid there); `coded`: the (tech, supply_chain) cells that
+# take their own allocation (default: those with a direct row), the rest taking the stage proxy.
+# Returns recipient_iso3, tech,
 # supply_chain, aid, aid_basis.
 partnership_strength_allocate_crs_purposes <- function(amounts,
                                                        crosswalk,
                                                        cells,
                                                        recipients = unique(amounts$recipient_iso3),
-                                                       fossil_techs = c("Coal", "Oil", "Gas")) {
+                                                       fossil_techs = c("Coal", "Oil", "Gas"),
+                                                       coded = NULL) {
   require_columns(amounts, c("recipient_iso3", "purpose_code", "amount"), label = "CRS amounts")
   # Evaluated before `amounts` is filtered below (a lazy default would see the filtered table).
   recipients <- unique(as.character(recipients))
@@ -287,7 +299,7 @@ partnership_strength_allocate_crs_purposes <- function(amounts,
   require_columns(cells, c("tech", "supply_chain"), label = "development cells")
 
   cw <- tibble::as_tibble(crosswalk[c("purpose_code", "supply_chain", "tech", "method")])
-  cw$purpose_code <- as.integer(cw$purpose_code)
+  cw$purpose_code <- as.character(cw$purpose_code)
   bad_method <- setdiff(unique(cw$method), c("direct", "pooled"))
   if (length(bad_method)) stop("CRS purpose crosswalk: unknown method(s) ", paste(bad_method, collapse = ", "))
   if (anyDuplicated(cw[c("purpose_code", "supply_chain", "tech")])) {
@@ -301,7 +313,7 @@ partnership_strength_allocate_crs_purposes <- function(amounts,
 
   amounts <- tibble::tibble(
     recipient_iso3 = as.character(amounts$recipient_iso3),
-    purpose_code = as.integer(amounts$purpose_code),
+    purpose_code = as.character(amounts$purpose_code),
     amount = as.numeric(amounts$amount)
   )
   amounts <- amounts[amounts$purpose_code %in% cw$purpose_code, , drop = FALSE]
@@ -349,7 +361,8 @@ partnership_strength_allocate_crs_purposes <- function(amounts,
     dplyr::filter(!purpose_code %in% fossil_only) %>%
     dplyr::group_by(recipient_iso3, supply_chain) %>%
     dplyr::summarise(proxy = sum(aid), .groups = "drop")
-  coded <- dplyr::distinct(direct_cw, supply_chain, tech) %>% dplyr::mutate(coded = TRUE)
+  coded <- if (is.null(coded)) dplyr::distinct(direct_cw, supply_chain, tech) else dplyr::distinct(tibble::as_tibble(coded[c("supply_chain", "tech")]))
+  coded$coded <- TRUE
 
   tidyr::expand_grid(
     recipient_iso3 = recipients,
@@ -366,6 +379,85 @@ partnership_strength_allocate_crs_purposes <- function(amounts,
     dplyr::select(recipient_iso3, tech, supply_chain, aid, aid_basis)
 }
 
+# CRS purpose codes inside OCI's scope (energy transactions): the Energy codes (23xxx), fossil
+# energy manufacturing (32167, refineries and liquefaction) and coal and oil-and-gas upstream
+# (32261, 32262). Only these CRS rows give way to an OCI institution that replaces a CRS measure;
+# its industry and mining rows (Korea's KEXIM OOF: $131M and $9M a year in 2020-24 of $365M) stay.
+partnership_strength_oci_energy_purpose <- function(purpose_code) {
+  code <- suppressWarnings(as.integer(purpose_code))
+  !is.na(code) & (code %/% 1000L == 23L | code %in% c(32167L, 32261L, 32262L))
+}
+
+# Export-credit and development-lender energy finance that the CRS does not carry, from the OCI
+# Public Finance for Energy extract (data/raw/oci_energy_finance.csv; R/utils/oci_energy_finance.R),
+# as allocation inputs for partnership_strength_allocate_crs_purposes():
+#   - the transactions of the settings' fiscal years and mechanisms (development_aid
+#     energy_finance mechanisms: loans, equity and grants; guarantees and insurance back other
+#     lenders' loans, often the same agency's, and are left out);
+#   - by the institutions data/reference/oci_energy_finance_institutions.csv marks source "oci"
+#     (no activities in the CRS), less those of the excluded lender countries (China). Institutions
+#     the table marks "crs" (JICA, AFD, KfW, DEG, BII, DFC, ...) are already in the CRS extract and
+#     are not counted twice; bilateral or export-credit institutions the table does not list are
+#     left out with a warning until they are reviewed;
+#   - to recipient countries (valid_iso);
+#   - each (sector, stage) keyed "oci|<sector>|<stage>" by data/reference/oci_energy_finance_crosswalk.csv,
+#     where a stage the table does not list for the sector falls back to its "*" row, and
+#     "exclude" rows (metro and rail filed under electric vehicles) are dropped.
+# Amounts are USD millions in current prices (the full transaction amount, as committed), summed
+# over the window. Returns list(amounts = recipient_iso3, purpose_code, amount; crosswalk = the
+# keyed rows; replaces = donor_iso3, measure of the CRS rows these institutions replace (Korea's
+# OOF is KEXIM's)).
+partnership_strength_oci_amounts <- function(oci, institutions, crosswalk, settings, valid_iso = NULL) {
+  require_columns(oci, c("fy", "institution_group", "institution_abbr", "institution_kind", "mechanism", "recipient_iso3",
+                         "recipient_share", "sector", "stage", "amount_usd"), label = "OCI energy finance")
+  require_columns(institutions, c("institution_group", "institution_abbr", "lender_iso3", "source", "replaces_crs_measure"),
+                  label = "OCI institutions")
+  require_columns(crosswalk, c("sector", "stage", "supply_chain", "tech", "method"), label = "OCI crosswalk")
+  ef <- settings$energy_finance
+  norm <- function(x) tolower(gsub("\\s+", " ", trimws(as.character(x))))
+
+  x <- tibble::as_tibble(oci)
+  x <- x[x$fy %in% settings$years & norm(x$mechanism) %in% norm(ef$mechanisms), , drop = FALSE]
+  if (!is.null(valid_iso)) x <- x[x$recipient_iso3 %in% valid_iso, , drop = FALSE]
+
+  inst <- tibble::as_tibble(institutions)
+  inst$replaces_crs_measure[is.na(inst$replaces_crs_measure)] <- ""
+  key_x <- paste(x$institution_group, x$institution_abbr, sep = "\r")
+  key_i <- paste(inst$institution_group, inst$institution_abbr, sep = "\r")
+  m <- match(key_x, key_i)
+  unlisted <- unique(x[is.na(m) & norm(x$institution_kind) %in% c("bilateral", "export credit"), c("institution_group", "institution_abbr")])
+  if (nrow(unlisted)) {
+    warning("OCI energy finance: institution(s) not in oci_energy_finance_institutions.csv left out: ",
+            paste(unlisted$institution_group, unlisted$institution_abbr, sep = " ", collapse = "; "), call. = FALSE)
+  }
+  use <- !is.na(m) & inst$source[m] == "oci" & !inst$lender_iso3[m] %in% ef$exclude_lender_countries
+  x$lender_iso3 <- inst$lender_iso3[m]
+  x$replaces <- inst$replaces_crs_measure[m]
+  x <- x[use, , drop = FALSE]
+
+  cw <- tibble::as_tibble(crosswalk)
+  cw$sector_n <- norm(cw$sector)
+  cw$stage_n <- norm(cw$stage)
+  cw$purpose_code <- paste("oci", cw$sector_n, cw$stage_n, sep = "|")
+  exact <- paste("oci", norm(x$sector), norm(x$stage), sep = "|")
+  fallback <- paste("oci", norm(x$sector), "*", sep = "|")
+  x$purpose_code <- dplyr::if_else(exact %in% cw$purpose_code, exact, fallback)
+  x <- x[x$purpose_code %in% cw$purpose_code[cw$method != "exclude"], , drop = FALSE]
+
+  amounts <- x %>%
+    dplyr::group_by(recipient_iso3, purpose_code) %>%
+    dplyr::summarise(amount = sum(amount_usd * recipient_share, na.rm = TRUE) / 1e6, .groups = "drop")
+  replaces <- x[nzchar(x$replaces), c("lender_iso3", "replaces")] %>%
+    dplyr::distinct() %>%
+    dplyr::transmute(donor_iso3 = lender_iso3, measure = replaces)
+
+  list(
+    amounts = amounts,
+    crosswalk = cw[cw$method != "exclude", c("purpose_code", "supply_chain", "tech", "method")],
+    replaces = replaces
+  )
+}
+
 # Official development finance received by partner j per (tech, stage), from the CRS extract
 # data/raw/oecd_crs_purpose.csv (scripts/fetchers/oecd_crs.R: bilateral flows of country donors,
 # by purpose code, USD millions at constant prices) and the purpose crosswalk
@@ -376,6 +468,13 @@ partnership_strength_allocate_crs_purposes <- function(amounts,
 # aid_index_supplychain and aidgdp_index_supplychain are their S-curves across recipients within
 # each (tech, stage); the names predate the tech dimension and are kept for the weights, the index
 # definition and the dashboard.
+#
+# With settings$energy_finance$include and `oci` given, the export-credit and lender energy
+# finance the CRS lacks (partnership_strength_oci_amounts(): JBIC, NEXI, JOGMEC, US EXIM, KEXIM,
+# Hermes, KfW IPEX-Bank, UKEF, ...) is allocated alongside, its annual mean over the window added
+# to the CRS amounts cell by cell; the energy CRS rows those institutions replace are dropped first.
+# OCI amounts are commitments in current US dollars, the CRS's are (by default) disbursements in
+# constant dollars: the ranking treats both as official finance received.
 #
 # Every recipient in the window gets every cell, 0 where it received nothing there: the CRS is
 # the census of its reporting donors' activities, so no recorded aid is an observed zero. A
@@ -389,7 +488,10 @@ partnership_strength_build_oecd_tech <- function(oecd_crs,
                                                  gdp_data,
                                                  cells,
                                                  settings = partnership_strength_development_aid_settings(),
-                                                 valid_iso = NULL) {
+                                                 valid_iso = NULL,
+                                                 oci = NULL,
+                                                 oci_institutions = NULL,
+                                                 oci_crosswalk = NULL) {
   require_columns(
     oecd_crs,
     c("year", "recipient_iso3", "purpose_code", "measure", "usd_commitment", "usd_disbursement"),
@@ -410,15 +512,44 @@ partnership_strength_build_oecd_tech <- function(oecd_crs,
             "; aid is the annual mean over ", paste(range(years_present), collapse = "-"), ".", call. = FALSE)
   }
 
+  use_oci <- isTRUE(settings$energy_finance$include) && !is.null(oci)
+  oci_parts <- NULL
+  if (use_oci) {
+    if (is.null(oci_institutions) || is.null(oci_crosswalk)) {
+      stop("OCI energy finance needs its institutions table and crosswalk.")
+    }
+    oci_parts <- partnership_strength_oci_amounts(oci, oci_institutions, oci_crosswalk, settings, valid_iso = valid_iso)
+    if (nrow(oci_parts$replaces)) {
+      require_columns(crs, "donor_iso3", label = "OECD CRS extract")
+      drop <- paste(crs$donor_iso3, crs$measure) %in% paste(oci_parts$replaces$donor_iso3, oci_parts$replaces$measure) &
+        partnership_strength_oci_energy_purpose(crs$purpose_code)
+      crs <- crs[!drop, , drop = FALSE]
+    }
+  }
+
   amounts <- crs %>%
+    dplyr::mutate(purpose_code = as.character(purpose_code)) %>%
     dplyr::group_by(recipient_iso3, purpose_code) %>%
     dplyr::summarise(amount = pmax(0, sum(.data[[amount_col]], na.rm = TRUE)) / length(years_present), .groups = "drop")
-  aid <- partnership_strength_allocate_crs_purposes(
-    amounts,
-    crosswalk,
-    cells,
-    recipients = unique(as.character(crs$recipient_iso3))
-  )
+  cw_crs <- tibble::as_tibble(crosswalk[c("purpose_code", "supply_chain", "tech", "method")]) %>%
+    dplyr::mutate(purpose_code = as.character(purpose_code))
+  recipients <- unique(as.character(crs$recipient_iso3))
+  if (use_oci) recipients <- union(recipients, oci_parts$amounts$recipient_iso3)
+  # Which cells take their own allocation is the CRS crosswalk's call: OCI's few battery and
+  # hydrogen deals would otherwise turn those stage-proxy cells into near-empty ones the CRS cannot
+  # fill (it has no battery or hydrogen codes); OCI's amounts still enter the stage proxy.
+  coded <- cw_crs[cw_crs$method == "direct", c("supply_chain", "tech")]
+  aid <- partnership_strength_allocate_crs_purposes(amounts, cw_crs, cells, recipients = recipients, coded = coded)
+  # Each source's cross-cutting amounts follow its own direct mix: the CRS's mining-policy aid is
+  # spread by the CRS's mineral projects, not pulled into oil and gas by an export credit agency's
+  # oil loans, and OCI's unclear-stage deals by OCI's own projects. The two allocations add up.
+  if (use_oci) {
+    oci_amounts <- oci_parts$amounts
+    oci_amounts$amount <- oci_amounts$amount / length(years_present)
+    aid_oci <- partnership_strength_allocate_crs_purposes(oci_amounts, oci_parts$crosswalk, cells, recipients = recipients, coded = coded)
+    k <- match(paste(aid$recipient_iso3, aid$tech, aid$supply_chain), paste(aid_oci$recipient_iso3, aid_oci$tech, aid_oci$supply_chain))
+    aid$aid <- aid$aid + aid_oci$aid[k]
+  }
 
   iso_col <- partnership_strength_pick_column(gdp_data, c("iso3c", "iso3", "Country.Code", "country_code"), "gdp iso")
   year_col <- partnership_strength_pick_column(gdp_data, c("year", "Year"), "gdp year")
@@ -558,7 +689,10 @@ partnership_strength_build_development_index <- function(energy_security_index,
                                                          gdp_data,
                                                          aid_settings = NULL,
                                                          component_weights = NULL,
-                                                         techs = NULL) {
+                                                         techs = NULL,
+                                                         oci = NULL,
+                                                         oci_institutions = NULL,
+                                                         oci_crosswalk = NULL) {
   if (is.null(aid_settings)) aid_settings <- partnership_strength_development_aid_settings()
   component_weights <- partnership_strength_resolve_weights(
     component_weights,
@@ -613,7 +747,10 @@ partnership_strength_build_development_index <- function(energy_security_index,
     gdp_data,
     cells = dplyr::distinct(base_tbl, tech, supply_chain),
     settings = aid_settings,
-    valid_iso = valid_iso
+    valid_iso = valid_iso,
+    oci = oci,
+    oci_institutions = oci_institutions,
+    oci_crosswalk = oci_crosswalk
   ) %>%
     dplyr::select(iso3c, tech, supply_chain, aid_basis, aid_index_supplychain, aidgdp_index_supplychain)
 
@@ -680,7 +817,10 @@ stronger_development <- function(country_info,
                                  component_weights = NULL,
                                  aid_settings = NULL,
                                  year = 2024L,
-                                 techs = NULL) {
+                                 techs = NULL,
+                                 oci = NULL,
+                                 oci_institutions = NULL,
+                                 oci_crosswalk = NULL) {
   component_weights <- partnership_strength_resolve_weights(
     component_weights,
     partnership_strength_development_default_weights(),
@@ -699,7 +839,10 @@ stronger_development <- function(country_info,
     gdp_data = gdp_data,
     aid_settings = aid_settings,
     component_weights = component_weights,
-    techs = techs
+    techs = techs,
+    oci = oci,
+    oci_institutions = oci_institutions,
+    oci_crosswalk = oci_crosswalk
   )
 
   weights_tbl <- tibble::tibble(
