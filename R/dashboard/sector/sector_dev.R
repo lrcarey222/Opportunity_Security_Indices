@@ -285,7 +285,7 @@ sector_dev_crs_parity <- function(stage, builder, flows) {
   k_b <- paste(builder$iso3c, builder$supply_chain)
   same_keys <- setequal(k_s, k_b) && !anyDuplicated(k_s)
   m <- match(k_b, k_s)
-  add("parity X: CRS aid received 2013-2024 by stage, ranked as the Development Potential builder ranks it, reproduces its aid_index_supplychain identical()",
+  add("parity X: CRS aid received 2013-2024 by stage, ranked as the 3-digit stage builder (partnership_strength_build_oecd_supplychain()) ranks it, reproduces its aid_index_supplychain identical()",
       same_keys && identical(s$a[m], builder$aid_index_supplychain), nrow(builder))
   add("parity X: CRS aid received / GDP by stage, ranked as the builder ranks it, reproduces its aidgdp_index_supplychain identical()",
       same_keys && identical(s$g[m], builder$aidgdp_index_supplychain), nrow(builder))
