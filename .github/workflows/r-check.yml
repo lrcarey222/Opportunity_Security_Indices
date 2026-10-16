@@ -20,6 +20,9 @@ jobs:
       # char, because fantasy-draft's image data URIs contain "akia" + 16 letters by chance. Hits
       # print as file:line only, to keep keys out of the public log; exit >1 is a grep error, not a
       # clean tree. renv.lock hashes are quoted 32-hex; a Firebase web apiKey is public by design.
+      # Generated outputs are excluded too: the dashboard data and test fixtures (written by
+      # scripts/85-89) and paper/results/*.json carry quoted MD5 content hashes (bundle_id,
+      # strategic_bundle_id, sector_bundle_id, design_code_md5). All source stays scanned.
       - name: Secret scan
         run: |
           status=0
@@ -29,7 +32,9 @@ jobs:
             -e '[Bb]earer [A-Za-z0-9._~+/=-]{20,}' \
             -e '(^|[^A-Za-z0-9+/])(sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|AIza[0-9A-Za-z_-]{35})' \
             -e '-----BEGIN ([A-Z]+ )?PRIVATE KEY-----' \
-            -- . ':(exclude)renv.lock' ':(exclude)fantasy-draft/firebase-config.js') || status=$?
+            -- . ':(exclude)renv.lock' ':(exclude)fantasy-draft/firebase-config.js' \
+            ':(exclude)dashboard/public/data/**' ':(exclude)dashboard/src/**/__fixtures__/**' \
+            ':(exclude)dashboard/tests/fixtures/**' ':(exclude)paper/results/*.json') || status=$?
           if [ "$status" -gt 1 ]; then
             echo "::error::git grep failed with exit $status, so the secret scan did not run"
             exit "$status"
