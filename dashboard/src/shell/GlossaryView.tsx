@@ -44,7 +44,7 @@ export default function GlossaryView() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHead
-        eyebrow="Allied Industrial Base Explorer"
+        eyebrow="About"
         title="Glossary"
         lede="What every index, category and measure in the explorer means, in plain words. Each entry gives a short definition and, where it helps, how the measure is built. The info buttons beside a term anywhere in the explorer open the same short definition."
       />

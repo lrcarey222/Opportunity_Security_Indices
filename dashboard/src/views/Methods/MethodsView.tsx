@@ -39,7 +39,7 @@ export default function MethodsView() {
   const paper = m.paper;
   return (
     <div>
-      <PageHead eyebrow="How it works" title="Methods" lede="How the indices, the dials and the network design are built, with the formulas, and a glossary of every term." />
+      <PageHead eyebrow="About · How it works" title="Methods" lede="How the indices, the dials and the network design are built, with the formulas, and a glossary of every term." />
       <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* the content is this app's own Markdown, filled with numbers from the data build */}
         <div className="min-w-0">
@@ -49,7 +49,7 @@ export default function MethodsView() {
               Glossary
             </h2>
             <p className="mb-4 text-sm text-paper-dim">
-              Every term on the Strategic Insights pages in plain words. The glossary of all three modules is on the{' '}
+              Every term of the indices, the dials and the network design in plain words. The glossary of the whole explorer is on the{' '}
               <Link className="link" to="/glossary">
                 Glossary page
               </Link>

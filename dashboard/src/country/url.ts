@@ -1,25 +1,30 @@
 // Country URL state (spec_country.md A3). Pure. The conventions of the other modules: defaults are
-// omitted, keys are written in one fixed order (cell partner all), invalid values are dropped and listed
+// omitted, keys are written in one fixed order (cell partner all ptab), invalid values are dropped and listed
 // (the "Ignored in the link" notice), keys this module does not know are ignored silently.
 //
 //   cell     a sector key of the sheet ("oil-upstream"); default: the first high-priority sector
 //   partner  an ISO3 among the sheet's partner rows; default: the top Partnership Strength partner
 //   all      1 = every in-sample sector in the priorities table (else the top 15)
+//   ptab     the Partnerships tab: trade (default), investment or development (IA refactor 2026-10-16)
 //
 // Selecting a sector or a partner replaces the history entry; changing country pushes one.
 
 import { isCellKey } from './contract.ts';
 
+export type PartnerTab = 'trade' | 'investment' | 'development';
+export const PARTNER_TABS: readonly PartnerTab[] = ['trade', 'investment', 'development'];
+
 export interface CountryUrlState {
   cell: string | null;
   partner: string | null;
   all: boolean;
+  ptab: PartnerTab;
 }
 
-export const COUNTRY_KEY_ORDER = ['cell', 'partner', 'all'] as const;
+export const COUNTRY_KEY_ORDER = ['cell', 'partner', 'all', 'ptab'] as const;
 export type CountryKey = (typeof COUNTRY_KEY_ORDER)[number];
 
-export const COUNTRY_DEFAULTS: CountryUrlState = { cell: null, partner: null, all: false };
+export const COUNTRY_DEFAULTS: CountryUrlState = { cell: null, partner: null, all: false, ptab: 'trade' };
 
 /** What the parser checks against (both optional: before the sheet loads only the syntax is checked). */
 export interface CountryUrlCtx {
@@ -70,6 +75,12 @@ export function parseCountrySearch(search: string, ctx: CountryUrlCtx = {}): Cou
         if (v === '1') state.all = true;
         else if (v !== '0' && v !== '') bad(k, raw, "'1' or nothing");
         break;
+      case 'ptab': {
+        const t = v.toLowerCase();
+        if ((PARTNER_TABS as readonly string[]).includes(t)) state.ptab = t as PartnerTab;
+        else bad(k, raw, 'trade, investment or development');
+        break;
+      }
     }
   }
   return { state, problems };
@@ -81,6 +92,7 @@ export function serializeCountrySearch(s: Partial<CountryUrlState>): string {
   if (s.cell) q.set('cell', s.cell);
   if (s.partner) q.set('partner', s.partner);
   if (s.all) q.set('all', '1');
+  if (s.ptab && s.ptab !== 'trade') q.set('ptab', s.ptab);
   const t = q.toString();
   return t ? `?${t}` : '';
 }

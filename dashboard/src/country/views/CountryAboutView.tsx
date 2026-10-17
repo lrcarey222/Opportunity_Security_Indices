@@ -76,26 +76,26 @@ function MemoList() {
 }
 
 export default function CountryAboutView() {
-  useTitle('About Country Insights', 'country');
+  useTitle('Country profiles: data notes', 'country');
   const { manifest } = useCountryCtx();
   const nCore = manifest.counts.core;
   const p = 'mb-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim';
   return (
     <div className={PAGE}>
       <PageHead
-        eyebrow="COUNTRY INSIGHTS"
-        title="About Country Insights"
+        eyebrow="COUNTRIES · DATA NOTES"
+        title="Country profiles: data notes"
         lede="What the country pages show, how each comparison is made, how the memos are written and checked, and where every number comes from."
       />
-      <H id="what">What Country Insights shows</H>
+      <H id="what">What the Country profiles show</H>
       <p className={p}>
-        Country Insights reads the paper&apos;s baseline values for one country and puts them next to the raw data behind them. Index values (<Term id="es" />, <Term id="eo" />, the{' '}
+        Each Country profile reads the NEIS baseline values for one country and puts them next to the raw data behind them. Index values (<Term id="es" />, <Term id="eo" />, the{' '}
         <Term id="si" /> and the <Term id="psi" />) are always labelled as scores from 0 to 1 that compare the country with other economies; raw values always carry their unit, year and source,
-        as Sector Insights prints them. The two are never mixed on one axis.
+        as the Sector profiles print them. The two are never mixed on one axis.
       </p>
       <p className={p}>
-        Everything is on the <Term id="paper_baseline" />: the weights the paper uses. To try other weightings, open the same country in Strategic Insights, where the dials recompute
-        every index in your browser. Country Insights never moves.
+        Everything starts on the <Term id="paper_baseline" />: the weights the paper uses. The Perspective control at the top of each profile re-weights strategic priorities, sector
+        rankings and partner scores; observed and modelled facts (trade, concentration, production, the Allied Industrial Base results) never move.
       </p>
 
       <H id="corners">Reading the four corners</H>
@@ -108,9 +108,9 @@ export default function CountryAboutView() {
         positions. A sector is in the <Term id="grow">Grow</Term> corner when both positions are at or above that median (a sector exactly at the median counts as high),{' '}
         <Term id="upgrade">Upgrade</Term> when opportunity is high but energy security low, <Term id="secure">Secure</Term> when both are low, and <Term id="watch">Watch</Term> when
         opportunity is low but energy security high. So the corners show where a country is relatively strong or weak, and every country has sectors in more than one corner; the tooltips
-        and the table still say whether each score is above or below the sector&apos;s <Term id="median" /> economy. The Security vs opportunity view of Strategic Insights, which shows every
+        and the table still say whether each score is above or below the sector&apos;s <Term id="median" /> economy. The Security vs opportunity comparison, which shows every
         economy in one sector, splits at the sector&apos;s median economy instead. The RMI (2025) framework associates the corners with export promotion, leapfrogging, friendshoring and
-        alternative value creation; Country Insights uses those as descriptions, not instructions. The paper has no Energy Security score for geothermal upstream, geothermal midstream and
+        alternative value creation; the Country profile uses those as descriptions, not instructions. The paper has no Energy Security score for geothermal upstream, geothermal midstream and
         electric-grid downstream, so at most 30 of the 33 sectors can be placed.
       </p>
 
@@ -136,7 +136,7 @@ export default function CountryAboutView() {
         The Partnership Strength Index is read from the country&apos;s own viewpoint: how good a partner each other economy is for it as a friendshoring opportunity, where it could invest and source to meet its own security need (<Term id="fs" />), a market (
         <Term id="po" />) and, for middle- and lower-income partners, a place to build supply chains together (<Term id="dp" />). Friendshore is about where investment and sourcing could go, not a ranking of today&apos;s suppliers (the import shares show those): the country&apos;s own need
         is the same for every partner within a sector, so the partner ranking there turns on the partner&apos;s Economic Opportunity, the trade and investment ties, UN-vote
-        alignment and ownership. Strategic Insights&apos; headline instead averages the viewpoints of the{' '}
+        alignment and ownership. The core-member headline, used where partners are ranked for the coalition as a whole, instead averages the viewpoints of the{' '}
         {nCore} core members; both are named wherever a rank appears.
       </p>
       <p className={p}>
@@ -174,7 +174,7 @@ export default function CountryAboutView() {
       </p>
       <div className="relative max-w-4xl overflow-x-auto">
         <table className="data-table">
-          <caption className="sr-only">Sources of Country Insights</caption>
+          <caption className="sr-only">Sources of the Country profiles</caption>
           <thead>
             <tr>
               <th scope="col">Source</th>
@@ -204,7 +204,7 @@ export default function CountryAboutView() {
 
       <H id="glossary">Glossary</H>
       <p className={p}>
-        The terms used in Country Insights. Every term of the explorer is on the{' '}
+        The terms used in the Country profiles. Every term of the explorer is on the{' '}
         <Link className="link" to="/glossary">
           glossary page
         </Link>

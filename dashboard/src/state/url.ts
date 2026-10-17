@@ -266,6 +266,40 @@ export function navSearch(scenario: Scenario, view: ViewState, ctx: UrlCtx): str
   return writeSearch(scenario, { ...VIEW_DEFAULTS, show: view.show, tech: view.tech, stage: view.stage }, ctx);
 }
 
+/**
+ * Split a query string for a page that hosts Strategic views (IA refactor, 2026-10-16): `own` is the
+ * query without the host's keys (what the Strategic parser reads), `host` the host's [key, value]
+ * pairs in their order (kept when the Strategic setters rewrite the URL). With no keys, `own` is the
+ * input unchanged.
+ */
+export function splitSearch(search: string, hostKeys: readonly string[]): { own: string; host: [string, string][] } {
+  if (!hostKeys.length) return { own: search, host: [] };
+  const q = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  const own = new URLSearchParams();
+  const host: [string, string][] = [];
+  for (const [k, v] of q) {
+    if (hostKeys.includes(k)) host.push([k, v]);
+    else own.append(k, v);
+  }
+  const s = own.toString();
+  return { own: s ? `?${s}` : '', host };
+}
+
+/** `search` ('' or '?...') with `extra` pairs appended after its own keys. */
+export function appendSearch(search: string, extra: readonly (readonly [string, string])[]): string {
+  if (!extra.length) return search;
+  const q = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  for (const [k, v] of extra) q.append(k, v);
+  const s = q.toString();
+  return s ? `?${s}` : '';
+}
+
+/** The Strategic scenario pairs of a query string (dials and advanced keys), for a host page to carry on its own writes. */
+export function scenarioPairs(search: string): [string, string][] {
+  const q = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  return [...q].filter(([k]) => (SCENARIO_KEYS as readonly string[]).includes(k));
+}
+
 /** The scenario as the engine reads it: every dial, and the advanced settings. */
 export function toSpec(s: Scenario): ScenarioSpec {
   return { dials: { ...s.dials }, advanced: cloneAdvanced(s.advanced) };

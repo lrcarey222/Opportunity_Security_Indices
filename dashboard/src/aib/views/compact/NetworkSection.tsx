@@ -17,8 +17,8 @@ import { useCompact } from './shared.tsx';
 
 const TOP = 15;
 export const REL_COLOR = { new: '#8b9d17', expanded: '#1889b0' } as const;
-const REL_LINK = { new: 'rgb(139 157 23 / 0.6)', expanded: 'rgb(24 137 176 / 0.6)' } as const;
-const REL_WORDS = { new: 'New relationship', expanded: 'Expanded relationship' } as const;
+export const REL_LINK = { new: 'rgb(139 157 23 / 0.6)', expanded: 'rgb(24 137 176 / 0.6)' } as const;
+export const REL_WORDS = { new: 'New relationship', expanded: 'Expanded relationship' } as const;
 
 export function NetworkSection() {
   const { c, meta, name, nodeLabel } = useCompact();

@@ -1,18 +1,22 @@
-// Sector profile /sector/:tech/:stage (spec_sector.md 4.3): the core page. Sections appear in
+// Sector profile /sector/:tech/:stage (spec_sector.md 4.3): the core page. IA refactor 2026-10-16 (brief
+// s.5-8): the supply-chain navigator under the head, the four lenses (./Lenses.tsx) on top, and the
+// existing sections grouped under Competitiveness & markets, Security & concentration, Policy, Climate
+// and Advanced & evidence (PROFILE_GROUPS; the rail lists the groups, section ids keep working; on
+// phones the groups start folded and open on a pick or a link to one of their sections). Sections appear in
 // rendering order only when the cell has data for them (S7 Investment before S5 Production); the rest
 // are listed under "Not available for this sector" with their reason. Sections mount when they come
 // within 800 px of the viewport, which also triggers their chunk. Footer: not available, sources on
 // this page, "Download this sector (.zip)".
 
-import { useMemo, useState, type ReactNode } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { Redirect } from '../../../shell/Redirect.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
 import { Notice, PageHead, StatTile } from '../../../components/ui.tsx';
 import { downloadBlob } from '../../../lib/download.ts';
 import { withBom } from '../../../lib/csv.ts';
 import { useTitle } from '../../../shell/title.ts';
-import { STAGE_COLOR } from '../../../theme/palette.ts';
-import { FAMILY_SECTION, isStageSlug, isTechSlug, STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, type SectionId, type SectorManifest, type StageSlug, type TechSlug } from '../../contract.ts';
+import { FAMILY_SECTION, isStageSlug, isTechSlug, STAGE_LABELS, TECH_LABELS, type SectionId, type SectorManifest, type StageSlug, type TechSlug } from '../../contract.ts';
 import { useModel, useSectorManifest } from '../../data/SectorDataProvider.tsx';
 import type { FactsIndex } from '../../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
@@ -23,12 +27,15 @@ import { slice } from '../../derive/summary.ts';
 import { stateOf, stateShort } from '../../derive/states.ts';
 import { sectorCsv, type CsvInput } from '../../derive/csv.ts';
 import { lc, fmtShare, fmtValue } from '../../format.ts';
-import { ChunkGate, Section, useHighlight } from '../common.tsx';
-import { useFacts, useNear, useScrollToHash } from '../data.ts';
+import { ChunkGate, EconomyLink, Section, useHighlight } from '../common.tsx';
+import { useFacts, useNear, useScrollToHash, useTrade } from '../data.ts';
+import { subComponents, validSub } from '../../derive/subs.ts';
 import { CoverageChips, SectionRail } from '../kit.tsx';
 import { useSectorUrl } from '../state.tsx';
 import { baseYear, chipsOf } from '../TechChainView.tsx';
 import { CsvRegistryProvider, ProfileProvider, useCardCsv, useCsvRegistry, useProfile, vOf, itemForCell, linkedWith } from './ctx.tsx';
+import { ChainNav } from '../ChainNav.tsx';
+import { AibNodesBlock, ClimateSection, Lenses } from './Lenses.tsx';
 import { Leaders, Snapshot, Who } from './Top.tsx';
 import { TradeSection } from './Trade.tsx';
 import { InvestmentSection } from './Investment.tsx';
@@ -237,7 +244,7 @@ function Countries() {
     }
   });
   const cols: Col<CountryRow>[] = [
-    { id: 'c', header: 'Economy', value: (r) => r.g.name, minWidth: 150 },
+    { id: 'c', header: 'Economy', value: (r) => r.g.name, cell: (r) => <EconomyLink g={r.g} />, minWidth: 150 },
     { id: 'g', header: 'Group', value: (r) => GROUP_SHORT[partOf(r.g)] },
     ...table.heads.flatMap(({ v, year, item }) => {
       const unit = model.unitOf(v, item.idx);
@@ -412,43 +419,114 @@ function SourcesOnPage() {
   );
 }
 
-function Header({ cell, tech, stage }: { cell: ItemInfo; tech: TechSlug; stage: StageSlug }) {
+function Header({ cell, tech, stage, sub }: { cell: ItemInfo; tech: TechSlug; stage: StageSlug; sub: string | null }) {
   const model = useModel();
-  const { link } = useSectorUrl();
-  const blurb = model.cellText.get(cell.slug)?.cell_blurb ?? null;
-  const lede = `${model.cellLabel(cell)}: who produces, holds, trades, invests in and regulates it.${blurb ? ` ${blurb.replace(/\.?$/, '.')}` : ''} Every number is in its source's own unit and year; nothing here is a score.`;
+  const { link, state } = useSectorUrl();
+  const label = model.cellLabel(cell);
+  const lede = sub
+    ? `${sub}, one component of ${label}: who makes, trades, invests in and regulates it, each number in its source's own unit and year (nothing here is a score).`
+    : `${label}: who produces, holds, trades, invests in and regulates it, each number in its source's own unit and year (nothing here is a score).`;
+  const eyebrow = sub ? `SECTORS · ${TECH_LABELS[tech].toUpperCase()} · ${STAGE_LABELS[stage].toUpperCase()}` : `SECTORS · ${STAGE_LABELS[stage].toUpperCase()}`;
   return (
-    <PageHead eyebrow={`SECTOR INSIGHTS · ${STAGE_LABELS[stage].toUpperCase()}`} title={model.cellLabel(cell)} lede={lede}>
+    <PageHead eyebrow={eyebrow} title={sub ?? label} lede={lede}>
       <div className="mt-4 space-y-3">
-        <CoverageChips chips={chipsOf(model, cell, (section) => `#${section}`)} ariaLabel={`Coverage of ${model.cellLabel(cell)}`} />
-        <div className="flex flex-wrap items-center gap-4">
-          <nav aria-label="Stages" className="flex items-center gap-1 text-sm">
-            {STAGE_SLUGS.map((s, i) => {
-              const exists = !!model.cell(tech, s);
-              const cur = s === stage;
-              return (
-                <span key={s} className="flex items-center gap-1">
-                  {i > 0 && <span className="text-paper-mute" aria-hidden="true">·</span>}
-                  {exists ? (
-                    <Link to={link(`/sector/${tech}/${s}`)} className="tag" aria-current={cur ? 'page' : undefined} style={{ borderLeft: `3px solid ${STAGE_COLOR[STAGE_LABELS[s]]}` }}>
-                      {STAGE_LABELS[s]}
-                    </Link>
-                  ) : (
-                    <span className="tag opacity-50" aria-disabled="true" title={`No ${STAGE_LABELS[s]} cell for ${TECH_LABELS[tech]}`}>
-                      {STAGE_LABELS[s]}
-                    </span>
-                  )}
-                </span>
-              );
-            })}
-          </nav>
-          <Link className="link text-sm" to={link(`/sector/${tech}`)}>
-            The whole {TECH_LABELS[tech]} chain
-          </Link>
-          <ZipButton cell={cell} />
-        </div>
+        <Link className="link text-sm" to={link(`/sector/${tech}`)}>
+          The whole {TECH_LABELS[tech]} chain
+        </Link>
+        <ChainNav tech={tech} stage={stage} sub={state.sub} collapsible />
       </div>
     </PageHead>
+  );
+}
+
+/** The sector's description, its download and what data it has (in "Advanced & evidence"). */
+function SectorData({ cell }: { cell: ItemInfo }) {
+  const model = useModel();
+  const chips = chipsOf(model, cell, (section) => `#${section}`);
+  const blurb = model.cellText.get(cell.slug)?.cell_blurb ?? null;
+  return (
+    <section aria-label="This sector's data" className="space-y-3">
+      {blurb && <p className="max-w-3xl text-sm text-paper-dim">{blurb.replace(/\.?$/, '.')}</p>}
+      <ZipButton cell={cell} />
+      <details className="disclosure text-sm">
+        <summary className="flex min-h-8 items-center gap-2 text-paper-dim">
+          <span className="disclosure-chevron text-paper-mute" aria-hidden="true">
+            ›
+          </span>
+          What data this sector has ({chips.filter((c) => c.status !== 'none' && c.status !== 'licensed').length} of {chips.length} kinds of data)
+        </summary>
+        <div className="mt-2">
+          <CoverageChips chips={chips} ariaLabel={`Coverage of ${model.cellLabel(cell)}`} />
+        </div>
+      </details>
+    </section>
+  );
+}
+
+/** The profile's groups (brief s.8), in order; a group shows when it holds a section with data (Climate and Advanced & evidence always do). */
+export const PROFILE_GROUPS: readonly { id: string; title: string; lede: string; sections: readonly SectionId[]; always?: boolean }[] = [
+  { id: 'markets', title: 'Competitiveness & markets', lede: 'How large the market is, who sells and who invests, demand and prices.', sections: ['snapshot', 'leaders', 'trade', 'investment', 'demand', 'prices'] },
+  { id: 'security', title: 'Security & concentration', lede: 'How concentrated supply is, measure by measure, and where production and resources sit.', sections: ['who', 'production', 'resources'] },
+  { id: 'policy-technology', title: 'Policy', lede: 'Recorded policy activity and how mature the technology is.', sections: ['policy', 'technology'] },
+  { id: 'climate', title: 'Climate', lede: 'What the explorer holds on climate for this sector, and what it does not.', sections: [], always: true },
+  { id: 'evidence', title: 'Advanced & evidence', lede: 'Every economy’s numbers, the stage’s costs, the explorer and the sources.', sections: ['countries', 'context'], always: true },
+];
+
+/** The group a section or group id belongs to (for opening folded groups on a link). */
+/** Anchors inside a group that are not sections of its own. */
+const EXTRA_ANCHORS: Readonly<Record<string, string>> = { 'aib-nodes': 'security', deeper: 'evidence' };
+
+export function groupOf(id: string): string | null {
+  const g = PROFILE_GROUPS.find((x) => x.id === id || (x.sections as readonly string[]).includes(id));
+  return g ? g.id : (EXTRA_ANCHORS[id] ?? null);
+}
+
+/** One group: a band heading, a line on what it holds, its sections (folded until opened, at every width). */
+function Group({ id, title, lede, open, onToggle, children }: { id: string; title: string; lede: string; open: boolean; onToggle: () => void; children: ReactNode }) {
+  const shown = open;
+  return (
+    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-[calc(var(--sector-bar-h,4.75rem)+4rem)] xl:scroll-mt-[calc(var(--sector-bar-h,4.75rem)+1.5rem)]">
+      <div className="flex items-end justify-between gap-3">
+        <h2 id={`${id}-h`} className="eyebrow rule-neis-sm">
+          {title}
+        </h2>
+        <button type="button" className="btn-quiet text-sm" aria-expanded={open} aria-controls={`${id}-body`} onClick={onToggle}>
+          {open ? 'Hide' : 'Show'}
+        </button>
+      </div>
+      <p className="mt-2 max-w-3xl text-sm text-paper-mute">{lede}</p>
+      {shown && (
+        <div id={`${id}-body`} className="mt-4 space-y-10">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Deeper({ tech, stage }: { tech: TechSlug; stage: StageSlug }) {
+  const { model, cell } = useProfile();
+  const { link } = useSectorUrl();
+  const minerals = model.itemsOfCell(cell.idx, 'mineral');
+  const items: { to: string; label: string; text: string }[] = [
+    { to: link('/sector/explore', { tech: TECH_LABELS[tech], stage: STAGE_LABELS[stage] }), label: 'Advanced explorer', text: 'Any measure for every economy and every sector: a map, a ranking, the spread and the trend.' },
+    { to: link('/sector/concentration'), label: 'Compare concentration across sectors', text: 'The same concentration measures for all 33 sectors side by side.' },
+    ...(minerals.length ? [{ to: link('/sector/minerals'), label: 'Minerals', text: 'Mining, refining, reserves and trade of the minerals this technology uses.' }] : []),
+    { to: link('/sector/sources'), label: 'Sources & data', text: 'The variable dictionary, every source, coverage, and the full data as downloads.' },
+  ];
+  return (
+    <Section id="deeper" title="Go deeper">
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {items.map((x) => (
+          <li key={x.label} className="panel p-4">
+            <Link className="link font-medium" to={x.to}>
+              {x.label}
+            </Link>
+            <p className="mt-1 text-sm text-paper-mute">{x.text}</p>
+          </li>
+        ))}
+      </ul>
+    </Section>
   );
 }
 
@@ -458,8 +536,89 @@ function Body({ cell, tech, stage, facts }: { cell: ItemInfo; tech: TechSlug; st
   const hasPolicy = !!manifest.data?.chunks.some((c) => c.name === 'sector-policy');
   const sections = useMemo(() => profileSections(model, cell, hasPolicy), [model, cell, hasPolicy]);
   const loc = useLocation();
-  useScrollToHash(loc.hash, !!facts);
+  const { link } = useSectorUrl();
+  const hashId = decodeURIComponent(loc.hash.replace(/^#/, ''));
+  const hashGroup = hashId ? groupOf(hashId) : null;
+  // groups start folded (the lenses above are the summary); a pick in the rail, "Show" or a link to one of their sections opens them
+  const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set(hashGroup ? [hashGroup] : []));
+  const openGroup = (id: string) => {
+    const g = groupOf(id);
+    if (g) setOpen((o) => (o.has(g) ? o : new Set([...o, g])));
+  };
+  useEffect(() => {
+    if (hashGroup) setOpen((o) => (o.has(hashGroup) ? o : new Set([...o, hashGroup])));
+  }, [hashGroup]);
+  useScrollToHash(loc.hash, !!facts && (!hashGroup || open.has(hashGroup)));
   const thin = isThin(model, cell);
+  const groups = PROFILE_GROUPS.filter((g) => g.always || g.sections.some((id) => sections.includes(id)));
+  const toggle = (id: string) => setOpen((o) => (o.has(id) ? new Set([...o].filter((x) => x !== id)) : new Set([...o, id])));
+  const has = (id: SectionId) => sections.includes(id);
+  const body: Record<string, ReactNode> = {
+    markets: (
+      <>
+        {has('snapshot') && (
+          <Section id="snapshot" title="Snapshot">
+            <Snapshot />
+          </Section>
+        )}
+        {has('leaders') && (
+          <Section id="leaders" title={SECTION_LABEL.leaders}>
+            <Leaders />
+          </Section>
+        )}
+        {has('trade') && <Lazy id="trade" title={SECTION_LABEL.trade}>{() => <TradeSection />}</Lazy>}
+        {has('investment') && <Lazy id="investment" title={SECTION_LABEL.investment}>{() => <InvestmentSection />}</Lazy>}
+        {has('demand') && <Lazy id="demand" title={SECTION_LABEL.demand}>{() => <DemandSection />}</Lazy>}
+        {has('prices') && <Lazy id="prices" title={SECTION_LABEL.prices}>{() => <PricesSection />}</Lazy>}
+      </>
+    ),
+    security: (
+      <>
+        {has('who') && (
+          <Section id="who" title={SECTION_LABEL.who} sub="Does the answer change with the measure?">
+            <Who />
+          </Section>
+        )}
+        <AibNodesBlock />
+        {has('production') && <Lazy id="production" title={SECTION_LABEL.production}>{() => <ProductionSection />}</Lazy>}
+        {has('resources') && <Lazy id="resources" title={SECTION_LABEL.resources}>{() => <ResourcesSection />}</Lazy>}
+        <p className="text-sm">
+          <Link className="link" to={link('/sector/concentration')}>
+            Compare concentration across sectors
+          </Link>
+        </p>
+      </>
+    ),
+    'policy-technology': (
+      <>
+        {has('policy') && <Lazy id="policy" title={SECTION_LABEL.policy}>{() => <PolicySection />}</Lazy>}
+        {has('technology') && (
+          <Section id="technology" title={SECTION_LABEL.technology}>
+            <Technology />
+          </Section>
+        )}
+      </>
+    ),
+    climate: <ClimateSection />,
+    evidence: (
+      <>
+        <SectorData cell={cell} />
+        {has('countries') && (
+          <Lazy id="countries" title={SECTION_LABEL.countries}>
+            {() => <Countries />}
+          </Lazy>
+        )}
+        {has('context') && (
+          <Lazy id="context" title={SECTION_LABEL.context} sub="Not specific to this technology: the stage's activity in each economy.">
+            {() => <Context />}
+          </Lazy>
+        )}
+        <Deeper tech={tech} stage={stage} />
+        <NotAvailable sections={sections} />
+        <SourcesOnPage />
+      </>
+    ),
+  };
   return (
     <div className="xl:grid xl:grid-cols-[200px_minmax(0,1fr)] xl:gap-8">
       {/* < 1280 px: a sticky band under the SectorBar (its height is --sector-bar-h); >= 1280 px: the
@@ -469,68 +628,35 @@ function Body({ cell, tech, stage, facts }: { cell: ItemInfo; tech: TechSlug; st
         style={{ top: 'var(--sector-bar-h, 3.5rem)' }}
         data-testid="section-nav-band"
       >
-        <SectionRail sections={sections.map((id) => ({ id, label: SECTION_LABEL[id] }))} />
+        <SectionRail sections={[{ id: 'overview', label: 'What to know' }, ...groups.map((g) => ({ id: g.id, label: g.title }))]} onNavigate={openGroup} />
       </div>
       <div className="min-w-0">
-      {thin && (
-        <div className="mb-6">
-          <Notice kind="info">{thinNotice(model, cell)}</Notice>
-          {cell.stageSlug === 'upstream' && model.itemsOfCell(cell.idx, 'mineral').length > 0 && (
-            <p className="mt-2 text-sm text-paper-dim">
-              Minerals:{' '}
-              {model.itemsOfCell(cell.idx, 'mineral').map((l, i) => (
-                <span key={l.item.slug}>
-                  {i > 0 && ', '}
-                  <Link className="link" to={`/sector/minerals/${l.item.slug}`}>
-                    {l.item.label}
-                  </Link>
-                </span>
-              ))}
-            </p>
-          )}
+        {thin && (
+          <div className="mb-6">
+            <Notice kind="info">{thinNotice(model, cell)}</Notice>
+            {cell.stageSlug === 'upstream' && model.itemsOfCell(cell.idx, 'mineral').length > 0 && (
+              <p className="mt-2 text-sm text-paper-dim">
+                Minerals:{' '}
+                {model.itemsOfCell(cell.idx, 'mineral').map((l, i) => (
+                  <span key={l.item.slug}>
+                    {i > 0 && ', '}
+                    <Link className="link" to={`/sector/minerals/${l.item.slug}`}>
+                      {l.item.label}
+                    </Link>
+                  </span>
+                ))}
+              </p>
+            )}
+          </div>
+        )}
+        <Lenses />
+        <div className="space-y-12">
+          {groups.map((g) => (
+            <Group key={g.id} id={g.id} title={g.title} lede={g.lede} open={open.has(g.id)} onToggle={() => toggle(g.id)}>
+              {body[g.id]}
+            </Group>
+          ))}
         </div>
-      )}
-      <div className="space-y-10">
-        {sections.includes('snapshot') && (
-          <Section id="snapshot" title="Snapshot">
-            <Snapshot />
-          </Section>
-        )}
-        {sections.includes('who') && (
-          <Section id="who" title={SECTION_LABEL.who} sub="Does the answer change with the measure?">
-            <Who />
-          </Section>
-        )}
-        {sections.includes('leaders') && (
-          <Section id="leaders" title={SECTION_LABEL.leaders}>
-            <Leaders />
-          </Section>
-        )}
-        {sections.includes('trade') && <Lazy id="trade" title={SECTION_LABEL.trade}>{() => <TradeSection />}</Lazy>}
-        {sections.includes('investment') && <Lazy id="investment" title={SECTION_LABEL.investment}>{() => <InvestmentSection />}</Lazy>}
-        {sections.includes('production') && <Lazy id="production" title={SECTION_LABEL.production}>{() => <ProductionSection />}</Lazy>}
-        {sections.includes('resources') && <Lazy id="resources" title={SECTION_LABEL.resources}>{() => <ResourcesSection />}</Lazy>}
-        {sections.includes('demand') && <Lazy id="demand" title={SECTION_LABEL.demand}>{() => <DemandSection />}</Lazy>}
-        {sections.includes('prices') && <Lazy id="prices" title={SECTION_LABEL.prices}>{() => <PricesSection />}</Lazy>}
-        {sections.includes('policy') && <Lazy id="policy" title={SECTION_LABEL.policy}>{() => <PolicySection />}</Lazy>}
-        {sections.includes('technology') && (
-          <Section id="technology" title={SECTION_LABEL.technology}>
-            <Technology />
-          </Section>
-        )}
-        {sections.includes('context') && (
-          <Lazy id="context" title={SECTION_LABEL.context} sub="Not specific to this technology: the stage's activity in each economy.">
-            {() => <Context />}
-          </Lazy>
-        )}
-        {sections.includes('countries') && (
-          <Lazy id="countries" title={SECTION_LABEL.countries}>
-            {() => <Countries />}
-          </Lazy>
-        )}
-        <NotAvailable sections={sections} />
-        <SourcesOnPage />
-      </div>
       </div>
       <span className="hidden">{tech}{stage}</span>
     </div>
@@ -544,17 +670,20 @@ export default function SectorProfileView() {
   const tech = rawT && isTechSlug(rawT) ? rawT : null;
   const stage = rawS && isStageSlug(rawS) ? rawS : null;
   const cell = tech && stage ? model.cell(tech, stage) : null;
-  useTitle(cell ? model.cellLabel(cell) : 'Sectors', 'Sector Insights');
+  // a sub-component named in the URL (?sub=) titles the page once the trade basket confirms it
+  const { trade } = useTrade(tech, !!cell?.has_trade && !!state.sub);
+  const sub = useMemo(() => (cell && state.sub && trade ? validSub(subComponents(trade, model, cell.idx), state.sub) : null), [cell, state.sub, trade, model]);
+  useTitle(cell ? (sub ? `${sub} · ${model.cellLabel(cell)}` : model.cellLabel(cell)) : 'Sectors', 'Sector Insights');
   const { facts, h } = useFacts();
   const highlight = useHighlight(model);
-  if (!tech) return <Navigate to="/sector" replace state={{ notice: `No sector called '${rawT}'; showing all sectors.` }} />;
+  if (!tech) return <Redirect to="/sector" notice={`No sector called '${rawT}'; showing all sectors.`} />;
   if (!stage || !cell) {
-    return <Navigate to={`/sector/${tech}`} replace state={{ notice: stage ? `${TECH_LABELS[tech]} has no ${STAGE_LABELS[stage]} cell; showing the whole chain.` : `No stage called '${rawS}'; showing the whole ${TECH_LABELS[tech]} chain.` }} />;
+    return <Redirect to={`/sector/${tech}`} notice={stage ? `${TECH_LABELS[tech]} has no ${STAGE_LABELS[stage]} cell; showing the whole chain.` : `No stage called '${rawS}'; showing the whole ${TECH_LABELS[tech]} chain.`} />;
   }
   return (
     <ProfileProvider value={{ model, cell, tech, stage, facts, highlight, eu: state.eu }}>
       <CsvRegistryProvider>
-        <Header cell={cell} tech={tech} stage={stage} />
+        <Header cell={cell} tech={tech} stage={stage} sub={sub} />
         <ChunkGate h={h} name="sector-facts">
           {() => <Body cell={cell} tech={tech} stage={stage} facts={facts} />}
         </ChunkGate>

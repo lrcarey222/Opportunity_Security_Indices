@@ -91,7 +91,8 @@ function NodeItem({ n }: { n: AibNode }) {
   );
 }
 
-export function NodeSection() {
+/** `frontier`: also show the specialization frontier card (false when the page puts it under method details). */
+export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
   const { c, nodes, meta, names } = useCompact();
   const mix = classMix(nodes.map((n) => n.cls));
   const rows = nodes.map((n) => nodeRow(n, names));
@@ -149,12 +150,12 @@ export function NodeSection() {
           ))}
         </ul>
       </ChartCard>
-      <FrontierCard />
+      {frontier && <FrontierCard />}
     </Section>
   );
 }
 
-function FrontierCard() {
+export function FrontierCard() {
   const { c, nodes, meta, names, name } = useCompact();
   const withFrontier = nodesWithFrontier(nodes);
   const [pick, setPick] = useState('');

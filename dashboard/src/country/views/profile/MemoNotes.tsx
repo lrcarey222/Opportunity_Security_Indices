@@ -92,7 +92,7 @@ export function DataNotes() {
         }))
       : [];
     const readme = [
-      `Country Insights tables for ${name} (paper baseline as of ${m.as_of_label}).`,
+      `Country profile tables for ${name} (NEIS baseline as of ${m.as_of_label}).`,
       `Built ${m.created} from Strategic export ${(m.strategic_bundle_id ?? '').slice(0, 8)} and Sector export ${(m.sector_bundle_id ?? '').slice(0, 8)}.`,
       '',
       'sectors.csv     Energy Security, Economic Opportunity, corners, Strategic Index and policy thirds by sector',

@@ -7,7 +7,8 @@ import {
   sectorProfileHref, sectorTabHref, strategicCarry, strategicCountry, strategicTabHref,
 } from './lastLocation.ts';
 import {
-  COUNTRY_NAV, countryIsoOfPath, countryNavKeyOf, isSectorProfilePath, MODULES, placeOf, sectorCellOfPath, sectorNavKeyOf, STRATEGIC_NAV, strategicNavOf,
+  ABOUT_NAV, aboutNavKeyOf, AIB_NAV, aibNavKeyOf, COUNTRY_NAV, countryIsoOfPath, countryNavKeyOf, isSectorProfilePath, MODULES, placeOf, sectorCellOfPath, sectorNavKeyOf,
+  STRATEGIC_NAV, strategicNavOf, tabOf,
 } from './modules.ts';
 import { isLegacyStrategicSearch } from './HomeOrLegacy.tsx';
 import { pageTitle } from './title.ts';
@@ -29,21 +30,39 @@ describe('places and nav keys', () => {
     // Country Insights lives at /countries; the Strategic "Country scores" view keeps /country
     for (const p of ['/countries', '/countries/about', '/countries/JPN', '/countries/usa/memo']) expect(placeOf(p)).toBe('country');
     expect(placeOf('/country')).toBe('strategic');
-    expect(placeOf('/glossary')).toBeNull();
+    // IA refactor: About owns /about and /glossary; the AIB module owns /aib and /compacts
+    expect(placeOf('/glossary')).toBe('about');
+    expect(placeOf('/about')).toBe('about');
+    for (const p of ['/aib', '/aib/partnerships', '/aib/roles', '/compacts', '/compacts/AIB-C01']) expect(placeOf(p)).toBe('aib');
   });
-  it("four modules in the user's order; the Strategic nav labels spell their views out", () => {
-    expect(MODULES.map((m) => [m.id, m.label, m.tag, m.home])).toEqual([
-      ['sector', 'Sector Insights', 'DESCRIPTIVE DATA', '/sector'],
-      ['strategic', 'Strategic Insights', 'NORMATIVE PRIORITISATION', '/overview'],
-      ['country', 'Country Insights', 'COUNTRY BRIEFING', '/countries'],
-      ['aib', 'Sectoral Compacts', 'COORDINATION DESIGN', '/compacts'],
+  it('legacy Strategic views show the tab that owns their content', () => {
+    for (const p of ['/overview', '/country/USA', '/space', '/strategic/JPN']) expect(tabOf(p)).toBe('country');
+    for (const p of ['/partners/CAN', '/network/batteries-midstream']) expect(tabOf(p)).toBe('aib');
+    for (const p of ['/methods', '/data', '/glossary', '/about']) expect(tabOf(p)).toBe('about');
+    expect(tabOf('/')).toBeNull();
+    expect(tabOf('/nothing')).toBeNull();
+    expect(aibNavKeyOf('/aib')).toBe('overview');
+    expect(aibNavKeyOf('/aib/partnerships')).toBe('partnerships');
+    expect(aibNavKeyOf('/compacts/AIB-C01')).toBe('compacts');
+    expect(aibNavKeyOf('/compacts/about')).toBe('about');
+    expect(aibNavKeyOf('/partners/CAN')).toBe('partnerships');
+    expect(aboutNavKeyOf('/methods')).toBe('methods');
+    expect(aboutNavKeyOf('/glossary')).toBe('glossary');
+  });
+  it('four tabs: Sectors, Countries, Allied Industrial Base, About (secondary); the legacy Strategic labels spell their views out', () => {
+    expect(MODULES.map((m) => [m.id, m.label, m.home, !!m.secondary])).toEqual([
+      ['sector', 'Sectors', '/sector', false],
+      ['country', 'Countries', '/countries', false],
+      ['aib', 'Allied Industrial Base', '/aib', false],
+      ['about', 'About', '/about', true],
     ]);
+    expect(AIB_NAV.map((n) => n.label)).toEqual(['Overview', 'Partnerships', 'Sectoral Compacts', 'Country roles']);
+    expect(ABOUT_NAV.map((n) => n.to)).toEqual(['/about', '/methods', '/data', '/glossary']);
     expect(STRATEGIC_NAV.map((n) => n.label)).toEqual(['Overview', 'Country scores', 'Security vs opportunity', 'Strategic Index', 'Partners', 'Allied network', 'Methods', 'Data']);
     expect(STRATEGIC_NAV.map((n) => n.to)).toEqual(['/overview', '/country', '/space', '/strategic', '/partners', '/network', '/methods', '/data']);
     expect(COUNTRY_NAV).toEqual([
-      { key: 'countries', to: '/countries', label: 'Countries' },
+      { key: 'countries', to: '/countries', label: 'All countries' },
       { key: 'profile', to: '/countries/USA', label: 'Country profile' },
-      { key: 'about', to: '/countries/about', label: 'About & data' },
     ]);
   });
   it('Country paths: the ISO3 of a profile or memo, and the nav entry', () => {
@@ -90,9 +109,13 @@ describe('places and nav keys', () => {
     expect(isLegacyStrategicSearch('?c=USA&eu=bloc')).toBe(false);
     expect(pageTitle('')).toBe('Allied Industrial Base Explorer | NEIS Center');
     expect(pageTitle('Overview')).toBe('Overview | Allied Industrial Base Explorer | NEIS Center');
-    expect(pageTitle('Batteries — Midstream', 'Sector Insights')).toBe('Batteries — Midstream | Sector Insights | Allied Industrial Base Explorer | NEIS Center');
-    expect(pageTitle('Japan', 'country')).toBe('Japan | Country Insights | Allied Industrial Base Explorer | NEIS Center');
-    expect(pageTitle('', 'Country Insights')).toBe('Country Insights | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('Batteries — Midstream', 'Sector Insights')).toBe('Batteries — Midstream | Sectors | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('Batteries — Midstream', 'sector')).toBe('Batteries — Midstream | Sectors | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('Compacts', 'aib')).toBe('Compacts | Allied Industrial Base | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('Countries', 'country')).toBe('Countries | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('Overview', 'strategic')).toBe('Overview | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('Japan', 'country')).toBe('Japan | Countries | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('', 'Country Insights')).toBe('Countries | Allied Industrial Base Explorer | NEIS Center');
   });
   it("the shell's slug copies equal the contract's", () => {
     expect(SHELL_TECH_SLUGS).toEqual([...TECH_SLUGS]);

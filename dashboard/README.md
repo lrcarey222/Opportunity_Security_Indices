@@ -1,32 +1,37 @@
 # Allied Industrial Base Explorer
 
 An interactive companion to the NEIS Center paper *Opportunity, Security, and the Allied Industrial
-Base: A Quantitative Network Approach to Coalition Supply Chains for Energy Technologies*. A Home
-page (`/`) leads into four modules that share one header:
+Base: A Quantitative Network Approach to Coalition Supply Chains for Energy Technologies*. Since the
+October 2026 refactor it is organised around three questions. Home (`/`) has one entry card for each,
+and every page shares one header with four tabs:
 
-| Module | Paths | What it is |
+| Tab | Main paths | The question |
 |---|---|---|
-| **Sector Insights** (descriptive data) | `/sector/...` | measured values in their sources' own units and years: who produces, holds, trades, invests in and regulates each energy technology's supply chain, upstream to downstream. No indices, no weights, no dials |
-| **Strategic Insights** (normative prioritisation) | `/overview`, `/country`, `/space`, `/strategic`, `/partners`, `/network`, `/methods`, `/data` | the paper's model, recomputed in the browser under four preference dials |
-| **Country Insights** (country briefing) | `/countries`, `/countries/:iso3`, `/countries/about` | the paper's baseline for one economy beside the raw data behind it, with policy memos |
-| **Sectoral Compacts** (coordination design) | `/compacts`, `/compacts/:id`, `/compacts/about` | the Allied Industrial Base trade and investment model (scripts/31, 32): which supply chains need coalitions to coordinate trade, build capacity or manage specialization under a supply shock, and which economies each compact needs |
+| **Sectors** | `/sector` (all sectors), `/sector/:tech` (the supply chain, Upstream -> Midstream -> Downstream), `/sector/:tech/:stage` (the Sector profile: Economic Opportunity, Energy Security, Policy and Climate at the top, the detail below), `/sector/minerals`, `/sector/explore` (advanced explorer) | What matters about this sector? Measured values in their sources' own units and years; no indices, no weights, no dials |
+| **Countries** | `/countries`, `/countries/:iso3` (the Country profile: strategic position, opportunities and risks, sector position, policy and climate, partnerships, role in the Allied Industrial Base), `/countries/:iso3/memo`, `/countries/about` | What is this country's strategic position? The only place with the preference dials |
+| **Allied Industrial Base** | `/aib` (overview), `/aib/partnerships` (trade, investment, development), `/compacts` and `/compacts/:id` (Sectoral Compacts), `/aib/roles` (country roles), `/compacts/about` | Where does international coordination add value, who needs to coordinate, and in what form? The AIB trade and investment model (scripts/31, 32, 84) |
+| **About** (secondary) | `/about`, `/methods`, `/data` (Data & sources), `/glossary` | the methods, the data and their sources, the glossary |
 
-In Strategic Insights readers move four preference dials (and an advanced panel) and the explorer
-recomputes, in their browser, the Energy Security and Economic Opportunity pillars, the Policy and
-Strategic indices, the bilateral partnership indices (Friendshore, Partnership Opportunity, the PSI)
-and the allied network design.
+In the Country profile readers open **Perspective: NEIS baseline** and move four preference dials (an
+advanced panel sits behind its own disclosure); the explorer recomputes, in their browser, the Policy
+and Strategic indices, the bilateral partnership indices (Friendshore, Partnership Opportunity, the PSI)
+and the allied network design. The dials change priorities, rankings and partner attractiveness; they
+never change observed or modelled facts (trade flows, production, concentration, the Energy Security and
+Economic Opportunity values, and the whole AIB bundle: shock coverage, residual gaps, coordination
+dividend, classes, compacts and roles). Pages label the two "Observed / modelled facts" and
+"Preference-adjusted priorities". (Only the advanced panel's category weights move the two pillars.)
 
 | Dial | Weighs up |
 |---|---|
 | Hawkishness | security: supply need, aligned partners, diversification of the network |
 | Bullishness | opportunity: economic opportunity, export markets, economic size |
 | Populism | policy signals and onshoring: industrial policy, midstream stages, self-supply |
-| Greenness | climate: clean technologies and climate ambition (coal, oil and gas dropped at 90+) |
+| Climate (URL key `g`, engine key `greenness`) | clean technologies and climate ambition (coal, oil and gas dropped at 90+) |
 
-Every dial runs from 0 to 100; 50 is the paper. With every dial at 50 and the advanced settings at
-their defaults, every page shows the pipeline's exported values exactly. Any other setting is a
-scenario, recomputed in a Web Worker, and every view can show the scenario, the paper's baseline or
-the change. The scenario lives in the page address, so a copied link reproduces it.
+Every dial runs from 0 to 100; 50 is the NEIS baseline (the paper). With every dial at 50 and the
+advanced settings at their defaults, every page shows the pipeline's exported values exactly. Any other
+setting is a custom perspective, recomputed in a Web Worker; it lives in the page address, so a copied
+link reproduces it.
 
 The model is the paper's final method (data build of 10 Oct 2026): a coalition of 57 economies (31
 core members and 26 partners, Brazil among them through its mineral reserves); the EU-27 as one node
@@ -39,11 +44,18 @@ switch in the advanced panel). The Methods page has the details.
 It is a static site: Vite + React + TypeScript, Tailwind v4 with the NEIS design tokens, Observable
 Plot and d3 for the charts. There is no server; the data are files next to the app.
 
-Every link made before the Home page existed keeps working: Strategic paths are unchanged, and a bare
-`/` carrying a Strategic key (`/?h=80&tech=Solar`) still redirects to `/overview?h=80&tech=Solar`.
-Home and Sector Insights never start the model's Web Worker; it starts on the first Strategic page
-(or when the pointer rests on a link to it) and survives switching modules. The module tabs remember
-the last page of each module (the Strategic scenario included) for the session.
+Old links keep working. The former Strategic Insights views keep their bare paths as advanced pages
+with the dial panel (`/overview`, `/country`, `/space`, `/strategic`, `/partners`, `/network`; the
+header files them under Countries or Allied Industrial Base); their one-economy links open the
+matching section of the Country profile, which embeds the same views (`/country/:iso3` -> `#sectors`,
+`/strategic/:iso3` -> `#opportunities`, `/partners/:iso3` -> `#partnerships`, query string kept). The
+old module paths are aliases (`/strategic-insights` and `/country-insights` -> `/countries`,
+`/sector-insights` and `/sectors` -> `/sector`, `/sectoral-compacts` -> `/compacts`,
+`/allied-industrial-base` -> `/aib`), and a bare `/` carrying a scenario key (`/?h=80&tech=Solar`) still
+redirects to `/overview?h=80&tech=Solar`. Home, Sectors, the AIB pages and a Country profile at the
+NEIS baseline never start the model's Web Worker; it starts when a page needs it (a custom
+perspective, AIB development partnerships, Methods and Data, a legacy Strategic page) and survives
+switching tabs. The tabs remember the last page of each for the session.
 
 ## How the numbers are produced
 

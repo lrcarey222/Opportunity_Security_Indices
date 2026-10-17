@@ -15,6 +15,8 @@ import { MODULE_CARDS } from '../../shell/Home.tsx';
 import type { AibDoc } from '../contract.ts';
 import { AibLoadError, AibStore, setAibStoreForTests, type AibSource } from '../data/store.ts';
 import { resetLastCompact } from '../nav.ts';
+import { peekEngineClient, setEngineClient } from '../../state/EngineProvider.tsx';
+import { EngineClient } from '../../worker/client.ts';
 import { FIXTURE_DIR, fixtureSource, haveFixture, readDoc, readManifest } from './fixture.ts';
 
 const restore: (() => void)[] = [];
@@ -75,6 +77,11 @@ afterEach(() => {
   resetLastCompact();
 });
 
+/** A client whose worker never answers: the engine stays 'starting' for good (as in app.test). */
+function neverReadyClient(): EngineClient {
+  return new EngineClient({ onmessage: null, postMessage: () => undefined }, '/never/');
+}
+
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(<RouterProvider router={router} />);
@@ -86,7 +93,8 @@ const h1 = async (name: RegExp | string) => screen.findByRole('heading', { level
 const main = () => document.querySelector('main') as HTMLElement;
 const noAcronyms = () => expect(bareAcronyms(document.body)).toEqual([]);
 const tabs = () => screen.getByRole('navigation', { name: 'Modules' });
-const views = () => screen.getByRole('navigation', { name: 'Sectoral Compacts views' });
+const views = () => screen.getByRole('navigation', { name: 'Allied Industrial Base views' });
+const AIB_VIEWS = ['Overview', 'Partnerships', 'Sectoral Compacts', 'Country roles'];
 
 /** Open every table twin of the page; the number of cards that have one. */
 function openTwins(): number {
@@ -102,24 +110,31 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   it('landing: the definition, a card per compact with its strip, every node by class; the fourth tab is current', async () => {
     renderAt('/compacts');
     expect(await h1('Sectoral Compacts')).toBeTruthy();
-    await waitFor(() => expect(document.title).toMatch(/^Compacts \| Sectoral Compacts \| Allied Industrial Base Explorer/));
+    await waitFor(() => expect(document.title).toMatch(/^Compacts \| Allied Industrial Base \| Allied Industrial Base Explorer/));
     expect(screen.getByText(/variable-geometry coalition/)).toBeTruthy();
     expect(screen.getByText(/derived from the model/)).toBeTruthy();
-    // the fourth tab, current; the views nav the module registered (with the first compact)
+    // the Allied Industrial Base tab, current; the views nav the module registered (IA refactor)
     const t = within(tabs()).getAllByRole('link');
-    expect(t.map((a) => a.textContent)).toEqual(['Sector Insights', 'Strategic Insights', 'Country Insights', 'Sectoral Compacts']);
-    expect(t[3].getAttribute('aria-current')).toBe('true');
-    await waitFor(() => expect(within(views()).getAllByRole('link').map((a) => a.textContent)).toEqual(['Compacts', 'Compact', 'About & data']));
-    expect(within(views()).getByRole('link', { name: 'Compact' }).getAttribute('href')).toBe(`/compacts/${first.id}`);
-    expect(within(views()).getByRole('link', { name: 'Compacts' }).getAttribute('aria-current')).toBe('page');
+    expect(t.map((a) => a.textContent)).toEqual(['Sectors', 'Countries', 'Allied Industrial Base', 'About']);
+    expect(t[2].getAttribute('aria-current')).toBe('true');
+    await waitFor(() => expect(within(views()).getAllByRole('link').map((a) => a.textContent)).toEqual(AIB_VIEWS));
+    expect(within(views()).getByRole('link', { name: 'Sectoral Compacts' }).getAttribute('aria-current')).toBe('page');
     // the cards
     const region = screen.getByRole('region', { name: `The compacts (${doc.compacts.length})` });
     const cards = within(region).getAllByRole('article');
     expect(cards).toHaveLength(doc.compacts.length);
     expect(within(cards[0]).getByRole('link', { name: first.name }).getAttribute('href')).toBe(`/compacts/${first.id}`);
-    expect(within(cards[0]).getByText(first.archetype)).toBeTruthy();
+    // the slim card (IA refactor): only why it exists, main nodes, key countries, the policy need, the resilience effect, View compact
+    expect(within(cards[0]).getAllByRole('term').map((t) => t.textContent)).toEqual(['Why it exists', 'Main nodes', 'Key countries', 'Policy need', 'Resilience effect']);
+    expect(within(cards[0]).getByRole('link', { name: `View compact: ${first.name}` }).getAttribute('href')).toBe(`/compacts/${first.id}`);
     expect(within(cards[0]).getByRole('list', { name: `${first.name}: demand served at each step` })).toBeTruthy();
     expect(within(cards[0]).getAllByRole('listitem')).toHaveLength(4);
+    // the strategic map first, the full node table behind "Explore all nodes"
+    const map = screen.getByRole('region', { name: 'Where compacts are justified' });
+    expect(within(map).getByText('Observed / modelled facts')).toBeTruthy();
+    expect(within(map).getByRole('img', { name: /^Strategic map of / })).toBeTruthy();
+    const explore = screen.getByText(/^Explore all nodes \(/).closest('details') as HTMLDetailsElement;
+    expect(explore.open).toBe(false);
     // the classification overview: every class present has its group; nodes link to their compact
     const nodes = screen.getByRole('region', { name: 'How every sub-sector is classified' });
     for (const cls of new Set(doc.nodes.map((n) => n.cls))) expect(within(nodes).getAllByText(cls).length).toBeGreaterThan(0);
@@ -132,9 +147,9 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const marks = within(legend).getAllByRole('listitem').map((li) => (li.querySelector('span[aria-hidden]') as HTMLElement).getAttribute('style'));
     expect(new Set(marks).size).toBe(5);
     noAcronyms();
-    expect(openTwins()).toBe(1);
-    expect(within(main()).getAllByRole('table').length).toBeGreaterThanOrEqual(1);
-    expect(within(main()).getByRole('button', { name: 'Download CSV' })).toBeTruthy();
+    expect(openTwins()).toBe(2);
+    expect(within(main()).getAllByRole('table').length).toBeGreaterThanOrEqual(2);
+    expect(within(main()).getAllByRole('button', { name: 'Download CSV' })).toHaveLength(2);
     noAcronyms();
     // the document is loaded once, with the manifest
     expect(source.calls).toEqual(['manifest.json', readManifest().files.compacts]);
@@ -150,19 +165,28 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(screen.getByText(`${n} ${n === 1 ? 'node' : 'nodes'} of ${doc.nodes.length}`)).toBeTruthy();
   });
 
-  it('a compact: the six sections in order, charts drawn, a table twin and a CSV on every card, no bare acronym', async () => {
+  it('a compact: the four questions in order, method details closed, charts drawn, a table twin and a CSV on every card, no bare acronym', async () => {
     renderAt(`/compacts/${first.id}`);
     expect(await h1(first.name)).toBeTruthy();
-    await waitFor(() => expect(document.title).toMatch(new RegExp(`^${first.id} .* \\| Sectoral Compacts \\|`)));
+    await waitFor(() => expect(document.title).toMatch(new RegExp(`^${first.id} .* \\| Allied Industrial Base \\|`)));
+    // the four questions (IA refactor), then the method details (closed) with the members-joining curve and the reading notes
     const h2 = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    const order = ['Compact overview', 'Why it exists', 'Node-by-node structure', 'Partnership network', 'Coverage comparison', 'How resilience changes as countries join', 'Reading these results'];
+    const order = ['Why this compact?', 'Who and what?', 'What does coordination change?', 'What should governments do?', 'How resilience changes as countries join', 'Reading these results'];
     expect(h2.filter((h) => order.includes(h ?? ''))).toEqual(order);
-    await waitFor(() => expect(within(views()).getByRole('link', { name: 'Compact' }).getAttribute('aria-current')).toBe('page'));
+    const h3 = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    for (const s of ['Coverage comparison', 'Partnership network', 'Node-by-node structure', 'Treatment node by node']) expect(h3).toContain(s);
+    expect((screen.getByText(/^Method details:/).closest('details') as HTMLDetailsElement).open).toBe(false);
+    expect(screen.getByTestId('why-answer').textContent).toMatch(/^The shock removes \d+% of the compact's demand/);
+    expect(within(main()).getAllByText('Observed / modelled facts').length).toBeGreaterThan(0);
+    await waitFor(() => expect(within(views()).getByRole('link', { name: 'Sectoral Compacts' }).getAttribute('aria-current')).toBe('page'));
     // the role matrix: the eight roles as columns, an economy per row, its name (never a bare code)
     const roles = screen.getByRole('region', { name: 'Members and their roles' });
     const heads = within(roles).getAllByRole('columnheader').map((h) => h.textContent);
     expect(heads).toEqual(['Economy', 'Demand anchor', 'Specialized supplier', 'Resource supplier', 'Capacity-building / investment host', 'Technology partner', 'Bridge partner', 'Associate partner', 'Supplier']);
     expect(within(roles).getAllByRole('rowheader').length).toBe(new Set(first.roles.map((x) => x.iso3)).size);
+    // each economy opens its Country profile at "Role in the Allied Industrial Base"
+    const iso = first.roles[0].iso3;
+    expect(within(roles).getAllByRole('link').some((a) => a.getAttribute('href') === `/countries/${iso}#aib-role`)).toBe(true);
     // why it exists: the five tiles
     const why = screen.getByRole('region', { name: 'The case for coordination' });
     for (const t of ['Shock exposure', 'Coordination dividend', 'Residual gap after trade', 'Residual gap after investment', 'Concentration']) expect(within(why).getByText(t)).toBeTruthy();
@@ -178,19 +202,20 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(main().querySelectorAll('figure svg').length).toBeGreaterThanOrEqual(5);
     noAcronyms();
     const cards = openTwins();
-    expect(cards).toBe(9);
-    expect(within(main()).getAllByRole('button', { name: 'Download CSV' })).toHaveLength(9);
+    expect(cards).toBe(10);
+    expect(within(main()).getAllByRole('button', { name: 'Download CSV' })).toHaveLength(10);
     expect(within(main()).getAllByRole('table').length).toBeGreaterThanOrEqual(cards);
     noAcronyms();
   });
 
-  it('every compact renders its six sections and opens its table twins without a bare acronym', async () => {
+  it('every compact renders its four questions and opens its table twins without a bare acronym', async () => {
     for (const c of doc.compacts) {
       renderAt(`/compacts/${c.id}`);
       expect(await h1(c.name)).toBeTruthy();
+      expect(screen.getByRole('heading', { level: 2, name: 'What should governments do?' })).toBeTruthy();
       expect(screen.getByRole('heading', { level: 2, name: 'How resilience changes as countries join' })).toBeTruthy();
       noAcronyms();
-      expect(openTwins()).toBe(9);
+      expect(openTwins()).toBe(10);
       noAcronyms();
       cleanup();
     }
@@ -228,12 +253,12 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const card = screen.getAllByRole('article').find((a) => within(a).queryByRole('link', { name: u.name }))!;
     const tag = within(card).getByText('Compact unnecessary');
     expect(tag.getAttribute('data-tone')).toBe('unnecessary');
-    expect(within(card).getByText(/^Existing relationships do nearly as well/)).toBeTruthy();
+    expect(within(card).getByText(/Existing relationships do nearly as well/)).toBeTruthy();
     cleanup();
     renderAt(`/compacts/${u.id}`);
     expect(await h1(u.name)).toBeTruthy();
     expect(screen.getAllByText('Compact unnecessary').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByRole('region', { name: 'Why it exists' }).textContent).toMatch(/existing relationships, not a new coalition, carry most of the response/);
+    expect(screen.getByRole('region', { name: 'Why this compact?' }).textContent).toMatch(/existing relationships, not a new coalition, carry most of the response/);
     noAcronyms();
   });
 
@@ -289,7 +314,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(screen.getByText(String(doc.meta.tradeYear))).toBeTruthy();
     for (const k of Object.keys(doc.meta.thresholds)) expect(screen.getByText(k)).toBeTruthy();
     expect(screen.getByText('docs/aib_methodology.md')).toBeTruthy();
-    await waitFor(() => expect(within(views()).getByRole('link', { name: 'About & data' }).getAttribute('aria-current')).toBe('page'));
+    await waitFor(() => expect(within(views()).getAllByRole('link').map((a) => a.textContent)).toEqual(AIB_VIEWS));
     noAcronyms();
   });
 
@@ -318,8 +343,8 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     renderAt('/compacts/about');
     expect(await screen.findByText('No compacts data', undefined, { timeout: 30_000 })).toBeTruthy();
     expect(screen.getByText(/scripts\/84_export_aib_data\.R/)).toBeTruthy();
-    expect(within(tabs()).getByRole('link', { name: 'Sectoral Compacts' }).getAttribute('aria-current')).toBe('true');
-    expect(within(views()).getAllByRole('link').map((a) => a.textContent)).toEqual(['Compacts', 'About & data']);
+    expect(within(tabs()).getByRole('link', { name: 'Allied Industrial Base' }).getAttribute('aria-current')).toBe('true');
+    expect(within(views()).getAllByRole('link').map((a) => a.textContent)).toEqual(AIB_VIEWS);
     expect(screen.getByRole('contentinfo')).toBeTruthy();
     noAcronyms();
   });
@@ -337,6 +362,88 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(await h1('Sectoral Compacts')).toBeTruthy();
   });
 
+  it('country roles (IA refactor): the role matrix in the brief order, one row per economy with its anchor, each linking to its Country profile; Country roles current', async () => {
+    renderAt('/aib/roles#role-' + doc.compacts[0].coalition.members[0]);
+    expect(await h1('Country roles')).toBeTruthy();
+    await waitFor(() => expect(within(views()).getByRole('link', { name: 'Country roles' }).getAttribute('aria-current')).toBe('page'));
+    const iso = doc.compacts[0].coalition.members[0];
+    const link = within(main()).getAllByRole('link').find((a) => a.getAttribute('href') === `/countries/${iso}#aib-role`);
+    expect(link).toBeTruthy();
+    const matrix = screen.getByRole('region', { name: 'Roles by economy' });
+    expect(within(matrix).getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
+      'Economy', 'Resource supplier', 'Specialized supplier', 'Investment host', 'Demand anchor', 'Bridge', 'Technology partner', 'Other supplier', 'Compact participation',
+    ]);
+    const row = document.getElementById(`role-${iso}`) as HTMLElement;
+    expect(row.className).toContain('bg-signal/10');
+    expect(within(row).getAllByRole('link').some((a) => a.getAttribute('href') === `/compacts/${doc.compacts[0].id}`)).toBe(true);
+    expect(within(main()).getByText('Observed / modelled facts')).toBeTruthy();
+    noAcronyms();
+    expect(openTwins()).toBe(1);
+    noAcronyms();
+  });
+
+  it('overview (IA refactor): node counts by treatment, the highest severity and dividends, the three question cards; never starts the engine', async () => {
+    setEngineClient(null);
+    renderAt('/aib');
+    expect(await h1('Allied Industrial Base')).toBeTruthy();
+    await waitFor(() => expect(within(views()).getByRole('link', { name: 'Overview' }).getAttribute('aria-current')).toBe('page'));
+    const tiles = screen.getByRole('list', { name: 'Nodes by treatment' });
+    const items = within(tiles).getAllByRole('listitem');
+    ['COORDINATE', 'BUILD', 'MANAGE SPECIALIZATION', 'LOW INTERVENTION'].forEach((cls, i) => {
+      const n = doc.nodes.filter((x) => x.cls === cls).length;
+      expect(items[i].textContent).toContain(cls);
+      expect(items[i].textContent).toContain(`${n} ${n === 1 ? 'node' : 'nodes'}`);
+    });
+    expect(within(screen.getByRole('list', { name: 'Nodes with the highest shock exposure' })).getAllByRole('listitem').length).toBeGreaterThan(0);
+    expect(within(screen.getByRole('list', { name: 'Nodes with the largest coordination dividend' })).getAllByRole('listitem').length).toBeGreaterThan(0);
+    const hrefs = within(screen.getByRole('region', { name: 'Who coordinates, and how' })).getAllByRole('link').map((a) => a.getAttribute('href'));
+    expect(hrefs).toEqual(['/aib/partnerships', '/compacts', '/aib/roles']);
+    expect(within(main()).getAllByText('Observed / modelled facts').length).toBeGreaterThan(0);
+    expect(peekEngineClient()).toBeNull();
+    noAcronyms();
+  });
+
+  it('partnerships (IA refactor): Trade by default with the coordinated relationships; the toggle and the filters write the URL; Investment and Development', async () => {
+    setEngineClient(neverReadyClient());
+    const r = renderAt('/aib/partnerships');
+    expect(await h1('Partnerships')).toBeTruthy();
+    await waitFor(() => expect(within(views()).getByRole('link', { name: 'Partnerships' }).getAttribute('aria-current')).toBe('page'));
+    const trade = screen.getByRole('region', { name: 'Coordinated trade relationships' });
+    const edge = doc.compacts.flatMap((c) => c.trade).find((e) => e.usd && e.usd > 0 && e.from !== e.to)!;
+    // the Sankey draws once its width is measured: wait for it (slow under a loaded full run)
+    expect(await within(trade).findByRole('img', { name: /exporter to importer/ }, { timeout: 15_000 })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Specialized suppliers' })).toBeTruthy();
+    expect(screen.getAllByText('Observed / modelled facts').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Preference-adjusted priorities · NEIS baseline/).length).toBeGreaterThan(0);
+    // the economy filter
+    fireEvent.change(screen.getByRole('combobox', { name: 'Economy' }), { target: { value: edge.from } });
+    await waitFor(() => expect(r.state.location.search).toBe(`?country=${edge.from}`));
+    fireEvent.click(within(trade).getByRole('button', { name: 'Table' }));
+    for (const a of within(trade).getAllByRole('link').filter((x) => x.getAttribute('href')?.endsWith('#partnerships'))) expect(a.getAttribute('href')).toMatch(/^\/countries\/[A-Z]{3}#partnerships$/);
+    // Investment
+    fireEvent.click(screen.getByRole('radio', { name: 'Investment' }));
+    await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('mode')).toBe('investment'));
+    expect(await screen.findByRole('region', { name: 'Where new capacity buys most resilience' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Investment hosts' })).toBeTruthy();
+    // Development: the capacity gaps (facts) without waiting for the engine
+    fireEvent.click(screen.getByRole('radio', { name: 'Development' }));
+    expect(await screen.findByRole('region', { name: 'Capacity gaps' })).toBeTruthy();
+    noAcronyms();
+    setEngineClient(null);
+  });
+
+  it('a compact deep link to a method anchor opens the method details', async () => {
+    renderAt(`/compacts/${first.id}#coalition`);
+    expect(await h1(first.name)).toBeTruthy();
+    expect((screen.getByText(/^Method details:/).closest('details') as HTMLDetailsElement).open).toBe(true);
+  });
+
+  it('/aib/<unknown> goes to the overview with a notice', async () => {
+    const router = renderAt('/aib/nothing');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/aib'), { timeout: 30_000 });
+    expect(await screen.findByText(/That Allied Industrial Base page does not exist/, undefined, { timeout: 30_000 })).toBeTruthy();
+  });
+
   it('a newer export asks for a reload', async () => {
     useFailing({ manifest: async () => ({ ...readManifest(), version: 2 }), json: async () => ({}) });
     renderAt('/compacts');
@@ -346,10 +453,10 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
 });
 
 describe('Home', () => {
-  it('has the fourth card: Sectoral Compacts, its tag, its links and its button', async () => {
-    expect(MODULE_CARDS.map((c) => c.id)).toEqual(['sector', 'strategic', 'country', 'aib']);
-    const card = MODULE_CARDS[3];
-    expect(card).toMatchObject({ title: 'Sectoral Compacts', tag: 'COORDINATION DESIGN', button: 'Open Sectoral Compacts' });
-    expect(card.links.every((l) => l.to.startsWith('/compacts'))).toBe(true);
+  it('has the third entry card: the Allied Industrial Base, its links and its button', async () => {
+    expect(MODULE_CARDS.map((c) => c.id)).toEqual(['sector', 'country', 'aib']);
+    const card = MODULE_CARDS[2];
+    expect(card).toMatchObject({ title: 'Explore the Allied Industrial Base', button: 'Explore AIB' });
+    expect(card.links.every((l) => l.to.startsWith('/compacts') || l.to.startsWith('/aib'))).toBe(true);
   });
 });

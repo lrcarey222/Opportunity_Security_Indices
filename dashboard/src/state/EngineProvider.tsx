@@ -17,7 +17,7 @@ import type { CorePayload, NetworkPayload, PartnerPayload } from '../worker/prot
 import type { Advanced, Dials } from '../engine/types.ts';
 import { buildAppData, type AppData } from './appData.ts';
 import {
-  advancedChanged, cloneAdvanced, defaultScenario, navSearch, parseSearch, scenarioKey, toSpec, writeSearch,
+  advancedChanged, appendSearch, cloneAdvanced, defaultScenario, navSearch, parseSearch, scenarioKey, splitSearch, toSpec, writeSearch,
   type Scenario, type ShowMode, type ViewState,
 } from './url.ts';
 
@@ -103,30 +103,44 @@ interface ScenarioCtx {
 
 const ScenarioContext = createContext<ScenarioCtx | null>(null);
 
-export function ScenarioProvider({ children }: { children: ReactNode }) {
+/**
+ * `hostKeys` (IA refactor, 2026-10-16): when Strategic views are embedded in another module's page
+ * (shell/EngineScope.tsx), the query keys that page owns (e.g. the Country profile's cell, partner,
+ * all). The Strategic parser never sees them (no "unknown setting" problem) and every URL write keeps
+ * them, and the hash. Without it the provider behaves exactly as before.
+ */
+export function ScenarioProvider({ children, hostKeys }: { children: ReactNode; hostKeys?: readonly string[] }) {
   const app = useApp();
   const ctx = app.urlCtx;
   const loc = useLocation();
   const navigate = useNavigate();
-  const parsed = useMemo(() => parseSearch(loc.search, ctx), [loc.search, ctx]);
-  const latest = useRef({ parsed, pathname: loc.pathname });
-  latest.current = { parsed, pathname: loc.pathname };
+  const hostKey = hostKeys?.join('|') ?? '';
+  const split = useMemo(() => splitSearch(loc.search, hostKey ? hostKey.split('|') : []), [loc.search, hostKey]);
+  const parsed = useMemo(() => parseSearch(split.own, ctx), [split.own, ctx]);
+  const latest = useRef({ parsed, pathname: loc.pathname, host: split.host, hash: loc.hash });
+  latest.current = { parsed, pathname: loc.pathname, host: split.host, hash: loc.hash };
   const [problems, setProblems] = useState<string[]>([]);
+  // the location to write: the host's keys and the hash travel only when there is a host
+  const to = useCallback(
+    (search: string) =>
+      hostKey ? { pathname: latest.current.pathname, search: appendSearch(search, latest.current.host), hash: latest.current.hash } : { pathname: latest.current.pathname, search },
+    [hostKey],
+  );
 
   // invalid values: list them once and rewrite the URL in canonical form
   useEffect(() => {
     if (!parsed.problems.length) return;
     setProblems((p) => [...new Set([...p, ...parsed.problems])]);
-    navigate({ pathname: loc.pathname, search: writeSearch(parsed.scenario, parsed.view, ctx) }, { replace: true });
-  }, [parsed, ctx, navigate, loc.pathname]);
+    navigate(to(writeSearch(parsed.scenario, parsed.view, ctx)), { replace: true });
+  }, [parsed, ctx, navigate, to]);
 
   const write = useCallback(
     (scenario: Scenario, view: ViewState, replace: boolean) => {
       const search = writeSearch(scenario, view, ctx);
       if (search === writeSearch(latest.current.parsed.scenario, latest.current.parsed.view, ctx)) return;
-      navigate({ pathname: latest.current.pathname, search }, { replace });
+      navigate(to(search), { replace, preventScrollReset: true });
     },
-    [ctx, navigate],
+    [ctx, navigate, to],
   );
 
   const value = useMemo<ScenarioCtx>(() => {
@@ -170,6 +184,11 @@ export function useScenario(): ScenarioCtx {
   const v = useContext(ScenarioContext);
   if (!v) throw new Error('useScenario outside ScenarioProvider');
   return v;
+}
+
+/** The scenario when a ScenarioProvider is mounted, else null (a host page that mounts the engine on demand). */
+export function useScenarioOptional(): ScenarioCtx | null {
+  return useContext(ScenarioContext);
 }
 
 export function useAdvancedChanged() {

@@ -4,6 +4,7 @@
 //    fragmented action for the demand anchors, coordination dividend, residual gaps, concentration).
 //    Each card has a table twin and a CSV.
 
+import { Link } from 'react-router';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
 import { EmptyState, Notice, StatTile, Tag } from '../../../components/ui.tsx';
@@ -19,8 +20,13 @@ import type { AibNode } from '../../contract.ts';
 import { csvWithRun, Section } from '../common.tsx';
 import { Economy, useCompact } from './shared.tsx';
 
-export function OverviewSection() {
-  const { c, nodes, meta } = useCompact();
+/**
+ * `title`: the section heading (the compact page asks "Who and what?"); `policy`: list the policy needs
+ * here (false when the page shows them under "What should governments do?").
+ */
+export function OverviewSection({ title = 'Compact overview', policy = true }: { title?: string; policy?: boolean } = {}) {
+  const { c, nodes, meta, name, shockLabel } = useCompact();
+  const critical = c.suppliers.map((x) => name(x));
   const mix = classMix(nodes.map((n) => n.cls));
   const type = compactTypeInfo(c.type, compactVsFragmented(c.metrics)?.gain);
   const lostMix = parseClassMix(c.classMix);
@@ -41,10 +47,10 @@ export function OverviewSection() {
   return (
     <Section
       id="overview"
-      title="Compact overview"
+      title={title}
       intro={
         <p>
-          What the compact covers, how its nodes are treated and which economies take part. {listWords(mix.map((m) => `${m.n} ${classInfo(m.cls).label}`))}{' '}
+          The supply-chain nodes the compact covers, how each is treated, and which economies take part in what role. {listWords(mix.map((m) => `${m.n} ${classInfo(m.cls).label}`))}{' '}
           {nodes.length === 1 ? 'node' : 'nodes'}.
         </p>
       }
@@ -99,22 +105,35 @@ export function OverviewSection() {
               ))}
             </ul>
           </dd>
-          <dt className="text-paper-mute">{lostMix.length > 1 ? 'Policy needs (the instruments of each major class)' : 'Policy needs'}</dt>
-          <dd>
-            {c.policyNeeds.length ? (
-              <ul className={`list-disc space-y-0.5 pl-5 text-paper-dim ${c.policyNeeds.length > 6 ? "sm:columns-2 lg:columns-3" : ""}`}>
-                {c.policyNeeds.map((p) => (
-                  <li key={p}>{p}</li>
-                ))}
-              </ul>
-            ) : (
-              <span className="text-paper-mute">None listed</span>
-            )}
-          </dd>
+          <dt className="text-paper-mute">Critical supply partners</dt>
+          <dd className="text-paper-dim">{critical.length ? listWords(critical) : 'none named'}</dd>
+          <dt className="text-paper-mute">External dependency</dt>
+          <dd className="text-paper-dim">The supplier the headline shock removes: {shockLabel}</dd>
+          {policy && (
+            <>
+              <dt className="text-paper-mute">{lostMix.length > 1 ? 'Policy needs (the instruments of each major class)' : 'Policy needs'}</dt>
+              <dd>
+                <PolicyNeeds needs={c.policyNeeds} />
+              </dd>
+            </>
+          )}
         </dl>
       </ChartCard>
       <RolesCard />
     </Section>
+  );
+}
+
+/** The compact's policy needs (the instruments of its major classes). */
+export function PolicyNeeds({ needs }: { needs: readonly string[] }) {
+  return needs.length ? (
+    <ul className={`list-disc space-y-0.5 pl-5 text-paper-dim ${needs.length > 6 ? 'sm:columns-2 lg:columns-3' : ''}`}>
+      {needs.map((p) => (
+        <li key={p}>{p}</li>
+      ))}
+    </ul>
+  ) : (
+    <span className="text-paper-mute">None listed</span>
   );
 }
 
@@ -184,7 +203,9 @@ function RoleMatrix({ rows }: { rows: RoleRow[] }) {
           {rows.map((row) => (
             <tr key={row.iso3}>
               <th scope="row" className="whitespace-nowrap text-left" style={ROW_HEAD}>
-                <Economy iso3={row.iso3} />
+                <Link className="link" to={`/countries/${row.iso3}#aib-role`} title={`${row.name}: Country profile, role in the Allied Industrial Base`}>
+                  <Economy iso3={row.iso3} />
+                </Link>
                 {!row.member && <span className="ml-1 text-xs text-paper-mute">associate</span>}
               </th>
               {ROLE_ORDER.map((r) => {
@@ -215,12 +236,17 @@ function RoleMatrix({ rows }: { rows: RoleRow[] }) {
   );
 }
 
-export function WhySection() {
+/** `title`: the section heading (the compact page asks "Why this compact?"). */
+export function WhySection({ title = 'Why it exists' }: { title?: string } = {}) {
   const { c, nodes, meta, name } = useCompact();
   const m = c.metrics;
   const conc = concentration(nodes);
   const vs = compactVsFragmented(m);
   const type = compactTypeInfo(c.type, vs?.gain);
+  const gap = typeof m.residual === 'number' && m.residual < 0.005 ? 'closing the gap' : `still leaving ${fmtShare(m.residual, 0)} unserved`;
+  const answer = `The shock removes ${fmtShare(m.exposure, 0)} of the compact's demand. After it, existing relationships serve ${fmtShare(m.existing, 0)} of that demand and coordinated trade among the members ${fmtShare(m.trade, 0)}, ${gap}${
+    vs ? `. Acting together, the demand anchors cover ${fmtPp(vs.gain).replace(/^\+/, '')} more of their own demand than through existing relationships alone` : ''
+  }${conc ? `; ${name(conc.supplier)} alone supplies up to ${fmtShare(conc.share, 0)} of one node (${conc.node.label})` : ''}.`;
   const tiles = [
     { key: 'exposure', label: 'Shock exposure', value: fmtShare(m.exposure), sub: `${fmtUsd(m.lostUsd)} of ${fmtUsd(m.demandUsd)} demand lost`, raw: m.exposure },
     ...(vs
@@ -255,9 +281,12 @@ export function WhySection() {
   return (
     <Section
       id="why"
-      title="Why it exists"
+      title={title}
       intro={
         <p>
+          <span className="text-paper" data-testid="why-answer">
+            {answer}
+          </span>{' '}
           A compact forms where the shock removes a material share of supply and joint action restores more of it than existing relationships would. Shares are of the compact&apos;s baseline
           traded demand, weighted by each node&apos;s demand; the comparison with fragmented action is for the demand anchors&apos; own demand.
         </p>

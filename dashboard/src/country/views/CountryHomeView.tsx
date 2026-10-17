@@ -46,10 +46,15 @@ export default function CountryHomeView() {
   return (
     <div className={PAGE}>
       <PageHead
-        eyebrow="COUNTRY INSIGHTS"
-        title="Country Insights"
-        lede={`Pick a country to see, in one place, where its energy supply chains are secure or exposed, where it has economic openings, which sectors the paper's Strategic Index would put first and how that compares with its current policies, and which partners the indices point to compared with whom it trades with today. All values are the paper's baseline (as of ${manifest.as_of_label}). For the ${manifest.counts.core} core coalition members a short policy memo ${nMemos ? 'is ready to read or download' : 'is being prepared'}.`}
+        eyebrow="COUNTRIES"
+        title="Countries"
+        lede={`Pick a country to see its strategic position in one place: where its energy supply chains are secure or exposed, where it has economic openings, which sectors to prioritise and how that compares with its current policies, its trade, investment and development partners, and its role in the Allied Industrial Base. Values are the NEIS baseline (as of ${manifest.as_of_label}); on each profile a Perspective control lets you weigh security, opportunity, policy and climate differently. For the ${manifest.counts.core} core coalition members a short policy memo ${nMemos ? 'is ready to read or download' : 'is being prepared'}.`}
       />
+      <p className="-mt-4 mb-6 text-sm">
+        <Link className="link" to="/overview">
+          World map of any measure &rarr;
+        </Link>
+      </p>
       <form
         className="mb-10 flex flex-wrap items-end gap-3"
         onSubmit={(e) => {
@@ -123,7 +128,7 @@ export default function CountryHomeView() {
 
       <section aria-labelledby="read-h" className="panel p-5">
         <h2 id="read-h" className="text-base font-medium text-paper">
-          How to read Country Insights
+          How to read a country profile
         </h2>
         <ul className="mt-3 space-y-2 text-sm text-paper-dim">
           <li>
@@ -139,7 +144,7 @@ export default function CountryHomeView() {
             <strong className="text-paper">Watch</strong> <InfoTip id="watch" term="Watch" />: low economic opportunity but high energy security; value may lie elsewhere.
           </li>
           <li>
-            Paper baseline <InfoTip id="paper_baseline" term="paper baseline" />: every number is the paper&apos;s own, as of {manifest.as_of_label}. To try other weightings, open the same country in Strategic Insights.
+            Paper baseline <InfoTip id="paper_baseline" term="paper baseline" />: every number is the paper&apos;s own, as of {manifest.as_of_label}. To try other weightings, open a country and change its Perspective.
           </li>
           <li>
             Memos <InfoTip id="memo" term="memo" />: short AI-written briefs for the core members, built from each country&apos;s fact sheet and checked against it.
@@ -147,7 +152,7 @@ export default function CountryHomeView() {
         </ul>
         <p className="mt-3 text-sm">
           <Link className="link" to="/countries/about">
-            About Country Insights and its data &rarr;
+            About the country data &rarr;
           </Link>
         </p>
       </section>

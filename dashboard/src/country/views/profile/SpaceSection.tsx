@@ -1,9 +1,10 @@
-// S2 of the Country profile (spec_country.md A4.2): "Security and opportunity, sector by sector" (the
-// quadrant scatter with its table twin, legend, the sectors not placed and the bridges to Strategic
-// Insights) and "The four corners" (the categorisation in words, readable without the chart).
+// S2 of the Country profile (spec_country.md A4.2; IA refactor 2026-10-16: "Strategic position", the
+// profile's central visual): the quadrant scatter with its table twin, legend and the sectors not placed;
+// the filled dots are the top five Strategic Index sectors under the reader's Perspective (the only
+// preference-adjusted mark; positions are facts); "Compare with other economies" opens the embedded
+// Security vs Opportunity view (the model); "The four corners" puts the categorisation in words.
 
 import { useMemo } from 'react';
-import { Link } from 'react-router';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { InfoTip } from '../../../components/InfoTip.tsx';
 import { Term } from '../../../components/Term.tsx';
@@ -11,17 +12,25 @@ import { TableView, type Col } from '../../../components/TableView.tsx';
 import { EmptyState } from '../../../components/ui.tsx';
 import { cellOf, QUADRANTS, type CellFacts } from '../../contract.ts';
 import { QuadrantScatter, ScatterLegend } from '../../charts/QuadrantScatter.tsx';
-import { countryScoresLink, spaceLink } from '../../derive/links.ts';
+import SpaceView from '../../../views/Space/SpaceView.tsx';
+import { siOrder } from '../../derive/framing.ts';
 import { cellsByQuadrant, scatterPoints } from '../../derive/model.ts';
 import { notPlacedLine, notPlacedReason, quadrantWord, proseName, poss, cap } from '../../derive/text.ts';
-import { csvWithSource, LinkRow, Section, useProfile } from './common.tsx';
+import { BasisTag, csvWithSource, Fold, perspectiveNote, Section, usePerspectiveSi, useProfile } from './common.tsx';
 
 const yes = (b: boolean) => (b ? 'yes' : 'no');
 
 export function SpaceSection() {
-  const { sheet, cell, setCell } = useProfile();
+  const { sheet, cell, setCell, reveal, setStrategicView } = useProfile();
+  const si = usePerspectiveSi();
   const name = proseName(sheet.meta.country);
-  const pts = useMemo(() => scatterPoints(sheet), [sheet]);
+  const pts = useMemo(() => {
+    const base = scatterPoints(sheet);
+    if (!si.map) return base;
+    // the Perspective's top five Strategic Index sectors are the filled dots
+    const top = new Set(siOrder(sheet, si.map).slice(0, 5).map((c) => c.key));
+    return base.map((p) => ({ ...p, top5: top.has(p.key) }));
+  }, [sheet, si.map]);
   const sel = cellOf(sheet, cell);
   const placedSel = sel && sel.placed ? sel : null;
   const notPlaced = notPlacedLine(sheet);
@@ -57,8 +66,15 @@ export function SpaceSection() {
   const summary = `${pts.length} of ${poss(name)} sectors placed by Economic Opportunity and Energy Security percentiles, split at ${poss(name)} median sector (${cm?.eo.d ?? '–'} and ${cm?.es.d ?? '–'}): ${QUADRANTS.map((q) => `${q.label} ${byQ[q.id].length}`).join(', ')}.`;
   return (
     <Section
-      id="space"
-      title="Security and opportunity, sector by sector"
+      id="position"
+      aliases={['space']}
+      title="Strategic position"
+      basis={
+        <>
+          <BasisTag kind="facts" note="positions" />
+          <BasisTag kind="prefs" note={`filled dots, ${perspectiveNote(si)}`} />
+        </>
+      }
       intro={
         <>
           Each sector is one technology at one stage of its supply chain. <Term id="es" /> asks how well {name} can rely on what it needs there; <Term id="eo" /> asks how well placed it is to create value there. Both compare {name} with every other economy scored in the same sector, so the chart shows the share of those economies it beats. The four corners then sort {poss(name)} own sectors: the dashed lines are its median sector, so the corners show where {name} is relatively strong or weak.
@@ -84,21 +100,24 @@ export function SpaceSection() {
         )}
         {placedSel && (
           <p className="mt-2 text-sm">
-            <a className="link" href="#why">
+            <button type="button" className="link" onClick={() => reveal?.('why')}>
               Why {placedSel.label}? &darr;
-            </a>
+            </button>
           </p>
         )}
       </ChartCard>
-      <LinkRow>
-        <Link className="link" to={spaceLink(placedSel ?? sel)}>
-          Compare all economies in one sector: Security vs opportunity &rarr;
-        </Link>
-        <Link className="link" to={countryScoresLink(sheet.iso3)}>
-          Change the weighting in Strategic Insights &rarr;
-        </Link>
-      </LinkRow>
       <QuadrantList byQ={byQ} />
+      <Fold
+        id="compare"
+        engine
+        summary="Compare with other economies: every economy in one sector (Security vs opportunity)"
+        onOpen={() => {
+          const c = placedSel ?? sel;
+          if (c) setStrategicView?.([['tech', c.tech], ['stage', c.stage]]);
+        }}
+      >
+        <SpaceView embedded iso3={sheet.iso3} />
+      </Fold>
     </Section>
   );
 }

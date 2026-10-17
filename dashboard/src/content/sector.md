@@ -1,12 +1,12 @@
-## What Sector Insights shows
+## What the Sector pages show
 
-Sector Insights shows the measured data that the Strategic Insights rankings start from: who produces,
+The Sector pages show the measured data that the country rankings start from: who produces,
 holds, trades, invests in and regulates each energy technology, from raw materials (Upstream) through
 manufacturing and processing (Midstream) to deployment and use (Downstream). Eleven technologies at
 three stages make 33 sectors; Semiconductors are shown as well, outside the paper's headline set.
 Every number is shown in its source's own unit and year, with the source, the coverage and the caveats
-beside it. Nothing here is an index, a weight or a score, and nothing moves with the Strategic Insights
-dials.
+beside it. Nothing here is an index, a weight or a score, and nothing moves with the Perspective dials
+of the Country profile.
 
 ## Reading the colours
 
@@ -18,7 +18,7 @@ zero (a net balance, net trade, a change), white is zero: orange below, blue abo
 is no value to colour; hover or open the table for the reason. Groups of economies keep their own
 colours everywhere: China, the coalition core, the coalition partners and the rest of the world.
 
-Strategic Insights ranks and weighs; Sector Insights shows the measured data those rankings start from.
+The Country profiles rank and weigh; the Sector pages show the measured data those rankings start from.
 
 ## Shares, world totals and concentration
 
@@ -77,7 +77,7 @@ bloc all sum this one matrix, so the cards on a page agree to the dollar.
 
 * **Technology attribution.** Each technology's trade is the trade of a basket of six-digit HS codes.
   Some codes belong to more than one technology, so trade is never added across technologies.
-* **The other basis.** Strategic Insights ranks the exporters' own reports (free on board), which leave
+* **The other basis.** The country indices rank the exporters' own reports (free on board), which leave
   out economies that do not report and Hong Kong's re-exports. The reconciliation table below compares
   the two bases for every technology. Revealed comparative advantage is the one exporter-reported
   measure shown here, and it is labelled so.
@@ -120,7 +120,7 @@ where the parent is headquartered, the destination, the status and a source link
   Macao included), the coalition core, the coalition partners and the rest of the world.
 * **Two bases.** "All" projects, or those "used by the indices": the manufacturing projects that are
   announced, under construction, completed or operational, without cancelled, paused or closed ones
-  (the projects the Strategic Insights partnership indices read). The share of a destination's projects
+  (the projects the partnership indices read). The share of a destination's projects
   with Chinese parents is shown as a raw share, not as the index component built from it.
 * **Not a country total.** Domestic investment is not in CM-FDI.
 
@@ -150,7 +150,7 @@ note" column of every table carries the fact's own notes (an assumed-zero produc
 
 ## What this module does not show, and why
 
-* **Index, weight and score values.** Rankings and weights belong to Strategic Insights. Each measure's
+* **Index, weight and score values.** Rankings and weights belong to the Country profiles. Each measure's
   notes say which index it feeds, without showing the index.
 * **Totals across technologies.** Trade baskets overlap, so a sum would count some goods twice.
 * **Regional or world values as country values.** World prices, IEA regions and entities, and
@@ -167,4 +167,4 @@ note" column of every table carries the fact's own notes (an assumed-zero produc
 * **Unverified units.** Where a unit could not be confirmed (the geothermal cost currency, the wind
   threshold, some commodity prices), the unit is labelled "unit to confirm".
 * **Licensed data.** BNEF and BCG data are licensed and are not part of the public explorer.
-* **Dials.** The Strategic Insights dials do not apply here: measured data do not move with priorities.
+* **Perspective dials.** The Country profile's dials do not apply here: measured data do not move with priorities.

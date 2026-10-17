@@ -6,7 +6,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import * as Plot from '@observablehq/plot';
-import { useTitle } from '../../App.tsx';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { Legend } from '../../charts/legends.tsx';
 import { PlotFigure, Tip } from '../../charts/PlotFigure.tsx';
@@ -23,7 +22,7 @@ import { useApp, useCore, useEngine, useNetwork, usePartner, useScenario } from 
 import { useGoto } from '../../state/nav.ts';
 import { toSpec, type ShowMode } from '../../state/url.ts';
 import { COMPARE_COLOR, INK, PILLAR_COLOR, SIGNAL } from '../../theme/palette.ts';
-import { CountryInsightsLink, noteText, numOr, policyBasisShort, policyBasisText, resourceBaseText, rowsOf, showWord, strOr, TechStageFilters, useCountryOptions, useTechStage, type Row } from '../common.tsx';
+import { CountryInsightsLink, noteText, numOr, policyBasisShort, policyBasisText, resourceBaseText, rowsOf, showWord, strOr, TechStageFilters, useCountryOptions, useTechStage, useViewTitle, type Row } from '../common.tsx';
 
 interface PillarPoint {
   pillar: 'Energy Security' | 'Economic Opportunity';
@@ -125,8 +124,9 @@ function ContribChart({ bars, color, title, showMode }: { bars: ContribBar[]; co
   );
 }
 
-export default function CountryView() {
-  useTitle('Country scores');
+/** `embedded` (IA refactor 2026-10-16): inside the Country profile, which owns the title, the head and the country. */
+export default function CountryView({ embedded = false }: { embedded?: boolean } = {}) {
+  useViewTitle('Country scores', embedded);
   const app = useApp();
   const { client } = useEngine();
   const params = useParams();
@@ -308,6 +308,7 @@ export default function CountryView() {
   const pillarsMoved = (pillars ?? []).some((p) => p.value !== null && p.value_base !== null && Math.abs(p.value - p.value_base) > 1e-12);
   return (
     <div>
+      {!embedded && (
       <PageHead
         eyebrow="Country scores"
         title={`Country scores: ${c.country}`}
@@ -316,14 +317,15 @@ export default function CountryView() {
             One economy&rsquo;s scores across the {app.cells.length} sectors ({app.techs.length} technologies at {app.stages.length} supply-chain stages; the paper
             has no Energy Security score for {nNoEs === 1 ? 'one of them' : `${nNoEs} of them`}): <Term id="es" />, <Term id="eo" />, what drives them, and its top
             sectors on the <Term id="si" />. Pick an economy and click a sector to see which data move its scores. For a plain-language briefing on the
-            paper&rsquo;s baseline, open Country Insights.
+            NEIS baseline, open its Country profile.
           </>
         }
       >
         <CountryInsightsLink iso3={iso} country={c.country} />
       </PageHead>
+      )}
       <FilterRow>
-        <CountrySelect label="Economy" value={iso} options={options} onChange={(v) => goto(`/country/${v}`)} />
+        {!embedded && <CountrySelect label="Economy" value={iso} options={options} onChange={(v) => goto(`/country/${v}`)} />}
         <TechStageFilters techLabel="Sector for the drivers: technology" />
       </FilterRow>
       {!core.data ? (
@@ -461,7 +463,7 @@ export default function CountryView() {
             sub="Each row is one measure inside a category: its value after ranking against the other economies in the sector (0 to 1, higher is better for the score), its weight inside the category and how much it adds to the score. Values the paper filled in where data were missing are flagged."
             tools={
               <>
-              {app.Uindex.has(iso) && (
+              {!embedded && app.Uindex.has(iso) && (
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => goto(`/partners/${iso}`, { tech, stage })} title={`${c.country}'s friendshoring opportunities and export markets in ${cellLabel(tech, stage)}`}>
                   Partners in this sector
                 </button>
@@ -495,9 +497,11 @@ export default function CountryView() {
             sub="The economy's ten highest-ranked sectors on the Strategic Index under the scenario, with the five weighted parts that add up to it: security need, Economic Opportunity, Policy activity, the stage and the technology's low-emission value."
             updating={updating}
             tools={
+              embedded ? undefined : (
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => goto(`/strategic/${iso}`)}>
                 Open Strategic Index
               </button>
+              )
             }
             csv={() => ({ name: `strategic-index-top-${iso}`, text: rowsToCsv(topSi as Record<string, unknown>[]) })}
           >

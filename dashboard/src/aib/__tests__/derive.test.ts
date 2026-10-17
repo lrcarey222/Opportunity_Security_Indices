@@ -11,9 +11,12 @@ import { compactVsFragmented, coverageSteps, globalOptimum, largestGain, nodeCov
 import { capLabel, FRONTIER_SERIES, frontierPoints, frontierReadings, frontierRows, nodesWithFrontier } from '../derive/frontier.ts';
 import { compactTypeInfo } from '../derive/types.ts';
 import { investmentFlows, nodesWithRelationships, tradeFlows } from '../derive/flows.ts';
-import { fmtPp, fmtShare, fmtUsd, listWords, nameOf, plural } from '../derive/format.ts';
+import { compactTitle, fmtPp, fmtShare, fmtUsd, listWords, nameOf, plural } from '../derive/format.ts';
 import { classCounts, compactNodes, concentration, mixedTreatments, nodeCsvRow, nodeRow, nodesByClass, technologiesOf } from '../derive/nodes.ts';
 import { canonicalRole, ROLE_ORDER, roleMatrix, rolesUsed } from '../derive/roles.ts';
+import { countryRoleRow, countryRoleRows, countryRolesUsed } from '../derive/countryRoles.ts';
+import { buildGaps, dividendOf, dpRows, filterChoices, hostRows, investmentNodes, NO_FILTER, pairInvestmentFlows, pairTradeFlows, specializedSuppliers, topNodes, topPairs } from '../derive/partnerships.ts';
+import { mapPoints } from '../charts/StrategicMap.tsx';
 import { aibNavItems, aibNavKeyOf, compactIdOfPath, rememberCompact, resetLastCompact } from '../nav.ts';
 import { aibTabHref, lastLocations, moduleResumeHref, rememberLocation, resetLastLocations } from '../../shell/lastLocation.ts';
 import { AIB_NAV, aibNavKeyOf as shellAibNavKeyOf, MODULES, placeOf } from '../../shell/modules.ts';
@@ -285,45 +288,145 @@ describe('formats', () => {
 });
 
 describe('nav and the shell', () => {
-  it('the module nav: Compacts, the compact on screen (else the last, else the first) and About', () => {
-    expect(aibNavItems('/compacts', 'AIB-C01')).toEqual([
-      { key: 'compacts', label: 'Compacts', to: '/compacts', active: true },
-      { key: 'compact', label: 'Compact', to: '/compacts/AIB-C01', active: false },
-      { key: 'about', label: 'About & data', to: '/compacts/about', active: false },
+  it('the module nav (IA refactor): Overview, Partnerships, Sectoral Compacts (every compact page), Country roles', () => {
+    expect(aibNavItems('/aib', 'AIB-C01')).toEqual([
+      { key: 'overview', label: 'Overview', to: '/aib', active: true },
+      { key: 'partnerships', label: 'Partnerships', to: '/aib/partnerships', active: false },
+      { key: 'compacts', label: 'Sectoral Compacts', to: '/compacts', active: false },
+      { key: 'roles', label: 'Country roles', to: '/aib/roles', active: false },
     ]);
-    expect(aibNavItems('/compacts/AIB-C02', 'AIB-C01')[1]).toEqual({ key: 'compact', label: 'Compact', to: '/compacts/AIB-C02', active: true });
+    expect(aibNavItems('/compacts/AIB-C02').filter((i) => i.active).map((i) => i.key)).toEqual(['compacts']);
+    expect(aibNavItems('/compacts/about').filter((i) => i.active)).toEqual([]);
     rememberCompact('AIB-C02');
-    expect(aibNavItems('/compacts/about', 'AIB-C01').map((i) => [i.to, i.active])).toEqual([
-      ['/compacts', false],
-      ['/compacts/AIB-C02', false],
-      ['/compacts/about', true],
-    ]);
     resetLastCompact();
-    expect(aibNavItems('/compacts', null).map((i) => i.key)).toEqual(['compacts', 'about']);
     expect(compactIdOfPath('/compacts/AIB-C01')).toBe('AIB-C01');
     expect(compactIdOfPath('/compacts/about')).toBeNull();
     expect(compactIdOfPath('/compacts')).toBeNull();
     expect(compactIdOfPath('/countries/JPN')).toBeNull();
     expect(aibNavKeyOf('/compacts/About')).toBe('about');
+    expect(aibNavKeyOf('/aib/roles')).toBe('roles');
     expect(aibNavKeyOf('/overview')).toBeNull();
   });
 
-  it('the shell knows the fourth module: place, static nav, tab and resume targets, titles', () => {
-    expect(MODULES.find((m) => m.id === 'aib')).toEqual({ id: 'aib', label: 'Sectoral Compacts', tag: 'COORDINATION DESIGN', home: '/compacts' });
-    for (const p of ['/compacts', '/compacts/about', '/compacts/AIB-C01']) expect(placeOf(p)).toBe('aib');
+  it('the shell knows the module: place, static nav, tab and resume targets, titles', () => {
+    expect(MODULES.find((m) => m.id === 'aib')).toMatchObject({ id: 'aib', label: 'Allied Industrial Base', home: '/aib' });
+    for (const p of ['/compacts', '/compacts/about', '/compacts/AIB-C01', '/aib', '/aib/roles']) expect(placeOf(p)).toBe('aib');
     expect(placeOf('/compact')).toBeNull();
-    expect(AIB_NAV.map((n) => n.label)).toEqual(['Compacts', 'About & data']);
-    expect(shellAibNavKeyOf('/compacts/AIB-C01')).toBe('compact');
+    expect(AIB_NAV.map((n) => n.label)).toEqual(['Overview', 'Partnerships', 'Sectoral Compacts', 'Country roles']);
+    expect(shellAibNavKeyOf('/compacts/AIB-C01')).toBe('compacts');
     expect(shellAibNavKeyOf('/compacts')).toBe('compacts');
-    expect(aibTabHref('/overview')).toBe('/compacts');
-    expect(moduleResumeHref('aib')).toBe('/compacts');
+    expect(aibTabHref('/overview')).toBe('/aib');
+    expect(moduleResumeHref('aib')).toBe('/aib');
     rememberLocation('/compacts/AIB-C02', '?x=1');
     expect(lastLocations().aib).toBe('/compacts/AIB-C02?x=1');
     expect(aibTabHref('/sector')).toBe('/compacts/AIB-C02?x=1');
-    expect(aibTabHref('/compacts/AIB-C02')).toBe('/compacts');
+    expect(aibTabHref('/compacts/AIB-C02')).toBe('/aib');
     expect(moduleResumeHref('aib')).toBe('/compacts/AIB-C02?x=1');
     resetLastLocations();
     expect(lastLocations().aib).toBeUndefined();
-    expect(pageTitle('About Sectoral Compacts', 'aib')).toBe('About Sectoral Compacts | Sectoral Compacts | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('About Sectoral Compacts', 'aib')).toBe('About Sectoral Compacts | Allied Industrial Base | Allied Industrial Base Explorer | NEIS Center');
+  });
+});
+
+describe('country roles across compacts (IA refactor)', () => {
+  it("gathers each economy's roles and seats from the compacts, with no score of its own", () => {
+    const rows = countryRoleRows(doc, names);
+    expect(rows.length).toBeGreaterThan(0);
+    for (const c of doc.compacts) {
+      for (const r of c.roles) {
+        const k = canonicalRole(r.role);
+        if (k) expect(rows.find((x) => x.iso3 === r.iso3)?.roles[k]).toContain(c.id);
+      }
+      for (const iso of c.coalition.members) expect(rows.find((x) => x.iso3 === iso)?.member).toContain(c.id);
+    }
+    const seats = (r: (typeof rows)[number]) => new Set([...r.member, ...r.associate]).size;
+    for (let i = 1; i < rows.length; i++) expect(seats(rows[i - 1])).toBeGreaterThanOrEqual(seats(rows[i]));
+    expect(countryRoleRow(doc, names, rows[0].iso3.toLowerCase())).toEqual(rows[0]);
+    expect(countryRoleRow(doc, names, 'ZZZ')).toBeNull();
+    expect(countryRolesUsed(rows).every((r) => (ROLE_ORDER as readonly string[]).includes(r))).toBe(true);
+  });
+});
+
+describe('partnerships and the overview (IA refactor)', () => {
+  it('sums the model trade edges by exporter, importer and relationship across compacts, largest first; filters by economy and node', () => {
+    const all = pairTradeFlows(doc, NO_FILTER);
+    const edges = doc.compacts.flatMap((c) => c.trade).filter((e) => typeof e.usd === 'number' && e.usd > 0 && e.from !== e.to);
+    expect(all.reduce((s, p) => s + p.value, 0)).toBeCloseTo(edges.reduce((s, e) => s + (e.usd as number), 0), 3);
+    for (let i = 1; i < all.length; i++) expect(all[i - 1].value).toBeGreaterThanOrEqual(all[i].value);
+    const iso = all[0].producer;
+    expect(pairTradeFlows(doc, { ...NO_FILTER, country: iso }).every((p) => p.producer === iso || p.consumer === iso)).toBe(true);
+    const node = edges[0].node;
+    expect(pairTradeFlows(doc, { ...NO_FILTER, node }).every((p) => p.nodes.every((n) => n === node))).toBe(true);
+    const inv = pairInvestmentFlows(doc, NO_FILTER);
+    const invEdges = doc.compacts.flatMap((c) => c.investment).filter((e) => typeof e.usd === 'number' && e.usd > 0 && e.investor !== e.host);
+    expect(inv.reduce((s, p) => s + p.value, 0)).toBeCloseTo(invEdges.reduce((s, e) => s + (e.usd as number), 0), 3);
+  });
+
+  it('the filter choices, the hosts, the specialized suppliers and the capacity gaps come from the nodes as exported', () => {
+    const ch = filterChoices(doc, NO_FILTER);
+    expect(ch.techs).toEqual([...new Set(doc.nodes.flatMap((n) => n.techs))].sort((a, b) => a.localeCompare(b, 'en')));
+    const tech = ch.techs[0];
+    expect(filterChoices(doc, { ...NO_FILTER, tech }).nodes.every((n) => n.techs.includes(tech))).toBe(true);
+    const hosts = hostRows(doc.nodes, NO_FILTER);
+    for (const h of hosts) for (const id of h.first) expect(nodeOf(id)?.hosts[0]).toBe(h.iso3);
+    const sup = specializedSuppliers(doc.nodes, NO_FILTER);
+    expect(sup.reduce((s, r) => s + r.nodes.length, 0)).toBe(doc.nodes.filter((n) => n.largest).length);
+    const gaps = buildGaps(doc.nodes, NO_FILTER);
+    expect(gaps.every((n) => n.cls === 'BUILD')).toBe(true);
+    expect(gaps.length).toBe(doc.nodes.filter((n) => n.cls === 'BUILD').length);
+    const inv = investmentNodes(doc.nodes, NO_FILTER);
+    expect(inv.every((n) => n.hosts.length > 0)).toBe(true);
+  });
+
+  it('the coordination dividend is the exported one, else optimized minus existing; top nodes skip missing values', () => {
+    const n = doc.nodes[0];
+    expect(dividendOf({ ...n, dividend: 0.12 })).toBe(0.12);
+    expect(dividendOf({ ...n, dividend: null, optimized: 0.9, existing: 0.6 })).toBeCloseTo(0.3);
+    expect(dividendOf({ ...n, dividend: null, optimized: null, existing: 0.6 })).toBeNull();
+    const top = topNodes(doc.nodes, (x) => x.exposure, 3);
+    expect(top.length).toBeLessThanOrEqual(3);
+    for (let i = 1; i < top.length; i++) expect(top[i - 1].exposure as number).toBeGreaterThanOrEqual(top[i].exposure as number);
+    const pts = mapPoints(doc.nodes);
+    expect(pts.every((p) => p.x === p.node.exposure && p.y === dividendOf(p.node))).toBe(true);
+  });
+
+  it('top partner pairs: an economy by its own rank, else the highest scores; development potential by economy within the scope', () => {
+    const rows = [
+      { reporter_iso: 'AAA', side: 'fs' as const, partner_iso: 'BBB', value: 0.4, rank: 2 },
+      { reporter_iso: 'AAA', side: 'fs' as const, partner_iso: 'CCC', value: 0.3, rank: 1 },
+      { reporter_iso: 'DDD', side: 'fs' as const, partner_iso: 'AAA', value: 0.9, rank: 1 },
+      { reporter_iso: 'DDD', side: 'po' as const, partner_iso: 'AAA', value: 1, rank: 1 },
+      { reporter_iso: 'EEE', side: 'fs' as const, partner_iso: 'EEE', value: 1, rank: 1 },
+    ];
+    expect(topPairs(rows, 'fs', 'AAA').map((r) => r.partner_iso)).toEqual(['CCC', 'BBB']);
+    expect(topPairs(rows, 'fs', null).map((r) => r.reporter_iso + r.partner_iso)).toEqual(['DDDAAA', 'AAABBB', 'AAACCC']);
+    const cells = [
+      { tech: 'Solar', supply_chain: 'Midstream' },
+      { tech: 'Wind', supply_chain: 'Upstream' },
+    ];
+    const dp = [
+      { partner_iso: 'AAA', cell_id: 1, value: 0.2 },
+      { partner_iso: 'AAA', cell_id: 2, value: 0.7 },
+      { partner_iso: 'BBB', cell_id: 1, value: 0.5 },
+      { partner_iso: 'CCC', cell_id: 1, value: null },
+    ];
+    expect(dpRows(dp, cells, [], NO_FILTER).map((r) => [r.iso3, r.value, r.tech])).toEqual([
+      ['AAA', 0.7, 'Wind'],
+      ['BBB', 0.5, 'Solar'],
+    ]);
+    expect(dpRows(dp, cells, [], { ...NO_FILTER, tech: 'Solar' }).map((r) => [r.iso3, r.value])).toEqual([
+      ['BBB', 0.5],
+      ['AAA', 0.2],
+    ]);
+  });
+});
+
+describe('compactTitle (display only)', () => {
+  it('shortens an exporter name cut to "and N more"; keeps other names whole', () => {
+    const nodes = Array.from({ length: 10 }, (_, i) => `n${i}`);
+    expect(compactTitle({ name: 'Electric Vehicles/Wind: Charging Infrastructure, Electric Drive Units & Motors, Motor & Generator Parts, and 7 more', nodes })).toBe(
+      'Electric Vehicles/Wind: Charging Infrastructure and 9 more',
+    );
+    expect(compactTitle({ name: 'Solar: Silicon Metal, Solar Cells', nodes: ['a', 'b'] })).toBe('Solar: Silicon Metal, Solar Cells');
   });
 });

@@ -62,7 +62,7 @@ export default function DataView() {
       'Allied Industrial Base Explorer: scenario tables',
       '',
       `Paper: ${m.paper?.title ?? DASH}`,
-      `Scenario: ${isBaseline ? "the paper's baseline (all dials at 50, advanced settings at the paper's)" : DIAL_SPECS.map((d) => `${d.label} ${scenario.dials[d.key]}`).join(', ')}`,
+      `Scenario: ${isBaseline ? "the NEIS baseline (all dials at 50, advanced settings at their defaults)" : DIAL_SPECS.map((d) => `${d.label} ${scenario.dials[d.key]}`).join(', ')}`,
       `Link: ${link}`,
       `Data build: ${m.bundle_id} (exported ${m.created}, git ${m.git_commit ?? DASH})`,
       `Engine: ${ENGINE_VERSION}`,
@@ -153,7 +153,7 @@ export default function DataView() {
 
   return (
     <div>
-      <PageHead eyebrow="Downloads and provenance" title="Data" lede="Download the numbers behind every view, for the paper's baseline or your scenario, and see how this export was checked." />
+      <PageHead eyebrow="About · Downloads and provenance" title="Data" lede="Download the numbers behind every view, for the NEIS baseline or a custom perspective, and see how this export was checked." />
       <div className="flex flex-col gap-6">
         <div className="grid gap-6 xl:grid-cols-2">
           <section className="card p-5">
@@ -235,7 +235,7 @@ export default function DataView() {
                 </Notice>
               </div>
             )}
-            <p className="mt-3 text-xs text-paper-mute tabular">Scenario key: {key || '(the paper baseline)'}</p>
+            <p className="mt-3 text-xs text-paper-mute tabular">Scenario key: {key || '(the NEIS baseline)'}</p>
           </section>
         </div>
 

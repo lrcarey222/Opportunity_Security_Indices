@@ -1,20 +1,34 @@
 // Shared pieces of the Sectoral Compacts views: the page section (an h2 with its anchor; cards inside use
 // h3), the CSV helper (columns in plain words; the shock, scenario and build as the last columns) and the
-// notes on reading the results.
+// notes on reading the results. Inside a QuestionSection (a compact page's four questions, IA refactor
+// 2026-10-16) a Section renders its heading as an h3.
 
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { rowsToCsv } from '../../lib/csv.ts';
 import type { AibMeta } from '../contract.ts';
 
+const Level = createContext<2 | 3>(2);
+
 export function Section({ id, title, intro, children }: { id: string; title: string; intro?: ReactNode; children: ReactNode }) {
+  const sub = useContext(Level) === 3;
+  const H = sub ? 'h3' : 'h2';
   return (
     <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-16">
-      <h2 id={`${id}-h`} className="rule-neis-sm mb-2 text-xl font-medium text-paper lg:text-2xl">
+      <H id={`${id}-h`} className={sub ? 'mb-2 text-lg font-medium text-paper' : 'rule-neis-sm mb-2 text-xl font-medium text-paper lg:text-2xl'}>
         {title}
-      </h2>
+      </H>
       {intro && <div className="mb-5 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">{intro}</div>}
       <div className="space-y-6">{children}</div>
     </section>
+  );
+}
+
+/** A question of a compact page: an h2 section whose inner Sections render as h3. */
+export function QuestionSection({ id, title, intro, children }: { id: string; title: string; intro?: ReactNode; children: ReactNode }) {
+  return (
+    <Section id={id} title={title} intro={intro}>
+      <Level.Provider value={3}>{children}</Level.Provider>
+    </Section>
   );
 }
 

@@ -1,5 +1,7 @@
-// The dial panel (spec_react.md 8.5): four NEIS sliders with readouts, presets, reset to the paper
-// baseline, and the advanced settings. Every change writes the URL (drags replace the history entry;
+// The dial panel (spec_react.md 8.5): four NEIS sliders with readouts, presets, reset to the NEIS
+// baseline (the paper's weights), and the advanced settings. `layout="wide"` (IA refactor 2026-10-16) lays
+// the four dials out in a row for the Country profile's Perspective control; the legacy Strategic
+// sidebar keeps the column. Every change writes the URL (drags replace the history entry;
 // discrete actions push); releasing a slider flushes the debounced run.
 // Copy (spec_country.md C3.5): every control names its index in full (no bare acronyms); each dial
 // has an info button with the glossary's plain-language definition.
@@ -18,7 +20,7 @@ export const DIAL_SPECS: { key: DialName; label: string; help: string }[] = [
   { key: 'hawkishness', label: 'Hawkishness', help: 'Security first: weight on exposure, aligned partners and spreading production.' },
   { key: 'bullishness', label: 'Bullishness', help: 'Opportunity first: weight on opportunity, export markets and market size.' },
   { key: 'populism', label: 'Populism', help: 'Policy signals and home manufacturing.' },
-  { key: 'greenness', label: 'Greenness', help: 'Climate first: low-emission technologies; at 90 and above coal, oil and gas drop out.' },
+  { key: 'greenness', label: 'Climate', help: 'Climate first: low-emission technologies; at 90 and above coal, oil and gas drop out.' },
 ];
 
 interface ReadoutRow {
@@ -68,7 +70,7 @@ export function DialSlider({
 }) {
   const id = `dial-${spec.key}`;
   const moved = value !== 50;
-  const valueText = moved ? `${value} · ${fmtMult(multiplier)}` : `${value} · paper`;
+  const valueText = moved ? `${value} · ${fmtMult(multiplier)}` : `${value} · baseline`;
   return (
     <div className="py-3">
       <div className="flex items-baseline justify-between gap-2">
@@ -95,7 +97,7 @@ export function DialSlider({
         value={value}
         style={fillStyle(value, 0, 100)}
         aria-describedby={`${id}-help`}
-        aria-valuetext={moved ? `${value}, weights times ${multiplier.toFixed(2)}` : `${value}, the paper's setting`}
+        aria-valuetext={moved ? `${value}, weights times ${multiplier.toFixed(2)}` : `${value}, the NEIS baseline`}
         onChange={(e) => onChange(Number(e.target.value))}
         onKeyDown={(e) => pageKeys(e, value, (v) => {
           onChange(v);
@@ -105,7 +107,7 @@ export function DialSlider({
       />
       <div className="flex justify-between text-[0.6875rem] text-paper-mute" aria-hidden="true">
         <span>{TIMES}0.25</span>
-        <span>paper</span>
+        <span>baseline</span>
         <span>{TIMES}4</span>
       </div>
       {fossilNote && (
@@ -285,7 +287,7 @@ export function AdvancedPanel() {
           ]}
           onChange={(v) => set((x) => ({ ...x, fossil: v }))}
         />
-        <p className="mt-1.5 text-xs text-paper-mute">Auto excludes them at greenness 90 and above.</p>
+        <p className="mt-1.5 text-xs text-paper-mute">Auto excludes them at a Climate setting of 90 and above.</p>
       </Disclosure>
       <Disclosure summary="Allied picks" badge={ch.screen ? <ChangedDot /> : undefined}>
         <Switch
@@ -406,7 +408,7 @@ export function AdvancedPanel() {
   );
 }
 
-export function DialPanel() {
+export function DialPanel({ layout = 'sidebar' }: { layout?: 'sidebar' | 'wide' } = {}) {
   const app = useApp();
   const { scenario, isBaseline, setDial, setDials, reset } = useScenario();
   const { flush } = useRun();
@@ -417,28 +419,33 @@ export function DialPanel() {
   const bi = app.bundleLike.baselineInputs;
   const fossilOn =
     scenario.advanced.fossil === 'always' || (scenario.advanced.fossil === 'auto' && scenario.dials.greenness >= (bi.fossil_threshold ?? 90));
+  const wide = layout === 'wide';
   return (
     <div>
-      <div className="rule-neis-sm">
-        <div className="eyebrow">Your priorities</div>
-        <h2 className="mt-1 text-lg font-medium text-paper">Scenario dials</h2>
-      </div>
+      {!wide && (
+        <div className="rule-neis-sm">
+          <div className="eyebrow">Your priorities</div>
+          <h2 className="mt-1 text-lg font-medium text-paper">Scenario dials</h2>
+        </div>
+      )}
       <p className="mt-1 text-xs leading-snug text-paper-mute">
-        Each dial runs 0&ndash;100; 50 is the paper. Moving a dial 25 points halves or doubles every weight it owns.
+        Each dial runs 0&ndash;100; 50 is the NEIS baseline (the paper&rsquo;s weights). Moving a dial 25 points halves or doubles every weight it owns.
       </p>
-      {DIAL_SPECS.map((s) => (
-        <DialSlider
-          key={s.key}
-          spec={s}
-          value={scenario.dials[s.key]}
-          multiplier={dialMultiplier(scenario.dials[s.key], grid)}
-          rows={rows.filter((r) => r.dial === s.key && r.salient)}
-          onChange={(v) => setDial(s.key, v, { replace: true })}
-          onCommit={flush}
-          fossilNote={s.key === 'greenness' && fossilOn}
-        />
-      ))}
-      <div className="mt-2 flex flex-col gap-3">
+      <div className={wide ? 'grid gap-x-6 sm:grid-cols-2 xl:grid-cols-4' : undefined}>
+        {DIAL_SPECS.map((s) => (
+          <DialSlider
+            key={s.key}
+            spec={s}
+            value={scenario.dials[s.key]}
+            multiplier={dialMultiplier(scenario.dials[s.key], grid)}
+            rows={rows.filter((r) => r.dial === s.key && r.salient)}
+            onChange={(v) => setDial(s.key, v, { replace: true })}
+            onCommit={flush}
+            fossilNote={s.key === 'greenness' && fossilOn}
+          />
+        ))}
+      </div>
+      <div className={wide ? 'mt-2 flex flex-wrap items-end gap-3' : 'mt-2 flex flex-col gap-3'}>
         <div>
           <label htmlFor="preset" className="label">
             Preset
@@ -460,8 +467,8 @@ export function DialPanel() {
             ))}
           </select>
         </div>
-        <button type="button" className="btn btn-ghost w-full" disabled={isBaseline} onClick={reset}>
-          Reset to paper baseline
+        <button type="button" className={wide ? 'btn btn-ghost' : 'btn btn-ghost w-full'} disabled={isBaseline} onClick={reset}>
+          Reset to NEIS baseline
         </button>
       </div>
       <AdvancedPanel />

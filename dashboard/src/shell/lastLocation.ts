@@ -167,18 +167,18 @@ export function countryTabHref(pathname: string, search: string, last: Readonly<
 }
 
 /**
- * Where the SECTORAL COMPACTS tab goes: inside the module, its landing; elsewhere the last Sectoral
- * Compacts location, else /compacts. (No other module names a compact, so nothing is carried.)
+ * Where the ALLIED INDUSTRIAL BASE tab goes: inside the module (/aib/*, /compacts/*), its overview;
+ * elsewhere the last location in the module, else /aib. (Nothing is carried.)
  */
 export function aibTabHref(pathname: string, last: Readonly<LastLocations> = store): string {
-  if (placeOf(pathname) === 'aib') return '/compacts';
-  return last.aib ?? '/compacts';
+  if (placeOf(pathname) === 'aib') return '/aib';
+  return last.aib ?? '/aib';
 }
 
 /** Home's OPEN buttons: the last location of the module, else its landing. */
 export function moduleResumeHref(id: 'sector' | 'strategic' | 'country' | 'aib', last: Readonly<LastLocations> = store): string {
   if (id === 'country') return last.country ?? '/countries';
-  if (id === 'aib') return last.aib ?? '/compacts';
+  if (id === 'aib') return last.aib ?? '/aib';
   return id === 'sector' ? (last.sector ?? '/sector') : (last.strategic ?? '/overview');
 }
 

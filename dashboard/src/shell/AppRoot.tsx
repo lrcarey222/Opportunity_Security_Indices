@@ -6,12 +6,13 @@
 // each module (lastLocation.ts).
 
 import { useEffect, useState } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
 import { Notice } from '../components/ui.tsx';
 import { Header } from './Header.tsx';
 import { Footer } from './Footer.tsx';
 import { ModuleNavProvider } from './ModuleNav.tsx';
 import { ViewErrorBoundary } from './ViewErrorBoundary.tsx';
+import { Redirect } from './Redirect.tsx';
 import { rememberLocation } from './lastLocation.ts';
 import { isSectorProfilePath } from './modules.ts';
 
@@ -61,5 +62,5 @@ export function AppRoot() {
 
 /** Unknown paths: Home with a notice (the query string is dropped: it belonged to the bad link). */
 export function ToHome({ notice }: { notice?: string }) {
-  return <Navigate to="/" replace state={notice ? { notice } : undefined} />;
+  return <Redirect to="/" notice={notice} />;
 }

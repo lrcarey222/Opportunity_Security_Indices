@@ -7,7 +7,6 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import * as Plot from '@observablehq/plot';
-import { useTitle } from '../../App.tsx';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { Legend } from '../../charts/legends.tsx';
 import { PlotFigure, Tip } from '../../charts/PlotFigure.tsx';
@@ -21,7 +20,7 @@ import { cellLabel, fmtNum, tierLabel } from '../../lib/format.ts';
 import { useAdvancedChanged, useApp, useCore, useScenario } from '../../state/EngineProvider.tsx';
 import type { ShowMode } from '../../state/url.ts';
 import { COMPARE_COLOR, INK, PAPER_MUTE, SIGNAL, STAGE_COLOR, TIER_COLOR, tierKey } from '../../theme/palette.ts';
-import { numOr, rowsOf, showWord, TechStageFilters, useCountryOptions, useTechStage } from '../common.tsx';
+import { numOr, rowsOf, showWord, TechStageFilters, useCountryOptions, useTechStage, useViewTitle } from '../common.tsx';
 import { fitDomain, median, regionOf, REGIONS } from './derive.ts';
 
 interface SpacePoint {
@@ -69,15 +68,16 @@ export function spacePoints(esRows: ReturnType<typeof rowsOf>, eoRows: ReturnTyp
   return out;
 }
 
-export default function SpaceView() {
-  useTitle('Opportunity-security space');
+/** `embedded` (IA refactor 2026-10-16): inside the Country profile ("Compare with other economies"), which owns the title and the head; `iso3` starts the economy picker there. */
+export default function SpaceView({ embedded = false, iso3 }: { embedded?: boolean; iso3?: string } = {}) {
+  useViewTitle('Opportunity-security space', embedded);
   const app = useApp();
   const { show, isBaseline } = useScenario();
   const { view, setView } = useScenario();
   const { tech, stage } = useTechStage();
   const core = useCore();
   const ch = useAdvancedChanged();
-  const [sel, setSel] = useState(app.defaultCountry);
+  const [sel, setSel] = useState(iso3 && app.byIso.has(iso3) ? iso3 : app.defaultCountry);
   const options = useCountryOptions((x) => app.scored.some((s) => s.iso3c === x.iso3c));
   const tierOf = useCallback((iso: string) => app.byIso.get(iso)?.tier ?? 'none', [app]);
 
@@ -212,19 +212,21 @@ export default function SpaceView() {
 
   return (
     <div>
+      {!embedded && (
       <PageHead
         eyebrow="Security vs opportunity"
         title="The opportunity–security space"
         lede={
           <>
             Every economy in one sector, placed by <Term id="eo" /> (across) and <Term id="es" /> (up). The dashed lines are the middle economy in this sector. The lower right,
-            high opportunity with low security, is where building capacity would both meet a need and create value; Country Insights calls it{' '}
+            high opportunity with low security, is where building capacity would both meet a need and create value; the Country profile calls it{' '}
             <Term id="upgrade">Upgrade</Term>. The other corners are <Term id="grow">Grow</Term> (high opportunity, high security),{' '}
             <Term id="secure">Secure</Term> (low opportunity, low security) and <Term id="watch">Watch</Term> (low opportunity, high security). Pick a technology
             and a stage.
           </>
         }
       />
+      )}
       <FilterRow result={`Showing ${pts.length} economies`}>
         <TechStageFilters />
         <Checkbox label="Rankable only" checked={view.rankable} onChange={(v) => setView({ rankable: v })} />

@@ -99,8 +99,8 @@ function openTwins(): number {
 describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixture', () => {
   it('landing: the lists, memo tags and the reading guide; no fact sheet is fetched', async () => {
     renderAt('/countries');
-    expect(await h1('Country Insights')).toBeTruthy();
-    expect(document.title).toMatch(/Countries \| Country Insights/);
+    expect(await h1('Countries')).toBeTruthy();
+    expect(document.title).toMatch(/^Countries \| Allied Industrial Base Explorer/);
     const core = screen.getByRole('region', { name: /Core coalition members/ });
     const usa = within(core).getByRole('link', { name: /United States/ });
     expect(usa.getAttribute('href')).toBe('/countries/USA');
@@ -112,30 +112,43 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     noAcronyms();
   });
 
-  it('core profile with a memo (United States): every section, actions, table twins, no bare acronym', async () => {
+  it('core profile with a memo (United States): every section, actions, disclosures, table twins, no bare acronym', async () => {
     renderAt('/countries/USA');
     expect(await h1('United States')).toBeTruthy();
     // the title effect can trail the h1 when the suite runs under load
-    await waitFor(() => expect(document.title).toMatch(/United States \| Country Insights/));
-    await screen.findByRole('heading', { level: 2, name: 'At a glance' }, { timeout: 30_000 });
-    for (const h of ['Security and opportunity, sector by sector', 'Priorities and policy', 'Why these sectors', 'Partners', 'Policy memo', 'Data notes']) {
-      expect(screen.getAllByRole('heading', { name: h }).length).toBeGreaterThan(0);
+    await waitFor(() => expect(document.title).toMatch(/United States \| Countries \| /));
+    await screen.findByRole('heading', { level: 2, name: 'Strategic position' }, { timeout: 30_000 });
+    for (const h of ['Opportunities & risks', 'Sector position', 'Policy & climate', 'Partnerships', 'Role in the Allied Industrial Base', 'Policy memo', 'Data notes']) {
+      expect(screen.getAllByRole('heading', { level: 2, name: h }).length).toBeGreaterThan(0);
     }
+    for (const h of ['Make bets', 'Avoid dangerous dependencies', 'Preserve capabilities']) expect(screen.getByRole('heading', { level: 3, name: h })).toBeTruthy();
     const memo = screen.getAllByRole('link', { name: 'GENERATE MEMO' });
     expect(memo.length).toBe(2); // the header action and the memo section
     for (const a of memo) expect(a.getAttribute('href')).toBe('/countries/USA/memo');
     expect(screen.getByText(/AI-generated from the data and checked against it; paper baseline as of 12 October 2026\./)).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'OPEN IN STRATEGIC INSIGHTS' }).getAttribute('href')).toMatch(/^\/strategic\/USA/);
-    expect(screen.getByRole('navigation', { name: 'Sections of this page' })).toBeTruthy();
-    // the top Strategic Index sector of an all-Grow country: the fallback rule (A9.5) explains its top three
-    expect(screen.getByText(/None of the United States' placed sectors is in the Upgrade corner/)).toBeTruthy();
-    // the strongest measures card says it is context and names the extract
-    expect(screen.getByRole('heading', { name: 'Strongest active industrial-policy measures' })).toBeTruthy();
+    // the dials live on the page now: no bridge to Strategic Insights, a closed Perspective control
+    expect(screen.queryByRole('link', { name: 'OPEN IN STRATEGIC INSIGHTS' })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Perspective: NEIS baseline/ }).getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getAllByText('Observed / modelled facts', { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Preference-adjusted priorities', { exact: false }).length).toBeGreaterThan(0);
+    const nav = screen.getByRole('navigation', { name: 'Sections of this page' });
+    expect(within(nav).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['#position', '#opportunities', '#sectors', '#policy', '#partnerships', '#aib-role', '#memo', '#notes']);
+    // old anchors still exist
+    for (const id of ['space', 'priorities', 'partners', 'aib-role']) expect(document.getElementById(id)).toBeTruthy();
+    // Sector position rows link to the Sector profile
+    const sectors = document.getElementById('sectors')!;
+    expect(within(sectors).getAllByRole('link').some((a) => /^\/sector\/[a-z-]+\/(upstream|midstream|downstream)\?c=USA$/.test(a.getAttribute('href') ?? ''))).toBe(true);
+    // the top Strategic Index sector of an all-Grow country: the fallback rule (A9.5) explains its top three (behind "Why these sectors")
+    fireEvent.click(screen.getByText(/^Why these sectors/));
+    expect(await screen.findByText(/None of the United States' placed sectors is in the Upgrade corner/)).toBeTruthy();
+    // the strongest measures card says it is context and names the extract (behind a disclosure)
+    fireEvent.click(screen.getByText(/^Policy records by technology and stage/));
+    expect(await screen.findByRole('heading', { name: 'Strongest active industrial-policy measures' })).toBeTruthy();
     expect(screen.getAllByText(/not part of the Policy index/).length).toBeGreaterThan(0);
     noAcronyms();
     // every chart card has a table twin; opening them all keeps the page free of bare acronyms
     const n = openTwins();
-    expect(n).toBeGreaterThanOrEqual(7);
+    expect(n).toBeGreaterThanOrEqual(3);
     expect(within(main()).getAllByRole('table').length).toBeGreaterThanOrEqual(n);
     noAcronyms();
     expect(source.calls.filter((c) => c.startsWith('facts-'))).toHaveLength(1);
@@ -165,12 +178,12 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
   it('no Strategic Index (Nigeria): the notices replace the priorities; tiles say so in words', async () => {
     renderAt('/countries/NGA');
     expect(await h1('Nigeria')).toBeTruthy();
-    await screen.findByRole('heading', { level: 2, name: 'Priorities and policy' }, { timeout: 30_000 });
+    await screen.findByRole('heading', { level: 2, name: 'Policy & climate' }, { timeout: 30_000 });
     expect(screen.getAllByText('No Strategic Index').length).toBeGreaterThan(0);
-    expect(screen.getByText(/so the paper computes no Strategic Index for it/)).toBeTruthy();
+    expect(screen.getAllByText(/so the paper computes no Strategic Index for it/).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: 'Which sectors the Strategic Index puts first' })).toBeNull();
     expect(screen.getByText('POLICY: RECORDS ONLY, NO CLIMATE RATING')).toBeTruthy();
-    expect(screen.getAllByText('Not a coalition member').length).toBeGreaterThan(0);
+    expect(screen.getByText(/Nigeria has no Climate Action Tracker rating/)).toBeTruthy();
     noAcronyms();
   });
 
@@ -196,21 +209,21 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     renderAt('/countries/ATA');
     expect(await h1('Antarctica')).toBeTruthy();
     expect(screen.getByText('No index data')).toBeTruthy();
-    expect(screen.getByRole('link', { name: /raw data in Sector Insights/ }).getAttribute('href')).toMatch(/^\/sector\?c=ATA/);
+    expect(screen.getByRole('link', { name: /raw data in Sectors/ }).getAttribute('href')).toMatch(/^\/sector\?c=ATA/);
     expect(source.calls.some((c) => c.startsWith('facts-'))).toBe(false);
     noAcronyms();
   });
 
   it('unknown ISO3: the landing with a route notice', async () => {
     renderAt('/countries/XYZ');
-    expect(await h1('Country Insights')).toBeTruthy();
+    expect(await h1('Countries')).toBeTruthy();
     expect(screen.getByText("No country with the code 'XYZ'; showing all countries.")).toBeTruthy();
   });
 
   it('memo of a core member: the verbatim label, the downloads, the sources and the trace switch', async () => {
     renderAt('/countries/USA/memo');
     expect(await h1(/^United States: energy security, economic opportunity and partnership priorities$/)).toBeTruthy();
-    expect(document.title).toMatch(/United States memo \| Country Insights/);
+    expect(document.title).toMatch(/United States memo \| Countries \| /);
     // the label under the title and again at the end of the memo
     expect(screen.getAllByText('AI-generated from the data and checked against it; paper baseline as of 12 October 2026.').length).toBe(2);
     const pdf = screen.getByText('DOWNLOAD PDF');
@@ -281,8 +294,8 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
 
   it('about: the sections, the glossary and the sources', async () => {
     renderAt('/countries/about');
-    expect(await h1('About Country Insights')).toBeTruthy();
-    for (const h of ['What Country Insights shows', 'Reading the four corners', 'How priorities are compared with policy', 'How partners are compared with today\'s ties', 'The memos', 'Data and vintage', 'Glossary']) {
+    expect(await h1('Country profiles: data notes')).toBeTruthy();
+    for (const h of ['What the Country profiles show', 'Reading the four corners', 'How priorities are compared with policy', 'How partners are compared with today\'s ties', 'The memos', 'Data and vintage', 'Glossary']) {
       expect(screen.getAllByRole('heading', { name: new RegExp(h.replace(/[()?]/g, '.')) }).length).toBeGreaterThan(0);
     }
     expect(screen.getAllByRole('link', { name: /glossary/i }).some((a) => a.getAttribute('href')?.startsWith('/glossary'))).toBe(true);
@@ -299,8 +312,9 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     const chip = within(corners).getAllByRole('button')[0];
     fireEvent.click(chip);
     await waitFor(() => expect(r.state.location.search).toMatch(/^\?cell=[a-z-]+/));
-    // a partner row of the slope chart selects the partner
-    const slope = screen.getByRole('region', { name: "Priority partners and today's partners" });
+    // a partner row of the slope chart (behind "Every partner") selects the partner
+    fireEvent.click(screen.getByText(/^Every partner of Japan/));
+    const slope = await screen.findByRole('region', { name: "Priority partners and today's partners" });
     const row = within(slope).getAllByRole('button').find((b) => /United States|Germany|South Korea|France/.test(b.textContent ?? ''));
     expect(row).toBeTruthy();
     fireEvent.click(row!);
@@ -308,8 +322,11 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
   });
 
   it('priorities table: "Show all" writes all=1 and lists every in-sample sector', async () => {
-    const r = renderAt('/countries/KOR');
+    const r = renderAt('/countries/KOR#why');
     expect(await h1('South Korea')).toBeTruthy();
+    // an old #why link opens its disclosure
+    await waitFor(() => expect(document.getElementById('fold-why')?.hasAttribute('open')).toBe(true), { timeout: 30_000 });
+    fireEvent.click(screen.getByText(/^How priorities are built/));
     const card = await screen.findByRole('region', { name: 'Which sectors the Strategic Index puts first' }, { timeout: 30_000 });
     const before = within(card).getAllByRole('row').length;
     const btn = within(card).queryByRole('button', { name: /^Show all \d+$/ });
