@@ -77,13 +77,19 @@ test_that("reallocation never reshuffles shipments the shock did not touch", {
   expect_equal(s$surviving_cut, 0, tolerance = 1e-12)
 })
 
-test_that("a half shock frees only half, and reallocation can take the rest", {
+test_that("a half shock frees only half of the sales to the shocked economy", {
   prob <- aib_node_problem(toy_flows, c(CHN = 0.5), NULL, "release", candidate_min_exports = 1e6, candidate_min_share = 0)
   cons <- aib_optimized_analytic(prob, "conservative", 1, flat_scores)
   real <- aib_optimized_analytic(prob, "reallocation", 1, flat_scores)
   expect_equal(prob$L, 40e6)
   expect_equal(cons$coverage, (55 + 7.5) / 95, tolerance = 1e-9)
-  expect_equal(real$coverage, (55 + 15) / 95, tolerance = 1e-9)
+  # A sells only to Z (in scope) and China: the half of its China sales the shock frees is all it can move.
+  expect_equal(real$coverage, (55 + 7.5) / 95, tolerance = 1e-9)
+  extra <- dplyr::bind_rows(toy_flows, tibble::tibble(exporter_iso = "AAA", importer_iso = "WWW", value = 4e6))
+  p2 <- aib_node_problem(extra, c(CHN = 0.5), NULL, "release", candidate_min_exports = 1e6, candidate_min_share = 0,
+                         demand_scope = c("XXX", "YYY", "ZZZ"))
+  # Reallocation adds A's sales outside the scope (4 to W).
+  expect_equal(aib_optimized_analytic(p2, "reallocation", 1, flat_scores)$coverage, (55 + 7.5 + 4) / 95, tolerance = 1e-9)
 })
 
 test_that("shock targets follow the level and carry re-export hubs", {
@@ -116,12 +122,15 @@ test_that("the frontier gives the costless limit and the minimum required divers
                        optimized_coverage = c(0.6, 0.79, 0.8, 0.8), optimized_largest_share = c(0.25, 0.3, 0.55, 0.7),
                        specialization_score = c(0.5, 0.6, 0.8, 1))
   fr$coverage_loss_vs_unconstrained <- 0.8 - fr$optimized_coverage
-  fr$second_shock_coverage <- fr$optimized_coverage * (1 - fr$optimized_largest_share)
+  fr$instantaneous_n1_retained_coverage <- fr$optimized_coverage * (1 - fr$optimized_largest_share)
+  fr$n1_reoptimized_coverage <- c(0.58, 0.7, 0.6, 0.45)
   m <- aib_frontier_minimum(fr, tolerance = 0.02, acceptable_coverage = 0.5)
   expect_equal(m$tightest_costless_max_share, 0.4)
-  # Second-shock coverage: 0.45, 0.553, 0.36, 0.24 -> only the 40% limit keeps 50%.
-  expect_equal(m$min_required_diversification, 0.4)
-  expect_equal(m$specialization_retained, 0.6)
+  # True N-1 (re-optimized): 0.58, 0.70, 0.60, 0.45 -> the loosest limit keeping 50% is 60%.
+  expect_equal(m$min_required_diversification, 0.6)
+  # Instantaneous N-1: 0.45, 0.553, 0.36, 0.24 -> only the 40% limit keeps 50%.
+  expect_equal(m$min_required_diversification_instantaneous, 0.4)
+  expect_equal(m$specialization_retained, 0.8)
   none <- aib_frontier_minimum(fr, acceptable_coverage = 0.9)
   expect_true(is.na(none$min_required_diversification))
   na_run <- dplyr::mutate(fr, coverage_loss_vs_unconstrained = NA_real_)
@@ -152,4 +161,83 @@ test_that("the trade-compact state lets members open relationships while others 
   expect_equal(b$coverage, 15 / 95, tolerance = 1e-9)
   expect_equal(with_a$coverage, 30 / 95, tolerance = 1e-9)  # A's freed 15 reaches X and Y
   expect_equal(with_b$coverage, 15 / 95, tolerance = 1e-9)  # B has nothing to redirect
+})
+
+
+test_that("hold keeps the shocked economy's purchases; release frees them", {
+  hold <- aib_node_problem(toy_flows, c(CHN = 1), NULL, "hold", candidate_min_exports = 1e6, candidate_min_share = 0)
+  rel <- aib_node_problem(toy_flows, c(CHN = 1), NULL, "release", candidate_min_exports = 1e6, candidate_min_share = 0)
+  expect_equal(sum(hold$freed), 0)
+  expect_equal(unname(rel$freed["AAA"]), 15 / 95)
+  # Conservative + hold: nothing the shock frees, so nothing moves (the no-adaptation bound).
+  expect_equal(aib_optimized_analytic(hold, "conservative", 1, flat_scores)$coverage, 15 / 95, tolerance = 1e-9)
+  # Reallocation + hold: China keeps buying, so A's sales to China stay with it; A has no other market.
+  expect_equal(aib_optimized_analytic(hold, "reallocation", 1, flat_scores)$coverage, 15 / 95, tolerance = 1e-9)
+  # Reallocation + release: China's purchases fall, so A's 15 move to the scope.
+  expect_equal(aib_optimized_analytic(rel, "reallocation", 1, flat_scores)$coverage, 30 / 95, tolerance = 1e-9)
+})
+
+test_that("the demand scope and the partner universe are separate", {
+  flows <- dplyr::bind_rows(toy_flows, tibble::tibble(exporter_iso = "AAA", importer_iso = "WWW", value = 20e6))
+  # Protect only X and Y; anyone may supply. A can divert its 5 to Z and 20 to W (outside the scope);
+  # under hold its 15 to China stay with China.
+  p <- aib_node_problem(flows, c(CHN = 1), shocked_demand = "hold", demand_scope = c("XXX", "YYY"),
+                        candidate_min_exports = 1e6, candidate_min_share = 0)
+  expect_setequal(p$scope, c("XXX", "YYY"))
+  expect_true("AAA" %in% p$cand)
+  expect_equal(unname(p$outside_scope["AAA"]), 25 / 90)  # 5 to Z and 20 to W, outside the scope
+  r <- aib_optimized_analytic(p, "reallocation", 1, flat_scores)
+  expect_equal(r$coverage, (10 + 25) / 90, tolerance = 1e-9)  # B's 10 stays; A's 25 diverted
+  expect_equal(r$diversion, 25 / 90, tolerance = 1e-9)
+  # The same scope with A outside the partner universe: A's shipments stay where they are.
+  q <- aib_node_problem(flows, c(CHN = 1), shocked_demand = "hold", demand_scope = c("XXX", "YYY"),
+                        partner_universe = c("BBB"), candidate_min_exports = 1e6, candidate_min_share = 0)
+  expect_false("AAA" %in% q$cand)
+  expect_equal(aib_optimized_analytic(q, "reallocation", 1, flat_scores)$coverage, 10 / 90, tolerance = 1e-9)
+})
+
+test_that("physical evidence decides who can supply, not how much", {
+  # Release: A's 15 sales to China are freed. A exports 20 in all (5 to Z, 15 to China).
+  free <- aib_node_problem(toy_flows, c(CHN = 1), NULL, "release", candidate_min_exports = 1e6, candidate_min_share = 0)
+  unc <- aib_optimized_analytic(free, "reallocation", 1, flat_scores)$coverage
+  expect_equal(unc, 30 / 95, tolerance = 1e-9)
+  # A listed as a producer, however small its share: its observed exports count in full.
+  listed <- aib_node_problem(toy_flows, c(CHN = 1), NULL, "release", candidate_min_exports = 1e6, candidate_min_share = 0,
+                             physical_share = c(CHN = 0.9, AAA = 0.02, BBB = 0.08))
+  expect_true(listed$physical_producer[["AAA"]])
+  expect_equal(unname(listed$supply_cap["AAA"]), 20 / 95, tolerance = 1e-12)
+  expect_equal(aib_optimized_analytic(listed, "reallocation", 1, flat_scores)$coverage, unc, tolerance = 1e-9)
+  # A absent from the physical data (a re-exporter, or another product under the code): it keeps its
+  # 5 to Z but cannot redirect its 15.
+  absent <- aib_node_problem(toy_flows, c(CHN = 1), NULL, "release", candidate_min_exports = 1e6, candidate_min_share = 0,
+                             physical_share = c(CHN = 0.9, BBB = 0.1))
+  expect_false(absent$physical_producer[["AAA"]])
+  expect_equal(unname(absent$supply_cap["AAA"]), 5 / 95, tolerance = 1e-12)
+  con <- aib_optimized_analytic(absent, "reallocation", 1, flat_scores)$coverage
+  expect_equal(con, 15 / 95, tolerance = 1e-9)
+  expect_equal(aib_optimized_analytic(absent, "conservative", 1, flat_scores)$coverage, 15 / 95, tolerance = 1e-9)
+  skip_if_not(aib_has_lp(), "Rglpk/slam not installed")
+  expect_equal(aib_solve_state(absent, "reallocation", "C", scores = flat_scores, steps = 1)$coverage, con, tolerance = 1e-7)
+})
+
+test_that("the true N-1 removes the largest remaining supplier and re-optimizes", {
+  flows <- dplyr::bind_rows(toy_flows, tibble::tibble(exporter_iso = "BBB", importer_iso = "WWW", value = 40e6))
+  p <- aib_node_problem(flows, c(CHN = 1), NULL, "release", candidate_min_exports = 1e6, candidate_min_share = 0)
+  c0 <- aib_optimized_analytic(p, "reallocation", 1, flat_scores)
+  expect_equal(c0$largest, "BBB")
+  n1 <- aib_n1_reoptimized(p, "reallocation", 1, "BBB", flat_scores)
+  # Without B: Y and W lose B's 50; A's 20 is all that can be redirected.
+  expect_equal(n1, 20 / 135, tolerance = 1e-9)  # only A's 20 of exports remain to redirect
+  p1 <- aib_remove_supplier(p, "BBB")
+  expect_false("BBB" %in% p1$cand)
+  expect_equal(p1$L, p$L + 50e6)
+  expect_equal(aib_instantaneous_n1(c0$coverage, c0$largest_share), c0$coverage * (1 - c0$largest_share))
+})
+
+test_that("existing-network coverage rises with the growth bound", {
+  skip_if_not(aib_has_lp(), "Rglpk/slam not installed")
+  flows <- tibble::tibble(exporter_iso = c("CHN", "BBB", "BBB"), importer_iso = c("YYY", "YYY", "CHN"), value = c(20, 10, 30) * 1e6)
+  p <- aib_node_problem(flows, c(CHN = 1), NULL, "release", candidate_min_exports = 1e6, candidate_min_share = 0)
+  g <- aib_existing_growth_sensitivity(p, "conservative", c(0.25, 1, 3, Inf), flat_scores)
+  expect_equal(g$existing_coverage, c(12.5, 20, 30, 30) / 30, tolerance = 1e-9)
 })

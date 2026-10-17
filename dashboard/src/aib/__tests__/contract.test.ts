@@ -1,12 +1,14 @@
 // The Sectoral Compacts contract and store: the synthetic fixture passes both checks; missing, badly
 // typed and collapsed fields are reported with their paths; a newer version asks for a reload; the
 // tolerated shapes of the R export ([] for an empty named list, null numbers and NA strings) pass; the
-// store maps every failure to NO_DATA / NEWER / CONTRACT / NETWORK and can retry.
+// additive and methodology fields are optional (an older bundle, secondShock and all, validates) and
+// checked when present; the store maps every failure to NO_DATA / NEWER / CONTRACT / NETWORK and can
+// retry.
 
 import { describe, expect, it } from 'vitest';
-import { AIB_DOC_FILE_RE, checkAibManifest, checkCompactsDoc, countryNamesOf, nodeCoverageOf, type AibDoc } from '../contract.ts';
+import { AIB_DOC_FILE_RE, checkAibManifest, checkCompactsDoc, coalitionMembersOf, countryNamesOf, inStrategicScope, nodeCoverageOf, variantsOf, variantWarningsOf, type AibDoc } from '../contract.ts';
 import { AibLoadError, AibStore, httpAibSource, type AibSource } from '../data/store.ts';
-import { fixtureSource, readDoc, readManifest, SYNTHETIC_DIR } from './fixture.ts';
+import { fixtureSource, readDoc, readManifest, stripMethodology, SYNTHETIC_DIR } from './fixture.ts';
 
 const doc = (): AibDoc => structuredClone(readDoc(SYNTHETIC_DIR));
 type Loose = Record<string, unknown>;
@@ -124,12 +126,157 @@ describe('checkCompactsDoc', () => {
     for (const n of d.nodes) {
       delete n.tightestCostless;
       delete n.minRequiredDiversification;
-      for (const f of n.frontier) {
-        delete f.secondShock;
-        delete f.specialization;
-      }
+      for (const f of n.frontier) delete f.specialization;
     }
     expect(checkCompactsDoc(d)).toEqual([]);
+  });
+
+  it('the methodology fields (2026-10-16) are optional: an older bundle, with secondShock in its frontier, still validates', () => {
+    const d = stripMethodology(doc());
+    expect(checkCompactsDoc(d)).toEqual([]);
+    // the older bundle wrote the instantaneous N-1 as secondShock: still accepted (and still range-checked)
+    expect(d.nodes[0].frontier[0].secondShock).toBeCloseTo(0.5325, 6);
+    d.nodes[0].frontier[0].secondShock = 1.5;
+    expect(checkCompactsDoc(d)).toEqual(['nodes[0].frontier[0].secondShock: 1.5 above 1']);
+    const m = loose(structuredClone(readManifest(SYNTHETIC_DIR)));
+    for (const k of ['demandScope', 'candidateUniverse', 'shockSemantics', 'supplyConstraint']) delete m[k];
+    expect(checkAibManifest(m)).toEqual([]);
+    // the synthetic document carries every one of them, and no secondShock
+    const full = doc();
+    expect(full.meta).toMatchObject({ demandScope: 'coalition', candidateUniverse: 'global', shockSemantics: 'hold', supplyConstraint: 'production_constrained', strategicScope: 'electro_industrial' });
+    expect(full.nodes.flatMap((n) => n.frontier).some((f) => 'secondShock' in f)).toBe(false);
+    expect(full.nodes.every((n) => Array.isArray(n.policyNeeds) && typeof n.inStrategicScope === 'boolean')).toBe(true);
+  });
+
+  it('the methodology fields are checked when present; nulls and an empty variants list ([]) are tolerated', () => {
+    const d = doc();
+    const n0 = loose(d.nodes[0]);
+    n0.policyNeeds = ['BUILD', 'PANIC'];
+    n0.warning = 7;
+    n0.physicalData = 'partial';
+    n0.inStrategicScope = 'yes';
+    n0.coordinateSensitiveToGrowth = 1;
+    n0.n1Reoptimized = 1.3;
+    n0.diversion = -0.1;
+    loose(d.nodes[1]).policyNeeds = 'BUILD';
+    loose(d.nodes[1]).variants = ['BUILD'];
+    loose(d.nodes[2].variants!).release = 'PANIC';
+    loose(d.nodes[3]).growth = { label: '2x' };
+    loose(d.nodes[4].growth![0]).cls = 'PANIC';
+    loose(d.nodes[4].growth![1]).existing = 1.2;
+    loose(d.nodes[5].frontier[0]).n1Removed = 5;
+    loose(d.nodes[5].frontier[1]).instantaneousN1 = -0.1;
+    loose(d.compacts[0].coalition).greedy = 'AAA';
+    loose(d.compacts[0].coalition).method = 3;
+    loose(d.compacts[0]).physicalWarnings = 'Wind Towers';
+    loose(d.compacts[0].roles[0]).tier = 5;
+    loose(d.compacts[0].roles[0]).critical = 'no';
+    loose(d.compacts[0].roles[1]).substitutes = 'GGG';
+    loose(d.meta).demandScope = 'planet';
+    loose(d.meta).nDemandScope = 5.5;
+    loose(d.meta).semantics = ['hold', 'grab'];
+    loose(d.meta).strategicScope = 5;
+    const p = checkCompactsDoc(d);
+    for (const want of [
+      "nodes[0].policyNeeds[1]: 'PANIC' is not one of COORDINATE, BUILD, MANAGE SPECIALIZATION",
+      'nodes[0].warning: expected a string or null',
+      "nodes[0].physicalData: 'partial' is not one of complete, incomplete, none",
+      'nodes[0].inStrategicScope: expected true or false',
+      'nodes[0].coordinateSensitiveToGrowth: expected true or false',
+      'nodes[0].n1Reoptimized: 1.3 above 1',
+      'nodes[0].diversion: -0.1 below 0',
+      'nodes[1].policyNeeds: expected an array (a one-item array collapsed to a string?)',
+      'nodes[1].variants: expected an object of variant -> class',
+      "nodes[2].variants.release: 'PANIC' is not one of meta.classes",
+      'nodes[3].growth: expected an array (a one-item array collapsed to an object?)',
+      "nodes[4].growth[0].cls: 'PANIC' is not one of meta.classes",
+      'nodes[4].growth[1].existing: 1.2 above 1',
+      'nodes[5].frontier[0].n1Removed: expected a string or null',
+      'nodes[5].frontier[1].instantaneousN1: -0.1 below 0',
+      'compacts[0].coalition.greedy: expected an array (a one-item array collapsed to a string?)',
+      'compacts[0].coalition.method: expected a string or null',
+      'compacts[0].physicalWarnings: expected an array (a one-item array collapsed to a string?)',
+      'compacts[0].roles[0].tier: expected a string or null',
+      'compacts[0].roles[0].critical: expected true or false',
+      'compacts[0].roles[1].substitutes: expected an array (a one-item array collapsed to a string?)',
+      "meta.demandScope: 'planet' is not one of coalition, configured, global",
+      'meta.nDemandScope: 5.5 is not an integer',
+      "meta.semantics[1]: 'grab' is not one of hold, release",
+      'meta.strategicScope: expected a string or null',
+    ]) {
+      expect(p).toContain(want);
+    }
+    // nulls where R had NA, and [] for an empty named list, pass
+    const ok = doc();
+    loose(ok.nodes[0]).variants = [];
+    ok.nodes[0].warning = null;
+    ok.nodes[0].physicalData = null;
+    ok.nodes[0].n1Reoptimized = null;
+    ok.nodes[1].variants = { ...ok.nodes[1].variants, release: null };
+    ok.nodes[1].growth = [{ label: '2x', existing: null, dividend: null, cls: null }];
+    ok.compacts[0].roles[0].tier = null;
+    ok.compacts[0].coalition.method = null;
+    ok.meta.nDemandScope = null;
+    ok.meta.shockSemantics = null;
+    // any configured strategic scope is accepted as written
+    ok.meta.strategicScope = 'critical_minerals';
+    expect(checkCompactsDoc(ok)).toEqual([]);
+    expect(variantsOf(ok.nodes[0])).toEqual({});
+    expect(inStrategicScope({ ...ok.nodes[0], inStrategicScope: undefined })).toBe(true);
+    expect(inStrategicScope(ok.nodes.find((n) => n.id === 'gas-mid-turbines')!)).toBe(false);
+    const m = { ...readManifest(SYNTHETIC_DIR), demandScope: 3 };
+    expect(checkAibManifest(m)).toEqual(['manifest.demandScope: expected a string or null']);
+  });
+
+  it('the final-model fields: per-variant and per-growth warnings, single substitutes and substitutesNeeded, leave-one-out, the marginal tier and the coalition flags', () => {
+    // the synthetic document carries every one of them
+    const full = doc();
+    expect(full.nodes.every((n) => n.variantWarnings && !Array.isArray(n.variantWarnings) && Object.keys(n.variantWarnings).join() === Object.keys(n.variants ?? {}).join())).toBe(true);
+    expect(full.nodes.some((n) => !n.warning && Object.values(n.variantWarnings ?? {}).some(Boolean))).toBe(true);
+    expect(full.nodes.flatMap((n) => n.growth ?? []).every((g) => typeof g.warning === 'boolean')).toBe(true);
+    expect(full.compacts.every((c) => typeof c.coalition.associatesReach99 === 'boolean' && typeof c.coalition.robustTieBreakSolved === 'boolean' && Array.isArray(c.coalition.criticalExternalMarginal))).toBe(true);
+    expect(full.compacts.flatMap((c) => c.roles).every((r) => typeof r.looCritical === 'boolean' && r.substitutesNeeded !== undefined)).toBe(true);
+    expect(full.compacts.flatMap((c) => c.roles).some((r) => r.tier === 'critical external dependency (marginal)')).toBe(true);
+    // checked when present
+    const d = doc();
+    loose(d.nodes[0].variantWarnings!).trade_only = 'yes';
+    loose(d.nodes[1]).variantWarnings = ['trade_only'];
+    loose(d.nodes[2].growth![0]).warning = 1;
+    loose(d.compacts[0].coalition).criticalExternalMarginal = 'JJJ';
+    loose(d.compacts[0].coalition).associatesReach99 = 'yes';
+    loose(d.compacts[0].coalition).robustTieBreakSolved = 0;
+    loose(d.compacts[0].roles[0]).looCritical = 'no';
+    loose(d.compacts[0].roles[1]).substitutesNeeded = 1.5;
+    loose(d.compacts[0].roles[2]).substitutesNeeded = -1;
+    const p = checkCompactsDoc(d);
+    for (const want of [
+      'nodes[0].variantWarnings.trade_only: expected true or false',
+      'nodes[1].variantWarnings: expected an object of variant -> true or false',
+      'nodes[2].growth[0].warning: expected true or false',
+      'compacts[0].coalition.criticalExternalMarginal: expected an array (a one-item array collapsed to a string?)',
+      'compacts[0].coalition.associatesReach99: expected true or false',
+      'compacts[0].coalition.robustTieBreakSolved: expected true or false',
+      'compacts[0].roles[0].looCritical: expected true or false',
+      'compacts[0].roles[1].substitutesNeeded: 1.5 is not an integer',
+      'compacts[0].roles[2].substitutesNeeded: -1 below 0',
+    ]) {
+      expect(p).toContain(want);
+    }
+    expect(p).toHaveLength(9);
+    // [] for an empty named list and null where nothing restores the target pass; variantWarningsOf reads both
+    const ok = doc();
+    loose(ok.nodes[0]).variantWarnings = [];
+    ok.compacts[0].roles[2].substitutesNeeded = null;
+    expect(checkCompactsDoc(ok)).toEqual([]);
+    expect(variantWarningsOf(ok.nodes[0])).toEqual({});
+    expect(variantWarningsOf(ok.nodes[1])).toEqual(ok.nodes[1].variantWarnings);
+    delete ok.nodes[1].variantWarnings;
+    expect(variantWarningsOf(ok.nodes[1])).toBeNull();
+    // the widest greedy set of an unreached target is in members; an older export's [] falls back to the member roles
+    const c03 = ok.compacts[2];
+    expect(c03.coalition.method).toMatch(/^greedy_sufficient_coalition/);
+    expect(coalitionMembersOf(c03)).toEqual(['AAA', 'EEE', 'FFF']);
+    expect(coalitionMembersOf({ ...c03, coalition: { ...c03.coalition, members: [] } })).toEqual(['AAA', 'EEE', 'FFF']);
   });
 
   it('the additive fields are checked when present; the new compact type is accepted', () => {

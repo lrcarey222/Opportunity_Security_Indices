@@ -88,27 +88,42 @@ aib_or <- function(a, b) if (is.null(a)) b else a
 
 # Everything about one node and one shock that does not depend on the scenario or the state.
 # flows: exporter_iso, importer_iso, value (USD, reference year). shocked: named fractions.
-# universe: ISO3 codes of the candidate universe, NULL = every economy in the flows.
-aib_node_problem <- function(flows, shocked, universe = NULL, shocked_demand = c("release", "hold"),
+# demand_scope: ISO3 codes whose demand is protected (the importers whose supply is restored);
+# partner_universe: ISO3 codes that may act as candidate partners (exporters re-optimized). NULL =
+# every economy in the flows; `universe` (older single setting) fills both when they are NULL.
+# shocked_demand: "hold" (an export / supply shock: the shocked economy keeps buying, so exports
+# headed to it stay with it, in both scenarios) or "release" (decoupling: its purchases fall by the
+# same fraction, so that share of the exports headed to it is freed). physical_share: named
+# production / capacity shares of the node (world = 1); when given, physical evidence decides who can
+# supply: a candidate the data list as a producer (share > physical_min_share) keeps its full trade
+# response; one they do not list (a re-exporter, stock, or a different product under the same HS
+# code, e.g. semiconductor wafers in HS 3818.00) keeps its current shipments to the scope but cannot
+# expand or redirect supply toward it. Shares are never multiplied into trade values: production is
+# physical volume and trade is value, and where the dominant producer uses most of its own output
+# (polysilicon, wafers) world trade is far below world production.
+aib_node_problem <- function(flows, shocked, universe = NULL, shocked_demand = c("hold", "release"),
                              candidate_min_exports = 1e6, candidate_min_share = 5e-4,
-                             allow_domestic = TRUE) {
+                             allow_domestic = TRUE, demand_scope = NULL, partner_universe = NULL,
+                             physical_share = NULL, physical_min_share = 0) {
   shocked_demand <- match.arg(shocked_demand)
   f <- flows[flows$value > 0, c("exporter_iso", "importer_iso", "value"), drop = FALSE]
   if (!nrow(f)) return(NULL)
   W <- sum(f$value)
   econ <- unique(c(f$exporter_iso, f$importer_iso))
-  U <- if (is.null(universe)) econ else intersect(universe, econ)
+  pick <- function(set) if (!is.null(set)) intersect(set, econ) else if (!is.null(universe)) intersect(universe, econ) else econ
+  scope_set <- pick(demand_scope)
+  partner_set <- pick(partner_universe)
   sh <- shocked[names(shocked) %in% econ]
   r_of <- function(iso) { r <- unname(sh[iso]); r[is.na(r)] <- 0; r }
 
   D_m <- tapply(f$value, f$importer_iso, sum)
-  scope <- setdiff(names(D_m)[names(D_m) %in% U], names(sh))
+  scope <- setdiff(names(D_m)[names(D_m) %in% scope_set], names(sh))
   if (!length(scope)) return(NULL)
   D <- sum(D_m[scope])
   if (!(D > 0)) return(NULL)
 
   S_e <- tapply(f$value, f$exporter_iso, sum)
-  cand <- names(S_e)[names(S_e) %in% U & !names(S_e) %in% names(sh) &
+  cand <- names(S_e)[names(S_e) %in% partner_set & !names(S_e) %in% names(sh) &
                        S_e >= max(candidate_min_exports, candidate_min_share * W)]
 
   fs <- f[f$importer_iso %in% scope, , drop = FALSE]
@@ -124,6 +139,7 @@ aib_node_problem <- function(flows, shocked, universe = NULL, shocked_demand = c
   fixed_by_exp <- tapply(fixed_row, fs$exporter_iso, sum)
   fixed_by_exp <- fixed_by_exp[fixed_by_exp > 0]
   base_supply <- tapply(fs$value, fs$exporter_iso, sum)
+  fk <- fixed_row > 0
 
   to_scope <- tapply(fs$value[is_cand], factor(fs$exporter_iso[is_cand], levels = cand), sum)
   to_scope[is.na(to_scope)] <- 0
@@ -136,25 +152,103 @@ aib_node_problem <- function(flows, shocked, universe = NULL, shocked_demand = c
       freed <- fr
     }
   }
+  # Candidates' exports to markets outside the demand scope (not the shocked economy): what the
+  # reallocation scenario can divert toward the scope.
+  out_f <- f[f$exporter_iso %in% cand & !f$importer_iso %in% c(scope, names(sh)), , drop = FALSE]
+  outside <- tapply(out_f$value, factor(out_f$exporter_iso, levels = cand), sum)
+  outside[is.na(outside)] <- 0
+  supply_cap <- NULL
+  producer <- NULL
+  if (!is.null(physical_share)) {
+    ps <- unname(physical_share[cand])
+    ps[is.na(ps)] <- 0
+    producer <- stats::setNames(ps > physical_min_share, cand)
+    supply_cap <- stats::setNames(ifelse(producer, as.numeric(S_e[cand]), as.numeric(to_scope)) / D, cand)
+  }
   links <- fs[is_cand, , drop = FALSE]
 
   list(
-    D = D, W = W, L = sum(lost_m), scope = scope, universe_size = length(U),
+    D = D, W = W, L = sum(lost_m), scope = scope, universe_size = length(scope_set), partner_size = length(partner_set),
     demand = D_m[scope] / D,
     lost = lost_m / D,
     fixed_m = fixed_m / D,
     fixed_by_exporter = fixed_by_exp / D,
     fixed_total = sum(fixed_row) / D,
+    fixed_links = tibble::tibble(e = fs$exporter_iso[fk], m = fs$importer_iso[fk], x = fixed_row[fk] / D),
     cand = cand,
     S = S_e[cand] / D,
     to_scope = to_scope / D,
     freed = freed / D,
+    outside_scope = outside / D,
+    physical_producer = producer,
+    supply_cap = supply_cap,
     links = tibble::tibble(e = links$exporter_iso, m = links$importer_iso, x = links$value / D),
     base_supply = base_supply / D,
     shocked = sh,
     allow_domestic = allow_domestic,
     shocked_demand = shocked_demand
   )
+}
+
+# The node problem after a supplier is lost as well (the true N-1 test): its shipments into the
+# demand scope become lost supply and, if it was a candidate, it can no longer be re-optimized.
+aib_remove_supplier <- function(prob, iso) {
+  if (is.null(prob) || is.null(iso) || is.na(iso) || !nzchar(iso)) return(prob)
+  p <- prob
+  lose <- function(e_m) {
+    add <- tapply(e_m$x, factor(e_m$m, levels = p$scope), sum)
+    add[is.na(add)] <- 0
+    add
+  }
+  if (iso %in% p$cand) {
+    lk <- p$links[p$links$e == iso, , drop = FALSE]
+    if (nrow(lk)) {
+      p$lost <- p$lost + lose(lk)
+      p$L <- p$L + sum(lk$x) * p$D
+    }
+    p$links <- p$links[p$links$e != iso, , drop = FALSE]
+    keep <- setdiff(p$cand, iso)
+    p$cand <- keep
+    p$S <- p$S[keep]
+    p$to_scope <- p$to_scope[keep]
+    p$freed <- p$freed[keep]
+    p$outside_scope <- p$outside_scope[keep]
+    if (!is.null(p$supply_cap)) p$supply_cap <- p$supply_cap[keep]
+    if (!is.null(p$physical_producer)) p$physical_producer <- p$physical_producer[keep]
+  }
+  fl <- p$fixed_links[p$fixed_links$e == iso, , drop = FALSE]
+  if (nrow(fl)) {
+    sub <- lose(fl)
+    p$fixed_m <- p$fixed_m - sub
+    p$lost <- p$lost + sub
+    p$fixed_total <- p$fixed_total - sum(fl$x)
+    p$L <- p$L + sum(fl$x) * p$D
+    p$fixed_by_exporter <- p$fixed_by_exporter[names(p$fixed_by_exporter) != iso]
+    p$fixed_links <- p$fixed_links[p$fixed_links$e != iso, , drop = FALSE]
+  }
+  p$removed <- c(p$removed, iso)
+  p
+}
+
+# Supply each candidate can direct to the demand scope under a scenario, before synthetic capacity:
+# conservative = its current shipments there plus what the shock frees; reallocation = those plus
+# its exports to markets outside the scope (under hold, its sales to the shocked economy stay with
+# it; under release, the share the shock frees is in `freed`); both bounded by its physical
+# capability where the problem carries one.
+aib_available_supply <- function(prob, scenario, iso) {
+  get0 <- function(v, k) {
+    if (is.null(v) || !length(v)) return(rep(0, length(k)))
+    a <- unname(v[k])
+    a[is.na(a)] <- 0
+    as.numeric(a)
+  }
+  avail <- get0(prob$to_scope, iso) + get0(prob$freed, iso)
+  if (!identical(scenario, "conservative")) avail <- avail + get0(prob$outside_scope, iso)
+  if (!is.null(prob$supply_cap)) {
+    has <- iso %in% names(prob$supply_cap)
+    avail[has] <- pmin(avail[has], get0(prob$supply_cap, iso[has]))
+  }
+  pmax(avail, 0)
 }
 
 aib_supply_stats <- function(by_exporter) {
@@ -247,11 +341,7 @@ aib_solve_state <- function(prob, scenario = c("conservative", "reallocation"), 
     as.numeric(a)
   }
   add <- function(iso) get0(extra, iso)
-  avail <- if (identical(scenario, "conservative")) {
-    get0(prob$to_scope, cand_all) + get0(prob$freed, cand_all) + add(cand_all)
-  } else {
-    get0(prob$S, cand_all) + add(cand_all)
-  }
+  avail <- aib_available_supply(prob, scenario, cand_all) + add(cand_all)
 
   # Cuts to surviving shipments (reallocation only; conservative locks them): d_k >= base - f for
   # every surviving relationship, minimized right after coverage so the optimizer moves supply only
@@ -320,8 +410,10 @@ aib_solve_state <- function(prob, scenario = c("conservative", "reallocation"), 
   tot <- stats::setNames(get0(sup, both) + get0(by_e, both), both)
   flows <- tibble::tibble(e = vars$e, m = vars$m, f = x, base = base)
   flows <- flows[flows$f > 1e-9 | flows$base > 0, , drop = FALSE]
+  own <- get0(prob$to_scope, names(by_e)) + get0(prob$freed, names(by_e)) + get0(extra, names(by_e))
   c(list(coverage = served, flows = flows, optima = sol$optima, status = sol$status, n_vars = n,
          surviving_cut = if (n_cut) sum(pmax(base[cut_idx] - x[cut_idx], 0)) else 0,
+         diversion = sum(pmax(as.numeric(by_e) - own, 0)),
          totals = stats::setNames(as.numeric(by_e), names(by_e)), supply = tot),
     aib_supply_stats(tot))
 }
@@ -350,12 +442,7 @@ aib_optimized_analytic <- function(prob, scenario = c("conservative", "reallocat
   if (!length(cand_all)) {
     return(c(list(coverage = fixed, totals = numeric(), status = 0L), aib_supply_stats(prob$fixed_by_exporter)))
   }
-  avail <- if (identical(scenario, "conservative")) {
-    get0(prob$to_scope, cand_all) + get0(prob$freed, cand_all)
-  } else {
-    get0(prob$S, cand_all)
-  }
-  avail <- pmax(avail + get0(extra, cand_all), 0)
+  avail <- pmax(aib_available_supply(prob, scenario, cand_all) + get0(extra, cand_all), 0)
   base_e <- get0(tapply(prob$links$x, prob$links$e, sum), cand_all)
   lower <- if (identical(scenario, "conservative")) base_e else rep(0, length(cand_all))
   if (cap >= 1) {
@@ -398,7 +485,9 @@ aib_optimized_analytic <- function(prob, scenario = c("conservative", "reallocat
   sup <- prob$fixed_by_exporter
   both <- union(names(sup), cand_all)
   tot <- stats::setNames(get0(sup, both) + get0(t, both), both)
-  c(list(coverage = fixed + sum(t), totals = t, supply = tot, status = 0L), aib_supply_stats(tot))
+  own <- get0(prob$to_scope, cand_all) + get0(prob$freed, cand_all) + get0(extra, cand_all)
+  c(list(coverage = fixed + sum(t), totals = t, supply = tot, status = 0L, diversion = sum(pmax(t - own, 0))),
+    aib_supply_stats(tot))
 }
 
 # Supply-weighted objective-2 weight of the candidates' optimized supply (how much of the
@@ -409,9 +498,33 @@ aib_specialization_score <- function(totals, scores) {
   if (!length(totals)) return(NA_real_)
   sum(totals * scores$spec(names(totals))) / sum(totals)
 }
-aib_second_shock_coverage <- function(coverage, largest_share) {
+# Instantaneous N-1: the coverage that remains if the optimized allocation's largest supplier is
+# lost and nothing re-optimizes (coverage x (1 - its share)). Mechanical, kept for comparison.
+aib_instantaneous_n1 <- function(coverage, largest_share) {
   if (is.na(coverage) || is.na(largest_share)) return(NA_real_)
   coverage * (1 - largest_share)
+}
+
+# True N-1: remove the largest remaining supplier of an allocation, re-optimize (state C at the same
+# supplier-share limit) and report the coverage. Uses the closed form where it applies.
+aib_n1_reoptimized <- function(prob, scenario, cap, largest, scores, tolerances = c(0.0005, 0.02, 0.02), neutral = 0.5) {
+  if (is.null(largest) || is.na(largest)) return(NA_real_)
+  p1 <- aib_remove_supplier(prob, largest)
+  if (isTRUE(p1$allow_domestic)) {
+    aib_optimized_analytic(p1, scenario, cap = cap, scores = scores)$coverage
+  } else {
+    aib_solve_state(p1, scenario, "C", cap = cap, scores = scores, tolerances = tolerances, neutral = neutral, steps = 1)$coverage
+  }
+}
+
+# Existing-network coverage (state B, coverage objective only) under several bounds on how far an
+# existing relationship may grow (growth g: up to (1 + g) times its observed size; Inf unbounded).
+aib_existing_growth_sensitivity <- function(prob, scenarios, growths, scores, tolerances = c(0.0005, 0.02, 0.02), neutral = 0.5) {
+  dplyr::bind_rows(lapply(scenarios, function(sc) dplyr::bind_rows(lapply(growths, function(g) {
+    b <- aib_solve_state(prob, sc, "B", cap = 1, scores = scores, tolerances = tolerances, neutral = neutral,
+                         steps = 1, existing_growth = g)
+    tibble::tibble(scenario = sc, existing_growth = g, existing_coverage = b$coverage, status = b$status)
+  }))))
 }
 
 # All trade-model outputs for one node and one shock: per scenario the static, existing-network
@@ -456,7 +569,7 @@ aib_run_node_shock <- function(prob, scenarios, caps, headline_cap, scores, tole
       sup_rows(C$supply, "optimized", sc)
     )
     if (!is.null(B$flows) && nrow(B$flows)) flows_ex[[sc]] <- dplyr::mutate(B$flows, scenario = sc)
-    redirectable <- if (identical(sc, "conservative")) sum(prob$freed) else sum(prob$S) - sum(prob$to_scope)
+    redirectable <- sum(pmax(aib_available_supply(prob, sc, prob$cand) - as.numeric(prob$to_scope[prob$cand]), 0))
     newl <- if (is.null(C$flows)) 0L else sum(C$flows$base == 0 & C$flows$e != C$flows$m & C$flows$f > 1e-6)
     expl <- if (is.null(C$flows)) 0L else sum(C$flows$base > 0 & C$flows$f > C$flows$base + 1e-6)
     summary[[sc]] <- tibble::tibble(
@@ -484,6 +597,11 @@ aib_run_node_shock <- function(prob, scenarios, caps, headline_cap, scores, tole
       optimized_top3_share = C$top3_share,
       baseline_top3_share = base$top3_share,
       optimized_n_suppliers = C$n_suppliers,
+      existing_diversion = aib_or(B$diversion, NA_real_),
+      optimized_diversion = aib_or(C$diversion, NA_real_),
+      optimized_instantaneous_n1_retained_coverage = aib_instantaneous_n1(C$coverage, C$largest_share),
+      optimized_n1_reoptimized_coverage = aib_n1_reoptimized(prob, sc, headline_cap, C$largest, scores, tolerances, neutral),
+      physically_constrained = !is.null(prob$supply_cap),
       n_candidates = length(prob$cand),
       n_universe_importers = length(prob$scope),
       n_new_links = newl,
@@ -501,7 +619,9 @@ aib_run_node_shock <- function(prob, scenarios, caps, headline_cap, scores, tole
         optimized_hhi = x$hhi, optimized_largest_supplier = x$largest, optimized_largest_share = x$largest_share,
         optimized_top3_share = x$top3_share, optimized_n_suppliers = x$n_suppliers,
         specialization_score = aib_specialization_score(x$totals, scores),
-        second_shock_coverage = aib_second_shock_coverage(x$coverage, x$largest_share),
+        instantaneous_n1_retained_coverage = aib_instantaneous_n1(x$coverage, x$largest_share),
+        n1_removed_supplier = x$largest,
+        n1_reoptimized_coverage = aib_n1_reoptimized(prob, sc, as.numeric(k), x$largest, scores, tolerances, neutral),
         status = x$status
       )
     }))
@@ -537,14 +657,16 @@ aib_run_node_shock <- function(prob, scenarios, caps, headline_cap, scores, tole
 #   tightest_costless_max_share   the tightest supplier-share limit whose coverage stays within
 #                                 `tolerance` of the unconstrained optimum (diversifying that far
 #                                 costs nothing against this shock);
-#   min_required_diversification  the loosest limit at which coverage would still reach
-#                                 `acceptable_coverage` if the optimized allocation then lost its
-#                                 largest supplier too (second_shock_coverage): the least
-#                                 diversification that buys acceptable resilience; NA when no
-#                                 tested limit reaches it. Specialization retained there is the
-#                                 specialization score at that limit over the unconstrained one.
+#   min_required_diversification  the loosest limit at which coverage still reaches
+#                                 `acceptable_coverage` after the true N-1 test (the largest
+#                                 remaining supplier removed and the trade re-optimized): the least
+#                                 diversification that buys acceptable resilience; NA when no tested
+#                                 limit reaches it. The `_instantaneous` variant reads the mechanical
+#                                 N-1 instead. Specialization retained is the specialization score at
+#                                 that limit over the unconstrained one.
 aib_frontier_minimum <- function(frontier, tolerance = 0.02, acceptable_coverage = 0.8,
                                  keys = c("node_id", "shock_id", "scenario")) {
+  pick_loosest <- function(ok, shares) if (any(ok)) max(shares[ok]) else NA_real_
   frontier %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(keys))) %>%
     dplyr::summarise(
@@ -554,10 +676,8 @@ aib_frontier_minimum <- function(frontier, tolerance = 0.02, acceptable_coverage
         if (any(ok)) min(max_supplier_share[ok]) else max(max_supplier_share)
       },
       coverage_at_tightest_costless = optimized_coverage[match(tightest_costless_max_share, max_supplier_share)],
-      min_required_diversification = {
-        ok <- dplyr::coalesce(second_shock_coverage >= acceptable_coverage - 1e-9, FALSE)
-        if (any(ok)) max(max_supplier_share[ok]) else NA_real_
-      },
+      min_required_diversification = pick_loosest(dplyr::coalesce(n1_reoptimized_coverage >= acceptable_coverage - 1e-9, FALSE), max_supplier_share),
+      min_required_diversification_instantaneous = pick_loosest(dplyr::coalesce(instantaneous_n1_retained_coverage >= acceptable_coverage - 1e-9, FALSE), max_supplier_share),
       specialization_retained = {
         k <- match(min_required_diversification, max_supplier_share)
         u <- specialization_score[which.max(max_supplier_share)]

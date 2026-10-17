@@ -72,7 +72,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Partner themes | `scripts/15_build_partner_themes.R` | `partner_{friendshore,opportunity,development}_*_tbl.rds`, `partner_trade_coverage_tbl.rds`, `cm_fdi_projects_tbl.rds`, `partner_cm_fdi_{ties,exposure,coverage}_tbl.rds` |
 | PSI | `scripts/25_build_partner_indices.R` | `psi_tbl.rds` (core-coalition view, headline), `psi_full_coalition_tbl.rds`, `psi_world_tbl.rds`, `psi_dyad_tbl.rds` and category contributions |
 | Allied network | `scripts/30_build_allied_network_design.R` | `outputs/allied_network_*.csv` |
-| Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path}.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}` |
+| Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path,leave_one_out}.csv`, `allied_trade_growth_sensitivity.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}` |
 | Vintages | `scripts/40_build_index_vintages.R` | `vintages/*` (ES and EO at several years) |
 | Dashboard: Strategic Insights | `scripts/85_export_dashboard_data.R`, `scripts/86_export_dashboard_fixtures.R` | `dashboard/validation_report.csv`; the app's bundle goes to the repo's `dashboard/public/data/` and the engine's parity fixtures to `dashboard/src/engine/__fixtures__/` |
 | Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them) |
@@ -556,8 +556,15 @@ beside the indices and the allied network design and changes neither. Full metho
 
 - **Grain:** sub-sector nodes of the HS6 master (Technology > stage > sub-sector > HS6; 91 nodes are
   optimized on the 2026-10 data), with every metric recomputed from flows summed to the node.
+- **Scope:** the importers protected (the demand scope: by default the allied core and partner tiers)
+  and the exporters that may supply them (the candidate-partner universe: by default every economy)
+  are separate settings; global demand with global partners is a sensitivity. Compacts are formed
+  only in the electro-industrial strategic scope (fossil nodes stay in the tables).
 - **Stress tests:** China removed, China halved, and the largest supplier removed at sub-sector,
-  stage or technology level, on the observed 2024 bilateral flows (importer's declaration first).
+  stage or technology level, on the observed 2024 bilateral flows (importer's declaration first),
+  as an export shock (`hold`, headline) and as decoupling (`release`), each with suppliers bounded by
+  physical production capacity where credible data exist (`production_constrained`, headline) and by
+  trade alone (`trade_only`).
   Two supply scenarios (conservative: only supply the shock frees moves; reallocation: exporters can
   redirect their observed global exports) and three states (static; existing relationships;
   optimized partnerships). `coordination_dividend = optimized - existing coverage`. Observed exports
@@ -572,12 +579,17 @@ beside the indices and the allied network design and changes neither. Full metho
 - **Emergent network and compacts:** directed trade and investment edges aggregated over nodes and
   shocks; nodes classified COORDINATE / BUILD / MANAGE SPECIALIZATION / LOW INTERVENTION and grouped
   into compacts only when they are supply-chain coherent, share or complement partners and need
-  similar instruments; each compact gets a greedy minimum sufficient coalition at 90/95/99% of its
-  anchors' demand, model-derived roles, an archetype and a node table for Gates & Fences.
+  similar instruments, coherence meaning a curated physical / process chain, not a shared stage;
+  each compact gets an exact minimum coalition (binary program) at 90/95/99% of its anchors' demand,
+  coalition tiers from a leave-one-country-out test (core members, critical supply partners,
+  associates, critical external dependencies), model-derived roles, an archetype and a node table for
+  Gates & Fences. Nodes keep multi-label policy needs beside the headline class, and a LOW / COORDINATE
+  class is flagged PHYSICAL CAPABILITY NOT VALIDATED where physical and trade evidence disagree.
 
 ```
 Rscript scripts/31_build_aib_trade_network.R [--raw-dir DIR] [--processed-dir DIR] [--out-dir DIR]
 Rscript scripts/32_build_aib_partnerships.R [--out-dir DIR] [--nodes id1,id2] [--skip-investment]
+  [--demand-scope global|coalition|ISO3,...] [--partner-universe ...] [--scope all|electro_industrial] [--from-checkpoint]
 Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR]
 ```
 

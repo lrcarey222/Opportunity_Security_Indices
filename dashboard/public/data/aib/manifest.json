@@ -1,11 +1,15 @@
 {
   "schema": "osi-aib",
   "version": 1,
-  "created": "2026-10-16T07:05:24Z",
-  "universe": "global",
+  "created": "2026-10-17T00:48:14Z",
+  "demandScope": "coalition",
+  "candidateUniverse": "global",
+  "shockSemantics": "hold",
+  "supplyConstraint": "production_constrained",
+  "universe": "coalition demand / global partners",
   "headlineShock": "china_100",
   "headlineScenario": "reallocation",
   "files": {
-    "compacts": "compacts.5bf879e5.json"
+    "compacts": "compacts.e86409f6.json"
   }
 }

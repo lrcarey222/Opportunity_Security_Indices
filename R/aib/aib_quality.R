@@ -177,3 +177,32 @@ aib_production_flags <- function(quality, production, node_summary, gap = 0.25, 
   q$data_quality[hit & q$data_quality == "High confidence"] <- "Usable with caution"
   q
 }
+
+# Physical validation of a node's class (config/aib.yml supply_constraint). `nodes` carries
+# node_classification, shock_exposure, physical_data (complete / incomplete / none: how much of
+# world production the proxy covers) and physically_divergent (physical and trade concentration
+# differ by the threshold or more). In the production_constrained mode (`constrained`) a node with
+# complete data had its suppliers bounded by physical capacity: that validates supplier capability,
+# not exposure, which is still measured on trade. A LOW INTERVENTION or COORDINATE class is flagged
+# PHYSICAL CAPABILITY NOT VALIDATED when the physical data are incomplete, or when they diverge from
+# trade and either were not applied or the class rests on low trade exposure (a dependence that
+# arrives embodied in downstream goods, as polysilicon does in wafers and cells).
+aib_physical_validation <- function(nodes, constrained, low_exposure) {
+  pd <- dplyr::coalesce(nodes$physical_data, "none")
+  dv <- dplyr::coalesce(nodes$physically_divergent, FALSE)
+  applied <- isTRUE(constrained) & pd == "complete"
+  low_exp <- dplyr::coalesce(nodes$shock_exposure < low_exposure, FALSE)
+  unl <- if ("trade_share_without_physical_data" %in% names(nodes)) nodes$trade_share_without_physical_data else rep(NA_real_, nrow(nodes))
+  held <- ifelse(is.na(unl), "", sprintf(" (exporters with %.0f%% of world trade are absent from the physical data and held at their current shipments)", 100 * unl))
+  nodes$physical_validation <- dplyr::case_when(
+    applied & dv & low_exp ~ paste0("constrained by physical data", held, "; trade exposure understates physical concentration"),
+    applied ~ paste0("constrained by physical data", held),
+    pd == "incomplete" ~ "trade only; physical data incomplete",
+    dv ~ "trade only; physical concentration diverges from trade",
+    pd == "none" ~ "trade only; no physical data",
+    TRUE ~ "trade only; physical data consistent with trade"
+  )
+  flag <- nodes$node_classification %in% c("LOW INTERVENTION", "COORDINATE") & (pd == "incomplete" | (dv & (!applied | low_exp)))
+  nodes$classification_warning <- ifelse(flag, "PHYSICAL CAPABILITY NOT VALIDATED", NA_character_)
+  nodes
+}

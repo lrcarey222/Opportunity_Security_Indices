@@ -9,7 +9,7 @@ import { Link, Navigate, useLocation, useParams } from 'react-router';
 import { PageHead } from '../../components/ui.tsx';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
-import type { AibCompact } from '../contract.ts';
+import { coalitionMembersOf, type AibCompact } from '../contract.ts';
 import { fmtShare, fmtUsd, listWords, plural } from '../derive/format.ts';
 import { compactNodes } from '../derive/nodes.ts';
 import { rememberCompact } from '../nav.ts';
@@ -71,7 +71,7 @@ function Compact({ c }: { c: AibCompact }) {
   const m = doc.meta;
   const stages = [...c.stages].sort((x, y) => stageRank(x) - stageRank(y)).map((x) => x.toLowerCase());
   const type = compactTypeInfo(c.type, compactVsFragmented(c.metrics)?.gain);
-  const lede = `${type.short}, ${c.archetype.replace(/ Compact$/, '').toLowerCase()} archetype: ${listWords(c.technologies)} across the ${listWords(stages)} ${stages.length === 1 ? 'stage' : 'stages'}, ${plural(c.nodes.length, 'node')} and ${plural(c.coalition.members.length, 'member')}. Under the headline shock (${shockLabel}, ${m.headlineScenario} scenario) the compact's demand of ${fmtUsd(c.metrics.demandUsd)} loses ${fmtUsd(c.metrics.lostUsd)} (${fmtShare(c.metrics.exposure, 0)}).`;
+  const lede = `${type.short}, ${c.archetype.replace(/ Compact$/, '').toLowerCase()} archetype: ${listWords(c.technologies)} across the ${listWords(stages)} ${stages.length === 1 ? 'stage' : 'stages'}, ${plural(c.nodes.length, 'node')} and ${plural(coalitionMembersOf(c).length, 'member')}. Under the headline shock (${shockLabel}, ${m.headlineScenario} scenario) the compact's demand of ${fmtUsd(c.metrics.demandUsd)} loses ${fmtUsd(c.metrics.lostUsd)} (${fmtShare(c.metrics.exposure, 0)}).`;
   return (
     <CompactProvider value={ctx}>
       <div className={PAGE}>

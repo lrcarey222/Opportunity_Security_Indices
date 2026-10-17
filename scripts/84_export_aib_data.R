@@ -7,7 +7,7 @@
 #   --out-dir    bundle directory (default: dashboard/public/data/aib)
 #   --top-edges  trade and investment relationships kept per compact (default 40)
 #
-# Writes compacts.<md5_8>.json (schema osi-aib v1: meta, country names, compacts, nodes) and, last,
+# Writes compacts.<md5_8>.json (schema osi-aib v1 with optional additions: meta, country names, compacts, nodes) and, last,
 # manifest.json naming it; older compacts.*.json files are removed. Plain JSON, every array field
 # wrapped in I() (R/dashboard/aib/aib_export.R).
 
@@ -69,6 +69,8 @@ writeLines(txt, file.path(out_dir, fname), useBytes = TRUE)
 old <- setdiff(list.files(out_dir, pattern = "^compacts\\.[0-9a-f]{8}\\.json$"), fname)
 if (length(old)) file.remove(file.path(out_dir, old))
 manifest <- list(schema = AIB_DASH_SCHEMA, version = AIB_DASH_VERSION, created = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+                 demandScope = res$meta$demand_scope, candidateUniverse = res$meta$candidate_universe,
+                 shockSemantics = res$meta$headline_semantics, supplyConstraint = res$meta$headline_constraint,
                  universe = res$meta$universe, headlineShock = res$meta$headline_shock, headlineScenario = res$meta$headline_scenario,
                  files = list(compacts = fname))
 writeLines(country_json(manifest, pretty = TRUE), file.path(out_dir, "manifest.json"), useBytes = TRUE)

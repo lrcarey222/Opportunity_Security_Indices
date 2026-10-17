@@ -1,6 +1,8 @@
 // 5. Coverage comparison (shock -> existing relationships -> trade compact -> trade + investment, in %
-// of demand, with the global optimum, "if every economy coordinated", as a reference rule) and 6. How resilience changes as countries join (the greedy coalition path against the
-// 90 / 95 / 99% targets). Table twins and CSVs.
+// of demand, with the global optimum, "if every economy coordinated", as a reference rule) and 6. How
+// resilience changes as countries join (the greedy path against the 90 / 95 / 99% targets, with the
+// exact minimum coalition of each target beside it: the greedy path can need more, or other,
+// economies). Table twins and CSVs.
 
 import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { Legend } from '../../../charts/legends.tsx';
@@ -23,7 +25,7 @@ export function CoverageSection() {
   const rows = [
     ...steps.map((s, i) => ({ ...s, change: i > 0 && s.value !== null && steps[i - 1].value !== null ? (s.value as number) - (steps[i - 1].value as number) : null })),
     ...(optimum !== null
-      ? [{ key: 'global', label: `${GLOBAL_OPTIMUM_LABEL} (reference)`, short: 'Every economy', meaning: 'every economy in the universe coordinates its trade: the global optimum, not a compact', value: optimum, change: null }]
+      ? [{ key: 'global', label: `${GLOBAL_OPTIMUM_LABEL} (reference)`, short: 'Every economy', meaning: 'every candidate partner coordinates its trade toward the demand scope: the global optimum, not a compact', value: optimum, change: null }]
       : []),
   ];
   const cols: Col<(typeof rows)[number]>[] = [
@@ -119,6 +121,7 @@ export function CoalitionSection() {
   const coalitions: { t: number; list: string[] }[] = [];
   const lists = [c.coalition.t90, c.coalition.t95, c.coalition.t99];
   [...meta.targets].sort((a, b) => a - b).forEach((t, i) => coalitions.push({ t, list: lists[i] ?? [] }));
+  const exact = /^exact/i.test(c.coalition.method ?? '');
   const summary = `${c.name}: minimum coverage of the anchors' demand from ${fmtShare(points[0]?.min ?? null)} with the demand anchors to ${fmtShare(points[points.length - 1]?.min ?? null)} with ${plural(points[points.length - 1]?.n ?? 0, 'member')}.`;
   return (
     <Section
@@ -126,15 +129,18 @@ export function CoalitionSection() {
       title="How resilience changes as countries join"
       intro={
         <p>
-          Starting from the demand anchors (the economies that lose most of the compact&apos;s supply), the model adds one economy at a time, the one that most reduces the shortfall, and
+          Starting from the demand anchors (the economies that lose most of the compact&apos;s supply), a greedy path adds one economy at a time, the one that most reduces the shortfall, and
           measures the coverage of the anchors&apos; demand in every node. The weakest node sets the minimum. Fewer members means less coordination to organise.
+          {exact
+            ? " The path is a heuristic: the coalitions below are the exact minimum for each target (a binary program), and the path can need more, or other, economies to reach the same target."
+            : ''}
         </p>
       }
     >
       <ChartCard
         headingLevel={3}
         title="Coverage as members join"
-        sub="Across: members in the coalition (each tick names the economy added at that step; anchors for the start). Up: coverage of the anchors' demand, the minimum over the nodes (solid) and the mean (dashed). Dotted rules: the coverage targets; a ring marks the first coalition to reach each."
+        sub="Across: members in the coalition (each tick names the economy added at that step; anchors for the start). Up: coverage of the anchors' demand, the minimum over the nodes (solid) and the mean (dashed). Dotted rules: the coverage targets; a ring marks the first step of the greedy path to reach each."
         summary={summary}
         legend={
           <Legend
@@ -143,7 +149,7 @@ export function CoalitionSection() {
               { label: 'Minimum coverage over the nodes', color: CURVE_COLOR.min, kind: 'line' },
               { label: 'Mean coverage', color: CURVE_COLOR.mean, kind: 'line', dash: '5,4' },
               { label: 'Coverage target', color: CURVE_COLOR.target, kind: 'line', dash: '2,3' },
-              { label: 'First coalition to reach a target', color: '#ffffff', kind: 'hollow' },
+              { label: 'First step of the path to reach a target', color: '#ffffff', kind: 'hollow' },
             ]}
           />
         }
@@ -163,7 +169,10 @@ export function CoalitionSection() {
         <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
           {coalitions.map(({ t, list }) => (
             <li key={t} className="panel px-3 py-2">
-              <span className="eyebrow block">{targetLabel(t)} coalition</span>
+              <span className="eyebrow block">
+                {exact ? 'Exact minimum, ' : ''}
+                {targetLabel(t)} target
+              </span>
               <span className="mt-1 block text-paper-dim">
                 {list.length ? `${plural(list.length, 'member')}: ${listWords(list.map((x) => name(x)))}` : 'not reached'}
               </span>
@@ -179,7 +188,8 @@ export function CoalitionSection() {
         )}
         {!c.coalition.reached99 && (
           <p className="mt-2 text-xs text-paper-mute">
-            The highest target is not reached: the best coalition the model found serves {fmtShare(c.coalition.maxCoverage)} of the anchors&apos; demand in its weakest node.
+            The highest target is not reached: along the greedy path, until no economy helps further, the anchors&apos; coverage in the weakest node peaks at{' '}
+            {fmtShare(c.coalition.maxCoverage)}.
           </p>
         )}
       </ChartCard>

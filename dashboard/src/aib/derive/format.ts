@@ -40,11 +40,11 @@ export function nameOf(names: Readonly<Record<string, string>>, iso3: string | n
   return names[iso3] ?? iso3;
 }
 
-/** "Japan, Korea and Germany". */
-export function listWords(items: readonly string[]): string {
+/** "Japan, Korea and Germany" ("Japan, Korea or Germany" with `or`). */
+export function listWords(items: readonly string[], conj: 'and' | 'or' = 'and'): string {
   if (items.length <= 1) return items[0] ?? '';
-  if (items.length === 2) return `${items[0]} and ${items[1]}`;
-  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+  if (items.length === 2) return `${items[0]} ${conj} ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')} ${conj} ${items[items.length - 1]}`;
 }
 
 /** "1 node" / "3 nodes". */
