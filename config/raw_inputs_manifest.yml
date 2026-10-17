@@ -832,12 +832,17 @@ inputs:
   owner: lcarey@rmi.org
   vintage: '2026'
   staged_from: sharepoint
+  licence: CC BY 4.0 (the workbook's Notice sheet); cite the IEA Critical Minerals Dataset
+    wherever the figures are shown
   notes: Staged as the published IEA workbook from the 2026 release onward; earlier
     vintages were staged as a hand-flattened CSV. R/utils/iea_critical_minerals.R
-    reads either form.
+    reads either form. The 2026 demand sheets publish the Current Policies, Stated Policies
+    and High Demand scenarios and no Net Zero scenario (scripts/17_build_iea_pathways.R reads
+    every scenario for the Climate section).
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
+  - scripts/17_build_iea_pathways.R
   - scripts/40_build_index_vintages.R
   - scripts/87_export_sector_data.R
   - scripts/paper/fig_es.R
@@ -1041,6 +1046,14 @@ inputs:
   cadence: annual
   owner: lcarey@rmi.org
   vintage: '2025'
+  licence: CC BY 4.0 (IEA free dataset); cite IEA (2025), World Energy Outlook 2025,
+    wherever the figures are shown
   staged_from: sharepoint
+  notes: World only (the regional free dataset needs an IEA account and is not staged).
+    Historical 2010, 2023, 2024 and the Stated Policies, Current Policies and Net Zero
+    Emissions by 2050 scenarios for 2035, 2040, 2050. scripts/17_build_iea_pathways.R also
+    reads the previous vintage (WEO2024_AnnexA_Free_Dataset_World.csv, the same pattern) for a
+    vintage check only; it is never shipped.
   required_by:
   - scripts/10_build_themes.R
+  - scripts/17_build_iea_pathways.R

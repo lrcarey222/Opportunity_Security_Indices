@@ -8,8 +8,10 @@
 //
 // ClimateSection is the expanded Climate block further down the profile: Climate TRACE sector emissions
 // for the sources mapped to the cell, with the match quality, the materials shown as context and the
-// technology's IPCC lifecycle intensity (Climate.tsx; climate data change 2026-10-17), then the
-// Climate Action Tracker ratings of the economies that lead the sector and the IEA mineral demand outlook.
+// technology's IPCC lifecycle intensity (Climate.tsx; climate data change 2026-10-17), then the IEA's World
+// pathways to 2050 for the sector (Stated Policies, Current Policies, Net Zero; IEA scenario projections,
+// Nze.tsx; user request 2026-10-17), the Climate Action Tracker ratings of the economies that lead the
+// sector and the IEA mineral demand outlook. The Climate lens adds one IEA pathway line under its figures.
 
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -30,6 +32,7 @@ import { concentrationSummary, theName } from '../../derive/text.ts';
 import { fmtHhi, fmtShare, lc, listText } from '../../format.ts';
 import { useAibDoc } from '../aibData.ts';
 import { climateLensFigures, ClimateEmissions } from './Climate.tsx';
+import { NzeLensLine, NzePathways } from './Nze.tsx';
 import { EconomyLink, fmtFact, measureConc, Section, splitParts } from '../common.tsx';
 import { useClimate, usePolicy, useTrade } from '../data.ts';
 import { BlocBar } from '../kit.tsx';
@@ -357,7 +360,9 @@ function ClimateLens({ basis, chunk }: { basis: LensBasis | null; chunk: SectorP
         metrics={fig ? fig.metrics.map((m) => <Metric key={m.label} label={m.label} value={m.value} sub={m.sub} />) : null}
         note={fig?.note}
         more={{ href: '#climate', label: 'Climate' }}
-      />
+      >
+        {climate?.nze ? <NzeLensLine d={climate.nze} cell={cell} /> : null}
+      </LensCard>
     );
   }
   const d = demand[0];
@@ -436,9 +441,10 @@ export function ClimateSection() {
   return (
     <div className="space-y-6">
       <p className="max-w-3xl text-sm text-paper-dim">
-        Sector emissions by economy from Climate TRACE, for the Climate TRACE subsectors that match this sector, with how well each matches; the technology’s lifecycle intensity from the IPCC; the Climate Action Tracker rating of the governments that lead the sector; and, for clean technologies, the IEA outlook for the minerals they use. These are observed facts: no perspective setting changes them.
+        Sector emissions by economy from Climate TRACE, for the Climate TRACE subsectors that match this sector, with how well each matches; the technology’s lifecycle intensity from the IPCC; where the IEA’s World pathways lead to 2050 under Stated Policies, Current Policies and Net Zero; the Climate Action Tracker rating of the governments that lead the sector; and, for clean technologies, the IEA outlook for the minerals they use. Emissions are Climate TRACE estimates, lifecycle intensity is the IPCC's literature median and ratings are Climate Action Tracker assessments: measured or modelled facts, not projections. The IEA pathways are scenario projections, labelled as such. No perspective setting changes any of them.
       </p>
       <ClimateEmissions model={model} cell={cell} tech={tech} chunk={p.chunk} />
+      <NzePathways model={model} cell={cell} />
       {rows.length > 0 && p.chunk && (
         <div>
           <h3 className="mb-2 text-base font-medium text-paper">Climate Action Tracker ratings of the largest {basis ? actorNoun(basis.v) : 'holders'}</h3>

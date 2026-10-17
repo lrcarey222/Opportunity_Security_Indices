@@ -7,6 +7,7 @@
 import type { ClimateMatch, SectorClimateChunk } from '../contract.ts';
 import type { GeoInfo, SectorModel } from '../data/model.ts';
 import { fmtSig } from '../format.ts';
+import { nzeData, type NzeData } from './nze.ts';
 
 export interface ClimateSrc {
   idx: number;
@@ -60,6 +61,8 @@ export interface ClimateData {
   em: Map<number, Map<number, Map<number, number>>>;
   /** "subsector|group" -> year -> geo idx -> intensity */
   intensity: Map<string, Map<number, Map<number, IntensityCell>>>;
+  /** the IEA pathways (climate.nze_*; null when the build has none) */
+  nze: NzeData | null;
 }
 
 const num = (x: number): number | null => (Number.isFinite(x) ? x : null);
@@ -121,7 +124,7 @@ export function climateData(c: SectorClimateChunk): ClimateData {
     });
   }
   const ys = [...years].sort((a, z) => a - z);
-  return { srcs, years: ys, latest: ys[ys.length - 1] ?? NaN, first: ys[0] ?? NaN, links, cells, lifecycle, em, intensity };
+  return { srcs, years: ys, latest: ys[ys.length - 1] ?? NaN, first: ys[0] ?? NaN, links, cells, lifecycle, em, intensity, nze: nzeData(c) };
 }
 
 /** The cell's match quality (none when the chunk has no row for it). */

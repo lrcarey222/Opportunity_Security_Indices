@@ -1,13 +1,13 @@
 {
   "schema": "osi-sector",
   "schema_version": 1,
-  "bundle_id": "befd59dfb59c50e0026779924ca97c0b",
-  "created": "2026-10-17T16:55:33Z",
-  "git_commit": "15637b6",
+  "bundle_id": "20f55b083d4e1a8b6ccde76372e465d5",
+  "created": "2026-10-17T19:08:08Z",
+  "git_commit": "2609f23",
   "generator": "scripts/87_export_sector_data.R",
   "phase": 1,
   "strategic_bundle_id": "980a08f5402a21c1d1e7d5190b4dcc1f",
-  "processed_mtime_max": "2026-10-17T16:51:11Z",
+  "processed_mtime_max": "2026-10-17T19:03:56Z",
   "pipeline_marker": "pipeline 04-25 finished 2026-10-12 09:09:32 (final: EIA fill, baskets, CM-FDI)",
   "flags": {
     "include_restricted": false,
@@ -22,10 +22,10 @@
   "chunks": [
     {
       "name": "sector-meta",
-      "file": "sector-meta.af323966.osb",
-      "bytes": 291376,
-      "bytes_gz": 86224,
-      "md5": "af323966da2c798ff978d1ad40746d39",
+      "file": "sector-meta.90bf66c6.osb",
+      "bytes": 293928,
+      "bytes_gz": 87130,
+      "md5": "90bf66c6d945cdd707d6fd1732f44b08",
       "tech": null
     },
     {
@@ -158,10 +158,10 @@
     },
     {
       "name": "sector-climate",
-      "file": "sector-climate.8ea4b815.osb",
-      "bytes": 481920,
-      "bytes_gz": 120493,
-      "md5": "8ea4b8150867aeec407400f862cba8db",
+      "file": "sector-climate.44d67e1d.osb",
+      "bytes": 574944,
+      "bytes_gz": 133626,
+      "md5": "44d67e1d01d2680e9e2f5bf87f635acc",
       "tech": null
     }
   ],
@@ -450,7 +450,7 @@
       "country_data": true
     }
   ],
-  "notes": ["Coalition: 57 economies (31 core, 26 partners); the EU-27 is one node in the Strategic network.", "Trade on screen is the reconciled Comtrade matrix (importer-declared; exporters' reports x1.06 where an importer did not declare); Hong Kong is kept and tagged as a re-export hub.", "Hong Kong is out of the exporter-reported Comtrade measures (RCA and the reported side of the reconciliation), as in Strategic Insights.", "Critical-mineral reserves: USGS Mineral Commodity Summaries 2026.", "Fossil production EI does not report separately comes from the EIA International Energy Statistics where the pipeline took it (converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 and the net balance and self-sufficiency say so (marked 'not reported separately').", "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.", "Sector emissions: Climate TRACE (climatetrace.org), CC BY 4.0, 2021-2025, tonnes CO2e (100-year GWP), mapped to technology x stage with a match quality per sector (config/climate_trace_map.yml); sectors with no match show the IPCC lifecycle intensity of the technology.", "Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; project counts and sums of disclosed capital computed by the OSI authors, no record altered; undisclosed capital investment is shown as not disclosed, never zero.", "Trade baskets cover Electric Vehicles, Solar, Wind, Nuclear and Semiconductors Upstream since the 2026-10 basket review; trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total.", "Scenario dials apply to Strategic Insights only."],
+  "notes": ["Coalition: 57 economies (31 core, 26 partners); the EU-27 is one node in the Strategic network.", "Trade on screen is the reconciled Comtrade matrix (importer-declared; exporters' reports x1.06 where an importer did not declare); Hong Kong is kept and tagged as a re-export hub.", "Hong Kong is out of the exporter-reported Comtrade measures (RCA and the reported side of the reconciliation), as in Strategic Insights.", "Critical-mineral reserves: USGS Mineral Commodity Summaries 2026.", "Fossil production EI does not report separately comes from the EIA International Energy Statistics where the pipeline took it (converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 and the net balance and self-sufficiency say so (marked 'not reported separately').", "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.", "Sector emissions: Climate TRACE (climatetrace.org), CC BY 4.0, 2021-2025, tonnes CO2e (100-year GWP), mapped to technology x stage with a match quality per sector (config/climate_trace_map.yml); sectors with no match show the IPCC lifecycle intensity of the technology.", "IEA pathways: World Energy Outlook 2025 Annex A free dataset (World only), Historical, Stated Policies, Current Policies and Net Zero Emissions by 2050, CC BY 4.0; mineral demand by scenario from the IEA Critical Minerals Dataset (Current Policies, Stated Policies, High Demand; no Net Zero scenario), CC BY 4.0; IEA scenario projections, mapped to technology x stage with a match quality (config/iea_pathways_map.yml).", "Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; project counts and sums of disclosed capital computed by the OSI authors, no record altered; undisclosed capital investment is shown as not disclosed, never zero.", "Trade baskets cover Electric Vehicles, Solar, Wind, Nuclear and Semiconductors Upstream since the 2026-10 basket review; trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total.", "Scenario dials apply to Strategic Insights only."],
   "validation": [
     {
       "check": "dictionary: valid, every measure of the build has an entry",
@@ -679,6 +679,18 @@
       "status": "WARN",
       "n": 5,
       "detail": null
+    },
+    {
+      "check": "climate: IEA pathways mapped to technology x stage (World only; IEA scenario projections and historical estimates)",
+      "status": "PASS",
+      "n": 372,
+      "detail": "World Energy Outlook 2025: 31 series, scenarios historical/stated/current/nze, years 2010, 2023, 2024, 2035, 2040, 2050; 33 cells with a match (direct 8, none 2, partial 11, proxy 14); 2412 mineral demand rows (current/stated/high_demand, base year 2025)"
+    },
+    {
+      "check": "climate: IEA pathways vintage check against World Energy Outlook 2024 (stated and nze, shared years; not shipped)",
+      "status": "WARN",
+      "n": 156,
+      "detail": "median |change| 7.8%; 22 values move by more than 25% (cap_coal nze 2035 +34%; cap_coal nze 2040 +36%; cap_coal stated 2050 +26%; gen_coal nze 2035 +73%; gen_coal nze 2040 -100%; gen_coal nze 2050 -100%)"
     },
     {
       "check": "dictionary: every measure of the build has data",
@@ -1305,6 +1317,42 @@
       "detail": null
     },
     {
+      "check": "climate (decoded): IEA pathway values identical() to iea_pathways_values_tbl (World)",
+      "status": "PASS",
+      "n": 372,
+      "detail": null
+    },
+    {
+      "check": "climate (decoded): IEA pathway series identical() to iea_pathways_series_tbl",
+      "status": "PASS",
+      "n": 31,
+      "detail": null
+    },
+    {
+      "check": "climate (decoded): IEA pathway cell map identical() to iea_pathways_map_tbl",
+      "status": "PASS",
+      "n": 58,
+      "detail": null
+    },
+    {
+      "check": "climate (decoded): IEA pathway cell match quality, notes and mineral technologies identical() to iea_pathways_cells_tbl",
+      "status": "PASS",
+      "n": 35,
+      "detail": null
+    },
+    {
+      "check": "climate (decoded): mineral demand by scenario identical() to iea_pathways_minerals_tbl",
+      "status": "PASS",
+      "n": 2412,
+      "detail": null
+    },
+    {
+      "check": "climate (decoded): IEA pathway editions identical() to iea_pathways_meta_tbl",
+      "status": "PASS",
+      "n": 5,
+      "detail": null
+    },
+    {
       "check": "CM-FDI parity: every decoded project is a CSV row and every CSV row is exported once",
       "status": "PASS",
       "n": 1042,
@@ -1338,15 +1386,15 @@
       "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 25 MB gz)",
       "status": "PASS",
       "n": 18,
-      "detail": "sector 4356 kB gz; combined 10.45 MB gz"
+      "detail": "sector 4369 kB gz; combined 10.46 MB gz"
     }
   ],
   "sources": [
     {
       "path": "config/sector_dictionary.yml",
-      "mtime": "2026-10-17T16:35:15Z",
-      "bytes": 150929,
-      "md5": "fbc7b38073774c87778eff639a32b725"
+      "mtime": "2026-10-17T18:57:45Z",
+      "bytes": 153701,
+      "md5": "7c5598966eafe98ca847d108d83b5e4a"
     },
     {
       "path": "data/processed/coalition_tbl.rds",
@@ -1608,50 +1656,92 @@
     },
     {
       "path": "data/processed/climate_trace_sources_tbl.rds",
-      "mtime": "2026-10-17T16:51:11Z",
+      "mtime": "2026-10-17T18:15:56Z",
       "bytes": 617,
       "md5": "2dc8ae09d6b9b62a75a40579eaca1584"
     },
     {
       "path": "data/processed/climate_trace_map_tbl.rds",
-      "mtime": "2026-10-17T16:51:11Z",
+      "mtime": "2026-10-17T18:15:56Z",
       "bytes": 599,
       "md5": "b4bbc59271d081c272717b1386e017a9"
     },
     {
       "path": "data/processed/climate_trace_cells_tbl.rds",
-      "mtime": "2026-10-17T16:51:11Z",
+      "mtime": "2026-10-17T18:15:56Z",
       "bytes": 1943,
       "md5": "09bff805ea4520a3985b9c880725c8d4"
     },
     {
       "path": "data/processed/climate_trace_lifecycle_tbl.rds",
-      "mtime": "2026-10-17T16:51:11Z",
+      "mtime": "2026-10-17T18:15:56Z",
       "bytes": 648,
       "md5": "01b7b731a7dbe86eeab8bca5dbb446d5"
     },
     {
       "path": "data/processed/climate_trace_emissions_tbl.rds",
-      "mtime": "2026-10-17T16:51:11Z",
+      "mtime": "2026-10-17T18:15:56Z",
       "bytes": 49722,
       "md5": "def3b5d69063daa2df30758c308f8da2"
     },
     {
       "path": "data/processed/climate_trace_intensity_tbl.rds",
-      "mtime": "2026-10-17T16:51:11Z",
+      "mtime": "2026-10-17T18:15:56Z",
       "bytes": 70180,
       "md5": "dd54f355e6986567516312e3850e4357"
     },
     {
       "path": "data/processed/climate_trace_country_tbl.rds",
-      "mtime": "2026-10-17T16:51:11Z",
+      "mtime": "2026-10-17T18:15:56Z",
       "bytes": 187854,
       "md5": "4edce8d76e7a7ebd62029848be2305a8"
+    },
+    {
+      "path": "data/processed/iea_pathways_series_tbl.rds",
+      "mtime": "2026-10-17T19:03:56Z",
+      "bytes": 1033,
+      "md5": "f9e2f9f220d452d51ebe6ee567d0b582"
+    },
+    {
+      "path": "data/processed/iea_pathways_values_tbl.rds",
+      "mtime": "2026-10-17T19:03:56Z",
+      "bytes": 2400,
+      "md5": "1a71d692bf0640e4f2805e7661112bff"
+    },
+    {
+      "path": "data/processed/iea_pathways_map_tbl.rds",
+      "mtime": "2026-10-17T19:03:56Z",
+      "bytes": 771,
+      "md5": "a77905d1b8c54ababc7151bb1ce2dbba"
+    },
+    {
+      "path": "data/processed/iea_pathways_cells_tbl.rds",
+      "mtime": "2026-10-17T19:03:56Z",
+      "bytes": 1933,
+      "md5": "347f163942e8fdcbf23c597cf28a4d7e"
+    },
+    {
+      "path": "data/processed/iea_pathways_minerals_tbl.rds",
+      "mtime": "2026-10-17T19:03:56Z",
+      "bytes": 7807,
+      "md5": "3fccfa4e8972c473c8866affc6b59240"
+    },
+    {
+      "path": "data/processed/iea_pathways_meta_tbl.rds",
+      "mtime": "2026-10-17T19:03:56Z",
+      "bytes": 285,
+      "md5": "f9acd19fbb60a6856728befdc88d6c6f"
+    },
+    {
+      "path": "data/processed/iea_pathways_vintage_tbl.rds",
+      "mtime": "2026-10-17T19:03:56Z",
+      "bytes": 3281,
+      "md5": "007c127e7129b8e5ef87f2a621650534"
     }
   ],
   "budget": {
-    "sector_gz": 4460155,
-    "combined_gz": 10959301,
+    "sector_gz": 4474194,
+    "combined_gz": 10973340,
     "limit_sector_gz": 9437184,
     "limit_combined_gz": 26214400
   },

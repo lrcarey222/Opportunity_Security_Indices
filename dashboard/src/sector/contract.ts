@@ -1378,6 +1378,18 @@ export const CLIMATE_CELL_MATCHES = ['direct', 'partial', 'proxy', 'none'] as co
 export type ClimateMatch = (typeof CLIMATE_CELL_MATCHES)[number];
 /** ipcc: the technology has its own IPCC rows; proxy: the paper scores it with other technologies' values. */
 export const CLIMATE_LIFECYCLE_BASES = ['ipcc', 'proxy'] as const;
+/** IEA pathways (climate.nze_*): what a WEO series measures. */
+export const NZE_GROUPS = ['deployment', 'power', 'fuel', 'emissions'] as const;
+/** WEO Annex A scenarios: the IEA's historical estimates and three scenario projections. */
+export const NZE_SCENARIOS = ['historical', 'stated', 'current', 'nze'] as const;
+export type NzeScenario = (typeof NZE_SCENARIOS)[number];
+/** IEA Critical Minerals Dataset scenarios (it has no Net Zero scenario). */
+export const NZE_MINERAL_SCENARIOS = ['current', 'stated', 'high_demand'] as const;
+export type NzeMineralScenario = (typeof NZE_MINERAL_SCENARIOS)[number];
+/** own: the cell's own activity; demand: the demand it supplies; context: an emissions trajectory. */
+export const NZE_ROLES = ['own', 'demand', 'context'] as const;
+/** Critical Minerals sheets: 1 total demand of the key minerals, 3.1 by technology, 3.2 by mineral. */
+export const NZE_SHEETS = ['1', '3.1', '3.2'] as const;
 
 /**
  * sector-climate (R/dashboard/sector/sector_climate.R; processed by scripts/16_build_climate_trace.R from
@@ -1422,6 +1434,55 @@ export const CLIMATE_SPEC = {
     cols: { subsector: SR, asset_group: SR, geo: GEO, year: IR, n: IR, emissions: FR, activity: FR, value: FR, unit: SR, activity_unit: SR },
     unique: ['subsector', 'asset_group', 'year', 'geo'],
   },
+  /*
+   * IEA pathways (user request 2026-10-17, additive; optional: all six tables or none). World only, from
+   * R/dashboard/sector/sector_climate.R (sector_nze_tables(); processed by scripts/17_build_iea_pathways.R from
+   * the WEO 2025 Annex A free dataset, dict source `iea_weo_pathways`, and the IEA Critical Minerals Dataset,
+   * dict source `iea_cm`; both CC BY 4.0; map config/iea_pathways_map.yml). IEA scenario projections and
+   * historical estimates, never observed country values.
+   *   climate.nze_series: id, grp (NZE_GROUPS), label, unit, and the WEO category / product / flow it reads.
+   *   climate.nze_values: (series row, scenario NZE_SCENARIOS, year, value), World.
+   *   climate.nze_map: (cell item, series row, role NZE_ROLES, match (null for context), order).
+   *   climate.nze_cells: every cell's match quality (best of its own and demand rows; none), note and the
+   *     Critical Minerals technologies its mineral demand sums (mineral_techs, "|"-separated; null for none).
+   *   climate.nze_minerals: (sheet, mineral, tech as published, scenario NZE_MINERAL_SCENARIOS, year, kt); slug:
+   *     the explorer's mineral item where one matches.
+   *   climate.nze_meta: key / value (weo, weo_file, weo_previous, minerals_file, minerals_base_year).
+   */
+  'climate.nze_series': {
+    kind: 'table',
+    optional: true,
+    cols: { id: SR, grp: { t: 'str', req: true, values: NZE_GROUPS }, label: SR, unit: SR, category: SR, product: SR, flow: SR },
+    unique: ['id'],
+  },
+  'climate.nze_values': {
+    kind: 'table',
+    optional: true,
+    cols: { series: IR, scenario: { t: 'str', req: true, values: NZE_SCENARIOS }, year: IR, value: FR },
+    sorted: ['series'],
+    unique: ['series', 'scenario', 'year'],
+  },
+  'climate.nze_map': {
+    kind: 'table',
+    optional: true,
+    cols: { item: ITEM, series: IR, role: { t: 'str', req: true, values: NZE_ROLES }, match: { t: 'str', values: CLIMATE_MATCHES }, order: IR },
+    sorted: ['item', 'order'],
+    unique: ['item', 'series'],
+  },
+  'climate.nze_cells': {
+    kind: 'table',
+    optional: true,
+    cols: { item: ITEM, match: { t: 'str', req: true, values: CLIMATE_CELL_MATCHES }, note: SR, mineral_techs: S },
+    sorted: ['item'],
+    unique: ['item'],
+  },
+  'climate.nze_minerals': {
+    kind: 'table',
+    optional: true,
+    cols: { sheet: { t: 'str', req: true, values: NZE_SHEETS }, mineral: SR, tech: SR, scenario: { t: 'str', req: true, values: NZE_MINERAL_SCENARIOS }, year: IR, kt: FR, slug: S },
+    unique: ['sheet', 'mineral', 'tech', 'scenario', 'year'],
+  },
+  'climate.nze_meta': { kind: 'table', optional: true, cols: { key: SR, value: S }, unique: ['key'] },
 } as const satisfies ChunkSpec;
 
 // ---- sector-fdi: CM-FDI (integrator change 2026-10-11, additive) ---------------------------------
@@ -2132,6 +2193,46 @@ function checkClimate(c: SectorClimateChunk, out: ChunkCheck) {
     if (!(a > 0) || Math.abs(v - it.cols.emissions[i] / a) > 1e-12 * Math.max(Math.abs(v), 1e-300)) badInt.hit(i);
   }
   badInt.report(out.errors, 'climate.intensity: value is not emissions / activity');
+  checkNze(c, out);
+}
+
+/** Cross-table rules of the optional climate.nze_* tables; the R mirror is sector_check_nze(). */
+function checkNze(c: SectorClimateChunk, out: ChunkCheck) {
+  const parts = [c['climate.nze_series'], c['climate.nze_values'], c['climate.nze_map'], c['climate.nze_cells'], c['climate.nze_minerals'], c['climate.nze_meta']];
+  const n = parts.filter(Boolean).length;
+  if (n === 0) return;
+  if (n !== parts.length) return void out.errors.push('climate.nze_*: either every nze table or none');
+  const ns = c['climate.nze_series']!.nrow;
+  const v = c['climate.nze_values']!;
+  const m = c['climate.nze_map']!;
+  const badSeries = new Tally();
+  const badMatch = new Tally();
+  const badValue = new Tally();
+  for (let i = 0; i < v.nrow; i++) {
+    if (v.cols.series[i] >= ns) badSeries.hit(i);
+    if (!Number.isFinite(v.cols.value[i])) badValue.hit(i);
+  }
+  const best = new Map<number, number>();
+  for (let i = 0; i < m.nrow; i++) {
+    if (m.cols.series[i] >= ns) badSeries.hit(i);
+    const ctx = m.cols.role[i] === 'context';
+    if (ctx !== (m.cols.match[i] === null)) badMatch.hit(i);
+    if (!ctx) {
+      const r = m.cols.match[i] === null ? -1 : CLIMATE_CELL_MATCHES.indexOf(m.cols.match[i] as ClimateMatch);
+      const b = best.get(m.cols.item[i]);
+      if (r >= 0 && (b === undefined || r < b)) best.set(m.cols.item[i], r);
+    }
+  }
+  badSeries.report(out.errors, 'climate.nze: a series index past climate.nze_series');
+  badMatch.report(out.errors, 'climate.nze_map: match must be set exactly on own and demand rows');
+  badValue.report(out.errors, 'climate.nze_values.value has non-finite values');
+  const cells = c['climate.nze_cells']!;
+  const badCell = new Tally();
+  for (let i = 0; i < cells.nrow; i++) {
+    const b = best.get(cells.cols.item[i]);
+    if (cells.cols.match[i] !== (b === undefined ? 'none' : CLIMATE_CELL_MATCHES[b])) badCell.hit(i);
+  }
+  badCell.report(out.errors, "climate.nze_cells.match is not the best match of the cell's own and demand series");
 }
 
 /** Cross-table rules of sector-fdi (FDI_SPEC); the R mirror is sector_check_fdi(). */

@@ -1,0 +1,262 @@
+# IEA scenario pathways (World): what is read from the IEA's free datasets and how it maps to
+# technology x stage (user request of 2026-10-17: "IEA Net Zero report data for the Climate section").
+#
+# Read by scripts/17_build_iea_pathways.R (into data/processed/iea_pathways_*_tbl.rds) and, through those
+# tables, scripts/87_export_sector_data.R (the optional climate.nze_* tables of the sector-climate chunk).
+# Pure helpers: R/categories/climate/iea_pathways.R (iea_pathways_map_validate() checks this file).
+#
+# Sources (both CC BY 4.0, cited wherever the figures are shown):
+#   - IEA (2025), World Energy Outlook 2025, Annex A free dataset, World
+#     (data/raw/WEO2025_AnnexA_Free_Dataset_World.csv): Historical (2010, 2023, 2024) and three scenarios,
+#     Stated Policies, Current Policies and Net Zero Emissions by 2050, for 2035, 2040 and 2050. World only:
+#     the free regional dataset needs an IEA account and is not staged. No 2030 values in this edition.
+#   - IEA (2026), Critical Minerals Dataset 2026 (data/raw/IEA Critical Minerals Dataset 2026.xlsx; Notice
+#     sheet: CC BY 4.0): mineral demand in kt for 2025 (base year) and 2030-2050 in the Current Policies,
+#     Stated Policies and High Demand scenarios. It has no Net Zero scenario.
+#
+# Every value is an IEA scenario projection (or, for Historical, the IEA's estimate of the past), never
+# an observed value for a country.
+#
+# Roles (one per cell x series):
+#   own      the pathway of the cell's own activity (installed capacity of the technology, the fuel's
+#            supply or use), with a match quality.
+#   demand   the demand the cell supplies (Midstream factories, Upstream minerals): the deployment pathway
+#            of the technology it serves, with a match quality. Shown as demand context.
+#   context  an emissions trajectory shown as context (the CO2 intensity of electricity, the CO2 of the
+#            materials a cell's products are made of): no match quality, never the cell's own emissions.
+# Match quality (own and demand rows; a cell's match is the best of them, `none` without one):
+#   direct   the series measures the cell's own activity, same boundary.
+#   partial  it covers the cell's activity but also other activity, or only part of it, or measures the
+#            stock that a factory's output adds to.
+#   proxy    a related quantity stands in for the cell (electricity used in transport for the EV fleet;
+#            the free dataset has no EV stock, grid length or electrolyser capacity).
+#
+# `minerals`: the IEA Critical Minerals technologies (sheet 3.1 labels) whose mineral demand the cell
+# shows (Upstream cells), summed over the technologies listed.
+
+scenarios:
+  # WEO SCENARIO label -> key. Historical is the IEA's estimate of past years, the same in every scenario.
+  weo:
+    "Historical": historical
+    "Stated Policies Scenario": stated
+    "Current Policies Scenario": current
+    "Net Zero Emissions by 2050 Scenario": nze
+  # Critical Minerals dataset scenario label -> key.
+  minerals:
+    "Current Policies scenario": current
+    "Stated Policies scenario": stated
+    "High Demand Scenario": high_demand
+
+series:
+  # group: deployment (capacity, production), fuel (supply and use of a fossil fuel), power (electricity
+  # generation), emissions (CO2). label: plain words for the views.
+  - {id: cap_solar, group: deployment, category: "Capacity: installed", product: "Solar PV", flow: "Electrical capacity", label: "Solar PV capacity"}
+  - {id: cap_wind, group: deployment, category: "Capacity: installed", product: "Wind", flow: "Electrical capacity", label: "Wind capacity"}
+  - {id: cap_nuclear, group: deployment, category: "Capacity: installed", product: "Nuclear", flow: "Electrical capacity", label: "Nuclear capacity"}
+  - {id: cap_geothermal, group: deployment, category: "Capacity: installed", product: "Geothermal", flow: "Electrical capacity", label: "Geothermal capacity"}
+  - {id: cap_battery, group: deployment, category: "Capacity: installed", product: "Battery storage", flow: "Electrical capacity", label: "Battery storage capacity"}
+  - {id: cap_coal, group: deployment, category: "Capacity: installed", product: "Coal: unabated", flow: "Electrical capacity", label: "Unabated coal-fired capacity"}
+  - {id: h2_low, group: deployment, category: "Energy", product: "Hydrogen: low-emissions", flow: "Hydrogen production: offsite", label: "Low-emissions hydrogen production"}
+  - {id: elec_transport, group: deployment, category: "Energy", product: "Electricity", flow: "Transport", label: "Electricity used in transport"}
+  - {id: gen_total, group: power, category: "Energy", product: "Total", flow: "Electricity generation", label: "Electricity generation"}
+  - {id: gen_coal, group: power, category: "Energy", product: "Coal: unabated", flow: "Electricity generation", label: "Electricity from unabated coal"}
+  - {id: gen_gas, group: power, category: "Energy", product: "Natural gas: unabated", flow: "Electricity generation", label: "Electricity from unabated gas"}
+  - {id: gen_oil, group: power, category: "Energy", product: "Oil", flow: "Electricity generation", label: "Electricity from oil"}
+  - {id: tes_coal, group: fuel, category: "Energy", product: "Coal", flow: "Total energy supply", label: "Coal supply"}
+  - {id: tes_oil, group: fuel, category: "Energy", product: "Oil", flow: "Total energy supply", label: "Oil supply"}
+  - {id: tes_gas, group: fuel, category: "Energy", product: "Natural gas", flow: "Total energy supply", label: "Natural gas supply"}
+  - {id: tes_nuclear, group: fuel, category: "Energy", product: "Nuclear", flow: "Total energy supply", label: "Nuclear energy supply"}
+  - {id: tfc_oil, group: fuel, category: "Energy", product: "Oil", flow: "Total final consumption", label: "Oil use by end users"}
+  - {id: tfc_gas, group: fuel, category: "Energy", product: "Natural gas", flow: "Total final consumption", label: "Gas use by end users"}
+  - {id: co2_intensity, group: emissions, category: "CO2 total intensity", product: "Electricity", flow: "Electricity generation", label: "CO2 intensity of electricity"}
+  - {id: co2_power, group: emissions, category: "CO2 total", product: "Total", flow: "Power sector inputs", label: "CO2 from power generation"}
+  - {id: co2_power_coal, group: emissions, category: "CO2 total", product: "Coal", flow: "Power sector inputs", label: "CO2 from coal in power generation"}
+  - {id: co2_power_gas, group: emissions, category: "CO2 total", product: "Natural gas", flow: "Power sector inputs", label: "CO2 from gas in power generation"}
+  - {id: co2_power_oil, group: emissions, category: "CO2 total", product: "Oil", flow: "Power sector inputs", label: "CO2 from oil in power generation"}
+  - {id: co2_comb_coal, group: emissions, category: "CO2 combustion", product: "Coal", flow: "Total energy supply", label: "CO2 from burning coal"}
+  - {id: co2_comb_oil, group: emissions, category: "CO2 combustion", product: "Oil", flow: "Total energy supply", label: "CO2 from burning oil"}
+  - {id: co2_comb_gas, group: emissions, category: "CO2 combustion", product: "Natural gas", flow: "Total energy supply", label: "CO2 from burning gas"}
+  - {id: co2_steel, group: emissions, category: "CO2 combustion and process", product: "Total", flow: "Iron and steel", label: "CO2 from iron and steel"}
+  - {id: co2_aluminium, group: emissions, category: "CO2 combustion and process", product: "Total", flow: "Non-ferrous metals: aluminium", label: "CO2 from aluminium"}
+  - {id: co2_chemicals, group: emissions, category: "CO2 combustion and process", product: "Total", flow: "Chemicals", label: "CO2 from chemicals"}
+  - {id: co2_ldv, group: emissions, category: "CO2 total", product: "Total", flow: "Road passenger light duty vehicles", label: "CO2 from cars and vans"}
+  # Used by no cell: the world context line of the Country Profile.
+  - {id: co2_energy, group: emissions, category: "CO2 total", product: "Total", flow: "Total energy supply", label: "Energy-sector CO2"}
+
+# Not read: cement (no cell's products are mostly cement, as in config/climate_trace_map.yml), industrial
+# material production, the "Hydrogen and H2-based fuels" capacity (hydrogen-fired power plants, not
+# electrolysers), and the stock and activity rows (floorspace, passenger-km).
+
+cells:
+  batteries-upstream:
+    series:
+      - {id: elec_transport, role: demand, match: proxy}
+      - {id: cap_battery, role: demand, match: proxy}
+    minerals: ["Electric vehicles", "Grid battery storage"]
+    note: "Battery minerals follow battery demand, most of it from electric vehicles. The WEO free dataset has no EV stock, so electricity used in transport stands in for the EV fleet; grid battery storage capacity is the rest. Mineral demand is the IEA's for EVs and grid storage together."
+  batteries-midstream:
+    series:
+      - {id: elec_transport, role: demand, match: proxy}
+      - {id: cap_battery, role: demand, match: partial}
+    note: "Battery factories supply electric vehicles (most of the demand) and stationary storage. Installed storage capacity is the stock their storage output adds to; electricity used in transport stands in for the EV fleet."
+  batteries-downstream:
+    series:
+      - {id: cap_battery, role: own, match: direct}
+      - {id: co2_intensity, role: context}
+    note: "Installed battery storage capacity on the power system, the deployment this sector measures."
+  coal-upstream:
+    series:
+      - {id: tes_coal, role: own, match: direct}
+      - {id: co2_comb_coal, role: context}
+    note: "World coal supply: at world level supply equals the coal mined (stock changes aside)."
+  coal-midstream:
+    series:
+      - {id: tes_coal, role: own, match: proxy}
+    note: "No WEO series covers coal processing or handling equipment; world coal supply stands in for the coal they handle."
+  coal-downstream:
+    series:
+      - {id: gen_coal, role: own, match: partial}
+      - {id: cap_coal, role: own, match: partial}
+      - {id: co2_power_coal, role: context}
+    note: "Coal-fired electricity and the unabated coal plants that make it. Coal burnt in industry and buildings is not included."
+  electric-grid-upstream:
+    series:
+      - {id: gen_total, role: demand, match: proxy}
+    minerals: ["Electricity networks"]
+    note: "Grid copper and aluminium follow network build-out, which the WEO free dataset does not report; electricity generation stands in for the power grids carry. Mineral demand is the IEA's for electricity networks."
+  electric-grid-midstream:
+    series:
+      - {id: gen_total, role: demand, match: proxy}
+      - {id: co2_steel, role: context}
+    note: "No WEO series covers grid equipment; electricity generation stands in for the power grids carry. Steel, a main material of transformers and towers, is shown as context."
+  electric-grid-downstream:
+    series:
+      - {id: gen_total, role: own, match: proxy}
+      - {id: co2_intensity, role: context}
+      - {id: co2_power, role: context}
+    note: "The WEO free dataset has no grid length or grid investment; electricity generation stands in for the power grids carry."
+  electric-vehicles-upstream:
+    series:
+      - {id: elec_transport, role: demand, match: proxy}
+    minerals: ["Electric vehicles"]
+    note: "EV minerals follow the EV fleet, which the WEO free dataset does not report; electricity used in transport stands in for it. Mineral demand is the IEA's for electric vehicles (batteries and motors)."
+  electric-vehicles-midstream:
+    series:
+      - {id: elec_transport, role: demand, match: proxy}
+      - {id: co2_steel, role: context}
+      - {id: co2_aluminium, role: context}
+    note: "The WEO free dataset has no EV sales or stock; electricity used in transport (mostly electric vehicles, also rail) stands in for the fleet these factories supply. Steel and aluminium, the main materials of a vehicle body, are shown as context."
+  electric-vehicles-downstream:
+    series:
+      - {id: elec_transport, role: own, match: proxy}
+      - {id: co2_ldv, role: context}
+    note: "The WEO free dataset has no EV stock; electricity used in transport (mostly electric vehicles, also rail) stands in for the fleet. CO2 from cars and vans is shown as context."
+  gas-upstream:
+    series:
+      - {id: tes_gas, role: own, match: direct}
+      - {id: co2_comb_gas, role: context}
+    note: "World natural gas supply: at world level supply equals the gas produced (stock changes aside)."
+  gas-midstream:
+    series:
+      - {id: tes_gas, role: own, match: proxy}
+    note: "No WEO series covers pipes, compressors or LNG plants; world gas supply stands in for the gas they move."
+  gas-downstream:
+    series:
+      - {id: tfc_gas, role: own, match: partial}
+      - {id: gen_gas, role: own, match: partial}
+      - {id: co2_power_gas, role: context}
+    note: "Gas used by end users and gas-fired electricity, the two parts of gas use."
+  geothermal-upstream:
+    series:
+      - {id: cap_geothermal, role: demand, match: proxy}
+    note: "No WEO series covers geothermal exploration; installed geothermal capacity stands in for the demand it serves."
+  geothermal-midstream:
+    series:
+      - {id: cap_geothermal, role: demand, match: partial}
+    note: "Installed geothermal capacity: the stock geothermal equipment adds to."
+  geothermal-downstream:
+    series:
+      - {id: cap_geothermal, role: own, match: direct}
+      - {id: co2_intensity, role: context}
+    note: "Installed geothermal power capacity."
+  green-hydrogen-upstream:
+    series:
+      - {id: h2_low, role: demand, match: proxy}
+    minerals: ["Hydrogen technologies"]
+    note: "Electrolyser minerals follow electrolyser build-out, which the WEO free dataset does not report; low-emissions hydrogen production stands in for it. Mineral demand is the IEA's for hydrogen technologies."
+  green-hydrogen-midstream:
+    series:
+      - {id: h2_low, role: demand, match: proxy}
+    note: "The WEO free dataset has no electrolyser capacity; low-emissions hydrogen production (from electrolysis and from fossil fuels with carbon capture) stands in for the demand electrolyser factories serve."
+  green-hydrogen-downstream:
+    series:
+      - {id: h2_low, role: own, match: partial}
+      - {id: co2_chemicals, role: context}
+    note: "Low-emissions hydrogen includes hydrogen from fossil fuels with carbon capture as well as electrolytic hydrogen. CO2 from chemicals (ammonia and methanol, today's main hydrogen users) is shown as context."
+  nuclear-upstream:
+    series:
+      - {id: tes_nuclear, role: demand, match: partial}
+    note: "Uranium demand follows the fuel reactors use; nuclear energy supply measures that fuel use (in heat terms), not uranium tonnes. The IEA mineral dataset has no uranium."
+  nuclear-midstream:
+    series:
+      - {id: cap_nuclear, role: demand, match: partial}
+    note: "Installed nuclear capacity: the stock reactor and fuel-cycle suppliers serve."
+  nuclear-downstream:
+    series:
+      - {id: cap_nuclear, role: own, match: direct}
+      - {id: co2_intensity, role: context}
+    note: "Installed nuclear power capacity."
+  oil-upstream:
+    series:
+      - {id: tes_oil, role: own, match: direct}
+      - {id: co2_comb_oil, role: context}
+    note: "World oil supply: at world level supply equals the oil produced (stock changes aside)."
+  oil-midstream:
+    series:
+      - {id: tes_oil, role: own, match: partial}
+    note: "Refining throughput follows oil supply; the cell also covers handling equipment, pipes and tanks."
+  oil-downstream:
+    series:
+      - {id: tfc_oil, role: own, match: partial}
+      - {id: gen_oil, role: own, match: partial}
+      - {id: co2_power_oil, role: context}
+    note: "Oil used by end users (transport, industry, buildings) and oil-fired electricity, the two parts of oil use."
+  solar-upstream:
+    series:
+      - {id: cap_solar, role: demand, match: proxy}
+    minerals: ["Solar PV"]
+    note: "Solar minerals (silicon, silver, copper and others) follow solar build-out. Mineral demand is the IEA's for solar PV."
+  solar-midstream:
+    series:
+      - {id: cap_solar, role: demand, match: partial}
+      - {id: co2_aluminium, role: context}
+    note: "Installed solar capacity: the stock module and inverter factories add to. Aluminium, used in module frames and mounting, is shown as context."
+  solar-downstream:
+    series:
+      - {id: cap_solar, role: own, match: direct}
+      - {id: co2_intensity, role: context}
+    note: "Installed solar PV capacity."
+  wind-upstream:
+    series:
+      - {id: cap_wind, role: demand, match: proxy}
+    minerals: ["Wind"]
+    note: "Wind minerals (rare earths for magnets, copper, zinc and others) follow wind build-out. Mineral demand is the IEA's for wind."
+  wind-midstream:
+    series:
+      - {id: cap_wind, role: demand, match: partial}
+      - {id: co2_steel, role: context}
+    note: "Installed wind capacity: the stock turbine factories add to. Steel, most of a turbine's tower and nacelle by weight, is shown as context."
+  wind-downstream:
+    series:
+      - {id: cap_wind, role: own, match: direct}
+      - {id: co2_intensity, role: context}
+    note: "Installed wind capacity."
+  semiconductors-upstream:
+    series: []
+    note: "The IEA pathways and mineral dataset cover energy technologies, not chips."
+  semiconductors-midstream:
+    series: []
+    note: "The IEA pathways cover energy technologies, not chips."
+
+# The world context of the Country Profile's Policy & climate section (series id).
+world_context: co2_energy

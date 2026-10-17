@@ -468,7 +468,7 @@ export const PROFILE_GROUPS: readonly { id: string; title: string; lede: string;
   { id: 'markets', title: 'Competitiveness & markets', lede: 'How large the market is, who sells and who invests, demand and prices.', sections: ['snapshot', 'leaders', 'trade', 'investment', 'demand', 'prices'] },
   { id: 'security', title: 'Security & concentration', lede: 'How concentrated supply is, measure by measure, and where production and resources sit.', sections: ['who', 'production', 'resources'] },
   { id: 'policy-technology', title: 'Policy', lede: 'Recorded policy activity and how mature the technology is.', sections: ['policy', 'technology'] },
-  { id: 'climate', title: 'Climate', lede: 'Sector emissions from Climate TRACE and how well they match this sector, the technology’s lifecycle intensity, and climate-policy ratings.', sections: [], always: true },
+  { id: 'climate', title: 'Climate', lede: 'Sector emissions from Climate TRACE and how well they match this sector, the technology’s lifecycle intensity, the IEA’s World pathways to 2050 (scenario projections), and climate-policy ratings.', sections: [], always: true },
   { id: 'evidence', title: 'Advanced & evidence', lede: 'Every economy’s numbers, the stage’s costs, the explorer and the sources.', sections: ['countries', 'context'], always: true },
 ];
 

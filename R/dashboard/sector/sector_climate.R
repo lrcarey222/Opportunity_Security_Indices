@@ -97,12 +97,15 @@ sector_climate_chunk <- function(cl, gi, ii) {
                         n = as.integer(it$n), emissions = as.double(it$emissions), activity = as.double(it$activity), value = as.double(it$value),
                         unit = as.character(it$unit), activity_unit = as.character(it$activity_unit))
   int <- int[order(int$subsector, int$asset_group, int$year, int$geo, method = "radix"), , drop = FALSE]
-  list(climate = list(src = src, map = m, cells = cc, lifecycle = lc, em = em, intensity = int))
+  out <- list(src = src, map = m, cells = cc, lifecycle = lc, em = em, intensity = int)
+  # The IEA pathways (optional: scripts/87 sets cl$nze when the iea_pathways_*_tbl.rds of scripts/17 exist).
+  if (!is.null(cl$nze)) out <- c(out, sector_nze_tables(cl$nze, ii))
+  list(climate = out)
 }
 
 # The R mirror of the contract's CLIMATE_SPEC (sector_chunk_specs() adds it).
 sector_climate_spec <- function() {
-  list(
+  c(list(
     `climate.src` = sector_tbl_spec(c(id = "s!", subsector = "s!", sector = "s!", label = "s!", asset_group = "s", basis = "s!", repeated = "b!"),
                                     unique = "id", values = list(basis = SECTOR_CLIMATE_V$basis)),
     `climate.map` = sector_tbl_spec(c(item = "i!@items", src = "i!", role = "s!", match = "s", order = "i!"),
@@ -117,7 +120,7 @@ sector_climate_spec <- function() {
     `climate.intensity` = sector_tbl_spec(c(subsector = "s!", asset_group = "s!", geo = "i!@geo", year = "i!", n = "i!", emissions = "f!",
                                             activity = "f!", value = "f!", unit = "s!", activity_unit = "s!"),
                                           unique = c("subsector", "asset_group", "year", "geo"))
-  )
+  ), sector_nze_spec())
 }
 
 # Cross-table rules of sector-climate (contract checkClimate()): source rows in range; a context row has
@@ -145,7 +148,7 @@ sector_check_climate <- function(d) {
   if (any(!is.finite(d$em$value))) e <- c(e, "climate.em.value has non-finite values")
   it <- d$intensity
   if (any(!(it$activity > 0)) || any(abs(it$value - it$emissions / it$activity) > 1e-12 * pmax(abs(it$value), 1e-300))) e <- c(e, "climate.intensity: value is not emissions / activity")
-  e
+  c(e, sector_check_nze(d))
 }
 
 # Decoded sector-climate against the processed tables (`p`, as sector_climate_part() takes them):
@@ -201,5 +204,161 @@ sector_climate_parity <- function(decoded, meta, p) {
   chk("climate (decoded): sources identical() to climate_trace_sources_tbl",
       identical(d$src$id, p$sources$src_id) && identical(d$src$label, p$sources$label) && identical(d$src$basis, p$sources$basis) &&
         identical(d$src$asset_group, as.character(p$sources$asset_group)), nrow(d$src))
+  dplyr::bind_rows(rows)
+}
+
+# ---- IEA pathways (climate.nze_*; user request of 2026-10-17: IEA Net Zero data) -----------------------
+#
+# Optional tables of sector-climate: the IEA's World pathways (WEO Annex A free dataset: Historical, Stated
+# Policies, Current Policies, Net Zero Emissions by 2050) and mineral demand by scenario (IEA Critical
+# Minerals Dataset: Current Policies, Stated Policies, High Demand; no Net Zero scenario), mapped to
+# technology x stage. scripts/87 reads data/processed/iea_pathways_*_tbl.rds (scripts/17_build_iea_pathways.R;
+# rules in R/categories/climate/iea_pathways.R; map in config/iea_pathways_map.yml) and ships them as they
+# are; after the decode every value is checked identical() to the processed table (sector_nze_parity()).
+# World only: no country value. Every value is an IEA scenario projection or the IEA's historical estimate.
+#
+#   climate.nze_series    one row per series: id, grp (deployment / power / fuel / emissions), label, unit,
+#                         category, product, flow (the WEO Annex A row it reads)
+#   climate.nze_values    (series row, scenario historical / stated / current / nze, year, value), World
+#   climate.nze_map       (cell item, series row, role own / demand / context, match (NA for context), order)
+#   climate.nze_cells     one row per cell: match (direct / partial / proxy / none), note, mineral_techs
+#                         (the Critical Minerals technologies the cell's mineral demand sums, "|"-separated)
+#   climate.nze_minerals  (sheet 1 / 3.1 / 3.2, mineral, tech, scenario current / stated / high_demand, year,
+#                         kt) as published; slug: the explorer's mineral item where one matches (NA otherwise)
+#   climate.nze_meta      key, value: weo (edition), weo_file, weo_previous (the vintage checked against),
+#                         minerals_file, minerals_base_year
+
+SECTOR_NZE_V <- list(
+  grp = c("deployment", "power", "fuel", "emissions"),
+  scenario = c("historical", "stated", "current", "nze"),
+  mineral_scenario = c("current", "stated", "high_demand"),
+  role = c("own", "demand", "context"),
+  match = c("direct", "partial", "proxy"),
+  cell_match = c("direct", "partial", "proxy", "none"),
+  sheet = c("1", "3.1", "3.2")
+)
+
+SECTOR_NZE_PROCESSED <- c(series = "iea_pathways_series_tbl", values = "iea_pathways_values_tbl", map = "iea_pathways_map_tbl",
+                          cells = "iea_pathways_cells_tbl", minerals = "iea_pathways_minerals_tbl", meta = "iea_pathways_meta_tbl")
+
+# The text-keyed nze part from the processed tables (`p`, named as SECTOR_NZE_PROCESSED).
+sector_nze_part <- function(p) {
+  for (nm in names(SECTOR_NZE_PROCESSED)) if (is.null(p[[nm]])) stop("sector_nze_part(): missing ", nm)
+  list(
+    series = p$series, values = p$values,
+    map = tibble::tibble(item_key = paste0("cell:", p$map$cell), series = p$map$series, role = p$map$role, match = p$map$match, order = as.integer(p$map$order)),
+    cells = tibble::tibble(item_key = paste0("cell:", p$cells$cell), match = p$cells$match, note = p$cells$note, mineral_techs = p$cells$mineral_techs),
+    minerals = p$minerals, meta = p$meta
+  )
+}
+
+# The climate.nze_* tables (contract CLIMATE_SPEC) from the nze part. ii: item code -> 0-based index.
+sector_nze_tables <- function(n, ii) {
+  ser <- tibble::tibble(id = as.character(n$series$id), grp = as.character(n$series$group), label = as.character(n$series$label),
+                        unit = as.character(n$series$unit), category = as.character(n$series$category), product = as.character(n$series$product),
+                        flow = as.character(n$series$flow))
+  si <- function(id) {
+    i <- match(id, ser$id)
+    if (anyNA(i)) stop("sector_nze_tables(): unknown series ", paste(utils::head(unique(id[is.na(i)]), 5), collapse = ", "))
+    as.integer(i - 1L)
+  }
+  val <- tibble::tibble(series = si(n$values$series), scenario = as.character(n$values$scenario), year = as.integer(n$values$year),
+                        value = as.double(n$values$value))
+  val <- val[order(val$series, method = "radix"), , drop = FALSE]
+  m <- tibble::tibble(item = ii(n$map$item_key), series = si(n$map$series), role = as.character(n$map$role), match = as.character(n$map$match),
+                      order = as.integer(n$map$order))
+  m <- m[order(m$item, m$order, method = "radix"), , drop = FALSE]
+  cc <- tibble::tibble(item = ii(n$cells$item_key), match = as.character(n$cells$match), note = as.character(n$cells$note),
+                       mineral_techs = as.character(n$cells$mineral_techs))
+  cc <- cc[order(cc$item, method = "radix"), , drop = FALSE]
+  mi <- n$minerals
+  mn <- tibble::tibble(sheet = as.character(mi$sheet), mineral = as.character(mi$mineral), tech = as.character(mi$tech),
+                       scenario = as.character(mi$scenario), year = as.integer(mi$year), kt = as.double(mi$kt),
+                       slug = as.character(sector_mineral_slug(mi$mineral)))
+  meta <- tibble::tibble(key = as.character(n$meta$key), value = as.character(n$meta$value))
+  list(nze_series = ser, nze_values = val, nze_map = m, nze_cells = cc, nze_minerals = mn, nze_meta = meta)
+}
+
+# The R mirror of the contract's climate.nze_* specs (optional tables of CLIMATE_SPEC).
+sector_nze_spec <- function() {
+  list(
+    `climate.nze_series` = sector_tbl_spec(c(id = "s!", grp = "s!", label = "s!", unit = "s!", category = "s!", product = "s!", flow = "s!"),
+                                           unique = "id", values = list(grp = SECTOR_NZE_V$grp), optional = TRUE),
+    `climate.nze_values` = sector_tbl_spec(c(series = "i!", scenario = "s!", year = "i!", value = "f!"), sorted = "series",
+                                           unique = c("series", "scenario", "year"), values = list(scenario = SECTOR_NZE_V$scenario), optional = TRUE),
+    `climate.nze_map` = sector_tbl_spec(c(item = "i!@items", series = "i!", role = "s!", match = "s", order = "i!"), sorted = c("item", "order"),
+                                        unique = c("item", "series"), values = list(role = SECTOR_NZE_V$role, match = SECTOR_NZE_V$match), optional = TRUE),
+    `climate.nze_cells` = sector_tbl_spec(c(item = "i!@items", match = "s!", note = "s!", mineral_techs = "s"), sorted = "item", unique = "item",
+                                          values = list(match = SECTOR_NZE_V$cell_match), optional = TRUE),
+    `climate.nze_minerals` = sector_tbl_spec(c(sheet = "s!", mineral = "s!", tech = "s!", scenario = "s!", year = "i!", kt = "f!", slug = "s"),
+                                             unique = c("sheet", "mineral", "tech", "scenario", "year"),
+                                             values = list(sheet = SECTOR_NZE_V$sheet, scenario = SECTOR_NZE_V$mineral_scenario), optional = TRUE),
+    `climate.nze_meta` = sector_tbl_spec(c(key = "s!", value = "s"), unique = "key", optional = TRUE)
+  )
+}
+
+# Cross-table rules of the nze tables (contract checkClimate()): all or none present; series rows in range;
+# match set exactly on own and demand rows; a cell's match is the best of its own and demand rows (none
+# without one); the WEO values finite.
+sector_check_nze <- function(d) {
+  nm <- c("nze_series", "nze_values", "nze_map", "nze_cells", "nze_minerals", "nze_meta")
+  have <- vapply(nm, function(x) !is.null(d[[x]]), logical(1))
+  if (!any(have)) return(character())
+  if (!all(have)) return("climate.nze_*: either every nze table or none")
+  e <- character()
+  ns <- nrow(d$nze_series)
+  if (any(d$nze_values$series >= ns) || any(d$nze_map$series >= ns)) e <- c(e, "climate.nze: a series index past climate.nze_series")
+  m <- d$nze_map
+  if (any(is.na(m$match) != (m$role == "context"))) e <- c(e, "climate.nze_map: match must be set exactly on own and demand rows")
+  rank <- match(m$match, SECTOR_NZE_V$cell_match)
+  want <- vapply(d$nze_cells$item, function(i) {
+    r <- rank[m$item == i & m$role != "context"]
+    if (length(r)) SECTOR_NZE_V$cell_match[min(r)] else "none"
+  }, character(1))
+  if (!identical(unname(want), d$nze_cells$match)) e <- c(e, "climate.nze_cells.match is not the best match of the cell's own and demand series")
+  if (!all(m$item %in% d$nze_cells$item)) e <- c(e, "climate.nze_map has a cell without a climate.nze_cells row")
+  if (any(!is.finite(d$nze_values$value))) e <- c(e, "climate.nze_values.value has non-finite values")
+  e
+}
+
+# Decoded nze tables against the processed iea_pathways_*_tbl.rds (`p`, as sector_nze_part() takes them):
+# every shipped value identical() to the processed row of the same key. Returns check rows.
+sector_nze_parity <- function(decoded, meta, p) {
+  d <- decoded$climate
+  rows <- list()
+  chk <- function(check, ok, n) rows[[length(rows) + 1L]] <<- tibble::tibble(check = check, status = if (ok) "PASS" else "FAIL", n = as.integer(n), detail = NA_character_)
+  if (is.null(d$nze_values)) return(tibble::tibble(check = character(), status = character(), n = integer(), detail = character()))
+  it <- meta$dims$items
+  key <- paste0(it$axis, ":", it$slug)
+  sid <- d$nze_series$id
+  df <- function(x) {
+    x <- as.data.frame(x, stringsAsFactors = FALSE)
+    rownames(x) <- NULL
+    x
+  }
+  a <- tibble::tibble(series = sid[d$nze_values$series + 1L], scenario = d$nze_values$scenario, year = d$nze_values$year, value = d$nze_values$value)
+  o <- function(x) df(x[order(x$series, x$scenario, x$year, method = "radix"), , drop = FALSE])
+  b <- tibble::tibble(series = p$values$series, scenario = p$values$scenario, year = as.integer(p$values$year), value = as.double(p$values$value))
+  chk("climate (decoded): IEA pathway values identical() to iea_pathways_values_tbl (World)", identical(o(a), o(b)), nrow(a))
+  s <- p$series
+  chk("climate (decoded): IEA pathway series identical() to iea_pathways_series_tbl",
+      identical(df(tibble::tibble(id = sid, group = d$nze_series$grp, label = d$nze_series$label, unit = d$nze_series$unit, category = d$nze_series$category,
+                                  product = d$nze_series$product, flow = d$nze_series$flow)),
+                df(s[c("id", "group", "label", "unit", "category", "product", "flow")])), nrow(s))
+  gm <- tibble::tibble(cell = sub("^cell:", "", key[d$nze_map$item + 1L]), series = sid[d$nze_map$series + 1L], role = d$nze_map$role, match = d$nze_map$match, order = d$nze_map$order)
+  om <- function(x) df(x[order(x$cell, x$order, method = "radix"), c("cell", "series", "role", "match", "order"), drop = FALSE])
+  chk("climate (decoded): IEA pathway cell map identical() to iea_pathways_map_tbl",
+      identical(om(gm), om(tibble::tibble(cell = p$map$cell, series = p$map$series, role = p$map$role, match = p$map$match, order = as.integer(p$map$order)))), nrow(gm))
+  gc <- tibble::tibble(cell = sub("^cell:", "", key[d$nze_cells$item + 1L]), match = d$nze_cells$match, note = d$nze_cells$note, mineral_techs = d$nze_cells$mineral_techs)
+  rc <- p$cells[match(gc$cell, p$cells$cell), c("cell", "match", "note", "mineral_techs")]
+  chk("climate (decoded): IEA pathway cell match quality, notes and mineral technologies identical() to iea_pathways_cells_tbl",
+      nrow(gc) == nrow(p$cells) && identical(df(gc), df(rc)), nrow(gc))
+  mm <- d$nze_minerals
+  om2 <- function(x) df(x[order(x$sheet, x$mineral, x$tech, x$scenario, x$year, method = "radix"), c("sheet", "mineral", "tech", "scenario", "year", "kt"), drop = FALSE])
+  pm <- p$minerals
+  chk("climate (decoded): mineral demand by scenario identical() to iea_pathways_minerals_tbl",
+      identical(om2(mm), om2(tibble::tibble(sheet = pm$sheet, mineral = pm$mineral, tech = pm$tech, scenario = pm$scenario, year = as.integer(pm$year), kt = as.double(pm$kt)))), nrow(mm))
+  chk("climate (decoded): IEA pathway editions identical() to iea_pathways_meta_tbl",
+      identical(d$nze_meta$key, p$meta$key) && identical(d$nze_meta$value, as.character(p$meta$value)), nrow(d$nze_meta))
   dplyr::bind_rows(rows)
 }

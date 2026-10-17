@@ -216,7 +216,7 @@ function Body({ d, model, cell, tech, chunk }: { d: ClimateData; model: SectorMo
       {own.length > 1 && (
         <div role="group" aria-label="Climate TRACE source" className="flex flex-wrap gap-2">
           {own.map((l, i) => (
-            <button key={l.src.id} type="button" className={`btn btn-sm ${i === own.indexOf(sel) ? 'btn-primary' : 'btn-ghost'}`} aria-pressed={i === own.indexOf(sel)} onClick={() => setPick(i)}>
+            <button key={l.src.id} type="button" className={`btn btn-sm max-w-full text-left ${i === own.indexOf(sel) ? 'btn-primary' : 'btn-ghost'}`} style={{ whiteSpace: 'normal' }} aria-pressed={i === own.indexOf(sel)} onClick={() => setPick(i)}>
               {l.src.label}
             </button>
           ))}

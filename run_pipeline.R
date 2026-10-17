@@ -29,6 +29,9 @@ source(file.path(repo_root, "scripts", "10_build_themes.R"))
 # Climate TRACE sector emissions mapped to technology x stage (reads tech_ghg_tbl.rds from scripts/10;
 # scripts/87 reads its tables for the Sector bundle).
 source(file.path(repo_root, "scripts", "16_build_climate_trace.R"))
+# IEA World pathways (WEO Annex A) and mineral demand by scenario mapped to technology x stage (the
+# optional climate.nze_* tables of the Sector bundle's sector-climate chunk).
+source(file.path(repo_root, "scripts", "17_build_iea_pathways.R"))
 source(file.path(repo_root, "scripts", "12_build_geopolitical_alignment.R"))
 source(file.path(repo_root, "scripts", "13_build_coalition.R"))
 source(file.path(repo_root, "scripts", "20_build_indices.R"))

@@ -4,7 +4,7 @@
 #   Rscript scripts/87_export_sector_data.R [--out-dir <dir>] [--phase 1|2] [--skip-trade]
 #                                           [--no-policy-text] [--no-series] [--synthetic <dir>]
 #                                           [--check-only] [--cmfdi <csv>] [--no-fdi] [--no-dev]
-#                                           [--no-climate]
+#                                           [--no-climate] [--no-nze]
 #
 # IO only: every rule lives in the pure helpers of R/dashboard/sector/ (sector_files()). It reads
 # config/sector_dictionary.yml, data/processed (raw rows only; never an index, weight or contribution
@@ -28,7 +28,10 @@
 #                                      the Development & finance raw measures out),
 #                                      climate (Climate TRACE sector emissions mapped to technology x
 #                                      stage and the IPCC lifecycle intensity, from the
-#                                      climate_trace_*_tbl.rds of scripts/16; --no-climate leaves it out)
+#                                      climate_trace_*_tbl.rds of scripts/16; --no-climate leaves it out;
+#                                      with the IEA World pathways and mineral demand by scenario as the
+#                                      optional climate.nze_* tables, from the iea_pathways_*_tbl.rds of
+#                                      scripts/17; --no-nze leaves them out)
 #   <processed_dir>/dashboard/sector_validation.csv   the full validation report (not deployed)
 #
 # <out-dir> defaults to <repo>/dashboard/public/data/sector. Every chunk is decoded again and must be
@@ -78,6 +81,7 @@ with_series <- !arg_flag("--no-series")
 with_fdi <- !arg_flag("--no-fdi")
 with_dev <- !arg_flag("--no-dev")
 with_climate <- !arg_flag("--no-climate")
+with_nze <- with_climate && !arg_flag("--no-nze")
 cmfdi_arg <- arg_value("--cmfdi")
 phase <- as.integer(arg_value("--phase", "1"))
 if (!phase %in% 1:2) stop("--phase must be 1 or 2")
@@ -949,6 +953,33 @@ if (with_climate) {
 } else {
   notes <- c(notes, "Climate TRACE sector emissions were not exported in this build (--no-climate).")
 }
+# IEA pathways (scripts/17): World scenario pathways and mineral demand by scenario, the optional
+# climate.nze_* tables of sector-climate, shipped as they are; identical() after the decode (post()). A
+# missing table stops the export (run scripts/17, or export with --no-nze).
+nze_proc <- NULL
+if (with_nze) {
+  step("Climate: IEA pathways (WEO Annex A World; Critical Minerals demand by scenario)")
+  nze_proc <- lapply(SECTOR_NZE_PROCESSED, rd)
+  climate_part$nze <- sector_nze_part(nze_proc)
+  nm <- stats::setNames(nze_proc$meta$value, nze_proc$meta$key)
+  add_check("climate: IEA pathways mapped to technology x stage (World only; IEA scenario projections and historical estimates)", "PASS",
+            nrow(nze_proc$values),
+            sprintf("%s: %d series, scenarios %s, years %s; %d cells with a match (%s); %d mineral demand rows (%s, base year %s)",
+                    nm[["weo"]], nrow(nze_proc$series), paste(unique(nze_proc$values$scenario), collapse = "/"),
+                    paste(sort(unique(nze_proc$values$year)), collapse = ", "), sum(nze_proc$cells$match != "none"),
+                    paste(names(table(nze_proc$cells$match)), table(nze_proc$cells$match), collapse = ", "), nrow(nze_proc$minerals),
+                    paste(unique(nze_proc$minerals$scenario), collapse = "/"), nm[["minerals_base_year"]]))
+  vint <- rd("iea_pathways_vintage_tbl")
+  if (nrow(vint)) {
+    big <- vint[!is.na(vint$rel) & abs(vint$rel) > 0.25, , drop = FALSE]
+    add_check(paste0("climate: IEA pathways vintage check against ", nm[["weo_previous"]], " (stated and nze, shared years; not shipped)"),
+              if (nrow(big)) "WARN" else "PASS", nrow(vint),
+              sprintf("median |change| %.1f%%; %d values move by more than 25%%%s", 100 * stats::median(abs(vint$rel), na.rm = TRUE), nrow(big),
+                      if (nrow(big)) paste0(" (", paste(utils::head(sprintf("%s %s %d %+.0f%%", big$series, big$scenario, big$year, 100 * big$rel), 6), collapse = "; "), ")") else ""))
+  }
+} else if (with_climate) {
+  notes <- c(notes, "IEA pathways were not exported in this build (--no-nze).")
+}
 
 parts <- list(
   geo = geo, region_members = region_members, items = items, item_links = item_links, mineral_demand = mineral_demand,
@@ -1080,6 +1111,12 @@ post <- function(decoded) {
     if (any(pc$status == "FAIL")) stop("Climate parity FAIL:
   ", paste(pc$check[pc$status == "FAIL"], collapse = "
   "))
+    if (!is.null(nze_proc)) {
+      pn <- sector_nze_parity(decoded$`sector-climate`, meta, nze_proc)
+      if (!nrow(pn)) stop("IEA pathways were built but the decoded sector-climate chunk has no climate.nze_* tables")
+      for (i in seq_len(nrow(pn))) add_check(pn$check[i], pn$status[i], pn$n[i], pn$detail[i])
+      if (any(pn$status == "FAIL")) stop("IEA pathways parity FAIL: ", paste(pn$check[pn$status == "FAIL"], collapse = "; "))
+    }
   }
   # CM-FDI parity: decoded projects identical() to the CSV after cleaning; aggregates recomputed.
   if (!is.null(decoded$`sector-fdi`)) {
@@ -1107,6 +1144,10 @@ notes <- c(notes,
            if (!is.null(climate_part)) paste0("Sector emissions: Climate TRACE (climatetrace.org), CC BY 4.0, ", min(climate_part$em$year), "-", climate_part$year,
                                               ", tonnes CO2e (100-year GWP), mapped to technology x stage with a match quality per sector ",
                                               "(config/climate_trace_map.yml); sectors with no match show the IPCC lifecycle intensity of the technology."),
+           if (!is.null(nze_proc)) paste0("IEA pathways: ", nze_proc$meta$value[nze_proc$meta$key == "weo"], " Annex A free dataset (World only), ",
+                                          "Historical, Stated Policies, Current Policies and Net Zero Emissions by 2050, CC BY 4.0; mineral demand by scenario ",
+                                          "from the IEA Critical Minerals Dataset (Current Policies, Stated Policies, High Demand; no Net Zero scenario), CC BY 4.0; ",
+                                          "IEA scenario projections, mapped to technology x stage with a match quality (config/iea_pathways_map.yml)."),
            if (!is.null(fdi)) paste0("Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and ",
                                      "the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; ",
                                      "project counts and sums of disclosed capital computed by the OSI authors, no record altered; ",

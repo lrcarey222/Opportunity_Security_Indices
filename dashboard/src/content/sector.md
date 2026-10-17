@@ -149,6 +149,35 @@ Climate TRACE's estimates of direct emissions (tonnes of CO2-equivalent on a 100
 * **Carried-forward years.** Where Climate TRACE's latest year repeats the year before (some mining
   subsectors in 2025), the section says so: the change is not a measured change.
 
+## Climate pathways (IEA scenarios)
+
+The Climate section of each sector also shows where the International Energy Agency's scenarios lead
+for the World, and the Policy & climate section of each Country profile one line of world context. These
+are **IEA scenario projections, not observed data and not forecasts**, and every figure says so.
+
+* **Source and licence.** IEA (2025), World Energy Outlook 2025, Annex A free dataset (World), CC BY 4.0:
+  the IEA's estimates for 2010, 2023 and 2024 and three scenarios for 2035, 2040 and 2050. *Stated
+  Policies* reflects the policies in place and those announced with concrete detail; *Current Policies*
+  only those already in force; *Net Zero Emissions by 2050* is the IEA's normative pathway to net zero
+  energy-sector CO2 by 2050. The dataset has no 2030 values; lines join the published years.
+* **World only.** The free dataset is World totals. The IEA's regional free dataset needs an IEA account
+  and is not used, so no economy has a pathway of its own here.
+* **Mapped, with a match quality.** Each sector shows the WEO series for its own activity (installed
+  solar, wind, nuclear, geothermal and battery storage capacity; coal, oil and gas supply and use;
+  coal-, gas- and oil-fired electricity), the demand it serves (Midstream factories and Upstream
+  minerals: the deployment of the technology they supply) and emissions trajectories as context (the CO2
+  intensity of electricity; CO2 from iron and steel, aluminium and chemicals beside the sectors made of
+  them). *Direct*, *partial* and *proxy* mean what they mean for the emissions above. The free dataset
+  has no EV stock, electrolyser capacity or grid length, so electricity used in transport stands in for
+  the EV fleet, low-emissions hydrogen production (which also counts hydrogen from fossil fuels with
+  carbon capture) for electrolysers, and electricity generation for the grid: each is labelled a proxy.
+* **Mineral demand by scenario.** For Upstream mineral sectors, the IEA Critical Minerals Dataset 2026
+  (CC BY 4.0) gives demand from the sector's technologies in the Current Policies, Stated Policies and
+  High Demand scenarios, summed over the technologies named. That dataset has **no Net Zero scenario**,
+  so mineral demand on the Net Zero pathway is not shown.
+* **Vintage.** The pathways are checked against the previous edition (World Energy Outlook 2024) on the
+  years both publish; the check is reported in the build, and only the 2025 edition is shown.
+
 ## Money
 
 Comtrade trade is in current US dollars. Clean Investment Monitor investment is in billions of 2024
