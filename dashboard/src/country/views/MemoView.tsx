@@ -1,7 +1,8 @@
 // The memo page /countries/:iso3/memo (spec_country.md A4.3): the pre-written, AI-generated policy memo of
 // a core coalition member, on screen with its PDF and Word downloads and the verbatim label. States: not a
 // core member -> the profile with a notice; a core member without a memo yet -> the profile's memo
-// section with a notice; a stale memo (a later fact sheet changed a claim) -> not shown, with a notice; a
+// section with a notice; a stale memo (a later fact sheet changed a claim, or the memo is under revision:
+// config memo_revision, 2026-10-17) -> not shown, with a notice that it is being revised; a
 // memo kept under an earlier rule (memo.rule_note, e.g. the quadrant rule of 2026-10-15) -> shown with its
 // notice (memo.rule_note_d).
 
@@ -16,6 +17,7 @@ import { countryStore } from '../data/store.ts';
 import { memoDownloadName } from '../derive/model.ts';
 import { MemoDocument } from '../memo/MemoDocument.tsx';
 import { rememberCountry } from '../nav.ts';
+import { MEMO_REVISED_TEXT } from './profile/Header.tsx';
 
 const when = (iso: string | null | undefined): string => {
   if (!iso) return '–';
@@ -51,7 +53,7 @@ export default function MemoView() {
     return (
       <div className={PAGE}>
         <PageHead eyebrow="COUNTRY INSIGHTS · POLICY MEMO" title={`${entry.name}: policy memo`} lede="" />
-        <Notice kind="info">This memo is being updated to the latest data.</Notice>
+        <Notice kind="info">{MEMO_REVISED_TEXT}</Notice>
         <p className="mt-6">{back}</p>
       </div>
     );

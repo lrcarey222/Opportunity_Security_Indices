@@ -23,7 +23,8 @@ function H({ id, children }: { id: string; children: string }) {
 function MemoList() {
   const { manifest } = useCountryCtx();
   const memos = manifest.countries.filter((c) => c.tier === 'core' && c.memo && !c.memo.stale);
-  if (!memos.length) return <p className="mb-3 max-w-3xl text-sm text-paper-mute">The memos are being prepared.</p>;
+  const revised = manifest.countries.some((c) => c.tier === 'core' && c.memo?.stale);
+  if (!memos.length) return <p className="mb-3 max-w-3xl text-sm text-paper-mute">{revised ? 'The memos are being revised. They will be available again once they have been rewritten.' : 'The memos are being prepared.'}</p>;
   const url = (f: string) => countryStore().url(f);
   return (
     <div className="relative mb-3 max-w-4xl overflow-x-auto">

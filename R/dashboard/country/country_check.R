@@ -10,7 +10,7 @@ COUNTRY_QUADRANT_IDS <- c("grow", "upgrade", "secure", "watch")
 # entries (2.8 kB gz) took the published manifest to 16.9 kB.
 COUNTRY_BUDGET_GZ <- c(manifest = 20480, sheet = 40960, sheet_target = 25600)
 COUNTRY_CLASSES <- c("aligned_high", "gap", "policy_ahead", "aligned_low", "partial")
-COUNTRY_CAVEAT_IDS <- c("relative_scores", "baseline", "rankability", "imputed_driver", "policy_pams_only", "no_si", "near_tie", "eu_node",
+COUNTRY_CAVEAT_IDS <- c("relative_scores", "baseline", "rankability", "imputed_driver", "policy_pams_only", "no_si", "near_tie",
                         "inherited_alignment", "assumed_zero_production", "cmfdi_coverage", "trade_mirror", "few_economies", "cat_eu_bloc",
                         "intra_eu", "hkg_reexport", "pick_stability", "ownership_parent", "eu_policy_records", "nipo_context",
                         "eu_region_share")

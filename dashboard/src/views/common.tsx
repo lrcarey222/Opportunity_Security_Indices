@@ -85,10 +85,9 @@ export function shownValue(value: number | null, base: number | null, mode: Show
 
 /** The core payload's notes in reader-facing words. */
 export function noteText(n: string): string {
-  if (/fossil/i.test(n)) return 'Coal, oil and gas are excluded from the Strategic Index, the partnership best-five summaries and the allied network.';
+  if (/fossil/i.test(n)) return 'Coal, oil and gas are excluded from the Strategic Index and the partnership best-five summaries.';
   if (/endowment screen off/i.test(n)) return 'The endowment screen is off: an upstream sector can be a member’s allied pick without recorded reserves or production of its resources.';
-  if (/baseline pillars/i.test(n)) return "Partnerships and the allied network keep the paper's Energy Security and Economic Opportunity (category weights move those two scores and the Strategic Index only).";
-  if (/Policy index/i.test(n)) return "The allied network's producer score includes the scenario's Policy activity (populism above 50).";
+  if (/baseline pillars/i.test(n)) return "Partnerships keep the paper's Energy Security and Economic Opportunity (category weights move those two scores and the Strategic Index only).";
   return n;
 }
 

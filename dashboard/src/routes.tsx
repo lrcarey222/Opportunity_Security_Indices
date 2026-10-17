@@ -2,7 +2,7 @@
 // Countries | Allied Industrial Base | About). AppRoot (header, tabs, route notice, <main>, footer; no
 // engine) is the root. Under it:
 //   * index: HomeOrLegacy: Home, or the legacy redirect of `/?h=80…` to `/overview?h=80…`;
-//   * a pathless lazy StrategicLayout (engine, scenario, runs, dials) around the six legacy Strategic
+//   * a pathless lazy StrategicLayout (engine, scenario, runs, dials) around the five legacy Strategic
 //     views, bare paths and titles unchanged (advanced pages); the header files them under Countries
 //     or Allied Industrial Base (shell/modules.ts tabOf). Their one-economy deep links open that
 //     section of the Country profile, which embeds the same views: /country/:iso3 -> #sectors,
@@ -17,6 +17,8 @@
 //   * aliases /sectors and /sector-insights (-> /sector), /strategic-insights (-> /countries: the
 //     Strategic module is gone), the Country module's (/country-insights) and the AIB module's
 //     (/sectoral-compacts, /allied-industrial-base);
+//   * /network[/:stage], the page of the original allied network design (retired 2026-10-17), goes to
+//     the Allied Industrial Base overview with a notice;
 //     unknown paths go Home with a notice;
 //   * route errors (a lazy chunk that fails to load) show a notice with Reload under the header.
 // Every view is a lazy route chunk, so the Strategic first load does not carry Home or Sector code.
@@ -26,6 +28,7 @@ import { AppRoot, ToHome } from './shell/AppRoot.tsx';
 import { HomeOrLegacy } from './shell/HomeOrLegacy.tsx';
 import { BootScreen } from './shell/screens.tsx';
 import { RootError, RouteError } from './shell/RouteError.tsx';
+import { Redirect } from './shell/Redirect.tsx';
 import { sectorRoute } from './sector/routes.tsx';
 import { COUNTRY_ALIASES, countryRoute } from './country/routes.tsx';
 import { AIB_ALIASES, aibHubRoute, aibRoute } from './aib/routes.tsx';
@@ -37,6 +40,10 @@ function Alias({ to }: { to: string }) {
   const loc = useLocation();
   return <Navigate to={{ pathname: to, search: loc.search, hash: loc.hash }} replace />;
 }
+
+/** The notice of an old link to the retired allied network design page (/network, /network/:stage). */
+export const NETWORK_RETIRED_NOTICE =
+  'The original allied network design has been retired. The Allied Industrial Base analysis replaces it: how the coalition absorbs a supply shock, where new investment would close the gaps and which country plays which role.';
 
 /** Old Strategic deep links about one economy -> that section of its Country profile, which embeds
  *  the same views (IA refactor, plan 2). The query string (a custom perspective) is kept; the views
@@ -59,7 +66,6 @@ export const STRATEGIC_ROUTES: RouteObject[] = [
   { path: 'space', lazy: view(() => import('./views/Space/SpaceView.tsx')) },
   { path: 'strategic', lazy: view(() => import('./views/Strategic/StrategicView.tsx')) },
   { path: 'partners', lazy: view(() => import('./views/Partners/PartnersView.tsx')) },
-  { path: 'network/:stage?', lazy: view(() => import('./views/Network/NetworkView.tsx')) },
 ];
 
 /** Methods and Data & sources: About pages that read the engine (paths kept). */
@@ -88,6 +94,7 @@ export const routes: RouteObject[] = [
       { path: 'sectors', element: <Alias to="/sector" /> },
       { path: 'sector-insights', element: <Alias to="/sector" /> },
       { path: 'strategic-insights', element: <Alias to="/countries" /> },
+      { path: 'network/:stage?', element: <Redirect to="/aib" notice={NETWORK_RETIRED_NOTICE} /> },
       ...LEGACY_PROFILE_LINKS.map((l) => ({ path: l.path, element: <ToProfile section={l.section} /> })),
       ...COUNTRY_ALIASES.map((a) => ({ path: a.path, element: <Alias to={a.to} /> })),
       ...AIB_ALIASES.map((a) => ({ path: a.path, element: <Alias to={a.to} /> })),

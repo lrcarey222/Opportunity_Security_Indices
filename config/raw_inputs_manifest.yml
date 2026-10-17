@@ -189,6 +189,54 @@ inputs:
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
+- id: climate_trace_country_emissions
+  path: climate_trace_country_emissions.csv
+  source_type: api
+  source_name: Climate TRACE, country emissions by subsector (CO2e, 100-year GWP)
+  url: https://api.climatetrace.org/v6/country/emissions
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: API v6, accessed 2026-10-17; years 2021-2025 (2026 is partial in the API and
+    not fetched)
+  licence: CC BY 4.0 (Climate TRACE, https://climatetrace.org); cite "Climate TRACE"
+    wherever the figures are shown
+  fetch_policy: fallback
+  staged_from: sharepoint
+  notes: 'Written by scripts/fetchers/climate_trace.R (Rscript scripts/fetchers/climate_trace.R
+    country): one call per (subsector, year) for every country of /v6/definitions/countries,
+    the 14 subsectors of config/climate_trace_map.yml (fossil-fuel operations, mineral
+    extraction, aluminium, iron and steel, chemicals, other metals, cement, electricity
+    generation), plus a WLD row per call from the answer''s worldEmissions. Columns iso3,
+    sector, subsector, year, co2e_100yr, co2, ch4, n2o, co2e_20yr (tonnes), fetched_on.
+    Answered calls are cached under data/raw_cache/climate_trace/; a failed call stops the
+    fetch and is named, never filled. fetch_policy is fallback: Climate TRACE revises its
+    history with each release, so the staged copy is kept until refetched on purpose.
+    Staged only in the worktree data/raw so far: copy it to the SharePoint raw folder.'
+  required_by:
+  - scripts/16_build_climate_trace.R
+- id: climate_trace_asset_activity
+  path: climate_trace_asset_activity.csv
+  source_type: api
+  source_name: Climate TRACE, tracked assets (power plants, smelters, mines, refineries)
+    aggregated by country, subsector, asset group and year
+  url: https://api.climatetrace.org/v6/assets
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: API v6, accessed 2026-10-17; years 2021-2025
+  licence: CC BY 4.0 (Climate TRACE, https://climatetrace.org)
+  fetch_policy: fallback
+  staged_from: sharepoint
+  notes: 'Written by scripts/fetchers/climate_trace.R (Rscript scripts/fetchers/climate_trace.R
+    assets): /v6/assets per (subsector, year), paged 10,000 assets at a time, aggregated at
+    once per (iso3, asset group) - the asset rows are not kept. Groups: electricity generation
+    by primary fuel (the first fuel listed), aluminium by asset type (Smelting, Refinery),
+    otherwise all. Columns iso3, subsector, asset_group, year, n_assets, n_activity (assets
+    reporting an activity), co2e_100yr, co2e_100yr_activity (emissions of those assets),
+    activity, activity_unit (MWh, t of steel, t of copper ore, BBL, ...), capacity,
+    capacity_unit, fetched_on. Oil and gas production and transport are not fetched: their
+    asset activity is licence-restricted. Staged only in the worktree data/raw so far.'
+  required_by:
+  - scripts/16_build_climate_trace.R
 - id: ilo_earnings_by_activity
   path: ilo_earnings_by_activity.csv
   source_type: api

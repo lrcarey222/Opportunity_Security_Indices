@@ -6,8 +6,10 @@
 // the URL names a trade sub-component (`sub`), the market and concentration figures follow it, as the
 // Trade section and "Rank the countries" do.
 //
-// ClimateSection is the expanded Climate block further down the profile: the Climate Action Tracker
-// ratings of the economies that lead the sector, the IEA mineral demand outlook, and what is missing.
+// ClimateSection is the expanded Climate block further down the profile: Climate TRACE sector emissions
+// for the sources mapped to the cell, with the match quality, the materials shown as context and the
+// technology's IPCC lifecycle intensity (Climate.tsx; climate data change 2026-10-17), then the
+// Climate Action Tracker ratings of the economies that lead the sector and the IEA mineral demand outlook.
 
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -27,8 +29,9 @@ import { hasSubTrade, subComponents, subLatestYear, subSlice, validSub } from '.
 import { concentrationSummary, theName } from '../../derive/text.ts';
 import { fmtHhi, fmtShare, lc, listText } from '../../format.ts';
 import { useAibDoc } from '../aibData.ts';
+import { climateLensFigures, ClimateEmissions } from './Climate.tsx';
 import { EconomyLink, fmtFact, measureConc, Section, splitParts } from '../common.tsx';
-import { usePolicy, useTrade } from '../data.ts';
+import { useClimate, usePolicy, useTrade } from '../data.ts';
 import { BlocBar } from '../kit.tsx';
 import { useSectorUrl } from '../state.tsx';
 import { baseYear, demandRows, MineralsUsed } from '../TechChainView.tsx';
@@ -337,12 +340,26 @@ function PolicyLens({ p }: { p: ReturnType<typeof usePolicyFacts> }) {
 }
 
 function ClimateLens({ basis, chunk }: { basis: LensBasis | null; chunk: SectorPolicyChunk | null }) {
-  const { model, tech } = useProfile();
+  const { model, tech, cell } = useProfile();
   const { link } = useSectorUrl();
+  const { climate, has } = useClimate();
   const label = TECH_LABELS[tech];
   const demand = useMemo(() => demandRows(model, label, (slug) => link(`/sector/minerals/${slug}`)), [model, label, link]);
   const rate = useMemo(() => catRatings(model, chunk), [model, chunk]);
+  const fig = useMemo(() => (climate ? climateLensFigures(climate, model, cell, tech) : null), [climate, model, cell, tech]);
   const lead = basis ? leaders(model, basis.conc) : [];
+  if (fig || has) {
+    return (
+      <LensCard
+        id="lens-climate"
+        title="Climate"
+        headline={fig ? fig.headline : 'Loading sector emissions (Climate TRACE)…'}
+        metrics={fig ? fig.metrics.map((m) => <Metric key={m.label} label={m.label} value={m.value} sub={m.sub} />) : null}
+        note={fig?.note}
+        more={{ href: '#climate', label: 'Climate' }}
+      />
+    );
+  }
   const d = demand[0];
   const headline = d
     ? `${label} uses ${listText(demand.slice(0, 3).map((r) => lc(r.label)))}. ${d.label} demand from ${label}: ${d.b.toLocaleString('en-US', { maximumFractionDigits: 0 })} kt now${Number.isFinite(d.a) ? `, ${d.a.toLocaleString('en-US', { maximumFractionDigits: 0 })} kt in 2040 on today’s stated policies (IEA)` : ''}.`
@@ -419,8 +436,9 @@ export function ClimateSection() {
   return (
     <div className="space-y-6">
       <p className="max-w-3xl text-sm text-paper-dim">
-        Sector-level climate data in the explorer are limited to two things: the Climate Action Tracker rating of each economy’s climate policy, shown here for the economies that lead this sector, and, for clean technologies, the IEA outlook for the minerals they use. There are no emissions figures by sector; adding them would need a new data export.
+        Sector emissions by economy from Climate TRACE, for the Climate TRACE subsectors that match this sector, with how well each matches; the technology’s lifecycle intensity from the IPCC; the Climate Action Tracker rating of the governments that lead the sector; and, for clean technologies, the IEA outlook for the minerals they use. These are observed facts: no perspective setting changes them.
       </p>
+      <ClimateEmissions model={model} cell={cell} tech={tech} chunk={p.chunk} />
       {rows.length > 0 && p.chunk && (
         <div>
           <h3 className="mb-2 text-base font-medium text-paper">Climate Action Tracker ratings of the largest {basis ? actorNoun(basis.v) : 'holders'}</h3>

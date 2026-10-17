@@ -3,8 +3,7 @@
 // partner-by-partner table (reasons, components, trade, factory projects, agreements, UN votes, match),
 // who supplies the country in each sector, the top friendshoring opportunities and export markets of one sector (or all
 // sectors) at the paper baseline with the pair's ties, its bilateral direct investment (IMF positions;
-// factory projects in the four CM-FDI sectors), and its role in the allied network design. The
-// sector-level data come from the Strategic bundle's auxiliary chunks (views/Partners/ties.ts), not
+// factory projects in the four CM-FDI sectors). The sector-level data come from the Strategic bundle's auxiliary chunks (views/Partners/ties.ts), not
 // the fact sheet.
 
 import { useMemo, type ReactNode } from 'react';
@@ -16,18 +15,18 @@ import { cellOf, type PartnerRow } from '../../contract.ts';
 import { PartnerSlope } from '../../charts/PartnerSlope.tsx';
 import { SupplierMatrix } from '../../charts/SupplierMatrix.tsx';
 import type { AibDoc } from '../../../aib/contract.ts';
-import { ClassChip } from '../../../aib/charts/ClassChip.tsx';
-import { fmtPp, fmtShare, fmtUsd, listWords, nameOf, plural } from '../../../aib/derive/format.ts';
+import { fmtShare, fmtUsd, listWords, nameOf, plural } from '../../../aib/derive/format.ts';
 import { compactHref } from '../../../aib/nav.ts';
 import { Segmented } from '../../../components/ui.tsx';
 import PartnersView from '../../../views/Partners/PartnersView.tsx';
 import { aibCountry, buildNodesOf } from '../../derive/framing.ts';
-import { devDataLink, networkLink } from '../../derive/links.ts';
+import { devDataLink } from '../../derive/links.ts';
 import type { PartnerTab } from '../../url.ts';
 import { GROUP_WORD, partnerTableRows, slopeModel, supplierModel } from '../../derive/model.ts';
-import { agreementsText, alignmentText, matchText, networkSentence, partnerReason, proseName, poss, cap } from '../../derive/text.ts';
+import { agreementsText, alignmentText, matchText, partnerReason, proseName, poss, cap } from '../../derive/text.ts';
 import { BasisTag, csvWithSource, Fold, LinkRow, Section, useProfile, type Basis } from './common.tsx';
 import { PartnersBySector } from './PartnersBySector.tsx';
+import { AibInvestmentCard } from './AibInvestmentCard.tsx';
 
 type Row = PartnerRow & { extra: boolean };
 
@@ -164,42 +163,7 @@ export function PartnershipsSection() {
       {tab === 'investment' && (
         <div className="space-y-6" data-testid="ptab-investment">
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card id="aib-host" title="Where new capacity could be hosted" basis="facts">
-              {!a ? (
-                aibMissing
-              ) : (
-                <>
-                  {a.hostNodes.length ? (
-                    <>
-                      <p>
-                        {cap(name)} is a listed host for new capacity in {plural(a.hostNodes.length, 'supply-chain node')}, with the coverage the best host would add:
-                      </p>
-                      <ul className="space-y-1.5">
-                        {a.hostNodes.slice(0, 5).map((nd) => (
-                          <li key={nd.id} className="flex flex-wrap items-baseline gap-x-2">
-                            <span className="text-paper">{nd.label}</span>
-                            <ClassChip cls={nd.cls} />
-                            <span className="tabular text-xs text-paper-mute">resilience gain of the best host {fmtPp(nd.bestGain)}</span>
-                            {nd.compact && (
-                              <Link className="link text-xs" to={compactHref(nd.compact)}>
-                                {nd.compact}
-                              </Link>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  ) : (
-                    <p>{cap(name)} is not a listed host for new capacity in any supply-chain node.</p>
-                  )}
-                  <p className="text-xs text-paper-mute">
-                    {a.investment.n
-                      ? `${cap(name)} is in ${plural(a.investment.n, 'investment relationship')} of the compacts (${fmtUsd(a.investment.usd)}).`
-                      : `The compacts' investment results list no investment relationship for ${name}.`}
-                  </p>
-                </>
-              )}
-            </Card>
+            <AibInvestmentCard />
             <Card id="fs-top" title="Friendshoring opportunities (Friendshore)" basis="prefs" note="NEIS baseline">
               <ScoreList rows={topBy(rows, 'fs')} k="fs" label="Friendshore" />
             </Card>
@@ -419,36 +383,5 @@ function SupplierCard() {
     >
       <SupplierMatrix sheet={sheet} selected={partner} onSelect={setPartner} />
     </ChartCard>
-  );
-}
-
-export function NetworkCard() {
-  const { sheet } = useProfile();
-  const n = sheet.network;
-  const largest = n.member && n.producer.length ? [...n.producer].sort((a, b) => (b.share.v ?? 0) - (a.share.v ?? 0))[0] : null;
-  const c = largest ? cellOf(sheet, largest.cell) : null;
-  return (
-    <section className="card p-5" aria-labelledby="network-h">
-      <h3 id="network-h" className="rule-neis-sm text-base font-medium text-paper lg:text-lg">
-        Role in the allied network design
-      </h3>
-      <div className="mt-2 space-y-2 text-sm text-paper-dim">
-        {networkSentence(sheet).map((t) => (
-          <p key={t}>{t}</p>
-        ))}
-        {n.member && (
-          <p className="text-xs text-paper-mute">
-            The <Term id="network" /> spreads each upstream and midstream sector&apos;s production across coalition members so that none dominates.
-          </p>
-        )}
-      </div>
-      {n.member && (
-        <LinkRow>
-          <Link className="link" to={networkLink(c)}>
-            See the network &rarr;
-          </Link>
-        </LinkRow>
-      )}
-    </section>
   );
 }

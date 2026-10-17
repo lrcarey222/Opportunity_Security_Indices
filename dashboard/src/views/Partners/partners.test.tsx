@@ -118,7 +118,7 @@ describe('Partners view: the sector choice', () => {
     });
     await waitFor(() => expect(router.state.location.search).not.toMatch(/tech=/));
     expect(screen.queryByTestId('sector-note')).toBeNull();
-    // a link with the sector opens on it (the country page's and the network view's links)
+    // a link with the sector opens on it (the country page's links)
     cleanup();
     render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [`/partners${search}`] })} />);
     const s2 = (await screen.findByLabelText('Sector', {}, { timeout: 20_000 })) as HTMLSelectElement;

@@ -12,24 +12,25 @@
 # weights are multiplied (x * 1 == x exactly), the Strategic Index weights are renormalised only
 # when some multiplier differs from 1, and the stage-weight contrast is skipped at mP = 1.
 #
-# HAWKISHNESS (mH): SI weight on security need (1 - ES); Friendshore weight in the PSI; Friendshore
-#   weight of network edges; the weights of Friendshore's two security components, geo_alignment
-#   (UN-vote alignment) and chinese_parent_exposure (CM-FDI Chinese-parent ownership, scored
-#   1 - share; since October 2026), both w0 x mH; network diversification lambda; need weight of
-#   network demand; resilience (own ES) weight of the producer score. The CM-FDI investment tie
-#   replaces the IMF position inside the outbound component (Solar, Wind, Batteries, EV Midstream)
-#   and keeps that component's weight, which no dial owns. The robustness switch that drops the
-#   ownership component (config/partnership.yml cm_fdi chinese_parent_exposure: false) is not a dial.
-# BULLISHNESS (mB): SI weight on EO; Opportunity weight in the PSI and of network edges; EO weight
-#   of the producer score; size weight of network demand.
+# HAWKISHNESS (mH): SI weight on security need (1 - ES); Friendshore weight in the PSI; the weights
+#   of Friendshore's two security components, geo_alignment (UN-vote alignment) and
+#   chinese_parent_exposure (CM-FDI Chinese-parent ownership, scored 1 - share; since October
+#   2026), both w0 x mH. The CM-FDI investment tie replaces the IMF position inside the outbound
+#   component (Solar, Wind, Batteries, EV Midstream) and keeps that component's weight, which no
+#   dial owns. The robustness switch that drops the ownership component (config/partnership.yml
+#   cm_fdi chinese_parent_exposure: false) is not a dial.
+# BULLISHNESS (mB): SI weight on EO; Opportunity weight in the PSI.
 # POPULISM (mP): SI policy weight; IEA PAMS weight in the Policy composite; stage weights
-#   lambda_s = lambda_max (lambda0_s / lambda_max)^mP (Midstream emphasis); the policy term of
-#   the producer score, which the paper leaves out (weight 0.3 max(0, (P - 50) / 50), switched on
-#   only above 50); a home-bias multiplier on the self-supply edge of every network stage.
+#   lambda_s = lambda_max (lambda0_s / lambda_max)^mP (Midstream emphasis).
 # GREENNESS (mG): SI technology (GHG) weight; CAT weight in the Policy composite; the climate
 #   penalties of Friendshore (per side) and Opportunity; fossil technologies (Coal, Oil, Gas) are
-#   dropped from the Strategic Index, the partnership best-five and the network when G >= 90
-#   (advanced setting fossil = "auto"; "never" / "always" override).
+#   dropped from the Strategic Index and the partnership best-five when G >= 90 (advanced setting
+#   fossil = "auto"; "never" / "always" override).
+#
+# The original allied network design (scripts/30, a lambda-calibrated design over Upstream and
+# Midstream stages) is retired (2026-10-17): the dashboard no longer recomputes it, so its dial
+# terms (edge, demand and producer-score weights, lambda, home bias) and the advanced network
+# settings are gone. The Allied Industrial Base analysis (docs/aib_methodology.md) replaces it.
 #
 # No dial owns the endowment screen of the allied picks: the advanced setting require_resource_base
 # (default TRUE, the paper's) bars an Upstream stage without recorded reserves or production from a
@@ -85,13 +86,7 @@ dash_default_advanced <- function(bundle) {
     # the endowment screen of the allied picks (select_allied_strategic_sectors(require_resource_base));
     # on unless the build says otherwise
     require_resource_base = !isFALSE(bi$require_resource_base),
-    psi_view = bi$psi_view,
-    network = list(
-      lambda = NA_real_,
-      max_share = bi$max_share,
-      min_producers = as.integer(bi$min_producers),
-      portfolio_enable = isTRUE(bi$portfolio$enable)
-    )
+    psi_view = bi$psi_view
   )
 }
 
@@ -152,34 +147,6 @@ dash_check_advanced <- function(advanced, bundle) {
     view <- as.character(advanced$psi_view)
     if (length(view) != 1 || !view %in% c("coalition", "world")) stop("psi_view must be 'coalition' or 'world'.")
     out$psi_view <- view
-  }
-  if (!is.null(advanced$network)) {
-    net <- advanced$network
-    unknown <- setdiff(names(net), names(def$network))
-    if (length(unknown)) stop("Unknown network setting(s): ", paste(unknown, collapse = ", "), ".")
-    if ("lambda" %in% names(net)) {
-      lam <- net$lambda
-      if (is.null(lam) || (length(lam) == 1 && is.na(lam))) {
-        out$network$lambda <- NA_real_
-      } else {
-        lam <- suppressWarnings(as.numeric(lam))
-        if (length(lam) != 1 || !is.finite(lam) || lam < 0) stop("network lambda must be NA or one number >= 0.")
-        out$network$lambda <- lam
-      }
-    }
-    if (!is.null(net$max_share)) {
-      ms <- suppressWarnings(as.numeric(net$max_share))
-      if (length(ms) != 1 || !is.finite(ms) || ms <= 0 || ms > 1) stop("max_share must be in (0, 1].")
-      out$network$max_share <- ms
-    }
-    if (!is.null(net$min_producers)) {
-      mp <- suppressWarnings(as.integer(round(as.numeric(net$min_producers))))
-      if (length(mp) != 1 || is.na(mp) || mp < 1) stop("min_producers must be a positive integer.")
-      out$network$min_producers <- mp
-    }
-    if (!is.null(net$portfolio_enable)) {
-      out$network$portfolio_enable <- isTRUE(as.logical(net$portfolio_enable))
-    }
   }
   out
 }
@@ -252,54 +219,6 @@ dash_params <- function(dials = dash_default_dials(), advanced = NULL, bundle) {
     exclude_techs = exclude_techs
   )
 
-  # Producer score: EO (mB) and resilience (mH); the policy term ramps in above P = 50 when the
-  # baseline leaves it out, else it scales with mP
-  nw <- bi$node_weights
-  node_policy <- isTRUE(bi$node_policy)
-  ramp <- max(0, (dials$populism - 50) / 50)
-  if (node_policy) {
-    nw$policy <- nw$policy * mP
-  } else if (ramp > 0) {
-    node_policy <- TRUE
-    nw$policy <- bi$node_policy_weight_max * ramp
-  }
-  nw$eo <- nw$eo * mB
-  nw$resilience <- nw$resilience * mH
-
-  lambda <- if (is.na(adv$network$lambda)) bi$lambda * mH else adv$network$lambda
-  network <- list(
-    node_weights = nw[c("eo", "policy", "resilience")],
-    node_policy = node_policy,
-    edge_weights = list(
-      friendshore = bi$edge_weights$friendshore * mH,
-      opportunity = bi$edge_weights$opportunity * mB
-    ),
-    demand_weights = list(
-      need = bi$demand_weights$need * mH,
-      size = bi$demand_weights$size * mB
-    ),
-    diversity_lambda = lambda,
-    self_multiplier = mP,
-    max_share = adv$network$max_share,
-    min_share = bi$min_share,
-    min_producers = adv$network$min_producers,
-    min_suppliers_per_consumer = bi$min_suppliers_per_consumer,
-    epsilon_supplier_share = bi$epsilon_supplier_share,
-    w_node = bi$w_node,
-    w_edge = bi$w_edge,
-    w_dev = bi$w_dev,
-    allow_self = bi$allow_self,
-    portfolio = utils::modifyList(bi$portfolio, list(enable = adv$network$portfolio_enable)),
-    diversity_breakpoint_step = bi$diversity_breakpoint_step,
-    supply_chains = bi$supply_chains,
-    exclude_techs = exclude_techs,
-    milp_time_limit = bi$milp_time_limit,
-    policy_missing = bi$policy_missing,
-    missing_components = bi$missing_components,
-    demand_mode = bi$demand_mode,
-    size_transform = bi$size_transform
-  )
-
   out <- list(
     dials = dials,
     m = m,
@@ -307,8 +226,7 @@ dash_params <- function(dials = dash_default_dials(), advanced = NULL, bundle) {
     pillars = list(es_weights = adv$es_weights, eo_weights = adv$eo_weights, tau = adv$tau),
     policy = list(weights = pw),
     si = si,
-    partner = partner,
-    network = network
+    partner = partner
   )
   class(out) <- "dash_params"
   out
@@ -329,17 +247,11 @@ dash_is_baseline <- function(params, bundle) {
 
 # The subset of the parameters a recompute layer reads.
 dash_params_layer <- function(params, layer = c("pillars", "policy", "si", "partner_cells", "fs_cells", "po_cells",
-                                                "psi", "net_inputs", "net_score", "net_solve", "all")) {
+                                                "psi", "all")) {
   layer <- match.arg(layer)
   p <- unclass(params)
   fs <- p$partner[c("fs_weights", "fs_penalty")]
   po <- p$partner[c("po_weights", "po_penalty")]
-  net_inputs <- list(fs = fs, po = po, stages = p$network[c("supply_chains", "exclude_techs")])
-  net_score <- c(net_inputs, list(
-    policy = if (isTRUE(p$network$node_policy)) p$policy else NULL,
-    score = p$network[c("node_weights", "node_policy", "edge_weights", "demand_weights", "self_multiplier",
-                        "policy_missing", "missing_components", "demand_mode", "size_transform")]
-  ))
   switch(
     layer,
     pillars = p$pillars,
@@ -349,9 +261,6 @@ dash_params_layer <- function(params, layer = c("pillars", "policy", "si", "part
     po_cells = po,
     partner_cells = list(fs = fs, po = po),
     psi = list(fs = fs, po = po, p$partner[c("psi_weights", "psi_view", "psi_tau", "top_k", "exclude_techs")]),
-    net_inputs = net_inputs,
-    net_score = net_score,
-    net_solve = c(net_score, list(solve = p$network[setdiff(names(p$network), names(net_score$score))])),
     all = p
   )
 }
@@ -378,11 +287,6 @@ dash_dial_readout <- function(params, bundle) {
     if (is.null(w[k]) || is.na(w[k])) return(NA_real_)
     w[[k]] / sum(w, na.rm = TRUE)
   }
-  eff_node <- function(p, k) {
-    nw <- unlist(p$network$node_weights)
-    if (!isTRUE(p$network$node_policy)) nw[["policy"]] <- 0
-    nw[[k]] / sum(nw)
-  }
   pol_share <- function(p, var) {
     w <- p$policy$weights
     if (!var %in% names(w)) return(NA_real_)
@@ -393,23 +297,14 @@ dash_dial_readout <- function(params, bundle) {
   rows <- list(
     list("hawkishness", "si_need", "Strategic Index weight on security need", function(p) p$si$weights[["energy_security_need"]], TRUE),
     list("hawkishness", "psi_fs_share", "Friendshore share of Partnership Strength", function(p) share(p$partner$psi_weights, "friendshore"), TRUE),
-    list("hawkishness", "edge_fs_share", "Friendshore share of network links", function(p) share(p$network$edge_weights, "friendshore"), FALSE),
     list("hawkishness", "fs_geo_share", "UN-vote alignment share of Friendshore", function(p) share(p$partner$fs_weights, "geo_alignment"), FALSE),
     list("hawkishness", "fs_cpe_share", "Chinese-parent ownership share of Friendshore", function(p) share(p$partner$fs_weights, "chinese_parent_exposure"), FALSE),
-    list("hawkishness", "lambda", "Diversification weight of the network design", function(p) p$network$diversity_lambda, TRUE),
-    list("hawkishness", "demand_need_share", "Security-need share of network demand", function(p) share(p$network$demand_weights, "need"), FALSE),
-    list("hawkishness", "node_resilience", "Own-security weight in the producer score", function(p) eff_node(p, "resilience"), FALSE),
     list("bullishness", "si_eo", "Strategic Index weight on Economic Opportunity", function(p) p$si$weights[["economic_opportunity"]], TRUE),
     list("bullishness", "psi_po_share", "Partnership Opportunity share of Partnership Strength", function(p) share(p$partner$psi_weights, "opportunity"), TRUE),
-    list("bullishness", "edge_po_share", "Partnership Opportunity share of network links", function(p) share(p$network$edge_weights, "opportunity"), TRUE),
-    list("bullishness", "node_eo", "Economic Opportunity weight in the producer score", function(p) eff_node(p, "eo"), FALSE),
-    list("bullishness", "demand_size_share", "Market-size share of network demand", function(p) share(p$network$demand_weights, "size"), FALSE),
     list("populism", "si_policy", "Strategic Index weight on policy activity", function(p) p$si$weights[["policy"]], TRUE),
     list("populism", "policy_iea_share", "IEA policy-record share of policy activity", function(p) pol_share(p, bi$policy_iea_var), FALSE),
     list("populism", "stage_up_ratio", "Upstream / Midstream stage weight", function(p) stage_ratio(p, "Upstream"), TRUE),
     list("populism", "stage_down_ratio", "Downstream / Midstream stage weight", function(p) stage_ratio(p, "Downstream"), FALSE),
-    list("populism", "node_policy", "Policy weight in the producer score", function(p) eff_node(p, "policy"), FALSE),
-    list("populism", "home_bias", "Home-supply multiplier in the network", function(p) p$network$self_multiplier, TRUE),
     list("greenness", "si_tech", "Strategic Index weight on low-emission technology", function(p) p$si$weights[["technology"]], TRUE),
     list("greenness", "policy_cat_share", "Climate Action Tracker share of policy activity", function(p) pol_share(p, bi$policy_cat_var), FALSE),
     list("greenness", "fs_penalty", "Friendshore climate penalty (per side)", function(p) p$partner$fs_penalty, TRUE),
@@ -422,8 +317,6 @@ dash_dial_readout <- function(params, bundle) {
     ratio <- if (is.finite(b) && b != 0) cur / b else NA_real_
     text <- if (r[[2]] == "fossil") {
       if (cur > 0) "Coal, Oil and Gas excluded" else "Fossil technologies included"
-    } else if (r[[2]] == "home_bias") {
-      sprintf("%s x%.2f", r[[3]], cur)
     } else if (is.finite(ratio) && abs(ratio - 1) > 1e-9) {
       sprintf("%s %.3g (x%.2f vs %.3g)", r[[3]], cur, ratio, b)
     } else if (!is.finite(ratio) && is.finite(cur) && cur != b) {

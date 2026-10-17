@@ -50,8 +50,7 @@ for (set in names(synthetic_sets)) {
     expect_identical(index$bundle_id, manifest$bundle_id)
 
     bundle <- synthetic_sets[[set]]()
-    base <- dash_fixture_baseline(bundle, network = TRUE)
-    bundle$network$greedy_baseline <- base$network
+    base <- dash_fixture_baseline(bundle)
 
     # the deploy-format bundle (same chunks as scripts/85 writes)
     chunks <- dash_web_chunks(bundle, base$result)
@@ -60,10 +59,10 @@ for (set in names(synthetic_sets)) {
       expect_identical(leaf_diffs(got, dash_osb_normalize(chunks[[ch$name]])), character(), label = paste(set, ch$name))
     }
 
-    # scenarios: the baseline, the fossil exclusion, all four dials, the softmax network path
+    # scenarios: the baseline, the fossil exclusion, all four dials, the endowment screen flipped
     scen <- dash_fixture_scenarios(bundle)
-    for (s in Filter(function(s) s$id %in% c("S00", "S08", "S11", "S15"), scen)) {
-      opts <- list(full_arrays = TRUE, contrib = TRUE, var = TRUE, sample = FALSE, network = TRUE, n_decompose = 2L)
+    for (s in Filter(function(s) s$id %in% c("S00", "S08", "S11", "S17"), scen)) {
+      opts <- list(full_arrays = TRUE, contrib = TRUE, var = TRUE, sample = FALSE, n_decompose = 2L)
       fo <- dash_fixture_outputs(bundle, s, base, opts)
       got <- read_osb_file(file.path(dir, paste0(s$id, ".osb")))$objects
       expect_identical(leaf_diffs(got, dash_osb_normalize(fo$objects)), character(), label = paste(set, s$id))
@@ -73,12 +72,14 @@ for (set in names(synthetic_sets)) {
 
 test_that("fixture references resolve to identical objects and dyad subsets are deterministic", {
   bundle <- dash_fixture_bundle(seed = 1)
-  base <- dash_fixture_baseline(bundle, network = FALSE)
+  base <- dash_fixture_baseline(bundle)
   scen <- dash_fixture_scenarios(bundle)
-  opts <- list(full_arrays = FALSE, contrib = FALSE, var = FALSE, sample = TRUE, network = FALSE, n_decompose = 2L, dyad_reporters = 4L)
+  expect_false(any(vapply(scen, function(s) s$id == "S15", logical(1))))  # S15 (network settings only) is retired
+  opts <- list(full_arrays = FALSE, contrib = FALSE, var = FALSE, sample = TRUE, n_decompose = 2L, dyad_reporters = 4L)
   s00 <- dash_fixture_outputs(bundle, scen[[1]], base, opts)$objects
-  s15 <- dash_fixture_outputs(bundle, scen[[16]], base, opts)$objects # network settings only: L1-L4 as S00
-  with_refs <- dash_fixture_refs(s15, s00, "S00", min_bytes = 0)
+  s17 <- Filter(function(s) s$id == "S17", scen)[[1]]
+  s17 <- dash_fixture_outputs(bundle, s17, base, opts)$objects # the endowment screen only: L1, L2 and L4 as S00
+  with_refs <- dash_fixture_refs(s17, s00, "S00", min_bytes = 0)
   expect_gt(dash_fixture_count_refs(with_refs), 5L)
   expect_true(inherits(with_refs$L1$es, "dash_osb_json"))
   expect_identical(unname(with_refs$L1$es$value["ref_path"]), "L1.es")

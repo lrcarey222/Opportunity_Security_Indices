@@ -109,7 +109,7 @@ export function SectorPositionSection() {
       <ChartCard
         headingLevel={3}
         title={`${cap(name)}: sector by sector`}
-        sub={`Sorted by Strategic priority (${perspectiveNote(si)}), then by Economic Opportunity for sectors outside the index. Climate shows the only sector-level climate value in the data: the Strategic Index's low-emission technology term (the same for every economy). Sector-level emissions are not in the data.`}
+        sub={`Sorted by Strategic priority (${perspectiveNote(si)}), then by Economic Opportunity for sectors outside the index. Climate shows the Strategic Index's low-emission technology term (the same for every economy). The economy's own emissions by sector, from Climate TRACE, are in Policy & climate below.`}
         summary={`${rows.length} sectors of ${name}.`}
         csv={csv}
       >

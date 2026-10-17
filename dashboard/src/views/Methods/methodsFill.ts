@@ -13,17 +13,16 @@ const fmtw = (x: unknown): string => {
 
 const escapeMd = (s: string): string => s.replace(/[\\`*_{}[\]<>|]/g, (c) => `\\${c}`);
 
-/** What the build facts are computed from: the countries (tier, network node), the network nodes and
- * the shipped baseline tables (policy eligibility, Strategic Index cells, allied picks). */
+/** What the build facts are computed from: the countries (tier) and the shipped baseline tables
+ * (policy eligibility, Strategic Index cells, allied picks). */
 export interface BuildFactsInput {
-  countries: { tier: string; network_node: string | null }[];
-  nNodes: number;
+  countries: { tier: string }[];
   eligibility: Table | null | undefined;
   siCells: Table | null | undefined;
   allied: Table | null | undefined;
 }
 
-/** Counts of this data build for the Methods text: coalition tiers and network nodes, Policy index
+/** Counts of this data build for the Methods text: coalition tiers, Policy index
  * bases, the endowment screen's flags on scored cells and the allied picks. */
 export function buildFacts(x: BuildFactsInput): Record<string, string> {
   const n = (v: number) => String(v);
@@ -41,7 +40,6 @@ export function buildFacts(x: BuildFactsInput): Record<string, string> {
     n_coalition: n(core + partner),
     n_core: n(core),
     n_partners: n(partner),
-    n_nodes: n(x.nNodes),
     n_policy: n(scored.length),
     n_policy_both: n(byBasis('IEA PAMS + CAT')),
     n_policy_pams_only: n(byBasis('IEA PAMS only')),
@@ -61,7 +59,6 @@ export function methodsValues(bi: BaselineInputs, manifest: Pick<Manifest, 'flag
     const ks = Object.keys(pw).filter((k) => re.test(k));
     return ks.length ? ks.reduce((a, k) => a + pw[k], 0) : NaN;
   };
-  const lam = bi.lambda;
   const geo = bi.fs_weights?.geo_alignment;
   const geoIn = manifest.flags?.geo_alignment_in_fs === true;
   // the CM-FDI ownership component of Friendshore (scaled by hawkishness like alignment)
@@ -72,9 +69,6 @@ export function methodsValues(bi: BaselineInputs, manifest: Pick<Manifest, 'flag
     cpe_weight: cpeIn ? fmtw(cpe) : 'not in this build',
     cpe_lo: cpeIn ? fmtw((cpe as number) * 0.25) : DASH,
     cpe_hi: cpeIn ? fmtw((cpe as number) * 4) : DASH,
-    lambda0: fmtw(lam),
-    lambda_lo: fmtw(lam * 0.25),
-    lambda_hi: fmtw(lam * 4),
     iea_weight: fmtw(pick(/iea/i)),
     cat_weight: fmtw(pick(/(^|[^a-z])cat([^a-z]|$)|climate action/i)),
     fs_penalty: fmtw(bi.fs_penalty),
@@ -82,14 +76,10 @@ export function methodsValues(bi: BaselineInputs, manifest: Pick<Manifest, 'flag
     policy_weights: Object.keys(pw).length ? Object.entries(pw).map(([k, v]) => `${escapeMd(k)} ${fmtw(v)}`).join(', ') : DASH,
     tau_text: bi.tau === null || bi.tau === undefined ? 'rule off (the stored pillars predate it)' : fmtw(bi.tau),
     psi_view: bi.psi_view === 'world' ? 'All reporters (world), as the stored partner-level PSI' : 'Coalition reporters',
-    max_share: fmtw(bi.max_share),
-    min_producers: fmtw(bi.min_producers),
-    min_share: fmtw(bi.min_share),
-    eps_share: typeof bi.epsilon_supplier_share === 'number' ? `${Math.round(100 * bi.epsilon_supplier_share)}%` : DASH,
     screen_default: bi.require_resource_base === false ? 'off (this build)' : 'on',
     // build counts (buildFacts()); a placeholder without a value reads as a dash
     ...Object.fromEntries(
-      ['n_coalition', 'n_core', 'n_partners', 'n_nodes', 'n_policy', 'n_policy_both', 'n_policy_pams_only', 'n_policy_none', 'n_si_cells',
+      ['n_coalition', 'n_core', 'n_partners', 'n_policy', 'n_policy_both', 'n_policy_pams_only', 'n_policy_none', 'n_si_cells',
         'n_si_countries', 'n_screened', 'n_screened_out', 'n_picked', 'n_picked_upstream'].map((k) => [k, DASH]),
     ),
     ...facts,

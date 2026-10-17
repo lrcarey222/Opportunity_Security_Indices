@@ -1,7 +1,7 @@
 // Map frames drawn with d3-geo into React SVG (exact per-country hover and click): an Equal Earth
 // projection fitted to the width, countries filled by a value or hatched (missing / not rankable /
 // excluded, with the reason in the tooltip), an orange outline on the selected and hovered country.
-// Overlays (network links and nodes) are drawn by the caller through `children(projection)`.
+// Overlays (links and nodes) are drawn by the caller through `children(projection)`.
 // Additive for Sector Insights (spec_sector.md 3.5, 5.2): a cell may be an observed zero ('zero',
 // solid ink-600), carry an orange `outline` (the highlighted economy) and be `dim` (40% opacity,
 // out of the selected scope).

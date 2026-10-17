@@ -3,7 +3,8 @@
 // secondary, About; Home is the eyebrow link. "Strategic Insights" is no longer a module: its views keep
 // their paths (STRATEGIC_NAV, the legacy list) and the header files each under the tab that now owns
 // its content (tabOf): Overview, Country scores, Security vs opportunity and Strategic Index under
-// Countries, Partners and Allied network under Allied Industrial Base, Methods and Data under About.
+// Countries, Partners under Allied Industrial Base, Methods and Data under About. The Allied network
+// view (the original allied network design) is retired (2026-10-17): /network redirects to /aib.
 // Dependency-free (the Sector slugs are the shell's copies), so the entry imports neither the engine
 // nor any module contract; src/state/nav.ts re-exports STRATEGIC_NAV (alias NAV_ITEMS) and MODULES.
 
@@ -44,7 +45,6 @@ export const STRATEGIC_NAV: { to: string; label: string }[] = [
   { to: '/space', label: 'Security vs opportunity' },
   { to: '/strategic', label: 'Strategic Index' },
   { to: '/partners', label: 'Partners' },
-  { to: '/network', label: 'Allied network' },
   { to: '/methods', label: 'Methods' },
   { to: '/data', label: 'Data' },
 ];
@@ -59,7 +59,6 @@ const STRATEGIC_TAB: Readonly<Record<string, ModuleId>> = {
   space: 'country',
   strategic: 'country',
   partners: 'aib',
-  network: 'aib',
   methods: 'about',
   data: 'about',
 };
@@ -171,8 +170,8 @@ export function aibNavKeyOf(pathname: string): AibNavKey | null {
     return v === 'partnerships' ? 'partnerships' : v === 'roles' ? 'roles' : null;
   }
   if (s[0] === COMPACTS_SEGMENT) return s.length > 1 && s[1].toLowerCase() === 'about' ? 'about' : 'compacts';
-  // the legacy Partners and Allied network views live with the partnerships
-  if (s[0] === 'partners' || s[0] === 'network') return 'partnerships';
+  // the legacy Partners view lives with the partnerships
+  if (s[0] === 'partners') return 'partnerships';
   return null;
 }
 

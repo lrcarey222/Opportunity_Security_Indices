@@ -4,20 +4,20 @@
 # section 5); dashboard/src/engine/__tests__/parity replays the same scenarios in TypeScript and
 # compares layer by layer.
 #
-#   dash_fixture_scenarios(bundle)      the 18 scenario specs (dials and advanced settings; category
+#   dash_fixture_scenarios(bundle)      the 17 scenario specs (dials and advanced settings; category
 #                                       names, the PSI view and the endowment screen are taken from
 #                                       the bundle)
 #   dash_fixture_tie_bundle(bundle)     the synthetic bundle with inputs rounded to a few distinct
-#                                       values, so the S-curves, ranks and the greedy see heavy ties
-#                                       as the real data do
-#   dash_fixture_baseline(bundle)       the baseline result and the greedy baseline network
-#                                       (share_rank_digits = 9) every scenario is compared with
+#                                       values, so the S-curves and ranks see heavy ties as the
+#                                       real data do
+#   dash_fixture_baseline(bundle)       the baseline result every scenario is compared with
 #   dash_fixture_outputs(...)           one scenario's layer outputs (a nested list for
 #                                       dash_osb_encode(kind = "fixture"))
 #   dash_fixture_refs(...)              leaves identical to the reference scenario's -> reference
 #                                       nodes (keeps the real set small)
 
-DASH_FIXTURE_SHARE_RANK_DIGITS <- 9L
+# The original allied network design (L5: the greedy network and its scenarios S15 and S16's
+# network settings) is retired (2026-10-17); S15 is gone and S16 keeps only its dial.
 
 dash_fixture_dials <- function(H = 50, B = 50, P = 50, G = 50) {
   list(hawkishness = H, bullishness = B, populism = P, greenness = G)
@@ -48,32 +48,29 @@ dash_fixture_scenarios <- function(bundle) {
   }
   list(
     sc("S00", "Paper baseline", d(), exercises = "the baseline; also checked against the shipped baseline tables"),
-    sc("S01", "Hawkishness 0", d(H = 0), exercises = "SI need weight, PSI / edge FS shares, geo and Chinese-parent ownership weights, lambda, demand need, resilience (down)"),
-    sc("S02", "Hawkishness 100", d(H = 100), exercises = "the same, up (lambda x4)"),
-    sc("S03", "Bullishness 0", d(B = 0), exercises = "SI EO weight, PSI / edge PO shares, node EO, demand size (down)"),
+    sc("S01", "Hawkishness 0", d(H = 0), exercises = "SI need weight, PSI FS share, geo and Chinese-parent ownership weights (down)"),
+    sc("S02", "Hawkishness 100", d(H = 100), exercises = "the same, up"),
+    sc("S03", "Bullishness 0", d(B = 0), exercises = "SI EO weight, PSI PO share (down)"),
     sc("S04", "Bullishness 100", d(B = 100), exercises = "the same, up"),
-    sc("S05", "Populism 0", d(P = 0), exercises = "SI policy weight, IEA share, stage contrast narrowed, home bias x0.25 (self edges)"),
-    sc("S06", "Populism 100", d(P = 100), exercises = "node policy term on (coalition-median imputation), home bias x4 capped, stage contrast widened"),
+    sc("S05", "Populism 0", d(P = 0), exercises = "SI policy weight, IEA share, stage contrast narrowed"),
+    sc("S06", "Populism 100", d(P = 100), exercises = "SI policy weight and IEA share up, stage contrast widened"),
     sc("S07", "Greenness 0", d(G = 0), exercises = "SI technology weight, CAT share, climate penalties x0.25"),
-    sc("S08", "Greenness 100", d(G = 100), exercises = "penalties x4, fossil exclusion (auto) in the SI, best-five and network"),
+    sc("S08", "Greenness 100", d(G = 100), exercises = "penalties x4, fossil exclusion (auto) in the SI and best-five"),
     sc("S09", "Greenness 85, fossil always", d(G = 85), list(fossil = "always"), "exclusion below the threshold"),
     sc("S10", "Greenness 100, fossil never", d(G = 100), list(fossil = "never"), "maximum penalties with fossil technologies kept"),
-    sc("S11", "All four dials", d(80, 30, 70, 80), exercises = "all dials at once (node policy on, no exclusion)"),
+    sc("S11", "All four dials", d(80, 30, 70, 80), exercises = "all dials at once (no exclusion)"),
     sc("S12", "Off-grid dials", d(37, 63, 41, 59), exercises = "integer dials off the slider's 5-step (dial grid lookups)"),
     sc("S13", s13_label, d(), list(psi_view = other_view, tau = other_tau), "PSI viewpoint; the rankability rule flipped (on <-> off)"),
     sc("S14", "Category weights, tau 0.3", d(), list(es_weights = es_adv, eo_weights = eo_adv, tau = 0.3),
        "pillar recompute, IWS, rankable, SI resample, degenerate rebuild, partner layer uses baseline pillars"),
-    sc("S15", "Lambda 0, max share 0.30, 4 producers", d(), list(network = list(lambda = 0, max_share = 0.30, min_producers = 4L)),
-       "greedy softmax path (no water-filling, no stepwise prune), constraint changes"),
-    sc("S16", "Hawkishness 70, lambda 3, no caps", d(H = 70), list(network = list(lambda = 3, portfolio_enable = FALSE)),
-       "high diversification, no portfolio-cap loop"),
+    sc("S16", "Hawkishness 70", d(H = 70), exercises = "an intermediate hawkishness multiplier (x1.74)"),
     sc("S17", if (screen_other) "Endowment screen on" else "Endowment screen off", d(), list(require_resource_base = screen_other),
        "the allied picks with the endowment screen flipped (Upstream stages without a resource base picked or barred)")
   )
 }
 
 # The synthetic bundle with its inputs rounded to `digits` decimals (pillar category scores, policy
-# values, partner components, development, node inputs), so ties are everywhere.
+# values, partner components, development), so ties are everywhere.
 dash_fixture_tie_bundle <- function(bundle, digits = 1) {
   rnd <- function(x) if (is.null(x)) NULL else {
     y <- x
@@ -85,33 +82,16 @@ dash_fixture_tie_bundle <- function(bundle, digits = 1) {
   for (k in c("imp_trade", "econ_opp_raw", "es_need", "eo_partner", "outbound", "outbound_cmfdi", "cpe", "geo")) bundle$partner$fs[[k]] <- rnd(bundle$partner$fs[[k]])
   for (k in c("trade", "econ_opp_index", "partner_es_need")) bundle$partner$po[[k]] <- rnd(bundle$partner$po[[k]])
   bundle$partner$dp$development <- rnd(bundle$partner$dp$development)
-  nr <- bundle$network$node_raw_member
-  for (k in c("eo_raw", "es_raw", "policy_raw")) nr[[k]] <- rnd(nr[[k]])
-  bundle$network$node_raw_member <- nr
   bundle$manifest$notes <- c(bundle$manifest$notes, paste0("Inputs rounded to ", digits, " decimal(s) (dash_fixture_tie_bundle()): heavy ties."))
   bundle
 }
 
-# The baseline every scenario is compared with: dash_run() at the baseline (partner layer on) and
-# the greedy network at the baseline with share_rank_digits = 9 (the bundle's own greedy baseline
-# when it was solved with that rule).
-dash_fixture_baseline <- function(bundle, network = TRUE) {
+# The baseline every scenario is compared with: dash_run() at the baseline (partner layer on).
+dash_fixture_baseline <- function(bundle) {
   params <- bundle$manifest$baseline
   if (is.null(params)) params <- dash_params(bundle = bundle)
   res <- dash_run(bundle, params)
-  net <- NULL
-  if (isTRUE(network)) {
-    gb <- bundle$network$greedy_baseline
-    if (!is.null(gb) && identical(as.integer(gb$share_rank_digits), DASH_FIXTURE_SHARE_RANK_DIGITS)) {
-      net <- gb
-    } else {
-      inputs <- dash_network_inputs(bundle, params, res$partner$cells, policy = res$policy)
-      scored <- dash_network_score(inputs, params)
-      net <- dash_network_solve(scored, params, bundle = bundle, solver = "greedy", share_rank_digits = DASH_FIXTURE_SHARE_RANK_DIGITS)
-      net$share_rank_digits <- DASH_FIXTURE_SHARE_RANK_DIGITS
-    }
-  }
-  list(params = params, result = res, network = net)
+  list(params = params, result = res)
 }
 
 # Per-cell statistics of a dyad index array [U, U, C] (sums with sum(), i.e. long double).
@@ -216,12 +196,12 @@ dash_fixture_count_refs <- function(objects) {
 }
 
 # One scenario's outputs (spec_react.md 5.3). base = dash_fixture_baseline(bundle). opts:
-# full_arrays (the FS / PO index arrays in full), contrib, var, sample (20,000 FS / PO cells), network
+# full_arrays (the FS / PO index arrays in full), contrib, var, sample (20,000 FS / PO cells)
 # (logicals), n_decompose (dyads decomposed), dyad_reporters (NULL: the full PSI dyad table; n: the
 # dyads of dash_fixture_dyad_reporters(bundle, n) only). Returns list(objects = <nested list>,
 # timings = named numeric (seconds per layer)).
 dash_fixture_outputs <- function(bundle, scenario, base, opts = list()) {
-  o <- utils::modifyList(list(full_arrays = TRUE, contrib = TRUE, var = TRUE, sample = FALSE, network = TRUE, n_decompose = 2L,
+  o <- utils::modifyList(list(full_arrays = TRUE, contrib = TRUE, var = TRUE, sample = FALSE, n_decompose = 2L,
                               dyad_reporters = NULL), opts)
   timings <- numeric()
   tick <- function(name, expr) {
@@ -292,35 +272,6 @@ dash_fixture_outputs <- function(bundle, scenario, base, opts = list()) {
     dash_partner_decompose(bundle, params, cells, dy$reporter_iso[i], dy$partner_iso[i])
   }))
   out$L4 <- L4
-
-  # L5
-  if (isTRUE(o$network)) {
-    inputs <- tick("L5 inputs", dash_network_inputs(bundle, params, cells, policy = res$policy))
-    scored <- tick("L5 score", dash_network_score(inputs, params))
-    sol <- tick("L5 solve", dash_network_solve(scored, params, bundle = bundle, solver = "greedy",
-                                               share_rank_digits = DASH_FIXTURE_SHARE_RANK_DIGITS))
-    pf <- sol$portfolio
-    out$L5 <- list(
-      stages = sol$stages,
-      inputs = list(raw_nodes = inputs$raw_nodes, edges = inputs$edges, notes = dash_osb_json(I(as.character(attr(inputs, "notes"))))),
-      scored = list(nodes = scored$nodes, edges = scored$edges),
-      solution = list(
-        specialization = sol$specialization, flows = sol$flows, diagnostics = sol$diagnostics,
-        member_shares = sol$member_shares, solver_by_stage = sol$solver_by_stage,
-        portfolio = if (is.null(pf)) NULL else list(
-          caps = pf$caps, counts = pf$counts, topk = pf$topk,
-          converged = dash_osb_json(pf$converged), iters = dash_osb_json(pf$iters),
-          violations_remaining = dash_osb_json(pf$violations_remaining)
-        ),
-        forbidden = dash_osb_json(sol$forbidden)
-      )
-    )
-    if (!is.null(base$network)) {
-      cmp <- dash_network_compare(sol, base$network)
-      out$L5$compare <- list(stage = cmp$stage, node = cmp$node, node_summary = cmp$node_summary)
-    }
-    out$L5$concentration <- dash_network_concentration(sol, bundle, reference = base$network)
-  }
 
   # Compare with the baseline
   cmp <- dash_compare(res, base$result)

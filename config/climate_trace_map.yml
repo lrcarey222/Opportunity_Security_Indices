@@ -1,0 +1,219 @@
+# Climate TRACE sector emissions: what is fetched and how it maps to technology x stage.
+#
+# Read by scripts/fetchers/climate_trace.R (the `fetch` block), scripts/16_build_climate_trace.R
+# (the `cells` map, into data/processed/climate_trace_*_tbl.rds) and, through those tables,
+# scripts/87_export_sector_data.R (the sector-climate chunk of the Sector bundle). Pure helpers:
+# R/categories/climate/climate_trace.R (climate_trace_map_validate() checks this file).
+#
+# Source: Climate TRACE, https://climatetrace.org, public API https://api.climatetrace.org/v6
+# (no key). Licence CC BY 4.0: every view that shows the figures cites "Climate TRACE" and links
+# climatetrace.org. Emissions are tonnes of CO2-equivalent on the 100-year global warming
+# potential (co2e_100yr), Climate TRACE's own estimates (satellite and other remote sensing,
+# plant-level models, and country-level models for what no asset covers).
+#
+# Match quality (one per cell; the best of the cell's `own` sources, `none` when it has none):
+#   direct   the Climate TRACE subsector is the cell's own activity, same boundary.
+#   partial  it covers the cell's activity but also other activity (oil and gas production is one
+#            subsector), or only part of it (coal-fired power is part of coal use).
+#   proxy    a related activity stands in for the cell: the emissions are not the cell's own and are
+#            shown to give scale, never as the cell's footprint (all mining other than coal, copper,
+#            iron, bauxite, rock and sand for the battery-mineral cells).
+#   none     Climate TRACE has no subsector for the cell. The views show the technology's IPCC
+#            lifecycle intensity instead (data/processed/tech_ghg_tbl.rds, from
+#            data/raw/ipcc_ghg_intensity.csv) and say so.
+# `context` sources are materials a cell's products are made of (steel for wind towers): shown apart,
+# labelled as context, never counted as the cell's emissions and never part of its match quality.
+#
+# Every source is a Climate TRACE subsector, optionally narrowed to an asset group. basis `country`
+# reads the country totals (/v6/country/emissions: every asset plus Climate TRACE's estimate for what
+# no asset covers); basis `assets` sums the tracked assets of the group (/v6/assets), the only way to
+# split electricity generation by fuel, so it leaves out the part no plant covers. Emissions
+# intensity is always the assets' emissions over the assets' activity (both from /v6/assets, only
+# the assets that report an activity), in Climate TRACE's activity unit.
+
+fetch:
+  api: https://api.climatetrace.org/v6
+  gas: co2e_100yr
+  # The latest complete year and four years of history. Climate TRACE publishes monthly and the
+  # current year is partial (2026 in October 2026), so it is never fetched.
+  years: [2021, 2022, 2023, 2024, 2025]
+  # Country totals: one call per (subsector, year) for every Climate TRACE country.
+  country_subsectors:
+    - {subsector: coal-mining, sector: fossil-fuel-operations, label: "Coal mining"}
+    - {subsector: oil-and-gas-production, sector: fossil-fuel-operations, label: "Oil and gas production"}
+    - {subsector: oil-and-gas-refining, sector: fossil-fuel-operations, label: "Oil and gas refining"}
+    - {subsector: oil-and-gas-transport, sector: fossil-fuel-operations, label: "Oil and gas transport"}
+    - {subsector: copper-mining, sector: mineral-extraction, label: "Copper mining"}
+    - {subsector: bauxite-mining, sector: mineral-extraction, label: "Bauxite mining"}
+    - {subsector: iron-mining, sector: mineral-extraction, label: "Iron ore mining"}
+    - {subsector: other-mining-quarrying, sector: mineral-extraction, label: "Other mining and quarrying"}
+    - {subsector: aluminum, sector: manufacturing, label: "Aluminium (alumina refining and smelting)"}
+    - {subsector: iron-and-steel, sector: manufacturing, label: "Iron and steel"}
+    - {subsector: chemicals, sector: manufacturing, label: "Chemicals (ammonia, methanol, soda ash)"}
+    - {subsector: other-metals, sector: manufacturing, label: "Other metals (non-ferrous metals other than aluminium, ferroalloys, silicon)"}
+    - {subsector: cement, sector: manufacturing, label: "Cement"}
+    - {subsector: electricity-generation, sector: power, label: "Electricity generation"}
+  # Tracked assets, aggregated per (country, subsector, asset group, year) at fetch time (the asset
+  # rows themselves are not kept). `group`: how an asset's AssetType becomes its group -
+  # primary_fuel (the first fuel listed: "coal, gas" -> coal), asset_type (as published) or all.
+  # Oil and gas production and transport are not here: their asset activity is licence-restricted.
+  asset_subsectors:
+    - {subsector: electricity-generation, group: primary_fuel}
+    - {subsector: aluminum, group: asset_type}
+    - {subsector: iron-and-steel, group: all}
+    - {subsector: copper-mining, group: all}
+    - {subsector: bauxite-mining, group: all}
+    - {subsector: iron-mining, group: all}
+    - {subsector: coal-mining, group: all}
+    - {subsector: cement, group: all}
+    - {subsector: oil-and-gas-refining, group: all}
+  # Labels of the asset groups the map uses.
+  group_labels:
+    coal: "coal-fired plants"
+    gas: "gas-fired plants"
+    oil: "oil-fired plants"
+    Smelting: "smelters"
+    Refinery: "alumina refineries"
+
+# Fetched but used by no cell: cement (kept for context in the raw file; no technology's
+# products are mostly cement).
+
+cells:
+  batteries-upstream:
+    sources:
+      - {subsector: other-mining-quarrying, role: own, match: proxy}
+      - {subsector: other-metals, role: own, match: proxy}
+    note: "Climate TRACE has no lithium, nickel, cobalt, graphite or manganese subsector. Shown for scale: all mining other than coal, copper, iron ore, bauxite, rock and sand, and the processing of non-ferrous metals other than aluminium (nickel among them)."
+  batteries-midstream:
+    sources: []
+    note: "Climate TRACE has no subsector for cathode, anode or cell manufacturing."
+  batteries-downstream:
+    sources: []
+    note: "Stationary storage has no emissions subsector."
+  coal-upstream:
+    sources:
+      - {subsector: coal-mining, role: own, match: direct}
+    note: "Coal mining: mostly methane from the mines, plus fuel and power used at the mine."
+  coal-midstream:
+    sources: []
+    note: "Climate TRACE has no subsector for coal processing or coal-handling equipment."
+  coal-downstream:
+    sources:
+      - {subsector: electricity-generation, asset_group: coal, basis: assets, role: own, match: partial}
+    note: "Coal-fired power plants only (plants whose first-listed fuel is coal). Coal burnt in industry, heat plants and buildings is not included."
+  electric-grid-upstream:
+    sources:
+      - {subsector: copper-mining, role: own, match: partial}
+      - {subsector: bauxite-mining, role: own, match: partial}
+      - {subsector: aluminum, role: own, match: partial}
+    note: "Copper mining, bauxite mining and aluminium (alumina refining and smelting) for every use, the grid among them. Copper smelting and refining are not in a separate subsector."
+  electric-grid-midstream:
+    sources:
+      - {subsector: iron-and-steel, role: context}
+      - {subsector: iron-mining, role: context}
+    note: "Climate TRACE has no subsector for cable, transformer or switchgear manufacturing. Steel, a main material of transformers and towers, is shown as context."
+  electric-grid-downstream:
+    sources: []
+    note: "Grid deployment has no emissions subsector."
+  electric-vehicles-upstream:
+    sources:
+      - {subsector: other-mining-quarrying, role: own, match: proxy}
+      - {subsector: other-metals, role: own, match: proxy}
+    note: "As Batteries Upstream: Climate TRACE has no subsector for the battery minerals or magnet rare earths. Shown for scale: other mining and the processing of other non-ferrous metals."
+  electric-vehicles-midstream:
+    sources:
+      - {subsector: iron-and-steel, role: context}
+      - {subsector: aluminum, role: context}
+    note: "Climate TRACE has no vehicle-manufacturing subsector. Steel and aluminium, the main materials of a vehicle body, are shown as context."
+  electric-vehicles-downstream:
+    sources: []
+    note: "Electric-car sales have no emissions subsector here (road transport is not mapped)."
+  gas-upstream:
+    sources:
+      - {subsector: oil-and-gas-production, role: own, match: partial}
+    note: "Climate TRACE reports oil and gas production as one subsector (venting, flaring, leaks and fuel use at the fields); it cannot be split into oil and gas."
+  gas-midstream:
+    sources:
+      - {subsector: oil-and-gas-transport, role: own, match: proxy}
+    note: "The emissions of operating oil and gas pipelines and LNG (oil and gas together) stand in for the equipment this cell trades."
+  gas-downstream:
+    sources:
+      - {subsector: electricity-generation, asset_group: gas, basis: assets, role: own, match: partial}
+    note: "Gas-fired power plants only (plants whose first-listed fuel is gas). Gas burnt in industry and buildings is not included."
+  geothermal-upstream:
+    sources: []
+    note: "Climate TRACE has no geothermal subsector."
+  geothermal-midstream:
+    sources: []
+    note: "Climate TRACE has no geothermal subsector."
+  geothermal-downstream:
+    sources: []
+    note: "Climate TRACE has no geothermal subsector."
+  green-hydrogen-upstream:
+    sources:
+      - {subsector: other-mining-quarrying, role: own, match: proxy}
+      - {subsector: other-metals, role: own, match: proxy}
+    note: "Climate TRACE has no nickel or platinum-group-metal subsector. Shown for scale: other mining and the processing of other non-ferrous metals."
+  green-hydrogen-midstream:
+    sources: []
+    note: "Climate TRACE has no electrolyser-manufacturing subsector."
+  green-hydrogen-downstream:
+    sources:
+      - {subsector: chemicals, role: own, match: proxy}
+    note: "Ammonia and methanol plants are today's main users of hydrogen, almost all of it made from fossil fuels: their emissions show what clean hydrogen could replace, not the emissions of hydrogen use."
+  nuclear-upstream:
+    sources:
+      - {subsector: other-mining-quarrying, role: own, match: proxy}
+    note: "Climate TRACE has no uranium-mining subsector; uranium mines fall in other mining and quarrying, shown for scale."
+  nuclear-midstream:
+    sources: []
+    note: "Climate TRACE has no fuel-cycle or reactor-manufacturing subsector."
+  nuclear-downstream:
+    sources: []
+    note: "Nuclear plants emit almost nothing in operation; Climate TRACE tracks no nuclear emissions."
+  oil-upstream:
+    sources:
+      - {subsector: oil-and-gas-production, role: own, match: partial}
+    note: "Climate TRACE reports oil and gas production as one subsector (venting, flaring, leaks and fuel use at the fields); it cannot be split into oil and gas."
+  oil-midstream:
+    sources:
+      - {subsector: oil-and-gas-refining, role: own, match: partial}
+      - {subsector: oil-and-gas-transport, role: own, match: proxy}
+    note: "Refineries (they also process some gas liquids) and, as a proxy, oil and gas pipelines and LNG; the cell itself trades refining and handling equipment."
+  oil-downstream:
+    sources:
+      - {subsector: electricity-generation, asset_group: oil, basis: assets, role: own, match: partial}
+    note: "Oil-fired power plants only (plants whose first-listed fuel is oil). Oil burnt in transport, industry and buildings is not included."
+  solar-upstream:
+    sources:
+      - {subsector: other-metals, role: own, match: proxy}
+      - {subsector: copper-mining, role: own, match: proxy}
+      - {subsector: other-mining-quarrying, role: own, match: proxy}
+    note: "Climate TRACE has no silicon or silver subsector. Shown for scale: other non-ferrous metals and ferroalloys (silicon metal among them), copper mining and other mining."
+  solar-midstream:
+    sources:
+      - {subsector: aluminum, role: context}
+    note: "Climate TRACE has no polysilicon, wafer, cell or module subsector. Aluminium, used in module frames and mounting, is shown as context."
+  solar-downstream:
+    sources: []
+    note: "Solar plants emit nothing in operation; their footprint is in manufacturing (IPCC lifecycle intensity)."
+  wind-upstream:
+    sources:
+      - {subsector: other-mining-quarrying, role: own, match: proxy}
+      - {subsector: copper-mining, role: own, match: proxy}
+    note: "Climate TRACE has no rare-earth subsector. Shown for scale: other mining (rare earths among it) and copper mining."
+  wind-midstream:
+    sources:
+      - {subsector: iron-and-steel, role: context}
+      - {subsector: iron-mining, role: context}
+    note: "Climate TRACE has no turbine-manufacturing subsector. Steel, most of a turbine's tower and nacelle by weight, is shown as context."
+  wind-downstream:
+    sources: []
+    note: "Wind farms emit nothing in operation; their footprint is in manufacturing (IPCC lifecycle intensity)."
+  semiconductors-upstream:
+    sources:
+      - {subsector: other-metals, role: own, match: proxy}
+    note: "Climate TRACE has no gallium, germanium or indium subsector; they are by-products of other non-ferrous metal refining, shown for scale."
+  semiconductors-midstream:
+    sources: []
+    note: "Climate TRACE has no semiconductor-manufacturing subsector, and the IPCC lifecycle table has no semiconductor row."

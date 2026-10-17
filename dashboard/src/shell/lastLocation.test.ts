@@ -24,7 +24,7 @@ describe('places and nav keys', () => {
     expect(placeOf('/')).toBe('home');
     expect(placeOf('/sector')).toBe('sector');
     expect(placeOf('/sector/batteries/midstream/USA')).toBe('sector');
-    for (const p of ['/overview', '/country/USA', '/space', '/strategic', '/partners/CAN', '/network/batteries-midstream', '/methods', '/data']) expect(placeOf(p)).toBe('strategic');
+    for (const p of ['/overview', '/country/USA', '/space', '/strategic', '/partners/CAN', '/methods', '/data']) expect(placeOf(p)).toBe('strategic');
     expect(placeOf('/sectors')).toBeNull();
     expect(placeOf('/nothing')).toBeNull();
     // Country Insights lives at /countries; the Strategic "Country scores" view keeps /country
@@ -37,7 +37,7 @@ describe('places and nav keys', () => {
   });
   it('legacy Strategic views show the tab that owns their content', () => {
     for (const p of ['/overview', '/country/USA', '/space', '/strategic/JPN']) expect(tabOf(p)).toBe('country');
-    for (const p of ['/partners/CAN', '/network/batteries-midstream']) expect(tabOf(p)).toBe('aib');
+    for (const p of ['/partners/CAN']) expect(tabOf(p)).toBe('aib');
     for (const p of ['/methods', '/data', '/glossary', '/about']) expect(tabOf(p)).toBe('about');
     expect(tabOf('/')).toBeNull();
     expect(tabOf('/nothing')).toBeNull();
@@ -58,8 +58,8 @@ describe('places and nav keys', () => {
     ]);
     expect(AIB_NAV.map((n) => n.label)).toEqual(['Overview', 'Partnerships', 'Sectoral Compacts', 'Country roles']);
     expect(ABOUT_NAV.map((n) => n.to)).toEqual(['/about', '/methods', '/data', '/glossary']);
-    expect(STRATEGIC_NAV.map((n) => n.label)).toEqual(['Overview', 'Country scores', 'Security vs opportunity', 'Strategic Index', 'Partners', 'Allied network', 'Methods', 'Data']);
-    expect(STRATEGIC_NAV.map((n) => n.to)).toEqual(['/overview', '/country', '/space', '/strategic', '/partners', '/network', '/methods', '/data']);
+    expect(STRATEGIC_NAV.map((n) => n.label)).toEqual(['Overview', 'Country scores', 'Security vs opportunity', 'Strategic Index', 'Partners', 'Methods', 'Data']);
+    expect(STRATEGIC_NAV.map((n) => n.to)).toEqual(['/overview', '/country', '/space', '/strategic', '/partners', '/methods', '/data']);
     expect(COUNTRY_NAV).toEqual([
       { key: 'countries', to: '/countries', label: 'All countries' },
       { key: 'profile', to: '/countries/USA', label: 'Country profile' },

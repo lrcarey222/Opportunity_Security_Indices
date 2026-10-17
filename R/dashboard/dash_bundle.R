@@ -267,8 +267,8 @@ dash_bundle_cpi <- function(policy_iso, U) {
 }
 
 # The bundle from its parts; manifest$baseline is computed from baseline_inputs.
-dash_bundle_assemble <- function(manifest, dims, pillars, policy, si, partner, network) {
-  bundle <- list(manifest = manifest, dims = dims, pillars = pillars, policy = policy, si = si, partner = partner, network = network)
+dash_bundle_assemble <- function(manifest, dims, pillars, policy, si, partner) {
+  bundle <- list(manifest = manifest, dims = dims, pillars = pillars, policy = policy, si = si, partner = partner)
   bundle$manifest$baseline <- NULL
   bundle$manifest$baseline <- dash_params(bundle = bundle)
   bundle

@@ -32,6 +32,8 @@ import { aibNavItems, aibNavKeyOf, compactIdOfPath, rememberCompact, resetLastCo
 import { aibTabHref, lastLocations, moduleResumeHref, rememberLocation, resetLastLocations } from '../../shell/lastLocation.ts';
 import { AIB_NAV, aibNavKeyOf as shellAibNavKeyOf, MODULES, placeOf } from '../../shell/modules.ts';
 import { pageTitle } from '../../shell/title.ts';
+import { countryEdges, countryRoleMatrix, countryRolesOf, edgeWords, fmtPts, namedRoles, roleHolders, sideLevel } from '../derive/network.ts';
+import { hostRanksOf, hostsOfNode, investmentPairs, investorHostFlows, partnerTotals, rankWords } from '../derive/investment.ts';
 import { readDoc, stripMethodology, SYNTHETIC_DIR } from './fixture.ts';
 
 const doc: AibDoc = readDoc(SYNTHETIC_DIR);
@@ -760,5 +762,61 @@ describe('compactTitle (display only)', () => {
       'Electric Vehicles/Wind: Charging Infrastructure and 9 more',
     );
     expect(compactTitle({ name: 'Solar: Silicon Metal, Solar Cells', nodes: ['a', 'b'] })).toBe('Solar: Silicon Metal, Solar Cells');
+  });
+});
+
+describe('emergent network roles and investment flows (2026-10-17)', () => {
+  it('a network role is named at 1 point of node demand, minor below it, none without a selected relationship', () => {
+    expect(sideLevel({ partners: 1, selected: 2, headline: 0.01, cumulative: 0.02, upstream: 0, midstream: 1, downstream: 0 })).toBe('named');
+    expect(sideLevel({ partners: 1, selected: 2, headline: 0.004, cumulative: 0.01, upstream: 0, midstream: 1, downstream: 0 })).toBe('minor');
+    expect(sideLevel({ partners: 0, selected: 0, headline: 0, cumulative: 0.02, upstream: 0, midstream: 0, downstream: 0 })).toBe('minor');
+    expect(sideLevel({ partners: 0, selected: 0, headline: 0, cumulative: 0, upstream: 0, midstream: 0, downstream: 0 })).toBe('none');
+    expect(sideLevel(null)).toBe('none');
+    expect([fmtPts(0.2461), fmtPts(0.05), fmtPts(0.0004), fmtPts(0), fmtPts(null)]).toEqual(['25 pts', '5.0 pts', '<0.1 pts', '0 pts', '–']);
+  });
+
+  it('the matrix reads the summary beside the compacts: Avalon buys, invests and leads graphite; Carpania supplies and specializes; Dorvalia hosts; Zembla (shocked) is a minor supplier', () => {
+    const rows = countryRoleMatrix(doc, names);
+    const by = new Map(rows.map((r) => [r.iso3, r]));
+    expect(namedRoles(by.get('AAA')!)).toEqual(['specialized', 'investor', 'buyer']);
+    expect(by.get('AAA')!.cells.supplier.level).toBe('minor');
+    expect(namedRoles(by.get('CCC')!)).toEqual(['supplier', 'specialized', 'bridge']);
+    expect(by.get('CCC')!.cells.specialized.nodes).toEqual(['ev-wind-mid-ree-compounds', 'bat-mid-anode']);
+    expect(by.get('DDD')!.cells.host.level).toBe('named');
+    expect(by.get('EEE')!.cells.host.level).toBe('minor');
+    expect(by.get('ZZZ')!.cells.supplier.level).toBe('minor');
+    // gas turbines are outside the strategic scope: Borduria, its largest supplier, is a specialized supplier through the magnets only
+    expect(by.get('BBB')!.cells.specialized.nodes).toEqual(['ev-wind-mid-magnets']);
+    expect(roleHolders(rows, 'investor').map((r) => r.iso3)).toEqual(['AAA', 'BBB']);
+    expect(countryRolesOf(doc, names, 'xyz').cells.buyer.level).toBe('none');
+    // an older bundle: the compacts' roles alone (a demand anchor is still named)
+    const old = countryRoleMatrix(stripMethodology(structuredClone(doc)), names);
+    expect(old.find((r) => r.iso3 === 'AAA')!.cells.buyer.level).toBe('named');
+    expect(old.find((r) => r.iso3 === 'AAA')!.cells.investor.level).toBe('none');
+  });
+
+  it("an economy's edges: headline contributions only, largest first, each direction its own relationship", () => {
+    const e = countryEdges(doc, 'AAA');
+    expect(e.map((x) => [x.partner, x.supplies])).toEqual([['CCC', false], ['EEE', false], ['DDD', false], ['EEE', true]]);
+    expect(edgeWords(e[2])).toEqual({ trade: 'buys from', investment: 'invests in' });
+    expect(edgeWords(countryEdges(doc, 'DDD')[0])).toEqual({ trade: 'supplies', investment: 'hosts new capacity for' });
+    expect(countryEdges(doc, 'ZZZ')).toEqual([]);
+  });
+
+  it('investment flows: the best-ranked host by default, alternatives on request, never summed', () => {
+    const best = investmentPairs(doc, { ...NO_FILTER });
+    expect(best.map((p) => `${p.investor}>${p.host}`)).toEqual(['AAA>DDD', 'BBB>DDD', 'AAA>CCC']);
+    expect(investmentPairs(doc, { ...NO_FILTER, rank: 'all' })).toHaveLength(5);
+    expect(investmentPairs(doc, { ...NO_FILTER, tech: 'Batteries' })).toEqual([]);
+    expect(investmentPairs(doc, { ...NO_FILTER, country: 'DDD', side: 'investor' })).toEqual([]);
+    expect(investmentPairs(doc, { ...NO_FILTER, nodes: ['ev-wind-mid-magnets'], rank: 'all' }).map((p) => p.rank)).toEqual([1, 1, 2, 2]);
+    const all = investmentPairs(doc, { ...NO_FILTER, rank: 'all' });
+    expect(investorHostFlows(all).map((x) => [x.producer, x.consumer, x.value])).toEqual([['AAA', 'DDD', 480000000], ['BBB', 'DDD', 310000000], ['AAA', 'CCC', 90000000]]);
+    expect(partnerTotals(all, 'AAA', 'investor').map((t) => [t.iso3, t.usd])).toEqual([['DDD', 480000000], ['CCC', 90000000]]);
+    expect(partnerTotals(all, 'DDD', 'host').map((t) => t.iso3)).toEqual(['AAA', 'BBB']);
+    expect(hostsOfNode(doc, 'ev-wind-mid-magnets').map((h) => h.host)).toEqual(['DDD', 'EEE']);
+    expect(hostRanksOf(doc, 'EEE').map((h) => h.rank)).toEqual([2]);
+    expect([rankWords(1), rankWords(2, 5), rankWords(3), rankWords(4, 5)]).toEqual(['best host', '2nd of 5', '3rd', '4th of 5']);
+    expect(investmentPairs(stripMethodology(structuredClone(doc)), NO_FILTER)).toEqual([]);
   });
 });

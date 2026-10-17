@@ -549,7 +549,34 @@ sources:
     transform: "As partnership_strength_build_outbound_edges() (Friendshore): reported official data, outward debt-instrument positions of all entities; the mean of the years each pair reports in {dip_years}; IMF names to ISO3 with the pipeline's mapping; regional and unallocated counterparts dropped. Positions with a conduit financial centre are kept and flagged."
     issues: "Positions as reported by the investing economy: an economy that does not report has no outward positions here. {dip_n_conduit} of {dip_n} positions involve a conduit centre."
 
+  - id: climate_trace
+    short: "Climate TRACE"
+    citation: "Climate TRACE, country emissions by sector and subsector and tracked-asset emissions and activity, 2021-2025 (CO2e, 100-year GWP)"
+    publisher: "Climate TRACE coalition"
+    edition: "API v6, years 2021-2025 (2026 is partial and not used)"
+    url: "https://climatetrace.org"
+    licence: attribution
+    attribution: "Source: Climate TRACE (climatetrace.org), CC BY 4.0."
+    accessed: "2026-10-17"
+    transform: "scripts/fetchers/climate_trace.R and scripts/16_build_climate_trace.R: country totals of 14 subsectors (fossil-fuel operations, mineral extraction, aluminium, iron and steel, chemicals, other metals, cement, electricity generation) as published; tracked assets summed per economy and asset group (power plants by first-listed fuel, aluminium smelters and refineries); emissions intensity = the tracked assets' emissions over their activity, only assets that report one. config/climate_trace_map.yml maps the subsectors to technology x stage with a match quality per cell."
+    issues: "Climate TRACE's own estimates (remote sensing and models), revised with each release. Direct emissions only: the electricity smelters and factories buy is counted in power. Oil and gas production is one subsector. Power by fuel counts only the plants Climate TRACE tracks. Some 2025 values repeat 2024's (an estimate carried forward)."
+  - id: ipcc_lifecycle
+    short: "IPCC lifecycle intensity"
+    citation: "Schlomer et al. (2014), IPCC AR5 WGIII Annex III, Table A.III.2, lifecycle GHG emissions of electricity supply technologies (medians); oil: Moomaw et al. (2011), IPCC SRREN Annex II, Table A.II.4"
+    publisher: "Intergovernmental Panel on Climate Change"
+    edition: "AR5 (2014); SRREN (2011) for oil"
+    url: "https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf"
+    licence: attribution
+    attribution: "Source: IPCC AR5 WGIII Annex III (2014); IPCC SRREN Annex II (2011) for oil."
+    accessed: "2026-10-07"
+    transform: "The medians the paper's technology climate weight is built from (data/raw/ipcc_ghg_intensity.csv, oil corrected to the SRREN median of 840 g): grams of CO2e per kWh over the plant's life. Batteries, Electric Vehicles, Green Hydrogen and Electric Grid have no IPCC row; the paper scores them with other technologies' values, named where shown."
+    issues: "Per kWh of electricity generated, over a plant's whole life: not comparable with Climate TRACE's annual tonnes."
 caveats:
+  - {id: climate_trace_direct, text: "Climate TRACE counts direct emissions where they happen: the electricity a smelter or factory buys is counted in power, not in its own sector."}
+  - {id: climate_trace_match, text: "Match quality: direct = the Climate TRACE subsector is the sector's own activity; partial = it also covers other activity, or only part of the sector's; proxy = a related activity shown for scale, not the sector's own emissions; none = no subsector, so the IPCC lifecycle intensity of the technology is shown instead."}
+  - {id: climate_trace_assets, text: "Power by fuel sums the plants Climate TRACE tracks, grouped by the first fuel each lists; it leaves out the generation no tracked plant covers, so it is below the country's total for power."}
+  - {id: climate_trace_repeat, text: "Climate TRACE's latest year repeats the year before for this subsector (an estimate carried forward), so the latest change is not a measured change."}
+  - {id: climate_trace_lifecycle, text: "IPCC lifecycle intensity is grams of CO2e per kWh over a plant's whole life (median of studies), a property of the technology: not this sector's emissions and not comparable with Climate TRACE's annual tonnes."}
   - {id: hs6_overlap, text: "Technology-attributed trade: {n_shared_codes} of the {n_codes} HS6 codes in the baskets count in more than one sector, so values are never added across technologies."}
   - {id: nominal_usd, text: "Current US dollars: 2020 was a COVID trough and fuel prices roughly doubled by 2024, so changes are nominal."}
   - {id: mirror_factor, text: "Where an importer did not report, its imports come from exporters' declarations multiplied by 1.06 (CIF/FOB)."}

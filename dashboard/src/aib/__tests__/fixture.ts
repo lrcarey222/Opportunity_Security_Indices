@@ -4,7 +4,7 @@
 // substitutes and substitutesNeeded, the leave-one-out flag, the six tiers with a marginal critical
 // external dependency, associatesReach99, robustTieBreakSolved), for tests only (node fs): the manifest,
 // the document, an AibSource over the files, and stripMethodology() to turn a document into one written
-// before the 2026-10-16 methodology fields. AIB_DATA_DIR overrides the directory (e.g. public/data/aib for
+// before the 2026-10-16 methodology fields (and the 2026-10-17 network and investment flows). AIB_DATA_DIR overrides the directory (e.g. public/data/aib for
 // a local run of the view tests on the real export).
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -52,6 +52,9 @@ export function stripMethodology(doc: AibDoc): AibDoc {
       delete r.substitutesNeeded;
     }
   }
+  // the emergent network and the investment flows (2026-10-17)
+  delete doc.network;
+  delete doc.investmentFlows;
   return doc;
 }
 

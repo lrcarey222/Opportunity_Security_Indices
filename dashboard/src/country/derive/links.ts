@@ -23,8 +23,6 @@ export const countryScoresLink = (iso3: string) => strategicLink(`/country/${iso
 export const partnersLink = (iso3: string, c?: { tech: string; stage: string } | null) =>
   strategicLink(`/partners/${iso3}`, c ? { tech: c.tech, stage: c.stage } : {});
 export const spaceLink = (c: CellFacts | null) => strategicLink('/space', c ? { tech: c.tech, stage: c.stage } : {});
-/** The network view of one stage (its path segment is the cell key, lib/format.ts stageSlug()). */
-export const networkLink = (c: CellFacts | null) => strategicLink(c ? `/network/${c.key}` : '/network');
 
 /** Sector Insights with the country highlighted. */
 export const sectorCountryLink = (iso3: string) => `/sector?c=${iso3}`;

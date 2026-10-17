@@ -132,7 +132,7 @@ export const MATRIX_KEYS: readonly string[] = THIRDS.flatMap((p) => THIRDS.map((
 
 /** Caveat ids (A8.4). */
 export const CAVEAT_IDS = [
-  'relative_scores', 'baseline', 'rankability', 'imputed_driver', 'policy_pams_only', 'no_si', 'near_tie', 'eu_node',
+  'relative_scores', 'baseline', 'rankability', 'imputed_driver', 'policy_pams_only', 'no_si', 'near_tie',
   'inherited_alignment', 'assumed_zero_production', 'cmfdi_coverage', 'trade_mirror', 'few_economies', 'cat_eu_bloc',
   'intra_eu', 'hkg_reexport', 'pick_stability', 'ownership_parent', 'eu_policy_records',
   // additive 2026-10-12: Global Trade Alert NIPO measures are context, not part of the Policy index
@@ -241,8 +241,6 @@ export interface SheetMeta {
   income_group: string | null;
   sovereign: boolean;
   eu_member: boolean;
-  /** the allied-network node (the ISO3 itself, or "EUU" for EU members), null outside the coalition */
-  network_node: string | null;
   /** shared-agreement names the country is listed in (economic_security_agreements.csv; EU rows not propagated) */
   agreements: string[];
   /** EU members: the EU's own memberships ("MSP", "G7"), said once in words */
@@ -669,15 +667,18 @@ export interface PartnersFacts {
   };
 }
 
-export interface NetworkFacts {
-  member: boolean;
-  node: string | null;
-  via_eu: boolean;
-  n_stages: Fv | null;
-  producer: { cell: string; share: Fv; derived: boolean }[];
-  /** additive 2026-10-14: `excluded` = technologies left out of every allied pick by rule (green hydrogen,
-   *  geothermal); `rule_d` = the pick rule in words */
-  pick: { cell: string; si: Fv; runner_up: string | null; margin: Fv; near_tie: boolean; excluded?: string[]; rule_d?: string } | null;
+/** The economy's allied pick (the Strategic Index's allied selection), null outside the coalition or
+ *  without a pick. `excluded` = technologies left out of every allied pick by rule (green hydrogen,
+ *  geothermal); `rule_d` = the pick rule in words. 2026-10-17: the sheet's `network` section (the role
+ *  in the retired allied network design) is gone and the pick it carried is this top-level `pick`. */
+export interface AlliedPick {
+  cell: string;
+  si: Fv;
+  runner_up: string | null;
+  margin: Fv;
+  near_tie: boolean;
+  excluded?: string[];
+  rule_d?: string;
 }
 
 export interface FactSheet {
@@ -693,7 +694,7 @@ export interface FactSheet {
   priority_rule: PriorityRule;
   policy: PolicyFacts;
   partners: PartnersFacts;
-  network: NetworkFacts;
+  pick: AlliedPick | null;
   caveats: { id: string; text: string }[];
   sources: SourceRef[];
   checks: { built_with: string; facts_sha256: string };
@@ -988,7 +989,7 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
   if (!isStrArr(meta.agreements)) p.add('meta.agreements: not an array of strings');
   if (!isStrArr(meta.routes)) p.add('meta.routes: not an array of strings');
   for (const k of ['as_of', 'as_of_label', 'created', 'trade_year', 'un_window', 'cmfdi_edition']) p.str(meta[k], `meta.${k}`);
-  for (const k of ['region', 'income_group', 'bloc', 'policy_basis', 'status_reason', 'network_node']) p.str(meta[k], `meta.${k}`, true);
+  for (const k of ['region', 'income_group', 'bloc', 'policy_basis', 'status_reason']) p.str(meta[k], `meta.${k}`, true);
   p.fv(meta.rank_threshold, 'meta.rank_threshold');
   p.fv(meta.alignment_s, 'meta.alignment_s');
   if (entry) {
@@ -1329,9 +1330,11 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
     else if (sm2.share.length !== sm2.partners.length) p.add('partners.supplier_matrix.share: one row per partner expected');
   }
 
-  // network, caveats, sources, checks
-  if (!isObj(x.network)) p.add('network: not an object');
-  else p.bool(x.network.member, 'network.member');
+  // pick, caveats, sources, checks
+  if (x.pick !== null && x.pick !== undefined) {
+    if (!isObj(x.pick) || !isStr(x.pick.cell)) p.add('pick: expected null or { cell, si, runner_up, margin, near_tie }');
+    else p.bool(x.pick.near_tie, 'pick.near_tie');
+  }
   if (!Array.isArray(x.caveats)) p.add('caveats: not an array');
   else
     x.caveats.forEach((c, i) => {

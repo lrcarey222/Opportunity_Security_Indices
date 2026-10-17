@@ -4,6 +4,7 @@
 // exact minimum coalition of each target beside it: the greedy path can need more, or other,
 // economies). Table twins and CSVs.
 
+import { useMemo } from 'react';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { Legend } from '../../../charts/legends.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
@@ -13,7 +14,10 @@ import { CoverageBars, REFERENCE_COLOR } from '../../charts/CoverageBars.tsx';
 import { STEP_COLOR } from '../../charts/CoverageStrip.tsx';
 import { coalitionCurve, targetLabel, targetMarks, type CurvePoint } from '../../derive/coalition.ts';
 import { coverageSteps, GLOBAL_OPTIMUM_LABEL, globalOptimum, largestGain, type CoverageStep } from '../../derive/coverage.ts';
-import { fmtPp, fmtShare, listWords, plural } from '../../derive/format.ts';
+import { fmtPp, fmtShare, fmtUsd, listWords, plural } from '../../derive/format.ts';
+import { useAibCtx } from '../../AibLayout.tsx';
+import { investmentPairs, partnerTotals } from '../../derive/investment.ts';
+import { NO_FILTER } from '../../derive/partnerships.ts';
 import { csvWithRun, Section } from '../common.tsx';
 import { useCompact } from './shared.tsx';
 
@@ -76,7 +80,44 @@ export function CoverageSection() {
       >
         <CoverageBars steps={steps} ariaLabel={summary} reference={optimum} referenceLabel={GLOBAL_OPTIMUM_LABEL} />
       </ChartCard>
+      <InvestmentStep />
     </Section>
+  );
+}
+
+/** The trade + investment step in words: who invests where for the compact's nodes (best-ranked hosts). */
+function InvestmentStep() {
+  const { c, name, nodeLabel } = useCompact();
+  const { doc } = useAibCtx();
+  const pairs = useMemo(() => investmentPairs(doc, { ...NO_FILTER, nodes: c.nodes }), [doc, c.nodes]);
+  if (!doc.investmentFlows) return null;
+  const hosts = [...new Set(pairs.map((p) => p.host))]
+    .map((h) => ({ host: h, investors: partnerTotals(pairs, h, 'host'), nodes: [...new Set(pairs.filter((p) => p.host === h).map((p) => p.node))] }))
+    .map((x) => ({ ...x, usd: x.investors.reduce((s, t) => s + t.usd, 0) }))
+    .sort((a, b) => b.usd - a.usd || a.host.localeCompare(b.host));
+  return (
+    <p className="max-w-3xl text-sm leading-relaxed text-paper-dim" data-testid="investment-step">
+      <span className="text-paper">Trade + investment: who invests where. </span>
+      {hosts.length ? (
+        <>
+          New capacity at the best-ranked host of each node with a remaining gap:{' '}
+          {hosts.slice(0, 3).map((x, i) => (
+            <span key={x.host}>
+              {i > 0 && '; '}
+              {name(x.host)} ({listWords(x.nodes.slice(0, 2).map(nodeLabel))}{x.nodes.length > 2 ? ' and more' : ''}) serving {listWords(x.investors.slice(0, 3).map((t) => `${name(t.iso3)} ${fmtUsd(t.usd)}`))}
+              {x.investors.length > 3 ? ` and ${x.investors.length - 3} more` : ''}
+            </span>
+          ))}
+          {hosts.length > 3 ? `; ${hosts.length - 3} more ${hosts.length - 3 === 1 ? 'host' : 'hosts'}` : ''}. The investor is the economy whose lost supply the capacity replaces;{' '}
+          <a className="link" href="#invest">
+            every flow below
+          </a>
+          .
+        </>
+      ) : (
+        'No node of this compact has a gap that passes the investment threshold, so no investment flow is simulated for it.'
+      )}
+    </p>
   );
 }
 

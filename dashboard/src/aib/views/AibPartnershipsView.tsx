@@ -3,17 +3,19 @@
 // technology / stage / sub-sector (URL `country`, `tech`, `stage`, `node`), over existing outputs only:
 //   Trade        the model's coordinated trade relationships across the compacts (Sankey + table, the
 //                existing compact-page chart), the specialized suppliers of the nodes, the Partnership
-//                Opportunity (export market) top partners of the ties chunk and, behind a disclosure,
-//                the paper's allied production network view (engine, NEIS baseline).
+//                Opportunity (export market) top partners of the ties chunk. (The paper's original allied
+//                network design, a disclosure here until 2026-10-17, is retired: the AIB analysis replaces it.)
 //   Investment   the nodes where simulated new capacity buys most resilience and their ranked eligible
-//                hosts, any investor -> host flows the export carries, the Friendshore top partners and,
-//                for one economy, the existing direct-investment and factory-project cards.
+//                hosts, the investor -> host flows of the investment simulation (doc.investmentFlows:
+//                Sankey of the best-ranked hosts, ranked flow list, every ranked host as alternatives;
+//                InvestmentFlowsCard), the Friendshore top partners and, for one economy, the existing
+//                direct-investment and factory-project cards.
 //   Development  the BUILD nodes (capacity gaps) and the Development Potential partners of the ties chunk
 //                (the engine's cell list maps its sector ids; the one EngineScope of the page).
 // Facts never respond to the Perspective; the rankings that use preference-weighted scores say so and
 // are the NEIS baseline.
 
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { Legend } from '../../charts/legends.tsx';
@@ -51,9 +53,8 @@ import { compactHref } from '../nav.ts';
 import { csvWithRun } from './common.tsx';
 import { REL_COLOR, REL_LINK, REL_WORDS } from './compact/NetworkSection.tsx';
 import { AIB_EYEBROW } from './AibOverviewView.tsx';
-import { BasisTag, LazyDisclosure } from './basis.tsx';
-
-const NetworkView = lazy(() => import('../../views/Network/NetworkView.tsx'));
+import { BasisTag } from './basis.tsx';
+import { InvestmentFlowsCard } from './InvestmentFlowsCard.tsx';
 
 /** The query keys this page owns (kept when an embedded Strategic view writes the URL). */
 export const PARTNERSHIP_KEYS = ['mode', 'country', 'tech', 'stage', 'node'] as const;
@@ -289,15 +290,6 @@ function TradeTab({ f }: { f: PartnershipFilter }) {
       <Block basis="baseline">
         <TopPartnersCard side="po" f={f} />
       </Block>
-      <LazyDisclosure summary="The paper's allied production network (a design that responds to preferences; shown at the NEIS baseline)">
-        {() => (
-          <EngineScope hostKeys={PARTNERSHIP_KEYS}>
-            <Suspense fallback={<Loading label="Loading the allied network" />}>
-              <NetworkView />
-            </Suspense>
-          </EngineScope>
-        )}
-      </LazyDisclosure>
     </>
   );
 }
@@ -373,7 +365,7 @@ function TopPartnersCard({ side, f }: { side: 'po' | 'fs'; f: PartnershipFilter 
 }
 
 function InvestmentTab({ f }: { f: PartnershipFilter }) {
-  const { doc, name, nodeOf } = useAibCtx();
+  const { doc, name, nodeOf, shockLabel } = useAibCtx();
   const scope = useScope(f);
   const label = (id: string) => nodeOf(id)?.label ?? id;
   const nodes = useMemo(() => investmentNodes(doc.nodes, f), [doc, f]);
@@ -465,22 +457,26 @@ function InvestmentTab({ f }: { f: PartnershipFilter }) {
             <EmptyState>No eligible host for {scope}.</EmptyState>
           )}
         </ChartCard>
-        {flows.length > 0 && (
-          <ChartCard
-            headingLevel={2}
-            title="Investment relationships"
-            sub={`Investor to host, ${scope}: supply from the simulated new capacity (USD a year).`}
-            table={() => <TableView rows={flows} cols={flowCols} caption={`Investment relationships, ${scope}`} search pageSize={20} initialSort={{ id: 'usd', desc: true }} />}
-          >
-            <SankeyChart
-              flows={flows.slice(0, TOP)}
-              label={(code) => name(code)}
-              ariaLabel={`Investment relationships, ${scope}, investor to host`}
-              valueFormat={fmtUsd}
-              sideLabels={{ left: 'INVESTORS', right: 'HOSTS' }}
-              tipNote="supply from the simulated new capacity a year"
-            />
-          </ChartCard>
+        {doc.investmentFlows ? (
+          <InvestmentFlowsCard doc={doc} meta={doc.meta} shockLabel={shockLabel} filter={f} scope={scope} name={name} nodeLabel={label} csvName="Allied Industrial Base" />
+        ) : (
+          flows.length > 0 && (
+            <ChartCard
+              headingLevel={2}
+              title="Investment relationships"
+              sub={`Investor to host, ${scope}: supply from the simulated new capacity (USD a year).`}
+              table={() => <TableView rows={flows} cols={flowCols} caption={`Investment relationships, ${scope}`} search pageSize={20} initialSort={{ id: 'usd', desc: true }} />}
+            >
+              <SankeyChart
+                flows={flows.slice(0, TOP)}
+                label={(code) => name(code)}
+                ariaLabel={`Investment relationships, ${scope}, investor to host`}
+                valueFormat={fmtUsd}
+                sideLabels={{ left: 'INVESTORS', right: 'HOSTS' }}
+                tipNote="supply from the simulated new capacity a year"
+              />
+            </ChartCard>
+          )
         )}
         {f.country ? (
           <InvestmentCards iso={f.country} name={name(f.country)} ties={ties?.ties ?? null} error={ties?.error ?? null} sector={sector} nameOf={anyName} headingLevel={2} />

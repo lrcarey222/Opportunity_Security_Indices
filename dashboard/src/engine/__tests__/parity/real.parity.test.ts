@@ -8,10 +8,9 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { loadIndex, loadWebBundle } from './harness.ts';
 import { paritySuite, turnEventLoop } from './suite.ts';
-import { selfCheckCore, selfCheckNetwork, selfCheckPartner } from '../../selfcheck.ts';
+import { selfCheckCore, selfCheckPartner } from '../../selfcheck.ts';
 import { makeParams, isBaseline } from '../../params.ts';
 import { run, runPartner } from '../../engine.ts';
-import { networkInputs, networkScore, networkSolve } from '../../network/index.ts';
 import type { Bundle } from '../../types.ts';
 
 const dataDir = fileURLToPath(new URL('../../../../public/data/', import.meta.url));
@@ -36,12 +35,12 @@ describe.skipIf(!hasData)('real data: engine at the baseline vs the shipped tabl
     if (!r.ok) throw new Error(r.detail);
     expect(r.ok).toBe(true);
   });
-  it('greedy network', async () => {
-    const r = await selfCheckNetwork(bundle());
-    if (!r.ok) throw new Error(r.detail);
-    expect(r.ok).toBe(true);
+  it('the shipped bundle has no network chunk (the original allied network design is retired)', () => {
+    const b = bundle();
+    expect(b.manifest.chunks.map((c) => c.name)).not.toContain('network');
+    expect('network' in b.baselineParams).toBe(false);
   });
-  it('performance (timings per layer)', async () => {
+  it('performance (timings per layer)', () => {
     const b = bundle();
     const t = (f: () => unknown) => {
       const t0 = performance.now();
@@ -51,16 +50,9 @@ describe.skipIf(!hasData)('real data: engine at the baseline vs the shipped tabl
     const p = makeParams({ dials: { hawkishness: 80, bullishness: 30, populism: 70, greenness: 80 } }, b);
     const [tCore, res] = t(() => run(b, p));
     const [tPartner, part] = t(() => runPartner(b, p));
-    const [tInputs, inp] = t(() => networkInputs(b, p, (part as ReturnType<typeof runPartner>).cells, (res as ReturnType<typeof run>).policy));
-    const [tScore, sc] = t(() => networkScore(inp as ReturnType<typeof networkInputs>, p));
-    const t0 = performance.now();
-    const sol = await networkSolve(sc as ReturnType<typeof networkScore>, p, b, { yieldBetweenStages: false });
-    const tSolve = performance.now() - t0;
-    console.log(
-      `[performance] L1-L3 ${tCore.toFixed(0)} ms; L4 ${tPartner.toFixed(0)} ms; L5 inputs ${tInputs.toFixed(0)} ms; ` +
-        `score ${tScore.toFixed(0)} ms; greedy ${tSolve.toFixed(0)} ms (${sol?.stages.length} stages, ${sol?.portfolio?.iters} cap iterations)`,
-    );
-    expect(sol).not.toBeNull();
+    console.log(`[performance] L1-L3 ${tCore.toFixed(0)} ms; L4 ${tPartner.toFixed(0)} ms`);
+    expect(res).toBeTruthy();
+    expect(part).toBeTruthy();
   });
 });
 

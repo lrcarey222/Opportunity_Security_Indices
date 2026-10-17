@@ -305,6 +305,45 @@ describe('checkCompactsDoc', () => {
     expect(p.some((x) => /compactGain|minRequiredDiversification/.test(x))).toBe(false);
   });
 
+  it('the network and investment flows (2026-10-17) are optional and checked when present, with the paths of the R mirror (R/dashboard/aib/aib_check.R)', () => {
+    const old = stripMethodology(doc());
+    expect(old.network).toBeUndefined();
+    expect(checkCompactsDoc(old)).toEqual([]);
+    const d = doc();
+    expect(d.network?.countries.length).toBeGreaterThan(0);
+    expect(d.investmentFlows?.pairs.length).toBeGreaterThan(0);
+    const n = loose(d.network);
+    const countries = n.countries as Loose[];
+    const edges = n.edges as Loose[];
+    edges[0].nodes = 'bat-mid-anode';
+    edges[1].from = edges[1].to;
+    edges[2].stages = ['Sidestream'];
+    countries[1].iso3 = countries[0].iso3;
+    loose(countries[2].supplier).headline = -0.1;
+    countries[3].roles = ['broker'];
+    const f = loose(d.investmentFlows);
+    const pairs = f.pairs as Loose[];
+    pairs[0].host = pairs[0].investor;
+    pairs[1].rank = 7;
+    pairs[2].node = 'wafers';
+    pairs[3].usd = null;
+    (f.hosts as Loose[])[0].capabilityTier = 1.5;
+    loose(f.variant).maxRank = 5;
+    const p = checkCompactsDoc(d);
+    expect(p).toContain('network.edges[0].nodes: expected an array (a one-item array collapsed to a string?)');
+    expect(p).toContain('network.edges[1]: supplier and buyer are the same economy');
+    expect(p).toContain("network.edges[2].stages: 'Sidestream' is not one of Upstream, Midstream, Downstream");
+    expect(p).toContain(`network.countries[1].iso3: duplicate '${countries[0].iso3}'`);
+    expect(p).toContain('network.countries[2].supplier.headline: -0.1 below 0');
+    expect(p).toContain("network.countries[3].roles: 'broker' is not one of supplier, buyer, investment_host, investor");
+    expect(p).toContain('investmentFlows.pairs[0]: investor and host are the same economy');
+    expect(p).toContain('investmentFlows.pairs[1].rank: 7 above 5');
+    expect(p).toContain("investmentFlows.pairs[2].node: 'wafers' is not a node of the document");
+    expect(p).toContain('investmentFlows.pairs[3].usd: expected a number');
+    expect(p).toContain('investmentFlows.hosts[0].capabilityTier: 1.5 is not an integer');
+    expect(checkCompactsDoc({ ...doc(), network: [] })).toContain('network: not an object');
+  });
+
   it('a newer document version needs a newer app; a non-object is one problem', () => {
     expect(checkCompactsDoc({ ...doc(), version: 3 })).toContain('document: version 3 needs a newer app');
     expect(checkCompactsDoc('x')).toEqual(['document: not an object']);

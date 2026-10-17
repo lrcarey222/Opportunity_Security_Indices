@@ -24,7 +24,6 @@ export interface GlossaryEntry {
 export const GLOSSARY_DEFAULTS = {
   n_core: '31',
   n_partner: '26',
-  lambda: '0.78',
   n_codes: '259',
   un_window: '2019-2023',
   n_tech: '11',
@@ -213,28 +212,6 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     modules: ALL,
     related: ['coalition', 'fs'],
   },
-  // ---- the allied network --------------------------------------------------------------------
-  {
-    id: 'network',
-    term: 'Allied network design',
-    short: 'A model design that spreads production of each upstream and midstream sector across coalition members so that none dominates, favouring capable, secure producers and strong partnerships.',
-    modules: ['strategic'],
-    related: ['lambda', 'eu_node'],
-  },
-  {
-    id: 'lambda',
-    term: 'Diversification weight',
-    short: "How strongly the network design penalises concentrating a sector's production in few members ({{lambda}} in the paper).",
-    modules: ['strategic'],
-    related: ['network', 'hhi'],
-  },
-  {
-    id: 'eu_node',
-    term: 'EU as one node',
-    short: "In the network design the EU-27 is a single producer; each member's share is derived from its weight within the EU.",
-    modules: ['strategic'],
-    related: ['network'],
-  },
   {
     id: 'allied_pick',
     term: 'Allied pick',
@@ -391,21 +368,21 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'hawkishness',
     term: 'Hawkishness',
-    short: 'Security first: more weight on where countries are exposed, on aligned partners and on spreading production across members.',
+    short: 'Security first: more weight on where countries are exposed and on aligned partners.',
     modules: ['strategic'],
     related: ['dials'],
   },
   {
     id: 'bullishness',
     term: 'Bullishness',
-    short: 'Opportunity first: more weight on economic opportunity, export markets and market size.',
+    short: 'Opportunity first: more weight on economic opportunity and export markets.',
     modules: ['strategic'],
     related: ['dials'],
   },
   {
     id: 'populism',
     term: 'Populism',
-    short: "Policy signals and home manufacturing: more weight on governments' policy activity and on the midstream stage.",
+    short: "Policy signals and manufacturing: more weight on governments' policy activity and on the midstream stage.",
     modules: ['strategic'],
     related: ['dials'],
   },

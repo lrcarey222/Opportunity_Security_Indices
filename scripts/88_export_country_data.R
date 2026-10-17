@@ -11,7 +11,7 @@
 # export reads data/processed (index_outputs.rds, psi_dyad_tbl.rds, psi_tbl.rds, coalition_tbl.rds,
 # geo_*.rds, cm_fdi_projects_tbl.rds, policy_outputs.rds, the partner Friendshore / Opportunity cell
 # and top-five tables, the theme tables named in config/country_insights.yml raw_tables,
-# charts/allied_strategic.csv, outputs/allied_network_member_shares.csv, nipo_policy_all.rds),
+# charts/allied_strategic.csv, nipo_policy_all.rds),
 # data/reference/economic_security_agreements.csv, data/raw/wdi_country_info.csv, and the published
 # Strategic and Sector bundles (dashboard/public/data/manifest.json and chunks;
 # dashboard/public/data/sector/...): the Strategic core chunk names every economy (Country -> ISO3)
@@ -120,8 +120,7 @@ if (!is.null(load_ctx)) {
   # the current config and dictionary, baseline date and build time (the saved inputs stay as they were)
   ctx$cfg <- cfg
   ctx$dict <- dict
-  s_in_l <- max(file.mtime(file.path(processed_dir, c("outputs/index_outputs.rds", "psi_dyad_tbl.rds", "coalition_tbl.rds",
-                                                      "outputs/allied_network_member_shares.csv"))))
+  s_in_l <- max(file.mtime(file.path(processed_dir, c("outputs/index_outputs.rds", "psi_dyad_tbl.rds", "coalition_tbl.rds"))))
   ctx$meta$as_of <- format(as.Date(format(s_in_l, "%Y-%m-%d")))
   ctx$meta$as_of_label <- country_date_label(as.Date(ctx$meta$as_of))
   ctx$meta$created <- created
@@ -175,7 +174,7 @@ if (!is.null(load_ctx)) {
   s_created <- as.POSIXct(smf$created, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   x_created <- as.POSIXct(xmf$created, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   newest <- function(fs) max(file.mtime(fs[file.exists(fs)]))
-  s_in <- newest(file.path(processed_dir, c("outputs/index_outputs.rds", "psi_dyad_tbl.rds", "coalition_tbl.rds", "outputs/allied_network_member_shares.csv")))
+  s_in <- newest(file.path(processed_dir, c("outputs/index_outputs.rds", "psi_dyad_tbl.rds", "coalition_tbl.rds")))
   x_in <- newest(file.path(processed_dir, c("import_dependence_tbl.rds", "trade_concentration_tbl.rds", "cm_fdi_projects_tbl.rds")))
   fresh_s <- s_in <= s_created
   fresh_x <- x_in <= x_created
@@ -430,8 +429,7 @@ if (!is.null(load_ctx)) {
   ga <- as.data.frame(rds("geo_alignment_tbl.rds"))[, c("reporter_iso", "partner_iso", "geo_alignment", "bloc_partner", "basis_partner")]
   un_window <- { w <- as.integer(strsplit(ip$window_years[1], ",", fixed = TRUE)[[1]]); paste0(min(w), "-", max(w)) }
 
-  # ---- network design and allied picks -------------------------------------------------------------------
-  member_shares <- read.csv(file.path(processed_dir, "outputs", "allied_network_member_shares.csv"), stringsAsFactors = FALSE)
+  # ---- allied picks (the network design's member shares are retired, 2026-10-17) --------------------------
   allied_csv <- read.csv(file.path(processed_dir, "charts", "allied_strategic.csv"), stringsAsFactors = FALSE)
   allied <- data.frame(iso3 = allied_csv$iso3, tech = allied_csv$tech, supply_chain = allied_csv$supply_chain, strategic_index = allied_csv$strategic_index,
                        stringsAsFactors = FALSE)
@@ -555,7 +553,7 @@ if (!is.null(load_ctx)) {
     .cat_tbl = list(es = ces$cat, eo = ceo$cat), .var_tbl = list(es = ces$var, eo = ceo$var),
     raw_rows = raw_rows, raw_idx = raw_idx, flows = flows, basket_keys = basket_keys, fdi = fdi,
     psi_by = split(psi_dyad, psi_dyad$reporter_iso), best5 = best5, psi_partner = psi_partner_tbl,
-    agreements = agreements, geo_alignment = ga, member_shares = member_shares, allied = allied, nipo = nipo,
+    agreements = agreements, geo_alignment = ga, allied = allied, nipo = nipo,
     party_fn = party_fn, note_fn = note_fn,
     dup_fn = function(e, n) dup_rows[[length(dup_rows) + 1]] <<- paste(e$pillar, e$category, e$variable, n),
     pick_fn = function(iso3, pick) picks_seen[[iso3]] <<- pick
@@ -784,6 +782,7 @@ memo_rule_check <- function(iso) {
   st
 }
 memo_rule_log <- list()
+memo_revised <- character()
 
 files <- list()
 entries <- list()
@@ -804,7 +803,13 @@ for (i in seq_len(nrow(roster))) {
     } else dfile <- NULL
     om <- old_memo[[iso]]
     if (!is.null(om) && identical(ro$tier, "core") && file.exists(file.path(out_dir, om$json))) {
-      if (identical(om$facts_sha256, s$checks$facts_sha256)) {
+      if (country_memo_under_revision(om, cfg$memo_revision)) {
+        # written before the revision cut-off (config memo_revision): hidden as "being revised"
+        om$stale <- TRUE
+        om["rule_note"] <- list(NULL)
+        om["rule_note_d"] <- list(NULL)
+        memo_revised <- c(memo_revised, iso)
+      } else if (identical(om$facts_sha256, s$checks$facts_sha256)) {
         om$stale <- isTRUE(om$stale)
       } else if (synthetic || (isTRUE(om$stale) && is.null(om$rule_note))) {
         om$stale <- TRUE
@@ -835,6 +840,11 @@ if (length(memo_rule_log)) {
   add_check("memos: claims re-resolved on the new sheets (kept with the 2026-10-15 quadrant-rule note when only quadrant-derived claims changed)",
             if (n_st[["stale"]] == 0) "PASS" else "WARN", length(memo_rule_log), NA,
             sprintf("%d current, %d kept with the rule note, %d stale", n_st[["current"]], n_st[["rule_note"]], n_st[["stale"]]))
+}
+
+if (!is.null(cfg$memo_revision$before)) {
+  add_check(paste0("memos: written before ", cfg$memo_revision$before, " are hidden as being revised (config memo_revision)"),
+            "PASS", length(memo_revised), NA, if (length(memo_revised)) paste(memo_revised, collapse = " ") else "none")
 }
 
 # the synthetic fixture: a placeholder memo for the United States (built against until the memo phase)

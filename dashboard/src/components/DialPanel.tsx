@@ -13,13 +13,13 @@ import { DIAL_NAMES, type Advanced, type DialName, type Dials } from '../engine/
 import { useAdvancedChanged, useApp, useRun, useScenario } from '../state/EngineProvider.tsx';
 import { toSpec } from '../state/url.ts';
 import { fmtMult, TIMES } from '../lib/format.ts';
-import { ChangedDot, Disclosure, Segmented, Switch, Checkbox } from './ui.tsx';
+import { ChangedDot, Disclosure, Segmented, Switch } from './ui.tsx';
 import { InfoTip } from './InfoTip.tsx';
 
 export const DIAL_SPECS: { key: DialName; label: string; help: string }[] = [
-  { key: 'hawkishness', label: 'Hawkishness', help: 'Security first: weight on exposure, aligned partners and spreading production.' },
-  { key: 'bullishness', label: 'Bullishness', help: 'Opportunity first: weight on opportunity, export markets and market size.' },
-  { key: 'populism', label: 'Populism', help: 'Policy signals and home manufacturing.' },
+  { key: 'hawkishness', label: 'Hawkishness', help: 'Security first: weight on exposure and on aligned partners.' },
+  { key: 'bullishness', label: 'Bullishness', help: 'Opportunity first: weight on opportunity and export markets.' },
+  { key: 'populism', label: 'Populism', help: 'Policy signals and the manufacturing (midstream) stages.' },
   { key: 'greenness', label: 'Climate', help: 'Climate first: low-emission technologies; at 90 and above coal, oil and gas drop out.' },
 ];
 
@@ -191,7 +191,7 @@ function CategoryWeights({
     <Disclosure summary={title} badge={changed ? <ChangedDot /> : undefined}>
       <p className="mb-1 text-xs text-paper-mute">Weights are relative: what counts is each category&rsquo;s share of the total. The score is recomputed exactly from the category scores.</p>
       {changed && !app.manifest.flags?.partner_pillar_consistent && (
-        <p className="mb-1 text-xs text-paper">Partnership and network layers keep the paper&rsquo;s pillars.</p>
+        <p className="mb-1 text-xs text-paper">The partnership measures keep the paper&rsquo;s pillars.</p>
       )}
       {cats.map((c) => (
         <WeightSlider
@@ -228,9 +228,7 @@ export function AdvancedPanel() {
   const ch = useAdvancedChanged();
   const a = scenario.advanced;
   const d = app.urlCtx.defaults;
-  const bi = app.bundleLike.baselineInputs;
   const set = (f: (a: Advanced) => Advanced, replace = false) => setAdvanced(f, { replace });
-  const lambdaDial = (bi.lambda ?? 1) * dialMultiplier(scenario.dials.hawkishness, app.manifest.dial_grid);
   return (
     <details className="disclosure mt-4 border-t hairline" open={ch.any || undefined}>
       <summary className="flex items-center gap-2 py-3">
@@ -313,96 +311,6 @@ export function AdvancedPanel() {
         <p className="mt-1.5 text-xs text-paper-mute">
           A partner&rsquo;s headline Partnership Strength averages how strong a partner it is for each reporting economy. The paper averages over {d.psi_view === 'world' ? 'all reporters (world)' : 'the coalition reporters'}.
         </p>
-      </Disclosure>
-      <Disclosure summary="Network design" badge={ch.net ? <ChangedDot /> : undefined}>
-        <Switch
-          label="Set the diversification weight (λ) by hand"
-          hint={`How strongly the design penalises concentrating a sector in few members. From the hawkishness dial: ${lambdaDial.toFixed(2)}`}
-          checked={a.network.lambda !== null}
-          onChange={(on) => set((x) => ({ ...x, network: { ...x.network, lambda: on ? Number(lambdaDial.toFixed(1)) : null } }))}
-        />
-        <div className="mt-2">
-          <div className="flex justify-between text-xs">
-            <label htmlFor="adv-lambda" className="text-paper-dim">
-              Diversification weight (&lambda;)
-            </label>
-            <span className="tabular text-paper-mute">{a.network.lambda ?? 'from dial'}</span>
-          </div>
-          <input
-            id="adv-lambda"
-            type="range"
-            className="slider"
-            min={0}
-            max={8}
-            step={0.1}
-            disabled={a.network.lambda === null}
-            value={a.network.lambda ?? Math.min(8, Number(lambdaDial.toFixed(1)))}
-            style={fillStyle(a.network.lambda ?? lambdaDial, 0, 8)}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              set((x) => ({ ...x, network: { ...x.network, lambda: v } }), true);
-            }}
-            onPointerUp={flush}
-            onKeyUp={flush}
-          />
-        </div>
-        <div className="mt-2">
-          <div className="flex justify-between text-xs">
-            <label htmlFor="adv-maxshare" className="text-paper-dim">
-              Largest share for one producer
-            </label>
-            <span className="tabular text-paper-mute">{a.network.max_share}</span>
-          </div>
-          <input
-            id="adv-maxshare"
-            type="range"
-            className="slider"
-            min={0.25}
-            max={0.6}
-            step={0.05}
-            value={a.network.max_share}
-            style={fillStyle(a.network.max_share, 0.25, 0.6)}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              set((x) => ({ ...x, network: { ...x.network, max_share: v } }), true);
-            }}
-            onPointerUp={flush}
-            onKeyUp={flush}
-          />
-        </div>
-        <div className="mt-3 flex items-center justify-between gap-2 text-xs">
-          <span className="text-paper-dim" id="adv-minprod-label">
-            Fewest producers per sector
-          </span>
-          <div className="flex items-center gap-1" role="group" aria-labelledby="adv-minprod-label">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm px-2"
-              aria-label="Fewer producers"
-              disabled={a.network.min_producers <= 2}
-              onClick={() => set((x) => ({ ...x, network: { ...x.network, min_producers: x.network.min_producers - 1 } }))}
-            >
-              {'−'}
-            </button>
-            <output className="w-6 text-center text-sm text-paper tabular" aria-live="polite">
-              {a.network.min_producers}
-            </output>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm px-2"
-              aria-label="More producers"
-              disabled={a.network.min_producers >= 6}
-              onClick={() => set((x) => ({ ...x, network: { ...x.network, min_producers: x.network.min_producers + 1 } }))}
-            >
-              +
-            </button>
-          </div>
-        </div>
-        <Checkbox
-          label="Portfolio caps: limit how many sectors each member leads"
-          checked={a.network.portfolio_enable}
-          onChange={(v) => set((x) => ({ ...x, network: { ...x.network, portfolio_enable: v } }))}
-        />
       </Disclosure>
     </details>
   );

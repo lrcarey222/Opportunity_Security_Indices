@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CellFacts, Driver, FactSheet } from '../contract.ts';
 import { matrixCells, partnerTableRows, priorityRows, quadrantLine, slopeModel } from '../derive/model.ts';
-import { editionSuffix, euRegionSentence, ledeOf, networkSentence, poss, proseName, rawNoteLine, whyIntro, whySentence } from '../derive/text.ts';
+import { editionSuffix, euRegionSentence, ledeOf, poss, proseName, rawNoteLine, whyIntro, whySentence } from '../derive/text.ts';
 import { haveFixture, readSheet } from './fixture.ts';
 
 const fv = (v: number | null, d = String(v)) => ({ v, d });
@@ -107,11 +107,11 @@ describe.skipIf(!haveFixture())('derive helpers on the synthetic sheets', () => 
     expect(whyIntro(nga)).toMatch(/^Nigeria has no Strategic Index/);
   });
 
-  it('the network sentence lists the producer shares once', () => {
-    const [first] = networkSentence(deu);
-    expect(first).toMatch(/through the EU node/);
-    expect((first.match(/designed production/g) ?? []).length).toBe(1);
-    expect(networkSentence(nga)[0]).toBe('Nigeria is not part of the allied network design.');
+  it('the sheets carry the allied pick, not the retired network design (2026-10-17)', () => {
+    for (const s of [usa, deu, nga]) expect('network' in s, s.iso3).toBe(false);
+    expect(nga.pick).toBeNull();
+    expect(deu.pick?.cell).toBeTruthy();
+    expect(deu.cells.find((c) => c.key === deu.pick?.cell)?.si.pick).toBe(true);
   });
 
   it('the slope model takes the first ten of each order and cross-references ranks', () => {

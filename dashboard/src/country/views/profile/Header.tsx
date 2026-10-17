@@ -20,6 +20,16 @@ export function memoReady(e: { tier: string; memo: { stale: boolean } | null }):
   return e.tier === 'core' && !!e.memo && !e.memo.stale;
 }
 
+/** A core member's memo that exists but is not shown: a later fact sheet changed a claim, or the memo is
+ *  under revision (config memo_revision, 2026-10-17: the original allied network design is retired and
+ *  the memos are being rewritten). The memo page, the profile's memo panel and GENERATE MEMO say so. */
+export function memoRevised(e: { tier: string; memo: { stale: boolean } | null }): boolean {
+  return e.tier === 'core' && !!e.memo && e.memo.stale;
+}
+
+export const MEMO_REVISED_TEXT = 'This memo is being revised. It will be available again once it has been rewritten.';
+export const memoRevisedLine = (name: string) => `The memo for ${name} is being revised. It will be available again once it has been rewritten.`;
+
 export function ProfileHead({ manifest }: { manifest: CountryManifest }) {
   const { sheet, entry } = useProfile();
   const nav = useNavigate();
@@ -32,12 +42,7 @@ export function ProfileHead({ manifest }: { manifest: CountryManifest }) {
         <CountrySelect label="Choose a country" value={entry.iso3} options={countryOptions(manifest)} onChange={(iso) => nav(countryHref(iso))} className="w-72 max-w-full" />
         <div className="flex flex-wrap items-center gap-2">
           <Tag accent={m.tier === 'core'}>{tierTag(m.tier)}</Tag>
-          {m.eu_member && (
-            <span className="inline-flex items-center gap-1">
-              <Tag>EU MEMBER</Tag>
-              <InfoTip id="eu_node" term="the EU as one node" />
-            </span>
-          )}
+          {m.eu_member && <Tag>EU MEMBER</Tag>}
           {m.policy_basis === 'IEA PAMS only' && (
             <span className="inline-flex items-center gap-1">
               <Tag>POLICY: RECORDS ONLY, NO CLIMATE RATING</Tag>
@@ -54,6 +59,16 @@ export function ProfileHead({ manifest }: { manifest: CountryManifest }) {
               GENERATE MEMO
             </Link>
             <p className="mt-1 text-xs text-paper-mute">Opens the pre-written memo for {name}</p>
+          </div>
+        )}
+        {memoRevised(entry) && (
+          <div>
+            <button type="button" className="btn btn-primary" disabled aria-describedby="memo-revised-head">
+              GENERATE MEMO
+            </button>
+            <p id="memo-revised-head" className="mt-1 text-xs text-paper-mute">
+              The memo for {name} is being revised
+            </p>
           </div>
         )}
         <Link to={sectorCountryLink(entry.iso3)} className="link self-center text-sm">

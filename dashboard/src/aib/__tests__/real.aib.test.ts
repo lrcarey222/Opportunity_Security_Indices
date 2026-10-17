@@ -222,6 +222,38 @@ describe.skipIf(!have)('the real Sectoral Compacts bundle (public/data/aib)', ()
     }
   });
 
+  it('the network and investment flows (2026-10-17): the headline variant, one best-ranked host per node, every code named', () => {
+    if (!doc.network || !doc.investmentFlows) return;
+    const net = doc.network;
+    const inv = doc.investmentFlows;
+    for (const v of [net.variant, inv.variant]) {
+      expect(v.shock).toBe(doc.meta.headlineShock);
+      expect(v.scenario).toBe(doc.meta.headlineScenario);
+      if (doc.meta.supplyConstraint) expect(v.supplyConstraint).toBe(doc.meta.supplyConstraint);
+    }
+    // the flows, like the compacts and the country summary, cover only nodes of the strategic scope
+    const nodeById = new Map(doc.nodes.map((n) => [n.id, n]));
+    for (const x of [...inv.pairs, ...inv.hosts]) expect(nodeById.has(x.node) && inStrategicScope(nodeById.get(x.node)!), `flow node ${x.node} in scope`).toBe(true);
+    const names = countryNamesOf(doc);
+    for (const c of net.countries) expect(names[c.iso3]).toBeTruthy();
+    for (const p of inv.pairs) {
+      expect(names[p.investor]).toBeTruthy();
+      expect(names[p.host]).toBeTruthy();
+    }
+    // the roles the summary names are the sides with a selected relationship
+    for (const c of net.countries) {
+      const sides = { supplier: c.supplier, buyer: c.buyer, investment_host: c.host, investor: c.investor } as const;
+      for (const [k, sd] of Object.entries(sides)) expect(c.roles.includes(k)).toBe(sd.selected > 0);
+    }
+    // each node's best-ranked host is one economy, and it is a ranked host of that node
+    const bestHost = new Map<string, Set<string>>();
+    for (const p of inv.pairs.filter((x) => x.rank === 1)) bestHost.set(p.node, (bestHost.get(p.node) ?? new Set()).add(p.host));
+    for (const [node, hosts] of bestHost) {
+      expect(hosts.size).toBe(1);
+      expect(inv.hosts.some((h) => h.node === node && h.rank === 1 && hosts.has(h.host))).toBe(true);
+    }
+  });
+
   it('every coalition path starts at step 0 with the anchors and grows by one economy a step', () => {
     for (const c of doc.compacts) {
       if (!c.path.length) continue;

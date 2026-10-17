@@ -1,13 +1,13 @@
 {
   "schema": "osi-sector",
   "schema_version": 1,
-  "bundle_id": "67e440a755c1d8a95fde6df667c0d38e",
-  "created": "2026-10-15T22:00:08Z",
-  "git_commit": "81d1bc5",
+  "bundle_id": "befd59dfb59c50e0026779924ca97c0b",
+  "created": "2026-10-17T16:55:33Z",
+  "git_commit": "15637b6",
   "generator": "scripts/87_export_sector_data.R",
   "phase": 1,
-  "strategic_bundle_id": "89d9af9a5fe8ef79f179cff95c5ba2a9",
-  "processed_mtime_max": "2026-10-12T16:03:45Z",
+  "strategic_bundle_id": "980a08f5402a21c1d1e7d5190b4dcc1f",
+  "processed_mtime_max": "2026-10-17T16:51:11Z",
   "pipeline_marker": "pipeline 04-25 finished 2026-10-12 09:09:32 (final: EIA fill, baskets, CM-FDI)",
   "flags": {
     "include_restricted": false,
@@ -16,15 +16,16 @@
     "policy_text": true,
     "series": true,
     "fdi": true,
-    "dev": true
+    "dev": true,
+    "climate": true
   },
   "chunks": [
     {
       "name": "sector-meta",
-      "file": "sector-meta.becb9645.osb",
-      "bytes": 288032,
-      "bytes_gz": 85118,
-      "md5": "becb964543c00deb4b72355cc1eaea1e",
+      "file": "sector-meta.af323966.osb",
+      "bytes": 291376,
+      "bytes_gz": 86224,
+      "md5": "af323966da2c798ff978d1ad40746d39",
       "tech": null
     },
     {
@@ -153,6 +154,14 @@
       "bytes": 1578168,
       "bytes_gz": 403412,
       "md5": "6a75922079d6d1802a725bbb0e91632d",
+      "tech": null
+    },
+    {
+      "name": "sector-climate",
+      "file": "sector-climate.8ea4b815.osb",
+      "bytes": 481920,
+      "bytes_gz": 120493,
+      "md5": "8ea4b8150867aeec407400f862cba8db",
       "tech": null
     }
   ],
@@ -441,7 +450,7 @@
       "country_data": true
     }
   ],
-  "notes": ["Coalition: 57 economies (31 core, 26 partners); the EU-27 is one node in the Strategic network.", "Trade on screen is the reconciled Comtrade matrix (importer-declared; exporters' reports x1.06 where an importer did not declare); Hong Kong is kept and tagged as a re-export hub.", "Hong Kong is out of the exporter-reported Comtrade measures (RCA and the reported side of the reconciliation), as in Strategic Insights.", "Critical-mineral reserves: USGS Mineral Commodity Summaries 2026.", "Fossil production EI does not report separately comes from the EIA International Energy Statistics where the pipeline took it (converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 and the net balance and self-sufficiency say so (marked 'not reported separately').", "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.", "Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; project counts and sums of disclosed capital computed by the OSI authors, no record altered; undisclosed capital investment is shown as not disclosed, never zero.", "Trade baskets cover Electric Vehicles, Solar, Wind, Nuclear and Semiconductors Upstream since the 2026-10 basket review; trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total.", "Scenario dials apply to Strategic Insights only."],
+  "notes": ["Coalition: 57 economies (31 core, 26 partners); the EU-27 is one node in the Strategic network.", "Trade on screen is the reconciled Comtrade matrix (importer-declared; exporters' reports x1.06 where an importer did not declare); Hong Kong is kept and tagged as a re-export hub.", "Hong Kong is out of the exporter-reported Comtrade measures (RCA and the reported side of the reconciliation), as in Strategic Insights.", "Critical-mineral reserves: USGS Mineral Commodity Summaries 2026.", "Fossil production EI does not report separately comes from the EIA International Energy Statistics where the pipeline took it (converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 and the net balance and self-sufficiency say so (marked 'not reported separately').", "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.", "Sector emissions: Climate TRACE (climatetrace.org), CC BY 4.0, 2021-2025, tonnes CO2e (100-year GWP), mapped to technology x stage with a match quality per sector (config/climate_trace_map.yml); sectors with no match show the IPCC lifecycle intensity of the technology.", "Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; project counts and sums of disclosed capital computed by the OSI authors, no record altered; undisclosed capital investment is shown as not disclosed, never zero.", "Trade baskets cover Electric Vehicles, Solar, Wind, Nuclear and Semiconductors Upstream since the 2026-10 basket review; trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total.", "Scenario dials apply to Strategic Insights only."],
   "validation": [
     {
       "check": "dictionary: valid, every measure of the build has an entry",
@@ -660,6 +669,18 @@
       "detail": "flows 748, groups 1200, years 321 rows; projects used by the indices 905; Chinese-HQ parents (CHN, HKG, MAC) 439"
     },
     {
+      "check": "climate: Climate TRACE sources mapped, emissions of dims.geo economies shipped (WLD = Climate TRACE's world total)",
+      "status": "PASS",
+      "n": 16730,
+      "detail": "15 sources, 17 cells with a match (direct 1, none 18, partial 7, proxy 9), 2021-2025; largest share of a world total from economies outside dims.geo: 0.45%"
+    },
+    {
+      "check": "climate: the latest year repeats the year before (an estimate carried forward) for copper-mining, bauxite-mining, iron-mining, other-mining-quarrying, other-metals",
+      "status": "WARN",
+      "n": 5,
+      "detail": null
+    },
+    {
       "check": "dictionary: every measure of the build has data",
       "status": "PASS",
       "n": 75,
@@ -860,13 +881,13 @@
     {
       "check": "chunks: decode identical() to the encoded objects (NA patterns included)",
       "status": "PASS",
-      "n": 17,
+      "n": 18,
       "detail": null
     },
     {
       "check": "chunks: R mirror of the contract checks (types, NA, indices, sort, keys, slices)",
       "status": "PASS",
-      "n": 17,
+      "n": 18,
       "detail": null
     },
     {
@@ -1248,6 +1269,42 @@
       "detail": null
     },
     {
+      "check": "climate (decoded): emissions identical() to climate_trace_emissions_tbl (dims.geo economies and WLD)",
+      "status": "PASS",
+      "n": 16730,
+      "detail": null
+    },
+    {
+      "check": "climate (decoded): intensity identical() to climate_trace_intensity_tbl",
+      "status": "PASS",
+      "n": 3735,
+      "detail": null
+    },
+    {
+      "check": "climate (decoded): cell map identical() to climate_trace_map_tbl",
+      "status": "PASS",
+      "n": 33,
+      "detail": null
+    },
+    {
+      "check": "climate (decoded): cell match quality and notes identical() to climate_trace_cells_tbl",
+      "status": "PASS",
+      "n": 35,
+      "detail": null
+    },
+    {
+      "check": "climate (decoded): IPCC lifecycle gCO2e/kWh identical() to climate_trace_lifecycle_tbl",
+      "status": "PASS",
+      "n": 11,
+      "detail": null
+    },
+    {
+      "check": "climate (decoded): sources identical() to climate_trace_sources_tbl",
+      "status": "PASS",
+      "n": 15,
+      "detail": null
+    },
+    {
       "check": "CM-FDI parity: every decoded project is a CSV row and every CSV row is exported once",
       "status": "PASS",
       "n": 1042,
@@ -1280,16 +1337,16 @@
     {
       "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 25 MB gz)",
       "status": "PASS",
-      "n": 17,
-      "detail": "sector 4237 kB gz; combined 10.80 MB gz"
+      "n": 18,
+      "detail": "sector 4356 kB gz; combined 10.45 MB gz"
     }
   ],
   "sources": [
     {
       "path": "config/sector_dictionary.yml",
-      "mtime": "2026-10-15T21:50:01Z",
-      "bytes": 147213,
-      "md5": "fa9bdfd94b4f00ee732e842214bb0ce2"
+      "mtime": "2026-10-17T16:35:15Z",
+      "bytes": 150929,
+      "md5": "fbc7b38073774c87778eff639a32b725"
     },
     {
       "path": "data/processed/coalition_tbl.rds",
@@ -1548,11 +1605,53 @@
       "mtime": "2026-09-30T14:19:50Z",
       "bytes": 5052025,
       "md5": "42f00ad80194ea4b33a595caf8b38a32"
+    },
+    {
+      "path": "data/processed/climate_trace_sources_tbl.rds",
+      "mtime": "2026-10-17T16:51:11Z",
+      "bytes": 617,
+      "md5": "2dc8ae09d6b9b62a75a40579eaca1584"
+    },
+    {
+      "path": "data/processed/climate_trace_map_tbl.rds",
+      "mtime": "2026-10-17T16:51:11Z",
+      "bytes": 599,
+      "md5": "b4bbc59271d081c272717b1386e017a9"
+    },
+    {
+      "path": "data/processed/climate_trace_cells_tbl.rds",
+      "mtime": "2026-10-17T16:51:11Z",
+      "bytes": 1943,
+      "md5": "09bff805ea4520a3985b9c880725c8d4"
+    },
+    {
+      "path": "data/processed/climate_trace_lifecycle_tbl.rds",
+      "mtime": "2026-10-17T16:51:11Z",
+      "bytes": 648,
+      "md5": "01b7b731a7dbe86eeab8bca5dbb446d5"
+    },
+    {
+      "path": "data/processed/climate_trace_emissions_tbl.rds",
+      "mtime": "2026-10-17T16:51:11Z",
+      "bytes": 49722,
+      "md5": "def3b5d69063daa2df30758c308f8da2"
+    },
+    {
+      "path": "data/processed/climate_trace_intensity_tbl.rds",
+      "mtime": "2026-10-17T16:51:11Z",
+      "bytes": 70180,
+      "md5": "dd54f355e6986567516312e3850e4357"
+    },
+    {
+      "path": "data/processed/climate_trace_country_tbl.rds",
+      "mtime": "2026-10-17T16:51:11Z",
+      "bytes": 187854,
+      "md5": "4edce8d76e7a7ebd62029848be2305a8"
     }
   ],
   "budget": {
-    "sector_gz": 4338556,
-    "combined_gz": 11320442,
+    "sector_gz": 4460155,
+    "combined_gz": 10959301,
     "limit_sector_gz": 9437184,
     "limit_combined_gz": 26214400
   },

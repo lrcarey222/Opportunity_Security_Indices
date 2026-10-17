@@ -7,13 +7,13 @@
 //                     with setters that write the URL (dial drags replace the history entry; discrete
 //                     actions push).
 //   RunProvider       one debounced run with the union of what the mounted views need (core always;
-//                     partner / network / contributions on demand); results per layer keyed by the
+//                     partner / contributions on demand); results per layer keyed by the
 //                     scenario, so a view keeps its previous frame while a new result computes.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { EngineClient, type EngineFailure, type EngineState, type ProgressMessage } from '../worker/client.ts';
-import type { CorePayload, NetworkPayload, PartnerPayload } from '../worker/protocol.ts';
+import type { CorePayload, PartnerPayload } from '../worker/protocol.ts';
 import type { Advanced, Dials } from '../engine/types.ts';
 import { buildAppData, type AppData } from './appData.ts';
 import {
@@ -215,12 +215,11 @@ export interface RunStatus {
   ms: number | null;
 }
 
-type Need = 'partner' | 'network' | 'contrib';
+type Need = 'partner' | 'contrib';
 
 interface RunCtx {
   core: LayerResult<CorePayload> | null;
   partner: LayerResult<PartnerPayload> | null;
-  network: LayerResult<NetworkPayload> | null;
   status: RunStatus;
   wants: Record<Need, boolean>;
   register: (need: Need) => () => void;
@@ -232,13 +231,12 @@ interface RunCtx {
 const RunContext = createContext<RunCtx | null>(null);
 
 export const DEBOUNCE_MS = 150;
-export const DEBOUNCE_NETWORK_MS = 600;
 
 export function RunProvider({ children }: { children: ReactNode }) {
   const { client, state } = useEngine();
   const { scenario, key } = useScenario();
-  const [needs, setNeeds] = useState<Record<Need, number>>({ partner: 0, network: 0, contrib: 0 });
-  const [res, setRes] = useState<Pick<RunCtx, 'core' | 'partner' | 'network'>>({ core: null, partner: null, network: null });
+  const [needs, setNeeds] = useState<Record<Need, number>>({ partner: 0, contrib: 0 });
+  const [res, setRes] = useState<Pick<RunCtx, 'core' | 'partner'>>({ core: null, partner: null });
   const [status, setStatus] = useState<RunStatus>({ phase: 'idle', progress: null, error: null, ms: null });
   const [attempt, setAttempt] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -247,18 +245,16 @@ export function RunProvider({ children }: { children: ReactNode }) {
   latest.current = { scenario, key };
 
   const wp = needs.partner > 0;
-  const wn = needs.network > 0;
   const wc = needs.contrib > 0;
-  const wants = useMemo(() => ({ partner: wp, network: wn, contrib: wc }), [wp, wn, wc]);
+  const wants = useMemo(() => ({ partner: wp, contrib: wc }), [wp, wc]);
   const missing =
     !res.core ||
     res.core.key !== key ||
     (wants.contrib && !res.core.contrib) ||
-    (wants.partner && res.partner?.key !== key) ||
-    (wants.network && res.network?.key !== key);
+    (wants.partner && res.partner?.key !== key);
   // read through a ref, so a result arriving mid-run never re-schedules (and supersedes) that run
   const delayRef = useRef(0);
-  delayRef.current = res.core === null ? 0 : wants.network && res.network?.key !== key ? DEBOUNCE_NETWORK_MS : DEBOUNCE_MS;
+  delayRef.current = res.core === null ? 0 : DEBOUNCE_MS;
 
   useEffect(() => {
     if (state.status !== 'ready' || !missing) return;
@@ -272,8 +268,7 @@ export function RunProvider({ children }: { children: ReactNode }) {
         onResult: (msg) => {
           const lr = { key: runKey, payload: msg.payload, source: msg.source, ms: msg.ms, cached: msg.cached };
           if (msg.layer === 'core') setRes((r) => ({ ...r, core: { ...lr, payload: msg.payload, contrib: want.contrib } }));
-          else if (msg.layer === 'partner') setRes((r) => ({ ...r, partner: { ...lr, payload: msg.payload } }));
-          else setRes((r) => ({ ...r, network: { ...lr, payload: msg.payload } }));
+          else setRes((r) => ({ ...r, partner: { ...lr, payload: msg.payload } }));
         },
         onProgress: (p) => setStatus((s) => ({ ...s, progress: p })),
       });
@@ -351,11 +346,4 @@ export function usePartner(enabled = true): LayerView<PartnerPayload> {
   const { partner } = useRun();
   const { key } = useScenario();
   return layerView(partner, key);
-}
-
-export function useNetwork(enabled = true): LayerView<NetworkPayload> {
-  useNeed('network', enabled);
-  const { network } = useRun();
-  const { key } = useScenario();
-  return layerView(network, key);
 }

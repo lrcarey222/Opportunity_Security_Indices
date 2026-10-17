@@ -7,9 +7,9 @@ This repository holds the **Opportunity Security Indices** pipeline. It produces
 - **Policy index**: industrial and climate policy support (IEA Policies and Measures + Climate Action Tracker).
 - **Strategic Index (SI)**: where a country should build, from EO, its energy-security *need*, policy support, the supply-chain stage and the technology's climate weight.
 - **Geopolitical alignment**: bloc membership on the US-China axis of UN General Assembly voting.
-- **Allied coalition**: a two-tier coalition (core and partners) derived from alignment, economic-security agreements and major-supplier (or reserve-holder) status, with the EU as one network node.
+- **Allied coalition**: a two-tier coalition (core and partners) derived from alignment, economic-security agreements and major-supplier (or reserve-holder) status, with the EU-27 as one coalition node.
 - **Partnership Strength Index (PSI)**: a partner-level score from bilateral Friendshore (friendshoring opportunities: where a reporter's security need in a sector meets a partner's economic opportunity there, on existing trade and investment ties), Opportunity (export markets) and Development components, from the coalition's point of view.
-- **Allied network design**: a coalition-wide division of labour per technology and stage (a MILP with a diversification term).
+- **Allied Industrial Base**: how the coalition absorbs a supply shock with the trade it has, where new investment would close the rest, the emergent network of trade and investment relationships, country roles and the Sectoral Compacts. It replaces the original allied network design (a MILP with a diversification term), retired on 2026-10-17.
 
 > **Unit of analysis:** **Country × Technology × Supply-chain stage**
 > Stages are `Upstream`, `Midstream`, `Downstream`. The 11 headline technologies are Electric Vehicles, Nuclear, Coal, Batteries, Green Hydrogen, Wind, Oil, Solar, Gas, Geothermal and Electric Grid.
@@ -38,7 +38,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
   - [Geopolitical alignment](#geopolitical-alignment)
   - [Allied coalition: two tiers and the EU node](#allied-coalition-two-tiers-and-the-eu-node)
   - [Partnership Strength Index (PSI)](#partnership-strength-index-psi)
-  - [Allied network design](#allied-network-design)
+  - [Allied network design (retired)](#allied-network-design-retired)
   - [Allied Industrial Base and Sectoral Compacts](#allied-industrial-base-and-sectoral-compacts)
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
@@ -66,16 +66,17 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Step | Script | Main outputs (`data/processed/`) |
 | --- | --- | --- |
 | Themes | `scripts/10_build_themes.R` | one tidy table per theme (`*_tbl.rds`), policy components, technology GHG weights |
+| Climate emissions | `scripts/16_build_climate_trace.R` | `climate_trace_{country,assets,sources,map,cells,emissions,intensity,lifecycle}_tbl.rds` (Climate TRACE sector emissions mapped to technology x stage, `config/climate_trace_map.yml`) |
 | Alignment | `scripts/12_build_geopolitical_alignment.R` | `geo_ideal_points_tbl.rds`, `geo_alignment_tbl.rds`, `geo_coalition_tbl.rds` |
 | Coalition | `scripts/13_build_coalition.R` | `coalition_tbl.rds`, `eu_stage_weights_tbl.rds`, `major_supplier_shares_tbl.rds` |
 | Pillars, Policy, SI | `scripts/20_build_indices.R` | `outputs/index_outputs.rds` (ES, EO, contributions, diagnostics, Policy index, Strategic Index, coalition), `charts/allied_strategic.csv` |
 | Partner themes | `scripts/15_build_partner_themes.R` | `partner_{friendshore,opportunity,development}_*_tbl.rds`, `partner_trade_coverage_tbl.rds`, `cm_fdi_projects_tbl.rds`, `partner_cm_fdi_{ties,exposure,coverage}_tbl.rds` |
 | PSI | `scripts/25_build_partner_indices.R` | `psi_tbl.rds` (core-coalition view, headline), `psi_full_coalition_tbl.rds`, `psi_world_tbl.rds`, `psi_dyad_tbl.rds` and category contributions |
-| Allied network | `scripts/30_build_allied_network_design.R` | `outputs/allied_network_*.csv` |
+| Allied network (retired 2026-10-17) | `scripts/30_build_allied_network_design.R`: dormant, not run by `run_pipeline.R` | `outputs/allied_network_*.csv` (last copies kept on disk; only the paper scripts `scripts/paper/fig_coalition.R` and `fig_reconcile.R` still read them) |
 | Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path,leave_one_out}.csv`, `allied_trade_growth_sensitivity.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}` |
 | Vintages | `scripts/40_build_index_vintages.R` | `vintages/*` (ES and EO at several years) |
 | Dashboard: Strategic Insights | `scripts/85_export_dashboard_data.R`, `scripts/86_export_dashboard_fixtures.R` | `dashboard/validation_report.csv`; the app's bundle goes to the repo's `dashboard/public/data/` and the engine's parity fixtures to `dashboard/src/engine/__fixtures__/` |
-| Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them) |
+| Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them, plus the optional `sector-climate` chunk: `flags.climate`) |
 | Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v1) |
 | Dashboard: Country Insights | `scripts/88_export_country_data.R` | the app's Country data go to the repo's `dashboard/public/data/country/` (manifest, a fact sheet per economy, drivers files; `--render-memos` publishes the verified policy memos of the 31 core members as JSON, PDF, Word and Markdown) |
 
@@ -520,30 +521,23 @@ A high-income partner (no Development) gets (0.4 FS + 0.4 OP) / 0.8, not a score
 
 ---
 
-### Allied network design
+### Allied network design (retired)
 
-**What it captures:** a coalition-wide division of labour: for each technology × stage, which nodes produce, with what share, and which producer → consumer flows serve each consumer.
-
-**Scope and inputs (`scripts/30_build_allied_network_design.R`, `R/indices/allied_network_design.R`):**
-- **Nodes:** the coalition members, with the EU-27 bundled as one node `EUU` (37 nodes on the inputs of 2026-10-09: 31 core and 26 partner members plus the 6 other EU members). A bundled node's inputs are aggregated from its members **before** any ranking: EO, ES and development are stage-weighted means over members with a value; demand size is the summed GDP and need the GDP-weighted mean member need; an edge to or from the node is the members' edge mean weighted by their 2024 basket trade on that edge (else stage weights, else equal); edges inside the node are dropped. `allied_network_member_shares.csv` splits a node's designed share back to its members by stage weight (derived, not designed).
-- **Stages:** **Upstream and Midstream only** (22 stage problems). Downstream deployment is not part of the allied division of labour.
-- **Producer score:** EO and ES only (`node_policy = FALSE`; weights 0.5 and 0.2 renormalised to 5/7 and 2/7). The policy term is off (decided while the Policy index required CAT and covered fewer members, whose gaps had to be filled with the stage median; every member now has one, 11 on IEA PAMS alone).
-- **Demand:** `demand_mode = "mixed"`, need 0.5 and size 0.5.
-- **Edges:** edge(p → c) = 0.5 FS(reporter = c, partner = p) + 0.5 OP(reporter = p, partner = c): Friendshore is rated by the importer and Opportunity by the exporter, so both halves rate the producer → consumer link. A missing component counts as 0 on the edge; a node's self-supply edge takes the stage's median edge weight.
-
-**Objective per stage (maximised):**
-
-```
-w_node * sum_p a_p x_p + w_edge * sum_pc W_pc f_pc + w_dev * sum_p dev_p z_p - lambda * sum_p x_p^2
-```
-
-with x_p the production share, w_node = 1, w_edge = 0.5, w_dev = 0. **Diversification:** `lambda` (score units per unit of HHI) turns the bang-bang linear design (λ = 0: producers at the 0.40 cap) into interior shares. The MILP carries Σx² as perspective tangent cuts on a 0.01 share grid (error ≤ 2.5e-5 per producer).
-
-**Calibration rule for lambda:** the smallest λ on a grid at which the **median designed HHI over the 22 stages ≤ the median observed export HHI of the network's own nodes** (2024 basket trade from the reconciled Comtrade matrix, shares within the nodes, the EU-27 as one exporter counting only extra-EU exports; median over the 18 stages with an HS6 basket; written to `allied_network_observed_hhi.csv`). On the 37-node set of the final rerun (2026-10-12: EIA-filled production, the EV, Solar, Wind and Nuclear Upstream baskets, CM-FDI in Friendshore) the target was 0.1556 (6.4 equivalent exporters, 18 basket stages) and the pick **λ = 0.78** (median designed HHI 0.152, all 22 stages solved by MILP; 0.77 gives 0.1558). The pick is knife-edge with respect to the inputs, so it must be re-derived on each full rerun; `scripts/30` warns when the designed median exceeds the observed one.
-
-**Constraints and solver settings:** `method = "auto"` (MILP for stages with ≤ 60 nodes, greedy fallback recorded in diagnostics), GLPK time limit 300 s per stage; `min_producers = 3`, `max_share = 0.40`, `min_share = 0.05`, `min_suppliers_per_consumer = 2`, `epsilon_supplier_share = 0.10`, `allow_self = TRUE`. **Portfolio caps (headline):** each node may appear in the stage top-5 at most `cap` times over the 22 stages, `cap` from log GDP between 2 and 10 (the EU node's cap uses the summed EU GDP), enforced iteratively (up to 30 passes; top-5 membership by strict rank). The no-caps design is the robustness variant.
-
-**Outputs:** `allied_network_specialization.csv`, `_flows.csv`, `_diagnostics.csv` (method, fallback reason, HHI, effective producers, objective terms, tangent error), `_members.csv`, `_member_shares.csv`, `_nodes.csv`, `_node_edges.csv`, `_observed_hhi.csv`, `_portfolio_caps.csv`, `_portfolio_counts.csv`, `_topk_by_stage.csv`, `_build_candidates.csv`, `_input_checks.csv`.
+**Retired on 2026-10-17 and replaced by the Allied Industrial Base analysis** (next section; method in
+[`docs/aib_methodology.md`](docs/aib_methodology.md)). The original design, a lambda-calibrated MILP that
+spread each Upstream and Midstream stage's production across the coalition's nodes, is no longer part
+of the pipeline (`run_pipeline.R` does not run `scripts/30`), the dashboard (no network chunk, no
+`/network` page: it redirects to the Allied Industrial Base overview) or the paper. Its code is kept,
+dormant, with its tests: `scripts/30_build_allied_network_design.R`, `R/indices/allied_network_design.R`
+and the standalone runner `scripts/build_allied_network.R`. The pipeline and the dashboard no longer
+read `outputs/allied_network_*.csv`; the last copies stay on disk for two paper scripts
+(`scripts/paper/fig_coalition.R`, the coalition figures, and `scripts/paper/fig_reconcile.R`).
+**Not yet updated:** the separate Yards & Fences site (`dashboard/src/fence/**`, built by
+`scripts/89_export_yards_fences_data.R`) still reads `allied_network_{member_shares,diagnostics,observed_hhi}.csv`
+and still shows the retired design (the network card on its supply view, the "Allied network build" row on
+its methodology page and the build date in its footer). It is developed in its own worktree
+(`feat/yards-fences`) and will drop them there. The method as it stood is in the git history (this section and `docs/methodology.md`
+section 10 before 2026-10-17).
 
 ---
 
@@ -551,7 +545,8 @@ with x_p the production share, w_node = 1, w_edge = 0.5, w_dev = 0. **Diversific
 
 **What it captures:** the Allied Industrial Base as an emergent network of bilateral trade and
 investment relationships, and the Sectoral Compacts that would coordinate groups of them. It sits
-beside the indices and the allied network design and changes neither. Full method:
+beside the indices and changes none of them; it replaces the original allied network design (retired
+2026-10-17). Full method:
 [`docs/aib_methodology.md`](docs/aib_methodology.md); settings: `config/aib.yml`; code: `R/aib/`.
 
 - **Grain:** sub-sector nodes of the HS6 master (Technology > stage > sub-sector > HS6; 91 nodes are
@@ -593,7 +588,7 @@ Rscript scripts/32_build_aib_partnerships.R [--out-dir DIR] [--nodes id1,id2] [-
 Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR]
 ```
 
-`run_pipeline.R` runs 31 and 32 after the allied network (`OPSI_RUN_AIB=false` skips them).
+`run_pipeline.R` runs 31 and 32 after the partner indices (`OPSI_RUN_AIB=false` skips them).
 
 ---
 
@@ -603,7 +598,7 @@ Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR]
 R/                    # Pure functions (no IO)
   utils/              # Helpers: schema, theme standardization, country harmonisation, HS6 crosswalk
   categories/         # Theme builders by category
-  indices/            # ES/EO builders, Policy index, Strategic Index, coalition, PSI, allied network
+  indices/            # ES/EO builders, Policy index, Strategic Index, coalition, PSI (allied network: retired, dormant)
   aib/                # Allied Industrial Base: trade network, shocks, LP, investment, network, compacts
   geopolitical_distance/  # UNGA ideal points and alignment
   themes/             # Bilateral partnership themes (Friendshore, Opportunity, Development)
@@ -667,22 +662,24 @@ Rscript scripts/00_setup.R
 Rscript scripts/04_build_hs6_views.R
 Rscript scripts/05_ingest_sources.R
 Rscript scripts/10_build_themes.R
+Rscript scripts/16_build_climate_trace.R
 Rscript scripts/12_build_geopolitical_alignment.R
 Rscript scripts/13_build_coalition.R
 Rscript scripts/20_build_indices.R
 Rscript scripts/15_build_partner_themes.R
 Rscript scripts/25_build_partner_indices.R
-Rscript scripts/30_build_allied_network_design.R
+Rscript scripts/31_build_aib_trade_network.R
+Rscript scripts/32_build_aib_partnerships.R
 Rscript scripts/80_write_outputs.R
 ```
 
-For an end-to-end run (`00, 05, 07, 10, 12, 13, 20, 15, 25, 30, 80`; 30 unless `OPSI_RUN_ALLIED_NETWORK=false`):
+For an end-to-end run (`00, 05, 07, 10, 16, 12, 13, 20, 15, 25, 31, 32, 80`; 31 and 32 unless `OPSI_RUN_AIB=false`):
 
 ```bash
 Rscript run_pipeline.R
 ```
 
-Run the allied network only:
+The retired allied network design still runs by hand (dormant; the pipeline and the dashboard do not read its outputs):
 
 ```bash
 Rscript scripts/build_allied_network.R
@@ -692,7 +689,7 @@ Optional environment variables:
 
 - `OPSI_INSTALL_MILP_PKGS=true|false`, `OPSI_REQUIRE_MILP=true|false` — MILP solver stack (ompr, ROI, GLPK)
 - `OPSI_AUTO_PREREQS=true|false`
-- `OPSI_RUN_ALLIED_NETWORK=true|false`
+- `OPSI_RUN_AIB=true|false` — the Allied Industrial Base steps (31, 32)
 - `OPSI_SKIP_NIPO=true|false` — reuse the stored NIPO rows of `policy_component_tbl.rds` instead of rescoring the GTA extract (4–5 GB of memory); NIPO is not in the Policy index composite
 - `OPSI_NIPO_SCOPE` — NIPO country scope (`allies` keeps the legacy ally list)
 - `OPSI_CONFIG`, `OPSI_WEIGHTS`, `OPSI_MISSING_DATA`, `OPSI_INDEX_DEFINITION`, `OPSI_RANKABILITY` — alternative config files (scratch runs)
@@ -712,7 +709,7 @@ When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under `data/raw/com
 
 `dashboard/` holds the Allied Industrial Base Explorer, a static React app (Vite, TypeScript, NEIS design). Since the October 2026 navigation refactor readers move between three questions, each a tab: **Sectors** (what matters about a sector: a Sector profile led by Economic Opportunity, Energy Security, Policy and Climate), **Countries** (a country's strategic position: one Country profile, where the four preference dials sit behind "Perspective: NEIS baseline" and change priorities but never the observed or modelled facts) and **Allied Industrial Base** (partnerships, Sectoral Compacts and country roles), with **About** (methods, data and sources, glossary) secondary; `dashboard/README.md` has the routes. The pages are composed from the data bundles below, named by the modules they first fed:
 
-* **Strategic Insights** (normative) recomputes the indices, partnership scores and the allied network in the browser when a reader moves the four preference dials. Its data bundle (`dashboard/public/data/`) is exported from the pipeline outputs by `scripts/85_export_dashboard_data.R` (builders in `R/dashboard/`), which also checks the dashboard engine at its baseline against the stored outputs; rerun it after a pipeline rerun, then `scripts/86_export_dashboard_fixtures.R` for the engine's parity fixtures. The TypeScript engine in `dashboard/src/engine/` is a port of `R/dashboard/` and is parity-tested against it.
+* **Strategic Insights** (normative) recomputes the indices and partnership scores in the browser when a reader moves the four preference dials. Its data bundle (`dashboard/public/data/`) is exported from the pipeline outputs by `scripts/85_export_dashboard_data.R` (builders in `R/dashboard/`), which also checks the dashboard engine at its baseline against the stored outputs; rerun it after a pipeline rerun, then `scripts/86_export_dashboard_fixtures.R` for the engine's parity fixtures. The TypeScript engine in `dashboard/src/engine/` is a port of `R/dashboard/` and is parity-tested against it.
 * **Sector Insights** (descriptive) shows the measured data behind the indices, by technology and supply-chain stage, in each source's own units and years: trade (the reconciled Comtrade dyad matrix), investment, cross-border manufacturing projects (CM-FDI, announced 1996-2026, in Solar, Wind, Batteries and EV Midstream: home → destination flows, the parent-HQ group split - China, coalition core, partners, rest - announcements by year and the project table with status and CM-FDI's source links; project counts and disclosed US$ m only, an undisclosed value never read as 0, the CC BY attribution on every card), reserves, production, consumption, prices, policy (IEA PAMS records and CAT ratings), time series (EI 1965-2025, IMF monthly prices, CIM investment and capacity, IEA EV regions) and, under Development & finance, the raw data behind Development Potential and Friendshore's investment tie (since 2026-10-15): the World Bank WDI series and Doing Business score the builder ranks, OECD CRS official development assistance received and given by aid sector (energy, industry, mining: the stage the builder maps each to) with the donor -> recipient flows, and the IMF bilateral direct-investment positions (who invests where; conduit financial centres shown and flagged), each read with the builders' own functions and checked against them (`--no-dev` leaves them out). No index, weight or dial value appears in it. Its data (`dashboard/public/data/sector/`) are exported by `scripts/87_export_sector_data.R` (pure helpers in `R/dashboard/sector/`, captions and units from `config/sector_dictionary.yml`): every value with a `data/processed` source is checked `identical()` to it after the encode/decode round trip, and the run writes `data/processed/dashboard/sector_validation.csv`. Rerun it after a pipeline rerun (`--check-only` runs every check without writing; `--synthetic <dir>` writes the small test fixture). Restricted sources (BNEF, BCG) never ship.
 * **Country Insights** (a hybrid of the two) puts one economy's index results and the data behind them on one page, on the paper baseline (with a link to the same country in Strategic Insights): its sectors on the Economic Opportunity x Energy Security plane (each axis the share of other economies it beats in that sector) with the Grow / Upgrade / Secure / Watch quadrants split at the country's own median sector, so they show its relatively strong and weak sectors, the drivers of its high-priority sectors in raw data, its sector priorities (the Strategic Index without its policy term) against its policy activity, the strongest active industrial-policy measures per sector from the latest GTA NIPO run (context only, not part of the Policy index), and partner priorities - friendshoring opportunities (Friendshore: partners where its security need meets the partner's economic opportunity, on existing trade and investment ties) and export markets (Partnership Opportunity) - against today's trade, factory projects, agreements and UN-vote alignment. The 31 core members have an AI-written policy memo (on screen, PDF and Word) in which every number is a token filled from the country's fact sheet, checked by a linter and an independent AI verifier. Data and memos are exported by `scripts/88_export_country_data.R` (pure helpers in `R/dashboard/country/`, settings in `config/country_insights.yml`, memo sources in `dashboard/country-memos/`).
 
@@ -728,7 +725,7 @@ Outputs are written under the configured outputs directory (default `data/proces
 * `energy_security_category_contributions.csv`, `energy_security_variable_contributions.csv`
 * `charts/allied_strategic.csv` and `strategic_index_selected_countries.xlsx`
 * coalition, alignment, partner and PSI tables (`*.rds` in `data/processed`)
-* allied network CSVs (`allied_network_*.csv`)
+* the Allied Industrial Base tables (`outputs/aib/`; the retired allied network design's `allied_network_*.csv` are no longer written by the pipeline)
 
 `docs/data_dictionary.md` lists the columns.
 
@@ -779,7 +776,7 @@ The `testthat` suite under `tests/testthat/` covers, among others:
 * Geopolitical alignment, the ideal-point fetchers and the territory map
 * Coalition tiers and EU stage weights
 * Partnership themes: trade flows (importer-first / mirror rule), conduits, PSI viewpoints and rankability, Comtrade dyad helpers
-* Allied network: integrity, diversification, EU node, demand modes, portfolio constraints
+* Allied network (retired design, dormant code): integrity, diversification, EU node, demand modes, portfolio constraints
 * Raw-input manifest drift and sync, fetchers
 * Dashboard bundle container (OSB) round trips and the engine's parity fixtures (the app's own tests run with `npm test` in `dashboard/`)
 * Sector Insights export helpers: the dictionary validator, facts and value states, the trade matrix and zero rebuild, concentration summaries, chunk round trips and the parity ledger (`test-sector-*.R`, synthetic inputs only)
@@ -851,6 +848,8 @@ Inputs with a public API are fetched by `scripts/fetchers/*.R` and written in th
 | `un_ga_ideal_points.csv` | Harvard Dataverse | Final-passage ideal points (sensitivity; to 2025) |
 | `critmin_mirror_import.csv` | UN Comtrade public preview API (keyless) | Partner-level critical-mineral imports from non-reporters, plus late reporters' own exports (optional) |
 | `eia_intl_fossil_production.csv` | EIA International Energy Statistics bulk file `INTL.zip` (keyless, public domain) | Oil, gas and coal production and consumption by country, 2000 on; fills the fuel production EI does not report. Staged copy kept (`fallback`; EIA revises monthly); refetch with `Rscript scripts/fetchers/eia_intl.R` |
+| `climate_trace_country_emissions.csv` | Climate TRACE API v6 (keyless, CC BY 4.0) | Country x subsector emissions 2021-2025; refetch `Rscript scripts/fetchers/climate_trace.R country` |
+| `climate_trace_asset_activity.csv` | Climate TRACE API v6 (keyless, CC BY 4.0) | Tracked assets by country and asset group; refetch `Rscript scripts/fetchers/climate_trace.R assets` |
 
 Three properties matter:
 

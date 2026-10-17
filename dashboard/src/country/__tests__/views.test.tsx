@@ -265,14 +265,19 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
       e.memo = { ...e.memo!, stale: true };
     });
     renderAt('/countries/USA/memo');
-    expect(await screen.findByText('This memo is being updated to the latest data.', undefined, { timeout: 30_000 })).toBeTruthy();
+    expect(await screen.findByText('This memo is being revised. It will be available again once it has been rewritten.', undefined, { timeout: 30_000 })).toBeTruthy();
     expect(source.calls.some((c) => c.startsWith('memo-'))).toBe(false);
     cleanup();
     renderAt('/countries/USA');
     expect(await h1('United States')).toBeTruthy();
     await screen.findByRole('heading', { level: 2, name: 'Policy memo' }, { timeout: 30_000 });
     expect(screen.queryByRole('link', { name: 'GENERATE MEMO' })).toBeNull();
-    expect(screen.getByText('The memo for the United States is being updated to the latest data.')).toBeTruthy();
+    expect(screen.getByText('The memo for the United States is being revised. It will be available again once it has been rewritten.')).toBeTruthy();
+    // GENERATE MEMO is there, disabled, and says why (head and memo panel)
+    const buttons = screen.getAllByRole('button', { name: 'GENERATE MEMO' }) as HTMLButtonElement[];
+    expect(buttons.length).toBe(2);
+    for (const b of buttons) expect(b.disabled).toBe(true);
+    expect(screen.getByText('The memo for the United States is being revised')).toBeTruthy();
   });
 
   it('a memo kept under the earlier quadrant rule is shown with its notice, on the memo page and in the profile', async () => {

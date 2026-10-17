@@ -5,7 +5,9 @@
 // country, with the Climate Action Tracker and IEA record tiles), "Policy records by technology and
 // stage" (IEA Policies and Measures coverage on the three-colour scale) and the user's addition of
 // 2026-10-12: the strongest active industrial-policy measures by sector from the latest completed GTA
-// New Industrial Policy Observatory run (context; not part of the Policy index).
+// New Industrial Policy Observatory run (context; not part of the Policy index). Since 2026-10-17 the
+// section also shows the economy's Climate TRACE emissions in the mapped sectors
+// (src/sector/views/climate/CountryClimate.tsx, the Sector data's sector-climate chunk).
 
 import { useMemo } from 'react';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
@@ -23,6 +25,7 @@ import {
 } from '../../derive/model.ts';
 import { quadrantWord, proseName, poss, cap } from '../../derive/text.ts';
 import { policyBehaviour } from '../../derive/framing.ts';
+import { CountryClimateCard } from '../../../sector/views/climate/CountryClimate.tsx';
 import { BasisTag, csvWithSource, Fold, Section, useProfile } from './common.tsx';
 
 /**
@@ -42,14 +45,14 @@ export function PolicyClimateSection() {
       title="Policy & climate"
       basis={
         <>
-          <BasisTag kind="facts" note="policy records, measures, climate rating" />
+          <BasisTag kind="facts" note="policy records, measures, climate rating, emissions" />
           {sheet.meta.has_si && <BasisTag kind="prefs" note="matrix priorities, NEIS baseline" />}
         </>
       }
       intro={
         <>
-          How {name} behaves: its <Term id="cat" />, its <Term id="pams">International Energy Agency policy records</Term> and, as context, the strongest industrial-policy measures recorded by
-          Global Trade Alert.
+          How {name} behaves: its <Term id="cat" />, its <Term id="pams">International Energy Agency policy records</Term>, its emissions in the mapped sectors (Climate TRACE) and, as
+          context, the strongest industrial-policy measures recorded by Global Trade Alert.
         </>
       }
     >
@@ -70,6 +73,7 @@ export function PolicyClimateSection() {
           )}
         </p>
       </div>
+      <CountryClimateCard iso3={sheet.iso3} name={name} />
       {sheet.meta.has_si ? (
         <AgreementMatrix />
       ) : (

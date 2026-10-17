@@ -8,9 +8,9 @@ Outputs:
 - **Economic Opportunity (EO)**: market and competitiveness opportunity across the same chains.
 - **Policy index**: IEA Policies and Measures and Climate Action Tracker support.
 - **Strategic Index (SI)**: where a country should build.
-- **Geopolitical alignment** and the **two-tier allied coalition** with the EU as one network node.
+- **Geopolitical alignment** and the **two-tier allied coalition** with the EU-27 as one coalition node.
 - **Partnership Strength Index (PSI)**: partner j's value to the allied coalition, from bilateral components.
-- **Allied network design**: a coalition-wide division of labour per technology and stage.
+- **Allied Industrial Base** (section 10a): how the coalition absorbs a supply shock with existing trade, where new investment would close the rest, the emergent network of trade and investment relationships, country roles and the Sectoral Compacts. It replaces the original **allied network design** (section 10), retired on 2026-10-17.
 
 ## 1. Unit of analysis
 
@@ -219,31 +219,21 @@ Views: **core coalition** (headline, `psi_tbl.rds`; reporters = core tier), **fu
 
 A partner is **rankable** if it is sovereign and its PSI imputed weight share ≤ 0.5. The share is computed per cell over the partner- and pair-specific components (an imputed trade cell, a missing DIP position outside the CM-FDI cells (9.4), an assigned rather than voted bloc and a missing Development indicator count in full; the partner's ES/EO components count at their own pillar share; reporter attributes are left out), averaged over the top-5 cells, the view's reporters and the categories exactly as the score is.
 
-## 10. Allied network design
+## 10. Allied network design (retired)
 
-(`R/indices/allied_network_design.R`, `scripts/30_build_allied_network_design.R`.)
-
-- **Nodes:** coalition members, with the EU-27 as one node. A bundled node's producer inputs are stage-weighted means of its members' raw values (over members with a value); demand need is the GDP-weighted mean member need and size the summed GDP; edges to or from it are member edges weighted by the members' 2024 basket trade on that edge (else stage weights, else equal); edges inside the node are dropped; its portfolio cap uses the summed GDP. Designed node shares are split back to members by stage weight (derived).
-- **Stages:** Upstream and Midstream of the 11 technologies (22 problems).
-- **Producer score** a_p: EO and ES (weights 5/7 and 2/7; the policy term is off). **Demand:** 0.5 need + 0.5 size. **Edges:** W_pc = 0.5 FS(reporter c, partner p) + 0.5 OP(reporter p, partner c), a missing component counting 0.
-- **Objective per stage (max):**
-
-  ```
-  sum_p a_p x_p + 0.5 sum_pc W_pc f_pc - lambda sum_p x_p^2
-  ```
-
-  with x_p production shares (sum 1) and f_pc flows. The MILP represents Σx² by perspective tangent cuts on a 0.01 share grid (error ≤ 2.5e-5 per producer).
-- **Constraints:** ≥ 3 producers, shares in {0} ∪ [0.05, 0.40], every consumer served by ≥ 2 suppliers each with ≥ 10% of its supply, self-supply allowed.
-- **Portfolio caps (headline):** a node may be in a stage's top 5 at most `cap` times over the 22 stages, `cap` from log GDP in [2, 10]; enforced iteratively (≤ 30 passes) by barring over-cap nodes; top-5 by strict rank. No caps is the robustness variant.
-- **Solver:** MILP (ompr/ROI/GLPK) for every stage with ≤ 60 nodes, 300 s per stage; greedy fallback (water-filled shares under the same objective) recorded in diagnostics.
-- **Calibration of lambda:** the smallest λ on the grid at which the median designed HHI over the 22 stages is at most the median observed export HHI of the network's nodes over the 18 stages with an HS6 basket (14 before 2026-10-11; 2024 reconciled trade, shares within the nodes, the EU counting extra-EU exports only; `allied_network_observed_hhi.csv`). Pick on the 37-node set of the final rerun (2026-10-12): λ = 0.78 (target 0.1556 over the 18 basket stages; designed median 0.1520; 0.77 gives 0.1558). The Upstream baskets of 2026-10-11 raise the target on that node set to 0.1556 over 18 stages, so λ is recalibrated on the rerun. The rule must be re-applied on each full rerun; `scripts/30` warns when it fails.
+Retired on 2026-10-17 and replaced by the Allied Industrial Base analysis (section 10a,
+`docs/aib_methodology.md`). The design (`R/indices/allied_network_design.R`,
+`scripts/30_build_allied_network_design.R`) spread each Upstream and Midstream stage's production across
+the coalition's nodes by a lambda-calibrated MILP. It no longer runs in `run_pipeline.R`, the dashboard
+no longer ships or recomputes it, and the paper no longer reports it; the code and its tests are kept,
+dormant. Its method as it stood is in the git history of this section (before 2026-10-17).
 
 ## 10a. Allied Industrial Base and Sectoral Compacts
 
 A separate layer on the observed bilateral trade (sub-sector nodes, shocks, existing vs optimized
 partnerships, a specialization-resilience frontier, a marginal capacity simulation, the emergent
-network and Sectoral Compact formation). It changes no index and no allied-network output. Method,
-settings and outputs: `docs/aib_methodology.md`.
+network and Sectoral Compact formation). It changes no index, and it replaces the allied network
+design of section 10 (retired 2026-10-17). Method, settings and outputs: `docs/aib_methodology.md`.
 
 ## 11. Pipeline stages
 
@@ -252,5 +242,5 @@ settings and outputs: `docs/aib_methodology.md`.
 3. **Alignment and coalition** (`scripts/12`, `scripts/13`).
 4. **Pillars, Policy, Strategic Index** (`scripts/20`).
 5. **Partner themes and PSI** (`scripts/15`, `scripts/25`).
-6. **Allied network** (`scripts/30`).
+6. **Allied Industrial Base** (`scripts/31`, `scripts/32`; `scripts/84` for its dashboard data). The retired allied network design (`scripts/30`) no longer runs.
 7. **Outputs and charts** (`scripts/80`, `scripts/paper/`, `scripts/85` for the dashboard bundle).

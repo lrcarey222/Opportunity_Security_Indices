@@ -473,6 +473,156 @@ export interface AibDoc {
   compacts: AibCompact[];
   /** every classified sub-sector node, in a compact or not */
   nodes: AibNode[];
+  /** the emergent AIB network of the headline variant (additive, 2026-10-17) */
+  network?: AibNetwork;
+  /** the investor -> host flows of the marginal investment simulation, headline variant (additive, 2026-10-17) */
+  investmentFlows?: AibInvestmentFlows;
+}
+
+// ---- Emergent network and investment flows (additive, 2026-10-17) ------------------------------------
+
+/** The run a network or investment section comes from (one variant: the headline). */
+export interface AibVariant {
+  shock: string;
+  scenario: string;
+  shockSemantics: string | null;
+  supplyConstraint: string | null;
+  strategicScope: string | null;
+  demandScope: string | null;
+  candidateUniverse: string | null;
+  universe: string | null;
+}
+
+/** The four network roles of emergent_aib_country_summary.csv, as the model names them. */
+export const AIB_NETWORK_ROLES = ['supplier', 'buyer', 'investment_host', 'investor'] as const;
+export type AibNetworkRole = (typeof AIB_NETWORK_ROLES)[number];
+
+export const AIB_STAGES = ['Upstream', 'Midstream', 'Downstream'] as const;
+
+/**
+ * One side of an economy in the network (scripts/32, emergent_aib_country_summary.csv): its distinct
+ * partners, the (node, shock) relationships the solution selects, and its contributions, in shares of a
+ * node's demand summed over the nodes and partners of the role (so above 1 is possible): `headline` under
+ * the headline shock, `cumulative` summed over every configured shock. Partner counts by stage.
+ */
+export interface AibNetworkSide {
+  partners: number;
+  selected: number;
+  headline: number;
+  cumulative: number;
+  upstream: number;
+  midstream: number;
+  downstream: number;
+  /** trade sides only: the part of `cumulative` carried by new relationships */
+  dividend?: number;
+  /** trade sides only: the optimized trade of the headline shock (USD a year) */
+  volumeUsd?: number;
+}
+
+export interface AibNetworkCountry {
+  iso3: string;
+  /** the model's own network roles (AIB_NETWORK_ROLES): every side with a selected relationship */
+  roles: string[];
+  technologies: string[];
+  /** supply it loses to the headline shock (USD a year; null: not an importer in the demand scope) */
+  lostUsd: number | null;
+  /** nodes in which it loses supply */
+  exposedNodes: number | null;
+  /** exporting to buyers */
+  supplier: AibNetworkSide;
+  /** importing from suppliers */
+  buyer: AibNetworkSide;
+  /** hosting new capacity that serves investors */
+  host: AibNetworkSide;
+  /** the economy whose gap the new capacity at a host serves */
+  investor: AibNetworkSide;
+}
+
+/**
+ * One bilateral relationship, oriented as goods move (supplier -> buyer): trade runs exporter -> importer;
+ * investment runs host -> investor (the host's new capacity serves the investor, so `to` invests in
+ * `from`). Only each node's best-ranked host counts as an investment relationship.
+ */
+export interface AibNetworkEdge {
+  from: string;
+  to: string;
+  /** (node, shock) trade relationships selected */
+  nTrade: number;
+  /** (node, shock) investment relationships selected */
+  nInvestment: number;
+  nShocks: number;
+  nodes: string[];
+  techs: string[];
+  stages: string[];
+  /** relationships in nodes where the shock removes at least the high-severity share */
+  nHighSeverity: number;
+  /** optimized trade of the headline shock (USD a year) */
+  tradeUsd: number;
+  /** headline shock: share of node demand the trade serves (summed over nodes) */
+  trade: number;
+  /** headline shock: share of node demand the new capacity serves */
+  investment: number;
+  /** every shock: trade, the part of it in new relationships, investment */
+  cumTrade: number;
+  cumDividend: number;
+  cumInvestment: number;
+  /** mean Export Opportunity (supplier -> buyer) and Friendshore (buyer -> supplier) scores, NEIS baseline */
+  opportunity: number | null;
+  friendshore: number | null;
+}
+
+export interface AibNetwork {
+  /** with the shocks summed into the cumulative figures */
+  variant: AibVariant & { shocks?: string[] };
+  countries: AibNetworkCountry[];
+  edges: AibNetworkEdge[];
+}
+
+/**
+ * One investor -> host flow: in the simulation of `rank`-th host of a node, the supply of the new capacity
+ * that serves the investor's lost demand. Each rank is a SEPARATE simulation of the same increment: only
+ * rank 1 is the selected host; flows of different ranks are alternatives and must not be added up.
+ */
+export interface AibInvestmentPair {
+  investor: string;
+  host: string;
+  node: string;
+  rank: number;
+  /** supply from the new capacity (USD a year) */
+  usd: number;
+  /** the same as a share of the node's demand */
+  share: number | null;
+  /** the investor's lost supply as a share of the node's demand */
+  lostShare: number | null;
+  /** the investor's Friendshore score for the host, NEIS baseline */
+  friendshore: number | null;
+  /** the host's Export Opportunity score for the investor, NEIS baseline */
+  opportunity: number | null;
+}
+
+/** A ranked host of a node (allied_investment_partnerships.csv, the headline increment). */
+export interface AibInvestmentHost {
+  node: string;
+  host: string;
+  rank: number;
+  /** marginal resilience gain: coverage after minus before */
+  gain: number | null;
+  before: number | null;
+  after: number | null;
+  /** share of the increment used */
+  newCapacityUsed: number | null;
+  /** additional demand served (USD a year) */
+  servedUsd: number | null;
+  /** 3 = the strongest capability evidence */
+  capabilityTier: number | null;
+  capabilityBasis: string | null;
+}
+
+export interface AibInvestmentFlows {
+  /** with the simulated increment (share of node demand) and the deepest host rank kept */
+  variant: AibVariant & { increment: number; maxRank: number };
+  pairs: AibInvestmentPair[];
+  hosts: AibInvestmentHost[];
 }
 
 // ---- Runtime checks ----------------------------------------------------------------------------------
@@ -801,7 +951,102 @@ export function checkCompactsDoc(x: unknown): string[] {
       if (isObj(n) && isStr(n.compact) && !compactIds.has(n.compact)) p.add(`nodes[${i}].compact: '${n.compact}' is not a compact of the document`);
     });
   }
+  checkNetwork(p, x.network, nodeIds);
+  checkInvestmentFlows(p, x.investmentFlows, nodeIds);
   return p.list;
+}
+
+// The additive sections (2026-10-17). The R mirror is R/dashboard/aib/aib_check.R (same paths, same bounds).
+
+function checkVariant(p: Problems, v: unknown, at: string): void {
+  if (!isObj(v)) return p.add(`${at}: not an object`);
+  for (const k of ['shock', 'scenario']) p.str(v[k], `${at}.${k}`);
+  for (const k of ['shockSemantics', 'supplyConstraint', 'strategicScope', 'demandScope', 'candidateUniverse', 'universe']) p.str(v[k], `${at}.${k}`, true);
+}
+
+function checkSide(p: Problems, s: unknown, at: string, trade: boolean): void {
+  if (!isObj(s)) return p.add(`${at}: not an object`);
+  for (const k of ['partners', 'selected', 'upstream', 'midstream', 'downstream']) p.num(s[k], `${at}.${k}`, { min: 0, int: true });
+  for (const k of ['headline', 'cumulative']) p.num(s[k], `${at}.${k}`, { min: 0 });
+  if (trade) for (const k of ['dividend', 'volumeUsd']) p.num(s[k], `${at}.${k}`, { min: 0 });
+}
+
+/** `network`: absent is fine; else the variant, unique economies with four sides, and edges over the document's nodes. */
+function checkNetwork(p: Problems, n: unknown, nodeIds: ReadonlySet<string>): void {
+  if (n === undefined) return;
+  if (!isObj(n)) return p.add('network: not an object');
+  checkVariant(p, n.variant, 'network.variant');
+  const seen = new Set<string>();
+  if (p.arr(n.countries, 'network.countries')) {
+    n.countries.forEach((r, i) => {
+      const at = `network.countries[${i}]`;
+      if (!isObj(r)) return p.add(`${at}: not an object`);
+      p.str(r.iso3, `${at}.iso3`);
+      if (isStr(r.iso3)) {
+        if (seen.has(r.iso3)) p.add(`${at}.iso3: duplicate '${r.iso3}'`);
+        seen.add(r.iso3);
+      }
+      if (p.strArr(r.roles, `${at}.roles`)) r.roles.forEach((x) => p.oneOf(x, AIB_NETWORK_ROLES, `${at}.roles`));
+      p.strArr(r.technologies, `${at}.technologies`);
+      p.num(r.lostUsd, `${at}.lostUsd`, { nullable: true, min: 0 });
+      p.num(r.exposedNodes, `${at}.exposedNodes`, { nullable: true, min: 0, int: true });
+      checkSide(p, r.supplier, `${at}.supplier`, true);
+      checkSide(p, r.buyer, `${at}.buyer`, true);
+      checkSide(p, r.host, `${at}.host`, false);
+      checkSide(p, r.investor, `${at}.investor`, false);
+    });
+  }
+  if (p.arr(n.edges, 'network.edges')) {
+    n.edges.forEach((e, i) => {
+      const at = `network.edges[${i}]`;
+      if (!isObj(e)) return p.add(`${at}: not an object`);
+      for (const k of ['from', 'to']) p.str(e[k], `${at}.${k}`);
+      if (isStr(e.from) && e.from === e.to) p.add(`${at}: supplier and buyer are the same economy`);
+      for (const k of ['nTrade', 'nInvestment', 'nShocks', 'nHighSeverity']) p.num(e[k], `${at}.${k}`, { min: 0, int: true });
+      if (p.strArr(e.nodes, `${at}.nodes`)) for (const id of e.nodes) if (!nodeIds.has(id)) p.add(`${at}.nodes: '${id}' is not a node of the document`);
+      p.strArr(e.techs, `${at}.techs`);
+      if (p.strArr(e.stages, `${at}.stages`)) e.stages.forEach((s) => p.oneOf(s, AIB_STAGES, `${at}.stages`));
+      for (const k of ['tradeUsd', 'trade', 'investment', 'cumTrade', 'cumDividend', 'cumInvestment']) p.num(e[k], `${at}.${k}`, { min: 0 });
+      for (const k of ['opportunity', 'friendshore']) p.num(e[k], `${at}.${k}`, SHARE);
+    });
+  }
+}
+
+/** `investmentFlows`: absent is fine; else the variant, pairs (investor != host, rank 1..maxRank) and ranked hosts over the document's nodes. */
+function checkInvestmentFlows(p: Problems, f: unknown, nodeIds: ReadonlySet<string>): void {
+  if (f === undefined) return;
+  if (!isObj(f)) return p.add('investmentFlows: not an object');
+  checkVariant(p, f.variant, 'investmentFlows.variant');
+  const v = isObj(f.variant) ? f.variant : {};
+  p.num(v.increment, 'investmentFlows.variant.increment', { min: 0, max: 1 });
+  p.num(v.maxRank, 'investmentFlows.variant.maxRank', { min: 1, int: true });
+  const maxRank = isNum(v.maxRank) ? v.maxRank : Infinity;
+  if (p.arr(f.pairs, 'investmentFlows.pairs')) {
+    f.pairs.forEach((e, i) => {
+      const at = `investmentFlows.pairs[${i}]`;
+      if (!isObj(e)) return p.add(`${at}: not an object`);
+      for (const k of ['investor', 'host', 'node']) p.str(e[k], `${at}.${k}`);
+      if (isStr(e.investor) && e.investor === e.host) p.add(`${at}: investor and host are the same economy`);
+      if (isStr(e.node) && !nodeIds.has(e.node)) p.add(`${at}.node: '${e.node}' is not a node of the document`);
+      p.num(e.rank, `${at}.rank`, { min: 1, max: maxRank, int: true });
+      p.num(e.usd, `${at}.usd`, { min: 0 });
+      for (const k of ['share', 'lostShare', 'friendshore', 'opportunity']) p.num(e[k], `${at}.${k}`, SHARE);
+    });
+  }
+  if (p.arr(f.hosts, 'investmentFlows.hosts')) {
+    f.hosts.forEach((h, i) => {
+      const at = `investmentFlows.hosts[${i}]`;
+      if (!isObj(h)) return p.add(`${at}: not an object`);
+      for (const k of ['node', 'host']) p.str(h[k], `${at}.${k}`);
+      if (isStr(h.node) && !nodeIds.has(h.node)) p.add(`${at}.node: '${h.node}' is not a node of the document`);
+      p.num(h.rank, `${at}.rank`, { min: 1, max: maxRank, int: true });
+      p.num(h.gain, `${at}.gain`, { nullable: true, min: -1, max: 1 });
+      for (const k of ['before', 'after', 'newCapacityUsed']) p.num(h[k], `${at}.${k}`, SHARE);
+      p.num(h.servedUsd, `${at}.servedUsd`, { nullable: true, min: 0 });
+      p.num(h.capabilityTier, `${at}.capabilityTier`, { nullable: true, min: 0, int: true });
+      p.str(h.capabilityBasis, `${at}.capabilityBasis`, true);
+    });
+  }
 }
 
 // ---- Accessors ---------------------------------------------------------------------------------------

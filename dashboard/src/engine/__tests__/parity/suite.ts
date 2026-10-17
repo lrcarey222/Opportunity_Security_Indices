@@ -15,7 +15,6 @@ import type { Bundle, NDArray, Params, PillarsResult, PolicyResult, ScenarioSpec
 import {
   asTable, compareArray, compareColumn, compareTable, get, loadFixture, loadIndex, report, type Diff, type FixtureScenario,
 } from './harness.ts';
-import { networkParity } from './network-suite.ts';
 
 export const TOL = {
   core: 1e-9,
@@ -27,7 +26,6 @@ export interface SuiteOptions {
   name: string;
   fixtureDir: string;
   bundle: () => Bundle;
-  layers?: { network?: boolean };
 }
 
 export function specOf(s: FixtureScenario): ScenarioSpec {
@@ -251,10 +249,6 @@ export function paritySuite(opts: SuiteOptions): void {
           }
           expectNoDiffs(diffs);
         });
-
-        if (opts.layers?.network !== false) {
-          networkParity(() => load(), TOL);
-        }
       });
     }
   });

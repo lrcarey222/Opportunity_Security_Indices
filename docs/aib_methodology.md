@@ -506,7 +506,12 @@ static 85.2%.
 The dashboard bundle (`dashboard/public/data/aib/`, schema `osi-aib` v1 with optional additions:
 scope, semantics and constraint ids, multi-label needs, physical warnings, variant classes, growth
 sensitivity, both N-1 readings, coalition method and tiers) is written by
-`scripts/84_export_aib_data.R`.
+`scripts/84_export_aib_data.R`. Its `network` section (headline variant) feeds the dashboard's country
+roles: a role is named when the economy serves at least 1 point of a node's demand under the headline
+shock (summed over nodes) and listed as minor below that; the CSVs and the paper count every positive
+role. Its `investmentFlows` section (headline variant, strategic-scope nodes only) gives investor ->
+host flows; only rank 1 is the selected host, and ranks 2-5 are alternatives for the same increment,
+never summed.
 
 ## 14. Results of the 2026-10-16 credibility run
 

@@ -43,12 +43,13 @@ export default function CountryHomeView() {
   const [pick, setPick] = useState('');
   const wide = useMediaQuery('(min-width: 768px)');
   const nMemos = manifest.countries.filter((c) => c.memo && !c.memo.stale).length;
+  const nRevised = manifest.countries.filter((c) => c.tier === 'core' && c.memo?.stale).length;
   return (
     <div className={PAGE}>
       <PageHead
         eyebrow="COUNTRIES"
         title="Countries"
-        lede={`Pick a country to see its strategic position in one place: where its energy supply chains are secure or exposed, where it has economic openings, which sectors to prioritise and how that compares with its current policies, its trade, investment and development partners, and its role in the Allied Industrial Base. Values are the NEIS baseline (as of ${manifest.as_of_label}); on each profile a Perspective control lets you weigh security, opportunity, policy and climate differently. For the ${manifest.counts.core} core coalition members a short policy memo ${nMemos ? 'is ready to read or download' : 'is being prepared'}.`}
+        lede={`Pick a country to see its strategic position in one place: where its energy supply chains are secure or exposed, where it has economic openings, which sectors to prioritise and how that compares with its current policies, its trade, investment and development partners, and its role in the Allied Industrial Base. Values are the NEIS baseline (as of ${manifest.as_of_label}); on each profile a Perspective control lets you weigh security, opportunity, policy and climate differently. For the ${manifest.counts.core} core coalition members a short policy memo ${nMemos ? 'is ready to read or download' : nRevised ? 'is being revised' : 'is being prepared'}.`}
       />
       <p className="-mt-4 mb-6 text-sm">
         <Link className="link" to="/overview">

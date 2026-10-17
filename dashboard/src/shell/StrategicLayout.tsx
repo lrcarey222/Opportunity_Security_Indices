@@ -1,5 +1,5 @@
 // The layout route of the legacy Strategic views (spec_sector.md 2.3, 2.5; IA refactor 2026-10-16):
-// /overview, /country/:iso3, /space, /strategic/:iso3, /partners/:iso3 and /network/:stage keep their
+// /overview, /country/:iso3, /space, /strategic/:iso3 and /partners/:iso3 keep their
 // paths and still render here with the dial chrome, but "Strategic Insights" is no longer a module: the
 // header files these paths under Countries or Allied Industrial Base (shell/modules.ts tabOf) and shows
 // that tab's links, so this layout registers no nav of its own. /methods and /data moved to
@@ -20,10 +20,10 @@ import { ViewErrorBoundary } from './ViewErrorBoundary.tsx';
 
 export { engineLoadingLabel } from './EngineScope.tsx';
 
-/** Where an advanced page belongs: Partners and the allied network under the AIB, the rest under Countries
+/** Where an advanced page belongs: Partners under the AIB, the rest under Countries
  *  (/country/:iso3, /strategic/:iso3 and /partners/:iso3 already redirect to the profile in routes.tsx). */
 export function advancedBack(pathname: string): { to: string; label: string } {
-  if (/^\/(?:network|partners)(?:\/|$)/.test(pathname)) return { to: '/aib/partnerships', label: 'Allied Industrial Base partnerships' };
+  if (/^\/partners(?:\/|$)/.test(pathname)) return { to: '/aib/partnerships', label: 'Allied Industrial Base partnerships' };
   return { to: '/countries', label: 'Countries' };
 }
 

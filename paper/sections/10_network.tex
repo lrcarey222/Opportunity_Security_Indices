@@ -1,369 +1,428 @@
 % ===========================================================================
-% Section 10. Designing the Allied Industrial Base: a network optimization
-% Specification: R/indices/allied_network_design.R and scripts/30_build_allied_network_design.R.
-% Numbers: final full rerun of 2026-10-12, scripts/30 at lambda = 0.78 (paper/results/network.json,
-% network_frontier.json). Algorithms, EU-node rules and the lambda grid: Appendix C
-% (app:algorithm). Further results: Online Appendix oa:network (sections/oa_network.tex).
-% Robustness of the design (fig:network_robustness, tab:network_robustness): Section 11.
+% Section 10. The Allied Industrial Base: stress tests, partnerships and Sectoral Compacts
+% Specification (code is the specification): config/aib.yml, R/aib/*.R (pure functions),
+% scripts/31_build_aib_trade_network.R and scripts/32_build_aib_partnerships.R (IO);
+% docs/aib_methodology.md. Run: the credibility pass of 2026-10-16 (commit ba38e2b), outputs in
+% data/processed/outputs/aib (global sensitivity in outputs/aib_global).
+% Numbers: paper/results/aib.json (scripts/paper/fig_aib.R); sensitivities in
+% paper/results/aib_robustness.json (scripts/paper/fig_aib_robustness.R, Section 11).
+% Formulations: Appendix C (app:algorithm). Validation chains and further detail: Online Appendix
+% oa:network. This section replaces the lambda-calibrated network design of earlier drafts
+% (scripts/30, now retired; history in Appendix D).
 % ===========================================================================
-\section{Designing the Allied Industrial Base: a network optimization}
+\section{The Allied Industrial Base: stress tests, partnerships and Sectoral Compacts}
 \label{sec:network}
 
 The indices of Sections~\ref{sec:es}--\ref{sec:bilateral} score countries, sectors and pairs one at
 a time. The case for an Allied Industrial Base turns on a different question
-\citep{neis2026allied}: a top-ranked country may add little if its strengths duplicate the
-coalition's, and a lower-ranked one may complete a resilient chain, so the object is a country's
-marginal contribution to the system and the task is to optimise combinations rather than rankings.
-The same source sketches a portfolio objective, security, opportunity, development and durability
-gains net of cost premia, delay, duplication and residual coercion exposure, maximised under
-explicit constraints such as a resilience floor and minimum diversity; because the weights are
-political, it asks for a frontier of feasible choices rather than one correct weighting.
+\citep{neis2026allied}: what happens to the allies' supply when a dominant supplier is lost, how much
+of the loss their existing trade relationships can absorb, what coordinated trade adds, and where
+only new capacity closes the gap. A top-ranked country may add little if its strengths duplicate the
+coalition's, and a lower-ranked one may complete a chain, so the object is a country's contribution
+to the system rather than its rank.
 
-This section builds the part of that objective that the indices support. For each Upstream and
-Midstream stage of the eleven headline technologies, a mixed-integer program chooses which network
-nodes produce, what share each carries and which partners each supplies. It rewards fit, the
-capability of producers and the quality of their partnerships, and penalises concentration through
-a concave Herfindahl term, under share limits, a dual-sourcing floor and caps on the number of
-stages a node may lead; the penalty weight traces a frontier between fit and dispersion, and a rule
-picks one point on it. The program is a multi-sourcing variant of facility-location and network
-design \citep{geoffrion1974multicommodity,owen1998strategic,melo2009facility,daskin2013network}
-with dual-sourcing constraints \citep{tomlin2006value,snyder2016orms}. Its objective is a score, not
-a cost, and the design is normative: it describes what a planner with these preferences would
-choose, not where production will locate. Appendix~\ref{app:algorithm} states the algorithms and
-Online Appendix~\ref{oa:network} reports further results.
-
-% ---------------------------------------------------------------------------
-\subsection{Nodes, stages and scores}
-\label{subsec:network_sets}
-
-The network consists of the 57 coalition members of Section~\ref{sec:coalition} (31 core members
-and 26 partners) and the six EU members that belong to it only through the Union. The EU-27 is one
-node, so the 63 economies form 37 nodes; its inputs are aggregated from the members with the stage
-weights of Section~\ref{sec:coalition}, and edges between members are internal and dropped
-(Appendix~\ref{app:algorithm}). Taiwan, Switzerland and the China-leaning suppliers outside the
-coalition are not nodes. A stage is a technology with $s\in\{\text{Upstream},\text{Midstream}\}$,
-22 in all; Downstream deployment serves each member's own market and is not part of the allied
-division of labour. All 37 nodes enter every stage, each as a potential producer $p$ and as a
-consumer $c$.
-
-Within each stage, $\EO$ and $\ES$ are re-ranked across the nodes with the S-curve of
-Section~\ref{sec:normalization}, $\tilde v_p=\Scurve(r_p)$ with $r_p=(\rank(v_p)-1)/(n_v-1)$ and
-$\gamma=0.5$, so that a score measures a node's standing among its partners. The producer score is
-the weighted mean of the components observed,
-\begin{equation}\label{eq:net_producer_score}
-  a_p=\frac{\sum_{v\in\{\EO,\ES\}}\omega_v\,\1[\tilde v_p\ \text{observed}]\,\tilde v_p}
-           {\sum_{v\in\{\EO,\ES\}}\omega_v\,\1[\tilde v_p\ \text{observed}]},\qquad
-  (\omega_{\EO},\,\omega_{\ES})=(0.5,\,0.2),
-\end{equation}
-that is, $5/7$ and $2/7$ when both are observed. Opportunity is the index closest to productive
-capability; security enters as reliability, since a secure node is a steadier supplier. The Policy
-index is not part of the score: its basis differs across members (IEA PAMS alone for 11 of them),
-and it enters the allied picks of Section~\ref{sec:strategic} instead. In the two Geothermal stages
-no node has $\ES$; in Green Hydrogen Midstream five small partners lack it.
-
-Demand is an allocation key, not a forecast. With need $1-\widetilde{\ES}_c$ and size the S-curve of
-the rank of GDP \citep{worldbank2026wdi},
-\begin{equation}\label{eq:net_demand}
-  \tilde d_c=
-  \begin{cases}
-    \tfrac12\,(1-\widetilde{\ES}_c)+\tfrac12\,\mathrm{size}_c & \text{if } \widetilde{\ES}_c \text{ is observed},\\
-    \mathrm{size}_c & \text{otherwise},
-  \end{cases}
-  \qquad d_c=\tilde d_c\Big/\textstyle\sum_{c'}\tilde d_{c'} .
-\end{equation}
-Because both terms are S-curved ranks, demand is rank-compressed: the EU node, with 24.6\% of the
-nodes' GDP, has a median weight of 0.035 across stages, close to the United States' 0.033, and no
-node has more than 0.054 in any stage. Development potential (Section~\ref{sec:bilateral}) has zero
-weight in the objective and serves only to rank build candidates (Online
-Appendix~\ref{oa:network}).
+This section treats the Allied Industrial Base as an \emph{emergent network} of bilateral trade and
+investment relationships, and Sectoral Compacts as the institutions that coordinate groups of those
+relationships where joint action materially improves resilience. The analysis is a chain of
+explicit steps on the observed 2024 trade in U.S. dollars: a supply shock at each supply-chain node;
+the response of the existing relationships; the trade that optimized partnerships could achieve; the
+residual gap that trade cannot close; a standardised capacity increment at candidate hosts; the
+network of relationships that emerges; and the groups of nodes and countries for which a compact is
+worth forming, with a policy treatment for each node. Every step is reported, and no step is a
+weighted composite of the others: there is no AIB score. The analysis is conditional and positive.
+It shows what the observed network can and cannot do under a stated shock, not where production will
+locate, and it prices neither cost nor time to build. Appendix~\ref{app:algorithm} states the
+programs and Online Appendix~\ref{oa:network} traces four nodes through every step. The analysis
+replaces the allocation of production by a mixed-integer program with a calibrated diversification
+penalty that earlier drafts of this paper reported (Appendix~\ref{app:corrections}).
 
 % ---------------------------------------------------------------------------
-\subsection{Partnership edges}
-\label{subsec:network_edges}
+\subsection{Nodes, flows and the two sets of economies}
+\label{subsec:aib_nodes}
 
-The quality of supply from $p$ to $c$ combines the two directed partner indices of
-Section~\ref{sec:bilateral}, each read from the end it describes: the consumer's friendshore rating
-of the producer and the producer's opportunity rating of the consumer's market,
-\begin{equation}\label{eq:net_edge}
-  W_{pc}=\tfrac12\,\FS_{cpts}+\tfrac12\,\PO_{pcts},\qquad p\neq c .
-\end{equation}
-Friendshore carries the consumer's view of the producer as a friendshoring opportunity, where the
-consumer's security need meets the producer's economic opportunity on existing trade and investment
-ties, including UN-vote alignment and Chinese ownership of the producer's foreign-invested
-manufacturing. A missing component counts as zero. Of the 29{,}304 stage-specific ordered pairs of distinct nodes, 90.3\% carry both
-components and 9.7\% friendshore only (every pair in the two Geothermal stages and the 180 pairs
-with a Green Hydrogen Midstream consumer without $\ES$); none has neither. Self-supply is valued at
-the median edge of the stage,
-\begin{equation}\label{eq:net_self_edge}
-  W_{pp}=\operatorname{median}\{W_{qc}:\ q\neq c,\ W_{qc}\ \text{observed}\},
-\end{equation}
-so domestic supply competes with a typical partnership, with neither home bias nor penalty.
+A node is a sub-sector of a technology stage in the HS6 master of Section~\ref{sec:data}: for
+example rare-earth compounds, permanent magnets or battery cells. Solar polysilicon and wafers,
+one sub-sector in the master, are split on their HS6 codes. The ten technologies with a trade
+basket (the nine headline technologies other than Geothermal and Green Hydrogen, plus
+Semiconductors) give 92 nodes in their Upstream and Midstream stages; Downstream deployment is left
+out. Where several technologies share the same HS6 set (permanent magnets, rare-earth compounds and
+rare-earth metals in Electric Vehicles and Wind, transformers in Electric Grid and Solar, pipelines in
+Oil and Gas) the cell is one physical node, counted once in network totals. The HS6 codes are the
+data, the node is the unit of optimization, the stage is the aggregation and policy frame, and every
+metric is recomputed from the flows summed to the node: no HS6-level score is averaged.
 
-% ---------------------------------------------------------------------------
-\subsection{The stage program}
-\label{subsec:network_program}
+Flows are the reconciled 2024 Comtrade dyads of Section~\ref{sec:data}: the importer's declaration
+where the importer reports the node, otherwise the exporter's declaration times 1.06
+\citep{uncomtrade}. An importer's demand for a node is its observed imports, so domestic production
+consumed at home lies outside the analysis and coverage is always coverage of \emph{traded} demand.
+Observed exports are read as revealed tradable capability, not as spare physical capacity. Each
+node is checked against data-quality thresholds (world trade, the number of material exporters and
+importers, the share of mirror flows, codes shared with other nodes, HS revisions, and production
+far more concentrated than trade): 23 nodes are of high confidence, 68 usable with caution and one,
+cobalt ores and concentrates, too thin to optimize after thin nodes are merged into a sibling linked
+by a material flow (monazite into rare-earth compounds). Ninety-one nodes are optimized.
 
-For stage $(t,s)$ the decisions are the flows $f_{pc}\ge0$, the share of the coalition's unit
-demand that $p$ supplies to $c$; the selection indicators $y_p\in\{0,1\}$; and the link indicators
-$\ell_{pc}\in\{0,1\}$. Production shares are $x_p=\sum_cf_{pc}$, and the program is
-\begin{subequations}\label{eq:net_milp}
-\begin{align}
-  \max_{f,\,y,\,\ell}\quad
-    & J=\sum_{p,c} f_{pc}\,\big(w_N\,a_p+w_E\,W_{pc}\big)+w_D\sum_p\delta_p\,y_p-\lambda\sum_p x_p^2
-    \label{eq:net_obj}\\
-  \text{s.t.}\quad
-    & \textstyle\sum_p f_{pc}=d_c && \forall c, \label{eq:net_c_demand}\\
-    & \underline s\,y_p\le x_p\le\bar s\,y_p,\qquad \textstyle\sum_p y_p\ge m_P && \forall p, \label{eq:net_c_share}\\
-    & \varepsilon\,d_c\,\ell_{pc}\le f_{pc}\le d_c\,\ell_{pc},\qquad \ell_{pc}\le y_p,\qquad
-      \textstyle\sum_p\ell_{pc}\ge m_S && \forall p,c, \label{eq:net_c_link}\\
-    & y_p=0 && \forall p\in\mathcal{X}_{ts}, \label{eq:net_c_elig}
-\end{align}
-\end{subequations}
-with $w_N=1$, $w_E=0.5$, $w_D=0$, $\bar s=0.40$, $\underline s=0.05$, $m_P=3$, $m_S=2$,
-$\varepsilon=0.10$ and $\lambda=0.78$, where $\mathcal{X}_{ts}$ holds the nodes barred by the
-portfolio caps. Demand is met in full by network producers (the network is closed); no node carries
-more than 40\% of a stage and a selected one at least 5\%, a stand-in for minimum efficient scale;
-and every consumer has at least two suppliers, each carrying at least a tenth of its demand. These
-constraints bound the Herfindahl index of designed shares, $\HHI^{\mathrm{D}}_{ts}=\sum_px_p^2$
-\citep{hirschman1945national}, for any $\lambda$:
-\begin{equation}\label{eq:net_hhi_bounds}
-  \frac{1}{\min\{|\mathcal{E}_{ts}|,\lfloor 1/\underline s\rfloor\}}
-  \ \le\ \HHI^{\mathrm{D}}_{ts}\ \le\
-  \lfloor 1/\bar s\rfloor\,\bar s^{2}+\big(1-\lfloor 1/\bar s\rfloor\,\bar s\big)^{2}=0.36,
-\end{equation}
-where $\mathcal{E}_{ts}$ is the set of eligible producers.
-
-The term $-\lambda\,\HHI^{\mathrm{D}}_{ts}$ is the diversification penalty, in score units per unit
-of concentration. Without it the objective is linear and the solution sits at corners, two
-producers at the cap and a third with the remainder. With it the marginal value of a share falls
-with its size, and at an interior optimum two producers' shares differ by their difference in
-marginal value divided by $2\lambda$: at $\lambda=0.78$ a score advantage of 0.0156 buys one
-percentage point of share. The penalty plays the role of the variance term in portfolio choice
-\citep{markowitz1952portfolio}, without a model of disruption probabilities, and it is the part of
-the program that values a node by what it adds to a combination: once the leaders' marginal value
-has fallen, a lower-scoring node with good partnerships enters. If supplier outages were
-independent and equally likely, with probability $\pi$, the variance of the share of a stage lost
-would be $\pi(1-\pi)\HHI^{\mathrm{D}}_{ts}$, so $\lambda$ reads as a price of that variance. The
-penalty is additively separable, however: a producer's marginal penalty depends only on its own share,
-and every node counts as an independent source, so two producers that share a bloc, a region or a
-Chinese parent diversify as much as two unrelated ones. The design is therefore a first step toward
-optimising combinations, not its full form (Section~\ref{sec:discussion}). The MILP carries the penalty
-through tangent cuts on a share grid of 0.01, in perspective form (error at most
-$2.5\times10^{-5}$ per producer; Appendix~\ref{app:algorithm}). Stages are built with
-\texttt{ompr} \citep{schumacher2023ompr} and solved by GLPK \citep{makhorin2020glpk} under a
-300-second limit, with a greedy water-filling heuristic as fallback.
+Two sets of economies are kept apart. The \emph{demand scope} is the set of importers whose lost
+supply the analysis seeks to restore: the 57 coalition members of Section~\ref{sec:coalition}, 31 core
+members and 26 partners, each EU member in its own right. The \emph{candidate partners} are the
+exporters that may open, expand or redirect relationships toward the scope: any economy other than
+the shocked one, with at least USD 1 million and 0.05 percent of the node's world exports (the larger
+bar binds); a median node has 43 candidates (9 to 74). The coalition is thus the set of economies
+protected, not a closed supplier set, and a supplier outside it counts wherever it supplies. Open
+ship registries (Liberia, the Marshall Islands, Panama and the Bahamas), which trade vessels under
+their flags, are in neither set. Compacts and network edges are formed only in the
+\emph{electro-industrial} scope, the 70 nodes of Batteries, Electric Vehicles, Solar, Wind, Electric
+Grid, Semiconductors and Nuclear; coal, oil and gas nodes are modelled and reported but form no
+compact. Which economies are protected, which may supply them and which technologies are strategic
+are preferences, and Section~\ref{subsec:robust_network} reports the results under other choices.
 
 % ---------------------------------------------------------------------------
-\subsection{Portfolio caps}
-\label{subsec:network_portfolio}
+\subsection{Shocks, existing relationships and optimized trade}
+\label{subsec:aib_trade}
 
-Solved independently, the stages would select the same strong nodes again and again,
-concentrating the base in a few economies and leaving many members without a stake. The design
-therefore caps the number of stages in which a node is a leading producer, rising with the
-logarithm of GDP:
-\begin{equation}\label{eq:net_cap}
-  \kappa_i=\min\Big\{\kappa_{\max},\,\max\Big\{\kappa_{\min},\
-  \operatorname{round}\Big(\kappa_{\min}+(\kappa_{\max}-\kappa_{\min})\,
-  \frac{\eta_i-\min_{j}\eta_j}{\max_{j}\eta_j-\min_{j}\eta_j}\Big)\Big\}\Big\},
+\paragraph{Shocks.} The headline shock removes China's exports in every node, with the re-exports of
+Hong Kong and Macao; sensitivities halve them or remove the largest supplier of the sub-sector, the
+stage or the technology. Two readings of a shock are kept. Under \emph{hold}, the headline, the
+shocked economy keeps buying: the shock is an export restriction, so other exporters' sales to China
+stay with China, which competes for the same supply. Under \emph{release}, a decoupling, China's
+purchases fall by the same fraction and the exports headed to it are freed for others. Release is the
+more optimistic reading wherever third countries sell much to the shocked economy, as Myanmar and Laos
+do in rare-earth concentrates and Chile in lithium. Shock exposure is the share of the scope's traded
+demand for the node that the shock removes.
+
+\paragraph{Three states.} In state A nothing adapts: the shocked supply disappears. In state B the
+surviving candidates may reallocate only through relationships observed in 2024, plus keeping their
+own exports at home, and an existing relationship may grow to at most twice its observed size. In
+state C, optimized partnerships, any candidate may serve any importer in the scope. A candidate's
+available supply is its current shipments to the scope plus, in the \emph{reallocation} scenario of
+the headline, its exports to markets outside the scope (under hold, not its sales to China); in the
+\emph{conservative} scenario every surviving shipment into the scope stays where it is and only the
+supply the shock frees can move. What a candidate draws beyond its own shipments to the scope is
+reported as diversion, supply taken from buyers outside it. The bound on state B matters: without
+it, a relationship of USD 10{,}000 could carry any volume and existing relationships would be as
+flexible as new ones. The difference between the two states,
+\begin{equation}\label{eq:aib_dividend}
+  \text{coordination dividend}_n \;=\; C^{\mathrm C}_n - C^{\mathrm B}_n ,
 \end{equation}
-where $\eta_i=\log(1+\mathrm{GDP}_i)$, $\kappa_{\min}=2$, $\kappa_{\max}=10$ for the largest economy, and the EU's GDP summed over its
-members. A node's appearances are the stages in which it is among the five largest producers,
-\begin{equation}\label{eq:net_topk}
-  A_i=\big|\big\{(t,s):\ x_{i,ts}>0,\ \rho_{i,ts}\le K\big\}\big|,\qquad K=5,
-\end{equation}
-where $\rho_{i,ts}$ is a strict rank of the share (ties broken by producer score, then by code), so
-a stage contributes at most five appearances. After all stages are solved, each node with
-$A_i>\kappa_i$ is barred from the $A_i-\kappa_i$ stages in which its share times its score is
-smallest, those stages are re-solved, and the count is repeated until no node exceeds its cap: a
-heuristic coupling of the stages, not a joint optimum.
+where $C_n$ is the share of the scope's traded demand for node $n$ served after the shock, is the
+value of new or expanded relationships, that is, of coordination. The residual gap
+$1-C^{\mathrm C}_n$ is what trade cannot close.
+
+\paragraph{The program.} States B and C are linear programs over the flows from candidates to
+importers, solved lexicographically: each objective is optimized only among the solutions that keep
+the earlier ones within a tolerance of their optimum \citep{ehrgott2005multicriteria,makhorin2020glpk}.
+The objectives are (1) to maximise demand served; (1b) to cut surviving shipments as little as
+possible, so that trade the shock did not touch is not reshuffled; (2) to preserve revealed
+specialization, weighting exporters by capped revealed comparative advantage
+\citep{balassa1965trade} or by their production share where a proxy exists; (3) to favour
+relationships with higher Export Opportunity ($\PO$ of Section~\ref{sec:bilateral}, exporter to
+market); and (4) to favour revealed policy and climate compatibility (similarity of IEA policy
+intensity in the node's technology and stage and of Climate Action Tracker ratings). The tolerance on
+coverage is 0.05 percent, so the later objectives decide only among allocations that serve the same
+demand. No geopolitical alignment score enters, and none of the scores is a weight on coverage.
+Appendix~\ref{app:algorithm} gives the program.
+
+\paragraph{Physical capability.} Trade values are a poor guide to who can produce where the dominant
+producer consumes most of its own output: world trade in polysilicon and wafers is far below world
+production, and HS 3818.00, the wafer heading, is mostly semiconductor wafers from Japan, Taiwan and
+Korea. In the 11 nodes with production or capacity shares covering at least 80 percent of world
+output (IEA mining and refining shares, \citealp{iea2026cmdata}; manufacturing capacity,
+\citealp{cim2026}) the headline is \emph{production-constrained}: an exporter the physical data list
+as a producer keeps its full trade response, while one they do not list (a re-exporter, stocks or a
+different product under the same code) keeps its current shipments to the scope but cannot expand or
+redirect toward it. Shares are not multiplied into trade values, since production is a volume and
+trade a value. The \emph{trade-only} result, in which exports alone bound supply, is kept beside it.
+Where the class of a node rests on low trade exposure while physical and trade concentration diverge
+by 25 points or more, it carries the warning \textsc{physical capability not validated}.
 
 % ---------------------------------------------------------------------------
-\subsection{Calibrating the diversification weight}
-\label{subsec:network_calibration}
+\subsection{Results: exposure, coverage and the coordination dividend}
+\label{subsec:aib_results}
 
-No price converts concentration into score, so $\lambda$ is set by a rule with an observable
-anchor: the smallest value on a grid at which the median of $\HHI^{\mathrm{D}}_{ts}$ over the 22
-stages is at most the median export Herfindahl index of the nodes themselves,
-$\HHI^{\mathrm{N}}_{ts}$, over the 18 stages with an HS6 basket (all but Geothermal and Green
-Hydrogen). $\HHI^{\mathrm{N}}_{ts}$ uses 2024 basket exports from the reconciled all-reporter
-Comtrade matrix \citep{uncomtrade}, with shares within the 37 nodes and the EU counting only its
-extra-EU exports. The target is 0.1556 (6.43 equivalent exporters). The design should be no more
-concentrated, in the median stage, than the coalition's own exports already are; a closed network
-of 37 nodes cannot match the dispersion of a world market, so world concentration would be the
-wrong anchor.
+Removing China's supply costs the 57 economies 14.2 percent of their traded demand across the 91
+nodes, USD 756 billion of USD 5{,}326 billion, and 22.9 percent in the electro-industrial scope (USD
+702 billion of USD 3{,}063 billion), where coverage falls to 77.1 percent (Figure~\ref{fig:aib_ladder}).
+Existing relationships restore it to 84.4 percent and optimized trade to 84.7 percent. Batteries are
+most exposed: 47.5 percent of the scope's traded demand is lost and 45.2 percent remains unserved
+after optimized trade. Solar (25.6 percent lost, gap 18.1), Electric Vehicles (24.7, 18.7), Wind (22.2,
+12.1), Semiconductors (18.1, 6.7), Electric Grid (16.6, 10.3) and Nuclear (8.6, 3.4) follow; coal, gas
+and oil lose 2 to 4 percent and close almost all of it. The recovery is not new supply: under hold,
+all of it, USD 283 billion across the nodes and USD 232 billion in the electro-industrial scope, is
+supply drawn from buyers outside the scope, so the allies' coverage rises because others' falls.
 
-The grid has 36 points (0, 0.5, every 0.01 from 0.70 to 1.00, and 1.1, 1.2 and 1.5), each a full
-re-solve of the production configuration. The rule picks $\lambda=0.78$, at which the median is
-0.1520, or 6.58 effective producers (Figure~\ref{fig:network_frontier}; Appendix~\ref{app:algorithm}
-tabulates the grid). The pick is knife-edge. At 0.77 the median is 0.1558, missing the target by
-0.0002; the median is not monotone in $\lambda$ (it rises in eight of the 35 grid steps, from
-0.1485 at 0.79 to 0.1502 at 0.80, for instance), because interior shares move top-five membership
-and the portfolio loop then bars different nodes; and the pick moved with every revision of the
-inputs during the final data corrections. The rule, not the number, is therefore the specification,
-re-applied to every full rerun. The design it selects is less fragile than the number: at
-$\lambda=0.77$ and 0.79 at most 1.1\% of production moves in the mean stage
-(Section~\ref{sec:robustness}). The frontier prices diversification in score, not in resource costs: at the pick the summed node
-and edge terms are 5.8\% below their value at $\lambda=0$, at $\lambda=1.5$ (median index 0.095)
-10.6\% below. This is the frontier of choices the conceptual objective asks for
-\citep{neis2026allied}.
-
-\begin{figure}[htbp]
+\begin{figure}[tbp]
   \centering
-  \includegraphics[width=\textwidth]{network_frontier}
-  \caption{Calibration of the diversification weight $\lambda$. Panel~(a): median over the 22
-  Upstream and Midstream stages of the Herfindahl index of designed production shares at each of
-  the 36 grid values of $\lambda$ (37 nodes, portfolio caps on, MILP with a 300-second stage
-  limit); the horizontal line is the target, the median export Herfindahl index of the nodes over
-  the 18 basket stages (0.1556); the large marker is the pick, $\lambda=0.78$; the open circle the
-  same design without portfolio caps. Panel~(b): the neighbourhood $0.70\le\lambda\le0.90$; open
-  markers lie above the target, filled markers meet it, and orange segments are steps at which the
-  median rises although $\lambda$ increases. Panel~(c): the summed node and edge terms of the 22
-  stage objectives, without the Herfindahl penalty, in percent of their value at $\lambda=0$.
-  Source: calibration study on the inputs of the final rerun of 12 October 2026.}
-  \label{fig:network_frontier}
+  \includegraphics[width=\textwidth]{aib_ladder}
+  \caption{Coverage of the allied scope's traded demand after the shock, by technology. Each row
+  is a technology: coverage of the 57 coalition economies' 2024 traded demand for its nodes when
+  China's supply is removed (state A, open circle), with the response of existing relationships
+  (B), with optimized trade partnerships (C), and with one synthetic increment of 10 percent of the
+  node's demand at its leading host in every node with a residual gap of 5 percent or more (the
+  investment step, a yardstick, not a forecast). Nodes shared by technologies count in each. Hold,
+  production-constrained, reallocation. Source: \texttt{allied\_trade\_stress\_test.csv},
+  \texttt{allied\_investment\_partnerships.csv}; \texttt{scripts/paper/fig\_aib.R}.}
+  \label{fig:aib_ladder}
+\end{figure}
+
+The coordination dividend is close to zero. It is below one point in 81 of the 91 nodes, with a
+median of 0.05 points, and reaches the five-point threshold for coordination only in wind towers, at
+6.7 points, where existing relationships already restore 93.3 percent (Figure~\ref{fig:aib_nodes}).
+The reason is the reach of the existing network: with global candidate partners and existing
+relationships allowed to double, the network of 2024 already carries almost everything trade can do,
+and what remains is the difference between what the world outside China exports and what the allies
+lost. In the most exposed nodes the gap is close to the exposure itself (panel~a): seven nodes lose
+more than half their traded supply and recover little of it, battery cells (61.1 percent lost, gap
+60.3), anode materials, vehicle batteries and packs, solar modules, permanent magnets, natural graphite
+and lithium chemicals. The problem the stress test reveals is capacity, not the coordination of trade.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{aib_nodes}
+  \caption{Shock exposure, the residual gap and the coordination dividend by node. Each point is one
+  of the 91 optimized nodes, coloured by its class (Section~\ref{subsec:aib_classes}); open points are
+  coal, oil and gas nodes outside the strategic scope. Panel~(a): the residual gap after optimized
+  trade against exposure; on the dashed diagonal trade restores nothing, and the solid line is the
+  10 percent gap above which an exposed node is \textsc{build}. Panel~(b): the coordination dividend,
+  optimized minus existing coverage, in points; the dashed line is the five-point threshold of
+  \textsc{coordinate}. China removed, hold, production-constrained, reallocation. Source:
+  \texttt{aib\_node\_classification.csv}; \texttt{scripts/paper/fig\_aib.R}.}
+  \label{fig:aib_nodes}
 \end{figure}
 
 % ---------------------------------------------------------------------------
-\subsection{Results}
-\label{subsec:network_results}
+\subsection{Residual gaps and marginal investment}
+\label{subsec:aib_investment}
 
-\paragraph{Solution.} All 22 stages are solved by the MILP, none by the fallback, and the
-portfolio loop converges after seven passes; the 62 stage solves take 462 seconds, none more than
-10.6.
+Only after optimized trade, and only in nodes where at least 5 percent of demand remains unserved,
+does the analysis ask where new capacity would help. It is a marginal capacity simulation, not a
+project appraisal: a standardised increment of 5, 10 or 20 percent of the node's demand-scope demand
+is added at one eligible host at a time and state C re-solved, and the gain in coverage is recorded
+with the change in concentration. A host is eligible only with revealed capability at material scale:
+revealed comparative advantage of at least one on exports of at least USD 50 million or 1 percent of
+world trade in the node, a production share of at least 1 percent, a world export share of at least
+0.5 percent, or that comparative advantage in a node joined to it by a material link. Hosts are ranked
+by (1) the gain in coverage with a 40 percent supplier-share limit in force, so that capacity at an
+already dominant supplier counts for little; (2) the fall in concentration; (3) capability at scale,
+the larger of the host's world export and production shares; (4) Friendshore
+(Section~\ref{sec:bilateral}) from the importers whose supply was lost; and (5) policy compatibility.
+Friendshore orders capable hosts and never admits an incapable one.
 
-\paragraph{Who produces what.} Figure~\ref{fig:network_specialization} and
-Table~\ref{tab:network_producers} show the designed division of labour: 201 producer roles, from
-seven producers (Nuclear Upstream) to ten per stage, median nine. $\HHI^{\mathrm{D}}_{ts}$ runs from
-0.126 (Oil Midstream) to 0.209 (Nuclear Upstream); the largest share is 0.325 (Indonesia in Green
-Hydrogen Upstream, Canada in Nuclear Upstream), none reaches the cap, and 61 sit at the floor. Twenty-nine of the 37
-nodes produce somewhere; eight never do (Turkey, New Zealand, Ukraine, the Dominican Republic,
-Guatemala, Ghana, Costa Rica and Gabon). Canada has the most roles (16), then the EU node (15; it leads no stage), the United States and
-Indonesia (13 each). How many roles a node takes follows its size through the caps
-(Spearman correlation 0.75 with the cap); which stages it takes follows its scores. Nodes outside
-the high-income group carry 47\% of designed Upstream and 43\% of Midstream production.
+In the headline 49 electro-industrial nodes qualify, with 83 distinct eligible hosts and a median of
+20 per node. At the 10 percent increment the leading host closes the median gap from 18.7 to 8.7
+percent, and closes it fully in 10 nodes; its gain is the full increment in the median node, since one
+increment is smaller than most gaps. Most leading hosts qualify on comparative advantage (41 of 49),
+five on production shares. Twenty-nine economies lead at least one node: Czechia leads seven (among them
+power converters, grid control panels, electrical steel, wind foundations and turbines), Viet Nam five
+(solar racking, cabling, module inputs, array cables and integrated circuits), the Philippines three, and
+Denmark, Spain, Finland, Indonesia, Korea, Malaysia, Taiwan and the United States two each.
 
-Three patterns arise from the construction rather than from observed capacity. Indonesia,
-China-leaning by its votes and a member through IPEF, leads six Upstream stages and Oil Midstream:
-the producer score has no alignment term, which reaches the design only through the edges.
-Thailand leads both Geothermal stages, where scores rest on $\EO$ alone and edges lack their
-opportunity half. And the design applies no endowment screen: by the screen of the allied picks
-(Section~\ref{sec:strategic}), 21 of the 90 designed roles in the ten screened Upstream stages are
-held by nodes without recorded reserves or production of the stage's resources, a median of 11\% of
-stage production (none in Electric Vehicles, Gas and Oil Upstream; 36\% in Solar Upstream). Their
-shares are supply they would have to source through trade or overseas equity.
+The investor--host pairs follow from the same simulation: with every other flow fixed, the new
+capacity at the leading host fills the unmet demand of the importers that lost supply, in descending
+order of the host's Export Opportunity toward them. Only the leading (first-ranked) host of each node
+enters the flows; the hosts ranked second to fifth are alternatives for the same increment and are
+never added to it. Each importer served is an \emph{investor}: the
+buyer whose lost supply the new capacity replaces and which therefore has the interest to finance or
+contract for it. Across the 49 nodes the leading hosts' capacity supplies USD 178 billion to 57
+investors in 618 investor--host pairs, beside USD 29 billion that hosts keep for their own demand
+(Figure~\ref{fig:aib_flows}). The largest pairs are Germany with Finland (USD 9.9 billion, in vehicle
+batteries and packs), the United States with Hungary (USD 7.4 billion, charging infrastructure), with
+the Philippines (USD 6.0 billion in three nodes) and with Taiwan (USD 5.8 billion, battery cells), and
+Mexico with Hungary (USD 5.7 billion). Core members host 58.9 percent of the supply, partners 33.6
+percent and economies outside the coalition 7.4 percent, chiefly Taiwan. The supply-weighted mean
+Friendshore of the investor toward the host is 0.77.
 
-\input{tables/network_producers}
-
-\begin{figure}[htbp]
+\begin{figure}[tbp]
   \centering
-  \includegraphics[width=\textwidth]{network_specialization}
-  \caption{Designed division of labour across the allied network. Rows are the 37 network nodes
-  (the EU-27 as one node), ordered by the number of stages in which they produce (in parentheses)
-  and then by their summed share; columns are the eleven headline technologies within the
-  Upstream and Midstream stages. Shading is the designed production share $x_{p,ts}$ from the
-  floor 0.05 to the largest share, 0.325; light grey cells are stages in which the node does not
-  produce, and a cross marks a stage from which the portfolio loop barred the node in its final
-  pass. Production design: $\lambda=0.78$, GDP-log portfolio caps, node policy term off, all 22
-  stages solved by the MILP. Source: \texttt{allied\_network\_specialization.csv} and
-  \texttt{allied\_network\_diagnostics.csv}.}
-  \label{fig:network_specialization}
-\end{figure}
-
-\paragraph{Flows.} Figure~\ref{fig:network_map} shows three Midstream stages; India leads Solar and
-Wind Midstream (0.275 each) and the United States Batteries Midstream (0.295). The redundancy rules
-bind: 793 of the 811 consumer--stage pairs with positive demand draw on exactly two suppliers, and
-in every stage the weakest link carries exactly 10\% of its consumer's demand. With no transport cost in the objective, routing follows the edge weights: the flow-weighted edge weight is
-0.874 in the median stage against an unweighted mean of 0.58, and 15 to 28\% of the mapped flows
-stay within a World Bank region.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\textwidth]{network_map}
-  \caption{Designed flows in three Midstream stages. In each panel producers sit on the left,
-  sized by their production share (printed next to the code; EU = the EU-27 node), and all 37
-  nodes sit on the right as consumers, in the same order in every panel: by World Bank region
-  (shaded bands) and by GDP within region. A line is a flow $f_{pc}$, wider for larger flows;
-  consumers that also produce are in bold. Producers are placed at the flow-weighted mean position
-  of their consumers (the barycentre step of a two-layer layout computed with \texttt{igraph}
-  \citep{csardi2006igraph}). Panel titles give the number of producers and
-  $\HHI^{\mathrm{D}}_{ts}$. Production design ($\lambda=0.78$, portfolio caps, MILP). Source:
-  \texttt{allied\_network\_flows.csv} and \texttt{allied\_network\_specialization.csv}.}
-  \label{fig:network_map}
-\end{figure}
-
-\paragraph{Concentration and current exporters.} Figure~\ref{fig:network_concentration} sets the
-design against two benchmarks in the 18 basket stages. It meets the nodes' median export
-concentration by construction, but stage by stage the two are unrelated (Spearman correlation
-$-0.07$): the design spreads production where the nodes' exports are concentrated, as in Nuclear
-Upstream (Canada 54\% of node exports), and concentrates it where they are dispersed. It is less
-concentrated than world exports (median 0.101) in only five stages. What changes is the identity of
-suppliers: China is the largest world exporter in ten basket stages (20 to 43\% of world exports),
-and the 37 nodes hold 74\% of world exports in the median basket stage, so the closed design
-replaces by assumption 3 to 46\% of current world supply, at a cost the model does not measure. Nor does it follow the ranking of current exporters: in the
-median basket stage 66\% of designed production lies outside the three largest exporting nodes, and
-designed and observed export shares have a median Spearman correlation of 0.53. Economies that do
-not report to Comtrade enter these benchmarks only through their partners' mirror declarations.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\textwidth]{network_concentration}
-  \caption{Designed versus observed concentration by technology and stage. Panel~(a): Herfindahl
-  index of designed production shares, $\HHI^{\mathrm{D}}_{ts}$ (filled circles coloured by
-  stage); of the 2024 basket exports of the 37 nodes, $\HHI^{\mathrm{N}}_{ts}$ (grey; the EU-27 as
-  one exporter counting only extra-EU exports; reconciled Comtrade matrix, importer report else the
-  exporter's mirror $\times1.06$); and of world exports across all reporters,
-  $\HHI^{\mathrm{W}}_{ts}$ (open circles). The vertical line is the calibration target (0.156).
-  Panel~(b): the largest single share in each case; the codes at the right name the world's
-  largest exporter of the stage's basket, in bold where it is outside the network. Geothermal and
-  Green Hydrogen have no basket. Production design ($\lambda=0.78$, caps on). Sources:
-  \texttt{allied\_network\_diagnostics.csv}, \texttt{allied\_network\_observed\_hhi.csv}, UN
-  Comtrade \citep{uncomtrade}.}
-  \label{fig:network_concentration}
-\end{figure}
-
-\paragraph{Portfolio caps.} The caps range from two (Gabon, Namibia) to ten (the United States, the
-EU) and sum to 218, against 110 top-five appearances; eight nodes end at their cap, and the final
-pass bars 49 (node, stage) combinations in 17 stages (Figure~\ref{fig:network_portfolio}). Without
-caps, the United States would be a top-five producer in 17 stages against a cap of ten. The caps
-pass appearances chiefly to Japan, Mexico, the Philippines, South Africa and Israel, cost 1.9\% of
-the summed objective (at most 5.9\%, in Coal Midstream) and raise the median $\HHI^{\mathrm{D}}_{ts}$
-from 0.139 to 0.152, so the calibrated $\lambda$ is specific to the capped configuration.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.75\textwidth]{network_portfolio}
-  \caption{Portfolio caps and realised top-5 appearances. For each of the 37 nodes (EU = the
-  EU-27 node), ordered by GDP, the vertical tick is the cap $\kappa_i$ of \eqref{eq:net_cap}, the
-  filled circle the number of stages in which the node is a top-5 producer \eqref{eq:net_topk} in
-  the production design, and the open circle the same count in the design solved without caps and
-  otherwise unchanged ($\lambda=0.78$). GDP: latest finite WDI value in current US dollars
-  \citep{worldbank2026wdi}, summed over the 27 members for the EU. Source:
-  \texttt{allied\_network\_portfolio\_caps.csv}, \texttt{allied\_network\_portfolio\_counts.csv}
-  and the no-caps run of the calibration study.}
-  \label{fig:network_portfolio}
+  \includegraphics[width=\textwidth]{aib_flows}
+  \caption{Investor--host flows of the investment step. Each cell is the supply, USD billion, that a
+  10 percent capacity increment at the leading host of a node would deliver to the investor, an
+  importer in the demand scope whose lost supply it replaces, summed over the 49 electro-industrial
+  nodes with a residual gap of at least 5 percent; values of at least USD 1 billion are printed. Rows
+  are the ten largest hosts and columns the twelve largest investors, 73.1 percent of the USD 178
+  billion delivered to other economies; supply a host keeps for its own demand is excluded. China
+  removed, hold, production-constrained, reallocation. Source:
+  \texttt{allied\_investment\_pairs.csv}; \texttt{scripts/paper/fig\_aib.R}.}
+  \label{fig:aib_flows}
 \end{figure}
 
 % ---------------------------------------------------------------------------
-\subsection{What the design does and does not show}
-\label{subsec:network_limitations}
+\subsection{The emergent network and country roles}
+\label{subsec:aib_network}
 
-Against the five analytical layers of the conceptual source \citep{neis2026allied}, the design joins
-the capability layer (node scores) to the complementarity layer (directed edges, with alignment and
-Chinese-parent exposure) under a minimal robustness layer (share caps, dual sourcing and the
-diversification penalty). It takes the severity layer as given, since all 22 stages are designed
-alike, and has no bankability layer; in the source's sequence from severity to coordination to
-specialization, it is the last step. Within these limits it illustrates, by construction rather than as a finding, the source's point
-that an allocation under a diversification constraint need not follow the ranking of current
-exporters; it does not show that the combinations are resilient, because
-the program models no shocks.
+The relationships the analysis selects form the emergent network: 2{,}029 directed pairs among 108
+economies in the electro-industrial scope, oriented as goods move. Trade selections (a new or
+expanded relationship in the optimized allocation) give 1{,}704 pairs, and investment selections (the
+leading host serving an investor, turned round so that the host supplies the investor) 669; 344 pairs
+carry both. Each economy's roles are kept apart rather than ranked (Figure~\ref{fig:aib_roles}): 105
+economies supply through trade, the 57 economies of the scope buy and invest, and 32 host a leading
+increment under one of the two simulated shocks. These counts include every positive role; the
+dashboard names a role only where it reaches at least one percentage point of node demand (the share
+of a node's demand the economy serves or receives under the headline shock, summed over nodes) and
+lists smaller roles as minor. Twenty-five economies hold all four roles. Economies
+outside the coalition provide 14.4 percent of the USD 159 billion of added trade, and the 44 that only
+supply are all outside it.
 
-Four further limits apply. The objective is a score: no unit costs, capacities, ramp-up times or
-build costs enter. Stages are solved
-independently, so cell manufacturing can be placed where none of the upstream supply is, although
-shocks propagate along such links \citep{acemoglu2012network,carvalho2021supply}. The network is
-closed: it shows how the coalition could divide its own requirement, not the cost of decoupling
-\citep{aiyar2023geoeconomic,javorcik2024economic}. And exposure is direct: dyadic edges do not
-register a partner's own dependence on non-members, although the economies that gained U.S. market
-share from China are themselves integrated into Chinese supply chains
-\citep{freund2024us,alfaro2023global}; the Chinese-parent component of friendshore captures one
-channel of such common-mode exposure, ownership, but not shared precursors, equipment or logistics.
+Added trade concentrates among a few suppliers: Korea adds USD 19.1 billion to 43 partners and Japan
+USD 16.7 billion to 55, followed by the United States (USD 11.2 billion), Germany (USD 10.5 billion),
+Italy and France. India, Singapore and the United States are the largest buyers of that trade, and the
+largest single pair is Korea to India (USD 12.0 billion over 20 sub-sectors). The hosts are a
+different group. The economies that would host the most new capacity, Hungary, Czechia, the
+Philippines and Viet Nam, with USD 26 to 29 billion each, are minor suppliers of added trade, while the
+largest investors, the United States (USD 32.2 billion across 25 nodes), Germany and Mexico, are also
+buyers. The roles answer different questions, which is why the network reports them separately and
+gives no single ranking.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=0.72\textwidth]{aib_roles}
+  \caption{Country roles in the emergent network. Rows are the 24 economies with the largest volume
+  across the four roles; dot area is the headline volume, USD billion: added trade supplied (trade
+  supplier) and received (trade buyer) in the optimized allocation, and supply from the leading
+  hosts' new capacity hosted (investment host) and received (investor), as in
+  Figure~\ref{fig:aib_flows}. Colour gives the coalition tier. Electro-industrial scope, China
+  removed, hold, production-constrained, reallocation. Source:
+  \texttt{emergent\_aib\_country\_summary.csv}, \texttt{allied\_investment\_pairs.csv};
+  \texttt{scripts/paper/fig\_aib.R}.}
+  \label{fig:aib_roles}
+\end{figure}
+
+% ---------------------------------------------------------------------------
+\subsection{Node classification}
+\label{subsec:aib_classes}
+
+Each node receives one of four policy treatments, by rules applied in order to the headline results:
+\begin{enumerate}[leftmargin=*,itemsep=1pt,topsep=2pt]
+  \item \textsc{low intervention} if the shock removes less than 15 percent of demand;
+  \item \textsc{build} if the residual gap after optimized trade is 10 percent or more: new capacity
+  is needed, with coordinated finance, guarantees and long-term offtake at the listed hosts;
+  \item \textsc{manage specialization} if the node is resilient but its optimized supply is
+  concentrated (the largest supplier holds 40 percent or more, the three largest 75 percent or more,
+  or diversifying to a 40 percent limit costs five points or more): inventories, supply guarantees and
+  reciprocal access with the dominant suppliers;
+  \item \textsc{low intervention} if existing relationships already restore 90 percent;
+  \item \textsc{coordinate} if the coordination dividend is five points or more: market access, rules
+  of origin, procurement and offtake with the listed partners;
+  \item otherwise \textsc{low intervention}: existing trade is nearly sufficient.
+\end{enumerate}
+Concentration is tested before adequate existing resilience because a node that copes through a few
+suppliers is a specialization to manage, not one to leave alone. A node can need several instruments,
+so the needs are also kept as labels (\textsc{coordinate} for a dividend of five points, \textsc{build}
+for a gap of 10 percent, \textsc{manage specialization} for the concentration test, each when exposure
+is at least 15 percent), and the continuous results stay beside the class.
+
+Of the 92 nodes, 40 are \textsc{build}, 50 \textsc{low intervention}, one \textsc{manage
+specialization} (oil storage and transport equipment) and one has insufficient data; none is
+\textsc{coordinate}. In the electro-industrial scope 37 nodes are \textsc{build} and 32 \textsc{low
+intervention}; the median \textsc{build} node loses 27.8 percent of its traded supply and keeps a gap of
+23.4 percent. Lithium chemicals and rare-earth metals need \textsc{build} and \textsc{manage
+specialization} together, and wind towers, \textsc{low intervention} because existing relationships
+restore 93 percent, keep \textsc{coordinate} as a need. Polysilicon and cobalt and nickel refining are
+\textsc{low intervention} on low trade exposure while China dominates their production, so both carry
+the physical-capability warning: their dependence arrives embodied in wafers, cells and battery
+materials. The classes are interpretations of the continuous results, made with stated thresholds;
+Section~\ref{subsec:robust_network} shows how they move with the settings.
+
+% ---------------------------------------------------------------------------
+\subsection{Sectoral Compacts}
+\label{subsec:aib_compacts}
+
+A Sectoral Compact is warranted only where a group of nodes and countries gains from acting together.
+The intervention nodes (\textsc{build}, \textsc{coordinate} and \textsc{manage specialization}) of the
+strategic scope are grouped by complete linkage, so that every pair of nodes in a compact passes three
+tests. \emph{Chain coherence}: one node is upstream of the other within three links of a curated,
+directed physical and process chain (rare-earth oxide to metal and alloy to permanent magnet to motor
+or generator; lithium minerals to chemicals to cathode to cell to pack to vehicle; graphite to anode to
+cell; silicon metal to polysilicon to wafer to cell to module; copper and electrical steel to cables
+and transformers), or both feed the same downstream node directly; sharing a technology or a stage is
+not enough. \emph{Partner overlap}: a cosine similarity of at least 0.35 between the nodes' recurring
+supplier vectors (optimized supply shares summed over every shock, with the leading hosts), or
+between one node's suppliers and the other's buyers. \emph{Policy coherence}: a cosine similarity of at
+least 0.5 between the nodes' policy-need profiles (dividend, residual gap, excess concentration). A
+compact must also be one connected piece of the chain. A technology can therefore yield several
+compacts or none.
+
+\paragraph{Exact minimum coalitions.} A compact protects its \emph{demand anchors}, the importers
+holding 60 percent of its lost supply (at most six). The anchors' coverage in a node when a set of
+countries coordinates is linear in membership: what reaches them with nobody coordinating, plus what
+each member adds by redirecting its available supply and, where it is a leading host of a node that
+needs capacity, one 10 percent increment. The \emph{minimum coalition} is then the solution of a binary
+program: the fewest countries such that every node of the compact reaches 95 percent of the anchors'
+traded demand, with the anchors always members. Among coalitions of that size a second program picks
+the most robust, maximizing the smallest margin over the target across the compact's nodes, so that the
+coalition does not sit exactly on the target where losing any small supplier would tip a node below it;
+remaining ties go to the coalition adding the most supply (Appendix~\ref{app:algorithm}). A greedy path,
+adding the economy that most reduces the shortfall, is kept for the view of coverage as countries
+join.
+
+\paragraph{Tiers.} The exact 95 percent coalition is the \emph{core}. Within it, a \emph{critical supply
+partner} is a member that is needed (without its supply the rest miss the target) and that no single
+other candidate can replace; in a minimum coalition every member is needed by construction, so
+substitutability is what distinguishes them. \emph{Associate partners} are the fewest additions that
+reach 99 percent. A \emph{critical external dependency} is a non-member whose loss would push a node
+below 95 percent with the coalition fixed and that supplies at least 1 percent of the anchors' demand.
+A group is a candidate compact only if its coalition lifts the anchors' coverage by at least five
+points over what their existing relationships give them, and a coalition of fewer than three countries
+is a bilateral arrangement rather than a compact.
+
+\paragraph{Results.} The 37 intervention nodes of the scope form 22 candidate compacts, nine of
+them spanning several nodes (Figure~\ref{fig:aib_compacts} and Table~\ref{tab:aib_compacts}). Every one
+is an Investment / Capacity compact, since every intervention node in the scope is \textsc{build}, and
+all carry the same instruments: coordinated finance, guarantees, an investment pipeline, price support,
+demand aggregation and long-term offtake. Coalitions are small: three to nine countries, six in 13 of the
+22. The exact coalition reaches 95 percent in all 22 and the robust tie-break is solved in all 22; the
+greedy path finds coalitions of the same size but with different members in nine. Twenty-nine economies
+belong to at least one coalition, led by Viet Nam (16 compacts), the United States (15), Japan (14),
+Germany (13), India and Korea (10 each). Critical supply partners appear in four compacts: Singapore and
+Taiwan in the battery compact (cells, foils, electrolyte, separators and packs), the United Kingdom in
+motors and magnets, Madagascar and Mozambique in anodes with natural graphite, and Viet Nam in rare-earth
+metals. Seven compacts have a critical external dependency, most of all motors and magnets, where seven
+non-members (Switzerland, France, Italy, Malaysia, the Philippines, Poland and Thailand) are critical;
+Thailand is also the one associate partner of any compact. Rare-earth compounds and metals sit apart
+from magnets because their partners and needs differ from their chain neighbours'.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{aib_compacts}
+  \caption{The 22 Sectoral Compacts. Panel~(a): coverage of the allied demand for the compact's nodes
+  after the shock, with existing relationships, with the trade compact (every economy keeps its
+  existing response and the coalition's members may also open or expand relationships) and with one
+  10 percent increment at up to two member hosts per \textsc{build} node. Panel~(b): the coalition
+  tiers, the exact 95 percent coalition split into critical supply partners and other core members,
+  with associate partners added for 99 percent; ``ext.'' counts critical external dependencies,
+  which are not members. Compacts are ordered by the allied demand lost (Table~\ref{tab:aib_compacts}).
+  China removed, hold, production-constrained, reallocation. Source:
+  \texttt{aib\_compact\_candidates.csv}; \texttt{scripts/paper/fig\_aib.R}.}
+  \label{fig:aib_compacts}
+\end{figure}
+
+\input{tables/aib_compacts}
+
+\paragraph{The coordination dividend of a compact.} Coordination within a coalition lifts the
+anchors' coverage by a median of 32.6 points (10.5 to 76.4) over their fragmented baseline, but that
+gain is almost entirely members redirecting their own exports toward each other. For all importers of
+the compact's nodes, the trade compact adds at most 0.04 points to what existing relationships
+achieve, in every compact: trade coordination moves supply among allies and away from others, and adds
+none to the system. What adds supply is the investment response, a median of 19.9 points of the
+nodes' demand, which brings 12 of the 22 compacts to 95 percent or more. The compacts are therefore
+best read as investment and offtake clubs for specific chains, with the coalition naming the members
+whose supply or capacity is indispensable and the external dependencies naming the risks that
+membership does not remove.
+
+% ---------------------------------------------------------------------------
+\subsection{What the analysis does and does not show}
+\label{subsec:aib_limitations}
+
+The analysis measures what the 2024 trade network can do after a stated shock; it does not measure
+what production would cost, how long capacity takes to build or what governments are willing to pay.
+Demand is traded demand, so domestic production used at home is outside it. HS6 headings mix grades
+and uses: rare-earth compounds mix concentrates and separated oxides, and cables and converters serve
+many technologies; the data-quality flags say where. Shocks are applied node by node with no coupling
+across nodes, so a magnet shortage does not by itself reduce motor exports. Export Opportunity and
+Friendshore are technology-stage indices, not sub-sector ones. The physical rule decides who can
+supply, not how much: a listed producer keeps its full trade response even where its production is
+small, and the 81 nodes without credible physical data, among them magnets, motors and most
+equipment, keep their trade-only result. The investment increment is synthetic and the same size
+everywhere, so the investment step ranks hosts and shows the order of magnitude of what capacity adds;
+it is not a project pipeline. Finally, the coordination dividend is near zero because the candidate
+universe is global and existing relationships may double; with a tighter bound on existing
+relationships coordination matters more, and Section~\ref{subsec:robust_network} reports how far.

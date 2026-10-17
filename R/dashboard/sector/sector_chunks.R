@@ -14,6 +14,7 @@ SECTOR_BUDGET_GZ <- list(
   `sector-meta` = 150 * 1024, `sector-facts` = 600 * 1024, `sector-trade` = 450 * 1024,
   `sector-policy` = 250 * 1024, `sector-policy-text` = 700 * 1024, `sector-series` = 900 * 1024,
   `sector-atlas` = 1.3 * 1024^2, `sector-dev` = 1.2 * 1024^2, `sector-fdi` = 300 * 1024,
+  `sector-climate` = 300 * 1024,
   sector_total = 9 * 1024^2, combined_total = 25 * 1024^2
 )
 SECTOR_DICT_VAR_COLS <- c("id", "theme", "family", "label", "short", "definition", "unit", "data_year", "years",
@@ -286,6 +287,7 @@ sector_chunks <- function(b) {
 
   if (!is.null(b$fdi)) out$`sector-fdi` <- sector_fdi_chunk(b$fdi, gi, ii)
   if (!is.null(b$dev)) out$`sector-dev` <- sector_dev_chunk(b$dev, gi, ii)
+  if (!is.null(b$climate)) out$`sector-climate` <- sector_climate_chunk(b$climate, gi, ii)
   out
 }
 

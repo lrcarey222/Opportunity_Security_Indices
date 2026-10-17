@@ -25,6 +25,7 @@ import {
   validateChunk,
   type HeadlineId,
   type SectorChunkName,
+  type SectorClimateChunk,
   type SectorDevChunk,
   type SectorFactsChunk,
   type SectorManifest,
@@ -37,6 +38,7 @@ import {
 import { factsIndexOf, seriesIndexOf, type FactsIndex } from '../data/facts.ts';
 import { modelOf, type ItemInfo, type SectorModel, type VarInfo } from '../data/model.ts';
 import { countryFamilies, countryVars, primaryMeasure } from '../derive/cells.ts';
+import { cellMatch, climateData, emitters, fmtLifecycle, intensityKeys, intensityOf } from '../derive/climate.ts';
 import { growth } from '../derive/concentration.ts';
 import { ASSUMED_ZERO_WORDS, isAssumedZero, noteWords } from '../derive/notes.ts';
 import { countryTotals, flowsOf, league, matrixTotal } from '../derive/trade.ts';
@@ -135,8 +137,11 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect(manifest.flags.fdi).toBe(true);
       // Development & finance (2026-10-15): the lazy sector-dev chunk ships with flags.dev (--no-dev has neither)
       expect(manifest.flags.dev).toBe(true);
-      // 17 chunks: meta, facts, 10 trade, policy, policy-text, series, fdi, dev
-      expect(manifest.chunks.length).toBe(17);
+      // Climate TRACE emissions (2026-10-17): the lazy sector-climate chunk ships with flags.climate (--no-climate has neither)
+      expect(manifest.flags.climate).toBe(true);
+      // 18 chunks: meta, facts, 10 trade, policy, policy-text, series, fdi, dev, climate
+      expect(manifest.chunks.length).toBe(18);
+      expect(manifest.chunks.filter((c) => c.name === 'sector-climate').length).toBe(1);
       expect(manifest.chunks.filter((c) => c.name === 'sector-dev').length).toBe(1);
       expect(manifest.chunks.filter((c) => c.name.startsWith('sector-trade-')).length).toBe(10);
       expect(manifest.chunks.filter((c) => c.name === 'sector-fdi').length).toBe(1);
@@ -156,8 +161,10 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       const warns = v.filter((x) => x.status === 'WARN');
       console.info(`manifest.validation: ${v.filter((x) => x.status === 'PASS').length} PASS, ${warns.length} WARN, 0 FAIL`);
       for (const w of warns) console.info(`  WARN ${w.check}${w.detail ? ` -- ${w.detail}` : ''}`);
-      // the two expected WARNs of the final run (EI hydro 1972 residual; oil-midstream trade bases)
-      expect(warns.length).toBeLessThanOrEqual(2);
+      // the two expected WARNs of the final run (EI hydro 1972 residual; oil-midstream trade bases), plus
+      // Climate TRACE's carried-forward latest year (2026-10-17; shown on the pages, caveat climate_trace_repeat)
+      expect(warns.filter((w) => !w.check.startsWith('climate: the latest year repeats')).length).toBeLessThanOrEqual(2);
+      expect(warns.filter((w) => w.check.startsWith('climate:')).length).toBeLessThanOrEqual(1);
     });
 
     it('budgets: each chunk, sector <= 9 MB gz, Strategic + Sector <= 25 MB gz', () => {
@@ -514,6 +521,26 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       for (let i = 0; i < dev['dev.dip'].nrow; i++) if (dev['dev.dip'].cols.conduit[i] !== 'none') flagged++;
       expect(flagged).toBeGreaterThan(100);
       expect(dev['dev.oda'].nrow).toBeGreaterThan(10_000);
+    });
+
+    it('sector-climate: Climate TRACE emissions identical() to data/processed, a match quality for every cell, plausible magnitudes', () => {
+      for (const c of manifest.validation.filter((x) => x.check.startsWith('climate (decoded):'))) expect({ check: c.check, status: c.status }).toEqual({ check: c.check, status: 'PASS' });
+      expect(manifest.validation.filter((x) => x.check.startsWith('climate (decoded):')).length).toBe(6);
+      const raw = validateChunk('sector-climate', readChunkFile(manifest.chunks.find((c) => c.name === 'sector-climate')!.file), ref) as SectorClimateChunk;
+      const d = climateData(raw);
+      expect(d.cells.size).toBe(model.cells.length);
+      expect(cellMatch(d, I('cell', 'coal-upstream').idx).match).toBe('direct');
+      expect(cellMatch(d, I('cell', 'solar-midstream').idx).match).toBe('none');
+      expect(d.latest).toBeGreaterThanOrEqual(2025);
+      const coal = d.srcs.find((x) => x.id === 'coal-mining')!;
+      const e = emitters(d, model, coal.idx, d.latest);
+      expect(e.world! > 1e9 && e.world! < 5e9).toBe(true);
+      expect(e.rows[0].g.code).toBe('CHN');
+      const power = d.srcs.find((x) => x.id === 'electricity-generation:coal')!;
+      const w = intensityOf(d, intensityKeys(d, power)[0].key, model.world!.idx, d.latest)!;
+      expect(w.value > 0.7 && w.value < 1.3 && w.unit === 't CO2e per MWh').toBe(true);
+      expect(fmtLifecycle(d.lifecycle.get('Coal'))).toBe('820 gCO2e/kWh');
+      expect(d.lifecycle.get('Electric Grid')?.proxyOf).toEqual(['Solar', 'Wind']);
     });
 
     it('every cell with a dictionary primary measure resolves it (the Snapshot is never empty); fuel Downstream: consumption per person', () => {

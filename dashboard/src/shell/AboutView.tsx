@@ -17,7 +17,7 @@ export const ABOUT_MAIN: readonly AboutLink[] = [
   {
     to: '/methods',
     title: 'Methods',
-    body: 'How Energy Security, Economic Opportunity, the Strategic Index and the partnership measures are built, what the four perspective dials change, and how the allied network is designed, with the formulas.',
+    body: 'How Energy Security, Economic Opportunity, the Strategic Index and the partnership measures are built and what the four perspective dials change, with the formulas.',
   },
   {
     to: '/data',

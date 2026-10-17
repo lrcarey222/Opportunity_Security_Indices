@@ -151,7 +151,6 @@ const VIEWS: [string, RegExp][] = [
   ['/space', /opportunity.security space|security vs opportunity/i],
   ['/strategic', /^Strategic Index$/],
   ['/partners', /^Partners$/],
-  ['/network', /^Allied network$/],
   ['/methods', /^Methods$/],
   ['/data', /^Data$/],
 ];
@@ -166,7 +165,7 @@ describe('every view renders', () => {
         // let the run, the lazy chunks and the per-view requests finish
         await waitFor(() => expect(screen.getByRole('main').querySelector('.chart-updating')).toBeNull(), { timeout: 30_000 });
         // the charts drew (Plot and the d3 maps render into the jsdom document); under CPU load the
-        // partner and network layers finish late, so wait on the figures rather than a fixed pause
+        // partner layer finishes late, so wait on the figures rather than a fixed pause
         if (!/methods|data|strategic/.test(path)) {
           await waitFor(() => expect(screen.getByRole('main').querySelectorAll('figure svg').length).toBeGreaterThan(0), { timeout: 30_000 });
         }
@@ -465,6 +464,16 @@ describe('home and the shell', () => {
     } finally {
       setEngineClient(client);
     }
+  }, 60_000);
+
+  it('the retired allied network page: /network and /network/:stage go to the AIB overview with a notice', async () => {
+    for (const path of ['/network', '/network/batteries-midstream?h=80']) {
+      const router = renderAt(path);
+      await waitFor(() => expect(router.state.location.pathname).toBe('/aib'), { timeout: 20_000 });
+      expect(await screen.findByText(/The original allied network design has been retired/, {}, { timeout: 20_000 })).toBeTruthy();
+      cleanup();
+    }
+    await settle(300);
   }, 60_000);
 
   it('aliases: /sector-insights and /sectors go to Sectors; /strategic-insights to Countries', async () => {

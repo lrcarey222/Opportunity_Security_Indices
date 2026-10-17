@@ -4,6 +4,7 @@
 #   Rscript scripts/87_export_sector_data.R [--out-dir <dir>] [--phase 1|2] [--skip-trade]
 #                                           [--no-policy-text] [--no-series] [--synthetic <dir>]
 #                                           [--check-only] [--cmfdi <csv>] [--no-fdi] [--no-dev]
+#                                           [--no-climate]
 #
 # IO only: every rule lives in the pure helpers of R/dashboard/sector/ (sector_files()). It reads
 # config/sector_dictionary.yml, data/processed (raw rows only; never an index, weight or contribution
@@ -24,7 +25,10 @@
 #                                      meta, facts, trade-<tech> x 10, policy, policy-text, series,
 #                                      fdi (CM-FDI; --no-fdi leaves it and its measures out),
 #                                      dev (CRS aid flows and IMF DIP positions; --no-dev leaves it and
-#                                      the Development & finance raw measures out)
+#                                      the Development & finance raw measures out),
+#                                      climate (Climate TRACE sector emissions mapped to technology x
+#                                      stage and the IPCC lifecycle intensity, from the
+#                                      climate_trace_*_tbl.rds of scripts/16; --no-climate leaves it out)
 #   <processed_dir>/dashboard/sector_validation.csv   the full validation report (not deployed)
 #
 # <out-dir> defaults to <repo>/dashboard/public/data/sector. Every chunk is decoded again and must be
@@ -73,6 +77,7 @@ policy_text <- !arg_flag("--no-policy-text")
 with_series <- !arg_flag("--no-series")
 with_fdi <- !arg_flag("--no-fdi")
 with_dev <- !arg_flag("--no-dev")
+with_climate <- !arg_flag("--no-climate")
 cmfdi_arg <- arg_value("--cmfdi")
 phase <- as.integer(arg_value("--phase", "1"))
 if (!phase %in% 1:2) stop("--phase must be 1 or 2")
@@ -161,7 +166,7 @@ write_chunks <- function(chunks, out_dir, check_only) {
     if (nm == "sector-meta") meta_sizes <- list(geo = nrow(dec$objects$dims$geo), items = nrow(dec$objects$dims$items), vars = nrow(dec$objects$dict$vars))
     errs <- sector_check_chunk(nm, dec$objects, meta_sizes, var_ids)
     if (length(errs)) stop("Chunk ", nm, " breaks the contract:\n  ", paste(errs, collapse = "\n  "))
-    if (nm %in% c("sector-meta", "sector-facts", "sector-series", "sector-fdi", "sector-dev") || startsWith(nm, "sector-trade-")) decoded[[nm]] <- dec$objects
+    if (nm %in% c("sector-meta", "sector-facts", "sector-series", "sector-fdi", "sector-dev", "sector-climate") || startsWith(nm, "sector-trade-")) decoded[[nm]] <- dec$objects
     rows[[nm]] <- tibble::tibble(name = nm, file = file_name, bytes = length(bytes), bytes_gz = file.size(tmp), md5 = md5, tmp = tmp)
     step(sprintf("  %-26s %8.1f kB, %7.1f kB gz; round trip identical; contract checks pass", nm, length(bytes) / 1024, file.size(tmp) / 1024))
   }
@@ -280,7 +285,8 @@ if (!is.null(synthetic_dir)) {
                 processed_mtime_max = "synthetic", pipeline_marker = NA_character_,
                 flags = list(include_restricted = FALSE, trade = length(bundle$trade) > 0, atlas = FALSE,
                              policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks),
-                             fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks)),
+                             fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks),
+                             climate = "sector-climate" %in% names(chunks)),
                 post_decode = syn_post)
   message(sprintf("Synthetic fixture: %d chunks, %.1f kB gz. %.0f s.", nrow(res$chunk_info), sum(res$chunk_info$bytes_gz) / 1024,
                   as.numeric(difftime(Sys.time(), t_script, units = "secs"))))
@@ -921,6 +927,29 @@ if (!is.null(dev_part)) item_units <- dplyr::bind_rows(item_units, sector_dev_it
 item_units <- item_units[!duplicated(item_units[c("var", "item_key")]), , drop = FALSE]
 if (any(price_unit$unit == "price_tbc")) notes <- c(notes, paste("IMF price units to confirm:", paste(price_unit$sub_sector[price_unit$unit == "price_tbc"], collapse = ", ")))
 
+# ---- Climate (Climate TRACE, IPCC lifecycle) -----------------------------------------------------------
+# The processed tables of scripts/16, shipped as they are for the economies of dims.geo (WLD keeps the
+# rest); identical() after the decode (post()). A missing table stops the export (run scripts/16, or
+# export with --no-climate).
+climate_proc <- NULL
+climate_part <- NULL
+if (with_climate) {
+  step("Climate: Climate TRACE sector emissions, IPCC lifecycle intensity")
+  climate_proc <- lapply(SECTOR_CLIMATE_PROCESSED, rd)
+  climate_part <- sector_climate_part(climate_proc, geo$code)
+  out_share <- climate_part$outside[climate_part$outside$year == climate_part$year, , drop = FALSE]
+  add_check("climate: Climate TRACE sources mapped, emissions of dims.geo economies shipped (WLD = Climate TRACE's world total)", "PASS",
+            nrow(climate_part$em),
+            sprintf("%d sources, %d cells with a match (%s), %d-%d; largest share of a world total from economies outside dims.geo: %.2f%%",
+                    nrow(climate_part$src), sum(climate_part$cells$match != "none"),
+                    paste(names(table(climate_part$cells$match)), table(climate_part$cells$match), collapse = ", "),
+                    min(climate_part$em$year), climate_part$year, 100 * max(c(0, out_share$share_outside), na.rm = TRUE)))
+  rep_src <- climate_part$src$id[climate_part$src$repeated]
+  if (length(rep_src)) add_check(paste0("climate: the latest year repeats the year before (an estimate carried forward) for ", paste(rep_src, collapse = ", ")), "WARN", length(rep_src))
+} else {
+  notes <- c(notes, "Climate TRACE sector emissions were not exported in this build (--no-climate).")
+}
+
 parts <- list(
   geo = geo, region_members = region_members, items = items, item_links = item_links, mineral_demand = mineral_demand,
   eu_outside_coalition = geo$code[geo$kind == "country" & geo$eu_member & geo$tier == "none"],
@@ -932,6 +961,7 @@ parts <- list(
   ),
   facts = facts, fact_notes = fact_notes, world = world, series = series, trade = trade, eu_intra = eu_intra, policy = pol, fdi = fdi,
   dev = dev_part, dev_year = if (is.null(dev_part)) NA_integer_ else max(dev_part$dip$year_max),
+  climate = climate_part,
   reported = if (!skip_trade) reported else NULL,
   licensed = tibble::tibble(item_key = paste0("cell:", c("solar-downstream", "wind-downstream", "gas-downstream", "coal-downstream", "batteries-downstream")),
                             family = "prices", sources = "BNEF LCOE"),
@@ -1043,6 +1073,14 @@ post <- function(decoded) {
     for (i in seq_len(nrow(pd))) add_check(pd$check[i], pd$status[i], pd$n[i], pd$detail[i])
     if (any(pd$status == "FAIL")) stop("Development & finance parity FAIL:\n  ", paste(pd$check[pd$status == "FAIL"], collapse = "\n  "))
   }
+  # Climate parity: every decoded value identical() to the processed climate_trace_*_tbl.rds.
+  if (!is.null(decoded$`sector-climate`)) {
+    pc <- sector_climate_parity(decoded$`sector-climate`, meta, climate_proc)
+    for (i in seq_len(nrow(pc))) add_check(pc$check[i], pc$status[i], pc$n[i], pc$detail[i])
+    if (any(pc$status == "FAIL")) stop("Climate parity FAIL:
+  ", paste(pc$check[pc$status == "FAIL"], collapse = "
+  "))
+  }
   # CM-FDI parity: decoded projects identical() to the CSV after cleaning; aggregates recomputed.
   if (!is.null(decoded$`sector-fdi`)) {
     pf <- sector_fdi_parity(decoded$`sector-fdi`, meta, cmfdi_raw, iso3_of, fdi_settings)
@@ -1066,6 +1104,9 @@ notes <- c(notes,
                   "(converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 ",
                   "and the net balance and self-sufficiency say so (marked 'not reported separately')."),
            "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.",
+           if (!is.null(climate_part)) paste0("Sector emissions: Climate TRACE (climatetrace.org), CC BY 4.0, ", min(climate_part$em$year), "-", climate_part$year,
+                                              ", tonnes CO2e (100-year GWP), mapped to technology x stage with a match quality per sector ",
+                                              "(config/climate_trace_map.yml); sectors with no match show the IPCC lifecycle intensity of the technology."),
            if (!is.null(fdi)) paste0("Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and ",
                                      "the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; ",
                                      "project counts and sums of disclosed capital computed by the OSI authors, no record altered; ",
@@ -1077,7 +1118,8 @@ res <- finish(bundle, chunks, out_dir, created = format(Sys.time(), "%Y-%m-%dT%H
               strategic_bundle_id = strategic_bundle_id, processed_mtime_max = processed_mtime_max, pipeline_marker = pipeline_marker,
               flags = list(include_restricted = FALSE, trade = length(trade) > 0, atlas = FALSE,
                            policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks),
-                           fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks)),
+                           fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks),
+                           climate = "sector-climate" %in% names(chunks)),
               validation_csv = file.path(processed_dir, "dashboard", "sector_validation.csv"), post_decode = post)
 
 # Reference values for the spec's Appendix B (recomputed on this data).

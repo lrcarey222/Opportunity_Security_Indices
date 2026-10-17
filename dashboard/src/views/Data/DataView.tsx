@@ -5,14 +5,14 @@
 import { useMemo, useRef, useState } from 'react';
 import { useTitle } from '../../App.tsx';
 import { TableView } from '../../components/TableView.tsx';
-import { Loading, Notice, PageHead, Select, KeyValue, Tag } from '../../components/ui.tsx';
+import { Loading, Notice, PageHead, Select, KeyValue } from '../../components/ui.tsx';
 import { checkAdvanced, checkDials } from '../../engine/params.ts';
 import { ENGINE_VERSION } from '../../engine/version.ts';
 import type { Table } from '../../engine/types.ts';
 import { tableToCsv, withBom } from '../../lib/csv.ts';
 import { downloadBlob, downloadText } from '../../lib/download.ts';
 import { DASH, fmtBytes, fmtDate, fmtMs, isNum } from '../../lib/format.ts';
-import { useApp, useEngine, useNetwork, useScenario } from '../../state/EngineProvider.tsx';
+import { useApp, useEngine, useScenario } from '../../state/EngineProvider.tsx';
 import { toSpec, writeSearch, VIEW_DEFAULTS } from '../../state/url.ts';
 import { DIAL_SPECS } from '../../components/DialPanel.tsx';
 
@@ -29,10 +29,6 @@ const TABLE_LABEL: Record<string, string> = {
   policy_index: 'Policy activity',
   psi_partner: 'Partnership Strength as a partner',
   psi_dyad: 'Partnership Strength of every pair',
-  network_specialization: 'Allied network: who produces what',
-  network_flows: 'Network flows',
-  network_diagnostics: 'Network diagnostics',
-  network_member_shares: 'Network member shares',
 };
 
 type Status = { kind: 'idle' } | { kind: 'busy'; text: string } | { kind: 'error'; text: string } | { kind: 'done'; text: string };
@@ -42,8 +38,6 @@ export default function DataView() {
   const app = useApp();
   const { client, state } = useEngine();
   const { scenario, isBaseline, setScenario, key } = useScenario();
-  const [wantNet, setWantNet] = useState(false);
-  const network = useNetwork(wantNet);
   const [one, setOne] = useState('strategic_index');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const [loadMsg, setLoadMsg] = useState<{ kind: 'info' | 'warning' | 'error'; text: string } | null>(null);
@@ -51,10 +45,7 @@ export default function DataView() {
   const fileRef = useRef<HTMLInputElement>(null);
   const m = app.manifest;
 
-  // the network tables are included once this scenario's design exists (computed here or on the
-  // Network page); at the baseline the shipped design is always there
-  const netReady = isBaseline || (network.fresh && !!network.data);
-  const include = (net: boolean): ('core' | 'partner' | 'network')[] => (net ? ['core', 'partner', 'network'] : ['core', 'partner']);
+  const include: ('core' | 'partner')[] = ['core', 'partner'];
   const link = typeof window !== 'undefined' ? `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}/overview${writeSearch(scenario, VIEW_DEFAULTS, app.urlCtx)}` : '';
 
   const readme = () =>
@@ -70,7 +61,6 @@ export default function DataView() {
       'Every table is a CSV (UTF-8 with a byte-order mark) with the R pipeline\'s column names. Empty cells are NA.',
       'Columns ending in _base hold the paper\'s value; delta = scenario minus paper; rank_delta = paper rank minus scenario rank (positive = moved up).',
       'parameters.csv lists every parameter of the scenario; data_vintage.csv the export the numbers come from.',
-      isBaseline || netReady ? 'The network tables hold the network design shown on the Network page.' : 'The network tables are not included: compute the network on the Data or Network page first.',
       'Scenario results are model outputs for exploration, not forecasts.',
       '',
       ...(m.notes ?? []).map((n) => `Note: ${n}`),
@@ -79,7 +69,7 @@ export default function DataView() {
   const downloadZip = async () => {
     setStatus({ kind: 'busy', text: 'Preparing the tables' });
     try {
-      const tables = await client.tables(toSpec(scenario), include(netReady));
+      const tables = await client.tables(toSpec(scenario), include);
       const { zipTexts } = await import('../../lib/zip.ts');
       const files: Record<string, string> = { 'README.txt': readme() };
       for (const [name, t] of Object.entries(tables)) files[`${name}.csv`] = withBom(tableToCsv(t));
@@ -94,11 +84,10 @@ export default function DataView() {
   const downloadOne = async () => {
     setStatus({ kind: 'busy', text: 'Preparing the table' });
     try {
-      const net = one.startsWith('network_');
-      const tables = await client.tables(toSpec(scenario), include(net && netReady));
+      const tables = await client.tables(toSpec(scenario), include);
       const t: Table | undefined = tables[one];
       if (!t) {
-        setStatus({ kind: 'error', text: net ? 'Compute the network first.' : 'This table is not available.' });
+        setStatus({ kind: 'error', text: 'This table is not available.' });
         return;
       }
       downloadText(withBom(tableToCsv(t)), `${one}.csv`);
@@ -119,12 +108,17 @@ export default function DataView() {
       if (!doc || typeof doc !== 'object' || !doc.spec) throw new Error('That file is not a parameter file from this explorer.');
       const dials = checkDials(doc.spec.dials ?? {});
       for (const d of DIAL_SPECS) if (!Number.isInteger(dials[d.key])) dials[d.key] = Math.round(dials[d.key]);
-      const advanced = checkAdvanced(doc.spec.advanced ?? null, app.bundleLike);
+      // a file saved before 2026-10-17 can carry the settings of the retired allied network design: dropped
+      const raw = doc.spec.advanced && typeof doc.spec.advanced === 'object' ? { ...(doc.spec.advanced as Record<string, unknown>) } : null;
+      const hadNetwork = !!raw && 'network' in raw;
+      if (raw) delete raw.network;
+      const advanced = checkAdvanced(raw, app.bundleLike);
       setScenario({ dials, advanced });
+      const retired = hadNetwork ? ' Its allied network design settings were ignored: that design is retired.' : '';
       setLoadMsg(
         doc.bundle_id && doc.bundle_id !== m.bundle_id
-          ? { kind: 'warning', text: `Scenario loaded. It was saved with another data build (${doc.bundle_id.slice(0, 8)}); the numbers may differ from when it was saved.` }
-          : { kind: 'info', text: 'Scenario loaded.' },
+          ? { kind: 'warning', text: `Scenario loaded. It was saved with another data build (${doc.bundle_id.slice(0, 8)}); the numbers may differ from when it was saved.${retired}` }
+          : { kind: hadNetwork ? 'warning' : 'info', text: `Scenario loaded.${retired}` },
       );
     } catch (e) {
       setLoadMsg({ kind: 'error', text: `Could not load the parameters: ${(e as Error).message}` });
@@ -149,7 +143,7 @@ export default function DataView() {
     [m.sources],
   );
   const budget = (m.budget ?? {}) as Record<string, unknown>;
-  const tableOptions = Object.entries(TABLE_LABEL).map(([value, label]) => ({ value, label, disabled: value.startsWith('network_') && !netReady }));
+  const tableOptions = Object.entries(TABLE_LABEL).map(([value, label]) => ({ value, label }));
 
   return (
     <div>
@@ -159,18 +153,12 @@ export default function DataView() {
           <section className="card p-5">
             <h2 className="rule-neis-sm text-base font-medium text-paper lg:text-lg">Download the current scenario</h2>
             <p className="mt-1 text-sm text-paper-mute">
-              Every table of the scenario as CSV files in one zip: parameters and data vintage, the Strategic Index, pillars and their contributions, Policy, partnership and (once designed) network tables, with the paper&rsquo;s values for comparison.
+              Every table of the scenario as CSV files in one zip: parameters and data vintage, the Strategic Index, pillars and their contributions, Policy and partnership tables, with the paper&rsquo;s values for comparison.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button type="button" className="btn btn-primary" onClick={downloadZip} disabled={status.kind === 'busy'}>
                 All tables (.zip)
               </button>
-              {!isBaseline && !netReady && (
-                <button type="button" className="btn btn-ghost" onClick={() => setWantNet(true)} disabled={wantNet}>
-                  {wantNet ? 'Designing the network' : 'Compute the network first'}
-                </button>
-              )}
-              {netReady && <Tag>network included</Tag>}
             </div>
             <div className="mt-5 flex flex-wrap items-end gap-3">
               <Select label="One table" value={one} options={tableOptions} onChange={setOne} className="min-w-[16rem]" />
@@ -262,9 +250,9 @@ export default function DataView() {
             />
           </div>
           <h3 className="mt-6 text-sm font-medium text-paper">Self-check in this browser</h3>
-          <p className="mt-1 text-sm text-paper-mute">After loading, the engine recomputes the baseline and compares it with the exported values (core layers at once, partnerships and network when their data load).</p>
+          <p className="mt-1 text-sm text-paper-mute">After loading, the engine recomputes the baseline and compares it with the exported values (core layers at once, partnerships when their data load).</p>
           <ul className="mt-2 space-y-1 text-sm text-paper-dim">
-            {(['core', 'partner', 'network'] as const).map((l) => {
+            {(['core', 'partner'] as const).map((l) => {
               const s = state.selfcheck[l];
               return (
                 <li key={l} className="flex flex-wrap items-center gap-2">
@@ -276,7 +264,7 @@ export default function DataView() {
                       {s.detail ? `; ${s.detail}` : ''}
                     </span>
                   )}
-                  {!s && l !== 'core' && <span className="text-paper-mute">runs when the {l === 'partner' ? 'partnership' : 'network'} data are first used</span>}
+                  {!s && l !== 'core' && <span className="text-paper-mute">runs when the partnership data are first used</span>}
                 </li>
               );
             })}

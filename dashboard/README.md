@@ -14,8 +14,8 @@ and every page shares one header with four tabs:
 
 In the Country profile readers open **Perspective: NEIS baseline** and move four preference dials (an
 advanced panel sits behind its own disclosure); the explorer recomputes, in their browser, the Policy
-and Strategic indices, the bilateral partnership indices (Friendshore, Partnership Opportunity, the PSI)
-and the allied network design. The dials change priorities, rankings and partner attractiveness; they
+and Strategic indices and the bilateral partnership indices (Friendshore, Partnership Opportunity, the
+PSI). The dials change priorities, rankings and partner attractiveness; they
 never change observed or modelled facts (trade flows, production, concentration, the Energy Security and
 Economic Opportunity values, and the whole AIB bundle: shock coverage, residual gaps, coordination
 dividend, classes, compacts and roles). Pages label the two "Observed / modelled facts" and
@@ -23,9 +23,9 @@ dividend, classes, compacts and roles). Pages label the two "Observed / modelled
 
 | Dial | Weighs up |
 |---|---|
-| Hawkishness | security: supply need, aligned partners, diversification of the network |
-| Bullishness | opportunity: economic opportunity, export markets, economic size |
-| Populism | policy signals and onshoring: industrial policy, midstream stages, self-supply |
+| Hawkishness | security: supply need, aligned partners |
+| Bullishness | opportunity: economic opportunity, export markets |
+| Populism | policy signals and manufacturing: industrial policy, midstream stages |
 | Climate (URL key `g`, engine key `greenness`) | clean technologies and climate ambition (coal, oil and gas dropped at 90+) |
 
 Every dial runs from 0 to 100; 50 is the NEIS baseline (the paper). With every dial at 50 and the
@@ -34,18 +34,20 @@ setting is a custom perspective, recomputed in a Web Worker; it lives in the pag
 link reproduces it.
 
 The model is the paper's final method (data build of 10 Oct 2026): a coalition of 57 economies (31
-core members and 26 partners, Brazil among them through its mineral reserves); the EU-27 as one node
-of the 37-node allied network, designed with diversification weight lambda = 0.94; the Policy index
+core members and 26 partners, Brazil among them through its mineral reserves); the Policy index
 from IEA Policies and Measures (required) plus Climate Action Tracker ratings where CAT rates the
 economy; critical-mineral reserves from USGS Mineral Commodity Summaries 2026; and an endowment screen
 on the allied picks (an Upstream stage with no recorded reserves or production is not picked; a
-switch in the advanced panel). The Methods page has the details.
+switch in the advanced panel). The Methods page has the details. The paper's original allied network
+design (a lambda-calibrated production design over the Upstream and Midstream stages) is retired
+(2026-10-17): the Allied Industrial Base pages replace it, the Strategic bundle no longer has a network
+chunk, the engine no longer recomputes it and `/network` redirects to `/aib` with a notice.
 
 It is a static site: Vite + React + TypeScript, Tailwind v4 with the NEIS design tokens, Observable
 Plot and d3 for the charts. There is no server; the data are files next to the app.
 
 Old links keep working. The former Strategic Insights views keep their bare paths as advanced pages
-with the dial panel (`/overview`, `/country`, `/space`, `/strategic`, `/partners`, `/network`; the
+with the dial panel (`/overview`, `/country`, `/space`, `/strategic`, `/partners`; the
 header files them under Countries or Allied Industrial Base); their one-economy links open the
 matching section of the Country profile, which embeds the same views (`/country/:iso3` -> `#sectors`,
 `/strategic/:iso3` -> `#opportunities`, `/partners/:iso3` -> `#partnerships`, query string kept). The
@@ -76,12 +78,8 @@ R pipeline (scripts/0x-4x)                 data/processed/...
 * `R/dashboard/` is the reference engine: at the baseline it reproduces the pipeline bit for bit.
 * `src/engine/` is its TypeScript port (no dependencies), run in a Web Worker (`src/worker/`). It
   is parity-tested against R fixtures: pillars, Policy and the Strategic Index to 1e-9 (in practice
-  bit-identical), partnership arrays exactly (the bundle is lossless: no quantisation), and the
-  greedy network with identical producer sets.
-* The baseline network: the paper's exact (MILP) design ships with the data when it was solved on
-  the same inputs; otherwise the greedy design at the paper's settings is the baseline (the
-  manifest's `flags.network_consistent`, shown on the Network and Methods pages). Scenarios are
-  re-designed with the fast greedy solver; exact re-solves in the browser are out of scope for v1.
+  bit-identical) and partnership arrays exactly (the bundle is lossless: no quantisation). The
+  greedy network solver (L5) went with the retired allied network design (2026-10-17).
 
 ### Data files (`public/data/`)
 
@@ -90,8 +88,7 @@ R pipeline (scripts/0x-4x)                 data/processed/...
 | `manifest.json` | at start (no-cache) | vintage, flags, notes, validation report, sources, baseline parameters, chunk list |
 | `core.<md5>.osb` | at start | pillars, Policy, Strategic Index inputs and the shipped baseline tables |
 | `vars.<md5>.osb` | Country view (variable drill-down) | variable-level components |
-| `partner.<md5>.osb` | Partners, Network, PSI metric | Friendshore / Opportunity components, dyads, baseline best-five and PSI |
-| `network.<md5>.osb` | Network view | nodes, member weights, stage inputs, the baseline design |
+| `partner.<md5>.osb` | Partners, PSI metric | Friendshore / Opportunity components, dyads, baseline best-five and PSI |
 | `ties.<md5>.osb` | lazily, main thread: Partners view, Country partners section (never the engine) | IMF direct investment positions by partner (both directions, latest year, and the 2020-2024 mean Friendshore ranks; conduit centres flagged), CM-FDI factory-project flows by sector, Development Potential by sector, agreements, UN-vote alignment, top partners by best-five Friendshore / Partnership Opportunity (R/dashboard/dash_ties.R; scripts/85 checks the positions reproduce the investment tie bit for bit) |
 | `pcell-<slug>.<md5>.osb` | lazily, one sector: Country partners section | each economy's top 10 friendshoring opportunities (Friendshore) and export markets (Partnership Opportunity) in that sector at the baseline, with the Partnership Strength rank; the Partners view ranks the sector in the worker instead (`cellPartners`, so the dials apply) |
 
@@ -137,12 +134,12 @@ manifests and chunks and checks every Energy Security, Economic Opportunity, Str
 Partnership Strength value against them and `data/processed`). It also reads `nipo_policy_all.rds`,
 `nipo_policy_index_tbl.rds` and the Global Trade Alert NIPO extracts in `data/raw` (vintage check),
 `policy_outputs.rds`, `index_outputs.rds`, the partner tables, `charts/allied_strategic.csv`,
-`outputs/allied_network_member_shares.csv`, `wdi_country_info.csv` and `economic_security_agreements.csv`.
+`wdi_country_info.csv` and `economic_security_agreements.csv`.
 
 | File | Loaded | Content |
 |---|---|---|
 | `manifest.json` | Country pages (no-cache) | roster, tiers, quadrant counts, memo entries, sources, validation |
-| `facts-<ISO3>.<h8>.json` | a Country profile | the economy's fact sheet (scores, drivers of the first sectors, policy, partners, network) |
+| `facts-<ISO3>.<h8>.json` | a Country profile | the economy's fact sheet (scores, drivers of the first sectors, policy, partners, the allied pick) |
 | `drivers-<ISO3>.<h8>.json` | the profile's "why" panel for other sectors | the remaining driver details |
 | `memo-<ISO3>.<h8>.{json,pdf,docx,md}` | the memo panel and its downloads | the verified AI-written policy memo of a core member (spec_country.md part B) |
 
@@ -159,6 +156,13 @@ requires a complete passing `verify.json` from the independent verifier (a later
 unchanged keeps the sign-off), and publishes the memo JSON, PDF (headless Edge or Chrome) and Word file
 (Python with python-docx and pypdf; local only). `--iso3` limits a run; `--save-ctx` / `--load-ctx` reuse
 the inputs of an earlier run for debugging. Real-data checks: `npm run test:country-real`.
+
+Memos under revision (2026-10-17): with the original allied network design retired, the 31 memos are
+being rewritten. `config/country_insights.yml` `memo_revision.before` hides every memo generated before
+that time: scripts/88 marks it stale in the manifest, and the memo page, the profile's memo panel and its
+(disabled) GENERATE MEMO button say the memo is being revised. The memo files are kept; a memo rendered
+after the cut-off is shown again. The fact sheets dropped their `network` section (the design role) and
+carry the allied pick as a top-level `pick` (memo tokens `{{pick.cell}}`, `{{pick.margin}}`, ...).
 
 ### Sectoral Compacts data (`public/data/aib/`)
 
@@ -186,13 +190,10 @@ Rscript scripts/86_export_dashboard_fixtures.R  # regenerates the engine's parit
 
 `scripts/85` prints a validation table (every baseline check must PASS except those the manifest
 flags as upstream-inconsistent) and stops above the budget. Options: `--out-dir`, `--r-out`,
-`--network-dir` (the scripts/30 MILP outputs to ship as the exact baseline), `--skip-trade`,
 `--paper` (copy the preview PDF to `public/paper/`; off by default). Then rerun the tests below.
 
-Run the export only on a finished pipeline run: it also reads raw inputs (the Comtrade basket trade,
-CAT ratings, GDP), and when the stored scripts/30 design no longer matches the nodes, stages, lambda
-or edge inputs, the export ships the greedy design as the network baseline (and the manifest says
-so) instead of the paper's exact design. `scripts/86 --set real` refuses a bundle other than the one
+Run the export only on a finished pipeline run: it also reads raw inputs (CAT ratings, GDP).
+`scripts/86 --set real` refuses a bundle other than the one
 `scripts/85` last exported, so run the two in that order.
 
 ## Develop
@@ -222,7 +223,7 @@ src/
   engine/      the TypeScript engine (port of R/dashboard/) + parity tests and fixtures
   worker/      Web Worker protocol, host and the main-thread client
   state/       URL state (url.ts), engine provider, runs, navigation
-  views/       Strategic: Overview, Country, Space, Strategic, Partners, Network, Methods, Data
+  views/       Strategic: Overview, Country, Space, Strategic, Partners, Methods, Data
   aib/         Sectoral Compacts: contract.ts (the data contract with scripts/84), data/ (store, hooks),
                derive/ (pure helpers: classes, coverage, nodes, flows, coalition, roles), charts/,
                views/ (index, compact, about), AibLayout, routes, nav

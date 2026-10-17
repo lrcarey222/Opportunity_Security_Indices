@@ -1,8 +1,7 @@
 # Parity fixtures of the Allied Industrial Base Explorer's TypeScript engine.
 #
 #   Rscript scripts/86_export_dashboard_fixtures.R [--set synthetic|real|both|numeric] [--out <dir>]
-#                                                  [--scenarios S00,S05] [--skip-network]
-#                                                  [--full-arrays]
+#                                                  [--scenarios S00,S05] [--full-arrays]
 #
 # Runs the R reference engine (R/dashboard) on a bundle for the fixture scenarios of
 # dash_fixture_scenarios() and writes, per scenario, the output of every layer as an OSB1 container
@@ -68,7 +67,6 @@ step <- function(...) message(format(Sys.time(), "%H:%M:%S"), "  ", ...)
 
 set_arg <- arg_value("--set", "both")
 if (!set_arg %in% c("synthetic", "real", "both", "numeric")) stop("--set must be synthetic, real, both or numeric.")
-skip_network <- arg_flag("--skip-network")
 full_arrays <- arg_flag("--full-arrays")
 only <- arg_value("--scenarios", NULL)
 only <- if (is.null(only)) NULL else trimws(strsplit(only, ",", fixed = TRUE)[[1]])
@@ -173,7 +171,6 @@ write_fixture_set <- function(bundle, set_name, out_dir, bundle_id, base, opts_f
     long_double = isTRUE(capabilities("long.double")),
     created = dash_osb_format_time(Sys.time()),
     generator = "scripts/86_export_dashboard_fixtures.R",
-    share_rank_digits = DASH_FIXTURE_SHARE_RANK_DIGITS,
     scenarios = index_rows
   )
   index_json <- jsonlite::toJSON(index, auto_unbox = TRUE, digits = I(17), na = "null", null = "null", pretty = TRUE)
@@ -240,16 +237,13 @@ if (set_arg %in% c("synthetic", "both")) {
     step("Synthetic set ", nm)
     bundle <- synth[[nm]]()
     dash_validate_bundle(bundle)
-    base <- dash_fixture_baseline(bundle, network = !skip_network)
-    if (!is.null(base$network)) {
-      bundle$network$greedy_baseline <- base$network
-    }
+    base <- dash_fixture_baseline(bundle)
     dir <- file.path(out_root, "synthetic", nm)
     web <- write_web_bundle(bundle, base$result, file.path(dir, "data"), created = bundle$manifest$created)
     old <- list.files(dir, pattern = "^S[0-9]+\\.osb$", full.names = TRUE)
     if (is.null(only) && length(old)) file.remove(old)
     write_fixture_set(bundle, paste0("synthetic/", nm), dir, web$bundle_id, base, function(id) {
-      list(full_arrays = TRUE, contrib = TRUE, var = TRUE, sample = FALSE, network = !skip_network, n_decompose = 2L)
+      list(full_arrays = TRUE, contrib = TRUE, var = TRUE, sample = FALSE, n_decompose = 2L)
     })
   }
 }
@@ -269,12 +263,12 @@ if (set_arg %in% c("real", "both")) {
       stop("bundle.rds (bundle_id ", if (is.null(bid)) "none" else bid, ") is not the bundle in ", man_path, " (", web_man$bundle_id,
            "): rerun scripts/85_export_dashboard_data.R.")
     }
-    base <- dash_fixture_baseline(bundle, network = !skip_network)
+    base <- dash_fixture_baseline(bundle)
     old <- list.files(file.path(out_root, "real"), pattern = "^S[0-9]+[.]osb$", full.names = TRUE)
     if (is.null(only) && length(old)) file.remove(old)
     write_fixture_set(bundle, "real", file.path(out_root, "real"), bid, base, function(id) {
       list(full_arrays = full_arrays && id == "S00", contrib = id %in% c("S00", "S14"), var = id %in% c("S00", "S14"),
-           sample = TRUE, network = !skip_network, n_decompose = 3L,
+           sample = TRUE, n_decompose = 3L,
            dyad_reporters = if (id %in% c("S00", "S13")) NULL else 24L)
     }, refs = TRUE)
   }

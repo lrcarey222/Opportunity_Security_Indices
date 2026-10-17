@@ -244,7 +244,8 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       await waitFor(() => expect(r.state.location.pathname).toBe('/countries/USA'), { timeout: 30_000 });
       await h2('Role in the Allied Industrial Base');
       const role = document.getElementById('aib-role')!;
-      expect(await within(role).findByText('Demand anchor', {}, { timeout: 20_000 })).toBeTruthy();
+      expect(await within(role).findByText('Demand anchor / Buyer', {}, { timeout: 20_000 })).toBeTruthy();
+      expect(within(role).getByTestId('aib-relationships').textContent).toMatch(/Trade against investment/);
       expect(within(role).getAllByRole('link', { name: 'AIB-C01' })[0].getAttribute('href')).toBe('/compacts/AIB-C01');
       expect(within(role).getByRole('link', { name: /See all country roles/ }).getAttribute('href')).toBe('/aib/roles#role-USA');
       // Partnerships: Trade first, then Investment and Development through the URL
@@ -253,7 +254,9 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       expect(within(part).getByText(/In the compacts' coordinated trade the United States has/)).toBeTruthy();
       fireEvent.click(within(part).getByRole('radio', { name: 'Investment' }));
       await waitFor(() => expect(r.state.location.search).toBe('?ptab=investment'));
-      expect(within(part).getByRole('heading', { name: 'Where new capacity could be hosted' })).toBeTruthy();
+      expect(within(part).getByRole('heading', { name: 'Investment flows in the Allied Industrial Base' })).toBeTruthy();
+      expect(within(part).getByTestId('aib-as-investor').textContent).toMatch(/New capacity at 2 hosts serves [$]570 m a year/);
+      expect(within(part).getByTestId('aib-as-host').textContent).toMatch(/is not the best-ranked host/);
       fireEvent.click(within(part).getByRole('radio', { name: 'Development' }));
       await waitFor(() => expect(r.state.location.search).toBe('?ptab=development'));
       expect(within(part).getByRole('heading', { name: 'Capacity to build in its compacts' })).toBeTruthy();

@@ -124,6 +124,31 @@ where the parent is headquartered, the destination, the status and a source link
   with Chinese parents is shown as a raw share, not as the index component built from it.
 * **Not a country total.** Domestic investment is not in CM-FDI.
 
+## Sector emissions
+
+The Climate section of each sector and the Policy & climate section of each Country profile show
+Climate TRACE's estimates of direct emissions (tonnes of CO2-equivalent on a 100-year basis,
+2021 to the latest complete year; Climate TRACE, climatetrace.org, CC BY 4.0).
+
+* **Mapped, with a match quality.** Climate TRACE reports subsectors (coal mining, oil and gas
+  production, aluminium, electricity generation, ...), not technologies. Each sector says how well its
+  subsectors match: *direct* (the subsector is the sector's own activity, as coal mining for Coal
+  Upstream), *partial* (it also covers other activity, or only part of the sector's: oil and gas
+  production is one subsector; coal-fired power is part of coal use), *proxy* (a related activity shown
+  for scale, not the sector's own emissions) or *none*. Sectors with no match show the technology's IPCC
+  lifecycle intensity (grams of CO2e per kWh over a plant's life) instead, which is a property of the
+  technology, not the sector's emissions.
+* **Direct emissions only.** The electricity a smelter or factory buys is counted in power, not in its
+  own sector.
+* **Power by fuel** sums the plants Climate TRACE tracks, grouped by the first fuel each lists, so it is
+  below a country's total for power.
+* **Intensity** is the tracked assets' emissions over their activity (t CO2e per MWh, per tonne of
+  steel, ...), counting only the assets that report an activity.
+* **Materials as context.** Steel and aluminium are shown beside the manufacturing sectors whose products
+  are made of them, labelled as context and never counted as those sectors' emissions.
+* **Carried-forward years.** Where Climate TRACE's latest year repeats the year before (some mining
+  subsectors in 2025), the section says so: the change is not a measured change.
+
 ## Money
 
 Comtrade trade is in current US dollars. Clean Investment Monitor investment is in billions of 2024

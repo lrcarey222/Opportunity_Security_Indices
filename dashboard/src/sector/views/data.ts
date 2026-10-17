@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { isTradeTechSlug, TECH_LABELS, tradeChunkName, type SectorChunkName, type TechSlug } from '../contract.ts';
 import { factsIndexOf, seriesIndexOf, type FactsIndex } from '../data/facts.ts';
 import { fdiData, type FdiData } from '../derive/fdi.ts';
+import { climateData, type ClimateData } from '../derive/climate.ts';
 import type { SectorDevChunk } from '../contract.ts';
 import { useSectorChunk, useSectorStore, type ChunkHandle } from '../data/SectorDataProvider.tsx';
 import type { SectorTradeChunk } from '../contract.ts';
@@ -53,6 +54,18 @@ export function useDev(enabled = true): { dev: SectorDevChunk | null; h: ChunkHa
   return { dev: h.data, h, has: store.hasChunk('sector-dev') || store.manifestState().status !== 'ready' };
 }
 
+/**
+ * Climate TRACE sector emissions (sector-climate; climate data change 2026-10-17; lazy: the Sector
+ * profile's Climate lens and section and the Country profile's Policy & climate section load it).
+ * `has` is false when the bundle lists no sector-climate chunk (true until the manifest is known).
+ */
+export function useClimate(enabled = true): { climate: ClimateData | null; h: ChunkHandle<import('../contract.ts').SectorClimateChunk>; has: boolean } {
+  const store = useSectorStore();
+  const h = useSectorChunk('sector-climate', enabled);
+  const climate = useMemo(() => (h.data ? climateData(h.data) : null), [h.data]);
+  return { climate, h, has: store.hasChunk('sector-climate') || store.manifestState().status !== 'ready' };
+}
+
 export function usePolicy(enabled = true) {
   return useSectorChunk('sector-policy', enabled);
 }
@@ -69,6 +82,7 @@ const CHUNK_WORDS: Record<string, string> = {
   'sector-series': 'time series',
   'sector-fdi': 'investment project data (CM-FDI)',
   'sector-dev': 'aid flows and investment positions',
+  'sector-climate': 'sector emissions (Climate TRACE)',
 };
 
 /** "trade data for Batteries" etc. */

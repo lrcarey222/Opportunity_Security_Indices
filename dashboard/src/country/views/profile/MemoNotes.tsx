@@ -8,7 +8,7 @@ import { rowsToCsv, withBom } from '../../../lib/csv.ts';
 import { downloadBlob } from '../../../lib/download.ts';
 import { factSheetDownloadName, supplierModel } from '../../derive/model.ts';
 import { editionSuffix, quadrantWord, proseName } from '../../derive/text.ts';
-import { memoReady } from './Header.tsx';
+import { memoReady, memoRevised, memoRevisedLine } from './Header.tsx';
 import { Section, useProfile } from './common.tsx';
 
 export function MemoCard() {
@@ -25,10 +25,17 @@ export function MemoCard() {
               See the list &rarr;
             </Link>
           </p>
+        ) : memoRevised(entry) ? (
+          <div className="flex flex-wrap items-center gap-4">
+            <button type="button" className="btn btn-primary" disabled aria-describedby="memo-revised">
+              GENERATE MEMO
+            </button>
+            <p id="memo-revised" className="text-sm text-paper-dim">
+              {memoRevisedLine(name)}
+            </p>
+          </div>
         ) : !ready ? (
-          <p className="text-sm text-paper-dim">
-            {entry.memo?.stale ? `The memo for ${name} is being updated to the latest data.` : `The memo for ${name} is being prepared.`}
-          </p>
+          <p className="text-sm text-paper-dim">{`The memo for ${name} is being prepared.`}</p>
         ) : (
           <>
             <p className="max-w-3xl text-sm text-paper-dim">

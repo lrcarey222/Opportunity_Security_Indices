@@ -46,7 +46,7 @@ country_caveats <- function(sheet, cfg, extra = list()) {
     any(vapply(sheet$partners$rows, function(r) isTRUE(r$ties$fdi_in_china_parent) && (r$ties$fdi_in$v %||% 0) > 0, TRUE))
   # the top sector or the allied pick within 0.01 of its runner-up, or any two neighbouring sectors of the
   # Strategic Index ranking (the memo's machine trigger also fires on those, A8.4)
-  near <- isTRUE(sheet$summary$top_si$near_tie) || isTRUE(sheet$network$pick$near_tie) ||
+  near <- isTRUE(sheet$summary$top_si$near_tie) || isTRUE(sheet$pick$near_tie) ||
     any_cell(function(c) isTRUE(c$si$in_sample) && isTRUE((c$si$margin_next$v %||% 1) < (cfg$near_tie %||% 0.01)))
   on <- list(
     relative_scores = TRUE, baseline = TRUE,
@@ -55,7 +55,6 @@ country_caveats <- function(sheet, cfg, extra = list()) {
     policy_pams_only = identical(m$policy_basis, "IEA PAMS only"),
     no_si = !isTRUE(m$has_si),
     near_tie = near,
-    eu_node = isTRUE(m$eu_member) && isTRUE(sheet$network$member),
     inherited_alignment = identical(m$alignment_basis, "inherited"),
     assumed_zero_production = drivers_any(function(d) any(vapply(d$vars, function(v) identical(v$raw$note, "production_assumed_zero"), TRUE))),
     cmfdi_coverage = fdi_any,
@@ -64,7 +63,7 @@ country_caveats <- function(sheet, cfg, extra = list()) {
     cat_eu_bloc = identical(sheet$policy$cat$scope, "eu_bloc"),
     intra_eu = isTRUE(m$eu_member) && has_trade,
     hkg_reexport = "HKG" %in% c(party_iso, partner_iso),
-    pick_stability = !is.null(sheet$network$pick),
+    pick_stability = !is.null(sheet$pick),
     ownership_parent = china_parent,
     eu_policy_records = isTRUE(m$eu_member) && !is.null(sheet$policy$pams_eu_records),
     nipo_context = isTRUE(sheet$policy$nipo$covered),
@@ -194,14 +193,13 @@ country_fact_sheet <- function(iso3, ctx) {
   partners$n_export_cells <- country_fv(pt$n_export_cells, "count")
   partners$supplier_matrix <- sm
 
-  # network and allied pick
+  # the allied pick (the sheet's network-design role is retired, 2026-10-17)
   allied <- if (is.null(ctx$allied)) NULL else ctx$allied[ctx$allied$iso3 == iso3, , drop = FALSE]
-  net <- country_network_role(iso3, ro$tier[1], ro$eu_member[1], country_chr_or_null(ro$network_node[1]), ctx$member_shares, allied, si_rows,
-                              cfg$near_tie %||% 0.01, cells_tbl, rule_words = country_pick_rule_words(cfg$pick_rule))
-  if (!is.null(net$pick)) {
-    for (i in seq_along(cells)) if (cells[[i]]$key == net$pick$cell) cells[[i]]$si$pick <- TRUE
-    if (!is.null(ctx$pick_fn)) ctx$pick_fn(iso3, net$pick)
-    net$pick$first <- NULL
+  pick <- country_allied_pick(ro$tier[1], allied, si_rows, cfg$near_tie %||% 0.01, cells_tbl, rule_words = country_pick_rule_words(cfg$pick_rule))
+  if (!is.null(pick)) {
+    for (i in seq_along(cells)) if (cells[[i]]$key == pick$cell) cells[[i]]$si$pick <- TRUE
+    if (!is.null(ctx$pick_fn)) ctx$pick_fn(iso3, pick)
+    pick$first <- NULL
   }
 
   # summary
@@ -241,7 +239,7 @@ country_fact_sheet <- function(iso3, ctx) {
   meta <- list(
     country = country, tier = ro$tier[1], routes = country_arr(if (is.na(ro$routes[1])) character() else trimws(strsplit(ro$routes[1], ";", fixed = TRUE)[[1]])),
     region = country_chr_or_null(ro$region[1]), income_group = country_chr_or_null(ro$income_group[1]), sovereign = isTRUE(ro$sovereign[1]),
-    eu_member = isTRUE(ro$eu_member[1]), network_node = country_chr_or_null(ro$network_node[1]),
+    eu_member = isTRUE(ro$eu_member[1]),
     agreements = country_arr(country_agreements_of(ctx$agreements, iso3)),
     eu_agreements = country_arr(if (isTRUE(ro$eu_member[1])) country_agreements_of(ctx$agreements, "EUU") else character()),
     bloc = country_chr_or_null(ro$bloc[1]), alignment_s = country_fv(ro$s_axis[1], "index"),
@@ -263,7 +261,7 @@ country_fact_sheet <- function(iso3, ctx) {
     priority_sectors = country_arr(ps$keys), priority_rule = ps$rule,
     policy = c(list(cat = cat_r), pams$facts, list(agreement = pp$agreement, nipo = nipo)),
     partners = partners,
-    network = net
+    pick = pick
   )
   extra <- list(pick_share = ctx$meta$pick_share_d %||% COUNTRY_DASH,
                 eu_records = if (!is.null(ctx$eu_records)) country_fmt(ctx$eu_records, "count") else COUNTRY_DASH,
@@ -280,7 +278,7 @@ country_fact_sheet <- function(iso3, ctx) {
   # Opportunity sectors, the allied pick); the others go to the companion drivers file (sheet size).
   n_keep <- cfg$drivers_in_sheet %||% list(si = 5, es = 4, eo = 4)
   keep <- unique(c(ps$keys, utils::head(si$si_order, n_keep$si %||% 5), utils::head(oo$es_order, n_keep$es %||% 4),
-                   utils::head(oo$eo_order, n_keep$eo %||% 4), if (!is.null(net$pick)) net$pick$cell))
+                   utils::head(oo$eo_order, n_keep$eo %||% 4), if (!is.null(pick)) pick$cell))
   extra <- list()
   for (i in seq_along(sheet$cells)) {
     k <- sheet$cells[[i]]$key

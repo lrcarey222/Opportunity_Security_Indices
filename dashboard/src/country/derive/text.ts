@@ -235,31 +235,6 @@ export function matchText(sheet: FactSheet, r: PartnerRow): string {
   return r.match ? cap(sheet.words?.match?.[r.match] ?? r.match) : '–';
 }
 
-/** The "Role in the allied network design" card text (S5). */
-export function networkSentence(sheet: FactSheet): string[] {
-  const n = sheet.network;
-  const name = proseName(sheet.meta.country);
-  if (!n.member) return [`${cap(name)} is not part of the allied network design.`];
-  const out: string[] = [];
-  const via = n.via_eu ? ' (through the EU node)' : '';
-  if (n.producer.length) {
-    const parts = n.producer.map((p) => `${cellOf(sheet, p.cell)?.label_prose ?? p.cell} ${p.share.d}`);
-    const derived = n.producer.some((p) => p.derived) ? ' (derived from the EU node’s shares)' : '';
-    out.push(
-      `In the paper's network design, ${name}${via} is a producer in ${n.producer.length} of the ${dOf(n.n_stages)} upstream and midstream stages. Its shares of the coalition's designed production${derived}: ${joinAnd(parts)}.`,
-    );
-  } else {
-    out.push(`In the paper's network design, ${name}${via} is not a producer in any of the ${dOf(n.n_stages)} upstream and midstream stages.`);
-  }
-  if (n.pick) {
-    const c = cellOf(sheet, n.pick.cell);
-    const ru = n.pick.runner_up ? cellOf(sheet, n.pick.runner_up) : null;
-    const tie = ru ? `, ${n.pick.near_tie ? 'almost tied with' : 'ahead of'} ${ru.label_prose} by ${n.pick.margin.d}` : '';
-    out.push(`Its allied pick is ${c?.label_prose ?? n.pick.cell} (Strategic Index ${n.pick.si.d}${tie}).`);
-  }
-  return out;
-}
-
 /** "Not placed (n): Geothermal — Upstream (no Energy Security score ...), ..." */
 export function notPlacedLine(sheet: FactSheet): string | null {
   const xs = sheet.cells.filter((c) => !c.placed);

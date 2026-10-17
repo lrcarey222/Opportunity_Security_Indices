@@ -13,14 +13,14 @@ import { useMediaQuery } from '../shell/useMediaQuery.ts';
 import { cloneAdvanced, type ShowMode } from '../state/url.ts';
 import { fmtBytes, fmtMs, fmtMult } from '../lib/format.ts';
 
-const CHUNK_LABEL: Record<string, string> = { vars: 'variable data', partner: 'partnership data', network: 'network data', core: 'core data' };
+const CHUNK_LABEL: Record<string, string> = { vars: 'variable data', partner: 'partnership data', core: 'core data' };
 
 function useComputeStatus(): { text: string; busy: boolean; error: string | null } {
   const { state } = useEngine();
-  const { status, core, partner, network } = useRun();
+  const { status, core, partner } = useRun();
   const { key, isBaseline } = useScenario();
   const app = useApp();
-  const loading = (['vars', 'partner', 'network'] as const).find((c) => state.chunks[c].state === 'loading');
+  const loading = (['vars', 'partner'] as const).find((c) => state.chunks[c].state === 'loading');
   if (loading) {
     const info = app.manifest.chunks.find((c) => c.name === loading);
     return { text: `Loading ${CHUNK_LABEL[loading]}${info ? `, ${fmtBytes(info.bytes_gz)}` : ''}`, busy: true, error: null };
@@ -28,15 +28,10 @@ function useComputeStatus(): { text: string; busy: boolean; error: string | null
   if (status.phase === 'error' && status.error) return { text: `Error: ${status.error.message}`, busy: false, error: status.error.message };
   if (status.phase === 'running' || status.phase === 'waiting') {
     const p = status.progress;
-    if (p?.layer === 'network') {
-      if (p.phase === 'portfolio') return { text: `Network: portfolio caps, iteration ${p.iter ?? 1}, stage ${p.current} of ${p.total}`, busy: true, error: null };
-      if (p.phase === 'inputs') return { text: 'Network: building inputs', busy: true, error: null };
-      return { text: `Network: stage ${Math.min(p.total, p.current + 1)} of ${p.total}`, busy: true, error: null };
-    }
     if (p?.layer === 'partner') return { text: `Recomputing partnerships (${p.phase})`, busy: true, error: null };
     return { text: 'Recomputing', busy: true, error: null };
   }
-  const fresh = [core, partner, network].filter((r) => r && r.key === key);
+  const fresh = [core, partner].filter((r) => r && r.key === key);
   if (!fresh.length) return { text: 'Starting', busy: true, error: null };
   if (isBaseline) return { text: 'NEIS baseline: exact values from the export', busy: false, error: null };
   const ms = status.ms;
@@ -65,7 +60,6 @@ function StatusStrip({ onOpenDials, showDialButton }: { onOpenDials: () => void;
   // the endowment screen of the allied picks (URL key `screen`); the chip names the moved state
   if (ch.screen) adv(scenario.advanced.require_resource_base ? 'Endowment screen on' : 'Endowment screen off', (a) => (a.require_resource_base = d.require_resource_base));
   if (ch.psi) adv(`Partnership Strength viewpoint: ${scenario.advanced.psi_view === 'world' ? 'all reporters' : 'coalition reporters'}`, (a) => (a.psi_view = d.psi_view));
-  if (ch.net) adv('Network settings', (a) => (a.network = { ...d.network }));
   const notes = app.manifest.notes ?? [];
   return (
     <div className="sticky top-0 z-30 border-b hairline bg-ink-850">
@@ -139,7 +133,7 @@ export function Banners() {
   const { problems, dismissProblems } = useScenario();
   const { retry } = useRun();
   const failed = Object.values(state.selfcheck).filter((s) => s && !s.ok);
-  const chunkErr = (['vars', 'partner', 'network'] as const).filter((c) => state.chunks[c].state === 'error');
+  const chunkErr = (['vars', 'partner'] as const).filter((c) => state.chunks[c].state === 'error');
   if (!problems.length && !failed.length && !chunkErr.length) return null;
   return (
     <div className="mx-auto mt-4 flex max-w-7xl flex-col gap-2 px-4 sm:px-6 lg:px-8">

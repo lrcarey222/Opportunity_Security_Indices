@@ -75,7 +75,7 @@ export const DIV_RANGE = [...DIV_NEG, DIV_MID, ...DIV_POS];
 
 export const MISSING = '#374151';
 
-/** Muted network flow colour (the hovered link is orange). */
+/** Muted flow colour for links (the hovered link is orange). */
 export const FLOW = 'rgb(24 137 176 / 0.55)';
 
 export const FONT = '"Roboto Variable", Roboto, ui-sans-serif, system-ui, "Segoe UI", Arial, sans-serif';

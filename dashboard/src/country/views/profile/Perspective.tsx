@@ -81,7 +81,7 @@ function PriorityReadout() {
       )}
       <p className="mt-2 text-xs text-paper-mute">
         Energy Security, Economic Opportunity, the four corners, trade and the Allied Industrial Base shock and compacts results stay as they are. The Strategic priority column in Sector position and
-        &ldquo;Make bets&rdquo; below follow the dials, as does the allied production network design (an advanced view under Partnerships).
+        &ldquo;Make bets&rdquo; below follow the dials.
       </p>
     </div>
   );
@@ -106,7 +106,7 @@ export function PerspectiveControl() {
         {sc ? <LiveSummary open={open} /> : custom ? <span className="text-sm text-paper-mute">Loading the model to apply the dials in the link…</span> : null}
         <p className="basis-full text-xs leading-snug text-paper-mute">
           Four dials (Hawkishness, Bullishness, Populism, Climate) re-weight strategic priorities, sector rankings and how attractive partners look. They never change observed or
-          modelled facts: trade flows, concentration, production, shock coverage, capacity gaps and the Allied Industrial Base shock and compacts results. The allied production network design (an advanced view) is a preference model and does follow the dials.
+          modelled facts: trade flows, concentration, production, shock coverage, capacity gaps and the Allied Industrial Base shock and compacts results.
         </p>
       </div>
       {open && (

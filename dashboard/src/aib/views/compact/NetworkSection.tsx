@@ -1,6 +1,8 @@
 // 4. Partnership network: the trade relationships behind the compact as a Sankey, exporter -> importer
 // (the largest flows of added trade, coloured new or expanded relationship), and the investment
-// relationships, investor -> host (supply from the simulated new capacity). One node filter scopes both
+// relationships, investor -> host (supply from the simulated new capacity; since 2026-10-17 the flows of
+// the investment simulation, doc.investmentFlows, for the compact's nodes: the best-ranked host of each
+// node, every ranked host as alternatives; InvestmentFlowsCard, id #invest). One node filter scopes both
 // cards. Table twins and CSVs list every relationship the export carries.
 
 import { useMemo, useState } from 'react';
@@ -12,7 +14,10 @@ import { EmptyState, FilterRow, Select } from '../../../components/ui.tsx';
 import type { AibInvestmentEdge, AibTradeEdge } from '../../contract.ts';
 import { investmentFlows, tradeFlows, type TradeFlow } from '../../derive/flows.ts';
 import { fmtScore, fmtShare, fmtUsd, plural } from '../../derive/format.ts';
+import { useAibCtx } from '../../AibLayout.tsx';
+import { NO_FILTER } from '../../derive/partnerships.ts';
 import { csvWithRun, Section } from '../common.tsx';
+import { InvestmentFlowsCard } from '../InvestmentFlowsCard.tsx';
 import { useCompact } from './shared.tsx';
 
 const TOP = 15;
@@ -21,13 +26,16 @@ export const REL_LINK = { new: 'rgb(139 157 23 / 0.6)', expanded: 'rgb(24 137 17
 export const REL_WORDS = { new: 'New relationship', expanded: 'Expanded relationship' } as const;
 
 export function NetworkSection() {
-  const { c, meta, name, nodeLabel } = useCompact();
+  const { c, meta, name, nodeLabel, shockLabel } = useCompact();
+  const { doc } = useAibCtx();
   const [node, setNode] = useState('');
   const sel = node || null;
   const trade = useMemo(() => tradeFlows(c, sel, TOP), [c, sel]);
   const invest = useMemo(() => investmentFlows(c, sel, TOP), [c, sel]);
   const tradeEdges = c.trade.filter((e) => !sel || e.node === sel);
   const invEdges = c.investment.filter((e) => !sel || e.node === sel);
+  const invFilter = useMemo(() => ({ ...NO_FILTER, node: sel, nodes: c.nodes }), [sel, c.nodes]);
+  const nFlows = doc.investmentFlows ? doc.investmentFlows.pairs.filter((p) => p.rank === 1 && c.nodes.includes(p.node) && (!sel || p.node === sel)).length : invEdges.length;
   const scope = sel ? nodeLabel(sel) : 'all nodes';
   const options = [{ value: '', label: 'All nodes' }, ...c.nodes.map((id) => ({ value: id, label: nodeLabel(id) }))];
 
@@ -80,7 +88,7 @@ export function NetworkSection() {
         </p>
       }
     >
-      <FilterRow result={`${plural(tradeEdges.length, 'trade relationship')}, ${plural(invEdges.length, 'investment relationship')}`}>
+      <FilterRow result={`${plural(tradeEdges.length, 'trade relationship')}, ${plural(nFlows, 'investment flow')}`}>
         <Select label="Node" value={node} options={options} onChange={setNode} className="min-w-[16rem]" />
       </FilterRow>
       <ChartCard
@@ -118,6 +126,22 @@ export function NetworkSection() {
           <EmptyState>No added trade relationships for {scope}: the solution keeps existing shipments.</EmptyState>
         )}
       </ChartCard>
+      {doc.investmentFlows ? (
+        <div id="invest" className="scroll-mt-16">
+          <InvestmentFlowsCard
+            doc={doc}
+            meta={meta}
+            shockLabel={shockLabel}
+            filter={invFilter}
+            scope={sel ? scope : 'the compact’s nodes'}
+            name={(iso) => name(iso)}
+            nodeLabel={nodeLabel}
+            headingLevel={3}
+            csvName={c.id}
+            sideChoice={false}
+          />
+        </div>
+      ) : (
       <ChartCard
         headingLevel={3}
         title="Investment relationships"
@@ -144,6 +168,7 @@ export function NetworkSection() {
           </EmptyState>
         )}
       </ChartCard>
+      )}
     </Section>
   );
 }

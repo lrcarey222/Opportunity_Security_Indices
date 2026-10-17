@@ -14,7 +14,7 @@ country_helper_files <- function() {
     "R/dashboard/country/country_fdi.R",
     "R/dashboard/country/country_ties.R",
     "R/dashboard/country/country_partners.R",
-    "R/dashboard/country/country_network.R",
+    "R/dashboard/country/country_pick.R",
     "R/dashboard/country/country_nipo.R",
     "R/dashboard/country/country_sheet.R",
     "R/dashboard/country/country_check.R",

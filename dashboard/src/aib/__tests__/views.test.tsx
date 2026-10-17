@@ -275,7 +275,14 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(within(nodes).getAllByText(/^Data quality:/).length).toBe(first.nodes.length);
     // the charts: Sankeys, the coverage bars and the coalition curve all draw SVG
     expect(within(screen.getByRole('region', { name: 'Trade relationships' })).getByRole('img', { name: /exporter to importer/ })).toBeTruthy();
-    if (first.investment.length) expect(within(screen.getByRole('region', { name: 'Investment relationships' })).getByRole('img', { name: /investor to host/ })).toBeTruthy();
+    // who invests where (the investment simulation's flows for the compact's nodes; the older compacts' card without them)
+    const firstFlows = (doc.investmentFlows?.pairs ?? []).filter((p) => p.rank === 1 && first.nodes.includes(p.node));
+    if (doc.investmentFlows && firstFlows.length) {
+      const inv = screen.getByRole('region', { name: 'Who invests where' });
+      expect(within(inv).getByRole('img', { name: /^Investor to host flows/ })).toBeTruthy();
+      expect(within(inv).getByTestId('modelled-note').textContent).toMatch(/does not move with the Perspective dials/);
+      expect(screen.getByTestId('investment-step').textContent).toMatch(/^Trade [+] investment: who invests where/);
+    } else if (first.investment.length) expect(within(screen.getByRole('region', { name: 'Investment relationships' })).getByRole('img', { name: /investor to host/ })).toBeTruthy();
     expect(within(screen.getByRole('region', { name: 'Demand served at each step' })).getAllByRole('img').length).toBeGreaterThan(0);
     expect(within(screen.getByRole('region', { name: 'Coverage as members join' })).getAllByRole('img').length).toBeGreaterThan(0);
     expect(main().querySelectorAll('figure svg').length).toBeGreaterThanOrEqual(5);
@@ -585,17 +592,24 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const label = doc.nodes.find((n) => n.id === nodeId)!.label;
     fireEvent.change(screen.getByRole('combobox', { name: 'Node' }), { target: { value: nodeId } });
     const nTrade = first.trade.filter((e) => e.node === nodeId).length;
-    const nInv = first.investment.filter((e) => e.node === nodeId).length;
-    await waitFor(() => expect(screen.getByText(`${nTrade} trade relationship${nTrade === 1 ? '' : 's'}, ${nInv} investment relationship${nInv === 1 ? '' : 's'}`)).toBeTruthy());
+    const nInv = doc.investmentFlows
+      ? doc.investmentFlows.pairs.filter((p) => p.rank === 1 && p.node === nodeId && first.nodes.includes(p.node)).length
+      : first.investment.filter((e) => e.node === nodeId).length;
+    const invWord = doc.investmentFlows ? 'investment flow' : 'investment relationship';
+    await waitFor(() => expect(screen.getByText(`${nTrade} trade relationship${nTrade === 1 ? '' : 's'}, ${nInv} ${invWord}${nInv === 1 ? '' : 's'}`)).toBeTruthy());
     expect(within(screen.getByRole('region', { name: 'Trade relationships' })).getByText(new RegExp(`Exporter to importer, ${label.replace(/[&()]/g, '.')}`))).toBeTruthy();
   });
 
   it('a compact without investment relationships says so; an unreached top target is explained', async () => {
-    const c = doc.compacts.find((x) => !x.investment.length);
+    const flows = doc.investmentFlows;
+    const c = flows ? doc.compacts.find((x) => !flows.pairs.some((p) => p.rank === 1 && x.nodes.includes(p.node))) : doc.compacts.find((x) => !x.investment.length);
     if (!c) return;
     renderAt(`/compacts/${c.id.toLowerCase()}`);
     expect(await h1(c.name)).toBeTruthy();
-    expect(within(screen.getByRole('region', { name: 'Investment relationships' })).getByText(/No investment relationships/)).toBeTruthy();
+    if (flows) {
+      expect(within(screen.getByRole('region', { name: 'Who invests where' })).getByText(/No simulated investment flow/)).toBeTruthy();
+      expect(screen.getByTestId('investment-step').textContent).toMatch(/no investment flow is simulated/);
+    } else expect(within(screen.getByRole('region', { name: 'Investment relationships' })).getByText(/No investment relationships/)).toBeTruthy();
     if (!c.coalition.reached99) expect(screen.getByText(/The highest target is not reached/)).toBeTruthy();
     noAcronyms();
   });
@@ -700,8 +714,10 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(link).toBeTruthy();
     const matrix = screen.getByRole('region', { name: 'Roles by economy' });
     expect(within(matrix).getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
-      'Economy', 'Resource supplier', 'Specialized supplier', 'Investment host', 'Demand anchor', 'Bridge', 'Technology partner', 'Other supplier', 'Compact participation',
+      'Economy', 'Resource / Supplier', 'Specialized supplier', 'Investment host', 'Investor', 'Demand anchor / Buyer', 'Bridge', 'Compact participation',
     ]);
+    expect(screen.getByRole('heading', { level: 2, name: 'How roles are read' })).toBeTruthy();
+    expect(within(main()).getAllByTestId('modelled-note')[0].textContent).toMatch(/does not move with the Perspective dials/);
     const row = document.getElementById(`role-${iso}`) as HTMLElement;
     expect(row.className).toContain('bg-signal/10');
     expect(within(row).getAllByRole('link').some((a) => a.getAttribute('href') === `/compacts/${doc.compacts[0].id}`)).toBe(true);
@@ -759,6 +775,55 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(await screen.findByRole('region', { name: 'Capacity gaps' })).toBeTruthy();
     noAcronyms();
     setEngineClient(null);
+  });
+
+  it('partnerships, investment (2026-10-17): investor-to-host flows of the best-ranked hosts, every ranked host as alternatives, the economy as investor or host; no original network design', async () => {
+    const flows = doc.investmentFlows;
+    if (!flows) return;
+    setEngineClient(neverReadyClient());
+    const r = renderAt('/aib/partnerships');
+    expect(await h1('Partnerships')).toBeTruthy();
+    expect(screen.queryByText(/allied production network/)).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: 'Investment' }));
+    await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('mode')).toBe('investment'));
+    const card = await screen.findByRole('region', { name: 'Who invests where' });
+    expect(await within(card).findByRole('img', { name: /^Investor to host flows/ }, { timeout: 15_000 })).toBeTruthy();
+    const best = flows.pairs.filter((p) => p.rank === 1);
+    const items = () => within(within(card).getByTestId('flow-list')).getAllByRole('listitem');
+    expect(items()).toHaveLength(Math.min(8, best.length));
+    expect(within(card).getByTestId('modelled-note').textContent).toMatch(/does not move with the Perspective dials/);
+    fireEvent.click(within(card).getByRole('radio', { name: 'Every ranked host' }));
+    await waitFor(() => expect(items()).toHaveLength(Math.min(8, flows.pairs.length)));
+    expect(within(card).getAllByText(/2nd of 5/).length).toBeGreaterThan(0);
+    // one economy: as host (its new capacity serves investors) or as investor
+    const host = best[0].host;
+    fireEvent.change(screen.getByRole('combobox', { name: 'Economy' }), { target: { value: host } });
+    await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('country')).toBe(host));
+    const card2 = screen.getByRole('region', { name: 'Who invests where' });
+    fireEvent.click(within(card2).getByRole('radio', { name: 'As investor' }));
+    const asInvestor = flows.pairs.filter((p) => p.investor === host);
+    if (!asInvestor.length) await waitFor(() => expect(within(card2).getByText(/No simulated investment flow/)).toBeTruthy());
+    fireEvent.click(within(card2).getByRole('radio', { name: 'As host' }));
+    await waitFor(() => expect(within(card2).getAllByRole('link', { name: doc.countries[host] }).length).toBeGreaterThan(0));
+    noAcronyms();
+    setEngineClient(null);
+  });
+
+  it('country roles (2026-10-17): a role is named at the floor, minor below it; "Show" keeps one role, named first and largest first', async () => {
+    const net = doc.network;
+    if (!net) return;
+    renderAt('/aib/roles');
+    expect(await h1('Country roles')).toBeTruthy();
+    const cellOf = (iso: string, col: number) => (document.getElementById(`role-${iso}`) as HTMLElement).querySelectorAll('td')[col];
+    // columns: 0 supplier, 1 specialized, 2 host, 3 investor, 4 buyer, 5 bridge, 6 participation
+    const named = net.countries.find((c) => c.buyer.headline >= 0.01)!;
+    expect(cellOf(named.iso3, 4).textContent).toMatch(new RegExp(`^${Math.round(named.buyer.headline * 100)}`));
+    const minor = net.countries.find((c) => c.host.headline < 0.01 && c.host.cumulative > 0);
+    if (minor) expect(cellOf(minor.iso3, 2).textContent).toMatch(/^minor/);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Show' }), { target: { value: 'investor' } });
+    const investors = net.countries.filter((c) => c.investor.selected > 0 || c.investor.cumulative > 0).sort((a, b) => b.investor.headline - a.investor.headline);
+    await waitFor(() => expect(within(screen.getByTestId('role-matrix')).getAllByRole('rowheader').map((h) => h.textContent)).toEqual(investors.map((c) => doc.countries[c.iso3] ?? c.iso3)));
+    noAcronyms();
   });
 
   it('a compact deep link to a method anchor opens the method details', async () => {

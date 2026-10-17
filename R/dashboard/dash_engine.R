@@ -23,7 +23,7 @@ dash_cached <- function(cache, key, expr) {
   val
 }
 
-# One scenario through L1-L4 (the network is solved separately: dash_network_*()). Returns a
+# One scenario through L1-L4 (the original allied network design, once L5, is retired). Returns a
 # "dash_result": params, pillars, policy, si, allied (selection), partner (cells, top5, psi) and the
 # layer keys. partner = FALSE skips L4.
 dash_run <- function(bundle, params, cache = NULL, partner = TRUE) {
@@ -61,16 +61,6 @@ dash_run <- function(bundle, params, cache = NULL, partner = TRUE) {
   attr(out, "notes") <- notes
   class(out) <- c("dash_result", "list")
   out
-}
-
-# The full network for a scenario: inputs, scores and the solve (greedy by default).
-dash_network_run <- function(bundle, params, result, solver = "greedy", progress = NULL, cache = NULL, solver_env = NULL) {
-  k_in <- dash_params_key(params, "net_inputs")
-  k_sc <- dash_params_key(params, "net_score")
-  k_so <- paste0(dash_params_key(params, "net_solve"), "|", solver)
-  inputs <- dash_cached(cache, k_in, dash_network_inputs(bundle, params, result$partner$cells, policy = result$policy))
-  scored <- dash_cached(cache, k_sc, dash_network_score(inputs, params))
-  dash_cached(cache, k_so, dash_network_solve(scored, params, bundle = bundle, solver = solver, progress = progress, solver_env = solver_env))
 }
 
 dash_join_base <- function(x, b, keys, cols, suffix = "_base") {
@@ -122,7 +112,7 @@ dash_compare_dyads <- function(result, baseline_result, reporter_iso) {
 # Parameters as a long table (section, parameter, value) for downloads.
 dash_params_long <- function(params) {
   p <- unclass(params)
-  flat <- unlist(p[c("dials", "m", "pillars", "policy", "si", "partner", "network")])
+  flat <- unlist(p[c("dials", "m", "pillars", "policy", "si", "partner")])
   tibble::tibble(
     section = sub("\\..*$", "", names(flat)),
     parameter = sub("^[^.]*\\.", "", names(flat)),
@@ -131,7 +121,7 @@ dash_params_long <- function(params) {
 }
 
 # Tidy tables of a scenario for download.
-dash_scenario_tables <- function(result, network = NULL, compare = NULL, bundle = NULL) {
+dash_scenario_tables <- function(result, compare = NULL, bundle = NULL) {
   out <- list(parameters = dash_params_long(result$params))
   if (!is.null(bundle)) {
     m <- bundle$manifest
@@ -153,12 +143,6 @@ dash_scenario_tables <- function(result, network = NULL, compare = NULL, bundle 
     out$psi_partner <- if (!is.null(compare$psi_partner)) compare$psi_partner else result$partner$psi$partner
     out$psi_dyad <- result$partner$psi$dyad
   }
-  if (!is.null(network)) {
-    out$network_specialization <- network$specialization
-    out$network_flows <- network$flows
-    out$network_diagnostics <- network$diagnostics
-    if (!is.null(network$member_shares)) out$network_member_shares <- network$member_shares
-  }
   lapply(out, tibble::as_tibble)
 }
 
@@ -166,11 +150,11 @@ dash_scenario_tables <- function(result, network = NULL, compare = NULL, bundle 
 dash_validate_bundle <- function(bundle) {
   need <- function(cond, msg) if (!isTRUE(cond)) stop("Invalid dashboard bundle: ", msg, call. = FALSE)
   need(is.list(bundle), "not a list")
-  for (s in c("manifest", "dims", "pillars", "policy", "si", "partner", "network")) need(!is.null(bundle[[s]]), paste0("missing $", s))
+  for (s in c("manifest", "dims", "pillars", "policy", "si", "partner")) need(!is.null(bundle[[s]]), paste0("missing $", s))
   need(!is.null(bundle$manifest$baseline_inputs), "missing manifest$baseline_inputs")
   bi <- bundle$manifest$baseline_inputs
   for (k in c("es_weights", "eo_weights", "policy_weights", "si_weights", "stage_weights", "fs_weights", "po_weights",
-              "psi_weights", "node_weights", "edge_weights", "demand_weights", "lambda", "portfolio", "supply_chains")) {
+              "psi_weights")) {
     need(!is.null(bi[[k]]), paste0("baseline_inputs$", k, " missing"))
   }
   need(!is.null(bundle$dims$techs) && length(bundle$dims$techs) > 0, "dims$techs empty")
@@ -215,7 +199,5 @@ dash_validate_bundle <- function(bundle) {
     need(all(is.na(pa$fs$cpe) | (pa$fs$cpe >= 0 & pa$fs$cpe <= 1)), "partner$fs$cpe must lie in [0, 1]")
   }
   need(length(pa$po$cpi) == U && length(pa$po$gh) == C, "partner$po cpi / gh lengths")
-  need(is.data.frame(bundle$network$members) && nrow(bundle$network$members) > 0, "network$members empty")
-  need(is.data.frame(bundle$network$node_raw_member), "network$node_raw_member missing")
   invisible(TRUE)
 }

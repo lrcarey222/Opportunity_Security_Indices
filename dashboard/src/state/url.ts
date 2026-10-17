@@ -7,7 +7,6 @@ import { DIAL_NAMES } from '../engine/types.ts';
 
 export type ShowMode = 'scenario' | 'baseline' | 'change';
 export type Metric = 'es' | 'eo' | 'si_rank' | 'si' | 'policy' | 'psi';
-export type CmpMode = 'greedy' | 'paper';
 
 export interface ViewState {
   show: ShowMode;
@@ -15,7 +14,6 @@ export interface ViewState {
   stage: string | null;
   metric: Metric;
   rankable: boolean;
-  cmp: CmpMode;
   partner: string | null;
 }
 
@@ -46,9 +44,12 @@ export const SHOW_MODES: ShowMode[] = ['scenario', 'baseline', 'change'];
 
 /** Every key the app writes, in the order it writes them. */
 export const KEY_ORDER = [
-  'h', 'b', 'p', 'g', 'es', 'eo', 'tau', 'fossil', 'screen', 'psi', 'lambda', 'maxshare', 'minprod', 'caps',
-  'show', 'tech', 'stage', 'metric', 'rankable', 'cmp', 'partner',
+  'h', 'b', 'p', 'g', 'es', 'eo', 'tau', 'fossil', 'screen', 'psi',
+  'show', 'tech', 'stage', 'metric', 'rankable', 'partner',
 ] as const;
+/** Keys of the retired allied network design (its settings and its comparison mode, 2026-10-17): an
+ *  old link that carries them still opens, with the keys dropped and named in `problems`. */
+export const RETIRED_KEYS = ['lambda', 'maxshare', 'minprod', 'caps', 'cmp'] as const;
 export const SCENARIO_KEYS = KEY_ORDER.slice(0, KEY_ORDER.indexOf('show'));
 /** View keys kept when navigating between views (tech / stage are shared by overview, space, country). */
 export const SHARED_VIEW_KEYS = ['show', 'tech', 'stage'];
@@ -59,7 +60,6 @@ export const VIEW_DEFAULTS: ViewState = {
   stage: null,
   metric: 'es',
   rankable: true,
-  cmp: 'greedy',
   partner: null,
 };
 
@@ -72,7 +72,7 @@ export function defaultScenario(ctx: UrlCtx): Scenario {
 }
 
 export function cloneAdvanced(a: Advanced): Advanced {
-  return { ...a, es_weights: { ...a.es_weights }, eo_weights: { ...a.eo_weights }, network: { ...a.network } };
+  return { ...a, es_weights: { ...a.es_weights }, eo_weights: { ...a.eo_weights } };
 }
 
 const DECIMAL = /^-?(\d+(\.\d*)?|\.\d+)(e-?\d+)?$/i;
@@ -164,27 +164,12 @@ export function parseSearch(search: string, ctx: UrlCtx): Parsed {
         if (v === 'coalition' || v === 'world') scenario.advanced.psi_view = v as PsiView;
         else bad(k, raw, 'coalition or world');
         break;
-      case 'lambda': {
-        const x = parseDecimal(v);
-        if (x === null || x < 0 || x > 100) bad(k, raw, 'a number from 0 to 100');
-        else scenario.advanced.network.lambda = x;
-        break;
-      }
-      case 'maxshare': {
-        const x = parseDecimal(v);
-        if (x === null || x <= 0 || x > 1) bad(k, raw, 'a share above 0 and at most 1');
-        else scenario.advanced.network.max_share = x;
-        break;
-      }
-      case 'minprod': {
-        const x = parseDecimal(v);
-        if (x === null || !Number.isInteger(x) || x < 1 || x > 20) bad(k, raw, 'a whole number from 1 to 20');
-        else scenario.advanced.network.min_producers = x;
-        break;
-      }
+      case 'lambda':
+      case 'maxshare':
+      case 'minprod':
       case 'caps':
-        if (v === '0' || v === '1') scenario.advanced.network.portfolio_enable = v === '1';
-        else bad(k, raw, '0 or 1');
+      case 'cmp':
+        problems.push(`${k} (a setting of the original allied network design, which is retired)`);
         break;
       case 'show':
         if ((SHOW_MODES as string[]).includes(v)) view.show = v as ShowMode;
@@ -205,10 +190,6 @@ export function parseSearch(search: string, ctx: UrlCtx): Parsed {
       case 'rankable':
         if (v === '0' || v === '1') view.rankable = v === '1';
         else bad(k, raw, '0 or 1');
-        break;
-      case 'cmp':
-        if (v === 'greedy' || v === 'paper') view.cmp = v;
-        else bad(k, raw, 'greedy or paper');
         break;
       case 'partner':
         if (/^[A-Z]{3}$/.test(v)) view.partner = v;
@@ -233,16 +214,11 @@ export function searchEntries(scenario: Scenario, view: ViewState, ctx: UrlCtx):
   if (a.fossil !== d.fossil) out.push(['fossil', a.fossil]);
   if (a.require_resource_base !== d.require_resource_base) out.push(['screen', a.require_resource_base ? '1' : '0']);
   if (a.psi_view !== d.psi_view) out.push(['psi', a.psi_view]);
-  if (a.network.lambda !== d.network.lambda && a.network.lambda !== null) out.push(['lambda', numText(a.network.lambda)]);
-  if (a.network.max_share !== d.network.max_share) out.push(['maxshare', numText(a.network.max_share)]);
-  if (a.network.min_producers !== d.network.min_producers) out.push(['minprod', numText(a.network.min_producers)]);
-  if (a.network.portfolio_enable !== d.network.portfolio_enable) out.push(['caps', a.network.portfolio_enable ? '1' : '0']);
   if (view.show !== VIEW_DEFAULTS.show) out.push(['show', view.show]);
   if (view.tech !== null) out.push(['tech', view.tech]);
   if (view.stage !== null) out.push(['stage', view.stage]);
   if (view.metric !== VIEW_DEFAULTS.metric) out.push(['metric', view.metric]);
   if (view.rankable !== VIEW_DEFAULTS.rankable) out.push(['rankable', view.rankable ? '1' : '0']);
-  if (view.cmp !== VIEW_DEFAULTS.cmp) out.push(['cmp', view.cmp]);
   if (view.partner !== null) out.push(['partner', view.partner]);
   return out;
 }
@@ -310,7 +286,7 @@ export function isDefaultScenario(s: Scenario, ctx: UrlCtx): boolean {
 }
 
 /** Which advanced groups differ from the paper's settings. */
-export function advancedChanged(a: Advanced, ctx: UrlCtx): { es: boolean; eo: boolean; sample: boolean; fossil: boolean; screen: boolean; psi: boolean; net: boolean; any: boolean } {
+export function advancedChanged(a: Advanced, ctx: UrlCtx): { es: boolean; eo: boolean; sample: boolean; fossil: boolean; screen: boolean; psi: boolean; any: boolean } {
   const d = ctx.defaults;
   const es = !sameWeights(a.es_weights, d.es_weights, ctx.esCategories);
   const eo = !sameWeights(a.eo_weights, d.eo_weights, ctx.eoCategories);
@@ -318,10 +294,5 @@ export function advancedChanged(a: Advanced, ctx: UrlCtx): { es: boolean; eo: bo
   const fossil = a.fossil !== d.fossil;
   const screen = a.require_resource_base !== d.require_resource_base;
   const psi = a.psi_view !== d.psi_view;
-  const net =
-    a.network.lambda !== d.network.lambda ||
-    a.network.max_share !== d.network.max_share ||
-    a.network.min_producers !== d.network.min_producers ||
-    a.network.portfolio_enable !== d.network.portfolio_enable;
-  return { es, eo, sample, fossil, screen, psi, net, any: es || eo || sample || fossil || screen || psi || net };
+  return { es, eo, sample, fossil, screen, psi, any: es || eo || sample || fossil || screen || psi };
 }

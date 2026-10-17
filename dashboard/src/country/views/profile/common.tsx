@@ -85,7 +85,9 @@ export const BASIS_LABEL: Record<Basis, string> = { facts: 'Observed / modelled 
 /** The basis of a block, as a quiet tag ("Preference-adjusted priorities · your perspective"). */
 export function BasisTag({ kind, note }: { kind: Basis; note?: string }) {
   return (
-    <span className="tag max-w-full whitespace-normal" data-basis={kind}>
+    // `.tag` is unlayered CSS with white-space: nowrap, so a Tailwind `whitespace-normal` loses: a long note
+    // (e.g. the policy section's) would push a 390 px page sideways; the inline style wins
+    <span className="tag max-w-full" style={{ whiteSpace: 'normal' }} data-basis={kind}>
       {BASIS_LABEL[kind]}
       {note ? ` · ${note}` : ''}
     </span>

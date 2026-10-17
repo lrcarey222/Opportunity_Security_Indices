@@ -613,6 +613,11 @@ export interface SectorManifest {
      * change 2026-10-15, additive): a manifest without the key has no sector-dev chunk.
      */
     dev?: boolean;
+    /**
+     * the sector-climate chunk (Climate TRACE sector emissions, IPCC lifecycle intensity) is present.
+     * Optional (climate data change 2026-10-17, additive): a manifest without the key has none.
+     */
+    climate?: boolean;
   };
   chunks: SectorChunkInfo[];
   headlines: SectorHeadline[];
@@ -638,6 +643,8 @@ export const SECTOR_BUDGET_GZ = {
   'sector-dev': 1.2 * 1024 * 1024,
   /** CM-FDI projects, sources and aggregates (integrator change 2026-10-11, additive) */
   'sector-fdi': 300 * 1024,
+  /** Climate TRACE emissions mapped to technology x stage (climate data change 2026-10-17, additive) */
+  'sector-climate': 300 * 1024,
   sector_total: 9 * 1024 * 1024,
   combined_total: 25 * 1024 * 1024,
 } as const;
@@ -672,6 +679,7 @@ export function sectorManifestProblems(x: unknown): string[] {
     for (const k of ['trade', 'atlas', 'policy_text', 'series']) if (typeof f[k] !== 'boolean') p.push(`flags.${k} must be a boolean`);
     if (f.fdi !== undefined && typeof f.fdi !== 'boolean') p.push('flags.fdi must be a boolean when present');
     if (f.dev !== undefined && typeof f.dev !== 'boolean') p.push('flags.dev must be a boolean when present');
+    if (f.climate !== undefined && typeof f.climate !== 'boolean') p.push('flags.climate must be a boolean when present');
   }
 
   if (!Array.isArray(x.chunks)) p.push('chunks must be an array');
@@ -702,6 +710,8 @@ export function sectorManifestProblems(x: unknown): string[] {
       if (f.fdi !== true && names.has('sector-fdi')) p.push('sector-fdi is listed but flags.fdi is not true');
       if (f.dev === true && !names.has('sector-dev')) p.push('flags.dev is true but sector-dev is missing');
       if (f.dev !== true && names.has('sector-dev')) p.push('sector-dev is listed but flags.dev is not true');
+      if (f.climate === true && !names.has('sector-climate')) p.push('flags.climate is true but sector-climate is missing');
+      if (f.climate !== true && names.has('sector-climate')) p.push('sector-climate is listed but flags.climate is not true');
     }
   }
 
@@ -1355,6 +1365,65 @@ export const DEV_SPEC = {
   'dev.conduits': { kind: 'table', cols: { geo: GEO, dej_top10: BR }, sorted: ['geo'], unique: ['geo'] },
 } as const satisfies ChunkSpec;
 
+// ---- sector-climate: Climate TRACE sector emissions (climate data change 2026-10-17, additive) ---------
+
+/** How a Climate TRACE source is read: country totals, or the summed tracked assets of one group. */
+export const CLIMATE_BASES = ['country', 'assets'] as const;
+/** own: counted as the cell's emissions (with a match quality); context: a material the cell's products are made of. */
+export const CLIMATE_ROLES = ['own', 'context'] as const;
+/** Match quality of an own source (config/climate_trace_map.yml). */
+export const CLIMATE_MATCHES = ['direct', 'partial', 'proxy'] as const;
+/** Match quality of a cell: the best of its own sources, none without one. */
+export const CLIMATE_CELL_MATCHES = ['direct', 'partial', 'proxy', 'none'] as const;
+export type ClimateMatch = (typeof CLIMATE_CELL_MATCHES)[number];
+/** ipcc: the technology has its own IPCC rows; proxy: the paper scores it with other technologies' values. */
+export const CLIMATE_LIFECYCLE_BASES = ['ipcc', 'proxy'] as const;
+
+/**
+ * sector-climate (R/dashboard/sector/sector_climate.R; processed by scripts/16_build_climate_trace.R from
+ * Climate TRACE, https://climatetrace.org, CC BY 4.0, dict source `climate_trace`; IPCC lifecycle medians,
+ * dict source `ipcc_lifecycle`). Optional chunk (manifest flags.climate), loaded by the Sector Profile's
+ * Climate lens and section and the Country Profile's Policy & climate section.
+ *   climate.src: one row per Climate TRACE source the map uses: id ("coal-mining",
+ *     "electricity-generation:coal"), subsector, sector, label, asset_group (null: the whole subsector),
+ *     basis, repeated (the latest year's world total equals the previous year's: carried forward).
+ *   climate.map: (cell item, src row, role, match (null for context), order).
+ *   climate.cells: every cell's match quality and the note that explains it.
+ *   climate.lifecycle: per technology label, the IPCC lifecycle gCO2e/kWh range (g_min..g_max, NaN for
+ *     a proxy), the IPCC rows behind it, and for a proxy the technologies it is scored with (proxy_of,
+ *     pipe-separated labels).
+ *   climate.em: tonnes CO2e (100-year GWP) per (src row, geo, year); WLD = Climate TRACE's world total
+ *     (country basis) or every country's tracked assets (assets basis).
+ *   climate.intensity: the tracked assets' emissions over their activity per (subsector, asset group,
+ *     geo, year): n assets with an activity, emissions (t CO2e), activity (activity_unit), value (unit,
+ *     "t CO2e per MWh").
+ */
+export const CLIMATE_SPEC = {
+  'climate.src': {
+    kind: 'table',
+    cols: { id: SR, subsector: SR, sector: SR, label: SR, asset_group: S, basis: { t: 'str', req: true, values: CLIMATE_BASES }, repeated: BR },
+    unique: ['id'],
+  },
+  'climate.map': {
+    kind: 'table',
+    cols: { item: ITEM, src: IR, role: { t: 'str', req: true, values: CLIMATE_ROLES }, match: { t: 'str', values: CLIMATE_MATCHES }, order: IR },
+    sorted: ['item', 'order'],
+    unique: ['item', 'src'],
+  },
+  'climate.cells': { kind: 'table', cols: { item: ITEM, match: { t: 'str', req: true, values: CLIMATE_CELL_MATCHES }, note: SR }, sorted: ['item'], unique: ['item'] },
+  'climate.lifecycle': {
+    kind: 'table',
+    cols: { tech: SR, basis: { t: 'str', req: true, values: CLIMATE_LIFECYCLE_BASES }, g_min: F, g_max: F, rows: S, proxy_of: S },
+    unique: ['tech'],
+  },
+  'climate.em': { kind: 'table', cols: { src: IR, geo: GEO, year: IR, value: FR }, sorted: ['src', 'year', 'geo'], unique: ['src', 'year', 'geo'] },
+  'climate.intensity': {
+    kind: 'table',
+    cols: { subsector: SR, asset_group: SR, geo: GEO, year: IR, n: IR, emissions: FR, activity: FR, value: FR, unit: SR, activity_unit: SR },
+    unique: ['subsector', 'asset_group', 'year', 'geo'],
+  },
+} as const satisfies ChunkSpec;
+
 // ---- sector-fdi: CM-FDI (integrator change 2026-10-11, additive) ---------------------------------
 //
 // The Cleantech Manufacturing FDI Dataset (CM-FDI): P. Bandara and the Net Zero Industrial Policy Lab,
@@ -1532,6 +1601,7 @@ export type SectorPolicyTextChunk = ChunkOf<typeof POLICY_TEXT_SPEC>;
 export type SectorSeriesChunk = ChunkOf<typeof SERIES_SPEC>;
 export type SectorAtlasChunk = ChunkOf<typeof ATLAS_SPEC>;
 export type SectorDevChunk = ChunkOf<typeof DEV_SPEC>;
+export type SectorClimateChunk = ChunkOf<typeof CLIMATE_SPEC>;
 export type SectorFdiChunk = ChunkOf<typeof FDI_SPEC>;
 export type FdiProjectTable = SectorFdiChunk['fdi.projects'];
 export type FdiSourceTable = SectorFdiChunk['fdi.sources'];
@@ -1564,7 +1634,8 @@ export type SectorChunkName =
   | 'sector-series'
   | 'sector-atlas'
   | 'sector-dev'
-  | 'sector-fdi';
+  | 'sector-fdi'
+  | 'sector-climate';
 
 export type ChunkFor<N extends SectorChunkName> = N extends 'sector-meta'
   ? SectorMetaChunk
@@ -1582,7 +1653,9 @@ export type ChunkFor<N extends SectorChunkName> = N extends 'sector-meta'
               ? SectorAtlasChunk
               : N extends 'sector-fdi'
                 ? SectorFdiChunk
-                : SectorDevChunk;
+                : N extends 'sector-climate'
+                  ? SectorClimateChunk
+                  : SectorDevChunk;
 
 export function tradeChunkName(tech: TradeTechSlug): SectorChunkName {
   return `sector-trade-${tech}`;
@@ -1590,7 +1663,7 @@ export function tradeChunkName(tech: TradeTechSlug): SectorChunkName {
 
 export function isSectorChunkName(s: string): s is SectorChunkName {
   if (s.startsWith('sector-trade-')) return isTradeTechSlug(s.slice('sector-trade-'.length));
-  return ['sector-meta', 'sector-facts', 'sector-policy', 'sector-policy-text', 'sector-series', 'sector-atlas', 'sector-dev', 'sector-fdi'].includes(s);
+  return ['sector-meta', 'sector-facts', 'sector-policy', 'sector-policy-text', 'sector-series', 'sector-atlas', 'sector-dev', 'sector-fdi', 'sector-climate'].includes(s);
 }
 
 /** The object spec of a chunk name. */
@@ -1611,6 +1684,8 @@ export function chunkSpec(name: SectorChunkName): ChunkSpec {
       return ATLAS_SPEC;
     case 'sector-fdi':
       return FDI_SPEC;
+    case 'sector-climate':
+      return CLIMATE_SPEC;
     default:
       return DEV_SPEC;
   }
@@ -2009,6 +2084,56 @@ function checkDev(c: SectorDevChunk, out: ChunkCheck) {
   badFlag.report(out.errors, 'dev.dip.conduit disagrees with dev.conduits');
 }
 
+/** Cross-table rules of sector-climate (CLIMATE_SPEC); the R mirror is sector_check_climate(). */
+function checkClimate(c: SectorClimateChunk, out: ChunkCheck) {
+  const ns = c['climate.src'].nrow;
+  const m = c['climate.map'];
+  const badSrc = new Tally();
+  const badMatch = new Tally();
+  const rank = (x: string | null) => (x === null ? -1 : CLIMATE_CELL_MATCHES.indexOf(x as ClimateMatch));
+  const best = new Map<number, number>();
+  for (let i = 0; i < m.nrow; i++) {
+    if (m.cols.src[i] >= ns) badSrc.hit(i);
+    const own = m.cols.role[i] === 'own';
+    if (own !== (m.cols.match[i] !== null)) badMatch.hit(i);
+    if (own) {
+      const r = rank(m.cols.match[i]);
+      const b = best.get(m.cols.item[i]);
+      if (r >= 0 && (b === undefined || r < b)) best.set(m.cols.item[i], r);
+    }
+  }
+  const e = c['climate.em'];
+  for (let i = 0; i < e.nrow; i++) if (e.cols.src[i] >= ns) badSrc.hit(i);
+  badSrc.report(out.errors, 'climate: a src index past climate.src');
+  badMatch.report(out.errors, 'climate.map: match must be set exactly on own rows');
+  const cells = c['climate.cells'];
+  const badCell = new Tally();
+  for (let i = 0; i < cells.nrow; i++) {
+    const b = best.get(cells.cols.item[i]);
+    if (cells.cols.match[i] !== (b === undefined ? 'none' : CLIMATE_CELL_MATCHES[b])) badCell.hit(i);
+  }
+  badCell.report(out.errors, "climate.cells.match is not the best match of the cell's own sources");
+  const s = c['climate.src'];
+  const badBasis = new Tally();
+  for (let i = 0; i < s.nrow; i++) if ((s.cols.basis[i] === 'assets') !== (s.cols.asset_group[i] !== null)) badBasis.hit(i);
+  badBasis.report(out.errors, 'climate.src: an assets source needs an asset_group, a country source none');
+  const l = c['climate.lifecycle'];
+  const badLife = new Tally();
+  for (let i = 0; i < l.nrow; i++) {
+    const proxy = l.cols.basis[i] === 'proxy';
+    if (proxy !== (l.cols.proxy_of[i] !== null) || (proxy && Number.isFinite(l.cols.g_min[i])) || (!proxy && !(l.cols.g_min[i] <= l.cols.g_max[i]))) badLife.hit(i);
+  }
+  badLife.report(out.errors, 'climate.lifecycle: proxy rows need proxy_of and no gCO2e range; ipcc rows g_min <= g_max');
+  const it = c['climate.intensity'];
+  const badInt = new Tally();
+  for (let i = 0; i < it.nrow; i++) {
+    const a = it.cols.activity[i];
+    const v = it.cols.value[i];
+    if (!(a > 0) || Math.abs(v - it.cols.emissions[i] / a) > 1e-12 * Math.max(Math.abs(v), 1e-300)) badInt.hit(i);
+  }
+  badInt.report(out.errors, 'climate.intensity: value is not emissions / activity');
+}
+
 /** Cross-table rules of sector-fdi (FDI_SPEC); the R mirror is sector_check_fdi(). */
 function checkFdi(c: SectorFdiChunk, out: ChunkCheck) {
   const p = c['fdi.projects'];
@@ -2124,6 +2249,7 @@ export function checkChunk(name: string, objects: OsbDecoded | Record<string, un
   else if (name.startsWith('sector-trade-')) checkTrade(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorTradeChunk, out);
   else if (name === 'sector-fdi') checkFdi(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorFdiChunk, out);
   else if (name === 'sector-dev') checkDev(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorDevChunk, out);
+  else if (name === 'sector-climate') checkClimate(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorClimateChunk, out);
   return out;
 }
 

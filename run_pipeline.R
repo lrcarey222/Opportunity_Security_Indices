@@ -26,14 +26,20 @@ source(file.path(repo_root, "scripts", "00_setup.R"))
 source(file.path(repo_root, "scripts", "05_ingest_sources.R"))
 source(file.path(repo_root, "scripts", "07_process_data.R"))
 source(file.path(repo_root, "scripts", "10_build_themes.R"))
+# Climate TRACE sector emissions mapped to technology x stage (reads tech_ghg_tbl.rds from scripts/10;
+# scripts/87 reads its tables for the Sector bundle).
+source(file.path(repo_root, "scripts", "16_build_climate_trace.R"))
 source(file.path(repo_root, "scripts", "12_build_geopolitical_alignment.R"))
 source(file.path(repo_root, "scripts", "13_build_coalition.R"))
 source(file.path(repo_root, "scripts", "20_build_indices.R"))
 source(file.path(repo_root, "scripts", "15_build_partner_themes.R"))
 source(file.path(repo_root, "scripts", "25_build_partner_indices.R"))
 
-run_allied <- tolower(Sys.getenv("OPSI_RUN_ALLIED_NETWORK", "true")) %in% c("1", "true", "yes")
-if (run_allied) source(file.path(repo_root, "scripts", "30_build_allied_network_design.R"))
+# The original allied network design (scripts/30_build_allied_network_design.R and
+# R/indices/allied_network_design.R) is retired (2026-10-17) and no longer runs here: the Allied
+# Industrial Base analysis below replaces it. Its code is kept, dormant; it still runs by hand
+# (Rscript scripts/30_build_allied_network_design.R), but nothing in the pipeline or the dashboard reads
+# its outputs.
 
 # Allied Industrial Base: trade partnership network, investment prioritization, emergent network
 # and Sectoral Compacts (docs/aib_methodology.md). Reads the partner indices and the coalition table.
