@@ -2,9 +2,10 @@
 // (compacts[].roles; see roles.ts) gathered by economy, for the Allied Industrial Base "Country roles"
 // view and a Country profile's "Role in the Allied Industrial Base". No new score: a cell is the list
 // of compacts in which the economy holds that role, and membership is the compact's minimum coalition
-// (coalition.members) or its associates. Pure.
+// (coalitionMembersOf: the exact minimum, or the widest greedy set when the middle target is out of
+// reach) or its associates. Pure.
 
-import type { AibDoc } from '../contract.ts';
+import { coalitionMembersOf, type AibDoc } from '../contract.ts';
 import { nameOf } from './format.ts';
 import { canonicalRole, ROLE_ORDER, type RoleName } from './roles.ts';
 
@@ -31,7 +32,7 @@ export function countryRoleRows(doc: Pick<AibDoc, 'compacts'>, names: Readonly<R
     return r;
   };
   for (const c of doc.compacts) {
-    for (const iso of c.coalition.members) if (!row(iso).member.includes(c.id)) row(iso).member.push(c.id);
+    for (const iso of coalitionMembersOf(c)) if (!row(iso).member.includes(c.id)) row(iso).member.push(c.id);
     for (const iso of c.associates) if (!row(iso).associate.includes(c.id)) row(iso).associate.push(c.id);
     for (const r of c.roles) {
       const k = canonicalRole(r.role);

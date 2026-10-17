@@ -1,5 +1,5 @@
 // The coverage comparison of a compact: shock (static) -> existing relationships -> trade compact ->
-// trade + investment response, as columns in % of the candidate universe's demand (Observable Plot). One
+// trade + investment response, as columns in % of the demand scope's demand (Observable Plot). One
 // measure, so one hue (the shock step gray as the starting point), each column labelled with its value
 // and the step-to-step change; hover gives the step's meaning. An optional reference (the global optimum:
 // coverage if every economy coordinated) is a dashed white rule across the columns, labelled at the left.

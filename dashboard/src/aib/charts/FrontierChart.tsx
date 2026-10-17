@@ -1,9 +1,11 @@
 // The specialization-resilience frontier of one node (Observable Plot): x = the supplier-share limit (25 /
-// 40 / 60 / 100%), y = 0-100%; three lines with dots: coverage, coverage if the largest supplier is also
-// lost (a second shock) and the specialization score, each in its own colour and dash, labelled at the
-// right end. A dotted rule marks the 80% acceptable coverage the second-shock reading uses; vertical
-// rules mark the least diversification that keeps it (minRequiredDiversification) and the tightest limit
-// that costs at most 2 points of coverage (tightestCostless). Hover gives the values at a limit.
+// 40 / 60 / 100%), y = 0-100%; four lines with dots: coverage, N-1 re-optimized (the largest remaining
+// supplier removed and the trade re-optimized: the true N-1 test), instantaneous N-1 retained coverage
+// (coverage x (1 - largest share), mechanical) and the specialization score, each in its own colour and
+// dash, labelled at the right end. A dotted rule marks the 80% acceptable coverage the resilience reading
+// uses; vertical rules mark the least diversification that keeps it (minRequiredDiversification) and the
+// tightest limit that costs at most 2 points of coverage (tightestCostless). Hover gives the values at a
+// limit.
 
 import { useCallback } from 'react';
 import * as Plot from '@observablehq/plot';
@@ -13,12 +15,23 @@ import { PAPER_MUTE, SIGNAL } from '../../theme/palette.ts';
 import { capLabel, FRONTIER_SERIES, frontierPoints, type FrontierRow } from '../derive/frontier.ts';
 import { fmtShare } from '../derive/format.ts';
 
-/** The coverage the second-shock reading asks for (the exporter's acceptable_coverage default). */
+/** The coverage the resilience reading asks for after the N-1 test (the exporter's acceptable_coverage default). */
 export const ACCEPTABLE_COVERAGE = 0.8;
 export const REQUIRED_COLOR = '#ffffff';
 export const COSTLESS_COLOR = '#9ca3af';
 
 type Pt = ReturnType<typeof frontierPoints>[number];
+
+/** The lines a tooltip lists for a limit. */
+export function frontierTipLines(r: FrontierRow): string[] {
+  return [
+    `Coverage ${fmtShare(r.coverage)}`,
+    `N-1 re-optimized ${fmtShare(r.n1Reoptimized)}${r.n1RemovedName ? ` (without ${r.n1RemovedName}, trade re-optimized)` : ''}`,
+    `Instantaneous N-1 retained ${fmtShare(r.instantaneousN1)} (coverage × (1 − largest share))`,
+    `Specialization score ${fmtShare(r.specialization, 0)}`,
+    ...(r.largestName ? [`Largest supplier ${r.largestName} (${fmtShare(r.largestShare)})`] : []),
+  ];
+}
 
 export function FrontierChart({
   rows, required, costless, ariaLabel,
@@ -36,12 +49,15 @@ export function FrontierChart({
       const lo = Math.min(...caps);
       const ends = FRONTIER_SERIES.map((s) => {
         const last = [...pts].filter((p) => p.key === s.key).sort((a, b) => b.cap - a.cap)[0];
-        return last ? { ...last, label: s.label, labelY: last.value } : null;
+        return last ? { ...last, label: s.short, labelY: last.value } : null;
       })
         .filter((x): x is Pt & { label: string; labelY: number } => x !== null)
         .sort((a, b) => b.value - a.value);
-      // keep the end labels apart: each at least two lines (about 0.12 of the axis) below the one above
-      for (let i = 1; i < ends.length; i++) ends[i].labelY = Math.min(ends[i].labelY, ends[i - 1].labelY - 0.12);
+      // keep the end labels apart: each at least one line (about 0.08 of the axis) below the one above,
+      // then lift the stack if its foot fell under the axis
+      for (let i = 1; i < ends.length; i++) ends[i].labelY = Math.min(ends[i].labelY, ends[i - 1].labelY - 0.08);
+      const lift = ends.length ? Math.max(0, 0.03 - ends[ends.length - 1].labelY) : 0;
+      for (const e of ends) e.labelY += lift;
       const narrow = width < 560;
       const vrules = [
         ...(isNum(required) ? [{ cap: required, color: REQUIRED_COLOR, dash: null as string | null, text: 'least diversification for resilience' }] : []),
@@ -54,7 +70,7 @@ export function FrontierChart({
         y: { domain: [0, 1], label: '↑ Coverage (% of demand); specialization score × 100', tickFormat: (v: number) => `${Math.round(v * 100)}`, grid: true },
         marks: [
           Plot.ruleY([ACCEPTABLE_COVERAGE], { stroke: 'rgb(255 255 255 / 0.4)', strokeDasharray: '2,3' }),
-          Plot.text([ACCEPTABLE_COVERAGE], { y: (d: number) => d, frameAnchor: 'left', textAnchor: 'start', dx: 4, dy: -7, text: () => `${Math.round(ACCEPTABLE_COVERAGE * 100)}% after a second shock`, fill: PAPER_MUTE, fontSize: 10 }),
+          Plot.text([ACCEPTABLE_COVERAGE], { y: (d: number) => d, frameAnchor: 'left', textAnchor: 'start', dx: 4, dy: -7, text: () => `${Math.round(ACCEPTABLE_COVERAGE * 100)}% after the N-1 test`, fill: PAPER_MUTE, fontSize: 10 }),
           ...vrules.map((r) => Plot.ruleX([r.cap], { stroke: r.color, strokeWidth: 1.5, strokeDasharray: r.dash ?? undefined })),
           ...vrules.map((r, i) =>
             Plot.text([r.cap], {
@@ -78,7 +94,7 @@ export function FrontierChart({
             ),
           ),
           ...FRONTIER_SERIES.map((s) => Plot.dot(pts.filter((p) => p.key === s.key), { x: 'cap', y: 'value', r: 3.5, fill: s.color, stroke: '#1f2937', strokeWidth: 1 })),
-          ...(narrow ? [] : [Plot.text(ends, { x: 'cap', y: 'labelY', text: 'label', textAnchor: 'start', dx: 10, fill: '#d1d5db', fontSize: 10, lineWidth: 14 })]),
+          ...(narrow ? [] : [Plot.text(ends, { x: 'cap', y: 'labelY', text: 'label', textAnchor: 'start', dx: 10, fill: '#d1d5db', fontSize: 10, lineWidth: 16 })]),
           Plot.dot(pts, Plot.pointer({ x: 'cap', y: 'value', r: 7, fill: 'none', stroke: SIGNAL, strokeWidth: 2 })),
         ],
       };
@@ -88,13 +104,7 @@ export function FrontierChart({
   const tip = (p: Pt) => {
     const r = rows.find((x) => x.cap === p.cap);
     const s = FRONTIER_SERIES.find((x) => x.key === p.key);
-    return (
-      <Tip
-        value={fmtShare(p.value)}
-        title={`${s?.label ?? p.key}, supplier limit ${capLabel(p.cap)}`}
-        lines={r ? [`Coverage ${fmtShare(r.coverage)}; after a second shock ${fmtShare(r.secondShock)}; specialization ${fmtShare(r.specialization, 0)}`, r.largestName ? `Largest supplier ${r.largestName} (${fmtShare(r.largestShare)})` : null] : []}
-      />
-    );
+    return <Tip value={fmtShare(p.value)} title={`${s?.label ?? p.key}, supplier limit ${capLabel(p.cap)}`} lines={r ? frontierTipLines(r) : []} />;
   };
-  return <PlotFigure<Pt> build={build} height={300} ariaLabel={ariaLabel} tooltip={tip} />;
+  return <PlotFigure<Pt> build={build} height={320} ariaLabel={ariaLabel} tooltip={tip} />;
 }

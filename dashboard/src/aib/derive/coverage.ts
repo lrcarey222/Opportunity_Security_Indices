@@ -1,4 +1,4 @@
-// Coverage steps: the share of the candidate universe's baseline traded demand served after the shock,
+// Coverage steps: the share of the demand scope's baseline traded demand served after the shock,
 // from the static shock (nothing reroutes) through existing relationships and the trade compact to the
 // trade + investment response. Pure.
 

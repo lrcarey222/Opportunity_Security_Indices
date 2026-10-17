@@ -83,3 +83,26 @@ test_that("coherence reaches two hops on the supply-chain graph", {
   expect_false(m["a", "d"])
   expect_false(aib_coherence_matrix(edges, c("a", "b", "c"), max_hops = 1)["a", "c"])
 })
+
+test_that("LOW and COORDINATE classes without physical validation carry the warning", {
+  nd <- tibble::tibble(
+    node_id = c("wafers", "polysilicon", "magnets", "ree", "lithium"),
+    node_classification = c("LOW INTERVENTION", "LOW INTERVENTION", "LOW INTERVENTION", "COORDINATE", "BUILD"),
+    shock_exposure = c(0.30, 0.10, 0.30, 0.40, 0.50),
+    physical_data = c("complete", "complete", "none", "incomplete", "complete"),
+    physically_divergent = c(TRUE, TRUE, FALSE, FALSE, TRUE)
+  )
+  tr <- aib_physical_validation(nd, constrained = FALSE, low_exposure = 0.15)
+  # Trade only: divergent physical data leave a LOW class unvalidated; no data is flagged in the
+  # validation column but not warned (there is nothing to diverge from).
+  expect_equal(tr$classification_warning, c("PHYSICAL CAPABILITY NOT VALIDATED", "PHYSICAL CAPABILITY NOT VALIDATED", NA, "PHYSICAL CAPABILITY NOT VALIDATED", NA))
+  expect_equal(tr$physical_validation[3], "trade only; no physical data")
+  pc <- aib_physical_validation(nd, constrained = TRUE, low_exposure = 0.15)
+  # Production-constrained: the wafer class rests on physically bounded suppliers; polysilicon's
+  # LOW rests on low trade exposure, which the physical bound does not validate.
+  expect_true(is.na(pc$classification_warning[1]))
+  expect_equal(pc$classification_warning[2], "PHYSICAL CAPABILITY NOT VALIDATED")
+  expect_match(pc$physical_validation[2], "understates")
+  expect_equal(pc$classification_warning[4], "PHYSICAL CAPABILITY NOT VALIDATED")  # incomplete data
+  expect_true(is.na(pc$classification_warning[5]))                                   # BUILD is never softened
+})
