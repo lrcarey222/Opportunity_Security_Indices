@@ -14,7 +14,8 @@ import { SectorStore, setSectorStoreForTests } from '../data/store.ts';
 import { modelOf } from '../data/model.ts';
 import { climateData } from '../derive/climate.ts';
 import { mineralPaths, nzeCompare, nzeData, nzeHeadline, nzeWorldLine, pathwayLines } from '../derive/nze.ts';
-import { CountryClimateCard } from './climate/CountryClimate.tsx';
+import { withClimateSrc } from '../__fixtures__/climateSrc.ts';
+import { CountryTransitionCards } from './climate/CountryTransition.tsx';
 
 type Spec = Parameters<typeof table>[0];
 type Row = Record<string, string | number | boolean | null>;
@@ -171,7 +172,7 @@ beforeAll(() => {
 afterAll(() => {
   for (const r of restore.reverse()) r();
 });
-beforeEach(() => setSectorStoreForTests(new SectorStore(fixtureSource(withClimate(buildSectorFixture())))));
+beforeEach(() => setSectorStoreForTests(new SectorStore(fixtureSource(withClimateSrc(withClimate(buildSectorFixture()))))));
 afterEach(() => {
   cleanup();
   setSectorStoreForTests(null);
@@ -196,13 +197,17 @@ describe('Sector profile: IEA pathways in the Climate lens and section', () => {
     const line = await within(lens).findByTestId('nze-lens', {}, { timeout: 10_000 });
     expect(within(line).getByText('IEA scenario projections · World')).toBeTruthy();
     expect(line.textContent).toMatch(/The Net Zero pathway needs 6,400 GW of solar PV capacity by 2035, 1\.6 times Stated Policies \(4,000 GW\); 1,900 GW in 2024 \(IEA estimate\)\./);
-    expect(line.textContent).toMatch(/World Energy Outlook 2025, Annex A free dataset \(World\), CC BY 4\.0/);
+    expect(line.textContent).toMatch(/World Energy Outlook 2025 free dataset \(World\), CC BY-NC-SA 4\.0/);
     await openGroups();
     const block = await screen.findByTestId('nze-pathways', {}, { timeout: 10_000 });
     expect(within(block).getByRole('heading', { level: 3, name: /Where the IEA’s pathways lead for Solar/ })).toBeTruthy();
     expect(within(block).getByTestId('nze-match').textContent).toBe('Direct match');
     expect(within(block).getByRole('heading', { level: 3, name: 'Solar PV capacity, World, to 2050' })).toBeTruthy();
     expect(within(block).getByTestId('nze-compare').textContent).toMatch(/Net Zero, 2035\s*6,400 GW\s*1\.6 times Stated Policies/);
+    // the 2021 roadmap's 2030 milestone beside it, labelled as the older edition (sector-climate-src)
+    const m21 = await within(block).findByTestId('nze21-milestone', {}, { timeout: 10_000 });
+    expect(m21.textContent).toMatch(/Net Zero, 2030 \(2021 roadmap, older edition\)\s*4,960 GW/);
+    expect(within(block).getByRole('columnheader', { name: /Net Zero 2030 \(2021 roadmap\)/ })).toBeTruthy();
     expect(within(block).getByRole('table', { name: /IEA World pathways mapped to/ })).toBeTruthy();
     expect(within(block).queryByText(/Mineral demand from/)).toBeNull();
   });
@@ -228,16 +233,16 @@ describe('Sector profile: IEA pathways in the Climate lens and section', () => {
 });
 
 describe('Country profile: world pathway context', () => {
-  it('adds the world line, labelled World-only, under the emissions table', async () => {
+  it('adds the world line, labelled World, to the regional pathway card', async () => {
     render(
       <MemoryRouter>
-        <CountryClimateCard iso3="CHN" name="China" />
+        <CountryTransitionCards iso3="CHN" name="China" />
       </MemoryRouter>,
     );
-    const card = screen.getByTestId('policy-emissions');
+    const card = await screen.findByTestId('policy-weo-region', {}, { timeout: 10_000 });
     const world = await within(card).findByTestId('nze-world', {}, { timeout: 10_000 });
     expect(world.textContent).toMatch(/World context, not this economy’s: energy-sector CO2 was 37\.6 Gt in 2024/);
-    expect(world.textContent).toMatch(/World-level only, so China has no pathway of its own here/);
+    expect(world.textContent).toMatch(/Net Zero pathway for the World only, so neither China nor its region has one here/);
     expect(within(world).getByText('IEA scenario projections · World')).toBeTruthy();
   });
 });

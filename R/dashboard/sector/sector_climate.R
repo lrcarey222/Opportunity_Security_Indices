@@ -362,3 +362,263 @@ sector_nze_parity <- function(decoded, meta, p) {
       identical(d$nze_meta$key, p$meta$key) && identical(d$nze_meta$value, as.character(p$meta$value)), nrow(d$nze_meta))
   dplyr::bind_rows(rows)
 }
+
+# ---- sector-climate-src: climate sources (user request of 2026-10-17: seven files added to data/raw) -------
+#
+# A lazy chunk of its own (manifest flags.climate_src; contract CLIMATE_SRC_SPEC; too large to join
+# sector-climate within its 300 kB budget): the Global Carbon Project's national fossil CO2
+# (territorial, consumption-based, transfers; Mt CO2) and World fossil CO2 by fuel (Gt CO2), the Energy
+# Institute's Country Transition Tracker with the median economy, the IEA's WEO 2025 regional pathways
+# (Historical, Stated Policies, Current Policies; regions have no Net Zero scenario) with the economy ->
+# region map, the IEA's Net Zero by 2050 (2021) series paired with the WEO 2025 World series, and the IEA's
+# World Energy Investment 2026 by region, with the cell map (WEI rows: own / demand with a match quality;
+# GCP fuels: context). scripts/87 reads data/processed/climate_src_*_tbl.rds (scripts/18_build_climate_sources.R;
+# rules in R/categories/climate/climate_sources.R; map in config/climate_sources_map.yml), keeps the economies
+# of dims.geo, and ships the rest as they are; after the decode every value is checked identical() to the
+# processed table (sector_src_parity()).
+#
+#   csrc.gcp            (geo, measure territorial / consumption / transfers, year, value Mt CO2)
+#   csrc.gcp_fuel       (fuel, year, value Gt CO2), World
+#   csrc.ei             (geo, ind, year, value) as published
+#   csrc.ei_ind         id, label, unit, better (lower / higher / none), sheet, low_carbon
+#   csrc.ei_median      (ind, year, value, n): the median of every economy the tracker lists
+#   csrc.weo_series     id, label, unit, category, product, flow
+#   csrc.weo_values     (region, series row, scenario, year, value)
+#   csrc.weo_regions    region, kind (country / union / region / world)
+#   csrc.weo_geo        (geo, region, match own / member / by_subregion)
+#   csrc.nze21_series   id, label, unit, category, product, flow, weo (paired WEO 2025 series id), match, note
+#   csrc.nze21_values   (series row, year, value), World, Net Zero Emissions by 2050 (2021 edition)
+#   csrc.wei_rows       id, label (as published), name, parent, unit
+#   csrc.wei_values     (row, region, year, value, estimate)
+#   csrc.wei_regions    region, label, kind (world / group / country / region)
+#   csrc.map            (cell item, src wei / gcp, key, role own / demand / context, match, order)
+#   csrc.cells          one row per cell: match (best WEI row; none), note
+#   csrc.meta           key, value: editions and files
+
+SECTOR_SRC_V <- list(
+  measure = c("territorial", "consumption", "transfers"),
+  fuel = c("total", "coal", "oil", "gas", "cement", "flaring", "other"),
+  better = c("lower", "higher", "none"),
+  scenario = c("historical", "stated", "current", "nze"),
+  region_kind = c("country", "union", "region", "world"),
+  geo_match = c("own", "member", "by_subregion"),
+  wei_kind = c("world", "group", "country", "region"),
+  nze21_match = c("direct", "partial"),
+  src = c("wei", "gcp"),
+  role = c("own", "demand", "context"),
+  match = c("direct", "partial", "proxy"),
+  cell_match = c("direct", "partial", "proxy", "none")
+)
+
+SECTOR_SRC_PROCESSED <- c(gcp_national = "climate_src_gcp_national_tbl", gcp_fuel = "climate_src_gcp_fuel_tbl", ei = "climate_src_ei_tbl",
+                          ei_ind = "climate_src_ei_ind_tbl", ei_median = "climate_src_ei_median_tbl", weo_series = "climate_src_weo_series_tbl",
+                          weo_values = "climate_src_weo_values_tbl", weo_regions = "climate_src_weo_regions_tbl", weo_geo = "climate_src_weo_geo_tbl",
+                          nze21_series = "climate_src_nze21_series_tbl", nze21_values = "climate_src_nze21_values_tbl", wei_rows = "climate_src_wei_rows_tbl",
+                          wei_values = "climate_src_wei_values_tbl", wei_regions = "climate_src_wei_regions_tbl", map = "climate_src_map_tbl",
+                          cells = "climate_src_cells_tbl", meta = "climate_src_meta_tbl")
+
+# The text-keyed part: the processed tables (`p`, named as SECTOR_SRC_PROCESSED), geo-keyed ones kept to the
+# dims.geo codes. Also `dropped`: the GCP and EI economies outside dims.geo (a validation note).
+sector_src_part <- function(p, geo_codes) {
+  for (nm in names(SECTOR_SRC_PROCESSED)) if (is.null(p[[nm]])) stop("sector_src_part(): missing ", nm)
+  out <- p
+  out$gcp_national <- p$gcp_national[p$gcp_national$iso3 %in% geo_codes, , drop = FALSE]
+  out$ei <- p$ei[p$ei$iso3 %in% geo_codes, , drop = FALSE]
+  out$weo_geo <- p$weo_geo[p$weo_geo$iso3 %in% geo_codes, , drop = FALSE]
+  out$map <- tibble::tibble(item_key = paste0("cell:", p$map$cell), src = p$map$src, key = p$map$key, role = p$map$role, match = p$map$match,
+                            order = as.integer(p$map$order))
+  out$cells <- tibble::tibble(item_key = paste0("cell:", p$cells$cell), match = p$cells$match, note = p$cells$note)
+  out$dropped <- list(gcp = setdiff(unique(p$gcp_national$iso3), geo_codes), ei = setdiff(unique(p$ei$iso3), geo_codes))
+  out
+}
+
+# The sector-climate-src chunk (contract CLIMATE_SRC_SPEC) from the part. gi / ii: geo / item code -> 0-based index.
+sector_src_chunk <- function(s, gi, ii) {
+  idx <- function(x, ids, what) {
+    i <- match(x, ids)
+    if (anyNA(i)) stop("sector_src_chunk(): unknown ", what, " ", paste(utils::head(unique(x[is.na(i)]), 5), collapse = ", "))
+    as.integer(i - 1L)
+  }
+  ch <- function(x) as.character(x)
+  srt <- function(d, ...) d[do.call(order, c(list(...), list(method = "radix"))), , drop = FALSE]
+  g <- s$gcp_national
+  gg <- gi(g$iso3)
+  gcp <- srt(tibble::tibble(geo = gg, measure = ch(g$measure), year = as.integer(g$year), value = as.double(g$value)), gg, g$measure, g$year)
+  f <- s$gcp_fuel
+  fuel <- tibble::tibble(fuel = ch(f$fuel), year = as.integer(f$year), value = as.double(f$value))
+  e <- s$ei
+  eg <- gi(e$iso3)
+  ei <- srt(tibble::tibble(geo = eg, ind = ch(e$ind), year = as.integer(e$year), value = as.double(e$value)), e$ind, e$year, eg)
+  ind <- tibble::tibble(id = ch(s$ei_ind$id), label = ch(s$ei_ind$label), unit = ch(s$ei_ind$unit), better = ch(s$ei_ind$better), sheet = ch(s$ei_ind$sheet),
+                        low_carbon = as.logical(s$ei_ind$low_carbon))
+  med <- tibble::tibble(ind = ch(s$ei_median$ind), year = as.integer(s$ei_median$year), value = as.double(s$ei_median$value), n = as.integer(s$ei_median$n))
+  ws <- s$weo_series
+  wser <- tibble::tibble(id = ch(ws$id), label = ch(ws$label), unit = ch(ws$unit), category = ch(ws$category), product = ch(ws$product), flow = ch(ws$flow))
+  wv <- s$weo_values
+  wval <- tibble::tibble(region = ch(wv$region), series = idx(wv$series, wser$id, "WEO series"), scenario = ch(wv$scenario), year = as.integer(wv$year),
+                         value = as.double(wv$value))
+  wreg <- tibble::tibble(region = ch(s$weo_regions$region), kind = ch(s$weo_regions$kind))
+  wg <- s$weo_geo
+  wgg <- gi(wg$iso3)
+  wgeo <- srt(tibble::tibble(geo = wgg, region = ch(wg$region), match = ch(wg$match)), wgg)
+  ns <- s$nze21_series
+  nser <- tibble::tibble(id = ch(ns$id), label = ch(ns$label), unit = ch(ns$unit), category = ch(ns$category), product = ch(ns$product), flow = ch(ns$flow),
+                         weo = ch(ns$weo), match = ch(ns$match), note = ch(ns$note))
+  nv <- s$nze21_values
+  ni <- idx(nv$series, nser$id, "NZE 2021 series")
+  nval <- srt(tibble::tibble(series = ni, year = as.integer(nv$year), value = as.double(nv$value)), ni, nv$year)
+  wr <- s$wei_rows
+  wrow <- tibble::tibble(id = ch(wr$id), label = ch(wr$label), name = ch(wr$name), parent = ch(wr$parent), unit = ch(wr$unit))
+  iv <- s$wei_values
+  ri <- idx(iv$row, wrow$id, "WEI row")
+  ival <- srt(tibble::tibble(row = ri, region = ch(iv$region), year = as.integer(iv$year), value = as.double(iv$value), estimate = as.logical(iv$estimate)),
+              ri, iv$region, iv$year)
+  ireg <- tibble::tibble(region = ch(s$wei_regions$region), label = ch(s$wei_regions$label), kind = ch(s$wei_regions$kind))
+  m <- s$map
+  mi <- ii(m$item_key)
+  mp <- srt(tibble::tibble(item = mi, src = ch(m$src), key = ch(m$key), role = ch(m$role), match = ch(m$match), order = as.integer(m$order)), mi, m$src, m$order)
+  ci <- ii(s$cells$item_key)
+  cc <- srt(tibble::tibble(item = ci, match = ch(s$cells$match), note = ch(s$cells$note)), ci)
+  meta <- tibble::tibble(key = ch(s$meta$key), value = ch(s$meta$value))
+  list(csrc = list(gcp = gcp, gcp_fuel = fuel, ei = ei, ei_ind = ind, ei_median = med, weo_series = wser, weo_values = wval,
+                   weo_regions = wreg, weo_geo = wgeo, nze21_series = nser, nze21_values = nval, wei_rows = wrow, wei_values = ival,
+                   wei_regions = ireg, map = mp, cells = cc, meta = meta))
+}
+
+# The R mirror of the contract's CLIMATE_SRC_SPEC (sector_chunk_specs() adds it).
+sector_src_spec <- function() {
+  V <- SECTOR_SRC_V
+  t <- function(cols, ...) sector_tbl_spec(cols, ...)
+  list(
+    `csrc.gcp` = t(c(geo = "i!@geo", measure = "s!", year = "i!", value = "f!"), sorted = "geo", unique = c("geo", "measure", "year"),
+                          values = list(measure = V$measure)),
+    `csrc.gcp_fuel` = t(c(fuel = "s!", year = "i!", value = "f!"), unique = c("fuel", "year"), values = list(fuel = V$fuel)),
+    `csrc.ei` = t(c(geo = "i!@geo", ind = "s!", year = "i!", value = "f!"), unique = c("ind", "year", "geo")),
+    `csrc.ei_ind` = t(c(id = "s!", label = "s!", unit = "s!", better = "s!", sheet = "s!", low_carbon = "b"), unique = "id", values = list(better = V$better)),
+    `csrc.ei_median` = t(c(ind = "s!", year = "i!", value = "f!", n = "i!"), unique = c("ind", "year")),
+    `csrc.weo_series` = t(c(id = "s!", label = "s!", unit = "s!", category = "s!", product = "s!", flow = "s!"), unique = "id"),
+    `csrc.weo_values` = t(c(region = "s!", series = "i!", scenario = "s!", year = "i!", value = "f!"), unique = c("region", "series", "scenario", "year"),
+                                 values = list(scenario = V$scenario)),
+    `csrc.weo_regions` = t(c(region = "s!", kind = "s!"), unique = "region", values = list(kind = V$region_kind)),
+    `csrc.weo_geo` = t(c(geo = "i!@geo", region = "s!", match = "s!"), sorted = "geo", unique = "geo", values = list(match = V$geo_match)),
+    `csrc.nze21_series` = t(c(id = "s!", label = "s!", unit = "s!", category = "s!", product = "s!", flow = "s!", weo = "s!", match = "s!", note = "s"),
+                                   unique = "id", values = list(match = V$nze21_match)),
+    `csrc.nze21_values` = t(c(series = "i!", year = "i!", value = "f!"), sorted = c("series", "year"), unique = c("series", "year")),
+    `csrc.wei_rows` = t(c(id = "s!", label = "s!", name = "s!", parent = "s", unit = "s!"), unique = "id"),
+    `csrc.wei_values` = t(c(row = "i!", region = "s!", year = "i!", value = "f!", estimate = "b!"), sorted = "row",
+                                 unique = c("row", "region", "year")),
+    `csrc.wei_regions` = t(c(region = "s!", label = "s!", kind = "s!"), unique = "region", values = list(kind = V$wei_kind)),
+    `csrc.map` = t(c(item = "i!@items", src = "s!", key = "s!", role = "s!", match = "s", order = "i!"), sorted = "item",
+                          unique = c("item", "src", "key"), values = list(src = V$src, role = V$role, match = V$match)),
+    `csrc.cells` = t(c(item = "i!@items", match = "s!", note = "s!"), sorted = "item", unique = "item", values = list(match = V$cell_match)),
+    `csrc.meta` = t(c(key = "s!", value = "s"), unique = "key")
+  )
+}
+
+# Cross-table rules of sector-climate-src (contract checkClimateSrc()); `d` is the decoded csrc list: row indices in range;
+# WEO values and the region map name regions of the region table; every EI indicator listed; a wei key of
+# the map is a WEI row id and a gcp key a fuel; wei rows have a match and role own or demand, gcp rows are
+# context without one; a cell's match is the best of its WEI rows (none without one); n is positive.
+sector_check_src <- function(d) {
+  e <- character()
+  if (any(d$weo_values$series >= nrow(d$weo_series))) e <- c(e, "csrc.weo_values: a series index past csrc.weo_series")
+  if (!all(d$weo_values$region %in% d$weo_regions$region) || !all(d$weo_geo$region %in% d$weo_regions$region)) e <- c(e, "csrc.weo: a region not in csrc.weo_regions")
+  if (any(d$nze21_values$series >= nrow(d$nze21_series))) e <- c(e, "csrc.nze21_values: a series index past csrc.nze21_series")
+  if (any(d$wei_values$row >= nrow(d$wei_rows))) e <- c(e, "csrc.wei_values: a row index past csrc.wei_rows")
+  if (!all(d$wei_values$region %in% d$wei_regions$region)) e <- c(e, "csrc.wei_values: a region not in csrc.wei_regions")
+  if (!all(d$ei$ind %in% d$ei_ind$id) || !all(d$ei_median$ind %in% d$ei_ind$id)) e <- c(e, "csrc.ei: an indicator not in csrc.ei_ind")
+  if (any(d$ei_median$n < 1L)) e <- c(e, "csrc.ei_median: n must be positive")
+  m <- d$map
+  wei <- m$src == "wei"
+  if (!all(m$key[wei] %in% d$wei_rows$id)) e <- c(e, "csrc.map: a wei key that is not a WEI row id")
+  if (!all(m$key[!wei] %in% SECTOR_SRC_V$fuel)) e <- c(e, "csrc.map: a gcp key that is not a fuel")
+  if (any(wei & (is.na(m$match) | m$role == "context")) || any(!wei & (!is.na(m$match) | m$role != "context"))) e <- c(e, "csrc.map: wei rows need a match and role own or demand; gcp rows are context without one")
+  rank <- match(m$match, SECTOR_SRC_V$cell_match)
+  want <- vapply(d$cells$item, function(i) {
+    r <- rank[m$item == i & wei]
+    if (length(r)) SECTOR_SRC_V$cell_match[min(r)] else "none"
+  }, character(1))
+  if (!identical(unname(want), d$cells$match)) e <- c(e, "csrc.cells.match is not the best match of the cell's WEI rows")
+  e
+}
+
+# The median economy per (indicator, year), recomputed from the processed tracker table (parity check).
+sector_src_median <- function(ei) {
+  out <- dplyr::summarise(dplyr::group_by(ei, .data$ind, .data$year), value = stats::median(.data$value), n = dplyr::n(), .groups = "drop")
+  tibble::tibble(ind = out$ind, year = as.integer(out$year), value = as.double(out$value), n = as.integer(out$n))
+}
+
+# The decoded sector-climate-src chunk against the processed climate_src_*_tbl.rds (`p`, as sector_src_part() takes them):
+# every shipped value identical() to the processed row of the same key, and every processed row of a
+# dims.geo economy shipped. Returns check rows (check, status, n, detail).
+sector_src_parity <- function(decoded, meta, p) {
+  d <- decoded$csrc
+  if (is.null(d$gcp)) return(tibble::tibble(check = character(), status = character(), n = integer(), detail = character()))
+  geo <- meta$dims$geo$code
+  it <- meta$dims$items
+  key <- paste0(it$axis, ":", it$slug)
+  rows <- list()
+  df <- function(x, by) {
+    x <- as.data.frame(x, stringsAsFactors = FALSE)
+    x <- x[do.call(order, c(unname(as.list(x[by])), list(method = "radix"))), , drop = FALSE]
+    rownames(x) <- NULL
+    x
+  }
+  chk <- function(label, got, ref, by) {
+    ok <- identical(df(got, by), df(ref, by))
+    rows[[length(rows) + 1L]] <<- tibble::tibble(check = paste0("climate (decoded): ", label), status = if (ok) "PASS" else "FAIL", n = nrow(got), detail = NA_character_)
+  }
+  pg <- p$gcp_national[p$gcp_national$iso3 %in% geo, , drop = FALSE]
+  chk("GCP national fossil CO2 identical() to climate_src_gcp_national_tbl (dims.geo economies, EU27 and World)",
+      tibble::tibble(iso3 = geo[d$gcp$geo + 1L], measure = d$gcp$measure, year = d$gcp$year, value = d$gcp$value),
+      tibble::tibble(iso3 = pg$iso3, measure = pg$measure, year = as.integer(pg$year), value = as.double(pg$value)), c("iso3", "measure", "year"))
+  chk("GCP World fossil CO2 by fuel identical() to climate_src_gcp_fuel_tbl",
+      tibble::tibble(fuel = d$gcp_fuel$fuel, year = d$gcp_fuel$year, value = d$gcp_fuel$value),
+      tibble::tibble(fuel = p$gcp_fuel$fuel, year = as.integer(p$gcp_fuel$year), value = as.double(p$gcp_fuel$value)), c("fuel", "year"))
+  pe <- p$ei[p$ei$iso3 %in% geo, , drop = FALSE]
+  chk("EI Country Transition Tracker identical() to climate_src_ei_tbl (dims.geo economies)",
+      tibble::tibble(iso3 = geo[d$ei$geo + 1L], ind = d$ei$ind, year = d$ei$year, value = d$ei$value),
+      tibble::tibble(iso3 = pe$iso3, ind = pe$ind, year = as.integer(pe$year), value = as.double(pe$value)), c("ind", "year", "iso3"))
+  chk("EI indicators identical() to climate_src_ei_ind_tbl", d$ei_ind,
+      tibble::tibble(id = p$ei_ind$id, label = p$ei_ind$label, unit = p$ei_ind$unit, better = p$ei_ind$better, sheet = p$ei_ind$sheet,
+                     low_carbon = as.logical(p$ei_ind$low_carbon)), "id")
+  chk("EI median economy identical() to climate_src_ei_median_tbl", d$ei_median,
+      tibble::tibble(ind = p$ei_median$ind, year = as.integer(p$ei_median$year), value = as.double(p$ei_median$value), n = as.integer(p$ei_median$n)), c("ind", "year"))
+  chk("EI median economy identical() to the median recomputed from climate_src_ei_tbl (every economy the tracker lists)", d$ei_median,
+      sector_src_median(p$ei), c("ind", "year"))
+  sid <- d$weo_series$id
+  chk("WEO regional series identical() to climate_src_weo_series_tbl", d$weo_series, p$weo_series[c("id", "label", "unit", "category", "product", "flow")], "id")
+  chk("WEO regional pathways identical() to climate_src_weo_values_tbl",
+      tibble::tibble(region = d$weo_values$region, series = sid[d$weo_values$series + 1L], scenario = d$weo_values$scenario,
+                     year = d$weo_values$year, value = d$weo_values$value),
+      tibble::tibble(region = p$weo_values$region, series = p$weo_values$series, scenario = p$weo_values$scenario, year = as.integer(p$weo_values$year),
+                     value = as.double(p$weo_values$value)), c("region", "series", "scenario", "year"))
+  chk("WEO regions identical() to climate_src_weo_regions_tbl", d$weo_regions, p$weo_regions[c("region", "kind")], "region")
+  pw <- p$weo_geo[p$weo_geo$iso3 %in% geo, , drop = FALSE]
+  chk("economy -> WEO region identical() to climate_src_weo_geo_tbl (dims.geo economies)",
+      tibble::tibble(iso3 = geo[d$weo_geo$geo + 1L], region = d$weo_geo$region, match = d$weo_geo$match), pw[c("iso3", "region", "match")], "iso3")
+  nid <- d$nze21_series$id
+  chk("NZE 2021 series identical() to climate_src_nze21_series_tbl", d$nze21_series,
+      p$nze21_series[c("id", "label", "unit", "category", "product", "flow", "weo", "match", "note")], "id")
+  chk("NZE 2021 values identical() to climate_src_nze21_values_tbl",
+      tibble::tibble(series = nid[d$nze21_values$series + 1L], year = d$nze21_values$year, value = d$nze21_values$value),
+      tibble::tibble(series = p$nze21_values$series, year = as.integer(p$nze21_values$year), value = as.double(p$nze21_values$value)), c("series", "year"))
+  rid <- d$wei_rows$id
+  chk("WEI rows identical() to climate_src_wei_rows_tbl", d$wei_rows, p$wei_rows[c("id", "label", "name", "parent", "unit")], "id")
+  chk("WEI investment identical() to climate_src_wei_values_tbl",
+      tibble::tibble(row = rid[d$wei_values$row + 1L], region = d$wei_values$region, year = d$wei_values$year, value = d$wei_values$value,
+                     estimate = d$wei_values$estimate),
+      tibble::tibble(row = p$wei_values$row, region = p$wei_values$region, year = as.integer(p$wei_values$year), value = as.double(p$wei_values$value),
+                     estimate = as.logical(p$wei_values$estimate)), c("row", "region", "year"))
+  chk("WEI regions identical() to climate_src_wei_regions_tbl", d$wei_regions, p$wei_regions[c("region", "label", "kind")], "region")
+  chk("climate sources cell map identical() to climate_src_map_tbl",
+      tibble::tibble(cell = sub("^cell:", "", key[d$map$item + 1L]), src = d$map$src, key = d$map$key, role = d$map$role,
+                     match = d$map$match, order = d$map$order),
+      tibble::tibble(cell = p$map$cell, src = p$map$src, key = p$map$key, role = p$map$role, match = p$map$match, order = as.integer(p$map$order)),
+      c("cell", "src", "order"))
+  chk("climate sources cell match and notes identical() to climate_src_cells_tbl",
+      tibble::tibble(cell = sub("^cell:", "", key[d$cells$item + 1L]), match = d$cells$match, note = d$cells$note),
+      p$cells[c("cell", "match", "note")], "cell")
+  chk("climate sources editions identical() to climate_src_meta_tbl", d$meta, tibble::tibble(key = p$meta$key, value = as.character(p$meta$value)), "key")
+  dplyr::bind_rows(rows)
+}

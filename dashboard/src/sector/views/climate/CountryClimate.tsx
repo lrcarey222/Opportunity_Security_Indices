@@ -2,9 +2,8 @@
 // section shows one economy's Climate TRACE emissions in every subsector config/climate_trace_map.yml maps
 // to a technology x stage, with its share of the world, its rank, the change since the first year and the
 // sectors each subsector maps to with the match quality. Reads the Sector data's sector-meta and lazy
-// sector-climate chunks through the shared Sector store (src/sector/data/store.ts); observed facts. Below
-// them, one line of world context from the IEA's World pathways (climate.nze_*; IEA scenario projections,
-// World only: the free dataset has no country pathways; user request 2026-10-17).
+// sector-climate chunks through the shared Sector store (src/sector/data/store.ts); observed facts. The
+// IEA's World pathway line moved to the regional pathway card (CountryTransition.tsx, 2026-10-17).
 
 import { useMemo } from 'react';
 import { Link } from 'react-router';
@@ -12,12 +11,10 @@ import { TableView } from '../../../components/TableView.tsx';
 import { Notice } from '../../../components/ui.tsx';
 import { useSectorMeta } from '../../data/SectorDataProvider.tsx';
 import { countryClimateRows, fmtTonnes, MATCH_WORDS, type CountryClimateRow } from '../../derive/climate.ts';
-import { nzeWorldLine } from '../../derive/nze.ts';
 import { fmtShare, fmtSignedPct } from '../../format.ts';
 import { ChunkGate } from '../common.tsx';
 import { useClimate, useNear } from '../data.ts';
 import { CLIMATE_TRACE_CREDIT } from '../profile/Climate.tsx';
-import { ieaWeoCredit, ScenarioTag } from '../profile/Nze.tsx';
 
 /** The card; mounts (and loads the Sector data) once near the viewport. `name`: the economy in prose. */
 export function CountryClimateCard({ iso3, name }: { iso3: string; name: string }) {
@@ -48,7 +45,6 @@ function Body({ iso3, name }: { iso3: string; name: string }) {
         if (!climate) return null;
         if (!g) return <p className="mt-3 text-sm text-paper-mute">The sector data have no row for {name}.</p>;
         const withValue = rows.filter((r) => r.value !== null);
-        const world = climate.nze ? nzeWorldLine(climate.nze) : null;
         return (
           <div className="mt-3 space-y-2">
             {withValue.length === 0 ? (
@@ -72,15 +68,6 @@ function Body({ iso3, name }: { iso3: string; name: string }) {
             <p className="text-xs text-paper-mute">
               Direct emissions where they happen (the electricity a factory buys is counted in power), tonnes CO2e on a 100-year basis. Power by fuel sums the plants Climate TRACE tracks. A proxy is shown for scale; context is a material the sector’s products are made of, not its emissions. Where the economy has a Strategic Index, its Climate Action Tracker rating is the tile further down this section. Source: {CLIMATE_TRACE_CREDIT}.
             </p>
-            {world && climate.nze && (
-              <div className="border-t hairline pt-2" data-testid="nze-world">
-                <ScenarioTag />
-                <p className="mt-1.5 max-w-3xl text-sm text-paper-dim">{world}</p>
-                <p className="mt-1 text-xs text-paper-mute">
-                  The IEA’s free World Energy Outlook dataset is World-level only, so {name} has no pathway of its own here. Each sector’s pathway is in its Climate section. Source: {ieaWeoCredit(climate.nze)}.
-                </p>
-              </div>
-            )}
           </div>
         );
       }}

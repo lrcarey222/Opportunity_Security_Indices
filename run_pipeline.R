@@ -32,6 +32,10 @@ source(file.path(repo_root, "scripts", "16_build_climate_trace.R"))
 # IEA World pathways (WEO Annex A) and mineral demand by scenario mapped to technology x stage (the
 # optional climate.nze_* tables of the Sector bundle's sector-climate chunk).
 source(file.path(repo_root, "scripts", "17_build_iea_pathways.R"))
+# Climate sources (GCP national and fuel CO2, EI Country Transition Tracker, IEA WEO regions, NZE 2021
+# milestones, World Energy Investment; config/climate_sources_map.yml): the Sector bundle's lazy
+# sector-climate-src chunk. After scripts/17 (it checks the NZE 2021 pairs against its series).
+source(file.path(repo_root, "scripts", "18_build_climate_sources.R"))
 source(file.path(repo_root, "scripts", "12_build_geopolitical_alignment.R"))
 source(file.path(repo_root, "scripts", "13_build_coalition.R"))
 source(file.path(repo_root, "scripts", "20_build_indices.R"))

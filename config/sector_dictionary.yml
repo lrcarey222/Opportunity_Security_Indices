@@ -567,10 +567,65 @@ sources:
     edition: "2025 (Historical 2010, 2023, 2024; scenarios 2035, 2040, 2050)"
     url: "https://www.iea.org/reports/world-energy-outlook-2025"
     licence: attribution
-    attribution: "Source: IEA (2025), World Energy Outlook 2025, Annex A free dataset (World), CC BY 4.0."
+    attribution: "Source: IEA (2025), World Energy Outlook 2025 free dataset (World), CC BY-NC-SA 4.0."
     accessed: "2026-10-17"
     transform: "scripts/17_build_iea_pathways.R: 31 World series read as published (installed capacity by technology, electricity generation, fuel supply and use, low-emissions hydrogen production, electricity used in transport, CO2 by sector and the CO2 intensity of electricity); config/iea_pathways_map.yml maps them to technology x stage as the sector's own activity, the demand it supplies or emissions context, with a match quality per cell. Ratios between scenarios are computed on screen."
-    issues: "World only: the free regional dataset needs an IEA account and is not used, so no country or region has a pathway here. Scenario projections, not forecasts or observed data. No 2030 values in this edition; no EV stock, electrolyser capacity or grid length in the free dataset (proxies named where used)."
+    issues: "World totals in the Sector profiles (regional pathways, source iea_weo_regions, are in the Country profiles). Scenario projections, not forecasts or observed data. No 2030 values in this edition; no EV stock, electrolyser capacity or grid length in the free dataset (proxies named where used). Licence CC BY-NC-SA 4.0 (the IEA dataset page): non-commercial use; adapted data shared under the same licence."
+  - id: gcp
+    short: "Global Carbon Project"
+    citation: "Friedlingstein, P. et al. (2025), Global Carbon Budget 2025, Earth System Science Data, https://doi.org/10.5194/essd-2025-659; national fossil CO2 emissions v1.0 (territorial; consumption-based emissions and transfers updated from Peters, G. P., Davis, S. J. and Andrew, R. (2012), Biogeosciences 9, 3247-3276) and fossil CO2 emissions by fuel"
+    publisher: "Global Carbon Project"
+    edition: "Global Carbon Budget 2025 v1.0 (territorial to 2024; consumption-based to 2023)"
+    url: "https://globalcarbonbudget.org"
+    licence: attribution
+    attribution: "Source: Global Carbon Project, Global Carbon Budget 2025 (Friedlingstein et al., 2025); consumption-based emissions after Peters et al. (2012)."
+    accessed: "2026-10-17"
+    transform: "scripts/18_build_climate_sources.R: values in million tonnes of carbon converted to CO2 with the workbook's factor 3.664; national series from 1990 (the first year of the consumption-based estimates), World by fuel from 1960; GCP names matched to ISO3 (EU27 as the EU). No other change."
+    issues: "Territorial emissions exclude international aviation and shipping, which the World total includes. Consumption-based estimates cover fewer economies and end a year earlier. The publisher's terms: use is conditional on citing the sources above."
+  - id: ei_ctt
+    short: "EI Country Transition Tracker"
+    citation: "Energy Institute, Statistical Review of World Energy 2025, Country Transition Tracker (2025 Country Transition Tracker Data)"
+    publisher: "Energy Institute"
+    edition: "2025 (1990, 2008, 2012, 2017 and 2024; power mix 2024)"
+    url: "https://www.energyinst.org/statistical-review"
+    licence: attribution
+    attribution: "Source: Energy Institute Statistical Review of World Energy 2025, Country Transition Tracker."
+    accessed: "2026-10-17"
+    transform: "scripts/18_build_climate_sources.R: the eight indicator sheets as published (the tracker's growth columns are not read); the median economy is the middle of the economies the tracker lists for each indicator and year, computed by the OSI authors; the low-carbon share of power adds the wind, solar, hydro, other renewables and nuclear shares on screen."
+    issues: "79 economies (70 for emissions and carbon intensity, 31 for the power mix). The workbook does not state the GDP basis of its intensities. The Carbon Intensity sheet labels its unit tonnes per megajoule; its values are tonnes per terajoule, as its Contents sheet says."
+  - id: iea_weo_regions
+    short: "IEA World Energy Outlook 2025 regions"
+    citation: "IEA (2025), World Energy Outlook 2025, free dataset, Regions: Historical, Stated Policies and Current Policies scenarios"
+    publisher: "International Energy Agency"
+    edition: "2025 (Historical 2010, 2023, 2024; scenarios 2035 and 2050)"
+    url: "https://www.iea.org/data-and-statistics/data-product/world-energy-outlook-2025-free-dataset"
+    licence: attribution
+    attribution: "Source: IEA (2025), World Energy Outlook 2025 free dataset (Regions), CC BY-NC-SA 4.0."
+    accessed: "2026-10-17"
+    transform: "scripts/18_build_climate_sources.R: 11 series (energy-sector and power-sector CO2, energy supply, electricity generation by source) for 15 regions and the World, as published; each economy mapped to the most specific WEO region (its own, the EU, Southeast Asia, the broad region that names it, else the region of its UN sub-region), stated wherever shown."
+    issues: "IEA scenario projections, not observed data. Regions have Stated Policies and Current Policies only: the IEA publishes its Net Zero scenario for the World. A regional pathway is the region's, not the economy's, unless the region is the economy (United States, Japan, China, India, Brazil, Russia). Licence CC BY-NC-SA 4.0: non-commercial use; adapted data shared under the same licence."
+  - id: iea_nze2021
+    short: "IEA Net Zero by 2050 (2021)"
+    citation: "IEA (2021), Net Zero by 2050: A Roadmap for the Global Energy Sector, Annex A, World"
+    publisher: "International Energy Agency"
+    edition: "2021 (2019, 2020, 2030, 2040, 2050)"
+    url: "https://www.iea.org/data-and-statistics/data-product/net-zero-by-2050-scenario"
+    licence: attribution
+    attribution: "Source: IEA (2021), Net Zero by 2050, Annex A, CC BY-NC-SA 3.0 IGO."
+    accessed: "2026-10-17"
+    transform: "scripts/18_build_climate_sources.R: 28 World series paired with the WEO 2025 series a sector already shows (config/climate_sources_map.yml; partial where the 2021 row is narrower, e.g. unabated coal only); shown as the roadmap's 2030 milestones."
+    issues: "An older edition: the IEA has updated the Net Zero scenario since, moving several milestones. Shown beside the 2025 pathways, never joined to them. Licence CC BY-NC-SA 3.0 IGO: non-commercial use; adapted data shared under the same licence."
+  - id: iea_wei
+    short: "IEA World Energy Investment 2026"
+    citation: "IEA (2026), World Energy Investment 2026, data file: energy investment by sector and region, 2015-2026"
+    publisher: "International Energy Agency"
+    edition: "2026 (2015-2025; 2026 IEA estimates)"
+    url: "https://www.iea.org/data-and-statistics/data-product/world-energy-investment-2026-datafile"
+    licence: attribution
+    attribution: "Source: IEA (2026), World Energy Investment 2026, CC BY 4.0."
+    accessed: "2026-10-17"
+    transform: "scripts/18_build_climate_sources.R: every row of the 11 region sheets as published (billion US dollars of 2025, market exchange rates); config/climate_sources_map.yml maps rows to technology x stage as the sector's own investment or the deployment it supplies, with a match quality per sector."
+    issues: "2026 values are IEA estimates. Regions overlap (China is in Asia Pacific; Advanced economies and EMDE, which excludes China, cut the World another way). Geothermal sits inside other renewables; end-use transport is mostly electric vehicles as the IEA counts them."
   - id: ipcc_lifecycle
     short: "IPCC lifecycle intensity"
     citation: "Schlomer et al. (2014), IPCC AR5 WGIII Annex III, Table A.III.2, lifecycle GHG emissions of electricity supply technologies (medians); oil: Moomaw et al. (2011), IPCC SRREN Annex II, Table A.II.4"
@@ -588,7 +643,14 @@ caveats:
   - {id: climate_trace_assets, text: "Power by fuel sums the plants Climate TRACE tracks, grouped by the first fuel each lists; it leaves out the generation no tracked plant covers, so it is below the country's total for power."}
   - {id: climate_trace_repeat, text: "Climate TRACE's latest year repeats the year before for this subsector (an estimate carried forward), so the latest change is not a measured change."}
   - {id: iea_nze_scenarios, text: "IEA scenario projections, not observed data: Stated Policies reflects the policies in place and those announced with concrete detail; Current Policies only those already in force; Net Zero Emissions by 2050 is the IEA's normative pathway to net zero energy-sector CO2 by 2050. Historical values are the IEA's estimates."}
-  - {id: iea_nze_world, text: "The IEA pathways are World totals from the World Energy Outlook 2025 free dataset; no economy has its own pathway here (the IEA's regional free dataset needs an account and is not used)."}
+  - {id: iea_nze_world, text: "The IEA pathways here are World totals from the World Energy Outlook 2025 free dataset; the Country profiles show the IEA's regional pathways (Stated and Current Policies) for the WEO region each economy belongs to."}
+  - {id: src_gcp_basis, text: "Territorial emissions are the fossil CO2 emitted inside the economy (fossil fuels, cement, flaring; international aviation and shipping excluded). Consumption-based emissions add the CO2 emitted abroad to make what it imports and subtract the CO2 in what it exports. The Global Carbon Project publishes transfers as territorial minus consumption-based emissions, so a net importer of embodied CO2 has negative transfers."}
+  - {id: src_ei_median, text: "The median economy is the middle of the economies the Energy Institute lists for that indicator and year (79; 70 for emissions; 31 for the power mix), not a world average."}
+  - {id: src_weo_regions, text: "Regional pathways are IEA scenario projections for the WEO region the economy belongs to (its own region only for the United States, Japan, China, India, Brazil and Russia). Regions have Stated Policies and Current Policies; the IEA publishes its Net Zero scenario for the World only."}
+  - {id: src_nze2021, text: "2030 milestones come from the IEA's Net Zero by 2050 roadmap of 2021, an older edition: the IEA has updated the scenario since, moving several milestones. Shown beside the 2025 pathways, never joined to them."}
+  - {id: src_wei, text: "Energy investment in billions of 2025 US dollars at market exchange rates; 2026 is an IEA estimate. Regions overlap: China is in Asia Pacific, and Advanced economies and EMDE (excluding China) cut the World another way."}
+  - {id: src_wei_match, text: "Match quality: direct = the IEA's investment row is the sector's own activity; partial = it also covers other activity, or only part of the sector's; proxy = a related investment shown for scale (end-use transport for electric vehicles, other renewables for geothermal)."}
+  - {id: src_value_added, text: "Manufacturing energy and emissions per value added (IEA Energy and Emissions per Value Added database) are not shown: the IEA's terms require its permission to disseminate that database outside the organisation."}
   - {id: iea_nze_match, text: "Match quality: direct = the WEO series measures the sector's own activity; partial = it also covers other activity, only part of it, or the stock a factory's output adds to; proxy = a related quantity stands in (electricity used in transport for the EV fleet); none = no WEO series."}
   - {id: iea_nze_minerals, text: "Mineral demand by scenario comes from the IEA Critical Minerals Dataset 2026, which publishes the Current Policies, Stated Policies and High Demand scenarios and no Net Zero scenario, so mineral demand on the Net Zero pathway is not shown."}
   - {id: climate_trace_lifecycle, text: "IPCC lifecycle intensity is grams of CO2e per kWh over a plant's whole life (median of studies), a property of the technology: not this sector's emissions and not comparable with Climate TRACE's annual tonnes."}

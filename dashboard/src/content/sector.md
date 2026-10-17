@@ -155,13 +155,14 @@ The Climate section of each sector also shows where the International Energy Age
 for the World, and the Policy & climate section of each Country profile one line of world context. These
 are **IEA scenario projections, not observed data and not forecasts**, and every figure says so.
 
-* **Source and licence.** IEA (2025), World Energy Outlook 2025, Annex A free dataset (World), CC BY 4.0:
+* **Source and licence.** IEA (2025), World Energy Outlook 2025 free dataset (World), CC BY-NC-SA 4.0
+  (non-commercial use; adapted data shared under the same licence):
   the IEA's estimates for 2010, 2023 and 2024 and three scenarios for 2035, 2040 and 2050. *Stated
   Policies* reflects the policies in place and those announced with concrete detail; *Current Policies*
   only those already in force; *Net Zero Emissions by 2050* is the IEA's normative pathway to net zero
   energy-sector CO2 by 2050. The dataset has no 2030 values; lines join the published years.
-* **World only.** The free dataset is World totals. The IEA's regional free dataset needs an IEA account
-  and is not used, so no economy has a pathway of its own here.
+* **World in the sectors, regions in the Country profiles.** The Sector pages use the World totals. The
+  Country profiles use the same edition's Regions file (below); its regions have no Net Zero scenario.
 * **Mapped, with a match quality.** Each sector shows the WEO series for its own activity (installed
   solar, wind, nuclear, geothermal and battery storage capacity; coal, oil and gas supply and use;
   coal-, gas- and oil-fired electricity), the demand it serves (Midstream factories and Upstream
@@ -177,6 +178,50 @@ are **IEA scenario projections, not observed data and not forecasts**, and every
   so mineral demand on the Net Zero pathway is not shown.
 * **Vintage.** The pathways are checked against the previous edition (World Energy Outlook 2024) on the
   years both publish; the check is reported in the build, and only the 2025 edition is shown.
+
+## Climate sources (fossil CO2, transition indicators, regional pathways, investment)
+
+Added 2026-10-17. Each is cited wherever its figures are shown.
+
+* **Fossil CO2 by economy.** Global Carbon Project, Global Carbon Budget 2025 (Friedlingstein et al.,
+  2025, *Earth System Science Data*, https://doi.org/10.5194/essd-2025-659); the publisher's terms make
+  use conditional on that citation. *Territorial* emissions are the fossil CO2 emitted inside the economy
+  (fossil fuels, cement, flaring; international aviation and shipping excluded). *Consumption-based*
+  emissions (after Peters, Davis and Andrew, 2012, *Biogeosciences* 9) add the CO2 emitted abroad to make
+  what it imports and subtract the CO2 in what it exports; the GCP publishes *transfers* as territorial
+  minus consumption-based, so a net importer of embodied CO2 has negative transfers. Values in tonnes of
+  carbon are converted to CO2 with the publisher's factor 3.664. From 1990; consumption-based to 2023.
+* **World fossil CO2 by fuel.** The same budget's fossil emissions by fuel (coal, oil, gas, cement,
+  flaring), shown beside the coal, oil and gas sectors as context: every use of the fuel, never the
+  sector's own emissions.
+* **Transition indicators.** Energy Institute, Statistical Review of World Energy 2025, Country
+  Transition Tracker: energy-related greenhouse gas emissions, fossil fuel consumption, renewables' share
+  of energy consumption, the power generation mix, the carbon intensity of energy and of GDP, and energy
+  per person, for 79 economies (31 for the power mix). Each is shown against the *median economy*, the
+  middle of the economies the tracker lists, not a world average. The low-carbon share of power adds the
+  wind, solar, hydro, other renewables and nuclear shares.
+* **Regional pathways.** IEA (2025), World Energy Outlook 2025 free dataset, Regions (CC BY-NC-SA 4.0):
+  the IEA's estimates for 2010, 2023 and 2024 and the Stated Policies and Current Policies scenarios for
+  2035 and 2050. Each Country profile names the region it shows: the economy's own (United States, Japan,
+  China, India, Brazil, Russia), the European Union for its members, Southeast Asia for its members, the
+  broader region whose IEA definition names the economy, or, for economies the IEA counts as "other", the
+  region of their UN sub-region. A regional pathway is the region's, not the economy's. The IEA publishes
+  its Net Zero scenario for the World only; the World line stays beside it as context. IEA scenario
+  projections, not observed data.
+* **2030 milestones.** IEA (2021), Net Zero by 2050, Annex A (CC BY-NC-SA 3.0 IGO): the 2021 roadmap's
+  World values for 2030, shown beside the 2025 pathways of the same quantity and labelled as an older
+  edition (the IEA has updated the scenario since). Where the 2021 row is narrower (unabated coal and gas
+  only, passenger cars without vans, combustion CO2 only), the table marks it.
+* **Energy investment.** IEA (2026), World Energy Investment 2026 (CC BY 4.0): investment by sector for the
+  World, Advanced economies, China, emerging market and developing economies (excluding China) and seven
+  regions, 2015-2026, in billions of 2025 US dollars at market exchange rates; 2026 values are IEA
+  estimates. Each sector shows the investment in its own activity (solar, wind, nuclear, battery storage,
+  electricity networks, coal, oil and gas supply, fossil power) or in the deployment it supplies, with
+  the match quality: geothermal sits inside "other renewables" and the IEA's end-use transport spending
+  (mostly electric vehicles) stands in for EVs, each labelled a proxy.
+* **Not shown: manufacturing emissions per value added.** The IEA Energy and Emissions per Value Added
+  database was staged, but its terms require the IEA's permission for any external dissemination, so the
+  Midstream sectors do not show it and say why.
 
 ## Money
 

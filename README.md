@@ -67,6 +67,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | --- | --- | --- |
 | Themes | `scripts/10_build_themes.R` | one tidy table per theme (`*_tbl.rds`), policy components, technology GHG weights |
 | Climate emissions | `scripts/16_build_climate_trace.R` | `climate_trace_{country,assets,sources,map,cells,emissions,intensity,lifecycle}_tbl.rds` (Climate TRACE sector emissions mapped to technology x stage, `config/climate_trace_map.yml`) |
+| Climate sources | `scripts/18_build_climate_sources.R` | `climate_src_{gcp_national,gcp_fuel,ei,ei_ind,ei_median,weo_series,weo_values,weo_regions,weo_geo,nze21_series,nze21_values,wei_rows,wei_values,wei_regions,map,cells,meta}_tbl.rds` (Global Carbon Project national fossil CO2 and World CO2 by fuel; Energy Institute Country Transition Tracker with the median economy; IEA WEO 2025 regional pathways and the economy -> region map; IEA Net Zero by 2050 (2021) milestones; IEA World Energy Investment 2026; `config/climate_sources_map.yml`; the IEA Energy and Emissions per Value Added database is licence-restricted and not read) |
 | Climate pathways | `scripts/17_build_iea_pathways.R` | `iea_pathways_{series,values,map,cells,minerals,meta,vintage}_tbl.rds` (IEA World Energy Outlook 2025 Annex A World pathways: Historical, Stated Policies, Current Policies, Net Zero; IEA Critical Minerals demand by scenario; mapped to technology x stage, `config/iea_pathways_map.yml`) |
 | Alignment | `scripts/12_build_geopolitical_alignment.R` | `geo_ideal_points_tbl.rds`, `geo_alignment_tbl.rds`, `geo_coalition_tbl.rds` |
 | Coalition | `scripts/13_build_coalition.R` | `coalition_tbl.rds`, `eu_stage_weights_tbl.rds`, `major_supplier_shares_tbl.rds` |
@@ -77,7 +78,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path,leave_one_out}.csv`, `allied_trade_growth_sensitivity.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}` |
 | Vintages | `scripts/40_build_index_vintages.R` | `vintages/*` (ES and EO at several years) |
 | Dashboard: Strategic Insights | `scripts/85_export_dashboard_data.R`, `scripts/86_export_dashboard_fixtures.R` | `dashboard/validation_report.csv`; the app's bundle goes to the repo's `dashboard/public/data/` and the engine's parity fixtures to `dashboard/src/engine/__fixtures__/` |
-| Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them, plus the optional `sector-climate` chunk: `flags.climate`, with the optional IEA pathway tables `climate.nze_*` from scripts/17; `--no-nze` leaves them out) |
+| Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them, plus the optional `sector-climate` chunk: `flags.climate`, with the optional IEA pathway tables `climate.nze_*` from scripts/17; `--no-nze` leaves them out; and the optional `sector-climate-src` chunk: `flags.climate_src`, the climate sources of scripts/18; `--no-climate-sources` leaves it out) |
 | Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v1) |
 | Dashboard: Country Insights | `scripts/88_export_country_data.R` | the app's Country data go to the repo's `dashboard/public/data/country/` (manifest, a fact sheet per economy, drivers files; `--render-memos` publishes the verified policy memos of the 31 core members as JSON, PDF, Word and Markdown) |
 
@@ -665,6 +666,7 @@ Rscript scripts/05_ingest_sources.R
 Rscript scripts/10_build_themes.R
 Rscript scripts/16_build_climate_trace.R
 Rscript scripts/17_build_iea_pathways.R
+Rscript scripts/18_build_climate_sources.R
 Rscript scripts/12_build_geopolitical_alignment.R
 Rscript scripts/13_build_coalition.R
 Rscript scripts/20_build_indices.R

@@ -7,7 +7,10 @@
 // 2026-10-12: the strongest active industrial-policy measures by sector from the latest completed GTA
 // New Industrial Policy Observatory run (context; not part of the Policy index). Since 2026-10-17 the
 // section also shows the economy's Climate TRACE emissions in the mapped sectors
-// (src/sector/views/climate/CountryClimate.tsx, the Sector data's sector-climate chunk).
+// (src/sector/views/climate/CountryClimate.tsx, the Sector data's sector-climate chunk) and, before them,
+// its fossil CO2 (Global Carbon Project), its transition indicators against the median economy (Energy
+// Institute) and the IEA pathway of its WEO region (src/sector/views/climate/CountryTransition.tsx, the
+// sector-climate-src chunk).
 
 import { useMemo } from 'react';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
@@ -26,6 +29,7 @@ import {
 import { quadrantWord, proseName, poss, cap } from '../../derive/text.ts';
 import { policyBehaviour } from '../../derive/framing.ts';
 import { CountryClimateCard } from '../../../sector/views/climate/CountryClimate.tsx';
+import { CountryTransitionCards } from '../../../sector/views/climate/CountryTransition.tsx';
 import { BasisTag, csvWithSource, Fold, Section, useProfile } from './common.tsx';
 
 /**
@@ -73,6 +77,7 @@ export function PolicyClimateSection() {
           )}
         </p>
       </div>
+      <CountryTransitionCards iso3={sheet.iso3} name={name} />
       <CountryClimateCard iso3={sheet.iso3} name={name} />
       {sheet.meta.has_si ? (
         <AgreementMatrix />

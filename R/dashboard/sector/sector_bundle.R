@@ -196,7 +196,7 @@ sector_assemble <- function(parts, dict, ship_vars = NULL) {
     mineral_demand = parts$mineral_demand, eu_outside_coalition = parts$eu_outside_coalition,
     dict = dict, item_units = item_units, rosters = rosters, coverage = coverage, avail = avail,
     summary = summary, reconcile = reconcile, facts = parts$facts, world = parts$world, series = parts$series,
-    trade = parts$trade, policy = parts$policy, fdi = parts$fdi, dev = parts$dev, climate = parts$climate, fact_notes = parts$fact_notes, headlines = headlines, glyph = glyph,
+    trade = parts$trade, policy = parts$policy, fdi = parts$fdi, dev = parts$dev, climate = parts$climate, climate_src = parts$climate_src, fact_notes = parts$fact_notes, headlines = headlines, glyph = glyph,
     cell_vars = cell_vars,
     world_missing = world_missing
   )

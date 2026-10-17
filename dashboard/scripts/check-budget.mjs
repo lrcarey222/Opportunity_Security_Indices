@@ -10,7 +10,8 @@
 //   Sector landing /sector  entry + SectorLayout + the Sector home view + sector manifest + meta <= 700 kB
 //   Sector profile          the landing + the profile view + facts                             <= 1.3 MB
 //   each sector chunk       meta 150 kB, facts 600 kB, trade 450 kB each, policy 250 kB,
-//                           policy-text 700 kB, series 900 kB, atlas 1.3 MB, dev 1.2 MB
+//                           policy-text 700 kB, series 900 kB, atlas 1.3 MB, dev 1.2 MB, fdi, climate and
+//                           climate-src 300 kB each
 //   Sector data             public/data/sector/* (manifest + chunks)                           <= 9 MB
 //   Country landing         entry + CountryLayout + landing view + world atlas + manifest      <= 700 kB
 //   Country profile         entry + CountryLayout + profile view + the largest fact sheet      <= 900 kB
@@ -74,6 +75,9 @@ const SECTOR_CHUNK_LIMIT = {
   'sector-series': 900 * KB,
   'sector-atlas': 1.3 * MB,
   'sector-dev': 1.2 * MB,
+  'sector-fdi': 300 * KB,
+  'sector-climate': 300 * KB,
+  'sector-climate-src': 300 * KB,
 };
 
 const kb = (n) => `${(n / KB).toFixed(1)} kB`;

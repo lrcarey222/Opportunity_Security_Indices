@@ -5,7 +5,8 @@
 // 2050, with the match quality stated; for Upstream mineral cells, the IEA's mineral demand by scenario
 // (Current Policies, Stated Policies, High Demand: the mineral dataset has no Net Zero scenario). Every
 // figure is labelled as an IEA scenario projection, World only. Data: the optional climate.nze_* tables of
-// the lazy sector-climate chunk.
+// the lazy sector-climate chunk. Beside each series, the 2030 milestone of the IEA's 2021 Net Zero roadmap
+// where a 2021 row is paired with it (the lazy sector-climate-src chunk; an older edition, labelled).
 
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
@@ -24,19 +25,21 @@ import {
   fmtNze, fmtTimes, mineralAt, mineralPaths, MINERAL_SCENARIO_WORDS, MINERAL_SCENARIOS, NZE_MATCH_WORDS, NZE_YEAR, nzeCell, nzeCompare, nzeHeadline, nzeLinks,
   pathwayLines, SCENARIO_WORDS, techWords, type MineralPath, type NzeData, type NzeLink,
 } from '../../derive/nze.ts';
+import { fmtUnit, nze21For, NZE21_YEAR, type ClimateSrc, type Nze21Milestone } from '../../derive/sources.ts';
 import { fmtSig } from '../../format.ts';
 import { ChunkGate } from '../common.tsx';
-import { useClimate } from '../data.ts';
+import { useClimate, useClimateSrc } from '../data.ts';
 import { useSectorUrl } from '../state.tsx';
 
-export const ieaWeoCredit = (d: NzeData) => `IEA (2025), ${d.weo}, Annex A free dataset (World), CC BY 4.0`;
+export const ieaWeoCredit = (d: NzeData) => `IEA (2025), ${d.weo} free dataset (World), CC BY-NC-SA 4.0`;
 export const IEA_CM_CREDIT = 'IEA (2026), Critical Minerals Dataset, CC BY 4.0';
+export const IEA_NZE21_CREDIT = 'IEA (2021), Net Zero by 2050, Annex A, CC BY-NC-SA 3.0 IGO';
 
-/** "IEA scenario projections · World": on every IEA pathway figure. */
-export function ScenarioTag() {
+/** "IEA scenario projections · World" (or the WEO region): on every IEA pathway figure. */
+export function ScenarioTag({ region = 'World' }: { region?: string }) {
   return (
     <span className="tag max-w-full" style={{ whiteSpace: 'normal' }} data-basis="scenario" data-testid="nze-tag">
-      IEA scenario projections · World
+      IEA scenario projections · {region}
     </span>
   );
 }
@@ -79,6 +82,7 @@ export function NzePathways({ model, cell }: { model: SectorModel; cell: ItemInf
 }
 
 function Body({ d, model, cell }: { d: NzeData; model: SectorModel; cell: ItemInfo }) {
+  const { src } = useClimateSrc();
   const links = nzeLinks(d, cell.idx);
   const { match, note, mineralTechs } = nzeCell(d, cell.idx);
   const [pick, setPick] = useState(0);
@@ -115,8 +119,8 @@ function Body({ d, model, cell }: { d: NzeData; model: SectorModel; cell: ItemIn
           ))}
         </div>
       )}
-      {sel && <PathwayCard d={d} link={sel} cellLabel={label} />}
-      {links.length > 0 && <CompareTable d={d} links={links} cellLabel={label} />}
+      {sel && <PathwayCard d={d} link={sel} cellLabel={label} m21={src ? nze21For(src, sel.series.id) : null} caveat={model.caveats.get('src_nze2021') ?? null} />}
+      {links.length > 0 && <CompareTable d={d} links={links} cellLabel={label} src={src} />}
       {mineralTechs.length > 0 && <MineralScenarios d={d} techs={mineralTechs} cellLabel={label} />}
       <p className="text-xs text-paper-mute">
         {model.caveats.get('iea_nze_match')} Source: {ieaWeoCredit(d)}
@@ -129,7 +133,7 @@ function Body({ d, model, cell }: { d: NzeData; model: SectorModel; cell: ItemIn
 const SCENARIO_ORDER = ['historical', 'stated', 'current', 'nze'] as const;
 
 /** One series: Historical, then the three scenarios to 2050 (LabelledLines; Net Zero highlighted). */
-function PathwayCard({ d, link, cellLabel }: { d: NzeData; link: NzeLink; cellLabel: string }) {
+function PathwayCard({ d, link, cellLabel, m21, caveat }: { d: NzeData; link: NzeLink; cellLabel: string; m21: Nze21Milestone | null; caveat: string | null }) {
   const s = link.series;
   const lines = useMemo(() => pathwayLines(d, s), [d, s]);
   const cmp = useMemo(() => nzeCompare(d, s), [d, s]);
@@ -157,15 +161,20 @@ function PathwayCard({ d, link, cellLabel }: { d: NzeData; link: NzeLink; cellLa
         </>
       }
       csv={csv}
-      summary={`${s.label}, World: ${fmtNze(cmp.base, s.unit)} in ${d.baseYear}; in ${NZE_YEAR} ${fmtNze(cmp.stated, s.unit)} under Stated Policies, ${fmtNze(cmp.current, s.unit)} under Current Policies, ${fmtNze(cmp.nze, s.unit)} on the Net Zero pathway${up && cmp.ratio !== null ? ` (${fmtTimes(cmp.ratio)} Stated Policies)` : ''}.`}
+      summary={`${s.label}, World: ${fmtNze(cmp.base, s.unit)} in ${d.baseYear}; in ${NZE_YEAR} ${fmtNze(cmp.stated, s.unit)} under Stated Policies, ${fmtNze(cmp.current, s.unit)} under Current Policies, ${fmtNze(cmp.nze, s.unit)} on the Net Zero pathway${up && cmp.ratio !== null ? ` (${fmtTimes(cmp.ratio)} Stated Policies)` : ''}.${m21?.value != null ? ` The IEA’s 2021 Net Zero roadmap set ${fmtUnit(m21.value, m21.series.unit)} for ${NZE21_YEAR}.` : ''}`}
       notes={
         <div className="space-y-1">
           <p>Scenario projections are what the IEA’s model finds under each set of assumptions, not forecasts and not observed data.</p>
           <p>WEO row: {s.category} / {s.product} / {s.flow}. Source: {ieaWeoCredit(d)}.</p>
+          {m21 && (
+            <p>
+              {caveat}{m21.series.match === 'partial' && m21.series.note ? ` ${m21.series.note}` : ''} Source: {IEA_NZE21_CREDIT}.
+            </p>
+          )}
         </div>
       }
     >
-      <dl className="mb-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4" data-testid="nze-compare">
+      <dl className={`mb-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4${m21?.value != null ? " lg:grid-cols-5" : ""}`} data-testid="nze-compare">
         <div className="border-t hairline pt-1">
           <dt className="text-xs text-paper-mute">World, {d.baseYear} (IEA estimate)</dt>
           <dd className="tabular font-medium text-paper">{fmtNze(cmp.base, s.unit)}</dd>
@@ -185,6 +194,18 @@ function PathwayCard({ d, link, cellLabel }: { d: NzeData; link: NzeLink; cellLa
             {cmp.ratio !== null && <span className="block text-xs font-normal text-paper-mute">{fmtTimes(cmp.ratio)} Stated Policies</span>}
           </dd>
         </div>
+        {m21 && m21.value !== null && (
+          <div className="border-t hairline pt-1" data-testid="nze21-milestone">
+            <dt className="text-xs text-paper-mute">Net Zero, {NZE21_YEAR} (2021 roadmap, older edition)</dt>
+            <dd className="tabular font-medium text-paper">
+              {fmtUnit(m21.value, m21.series.unit)}
+              <span className="block text-xs font-normal text-paper-mute">
+                {m21.series.match === 'partial' ? `${m21.series.label}; ` : ''}
+                {m21.base !== null ? `${fmtUnit(m21.base, m21.series.unit)} in ${m21.baseYear} in that edition` : ''}
+              </span>
+            </dd>
+          </div>
+        )}
       </dl>
       <LabelledLines lines={ls} highlight="nze" yLabel={s.unit} ariaLabel={`${s.label}, World: IEA historical estimates and scenario projections to 2050`} valueFormat={(v) => fmtNze(v, s.unit)} yTickFormat={(v) => fmtSig(v)} height={260} />
     </ChartCard>
@@ -192,8 +213,9 @@ function PathwayCard({ d, link, cellLabel }: { d: NzeData; link: NzeLink; cellLa
 }
 
 /** Every mapped series of the cell at a glance: the last estimate and the three scenarios in 2035, Net Zero in 2050. */
-function CompareTable({ d, links, cellLabel }: { d: NzeData; links: NzeLink[]; cellLabel: string }) {
-  const rows = links.map((l) => ({ l, c: nzeCompare(d, l.series), n50: d.values.get(l.series.idx)?.get('nze')?.get(2050) ?? null }));
+function CompareTable({ d, links, cellLabel, src }: { d: NzeData; links: NzeLink[]; cellLabel: string; src: ClimateSrc | null }) {
+  const rows = links.map((l) => ({ l, c: nzeCompare(d, l.series), n50: d.values.get(l.series.idx)?.get('nze')?.get(2050) ?? null, m21: src ? nze21For(src, l.series.id) : null }));
+  const any21 = rows.some((r) => r.m21?.value != null);
   return (
     <div>
       <h3 className="mb-2 text-base font-medium text-paper">Every IEA series mapped to {cellLabel}</h3>
@@ -211,9 +233,15 @@ function CompareTable({ d, links, cellLabel }: { d: NzeData; links: NzeLink[]; c
           { id: 'nz', header: `Net Zero ${NZE_YEAR}`, value: (r) => r.c.nze, cell: (r) => fmtSig(r.c.nze ?? NaN), num: true },
           { id: 'x', header: 'Net Zero ÷ Stated', value: (r) => r.c.ratio, cell: (r) => (r.c.ratio === null ? '–' : `${fmtSig(r.c.ratio, 2)}×`), num: true },
           { id: 'n5', header: 'Net Zero 2050', value: (r) => r.n50, cell: (r) => fmtSig(r.n50 ?? NaN), num: true },
+          ...(any21
+            ? [{ id: 'n21', header: `Net Zero ${NZE21_YEAR} (2021 roadmap)`, value: (r: (typeof rows)[number]) => r.m21?.value ?? null, cell: (r: (typeof rows)[number]) => (r.m21 ? `${fmtUnit(r.m21.value, r.m21.series.unit)}${r.m21.series.match === 'partial' ? ' *' : ''}` : '–'), num: true }]
+            : []),
         ]}
       />
-      <p className="mt-2 text-xs text-paper-mute">IEA scenario projections (World); {d.baseYear} is the IEA’s estimate. Ratios are computed here from the published values.</p>
+      <p className="mt-2 text-xs text-paper-mute">
+        IEA scenario projections (World); {d.baseYear} is the IEA’s estimate. Ratios are computed here from the published values.
+        {any21 ? ` The ${NZE21_YEAR} column is the IEA’s Net Zero by 2050 roadmap of 2021, an older edition, in its own unit (* a narrower series, e.g. unabated coal only). Source: ${IEA_NZE21_CREDIT}.` : ''}
+      </p>
     </div>
   );
 }

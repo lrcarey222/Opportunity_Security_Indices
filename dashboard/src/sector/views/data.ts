@@ -7,6 +7,7 @@ import { isTradeTechSlug, TECH_LABELS, tradeChunkName, type SectorChunkName, typ
 import { factsIndexOf, seriesIndexOf, type FactsIndex } from '../data/facts.ts';
 import { fdiData, type FdiData } from '../derive/fdi.ts';
 import { climateData, type ClimateData } from '../derive/climate.ts';
+import { climateSrcData, type ClimateSrc } from '../derive/sources.ts';
 import type { SectorDevChunk } from '../contract.ts';
 import { useSectorChunk, useSectorStore, type ChunkHandle } from '../data/SectorDataProvider.tsx';
 import type { SectorTradeChunk } from '../contract.ts';
@@ -66,6 +67,19 @@ export function useClimate(enabled = true): { climate: ClimateData | null; h: Ch
   return { climate, h, has: store.hasChunk('sector-climate') || store.manifestState().status !== 'ready' };
 }
 
+/**
+ * The climate sources (sector-climate-src; user request 2026-10-17: GCP fossil CO2, EI Country Transition
+ * Tracker, IEA WEO regions, NZE 2021 milestones, World Energy Investment; lazy: the Country profile's Policy
+ * & climate section and the Sector profile's Climate section load it). `has` is false when the bundle lists
+ * no sector-climate-src chunk (true until the manifest is known).
+ */
+export function useClimateSrc(enabled = true): { src: ClimateSrc | null; h: ChunkHandle<import('../contract.ts').SectorClimateSrcChunk>; has: boolean } {
+  const store = useSectorStore();
+  const h = useSectorChunk('sector-climate-src', enabled);
+  const src = useMemo(() => (h.data ? climateSrcData(h.data) : null), [h.data]);
+  return { src, h, has: store.hasChunk('sector-climate-src') || store.manifestState().status !== 'ready' };
+}
+
 export function usePolicy(enabled = true) {
   return useSectorChunk('sector-policy', enabled);
 }
@@ -83,6 +97,7 @@ const CHUNK_WORDS: Record<string, string> = {
   'sector-fdi': 'investment project data (CM-FDI)',
   'sector-dev': 'aid flows and investment positions',
   'sector-climate': 'sector emissions (Climate TRACE)',
+  'sector-climate-src': 'climate sources (GCP, Energy Institute, IEA)',
 };
 
 /** "trade data for Batteries" etc. */

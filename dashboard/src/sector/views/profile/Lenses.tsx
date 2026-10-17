@@ -33,6 +33,7 @@ import { fmtHhi, fmtShare, lc, listText } from '../../format.ts';
 import { useAibDoc } from '../aibData.ts';
 import { climateLensFigures, ClimateEmissions } from './Climate.tsx';
 import { NzeLensLine, NzePathways } from './Nze.tsx';
+import { ClimateSources } from './ClimateSources.tsx';
 import { EconomyLink, fmtFact, measureConc, Section, splitParts } from '../common.tsx';
 import { useClimate, usePolicy, useTrade } from '../data.ts';
 import { BlocBar } from '../kit.tsx';
@@ -441,10 +442,11 @@ export function ClimateSection() {
   return (
     <div className="space-y-6">
       <p className="max-w-3xl text-sm text-paper-dim">
-        Sector emissions by economy from Climate TRACE, for the Climate TRACE subsectors that match this sector, with how well each matches; the technology’s lifecycle intensity from the IPCC; where the IEA’s World pathways lead to 2050 under Stated Policies, Current Policies and Net Zero; the Climate Action Tracker rating of the governments that lead the sector; and, for clean technologies, the IEA outlook for the minerals they use. Emissions are Climate TRACE estimates, lifecycle intensity is the IPCC's literature median and ratings are Climate Action Tracker assessments: measured or modelled facts, not projections. The IEA pathways are scenario projections, labelled as such. No perspective setting changes any of them.
+        Sector emissions by economy from Climate TRACE, for the Climate TRACE subsectors that match this sector, with how well each matches; the technology’s lifecycle intensity from the IPCC; where the IEA’s World pathways lead to 2050 under Stated Policies, Current Policies and Net Zero, with the 2030 milestones of its 2021 Net Zero roadmap; energy investment in the sector by region (IEA); for coal, oil and gas, World fossil CO2 from the fuel (Global Carbon Project); the Climate Action Tracker rating of the governments that lead the sector; and, for clean technologies, the IEA outlook for the minerals they use. Emissions are Climate TRACE and Global Carbon Project estimates, lifecycle intensity is the IPCC's literature median, investment is the IEA's estimate and ratings are Climate Action Tracker assessments: measured or modelled facts, not projections. The IEA pathways are scenario projections, labelled as such. No perspective setting changes any of them.
       </p>
       <ClimateEmissions model={model} cell={cell} tech={tech} chunk={p.chunk} />
       <NzePathways model={model} cell={cell} />
+      <ClimateSources model={model} cell={cell} />
       {rows.length > 0 && p.chunk && (
         <div>
           <h3 className="mb-2 text-base font-medium text-paper">Climate Action Tracker ratings of the largest {basis ? actorNoun(basis.v) : 'holders'}</h3>

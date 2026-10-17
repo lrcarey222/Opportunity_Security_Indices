@@ -176,7 +176,8 @@ sector_chunk_specs <- function() {
                                   values = list(conduit = SECTOR_V$dev_conduit)),
       `dev.conduits` = sector_tbl_spec(c(geo = "i!@geo", dej_top10 = "b!"), sorted = "geo", unique = "geo")
     ),
-    climate = sector_climate_spec()
+    climate = sector_climate_spec(),
+    climate_src = sector_src_spec()
   )
 }
 
@@ -184,7 +185,7 @@ sector_spec_of <- function(name) {
   s <- sector_chunk_specs()
   if (startsWith(name, "sector-trade-")) return(s$trade)
   switch(name, `sector-meta` = s$meta, `sector-facts` = s$facts, `sector-policy` = s$policy,
-         `sector-policy-text` = s$policy_text, `sector-series` = s$series, `sector-fdi` = s$fdi, `sector-dev` = s$dev, `sector-climate` = s$climate, stop("no spec for ", name))
+         `sector-policy-text` = s$policy_text, `sector-series` = s$series, `sector-fdi` = s$fdi, `sector-dev` = s$dev, `sector-climate` = s$climate, `sector-climate-src` = s$climate_src, stop("no spec for ", name))
 }
 
 # A dotted path of a nested list.
@@ -301,6 +302,7 @@ sector_check_chunk <- function(name, objects, sizes = list(), var_ids = NULL) {
   if (name == "sector-fdi") e <- c(e, sector_check_fdi(objects$fdi))
   if (name == "sector-dev") e <- c(e, sector_check_dev(objects$dev))
   if (name == "sector-climate") e <- c(e, sector_check_climate(objects$climate))
+  if (name == "sector-climate-src") e <- c(e, sector_check_src(objects$csrc))
   if (startsWith(name, "sector-trade-")) {
     f <- objects$trade$flows
     for (y in SECTOR_TRADE_YEARS) {

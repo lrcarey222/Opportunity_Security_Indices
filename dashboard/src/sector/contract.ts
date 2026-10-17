@@ -618,6 +618,12 @@ export interface SectorManifest {
      * Optional (climate data change 2026-10-17, additive): a manifest without the key has none.
      */
     climate?: boolean;
+    /**
+     * the sector-climate-src chunk (GCP national and fuel CO2, EI Country Transition Tracker, IEA WEO
+     * regions, NZE 2021 milestones, World Energy Investment) is present. Optional (climate sources change
+     * 2026-10-17, additive): a manifest without the key has none.
+     */
+    climate_src?: boolean;
   };
   chunks: SectorChunkInfo[];
   headlines: SectorHeadline[];
@@ -645,6 +651,8 @@ export const SECTOR_BUDGET_GZ = {
   'sector-fdi': 300 * 1024,
   /** Climate TRACE emissions mapped to technology x stage (climate data change 2026-10-17, additive) */
   'sector-climate': 300 * 1024,
+  /** Climate sources: GCP, EI Country Transition Tracker, IEA WEO regions, NZE 2021, WEI (2026-10-17, additive) */
+  'sector-climate-src': 300 * 1024,
   sector_total: 9 * 1024 * 1024,
   combined_total: 25 * 1024 * 1024,
 } as const;
@@ -680,6 +688,7 @@ export function sectorManifestProblems(x: unknown): string[] {
     if (f.fdi !== undefined && typeof f.fdi !== 'boolean') p.push('flags.fdi must be a boolean when present');
     if (f.dev !== undefined && typeof f.dev !== 'boolean') p.push('flags.dev must be a boolean when present');
     if (f.climate !== undefined && typeof f.climate !== 'boolean') p.push('flags.climate must be a boolean when present');
+    if (f.climate_src !== undefined && typeof f.climate_src !== 'boolean') p.push('flags.climate_src must be a boolean when present');
   }
 
   if (!Array.isArray(x.chunks)) p.push('chunks must be an array');
@@ -712,6 +721,8 @@ export function sectorManifestProblems(x: unknown): string[] {
       if (f.dev !== true && names.has('sector-dev')) p.push('sector-dev is listed but flags.dev is not true');
       if (f.climate === true && !names.has('sector-climate')) p.push('flags.climate is true but sector-climate is missing');
       if (f.climate !== true && names.has('sector-climate')) p.push('sector-climate is listed but flags.climate is not true');
+      if (f.climate_src === true && !names.has('sector-climate-src')) p.push('flags.climate_src is true but sector-climate-src is missing');
+      if (f.climate_src !== true && names.has('sector-climate-src')) p.push('sector-climate-src is listed but flags.climate_src is not true');
     }
   }
 
@@ -1485,6 +1496,93 @@ export const CLIMATE_SPEC = {
   'climate.nze_meta': { kind: 'table', optional: true, cols: { key: SR, value: S }, unique: ['key'] },
 } as const satisfies ChunkSpec;
 
+// ---- sector-climate-src: climate sources (user request 2026-10-17, additive) ---------------------------
+
+/** GCP national fossil CO2 measures: territorial, consumption-based, transfers (territorial minus consumption-based, as the GCP publishes them: negative for a net importer of embodied CO2). */
+export const SRC_MEASURES = ['territorial', 'consumption', 'transfers'] as const;
+export type SrcMeasure = (typeof SRC_MEASURES)[number];
+/** GCP World fossil CO2 by fuel (total = fossil emissions excluding the cement carbonation sink). */
+export const SRC_FUELS = ['total', 'coal', 'oil', 'gas', 'cement', 'flaring', 'other'] as const;
+export type SrcFuel = (typeof SRC_FUELS)[number];
+/** The direction of the transition for an EI indicator (none: neither is better, e.g. energy per person). */
+export const SRC_BETTER = ['lower', 'higher', 'none'] as const;
+/** WEO region kinds: country (the region is one economy), union (the EU), region, world. */
+export const SRC_REGION_KINDS = ['country', 'union', 'region', 'world'] as const;
+/** How an economy maps to its WEO region: own region, a named member, or by its UN sub-region. */
+export const SRC_GEO_MATCHES = ['own', 'member', 'by_subregion'] as const;
+export type SrcGeoMatch = (typeof SRC_GEO_MATCHES)[number];
+/** World Energy Investment sheet kinds. */
+export const SRC_WEI_KINDS = ['world', 'group', 'country', 'region'] as const;
+/** NZE 2021 pairing: direct (the same quantity as the WEO 2025 series) or partial (narrower; noted). */
+export const SRC_NZE21_MATCHES = ['direct', 'partial'] as const;
+/** The cell map's sources: World Energy Investment rows, GCP fuels. */
+export const SRC_SOURCES = ['wei', 'gcp'] as const;
+
+/**
+ * sector-climate-src (R/dashboard/sector/sector_climate.R sector_src_chunk(); processed by
+ * scripts/18_build_climate_sources.R; map config/climate_sources_map.yml). Optional lazy chunk (manifest
+ * flags.climate_src), loaded by the Country Profile's Policy & climate section and the Sector Profile's
+ * Climate section. Dict sources gcp (cite Friedlingstein et al. 2025), ei_ctt, iea_weo_regions
+ * (CC BY-NC-SA 4.0), iea_nze2021 (CC BY-NC-SA 3.0 IGO), iea_wei (CC BY 4.0).
+ *   csrc.gcp: (geo, measure, year, value Mt CO2) national fossil CO2 from 1990; EUU = EU27, WLD = World.
+ *   csrc.gcp_fuel: (fuel, year, value Gt CO2) World fossil CO2 by fuel from 1960.
+ *   csrc.ei / csrc.ei_ind / csrc.ei_median: the EI Country Transition Tracker as published (power mix as
+ *     power_<source> shares), its indicators, and the median of the economies it lists (n).
+ *   csrc.weo_series / csrc.weo_values / csrc.weo_regions: the IEA WEO 2025 regional pathways (Historical,
+ *     Stated Policies, Current Policies; the regions have no Net Zero scenario); csrc.weo_geo: economy ->
+ *     region with how it maps.
+ *   csrc.nze21_series / csrc.nze21_values: IEA Net Zero by 2050 (2021) World series, each paired with a
+ *     WEO 2025 World series id of climate.nze_series (weo) and a match.
+ *   csrc.wei_rows / csrc.wei_values / csrc.wei_regions: IEA World Energy Investment 2026 by region
+ *     (billion USD 2025, MER; estimate = an IEA estimate).
+ *   csrc.map / csrc.cells: cell -> WEI rows (own / demand, match) and GCP fuels (context), the cell match.
+ *   csrc.meta: editions and files.
+ */
+export const CLIMATE_SRC_SPEC = {
+  'csrc.gcp': {
+    kind: 'table',
+    cols: { geo: GEO, measure: { t: 'str', req: true, values: SRC_MEASURES }, year: IR, value: FR },
+    sorted: ['geo'],
+    unique: ['geo', 'measure', 'year'],
+  },
+  'csrc.gcp_fuel': { kind: 'table', cols: { fuel: { t: 'str', req: true, values: SRC_FUELS }, year: IR, value: FR }, unique: ['fuel', 'year'] },
+  'csrc.ei': { kind: 'table', cols: { geo: GEO, ind: SR, year: IR, value: FR }, unique: ['ind', 'year', 'geo'] },
+  'csrc.ei_ind': {
+    kind: 'table',
+    cols: { id: SR, label: SR, unit: SR, better: { t: 'str', req: true, values: SRC_BETTER }, sheet: SR, low_carbon: B },
+    unique: ['id'],
+  },
+  'csrc.ei_median': { kind: 'table', cols: { ind: SR, year: IR, value: FR, n: IR }, unique: ['ind', 'year'] },
+  'csrc.weo_series': { kind: 'table', cols: { id: SR, label: SR, unit: SR, category: SR, product: SR, flow: SR }, unique: ['id'] },
+  'csrc.weo_values': {
+    kind: 'table',
+    cols: { region: SR, series: IR, scenario: { t: 'str', req: true, values: NZE_SCENARIOS }, year: IR, value: FR },
+    unique: ['region', 'series', 'scenario', 'year'],
+  },
+  'csrc.weo_regions': { kind: 'table', cols: { region: SR, kind: { t: 'str', req: true, values: SRC_REGION_KINDS } }, unique: ['region'] },
+  'csrc.weo_geo': { kind: 'table', cols: { geo: GEO, region: SR, match: { t: 'str', req: true, values: SRC_GEO_MATCHES } }, sorted: ['geo'], unique: ['geo'] },
+  'csrc.nze21_series': {
+    kind: 'table',
+    cols: { id: SR, label: SR, unit: SR, category: SR, product: SR, flow: SR, weo: SR, match: { t: 'str', req: true, values: SRC_NZE21_MATCHES }, note: S },
+    unique: ['id'],
+  },
+  'csrc.nze21_values': { kind: 'table', cols: { series: IR, year: IR, value: FR }, sorted: ['series', 'year'], unique: ['series', 'year'] },
+  'csrc.wei_rows': { kind: 'table', cols: { id: SR, label: SR, name: SR, parent: S, unit: SR }, unique: ['id'] },
+  'csrc.wei_values': { kind: 'table', cols: { row: IR, region: SR, year: IR, value: FR, estimate: BR }, sorted: ['row'], unique: ['row', 'region', 'year'] },
+  'csrc.wei_regions': { kind: 'table', cols: { region: SR, label: SR, kind: { t: 'str', req: true, values: SRC_WEI_KINDS } }, unique: ['region'] },
+  'csrc.map': {
+    kind: 'table',
+    cols: {
+      item: ITEM, src: { t: 'str', req: true, values: SRC_SOURCES }, key: SR, role: { t: 'str', req: true, values: NZE_ROLES },
+      match: { t: 'str', values: CLIMATE_MATCHES }, order: IR,
+    },
+    sorted: ['item'],
+    unique: ['item', 'src', 'key'],
+  },
+  'csrc.cells': { kind: 'table', cols: { item: ITEM, match: { t: 'str', req: true, values: CLIMATE_CELL_MATCHES }, note: SR }, sorted: ['item'], unique: ['item'] },
+  'csrc.meta': { kind: 'table', cols: { key: SR, value: S }, unique: ['key'] },
+} as const satisfies ChunkSpec;
+
 // ---- sector-fdi: CM-FDI (integrator change 2026-10-11, additive) ---------------------------------
 //
 // The Cleantech Manufacturing FDI Dataset (CM-FDI): P. Bandara and the Net Zero Industrial Policy Lab,
@@ -1663,6 +1761,7 @@ export type SectorSeriesChunk = ChunkOf<typeof SERIES_SPEC>;
 export type SectorAtlasChunk = ChunkOf<typeof ATLAS_SPEC>;
 export type SectorDevChunk = ChunkOf<typeof DEV_SPEC>;
 export type SectorClimateChunk = ChunkOf<typeof CLIMATE_SPEC>;
+export type SectorClimateSrcChunk = ChunkOf<typeof CLIMATE_SRC_SPEC>;
 export type SectorFdiChunk = ChunkOf<typeof FDI_SPEC>;
 export type FdiProjectTable = SectorFdiChunk['fdi.projects'];
 export type FdiSourceTable = SectorFdiChunk['fdi.sources'];
@@ -1696,7 +1795,8 @@ export type SectorChunkName =
   | 'sector-atlas'
   | 'sector-dev'
   | 'sector-fdi'
-  | 'sector-climate';
+  | 'sector-climate'
+  | 'sector-climate-src';
 
 export type ChunkFor<N extends SectorChunkName> = N extends 'sector-meta'
   ? SectorMetaChunk
@@ -1716,7 +1816,9 @@ export type ChunkFor<N extends SectorChunkName> = N extends 'sector-meta'
                 ? SectorFdiChunk
                 : N extends 'sector-climate'
                   ? SectorClimateChunk
-                  : SectorDevChunk;
+                  : N extends 'sector-climate-src'
+                    ? SectorClimateSrcChunk
+                    : SectorDevChunk;
 
 export function tradeChunkName(tech: TradeTechSlug): SectorChunkName {
   return `sector-trade-${tech}`;
@@ -1724,7 +1826,7 @@ export function tradeChunkName(tech: TradeTechSlug): SectorChunkName {
 
 export function isSectorChunkName(s: string): s is SectorChunkName {
   if (s.startsWith('sector-trade-')) return isTradeTechSlug(s.slice('sector-trade-'.length));
-  return ['sector-meta', 'sector-facts', 'sector-policy', 'sector-policy-text', 'sector-series', 'sector-atlas', 'sector-dev', 'sector-fdi', 'sector-climate'].includes(s);
+  return ['sector-meta', 'sector-facts', 'sector-policy', 'sector-policy-text', 'sector-series', 'sector-atlas', 'sector-dev', 'sector-fdi', 'sector-climate', 'sector-climate-src'].includes(s);
 }
 
 /** The object spec of a chunk name. */
@@ -1747,6 +1849,8 @@ export function chunkSpec(name: SectorChunkName): ChunkSpec {
       return FDI_SPEC;
     case 'sector-climate':
       return CLIMATE_SPEC;
+    case 'sector-climate-src':
+      return CLIMATE_SRC_SPEC;
     default:
       return DEV_SPEC;
   }
@@ -2235,6 +2339,55 @@ function checkNze(c: SectorClimateChunk, out: ChunkCheck) {
   badCell.report(out.errors, "climate.nze_cells.match is not the best match of the cell's own and demand series");
 }
 
+/** Cross-table rules of sector-climate-src (CLIMATE_SRC_SPEC); the R mirror is sector_check_src(). */
+function checkClimateSrc(c: SectorClimateSrcChunk, out: ChunkCheck) {
+  const nWs = c['csrc.weo_series'].nrow;
+  const regions = new Set(Array.from({ length: c['csrc.weo_regions'].nrow }, (_, i) => c['csrc.weo_regions'].cols.region[i]));
+  const wv = c['csrc.weo_values'];
+  const bad = new Tally();
+  for (let i = 0; i < wv.nrow; i++) if (wv.cols.series[i] >= nWs || !regions.has(wv.cols.region[i])) bad.hit(i);
+  const wg = c['csrc.weo_geo'];
+  for (let i = 0; i < wg.nrow; i++) if (!regions.has(wg.cols.region[i])) bad.hit(i);
+  bad.report(out.errors, 'csrc.weo: a series index past csrc.weo_series or a region not in csrc.weo_regions');
+  const nv = c['csrc.nze21_values'];
+  const badN = new Tally();
+  for (let i = 0; i < nv.nrow; i++) if (nv.cols.series[i] >= c['csrc.nze21_series'].nrow) badN.hit(i);
+  badN.report(out.errors, 'csrc.nze21_values: a series index past csrc.nze21_series');
+  const iv = c['csrc.wei_values'];
+  const wr = new Set(Array.from({ length: c['csrc.wei_regions'].nrow }, (_, i) => c['csrc.wei_regions'].cols.region[i]));
+  const badW = new Tally();
+  for (let i = 0; i < iv.nrow; i++) if (iv.cols.row[i] >= c['csrc.wei_rows'].nrow || !wr.has(iv.cols.region[i])) badW.hit(i);
+  badW.report(out.errors, 'csrc.wei_values: a row index past csrc.wei_rows or a region not in csrc.wei_regions');
+  const ind = new Set(Array.from({ length: c['csrc.ei_ind'].nrow }, (_, i) => c['csrc.ei_ind'].cols.id[i]));
+  const badI = new Tally();
+  for (let i = 0; i < c['csrc.ei'].nrow; i++) if (!ind.has(c['csrc.ei'].cols.ind[i])) badI.hit(i);
+  const med = c['csrc.ei_median'];
+  for (let i = 0; i < med.nrow; i++) if (!ind.has(med.cols.ind[i]) || !(med.cols.n[i] >= 1)) badI.hit(i);
+  badI.report(out.errors, 'csrc.ei: an indicator not in csrc.ei_ind, or a median with n < 1');
+  const weiIds = new Set(Array.from({ length: c['csrc.wei_rows'].nrow }, (_, i) => c['csrc.wei_rows'].cols.id[i]));
+  const m = c['csrc.map'];
+  const badM = new Tally();
+  const best = new Map<number, number>();
+  for (let i = 0; i < m.nrow; i++) {
+    const wei = m.cols.src[i] === 'wei';
+    const k = m.cols.key[i] ?? '';
+    if (wei ? !weiIds.has(k) || m.cols.match[i] === null || m.cols.role[i] === 'context' : !(SRC_FUELS as readonly string[]).includes(k) || m.cols.match[i] !== null || m.cols.role[i] !== 'context') badM.hit(i);
+    if (wei && m.cols.match[i] !== null) {
+      const r = CLIMATE_CELL_MATCHES.indexOf(m.cols.match[i] as ClimateMatch);
+      const b = best.get(m.cols.item[i]);
+      if (r >= 0 && (b === undefined || r < b)) best.set(m.cols.item[i], r);
+    }
+  }
+  badM.report(out.errors, 'csrc.map: wei rows need a WEI row id, a match and role own or demand; gcp rows a fuel and role context without a match');
+  const cells = c['csrc.cells'];
+  const badC = new Tally();
+  for (let i = 0; i < cells.nrow; i++) {
+    const b = best.get(cells.cols.item[i]);
+    if (cells.cols.match[i] !== (b === undefined ? 'none' : CLIMATE_CELL_MATCHES[b])) badC.hit(i);
+  }
+  badC.report(out.errors, "csrc.cells.match is not the best match of the cell's WEI rows");
+}
+
 /** Cross-table rules of sector-fdi (FDI_SPEC); the R mirror is sector_check_fdi(). */
 function checkFdi(c: SectorFdiChunk, out: ChunkCheck) {
   const p = c['fdi.projects'];
@@ -2351,6 +2504,7 @@ export function checkChunk(name: string, objects: OsbDecoded | Record<string, un
   else if (name === 'sector-fdi') checkFdi(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorFdiChunk, out);
   else if (name === 'sector-dev') checkDev(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorDevChunk, out);
   else if (name === 'sector-climate') checkClimate(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorClimateChunk, out);
+  else if (name === 'sector-climate-src') checkClimateSrc(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorClimateSrcChunk, out);
   return out;
 }
 
