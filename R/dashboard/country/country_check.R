@@ -8,7 +8,8 @@ COUNTRY_QUADRANT_IDS <- c("grow", "upgrade", "secure", "watch")
 # gzip budgets of the export (spec A10; the same numbers as COUNTRY_BUDGET_GZ in dashboard/src/country/contract.ts
 # and dashboard/scripts/check-budget.mjs). manifest: 15 kB until 2026-10-14, raised to 20 kB when the 31 memo
 # entries (2.8 kB gz) took the published manifest to 16.9 kB.
-COUNTRY_BUDGET_GZ <- c(manifest = 20480, sheet = 40960, sheet_target = 25600)
+# trade_monthly (2026-10-19): the companion monthly trade file of a core member (trade-<ISO3>).
+COUNTRY_BUDGET_GZ <- c(manifest = 20480, sheet = 40960, sheet_target = 25600, trade_monthly = 25600)
 COUNTRY_CLASSES <- c("aligned_high", "gap", "policy_ahead", "aligned_low", "partial")
 COUNTRY_CAVEAT_IDS <- c("relative_scores", "baseline", "rankability", "imputed_driver", "policy_pams_only", "no_si", "near_tie",
                         "inherited_alignment", "assumed_zero_production", "cmfdi_coverage", "trade_mirror", "few_economies", "cat_eu_bloc",
@@ -190,6 +191,7 @@ country_check_manifest <- function(m) {
     if (identical(c$status, "no_data") && !is.null(c$file)) add(c$iso3, ": no data but a file")
     if (!identical(c$status, "no_data") && !grepl("^facts-[A-Z0-9]{3}\\.[0-9a-f]{8}\\.json$", c$file %||% "")) add(c$iso3, ": bad file name")
     if (!is.null(c$memo) && !identical(c$tier, "core")) add(c$iso3, ": memo for a non-core economy")
+    if (!is.null(c$trade_monthly) && !grepl("^trade-[A-Z0-9]{3}\\.[0-9a-f]{8}\\.json$", c$trade_monthly)) add(c$iso3, ": bad monthly trade file name")
     rn <- c$memo$rule_note %||% NULL
     if (!is.null(rn)) {
       if (!identical(rn, "quadrant_rule_2026_10_15")) add(c$iso3, ": memo.rule_note '", rn, "' is not a known rule note")

@@ -77,6 +77,25 @@ inputs:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
   - scripts/98_pull_comtrade_energy_dyads.R
+- id: comtrade_monthly_core
+  path: comtrade_monthly_core.csv
+  source_type: api
+  source_name: UN Comtrade (monthly HS6 trade with the world, coalition core members)
+  url: https://comtradeplus.un.org/
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: each core member's latest 12 calendar months in Comtrade's monthly availability
+    listing at pull time (first pull 2026-10-19 UTC; windows end 2025-09 to 2026-08)
+  staged_from: pipeline
+  notes: Written by scripts/99_pull_comtrade_monthly_core.R (chunked, resumable; requires
+    COMTRADE_API_KEY) with its windows file comtrade_monthly_core_windows.csv (reporter_iso,
+    first_month, last_month, n_missing, reason). Reporters are the tier-core members of
+    coalition_tbl.rds; partner World; codes are the non-legacy codes of the HS6 master plus
+    any COMTRADE_MONTHLY_EXTRA_CODES lists. Values as each economy reported them (no mirror
+    flows). Austria publishes no monthly data. Feeds the Country pages' monthly trade files.
+  required_by:
+  - scripts/88_export_country_data.R
+  - scripts/99_pull_comtrade_monthly_core.R
 - id: comtrade_total_export
   path: comtrade_total_export.csv
   source_type: api

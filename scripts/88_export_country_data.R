@@ -725,6 +725,59 @@ budget <- COUNTRY_BUDGET_GZ[["sheet"]]
 add_check(sprintf("sheets: gzip size <= %d bytes (WARN above 25,600)", budget), if (all(sizes <= budget)) (if (all(sizes <= 25600)) "PASS" else "WARN") else "FAIL",
           length(sizes), NA, if (length(sizes)) sprintf("max %s (%s), median %s", format(max(sizes), big.mark = ","), names(sizes)[which.max(sizes)], format(stats::median(sizes), big.mark = ",")) else NA)
 
+# Monthly trade by sub-component (2026-10-19): one companion file per core member with monthly data,
+# trade-<ISO3>.<h8>.json, from scripts/99's pull (data/raw/comtrade_monthly_core.csv and its windows file)
+# and the in-basket HS6 master. An optional input: without it the Country pages show no monthly card.
+trade_texts <- list()
+mon <- NULL
+if (synthetic) {
+  mon <- country_synthetic_monthly()
+} else {
+  m_paths <- file.path(raw_dir, c("comtrade_monthly_core.csv", "comtrade_monthly_core_windows.csv", "energy_hs6_master.csv"))
+  if (all(file.exists(m_paths))) {
+    mon <- list(
+      raw = utils::read.csv(m_paths[1], colClasses = c(period = "character", reporter_iso = "character", flow_code = "character", cmd_code = "character")),
+      windows = utils::read.csv(m_paths[2], stringsAsFactors = FALSE),
+      basket = sector_trade_basket(utils::read.csv(m_paths[3], colClasses = "character"))
+    )
+  } else {
+    add_check("trade monthly: inputs present (scripts/99 data/raw/comtrade_monthly_core.csv and windows file)", "WARN", NA, NA,
+              paste("missing:", paste(basename(m_paths[!file.exists(m_paths)]), collapse = ", ")))
+  }
+}
+if (!is.null(mon)) {
+  src_m <- Filter(function(s) identical(s$id, "comtrade_monthly"), cfg$sources)
+  if (!length(src_m)) stop("config/country_insights.yml: sources has no comtrade_monthly entry.")
+  src_m <- src_m[[1]]
+  src_ref <- list(id = src_m$id, label = src_m$label, edition = src_m$edition %||% NA_character_,
+                  licence = src_m$licence %||% NA_character_, url = src_m$url %||% NA_character_)
+  mtbl <- country_monthly_table(mon$raw, mon$basket, mon$windows)
+  core_m <- intersect(roster$iso3[roster$tier == "core"], names(sheets))
+  probs_m <- character()
+  for (iso in intersect(core_m, unique(mtbl$iso3))) {
+    doc <- country_monthly_doc(mtbl, iso, mon$windows[mon$windows$reporter_iso == iso, , drop = FALSE], mon$basket, src_ref)
+    txt <- as.character(country_json(doc))
+    pr <- country_check_monthly_doc(jsonlite::fromJSON(txt, simplifyVector = FALSE))
+    if (length(pr)) probs_m <- c(probs_m, paste0(iso, ": ", pr))
+    trade_texts[[iso]] <- txt
+  }
+  add_check("trade monthly: every doc passes country_check_monthly_doc() after a JSON round trip", if (!length(probs_m)) "PASS" else "FAIL",
+            length(trade_texts), NA, if (length(probs_m)) paste(utils::head(probs_m, 3), collapse = " | ") else NA)
+  tsz <- vapply(trade_texts, gz_size, 1)
+  tb <- COUNTRY_BUDGET_GZ[["trade_monthly"]]
+  add_check(sprintf("trade monthly: gzip size <= %d bytes", tb), if (all(tsz <= tb)) "PASS" else "FAIL", length(tsz), NA,
+            if (length(tsz)) sprintf("max %s (%s), total %s", format(max(tsz), big.mark = ","), names(tsz)[which.max(tsz)], format(sum(tsz), big.mark = ",")) else NA)
+  base_gap <- names(trade_texts)[vapply(trade_texts, function(txt) {
+    d <- jsonlite::fromJSON(txt, simplifyVector = TRUE)$window$declared
+    !isTRUE(d$imports[1]) || !isTRUE(d$exports[1])
+  }, logical(1))]
+  add_check("trade monthly: every economy reported the first month of its window (the index base)", if (!length(base_gap)) "PASS" else "WARN",
+            length(trade_texts), NA, if (length(base_gap)) paste("no base month:", paste(base_gap, collapse = " ")) else NA)
+  no_m <- setdiff(core_m, names(trade_texts))
+  add_check("trade monthly: core members with a monthly file", if (!length(no_m)) "PASS" else "WARN", length(trade_texts), NA,
+            if (length(no_m)) paste("no monthly data:", paste(no_m, collapse = " ")) else NA)
+}
+
 # =====================================================================================================
 # Manifest and files
 # =====================================================================================================
@@ -801,6 +854,10 @@ for (i in seq_len(nrow(roster))) {
       dfile <- sprintf("drivers-%s.%s.json", iso, md5_8(drv_texts[[iso]]))
       files[[dfile]] <- drv_texts[[iso]]
     } else dfile <- NULL
+    if (!is.null(trade_texts[[iso]])) {
+      tfile <- sprintf("trade-%s.%s.json", iso, md5_8(trade_texts[[iso]]))
+      files[[tfile]] <- trade_texts[[iso]]
+    } else tfile <- NULL
     om <- old_memo[[iso]]
     if (!is.null(om) && identical(ro$tier, "core") && file.exists(file.path(out_dir, om$json))) {
       if (country_memo_under_revision(om, cfg$memo_revision)) {
@@ -826,6 +883,7 @@ for (i in seq_len(nrow(roster))) {
   }
   e <- country_manifest_entry(as.list(ro), s, file, bytes, memo)
   e$drivers <- if (!is.null(s)) dfile else NULL
+  e$trade_monthly <- if (!is.null(s)) tfile else NULL
   entries[[length(entries) + 1]] <- e
 }
 
@@ -911,8 +969,8 @@ if (partial && !is.null(old_manifest)) {
   manifest$counts$sheets <- sum(vapply(allc, function(c) !is.null(c$file), TRUE))
   mtxt <- as.character(country_json(manifest))
 }
-listed <- unlist(lapply(manifest$countries, function(c) c(c$file, c$drivers, c$memo$json, c$memo$pdf, c$memo$docx, c$memo$md)))
-old <- list.files(out_dir, pattern = "^(facts|drivers|memo)-[A-Z0-9]{3}\\.[0-9a-f]{8}\\.(json|pdf|docx|md)$")
+listed <- unlist(lapply(manifest$countries, function(c) c(c$file, c$drivers, c$trade_monthly, c$memo$json, c$memo$pdf, c$memo$docx, c$memo$md)))
+old <- list.files(out_dir, pattern = "^(facts|drivers|trade|memo)-[A-Z0-9]{3}\\.[0-9a-f]{8}\\.(json|pdf|docx|md)$")
 stale_files <- setdiff(old, listed)
 if (length(stale_files)) unlink(file.path(out_dir, stale_files))
 write_text(mtxt, file.path(out_dir, "manifest.json"))

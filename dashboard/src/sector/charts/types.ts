@@ -162,6 +162,8 @@ export interface LineSeries {
   label: string;
   /** a group colour, or neutral (world, rest of world, context lines) */
   group: GroupKey | 'neutral';
+  /** additive 2026-10-19: a fixed stroke colour instead of the group's (lines sharing a colour take the dash patterns) */
+  color?: string;
   points: LinePoint[];
 }
 
@@ -172,11 +174,19 @@ export interface LabelledLinesProps {
   highlight?: string | null;
   /** index every line to its first point = 100 */
   index?: boolean;
+  /** additive 2026-10-19: the index base in the y label (default "first year = 100") */
+  indexLabel?: string;
+  /** additive 2026-10-19: a horizontal reference rule at this y (e.g. 100 on an index) */
+  rule?: number;
   yLabel: string;
   ariaLabel: string;
   yTickFormat?: NumFormat;
   valueFormat: NumFormat;
   xTickFormat?: NumFormat;
+  /** additive 2026-10-19: the x value in the tooltip (default xTickFormat) */
+  xLabelFormat?: NumFormat;
+  /** additive 2026-10-19: pixels per x tick (default 70; long tick labels want more) */
+  xTickSpacing?: number;
   onPickX?: (x: number) => void;
   log?: boolean;
   height?: number;

@@ -4,7 +4,8 @@
 // around the typical economy, 50%) | Policy (the policy-activity third) | Climate (the Strategic Index's
 // low-emission technology term: one value per technology, the same for every economy) | Strategic
 // priority (the Strategic Index rank, under the reader's Perspective). Only the last column is
-// preference-adjusted. "Explore details" opens the embedded Country scores view (the model).
+// preference-adjusted. "Explore details" opens the embedded Country scores view (the model). Under the table
+// (2026-10-19), core members get the monthly trade of the selected sector by sub-component (TradeMonthlyCard).
 
 import { useMemo } from 'react';
 import { Link } from 'react-router';
@@ -19,6 +20,7 @@ import { sectorProfileLink } from '../../derive/links.ts';
 import { POLICY_THIRD_LABEL } from '../../derive/model.ts';
 import { cap, proseName, quadrantWord } from '../../derive/text.ts';
 import { BasisTag, csvWithSource, Fold, perspectiveNote, Section, usePerspectiveSi, useProfile } from './common.tsx';
+import { TradeMonthlyCard } from './TradeMonthlyCard.tsx';
 
 /** Sectors in the order of the Strategic priority (the Perspective's), then the rest by Economic Opportunity. */
 export function sectorPositionRows(cells: readonly CellFacts[], ordered: readonly CellFacts[]): CellFacts[] {
@@ -115,6 +117,7 @@ export function SectorPositionSection() {
       >
         <TableView rows={rows} cols={cols} caption={`${cap(name)}: sector position`} rowKey={(c) => c.key} onRowClick={(c) => setCell(c.key)} selectedKey={cell} pageSize={12} />
       </ChartCard>
+      <TradeMonthlyCard />
       <Fold id="scores" engine summary="Explore details: the scores' categories, contributions and every measure (Country scores, the model)">
         <CountryView embedded />
       </Fold>

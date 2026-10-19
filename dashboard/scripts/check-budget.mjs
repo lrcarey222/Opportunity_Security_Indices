@@ -64,7 +64,8 @@ const LIMITS = {
 };
 // spec_country.md A10 (the same numbers as COUNTRY_BUDGET_GZ in src/country/contract.ts)
 // manifest: 15 kB until 2026-10-14; 20 kB once the 31 memo entries (2.8 kB gz) were added (16.9 kB)
-const COUNTRY_FILE_LIMIT = { manifest: 20 * KB, sheet: 40 * KB, memoJson: 25 * KB, memoPdf: 400 * KB, memoDocx: 100 * KB };
+// tradeMonthly (2026-10-19): the companion monthly trade file of a core member (trade-<ISO3>)
+const COUNTRY_FILE_LIMIT = { manifest: 20 * KB, sheet: 40 * KB, memoJson: 25 * KB, memoPdf: 400 * KB, memoDocx: 100 * KB, tradeMonthly: 25 * KB };
 const TARGET_APP = 350 * KB;
 const SECTOR_CHUNK_LIMIT = {
   'sector-meta': 150 * KB,
@@ -218,6 +219,7 @@ const countryListed = (name) => {
   return countryWire(file);
 };
 const countrySheets = (countryManifest?.countries ?? []).filter((c) => c.file).map((c) => [c.file, countryListed(c.file)]);
+const countryTrades = (countryManifest?.countries ?? []).filter((c) => c.trade_monthly).map((c) => [c.trade_monthly, countryListed(c.trade_monthly)]);
 const countryMemos = (countryManifest?.countries ?? [])
   .filter((c) => c.memo)
   .map((c) => ({ iso3: c.iso3, json: countryListed(c.memo.json), pdf: countryListed(c.memo.pdf), docx: countryListed(c.memo.docx) }));
@@ -304,6 +306,7 @@ figure(
 );
 if (countryManifest && countryManifestSize > COUNTRY_FILE_LIMIT.manifest) fail(`Country manifest ${size(countryManifestSize)} > ${size(COUNTRY_FILE_LIMIT.manifest)}`);
 for (const [f, n] of countrySheets) if (n > COUNTRY_FILE_LIMIT.sheet) fail(`${f} ${size(n)} > ${size(COUNTRY_FILE_LIMIT.sheet)} (fact sheet)`);
+for (const [f, n] of countryTrades) if (n > COUNTRY_FILE_LIMIT.tradeMonthly) fail(`${f} ${size(n)} > ${size(COUNTRY_FILE_LIMIT.tradeMonthly)} (monthly trade)`);
 for (const m of countryMemos) {
   for (const [k, lim] of [['json', COUNTRY_FILE_LIMIT.memoJson], ['pdf', COUNTRY_FILE_LIMIT.memoPdf], ['docx', COUNTRY_FILE_LIMIT.memoDocx]]) {
     if (m[k] > lim) fail(`memo ${m.iso3} ${k.toUpperCase()} ${size(m[k])} > ${size(lim)}`);

@@ -307,3 +307,45 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
     }
   }, 90_000);
 });
+
+describe.skipIf(!haveFixture() || !haveAib())('Country profile: monthly trade by sub-component (2026-10-19)', () => {
+  it('a core member with a monthly file: the card follows the selected sector and switches flow', async () => {
+    setEngineClient(neverReady());
+    try {
+      renderAt('/countries/USA?cell=solar-midstream#sectors');
+      const card = await screen.findByTestId('trade-monthly', {}, { timeout: 30_000 });
+      expect(within(card).getByRole('heading', { level: 3, name: /Solar — Midstream: monthly imports by sub-component/ })).toBeTruthy();
+      fireEvent.click(within(card).getByRole('radio', { name: 'Exports' }));
+      expect(await within(card).findByRole('heading', { level: 3, name: /monthly exports by sub-component/ })).toBeTruthy();
+    } finally {
+      setEngineClient(null);
+    }
+  }, 90_000);
+
+  it('a sector without a traded-goods basket falls back to the one with the most monthly trade and says why', async () => {
+    setEngineClient(neverReady());
+    try {
+      renderAt('/countries/USA?cell=oil-upstream#sectors');
+      const card = await screen.findByTestId('trade-monthly', {}, { timeout: 30_000 });
+      expect(within(card).getByRole('heading', { level: 3, name: /Batteries — Midstream/ })).toBeTruthy();
+      expect(within(card).getByText(/has no traded-goods basket \(HS6 codes\); showing Batteries — Midstream/)).toBeTruthy();
+    } finally {
+      setEngineClient(null);
+    }
+  }, 90_000);
+
+  it('a core member without monthly data gets a notice; the card stays off non-core pages', async () => {
+    setEngineClient(neverReady());
+    try {
+      renderAt('/countries/FRA#sectors');
+      expect(await screen.findByTestId('trade-monthly-none', {}, { timeout: 30_000 })).toBeTruthy();
+      cleanup();
+      renderAt('/countries/BRA#sectors');
+      await h2('Sector position');
+      expect(screen.queryByTestId('trade-monthly')).toBeNull();
+      expect(screen.queryByTestId('trade-monthly-none')).toBeNull();
+    } finally {
+      setEngineClient(null);
+    }
+  }, 90_000);
+});

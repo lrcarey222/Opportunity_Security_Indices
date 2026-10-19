@@ -20,6 +20,8 @@ country_helper_files <- function() {
     "R/dashboard/country/country_check.R",
     "R/dashboard/country/country_memo.R",
     "R/dashboard/country/country_memo_lint.R",
+    "R/dashboard/sector/sector_trade.R",
+    "R/dashboard/country/country_trade_monthly.R",
     "R/dashboard/country/country_synthetic.R"
   )
 }
