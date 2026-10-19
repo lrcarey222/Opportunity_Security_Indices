@@ -19,7 +19,6 @@ const ctx: UrlCtx = {
     fossil: 'auto',
     require_resource_base: true,
     psi_view: 'world',
-    network: { lambda: null, max_share: 0.4, min_producers: 3, portfolio_enable: true },
   },
   techs: ['Batteries', 'Solar', 'Electric Vehicles'],
   stages: ['Upstream', 'Midstream', 'Downstream'],
@@ -41,8 +40,8 @@ describe('parseSearch / writeSearch', () => {
 
   it('round-trips every key in the canonical order', () => {
     const q =
-      '?h=80&b=25&p=55&g=95&es=1,0.5,3&eo=2,0&tau=0.25&fossil=never&screen=0&psi=coalition&lambda=1.5&maxshare=0.3&minprod=4&caps=0' +
-      '&show=change&tech=Solar&stage=Upstream&metric=si_rank&rankable=0&cmp=paper&partner=CAN';
+      '?h=80&b=25&p=55&g=95&es=1,0.5,3&eo=2,0&tau=0.25&fossil=never&screen=0&psi=coalition' +
+      '&show=change&tech=Solar&stage=Upstream&metric=si_rank&rankable=0&partner=CAN';
     expect(roundTrip(q)).toBe(q.replace(/,/g, '%2C'));
     // any order in, canonical order out
     const shuffled = '?metric=si_rank&g=95&h=80&show=change';
@@ -50,27 +49,35 @@ describe('parseSearch / writeSearch', () => {
   });
 
   it('omits values equal to the defaults', () => {
-    expect(roundTrip('?h=50&fossil=auto&screen=1&psi=world&show=scenario&rankable=1&cmp=greedy&es=1,2,1')).toBe('');
+    expect(roundTrip('?h=50&fossil=auto&screen=1&psi=world&show=scenario&rankable=1&es=1,2,1')).toBe('');
   });
 
   it('is idempotent: writeSearch(parseSearch(x)) is a fixed point', () => {
-    for (const q of ['?h=80', '?g=100&fossil=always', '?tau=off&psi=coalition', '?es=0,0,1&eo=1,3&minprod=2']) {
+    for (const q of ['?h=80', '?g=100&fossil=always', '?tau=off&psi=coalition', '?es=0,0,1&eo=1,3']) {
       const once = roundTrip(q);
       expect(roundTrip(once)).toBe(once);
     }
   });
 
   it('drops invalid values and lists them', () => {
-    const p = parseSearch('?h=140&b=abc&tech=Coal&es=1,2&tau=2&caps=yes&zzz=1&g=72.4', ctx);
+    const p = parseSearch('?h=140&b=abc&tech=Coal&es=1,2&tau=2&zzz=1&g=72.4', ctx);
     expect(p.scenario.dials.hawkishness).toBe(100);
     expect(p.scenario.dials.bullishness).toBe(50);
     expect(p.scenario.dials.greenness).toBe(72);
     expect(p.view.tech).toBeNull();
     expect(p.scenario.advanced.es_weights).toEqual(ctx.defaults.es_weights);
     expect(p.scenario.advanced.tau).toBeNull();
-    expect(p.scenario.advanced.network.portfolio_enable).toBe(true);
     const text = p.problems.join(' | ');
-    for (const k of ['h=140', 'b=abc', 'tech=Coal', 'es=1,2', 'tau=2', 'caps=yes', 'zzz', 'g=72.4']) expect(text).toContain(k);
+    for (const k of ['h=140', 'b=abc', 'tech=Coal', 'es=1,2', 'tau=2', 'zzz', 'g=72.4']) expect(text).toContain(k);
+  });
+
+  it('an old link with the retired network design settings still opens; the keys are dropped and named', () => {
+    const p = parseSearch('?h=80&lambda=1.5&maxshare=0.3&minprod=4&caps=0&cmp=paper', ctx);
+    expect(p.scenario.dials.hawkishness).toBe(80);
+    expect('network' in p.scenario.advanced).toBe(false);
+    expect(p.problems).toHaveLength(5);
+    for (const k of ['lambda', 'maxshare', 'minprod', 'caps', 'cmp']) expect(p.problems.join(' | ')).toContain(`${k} (a setting of the original allied network design, which is retired)`);
+    expect(writeSearch(p.scenario, p.view, ctx)).toBe('?h=80');
   });
 
   it('rejects all-zero category weights and repeated keys', () => {
@@ -81,7 +88,7 @@ describe('parseSearch / writeSearch', () => {
   });
 
   it('navigation keeps the scenario, Show, technology and stage only', () => {
-    const p = parseSearch('?h=80&show=baseline&tech=Solar&metric=psi&partner=CAN&cmp=paper', ctx);
+    const p = parseSearch('?h=80&show=baseline&tech=Solar&metric=psi&partner=CAN', ctx);
     expect(navSearch(p.scenario, p.view, ctx)).toBe('?h=80&show=baseline&tech=Solar');
     expect(scenarioKey(p.scenario, ctx)).toBe('?h=80');
   });
@@ -96,9 +103,9 @@ describe('parseSearch / writeSearch', () => {
   });
 
   it('advancedChanged names the groups that differ', () => {
-    const p = parseSearch('?eo=1,3&lambda=2', ctx);
+    const p = parseSearch('?eo=1,3', ctx);
     const c = advancedChanged(p.scenario.advanced, ctx);
-    expect(c).toMatchObject({ es: false, eo: true, sample: false, fossil: false, screen: false, psi: false, net: true, any: true });
+    expect(c).toMatchObject({ es: false, eo: true, sample: false, fossil: false, screen: false, psi: false, any: true });
     expect(advancedChanged(defaultScenario(ctx).advanced, ctx).any).toBe(false);
     expect(VIEW_DEFAULTS.show).toBe('scenario');
   });

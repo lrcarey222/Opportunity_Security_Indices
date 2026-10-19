@@ -1860,6 +1860,6 @@
       }
     }
   },
-  "figures": ["coalition_axis", "coalition_routes", "coalition_alignment_matrix", "coalition_eu_weights"],
+  "figures": ["coalition_axis", "coalition_routes", "coalition_alignment_matrix"],
   "tables": "coalition_composition"
 }

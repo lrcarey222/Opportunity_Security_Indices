@@ -635,35 +635,36 @@ nu_floor_es <- es_floor$es_mode[es_floor$sector == "Nuclear - Upstream"]
 nu_floor_equals_no_resource <- identical(sort(nu_up$Country[round(nu_up$ES, 6) == round(nu_floor_es, 6)]),
                                          sort(nu_up$Country[nu_up$resource_base %in% FALSE]))
 
-# Pick versus the network design (review of 2026-10-15): the designed production share of the
-# member's network node in its pick stage (the EU node for EU members), from scripts/30 at lambda 0.78.
-spec_csv <- read.csv(file.path(processed_dir, "outputs", "allied_network_specialization.csv"),
-                     stringsAsFactors = FALSE)
-design_share <- spec_csv %>%
-  transmute(sector = paste(.data$tech, .data$supply_chain, sep = " - "), network_node = .data$network_node,
-            design_share = .data$production_share)
-stopifnot(!anyDuplicated(design_share[, c("sector", "network_node")]))
-pick_design <- base_sel %>% select(Country, iso3, tier, top) %>%
-  left_join(allies %>% select(iso3, network_node), by = "iso3") %>%
-  left_join(design_share, by = c("top" = "sector", "network_node")) %>%
-  mutate(design_share = dplyr::coalesce(.data$design_share, 0))
-nodes_no_production <- design_share %>% group_by(.data$network_node) %>%
-  summarise(n = sum(.data$design_share > 0), .groups = "drop") %>% filter(.data$n == 0) %>% pull(.data$network_node)
-bm_pick <- pick_design %>% filter(.data$top == "Batteries - Midstream")
-pick_vs_design <- list(
-  source = "data/processed/outputs/allied_network_specialization.csv (lambda = 0.78)",
+# Pick versus the Allied Industrial Base (Section 10): the Sectoral Compacts of scripts/32 (headline:
+# China removed, hold, production-constrained, reallocation) with a node in the member's pick stage
+# whose exact minimum coalition includes the member. Replaces the comparison with the retired
+# lambda-calibrated network design (scripts/30).
+aib_dir <- Sys.getenv("OPSI_AIB_DIR", file.path(processed_dir, "outputs", "aib"))
+aib_cc <- read.csv(file.path(aib_dir, "aib_compact_candidates.csv"), stringsAsFactors = FALSE) %>%
+  filter(.data$supply_constraint == "production_constrained")
+aib_cn <- read.csv(file.path(aib_dir, "aib_compact_nodes.csv"), stringsAsFactors = FALSE) %>%
+  filter(.data$supply_constraint == "production_constrained", !is.na(.data$compact_id), nzchar(.data$compact_id)) %>%
+  distinct(compact_id = .data$compact_id, sector = paste(.data$technology, .data$stage, sep = " - "))
+aib_members <- aib_cc %>% select(compact_id, minimum_coalition) %>%
+  mutate(iso3 = strsplit(.data$minimum_coalition, " ")) %>% tidyr::unnest(iso3) %>% select(compact_id, iso3)
+aib_member_sector <- aib_members %>% inner_join(aib_cn, by = "compact_id", relationship = "many-to-many")
+pick_aib <- base_sel %>% select(Country, iso3, tier, top) %>%
+  left_join(aib_member_sector %>% group_by(iso3, sector) %>% summarise(aib_n = n_distinct(compact_id), .groups = "drop"),
+            by = c("iso3", "top" = "sector")) %>%
+  mutate(aib_n = dplyr::coalesce(.data$aib_n, 0L))
+bm_pick <- pick_aib %>% filter(.data$top == "Batteries - Midstream")
+bm_compacts <- sort(unique(aib_cn$compact_id[aib_cn$sector == "Batteries - Midstream"]))
+bm_coalition <- sort(unique(aib_members$iso3[aib_members$compact_id %in% bm_compacts]))
+pick_vs_aib <- list(
+  source = "data/processed/outputs/aib/aib_compact_candidates.csv, aib_compact_nodes.csv (production_constrained)",
   batteries_midstream_pickers = nrow(bm_pick),
-  batteries_midstream_designed_producers = sum(design_share$design_share[design_share$sector == "Batteries - Midstream"] > 0),
-  batteries_midstream_designed_producer_nodes = sort(design_share$network_node[design_share$sector == "Batteries - Midstream" &
-                                                                              design_share$design_share > 0]),
-  batteries_midstream_pickers_with_designed_role = sum(bm_pick$design_share > 0),
-  batteries_midstream_pickers_with_role_via_eu_node = sum(bm_pick$design_share > 0 & bm_pick$network_node == "EUU"),
-  batteries_midstream_pickers_without_role = sort(bm_pick$iso3[bm_pick$design_share <= 0]),
-  members_with_role_in_pick_stage = sum(pick_design$design_share > 0),
-  members_without_role_in_pick_stage = sort(pick_design$iso3[pick_design$design_share <= 0]),
-  nodes_without_production = sort(nodes_no_production),
-  members_in_nodes_without_production = sort(pick_design$iso3[pick_design$network_node %in% nodes_no_production]),
-  design_share_by_member = setNames(as.list(round(pick_design$design_share, 4)), pick_design$iso3)
+  batteries_midstream_compacts = bm_compacts,
+  batteries_midstream_coalition_members = bm_coalition,
+  batteries_midstream_pickers_in_coalition = sort(bm_pick$iso3[bm_pick$iso3 %in% bm_coalition]),
+  batteries_midstream_coalition_non_pickers = sort(setdiff(bm_coalition, bm_pick$iso3)),
+  members_in_coalition_for_pick_stage = sum(pick_aib$aib_n > 0),
+  members_with_pick = nrow(pick_aib),
+  aib_coalitions_by_member = setNames(as.list(pick_aib$aib_n), pick_aib$iso3)
 )
 u_res <- read.csv(file.path(root, "data", "reference", "uranium_resources.csv"), stringsAsFactors = FALSE) %>%
   filter(.data$variable == "identified_recoverable_resources_lt_usd260_kgu")
@@ -1325,7 +1326,7 @@ same_under <- function(v) {
 }
 tab <- base_sel %>%
   mutate(s_str = same_under("si_strength"), s_np = same_under("si_nopriors")) %>%
-  left_join(pick_design %>% select(Country, design_share, network_node), by = "Country") %>%
+  left_join(pick_aib %>% select(Country, aib_n), by = "Country") %>%
   left_join(screen_cmp %>% select(Country, off, changed), by = "Country") %>%
   mutate(tier = factor(tier, levels = c("core", "partner"))) %>%
   arrange(tier, Country)
@@ -1334,7 +1335,7 @@ row_tex <- function(d) sprintf(
   "%s & %s & %.3f & %s & %.4f & %s & %s & %s & %s \\\\",
   paste0(tex_escape(d$Country), ifelse(d$Country %in% coalition_pams_only$Country, "$^{\\dagger}$", "")),
   sector_label_s(d$top), d$top_score, sector_label_s(d$second), d$margin,
-  ifelse(d$design_share > 0, sprintf("%.3f", d$design_share), "--"),
+  ifelse(d$aib_n > 0, sprintf("%d", as.integer(d$aib_n)), "--"),
   ifelse(d$changed, sector_label_s(d$off), "same"), mark(d$s_str), mark(d$s_np)
 )
 tab_core <- tab %>% filter(tier == "core"); tab_partner <- tab %>% filter(tier == "partner")
@@ -1344,7 +1345,7 @@ tab_head <- c(
   "\\toprule",
   " & & & & & & & \\multicolumn{2}{c@{}}{\\makecell{Same pick\\\\under}}\\\\",
   "\\cmidrule(l){8-9}",
-  "Member & Pick & {$\\SI$} & Runner-up & {Margin} & \\makecell{Design\\\\share} & \\makecell[l]{Pick without\\\\the screen} & (1) & (2)\\\\",
+  "Member & Pick & {$\\SI$} & Runner-up & {Margin} & \\makecell{AIB\\\\coalitions} & \\makecell[l]{Pick without\\\\the screen} & (1) & (2)\\\\",
   "\\midrule"
 )
 tab_tex <- c(
@@ -1383,9 +1384,8 @@ tab_tex <- c(
     "the member has no recorded reserves or production; the runner-up is the second-highest such ",
     "sector and the margin the difference between their indices; (U) Upstream, (M) Midstream. ",
     if (all(base_sel$n_tied_top == 1)) "No member has a tie. " else "",
-    "Design share is the share of the stage's production that the network design ",
-    "(Section~\\ref{sec:network}, $\\lambda=0.78$) assigns to the member's node, for EU members the EU node ",
-    "(-- if none). ",
+    "AIB coalitions counts the Sectoral Compacts of Section~\\ref{sec:network} with a node in the pick stage ",
+    "whose exact minimum coalition includes the member (-- if none). ",
     "``Pick without the screen'' is the pick when the endowment screen is ",
     "switched off (``same'' if unchanged); the index values are the same in both cases. ",
     "Columns (1) and (2) mark whether the pick, with the screen, is unchanged when the index is ",
@@ -1649,7 +1649,7 @@ results <- list(
         n_cells = d$n_cells[k], resource_base = d$resource_base[k]))
     }),
     focal_pick = setNames(as.list(base_sel$top[match(focal, base_sel$Country)]), focal),
-    pick_vs_design = pick_vs_design,
+    pick_vs_aib = pick_vs_aib,
     nuclear_upstream_pick_resources = nuclear_upstream_pick_resources,
     screen_production_required = screen_production_required,
     cell_constant = cell_constant,

@@ -148,7 +148,7 @@ export function sectorCols(sector: string): Col<SectorRow>[] {
     { id: 'fs_rank', header: 'Friendshore rank', value: (r) => r.fs_rank, num: true },
     { id: 'po', header: `Partnership Opportunity, ${sector}`, title: 'How good a market the partner is for exports in this sector (0 to 1)', value: (r) => r.po, cell: (r) => fmtNum(r.po, 3), num: true },
     { id: 'po_rank', header: 'Market rank', value: (r) => r.po_rank, num: true },
-    { id: 'dp', header: `Development Potential, ${sector}`, title: 'Paper baseline; scored for middle- and lower-income partners only', value: (r) => r.dp, cell: (r) => (r.dp === null ? 'not scored' : fmtNum(r.dp, 3)), num: true, minWidth: 120 },
+    { id: 'dp', header: `Development Potential, ${sector}`, title: 'NEIS baseline; scored for middle- and lower-income partners only', value: (r) => r.dp, cell: (r) => (r.dp === null ? 'not scored' : fmtNum(r.dp, 3)), num: true, minWidth: 120 },
     { id: 'psi_rank', header: 'Partnership Strength rank (all sectors)', value: (r) => r.psi_rank, num: true },
     { id: 'fs_base', header: 'Friendshore, paper', value: (r) => r.fs_base, cell: (r) => fmtNum(r.fs_base, 3), num: true },
     { id: 'po_base', header: 'Partnership Opportunity, paper', value: (r) => r.po_base, cell: (r) => fmtNum(r.po_base, 3), num: true },

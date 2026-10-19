@@ -1,9 +1,11 @@
 % ===========================================================================
 % Section 12. Discussion, next steps and conclusion
-% Numbers: paper/results/*.json of the final run of 12 October 2026 (network at lambda = 0.78),
-% as reported in Sections 5-11. Conceptual frame and reference list: the NEIS working paper
-% "Allied Industrial Base: Conceptual overview, literature review and analytical design"
-% (October 2026), cited as neis2026allied; paraphrased, not quoted.
+% Numbers: paper/results/*.json as reported in Sections 5-11: the indices, picks and partnership
+% index from the final run of 12 October 2026; the Allied Industrial Base from aib.json and
+% aib_robustness.json (AIB run of 16 October 2026 after the credibility pass). Conceptual frame
+% and reference list: the NEIS working paper "Allied Industrial Base: Conceptual overview,
+% literature review and analytical design" (October 2026), cited as neis2026allied; paraphrased,
+% not quoted.
 % ===========================================================================
 \section{Discussion, next steps and conclusion}\label{sec:discussion}
 
@@ -23,34 +25,36 @@ of the 30 Energy Security pairs (Sections~\ref{sec:es} and~\ref{sec:eo}); a coal
 move in opposite directions: the median within-country Spearman correlation between $\EO$ and
 $1-\ES$ is $-0.49$ and negative for every member (Section~\ref{sec:strategic}). A member's strongest
 opportunities lie where it is already secure, and its needs lie where others are strong. The
-network design makes this arithmetic explicit (Section~\ref{sec:network}). It selects seven to ten
-producers per stage among 37 nodes, with a median designed Herfindahl index of 0.152 (6.6
-equivalent producers), close by calibration to the nodes' own export concentration. Self-supply is
-positive in two stages only, a consequence of scoring a node's self-supply at the median edge weight
-and of the binding dual-sourcing rule (793 of the 811 consumer--stage pairs draw on exactly two
-partners) rather than an empirical finding; under these rules every node draws most of its
-requirement from other members.
+Allied Industrial Base analysis shows what this means under stress (Section~\ref{sec:network}). With
+China's supply removed, the 57 members lose 22.9 percent of their traded electro-industrial demand.
+Existing relationships restore 7.3 points of it and optimized partnerships 0.3 more: the coordination
+dividend is below one point in 81 of the 91 nodes. The trade partners the allies need are already
+their partners; what is missing is supply.
 
-The closed network is not the world market, however. In the median basket stage the 37 nodes
-account for 74 percent of world exports (54 to 97 percent), and China is the largest world exporter
-in 10 of the 18 basket stages, including eight of the nine Midstream ones, with shares of 20 to 43
-percent. The design therefore replaces between 3 and 46 percent of observed world supply by
-assumption; whether the designated nodes could supply it, at what cost and how fast, lies outside
-the model. The evidence that broad relocalisation is costly and that diversification usually serves
-resilience better than reshoring \citep{oecd2025supply,thakurweigold2024promoting,aiyar2023geoeconomic}
-applies to an allied wall as much as to a national one.
+The allied response is not new supply, either. Under the headline reading of the shock, all of the
+recovery, USD 232 billion in the electro-industrial scope, is drawn from buyers outside the coalition,
+and with every importer's demand protected nothing can be recovered by trade at all
+(Section~\ref{subsec:robust_network}). China is the largest world exporter in 9 of the 18 basket
+stages, including eight of the nine Midstream ones, with shares of 19 to 44 percent. The evidence that
+broad relocalisation is costly and that diversification usually serves resilience better than
+reshoring \citep{oecd2025supply,thakurweigold2024promoting,aiyar2023geoeconomic} applies to an allied
+wall as much as to a national one. The stress test adds a caution about diversification itself:
+against a China shock a supplier-share limit costs little, but in 63 of the 91 nodes no tested limit
+restores 80 percent of demand after a second loss, because the capacity to diversify into does not
+exist.
 
 \paragraph{The node, not the sector, as the unit of treatment.} The working paper argues that
 policy should be set by node, because one technology contains very different risks
-\citep{neis2026allied}. Our stages are coarser than its nodes, but they show the same heterogeneity.
-Technology and stage explain 44 percent of the variance of $\ES$ and 58 percent of $\EO$, against 12
-and 18 percent for countries alone, and concentration sits in different places along each chain.
-Midstream security is mostly a trade question (the Trade category supplies 73 percent of the
-Midstream score), and China dominates the Midstream baskets. Upstream concentration lies with
-resource holders inside the network: Canada supplies 54 percent of the nodes' Nuclear Upstream
-exports, Australia 41 percent of Coal Upstream, and the EU 48 percent of Nuclear Midstream.
-Chinese-parent ownership of foreign-invested plants is high in solar (median share 0.75 across
-partners) and nil in wind (Section~\ref{sec:bilateral}).
+\citep{neis2026allied}. The AIB analysis works at the sub-sector node, and the stages of the indices
+show the same heterogeneity. Technology and stage explain 44 percent of the variance of $\ES$ and 58
+percent of $\EO$, against 12 and 18 percent for countries alone, and concentration sits in different
+places along each chain. Midstream security is mostly a trade question (the Trade category supplies 73
+percent of the Midstream score), and China is the largest exporter in almost every Midstream basket.
+Upstream supply is led by resource holders instead: Australia in the Batteries, Electric Vehicles and
+Coal baskets, Chile in Electric Grid (copper) and Kazakhstan in Nuclear. Chinese-parent ownership of
+foreign-invested plants is high in solar (median share 0.75 across partners) and nil in wind
+(Section~\ref{sec:bilateral}). Within the electro-industrial chains, 37 of the 70 nodes need new
+capacity and 32 need no intervention, so a rule set by technology would treat most nodes wrongly.
 
 Node-level treatment departs from naive rankings in two places. First, the need reading of the
 Strategic Index rates a stage highest where a member lacks the resource. Without the endowment
@@ -60,67 +64,69 @@ eight Nuclear Upstream picks that remain all hold identified uranium resources, 
 (0.015 to 0.79 percent of the world's) and none with recorded mine production in 2019--2024, so
 they are still need-driven: the screen removes the no-resource artefact but not its small-resource
 counterpart. The screen is a rule of pick eligibility and leaves every index value unchanged. Nor
-are the picks an allied assignment: 27 members would prioritise Batteries Midstream, which the
-network design gives to nine producer nodes, and only 28 of the 57 members hold a designed share in
-their pick stage. Second, the network
-does not reproduce the export ranking: the median Spearman correlation between designed production
-shares and observed export shares is 0.53, and in the median basket stage 66 percent of designed
-production goes to nodes outside the three largest exporting nodes. The design applies no endowment
-screen, so 21 of its 90 roles in the screened Upstream stages are held by nodes without a recorded
-resource base; their shares would have to be sourced through trade or overseas equity.
+are the picks an allied assignment: 27 members would prioritise Batteries Midstream, but the minimum
+coalitions of the four compacts with a Batteries Midstream node contain 12 of them, and only 13 of the
+57 members sit in a coalition for their pick stage. Second, the stress test does not follow the export
+ranking either: the economies that would host the most new capacity, Hungary, Czechia, the Philippines
+and Viet Nam, are minor suppliers of added trade, and hosts qualify on revealed capability at scale,
+not on their rank (Section~\ref{subsec:aib_investment}).
 
-\paragraph{Partners in the designed network.} The working paper asks
+\paragraph{Partners in the emergent network.} The working paper asks
 an allied design to ``optimize combinations, not rankings'', valuing a partner for the capability
 it adds rather than for its stand-alone score \citep{neis2026allied}. As bilateral partners the 26
 partner-tier members rank low: their median rank in the headline Partnership Strength Index is 64.5
 of 192, against 16 for the core members, in part because UNGA alignment makes up on average 24
-percent of the Friendshore composite. Yet, in a design that scores capability rather than current
-capacity, the partner tier carries 58 percent of designed Upstream
-production and 45 percent of Midstream production, and nodes outside the high-income group carry 47
-and 43 percent. Eight nodes produce only Upstream, all resource economies (Australia, Chile, Saudi
-Arabia, Peru, Argentina, Oman, Namibia and the Democratic Republic of the Congo); eight others
-produce nothing and belong to the network as consumers. One caveat qualifies the reading: the
-producer score carries no alignment term, so Indonesia, which enters through IPEF and is
-China-leaning by its votes, leads six Upstream stages.
+percent of the Friendshore composite. In the stress test they matter more. Partners would host 33.6
+percent of the supply from the leading hosts' new capacity and economies outside the coalition 7.4
+percent; Viet Nam sits in 16 of the 22 compact coalitions, more than any member; and of the six
+critical supply partners, two are partners (Singapore and Viet Nam) and three are outside the
+coalition altogether (Madagascar, Mozambique and Taiwan). Economies outside the coalition also provide
+14.4 percent of the added trade. The coalition is the set of economies the analysis protects; the
+industrial base that supplies it is wider.
 
 \paragraph{The three hypotheses.} The working paper proposes three hypotheses for testing first
 \citep{neis2026allied}. The paper tests none of them; its results bear on each to a different
 degree. On the first, that allied specialisation reaches a resilience target at lower public cost
-than parallel national programmes, the design shows that seven to ten producers per stage reproduce
-the nodes' observed concentration and leave no consumer on a single supplier, but it contains no
-costs, capacities or outlays; the 1.9 percent of the objective that the portfolio caps forgo is
-score, not money. On the second, that coordinating demand matters more than coordinating subsidies,
-the results are silent: the Policy index folds every policy type into one strength score, and
-network demand is an index of need and size, not a volume. On the third, that rules targeted at
-high-severity nodes deliver most of the benefit of broad decoupling at lower cost, the results
-document a precondition, heterogeneity across stages (the Strategic Index is 73 percent sector and 4
-percent country variance), but not the benefit or cost of either rule, because the design excludes
-China from every stage, itself a sector-wide rule.
+than parallel national programmes, the compacts show how few countries a target needs (three to nine
+reach 95 percent of the anchors' traded demand in every node), but the analysis contains no costs or
+outlays. On the second, that coordinating demand matters more than coordinating subsidies, the results
+point to capacity: the trade compacts add at most 0.04 points to the system's coverage, and every
+compact is an investment and offtake club, which makes demand aggregation, offtake and finance rather
+than trade rules the instruments that matter; whether demand or subsidy coordination delivers the
+capacity is beyond the data. On the third, that rules targeted at high-severity nodes deliver most of
+the benefit of broad decoupling at lower cost, the results document a precondition, heterogeneity
+across nodes and stages (the Strategic Index is 73 percent sector and 4 percent country variance), but
+not the benefit or cost of either rule, because the stress test removes China from every node, itself a
+sector-wide shock.
 
 \paragraph{Normative choices and how readers can vary them.} The weights of the Strategic Index,
-its need reading, the alignment weight in Friendshore, the diversification weight $\lambda$, the
-portfolio caps and the coalition thresholds are choices. As the working paper argues, such weights
-are political, and analysis should display the frontier of choices rather than one number
-\citep{neis2026allied}. Some choices matter a great deal (Section~\ref{sec:robustness}): reading
-the security term as strength rather than need keeps only 5 of the 57 picks; random draws of the
-five Strategic Index weights keep a member's pick in 73 percent of draws on average; dropping
-alignment from Friendshore moves China from 44th to 3rd in the Partnership Strength Index. The
-interactive explorer that accompanies the paper exposes these choices through four dials in its
-Strategic Insights module: \emph{hawkishness} weights security (the need term, Friendshore,
-alignment and Chinese-parent exposure, the diversification weight), \emph{bullishness} opportunity
-(the $\EO$ term, partnership opportunity, market size in network demand), \emph{populism} policy
-signals and home manufacturing, and \emph{greenness} climate performance, dropping coal, oil and gas
-at its highest settings. The paper's headline is one setting of these dials. The descriptive Sector
-Insights module shows the theme data (trade flows, reserves, production, investment including the
-CM-FDI projects, policy records) by technology and stage without index weights, so that a reader
-can inspect the evidence behind any score.
+its need reading, the alignment weight in Friendshore and the coalition thresholds are choices, and so
+are, in the AIB analysis, the economies protected, the reading of the shock and the classification
+thresholds. As the working paper argues, such weights are political, and analysis should display the
+frontier of choices rather than one number \citep{neis2026allied}. Some choices matter a great deal
+(Section~\ref{sec:robustness}): reading the security term as strength rather than need keeps only 5 of
+the 57 picks; random draws of the five Strategic Index weights keep a member's pick in 73 percent of
+draws on average; dropping alignment from Friendshore moves China from 44th to 3rd in the Partnership
+Strength Index; reading the China shock as a decoupling rather than an export restriction lowers the
+electro-industrial nodes that need new capacity from 37 to 24. The interactive explorer that accompanies
+the paper exposes the index choices through four Perspective dials in its country profiles:
+\emph{hawkishness} weights security (the need term, Friendshore, alignment and Chinese-parent
+exposure), \emph{bullishness} opportunity (the $\EO$ term and partnership opportunity),
+\emph{populism} policy signals and home manufacturing, and \emph{greenness} climate performance,
+dropping coal, oil and gas at its highest settings. The paper's headline is one setting of these dials.
+The sector profiles show the theme data (trade flows, reserves, production, investment including the
+CM-FDI projects, policy records) by technology and stage without index weights, and the Allied
+Industrial Base section shows the stress test, the investor--host flows, the country roles and the
+compacts, with observed facts and settings that are preferences labelled apart.
 
 \subsection{Limitations}\label{subsec:discussion_limitations}
 
 \emph{No outcome validation.} The indices are not validated against disruptions, investment or
 export growth. The one predictive test, in the study of vertical complementarities
 (Section~\ref{subsec:robust_vertical}), is a warning: sourcing-weighted input security did not
-predict the import shortfalls of 2021--22, whereas sourcing concentration did.
+predict the import shortfalls of 2021--22, whereas sourcing concentration did. The AIB analysis is
+validated only by tracing four nodes through every step (Online Appendix~\ref{oa:network}), not
+against a realised shock.
 
 \emph{Data vintages and source conventions.} Inputs come from different years (92 percent of
 opportunity cells mix years; fossil reserves date from end-2020, mineral reserves from end-2025),
@@ -137,10 +143,11 @@ through their partners' declarations: 65 of 208 importers in 2024, among them tw
 (Gabon and Viet Nam). Electricity is excluded from the grid basket, and Hong Kong's re-exports from
 the export measures.
 
-\emph{A knife-edge $\lambda$.} The calibrated value 0.78 meets the target by a small margin (0.77
-misses it by 0.0002), the median designed concentration is not monotone in $\lambda$, and the pick
-moved with every input vintage. The design itself is stable: at 0.77, 21 of the 22 producer sets
-are unchanged.
+\emph{Traded demand and synthetic capacity.} The AIB analysis covers traded demand only, so
+production used at home is outside it; it rests on one reference year, applies each shock node by node
+without propagation along the chain, reads trade values as capability except in the 11 nodes with
+credible physical data, and adds capacity as a standardised increment rather than as projects with
+costs and lead times.
 
 \emph{Policy basis.} The Policy index of 150 economies, 11 of them coalition members, rests on IEA
 PAMS alone. For the 65 economies with both components, ranking their cells on IEA PAMS alone rather
@@ -153,83 +160,78 @@ Midstream stages of nuclear, oil, gas and coal (Namibia also Nuclear Upstream); 
 median; and the technology weight (0.999 for nuclear against 0.42 for gas, 0.02 for coal and 0 for
 oil) decides the pick. The picks reflect a narrow choice set, not an opportunity in nuclear fuel.
 
-\emph{Rank-compressed EU demand.} The EU node holds 24.6 percent of the nodes' GDP but a median
-demand weight of 0.035, about that of the United States: network demand is a ranking, not a
-volume.
-
 \emph{Coalition boundary.} Taiwan (no UN vote, no listed agreement, at most 1.5 percent of any
 world stage) and Switzerland (whose only supplier route rested on electricity exports) are outside
-the coalition.
+the coalition. The AIB analysis does not protect their demand but counts their supply: Taiwan is a
+critical supply partner of the battery compact.
 
 \emph{Layers not yet measured.} Of the working paper's five analytical layers, the paper measures
-node severity only as country-relative exposure (concentration and dependence, ranked within each
-node), capability through $\EO$, and partner
-complementarity through the bilateral indices and the network. It does not measure the fourth and
-fifth, bankability and robustness under stress (recovery time), nor common-mode risk beyond the
-ownership of foreign-invested plants or the dynamic option value of latent capacity.
+node severity as country-relative exposure and, in the AIB analysis, as the share of traded demand a
+shock removes; capability through $\EO$ and revealed export capability; partner complementarity
+through the bilateral indices and the compacts; and robustness through the stress tests and an N-1
+test. It does not measure the fourth layer, bankability, nor recovery time, common-mode risk beyond
+the ownership of foreign-invested plants, or the dynamic option value of latent capacity.
 
 \subsection{Next steps and recommendations}\label{subsec:discussion_next}
 
 The working paper orders the decision in three steps, severity, coordination and specialisation
-\citep{neis2026allied}. This paper offers a first, score-based version of the last step and partial measures for the
-first two.
+\citep{neis2026allied}. This paper offers measured versions of the first two for traded goods and a
+first version of the third: the compacts name where capacity should be built and with whom.
 Table~\ref{tab:discussion_agenda} lists ten extensions drawn from the working paper's
 implementation questions, analytical upgrades and research agenda, with the data and model change
 each requires. Five deserve emphasis.
 
-First, a \emph{complementarity matrix}. The network can already price a node's marginal
-contribution: re-solving the design without each node, or with each candidate added, measures what
-it adds to the network objective. A full solve of the 22 stages takes about 13 minutes at the
-headline setting, so the matrix is affordable, and it would replace the stand-alone ranking of
-partners with the gap-filling value the working paper asks for.
+First, a \emph{complementarity matrix}. The AIB analysis already prices a country's marginal
+contribution to a compact: the leave-one-country-out test and the exact coalition identify the
+members no single other economy can replace. Extending the test to every economy and node, with
+Shapley values over the coalition program, would replace the stand-alone ranking of partners with the
+gap-filling value the working paper asks for.
 
 Second, \emph{common-mode risk and resilience floors}. Two suppliers in two countries do not
 diversify supply if they share a parent, a precursor or an equipment maker
 \citep{neis2026allied,farrell2019weaponized}. The Chinese-parent component of Friendshore covers
-the first channel in four Midstream stages; the network should also cap, by constraint, the
-designed share resting on any one parent headquarters or precursor source. The redundancy rule of
-the design (at least two suppliers per consumer) is a first resilience floor. Floors tied to
-recovery time need volumes, capacities and inventories in place of unit demand, so that removing
-the largest producer for 6, 12 or 24 months yields unmet demand rather than a change in score. The
-two other upgrades need new inputs. \emph{Dynamic option value}, the time and cost of ramping or
-requalifying capacity, calls for a multi-period design with build lead times, which the CM-FDI
-announcement and completion years could calibrate. \emph{Bankability} needs the cost of capital,
+the first channel in four Midstream stages; the trade program could also cap, by constraint, the
+supply resting on any one parent headquarters or precursor source. The N-1 test of the stress test is
+a first resilience floor. Floors tied to recovery time need capacities and inventories, so that
+removing the largest producer for 6, 12 or 24 months yields unmet demand over time. The two other
+upgrades need new inputs. \emph{Dynamic option value}, the time and cost of ramping or requalifying
+capacity, calls for a multi-period version of the investment step with build lead times, which the
+CM-FDI announcement and completion years could calibrate. \emph{Bankability} needs the cost of capital,
 permitting times, offtake and delivery capacity by country and stage \citep{spokas2025systemic},
-entered as a node-score component or a feasibility constraint.
+entered as a host-eligibility condition or a cost of the increment.
 
-Third, an \emph{AIB Network Optimization Pilot} for the three chains the working paper proposes:
-rare earths and magnets, batteries and anodes, and solar wafers. Our baskets already isolate the
-magnet rare earths (Wind and Electric Vehicles Upstream), permanent magnets (Wind and Electric
-Vehicles Midstream), anode materials (Batteries Midstream) and polysilicon and wafers (Solar
-Midstream), but each chain must be split into sub-stages (separation, alloy, magnet; graphite,
+Third, \emph{chain pilots} for the three chains the working paper proposes: rare earths and magnets,
+batteries and anodes, and solar wafers. The AIB analysis already traces permanent magnets, rare-earth
+compounds, anode materials and wafers through every step and finds each a capacity gap under the
+headline, but each chain must be split into finer sub-stages (separation, alloy, magnet; graphite,
 spherical graphite, anode; polysilicon, ingot and wafer, cell) with plant-level capacity and
-qualification times. The output would be a portfolio per chain: capacity by node, locations,
-minimum redundancy, priority projects and financing gaps.
+qualification times. The output would be a portfolio per chain: capacity by host, minimum redundancy,
+priority projects and financing gaps.
 
 Fourth, \emph{differentiated Gates and Fences and sectoral compacts}. Combined with severity data
-on consequence and substitutability, the stage-level evidence assembled here (concentration, China's
-export share, Chinese-parent exposure, alignment) can sort stages into high, medium and low fences.
-The designed flows identify the partner sets for compacts with pooled demand and finance, and the
-build candidates (led by India, Indonesia and Viet Nam) show where development finance would back a
-designated role.
+on consequence and substitutability, the node evidence assembled here (exposure, residual gap,
+concentration, Chinese-parent exposure, alignment) can sort nodes into high, medium and low fences.
+The node table of the compacts hands each node to that evidence with its treatment, and the
+investor--host pairs show where development and export finance would back new capacity (Czechia, Viet
+Nam and the Philippines lead the most nodes).
 
 Fifth, a \emph{system scorecard with off-ramps}. A recurring rerun already produces several of the
-working paper's system metrics: supplier counts, designed and observed concentration, the largest
-share and the trusted share of world supply. With inventory coverage, recovery time and the price
-premium added, it could trigger reviews automatically, for instance when the nodes' observed
-concentration in a stage rises above the calibration target, and retire support when it falls.
+working paper's system metrics by node: exposure, coverage, the residual gap, the largest supplier's
+share and the share of supply from inside the coalition. With inventory coverage, recovery time and
+the price premium added, it could trigger reviews automatically, for instance when a node's residual
+gap rises above the \textsc{build} threshold, and retire support when it falls.
 
-The hypotheses can then be tested. Forcing each node to supply its own demand gives the
-self-sufficiency counterfactual for the first, once costs enter. CM-FDI project histories can be
-set against demand instruments and supply subsidies for the second. Admitting China and other non-members as nodes, fenced stage by
-stage rather than excluded, would test the third, and varying the redundancy rule would show when
-another allied supplier stops reducing risk. The study of vertical complementarities adds its own
-agenda (last row of the table).
+The hypotheses can then be tested. Restricting each member to its own supply gives the
+self-sufficiency counterfactual for the first, once costs enter. CM-FDI project histories can be set
+against demand instruments and supply subsidies for the second. Shocks that remove China only in
+high-severity nodes, rather than in every node, would test the third, and the supplier-share frontier
+already shows when another supplier stops adding resilience. The study of vertical complementarities
+adds its own agenda (last row of the table).
 
 \begin{table}[htbp]
   \centering
   \begin{threeparttable}
-  \caption{Next steps: extensions of the indices and the network design}
+  \caption{Next steps: extensions of the indices and the Allied Industrial Base analysis}
   \label{tab:discussion_agenda}
   \footnotesize
   \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.2\textwidth}
@@ -237,23 +239,23 @@ agenda (last row of the table).
     \toprule
     Extension & Data needed & Model change \\
     \midrule
-    Complementarity matrix & None beyond the present inputs & Leave-one-node-out and add-one-candidate re-solves; marginal (or Shapley) value of each node in each stage \\
-    Common-mode risk & Plant ownership beyond foreign investment; precursor and equipment sourcing by plant & Constraint on the designed share sharing a parent headquarters or precursor source \\
-    Dynamic option value & Project lead times (CM-FDI announcement and completion years), pipeline capacity, technology readiness of substitutes & Multi-period design with capacity expansion and build lead times \\
-    Bankability and feasibility & Cost of capital, permitting times, offtake, insurance, delivery capacity \citep{spokas2025systemic} & Bankability as a node-score component or a feasibility constraint \\
-    Resilience floors and recovery time & Demand volumes for 2030 and 2035, plant capacities, inventories & Volumetric flows; stress tests removing the largest producer for 6, 12 or 24 months \\
-    Network Optimization Pilot & Sub-stage HS6 codes, plant-level capacity, qualification times for magnets, anodes and wafers & Sub-stage nodes for three chains; portfolio by chain \\
-    Gates and Fences by node & Consequence and substitutability by stage; Chinese-parent exposure beyond four stages & Stage-specific access rules for non-members admitted as fenced nodes \\
-    Sectoral compacts & Offtake and procurement commitments; development and export finance & Pooled demand by compact; finance assigned to designed roles \\
-    System scorecard and off-ramps & Inventory coverage, price premium, capital mobilised & Annual rerun with review triggers on concentration and supplier counts \\
-    Vertical complementarities & Plant-level co-location; input--output coefficients; 2023 graphite and gallium controls & Co-location term in the network; tested before adoption \\
+    Complementarity matrix & None beyond the present inputs & Leave-one-country-out over every node and economy; Shapley values over the coalition program \\
+    Common-mode risk & Plant ownership beyond foreign investment; precursor and equipment sourcing by plant & Constraint on the supply sharing a parent headquarters or precursor source \\
+    Dynamic option value & Project lead times (CM-FDI announcement and completion years), pipeline capacity, technology readiness of substitutes & Multi-period investment step with build lead times \\
+    Bankability and feasibility & Cost of capital, permitting times, offtake, insurance, delivery capacity \citep{spokas2025systemic} & Bankability as a host-eligibility condition or a cost of the increment \\
+    Resilience floors and recovery time & Demand volumes for 2030 and 2035, plant capacities, inventories & Capacities and inventories in the stress test; outages of 6, 12 or 24 months \\
+    Chain pilots & Sub-stage HS6 codes, plant-level capacity, qualification times for magnets, anodes and wafers & Sub-stage nodes for three chains; portfolio by chain \\
+    Gates and Fences by node & Consequence and substitutability by node; Chinese-parent exposure beyond four stages & Node-specific access rules for non-members \\
+    Sectoral compacts & Offtake and procurement commitments; development and export finance & Offtake volumes and finance by compact; costs of the investment step \\
+    System scorecard and off-ramps & Inventory coverage, price premium, capital mobilised & Annual rerun with review triggers on exposure and residual gaps \\
+    Vertical complementarities & Plant-level co-location; input--output coefficients; 2023 graphite and gallium controls & Coupling of supply across the nodes of a chain; tested before adoption \\
     \bottomrule
   \end{tabularx}
   \begin{tablenotes}[flushleft]\footnotesize
     \item \emph{Notes:} Extensions drawn from the implementation questions, analytical upgrades and research
     agenda of the NEIS working paper on the Allied Industrial Base \citep{neis2026allied}, matched to the
-    data and model of this paper. ``Re-solves'' use the production configuration of
-    Section~\ref{sec:network} (37 nodes, $\lambda=0.78$, portfolio caps).
+    data and model of this paper. Model changes extend the headline configuration of
+    Section~\ref{sec:network} (China removed, hold, production-constrained, reallocation).
   \end{tablenotes}
   \end{threeparttable}
 \end{table}
@@ -262,12 +264,11 @@ agenda (last row of the table).
 
 This paper has built indices of energy security and economic opportunity for 219 economies, eleven
 technologies and three supply-chain stages; derived a coalition of 57 members from UN voting and
-supply shares; scored every ordered pair of economies as friendshoring opportunities and export markets; and designed an
-allied division of labour across 22 Upstream and Midstream stages. The results support the working
+supply shares; scored every ordered pair of economies as friendshoring opportunities and export
+markets; and stress-tested the allied supply network at 92 sub-sector nodes, from the shock through
+existing and optimized trade to capacity and Sectoral Compacts. The results support the working
 paper's premise in a limited sense: no member is both secure and competitive across the chains, and
-a design that penalises concentration assigns roles very differently from a ranking of current
-exporters. Whether members' capabilities are complementary in the working paper's sense, and whether
-such a design is cheaper, more bankable or faster to recover, needs the complementarity matrix,
-costs, volumes and time. The
-indices and the network are best read as the analytical backbone of a
-recurring review, with the explorer showing how its answers change when the weights change.
+the allies' exposure to a China shock is a gap in capacity that trade among them cannot close.
+Whether the compacts are cheaper, more bankable or faster to recover than national programmes needs
+costs, volumes and time. The indices and the AIB analysis are best read as the analytical backbone of
+a recurring review, with the explorer showing how its answers change when the settings change.

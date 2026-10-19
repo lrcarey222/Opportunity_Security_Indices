@@ -7,9 +7,13 @@
 #   --out-dir    bundle directory (default: dashboard/public/data/aib)
 #   --top-edges  trade and investment relationships kept per compact (default 40)
 #
-# Writes compacts.<md5_8>.json (schema osi-aib v1: meta, country names, compacts, nodes) and, last,
-# manifest.json naming it; older compacts.*.json files are removed. Plain JSON, every array field
-# wrapped in I() (R/dashboard/aib/aib_export.R).
+# Writes compacts.<md5_8>.json (schema osi-aib v1 with optional additions: meta, country names, compacts, nodes,
+# and since 2026-10-17 the emergent network `network` (emergent_aib_country_summary + emergent_aib_edges)
+# and the investor -> host flows `investmentFlows` (allied_investment_pairs + the ranked hosts of
+# allied_investment_partnerships), headline variant) and, last, manifest.json naming it; older
+# compacts.*.json files are removed. Plain JSON, every array field wrapped in I()
+# (R/dashboard/aib/aib_export.R); the additive sections are checked first (R/dashboard/aib/aib_check.R,
+# the mirror of the TypeScript contract) and the script stops on a problem.
 
 source(local({
   resolve_bootstrap_path <- function() {
@@ -48,6 +52,7 @@ abs_path <- function(p) normalizePath(if (grepl("^([A-Za-z]:)?[/\\]", p)) p else
 
 source(file.path(repo_root, "R", "aib", "aib_compacts.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_export.R"))
+source(file.path(repo_root, "R", "dashboard", "aib", "aib_check.R"))
 source(file.path(repo_root, "R", "dashboard", "country", "country_util.R"))
 
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) file.path(repo_root, config$outputs_dir) else file.path(repo_root, config$processed_dir, "outputs")
@@ -59,6 +64,8 @@ if (!file.exists(res_path)) stop("Run scripts/32_build_aib_partnerships.R first:
 res <- readRDS(res_path)
 
 bundle <- aib_dash_bundle(res, top_edges = top_edges)
+problems <- aib_check_bundle_additions(bundle)
+if (length(problems)) stop("The AIB bundle does not match the contract:\n  ", paste(utils::head(problems, 20), collapse = "\n  "))
 txt <- country_json(bundle)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 tmp <- tempfile(fileext = ".json")
@@ -69,8 +76,11 @@ writeLines(txt, file.path(out_dir, fname), useBytes = TRUE)
 old <- setdiff(list.files(out_dir, pattern = "^compacts\\.[0-9a-f]{8}\\.json$"), fname)
 if (length(old)) file.remove(file.path(out_dir, old))
 manifest <- list(schema = AIB_DASH_SCHEMA, version = AIB_DASH_VERSION, created = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+                 demandScope = res$meta$demand_scope, candidateUniverse = res$meta$candidate_universe,
+                 shockSemantics = res$meta$headline_semantics, supplyConstraint = res$meta$headline_constraint,
                  universe = res$meta$universe, headlineShock = res$meta$headline_shock, headlineScenario = res$meta$headline_scenario,
                  files = list(compacts = fname))
 writeLines(country_json(manifest, pretty = TRUE), file.path(out_dir, "manifest.json"), useBytes = TRUE)
-message(sprintf("AIB dashboard bundle: %s (%.0f kB, %d compacts, %d nodes) in %s",
-                fname, file.size(file.path(out_dir, fname)) / 1024, length(bundle$compacts), length(bundle$nodes), out_dir))
+message(sprintf("AIB dashboard bundle: %s (%.0f kB, %d compacts, %d nodes, %d network countries, %d network edges, %d investment flows) in %s",
+                fname, file.size(file.path(out_dir, fname)) / 1024, length(bundle$compacts), length(bundle$nodes),
+                length(bundle$network$countries), length(bundle$network$edges), length(bundle$investmentFlows$pairs), out_dir))

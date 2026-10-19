@@ -217,7 +217,7 @@ function Reconciliation() {
       notes={
         <p>
           The gap has three reasons: importers declare cost, insurance and freight while exporters declare free on board; economies that do not report are seen in the matrix through their partners; Hong Kong's
-          re-exports are out of the exporter-reported basis. Strategic Insights ranks the exporter-reported <Term id="hhi">concentration index (HHI)</Term>.
+          re-exports are out of the exporter-reported basis. The country indices rank the exporter-reported <Term id="hhi">concentration index (HHI)</Term>.
         </p>
       }
       summary={`${rows.length} sector-years compared; ${warn} differ in China's share by more than 3 points.`}
@@ -434,8 +434,8 @@ export default function SourcesView() {
   useScrollToHash(loc.hash, true);
   return (
     <div className="space-y-10">
-      <PageHead eyebrow="SECTOR INSIGHTS · SOURCES" title="Sources & data" lede="Where every number comes from, how the trade figures are reconciled, and the full data as downloads." />
-      <Section id="about" title="About Sector Insights">
+      <PageHead eyebrow="SECTORS · SOURCES" title="Sources & data" lede="Where every number comes from, how the trade figures are reconciled, and the full data as downloads." />
+      <Section id="about" title="About the Sector pages">
         {/* the content is this app's own Markdown, filled with counts from the data build */}
         <article className="prose-neis max-w-4xl" dangerouslySetInnerHTML={{ __html: html }} />
         <p className="mt-4 text-sm">

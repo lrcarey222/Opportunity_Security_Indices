@@ -115,7 +115,7 @@ describe('GlossaryList', () => {
     expect(terms.length).toBe(glossaryFor('country').length);
     expect(terms.some((t) => t === 'Energy Security(ES)')).toBe(true);
     expect(list.querySelector(`#${glossaryAnchor('grow')}`)).toBeTruthy();
-    expect(list.querySelector(`#${glossaryAnchor('lambda')}`)).toBeNull();
+    expect(list.querySelector(`#${glossaryAnchor('endowment_screen')}`)).toBeNull();
     // related terms link within the page
     const es = list.querySelector(`#${glossaryAnchor('es')}`) as HTMLElement;
     expect(within(es).getByRole('link', { name: 'Economic Opportunity' }).getAttribute('href')).toBe(`#${glossaryAnchor('eo')}`);
@@ -155,12 +155,12 @@ describe('/glossary', () => {
       scrolled = this.id;
     };
     try {
-      withRouter(<GlossaryView />, `/glossary?module=country#${glossaryAnchor('lambda')}`);
+      withRouter(<GlossaryView />, `/glossary?module=country#${glossaryAnchor('endowment_screen')}`);
       expect(await screen.findByRole('heading', { level: 1, name: 'Glossary' })).toBeTruthy();
-      expect(document.getElementById(glossaryAnchor('lambda'))).toBeTruthy();
+      expect(document.getElementById(glossaryAnchor('endowment_screen'))).toBeTruthy();
       expect((screen.getByRole('radio', { name: 'All' }) as HTMLInputElement).checked).toBe(true);
       await act(async () => undefined);
-      expect(scrolled).toBe(glossaryAnchor('lambda'));
+      expect(scrolled).toBe(glossaryAnchor('endowment_screen'));
     } finally {
       proto.scrollIntoView = had;
     }

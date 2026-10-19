@@ -40,11 +40,11 @@ export function nameOf(names: Readonly<Record<string, string>>, iso3: string | n
   return names[iso3] ?? iso3;
 }
 
-/** "Japan, Korea and Germany". */
-export function listWords(items: readonly string[]): string {
+/** "Japan, Korea and Germany" ("Japan, Korea or Germany" with `or`). */
+export function listWords(items: readonly string[], conj: 'and' | 'or' = 'and'): string {
   if (items.length <= 1) return items[0] ?? '';
-  if (items.length === 2) return `${items[0]} and ${items[1]}`;
-  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+  if (items.length === 2) return `${items[0]} ${conj} ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')} ${conj} ${items[items.length - 1]}`;
 }
 
 /** "1 node" / "3 nodes". */
@@ -53,4 +53,18 @@ export const plural = (n: number, one: string, many = `${one}s`): string => `${n
 /** "Batteries, Electric Vehicles · Midstream". */
 export function techStage(techs: readonly string[], stage: string): string {
   return `${techs.join(', ') || DASH} · ${stage}`;
+}
+
+/**
+ * A short display title for a compact. The exporter names a compact by its technologies and every node,
+ * cut to "…, and N more" when long (up to ~150 characters); such a name becomes "{technologies}: {first
+ * node} and {N} more". Shorter names are kept whole. Display only.
+ */
+export function compactTitle(c: { name: string; nodes: readonly string[] }): string {
+  if (!/, and \d+ more$/.test(c.name)) return c.name;
+  const i = c.name.indexOf(': ');
+  if (i < 0) return c.name;
+  const first = c.name.slice(i + 2).split(', ')[0];
+  const more = c.nodes.length - 1;
+  return more > 0 ? `${c.name.slice(0, i)}: ${first} and ${more} more` : `${c.name.slice(0, i)}: ${first}`;
 }

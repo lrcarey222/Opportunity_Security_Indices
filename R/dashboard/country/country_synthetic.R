@@ -213,13 +213,7 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
   ga$bloc_partner <- unname(b2)
   ga$basis_partner <- ifelse(ga$partner_iso %in% c("PRI", "HKG"), "inherited", "own_votes")
 
-  # ---- network design and allied picks
-  ms <- data.frame(tech = c("Batteries", "Solar", "Oil", "Batteries", "Nuclear", "Solar", "Gas", "Oil"),
-                   supply_chain = c("Midstream", "Midstream", "Upstream", "Midstream", "Upstream", "Midstream", "Upstream", "Upstream"),
-                   iso3c = c("USA", "USA", "USA", "DEU", "FRA", "JPN", "BRA", "BRA"),
-                   network_node = c("USA", "USA", "USA", "EUU", "EUU", "JPN", "BRA", "BRA"), selected = TRUE,
-                   production_share_derived = c(0.3, 0.12, 0.25, 0.08, 0.05, 0.1, 0.07, 0.11),
-                   share_is_derived = c(FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE), stringsAsFactors = FALSE)
+  # ---- allied picks (the network design's member shares are retired, 2026-10-17)
   allied <- do.call(rbind, lapply(ro$iso3[ro$tier %in% c("core", "partner")], function(iso) {
     d <- si_rows[[iso]]
     el <- d[is.finite(d$si) & d$stage != "Downstream" & !d$tech %in% c("Geothermal", "Green Hydrogen") & is.na(d$pick_exclusion), ]
@@ -283,7 +277,7 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
     raw_rows = raw_rows, raw_idx = country_raw_index(raw_rows),
     flows = flows, basket_keys = basket_keys, fdi = fdi,
     psi_by = split(psi_dyad, psi_dyad$reporter_iso), best5 = b5, psi_partner = pp,
-    agreements = agreements, geo_alignment = ga, member_shares = ms, allied = allied, nipo = nipo,
+    agreements = agreements, geo_alignment = ga, allied = allied, nipo = nipo,
     party_fn = party_fn,
     .cell_fs = cell_fs, .psi_dyad = psi_dyad
   ) |> country_ctx_finish()
@@ -303,4 +297,32 @@ country_ctx_finish <- function(ctx) {
                                    nm$eu_min_jurisdictions %||% ctx$cfg$nipo$eu_min_jurisdictions %||% 5L)
   }
   ctx
+}
+
+# Synthetic inputs of the monthly trade files (2026-10-19): a small basket over three cells and 12 months of
+# reported imports and exports for the United States and Germany (France has no monthly data), so the
+# fixture carries trade-USA and trade-DEU. Germany declares no exports in its last month.
+country_synthetic_monthly <- function(seed = 7L) {
+  set.seed(seed)
+  basket <- sector_trade_basket(data.frame(
+    tech = c("Batteries", "Batteries", "Batteries", "Batteries", "Solar", "Solar", "Electric Vehicles"),
+    supply_chain = "Midstream",
+    sub_sector = c("Battery Cells", "Battery Cells", "Cathode Materials & Battery Precursors", "Anode Materials",
+                   "Solar Modules", "Polysilicon & Wafers", "Vehicle Batteries & Packs"),
+    hs6 = c("850760", "850790", "284190", "380110", "854143", "280461", "850760")
+  ))
+  months <- country_month_seq(202508L)
+  codes <- unique(basket$hs6)
+  base <- c(`850760` = 9e8, `850790` = 1.5e8, `284190` = 6e7, `380110` = 2e7, `854143` = 3e8, `280461` = 4e7)
+  rows <- list()
+  for (iso in c("USA", "DEU")) for (fl in c("M", "X")) for (cd in codes) {
+    trend <- if (cd == "854143") seq(1, 0.6, length.out = 12) else seq(1, 1.35, length.out = 12)
+    v <- round(base[[cd]] * (if (iso == "DEU") 0.4 else 1) * (if (fl == "X") 0.3 else 1) * trend * exp(stats::rnorm(12, 0, 0.08)))
+    keep <- !(iso == "DEU" & fl == "X" & seq_along(months) == 12)
+    rows[[length(rows) + 1]] <- data.frame(reporter_iso = iso, period = as.character(months[keep]), flow_code = fl,
+                                           cmd_code = cd, primary_value = v[keep], stringsAsFactors = FALSE)
+  }
+  list(raw = do.call(rbind, rows), basket = basket,
+       windows = data.frame(reporter_iso = c("USA", "DEU", "FRA"), first_month = c(202508L, 202508L, NA),
+                            last_month = c(202607L, 202607L, NA), stringsAsFactors = FALSE))
 }

@@ -65,7 +65,7 @@ export function ledeOf(sheet: FactSheet): string {
   const upgrade = s.quadrants.upgrade;
   const nUp = upgrade.v ?? 0;
   const howMany = nUp === 0 ? 'none' : dOf(upgrade);
-  let mid = `On the paper's baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the Upgrade corner, split at its own median sector)`;
+  let mid = `On the NEIS baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the Upgrade corner, split at its own median sector)`;
   if (m.has_si && s.top_si) {
     const top = cellOf(sheet, s.top_si.cell);
     const nxt = cellOf(sheet, s.top_si.next);
@@ -233,31 +233,6 @@ export function alignmentText(r: PartnerRow): string {
 /** The match column words (sentence case), or a dash. */
 export function matchText(sheet: FactSheet, r: PartnerRow): string {
   return r.match ? cap(sheet.words?.match?.[r.match] ?? r.match) : '–';
-}
-
-/** The "Role in the allied network design" card text (S5). */
-export function networkSentence(sheet: FactSheet): string[] {
-  const n = sheet.network;
-  const name = proseName(sheet.meta.country);
-  if (!n.member) return [`${cap(name)} is not part of the allied network design.`];
-  const out: string[] = [];
-  const via = n.via_eu ? ' (through the EU node)' : '';
-  if (n.producer.length) {
-    const parts = n.producer.map((p) => `${cellOf(sheet, p.cell)?.label_prose ?? p.cell} ${p.share.d}`);
-    const derived = n.producer.some((p) => p.derived) ? ' (derived from the EU node’s shares)' : '';
-    out.push(
-      `In the paper's network design, ${name}${via} is a producer in ${n.producer.length} of the ${dOf(n.n_stages)} upstream and midstream stages. Its shares of the coalition's designed production${derived}: ${joinAnd(parts)}.`,
-    );
-  } else {
-    out.push(`In the paper's network design, ${name}${via} is not a producer in any of the ${dOf(n.n_stages)} upstream and midstream stages.`);
-  }
-  if (n.pick) {
-    const c = cellOf(sheet, n.pick.cell);
-    const ru = n.pick.runner_up ? cellOf(sheet, n.pick.runner_up) : null;
-    const tie = ru ? `, ${n.pick.near_tie ? 'almost tied with' : 'ahead of'} ${ru.label_prose} by ${n.pick.margin.d}` : '';
-    out.push(`Its allied pick is ${c?.label_prose ?? n.pick.cell} (Strategic Index ${n.pick.si.d}${tie}).`);
-  }
-  return out;
 }
 
 /** "Not placed (n): Geothermal — Upstream (no Energy Security score ...), ..." */

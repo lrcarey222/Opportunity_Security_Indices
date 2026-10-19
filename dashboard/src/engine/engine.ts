@@ -12,7 +12,7 @@ import type {
   Bundle, Column, Params, PartnerCells, PillarsResult, PolicyResult, PsiResult, SiResult, Str, Table, Top5Result,
 } from './types.ts';
 
-export type CacheLayer = 'pillars' | 'policy' | 'si' | 'fs_cells' | 'po_cells' | 'top5' | 'psi' | 'net_inputs' | 'net_score' | 'net_solve';
+export type CacheLayer = 'pillars' | 'policy' | 'si' | 'fs_cells' | 'po_cells' | 'top5' | 'psi';
 
 /** An LRU cache per layer; pinned keys (the baseline) are never evicted. */
 export class LayerCache {
@@ -240,17 +240,12 @@ export function paramsLong(params: Params): Table {
       value.push(v === null || v === undefined ? null : typeof v === 'boolean' ? (v ? 'TRUE' : 'FALSE') : String(v));
     });
   };
-  for (const sec of ['dials', 'm', 'pillars', 'policy', 'si', 'partner', 'network'] as const) walk(sec, '', (params as unknown as Record<string, unknown>)[sec]);
+  for (const sec of ['dials', 'm', 'pillars', 'policy', 'si', 'partner'] as const) walk(sec, '', (params as unknown as Record<string, unknown>)[sec]);
   return table({ section, parameter, value });
 }
 
 /** dash_scenario_tables(): tidy tables of a scenario for download. */
-export function scenarioTables(
-  result: DashResult,
-  network?: { specialization?: Table; flows?: Table; diagnostics?: Table; member_shares?: Table | null } | null,
-  cmp?: CompareResult | null,
-  bundle?: Bundle | null,
-): Record<string, Table> {
+export function scenarioTables(result: DashResult, cmp?: CompareResult | null, bundle?: Bundle | null): Record<string, Table> {
   const out: Record<string, Table> = { parameters: paramsLong(result.params) };
   if (bundle) {
     const m = bundle.manifest;
@@ -270,12 +265,6 @@ export function scenarioTables(
   if (result.partner) {
     out.psi_partner = cmp?.psi_partner ?? result.partner.psi.partner;
     out.psi_dyad = result.partner.psi.dyad;
-  }
-  if (network) {
-    if (network.specialization) out.network_specialization = network.specialization;
-    if (network.flows) out.network_flows = network.flows;
-    if (network.diagnostics) out.network_diagnostics = network.diagnostics;
-    if (network.member_shares) out.network_member_shares = network.member_shares;
   }
   return out;
 }

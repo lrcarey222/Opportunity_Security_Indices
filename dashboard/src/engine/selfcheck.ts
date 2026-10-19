@@ -3,13 +3,11 @@
 
 import type { Column, NDArray, Table } from './codec.ts';
 import { run, runPartner, type LayerCache } from './engine.ts';
-import { networkInputs, networkScore, networkSolve } from './network/index.ts';
 import { NA_BOOL, NA_INT } from './numeric.ts';
-import { lgl, num, str } from './table.ts';
-import type { Bundle, PartnerCells, PolicyResult } from './types.ts';
+import type { Bundle } from './types.ts';
 
 export interface SelfCheck {
-  layer: 'core' | 'partner' | 'network';
+  layer: 'core' | 'partner';
   ok: boolean;
   n: number;
   max_abs_diff: number;
@@ -111,46 +109,4 @@ export function selfCheckPartner(bundle: Bundle, tol = 1e-12, opts: { cache?: La
   }
   acc.table('psi_partner', p.psi.partner, get(bundle.baseline, 'psi_partner') as Table, tol);
   return acc.result('partner');
-}
-
-/** The greedy network at the baseline against the shipped greedy baseline (same producers; shares <= 1e-6). */
-export async function selfCheckNetwork(
-  bundle: Bundle,
-  tol = 1e-6,
-  opts: { shouldAbort?: () => boolean; cells?: PartnerCells; policy?: PolicyResult } = {},
-): Promise<SelfCheck> {
-  const acc = new Acc();
-  const gb = bundle.network?.greedy_baseline as Record<string, unknown> | null | undefined;
-  if (!gb) return { layer: 'network', ok: true, n: 0, max_abs_diff: 0, detail: 'no shipped greedy baseline' };
-  const params = bundle.baselineParams;
-  // the baseline cells and Policy index (the caller's cached ones when given)
-  const pol = opts.policy ?? run(bundle, params, undefined, { partner: false, contributions: false }).policy;
-  const cells = opts.cells ?? runPartner(bundle, params).cells;
-  const sc = networkScore(networkInputs(bundle, params, cells, pol), params);
-  const sol = await networkSolve(sc, params, bundle, { shouldAbort: opts.shouldAbort });
-  if (!sol) return { layer: 'network', ok: true, n: 0, max_abs_diff: 0, detail: 'aborted' };
-  const want = gb.specialization as Table;
-  const key = (t: Table, i: number) => `${str(t, 'tech')[i]}|${str(t, 'supply_chain')[i]}|${str(t, 'iso3c')[i]}`;
-  const got = new Map<string, number>();
-  for (let i = 0; i < sol.specialization.nrow; i++) got.set(key(sol.specialization, i), i);
-  const gSel = lgl(sol.specialization, 'selected');
-  const gSh = num(sol.specialization, 'production_share');
-  const wSel = lgl(want, 'selected');
-  const wSh = num(want, 'production_share');
-  let mismatch = 0;
-  for (let i = 0; i < want.nrow; i++) {
-    const j = got.get(key(want, i));
-    acc.n++;
-    if (j === undefined) {
-      mismatch++;
-      continue;
-    }
-    if (gSel[j] !== wSel[i] || gSh[j] > 0 !== wSh[i] > 0) mismatch++;
-    const d = Math.abs(gSh[j] - wSh[i]);
-    if (d > acc.max) acc.max = d;
-  }
-  if (mismatch) acc.problems.push(`${mismatch} producer / selection mismatches`);
-  if (acc.max > tol) acc.problems.push(`max share |diff| ${acc.max.toExponential(2)} > ${tol}`);
-  if (sol.specialization.nrow !== want.nrow) acc.problems.push(`${sol.specialization.nrow} vs ${want.nrow} specialization rows`);
-  return acc.result('network');
 }

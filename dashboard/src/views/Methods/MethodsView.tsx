@@ -23,7 +23,6 @@ export default function MethodsView() {
   const html = useMemo(() => {
     const facts = buildFacts({
       countries: app.countries,
-      nNodes: app.nodes.length,
       eligibility: app.baseline.policy.eligibility,
       siCells: app.baseline.si.cells,
       allied: app.baseline.allied,
@@ -39,7 +38,7 @@ export default function MethodsView() {
   const paper = m.paper;
   return (
     <div>
-      <PageHead eyebrow="How it works" title="Methods" lede="How the indices, the dials and the network design are built, with the formulas, and a glossary of every term." />
+      <PageHead eyebrow="About · How it works" title="Methods" lede="How the indices and the dials are built, with the formulas, and a glossary of every term." />
       <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* the content is this app's own Markdown, filled with numbers from the data build */}
         <div className="min-w-0">
@@ -49,7 +48,7 @@ export default function MethodsView() {
               Glossary
             </h2>
             <p className="mb-4 text-sm text-paper-dim">
-              Every term on the Strategic Insights pages in plain words. The glossary of all three modules is on the{' '}
+              Every term of the indices and the dials in plain words. The glossary of the whole explorer is on the{' '}
               <Link className="link" to="/glossary">
                 Glossary page
               </Link>
@@ -72,8 +71,6 @@ export default function MethodsView() {
                 ['Friendshore includes geopolitical alignment', yesNo(fl.geo_alignment_in_fs)],
                 ['Friendshore reads factory projects (CM-FDI) and Chinese-parent ownership', yesNo(fl.fs_cmfdi)],
                 ['Partnerships recompute with scenario pillars', yesNo(fl.partner_pillar_consistent)],
-                ['Stored exact network matches these inputs', yesNo(fl.network_consistent)],
-                ['Baseline network is the exact (MILP) design', yesNo(fl.milp_baseline)],
               ]}
             />
             {(m.notes ?? []).length > 0 && (
@@ -88,11 +85,11 @@ export default function MethodsView() {
             <h2 className="rule-neis-sm mb-3 text-base font-medium text-paper">The paper</h2>
             <p className="text-sm text-paper-dim">{paper?.title ?? 'Opportunity, Security, and the Allied Industrial Base'}</p>
             <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-paper-mute">
-              <li>Section 2: the framework and the equations for Energy Security, Economic Opportunity, the Strategic Index, the Partnership Strength Index and the network</li>
-              <li>Section 7: the opportunity&ndash;security space</li>
-              <li>Section 8: Policy activity and the Strategic Index</li>
-              <li>Section 9: the partnership indices</li>
-              <li>Section 10: the network design</li>
+              <li>The framework and the equations for Energy Security, Economic Opportunity, the Strategic Index and the Partnership Strength Index</li>
+              <li>The opportunity&ndash;security space</li>
+              <li>Policy activity and the Strategic Index</li>
+              <li>The partnership indices</li>
+              <li>The Allied Industrial Base: the supply shock, the coalition&rsquo;s response, new investment and the Sectoral Compacts</li>
             </ul>
             {(paper?.url || paper?.pdf) && (
               <p className="mt-3 flex flex-wrap gap-4 text-sm">

@@ -4,7 +4,8 @@
 % later data and method commits up to 3122cea), the audit's fix logs, README changelog, and the
 % corrected code in R/, scripts/, config/. Reconciliation numbers: paper/results/reconcile.json
 % (scripts/paper/fig_reconcile.R), shipped release of 3 September 2026 against the final run of
-% 12 October 2026 (network at lambda = 0.78). Item detail: Online Appendix oa:corrections.
+% 12 October 2026. The lambda-calibrated network design (scripts/30) is retired; its history is the
+% paragraph "The retired network design" below. Item detail: Online Appendix oa:corrections.
 % ===========================================================================
 \section{Corrections relative to the shipped release}
 \label{app:corrections}
@@ -15,9 +16,10 @@ Index of 3~September 2026 rested on a policy component table of 6~February 2026,
 tables dated from 24~March 2026 and the allied network outputs from 23~February 2026. Before the
 results of this paper were produced, the pipeline was audited end to end, from the staged raw
 inputs to the published tables, and every defect found was corrected. A set of data and method
-changes followed, decided while the paper was written. All results in
+changes followed, decided while the paper was written. All index results in
 Sections~\ref{sec:es}--\ref{sec:robustness} come from one complete run of the corrected pipeline,
-the final run of 12~October 2026, built from a single revision of the code. This appendix lists
+the final run of 12~October 2026, built from a single revision of the code; the Allied Industrial
+Base analysis of Section~\ref{sec:network} was run on the inputs of that run on 16~October 2026. This appendix lists
 every correction and change and compares the shipped release with the final one, so that a reader
 who holds numbers from the shipped release can tell which changed and why.
 
@@ -125,7 +127,7 @@ correction comes with unit tests that encode the corrected behaviour, and the co
   B3 & Development potential at partner level & \texttt{45efcf2} & DP, PSI, network & R \\
   B4 & Available-case PSI; partner identity by ISO3 code & \texttt{45efcf2} & PSI & R \\
   B5 & Direction conventions; headline technologies only & \texttt{45efcf2} & FS, PO, PSI, network & R \\
-  \multicolumn{5}{@{}l}{\emph{Allied network}}\\
+  \multicolumn{5}{@{}l}{\emph{Allied network design (retired; history only)}}\\
   N1 & Development join fan-out & \texttt{2eeb111} & network & R \\
   N2 & Duplicate edges and split country records & \texttt{2eeb111} & network & R \\
   N3 & Friendshore half of the edge oriented consumer to producer & \texttt{2eeb111} & network & R \\
@@ -150,8 +152,8 @@ correction comes with unit tests that encode the corrected behaviour, and the co
   M3 & Policy index: IEA PAMS required, CAT where rated; NIPO (robustness only, October 2026 run) and dual use out & \texttt{0aaf68d}, \texttt{aefd3ef} & Policy, SI & X \\
   M4 & Endowment screen for the allied pick & \texttt{0aaf68d} & allied pick & X \\
   M5 & Alignment in Friendshore; conduit centres out; core-view PSI & \texttt{6ef4831} & FS, PSI & X \\
-  M6 & Network on Upstream and Midstream, diversification term, caps, no policy term & \texttt{5afe34c} & network & X \\
-  M7 & Calibration rule for $\lambda$; $\lambda=0.78$ on the final inputs & \texttt{3122cea} & network & X \\
+  M6 & Network on Upstream and Midstream, diversification term, caps, no policy term (retired) & \texttt{5afe34c} & network & X \\
+  M7 & Calibration rule for $\lambda$; $\lambda=0.78$ on the final inputs (retired) & \texttt{3122cea} & network & X \\
 \end{longtable}
 }
 
@@ -205,17 +207,6 @@ so high-income partners sat at the bottom: the United States ranked 185th of 218
 duplication of Friendshore rows (B1) and the outbound-investment defect (B2), the shipped PSI ordering
 does not survive the corrections.
 
-\emph{The network fan-out (N1).} The node table joined the dyadic development table without
-aggregating it, and the greedy solver took the first rows of the ranked candidates rather than
-distinct countries, so in the affected stages one country was selected with $k^2$ rows of share
-$1/k$:
-\begin{equation}\label{eq:corr_fanout}
-  n_{\text{producers}}=k^2,\qquad \HHI=\sum_{r=1}^{k^2}\Big(\frac1k\Big)^2=1 .
-\end{equation}
-The shipped specialisation table had 606{,}866 rows, of which 2{,}339 were distinct. With the
-transposed Friendshore half of the edge (N3), counts over rows (N4) and the invalid code for the
-United Arab Emirates (N5), the shipped network outputs carry no usable information.
-
 The remaining defects are smaller but not negligible. The country standardiser left 30 economies
 under two or three spellings, each taking its own rank in every S-curve (C1); graphite and the rare
 earths fell out of every mineral join (E1); refining was pooled with mining (E2); and the policy
@@ -247,18 +238,32 @@ manufacturing-capacity shares are regional for Europe, so every EU member carrie
 the variables built on them (Section~\ref{subsec:discussion_limitations}).
 
 The method changes are the rankability rule (M1); the coalition derived from UN-voting alignment in
-two tiers, with the EU-27 as one network node (M2), which replaced the shipped hand-picked list of 23
+two tiers, with the EU-27 as one unit (M2), which replaced the shipped hand-picked list of 23
 economies; a Policy index built on IEA PAMS, combined with CAT where CAT rates the country, which
 dropped the GTA NIPO component and the dual-use score of the shipped four-component index (M3; NIPO
 survives only as a robustness variant, rebuilt from the October 2026 extract for 77 jurisdictions);
 the endowment screen of the allied pick (M4); the alignment component, the exclusion of conduit
-financial centres and the core-coalition view of the PSI (M5); and a network restricted to the
-Upstream and Midstream stages, with a concave diversification term, GDP-log portfolio caps and no
-policy term (M6). The diversification weight follows a rule rather than a number (M7): the smallest
-$\lambda$ whose median designed Herfindahl index does not exceed the nodes' median observed export
-Herfindahl index. Applied to successive input vintages, the rule gave 1.5 on the hand-picked list,
-then 0.94 on 34 nodes, 0.92 on 36, 0.95 and 0.94 on 37 nodes with 14 basket stages, and 0.78 on the
-final 37-node inputs with 18 basket stages; only the last is used in this paper.
+financial centres and the core-coalition view of the PSI (M5); and the changes M6 and M7 to the
+network design, which the paper no longer uses.
+
+\paragraph{The retired network design.} The shipped release and earlier drafts of this paper
+allocated production among the coalition's units with a network design
+(\path{scripts/30_build_allied_network_design.R}): for each Upstream and Midstream stage, a
+mixed-integer program over 37 units (the EU-27 as one, its members' inputs combined with
+stage-specific weights: production, else HS6-basket exports, else GDP) chose producers, links and flows to maximise an
+index-based score of producer capability and partnership edges less a concave penalty on the
+Herfindahl index of designed shares, under share bounds, a dual-sourcing floor and GDP-log portfolio
+caps (M6), with the penalty weight set by a rule, the smallest $\lambda$ whose median designed
+Herfindahl index does not exceed the units' median observed export concentration (M7; 0.78 on the
+final inputs). Its shipped outputs carried no usable information: the node table joined the dyadic
+development table without aggregating it and the greedy solver filled producer slots with rows rather
+than countries, so one country could appear as $k^2$ producers with a Herfindahl index of one
+(606{,}866 specialisation rows, 2{,}339 distinct), with transposed edges, counts over rows and an
+invalid code for the United Arab Emirates (N1--N7). The corrected design was then replaced by the
+Allied Industrial Base analysis of Section~\ref{sec:network}, because it scored capability rather
+than observed supply, measured neither shocks nor what existing trade can absorb, and rested on a
+calibrated weight that met its target by a knife-edge margin. Its code remains in the repository
+outside the pipeline run, and no result of this paper depends on it.
 
 % ---------------------------------------------------------------------------
 \subsection{Reconciliation with the shipped release}
@@ -455,13 +460,7 @@ Nuclear Upstream (8) and Batteries Upstream (5) to Batteries Midstream (13).
 
 \input{tables/reconcile_allied}
 
-\paragraph{Network and partnership strength.} The shipped network outputs are not comparable with
-the final ones (Table~\ref{tab:reconcile_network}). The shipped diagnostics record a greedy solution
-in all 33 stages over 22 effective members, and in 14 stages a producer count of $k^2$ with a
-Herfindahl index of one, the signature of \eqref{eq:corr_fanout}; the portfolio loop stopped at its
-limit with 12 members above their caps. The final design solves 22 stages over 37 nodes by MILP, with
-7 to 10 producers per stage and a median designed Herfindahl index of 0.152, and the loop converges
-in seven passes. The shipped release did not write the PSI to disk; reconstructed from the March 2026
+\paragraph{Partnership strength.} The shipped release did not write the PSI to disk; reconstructed from the March 2026
 partner tables with the shipped logic, it correlates $-0.09$ with the final world view over 187
 partners and $-0.33$ with the core view over 191. The denominator defect (B4) placed high-income
 partners below the others, so correcting it moves that group up as a block: the United States moves
@@ -469,15 +468,14 @@ from 168th to 4th of the 187 in the world view and to 1st in the core view, and 
 5th. China moves from 22nd to 1st in the world view but to 44th in the core view, whose Friendshore
 scores rate China from the core members' viewpoints, alignment included.
 
-\input{tables/reconcile_network}
 
 \paragraph{Using numbers from the shipped release.} Within a technology--stage cell, shipped pillar
 rankings are a rough guide in the Downstream (median within-cell correlations 0.90 for $\ES$ and 0.88
 for $\EO$) and in the $\EO$ Midstream (0.80), a poor guide in the $\ES$ Midstream (0.70) and the $\EO$
 Upstream (0.61), and no guide for $\EO$ Green Hydrogen Midstream. Comparisons across cells, and with
 them the shipped Strategic Index and its picks, inherit the level shifts and a different Policy index;
-the shipped picks should be replaced by those of Section~\ref{sec:strategic}. The shipped network
-outputs and any PSI computed from the shipped partner tables should not be used. As the
+the shipped picks should be replaced by those of Section~\ref{sec:strategic}. Any PSI computed
+from the shipped partner tables should not be used, nor the shipped network outputs. As the
 composite-indicator literature warns, the ordering a composite produces can depend on its
 construction as much as on its data \citep{saisana2005uncertainty,saltelli2007composite}; here,
 however, the large changes come from defects and new data rather than from defensible alternative

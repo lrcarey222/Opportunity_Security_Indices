@@ -1,13 +1,14 @@
 % Section 7.5: Geopolitical alignment and the allied coalition.
 % Specification: R/geopolitical_distance/{ideal_points,alignment}.R and scripts/12 (ideal points,
-% blocs, dyadic alignment); R/indices/coalition.R and scripts/13 (tiers, routes, EU node weights);
+% blocs, dyadic alignment); R/indices/coalition.R and scripts/13 (tiers, routes);
 % config/coalition.yml, config/geopolitical_distance.yml. Numbers: paper/results/coalition.json
 % (final rerun of 2026-10-12); figures and table: scripts/paper/fig_coalition.R.
 \section{Geopolitical alignment and the allied coalition}\label{sec:coalition}
 
 Three parts of the analysis need a coalition: the allied picks of the Strategic Index
 (Section~\ref{sec:strategic}), the viewpoint from which the Partnership Strength Index rates partners
-(Section~\ref{sec:bilateral}) and the nodes of the network design (Section~\ref{sec:network}). We
+(Section~\ref{sec:bilateral}) and the demand scope of the Allied Industrial Base analysis
+(Section~\ref{sec:network}). We
 derive it by rule from two observable attributes, an economy's alignment in the United Nations
 General Assembly and its weight in world supply, rather than fixing it by hand.
 
@@ -47,7 +48,7 @@ For a pair of economies the dyadic alignment is
 which would be the probability that $i$ and $j$ fall on the same side of the divide if $p_i$ were
 a probability; with hard blocs it is 1 for the same bloc, 0 for opposite blocs and $\tfrac12$ whenever either is nonaligned. It is a Friendshore
 component with weight 2 of 11 (Section~\ref{subsec:friendshore}) and through Friendshore enters the
-edge term of the network design. Figure~\ref{fig:coalition_axis} shows the axis by coalition tier.
+ranking of investment hosts in the Allied Industrial Base analysis. Figure~\ref{fig:coalition_axis} shows the axis by coalition tier.
 
 \begin{figure}[tbp]
   \centering
@@ -58,7 +59,7 @@ edge term of the network design. Figure~\ref{fig:coalition_axis} shows the axis 
   \citet{bailey2017estimating} over sessions 74--78 (2019--2023), projected on the segment from China
   ($s=0$) to the United States ($s=1$) and clamped to $[0,1]$. Vertical lines are the quartile cuts
   ($s\leq 0.142$ China-leaning, $s\geq 0.511$ U.S.-leaning; 49, 95 and 49 economies). Rows are the 31
-  core members, the 26 partners, the six EU members that enter only through the EU node and the 130
+  core members, the 26 partners, the six EU members below the GDP floor and the 130
   other voting economies; vertical position within a row carries no information. Filled markers are
   major suppliers (at least 5 percent of world supply in an Upstream or Midstream stage, or at least
   10 percent of world reserves of a headline mineral, fuel or uranium). G20 economies and selected
@@ -125,49 +126,32 @@ share is 1.1 percent; its former supplier route rested on electricity exports, n
 the Electric Grid basket (Section~\ref{sec:data}). Taiwan has no UN vote and is therefore neutral,
 appears in no agreement list and has no World Bank GDP; its largest share is 1.5 percent (Solar
 Midstream exports), and its semiconductor strength lies outside the energy baskets. Both remain
-partners in the bilateral indices but are not network nodes.
+partners in the bilateral indices and candidate suppliers in the Allied Industrial Base analysis, but
+are not members.
 
 The coalition is long in mining and short in processing: its economies mine 81.9 percent of the
 world's cobalt and 60.0 percent of its lithium but refine 17.4 and 24.6 percent, and 5.5 percent of
 graphite, against China's 75.6, 73.7 and 94.4 percent \citep{iea2026cmdata}; Online
 Appendix~\ref{oa:coalition} gives the supply cover by stage.
 
-\subsection{Network nodes and the European Union}\label{subsec:coalition_nodes}
+\subsection{The European Union}\label{subsec:coalition_nodes}
 
-The EU-27 enters the network design as a single node, because the Union conducts a common
+The coalition table also represents the EU-27 as a single unit, because the Union conducts a common
 commercial policy and its members' supply chains are integrated in a single market. Twenty-one EU
 members are core members in their own right; the six below the GDP floor (Cyprus, Estonia, Latvia,
-Lithuania, Malta and Slovenia, 1.6 percent of EU GDP) belong to the network only through the node.
-The network therefore has 37 nodes representing 63 economies: 11 core nodes (the United States, the
-EU, Japan, the United Kingdom, Canada, Korea, Australia, Israel, Norway, New Zealand and Ukraine) and
-26 partner nodes. The node's demand enters the design through ranks and is therefore compressed
-relative to the EU's share of coalition GDP (Section~\ref{sec:network}).
-
-Members' inputs are aggregated into the node with stage-specific weights
-(Figure~\ref{fig:coalition_eu_weights}): production for Coal, Gas and Oil Upstream, exports of the
-stage's HS6 basket for 15 cells and GDP for the four Geothermal and Green Hydrogen cells, which have
-no basket. The weights are concentrated: Germany carries the largest weight in 11 of the 22 cells,
-and France 97.9 percent of the EU's uranium-basket exports although it mines no uranium, trade that
-reflects conversion and trading rather than mine output.
-
-\begin{figure}[tbp]
-  \centering
-  \includegraphics[width=\textwidth]{coalition_eu_weights}
-  \caption{Member weights within the EU network node. Columns are the 27 EU members, ordered by GDP;
-  an asterisk marks the six members below the GDP floor, which enter the network only through the
-  node. Rows are the 22 Upstream and Midstream cells, grouped by the basis of the weights: members'
-  production (Energy Institute; 3 cells), members' shares of world exports of the stage's HS6 basket
-  (15 cells) or, for the four stages without a basket, GDP shares (Geothermal and Green Hydrogen,
-  Upstream and Midstream). Weights in a row sum to one; weights of at least 0.15 under the production
-  and export bases are printed. Median Herfindahl index of the weights: 0.34 (production), 0.139
-  (exports), 0.117 (GDP). Source: \texttt{eu\_stage\_weights\_tbl.rds}.}
-  \label{fig:coalition_eu_weights}
-\end{figure}
+Lithuania, Malta and Slovenia, 1.6 percent of EU GDP) belong to the coalition's 63 economies only
+through the Union. With the EU as one unit the coalition has 37 units: 11 core (the United States, the
+EU, Japan, the United Kingdom, Canada, Korea, Australia, Israel, Norway, New Zealand and Ukraine) and 26
+partners. Earlier drafts allocated production among these 37 units in a network design that the
+paper no longer uses (Appendix~\ref{app:corrections}). The Allied Industrial Base analysis of
+Section~\ref{sec:network} treats each EU member as an economy in its own right, so that trade among
+members is part of both the demand it protects and the response it measures; the six members below
+the floor are outside its demand scope but may supply it.
 
 \subsection{Alignment within the coalition}\label{subsec:coalition_dyadic}
 
 Because the blocs are hard, alignment within the coalition takes a simple form
-(Figure~\ref{fig:coalition_alignment_matrix}). Of the 666 pairs of network nodes, 8.7 percent have
+(Figure~\ref{fig:coalition_alignment_matrix}). Of the 666 pairs of the 37 coalition units, 8.7 percent have
 $A_{ij}=1$ (pairs of core nodes and pairs among the three China-leaning partners), 86.3 percent have
 $A_{ij}=\tfrac12$ because one of the two is a nonaligned partner, and 5.0 percent have $A_{ij}=0$:
 each core node paired with Indonesia, Viet Nam or Oman. The alignment component of Friendshore thus
@@ -177,10 +161,10 @@ friendshoring partners of the core, but leaves the ordering of the 23 nonaligned
 \begin{figure}[tbp]
   \centering
   \includegraphics[width=\textwidth]{coalition_alignment_matrix}
-  \caption{Dyadic alignment among the network nodes. Each cell is $A_{ij}$ of
+  \caption{Dyadic alignment among the 37 coalition units, with the EU-27 as one. Each cell is $A_{ij}$ of
   equation~\eqref{eq:coalition_dyadic}: 1 for the same bloc, 0 for opposite blocs and $\tfrac12$
-  when either economy is nonaligned. The 37 network nodes, 11 core and 26 partner, are followed by
-  Russia and China for reference, ordered by tier and, within a tier, by $s$ (for the EU node, the
+  when either economy is nonaligned. The 37 units, 11 core and 26 partner, are followed by
+  Russia and China for reference, ordered by tier and, within a tier, by $s$ (for the EU, the
   GDP-weighted mean of its members, 0.677; all 27 members are U.S.-leaning). Source:
   \texttt{geo\_alignment\_tbl.rds}, \texttt{allied\_network\_nodes.csv}.}
   \label{fig:coalition_alignment_matrix}

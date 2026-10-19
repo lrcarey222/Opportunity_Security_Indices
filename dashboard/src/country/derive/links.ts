@@ -23,8 +23,6 @@ export const countryScoresLink = (iso3: string) => strategicLink(`/country/${iso
 export const partnersLink = (iso3: string, c?: { tech: string; stage: string } | null) =>
   strategicLink(`/partners/${iso3}`, c ? { tech: c.tech, stage: c.stage } : {});
 export const spaceLink = (c: CellFacts | null) => strategicLink('/space', c ? { tech: c.tech, stage: c.stage } : {});
-/** The network view of one stage (its path segment is the cell key, lib/format.ts stageSlug()). */
-export const networkLink = (c: CellFacts | null) => strategicLink(c ? `/network/${c.key}` : '/network');
 
 /** Sector Insights with the country highlighted. */
 export const sectorCountryLink = (iso3: string) => `/sector?c=${iso3}`;
@@ -40,3 +38,7 @@ export const devDataLink = (iso3: string | null, c?: { tech: string; stage: stri
   c && iso3
     ? `/sector/${slug(c.tech)}/${slug(c.stage)}/${iso3}#aid-investment`
     : `/sector/explore/development?m=development.wdi${iso3 ? `&c=${iso3}` : ''}`;
+
+/** The Sector profile of one sector (technology and stage) with the economy highlighted (IA refactor 2026-10-16). */
+export const sectorProfileLink = (c: { tech: string; stage: string }, iso3?: string | null) =>
+  `/sector/${slug(c.tech)}/${slug(c.stage)}${iso3 ? `?c=${iso3}` : ''}`;

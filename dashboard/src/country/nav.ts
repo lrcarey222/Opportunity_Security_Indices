@@ -1,5 +1,6 @@
-// The Country Insights tier-2 links (spec_country.md A2.1): Countries, Country profile (the last
-// visited country, else the United States) and About & data. CountryLayout registers them with the
+// The Countries tier-2 links (spec_country.md A2.1; IA refactor 2026-10-16): All countries and Country
+// profile (the country on screen, else the last visited one, else the United States). /countries/about
+// keeps its path; About lists it. CountryLayout registers them with the
 // shell; the shell's static COUNTRY_NAV (shell/modules.ts) is the fallback before it does. Pure apart
 // from the in-memory last ISO3.
 
@@ -40,8 +41,7 @@ export function countryNavItems(pathname: string): { key: string; label: string;
   const iso = countryIsoOfPath(pathname) ?? lastIso ?? 'USA';
   const active = countryNavKeyOf(pathname);
   return [
-    { key: 'countries', label: 'Countries', to: '/countries', active: active === 'countries' },
+    { key: 'countries', label: 'All countries', to: '/countries', active: active === 'countries' },
     { key: 'profile', label: 'Country profile', to: `/countries/${iso}`, active: active === 'profile' },
-    { key: 'about', label: 'About & data', to: '/countries/about', active: active === 'about' },
   ];
 }

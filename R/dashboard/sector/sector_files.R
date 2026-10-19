@@ -16,6 +16,7 @@ sector_files <- function() {
     "R/dashboard/sector/sector_series.R",
     "R/dashboard/sector/sector_fdi.R",
     "R/dashboard/sector/sector_dev.R",
+    "R/dashboard/sector/sector_climate.R",
     "R/dashboard/sector/sector_synthetic.R"
   )
 }

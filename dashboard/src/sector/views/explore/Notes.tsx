@@ -64,11 +64,11 @@ export function NotesCard({ v, extra }: { v: VarInfo; extra?: string[] }) {
             <p className="text-paper">Used in the indices</p>
             {v.feeds.length ? (
               <p>
-                Strategic Insights uses this measure in {v.feeds.map(feedWords).join('; ')}
+                The country indices use this measure in {v.feeds.map(feedWords).join('; ')}
                 {v.feeds.every((f) => /^\s*(ES|EO)\s*:/.test(f)) ? ', as S-curved ranks within each sector' : v.feeds.some((f) => /^\s*(ES|EO)\s*:/.test(f)) ? ' (the Energy Security and Economic Opportunity inputs as S-curved ranks within each sector)' : ' (see Methods for how it enters)'}. No index values are shown here.
               </p>
             ) : (
-              <p>Not used by the Strategic Insights indices: shown here as context.</p>
+              <p>Not used by the country indices: shown here as context.</p>
             )}
           </div>
         </div>

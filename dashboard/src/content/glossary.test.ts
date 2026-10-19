@@ -5,7 +5,7 @@ import { ACRONYM_NAMES, bareAcronymsInText } from '../components/testing/acronym
 /** The ids of spec_country.md C3.2, in its order (the interface every module codes against). */
 const SPEC_IDS = [
   'es', 'eo', 'si', 'need', 'psi', 'fs', 'po', 'dp', 'policy_index', 'policy_basis', 'pams', 'cat', 'rankable', 'imputed', 's_curve', 'percentile',
-  'median', 'colour_scale', 'sector', 'stage', 'coalition', 'alignment', 'network', 'lambda', 'eu_node', 'allied_pick', 'endowment_screen', 'best_five',
+  'median', 'colour_scale', 'sector', 'stage', 'coalition', 'alignment', 'allied_pick', 'endowment_screen', 'best_five',
   'hhi', 'effective_n', 'rca', 'feasibility', 'matrix', 'mirror', 'basket', 'sub_component', 'net_balance', 'self_sufficiency', 'cmfdi', 'chinese_parent',
   'investment_ties', 'trl', 'unattributed', 'paper_baseline', 'scenario', 'dials', 'hawkishness', 'bullishness', 'populism', 'greenness', 'grow',
   'upgrade', 'secure', 'watch', 'quadrant', 'priority_no_policy', 'ties_today', 'memo',
@@ -43,9 +43,10 @@ describe('glossary content (C3.2)', () => {
     // the templates do carry placeholders (so a manifest can update them)
     expect(GLOSSARY_TEMPLATES.some((e) => e.short.includes('{{n_core}}'))).toBe(true);
     expect(glossaryById.get('coalition')?.short).toContain(`${GLOSSARY_DEFAULTS.n_core} core members`);
-    const next = glossaryWith({ n_core: '32', lambda: '0.81' });
+    const next = glossaryWith({ n_core: '32', n_partner: '27' });
     expect(next.find((e) => e.id === 'coalition')?.short).toContain('32 core members');
-    expect(next.find((e) => e.id === 'lambda')?.short).toContain('(0.81 in the paper)');
+    // the retired allied network design has no entries (2026-10-17)
+    for (const id of ['network', 'lambda', 'eu_node']) expect(next.some((e) => e.id === id), id).toBe(false);
     expect(fillGlossaryText('{{unknown}} and {{n_partner}}')).toBe(`{{unknown}} and ${GLOSSARY_DEFAULTS.n_partner}`);
   });
 
@@ -59,7 +60,7 @@ describe('glossary content (C3.2)', () => {
       expect(country.some((e) => e.id === id), id).toBe(true);
     }
     expect(glossaryFor('sector').some((e) => e.id === 'memo')).toBe(false);
-    expect(glossaryFor('strategic').some((e) => e.id === 'lambda')).toBe(true);
+    expect(glossaryFor('strategic').some((e) => e.id === 'endowment_screen')).toBe(true);
   });
 
   it('every abbreviation is spelled out by its term, as the acronym test helper expects', () => {

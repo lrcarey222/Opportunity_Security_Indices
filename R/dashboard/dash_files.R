@@ -7,19 +7,16 @@ dash_engine_files <- function() {
     "R/utils/scurve.R",
     "R/utils/schema.R",
     "R/themes/partnership_strength/partnership_strength_helpers.R",
-    "R/indices/allied_network_design.R",
     "R/dashboard/dash_bundle.R",
     "R/dashboard/dash_engine.R",
     "R/dashboard/dash_files.R",
     "R/dashboard/dash_fixture.R",
-    "R/dashboard/dash_network.R",
     "R/dashboard/dash_osb.R",
     "R/dashboard/dash_params.R",
     "R/dashboard/dash_partner.R",
     "R/dashboard/dash_pillars.R",
     "R/dashboard/dash_policy.R",
     "R/dashboard/dash_si.R",
-    "R/dashboard/dash_solver.R",
     "R/dashboard/dash_web.R"
   )
 }

@@ -91,8 +91,17 @@ function hash01(s: string): number {
   return ((h >>> 0) % 1000) / 1000;
 }
 
-export default function PartnersView() {
+/** Sets the page title (a component so the embedded view can skip it). */
+function PartnersTitle() {
   useTitle('Partners');
+  return null;
+}
+
+/**
+ * The Partners view. `embedded` (the Country profile's Partnerships section): no page title, no page head
+ * and no economy picker; the reporter is still the route's ISO3 (/countries/:iso3).
+ */
+export default function PartnersView({ embedded = false }: { embedded?: boolean } = {}) {
   const app = useApp();
   const { client } = useEngine();
   const params = useParams();
@@ -457,6 +466,8 @@ export default function PartnersView() {
   const rName = countryName(app, reporter);
   return (
     <div>
+      {!embedded && <PartnersTitle />}
+      {!embedded && (
       <PageHead
         eyebrow="Partners"
         title="Partners"
@@ -471,8 +482,9 @@ export default function PartnersView() {
       >
         <CountryInsightsLink iso3={reporter} country={rName} />
       </PageHead>
+      )}
       <FilterRow result={rows.length ? `${ranked.length} ranked partners of ${rows.length}` : undefined}>
-        <CountrySelect label="Economy (whose partners)" value={reporter} options={options} onChange={(v) => goto(`/partners/${v}`)} />
+        {!embedded && <CountrySelect label="Economy (whose partners)" value={reporter} options={options} onChange={(v) => goto(`/partners/${v}`)} />}
         <Select label="Sector" value={sector ? stageSlug(sector.tech, sector.stage) : ''} options={sectorOptions} onChange={pickSector} className="min-w-[16rem]" />
       </FilterRow>
       {sector && (
@@ -480,7 +492,7 @@ export default function PartnersView() {
           Showing <strong className="text-paper">{sector.label}</strong> only: {rName}&apos;s partners ranked on <Term id="fs" /> and <Term id="po" /> in this one
           sector (the dials apply), not on the five-sector summaries. {rName}&apos;s own security need is the same for every partner in one sector: it sets how much the
           sector matters to {rName}, so the Friendshore ranking turns on the partner&apos;s Economic Opportunity, the trade and investment ties, UN-vote alignment and
-          ownership. Development Potential is shown for this sector at the paper baseline; the Partnership
+          ownership. Development Potential is shown for this sector at the NEIS baseline; the Partnership
           Strength rank is across all sectors. Choose &ldquo;All sectors&rdquo; for the Partnership Strength ranking.{' '}
           <Link className="link" to={devDataLink(sel, sector)} data-testid="dev-data-link">
             The development data behind this &rarr;

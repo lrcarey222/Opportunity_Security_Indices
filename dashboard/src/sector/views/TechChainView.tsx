@@ -4,7 +4,8 @@
 // cards, (c) the minerals this technology uses (IEA demand, observed vs 2040 STEPS).
 
 import { useMemo } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
+import { Redirect } from '../../shell/Redirect.tsx';
 import { TableView } from '../../components/TableView.tsx';
 import { PageHead } from '../../components/ui.tsx';
 import { rowsToCsv } from '../../lib/csv.ts';
@@ -21,6 +22,7 @@ import { fmtFact, HowToRead, markGroup, measureConc, SPLIT_COLUMNS, SPLIT_READIN
 import { useFacts } from './data.ts';
 import { CoverageChips, Dumbbell, GroupLegend, SectorChartCard, ShareSplitChart, type CoverageChip, type DumbbellRow, type ShareSplitRow, type VarRef } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
+import { ChainNav } from './ChainNav.tsx';
 
 interface LadderRow {
   row: ShareSplitRow;
@@ -185,7 +187,8 @@ export function demandRows(model: SectorModel, techLabel: string, href: (slug: s
   return out.sort((a, z) => z.b - a.b);
 }
 
-function MineralsUsed({ tech }: { tech: TechSlug }) {
+/** The minerals a technology uses (IEA demand, observed vs 2040 STEPS); also the Sector profile's Climate block. */
+export function MineralsUsed({ tech, headingLevel = 2 }: { tech: TechSlug; headingLevel?: 2 | 3 }) {
   const model = useModel();
   const { link } = useSectorUrl();
   const navigate = useNavigate();
@@ -194,7 +197,7 @@ function MineralsUsed({ tech }: { tech: TechSlug }) {
   if (!rows.length) return null;
   return (
     <SectorChartCard
-      headingLevel={2}
+      headingLevel={headingLevel}
       title={`Minerals ${label} uses`}
       vars={[{ var: 'consumption.mineral_demand' }]}
       subExtra={<HowToRead>Each row is one mineral; the filled dot is how many kilotonnes {label} used in the latest observed year, the hollow dot the IEA projection for 2040 under today’s stated policies (the Stated Policies Scenario), not a forecast. The further right, the more it uses. Click a row for that mineral’s page.</HowToRead>}
@@ -227,7 +230,7 @@ export default function TechChainView() {
   const ladder = useLadder((tech ?? 'batteries') as TechSlug, facts);
   const highlight = useHighlight(model);
   const navigate = useNavigate();
-  if (!tech) return <Navigate to="/sector" replace state={{ notice: `No sector called '${raw}'; showing all sectors.` }} />;
+  if (!tech) return <Redirect to="/sector" notice={`No sector called '${raw}'; showing all sectors.`} />;
   const blurb = model.techText.get(tech)?.tech_blurb ?? `${TECH_LABELS[tech]} from raw materials to deployment.`;
   const stages = STAGE_SLUGS.filter((s) => model.cell(tech, s));
   const reading = ladder
@@ -237,7 +240,8 @@ export default function TechChainView() {
     .map((r) => `${fmtShare(r.china)} of ${r.words}`);
   return (
     <div className="space-y-8">
-      <PageHead eyebrow="SECTOR INSIGHTS · TECHNOLOGY" title={`${TECH_LABELS[tech]}: the supply chain`} lede={blurb} />
+      <PageHead eyebrow="SECTORS · TECHNOLOGY" title={`${TECH_LABELS[tech]}: the supply chain`} lede={blurb} />
+      <ChainNav tech={tech} />
       <SectorChartCard
         headingLevel={2}
         title="Where concentration sits along the chain"

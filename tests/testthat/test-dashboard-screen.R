@@ -97,7 +97,7 @@ test_that("require_resource_base is an advanced setting with the build's default
 
 test_that("the core chunk ships the screen's table and the policy component order", {
   b <- dash_fixture_bundle(seed = 1)
-  base <- dash_fixture_baseline(b, network = FALSE)
+  base <- dash_fixture_baseline(b)
   core <- dash_web_chunks(b, base$result)$core
   expect_identical(core$si$resource_base, b$si$resource_base)
   expect_identical(core$policy$components, b$policy$components)

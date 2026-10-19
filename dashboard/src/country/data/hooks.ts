@@ -2,7 +2,7 @@
 // retry(); a settled value is read synchronously on the next mount (no flash of "Loading").
 
 import { useCallback, useEffect, useState } from 'react';
-import type { CountryEntry, CountryManifest, DriversDoc, FactSheet, MemoDoc } from '../contract.ts';
+import type { CountryEntry, CountryManifest, DriversDoc, FactSheet, MemoDoc, TradeMonthlyDoc } from '../contract.ts';
 import { countryStore, CountryLoadError, type LoadState } from './store.ts';
 
 export interface Loaded<T> extends LoadState<T> {
@@ -63,4 +63,10 @@ export function useMemoDoc(entry: CountryEntry | null): Loaded<MemoDoc> {
 export function useDriversDoc(entry: CountryEntry | null, sheet: FactSheet | null, needed: boolean): Loaded<DriversDoc> {
   const ok = needed && entry && entry.drivers && sheet ? entry : null;
   return useLoad<DriversDoc>(ok ? `drivers:${ok.iso3}` : null, ok ? () => countryStore().driversDoc(ok, sheet ?? undefined) : null);
+}
+
+/** The companion monthly trade file (additive 2026-10-19), loaded only when `needed` (the card is near the viewport). */
+export function useTradeMonthly(entry: CountryEntry | null, needed: boolean): Loaded<TradeMonthlyDoc> {
+  const ok = needed && entry && entry.trade_monthly ? entry : null;
+  return useLoad<TradeMonthlyDoc>(ok ? `trade:${ok.iso3}` : null, ok ? () => countryStore().tradeMonthly(ok) : null);
 }

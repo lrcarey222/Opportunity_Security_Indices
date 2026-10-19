@@ -235,3 +235,16 @@ country_memo_rule_note_words <- function(cfg, note, country, generated_at) {
   written <- if (is.na(day)) "an earlier date" else paste(as.integer(format(day, "%d")), month.name[as.integer(format(day, "%m"))], format(day, "%Y"))
   country_fill_caveat(tpl, list(country = country, written = written))
 }
+
+# ---- Memos under revision (the user's decision of 2026-10-17) ---------------------------------------------
+# The original allied network design is retired, so the 31 memos written before it went are being
+# rewritten. config memo_revision$before (an ISO 8601 UTC time) hides every memo generated before it: the
+# manifest marks it stale and the UI says the memo is being revised; the memo files are never touched. A
+# memo rendered after the cut-off is shown as usual. TRUE when `memo` (a manifest memo entry) is under
+# revision; a memo without generated_at counts as written before.
+country_memo_under_revision <- function(memo, revision = NULL) {
+  before <- revision$before %||% NULL
+  if (is.null(before) || !nzchar(before)) return(FALSE)
+  at <- memo$generated_at %||% ""
+  !nzchar(at) || at < before
+}

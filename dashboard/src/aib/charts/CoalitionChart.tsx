@@ -2,7 +2,8 @@
 // x = members in the coalition (step 0: the demand anchors), each tick labelled with the economy added
 // at that step; y = coverage of the anchors' demand: the minimum over the compact's nodes (solid, with
 // dots) and the mean (dashed). The coverage targets are dotted rules; the first step reaching each
-// target is ringed and named ("90% coalition"; targets reached at the same step share one label).
+// target is ringed and named ("90% reached"; targets reached at the same step share one label). The
+// path is a heuristic; the exact minimum coalitions are listed beside the chart.
 // Hover gives the step with names.
 
 import { useCallback } from 'react';
@@ -37,8 +38,8 @@ export function CoalitionChart({ points, marks, ariaLabel }: { points: CurvePoin
       for (const m of marks) {
         if (!m.point) continue;
         const r = reached.find((x) => x.point.step === m.point!.step);
-        if (r) r.text = r.text.replace(' coalition', `, ${targetLabel(m.target)} coalition`);
-        else reached.push({ point: m.point, text: `${targetLabel(m.target)} coalition` });
+        if (r) r.text = r.text.replace(' reached', `, ${targetLabel(m.target)} reached`);
+        else reached.push({ point: m.point, text: `${targetLabel(m.target)} reached` });
       }
       return {
         marginLeft: 56,
@@ -81,7 +82,7 @@ export function CoalitionChart({ points, marks, ariaLabel }: { points: CurvePoin
         <Tip
           value={`${fmtShare(p.min)} minimum`}
           title={p.step === 0 ? `Step 0: the demand anchors (${p.n})` : `Step ${p.step}: ${p.addedName} joins (${p.n} members)`}
-          lines={[`${fmtShare(p.mean)} mean coverage over the nodes`, ...marks.filter((m) => m.point?.step === p.step).map((m) => `First coalition to reach the ${targetLabel(m.target)} target`)]}
+          lines={[`${fmtShare(p.mean)} mean coverage over the nodes`, ...marks.filter((m) => m.point?.step === p.step).map((m) => `First step of the path to reach the ${targetLabel(m.target)} target`)]}
         />
       )}
     />

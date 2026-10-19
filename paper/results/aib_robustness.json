@@ -1,0 +1,339 @@
+{
+  "generated": "2026-10-17 09:25",
+  "n_scope": 70,
+  "classes": {
+    "Headline: China removed, hold, production-constrained, reallocation": {
+      "BUILD": 37,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 32
+    },
+    "Release (decoupling)": {
+      "BUILD": 24,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 44,
+      "MANAGE SPECIALIZATION": 1
+    },
+    "Trade-only": {
+      "BUILD": 36,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 33
+    },
+    "Conservative": {
+      "BUILD": 47,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 22
+    },
+    "China 50%": {
+      "BUILD": 13,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 56
+    },
+    "Largest supplier, sub-sector": {
+      "BUILD": 34,
+      "COORDINATE": 3,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 30,
+      "MANAGE SPECIALIZATION": 2
+    },
+    "Largest supplier, stage": {
+      "BUILD": 33,
+      "COORDINATE": 2,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 34
+    },
+    "Largest supplier, technology": {
+      "BUILD": 33,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 36
+    },
+    "Existing links may grow 1.25x": {
+      "BUILD": 37,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 32
+    },
+    "Existing links may grow 4x": {
+      "BUILD": 37,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 32
+    },
+    "Existing links unbounded": {
+      "BUILD": 37,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 32
+    },
+    "Global demand, hold": {
+      "BUILD": 48,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 21
+    },
+    "Global demand, release": {
+      "BUILD": 37,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 30,
+      "MANAGE SPECIALIZATION": 2
+    }
+  },
+  "release": {
+    "build_to_low": ["Cathode Materials & Battery Precursors", "Current Collectors & Foils", "Separator Materials", "Power Capacitors & Fuses", "Steam Cycle & Balance of Plant", "Gallium, Germanium & Indium", "Discrete Semiconductors", "Piezoelectric Components", "Semiconductor Device Parts", "Inverters & Power Electronics", "Solar Module Assembly & Inputs", "Wind Substations"],
+    "n_build_to_low": 12,
+    "manage": "Lithium Chemicals"
+  },
+  "trade_only": {
+    "changes": [
+      {
+        "sub_sector": "Wafers",
+        "headline": "BUILD",
+        "trade_only": "LOW INTERVENTION",
+        "warning": "PHYSICAL CAPABILITY NOT VALIDATED"
+      }
+    ],
+    "warnings": ["Cobalt & Nickel Refining", "Polysilicon", "Wafers"]
+  },
+  "conservative_extra_build": ["Grid Cables & Accessories", "Grid Control Panels", "Other High-Voltage Apparatus", "Surge Arresters", "Integrated Circuits", "Semiconductor Materials", "Solar Cabling & Connectors", "Array Cables & Collection Systems", "Nacelles & Drivetrains", "Wind Towers"],
+  "china_50": {
+    "changes": 24
+  },
+  "coordinate_other_shocks": [
+    {
+      "sub_sector": "Copper Smelting & Refining",
+      "largest_subsector": "LOW INTERVENTION",
+      "largest_stage": "COORDINATE"
+    },
+    {
+      "sub_sector": "Circuit Breakers",
+      "largest_subsector": "COORDINATE",
+      "largest_stage": "LOW INTERVENTION"
+    },
+    {
+      "sub_sector": "Nickel Ores & Concentrates",
+      "largest_subsector": "COORDINATE",
+      "largest_stage": "LOW INTERVENTION"
+    },
+    {
+      "sub_sector": "Reactor Components",
+      "largest_subsector": "COORDINATE",
+      "largest_stage": "COORDINATE"
+    }
+  ],
+  "growth": {
+    "class_changes": 0,
+    "by_bound": {
+      "1.25x": {
+        "existing_coverage_mean": 0.857,
+        "dividend_median_pt": 0.139,
+        "dividend_max_pt": 8.6,
+        "max_node": "Wind Towers",
+        "at_least_5pt": 2
+      },
+      "2x": {
+        "existing_coverage_mean": 0.862,
+        "dividend_median_pt": 0.038,
+        "dividend_max_pt": 6.64,
+        "max_node": "Wind Towers",
+        "at_least_5pt": 1
+      },
+      "4x": {
+        "existing_coverage_mean": 0.863,
+        "dividend_median_pt": 0,
+        "dividend_max_pt": 3.17,
+        "max_node": "Wind Towers",
+        "at_least_5pt": 0
+      },
+      "unlimited": {
+        "existing_coverage_mean": 0.865,
+        "dividend_median_pt": 0,
+        "dividend_max_pt": 0.49,
+        "max_node": "Processing & Separation Equipment",
+        "at_least_5pt": 0
+      }
+    },
+    "sensitive": 0
+  },
+  "frontier": {
+    "n_nodes": 91,
+    "min_required_diversification": {
+      "1": 28,
+      "none": 63
+    },
+    "tightest_costless": {
+      "0.25": 77,
+      "0.4": 9,
+      "0.6": 5
+    },
+    "by_limit": {
+      "0.25": {
+        "coverage_median": 0.891,
+        "n1_reoptimized_median": 0.705,
+        "n1_instantaneous_median": 0.715,
+        "n1_at_least_80": 25,
+        "largest_share_median": 0.217
+      },
+      "0.4": {
+        "coverage_median": 0.911,
+        "n1_reoptimized_median": 0.715,
+        "n1_instantaneous_median": 0.705,
+        "n1_at_least_80": 27,
+        "largest_share_median": 0.217
+      },
+      "0.6": {
+        "coverage_median": 0.92,
+        "n1_reoptimized_median": 0.722,
+        "n1_instantaneous_median": 0.705,
+        "n1_at_least_80": 28,
+        "largest_share_median": 0.217
+      },
+      "1": {
+        "coverage_median": 0.92,
+        "n1_reoptimized_median": 0.722,
+        "n1_instantaneous_median": 0.705,
+        "n1_at_least_80": 28,
+        "largest_share_median": 0.213
+      }
+    },
+    "n1_drop_median_pt": 14.5
+  },
+  "technology": {
+    "Batteries": {
+      "in_strategic_scope": true,
+      "exposure": 0.475,
+      "headline": 0.452,
+      "release": 0.394,
+      "trade_only": 0.448,
+      "conservative": 0.475,
+      "china_50": 0.215,
+      "global": 0.478,
+      "global_release": 0.411,
+      "global_exposure": 0.478
+    },
+    "Coal": {
+      "in_strategic_scope": false,
+      "exposure": 0.034,
+      "headline": 0.014,
+      "release": 0.011,
+      "trade_only": 0.014,
+      "conservative": 0.034,
+      "china_50": 0.001,
+      "global": 0.036,
+      "global_release": 0.028,
+      "global_exposure": 0.036
+    },
+    "Electric Grid": {
+      "in_strategic_scope": true,
+      "exposure": 0.166,
+      "headline": 0.103,
+      "release": 0.053,
+      "trade_only": 0.103,
+      "conservative": 0.166,
+      "china_50": 0.03,
+      "global": 0.179,
+      "global_release": 0.123,
+      "global_exposure": 0.18
+    },
+    "Electric Vehicles": {
+      "in_strategic_scope": true,
+      "exposure": 0.247,
+      "headline": 0.187,
+      "release": 0.142,
+      "trade_only": 0.187,
+      "conservative": 0.247,
+      "china_50": 0.069,
+      "global": 0.257,
+      "global_release": 0.215,
+      "global_exposure": 0.257
+    },
+    "Gas": {
+      "in_strategic_scope": false,
+      "exposure": 0.036,
+      "headline": -0,
+      "release": -0,
+      "trade_only": -0,
+      "conservative": 0.036,
+      "china_50": -0,
+      "global": 0.047,
+      "global_release": 0.037,
+      "global_exposure": 0.052
+    },
+    "Nuclear": {
+      "in_strategic_scope": true,
+      "exposure": 0.086,
+      "headline": 0.034,
+      "release": 0.017,
+      "trade_only": 0.034,
+      "conservative": 0.086,
+      "china_50": 0,
+      "global": 0.107,
+      "global_release": 0.071,
+      "global_exposure": 0.107
+    },
+    "Oil": {
+      "in_strategic_scope": false,
+      "exposure": 0.021,
+      "headline": 0.001,
+      "release": 0,
+      "trade_only": 0.001,
+      "conservative": 0.021,
+      "china_50": 0,
+      "global": 0.024,
+      "global_release": 0.011,
+      "global_exposure": 0.027
+    },
+    "Semiconductors": {
+      "in_strategic_scope": true,
+      "exposure": 0.181,
+      "headline": 0.067,
+      "release": -0,
+      "trade_only": 0.067,
+      "conservative": 0.181,
+      "china_50": 0.007,
+      "global": 0.186,
+      "global_release": 0.002,
+      "global_exposure": 0.186
+    },
+    "Solar": {
+      "in_strategic_scope": true,
+      "exposure": 0.256,
+      "headline": 0.181,
+      "release": 0.111,
+      "trade_only": 0.176,
+      "conservative": 0.256,
+      "china_50": 0.062,
+      "global": 0.266,
+      "global_release": 0.197,
+      "global_exposure": 0.266
+    },
+    "Wind": {
+      "in_strategic_scope": true,
+      "exposure": 0.222,
+      "headline": 0.121,
+      "release": 0.073,
+      "trade_only": 0.121,
+      "conservative": 0.222,
+      "china_50": 0.02,
+      "global": 0.232,
+      "global_release": 0.191,
+      "global_exposure": 0.233
+    }
+  },
+  "global": {
+    "classes": {
+      "BUILD": 48,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 21
+    },
+    "release": {
+      "BUILD": 37,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 30,
+      "MANAGE SPECIALIZATION": 2
+    },
+    "compacts_pc": 30,
+    "compacts_types": {
+      "candidate compact": 30
+    }
+  },
+  "compacts": {
+    "production_constrained": 22,
+    "trade_only": 22,
+    "same_node_sets": 21
+  }
+}

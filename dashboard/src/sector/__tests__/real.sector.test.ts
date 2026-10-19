@@ -25,6 +25,7 @@ import {
   validateChunk,
   type HeadlineId,
   type SectorChunkName,
+  type SectorClimateChunk,
   type SectorDevChunk,
   type SectorFactsChunk,
   type SectorManifest,
@@ -33,16 +34,22 @@ import {
   type SectorRefSizes,
   type SectorSeriesChunk,
   type SectorTradeChunk,
+  type SectorClimateSrcChunk,
 } from '../contract.ts';
 import { factsIndexOf, seriesIndexOf, type FactsIndex } from '../data/facts.ts';
 import { modelOf, type ItemInfo, type SectorModel, type VarInfo } from '../data/model.ts';
 import { countryFamilies, countryVars, primaryMeasure } from '../derive/cells.ts';
+import { mineralPaths, nzeCell, nzeCompare, nzeHeadline, nzeWorldLine } from '../derive/nze.ts';
+import { cellMatch, climateData, emitters, fmtLifecycle, intensityKeys, intensityOf } from '../derive/climate.ts';
+import { climateSrcData, eiRows, fuelRows, gcpCountry, gcpHeadline, nze21For, srcCell, weiSummary, weoRegionOf } from '../derive/sources.ts';
 import { growth } from '../derive/concentration.ts';
 import { ASSUMED_ZERO_WORDS, isAssumedZero, noteWords } from '../derive/notes.ts';
 import { countryTotals, flowsOf, league, matrixTotal } from '../derive/trade.ts';
 import { summaryFromFacts, summaryParity } from '../derive/summary.ts';
 
 const DATA_DIR = resolve(process.cwd(), 'public/data');
+/** The parity rows of the climate sources (sector_src_parity()). */
+const SRC_PARITY = /^climate \(decoded\): (GCP|EI |WEO regional|WEO regions|economy -> WEO|NZE 2021|WEI|climate sources)/;
 const SECTOR_DIR = join(DATA_DIR, 'sector');
 const HAVE = existsSync(join(SECTOR_DIR, 'manifest.json'));
 
@@ -135,8 +142,13 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect(manifest.flags.fdi).toBe(true);
       // Development & finance (2026-10-15): the lazy sector-dev chunk ships with flags.dev (--no-dev has neither)
       expect(manifest.flags.dev).toBe(true);
-      // 17 chunks: meta, facts, 10 trade, policy, policy-text, series, fdi, dev
-      expect(manifest.chunks.length).toBe(17);
+      // Climate TRACE emissions (2026-10-17): the lazy sector-climate chunk ships with flags.climate (--no-climate has neither)
+      expect(manifest.flags.climate).toBe(true);
+      // 18 chunks: meta, facts, 10 trade, policy, policy-text, series, fdi, dev, climate; 19 with the climate
+      // sources (sector-climate-src, flags.climate_src, 2026-10-17; --no-climate-sources has neither)
+      expect(manifest.chunks.length).toBe(manifest.flags.climate_src ? 19 : 18);
+      expect(manifest.chunks.filter((c) => c.name === 'sector-climate-src').length).toBe(manifest.flags.climate_src ? 1 : 0);
+      expect(manifest.chunks.filter((c) => c.name === 'sector-climate').length).toBe(1);
       expect(manifest.chunks.filter((c) => c.name === 'sector-dev').length).toBe(1);
       expect(manifest.chunks.filter((c) => c.name.startsWith('sector-trade-')).length).toBe(10);
       expect(manifest.chunks.filter((c) => c.name === 'sector-fdi').length).toBe(1);
@@ -156,8 +168,12 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       const warns = v.filter((x) => x.status === 'WARN');
       console.info(`manifest.validation: ${v.filter((x) => x.status === 'PASS').length} PASS, ${warns.length} WARN, 0 FAIL`);
       for (const w of warns) console.info(`  WARN ${w.check}${w.detail ? ` -- ${w.detail}` : ''}`);
-      // the two expected WARNs of the final run (EI hydro 1972 residual; oil-midstream trade bases)
-      expect(warns.length).toBeLessThanOrEqual(2);
+      // the two expected WARNs of the final run (EI hydro 1972 residual; oil-midstream trade bases), plus
+      // Climate TRACE's carried-forward latest year (2026-10-17; shown on the pages, caveat climate_trace_repeat)
+      expect(warns.filter((w) => !w.check.startsWith('climate: the latest year repeats') && !w.check.startsWith('climate: IEA pathways vintage check')).length).toBeLessThanOrEqual(2);
+      // and the IEA pathways' vintage check against the previous WEO edition (2026-10-17; editions differ by design)
+      expect(warns.filter((w) => w.check.startsWith('climate:') && !w.check.startsWith('climate: IEA pathways vintage check')).length).toBeLessThanOrEqual(1);
+      expect(warns.filter((w) => w.check.startsWith('climate: IEA pathways vintage check')).length).toBeLessThanOrEqual(1);
     });
 
     it('budgets: each chunk, sector <= 9 MB gz, Strategic + Sector <= 25 MB gz', () => {
@@ -514,6 +530,84 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       for (let i = 0; i < dev['dev.dip'].nrow; i++) if (dev['dev.dip'].cols.conduit[i] !== 'none') flagged++;
       expect(flagged).toBeGreaterThan(100);
       expect(dev['dev.oda'].nrow).toBeGreaterThan(10_000);
+    });
+
+    it('sector-climate: Climate TRACE emissions identical() to data/processed, a match quality for every cell, plausible magnitudes', () => {
+      for (const c of manifest.validation.filter((x) => x.check.startsWith('climate (decoded):'))) expect({ check: c.check, status: c.status }).toEqual({ check: c.check, status: 'PASS' });
+      // 6 Climate TRACE parity rows, plus 6 for the IEA pathway tables (climate.nze_*) and 18 for the climate
+      // sources (sector-climate-src) when the build has them
+      const nzeRows = manifest.validation.filter((x) => x.check.startsWith('climate (decoded):') && /IEA pathway|mineral demand by scenario/.test(x.check)).length;
+      expect(nzeRows === 0 || nzeRows === 6).toBe(true);
+      const srcRows = manifest.validation.filter((x) => SRC_PARITY.test(x.check)).length;
+      expect(srcRows === 0 || srcRows === 18).toBe(true);
+      expect(manifest.validation.filter((x) => x.check.startsWith('climate (decoded):')).length - nzeRows - srcRows).toBe(6);
+      const raw = validateChunk('sector-climate', readChunkFile(manifest.chunks.find((c) => c.name === 'sector-climate')!.file), ref) as SectorClimateChunk;
+      const d = climateData(raw);
+      expect(d.cells.size).toBe(model.cells.length);
+      expect(cellMatch(d, I('cell', 'coal-upstream').idx).match).toBe('direct');
+      expect(cellMatch(d, I('cell', 'solar-midstream').idx).match).toBe('none');
+      expect(d.latest).toBeGreaterThanOrEqual(2025);
+      const coal = d.srcs.find((x) => x.id === 'coal-mining')!;
+      const e = emitters(d, model, coal.idx, d.latest);
+      expect(e.world! > 1e9 && e.world! < 5e9).toBe(true);
+      expect(e.rows[0].g.code).toBe('CHN');
+      const power = d.srcs.find((x) => x.id === 'electricity-generation:coal')!;
+      const w = intensityOf(d, intensityKeys(d, power)[0].key, model.world!.idx, d.latest)!;
+      expect(w.value > 0.7 && w.value < 1.3 && w.unit === 't CO2e per MWh').toBe(true);
+      expect(fmtLifecycle(d.lifecycle.get('Coal'))).toBe('820 gCO2e/kWh');
+      expect(d.lifecycle.get('Electric Grid')?.proxyOf).toEqual(['Solar', 'Wind']);
+    });
+
+    it('sector-climate IEA pathways (climate.nze_*): parity PASS, every cell mapped, World scenarios as published, no Net Zero mineral scenario', () => {
+      const raw = validateChunk('sector-climate', readChunkFile(manifest.chunks.find((c) => c.name === 'sector-climate')!.file), ref) as SectorClimateChunk;
+      const n = climateData(raw).nze;
+      if (!n) return void console.info('this build has no IEA pathway tables (--no-nze)');
+      expect(manifest.validation.filter((x) => /^climate \(decoded\): (IEA pathway|mineral demand by scenario)/.test(x.check)).every((x) => x.status === 'PASS')).toBe(true);
+      expect(n.cells.size).toBe(model.cells.length);
+      expect(nzeCell(n, I('cell', 'solar-downstream').idx).match).toBe('direct');
+      expect(nzeCell(n, I('cell', 'electric-vehicles-downstream').idx).match).toBe('proxy');
+      expect(nzeCell(n, I('cell', 'semiconductors-upstream').idx).match).toBe('none');
+      expect(n.weo).toMatch(/^World Energy Outlook 20\d\d$/);
+      expect(n.baseYear).toBeGreaterThanOrEqual(2024);
+      const solar = nzeCompare(n, n.byId.get('cap_solar')!);
+      expect(solar.nze! > solar.stated! && solar.stated! > solar.base!).toBe(true);
+      const coal = nzeCompare(n, n.byId.get('tes_coal')!);
+      expect(coal.nze! < coal.stated!).toBe(true);
+      expect(nzeHeadline(n, I('cell', 'solar-downstream').idx)!.text).toMatch(/^The Net Zero pathway needs [\d,]+ GW of solar PV capacity by 2035/);
+      expect(new Set(n.minerals.map((r) => r.scenario))).toEqual(new Set(['current', 'stated', 'high_demand']));
+      const li = mineralPaths(n, nzeCell(n, I('cell', 'batteries-upstream').idx).mineralTechs);
+      expect(li.map((m) => m.mineral)).toContain('Lithium');
+      expect(nzeWorldLine(n)).toMatch(/^World context, not this economy’s: energy-sector CO2 was [\d.]+ Gt in 20\d\d/);
+    });
+
+    it('sector-climate-src (climate sources): parity PASS, published spot values, regions mapped, every cell with a match quality', () => {
+      const info = manifest.chunks.find((c) => c.name === 'sector-climate-src');
+      if (!info) return void console.info('this build has no climate sources (--no-climate-sources)');
+      expect(manifest.validation.filter((x) => SRC_PARITY.test(x.check)).every((x) => x.status === 'PASS')).toBe(true);
+      const d = climateSrcData(validateChunk('sector-climate-src', readChunkFile(info.file), ref) as SectorClimateSrcChunk);
+      const G = (code: string) => model.geoByCode.get(code)!.idx;
+      // GCP 2025 v1.0: Japan territorial 2024 262.5 MtC x 3.664 (962 Mt); consumption-based above territorial (negative transfers)
+      const jp = gcpCountry(d, G('JPN'), G('WLD'))!;
+      expect(jp.last!.year).toBe(2024);
+      expect(jp.last!.value > 900 && jp.last!.value < 1000).toBe(true);
+      expect(jp.lastCons!.transfer! < 0).toBe(true);
+      expect(gcpHeadline(jp, 'Japan')).toMatch(/more than it emits at home/);
+      expect(eiRows(d, G('DEU')).map((r) => r.ind.id)).toEqual(expect.arrayContaining(['ghg', 'renewables_share', 'carbon_intensity', 'power_low_carbon']));
+      expect(weoRegionOf(d, G('JPN'), 'Japan')).toMatchObject({ region: 'Japan', match: 'own' });
+      expect(weoRegionOf(d, G('DEU'), 'Germany')).toMatchObject({ region: 'European Union', match: 'member' });
+      expect(weoRegionOf(d, G('BRA'), 'Brazil')).toMatchObject({ region: 'Brazil', match: 'own' });
+      expect(d.weo.get('Japan')!.get(d.weoSeries.find((x) => x.id === 'co2_energy')!.idx)!.has('nze')).toBe(false);
+      // NZE 2021: 4,956 GW of solar PV in 2030; WEI 2026: World solar investment USD 407 bn in 2025, 2026 an estimate
+      expect(nze21For(d, 'cap_solar')!.value).toBe(4956);
+      const sol = weiSummary(d, 'solar')!;
+      expect([sol.year, sol.value, sol.est?.year]).toEqual([2025, 407, 2026]);
+      expect(d.cells.size).toBe(model.cells.length);
+      expect(srcCell(d, I('cell', 'solar-downstream').idx).match).toBe('direct');
+      expect(srcCell(d, I('cell', 'semiconductors-midstream').idx).match).toBe('none');
+      const coal = fuelRows(d, I('cell', 'coal-upstream').idx)[0];
+      expect(coal.fuel).toBe('coal');
+      expect(coal.share! > 0.35 && coal.share! < 0.45).toBe(true);
+      expect(fuelRows(d, I('cell', 'solar-downstream').idx)).toEqual([]);
     });
 
     it('every cell with a dictionary primary measure resolves it (the Snapshot is never empty); fuel Downstream: consumption per person', () => {

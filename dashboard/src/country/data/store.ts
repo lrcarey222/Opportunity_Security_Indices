@@ -5,7 +5,7 @@
 
 import {
   COUNTRY_DATA_DIR, COUNTRY_MANIFEST_FILE, COUNTRY_SCHEMA_VERSION, CountryContractError, checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc,
-  type CountryEntry, type CountryManifest, type DriversDoc, type FactSheet, type MemoDoc,
+  checkTradeMonthlyDoc, type CountryEntry, type CountryManifest, type DriversDoc, type FactSheet, type MemoDoc, type TradeMonthlyDoc,
 } from '../contract.ts';
 
 export type CountryLoadCode = 'NO_DATA' | 'NEWER' | 'CONTRACT' | 'NETWORK';
@@ -86,6 +86,7 @@ export class CountryStore {
   private readonly sheets = new Map<string, Promise<FactSheet>>();
   private readonly memos = new Map<string, Promise<MemoDoc>>();
   private readonly drivers = new Map<string, Promise<DriversDoc>>();
+  private readonly trades = new Map<string, Promise<TradeMonthlyDoc>>();
   /** settled values, for synchronous reads after the first load */
   private readonly done = new Map<string, unknown>();
   readonly calls: string[] = [];
@@ -183,6 +184,30 @@ export class CountryStore {
           throw contractError(e, `The drivers file of ${entry.name}`);
         });
       this.drivers.set(file, p);
+    }
+    return p;
+  }
+
+  /** The companion monthly trade file (additive 2026-10-19): monthly trade by sub-component of a core member. */
+  tradeMonthly(entry: CountryEntry): Promise<TradeMonthlyDoc> {
+    const file = entry.trade_monthly;
+    if (!file) return Promise.reject(new CountryLoadError('NETWORK', `${entry.name} has no monthly trade file.`));
+    let p = this.trades.get(file);
+    if (!p) {
+      this.calls.push(file);
+      p = this.source
+        .json(file)
+        .then((x) => {
+          const problems = checkTradeMonthlyDoc(x, entry.iso3);
+          if (problems.length) throw new CountryContractError(`Monthly trade ${entry.iso3}`, problems);
+          this.done.set(`trade:${entry.iso3}`, x);
+          return x as TradeMonthlyDoc;
+        })
+        .catch((e) => {
+          this.trades.delete(file);
+          throw contractError(e, `The monthly trade file of ${entry.name}`);
+        });
+      this.trades.set(file, p);
     }
     return p;
   }

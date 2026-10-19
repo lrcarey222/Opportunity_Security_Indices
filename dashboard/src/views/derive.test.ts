@@ -1,11 +1,10 @@
 // Pure derivations behind the views (spec_react.md 8.3: one pure function per chart, unit-tested):
-// Show-mode values, colour domains, regions, network comparisons, chart helpers, formats and CSV.
+// Show-mode values, colour domains, regions, chart helpers, formats and CSV.
 
 import { describe, expect, it } from 'vitest';
 import { cellRows, scaleValues, sideWords, triOptions, withShown, type MetricRow } from './Overview/derive.ts';
 import { triScale } from '../charts/scale.ts';
 import { fitDomain, median, regionOf, REGIONS } from './Space/derive.ts';
-import { compareSpecs, designGap, hhi, type SpecRow } from './Network/derive.ts';
 import { declutter, fitLabel, labelMargin, symDomain } from '../charts/theme.ts';
 import { fmtDelta, fmtNum, fmtPct, fmtRankChange, fmtSigned, stageSlug } from '../lib/format.ts';
 import { rowsToCsv, tableToCsv, withBom } from '../lib/csv.ts';
@@ -84,32 +83,6 @@ describe('Space: regions and domains', () => {
     const [a, b] = fitDomain([0.5, 0.51]);
     expect(b - a).toBeGreaterThanOrEqual(0.2 - 1e-12);
     expect(fitDomain([0, 1])).toEqual([0, 1]);
-  });
-});
-
-describe('Network: comparisons', () => {
-  const spec = (node: string, share: number, tech = 'Batteries', supply_chain = 'Midstream'): SpecRow => ({ tech, supply_chain, node, share, selected: share > 0, score: null });
-
-  it('compares producer sets, concentration and shares per stage', () => {
-    const cur = [spec('USA', 0.5), spec('CAN', 0.3), spec('MEX', 0.2), spec('USA', 1, 'Solar')];
-    const ref = [spec('USA', 0.6), spec('CAN', 0.4), spec('USA', 1, 'Solar')];
-    const { stage, node } = compareSpecs(cur, ref);
-    const b = stage.find((s) => s.tech === 'Batteries')!;
-    expect(b.producers_added).toBe('MEX');
-    expect(b.producers_removed).toBe('');
-    expect(b.jaccard).toBeCloseTo(2 / 3, 12);
-    expect(b.hhi).toBeCloseTo(0.25 + 0.09 + 0.04, 12);
-    expect(b.hhi_ref).toBeCloseTo(0.36 + 0.16, 12);
-    expect(b.max_abs_share_delta).toBeCloseTo(0.2, 12);
-    expect(b.changed).toBe(true);
-    const s = stage.find((x) => x.tech === 'Solar')!;
-    expect(s.changed).toBe(false);
-    expect(s.jaccard).toBe(1);
-    expect(node.filter((r) => r.tech === 'Batteries').map((r) => r.node).sort()).toEqual(['CAN', 'MEX', 'USA']);
-    const gap = designGap(stage, node)!;
-    expect(gap.medianJaccard).toBeCloseTo((2 / 3 + 1) / 2, 12);
-    expect(gap.meanAbs).toBeCloseTo((0.1 + 0.1 + 0.2 + 0) / 4, 12);
-    expect(hhi([0.5, 0.5])).toBe(0.5);
   });
 });
 

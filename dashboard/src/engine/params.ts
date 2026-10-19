@@ -87,12 +87,6 @@ export function defaultAdvanced(bundle: Pick<Bundle, 'baselineInputs'>): Advance
     fossil: 'auto',
     require_resource_base: bi.require_resource_base !== false,
     psi_view: bi.psi_view,
-    network: {
-      lambda: null,
-      max_share: bi.max_share,
-      min_producers: Math.trunc(bi.min_producers),
-      portfolio_enable: bi.portfolio.enable === true,
-    },
   };
 }
 
@@ -127,7 +121,7 @@ export function checkAdvanced(x: unknown, bundle: Pick<Bundle, 'baselineInputs'>
   const a = x as Record<string, unknown>;
   const unknown = Object.keys(a).filter((k) => !(k in def));
   if (unknown.length) throw new EngineError('PARAMS', `Unknown advanced setting(s): ${unknown.join(', ')}.`);
-  const out: Advanced = { ...def, network: { ...def.network } };
+  const out: Advanced = { ...def };
   out.es_weights = checkCategoryWeights(a.es_weights, bi.es_weights, 'es_weights');
   out.eo_weights = checkCategoryWeights(a.eo_weights, bi.eo_weights, 'eo_weights');
   if ('tau' in a) {
@@ -153,34 +147,6 @@ export function checkAdvanced(x: unknown, bundle: Pick<Bundle, 'baselineInputs'>
     const v = s1(a.psi_view);
     if (!['coalition', 'world'].includes(v)) throw new EngineError('PARAMS', "psi_view must be 'coalition' or 'world'.");
     out.psi_view = v as PsiView;
-  }
-  if (a.network !== undefined && a.network !== null && !(Array.isArray(a.network) && a.network.length === 0)) {
-    const net = a.network as Record<string, unknown>;
-    const unk = Object.keys(net).filter((k) => !(k in def.network));
-    if (unk.length) throw new EngineError('PARAMS', `Unknown network setting(s): ${unk.join(', ')}.`);
-    if ('lambda' in net) {
-      if (isNA(net.lambda)) out.network.lambda = null;
-      else {
-        const lam = Number(net.lambda);
-        if (!Number.isFinite(lam) || lam < 0) throw new EngineError('PARAMS', 'network lambda must be NA or one number >= 0.');
-        out.network.lambda = lam;
-      }
-    }
-    if (net.max_share !== undefined && net.max_share !== null) {
-      const ms = Number(net.max_share);
-      if (!Number.isFinite(ms) || ms <= 0 || ms > 1) throw new EngineError('PARAMS', 'max_share must be in (0, 1].');
-      out.network.max_share = ms;
-    }
-    if (net.min_producers !== undefined && net.min_producers !== null) {
-      const v = Number(net.min_producers);
-      const mp = Number.isFinite(v) ? Math.round(v) : NaN;
-      if (!Number.isFinite(mp) || mp < 1) throw new EngineError('PARAMS', 'min_producers must be a positive integer.');
-      out.network.min_producers = mp;
-    }
-    if (net.portfolio_enable !== undefined && net.portfolio_enable !== null) {
-      const pe = Array.isArray(net.portfolio_enable) ? net.portfolio_enable[0] : net.portfolio_enable;
-      out.network.portfolio_enable = pe === true || pe === 'TRUE' || pe === 'true' || pe === 1;
-    }
   }
   return out;
 }
@@ -248,44 +214,6 @@ export function makeParams(spec: ScenarioSpec | null | undefined, bundle: Pick<B
     top_k: Math.trunc(bi.top_k),
     exclude_techs: excludeTechs,
   };
-
-  const nw = { eo: bi.node_weights.eo, policy: bi.node_weights.policy, resilience: bi.node_weights.resilience };
-  let nodePolicy = bi.node_policy === true;
-  const ramp = Math.max(0, (dials.populism - 50) / 50);
-  if (nodePolicy) nw.policy = nw.policy * mP;
-  else if (ramp > 0) {
-    nodePolicy = true;
-    nw.policy = bi.node_policy_weight_max * ramp;
-  }
-  nw.eo = nw.eo * mB;
-  nw.resilience = nw.resilience * mH;
-  const lambda = adv.network.lambda === null ? bi.lambda * mH : adv.network.lambda;
-  const network = {
-    node_weights: { eo: nw.eo, policy: nw.policy, resilience: nw.resilience },
-    node_policy: nodePolicy,
-    edge_weights: { friendshore: bi.edge_weights.friendshore * mH, opportunity: bi.edge_weights.opportunity * mB },
-    demand_weights: { need: bi.demand_weights.need * mH, size: bi.demand_weights.size * mB },
-    diversity_lambda: lambda,
-    self_multiplier: mP,
-    max_share: adv.network.max_share,
-    min_share: bi.min_share,
-    min_producers: adv.network.min_producers,
-    min_suppliers_per_consumer: bi.min_suppliers_per_consumer,
-    epsilon_supplier_share: bi.epsilon_supplier_share,
-    w_node: bi.w_node,
-    w_edge: bi.w_edge,
-    w_dev: bi.w_dev,
-    allow_self: bi.allow_self,
-    portfolio: { ...bi.portfolio, enable: adv.network.portfolio_enable },
-    diversity_breakpoint_step: bi.diversity_breakpoint_step,
-    supply_chains: [...bi.supply_chains],
-    exclude_techs: [...excludeTechs],
-    milp_time_limit: bi.milp_time_limit,
-    policy_missing: bi.policy_missing,
-    missing_components: bi.missing_components,
-    demand_mode: bi.demand_mode,
-    size_transform: bi.size_transform,
-  };
   return {
     dials,
     m: { H: mH, B: mB, P: mP, G: mG },
@@ -294,7 +222,6 @@ export function makeParams(spec: ScenarioSpec | null | undefined, bundle: Pick<B
     policy: { weights: pw },
     si,
     partner,
-    network,
   };
 }
 
@@ -316,21 +243,12 @@ export function isBaseline(params: Params, bundle: Pick<Bundle, 'manifest'>): bo
 }
 
 export type Layer =
-  | 'pillars' | 'policy' | 'si' | 'partner_cells' | 'fs_cells' | 'po_cells' | 'psi' | 'top5'
-  | 'net_inputs' | 'net_score' | 'net_solve' | 'all';
+  | 'pillars' | 'policy' | 'si' | 'partner_cells' | 'fs_cells' | 'po_cells' | 'psi' | 'top5' | 'all';
 
 /** dash_params_layer(): the subset of the parameters a recompute layer reads. */
 export function paramsLayer(p: Params, layer: Layer): unknown {
   const fs = { fs_weights: p.partner.fs_weights, fs_penalty: p.partner.fs_penalty };
   const po = { po_weights: p.partner.po_weights, po_penalty: p.partner.po_penalty };
-  const netInputs = { fs, po, stages: { supply_chains: p.network.supply_chains, exclude_techs: p.network.exclude_techs } };
-  const n = p.network;
-  const score = {
-    node_weights: n.node_weights, node_policy: n.node_policy, edge_weights: n.edge_weights, demand_weights: n.demand_weights,
-    self_multiplier: n.self_multiplier, policy_missing: n.policy_missing, missing_components: n.missing_components,
-    demand_mode: n.demand_mode, size_transform: n.size_transform,
-  };
-  const netScore = { ...netInputs, policy: n.node_policy ? p.policy : null, score };
   switch (layer) {
     case 'pillars':
       return p.pillars;
@@ -351,15 +269,6 @@ export function paramsLayer(p: Params, layer: Layer): unknown {
         fs, po, psi_weights: p.partner.psi_weights, psi_view: p.partner.psi_view, psi_tau: p.partner.psi_tau,
         top_k: p.partner.top_k, exclude_techs: p.partner.exclude_techs,
       };
-    case 'net_inputs':
-      return netInputs;
-    case 'net_score':
-      return netScore;
-    case 'net_solve': {
-      const solve: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(n)) if (!(k in score)) solve[k] = v;
-      return { ...netScore, solve };
-    }
     case 'all':
       return p;
   }
@@ -406,11 +315,6 @@ function share(w: Record<string, number | null> | undefined, k: string): number 
 export function dialReadout(params: Params, bundle: Pick<Bundle, 'baselineInputs' | 'baselineParams'>): Table {
   const bi = bundle.baselineInputs;
   const base = bundle.baselineParams;
-  const effNode = (p: Params, k: 'eo' | 'policy' | 'resilience') => {
-    const nw = { ...p.network.node_weights };
-    if (!p.network.node_policy) nw.policy = 0;
-    return nw[k] / sumList([nw.eo, nw.policy, nw.resilience]);
-  };
   const polShare = (p: Params, v: string) => {
     const w = p.policy.weights;
     if (!(v in w)) return NaN;
@@ -421,23 +325,14 @@ export function dialReadout(params: Params, bundle: Pick<Bundle, 'baselineInputs
   const rows: ReadoutRow[] = [
     ['hawkishness', 'si_need', 'Strategic Index weight on security need', (p) => p.si.weights.energy_security_need, true],
     ['hawkishness', 'psi_fs_share', 'Friendshore share of Partnership Strength', (p) => share(p.partner.psi_weights, 'friendshore'), true],
-    ['hawkishness', 'edge_fs_share', 'Friendshore share of network links', (p) => share(p.network.edge_weights, 'friendshore'), false],
     ['hawkishness', 'fs_geo_share', 'UN-vote alignment share of Friendshore', (p) => share(p.partner.fs_weights, 'geo_alignment'), false],
     ['hawkishness', 'fs_cpe_share', 'Chinese-parent ownership share of Friendshore', (p) => share(p.partner.fs_weights, 'chinese_parent_exposure'), false],
-    ['hawkishness', 'lambda', 'Diversification weight of the network design', (p) => p.network.diversity_lambda, true],
-    ['hawkishness', 'demand_need_share', 'Security-need share of network demand', (p) => share(p.network.demand_weights, 'need'), false],
-    ['hawkishness', 'node_resilience', 'Own-security weight in the producer score', (p) => effNode(p, 'resilience'), false],
     ['bullishness', 'si_eo', 'Strategic Index weight on Economic Opportunity', (p) => p.si.weights.economic_opportunity, true],
     ['bullishness', 'psi_po_share', 'Partnership Opportunity share of Partnership Strength', (p) => share(p.partner.psi_weights, 'opportunity'), true],
-    ['bullishness', 'edge_po_share', 'Partnership Opportunity share of network links', (p) => share(p.network.edge_weights, 'opportunity'), true],
-    ['bullishness', 'node_eo', 'Economic Opportunity weight in the producer score', (p) => effNode(p, 'eo'), false],
-    ['bullishness', 'demand_size_share', 'Market-size share of network demand', (p) => share(p.network.demand_weights, 'size'), false],
     ['populism', 'si_policy', 'Strategic Index weight on policy activity', (p) => p.si.weights.policy, true],
     ['populism', 'policy_iea_share', 'IEA policy-record share of policy activity', (p) => polShare(p, bi.policy_iea_var), false],
     ['populism', 'stage_up_ratio', 'Upstream / Midstream stage weight', (p) => stageRatio(p, 'Upstream'), true],
     ['populism', 'stage_down_ratio', 'Downstream / Midstream stage weight', (p) => stageRatio(p, 'Downstream'), false],
-    ['populism', 'node_policy', 'Policy weight in the producer score', (p) => effNode(p, 'policy'), false],
-    ['populism', 'home_bias', 'Home-supply multiplier in the network', (p) => p.network.self_multiplier, true],
     ['greenness', 'si_tech', 'Strategic Index weight on low-emission technology', (p) => p.si.weights.technology, true],
     ['greenness', 'policy_cat_share', 'Climate Action Tracker share of policy activity', (p) => polShare(p, bi.policy_cat_var), false],
     ['greenness', 'fs_penalty', 'Friendshore climate penalty (per side)', (p) => p.partner.fs_penalty, true],
@@ -459,7 +354,6 @@ export function dialReadout(params: Params, bundle: Pick<Bundle, 'baselineInputs
     const ratio = Number.isFinite(b) && b !== 0 ? cur / b : NaN;
     let t: string;
     if (prm === 'fossil') t = cur > 0 ? 'Coal, Oil and Gas excluded' : 'Fossil technologies included';
-    else if (prm === 'home_bias') t = `${lab} x${fmtF(cur, 2)}`;
     else if (Number.isFinite(ratio) && Math.abs(ratio - 1) > 1e-9) t = `${lab} ${fmtG(cur, 3)} (x${fmtF(ratio, 2)} vs ${fmtG(b, 3)})`;
     else if (!Number.isFinite(ratio) && Number.isFinite(cur) && cur !== b) t = `${lab} ${fmtG(cur, 3)} (paper: ${fmtG(b, 3)})`;
     else t = `${lab} ${fmtG(cur, 3)} (paper)`;
@@ -500,10 +394,5 @@ export function advancedDiff(adv: Advanced, bundle: Pick<Bundle, 'baselineInputs
   for (const k of ['es_weights', 'eo_weights', 'tau', 'fossil', 'require_resource_base', 'psi_view'] as const) {
     if (!deepEqual(adv[k], def[k])) out[k] = adv[k];
   }
-  const net: Record<string, unknown> = {};
-  for (const k of ['lambda', 'max_share', 'min_producers', 'portfolio_enable'] as const) {
-    if (!deepEqual(adv.network[k], def.network[k])) net[k] = adv.network[k];
-  }
-  if (Object.keys(net).length) out.network = net;
   return out as ScenarioSpec['advanced'];
 }

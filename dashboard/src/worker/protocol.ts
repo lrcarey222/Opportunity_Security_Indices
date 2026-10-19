@@ -3,12 +3,12 @@
 
 import type { Manifest, Dims, Table, ScenarioSpec, Params, NumRecord, PsiView } from '../engine/types.ts';
 
-export type ChunkName = 'core' | 'vars' | 'partner' | 'network';
-export type RunLayer = 'core' | 'partner' | 'network';
+// The network chunk and layer of the original allied network design are retired (2026-10-17).
+export type ChunkName = 'core' | 'vars' | 'partner';
+export type RunLayer = 'core' | 'partner';
 
 export interface RunWant {
   partner?: boolean;
-  network?: boolean;
   contrib?: boolean;
 }
 
@@ -39,7 +39,6 @@ export interface BaselineCore {
   psi_partner: Table | null;
   psi_view: PsiView;
   psi_reporters: string[];
-  network_summary: { source: string; specialization: Table; diagnostics: Table } | null;
 }
 
 export interface CorePayload {
@@ -62,27 +61,6 @@ export interface PartnerPayload {
   compare: { psi_partner: Table };
 }
 
-export interface NetworkPayload {
-  is_baseline: boolean;
-  stages: { tech: string; supply_chain: string }[];
-  scored: { nodes: Table } | null;
-  solution: {
-    specialization: Table;
-    flows: Table;
-    diagnostics: Table;
-    member_shares: Table | null;
-    portfolio: { caps: Table; counts: Table; topk: Table; converged: boolean | null; iters: number | null; violations_remaining: number | null } | null;
-    forbidden: Record<string, string[]>;
-  };
-  /** what the solution is: the greedy solver, or the paper's stored MILP design (baseline only) */
-  method: 'greedy' | 'milp' | 'stored';
-  /** the design comparisons are made against */
-  reference: 'greedy' | 'milp';
-  compare: { stage: Table; node: Table; node_summary: Table } | null;
-  concentration: Table;
-  elapsed_ms: number;
-}
-
 // ---- worker -> main -------------------------------------------------------------------------------
 
 export interface SelfCheckMessage {
@@ -99,8 +77,7 @@ export type FromWorker =
   | { type: 'chunk'; name: ChunkName; state: 'loading' | 'loaded' | 'error'; bytes?: number; ms?: number; error?: string }
   | { type: 'result'; id: number; layer: 'core'; key: string; source: 'baseline' | 'computed'; payload: CorePayload; ms: number; cached: boolean }
   | { type: 'result'; id: number; layer: 'partner'; key: string; source: 'baseline' | 'computed'; payload: PartnerPayload; ms: number; cached: boolean }
-  | { type: 'result'; id: number; layer: 'network'; key: string; source: 'baseline' | 'computed'; payload: NetworkPayload; ms: number; cached: boolean }
-  | { type: 'progress'; id: number; layer: 'partner' | 'network'; phase: string; current: number; total: number; tech?: string; supply_chain?: string; iter?: number }
+  | { type: 'progress'; id: number; layer: 'partner'; phase: string; current: number; total: number }
   | { type: 'done'; id: number; ms: number }
   | { type: 'reply'; id: number; payload: unknown }
   | SelfCheckMessage

@@ -16,12 +16,50 @@
 //
 // Additive fields (2026-10-15, after the R review; still v1): Compact.metrics.globalOptimum,
 // anchorFragmented, anchorCompact, compactGain; Compact.classMix, secondaryClass; Node.tightestCostless,
-// minRequiredDiversification; frontier[].secondShock, specialization; and the compact type "compact
-// unnecessary: ...". They are optional here: an earlier bundle without them still validates. From the
-// same review, metrics.trade is "the trade compact": every economy keeps its existing-relationship
-// response and the coalition's members may also open or expand relationships, so it is at least
-// metrics.existing; metrics.investment adds the standard
-// increment at up to two member hosts per BUILD node.
+// minRequiredDiversification; frontier[].specialization; and the compact type "compact unnecessary: ...".
+// They are optional here: an earlier bundle without them still validates. From the same review,
+// metrics.trade is "the trade compact": every economy keeps its existing-relationship response and the
+// coalition's members may also open or expand relationships, so it is at least metrics.existing;
+// metrics.investment adds the standard increment at up to two member hosts per BUILD node.
+//
+// Methodology fields (2026-10-16; still v1, all optional so an older bundle validates):
+//   manifest + meta   demandScope (the importers whose lost supply is restored; "coalition" = the allied
+//                     core and partner tiers of the coalition table, NOT a compact's coalition) and
+//                     candidateUniverse (the exporters that may supply; "global" = any economy) as
+//                     separate settings, nDemandScope, the shock semantics (hold: the shocked economy keeps
+//                     buying, so other exporters' sales to it stay with it; release: its purchases fall and
+//                     that share of the sales to it is freed), the supply constraint
+//                     (production_constrained: where credible production or capacity data exist they decide
+//                     WHO can supply, a listed producer keeps its full trade response and an unlisted
+//                     exporter keeps its current shipments to the demand scope but cannot expand or redirect;
+//                     trade_only: observed exports alone), the modes run (semantics, constraints) and the
+//                     strategic scope (any configured name, e.g. electro_industrial: compacts only from the
+//                     scopeTechs nodes). meta.universe stays, now a label ("coalition demand / global
+//                     partners").
+//   node              policyNeeds (multi-label: any of COORDINATE, BUILD, MANAGE SPECIALIZATION beside the
+//                     single headline class), warning ("PHYSICAL CAPABILITY NOT VALIDATED"),
+//                     physicalValidation / physicalData / physicalDivergence, inStrategicScope, variants
+//                     (the class under the other shocks, the conservative scenario, release semantics and
+//                     each supply constraint), growth (existing coverage, dividend and class at each bound on
+//                     how far an existing relationship may grow) and coordinateSensitiveToGrowth,
+//                     n1Reoptimized (true N-1: the largest supplier removed and the trade re-optimized),
+//                     instantaneousN1 (coverage x (1 - largest share), mechanical) and diversion.
+//   node.frontier[]   instantaneousN1, n1Reoptimized, n1Removed. secondShock (the earlier name of the
+//                     instantaneous N-1) is no longer written; it is accepted in an older bundle.
+//   compact           coalition.method (the members are the EXACT minimum coalition when the middle target
+//                     is reached: the fewest economies meeting it at every node, anchors always in; among
+//                     coalitions of that size the widest margin over the target in the weakest node, then
+//                     the most supply. When the target is out of reach the method starts with
+//                     "greedy_sufficient_coalition" and members is the widest greedy set; an earlier export
+//                     wrote [] and kept that set as the roles with member = true: read the members with
+//                     coalitionMembersOf()), robustTieBreakSolved (false: the tie-break hit its time limit),
+//                     coalition.greedy (the greedy sufficient coalition, a heuristic), criticalPartners,
+//                     criticalExternal, criticalExternalMarginal, external, associatesReach99;
+//                     nodePolicyNeeds; physicalWarnings; and per role its coalition tier (AIB_TIERS, six),
+//                     critical and leave-one-out (looCritical) flags, its SINGLE substitutes and
+//                     substitutesNeeded. Externals hold roles with member = false, like associates.
+//   node (later)      variantWarnings (variant -> the class under it carries the physical-capability
+//                     warning) and growth[].warning: the warning of every class a node shows.
 
 // ---- Schema ----------------------------------------------------------------------------------------
 
@@ -52,15 +90,82 @@ export type AibCompactType = (typeof AIB_COMPACT_TYPES)[number];
 export const AIB_RELATIONSHIPS = ['new', 'expanded'] as const;
 export type AibRelationship = (typeof AIB_RELATIONSHIPS)[number];
 
+/** The policy needs a node can carry at once (the multi-label profile beside the headline class). */
+export const AIB_POLICY_NEEDS = ['COORDINATE', 'BUILD', 'MANAGE SPECIALIZATION'] as const;
+export type AibPolicyNeed = (typeof AIB_POLICY_NEEDS)[number];
+
+/** The warning the exporter writes on a LOW INTERVENTION or COORDINATE class it cannot validate physically. */
+export const AIB_PHYSICAL_WARNING = 'PHYSICAL CAPABILITY NOT VALIDATED';
+
+/** How much of world production a node's physical proxy covers. */
+export const AIB_PHYSICAL_DATA = ['complete', 'incomplete', 'none'] as const;
+export type AibPhysicalData = (typeof AIB_PHYSICAL_DATA)[number];
+
+/**
+ * The modes of the demand scope and of the candidate-partner universe. "coalition" is the allied core and
+ * partner tiers of the coalition table (57 economies in the headline run), not a compact's coalition;
+ * "global" is any economy in the trade data.
+ */
+export const AIB_SCOPE_MODES = ['coalition', 'configured', 'global'] as const;
+export type AibScopeMode = (typeof AIB_SCOPE_MODES)[number];
+
+/** Shock semantics: hold (an export shock; the shocked economy keeps buying) or release (decoupling). */
+export const AIB_SEMANTICS = ['hold', 'release'] as const;
+export type AibSemantics = (typeof AIB_SEMANTICS)[number];
+
+/**
+ * Supply constraint. production_constrained: where credible production or capacity data exist, they decide
+ * who can supply (a listed producer keeps its full trade response; an exporter they do not list keeps its
+ * current shipments to the demand scope but cannot expand or redirect supply; shares are never turned into
+ * trade values). trade_only: observed exports alone.
+ */
+export const AIB_CONSTRAINTS = ['production_constrained', 'trade_only'] as const;
+export type AibConstraint = (typeof AIB_CONSTRAINTS)[number];
+
+/** The strategic scopes config/aib.yml ships with (words only: meta.strategicScope may be any configured name and is not validated against this list). */
+export const AIB_STRATEGIC_SCOPES = ['electro_industrial', 'all'] as const;
+export type AibStrategicScope = (typeof AIB_STRATEGIC_SCOPES)[number];
+
+/**
+ * The coalition tiers of a compact's economies, from the most to the least involved:
+ *   core coordinating member                 a member of the exact coalition that is not a critical supply
+ *                                            partner (the demand anchors, and suppliers one other candidate
+ *                                            could replace)
+ *   critical supply partner                  a needed member no single other candidate can replace
+ *   associate partner                        the fewest additions to the core (held in) that reach the
+ *                                            highest target
+ *   critical external dependency             a non-member whose loss pushes a node below the middle target
+ *                                            with the coalition fixed, supplying at least
+ *                                            critical_min_supply_share (1%) of the anchors' demand there
+ *   critical external dependency (marginal)  the same, under that share: critical only because the
+ *                                            coalition sits near the target
+ *   external dependency                      another non-member supplying a material share (5%)
+ */
+export const AIB_TIERS = [
+  'core coordinating member',
+  'critical supply partner',
+  'associate partner',
+  'critical external dependency',
+  'critical external dependency (marginal)',
+  'external dependency',
+] as const;
+export type AibTier = (typeof AIB_TIERS)[number];
+
 // ---- Manifest ----------------------------------------------------------------------------------------
 
 export interface AibManifest {
   schema: typeof AIB_SCHEMA;
   version: number;
   created: string;
+  /** a label of the run ("coalition demand / global partners") */
   universe: string;
   headlineShock: string;
   headlineScenario: string;
+  /** additive (2026-10-16): the settings meta carries too */
+  demandScope?: string | null;
+  candidateUniverse?: string | null;
+  shockSemantics?: string | null;
+  supplyConstraint?: string | null;
   files: { compacts: string };
 }
 
@@ -72,9 +177,27 @@ export interface AibShock {
 }
 
 export interface AibMeta {
+  /** a label of the run ("coalition demand / global partners"); an older bundle wrote the one universe */
   universe: string;
   headlineShock: string;
   headlineScenario: string;
+  /** the importers whose lost supply is restored ("coalition": the allied core and partner tiers, not a compact's coalition; additive) */
+  demandScope?: AibScopeMode | null;
+  /** the exporters that may add or redirect supply ("global": any economy; additive) */
+  candidateUniverse?: AibScopeMode | null;
+  /** the number of economies in the demand scope (additive) */
+  nDemandScope?: number | null;
+  /** the headline shock semantics (additive) */
+  shockSemantics?: AibSemantics | null;
+  /** the headline supply constraint (additive) */
+  supplyConstraint?: AibConstraint | null;
+  /** every shock semantics run, the headline first (additive) */
+  semantics?: string[];
+  /** every supply constraint run, the headline first (additive) */
+  constraints?: string[];
+  /** the technologies compacts are formed from (additive): electro_industrial, all or another configured scope */
+  strategicScope?: string | null;
+  scopeTechs?: string[];
   tradeYear: number;
   built: string;
   shocks: AibShock[];
@@ -88,21 +211,82 @@ export interface AibMeta {
 }
 
 export interface AibCoalition {
-  /** the minimum sufficient coalition (the middle target) */
+  /**
+   * the coalition at the middle target: the exact minimum (method "exact ...") when that target is
+   * reached; the widest greedy set when it is not (method "greedy_sufficient_coalition ..."). An earlier
+   * export wrote [] in that case and kept the set as the roles with member = true: the pages read the
+   * members with coalitionMembersOf()
+   */
   members: string[];
+  /** the exact minimum coalition at each target ([] when not reached) */
   t90: string[];
   t95: string[];
   t99: string[];
   reached99: boolean;
+  /** the best minimum coverage of the anchors' demand on the greedy path */
   maxCoverage: number | null;
+  /**
+   * how the members are found (additive): "exact (binary program: ...)" (with "; the solver hit its time
+   * limit ..." when minimality is not proven), or "greedy_sufficient_coalition (...)" when the middle
+   * target is out of reach
+   */
+  method?: string | null;
+  /**
+   * the exact program's tie-break (among minimum-size coalitions: the widest margin over the target in the
+   * weakest node, then the most supply) was solved; false: it hit its time limit (additive)
+   */
+  robustTieBreakSolved?: boolean;
+  /** the greedy sufficient coalition at the middle target, a heuristic ([] when it does not reach it; additive) */
+  greedy?: string[];
+  /** members no single other candidate can replace at the middle target (additive) */
+  criticalPartners?: string[];
+  /**
+   * non-members whose loss pushes a node below the middle target with the coalition fixed (where a node is
+   * below it already, lowers its coverage by a point or more), each supplying at least
+   * critical_min_supply_share of the anchors' demand (additive)
+   */
+  criticalExternal?: string[];
+  /** the same test, supplying less than that share: critical only because the coalition sits near the target (additive) */
+  criticalExternalMarginal?: string[];
+  /** other non-members supplying a material share of the anchors' demand in a node (additive) */
+  external?: string[];
+  /**
+   * the associates (the fewest additions to the core coalition, held in) reach the highest target; the
+   * highest target's own minimum coalition (t99) is solved apart and need not contain the core (additive)
+   */
+  associatesReach99?: boolean;
 }
 
 export interface AibRole {
   iso3: string;
   role: string;
   basis: string;
-  /** in the minimum coalition (false: an associate that joins only for the highest target) */
+  /** in the minimum coalition (false: an associate, or an external dependency) */
   member: boolean;
+  /** the coalition tier (AIB_TIERS; additive) */
+  tier?: string | null;
+  /** a critical supply partner or a critical external dependency, marginal ones included (additive) */
+  critical?: boolean;
+  /**
+   * leave-one-out with the coalition fixed: losing its supply pushes a node below the middle target (true
+   * for nearly every non-anchor member by construction of a minimum coalition; additive)
+   */
+  looCritical?: boolean;
+  /**
+   * a member's SINGLE substitutes: the non-members any ONE of which, added to the rest of the coalition,
+   * restores the middle target when this member's supply is lost (most supply first, at most five). []
+   * for a member the rest of the coalition does without, for a critical supply partner (none exists, by
+   * definition) and when the target is not reached. An export without substitutesNeeded wrote an earlier
+   * reading: the economies the exact program added when the member's supply was lost (additive)
+   */
+  substitutes?: string[];
+  /**
+   * how many additions restore the middle target when this member's supply is lost: 0 when the rest of the
+   * coalition still reaches it, 1 when a single substitute does, 2 or more for a critical supply partner
+   * that only several economies together replace; null when nothing restores it, or the economy was not
+   * tested (a non-member, or a target that is not reached) (additive)
+   */
+  substitutesNeeded?: number | null;
 }
 
 export interface AibMetrics {
@@ -179,6 +363,10 @@ export interface AibCompact {
   classMix?: string | null;
   /** the second class when it holds enough of the lost supply to keep its instruments (additive) */
   secondaryClass?: string | null;
+  /** each node's multi-label policy needs, "Sub-sector: BUILD + MANAGE SPECIALIZATION; ..." ("none" when empty; additive) */
+  nodePolicyNeeds?: string | null;
+  /** the sub-sectors of the compact whose class carries the physical-capability warning (additive) */
+  physicalWarnings?: string[];
   /** the instruments of every archetype whose class holds enough of the lost supply */
   policyNeeds: string[];
   path: AibPathStep[];
@@ -192,10 +380,27 @@ export interface AibFrontierPoint {
   coverage: number | null;
   largestShare: number | null;
   largest: string | null;
-  /** coverage if the optimized allocation then also lost its largest supplier (additive) */
+  /** instantaneous N-1 retained coverage: coverage x (1 - largest share), nothing re-optimized (additive) */
+  instantaneousN1?: number | null;
+  /** N-1 re-optimized: the largest remaining supplier removed and the trade re-optimized (additive) */
+  n1Reoptimized?: number | null;
+  /** the supplier the N-1 test removes (additive) */
+  n1Removed?: string | null;
+  /** the earlier name of instantaneousN1; no longer written, accepted in an older bundle */
   secondShock?: number | null;
   /** supply-weighted specialization score of the optimized supply, 0-1 (additive) */
   specialization?: number | null;
+}
+
+/** The class of a node at one bound on how far an existing relationship may grow. */
+export interface AibGrowthPoint {
+  /** "1.25x", "2x" (the headline), "4x", "unlimited" */
+  label: string;
+  existing: number | null;
+  dividend: number | null;
+  cls: string | null;
+  /** the class at this bound carries PHYSICAL CAPABILITY NOT VALIDATED (additive) */
+  warning?: boolean;
 }
 
 export interface AibNode {
@@ -205,6 +410,30 @@ export interface AibNode {
   stage: string;
   cls: string;
   reason: string | null;
+  /** the multi-label policy needs (any of AIB_POLICY_NEEDS; additive) */
+  policyNeeds?: string[];
+  /** "PHYSICAL CAPABILITY NOT VALIDATED" or null (additive) */
+  warning?: string | null;
+  /** how physical data bear on the class, in words (additive) */
+  physicalValidation?: string | null;
+  physicalData?: AibPhysicalData | null;
+  /** how far physical and trade concentration differ (additive) */
+  physicalDivergence?: number | null;
+  /** in the strategic scope (compacts are formed only from these; additive, absent = in scope) */
+  inStrategicScope?: boolean;
+  /** the class under each other variant: shock id, scenario, "release", "production_constrained", "trade_only" (additive) */
+  variants?: Record<string, string | null>;
+  /** variant -> the class under it carries PHYSICAL CAPABILITY NOT VALIDATED (the keys of variants; [] when empty; additive) */
+  variantWarnings?: Record<string, boolean>;
+  /** existing coverage, dividend and class at each existing-relationship growth bound (additive) */
+  growth?: AibGrowthPoint[];
+  /** COORDINATE under some growth bounds and another class under others (additive) */
+  coordinateSensitiveToGrowth?: boolean;
+  /** at the headline supplier limit: N-1 re-optimized and instantaneous N-1 coverage (additive) */
+  n1Reoptimized?: number | null;
+  instantaneousN1?: number | null;
+  /** share of demand the optimized solution serves with exports redirected from markets outside the demand scope (additive) */
+  diversion?: number | null;
   quality: string | null;
   flags: string[];
   exposure: number | null;
@@ -229,7 +458,7 @@ export interface AibNode {
   yfSubcomponents: string[];
   /** the tightest supplier-share limit that costs at most 2 points of coverage (additive) */
   tightestCostless?: number | null;
-  /** the loosest limit at which coverage stays >= 80% after a second shock; null when none does (additive) */
+  /** the loosest limit at which coverage stays >= 80% after the N-1 test (re-optimized where the bundle has it); null when none does (additive) */
   minRequiredDiversification?: number | null;
   frontier: AibFrontierPoint[];
 }
@@ -244,6 +473,156 @@ export interface AibDoc {
   compacts: AibCompact[];
   /** every classified sub-sector node, in a compact or not */
   nodes: AibNode[];
+  /** the emergent AIB network of the headline variant (additive, 2026-10-17) */
+  network?: AibNetwork;
+  /** the investor -> host flows of the marginal investment simulation, headline variant (additive, 2026-10-17) */
+  investmentFlows?: AibInvestmentFlows;
+}
+
+// ---- Emergent network and investment flows (additive, 2026-10-17) ------------------------------------
+
+/** The run a network or investment section comes from (one variant: the headline). */
+export interface AibVariant {
+  shock: string;
+  scenario: string;
+  shockSemantics: string | null;
+  supplyConstraint: string | null;
+  strategicScope: string | null;
+  demandScope: string | null;
+  candidateUniverse: string | null;
+  universe: string | null;
+}
+
+/** The four network roles of emergent_aib_country_summary.csv, as the model names them. */
+export const AIB_NETWORK_ROLES = ['supplier', 'buyer', 'investment_host', 'investor'] as const;
+export type AibNetworkRole = (typeof AIB_NETWORK_ROLES)[number];
+
+export const AIB_STAGES = ['Upstream', 'Midstream', 'Downstream'] as const;
+
+/**
+ * One side of an economy in the network (scripts/32, emergent_aib_country_summary.csv): its distinct
+ * partners, the (node, shock) relationships the solution selects, and its contributions, in shares of a
+ * node's demand summed over the nodes and partners of the role (so above 1 is possible): `headline` under
+ * the headline shock, `cumulative` summed over every configured shock. Partner counts by stage.
+ */
+export interface AibNetworkSide {
+  partners: number;
+  selected: number;
+  headline: number;
+  cumulative: number;
+  upstream: number;
+  midstream: number;
+  downstream: number;
+  /** trade sides only: the part of `cumulative` carried by new relationships */
+  dividend?: number;
+  /** trade sides only: the optimized trade of the headline shock (USD a year) */
+  volumeUsd?: number;
+}
+
+export interface AibNetworkCountry {
+  iso3: string;
+  /** the model's own network roles (AIB_NETWORK_ROLES): every side with a selected relationship */
+  roles: string[];
+  technologies: string[];
+  /** supply it loses to the headline shock (USD a year; null: not an importer in the demand scope) */
+  lostUsd: number | null;
+  /** nodes in which it loses supply */
+  exposedNodes: number | null;
+  /** exporting to buyers */
+  supplier: AibNetworkSide;
+  /** importing from suppliers */
+  buyer: AibNetworkSide;
+  /** hosting new capacity that serves investors */
+  host: AibNetworkSide;
+  /** the economy whose gap the new capacity at a host serves */
+  investor: AibNetworkSide;
+}
+
+/**
+ * One bilateral relationship, oriented as goods move (supplier -> buyer): trade runs exporter -> importer;
+ * investment runs host -> investor (the host's new capacity serves the investor, so `to` invests in
+ * `from`). Only each node's best-ranked host counts as an investment relationship.
+ */
+export interface AibNetworkEdge {
+  from: string;
+  to: string;
+  /** (node, shock) trade relationships selected */
+  nTrade: number;
+  /** (node, shock) investment relationships selected */
+  nInvestment: number;
+  nShocks: number;
+  nodes: string[];
+  techs: string[];
+  stages: string[];
+  /** relationships in nodes where the shock removes at least the high-severity share */
+  nHighSeverity: number;
+  /** optimized trade of the headline shock (USD a year) */
+  tradeUsd: number;
+  /** headline shock: share of node demand the trade serves (summed over nodes) */
+  trade: number;
+  /** headline shock: share of node demand the new capacity serves */
+  investment: number;
+  /** every shock: trade, the part of it in new relationships, investment */
+  cumTrade: number;
+  cumDividend: number;
+  cumInvestment: number;
+  /** mean Export Opportunity (supplier -> buyer) and Friendshore (buyer -> supplier) scores, NEIS baseline */
+  opportunity: number | null;
+  friendshore: number | null;
+}
+
+export interface AibNetwork {
+  /** with the shocks summed into the cumulative figures */
+  variant: AibVariant & { shocks?: string[] };
+  countries: AibNetworkCountry[];
+  edges: AibNetworkEdge[];
+}
+
+/**
+ * One investor -> host flow: in the simulation of `rank`-th host of a node, the supply of the new capacity
+ * that serves the investor's lost demand. Each rank is a SEPARATE simulation of the same increment: only
+ * rank 1 is the selected host; flows of different ranks are alternatives and must not be added up.
+ */
+export interface AibInvestmentPair {
+  investor: string;
+  host: string;
+  node: string;
+  rank: number;
+  /** supply from the new capacity (USD a year) */
+  usd: number;
+  /** the same as a share of the node's demand */
+  share: number | null;
+  /** the investor's lost supply as a share of the node's demand */
+  lostShare: number | null;
+  /** the investor's Friendshore score for the host, NEIS baseline */
+  friendshore: number | null;
+  /** the host's Export Opportunity score for the investor, NEIS baseline */
+  opportunity: number | null;
+}
+
+/** A ranked host of a node (allied_investment_partnerships.csv, the headline increment). */
+export interface AibInvestmentHost {
+  node: string;
+  host: string;
+  rank: number;
+  /** marginal resilience gain: coverage after minus before */
+  gain: number | null;
+  before: number | null;
+  after: number | null;
+  /** share of the increment used */
+  newCapacityUsed: number | null;
+  /** additional demand served (USD a year) */
+  servedUsd: number | null;
+  /** 3 = the strongest capability evidence */
+  capabilityTier: number | null;
+  capabilityBasis: string | null;
+}
+
+export interface AibInvestmentFlows {
+  /** with the simulated increment (share of node demand) and the deepest host rank kept */
+  variant: AibVariant & { increment: number; maxRank: number };
+  pairs: AibInvestmentPair[];
+  hosts: AibInvestmentHost[];
 }
 
 // ---- Runtime checks ----------------------------------------------------------------------------------
@@ -317,6 +696,21 @@ class Problems {
   oneOf<T>(x: unknown, vals: readonly T[], path: string): void {
     if (!vals.includes(x as T)) this.add(`${path}: '${String(x)}' is not one of ${vals.join(', ')}`);
   }
+  /** an additive field: absent or null is fine, else one of the values */
+  optOneOf<T>(x: unknown, vals: readonly T[], path: string): void {
+    if (x === undefined || x === null) return;
+    this.oneOf(x, vals, path);
+  }
+  /** an additive field: absent is fine, else true or false */
+  optBool(x: unknown, path: string): void {
+    if (x === undefined) return;
+    this.bool(x, path);
+  }
+  /** an additive field: absent is fine, else an array of strings (each one of `vals` when given) */
+  optStrArr(x: unknown, path: string, vals?: readonly string[]): void {
+    if (x === undefined) return;
+    if (this.strArr(x, path) && vals) x.forEach((v, i) => this.oneOf(v, vals, `${path}[${i}]`));
+  }
 }
 
 /** A share in [0, 1] (or null); a small tolerance for rounding. */
@@ -330,6 +724,7 @@ export function checkAibManifest(x: unknown): string[] {
   if (!isNum(x.version)) p.add('manifest.version: not a number');
   else if (Math.floor(x.version) > AIB_VERSION) p.add(`manifest: version ${x.version} needs a newer app`);
   for (const k of ['created', 'universe', 'headlineShock', 'headlineScenario']) p.str(x[k], `manifest.${k}`);
+  for (const k of ['demandScope', 'candidateUniverse', 'shockSemantics', 'supplyConstraint']) p.optStr(x[k], `manifest.${k}`);
   if (!isObj(x.files)) p.add('manifest.files: not an object');
   else if (!isStr(x.files.compacts) || !AIB_DOC_FILE_RE.test(x.files.compacts)) p.add('manifest.files.compacts: not a compacts.<8 hex>.json file name');
   return p.list;
@@ -356,6 +751,24 @@ function checkMeta(p: Problems, m: unknown): void {
   if (p.arr(m.targets, 'meta.targets')) m.targets.forEach((t, i) => p.num(t, `meta.targets[${i}]`, { min: 0, max: 1 }));
   if (!isObj(m.thresholds)) p.add('meta.thresholds: not an object');
   else for (const [k, v] of Object.entries(m.thresholds)) p.num(v, `meta.thresholds.${k}`);
+  // the methodology settings (additive)
+  p.optOneOf(m.demandScope, AIB_SCOPE_MODES, 'meta.demandScope');
+  p.optOneOf(m.candidateUniverse, AIB_SCOPE_MODES, 'meta.candidateUniverse');
+  if (m.nDemandScope !== undefined) p.num(m.nDemandScope, 'meta.nDemandScope', { nullable: true, min: 0, int: true });
+  p.optOneOf(m.shockSemantics, AIB_SEMANTICS, 'meta.shockSemantics');
+  p.optOneOf(m.supplyConstraint, AIB_CONSTRAINTS, 'meta.supplyConstraint');
+  p.optStrArr(m.semantics, 'meta.semantics', AIB_SEMANTICS);
+  p.optStrArr(m.constraints, 'meta.constraints', AIB_CONSTRAINTS);
+  // any configured scope: scripts/32 accepts every key under strategic_scope.technologies
+  p.optStr(m.strategicScope, 'meta.strategicScope');
+  p.optStrArr(m.scopeTechs, 'meta.scopeTechs');
+}
+
+/** A class written beside the headline one (a variant, a growth bound): null, or one of meta.classes. */
+function checkCls(p: Problems, x: unknown, path: string, classes: readonly string[]): void {
+  if (x === null) return;
+  if (!isStr(x)) p.add(`${path}: expected a string or null`);
+  else if (!classes.includes(x)) p.add(`${path}: '${x}' is not one of meta.classes`);
 }
 
 function checkNode(p: Problems, n: unknown, at: string, classes: readonly string[]): void {
@@ -370,6 +783,37 @@ function checkNode(p: Problems, n: unknown, at: string, classes: readonly string
   for (const k of ['dividend', 'bestGain']) p.num(n[k], `${at}.${k}`, { nullable: true, min: -1, max: 1 });
   for (const k of ['demandUsd', 'lostUsd']) p.num(n[k], `${at}.${k}`, { nullable: true, min: 0 });
   for (const k of ['tightestCostless', 'minRequiredDiversification']) p.optNum(n[k], `${at}.${k}`, { min: 0, max: 1 });
+  // the methodology fields (additive)
+  p.optStrArr(n.policyNeeds, `${at}.policyNeeds`, AIB_POLICY_NEEDS);
+  for (const k of ['warning', 'physicalValidation']) p.optStr(n[k], `${at}.${k}`);
+  p.optOneOf(n.physicalData, AIB_PHYSICAL_DATA, `${at}.physicalData`);
+  p.optNum(n.physicalDivergence, `${at}.physicalDivergence`, { min: -1, max: 1 });
+  p.optBool(n.inStrategicScope, `${at}.inStrategicScope`);
+  p.optBool(n.coordinateSensitiveToGrowth, `${at}.coordinateSensitiveToGrowth`);
+  for (const k of ['n1Reoptimized', 'instantaneousN1']) p.optNum(n[k], `${at}.${k}`, { min: 0, max: 1 });
+  p.optNum(n.diversion, `${at}.diversion`, { min: 0 });
+  const v = n.variants;
+  // a named list; [] when empty (jsonlite)
+  if (v !== undefined) {
+    if (Array.isArray(v) ? v.length > 0 : !isObj(v)) p.add(`${at}.variants: expected an object of variant -> class`);
+    else if (isObj(v)) for (const [k, c] of Object.entries(v)) checkCls(p, c, `${at}.variants.${k}`, classes);
+  }
+  const vw = n.variantWarnings;
+  if (vw !== undefined) {
+    if (Array.isArray(vw) ? vw.length > 0 : !isObj(vw)) p.add(`${at}.variantWarnings: expected an object of variant -> true or false`);
+    else if (isObj(vw)) for (const [k, w] of Object.entries(vw)) p.bool(w, `${at}.variantWarnings.${k}`);
+  }
+  if (n.growth !== undefined && p.arr(n.growth, `${at}.growth`)) {
+    n.growth.forEach((g, i) => {
+      const ga = `${at}.growth[${i}]`;
+      if (!isObj(g)) return p.add(`${ga}: not an object`);
+      p.str(g.label, `${ga}.label`);
+      p.num(g.existing, `${ga}.existing`, SHARE);
+      p.num(g.dividend, `${ga}.dividend`, { nullable: true, min: -1, max: 1 });
+      checkCls(p, g.cls, `${ga}.cls`, classes);
+      p.optBool(g.warning, `${ga}.warning`);
+    });
+  }
   if (p.arr(n.frontier, `${at}.frontier`)) {
     n.frontier.forEach((f, i) => {
       const fa = `${at}.frontier[${i}]`;
@@ -378,8 +822,8 @@ function checkNode(p: Problems, n: unknown, at: string, classes: readonly string
       p.num(f.coverage, `${fa}.coverage`, SHARE);
       p.num(f.largestShare, `${fa}.largestShare`, SHARE);
       p.str(f.largest, `${fa}.largest`, true);
-      p.optNum(f.secondShock, `${fa}.secondShock`, { min: 0, max: 1 });
-      p.optNum(f.specialization, `${fa}.specialization`, { min: 0, max: 1 });
+      for (const k of ['instantaneousN1', 'n1Reoptimized', 'secondShock', 'specialization']) p.optNum(f[k], `${fa}.${k}`, { min: 0, max: 1 });
+      p.optStr(f.n1Removed, `${fa}.n1Removed`);
     });
   }
 }
@@ -400,13 +844,24 @@ function checkCompact(p: Problems, c: unknown, at: string, nodeIds: ReadonlySet<
     for (const k of ['members', 't90', 't95', 't99']) p.strArr(co[k], `${at}.coalition.${k}`);
     p.bool(co.reached99, `${at}.coalition.reached99`);
     p.num(co.maxCoverage, `${at}.coalition.maxCoverage`, SHARE);
+    p.optStr(co.method, `${at}.coalition.method`);
+    for (const k of ['greedy', 'criticalPartners', 'criticalExternal', 'criticalExternalMarginal', 'external']) p.optStrArr(co[k], `${at}.coalition.${k}`);
+    for (const k of ['associatesReach99', 'robustTieBreakSolved']) p.optBool(co[k], `${at}.coalition.${k}`);
   }
+  p.optStr(c.nodePolicyNeeds, `${at}.nodePolicyNeeds`);
+  p.optStrArr(c.physicalWarnings, `${at}.physicalWarnings`);
   if (p.arr(c.roles, `${at}.roles`)) {
     c.roles.forEach((r, i) => {
       const ra = `${at}.roles[${i}]`;
       if (!isObj(r)) return p.add(`${ra}: not an object`);
       for (const k of ['iso3', 'role', 'basis']) p.str(r[k], `${ra}.${k}`);
       p.bool(r.member, `${ra}.member`);
+      // an unknown tier is shown as written; only its type is checked
+      p.optStr(r.tier, `${ra}.tier`);
+      p.optBool(r.critical, `${ra}.critical`);
+      p.optBool(r.looCritical, `${ra}.looCritical`);
+      p.optStrArr(r.substitutes, `${ra}.substitutes`);
+      if (r.substitutesNeeded !== undefined) p.num(r.substitutesNeeded, `${ra}.substitutesNeeded`, { nullable: true, min: 0, int: true });
     });
   }
   const m = c.metrics;
@@ -496,7 +951,102 @@ export function checkCompactsDoc(x: unknown): string[] {
       if (isObj(n) && isStr(n.compact) && !compactIds.has(n.compact)) p.add(`nodes[${i}].compact: '${n.compact}' is not a compact of the document`);
     });
   }
+  checkNetwork(p, x.network, nodeIds);
+  checkInvestmentFlows(p, x.investmentFlows, nodeIds);
   return p.list;
+}
+
+// The additive sections (2026-10-17). The R mirror is R/dashboard/aib/aib_check.R (same paths, same bounds).
+
+function checkVariant(p: Problems, v: unknown, at: string): void {
+  if (!isObj(v)) return p.add(`${at}: not an object`);
+  for (const k of ['shock', 'scenario']) p.str(v[k], `${at}.${k}`);
+  for (const k of ['shockSemantics', 'supplyConstraint', 'strategicScope', 'demandScope', 'candidateUniverse', 'universe']) p.str(v[k], `${at}.${k}`, true);
+}
+
+function checkSide(p: Problems, s: unknown, at: string, trade: boolean): void {
+  if (!isObj(s)) return p.add(`${at}: not an object`);
+  for (const k of ['partners', 'selected', 'upstream', 'midstream', 'downstream']) p.num(s[k], `${at}.${k}`, { min: 0, int: true });
+  for (const k of ['headline', 'cumulative']) p.num(s[k], `${at}.${k}`, { min: 0 });
+  if (trade) for (const k of ['dividend', 'volumeUsd']) p.num(s[k], `${at}.${k}`, { min: 0 });
+}
+
+/** `network`: absent is fine; else the variant, unique economies with four sides, and edges over the document's nodes. */
+function checkNetwork(p: Problems, n: unknown, nodeIds: ReadonlySet<string>): void {
+  if (n === undefined) return;
+  if (!isObj(n)) return p.add('network: not an object');
+  checkVariant(p, n.variant, 'network.variant');
+  const seen = new Set<string>();
+  if (p.arr(n.countries, 'network.countries')) {
+    n.countries.forEach((r, i) => {
+      const at = `network.countries[${i}]`;
+      if (!isObj(r)) return p.add(`${at}: not an object`);
+      p.str(r.iso3, `${at}.iso3`);
+      if (isStr(r.iso3)) {
+        if (seen.has(r.iso3)) p.add(`${at}.iso3: duplicate '${r.iso3}'`);
+        seen.add(r.iso3);
+      }
+      if (p.strArr(r.roles, `${at}.roles`)) r.roles.forEach((x) => p.oneOf(x, AIB_NETWORK_ROLES, `${at}.roles`));
+      p.strArr(r.technologies, `${at}.technologies`);
+      p.num(r.lostUsd, `${at}.lostUsd`, { nullable: true, min: 0 });
+      p.num(r.exposedNodes, `${at}.exposedNodes`, { nullable: true, min: 0, int: true });
+      checkSide(p, r.supplier, `${at}.supplier`, true);
+      checkSide(p, r.buyer, `${at}.buyer`, true);
+      checkSide(p, r.host, `${at}.host`, false);
+      checkSide(p, r.investor, `${at}.investor`, false);
+    });
+  }
+  if (p.arr(n.edges, 'network.edges')) {
+    n.edges.forEach((e, i) => {
+      const at = `network.edges[${i}]`;
+      if (!isObj(e)) return p.add(`${at}: not an object`);
+      for (const k of ['from', 'to']) p.str(e[k], `${at}.${k}`);
+      if (isStr(e.from) && e.from === e.to) p.add(`${at}: supplier and buyer are the same economy`);
+      for (const k of ['nTrade', 'nInvestment', 'nShocks', 'nHighSeverity']) p.num(e[k], `${at}.${k}`, { min: 0, int: true });
+      if (p.strArr(e.nodes, `${at}.nodes`)) for (const id of e.nodes) if (!nodeIds.has(id)) p.add(`${at}.nodes: '${id}' is not a node of the document`);
+      p.strArr(e.techs, `${at}.techs`);
+      if (p.strArr(e.stages, `${at}.stages`)) e.stages.forEach((s) => p.oneOf(s, AIB_STAGES, `${at}.stages`));
+      for (const k of ['tradeUsd', 'trade', 'investment', 'cumTrade', 'cumDividend', 'cumInvestment']) p.num(e[k], `${at}.${k}`, { min: 0 });
+      for (const k of ['opportunity', 'friendshore']) p.num(e[k], `${at}.${k}`, SHARE);
+    });
+  }
+}
+
+/** `investmentFlows`: absent is fine; else the variant, pairs (investor != host, rank 1..maxRank) and ranked hosts over the document's nodes. */
+function checkInvestmentFlows(p: Problems, f: unknown, nodeIds: ReadonlySet<string>): void {
+  if (f === undefined) return;
+  if (!isObj(f)) return p.add('investmentFlows: not an object');
+  checkVariant(p, f.variant, 'investmentFlows.variant');
+  const v = isObj(f.variant) ? f.variant : {};
+  p.num(v.increment, 'investmentFlows.variant.increment', { min: 0, max: 1 });
+  p.num(v.maxRank, 'investmentFlows.variant.maxRank', { min: 1, int: true });
+  const maxRank = isNum(v.maxRank) ? v.maxRank : Infinity;
+  if (p.arr(f.pairs, 'investmentFlows.pairs')) {
+    f.pairs.forEach((e, i) => {
+      const at = `investmentFlows.pairs[${i}]`;
+      if (!isObj(e)) return p.add(`${at}: not an object`);
+      for (const k of ['investor', 'host', 'node']) p.str(e[k], `${at}.${k}`);
+      if (isStr(e.investor) && e.investor === e.host) p.add(`${at}: investor and host are the same economy`);
+      if (isStr(e.node) && !nodeIds.has(e.node)) p.add(`${at}.node: '${e.node}' is not a node of the document`);
+      p.num(e.rank, `${at}.rank`, { min: 1, max: maxRank, int: true });
+      p.num(e.usd, `${at}.usd`, { min: 0 });
+      for (const k of ['share', 'lostShare', 'friendshore', 'opportunity']) p.num(e[k], `${at}.${k}`, SHARE);
+    });
+  }
+  if (p.arr(f.hosts, 'investmentFlows.hosts')) {
+    f.hosts.forEach((h, i) => {
+      const at = `investmentFlows.hosts[${i}]`;
+      if (!isObj(h)) return p.add(`${at}: not an object`);
+      for (const k of ['node', 'host']) p.str(h[k], `${at}.${k}`);
+      if (isStr(h.node) && !nodeIds.has(h.node)) p.add(`${at}.node: '${h.node}' is not a node of the document`);
+      p.num(h.rank, `${at}.rank`, { min: 1, max: maxRank, int: true });
+      p.num(h.gain, `${at}.gain`, { nullable: true, min: -1, max: 1 });
+      for (const k of ['before', 'after', 'newCapacityUsed']) p.num(h[k], `${at}.${k}`, SHARE);
+      p.num(h.servedUsd, `${at}.servedUsd`, { nullable: true, min: 0 });
+      p.num(h.capabilityTier, `${at}.capabilityTier`, { nullable: true, min: 0, int: true });
+      p.str(h.capabilityBasis, `${at}.capabilityBasis`, true);
+    });
+  }
 }
 
 // ---- Accessors ---------------------------------------------------------------------------------------
@@ -506,3 +1056,24 @@ export const nodeCoverageOf = (s: AibPathStep): Record<string, number> => (Array
 
 /** The country names as an object (the exporter writes [] for an empty one). */
 export const countryNamesOf = (doc: AibDoc): Record<string, string> => (Array.isArray(doc.countries) ? {} : doc.countries);
+
+/** A node's classes under the other variants as an object ({} when the export has none, or wrote []). */
+export const variantsOf = (n: AibNode): Record<string, string | null> => (!n.variants || Array.isArray(n.variants) ? {} : n.variants);
+
+/** A node's variant warnings as an object ({} when the export wrote []); null when the export predates them. */
+export const variantWarningsOf = (n: AibNode): Record<string, boolean> | null =>
+  n.variantWarnings === undefined ? null : Array.isArray(n.variantWarnings) ? {} : n.variantWarnings;
+
+/**
+ * The compact's coalition as the pages show it: coalition.members (the exact minimum at the middle target,
+ * or the widest greedy set when that target is out of reach) when the export lists it; else (an earlier
+ * export wrote members [] for an unreached target and kept the widest set as the roles with member = true)
+ * those economies, alphabetical.
+ */
+export function coalitionMembersOf(c: AibCompact): string[] {
+  if (c.coalition.members.length) return c.coalition.members;
+  return [...new Set(c.roles.filter((r) => r.member).map((r) => r.iso3))].sort();
+}
+
+/** In the strategic scope (an older bundle without the field: every node is). */
+export const inStrategicScope = (n: AibNode): boolean => n.inStrategicScope !== false;

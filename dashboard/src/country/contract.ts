@@ -27,9 +27,9 @@ export const COUNTRY_SCHEMA_VERSION = 1;
 export const COUNTRY_DATA_DIR = 'data/country/';
 export const COUNTRY_MANIFEST_FILE = 'manifest.json';
 /** File names scripts/88 writes (and deletes when the manifest no longer lists them). */
-export const COUNTRY_FILE_RE = /^(facts|drivers|memo)-[A-Z0-9]{3}\.[0-9a-f]{8}\.(json|pdf|docx|md)$/;
+export const COUNTRY_FILE_RE = /^(facts|drivers|trade|memo)-[A-Z0-9]{3}\.[0-9a-f]{8}\.(json|pdf|docx|md)$/;
 /** gzip budgets in bytes (A10). */
-export const COUNTRY_BUDGET_GZ = { manifest: 20_480, sheet: 40_960, memoJson: 25_600, memoPdf: 409_600, memoDocx: 102_400 } as const;
+export const COUNTRY_BUDGET_GZ = { manifest: 20_480, sheet: 40_960, memoJson: 25_600, memoPdf: 409_600, memoDocx: 102_400, tradeMonthly: 25_600 } as const;
 /** Path segments under /countries that are not ISO3 codes. */
 export const COUNTRY_RESERVED = ['about'] as const;
 
@@ -132,7 +132,7 @@ export const MATRIX_KEYS: readonly string[] = THIRDS.flatMap((p) => THIRDS.map((
 
 /** Caveat ids (A8.4). */
 export const CAVEAT_IDS = [
-  'relative_scores', 'baseline', 'rankability', 'imputed_driver', 'policy_pams_only', 'no_si', 'near_tie', 'eu_node',
+  'relative_scores', 'baseline', 'rankability', 'imputed_driver', 'policy_pams_only', 'no_si', 'near_tie',
   'inherited_alignment', 'assumed_zero_production', 'cmfdi_coverage', 'trade_mirror', 'few_economies', 'cat_eu_bloc',
   'intra_eu', 'hkg_reexport', 'pick_stability', 'ownership_parent', 'eu_policy_records',
   // additive 2026-10-12: Global Trade Alert NIPO measures are context, not part of the Policy index
@@ -200,6 +200,8 @@ export interface CountryEntry {
   drivers?: string | null;
   /** additive 2026-10-13: ISO 3166 numeric code ("392"), the world map's join key; null for entities without one */
   iso_n3?: string | null;
+  /** additive 2026-10-19: the companion monthly trade file (core members with monthly Comtrade data) */
+  trade_monthly?: string | null;
 }
 
 export interface ValidationRow {
@@ -241,8 +243,6 @@ export interface SheetMeta {
   income_group: string | null;
   sovereign: boolean;
   eu_member: boolean;
-  /** the allied-network node (the ISO3 itself, or "EUU" for EU members), null outside the coalition */
-  network_node: string | null;
   /** shared-agreement names the country is listed in (economic_security_agreements.csv; EU rows not propagated) */
   agreements: string[];
   /** EU members: the EU's own memberships ("MSP", "G7"), said once in words */
@@ -669,15 +669,18 @@ export interface PartnersFacts {
   };
 }
 
-export interface NetworkFacts {
-  member: boolean;
-  node: string | null;
-  via_eu: boolean;
-  n_stages: Fv | null;
-  producer: { cell: string; share: Fv; derived: boolean }[];
-  /** additive 2026-10-14: `excluded` = technologies left out of every allied pick by rule (green hydrogen,
-   *  geothermal); `rule_d` = the pick rule in words */
-  pick: { cell: string; si: Fv; runner_up: string | null; margin: Fv; near_tie: boolean; excluded?: string[]; rule_d?: string } | null;
+/** The economy's allied pick (the Strategic Index's allied selection), null outside the coalition or
+ *  without a pick. `excluded` = technologies left out of every allied pick by rule (green hydrogen,
+ *  geothermal); `rule_d` = the pick rule in words. 2026-10-17: the sheet's `network` section (the role
+ *  in the retired allied network design) is gone and the pick it carried is this top-level `pick`. */
+export interface AlliedPick {
+  cell: string;
+  si: Fv;
+  runner_up: string | null;
+  margin: Fv;
+  near_tie: boolean;
+  excluded?: string[];
+  rule_d?: string;
 }
 
 export interface FactSheet {
@@ -693,7 +696,7 @@ export interface FactSheet {
   priority_rule: PriorityRule;
   policy: PolicyFacts;
   partners: PartnersFacts;
-  network: NetworkFacts;
+  pick: AlliedPick | null;
   caveats: { id: string; text: string }[];
   sources: SourceRef[];
   checks: { built_with: string; facts_sha256: string };
@@ -856,6 +859,9 @@ export function checkCountryManifest(x: unknown): string[] {
           if (c.tier !== 'core') p.add(`${at}.memo: memos are for core members only`);
         }
       }
+      if (c.trade_monthly !== null && c.trade_monthly !== undefined && (!isStr(c.trade_monthly) || !/^trade-[A-Z0-9]{3}\.[0-9a-f]{8}\.json$/.test(c.trade_monthly))) {
+        p.add(`${at}.trade_monthly: not a monthly trade file name`);
+      }
       if (c.quadrants !== null && c.quadrants !== undefined) {
         if (!isObj(c.quadrants) || !QUADRANT_IDS.every((q) => isNumber((c.quadrants as Obj)[q]))) p.add(`${at}.quadrants: expected four counts`);
       }
@@ -864,6 +870,107 @@ export function checkCountryManifest(x: unknown): string[] {
   if (!Array.isArray(x.sources)) p.add('manifest.sources: not an array');
   else x.sources.forEach((s, i) => checkSource(p, s, `manifest.sources[${i}]`));
   if (!Array.isArray(x.validation)) p.add('manifest.validation: not an array');
+  return p.list;
+}
+
+// ---- Monthly trade by sub-component (additive 2026-10-19) ------------------------------------------
+
+/** The companion monthly trade file of a core member (scripts/99 pull -> scripts/88; R country_monthly_doc()). */
+export const TRADE_MONTHLY_SCHEMA = 'osi-country-trade-monthly';
+export const TRADE_MONTHLY_MONTHS = 12;
+
+export interface TradeMonthlySeries {
+  /** USD by month as the economy reported it; null for a month it did not report (the client indexes it: indexTo100) */
+  imports: (number | null)[];
+  exports: (number | null)[];
+}
+
+export interface TradeMonthlySub extends TradeMonthlySeries {
+  name: string;
+  /** HS6 codes of the sub-component in the basket */
+  n_codes: number;
+}
+
+export interface TradeMonthlyCell {
+  key: string;
+  label: string;
+  /** the sum of the sub-components */
+  total: TradeMonthlySeries;
+  /** largest first (imports and exports over the window) */
+  subs: TradeMonthlySub[];
+}
+
+export interface TradeMonthlyDoc {
+  schema: typeof TRADE_MONTHLY_SCHEMA;
+  schema_version: number;
+  iso3: string;
+  window: { first: string; last: string; months: string[]; declared: { imports: boolean[]; exports: boolean[] } };
+  source: SourceRef;
+  /** every cell with an HS6 basket, traded or not */
+  cells: TradeMonthlyCell[];
+}
+
+/** 100 x v / v[0]; all null when the first value is zero or missing (the R country_index_100()). */
+export function indexTo100(v: readonly (number | null)[]): (number | null)[] {
+  const v0 = v[0];
+  if (v0 === null || v0 === undefined || !(v0 > 0)) return v.map(() => null);
+  return v.map((x) => (x === null ? null : (100 * x) / v0));
+}
+
+const isNumOrNull = (x: unknown): x is number | null => x === null || isNumber(x);
+const isSeries = (x: unknown, n: number): x is (number | null)[] => Array.isArray(x) && x.length === n && x.every(isNumOrNull);
+
+/** Problems with a monthly trade file (empty when it is valid); the R country_check_monthly_doc() (same rules and keywords). */
+export function checkTradeMonthlyDoc(x: unknown, iso3?: string): string[] {
+  const p = new Problems();
+  const N = TRADE_MONTHLY_MONTHS;
+  if (!isObj(x)) return ['trade: not an object'];
+  if (x.schema !== TRADE_MONTHLY_SCHEMA) p.add(`trade.schema: expected '${TRADE_MONTHLY_SCHEMA}'`);
+  if (!isNumber(x.schema_version)) p.add('trade.schema_version: not a number');
+  else if (Math.floor(x.schema_version) > 1) p.add(`trade: schema_version ${x.schema_version} needs a newer app`);
+  if (!isStr(x.iso3) || !/^[A-Z0-9]{3}$/.test(x.iso3)) p.add('trade.iso3: not an ISO3 code');
+  else if (iso3 && x.iso3 !== iso3) p.add(`trade.iso3: ${x.iso3} is not ${iso3}`);
+  const w = x.window;
+  if (!isObj(w) || !isStrArr(w.months)) p.add('trade.window.months: expected 12 months');
+  else {
+    if (w.months.length !== N) p.add('trade.window.months: expected 12 months');
+    if (!w.months.every((m) => /^[0-9]{4}-[0-9]{2}$/.test(m))) p.add('trade.window.months: bad month');
+    if (w.months[0] !== w.first || w.months[w.months.length - 1] !== w.last) p.add('trade.window: first/last');
+    for (const fl of ['imports', 'exports'] as const) {
+      const d = isObj(w.declared) ? w.declared[fl] : undefined;
+      if (!Array.isArray(d) || d.length !== N || !d.every((z) => typeof z === 'boolean')) p.add(`trade.window.declared.${fl}: expected 12 true/false`);
+    }
+  }
+  if (!isObj(x.source)) p.add('trade.source: not an object');
+  else checkSource(p, x.source, 'trade.source');
+  if (!Array.isArray(x.cells) || !x.cells.length) return [...p.list, 'trade.cells: empty'];
+  x.cells.forEach((c) => {
+    if (!isObj(c)) return p.add('trade.cells: not an object');
+    const k = isStr(c.key) ? c.key : '';
+    if (!isCellKey(c.key)) p.add(`trade.cells: unknown cell key '${String(c.key)}'`);
+    if (!isStr(c.label)) p.add(`${k}.label`);
+    if (!Array.isArray(c.subs) || !c.subs.length) return p.add(`${k}: no sub-components`);
+    for (const s of c.subs as unknown[]) if (!isObj(s) || !isStr(s.name) || !s.name) p.add(`${k}: sub-component without a name`);
+    for (const fl of ['imports', 'exports'] as const) {
+      const tot = isObj(c.total) ? c.total[fl] : undefined;
+      if (!isSeries(tot, N)) {
+        p.add(`${k}.total.${fl}: length`);
+        continue;
+      }
+      const sum = new Array<number>(N).fill(0);
+      for (const s of c.subs as unknown[]) {
+        if (!isObj(s)) continue;
+        const v = s[fl];
+        if (!isSeries(v, N)) {
+          p.add(`${k}/${String(s.name)}.${fl}: length`);
+          continue;
+        }
+        if (v.some((z) => z !== null && z < 0)) p.add(`${k}/${String(s.name)}.${fl}: negative value`);
+        v.forEach((z, i) => (sum[i] += z ?? 0));
+      }
+      if (tot.some((t, i) => Math.abs((t ?? 0) - sum[i]) > 0.5 + 1e-9 * Math.abs(sum[i]))) p.add(`${k}.total.${fl}: sub-components do not sum to the cell`);
+    }
+  });
   return p.list;
 }
 
@@ -988,7 +1095,7 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
   if (!isStrArr(meta.agreements)) p.add('meta.agreements: not an array of strings');
   if (!isStrArr(meta.routes)) p.add('meta.routes: not an array of strings');
   for (const k of ['as_of', 'as_of_label', 'created', 'trade_year', 'un_window', 'cmfdi_edition']) p.str(meta[k], `meta.${k}`);
-  for (const k of ['region', 'income_group', 'bloc', 'policy_basis', 'status_reason', 'network_node']) p.str(meta[k], `meta.${k}`, true);
+  for (const k of ['region', 'income_group', 'bloc', 'policy_basis', 'status_reason']) p.str(meta[k], `meta.${k}`, true);
   p.fv(meta.rank_threshold, 'meta.rank_threshold');
   p.fv(meta.alignment_s, 'meta.alignment_s');
   if (entry) {
@@ -1329,9 +1436,11 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
     else if (sm2.share.length !== sm2.partners.length) p.add('partners.supplier_matrix.share: one row per partner expected');
   }
 
-  // network, caveats, sources, checks
-  if (!isObj(x.network)) p.add('network: not an object');
-  else p.bool(x.network.member, 'network.member');
+  // pick, caveats, sources, checks
+  if (x.pick !== null && x.pick !== undefined) {
+    if (!isObj(x.pick) || !isStr(x.pick.cell)) p.add('pick: expected null or { cell, si, runner_up, margin, near_tie }');
+    else p.bool(x.pick.near_tie, 'pick.near_tie');
+  }
   if (!Array.isArray(x.caveats)) p.add('caveats: not an array');
   else
     x.caveats.forEach((c, i) => {

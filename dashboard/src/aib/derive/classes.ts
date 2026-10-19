@@ -80,6 +80,37 @@ export function classMix(classes: readonly string[]): { cls: string; n: number }
 }
 
 /**
+ * A node's multi-label policy needs in words, in the class order: "BUILD + MANAGE SPECIALIZATION", "none"
+ * for an empty profile, null when the export has none (an older bundle).
+ */
+export function policyNeedsText(needs: readonly string[] | null | undefined): string | null {
+  if (!needs) return null;
+  if (!needs.length) return 'none';
+  return [...new Set(needs)].sort((a, b) => classOrder(a) - classOrder(b) || a.localeCompare(b)).join(' + ');
+}
+
+/** True when the needs say more than the class: several needs, or one that is not the class itself. */
+export function needsAddToClass(cls: string, needs: readonly string[] | null | undefined): boolean {
+  if (!needs || !needs.length) return false;
+  return needs.length > 1 || needs[0] !== cls;
+}
+
+/**
+ * The compact's policy needs by node as the exporter writes them ("Battery Cells: BUILD; Lithium
+ * Chemicals: BUILD + MANAGE SPECIALIZATION"; "none" when a node has none) as { node, needs }.
+ */
+export function parseNodePolicyNeeds(s: string | null | undefined): { node: string; needs: string }[] {
+  if (!s) return [];
+  return s
+    .split('; ')
+    .map((part) => {
+      const i = part.lastIndexOf(': ');
+      return i < 0 ? { node: part.trim(), needs: '' } : { node: part.slice(0, i).trim(), needs: part.slice(i + 2).trim() };
+    })
+    .filter((x) => x.node);
+}
+
+/**
  * The compact's class mix as the exporter writes it ("BUILD 78%; COORDINATE 22%": lost-supply shares of
  * the intervention classes) as { cls, share } in the written order; malformed parts are skipped.
  */

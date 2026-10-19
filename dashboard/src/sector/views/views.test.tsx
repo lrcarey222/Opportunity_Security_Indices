@@ -63,12 +63,16 @@ function renderAt(path: string) {
 
 // 30 s: the first render compiles every lazy route module (slow under load)
 const h1 = async (name: RegExp | string) => screen.findByRole('heading', { level: 1, name }, { timeout: 30_000 });
+/** The Sector profile's groups start folded at every width: open them all, as a reader clicking "Show". */
+const openGroups = async () => {
+  for (const b of await screen.findAllByRole('button', { name: 'Show' }, { timeout: 30_000 })) fireEvent.click(b);
+};
 
 describe('Sector routes render on the fixture', () => {
   it('home: questions, the Atlas, minerals and themes', async () => {
     renderAt('/sector');
     expect(await h1('Energy supply chains, measured')).toBeTruthy();
-    expect(document.title).toMatch(/Sectors \| Sector Insights/);
+    expect(document.title).toMatch(/^Sectors \| Allied Industrial Base Explorer/);
     expect(screen.getByRole('link', { name: 'Who controls supply?' })).toBeTruthy();
     expect(screen.getByRole('group', { name: /Supply-chain cells/ })).toBeTruthy();
     const tile = screen.getByRole('link', { name: /^Batteries — Midstream: exports/ });
@@ -108,7 +112,7 @@ describe('Sector routes render on the fixture', () => {
     setSectorStoreForTests(new SectorStore(fixtureSource(buildSectorFixture(), { noManifest: true })));
     renderAt('/sector');
     expect(await screen.findByText(/scripts\/87_export_sector_data\.R/, {}, { timeout: 10_000 })).toBeTruthy();
-    expect(document.title).toMatch(/Sector Insights/);
+    expect(document.title).toMatch(/(^|\| )Sectors \| /);
   });
 
   it('invalid link values are listed in the "Ignored in the link" notice', async () => {
@@ -146,7 +150,8 @@ describe('Sector profile', () => {
   it('Batteries — Midstream renders every section with data, coverage chips and the highlight', async () => {
     const r = renderAt('/sector/batteries/midstream?c=USA');
     expect(await h1('Batteries — Midstream')).toBeTruthy();
-    expect(document.title).toMatch(/^Batteries — Midstream \| Sector Insights/);
+    await openGroups();
+    expect(document.title).toMatch(/^Batteries — Midstream \| Sectors \| /);
     expect(await screen.findByRole('heading', { level: 2, name: 'Snapshot' }, { timeout: 10_000 })).toBeTruthy();
     // coverage chips: trade links to its section; reserves explains why not
     const chips = screen.getByRole('list', { name: /Coverage of Batteries — Midstream/ });
@@ -173,6 +178,7 @@ describe('Sector profile', () => {
   it('a thin cell shows the notice and the "Not available" list', async () => {
     renderAt('/sector/geothermal/upstream');
     expect(await h1('Geothermal — Upstream')).toBeTruthy();
+    await openGroups();
     expect(await screen.findByText(/Little country-level data exists for Geothermal — Upstream/, {}, { timeout: 10_000 })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Not available for this sector' })).toBeTruthy();
     expect(within(screen.getByRole('heading', { name: 'Not available for this sector' }).closest('section') as HTMLElement).getByText(/No HS6 trade basket/)).toBeTruthy();
@@ -181,12 +187,15 @@ describe('Sector profile', () => {
   it('the EU switch changes the snapshot and loads the trade chunk', async () => {
     const r = renderAt('/sector/batteries/midstream');
     expect(await h1('Batteries — Midstream')).toBeTruthy();
-    await screen.findByText('World exports', {}, { timeout: 10_000 });
-    const before = screen.getByText('World exports').closest('div')?.parentElement?.textContent;
+    await openGroups();
+    // the Snapshot's tile (the Economic Opportunity lens repeats the figure above it)
+    const snap = () => within(document.getElementById('snapshot') as HTMLElement);
+    await waitFor(() => expect(snap().getByText('World exports')).toBeTruthy(), { timeout: 10_000 });
+    const before = snap().getByText('World exports').closest('div')?.parentElement?.textContent;
     fireEvent.click(screen.getByRole('switch', { name: /EU as one bloc/ }));
     await waitFor(() => expect(r.state.location.search).toBe('?eu=bloc'));
     await waitFor(() => expect(source.calls.some((c) => c.startsWith('sector-trade-batteries'))).toBe(true));
-    await waitFor(() => expect(screen.getByText('World exports').closest('div')?.parentElement?.textContent).not.toBe(before), { timeout: 10_000 });
+    await waitFor(() => expect(snap().getByText('World exports').closest('div')?.parentElement?.textContent).not.toBe(before), { timeout: 10_000 });
   });
 
   it('unknown stage goes to the chain; the chain renders', async () => {
@@ -199,6 +208,7 @@ describe('Sector profile', () => {
   it('Oil — Upstream: production, reserves, prices', async () => {
     renderAt('/sector/oil/upstream');
     expect(await h1('Oil — Upstream')).toBeTruthy();
+    await openGroups();
     for (const name of ['Production & capacity', 'Resources & potential', 'Prices & costs']) {
       expect(await screen.findByRole('heading', { level: 2, name }, { timeout: 10_000 })).toBeTruthy();
     }
@@ -220,7 +230,7 @@ describe('Minerals', () => {
   it('index: tiles, the split by mineral and the table render from meta alone', async () => {
     renderAt('/sector/minerals?c=USA');
     expect(await h1('Minerals')).toBeTruthy();
-    expect(document.title).toMatch(/^Minerals \| Sector Insights/);
+    expect(document.title).toMatch(/^Minerals \| Sectors \| /);
     expect(screen.getByRole('link', { name: /^Lithium: mine production/ }).getAttribute('href')).toBe('/sector/minerals/lithium?c=USA');
     expect(screen.getByRole('heading', { level: 2, name: 'Who mines and who refines, by mineral' })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Every mineral' })).toBeTruthy();
@@ -231,7 +241,7 @@ describe('Minerals', () => {
   it('lithium: snapshot, mining and refining by year with projections, reserves, trade and uses', async () => {
     renderAt('/sector/minerals/lithium?c=USA');
     expect(await h1('Lithium')).toBeTruthy();
-    expect(document.title).toMatch(/^Lithium \| Sector Insights/);
+    expect(document.title).toMatch(/^Lithium \| Sectors \| /);
     for (const name of ['Snapshot', 'Mining and refining', 'Reserves and production', 'Trade', 'Who uses it']) {
       expect(await screen.findByRole('heading', { level: 2, name }, { timeout: 10_000 })).toBeTruthy();
     }
@@ -263,7 +273,7 @@ describe('Concentration', () => {
   it('the board, the lens in the URL, a tile opens its section; the note is always there', async () => {
     const r = renderAt('/sector/concentration');
     expect(await h1('Concentration across sectors')).toBeTruthy();
-    expect(document.title).toMatch(/^Concentration \| Sector Insights/);
+    expect(document.title).toMatch(/^Concentration \| Sectors \| /);
     expect(screen.getByText(/Compared within one measure family; values come from different sources and years and are never added\./)).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Concentration board' })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Share split by sector' })).toBeTruthy();
@@ -298,7 +308,7 @@ describe('Explore', () => {
   it('default theme: chips, the filter row, key figures, map and ranking, table and notes', async () => {
     const r = renderAt('/sector/explore?c=USA');
     expect(await h1('Trade')).toBeTruthy();
-    expect(document.title).toMatch(/^Explore Trade \| Sector Insights/);
+    expect(document.title).toMatch(/^Explore Trade \| Sectors \| /);
     const chips = screen.getByRole('navigation', { name: 'Themes' });
     expect(within(chips).getByRole('link', { name: 'Trade' }).getAttribute('aria-current')).toBe('page');
     expect(within(chips).getByRole('link', { name: 'Policy' }).getAttribute('href')).toBe('/sector/explore/policy?c=USA');
@@ -383,7 +393,7 @@ describe('Country in sector', () => {
   it('United States in Batteries — Midstream: tags, lede, position tiles, peers, trade partners, policies', async () => {
     renderAt('/sector/batteries/midstream/USA');
     expect(await h1('United States in Batteries — Midstream')).toBeTruthy();
-    expect(document.title).toMatch(/^United States in Batteries — Midstream \| Sector Insights/);
+    expect(document.title).toMatch(/^United States in Batteries — Midstream \| Sectors \| /);
     expect(screen.getByText('Coalition core')).toBeTruthy();
     expect(await screen.findByRole('list', { name: 'Position tiles' }, { timeout: 10_000 })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Rank among peers' })).toBeTruthy();
@@ -414,9 +424,9 @@ describe('Sources & data', () => {
   it('about, dictionary, sources, coverage, the trade basis, downloads and the build', async () => {
     renderAt('/sector/sources');
     expect(await h1('Sources & data')).toBeTruthy();
-    expect(document.title).toMatch(/^Sources & data \| Sector Insights/);
-    expect(screen.getByRole('heading', { level: 2, name: 'What Sector Insights shows' })).toBeTruthy();
-    expect(screen.getByText(/Strategic Insights ranks and weighs; Sector Insights shows the measured data those rankings start from\./)).toBeTruthy();
+    expect(document.title).toMatch(/^Sources & data \| Sectors \| /);
+    expect(screen.getByRole('heading', { level: 2, name: 'What the Sector pages show' })).toBeTruthy();
+    expect(screen.getByText(/The Country profiles rank and weigh; the Sector pages show the measured data those rankings start from\./)).toBeTruthy();
     expect(screen.queryByText(/\{members_n\}|\{core_n\}/)).toBeNull();
     // the cards inside the Dictionary and Sources sections have their own names (unique landmarks, C5.8)
     for (const name of ['Every measure: unit, years, source and caveats', 'Every source: edition, licence and attribution', 'Coverage by sector and measure family', 'Coalition coverage', "Trade basis: the matrix and the exporters' reports"]) {
@@ -456,6 +466,76 @@ describe('Profile ZIP and keyboard', () => {
     tile.focus();
     fireEvent.click(tile);
     await waitFor(() => expect(r.state.location.pathname).toBe('/sector/batteries/midstream'), { timeout: 10_000 });
+  });
+});
+
+describe('Sector profile: lenses, supply-chain navigator and groups (IA refactor)', () => {
+  it('four lenses on top, the navigator scopes the profile to a sub-component, sections sit in five groups', async () => {
+    const r = renderAt('/sector/batteries/midstream');
+    expect(await h1('Batteries — Midstream')).toBeTruthy();
+    await openGroups();
+    // the four lenses
+    expect(await screen.findByRole('heading', { level: 2, name: 'What to know about Batteries — Midstream' }, { timeout: 10_000 })).toBeTruthy();
+    for (const name of ['Economic Opportunity', 'Energy Security', 'Policy', 'Climate']) expect(screen.getByRole('heading', { level: 3, name })).toBeTruthy();
+    const eo = screen.getByTestId('lens-eo');
+    expect(within(eo).getByRole('link', { name: /Competitiveness & markets/ }).getAttribute('href')).toBe('#markets');
+    // Sector -> Country: the lens's largest exporters link to their Country profiles
+    expect(within(eo).getAllByRole('link').some((a) => /^\/countries\/[A-Z]{3}$/.test(a.getAttribute('href') ?? ''))).toBe(true);
+    expect(within(screen.getByTestId('lens-climate')).getByText(/Sector-level climate data are limited/)).toBeTruthy();
+    // the groups, in order, and the rail lists them
+    for (const name of ['Competitiveness & markets', 'Security & concentration', 'Policy', 'Climate', 'Advanced & evidence']) {
+      expect(screen.getByRole('heading', { level: 2, name })).toBeTruthy();
+    }
+    const rail = screen.getByRole('navigation', { name: 'Sections' });
+    expect(within(rail).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['#overview', '#markets', '#security', '#policy-technology', '#climate', '#evidence']);
+    expect(document.getElementById('markets')?.contains(document.getElementById('snapshot'))).toBe(true);
+    expect(document.getElementById('security')?.contains(document.getElementById('who'))).toBe(true);
+    expect(within(document.getElementById('deeper') as HTMLElement).getByRole('link', { name: 'Advanced explorer' }).getAttribute('href')).toMatch(/^\/sector\/explore\?/);
+    // the navigator: folded to the three stages; "Show components" lists the trade basket's components; one scopes the lenses
+    const nav = screen.getByRole('navigation', { name: 'Batteries supply chain' });
+    expect(within(nav).getByRole('link', { name: /^Midstream/ }).getAttribute('aria-current')).toBe('page');
+    expect(within(nav).queryByRole('link', { name: 'Cells and packs' })).toBeNull();
+    fireEvent.click(within(nav).getByRole('button', { name: 'Show components' }));
+    const cells = await within(nav).findByRole('link', { name: 'Cells and packs' }, { timeout: 10_000 });
+    expect(cells.getAttribute('href')).toBe('/sector/batteries/midstream?sub=Cells%20and%20packs');
+    fireEvent.click(cells);
+    await waitFor(() => expect(r.state.location.search).toBe('?sub=Cells%20and%20packs'));
+    expect(await screen.findByRole('heading', { level: 2, name: 'What to know about Cells and packs' }, { timeout: 10_000 })).toBeTruthy();
+    // the chosen component titles the page; its sector is the eyebrow
+    expect(await h1('Cells and packs')).toBeTruthy();
+    expect(document.title).toMatch(/^Cells and packs · Batteries — Midstream \| Sectors \| /);
+    expect(within(nav).getByRole('link', { name: 'Cells and packs' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('link', { name: 'Whole sector' }).getAttribute('href')).toBe('/sector/batteries/midstream');
+  });
+
+  it('phones: the groups start folded and open on "Show" or a link to one of their sections', async () => {
+    wide = false;
+    renderAt('/sector/batteries/midstream#trade');
+    expect(await h1('Batteries — Midstream')).toBeTruthy();
+    expect(await screen.findByTestId('lens-eo', {}, { timeout: 10_000 })).toBeTruthy();
+    // the link opened Competitiveness & markets; the others are folded
+    expect(await screen.findByRole('heading', { level: 2, name: 'Trade' }, { timeout: 10_000 })).toBeTruthy();
+    expect(screen.queryByRole('heading', { level: 2, name: 'Who holds the market' })).toBeNull();
+    const security = document.getElementById('security') as HTMLElement;
+    fireEvent.click(within(security).getByRole('button', { name: 'Show' }));
+    expect(await screen.findByRole('heading', { level: 2, name: 'Who holds the market' })).toBeTruthy();
+    // the navigator folds to the three stages with a "Show components" button
+    const nav = screen.getByRole('navigation', { name: 'Batteries supply chain' });
+    expect(within(nav).getByRole('link', { name: 'Midstream' }).getAttribute('aria-current')).toBe('page');
+    fireEvent.click(within(nav).getByRole('button', { name: 'Show components' }));
+    expect(await within(nav).findByRole('link', { name: 'Cells and packs' }, { timeout: 10_000 })).toBeTruthy();
+  });
+
+  it('the landing picks a technology; its chain shows the navigator open', async () => {
+    const r = renderAt('/sector');
+    expect(await h1('Energy supply chains, measured')).toBeTruthy();
+    fireEvent.click(within(screen.getByRole('heading', { name: 'Pick a technology' }).closest('section') as HTMLElement).getByRole('link', { name: 'Batteries' }));
+    await waitFor(() => expect(r.state.location.pathname).toBe('/sector/batteries'));
+    expect(await h1('Batteries: the supply chain')).toBeTruthy();
+    const nav = screen.getByRole('navigation', { name: 'Batteries supply chain' });
+    expect(within(nav).getByRole('link', { name: /^Midstream/ }).getAttribute('href')).toBe('/sector/batteries/midstream');
+    expect(within(nav).queryByRole('button', { name: 'Show components' })).toBeNull();
+    expect((await within(nav).findByRole('link', { name: 'Cells and packs' }, { timeout: 10_000 })).getAttribute('href')).toBe('/sector/batteries/midstream?sub=Cells%20and%20packs');
   });
 });
 

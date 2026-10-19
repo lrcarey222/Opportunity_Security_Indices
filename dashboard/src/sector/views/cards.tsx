@@ -15,7 +15,7 @@ import { stateOf, stateShort } from '../derive/states.ts';
 import { assumedCount, assumedNote, noteLine } from '../derive/notes.ts';
 import { concentrationSummary } from '../derive/text.ts';
 import { lc, axisFormatter, fmtShare, fmtValue } from '../format.ts';
-import { BARS_READING, concentrationCsv, fmtFact, HowToRead, leagueRows, MAP_READING, MAP_READING_SIGNED, mapCells, SliceMapLegend, statesPresent } from './common.tsx';
+import { BARS_READING, concentrationCsv, EconomyLink, fmtFact, HowToRead, leagueRows, MAP_READING, MAP_READING_SIGNED, mapCells, SliceMapLegend, statesPresent } from './common.tsx';
 import { GroupLegend, LeagueBars, SectorChartCard, StateLegend, type VarRef } from './kit.tsx';
 import { useCardCsv } from './profile/ctx.tsx';
 import { useSectorUrl } from './state.tsx';
@@ -95,7 +95,7 @@ export function LeagueCard(p: LeagueCardProps) {
         (coal.length ? ` · coalition coverage ${coalHave}/${coal.length}` : '');
   const cols: Col<(typeof conc.rows)[number]>[] = [
     { id: 'rank', header: 'Rank', value: (r) => r.rank, num: true },
-    { id: 'country', header: 'Economy', value: (r) => model.geos[r.geo]?.name ?? '', minWidth: 150 },
+    { id: 'country', header: 'Economy', value: (r) => model.geos[r.geo]?.name ?? '', cell: (r) => (model.geos[r.geo] ? <EconomyLink g={model.geos[r.geo]} /> : ''), minWidth: 150 },
     { id: 'group', header: 'Group', value: (r) => GROUP_SHORT[partOf(model.geos[r.geo])] },
     { id: 'value', header: `Value (${unit.short || unit.long})`, value: (r) => r.value, cell: (r) => fmtValue(r.value, unit, { scale: v.display_scale, ctx: 'table' }), num: true },
     ...(conc.W !== null ? [{ id: 'share', header: 'Share', value: (r: (typeof conc.rows)[number]) => r.share, cell: (r: (typeof conc.rows)[number]) => fmtShare(r.share), num: true }] : []),

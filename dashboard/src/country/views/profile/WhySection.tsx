@@ -19,7 +19,8 @@ import { csvWithSource, Section, useProfile } from './common.tsx';
 
 const PILLAR = { es: 'Energy Security', eo: 'Economic Opportunity' } as const;
 
-export function WhySection() {
+/** `level` 3 when it sits inside "Opportunities & risks" (IA refactor 2026-10-16). */
+export function WhySection({ level = 2 }: { level?: 2 | 3 } = {}) {
   const { sheet, cell, setCell } = useProfile();
   const name = proseName(sheet.meta.country);
   const prio = sheet.priority_sectors.map((k) => cellOf(sheet, k)).filter((c): c is CellFacts => !!c);
@@ -28,14 +29,14 @@ export function WhySection() {
   const showing = current && current.placed ? current : (prio[0] ?? null);
   if (sheet.priority_rule === 'none' || !placed.length) {
     return (
-      <Section id="why" title="Why these sectors">
+      <Section id="why" level={level} title="Why these sectors">
         <Notice kind="info">{whyIntro(sheet)}</Notice>
       </Section>
     );
   }
   const inPrio = showing && prio.some((c) => c.key === showing.key);
   return (
-    <Section id="why" title="Why these sectors" intro={whyIntro(sheet)}>
+    <Section id="why" level={level} title="Why these sectors" intro={whyIntro(sheet)}>
       <div className="flex flex-wrap items-end gap-4">
         {prio.length > 0 && (
           <Segmented

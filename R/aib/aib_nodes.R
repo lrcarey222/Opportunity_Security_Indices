@@ -146,6 +146,14 @@ aib_hs2022_codes <- function() {
     "854911", "854912", "854913", "854914", "854919", "854921", "854929", "854931", "854939", "854991", "854999")
 }
 
+# Node ids carrying a sub-sector name from a config link. "Tech::Sub-sector" restricts the name to
+# one technology (several share names such as "Ores & Concentrates").
+aib_link_nodes <- function(cells, name) {
+  parts <- strsplit(name, "::", fixed = TRUE)[[1]]
+  hit <- if (length(parts) == 2) cells$tech == parts[1] & cells$sub_sector == parts[2] else cells$sub_sector == name
+  unique(cells$node_id[hit])
+}
+
 # The supply-chain coherence graph: nodes in the same stage of one technology are adjacent, and
 # config/aib.yml material_links adds the links that cross stages or technologies (sub-sector
 # names, matched to every node carrying that name). Returns an edge list node_a, node_b, basis.
@@ -159,11 +167,10 @@ aib_supply_chain_edges <- function(node_cells, material_links = list()) {
     dplyr::filter(node_id < node_b) %>%
     dplyr::distinct(node_a = node_id, node_b) %>%
     dplyr::mutate(basis = "same technology stage")
-  by_name <- split(node_cells$node_id, node_cells$sub_sector)
   mat <- dplyr::bind_rows(lapply(material_links, function(l) {
     l <- unlist(l)
-    a <- unique(unlist(by_name[l[1]]))
-    b <- unique(unlist(by_name[l[2]]))
+    a <- aib_link_nodes(node_cells, l[1])
+    b <- aib_link_nodes(node_cells, l[2])
     if (!length(a) || !length(b)) return(NULL)
     tidyr::expand_grid(node_a = a, node_b = b)
   }))

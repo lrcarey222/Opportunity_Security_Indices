@@ -1,0 +1,389 @@
+# Climate sources (user request of 2026-10-17: seven files added to data/raw for the Climate section).
+# What is read from each, how it is checked, and how it maps to economies and to technology x stage.
+#
+# Read by scripts/18_build_climate_sources.R (into data/processed/climate_src_*_tbl.rds) and, through those
+# tables, scripts/87_export_sector_data.R (the optional tables of the lazy sector-climate-src chunk).
+# Pure helpers: R/categories/climate/climate_sources.R (climate_sources_map_validate() checks this file).
+#
+# Sources, licences and what ships (each licence read from the file or the publisher's dataset page):
+#   - Global Carbon Project, Global Carbon Budget 2025 v1.0 (Friedlingstein et al., 2025, Earth Syst. Sci.
+#     Data, https://doi.org/10.5194/essd-2025-659): National_Fossil_Carbon_Emissions_2025_v1.0.xlsx
+#     (territorial 1850-2024; consumption-based and transfers 1990-2023, Peters et al., 2012) and
+#     Global_Carbon_Budget_2025_v1.0.xlsx (fossil CO2 by fuel). Terms (Summary sheet): use is conditional on
+#     citing the original sources. Ships, cited wherever shown.
+#   - Energy Institute, Statistical Review of World Energy 2025, Country Transition Tracker
+#     (2025 Country Transition Tracker Data.xlsx). The workbook states no terms; the Statistical Review is
+#     free to use with attribution (as the explorer's other EI data). Ships, attributed.
+#   - IEA (2025), World Energy Outlook 2025 free dataset, Regions (WEO2025_AnnexA_Free_Dataset_Regions.csv).
+#     Licence CC BY-NC-SA 4.0 (the IEA dataset page): non-commercial use, adapted data shared alike. Ships,
+#     labelled. Regions have Historical, Stated Policies and Current Policies; Net Zero is World only.
+#   - IEA (2021), Net Zero by 2050, Annex A (NZE2021_AnnexA.csv). Licence CC BY-NC-SA 3.0 IGO (the IEA
+#     dataset page). An older edition: shown only as the 2030 milestones of the 2021 roadmap, labelled.
+#   - IEA (2026), World Energy Investment 2026 data file (WorldEnergyInvestment2026_DataFile(1).xlsx).
+#     Licence CC BY 4.0 (the IEA dataset page). Ships. 2026 values are IEA estimates (Notes_Web sheet).
+#   - IEA Energy and Emissions per Value Added database (IEA_Energy_ValueAdded.xlsx). RESTRICTED: its
+#     Contents sheet says external dissemination of any IEA data, including within software or other tools,
+#     requires the IEA's permission and may carry a fee. Not read by the pipeline and never shipped
+#     (registered in the manifest with retain: true so it is not forgotten).
+#
+# Every IEA value is an IEA scenario projection or the IEA's estimate of the past, never an observed value.
+# GCP and EI values are the publishers' estimates of the past (observed facts in the explorer's sense).
+
+gcp:
+  # National_Fossil_Carbon_Emissions: one sheet per measure; MtC per year, converted with c_to_co2.
+  national_sheets:
+    territorial: "Territorial Emissions"
+    consumption: "Consumption Emissions"
+    transfers: "Emissions Transfers"
+  national_unit: "MtC/yr"
+  fuel_sheet: "Fossil Emissions by Category"
+  fuel_unit: "GtC/yr"
+  # Column header (as published) -> fuel key.
+  fuel_columns:
+    "fossil.emissions.excluding.carbonation": total
+    "Coal": coal
+    "Oil": oil
+    "Gas": gas
+    "Cement.emission": cement
+    "Flaring": flaring
+    "Other": other
+  # 1 tonne of carbon = 3.664 tonnes of CO2 (the workbook's own factor).
+  c_to_co2: 3.664
+  # National series are kept from the first year of the consumption-based estimates; World by fuel from 1960.
+  national_first_year: 1990
+  fuel_first_year: 1960
+  # Columns that are not one economy. EU27 and World are kept as EUU and WLD; the rest are dropped.
+  aggregates: ["KP Annex B", "Non KP Annex B", "OECD", "Non-OECD", "EU27", "Africa", "Asia", "Central America", "Europe", "Middle East",
+               "North America", "Oceania", "South America", "International Shipping", "International Aviation", "Statistical Difference", "World"]
+  aggregate_geo: {"EU27": EUU, "World": WLD}
+  # GCP column names country_name_to_iso3() reads differently (none needed for the 2025 edition).
+  names: {}
+
+ei:
+  # One sheet per indicator: the title in A1 (stops on a renamed sheet), the explorer's unit (the sheet's
+  # own unit text is kept as published in the build log; the Carbon Intensity sheet says "tonne CO2-eq per
+  # Megajoule" where its values, 50-120, are tonnes per terajoule, as the Contents sheet says).
+  # better: which direction is the transition (lower carbon intensity is better). Growth columns are not read.
+  indicators:
+    - {id: ghg, sheet: "Greenhouse Gas Emissions", title: "Energy Related Greenhouse Gas Emissions", label: "Energy-related greenhouse gas emissions", unit: "Mt CO2e", better: lower}
+    - {id: fossil, sheet: "Fossil Fuel Consumption", title: "Fossil Fuel Consumption", label: "Fossil fuel consumption", unit: "EJ", better: lower}
+    - {id: renewables_share, sheet: "Renewable Energy Consumption", title: "Renewable Energy Consumption", label: "Renewables' share of energy consumption", unit: "share", better: higher}
+    - {id: carbon_intensity, sheet: "Carbon Intensity", title: "Carbon Intensity", label: "Carbon intensity of energy", unit: "t CO2e per TJ", better: lower}
+    - {id: energy_per_capita, sheet: "Energy Consumption per Capita", title: "Energy Consumption per Capita", label: "Energy consumption per person", unit: "GJ per person", better: none}
+    - {id: energy_intensity_gdp, sheet: "Economic Energy Intensity", title: "Economy-wide Energy Intensity", label: "Energy intensity of GDP", unit: "MJ per $ of GDP", better: lower}
+    - {id: carbon_intensity_gdp, sheet: "Carbon Intensity (per GDP)", title: "Carbon Intensity", label: "Carbon intensity of GDP", unit: "kg CO2e per $ of GDP", better: lower}
+  # Power generation mix, one year: column header -> key (indicator id power_<key>, unit share).
+  power:
+    sheet: "Power Sector Decarbonisation"
+    title: "Power Sector Decarbonisation"
+    columns:
+      "Wind": wind
+      "Solar": solar
+      "Hydro": hydro
+      "Other Renewables": other_renewables
+      "Nuclear": nuclear
+      "Gas": gas
+      "Oil": oil
+      "Coal": coal
+      "Other non-Renewable": other_non_renewable
+    # The low-carbon share the views add up (shares of the same generation, same year).
+    low_carbon: [wind, solar, hydro, other_renewables, nuclear]
+  names: {}
+
+weo_regions:
+  publication: "World Energy Outlook 2025"
+  scenarios:
+    "Historical": historical
+    "Stated Policies Scenario": stated
+    "Current Policies Scenario": current
+    "Net Zero Emissions by 2050 Scenario": nze
+  # Regions read (label as published -> kind). country: the region is one economy (China includes Hong
+  # Kong); union: the European Union; region: a group of economies; world: World.
+  regions:
+    "United States": country
+    "Japan": country
+    "China": country
+    "India": country
+    "Brazil": country
+    "Russia": country
+    "European Union": union
+    "Southeast Asia": region
+    "North America": region
+    "Central and South America": region
+    "Europe": region
+    "Africa": region
+    "Middle East": region
+    "Eurasia": region
+    "Asia Pacific": region
+    "World": world
+  # Regions in the file that carry only refining or oil-production rows: not read.
+  ignored_regions: ["Japan and Korea", "Atlantic Basin", "East of Suez", "Non-OPEC plus", "OPECplus"]
+  series:
+    - {id: co2_energy, category: "CO2 total", product: "Total", flow: "Total energy supply", label: "Energy-sector CO2"}
+    - {id: co2_power, category: "CO2 total", product: "Total", flow: "Power sector inputs", label: "CO2 from power generation"}
+    - {id: tes_total, category: "Energy", product: "Total", flow: "Total energy supply", label: "Total energy supply"}
+    - {id: tes_renewables, category: "Energy", product: "Renewables", flow: "Total energy supply", label: "Renewable energy supply"}
+    - {id: gen_total, category: "Energy", product: "Total", flow: "Electricity generation", label: "Electricity generation"}
+    - {id: gen_renewables, category: "Energy", product: "Renewables", flow: "Electricity generation", label: "Electricity from renewables"}
+    - {id: gen_solar, category: "Energy", product: "Solar PV", flow: "Electricity generation", label: "Electricity from solar PV"}
+    - {id: gen_wind, category: "Energy", product: "Wind", flow: "Electricity generation", label: "Electricity from wind"}
+    - {id: gen_nuclear, category: "Energy", product: "Nuclear", flow: "Electricity generation", label: "Electricity from nuclear"}
+    - {id: gen_coal, category: "Energy", product: "Coal", flow: "Electricity generation", label: "Electricity from coal"}
+    - {id: gen_gas, category: "Energy", product: "Natural gas", flow: "Electricity generation", label: "Electricity from natural gas"}
+  # Economy -> WEO region, most specific first: own (the region is the economy), the European Union for
+  # EU members, Southeast Asia for its members, then the broader region whose IEA definition names the
+  # economy (WEO 2025 Annex C, as the WEI 2026 Notes_Web sheet lists them), then, for economies the IEA
+  # groups as "Other Africa", "Other Asia" or "other Central and South America", the region of their UN
+  # sub-region (match by_subregion). An economy with none of these has no regional pathway.
+  own:
+    USA: "United States"
+    JPN: "Japan"
+    CHN: "China"
+    IND: "India"
+    BRA: "Brazil"
+    RUS: "Russia"
+  members:
+    "China": [HKG]
+    "European Union": [AUT, BEL, BGR, HRV, CYP, CZE, DNK, EST, FIN, FRA, DEU, GRC, HUN, IRL, ITA, LVA, LTU, LUX, MLT, NLD, POL, PRT, ROU, SVK, SVN, ESP, SWE]
+    "Southeast Asia": [BRN, KHM, IDN, LAO, MYS, MMR, PHL, SGP, THA, VNM]
+    "North America": [CAN, MEX]
+    "Central and South America": [ARG, BOL, CHL, COL, CRI, CUB, CUW, DOM, ECU, SLV, GTM, HTI, HND, JAM, NIC, PAN, PRY, PER, SUR, TTO, URY, VEN]
+    "Europe": [ALB, BLR, BIH, MKD, GIB, ISL, ISR, XKX, MNE, NOR, SRB, CHE, MDA, TUR, UKR, GBR]
+    "Africa": [DZA, AGO, BEN, BWA, CMR, COG, COD, CIV, EGY, ERI, ETH, GAB, GHA, KEN, LBY, MUS, MAR, MOZ, NAM, NER, NGA, SEN, ZAF, SSD, SDN, TZA, TGO, TUN, ZMB, ZWE]
+    "Middle East": [BHR, IRN, IRQ, JOR, KWT, LBN, OMN, QAT, SAU, SYR, ARE, YEM]
+    "Eurasia": [ARM, AZE, GEO, KAZ, KGZ, TJK, TKM, UZB]
+    "Asia Pacific": [AUS, BGD, PRK, KOR, MNG, NPL, NZL, PAK, LKA, TWN, AFG, BTN, COK, TLS, FJI, PYF, KIR, MAC, MDV, NCL, PNG, WSM, SLB, TON, VUT]
+  # UN sub-region (countrycode un.regionsub.name) -> WEO region, for economies not listed above.
+  by_subregion:
+    "Sub-Saharan Africa": "Africa"
+    "Northern Africa": "Africa"
+    "Latin America and the Caribbean": "Central and South America"
+    "Eastern Asia": "Asia Pacific"
+    "South-eastern Asia": "Asia Pacific"
+    "Southern Asia": "Asia Pacific"
+    "Australia and New Zealand": "Asia Pacific"
+    "Melanesia": "Asia Pacific"
+    "Micronesia": "Asia Pacific"
+    "Polynesia": "Asia Pacific"
+
+nze2021:
+  publication: "Net Zero by 2050"
+  scenario: "Net-Zero Emissions by 2050"
+  # NZE 2021 rows paired with the WEO 2025 World series of config/iea_pathways_map.yml (`weo`), so a sector
+  # shows the 2021 roadmap's milestones beside the pathway it already shows. match: direct = the same
+  # quantity; partial = a narrower or differently bounded one (named in `note`).
+  series:
+    - {id: cap_solar, weo: cap_solar, match: direct, category: "Capacity", product: "Solar PV", flow: "Installed total power capacity", label: "Solar PV capacity"}
+    - {id: cap_wind, weo: cap_wind, match: direct, category: "Capacity", product: "Wind", flow: "Installed total power capacity", label: "Wind capacity"}
+    - {id: cap_nuclear, weo: cap_nuclear, match: direct, category: "Capacity", product: "Nuclear", flow: "Installed total power capacity", label: "Nuclear capacity"}
+    - {id: cap_geothermal, weo: cap_geothermal, match: direct, category: "Capacity", product: "Geothermal", flow: "Installed total power capacity", label: "Geothermal capacity"}
+    - {id: cap_battery, weo: cap_battery, match: direct, category: "Capacity", product: "Battery storage total", flow: "Installed total power capacity", label: "Battery storage capacity"}
+    - {id: cap_coal, weo: cap_coal, match: direct, category: "Capacity", product: "Unabated coal", flow: "Installed total power capacity", label: "Unabated coal-fired capacity"}
+    - {id: gen_total, weo: gen_total, match: direct, category: "Energy", product: "Total", flow: "Electricity generation", label: "Electricity generation"}
+    - {id: gen_coal, weo: gen_coal, match: direct, category: "Energy", product: "Unabated coal", flow: "Electricity generation", label: "Electricity from unabated coal"}
+    - {id: gen_gas, weo: gen_gas, match: direct, category: "Energy", product: "Unabated natural gas", flow: "Electricity generation", label: "Electricity from unabated gas"}
+    - {id: gen_oil, weo: gen_oil, match: direct, category: "Energy", product: "Oil products", flow: "Electricity generation", label: "Electricity from oil"}
+    - {id: tes_coal, weo: tes_coal, match: partial, category: "Energy", product: "Unabated coal", flow: "Total energy supply", label: "Unabated coal supply", note: "Unabated coal only: the 2021 roadmap reports coal with carbon capture separately."}
+    - {id: tes_oil, weo: tes_oil, match: direct, category: "Energy", product: "Oil products", flow: "Total energy supply", label: "Oil supply"}
+    - {id: tes_gas, weo: tes_gas, match: partial, category: "Energy", product: "Unabated natural gas", flow: "Total energy supply", label: "Unabated natural gas supply", note: "Unabated gas only: the 2021 roadmap reports gas with carbon capture separately."}
+    - {id: tes_nuclear, weo: tes_nuclear, match: direct, category: "Energy", product: "Nuclear", flow: "Total energy supply", label: "Nuclear energy supply"}
+    - {id: tfc_oil, weo: tfc_oil, match: direct, category: "Energy", product: "Oil products", flow: "Total final consumption", label: "Oil use by end users"}
+    - {id: tfc_gas, weo: tfc_gas, match: direct, category: "Energy", product: "Natural gas", flow: "Total final consumption", label: "Gas use by end users"}
+    - {id: elec_transport, weo: elec_transport, match: direct, category: "Energy", product: "Electricity", flow: "Transport", label: "Electricity used in transport"}
+    - {id: co2_intensity, weo: co2_intensity, match: direct, category: "CO2 emissions intensity", product: "Electricity", flow: "Electricity generation", label: "CO2 intensity of electricity"}
+    - {id: co2_power, weo: co2_power, match: partial, category: "CO2 combustion", product: "Total", flow: "Power sector inputs", label: "CO2 from power generation", note: "Combustion CO2 only, net of bioenergy with carbon capture."}
+    - {id: co2_power_coal, weo: co2_power_coal, match: partial, category: "CO2 combustion", product: "Coal", flow: "Power sector inputs", label: "CO2 from coal in power generation", note: "Combustion CO2 only."}
+    - {id: co2_power_gas, weo: co2_power_gas, match: partial, category: "CO2 combustion", product: "Natural gas", flow: "Power sector inputs", label: "CO2 from gas in power generation", note: "Combustion CO2 only."}
+    - {id: co2_power_oil, weo: co2_power_oil, match: partial, category: "CO2 combustion", product: "Oil products", flow: "Power sector inputs", label: "CO2 from oil in power generation", note: "Combustion CO2 only."}
+    - {id: co2_comb_coal, weo: co2_comb_coal, match: direct, category: "CO2 combustion", product: "Coal", flow: "Total energy supply", label: "CO2 from burning coal"}
+    - {id: co2_comb_oil, weo: co2_comb_oil, match: direct, category: "CO2 combustion", product: "Oil products", flow: "Total energy supply", label: "CO2 from burning oil"}
+    - {id: co2_comb_gas, weo: co2_comb_gas, match: direct, category: "CO2 combustion", product: "Natural gas", flow: "Total energy supply", label: "CO2 from burning gas"}
+    - {id: co2_steel, weo: co2_steel, match: direct, category: "CO2 combustion and processes emissions", product: "Total", flow: "Iron and steel", label: "CO2 from iron and steel"}
+    - {id: co2_chemicals, weo: co2_chemicals, match: direct, category: "CO2 combustion and processes emissions", product: "Total", flow: "Chemical and petrochemical", label: "CO2 from chemicals"}
+    - {id: co2_ldv, weo: co2_ldv, match: partial, category: "CO2 combustion", product: "Total", flow: "Passenger cars", label: "CO2 from passenger cars", note: "Passenger cars only; the 2025 series also counts vans."}
+  # Not paired: low-emissions hydrogen production and aluminium CO2 (no 2021 row measures them).
+  milestone_year: 2030
+
+wei:
+  # World Energy Investment 2026 data file: one sheet per region (label in A3 = the sheet name), years in
+  # row 3, rows below with the labels in `rows` in this order (stops when a label is renamed, added or
+  # dropped; `only`: the regions whose sheet has the row). Billion USD (2025, MER) except the share row.
+  regions:
+    "World": world
+    "Advanced economies": group
+    "China": country
+    "EMDE": group
+    "North America": region
+    "Central and South America": region
+    "Europe": region
+    "Africa": region
+    "Middle East": region
+    "Eurasia": region
+    "Asia Pacific": region
+  # The region label in A3 where it is not the sheet name (EMDE excludes China, as the Notes_Web sheet says).
+  region_labels:
+    "EMDE": "Emerging market and developing economies"
+  unit: "Billion USD (2025, MER)"
+  estimate_years: [2026]
+  rows:
+    - {id: total, label: "Total Billion USD (2025, MER)", name: "Total energy investment"}
+    - {id: clean, label: "of which: Clean energy", name: "Clean energy", parent: total}
+    - {id: fuels, label: "Fuels", name: "Fuel supply"}
+    - {id: fossil_fuels, label: "Fossil fuels", name: "Fossil fuel supply", parent: fuels}
+    - {id: oil_supply, label: "Oil", name: "Oil supply", parent: fossil_fuels}
+    - {id: gas_supply, label: "Gas", name: "Gas supply", parent: fossil_fuels}
+    - {id: coal_supply, label: "Coal", name: "Coal supply", parent: fossil_fuels}
+    - {id: clean_fuels, label: "Clean Fuels", name: "Low-emissions fuels", parent: fuels}
+    - {id: dac, label: "Direct Air Capture", name: "Direct air capture", parent: fuels}
+    - {id: power, label: "Power", name: "Power"}
+    - {id: generation, label: "Generation", name: "Power generation", parent: power}
+    - {id: gen_coal, label: "Coal (unabated)", name: "Unabated coal power", parent: generation}
+    - {id: gen_oil_gas, label: "Oil and natural gas (unabated)", name: "Unabated oil and gas power", parent: generation}
+    - {id: gen_waste, label: "Waste: non-renewable", name: "Non-renewable waste power", parent: generation}
+    - {id: nuclear, label: "Nuclear", name: "Nuclear power", parent: generation}
+    - {id: renewables, label: "Renewables", name: "Renewable power", parent: generation}
+    - {id: solar, label: "o/w solar", name: "Solar power", parent: renewables}
+    - {id: wind, label: "o/w wind", name: "Wind power", parent: renewables}
+    - {id: renewables_other, label: "o/w others", name: "Other renewable power (hydro, bioenergy, geothermal and others)", parent: renewables}
+    - {id: gen_ccus, label: "Fossil fuels: with CCUS", name: "Fossil power with carbon capture", parent: generation}
+    - {id: other_clean_power, label: "Other clean power", name: "Other clean power", parent: generation}
+    - {id: h2_power, label: "o/w Hydrogen", name: "Hydrogen-fired power", parent: other_clean_power}
+    - {id: nh3_power, label: "o/w Ammonia", name: "Ammonia-fired power", parent: other_clean_power}
+    - {id: heat_pumps_power, label: "o/w Large scale heat pumps", name: "Large-scale heat pumps", parent: other_clean_power}
+    - {id: battery, label: "Battery storage", name: "Battery storage", parent: power}
+    - {id: grids, label: "Electricity networks", name: "Electricity networks", parent: power}
+    - {id: end_use, label: "End-use", name: "End use"}
+    - {id: efficiency, label: "Energy efficiency", name: "Energy efficiency", parent: end_use}
+    - {id: eff_buildings, label: "Buildings", name: "Efficiency in buildings", parent: efficiency}
+    - {id: eff_transport, label: "Transport", name: "Efficiency in transport", parent: efficiency}
+    - {id: eff_industry, label: "Industry", name: "Efficiency in industry", parent: efficiency}
+    - {id: other_end_use, label: "Other end-use", name: "Other end use (electrification and renewables for end use)", parent: end_use}
+    - {id: oeu_buildings, label: "Buildings", name: "Other end use in buildings", parent: other_end_use}
+    - {id: oeu_transport, label: "Transport", name: "Other end use in transport (mostly electric vehicles)", parent: other_end_use}
+    - {id: oeu_industry, label: "Industry", name: "Other end use in industry", parent: other_end_use}
+    - {id: memo_og_upstream, label: "Memo: Oil & gas upstream", name: "Oil and gas upstream (memo)"}
+    - {id: memo_transitional, label: "Memo: Transitional fossil fuels", name: "Transitional fossil fuels (memo)"}
+    - {id: memo_electricity, label: "Memo Electricity", name: "Electricity-related investment (memo)", only: ["World"]}
+    - {id: memo_electricity_share, label: "Electricity %", name: "Electricity's share of the total (memo)", unit: "share", only: ["World"]}
+  # The World rows every sector shows as context: clean energy against fossil fuel supply.
+  context: [clean, fossil_fuels]
+
+# Cells -> WEI rows (role own: investment in the sector's own activity; demand: investment in the
+# deployment the sector supplies) and GCP World fossil CO2 by fuel (role context: the CO2 from burning the
+# fuel the sector supplies, handles or burns, all uses; never the sector's own emissions). Match quality as
+# in config/iea_pathways_map.yml: direct, partial, proxy (none without a row). Every cell is listed.
+cells:
+  batteries-upstream:
+    wei: [{id: battery, role: demand, match: proxy}, {id: oeu_transport, role: demand, match: proxy}]
+    note: "Battery minerals follow battery demand: investment in grid battery storage and in end-use transport (mostly electric vehicles) stand in for it."
+  batteries-midstream:
+    wei: [{id: battery, role: demand, match: partial}, {id: oeu_transport, role: demand, match: proxy}]
+    note: "Battery factories supply stationary storage and electric vehicles: investment in battery storage is the stock their storage output adds to; end-use transport investment (mostly electric vehicles) stands in for the rest."
+  batteries-downstream:
+    wei: [{id: battery, role: own, match: direct}]
+    note: "Investment in battery storage on the power system."
+  coal-upstream:
+    wei: [{id: coal_supply, role: own, match: direct}]
+    gcp: [coal]
+    note: "Investment in coal supply, as the IEA reports it."
+  coal-midstream:
+    wei: [{id: coal_supply, role: own, match: partial}]
+    gcp: [coal]
+    note: "Coal supply investment covers mining as well as the handling and transport this sector makes equipment for."
+  coal-downstream:
+    wei: [{id: gen_coal, role: own, match: direct}]
+    gcp: [coal]
+    note: "Investment in unabated coal-fired power."
+  electric-grid-upstream:
+    wei: [{id: grids, role: demand, match: proxy}]
+    note: "Grid copper and aluminium follow network build-out: investment in electricity networks stands in for it."
+  electric-grid-midstream:
+    wei: [{id: grids, role: demand, match: partial}]
+    note: "Investment in electricity networks: the build-out grid equipment makers supply."
+  electric-grid-downstream:
+    wei: [{id: grids, role: own, match: direct}]
+    note: "Investment in electricity networks (transmission and distribution)."
+  electric-vehicles-upstream:
+    wei: [{id: oeu_transport, role: demand, match: proxy}]
+    note: "EV minerals follow EV sales: the IEA's end-use transport investment (mostly electric vehicles) stands in for them."
+  electric-vehicles-midstream:
+    wei: [{id: oeu_transport, role: demand, match: proxy}]
+    note: "The IEA's end-use transport investment (mostly electric vehicles, as the IEA counts them) stands in for the demand EV factories serve."
+  electric-vehicles-downstream:
+    wei: [{id: oeu_transport, role: own, match: proxy}]
+    note: "The IEA's end-use transport investment is mostly electric vehicles but also other transport electrification; it is not EV sales."
+  gas-upstream:
+    wei: [{id: gas_supply, role: own, match: partial}]
+    gcp: [gas, flaring]
+    note: "Gas supply investment covers production and also pipelines and LNG; flaring CO2 (from oil and gas fields) is shown as context."
+  gas-midstream:
+    wei: [{id: gas_supply, role: own, match: partial}]
+    gcp: [gas]
+    note: "Gas supply investment includes the pipelines, compressors and LNG plants this sector covers, and production too."
+  gas-downstream:
+    wei: [{id: gen_oil_gas, role: own, match: partial}]
+    gcp: [gas]
+    note: "Investment in unabated oil- and gas-fired power: gas-fired power is most of it, and gas used outside power is not included."
+  geothermal-upstream:
+    wei: [{id: renewables_other, role: demand, match: proxy}]
+    note: "The IEA reports geothermal inside other renewable power (with hydro and bioenergy)."
+  geothermal-midstream:
+    wei: [{id: renewables_other, role: demand, match: proxy}]
+    note: "The IEA reports geothermal inside other renewable power (with hydro and bioenergy)."
+  geothermal-downstream:
+    wei: [{id: renewables_other, role: own, match: proxy}]
+    note: "The IEA reports geothermal inside other renewable power (with hydro and bioenergy), so the figure is far larger than geothermal alone."
+  green-hydrogen-upstream:
+    wei: [{id: clean_fuels, role: demand, match: proxy}]
+    note: "Investment in low-emissions fuels (hydrogen, biofuels and others) stands in for electrolyser build-out."
+  green-hydrogen-midstream:
+    wei: [{id: clean_fuels, role: demand, match: proxy}]
+    note: "Investment in low-emissions fuels (hydrogen, biofuels and others) stands in for the demand electrolyser factories serve."
+  green-hydrogen-downstream:
+    wei: [{id: clean_fuels, role: own, match: partial}]
+    note: "Low-emissions fuels include low-emissions hydrogen and also biofuels and other fuels."
+  nuclear-upstream:
+    wei: [{id: nuclear, role: demand, match: proxy}]
+    note: "Uranium demand follows reactor build-out: investment in nuclear power stands in for it."
+  nuclear-midstream:
+    wei: [{id: nuclear, role: demand, match: partial}]
+    note: "Investment in nuclear power: the build-out reactor and fuel-cycle suppliers serve."
+  nuclear-downstream:
+    wei: [{id: nuclear, role: own, match: direct}]
+    note: "Investment in nuclear power."
+  oil-upstream:
+    wei: [{id: oil_supply, role: own, match: partial}]
+    gcp: [oil, flaring]
+    note: "Oil supply investment covers production and also refining and transport; flaring CO2 (from oil and gas fields) is shown as context."
+  oil-midstream:
+    wei: [{id: oil_supply, role: own, match: partial}]
+    gcp: [oil]
+    note: "Oil supply investment includes the refining, pipes and tanks this sector covers, and production too."
+  oil-downstream:
+    wei: [{id: gen_oil_gas, role: own, match: proxy}]
+    gcp: [oil]
+    note: "Oil use is mostly in transport, which the IEA counts as end-use spending, not energy investment; unabated oil- and gas-fired power (mostly gas) is shown for scale."
+  solar-upstream:
+    wei: [{id: solar, role: demand, match: proxy}]
+    note: "Solar materials follow solar build-out: investment in solar power stands in for it."
+  solar-midstream:
+    wei: [{id: solar, role: demand, match: partial}]
+    note: "Investment in solar power: the build-out module and inverter factories supply."
+  solar-downstream:
+    wei: [{id: solar, role: own, match: direct}]
+    note: "Investment in solar power."
+  wind-upstream:
+    wei: [{id: wind, role: demand, match: proxy}]
+    note: "Wind materials follow wind build-out: investment in wind power stands in for it."
+  wind-midstream:
+    wei: [{id: wind, role: demand, match: partial}]
+    note: "Investment in wind power: the build-out turbine factories supply."
+  wind-downstream:
+    wei: [{id: wind, role: own, match: direct}]
+    note: "Investment in wind power."
+  semiconductors-upstream:
+    wei: []
+    note: "The IEA's energy investment data do not cover chips."
+  semiconductors-midstream:
+    wei: []
+    note: "The IEA's energy investment data do not cover chips."

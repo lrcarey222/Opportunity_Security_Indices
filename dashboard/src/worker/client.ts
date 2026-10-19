@@ -13,7 +13,7 @@
 
 import type { Dims, Manifest, ScenarioSpec, Table } from '../engine/types.ts';
 import type {
-  BaselineCore, ChunkName, CorePayload, FromWorker, NetworkPayload, PartnerPayload, ResultMessage, RunLayer, RunWant, SelfCheckMessage, ToWorker,
+  BaselineCore, ChunkName, CorePayload, FromWorker, PartnerPayload, ResultMessage, RunLayer, RunWant, SelfCheckMessage, ToWorker,
 } from './protocol.ts';
 
 /** What the client needs of a Worker (a real one, or an in-process stand-in in tests). */
@@ -53,7 +53,6 @@ export interface EngineState {
 
 export type CoreResult = Extract<ResultMessage, { layer: 'core' }>;
 export type PartnerResult = Extract<ResultMessage, { layer: 'partner' }>;
-export type NetworkResult = Extract<ResultMessage, { layer: 'network' }>;
 export type ProgressMessage = Extract<FromWorker, { type: 'progress' }>;
 
 export interface RunCallbacks {
@@ -65,7 +64,6 @@ export interface RunOutcome {
   status: 'done' | 'superseded' | 'cancelled' | 'error';
   core?: CoreResult;
   partner?: PartnerResult;
-  network?: NetworkResult;
   error?: EngineFailure;
   ms?: number;
 }
@@ -98,7 +96,7 @@ interface PendingRequest {
 type RequestMessage = Extract<ToWorker, { id: number }> extends infer M ? (M extends { type: 'run' | 'cancel' } ? never : M extends unknown ? Omit<M, 'id'> : never) : never;
 
 const idleChunks = (): Record<ChunkName, ChunkStatus> => ({
-  core: { state: 'idle' }, vars: { state: 'idle' }, partner: { state: 'idle' }, network: { state: 'idle' },
+  core: { state: 'idle' }, vars: { state: 'idle' }, partner: { state: 'idle' },
 });
 
 export class EngineClient {
@@ -161,7 +159,7 @@ export class EngineClient {
 
   // ---- runs ---------------------------------------------------------------------------------------
 
-  /** Compute a scenario: core (L1-L3) always, partner and network when wanted. Supersedes older runs. */
+  /** Compute a scenario: core (L1-L3) always, partner when wanted. Supersedes older runs. */
   run(spec: ScenarioSpec, want: RunWant = {}, cb: RunCallbacks = {}): RunHandle {
     for (const [id, r] of this.runs) {
       this.runs.delete(id);
@@ -260,8 +258,7 @@ export class EngineClient {
         const r = this.runs.get(msg.id);
         if (!r) return;
         if (msg.layer === 'core') r.outcome.core = msg;
-        else if (msg.layer === 'partner') r.outcome.partner = msg;
-        else r.outcome.network = msg;
+        else r.outcome.partner = msg;
         r.cb.onResult?.(msg);
         break;
       }
@@ -310,4 +307,4 @@ export class EngineClient {
   }
 }
 
-export type { CorePayload, PartnerPayload, NetworkPayload, BaselineCore, ChunkName, RunWant, RunLayer, SelfCheckMessage };
+export type { CorePayload, PartnerPayload, BaselineCore, ChunkName, RunWant, RunLayer, SelfCheckMessage };

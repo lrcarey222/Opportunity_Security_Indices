@@ -4,8 +4,7 @@
 # components (IEA PAMS, CAT and a stale NIPO), Friendshore / Opportunity dyad components with gaps,
 # Friendshore's CM-FDI parts (Solar and Wind Midstream are CM-FDI cells: investment ties with
 # reporters that have no project there, and Chinese-parent ownership defined for some partners only,
-# 1 for CHN and HKG, undefined for JPN), Development for half the partners and a 6-member network
-# (5 nodes) over 2 technologies, and the
+# 1 for CHN and HKG, undefined for JPN), Development for half the partners, and the
 # endowment screen of the allied picks over two Upstream stages (Coal, Solar; explicit FALSE rows and
 # countries without a row). The policy components' pipeline order (bundle$policy$components) is
 # IEA PAMS, CAT, NIPO (not alphabetical), so the policy_basis labels exercise the reordering. The
@@ -205,57 +204,12 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
     psi = list(coalition_reporters = members_tbl$iso3c, tau = 0.5)
   )
 
-  # ---- Network ----
-  net_members <- tibble::tibble(
-    iso3c = members_tbl$iso3c, country = members_tbl$country, tier = members_tbl$tier,
-    network_node = members_tbl$network_node, node_tier = members_tbl$tier, node_only = FALSE
-  )
-  net_techs <- c("Solar", "Coal")
-  nr <- expand.grid(iso3c = net_members$iso3c, tech = net_techs, supply_chain = stages, stringsAsFactors = FALSE)
-  gdp <- c(BRA = 2.1e12, DEU = 4.5e12, FRA = 3.0e12, IND = 3.6e12, JPN = 4.2e12, USA = 27e12)
-  node_raw_member <- tibble::tibble(
-    iso3c = nr$iso3c,
-    country = net_members$country[match(nr$iso3c, net_members$iso3c)],
-    tech = nr$tech,
-    supply_chain = nr$supply_chain,
-    eo_raw = rnd(nrow(nr)),
-    es_raw = rnd(nrow(nr), 0.1),
-    policy_raw = rnd(nrow(nr), 0.2),
-    dev_potential = NA_real_,
-    gdp_usd = unname(gdp[nr$iso3c]),
-    gdp_imputed = FALSE
-  )
-  node_raw_member <- node_raw_member[order(node_raw_member$iso3c, node_raw_member$tech, node_raw_member$supply_chain, method = "radix"), ]
-  nst <- expand.grid(tech = net_techs, supply_chain = stages, stringsAsFactors = FALSE)
-  node_member_weights <- tibble::tibble(
-    network_node = "XEU",
-    iso3 = rep(c("DEU", "FRA"), times = nrow(nst)),
-    tech = rep(nst$tech, each = 2),
-    supply_chain = rep(nst$supply_chain, each = 2),
-    weight = rep(c(0.6, 0.4), times = nrow(nst)),
-    basis = "exports"
-  )
-  tr <- expand.grid(exporter_iso = net_members$iso3c, importer_iso = net_members$iso3c, tech = net_techs, supply_chain = stages, stringsAsFactors = FALSE)
-  tr <- tr[tr$exporter_iso != tr$importer_iso, ]
-  tr$value <- round(stats::runif(nrow(tr)) * 1e9)
-  tr$value[stats::runif(nrow(tr)) < 0.3] <- NA_real_
-  node_trade <- tibble::as_tibble(tr[!is.na(tr$value), ])
-  country_size <- tibble::tibble(iso3c = net_members$iso3c, country = net_members$country, year = 2024, gdp_usd = unname(gdp[net_members$iso3c]), gdp_imputed = FALSE)
-  network <- list(
-    members = net_members,
-    node_raw_member = node_raw_member,
-    node_member_weights = node_member_weights,
-    node_trade = node_trade,
-    country_size = country_size,
-    node_labels = c(XEU = "Euro bloc"),
-    country_info = tibble::tibble(iso3c = countries$iso3c, country = countries$country),
-    country_map = tibble::tibble(Country = countries$country, iso3c = countries$iso3c, is_canonical = TRUE),
-    stored = NULL,
-    greedy_baseline = NULL,
-    observed_hhi = tibble::tibble(tech = c("Solar", "Coal"), supply_chain = c("Midstream", "Upstream"), n_nodes_exporting = c(4L, 3L),
-                                  total_exports = c(1e10, 5e9), hhi = c(0.31, 0.45), top_node = c("USA", "BRA"),
-                                  top_share = c(0.45, 0.6), effective_exporters = 1 / c(0.31, 0.45))
-  )
+  # ---- (retired) network inputs ----
+  # The original allied network design is retired (2026-10-17): its synthetic inputs (member-level
+  # node inputs and basket trade of the 6 members over 2 technologies) are no longer built, but their
+  # 576 random draws are kept so the CM-FDI parts drawn after them keep their values.
+  n_net <- nrow(members_tbl) * 2L * length(stages)
+  invisible(stats::runif(3L * 2L * n_net + 2L * (n_net * nrow(members_tbl) - n_net)))
 
   # ---- Friendshore's CM-FDI parts (drawn last, so the other synthetic inputs keep their values) ----
   # In the CM-FDI cells the outbound rows are investment ties (NA for a reporter whose parents have no
@@ -289,9 +243,9 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
                      cpe = cm_parts$cpe, geo = fsb$geo_alignment, mask = fsb$mask, cpi = cpi, gh = gh)
 
   # ---- Dims and manifest ----
-  node_tbl <- net_members %>%
+  node_tbl <- members_tbl %>%
     dplyr::group_by(.data$network_node) %>%
-    dplyr::summarise(n_members = dplyr::n(), tier = dplyr::first(.data$node_tier), .groups = "drop")
+    dplyr::summarise(n_members = dplyr::n(), tier = dplyr::first(.data$tier), .groups = "drop")
   node_tbl$label <- ifelse(node_tbl$network_node == "XEU", "Euro bloc", countries$country[match(node_tbl$network_node, countries$iso3c)])
   node_tbl$lon <- vapply(node_tbl$network_node, function(n) mean(countries$lon[countries$network_node %in% n]), numeric(1))
   node_tbl$lat <- vapply(node_tbl$network_node, function(n) mean(countries$lat[countries$network_node %in% n]), numeric(1))
@@ -329,30 +283,7 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
     psi_weights = c(friendshore = 0.4, opportunity = 0.4, development = 0.2),
     psi_view = "coalition",
     psi_tau = 0.5,
-    top_k = 5L,
-    node_weights = list(eo = 0.5, policy = 0.3, resilience = 0.2),
-    node_policy = FALSE,
-    node_policy_weight_max = 0.3,
-    edge_weights = list(friendshore = 0.5, opportunity = 0.5),
-    demand_weights = list(need = 0.5, size = 0.5),
-    lambda = 1.5,
-    max_share = 0.40,
-    min_share = 0.05,
-    min_producers = 3L,
-    min_suppliers_per_consumer = 2L,
-    epsilon_supplier_share = 0.10,
-    w_node = 1,
-    w_edge = 0.5,
-    w_dev = 0,
-    allow_self = TRUE,
-    portfolio = list(enable = TRUE, top_k = 5L, min_cap = 2, max_cap = 10, transform = "log", max_iters = 30L),
-    diversity_breakpoint_step = 0.01,
-    supply_chains = c("Upstream", "Midstream"),
-    milp_time_limit = 60,
-    policy_missing = "coalition_median",
-    missing_components = "renormalize",
-    demand_mode = "mixed",
-    size_transform = "log_scurve"
+    top_k = 5L
   )
   manifest <- list(
     bundle_version = 1L,
@@ -361,14 +292,13 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
     osi_branch = NA_character_,
     fixture = TRUE,
     sources = tibble::tibble(path = character(), mtime = as.POSIXct(character()), size = numeric(), md5 = character()),
-    flags = list(pillar_rule = TRUE, geo_alignment_in_fs = TRUE, fs_cmfdi = TRUE, partner_pillar_consistent = FALSE,
-                 network_aggregation = TRUE, network_consistent = FALSE, milp_baseline = FALSE),
+    flags = list(pillar_rule = TRUE, geo_alignment_in_fs = TRUE, fs_cmfdi = TRUE, partner_pillar_consistent = FALSE),
     baseline_inputs = baseline_inputs,
     validation = tibble::tibble(check = character(), layer = character(), status = character(), n = integer(),
                                 max_abs_diff = numeric(), note = character()),
     notes = "Synthetic fixture bundle (dash_fixture_bundle()); not real data."
   )
-  bundle <- dash_bundle_assemble(manifest, dims, pillars, policy, si, partner, network)
+  bundle <- dash_bundle_assemble(manifest, dims, pillars, policy, si, partner)
   attr(bundle, "fixture_raw") <- list(
     es = es_raw, eo = eo_raw, es_categories_in_data = es_in_data, eo_categories_in_data = eo_in_data,
     country_tbl = country_tbl, policy_component_tbl = policy_component_tbl, tech_ghg = tech_ghg, trl = trl,

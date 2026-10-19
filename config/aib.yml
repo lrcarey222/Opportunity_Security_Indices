@@ -46,19 +46,40 @@ nodes:
         - sub_sector: Wafers
           hs6: ["381800"]
 
-# ---- Candidate universe ---------------------------------------------------------------------
-# global: every economy in the trade data. coalition: the core and partner tiers of
-# data/processed/coalition_tbl.rds (a sensitivity, not the definition of the AIB). A list of ISO3
-# codes is also accepted. The universe is both the demand scope (importers whose supply is being
-# restored) and the set of candidate partners.
-universe: global
+# ---- Demand scope and candidate-partner universe --------------------------------------------
+# Two separate sets (every output names both):
+#   demand_scope                importers whose lost supply the module restores: the economies the
+#                               AIB protects.
+#   candidate_partner_universe  exporters that may add or redirect supply (new and expanded
+#                               relationships, investment hosts, coalition members).
+# Modes: configured (the `countries` listed), coalition (the `tiers` of
+# data/processed/coalition_tbl.rds), or global (every economy in the trade data). A comma list of
+# ISO3 codes on the command line (--demand-scope / --partner-universe) overrides either.
+# The default protects the allied set and lets any economy supply it. Global demand with global
+# partners (the first full run, 2026-10-15) is a sensitivity: it treats every importer's
+# shortfall, including the shocked economy's own customers, as the AIB's problem.
+demand_scope:
+  mode: coalition
+  tiers: [core, partner]
+  countries: []
+candidate_partner_universe:
+  mode: global
+  tiers: [core, partner]
+  countries: []
+
+# ---- Strategic scope ------------------------------------------------------------------------
+# Which technologies the compacts, the emergent network and the dashboard lead with. All nodes
+# are still modelled and kept in the trade and classification tables (in_strategic_scope marks
+# them); fossil-fuel nodes are not headline compacts under electro_industrial.
+strategic_scope:
+  mode: electro_industrial
+  technologies:
+    electro_industrial: [Batteries, Electric Vehicles, Solar, Wind, Electric Grid, Semiconductors, Nuclear]
 
 # ---- Shocks ---------------------------------------------------------------------------------
 # type country: the listed exporters lose `fraction` of their exports in every node.
 # type largest_supplier: the largest exporter of the node (level subsector), of the node's stage
 # (level stage) or of its technology (level technology) loses `fraction` of its exports.
-# shocked_demand: release (default) means the shocked economy's purchases fall by the same
-# fraction, so exports headed to it are freed; hold keeps its purchases (a pure export cut).
 shocks:
   - id: china_100
     label: China supply removed
@@ -85,18 +106,46 @@ shocks:
     type: largest_supplier
     level: technology
     fraction: 1.0
-shocked_demand: release
+# Shock semantics, every one run; the first is the headline.
+#   hold     an export / supply shock: the shocked economy keeps buying, so exports headed to it
+#            stay there in both scenarios (the security stress test).
+#   release  decoupling: its purchases fall by the same fraction and that share of the exports
+#            headed to it is freed for others (a sensitivity).
+shocked_demand: [hold, release]
 # The shock the compact layer, the investment simulation and the dashboard lead with.
 headline_shock: china_100
 
 # ---- Supply scenarios -----------------------------------------------------------------------
-# conservative: every surviving shipment to the universe stays where it is; only the supply the
-#   shock frees (exports that were headed to the shocked economy) can move.
-# reallocation: an exporter can redirect any of its observed global exports, including those to
-#   markets outside the universe and to the shocked economy, toward importers in the universe.
+# conservative: every surviving shipment to the demand scope stays where it is; only the supply
+#   the shock frees (exports that were headed to the shocked economy, under release) can move.
+# reallocation: a candidate partner can also redirect its observed exports to markets outside the
+#   demand scope toward it (its sales to the shocked economy only as far as release frees them).
 # Observed exports are revealed tradable capability, not spare physical capacity.
 scenarios: [conservative, reallocation]
 headline_scenario: reallocation
+
+# ---- Physical supply constraint -------------------------------------------------------------
+# Every mode is run; the first is the headline.
+#   trade_only              observed exports bound what a supplier can provide.
+#   production_constrained  where credible production or capacity shares exist (production_proxies
+#                           below), physical evidence decides who can supply: an exporter the data
+#                           list as a producer (share above producer_min_share) keeps its full trade
+#                           response; one they do not list (a re-exporter, stock, or a different
+#                           product under the same HS code, e.g. semiconductor wafers in HS 3818.00)
+#                           keeps its current shipments to the demand scope but cannot expand or
+#                           redirect supply toward it. Shares are not converted into trade values
+#                           (production is volume, trade is value; where the dominant producer uses
+#                           most of its own output, world trade is far below world production).
+#                           Nodes without credible physical data keep their trade-only result, flagged.
+# A node's physical data are credible when the proxy covers at least min_physical_completeness of
+# world production. Where physical and trade concentration diverge by divergence_threshold or more
+# (largest-supplier share, or China's share) and the node is not physically constrained, a LOW
+# INTERVENTION or COORDINATE class carries the warning PHYSICAL CAPABILITY NOT VALIDATED.
+supply_constraint:
+  modes: [production_constrained, trade_only]
+  min_physical_completeness: 0.80
+  producer_min_share: 0.0
+  divergence_threshold: 0.25
 
 # ---- Trade optimization ---------------------------------------------------------------------
 optimization:
@@ -121,6 +170,9 @@ optimization:
   # volume and "existing relationships" would be as flexible as new ones (on the first full run,
   # 2026-10-15, the coordination dividend was ~0 in 89 of 91 nodes for that reason). .inf = unbounded.
   existing_relationship_growth: 1.0
+  # Sensitivity of the existing network (and of the COORDINATE class) to that bound: about 1.25x,
+  # 2x, 4x and unlimited (allied_trade_growth_sensitivity.csv).
+  existing_growth_sensitivity: [0.25, 1.0, 3.0, .inf]
   # Maximum share of the universe's post-shock supply any one candidate exporter may provide.
   # 1 means no constraint; the frontier runs every value.
   max_supplier_share: [0.25, 0.40, 0.60, 1.00]
@@ -227,10 +279,93 @@ compacts:
   # A group is a compact only if its coalition improves the anchors' coverage over what their
   # existing relationships give them (fragmented action) by at least this much.
   min_compact_gain: 0.05
+  # Leave-one-country-out: every non-member whose loss pushes a node below the 95% target is
+  # reported; those supplying under this share of the anchors' demand in that node matter only
+  # because the coalition sits near the target and are listed apart (`..._marginal`).
+  critical_min_supply_share: 0.01
+  # Seconds GLPK may spend on the robustness tie-break of each exact coalition (the minimum size
+  # itself gets 20 times this); a solve that hits it keeps its best coalition found (reported).
+  solver_time_limit: 10
+  # Supply-chain coherence (needed, with partner and policy similarity, for two nodes to share a
+  # compact): one node is upstream of the other within chain_max_hops links of supply_chain_links,
+  # or (allow_co_inputs) both feed the same downstream node. A shared technology or stage is not
+  # enough: wind foundations and permanent magnets are both Wind Midstream but not one chain.
+  chain_max_hops: 3
+  allow_co_inputs: true
 
-# Supply-chain links between sub-sectors (material flows) used for supply-chain coherence.
-# Nodes in the same stage of one technology are coherent by default; these add the links that
-# cross stages or technologies. Names are master sub-sectors (or split nodes).
+# Curated physical / process adjacency, upstream -> downstream (master sub-sector or split-node
+# names; "Tech::Sub-sector" where a name recurs in several technologies; quote names with
+# commas), for compact coherence. Material inputs, components into assemblies, and equipment into
+# the stage that uses it.
+supply_chain_links:
+  # Rare earths and magnets: oxide -> metal / alloy -> permanent magnet -> motor / generator
+  - [Rare-Earth Ores (Monazite), Rare-Earth Compounds]
+  - [Rare-Earth Compounds, Rare-Earth Metals]
+  - [Rare-Earth Metals, Permanent Magnets & Magnet Parts]
+  - [Permanent Magnets & Magnet Parts, Electric Drive Units & Motors]
+  - [Permanent Magnets & Magnet Parts, Wind Turbines & Generators]
+  - [Permanent Magnets & Magnet Parts, Nacelles & Drivetrains]
+  - [Motor & Generator Parts, Electric Drive Units & Motors]
+  - [Motor & Generator Parts, Wind Turbines & Generators]
+  - [Electric Drive Units & Motors, Electric Vehicle Assembly]
+  - [Nacelles & Drivetrains, Wind Turbines & Generators]
+  - [Wind Blades, Wind Turbines & Generators]
+  # Batteries: minerals -> refined chemicals -> active materials -> cells -> packs -> vehicles
+  - [Lithium Minerals (Spodumene), Lithium Chemicals]
+  - ["Batteries::Ores & Concentrates", Lithium Chemicals]
+  - ["Batteries::Ores & Concentrates", Cobalt & Nickel Refining]
+  - [Cobalt Ores & Concentrates, Cobalt & Nickel Refining]
+  - [Nickel Ores & Concentrates, Cobalt & Nickel Refining]
+  - [Battery Recycling & Urban Mining, Cobalt & Nickel Refining]
+  - [Battery Recycling & Urban Mining, Lithium Chemicals]
+  - [Lithium Chemicals, Cathode Materials & Battery Precursors]
+  - [Lithium Chemicals, Electrolyte Materials]
+  - [Cobalt & Nickel Refining, Cathode Materials & Battery Precursors]
+  - [Manganese Ores & Concentrates, Cathode Materials & Battery Precursors]
+  - [Natural Graphite, Anode Materials]
+  - [Cathode Materials & Battery Precursors, Battery Cells]
+  - [Anode Materials, Battery Cells]
+  - [Electrolyte Materials, Battery Cells]
+  - [Separator Materials, Battery Cells]
+  - [Current Collectors & Foils, Battery Cells]
+  - [Battery Cells, "Battery Packs, Parts & BMS"]
+  - [Battery Cells, Vehicle Batteries & Packs]
+  - [Vehicle Batteries & Packs, Electric Vehicle Assembly]
+  # Solar: silicon metal -> polysilicon -> wafer -> cell -> module
+  - [Silicon Metal, Polysilicon]
+  - [Polysilicon, Wafers]
+  - [Wafers, Solar Cells]
+  - [Solar Cells, Solar Modules]
+  - [Solar Module Assembly & Inputs, Solar Modules]
+  - [Solar Cell Manufacturing Equipment, Solar Cells]
+  # Grid: metals -> conductors and cores -> apparatus
+  - ["Electric Grid::Ores & Concentrates", Copper Smelting & Refining]
+  - ["Electric Grid::Ores & Concentrates", Alumina & Primary Aluminium]
+  - [Copper Smelting & Refining, Grid Cables & Accessories]
+  - [Copper Smelting & Refining, Transformers]
+  - [Copper Smelting & Refining, Array Cables & Collection Systems]
+  - [Copper Smelting & Refining, Solar Cabling & Connectors]
+  - [Copper Smelting & Refining, Vehicle Wiring Harnesses]
+  - [Alumina & Primary Aluminium, Grid Cables & Accessories]
+  - [Electrical Steel (GOES), Transformers]
+  - [Circuit Breakers, Switchgear]
+  - [Circuit Breakers, Grid Control Panels]
+  - [Transformers, Wind Substations]
+  - [Switchgear, Wind Substations]
+  # Nuclear fuel
+  - [Uranium Ores & Concentrates, Natural Uranium & Compounds]
+  - [Natural Uranium & Compounds, Nuclear Fuel Cycle]
+  # Semiconductors: materials and parts -> devices; equipment parts -> equipment -> devices
+  - ["Gallium, Germanium & Indium", Semiconductor Materials]
+  - [Semiconductor Materials, Discrete Semiconductors]
+  - [Semiconductor Materials, Integrated Circuits]
+  - [Semiconductor Equipment Parts, Semiconductor Manufacturing Equipment]
+  - [Semiconductor Manufacturing Equipment, Integrated Circuits]
+  - [Integrated Circuit Parts, Integrated Circuits]
+  - [Semiconductor Device Parts, Discrete Semiconductors]
+
+# Material links between sub-sectors used for investment-host eligibility (RCA in a linked node
+# counts as revealed capability). Narrower than supply_chain_links: shared materials, not assembly.
 material_links:
   - [Rare-Earth Ores (Monazite), Rare-Earth Compounds]
   - [Rare-Earth Compounds, Rare-Earth Metals]
@@ -240,14 +375,14 @@ material_links:
   - [Permanent Magnets & Magnet Parts, Wind Turbines & Generators]
   - [Natural Graphite, Anode Materials]
   - [Lithium Minerals (Spodumene), Lithium Chemicals]
-  - [Ores & Concentrates, Lithium Chemicals]
+  - ["Batteries::Ores & Concentrates", Lithium Chemicals]
   - [Cobalt Ores & Concentrates, Cobalt & Nickel Refining]
   - [Nickel Ores & Concentrates, Cobalt & Nickel Refining]
-  - [Ores & Concentrates, Cobalt & Nickel Refining]
+  - ["Batteries::Ores & Concentrates", Cobalt & Nickel Refining]
   - [Lithium Chemicals, Cathode Materials & Battery Precursors]
   - [Cobalt & Nickel Refining, Cathode Materials & Battery Precursors]
   - [Battery Cells, Vehicle Batteries & Packs]
-  - [Battery Cells, Battery Packs, Parts & BMS]
+  - [Battery Cells, "Battery Packs, Parts & BMS"]
   - [Silicon Metal, Polysilicon]
   - [Polysilicon, Wafers]
   - [Wafers, Solar Cells]
@@ -257,7 +392,7 @@ material_links:
   - [Electrical Steel (GOES), Transformers]
   - [Uranium Ores & Concentrates, Natural Uranium & Compounds]
   - [Natural Uranium & Compounds, Nuclear Fuel Cycle]
-  - [Gallium, Germanium & Indium, Semiconductor Materials]
+  - ["Gallium, Germanium & Indium", Semiconductor Materials]
 
 # ---- Data-quality guardrails ----------------------------------------------------------------
 data_quality:

@@ -7,7 +7,6 @@
 
 import { useMemo } from 'react';
 import { useParams } from 'react-router';
-import { useTitle } from '../../App.tsx';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { Legend } from '../../charts/legends.tsx';
 import { CountrySelect } from '../../components/CountrySelect.tsx';
@@ -19,7 +18,7 @@ import { DASH, fmtNum, fmtSigned, tierLabel } from '../../lib/format.ts';
 import { useApp, useCore, useScenario } from '../../state/EngineProvider.tsx';
 import { useGoto } from '../../state/nav.ts';
 import { COMPARE_COLOR, STAGE_COLOR } from '../../theme/palette.ts';
-import { CountryInsightsLink, noteText, numOr, policyBasisShort, policyBasisText, policyComponentName, resourceBaseText, rowsOf, strOr, useCountryOptions, type Row } from '../common.tsx';
+import { CountryInsightsLink, useViewTitle, noteText, numOr, policyBasisShort, policyBasisText, policyComponentName, resourceBaseText, rowsOf, strOr, useCountryOptions, type Row } from '../common.tsx';
 
 // The five parts of the Strategic Index (spec_country.md C3.5 facet labels), each already weighted
 const TERMS: { key: string; label: string; title: string }[] = [
@@ -52,8 +51,9 @@ interface SiBarRow {
   resource_evidence: string | null;
 }
 
-export default function StrategicView() {
-  useTitle('Strategic Index');
+/** `embedded` (IA refactor 2026-10-16): inside the Country profile, which owns the title, the head and the country. */
+export default function StrategicView({ embedded = false }: { embedded?: boolean } = {}) {
+  useViewTitle('Strategic Index', embedded);
   const app = useApp();
   const params = useParams();
   const goto = useGoto();
@@ -163,6 +163,7 @@ export default function StrategicView() {
   const updating = !core.fresh;
   return (
     <div>
+      {!embedded && (<>
       <PageHead
         eyebrow="Where to focus"
         title="Strategic Index"
@@ -189,6 +190,7 @@ export default function StrategicView() {
       >
         <CountrySelect label="Economy" value={iso} options={options} onChange={(v) => goto(`/strategic/${v}`)} />
       </FilterRow>
+      </>)}
       {!core.data ? (
         <Loading label="Computing" />
       ) : (

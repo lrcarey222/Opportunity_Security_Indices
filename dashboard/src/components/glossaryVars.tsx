@@ -1,5 +1,5 @@
 // The glossary's data-dependent numbers (spec_country.md C3.2): a module that has loaded a manifest can
-// supply newer values ({ n_core: '31', lambda: '0.78', ... }) for the glossary's {{placeholders}}; without
+// supply newer values ({ n_core: '31', n_partner: '26', ... }) for the glossary's {{placeholders}}; without
 // a provider the glossary shows GLOSSARY_DEFAULTS. InfoTip, Term and GlossaryList read through here.
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react';

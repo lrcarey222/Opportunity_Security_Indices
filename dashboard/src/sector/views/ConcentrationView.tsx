@@ -372,7 +372,7 @@ export default function ConcentrationView() {
   return (
     <div className="space-y-8">
       <PageHead
-        eyebrow="SECTOR INSIGHTS · CONCENTRATION"
+        eyebrow="SECTORS · CONCENTRATION"
         title="Concentration across sectors"
         lede={
           <>

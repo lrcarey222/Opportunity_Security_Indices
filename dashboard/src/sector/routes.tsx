@@ -5,6 +5,7 @@
 // snapshot (4.9) is not in this build, so /sector/country/:iso3 redirects to /sector?c=ISO3.
 
 import { Navigate, useLocation, useParams, type RouteObject } from 'react-router';
+import { Redirect } from '../shell/Redirect.tsx';
 
 const view = (load: () => Promise<{ default: React.ComponentType }>) => async () => ({ Component: (await load()).default });
 
@@ -12,7 +13,7 @@ const view = (load: () => Promise<{ default: React.ComponentType }>) => async ()
 function ToSectorHome() {
   const loc = useLocation();
   const bad = loc.pathname.replace(/^.*\/sector\/?/, '').split('/')[0];
-  return <Navigate to="/sector" replace state={{ notice: bad ? `No sector page called '${bad}'; showing all sectors.` : 'Showing all sectors.' }} />;
+  return <Redirect to="/sector" notice={bad ? `No sector page called '${bad}'; showing all sectors.` : 'Showing all sectors.'} />;
 }
 
 /** Phase-1 stand-in for the Country snapshot: the Atlas with the country highlighted. */
