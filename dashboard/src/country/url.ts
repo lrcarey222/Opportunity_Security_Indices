@@ -5,23 +5,29 @@
 //   cell     a sector key of the sheet ("oil-upstream"); default: the first high-priority sector
 //   partner  an ISO3 among the sheet's partner rows; default: the top Partnership Strength partner
 //   all      1 = every in-sample sector in the priorities table (else the top 15)
-//   ptab     the Partnerships tab: trade (default), investment or development (IA refactor 2026-10-16)
+//   ptab     the Partnerships tab: trade (default), investment, development (IA refactor 2026-10-16) or
+//            geopolitical (2026-10-19)
+//   scn      the AIB scenario toggle (2026-10-19; src/aib/scenarioUrl.ts): managed, else absent (Decoupling).
+//            A host key here, so the embedded Strategic views keep it and the profile's own writes carry
+//            it; the AIB lens of the Partnerships section and the AIB role section follow it.
 //
 // Selecting a sector or a partner replaces the history entry; changing country pushes one.
 
 import { isCellKey } from './contract.ts';
 
-export type PartnerTab = 'trade' | 'investment' | 'development';
-export const PARTNER_TABS: readonly PartnerTab[] = ['trade', 'investment', 'development'];
+export type PartnerTab = 'trade' | 'investment' | 'development' | 'geopolitical';
+export const PARTNER_TABS: readonly PartnerTab[] = ['trade', 'investment', 'development', 'geopolitical'];
 
 export interface CountryUrlState {
   cell: string | null;
   partner: string | null;
   all: boolean;
   ptab: PartnerTab;
+  /** the AIB scenario toggle: 'managed', or absent (Decoupling, the default) */
+  scn?: 'managed';
 }
 
-export const COUNTRY_KEY_ORDER = ['cell', 'partner', 'all', 'ptab'] as const;
+export const COUNTRY_KEY_ORDER = ['cell', 'partner', 'all', 'ptab', 'scn'] as const;
 export type CountryKey = (typeof COUNTRY_KEY_ORDER)[number];
 
 export const COUNTRY_DEFAULTS: CountryUrlState = { cell: null, partner: null, all: false, ptab: 'trade' };
@@ -78,9 +84,13 @@ export function parseCountrySearch(search: string, ctx: CountryUrlCtx = {}): Cou
       case 'ptab': {
         const t = v.toLowerCase();
         if ((PARTNER_TABS as readonly string[]).includes(t)) state.ptab = t as PartnerTab;
-        else bad(k, raw, 'trade, investment or development');
+        else bad(k, raw, 'trade, investment, development or geopolitical');
         break;
       }
+      case 'scn':
+        if (v === 'managed') state.scn = 'managed';
+        else bad(k, raw, "'managed' or nothing");
+        break;
     }
   }
   return { state, problems };
@@ -93,6 +103,7 @@ export function serializeCountrySearch(s: Partial<CountryUrlState>): string {
   if (s.partner) q.set('partner', s.partner);
   if (s.all) q.set('all', '1');
   if (s.ptab && s.ptab !== 'trade') q.set('ptab', s.ptab);
+  if (s.scn === 'managed') q.set('scn', 'managed');
   const t = q.toString();
   return t ? `?${t}` : '';
 }

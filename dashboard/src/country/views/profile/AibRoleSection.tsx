@@ -5,14 +5,19 @@
 // the compacts it sits in, and its main relationships in the emergent network (partners, nodes, trade
 // against investment). Every number is a modelled fact of the AIB bundle; nothing here follows the
 // Perspective. A bundle without the network summary falls back to the compacts' coordinated trade.
+// The scenarios (2026-10-19): the figures follow the AIB toggle (URL scn, shared with the Partnerships
+// section's AIB lens): Decoupling reads the main document; Managed Interdependence the scenario file (its
+// compacts' coalitions and roles, its network: aibDocUnder()). A line names the scenario shown and switches it.
 
 import { useMemo } from 'react';
 import { Link } from 'react-router';
+import { useAibScenario, useAibScenarioDoc } from '../../../aib/data/hooks.ts';
 import { compactTitle, fmtUsd, listWords, nameOf, plural } from '../../../aib/derive/format.ts';
-import { countryEdges, countryRolesOf, edgeWords, fmtPts, MATRIX_ROLES, ROLE_FLOOR, ROLE_READING } from '../../../aib/derive/network.ts';
-import { compactHref, rolesHref } from '../../../aib/nav.ts';
+import { countryEdges, countryRolesOf, edgeWords, everyShock, everyShockLabel, fmtPts, MATRIX_ROLES, ROLE_FLOOR, ROLE_READING, scenarioRoleSource } from '../../../aib/derive/network.ts';
+import { effectiveScenario, hasScenarios, scenarioLabel, scenarioNameOf, scenarioShockLabel } from '../../../aib/derive/scenarios.ts';
+import { compactHref, rolesHref, withScenario } from '../../../aib/nav.ts';
 import { cellWords, INVEST_COLOR, ModelledNote, TRADE_COLOR, TradeInvestBar } from '../../../aib/views/networkParts.tsx';
-import { aibCountry } from '../../derive/framing.ts';
+import { aibCountry, aibDocUnder } from '../../derive/framing.ts';
 import { cap, poss, proseName } from '../../derive/text.ts';
 import { BasisTag, LinkRow, Section, useProfile } from './common.tsx';
 import { PartnerName } from './PartnersSection.tsx';
@@ -23,14 +28,31 @@ export function AibRoleSection() {
   const { sheet, aib } = useProfile();
   const name = proseName(sheet.meta.country);
   const iso = sheet.iso3;
-  const doc = aib?.doc ?? null;
-  const names = aib?.names;
+  const main = aib?.doc ?? null;
+  const toggle = useAibScenario();
+  const available = main ? hasScenarios(main) : false;
+  const sid = effectiveScenario(toggle.scenario, available);
+  const managed = useAibScenarioDoc(sid === 'managed' ? 'managed' : null);
+  const doc = useMemo(() => (main ? aibDocUnder(main, sid, managed.doc as Parameters<typeof aibDocUnder>[2]) : null), [main, sid, managed.doc]);
+  const names = useMemo(() => (aib?.names && managed.doc ? { ...managed.doc.countries, ...aib.names } : aib?.names), [aib?.names, managed.doc]);
+  const label = scenarioLabel(sid, main?.meta);
   const a = useMemo(() => (doc && names ? aibCountry(doc, names, iso) : null), [doc, names, iso]);
-  const roles = useMemo(() => (doc && names ? countryRolesOf(doc, names, iso) : null), [doc, names, iso]);
+  // read as /aib/roles reads the scenario: Decoupling's headline network and partners, Managed Interdependence's
+  // own network and compacts (scenarioRoleSource()); an older bundle without the scenarios keeps every shock
+  const src = useMemo(
+    () => (main && available ? scenarioRoleSource(main, sid, sid === 'managed' ? (managed.doc as Parameters<typeof scenarioRoleSource>[2]) : null) : null),
+    [main, available, sid, managed.doc],
+  );
+  const roles = useMemo(() => (doc && names ? countryRolesOf(doc, names, iso, src) : null), [doc, names, iso, src]);
   const edges = useMemo(() => (doc ? countryEdges(doc, iso) : []), [doc, iso]);
+  // what the cumulative figures sum: Decoupling's supply shocks (Managed Interdependence has none: cum = headline)
+  const every = !main || !doc ? null : !available ? everyShock(doc).phrase : sid === 'decoupling' ? everyShockLabel(main).phrase : null;
   const nodeName = (id: string) => doc?.nodes.find((nd) => nd.id === id)?.label ?? id;
-  const partner = (x: string) => nameOf(names ?? {}, x);
-  const shock = doc ? (doc.meta.shocks.find((s) => s.id === doc.meta.headlineShock)?.label ?? doc.meta.headlineShock) : '';
+  const partner = scenarioNameOf((x) => nameOf(names ?? {}, x), managed.doc);
+  const shock = main ? scenarioShockLabel(main.meta, sid) : '';
+  const under = !available ? 'the headline shock' : label;
+  // the words of a role cell: "under Decoupling", "under Managed Interdependence" (an older bundle: the headline shock)
+  const underCell = `under ${under}`;
   const hasNet = !!doc?.network;
   const anyRole = !!roles && MATRIX_ROLES.some((k) => roles.cells[k].level !== 'none');
   const inAny = !!a && (anyRole || a.compacts.length > 0 || a.pairs.length > 0 || edges.length > 0);
@@ -42,20 +64,46 @@ export function AibRoleSection() {
     <Section
       id="aib-role"
       title="Role in the Allied Industrial Base"
-      basis={<BasisTag kind="facts" note="the Allied Industrial Base results" />}
+      basis={<BasisTag kind="facts" note={available ? `the Allied Industrial Base results · ${label}` : 'the Allied Industrial Base results'} />}
       intro={
         <>
-          The Allied Industrial Base analysis removes a major supplier, asks how much of the lost supply existing relationships, coordinated trade and new capacity can restore, and groups
-          the supply-chain nodes that need coordination into Sectoral Compacts. The roles below are read from the model&apos;s results for {name}, not a ranking.
+          The Allied Industrial Base analysis takes away supply (under Decoupling, China stops supplying the allied market; under Managed Interdependence, no supplier may hold more than
+          the share comparable goods would allow), asks how much of it existing relationships, coordinated trade and new capacity can restore, and groups the supply-chain nodes that need
+          coordination into Sectoral Compacts. The roles below are read from the model&apos;s results for {name}, not a ranking.
         </>
       }
     >
-      {!a || !roles ? (
+      {available && main && (
+        <p className="text-sm text-paper-dim" data-testid="aib-role-scenario">
+          Shown under <span className="font-medium text-paper">{label}</span>, the scenario chosen for the Allied Industrial Base.{' '}
+          <button type="button" className="link" onClick={() => toggle.setScenario(sid === 'managed' ? 'decoupling' : 'managed')}>
+            Show {scenarioLabel(sid === 'managed' ? 'decoupling' : 'managed', main.meta)} instead
+          </button>
+        </p>
+      )}
+      {main && sid === 'managed' && !managed.doc ? (
+        <p className="text-sm text-paper-mute">
+          {managed.error ? (
+            <>
+              The Managed Interdependence results could not be loaded.{' '}
+              <button type="button" className="link" onClick={managed.retry}>
+                Retry
+              </button>
+            </>
+          ) : managed.missing ? (
+            'This data build has no Managed Interdependence results for the country roles.'
+          ) : (
+            'Loading the Managed Interdependence results…'
+          )}
+        </p>
+      ) : !a || !roles ? (
         <p className="text-sm text-paper-mute">
           {aib?.status === 'loading' ? 'Loading the Allied Industrial Base results…' : 'The Allied Industrial Base results are not available in this build.'}
         </p>
       ) : !inAny ? (
-        <p className="text-sm text-paper-dim">{cap(name)} holds no role in the Allied Industrial Base network or in any Sectoral Compact.</p>
+        <p className="text-sm text-paper-dim">
+          {cap(name)} holds no role in the Allied Industrial Base network or in any Sectoral Compact{available ? ` under ${label}` : ''}.
+        </p>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           <section className="card p-5" aria-labelledby="aib-roles-h" data-testid="aib-roles">
@@ -69,7 +117,7 @@ export function AibRoleSection() {
                   <li key={k} data-level={c.level}>
                     <span className={c.level === 'named' ? 'font-medium text-paper' : 'text-paper-mute'}>{ROLE_READING[k].short}</span>
                     <span className="text-xs text-paper-mute"> · {LEVEL_WORD[c.level]}</span>
-                    {c.level !== 'none' && <span className="block text-xs text-paper-mute">{cellWords(k, c)}</span>}
+                    {c.level !== 'none' && <span className="block text-xs text-paper-mute">{cellWords(k, c, every, underCell)}</span>}
                   </li>
                 );
               })}
@@ -82,10 +130,10 @@ export function AibRoleSection() {
               <ul className="mt-2 space-y-1 text-xs text-paper-mute">
                 {a.compacts.map(({ compact: c, member, associate }) => (
                   <li key={c.id}>
-                    <Link className="link" to={compactHref(c.id)}>
+                    <Link className="link" to={compactHref(c.id, sid)}>
                       {c.id}
                     </Link>{' '}
-                    {compactTitle(c)}
+                    {compactTitle(c, doc?.nodes ?? [])}
                     {member ? ' · member' : associate ? ' · associate' : ''}
                   </li>
                 ))}
@@ -93,9 +141,9 @@ export function AibRoleSection() {
             )}
             <p className="mt-3 text-xs leading-relaxed text-paper-mute">
               {hasNet
-                ? `Trade and investment roles are the share of a node's demand ${poss(name)} relationships serve after the shock, summed over nodes (1 point = 1% of one node's demand); a role is named at ${fmtPts(ROLE_FLOOR)} or more under the headline shock (${shock}), minor below.`
+                ? `Trade and investment roles are the share of a node's demand ${poss(name)} relationships serve after ${sid === 'managed' ? 'the cap' : 'the shock'}, summed over nodes (1 point = 1% of one node's demand); a role is named at ${fmtPts(ROLE_FLOOR)} or more under ${under} (${shock}), minor below.`
                 : 'This build has no economy-level network summary: the roles are the compacts’ own labels.'}{' '}
-              <Link className="link" to={rolesHref(iso)}>
+              <Link className="link" to={rolesHref(iso, sid)}>
                 How roles are read
               </Link>
             </p>
@@ -108,7 +156,7 @@ export function AibRoleSection() {
               edges.length ? (
                 <div className="mt-2 space-y-3 text-sm text-paper-dim">
                   <p>
-                    <span className="text-paper">Trade against investment:</span> under the headline shock {poss(name)} {plural(edges.length, 'relationship')} serve {fmtPts(tradeSum)} of node
+                    <span className="text-paper">Trade against investment:</span> under {under} {poss(name)} {plural(edges.length, 'relationship')} serve {fmtPts(tradeSum)} of node
                     demand through trade and {fmtPts(invSum)} through new capacity.
                     {invSum === 0 ? ` For ${name}, coordination runs through trade.` : tradeSum === 0 ? ` For ${name}, it runs through investment.` : ''}
                   </p>
@@ -146,7 +194,7 @@ export function AibRoleSection() {
                   </ol>
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-paper-dim">{cap(name)} has no relationship with a headline-shock contribution in the network.</p>
+                <p className="mt-2 text-sm text-paper-dim">{cap(name)} has no relationship with a contribution under {under} in the network.</p>
               )
             ) : (
               <div className="mt-2 space-y-3 text-sm text-paper-dim">
@@ -166,15 +214,17 @@ export function AibRoleSection() {
                 )}
               </div>
             )}
-            <ModelledNote className="mt-3">{`${shock}, ${doc?.meta.headlineScenario ?? ''} scenario`}</ModelledNote>
+            <ModelledNote className="mt-3">
+              {sid === 'decoupling' ? `${available ? `${label}: ` : ''}${shock}; supply assumption: ${doc?.meta.headlineScenario ?? ''}` : `${label}: ${shock}`}
+            </ModelledNote>
           </section>
         </div>
       )}
       <LinkRow>
-        <Link className="link" to={rolesHref(iso)}>
+        <Link className="link" to={rolesHref(iso, sid)}>
           See all country roles &rarr;
         </Link>
-        <Link className="link" to="/aib">
+        <Link className="link" to={withScenario('/aib', sid)}>
           The Allied Industrial Base overview &rarr;
         </Link>
       </LinkRow>

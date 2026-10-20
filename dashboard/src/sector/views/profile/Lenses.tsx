@@ -17,14 +17,15 @@ import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ClassChip } from '../../../aib/charts/ClassChip.tsx';
 import type { AibDoc, AibNode } from '../../../aib/contract.ts';
-import { fmtPp, fmtUsd } from '../../../aib/derive/format.ts';
+import { compactTitle, fmtPp, fmtUsd } from '../../../aib/derive/format.ts';
+import { nodeWhere, taxonomyOf } from '../../../aib/derive/taxonomy.ts';
 import { compactHref } from '../../../aib/nav.ts';
 import { TableView } from '../../../components/TableView.tsx';
 import { STAGE_LABELS, TECH_LABELS, type SectorPolicyChunk, type SectorTradeChunk } from '../../contract.ts';
 import { useSectorManifest } from '../../data/SectorDataProvider.tsx';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
 import { primaryMeasure } from '../../derive/cells.ts';
-import { matchNodes, nodesOfCell } from '../../derive/chain.ts';
+import { matchNodes, nodesOfCell, subsOfNodes } from '../../derive/chain.ts';
 import { concentration, growth, growthKindWords, growthWords, isWorldBasis, type Concentration } from '../../derive/concentration.ts';
 import { countsByCountry, instrumentOf, policyRecords, scopePolicies, statusClass, tagBit } from '../../derive/policy.ts';
 import { hasSubTrade, subComponents, subLatestYear, subSlice, validSub } from '../../derive/subs.ts';
@@ -255,7 +256,7 @@ function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: A
                         <>
                           {' · '}
                           <Link className="link" to={compactHref(compact.id)}>
-                            {compact.name}
+                            {compactTitle(compact, doc.nodes)}
                           </Link>
                         </>
                       ) : (
@@ -267,11 +268,14 @@ function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: A
               })}
             </ul>
           ) : (
-            <p className="mt-1 text-xs text-paper-mute">The Allied Industrial Base model has no supply-chain node for this {basis?.sub ? 'component' : 'sector'}.</p>
+            <p className="mt-1 text-xs text-paper-mute">
+              The Allied Industrial Base model has no {taxonomyOf(doc.meta).dictionary ? 'node with codes in' : 'supply-chain node for'} this {basis?.sub ? 'component' : 'sector'}.
+            </p>
           )}
           {nodes.length > 0 && (
             <p className="mt-2 text-xs text-paper-mute">
               Allied Industrial Base model{shock ? `, ${lc(shock)}` : ''}: shock exposure is the share of demand lost; the residual gap is what even coordinated trade cannot restore.
+              {taxonomyOf(doc.meta).dictionary ? ' The nodes are electro-industrial dictionary nodes whose codes sit here; each result is for the whole node.' : ''}
             </p>
           )}
         </div>
@@ -483,34 +487,39 @@ export function AibNodesBlock() {
   const { trade } = useTrade(tech, cell.has_trade);
   const doc = useAibDoc();
   const rows = useMemo(() => cellNodes(doc, model, cell, null, null), [doc, model, cell]);
-  const subOf = useMemo(() => {
-    const out = new Map<string, string>();
-    if (!doc || !trade || !cell.has_trade || !hasSubTrade(trade)) return out;
-    const m = matchNodes(subComponents(trade, model, cell.idx).map((x) => x.name), doc.nodes, cell.slug);
-    for (const [sub, ns] of m.bySub) for (const n of ns) out.set(n.id, sub);
-    return out;
+  // the sub-components each node sits under (many-to-many: a dictionary node can span several)
+  const subsOf = useMemo(() => {
+    if (!doc || !trade || !cell.has_trade || !hasSubTrade(trade)) return new Map<string, string[]>();
+    return subsOfNodes(matchNodes(subComponents(trade, model, cell.idx).map((x) => x.name), doc.nodes, cell.slug));
   }, [doc, trade, model, cell]);
   if (!doc || !rows.length) return null;
   const shock = doc.meta.shocks.find((x) => x.id === doc.meta.headlineShock)?.label ?? null;
+  const tx = taxonomyOf(doc.meta);
+  const apart = (n: AibNode) => (subsOf.get(n.id) ?? []).filter((s) => s.toLowerCase() !== n.label.toLowerCase());
   return (
     <Section
       id="aib-nodes"
       title="Allied Industrial Base nodes"
-      sub={`What the Allied Industrial Base model finds for the supply-chain nodes of this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows.`}
+      sub={
+        tx.dictionary
+          ? `What the Allied Industrial Base model finds for the nodes of the electro-industrial dictionary whose traded codes sit in this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows. The nodes are not this sector's sub-sectors: each belongs to a dictionary sector and stage, and reaches this sector through the codes it shares with it (a node can sit in several sectors, and its results are for the whole node).`
+          : `What the Allied Industrial Base model finds for the supply-chain nodes of this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows.`
+      }
       aside={<span className="eyebrow">Observed / modelled facts</span>}
     >
       <TableView
         rows={rows}
-        caption="Allied Industrial Base nodes of this sector"
+        caption={tx.dictionary ? 'Allied Industrial Base nodes with codes in this sector' : 'Allied Industrial Base nodes of this sector'}
         rowKey={(n) => n.id}
         cols={[
-          { id: 'n', header: 'Node', value: (n) => n.label, cell: (n) => (subOf.get(n.id) && subOf.get(n.id)!.toLowerCase() !== n.label.toLowerCase() ? <span>{n.label} <span className="text-xs text-paper-mute">(in {subOf.get(n.id)})</span></span> : n.label), minWidth: 150 },
+          { id: 'n', header: 'Node', value: (n) => n.label, cell: (n) => (apart(n).length ? <span>{n.label} <span className="text-xs text-paper-mute">(in {apart(n).join(', ')})</span></span> : n.label), minWidth: 150 },
+          ...(tx.dictionary ? [{ id: 's', header: 'Dictionary sector and stage', value: (n: AibNode) => nodeWhere(tx, n), minWidth: 180 }] : []),
           { id: 'c', header: 'Class', value: (n) => n.cls, cell: (n) => <ClassChip cls={n.cls} /> },
           { id: 'e', header: 'Shock exposure', value: (n) => n.exposure, cell: (n) => fmtShare(n.exposure), num: true },
           { id: 'd', header: 'Coordination dividend', value: (n) => dividendOf(n), cell: (n) => fmtPp(dividendOf(n)), num: true },
           { id: 'r', header: 'Residual gap', value: (n) => n.residual, cell: (n) => fmtShare(n.residual), num: true },
           { id: 'l', header: 'Supply lost', value: (n) => n.lostUsd, cell: (n) => fmtUsd(n.lostUsd), num: true },
-          { id: 'k', header: 'Compact', value: (n) => n.compact ?? '', cell: (n) => { const k = n.compact ? doc.compacts.find((x) => x.id === n.compact) : null; return k ? <Link className="link" to={compactHref(k.id)}>{k.name}</Link> : <span className="text-paper-mute">none</span>; } },
+          { id: 'k', header: 'Compact', value: (n) => n.compact ?? '', cell: (n) => { const k = n.compact ? doc.compacts.find((x) => x.id === n.compact) : null; return k ? <Link className="link" to={compactHref(k.id)}>{compactTitle(k, doc.nodes)}</Link> : <span className="text-paper-mute">none</span>; } },
         ]}
       />
       <p className="text-xs text-paper-mute">

@@ -1,13 +1,20 @@
 // About Sectoral Compacts /compacts/about: the method in brief (observed trade network -> demand scope and
 // candidate partners -> shock -> existing response -> optimized partnerships -> coordination dividend and
 // frontier -> residual gaps -> marginal investment -> emergent network -> compacts -> node treatments),
-// the classes; then what the settings mean, with this export's values: demand scope vs candidate-partner
+// the classes; where the nodes come from (the electro-industrial dictionary: index > sector > stage, its
+// scope, primary rows, the partner indices through the OSI crosswalk; or the OSI basket of an older
+// bundle); then what the settings mean, with this export's values: demand scope vs candidate-partner
 // universe, hold vs release shock semantics, production-constrained vs trade-only supply, the multi-label
 // policy needs and the physical-capability warning rule, the exact vs greedy coalition and its tiers,
-// true vs instantaneous N-1, the existing-relationship growth bound and the strategic scope; then the
-// data, the run settings and the classification thresholds from the data, and where the full method is.
+// true vs instantaneous N-1, the existing-relationship growth bound and the strategic scope; the
+// diversification scenario (2026-10-19: concentration (HHI), the benchmark and its fallback, the cap on the
+// allied market's demand, allies' own purchases, the cap in both trade states; this export's counts); then
+// the data, the run settings and the classification thresholds from the data, and where the full method is.
+// "How the scenarios work" (#scenarios, 2026-10-19; the toggle links to it): Baseline, Managed
+// Interdependence and Decoupling in plain words, what each page shows under each, with this export's counts.
 
-import { Link } from 'react-router';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router';
 import { PageHead } from '../../components/ui.tsx';
 import { useTitle } from '../../shell/title.ts';
 import { EYEBROW, PAGE, useAibCtx } from '../AibLayout.tsx';
@@ -15,10 +22,32 @@ import { CLASS_INFO } from '../derive/classes.ts';
 import { ClassSwatch } from '../charts/ClassChip.tsx';
 import { targetLabel } from '../derive/coalition.ts';
 import { fmtShare, listWords, plural } from '../derive/format.ts';
-import { candidateUniverse, CONSTRAINT_WORDS, constraintLabel, demandScope, SEMANTICS_WORDS, semanticsLabel, shockSemantics, strategicScope, supplyConstraint } from '../derive/settings.ts';
+import {
+  candidateUniverse, CONSTRAINT_WORDS, constraintLabel, demandScope, DICTIONARY_SCOPE_WORDS, DIVERSIFY_BENCHMARK_WORDS, diversifyRules, diversifySetting, nodeTaxonomy, SEMANTICS_WORDS, semanticsLabel,
+  shockSemantics, strategicScope, supplyConstraint,
+} from '../derive/settings.ts';
+import { groupedSectorWords, indexLabel, sectorGroups } from '../derive/taxonomy.ts';
 import { coalitionTargets, isGreedySetMethod, TIER_LABEL, tierMeanings, tierShares } from '../derive/tiers.ts';
+import { aboveWords, DIVERSIFY_HREF, diversifyTotals, hasDiversify } from '../derive/diversify.ts';
 import { ReadingNotes } from './common.tsx';
-import { AIB_CLASSES, AIB_TIERS, inStrategicScope } from '../contract.ts';
+import { AIB_CLASSES, AIB_TIERS, diversifyShockIdOf, inStrategicScope, supplyScenariosOf, type AibDoc } from '../contract.ts';
+import { comparableNodes, nodeScenario, scenarioInfo, SCENARIO_CAVEAT, SCENARIO_ORDER } from '../derive/scenarios.ts';
+import { ScenarioSwatch } from '../charts/ScenarioCompare.tsx';
+
+/** What each scenario means for the pages, in plain words, with this export's counts. */
+function scenarioMeaning(doc: AibDoc, id: (typeof SCENARIO_ORDER)[number], shockLabel: string, hasScenarios: boolean): string {
+  const nodes = comparableNodes(doc.nodes);
+  if (id === 'baseline') {
+    return 'Coverage is 100% by definition and nothing is lost, so it has no class. The pages use it as the reference: today\u2019s suppliers, today\u2019s concentration and today\u2019s trade network (observed supplier-to-buyer pairs serving at least half a percent of a node\u2019s allied demand).';
+  }
+  if (id === 'managed') {
+    const ran = nodes.filter((n) => nodeScenario(n, 'managed').ran).length;
+    const compacts = doc.compacts.filter((c) => (c.managed ? c.managed.nodesRun > 0 : c.nodes.some((x) => doc.nodes.find((n) => n.id === x)?.diversify?.status === 'diversified to the benchmark'))).length;
+    const counts = hasScenarios ? ` In this export it runs on ${plural(ran, 'node')} of ${nodes.length} and touches ${plural(compacts, 'compact')} of ${doc.compacts.length}.` : '';
+    return `It changes only the steps more concentrated than their benchmark; every other node stays as it is today. The compacts keep the groups formed under Decoupling (the same compacts and nodes) and are solved again under this scenario, with their own coalition, tiers and roles; a compact none of whose nodes it changes has no coalition under it. Its network is built from this scenario alone.${counts}`;
+  }
+  return `The headline stress test (${shockLabel}, under hold semantics). The compacts are formed under it. In the three-way comparisons only this shock counts; the Country roles page also keeps its totals over every supply shock, labelled as such.`;
+}
 
 const P = 'mb-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim';
 
@@ -30,15 +59,23 @@ function H({ id, children }: { id: string; children: string }) {
   );
 }
 
+/** The first step of the method, by where the nodes come from. */
+const tradeNetworkStep = (dictionary: boolean): { step: string; text: string } => ({
+  step: 'Observed trade network',
+  text: dictionary
+    ? 'Bilateral trade in every node of the electro-industrial dictionary (a group of HS6 goods of one sector at one stage of the electro-industrial stack), importer declarations first, mirrored where missing.'
+    : 'Bilateral trade in every sub-sector node (a group of HS6 goods at one stage of an energy supply chain), importer declarations first, mirrored where missing.',
+});
+
 const METHOD: { step: string; text: string }[] = [
-  { step: 'Observed trade network', text: 'Bilateral trade in every sub-sector node (a group of HS6 goods at one stage of an energy supply chain), importer declarations first, mirrored where missing.' },
+  tradeNetworkStep(false),
   {
     step: 'Demand scope and candidate partners',
     text: 'Two separate sets: the demand scope is the importers whose lost supply is restored; the candidate partners are the exporters that may add or redirect supply. Protecting one set of economies does not limit who may supply them.',
   },
   {
     step: 'Shock',
-    text: 'A supplier loses its exports (the headline: China supply removed). Under hold semantics the shocked economy keeps buying; release (decoupling) is a sensitivity. The shock exposure is the share of the demand scope’s demand that disappears.',
+    text: 'A supplier loses its exports (the headline: China supply removed). Under hold semantics the shocked economy keeps buying; release (a two-way cut: its purchases also fall by the same share) is a sensitivity. The shock exposure is the share of the demand scope’s demand that disappears.',
   },
   {
     step: 'Existing response',
@@ -46,7 +83,7 @@ const METHOD: { step: string; text: string }[] = [
   },
   {
     step: 'Optimized partnerships',
-    text: 'A linear program reallocates the candidate partners’ observed exports to restore as much of the demand scope’s demand as possible, then favours revealed specialization, export opportunity and policy compatibility among equally good solutions. Under the production-constrained headline, where credible production or capacity data exist they decide who can supply: an exporter the data list as a producer keeps its full trade response, and one they do not list keeps its current shipments to the demand scope but cannot expand or redirect supply.',
+    text: 'A linear program reallocates the candidate partners’ observed exports to restore as much of the demand scope’s demand as possible, then favours revealed specialization, Partnership Opportunity and policy compatibility among equally good solutions. Under the production-constrained headline, where credible production or capacity data exist they decide who can supply: an exporter the data list as a producer keeps its full trade response, and one they do not list keeps its current shipments to the demand scope but cannot expand or redirect supply.',
   },
   {
     step: 'Coordination dividend and frontier',
@@ -84,7 +121,12 @@ const modesWords = (modes: readonly string[] | undefined, headline: string | nul
 
 export default function AibAboutView() {
   useTitle('About Sectoral Compacts', 'aib');
-  const { doc, manifest, shockLabel } = useAibCtx();
+  const { doc, manifest, shockLabel, tx, hasScenarios, scenario, href } = useAibCtx();
+  const loc = useLocation();
+  // follow a link's #anchor (#scenarios from the toggle, #diversification, #semantics)
+  useEffect(() => {
+    if (loc.hash) document.getElementById(loc.hash.slice(1))?.scrollIntoView?.({ block: 'start' });
+  }, [loc.hash]);
   const m = doc.meta;
   const thresholds = Object.entries(m.thresholds);
   const ds = demandScope(m);
@@ -92,6 +134,7 @@ export default function AibAboutView() {
   const sem = shockSemantics(m);
   const con = supplyConstraint(m);
   const st = strategicScope(m);
+  const nt = nodeTaxonomy(m);
   const { mid, top } = coalitionTargets(m.targets);
   const nodes = doc.nodes;
   const count = (f: (n: (typeof nodes)[number]) => boolean) => nodes.filter(f).length;
@@ -100,11 +143,17 @@ export default function AibAboutView() {
   const nWarned = count((n) => !!n.warning);
   const nSensitive = count((n) => n.coordinateSensitiveToGrowth === true);
   const nOut = count((n) => !inStrategicScope(n));
+  // fossil-fuel chains are named only where nodes outside the scope are of them (never in the dictionary)
+  const fossilOut = !nt.dictionary && nodes.some((n) => !inStrategicScope(n) && n.techs.some((t) => /^(coal|oil|gas|natural gas)$/i.test(t)));
   const headSem = m.shockSemantics ?? null;
   const headCon = m.supplyConstraint ?? null;
   const tierMeaning = tierMeanings({ mid, top, shares: tierShares(doc.compacts) });
   const nWidest = doc.compacts.filter((c) => isGreedySetMethod(c.coalition.method)).length;
   const nTieBreakOpen = doc.compacts.filter((c) => c.coalition.robustTieBreakSolved === false).length;
+  const dv = diversifySetting(m);
+  const dvId = diversifyShockIdOf(m);
+  const dvHas = hasDiversify(doc);
+  const dvTotals = diversifyTotals(nodes);
   return (
     <div className={PAGE}>
       <PageHead
@@ -120,9 +169,44 @@ export default function AibAboutView() {
         are settings, and the compacts, their members and their roles come out of the model.
       </p>
 
+      <H id="scenarios">How the scenarios work</H>
+      <div data-testid="about-scenarios">
+        <p className={P}>
+          {hasScenarios
+            ? `Every Allied Industrial Base page can be read under two scenarios, chosen at the top of the page: Decoupling (the default) or Managed Interdependence. Every comparison also shows Baseline beside them, in the same order. The detail views (networks, relationships, coalitions, roles and investment flows) follow the choice and show Baseline as the reference where it means something. You are reading ${scenarioInfo(m, scenario).label}.`
+            : 'This export carries the Decoupling scenario only: the pages show it without a choice.'}{' '}
+          {SCENARIO_CAVEAT}
+        </p>
+        <dl className="grid max-w-3xl gap-x-6 gap-y-3 text-[0.9375rem] leading-relaxed sm:grid-cols-[14rem_minmax(0,1fr)]">
+          {SCENARIO_ORDER.map((id) => {
+            const s = scenarioInfo(m, id);
+            return (
+              <div key={id} className="contents">
+                <dt className="flex items-start gap-2 font-medium text-paper">
+                  <span className="mt-1.5 inline-flex">
+                    <ScenarioSwatch id={id} />
+                  </span>
+                  {s.label}
+                </dt>
+                <dd className="text-paper-dim">
+                  {s.words} {scenarioMeaning(doc, id, shockLabel, hasScenarios)}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+        <p className={`${P} mt-3`}>
+          Coverage is read the same way in all three: the share of the allied (demand-scope) demand that is kept, the share trade restores (existing relationships, then optimized trade
+          with every candidate partner coordinating), and the new capacity still needed. Each scenario has its own classes and policy needs. The Sector pages keep the Decoupling figures.{' '}
+          <Link className="link" to={href(DIVERSIFY_HREF)}>
+            How Managed Interdependence sets its caps &rarr;
+          </Link>
+        </p>
+      </div>
+
       <H id="method">The method in brief</H>
       <ol className="max-w-3xl space-y-3">
-        {METHOD.map((s, i) => (
+        {[tradeNetworkStep(nt.dictionary), ...METHOD.slice(1)].map((s, i) => (
           <li key={s.step} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-2 text-[0.9375rem] leading-relaxed">
             <span className="tabular text-paper-mute" aria-hidden="true">
               {i + 1}.
@@ -147,6 +231,52 @@ export default function AibAboutView() {
           </li>
         ))}
       </ul>
+
+      <H id="taxonomy">Where the nodes come from</H>
+      {nt.dictionary ? (
+        <>
+          <p className={P} data-testid="about-taxonomy">
+            The nodes come from the electro-industrial HS6 dictionary (RMI&apos;s Electro-Industrial Stack). It is read top down: index &gt; sector &gt; stage (Upstream, Midstream,
+            Downstream) &gt; HS6 code, and a sector is split into nodes where its chain steps differ (rare-earth oxides apart from rare-earth metals, wafers apart from gallium). Only each
+            code&apos;s primary row is used, so every code sits in exactly one node and nothing is counted twice.{' '}
+            {tx.scope ? (
+              <>
+                This export uses the <strong className="font-medium text-paper">{tx.scope}</strong> scope: {DICTIONARY_SCOPE_WORDS[tx.scope] ? `${DICTIONARY_SCOPE_WORDS[tx.scope].words}, ${DICTIONARY_SCOPE_WORDS[tx.scope].role}` : tx.scope}
+                {tx.scope === 'core'
+                  ? `; the extended scope (${DICTIONARY_SCOPE_WORDS.extended.words}) is a sensitivity`
+                  : tx.scope === 'extended'
+                    ? `; the headline is the core scope (${DICTIONARY_SCOPE_WORDS.core.words})`
+                    : ''}
+                .
+              </>
+            ) : (
+              'This export does not state its dictionary scope.'
+            )}{' '}
+            The dictionary covers electro-industrial supply chains only: it has no fossil-fuel nodes.
+          </p>
+          <p className={P}>
+            The partner indices the model uses to choose among equally good solutions (Partnership Opportunity, Friendshore, policy compatibility) are kept by OSI technology × stage, the
+            cells of the paper&apos;s basket. A dictionary node reads them through the OSI cells its codes sit in (a trade-weighted crosswalk; one node can sit in several cells, and
+            several nodes in one cell). A node with no code in the basket (heat pumps, electrolysers or hydrogen, for example) gets neutral partner scores. The Sector and Country
+            pages show a node in every OSI cell its codes sit in; the Partnerships page reads the partner rankings for the OSI cell of the selected nodes and says which.
+          </p>
+          {tx.indices.length > 0 && (
+            <dl className="grid max-w-3xl gap-x-6 gap-y-2 text-[0.9375rem] leading-relaxed sm:grid-cols-[14rem_minmax(0,1fr)]" data-testid="about-indices">
+              {sectorGroups(tx, tx.indices.flatMap((ix) => ix.sectors)).map((g) => (
+                <div key={g.index?.code ?? 'other'} className="contents">
+                  <dt className="font-medium text-paper">{g.index ? indexLabel(g.index) : 'Other sectors'}</dt>
+                  <dd className="text-paper-dim">{g.sectors.join(', ')}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </>
+      ) : (
+        <p className={P} data-testid="about-taxonomy">
+          The nodes are the sub-sectors of the OSI technology basket: groups of HS6 goods at one stage (Upstream, Midstream, Downstream) of a technology&apos;s supply chain. The partner
+          indices are read for each node&apos;s own technology and stage.
+        </p>
+      )}
 
       <H id="scope">Demand scope and candidate partners</H>
       <p className={P}>
@@ -269,11 +399,34 @@ export default function AibAboutView() {
           <p className={P} data-testid="about-strategic">
             {st.label}: {st.words}.{' '}
             {st.mode !== 'all'
-              ? `The other nodes (fossil-fuel supply chains among them) are modelled with the same method and kept in the data, marked outside the scope; they are not headline results, and the node lists leave them out unless asked. In this export ${nOut} of ${nodes.length} nodes are outside the scope.`
-              : ''}
+              ? `The other nodes${fossilOut ? ' (fossil-fuel supply chains among them)' : ''} are modelled with the same method and kept in the data, marked outside the scope; they are not headline results, and the node lists leave them out unless asked.`
+              : nt.dictionary
+                ? 'Every node of the dictionary can join a compact; the dictionary has no fossil-fuel nodes to leave out.'
+                : `Every ${tx.one} can join a compact.`}{' '}
+            In this export {nOut} of {nodes.length} nodes are outside the scope.
           </p>
         </>
       )}
+
+      <H id="diversification">Managed Interdependence</H>
+      <div data-testid="about-diversify">
+        <p className={P}>
+          A counterfactual beside the shocks: what would trade and investment look like if each step of the supply chain were as diversified as its wider sector?
+        </p>
+        <ul className="mb-3 max-w-3xl list-disc space-y-2 pl-5 text-[0.9375rem] leading-relaxed text-paper-dim">
+          {diversifyRules(m).map((s) => (
+            <li key={s}>{s}</li>
+          ))}
+        </ul>
+        <p className={P}>
+          {dvHas
+            ? `In this export (Managed Interdependence${dv ? `, benchmark: ${(DIVERSIFY_BENCHMARK_WORDS[dv.benchmark]?.label ?? dv.benchmark).toLowerCase()}` : ''}) ${aboveWords(dvTotals)}: the scenario ran for ${dvTotals.diversified}, ${dvTotals.withinCap} ${dvTotals.withinCap === 1 ? 'is' : 'are'} within the cap in the allied market, and ${dvTotals.already} ${dvTotals.already === 1 ? 'is' : 'are'} already as diversified as ${dvTotals.already === 1 ? 'its' : 'their'} benchmark${dvTotals.nearBenchmark ? ` (${dvTotals.nearBenchmark === 1 ? 'one of them sits' : `${dvTotals.nearBenchmark} of them sit`} above it by less than the tolerance)` : ''}${dvTotals.noBenchmark ? `; ${dvTotals.noBenchmark} ${dvTotals.noBenchmark === 1 ? 'has' : 'have'} no benchmark` : ''}. Each node's class under the scenario is in its sensitivity table ("not run" where the scenario did not run). `
+            : 'This export has no Managed Interdependence scenario. '}
+          <Link className="link" to={href(DIVERSIFY_HREF)}>
+            Every node in the scenario &rarr;
+          </Link>
+        </p>
+      </div>
 
       <H id="data">Data and settings</H>
       <dl className="grid max-w-3xl gap-x-6 gap-y-2 text-sm sm:grid-cols-[12rem_minmax(0,1fr)]">
@@ -303,6 +456,7 @@ export default function AibAboutView() {
               <li key={s.id}>
                 {s.label}
                 {s.id === m.headlineShock ? ' (headline)' : ''}
+                {s.id === dvId && s.id !== m.headlineShock ? ' (removes no supplier: Managed Interdependence)' : ''}
               </li>
             ))}
           </ul>
@@ -315,7 +469,7 @@ export default function AibAboutView() {
         )}
         <dt className="text-paper-mute">Supply scenarios</dt>
         <dd className="text-paper-dim">
-          {m.scenarios.map((s) => `${s}${s === m.headlineScenario ? ' (headline)' : ''}`).join(', ')}. Conservative: only the supply the shock frees can move; reallocation: a candidate partner can
+          {supplyScenariosOf(m).map((s) => `${s}${s === m.headlineScenario ? ' (headline)' : ''}`).join(', ')}. Conservative: only the supply the shock frees can move; reallocation: a candidate partner can
           redirect any of its observed exports toward the demand scope.
         </dd>
         {con && (
@@ -324,12 +478,16 @@ export default function AibAboutView() {
             <dd className="text-paper-dim">{modesWords(m.constraints, m.supplyConstraint, constraintLabel) ?? `${con.label} (headline)`}</dd>
           </>
         )}
+        <dt className="text-paper-mute">Nodes</dt>
+        <dd className="text-paper-dim" data-testid="about-nodes-source">
+          {nt.label}; {plural(nodes.length, 'node')}
+        </dd>
         {st && (
           <>
             <dt className="text-paper-mute">Strategic scope</dt>
             <dd className="text-paper-dim">
               {st.label}
-              {st.techs.length ? `: ${st.techs.join(', ')}` : ''}
+              {st.techs.length ? `: ${tx.dictionary ? groupedSectorWords(tx, st.techs) : st.techs.join(', ')}` : ''}
             </dd>
           </>
         )}
@@ -376,7 +534,7 @@ export default function AibAboutView() {
         pages are written by <code>scripts/84_export_aib_data.R</code> after <code>scripts/31_build_aib_trade_network.R</code> and <code>scripts/32_build_aib_partnerships.R</code>.
       </p>
       <p className={P}>
-        <Link className="link" to="/compacts">
+        <Link className="link" to={href('/compacts')}>
           &larr; All compacts
         </Link>
       </p>

@@ -47,30 +47,30 @@ export function Select({
 }) {
   const auto = useId();
   const id = idIn ?? auto;
-  const groups = [...new Set(options.map((o) => o.group ?? ''))];
+  // options without a group before the first grouped one (an "All ..." choice) stay outside the groups
+  const firstGrouped = options.findIndex((o) => o.group !== undefined);
+  const lead = firstGrouped < 0 ? [] : options.slice(0, firstGrouped);
+  const rest = firstGrouped < 0 ? options : options.slice(firstGrouped);
+  const groups = [...new Set(rest.map((o) => o.group ?? ''))];
+  const opt = (o: Option) => (
+    <option key={o.value} value={o.value} disabled={o.disabled}>
+      {o.label}
+    </option>
+  );
   return (
     <div className={className ?? 'min-w-[11rem]'}>
       <label htmlFor={id} className={hideLabel ? 'sr-only' : 'label'}>
         {label}
       </label>
       <select id={id} className="field field-sm" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} title={title}>
+        {lead.map(opt)}
         {groups.length > 1 || groups[0]
           ? groups.map((g) => (
               <optgroup key={g} label={g || 'Other'}>
-                {options
-                  .filter((o) => (o.group ?? '') === g)
-                  .map((o) => (
-                    <option key={o.value} value={o.value} disabled={o.disabled}>
-                      {o.label}
-                    </option>
-                  ))}
+                {rest.filter((o) => (o.group ?? '') === g).map(opt)}
               </optgroup>
             ))
-          : options.map((o) => (
-              <option key={o.value} value={o.value} disabled={o.disabled}>
-                {o.label}
-              </option>
-            ))}
+          : rest.map(opt)}
       </select>
     </div>
   );

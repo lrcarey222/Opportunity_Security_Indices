@@ -143,7 +143,7 @@ export function AibInvestmentCard() {
                 Every investor-to-host flow of {name} &rarr;
               </Link>
             </p>
-            <ModelledNote>{`${shock}, ${doc.investmentFlows.variant.scenario} scenario, an increment of ${Math.round(doc.investmentFlows.variant.increment * 100)}% of node demand per host`}</ModelledNote>
+            <ModelledNote>{`${shock}; supply assumption: ${doc.investmentFlows.variant.scenario}, an increment of ${Math.round(doc.investmentFlows.variant.increment * 100)}% of node demand per host`}</ModelledNote>
           </>
         )}
       </div>

@@ -2,8 +2,10 @@
 // when known (from buildInfo; never forces a load), and the links to Methods (Strategic), Sources
 // & data (Sector), the country data notes, how compacts are derived, the shared Glossary and neiscenter.org. Methods / Data
 // carry the scenario of the last Strategic location, as the old footer carried navQuery.
+// How compacts are derived carries the AIB scenario toggle (scn) of the current page.
 
 import { Link, useLocation } from 'react-router';
+import { scenarioCarry } from '../aib/scenarioUrl.ts';
 import { fmtDate } from '../lib/format.ts';
 import { useBuildInfo } from './buildInfo.ts';
 import { lastLocations, sectorCarry, strategicCarry } from './lastLocation.ts';
@@ -65,7 +67,7 @@ export function Footer() {
           <Link className="link" to="/countries/about">
             Country data notes
           </Link>
-          <Link className="link" to="/compacts/about">
+          <Link className="link" to={`/compacts/about${scenarioCarry(loc.search)}`}>
             How compacts are derived
           </Link>
           <Link className="link" to="/glossary">

@@ -134,7 +134,11 @@ aib_group_nodes <- function(classified, vectors, coherence, min_partner = 0.35, 
 #        anchors; conservative = the supply the shock frees for it, within its physical room;
 #        plus any synthetic increment at c (host_extra),
 #   x_c  every exporter's current shipments to the anchors (for the leave-one-out test).
-# Linear in the membership, so the minimum coalition is an exact integer program.
+# Linear in the membership, so the minimum coalition is an exact integer program. A node problem with a
+# supplier-share cap on the scope's demand (aib_compact_share_cap(): the diversification scenario's) bounds
+# each g_c as its own states B and C do: no economy ships more than cap x the scope's demand, so g_c is at
+# most the cap less its fixed shipments and less its current shipments to the anchors (reallocation, which
+# may draw on its other shipments in the scope) or to the whole scope (conservative, which locks them).
 aib_anchor_terms <- function(prob, anchors, scenario, host_extra = NULL, drop = character()) {
   if (is.null(prob)) return(NULL)
   A <- intersect(anchors, prob$scope)
@@ -166,7 +170,13 @@ aib_anchor_terms <- function(prob, anchors, scenario, host_extra = NULL, drop = 
     new <- host_extra[!names(host_extra) %in% names(g)]
     g <- c(g, new)
   }
-  x_all <- c(stats::setNames(as.numeric(x_c), names(x_c)), stats::setNames(as.numeric(x_f), names(x_f)))
+  cap <- aib_compact_share_cap(prob)
+  if (cap < 1 && length(g)) {
+    k <- names(g)
+    held <- get0(prob$fixed_by_exporter, k) + if (identical(scenario, "conservative")) get0(prob$to_scope, k) else get0(x_c, k)
+    g <- stats::setNames(pmin(as.numeric(g), pmax(cap - held, 0)), k)
+  }
+  x_all <-c(stats::setNames(as.numeric(x_c), names(x_c)), stats::setNames(as.numeric(x_f), names(x_f)))
   x_all <- tapply(x_all, names(x_all), sum)
   out <- list(dA = dA, F = sum(prob$fixed_m[A]) + sum(xA), g = g, x = stats::setNames(as.numeric(x_all), names(x_all)))
   # `drop`: economies whose supply is lost entirely (current shipments and any addition).
@@ -175,6 +185,28 @@ aib_anchor_terms <- function(prob, anchors, scenario, host_extra = NULL, drop = 
     out$g[names(out$g) %in% drop] <- 0
   }
   out
+}
+
+# The supplier-share cap the compact tests apply to a node problem: prob$share_cap (set on the
+# diversification scenario's problems, whose cap is a share of the scope's demand) where the problem's cap
+# basis is "demand"; 1 (no cap) otherwise.
+aib_compact_share_cap <- function(prob) {
+  cp <- prob$share_cap
+  if (is.null(cp) || !length(cp) || is.na(cp[1]) || !identical(prob$cap_basis, "demand")) return(1)
+  min(1, as.numeric(cp[1]))
+}
+
+# Coverage of a node's whole demand scope in the trade-compact state: state B (existing relationships, each
+# growing at most `existing_growth`) with the `members` and the hosts of `extra` (synthetic capacity, the
+# investment response) free to open or expand relationships with every importer. The node problem's
+# supplier-share cap (prob$share_cap, 1 when absent) binds as in the scenario's own states B and C, so a
+# compact's trade coverage never exceeds the scenario's optimum (state C at the same cap).
+aib_compact_trade_coverage <- function(prob, scenario, members, scores, extra = NULL, tolerances = c(0.0005, 0.02, 0.02),
+                                       neutral = 0.5, existing_growth = Inf) {
+  cp <- prob$share_cap
+  cap <- if (is.null(cp) || !length(cp) || is.na(cp[1])) 1 else min(1, as.numeric(cp[1]))
+  aib_solve_state(prob, scenario, "B", cap = cap, scores = scores, tolerances = tolerances, neutral = neutral, steps = 1,
+                  existing_growth = existing_growth, coordinating = c(members, names(extra)), extra = extra)$coverage
 }
 
 # Coverage of the anchors' demand in one node when the members in `S` coordinate (aib_anchor_terms()).
@@ -488,7 +520,8 @@ aib_compact_name <- function(labels, techs) {
   t <- sort(unique(unlist(strsplit(techs, "; "))))
   l <- unique(sub(" \\+ .*$", "", labels))
   if (length(l) > 4) l <- c(l[1:3], paste0("and ", length(l) - 3, " more"))
-  paste0(paste(t, collapse = "/"), ": ", paste(l, collapse = ", "))
+  # " / " between technologies: sector names of the electro-industrial dictionary contain "/".
+  paste0(paste(t, collapse = " / "), ": ", paste(l, collapse = ", "))
 }
 
 # The node problem with only `members` coordinating: non-member candidates keep their surviving
@@ -532,19 +565,42 @@ aib_anchor_existing_coverage <- function(prob, anchors, flows_existing) {
 }
 
 # Lost-supply shares by class, and the policy needs of every class holding at least `floor` of the
-# compact's lost supply (a chain that spans archetypes keeps every archetype's instruments).
-aib_class_mix <- function(classes, lost) {
+# compact's lost supply (a chain that spans archetypes keeps every archetype's instruments). `keep`: the
+# classes counted (the intervention classes; a scenario's mix over all of a compact's nodes passes
+# aib_node_classes(), so LOW INTERVENTION shows too).
+aib_class_mix <- function(classes, lost, keep = c("COORDINATE", "BUILD", "MANAGE SPECIALIZATION")) {
   w <- tapply(lost, classes, sum)
-  w <- w[names(w) %in% c("COORDINATE", "BUILD", "MANAGE SPECIALIZATION")]
+  w <- w[names(w) %in% keep]
   if (!length(w) || sum(w) <= 0) return(stats::setNames(numeric(), character()))
   sort(w / sum(w), decreasing = TRUE)
 }
+# "BUILD 78%; LOW INTERVENTION 22%" (NA when the mix is empty).
+aib_class_mix_text <- function(mix) {
+  if (!length(mix)) return(NA_character_)
+  paste(sprintf("%s %.0f%%", names(mix), 100 * mix), collapse = "; ")
+}
+
+# Why a compact has no coalition under a scenario that ran on none of its nodes, from the nodes'
+# statuses in that scenario (the diversification statuses of aib_diversification.csv; NA = not assessed).
+aib_scenario_coalition_reason <- function(statuses) {
+  s <- unique(as.character(stats::na.omit(statuses)))
+  if (!length(s)) return("the scenario did not assess any node of this compact")
+  # "already as diversified" also covers a node above its benchmark by less than the scenario's small tolerance.
+  if (all(s == "already as diversified as its benchmark")) return("no node of this compact is above its benchmark by more than a small tolerance")
+  if (all(s == "no benchmark")) return("no node of this compact has a concentration benchmark")
+  if (all(s %in% c("already as diversified as its benchmark", "within the cap in the allied market", "no benchmark"))) {
+    return("no node of this compact has a supplier above its benchmark cap in the allied market")
+  }
+  "the scenario did not run on any node of this compact"
+}
+
 aib_policy_needs <- function(mix, floor = 0.2) {
   map <- c("COORDINATE" = "Trade / Coordination Compact", "BUILD" = "Investment / Capacity Compact",
            "MANAGE SPECIALIZATION" = "Specialization Compact")
   tools <- aib_archetype_tools()
   k <- names(mix)[mix >= floor]
-  if (!length(k)) k <- names(mix)[1]
+  if (!length(k) && length(mix)) k <- names(mix)[1]
+  # No intervention class holds lost supply (a scenario under which every node is LOW INTERVENTION).
   if (!length(k)) return(tools[["Integrated Compact"]])
   paste(unique(unlist(strsplit(unlist(tools[unname(map[k])]), "; "))), collapse = "; ")
 }

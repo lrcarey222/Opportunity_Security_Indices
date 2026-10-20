@@ -3,14 +3,26 @@
 #
 # Usage:
 #   Rscript scripts/31_build_aib_trade_network.R [--raw-dir DIR] [--processed-dir DIR] [--out-dir DIR]
+#     [--taxonomy dictionary|master] [--dictionary-scope core|extended] [--dyads FILE]
 #
-#   --raw-dir        raw inputs (default: config raw_data_dir)
-#   --processed-dir  processed tables of the OSI pipeline (default: config processed_dir); read only
-#   --out-dir        where the AIB writes (default: <outputs_dir>/aib)
+#   --raw-dir           raw inputs (default: config raw_data_dir)
+#   --processed-dir     processed tables of the OSI pipeline (default: config processed_dir); read only
+#   --out-dir           where the AIB writes (default: <outputs_dir>/aib)
+#   --taxonomy          the HS6 taxonomy of the nodes (default: config/aib.yml taxonomy; see
+#                       config/aib_taxonomy_<taxonomy>.yml)
+#   --dictionary-scope  core (headline) or extended rows of the electro-industrial dictionary
+#   --dyads             the bilateral HS6 trade file (default: <raw>/comtrade_energy_dyads_all.csv); it
+#                       must hold every code of the taxonomy (the dictionary's new codes were pulled
+#                       2026-10-19 into a combined file, see docs/electro_industrial_dictionary/README.md)
 #
 # Reads:
-#   data/reference/energy_hs6_master.csv          Technology > stage > sub-sector > HS6 (in basket)
+#   data/reference/electro_industrial_hs6_dictionary.csv  EIS index > sector > stage > HS6 (taxonomy
+#                                                 dictionary, the default)
+#   data/reference/energy_hs6_master.csv          Technology > stage > sub-sector > HS6 (taxonomy master;
+#                                                 with the dictionary, the OSI crosswalk of the scores)
 #   <raw>/comtrade_energy_dyads_all.csv            all-reporter bilateral HS6 trade (scripts/98)
+#   <raw>/hs92_country_product_year_6.csv          Atlas HS92 exports by country and HS6 line: the benchmark
+#                                                 concentration of the diversification scenario
 #   <raw>/comtrade_total_export.csv                total goods exports (RCA denominators)
 #   <raw>/comtrade_bulk_annual_totals.csv          earlier-year totals for non-reporters
 #   <raw>/wdi_country_info.csv, <raw>/CAT_country ratings data.csv
@@ -69,12 +81,30 @@ processed_dir <- abs_path(arg_value("--processed-dir", config$processed_dir))
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) file.path(repo_root, config$outputs_dir) else file.path(repo_root, config$processed_dir, "outputs")
 out_dir <- abs_path(arg_value("--out-dir", file.path(outputs_dir, "aib")))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-cfg <- yaml::read_yaml(file.path(repo_root, "config", "aib.yml"))
-step("AIB inputs: raw ", raw_data_path, "; processed ", processed_dir, "; out ", out_dir)
+source(file.path(repo_root, "scripts", "utils", "aib_config.R"))
+cfg <- aib_read_config(repo_root, arg_value("--taxonomy"))
+step("AIB inputs: raw ", raw_data_path, "; processed ", processed_dir, "; out ", out_dir, "; taxonomy ", cfg$taxonomy)
 
 # ---- Nodes ------------------------------------------------------------------------------------
-master <- utils::read.csv(file.path(raw_inputs_reference_dir(repo_root), "energy_hs6_master.csv"),
-                          colClasses = c(hs6 = "character"), stringsAsFactors = FALSE)
+# The OSI basket is read in every case: it is the master taxonomy, and with the dictionary it is the
+# crosswalk through which the partner indices and the policy compatibility (kept by OSI technology x
+# stage) reach the nodes.
+osi_master <- utils::read.csv(file.path(raw_inputs_reference_dir(repo_root), "energy_hs6_master.csv"),
+                              colClasses = c(hs6 = "character"), stringsAsFactors = FALSE)
+dictionary_scope <- NA_character_
+if (identical(aib_or(cfg$nodes$source, "master"), "dictionary")) {
+  dict_file <- aib_or(cfg$nodes$dictionary$file, "electro_industrial_hs6_dictionary.csv")
+  dict <- utils::read.csv(file.path(raw_inputs_reference_dir(repo_root), dict_file),
+                          colClasses = c(hs6 = "character", hs1992_join = "character"), stringsAsFactors = FALSE)
+  dictionary_scope <- arg_value("--dictionary-scope", aib_or(cfg$nodes$dictionary$scope, "core"))
+  master <- aib_dictionary_master(dict, dictionary_scope, primary_only = !identical(cfg$nodes$dictionary$primary_only, FALSE))
+  taxonomy_tbl <- master %>% dplyr::distinct(tech, index_code, index_name) %>% dplyr::arrange(index_code, tech)
+  step("Dictionary ", dict_file, ": ", dplyr::n_distinct(master$hs6), " codes (", dictionary_scope, ", primary rows) in ",
+       dplyr::n_distinct(master$tech), " sectors of ", dplyr::n_distinct(master$index_code), " indices")
+} else {
+  master <- osi_master
+  taxonomy_tbl <- tibble::tibble(tech = sort(unique(stringr::str_squish(master$tech))), index_code = NA_character_, index_name = NA_character_)
+}
 cells <- aib_master_cells(master, cfg$nodes$splits)
 nd <- aib_build_nodes(cells)
 step("Nodes: ", nrow(nd$nodes), " physical nodes from ", nrow(nd$node_cells), " technology/stage/sub-sector cells (",
@@ -83,8 +113,8 @@ step("Nodes: ", nrow(nd$nodes), " physical nodes from ", nrow(nd$node_cells), " 
 # ---- Bilateral flows at node grain ---------------------------------------------------------------
 trade_year <- as.integer(cfg$trade$year)
 hist_year <- as.integer(cfg$trade$history_year)
-dyad_path <- file.path(raw_data_path, "comtrade_energy_dyads_all.csv")
-if (!file.exists(dyad_path)) stop("comtrade_energy_dyads_all.csv not found in ", raw_data_path, " (scripts/98).")
+dyad_path <- abs_path(arg_value("--dyads", file.path(raw_data_path, "comtrade_energy_dyads_all.csv")))
+if (!file.exists(dyad_path)) stop(dyad_path, " not found (scripts/98; --dyads).")
 trade_cols <- c("reporter_iso", "partner_iso", "period", "flow_direction", "cmd_code", "primary_value")
 dyads <- data.table::fread(
   dyad_path, select = trade_cols,
@@ -95,6 +125,14 @@ dyads <- dyads[dyads$period %in% c(hist_year, trade_year), ]
 dyads$cmd_code <- hs6_clean_code(dyads$cmd_code)
 dyads <- dyads[dyads$cmd_code %in% nd$node_codes$hs6, ]
 step("Dyads: ", format(nrow(dyads), big.mark = ","), " rows in ", hist_year, " and ", trade_year, " on basket codes")
+missing_codes <- setdiff(nd$node_codes$hs6, unique(dyads$cmd_code))
+if (length(missing_codes)) {
+  warning(length(missing_codes), " taxonomy codes have no trade in ", basename(dyad_path), ": ", paste(utils::head(missing_codes, 20), collapse = ", "),
+          if (length(missing_codes) > 20) " ..." else "", call. = FALSE)
+}
+# World imports per code in the reference year: the weights of the OSI crosswalk.
+code_trade <- dyads[dyads$period == trade_year & tolower(dyads$flow_direction) == "import", ]
+code_trade <- code_trade[, list(value = sum(primary_value, na.rm = TRUE)), by = list(hs6 = cmd_code)]
 
 build_flows <- function(node_ids) {
   xw <- aib_node_crosswalk(nd$node_codes, node_ids)
@@ -187,8 +225,59 @@ if (!is.null(merge_map) && nrow(merge_map)) {
   cells_detail$node_id[!is.na(k)] <- merge_map$merged_id[k[!is.na(k)]]
 }
 quality$optimize <- quality$data_quality != "Insufficient for optimization" & quality$node_id %in% nd$nodes$node_id
+
+# Crosswalk to the OSI technology x stage cells (the partner indices and the policy compatibility are
+# kept there). With the master taxonomy every node is its own cell.
+if (identical(aib_or(cfg$nodes$source, "master"), "dictionary")) {
+  osi_xw <- aib_osi_crosswalk(nd$node_codes, osi_master, as.data.frame(code_trade), min_share = aib_or(cfg$nodes$osi_crosswalk_min_share, 0.2))
+  nd$nodes <- nd$nodes %>% dplyr::select(-dplyr::any_of(c("score_techs", "score_stage", "osi_cells", "yf_cells", "osi_subcomponents", "osi_coverage"))) %>%
+    dplyr::left_join(osi_xw, by = "node_id")
+  step("OSI crosswalk: ", sum(!is.na(nd$nodes$score_techs)), " of ", nrow(nd$nodes), " nodes have basket codes (median coverage ",
+       round(100 * stats::median(nd$nodes$osi_coverage, na.rm = TRUE)), "% of their trade); the rest get neutral partner scores")
+} else {
+  nd$nodes <- nd$nodes %>% dplyr::mutate(score_techs = techs, score_stage = supply_chain,
+                                         osi_cells = NA_character_, yf_cells = NA_character_, osi_subcomponents = NA_character_,
+                                         osi_coverage = 1)
+}
 step("Data quality: ", paste(names(table(quality$data_quality)), table(quality$data_quality), sep = " ", collapse = "; "),
      "; ", sum(quality$optimize), " nodes enter the optimization")
+
+# ---- Benchmark concentration (the diversification scenario) -------------------------------------
+# The concentration of each node's higher-level sector: the trade-weighted mean exporter HHI of the
+# other HS6 lines of its parent HS4 heading(s) in the Atlas HS92 panel (latest year up to the trade
+# year; electric cars against petrol, diesel and hybrid cars), and of the other nodes of its sector.
+# A node's own lines in HS92 are the dictionary's hs1992_join codes (electric cars: 870390), else its codes.
+benchmarks <- NULL
+product_hhi <- NULL
+atlas_path <- file.path(raw_data_path, "hs92_country_product_year_6.csv")
+if (file.exists(atlas_path)) {
+  headings <- unique(substr(nd$node_codes$hs6, 1, 4))
+  atlas <- data.table::fread(atlas_path, select = c("country_iso3_code", "product_hs92_code", "year", "export_value"),
+                             colClasses = list(character = c("country_iso3_code", "product_hs92_code")), showProgress = FALSE)
+  atlas <- atlas[substr(atlas$product_hs92_code, 1, 4) %in% headings & atlas$year <= trade_year, ]
+  bench_year <- max(atlas$year)
+  atlas <- atlas[atlas$year == bench_year, ]
+  product_hhi <- aib_product_hhi(tibble::tibble(hs6 = atlas$product_hs92_code, iso3 = atlas$country_iso3_code,
+                                                value = as.numeric(atlas$export_value)))
+  rm(atlas)
+  invisible(gc())
+  own_hs92 <- nd$node_codes %>% dplyr::distinct(node_id, hs6)
+  if (identical(aib_or(cfg$nodes$source, "master"), "dictionary") && "hs1992_join" %in% names(dict)) {
+    joins <- dict %>% dplyr::transmute(hs6 = hs6_clean_code(hs6), hs92 = hs6_clean_code(hs1992_join)) %>%
+      dplyr::filter(!is.na(hs92), nzchar(hs92)) %>% dplyr::distinct()
+    own_hs92 <- dplyr::bind_rows(own_hs92, own_hs92 %>% dplyr::inner_join(joins, by = "hs6") %>% dplyr::transmute(node_id, hs6 = hs92)) %>%
+      dplyr::distinct()
+  }
+  node_hhi <- mt$summary %>% dplyr::select(node_id, hhi = export_hhi, world_trade) %>%
+    dplyr::inner_join(nd$nodes %>% dplyr::select(node_id, sector = primary_tech), by = "node_id")
+  benchmarks <- aib_benchmark_hhi(nd$node_codes, product_hhi, own_hs92, node_hhi) %>%
+    dplyr::left_join(node_hhi %>% dplyr::select(node_id, node_export_hhi = hhi), by = "node_id") %>%
+    dplyr::mutate(benchmark_year = bench_year)
+  step("Benchmarks: ", sum(!is.na(benchmarks$benchmark_hs4)), " nodes with a parent-heading benchmark (Atlas HS92 ", bench_year,
+       "), ", sum(!is.na(benchmarks$benchmark_sector)), " with a sector benchmark")
+} else {
+  warning("hs92_country_product_year_6.csv not found in ", raw_data_path, "; the diversification scenario has no benchmark.", call. = FALSE)
+}
 
 # ---- Production / capacity proxies --------------------------------------------------------------
 mss_path <- file.path(processed_dir, "major_supplier_shares_tbl.rds")
@@ -219,7 +308,10 @@ quality <- aib_production_flags(quality, production, mt$summary)
 step("Production proxies: ", dplyr::n_distinct(production$node_id), " nodes, ", nrow(production), " country shares")
 
 # ---- Partner indices (Export Opportunity, Friendshore) -----------------------------------------------
-techs_used <- unique(nd$node_cells$tech)
+# The OSI technologies the scores are read for (the crosswalk's score_techs; with the master taxonomy
+# the node technologies themselves).
+techs_used <- unique(c(unlist(strsplit(stats::na.omit(nd$nodes$score_techs), "; ")),
+                       if (identical(aib_or(cfg$nodes$source, "master"), "master")) unique(nd$node_cells$tech)))
 read_index <- function(name, variable) {
   path <- file.path(processed_dir, paste0(name, ".rds"))
   if (!file.exists(path)) {
@@ -271,8 +363,9 @@ inputs <- list(
   meta = list(
     built = format(Sys.time(), "%Y-%m-%dT%H:%M:%S"), trade_year = trade_year, history_year = hist_year,
     dyad_file = basename(dyad_path), cif_fob_factor = as.numeric(cfg$trade$cif_fob_factor),
-    n_dyad_flows = nrow(flows), config = cfg
+    n_dyad_flows = nrow(flows), taxonomy = cfg$taxonomy, dictionary_scope = dictionary_scope, config = cfg
   ),
+  taxonomy = taxonomy_tbl, benchmarks = benchmarks, product_hhi = product_hhi,
   nodes = nd$nodes, node_cells = nd$node_cells, node_cells_detail = cells_detail, node_codes = nd$node_codes,
   flows = flows, exporter_metrics = mt$exporter, importer_metrics = mt$importer, node_summary = mt$summary,
   quality = quality, merge_map = merge_map, production = production, total_exports = totals,

@@ -5,14 +5,17 @@
 // size). Every class shown carries its own PHYSICAL CAPABILITY NOT VALIDATED flag (node.variantWarnings,
 // growth[].warning; null in an export that predates them). A node that is COORDINATE under some bounds and
 // another class under others depends on the bound, whatever its headline class: the exporter flags it
-// (coordinateSensitiveToGrowth) and the words start from the headline class. Pure.
+// (coordinateSensitiveToGrowth) and the words start from the headline class. The diversification scenario
+// (2026-10-19; it removes no supplier) has its own group after the shocks; where it did not run its class
+// is null and reads "not run" (VariantRow.notRun), and it never counts as a variant that changes the class.
+// Pure.
 
 import { isNum } from '../../lib/format.ts';
-import { AIB_CONSTRAINTS, AIB_PHYSICAL_WARNING, AIB_SEMANTICS, variantsOf, variantWarningsOf, type AibMeta, type AibNode } from '../contract.ts';
+import { AIB_CONSTRAINTS, AIB_PHYSICAL_WARNING, AIB_SEMANTICS, diversifyShockIdOf, supplyScenariosOf, variantsOf, variantWarningsOf, type AibMeta, type AibNode } from '../contract.ts';
 import { listWords } from './format.ts';
-import { constraintLabel, SEMANTICS_WORDS } from './settings.ts';
+import { constraintLabel, diversifySetting, DIVERSIFY_LABEL, SEMANTICS_WORDS } from './settings.ts';
 
-export type VariantGroup = 'Supply constraint' | 'Shock semantics' | 'Supply scenario' | 'Shock' | 'Other';
+export type VariantGroup = 'Supply constraint' | 'Shock semantics' | 'Supply scenario' | 'Shock' | 'Diversification' | 'Other';
 
 export interface VariantRow {
   group: VariantGroup;
@@ -27,9 +30,14 @@ export interface VariantRow {
   headline: boolean;
   /** a class other than the headline one */
   differs: boolean;
+  /**
+   * the diversification scenario did not run for the node (its class is null: the node is not above its
+   * benchmark, or no supplier to the allied market is above the cap): shown as "not run", not as missing data
+   */
+  notRun: boolean;
 }
 
-const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+const cap =(s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 const uniq = (xs: readonly (string | null | undefined)[]): string[] => [...new Set(xs.filter((x): x is string => typeof x === 'string' && x.length > 0))];
 
 /**
@@ -58,14 +66,17 @@ export function classVariants(n: AibNode, meta: AibMeta): VariantRow[] {
     const cls = key in v ? v[key] : headline ? n.cls : undefined;
     if (cls === undefined) return;
     used.add(key);
-    rows.push({ group, key, setting, cls, warning: variantWarning(n, key, headline), headline, differs: cls !== null && cls !== n.cls });
+    rows.push({ group, key, setting, cls, warning: variantWarning(n, key, headline), headline, differs: cls !== null && cls !== n.cls, notRun: group === 'Diversification' && cls === null });
   };
   for (const k of uniq([meta.supplyConstraint, ...(meta.constraints ?? []), ...AIB_CONSTRAINTS])) add('Supply constraint', k, constraintLabel(k), k === meta.supplyConstraint);
   const headSem = meta.shockSemantics ?? ('release' in v ? 'hold' : null);
   for (const k of uniq([headSem, ...(meta.semantics ?? []), ...AIB_SEMANTICS])) add('Shock semantics', k, SEMANTICS_WORDS[k] ? cap(SEMANTICS_WORDS[k].short) : k, k === headSem);
-  for (const k of uniq([meta.headlineScenario, ...meta.scenarios])) add('Supply scenario', k, `${cap(k)} scenario`, k === meta.headlineScenario);
+  for (const k of uniq([meta.headlineScenario, ...supplyScenariosOf(meta)])) add('Supply scenario', k, `${cap(k)} scenario`, k === meta.headlineScenario);
+  // the diversification scenario removes no supplier: its own group, after the shocks
+  const dvId = diversifyShockIdOf(meta);
   const shocks = [...meta.shocks].sort((a, b) => Number(b.id === meta.headlineShock) - Number(a.id === meta.headlineShock));
-  for (const s of shocks) add('Shock', s.id, s.label, s.id === meta.headlineShock);
+  for (const s of shocks) if (s.id !== dvId) add('Shock', s.id, s.label, s.id === meta.headlineShock);
+  if (dvId in v) add('Diversification', dvId, diversifySetting(meta)?.label ?? meta.shocks.find((s) => s.id === dvId)?.label ?? DIVERSIFY_LABEL, false);
   for (const k of Object.keys(v)) add('Other', k, k, false);
   return rows;
 }
@@ -149,7 +160,8 @@ export function warnedGrowthBounds(n: AibNode): string[] | null {
 export function robustnessSummary(n: AibNode, meta: AibMeta): string {
   const variants = classVariants(n, meta);
   const growth = growthRows(n);
-  const differs = variants.filter((v) => v.differs).length;
+  // the diversification scenario is a counterfactual market, not a robustness variant of the headline
+  const differs = variants.filter((v) => v.differs && v.group !== 'Diversification').length;
   const warned = variants.filter((v) => v.warning === true && !v.headline).length + growth.filter((g) => g.warning === true && !g.headline).length;
   return [
     'Class under other assumptions and growth bounds',

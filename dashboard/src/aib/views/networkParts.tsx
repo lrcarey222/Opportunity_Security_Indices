@@ -2,10 +2,16 @@
 // (headline run; does not move with the Perspective dials), a role cell of the country x role matrix, the
 // trade-against-investment bar of one relationship and a ranked list of investor -> host flows. Used by
 // the AIB Country roles and Partnerships pages, a compact page and a Country profile.
+// The scenarios (2026-10-19): a cell's words name the scenario ("under Managed Interdependence") and leave
+// out the every-shock total where the network has none (`every` null); ScenarioFileState is the loading,
+// failed and missing states of a lazily loaded scenario file.
 
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import type { AibInvestmentPair } from '../contract.ts';
+import { EmptyState, Loading, Notice } from '../../components/ui.tsx';
+import type { AibBaselineScenarioDoc, AibInvestmentPair, AibManagedScenarioDoc } from '../contract.ts';
+import { useAibScenarioDoc, type ScenarioLoad } from '../data/hooks.ts';
+import type { AibLoadError } from '../data/store.ts';
 import { fmtScore, fmtUsd, plural } from '../derive/format.ts';
 import { rankWords } from '../derive/investment.ts';
 import { fmtPts, ROLE_FLOOR, ROLE_READING, type CountryRoles, type MatrixRole, type RoleCell } from '../derive/network.ts';
@@ -30,34 +36,51 @@ const PARTNER_WORD: Partial<Record<MatrixRole, [string, string]>> = {
   investor: ['host', 'hosts'],
 };
 
-/** One cell's words, for a hover title and the table twin. */
-export function cellWords(k: MatrixRole, c: RoleCell): string {
+/**
+ * One cell's words, for a hover title and the table twin. `every`: what the cumulative figure sums
+ * (everyShock(doc).phrase, everyShockLabel(doc).phrase; "every shock" by default; null leaves it out, for a
+ * network without one); `under`: the scenario ("under the headline shock" by default, "under Decoupling").
+ */
+export function cellWords(k: MatrixRole, c: RoleCell, every: string | null = 'every shock', under = 'under the headline shock'): string {
   const parts: string[] = [];
   if (c.side && c.side.selected === 0 && c.side.cumulative === 0) {
     parts.push('no relationship of this kind in the network');
   } else if (c.side) {
     const pw = PARTNER_WORD[k];
-    parts.push(`${fmtPts(c.side.headline)} under the headline shock, ${fmtPts(c.side.cumulative)} across every shock`);
-    if (pw) parts.push(`${c.side.partners} ${c.side.partners === 1 ? pw[0] : pw[1]} (upstream ${c.side.upstream}, midstream ${c.side.midstream}, downstream ${c.side.downstream})`);
-    parts.push(`${plural(c.side.selected, 'selected relationship')}`);
+    const pwords = pw ?? ['partner', 'partners'];
+    const who = (n: number) => `${n} ${n === 1 ? pwords[0] : pwords[1]}`;
+    const stages = `(upstream ${c.side.upstream}, midstream ${c.side.midstream}, downstream ${c.side.downstream})`;
+    const hp = c.headlinePartners;
+    if (hp !== undefined && every !== null) {
+      // read on the headline (Decoupling): its own partners; the side's counts sum every shock, and say so
+      parts.push(`${fmtPts(c.side.headline)} ${under}${pw ? ` with ${who(hp)}` : ''}`);
+      parts.push(`across ${every}: ${fmtPts(c.side.cumulative)}${pw ? `, ${who(c.side.partners)} ${stages}` : ''}, ${plural(c.side.selected, 'selected relationship')}`);
+    } else {
+      parts.push(`${fmtPts(c.side.headline)} ${under}${every === null ? '' : `, ${fmtPts(c.side.cumulative)} across ${every}`}`);
+      if (pw) parts.push(`${who(c.side.partners)} ${stages}`);
+      parts.push(`${plural(c.side.selected, 'selected relationship')}`);
+    }
   }
   if (k === 'specialized' && c.nodes.length) parts.push(`largest optimized supplier of ${plural(c.nodes.length, 'node')}`);
   if (c.compacts.length) parts.push(`the compact role in ${c.compacts.join(', ')}`);
   return parts.join('; ') || 'none';
 }
 
-/** A matrix cell: the role's own metric when named, "minor" below the floor, a dot when none. */
-export function RoleCellView({ k, cell }: { k: MatrixRole; cell: RoleCell }) {
+/** A matrix cell: the role's own metric when named, "minor" below the floor, a dot when none (`every`, `under`: cellWords()). */
+export function RoleCellView({ k, cell, every, under }: { k: MatrixRole; cell: RoleCell; every?: string | null; under?: string }) {
   if (cell.level === 'none')
     return (
       <span className="text-paper-mute" aria-label="none">
         ·
       </span>
     );
-  const title = `${ROLE_READING[k].short}${cell.level === 'minor' ? ' (minor)' : ''}: ${cellWords(k, cell)}`;
+  const words = cellWords(k, cell, every, under);
+  const title = `${ROLE_READING[k].short}${cell.level === 'minor' ? ' (minor)' : ''}: ${words}`;
   // named by a compact while the network carries nothing under the headline shock: the compacts lead
   const byCompact = cell.level === 'named' && !!cell.side && cell.side.headline < ROLE_FLOOR && cell.compacts.length > 0;
-  const partners = cell.side ? `${cell.side.partners} ${(PARTNER_WORD[k] ?? ['partner', 'partners'])[cell.side.partners === 1 ? 0 : 1]}` : '';
+  // the partners under the scenario: the headline ones where the network's own count sums every shock
+  const np = cell.headlinePartners ?? cell.side?.partners ?? 0;
+  const partners = cell.side ? `${np} ${(PARTNER_WORD[k] ?? ['partner', 'partners'])[np === 1 ? 0 : 1]}` : '';
   const main = cell.side && !byCompact
     ? fmtPts(cell.side.headline)
     : k === 'specialized' && cell.nodes.length
@@ -74,7 +97,7 @@ export function RoleCellView({ k, cell }: { k: MatrixRole; cell: RoleCell }) {
     <span title={title} className={`inline-flex flex-col items-center leading-tight ${cell.level === 'minor' ? 'text-paper-mute' : 'text-paper'}`}>
       <span className="tabular">{cell.level === 'minor' ? `minor · ${main}` : main}</span>
       {sub && <span className="text-[0.6875rem] text-paper-mute">{sub}</span>}
-      <span className="sr-only"> ({cellWords(k, cell)})</span>
+      <span className="sr-only"> ({words})</span>
     </span>
   );
 }
@@ -119,7 +142,7 @@ export function FlowList({
             <span className="block text-xs text-paper-mute">
               {nodeLabel(p.node)} · {rankWords(p.rank, maxRank)}
               {p.friendshore !== null ? ` · Friendshore ${fmtScore(p.friendshore)}` : ''}
-              {p.opportunity !== null ? ` · Export Opportunity ${fmtScore(p.opportunity)}` : ''}
+              {p.opportunity !== null ? ` · Partnership Opportunity ${fmtScore(p.opportunity)}` : ''}
             </span>
           </span>
           <span className="flex items-center gap-2">
@@ -135,7 +158,52 @@ export function FlowList({
 }
 
 /** The line under a role in a list: its metric and partner count, or the compacts. */
-export function roleLine(r: CountryRoles, k: MatrixRole): string {
-  return cellWords(k, r.cells[k]);
+export function roleLine(r: CountryRoles, k: MatrixRole, every?: string | null, under?: string): string {
+  return cellWords(k, r.cells[k], every, under);
 }
 
+/** What a scenario file's load says (useAibScenarioDoc()). */
+export interface FileLoad {
+  loading: boolean;
+  error: AibLoadError | null;
+  retry: () => void;
+  missing: boolean;
+}
+
+/**
+ * The state of a lazily loaded scenario file in place of the content that needs it: loading, failed
+ * (with Retry) or missing (an older bundle). `what`: the content ("the country roles"); `label`: the
+ * scenario ("Managed Interdependence").
+ */
+export function ScenarioFileState({ load, what, label }: { load: FileLoad; what: string; label: string }) {
+  if (load.error) {
+    return (
+      <Notice
+        kind="error"
+        title={`The ${label} data could not be loaded`}
+        action={
+          <button type="button" className="btn btn-ghost btn-sm" onClick={load.retry}>
+            Retry
+          </button>
+        }
+      >
+        {load.error.message}
+      </Notice>
+    );
+  }
+  if (load.missing) return <EmptyState>This data build has no {label} file, so {what} cannot be shown.</EmptyState>;
+  return <Loading label={`Loading ${what} under ${label}`} />;
+}
+
+
+/** The Managed Interdependence file when `on` (idle otherwise): useAibScenarioDoc() typed for a conditional id. */
+export function useManagedDoc(on: boolean): ScenarioLoad<AibManagedScenarioDoc> {
+  const l = useAibScenarioDoc(on ? 'managed' : null);
+  return { ...l, doc: l.doc && l.doc.scenario === 'managed' ? l.doc : null };
+}
+
+/** The Baseline file (today's network and suppliers) when `on` (idle otherwise). */
+export function useBaselineDoc(on: boolean): ScenarioLoad<AibBaselineScenarioDoc> {
+  const l = useAibScenarioDoc(on ? 'baseline' : null);
+  return { ...l, doc: l.doc && l.doc.scenario === 'baseline' ? l.doc : null };
+}

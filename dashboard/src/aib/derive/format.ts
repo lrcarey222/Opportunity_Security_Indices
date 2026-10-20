@@ -55,16 +55,33 @@ export function techStage(techs: readonly string[], stage: string): string {
   return `${techs.join(', ') || DASH} · ${stage}`;
 }
 
+/** At most this many node labels in a short compact title (more: "{first} and N more", "{first} (and N more)" when the first holds a comma). */
+export const TITLE_NODES = 3;
+
+/** Node labels in one line: ", " between them, "; " when a label holds a comma ("Electric buses, trucks & tractors"). */
+export const joinLabels = (labels: readonly string[]): string => labels.join(labels.some((l) => l.includes(',')) ? '; ' : ', ');
+
 /**
- * A short display title for a compact. The exporter names a compact by its technologies and every node,
- * cut to "…, and N more" when long (up to ~150 characters); such a name becomes "{technologies}: {first
- * node} and {N} more". Shorter names are kept whole. Display only.
+ * A display title for a compact, built from its structured fields, never by parsing compact.name (node
+ * labels can contain ", " and ": ", sector names "/"): "{sectors or technologies, ' / '}: {node labels}".
+ * The labels are the compact's nodes in its own order, joined with ", " (with "; " when a label contains a
+ * comma, so "Electric buses, trucks & tractors" stays one label); more than TITLE_NODES become "{first
+ * label} and N more" unless `full` ("{first label} (and N more)" when that label holds a comma, so the count
+ * never reads as part of it: "Electric buses, trucks & tractors (and 3 more)"). Nodes the document lacks are skipped; with none found, the exported
+ * name. `nodes`: the document's nodes, or a lookup by id.
  */
-export function compactTitle(c: { name: string; nodes: readonly string[] }): string {
-  if (!/, and \d+ more$/.test(c.name)) return c.name;
-  const i = c.name.indexOf(': ');
-  if (i < 0) return c.name;
-  const first = c.name.slice(i + 2).split(', ')[0];
-  const more = c.nodes.length - 1;
-  return more > 0 ? `${c.name.slice(0, i)}: ${first} and ${more} more` : `${c.name.slice(0, i)}: ${first}`;
+export function compactTitle(
+  c: { name: string; nodes: readonly string[]; technologies?: readonly string[] },
+  nodes: readonly { id: string; label: string; techs?: readonly string[] }[] | ((id: string) => { label: string; techs?: readonly string[] } | null | undefined),
+  opts: { full?: boolean } = {},
+): string {
+  const find = typeof nodes === 'function' ? nodes : (id: string) => nodes.find((n) => n.id === id);
+  const own = c.nodes.map((id) => find(id)).filter((n): n is { label: string; techs?: readonly string[] } => !!n);
+  if (!own.length) return c.name;
+  const labels = [...new Set(own.map((n) => n.label))];
+  const techs = c.technologies?.length ? [...c.technologies] : [...new Set(own.flatMap((n) => n.techs ?? []))].sort((a, b) => a.localeCompare(b, 'en'));
+  const more = labels.length - 1;
+  const short = labels[0].includes(',') ? `${labels[0]} (and ${more} more)` : `${labels[0]} and ${more} more`;
+  const list = opts.full || labels.length <= TITLE_NODES ? joinLabels(labels) : short;
+  return techs.length ? `${techs.join(' / ')}: ${list}` : list;
 }

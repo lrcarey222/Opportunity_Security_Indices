@@ -1,7 +1,7 @@
 {
   "schema": "osi-aib",
-  "version": 1,
-  "created": "2026-10-17T18:32:21Z",
+  "version": 2,
+  "created": "2026-10-20T10:28:33Z",
   "demandScope": "coalition",
   "candidateUniverse": "global",
   "shockSemantics": "hold",
@@ -10,6 +10,10 @@
   "headlineShock": "china_100",
   "headlineScenario": "reallocation",
   "files": {
-    "compacts": "compacts.352928b8.json"
+    "compacts": "compacts.e814ea49.json",
+    "scenarios": {
+      "managed": "scenario-managed.29dbcdeb.json",
+      "baseline": "scenario-baseline.23b8264a.json"
+    }
   }
 }

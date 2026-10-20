@@ -94,18 +94,21 @@ export const COUNTRY_SEGMENT = 'countries';
 /** Second segments under /countries that are views, not countries. */
 const COUNTRY_RESERVED = new Set(['about']);
 
-export type AibNavKey = 'overview' | 'partnerships' | 'compacts' | 'roles' | 'about';
+export type AibNavKey = 'overview' | 'partnerships' | 'compacts' | 'roles' | 'diversification' | 'about';
 
 /**
- * Allied Industrial Base views: the overview, then the three questions. Sectoral Compacts keep their
+ * Allied Industrial Base views: the overview, the three questions, then the Managed Interdependence
+ * explainer (2026-10-19: the diversification scenario; path kept). Sectoral Compacts keep their
  * paths (/compacts, /compacts/:id); /compacts/about stays (About lists it). The module registers the
- * same list (src/aib/nav.ts) once its data load; this is the fallback before it does.
+ * same list (src/aib/nav.ts) once its data load; this is the fallback before it does (the Header carries
+ * the scenario toggle, `scn`, onto it).
  */
 export const AIB_NAV: { key: AibNavKey; to: string; label: string }[] = [
   { key: 'overview', to: '/aib', label: 'Overview' },
   { key: 'partnerships', to: '/aib/partnerships', label: 'Partnerships' },
   { key: 'compacts', to: '/compacts', label: 'Sectoral Compacts' },
   { key: 'roles', to: '/aib/roles', label: 'Country roles' },
+  { key: 'diversification', to: '/aib/diversification', label: 'Managed Interdependence' },
 ];
 
 /** The first path segments of the Allied Industrial Base module. */
@@ -167,7 +170,7 @@ export function aibNavKeyOf(pathname: string): AibNavKey | null {
   if (s[0] === AIB_SEGMENT) {
     if (s.length === 1) return 'overview';
     const v = s[1].toLowerCase();
-    return v === 'partnerships' ? 'partnerships' : v === 'roles' ? 'roles' : null;
+    return v === 'partnerships' ? 'partnerships' : v === 'roles' ? 'roles' : v === 'diversification' ? 'diversification' : null;
   }
   if (s[0] === COMPACTS_SEGMENT) return s.length > 1 && s[1].toLowerCase() === 'about' ? 'about' : 'compacts';
   // the legacy Partners view lives with the partnerships

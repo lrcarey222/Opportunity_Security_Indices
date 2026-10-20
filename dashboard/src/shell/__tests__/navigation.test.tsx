@@ -186,6 +186,7 @@ const PRIMARY: [string, string, string | null][] = [
   ['/compacts', 'Allied Industrial Base', 'Sectoral Compacts'],
   [`/compacts/${COMPACT_ID}`, 'Allied Industrial Base', 'Sectoral Compacts'],
   ['/aib/roles', 'Allied Industrial Base', 'Country roles'],
+  ['/aib/diversification', 'Allied Industrial Base', 'Managed Interdependence'],
   ['/about', 'About', 'Overview'],
   ['/glossary', 'About', 'Glossary'],
 ];

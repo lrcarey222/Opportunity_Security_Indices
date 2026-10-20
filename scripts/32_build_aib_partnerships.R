@@ -15,8 +15,9 @@
 #   --scope M           override config strategic_scope mode (all or electro_industrial)
 #   --from-checkpoint   reuse the last run's trade model and investment simulation (same out dir)
 #
-# Every trade run is one variant: shock semantics (hold: an export / supply shock; release: full
-# decoupling) x supply constraint (trade_only; production_constrained: physical capacity bounds what
+# Every trade run is one variant: shock semantics (hold: an export / supply shock; release: a two-way
+# cut, the shocked economy's purchases also fall by the same share) x supply constraint (trade_only;
+# production_constrained: physical capacity bounds what
 # a supplier can add, where credible production data exist). The headline variant is the first of
 # each list in config/aib.yml; every output keeps the variant columns, the demand scope and the
 # candidate-partner universe. Checkpoints aib_checkpoint_trade.rds / aib_checkpoint_investment.rds
@@ -37,6 +38,18 @@
 #   aib_compact_leave_one_out.csv         each supplier's loss, coalition fixed and every candidate open
 #   allied_subsector_data_quality.csv     data-quality and physical-validation flags per sub-sector
 #   aib_validation_cases.csv / .md        the validation chains, trade-only vs production-constrained
+#   aib_diversification.csv               the diversification scenario (Managed Interdependence) per node
+# The dashboard's three scenarios (Baseline: observed trade; Managed Interdependence: the diversification
+# shock; Decoupling: the headline shock, whose outputs are the files above) add:
+#   aib_observed_supply.csv               Baseline: each node's observed supply to the demand scope by exporter
+#   emergent_aib_edges_baseline.csv       Baseline: observed supplier -> buyer pairs (strategic scope, >= min share)
+#   emergent_aib_country_summary_baseline.csv  Baseline: each economy's roles in that network
+#   emergent_aib_edges_managed.csv        Managed Interdependence: the network of the diversification shock alone
+#   emergent_aib_country_summary_managed.csv   Managed Interdependence: the economies' roles in it
+#   aib_compact_candidates_managed.csv    Managed Interdependence: the headline compacts (same ids and nodes)
+#   aib_compact_members_managed.csv       solved under the diversification shock (headline supply constraint):
+#   aib_compact_coalition_path_managed.csv  coalition, tiers, roles, path and leave-one-out
+#   aib_compact_leave_one_out_managed.csv
 #   aib_results.rds                       everything above in one list (for scripts/84)
 
 source(local({
@@ -88,7 +101,14 @@ out_dir <- abs_path(arg_value("--out-dir", file.path(outputs_dir, "aib")))
 inputs_path <- file.path(out_dir, "aib_inputs.rds")
 if (!file.exists(inputs_path)) stop("Run scripts/31_build_aib_trade_network.R first: ", inputs_path, " not found.")
 inputs <- readRDS(inputs_path)
-cfg <- yaml::read_yaml(file.path(repo_root, "config", "aib.yml"))
+# The taxonomy is the one scripts/31 built the inputs with (config/aib_taxonomy_<taxonomy>.yml).
+source(file.path(repo_root, "scripts", "utils", "aib_config.R"))
+input_taxonomy <- aib_or(inputs$meta$taxonomy, "master")
+if (!is.null(arg_value("--taxonomy")) && !identical(arg_value("--taxonomy"), input_taxonomy)) {
+  stop("--taxonomy ", arg_value("--taxonomy"), " differs from the inputs' taxonomy (", input_taxonomy, "); rerun scripts/31 with it.")
+}
+cfg <- aib_read_config(repo_root, input_taxonomy)
+taxonomy_tbl <- if (is.null(inputs$taxonomy)) tibble::tibble(tech = character(), index_code = character(), index_name = character()) else inputs$taxonomy
 opt <- cfg$optimization
 tolerances <- c(opt$tolerance_coverage, opt$tolerance_specialization, opt$tolerance_opportunity)
 neutral <- as.numeric(opt$neutral_score)
@@ -165,21 +185,62 @@ phys_share_of <- function(nid) {
   stats::setNames(p$production_share, p$iso3)
 }
 
-targets <- aib_shock_targets(cfg$shocks, inputs$node_cells, inputs$exporter_metrics, cfg$trade$reexport_hubs)
+# The diversification scenario (a shock of type "diversify"): each node more concentrated than its
+# higher-level sector gets the supplier-share cap that brings its exporter HHI down to that benchmark;
+# the suppliers above the cap lose the excess, and the optimized state keeps the cap.
+div_shock <- Filter(function(s) identical(s$type, "diversify"), cfg$shocks)
+div_id <- if (length(div_shock)) div_shock[[1]]$id else NA_character_
+div_targets <- NULL
+if (length(div_shock)) {
+  if (is.null(inputs$benchmarks)) {
+    warning("A diversify shock is configured but the inputs have no benchmarks; rerun scripts/31.", call. = FALSE)
+  } else {
+    scope_supply <- inputs$flows[inputs$flows$node_id %in% opt_nodes & inputs$flows$importer_iso %in% demand_set$iso & inputs$flows$value > 0, ] %>%
+      dplyr::group_by(node_id, exporter_iso) %>% dplyr::summarise(value = sum(value), .groups = "drop")
+    div_targets <- aib_diversify_targets(inputs$exporter_metrics[inputs$exporter_metrics$node_id %in% opt_nodes, , drop = FALSE],
+                                         inputs$benchmarks, level = aib_or(div_shock[[1]]$benchmark, "hs4"),
+                                         reexport_hubs = cfg$trade$reexport_hubs, min_excess = as.numeric(aib_or(div_shock[[1]]$min_excess, 0)),
+                                         scope_supply = scope_supply)
+    step("Diversification scenario: ", sum(!is.na(div_targets$cap)), " of ", nrow(div_targets), " nodes are more concentrated than their benchmark")
+  }
+}
+targets <- aib_shock_targets(cfg$shocks, inputs$node_cells, inputs$exporter_metrics, cfg$trade$reexport_hubs, diversify = div_targets)
 targets <- targets[targets$node_id %in% opt_nodes, , drop = FALSE]
-runs <- targets %>% dplyr::distinct(node_id, shock_key) %>% dplyr::arrange(node_id, shock_key)
+runs <- targets %>% dplyr::distinct(node_id, shock_key, .keep_all = TRUE) %>% dplyr::select(node_id, shock_key, cap) %>%
+  dplyr::arrange(node_id, shock_key)
+# A diversification run: its cap is a share of the scope's demand and the capped allies' own
+# purchases stay protected (aib_node_problem(protect_shocked, cap_basis)).
+is_div_key <- function(nid, key) !is.na(div_id) && any(targets$node_id == nid & targets$shock_key == key & targets$shock_id == div_id)
+# The supplier-share limit of a run's optimized state: the diversification cap, else the headline one.
+run_cap_of <- function(nid, key) {
+  c0 <- targets$cap[targets$node_id == nid & targets$shock_key == key]
+  c0 <- c0[!is.na(c0)]
+  if (length(c0)) c0[1] else headline_cap
+}
 headline_keys <- targets %>% dplyr::filter(shock_id == headline_shock) %>% dplyr::distinct(node_id, shock_key)
 step("Trade model: ", length(opt_nodes), " nodes, ", length(cfg$shocks), " shocks, ", nrow(runs), " node-shock runs x ",
      length(semantics), " shock semantics x ", length(constraints), " supply constraints (", length(phys_nodes),
      " nodes with physical data) x ", length(scenarios), " scenarios")
 
-node_scores <- function(nid) {
+# The OSI technology x stage the partner indices and the policy compatibility are read for: the node's
+# own with the master taxonomy, its crosswalk (scripts/31, aib_osi_crosswalk()) with the dictionary;
+# none (neutral scores) for a node with no code in the OSI basket.
+score_cell <- function(nid) {
   n <- nodes[nodes$node_id == nid, ]
-  aib_node_scores(nid, strsplit(n$techs, "; ")[[1]], n$supply_chain, inputs$exporter_metrics, inputs$op_index,
+  has <- "score_techs" %in% names(n) && !is.na(n$score_techs) && nzchar(n$score_techs)
+  if (has) return(list(techs = strsplit(n$score_techs, "; ")[[1]], stage = aib_or(n$score_stage, n$supply_chain)))
+  if (identical(aib_or(cfg$nodes$source, "master"), "dictionary")) return(list(techs = character(), stage = n$supply_chain))
+  list(techs = strsplit(n$techs, "; ")[[1]], stage = n$supply_chain)
+}
+node_scores <- function(nid) {
+  sc <- score_cell(nid)
+  aib_node_scores(nid, sc$techs, sc$stage, inputs$exporter_metrics, inputs$op_index,
                   inputs$pams, inputs$cat_scores, rca_cap = opt$rca_cap, neutral = neutral, components = components)
 }
 node_problem <- function(nid, key, sem = headline_semantics, con = headline_constraint) {
+  div <- is_div_key(nid, key)
   aib_node_problem(flows_by_node[[nid]], aib_parse_shock_key(key), shocked_demand = sem,
+                   protect_shocked = div, cap_basis = if (div) "demand" else "served",
                    candidate_min_exports = as.numeric(cfg$trade$candidate_min_exports_usd),
                    candidate_min_share = as.numeric(cfg$trade$candidate_min_world_share),
                    allow_domestic = isTRUE(opt$allow_domestic_retention),
@@ -237,8 +298,10 @@ if (use_ckpt) {
         } else {
           prob <- node_problem(nid, key, sem, con)
           if (is.null(prob)) next
-          r <- aib_run_node_shock(prob, scenarios, caps, headline_cap, sc_obj, tolerances, neutral,
-                                  existing_growth = growth, tolerance_stability = as.numeric(aib_or(opt$tolerance_stability, 1e-6)))
+          rcap <- run_cap_of(nid, key)
+          r <- aib_run_node_shock(prob, scenarios, caps, rcap, sc_obj, tolerances, neutral,
+                                  existing_growth = growth, tolerance_stability = as.numeric(aib_or(opt$tolerance_stability, 1e-6)),
+                                  existing_cap = if (is_div_key(nid, key)) rcap else 1)
           if (!physical) shared <- list(prob = prob, r = r)
         }
         id <- paste(k, sem, con)
@@ -354,10 +417,11 @@ frontier_nodes <- pick_variant(frontier_nodes_all)
 ex_cols <- inputs$exporter_metrics %>% dplyr::select(node_id, exporter_iso, exporter_rca = export_rca, exporter_world_share = world_share,
                                                      exporter_production_share = production_share)
 partners_out <- partners_all %>%
-  dplyr::inner_join(dplyr::distinct(targets, node_id, shock_key, shock_id, shock_label, target_iso), by = c("node_id", "shock_key"), relationship = "many-to-many") %>%
+  dplyr::inner_join(dplyr::distinct(targets, node_id, shock_key, shock_id, shock_label, target_iso, cap), by = c("node_id", "shock_key"), relationship = "many-to-many") %>%
   dplyr::left_join(ex_cols, by = c("node_id", "exporter_iso")) %>%
   dplyr::left_join(node_label, by = "node_id") %>%
-  dplyr::mutate(max_supplier_share = headline_cap, in_strategic_scope = node_id %in% scope_nodes) %>%
+  dplyr::mutate(max_supplier_share = dplyr::coalesce(cap, headline_cap), in_strategic_scope = node_id %in% scope_nodes) %>%
+  dplyr::select(-cap) %>%
   ids_cols() %>%
   dplyr::select(-shock_key) %>%
   dplyr::relocate(demand_scope, candidate_universe, universe, node_id, node_label, techs, node_stage, shock_id, shock_label,
@@ -438,11 +502,13 @@ for (con in constraints) for (inv_sc in inv_scenarios) for (shk in inv_plan) {
     if (!nrow(hosts)) next
     hosts <- hosts %>% dplyr::arrange(dplyr::desc(capability_tier), dplyr::desc(capability_value)) %>% utils::head(inv$max_hosts_per_node)
     sc_obj <- node_scores(nid)
-    fs_env <- aib_node_dyad_lookup(inputs$fs_index, strsplit(nodes$techs[nodes$node_id == nid], "; ")[[1]], nodes$supply_chain[nodes$node_id == nid])
+    sc_cell <- score_cell(nid)
+    fs_env <- aib_node_dyad_lookup(inputs$fs_index, sc_cell$techs, sc_cell$stage)
     fs_lookup <- function(a, b) aib_lookup_pairs_raw(fs_env, a, b)
     bf <- flows_head_all[flows_head_all$node_id == nid & flows_head_all$supply_constraint == con & flows_head_all$scenario == inv_sc, , drop = FALSE]
+    rc <- run_cap_of(nid, key)
     r <- aib_investment_node(prob, inv_sc, hosts, as.numeric(unlist(inv$increments)), as.numeric(inv$headline_increment),
-                             headline_cap, as.numeric(inv$diversified_max_supplier_share), sc_obj, fs_lookup, tolerances, neutral,
+                             rc, min(as.numeric(inv$diversified_max_supplier_share), rc), sc_obj, fs_lookup, tolerances, neutral,
                              pair_hosts = inv$top_hosts, tie_resilience = inv$tie_resilience, tie_hhi = inv$tie_hhi,
                              base_flows = if (shk == headline_shock && nrow(bf)) bf[, c("e", "m", "f", "base")] else NULL)
     if (!is.null(r$hosts)) inv_hosts[[length(inv_hosts) + 1]] <- dplyr::mutate(r$hosts, node_id = nid, shock_id = shk, shock_key = key, scenario = inv_sc, supply_constraint = con, .before = 1)
@@ -486,27 +552,87 @@ inv_hosts_head <- if (nrow(inv_hosts)) inv_hosts[inv_hosts$supply_constraint == 
 inv_pairs_head <- if (nrow(inv_pairs_out)) inv_pairs_out[inv_pairs_out$supply_constraint == headline_constraint, , drop = FALSE] else inv_pairs_out
 
 # ---- Emergent AIB network (headline variant, strategic scope) ---------------------------------------
-node_shock <- summary_runs %>% dplyr::inner_join(dplyr::distinct(targets, node_id, shock_key, shock_id), by = c("node_id", "shock_key"), relationship = "many-to-many") %>%
-  dplyr::select(node_id, shock_id, scenario, shock_exposure) %>% dplyr::distinct()
-primary_key <- summary_runs %>% dplyr::inner_join(dplyr::distinct(targets, node_id, shock_key, shock_id), by = c("node_id", "shock_key"), relationship = "many-to-many") %>%
-  dplyr::filter(scenario == headline_scenario) %>% dplyr::group_by(node_id, shock_id) %>%
-  dplyr::slice_max(shock_exposure, n = 1, with_ties = FALSE) %>% dplyr::ungroup() %>% dplyr::select(node_id, shock_id, shock_key)
-trade_for_net <- partners_runs %>% dplyr::filter(node_id %in% scope_nodes) %>%
-  dplyr::inner_join(primary_key, by = c("node_id", "shock_key"), relationship = "many-to-many") %>%
-  dplyr::select(node_id, shock_id, scenario, exporter_iso, importer_iso, delta_usd, delta_share_of_demand, relationship)
-invest_top <- if (nrow(inv_pairs_head)) inv_pairs_head %>% dplyr::filter(dplyr::coalesce(host_rank, 99L) == 1L, node_id %in% scope_nodes) %>%
-  dplyr::semi_join(primary_key, by = c("node_id", "shock_id", "shock_key")) else NULL
-edges <- aib_network_pairs(trade_for_net, invest_top, nodes, node_shock, headline_shock, cls$high_severity,
-                           node_cells = inputs$node_cells, op_index = inputs$op_index, fs_index = inputs$fs_index)
-imp_exposure <- importer_loss %>% dplyr::filter(node_id %in% scope_nodes) %>% dplyr::group_by(iso3 = importer_iso) %>%
-  dplyr::summarise(headline_lost_usd = sum(lost_usd), n_exposed_subsectors = sum(lost_share > 0), .groups = "drop") %>%
-  tidyr::expand_grid(scenario = scenarios)
-countries <- aib_network_countries(edges, imp_exposure)
-if (!is.null(countries)) countries <- countries %>% dplyr::left_join(inputs$country_names, by = "iso3") %>% dplyr::relocate(iso3, country, scenario)
-write_out(edges %>% ids_cols() %>% dplyr::mutate(shock_semantics = headline_semantics, supply_constraint = headline_constraint, strategic_scope = scope_mode),
-          "emergent_aib_edges.csv")
-write_out(countries %>% ids_cols() %>% dplyr::mutate(shock_semantics = headline_semantics, supply_constraint = headline_constraint,
-                                                     strategic_scope = scope_mode), "emergent_aib_country_summary.csv")
+# One network per scenario of the dashboard. Decoupling: over the supply shocks (the headline* fields are
+# the headline shock, the cumulative ones sum every supply shock), with the headline shock's importer
+# exposure. Managed Interdependence: the diversification shock alone (it removes no supplier, so it stays
+# out of the supply shocks' sums), with its own importer exposure. Baseline: the observed network below.
+build_network <- function(shock_ids, head_shock, loss) {
+  net_targets <- targets %>% dplyr::filter(shock_id %in% shock_ids) %>% dplyr::distinct(node_id, shock_key, shock_id)
+  node_shock <- summary_runs %>% dplyr::inner_join(net_targets, by = c("node_id", "shock_key"), relationship = "many-to-many") %>%
+    dplyr::select(node_id, shock_id, scenario, shock_exposure) %>% dplyr::distinct()
+  primary_key <- summary_runs %>% dplyr::inner_join(net_targets, by = c("node_id", "shock_key"), relationship = "many-to-many") %>%
+    dplyr::filter(scenario == headline_scenario) %>% dplyr::group_by(node_id, shock_id) %>%
+    dplyr::slice_max(shock_exposure, n = 1, with_ties = FALSE) %>% dplyr::ungroup() %>% dplyr::select(node_id, shock_id, shock_key)
+  trade_for_net <- partners_runs %>% dplyr::filter(node_id %in% scope_nodes) %>%
+    dplyr::inner_join(primary_key, by = c("node_id", "shock_key"), relationship = "many-to-many") %>%
+    dplyr::select(node_id, shock_id, scenario, exporter_iso, importer_iso, delta_usd, delta_share_of_demand, relationship)
+  invest_top <- if (nrow(inv_pairs_head)) inv_pairs_head %>% dplyr::filter(dplyr::coalesce(host_rank, 99L) == 1L, node_id %in% scope_nodes) %>%
+    dplyr::semi_join(primary_key, by = c("node_id", "shock_id", "shock_key")) else NULL
+  edges <- aib_network_pairs(trade_for_net, invest_top, nodes, node_shock, head_shock, cls$high_severity,
+                             node_cells = inputs$node_cells, op_index = inputs$op_index, fs_index = inputs$fs_index)
+  countries <- aib_network_countries(edges, aib_importer_exposure(loss, scope_nodes, scenarios))
+  if (!is.null(countries)) countries <- countries %>% dplyr::left_join(inputs$country_names, by = "iso3") %>% dplyr::relocate(iso3, country, scenario)
+  list(edges = edges, countries = countries)
+}
+net_cols <- function(t) if (is.null(t)) t else t %>% ids_cols() %>%
+  dplyr::mutate(shock_semantics = headline_semantics, supply_constraint = headline_constraint, strategic_scope = scope_mode)
+supply_shock_ids <- setdiff(vapply(cfg$shocks, `[[`, "", "id"), div_id)
+net <- build_network(supply_shock_ids, headline_shock, importer_loss)
+edges <- net$edges
+countries <- net$countries
+write_out(net_cols(edges), "emergent_aib_edges.csv")
+write_out(net_cols(countries), "emergent_aib_country_summary.csv")
+
+# Managed Interdependence: each importer's lost supply under the diversification shock, from the node
+# problem alone (no LP), and the network of that shock.
+div_keys <- if (is.na(div_id)) tibble::tibble(node_id = character(), shock_key = character()) else
+  summary_runs %>% dplyr::filter(scenario == headline_scenario) %>%
+  dplyr::semi_join(targets %>% dplyr::filter(shock_id == div_id), by = c("node_id", "shock_key")) %>%
+  dplyr::distinct(node_id, shock_key) %>% dplyr::arrange(node_id)
+# Each problem carries its run's supplier-share cap (share_cap, a share of the scope's demand): the compact
+# tests (aib_compact_trade_coverage(), aib_anchor_terms()) keep it, as the scenario's own states B and C do.
+problems_managed <- list()
+for (i in seq_len(nrow(div_keys))) {
+  p <- node_problem(div_keys$node_id[i], div_keys$shock_key[i])
+  if (!is.null(p)) {
+    p$share_cap <- run_cap_of(div_keys$node_id[i], div_keys$shock_key[i])
+    problems_managed[[div_keys$node_id[i]]] <- p
+  }
+}
+importer_loss_managed <- dplyr::bind_rows(lapply(names(problems_managed), function(nid) {
+  p <- problems_managed[[nid]]
+  tibble::tibble(node_id = nid, importer_iso = names(p$lost), lost_share = as.numeric(p$lost), demand_share = as.numeric(p$demand),
+                 lost_usd = as.numeric(p$lost) * p$D)
+}))
+net_managed <- if (length(problems_managed)) build_network(div_id, div_id, importer_loss_managed) else list(edges = NULL, countries = NULL)
+if (!is.null(net_managed$edges)) {
+  write_out(net_cols(net_managed$edges), "emergent_aib_edges_managed.csv")
+  write_out(net_cols(net_managed$countries), "emergent_aib_country_summary_managed.csv")
+}
+
+# Baseline: trade as it is in the reference year, before any shock. Each optimized node's observed supply
+# to the demand scope by exporter (every exporter; the HHI and largest supplier of res$stress
+# baseline_* are read on this basis), and the observed supplier -> buyer network of the strategic-scope
+# nodes as a pseudo-shock "baseline" (scenario "observed"), keeping the pairs whose summed share of node
+# demand is at least `baseline_min_share`; the country roles are read from the pairs kept.
+baseline_min_share <- as.numeric(aib_or(cfg$network$baseline_min_share, 0.005))
+observed_supply <- aib_observed_supply(inputs$flows, demand_set$iso, opt_nodes)
+obs_net <- aib_observed_network_inputs(inputs$flows, demand_set$iso, intersect(scope_nodes, opt_nodes))
+edges_baseline <- aib_network_min_share(
+  aib_network_pairs(obs_net$trade, NULL, nodes, obs_net$node_shock, "baseline", cls$high_severity,
+                    node_cells = inputs$node_cells, op_index = inputs$op_index, fs_index = inputs$fs_index),
+  baseline_min_share)
+countries_baseline <- aib_network_countries(edges_baseline)
+if (!is.null(countries_baseline)) countries_baseline <- countries_baseline %>% dplyr::left_join(inputs$country_names, by = "iso3") %>%
+  dplyr::relocate(iso3, country, scenario)
+step("Baseline (observed): ", dplyr::n_distinct(observed_supply$node_id), " nodes, USD ", round(sum(observed_supply$supply_usd) / 1e9, 1),
+     " bn supplied to the demand scope; network ", NROW(edges_baseline), " pairs with at least ", 100 * baseline_min_share,
+     "% of node demand, ", NROW(countries_baseline), " economies")
+write_out(observed_supply %>% dplyr::left_join(node_label, by = "node_id") %>% ids_cols() %>% dplyr::relocate(node_id, node_label),
+          "aib_observed_supply.csv")
+obs_cols <- function(t) if (is.null(t)) t else t %>% ids_cols() %>% dplyr::mutate(strategic_scope = scope_mode, min_pair_share = baseline_min_share)
+write_out(obs_cols(edges_baseline), "emergent_aib_edges_baseline.csv")
+write_out(obs_cols(countries_baseline), "emergent_aib_country_summary_baseline.csv")
 
 # ---- Node classification and Sectoral Compacts (per supply-constraint mode) -------------------------
 cmp <- cfg$compacts
@@ -541,78 +667,21 @@ classify_variant <- function(con, sc = headline_scenario, shk = headline_shock, 
 }
 gl <- function(g) if (is.infinite(g)) "unlimited" else sprintf("%gx", 1 + g)
 
-build_compact_layer <- function(con) {
-  classified <- classify_variant(con)
-  hosts_m <- if (nrow(inv_hosts)) inv_hosts %>% dplyr::filter(supply_constraint == con) else inv_hosts
-  best_host <- if (nrow(hosts_m)) hosts_m %>% dplyr::filter(shock_id == headline_shock, scenario == headline_scenario,
-                                                            abs(increment - inv$headline_increment) < 1e-9) %>%
-    dplyr::group_by(node_id) %>% dplyr::arrange(host_rank, .by_group = TRUE) %>%
-    dplyr::summarise(priority_investment_hosts = paste(utils::head(host_iso, 3), collapse = "; "),
-                     best_marginal_gain = max(marginal_resilience_gain), .groups = "drop") else
-    tibble::tibble(node_id = character(), priority_investment_hosts = character(), best_marginal_gain = numeric())
-  classified <- classified %>% dplyr::left_join(best_host, by = "node_id")
-  # The class under every other variant, each with its physical-validation warning.
-  ps <- phys_status %>% dplyr::select(node_id, physical_data, physical_divergence, physically_divergent, trade_share_without_physical_data)
-  put_variant <- function(key, cv) {
-    k <- match(classified$node_id, cv$node_id)
-    w <- cv %>% dplyr::left_join(ps, by = "node_id") %>%
-      aib_physical_validation(constrained = identical(con, "production_constrained"), low_exposure = cls$low_exposure)
-    classified[[paste0("class_", key)]] <<- cv$node_classification[k]
-    classified[[paste0("classification_warning_", key)]] <<- w$classification_warning[k]
-  }
-  for (shk in setdiff(vapply(cfg$shocks, `[[`, "", "id"), headline_shock)) put_variant(shk, classify_variant(con, shk = shk))
-  for (osc in setdiff(scenarios, headline_scenario)) put_variant(osc, classify_variant(con, sc = osc))
-  for (osem in setdiff(semantics, headline_semantics)) {
-    co <- classify_variant(con, sem = osem)
-    put_variant(osem, co)
-    classified[[paste0("coordination_dividend_", osem)]] <- co$coordination_dividend[match(classified$node_id, co$node_id)]
-    classified[[paste0("residual_gap_", osem)]] <- co$residual_gap[match(classified$node_id, co$node_id)]
-  }
-  # Sensitivity to the existing-relationship growth bound (headline constraint only: the growth runs).
-  if (identical(con, headline_constraint) && nrow(growth_runs)) {
-    for (g in growths) {
-      ov <- growth_runs %>% dplyr::filter(scenario == headline_scenario, abs(existing_growth - g) < 1e-12 | (is.infinite(existing_growth) & is.infinite(g))) %>%
-        dplyr::group_by(node_id) %>% dplyr::summarise(existing_g = dplyr::first(existing_coverage), .groups = "drop")
-      put_variant(paste0("growth_", gl(g)), classify_variant(con, existing_override = ov))
-    }
-    gcols <- grep("^class_growth_", names(classified), value = TRUE)
-    gm <- as.matrix(classified[, gcols, drop = FALSE])
-    classified$coordinate_sensitive_to_growth <- apply(gm, 1, function(v) any(v == "COORDINATE", na.rm = TRUE) && length(unique(stats::na.omit(v))) > 1)
-  }
-  classified <- classified %>% dplyr::left_join(ps, by = "node_id") %>%
-    aib_physical_validation(constrained = identical(con, "production_constrained"), low_exposure = cls$low_exposure) %>%
-    dplyr::mutate(in_strategic_scope = node_id %in% scope_nodes, supply_constraint = con)
-
-  problems <- head_problems[[con]]
-  il_all <- importer_loss
-  flows_m <- flows_head_all %>% dplyr::filter(supply_constraint == con, scenario == headline_scenario)
-  fx_m <- flows_ex_head_all %>% dplyr::filter(supply_constraint == con, scenario == headline_scenario)
-  supply_m <- supply_all %>% dplyr::filter(supply_constraint == con, shock_semantics == headline_semantics)
-  hosts_head <- if (nrow(hosts_m)) hosts_m %>% dplyr::filter(shock_id == headline_shock, scenario == headline_scenario,
-                                                            abs(increment - inv$headline_increment) < 1e-9) else NULL
-  lost_vec <- split(il_all, il_all$node_id)
-  lost_vec <- lapply(lost_vec, function(t) stats::setNames(t$lost_share, t$importer_iso))
-  supply_rec <- supply_m %>% dplyr::filter(scenario == headline_scenario, state == "optimized") %>%
-    dplyr::group_by(node_id, shock_key) %>% dplyr::mutate(w = supply_usd / sum(supply_usd)) %>% dplyr::ungroup() %>%
-    dplyr::group_by(node_id, exporter_iso) %>% dplyr::summarise(w = sum(w), .groups = "drop")
-  hosts_rec <- if (nrow(hosts_m)) hosts_m %>% dplyr::filter(scenario == headline_scenario, abs(increment - inv$headline_increment) < 1e-9,
-                                                            host_rank <= inv$top_hosts) else NULL
-  vectors <- aib_node_partner_vectors(supply_rec, lost_vec, hosts_rec, inv$top_hosts)
-  coh <- aib_chain_coherence(chain_edges, classified$node_id, max_hops = aib_or(cmp$chain_max_hops, 3),
-                             allow_co_inputs = isTRUE(aib_or(cmp$allow_co_inputs, TRUE)))
-  groups <- aib_group_nodes(classified[classified$in_strategic_scope, , drop = FALSE], vectors, coh,
-                            cmp$min_partner_similarity, cmp$min_policy_similarity)
-  # A compact is one connected piece of the chain, not linked only through another compact's node.
-  groups <- aib_split_disconnected(groups, chain_edges, classified$node_id, max_hops = aib_or(cmp$chain_max_hops, 3),
-                                   allow_co_inputs = isTRUE(aib_or(cmp$allow_co_inputs, TRUE)))
-  step("Compacts (", con, "): ", nrow(groups), " intervention nodes in strategic scope, ", dplyr::n_distinct(groups$group), " groups")
-
+# The compacts of one shock: each group of nodes (group_ids: compact id -> node ids, in the order of
+# cls_rows) gets its demand anchors, exact minimum coalitions, greedy path, coalition tiers, functional
+# roles, leave-one-out and coverage metrics from that shock's node problems (`problems`), importer loss
+# (`il_all`: node_id, importer_iso, lost_share, lost_usd), optimized and existing-network flows
+# (`flows_m`, `fx_m`: node_id, e, m, f, base) and ranked investment hosts (`hosts_head`), with the node
+# classes of that shock (`cls_rows`, classify_variant()). Only nodes with a problem are solved;
+# `unchanged` (compact id -> node_id, demand_usd) adds the compact's other nodes to the demand-weighted
+# coverage metrics as unchanged (coverage 1, nothing lost), as the diversification scenario leaves them.
+solve_compacts <- function(con, shk, cls_rows, group_ids, problems, il_all, flows_m, fx_m, hosts_head, unchanged = NULL) {
   compact_rows <- list(); compact_nodes <- list(); compact_members <- list(); compact_paths <- list(); compact_loo <- list()
-  for (g in sort(unique(groups$group))) {
-    ids <- groups$node_id[groups$group == g]
+  for (cid in names(group_ids)) {
+    ids <- group_ids[[cid]]
     ids <- ids[ids %in% names(problems)]
     if (!length(ids)) next
-    cn <- classified[classified$node_id %in% ids, , drop = FALSE]
+    cn <- cls_rows[cls_rows$node_id %in% ids, , drop = FALSE]
     il <- il_all[il_all$node_id %in% ids, , drop = FALSE] %>%
       dplyr::group_by(importer_iso) %>% dplyr::summarise(lost = sum(lost_usd), .groups = "drop") %>% dplyr::arrange(dplyr::desc(lost))
     il$cum <- cumsum(il$lost) / sum(il$lost)
@@ -718,9 +787,10 @@ build_compact_layer <- function(con) {
       h <- hosts_head %>% dplyr::filter(node_id == n) %>% dplyr::arrange(host_rank)
       utils::head(intersect(h$host_iso, members), cmp$investment_hosts_per_node)
     }
+    # The problem's supplier-share cap binds (the diversification scenario's; none under the headline shock).
     cov_mixed <- function(n, extra = NULL) {
-      aib_solve_state(problems[[n]], headline_scenario, "B", cap = 1, scores = node_scores(n), tolerances = tolerances,
-                      neutral = neutral, steps = 1, existing_growth = growth, coordinating = c(members, names(extra)), extra = extra)$coverage
+      aib_compact_trade_coverage(problems[[n]], headline_scenario, members, scores = node_scores(n), extra = extra,
+                                 tolerances = tolerances, neutral = neutral, existing_growth = growth)
     }
     cov_trade <- vapply(ids, function(n) cov_mixed(n), numeric(1))
     cov_inv <- vapply(ids, function(n) {
@@ -735,8 +805,11 @@ build_compact_layer <- function(con) {
     anchor_fragmented <- if (any(okd)) sum(frag[okd] * anchor_dem[okd]) / sum(anchor_dem[okd]) else NA_real_
     anchor_compact <- if (any(okd)) sum(coal_cov[okd] * anchor_dem[okd]) / sum(anchor_dem[okd]) else NA_real_
     compact_gain <- anchor_compact - anchor_fragmented
-    dem <- cn$demand_usd
-    wmean <- function(x) sum(x * dem) / sum(dem)
+    # The compact's nodes the shock did not run on count as unchanged: their demand, coverage 1.
+    ux <- if (is.null(unchanged)) NULL else unchanged[[cid]]
+    one <- rep(1, NROW(ux))
+    dem <- c(cn$demand_usd, if (NROW(ux)) ux$demand_usd)
+    wmean <- function(x) sum(c(x, one) * dem) / sum(dem)
     mix <- aib_class_mix(cn$node_classification, cn$lost_usd)
     archetype <- aib_archetype(cn$node_classification, cn$lost_usd, cmp$archetype_dominance)
     secondary <- if (length(mix) >= 2 && mix[2] >= aib_or(cmp$policy_need_floor, 0.2)) names(mix)[2] else NA_character_
@@ -745,7 +818,6 @@ build_compact_layer <- function(con) {
       "compact unnecessary: existing relationships do nearly as well"
     } else if (n_countries < cmp$min_countries) "bilateral arrangement sufficient" else "candidate compact"
     fmt_set <- function(x) if (is.null(x) || all(is.na(x))) NA_character_ else paste(sort(x), collapse = " ")
-    cid <- sprintf("AIB-C%02d", g)
     compact_rows[[length(compact_rows) + 1]] <- tibble::tibble(
       compact_id = cid,
       compact_name = aib_compact_name(cn$sub_sector, cn$techs),
@@ -799,7 +871,7 @@ build_compact_layer <- function(con) {
       secondary_class = secondary,
       key_policy_needs = aib_policy_needs(mix, aib_or(cmp$policy_need_floor, 0.2)),
       physical_warnings = paste(cn$sub_sector[!is.na(cn$classification_warning)], collapse = "; "),
-      shock_id = headline_shock, shock_semantics = headline_semantics, supply_constraint = con, scenario = headline_scenario
+      shock_id = shk, shock_semantics = headline_semantics, supply_constraint = con, scenario = headline_scenario
     )
     compact_members[[length(compact_members) + 1]] <- roles %>% dplyr::mutate(compact_id = cid, in_minimum_coalition = iso3 %in% members, .before = 1)
     compact_paths[[length(compact_paths) + 1]] <- path %>%
@@ -828,6 +900,87 @@ build_compact_layer <- function(con) {
         dplyr::summarise(bp = paste(sort(unique(iso3)), collapse = " "), .groups = "drop"), by = "compact_id") %>%
       dplyr::mutate(bridge_partners = dplyr::coalesce(bp, "")) %>% dplyr::select(-bp)
   }
+  list(compacts = compacts, members = members_tbl, paths = paths_tbl, cnodes = cnodes, loo = loo_tbl)
+}
+
+build_compact_layer <- function(con) {
+  classified <- classify_variant(con)
+  hosts_m <- if (nrow(inv_hosts)) inv_hosts %>% dplyr::filter(supply_constraint == con) else inv_hosts
+  best_host <- if (nrow(hosts_m)) hosts_m %>% dplyr::filter(shock_id == headline_shock, scenario == headline_scenario,
+                                                            abs(increment - inv$headline_increment) < 1e-9) %>%
+    dplyr::group_by(node_id) %>% dplyr::arrange(host_rank, .by_group = TRUE) %>%
+    dplyr::summarise(priority_investment_hosts = paste(utils::head(host_iso, 3), collapse = "; "),
+                     best_marginal_gain = max(marginal_resilience_gain), .groups = "drop") else
+    tibble::tibble(node_id = character(), priority_investment_hosts = character(), best_marginal_gain = numeric())
+  classified <- classified %>% dplyr::left_join(best_host, by = "node_id")
+  # The class under every other variant, each with its physical-validation warning.
+  ps <- phys_status %>% dplyr::select(node_id, physical_data, physical_divergence, physically_divergent, trade_share_without_physical_data)
+  put_variant <- function(key, cv) {
+    k <- match(classified$node_id, cv$node_id)
+    w <- cv %>% dplyr::left_join(ps, by = "node_id") %>%
+      aib_physical_validation(constrained = identical(con, "production_constrained"), low_exposure = cls$low_exposure)
+    classified[[paste0("class_", key)]] <<- cv$node_classification[k]
+    classified[[paste0("classification_warning_", key)]] <<- w$classification_warning[k]
+  }
+  for (shk in setdiff(vapply(cfg$shocks, `[[`, "", "id"), headline_shock)) {
+    put_variant(shk, classify_variant(con, shk = shk))
+    # The diversification scenario runs only where a supplier is above the cap: elsewhere it has no class.
+    if (identical(shk, div_id)) {
+      off <- !classified$node_id %in% targets$node_id[targets$shock_id == shk]
+      classified[[paste0("class_", shk)]][off] <- NA_character_
+      classified[[paste0("classification_warning_", shk)]][off] <- NA
+    }
+  }
+  for (osc in setdiff(scenarios, headline_scenario)) put_variant(osc, classify_variant(con, sc = osc))
+  for (osem in setdiff(semantics, headline_semantics)) {
+    co <- classify_variant(con, sem = osem)
+    put_variant(osem, co)
+    classified[[paste0("coordination_dividend_", osem)]] <- co$coordination_dividend[match(classified$node_id, co$node_id)]
+    classified[[paste0("residual_gap_", osem)]] <- co$residual_gap[match(classified$node_id, co$node_id)]
+  }
+  # Sensitivity to the existing-relationship growth bound (headline constraint only: the growth runs).
+  if (identical(con, headline_constraint) && nrow(growth_runs)) {
+    for (g in growths) {
+      ov <- growth_runs %>% dplyr::filter(scenario == headline_scenario, abs(existing_growth - g) < 1e-12 | (is.infinite(existing_growth) & is.infinite(g))) %>%
+        dplyr::group_by(node_id) %>% dplyr::summarise(existing_g = dplyr::first(existing_coverage), .groups = "drop")
+      put_variant(paste0("growth_", gl(g)), classify_variant(con, existing_override = ov))
+    }
+    gcols <- grep("^class_growth_", names(classified), value = TRUE)
+    gm <- as.matrix(classified[, gcols, drop = FALSE])
+    classified$coordinate_sensitive_to_growth <- apply(gm, 1, function(v) any(v == "COORDINATE", na.rm = TRUE) && length(unique(stats::na.omit(v))) > 1)
+  }
+  classified <- classified %>% dplyr::left_join(ps, by = "node_id") %>%
+    aib_physical_validation(constrained = identical(con, "production_constrained"), low_exposure = cls$low_exposure) %>%
+    dplyr::mutate(in_strategic_scope = node_id %in% scope_nodes, supply_constraint = con)
+
+  problems <- head_problems[[con]]
+  il_all <- importer_loss
+  flows_m <- flows_head_all %>% dplyr::filter(supply_constraint == con, scenario == headline_scenario)
+  fx_m <- flows_ex_head_all %>% dplyr::filter(supply_constraint == con, scenario == headline_scenario)
+  supply_m <- supply_all %>% dplyr::filter(supply_constraint == con, shock_semantics == headline_semantics)
+  hosts_head <- if (nrow(hosts_m)) hosts_m %>% dplyr::filter(shock_id == headline_shock, scenario == headline_scenario,
+                                                            abs(increment - inv$headline_increment) < 1e-9) else NULL
+  lost_vec <- split(il_all, il_all$node_id)
+  lost_vec <- lapply(lost_vec, function(t) stats::setNames(t$lost_share, t$importer_iso))
+  supply_rec <- supply_m %>% dplyr::filter(scenario == headline_scenario, state == "optimized") %>%
+    dplyr::group_by(node_id, shock_key) %>% dplyr::mutate(w = supply_usd / sum(supply_usd)) %>% dplyr::ungroup() %>%
+    dplyr::group_by(node_id, exporter_iso) %>% dplyr::summarise(w = sum(w), .groups = "drop")
+  hosts_rec <- if (nrow(hosts_m)) hosts_m %>% dplyr::filter(scenario == headline_scenario, abs(increment - inv$headline_increment) < 1e-9,
+                                                            host_rank <= inv$top_hosts) else NULL
+  vectors <- aib_node_partner_vectors(supply_rec, lost_vec, hosts_rec, inv$top_hosts)
+  coh <- aib_chain_coherence(chain_edges, classified$node_id, max_hops = aib_or(cmp$chain_max_hops, 3),
+                             allow_co_inputs = isTRUE(aib_or(cmp$allow_co_inputs, TRUE)))
+  groups <- aib_group_nodes(classified[classified$in_strategic_scope, , drop = FALSE], vectors, coh,
+                            cmp$min_partner_similarity, cmp$min_policy_similarity)
+  # A compact is one connected piece of the chain, not linked only through another compact's node.
+  groups <- aib_split_disconnected(groups, chain_edges, classified$node_id, max_hops = aib_or(cmp$chain_max_hops, 3),
+                                   allow_co_inputs = isTRUE(aib_or(cmp$allow_co_inputs, TRUE)))
+  step("Compacts (", con, "): ", nrow(groups), " intervention nodes in strategic scope, ", dplyr::n_distinct(groups$group), " groups")
+
+  group_ids <- lapply(split(groups$node_id, groups$group), identity)
+  names(group_ids) <- sprintf("AIB-C%02d", as.integer(names(group_ids)))
+  sol <- solve_compacts(con, headline_shock, classified, group_ids, problems, il_all, flows_m, fx_m, hosts_head)
+  compacts <- sol$compacts; members_tbl <- sol$members; paths_tbl <- sol$paths; cnodes <- sol$cnodes; loo_tbl <- sol$loo
   if (nrow(compacts)) {
     compacts <- compacts %>% dplyr::arrange(dplyr::desc(lost_usd))
     remap <- stats::setNames(sprintf("AIB-C%02d", seq_len(nrow(compacts))), compacts$compact_id)
@@ -845,9 +998,20 @@ build_compact_layer <- function(con) {
   top_partners <- pm %>% dplyr::group_by(node_id) %>% dplyr::arrange(dplyr::desc(delta_usd), .by_group = TRUE) %>%
     dplyr::summarise(key_trade_partners = paste(utils::head(sprintf("%s->%s (%s)", exporter_iso, importer_iso, relationship), 4), collapse = "; "), .groups = "drop")
   pct <- function(x) ifelse(is.na(x), "n/a", sprintf("%.0f%%", 100 * x))
-  detail <- inputs$node_cells_detail %>% dplyr::group_by(node_id) %>%
-    dplyr::summarise(yf_subcomponent_id = paste(unique(paste0(aib_slug(tech), "-", aib_slug(supply_chain), "::", sub_sector)), collapse = "; "), .groups = "drop")
-  cells_long <- inputs$node_cells %>% dplyr::select(node_id, technology = tech, stage = supply_chain)
+  # Yards & Fences ids are OSI technology x stage cells: the node's own with the master taxonomy, its
+  # crosswalk cell with the dictionary (no sub-component id: the dictionary's nodes are not OSI
+  # sub-sectors).
+  dictionary_nodes <- identical(aib_or(cfg$nodes$source, "master"), "dictionary")
+  detail <- if (dictionary_nodes) {
+    nodes %>% dplyr::transmute(node_id, yf_subcomponent_id = osi_subcomponents, yf_cells,
+                               osi_cell = ifelse(is.na(yf_cells), NA_character_, sub(";.*$", "", yf_cells)))
+  } else {
+    inputs$node_cells_detail %>% dplyr::group_by(node_id) %>%
+      dplyr::summarise(yf_subcomponent_id = paste(unique(paste0(aib_slug(tech), "-", aib_slug(supply_chain), "::", sub_sector)), collapse = "; "),
+                       yf_cells = NA_character_, osi_cell = NA_character_, .groups = "drop")
+  }
+  cells_long <- inputs$node_cells %>% dplyr::select(node_id, technology = tech, stage = supply_chain) %>%
+    dplyr::left_join(taxonomy_tbl %>% dplyr::select(technology = tech, index_code, index_name), by = "technology")
   node_table <- classified %>%
     dplyr::left_join(cnodes, by = "node_id") %>%
     dplyr::left_join(top_partners, by = "node_id") %>%
@@ -864,24 +1028,119 @@ build_compact_layer <- function(con) {
       concentration_risk = paste0("optimized largest supplier ", optimized_largest_supplier, " ", pct(optimized_largest_share), "; HHI ",
                                   ifelse(is.na(optimized_hhi), "n/a", sprintf("%.2f", optimized_hhi))),
       recommended_policy_treatment = aib_class_treatment(node_classification),
-      yf_cell = paste0(aib_slug(technology), "-", aib_slug(stage))
+      yf_cell = if (dictionary_nodes) osi_cell else paste0(aib_slug(technology), "-", aib_slug(stage))
     ) %>%
-    dplyr::select(compact_id, technology, stage, sub_sector, node_id, node_classification, policy_needs, classification_reason,
+    dplyr::select(compact_id, index_code, index_name, technology, stage, sub_sector, node_id, node_classification, policy_needs, classification_reason,
                   classification_warning, physical_validation, severity, coordination_dividend, residual_gap, concentration,
                   key_trade_partners, priority_investment_hosts, strategic_problem, trade_solution, investment_need, concentration_risk,
                   recommended_policy_treatment, shock_exposure, static_coverage, existing_coverage, optimized_coverage, best_marginal_gain,
-                  optimized_largest_supplier, optimized_hhi, coverage_loss_at_manage_cap, data_quality, yf_cell, yf_subcomponent_id,
+                  optimized_largest_supplier, optimized_hhi, coverage_loss_at_manage_cap, data_quality, yf_cell, yf_cells, yf_subcomponent_id,
                   need_coordinate, need_build, need_manage, need_manage_specialization, needs_coordinate, needs_build,
                   needs_manage_specialization, in_strategic_scope, supply_constraint) %>%
     dplyr::mutate(shock_id = headline_shock, shock_semantics = headline_semantics, scenario = headline_scenario) %>%
     dplyr::arrange(compact_id, technology, stage, sub_sector)
-  list(classified = classified, compacts = compacts, members = members_tbl, paths = paths_tbl, node_table = node_table, loo = loo_tbl)
+  list(classified = classified, compacts = compacts, members = members_tbl, paths = paths_tbl, node_table = node_table, loo = loo_tbl,
+       cnodes = cnodes)
 }
 layers <- stats::setNames(lapply(constraints, build_compact_layer), constraints)
 head_layer <- layers[[headline_constraint]]
 classified <- head_layer$classified
 step("Node classes (", headline_shock, ", ", headline_scenario, ", ", headline_constraint, "): ",
      paste(names(table(classified$node_classification)), table(classified$node_classification), sep = " ", collapse = "; "))
+
+# ---- Managed Interdependence: the headline compacts solved under the diversification shock ----------
+# The compacts keep their ids and nodes (formed under the headline shock, so the scenarios stay
+# comparable); each is solved again, headline supply constraint only, with the diversification shock's
+# node problems, importer loss, optimized and existing-network flows, investment hosts and node classes:
+# coalition (90/95/99), greedy path, tiers, roles, leave-one-out and coverage metrics. The compact's nodes
+# the scenario did not run on count as unchanged in the coverage metrics (coverage 1, nothing lost); a
+# compact none of whose nodes it ran on has no coalition and says why (coalition_reason).
+managed_layer <- NULL
+if (length(problems_managed) && nrow(head_layer$compacts)) {
+  t_m <- Sys.time()
+  con_m <- headline_constraint
+  ps_m <- phys_status %>% dplyr::select(node_id, physical_data, physical_divergence, physically_divergent, trade_share_without_physical_data)
+  cls_m <- classify_variant(con_m, shk = div_id) %>% dplyr::left_join(ps_m, by = "node_id") %>%
+    aib_physical_validation(constrained = identical(con_m, "production_constrained"), low_exposure = cls$low_exposure)
+  # The trade checkpoint keeps the optimized and existing-network flows of the headline shock only: each
+  # diversification run's states B and C are solved again exactly as the trade model solved them (same
+  # problem, scores, cap and tolerances), and checked against its stored coverage.
+  sm_div <- summary_runs %>% dplyr::filter(scenario == headline_scenario) %>% dplyr::semi_join(div_keys, by = c("node_id", "shock_key"))
+  tol_stab <- as.numeric(aib_or(opt$tolerance_stability, 1e-6))
+  fl_opt <- list(); fl_ex <- list(); n_off <- 0L
+  for (nid in names(problems_managed)) {
+    key <- div_keys$shock_key[div_keys$node_id == nid][1]
+    prob <- problems_managed[[nid]]
+    sc_obj <- node_scores(nid)
+    rcap <- run_cap_of(nid, key)
+    B <- aib_solve_state(prob, headline_scenario, "B", cap = rcap, scores = sc_obj, tolerances = tolerances, neutral = neutral,
+                         existing_growth = growth, tolerance_stability = tol_stab)
+    C <- aib_solve_state(prob, headline_scenario, "C", cap = rcap, scores = sc_obj, tolerances = tolerances, neutral = neutral,
+                         tolerance_stability = tol_stab)
+    s0 <- sm_div[sm_div$node_id == nid, , drop = FALSE]
+    if (!nrow(s0) || !isTRUE(abs(C$coverage - s0$optimized_coverage[1]) < 1e-6 && abs(B$coverage - s0$existing_coverage[1]) < 1e-6)) n_off <- n_off + 1L
+    if (!is.null(C$flows) && nrow(C$flows)) fl_opt[[nid]] <- dplyr::mutate(C$flows, node_id = nid, .before = 1)
+    if (!is.null(B$flows) && nrow(B$flows)) fl_ex[[nid]] <- dplyr::mutate(B$flows, node_id = nid, .before = 1)
+  }
+  if (n_off) warning(n_off, " diversification runs did not reproduce their stored coverage; their compact roles may differ.", call. = FALSE)
+  hosts_head_m <- if (nrow(inv_hosts)) inv_hosts %>% dplyr::filter(supply_constraint == con_m, shock_id == div_id, scenario == headline_scenario,
+                                                                   abs(increment - inv$headline_increment) < 1e-9) else NULL
+  if (!is.null(hosts_head_m) && !nrow(hosts_head_m)) hosts_head_m <- NULL
+  cn_head <- head_layer$cnodes
+  group_ids_m <- split(cn_head$node_id, cn_head$compact_id)
+  demand_of <- stats::setNames(classified$demand_usd, classified$node_id)
+  unchanged_m <- lapply(group_ids_m, function(ids) {
+    u <- setdiff(ids, names(problems_managed))
+    tibble::tibble(node_id = u, demand_usd = as.numeric(demand_of[u]))
+  })
+  no_flows <- tibble::tibble(node_id = character(), e = character(), m = character(), f = numeric(), base = numeric())
+  sol_m <- solve_compacts(con_m, div_id, cls_m, group_ids_m, problems_managed, importer_loss_managed,
+                          if (length(fl_opt)) dplyr::bind_rows(fl_opt) else no_flows, if (length(fl_ex)) dplyr::bind_rows(fl_ex) else no_flows,
+                          hosts_head_m, unchanged = unchanged_m)
+  # Each node's status in the scenario (as in aib_diversification.csv), for the reason a compact has no coalition.
+  div_status <- function(ids) {
+    d <- if (is.null(div_targets)) NULL else div_targets[match(ids, div_targets$node_id), , drop = FALSE]
+    if (is.null(d)) return(rep(NA_character_, length(ids)))
+    dplyr::case_when(is.na(d$node_id) ~ NA_character_, is.na(d$benchmark_hhi) ~ "no benchmark",
+                     is.na(d$cap) ~ "already as diversified as its benchmark",
+                     !ids %in% names(problems_managed) ~ "within the cap in the allied market",
+                     TRUE ~ "diversified to the benchmark")
+  }
+  hc <- head_layer$compacts
+  run_ids <- lapply(group_ids_m, function(ids) ids[ids %in% names(problems_managed)])
+  none <- hc$compact_id[!hc$compact_id %in% sol_m$compacts$compact_id]
+  empty_rows <- dplyr::bind_rows(lapply(none, function(cid) {
+    ids <- group_ids_m[[cid]]
+    tibble::tibble(compact_id = cid, coalition_reason = aib_scenario_coalition_reason(div_status(ids)),
+                   demand_usd = sum(demand_of[ids]), lost_usd = 0, baseline_shock_exposure = 0, coverage_static = 1,
+                   coverage_without_coordination = 1, coverage_with_trade_coordination = 1, coverage_after_investment_simulation = 1,
+                   coverage_global_optimum = 1, coordination_dividend = 0, residual_gap = 0, residual_gap_after_investment = 0,
+                   shock_id = div_id, shock_semantics = headline_semantics, supply_constraint = con_m, scenario = headline_scenario)
+  }))
+  keep_cols <- c("compact_id", "compact_name", "technology", "stages", "included_subsectors", "n_subsectors")
+  compacts_managed <- dplyr::bind_rows(sol_m$compacts, empty_rows) %>%
+    dplyr::select(-dplyr::any_of(setdiff(keep_cols, "compact_id"))) %>%
+    dplyr::left_join(hc %>% dplyr::select(dplyr::all_of(keep_cols)), by = "compact_id") %>%
+    dplyr::mutate(n_nodes_run = vapply(compact_id, function(cid) length(run_ids[[cid]]), integer(1)),
+                  nodes_run = vapply(compact_id, function(cid) paste(run_ids[[cid]], collapse = " "), character(1)),
+                  node_statuses = vapply(compact_id, function(cid) {
+                    ids <- group_ids_m[[cid]]
+                    paste(sprintf("%s: %s", ids, dplyr::coalesce(div_status(ids), "not assessed")), collapse = "; ")
+                  }, character(1))) %>%
+    dplyr::relocate(dplyr::all_of(keep_cols), n_nodes_run, nodes_run, dplyr::any_of("coalition_reason")) %>%
+    dplyr::arrange(match(compact_id, hc$compact_id))
+  if (!"coalition_reason" %in% names(compacts_managed)) compacts_managed$coalition_reason <- NA_character_
+  # The trade compact is a restriction of the scenario's optimized state at the same cap: its coverage cannot
+  # pass the global optimum beyond the lexicographic coverage tolerance.
+  over <- compacts_managed$compact_id[dplyr::coalesce(compacts_managed$coverage_with_trade_coordination - compacts_managed$coverage_global_optimum, 0) >
+                                        2 * tolerances[1] + 1e-6]
+  if (length(over)) warning("Managed Interdependence compacts whose trade coverage passes the global optimum: ", paste(over, collapse = ", "), call. = FALSE)
+  managed_layer <- list(compacts = compacts_managed, members = sol_m$members, paths = sol_m$paths, loo = sol_m$loo,
+                        cnodes = sol_m$cnodes, classified = cls_m)
+  step("Compacts under ", div_id, " (", con_m, "): ", nrow(sol_m$compacts), " of ", nrow(hc), " compacts solved (",
+       length(names(problems_managed)), " scenario nodes), ", sum(!is.na(compacts_managed$minimum_coalition)), " reach the ",
+       100 * mid_target, "% target; ", round(as.numeric(difftime(Sys.time(), t_m, units = "mins")), 1), " min")
+}
 
 # Classification table: the headline mode, with the other mode's class beside it.
 other <- setdiff(constraints, headline_constraint)
@@ -936,6 +1195,60 @@ write_out(members_tbl %>% ids_cols(), "aib_compact_members.csv")
 write_out(paths_tbl %>% ids_cols(), "aib_compact_coalition_path.csv")
 loo_out <- dplyr::bind_rows(lapply(names(layers), function(m) if (nrow(layers[[m]]$loo)) dplyr::mutate(layers[[m]]$loo, supply_constraint = m)))
 write_out(loo_out %>% ids_cols(), "aib_compact_leave_one_out.csv")
+if (!is.null(managed_layer)) {
+  m_cols <- function(t) if (is.null(t) || !nrow(t)) t else t %>% dplyr::mutate(shock_id = div_id, supply_constraint = headline_constraint) %>% ids_cols()
+  write_out(managed_layer$compacts %>% ids_cols(), "aib_compact_candidates_managed.csv")
+  write_out(m_cols(managed_layer$members), "aib_compact_members_managed.csv")
+  write_out(m_cols(managed_layer$paths), "aib_compact_coalition_path_managed.csv")
+  write_out(m_cols(managed_layer$loo), "aib_compact_leave_one_out_managed.csv")
+}
+
+# ---- The diversification scenario, one row per node and scenario ----------------------------------------
+# Each node's exporter concentration against its higher-level sector's, the supplier cap that closes the
+# difference, and what it takes (headline semantics and supply constraint): the supply the capped
+# suppliers lose, how much existing and new trade relationships replace under the cap, the capacity gap
+# left and the hosts that would close it.
+div_out <- NULL
+if (!is.null(div_targets)) {
+  dk <- targets %>% dplyr::filter(shock_id == div_id) %>% dplyr::distinct(node_id, shock_key)
+  ds <- summary_runs %>% dplyr::inner_join(dk, by = c("node_id", "shock_key")) %>%
+    dplyr::select(node_id, scenario, demand_usd, lost_usd, shock_exposure, static_coverage, existing_coverage, optimized_coverage,
+                  coordination_dividend, residual_gap, residual_gap_usd, optimized_largest_supplier, optimized_largest_share, optimized_hhi,
+                  n_new_links, n_expanded_links, optimized_top3_share)
+  hosts_d <- if (nrow(inv_hosts_head)) inv_hosts_head %>%
+    dplyr::filter(shock_id == div_id, abs(increment - inv$headline_increment) < 1e-9, host_rank <= inv$top_hosts) %>%
+    dplyr::group_by(node_id, scenario) %>% dplyr::arrange(host_rank, .by_group = TRUE) %>%
+    dplyr::summarise(priority_investment_hosts = paste(utils::head(host_iso, 3), collapse = "; "), .groups = "drop") else
+    tibble::tibble(node_id = character(), scenario = character(), priority_investment_hosts = character())
+  rel_d <- partners_head %>% dplyr::filter(shock_id == div_id, relationship != "domestic retention") %>%
+    dplyr::group_by(node_id, scenario) %>% dplyr::arrange(dplyr::desc(delta_usd), .by_group = TRUE) %>%
+    dplyr::summarise(key_trade_partners = paste(utils::head(sprintf("%s->%s", exporter_iso, importer_iso), 4), collapse = "; "),
+                     new_and_expanded_usd = sum(delta_usd), .groups = "drop")
+  cls_col <- paste0("class_", div_id)
+  div_cls <- if (cls_col %in% names(classified)) classified %>% dplyr::select(node_id, diversify_class = dplyr::all_of(cls_col)) else
+    tibble::tibble(node_id = character(), diversify_class = character())
+  div_out <- div_targets %>%
+    dplyr::left_join(inputs$benchmarks %>% dplyr::select(node_id, benchmark_hs4, benchmark_sector, n_benchmark_lines, benchmark_hs4_headings,
+                                                         benchmark_year), by = "node_id") %>%
+    dplyr::left_join(node_label, by = "node_id") %>%
+    dplyr::left_join(taxonomy_tbl %>% dplyr::select(techs = tech, index_code, index_name), by = "techs") %>%
+    dplyr::left_join(ds, by = "node_id", relationship = "one-to-many") %>%
+    dplyr::left_join(hosts_d, by = c("node_id", "scenario")) %>%
+    dplyr::left_join(rel_d, by = c("node_id", "scenario")) %>%
+    dplyr::left_join(div_cls, by = "node_id") %>%
+    # Above the benchmark worldwide but no supplier above the cap in the demand scope: nothing to replace there.
+    dplyr::mutate(status = dplyr::case_when(is.na(benchmark_hhi) ~ "no benchmark",
+                                            is.na(cap) ~ "already as diversified as its benchmark",
+                                            is.na(scenario) ~ "within the cap in the allied market",
+                                            TRUE ~ "diversified to the benchmark"),
+                  diversify_class = dplyr::if_else(status == "diversified to the benchmark", diversify_class, NA_character_),
+                  shock_id = div_id, shock_semantics = headline_semantics, supply_constraint = headline_constraint,
+                  in_strategic_scope = node_id %in% scope_nodes) %>%
+    dplyr::relocate(node_id, node_label, techs, index_code, node_stage, status, current_hhi, benchmark_hhi, benchmark_basis, cap,
+                    target_iso, scenario) %>%
+    ids_cols()
+  write_out(div_out, "aib_diversification.csv")
+}
 
 # ---- Validation cases: trade-only vs production-constrained ------------------------------------------
 val_tables <- list(); val_md <- c()
@@ -957,7 +1270,9 @@ saveRDS(list(
   meta = list(built = format(Sys.time(), "%Y-%m-%dT%H:%M:%S"), universe = universe_id, demand_scope = demand_set$id,
               candidate_universe = partner_set$id, n_demand_scope = length(demand_set$iso), headline_shock = headline_shock,
               headline_scenario = headline_scenario, headline_semantics = headline_semantics, headline_constraint = headline_constraint,
-              strategic_scope = scope_mode, scope_techs = scope_techs, trade_year = inputs$meta$trade_year, config = cfg),
+              strategic_scope = scope_mode, scope_techs = scope_techs, trade_year = inputs$meta$trade_year,
+              taxonomy = input_taxonomy, dictionary_scope = aib_or(inputs$meta$dictionary_scope, NA_character_), config = cfg),
+  taxonomy = taxonomy_tbl,
   nodes = nodes, node_cells = inputs$node_cells, quality = dq_out, stress = stress, partnerships = partners_head,
   frontier = pick_variant(frontier_out), frontier_all = frontier_out,
   investment = if (nrow(inv_out)) inv_out[inv_out$supply_constraint == headline_constraint, , drop = FALSE] else inv_out,
@@ -965,7 +1280,18 @@ saveRDS(list(
   classification = classified, compacts = head_layer$compacts, compact_nodes = head_layer$node_table,
   compact_members = head_layer$members, coalition_paths = head_layer$paths, leave_one_out = head_layer$loo, layers = layers,
   growth = if (exists("growth_out")) growth_out else NULL, importer_loss = importer_loss,
-  validation = dplyr::bind_rows(val_tables), country_names = inputs$country_names, scope_nodes = scope_nodes
+  diversification = div_out, benchmarks = inputs$benchmarks,
+  validation = dplyr::bind_rows(val_tables), country_names = inputs$country_names, scope_nodes = scope_nodes,
+  # The dashboard's other two scenarios (scripts/84 needs nothing from aib_inputs.rds). Managed
+  # Interdependence (the diversification shock, headline variant): its network, importer loss and the
+  # headline compacts solved under it. Baseline (observed reference-year trade): each optimized node's
+  # supply to the demand scope by exporter and the observed network.
+  scenario_shock = div_id,
+  edges_managed = net_managed$edges, countries_managed = net_managed$countries, importer_loss_managed = importer_loss_managed,
+  compacts_managed = managed_layer$compacts, compact_members_managed = managed_layer$members,
+  coalition_paths_managed = managed_layer$paths, leave_one_out_managed = managed_layer$loo,
+  baseline_supply = observed_supply, edges_baseline = edges_baseline, countries_baseline = countries_baseline,
+  baseline_min_share = baseline_min_share
 ), file.path(out_dir, "aib_results.rds"))
 step("AIB done in ", round(as.numeric(difftime(Sys.time(), t_script, units = "mins")), 1), " min; ",
      nrow(head_layer$compacts), " compacts (", headline_constraint, ")")

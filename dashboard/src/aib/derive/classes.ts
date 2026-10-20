@@ -95,19 +95,33 @@ export function needsAddToClass(cls: string, needs: readonly string[] | null | u
   return needs.length > 1 || needs[0] !== cls;
 }
 
+/** One node's needs as the exporter writes them: class names joined with " + ", or "none". */
+const NEEDS_RE = /^(.*): ((?:[A-Z][A-Z ]*[A-Z])(?: \+ [A-Z][A-Z ]*[A-Z])*|none)$/;
+
 /**
  * The compact's policy needs by node as the exporter writes them ("Battery Cells: BUILD; Lithium
- * Chemicals: BUILD + MANAGE SPECIALIZATION"; "none" when a node has none) as { node, needs }.
+ * Chemicals: BUILD + MANAGE SPECIALIZATION"; "none" when a node has none) as { node, needs }. Node labels
+ * are never split: a part ends only where the needs (upper-case class names or "none") end, so a label
+ * holding "; " or ": " survives (the dictionary's labels hold ", " and "/", neither "; " nor ": ").
  */
 export function parseNodePolicyNeeds(s: string | null | undefined): { node: string; needs: string }[] {
   if (!s) return [];
-  return s
-    .split('; ')
-    .map((part) => {
-      const i = part.lastIndexOf(': ');
-      return i < 0 ? { node: part.trim(), needs: '' } : { node: part.slice(0, i).trim(), needs: part.slice(i + 2).trim() };
-    })
-    .filter((x) => x.node);
+  const out: { node: string; needs: string }[] = [];
+  let buf = '';
+  for (const part of s.split('; ')) {
+    buf = buf ? `${buf}; ${part}` : part;
+    const m = NEEDS_RE.exec(buf);
+    if (m) {
+      if (m[1].trim()) out.push({ node: m[1].trim(), needs: m[2] });
+      buf = '';
+    }
+  }
+  // a tail without recognisable needs: kept whole, as before
+  if (buf.trim()) {
+    const i = buf.lastIndexOf(': ');
+    out.push(i < 0 ? { node: buf.trim(), needs: '' } : { node: buf.slice(0, i).trim(), needs: buf.slice(i + 2).trim() });
+  }
+  return out.filter((x) => x.node);
 }
 
 /**

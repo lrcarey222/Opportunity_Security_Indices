@@ -18,6 +18,7 @@ import { EngineHost, type FetchBytes } from '../../worker/host.ts';
 import type { FromWorker, ToWorker } from '../../worker/protocol.ts';
 import type { AibDoc } from '../../aib/contract.ts';
 import { AibStore, setAibStoreForTests } from '../../aib/data/store.ts';
+import { compactTitle } from '../../aib/derive/format.ts';
 import { fixtureSource as aibSource, haveFixture as haveAib, readDoc } from '../../aib/__tests__/fixture.ts';
 import { CountryStore, setCountryStoreForTests } from '../data/store.ts';
 import { aibCountry, capabilities, compactsOfCell, dependencies, engineCellKey, makeBets, policyBehaviour, siMapOf, siOrder } from '../derive/framing.ts';
@@ -64,6 +65,22 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile framing (pure)', 
     const node = doc.nodes.find((nd) => nd.compact && nd.yfCells.length)!;
     expect(compactsOfCell(doc, node.yfCells[0]).map((c) => c.id)).toContain(node.compact);
     expect(compactsOfCell(doc, 'no-such-cell')).toEqual([]);
+  });
+
+  it('compactsOfCell joins through the OSI crosswalk (yfCells), many-to-many, never through the node sector or stage', () => {
+    // the AIB fixture is an electro-industrial dictionary bundle: AIB-C01 (sectors Magnets, Rare earths; Midstream)
+    expect(doc.meta.taxonomy).toBe('dictionary');
+    // its magnets node sits in two OSI cells, its rare-earth node in the Upstream ones: one compact, four cells
+    for (const key of ['electric-vehicles-midstream', 'wind-midstream', 'electric-vehicles-upstream', 'wind-upstream']) expect(compactsOfCell(doc, key).map((c) => c.id)).toContain('AIB-C01');
+    // one cell, two compacts (the magnets of AIB-C01 and the wind towers of AIB-C03)
+    expect(compactsOfCell(doc, 'wind-midstream').map((c) => c.id)).toEqual(['AIB-C01', 'AIB-C03']);
+    // the wind towers (sector Onshore wind, Downstream) reach OSI Wind Midstream only; a name or stage join would find these
+    expect(compactsOfCell(doc, 'wind-downstream')).toEqual([]);
+    expect(compactsOfCell(doc, 'magnets-midstream')).toEqual([]);
+    // the dependencies list the compacts by their display title (labels with commas kept whole)
+    const deps = dependencies(sheet, doc, 99);
+    for (const d of deps) for (const cp of d.compacts) expect(cp.name).toBe(compactTitle(doc.compacts.find((c) => c.id === cp.id)!, doc.nodes));
+    expect(compactTitle(doc.compacts[0], doc.nodes)).toBe('Magnets / Rare earths: Magnets, magnet parts & assemblies; Rare-earth oxides & compounds');
   });
 
   it('aibCountry: roles, compacts and trade relationships of the economy', () => {

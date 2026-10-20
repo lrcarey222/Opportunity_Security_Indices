@@ -3,9 +3,13 @@
 // ranked host of a node is a separate simulation of the same increment of capacity: only rank 1 is the
 // selected host, so flows are summed across nodes for rank 1 only; alternatives (ranks 2..) are listed,
 // never added up. A modelled result: nothing here follows the Perspective. Pure.
+// The scenarios (2026-10-19): the flows follow the toggle (Decoupling doc.investmentFlows, Managed
+// Interdependence its scenario file's; scenarios.ts scenarioInvestmentFlows()); flowsDocOf() pairs them
+// with the main document's nodes, so every function here reads either. Baseline has none: no new capacity
+// exists today.
 
 import { isNum } from '../../lib/format.ts';
-import type { AibDoc, AibInvestmentHost, AibInvestmentPair, AibNode } from '../contract.ts';
+import type { AibDoc, AibInvestmentFlows, AibInvestmentHost, AibInvestmentPair, AibNode } from '../contract.ts';
 import { nodeInScope, type PartnershipFilter } from './partnerships.ts';
 
 export type RankChoice = 'best' | 'all';
@@ -106,6 +110,11 @@ export function rankWords(rank: number, maxRank?: number): string {
   return `${rank}${suf}${maxRank ? ` of ${maxRank}` : ''}`;
 }
 
+/** A scenario's flows as the functions here read them: the main document's nodes and meta with those flows (none: null). */
+export function flowsDocOf<D extends Pick<AibDoc, 'nodes' | 'meta'>>(doc: D, flows: AibInvestmentFlows | null | undefined): Pick<AibDoc, 'nodes' | 'meta' | 'investmentFlows'> {
+  return { nodes: doc.nodes, meta: doc.meta, investmentFlows: flows ?? undefined };
+}
+
 /** The document carries the flows (a bundle from before 2026-10-17 does not). */
 export const hasInvestmentFlows = (doc: Pick<AibDoc, 'investmentFlows'>): boolean => !!doc.investmentFlows;
 
@@ -113,7 +122,7 @@ export const hasInvestmentFlows = (doc: Pick<AibDoc, 'investmentFlows'>): boolea
 export function variantPhrase(doc: Pick<AibDoc, 'investmentFlows' | 'meta'>, shockLabel: string): string {
   const v = doc.investmentFlows?.variant;
   const inc = v && isNum(v.increment) ? `, an increment of ${Math.round(v.increment * 100)}% of node demand at each host` : '';
-  return `${shockLabel}, ${v?.scenario ?? doc.meta.headlineScenario} scenario${v?.supplyConstraint ? `, ${v.supplyConstraint.replace(/_/g, '-')} supply` : ''}${inc}`;
+  return `${shockLabel}; supply assumption: ${v?.scenario ?? doc.meta.headlineScenario}${v?.supplyConstraint ? `, ${v.supplyConstraint.replace(/_/g, '-')} supply` : ''}${inc}`;
 }
 
 /** Node lookup helper shared by the views: the label, else the id. */

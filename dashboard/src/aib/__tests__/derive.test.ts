@@ -5,26 +5,35 @@
 // filter); the coalition curve and its target marks; the exact vs greedy coalition (the tie-break, an
 // unreached target's widest set, an empty member list) and the six tiers with what would replace a member;
 // the physical-capability flag of every class shown; the role matrix; the run settings in words; the
-// formats; the module's nav and the shell's place of /compacts paths.
+// formats; the module's nav and the shell's place of /compacts paths; the diversification scenario (rows,
+// the demand split, totals, order, filters, the node block per status, the CSV row, the variant class).
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { coalitionMembersOf, type AibCompact, type AibDoc } from '../contract.ts';
+import { AIB_DIVERSIFY_STATUSES, coalitionMembersOf, type AibCompact, type AibDoc, type AibNode } from '../contract.ts';
 import { classInfo, classMix, classOrder, CLASS_INFO, INTERVENTION_CLASSES, needsAddToClass, parseClassMix, parseNodePolicyNeeds, policyNeedsText } from '../derive/classes.ts';
 import { coalitionCurve, curveFloor, targetLabel, targetMarks } from '../derive/coalition.ts';
 import { compactVsFragmented, coverageSteps, globalOptimum, largestGain, nodeCoverageSteps } from '../derive/coverage.ts';
 import { capLabel, FRONTIER_SERIES, frontierPoints, frontierReadings, frontierRows, hasReoptimizedN1, nodesWithFrontier } from '../derive/frontier.ts';
 import { compactTypeInfo } from '../derive/types.ts';
 import { investmentFlows, nodesWithRelationships, tradeFlows } from '../derive/flows.ts';
-import { compactTitle, fmtPp, fmtShare, fmtUsd, listWords, nameOf, plural } from '../derive/format.ts';
+import { compactTitle, fmtPp, fmtShare, fmtUsd, joinLabels, listWords, nameOf, plural } from '../derive/format.ts';
 import { classCounts, compactNodes, concentration, mixedTreatments, nodeCsvRow, nodeRow, nodesByClass, outOfScopeCount, scopedNodes, technologiesOf } from '../derive/nodes.ts';
 import { canonicalRole, ROLE_ORDER, roleMatrix, rolesUsed } from '../derive/roles.ts';
 import { countryRoleRow, countryRoleRows, countryRolesUsed } from '../derive/countryRoles.ts';
-import { buildGaps, dividendOf, dpRows, filterChoices, hostRows, investmentNodes, NO_FILTER, pairInvestmentFlows, pairTradeFlows, specializedSuppliers, topNodes, topPairs } from '../derive/partnerships.ts';
+import {
+  buildGaps, dividendOf, dpRows, filterChoices, hostRows, investmentNodes, NO_FILTER, osiCellPick, pairInvestmentFlows, pairTradeFlows, scoredCellsOf, specializedSuppliers, topNodes, topPairs,
+} from '../derive/partnerships.ts';
+import {
+  groupedSectorWords, indexLabel, indexOfNode, indexOfSector, indicesOfCompact, nodeWhere, osiCellHref, osiCellOf, profiledCellsOfNode, sectorGroups, taxonomyOf, techOptions,
+} from '../derive/taxonomy.ts';
 import { mapPoints } from '../charts/StrategicMap.tsx';
 import {
   classVariants, constraintClasses, growthBoundWords, growthFlag, growthRows, robustnessSummary, variantWarning, warnedGrowthBounds, warnedVariants,
 } from '../derive/sensitivity.ts';
-import { candidateUniverse, coverageBase, demandScope, shockSemantics, strategicScope, supplyConstraint } from '../derive/settings.ts';
+import {
+  candidateUniverse, coverageBase, demandScope, DIVERSIFY_BENCHMARK_WORDS, DIVERSIFY_LABEL, diversifyRules, diversifySetting, HHI_WORDS, nodeTaxonomy, shockSemantics, strategicScope,
+  strategicScopeShort, supplyConstraint,
+} from '../derive/settings.ts';
 import {
   additionsNeeded, coalitionMethod, coalitionTargets, coalitionTiers, isGreedySetMethod, replacementWords, tierEconomies, tierName, tierShares,
 } from '../derive/tiers.ts';
@@ -32,12 +41,24 @@ import { aibNavItems, aibNavKeyOf, compactIdOfPath, rememberCompact, resetLastCo
 import { aibTabHref, lastLocations, moduleResumeHref, rememberLocation, resetLastLocations } from '../../shell/lastLocation.ts';
 import { AIB_NAV, aibNavKeyOf as shellAibNavKeyOf, MODULES, placeOf } from '../../shell/modules.ts';
 import { pageTitle } from '../../shell/title.ts';
-import { countryEdges, countryRoleMatrix, countryRolesOf, edgeWords, fmtPts, namedRoles, roleHolders, sideLevel } from '../derive/network.ts';
+import { countryEdges, countryRoleMatrix, countryRolesOf, edgeWords, everyShock, fmtPts, namedRoles, roleHolders, sideLevel } from '../derive/network.ts';
+import { cellWords } from '../views/networkParts.tsx';
 import { hostRanksOf, hostsOfNode, investmentPairs, investorHostFlows, partnerTotals, rankWords } from '../derive/investment.ts';
-import { readDoc, stripMethodology, SYNTHETIC_DIR } from './fixture.ts';
+import { readDoc, stripDiversify, stripMethodology, SYNTHETIC_DIR, toMasterTaxonomy } from './fixture.ts';
+import {
+  aboveWords, basisWords, benchmarkWords, cappedWords, demandSplit, DIVERSIFY_STATUS_WORDS, diversifyClassText, diversifyCsvRow, diversifyIndices, diversifyLabel, diversifyRow, diversifyRows,
+  rowStatusLabel,
+  diversifySectorOptions, diversifyTotals, diversifyWords, filterDiversify, hasDiversify, hhiAxisMax, NO_DIVERSIFY_FILTER, orderDiversify, relationshipsOf, relationshipWords, statusWords,
+  totalsWords,
+} from '../derive/diversify.ts';
+import { hhiTicks } from '../charts/DiversifyChart.tsx';
 
+// the synthetic fixture is a dictionary bundle (strategic scope all); `master` is its OSI-basket form
+// (strategic scope electro_industrial, the electrolysers node outside it); `older` predates both
 const doc: AibDoc = readDoc(SYNTHETIC_DIR);
+const master: AibDoc = toMasterTaxonomy(structuredClone(doc));
 const older: AibDoc = stripMethodology(structuredClone(doc));
+const tx = taxonomyOf(doc.meta);
 const names = doc.countries;
 const c01 = doc.compacts[0];
 const c02 = doc.compacts[1];
@@ -69,7 +90,9 @@ describe('classes', () => {
       { cls: 'BUILD', n: 2 },
     ]);
     expect(classCounts(doc.nodes)).toEqual({ COORDINATE: 3, BUILD: 2, 'MANAGE SPECIALIZATION': 1, 'LOW INTERVENTION': 1, 'INSUFFICIENT DATA': 1 });
-    expect(classCounts(scopedNodes(doc.nodes))).toEqual({ COORDINATE: 3, BUILD: 1, 'MANAGE SPECIALIZATION': 1, 'LOW INTERVENTION': 1, 'INSUFFICIENT DATA': 1 });
+    // strategic scope all: every node; the master form leaves the electrolysers (BUILD) outside
+    expect(classCounts(scopedNodes(doc.nodes))).toEqual(classCounts(doc.nodes));
+    expect(classCounts(scopedNodes(master.nodes))).toEqual({ COORDINATE: 3, BUILD: 1, 'MANAGE SPECIALIZATION': 1, 'LOW INTERVENTION': 1, 'INSUFFICIENT DATA': 1 });
   });
 
   it('policy needs in words, in the class order; whether they say more than the class', () => {
@@ -82,11 +105,18 @@ describe('classes', () => {
     // a LOW INTERVENTION node can still need coordination
     expect(needsAddToClass('LOW INTERVENTION', ['COORDINATE'])).toBe(true);
     expect(needsAddToClass('LOW INTERVENTION', [])).toBe(false);
+    // node labels with commas survive (the parts end where the needs end)
     expect(parseNodePolicyNeeds(c01.nodePolicyNeeds)).toEqual([
-      { node: 'Permanent Magnets & Magnet Parts', needs: 'COORDINATE + BUILD' },
-      { node: 'Rare-Earth Compounds', needs: 'COORDINATE + MANAGE SPECIALIZATION' },
+      { node: 'Magnets, magnet parts & assemblies', needs: 'COORDINATE + BUILD' },
+      { node: 'Rare-earth oxides & compounds', needs: 'COORDINATE + MANAGE SPECIALIZATION' },
     ]);
     expect(parseNodePolicyNeeds('Rare-Earth Compounds + Ores: none')).toEqual([{ node: 'Rare-Earth Compounds + Ores', needs: 'none' }]);
+    // a label holding ": " or "; " (the dictionary has none, an older segment name had "PGMs: iridium/ruthenium") stays whole
+    expect(parseNodePolicyNeeds('PGMs: iridium/ruthenium: BUILD; Odd; label: none; Electric buses, trucks & tractors: COORDINATE + BUILD')).toEqual([
+      { node: 'PGMs: iridium/ruthenium', needs: 'BUILD' },
+      { node: 'Odd; label', needs: 'none' },
+      { node: 'Electric buses, trucks & tractors', needs: 'COORDINATE + BUILD' },
+    ]);
     expect(parseNodePolicyNeeds(null)).toEqual([]);
   });
 
@@ -155,26 +185,36 @@ describe('coverage steps', () => {
 });
 
 describe('nodes', () => {
-  it('groups every node by class (all five groups), by lost supply within a group; filters by technology', () => {
+  it('groups every node by class (all five groups), by lost supply within a group; filters by sector (dictionary) or technology (master)', () => {
     const g = nodesByClass(doc.nodes);
     expect(g.map((x) => x.cls)).toEqual(['COORDINATE', 'BUILD', 'MANAGE SPECIALIZATION', 'LOW INTERVENTION', 'INSUFFICIENT DATA']);
-    expect(g[0].nodes.map((n) => n.label)).toEqual(['Anode Materials', 'Wind Towers & Nacelles', 'Natural Graphite']);
+    expect(g[0].nodes.map((n) => n.label)).toEqual(['Synthetic graphite (anode-grade, spherical)', 'Wind towers, nacelles & hubs', 'Natural graphite']);
     expect(g[0].lostUsd).toBeCloseTo(2.68e9, 0);
-    const wind = nodesByClass(doc.nodes, 'Wind');
+    const graphite = nodesByClass(doc.nodes, 'Graphite');
+    expect(graphite.flatMap((x) => x.nodes).map((n) => n.id).sort()).toEqual(['bat-mid-anode', 'bat-up-graphite']);
+    expect(graphite.find((x) => x.cls === 'LOW INTERVENTION')!.nodes).toEqual([]);
+    // the dictionary's sectors, "/" kept; never an OSI technology name the dictionary does not use
+    expect(technologiesOf(doc.nodes)).toEqual(['Electrolysers/H2 equipment', 'Graphite', 'Magnets', 'Onshore wind', 'Rare earths', 'Solar', 'Transformers']);
+    expect(nodesByClass(doc.nodes, 'Wind').flatMap((x) => x.nodes)).toEqual([]);
+    // the master form: OSI technologies from the crosswalk
+    const wind = nodesByClass(master.nodes, 'Wind');
     expect(wind.flatMap((x) => x.nodes).map((n) => n.id).sort()).toEqual(['ev-wind-mid-magnets', 'ev-wind-mid-ree-compounds', 'wind-down-towers']);
     expect(wind.find((x) => x.cls === 'COORDINATE')!.nodes.map((n) => n.id)).toEqual(['wind-down-towers']);
-    expect(wind.find((x) => x.cls === 'LOW INTERVENTION')!.nodes).toEqual([]);
-    expect(technologiesOf(doc.nodes)).toEqual(['Batteries', 'Electric Grid', 'Electric Vehicles', 'Natural Gas', 'Solar', 'Wind']);
+    expect(technologiesOf(master.nodes)).toEqual(['Batteries', 'Electric Grid', 'Electric Vehicles', 'Green Hydrogen', 'Solar', 'Wind']);
   });
 
-  it('the strategic scope: in-scope nodes by default, every node on request; an older bundle has every node in scope', () => {
-    expect(outOfScopeCount(doc.nodes)).toBe(1);
-    expect(scopedNodes(doc.nodes).map((n) => n.id)).not.toContain('gas-mid-turbines');
-    expect(scopedNodes(doc.nodes, true)).toHaveLength(doc.nodes.length);
-    expect(technologiesOf(scopedNodes(doc.nodes))).not.toContain('Natural Gas');
-    expect(nodesByClass(scopedNodes(doc.nodes)).find((g) => g.cls === 'BUILD')!.nodes.map((n) => n.id)).toEqual(['ev-wind-mid-magnets']);
+  it('the strategic scope: in-scope nodes by default, every node on request; all in a dictionary bundle; an older bundle has every node in scope', () => {
+    // the dictionary bundle's scope is "all"
+    expect(outOfScopeCount(doc.nodes)).toBe(0);
+    expect(scopedNodes(doc.nodes)).toHaveLength(doc.nodes.length);
+    // a configured scope (the master form): the electrolysers node, as Green Hydrogen, is outside
+    expect(outOfScopeCount(master.nodes)).toBe(1);
+    expect(scopedNodes(master.nodes).map((n) => n.id)).not.toContain('h2-down-electrolysers');
+    expect(scopedNodes(master.nodes, true)).toHaveLength(master.nodes.length);
+    expect(technologiesOf(scopedNodes(master.nodes))).not.toContain('Green Hydrogen');
+    expect(nodesByClass(scopedNodes(master.nodes)).find((g) => g.cls === 'BUILD')!.nodes.map((n) => n.id)).toEqual(['ev-wind-mid-magnets']);
     // every compact node is in scope
-    for (const c of doc.compacts) for (const id of c.nodes) expect(nodeOf(id)!.inStrategicScope, id).toBe(true);
+    for (const c of master.compacts) for (const id of c.nodes) expect(master.nodes.find((n) => n.id === id)!.inStrategicScope, id).toBe(true);
     expect(outOfScopeCount(older.nodes)).toBe(0);
     expect(scopedNodes(older.nodes)).toHaveLength(older.nodes.length);
   });
@@ -190,13 +230,24 @@ describe('nodes', () => {
     expect(mixedTreatments(compactNodes(c02, nodeOf))).toBe(false);
   });
 
-  it('table and CSV rows resolve names and join arrays', () => {
-    const r = nodeRow(nodeOf('ev-wind-mid-magnets')!, names);
-    expect(r).toMatchObject({ optimizedLargest: 'Borduria', baselineLargest: 'Zembla', hosts: 'Dorvalia; Elbonia', technologies: 'Electric Vehicles; Wind', compact: 'AIB-C01' });
+  it('table and CSV rows resolve names and join arrays; a dictionary node names its sectors and index, never technologies', () => {
+    const r = nodeRow(nodeOf('ev-wind-mid-magnets')!, names, tx);
+    expect(r).toMatchObject({
+      optimizedLargest: 'Borduria', baselineLargest: 'Zembla', hosts: 'Dorvalia; Elbonia', technologies: 'Magnets', compact: 'AIB-C01',
+      dictionary: true, indexCode: 'B', indexName: 'Electrotechnologies', osiCells: 'electric-vehicles-midstream; wind-midstream',
+    });
     const csv = nodeCsvRow(r);
-    expect(Object.keys(csv)[0]).toBe('node_id');
+    expect(Object.keys(csv).slice(0, 7)).toEqual(['node_id', 'sub_sector', 'sectors', 'index_code', 'index_name', 'osi_cells', 'stage']);
+    expect(csv).not.toHaveProperty('technologies');
     expect(csv.classification).toBe('BUILD');
     expect(nodeRow(nodeOf('grid-mid-transformers')!, names).optimizedLargest).toBeNull();
+    // a node with no basket code: no OSI cell
+    expect(nodeCsvRow(nodeRow(nodeOf('h2-down-electrolysers')!, names, tx))).toMatchObject({ sectors: 'Electrolysers/H2 equipment', index_code: 'F', osi_cells: '' });
+    // master (or no taxonomy given): the technologies column, no index
+    const m = nodeCsvRow(nodeRow(master.nodes.find((n) => n.id === 'ev-wind-mid-magnets')!, names, taxonomyOf(master.meta)));
+    expect(m).toMatchObject({ technologies: 'Electric Vehicles; Wind' });
+    expect(m).not.toHaveProperty('sectors');
+    expect(m).not.toHaveProperty('index_code');
   });
 
   it('table and CSV rows carry the policy needs, the warning, the physical validation, the scope, both constraint classes and the N-1 readings', () => {
@@ -207,7 +258,8 @@ describe('nodes', () => {
     });
     const csv = nodeCsvRow(r);
     expect(csv).toMatchObject({ policy_needs: 'COORDINATE', classification_warning: 'PHYSICAL CAPABILITY NOT VALIDATED', in_strategic_scope: true, class_trade_only: 'COORDINATE', n1_reoptimized_coverage: 0.77 });
-    expect(nodeRow(nodeOf('gas-mid-turbines')!, names)).toMatchObject({ inStrategicScope: false, policyNeeds: 'COORDINATE + BUILD', warning: null });
+    expect(nodeRow(nodeOf('h2-down-electrolysers')!, names)).toMatchObject({ inStrategicScope: true, policyNeeds: 'COORDINATE + BUILD', warning: null });
+    expect(nodeRow(master.nodes.find((n) => n.id === 'h2-down-electrolysers')!, names)).toMatchObject({ inStrategicScope: false, technologies: 'Green Hydrogen' });
     // an older bundle: none of them, and every node in scope
     const o = nodeRow(older.nodes[0], names);
     expect(o).toMatchObject({ policyNeeds: null, warning: null, physicalValidation: null, inStrategicScope: true, tradeOnlyCls: null, coordinateSensitiveToGrowth: null, n1Reoptimized: null });
@@ -492,7 +544,11 @@ describe('class variants and the growth-bound sensitivity', () => {
       ['Shock', 'zzz_100', 'MANAGE SPECIALIZATION', true, false],
       ['Shock', 'zzz_50', 'MANAGE SPECIALIZATION', false, false],
       ['Shock', 'largest_subsector', 'BUILD', false, true],
+      // the diversification scenario: its own group; within the cap, so it did not run
+      ['Diversification', 'diversify_benchmark', null, false, false],
     ]);
+    expect(v.filter((r) => r.notRun).map((r) => r.key)).toEqual(['diversify_benchmark']);
+    expect(v.find((r) => r.key === 'diversify_benchmark')!.setting).toBe("Diversified to its sector's concentration");
     expect(v.find((r) => r.key === 'trade_only')!.setting).toBe('Trade-only');
     expect(v.find((r) => r.key === 'zzz_50')!.setting).toBe('Zembla supply halved');
     expect(constraintClasses(nodeOf('bat-up-graphite')!)).toEqual({
@@ -589,10 +645,25 @@ describe('run settings in words', () => {
     expect(pc).toMatch(/Production shares are not converted into trade values/);
     expect(pc).not.toMatch(/world trade|larger of/);
     // any configured strategic scope is shown as written
-    expect(strategicScope({ ...doc.meta, strategicScope: 'critical_minerals', scopeTechs: ['Lithium'] })).toMatchObject({ mode: 'critical_minerals', label: 'critical_minerals', techs: ['Lithium'] });
-    const st = strategicScope(doc.meta)!;
+    expect(strategicScope({ ...master.meta, strategicScope: 'critical_minerals', scopeTechs: ['Lithium'] })).toMatchObject({ mode: 'critical_minerals', label: 'critical_minerals', techs: ['Lithium'] });
+    const st = strategicScope(master.meta)!;
     expect(st).toMatchObject({ mode: 'electro_industrial', label: 'Electro-industrial' });
     expect(st.words).toMatch(/^compacts are formed only from the nodes of Batteries, .* and Nuclear; other nodes stay in the data, outside the headline$/);
+    expect(strategicScope({ ...master.meta, strategicScope: 'all' })).toMatchObject({ label: 'All technologies', words: 'compacts can be formed from the nodes of every technology' });
+    // the dictionary bundle: every sector, in words of sectors and indices
+    expect(strategicScope(doc.meta)).toMatchObject({
+      mode: 'all', label: 'All sectors', words: 'compacts can be formed from the nodes of every sector of the electro-industrial dictionary (8 sectors in 6 indices)',
+    });
+    expect([strategicScopeShort(doc.meta), strategicScopeShort(master.meta), strategicScopeShort(master.meta, 'all')]).toEqual(['all sectors', 'electro-industrial technologies', 'all technologies']);
+    // where the nodes come from
+    const nt = nodeTaxonomy(doc.meta);
+    expect(nt).toMatchObject({ mode: 'dictionary', dictionary: true, label: 'Electro-industrial dictionary (core scope)' });
+    expect(nt.words).toMatch(/^nodes come from the electro-industrial HS6 dictionary \(RMI Electro-Industrial Stack\): 6 indices > 8 sectors > stage/);
+    expect(nt.words).toMatch(/core scope: the dictionary's core codes: those dedicated or predominant in their sector \(specificity 1-2\), plus a few shared codes it keeps as core with a written justification, the headline; primary rows only, so each code sits in one node$/);
+    // a scope the words do not know is still named once
+    expect(nodeTaxonomy({ ...doc.meta, dictionaryScope: 'wide' }).label).toBe('Electro-industrial dictionary (wide scope)');
+    expect(nodeTaxonomy(master.meta)).toMatchObject({ mode: 'master', dictionary: false, label: 'OSI basket' });
+    expect(nodeTaxonomy(older.meta)).toMatchObject({ mode: 'master' });
     expect(coverageBase(doc.meta)).toBe("the demand scope's baseline traded demand");
     for (const f of [demandScope, candidateUniverse, shockSemantics, supplyConstraint, strategicScope]) expect(f(older.meta)).toBeNull();
     expect(coverageBase(older.meta)).toBe("the universe's baseline traded demand");
@@ -622,13 +693,16 @@ describe('formats', () => {
 });
 
 describe('nav and the shell', () => {
-  it('the module nav (IA refactor): Overview, Partnerships, Sectoral Compacts (every compact page), Country roles', () => {
+  it('the module nav (IA refactor): Overview, Partnerships, Sectoral Compacts (every compact page), Country roles, Diversification', () => {
     expect(aibNavItems('/aib', 'AIB-C01')).toEqual([
       { key: 'overview', label: 'Overview', to: '/aib', active: true },
       { key: 'partnerships', label: 'Partnerships', to: '/aib/partnerships', active: false },
       { key: 'compacts', label: 'Sectoral Compacts', to: '/compacts', active: false },
       { key: 'roles', label: 'Country roles', to: '/aib/roles', active: false },
+      { key: 'diversification', label: 'Managed Interdependence', to: '/aib/diversification', active: false },
     ]);
+    expect(aibNavItems('/aib/diversification').filter((i) => i.active).map((i) => i.key)).toEqual(['diversification']);
+    expect(aibNavKeyOf('/aib/Diversification')).toBe('diversification');
     expect(aibNavItems('/compacts/AIB-C02').filter((i) => i.active).map((i) => i.key)).toEqual(['compacts']);
     expect(aibNavItems('/compacts/about').filter((i) => i.active)).toEqual([]);
     rememberCompact('AIB-C02');
@@ -644,9 +718,11 @@ describe('nav and the shell', () => {
 
   it('the shell knows the module: place, static nav, tab and resume targets, titles', () => {
     expect(MODULES.find((m) => m.id === 'aib')).toMatchObject({ id: 'aib', label: 'Allied Industrial Base', home: '/aib' });
-    for (const p of ['/compacts', '/compacts/about', '/compacts/AIB-C01', '/aib', '/aib/roles']) expect(placeOf(p)).toBe('aib');
+    for (const p of ['/compacts', '/compacts/about', '/compacts/AIB-C01', '/aib', '/aib/roles', '/aib/diversification']) expect(placeOf(p)).toBe('aib');
     expect(placeOf('/compact')).toBeNull();
-    expect(AIB_NAV.map((n) => n.label)).toEqual(['Overview', 'Partnerships', 'Sectoral Compacts', 'Country roles']);
+    expect(AIB_NAV.map((n) => n.label)).toEqual(['Overview', 'Partnerships', 'Sectoral Compacts', 'Country roles', 'Managed Interdependence']);
+    expect(AIB_NAV.find((n) => n.key === 'diversification')!.to).toBe('/aib/diversification');
+    expect(shellAibNavKeyOf('/aib/diversification')).toBe('diversification');
     expect(shellAibNavKeyOf('/compacts/AIB-C01')).toBe('compacts');
     expect(shellAibNavKeyOf('/compacts')).toBe('compacts');
     expect(aibTabHref('/overview')).toBe('/aib');
@@ -734,34 +810,222 @@ describe('partnerships and the overview (IA refactor)', () => {
     ];
     expect(topPairs(rows, 'fs', 'AAA').map((r) => r.partner_iso)).toEqual(['CCC', 'BBB']);
     expect(topPairs(rows, 'fs', null).map((r) => r.reporter_iso + r.partner_iso)).toEqual(['DDDAAA', 'AAABBB', 'AAACCC']);
+    // the engine's OSI cells; the third shares its technology name with the dictionary's Solar sector
     const cells = [
       { tech: 'Solar', supply_chain: 'Midstream' },
       { tech: 'Wind', supply_chain: 'Upstream' },
+      { tech: 'Solar', supply_chain: 'Downstream' },
     ];
     const dp = [
       { partner_iso: 'AAA', cell_id: 1, value: 0.2 },
       { partner_iso: 'AAA', cell_id: 2, value: 0.7 },
       { partner_iso: 'BBB', cell_id: 1, value: 0.5 },
       { partner_iso: 'CCC', cell_id: 1, value: null },
+      { partner_iso: 'DDD', cell_id: 3, value: 0.9 },
     ];
-    expect(dpRows(dp, cells, [], NO_FILTER).map((r) => [r.iso3, r.value, r.tech])).toEqual([
-      ['AAA', 0.7, 'Wind'],
-      ['BBB', 0.5, 'Solar'],
+    expect(dpRows(dp, cells, doc.nodes, NO_FILTER, { osiTech: false }).map((r) => [r.iso3, r.value, r.tech, r.stage])).toEqual([
+      ['DDD', 0.9, 'Solar', 'Downstream'],
+      ['AAA', 0.7, 'Wind', 'Upstream'],
+      ['BBB', 0.5, 'Solar', 'Midstream'],
     ]);
-    expect(dpRows(dp, cells, [], { ...NO_FILTER, tech: 'Solar' }).map((r) => [r.iso3, r.value])).toEqual([
-      ['BBB', 0.5],
-      ['AAA', 0.2],
+    // the dictionary's Solar sector (a Downstream node) reaches OSI Solar Midstream through its codes, never Solar Downstream by name
+    for (const f of [{ ...NO_FILTER, tech: 'Solar' }, { ...NO_FILTER, tech: 'Solar', stage: 'Downstream' }, { ...NO_FILTER, node: 'solar-down-modules' }]) {
+      expect(dpRows(dp, cells, doc.nodes, f, { osiTech: false }).map((r) => [r.iso3, r.value, r.stage])).toEqual([
+        ['BBB', 0.5, 'Midstream'],
+        ['AAA', 0.2, 'Midstream'],
+      ]);
+    }
+    // a Midstream rare-earth node whose codes sit in the OSI Upstream cells
+    expect(dpRows(dp, cells, doc.nodes, { ...NO_FILTER, node: 'ev-wind-mid-ree-compounds' }, { osiTech: false }).map((r) => [r.iso3, r.tech, r.stage])).toEqual([['AAA', 'Wind', 'Upstream']]);
+    // no basket code: no cell, no rows (the view says so); a sector name the nodes do not use: none either
+    expect(dpRows(dp, cells, doc.nodes, { ...NO_FILTER, tech: 'Electrolysers/H2 equipment' }, { osiTech: false })).toEqual([]);
+    expect(dpRows(dp, cells, [], { ...NO_FILTER, tech: 'Solar' }, { osiTech: false })).toEqual([]);
+    // the economy filter still applies
+    expect(dpRows(dp, cells, doc.nodes, { ...NO_FILTER, tech: 'Solar', country: 'AAA' }, { osiTech: false }).map((r) => r.iso3)).toEqual(['AAA']);
+    // a master bundle (OSI technologies): the filter's technology and stage limit the cells, so the
+    // rare-earth node in Electric Vehicles and Wind never lends Wind + Upstream its Electric Vehicles cell
+    const mcells = [
+      { tech: 'Electric Vehicles', supply_chain: 'Upstream' },
+      { tech: 'Wind', supply_chain: 'Upstream' },
+      { tech: 'Electric Vehicles', supply_chain: 'Midstream' },
+      { tech: 'Wind', supply_chain: 'Midstream' },
+    ];
+    const mdp = [
+      { partner_iso: 'AAA', cell_id: 1, value: 0.9 },
+      { partner_iso: 'AAA', cell_id: 2, value: 0.3 },
+      { partner_iso: 'BBB', cell_id: 1, value: 0.8 },
+      { partner_iso: 'BBB', cell_id: 4, value: 0.6 },
+      { partner_iso: 'CCC', cell_id: 3, value: 0.7 },
+    ];
+    const M = { osiTech: true };
+    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Upstream' }, M).map((r) => [r.iso3, r.value, r.tech, r.stage])).toEqual([['AAA', 0.3, 'Wind', 'Upstream']]);
+    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, tech: 'Wind' }, M).map((r) => [r.iso3, r.tech, r.stage])).toEqual([
+      ['BBB', 'Wind', 'Midstream'],
+      ['AAA', 'Wind', 'Upstream'],
     ]);
+    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, stage: 'Midstream' }, M).map((r) => [r.iso3, r.tech])).toEqual([
+      ['CCC', 'Electric Vehicles'],
+      ['BBB', 'Wind'],
+    ]);
+    // a node alone: every cell it sits in, both technologies (as before the crosswalk)
+    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, node: 'ev-wind-mid-ree-compounds' }, M).map((r) => [r.iso3, r.tech])).toEqual([
+      ['AAA', 'Electric Vehicles'],
+      ['BBB', 'Electric Vehicles'],
+    ]);
+    // the same filter read without the master rule would take the other technology's cell
+    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Upstream' }, { osiTech: false }).map((r) => r.tech)).toContain('Electric Vehicles');
+  });
+
+  it('the filter as OSI cells (osiCellPick): the dominant cell of the matching nodes, every cell they sit in, none for a node without basket codes', () => {
+    expect(osiCellPick(doc.nodes, NO_FILTER, { osiTech: false })).toBeNull();
+    // a sector named like an OSI technology at another stage: its crosswalk cell, not the name
+    const solar = osiCellPick(doc.nodes, { ...NO_FILTER, tech: 'Solar' }, { osiTech: false })!;
+    expect(solar.cell).toEqual({ slug: 'solar-midstream', tech: 'Solar', stage: 'Midstream' });
+    expect(solar.nodes.map((n) => n.id)).toEqual(['solar-down-modules']);
+    // a node in two cells: the first (the largest share of its trade) is the dominant one
+    const magnets = osiCellPick(doc.nodes, { ...NO_FILTER, tech: 'Magnets' }, { osiTech: false })!;
+    expect(magnets.cell?.slug).toBe('electric-vehicles-midstream');
+    expect(magnets.cells.map((c) => c.slug)).toEqual(['electric-vehicles-midstream', 'wind-midstream']);
+    expect(magnets.from?.id).toBe('ev-wind-mid-magnets');
+    // several matching nodes: the one with the largest lost supply decides; the others' cells follow
+    const graphite = osiCellPick(doc.nodes, { ...NO_FILTER, tech: 'Graphite' }, { osiTech: false })!;
+    expect([graphite.from?.id, graphite.cell?.slug]).toEqual(['bat-mid-anode', 'batteries-midstream']);
+    expect(graphite.cells.map((c) => c.slug)).toEqual(['batteries-midstream', 'batteries-upstream']);
+    // no basket code: no cell, the node listed as unmapped
+    const h2 = osiCellPick(doc.nodes, { ...NO_FILTER, tech: 'Electrolysers/H2 equipment' }, { osiTech: false })!;
+    expect([h2.cell, h2.cells, h2.unmapped.map((n) => n.id)]).toEqual([null, [], ['h2-down-electrolysers']]);
+    // a stage alone spans several cells: no dominant cell, every cell listed
+    const down = osiCellPick(doc.nodes, { ...NO_FILTER, stage: 'Downstream' }, { osiTech: false })!;
+    expect(down.cell).toBeNull();
+    expect(down.cells.map((c) => c.slug)).toEqual(['solar-midstream', 'wind-midstream']);
+    expect(down.unmapped.map((n) => n.id)).toEqual(['h2-down-electrolysers']);
+    expect([h2.unscored, h2.unscoredNodes]).toEqual([[], []]);
+    // the master form: the filter names OSI technologies, so its technology and stage limit the cells; the
+    // magnets node (Electric Vehicles and Wind, the largest lost supply) never lends Wind its Electric Vehicles cell
+    const M = { osiTech: true };
+    const windMid = osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Midstream' }, M)!;
+    expect([windMid.from?.id, windMid.cell?.slug, windMid.cells.map((c) => c.slug)]).toEqual(['ev-wind-mid-magnets', 'wind-midstream', ['wind-midstream']]);
+    const windUp = osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Upstream' }, M)!;
+    expect([windUp.from?.id, windUp.cell?.slug, windUp.cells.map((c) => c.slug)]).toEqual(['ev-wind-mid-ree-compounds', 'wind-upstream', ['wind-upstream']]);
+    // a technology alone: its own cells only, the dominant from the largest lost supply
+    const wind = osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind' }, M)!;
+    expect([wind.cell?.slug, wind.cells.map((c) => c.slug)]).toEqual(['wind-midstream', ['wind-midstream', 'wind-upstream']]);
+    // a stage alone: every technology's cell at that stage; a node alone: both of its cells
+    expect(osiCellPick(master.nodes, { ...NO_FILTER, stage: 'Upstream' }, M)!.cells.map((c) => c.slug)).toEqual(['electric-vehicles-upstream', 'wind-upstream', 'batteries-upstream']);
+    expect(osiCellPick(master.nodes, { ...NO_FILTER, node: 'ev-wind-mid-magnets' }, M)!.cells.map((c) => c.slug)).toEqual(['electric-vehicles-midstream', 'wind-midstream']);
+    // without the master rule the same filter would read the magnets node's first cell
+    expect(osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Midstream' }, { osiTech: false })!.cell?.slug).toBe('electric-vehicles-midstream');
+  });
+
+  it('only the cells the build keeps partner indices for count: a node in an unscored cell (Semiconductors) falls to its next cell, else to a notice', () => {
+    // the engine's cells (no Semiconductors, as in the Strategic bundle)
+    const scored = scoredCellsOf([
+      { tech: 'Solar', supply_chain: 'Midstream' },
+      { tech: 'Batteries', supply_chain: 'Midstream' },
+    ]);
+    expect([...scored]).toEqual(['solar-midstream', 'batteries-midstream']);
+    const node = (id: string, label: string, techs: string[], yfCells: string[], lostUsd: number): AibNode => ({ ...doc.nodes[0], id, label, techs, stage: 'Midstream', yfCells, lostUsd });
+    // the crosswalk orders ties alphabetically: the first cell of wafers is Semiconductors Midstream
+    const wafers = node('wafers', 'Wafers', ['Semiconductor materials'], ['semiconductors-midstream', 'solar-midstream'], 3e9);
+    const chips = node('chips', 'Chips', ['Semiconductor materials'], ['semiconductors-midstream'], 9e9);
+    const packs = node('cells', 'Li-ion cells & packs', ['Cells/packs'], ['batteries-midstream'], 1e9);
+    const nodes = [wafers, chips, packs];
+    const D = { osiTech: false, scored };
+    const semi = osiCellPick(nodes, { ...NO_FILTER, tech: 'Semiconductor materials' }, D)!;
+    // chips has the larger lost supply but no scored cell: wafers decides, through Solar Midstream
+    expect([semi.from?.id, semi.cell?.slug, semi.cells.map((c) => c.slug)]).toEqual(['wafers', 'solar-midstream', ['solar-midstream']]);
+    expect([semi.unscored.map((c) => c.slug), semi.unscoredNodes.map((n) => n.id), semi.unmapped]).toEqual([['semiconductors-midstream'], ['chips'], []]);
+    // without the scored set the unscored cell would win
+    expect(osiCellPick(nodes, { ...NO_FILTER, node: 'wafers' }, { osiTech: false })!.cell?.slug).toBe('semiconductors-midstream');
+    expect(osiCellPick(nodes, { ...NO_FILTER, node: 'wafers' }, D)!.cell?.slug).toBe('solar-midstream');
+    // a node only in unscored cells: no cell, listed apart from the nodes without a basket code
+    const onlyChips = osiCellPick(nodes, { ...NO_FILTER, node: 'chips' }, D)!;
+    expect([onlyChips.cell, onlyChips.cells, onlyChips.unscored.map((c) => c.slug), onlyChips.unscoredNodes.map((n) => n.id), onlyChips.unmapped]).toEqual([
+      null, [], ['semiconductors-midstream'], ['chips'], [],
+    ]);
+    // dpRows reads the engine's cells as the scored set: the Development Potential of wafers is Solar Midstream's
+    const dp = [
+      { partner_iso: 'AAA', cell_id: 1, value: 0.4 },
+      { partner_iso: 'BBB', cell_id: 2, value: 0.9 },
+    ];
+    const engine = [
+      { tech: 'Solar', supply_chain: 'Midstream' },
+      { tech: 'Batteries', supply_chain: 'Midstream' },
+    ];
+    expect(dpRows(dp, engine, nodes, { ...NO_FILTER, tech: 'Semiconductor materials' }, { osiTech: false }).map((r) => [r.iso3, r.tech, r.stage])).toEqual([['AAA', 'Solar', 'Midstream']]);
+    expect(dpRows(dp, engine, nodes, { ...NO_FILTER, node: 'chips' }, { osiTech: false })).toEqual([]);
   });
 });
 
-describe('compactTitle (display only)', () => {
-  it('shortens an exporter name cut to "and N more"; keeps other names whole', () => {
-    const nodes = Array.from({ length: 10 }, (_, i) => `n${i}`);
-    expect(compactTitle({ name: 'Electric Vehicles/Wind: Charging Infrastructure, Electric Drive Units & Motors, Motor & Generator Parts, and 7 more', nodes })).toBe(
-      'Electric Vehicles/Wind: Charging Infrastructure and 9 more',
-    );
-    expect(compactTitle({ name: 'Solar: Silicon Metal, Solar Cells', nodes: ['a', 'b'] })).toBe('Solar: Silicon Metal, Solar Cells');
+describe('compactTitle (display only): from the structured fields, never by parsing the name', () => {
+  it('sectors joined with " / ", node labels whole (commas kept), the first and N more when long', () => {
+    const c01t = compactTitle(c01, doc.nodes);
+    expect(c01t).toBe('Magnets / Rare earths: Magnets, magnet parts & assemblies; Rare-earth oxides & compounds');
+    // a lookup by id works the same
+    expect(compactTitle(c01, nodeOf)).toBe(c01t);
+    expect(compactTitle(c02, doc.nodes)).toBe('Graphite: Synthetic graphite (anode-grade, spherical); Natural graphite');
+    expect(compactTitle(c03, doc.nodes)).toBe('Onshore wind: Wind towers, nacelles & hubs');
+    // a name written with commas inside labels and "and N more": never split, the labels come from the nodes
+    const labels = ['Electric buses, trucks & tractors', 'Electric & plug-in cars', 'Gallium, germanium & indium', 'Heat pumps & AC units', 'Wafers'];
+    const nodes = labels.map((label, i) => ({ id: `n${i}`, label, techs: ['EVs/drivetrains'] }));
+    const big = { name: 'EVs/drivetrains / Semiconductor materials: Electric buses, trucks & tractors, Electric & plug-in cars, Gallium, germanium & indium, and 2 more', nodes: nodes.map((n) => n.id), technologies: ['EVs/drivetrains', 'Semiconductor materials'] };
+    expect(compactTitle(big, nodes)).toBe('EVs/drivetrains / Semiconductor materials: Electric buses, trucks & tractors (and 4 more)');
+    // a first label without a comma keeps the plain form
+    expect(compactTitle({ ...big, nodes: ['n1', 'n0', 'n2', 'n3'] }, nodes)).toBe('EVs/drivetrains / Semiconductor materials: Electric & plug-in cars and 3 more');
+    expect(compactTitle(big, nodes, { full: true })).toBe(`EVs/drivetrains / Semiconductor materials: ${labels.join('; ')}`);
+    // no technologies listed: the nodes' own, alphabetical; no node found: the exported name
+    expect(compactTitle({ name: 'x', nodes: ['n4', 'n0'] }, nodes)).toBe('EVs/drivetrains: Wafers; Electric buses, trucks & tractors');
+    expect(compactTitle({ name: 'Solar: Silicon Metal, Solar Cells', nodes: ['a', 'b'] }, [])).toBe('Solar: Silicon Metal, Solar Cells');
+    // a master compact: the same rule
+    expect(compactTitle(master.compacts[0], master.nodes)).toBe('Electric Vehicles / Wind: Magnets, magnet parts & assemblies; Rare-earth oxides & compounds');
+    expect(joinLabels(['A', 'B'])).toBe('A, B');
+    expect(joinLabels(['A, B', 'C'])).toBe('A, B; C');
+  });
+});
+
+describe('taxonomy (2026-10-19): sectors grouped by index, the words, the OSI crosswalk', () => {
+  it('a dictionary bundle says sector(s) and knows the indices; a master one says technology', () => {
+    expect([tx.dictionary, tx.scope, tx.one, tx.Many, tx.all, tx.csv]).toEqual([true, 'core', 'sector', 'Sectors', 'All sectors', 'sectors']);
+    const mt = taxonomyOf(master.meta);
+    expect([mt.dictionary, mt.scope, mt.one, mt.Many, mt.all, mt.csv, mt.indices]).toEqual([false, null, 'technology', 'Technologies', 'All technologies', 'technologies', []]);
+    expect(indexOfSector(tx, 'Magnets')).toMatchObject({ code: 'B', name: 'Electrotechnologies' });
+    expect(indexOfSector(tx, 'Wind')).toBeNull();
+    expect(indexLabel(indexOfNode(tx, nodeOf('h2-down-electrolysers')!)!)).toBe('F Industrial Transition');
+    // the index from the sector when the node does not carry it
+    expect(indexOfNode(tx, { indexCode: null, techs: ['Transformers'] })?.code).toBe('C');
+    expect(indexOfNode(mt, master.nodes[0])).toBeNull();
+    // a compact spanning two indices, in code order; from its sectors when the export has no compact.indices
+    expect(indicesOfCompact(tx, c01).map(indexLabel)).toEqual(['A Materials & Inputs', 'B Electrotechnologies']);
+    expect(indicesOfCompact(tx, { ...c01, indices: undefined }).map((ix) => ix.code)).toEqual(['A', 'B']);
+    expect(indicesOfCompact(mt, master.compacts[0])).toEqual([]);
+  });
+
+  it('sector choices grouped by index (A..F, alphabetical within, unknown last); a master bundle is one plain list', () => {
+    const groups = sectorGroups(tx, technologiesOf(doc.nodes));
+    expect(groups.map((g) => [g.index?.code ?? null, g.sectors])).toEqual([
+      ['A', ['Graphite', 'Rare earths']],
+      ['B', ['Magnets']],
+      ['C', ['Transformers']],
+      ['D', ['Onshore wind', 'Solar']],
+      ['F', ['Electrolysers/H2 equipment']],
+    ]);
+    expect(sectorGroups(tx, ['Solar', 'Nonesuch']).map((g) => [g.index?.code ?? null, g.sectors])).toEqual([
+      ['D', ['Solar']],
+      [null, ['Nonesuch']],
+    ]);
+    const opts = techOptions(tx, technologiesOf(doc.nodes));
+    expect(opts[0]).toEqual({ value: 'Graphite', label: 'Graphite', group: 'A Materials & Inputs' });
+    expect(opts.find((o) => o.value === 'Electrolysers/H2 equipment')!.group).toBe('F Industrial Transition');
+    expect(techOptions(taxonomyOf(master.meta), technologiesOf(master.nodes)).every((o) => o.group === undefined)).toBe(true);
+    expect(groupedSectorWords(tx, c01.technologies)).toBe('A Materials & Inputs: Rare earths; B Electrotechnologies: Magnets');
+  });
+
+  it('where a node sits: index > sector > stage (dictionary), technologies and stage (master); the OSI cell of a crosswalk id', () => {
+    expect(nodeWhere(tx, nodeOf('solar-down-modules')!)).toBe('D Generation › Solar · Downstream');
+    expect(nodeWhere(taxonomyOf(master.meta), master.nodes.find((n) => n.id === 'ev-wind-mid-magnets')!)).toBe('Electric Vehicles, Wind · Midstream');
+    expect(osiCellOf('electric-vehicles-midstream')).toEqual({ slug: 'electric-vehicles-midstream', tech: 'Electric Vehicles', stage: 'Midstream' });
+    expect(osiCellOf('green-hydrogen-downstream')).toMatchObject({ tech: 'Green Hydrogen', stage: 'Downstream' });
+    expect(osiCellOf('magnets')).toBeNull();
   });
 });
 
@@ -785,14 +1049,34 @@ describe('emergent network roles and investment flows (2026-10-17)', () => {
     expect(by.get('DDD')!.cells.host.level).toBe('named');
     expect(by.get('EEE')!.cells.host.level).toBe('minor');
     expect(by.get('ZZZ')!.cells.supplier.level).toBe('minor');
-    // gas turbines are outside the strategic scope: Borduria, its largest supplier, is a specialized supplier through the magnets only
-    expect(by.get('BBB')!.cells.specialized.nodes).toEqual(['ev-wind-mid-magnets']);
+    // strategic scope all: Borduria is the largest supplier of the magnets and of the electrolysers (outside every compact)
+    expect(by.get('BBB')!.cells.specialized.nodes).toEqual(['ev-wind-mid-magnets', 'h2-down-electrolysers']);
+    // a configured scope that leaves the electrolysers (Green Hydrogen) outside: the magnets only
+    expect(countryRoleMatrix(master, names).find((r) => r.iso3 === 'BBB')!.cells.specialized.nodes).toEqual(['ev-wind-mid-magnets']);
     expect(roleHolders(rows, 'investor').map((r) => r.iso3)).toEqual(['AAA', 'BBB']);
     expect(countryRolesOf(doc, names, 'xyz').cells.buyer.level).toBe('none');
     // an older bundle: the compacts' roles alone (a demand anchor is still named)
     const old = countryRoleMatrix(stripMethodology(structuredClone(doc)), names);
     expect(old.find((r) => r.iso3 === 'AAA')!.cells.buyer.level).toBe('named');
     expect(old.find((r) => r.iso3 === 'AAA')!.cells.investor.level).toBe('none');
+  });
+
+  it('"every shock": the supply shocks, and the diversification scenario named apart where the export counts it in the network', () => {
+    // the export lists every configured shock, the diversification scenario among them (it removes no supplier)
+    expect(doc.network!.variant.shocks).toContain('diversify_benchmark');
+    const e = everyShock(doc);
+    expect(e).toEqual({
+      supplyShocks: 3,
+      diversify: true,
+      phrase: 'every shock and the diversification scenario',
+      note: '"every shock" sums the 3 supply shocks and the diversification scenario, which removes no supplier',
+    });
+    const cell = countryRolesOf(doc, names, 'AAA').cells.buyer;
+    expect(cellWords('buyer', cell, e.phrase)).toContain(' across every shock and the diversification scenario');
+    expect(cellWords('buyer', cell)).toContain(' across every shock;');
+    // an export written before the scenario: the configured shocks alone
+    const old = everyShock(stripDiversify(structuredClone(doc)));
+    expect(old).toEqual({ supplyShocks: 3, diversify: false, phrase: 'every shock', note: '"every shock" sums the 3 configured shocks' });
   });
 
   it("an economy's edges: headline contributions only, largest first, each direction its own relationship", () => {
@@ -807,7 +1091,9 @@ describe('emergent network roles and investment flows (2026-10-17)', () => {
     const best = investmentPairs(doc, { ...NO_FILTER });
     expect(best.map((p) => `${p.investor}>${p.host}`)).toEqual(['AAA>DDD', 'BBB>DDD', 'AAA>CCC']);
     expect(investmentPairs(doc, { ...NO_FILTER, rank: 'all' })).toHaveLength(5);
-    expect(investmentPairs(doc, { ...NO_FILTER, tech: 'Batteries' })).toEqual([]);
+    expect(investmentPairs(doc, { ...NO_FILTER, tech: 'Graphite' })).toEqual([]);
+    // the filter reads the bundle's own sector names ("/" kept)
+    expect(investmentPairs(doc, { ...NO_FILTER, tech: 'Electrolysers/H2 equipment' }).map((p) => p.node)).toEqual(['h2-down-electrolysers']);
     expect(investmentPairs(doc, { ...NO_FILTER, country: 'DDD', side: 'investor' })).toEqual([]);
     expect(investmentPairs(doc, { ...NO_FILTER, nodes: ['ev-wind-mid-magnets'], rank: 'all' }).map((p) => p.rank)).toEqual([1, 1, 2, 2]);
     const all = investmentPairs(doc, { ...NO_FILTER, rank: 'all' });
@@ -818,5 +1104,207 @@ describe('emergent network roles and investment flows (2026-10-17)', () => {
     expect(hostRanksOf(doc, 'EEE').map((h) => h.rank)).toEqual([2]);
     expect([rankWords(1), rankWords(2, 5), rankWords(3), rankWords(4, 5)]).toEqual(['best host', '2nd of 5', '3rd', '4th of 5']);
     expect(investmentPairs(stripMethodology(structuredClone(doc)), NO_FILTER)).toEqual([]);
+  });
+});
+
+describe('the diversification scenario (2026-10-19)', () => {
+  const rows = diversifyRows(doc.nodes);
+  const rowOf = (id: string) => rows.find((r) => r.node.id === id)!;
+  const ids = (rs: readonly { node: AibNode }[]) => rs.map((r) => r.node.id);
+
+  it('rows: every node the scenario assessed, ran only where it diversified; the supply to shift is excess x allied demand', () => {
+    expect(rows).toHaveLength(7);
+    expect(rows.some((r) => r.node.id === 'grid-mid-transformers')).toBe(false);
+    expect(ids(rows.filter((r) => r.ran))).toEqual(['ev-wind-mid-magnets', 'bat-mid-anode', 'wind-down-towers']);
+    expect(ids(rows.filter((r) => r.above))).toEqual(['ev-wind-mid-ree-compounds', 'ev-wind-mid-magnets', 'bat-mid-anode', 'wind-down-towers']);
+    const mag = rowOf('ev-wind-mid-magnets');
+    expect(mag.demandUsd).toBe(9.6e9);
+    expect(mag.shiftUsd! / 1e9).toBeCloseTo(0.34 * 9.6, 9);
+    expect(mag.gapUsd).toBe(2112000000);
+    expect(mag.tradeUsd! / 1e9).toBeCloseTo(0.12 * 9.6, 9);
+    expect(mag.hhiGap).toBeCloseTo(0.31, 9);
+    // within the cap: nothing to shift, no split; no benchmark: no distance
+    expect(rowOf('ev-wind-mid-ree-compounds').shiftUsd).toBe(0);
+    expect(rowOf('ev-wind-mid-ree-compounds').split).toBeNull();
+    expect(rowOf('h2-down-electrolysers').hhiGap).toBeNull();
+    // the class under the scenario carries its own physical-capability flag (null without a class)
+    expect([rowOf('wind-down-towers').clsWarning, mag.clsWarning, rowOf('solar-down-modules').clsWarning]).toEqual([true, false, null]);
+    expect(diversifyRow(nodeOf('wind-down-towers')!, 'another_id')!.clsWarning).toBe(false);
+    const { variantWarnings: _vw, ...noFlags } = nodeOf('wind-down-towers')!;
+    void _vw;
+    expect(diversifyRow(noFlags)!.clsWarning).toBeNull();
+    // already as diversified, yet above the benchmark by less than the tolerance
+    expect(ids(rows.filter((r) => r.nearBenchmark))).toEqual(['bat-up-graphite']);
+    expect(rowOf('bat-up-graphite').above).toBe(false);
+    expect(diversifyRow(nodeOf('grid-mid-transformers')!)).toBeNull();
+    expect(diversifyRows(older.nodes)).toEqual([]);
+    expect(hasDiversify(doc)).toBe(true);
+    expect(hasDiversify(stripDiversify(structuredClone(doc)))).toBe(false);
+    expect(diversifyLabel(doc.meta)).toBe("Diversified to its sector's concentration");
+    expect(diversifyLabel(older.meta)).toBe(DIVERSIFY_LABEL);
+  });
+
+  it('the demand split is to scale: kept + restored by trade + new capacity = 1', () => {
+    for (const r of rows.filter((x) => x.ran)) expect(r.split!.kept + r.split!.trade + r.split!.build).toBeCloseTo(1, 12);
+    const mag = rowOf('ev-wind-mid-magnets').split!;
+    expect([mag.kept, mag.trade, mag.build].map((x) => Number(x.toFixed(6)))).toEqual([0.66, 0.12, 0.22]);
+    expect(rowOf('bat-mid-anode').split!.build).toBeCloseTo(0, 12);
+    // an earlier run with coverage after trade below the coverage before it: the lower figure is kept
+    const low = demandSplit({ static: 0.8, optimized: 0.75 })!;
+    expect([low.kept, low.trade, low.build].map((x) => Number(x.toFixed(6)))).toEqual([0.75, 0, 0.25]);
+    expect(demandSplit({ static: 1.0001, optimized: 1.0001 })).toEqual({ kept: 1, trade: 0, build: 0 });
+    expect(demandSplit({ static: null, optimized: 0.5 })).toBeNull();
+  });
+
+  it('totals: nodes above their benchmark of those with one, the supply to shift, what trade restores, the gap, the most-capped suppliers', () => {
+    const t = diversifyTotals(doc.nodes);
+    expect([t.nodes, t.assessed, t.withBenchmark, t.above, t.diversified, t.withinCap, t.already, t.nearBenchmark, t.noBenchmark, t.closedByTrade]).toEqual([8, 7, 6, 4, 3, 1, 2, 1, 1, 1]);
+    expect(t.demandUsd / 1e9).toBeCloseTo(9.6 + 3.1 + 2 + 4.2, 9);
+    expect(t.shiftUsd / 1e9).toBeCloseTo(3.264 + 0.372 + 0.14, 9);
+    expect(t.shiftShare!).toBeCloseTo(3.776 / 18.9, 9);
+    expect(t.tradeUsd / 1e9).toBeCloseTo(1.152 + 0.372 + 0.06, 9);
+    expect(t.gapUsd / 1e9).toBeCloseTo(2.112 + 0.08, 9);
+    // the fixture is consistent (what trade restores plus the gap is the supply to shift); the words never rely on it
+    expect((t.tradeUsd + t.gapUsd) / 1e9).toBeCloseTo(t.shiftUsd / 1e9, 9);
+    expect(t.capped).toEqual([{ iso3: 'ZZZ', nodes: 2 }, { iso3: 'AAA', nodes: 1 }, { iso3: 'BBB', nodes: 1 }]);
+    expect(cappedWords(t.capped, names)).toBe('Zembla (2 nodes), Avalon (1) and Borduria (1)');
+    expect(totalsWords(t)).toBe(
+      '4 of the 6 nodes with a benchmark are more concentrated than their benchmark by more than a small tolerance (in 1 of them no supplier to the allied market is above the cap, so nothing shifts). ' +
+        '1 other node sits above its benchmark by less than that and is left as it is. ' +
+        'Capping their suppliers in the allied market at the share that would bring each down to its benchmark shifts $3.8 bn of supply (20% of the allied demand in those nodes) away from the capped suppliers. ' +
+        'Existing relationships and optimized trade restore $1.6 bn with the cap holding; $2.2 bn is left for new capacity, and in 1 node trade replaces everything.',
+    );
+    // the most-capped suppliers follow the tiles, not the lede
+    expect(totalsWords(t)).not.toContain('Most often capped');
+    expect(aboveWords({ above: 1, withBenchmark: 6 })).toBe('1 of the 6 nodes with a benchmark is more concentrated than its benchmark by more than a small tolerance');
+    expect(totalsWords({ ...t, nearBenchmark: 2 })).toContain(' 2 other nodes sit above their benchmark by less than that and are left as they are. ');
+    expect(totalsWords({ ...t, nearBenchmark: 0 })).not.toContain('other node');
+    const none = diversifyTotals(older.nodes);
+    expect([none.assessed, none.above, none.shiftUsd, none.shiftShare]).toEqual([0, 0, 0, null]);
+    expect(totalsWords(none)).toBe('');
+  });
+
+  it('order: diversified by capacity gap in USD, then within the cap, already diversified, no benchmark', () => {
+    expect(ids(orderDiversify(rows))).toEqual([
+      'ev-wind-mid-magnets', 'wind-down-towers', 'bat-mid-anode', 'ev-wind-mid-ree-compounds', 'bat-up-graphite', 'solar-down-modules', 'h2-down-electrolysers',
+    ]);
+  });
+
+  it('filters by index and sector; by default only the nodes diversified', () => {
+    expect(ids(filterDiversify(rows, NO_DIVERSIFY_FILTER, tx))).toEqual(['ev-wind-mid-magnets', 'bat-mid-anode', 'wind-down-towers']);
+    expect(filterDiversify(rows, { ...NO_DIVERSIFY_FILTER, all: true }, tx)).toHaveLength(7);
+    expect(ids(filterDiversify(rows, { index: 'A', sector: null, all: false }, tx))).toEqual(['bat-mid-anode']);
+    expect(ids(filterDiversify(rows, { index: 'A', sector: null, all: true }, tx))).toEqual(['ev-wind-mid-ree-compounds', 'bat-mid-anode', 'bat-up-graphite']);
+    expect(ids(filterDiversify(rows, { index: null, sector: 'Graphite', all: true }, tx))).toEqual(['bat-mid-anode', 'bat-up-graphite']);
+    expect(diversifyIndices(rows, tx).map((ix) => ix.code)).toEqual(['A', 'B', 'D', 'F']);
+    expect(diversifySectorOptions(rows, tx, 'A')).toEqual([
+      { value: 'Graphite', label: 'Graphite', group: 'A Materials & Inputs' },
+      { value: 'Rare earths', label: 'Rare earths', group: 'A Materials & Inputs' },
+    ]);
+    expect(diversifySectorOptions(rows, tx, null).map((o) => o.value)).toEqual(['Graphite', 'Rare earths', 'Magnets', 'Onshore wind', 'Solar', 'Electrolysers/H2 equipment']);
+  });
+
+  it('the node block in words, per status', () => {
+    expect(Object.keys(DIVERSIFY_STATUS_WORDS)).toEqual([...AIB_DIVERSIFY_STATUSES]);
+    expect(statusWords('no benchmark').label).toBe('No benchmark');
+    expect(statusWords('something new')).toEqual({ label: 'something new', meaning: 'something new' });
+    expect(rowStatusLabel(rowOf('bat-up-graphite'))).toBe('Already as diversified as its benchmark (above it by less than a small tolerance)');
+    expect(rowStatusLabel(rowOf('solar-down-modules'))).toBe('Already as diversified as its benchmark');
+    expect(diversifyWords(rowOf('ev-wind-mid-magnets'), names)).toEqual([
+      'More concentrated than its benchmark: concentration (HHI) 0.46 against 0.15 for the other HS6 lines of heading 8505.',
+      'The supplier-share cap that would bring it down to the benchmark is 22%, applied to the allied market. Zembla and Avalon are above it and lose the excess: 34.0% of allied demand ($3.3 bn) has to shift.',
+      'With the cap holding, existing relationships restore coverage to 71.0% and optimized trade to 78.0%; new capacity has to fill the remaining 22.0% ($2.1 bn).',
+      'Class under the scenario: BUILD. Leading hosts for the new capacity: Carpania and Dorvalia. Largest new or expanded relationships: Borduria → Carpania; Dorvalia → Avalon.',
+    ]);
+    const anode = diversifyWords(rowOf('bat-mid-anode'), names);
+    expect(anode[1]).toContain('Zembla is above it and loses the excess: 12.0% of allied demand ($372 m) has to shift');
+    expect(anode[2]).toBe('With the cap holding, existing relationships restore coverage to 95.0% and optimized trade to 100.0%; trade under the cap replaces all of it, so no new capacity is needed.');
+    expect(anode[3]).not.toContain('Leading hosts');
+    // the class under the scenario with its physical-capability flag
+    expect(diversifyWords(rowOf('wind-down-towers'), names)[3]).toMatch(/^Class under the scenario: COORDINATE \(PHYSICAL CAPABILITY NOT VALIDATED\)\. /);
+    expect(diversifyWords(rowOf('ev-wind-mid-magnets'), names)[3]).not.toContain('PHYSICAL CAPABILITY');
+    // no capped supplier named (an export that lists none): the supply to shift as its own sentence
+    expect(diversifyWords({ ...rowOf('bat-mid-anode'), d: { ...rowOf('bat-mid-anode').d, capped: [], cap: null } }, names)[1]).toBe(
+      'A supplier-share cap that would bring it down to the benchmark applies to the allied market. 12.0% of allied demand ($372 m) has to shift.',
+    );
+    expect(diversifyWords(rowOf('ev-wind-mid-ree-compounds'), names)).toEqual([
+      'More concentrated than its benchmark worldwide: concentration (HHI) 0.39 against 0.31 for the other HS6 lines of heading 2846.',
+      'But no supplier to the allied market is above the 48% cap that would bring it down to the benchmark, so nothing has to shift and the scenario does not run.',
+    ]);
+    expect(diversifyWords(rowOf('solar-down-modules'), names)).toEqual([
+      'Already as diversified as its benchmark: concentration (HHI) 0.12 against 0.19 for the other HS6 lines of headings 8541 and 8501. The scenario leaves it as it is.',
+    ]);
+    expect(diversifyWords(rowOf('bat-up-graphite'), names)).toEqual([
+      'Within a small tolerance of its benchmark: concentration (HHI) 0.26 against 0.26 for the other HS6 lines of heading 2504. It is above the benchmark by less than the margin the scenario acts on, so the scenario leaves it as it is.',
+    ]);
+    // no block sentence compares a node with "its sector" (the benchmark is mostly the other lines of its heading)
+    for (const r of rows) for (const w of diversifyWords(r, names)) expect(w, r.node.id).not.toMatch(/than its sector|diversified as its sector/);
+    expect(diversifyWords(rowOf('h2-down-electrolysers'), names)).toEqual([
+      'No benchmark: its customs heading has no other line and its sector no other node to compare it with, so the scenario leaves it as it is. Its concentration (HHI) is 0.20.',
+    ]);
+    expect(diversifyClassText(null)).toBe('not run');
+    expect(diversifyClassText('BUILD')).toBe('BUILD');
+    expect(diversifyClassText('LOW INTERVENTION', true)).toBe('LOW INTERVENTION (PHYSICAL CAPABILITY NOT VALIDATED)');
+    expect(diversifyClassText(null, true)).toBe('not run');
+  });
+
+  it('basis, relationships, the axis, the Sector Profile of a cell and the CSV row', () => {
+    expect(basisWords('other HS6 lines of heading 8507')).toBe('the other HS6 lines of heading 8507');
+    expect(basisWords('other HS6 lines of heading 2826; 7410')).toBe('the other HS6 lines of headings 2826 and 7410');
+    expect(basisWords('other nodes of the sector')).toBe('the other nodes of its sector');
+    expect(basisWords(null)).toBe('its benchmark');
+    expect(benchmarkWords({ currentHhi: 0.3839, benchmarkHhi: 0.0858, basis: 'other HS6 lines of heading 8507' })).toBe('0.38 against 0.09 for the other HS6 lines of heading 8507');
+    expect(relationshipsOf('DEU->FRA; DEU->ESP;  ;bad')).toEqual([{ from: 'DEU', to: 'FRA' }, { from: 'DEU', to: 'ESP' }]);
+    expect(relationshipsOf(null)).toEqual([]);
+    expect(relationshipWords('ZZZ->AAA; QQQ->BBB', names)).toBe('Zembla → Avalon; QQQ → Borduria');
+    expect(hhiAxisMax(rows)).toBe(0.5);
+    expect(hhiAxisMax([])).toBe(0.1);
+    expect(hhiTicks(0.5)).toEqual([0, 0.1, 0.2, 0.3, 0.4, 0.5]);
+    expect(hhiTicks(1)).toEqual([0, 0.2, 0.4, 0.6, 0.8, 1]);
+    expect(osiCellHref(osiCellOf('electric-vehicles-midstream')!)).toBe('/sector/electric-vehicles/midstream');
+    expect(osiCellHref(osiCellOf('heat-pumps-downstream')!)).toBeNull();
+    expect(profiledCellsOfNode(nodeOf('ev-wind-mid-magnets')!).map((c) => c.href)).toEqual(['/sector/electric-vehicles/midstream', '/sector/wind/midstream']);
+    expect(profiledCellsOfNode(nodeOf('h2-down-electrolysers')!)).toEqual([]);
+    const csv = diversifyCsvRow(rowOf('ev-wind-mid-magnets'), names, tx);
+    expect(csv).toMatchObject({
+      node_id: 'ev-wind-mid-magnets', index_code: 'B', index_name: 'Electrotechnologies', sectors: 'Magnets', status: 'diversified to the benchmark', supplier_cap: 0.22,
+      capped_suppliers: 'Zembla; Avalon', capped_iso3: 'ZZZ; AAA', capacity_gap_usd: 2112000000, class_under_scenario: 'BUILD', class_under_scenario_warning: false, headline_class: 'BUILD',
+      investment_hosts: 'Carpania; Dorvalia', largest_new_or_expanded_relationships: 'Borduria → Carpania; Dorvalia → Avalon', compact: 'AIB-C01', within_tolerance_of_benchmark: false,
+    });
+    expect(diversifyCsvRow(rowOf('wind-down-towers'), names, tx)).toMatchObject({ class_under_scenario: 'COORDINATE', class_under_scenario_warning: true });
+    expect(diversifyCsvRow(rowOf('bat-up-graphite'), names, tx).within_tolerance_of_benchmark).toBe(true);
+    const sol = diversifyCsvRow(rowOf('solar-down-modules'), names, tx);
+    expect([sol.status, sol.supplier_cap, sol.capacity_gap_usd, sol.class_under_scenario, sol.class_under_scenario_warning, sol.capped_suppliers]).toEqual([
+      'already as diversified as its benchmark', null, null, null, null, '',
+    ]);
+    expect(Object.keys(diversifyCsvRow(rowOf('solar-down-modules'), names, taxonomyOf(master.meta)))).toContain('technologies');
+  });
+
+  it('settings in words, and the class under the scenario among the variants: "not run" where it did not run, never a robustness difference', () => {
+    const s = diversifySetting(doc.meta)!;
+    expect([s.mode, s.shockId, s.benchmark, s.label]).toEqual(['hs4', 'diversify_benchmark', 'hs4', "Diversified to its sector's concentration"]);
+    expect(s.words).toContain('HS4 customs heading');
+    expect(diversifySetting(older.meta)).toBeNull();
+    expect(diversifySetting({ ...doc.meta, diversify: { shockId: 'x', label: null, benchmark: 'sector' } })!.words).toBe(DIVERSIFY_BENCHMARK_WORDS.sector.words);
+    const rules = diversifyRules(doc.meta);
+    expect(rules).toHaveLength(6);
+    expect(rules[0]).toBe(HHI_WORDS);
+    expect(rules[2]).toContain('(the demand scope: 6 economies)');
+    expect(rules[2]).toContain('its own purchases stay protected');
+    expect(rules[2]).toContain('more concentrated than its benchmark, by more than a small tolerance, gets the supplier-share cap that would bring');
+    // an export that states the tolerance gets it named
+    expect(diversifyRules({ ...doc.meta, diversify: { ...doc.meta.diversify!, minExcess: 0.005 } })[2]).toContain('by more than a small tolerance (0.005 of HHI), gets');
+    expect(rules[3]).toContain('with the cap holding for every supplier in both');
+    expect(rules[4]).toBe('The scenario removes no supplier. It runs under the headline settings: hold semantics, production-constrained supply, the reallocation supply assumption, allied demand, and any economy may supply.');
+    expect(rules[5]).toBe(`It is a counterfactual market structure, not a forecast. Dollar values are ${doc.meta.tradeYear} trade values.`);
+    const mag = nodeOf('ev-wind-mid-magnets')!;
+    expect(classVariants(mag, doc.meta).filter((v) => v.group === 'Diversification').map((v) => [v.key, v.cls, v.notRun])).toEqual([['diversify_benchmark', 'BUILD', false]]);
+    expect(classVariants(nodeOf('solar-down-modules')!, doc.meta).find((v) => v.group === 'Diversification')!.notRun).toBe(true);
+    // a different class under the scenario is not a variant that changes the class
+    const other = { ...mag, variants: { ...mag.variants, diversify_benchmark: 'COORDINATE' } };
+    expect(classVariants(other, doc.meta).find((v) => v.key === 'diversify_benchmark')!.differs).toBe(true);
+    expect(robustnessSummary(other, doc.meta)).toBe(robustnessSummary(mag, doc.meta));
+    // an older bundle has no such row
+    expect(classVariants(older.nodes[0], older.meta).some((v) => v.group === 'Diversification')).toBe(false);
   });
 });

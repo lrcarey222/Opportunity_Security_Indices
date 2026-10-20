@@ -2,10 +2,15 @@
 // compacts document the manifest names (immutable, default cache), checks it with checkCompactsDoc()
 // and caches it for the page life. Concurrent requests share one promise; a failure is retryable (the
 // cached promise is dropped). No React here. Tests swap the store with setAibStoreForTests().
+//
+// The scenario files (2026-10-19; manifest.files.scenarios) load only when asked: scenario() for a page
+// that shows one, prefetchScenario() on a hover or a toggle; the landing never waits on them. Each is
+// checked with checkScenarioDoc() (cross-checked against the main document when it is already loaded),
+// normalized (normalizeScenarioDoc) and cached like the document.
 
 import {
-  AIB_DATA_DIR, AIB_MANIFEST_FILE, AIB_VERSION, AibContractError, checkAibManifest, checkCompactsDoc, needsNewerApp,
-  type AibDoc, type AibManifest,
+  AIB_DATA_DIR, AIB_MANIFEST_FILE, AIB_VERSION, AibContractError, checkAibManifest, checkCompactsDoc, checkScenarioDoc, needsNewerApp, normalizeScenarioDoc,
+  scenarioFilesOf, type AibDoc, type AibManifest, type AibScenarioDoc, type AibScenarioDocOf, type AibScenarioFileId,
 } from '../contract.ts';
 
 export type AibLoadCode = 'NO_DATA' | 'NEWER' | 'CONTRACT' | 'NETWORK';
@@ -84,6 +89,7 @@ export class AibStore {
   readonly source: AibSource;
   private manifestP: Promise<AibManifest> | null = null;
   private readonly docs = new Map<string, Promise<AibDoc>>();
+  private readonly scenarioDocs = new Map<string, Promise<AibScenarioDoc>>();
   /** settled values, for synchronous reads after the first load */
   private readonly done = new Map<string, unknown>();
   /** the files requested, in order (tests) */
@@ -138,7 +144,45 @@ export class AibStore {
     }
     return p;
   }
+
+  /**
+   * A scenario file the manifest names (null when it names none: an older bundle). Checked against the
+   * contract and, when the main document is already loaded, against its node and compact ids; cached.
+   */
+  scenario<K extends AibScenarioFileId>(m: AibManifest, id: K): Promise<AibScenarioDocOf<K> | null> {
+    const file = scenarioFilesOf(m)[id];
+    if (!file) return Promise.resolve(null);
+    let p = this.scenarioDocs.get(file);
+    if (!p) {
+      this.calls.push(file);
+      p = this.source
+        .json(file)
+        .then((x) => {
+          const main = this.peek<AibDoc>(`doc:${m.files.compacts}`) ?? null;
+          const problems = checkScenarioDoc(x, main, id);
+          if (problems.length) throw new AibContractError(`Scenario document ${file}`, problems);
+          const d = normalizeScenarioDoc(x as AibScenarioDoc);
+          this.done.set(scenarioKey(file), d);
+          return d;
+        })
+        .catch((e) => {
+          this.scenarioDocs.delete(file);
+          throw toLoadError(e, 'The scenario data');
+        });
+      this.scenarioDocs.set(file, p);
+    }
+    return p as Promise<AibScenarioDocOf<K>>;
+  }
+
+  /** Start loading a scenario file (a hover, a toggle); never throws, never blocks. */
+  prefetchScenario(m: AibManifest | null | undefined, id: AibScenarioFileId): void {
+    if (!m) return;
+    this.scenario(m, id).catch(() => undefined);
+  }
 }
+
+/** The store key of a loaded scenario file (peek). */
+export const scenarioKey = (file: string): string => `scn:${file}`;
 
 let shared: AibStore | null = null;
 let forTests: AibStore | null = null;

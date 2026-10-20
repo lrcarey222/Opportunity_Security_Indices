@@ -35,7 +35,10 @@ aib_shock_key <- function(iso, fraction) {
 # that level's nodes. Re-export hubs inherit the shock of the origin they re-export for.
 # Returns shock_id, shock_label, shock_type, shock_level, tech, supply_chain, sub_sector, node_id,
 # target_iso (the named origin), shock_key ("ISO:fraction,..." with hubs).
-aib_shock_targets <- function(shocks, node_cells, exporter_metrics, reexport_hubs = list()) {
+# `diversify`: the per-node targets of a type "diversify" shock (aib_diversify_targets(): node_id,
+# target_iso, shock_key, cap); nodes already as diversified as their benchmark get no run. `cap` is the
+# supplier-share limit the optimized state of that run keeps (NA for the other shock types).
+aib_shock_targets <- function(shocks, node_cells, exporter_metrics, reexport_hubs = list(), diversify = NULL) {
   with_hubs <- function(iso) {
     hubs <- unlist(lapply(iso, function(x) reexport_hubs[[x]]))
     unique(c(iso, hubs))
@@ -70,6 +73,12 @@ aib_shock_targets <- function(shocks, node_cells, exporter_metrics, reexport_hub
         iso <- with_hubs(t)
         aib_shock_key(iso, rep(frac, length(iso)))
       }, character(1), USE.NAMES = FALSE)
+    } else if (identical(s$type, "diversify")) {
+      level <- "subsector"
+      if (is.null(diversify) || !nrow(diversify)) next
+      d <- diversify[!is.na(diversify$shock_key), c("node_id", "target_iso", "shock_key", "cap"), drop = FALSE]
+      rows <- rows %>% dplyr::inner_join(d, by = "node_id")
+      frac <- NA_real_
     } else {
       stop("aib_shock_targets(): unknown shock type ", s$type)
     }
@@ -80,8 +89,10 @@ aib_shock_targets <- function(shocks, node_cells, exporter_metrics, reexport_hub
     rows$shock_fraction <- frac
     out[[length(out) + 1]] <- rows
   }
-  dplyr::bind_rows(out) %>%
-    dplyr::select(shock_id, shock_label, shock_type, shock_level, shock_fraction, tech, supply_chain, sub_sector, node_id, target_iso, shock_key)
+  out <- dplyr::bind_rows(out)
+  if (!"cap" %in% names(out)) out$cap <- NA_real_
+  out %>%
+    dplyr::select(shock_id, shock_label, shock_type, shock_level, shock_fraction, tech, supply_chain, sub_sector, node_id, target_iso, shock_key, cap)
 }
 
 aib_or <- function(a, b) if (is.null(a)) b else a
@@ -92,7 +103,7 @@ aib_or <- function(a, b) if (is.null(a)) b else a
 # partner_universe: ISO3 codes that may act as candidate partners (exporters re-optimized). NULL =
 # every economy in the flows; `universe` (older single setting) fills both when they are NULL.
 # shocked_demand: "hold" (an export / supply shock: the shocked economy keeps buying, so exports
-# headed to it stay with it, in both scenarios) or "release" (decoupling: its purchases fall by the
+# headed to it stay with it, in both scenarios) or "release" (a two-way cut: its purchases fall by the
 # same fraction, so that share of the exports headed to it is freed). physical_share: named
 # production / capacity shares of the node (world = 1); when given, physical evidence decides who can
 # supply: a candidate the data list as a producer (share > physical_min_share) keeps its full trade
@@ -101,11 +112,19 @@ aib_or <- function(a, b) if (is.null(a)) b else a
 # expand or redirect supply toward it. Shares are never multiplied into trade values: production is
 # physical volume and trade is value, and where the dominant producer uses most of its own output
 # (polysilicon, wafers) world trade is far below world production.
+# protect_shocked: keep the shocked economies' own purchases in the demand scope (the diversification
+# scenario caps an ally's sales; its own imports stay protected); by default a shocked economy is no
+# importer to restore. cap_basis: what a supplier-share limit is a share of in this problem: "served"
+# (the supply the state delivers; the specialization frontier) or "demand" (the scope's baseline
+# demand: no supplier may ship more than cap x demand, so coverage after trade never falls below the
+# static state; the diversification scenario).
 aib_node_problem <- function(flows, shocked, universe = NULL, shocked_demand = c("hold", "release"),
                              candidate_min_exports = 1e6, candidate_min_share = 5e-4,
                              allow_domestic = TRUE, demand_scope = NULL, partner_universe = NULL,
-                             physical_share = NULL, physical_min_share = 0) {
+                             physical_share = NULL, physical_min_share = 0,
+                             protect_shocked = FALSE, cap_basis = c("served", "demand")) {
   shocked_demand <- match.arg(shocked_demand)
+  cap_basis <- match.arg(cap_basis)
   f <- flows[flows$value > 0, c("exporter_iso", "importer_iso", "value"), drop = FALSE]
   if (!nrow(f)) return(NULL)
   W <- sum(f$value)
@@ -117,7 +136,8 @@ aib_node_problem <- function(flows, shocked, universe = NULL, shocked_demand = c
   r_of <- function(iso) { r <- unname(sh[iso]); r[is.na(r)] <- 0; r }
 
   D_m <- tapply(f$value, f$importer_iso, sum)
-  scope <- setdiff(names(D_m)[names(D_m) %in% scope_set], names(sh))
+  scope <- names(D_m)[names(D_m) %in% scope_set]
+  if (!isTRUE(protect_shocked)) scope <- setdiff(scope, names(sh))
   if (!length(scope)) return(NULL)
   D <- sum(D_m[scope])
   if (!(D > 0)) return(NULL)
@@ -145,7 +165,8 @@ aib_node_problem <- function(flows, shocked, universe = NULL, shocked_demand = c
   to_scope[is.na(to_scope)] <- 0
   freed <- stats::setNames(rep(0, length(cand)), cand)
   if (identical(shocked_demand, "release") && length(sh)) {
-    to_sh <- f[f$exporter_iso %in% cand & f$importer_iso %in% names(sh), , drop = FALSE]
+    # Purchases of a shocked economy inside the scope (protect_shocked) are demand, not freed supply.
+    to_sh <- f[f$exporter_iso %in% cand & f$importer_iso %in% setdiff(names(sh), scope), , drop = FALSE]
     if (nrow(to_sh)) {
       fr <- tapply(to_sh$value * r_of(to_sh$importer_iso), factor(to_sh$exporter_iso, levels = cand), sum)
       fr[is.na(fr)] <- 0
@@ -186,7 +207,8 @@ aib_node_problem <- function(flows, shocked, universe = NULL, shocked_demand = c
     base_supply = base_supply / D,
     shocked = sh,
     allow_domestic = allow_domestic,
-    shocked_demand = shocked_demand
+    shocked_demand = shocked_demand,
+    cap_basis = cap_basis
   )
 }
 
@@ -370,20 +392,27 @@ aib_solve_state <- function(prob, scenario = c("conservative", "reallocation"), 
   }
 
   if (cap < 1) {
+    by_demand <- identical(prob$cap_basis, "demand")
     locked_e <- tapply(lower, factor(vars$e, levels = cand_all), sum)
     locked_e[is.na(locked_e)] <- 0
     served_floor <- prob$fixed_total + sum(lower)
+    fixed_e <- get0(prob$fixed_by_exporter, cand_all)
     for (k in seq_along(cand_all)) {
       jj <- which(e_idx == k)
       if (!length(jj)) next
-      if (locked_e[k] > cap * served_floor + 1e-12) {
+      if (locked_e[k] + (if (by_demand) fixed_e[k] else 0) > cap * (if (by_demand) 1 else served_floor) + 1e-12) {
         # Its shipments that may not move already exceed the limit: it may not expand.
         upper[jj] <- lower[jj]
         next
       }
-      others <- setdiff(seq_len(n), jj)
-      rows <- aib_rows_add(rows, c(jj, others), c(rep(1 - cap, length(jj)), rep(-cap, length(others))),
-                           "<=", cap * prob$fixed_total)
+      if (by_demand) {
+        # A share of the scope's demand (which is 1 in these units): a ceiling on its total.
+        rows <- aib_rows_add(rows, jj, rep(1, length(jj)), "<=", cap - fixed_e[k])
+      } else {
+        others <- setdiff(seq_len(n), jj)
+        rows <- aib_rows_add(rows, c(jj, others), c(rep(1 - cap, length(jj)), rep(-cap, length(others))),
+                             "<=", cap * prob$fixed_total)
+      }
     }
   }
 
@@ -421,6 +450,7 @@ aib_solve_state <- function(prob, scenario = c("conservative", "reallocation"), 
 # State C solved in closed form at the exporter level. With every candidate free to serve every
 # importer in the universe, the program decomposes: coverage is the largest total T with
 #   T <= fixed + sum_e min(avail_e, cap * T)   and   T <= fixed + sum_m (demand_m - fixed_m)
+# (with prob$cap_basis "demand" the limit is cap, not cap * T, and no bisection is needed)
 # (found by bisection; T - RHS is concave in T), and the lexicographic order then fixes each
 # exporter's total: surviving shipments first (the stability rule), then the most specialized
 # exporters fill the rest (objective 2). Objectives 3 and 4 only decide which importer each unit
@@ -448,6 +478,12 @@ aib_optimized_analytic <- function(prob, scenario = c("conservative", "reallocat
   if (cap >= 1) {
     upper <- avail
     total <- min(sum(avail), dcap)
+  } else if (identical(prob$cap_basis, "demand")) {
+    # A ceiling of cap x demand on each exporter's total (fixed shipments included); one already above
+    # it through shipments that may not move keeps them and does not expand.
+    lim <- pmax(cap - get0(prob$fixed_by_exporter, cand_all), 0)
+    upper <- ifelse(lower > lim + 1e-12, lower, pmin(avail, lim))
+    total <- max(min(sum(upper), dcap), sum(lower))
   } else {
     floor_T <- fixed + sum(lower)
     locked <- lower > cap * floor_T + 1e-12
@@ -530,8 +566,10 @@ aib_existing_growth_sensitivity <- function(prob, scenarios, growths, scores, to
 # All trade-model outputs for one node and one shock: per scenario the static, existing-network
 # and optimized states at the headline supplier-share limit, the frontier over every limit, and
 # the optimized relationships. `scores_fun(prob)` returns the score functions for the node.
+# existing_cap: the supplier-share limit of the existing-network state (1; the diversification scenario
+# passes its cap, so neither state lets a supplier above it).
 aib_run_node_shock <- function(prob, scenarios, caps, headline_cap, scores, tolerances, neutral = 0.5, existing_growth = Inf,
-                               tolerance_stability = 1e-6) {
+                               tolerance_stability = 1e-6, existing_cap = 1) {
   A <- aib_static_state(prob)
   base <- aib_baseline_state(prob)
   caps <- sort(unique(c(caps, headline_cap)))
@@ -549,7 +587,7 @@ aib_run_node_shock <- function(prob, scenarios, caps, headline_cap, scores, tole
   r_sh <- prob$shocked[names(prob$base_supply)]
   r_sh[is.na(r_sh)] <- 0
   for (sc in scenarios) {
-    B <- aib_solve_state(prob, sc, "B", cap = 1, scores = scores, tolerances = tolerances, neutral = neutral,
+    B <- aib_solve_state(prob, sc, "B", cap = existing_cap, scores = scores, tolerances = tolerances, neutral = neutral,
                          existing_growth = existing_growth, tolerance_stability = tolerance_stability)
     C <- aib_solve_state(prob, sc, "C", cap = headline_cap, scores = scores, tolerances = tolerances, neutral = neutral,
                          tolerance_stability = tolerance_stability)

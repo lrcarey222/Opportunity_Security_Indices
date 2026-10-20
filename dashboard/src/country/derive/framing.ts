@@ -8,12 +8,21 @@
 // whole AIB document are observed / modelled facts. Only the Strategic Index rank is preference-adjusted;
 // it comes from `SiMap` (the engine's run for the reader's Perspective) when one is given, else from the
 // fact sheet (the NEIS baseline: the same numbers).
+//
+// The scenarios (2026-10-19): the AIB parts follow the scenario toggle (scn). aibTradeOf() reads any
+// compacts' trade (the main document's: Decoupling, or the Managed Interdependence file's), aibDocUnder()
+// gives the whole document as a scenario reads it (the role section), buildNodesFor() the BUILD nodes that
+// concern the economy under a scenario; tradeTiesToday() and agreementRows() are the Partnerships section's
+// Today lens (fact sheet only).
 
-import type { AibCompact, AibDoc, AibNode } from '../../aib/contract.ts';
+import type { AibCoalition, AibCompact, AibDoc, AibManagedScenarioDoc, AibNode, AibTradeEdge } from '../../aib/contract.ts';
 import { countryRoleRow, type CountryRoleRow } from '../../aib/derive/countryRoles.ts';
+import { compactTitle } from '../../aib/derive/format.ts';
+import type { LensNode } from '../../aib/derive/partnerships.ts';
 import { ROLE_ORDER, type RoleName } from '../../aib/derive/roles.ts';
+import { nodeScenario } from '../../aib/derive/scenarios.ts';
 import { cap } from './text.ts';
-import { cellKey, cellOf, COUNTRY_STAGES, COUNTRY_TECHS, isCellKey, type CellFacts, type FactSheet, type TradeParty } from '../contract.ts';
+import { cellKey, cellOf, COUNTRY_STAGES, COUNTRY_TECHS, isCellKey, type CellFacts, type FactSheet, type PartnerRow, type TradeParty } from '../contract.ts';
 
 // ---- the preference-adjusted Strategic Index ---------------------------------------------------------
 
@@ -104,11 +113,15 @@ export interface Dependency {
   cell: CellFacts;
   /** the largest supplier of the economy's imports in the sector (fact sheet trade), when known */
   supplier: TradeParty | null;
-  /** compacts covering the sector in which the economy is a demand anchor */
+  /** compacts covering the sector in which the economy is a demand anchor; `name`: the display title (compactTitle) */
   compacts: { id: string; name: string }[];
 }
 
-/** The compacts (id, name) that cover a cell: a node of the compact maps to the cell (nodes[].yfCells). */
+/**
+ * The compacts that cover a cell: a node of the compact has codes in the cell (nodes[].yfCells, the OSI
+ * crosswalk: a dictionary node can sit in several cells and a cell hold several nodes, so a compact can
+ * cover several cells; the node's own sector or technology never decides it).
+ */
 export function compactsOfCell(doc: Pick<AibDoc, 'compacts' | 'nodes'>, key: string): AibCompact[] {
   const nodeIds = new Set(doc.nodes.filter((nd) => nd.yfCells.includes(key)).map((nd) => nd.id));
   return doc.compacts.filter((c) => c.nodes.some((id) => nodeIds.has(id)));
@@ -132,7 +145,7 @@ export function dependencies(sheet: FactSheet, doc: Pick<AibDoc, 'compacts' | 'n
       compacts: doc
         ? compactsOfCell(doc, c.key)
             .filter((cp) => cp.roles.some((r) => r.iso3 === sheet.iso3 && r.role.toLowerCase().startsWith('demand anchor')))
-            .map((cp) => ({ id: cp.id, name: cp.name }))
+            .map((cp) => ({ id: cp.id, name: compactTitle(cp, doc.nodes) }))
         : [],
     }));
 }
@@ -208,12 +221,39 @@ export function aibCountry(doc: AibDoc, names: Readonly<Record<string, string>>,
       associate: row?.associate.includes(c.id) ?? false,
       roles: roles.filter((r) => r.compacts.some((x) => x.id === c.id)).map((r) => r.role),
     }));
+  const t = aibTradeOf(doc.compacts, iso);
+  let invN = 0;
+  let invUsd = 0;
+  for (const c of doc.compacts) {
+    for (const e of c.investment) {
+      if (e.investor !== iso && e.host !== iso) continue;
+      invN += 1;
+      invUsd += e.usd ?? 0;
+    }
+  }
+  const hostNodes = doc.nodes.filter((nd) => nd.hosts.includes(iso)).sort((a, b) => (b.bestGain ?? -1) - (a.bestGain ?? -1));
+  const keyNodes = [...t.nodeUsd.entries()]
+    .map(([id, usd]) => ({ node: nodeById.get(id), usd }))
+    .filter((x): x is { node: AibNode; usd: number } => !!x.node)
+    .sort((a, b) => b.usd - a.usd);
+  return { row, roles, compacts, pairs: t.pairs, trade: t.trade, investment: { n: invN, usd: invUsd }, hostNodes, keyNodes };
+}
+
+/**
+ * The economy's bilateral trade relationships in any compacts' coordinated trade (the main document's, or
+ * a scenario's), aggregated by partner, largest first; the totals; USD by node. Pure.
+ */
+export function aibTradeOf(
+  compacts: readonly { id: string; trade: readonly AibTradeEdge[] }[],
+  iso3: string,
+): { pairs: AibPair[]; trade: { n: number; usd: number; nNew: number }; nodeUsd: Map<string, number> } {
+  const iso = iso3.toUpperCase();
   const pairs = new Map<string, AibPair & { nodeUsd: Map<string, number> }>();
   const nodeUsd = new Map<string, number>();
   let tradeN = 0;
   let tradeUsd = 0;
   let tradeNew = 0;
-  for (const c of doc.compacts) {
+  for (const c of compacts) {
     for (const e of c.trade) {
       if (e.from !== iso && e.to !== iso) continue;
       const partner = e.from === iso ? e.to : e.from;
@@ -241,21 +281,73 @@ export function aibCountry(doc: AibDoc, names: Readonly<Record<string, string>>,
   const pairList = [...pairs.values()]
     .map(({ nodeUsd: nu, ...p }) => ({ ...p, nodes: [...nu.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k) }))
     .sort((a, b) => b.usd - a.usd || a.partner.localeCompare(b.partner));
-  let invN = 0;
-  let invUsd = 0;
-  for (const c of doc.compacts) {
-    for (const e of c.investment) {
-      if (e.investor !== iso && e.host !== iso) continue;
-      invN += 1;
-      invUsd += e.usd ?? 0;
-    }
-  }
-  const hostNodes = doc.nodes.filter((nd) => nd.hosts.includes(iso)).sort((a, b) => (b.bestGain ?? -1) - (a.bestGain ?? -1));
-  const keyNodes = [...nodeUsd.entries()]
-    .map(([id, usd]) => ({ node: nodeById.get(id), usd }))
-    .filter((x): x is { node: AibNode; usd: number } => !!x.node)
-    .sort((a, b) => b.usd - a.usd);
-  return { row, roles, compacts, pairs: pairList, trade: { n: tradeN, usd: tradeUsd, nNew: tradeNew }, investment: { n: invN, usd: invUsd }, hostNodes, keyNodes };
+  return { pairs: pairList, trade: { n: tradeN, usd: tradeUsd, nNew: tradeNew }, nodeUsd };
+}
+
+/**
+ * The AIB document as one scenario reads it, for the views that take a whole document (the Country
+ * profile's role section): Decoupling the document itself; Managed Interdependence (its file loaded) the
+ * same compacts (ids, nodes) with the scenario's coalition, roles, tiers and relationships (a compact the
+ * file does not solve keeps no coalition and no relationship), the scenario's network and investment
+ * flows, and each node's largest supplier after coordination under the scenario (none where the scenario
+ * did not run). Null while the file is not there. Pure.
+ */
+export function aibDocUnder(doc: AibDoc, id: 'decoupling' | 'managed', managed?: AibManagedScenarioDoc | null): AibDoc | null {
+  if (id === 'decoupling') return doc;
+  if (!managed) return null;
+  const empty: AibCoalition = { members: [], t90: [], t95: [], t99: [], reached99: false, maxCoverage: null };
+  const compacts = doc.compacts.map((c): AibCompact => {
+    const m = managed.compacts.find((x) => x.id === c.id);
+    if (!m) return { ...c, coalition: empty, anchors: [], suppliers: [], hosts: [], technologyPartners: [], bridges: [], associates: [], roles: [], path: [], trade: [], investment: [] };
+    return {
+      ...c,
+      // the type, archetype and policy needs under the scenario where the file has them
+      type: m.type ?? c.type,
+      archetype: m.archetype ?? c.archetype,
+      policyNeeds: m.type ? m.policyNeeds : c.policyNeeds,
+      secondaryClass: m.type ? m.secondaryClass : (c.secondaryClass ?? null),
+      coalition: m.coalition ?? empty,
+      anchors: m.anchors,
+      suppliers: m.suppliers,
+      hosts: m.hosts,
+      technologyPartners: m.technologyPartners,
+      bridges: m.bridges,
+      associates: m.associates,
+      roles: m.roles,
+      metrics: m.metrics ?? c.metrics,
+      path: m.path,
+      trade: m.trade,
+      investment: m.investment,
+    };
+  });
+  // a node the scenario leaves unchanged keeps today's largest supplier (as on /aib/roles) and has no hosts
+  const nodes = doc.nodes.map((n): AibNode => {
+    const s = nodeScenario(n, 'managed');
+    return { ...n, largest: s.largest, largestShare: s.largestShare, hosts: s.ran ? (n.diversify?.hosts ?? []) : [] };
+  });
+  return { ...doc, compacts, nodes, network: managed.network, investmentFlows: managed.investmentFlows };
+}
+
+/**
+ * The BUILD nodes (new capacity needed) under a scenario that concern the economy: the nodes of the
+ * compacts it sits in, and the nodes where it is a listed host; largest remaining gap first. Pure.
+ */
+export function buildNodesFor(rows: readonly LensNode[], compactIds: readonly string[], iso3: string): LensNode[] {
+  const ids = new Set(compactIds);
+  const iso = iso3.toUpperCase();
+  return rows
+    .filter((r) => r.cls === 'BUILD' && ((r.node.compact !== null && ids.has(r.node.compact)) || r.hosts.includes(iso)))
+    .sort((a, b) => (b.residual ?? -1) - (a.residual ?? -1) || a.node.label.localeCompare(b.node.label, 'en'));
+}
+
+/** The economy's partners in trade today (the fact sheet's tie order: average import and export shares). Pure. */
+export const tradeTiesToday = (sheet: FactSheet): string[] => sheet.partners.tie_order.filter((x) => x !== sheet.iso3);
+
+/** Partner rows that share an economic-security agreement with the economy (fact sheet), most agreements first, then the most aligned. Pure. */
+export function agreementRows(sheet: FactSheet): PartnerRow[] {
+  return sheet.partners.rows
+    .filter((r) => r.iso3 !== sheet.iso3 && r.ties.agreements.length > 0)
+    .sort((a, b) => b.ties.agreements.length - a.ties.agreements.length || (b.ties.alignment.v ?? -1) - (a.ties.alignment.v ?? -1) || a.name.localeCompare(b.name, 'en'));
 }
 
 /** BUILD nodes of the compacts the economy sits in, with their listed hosts (development candidates). */

@@ -60,11 +60,72 @@
 //                     substitutesNeeded. Externals hold roles with member = false, like associates.
 //   node (later)      variantWarnings (variant -> the class under it carries the physical-capability
 //                     warning) and growth[].warning: the warning of every class a node shows.
+//
+// Taxonomy fields (2026-10-19; still v1, all optional so an older bundle validates):
+//   meta              taxonomy: where the nodes come from. "dictionary": the electro-industrial HS6
+//                     dictionary (RMI Electro-Industrial Stack: index > sector > stage > HS6; primary rows
+//                     only, so each code sits in one node); "master" (absent in an older bundle): the OSI
+//                     basket (technology x stage x sub-sector). dictionaryScope (the dictionary's `scope`
+//                     column: "core", mostly specificity 1-2 plus a few shared codes kept as core with a
+//                     written justification, the headline; "extended": core plus the other shared codes,
+//                     a sensitivity; null for master) and indices ([{code, name, sectors}], the six EIS
+//                     indices A-F with their sectors; [] for master).
+//   node              indexCode: the EIS index ("A".."F") of the node's sector (null for master). With the
+//                     dictionary, node.techs holds the node's EIS sector(s) (names may contain "/"), not an
+//                     OSI technology; node.yfCells / yfSubcomponents are the OSI cells and sub-components its
+//                     codes sit in (a trade-weighted crosswalk to the OSI basket; many-to-many; [] where a node
+//                     has no basket code).
+//   compact           indices: the EIS indices of its sectors ([] for master). compact.name joins the sectors
+//                     with " / " and lists node labels that may contain ", ": display it, never parse it.
+//
+// Diversification fields (2026-10-19, later; still v1, all optional so an older bundle validates): the
+// scenario "Diversified to its sector's concentration" (a shock of type "diversify" in config/aib.yml,
+// id diversify_benchmark). It removes no supplier: each node's world exporter concentration (HHI, Hong
+// Kong and Macao counted with China) is set against a benchmark, the trade-weighted mean HHI of the other
+// HS6 lines of its HS4 heading (else of the other nodes of its sector); a node above it gets the supplier-
+// share cap that would bring it down, every supplier above the cap in the allied market (the demand scope) loses
+// the excess (no supplier may ship more than cap x the allied market's demand; a capped ally keeps its own
+// purchases), existing relationships then optimized trade replace what they can with the cap holding, and
+// the rest is the new capacity diversification needs (the investment simulation ranks its hosts).
+//   meta              diversify: {shockId, label, benchmark ("hs4" | "sector")}.
+//   node              diversify (absent for a node the scenario did not assess): status (AIB_DIVERSIFY_STATUSES),
+//                     currentHhi, benchmarkHhi, basis ("other HS6 lines of heading 8507", "other nodes of
+//                     the sector"), cap (null when already as diversified or without a benchmark), capped
+//                     (the suppliers above the cap in the allied market; [] when none), excess (the share of
+//                     the node's allied demand above the cap: supply to shift = excess x node.demandUsd), the
+//                     coverages static / existing / optimized of the node's allied demand under the cap,
+//                     residual (only new capacity fills it) and residualUsd, hosts, partners ("EXP->IMP;
+//                     ...") and cls (the class under the scenario); the run fields are null where the
+//                     scenario did not run. node.variants[shockId] is that class (null where it did not run).
+//
+// Scenario fields (2026-10-19, the scenario toggle; still v1, all optional so an older bundle validates and
+// renders with Decoupling only). Three scenarios: Baseline (trade as it is today, before any shock),
+// Managed Interdependence ("managed": the diversify_benchmark shock) and Decoupling (the headline shock
+// under hold: this main document). The R mirror is R/dashboard/aib/aib_check.R (aib_check_scenarios,
+// aib_check_scenario_doc).
+//   manifest          files.scenarios: { managed?: "scenario-managed.<h8>.json", baseline?:
+//                     "scenario-baseline.<h8>.json" } (AIB_SCENARIO_FILE_RE; the hash as for compacts),
+//                     lazily loaded (AibScenarioDoc, checkScenarioDoc()).
+//   meta              scenarios: the list {id, label, shockId, words} (baseline, managed, decoupling).
+//                     COLLISION: meta.scenarios was, and in an older bundle still is, the supply scenarios
+//                     (["conservative", "reallocation"]). Both shapes validate; read the supply scenarios
+//                     with supplyScenariosOf() (meta.supplyScenarios when meta.scenarios holds the objects)
+//                     and the scenario list with scenarioDefsOf(); never read meta.scenarios directly.
+//   node              baseline: {hhi, top3Share, largest, largestShare, suppliers: [iso3, share][] (top 5,
+//                     shares of the node's allied demand)}, observed, before any shock (scope-supply basis).
+//   node.diversify    lostUsd (excess x demandUsd), dividend (optimized - existing), hhi, largest,
+//                     largestShare, top3Share (the optimized state under the scenario, on node.hhi's basis),
+//                     newLinks, expandedLinks: filled where the scenario ran, null otherwise.
+//   compact           managed: {nodesRun, demandUsd, lostUsd, static, existing, optimized, residual,
+//                     residualUsd, classMix} (demand-weighted over ALL its nodes; a node the scenario did not
+//                     run on counts as unchanged); baseline: {hhi, suppliers: [iso3, share][] (top 5, shares
+//                     of the compact's allied demand)}.
 
 // ---- Schema ----------------------------------------------------------------------------------------
 
 export const AIB_SCHEMA = 'osi-aib';
-export const AIB_VERSION = 1;
+/** 2 since 2026-10-20: meta.scenarios became the scenario list (objects); an app reading 1 asks for a reload. Version 1 bundles still read. */
+export const AIB_VERSION = 2;
 /** Relative to the app's base URL. Written only by scripts/84. */
 export const AIB_DATA_DIR = 'data/aib/';
 export const AIB_MANIFEST_FILE = 'manifest.json';
@@ -109,7 +170,10 @@ export type AibPhysicalData = (typeof AIB_PHYSICAL_DATA)[number];
 export const AIB_SCOPE_MODES = ['coalition', 'configured', 'global'] as const;
 export type AibScopeMode = (typeof AIB_SCOPE_MODES)[number];
 
-/** Shock semantics: hold (an export shock; the shocked economy keeps buying) or release (decoupling). */
+/**
+ * Shock semantics: hold (an export shock; the shocked economy keeps buying) or release (a two-way cut: the
+ * shocked economy's purchases also fall by the same share).
+ */
 export const AIB_SEMANTICS = ['hold', 'release'] as const;
 export type AibSemantics = (typeof AIB_SEMANTICS)[number];
 
@@ -125,6 +189,34 @@ export type AibConstraint = (typeof AIB_CONSTRAINTS)[number];
 /** The strategic scopes config/aib.yml ships with (words only: meta.strategicScope may be any configured name and is not validated against this list). */
 export const AIB_STRATEGIC_SCOPES = ['electro_industrial', 'all'] as const;
 export type AibStrategicScope = (typeof AIB_STRATEGIC_SCOPES)[number];
+
+/**
+ * Where the nodes come from (meta.taxonomy; absent = master): the electro-industrial HS6 dictionary (EIS
+ * index > sector > stage) or the OSI basket (technology x stage x sub-sector).
+ */
+export const AIB_TAXONOMIES = ['dictionary', 'master'] as const;
+export type AibTaxonomy = (typeof AIB_TAXONOMIES)[number];
+
+/** The dictionary scopes (its `scope` column): core (mostly specificity 1-2, the headline) or extended (core plus the shared codes, a sensitivity). */
+export const AIB_DICTIONARY_SCOPES = ['core', 'extended'] as const;
+
+/** An index code of the Electro-Industrial Stack: one capital letter ("A".."F"). */
+export const AIB_INDEX_CODE_RE = /^[A-Z]$/;
+
+/**
+ * The statuses of a node in the diversification scenario (node.diversify.status): the scenario ran (the
+ * node is more concentrated than its benchmark and a supplier to the allied market is above the cap);
+ * above the benchmark worldwide but no supplier to the allied market exceeds the cap (nothing to shift);
+ * already as diversified as its benchmark; no benchmark (its heading has no other line, its sector no
+ * other node).
+ */
+export const AIB_DIVERSIFY_STATUSES = [
+  'diversified to the benchmark',
+  'within the cap in the allied market',
+  'already as diversified as its benchmark',
+  'no benchmark',
+] as const;
+export type AibDiversifyStatus = (typeof AIB_DIVERSIFY_STATUSES)[number];
 
 /**
  * The coalition tiers of a compact's economies, from the most to the least involved:
@@ -166,7 +258,8 @@ export interface AibManifest {
   candidateUniverse?: string | null;
   shockSemantics?: string | null;
   supplyConstraint?: string | null;
-  files: { compacts: string };
+  /** scenarios (additive, 2026-10-19): the lazily loaded scenario files; read them with scenarioFilesOf() */
+  files: { compacts: string; scenarios?: Partial<Record<AibScenarioFileId, string | null>> };
 }
 
 // ---- Document ----------------------------------------------------------------------------------------
@@ -174,6 +267,115 @@ export interface AibManifest {
 export interface AibShock {
   id: string;
   label: string;
+}
+
+/** One index of the Electro-Industrial Stack (meta.indices): "A" Materials & Inputs, with its sectors. */
+export interface AibIndex {
+  code: string;
+  name: string;
+  sectors: string[];
+}
+
+/** The diversification scenario of a run (meta.diversify). */
+export interface AibDiversifyMeta {
+  /** its shock id in meta.shocks and node.variants ("diversify_benchmark") */
+  shockId: string;
+  label: string | null;
+  /** "hs4": the other HS6 lines of the node's HS4 heading, falling back to the other nodes of its sector; "sector": the other nodes of its sector */
+  benchmark: string | null;
+  /** the HHI margin above its benchmark within which a node counts as already as diversified (config min_excess; additive) */
+  minExcess?: number | null;
+}
+
+/**
+ * One node in the diversification scenario (node.diversify). Shares are of the node's allied demand
+ * (node.demandUsd): the supply to shift is excess x demandUsd and residualUsd ~ residual x demandUsd.
+ */
+export interface AibNodeDiversify {
+  /** one of AIB_DIVERSIFY_STATUSES (shown as written when unknown) */
+  status: string;
+  /** the node's world exporter concentration (HHI, 0-1; 1 = a single supplier) */
+  currentHhi: number | null;
+  /** the benchmark: the trade-weighted mean HHI of the other lines of its heading (or of the other nodes of its sector) */
+  benchmarkHhi: number | null;
+  /** "other HS6 lines of heading 8507", "other nodes of the sector" */
+  basis: string | null;
+  /** the supplier-share cap that would bring the HHI down to the benchmark (null when already as diversified, or without a benchmark) */
+  cap: number | null;
+  /** the suppliers above the cap in the allied market ([] when none) */
+  capped: string[];
+  /** the share of the node's allied demand above the cap: the supply to shift */
+  excess: number | null;
+  /** coverage of the node's allied demand under the cap: before trade, after existing relationships, after optimized trade (null where the scenario did not run) */
+  static: number | null;
+  existing: number | null;
+  optimized: number | null;
+  /** the share of allied demand only new capacity fills */
+  residual: number | null;
+  residualUsd: number | null;
+  /** the leading investment hosts for that new capacity (may be []) */
+  hosts: string[];
+  /** the largest new or expanded relationships, "EXP->IMP; ..." (null when none) */
+  partners: string | null;
+  /** the class under the scenario (null where it did not run) */
+  cls: string | null;
+  // The scenario toggle (additive, 2026-10-19): filled where the scenario ran, null otherwise.
+  /** the supply that shifts away from the capped suppliers, USD a year (excess x the node's demandUsd) */
+  lostUsd?: number | null;
+  /** the coordination dividend under the scenario: optimized minus existing */
+  dividend?: number | null;
+  /** the optimized state under the scenario, on the basis of node.hhi / node.largestShare (share of served supply) */
+  hhi?: number | null;
+  largest?: string | null;
+  largestShare?: number | null;
+  top3Share?: number | null;
+  /** the relationships the optimized trade opens or expands */
+  newLinks?: number | null;
+  expandedLinks?: number | null;
+}
+
+/** [ISO3, share]: a supplier and its share (of a node's or a compact's allied demand). */
+export type AibSupplierShare = [string, number | null];
+/** [ISO3, USD a year, share]: a supplier, what it ships, and its share of the demand. */
+export type AibSupplierFlow = [string, number | null, number | null];
+
+/**
+ * A node as it is today (node.baseline; additive, 2026-10-19): observed trade, before any shock, on the
+ * scope-supply basis (shares of the supply to the demand scope; the same in every shock). suppliers: the
+ * top five observed suppliers to the allied market, as shares of the node's allied demand.
+ */
+export interface AibNodeBaseline {
+  hhi: number | null;
+  top3Share: number | null;
+  largest: string | null;
+  largestShare: number | null;
+  suppliers: AibSupplierShare[];
+}
+
+/**
+ * A compact under Managed Interdependence (compact.managed; additive, 2026-10-19): demand-weighted over ALL
+ * its nodes, a node the scenario did not run on counted as unchanged (coverage 1, nothing lost).
+ */
+export interface AibCompactManaged {
+  /** its nodes the scenario ran on */
+  nodesRun: number;
+  demandUsd: number | null;
+  lostUsd: number | null;
+  static: number | null;
+  existing: number | null;
+  optimized: number | null;
+  residual: number | null;
+  residualUsd: number | null;
+  /** the classes' shares of the lost supply under the scenario ("BUILD 78%; LOW INTERVENTION 22%"); null when no node ran */
+  classMix: string | null;
+}
+
+/** A compact as it is today (compact.baseline; additive, 2026-10-19). */
+export interface AibCompactBaseline {
+  /** the scope-supply HHI of the compact's summed observed supply */
+  hhi: number | null;
+  /** the top five suppliers over its nodes, as shares of the compact's allied demand */
+  suppliers: AibSupplierShare[];
 }
 
 export interface AibMeta {
@@ -197,11 +399,26 @@ export interface AibMeta {
   constraints?: string[];
   /** the technologies compacts are formed from (additive): electro_industrial, all or another configured scope */
   strategicScope?: string | null;
+  /** the technologies (dictionary: the sectors) of the strategic scope (additive) */
   scopeTechs?: string[];
+  /** where the nodes come from (additive, 2026-10-19): "dictionary" or "master"; absent = master */
+  taxonomy?: string | null;
+  /** the dictionary scope: "core" or "extended" (null for master; additive) */
+  dictionaryScope?: string | null;
+  /** the EIS indices with their sectors ([] for master; additive) */
+  indices?: AibIndex[];
+  /** the diversification scenario (additive, 2026-10-19; absent in an older bundle) */
+  diversify?: AibDiversifyMeta;
   tradeYear: number;
   built: string;
   shocks: AibShock[];
-  scenarios: string[];
+  /**
+   * the supply scenarios (["conservative", "reallocation"]) in an older bundle, or the scenario list
+   * (AibScenarioDef[], 2026-10-19): read them with supplyScenariosOf() and scenarioDefsOf()
+   */
+  scenarios: string[] | AibScenarioDef[];
+  /** the supply scenarios, when meta.scenarios holds the scenario list (additive, 2026-10-19) */
+  supplyScenarios?: string[];
   /** the five classes, in order (AIB_CLASSES) */
   classes: string[];
   /** coverage targets of the minimum sufficient coalition, e.g. [0.9, 0.95, 0.99] */
@@ -343,9 +560,13 @@ export interface AibInvestmentEdge {
 export interface AibCompact {
   /** "AIB-C01" */
   id: string;
+  /** "Sector A / Sector B: Node 1, Node 2, and N more": display only (labels may contain ", "); build titles with compactTitle() */
   name: string;
+  /** the OSI technologies (master) or the EIS sectors (dictionary) of its nodes */
   technologies: string[];
   stages: string[];
+  /** the EIS indices of its sectors ([] for master; additive, 2026-10-19) */
+  indices?: string[];
   archetype: AibArchetype;
   type: AibCompactType;
   /** node ids */
@@ -372,6 +593,10 @@ export interface AibCompact {
   path: AibPathStep[];
   trade: AibTradeEdge[];
   investment: AibInvestmentEdge[];
+  /** the compact under Managed Interdependence (additive, 2026-10-19) */
+  managed?: AibCompactManaged;
+  /** the compact as it is today (additive, 2026-10-19) */
+  baseline?: AibCompactBaseline;
 }
 
 export interface AibFrontierPoint {
@@ -406,8 +631,11 @@ export interface AibGrowthPoint {
 export interface AibNode {
   id: string;
   label: string;
+  /** the OSI technologies (master) or the node's EIS sector (dictionary) */
   techs: string[];
   stage: string;
+  /** the EIS index of the node's sector ("A".."F"; null for master; additive, 2026-10-19) */
+  indexCode?: string | null;
   cls: string;
   reason: string | null;
   /** the multi-label policy needs (any of AIB_POLICY_NEEDS; additive) */
@@ -434,6 +662,10 @@ export interface AibNode {
   instantaneousN1?: number | null;
   /** share of demand the optimized solution serves with exports redirected from markets outside the demand scope (additive) */
   diversion?: number | null;
+  /** the node in the diversification scenario (additive, 2026-10-19; absent in an older bundle and for a node it did not assess) */
+  diversify?: AibNodeDiversify;
+  /** the node as it is today, before any shock (additive, 2026-10-19; every optimized node) */
+  baseline?: AibNodeBaseline;
   quality: string | null;
   flags: string[];
   exposure: number | null;
@@ -566,7 +798,7 @@ export interface AibNetworkEdge {
   cumTrade: number;
   cumDividend: number;
   cumInvestment: number;
-  /** mean Export Opportunity (supplier -> buyer) and Friendshore (buyer -> supplier) scores, NEIS baseline */
+  /** mean Export Opportunity (supplier -> buyer) and Friendshore (buyer -> supplier) scores, NEIS defaults */
   opportunity: number | null;
   friendshore: number | null;
 }
@@ -594,9 +826,9 @@ export interface AibInvestmentPair {
   share: number | null;
   /** the investor's lost supply as a share of the node's demand */
   lostShare: number | null;
-  /** the investor's Friendshore score for the host, NEIS baseline */
+  /** the investor's Friendshore score for the host, NEIS defaults */
   friendshore: number | null;
-  /** the host's Export Opportunity score for the investor, NEIS baseline */
+  /** the host's Export Opportunity score for the investor, NEIS defaults */
   opportunity: number | null;
 }
 
@@ -624,6 +856,123 @@ export interface AibInvestmentFlows {
   pairs: AibInvestmentPair[];
   hosts: AibInvestmentHost[];
 }
+
+// ---- Scenarios (additive, 2026-10-19) ----------------------------------------------------------------
+
+/**
+ * The scenarios, in the order every comparison shows them: Baseline (trade as it is today, 2024, before any
+ * shock), Managed Interdependence (the diversify_benchmark shock) and Decoupling (the headline shock under
+ * hold: China stops supplying the allied market and keeps buying; the main document).
+ */
+export const AIB_SCENARIO_IDS = ['baseline', 'managed', 'decoupling'] as const;
+export type AibScenarioId = (typeof AIB_SCENARIO_IDS)[number];
+
+/** The scenarios with a lazily loaded file of their own (Decoupling is the main document). */
+export const AIB_SCENARIO_FILE_IDS = ['managed', 'baseline'] as const;
+export type AibScenarioFileId = (typeof AIB_SCENARIO_FILE_IDS)[number];
+
+export const AIB_SCENARIO_SCHEMA = 'osi-aib-scenario';
+export const AIB_SCENARIO_VERSION = 1;
+/** A scenario file name scripts/84 writes (and deletes when stale); the group is the scenario. */
+export const AIB_SCENARIO_FILE_RE = /^scenario-(managed|baseline)\.[0-9a-f]{8}\.json$/;
+
+/** One scenario of meta.scenarios: its label, its shock (null for baseline) and its words. */
+export interface AibScenarioDef {
+  id: AibScenarioId;
+  label: string;
+  shockId: string | null;
+  words: string;
+}
+
+/**
+ * A China compact under Managed Interdependence (scenario-managed, compacts[]): the same id and nodes as
+ * in the main document, solved under the scenario. coalition is null (with coalitionReason) when the
+ * scenario ran on none of its nodes. The arrays are [] when the export leaves them out (the store fills
+ * them: normalizeScenarioDoc()).
+ */
+export interface AibScenarioCompact {
+  id: string;
+  /** its nodes the scenario ran on */
+  nodesRun: number;
+  coalition: AibCoalition | null;
+  /** why coalition is null ("no node of this compact is above its benchmark by more than a small tolerance"); null otherwise */
+  coalitionReason: string | null;
+  /**
+   * The compact's type, archetype, policy needs and secondary class under the scenario (from its classes,
+   * compact gain and coalition size; 2026-10-20, optional in the file): null / [] without a coalition or in
+   * an older file (normalizeScenarioDoc()).
+   */
+  type: AibCompactType | null;
+  archetype: AibArchetype | null;
+  policyNeeds: string[];
+  secondaryClass: string | null;
+  anchors: string[];
+  suppliers: string[];
+  hosts: string[];
+  technologyPartners: string[];
+  bridges: string[];
+  associates: string[];
+  roles: AibRole[];
+  /** null when the export writes none (a compact without a coalition) */
+  metrics: AibMetrics | null;
+  path: AibPathStep[];
+  /** the scenario's trade relationships: top 40 by USD, domestic retention excluded */
+  trade: AibTradeEdge[];
+  investment: AibInvestmentEdge[];
+}
+
+/** Today's suppliers of one node (scenario-baseline, nodes[]): the top ten, shares of the node's allied demand. */
+export interface AibBaselineNodeSuppliers {
+  id: string;
+  suppliers: AibSupplierFlow[];
+}
+
+/** Today's suppliers of one compact (scenario-baseline, compacts[]): the top ten over its nodes, shares of its allied demand. */
+export interface AibBaselineCompactSuppliers {
+  id: string;
+  suppliers: AibSupplierFlow[];
+}
+
+interface AibScenarioDocBase {
+  schema: typeof AIB_SCENARIO_SCHEMA;
+  version: number;
+  created: string;
+  /** ISO3 -> name for every code used in the file ([] in the export when empty; read with scenarioNamesOf()) */
+  countries: Record<string, string>;
+}
+
+/**
+ * scenario-managed.<h8>.json: the China compacts solved under Managed Interdependence; the network of the
+ * scenario's shock alone (its headline fields are the scenario's; cum* = headline; variant.shock and
+ * variant.shocks name diversify_benchmark); its investor -> host flows (same increment and ranks as the main
+ * document).
+ */
+export interface AibManagedScenarioDoc extends AibScenarioDocBase {
+  scenario: 'managed';
+  shockId: string;
+  compacts: AibScenarioCompact[];
+  network?: AibNetwork;
+  investmentFlows?: AibInvestmentFlows;
+}
+
+/**
+ * scenario-baseline.<h8>.json: trade as it is today. network: observed 2024 supplier -> buyer pairs in the
+ * strategic scope, demand-scope buyers, pairs whose summed share of node demand is at least 0.005 (trade =
+ * observed share summed over nodes, tradeUsd = observed USD, investment 0, cum* = headline, nShocks 0,
+ * variant.shock "baseline", variant.scenario "observed", variant.shocks []); nodes and compacts: their top
+ * ten observed suppliers.
+ */
+export interface AibBaselineScenarioDoc extends AibScenarioDocBase {
+  scenario: 'baseline';
+  shockId: null;
+  network?: AibNetwork;
+  nodes: AibBaselineNodeSuppliers[];
+  compacts: AibBaselineCompactSuppliers[];
+}
+
+export type AibScenarioDoc = AibManagedScenarioDoc | AibBaselineScenarioDoc;
+/** The scenario file of each id. */
+export type AibScenarioDocOf<K extends AibScenarioFileId> = K extends 'managed' ? AibManagedScenarioDoc : AibBaselineScenarioDoc;
 
 // ---- Runtime checks ----------------------------------------------------------------------------------
 
@@ -726,8 +1075,27 @@ export function checkAibManifest(x: unknown): string[] {
   for (const k of ['created', 'universe', 'headlineShock', 'headlineScenario']) p.str(x[k], `manifest.${k}`);
   for (const k of ['demandScope', 'candidateUniverse', 'shockSemantics', 'supplyConstraint']) p.optStr(x[k], `manifest.${k}`);
   if (!isObj(x.files)) p.add('manifest.files: not an object');
-  else if (!isStr(x.files.compacts) || !AIB_DOC_FILE_RE.test(x.files.compacts)) p.add('manifest.files.compacts: not a compacts.<8 hex>.json file name');
+  else {
+    if (!isStr(x.files.compacts) || !AIB_DOC_FILE_RE.test(x.files.compacts)) p.add('manifest.files.compacts: not a compacts.<8 hex>.json file name');
+    checkScenarioFiles(p, x.files.scenarios);
+  }
   return p.list;
+}
+
+/**
+ * manifest.files.scenarios (2026-10-19): absent or null is fine; else an object whose managed and baseline
+ * entries (each absent, null, or a scenario-<id>.<8 hex>.json name of that same scenario) are checked; other
+ * keys are ignored (a newer export's scenario this app does not show).
+ */
+function checkScenarioFiles(p: Problems, s: unknown): void {
+  if (s === undefined || s === null) return;
+  if (!isObj(s)) return p.add('manifest.files.scenarios: not an object');
+  for (const id of AIB_SCENARIO_FILE_IDS) {
+    const f = s[id];
+    if (f === undefined || f === null) continue;
+    const m = isStr(f) ? AIB_SCENARIO_FILE_RE.exec(f) : null;
+    if (!m || m[1] !== id) p.add(`manifest.files.scenarios.${id}: not a scenario-${id}.<8 hex>.json file name`);
+  }
 }
 
 /** True when a manifest's version is newer than this app reads (the module asks for a reload). */
@@ -744,7 +1112,8 @@ function checkMeta(p: Problems, m: unknown): void {
       p.str(s.label, `meta.shocks[${i}].label`);
     });
   }
-  p.strArr(m.scenarios, 'meta.scenarios');
+  checkMetaScenarios(p, m.scenarios);
+  p.optStrArr(m.supplyScenarios, 'meta.supplyScenarios');
   if (p.strArr(m.classes, 'meta.classes')) {
     for (const c of m.classes) if (!(AIB_CLASSES as readonly string[]).includes(c)) p.add(`meta.classes: '${c}' is not one of ${AIB_CLASSES.join(', ')}`);
   }
@@ -762,6 +1131,115 @@ function checkMeta(p: Problems, m: unknown): void {
   // any configured scope: scripts/32 accepts every key under strategic_scope.technologies
   p.optStr(m.strategicScope, 'meta.strategicScope');
   p.optStrArr(m.scopeTechs, 'meta.scopeTechs');
+  // the taxonomy (2026-10-19): written as strings (a value this app does not know reads as master)
+  p.optStr(m.taxonomy, 'meta.taxonomy');
+  p.optStr(m.dictionaryScope, 'meta.dictionaryScope');
+  if (m.indices !== undefined && p.arr(m.indices, 'meta.indices')) {
+    const seen = new Set<string>();
+    m.indices.forEach((ix, i) => {
+      const at = `meta.indices[${i}]`;
+      if (!isObj(ix)) return p.add(`${at}: not an object`);
+      p.str(ix.code, `${at}.code`);
+      if (isStr(ix.code)) {
+        if (!AIB_INDEX_CODE_RE.test(ix.code)) p.add(`${at}.code: '${ix.code}' is not one capital letter`);
+        if (seen.has(ix.code)) p.add(`${at}.code: duplicate '${ix.code}'`);
+        seen.add(ix.code);
+      }
+      p.str(ix.name, `${at}.name`);
+      p.strArr(ix.sectors, `${at}.sectors`);
+    });
+  }
+  // the diversification scenario (2026-10-19): absent in an older bundle; the benchmark is any configured name
+  const dv = m.diversify;
+  if (dv !== undefined) {
+    if (!isObj(dv)) p.add('meta.diversify: not an object');
+    else {
+      p.str(dv.shockId, 'meta.diversify.shockId');
+      p.optStr(dv.label, 'meta.diversify.label');
+      p.optStr(dv.benchmark, 'meta.diversify.benchmark');
+      p.optNum(dv.minExcess, 'meta.diversify.minExcess', { min: 0, max: 1 });
+    }
+  }
+}
+
+/**
+ * meta.scenarios: an array of strings (the supply scenarios: an older bundle) or of scenario objects
+ * ({id one of AIB_SCENARIO_IDS, label, shockId a string or null, words}; 2026-10-19), not both.
+ */
+function checkMetaScenarios(p: Problems, s: unknown): void {
+  if (!p.arr(s, 'meta.scenarios')) return;
+  if (s.every(isStr)) return;
+  const seen = new Set<string>();
+  s.forEach((x, i) => {
+    const at = `meta.scenarios[${i}]`;
+    if (!isObj(x)) return p.add(`${at}: expected a scenario object (meta.scenarios mixes names and scenario objects)`);
+    p.oneOf(x.id, AIB_SCENARIO_IDS, `${at}.id`);
+    if (isStr(x.id)) {
+      if (seen.has(x.id)) p.add(`${at}.id: duplicate '${x.id}'`);
+      seen.add(x.id);
+    }
+    p.str(x.label, `${at}.label`);
+    p.str(x.shockId, `${at}.shockId`, true);
+    p.str(x.words, `${at}.words`);
+  });
+}
+
+/** [ISO3, number...] tuples (node / compact suppliers): an array of arrays of `n` items, the first an ISO3 string, then USD >= 0 (n = 3) and a share. */
+function checkSupplierTuples(p: Problems, x: unknown, at: string, n: 2 | 3): void {
+  if (!p.arr(x, at)) return;
+  x.forEach((t, i) => {
+    const ta = `${at}[${i}]`;
+    if (!Array.isArray(t) || t.length !== n) return p.add(`${ta}: expected [${n === 3 ? 'ISO3, USD, share' : 'ISO3, share'}]`);
+    p.str(t[0], `${ta}[0]`);
+    if (n === 3) p.num(t[1], `${ta}[1]`, { nullable: true, min: 0 });
+    p.num(t[n - 1], `${ta}[${n - 1}]`, SHARE);
+  });
+}
+
+/** node.baseline (2026-10-19): absent is fine; else shares in 0-1 or null, the largest supplier a string or null, the top suppliers [ISO3, share]. */
+function checkNodeBaseline(p: Problems, b: unknown, at: string): void {
+  if (b === undefined) return;
+  if (!isObj(b)) return p.add(`${at}: not an object`);
+  for (const k of ['hhi', 'top3Share', 'largestShare']) p.num(b[k], `${at}.${k}`, SHARE);
+  p.str(b.largest, `${at}.largest`, true);
+  checkSupplierTuples(p, b.suppliers, `${at}.suppliers`, 2);
+}
+
+/**
+ * node.diversify (2026-10-19): absent is fine; else the status (one of AIB_DIVERSIFY_STATUSES), shares in
+ * 0-1 or null, the supply only new capacity fills in USD (>= 0 or null), the capped suppliers and the hosts
+ * as arrays of strings, the basis and the relationships as strings or null, and the class under the
+ * scenario null or one of meta.classes.
+ */
+function checkNodeDiversify(p: Problems, d: unknown, at: string, classes: readonly string[]): void {
+  if (d === undefined) return;
+  if (!isObj(d)) return p.add(`${at}: not an object`);
+  p.oneOf(d.status, AIB_DIVERSIFY_STATUSES, `${at}.status`);
+  for (const k of ['currentHhi', 'benchmarkHhi', 'cap', 'excess', 'static', 'existing', 'optimized', 'residual']) p.num(d[k], `${at}.${k}`, SHARE);
+  p.num(d.residualUsd, `${at}.residualUsd`, { nullable: true, min: 0 });
+  for (const k of ['basis', 'partners']) p.str(d[k], `${at}.${k}`, true);
+  for (const k of ['capped', 'hosts']) p.strArr(d[k], `${at}.${k}`);
+  checkCls(p, d.cls, `${at}.cls`, classes);
+  // the scenario toggle (2026-10-19; each absent, or null where the scenario did not run)
+  p.optNum(d.lostUsd, `${at}.lostUsd`, { min: 0 });
+  p.optNum(d.dividend, `${at}.dividend`, { min: -1, max: 1 });
+  for (const k of ['hhi', 'largestShare', 'top3Share']) p.optNum(d[k], `${at}.${k}`, { min: 0, max: 1 });
+  p.optStr(d.largest, `${at}.largest`);
+  for (const k of ['newLinks', 'expandedLinks']) if (d[k] !== undefined) p.num(d[k], `${at}.${k}`, { nullable: true, min: 0, int: true });
+}
+
+/** The index codes of meta.indices (empty when the bundle has none: index fields are then not cross-checked). */
+function indexCodesOf(m: unknown): Set<string> {
+  const out = new Set<string>();
+  if (isObj(m) && Array.isArray(m.indices)) for (const ix of m.indices) if (isObj(ix) && isStr(ix.code)) out.add(ix.code);
+  return out;
+}
+
+/** An additive index code (node.indexCode): absent or null is fine; else a string, one of meta.indices when it lists any. */
+function checkIndexCode(p: Problems, x: unknown, path: string, codes: ReadonlySet<string>): void {
+  if (x === undefined || x === null) return;
+  if (!isStr(x)) return p.add(`${path}: expected a string or null`);
+  if (codes.size && !codes.has(x)) p.add(`${path}: '${x}' is not an index of meta.indices`);
 }
 
 /** A class written beside the headline one (a variant, a growth bound): null, or one of meta.classes. */
@@ -771,9 +1249,10 @@ function checkCls(p: Problems, x: unknown, path: string, classes: readonly strin
   else if (!classes.includes(x)) p.add(`${path}: '${x}' is not one of meta.classes`);
 }
 
-function checkNode(p: Problems, n: unknown, at: string, classes: readonly string[]): void {
+function checkNode(p: Problems, n: unknown, at: string, classes: readonly string[], codes: ReadonlySet<string> = new Set()): void {
   if (!isObj(n)) return p.add(`${at}: not an object`);
   for (const k of ['id', 'label', 'stage']) p.str(n[k], `${at}.${k}`);
+  checkIndexCode(p, n.indexCode, `${at}.indexCode`, codes);
   if (!isStr(n.cls)) p.add(`${at}.cls: expected a string`);
   else if (!classes.includes(n.cls)) p.add(`${at}.cls: '${n.cls}' is not one of meta.classes`);
   for (const k of ['reason', 'quality', 'baseLargest', 'largest', 'partners', 'treatment', 'compact']) p.str(n[k], `${at}.${k}`, true);
@@ -792,6 +1271,8 @@ function checkNode(p: Problems, n: unknown, at: string, classes: readonly string
   p.optBool(n.coordinateSensitiveToGrowth, `${at}.coordinateSensitiveToGrowth`);
   for (const k of ['n1Reoptimized', 'instantaneousN1']) p.optNum(n[k], `${at}.${k}`, { min: 0, max: 1 });
   p.optNum(n.diversion, `${at}.diversion`, { min: 0 });
+  checkNodeDiversify(p, n.diversify, `${at}.diversify`, classes);
+  checkNodeBaseline(p, n.baseline, `${at}.baseline`);
   const v = n.variants;
   // a named list; [] when empty (jsonlite)
   if (v !== undefined) {
@@ -828,9 +1309,107 @@ function checkNode(p: Problems, n: unknown, at: string, classes: readonly string
   }
 }
 
-function checkCompact(p: Problems, c: unknown, at: string, nodeIds: ReadonlySet<string>): void {
+/** compact.coalition (an object; the R mirror and checkScenarioCompact() share it). */
+function checkCoalition(p: Problems, co: unknown, at: string): void {
+  if (!isObj(co)) return p.add(`${at}: not an object`);
+  for (const k of ['members', 't90', 't95', 't99']) p.strArr(co[k], `${at}.${k}`);
+  p.bool(co.reached99, `${at}.reached99`);
+  p.num(co.maxCoverage, `${at}.maxCoverage`, SHARE);
+  p.optStr(co.method, `${at}.method`);
+  for (const k of ['greedy', 'criticalPartners', 'criticalExternal', 'criticalExternalMarginal', 'external']) p.optStrArr(co[k], `${at}.${k}`);
+  for (const k of ['associatesReach99', 'robustTieBreakSolved']) p.optBool(co[k], `${at}.${k}`);
+}
+
+function checkRoles(p: Problems, roles: unknown, at: string): void {
+  if (!p.arr(roles, at)) return;
+  roles.forEach((r, i) => {
+    const ra = `${at}[${i}]`;
+    if (!isObj(r)) return p.add(`${ra}: not an object`);
+    for (const k of ['iso3', 'role', 'basis']) p.str(r[k], `${ra}.${k}`);
+    p.bool(r.member, `${ra}.member`);
+    // an unknown tier is shown as written; only its type is checked
+    p.optStr(r.tier, `${ra}.tier`);
+    p.optBool(r.critical, `${ra}.critical`);
+    p.optBool(r.looCritical, `${ra}.looCritical`);
+    p.optStrArr(r.substitutes, `${ra}.substitutes`);
+    if (r.substitutesNeeded !== undefined) p.num(r.substitutesNeeded, `${ra}.substitutesNeeded`, { nullable: true, min: 0, int: true });
+  });
+}
+
+function checkMetrics(p: Problems, m: unknown, at: string): void {
+  if (!isObj(m)) return p.add(`${at}: not an object`);
+  for (const k of ['demandUsd', 'lostUsd']) p.num(m[k], `${at}.${k}`, { nullable: true, min: 0 });
+  for (const k of ['exposure', 'static', 'existing', 'trade', 'investment', 'residual', 'residualAfterInvestment']) p.num(m[k], `${at}.${k}`, SHARE);
+  p.num(m.dividend, `${at}.dividend`, { nullable: true, min: -1, max: 1 });
+  for (const k of ['globalOptimum', 'anchorFragmented', 'anchorCompact']) p.optNum(m[k], `${at}.${k}`, { min: 0, max: 1 });
+  p.optNum(m.compactGain, `${at}.compactGain`, { min: -1, max: 1 });
+}
+
+function checkPath(p: Problems, path: unknown, at: string): void {
+  if (!p.arr(path, at)) return;
+  path.forEach((s, i) => {
+    const sa = `${at}[${i}]`;
+    if (!isObj(s)) return p.add(`${sa}: not an object`);
+    p.num(s.step, `${sa}.step`, { min: 0, int: true });
+    p.str(s.added, `${sa}.added`, true);
+    p.strArr(s.members, `${sa}.members`);
+    p.num(s.minCoverage, `${sa}.minCoverage`, SHARE);
+    p.num(s.meanCoverage, `${sa}.meanCoverage`, SHARE);
+    const nc = s.nodeCoverage;
+    if (Array.isArray(nc) ? nc.length > 0 : !isObj(nc)) p.add(`${sa}.nodeCoverage: expected an object of node coverages`);
+    else if (isObj(nc)) for (const [k, v] of Object.entries(nc)) p.num(v, `${sa}.nodeCoverage.${k}`, SHARE);
+  });
+}
+
+function checkTradeEdges(p: Problems, trade: unknown, at: string): void {
+  if (!p.arr(trade, at)) return;
+  trade.forEach((e, i) => {
+    const ea = `${at}[${i}]`;
+    if (!isObj(e)) return p.add(`${ea}: not an object`);
+    for (const k of ['from', 'to', 'node']) p.str(e[k], `${ea}.${k}`);
+    p.num(e.usd, `${ea}.usd`, { nullable: true });
+    p.num(e.share, `${ea}.share`, { nullable: true });
+    p.oneOf(e.relationship, AIB_RELATIONSHIPS, `${ea}.relationship`);
+    p.num(e.opportunity, `${ea}.opportunity`, { nullable: true });
+  });
+}
+
+function checkInvestmentEdges(p: Problems, inv: unknown, at: string): void {
+  if (!p.arr(inv, at)) return;
+  inv.forEach((e, i) => {
+    const ea = `${at}[${i}]`;
+    if (!isObj(e)) return p.add(`${ea}: not an object`);
+    for (const k of ['investor', 'host', 'node']) p.str(e[k], `${ea}.${k}`);
+    p.num(e.usd, `${ea}.usd`, { nullable: true });
+    p.num(e.share, `${ea}.share`, { nullable: true });
+    p.num(e.friendshore, `${ea}.friendshore`, { nullable: true });
+  });
+}
+
+/** compact.managed (2026-10-19): absent is fine; else nodesRun an integer from 0 to the compact's node count, USD >= 0 or null, shares in 0-1 or null, classMix a string or null. */
+function checkCompactManaged(p: Problems, m: unknown, at: string, nNodes: number | null): void {
+  if (m === undefined) return;
+  if (!isObj(m)) return p.add(`${at}: not an object`);
+  p.num(m.nodesRun, `${at}.nodesRun`, { min: 0, int: true, ...(nNodes === null ? {} : { max: nNodes }) });
+  for (const k of ['demandUsd', 'lostUsd', 'residualUsd']) p.num(m[k], `${at}.${k}`, { nullable: true, min: 0 });
+  for (const k of ['static', 'existing', 'optimized', 'residual']) p.num(m[k], `${at}.${k}`, SHARE);
+  p.optStr(m.classMix, `${at}.classMix`);
+}
+
+/** compact.baseline (2026-10-19): absent is fine; else the HHI a share or null and the top suppliers [ISO3, share]. */
+function checkCompactBaseline(p: Problems, b: unknown, at: string): void {
+  if (b === undefined) return;
+  if (!isObj(b)) return p.add(`${at}: not an object`);
+  p.num(b.hhi, `${at}.hhi`, SHARE);
+  checkSupplierTuples(p, b.suppliers, `${at}.suppliers`, 2);
+}
+
+function checkCompact(p: Problems, c: unknown, at: string, nodeIds: ReadonlySet<string>, codes: ReadonlySet<string> = new Set()): void {
   if (!isObj(c)) return p.add(`${at}: not an object`);
   for (const k of ['id', 'name']) p.str(c[k], `${at}.${k}`);
+  if (c.indices !== undefined && p.strArr(c.indices, `${at}.indices`) && codes.size) {
+    for (const x of c.indices) if (!codes.has(x)) p.add(`${at}.indices: '${x}' is not an index of meta.indices`);
+  }
   p.oneOf(c.archetype, AIB_ARCHETYPES, `${at}.archetype`);
   p.oneOf(c.type, AIB_COMPACT_TYPES, `${at}.type`);
   for (const k of ['technologies', 'stages', 'anchors', 'suppliers', 'hosts', 'technologyPartners', 'bridges', 'associates', 'policyNeeds']) p.strArr(c[k], `${at}.${k}`);
@@ -838,78 +1417,18 @@ function checkCompact(p: Problems, c: unknown, at: string, nodeIds: ReadonlySet<
     if (!c.nodes.length) p.add(`${at}.nodes: a compact without nodes`);
     for (const id of c.nodes) if (!nodeIds.has(id)) p.add(`${at}.nodes: '${id}' is not a node of the document`);
   }
-  const co = c.coalition;
-  if (!isObj(co)) p.add(`${at}.coalition: not an object`);
-  else {
-    for (const k of ['members', 't90', 't95', 't99']) p.strArr(co[k], `${at}.coalition.${k}`);
-    p.bool(co.reached99, `${at}.coalition.reached99`);
-    p.num(co.maxCoverage, `${at}.coalition.maxCoverage`, SHARE);
-    p.optStr(co.method, `${at}.coalition.method`);
-    for (const k of ['greedy', 'criticalPartners', 'criticalExternal', 'criticalExternalMarginal', 'external']) p.optStrArr(co[k], `${at}.coalition.${k}`);
-    for (const k of ['associatesReach99', 'robustTieBreakSolved']) p.optBool(co[k], `${at}.coalition.${k}`);
-  }
+  checkCoalition(p, c.coalition, `${at}.coalition`);
   p.optStr(c.nodePolicyNeeds, `${at}.nodePolicyNeeds`);
   p.optStrArr(c.physicalWarnings, `${at}.physicalWarnings`);
-  if (p.arr(c.roles, `${at}.roles`)) {
-    c.roles.forEach((r, i) => {
-      const ra = `${at}.roles[${i}]`;
-      if (!isObj(r)) return p.add(`${ra}: not an object`);
-      for (const k of ['iso3', 'role', 'basis']) p.str(r[k], `${ra}.${k}`);
-      p.bool(r.member, `${ra}.member`);
-      // an unknown tier is shown as written; only its type is checked
-      p.optStr(r.tier, `${ra}.tier`);
-      p.optBool(r.critical, `${ra}.critical`);
-      p.optBool(r.looCritical, `${ra}.looCritical`);
-      p.optStrArr(r.substitutes, `${ra}.substitutes`);
-      if (r.substitutesNeeded !== undefined) p.num(r.substitutesNeeded, `${ra}.substitutesNeeded`, { nullable: true, min: 0, int: true });
-    });
-  }
-  const m = c.metrics;
-  if (!isObj(m)) p.add(`${at}.metrics: not an object`);
-  else {
-    for (const k of ['demandUsd', 'lostUsd']) p.num(m[k], `${at}.metrics.${k}`, { nullable: true, min: 0 });
-    for (const k of ['exposure', 'static', 'existing', 'trade', 'investment', 'residual', 'residualAfterInvestment']) p.num(m[k], `${at}.metrics.${k}`, SHARE);
-    p.num(m.dividend, `${at}.metrics.dividend`, { nullable: true, min: -1, max: 1 });
-    for (const k of ['globalOptimum', 'anchorFragmented', 'anchorCompact']) p.optNum(m[k], `${at}.metrics.${k}`, { min: 0, max: 1 });
-    p.optNum(m.compactGain, `${at}.metrics.compactGain`, { min: -1, max: 1 });
-  }
+  checkRoles(p, c.roles, `${at}.roles`);
+  checkMetrics(p, c.metrics, `${at}.metrics`);
   p.optStr(c.classMix, `${at}.classMix`);
   p.optStr(c.secondaryClass, `${at}.secondaryClass`);
-  if (p.arr(c.path, `${at}.path`)) {
-    c.path.forEach((s, i) => {
-      const sa = `${at}.path[${i}]`;
-      if (!isObj(s)) return p.add(`${sa}: not an object`);
-      p.num(s.step, `${sa}.step`, { min: 0, int: true });
-      p.str(s.added, `${sa}.added`, true);
-      p.strArr(s.members, `${sa}.members`);
-      p.num(s.minCoverage, `${sa}.minCoverage`, SHARE);
-      p.num(s.meanCoverage, `${sa}.meanCoverage`, SHARE);
-      const nc = s.nodeCoverage;
-      if (Array.isArray(nc) ? nc.length > 0 : !isObj(nc)) p.add(`${sa}.nodeCoverage: expected an object of node coverages`);
-      else if (isObj(nc)) for (const [k, v] of Object.entries(nc)) p.num(v, `${sa}.nodeCoverage.${k}`, SHARE);
-    });
-  }
-  if (p.arr(c.trade, `${at}.trade`)) {
-    c.trade.forEach((e, i) => {
-      const ea = `${at}.trade[${i}]`;
-      if (!isObj(e)) return p.add(`${ea}: not an object`);
-      for (const k of ['from', 'to', 'node']) p.str(e[k], `${ea}.${k}`);
-      p.num(e.usd, `${ea}.usd`, { nullable: true });
-      p.num(e.share, `${ea}.share`, { nullable: true });
-      p.oneOf(e.relationship, AIB_RELATIONSHIPS, `${ea}.relationship`);
-      p.num(e.opportunity, `${ea}.opportunity`, { nullable: true });
-    });
-  }
-  if (p.arr(c.investment, `${at}.investment`)) {
-    c.investment.forEach((e, i) => {
-      const ea = `${at}.investment[${i}]`;
-      if (!isObj(e)) return p.add(`${ea}: not an object`);
-      for (const k of ['investor', 'host', 'node']) p.str(e[k], `${ea}.${k}`);
-      p.num(e.usd, `${ea}.usd`, { nullable: true });
-      p.num(e.share, `${ea}.share`, { nullable: true });
-      p.num(e.friendshore, `${ea}.friendshore`, { nullable: true });
-    });
-  }
+  checkPath(p, c.path, `${at}.path`);
+  checkTradeEdges(p, c.trade, `${at}.trade`);
+  checkInvestmentEdges(p, c.investment, `${at}.investment`);
+  checkCompactManaged(p, c.managed, `${at}.managed`, Array.isArray(c.nodes) ? c.nodes.length : null);
+  checkCompactBaseline(p, c.baseline, `${at}.baseline`);
 }
 
 /** Problems with a compacts.<h8>.json document (empty when it is valid). */
@@ -921,13 +1440,14 @@ export function checkCompactsDoc(x: unknown): string[] {
   else if (Math.floor(x.version) > AIB_VERSION) p.add(`document: version ${x.version} needs a newer app`);
   checkMeta(p, x.meta);
   const classes = isObj(x.meta) && Array.isArray(x.meta.classes) ? (x.meta.classes as unknown[]).filter(isStr) : [...AIB_CLASSES];
+  const codes = indexCodesOf(x.meta);
   // countries: an object of names ([] when empty, as jsonlite writes an empty named list)
   if (Array.isArray(x.countries) ? x.countries.length > 0 : !isObj(x.countries)) p.add('countries: expected an object of ISO3 -> name');
   else if (isObj(x.countries)) for (const [k, v] of Object.entries(x.countries)) p.str(v, `countries.${k}`);
   const nodeIds = new Set<string>();
   if (p.arr(x.nodes, 'nodes')) {
     x.nodes.forEach((n, i) => {
-      checkNode(p, n, `nodes[${i}]`, classes);
+      checkNode(p, n, `nodes[${i}]`, classes, codes);
       if (isObj(n) && isStr(n.id)) {
         if (nodeIds.has(n.id)) p.add(`nodes[${i}].id: duplicate '${n.id}'`);
         nodeIds.add(n.id);
@@ -937,7 +1457,7 @@ export function checkCompactsDoc(x: unknown): string[] {
   const compactIds = new Set<string>();
   if (p.arr(x.compacts, 'compacts')) {
     x.compacts.forEach((c, i) => {
-      checkCompact(p, c, `compacts[${i}]`, nodeIds);
+      checkCompact(p, c, `compacts[${i}]`, nodeIds, codes);
       if (isObj(c) && isStr(c.id)) {
         if (compactIds.has(c.id)) p.add(`compacts[${i}].id: duplicate '${c.id}'`);
         else if ((AIB_RESERVED as readonly string[]).includes(c.id.toLowerCase())) p.add(`compacts[${i}].id: '${c.id}' is a reserved path segment`);
@@ -972,7 +1492,7 @@ function checkSide(p: Problems, s: unknown, at: string, trade: boolean): void {
 }
 
 /** `network`: absent is fine; else the variant, unique economies with four sides, and edges over the document's nodes. */
-function checkNetwork(p: Problems, n: unknown, nodeIds: ReadonlySet<string>): void {
+function checkNetwork(p: Problems, n: unknown, nodeIds: ReadonlySet<string> | null): void {
   if (n === undefined) return;
   if (!isObj(n)) return p.add('network: not an object');
   checkVariant(p, n.variant, 'network.variant');
@@ -1003,7 +1523,7 @@ function checkNetwork(p: Problems, n: unknown, nodeIds: ReadonlySet<string>): vo
       for (const k of ['from', 'to']) p.str(e[k], `${at}.${k}`);
       if (isStr(e.from) && e.from === e.to) p.add(`${at}: supplier and buyer are the same economy`);
       for (const k of ['nTrade', 'nInvestment', 'nShocks', 'nHighSeverity']) p.num(e[k], `${at}.${k}`, { min: 0, int: true });
-      if (p.strArr(e.nodes, `${at}.nodes`)) for (const id of e.nodes) if (!nodeIds.has(id)) p.add(`${at}.nodes: '${id}' is not a node of the document`);
+      if (p.strArr(e.nodes, `${at}.nodes`) && nodeIds) for (const id of e.nodes) if (!nodeIds.has(id)) p.add(`${at}.nodes: '${id}' is not a node of the document`);
       p.strArr(e.techs, `${at}.techs`);
       if (p.strArr(e.stages, `${at}.stages`)) e.stages.forEach((s) => p.oneOf(s, AIB_STAGES, `${at}.stages`));
       for (const k of ['tradeUsd', 'trade', 'investment', 'cumTrade', 'cumDividend', 'cumInvestment']) p.num(e[k], `${at}.${k}`, { min: 0 });
@@ -1013,7 +1533,7 @@ function checkNetwork(p: Problems, n: unknown, nodeIds: ReadonlySet<string>): vo
 }
 
 /** `investmentFlows`: absent is fine; else the variant, pairs (investor != host, rank 1..maxRank) and ranked hosts over the document's nodes. */
-function checkInvestmentFlows(p: Problems, f: unknown, nodeIds: ReadonlySet<string>): void {
+function checkInvestmentFlows(p: Problems, f: unknown, nodeIds: ReadonlySet<string> | null): void {
   if (f === undefined) return;
   if (!isObj(f)) return p.add('investmentFlows: not an object');
   checkVariant(p, f.variant, 'investmentFlows.variant');
@@ -1027,7 +1547,7 @@ function checkInvestmentFlows(p: Problems, f: unknown, nodeIds: ReadonlySet<stri
       if (!isObj(e)) return p.add(`${at}: not an object`);
       for (const k of ['investor', 'host', 'node']) p.str(e[k], `${at}.${k}`);
       if (isStr(e.investor) && e.investor === e.host) p.add(`${at}: investor and host are the same economy`);
-      if (isStr(e.node) && !nodeIds.has(e.node)) p.add(`${at}.node: '${e.node}' is not a node of the document`);
+      if (isStr(e.node) && nodeIds && !nodeIds.has(e.node)) p.add(`${at}.node: '${e.node}' is not a node of the document`);
       p.num(e.rank, `${at}.rank`, { min: 1, max: maxRank, int: true });
       p.num(e.usd, `${at}.usd`, { min: 0 });
       for (const k of ['share', 'lostShare', 'friendshore', 'opportunity']) p.num(e[k], `${at}.${k}`, SHARE);
@@ -1038,7 +1558,7 @@ function checkInvestmentFlows(p: Problems, f: unknown, nodeIds: ReadonlySet<stri
       const at = `investmentFlows.hosts[${i}]`;
       if (!isObj(h)) return p.add(`${at}: not an object`);
       for (const k of ['node', 'host']) p.str(h[k], `${at}.${k}`);
-      if (isStr(h.node) && !nodeIds.has(h.node)) p.add(`${at}.node: '${h.node}' is not a node of the document`);
+      if (isStr(h.node) && nodeIds && !nodeIds.has(h.node)) p.add(`${at}.node: '${h.node}' is not a node of the document`);
       p.num(h.rank, `${at}.rank`, { min: 1, max: maxRank, int: true });
       p.num(h.gain, `${at}.gain`, { nullable: true, min: -1, max: 1 });
       for (const k of ['before', 'after', 'newCapacityUsed']) p.num(h[k], `${at}.${k}`, SHARE);
@@ -1048,6 +1568,159 @@ function checkInvestmentFlows(p: Problems, f: unknown, nodeIds: ReadonlySet<stri
     });
   }
 }
+
+// ---- Scenario files (2026-10-19) ---------------------------------------------------------------------
+
+/** What a scenario file is cross-checked against: the main document's nodes and compacts (by id). */
+export interface ScenarioCheckRefs {
+  nodes: readonly { id: string }[];
+  compacts: readonly { id: string }[];
+}
+
+/** One compact of scenario-managed (tolerant: the arrays and metrics may be absent; normalizeScenarioDoc() fills them). */
+function checkScenarioCompact(p: Problems, c: unknown, at: string): void {
+  if (!isObj(c)) return p.add(`${at}: not an object`);
+  p.str(c.id, `${at}.id`);
+  p.num(c.nodesRun, `${at}.nodesRun`, { min: 0, int: true });
+  if (c.coalition !== null) checkCoalition(p, c.coalition, `${at}.coalition`);
+  p.optStr(c.coalitionReason, `${at}.coalitionReason`);
+  if (c.coalition === null && !isStr(c.coalitionReason)) p.add(`${at}.coalitionReason: expected a string when coalition is null`);
+  p.optOneOf(c.type, AIB_COMPACT_TYPES, `${at}.type`);
+  p.optOneOf(c.archetype, AIB_ARCHETYPES, `${at}.archetype`);
+  p.optStr(c.secondaryClass, `${at}.secondaryClass`);
+  for (const k of ['anchors', 'suppliers', 'hosts', 'technologyPartners', 'bridges', 'associates', 'policyNeeds']) p.optStrArr(c[k], `${at}.${k}`);
+  if (c.roles !== undefined) checkRoles(p, c.roles, `${at}.roles`);
+  if (c.metrics !== undefined && c.metrics !== null) checkMetrics(p, c.metrics, `${at}.metrics`);
+  if (c.path !== undefined) checkPath(p, c.path, `${at}.path`);
+  if (c.trade !== undefined) checkTradeEdges(p, c.trade, `${at}.trade`);
+  if (c.investment !== undefined) checkInvestmentEdges(p, c.investment, `${at}.investment`);
+}
+
+/** An array of {id, suppliers: [ISO3, USD, share][]} (scenario-baseline nodes / compacts), ids unique and, with `known`, of the main document. */
+function checkSupplierLists(p: Problems, x: unknown, at: string, known: ReadonlySet<string> | null, what: string): void {
+  if (!p.arr(x, at)) return;
+  const seen = new Set<string>();
+  x.forEach((r, i) => {
+    const ra = `${at}[${i}]`;
+    if (!isObj(r)) return p.add(`${ra}: not an object`);
+    p.str(r.id, `${ra}.id`);
+    if (isStr(r.id)) {
+      if (seen.has(r.id)) p.add(`${ra}.id: duplicate '${r.id}'`);
+      seen.add(r.id);
+      if (known && !known.has(r.id)) p.add(`${ra}.id: '${r.id}' is not a ${what} of the main document`);
+    }
+    checkSupplierTuples(p, r.suppliers, `${ra}.suppliers`, 3);
+  });
+}
+
+/**
+ * Problems with a scenario-<id>.<h8>.json file (empty when it is valid). `refs` (the main document) adds
+ * the cross-checks: compact and node ids must be the main document's. Tolerant like the main checks: [] for
+ * an empty named list, null numbers; network and investmentFlows may be absent; a managed compact's arrays,
+ * metrics and coalitionReason may be absent (normalizeScenarioDoc() fills them), and its coalition may be
+ * null (then coalitionReason says why). `expect`: the scenario the manifest names the file for.
+ */
+export function checkScenarioDoc(x: unknown, refs: ScenarioCheckRefs | null = null, expect: AibScenarioFileId | null = null): string[] {
+  if (!isObj(x)) return ['document: not an object'];
+  const p = new Problems();
+  if (x.schema !== AIB_SCENARIO_SCHEMA) p.add(`document.schema: expected '${AIB_SCENARIO_SCHEMA}'`);
+  if (!isNum(x.version)) p.add('document.version: not a number');
+  else if (Math.floor(x.version) > AIB_SCENARIO_VERSION) p.add(`document: version ${x.version} needs a newer app`);
+  p.oneOf(x.scenario, AIB_SCENARIO_FILE_IDS, 'document.scenario');
+  if (expect && isStr(x.scenario) && x.scenario !== expect) p.add(`document.scenario: '${x.scenario}' where the manifest names a ${expect} file`);
+  if (x.scenario === 'managed') p.str(x.shockId, 'document.shockId');
+  else p.str(x.shockId, 'document.shockId', true);
+  p.str(x.created, 'document.created');
+  if (Array.isArray(x.countries) ? x.countries.length > 0 : !isObj(x.countries)) p.add('countries: expected an object of ISO3 -> name');
+  else if (isObj(x.countries)) for (const [k, v] of Object.entries(x.countries)) p.str(v, `countries.${k}`);
+  const nodeIds = refs ? new Set(refs.nodes.map((n) => n.id)) : null;
+  const compactIds = refs ? new Set(refs.compacts.map((c) => c.id)) : null;
+  if (x.scenario === 'managed') {
+    if (p.arr(x.compacts, 'compacts')) {
+      const seen = new Set<string>();
+      x.compacts.forEach((c, i) => {
+        checkScenarioCompact(p, c, `compacts[${i}]`);
+        if (isObj(c) && isStr(c.id)) {
+          if (seen.has(c.id)) p.add(`compacts[${i}].id: duplicate '${c.id}'`);
+          seen.add(c.id);
+          if (compactIds && !compactIds.has(c.id)) p.add(`compacts[${i}].id: '${c.id}' is not a compact of the main document`);
+        }
+      });
+    }
+    checkInvestmentFlows(p, x.investmentFlows, nodeIds);
+  } else if (x.scenario === 'baseline') {
+    checkSupplierLists(p, x.nodes, 'nodes', nodeIds, 'node');
+    checkSupplierLists(p, x.compacts, 'compacts', compactIds, 'compact');
+  }
+  checkNetwork(p, x.network, nodeIds);
+  return p.list;
+}
+
+/**
+ * A checked scenario file with its tolerated gaps filled (a copy): a managed compact's absent arrays as [],
+ * absent metrics and coalitionReason as null; countries [] as {}.
+ */
+export function normalizeScenarioDoc<D extends AibScenarioDoc>(d: D): D {
+  const countries = Array.isArray(d.countries) ? {} : d.countries;
+  if (d.scenario !== 'managed') return { ...d, countries };
+  const arr = <T,>(v: T[] | undefined): T[] => (Array.isArray(v) ? v : []);
+  const compacts = d.compacts.map((c): AibScenarioCompact => {
+    const x = c as Partial<AibScenarioCompact> & { id: string; nodesRun: number };
+    return {
+      ...x,
+      coalition: x.coalition ?? null,
+      coalitionReason: x.coalitionReason ?? null,
+      type: x.type ?? null,
+      archetype: x.archetype ?? null,
+      policyNeeds: arr(x.policyNeeds),
+      secondaryClass: x.secondaryClass ?? null,
+      anchors: arr(x.anchors),
+      suppliers: arr(x.suppliers),
+      hosts: arr(x.hosts),
+      technologyPartners: arr(x.technologyPartners),
+      bridges: arr(x.bridges),
+      associates: arr(x.associates),
+      roles: arr(x.roles),
+      metrics: x.metrics ?? null,
+      path: arr(x.path),
+      trade: arr(x.trade),
+      investment: arr(x.investment),
+    };
+  });
+  return { ...d, countries, compacts };
+}
+
+/** The scenario files a manifest names (an entry only for a valid file name of that scenario). */
+export function scenarioFilesOf(m: Pick<AibManifest, 'files'>): Partial<Record<AibScenarioFileId, string>> {
+  const s = (m.files as { scenarios?: unknown }).scenarios;
+  const out: Partial<Record<AibScenarioFileId, string>> = {};
+  if (!isObj(s)) return out;
+  for (const id of AIB_SCENARIO_FILE_IDS) {
+    const f = s[id];
+    const g = isStr(f) ? AIB_SCENARIO_FILE_RE.exec(f) : null;
+    if (isStr(f) && g && g[1] === id) out[id] = f;
+  }
+  return out;
+}
+
+/** The supply scenarios of a bundle: meta.scenarios when it lists names; else meta.supplyScenarios; else the headline scenario alone. */
+export function supplyScenariosOf(m: Pick<AibMeta, 'scenarios' | 'supplyScenarios' | 'headlineScenario'>): string[] {
+  const s = m.scenarios as unknown;
+  if (Array.isArray(s) && s.every(isStr)) return s;
+  if (Array.isArray(m.supplyScenarios) && m.supplyScenarios.every(isStr)) return m.supplyScenarios;
+  return [m.headlineScenario];
+}
+
+/** The scenario list of meta.scenarios ([] when it lists the supply scenarios: an older bundle), in AIB_SCENARIO_IDS order. */
+export function scenarioDefsOf(m: Pick<AibMeta, 'scenarios'>): AibScenarioDef[] {
+  const s = m.scenarios as unknown;
+  if (!Array.isArray(s)) return [];
+  const defs = s.filter((x): x is AibScenarioDef => isObj(x) && (AIB_SCENARIO_IDS as readonly unknown[]).includes(x.id) && isStr(x.label));
+  return AIB_SCENARIO_IDS.flatMap((id) => defs.filter((d) => d.id === id).slice(0, 1));
+}
+
+/** A scenario file's country names as an object (the exporter writes [] for an empty one). */
+export const scenarioNamesOf = (d: Pick<AibScenarioDoc, 'countries'>): Record<string, string> => (Array.isArray(d.countries) ? {} : d.countries);
 
 // ---- Accessors ---------------------------------------------------------------------------------------
 
@@ -1077,3 +1750,18 @@ export function coalitionMembersOf(c: AibCompact): string[] {
 
 /** In the strategic scope (an older bundle without the field: every node is). */
 export const inStrategicScope = (n: AibNode): boolean => n.inStrategicScope !== false;
+
+/** The nodes come from the electro-industrial dictionary (any other value, or none, reads as the OSI basket). */
+export const isDictionary = (m: Pick<AibMeta, 'taxonomy'>): boolean => m.taxonomy === 'dictionary';
+
+/** The EIS indices of the bundle ([] for master or an older bundle). */
+export const indicesOf = (m: Pick<AibMeta, 'indices'>): AibIndex[] => (Array.isArray(m.indices) ? m.indices : []);
+
+/** The diversification scenario of the bundle (meta.diversify); null in an older bundle. */
+export const diversifyMetaOf = (m: Pick<AibMeta, 'diversify'>): AibDiversifyMeta | null => (isObj(m.diversify) ? m.diversify : null);
+
+/** The shock id config/aib.yml gives the diversification scenario (when meta.diversify does not name one). */
+export const AIB_DIVERSIFY_SHOCK = 'diversify_benchmark';
+
+/** The diversification scenario's id in meta.shocks and node.variants (meta.diversify.shockId, else AIB_DIVERSIFY_SHOCK). */
+export const diversifyShockIdOf = (m: Pick<AibMeta, 'diversify'>): string => diversifyMetaOf(m)?.shockId ?? AIB_DIVERSIFY_SHOCK;

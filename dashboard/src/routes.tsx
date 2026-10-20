@@ -9,7 +9,7 @@
 //     /strategic/:iso3 -> #opportunities, /partners/:iso3 -> #partnerships (query string kept);
 //   * sectorRoute (src/sector/routes.tsx) at /sector: Sectors;
 //   * countryRoute (src/country/routes.tsx) at /countries: Countries;
-//   * aibHubRoute at /aib (Overview, Partnerships, Country roles) and aibRoute at /compacts (Sectoral
+//   * aibHubRoute at /aib (Overview, Partnerships, Country roles, Diversification) and aibRoute at /compacts (Sectoral
 //     Compacts), both in src/aib/routes.tsx: Allied Industrial Base;
 //   * About: /about (shell/AboutView.tsx), with Methods (/methods) and Data & sources (/data) in a
 //     pathless lazy AboutEngineLayout (the engine and a one-line perspective, no dial panel), and the

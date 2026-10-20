@@ -1,7 +1,7 @@
 {
   "schema": "osi-aib",
   "version": 1,
-  "created": "2026-10-16T00:00:00Z",
+  "created": "2026-10-19T00:00:00Z",
   "demandScope": "coalition",
   "candidateUniverse": "global",
   "shockSemantics": "hold",
@@ -10,6 +10,10 @@
   "headlineShock": "zzz_100",
   "headlineScenario": "reallocation",
   "files": {
-    "compacts": "compacts.07e0eec9.json"
+    "compacts": "compacts.2052b258.json",
+    "scenarios": {
+      "managed": "scenario-managed.5484857f.json",
+      "baseline": "scenario-baseline.b1da3ba3.json"
+    }
   }
 }

@@ -56,7 +56,7 @@ describe('places and nav keys', () => {
       ['aib', 'Allied Industrial Base', '/aib', false],
       ['about', 'About', '/about', true],
     ]);
-    expect(AIB_NAV.map((n) => n.label)).toEqual(['Overview', 'Partnerships', 'Sectoral Compacts', 'Country roles']);
+    expect(AIB_NAV.map((n) => n.label)).toEqual(['Overview', 'Partnerships', 'Sectoral Compacts', 'Country roles', 'Managed Interdependence']);
     expect(ABOUT_NAV.map((n) => n.to)).toEqual(['/about', '/methods', '/data', '/glossary']);
     expect(STRATEGIC_NAV.map((n) => n.label)).toEqual(['Overview', 'Country scores', 'Security vs opportunity', 'Strategic Index', 'Partners', 'Methods', 'Data']);
     expect(STRATEGIC_NAV.map((n) => n.to)).toEqual(['/overview', '/country', '/space', '/strategic', '/partners', '/methods', '/data']);

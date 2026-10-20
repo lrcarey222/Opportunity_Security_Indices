@@ -8,6 +8,14 @@
 // roles); a role is named only where the metrics support it. Row ids `role-ISO3` (rolesHref); each economy
 // links to its Country profile, #aib-role. No new score, no ranking. Modelled facts: nothing follows the
 // Perspective.
+//
+// The scenarios (2026-10-19): the page follows the toggle. Decoupling reads the main document's network
+// through headlineNetwork() (only relationships with a headline contribution; a role is minor only where
+// the headline shock contributes below the floor) and keeps its every-shock totals in the table, labelled
+// as Decoupling's supply shocks; Managed Interdependence reads its lazily loaded scenario file (network,
+// compacts, the largest supplier of node.diversify), with loading, failed and missing states. Today's
+// network (the Baseline file, loaded on this page) is the reference: "What changes from today" sets who
+// supplies whom today beside the scenario, and the roles each economy gains or loses.
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router';
@@ -16,54 +24,104 @@ import { TableView, type Col } from '../../components/TableView.tsx';
 import { EmptyState, FilterRow, PageHead, Select } from '../../components/ui.tsx';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
+import { ScenarioTag } from '../charts/ScenarioCompare.tsx';
+import { scenarioNamesOf } from '../contract.ts';
 import { plural } from '../derive/format.ts';
-import { countryRoleMatrix, fmtPts, MATRIX_ROLES, roleHolders, ROLE_FLOOR, ROLE_READING, type CountryRoles, type MatrixRole } from '../derive/network.ts';
+import { strategicScopeShort } from '../derive/settings.ts';
+import {
+  countryRoleMatrix, decoupledEconomy, everyShock, everyShockLabel, fmtPts, MATRIX_ROLES, roleChanges, roleHolders, roleNamedWords, ROLE_FLOOR, ROLE_READING,
+  scenarioRoleSource, type CountryRoles, type MatrixRole, type RoleCell,
+} from '../derive/network.ts';
+import { runMetaOf, scenarioCaveat, scenarioCsvFields, scenarioInfo, scenarioShockLabel } from '../derive/scenarios.ts';
 import { compactHref } from '../nav.ts';
 import { AIB_EYEBROW } from './AibOverviewView.tsx';
 import { BasisTag } from './basis.tsx';
 import { csvWithRun } from './common.tsx';
-import { cellWords, ModelledNote, RoleCellView } from './networkParts.tsx';
+import { cellWords, ModelledNote, RoleCellView, ScenarioFileState, useBaselineDoc, useManagedDoc } from './networkParts.tsx';
+import { RoleChangesCard, WhoSuppliesWhomCard } from './scenarioNetwork.tsx';
 
 /** The matrix columns in the brief's order. */
 export const ROLE_COLUMNS = MATRIX_ROLES.map((role) => ({ role, ...ROLE_READING[role] }));
 
 const SIDE_ROLES: readonly MatrixRole[] = ['supplier', 'host', 'investor', 'buyer'];
 const participation = (r: CountryRoles) => new Set([...r.member, ...r.associate]).size;
+/** A side's partners under the scenario: the headline ones where the network's own count sums every shock. */
+const partnersOf = (c: RoleCell): number | null => (c.side ? (c.headlinePartners ?? c.side.partners) : null);
 
 export default function AibRolesView() {
   useTitle('Country roles', 'aib');
-  const { doc, names, compactOf, shockLabel } = useAibCtx();
+  const { doc, names, compactOf, shockLabel, title, scenario, hasScenarios, href } = useAibCtx();
   const loc = useLocation();
-  const rows = useMemo(() => countryRoleMatrix(doc, names), [doc, names]);
+  const meta = doc.meta;
+  const mi = useManagedDoc(scenario === 'managed');
+  const today = useBaselineDoc(hasScenarios);
+  const src = useMemo(() => scenarioRoleSource(doc, scenario, mi.doc), [doc, scenario, mi.doc]);
+  // the scenario files name the economies only they use (today's network reaches economies the model never selects)
+  const nm = useMemo(
+    () => ({ ...(today.doc ? scenarioNamesOf(today.doc) : {}), ...(scenario === 'managed' && mi.doc ? scenarioNamesOf(mi.doc) : {}), ...names }),
+    [today.doc, scenario, mi.doc, names],
+  );
+  const rows = useMemo(() => (src ? countryRoleMatrix(doc, nm, src) : []), [doc, nm, src]);
   const [show, setShow] = useState<MatrixRole | ''>('');
   const shown = useMemo(() => (show ? roleHolders(rows, show) : rows), [rows, show]);
   const target = loc.hash.startsWith('#role-') ? loc.hash.slice(6).toUpperCase() : null;
-  const v = doc.network?.variant;
+  const net = src?.network ?? null;
+  const v = net?.variant;
+  const info = scenarioInfo(meta, scenario);
+  // the words of the scenario: "under Decoupling"; a bundle without the scenarios keeps "the headline shock"
+  const under = hasScenarios ? `under ${info.label}` : 'under the headline shock';
+  const shockWords = scenario === 'managed' ? scenarioShockLabel(meta, 'managed') : shockLabel;
+  // what the Decoupling network's "every shock" figures sum (Managed Interdependence has none: cum = headline)
+  const label = useMemo(() => everyShockLabel(doc), [doc]);
+  const plain = useMemo(() => everyShock(doc), [doc]);
+  const every = scenario === 'decoupling' ? (hasScenarios ? label.phrase : plain.phrase) : null;
+  // an older bundle keeps its run note; with the scenarios the every-shock totals get a sentence of their own
+  const everyNote = scenario === 'decoupling' && !hasScenarios ? plain.note : null;
+  const everyLine =
+    scenario === 'decoupling' && hasScenarios ? `${label.note} They appear only in the table and in each role's details; every role is read on ${info.label} alone.` : null;
+  const everyHeader = hasScenarios ? label.header : 'every shock';
+  const removed = useMemo(() => (scenario === 'decoupling' ? decoupledEconomy(meta, names) : null), [scenario, meta, names]);
+  const changes = useMemo(
+    () => (src && today.doc?.network ? roleChanges({ scenario, today: today.doc.network, network: src.network, nodes: doc.nodes, names: nm, removed }) : null),
+    [src, today.doc, scenario, doc.nodes, nm, removed],
+  );
 
   // follow #role-ISO3 (from a Country profile or a compact page)
   useEffect(() => {
     if (target) document.getElementById(`role-${target}`)?.scrollIntoView?.({ block: 'center' });
   }, [target, rows]);
 
-  const compactWords = (ids: readonly string[]) => ids.map((id) => `${id} ${compactOf(id)?.name ?? ''}`.trim()).join('; ');
+  const name = (iso: string) => nm[iso] ?? iso;
+  const compactWords = (ids: readonly string[]) =>
+    ids
+      .map((id) => {
+        const c = compactOf(id);
+        return `${id} ${c ? title(c) : ''}`.trim();
+      })
+      .join('; ');
   const leaders = ROLE_COLUMNS.map((col) => ({ ...col, top: roleHolders(rows, col.role, 'named') })).filter((c) => c.top.length > 0);
+  const hHead = hasScenarios ? info.label : 'headline shock';
   const sideCols = (k: MatrixRole): Col<CountryRoles>[] =>
     SIDE_ROLES.includes(k)
       ? [
-          { id: `${k}-h`, header: `${ROLE_READING[k].short}: headline shock (pts)`, value: (r) => r.cells[k].side?.headline ?? null, cell: (r) => fmtPts(r.cells[k].side?.headline), num: true, title: 'Share of node demand served under the headline shock, summed over nodes, in points' },
-          { id: `${k}-c`, header: `${ROLE_READING[k].short}: every shock (pts)`, value: (r) => r.cells[k].side?.cumulative ?? null, cell: (r) => fmtPts(r.cells[k].side?.cumulative), num: true },
-          { id: `${k}-p`, header: `${ROLE_READING[k].short}: partners`, value: (r) => r.cells[k].side?.partners ?? null, num: true },
+          { id: `${k}-h`, header: `${ROLE_READING[k].short}: ${hHead} (pts)`, value: (r) => r.cells[k].side?.headline ?? null, cell: (r) => fmtPts(r.cells[k].side?.headline), num: true, title: `Share of node demand served ${under}, summed over nodes, in points` },
+          ...(every !== null
+            ? [{ id: `${k}-c`, header: `${ROLE_READING[k].short}: ${everyHeader} (pts)`, value: (r: CountryRoles) => r.cells[k].side?.cumulative ?? null, cell: (r: CountryRoles) => fmtPts(r.cells[k].side?.cumulative), num: true, title: `Share of node demand served across ${every}, summed over nodes, in points` } as Col<CountryRoles>]
+            : []),
+          { id: `${k}-p`, header: `${ROLE_READING[k].short}: partners`, value: (r) => partnersOf(r.cells[k]), num: true, title: `Distinct partners of the relationships ${under}` },
           { id: `${k}-l`, header: `${ROLE_READING[k].short}: read as`, value: (r) => r.cells[k].level },
         ]
-      : [{ id: `${k}-l`, header: ROLE_READING[k].short, value: (r) => (r.cells[k].level === 'none' ? 'none' : cellWords(k, r.cells[k])), minWidth: 160 }];
+      : [{ id: `${k}-l`, header: ROLE_READING[k].short, value: (r) => (r.cells[k].level === 'none' ? 'none' : cellWords(k, r.cells[k], every, under)), minWidth: 160 }];
   const cols: Col<CountryRoles>[] = [
-    { id: 'name', header: 'Economy', value: (r) => r.name, cell: (r) => <Link className="link" to={`/countries/${r.iso3}#aib-role`}>{r.name}</Link>, minWidth: 160 },
+    { id: 'name', header: 'Economy', value: (r) => r.name, cell: (r) => <Link className="link" to={href(`/countries/${r.iso3}#aib-role`)}>{r.name}</Link>, minWidth: 160 },
     ...MATRIX_ROLES.flatMap(sideCols),
     { id: 'member', header: 'Member of', value: (r) => r.member.join(', ') },
     { id: 'associate', header: 'Associate in', value: (r) => r.associate.join(', ') },
   ];
+  const runMeta = runMetaOf(meta, scenario);
+  const scnCsv = hasScenarios ? scenarioCsvFields(meta, scenario) : null;
   const csv = () => ({
-    name: 'Allied Industrial Base country roles',
+    name: `Allied Industrial Base country roles${scenario === 'managed' ? ` ${info.label}` : ''}`,
     text: csvWithRun(
       rows.map((r) => {
         const out: Record<string, unknown> = { iso3: r.iso3, economy: r.name };
@@ -73,9 +131,15 @@ export default function AibRolesView() {
           out[`${key}_read_as`] = c.level;
           if (SIDE_ROLES.includes(k)) {
             out[`${key}_headline_contribution`] = c.side?.headline ?? null;
-            out[`${key}_cumulative_contribution`] = c.side?.cumulative ?? null;
-            out[`${key}_n_partners`] = c.side?.partners ?? null;
-            out[`${key}_n_selected`] = c.side?.selected ?? null;
+            if (every !== null) out[`${key}_cumulative_contribution`] = c.side?.cumulative ?? null;
+            out[`${key}_n_partners`] = partnersOf(c);
+            // read on the headline, the network's own counts sum every shock: kept, named so
+            if (c.headlinePartners !== undefined && every !== null) {
+              out[`${key}_n_partners_cumulative`] = c.side?.partners ?? null;
+              out[`${key}_n_selected_cumulative`] = c.side?.selected ?? null;
+            } else {
+              out[`${key}_n_selected`] = c.side?.selected ?? null;
+            }
           }
           if (k === 'specialized') out[`${key}_largest_supplier_nodes`] = c.nodes.join('; ');
           out[`${key}_compacts`] = c.compacts.join('; ');
@@ -83,28 +147,33 @@ export default function AibRolesView() {
         out.member_of = r.member.join('; ');
         out.associate_in = r.associate.join('; ');
         out.headline_lost_usd = r.net?.lostUsd ?? null;
+        if (scnCsv) {
+          out.aib_scenario = scnCsv.aib_scenario;
+          out.aib_scenario_shock = scnCsv.aib_scenario_shock;
+        }
         return out;
       }),
-      doc.meta,
+      runMeta,
     ),
   });
 
+  const pending = !src;
   return (
     <div className={PAGE}>
       <PageHead
         eyebrow={AIB_EYEBROW}
         title="Country roles"
-        lede="What division of labour emerges across countries? For each economy, the roles it plays in the network of trade and investment relationships the model selects after the shock, and the Sectoral Compacts it joins. Roles are read from the model's own results: they are not a ranking or a score."
+        lede={`What division of labour emerges across countries? For each economy, the roles it plays in the network of trade and investment relationships the model selects ${hasScenarios ? `${under}` : 'after the shock'}, and the Sectoral Compacts it joins${hasScenarios ? ', set against trade as it is today' : ''}. Roles are read from the model's own results: they are not a ranking or a score.`}
       />
       <div className="space-y-10">
         <section aria-labelledby="reading-roles-h" className="max-w-4xl">
-          <BasisTag basis="facts" />
+          <BasisTag basis={hasScenarios ? 'model' : 'facts'} scenario={hasScenarios ? info.label : null} />
           <h2 id="reading-roles-h" className="rule-neis-sm mb-2 mt-1 text-xl font-medium text-paper lg:text-2xl">
             How roles are read
           </h2>
           <p className="mb-3 text-[0.9375rem] leading-relaxed text-paper-dim">
-            {v
-              ? `An economy can hold several roles. A trade or investment role is measured by the share of a supply-chain node's demand its relationships serve after the shock, summed over the nodes: 1 point is 1% of one node's demand, so 100 points is the whole demand of one node. A role is named at ${fmtPts(ROLE_FLOOR)} or more under the headline shock (${shockLabel}); below that it is shown as minor. Specialized supplier and bridge come from the nodes' and compacts' own results.`
+            {v || pending
+              ? `An economy can hold several roles. A trade or investment role is measured by the share of a supply-chain node's demand its relationships serve ${hasScenarios ? under : 'after the shock'}, summed over the nodes: 1 point is 1% of one node's demand, so 100 points is the whole demand of one node. A role is named at ${fmtPts(ROLE_FLOOR)} or more ${under} (${shockWords}); below that it is shown as minor. Specialized supplier and bridge come from the nodes' and compacts' own results.${scenario === 'managed' ? ` ${info.label} removes no supplier: its network is the trade and new capacity that replace the supply held above each node's cap.` : ''}`
               : 'This data build has no economy-level network summary, so the roles are the compacts’ own labels only.'}
           </p>
           <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
@@ -112,125 +181,165 @@ export default function AibRolesView() {
               <div key={c.role}>
                 <dt className="font-medium text-paper">{c.short}</dt>
                 <dd className="text-paper-dim">
-                  An economy that {c.meaning}; {c.named}.
+                  An economy that {c.meaning}; {roleNamedWords(c.role, under)}.
                 </dd>
               </div>
             ))}
           </dl>
           <ModelledNote className="mt-3">
             {v
-              ? `${shockLabel}, ${v.scenario} scenario, ${(v.supplyConstraint ?? '').replace(/_/g, '-')} supply, ${(v.strategicScope ?? '').replace(/_/g, '-')} technologies; "every shock" sums the ${plural(v.shocks?.length ?? 0, 'configured shock')}`
-              : shockLabel}
+              ? `${shockWords}; supply assumption: ${v.scenario}, ${(v.supplyConstraint ?? '').replace(/_/g, '-')} supply, ${strategicScopeShort(meta, v.strategicScope)}${everyNote ? `; ${everyNote}` : ''}`
+              : shockWords}
           </ModelledNote>
-        </section>
-
-        <section aria-labelledby="leaders-h">
-          <h2 id="leaders-h" className="rule-neis-sm mb-2 mt-1 text-xl font-medium text-paper lg:text-2xl">
-            Who does what
-          </h2>
-          <p className="mb-4 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">
-            {plural(rows.length, 'economy', 'economies')} hold a role or a compact seat. For each role, the named economies with the largest value:
-          </p>
-          {leaders.length ? (
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {leaders.map((l) => (
-                <li key={l.role} className="card p-4">
-                  <h3 className="text-base font-medium text-paper">{l.short}</h3>
-                  <p className="mt-0.5 text-xs leading-relaxed text-paper-mute">
-                    {plural(l.top.length, 'economy', 'economies')} named. An economy that {l.meaning}.
-                  </p>
-                  <p className="mt-2 text-sm text-paper-dim">
-                    {l.top.slice(0, 4).map((r, i) => {
-                      const c = r.cells[l.role];
-                      const val = c.side && c.side.headline >= ROLE_FLOOR ? fmtPts(c.side.headline) : l.role === 'specialized' && c.nodes.length ? plural(c.nodes.length, 'node') : plural(c.compacts.length, 'compact');
-                      return (
-                        <span key={r.iso3}>
-                          {i > 0 && ', '}
-                          <Link className="link" to={`/countries/${r.iso3}#aib-role`}>
-                            {r.name}
-                          </Link>{' '}
-                          <span className="tabular text-paper-mute">({val})</span>
-                        </span>
-                      );
-                    })}
-                    {l.top.length > 4 ? ` and ${l.top.length - 4} more` : ''}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState>The model assigned no roles in this run.</EmptyState>
+          {everyLine && (
+            <p className="mt-1 text-xs leading-relaxed text-paper-mute" data-testid="every-shock-note">
+              {everyLine}
+            </p>
           )}
         </section>
 
-        <ChartCard
-          title="Roles by economy"
-          sub="Trade and investment roles: points of node demand served under the headline shock, with the number of partners; specialized supplier: the nodes where the economy is the largest supplier after coordination; bridge: compacts. Faint cells are minor. Compact participation counts the compacts the economy belongs to, as a member of the coalition or as an associate. Hover a cell for every metric; economy names open the Country profile."
-          table={() => <TableView rows={shown} cols={cols} caption="Economies by role in the Allied Industrial Base" search rowKey={(r) => r.iso3} pageSize={25} />}
-          csv={csv}
-        >
-          <FilterRow result={show ? `${plural(shown.length, 'economy', 'economies')} with this role, named first, largest value first` : `${plural(rows.length, 'economy', 'economies')}, by compact participation`}>
-            <Select
-              label="Show"
-              value={show}
-              options={[{ value: '', label: 'Every economy' }, ...ROLE_COLUMNS.map((c) => ({ value: c.role, label: c.short }))]}
-              onChange={(x) => setShow(x as MatrixRole | '')}
-              className="min-w-[14rem]"
-            />
-          </FilterRow>
-          {shown.length ? (
-            <div className="relative overflow-x-auto" data-testid="role-matrix">
-              <table className="data-table">
-                <caption className="sr-only">Economies by role in the Allied Industrial Base</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Economy</th>
-                    {ROLE_COLUMNS.map((c) => (
-                      <th key={c.role} scope="col" title={`An economy that ${c.meaning}; ${c.named}`} className="align-bottom" style={{ minWidth: 84, maxWidth: 120, whiteSpace: 'normal', textAlign: 'center' }}>
-                        {c.short}
-                      </th>
-                    ))}
-                    <th scope="col" className="align-bottom" style={{ minWidth: 140, whiteSpace: 'normal' }}>
-                      Compact participation
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shown.map((r) => (
-                    <tr key={r.iso3} id={`role-${r.iso3}`} className={`scroll-mt-24 ${target === r.iso3 ? 'bg-signal/10' : ''}`}>
-                      <th scope="row" className="whitespace-nowrap text-left" style={{ position: 'sticky', left: 0, zIndex: 2, background: 'var(--color-ink-800)', textTransform: 'none', letterSpacing: 'normal', fontSize: '0.8125rem', fontWeight: 400 }}>
-                        <Link className="link" to={`/countries/${r.iso3}#aib-role`}>
-                          {r.name}
-                        </Link>
-                      </th>
-                      {ROLE_COLUMNS.map((c) => (
-                        <td key={c.role} className="text-center text-sm">
-                          <RoleCellView k={c.role} cell={r.cells[c.role]} />
-                        </td>
-                      ))}
-                      <td className="text-sm">
-                        <span className="tabular text-paper">{participation(r)}</span>{' '}
-                        <span className="text-xs text-paper-mute">
-                          {r.member.map((id, i) => (
-                            <span key={id}>
-                              {i > 0 && ', '}
-                              <Link className="link" to={compactHref(id)} title={compactWords([id])}>
-                                {id}
-                              </Link>
-                            </span>
-                          ))}
-                          {r.associate.length > 0 && ` (associate: ${r.associate.join(', ')})`}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {pending ? (
+          <ScenarioFileState load={mi} what="the country roles" label={info.label} />
+        ) : (
+          <section aria-labelledby="leaders-h">
+            <h2 id="leaders-h" className="rule-neis-sm mb-2 mt-1 text-xl font-medium text-paper lg:text-2xl">
+              Who does what
+            </h2>
+            <p className="mb-4 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">
+              {plural(rows.length, 'economy', 'economies')} hold a role or a compact seat{hasScenarios ? ` ${under}` : ''}. For each role, the named economies with the largest value:
+            </p>
+            {leaders.length ? (
+              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {leaders.map((l) => (
+                  <li key={l.role} className="card p-4">
+                    <h3 className="text-base font-medium text-paper">{l.short}</h3>
+                    <p className="mt-0.5 text-xs leading-relaxed text-paper-mute">
+                      {plural(l.top.length, 'economy', 'economies')} named. An economy that {l.meaning}.
+                    </p>
+                    <p className="mt-2 text-sm text-paper-dim">
+                      {l.top.slice(0, 4).map((r, i) => {
+                        const c = r.cells[l.role];
+                        const val = c.side && c.side.headline >= ROLE_FLOOR ? fmtPts(c.side.headline) : l.role === 'specialized' && c.nodes.length ? plural(c.nodes.length, 'node') : plural(c.compacts.length, 'compact');
+                        return (
+                          <span key={r.iso3}>
+                            {i > 0 && ', '}
+                            <Link className="link" to={href(`/countries/${r.iso3}#aib-role`)}>
+                              {r.name}
+                            </Link>{' '}
+                            <span className="tabular text-paper-mute">({val})</span>
+                          </span>
+                        );
+                      })}
+                      {l.top.length > 4 ? ` and ${l.top.length - 4} more` : ''}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <EmptyState>The model assigned no roles in this run.</EmptyState>
+            )}
+          </section>
+        )}
+
+        {hasScenarios && !pending && (
+          <section aria-labelledby="changes-h" className="space-y-6" data-testid="roles-today">
+            <div className="max-w-4xl">
+              <BasisTag basis="today" />
+              <h2 id="changes-h" className="rule-neis-sm mb-2 mt-1 text-xl font-medium text-paper lg:text-2xl">
+                What changes from today
+              </h2>
+              <p className="text-[0.9375rem] leading-relaxed text-paper-dim">
+                Today&apos;s network is the trade as it is ({meta.tradeYear}): who supplies whom, before any shock. {info.label}&apos;s network is the trade and new capacity it adds or
+                redirects to replace the supply {scenario === 'managed' ? 'held above each node’s cap' : 'it removes'}. The two measure different things, so they stand side by side, each on its own
+                scale. {scenarioCaveat(meta)}
+              </p>
             </div>
-          ) : (
-            <EmptyState>No economy holds this role in this run.</EmptyState>
-          )}
-        </ChartCard>
+            {today.doc ? (
+              today.doc.network && net ? (
+                <>
+                  <WhoSuppliesWhomCard today={today.doc.network} network={net} scenario={scenario} meta={meta} name={name} />
+                  {changes && <RoleChangesCard cmp={changes} scenario={scenario} meta={meta} href={href} />}
+                </>
+              ) : (
+                <EmptyState>{today.doc.network ? `This data build has no network ${under}.` : 'The Baseline data of this build have no network of today’s trade.'}</EmptyState>
+              )
+            ) : (
+              <ScenarioFileState load={today} what="today's network" label={scenarioInfo(meta, 'baseline').label} />
+            )}
+          </section>
+        )}
+
+        {!pending && (
+          <ChartCard
+            title="Roles by economy"
+            badge={hasScenarios ? <ScenarioTag id={scenario} meta={meta} /> : undefined}
+            sub={`Trade and investment roles: points of node demand served ${under}, with the number of partners; specialized supplier: the nodes where the economy is the largest supplier after coordination; bridge: compacts. Faint cells are minor. Compact participation counts the compacts the economy belongs to, as a member of the coalition or as an associate. Hover a cell for every metric; economy names open the Country profile.`}
+            table={() => <TableView rows={shown} cols={cols} caption={`Economies by role in the Allied Industrial Base${hasScenarios ? `, ${under}` : ''}`} search rowKey={(r) => r.iso3} pageSize={25} />}
+            csv={csv}
+          >
+            <FilterRow result={show ? `${plural(shown.length, 'economy', 'economies')} with this role, named first, largest value first` : `${plural(rows.length, 'economy', 'economies')}, by compact participation`}>
+              <Select
+                label="Show"
+                value={show}
+                options={[{ value: '', label: 'Every economy' }, ...ROLE_COLUMNS.map((c) => ({ value: c.role, label: c.short }))]}
+                onChange={(x) => setShow(x as MatrixRole | '')}
+                className="min-w-[14rem]"
+              />
+            </FilterRow>
+            {shown.length ? (
+              <div className="relative overflow-x-auto" data-testid="role-matrix">
+                <table className="data-table">
+                  <caption className="sr-only">Economies by role in the Allied Industrial Base{hasScenarios ? `, ${under}` : ''}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Economy</th>
+                      {ROLE_COLUMNS.map((c) => (
+                        <th key={c.role} scope="col" title={`An economy that ${c.meaning}; ${roleNamedWords(c.role, under)}`} className="align-bottom" style={{ minWidth: 84, maxWidth: 120, whiteSpace: 'normal', textAlign: 'center' }}>
+                          {c.short}
+                        </th>
+                      ))}
+                      <th scope="col" className="align-bottom" style={{ minWidth: 140, whiteSpace: 'normal' }}>
+                        Compact participation
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shown.map((r) => (
+                      <tr key={r.iso3} id={`role-${r.iso3}`} className={`scroll-mt-24 ${target === r.iso3 ? 'bg-signal/10' : ''}`}>
+                        <th scope="row" className="whitespace-nowrap text-left" style={{ position: 'sticky', left: 0, zIndex: 2, background: 'var(--color-ink-800)', textTransform: 'none', letterSpacing: 'normal', fontSize: '0.8125rem', fontWeight: 400 }}>
+                          <Link className="link" to={href(`/countries/${r.iso3}#aib-role`)}>
+                            {r.name}
+                          </Link>
+                        </th>
+                        {ROLE_COLUMNS.map((c) => (
+                          <td key={c.role} className="text-center text-sm">
+                            <RoleCellView k={c.role} cell={r.cells[c.role]} every={every} under={under} />
+                          </td>
+                        ))}
+                        <td className="text-sm">
+                          <span className="tabular text-paper">{participation(r)}</span>{' '}
+                          <span className="text-xs text-paper-mute">
+                            {r.member.map((id, i) => (
+                              <span key={id}>
+                                {i > 0 && ', '}
+                                <Link className="link" to={compactHref(id, scenario)} title={compactWords([id])}>
+                                  {id}
+                                </Link>
+                              </span>
+                            ))}
+                            {r.associate.length > 0 && ` (associate: ${r.associate.join(', ')})`}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <EmptyState>No economy holds this role in this run.</EmptyState>
+            )}
+          </ChartCard>
+        )}
       </div>
     </div>
   );

@@ -20,7 +20,10 @@
 //   Country data            public/data/country/** (every file)                                <= 11 MB
 //   Compacts landing        entry + AibLayout + the compacts index view + manifest + document  <= 700 kB
 //   Compact view            entry + AibLayout + the compact view + manifest + document         <= 900 kB
-//   Compacts data           public/data/aib/* (manifest + the compacts document)               <= 2 MB
+//   each Compacts scenario  scenario-managed / scenario-baseline (lazily loaded on a toggle or a
+//                           page that shows the scenario; never on the landing)                <= 250 kB
+//   Compacts data           public/data/aib/* (manifest + the compacts document + the scenario
+//                           files)                                                             <= 2 MB
 //   All data                Strategic + Sector + Country + Compacts                            <= 25 MB
 //
 // Fails above a limit, when a manifest lists a chunk file that does not exist, or when a route chunk
@@ -60,6 +63,8 @@ const LIMITS = {
   aibLanding: 700 * KB,
   aibCompact: 900 * KB,
   aibData: 2 * MB,
+  // each lazily loaded scenario file (2026-10-19: manifest.files.scenarios)
+  aibScenario: 250 * KB,
   allData: 25 * MB,
 };
 // spec_country.md A10 (the same numbers as COUNTRY_BUDGET_GZ in src/country/contract.ts)
@@ -321,6 +326,17 @@ if (aibManifest) {
   if (!f || !existsSync(f)) fail(`Compacts document ${aibManifest.files?.compacts ?? '(none)'} is listed in its manifest but missing`);
   else aibDocSize = gz(f);
 }
+// the scenario files (2026-10-19): lazily loaded, so not in the landing or compact view figures
+const aibScenarios = [];
+if (aibManifest && aibManifest.files?.scenarios && typeof aibManifest.files.scenarios === 'object') {
+  for (const [id, name] of Object.entries(aibManifest.files.scenarios)) {
+    if (!name) continue;
+    const f = join(aibDir, name);
+    if (!existsSync(f)) fail(`Compacts scenario file ${name} is listed in its manifest but missing`);
+    else aibScenarios.push({ id, name, size: gz(f) });
+  }
+}
+const aibScenarioSize = aibScenarios.reduce((s, x) => s + x.size, 0);
 const aibNote = aibManifest ? '' : 'Compacts data absent (scripts/84): code only';
 figure(
   'Compacts landing /compacts',
@@ -334,8 +350,9 @@ figure(
   LIMITS.aibCompact,
   aibNote,
 );
-const aibData = aibManifestSize + aibDocSize;
-if (aibManifest) figure('Compacts data', [['manifest + document', aibData]], LIMITS.aibData);
+for (const s of aibScenarios) figure(`Compacts scenario ${s.id}`, [[s.name, s.size]], LIMITS.aibScenario, 'lazy');
+const aibData = aibManifestSize + aibDocSize + aibScenarioSize;
+if (aibManifest) figure('Compacts data', [['manifest + document', aibManifestSize + aibDocSize], ...aibScenarios.map((s) => [`scenario ${s.id}`, s.size])], LIMITS.aibData);
 figure('All data', [['Strategic', strategicData], ['Sector', sectorData], ['Country', countryData], ['Compacts', aibData]], LIMITS.allData);
 
 // ---- report ------------------------------------------------------------------------------------------
@@ -361,7 +378,7 @@ if (countryManifest) {
       `median ${size(sheets[Math.floor(sheets.length / 2)] ?? 0)}); ${countryMemos.length} memos (largest JSON ${largest('json')}, PDF ${largest('pdf')}, DOCX ${largest('docx')})`,
   );
 } else console.log('  (public/data/country/manifest.json not found: export the Country bundle with scripts/88)');
-if (aibManifest) console.log(`  data/aib/: manifest ${size(aibManifestSize)}, ${aibManifest.files.compacts} ${size(aibDocSize)}`);
+if (aibManifest) console.log(`  data/aib/: manifest ${size(aibManifestSize)}, ${aibManifest.files.compacts} ${size(aibDocSize)}${aibScenarios.map((s) => `, ${s.name} ${size(s.size)} (lazy)`).join('')}`);
 else console.log('  (public/data/aib/manifest.json not found: export the Sectoral Compacts bundle with scripts/84)');
 console.log('');
 console.log('Figures');

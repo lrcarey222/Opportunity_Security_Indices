@@ -9,6 +9,13 @@
 //    role matrix with each economy's tier) and 2. Why it exists (shock exposure, compact vs fragmented
 //    action for the demand anchors, coordination dividend, residual gaps, concentration). Each card has a
 //    table twin and a CSV.
+//
+// The scenario toggle (2026-10-19): the class mix, the classes of the included nodes, the critical supply
+// partners, the external dependency (Managed Interdependence removes no supplier: the suppliers it caps),
+// the coalition and its tiers, the roles and the case for coordination follow the toggled scenario (the
+// compact as the scenario solves it, `view`; ScenarioGate while its file loads, on a failure, or when the
+// scenario has no coalition for the compact); the compact's suppliers today (compact.baseline) are listed
+// beside them as the reference.
 
 import { Fragment } from 'react';
 import { Link } from 'react-router';
@@ -16,7 +23,8 @@ import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
 import { EmptyState, Notice, StatTile, Tag } from '../../../components/ui.tsx';
 import { useAibCtx } from '../../AibLayout.tsx';
-import { ClassLegend, ClassSwatch, NodeClass } from '../../charts/ClassChip.tsx';
+import { ClassChip, ClassLegend, ClassSwatch, NodeClass } from '../../charts/ClassChip.tsx';
+import { ScenarioTag } from '../../charts/ScenarioCompare.tsx';
 import { TypeTag } from '../../charts/TypeTag.tsx';
 import { classInfo, classMix, parseClassMix, parseNodePolicyNeeds, policyNeedsText } from '../../derive/classes.ts';
 import { targetLabel } from '../../derive/coalition.ts';
@@ -24,11 +32,47 @@ import { compactVsFragmented } from '../../derive/coverage.ts';
 import { compactTypeInfo } from '../../derive/types.ts';
 import { fmtPp, fmtShare, fmtUsd, listWords, plural } from '../../derive/format.ts';
 import { concentration } from '../../derive/nodes.ts';
+import { compactUnchangedReasonOf } from '../../derive/scenarioPages.ts';
+import { compactScenario, compactSuppliersToday, nodeScenario, runMetaOf, scenarioCsvFields, type AibScenarioId } from '../../derive/scenarios.ts';
 import { ROLE_ORDER, roleMatrix, type RoleRow } from '../../derive/roles.ts';
 import { additionsNeeded, coalitionMethod, coalitionTiers, replacementWords, tierEconomies, tierName, tierShares, type TierEconomy } from '../../derive/tiers.ts';
-import { AIB_PHYSICAL_WARNING, coalitionMembersOf, type AibNode } from '../../contract.ts';
+import { AIB_PHYSICAL_WARNING, AIB_STAGES, coalitionMembersOf, type AibCompact, type AibMeta, type AibNode } from '../../contract.ts';
+import { groupedSectorWords, indexLabel, indexOfNode, indicesOfCompact } from '../../derive/taxonomy.ts';
 import { csvWithRun, Section } from '../common.tsx';
-import { Economy, useCompact } from './shared.tsx';
+import { Economy, ScenarioGate, useCompact } from './shared.tsx';
+
+/**
+ * A CSV of one scenario's rows: the scenario named (aib_scenario, aib_scenario_shock) where the bundle has
+ * the scenarios, and the run columns naming that scenario's shock (runMetaOf()).
+ */
+function scenarioCsv(rows: Record<string, unknown>[], meta: AibMeta, scenario: AibScenarioId, hasScenarios: boolean): string {
+  const scn = hasScenarios ? scenarioCsvFields(meta, scenario) : null;
+  return csvWithRun(scn ? rows.map((r) => ({ ...r, ...scn })) : rows, runMetaOf(meta, scenario));
+}
+
+/** " (Managed Interdependence)" in a CSV's file name under that scenario. */
+const scenarioFileTag = (scenario: AibScenarioId): string => (scenario === 'managed' ? ' (Managed Interdependence)' : '');
+
+/** The toggled scenario as a tag beside a card's title (only when the bundle has the scenarios). */
+export function ScenarioBadge() {
+  const { scenario, hasScenarios, meta } = useCompact();
+  return hasScenarios ? <ScenarioTag id={scenario} meta={meta} /> : null;
+}
+
+/** The suppliers Managed Interdependence caps in the compact's nodes (where it ran), in the order first met. */
+function cappedSuppliers(nodes: readonly AibNode[]): string[] {
+  const out: string[] = [];
+  for (const n of nodes) {
+    if (!nodeScenario(n, 'managed').ran) continue;
+    for (const iso of n.diversify?.capped ?? []) if (!out.includes(iso)) out.push(iso);
+  }
+  return out;
+}
+
+const stageRank = (s: string) => {
+  const i = (AIB_STAGES as readonly string[]).indexOf(s);
+  return i < 0 ? AIB_STAGES.length : i;
+};
 
 /** The compact's nodes whose class carries the physical-capability warning (the exported list, else the nodes' own). */
 function warnedNodes(physicalWarnings: readonly string[] | undefined, nodes: readonly AibNode[]): string[] {
@@ -42,19 +86,46 @@ function warnedNodes(physicalWarnings: readonly string[] | undefined, nodes: rea
  * criticalPartners; the compact's suppliers in a bundle without it).
  */
 export function OverviewSection({ title = 'Compact overview', policy = true }: { title?: string; policy?: boolean } = {}) {
-  const { c, nodes, meta, name, shockLabel } = useCompact();
-  const critical = (c.coalition.criticalPartners ?? c.suppliers).map((x) => name(x));
-  const mix = classMix(nodes.map((n) => n.cls));
-  const type = compactTypeInfo(c.type, compactVsFragmented(c.metrics)?.gain);
-  const lostMix = parseClassMix(c.classMix);
+  const { c, nodes, meta, name, shockLabel, tx, scenario, hasScenarios, view, viewState } = useCompact();
+  const mi = scenario === 'managed';
+  const critical = view ? (view.coalition.criticalPartners ?? view.suppliers).map((x) => name(x)) : null;
+  const miRows = nodes.map((n) => nodeScenario(n, 'managed'));
+  const mix = classMix(mi ? miRows.filter((r) => r.ran && r.cls).map((r) => r.cls as string) : nodes.map((n) => n.cls));
+  const unchanged = mi ? miRows.filter((r) => !r.ran || !r.cls).length : 0;
+  // The type, archetype, secondary class and policy needs of the compact as the toggled scenario solves it
+  // (Managed Interdependence: its own; none without a coalition there or while its file loads).
+  const typed = mi ? view : c;
+  const type = typed ? compactTypeInfo(typed.type, compactVsFragmented(typed.metrics)?.gain) : null;
+  const noneWords = viewState.status === 'loading' ? 'loading…' : viewState.status === 'none' ? 'none: no coalition under this scenario' : '–';
+  const lostMix = parseClassMix(mi ? c.managed?.classMix : c.classMix);
+  const capped = mi ? cappedSuppliers(nodes) : [];
+  const today = compactSuppliersToday(c);
   const byNode = parseNodePolicyNeeds(c.nodePolicyNeeds);
   const warned = warnedNodes(c.physicalWarnings, nodes);
   const warning = nodes.find((n) => n.warning)?.warning ?? AIB_PHYSICAL_WARNING;
+  const indices = indicesOfCompact(tx, c);
+  const nodeIndex = (n: AibNode) => {
+    const ix = indexOfNode(tx, n);
+    return ix ? indexLabel(ix) : null;
+  };
   const nodeCols: Col<AibNode>[] = [
     { id: 'node', header: 'Sub-sector', value: (n) => n.label },
-    { id: 'techs', header: 'Technologies', value: (n) => n.techs.join(', ') },
+    ...(tx.dictionary ? [{ id: 'index', header: 'Index', value: nodeIndex }] : []),
+    { id: 'techs', header: tx.Many, value: (n) => n.techs.join(', ') },
     { id: 'stage', header: 'Stage', value: (n) => n.stage },
-    { id: 'cls', header: 'Class', value: (n) => classInfo(n.cls).label },
+    { id: 'cls', header: hasScenarios ? 'Class under Decoupling' : 'Class', value: (n) => classInfo(n.cls).label },
+    ...(hasScenarios
+      ? [
+          {
+            id: 'miCls',
+            header: 'Class under Managed Interdependence',
+            value: (n: AibNode) => {
+              const r = nodeScenario(n, 'managed');
+              return r.ran && r.cls ? classInfo(r.cls).label : 'unchanged';
+            },
+          },
+        ]
+      : []),
     { id: 'needs', header: 'Policy needs', value: (n) => policyNeedsText(n.policyNeeds) },
     { id: 'warning', header: 'Warning', value: (n) => n.warning ?? 'none', minWidth: 200 },
     { id: 'treatment', header: 'Recommended treatment', value: (n) => n.treatment, minWidth: 220 },
@@ -63,7 +134,10 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
     name: `${c.id} included nodes`,
     text: csvWithRun(
       nodes.map((n) => ({
-        compact: c.id, node_id: n.id, sub_sector: n.label, technologies: n.techs.join('; '), stage: n.stage, classification: n.cls,
+        compact: c.id, node_id: n.id, sub_sector: n.label,
+        ...(tx.dictionary ? { index: nodeIndex(n), sectors: n.techs.join('; '), osi_cells: n.yfCells.join('; ') } : { technologies: n.techs.join('; ') }),
+        stage: n.stage, classification: n.cls,
+        ...(hasScenarios ? { class_managed_interdependence: nodeScenario(n, 'managed').ran ? nodeScenario(n, 'managed').cls : null } : {}),
         policy_needs: policyNeedsText(n.policyNeeds), classification_warning: n.warning ?? null, physical_validation: n.physicalValidation ?? null, recommended_treatment: n.treatment,
       })),
       meta,
@@ -75,8 +149,9 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
       title={title}
       intro={
         <p>
-          The supply-chain nodes the compact covers, how each is treated, and which economies take part in what role. {listWords(mix.map((m) => `${m.n} ${classInfo(m.cls).label}`))}{' '}
-          {nodes.length === 1 ? 'node' : 'nodes'}.
+          The supply-chain nodes the compact covers, how each is treated, and which economies take part in what role
+          {hasScenarios ? ' under the scenario chosen above' : ''}. {mix.length ? `${listWords(mix.map((m) => `${m.n} ${classInfo(m.cls).label}`))} ${nodes.length - unchanged === 1 ? 'node' : 'nodes'}` : 'No node changes'}
+          {unchanged ? `; ${unchanged} unchanged under Managed Interdependence` : ''}.
         </p>
       }
     >
@@ -92,7 +167,8 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
       <ChartCard
         headingLevel={3}
         title="Included nodes and the compact's design"
-        sub={`What the compact covers, how its nodes are treated and what it needs. ${type.short}.`}
+        badge={<ScenarioBadge />}
+        sub={`What the compact covers, how its nodes are treated and what it needs.${type ? ` ${type.short}.` : ''}`}
         legend={<ClassLegend classes={mix.map((m) => m.cls)} />}
         table={() => <TableView rows={nodes} cols={nodeCols} caption={`${c.name}: included nodes`} rowKey={(n) => n.id} pageSize={50} />}
         csv={nodesCsv}
@@ -100,10 +176,10 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
         <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[10rem_minmax(0,1fr)]">
           <dt className="text-paper-mute">Archetype</dt>
           <dd className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <Tag>{c.archetype}</Tag>
+            {typed ? <Tag>{typed.archetype}</Tag> : <span className="text-paper-dim">{noneWords}</span>}
             {lostMix.length > 0 && (
               <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-paper-dim" data-testid="class-mix">
-                <span className="text-paper-mute">Class mix of the lost supply:</span>
+                <span className="text-paper-mute">Class mix of the {mi ? 'shifted' : 'lost'} supply:</span>
                 {lostMix.map((m) => (
                   <span key={m.cls} className="inline-flex items-center gap-1.5">
                     <ClassSwatch cls={m.cls} />
@@ -112,37 +188,66 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
                 ))}
               </span>
             )}
-            {c.secondaryClass && (
+            {typed?.secondaryClass && (
               <span className="text-paper-dim" data-testid="secondary-class">
-                <span className="text-paper-mute">Secondary class:</span> {classInfo(c.secondaryClass).label}
+                <span className="text-paper-mute">Secondary class:</span> {classInfo(typed.secondaryClass).label}
               </span>
             )}
           </dd>
           <dt className="text-paper-mute">Type</dt>
           <dd className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <TypeTag info={type} />
-            <span className="text-paper-dim">{type.explanation}</span>
+            {type ? (
+              <>
+                <TypeTag info={type} />
+                <span className="text-paper-dim">{type.explanation}</span>
+              </>
+            ) : (
+              <span className="text-paper-dim">{noneWords}</span>
+            )}
           </dd>
-          <dt className="text-paper-mute">Technologies</dt>
-          <dd className="text-paper-dim">{c.technologies.join(', ') || '–'}</dd>
+          {tx.dictionary && (
+            <>
+              <dt className="text-paper-mute">{indices.length === 1 ? 'Index' : 'Indices'}</dt>
+              <dd className="text-paper-dim" data-testid="compact-indices">
+                {indices.length ? indices.map(indexLabel).join(', ') : '–'}
+              </dd>
+            </>
+          )}
+          <dt className="text-paper-mute">{tx.Many}</dt>
+          <dd className="text-paper-dim">{(tx.dictionary ? groupedSectorWords(tx, c.technologies) : c.technologies.join(', ')) || '–'}</dd>
           <dt className="text-paper-mute">Stages</dt>
-          <dd className="text-paper-dim">{c.stages.join(', ') || '–'}</dd>
+          <dd className="text-paper-dim">{[...c.stages].sort((a, b) => stageRank(a) - stageRank(b)).join(', ') || '–'}</dd>
           <dt className="text-paper-mute">Included nodes</dt>
           <dd>
             <ul className="flex flex-wrap gap-2">
-              {nodes.map((n) => (
+              {nodes.map((n, i) => (
                 <li key={n.id} className="inline-flex flex-wrap items-center gap-2 border hairline px-2 py-1">
-                  <NodeClass n={n} />
+                  {mi ? miRows[i].ran && miRows[i].cls ? <ClassChip cls={miRows[i].cls as string} /> : <span className="tag text-paper-mute">Unchanged</span> : <NodeClass n={n} />}
                   <span className="text-paper">{n.label}</span>
-                  <span className="text-xs text-paper-mute">{n.stage}</span>
+                  <span className="text-xs text-paper-mute">{tx.dictionary ? `${n.techs.join(', ')} · ${n.stage}` : n.stage}</span>
                 </li>
               ))}
             </ul>
           </dd>
           <dt className="text-paper-mute">Critical supply partners</dt>
-          <dd className="text-paper-dim">{critical.length ? listWords(critical) : 'none named'}</dd>
+          <dd className="text-paper-dim">
+            {critical ? (critical.length ? listWords(critical) : 'none named') : viewState.status === 'loading' ? 'loading…' : viewState.status === 'none' ? 'none: no coalition under this scenario' : '–'}
+          </dd>
           <dt className="text-paper-mute">External dependency</dt>
-          <dd className="text-paper-dim">The supplier the headline shock removes: {shockLabel}</dd>
+          <dd className="text-paper-dim" data-testid="external-dependency">
+            {mi
+              ? `Managed Interdependence removes no supplier; ${capped.length ? `it caps ${listWords(capped.map((x) => name(x)))} in the allied market` : 'it caps no supplier in this compact'}`
+              : `The supplier the headline shock removes: ${shockLabel}`}
+          </dd>
+          {today.length > 0 && (
+            <>
+              <dt className="text-paper-mute">Suppliers today</dt>
+              <dd className="text-paper-dim" data-testid="suppliers-today">
+                {listWords(today.map((t) => `${name(t.iso3)} ${fmtShare(t.share, 0)}`))}{' '}
+                <span className="text-paper-mute">(shares of the compact&apos;s allied demand, {meta.tradeYear}, before any shock)</span>
+              </dd>
+            </>
+          )}
           {policy && (
             <>
               {byNode.length > 0 && (
@@ -155,7 +260,7 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
               )}
               <dt className="text-paper-mute">{lostMix.length > 1 ? 'Policy needs (the instruments of each major class)' : 'Policy needs'}</dt>
               <dd>
-                <PolicyNeeds needs={c.policyNeeds} />
+                {typed ? <PolicyNeeds needs={typed.policyNeeds} /> : <span className="text-paper-mute">{noneWords}</span>}
               </dd>
             </>
           )}
@@ -197,7 +302,19 @@ export function NodePolicyNeeds({ byNode }: { byNode: readonly { node: string; n
 const INLINE_TIERS = ['critical external dependency (marginal)'];
 
 function CoalitionCard() {
-  const { c, meta, names, name } = useCompact();
+  const { view } = useCompact();
+  if (!view) {
+    return (
+      <ChartCard headingLevel={3} title="The coalition and its tiers" badge={<ScenarioBadge />}>
+        <ScenarioGate what="the coalition">{() => null}</ScenarioGate>
+      </ChartCard>
+    );
+  }
+  return <CoalitionCardOf c={view} />;
+}
+
+function CoalitionCardOf({ c }: { c: AibCompact }) {
+  const { meta, names, name, scenario, hasScenarios } = useCompact();
   const { doc } = useAibCtx();
   const mt = coalitionMethod(c, meta.targets);
   const mid = targetLabel(mt.mid);
@@ -222,14 +339,16 @@ function CoalitionCard() {
     { id: 'roles', header: 'Roles', value: (e) => e.roles.join('; ') || '–', minWidth: 220 },
   ];
   const csv = () => ({
-    name: `${c.id} coalition tiers`,
-    text: csvWithRun(
+    name: `${c.id} coalition tiers${scenarioFileTag(scenario)}`,
+    text: scenarioCsv(
       econ.map((e) => ({
         compact: c.id, iso3: e.iso3, economy: e.name, tier: e.tier, critical: e.critical, loo_critical: e.looCritical, single_substitutes: e.substitutes.join(' '),
         substitutes_needed: e.substitutesNeeded ?? null, roles: e.roles.join('; '),
         in_coalition: members.includes(e.iso3), in_greedy_coalition: greedy ? greedy.includes(e.iso3) : null,
       })),
       meta,
+      scenario,
+      hasScenarios,
     ),
   });
   const lead = mt.exact
@@ -274,6 +393,7 @@ function CoalitionCard() {
     <ChartCard
       headingLevel={3}
       title="The coalition and its tiers"
+      badge={<ScenarioBadge />}
       sub={`${mt.label}: ${plural(members.length, 'economy', 'economies')}.${mt.method ? ` Method: ${mt.method}.` : ''}`}
       table={() => <TableView rows={econ} cols={cols} caption={`${c.name}: coalition tiers`} pageSize={50} />}
       csv={csv}
@@ -328,7 +448,19 @@ function CoalitionCard() {
 }
 
 function RolesCard() {
-  const { c, meta, names, name } = useCompact();
+  const { view } = useCompact();
+  if (!view) {
+    return (
+      <ChartCard headingLevel={3} title="Economies and their roles" badge={<ScenarioBadge />}>
+        <ScenarioGate what="the roles">{() => null}</ScenarioGate>
+      </ChartCard>
+    );
+  }
+  return <RolesCardOf c={view} />;
+}
+
+function RolesCardOf({ c }: { c: AibCompact }) {
+  const { meta, names, name, href, scenario, hasScenarios } = useCompact();
   const rows = roleMatrix(c, names);
   const tiers = new Map(tierEconomies(c, names).map((e) => [e.iso3, e]));
   const flat = c.roles.map((r) => ({ ...r, name: name(r.iso3), tierName: tierName(tiers.get(r.iso3)?.tier ?? r.tier) }));
@@ -340,14 +472,16 @@ function RolesCard() {
     { id: 'member', header: 'In the coalition', value: (r) => (r.member ? 'yes' : 'no') },
   ];
   const csv = () => ({
-    name: `${c.id} members and roles`,
-    text: csvWithRun(
+    name: `${c.id} members and roles${scenarioFileTag(scenario)}`,
+    text: scenarioCsv(
       c.roles.map((r) => ({
         compact: c.id, iso3: r.iso3, economy: name(r.iso3), role: r.role, basis: r.basis, in_coalition: r.member,
         tier: tiers.get(r.iso3)?.tier ?? r.tier ?? null, critical: r.critical ?? null, loo_critical: r.looCritical ?? null,
         single_substitutes: (r.substitutes ?? []).join(' '), substitutes_needed: r.substitutesNeeded ?? null,
       })),
       meta,
+      scenario,
+      hasScenarios,
     ),
   });
   const nMembers = coalitionMembersOf(c).length;
@@ -356,11 +490,12 @@ function RolesCard() {
     <ChartCard
       headingLevel={3}
       title="Economies and their roles"
+      badge={<ScenarioBadge />}
       sub={`${plural(nMembers, 'economy', 'economies')} in the coalition${nOutside ? `; ${plural(nOutside, 'economy', 'economies')} outside it (associates or external dependencies)` : ''}. The model assigns the roles from its results; an economy can hold several. Hover a mark for the reason.`}
       table={() => <TableView rows={flat} cols={cols} caption={`${c.name}: economies and roles`} pageSize={50} />}
       csv={csv}
     >
-      {rows.length ? <RoleMatrix rows={rows} /> : <EmptyState>The model assigned no roles in this compact.</EmptyState>}
+      {rows.length ? <RoleMatrix rows={rows} c={c} href={href} /> : <EmptyState>The model assigned no roles in this compact.</EmptyState>}
     </ChartCard>
   );
 }
@@ -379,8 +514,7 @@ const ROW_HEAD = {
   borderBottom: '1px solid rgb(255 255 255 / 0.08)',
 } as const;
 
-function RoleMatrix({ rows }: { rows: RoleRow[] }) {
-  const { c } = useCompact();
+function RoleMatrix({ rows, c, href }: { rows: RoleRow[]; c: AibCompact; href: (to: string) => string }) {
   return (
     <div className="relative overflow-x-auto">
       <table className="data-table">
@@ -402,7 +536,7 @@ function RoleMatrix({ rows }: { rows: RoleRow[] }) {
           {rows.map((row) => (
             <tr key={row.iso3}>
               <th scope="row" className="whitespace-nowrap text-left" style={ROW_HEAD}>
-                <Link className="link" to={`/countries/${row.iso3}#aib-role`} title={`${row.name}: Country profile, role in the Allied Industrial Base`}>
+                <Link className="link" to={href(`/countries/${row.iso3}#aib-role`)} title={`${row.name}: Country profile, role in the Allied Industrial Base`}>
                   <Economy iso3={row.iso3} />
                 </Link>
               </th>
@@ -437,19 +571,46 @@ function RoleMatrix({ rows }: { rows: RoleRow[] }) {
   );
 }
 
+/** The largest supplier share after optimized trade under Managed Interdependence (today's share where it does not run). */
+function miConcentration(nodes: readonly AibNode[]): { node: AibNode; share: number; supplier: string | null } | null {
+  let best: { node: AibNode; share: number; supplier: string | null } | null = null;
+  for (const n of nodes) {
+    const r = nodeScenario(n, 'managed');
+    if (typeof r.largestShare !== 'number') continue;
+    if (!best || r.largestShare > best.share) best = { node: n, share: r.largestShare, supplier: r.largest };
+  }
+  return best;
+}
+
 /** `title`: the section heading (the compact page asks "Why this compact?"). */
 export function WhySection({ title = 'Why it exists' }: { title?: string } = {}) {
-  const { c, nodes, meta, name } = useCompact();
-  const m = c.metrics;
-  const conc = concentration(nodes);
+  const { c, view, viewState, scenario, hasScenarios, nodes, meta, name } = useCompact();
+  const { nodeOf } = useAibCtx();
+  const mi = scenario === 'managed';
+  // Managed Interdependence: the compact as its file solves it, else its figures from compact.managed (loading, or no coalition)
+  const s = mi ? compactScenario(c, 'managed', nodeOf) : null;
+  const m = view
+    ? view.metrics
+    : s
+      ? { ...c.metrics, lostUsd: s.lostUsd, exposure: s.exposure, static: s.static, existing: s.existing, trade: s.optimized, investment: null, dividend: s.dividend, residual: s.residual, residualAfterInvestment: null, globalOptimum: s.optimized, anchorFragmented: null, anchorCompact: null, compactGain: null }
+      : c.metrics;
+  const conc = mi ? miConcentration(nodes) : concentration(nodes);
   const vs = compactVsFragmented(m);
-  const type = compactTypeInfo(c.type, vs?.gain);
+  // The compact's type under the toggled scenario (Managed Interdependence: its own; none without a coalition there).
+  const typed = mi ? view : c;
+  const type = typed ? compactTypeInfo(typed.type, compactVsFragmented(typed.metrics)?.gain) : null;
   const gap = typeof m.residual === 'number' && m.residual < 0.005 ? 'closing the gap' : `still leaving ${fmtShare(m.residual, 0)} unserved`;
-  const answer = `The shock removes ${fmtShare(m.exposure, 0)} of the compact's demand. After it, existing relationships serve ${fmtShare(m.existing, 0)} of that demand and coordinated trade among the members ${fmtShare(m.trade, 0)}, ${gap}${
-    vs ? `. Acting together, the demand anchors cover ${fmtPp(vs.gain).replace(/^\+/, '')} more of their own demand than through existing relationships alone` : ''
-  }${conc ? `; ${name(conc.supplier)} alone supplies up to ${fmtShare(conc.share, 0)} of one node (${conc.node.label})` : ''}.`;
+  const tradeWords = view ? 'coordinated trade among the members' : 'optimized trade among every partner';
+  const answer =
+    mi && s && !s.ran
+      ? `Managed Interdependence leaves this compact unchanged (${viewState.reason ?? compactUnchangedReasonOf(nodes)}): no supply has to shift and its demand stays served as it is today.`
+      : `${mi ? `Managed Interdependence shifts ${fmtShare(m.exposure, 0)} of the compact's demand away from capped suppliers` : `The shock removes ${fmtShare(m.exposure, 0)} of the compact's demand`}. After it, existing relationships serve ${fmtShare(m.existing, 0)} of that demand and ${tradeWords} ${fmtShare(m.trade, 0)}, ${gap}${
+          vs ? `. Acting together, the demand anchors cover ${fmtPp(vs.gain).replace(/^\+/, '')} more of their own demand than through existing relationships alone` : ''
+        }${conc ? `; ${name(conc.supplier)} alone supplies up to ${fmtShare(conc.share, 0)} of one node (${conc.node.label})` : ''}.`;
   const tiles = [
-    { key: 'exposure', label: 'Shock exposure', value: fmtShare(m.exposure), sub: `${fmtUsd(m.lostUsd)} of ${fmtUsd(m.demandUsd)} demand lost`, raw: m.exposure },
+    mi
+      ? { key: 'exposure', label: 'Share shifted', value: fmtShare(m.exposure), sub: `${fmtUsd(m.lostUsd)} of ${fmtUsd(m.demandUsd)} demand shifts away from capped suppliers`, raw: m.exposure }
+      : { key: 'exposure', label: 'Shock exposure', value: fmtShare(m.exposure), sub: `${fmtUsd(m.lostUsd)} of ${fmtUsd(m.demandUsd)} demand lost`, raw: m.exposure },
     ...(vs
       ? [
           {
@@ -468,15 +629,17 @@ export function WhySection({ title = 'Why it exists' }: { title?: string } = {})
       key: 'concentration',
       label: 'Concentration',
       value: conc ? fmtShare(conc.share) : '–',
-      sub: conc ? `${name(conc.supplier)} in ${conc.node.label}: the largest optimized supplier share across the nodes` : 'no optimized supplier shares',
+      sub: conc ? `${name(conc.supplier)} in ${conc.node.label}: the largest optimized supplier share across the nodes${mi ? ' under the scenario' : ''}` : 'no optimized supplier shares',
       raw: conc?.share ?? null,
     },
   ];
   const csv = () => ({
-    name: `${c.id} why it exists`,
-    text: csvWithRun(
+    name: `${c.id} why it exists${scenarioFileTag(scenario)}`,
+    text: scenarioCsv(
       tiles.map((t) => ({ compact: c.id, measure: t.label, value: t.raw, meaning: t.sub })),
       meta,
+      scenario,
+      hasScenarios,
     ),
   });
   return (
@@ -488,20 +651,25 @@ export function WhySection({ title = 'Why it exists' }: { title?: string } = {})
           <span className="text-paper" data-testid="why-answer">
             {answer}
           </span>{' '}
-          A compact forms where the shock removes a material share of supply and joint action restores more of it than existing relationships would. Shares are of the compact&apos;s baseline
-          traded demand, weighted by each node&apos;s demand; the comparison with fragmented action is for the demand anchors&apos; own demand.
+          {mi
+            ? 'The compacts are formed under Decoupling, where the shock removes a material share of supply and joint action restores more of it than existing relationships would; here each is solved again under the cap.'
+            : 'A compact forms where the shock removes a material share of supply and joint action restores more of it than existing relationships would.'}{' '}
+          Shares are of the compact&apos;s traded
+          demand today, weighted by each node&apos;s demand; the comparison with fragmented action is for the demand anchors&apos; own demand.
+          {mi && !view ? ' The figures below are the compact’s nodes under the scenario; the coalition’s own figures appear once its data are loaded.' : ''}
         </p>
       }
     >
-      {type.tone === 'unnecessary' && (
+      {type?.tone === 'unnecessary' && (
         <Notice kind="info" title="Compact unnecessary">
-          {type.explanation} The group is listed because its supply chains hang together and the shock still removes supply; existing relationships, not a new coalition, carry most of the
-          response.
+          {type.explanation} The group is listed because its supply chains hang together and {mi ? 'the cap still shifts supply' : 'the shock still removes supply'}; existing relationships, not a
+          new coalition, carry most of the response.
         </Notice>
       )}
       <ChartCard
         headingLevel={3}
         title="The case for coordination"
+        badge={<ScenarioBadge />}
         table={() => (
           <TableView
             rows={tiles}

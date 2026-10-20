@@ -476,6 +476,18 @@ inputs:
   - scripts/15_build_partner_themes.R
   - scripts/30_build_allied_network_design.R
   - scripts/98_pull_comtrade_energy_dyads.R
+- id: electro_industrial_hs6_dictionary
+  path: electro_industrial_hs6_dictionary.csv
+  source_type: derived
+  source_name: Electro-industrial HS6 dictionary (RMI Electro-Industrial Stack)
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  staged_from: repo
+  notes: 370 rows, 318 HS2022 codes in 6 indices x 39 sectors, each code with one stage and one primary row;
+    built 2026-10-18 against NZIPL's Green Dictionary and the OSI basket (docs/electro_industrial_dictionary/).
+    The node taxonomy of the Allied Industrial Base (config/aib_taxonomy_dictionary.yml).
+  required_by:
+  - scripts/31_build_aib_trade_network.R
 - id: hs6_categories_with_essential
   path: hs6_categories_with_essential.csv
   source_type: derived
@@ -773,6 +785,7 @@ inputs:
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
+  - scripts/31_build_aib_trade_network.R
 - id: hs92_product_year_6
   path: hs92_product_year_6.csv
   source_type: manual

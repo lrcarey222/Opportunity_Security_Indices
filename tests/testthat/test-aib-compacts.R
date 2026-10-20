@@ -309,3 +309,52 @@ test_that("a compact linked only through another compact's node is split", {
   kept <- aib_split_disconnected(tibble::tibble(node_id = c("a", "d"), group = c(1L, 1L)), e, cells$node_id)
   expect_equal(dplyr::n_distinct(kept$group), 1)
 })
+
+test_that("under a supplier-share cap the compact never passes the scenario's own optimum", {
+  skip_if_not(aib_has_lp(), "Rglpk/slam not installed")
+  flat <- list(spec = function(e) rep(0.5, length(e)), op = function(e, m) rep(0.5, length(e)),
+               compat = function(e, m) rep(0.5, length(e)))
+  # China holds 80% of the scope's supply and is capped at 30% (it gives up 50); Japan and Korea ship 10 each
+  # to the scope and 50 each elsewhere, so uncapped they could replace all of it, but capped only 20 each.
+  mk <- function(cap, other = 50) {
+    fl <- tibble::tibble(exporter_iso = c("CHN", "CHN", "JPN", "KOR", "JPN", "KOR"), importer_iso = c("USA", "DEU", "USA", "DEU", "ZZZ", "ZZZ"),
+                         value = c(60, 20, 10, 10, other, other))
+    p <- aib_node_problem(fl, c(CHN = 1 - 0.3 / 0.8), shocked_demand = "hold", demand_scope = c("USA", "DEU"),
+                          candidate_min_exports = 1, candidate_min_share = 0, cap_basis = "demand")
+    p$share_cap <- cap
+    p
+  }
+  probs <- list(n1 = mk(0.3), n2 = mk(0.3, other = 30))
+  anchors <- c("USA", "DEU")
+  members <- c("USA", "DEU", "JPN", "KOR")
+  for (n in names(probs)) {
+    p <- probs[[n]]
+    optimum <- aib_solve_state(p, "reallocation", "C", cap = 0.3, scores = flat)$coverage
+    existing <- aib_solve_state(p, "reallocation", "B", cap = 0.3, scores = flat, existing_growth = 1)$coverage
+    trade <- aib_compact_trade_coverage(p, "reallocation", members, scores = flat, existing_growth = 1)
+    expect_equal(optimum, 0.9, tolerance = 1e-6, info = n)
+    expect_lte(trade, optimum + 1e-6)
+    expect_gte(trade, existing - 1e-6)
+    expect_equal(trade, 0.9, tolerance = 1e-6, info = n)
+    # The anchors are the whole scope here, so their coverage cannot pass the optimum either; each member adds 20.
+    expect_equal(aib_anchor_coverage(p, anchors, members, "reallocation"), 0.9, tolerance = 1e-9)
+    expect_equal(unname(aib_anchor_terms(p, anchors, "reallocation")$g[c("JPN", "KOR")]), c(0.2, 0.2), tolerance = 1e-9)
+    # Synthetic capacity at a member host is capped too.
+    expect_equal(unname(aib_anchor_terms(p, anchors, "reallocation", host_extra = c(JPN = 0.5))$g["JPN"]), 0.2, tolerance = 1e-9)
+    # Without the cap the same members would restore everything.
+    u <- p
+    u$share_cap <- NULL
+    expect_equal(aib_compact_trade_coverage(u, "reallocation", members, scores = flat, existing_growth = 1), 1, tolerance = 1e-6)
+    expect_equal(aib_anchor_coverage(u, anchors, members, "reallocation"), 1)
+  }
+  # The 95% target is out of reach under the cap: no coalition is forced onto it.
+  ex <- aib_coalition_exact(probs, names(probs), anchors, c("JPN", "KOR"), "reallocation", target = 0.95)
+  expect_false(ex$reached)
+  expect_lte(ex$best_min_coverage, 0.9 + 1e-9)
+  path <- aib_coalition_path(probs, names(probs), anchors, c("JPN", "KOR"), "reallocation", target = 0.99)
+  expect_lte(max(path$min_coverage), 0.9 + 1e-9)
+  # A served-basis problem ignores share_cap in the coalition terms (its cap is not linear in the membership).
+  s <- probs$n1
+  s$cap_basis <- "served"
+  expect_equal(aib_compact_share_cap(s), 1)
+})

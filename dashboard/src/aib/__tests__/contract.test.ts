@@ -2,13 +2,17 @@
 // typed and collapsed fields are reported with their paths; a newer version asks for a reload; the
 // tolerated shapes of the R export ([] for an empty named list, null numbers and NA strings) pass; the
 // additive and methodology fields are optional (an older bundle, secondShock and all, validates) and
-// checked when present; the store maps every failure to NO_DATA / NEWER / CONTRACT / NETWORK and can
+// checked when present (the diversification scenario of 2026-10-19 too: four statuses, nulls where it did
+// not run); the store maps every failure to NO_DATA / NEWER / CONTRACT / NETWORK and can
 // retry.
 
 import { describe, expect, it } from 'vitest';
-import { AIB_DOC_FILE_RE, checkAibManifest, checkCompactsDoc, coalitionMembersOf, countryNamesOf, inStrategicScope, nodeCoverageOf, variantsOf, variantWarningsOf, type AibDoc } from '../contract.ts';
+import {
+  AIB_DIVERSIFY_SHOCK, AIB_DIVERSIFY_STATUSES, AIB_DOC_FILE_RE, checkAibManifest, checkCompactsDoc, coalitionMembersOf, countryNamesOf, diversifyMetaOf, diversifyShockIdOf, indicesOf,
+  inStrategicScope, isDictionary, nodeCoverageOf, variantsOf, variantWarningsOf, type AibDoc,
+} from '../contract.ts';
 import { AibLoadError, AibStore, httpAibSource, type AibSource } from '../data/store.ts';
-import { fixtureSource, readDoc, readManifest, stripMethodology, SYNTHETIC_DIR } from './fixture.ts';
+import { fixtureSource, readDoc, readManifest, stripDiversify, stripMethodology, SYNTHETIC_DIR, toMasterTaxonomy } from './fixture.ts';
 
 const doc = (): AibDoc => structuredClone(readDoc(SYNTHETIC_DIR));
 type Loose = Record<string, unknown>;
@@ -35,8 +39,8 @@ describe('checkAibManifest', () => {
   });
 
   it('a newer version needs a newer app', () => {
-    const m = { ...readManifest(SYNTHETIC_DIR), version: 2 };
-    expect(checkAibManifest(m)).toEqual(['manifest: version 2 needs a newer app']);
+    const m = { ...readManifest(SYNTHETIC_DIR), version: 3 };
+    expect(checkAibManifest(m)).toEqual(['manifest: version 3 needs a newer app']);
   });
 });
 
@@ -143,7 +147,7 @@ describe('checkCompactsDoc', () => {
     expect(checkAibManifest(m)).toEqual([]);
     // the synthetic document carries every one of them, and no secondShock
     const full = doc();
-    expect(full.meta).toMatchObject({ demandScope: 'coalition', candidateUniverse: 'global', shockSemantics: 'hold', supplyConstraint: 'production_constrained', strategicScope: 'electro_industrial' });
+    expect(full.meta).toMatchObject({ demandScope: 'coalition', candidateUniverse: 'global', shockSemantics: 'hold', supplyConstraint: 'production_constrained', strategicScope: 'all' });
     expect(full.nodes.flatMap((n) => n.frontier).some((f) => 'secondShock' in f)).toBe(false);
     expect(full.nodes.every((n) => Array.isArray(n.policyNeeds) && typeof n.inStrategicScope === 'boolean')).toBe(true);
   });
@@ -223,7 +227,9 @@ describe('checkCompactsDoc', () => {
     expect(checkCompactsDoc(ok)).toEqual([]);
     expect(variantsOf(ok.nodes[0])).toEqual({});
     expect(inStrategicScope({ ...ok.nodes[0], inStrategicScope: undefined })).toBe(true);
-    expect(inStrategicScope(ok.nodes.find((n) => n.id === 'gas-mid-turbines')!)).toBe(false);
+    // strategic scope "all" (the dictionary): every node is in it; the master form leaves the electrolysers (Green Hydrogen) outside
+    expect(ok.nodes.every(inStrategicScope)).toBe(true);
+    expect(inStrategicScope(toMasterTaxonomy(doc()).nodes.find((n) => n.id === 'h2-down-electrolysers')!)).toBe(false);
     const m = { ...readManifest(SYNTHETIC_DIR), demandScope: 3 };
     expect(checkAibManifest(m)).toEqual(['manifest.demandScope: expected a string or null']);
   });
@@ -344,6 +350,58 @@ describe('checkCompactsDoc', () => {
     expect(checkCompactsDoc({ ...doc(), network: [] })).toContain('network: not an object');
   });
 
+  it('the taxonomy fields (2026-10-19) are optional, checked when present and cross-checked against meta.indices; a master bundle without them validates', () => {
+    const full = doc();
+    expect(isDictionary(full.meta)).toBe(true);
+    expect(full.meta).toMatchObject({ taxonomy: 'dictionary', dictionaryScope: 'core' });
+    expect(indicesOf(full.meta).map((ix) => ix.code)).toEqual(['A', 'B', 'C', 'D', 'E', 'F']);
+    expect(full.nodes.every((n) => typeof n.indexCode === 'string')).toBe(true);
+    expect(full.compacts.find((c) => c.id === 'AIB-C01')!.indices).toEqual(['A', 'B']);
+    // sector names with "/", labels with commas, a Downstream node and a node with no OSI cell
+    expect(full.nodes.some((n) => n.techs.some((t) => t.includes('/')))).toBe(true);
+    expect(full.nodes.some((n) => n.label.includes(','))).toBe(true);
+    expect(full.nodes.some((n) => n.stage === 'Downstream')).toBe(true);
+    expect(full.nodes.some((n) => !n.yfCells.length)).toBe(true);
+    // the master form (an older bundle): no taxonomy fields, OSI technology names; still valid
+    const master = toMasterTaxonomy(doc());
+    expect(isDictionary(master.meta)).toBe(false);
+    expect(indicesOf(master.meta)).toEqual([]);
+    expect(master.nodes.every((n) => n.indexCode === undefined) && master.compacts.every((c) => c.indices === undefined)).toBe(true);
+    expect(master.nodes.find((n) => n.id === 'ev-wind-mid-magnets')!.techs).toEqual(['Electric Vehicles', 'Wind']);
+    expect(checkCompactsDoc(master)).toEqual([]);
+    // null where R had NA (a master export writes them), an unknown taxonomy word read as master
+    const na = doc();
+    na.meta.dictionaryScope = null;
+    na.nodes[0].indexCode = null;
+    na.meta.taxonomy = 'something-new';
+    expect(checkCompactsDoc(na)).toEqual([]);
+    expect(isDictionary(na.meta)).toBe(false);
+    // checked when present
+    const d = doc();
+    loose(d.meta).taxonomy = 3;
+    loose(d.meta.indices![1]).code = 'A';
+    loose(d.meta.indices![2]).code = 'grid';
+    loose(d.meta.indices![3]).sectors = 'Solar';
+    loose(d.nodes[0]).indexCode = 'Z';
+    loose(d.nodes[1]).indexCode = 2;
+    loose(d.compacts[0]).indices = 'A';
+    loose(d.compacts[1]).indices = ['A', 'Q'];
+    const p = checkCompactsDoc(d);
+    for (const want of [
+      'meta.taxonomy: expected a string or null',
+      "meta.indices[1].code: duplicate 'A'",
+      "meta.indices[2].code: 'grid' is not one capital letter",
+      'meta.indices[3].sectors: expected an array (a one-item array collapsed to a string?)',
+      "nodes[0].indexCode: 'Z' is not an index of meta.indices",
+      'nodes[1].indexCode: expected a string or null',
+      'compacts[0].indices: expected an array (a one-item array collapsed to a string?)',
+      "compacts[1].indices: 'Q' is not an index of meta.indices",
+    ]) {
+      expect(p).toContain(want);
+    }
+    expect(checkCompactsDoc({ ...doc(), meta: { ...doc().meta, indices: { A: 'x' } } })).toContain('meta.indices: expected an array (a one-item array collapsed to an object?)');
+  });
+
   it('a newer document version needs a newer app; a non-object is one problem', () => {
     expect(checkCompactsDoc({ ...doc(), version: 3 })).toContain('document: version 3 needs a newer app');
     expect(checkCompactsDoc('x')).toEqual(['document: not an object']);
@@ -384,7 +442,7 @@ describe('AibStore', () => {
     await expect(s.manifest()).rejects.toMatchObject({ code: 'NO_DATA' });
     expect(n).toBe(2);
 
-    const newer = new AibStore({ manifest: async () => ({ ...readManifest(SYNTHETIC_DIR), version: 2 }), json: async () => ({}) });
+    const newer = new AibStore({ manifest: async () => ({ ...readManifest(SYNTHETIC_DIR), version: 3 }), json: async () => ({}) });
     await expect(newer.manifest()).rejects.toMatchObject({ code: 'NEWER' });
 
     const broken = new AibStore(fixtureSource(SYNTHETIC_DIR, (d) => delete loose(d).nodes));
@@ -411,5 +469,106 @@ describe('AibStore', () => {
     await expect(down.manifest()).rejects.toMatchObject({ code: 'NETWORK' });
     const ok = httpAibSource('/data/aib/', { fetch: async () => res(200, JSON.stringify(readManifest(SYNTHETIC_DIR))) });
     expect(checkAibManifest(await ok.manifest())).toEqual([]);
+  });
+});
+
+describe('the diversification scenario (2026-10-19)', () => {
+  const ALL = ['diversified to the benchmark', 'within the cap in the allied market', 'already as diversified as its benchmark', 'no benchmark'];
+
+  it('the synthetic document carries meta.diversify and node.diversify in every status; it validates, and so does an older bundle without them', () => {
+    const d = doc();
+    expect(AIB_DIVERSIFY_STATUSES).toEqual(ALL);
+    expect(d.meta.diversify).toEqual({ shockId: 'diversify_benchmark', label: "Diversified to its sector's concentration", benchmark: 'hs4' });
+    expect(d.meta.shocks.map((s) => s.id)).toContain('diversify_benchmark');
+    expect(new Set(d.nodes.flatMap((n) => (n.diversify ? [n.diversify.status] : [])))).toEqual(new Set(ALL));
+    // one node the scenario did not assess
+    expect(d.nodes.filter((n) => n.diversify === undefined).map((n) => n.id)).toEqual(['grid-mid-transformers']);
+    expect(checkCompactsDoc(d)).toEqual([]);
+    expect(diversifyMetaOf(d.meta)).toEqual(d.meta.diversify);
+    expect(diversifyShockIdOf(d.meta)).toBe('diversify_benchmark');
+    // older bundles: without the scenario, and before the methodology fields
+    const older = stripDiversify(doc());
+    expect(older.meta.diversify).toBeUndefined();
+    expect(older.nodes.some((n) => n.diversify !== undefined || 'diversify_benchmark' in (n.variants ?? {}))).toBe(false);
+    expect(older.meta.shocks.map((s) => s.id)).not.toContain('diversify_benchmark');
+    expect(checkCompactsDoc(older)).toEqual([]);
+    expect(diversifyMetaOf(older.meta)).toBeNull();
+    expect(diversifyShockIdOf(older.meta)).toBe(AIB_DIVERSIFY_SHOCK);
+    expect(checkCompactsDoc(stripMethodology(doc()))).toEqual([]);
+  });
+
+  it('every status validates, with nulls where the scenario did not run; the variant class is null there', () => {
+    const d = doc();
+    const byStatus = (s: string) => d.nodes.find((n) => n.diversify?.status === s)!;
+    for (const s of ALL) {
+      const n = byStatus(s);
+      const ran = s === 'diversified to the benchmark';
+      for (const k of ['static', 'existing', 'optimized', 'residual', 'residualUsd', 'cls'] as const) expect(n.diversify![k] === null, `${s} ${k}`).toBe(!ran);
+      expect(variantsOf(n).diversify_benchmark ?? null).toBe(n.diversify!.cls);
+      expect(n.diversify!.cap === null).toBe(s === 'already as diversified as its benchmark' || s === 'no benchmark');
+    }
+    // a no-benchmark node: every nullable field null, the arrays empty
+    const nb = byStatus('no benchmark').diversify!;
+    expect([nb.benchmarkHhi, nb.basis, nb.cap, nb.excess, nb.partners]).toEqual([null, null, null, null, null]);
+    expect([nb.capped, nb.hosts]).toEqual([[], []]);
+    // one diversified node with two capped suppliers and one where trade replaces everything
+    expect(d.nodes.find((n) => n.id === 'ev-wind-mid-magnets')!.diversify!.capped).toEqual(['ZZZ', 'AAA']);
+    expect(d.nodes.find((n) => n.id === 'bat-mid-anode')!.diversify!.residual).toBe(0);
+    // shares at both ends and every field null at once pass
+    const ok = doc();
+    Object.assign(ok.nodes[1].diversify!, { currentHhi: 1, benchmarkHhi: 0, cap: 0, excess: 1, static: 0, existing: 0, optimized: 1, residual: 0, residualUsd: 0 });
+    Object.assign(ok.nodes[0].diversify!, { currentHhi: null, benchmarkHhi: null, basis: null, cap: null, excess: null, partners: null, cls: null });
+    loose(ok.meta.diversify!).label = null;
+    loose(ok.meta.diversify!).benchmark = 'sector';
+    loose(ok.meta.diversify!).minExcess = 0.005;
+    expect(checkCompactsDoc(ok)).toEqual([]);
+    // the tolerance is a share of HHI: outside 0-1 it is reported
+    const bad = doc();
+    loose(bad.meta.diversify!).minExcess = -0.1;
+    expect(checkCompactsDoc(bad).some((x) => x.startsWith('meta.diversify.minExcess'))).toBe(true);
+  });
+
+  it('bad values are reported with their paths', () => {
+    const d = doc();
+    const at = (id: string) => d.nodes.findIndex((n) => n.id === id);
+    const mag = at('ev-wind-mid-magnets');
+    const ree = at('ev-wind-mid-ree-compounds');
+    const sol = at('solar-down-modules');
+    const h2 = at('h2-down-electrolysers');
+    const x = (i: number) => loose(d.nodes[i].diversify);
+    x(mag).status = 'diversified';
+    x(mag).cap = 1.2;
+    x(mag).capped = 'ZZZ';
+    x(mag).cls = 'REBUILD';
+    x(mag).residualUsd = -5;
+    x(ree).excess = '0';
+    x(ree).basis = 7;
+    delete x(sol).hosts;
+    x(sol).static = -0.1;
+    loose(d.nodes[h2]).diversify = [];
+    delete loose(d.meta.diversify).shockId;
+    loose(d.meta.diversify).benchmark = 4;
+    const p = checkCompactsDoc(d);
+    for (const want of [
+      `nodes[${mag}].diversify.status: 'diversified' is not one of ${ALL.join(', ')}`,
+      `nodes[${mag}].diversify.cap: 1.2 above 1`,
+      `nodes[${mag}].diversify.capped: expected an array (a one-item array collapsed to a string?)`,
+      `nodes[${mag}].diversify.cls: 'REBUILD' is not one of meta.classes`,
+      `nodes[${mag}].diversify.residualUsd: -5 below 0`,
+      `nodes[${ree}].diversify.excess: expected a number or null`,
+      `nodes[${ree}].diversify.basis: expected a string or null`,
+      `nodes[${sol}].diversify.hosts: expected an array`,
+      `nodes[${sol}].diversify.static: -0.1 below 0`,
+      `nodes[${h2}].diversify: not an object`,
+      'meta.diversify.shockId: expected a string',
+      'meta.diversify.benchmark: expected a string or null',
+    ]) {
+      expect(p).toContain(want);
+    }
+    expect(p).toHaveLength(12);
+    const m = doc();
+    loose(m.meta).diversify = 'hs4';
+    expect(checkCompactsDoc(m)).toEqual(['meta.diversify: not an object']);
+    expect(diversifyMetaOf(m.meta)).toBeNull();
   });
 });

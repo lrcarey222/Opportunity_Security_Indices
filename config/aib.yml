@@ -8,6 +8,14 @@
 # their inputs but changes neither. It builds no composite score and fixes no alliance in advance:
 # the candidate universe is a setting and defaults to every economy in the trade data.
 
+# ---- Taxonomy -------------------------------------------------------------------------------
+# Which HS6 taxonomy defines the nodes: dictionary (data/reference/electro_industrial_hs6_dictionary.csv,
+# RMI's Electro-Industrial Stack: index > sector > stage > HS6; the default since 2026-10-19) or master
+# (the OSI energy basket, data/reference/energy_hs6_master.csv). The taxonomy-specific settings (nodes
+# and splits, strategic scope, supply-chain and material links, production proxies, validation cases)
+# are in config/aib_taxonomy_<taxonomy>.yml, read on top of this file; --taxonomy overrides it.
+taxonomy: dictionary
+
 # ---- Observed trade network -----------------------------------------------------------------
 trade:
   # Reference year of the bilateral flows (the latest all-reporter pull with HS2022 codes) and the
@@ -31,21 +39,6 @@ trade:
   # universe (no demand to restore, no partner); their shipments stay as observed.
   exclude_from_universe: [LBR, MHL, PAN, BHS]
 
-# Sub-sector nodes are the (tech, stage, sub_sector) cells of data/reference/energy_hs6_master.csv.
-# Cells with an identical HS6 set in several technologies (magnets in EV and Wind, transformers in
-# Grid and Solar, pipelines in Oil and Gas) are one physical node, counted once. `splits` refines a
-# master sub-sector into finer nodes where its HS6 codes allow it.
-nodes:
-  splits:
-    - tech: Solar
-      supply_chain: Midstream
-      sub_sector: Polysilicon & Wafers
-      into:
-        - sub_sector: Polysilicon
-          hs6: ["280461"]
-        - sub_sector: Wafers
-          hs6: ["381800"]
-
 # ---- Demand scope and candidate-partner universe --------------------------------------------
 # Two separate sets (every output names both):
 #   demand_scope                importers whose lost supply the module restores: the economies the
@@ -66,15 +59,6 @@ candidate_partner_universe:
   mode: global
   tiers: [core, partner]
   countries: []
-
-# ---- Strategic scope ------------------------------------------------------------------------
-# Which technologies the compacts, the emergent network and the dashboard lead with. All nodes
-# are still modelled and kept in the trade and classification tables (in_strategic_scope marks
-# them); fossil-fuel nodes are not headline compacts under electro_industrial.
-strategic_scope:
-  mode: electro_industrial
-  technologies:
-    electro_industrial: [Batteries, Electric Vehicles, Solar, Wind, Electric Grid, Semiconductors, Nuclear]
 
 # ---- Shocks ---------------------------------------------------------------------------------
 # type country: the listed exporters lose `fraction` of their exports in every node.
@@ -106,11 +90,27 @@ shocks:
     type: largest_supplier
     level: technology
     fraction: 1.0
+  # type diversify: no supplier is removed. Each node more concentrated than its higher-level sector is
+  # brought to that sector's concentration (exporter HHI, re-export hubs counted with their origin):
+  #   benchmark hs4     the trade-weighted mean HHI of the other HS6 lines of the node's parent HS4
+  #                     heading(s) in the Atlas HS92 panel, latest year (electric cars against petrol,
+  #                     diesel and hybrid cars), falling back to the sector benchmark where the heading
+  #                     has no other line;
+  #   benchmark sector  the trade-weighted mean HHI of the other nodes of the node's sector.
+  # The supplier-share cap that brings the node to its benchmark applies: suppliers above it lose the
+  # excess of their sales to the demand scope, and the optimized state keeps the cap. Nodes within
+  # min_excess of their benchmark are left alone.
+  - id: diversify_benchmark
+    label: Diversified to its sector's concentration
+    type: diversify
+    benchmark: hs4
+    min_excess: 0.005
 # Shock semantics, every one run; the first is the headline.
 #   hold     an export / supply shock: the shocked economy keeps buying, so exports headed to it
 #            stay there in both scenarios (the security stress test).
-#   release  decoupling: its purchases fall by the same fraction and that share of the exports
-#            headed to it is freed for others (a sensitivity).
+#   release  a two-way cut: its purchases fall by the same fraction and that share of the exports
+#            headed to it is freed for others (a sensitivity). The dashboard's "Decoupling" scenario
+#            is the headline shock under hold, not this.
 shocked_demand: [hold, release]
 # The shock the compact layer, the investment simulation and the dashboard lead with.
 headline_shock: china_100
@@ -196,7 +196,7 @@ compatibility:
 investment:
   # Shocks and scenarios simulated. Nodes whose optimized residual gap (share of universe demand)
   # reaches min_residual_gap under a shock enter the simulation for it.
-  shocks: [china_100, largest_subsector]
+  shocks: [china_100, largest_subsector, diversify_benchmark]
   scenarios: [reallocation, conservative]
   min_residual_gap: 0.05
   # Eligible hosts simulated per node, the most capable first (capability tier, then value).
@@ -293,107 +293,6 @@ compacts:
   chain_max_hops: 3
   allow_co_inputs: true
 
-# Curated physical / process adjacency, upstream -> downstream (master sub-sector or split-node
-# names; "Tech::Sub-sector" where a name recurs in several technologies; quote names with
-# commas), for compact coherence. Material inputs, components into assemblies, and equipment into
-# the stage that uses it.
-supply_chain_links:
-  # Rare earths and magnets: oxide -> metal / alloy -> permanent magnet -> motor / generator
-  - [Rare-Earth Ores (Monazite), Rare-Earth Compounds]
-  - [Rare-Earth Compounds, Rare-Earth Metals]
-  - [Rare-Earth Metals, Permanent Magnets & Magnet Parts]
-  - [Permanent Magnets & Magnet Parts, Electric Drive Units & Motors]
-  - [Permanent Magnets & Magnet Parts, Wind Turbines & Generators]
-  - [Permanent Magnets & Magnet Parts, Nacelles & Drivetrains]
-  - [Motor & Generator Parts, Electric Drive Units & Motors]
-  - [Motor & Generator Parts, Wind Turbines & Generators]
-  - [Electric Drive Units & Motors, Electric Vehicle Assembly]
-  - [Nacelles & Drivetrains, Wind Turbines & Generators]
-  - [Wind Blades, Wind Turbines & Generators]
-  # Batteries: minerals -> refined chemicals -> active materials -> cells -> packs -> vehicles
-  - [Lithium Minerals (Spodumene), Lithium Chemicals]
-  - ["Batteries::Ores & Concentrates", Lithium Chemicals]
-  - ["Batteries::Ores & Concentrates", Cobalt & Nickel Refining]
-  - [Cobalt Ores & Concentrates, Cobalt & Nickel Refining]
-  - [Nickel Ores & Concentrates, Cobalt & Nickel Refining]
-  - [Battery Recycling & Urban Mining, Cobalt & Nickel Refining]
-  - [Battery Recycling & Urban Mining, Lithium Chemicals]
-  - [Lithium Chemicals, Cathode Materials & Battery Precursors]
-  - [Lithium Chemicals, Electrolyte Materials]
-  - [Cobalt & Nickel Refining, Cathode Materials & Battery Precursors]
-  - [Manganese Ores & Concentrates, Cathode Materials & Battery Precursors]
-  - [Natural Graphite, Anode Materials]
-  - [Cathode Materials & Battery Precursors, Battery Cells]
-  - [Anode Materials, Battery Cells]
-  - [Electrolyte Materials, Battery Cells]
-  - [Separator Materials, Battery Cells]
-  - [Current Collectors & Foils, Battery Cells]
-  - [Battery Cells, "Battery Packs, Parts & BMS"]
-  - [Battery Cells, Vehicle Batteries & Packs]
-  - [Vehicle Batteries & Packs, Electric Vehicle Assembly]
-  # Solar: silicon metal -> polysilicon -> wafer -> cell -> module
-  - [Silicon Metal, Polysilicon]
-  - [Polysilicon, Wafers]
-  - [Wafers, Solar Cells]
-  - [Solar Cells, Solar Modules]
-  - [Solar Module Assembly & Inputs, Solar Modules]
-  - [Solar Cell Manufacturing Equipment, Solar Cells]
-  # Grid: metals -> conductors and cores -> apparatus
-  - ["Electric Grid::Ores & Concentrates", Copper Smelting & Refining]
-  - ["Electric Grid::Ores & Concentrates", Alumina & Primary Aluminium]
-  - [Copper Smelting & Refining, Grid Cables & Accessories]
-  - [Copper Smelting & Refining, Transformers]
-  - [Copper Smelting & Refining, Array Cables & Collection Systems]
-  - [Copper Smelting & Refining, Solar Cabling & Connectors]
-  - [Copper Smelting & Refining, Vehicle Wiring Harnesses]
-  - [Alumina & Primary Aluminium, Grid Cables & Accessories]
-  - [Electrical Steel (GOES), Transformers]
-  - [Circuit Breakers, Switchgear]
-  - [Circuit Breakers, Grid Control Panels]
-  - [Transformers, Wind Substations]
-  - [Switchgear, Wind Substations]
-  # Nuclear fuel
-  - [Uranium Ores & Concentrates, Natural Uranium & Compounds]
-  - [Natural Uranium & Compounds, Nuclear Fuel Cycle]
-  # Semiconductors: materials and parts -> devices; equipment parts -> equipment -> devices
-  - ["Gallium, Germanium & Indium", Semiconductor Materials]
-  - [Semiconductor Materials, Discrete Semiconductors]
-  - [Semiconductor Materials, Integrated Circuits]
-  - [Semiconductor Equipment Parts, Semiconductor Manufacturing Equipment]
-  - [Semiconductor Manufacturing Equipment, Integrated Circuits]
-  - [Integrated Circuit Parts, Integrated Circuits]
-  - [Semiconductor Device Parts, Discrete Semiconductors]
-
-# Material links between sub-sectors used for investment-host eligibility (RCA in a linked node
-# counts as revealed capability). Narrower than supply_chain_links: shared materials, not assembly.
-material_links:
-  - [Rare-Earth Ores (Monazite), Rare-Earth Compounds]
-  - [Rare-Earth Compounds, Rare-Earth Metals]
-  - [Rare-Earth Metals, Permanent Magnets & Magnet Parts]
-  - [Rare-Earth Compounds, Permanent Magnets & Magnet Parts]
-  - [Permanent Magnets & Magnet Parts, Electric Drive Units & Motors]
-  - [Permanent Magnets & Magnet Parts, Wind Turbines & Generators]
-  - [Natural Graphite, Anode Materials]
-  - [Lithium Minerals (Spodumene), Lithium Chemicals]
-  - ["Batteries::Ores & Concentrates", Lithium Chemicals]
-  - [Cobalt Ores & Concentrates, Cobalt & Nickel Refining]
-  - [Nickel Ores & Concentrates, Cobalt & Nickel Refining]
-  - ["Batteries::Ores & Concentrates", Cobalt & Nickel Refining]
-  - [Lithium Chemicals, Cathode Materials & Battery Precursors]
-  - [Cobalt & Nickel Refining, Cathode Materials & Battery Precursors]
-  - [Battery Cells, Vehicle Batteries & Packs]
-  - [Battery Cells, "Battery Packs, Parts & BMS"]
-  - [Silicon Metal, Polysilicon]
-  - [Polysilicon, Wafers]
-  - [Wafers, Solar Cells]
-  - [Solar Cells, Solar Modules]
-  - [Copper Smelting & Refining, Grid Cables & Accessories]
-  - [Alumina & Primary Aluminium, Grid Cables & Accessories]
-  - [Electrical Steel (GOES), Transformers]
-  - [Uranium Ores & Concentrates, Natural Uranium & Compounds]
-  - [Natural Uranium & Compounds, Nuclear Fuel Cycle]
-  - ["Gallium, Germanium & Indium", Semiconductor Materials]
-
 # ---- Data-quality guardrails ----------------------------------------------------------------
 data_quality:
   # Insufficient for optimization below any of these.
@@ -409,59 +308,3 @@ data_quality:
   # Insufficient sub-sectors of one technology stage are merged into one aggregated node; an
   # aggregate that still fails stays out of the optimization (reported, not solved).
   aggregate_insufficient: true
-
-# Production or capacity shares used as host capability (and reported beside RCA). Each entry maps
-# a node to a measure of data/processed/major_supplier_shares_tbl.rds (mineral as recorded there)
-# or to a GCIM manufacturing product (data/raw/GCIM_Investment_Capacity_aggregated.xlsx).
-production_proxies:
-  - sub_sector: Rare-Earth Compounds
-    source: major_supplier_shares
-    measure: iea_mineral_refining
-    mineral: Rare Earths
-  - sub_sector: Rare-Earth Metals
-    source: major_supplier_shares
-    measure: iea_mineral_refining
-    mineral: Rare Earths
-  - sub_sector: Anode Materials
-    source: major_supplier_shares
-    measure: iea_mineral_refining
-    mineral: Graphite
-  - sub_sector: Natural Graphite
-    source: major_supplier_shares
-    measure: iea_mineral_mining
-    mineral: Graphite
-  - sub_sector: Lithium Chemicals
-    source: major_supplier_shares
-    measure: iea_mineral_refining
-    mineral: Lithium
-  - sub_sector: Cobalt & Nickel Refining
-    source: major_supplier_shares
-    measure: iea_mineral_refining
-    mineral: Cobalt
-  - sub_sector: Polysilicon
-    source: gcim
-    technology: Solar
-    product: Polysilicon
-  - sub_sector: Wafers
-    source: gcim
-    technology: Solar
-    product: Wafers
-  - sub_sector: Solar Cells
-    source: gcim
-    technology: Solar
-    product: Cells
-  - sub_sector: Solar Modules
-    source: gcim
-    technology: Solar
-    product: Modules
-  - sub_sector: Battery Cells
-    source: gcim
-    technology: Batteries
-    product: Cells
-
-# Validation cases checked by hand before the full taxonomy (scripts/32 writes their chains).
-validation_cases:
-  - Permanent Magnets & Magnet Parts
-  - Rare-Earth Compounds
-  - Anode Materials
-  - Wafers

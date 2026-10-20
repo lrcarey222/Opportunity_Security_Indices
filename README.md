@@ -75,11 +75,11 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Partner themes | `scripts/15_build_partner_themes.R` | `partner_{friendshore,opportunity,development}_*_tbl.rds`, `partner_trade_coverage_tbl.rds`, `cm_fdi_projects_tbl.rds`, `partner_cm_fdi_{ties,exposure,coverage}_tbl.rds` |
 | PSI | `scripts/25_build_partner_indices.R` | `psi_tbl.rds` (core-coalition view, headline), `psi_full_coalition_tbl.rds`, `psi_world_tbl.rds`, `psi_dyad_tbl.rds` and category contributions |
 | Allied network (retired 2026-10-17) | `scripts/30_build_allied_network_design.R`: dormant, not run by `run_pipeline.R` | `outputs/allied_network_*.csv` (last copies kept on disk; only the paper scripts `scripts/paper/fig_coalition.R` and `fig_reconcile.R` still read them) |
-| Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path,leave_one_out}.csv`, `allied_trade_growth_sensitivity.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}` |
+| Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path,leave_one_out}.csv`, `aib_diversification.csv`, `allied_trade_growth_sensitivity.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}`; the dashboard scenarios' `aib_observed_supply.csv`, `emergent_aib_{edges,country_summary}_{baseline,managed}.csv`, `aib_compact_{candidates,members,coalition_path,leave_one_out}_managed.csv` |
 | Vintages | `scripts/40_build_index_vintages.R` | `vintages/*` (ES and EO at several years) |
 | Dashboard: Strategic Insights | `scripts/85_export_dashboard_data.R`, `scripts/86_export_dashboard_fixtures.R` | `dashboard/validation_report.csv`; the app's bundle goes to the repo's `dashboard/public/data/` and the engine's parity fixtures to `dashboard/src/engine/__fixtures__/` |
 | Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them, plus the optional `sector-climate` chunk: `flags.climate`, with the optional IEA pathway tables `climate.nze_*` from scripts/17; `--no-nze` leaves them out; and the optional `sector-climate-src` chunk: `flags.climate_src`, the climate sources of scripts/18; `--no-climate-sources` leaves it out) |
-| Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v1) |
+| Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v2, the Decoupling scenario; plus the lazily loaded `scenario-managed.<hash>.json` and `scenario-baseline.<hash>.json`, schema `osi-aib-scenario` v1, named in `manifest.files.scenarios`) |
 | Dashboard: Country Insights | `scripts/88_export_country_data.R` | the app's Country data go to the repo's `dashboard/public/data/country/` (manifest, a fact sheet per economy, drivers files; `--render-memos` publishes the verified policy memos of the 31 core members as JSON, PDF, Word and Markdown) |
 
 Every index keeps its decomposition (category and variable contributions reconcile to the index value), and every country-cell carries how much of its weight rests on imputed inputs.
@@ -551,23 +551,34 @@ beside the indices and changes none of them; it replaces the original allied net
 2026-10-17). Full method:
 [`docs/aib_methodology.md`](docs/aib_methodology.md); settings: `config/aib.yml`; code: `R/aib/`.
 
-- **Grain:** sub-sector nodes of the HS6 master (Technology > stage > sub-sector > HS6; 91 nodes are
-  optimized on the 2026-10 data), with every metric recomputed from flows summed to the node.
+- **Grain:** the nodes of the electro-industrial HS6 dictionary
+  (`data/reference/electro_industrial_hs6_dictionary.csv`; index > sector > stage, refined by product
+  splits: 77 nodes from its 182 core codes, 74 optimized on the 2026-10 data), with every metric
+  recomputed from flows summed to the node (`config/aib_taxonomy_dictionary.yml`). The earlier grain,
+  the sub-sectors of the OSI HS6 basket, is kept as `--taxonomy master`. Partnership Opportunity,
+  Friendshore and the compatibility indices reach a dictionary node through a trade-weighted crosswalk
+  to the OSI technology x stage cells its codes belong to; nodes with no basket code score neutral.
 - **Scope:** the importers protected (the demand scope: by default the allied core and partner tiers)
   and the exporters that may supply them (the candidate-partner universe: by default every economy)
   are separate settings; global demand with global partners is a sensitivity. Compacts are formed
-  only in the electro-industrial strategic scope (fossil nodes stay in the tables).
+  only in the strategic scope (every dictionary node; under `master`, the electro-industrial subset,
+  with fossil nodes kept in the tables).
 - **Stress tests:** China removed, China halved, and the largest supplier removed at sub-sector,
   stage or technology level, on the observed 2024 bilateral flows (importer's declaration first),
-  as an export shock (`hold`, headline) and as decoupling (`release`), each with suppliers bounded by
+  as an export shock (`hold`, headline) and as a two-way cut (`release`: the shocked economy's purchases
+  also fall by the same share), each with suppliers bounded by
   physical production capacity where credible data exist (`production_constrained`, headline) and by
   trade alone (`trade_only`).
+  A diversification scenario removes no supplier: it caps each node's suppliers at the share that
+  would bring the node's exporter concentration (HHI) down to that of the other HS6 lines of its HS4
+  heading (electric cars against petrol, diesel and hybrid cars), or of its sector's other nodes, and
+  asks how much trade and new capacity replace the excess (`aib_diversification.csv`).
   Two supply scenarios (conservative: only supply the shock frees moves; reallocation: exporters can
   redirect their observed global exports) and three states (static; existing relationships;
   optimized partnerships). `coordination_dividend = optimized - existing coverage`. Observed exports
   are revealed tradable capability, not spare capacity.
 - **Trade optimization:** lexicographic (demand served; then the smallest cut to surviving trade;
-  then revealed specialization by RCA; then Export Opportunity; then revealed policy/climate
+  then revealed specialization by RCA; then Partnership Opportunity; then revealed policy/climate
   compatibility), with a maximum supplier share run at 25/40/60/100% as a
   specialization-resilience frontier. No composite score.
 - **Investment partnership prioritization:** a marginal capacity simulation on nodes with a residual
@@ -582,10 +593,18 @@ beside the indices and changes none of them; it replaces the original allied net
   associates, critical external dependencies), model-derived roles, an archetype and a node table for
   Gates & Fences. Nodes keep multi-label policy needs beside the headline class, and a LOW / COORDINATE
   class is flagged PHYSICAL CAPABILITY NOT VALIDATED where physical and trade evidence disagree.
+- **Three scenarios in the dashboard** (counterfactual market structures, not forecasts):
+  **Baseline** (trade as it is in 2024, before any shock: `aib_observed_supply.csv` and the observed
+  network `emergent_aib_*_baseline.csv`), **Managed Interdependence** (the diversification scenario:
+  its own network `emergent_aib_*_managed.csv`, and the headline compacts, same ids and nodes, solved
+  again under it: `aib_compact_*_managed.csv`) and **Decoupling** (the headline China shock under
+  `hold`: every other output). `scripts/84` writes Decoupling as the main document and the other two as
+  lazily loaded `scenario-managed.<hash>.json` / `scenario-baseline.<hash>.json` files.
 
 ```
 Rscript scripts/31_build_aib_trade_network.R [--raw-dir DIR] [--processed-dir DIR] [--out-dir DIR]
-Rscript scripts/32_build_aib_partnerships.R [--out-dir DIR] [--nodes id1,id2] [--skip-investment]
+  [--taxonomy dictionary|master] [--dictionary-scope core|extended] [--dyads FILE]
+Rscript scripts/32_build_aib_partnerships.R [--out-dir DIR] [--nodes id1,id2] [--skip-investment] [--taxonomy ...]
   [--demand-scope global|coalition|ISO3,...] [--partner-universe ...] [--scope all|electro_industrial] [--from-checkpoint]
 Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR]
 ```

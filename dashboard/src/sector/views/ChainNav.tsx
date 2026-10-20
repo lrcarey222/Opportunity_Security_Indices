@@ -16,7 +16,8 @@ import { STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, type StageSlug, type TechSlug }
 import { useModel } from '../data/SectorDataProvider.tsx';
 import { matchNodes, nodeNamedApart } from '../derive/chain.ts';
 import { subComponents, type SubComponent } from '../derive/subs.ts';
-import type { AibNode } from '../../aib/contract.ts';
+import { isDictionary, type AibNode } from '../../aib/contract.ts';
+import { joinLabels } from '../../aib/derive/format.ts';
 import { fmtShare } from '../format.ts';
 import { useAibDoc } from './aibData.ts';
 import { useTrade } from './data.ts';
@@ -44,7 +45,7 @@ function NodeMarks({ nodes, sub }: { nodes: AibNode[]; sub: string }) {
           </span>
         ))}
       </span>
-      {apart.length > 0 && <span className="block text-xs text-paper-mute">Allied Industrial Base nodes: {apart.map((n) => n.label).join(', ')}</span>}
+      {apart.length > 0 && <span className="block text-xs text-paper-mute">Allied Industrial Base nodes: {joinLabels(apart.map((n) => n.label))}</span>}
     </>
   );
 }
@@ -68,6 +69,7 @@ export function ChainNav({ tech, stage = null, sub = null, collapsible = false }
     [model, tech, trade, doc],
   );
   const anyNodes = cols.some((c) => c.unmatched.length || [...c.nodes.values()].some((n) => n.length));
+  const dictionary = !!doc && isDictionary(doc.meta);
   // a sub-component the stage does not have (or before the trade chunk loads) scopes nothing
   if (sub && !cols.find((c) => c.stage === stage)?.subs.some((x) => x.name === sub)) sub = null;
   const foldable = collapsible || !md;
@@ -153,7 +155,7 @@ export function ChainNav({ tech, stage = null, sub = null, collapsible = false }
                   {c.exists && !c.subs.length && (
                     <li className="text-xs text-paper-mute">{c.hasTrade ? (trade ? 'One trade basket, no components' : 'Loading the components…') : 'No traded components (deployment and use)'}</li>
                   )}
-                  {c.unmatched.length > 0 && <li className="text-xs text-paper-mute">Also modelled: {c.unmatched.map((n) => n.label).join(', ')}</li>}
+                  {c.unmatched.length > 0 && <li className="text-xs text-paper-mute">Also modelled: {joinLabels(c.unmatched.map((n) => n.label))}</li>}
                 </ul>
               </li>
             );
@@ -165,7 +167,8 @@ export function ChainNav({ tech, stage = null, sub = null, collapsible = false }
           Percentages: each component’s share of the stage’s world exports.
           {anyNodes && (
             <>
-              {' '}Marks: the class the <Link className="link" to="/aib">Allied Industrial Base</Link> model gives the matching supply-chain node (shown under Energy Security).
+              {' '}Marks: the class the <Link className="link" to="/aib">Allied Industrial Base</Link> model gives the matching supply-chain node (shown under Energy Security)
+              {dictionary ? ': a node of the electro-industrial dictionary whose codes sit in the component; one node can sit under several components and stages.' : '.'}
             </>
           )}
         </p>

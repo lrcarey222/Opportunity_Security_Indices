@@ -4,6 +4,7 @@
 // Pure apart from the store.
 
 import { SCENARIO_KEYS, SHARED_VIEW_KEYS } from '../state/url.ts';
+import { scenarioCarry } from '../aib/scenarioUrl.ts';
 import { isShellStageSlug, isShellTechSlug } from './sectorSlugs.ts';
 import { COUNTRY_DEFAULT_ISO, countryIsoOfPath, placeOf, sectorCellOfPath, SECTOR_NAV } from './modules.ts';
 
@@ -167,11 +168,12 @@ export function countryTabHref(pathname: string, search: string, last: Readonly<
 }
 
 /**
- * Where the ALLIED INDUSTRIAL BASE tab goes: inside the module (/aib/*, /compacts/*), its overview;
- * elsewhere the last location in the module, else /aib. (Nothing is carried.)
+ * Where the ALLIED INDUSTRIAL BASE tab goes: inside the module (/aib/*, /compacts/*), its overview with the
+ * scenario toggle (scn) of `search` carried; elsewhere the last location in the module (its own scn
+ * included), else /aib.
  */
-export function aibTabHref(pathname: string, last: Readonly<LastLocations> = store): string {
-  if (placeOf(pathname) === 'aib') return '/aib';
+export function aibTabHref(pathname: string, search = '', last: Readonly<LastLocations> = store): string {
+  if (placeOf(pathname) === 'aib') return `/aib${scenarioCarry(search)}`;
   return last.aib ?? '/aib';
 }
 

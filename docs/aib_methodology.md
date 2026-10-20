@@ -35,10 +35,10 @@ worth preserving, no compact needed, several compacts in one technology.
 
 | Need | Reused from |
 |---|---|
-| Technology > stage > sub-sector > HS6 | `data/reference/energy_hs6_master.csv` (in-basket rows; `R/utils/hs6_crosswalk.R`) |
+| Index > sector > stage > HS6 (the nodes) | `data/reference/electro_industrial_hs6_dictionary.csv` (core, primary rows); the OSI basket `data/reference/energy_hs6_master.csv` for the master taxonomy and the crosswalk of the partner scores |
 | Bilateral flows (importer's declaration first, else exporter's x 1.06) | `partnership_strength_build_trade_cells()` run at node grain through a pseudo-crosswalk (`aib_node_crosswalk()`) |
 | RCA (Balassa) | `trade_core_build_comtrade_rca()` on node exports |
-| Export Opportunity, exporter -> market | `partner_opportunity_tbl.rds`, variable `Opportunity Index` |
+| Partnership Opportunity (the OSI index name; the outputs keep the column `export_opportunity`), exporter -> market | `partner_opportunity_tbl.rds`, variable `Opportunity Index` |
 | Friendshore, investor/buyer -> host | `partner_friendshore_tbl.rds`, variable `Friendshore Index` |
 | Production / capacity shares | `major_supplier_shares_tbl.rds` (IEA refining and mining), GCIM operational capacity |
 | Policy / climate | IEA PAMS (`policy_outputs.rds$policy_agg`), CAT ratings (`cat_prepare_ratings()`, `partnership_strength_clean_policy()`) |
@@ -51,19 +51,61 @@ or its GDP-derived portfolio caps.
 
 ## 2. Nodes
 
-A node is a `(tech, supply_chain, sub_sector)` cell of the master (in-basket rows), with
-`nodes$splits` refining a sub-sector where its HS6 codes allow it. The October 2026 configuration
-splits Solar `Polysilicon & Wafers` into `Polysilicon` (2804.61) and `Wafers` (3818.00).
+Since 2026-10-19 the nodes come from the **electro-industrial HS6 dictionary**
+(`data/reference/electro_industrial_hs6_dictionary.csv`; `docs/electro_industrial_dictionary/`), not
+from the OSI energy basket. The taxonomy is a setting: `taxonomy` in `config/aib.yml` (or
+`--taxonomy`) picks the overlay `config/aib_taxonomy_dictionary.yml` (default) or
+`config/aib_taxonomy_master.yml` (the OSI basket, `data/reference/energy_hs6_master.csv`, kept for
+comparison runs). Every taxonomy-specific setting lives in the overlay: the node source and splits,
+the strategic scope, the supply-chain and material links, the production proxies and the validation
+cases.
 
-Cells whose HS6 set is identical in several technologies are one **physical node**, counted once,
-which keeps the list of technologies it serves (2026-10 data: permanent magnets in EV and Wind,
-rare-earth compounds and metals in EV and Wind, transformers in Grid and Solar, pipelines in Oil and
-Gas). The hierarchy outputs carry one row per technology; aggregates across technologies are
-"technology-attributed" where nodes are shared, and network aggregates count each physical node once.
+**The dictionary.** RMI's Electro-Industrial Stack: 6 indices (A Materials & Inputs, B
+Electrotechnologies, C Grid, D Generation, E Electrified End Uses, F Industrial Transition), 39
+sectors, HS2022 codes, each with one stage (Upstream / Midstream / Downstream), a specificity (1
+dedicated, 2 predominant, 3 shared) and exactly one `primary` row. The headline uses the **core**
+scope (182 codes in 32 sectors: the dedicated and predominant codes, specificity 1-2, plus 12 shared codes the
+dictionary keeps as core with a written justification; seven sectors, such as HVDC, charging and stationary
+storage, have no HS line of their own); `--dictionary-scope extended` adds the 136 shared codes as a
+sensitivity (`aib_extended/`). Only primary rows are used, so every code sits in one node and
+sector totals never count a code twice (the dictionary's own aggregation rule). Fossil fuels are not
+in the dictionary, so every node is in the strategic scope.
 
-The HS6 codes are the empirical trade data, the sub-sector is the optimization unit, the stage is
-the aggregation and policy frame and the technology a system summary. **Every metric is recomputed
-from flows summed to the node; no HS6-level score is averaged.**
+**Node grain.** The hierarchy is index > sector (the AIB's "technology") > stage > node. A node is a
+sector x stage cell (`aib_dictionary_master()`), split where the cell mixes physical chains the
+compacts and the physical constraint must keep apart (`nodes.splits`; a split names parts by HS6 code
+and sends the rest to `rest`): rare-earth ores / oxides & compounds / metals; lithium minerals,
+lithium chemicals, nickel and cobalt intermediates, manganese dioxide, battery recycling feed; wafers
+/ gallium-germanium-indium / piezo quartz; copper ores / smelting & refining / wire & rod, aluminium
+wire rod; GOES / NGO steel; uranium ores / conversion & enrichment / fuel assemblies / special
+materials; Li-ion vs other accumulators; NdFeB vs ferrite magnets; electric motors vs AC generators;
+PV cells / cover glass / modules / solar thermal; blades / balsa / towers / turbines; overhead
+conductors / power cables / insulators; electric cars / buses and trucks / rail / two-wheelers;
+refrigerants / compressors / heat pumps; hydrogen derivatives vs biofuels. On the 2026-10 data: 78
+nodes, 74 optimized (cobalt ores, monazite and the uranium ores / spent fuel aggregate are too thin).
+
+**The OSI crosswalk.** Partnership Opportunity, Friendshore and the PAMS policy compatibility are kept by
+OSI technology x stage. `aib_osi_crosswalk()` places each node in the OSI cells its codes sit in,
+weighted by 2024 world imports: `score_techs` (OSI technologies holding at least 20% of the node's
+matched trade) and `score_stage` read the scores; `yf_cells` and `osi_subcomponents` are the Yards &
+Fences / Sector Profile ids through which the dashboard joins nodes to OSI cells. 56 of 77 nodes have
+basket codes (median coverage 100% of their trade); the rest (heat pumps, refrigerants and
+compressors, electric furnaces, electrolysers, hydrogen derivatives and biofuels, hydro turbines,
+electric rail, PGMs, silver powder, piezo quartz, balsa, aluminium wire rod, sensors) get neutral
+tie-break scores and no OSI cell.
+
+**Trade data.** The dictionary needs 155 codes no earlier pull held; they were pulled on 2026-10-19
+with `scripts/98` unchanged (`osi-worktrees/scratch_eid`, combined with the live dyads, the existing
+codes verified identical). `scripts/31 --dyads <file>` reads that combined file until it is installed
+as `data/raw/comtrade_energy_dyads_all.csv`.
+
+With the master taxonomy a node is a `(tech, supply_chain, sub_sector)` cell of the basket, cells
+with an identical HS6 set in several technologies are one physical node, and the October 2026
+configuration splits Solar `Polysilicon & Wafers` into `Polysilicon` and `Wafers`.
+
+The HS6 codes are the empirical trade data, the node is the optimization unit, the stage is the
+aggregation and policy frame and the sector (technology) a system summary. **Every metric is
+recomputed from flows summed to the node; no HS6-level score is averaged.**
 
 ## 3. Observed trade network
 
@@ -107,12 +149,51 @@ removed at sub-sector, stage or technology level (`largest_subsector`, `largest_
 `largest_technology`; the largest exporter of the trade summed over that level's nodes). Hong Kong
 and Macao re-exports follow China (`trade.reexport_hubs`).
 
+**The diversification scenario** (`diversify_benchmark`, a shock of type `diversify`;
+`R/aib/aib_diversify.R`) removes no supplier. It asks what trade and investment would look like if a
+supply-chain step were as diversified as its higher-level sector: electric cars as diversified as cars
+in general, lithium-ion cells as accumulators in general.
+
+* **Benchmark** (`benchmark: hs4`): the trade-weighted mean exporter HHI of the *other* HS6 lines of
+  the node's parent HS4 heading(s), from the Atlas HS92 export panel (latest year, 2023; electric cars
+  against the petrol, diesel and hybrid lines of 8703). A node's own lines in HS92 are the
+  dictionary's `hs1992_join` codes and are left out. Where the heading has no other line, the
+  benchmark falls back to `sector`: the trade-weighted mean HHI of the other nodes of the node's
+  sector. Concentration is measured on world exports, with Hong Kong and Macao counted with China.
+* **The cap.** A node more concentrated than its benchmark (by more than `min_excess`, 0.005 of HHI;
+  a node within it counts as already as diversified) gets the
+  supplier-share cap that brings its HHI down to the benchmark when every supplier above it is cut to
+  it and the excess goes to the others in proportion (`aib_diversify_cap()`). Where the benchmark is
+  below what the number of suppliers allows, the cap is equal shares and `cap_reaches_benchmark` is
+  false.
+* **The shock.** The cap binds on the demand scope's supply: every supplier above it there loses the
+  excess of its sales to the scope (`excess_share`, a share of the scope's demand, equal to the run's
+  shock exposure). The cap is a ceiling of cap x the scope's demand on every supplier's total, in the
+  existing-network and the optimized states alike (`aib_node_problem(cap_basis = "demand")`); the
+  specialization frontier's limits are shares of the supply served instead, and on that basis a
+  supplier would be cut further whenever trade cannot refill the market, pushing coverage below the
+  static state. A capped ally stays a buyer: its own purchases remain in the protected demand
+  (`protect_shocked`), where an economy removed by a shock is not one. The rest of the chain is
+  unchanged: existing relationships, optimized trade, the residual gap (the capacity diversification
+  needs; with it filled, the cap and so the benchmark concentration hold), the marginal investment
+  simulation (`investment.shocks`; capped suppliers are not hosts) and the node's class under this
+  scenario (`class_diversify_benchmark`, empty where the scenario does not run). The emergent network
+  and the country roles sum over the supply shocks only, without this scenario.
+
+`aib_diversification.csv` has one row per node: current and benchmark HHI, the basis, the cap, the
+capped suppliers, the supply to replace, the coverage after existing and optimized trade, the gap,
+the leading new relationships and investment hosts. Nodes the scenario does not run on are listed
+with their status: already as diversified as their benchmark; within the cap in the allied market
+(above the benchmark worldwide, but no supplier to the demand scope exceeds the cap); or no
+benchmark. They have no class under the scenario.
+
 **Shock semantics** (`shocked_demand`, every one run, the first is the headline):
 
 * **hold** (headline): an export / supply shock. The shocked economy keeps buying, so other
   exporters' sales to it stay with it in both scenarios (they compete for the same supply).
-* **release**: decoupling. The shocked economy's purchases fall by the same fraction and that share
-  of the exports headed to it is freed for others; a sensitivity. Release is therefore the more
+* **release**: a two-way cut. The shocked economy's purchases fall by the same fraction and that share
+  of the exports headed to it is freed for others; a sensitivity. (The dashboard's "Decoupling"
+  scenario is the headline shock under hold, section 13.) Release is therefore the more
   optimistic reading wherever third countries sell much to the shocked economy (rare-earth
   concentrates from Myanmar and Laos, Chilean lithium).
 
@@ -193,7 +274,7 @@ expanded relationships, i.e. of coordination.
 optimized only among solutions within the tolerance of the earlier optimum:
 
 1. maximize demand served (`tolerance_coverage` 0.05%: a wider band let state B's tie-breaks buy
-   Export Opportunity with coverage, which faked a coordination dividend);
+   Partnership Opportunity with coverage, which faked a coordination dividend);
    1b. stability, **a module addition to the four specified objectives**: cut surviving shipments as
    little as possible (`tolerance_stability`), so the optimizer never reshuffles trade the shock did
    not touch; only coverage or the supplier-share limit can require a cut. In reallocation,
@@ -201,7 +282,7 @@ optimized only among solutions within the tolerance of the earlier optimum:
 2. preserve revealed specialization: exporter weight `min(RCA, rca_cap) / rca_cap`, or the
    exporter's production / capacity share where a proxy exists and is larger (trade misses
    production used at home), ties by world export share (`aib_specialization_weight()`);
-3. favour relationships with stronger Export Opportunity (exporter -> market);
+3. favour relationships with stronger Partnership Opportunity (exporter -> market);
 4. revealed policy/climate compatibility: mean of the available components, IEA PAMS policy intensity
    similarity in the node's technology and stage and CAT rating similarity
    (`aib_compatibility()`). No geopolitical alignment score enters.
@@ -298,11 +379,24 @@ counts as a selected investment relationship, so alternative hosts are not summe
 high-severity nodes (exposure >= 40%); Upstream / Midstream / Downstream participation; headline
 trade volume and contributions; `cumulative_trade_resilience_contribution`,
 `cumulative_coordination_dividend` (new links only), `cumulative_investment_resilience_contribution`;
-mean Export Opportunity (supplier -> buyer) and Friendshore (buyer rating the supplier as host).
+mean Partnership Opportunity (supplier -> buyer) and Friendshore (buyer rating the supplier as host).
 Where a shared node has two targets under one shock, the run with the larger exposure stands for it.
 `emergent_aib_country_summary.csv` keeps each economy's roles apart (trade supplier, trade buyer,
 investment host, investor, each with stage participation and the coordination dividend); there is no
 single ranking. The network is the primary result.
+
+The headline network sums the supply shocks (its `headline_*` fields are the headline shock alone,
+its `cumulative_*` fields every supply shock). Two more networks are built with the same functions
+for the dashboard's scenarios (section 13): the **diversification scenario's** network from that
+shock alone (`emergent_aib_edges_managed.csv`; its headline and cumulative fields coincide; country
+exposure from the scenario's own lost supply by importer, recomputed from the node problems without
+an LP), and the **observed (Baseline) network**: every reference-year shipment of a strategic-scope,
+optimized node into the demand scope as a pseudo-shock `baseline` (scenario `observed`, exposure 0,
+relationship `existing`), so a pair's trade contribution is its observed share of node demand summed
+over the nodes and its volume the observed USD; the dividend, investment and high-severity counts are
+0 by construction. Pairs below 0.5% of node demand (summed over nodes) are dropped
+(`emergent_aib_edges_baseline.csv`: about 1,100 of 5,000 pairs, 96% of the USD), and the country
+roles are read from the pairs kept.
 
 ## 9. Node classification (policy interpretation)
 
@@ -436,40 +530,49 @@ concentration risk and recommended policy treatment, with `yf_cell` (`<tech>-<st
 
 ## 12. Validation
 
-`aib_validation_cases.csv` and `.md` write the full chain for permanent magnets, rare-earth compounds,
-battery anodes and solar wafers (`validation_cases`), once per supply-constraint mode: shock exposure,
-existing resilience, optimized relationships, coordination dividend, residual gap, investment partners,
-compact membership with its critical supply partners and critical external dependencies, the node's
-policy needs and its physical validation. They report what the model produced; nothing was tuned to
-them. China removed, reallocation, 2026-10-16:
+`aib_validation_cases.csv` and `.md` write the full chain for rare-earth permanent magnets, rare-earth
+oxides and compounds, anode-grade synthetic graphite and wafers (`validation_cases`), once per
+supply-constraint mode: shock exposure, existing resilience, optimized relationships, coordination
+dividend, residual gap, investment partners, compact membership with its critical supply partners and
+critical external dependencies, the node's policy needs and its physical validation. They report what
+the model produced; nothing was tuned to them. Dictionary taxonomy, China removed, reallocation,
+allied demand, hold, 2026-10-19:
 
-| Case | Run | Exposure | Existing | Optimized | Dividend | Gap | Class (needs) | Compact |
+| Case | Mode | Exposure | Existing | Optimized | Dividend | Gap | Class (needs) | Compact |
 |---|---|---|---|---|---|---|---|---|
-| Permanent magnets (no physical data) | before: global demand, release, trade only | 53.0% | 53.2% | 53.2% | 0 | 46.8% | BUILD | EV / wind drive train (10 sub-sectors) |
-| | headline: allied demand, hold, production-constrained | 52.4% | 50.0% | 50.0% | 0 | 50.0% | BUILD | motors + magnets: DEU GBR JPN KOR MEX USA VNM; critical partner GBR; critical external CHE FRA ITA MYS PHL POL THA |
-| | trade only | identical (no physical data) | | | | | | |
-| Rare-earth compounds | before | 39.1% | 80.9% | 100% | 19.1 pts | 0 | COORDINATE | Japan-US bilateral |
-| | headline | 39.9% | 61.8% | 61.8% | 0 | 38.2% | BUILD | alone: JPN MYS USA |
+| Rare-earth permanent magnets (no physical data) | headline: production-constrained | 65.0% | 36.3% | 36.3% | 0 | 63.7% | BUILD | with wind turbine generating sets: AUS BRA DEU MEX MMR TWN USA VNM ZAF; no critical partner or external dependency |
+| | trade only | identical (no physical data) | | | | | BUILD | magnets alone: AUS DEU IND KOR MEX MMR TWN USA VNM; critical external CHE JPN PHL |
+| Rare-earth oxides & compounds | headline | 39.9% | 61.8% | 61.8% | 0 | 38.2% | BUILD | alone: JPN MYS USA |
 | | trade only | 39.9% | 66.2% | 66.2% | 0 | 33.8% | BUILD | same |
-| Battery anodes | before | 59.0% | 49.8% | 49.8% | 0 | 50.2% | BUILD | battery compact |
-| | headline | 59.4% | 41.7% | 41.7% | 0 | 58.3% | BUILD | anodes + natural graphite: DEU HUN MDG MOZ MYS NOR POL USA; critical MDG MOZ |
-| | trade only | 59.4% | 42.5% | 42.6% | 0.1 pts | 57.4% | BUILD | same chain, critical MDG |
-| Solar wafers | before | 26.2% | 90.5% | 90.6% | 0 | 9.4% | LOW | none |
-| | headline | 27.8% | 74.5% | 74.5% | 0 | 25.5% | BUILD | silicon metal + cells + wafers: IND JPN KOR THA TUR TWN |
+| Synthetic graphite (anode-grade) | headline | 63.2% | 37.8% | 37.8% | 0 | 62.2% | BUILD | alone: AUT CAN HUN IDN MDG MYS POL USA |
+| | trade only | 63.2% | 38.1% | 38.1% | 0 | 61.9% | BUILD | the six-node battery compact (foils and electrolyte, separators, Li-ion cells and three more) |
+| Wafers | headline | 27.8% | 74.5% | 74.5% | 0 | 25.5% | BUILD | with solar cells: IND JPN KOR THA TUR |
 | | trade only | 27.8% | 91.0% | 93.4% | 2.4 pts | 6.6% | LOW, **PHYSICAL CAPABILITY NOT VALIDATED** | none |
+
+The classes are those of the 2026-10-16 run on the OSI basket (`--taxonomy master`; its table is in the
+git history) in every case and mode. The magnet node is now metal permanent magnets alone (8505.11,
+without the ferrite magnets of 8505.19, now their own node, or the parts of 8505.90, outside the core), so its
+exposure is higher (65% against 52%).
 
 Reading them:
 
-* Rare-earth processing no longer looks resilient, in either mode. Under hold the shocked economy keeps
-  buying, so the concentrates Myanmar and Laos sell to China stay there (the earlier COORDINATE result
-  redirected them); in the production-constrained mode exporters absent from the IEA refining data
-  (65% of world trade in the heading) cannot expand either. The gap is separation capacity.
+* Rare-earth processing does not look resilient in either mode. Under hold the shocked economy keeps
+  buying, so the concentrates Myanmar and Laos sell to China stay there; in the production-constrained
+  mode exporters absent from the IEA refining data (62% of world trade in the heading) cannot expand
+  either. The gap is separation capacity.
 * Wafers look resilient only on trade: HS 3818.00 is mostly semiconductor wafers (Japan, Taiwan,
   Korea), which cannot replace Chinese solar wafers. With GCIM solar-wafer capacity deciding who can
   supply, 61% of the heading's trade is held at its current shipments and a 26% gap appears; the
   trade-only LOW carries the warning.
-* Magnets and anodes are capacity gaps under every variant; coordination adds nothing; finance,
+* Magnets and anode graphite are capacity gaps under every variant; coordination adds nothing; finance,
   offtake and the listed hosts do.
+* Under the diversification scenario magnets are the clearest case: an exporter HHI of 0.43 against
+  0.12 for the other lines of heading 8505 gives an 18% cap; China's supply above it is 47% of the
+  allied market's demand, and 46% (USD 2.1bn) is left for new capacity (hosts KOR, THA, CHE). Anode
+  graphite (0.37 against 0.31 for heading 3801) has 10% to replace and keeps a 9% gap; wafers (0.16
+  against their sector's 0.15) a 1% gap. Rare-earth oxides are already as diversified as the other lines of heading 2846 on
+  trade (0.19 against 0.21) while China holds 84% of refining: the benchmark is a trade measure, so it
+  inherits the trade data's blind spot for processing concentration (section 15).
 
 ## 12a. How to read compact coverage
 
@@ -478,32 +581,72 @@ keeping or redirecting their own exports toward each other, which is zero-sum fo
 outside the coalition. `coverage_with_trade_coordination` (all importers of the compact's nodes)
 shows whether the compact adds supply to the system: in the BUILD compacts it equals the existing
 state, so the gains there come from the investment response, not from trade coordination. The same
-holds for the demand scope as a whole: under hold, the allied scope recovers from 85.7% (static) to
-91.0% of its traded demand by drawing about USD 288bn of supply away from buyers outside it
-(`optimized_diversion`); with global demand there is no outside buyer and coverage stays at the
-static 85.2%.
+holds for the demand scope as a whole: under hold, the allied scope recovers from 77.1% (static) to
+84.1% of its traded demand by drawing about USD 111bn of supply away from buyers outside it
+(`optimized_diversion`, all of the recovery); with global demand there is no outside buyer and
+coverage stays at the static 76.1%.
 
 ## 13. Outputs (`<outputs_dir>/aib/`)
 
 | File | Key | Content |
 |---|---|---|
 | `allied_trade_stress_test.csv` | level x tech x stage x sub-sector x shock x semantics x supply constraint x scenario | exposure, static / existing / optimized coverage, dividend, residual gap, diversion, N-1, HHI, largest supplier, data quality |
-| `allied_trade_partnerships.csv` | node x shock x scenario x exporter x importer | optimized new / expanded relationships: baseline and optimized USD, share of the importer's loss restored, RCA, world share, Export Opportunity, compatibility |
+| `allied_trade_partnerships.csv` | node x shock x scenario x exporter x importer | optimized new / expanded relationships: baseline and optimized USD, share of the importer's loss restored, RCA, world share, Partnership Opportunity, compatibility |
 | `allied_trade_frontier.csv` | node / stage x shock x semantics x supply constraint x scenario x max supplier share | coverage, coverage loss vs unconstrained, HHI, largest and top-three shares, specialization score, instantaneous and re-optimized N-1 coverage, tightest costless share, minimum required diversification |
 | `allied_trade_growth_sensitivity.csv` | node x scenario x growth bound | existing coverage, dividend and class at 1.25x / 2x / 4x / unlimited |
 | `allied_investment_partnerships.csv` | node x shock x host x increment | marginal resilience gain, residual gap before / after, HHI and largest-share change, capability, Friendshore, rank |
 | `allied_investment_pairs.csv` | node x shock x investor x host | supply from the new capacity, Friendshore |
-| `emergent_aib_edges.csv` | supplier x buyer x scenario | the emergent network: trade and investment selections, contributions, stage participation, Export Opportunity, Friendshore |
+| `emergent_aib_edges.csv` | supplier x buyer x scenario | the emergent network: trade and investment selections, contributions, stage participation, Partnership Opportunity, Friendshore |
 | `emergent_aib_country_summary.csv` | economy x scenario | roles kept apart |
 | `aib_node_classification.csv` | node | class, multi-label policy needs, reason, physical validation and warning, continuous results, the class under every other variant |
 | `aib_compact_candidates.csv` | supply constraint x compact | the compact summary (exact and greedy coalitions, tiers, roles, coverage comparison, policy needs, physical warnings) |
 | `aib_compact_nodes.csv` | compact x node x technology | the Gates & Fences handoff table |
 | `aib_compact_members.csv`, `aib_compact_coalition_path.csv` | compact x economy / step | roles and coalition tiers; coverage as members are added (greedy path) |
 | `aib_compact_leave_one_out.csv` | compact x node x supplier | the leave-one-country-out test |
+| `aib_diversification.csv` | node x scenario | the diversification scenario: current vs benchmark HHI, cap, capped suppliers, supply to replace, coverage after existing and optimized trade, capacity gap, hosts |
 | `allied_subsector_data_quality.csv` | node | flags and category |
 | `aib_validation_cases.csv` / `.md` | supply constraint x case x step | validation chains, trade-only and production-constrained |
+| `aib_observed_supply.csv` | node x exporter | Baseline: observed supply to the demand scope, the node's demand, share and rank |
+| `emergent_aib_edges_baseline.csv`, `emergent_aib_country_summary_baseline.csv` | supplier x buyer; economy | Baseline: the observed network (pairs with at least 0.5% of node demand) and the economies' roles in it |
+| `emergent_aib_edges_managed.csv`, `emergent_aib_country_summary_managed.csv` | supplier x buyer x scenario; economy x scenario | Managed Interdependence: the network of the diversification shock alone, with its importer exposure |
+| `aib_compact_candidates_managed.csv`, `aib_compact_members_managed.csv`, `aib_compact_coalition_path_managed.csv`, `aib_compact_leave_one_out_managed.csv` | compact (x economy / step / node) | Managed Interdependence: the headline compacts solved under the diversification shock (headline supply constraint), with `n_nodes_run` and `coalition_reason` |
 
-The dashboard bundle (`dashboard/public/data/aib/`, schema `osi-aib` v1 with optional additions:
+**The dashboard's three scenarios.** The dashboard compares three counterfactual market structures,
+not forecasts: **Baseline**, trade as it is in the reference year (2024), before any shock;
+**Managed Interdependence**, the diversification shock (section 5: no supplier is removed; each supplier
+above its node's benchmark cap gives up the excess, which trade and new capacity replace); and
+**Decoupling**, the headline shock under hold (China stops supplying the allied market and keeps
+buying). (Decoupling here is the dashboard's name for the headline export shock; the `release`
+semantics, where the shocked economy's purchases also fall, is the two-way cut of section 5.) Every
+Decoupling output above is unchanged. For Managed Interdependence, `scripts/32` keeps the headline
+compacts (the same ids and nodes, formed under the headline shock, so the scenarios compare) and solves
+each again under the diversification shock with the same functions: its node problems, its importer
+loss (recomputed from the node problems, no LP), its optimized and existing-network flows (states B and
+C solved again exactly as the trade model solved them, and checked against the stored coverage; the
+trade checkpoint keeps the headline shock's flows only), its investment hosts and its node classes.
+Coverage metrics are demand-weighted over all the compact's nodes, a node the scenario did not run on
+counting as unchanged (coverage 1, nothing lost); the anchors' coverage is over the nodes it ran on. The
+scenario's supplier-share cap binds in the compact tests as in its own states B and C (2026-10-20): each
+node problem carries its run's cap (`share_cap`, a share of the scope's demand), the trade-compact and
+investment coverages are solved under it (`aib_compact_trade_coverage()`), and in the coalition terms
+(`aib_anchor_terms()`) no economy adds more than the cap less what it already counts against it, so a
+compact's trade coverage never passes the scenario's global optimum (`scripts/32` warns if one does). The
+anchors' own coverage can still reach 100% where their demand is within the capped supply (the coalition
+test lets members redirect supply from the scope's other buyers to the anchors, as under Decoupling). A
+compact none of whose nodes the scenario ran on has no coalition and says why. The Baseline network is
+built as in section 8. Under the 2026-10-19 run, the scenario runs on 38 nodes (USD 117.3bn of supply
+shifts away from the capped suppliers; USD 86.5bn is left for new capacity), 26 of the 44 compact
+nodes and 21 of the 33 compacts; all 21 reach the 95% and 99% targets, with smaller minimum coalitions
+than under Decoupling in 14 (mean 5.3 economies against 6.4), the same size in 6 and a larger one in 1.
+With the cap in the compact tests (the 2026-10-20 rerun) the coalitions are unchanged; AIB-C04's trade
+and investment coverage fall from 100% to its 97.4% optimum (dividend 0), and the investment coverage of
+AIB-C31 (93.0% to 84.1%) and AIB-C32 (89.9% to 89.4%) falls. Under the scenario 13 compacts are candidate
+compacts, 7 compacts are unnecessary (compact gain under 5 points) and 1 is bilateral; the type, archetype
+and policy needs of each are in `aib_compact_candidates_managed.csv` and the scenario file. Eleven compacts
+have no node above its benchmark by more than the small tolerance and one has no supplier above its cap in
+the allied market. The observed network keeps 1,126 pairs of about 5,000 (USD 1,519bn of 1,587bn).
+
+The dashboard bundle (`dashboard/public/data/aib/`, schema `osi-aib` v2 since 2026-10-20, when `meta.scenarios` became the scenario list (an app reading v1 asks for a reload), with optional additions:
 scope, semantics and constraint ids, multi-label needs, physical warnings, variant classes, growth
 sensitivity, both N-1 readings, coalition method and tiers) is written by
 `scripts/84_export_aib_data.R`. Its `network` section (headline variant) feeds the dashboard's country
@@ -511,39 +654,79 @@ roles: a role is named when the economy serves at least 1 point of a node's dema
 shock (summed over nodes) and listed as minor below that; the CSVs and the paper count every positive
 role. Its `investmentFlows` section (headline variant, strategic-scope nodes only) gives investor ->
 host flows; only rank 1 is the selected host, and ranks 2-5 are alternatives for the same increment,
-never summed.
+never summed. That document is the Decoupling scenario; since 2026-10-19 it also carries
+`meta.scenarios` (the three scenarios' labels, shocks and words; the supply scenarios move to
+`meta.supplyScenarios`), `node.baseline` (observed concentration and top suppliers), the run fields of
+`node.diversify` and, per compact, `managed` (its nodes under Managed Interdependence) and `baseline`
+(its observed HHI and top suppliers). The other two scenarios are lazily loaded files named in
+`manifest.files.scenarios` (schema `osi-aib-scenario` v1): `scenario-managed.<hash>.json` (the
+compacts solved under the diversification shock, its network and investment flows) and
+`scenario-baseline.<hash>.json` (the observed network and each node's and compact's top ten
+suppliers). The dashboard's scenario toggle (Decoupling | Managed Interdependence) reads them; every
+comparison shows Baseline, Managed Interdependence and Decoupling side by side.
 
-## 14. Results of the 2026-10-16 credibility run
+## 14. Results of the 2026-10-19 dictionary run
 
-92 nodes after the upward aggregation: 23 high confidence, 68 usable with caution, 1 insufficient
-(cobalt ores); 91 optimized; 70 in the electro-industrial strategic scope. Headline: allied demand
-scope (core and partner tiers, 57 economies), global candidate partners, China removed, hold,
-production-constrained, reallocation.
+77 nodes from the 182 core codes of the electro-industrial dictionary (primary rows): 47 high
+confidence, 27 usable with caution, 3 insufficient for optimization; 74 optimized; all in the
+strategic scope. Headline: allied demand scope (core and partner tiers, 57 economies), global
+candidate partners, China removed, hold, production-constrained, reallocation. The 2026-10-16 run on
+the OSI basket (70 nodes in scope, BUILD 37, 22 compacts) is in the git history.
 
-* Exposure by technology (share of the allied scope's traded demand) and residual gap after optimized
-  trade: Batteries 48% / 45%, Solar 26% / 18%, EV 25% / 19%, Wind 22% / 12%, Semiconductors 18% / 7%,
-  Electric Grid 17% / 10%, Nuclear 9% / 3%; Gas, Coal and Oil 2-4% / under 2%.
-* Classes (all 92): BUILD 40, LOW INTERVENTION 50, MANAGE SPECIALIZATION 1 (oil storage and
-  transport equipment, outside the strategic scope), INSUFFICIENT DATA 1, COORDINATE 0. In scope:
-  BUILD 37, LOW 32. Multi-label needs: lithium chemicals and rare-earth metals are BUILD + MANAGE
-  SPECIALIZATION. PHYSICAL CAPABILITY NOT VALIDATED: polysilicon and cobalt / nickel refining (LOW on
-  low trade exposure while China dominates production); in trade-only mode also wafers.
-* Sensitivities: release (decoupling) gives BUILD 24, LOW 44, MANAGE 1 in scope (lithium chemicals:
-  Chile); trade-only BUILD 36; conservative BUILD 47. The growth bound changes no class (1.25x, 2x, 4x,
-  unlimited): the coordination dividend is below 1 point in every node but wind towers (6.7 points;
-  LOW because existing relationships already restore 93%, with COORDINATE kept as its policy need),
-  so COORDINATE does not depend on it here.
-* Global demand with global partners (`aib_global/`): in scope BUILD 48, LOW 21; under hold nothing can
-  be recovered by trade (gap = exposure in every technology) because every non-China buyer is already
-  in scope and sales to China stay with it; release gives BUILD 37.
-* 22 candidate compacts in scope, all Investment / Capacity: batteries (cells, foils, electrolyte,
-  separators, vehicle packs), battery packs, lithium chemicals with cathodes, anodes with natural
-  graphite, motors with magnets, motor parts / blades / turbines, wind foundations, GOES / transformers /
-  wind substations, power converters, capacitors and fuses, metering, charging, inverters, solar modules
-  and module inputs, silicon metal / cells / wafers, racking, discrete semiconductors and device parts,
-  piezoelectric components, gallium / germanium / indium, nuclear balance of plant, rare-earth compounds,
-  rare-earth metals. No coal, oil or gas compact. The exact and greedy coalitions have the same size in
-  every compact and different members in 9 of 22.
+* The allied scope's traded demand in these nodes is USD 1,587bn and China's removal takes 22.9% of it
+  (USD 364bn). Coverage goes from 77.1% (static) to 83.9% with existing relationships and 84.1% with
+  optimized trade, leaving a USD 252bn capacity gap; the USD 111bn that trade recovers is all drawn
+  from buyers outside the scope (`optimized_diversion`).
+* Exposure and residual gap by index (share of the index's allied demand): Generation 45% / 42%
+  (USD 30bn), Electrotechnologies 26% / 17% (USD 166bn, two thirds of the total gap), Electrified End
+  Uses 22% / 16% (USD 43bn), Grid 19% / 6%, Materials & Inputs 8% / 6%, Industrial Transition 3% / 1%.
+* Classes: BUILD 42, LOW INTERVENTION 30, COORDINATE 2 (graphite electrodes and hydro turbine parts,
+  dividends of 9.4 and 7.4 points), INSUFFICIENT DATA 3, MANAGE SPECIALIZATION 0. Multi-label needs:
+  lithium chemicals, cathode materials, wind turbine generating sets and rare-earth metals are BUILD +
+  MANAGE SPECIALIZATION. PHYSICAL CAPABILITY NOT VALIDATED: nickel intermediates, copper ores, copper
+  smelting and refining, polysilicon (LOW on trade while production is concentrated); in trade-only
+  mode also cobalt intermediates and wafers.
+* Sensitivities: release gives BUILD 32, LOW 37, COORDINATE 3, MANAGE SPECIALIZATION 2 (lithium
+  chemicals: Chile; cathode materials: Korea); trade-only BUILD 40; conservative BUILD 50; China halved
+  BUILD 20. BUILD is 42 at every growth bound, while COORDINATE is 3, 2, 1 and 0 at 1.25x, 2x, 4x and
+  unlimited growth and both headline COORDINATE nodes are flagged growth-sensitive: unlike the basket
+  run, coordination here depends on how far existing relationships may grow.
+* Global demand with global partners (`aib_global/`): BUILD 53, LOW 21, INSUFFICIENT DATA 3,
+  COORDINATE 0; hydro turbines and polysilicon join the BUILD + MANAGE SPECIALIZATION nodes. Under
+  hold trade recovers nothing (coverage stays at the static 76.1% of USD 1,806bn; gap USD 431bn)
+  because every buyer but China is in scope and China's purchases stay with it; release gives BUILD
+  46, MANAGE SPECIALIZATION 3. The only solver problems, here and in the extended run: GLPK stops
+  short of an optimal existing-network state in integrated circuits' release variants (status 1).
+* Extended dictionary scope (`--dictionary-scope extended`, `aib_extended/`; adds the specificity-3
+  codes): 97 nodes, 94 optimized; BUILD 48, LOW 44, COORDINATE 2 (the same two); exposure 19.5% of
+  USD 2,343bn, optimized coverage 87.1%, gap USD 302bn; silicon metal joins the BUILD + MANAGE
+  SPECIALIZATION nodes; 39 compacts.
+* 33 candidate compacts: 31 Investment / Capacity and 2 Trade / Coordination (graphite electrodes;
+  hydro turbine parts). The multi-node ones: Li-ion cells with electric buses and trucks; power
+  electronics components, converters and power semiconductors; heat-pump compressors, heat pumps and
+  motors; PV cover glass with modules; non-oriented electrical steel with motor parts; wafers with
+  solar cells; magnets with wind turbine generating sets; lithium chemicals with cathode materials;
+  furnace parts with electric furnaces. The other 24 are single nodes, from electric cars to
+  piezo-electric quartz. The exact and greedy coalitions have the same size in all 33 and different
+  members in 15.
+* **Diversification scenario** (headline variant). 39 of the 74 optimized nodes are more concentrated
+  than their benchmark (34 against the other lines of their heading, 5 against their sector's other
+  nodes); 35 are already as diversified. In 38 a supplier is above the cap in the allied market
+  (cobalt intermediates and chemicals is within it). Bringing them to the cap means shifting USD 117bn,
+  18% of the USD 660bn allied demand in those nodes; trade under the cap restores USD 31bn (coverage
+  82.2% before trade, 86.8% with existing relationships, 86.9% optimized) and USD 86bn is left for new
+  capacity. China is capped in 26 nodes, Germany in 6, the United States in 5, Japan in 4. The largest
+  gaps: Li-ion cells and packs (HHI 0.38 against 0.09 for the other accumulators of heading 8507; a 12%
+  cap; 48% of demand, USD 52bn; hosts MYS, FIN, VNM) and PV modules (0.36 against 0.12; 32%, USD 14bn).
+  Electric cars are only mildly over-concentrated (0.13 against 0.10 for the petrol, diesel and hybrid
+  cars of heading 8703): the 18% cap binds on Germany, whose excess is 7% of allied demand; trade
+  replaces two thirds of it and leaves 2.6% (USD 4.6bn). Rare-earth permanent magnets (0.43 against
+  0.12) and PV cover glass (0.40 against 0.08) keep gaps of 46% and 45%, small in dollars (USD 2.1bn
+  and 1.7bn). Electrotechnologies carries USD 58bn of the gap, Generation USD 18bn (32% of its
+  diversified nodes' demand). Under the scenario 17 nodes are BUILD, 19 LOW and 2 COORDINATE (hydro
+  turbines, reactor parts). Extended scope: 40 of 94 nodes above their benchmark (38 with a supplier
+  above the cap), USD 125bn to shift, USD 86bn gap. Global demand: 39 nodes, USD 170bn to shift and,
+  under hold, nothing restored by trade.
 
 ## 15. Limitations
 
@@ -554,7 +737,7 @@ production-constrained, reallocation.
 * One reference year (2024); 2020 is used only for the time-series check.
 * Shocks are applied node by node; there is no cross-node capacity coupling (a magnet shortage does
   not by itself reduce motor exports in the model).
-* Export Opportunity and Friendshore are technology-stage indices, not sub-sector ones.
+* Partnership Opportunity and Friendshore are technology-stage indices, not sub-sector ones.
 * The coalition test pools members' supply without link restrictions (state C logic) and uses the
   headline supplier-share limit.
 * The physical rule decides who can supply, not how much: listed producers keep their full trade
@@ -566,6 +749,11 @@ production-constrained, reallocation.
   coordination dividend is near zero and COORDINATE does not occur in the headline; the module's
   answer there is capacity (BUILD), and trade gains for the allied scope are diversion from other
   buyers.
+* The diversification benchmark is a trade measure (world exporter HHI), so it cannot see
+  concentration in production that trade does not show (rare-earth oxides: diversified on trade,
+  84% Chinese in refining), and an HS4 heading is a customs grouping, not a market: its other lines
+  can be mature products or other grades. The cap is a counterfactual market structure, not a
+  forecast of what diversification policy would achieve.
 * Compacts are grouped by complete linkage and then split into connected chain pieces; a node whose
   partners or needs differ from its chain neighbours forms its own compact (rare-earth compounds and
   metals sit apart from magnets in the headline).

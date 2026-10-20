@@ -19,12 +19,17 @@ import { ABOUT_NAV, aboutNavKeyOf, AIB_NAV, aibNavKeyOf, COUNTRY_NAV, countryNav
 import { useModuleNav, type ModuleNavItem } from './ModuleNav.tsx';
 import { aibTabHref, countryProfileHref, countryTabHref, sectorCarry, sectorProfileHref, sectorTabHref, strategicCarry } from './lastLocation.ts';
 import { prefetchAib, prefetchCountry } from './prefetch.ts';
+import { scenarioCarry } from '../aib/scenarioUrl.ts';
 
 /** The tier-2 links of a module: the registered ones, else the static list; `active` filled in. */
 export function moduleItems(module: ModuleId, registered: { module: ModuleId | null; items: readonly ModuleNavItem[] }, pathname: string, search: string): ModuleNavItem[] {
   let items: ModuleNavItem[];
   if (registered.module === module && registered.items.length) items = registered.items.map((i) => ({ ...i }));
-  else if (module === 'aib') items = AIB_NAV.map((n) => ({ key: n.key, label: n.label, to: n.to }));
+  else if (module === 'aib') {
+    // the scenario toggle (scn) travels between the AIB views
+    const q = scenarioCarry(search);
+    items = AIB_NAV.map((n) => ({ key: n.key, label: n.label, to: n.to + q }));
+  }
   else if (module === 'country') {
     const profile = countryProfileHref(pathname);
     items = COUNTRY_NAV.map((n) => ({ key: n.key, label: n.label, to: n.key === 'profile' ? profile : n.to }));
@@ -61,7 +66,7 @@ function prefetchProps(id: ModuleId) {
 function tabHref(id: ModuleId, pathname: string, search: string): string {
   if (id === 'sector') return sectorTabHref(pathname, search);
   if (id === 'country') return countryTabHref(pathname, search);
-  if (id === 'aib') return aibTabHref(pathname);
+  if (id === 'aib') return aibTabHref(pathname, search);
   return '/about';
 }
 

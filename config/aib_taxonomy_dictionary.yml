@@ -1,0 +1,576 @@
+# AIB taxonomy overlay: the electro-industrial HS6 dictionary (data/reference/electro_industrial_hs6_dictionary.csv;
+# docs/electro_industrial_dictionary/README.md), RMI's Electro-Industrial Stack: 6 indices > 39 sectors > HS6,
+# each code with one stage and one primary row. The default node source of the AIB since 2026-10-19. Read by
+# scripts/31 and 32 on top of config/aib.yml when `taxonomy: dictionary`; every key here replaces the same
+# key of config/aib.yml.
+
+# Nodes: tech = EIS sector, supply_chain = stage, sub_sector = the sector, refined by `splits` (a split
+# matches a sector and stage; codes no part lists go to `rest`, which also names a cell that is not split).
+# The splits keep the chain steps the compacts and the physical constraint need apart (rare-earth oxides
+# vs metals, lithium vs nickel vs cobalt, wafers vs gallium, GOES vs NGO steel, Li-ion vs other cells).
+# scope: core (the headline: 182 codes, dedicated or predominant (specificity 1-2) plus 12 shared codes kept as core with a justification) or extended (core + extended, 318 codes; a
+# sensitivity; --dictionary-scope overrides it). primary_only: each code in its primary sector only, so
+# nothing is counted twice. Codes not in the OSI basket get neutral Export Opportunity, Friendshore and
+# policy-compatibility scores (those indices are kept by OSI technology x stage; aib_osi_crosswalk()).
+nodes:
+  source: dictionary
+  dictionary:
+    file: electro_industrial_hs6_dictionary.csv
+    scope: core
+    primary_only: true
+  osi_crosswalk_min_share: 0.2
+  splits:
+    - tech: "Critical minerals"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "PGMs (iridium, ruthenium)"
+          hs6: ["711041"]
+        - sub_sector: "Silver powder"
+          hs6: ["710610"]
+      rest: "Other critical minerals"
+    - tech: "Critical minerals"
+      supply_chain: Upstream
+      optional: true
+      rest: "Critical-mineral ores"
+    - tech: "Battery minerals/refining"
+      supply_chain: Upstream
+      optional: true
+      into:
+        - sub_sector: "Lithium minerals"
+          hs6: ["253090"]
+        - sub_sector: "Cobalt ores"
+          hs6: ["260500"]
+        - sub_sector: "Battery recycling feed"
+          hs6: ["854913", "854914", "854919"]
+      rest: "Other battery-mineral ores"
+    - tech: "Battery minerals/refining"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Lithium chemicals"
+          hs6: ["283691", "282520", "280519"]
+        - sub_sector: "Nickel intermediates & chemicals"
+          hs6: ["750110", "750120", "282540", "283324"]
+        - sub_sector: "Cobalt intermediates & chemicals"
+          hs6: ["810520", "282200", "283329"]
+        - sub_sector: "Manganese dioxide (EMD)"
+          hs6: ["282010"]
+      rest: "Other battery-metal chemicals"
+    - tech: "Graphite"
+      supply_chain: Upstream
+      optional: true
+      rest: "Natural graphite"
+    - tech: "Graphite"
+      supply_chain: Midstream
+      optional: true
+      rest: "Synthetic graphite (anode-grade)"
+    - tech: "Rare earths"
+      supply_chain: Upstream
+      optional: true
+      rest: "Rare-earth ores (monazite)"
+    - tech: "Rare earths"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Rare-earth metals"
+          hs6: ["280530"]
+      rest: "Rare-earth oxides & compounds"
+    - tech: "Copper/aluminum"
+      supply_chain: Upstream
+      optional: true
+      into:
+        - sub_sector: "Copper ores & concentrates"
+          hs6: ["260300"]
+      rest: "Bauxite & other ores"
+    - tech: "Copper/aluminum"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Copper smelting & refining"
+          hs6: ["740100", "740200", "740311", "740312"]
+        - sub_sector: "Copper wire & rod"
+          hs6: ["740811", "740819"]
+        - sub_sector: "Aluminium wire rod"
+          hs6: ["760511"]
+      rest: "Other copper & aluminium products"
+    - tech: "Electrical steel"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Grain-oriented electrical steel (GOES)"
+          hs6: ["722511", "722611"]
+      rest: "Non-oriented electrical steel (NGO)"
+    - tech: "Polysilicon"
+      supply_chain: Upstream
+      optional: true
+      rest: "Silicon metal"
+    - tech: "Polysilicon"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Polysilicon"
+          hs6: ["280461"]
+      rest: "Other silicon products"
+    - tech: "Semiconductor materials"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Wafers"
+          hs6: ["381800"]
+        - sub_sector: "Gallium, germanium & indium"
+          hs6: ["811292"]
+        - sub_sector: "Piezo-electric quartz"
+          hs6: ["710410"]
+      rest: "Other semiconductor materials"
+    - tech: "Uranium/fuel"
+      supply_chain: Upstream
+      optional: true
+      into:
+        - sub_sector: "Uranium ores"
+          hs6: ["261210"]
+      rest: "Spent fuel & nuclear scrap"
+    - tech: "Uranium/fuel"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Uranium conversion & enrichment"
+          hs6: ["284410", "284420", "284430"]
+        - sub_sector: "Fuel assemblies & zirconium"
+          hs6: ["840130", "810921", "810991"]
+      rest: "Nuclear special materials"
+    - tech: "Logic/memory/analog chips"
+      supply_chain: Midstream
+      optional: true
+      rest: "Integrated circuits"
+    - tech: "Logic/memory/analog chips"
+      supply_chain: Downstream
+      optional: true
+      rest: "Semiconductor manufacturing equipment"
+    - tech: "Power semis"
+      supply_chain: Midstream
+      optional: true
+      rest: "Power semiconductors"
+    - tech: "Power electronics"
+      supply_chain: Midstream
+      optional: true
+      rest: "Power electronics components"
+    - tech: "Power electronics"
+      supply_chain: Downstream
+      optional: true
+      rest: "Static converters & inverters"
+    - tech: "Controls/sensors"
+      supply_chain: Midstream
+      optional: true
+      rest: "Sensors & controller parts"
+    - tech: "Controls/sensors"
+      supply_chain: Downstream
+      optional: true
+      rest: "Automatic controllers"
+    - tech: "Cathodes"
+      supply_chain: Midstream
+      optional: true
+      rest: "Cathode materials & precursors"
+    - tech: "Battery materials"
+      supply_chain: Midstream
+      optional: true
+      rest: "Battery materials (foil, electrolyte)"
+    - tech: "Cells/packs"
+      supply_chain: Midstream
+      optional: true
+      rest: "Accumulator parts & separators"
+    - tech: "Cells/packs"
+      supply_chain: Downstream
+      optional: true
+      into:
+        - sub_sector: "Li-ion cells & packs"
+          hs6: ["850760"]
+      rest: "Other accumulators"
+    - tech: "Magnets"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Rare-earth permanent magnets"
+          hs6: ["850511"]
+      rest: "Ferrite & other magnets"
+    - tech: "Magnets"
+      supply_chain: Downstream
+      optional: true
+      rest: "Magnet assemblies"
+    - tech: "Motors"
+      supply_chain: Midstream
+      optional: true
+      rest: "Motor & generator parts"
+    - tech: "Motors"
+      supply_chain: Downstream
+      optional: true
+      into:
+        - sub_sector: "AC generators"
+          hs6: ["850161", "850162", "850163", "850164"]
+      rest: "Electric motors"
+    - tech: "Transformers"
+      supply_chain: Midstream
+      optional: true
+      rest: "Transformer components"
+    - tech: "Transformers"
+      supply_chain: Downstream
+      optional: true
+      rest: "Transformers"
+    - tech: "Switchgear/protection"
+      supply_chain: Midstream
+      optional: true
+      rest: "Switchgear components"
+    - tech: "Switchgear/protection"
+      supply_chain: Downstream
+      optional: true
+      rest: "Switchgear & protection"
+    - tech: "Cables/conductors"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Overhead conductors"
+          hs6: ["761410", "761490"]
+        - sub_sector: "Power cables"
+          hs6: ["854460"]
+        - sub_sector: "Insulators & bushings"
+          hs6: ["854610", "854620", "854690"]
+      rest: "Other cables & conductors"
+    - tech: "Digital grid/GETs"
+      supply_chain: Midstream
+      optional: true
+      rest: "Grid sensors & parts"
+    - tech: "Digital grid/GETs"
+      supply_chain: Downstream
+      optional: true
+      rest: "Electricity meters"
+    - tech: "Solar"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Solar cells"
+          hs6: ["854142"]
+        - sub_sector: "PV cover glass"
+          hs6: ["700719"]
+      rest: "Other PV materials"
+    - tech: "Solar"
+      supply_chain: Downstream
+      optional: true
+      into:
+        - sub_sector: "PV modules & generators"
+          hs6: ["854143", "850171", "850172", "850180"]
+        - sub_sector: "Solar thermal water heaters"
+          hs6: ["841912"]
+      rest: "Other solar equipment"
+    - tech: "Onshore wind"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Wind blades & hubs"
+          hs6: ["841290"]
+        - sub_sector: "Blade core wood (balsa)"
+          hs6: ["440722"]
+        - sub_sector: "Wind towers"
+          hs6: ["730820"]
+      rest: "Other wind components"
+    - tech: "Onshore wind"
+      supply_chain: Downstream
+      optional: true
+      rest: "Wind turbine generating sets"
+    - tech: "Offshore wind"
+      supply_chain: Downstream
+      optional: true
+      rest: "Offshore wind structures"
+    - tech: "Nuclear reactor systems"
+      supply_chain: Midstream
+      optional: true
+      rest: "Reactor parts"
+    - tech: "Nuclear reactor systems"
+      supply_chain: Downstream
+      optional: true
+      rest: "Nuclear reactors & enrichment machinery"
+    - tech: "Other firm/flexible power"
+      supply_chain: Midstream
+      optional: true
+      rest: "Hydro turbine parts"
+    - tech: "Other firm/flexible power"
+      supply_chain: Downstream
+      optional: true
+      rest: "Hydro turbines"
+    - tech: "EVs/drivetrains"
+      supply_chain: Midstream
+      optional: true
+      rest: "EV components"
+    - tech: "EVs/drivetrains"
+      supply_chain: Downstream
+      optional: true
+      into:
+        - sub_sector: "Electric & plug-in cars"
+          hs6: ["870380", "870360", "870370"]
+        - sub_sector: "Electric buses, trucks & tractors"
+          hs6: ["870240", "870460", "870124"]
+        - sub_sector: "Electric rail vehicles"
+          hs6: ["860110", "860120", "860310"]
+        - sub_sector: "Electric two-wheelers & works trucks"
+          hs6: ["871160", "842710", "870911"]
+      rest: "Other electric vehicles"
+    - tech: "Heat pumps/cooling"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Refrigeration & heat-pump compressors"
+          hs6: ["841430"]
+      rest: "Refrigerants"
+    - tech: "Heat pumps/cooling"
+      supply_chain: Downstream
+      optional: true
+      rest: "Heat pumps & AC units"
+    - tech: "Industrial electrification/process heat"
+      supply_chain: Midstream
+      optional: true
+      into:
+        - sub_sector: "Graphite electrodes"
+          hs6: ["854511"]
+      rest: "Furnace parts"
+    - tech: "Industrial electrification/process heat"
+      supply_chain: Downstream
+      optional: true
+      rest: "Electric furnaces & heating"
+    - tech: "Electrolysers/H2 equipment"
+      supply_chain: Downstream
+      optional: true
+      rest: "Electrolysers"
+    - tech: "Hydrogen derivatives and low-emissions fuels"
+      supply_chain: Upstream
+      optional: true
+      rest: "Biofuel feedstocks"
+    - tech: "Hydrogen derivatives and low-emissions fuels"
+      supply_chain: Midstream
+      optional: true
+      rest: "Hydrogen, ammonia & methanol"
+    - tech: "Hydrogen derivatives and low-emissions fuels"
+      supply_chain: Downstream
+      optional: true
+      rest: "Biofuels & wood pellets"
+    - tech: "Near-zero materials and carbon management"
+      supply_chain: Midstream
+      optional: true
+      rest: "Direct-reduced iron (DRI/HBI)"
+
+# ---- Strategic scope ------------------------------------------------------------------------
+# Every dictionary sector is electro-industrial (fossil fuels are not in it), so every node is in scope.
+strategic_scope:
+  mode: all
+
+# Curated physical / process adjacency, upstream -> downstream (node names; "Sector::Name" where a name
+# recurs), for compact coherence: material inputs, components into assemblies, equipment into the stage
+# that uses it.
+supply_chain_links:
+  - ["Rare-earth ores (monazite)", "Rare-earth oxides & compounds"]
+  - ["Rare-earth oxides & compounds", "Rare-earth metals"]
+  - ["Rare-earth metals", "Rare-earth permanent magnets"]
+  - ["Rare-earth permanent magnets", "Electric motors"]
+  - ["Rare-earth permanent magnets", "AC generators"]
+  - ["Rare-earth permanent magnets", "Wind turbine generating sets"]
+  - ["Motor & generator parts", "Electric motors"]
+  - ["Motor & generator parts", "AC generators"]
+  - ["Non-oriented electrical steel (NGO)", "Electric motors"]
+  - ["Non-oriented electrical steel (NGO)", "AC generators"]
+  - ["AC generators", "Wind turbine generating sets"]
+  - ["Electric motors", "Electric & plug-in cars"]
+  - ["Electric motors", "Electric buses, trucks & tractors"]
+  - ["Electric motors", "Electric rail vehicles"]
+  - ["Electric motors", "Electric two-wheelers & works trucks"]
+  - ["Electric motors", "Refrigeration & heat-pump compressors"]
+  - ["Lithium minerals", "Lithium chemicals"]
+  - ["Cobalt ores", "Cobalt intermediates & chemicals"]
+  - ["Battery recycling feed", "Lithium chemicals"]
+  - ["Battery recycling feed", "Nickel intermediates & chemicals"]
+  - ["Battery recycling feed", "Cobalt intermediates & chemicals"]
+  - ["Lithium chemicals", "Cathode materials & precursors"]
+  - ["Nickel intermediates & chemicals", "Cathode materials & precursors"]
+  - ["Cobalt intermediates & chemicals", "Cathode materials & precursors"]
+  - ["Manganese dioxide (EMD)", "Cathode materials & precursors"]
+  - ["Lithium chemicals", "Battery materials (foil, electrolyte)"]
+  - ["Copper smelting & refining", "Battery materials (foil, electrolyte)"]
+  - ["Natural graphite", "Li-ion cells & packs"]
+  - ["Synthetic graphite (anode-grade)", "Li-ion cells & packs"]
+  - ["Cathode materials & precursors", "Li-ion cells & packs"]
+  - ["Battery materials (foil, electrolyte)", "Li-ion cells & packs"]
+  - ["Accumulator parts & separators", "Li-ion cells & packs"]
+  - ["Accumulator parts & separators", "Other accumulators"]
+  - ["Li-ion cells & packs", "Electric & plug-in cars"]
+  - ["Li-ion cells & packs", "Electric buses, trucks & tractors"]
+  - ["Li-ion cells & packs", "Electric two-wheelers & works trucks"]
+  - ["Li-ion cells & packs", "Electric rail vehicles"]
+  - ["Copper ores & concentrates", "Copper smelting & refining"]
+  - ["Copper smelting & refining", "Copper wire & rod"]
+  - ["Copper wire & rod", "Power cables"]
+  - ["Copper wire & rod", "Electric motors"]
+  - ["Copper wire & rod", "Transformers"]
+  - ["Aluminium wire rod", "Overhead conductors"]
+  - ["Aluminium wire rod", "Power cables"]
+  - ["Grain-oriented electrical steel (GOES)", "Transformers"]
+  - ["Polysilicon", "Wafers"]
+  - ["Wafers", "Solar cells"]
+  - ["Solar cells", "PV modules & generators"]
+  - ["PV cover glass", "PV modules & generators"]
+  - ["Silver powder", "Solar cells"]
+  - ["Wafers", "Integrated circuits"]
+  - ["Wafers", "Power semiconductors"]
+  - ["Wafers", "Sensors & controller parts"]
+  - ["Gallium, germanium & indium", "Power semiconductors"]
+  - ["Gallium, germanium & indium", "Integrated circuits"]
+  - ["Semiconductor manufacturing equipment", "Integrated circuits"]
+  - ["Semiconductor manufacturing equipment", "Power semiconductors"]
+  - ["Power semiconductors", "Static converters & inverters"]
+  - ["Power electronics components", "Static converters & inverters"]
+  - ["Integrated circuits", "Automatic controllers"]
+  - ["Sensors & controller parts", "Automatic controllers"]
+  - ["Blade core wood (balsa)", "Wind blades & hubs"]
+  - ["Wind blades & hubs", "Wind turbine generating sets"]
+  - ["Wind towers", "Wind turbine generating sets"]
+  - ["Uranium ores", "Uranium conversion & enrichment"]
+  - ["Uranium conversion & enrichment", "Fuel assemblies & zirconium"]
+  - ["Fuel assemblies & zirconium", "Nuclear reactors & enrichment machinery"]
+  - ["Nuclear special materials", "Nuclear reactors & enrichment machinery"]
+  - ["Reactor parts", "Nuclear reactors & enrichment machinery"]
+  - ["Hydro turbine parts", "Hydro turbines"]
+  - ["Refrigerants", "Heat pumps & AC units"]
+  - ["Refrigeration & heat-pump compressors", "Heat pumps & AC units"]
+  - ["Furnace parts", "Electric furnaces & heating"]
+  - ["Graphite electrodes", "Electric furnaces & heating"]
+  - ["Synthetic graphite (anode-grade)", "Graphite electrodes"]
+  - ["PGMs (iridium, ruthenium)", "Electrolysers"]
+  - ["Electrolysers", "Hydrogen, ammonia & methanol"]
+  - ["Hydrogen, ammonia & methanol", "Direct-reduced iron (DRI/HBI)"]
+
+# Material links between nodes used for investment-host eligibility (RCA in a linked node counts as
+# revealed capability). Narrower than supply_chain_links: shared materials, not assembly.
+material_links:
+  - ["Rare-earth ores (monazite)", "Rare-earth oxides & compounds"]
+  - ["Rare-earth oxides & compounds", "Rare-earth metals"]
+  - ["Rare-earth metals", "Rare-earth permanent magnets"]
+  - ["Rare-earth oxides & compounds", "Rare-earth permanent magnets"]
+  - ["Lithium minerals", "Lithium chemicals"]
+  - ["Cobalt ores", "Cobalt intermediates & chemicals"]
+  - ["Battery recycling feed", "Nickel intermediates & chemicals"]
+  - ["Battery recycling feed", "Cobalt intermediates & chemicals"]
+  - ["Lithium chemicals", "Cathode materials & precursors"]
+  - ["Nickel intermediates & chemicals", "Cathode materials & precursors"]
+  - ["Cobalt intermediates & chemicals", "Cathode materials & precursors"]
+  - ["Natural graphite", "Synthetic graphite (anode-grade)"]
+  - ["Synthetic graphite (anode-grade)", "Graphite electrodes"]
+  - ["Copper ores & concentrates", "Copper smelting & refining"]
+  - ["Copper smelting & refining", "Copper wire & rod"]
+  - ["Aluminium wire rod", "Overhead conductors"]
+  - ["Polysilicon", "Wafers"]
+  - ["Wafers", "Solar cells"]
+  - ["Solar cells", "PV modules & generators"]
+  - ["Uranium ores", "Uranium conversion & enrichment"]
+  - ["Uranium conversion & enrichment", "Fuel assemblies & zirconium"]
+  - ["Gallium, germanium & indium", "Power semiconductors"]
+  - ["Grain-oriented electrical steel (GOES)", "Transformers"]
+  - ["Non-oriented electrical steel (NGO)", "Electric motors"]
+
+# Production or capacity shares (the physical supply constraint and host capability). Each entry maps a
+# node to a measure of data/processed/major_supplier_shares_tbl.rds (mineral as recorded there; none for
+# uranium mine production) or to a GCIM manufacturing product (data/raw/GCIM_Investment_Capacity_aggregated.xlsx).
+production_proxies:
+  - sub_sector: "Rare-earth ores (monazite)"
+    source: major_supplier_shares
+    measure: iea_mineral_mining
+    mineral: "Rare Earths"
+  - sub_sector: "Rare-earth oxides & compounds"
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: "Rare Earths"
+  - sub_sector: "Rare-earth metals"
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: "Rare Earths"
+  - sub_sector: "Natural graphite"
+    source: major_supplier_shares
+    measure: iea_mineral_mining
+    mineral: "Graphite"
+  - sub_sector: "Synthetic graphite (anode-grade)"
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: "Graphite"
+  - sub_sector: "Lithium minerals"
+    source: major_supplier_shares
+    measure: iea_mineral_mining
+    mineral: "Lithium"
+  - sub_sector: "Lithium chemicals"
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: "Lithium"
+  - sub_sector: "Nickel intermediates & chemicals"
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: "Nickel"
+  - sub_sector: "Cobalt ores"
+    source: major_supplier_shares
+    measure: iea_mineral_mining
+    mineral: "Cobalt"
+  - sub_sector: "Cobalt intermediates & chemicals"
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: "Cobalt"
+  - sub_sector: "Copper ores & concentrates"
+    source: major_supplier_shares
+    measure: iea_mineral_mining
+    mineral: "Copper"
+  - sub_sector: "Copper smelting & refining"
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: "Copper"
+  - sub_sector: "PGMs (iridium, ruthenium)"
+    source: major_supplier_shares
+    measure: ei_mineral_mining
+    mineral: "PGMs"
+  - sub_sector: "Uranium ores"
+    source: major_supplier_shares
+    measure: uranium_mine_production
+  - sub_sector: "Polysilicon"
+    source: gcim
+    technology: "Solar"
+    product: "Polysilicon"
+  - sub_sector: "Wafers"
+    source: gcim
+    technology: "Solar"
+    product: "Wafers"
+  - sub_sector: "Solar cells"
+    source: gcim
+    technology: "Solar"
+    product: "Cells"
+  - sub_sector: "PV modules & generators"
+    source: gcim
+    technology: "Solar"
+    product: "Modules"
+  - sub_sector: "Li-ion cells & packs"
+    source: gcim
+    technology: "Batteries"
+    product: "Cells"
+  - sub_sector: "Cathode materials & precursors"
+    source: gcim
+    technology: "Batteries"
+    product: "EAM"
+  - sub_sector: "Electric & plug-in cars"
+    source: gcim
+    technology: "Zero Emission Vehicles"
+    product: "ZEVs"
+  - sub_sector: "Wind blades & hubs"
+    source: gcim
+    technology: "Wind"
+    product: "Blades"
+  - sub_sector: "Wind turbine generating sets"
+    source: gcim
+    technology: "Wind"
+    product: "Nacelles"
+
+# Validation cases (scripts/32 writes their chains).
+validation_cases:
+  - "Rare-earth permanent magnets"
+  - "Rare-earth oxides & compounds"
+  - "Synthetic graphite (anode-grade)"
+  - "Wafers"

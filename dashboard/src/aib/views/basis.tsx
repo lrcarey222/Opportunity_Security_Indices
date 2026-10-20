@@ -1,31 +1,45 @@
 // Small pieces of the Allied Industrial Base composition pages (IA refactor, 2026-10-16): the eyebrow that
-// says whether a block is an observed / modelled fact or a preference-adjusted priority (plan.md 4: the
-// AIB physical analysis never responds to the Perspective; partnership rankings that use preference-
-// adjusted scores are shown at the NEIS baseline and say so), a disclosure that mounts its content only
-// once opened (for blocks that start the engine), and a link card.
+// says where a block comes from (plan.md 4: the AIB physical analysis never responds to the Perspective;
+// partnership rankings that use preference-adjusted scores are shown at the NEIS defaults and say so), a
+// disclosure that mounts its content only once opened (for blocks that start the engine), and a link card.
+//
+// The bases (2026-10-19, the three partnership lenses): 'today' (observed: trade, investment, aid and
+// votes as they are), 'baseline' (the OSI's recommendation at the NEIS defaults; the internal key stays:
+// "baseline" now means the observed 2024 trade in the AIB section, so the words never say it), 'model'
+// (the AIB model under the toggled scenario: pass `scenario`, its label) and 'facts' (observed or modelled
+// facts together, as before).
 
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
-export type Basis = 'facts' | 'baseline';
+export type Basis = 'facts' | 'baseline' | 'today' | 'model';
 
-const BASIS_WORDS: Record<Basis, { label: string; title: string }> = {
+export const BASIS_WORDS: Readonly<Record<Basis, { label: string; title: string }>> = {
   facts: {
     label: 'Observed / modelled facts',
-    title: 'From the trade-network model under the headline shock: these do not change with the Perspective (preference) settings of a Country profile.',
+    title: 'Observed trade or the trade-network model: these do not change with the Perspective (preference) settings of a Country profile.',
   },
   baseline: {
-    label: 'Preference-adjusted priorities · NEIS baseline',
-    title: 'A ranking that uses preference-weighted scores; shown here at the NEIS baseline. A Country profile can change the Perspective.',
+    label: 'OSI recommends · NEIS defaults',
+    title: 'A ranking from the OSI indices that uses preference-weighted scores; shown here at the NEIS defaults. A Country profile can change the Perspective.',
+  },
+  today: {
+    label: 'Today · observed',
+    title: 'Observed data as they are (2024 trade, investment positions and projects, aid, votes and agreements): no model and no preferences.',
+  },
+  model: {
+    label: 'AIB model',
+    title: 'The trade-network model under the chosen scenario: a counterfactual market structure, not a forecast. It does not change with the Perspective settings.',
   },
 };
 
-/** The basis of a block, as a small eyebrow above its heading. */
-export function BasisTag({ basis }: { basis: Basis }) {
+/** The basis of a block, as a small eyebrow above its heading (`scenario`: the AIB model's scenario label, after the basis). */
+export function BasisTag({ basis, scenario }: { basis: Basis; scenario?: string | null }) {
   const w = BASIS_WORDS[basis];
   return (
     <span className="eyebrow block" title={w.title} data-basis={basis}>
       {w.label}
+      {scenario ? ` · ${scenario}` : ''}
     </span>
   );
 }

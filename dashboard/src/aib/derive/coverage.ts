@@ -35,10 +35,18 @@ export const COVERAGE_STEPS: readonly Omit<CoverageStep, 'value'>[] = [
   },
 ];
 
-/** The four coverage steps of a compact (demand-weighted over its nodes). */
-export function coverageSteps(m: AibMetrics): CoverageStep[] {
+/** The first step under Managed Interdependence (2026-10-19): it removes no supplier; the cap takes the excess away. */
+export const MANAGED_STATIC_STEP: Omit<CoverageStep, 'value'> = {
+  key: 'static',
+  label: 'Cap (static)',
+  short: 'Cap',
+  meaning: 'the cap alone: suppliers above it in the allied market lose the excess and nothing is rerouted',
+};
+
+/** The four coverage steps of a compact (demand-weighted over its nodes); `managed`: the first step is the cap of Managed Interdependence. */
+export function coverageSteps(m: AibMetrics, managed = false): CoverageStep[] {
   const v: Record<CoverageKey, number | null> = { static: m.static, existing: m.existing, trade: m.trade, investment: m.investment };
-  return COVERAGE_STEPS.map((s) => ({ ...s, value: isNum(v[s.key]) ? v[s.key] : null }));
+  return COVERAGE_STEPS.map((s) => ({ ...(managed && s.key === 'static' ? MANAGED_STATIC_STEP : s), value: isNum(v[s.key]) ? v[s.key] : null }));
 }
 
 /** The reference beside the steps: coverage if every economy coordinated (null when the export has none). */

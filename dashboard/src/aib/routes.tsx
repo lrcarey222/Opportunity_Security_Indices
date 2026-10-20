@@ -1,13 +1,14 @@
 // Allied Industrial Base routes (IA refactor, 2026-10-16). The shell mounts two subtrees under AppRoot,
 // both inside AibLayout (the compacts document and the module nav):
-//   * aibHubRoute at /aib: the Overview (index), Partnerships (/aib/partnerships) and Country roles
-//     (/aib/roles), the module's composition pages;
+//   * aibHubRoute at /aib: the Overview (index), Partnerships (/aib/partnerships), Country roles
+//     (/aib/roles) and Diversification (/aib/diversification), the module's composition pages;
 //   * aibRoute at /compacts: Sectoral Compacts (landing, /compacts/:id, /compacts/about), paths kept.
 // AibLayout and every view are lazy route chunks, so no other module's first load grows. `about` is
-// static and outranks `:id`.
+// static and outranks `:id`. The redirects keep the scenario toggle (scn).
 
 import { Navigate, useLocation, useParams, type RouteObject } from 'react-router';
 import { Redirect } from '../shell/Redirect.tsx';
+import { scenarioCarry } from './scenarioUrl.ts';
 
 const view = (load: () => Promise<{ default: React.ComponentType }>) => async () => ({ Component: (await load()).default });
 
@@ -18,9 +19,10 @@ function ToCompact() {
   return <Navigate to={{ pathname: `/compacts/${encodeURIComponent(id ?? '')}`, search: loc.search }} replace />;
 }
 
-/** /aib/<anything else> -> the Overview, with a notice. */
+/** /aib/<anything else> -> the Overview, with a notice (the scenario toggle kept). */
 function ToAibHome() {
-  return <Redirect to="/aib" notice="That Allied Industrial Base page does not exist; showing the overview." />;
+  const loc = useLocation();
+  return <Redirect to={`/aib${scenarioCarry(loc.search)}`} notice="That Allied Industrial Base page does not exist; showing the overview." />;
 }
 
 /** The Allied Industrial Base composition pages. */
@@ -31,6 +33,7 @@ export const aibHubRoute: RouteObject = {
     { index: true, lazy: view(() => import('./views/AibOverviewView.tsx')) },
     { path: 'partnerships', lazy: view(() => import('./views/AibPartnershipsView.tsx')) },
     { path: 'roles', lazy: view(() => import('./views/AibRolesView.tsx')) },
+    { path: 'diversification', lazy: view(() => import('./views/AibDiversifyView.tsx')) },
     { path: '*', element: <ToAibHome /> },
   ],
 };

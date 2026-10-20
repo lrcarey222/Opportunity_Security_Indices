@@ -8,6 +8,7 @@ import { AIB_CLASSES, inStrategicScope, type AibClass, type AibCompact, type Aib
 import { classInfo, classOrder, policyNeedsText, type ClassInfo } from './classes.ts';
 import { nameOf } from './format.ts';
 import { constraintClasses, growthFlag, warnedGrowthBounds, warnedVariants } from './sensitivity.ts';
+import { nodeIndexFields, type Taxonomy } from './taxonomy.ts';
 
 /** The nodes of the strategic scope, or every node with `all`. */
 export function scopedNodes(nodes: readonly AibNode[], all = false): AibNode[] {
@@ -17,7 +18,7 @@ export function scopedNodes(nodes: readonly AibNode[], all = false): AibNode[] {
 /** How many nodes lie outside the strategic scope. */
 export const outOfScopeCount = (nodes: readonly AibNode[]): number => nodes.filter((n) => !inStrategicScope(n)).length;
 
-/** Every technology named by the nodes, alphabetical. */
+/** Every technology (dictionary: sector) named by the nodes, alphabetical. */
 export function technologiesOf(nodes: readonly AibNode[]): string[] {
   return [...new Set(nodes.flatMap((n) => n.techs))].sort((a, b) => a.localeCompare(b, 'en'));
 }
@@ -75,7 +76,15 @@ export const mixedTreatments = (nodes: readonly AibNode[]): boolean => new Set(n
 export interface NodeRow {
   id: string;
   node: string;
+  /** the node's techs, "; "-joined: OSI technologies (master) or EIS sectors (dictionary) */
   technologies: string;
+  /** the node comes from the electro-industrial dictionary: the CSV names its sectors and index */
+  dictionary: boolean;
+  /** its EIS index (dictionary; null otherwise) */
+  indexCode: string | null;
+  indexName: string | null;
+  /** the OSI cells its codes sit in ("; "-joined crosswalk ids; "" when none) */
+  osiCells: string;
   stage: string;
   cls: string;
   reason: string | null;
@@ -120,13 +129,19 @@ export interface NodeRow {
   compact: string | null;
 }
 
-export function nodeRow(n: AibNode, names: Readonly<Record<string, string>>): NodeRow {
+/** A node's table and CSV row; `tx` (the bundle's taxonomy) adds the EIS index of a dictionary node. */
+export function nodeRow(n: AibNode, names: Readonly<Record<string, string>>, tx?: Taxonomy): NodeRow {
   const modes = constraintClasses(n);
   const num = (x: number | null | undefined) => (isNum(x) ? x : null);
+  const ix = tx ? nodeIndexFields(tx, n) : { indexCode: null, indexName: null };
   return {
     id: n.id,
     node: n.label,
     technologies: n.techs.join('; '),
+    dictionary: !!tx?.dictionary,
+    indexCode: ix.indexCode,
+    indexName: ix.indexName,
+    osiCells: n.yfCells.join('; '),
     stage: n.stage,
     cls: n.cls,
     reason: n.reason,
@@ -167,12 +182,16 @@ export function nodeRow(n: AibNode, names: Readonly<Record<string, string>>): No
   };
 }
 
-/** The CSV columns of a node row, in plain words. */
+/**
+ * The CSV columns of a node row, in plain words. A dictionary node: its sectors (never called
+ * technologies), its EIS index and the OSI cells its codes sit in; a master node: its technologies.
+ */
 export function nodeCsvRow(r: NodeRow): Record<string, unknown> {
+  const place = r.dictionary ? { sectors: r.technologies, index_code: r.indexCode, index_name: r.indexName, osi_cells: r.osiCells } : { technologies: r.technologies };
   return {
     node_id: r.id,
     sub_sector: r.node,
-    technologies: r.technologies,
+    ...place,
     stage: r.stage,
     classification: r.cls,
     classification_reason: r.reason,
