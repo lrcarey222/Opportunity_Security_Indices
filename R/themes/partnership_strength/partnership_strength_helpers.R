@@ -672,6 +672,87 @@ partnership_strength_with_trade_status <- function(trade_indices, index_col) {
   trade_indices
 }
 
+# ---- Cells without trade data -------------------------------------------------------------------
+#
+# A (tech, stage) the HS6 crosswalk maps no code to has no bilateral flow at all (trade_status
+# "no_data": every Downstream stage, and Green Hydrogen and Geothermal outside it). Its trade term
+# used to be the constant 0.5 for every dyad. Within such a cell the other components then ranked
+# the reporter's partners on their own. In Opportunity that was the market's energy-security need
+# alone, because the reporter's EO is the same for all its markets. Small insecure economies that
+# the reporter barely trades with collected five such cells near the top of its list (2026-10-20:
+# Equatorial Guinea, Sao Tome and Burundi were the 9th, 11th and 12th of the US's 218 markets).
+# The fill rule (config/partnership.yml trade: no_data_fill) sets the trade term of these cells:
+#   - "dyad" (default): the dyad's own trade index, the mean over its cells with an observed flow
+#     (trade or a recorded zero) in the same technology, else over all its observed cells; a dyad
+#     without an observed cell keeps 0.5. Cells imputed at the cell mean are not used: they carry
+#     no information on the dyad.
+#   - "constant": 0.5 everywhere, the rule before 2026-10-20.
+# trade_status stays "no_data" either way: the coverage table counts the cells as before, and the
+# imputed weight share leaves their trade term out (below).
+PARTNERSHIP_STRENGTH_NO_DATA_FILLS <- c("dyad", "constant")
+
+# The no_data fill rule from config/partnership.yml `trade` (no_data_fill), "dyad" when absent.
+partnership_strength_no_data_fill_setting <- function(cfg = NULL) {
+  fill <- if (is.null(cfg$no_data_fill)) "dyad" else tolower(as.character(cfg$no_data_fill))
+  if (length(fill) != 1 || !fill %in% PARTNERSHIP_STRENGTH_NO_DATA_FILLS) {
+    stop(
+      "trade no_data_fill must be one of ", paste(PARTNERSHIP_STRENGTH_NO_DATA_FILLS, collapse = ", "),
+      ", not '", paste(fill, collapse = ", "), "'."
+    )
+  }
+  fill
+}
+
+# Fill the trade index `index_col` of the no_data cells of a dyad table (one row per reporter_iso,
+# partner_iso, tech, supply_chain, with trade_status) by the rule `fill`. Adds trade_fill, the
+# basis of each no_data cell's trade term: "same_tech" or "all_tech" (the dyad's observed cells it
+# averages) or "constant" (0.5 kept); NA in cells with trade data, which are not touched.
+partnership_strength_fill_no_data_trade <- function(tbl, index_col, fill = "dyad") {
+  require_columns(
+    tbl,
+    c("reporter_iso", "partner_iso", "tech", "supply_chain", "trade_status", index_col),
+    label = "dyad cells"
+  )
+  fill <- partnership_strength_no_data_fill_setting(list(no_data_fill = fill))
+  tbl <- dplyr::ungroup(tbl)
+  no_data <- tbl$trade_status %in% "no_data"
+  tbl$trade_fill <- dplyr::if_else(no_data, "constant", NA_character_)
+  if (identical(fill, "constant") || !any(no_data)) {
+    return(tbl)
+  }
+
+  observed <- tbl$trade_status %in% c("trade", "zero") & !is.na(tbl[[index_col]])
+  obs <- tibble::tibble(
+    reporter_iso = tbl$reporter_iso[observed],
+    partner_iso = tbl$partner_iso[observed],
+    tech = tbl$tech[observed],
+    x = tbl[[index_col]][observed]
+  )
+  same_tech <- obs %>%
+    dplyr::group_by(reporter_iso, partner_iso, tech) %>%
+    dplyr::summarise(fill_same = mean(x), .groups = "drop")
+  all_tech <- obs %>%
+    dplyr::group_by(reporter_iso, partner_iso) %>%
+    dplyr::summarise(fill_all = mean(x), .groups = "drop")
+  # One row per no_data cell, in table order (the fill tables are unique on their keys).
+  nd <- tibble::tibble(
+    reporter_iso = tbl$reporter_iso[no_data],
+    partner_iso = tbl$partner_iso[no_data],
+    tech = tbl$tech[no_data]
+  ) %>%
+    dplyr::left_join(same_tech, by = c("reporter_iso", "partner_iso", "tech")) %>%
+    dplyr::left_join(all_tech, by = c("reporter_iso", "partner_iso"))
+
+  rows <- which(no_data)
+  tbl[[index_col]][rows] <- dplyr::coalesce(nd$fill_same, nd$fill_all, tbl[[index_col]][rows])
+  tbl$trade_fill[rows] <- dplyr::case_when(
+    !is.na(nd$fill_same) ~ "same_tech",
+    !is.na(nd$fill_all) ~ "all_tech",
+    TRUE ~ "constant"
+  )
+  tbl
+}
+
 # ---- Imputed weight share (PSI rankability) -----------------------------------------------------
 #
 # The pillars rank a cell only when at most a share tau of its index weight rests on imputed
@@ -700,8 +781,10 @@ partnership_strength_with_trade_status <- function(trade_indices, index_col) {
 #     so they cannot make one partner's rank more or less reliable than another's, and counting
 #     them would add the reporters' pillar imputation to every partner alike;
 #   - the trade component of a (tech, stage) without trade data (trade_status "no_data": no HS6
-#     code maps to it, every dyad gets the constant 0.5). Such a cell has no trade component, as a
-#     pillar cell has no category its sources never cover;
+#     code maps to it). Such a cell has no trade component of its own, as a pillar cell has no
+#     category its sources never cover. Its trade term is the dyad's trade in its other cells
+#     (partnership_strength_fill_no_data_trade()), whose observation is counted in those cells;
+#     counting the fill as imputed would make 21% of the rankable dyads unrankable (2026-10-20);
 #   - the climate-policy penalties, which are subtracted from the composite, not weighted in it.
 # A dyad's (partner's) share is the mean over the five (tech, stage) cells its top-5 index value
 # averages (partnership_strength_top_k_share()); the PSI averages those as it averages the scores
@@ -799,9 +882,15 @@ partnership_strength_add_top5_share <- function(top5_tbl, unit_share, id_cols, i
 # Coverage of a dyad table's trade component by (tech, stage): dyad cells scored on an observed
 # flow (trade or a recorded zero), cells imputed at the cell mean, and cells of a (tech, stage)
 # without trade data (no HS6 code mapped; n_no_data = n_cells there). share_imputed is the
-# imputed share of the cells of a (tech, stage) with trade data (NA for one without).
+# imputed share of the cells of a (tech, stage) with trade data (NA for one without). The no_data
+# cells split by the basis of their trade term (trade_fill, partnership_strength_fill_no_data_trade()):
+# the dyad's observed cells in the same technology, in all technologies, or the constant 0.5 (all
+# of them when the table has no trade_fill).
 partnership_strength_trade_coverage <- function(dyads, theme) {
   require_columns(dyads, c("reporter_iso", "partner_iso", "tech", "supply_chain", "trade_status"), label = "dyads")
+  if (!"trade_fill" %in% names(dyads)) {
+    dyads$trade_fill <- dplyr::if_else(dyads$trade_status %in% "no_data", "constant", NA_character_)
+  }
   dyads %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::summarise(
@@ -810,6 +899,9 @@ partnership_strength_trade_coverage <- function(dyads, theme) {
       n_zero = sum(trade_status %in% "zero"),
       n_imputed = sum(trade_status %in% "imputed"),
       n_no_data = sum(trade_status %in% "no_data"),
+      n_no_data_same_tech = sum(trade_status %in% "no_data" & trade_fill %in% "same_tech"),
+      n_no_data_all_tech = sum(trade_status %in% "no_data" & trade_fill %in% "all_tech"),
+      n_no_data_constant = sum(trade_status %in% "no_data" & trade_fill %in% "constant"),
       .groups = "drop"
     ) %>%
     dplyr::mutate(

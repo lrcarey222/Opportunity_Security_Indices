@@ -24,6 +24,15 @@ trade:
   # Kazakhstan the United States' first Opportunity market (README, Partnership Strength Index).
   growth_min_base_usd: 1000000
   growth_unscored: neutral
+  # Trade term of the cells without trade data: a (tech, stage) the HS6 crosswalk maps no code to
+  # (trade_status no_data: every Downstream stage, plus Green Hydrogen, and Geothermal in
+  # Friendshore). dyad: the dyad's own trade index, the mean over its observed cells (trade or a
+  # recorded zero) in the same technology, else over all its observed cells (0.5 for a dyad
+  # without one). constant: 0.5 for every dyad, the rule before 2026-10-20. Under that rule such
+  # a cell ranked a reporter's markets on their energy-security need alone, and markets the US
+  # barely trades with ranked 9th to 15th (Equatorial Guinea, Sao Tome, Burundi, Guinea-Bissau).
+  # Rule: partnership_strength_fill_no_data_trade() (README, Partnership Strength Index).
+  no_data_fill: dyad
 
 # Outward direct investment (Friendshore outbound_index, IMF Direct Investment Positions).
 outbound_fdi:

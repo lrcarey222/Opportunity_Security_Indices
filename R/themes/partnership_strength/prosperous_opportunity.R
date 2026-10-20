@@ -12,7 +12,10 @@
 # partnership_strength_build_trade_cells() (partnership_strength_helpers.R): the market's import
 # declaration where it reports the cell, else the reporter's own export declaration (mirror). A
 # dyad cell with no observed flow in the last theme year takes the (tech, stage) mean
-# (trade_status "imputed"); one observed with no trade is a recorded zero.
+# (trade_status "imputed"); one observed with no trade is a recorded zero. A (tech, stage) the HS6
+# crosswalk maps no code to ("no_data": the Downstream stages and Green Hydrogen) takes the dyad's
+# own trade index in its observed cells, the same technology first (no_data_fill "dyad";
+# partnership_strength_fill_no_data_trade(), partnership_strength_helpers.R).
 #
 # Each dyad cell also carries imputed_weight_share, the share of its partner- and pair-specific
 # component weight (trade, partner_es_need) resting on imputed inputs
@@ -113,7 +116,8 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
                                                          policy,
                                                          country_info,
                                                          component_weights = NULL,
-                                                         techs = NULL) {
+                                                         techs = NULL,
+                                                         no_data_fill = "dyad") {
   component_weights <- partnership_strength_resolve_opportunity_weights(component_weights)
   climate_policy_weight <- component_weights$climate_policy_weight
 
@@ -179,7 +183,8 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
   out <- dyad_backbone %>%
     dplyr::left_join(trade_indices, by = c("reporter_iso", "partner_iso", "tech", "supply_chain")) %>%
     # A dyad cell without an observed flow in the last theme year takes the (tech, stage) mean; a
-    # (tech, stage) with no observed flow at all (no HS6 code mapped) is "no_data", a constant 0.5.
+    # (tech, stage) with no observed flow at all (no HS6 code mapped) is "no_data": 0.5 here, then
+    # the dyad's own trade in its other cells (no_data_fill; partnership_strength_fill_no_data_trade()).
     dplyr::mutate(trade_status = dplyr::if_else(is.na(trade_index), "imputed", trade_status)) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
@@ -194,6 +199,7 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       )
     ) %>%
     dplyr::ungroup() %>%
+    partnership_strength_fill_no_data_trade("trade_index", fill = no_data_fill) %>%
     dplyr::left_join(econ_opp_iso, by = c("reporter_iso" = "exporter_iso", "tech", "supply_chain")) %>%
     dplyr::left_join(energy_sec_iso, by = c("partner_iso", "tech", "supply_chain")) %>%
     partnership_strength_join_pillar_share(es_partner_share, "partner_iso", "es_partner_imputed") %>%
@@ -253,6 +259,7 @@ partnership_strength_build_opportunity_dyads <- function(trade_indices,
       opportunity_index,
       opportunity_index_country,
       trade_status,
+      trade_fill,
       imputed_weight_share
     )
 
@@ -523,7 +530,8 @@ prosperous_opportunity <- function(comtrade_dyads,
                                    techs = NULL,
                                    trade_cells = NULL,
                                    cif_fob_factor = PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR,
-                                   trade_growth = partnership_strength_trade_growth_settings()) {
+                                   trade_growth = partnership_strength_trade_growth_settings(),
+                                   no_data_fill = "dyad") {
   component_weights <- partnership_strength_resolve_opportunity_weights(component_weights)
 
   # The export side of the reconciled flow matrix Friendshore reads (importer's report, else the
@@ -543,7 +551,8 @@ prosperous_opportunity <- function(comtrade_dyads,
     policy,
     country_info,
     component_weights = component_weights,
-    techs = techs
+    techs = techs,
+    no_data_fill = no_data_fill
   )
 
   opportunity_dyads <- partnership_strength_build_opportunity_dyads_table(

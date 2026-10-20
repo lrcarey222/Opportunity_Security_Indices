@@ -270,6 +270,131 @@ test_that("the trade growth settings read config/partnership.yml and reject bad 
   expect_equal(partnership_strength_trade_growth_settings(cfg$trade), list(min_base_usd = 1e6, unscored = "neutral"))
 })
 
+# Dyad cells of a reporter with cells that have trade data and cells that do not (no_data).
+ptf_no_data_cells <- function() {
+  tibble::tribble(
+    ~reporter_iso, ~partner_iso, ~tech, ~supply_chain, ~trade_index, ~trade_status,
+    "USA", "MEX", "Solar", "Upstream", 0.9, "trade",
+    "USA", "MEX", "Solar", "Midstream", 0.7, "trade",
+    "USA", "MEX", "Solar", "Downstream", 0.5, "no_data",
+    "USA", "MEX", "Wind", "Midstream", 0.3, "zero",
+    "USA", "MEX", "Green Hydrogen", "Downstream", 0.5, "no_data",
+    # STP: Solar is imputed at the cell mean (no information on the dyad); Wind a recorded zero.
+    "USA", "STP", "Solar", "Midstream", 0.6, "imputed",
+    "USA", "STP", "Wind", "Midstream", 0.2, "zero",
+    "USA", "STP", "Solar", "Downstream", 0.5, "no_data",
+    # BDI: no observed cell at all.
+    "USA", "BDI", "Solar", "Midstream", 0.6, "imputed",
+    "USA", "BDI", "Solar", "Downstream", 0.5, "no_data"
+  )
+}
+
+test_that("a cell without trade data takes the dyad's own trade index, the same technology first", {
+  cells <- ptf_no_data_cells()
+  out <- partnership_strength_fill_no_data_trade(cells, "trade_index")
+  cell <- function(p, t, s) out[out$partner_iso == p & out$tech == t & out$supply_chain == s, ]
+
+  # Same technology: the mean of MEX's observed Solar stages.
+  expect_equal(cell("MEX", "Solar", "Downstream")$trade_index, mean(c(0.9, 0.7)))
+  expect_equal(cell("MEX", "Solar", "Downstream")$trade_fill, "same_tech")
+  # No observed Green Hydrogen cell: the mean over all of MEX's observed cells, zeros included.
+  expect_equal(cell("MEX", "Green Hydrogen", "Downstream")$trade_index, mean(c(0.9, 0.7, 0.3)))
+  expect_equal(cell("MEX", "Green Hydrogen", "Downstream")$trade_fill, "all_tech")
+  # Imputed cells are not used: STP's Solar Downstream reads its recorded Wind zero.
+  expect_equal(cell("STP", "Solar", "Downstream")$trade_index, 0.2)
+  expect_equal(cell("STP", "Solar", "Downstream")$trade_fill, "all_tech")
+  # A dyad without an observed cell keeps the constant.
+  expect_equal(cell("BDI", "Solar", "Downstream")$trade_index, 0.5)
+  expect_equal(cell("BDI", "Solar", "Downstream")$trade_fill, "constant")
+
+  # Cells with trade data and every trade_status are untouched.
+  has_data <- cells$trade_status != "no_data"
+  expect_equal(out$trade_index[has_data], cells$trade_index[has_data])
+  expect_true(all(is.na(out$trade_fill[has_data])))
+  expect_equal(out$trade_status, cells$trade_status)
+
+  # "constant" is the rule before 2026-10-20: 0.5 in every no_data cell.
+  const <- partnership_strength_fill_no_data_trade(cells, "trade_index", fill = "constant")
+  expect_equal(const$trade_index, cells$trade_index)
+  expect_equal(const$trade_fill[!has_data], rep("constant", sum(!has_data)))
+  # A table without no_data cells comes back unchanged (plus an all-NA trade_fill).
+  plain <- partnership_strength_fill_no_data_trade(cells[has_data, ], "trade_index")
+  expect_equal(plain$trade_index, cells$trade_index[has_data])
+  expect_true(all(is.na(plain$trade_fill)))
+})
+
+test_that("the no_data fill setting reads config/partnership.yml and rejects bad values", {
+  expect_equal(partnership_strength_no_data_fill_setting(), "dyad")
+  expect_equal(partnership_strength_no_data_fill_setting(list(source = "auto", no_data_fill = "Constant")), "constant")
+  expect_error(partnership_strength_no_data_fill_setting(list(no_data_fill = "mean")), "no_data_fill must be one of dyad, constant")
+  expect_error(partnership_strength_fill_no_data_trade(ptf_no_data_cells(), "trade_index", fill = "zero"), "no_data_fill")
+
+  cfg <- yaml::read_yaml(file.path(ptf_root, "config", "partnership.yml"))
+  expect_equal(partnership_strength_no_data_fill_setting(cfg$trade), "dyad")
+})
+
+test_that("a market the reporter barely trades with no longer tops a cell without trade data on its need alone", {
+  ci <- tibble::tibble(
+    country = c("United States", "Mexico", "Sao Tome and Principe", "Japan"),
+    iso3c = c("USA", "MEX", "STP", "JPN"),
+    income = c("High income", "Upper middle income", "Lower middle income", "High income")
+  )
+  grid <- function(col, values) {
+    tbl <- tidyr::expand_grid(Country = ci$country, tech = c("Solar", "Wind"), supply_chain = c("Midstream", "Downstream"))
+    tbl[[col]] <- rep(values, each = 4)
+    tbl
+  }
+  eo <- grid("Economic_Opportunity_Index", c(0.9, 0.5, 0.1, 0.8))
+  # Sao Tome is the least secure market (the highest need), Mexico a middling one.
+  es <- grid("Energy_Security_Index", c(0.95, 0.6, 0.1, 0.9))
+  # US exports: large to Mexico, recorded zeros to Sao Tome, Solar only to Japan. No HS6 code maps
+  # to Downstream, so every Downstream cell is no_data.
+  trade <- tibble::tribble(
+    ~reporter_iso, ~partner_iso, ~tech, ~supply_chain, ~trade_index, ~trade_status,
+    "USA", "MEX", "Solar", "Midstream", 1.0, "trade",
+    "USA", "MEX", "Wind", "Midstream", 0.9, "trade",
+    "USA", "STP", "Solar", "Midstream", 0.2, "zero",
+    "USA", "STP", "Wind", "Midstream", 0.2, "zero",
+    "USA", "JPN", "Solar", "Midstream", 0.6, "trade"
+  )
+  op_with <- function(no_data_fill) {
+    partnership_strength_build_opportunity_dyads(
+      trade, eo, es,
+      tibble::tibble(tech = c("Solar", "Wind"), ghg_index = 1),
+      tibble::tibble(Country = "Japan", climate_policy_index = 0.5),
+      ci,
+      component_weights = list(trade_index = 3, econ_opp_index = 3, partner_es_need = 1, climate_policy_weight = 0),
+      no_data_fill = no_data_fill
+    )
+  }
+  cell <- function(op, r, p, t, s) op[op$reporter_iso == r & op$partner_iso == p & op$tech == t & op$supply_chain == s, ]
+  old <- op_with("constant")
+  new <- op_with("dyad")
+
+  # Before: the Downstream trade term is 0.5 for every market, so Sao Tome's need puts it first.
+  expect_true(all(old$trade_index[old$supply_chain == "Downstream"] == 0.5))
+  expect_gt(cell(old, "USA", "STP", "Solar", "Downstream")$opportunity_index, cell(old, "USA", "MEX", "Solar", "Downstream")$opportunity_index)
+
+  # Now: each market's Downstream trade term is its own Midstream trade in the technology.
+  expect_equal(cell(new, "USA", "MEX", "Solar", "Downstream")$trade_index, 1.0)
+  expect_equal(cell(new, "USA", "STP", "Solar", "Downstream")$trade_index, 0.2)
+  expect_equal(cell(new, "USA", "MEX", "Solar", "Downstream")$trade_fill, "same_tech")
+  expect_gt(cell(new, "USA", "MEX", "Solar", "Downstream")$opportunity_index, cell(new, "USA", "STP", "Solar", "Downstream")$opportunity_index)
+  # Japan has no observed Wind cell with the US: its Wind Downstream reads its Solar trade.
+  expect_equal(cell(new, "USA", "JPN", "Wind", "Downstream")$trade_index, 0.6)
+  expect_equal(cell(new, "USA", "JPN", "Wind", "Downstream")$trade_fill, "all_tech")
+  # A reporter with no observed export cell keeps the constant.
+  expect_true(all(new$trade_index[new$reporter_iso == "JPN" & new$supply_chain == "Downstream"] == 0.5))
+  expect_true(all(new$trade_fill[new$reporter_iso == "JPN" & new$supply_chain == "Downstream"] == "constant"))
+
+  # The status, the cells with trade data and the imputed weight share do not change.
+  expect_equal(new$trade_status, old$trade_status)
+  expect_true(all(new$trade_status[new$supply_chain == "Downstream"] == "no_data"))
+  mid <- new$supply_chain == "Midstream"
+  expect_equal(new$opportunity_index[mid], old$opportunity_index[mid])
+  expect_equal(new$imputed_weight_share, old$imputed_weight_share)
+})
+
 test_that("the theme builders report trade coverage: observed trade, recorded zeros and imputed cells", {
   ci <- tibble::tibble(
     country = c("United States", "Japan", "China", "India", "Viet Nam"),
@@ -289,23 +414,31 @@ test_that("the theme builders report trade coverage: observed trade, recorded ze
   eo <- idx("Economic_Opportunity_Index", rev(seq(0.05, 1, length.out = 20)))
   cells <- partnership_strength_build_trade_cells(ptf_comtrade(), ptf_subcat(), years = 2020:2024)
 
-  fs <- safer_friendshore(
-    NULL, ptf_subcat(), eo, es, tibble::tibble(tech = c("Solar", "Wind"), ghg_index = 1),
-    tibble::tibble(Country = "Japan", climate_policy_index = 0.5),
-    tibble::tibble(
-      COUNTRY = character(), COUNTERPART_COUNTRY = character(), DV_TYPE = character(),
-      INDICATOR = character(), X2022 = numeric()
-    ),
-    ci,
-    tibble::tibble(iso3c = ci$iso3c, year = 2023, NY.GDP.MKTP.CD = c(27, 4, 18, 3.5, 0.4) * 1e12),
-    trade_cells = cells
-  )
+  fs_with <- function(no_data_fill) {
+    safer_friendshore(
+      NULL, ptf_subcat(), eo, es, tibble::tibble(tech = c("Solar", "Wind"), ghg_index = 1),
+      tibble::tibble(Country = "Japan", climate_policy_index = 0.5),
+      tibble::tibble(
+        COUNTRY = character(), COUNTERPART_COUNTRY = character(), DV_TYPE = character(),
+        INDICATOR = character(), X2022 = numeric()
+      ),
+      ci,
+      tibble::tibble(iso3c = ci$iso3c, year = 2023, NY.GDP.MKTP.CD = c(27, 4, 18, 3.5, 0.4) * 1e12),
+      trade_cells = cells,
+      no_data_fill = no_data_fill
+    )
+  }
+  fs <- fs_with("dyad")
   cov <- fs$trade_coverage
   expect_setequal(
     names(cov),
-    c("theme", "tech", "supply_chain", "n_cells", "n_trade", "n_zero", "n_imputed", "n_no_data", "share_imputed")
+    c(
+      "theme", "tech", "supply_chain", "n_cells", "n_trade", "n_zero", "n_imputed", "n_no_data",
+      "n_no_data_same_tech", "n_no_data_all_tech", "n_no_data_constant", "share_imputed"
+    )
   )
   expect_equal(cov$n_cells, cov$n_trade + cov$n_zero + cov$n_imputed + cov$n_no_data)
+  expect_equal(cov$n_no_data, cov$n_no_data_same_tech + cov$n_no_data_all_tech + cov$n_no_data_constant)
 
   # Solar Downstream, importer view (5 x 4 = 20 dyad cells): USA reports (CHN 200 and JPN 50;
   # IND and VNM zeros); JPN reports 2024 (CHN 80; USA, IND and VNM zeros); IND and VNM are seen
@@ -318,16 +451,31 @@ test_that("the theme builders report trade coverage: observed trade, recorded ze
   expect_equal(sd$n_imputed, 20 - 10)
   expect_equal(sd$n_no_data, 0)
   expect_equal(sd$share_imputed, 10 / 20)
-  # A (tech, stage) no Comtrade code maps to has no trade data: every dyad gets the constant 0.5,
-  # counted as no_data rather than imputed, and it has no imputed share.
+  # A (tech, stage) no Comtrade code maps to has no trade data: counted as no_data rather than
+  # imputed, and it has no imputed share. Its trade term is the dyad's own: the 10 dyads observed
+  # in Solar Downstream take that cell's index (same technology).
   sm <- cov[cov$tech == "Solar" & cov$supply_chain == "Midstream", ]
   expect_equal(sm$n_no_data, 20)
   expect_equal(sm$n_imputed, 0)
   expect_true(is.na(sm$share_imputed))
-  fs_sm <- fs$variable[fs$variable$tech == "Solar" & fs$variable$supply_chain == "Midstream" &
-    fs$variable$variable == "imp_trade_index", ]
-  expect_true(nrow(fs_sm) > 0)
-  expect_true(all(fs_sm$value == 0.5))
+  expect_equal(sm$n_no_data_same_tech, sd$n_trade + sd$n_zero)
+  trade_rows <- function(out, stage) {
+    v <- out$variable
+    v <- v[v$tech == "Solar" & v$supply_chain == stage & v$variable == "imp_trade_index", ]
+    stats::setNames(v$value, paste(v$reporter_iso, v$partner_iso))
+  }
+  fs_sm <- trade_rows(fs, "Midstream")
+  fs_sd <- trade_rows(fs, "Downstream")
+  expect_equal(fs_sm[["USA CHN"]], fs_sd[["USA CHN"]])
+  expect_equal(fs_sm[["JPN VNM"]], fs_sd[["JPN VNM"]])
+  expect_gt(fs_sm[["USA CHN"]], fs_sm[["USA VNM"]])
+
+  # no_data_fill "constant" (the rule before 2026-10-20): every dyad gets 0.5.
+  fs_const <- fs_with("constant")
+  expect_true(all(trade_rows(fs_const, "Midstream") == 0.5))
+  expect_equal(fs_const$trade_coverage$n_no_data_constant, fs_const$trade_coverage$n_no_data)
+  # Cells with trade data are the same under both rules.
+  expect_equal(trade_rows(fs_const, "Downstream"), fs_sd)
 })
 
 test_that("the trade source prefers the all-reporter pull and flags the allied fallback", {
