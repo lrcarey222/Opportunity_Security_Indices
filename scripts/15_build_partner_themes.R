@@ -155,6 +155,9 @@ trade_cif_fob_factor <- if (is.null(partnership_cfg$trade$cif_fob_factor)) {
 } else {
   as.numeric(partnership_cfg$trade$cif_fob_factor)
 }
+# Growth term of the trade index: scored from a first-year flow of at least growth_min_base_usd;
+# other trading dyads take the neutral score (or their level alone).
+trade_growth <- partnership_strength_trade_growth_settings(partnership_cfg$trade)
 outbound_conduits <- partnership_strength_conduit_rule(
   rule = if (is.null(partnership_cfg$outbound_fdi$conduit_rule)) "conduits" else partnership_cfg$outbound_fdi$conduit_rule,
   scope = if (is.null(partnership_cfg$outbound_fdi$conduit_scope)) "both" else partnership_cfg$outbound_fdi$conduit_scope
@@ -368,6 +371,18 @@ message(
   round(100 * mean(trade_cells$source_last[!is.na(trade_cells$source_last)] == "mirror"), 1),
   "% of those observed in the last year from mirror declarations."
 )
+# The trading dyad cells the trade index ranks (observed last year, positive flow in either year)
+# and those whose growth it scores (partnership_strength_two_stage_trade_index()).
+trade_cells_trading <- !is.na(trade_cells$value_last) &
+  (trade_cells$value_last > 0 | (!is.na(trade_cells$value_first) & trade_cells$value_first > 0))
+trade_cells_growth <- trade_cells_trading & !is.na(trade_cells$value_first) & trade_cells$value_first > 0 &
+  trade_cells$value_first >= trade_growth$min_base_usd
+message(
+  "Partner themes: growth scored for ", round(100 * sum(trade_cells_growth) / sum(trade_cells_trading), 1),
+  "% of the trading dyad cells (first-year flow >= USD ", format(trade_growth$min_base_usd, big.mark = ",", scientific = FALSE),
+  "); the others take ", if (identical(trade_growth$unscored, "neutral")) "the neutral growth score 0.5." else "their level alone."
+)
+rm(trade_cells_trading, trade_cells_growth)
 
 friendshore_outputs <- safer_friendshore(
   comtrade_dyads = NULL,
@@ -386,7 +401,8 @@ friendshore_outputs <- safer_friendshore(
   trade_cells = trade_cells,
   conduit_iso = outbound_conduits$iso3,
   conduit_scope = outbound_conduits$scope,
-  cm_fdi = cm_fdi_inputs
+  cm_fdi = cm_fdi_inputs,
+  trade_growth = trade_growth
 )
 rm(fdi_raw)
 invisible(gc())
@@ -475,7 +491,8 @@ opportunity_outputs <- prosperous_opportunity(
   component_weights = weights$partnership_opportunity_components,
   years = partner_trade_years,
   techs = partner_techs,
-  trade_cells = trade_cells
+  trade_cells = trade_cells,
+  trade_growth = trade_growth
 )
 rm(trade_cells)
 invisible(gc())

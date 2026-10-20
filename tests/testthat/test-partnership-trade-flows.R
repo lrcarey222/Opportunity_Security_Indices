@@ -141,14 +141,14 @@ test_that("trade views orient the matrix for each theme and keep only observed l
   expect_equal(nrow(imp), sum(!is.na(cells$value_last)))
 })
 
-test_that("the two-stage index keeps level-only dyads and ranks recorded zeros below every trading partner", {
+test_that("the two-stage index scores dyads without first-year trade and ranks recorded zeros below every trading partner", {
   ds <- tibble::tibble(
     reporter_iso = c(rep("USA", 6), "JPN", "JPN"),
     partner_iso = c("A", "B", "C", "D", "E", "F", "A", "B"),
     tech = "Solar",
     supply_chain = "Upstream",
-    # A grows, B has no first-year trade (no growth), C and D are recorded zeros, E stopped
-    # trading, F declined.
+    # A grows, B has no first-year trade (no growth: the neutral growth score), C and D are
+    # recorded zeros, E stopped trading, F declined.
     level_last = c(100, 10, 0, 0, 0, 40, 30, 60),
     level_first = c(50, 0, 0, NA, 20, 80, 10, 20)
   ) %>%
@@ -158,7 +158,7 @@ test_that("the two-stage index keeps level-only dyads and ranks recorded zeros b
   got <- stats::setNames(out$imp_trade_index[out$reporter_iso == "USA"], out$partner_iso[out$reporter_iso == "USA"])
   status <- stats::setNames(out$trade_status[out$reporter_iso == "USA"], out$partner_iso[out$reporter_iso == "USA"])
 
-  # B used to lose its score (NA numerator) and be imputed; it is scored on its level now.
+  # B used to lose its score (NA numerator) and be imputed; it is scored now.
   expect_false(anyNA(got))
   expect_equal(unname(status[c("A", "B", "E", "F")]), rep("trade", 4))
   expect_equal(unname(status[c("C", "D")]), c("zero", "zero"))
@@ -178,6 +178,96 @@ test_that("the two-stage index keeps level-only dyads and ranks recorded zeros b
     rank(trading_only$trade_index[trading_only$reporter_iso == "USA"]),
     rank(with_zeros$trade_index[m][trading_only$reporter_iso == "USA"])
   )
+})
+
+# One (tech, stage) in USD: USA exports to MEX (an established market with modest growth), KAZ (a
+# USD 5k first-year base, the 2024 Kazakhstan case) and NEW (no first-year trade), beside 20 other
+# exporters' dyads with bases above USD 1m and growth from -30% to +90%.
+ptf_growth_cell <- function() {
+  bg_last <- exp(seq(log(2e6), log(4e7), length.out = 20))
+  bg_growth <- seq(-0.3, 0.9, length.out = 20)
+  tibble::tibble(
+    reporter_iso = c("USA", "USA", "USA", sprintf("R%02d", 1:20)),
+    partner_iso = c("MEX", "KAZ", "NEW", rep("P", 20)),
+    tech = "Electric Grid",
+    supply_chain = "Midstream",
+    level_last = c(2.1e9, 4.2e7, 9.6e7, bg_last),
+    level_first = c(2.1e9 / 1.1, 5e3, 0, bg_last / (1 + bg_growth))
+  ) %>%
+    dplyr::mutate(growth = dplyr::if_else(!is.na(level_first) & level_first > 0, level_last / level_first - 1, NA_real_))
+}
+
+ptf_usa <- function(out) {
+  u <- out[out$reporter_iso == "USA", ]
+  stats::setNames(u$trade_index, u$partner_iso)
+}
+
+test_that("growth is scored only from a minimum first-year base, so a tiny or missing base cannot top the reporter", {
+  ds <- ptf_growth_cell()
+  legacy <- list(min_base_usd = 0, unscored = "level_only")
+
+  # The rule before 2026-10-20: the USD 5k base is the fastest growth of the cell and NEW is
+  # scored on its level alone, so both rank above MEX, 22 times KAZ's 2024 flow.
+  old <- ptf_usa(partnership_strength_build_export_indices(ds, trade_growth = legacy))
+  expect_equal(names(old)[which.max(old)], "KAZ")
+  expect_lt(old[["MEX"]], min(old[c("KAZ", "NEW")]))
+
+  # Default: growth is scored from USD 1m; KAZ and NEW take the neutral growth score.
+  new <- ptf_usa(partnership_strength_build_export_indices(ds))
+  expect_equal(names(new)[which.max(new)], "MEX")
+  expect_gt(new[["MEX"]], max(new[c("KAZ", "NEW")]))
+  # Unscored growth is neutral, whatever the multiple: any base below the floor gives the same index.
+  ds_bigger_base <- ds
+  ds_bigger_base$level_first[ds$partner_iso == "KAZ"] <- 9e5
+  ds_bigger_base$growth[ds$partner_iso == "KAZ"] <- 4.2e7 / 9e5 - 1
+  expect_equal(ptf_usa(partnership_strength_build_export_indices(ds_bigger_base)), new)
+  # ... and a tiny base scores as no first-year trade at the same level.
+  ds_same_level <- ds
+  ds_same_level$level_last[ds$partner_iso == "NEW"] <- 4.2e7
+  same <- ptf_usa(partnership_strength_build_export_indices(ds_same_level))
+  expect_equal(same[["KAZ"]], same[["NEW"]])
+
+  # The floor is inclusive: at USD 5k KAZ's growth is scored again and KAZ tops the reporter.
+  at_floor <- ptf_usa(partnership_strength_build_export_indices(ds, trade_growth = list(min_base_usd = 5e3, unscored = "neutral")))
+  expect_equal(names(at_floor)[which.max(at_floor)], "KAZ")
+
+  # The Friendshore view applies the same rule.
+  imp <- partnership_strength_build_import_indices(ds)
+  expect_equal(imp$imp_trade_index, partnership_strength_build_export_indices(ds)$trade_index)
+})
+
+test_that("growth_min_base_usd 0 with level_only reproduces the index before 2026-10-20", {
+  ds <- ptf_growth_cell()
+  # The earlier stage 1, written out: growth S-curved over every trading dyad with a positive
+  # first-year flow; a dyad without growth scored on its level alone.
+  old <- ds %>%
+    dplyr::mutate(trading = level_last > 0 | (!is.na(level_first) & level_first > 0)) %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::mutate(
+      level_idx = median_scurve(dplyr::if_else(trading, level_last, NA_real_)),
+      growth_idx = median_scurve(dplyr::if_else(trading, growth, NA_real_)),
+      combined = dplyr::if_else(is.na(growth_idx), level_idx, (2 * level_idx + growth_idx) / 3)
+    ) %>%
+    dplyr::group_by(reporter_iso, tech, supply_chain) %>%
+    dplyr::mutate(trade_index = median_scurve(combined)) %>%
+    dplyr::ungroup()
+  got <- partnership_strength_build_export_indices(ds, trade_growth = list(min_base_usd = 0, unscored = "level_only"))
+  expect_equal(got$trade_index, old$trade_index)
+})
+
+test_that("the trade growth settings read config/partnership.yml and reject bad values", {
+  expect_equal(partnership_strength_trade_growth_settings(), list(min_base_usd = 1e6, unscored = "neutral"))
+  expect_equal(
+    partnership_strength_trade_growth_settings(list(source = "auto", growth_min_base_usd = "250000", growth_unscored = "Level_Only")),
+    list(min_base_usd = 250000, unscored = "level_only")
+  )
+  expect_error(partnership_strength_trade_growth_settings(list(growth_min_base_usd = -1)), ">= 0")
+  expect_error(partnership_strength_trade_growth_settings(list(growth_min_base_usd = "a lot")), ">= 0")
+  expect_error(partnership_strength_trade_growth_settings(list(growth_unscored = "drop")), "neutral or level_only")
+  expect_error(partnership_strength_build_export_indices(ptf_growth_cell(), trade_growth = list(min_base_usd = NA, unscored = "neutral")), ">= 0")
+
+  cfg <- yaml::read_yaml(file.path(ptf_root, "config", "partnership.yml"))
+  expect_equal(partnership_strength_trade_growth_settings(cfg$trade), list(min_base_usd = 1e6, unscored = "neutral"))
 })
 
 test_that("the theme builders report trade coverage: observed trade, recorded zeros and imputed cells", {

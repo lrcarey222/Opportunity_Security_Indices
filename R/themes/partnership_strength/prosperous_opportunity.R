@@ -99,10 +99,11 @@ partnership_strength_build_dyad_series <- function(res_tech, flow = c("export", 
 }
 
 # Reporter i's exports to market j: the two-stage trade index of
-# partnership_strength_two_stage_trade_index() (partnership_strength_helpers.R). Returns
-# reporter_iso, partner_iso, tech, supply_chain, trade_index and trade_status.
-partnership_strength_build_export_indices <- function(ds_export) {
-  partnership_strength_two_stage_trade_index(ds_export, "trade_index")
+# partnership_strength_two_stage_trade_index() (partnership_strength_helpers.R; growth scored from
+# a minimum first-year base, `trade_growth`). Returns reporter_iso, partner_iso, tech,
+# supply_chain, trade_index and trade_status.
+partnership_strength_build_export_indices <- function(ds_export, trade_growth = partnership_strength_trade_growth_settings()) {
+  partnership_strength_two_stage_trade_index(ds_export, "trade_index", trade_growth = trade_growth)
 }
 
 partnership_strength_build_opportunity_dyads <- function(trade_indices,
@@ -521,7 +522,8 @@ prosperous_opportunity <- function(comtrade_dyads,
                                    top_n = 3,
                                    techs = NULL,
                                    trade_cells = NULL,
-                                   cif_fob_factor = PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR) {
+                                   cif_fob_factor = PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR,
+                                   trade_growth = partnership_strength_trade_growth_settings()) {
   component_weights <- partnership_strength_resolve_opportunity_weights(component_weights)
 
   # The export side of the reconciled flow matrix Friendshore reads (importer's report, else the
@@ -531,7 +533,7 @@ prosperous_opportunity <- function(comtrade_dyads,
   }
   ds_export <- partnership_strength_trade_view(trade_cells, view = "export")
   rm(trade_cells)
-  trade_indices <- partnership_strength_build_export_indices(ds_export)
+  trade_indices <- partnership_strength_build_export_indices(ds_export, trade_growth = trade_growth)
   rm(ds_export)
   opportunity_all <- partnership_strength_build_opportunity_dyads(
     trade_indices,
