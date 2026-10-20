@@ -595,24 +595,61 @@ partnership_strength_trade_view <- function(trade_cells, view = c("import", "exp
     )
 }
 
+# Growth term of the two-stage trade index (config/partnership.yml trade): growth is scored only
+# from a first-year flow of at least this many USD. A ratio from a smaller base is mostly noise in
+# the base: the two declarations of one flow can disagree by more than the base itself (2020 US ->
+# Kazakhstan, Electric Grid Midstream: USD 5k in Kazakhstan's import declaration, about USD 11m in
+# the US export declaration), and the growth S-curve then ranks such a dyad among the fastest
+# growing. Below the floor, and where the first year has no trade, a trading dyad takes the
+# neutral growth score (growth_unscored "neutral": 0.5, the median growth score) or is scored on
+# its level alone ("level_only", the rule before 2026-10-20). See
+# partnership_strength_two_stage_trade_index().
+PARTNERSHIP_STRENGTH_GROWTH_MIN_BASE_USD <- 1e6
+
+# The growth settings of the trade index from config/partnership.yml `trade` (growth_min_base_usd,
+# growth_unscored), with the defaults above for absent keys. Returns list(min_base_usd, unscored).
+partnership_strength_trade_growth_settings <- function(cfg = NULL) {
+  out <- list(min_base_usd = PARTNERSHIP_STRENGTH_GROWTH_MIN_BASE_USD, unscored = "neutral")
+  if (!is.null(cfg$growth_min_base_usd)) out$min_base_usd <- suppressWarnings(as.numeric(cfg$growth_min_base_usd))
+  if (!is.null(cfg$growth_unscored)) out$unscored <- tolower(as.character(cfg$growth_unscored))
+  if (length(out$min_base_usd) != 1 || is.na(out$min_base_usd) || out$min_base_usd < 0) {
+    stop("trade growth_min_base_usd must be one number >= 0.")
+  }
+  if (length(out$unscored) != 1 || !out$unscored %in% c("neutral", "level_only")) {
+    stop("trade growth_unscored must be neutral or level_only, not '", paste(out$unscored, collapse = ", "), "'.")
+  }
+  out
+}
+
 # The two-stage trade index of a dyad series (Friendshore imports, Opportunity exports).
 # Stage 1, within (tech, stage) across dyads that trade (a positive flow in either theme year):
-# S-curve of the last-year level and of growth, combined 2:1 over the measures the dyad has (a
-# dyad without growth, e.g. no first-year trade, is scored on its level). Stage 2: S-curve within
+# S-curve of the last-year level and of growth, combined 2:1. Growth is scored (S-curved) only for
+# the dyads whose first-year flow is at least trade_growth$min_base_usd; the other trading dyads
+# (no first-year trade, or a smaller base) take the neutral growth score 0.5. So a new or
+# tiny-base flow is neither ranked among the fastest growing nor scored on its level alone, which
+# put it above larger partners with ordinary growth (trade_growth$unscored "level_only" restores
+# that rule; with min_base_usd 0 it is the index before 2026-10-20). Stage 2: S-curve within
 # (reporter, tech, stage). Dyads observed with no trade in either year (observed zeros) enter
 # stage 2 as one tie block below every trading partner, so they take the block's mid-rank, the
 # convention the outbound index uses for zero positions. Returns reporter_iso, partner_iso, tech,
 # supply_chain, `index_col` and trade_status ("trade" / "zero").
-partnership_strength_two_stage_trade_index <- function(ds, index_col) {
+partnership_strength_two_stage_trade_index <- function(ds, index_col, trade_growth = partnership_strength_trade_growth_settings()) {
   require_columns(ds, c("reporter_iso", "partner_iso", "tech", "supply_chain", "level_last", "level_first", "growth"), label = "dyad series")
+  trade_growth <- partnership_strength_trade_growth_settings(
+    list(growth_min_base_usd = trade_growth$min_base_usd, growth_unscored = trade_growth$unscored)
+  )
+  neutral_growth <- if (identical(trade_growth$unscored, "neutral")) 0.5 else NA_real_
   ds %>%
     dplyr::mutate(
-      trading = (!is.na(level_last) & level_last > 0) | (!is.na(level_first) & level_first > 0)
+      trading = (!is.na(level_last) & level_last > 0) | (!is.na(level_first) & level_first > 0),
+      growth_scored = trading & !is.na(growth) & !is.na(level_first) & level_first > 0 &
+        level_first >= trade_growth$min_base_usd
     ) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
       level_idx = partnership_strength_safe_scurve(dplyr::if_else(trading, level_last, NA_real_)),
-      growth_idx = partnership_strength_safe_scurve(dplyr::if_else(trading, growth, NA_real_)),
+      growth_idx = partnership_strength_safe_scurve(dplyr::if_else(growth_scored, growth, NA_real_)),
+      growth_idx = dplyr::if_else(trading & !growth_scored, neutral_growth, growth_idx),
       # Available-case on both sides: the numerator used to propagate a missing growth, so a dyad
       # with last-year but no first-year trade lost its trade score and was imputed at the mean.
       combined = partnership_strength_row_weighted_mean(list(level_idx, growth_idx), c(2, 1)),
