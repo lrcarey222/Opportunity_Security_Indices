@@ -159,7 +159,7 @@ Codes are network nodes (`iso3c` = the node; `EUU` for the EU). In edges and flo
 | `_portfolio_caps.csv`, `_portfolio_counts.csv`, `_topk_by_stage.csv` | caps from GDP, top-5 counts, top-5 membership by stage |
 | `_build_candidates.csv`, `_input_checks.csv` | candidate producers; input uniqueness checks |
 
-## Allied Industrial Base (`scripts/31`, `scripts/32`, `outputs/aib/`)
+## Allied Industrial Base (`scripts/31`, `scripts/32`, `scripts/33`, `outputs/aib/`)
 
 Method: `docs/aib_methodology.md`. Shares are of the demand scope's baseline traded demand for the
 node (coverage 0.8 = 80% served after the shock). Every table carries `demand_scope` (the importers
@@ -228,3 +228,39 @@ roles, `metrics`, `path`, the scenario's top 40 `trade` and `investment` relatio
 (the diversification shock alone) and `investmentFlows`. `scenario-baseline`: `network` (the observed
 network above), `nodes[]` and `compacts[]` with their top ten `[ISO3, USD, share]` suppliers. The
 contract is `dashboard/src/aib/contract.ts`.
+
+Since 2026-10-20 the main document may also carry `strategic`, the strategic layer of `scripts/33`
+(optional; shape in `docs/aib_methodology.md` 16.9, rules in `aib_check_strategic()` of
+`R/dashboard/aib/aib_check.R`): `scenarios`, `defaultScenario` (`managed`), `roleDefs`, `thresholds`,
+`compacts[]` (steps with aligned `nodes` / `functions`, workstreams, core countries, a `scenarios`
+object with every scenario id (counts, needs, missions, policy menu, coverage, partners, the spine's
+`[node, status, coverage, host]` tuples) and the `division` tuples `[ISO3, node, supply share, allied
+demand share, host rank, flags]`), `workstreams[]`, `countries[]` (role tuples `[code, status, rank,
+strength, gate 1 value, gate 1 pct, gate 2 value, gate 2 pct]`, metrics, narrative slots and, since
+2026-10-21, their `items` as codes),
+`compactRoles[]` and `theses[]` (`[ISO3, ISO3, compacts, logic]`).
+
+### AIB strategic layer (`scripts/33`, `outputs/aib/`)
+
+Method: `docs/aib_methodology.md` section 16. Configs: `config/aib_strategic_compacts.yml` (the curated
+compact taxonomy), `config/aib_node_functions.yml` (node -> resource / processing / components /
+systems) and `config/aib_strategic_layer.yml` (scenarios, mission templates, policy menu, role
+thresholds, capital evidence). Scenario ids: `baseline`, `managed` (Managed Interdependence), `partial`
+(`china_50`), `decoupling` (`china_100`). Shares are 0-1. Percentiles are `percent_rank` among the
+role's eligible economies (1 = top).
+
+| File | Columns (main) |
+| --- | --- |
+| `aib_strategic_compacts.csv` | one row per strategic compact x scenario: `strategic_compact_id`, `strategic_compact_name`, `scenario`, `scenario_label`, `shock_id`, `technology_family`, `purpose`, `value_chain` (steps joined by ->), `n_steps`, `n_nodes`, `included_nodes`, `workstream_count`, `workstreams`, `active_workstream_count`, `active_workstreams` (a node in BUILD / COORDINATE / MANAGE SPECIALIZATION), `also_touching_workstreams`, `build_node_count`, `coordinate_node_count`, `manage_node_count`, `low_node_count`, `insufficient_node_count`, `not_stressed_node_count`, `not_tested_node_count`, `no_shock_node_count`, `needs_build_nodes` / `needs_coordinate_nodes` / `needs_manage_nodes` (multi-label needs), `class_mix` (classes' shares of lost supply), `mission_lead` (mission / monitor / monitor (targeted actions only)), `primary_mission`, `secondary_mission`, `supporting_mission` with `_class`, `_basis` and `_material` (below 25% of lost supply and US$1bn: a targeted action), `mission_statement`, `policy_mix`, `policy_menu`, `demand_usd`, `lost_usd`, `exposure`, `coverage_static`, `coverage_existing`, `coverage_coordinated`, `coverage_post_investment` (coordinated + the best host's simulated gain at the headline increment, capped at 1: by construction coordinated + min(increment, gap); NA without an investment simulation), `coverage_basis`, `headline_result`, `core_countries` / `core_country_roles` (structural, the same in every scenario), `critical_supply_partners` (allied, >= 5% of world supply of a node), `critical_external_dependencies` (non-allied), `allied_outside_core`, `coalition_members` (allied), `non_allied_relied_on` (the scenario's workstream coalitions; empty without coalitions), `build_hosts` / `build_hosts_non_allied` (named only when no other host ties), `build_host_ties`, `decoupling_binds`, `leading_non_allied`, `leading_non_allied_usd`, `headline_target_usd`, `stress_lens_shock`, `stress_lens_classes`, `stress_note` |
+| `aib_compact_workstreams.csv` | one row per compact candidate (AIB-Cxx): `workstream_id`, `strategic_compact_id`, `assignment_basis` (largest share of allied demand / override), `primary_demand_share`, `demand_split`, `also_spans`, `straddles`, `n_nodes`, `nodes`, `override_reason`, `active_<scenario>`, `strategic_compact_name`, `workstream_name`, `decoupling_type`, `decoupling_archetype`, `decoupling_class_mix`, `decoupling_coalition`, `managed_nodes_run`, `managed_coalition`, `value_chain_steps` |
+| `aib_strategic_spine.csv` | one row per compact x value-chain step x node x scenario: `value_chain_order`, `value_chain_step`, `step_description`, `node_id`, `node_label`, `node_function`, `scope`, `node_status` (the five classes, NOT STRESSED, NOT TESTED or NO SHOCK), `status_detail`, `policy_needs`, `demand_usd`, `optimize`, `lost_usd`, `exposure`, the four coverage states, `residual_gap`, `needs_*`, `top_host` (named only when no other host ties with the model's rank 1), `host_gain`, `host_tie_n`, `host_tied`, `model_rank1`, `largest_supplier`, `largest_share`, `workstream_id` |
+| `aib_compact_country_roles.csv` | one row per strategic compact x country with a function: `iso3`, `country`, `allied`, `compact_role` (lead role; "(non-allied supplier)" suffix), `compact_role_detail`, `compact_functions`, `lead_function`, `lead_node`, `lead_step`, `lead_share`, `lead_share_basis` (world exports or production / world imports), `key_nodes`, `supplier_contribution` (its exports / world trade of the compact's nodes), `demand_contribution` (its share of the scope's imports of the compact), `investment_contribution` (its share of the CM-FDI capital in the compact's sectors; NA outside Battery, EV, Solar, Wind), `resilience_contribution` (= `_managed`), `resilience_contribution_managed`, `resilience_contribution_decoupling` (US$ its new and expanded relationships restore in the compact / the compact's allied demand), `resilience_usd_managed`, `resilience_usd_decoupling`, `criticality`, `compact_relevance` (the larger of the supplier and demand contributions), `mean_step_supply`, `mean_step_demand`, the function flags `f_*` and the shares behind them |
+| `aib_compact_division_of_labour.csv` | compact x country x node cells with >= 1% supply or demand or a host rank: `position_share`, `world_share`, `production_share`, `export_rca`, `scope_demand_share`, `world_import_share`, `net_import_share`, `best_host_rank`, `host_scaled`, `capable_host`, `host_gap_usd`, `momentum`, `anchor_position`, `specialist_position` |
+| `aib_country_strategic_roles.csv` | one row per assessed economy x role it is eligible for (7, or the 3 supply roles for a non-allied supplier): `iso3`, `country`, `allied`, `role_code`, `strategic_role`, `eligible`, `gate1`, `gate1_value`, `gate1_pct`, `gate2`, `gate2_value`, `gate2_pct`, `all_positive`, `role_strength` (the lower gate percentile), `other_gate_pct`, `primary_ok`, `secondary_ok`, `primary_or_secondary` (primary / secondary / qualifies beyond the cap / not assigned), `role_rank`, `supporting_metrics` |
+| `aib_country_strategic_role_metrics.csv` | one row per assessed economy: every gate and supporting metric (`rp_positions`, `rp_mean_share`, `spec_value_share`, `spec_compacts`, `mfg_value_share`, `integration_compacts`, `demand_mean_share`, `net_import_mf`, `cmfdi_out_usd_bn`, `fdi_out_usd_bn` (NA: not assessed), `fdi_year`, `host_gap_usd_bn`, `scaleup_rate`, `ws_bridge_vertical`, `sc_span`, ...), `allied`, `major_supplier` |
+| `aib_country_role_narratives.csv` | one row per allied economy and per non-allied supplier with a role: `primary_roles`, `secondary_roles`, `beyond_cap_roles` (codes), the slots `slot_headline`, `slot_secondary`, `slot_first_on`, `slot_contributes`, `slot_focus`, `slot_dependency`, `slot_needs`, `slot_compacts`, `slot_partners`, `slot_capacity`; the list slots' items as space-separated codes (2026-10-21): `items_first_on` (gate metrics), `items_contributes`, `items_needs`, `items_capacity` (node ids) with `items_contributes_share`, `items_needs_share`, `items_capacity_usd_bn` and `capacity_usd_bn`, `items_focus` (node functions), `items_compacts` (strategic compact ids), `items_partners` (ISO3); and the assembled `narrative` |
+| `aib_relationship_theses.csv` | one row per allied pair (`a` < `b`) with a modelled relationship in either institutional network: `priority_compacts`, `shared_compacts`, `complementarity`, `logic` (trade; investment; technology; development / capacity building; market access; resilience / second sourcing; the four compact-role labels read on the priority compacts only), `thesis` |
+
+`aib_strategic.rds` holds the tables above plus `params`, `scenarios`, `compact_defs`, `map` (run node
+-> compact, step, function), `unmapped`, `stale_overrides`, `node_status`, `policy_menus`, `core`,
+`core_long`, `steps` (country x compact x step shares), `evidence` (country x node), `notes` and `meta`.

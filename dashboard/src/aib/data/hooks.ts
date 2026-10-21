@@ -2,13 +2,18 @@
 // retry(); a settled value is read synchronously on the next mount (no flash of "Loading").
 // The scenarios (2026-10-19): useAibScenarioDoc() loads one lazily loaded scenario file (anywhere under
 // the router: the AIB pages and the Country profile alike), useAibScenario() reads and writes the toggle
-// in the URL (`scn`).
+// in the URL (`scn`; absent = Managed Interdependence since 2026-10-20).
+// The strategic layer (2026-10-20): useAibStrategic() reads doc.strategic anywhere under the router (it
+// loads the manifest and the main document itself, from the shared store: inside AibLayout nothing is
+// fetched twice), with the scenario a strategic view reads (strategicScenarioFor() of the toggle).
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import {
-  scenarioFilesOf, type AibBaselineScenarioDoc, type AibDoc, type AibManagedScenarioDoc, type AibManifest, type AibScenarioDoc, type AibScenarioFileId, type AibScenarioId,
+  scenarioFilesOf, strategicOf, type AibBaselineScenarioDoc, type AibDoc, type AibManagedScenarioDoc, type AibManifest, type AibScenarioDoc, type AibScenarioFileId, type AibScenarioId,
+  type AibStrategic, type AibStrategicScenarioId,
 } from '../contract.ts';
+import { strategicScenarioFor } from '../derive/strategic.ts';
 import { scenarioOfSearch, setScenarioSearch, withScenario, type AibToggle } from '../scenarioUrl.ts';
 import { aibStore, AibLoadError, scenarioKey, type LoadState } from './store.ts';
 
@@ -115,4 +120,36 @@ export function useAibScenario(): ScenarioState {
   );
   const href = useCallback((to: string) => withScenario(to, scenario), [scenario]);
   return { scenario, setScenario, href };
+}
+
+/** The strategic layer as a page reads it. */
+export interface StrategicLoad {
+  /** doc.strategic (null while loading, on an error, and for a bundle without the layer) */
+  strategic: AibStrategic | null;
+  /** the main document (null until loaded) */
+  doc: AibDoc | null;
+  loading: boolean;
+  error: AibLoadError | null;
+  retry: () => void;
+  /** the bundle has no strategic layer (an older export, or scripts/33 not run): show the workstreams only */
+  missing: boolean;
+  /** the scenario a strategic view reads: the toggle (Managed Interdependence unless scn=decoupling) when listed, else the section's default */
+  scenario: AibStrategicScenarioId | null;
+}
+
+/**
+ * The strategic layer of the bundle (doc.strategic), anywhere under the router: the AIB pages (where the
+ * document is already loaded) and the Country profile alike. Loads the manifest and the main document
+ * through the shared store (a settled document is read synchronously).
+ */
+export function useAibStrategic(): StrategicLoad {
+  const m = useAibManifest();
+  const d = useCompactsDoc(m.data);
+  const { scenario: toggle } = useAibScenario();
+  const strategic = useMemo(() => strategicOf(d.data), [d.data]);
+  const scenario = useMemo(() => (strategic ? strategicScenarioFor(strategic, toggle) : null), [strategic, toggle]);
+  const error = m.status === 'error' ? m.error : d.status === 'error' ? d.error : null;
+  const retry = m.status === 'error' ? m.retry : d.retry;
+  const loading = !error && (m.status !== 'ready' || d.status !== 'ready');
+  return { strategic, doc: d.data, loading, error, retry, missing: !loading && !error && !strategic, scenario };
 }

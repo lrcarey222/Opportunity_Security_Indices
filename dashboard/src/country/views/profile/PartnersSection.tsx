@@ -16,17 +16,23 @@
 //                   or hosts, the BUILD nodes that concern it, its compact coalitions.
 // The partner-by-partner table (priority partners beside today's partners) and the model's partner scores
 // under the reader's Perspective stay in disclosures after the lenses.
+//
+// Above the lenses (2026-10-20, strategic task spec s.19): the relationship thesis of the economy and its
+// selected partner (URL `partner`, the profile's own; the picker lists the fact sheet's partners, those the
+// model writes a thesis with first), from the strategic layer of the AIB document (src/partnerships/
+// RelationshipThesis.tsx; shown only when the bundle has the layer). The cross-lens summary says where
+// that partner sits in the three lenses.
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { Term } from '../../../components/Term.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
-import { Loading } from '../../../components/ui.tsx';
+import { Loading, Select } from '../../../components/ui.tsx';
 import { cellOf, type PartnerRow } from '../../contract.ts';
 import { PartnerSlope } from '../../charts/PartnerSlope.tsx';
 import { SupplierMatrix } from '../../charts/SupplierMatrix.tsx';
-import type { AibDoc, AibInvestmentFlows, AibManagedScenarioDoc } from '../../../aib/contract.ts';
+import { strategicOf, type AibDoc, type AibInvestmentFlows, type AibManagedScenarioDoc } from '../../../aib/contract.ts';
 import { ClassChip } from '../../../aib/charts/ClassChip.tsx';
 import { useAibManifest, useAibScenario, useAibScenarioDoc, type ScenarioLoad } from '../../../aib/data/hooks.ts';
 import { aibStore } from '../../../aib/data/store.ts';
@@ -34,12 +40,14 @@ import { compactTitle, fmtPp, fmtShare, fmtUsd, listWords, plural } from '../../
 import { hostRanksOf, investmentPairs, partnerTotals, rankWords, type PartnerTotal } from '../../../aib/derive/investment.ts';
 import { lensCoalitions, lensNodes, NO_FILTER, partnersInPairs, scenarioCompacts, type LensScenario, type ScenarioCompactRel } from '../../../aib/derive/partnerships.ts';
 import { effectiveScenario, hasScenarios, scenarioLabel, scenarioNameOf, scenarioShockLabel } from '../../../aib/derive/scenarios.ts';
-import { compactHref, withScenario } from '../../../aib/nav.ts';
+import { compactHref, strategicCompactHref, withScenario } from '../../../aib/nav.ts';
 import { ScenarioToggle } from '../../../aib/ScenarioToggle.tsx';
 import { INVEST_COLOR, ModelledNote } from '../../../aib/views/networkParts.tsx';
 import { AGGREGATE_NAMES, agreementNames, agreementTies, alignmentWords, coalitionOf, dipPartners, tierWords } from '../../../partnerships/derive.ts';
 import { kindOf, lensNames, lensNone, LENS_LOADING, type LensId, type LensNames, type PartnershipKind } from '../../../partnerships/lenses.ts';
 import { PartnershipLenses, RankedNames, type LensPanelSpec } from '../../../partnerships/PartnershipLenses.tsx';
+import { RelationshipThesis } from '../../../partnerships/RelationshipThesis.tsx';
+import { thesisPartners } from '../../../partnerships/thesis.ts';
 import PartnersView from '../../../views/Partners/PartnersView.tsx';
 import { loadTies, tiesName, type Ties } from '../../../views/Partners/ties.ts';
 import { agreementRows, aibTradeOf, buildNodesFor, tradeTiesToday } from '../../derive/framing.ts';
@@ -227,10 +235,11 @@ export function PartnershipsSection() {
         <>
           Who {name} could trade, invest, build and align with, read three ways: as it is today (observed data), as the Opportunity Security Indices recommend (the partner scores of the{' '}
           <Term id="psi" />, such as <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the NEIS defaults) and as the Allied Industrial Base model arranges it under the
-          chosen scenario. The summary of each kind says where the three agree and where they differ.
+          chosen scenario. The summary of each kind says where the three agree and where they differ. First, the relationship thesis of {name} and the partner you choose.
         </>
       }
     >
+      <PairThesisCard />
       <div data-testid={`ptab-${kind}`}>
         {kind === 'trade' && <TradeLenses onKind={onKind} />}
         {kind === 'investment' && <InvestmentLenses onKind={onKind} />}
@@ -266,9 +275,72 @@ function useProfileHref(): (iso: string) => string | null {
   }, [manifest, href]);
 }
 
+/**
+ * The relationship thesis of the economy and its selected partner (the profile's `partner`), from the AIB
+ * document's strategic layer; nothing in a bundle without it. The picker lists the fact sheet's partners.
+ */
+function PairThesisCard() {
+  const { sheet, aib, manifest, partner, setPartner } = useProfile();
+  const { href } = useAibScenario();
+  const doc = aib?.doc ?? null;
+  const strategic = useMemo(() => strategicOf(doc), [doc]);
+  const iso = sheet.iso3;
+  const rows = sheet.partners.rows;
+  const aibNames = aib?.names;
+  const nameOf = useMemo(() => {
+    const m = new Map<string, string>(Object.entries(AGGREGATE_NAMES));
+    for (const [k, v] of Object.entries(aibNames ?? {})) m.set(k, v);
+    for (const c of manifest.countries) m.set(c.iso3, c.name);
+    for (const r of rows) m.set(r.iso3, r.name);
+    m.set(iso, sheet.meta.country);
+    return (x: string) => m.get(x) ?? x;
+  }, [aibNames, manifest, rows, iso, sheet.meta.country]);
+  const profiles = useMemo(() => new Set(manifest.countries.filter((e) => e.status !== 'no_data' && !!e.file).map((e) => e.iso3)), [manifest]);
+  const withThesis = useMemo(() => new Set(thesisPartners(strategic, iso)), [strategic, iso]);
+  if (!strategic) return null;
+  const choices = rows.filter((r) => r.iso3 !== iso);
+  // the fact sheet's order (Partnership Strength) within each group, the partners with a thesis first
+  const ordered = [...choices.filter((r) => withThesis.has(r.iso3)), ...choices.filter((r) => !withThesis.has(r.iso3))];
+  const b = partner && partner !== iso && choices.some((r) => r.iso3 === partner) ? partner : null;
+  const name = proseName(sheet.meta.country);
+  const picker = ordered.length ? (
+    <Select
+      label="Partner"
+      value={b ?? ''}
+      options={[
+        ...(b ? [] : [{ value: '', label: 'Choose a partner' }]),
+        ...ordered.map((r) => ({ value: r.iso3, label: r.name, group: withThesis.has(r.iso3) ? 'With a relationship thesis' : 'No thesis in the model' })),
+      ]}
+      onChange={(v) => setPartner(v || null)}
+      className="max-w-xs"
+    />
+  ) : null;
+  const pairLink = `/aib/partnerships?country=${iso}${b ? `&partner=${b}` : ''}`;
+  return (
+    <RelationshipThesis
+      id="profile-thesis"
+      strategic={strategic}
+      a={iso}
+      b={b}
+      name={nameOf}
+      compactHref={(id) => href(strategicCompactHref(id))}
+      countryHref={(x) => (x !== iso && profiles.has(x) ? href(`/countries/${x}#aib-role`) : null)}
+      headingLevel={3}
+      tools={picker}
+      footer={
+        <p className="text-xs">
+          <Link className="link" to={href(pairLink)}>
+            Every relationship thesis of {name}, with any partner, on the Partnerships page &rarr;
+          </Link>
+        </p>
+      }
+    />
+  );
+}
+
 /** The shared component with the profile's settings. */
 function Lenses({ kind, onKind, lenses, sc, name }: { kind: PartnershipKind; onKind: (k: PartnershipKind) => void; lenses: Record<LensId, LensPanelSpec>; sc: CountryScenario; name?: (iso: string) => string }) {
-  const { sheet } = useProfile();
+  const { sheet, partner } = useProfile();
   const href = useProfileHref();
   return (
     <PartnershipLenses
@@ -283,6 +355,7 @@ function Lenses({ kind, onKind, lenses, sc, name }: { kind: PartnershipKind; onK
       partnerHref={href}
       scenarioLabel={sc.label}
       lenses={lenses}
+      pair={partner && partner !== sheet.iso3 ? partner : null}
     />
   );
 }

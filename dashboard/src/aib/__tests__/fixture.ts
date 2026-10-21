@@ -25,10 +25,25 @@
 // network of six edges; investment flows for the magnets node only, a rank-2 alternative among them) and
 // scenario-baseline (today's network, every pair with at least 2% of a node's demand; each node's and
 // compact's top ten suppliers).
+// Since 2026-10-20 too, the strategic layer (doc.strategic, version 1; it passes the R mirror,
+// aib_check_strategic(), through test-aib-dash-network.R): four scenarios (Baseline, Managed
+// Interdependence the default, the partial disruption zzz_50 without coalitions or investment, Decoupling);
+// five strategic compacts over the eight nodes, every node on one spine: SC-MAGNETS (steps of order 2 and 4:
+// separated oxides, magnets; workstream AIB-C01), SC-BATTERIES (graphite feedstock, anode materials;
+// AIB-C02), SC-WIND (one step; AIB-C03), SC-SOLAR and SC-GRID (no workstream; SC-GRID one step holding two
+// nodes, the INSUFFICIENT DATA transformers and the electrolysers); per scenario the statuses (NO SHOCK
+// under Baseline, NOT STRESSED where Managed Interdependence shifts nothing), counts, needs, missions (up to
+// three slots under Decoupling in SC-MAGNETS; none under the partial disruption in SC-BATTERIES), menus,
+// coverage, partners (null without coalitions), BUILD hosts and headlines; the division of labour (ZZZ the
+// non-allied anchor in every compact); eight assessed economies (AAA DMA + CIA primary, CBH secondary; BBB
+// SMI; CCC STM + RPA primary, SMI + CBH secondary, DSP beyond the cap; DDD DSP; EEE CBH; FFF no role; ZZZ and
+// GGG non-allied, supply roles only, GGG with an empty metrics object; narratives for AAA to EEE); 24
+// compact roles; six theses (CCC-EEE with no priority compact).
 //
 // For tests only (node fs): the manifest, the document, the scenario files (readScenarioDoc), an AibSource
 // over the files (fixtureSource: `edit` changes the main document, `opts.editScenario` a scenario file,
-// `opts.noScenarioFiles` drops files.scenarios from the manifest), stripScenarios() to turn the document
+// `opts.noScenarioFiles` drops files.scenarios from the manifest), stripStrategic() to turn the document
+// into one written before the strategic layer (2026-10-20; every older strip strips it too), stripScenarios() to turn the document
 // into one written before the scenario toggle (stripDiversify() and stripMethodology() strip it too), toMasterTaxonomy() to
 // turn the document into one of the OSI basket (meta without the taxonomy fields, OSI technology names
 // from the crosswalk, strategic scope electro_industrial with the electrolysers node, as Green Hydrogen,
@@ -102,12 +117,19 @@ export function toMasterTaxonomy(doc: AibDoc): AibDoc {
 /** The node.diversify fields of the scenario toggle (2026-10-19). */
 const DIVERSIFY_EXTRAS = ['lostUsd', 'dividend', 'hhi', 'largest', 'largestShare', 'top3Share', 'newLinks', 'expandedLinks'] as const;
 
+/** The document as a bundle written before the strategic layer (in place): no doc.strategic. A no-op on a document without it. */
+export function stripStrategic(doc: AibDoc): AibDoc {
+  delete doc.strategic;
+  return doc;
+}
+
 /**
- * The document as a bundle written before the scenario toggle (in place): meta.scenarios back to the supply
+ * The document as a bundle written before the scenario toggle (in place; so before the strategic layer too): meta.scenarios back to the supply
  * scenarios (meta.supplyScenarios, then removed), no node.baseline, no node.diversify extras, no
  * compact.managed or compact.baseline. A no-op on a document without them.
  */
 export function stripScenarios(doc: AibDoc): AibDoc {
+  stripStrategic(doc);
   const m = doc.meta as unknown as Record<string, unknown>;
   if (Array.isArray(m.supplyScenarios)) m.scenarios = m.supplyScenarios;
   else if (Array.isArray(m.scenarios) && !m.scenarios.every((s) => typeof s === 'string')) m.scenarios = [doc.meta.headlineScenario];

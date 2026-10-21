@@ -22,7 +22,7 @@ import { scenarioDefsOf, type AibDoc, type AibInvestmentPair, type AibMeta } fro
 import { useAibScenario } from '../data/hooks.ts';
 import { fmtScore, fmtShare, fmtUsd, plural } from '../derive/format.ts';
 import { flowsDocOf, investmentPairs, investorHostFlows, rankWords, variantPhrase, type InvestmentFilter, type RankChoice } from '../derive/investment.ts';
-import { effectiveScenario, runMetaOf, scenarioCsvFields, scenarioInfo, scenarioNameOf, scenarioShockLabel } from '../derive/scenarios.ts';
+import { effectiveScenario, runMetaOf, scenarioCsvFields, scenarioFileTag, scenarioInfo, scenarioNameOf, scenarioShockLabel } from '../derive/scenarios.ts';
 import { nodeWhere, taxonomyOf } from '../derive/taxonomy.ts';
 import type { AibToggle } from '../scenarioUrl.ts';
 import { csvWithRun } from './common.tsx';
@@ -122,7 +122,7 @@ export function InvestmentFlowsCard({ doc, meta, shockLabel, filter, scope, name
   const runMeta = runMetaOf(meta, id);
   const scn = available ? scenarioCsvFields(meta, id) : null;
   const csv = () => ({
-    name: `${csvName} investor to host flows${scope ? ` ${scope}` : ''}${rank === 'all' ? ' every ranked host' : ''}${id === 'managed' ? ` ${info.label}` : ''}`,
+    name: `${csvName} investor to host flows${scope ? ` ${scope}` : ''}${rank === 'all' ? ' every ranked host' : ''}${scenarioFileTag(id, meta, available)}`,
     text: csvWithRun(
       pairs.map((p) => ({
         investor_iso3: p.investor, investor: nm(p.investor), host_iso3: p.host, host: nm(p.host), node_id: p.node, sub_sector: nodeLabel(p.node),

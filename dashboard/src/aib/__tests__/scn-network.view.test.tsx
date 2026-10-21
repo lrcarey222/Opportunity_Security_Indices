@@ -89,7 +89,7 @@ const names = countryNamesOf(doc);
 
 describe('the Country roles page under the toggle', () => {
   it('Decoupling: the headline network, its every-shock totals labelled; what changes from today: who supplies whom and the roles gained or lost', async () => {
-    renderAt('/aib/roles');
+    renderAt('/aib/roles?scn=decoupling');
     expect(await h1('Country roles')).toBeTruthy();
     const note = within(main()).getAllByTestId('modelled-note')[0].textContent ?? '';
     expect(note).toContain('Zembla supply removed; supply assumption: reallocation');
@@ -119,7 +119,7 @@ describe('the Country roles page under the toggle', () => {
     const roles = await region('Roles gained or lost');
     const lost = within(roles).getByRole('region', { name: 'Roles lost or reduced under Decoupling' });
     expect(within(lost).getByText(/Stop supplying the allied market/)).toBeTruthy();
-    expect(within(lost).getAllByRole('link', { name: 'Zembla' })[0].getAttribute('href')).toBe('/countries/ZZZ#aib-role');
+    expect(within(lost).getAllByRole('link', { name: 'Zembla' })[0].getAttribute('href')).toBe('/countries/ZZZ?scn=decoupling#aib-role');
     const gained = within(roles).getByRole('region', { name: 'Roles gained under Decoupling' });
     expect(within(gained).getByText(/New suppliers/).parentElement!.textContent).toContain('Dorvalia');
     noAcronyms();
@@ -132,7 +132,7 @@ describe('the Country roles page under the toggle', () => {
   });
 
   it('Managed Interdependence: the roles from its file, no every-shock totals, the capped suppliers; links carry the toggle', async () => {
-    renderAt('/aib/roles?scn=managed');
+    renderAt('/aib/roles');
     expect(await h1('Country roles')).toBeTruthy();
     await waitFor(() => expect(document.getElementById('role-FFF')).toBeTruthy(), { timeout: 15_000 });
     const note = within(main()).getAllByTestId('modelled-note')[0].textContent ?? '';
@@ -143,9 +143,9 @@ describe('the Country roles page under the toggle', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'How roles are read' }).nextElementSibling!.textContent).toContain('removes no supplier');
     // the matrix: a compact link and a Country profile link carry the toggle
     const ccc = document.getElementById('role-CCC') as HTMLElement;
-    expect(within(ccc).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/countries/CCC?scn=managed#aib-role');
+    expect(within(ccc).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/countries/CCC#aib-role');
     const fff = document.getElementById('role-FFF') as HTMLElement;
-    expect(within(fff).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/compacts/AIB-C03?scn=managed');
+    expect(within(fff).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/compacts/AIB-C03');
     const roles = await region('Roles gained or lost');
     const lost = within(roles).getByRole('region', { name: 'Roles lost or reduced under Managed Interdependence' });
     expect(within(lost).getByText(/Supply less: held to the cap/).parentElement!.textContent).toMatch(/Zembla in 2 nodes/);
@@ -161,7 +161,7 @@ describe('the Country roles page under the toggle', () => {
 
   it('a broken Managed Interdependence file: an error with Retry in place of the roles', async () => {
     useSource(undefined, { editScenario: (d, id) => void (id === 'managed' && ((d as unknown as Record<string, unknown>).schema = 'x')) });
-    renderAt('/aib/roles?scn=managed');
+    renderAt('/aib/roles');
     expect(await h1('Country roles')).toBeTruthy();
     expect(await screen.findByText('The Managed Interdependence data could not be loaded', undefined, { timeout: 15_000 })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
@@ -170,11 +170,11 @@ describe('the Country roles page under the toggle', () => {
 
   it('a bundle whose manifest names no scenario file: the missing states, never a crash', async () => {
     useSource(undefined, { noScenarioFiles: true });
-    renderAt('/aib/roles?scn=managed');
+    renderAt('/aib/roles');
     expect(await h1('Country roles')).toBeTruthy();
     expect(await screen.findByText(/This data build has no Managed Interdependence file, so the country roles cannot be shown/, undefined, { timeout: 15_000 })).toBeTruthy();
     cleanup();
-    renderAt('/aib/roles');
+    renderAt('/aib/roles?scn=decoupling');
     expect(await h1('Country roles')).toBeTruthy();
     expect(await screen.findByText(/This data build has no Baseline file, so today's network cannot be shown/, undefined, { timeout: 15_000 })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Roles by economy' })).toBeTruthy();
@@ -194,7 +194,7 @@ describe('the Country roles page under the toggle', () => {
 
 describe('a compact\'s partnership network under the toggle', () => {
   it('Decoupling: today\'s suppliers beside the added ones, the removed supplier marked', async () => {
-    renderAt('/compacts/AIB-C01');
+    renderAt('/compacts/AIB-C01?scn=decoupling');
     await h1(/./);
     const trade = await region('Trade relationships');
     const cmp = await within(trade).findByTestId('suppliers-compare');
@@ -206,7 +206,7 @@ describe('a compact\'s partnership network under the toggle', () => {
   });
 
   it('Managed Interdependence: the compact as its file solves it, the capped supplier, its flows', async () => {
-    renderAt('/compacts/AIB-C01?scn=managed');
+    renderAt('/compacts/AIB-C01');
     await h1(/./);
     const c = mi.compacts.find((x) => x.id === 'AIB-C01')!;
     const trade = await region('Trade relationships');
@@ -236,13 +236,13 @@ describe('the investor -> host flows card follows the toggle wherever it is embe
   };
 
   it('the URL chooses: Decoupling the main document\'s flows, Managed Interdependence its file\'s (after loading)', async () => {
-    renderCard('/x');
+    renderCard('/x?scn=decoupling');
     const best = doc.investmentFlows!.pairs.filter((p) => p.rank === 1);
     const card = await region('Who invests where');
     expect(within(within(card).getByTestId('flow-list')).getAllByRole('listitem')).toHaveLength(Math.min(8, best.length));
     expect(within(card).getByText('Decoupling')).toBeTruthy();
     cleanup();
-    renderCard('/x?scn=managed');
+    renderCard('/x');
     const card2 = await region('Who invests where');
     await waitFor(() => expect(within(card2).getByTestId('flow-list')).toBeTruthy(), { timeout: 15_000 });
     expect(within(within(card2).getByTestId('flow-list')).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
@@ -254,7 +254,7 @@ describe('the investor -> host flows card follows the toggle wherever it is embe
 
   it('a failed file: the error and Retry in the card', async () => {
     useSource(undefined, { editScenario: (d, id) => void (id === 'managed' && ((d as unknown as Record<string, unknown>).schema = 'x')) });
-    renderCard('/x?scn=managed');
+    renderCard('/x');
     const card = await region('Who invests where');
     expect(await within(card).findByText('The Managed Interdependence data could not be loaded', undefined, { timeout: 15_000 })).toBeTruthy();
     expect(within(card).getByRole('button', { name: 'Retry' })).toBeTruthy();

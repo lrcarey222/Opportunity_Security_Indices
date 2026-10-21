@@ -17,8 +17,8 @@ import {
   lostByClassOf, nodeScenario, nodeScenarios, nodeSuppliersToday, parseClassMix, scenarioCaveat, SCENARIO_COLOR, SCENARIO_DEFAULTS, scenarioInfo, scenarioInvestmentFlows,
   scenarioLabel, scenarioList, scenarioNameOf, scenarioNetwork, scenarioShockLabel, scenarioTotals, scenarioTotalsAll,
 } from '../derive/scenarios.ts';
-import { aibNavItems, compactHref, rolesHref } from '../nav.ts';
-import { hasStrayScenario, scenarioCarry, scenarioOfSearch, setScenarioSearch, withScenario } from '../scenarioUrl.ts';
+import { aibNavItems, compactHref, rolesHref, strategicCompactHref, workstreamsHref } from '../nav.ts';
+import { clearScenarioSearch, DEFAULT_TOGGLE, hasScenarioKey, hasStrayScenario, scenarioCarry, scenarioOfSearch, SCENARIO_TOGGLES, setScenarioSearch, withScenario } from '../scenarioUrl.ts';
 import { aibTabHref, rememberLocation, resetLastLocations } from '../../shell/lastLocation.ts';
 import { moduleItems } from '../../shell/Header.tsx';
 import { COUNTRY_KEY_ORDER, parseCountrySearch, serializeCountrySearch } from '../../country/url.ts';
@@ -243,56 +243,73 @@ describe('the store loads the scenario files lazily', () => {
 });
 
 describe('the scenario in the URL (scn)', () => {
-  it('reads Decoupling unless scn=managed; a stray value is flagged; writes omit the default', () => {
-    expect(scenarioOfSearch('')).toBe('decoupling');
+  it('reads Managed Interdependence unless scn=decoupling (the default since 2026-10-20); a stray value is flagged; writes omit the default', () => {
+    expect(DEFAULT_TOGGLE).toBe('managed');
+    expect(SCENARIO_TOGGLES).toEqual(['managed', 'decoupling']);
+    expect(scenarioOfSearch('')).toBe('managed');
+    expect(scenarioOfSearch('?scn=decoupling')).toBe('decoupling');
+    expect(scenarioOfSearch('?scn=baseline')).toBe('managed');
+    // a link written before the default changed still opens Managed Interdependence
     expect(scenarioOfSearch('?scn=managed')).toBe('managed');
-    expect(scenarioOfSearch('?scn=baseline')).toBe('decoupling');
-    expect(scenarioOfSearch(new URLSearchParams('mode=trade&scn=managed'))).toBe('managed');
-    expect(hasStrayScenario('?scn=managed')).toBe(false);
-    expect(hasStrayScenario('?scn=decoupling')).toBe(true);
+    expect(scenarioOfSearch(new URLSearchParams('mode=trade&scn=decoupling'))).toBe('decoupling');
+    expect(hasStrayScenario('?scn=decoupling')).toBe(false);
+    expect(hasStrayScenario('?scn=managed')).toBe(true);
     expect(hasStrayScenario('?scn=foo&x=1')).toBe(true);
-    expect(hasStrayScenario('?scn=managed&scn=managed')).toBe(true);
+    expect(hasStrayScenario('?scn=decoupling&scn=decoupling')).toBe(true);
     expect(hasStrayScenario('?x=1')).toBe(false);
-    expect(setScenarioSearch('?mode=trade', 'managed')).toBe('?mode=trade&scn=managed');
-    expect(setScenarioSearch('?scn=managed&mode=trade', 'decoupling')).toBe('?mode=trade');
-    expect(setScenarioSearch('?scn=foo', 'decoupling')).toBe('');
-    expect(scenarioCarry('?mode=x&scn=managed')).toBe('?scn=managed');
+    expect(hasScenarioKey('?x=1&scn=decoupling')).toBe(true);
+    expect(hasScenarioKey('?x=1')).toBe(false);
+    expect(setScenarioSearch('?mode=trade', 'decoupling')).toBe('?mode=trade&scn=decoupling');
+    expect(setScenarioSearch('?scn=decoupling&mode=trade', 'managed')).toBe('?mode=trade');
+    expect(setScenarioSearch('?scn=foo', 'managed')).toBe('');
+    expect(clearScenarioSearch('?scn=decoupling&mode=trade')).toBe('?mode=trade');
+    expect(scenarioCarry('?mode=x&scn=decoupling')).toBe('?scn=decoupling');
+    expect(scenarioCarry('?mode=x&scn=managed')).toBe('');
     expect(scenarioCarry('?mode=x')).toBe('');
   });
 
   it('withScenario carries the choice on any href: a path, a query, a hash', () => {
-    expect(withScenario('/compacts/AIB-C01', 'managed')).toBe('/compacts/AIB-C01?scn=managed');
-    expect(withScenario('/compacts/AIB-C01', 'decoupling')).toBe('/compacts/AIB-C01');
-    expect(withScenario('/aib/roles#role-USA', 'managed')).toBe('/aib/roles?scn=managed#role-USA');
-    expect(withScenario('/aib/partnerships?mode=investment&scn=managed#x', 'decoupling')).toBe('/aib/partnerships?mode=investment#x');
-    expect(withScenario('/aib/partnerships?mode=investment', '?scn=managed')).toBe('/aib/partnerships?mode=investment&scn=managed');
-    expect(compactHref('AIB-C01', 'managed')).toBe('/compacts/AIB-C01?scn=managed');
+    expect(withScenario('/compacts/AIB-C01', 'decoupling')).toBe('/compacts/AIB-C01?scn=decoupling');
+    expect(withScenario('/compacts/AIB-C01', 'managed')).toBe('/compacts/AIB-C01');
+    expect(withScenario('/aib/roles#role-USA', 'decoupling')).toBe('/aib/roles?scn=decoupling#role-USA');
+    expect(withScenario('/aib/partnerships?mode=investment&scn=decoupling#x', 'managed')).toBe('/aib/partnerships?mode=investment#x');
+    expect(withScenario('/aib/partnerships?mode=investment&scn=managed#x', 'managed')).toBe('/aib/partnerships?mode=investment#x');
+    expect(withScenario('/aib/partnerships?mode=investment', '?scn=decoupling')).toBe('/aib/partnerships?mode=investment&scn=decoupling');
+    expect(compactHref('AIB-C01', 'decoupling')).toBe('/compacts/AIB-C01?scn=decoupling');
     expect(compactHref('AIB-C01')).toBe('/compacts/AIB-C01');
-    expect(rolesHref('usa', 'managed')).toBe('/aib/roles?scn=managed#role-USA');
+    expect(rolesHref('usa', 'decoupling')).toBe('/aib/roles?economy=USA&scn=decoupling#role-USA');
+    expect(strategicCompactHref('SC-MAGNETS', 'decoupling', 'spine')).toBe('/compacts/s/SC-MAGNETS?scn=decoupling#spine');
+    expect(workstreamsHref('decoupling', 'SC-MAGNETS')).toBe('/compacts/workstreams?scn=decoupling#sc-SC-MAGNETS');
   });
 
   it('the module nav, the static fallback and the header tab carry it', () => {
-    expect(aibNavItems('/aib', null, '?scn=managed&mode=trade').map((i) => i.to)).toEqual([
-      '/aib?scn=managed', '/aib/partnerships?scn=managed', '/compacts?scn=managed', '/aib/roles?scn=managed', '/aib/diversification?scn=managed',
+    expect(aibNavItems('/aib', null, '?scn=decoupling&mode=trade').map((i) => i.to)).toEqual([
+      '/aib?scn=decoupling', '/aib/partnerships?scn=decoupling', '/compacts?scn=decoupling', '/aib/roles?scn=decoupling', '/aib/diversification?scn=decoupling',
     ]);
     expect(aibNavItems('/aib').map((i) => i.to)[0]).toBe('/aib');
-    const fallback = moduleItems('aib', { module: null, items: [] }, '/compacts', '?scn=managed');
-    expect(fallback.every((i) => i.to.endsWith('?scn=managed'))).toBe(true);
+    expect(aibNavItems('/aib', null, '?scn=managed').map((i) => i.to)[0]).toBe('/aib');
+    const fallback = moduleItems('aib', { module: null, items: [] }, '/compacts', '?scn=decoupling');
+    expect(fallback.every((i) => i.to.endsWith('?scn=decoupling'))).toBe(true);
     expect(fallback.find((i) => i.active)!.key).toBe('compacts');
-    expect(aibTabHref('/compacts/AIB-C01', '?scn=managed')).toBe('/aib?scn=managed');
+    expect(aibTabHref('/compacts/AIB-C01', '?scn=decoupling')).toBe('/aib?scn=decoupling');
     expect(aibTabHref('/compacts/AIB-C01', '?scn=foo')).toBe('/aib');
-    rememberLocation('/compacts/AIB-C02', '?scn=managed');
-    expect(aibTabHref('/sector', '')).toBe('/compacts/AIB-C02?scn=managed');
+    rememberLocation('/compacts/AIB-C02', '?scn=decoupling');
+    expect(aibTabHref('/sector', '')).toBe('/compacts/AIB-C02?scn=decoupling');
     resetLastLocations();
   });
 
   it('the Country profile keeps scn as a host key (parsed, written last) and has the Geopolitical tab', () => {
     expect(COUNTRY_KEY_ORDER).toContain('scn');
-    expect(parseCountrySearch('?cell=oil-upstream&scn=managed').state.scn).toBe('managed');
-    const p = parseCountrySearch('?scn=decoupling');
+    expect(parseCountrySearch('?cell=oil-upstream&scn=decoupling').state.scn).toBe('decoupling');
+    // the default, as an older link writes it: read as nothing, without a notice
+    const old = parseCountrySearch('?scn=managed');
+    expect(old.state.scn).toBeUndefined();
+    expect(old.problems).toEqual([]);
+    const p = parseCountrySearch('?scn=baseline');
     expect(p.state.scn).toBeUndefined();
-    expect(p.problems).toEqual(["scn=decoupling ('managed' or nothing)"]);
-    expect(serializeCountrySearch({ cell: 'oil-upstream', ptab: 'investment', scn: 'managed' })).toBe('?cell=oil-upstream&ptab=investment&scn=managed');
+    expect(p.problems).toEqual(["scn=baseline ('decoupling' or nothing)"]);
+    expect(serializeCountrySearch({ cell: 'oil-upstream', ptab: 'investment', scn: 'decoupling' })).toBe('?cell=oil-upstream&ptab=investment&scn=decoupling');
+    expect(serializeCountrySearch({ cell: 'oil-upstream' })).toBe('?cell=oil-upstream');
     expect(parseCountrySearch('?ptab=geopolitical').state.ptab).toBe('geopolitical');
   });
 });

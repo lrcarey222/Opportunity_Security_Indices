@@ -279,13 +279,17 @@ describe('acceptance workflows (brief s.27), at navigation level', () => {
     expect(errors).toEqual([]);
   }, 90_000);
 
-  it('AIB: Home -> Allied Industrial Base -> overview -> Sectoral Compacts -> a compact -> a country role -> its profile', async () => {
+  it('AIB: Home -> Allied Industrial Base -> overview -> Sectoral Compacts -> a strategic compact and its workstreams -> a workstream -> a country role -> its profile', async () => {
     setCountryStoreForTests(new CountryStore(countrySourceWithAib()));
     const router = renderAt('/');
     await follow(router, linkIn('main article a[href="/aib"]', /^Explore AIB$/), path('/aib'));
     expect(await screen.findByRole('list', { name: 'Nodes by treatment' }, { timeout: 30_000 })).toBeTruthy();
     await follow(router, linkIn('nav[aria-label="Allied Industrial Base views"] a', /^Sectoral Compacts$/), path('/compacts'));
-    await follow(router, linkIn('main a', /^View compact/), path(/^\/compacts\/[^/]+$/));
+    // the Strategic Sectoral Compacts: a card opens its compact, and its workstreams (the compact candidates)
+    await follow(router, linkIn('main a', /^View compact/), path(/^\/compacts\/s\/SC-[^/]+$/));
+    await follow(router, linkIn('nav[aria-label="Allied Industrial Base views"] a', /^Sectoral Compacts$/), path('/compacts'));
+    await follow(router, linkIn('main a', /^View workstreams/), path('/compacts/workstreams'));
+    await follow(router, linkIn('main a', /^View compact/), path(/^\/compacts\/AIB-[^/]+$/));
     const role = await waitFor(() => {
       const a = linkIn('main a[href^="/countries/"][href$="#aib-role"]')();
       expect(a).toBeTruthy();

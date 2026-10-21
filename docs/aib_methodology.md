@@ -1,8 +1,9 @@
 # Allied Industrial Base (AIB): trade partnerships, investment prioritization and Sectoral Compacts
 
 (`config/aib.yml`; pure functions in `R/aib/`; IO in `scripts/31_build_aib_trade_network.R`,
-`scripts/32_build_aib_partnerships.R` and `scripts/84_export_aib_data.R`; tests
-`tests/testthat/test-aib-*.R`; dashboard view `dashboard/src/aib/`.)
+`scripts/32_build_aib_partnerships.R`, `scripts/33_build_aib_strategic_layer.R` (the strategic layer,
+section 16) and `scripts/84_export_aib_data.R`; tests `tests/testthat/test-aib-*.R`; dashboard view
+`dashboard/src/aib/`.)
 
 The Allied Industrial Base is treated as an **emergent network of bilateral trade and investment
 relationships**. Sectoral Compacts are the institutional structures that coordinate groups of those
@@ -18,6 +19,8 @@ observed trade network -> supply-chain node shock -> existing-relationship respo
   -> residual capacity gaps -> marginal investment partnerships -> emergent AIB network
   -> recurring, complementary relationships grouped -> Sectoral Compact candidates
   -> node-specific policy treatment (the Gates & Fences / Yards & Fences handoff)
+  -> (section 16) Strategic Sectoral Compacts above the compacts, which become their workstreams;
+     Strategic AIB Roles and compact-specific roles of countries
 ```
 
 What it does **not** do, by design: no composite AIB score; no alliance fixed in advance as a
@@ -610,6 +613,7 @@ coverage stays at the static 76.1%.
 | `emergent_aib_edges_baseline.csv`, `emergent_aib_country_summary_baseline.csv` | supplier x buyer; economy | Baseline: the observed network (pairs with at least 0.5% of node demand) and the economies' roles in it |
 | `emergent_aib_edges_managed.csv`, `emergent_aib_country_summary_managed.csv` | supplier x buyer x scenario; economy x scenario | Managed Interdependence: the network of the diversification shock alone, with its importer exposure |
 | `aib_compact_candidates_managed.csv`, `aib_compact_members_managed.csv`, `aib_compact_coalition_path_managed.csv`, `aib_compact_leave_one_out_managed.csv` | compact (x economy / step / node) | Managed Interdependence: the headline compacts solved under the diversification shock (headline supply constraint), with `n_nodes_run` and `coalition_reason` |
+| `aib_strategic_*.csv`, `aib_compact_workstreams.csv`, `aib_compact_country_roles.csv`, `aib_compact_division_of_labour.csv`, `aib_country_strategic_role*.csv`, `aib_country_role_narratives.csv`, `aib_relationship_theses.csv`, `aib_strategic.rds` | see section 16.8 | the strategic layer of `scripts/33` |
 
 **The dashboard's three scenarios.** The dashboard compares three counterfactual market structures,
 not forecasts: **Baseline**, trade as it is in the reference year (2024), before any shock;
@@ -663,7 +667,8 @@ never summed. That document is the Decoupling scenario; since 2026-10-19 it also
 compacts solved under the diversification shock, its network and investment flows) and
 `scenario-baseline.<hash>.json` (the observed network and each node's and compact's top ten
 suppliers). The dashboard's scenario toggle (Decoupling | Managed Interdependence) reads them; every
-comparison shows Baseline, Managed Interdependence and Decoupling side by side.
+comparison shows Baseline, Managed Interdependence and Decoupling side by side. Since 2026-10-20 the main
+document also carries the optional `strategic` section (section 16.9).
 
 ## 14. Results of the 2026-10-19 dictionary run
 
@@ -757,3 +762,470 @@ the OSI basket (70 nodes in scope, BUILD 37, 22 compacts) is in the git history.
 * Compacts are grouped by complete linkage and then split into connected chain pieces; a node whose
   partners or needs differ from its chain neighbours forms its own compact (rare-earth compounds and
   metals sit apart from magnets in the headline).
+
+## 16. The strategic layer: Strategic Sectoral Compacts and Strategic AIB Roles
+
+(`scripts/33_build_aib_strategic_layer.R`; pure functions in `R/aib/aib_strategic.R`; configs
+`config/aib_strategic_compacts.yml`, `config/aib_node_functions.yml`, `config/aib_strategic_layer.yml`;
+tests `tests/testthat/test-aib-strategic.R`. Added 2026-10-20.)
+
+An interpretive layer above sections 1-14. It reads `aib_results.rds` and `aib_inputs.rds` and never
+changes them: the node stress tests, classes, trade optimization, investment simulation, scenarios,
+compact clustering and operational roles stay as they are and become the evidence underneath. The
+hierarchy it adds:
+
+```
+ELECTRO-INDUSTRIAL SYSTEM
+  -> STRATEGIC SECTORAL COMPACT   persistent institutional architecture around one coherent value chain
+  -> COMPACT WORKSTREAM           the compact candidates of section 10 (AIB-C01 ...), ids unchanged
+  -> NODE POLICY                  BUILD / COORDINATE / MANAGE SPECIALIZATION / LOW INTERVENTION
+  -> BILATERAL / PROJECT ACTIONS  trade, investment, finance, offtake, R&D, procurement
+
+COUNTRY
+  -> STRATEGIC AIB ROLE           up to 3 primary and 2 secondary of seven roles
+  -> COMPACT-SPECIFIC ROLE        what it contributes within each strategic compact
+  -> OPERATIONAL NETWORK ROLES    supplier / buyer / investor / host / bridge (section 8, section 10)
+```
+
+Nothing here is a composite score. Every rule compares named evidence with a stated bar; no rule sums
+evidence across roles, compacts or countries.
+
+### 16.1 The strategic compact taxonomy
+
+`config/aib_strategic_compacts.yml` maps every node to one strategic compact, one value-chain step
+(`value_chain_order`, a label and a description) and an optional `family`. **The mapping is curated
+from industrial-process knowledge, not discovered.** It starts from the dictionary's index > sector >
+stage structure and the curated `supply_chain_links` / `material_links` of
+`config/aib_taxonomy_dictionary.yml`; no clustering, partner similarity or optimization result decides
+which compact a node belongs to, so physically linked nodes stay together even when their best partners
+differ (rare-earth ore -> oxides -> metals -> magnets -> motors; polysilicon -> wafers -> cells ->
+modules). Every judgement call is in the file's `mapping_notes` with the rejected alternative. Ten
+compacts:
+
+| id | name | family | spine (steps with a node in the 2026-10-20 run) | nodes |
+|---|---|---|---|---|
+| SC-MAGNETS | Permanent Magnets & Drive Systems | Electrotechnology supply chains | rare-earth ore -> separated oxides -> metals & alloys -> magnets & core steel -> motor & generator parts -> motors & generators | 9 |
+| SC-BATTERIES | Battery Materials & Cells | Electrotechnology supply chains | minerals & recycled feed -> refined chemicals -> electrode materials & components -> cells & packs | 14 |
+| SC-SEMIS | Semiconductors & Power Electronics | Electrotechnology supply chains | semiconductor materials -> fab equipment -> chips, power devices & sensors -> power-electronics components -> converters & controllers | 9 |
+| SC-SOLAR | Solar Manufacturing | Power generation equipment | polysilicon -> wafers & silver paste -> cells & cover glass -> modules | 6 |
+| SC-WIND | Wind & Hydropower Equipment | Power generation equipment | blade materials -> blades, towers & turbine parts -> turbines | 6 |
+| SC-NUCLEAR | Nuclear Fuel & Reactor Systems | Power generation equipment | uranium ore & spent fuel -> conversion & enrichment -> fuel & nuclear materials -> reactor components -> reactors & enrichment machinery | 6 |
+| SC-GRID | Grid Equipment & Conductors | Networks | copper ore -> refined copper -> wire rod & transformer steel -> insulators & components -> network equipment | 11 |
+| SC-EV | Electric Vehicles | Electrified end uses | electric vehicles (one step: the vehicles integrate cells, motors and inverters from three other compacts) | 4 |
+| SC-HEAT | Heat Pumps & Cooling | Electrified end uses | refrigerants -> compressors -> heating & cooling units | 4 |
+| SC-INDUSTRY | Industrial Electrification & Hydrogen | Electrified end uses | catalyst metals -> electrolysers -> hydrogen & derivatives -> green iron & furnace inputs -> electric furnaces & heating | 7 |
+
+76 of the run's 77 nodes are mapped; `biofuels-and-wood-pellets` is unmapped (no process link to any
+compact). Grid deliberately excludes power electronics (HS 850440 converters are mostly non-grid; they
+sit in SC-SEMIS), so it does not become a collection of all electrical equipment.
+
+**Validation contract** (`aib_strategic_validate_map()`; `scripts/33` stops on a problem): every node of
+the run is mapped to exactly one compact and step or listed as unmapped; `value_chain_order` rises
+strictly within a compact; ids are unique; overrides name known compacts. A listed id that is not a
+node of the run is not an error (extended scope, or a sub-sector merged into an aggregated node); an
+aggregated node the map does not list takes the compact and step of its member with the most world trade;
+a step with no node in the run is left off the spine and a compact with no node is left out of every
+output.
+
+**Node functions** (`config/aib_node_functions.yml`, keyed by node id, curated): each mapped node is
+`resource` (ores, concentrates, recycled feed), `processing` (chemical or metallurgical transformation),
+`components` (manufactured materials, components and production equipment) or `systems` (assembled
+systems and end products). A node the file does not list falls back on its dictionary stage (Upstream
+-> resource, Midstream -> components, Downstream -> systems) with a note. Keying by node id means a
+revision of the compact map (moving a node, renumbering steps) never changes a node's function.
+
+### 16.2 Workstreams
+
+Each compact candidate of section 10 becomes a **workstream** of exactly one strategic compact: by
+default the compact holding the largest share of its allied demand (`classification$demand_usd` summed
+over its nodes; the split is recorded). A `workstream_overrides` entry takes precedence when its `nodes`
+equal the workstream's node set exactly, whatever its id; an override no workstream matches is reported
+as stale and the demand rule applies. `also_spans` names the other compacts a straddling workstream
+touches (shown as "also touching" there). Nodes outside any workstream still sit on their compact's
+spine. In the 2026-10-20 run: 33 workstreams, 3 straddling, all 3 placed by override:
+
+* AIB-C09 (rare-earth magnets + wind turbine sets; demand 51% Wind / 49% Magnets) -> SC-MAGNETS, also
+  SC-WIND: filing it under Wind would leave the magnets compact without the workstream holding its
+  magnets node.
+* AIB-C03 (motors, compressors, heat pumps; 58% Magnets / 42% Heat) -> SC-HEAT, also SC-MAGNETS: the
+  motor -> hermetic compressor -> heat-pump chain HVAC makers build in-house.
+* AIB-C01 (Li-ion cells + electric buses; 92% / 8%) -> SC-BATTERIES, also SC-EV.
+
+The others fall wholly in one compact: Magnets C06 C19 C26 C30; Batteries C10 C11 C12 C15 C22 C23 C27
+C32; Semis C02 C16 C28 C33; Solar C05 C08; Wind C13 C29; Grid C18 C20 C21; EV C04 C07; Heat C14 C31;
+Industry C17 C24 C25. SC-NUCLEAR has no workstream (every nuclear node is LOW INTERVENTION or
+INSUFFICIENT DATA under Decoupling); its card and spine render with zero workstreams.
+
+### 16.3 Scenarios, portfolio, missions, policy menu and coverage
+
+A strategic compact's id, nodes and steps are identical in every scenario; a scenario sets only each
+node's **status**, the compact's portfolio, missions, coverage and critical partners. Four scenarios
+(`aib_strategic_scenario_defs()`):
+
+* **baseline**: trade as it is in 2024, no shock. Every node is `NO SHOCK`, coverage is 1 and there is no
+  mission ("no shock applied"). Nothing is invented.
+* **managed** (Managed Interdependence, the institutional-design default of the dashboard): the
+  diversification shock. A node the scenario ran on has its scenario class; a node within its
+  benchmark is `NOT STRESSED` (coverage 1, nothing lost), except `NOT TESTED` (2026-10-21 review): a
+  node that is itself concentrated (exporter HHI >= 0.10) and was left alone only because its benchmark
+  heading is concentrated too (benchmark HHI >= 0.18, "highly concentrated" in the 2023 US merger
+  guidelines; `scenarios.managed_untested`). Being as diversified as a concentrated benchmark says
+  nothing, so the node gets no coverage credit and its status detail points to its Decoupling class.
+* **partial** (partial supplier disruption, `china_50`, present because the run classified it): the
+  stress rows and recorded class of that shock; no investment simulation, so no post-investment coverage
+  and no coalitions.
+* **decoupling**: the headline shock (`china_100`, hold), the classes of section 9.
+
+A node the trade model did not optimize is `INSUFFICIENT DATA` in every shocked scenario. Per compact and
+scenario (`aib_strategic_portfolio()`):
+
+* **Class counts**: BUILD, COORDINATE, MANAGE SPECIALIZATION, LOW INTERVENTION, INSUFFICIENT DATA, NOT
+  STRESSED, NOT TESTED and NO SHOCK nodes (they sum to the compact's nodes), plus the nodes carrying each multi-label
+  need. An absent class is a zero, not a dropped column (Decoupling has no MANAGE SPECIALIZATION node).
+* **Missions** (`aib_strategic_missions()`): each intervention class present is a candidate, ordered by
+  its share of the compact's lost supply, then node count, then BUILD, MANAGE SPECIALIZATION, COORDINATE.
+  A multi-label need a node carries beside its headline class (section 9) fills a slot left free,
+  ordered by the lost supply of the nodes that carry it. The first three are the `primary_mission`,
+  `secondary_mission` and `supporting_mission`, each a template filled with the value-chain steps of its
+  nodes (largest lost supply first, at most 3): BUILD "build missing capacity in {steps}", MANAGE
+  SPECIALIZATION "preserve and second-source specialized production in {steps}", COORDINATE
+  "coordinate trade to redirect existing supply in {steps}". A step whose other nodes have another
+  class is named through the mission's own nodes ("solar water heaters (heating & cooling units)"), so a
+  step whose main node is LOW is not announced as BUILD (2026-10-21 review). The basis is kept ("BUILD:
+  97% of lost supply, 7 nodes"; "of supply to shift" under Managed Interdependence). **Materiality**
+  (2026-10-21 review): a mission is material when its nodes carry >= 25% of the compact's lost supply or
+  >= US$1bn (`missions.material_share`, `material_usd`). A compact whose primary mission is not material
+  is led by "monitor: no intervention class reaches the materiality floor (...)" and its missions are
+  listed as targeted actions (`mission_lead`, `*_mission_material`; `targeted` in the bundle). With no
+  intervention node the mission is "monitor: existing trade restores supply in every node", or "... in
+  every node the model could test (N ...)" when some nodes are INSUFFICIENT DATA or NOT TESTED. No score:
+  an ordering of named evidence.
+* **Policy menu** (`config/aib_strategic_layer.yml` `policy_menu`): the instruments of every class (and
+  need) among the missions. BUILD: coordinated investment, DFI / ECA financing, guarantees, price
+  stabilization, long-term offtake, demand aggregation. COORDINATE: reciprocal market access, procurement
+  alignment, customs / trade facilitation, standards, emergency supply arrangements. MANAGE
+  SPECIALIZATION: strategic inventories, mutual supply guarantees, contingency planning, long-term
+  contracts, targeted second-source capacity, R&D / technology cooperation. Interpretive, not an
+  optimized prescription.
+* **Coverage**: demand-weighted over the compact's nodes that have coverage (INSUFFICIENT DATA and NOT
+  TESTED nodes are left out of the weights; NOT STRESSED and NO SHOCK count as 1): `coverage_existing`
+  (existing relationships), `coverage_coordinated` (the optimized trade solution) and
+  `coverage_post_investment` = coordinated + the best host's simulated gain at the headline increment
+  (10%), capped at 1, per node, then weighted. **By construction** this is coordinated + min(increment,
+  residual gap) on each node: every host that can supply the gap gains the same, so the figure is
+  arithmetic, not a finding, and it is left out of the headline sentence (2026-10-21 review). Not
+  simulated under the partial disruption.
+* **Hosts** (2026-10-21 review): the ranked hosts of almost every node tie with the model's rank 1 on its
+  own findings (gain within `tie_resilience` and HHI change within `tie_hhi` of rank 1, config/aib.yml
+  `investment`; `aib_strategic_tie_group()`), so rank 1 is the model's capability / Friendshore
+  tie-break. A host is named (`top_host`, `build_hosts`) only when no other host ties with it; otherwise
+  the spine keeps `host_tie_n` and `host_tied`, and `build_host_ties` counts the BUILD nodes whose hosts
+  tie. In the 2026-10-20 run every BUILD node ties (42 under Decoupling, 17 under Managed
+  Interdependence), so no compact names a host.
+* **Countries**: `core_countries` is structural, the same in every scenario (the five allied economies
+  with a compact role of largest relevance, 16.6). The institutional slots are the scenario's, from the
+  coalitions of the compact's workstreams (Managed Interdependence and Decoupling only), restricted to
+  the allied set (the demand scope plus `allied.treat_as_allied`, Taiwan and Switzerland; 2026-10-21
+  review): `coalition_members` (allied minimum-coalition members), `critical_supply_partners` (allied
+  critical partners with >= 5% of world supply of a node of the compact), `critical_external_dependencies`
+  (non-allied only), `allied_outside_core` (allied economies a workstream lists as a critical external
+  dependency that are in no core coalition of the compact and are not among its `core_countries`),
+  `non_allied_relied_on` (non-allied minimum-
+  coalition members) and `build_hosts` / `build_hosts_non_allied`.
+* **Stress lens** (2026-10-21 review): when the compact's leading non-allied supplier (largest US$ supply
+  equivalent over its nodes) is not a target of the headline shock, `stress_note` (Decoupling and partial
+  rows) says the Decoupling shock does not bind hardest on it and gives its nodes' classes under the
+  largest-supplier shock (`class_largest_subsector`): SC-NUCLEAR (Kazakhstan) and SC-INDUSTRY (Trinidad
+  and Tobago) in the 2026-10-20 run.
+
+### 16.4 Strategic AIB Roles: evidence and country metrics
+
+The design and its calibration are in the strategic-roles method note of 2026-10-20; the rules below
+are what `R/aib/aib_strategic.R` implements (`aib_country_node_evidence()`,
+`aib_country_role_metrics()`). Structural evidence carries the roles (2024 trade, physical production,
+outward investment); model evidence (hosts, coalitions, bridges) is the union of Managed Interdependence
+and Decoupling, so a country's strategic role does not flip with the scenario toggle.
+
+**Evidence.** From `aib_inputs.rds`: exports, world share and RCA by exporter and node; production
+shares (the maximum over sources); bilateral flows 2024 and 2020 (allied-scope demand shares, net
+imports, world import shares, the 2020 -> 2024 export-share change); world trade; `optimize`; material
+links; the demand scope. From `aib_results.rds`: investment hosts at the headline increment under both
+institutional scenarios; node demand; workstream coalitions, roles, bases and tiers in both scenarios;
+partnerships; the Managed Interdependence edges. Capital (read-only partner data): the Cleantech
+Manufacturing FDI projects (`cm_fdi_projects_tbl.rds` of `scripts/15`, `index_use` and cross-border,
+capital x attribution weight; NZIPL / Johns Hopkins, CC BY 4.0) and the IMF Direct Investment Positions
+(outward net position, all instruments, reported official data, 2023 or 2022, summed over counterparts
+that are not conduit centres; conduit reporters, `partnership_strength_conduit_centres()`, are not
+assessed). A missing capital input leaves the capital role "not assessed" (NA, never 0).
+
+**Node flags** (country i, node n): `position_share` = max(world export share, production share);
+**anchor position** = position >= 10% and (RCA >= 1 or production share >= 10%); **specialist
+position** = a `components` node with world export share >= 10% and RCA >= 1.5; **momentum** = export
+share up >= 1 point 2020 -> 2024, >= 2% in 2024 and >= 1.25x its 2020 share; **presence** = position >=
+2%; **capable host** = ranked as a host in either institutional scenario with capability scale >= 2%
+(its own world export or production share in n, or its position in a node joined to n by a material
+link); **credited host** (2026-10-21 review) = a capable host in rank 1's tie group (16.3) on a node that
+needs new capacity in that scenario (BUILD, or a BUILD need beside its class); **host gap** = its credit,
+the best gain x node demand split equally among the credited hosts, the larger of the two scenarios
+(before: the whole residual gap for any host ranked 1-5, LOW nodes included). `best_host_rank` is the
+model's rank where it is credited (evidence; inside a tie it is the capability tie-break). Re-export hubs
+(config/aib.yml `trade.reexport_hubs`: Hong Kong, Macao) hold no anchor, specialist or scale position.
+
+**Assessed economies.** The 57 economies of the demand scope plus the non-allied major suppliers (>= 10%
+of world supply of one mapped node, or >= 5% of three): 73 in the run. Non-allied economies are
+assessed on the three supply roles only; they appear as suppliers and dependencies, never as members.
+
+### 16.5 The seven roles: two gates each
+
+| code | role | gate 1 (size) | gate 2 (breadth / depth) | assessed among |
+|---|---|---|---|---|
+| RPA | Resource & Processing Anchor | anchor positions in resource and processing nodes | mean position share over those nodes | allied + major suppliers |
+| STM | Specialized Technology & Manufacturing Anchor | exports in specialist positions / world trade of the manufacturing nodes | compacts with a specialist position | allied + major suppliers |
+| SMI | Scale Manufacturing & Integration Platform | manufacturing exports / world trade of the manufacturing nodes | compacts with >= 5% of world exports in >= 2 manufacturing nodes (nodes, not steps, since 2026-10-21: a one-step chain such as EVs could never count) | allied + major suppliers |
+| DMA | Demand & Market Anchor | mean share of allied demand | mean net-import share of end-use goods (the nodes of each compact's last step; manufactured goods before 2026-10-21, which counted input buying) | allied |
+| CIA | Capital & Investment Anchor | outward CM-FDI capital | outward IMF DIP position (conduit-free) | allied, not conduits |
+| DSP | Development & Scale-Up Platform | its credited share of new capacity on nodes that need it (US$) | scale-up rate (momentum nodes / presence nodes) | allied |
+| CBH | Coordination / Bridge Hub | workstreams where it is a vertical bridge partner | strategic compacts reached through minimum coalitions | allied |
+
+**Rules** (`aib_assign_strategic_roles()`; parameters in `config/aib_strategic_layer.yml` `roles`):
+
+1. Each gate is a percentile (`dplyr::percent_rank`, 1 = top) among the role's eligible economies. A role
+   **qualifies as primary** when both gate values are > 0 and both percentiles are >= 0.90, as
+   **secondary** when both are >= 0.75. `role_strength` is the lower (binding) percentile; it orders a
+   country's own roles and nothing else. The gates are never averaged.
+2. Order: primary-qualifying first, then `role_strength` in whole percentile points, then the other
+   gate, then the fixed order RPA, STM, SMI, DMA, CIA, DSP, CBH.
+3. Cap: the first three primary-qualifying roles are primary, a fourth is demoted to secondary; at most
+   two secondary; any further qualifying role is reported as "qualifies beyond the cap" (evidence, not
+   in the narrative).
+
+Every gate value, percentile and supporting metric is kept (`aib_country_strategic_roles.csv`,
+`aib_country_strategic_role_metrics.csv`). Why these gates: DMA needs net demand for manufactured goods,
+so a large exporter that also imports is not a demand anchor; DSP needs a scale-up rate, which keeps
+incumbents present almost everywhere out and is why no economy qualifies for all seven roles; a
+specialist position must be a component (EVs, modules and turbines are scale, not specialization).
+
+### 16.6 Compact-specific country roles
+
+One row per country x strategic compact where the country performs at least one function
+(`aib_compact_country_roles()`), from node-level evidence inside the compact:
+
+| function | rule |
+|---|---|
+| Resource supplier | an anchor position in a `resource` node |
+| Processing anchor | an anchor position in a `processing` node |
+| Specialized technology supplier | a specialist position |
+| Scale manufacturer | >= 5% of world exports of a manufacturing node that is not a specialist position (node level since 2026-10-21: a step bundling several products hid transformer and meter makers; the step shares stay as evidence, `scale_steps10`, `scale_steps5`, `f_scale_step`) |
+| Demand anchor (allied) | >= 10% of the allied scope's imports of a step's optimized nodes, or "Demand anchor" in a workstream of the compact |
+| Investment anchor (allied) | >= 10% of the outward CM-FDI capital in the compact's CM-FDI sectors (Battery -> SC-BATTERIES, EV -> SC-EV, Solar, Wind; NA elsewhere) |
+| Capacity-building host (allied) | a credited host in a node of the compact (16.4), or a capable host with momentum there |
+| Bridge / coordination partner (allied) | "Bridge partner" in a workstream of the compact, or a member of >= 2 of its workstreams' minimum coalitions |
+| Diversification partner (allied) | any coalition tier in a workstream of the compact |
+
+The **lead role** (`compact_role`) is the function behind the country's largest position: each supply
+function's largest node share of world supply against, for demand, its largest share of world imports
+of an optimized node in a qualifying step (both world-denominated). Positions within 3 points are tied;
+a supply function beats demand in a tie, and among supply functions the larger US$ position leads
+(2026-10-21 review: US$ no longer compares a demand node with a supply node). A demand position leads
+only with >= 5% of world imports of its node. Input demand does not lead (2026-10-21): a demand position
+in a step before the country's last supply step (its furthest resource, processing, specialist or scale
+node) is input buying for its own downstream production; it stays among the functions, but only demand
+at or after that step (any step, for a country that supplies nothing in the compact) competes for the
+lead. Investment, host, bridge and diversification lead only without a supply or demand lead; demand
+alone leads as a last resort. `compact_role_detail` adds up to two other substantive functions. The row
+keeps the evidence: lead node, step and share; key nodes (prose labels); supplier, demand and investment
+contributions; the resilience contribution in each scenario (the US$ its new and expanded relationships
+restore in the compact's nodes, `resilience_usd_*`, and that over the compact's allied demand; before
+2026-10-21 a sum of node-level shares); criticality (critical supply partner with >= 5% of world supply of
+a node of the compact; critical external dependency for a non-allied economy only; "allied supplier
+outside the core coalition" for an allied one in no core coalition of the compact and not among its core
+countries); and the relevance
+used to order countries, value-weighted: the larger of its supplier contribution (share of the compact's
+world trade) and demand contribution (share of its allied demand); the unweighted step means
+(`mean_step_supply`, `mean_step_demand`) stay as evidence.
+The compact's **core countries** (the same in every scenario; `aib_strategic_core_long()`) are its major
+players plus its upstream anchors, at most six: the three allied economies with the highest relevance;
+then, for each upstream function (resource supplier, processing anchor), the allied economy with the
+strongest lead position in it if that position is at least 10% of world supply and it is not already in;
+then the next most relevant, up to six; listed in chain order (resource, processing, specialized
+technology, scale manufacturing, demand). A value ranking alone filled the magnets core with motor makers
+and left out the rare-earth stages, and one leader per function alone let niche leaders (monazite ore,
+quartz) push out the largest manufacturers; both were tried on 2026-10-21. Non-allied lead suppliers are
+listed apart. The country x step and country x node tables behind
+the division-of-labour matrix are `aib_compact_division_of_labour.csv` and `steps` in
+`aib_strategic.rds`.
+
+### 16.7 Narratives and bilateral theses
+
+**Narratives** (`aib_country_role_narratives()`): one per allied economy and per non-allied supplier
+with a role, assembled from slots so the dashboard can show them separately; no text is written for a
+particular country. `headline` (no role / no primary role / the one primary role / "{Role 1} with ...
+roles" when it leads the second by >= 3 points / otherwise "Combines ... roles"), `secondary`, `first_on`
+(gate metrics where it ranks first among allied economies), `contributes` (its three anchor or
+specialist positions of largest US$ value, share x the node's world trade), `focus` (the node functions
+where it is most present), `needs` (its three largest net imports in US$ among those >= 5% of allied
+demand), `dependency` (top-quartile net buyer of upstream materials / manufactured goods), `compacts` (its
+three most relevant compacts with compact role and lead step), `partners` (the allied economies with which
+new and expanded trade restores the most US$ under Managed Interdependence and Decoupling; investment
+edges are left out since their hosts tie) and `capacity` (up to three nodes where it is a credited host,
+with its credited US$). Value, not share, orders the lists (2026-10-21 review: a 45% share of a US$0.1bn
+node no longer headlines a country); the share is the number shown. Beside each list slot the
+table carries its items as codes (`items_first_on` gate metrics; `items_contributes`, `items_needs` and
+`items_capacity` node ids with `items_contributes_share`, `items_needs_share` and
+`items_capacity_usd_bn`; `items_focus` node functions; `items_compacts` compact ids; `items_partners`
+ISO3; 2026-10-21), so a reader joins them to the bundle instead of splitting the prose. An aggregated
+node reads as its members in prose ("Spent fuel & nuclear scrap and uranium ores (aggregated)").
+
+**Bilateral theses** (`aib_relationship_theses()`; every allied pair with a modelled trade or investment
+relationship in either institutional network, 1,133 pairs with Taiwan and Switzerland): the priority
+compacts (shared compacts, complementary ones first, where one side is the demand anchor and the other
+supplies, then those where the lead roles differ, then by the smaller of the two relevances; a compact
+where both are demand anchors is left out; at most 3; 2026-10-21 review), the complementarity (each side's
+lead role in them) and the
+AIB logic, every label whose evidence holds: trade and investment (a modelled relationship of that kind),
+technology (in a priority compact one side is the specialized technology supplier and the other is not),
+development / capacity building (one side is a capacity-building host where the other is an investment
+anchor or holds the capital role), market access (a demand anchor facing a supplier) and resilience /
+second sourcing (a demand anchor facing a diversification or bridge partner). The four compact-role
+labels are read on the priority compacts only (2026-10-21): read on every shared compact, large
+economies sharing up to nine compacts got nearly every label and the theses did not tell pairs apart
+(Japan - Korea had five). The thesis reads "an" before "investment". No bilateral score.
+
+### 16.8 Outputs (`<outputs_dir>/aib/`)
+
+| File | Key | Content |
+|---|---|---|
+| `aib_strategic_compacts.csv` | strategic compact x scenario | portfolio, class counts, missions with class and basis, policy mix and menu, demand, lost supply, coverage (static, existing, coordinated, post-investment), headline, core countries and roles, critical supply partners and external dependencies, coalition members, build hosts |
+| `aib_compact_workstreams.csv` | workstream (AIB-Cxx) | its strategic compact, assignment basis, demand split, also-spans, straddles, override reason, activity per scenario, the Decoupling name, type, archetype and coalition, the Managed nodes run and coalition |
+| `aib_strategic_spine.csv` | compact x step x node x scenario | node status, status detail, policy needs, demand, lost supply, coverage states, rank-1 host and gain, largest supplier, workstream |
+| `aib_compact_country_roles.csv` | compact x country | compact role, detail, functions (and their flags), lead node / step / share, key nodes, contributions, resilience contribution per scenario, criticality, relevance |
+| `aib_compact_division_of_labour.csv` | compact x country x node | position, world and production shares, RCA, allied demand, world import and net-import shares, host rank, capable host, host gap, momentum, anchor and specialist flags (cells with >= 1% supply or demand, or a host rank) |
+| `aib_country_strategic_roles.csv` | country x role | eligibility, both gates (metric, value, percentile), role strength, primary / secondary / qualifies beyond the cap / not assigned, role rank, supporting metrics |
+| `aib_country_strategic_role_metrics.csv` | country | every role metric |
+| `aib_country_role_narratives.csv` | country | role lists, the ten slots, their items as codes (`items_*`), the narrative |
+| `aib_relationship_theses.csv` | allied pair | priority compacts, shared compacts, complementarity, logic, thesis |
+| `aib_strategic.rds` | | all of the above plus the map, node functions, evidence, notes and meta (read by `scripts/84`) |
+
+### 16.9 The dashboard bundle's `strategic` section
+
+`scripts/84` adds an optional `strategic` section to the main document (`aib_dash_strategic()`; checked
+by `aib_check_strategic()`, whose header lists every rule) when `aib_strategic.rds` exists. Additive:
+the rest of the document is unchanged and a bundle without it stays valid. Version 1:
+
+* `version`, `defaultScenario` (`managed`), `framing` ("Strategic compact = persistent architecture;
+  scenario = the stress applied to it."), `scenarios` [{id, label, shockId, words, investment,
+  coalitions}], `roleDefs` [{code, name, noun, gates, gateLabels, supplyRole}], `thresholds` {pPrimary,
+  pSecondary, maxPrimary, maxSecondary}.
+* `compacts` [{id, name, family, purpose, steps [{order, label, description, nodes, functions}],
+  workstreams, alsoTouching, core / nonAllied [{iso3, role, step}], scenarios {baseline, managed,
+  partial, decoupling: {counts {build, coordinate, manage, low, insufficient, notStressed, notTested,
+  noShock}, needs {build, coordinate, manage}, missions [{slot, cls, text, basis, targeted}], statement,
+  policyMix, menu [{cls, instruments, nodes}], demandUsd, lostUsd, exposure, coverage {static, existing,
+  coordinated, postInvestment}, activeWorkstreams, criticalPartners / criticalExternal / coalition /
+  alliedOutsideCore / nonAlliedReliedOn (null where the scenario has no coalitions), buildHosts,
+  buildHostsNonAllied, buildHostTies, classMix, headline, stressNote, nodes [[node, status, coordinated
+  coverage, named host, hosts tied with rank 1]] in spine order}}, division [[ISO3, node, share of world
+  supply, share of allied demand, best host rank where credited, flags]]}], flags: `a` anchor, `s`
+  specialist, `h` credited host, `m` momentum. The 2026-10-21 fields are optional in both checkers
+  (`notTested`, `targeted`, the new slots, the fifth spine element), so an older bundle stays valid.
+* `workstreams` [{id, compact, basis (demand / override / none), share, split [[compact, share]],
+  alsoSpans, straddles, overrideReason, active (scenario ids)}]: every compact of the document once.
+* `countries` [{iso3, allied, majorSupplier, primary, secondary, beyondCap, roles [[code, status, rank,
+  strength, gate 1 value, gate 1 percentile, gate 2 value, gate 2 percentile]], metrics {...}, slots {the
+  ten slots} or null, items {firstOn, contributes [[node, share]], focus, needs [[node, share]], compacts,
+  partners, capacity [[node, US$bn]], capacityUsdBn} (optional; absent before 2026-10-21) or null,
+  narrative}].
+* `compactRoles` [{compact, iso3, allied, role, detail, functions, leadNode, leadStep, leadShare,
+  leadBasis, keyNodes, supplier, demand, investment, resilienceManaged, resilienceDecoupling,
+  criticality, relevance}].
+* `theses` [[ISO3, ISO3, priority compact ids, logic labels]]: the complementarity text is the two
+  countries' compact roles in those compacts.
+
+Every ISO3 code it uses is in the document's `countries`. On the 2026-10-21 export the section is 545 kB,
+68 kB gzip; the main document goes from 200 to 268 kB gzip (`npm run budget`: Compacts landing 500 of
+700 kB, Strategic compact view 612 of 900 kB).
+
+### 16.10 Results (scripts/32 run of 2026-10-20, strategic layer of 2026-10-21)
+
+Managed Interdependence (the default lens) and Decoupling (the stress test), with core countries (the
+same in both):
+
+| compact | Managed Interdependence: classes, primary mission | Decoupling: classes, primary mission | core countries |
+|---|---|---|---|
+| SC-MAGNETS | 1 BUILD, 3 LOW, 1 INSUFF, 2 not stressed, 2 not tested; build missing capacity in rare-earth permanent magnets (magnets & core steel) | 7 BUILD, 1 LOW, 1 INSUFF; build missing capacity in electric motors (motors & generators), motor & generator parts and magnets & core steel | THA VNM DEU USA JPN MEX |
+| SC-BATTERIES | 4 BUILD, 3 LOW, 1 INSUFF, 1 not stressed, 5 not tested; build missing capacity in Li-ion cells & packs, cathode materials & precursors (electrode materials & components) and lithium chemicals and manganese dioxide (EMD) (refined chemicals) | 10 BUILD, 3 LOW, 1 INSUFF; build missing capacity in cells & packs; electrode materials & components and lithium chemicals, cobalt intermediates & chemicals and manganese dioxide (EMD) (refined chemicals) | USA COD JPN IDN KOR DEU |
+| SC-SEMIS | 1 BUILD, 3 LOW, 3 not stressed, 2 not tested; monitor (below the materiality floor); targeted: build missing capacity in piezo-electric quartz (semiconductor materials) | 6 BUILD, 3 LOW; build missing capacity in static converters & inverters (converters & controllers); power-electronics components and power semiconductors and sensors & controller parts (chips, power devices & sensors) | BRA TWN SGP KOR USA VNM |
+| SC-SOLAR | 4 BUILD, 2 LOW; build missing capacity in modules, cells & cover glass and silver powder (wafers & silver paste) | 4 BUILD, 2 LOW; build missing capacity in modules, cells & cover glass and wafers (wafers & silver paste) | DEU JPN KOR VNM USA IND |
+| SC-WIND | 2 BUILD, 1 COORD, 2 not stressed, 1 not tested; build missing capacity in wind turbine generating sets (turbines) and blade materials | 2 BUILD, 1 COORD, 3 LOW; build missing capacity in wind blades & hubs (blades, towers & turbine parts) and wind turbine generating sets (turbines) | ESP POL IND DEU USA GBR |
+| SC-NUCLEAR | 2 BUILD, 1 COORD, 1 INSUFF, 1 not stressed, 1 not tested; build missing capacity in reactors & enrichment machinery and nuclear special materials (fuel & nuclear materials) | 5 LOW, 1 INSUFF; monitor | AUS CAN IND USA FRA GBR |
+| SC-GRID | 1 BUILD, 4 LOW, 6 not stressed; monitor (below the materiality floor); targeted: build missing capacity in grain-oriented electrical steel (GOES) (wire rod & transformer steel) | 3 BUILD, 8 LOW; build missing capacity in grain-oriented electrical steel (GOES) (wire rod & transformer steel), electricity meters (network equipment) and insulators & components | CHL PER COD JPN DEU USA |
+| SC-EV | 1 LOW, 2 not stressed, 1 not tested; monitor | 3 BUILD, 1 LOW; build missing capacity in electric & plug-in cars; electric buses, trucks & tractors and electric two-wheelers & works trucks (electric vehicles) | DEU USA FRA JPN KOR GBR |
+| SC-HEAT | 1 BUILD, 2 LOW, 1 not stressed; monitor (below the materiality floor); targeted: build missing capacity in solar thermal water heaters (heating & cooling units) | 4 BUILD; build missing capacity in heating & cooling units, compressors and refrigerants | USA NLD THA MEX DEU ITA |
+| SC-INDUSTRY | 1 BUILD, 1 LOW, 3 not stressed, 2 not tested; build missing capacity in catalyst metals | 3 BUILD, 1 COORD, 3 LOW; build missing capacity in electric furnaces & heating, electrolysers and furnace parts (green iron & furnace inputs) | IND OMN ZAF USA SAU MAR |
+
+Strategic roles (upper case primary, lower case secondary; beyond the cap in brackets): Japan {CIA, STM,
+SMI, cbh}; Korea {STM, SMI, cbh, cia}; United States {DMA, CBH, CIA, smi, stm} (RPA); Australia {RPA};
+India {dsp, stm} (CBH, RPA); Germany {CBH, CIA, SMI, dma, stm} (RPA); China (supply roles only) {RPA, SMI,
+STM}; Viet Nam {cbh, dsp}; Mexico {dma, smi} (CBH). Japan, Korea and the US differ: Japan and Korea share
+the two manufacturing roles and differ on capital (primary for Japan, secondary for Korea); the US is the
+only one led by demand. No economy qualifies for all seven roles; 23 of the 59 allied economies (the demand
+scope plus Taiwan and Switzerland) hold a strategic role at these bars, the rest are described by their
+compact roles. No economy holds DSP as a primary role, and India, Mexico and Viet Nam hold no primary role.
+The capital roles need the partner inputs (`--partner-dir`, `--dip`): without them scripts/33 warns and
+does not assess the Capital & Investment Anchor.
+
+Compact roles of the validation economies (lead role, lead step and share): Permanent Magnets: Japan
+scale manufacturer (magnets & core steel 9%), Korea specialized technology supplier (NGO steel 14%), the
+US scale manufacturer (motors & generators 27%), Australia and Viet Nam processing anchors (rare-earth
+metals 25% and 38%), Germany demand anchor (motors 14%). Batteries: Korea specialized technology supplier
+(cathodes 51%), Japan processing anchor (refined chemicals 18%), Australia resource supplier (lithium
+minerals 53%), the US resource supplier (battery recycling feed 44%), Indonesia and Chile processing
+anchors. Solar: the US and India demand anchors, Germany processing anchor (polysilicon 34%), Japan
+specialized technology supplier (wafers & silver paste 59%), Viet Nam scale manufacturer (modules 13%).
+Grid: the US demand anchor (network equipment 34%), Chile and Peru resource suppliers, DR Congo
+processing anchor (refined copper 20%), Germany scale manufacturer (network equipment 11%), Japan
+specialized technology supplier (GOES 25%). The 2026-10-21 rules moved lead roles from input demand to
+what the country supplies (Japan in Magnets, from demand anchor for rare-earth metals; Viet Nam in Solar,
+modules; Korea in Solar; the US in Semiconductors, fab equipment, and in Nuclear, reactor components;
+Japan in Industry, electrolysers) and, in the one-step Electric Vehicles compact, made Korea (11%), Japan
+(7%) and Mexico (6%) scale manufacturers. Theses: 31 of 1,042 pairs carry all six logic labels (45
+before the priority-compact rule) and Japan - Korea two (five before).
+
+### 16.11 Results that still look implausible
+
+Reported, not forced (the rules decide; no country outcome is hard-coded; validation of 2026-10-21):
+
+* **Australia has no Development & Scale-Up role**: its hostable unmet demand is p95 (US$5.0bn: rare-earth
+  magnets, lithium chemicals) but its scale-up rate p73 is below the p75 bar. The potential shows in its
+  narrative's capacity slot.
+* **Korea's capital role is beyond the cap** although Korea is the largest allied cleantech-manufacturing
+  investor (US$61.8bn, p100): its IMF outward position is p82, so the role is secondary-qualifying and
+  the cap (two secondary roles) hides it; the narrative names it ("first among allied economies in ...
+  outward cleantech-manufacturing FDI").
+* **The US in Batteries leads as a resource supplier** on battery recycling feed (44% of world exports of
+  the scrap heading): scrap exports follow consumption, not resource endowment. The US in Magnets leads
+  as a scale manufacturer on AC generators (27%) rather than as the market it also is (20% of allied
+  demand).
+* **Australia in Magnets is a processing anchor on rare-earth metals** (25%) rather than a resource
+  supplier: the ore node has insufficient data (Nigeria 75% of the heading). These shares, and Viet Nam's
+  38% of rare-earth metals, need an HS6 check.
+* **Japan in Magnets is a scale manufacturer (9% of magnets & core steel)**, not a specialized technology
+  supplier: its magnet and NGO exports are under the 10% specialist bar against China's share.
+* **Magnets' Decoupling mission names motors, motor parts and magnets** (the largest lost supply); the
+  BUILD nodes in separated oxides and metals & alloys (US$0.4bn and 0.1bn lost) are on the spine but not
+  in the three-step mission text.
+* **Managed Interdependence lists China as the rank-1 host** for silver powder and nuclear reactors &
+  enrichment machinery (no supplier is removed in that scenario, so China stays a candidate host).
+* **Relationship theses still do not tell the largest pairs apart**: Japan - US, Korea - US, India - US,
+  India - Japan and Australia - Korea carry all six labels; trade holds for nearly every pair and the US
+  is a demand anchor in most compacts. A lead logic (the label supported in the most priority compacts)
+  would need a new tuple field.
+* **Viet Nam's lead on hostable unmet demand** comes from integrated circuits and depends on the
+  investment-host ranking, which the aib-eid revision changes; DSP, the capacity slot and the host
+  functions should be rerun after it.
+* Integrated circuits (about 70% of SC-SEMIS demand) and the conductor metals (about 65% of SC-GRID)
+  dominate those compacts' demand-weighted coverage; read their BUILD nodes beside the figure.
+* Percentile gates are zero-inflated (70-77% of economies have no specialist position, workstream bridge
+  or integrated compact), so any holder clears the p75 secondary bar on that gate and the role rests on
+  its other gate. Tested 2026-10-21: requiring the median of the holders changes no validation economy;
+  ranking among holders only strips Japan and Korea of their manufacturing primaries. Kept.

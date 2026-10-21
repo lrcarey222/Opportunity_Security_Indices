@@ -7,9 +7,11 @@
 //   all      1 = every in-sample sector in the priorities table (else the top 15)
 //   ptab     the Partnerships tab: trade (default), investment, development (IA refactor 2026-10-16) or
 //            geopolitical (2026-10-19)
-//   scn      the AIB scenario toggle (2026-10-19; src/aib/scenarioUrl.ts): managed, else absent (Decoupling).
-//            A host key here, so the embedded Strategic views keep it and the profile's own writes carry
-//            it; the AIB lens of the Partnerships section and the AIB role section follow it.
+//   scn      the AIB scenario toggle (2026-10-19; src/aib/scenarioUrl.ts): decoupling, else absent (Managed
+//            Interdependence, the default since 2026-10-20; an older link's scn=managed reads as the default
+//            and is dropped without a notice). A host key here, so the embedded Strategic views keep it and
+//            the profile's own writes carry it; the AIB lens of the Partnerships section and the AIB role
+//            section follow it.
 //
 // Selecting a sector or a partner replaces the history entry; changing country pushes one.
 
@@ -23,8 +25,8 @@ export interface CountryUrlState {
   partner: string | null;
   all: boolean;
   ptab: PartnerTab;
-  /** the AIB scenario toggle: 'managed', or absent (Decoupling, the default) */
-  scn?: 'managed';
+  /** the AIB scenario toggle: 'decoupling', or absent (Managed Interdependence, the default) */
+  scn?: 'decoupling';
 }
 
 export const COUNTRY_KEY_ORDER = ['cell', 'partner', 'all', 'ptab', 'scn'] as const;
@@ -88,8 +90,9 @@ export function parseCountrySearch(search: string, ctx: CountryUrlCtx = {}): Cou
         break;
       }
       case 'scn':
-        if (v === 'managed') state.scn = 'managed';
-        else bad(k, raw, "'managed' or nothing");
+        // 'managed' is the default (a link written before 2026-10-20): read as nothing, no notice
+        if (v === 'decoupling') state.scn = 'decoupling';
+        else if (v !== 'managed') bad(k, raw, "'decoupling' or nothing");
         break;
     }
   }
@@ -103,7 +106,7 @@ export function serializeCountrySearch(s: Partial<CountryUrlState>): string {
   if (s.partner) q.set('partner', s.partner);
   if (s.all) q.set('all', '1');
   if (s.ptab && s.ptab !== 'trade') q.set('ptab', s.ptab);
-  if (s.scn === 'managed') q.set('scn', 'managed');
+  if (s.scn === 'decoupling') q.set('scn', 'decoupling');
   const t = q.toString();
   return t ? `?${t}` : '';
 }

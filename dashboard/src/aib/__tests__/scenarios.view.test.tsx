@@ -1,5 +1,6 @@
-// The scenario toggle in the app (2026-10-19): the shared header of every AIB page (a radio group
-// "Decoupling | Managed Interdependence", the chosen scenario's words, the About link), the URL key scn
+// The scenario toggle in the app (2026-10-19; Managed Interdependence the default since 2026-10-20): the
+// shared header of every AIB page (a radio group "Managed Interdependence | Decoupling", the chosen
+// scenario's words, the framing line, the About link), the URL key scn
 // (written on a choice, carried by the nav across the two layouts, a stray value dropped, an older bundle
 // without the toggle), the lazy scenario files (never fetched before a hover or a choice; the hook idle for
 // Decoupling and "missing" in an older bundle), About's "How the scenarios work", the Partnerships page's
@@ -14,7 +15,7 @@ import { resetLastLocations } from '../../shell/lastLocation.ts';
 import { splitSearch } from '../../state/url.ts';
 import { AibStore, setAibStoreForTests, type AibSource } from '../data/store.ts';
 import { useAibScenario, useAibScenarioDoc } from '../data/hooks.ts';
-import { nodeScenarios, scenarioTotalsAll } from '../derive/scenarios.ts';
+import { nodeScenarios, scenarioTotalsAll, STRATEGIC_FRAMING } from '../derive/scenarios.ts';
 import { fmtUsd } from '../derive/format.ts';
 import { ScenarioBars, ScenarioClassBars, ScenarioCoverageCompare, scenarioValues } from '../charts/ScenarioCompare.tsx';
 import { resetLastCompact } from '../nav.ts';
@@ -90,65 +91,84 @@ describe.skipIf(!haveFixture())('the scenario toggle', () => {
   const files = manifest.files.scenarios ?? {};
   const scenarioFetched = () => source.calls.filter((f) => f.startsWith('scenario-'));
 
-  it('every AIB page has it: a radio group with Decoupling chosen, its words, the About link; nothing is fetched before a hover or a choice', async () => {
+  it('every AIB page has it: "Managed Interdependence | Decoupling", Managed Interdependence the default (no scn), its words, the framing, the About link', async () => {
     if (!files.managed) return;
     const router = renderAt('/aib');
     const t = await toggle();
     const radios = within(t).getAllByRole('radio') as HTMLInputElement[];
-    expect(radios.map((r) => r.closest('label')!.textContent)).toEqual(['Decoupling', 'Managed Interdependence']);
-    expect(radio('Decoupling').checked).toBe(true);
+    expect(radios.map((r) => r.closest('label')!.textContent)).toEqual(['Managed Interdependence', 'Decoupling']);
+    expect(radio('Managed Interdependence').checked).toBe(true);
+    expect(router.state.location.search).toBe('');
     expect(within(t).getByRole('radiogroup', { name: 'Scenario' })).toBeTruthy();
-    expect(t.textContent).toMatch(/Decoupling: .*stops supplying the allied market \(it keeps buying\)/);
+    expect(t.textContent).toMatch(/Managed Interdependence: No supplier is removed/);
     expect(t.textContent).toMatch(/not forecasts/);
+    // the strategic compact is the persistent architecture, the scenario the stress applied to it
+    const framing = readDoc().strategic?.framing ?? STRATEGIC_FRAMING;
+    expect(within(t).getByTestId('scenario-framing').textContent).toBe(`${framing} Managed Interdependence is the default institutional lens; Decoupling is the stress test.`);
     expect(within(t).getByRole('link', { name: /How the scenarios work/ }).getAttribute('href')).toBe('/compacts/about#scenarios');
-    expect(scenarioFetched()).toEqual([]);
     expect(bareAcronyms(t)).toEqual([]);
-    // a hover prefetches the Managed Interdependence file only
+    // the choice: scn=decoupling in the URL, the words, the nav and the About link carry it
+    fireEvent.click(radio('Decoupling'));
+    await waitFor(() => expect(router.state.location.search).toBe('?scn=decoupling'));
+    expect(radio('Decoupling').checked).toBe(true);
+    expect(t.textContent).toMatch(/Decoupling: .*stops supplying the allied market \(it keeps buying\)/);
+    await waitFor(() => expect(within(views()).getAllByRole('link').every((a) => a.getAttribute('href')!.endsWith('?scn=decoupling'))).toBe(true));
+    expect(within(t).getByRole('link', { name: /How the scenarios work/ }).getAttribute('href')).toBe('/compacts/about?scn=decoupling#scenarios');
+    // and back: the default is never written
+    fireEvent.click(radio('Managed Interdependence'));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+  });
+
+  it('under Decoupling nothing is fetched before a hover or a choice; a hover prefetches the Managed Interdependence file only', async () => {
+    if (!files.managed) return;
+    renderAt('/aib?scn=decoupling');
+    const t = await toggle();
+    expect(radio('Decoupling').checked).toBe(true);
+    expect(scenarioFetched()).toEqual([]);
     fireEvent.pointerEnter(t);
     await waitFor(() => expect(scenarioFetched()).toEqual([files.managed]));
-    // the choice: scn=managed in the URL, the words, the nav and the About link carry it
-    fireEvent.click(radio('Managed Interdependence'));
-    await waitFor(() => expect(router.state.location.search).toBe('?scn=managed'));
-    expect(radio('Managed Interdependence').checked).toBe(true);
-    expect(t.textContent).toMatch(/Managed Interdependence: No supplier is removed/);
-    await waitFor(() => expect(within(views()).getAllByRole('link').every((a) => a.getAttribute('href')!.endsWith('?scn=managed'))).toBe(true));
-    expect(within(t).getByRole('link', { name: /How the scenarios work/ }).getAttribute('href')).toBe('/compacts/about?scn=managed#scenarios');
-    // and back: the default is never written
-    fireEvent.click(radio('Decoupling'));
-    await waitFor(() => expect(router.state.location.search).toBe(''));
   });
 
   it('the choice survives the move between /aib and /compacts (two layouts): the nav carries it, the toggle reads it', async () => {
     if (!files.managed) return;
-    const router = renderAt('/aib?scn=managed');
+    const router = renderAt('/aib?scn=decoupling');
     await toggle();
-    expect(radio('Managed Interdependence').checked).toBe(true);
-    await waitFor(() => expect(within(views()).getByRole('link', { name: 'Sectoral Compacts' }).getAttribute('href')).toBe('/compacts?scn=managed'));
+    expect(radio('Decoupling').checked).toBe(true);
+    await waitFor(() => expect(within(views()).getByRole('link', { name: 'Sectoral Compacts' }).getAttribute('href')).toBe('/compacts?scn=decoupling'));
     fireEvent.click(within(views()).getByRole('link', { name: 'Sectoral Compacts' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/compacts'));
-    expect(router.state.location.search).toBe('?scn=managed');
-    await waitFor(() => expect(radio('Managed Interdependence').checked).toBe(true));
-    // a compact's page and About have it too
-    await router.navigate(`/compacts/${readDoc().compacts[0].id}?scn=managed`);
-    await waitFor(() => expect(radio('Managed Interdependence').checked).toBe(true));
+    expect(router.state.location.search).toBe('?scn=decoupling');
+    await waitFor(() => expect(radio('Decoupling').checked).toBe(true));
+    // a workstream's page, the Workstreams index and About have it too
+    await router.navigate(`/compacts/${readDoc().compacts[0].id}?scn=decoupling`);
+    await waitFor(() => expect(radio('Decoupling').checked).toBe(true));
+    await router.navigate('/compacts/workstreams?scn=decoupling');
+    await waitFor(() => expect(radio('Decoupling').checked).toBe(true));
   });
 
-  it('a stray scn is dropped (other keys and the hash kept); an older bundle has no toggle and drops scn=managed', async () => {
-    const router = renderAt('/compacts?tech=x&scn=baseline#nodes');
+  it("a stray scn is dropped (other keys and the hash kept), an older link's scn=managed too; an older bundle has no toggle and drops any scn", async () => {
+    const router = renderAt('/compacts/workstreams?tech=x&scn=baseline#nodes');
     await toggle();
     await waitFor(() => expect(router.state.location.search).toBe('?tech=x'));
     expect(router.state.location.hash).toBe('#nodes');
-    expect(radio('Decoupling').checked).toBe(true);
+    expect(radio('Managed Interdependence').checked).toBe(true);
+    cleanup();
+    const r1 = renderAt('/aib?scn=managed&x=1');
+    await toggle();
+    await waitFor(() => expect(r1.state.location.search).toBe('?x=1'));
+    expect(radio('Managed Interdependence').checked).toBe(true);
     cleanup();
     useSource((d) => stripScenarios(d), { noScenarioFiles: true });
-    const r2 = renderAt('/aib?scn=managed');
+    const r2 = renderAt('/aib?scn=decoupling');
     await screen.findByRole('heading', { level: 1 }, { timeout: 30_000 });
     await waitFor(() => expect(r2.state.location.search).toBe(''));
     expect(screen.queryByTestId('scenario-toggle')).toBeNull();
+    // its links write no scn (its pages show Decoupling, the main document)
+    await waitFor(() => expect(within(views()).getAllByRole('link').every((a) => !a.getAttribute('href')!.includes('scn='))).toBe(true));
   });
 
-  it('About: How the scenarios work, the three scenarios in order with this export\'s counts', async () => {
-    renderAt('/compacts/about?scn=managed');
+  it("About: How the scenarios work, the three scenarios in order with this export's counts", async () => {
+    renderAt('/compacts/about');
     expect(await screen.findByRole('heading', { level: 2, name: 'How the scenarios work' }, { timeout: 30_000 })).toBeTruthy();
     const s = screen.getByTestId('about-scenarios');
     const text = s.textContent ?? '';
@@ -156,7 +176,7 @@ describe.skipIf(!haveFixture())('the scenario toggle', () => {
     expect(text).toContain('You are reading Managed Interdependence.');
     expect(text).toMatch(/In this export it runs on 3 nodes of 7 and touches 3 compacts of 3\./);
     expect(text).toMatch(/counterfactual market structures, not forecasts/);
-    expect(within(s).getByRole('link', { name: /How Managed Interdependence sets its caps/ }).getAttribute('href')).toBe('/aib/diversification?scn=managed');
+    expect(within(s).getByRole('link', { name: /How Managed Interdependence sets its caps/ }).getAttribute('href')).toBe('/aib/diversification');
     expect(bareAcronyms(s)).toEqual([]);
   });
 
@@ -167,12 +187,12 @@ describe.skipIf(!haveFixture())('the scenario toggle', () => {
       seen.push(this.id);
     } as typeof Element.prototype.scrollIntoView;
     try {
-      renderAt('/compacts/about?scn=managed#scenarios');
+      renderAt('/compacts/about?scn=decoupling#scenarios');
       expect(await screen.findByRole('heading', { level: 2, name: 'How the scenarios work' }, { timeout: 30_000 })).toBeTruthy();
       await waitFor(() => expect(seen).toContain('scenarios'));
       const footer = document.querySelector('footer');
       expect(footer).not.toBeNull();
-      expect(within(footer as HTMLElement).getByRole('link', { name: 'How compacts are derived' }).getAttribute('href')).toBe('/compacts/about?scn=managed');
+      expect(within(footer as HTMLElement).getByRole('link', { name: 'How compacts are derived' }).getAttribute('href')).toBe('/compacts/about?scn=decoupling');
     } finally {
       Element.prototype.scrollIntoView = prev;
     }
@@ -180,7 +200,7 @@ describe.skipIf(!haveFixture())('the scenario toggle', () => {
 
   it('the Partnerships page keeps scn as a host key, so an embedded Strategic view never strips it', () => {
     expect(PARTNERSHIP_KEYS).toContain('scn');
-    expect(splitSearch('?mode=development&scn=managed&h=60', PARTNERSHIP_KEYS)).toEqual({ own: '?h=60', host: [['mode', 'development'], ['scn', 'managed']] });
+    expect(splitSearch('?mode=development&scn=decoupling&h=60', PARTNERSHIP_KEYS)).toEqual({ own: '?h=60', host: [['mode', 'development'], ['scn', 'decoupling']] });
   });
 });
 
@@ -204,11 +224,12 @@ const probe = () => JSON.parse(screen.getByTestId('probe').textContent ?? '{}') 
 describe.skipIf(!haveFixture())('useAibScenarioDoc and useAibScenario (anywhere under the router)', () => {
   it('loads a scenario file lazily; Decoupling is idle; an older manifest says missing', async () => {
     if (!readManifest().files.scenarios?.baseline) return;
-    renderProbe('baseline', '/x?scn=managed');
-    await waitFor(() => expect(probe()).toMatchObject({ scenario: 'baseline', loading: false, missing: false, error: null, toggle: 'managed', href: '/compacts/AIB-C01?scn=managed' }));
+    renderProbe('baseline', '/x?scn=decoupling');
+    await waitFor(() => expect(probe()).toMatchObject({ scenario: 'baseline', loading: false, missing: false, error: null, toggle: 'decoupling', href: '/compacts/AIB-C01?scn=decoupling' }));
     cleanup();
+    // no scn: Managed Interdependence, the default (never written)
     renderProbe('decoupling');
-    await waitFor(() => expect(probe()).toMatchObject({ scenario: null, loading: false, missing: false, toggle: 'decoupling', href: '/compacts/AIB-C01' }));
+    await waitFor(() => expect(probe()).toMatchObject({ scenario: null, loading: false, missing: false, toggle: 'managed', href: '/compacts/AIB-C01' }));
     expect(source.calls.filter((f) => f.startsWith('scenario-'))).toEqual([readManifest().files.scenarios!.baseline]);
     cleanup();
     useSource(undefined, { noScenarioFiles: true });

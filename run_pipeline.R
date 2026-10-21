@@ -50,10 +50,14 @@ source(file.path(repo_root, "scripts", "25_build_partner_indices.R"))
 
 # Allied Industrial Base: trade partnership network, investment prioritization, emergent network
 # and Sectoral Compacts (docs/aib_methodology.md). Reads the partner indices and the coalition table.
+# scripts/33 adds the strategic layer above scripts/32's outputs (Strategic Sectoral Compacts, their
+# workstreams, Strategic AIB Roles and compact-specific country roles; section 16); it reads the CM-FDI
+# projects scripts/15 writes and the raw IMF DIP file, and without them leaves the capital role "not assessed".
 run_aib <- tolower(Sys.getenv("OPSI_RUN_AIB", "true")) %in% c("1", "true", "yes")
 if (run_aib) {
   source(file.path(repo_root, "scripts", "31_build_aib_trade_network.R"))
   source(file.path(repo_root, "scripts", "32_build_aib_partnerships.R"))
+  source(file.path(repo_root, "scripts", "33_build_aib_strategic_layer.R"))
 }
 
 source(file.path(repo_root, "scripts", "80_write_outputs.R"))

@@ -2,8 +2,10 @@
 // Interdependence (the diversify_benchmark shock: no supplier is removed; where a step is more concentrated
 // than comparable goods, no supplier may hold more than the share that brings it to that benchmark) and
 // Decoupling (the headline shock under hold: China stops supplying the allied market and keeps buying).
-// The toggle chooses Decoupling | Managed Interdependence (scenarioUrl.ts); Baseline is the reference every
-// comparison shows beside them, always in the order Baseline, Managed Interdependence, Decoupling.
+// The toggle chooses Managed Interdependence (the default institutional lens since 2026-10-20) | Decoupling
+// (the stress test) (scenarioUrl.ts); Baseline is the reference every comparison shows beside them, always in
+// the order Baseline, Managed Interdependence, Decoupling. A strategic compact is the persistent
+// architecture; the scenario is the stress applied to it (STRATEGIC_FRAMING).
 //
 // Where each scenario's figures come from:
 //   Baseline     node.baseline / compact.baseline (main document) and the lazily loaded scenario-baseline
@@ -125,6 +127,21 @@ export const scenarioWords = (id: AibScenarioId, meta?: AibMeta | null): string 
 
 /** The About section the toggle links to ("How the scenarios work"). */
 export const SCENARIOS_ABOUT_HREF = '/compacts/about#scenarios';
+
+/** What the scenarios are to a strategic compact (strategic.framing carries the export's words; this is the fallback). */
+export const STRATEGIC_FRAMING = 'Strategic compact = persistent architecture; scenario = the stress applied to it.';
+
+/** What each toggle choice is for: Managed Interdependence the default institutional lens, Decoupling the stress test. */
+export const SCENARIO_LENS: Readonly<Record<AibToggle, string>> = {
+  managed: 'the default institutional lens',
+  decoupling: 'the stress test',
+};
+
+/**
+ * The scenario part of an export's file name (" Managed Interdependence", " Decoupling"): every toggle
+ * choice is named, the default included, when the bundle has scenarios; '' without them (Decoupling alone).
+ */
+export const scenarioFileTag = (id: AibScenarioId, meta: AibMeta | null | undefined, available = true): string => (available ? ` ${scenarioInfo(meta, id).label}` : '');
 
 /** The plain-language caveat every scenario view may carry. */
 export const SCENARIO_CAVEAT = 'Scenarios are counterfactual market structures, not forecasts; dollar values are 2024 trade values.';

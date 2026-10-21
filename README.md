@@ -75,11 +75,11 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Partner themes | `scripts/15_build_partner_themes.R` | `partner_{friendshore,opportunity,development}_*_tbl.rds`, `partner_trade_coverage_tbl.rds`, `cm_fdi_projects_tbl.rds`, `partner_cm_fdi_{ties,exposure,coverage}_tbl.rds` |
 | PSI | `scripts/25_build_partner_indices.R` | `psi_tbl.rds` (core-coalition view, headline), `psi_full_coalition_tbl.rds`, `psi_world_tbl.rds`, `psi_dyad_tbl.rds` and category contributions |
 | Allied network (retired 2026-10-17) | `scripts/30_build_allied_network_design.R`: dormant, not run by `run_pipeline.R` | `outputs/allied_network_*.csv` (last copies kept on disk; only the paper scripts `scripts/paper/fig_coalition.R` and `fig_reconcile.R` still read them) |
-| Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path,leave_one_out}.csv`, `aib_diversification.csv`, `allied_trade_growth_sensitivity.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}`; the dashboard scenarios' `aib_observed_supply.csv`, `emergent_aib_{edges,country_summary}_{baseline,managed}.csv`, `aib_compact_{candidates,members,coalition_path,leave_one_out}_managed.csv` |
+| Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R`, `scripts/33_build_aib_strategic_layer.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path,leave_one_out}.csv`, `aib_diversification.csv`, `allied_trade_growth_sensitivity.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}`; the dashboard scenarios' `aib_observed_supply.csv`, `emergent_aib_{edges,country_summary}_{baseline,managed}.csv`, `aib_compact_{candidates,members,coalition_path,leave_one_out}_managed.csv`; the strategic layer's `aib_strategic_{compacts,spine}.csv`, `aib_compact_{workstreams,country_roles,division_of_labour}.csv`, `aib_country_strategic_role{s,_metrics}.csv`, `aib_country_role_narratives.csv`, `aib_relationship_theses.csv`, `aib_strategic.rds` |
 | Vintages | `scripts/40_build_index_vintages.R` | `vintages/*` (ES and EO at several years) |
 | Dashboard: Strategic Insights | `scripts/85_export_dashboard_data.R`, `scripts/86_export_dashboard_fixtures.R` | `dashboard/validation_report.csv`; the app's bundle goes to the repo's `dashboard/public/data/` and the engine's parity fixtures to `dashboard/src/engine/__fixtures__/` |
 | Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them, plus the optional `sector-climate` chunk: `flags.climate`, with the optional IEA pathway tables `climate.nze_*` from scripts/17; `--no-nze` leaves them out; and the optional `sector-climate-src` chunk: `flags.climate_src`, the climate sources of scripts/18; `--no-climate-sources` leaves it out) |
-| Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v2, the Decoupling scenario; plus the lazily loaded `scenario-managed.<hash>.json` and `scenario-baseline.<hash>.json`, schema `osi-aib-scenario` v1, named in `manifest.files.scenarios`) |
+| Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v2, the Decoupling scenario; plus the lazily loaded `scenario-managed.<hash>.json` and `scenario-baseline.<hash>.json`, schema `osi-aib-scenario` v1, named in `manifest.files.scenarios`; since 2026-10-20 the main document's optional `strategic` section, from `scripts/33`) |
 | Dashboard: Country Insights | `scripts/88_export_country_data.R` | the app's Country data go to the repo's `dashboard/public/data/country/` (manifest, a fact sheet per economy, drivers files; `--render-memos` publishes the verified policy memos of the 31 core members as JSON, PDF, Word and Markdown) |
 
 Every index keeps its decomposition (category and variable contributions reconcile to the index value), and every country-cell carries how much of its weight rests on imputed inputs.
@@ -600,16 +600,34 @@ beside the indices and changes none of them; it replaces the original allied net
   again under it: `aib_compact_*_managed.csv`) and **Decoupling** (the headline China shock under
   `hold`: every other output). `scripts/84` writes Decoupling as the main document and the other two as
   lazily loaded `scenario-managed.<hash>.json` / `scenario-baseline.<hash>.json` files.
+- **Strategic layer** (`scripts/33`, `R/aib/aib_strategic.R`; method section 16): an interpretive layer
+  above the outputs, which it never changes. Ten **Strategic Sectoral Compacts** (persistent
+  institutional frameworks around one physically coherent value chain, e.g. rare-earth ore -> oxides ->
+  metals -> magnets -> motors; `config/aib_strategic_compacts.yml`, curated from industrial-process
+  knowledge, not discovered), identical in every scenario (Baseline, Managed Interdependence, partial
+  disruption `china_50`, Decoupling); the 33 compact candidates become their **workstreams**. Per compact
+  and scenario: node class counts, primary / secondary / supporting missions and a policy menu from
+  transparent rules on the classes' shares of lost supply, coverage (existing, coordinated,
+  post-investment), core countries and critical partners. Countries get **Strategic AIB Roles** (Resource
+  & Processing, Specialized Technology & Manufacturing, Scale Manufacturing & Integration, Demand &
+  Market, Capital & Investment, Development & Scale-Up, Coordination / Bridge), each from two percentile
+  gates over named evidence (at most 3 primary and 2 secondary; no composite score; capital evidence
+  from the CM-FDI projects and the IMF DIP outward positions), a **compact-specific role** in each
+  compact from node-level evidence, template narratives and bilateral relationship theses.
 
 ```
 Rscript scripts/31_build_aib_trade_network.R [--raw-dir DIR] [--processed-dir DIR] [--out-dir DIR]
   [--taxonomy dictionary|master] [--dictionary-scope core|extended] [--dyads FILE]
 Rscript scripts/32_build_aib_partnerships.R [--out-dir DIR] [--nodes id1,id2] [--skip-investment] [--taxonomy ...]
   [--demand-scope global|coalition|ISO3,...] [--partner-universe ...] [--scope all|electro_industrial] [--from-checkpoint]
-Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR]
+Rscript scripts/33_build_aib_strategic_layer.R [--in-dir DIR] [--out-dir DIR] [--partner-dir DIR] [--dip FILE]
+  [--compacts FILE] [--node-functions FILE] [--layer FILE]
+Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR] [--strategic FILE]
 ```
 
-`run_pipeline.R` runs 31 and 32 after the partner indices (`OPSI_RUN_AIB=false` skips them).
+`run_pipeline.R` runs 31, 32 and 33 after the partner indices (`OPSI_RUN_AIB=false` skips them).
+`scripts/33` reads `cm_fdi_projects_tbl.rds` from the processed directory (`scripts/15`) and the raw
+`imf_dip.csv`; without either it runs and leaves the Capital & Investment Anchor role "not assessed".
 
 ---
 
@@ -693,10 +711,11 @@ Rscript scripts/15_build_partner_themes.R
 Rscript scripts/25_build_partner_indices.R
 Rscript scripts/31_build_aib_trade_network.R
 Rscript scripts/32_build_aib_partnerships.R
+Rscript scripts/33_build_aib_strategic_layer.R
 Rscript scripts/80_write_outputs.R
 ```
 
-For an end-to-end run (`00, 05, 07, 10, 16, 12, 13, 20, 15, 25, 31, 32, 80`; 31 and 32 unless `OPSI_RUN_AIB=false`):
+For an end-to-end run (`00, 05, 07, 10, 16, 12, 13, 20, 15, 25, 31, 32, 33, 80`; 31, 32 and 33 unless `OPSI_RUN_AIB=false`):
 
 ```bash
 Rscript run_pipeline.R
@@ -712,7 +731,7 @@ Optional environment variables:
 
 - `OPSI_INSTALL_MILP_PKGS=true|false`, `OPSI_REQUIRE_MILP=true|false` — MILP solver stack (ompr, ROI, GLPK)
 - `OPSI_AUTO_PREREQS=true|false`
-- `OPSI_RUN_AIB=true|false` — the Allied Industrial Base steps (31, 32)
+- `OPSI_RUN_AIB=true|false` — the Allied Industrial Base steps (31, 32, 33)
 - `OPSI_SKIP_NIPO=true|false` — reuse the stored NIPO rows of `policy_component_tbl.rds` instead of rescoring the GTA extract (4–5 GB of memory); NIPO is not in the Policy index composite
 - `OPSI_NIPO_SCOPE` — NIPO country scope (`allies` keeps the legacy ally list)
 - `OPSI_CONFIG`, `OPSI_WEIGHTS`, `OPSI_MISSING_DATA`, `OPSI_INDEX_DEFINITION`, `OPSI_RANKABILITY` — alternative config files (scratch runs)

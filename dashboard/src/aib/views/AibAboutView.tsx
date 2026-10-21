@@ -173,7 +173,7 @@ export default function AibAboutView() {
       <div data-testid="about-scenarios">
         <p className={P}>
           {hasScenarios
-            ? `Every Allied Industrial Base page can be read under two scenarios, chosen at the top of the page: Decoupling (the default) or Managed Interdependence. Every comparison also shows Baseline beside them, in the same order. The detail views (networks, relationships, coalitions, roles and investment flows) follow the choice and show Baseline as the reference where it means something. You are reading ${scenarioInfo(m, scenario).label}.`
+            ? `Every Allied Industrial Base page can be read under two scenarios, chosen at the top of the page: Managed Interdependence (the default institutional lens) or Decoupling (the stress test). A strategic compact is the persistent architecture; the scenario is the stress applied to it. Every comparison also shows Baseline beside them, in the same order. The detail views (networks, relationships, coalitions, roles and investment flows) follow the choice and show Baseline as the reference where it means something. You are reading ${scenarioInfo(m, scenario).label}.`
             : 'This export carries the Decoupling scenario only: the pages show it without a choice.'}{' '}
           {SCENARIO_CAVEAT}
         </p>

@@ -18,8 +18,11 @@
 //   Country memo view       entry + CountryLayout + memo view + the largest memo JSON          <= 450 kB
 //   each Country file       fact sheet 40 kB, manifest 20 kB, memo JSON 25 kB / PDF 400 kB / DOCX 100 kB
 //   Country data            public/data/country/** (every file)                                <= 11 MB
-//   Compacts landing        entry + AibLayout + the compacts index view + manifest + document  <= 700 kB
+//   Compacts landing        entry + AibLayout + the strategic compacts view (2026-10-20; the
+//                           compacts index view in a build without it) + manifest + document   <= 700 kB
+//   Compacts workstreams    entry + AibLayout + the compacts index view + manifest + document  <= 700 kB
 //   Compact view            entry + AibLayout + the compact view + manifest + document         <= 900 kB
+//   Strategic compact view  entry + AibLayout + the strategic compact view + manifest + document <= 900 kB
 //   each Compacts scenario  scenario-managed / scenario-baseline (lazily loaded on a toggle or a
 //                           page that shows the scenario; never on the landing)                <= 250 kB
 //   Compacts data           public/data/aib/* (manifest + the compacts document + the scenario
@@ -170,6 +173,9 @@ const keys = {
   // Sectoral Compacts (src/aib/); optional, so a build without the module still checks the others
   aibLayout: routeKey('AibLayout', /src\/aib\/AibLayout\.tsx$/, 'AibLayout', false),
   aibIndex: routeKey('the compacts index view', /src\/aib\/views\/CompactsIndexView\.tsx$/, 'CompactsIndexView', false),
+  // the strategic layer (2026-10-20): /compacts lands on the strategic compacts; /compacts/s/:sid
+  aibStrategic: routeKey('the strategic compacts view', /src\/aib\/views\/StrategicCompactsView\.tsx$/, 'StrategicCompactsView', false),
+  aibStrategicCompact: routeKey('the strategic compact view', /src\/aib\/views\/StrategicCompactView\.tsx$/, 'StrategicCompactView', false),
   aibCompact: routeKey('the compact view', /src\/aib\/views\/CompactView\.tsx$/, 'CompactView', false),
   aibAbout: routeKey('the compacts about view', /src\/aib\/views\/AibAboutView\.tsx$/, 'AibAboutView', false),
 };
@@ -340,10 +346,26 @@ const aibScenarioSize = aibScenarios.reduce((s, x) => s + x.size, 0);
 const aibNote = aibManifest ? '' : 'Compacts data absent (scripts/84): code only';
 figure(
   'Compacts landing /compacts',
-  [['code', codeSize(closure([entryKey, keys.aibLayout, keys.aibIndex].filter(Boolean)))], ['font', fontSize], ['compacts manifest + document', aibManifestSize + aibDocSize]],
+  [['code', codeSize(closure([entryKey, keys.aibLayout, keys.aibStrategic ?? keys.aibIndex].filter(Boolean)))], ['font', fontSize], ['compacts manifest + document', aibManifestSize + aibDocSize]],
   LIMITS.aibLanding,
   aibNote,
 );
+if (keys.aibStrategic) {
+  figure(
+    'Compacts workstreams',
+    [['code', codeSize(closure([entryKey, keys.aibLayout, keys.aibIndex].filter(Boolean)))], ['font', fontSize], ['compacts manifest + document', aibManifestSize + aibDocSize]],
+    LIMITS.aibLanding,
+    aibNote,
+  );
+}
+if (keys.aibStrategicCompact) {
+  figure(
+    'Strategic compact view',
+    [['code', codeSize(closure([entryKey, keys.aibLayout, keys.aibStrategicCompact].filter(Boolean)))], ['font', fontSize], ['compacts manifest + document', aibManifestSize + aibDocSize]],
+    LIMITS.aibCompact,
+    aibNote,
+  );
+}
 figure(
   'Compact view',
   [['code', codeSize(closure([entryKey, keys.aibLayout, keys.aibCompact].filter(Boolean)))], ['font', fontSize], ['compacts manifest + document', aibManifestSize + aibDocSize]],
@@ -390,7 +412,14 @@ for (const f of figures) {
 console.log('');
 console.log(`app shell JS + CSS (entry): ${kb(app)}  (target ${kb(TARGET_APP)})`);
 // the Sectoral Compacts route chunks beyond the entry (shared chunks such as Plot counted once per route)
-const aibRoutes = [['AibLayout', keys.aibLayout], ['compacts index view', keys.aibIndex], ['compact view', keys.aibCompact], ['about view', keys.aibAbout]].filter(([, k]) => k);
+const aibRoutes = [
+  ['AibLayout', keys.aibLayout],
+  ['strategic compacts view', keys.aibStrategic],
+  ['strategic compact view', keys.aibStrategicCompact],
+  ['compacts index view', keys.aibIndex],
+  ['compact view', keys.aibCompact],
+  ['about view', keys.aibAbout],
+].filter(([, k]) => k);
 if (aibRoutes.length) {
   const own = (k) => codeSize(new Set([vm[k].file, ...(vm[k].css ?? [])]));
   const beyond = (k) => codeSize(new Set([...closure([k])].filter((f) => !entryFiles.has(f))));

@@ -130,9 +130,9 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   const docM = toMasterTaxonomy(structuredClone(doc));
 
   it('landing: the definition, a card per compact with its strip, every node by class; the fourth tab is current', async () => {
-    renderAt('/compacts');
-    expect(await h1('Sectoral Compacts')).toBeTruthy();
-    await waitFor(() => expect(document.title).toMatch(/^Compacts \| Allied Industrial Base \| Allied Industrial Base Explorer/));
+    renderAt('/compacts/workstreams?scn=decoupling');
+    expect(await h1('Workstreams')).toBeTruthy();
+    await waitFor(() => expect(document.title).toMatch(/^Workstreams \| Allied Industrial Base \| Allied Industrial Base Explorer/));
     expect(screen.getByText(/variable-geometry coalition/)).toBeTruthy();
     expect(screen.getByText(/derived from the model/)).toBeTruthy();
     // the Allied Industrial Base tab, current; the views nav the module registered (IA refactor)
@@ -142,13 +142,13 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     await waitFor(() => expect(within(views()).getAllByRole('link').map((a) => a.textContent)).toEqual(AIB_VIEWS));
     expect(within(views()).getByRole('link', { name: 'Sectoral Compacts' }).getAttribute('aria-current')).toBe('page');
     // the cards
-    const region = screen.getByRole('region', { name: `The compacts (${doc.compacts.length})` });
+    const region = screen.getByRole('region', { name: `The workstreams (${doc.compacts.length})` });
     const cards = within(region).getAllByRole('article');
     expect(cards).toHaveLength(doc.compacts.length);
-    expect(within(cards[0]).getByRole('link', { name: titleOf(first) }).getAttribute('href')).toBe(`/compacts/${first.id}`);
+    expect(within(cards[0]).getByRole('link', { name: titleOf(first) }).getAttribute('href')).toBe(`/compacts/${first.id}?scn=decoupling`);
     // the slim card (IA refactor): only why it exists, main nodes, key countries, the policy need, the resilience effect, View compact
     expect(within(cards[0]).getAllByRole('term').map((t) => t.textContent)).toEqual(['Why it exists', 'Main nodes', 'Key countries', 'Coalition', 'Policy need', 'Resilience effect']);
-    expect(within(cards[0]).getByRole('link', { name: `View compact: ${titleOf(first)}` }).getAttribute('href')).toBe(`/compacts/${first.id}`);
+    expect(within(cards[0]).getByRole('link', { name: `View compact workstream: ${titleOf(first)}` }).getAttribute('href')).toBe(`/compacts/${first.id}?scn=decoupling`);
     expect(within(cards[0]).getByRole('list', { name: `${titleOf(first)}: demand served under each scenario` })).toBeTruthy();
     expect(within(cards[0]).getAllByRole('listitem')).toHaveLength(3);
     // the strategic map first, the full node table behind "Explore all nodes"
@@ -178,8 +178,8 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   });
 
   it('landing: the sector (technology) filter writes tech and narrows the nodes (of the strategic scope)', async () => {
-    const r = renderAt('/compacts');
-    expect(await h1('Sectoral Compacts')).toBeTruthy();
+    const r = renderAt('/compacts/workstreams?scn=decoupling');
+    expect(await h1('Workstreams')).toBeTruthy();
     const inScope = doc.nodes.filter((x) => x.inStrategicScope !== false);
     const nOut = doc.nodes.length - inScope.length;
     // a sector name with "/" where the bundle has one
@@ -193,7 +193,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   it('landing (dictionary): sectors grouped by index in the filter, each card names its sectors by index, nodes say index > sector > stage, the table has Index and Sectors', async () => {
     if (!tx.dictionary) return;
     renderAt('/compacts#nodes');
-    expect(await h1('Sectoral Compacts')).toBeTruthy();
+    expect(await h1('Workstreams')).toBeTruthy();
     const select = screen.getByRole('combobox', { name: 'Sector' }) as HTMLSelectElement;
     // "All sectors" outside the groups, then one group per index with sectors, in index order
     expect(select.options[0].textContent).toBe('All sectors');
@@ -229,8 +229,8 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const doc = docM;
     const out = doc.nodes.filter((x) => x.inStrategicScope === false);
     if (!out.length || !doc.meta.demandScope) return;
-    const r = renderAt('/compacts');
-    expect(await h1('Sectoral Compacts')).toBeTruthy();
+    const r = renderAt('/compacts/workstreams?scn=decoupling');
+    expect(await h1('Workstreams')).toBeTruthy();
     const run = screen.getByTestId('run-settings');
     // "coalition" demand is the allied core and partner economies, not a compact's coalition
     expect(run.textContent).toMatch(/Demand scope: the allied core and partner economies of the coalition table \(\d+ economies\), not a compact's coalition/);
@@ -251,7 +251,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     noAcronyms();
     // include the nodes outside the scope (the filter sits over the strategic map and drives both): the URL keeps it, they appear marked
     fireEvent.click(within(screen.getByRole('region', { name: 'Where compacts are justified' })).getByRole('checkbox', { name: 'Include nodes outside the strategic scope' }));
-    await waitFor(() => expect(r.state.location.search).toBe('?scope=all'));
+    await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('scope')).toBe('all'));
     // (a label can recur across technologies, or name a technology too)
     for (const n of out) {
       const lis = within(nodes).getAllByText(n.label).map((el) => el.closest('li'));
@@ -262,8 +262,8 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   });
 
   it('landing: the growth-bound flag on the node chips and in the table, worded from the headline class; nodes outside a compact open their variants in place', async () => {
-    renderAt('/compacts?scope=all');
-    expect(await h1('Sectoral Compacts')).toBeTruthy();
+    renderAt('/compacts/workstreams?scope=all&scn=decoupling');
+    expect(await h1('Workstreams')).toBeTruthy();
     const nodes = screen.getByRole('region', { name: 'How every sub-sector is classified' });
     // (a label can recur across technologies: the per-chip checks take nodes whose label is unique)
     const unique = (n: AibNode) => doc.nodes.filter((x) => x.label === n.label).length === 1;
@@ -299,12 +299,12 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   });
 
   it('a compact: the four questions in order, method details closed, charts drawn, a table twin and a CSV on every card, no bare acronym', async () => {
-    renderAt(`/compacts/${first.id}`);
+    renderAt(`/compacts/${first.id}?scn=decoupling`);
     expect(await h1(titleOf(first))).toBeTruthy();
     await waitFor(() => expect(document.title).toMatch(new RegExp(`^${first.id} .* \\| Allied Industrial Base \\|`)));
     // the four questions (IA refactor), then the method details (closed) with the members-joining curve and the reading notes
     const h2 = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    const order = ['Why this compact?', 'Who and what?', 'What does coordination change?', 'What should governments do?', 'How resilience changes as countries join', 'Reading these results'];
+    const order = ['Why this workstream?', 'Who and what?', 'What does coordination change?', 'What should governments do?', 'How resilience changes as countries join', 'Reading these results'];
     expect(h2.filter((h) => order.includes(h ?? ''))).toEqual(order);
     const h3 = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
     for (const s of ['Coverage comparison', 'Partnership network', 'Node-by-node structure', 'Treatment node by node']) expect(h3).toContain(s);
@@ -319,7 +319,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(within(roles).getAllByRole('rowheader').length).toBe(new Set(first.roles.map((x) => x.iso3)).size);
     // each economy opens its Country profile at "Role in the Allied Industrial Base"
     const iso = first.roles[0].iso3;
-    expect(within(roles).getAllByRole('link').some((a) => a.getAttribute('href') === `/countries/${iso}#aib-role`)).toBe(true);
+    expect(within(roles).getAllByRole('link').some((a) => a.getAttribute('href') === `/countries/${iso}?scn=decoupling#aib-role`)).toBe(true);
     // why it exists: the five tiles
     const why = screen.getByRole('region', { name: 'The case for coordination' });
     for (const t of ['Shock exposure', 'Coordination dividend', 'Residual gap after trade', 'Residual gap after investment', 'Concentration']) expect(within(why).getByText(t)).toBeTruthy();
@@ -350,7 +350,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
 
   it('every compact renders its four questions and opens its table twins without a bare acronym', async () => {
     for (const c of doc.compacts) {
-      renderAt(`/compacts/${c.id}`);
+      renderAt(`/compacts/${c.id}?scn=decoupling`);
       expect(await h1(titleOf(c))).toBeTruthy();
       expect(screen.getByRole('heading', { level: 2, name: 'What should governments do?' })).toBeTruthy();
       expect(screen.getByRole('heading', { level: 2, name: 'How resilience changes as countries join' })).toBeTruthy();
@@ -362,7 +362,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   });
 
   it('a compact: the type, the class mix and secondary class, compact vs fragmented action and the global optimum', async () => {
-    renderAt(`/compacts/${first.id}`);
+    renderAt(`/compacts/${first.id}?scn=decoupling`);
     expect(await h1(titleOf(first))).toBeTruthy();
     const design = screen.getByRole('region', { name: "Included nodes and the compact's design" });
     if (first.classMix) {
@@ -388,22 +388,22 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   it('a "compact unnecessary" group is shown, with a muted tag and its explanation, on the card and the page', async () => {
     const u = doc.compacts.find((c) => c.type.startsWith('compact unnecessary'));
     if (!u) return;
-    renderAt('/compacts');
-    expect(await h1('Sectoral Compacts')).toBeTruthy();
+    renderAt('/compacts/workstreams?scn=decoupling');
+    expect(await h1('Workstreams')).toBeTruthy();
     const card = screen.getAllByRole('article').find((a) => within(a).queryByRole('link', { name: titleOf(u) }))!;
     const tag = within(card).getByText('Compact unnecessary');
     expect(tag.getAttribute('data-tone')).toBe('unnecessary');
     expect(within(card).getByText(/Existing relationships do nearly as well/)).toBeTruthy();
     cleanup();
-    renderAt(`/compacts/${u.id}`);
+    renderAt(`/compacts/${u.id}?scn=decoupling`);
     expect(await h1(titleOf(u))).toBeTruthy();
     expect(screen.getAllByText('Compact unnecessary').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByRole('region', { name: 'Why this compact?' }).textContent).toMatch(/existing relationships, not a new coalition, carry most of the response/);
+    expect(screen.getByRole('region', { name: 'Why this workstream?' }).textContent).toMatch(/existing relationships, not a new coalition, carry most of the response/);
     noAcronyms();
   });
 
   it('the specialization-resilience frontier: a node selector, the readings, a table twin and a CSV', async () => {
-    renderAt(`/compacts/${first.id}`);
+    renderAt(`/compacts/${first.id}?scn=decoupling`);
     expect(await h1(titleOf(first))).toBeTruthy();
     const card = screen.getByRole('region', { name: 'Specialization and resilience by supplier limit' });
     const withFrontier = first.nodes.map((id) => doc.nodes.find((n) => n.id === id)!).filter((n) => n.frontier.length);
@@ -427,7 +427,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   });
 
   it('a compact: the exact minimum coalition, the method and tie-break, the tiers with what would replace a member', async () => {
-    renderAt(`/compacts/${first.id}`);
+    renderAt(`/compacts/${first.id}?scn=decoupling`);
     expect(await h1(titleOf(first))).toBeTruthy();
     const card = screen.getByRole('region', { name: 'The coalition and its tiers' });
     if (!first.coalition.method) return;
@@ -500,7 +500,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   it('a compact whose greedy coalition differs shows it beside the exact one; an unreached middle target is never called exact', async () => {
     const differs = doc.compacts.find((c) => (c.coalition.greedy ?? []).length && c.coalition.greedy!.join() !== c.coalition.members.join());
     if (differs) {
-      renderAt(`/compacts/${differs.id}`);
+      renderAt(`/compacts/${differs.id}?scn=decoupling`);
       expect(await h1(titleOf(differs))).toBeTruthy();
       const g = screen.getByTestId('greedy-coalition').textContent ?? '';
       expect(g).toMatch(/^A greedy heuristic .* reaches the 95% target with \d+ economies: .* It is a different coalition/);
@@ -517,7 +517,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     }
     const unreached = doc.compacts.find((c) => !c.coalition.t95.length && c.coalition.method);
     if (unreached) {
-      renderAt(`/compacts/${unreached.id}`);
+      renderAt(`/compacts/${unreached.id}?scn=decoupling`);
       expect(await h1(titleOf(unreached))).toBeTruthy();
       const card = screen.getByRole('region', { name: 'The coalition and its tiers' });
       // the members are the widest greedy set, never the exact minimum; no member is called critical
@@ -534,7 +534,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
 
   it('a compact: policy needs, the visible physical-capability warning, the growth flag, the variants and the N-1 readings of each node', async () => {
     const c = doc.compacts.find((x) => x.nodes.some((id) => doc.nodes.find((n) => n.id === id)!.warning)) ?? first;
-    renderAt(`/compacts/${c.id}`);
+    renderAt(`/compacts/${c.id}?scn=decoupling`);
     expect(await h1(titleOf(c))).toBeTruthy();
     const ns = c.nodes.map((id) => doc.nodes.find((n) => n.id === id)!);
     // the compact-level notice names the warned nodes
@@ -648,7 +648,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   });
 
   it('a compact: the node filter scopes the network cards', async () => {
-    renderAt(`/compacts/${first.id}`);
+    renderAt(`/compacts/${first.id}?scn=decoupling`);
     expect(await h1(titleOf(first))).toBeTruthy();
     const nodeId = first.trade[first.trade.length - 1].node;
     const label = doc.nodes.find((n) => n.id === nodeId)!.label;
@@ -666,7 +666,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const flows = doc.investmentFlows;
     const c = flows ? doc.compacts.find((x) => !flows.pairs.some((p) => p.rank === 1 && x.nodes.includes(p.node))) : doc.compacts.find((x) => !x.investment.length);
     if (!c) return;
-    renderAt(`/compacts/${c.id.toLowerCase()}`);
+    renderAt(`/compacts/${c.id.toLowerCase()}?scn=decoupling`);
     expect(await h1(titleOf(c))).toBeTruthy();
     if (flows) {
       expect(within(screen.getByRole('region', { name: 'Who invests where' })).getByText(/No simulated investment flow/)).toBeTruthy();
@@ -847,14 +847,14 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   it('a master-taxonomy bundle (OSI technologies) still renders the landing, a compact, the partnerships and About', async () => {
     useSource((d) => void toMasterTaxonomy(d));
     setEngineClient(neverReadyClient());
-    renderAt('/compacts');
-    expect(await h1('Sectoral Compacts')).toBeTruthy();
+    renderAt('/compacts/workstreams?scn=decoupling');
+    expect(await h1('Workstreams')).toBeTruthy();
     expect(screen.getByRole('combobox', { name: 'Technology' })).toBeTruthy();
     expect(screen.queryAllByTestId('compact-taxonomy')).toEqual([]);
     noAcronyms();
     cleanup();
     const c = docM.compacts[0];
-    renderAt(`/compacts/${c.id}`);
+    renderAt(`/compacts/${c.id}?scn=decoupling`);
     expect(await h1(titleOf(c, docM))).toBeTruthy();
     expect(within(screen.getByRole('region', { name: "Included nodes and the compact's design" })).getAllByRole('term').map((t) => t.textContent)).toContain('Technologies');
     expect(screen.queryByTestId('compact-indices')).toBeNull();
@@ -885,11 +885,11 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     setEngineClient(null);
   });
 
-  it('an unknown compact id: the landing with a notice; deeper paths go to the compact; the alias', async () => {
-    const r = renderAt('/compacts/NOPE-9');
-    expect(await h1('Sectoral Compacts')).toBeTruthy();
-    expect(screen.getByText("No compact with the id 'NOPE-9'; showing all compacts.")).toBeTruthy();
-    expect(r.state.location.pathname).toBe('/compacts');
+  it('an unknown compact id: the Workstreams index with a notice, the scenario kept; deeper paths go to the compact; an SC- id goes to the strategic compact; the alias', async () => {
+    const r = renderAt('/compacts/NOPE-9?scn=decoupling');
+    expect(await h1('Workstreams')).toBeTruthy();
+    expect(screen.getByText("No workstream with the id 'NOPE-9'; showing all workstreams.")).toBeTruthy();
+    expect(r.state.location.pathname + r.state.location.search).toBe('/compacts/workstreams?scn=decoupling');
     cleanup();
     const r2 = renderAt(`/compacts/${first.id}/extra?x=1`);
     expect(await h1(titleOf(first))).toBeTruthy();
@@ -930,11 +930,11 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   });
 
   it('country roles (IA refactor): the role matrix in the brief order, one row per economy with its anchor, each linking to its Country profile; Country roles current', async () => {
-    renderAt('/aib/roles#role-' + doc.compacts[0].coalition.members[0]);
+    renderAt('/aib/roles?scn=decoupling#role-' + doc.compacts[0].coalition.members[0]);
     expect(await h1('Country roles')).toBeTruthy();
     await waitFor(() => expect(within(views()).getByRole('link', { name: 'Country roles' }).getAttribute('aria-current')).toBe('page'));
     const iso = doc.compacts[0].coalition.members[0];
-    const link = within(main()).getAllByRole('link').find((a) => a.getAttribute('href') === `/countries/${iso}#aib-role`);
+    const link = within(main()).getAllByRole('link').find((a) => a.getAttribute('href') === `/countries/${iso}?scn=decoupling#aib-role`);
     expect(link).toBeTruthy();
     const matrix = screen.getByRole('region', { name: 'Roles by economy' });
     expect(within(matrix).getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
@@ -948,7 +948,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     if (everyShock(doc).diversify) expect(everyNote).toContain('and the diversification scenario, which removes no supplier');
     const row = document.getElementById(`role-${iso}`) as HTMLElement;
     expect(row.className).toContain('bg-signal/10');
-    expect(within(row).getAllByRole('link').some((a) => a.getAttribute('href') === `/compacts/${doc.compacts[0].id}`)).toBe(true);
+    expect(within(row).getAllByRole('link').some((a) => a.getAttribute('href') === `/compacts/${doc.compacts[0].id}?scn=decoupling`)).toBe(true);
     expect(within(main()).getByText(hasScenarios(doc) ? /^AIB model · / : 'Observed / modelled facts')).toBeTruthy();
     // with today's network (the Baseline file): who supplies whom and the roles gained or lost, each with a twin
     const withToday = hasScenarios(doc) && !!readManifest().files.scenarios?.baseline;
@@ -960,7 +960,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
 
   it('overview (IA refactor): node counts by treatment, the highest severity and dividends, the three question cards; never starts the engine', async () => {
     setEngineClient(null);
-    renderAt('/aib');
+    renderAt('/aib?scn=decoupling');
     expect(await h1('Allied Industrial Base')).toBeTruthy();
     await waitFor(() => expect(within(views()).getByRole('link', { name: 'Overview' }).getAttribute('aria-current')).toBe('page'));
     const tiles = screen.getByRole('list', { name: 'Nodes by treatment' });
@@ -973,7 +973,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(within(screen.getByRole('list', { name: 'Nodes with the highest shock exposure' })).getAllByRole('listitem').length).toBeGreaterThan(0);
     expect(within(screen.getByRole('list', { name: 'Nodes with the largest coordination dividend' })).getAllByRole('listitem').length).toBeGreaterThan(0);
     const hrefs = within(screen.getByRole('region', { name: 'Who coordinates, and how' })).getAllByRole('link').map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual(['/aib/partnerships', '/compacts', '/aib/roles']);
+    expect(hrefs).toEqual(['/aib/partnerships?scn=decoupling', '/compacts?scn=decoupling', '/aib/roles?scn=decoupling']);
     expect(within(main()).getAllByText('Observed / modelled facts').length).toBeGreaterThan(0);
     expect(peekEngineClient()).toBeNull();
     noAcronyms();
@@ -1014,7 +1014,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const flows = doc.investmentFlows;
     if (!flows) return;
     setEngineClient(neverReadyClient());
-    const r = renderAt('/aib/partnerships');
+    const r = renderAt('/aib/partnerships?scn=decoupling');
     expect(await h1('Partnerships')).toBeTruthy();
     expect(screen.queryByText(/allied production network/)).toBeNull();
     fireEvent.click(screen.getByRole('radio', { name: 'Investment' }));
@@ -1045,7 +1045,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
   it('country roles (2026-10-17): a role is named at the floor, minor below it; "Show" keeps one role, named first and largest first', async () => {
     const net = doc.network;
     if (!net) return;
-    renderAt('/aib/roles');
+    renderAt('/aib/roles?scn=decoupling');
     expect(await h1('Country roles')).toBeTruthy();
     const cellOf = (iso: string, col: number) => (document.getElementById(`role-${iso}`) as HTMLElement).querySelectorAll('td')[col];
     // columns: 0 supplier, 1 specialized, 2 host, 3 investor, 4 buyer, 5 bridge, 6 participation
@@ -1342,7 +1342,7 @@ describe.skipIf(!haveFixture())('the diversification scenario (2026-10-19)', () 
   it('the landing: a node outside every compact shows the block in its robustness disclosure; a node the scenario did not assess shows none', async () => {
     if (!has) return;
     renderAt('/compacts#nodes');
-    expect(await h1('Sectoral Compacts')).toBeTruthy();
+    expect(await h1('Workstreams')).toBeTruthy();
     const outside = doc.nodes.filter((n) => !n.compact && n.inStrategicScope !== false && n.diversify !== undefined);
     const blocks = screen.queryAllByTestId('diversify-block');
     expect(blocks.map((b) => b.getAttribute('data-status')).sort()).toEqual(outside.map((n) => n.diversify!.status).sort());

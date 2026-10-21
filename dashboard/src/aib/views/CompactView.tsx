@@ -15,6 +15,12 @@
 // the three scenarios (Baseline, Managed Interdependence, Decoupling) for the compact and for each node; the
 // compact's suppliers today come from compact.baseline. The context keeps `c` the main document's compact
 // (Decoupling) and adds the scenario's `view` (compact/shared.tsx).
+//
+// The strategic layer (2026-10-20): with doc.strategic a compact candidate is a Workstream of a Strategic
+// Sectoral Compact, so the page reads "WORKSTREAM · AIB-Cxx" and "Why this workstream?", says which strategic
+// compact it is filed under (WorkstreamParent: a link up, its share of the allied demand, the others it
+// spans, whether it is active under the scenario, why it was filed by review) and links back to that
+// compact's workstreams and to the Workstreams index. A bundle without the layer keeps the former words.
 
 import { useEffect, useMemo } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
@@ -29,7 +35,8 @@ import { compactNodes } from '../derive/nodes.ts';
 import { compactUnchangedReasonOf, managedCompact, managedOf } from '../derive/scenarioPages.ts';
 import { compactDetail, compactScenario, scenarioInfo, type CompactScenario } from '../derive/scenarios.ts';
 import { indexLabel, indicesOfCompact, type Taxonomy } from '../derive/taxonomy.ts';
-import { rememberCompact } from '../nav.ts';
+import { workstreamHomeOf, workstreamOf } from '../derive/strategic.ts';
+import { rememberCompact, strategicCompactHref, WORKSTREAMS_LABEL, workstreamsHref } from '../nav.ts';
 import { QuestionSection, ReadingNotes } from './common.tsx';
 import { BasisTag } from './basis.tsx';
 import { NetworkSection } from './compact/NetworkSection.tsx';
@@ -37,7 +44,7 @@ import { FrontierCard, NodeSection } from './compact/NodeSection.tsx';
 import { OverviewSection, WhySection } from './compact/OverviewSections.tsx';
 import { PolicySection } from './compact/PolicySection.tsx';
 import { CoalitionSection, CoverageSection } from './compact/ResilienceSections.tsx';
-import { CompactProvider, type CompactCtx, type CompactViewState } from './compact/shared.tsx';
+import { CompactProvider, WorkstreamParent, type CompactCtx, type CompactViewState } from './compact/shared.tsx';
 import { TypeTag } from '../charts/TypeTag.tsx';
 import { compactVsFragmented } from '../derive/coverage.ts';
 import { compactTypeInfo } from '../derive/types.ts';
@@ -59,18 +66,23 @@ const METHOD_ANCHORS = ['method', 'frontier', 'coalition', 'reading-h'];
 
 export default function CompactView() {
   const { id = '' } = useParams();
-  const { compactOf, title } = useAibCtx();
+  const { compactOf, title, href } = useAibCtx();
   const c = compactOf(id);
   useTitle(c ? `${c.id} ${title(c)}` : 'Compacts', 'aib');
   useEffect(() => {
     if (c) rememberCompact(c.id);
   }, [c]);
-  if (!c) return <Redirect to="/compacts" notice={`No compact with the id '${id}'; showing all compacts.`} />;
+  // an unknown id: the Workstreams index (the compact candidates' list since 2026-10-20), the scenario kept
+  if (!c) return <Redirect to={href('/compacts/workstreams')} notice={`No workstream with the id '${id}'; showing all workstreams.`} />;
   return <Compact key={c.id} c={c} />;
 }
 
 function Compact({ c }: { c: AibCompact }) {
-  const { doc, names, name, nodeOf, shockLabel, tx, title: titleOf, scenario, hasScenarios, href } = useAibCtx();
+  const { doc, names, name, nodeOf, shockLabel, tx, title: titleOf, scenario, hasScenarios, href, strategic, strategicScenario } = useAibCtx();
+  // with the strategic layer (2026-10-20) a compact candidate is a Workstream of a Strategic Sectoral Compact
+  const ws = strategic !== null && workstreamOf(strategic, c.id) !== null;
+  const home = strategic ? workstreamHomeOf(strategic, c.id) : null;
+  const whyTitle = ws ? 'Why this workstream?' : 'Why this compact?';
   const loc = useLocation();
   const mi = scenario === 'managed';
   const load = useAibScenarioDoc(mi ? 'managed' : null);
@@ -120,7 +132,7 @@ function Compact({ c }: { c: AibCompact }) {
   const members = view ? coalitionMembersOf(view).length : null;
   const kind = typed && type
     ? `${type.short}, ${typed.archetype.replace(/ Compact$/, '').toLowerCase()} archetype`
-    : viewState.status === 'none' ? 'No coalition under Managed Interdependence' : 'Sectoral compact';
+    : viewState.status === 'none' ? 'No coalition under Managed Interdependence' : ws ? 'Workstream' : 'Sectoral compact';
   const head = `${title !== full ? `${full}. ` : ''}${kind}: ${coversWords(c, tx)} across the ${listWords(stages)} ${stages.length === 1 ? 'stage' : 'stages'}, ${plural(c.nodes.length, 'node')}${members !== null ? ` and ${plural(members, 'member')}` : ''}.`;
   const lede = mi
     ? `${head} ${managedWords(compactScenario(c, 'managed', nodeOf), scenarioInfo(m, 'managed').label, viewState.reason ?? compactUnchangedReasonOf(compactNodes(c, nodeOf)))}`
@@ -128,12 +140,26 @@ function Compact({ c }: { c: AibCompact }) {
   return (
     <CompactProvider value={ctx}>
       <div className={PAGE}>
-        <p className="mb-4 text-sm">
-          <Link className="link" to={href('/compacts')}>
-            &larr; All compacts
-          </Link>
-        </p>
-        <PageHead eyebrow={`SECTORAL COMPACT · ${c.id}`} title={title} lede={lede}>
+        {ws ? (
+          <p className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm" data-testid="workstream-back">
+            {home && (
+              <Link className="link" to={href(strategicCompactHref(home.id, undefined, 'workstreams'))}>
+                &larr; {home.name}
+              </Link>
+            )}
+            <Link className="link" to={href(workstreamsHref(undefined, home?.id))}>
+              All {WORKSTREAMS_LABEL.toLowerCase()}
+            </Link>
+          </p>
+        ) : (
+          <p className="mb-4 text-sm">
+            <Link className="link" to={href('/compacts')}>
+              &larr; All compacts
+            </Link>
+          </p>
+        )}
+        <PageHead eyebrow={`${ws ? 'WORKSTREAM' : 'SECTORAL COMPACT'} · ${c.id}`} title={title} lede={lede}>
+          <WorkstreamParent s={strategic} id={c.id} scenario={strategicScenario} href={href} />
           {type?.tone === 'unnecessary' && (
             <p className="mt-3 flex max-w-3xl flex-wrap items-center gap-x-3 gap-y-1 text-sm text-paper-dim">
               <TypeTag info={type} />
@@ -143,12 +169,12 @@ function Compact({ c }: { c: AibCompact }) {
           <div className="mt-3">
             <BasisTag basis="facts" />
           </div>
-          <nav aria-label="Sections of this compact" className="mt-4">
+          <nav aria-label={ws ? 'Sections of this workstream' : 'Sections of this compact'} className="mt-4">
             <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
               {SECTIONS.map(([sid, label]) => (
                 <li key={sid}>
                   <a className="link" href={`#${sid}`}>
-                    {label}
+                    {sid === 'why' ? whyTitle : label}
                   </a>
                 </li>
               ))}
@@ -156,7 +182,7 @@ function Compact({ c }: { c: AibCompact }) {
           </nav>
         </PageHead>
         <div className="space-y-14">
-          <WhySection title="Why this compact?" />
+          <WhySection title={whyTitle} />
           <OverviewSection title="Who and what?" policy={false} />
           <QuestionSection
             id="change"

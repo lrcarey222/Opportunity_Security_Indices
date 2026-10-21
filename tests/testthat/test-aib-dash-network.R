@@ -401,3 +401,115 @@ test_that("the R mirror names each broken field of a scenario file, and the mani
   expect_match(j, '"suppliers":[["CHN",0.4]]', fixed = TRUE)
   expect_match(j, '"flows":[["CHN",1000000000,null]]', fixed = TRUE)
 })
+
+# ---- The strategic layer (2026-10-20) ---------------------------------------------------------------------
+# The `strategic` section (aib_dash_strategic() of scripts/33's layer; aib_check_strategic()), built from the
+# synthetic run of helper-aib-strategic.R.
+source(file.path(repo_root, "R", "aib", "aib_compacts.R"))
+source(file.path(repo_root, "R", "aib", "aib_strategic.R"))
+
+strat_dash_doc <- function() {
+  cfg <- yaml::read_yaml(file.path(repo_root, "config", "aib_strategic_layer.yml"))
+  cfg$capital$cmfdi_sectors <- list(Battery = "SC-B", EV = "SC-B")
+  cap <- strat_fx_capital()
+  st <- aib_strategic_layer(strat_fx_inputs(), strat_fx_res(), strat_fx_compacts_yml(), strat_fx_node_functions(), cfg,
+                            capital = list(dip = cap$dip, cmfdi = cap$cmfdi), conduits = cap$conduits, iso_of = cap$iso_of)
+  st$meta <- list(default_scenario = "managed")
+  list(nodes = lapply(strat_fx_inputs()$nodes$node_id, function(id) list(id = id)),
+       compacts = lapply(sprintf("AIB-C%02d", 1:5), function(id) list(id = id)),
+       strategic = aib_dash_strategic(st, aib_strategic_gate_labels()))
+}
+
+test_that("the strategic section is optional, persistent across scenarios, and accepted by the R mirror before and after JSON", {
+  expect_equal(aib_check_strategic(list(nodes = list(), compacts = list())), character())
+  doc <- strat_dash_doc()
+  s <- doc$strategic
+  expect_equal(aib_check_strategic(doc), character())
+  expect_equal(aib_check_bundle_additions(doc), character())
+  rt <- aib_as_r(jsonlite::fromJSON(as.character(country_json(doc)), simplifyVector = FALSE))
+  expect_equal(aib_check_strategic(rt), character())
+  # SC-C (no node in the run) is left out; the others have every scenario, the same spine in each
+  expect_equal(vapply(s$compacts, `[[`, "", "id"), c("SC-A", "SC-B"))
+  expect_equal(vapply(s$scenarios, `[[`, "", "id"), c("baseline", "managed", "partial", "decoupling"))
+  a <- s$compacts[[1]]
+  expect_equal(names(a$scenarios), c("baseline", "managed", "partial", "decoupling"))
+  spine <- unlist(lapply(a$steps, function(x) as.character(x$nodes)))
+  for (sid in names(a$scenarios)) expect_equal(vapply(a$scenarios[[sid]]$nodes, `[[`, "", 1), spine)
+  expect_equal(spine, c("ore", "oxide", "magnet", "motor"))
+  expect_equal(as.character(a$workstreams), c("AIB-C01", "AIB-C02", "AIB-C03"))
+  expect_equal(as.character(s$compacts[[2]]$alsoTouching), "AIB-C02")
+  # no coalitions under Baseline and the partial disruption: null partners; arrays where there are coalitions
+  expect_null(a$scenarios$baseline$criticalPartners)
+  expect_equal(as.character(a$scenarios$decoupling$criticalPartners), "JPN")
+  j <- as.character(country_json(a$scenarios$baseline))
+  expect_match(j, '"criticalPartners":null', fixed = TRUE)
+  expect_match(as.character(country_json(a$scenarios$decoupling)), '"policyMix":["COORDINATE","MANAGE SPECIALIZATION","BUILD"]', fixed = TRUE)
+  # one-item arrays stay arrays; tuples stay tuples
+  expect_match(as.character(country_json(s$compacts[[2]])), '"alsoTouching":["AIB-C02"]', fixed = TRUE)
+  usa <- s$countries[[which(vapply(s$countries, `[[`, "", "iso3") == "USA")]]
+  expect_match(as.character(country_json(usa)), '"primary":["DMA"]', fixed = TRUE)
+  expect_equal(usa$roles[[1]][[1]], "DMA")
+  expect_length(usa$roles, 7)
+  expect_length(s$countries[[which(vapply(s$countries, `[[`, "", "iso3") == "CHN")]]$roles, 3)
+  ws <- s$workstreams[[which(vapply(s$workstreams, `[[`, "", "id") == "AIB-C02")]]
+  expect_equal(ws$basis, "override")
+  expect_equal(ws$split[[1]], list("SC-B", 0.57))
+  # 2026-10-21 review: the spine tuple counts the hosts tied with rank 1, NOT TESTED has a count, a mission
+  # says whether it is a targeted action, and the allied-only slots and the stress note are written
+  d <- a$scenarios$decoupling
+  expect_true(all(vapply(d$nodes, length, 1L) == 5L))
+  expect_equal(d$nodes[[1]][[4]], "AUS")
+  expect_equal(d$nodes[[1]][[5]], 1L)
+  expect_equal(a$scenarios$managed$counts$notTested, 0L)
+  expect_true(all(vapply(d$missions, function(m) is.logical(m$targeted), logical(1))))
+  for (k in c("alliedOutsideCore", "nonAlliedReliedOn", "buildHostsNonAllied", "buildHostTies", "stressNote")) expect_true(k %in% names(d), info = k)
+  expect_equal(as.character(d$buildHosts), "AUS")
+})
+
+test_that("the R mirror names each broken strategic field", {
+  doc <- strat_dash_doc()
+  s <- doc$strategic
+  s$defaultScenario <- "stress"
+  s$compacts[[1]]$steps[[2]]$order <- 1L
+  s$compacts[[2]]$steps[[1]]$nodes <- aib_dash_arr(c("cellmat", "zinc"))
+  s$compacts[[1]]$scenarios$partial <- NULL
+  s$compacts[[1]]$scenarios$decoupling$counts$build <- 9L
+  s$compacts[[1]]$scenarios$decoupling$criticalPartners <- NULL
+  s$compacts[[1]]$division[[1]][[6]] <- "x"
+  s$workstreams[[1]]$compact <- "SC-Z"
+  i_usa <- which(vapply(s$countries, `[[`, "", "iso3") == "USA")
+  s$countries[[i_usa]]$primary <- aib_dash_arr(c("DMA", "CIA", "CBH", "SMI"))
+  i_chn <- which(vapply(s$countries, `[[`, "", "iso3") == "CHN")
+  s$countries[[i_chn]]$secondary <- aib_dash_arr("DMA")
+  s$compactRoles[[1]]$leadNode <- "cell"
+  s$theses[[1]][[4]] <- aib_dash_arr("friendship")
+  s$framing <- 3
+  s$compacts[[1]]$scenarios$managed$nodes[[1]][[5]] <- 0L
+  doc$strategic <- s
+  p <- aib_check_strategic(doc)
+  has <- function(msg) any(startsWith(p, msg))
+  expect_true(has("strategic.defaultScenario: 'stress' is not a listed scenario"))
+  expect_true(has("strategic.compacts[0].steps[1].order: 1 does not follow 1"))
+  expect_true(has("strategic.compacts[1].steps[0].nodes: 'zinc' is not a node of the document"))
+  expect_true(has("strategic.compacts[1].steps[0].functions: expected one per node"))
+  expect_true(has("strategic.compacts[0].scenarios: no 'partial'"))
+  expect_true(has("strategic.compacts[0].scenarios.decoupling.counts.build: 9 where the spine has 2"))
+  expect_true(has("strategic.compacts[0].scenarios.decoupling.criticalPartners: expected an array"))
+  expect_true(has("strategic.compacts[0].division[0][5]: expected flags"))
+  expect_true(has("strategic.workstreams[0].compact: 'SC-Z' is not a strategic compact"))
+  expect_true(has(sprintf("strategic.countries[%d].primary: more than 3 roles", i_usa - 1)))
+  expect_true(has(sprintf("strategic.countries[%d].secondary: 'DMA' is not a supply role", i_chn - 1)))
+  expect_true(has("strategic.compactRoles[0].leadNode: 'cell' is not a node of"))
+  expect_true(has("strategic.theses[0][3]: 'friendship' is not a relationship logic"))
+  expect_true(has("strategic.framing"))
+  expect_true(has("strategic.compacts[0].scenarios.managed.nodes[0][4]"))
+  expect_true(all(p %in% aib_check_bundle_additions(doc)))
+  expect_equal(aib_check_strategic(list(strategic = "x")), "strategic: not an object")
+  # a compact id twice, or a node in two compacts
+  d2 <- strat_dash_doc()
+  d2$strategic$compacts[[2]]$id <- "SC-A"
+  d2$strategic$compacts[[2]]$steps[[1]]$nodes <- aib_dash_arr("ore")
+  p2 <- aib_check_strategic(d2)
+  expect_true(any(startsWith(p2, "strategic.compacts[1].id: duplicate 'SC-A'")))
+  expect_true(any(startsWith(p2, "strategic.compacts[1].steps[0].nodes: 'ore' is in more than one step or compact")))
+})

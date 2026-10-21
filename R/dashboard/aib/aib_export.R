@@ -18,7 +18,9 @@
 # 2026-10-19 (the scenario toggle; optional): the document is the Decoupling scenario, with meta.scenarios
 # (meta.supplyScenarios then holds the supply scenarios), node.baseline, the run fields of node.diversify,
 # compact.managed and compact.baseline; the Managed Interdependence and Baseline scenarios are separate
-# documents (aib_dash_scenario_managed(), aib_dash_scenario_baseline(); schema osi-aib-scenario).
+# documents (aib_dash_scenario_managed(), aib_dash_scenario_baseline(); schema osi-aib-scenario). Added
+# 2026-10-20 (optional): `strategic`, the strategic layer of scripts/33 (Strategic Sectoral Compacts, their
+# workstreams, Strategic AIB Roles, compact-specific country roles and bilateral theses; aib_dash_strategic()).
 
 AIB_DASH_SCHEMA <- "osi-aib"
 # Version 2 (2026-10-20): meta.scenarios became the scenario list (objects) and the supply scenarios moved to
@@ -464,8 +466,9 @@ aib_dash_investment_flows <- function(res, max_rank = 5L, shock = res$meta$headl
 }
 
 # The whole document: meta, country names for every code used, compacts and nodes; additive: the
-# emergent network (`network`) and the investor -> host flows (`investmentFlows`).
-aib_dash_bundle <- function(res, top_edges = 40) {
+# emergent network (`network`), the investor -> host flows (`investmentFlows`) and, given the strategic layer
+# (`strategic`: aib_dash_strategic() of scripts/33's aib_strategic.rds; 2026-10-20), the `strategic` section.
+aib_dash_bundle <- function(res, top_edges = 40, strategic = NULL) {
   cfg <- res$meta$config
   nodes <- aib_dash_nodes(res)
   drop_null <- function(x) x[!vapply(x, is.null, logical(1))]
@@ -493,7 +496,8 @@ aib_dash_bundle <- function(res, top_edges = 40) {
                                          unlist(lapply(c$trade, function(t) c(t$from, t$to))), unlist(lapply(c$investment, function(t) c(t$investor, t$host))),
                                          aib_dash_tuple_codes(c$baseline$suppliers)))),
     unlist(lapply(nodes, function(n) c(n$baseLargest, n$largest, unlist(n$hosts), n$baseline$largest, aib_dash_tuple_codes(n$baseline$suppliers),
-                                       if (is.list(n$diversify)) n$diversify$largest)))
+                                       if (is.list(n$diversify)) n$diversify$largest))),
+    aib_dash_strategic_codes(strategic)
   ))
   names_out <- aib_dash_country_names(res, codes)
   shocks <- lapply(cfg$shocks, function(s) list(id = s$id, label = s$label))
@@ -537,6 +541,7 @@ aib_dash_bundle <- function(res, top_edges = 40) {
   # additive sections: absent (not null) when the run has none
   if (!is.null(network)) doc$network <- network
   if (!is.null(invest)) doc$investmentFlows <- invest
+  if (!is.null(strategic)) doc$strategic <- strategic
   doc
 }
 
@@ -708,4 +713,244 @@ aib_dash_scenario_baseline <- function(res, top = 10L) {
   doc$nodes <- nodes
   doc$compacts <- comps
   doc
+}
+
+# ---- The strategic layer (2026-10-20) ------------------------------------------------------------------
+# `strategic`: an optional section of the main document, built from scripts/33's aib_strategic.rds (R/aib/
+# aib_strategic.R; docs/aib_methodology.md section 16): the Strategic Sectoral Compacts (persistent: the same
+# ids, steps and nodes in every scenario) with their value-chain spine, per-scenario portfolio, missions,
+# policy menu, coverage and partners, and the country x node division of labour; the compact candidates of
+# the main document as their workstreams; the Strategic AIB Roles of countries (every gate value and
+# percentile, the narrative slots); the compact-specific country roles; and the bilateral theses as tuples
+# [a, b, [priority compact ids], [logic labels]] (the complementarity text is the two countries' compact
+# roles). Absent when there is no strategic layer. Arrays are I()-wrapped; NA is JSON null. The shape is in
+# docs/aib_methodology.md 16.9 and checked by aib_check_strategic() (aib_check.R).
+
+AIB_DASH_STRATEGIC_VERSION <- 1L
+
+aib_dash_strategic_scenario_ids <- function() c("baseline", "managed", "partial", "decoupling")
+aib_dash_strategic_role_codes <- function() c("RPA", "STM", "SMI", "DMA", "CIA", "DSP", "CBH")
+aib_dash_strategic_supply_roles <- function() c("RPA", "STM", "SMI")
+aib_dash_strategic_role_names <- function() {
+  c(RPA = "Resource & Processing Anchor", STM = "Specialized Technology & Manufacturing Anchor",
+    SMI = "Scale Manufacturing & Integration Platform", DMA = "Demand & Market Anchor",
+    CIA = "Capital & Investment Anchor", DSP = "Development & Scale-Up Platform", CBH = "Coordination / Bridge Hub")
+}
+aib_dash_strategic_role_nouns <- function() {
+  c(RPA = "resource & processing", STM = "specialized technology", SMI = "scale manufacturing", DMA = "demand & market",
+    CIA = "capital & investment", DSP = "development & scale-up", CBH = "coordination / bridge")
+}
+# The spine statuses: the five AIB classes plus the three scenario statuses that are not classes (NOT TESTED,
+# 2026-10-21: a Managed Interdependence node left alone only because its benchmark is concentrated too).
+aib_dash_strategic_statuses <- function() c("COORDINATE", "BUILD", "MANAGE SPECIALIZATION", "LOW INTERVENTION", "INSUFFICIENT DATA", "NOT STRESSED", "NOT TESTED", "NO SHOCK")
+aib_dash_strategic_functions <- function() c("resource", "processing", "components", "systems")
+
+# Gate and supporting metrics exported per country (the evidence of every role).
+aib_dash_strategic_metric_names <- function() {
+  c("rp_positions", "rp_mean_share", "spec_value_share", "spec_compacts", "spec_positions", "mfg_value_share",
+    "integration_compacts", "mfg_positions", "demand_mean_share", "net_import_mf", "net_import_rp", "net_import_mean",
+    "net_import_end", "demand_positions", "cmfdi_out_usd_bn", "cmfdi_destinations", "fdi_out_usd_bn", "fdi_year", "host_gap_usd_bn",
+    "scaleup_rate", "host_top_scaled", "momentum_nodes", "presence_nodes", "host_capable_gap_nodes",
+    "ws_bridge_vertical", "sc_span", "ws_member", "ws_bridge", "sc_span_supply", "ws_specialized", "ws_resource",
+    "ws_demand_anchor", "ws_critical")
+}
+
+aib_dash_signif <- function(x, d = 4) ifelse(is.na(x), NA_real_, signif(as.numeric(x), d))
+aib_dash_split_codes <- function(x) {
+  if (is.null(x) || !length(x) || is.na(x) || !nzchar(trimws(x))) return(aib_dash_arr(character()))
+  aib_dash_arr(strsplit(trimws(x), "\\s+")[[1]])
+}
+
+# st: readRDS(aib_strategic.rds). gate_labels: named character (gate metric -> plain label), e.g.
+# aib_strategic_gate_labels(); the metric name is used where it has none.
+aib_dash_strategic <- function(st, gate_labels = NULL) {
+  if (is.null(st) || is.null(st$compacts) || !nrow(st$compacts)) return(NULL)
+  sids <- intersect(aib_dash_strategic_scenario_ids(), st$scenarios$scenario)
+  defs <- st$compact_defs
+  map <- st$map
+  # a configured compact with no node in the run has no spine: left out
+  defs <- defs[defs$strategic_compact_id %in% map$strategic_compact_id, , drop = FALSE]
+  P <- st$params
+  ws <- st$workstreams
+  gates <- st$roles[!duplicated(st$roles$role_code), c("role_code", "gate1", "gate2")]
+  num <- function(x, d = 4) aib_dash_round(x, d)
+  coalition_scenario <- function(s) isTRUE(st$scenarios$coalitions[st$scenarios$scenario == s])
+  # A scenario without coalitions (Baseline, partial disruption) has no partners: null, not [].
+  codes_or_null <- function(x, s) if (!coalition_scenario(s)) NULL else aib_dash_split_codes(x)
+  core_long <- st$core_long
+  dl <- st$division
+  scen <- lapply(sids, function(s) {
+    r <- st$scenarios[st$scenarios$scenario == s, ]
+    list(id = s, label = r$label, shockId = aib_dash_chr(r$shock_id), words = aib_dash_chr(r$words),
+         investment = isTRUE(r$investment), coalitions = isTRUE(r$coalitions))
+  })
+  comps <- lapply(seq_len(nrow(defs)), function(k) {
+    sc <- defs$strategic_compact_id[k]
+    m <- map[map$strategic_compact_id == sc, , drop = FALSE]
+    m <- m[order(m$value_chain_order, match(m$node_id, map$node_id)), , drop = FALSE]
+    steps <- lapply(unique(m$value_chain_order), function(o) {
+      x <- m[m$value_chain_order == o, , drop = FALSE]
+      list(order = as.integer(o), label = x$value_chain_step[1], description = aib_dash_chr(x$step_description[1]),
+           nodes = aib_dash_arr(x$node_id), functions = aib_dash_arr(x$node_function))
+    })
+    core <- if (is.null(core_long)) NULL else core_long[core_long$strategic_compact_id == sc, , drop = FALSE]
+    core_obj <- function(d) if (is.null(d) || !nrow(d)) list() else lapply(seq_len(nrow(d)), function(i) list(iso3 = d$iso3[i], role = d$compact_role[i], step = aib_dash_chr(d$lead_step[i])))
+    ws_k <- ws[ws$strategic_compact_id %in% sc, , drop = FALSE]
+    also <- ws$workstream_id[!ws$strategic_compact_id %in% sc &
+                               vapply(strsplit(dplyr::coalesce(ws$also_spans, ""), " ", fixed = TRUE), function(a) sc %in% a, logical(1))]
+    by_s <- lapply(sids, function(s) {
+      r <- st$compacts[st$compacts$strategic_compact_id == sc & st$compacts$scenario == s, , drop = FALSE]
+      sp <- st$spine[st$spine$strategic_compact_id == sc & st$spine$scenario == s, , drop = FALSE]
+      sp <- sp[match(m$node_id, sp$node_id), , drop = FALSE]
+      ms <- Filter(Negate(is.null), lapply(c("primary", "secondary", "supporting"), function(slot) {
+        txt <- r[[paste0(slot, "_mission")]]
+        if (is.null(txt) || is.na(txt)) return(NULL)
+        mat <- r[[paste0(slot, "_mission_material")]]
+        # targeted: below the materiality floor (a targeted action, not a mission that leads the compact)
+        list(slot = slot, cls = r[[paste0(slot, "_mission_class")]], text = txt, basis = aib_dash_chr(r[[paste0(slot, "_mission_basis")]]),
+             targeted = !is.null(mat) && isFALSE(as.logical(mat)))
+      }))
+      menu <- st$policy_menus[[paste(sc, s)]]
+      mix <- if (is.na(r$policy_mix) || identical(r$policy_mix, "NO SHOCK")) character() else strsplit(r$policy_mix, " + ", fixed = TRUE)[[1]]
+      list(
+        counts = list(build = as.integer(r$build_node_count), coordinate = as.integer(r$coordinate_node_count), manage = as.integer(r$manage_node_count),
+                      low = as.integer(r$low_node_count), insufficient = as.integer(r$insufficient_node_count),
+                      notStressed = as.integer(r$not_stressed_node_count), notTested = as.integer(dplyr::coalesce(r$not_tested_node_count, 0L)),
+                      noShock = as.integer(r$no_shock_node_count)),
+        needs = list(build = as.integer(r$needs_build_nodes), coordinate = as.integer(r$needs_coordinate_nodes), manage = as.integer(r$needs_manage_nodes)),
+        missions = ms, statement = r$mission_statement, policyMix = aib_dash_arr(mix),
+        menu = if (is.null(menu)) list() else lapply(unname(menu), function(x) list(cls = x$cls, instruments = aib_dash_arr(x$instruments), nodes = aib_dash_arr(unique(x$nodes)))),
+        demandUsd = aib_dash_round(r$demand_usd, 0), lostUsd = aib_dash_round(r$lost_usd, 0), exposure = num(r$exposure),
+        coverage = list(static = num(r$coverage_static), existing = num(r$coverage_existing),
+                        coordinated = num(r$coverage_coordinated), postInvestment = num(r$coverage_post_investment)),
+        activeWorkstreams = aib_dash_split_codes(r$active_workstreams),
+        # allied economies only (2026-10-21): the non-allied ones are criticalExternal and nonAlliedReliedOn
+        criticalPartners = codes_or_null(r$critical_supply_partners, s), criticalExternal = codes_or_null(r$critical_external_dependencies, s),
+        alliedOutsideCore = codes_or_null(r$allied_outside_core, s), coalition = codes_or_null(r$coalition_members, s),
+        nonAlliedReliedOn = codes_or_null(r$non_allied_relied_on, s),
+        # hosts that beat every other host on a BUILD node (a tie names nobody: buildHostTies counts those nodes)
+        buildHosts = aib_dash_split_codes(r$build_hosts), buildHostsNonAllied = aib_dash_split_codes(r$build_hosts_non_allied),
+        buildHostTies = if (is.null(r$build_host_ties) || is.na(r$build_host_ties)) NA_integer_ else as.integer(r$build_host_ties),
+        classMix = aib_dash_chr(r$class_mix), headline = r$headline_result, stressNote = aib_dash_chr(r$stress_note),
+        # the spine: [node id, status, coordinated coverage or null, named host or null, hosts tied with the
+        # model's rank 1 or null], in spine order (a host is named only when no other host ties with it)
+        nodes = lapply(seq_len(nrow(sp)), function(i) list(m$node_id[i], sp$node_status[i], num(sp$coverage_coordinated[i]), aib_dash_chr(sp$top_host[i]),
+                                                           if (is.null(sp$host_tie_n) || is.na(sp$host_tie_n[i])) NA_integer_ else as.integer(sp$host_tie_n[i])))
+      )
+    })
+    names(by_s) <- sids
+    d <- dl[dl$strategic_compact_id == sc, , drop = FALSE]
+    # flags: a = anchor position, s = specialist position, h = capable top host, m = momentum
+    flags <- paste0(ifelse(d$anchor_position %in% TRUE, "a", ""), ifelse(d$specialist_position %in% TRUE, "s", ""),
+                    ifelse(!is.na(d$best_host_rank) & d$host_scaled %in% TRUE, "h", ""), ifelse(d$momentum %in% TRUE, "m", ""))
+    list(
+      id = sc, name = defs$strategic_compact_name[k], family = aib_dash_chr(defs$family[k]), purpose = aib_dash_chr(defs$purpose[k]),
+      steps = steps, workstreams = aib_dash_arr(ws_k$workstream_id), alsoTouching = aib_dash_arr(also),
+      core = core_obj(core[core$allied, , drop = FALSE]), nonAllied = core_obj(core[!core$allied, , drop = FALSE]),
+      scenarios = by_s,
+      # [ISO3, node id, share of world supply, share of allied demand, best host rank or null, flags]
+      division = lapply(seq_len(nrow(d)), function(i) list(d$iso3[i], d$node_id[i], num(d$position_share[i]), num(d$scope_demand_share[i]),
+                                                          if (is.na(d$best_host_rank[i])) NA_integer_ else as.integer(d$best_host_rank[i]), flags[i]))
+    )
+  })
+  wso <- lapply(seq_len(nrow(ws)), function(i) {
+    w <- ws[i, ]
+    split <- if (is.na(w$demand_split) || !nzchar(w$demand_split)) list() else lapply(strsplit(w$demand_split, "; ", fixed = TRUE)[[1]], function(x) {
+      p <- strsplit(x, " ", fixed = TRUE)[[1]]
+      list(p[1], num(as.numeric(sub("%", "", p[2], fixed = TRUE)) / 100))
+    })
+    list(id = w$workstream_id, compact = aib_dash_chr(w$strategic_compact_id),
+         basis = if (grepl("^override", w$assignment_basis)) "override" else if (is.na(w$strategic_compact_id)) "none" else "demand",
+         share = num(w$primary_demand_share), split = split, alsoSpans = aib_dash_split_codes(w$also_spans),
+         straddles = isTRUE(w$straddles), overrideReason = aib_dash_chr(w$override_reason),
+         active = aib_dash_arr(sids[vapply(sids, function(s) isTRUE(w[[paste0("active_", s)]]), logical(1))]))
+  })
+  mt <- st$metrics
+  narr <- st$narratives
+  slot_names <- c(headline = "slot_headline", secondary = "slot_secondary", firstOn = "slot_first_on", contributes = "slot_contributes",
+                  focus = "slot_focus", needs = "slot_needs", dependency = "slot_dependency", compacts = "slot_compacts",
+                  partners = "slot_partners", capacity = "slot_capacity")
+  mnames <- intersect(aib_dash_strategic_metric_names(), names(mt))
+  shown <- c("primary", "secondary", "qualifies beyond the cap")
+  # a list slot's items as [code, number] pairs (codes and numbers space-separated in the narrative table)
+  item_pairs <- function(ids, vals, d = 4) {
+    id <- if (is.null(ids) || is.na(ids) || !nzchar(trimws(ids))) character() else strsplit(trimws(ids), "\\s+")[[1]]
+    v <- if (is.null(vals) || is.na(vals) || !nzchar(trimws(vals))) numeric() else suppressWarnings(as.numeric(strsplit(trimws(vals), "\\s+")[[1]]))
+    lapply(seq_along(id), function(j) list(id[j], if (j <= length(v)) num(v[j], d) else NA_real_))
+  }
+  items_of <- function(n) {
+    if (!nrow(n) || !"items_contributes" %in% names(n)) return(NULL)
+    list(firstOn = aib_dash_split_codes(n$items_first_on[1]), contributes = item_pairs(n$items_contributes[1], n$items_contributes_share[1]),
+         focus = aib_dash_split_codes(n$items_focus[1]), needs = item_pairs(n$items_needs[1], n$items_needs_share[1]),
+         compacts = aib_dash_split_codes(n$items_compacts[1]), partners = aib_dash_split_codes(n$items_partners[1]),
+         capacity = item_pairs(n$items_capacity[1], n$items_capacity_usd_bn[1], 3), capacityUsdBn = num(n$capacity_usd_bn[1], 3))
+  }
+  countries <- lapply(seq_len(nrow(mt)), function(i) {
+    iso <- mt$iso3[i]
+    r <- st$roles[st$roles$iso3 == iso, , drop = FALSE]
+    r <- r[order(is.na(r$role_rank), r$role_rank, match(r$role_code, aib_dash_strategic_role_codes())), , drop = FALSE]
+    n <- narr[narr$iso3 == iso, , drop = FALSE]
+    pos <- function(k) aib_dash_arr(r$role_code[r$primary_or_secondary %in% k])
+    list(
+      iso3 = iso, allied = isTRUE(mt$allied[i]), majorSupplier = isTRUE(mt$major_supplier[i]),
+      primary = pos("primary"), secondary = pos("secondary"), beyondCap = pos("qualifies beyond the cap"),
+      # [code, status or null, rank or null, role strength, gate 1 value, gate 1 percentile, gate 2 value, gate 2 percentile]
+      roles = lapply(seq_len(nrow(r)), function(j) list(
+        r$role_code[j], if (r$primary_or_secondary[j] %in% shown) r$primary_or_secondary[j] else NA_character_,
+        if (is.na(r$role_rank[j])) NA_integer_ else as.integer(r$role_rank[j]),
+        num(r$role_strength[j], 3), aib_dash_signif(r$gate1_value[j]), num(r$gate1_pct[j], 3),
+        aib_dash_signif(r$gate2_value[j]), num(r$gate2_pct[j], 3))),
+      metrics = stats::setNames(lapply(mnames, function(k) aib_dash_signif(mt[[k]][i])), mnames),
+      slots = if (!nrow(n)) NULL else stats::setNames(lapply(slot_names, function(k) aib_dash_chr(n[[k]][1])), names(slot_names)),
+      # the list slots' items as codes (2026-10-21): readers join them to the bundle's nodes, compacts and
+      # countries instead of splitting the prose back apart
+      items = items_of(n),
+      narrative = if (!nrow(n)) NA_character_ else n$narrative[1]
+    )
+  })
+  cr <- st$compact_roles
+  croles <- lapply(seq_len(nrow(cr)), function(i) {
+    x <- cr[i, ]
+    list(compact = x$strategic_compact_id, iso3 = x$iso3, allied = isTRUE(x$allied), role = x$compact_role,
+         detail = aib_dash_chr(x$compact_role_detail), functions = aib_dash_split(x$compact_functions, "; "),
+         leadNode = aib_dash_chr(x$lead_node), leadStep = aib_dash_chr(x$lead_step), leadShare = num(x$lead_share),
+         leadBasis = aib_dash_chr(x$lead_share_basis), keyNodes = aib_dash_split(x$key_nodes, "; "),
+         supplier = num(x$supplier_contribution), demand = num(x$demand_contribution), investment = num(x$investment_contribution),
+         resilienceManaged = num(x$resilience_contribution_managed), resilienceDecoupling = num(x$resilience_contribution_decoupling),
+         criticality = aib_dash_chr(x$criticality), relevance = num(x$compact_relevance))
+  })
+  th <- st$theses
+  theses <- if (is.null(th) || !nrow(th)) list() else lapply(seq_len(nrow(th)), function(i) list(
+    th$a[i], th$b[i], aib_dash_split_codes(th$priority_compacts[i]), aib_dash_split(th$logic[i], "; ")))
+  names_r <- aib_dash_strategic_role_names()
+  nouns <- aib_dash_strategic_role_nouns()
+  list(
+    version = AIB_DASH_STRATEGIC_VERSION,
+    defaultScenario = if (is.null(st$meta$default_scenario)) "managed" else st$meta$default_scenario,
+    framing = "Strategic compact = persistent architecture; scenario = the stress applied to it.",
+    scenarios = scen,
+    roleDefs = lapply(aib_dash_strategic_role_codes(), function(code) {
+      g <- gates[gates$role_code == code, , drop = FALSE]
+      gg <- if (nrow(g)) c(g$gate1[1], g$gate2[1]) else character()
+      lab <- if (is.null(gate_labels)) gg else ifelse(is.na(gate_labels[gg]), gg, gate_labels[gg])
+      list(code = code, name = names_r[[code]], noun = nouns[[code]], gates = aib_dash_arr(gg), gateLabels = aib_dash_arr(unname(lab)),
+           supplyRole = code %in% aib_dash_strategic_supply_roles())
+    }),
+    thresholds = list(pPrimary = P$p_primary, pSecondary = P$p_secondary, maxPrimary = as.integer(P$max_primary), maxSecondary = as.integer(P$max_secondary)),
+    compacts = comps, workstreams = wso, countries = countries, compactRoles = croles, theses = theses
+  )
+}
+
+# Every ISO3 code the strategic section names (for the document's country names).
+aib_dash_strategic_codes <- function(s) {
+  if (is.null(s)) return(character())
+  c(unlist(lapply(s$countries, `[[`, "iso3")), unlist(lapply(s$compactRoles, `[[`, "iso3")),
+    unlist(lapply(s$theses, function(t) c(t[[1]], t[[2]]))),
+    unlist(lapply(s$compacts, function(k) c(unlist(lapply(k$core, `[[`, "iso3")), unlist(lapply(k$nonAllied, `[[`, "iso3")),
+                                             unlist(lapply(k$division, `[[`, 1)),
+                                             unlist(lapply(k$scenarios, function(x) c(unlist(x$criticalPartners), unlist(x$criticalExternal),
+                                                                                       unlist(x$alliedOutsideCore), unlist(x$nonAlliedReliedOn),
+                                                                                       unlist(x$buildHostsNonAllied),
+                                                                                       unlist(x$coalition), unlist(x$buildHosts),
+                                                                                       unlist(lapply(x$nodes, `[[`, 4)))))))))
 }

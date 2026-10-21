@@ -16,6 +16,14 @@
 // compacts, the largest supplier of node.diversify), with loading, failed and missing states. Today's
 // network (the Baseline file, loaded on this page) is the reference: "What changes from today" sets who
 // supplies whom today beside the scenario, and the roles each economy gains or loses.
+//
+// The strategic layer (2026-10-20; task spec s.17): with doc.strategic the page opens on "Strategic roles"
+// (strategicRoles/StrategicRolesSection.tsx): the chosen economy's role in the Allied Industrial Base (its
+// primary strategic roles, what it contributes and needs, its most important strategic compacts, its
+// highest-value partners, where new capacity matters) with "How the model derives this" (both gates of
+// every role, then this page's operational evidence for the economy under the scenario), and who holds
+// each strategic role. The operational part above follows unchanged under "Operational network roles". A
+// bundle without the layer shows the operational part only.
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router';
@@ -32,12 +40,13 @@ import {
   countryRoleMatrix, decoupledEconomy, everyShock, everyShockLabel, fmtPts, MATRIX_ROLES, roleChanges, roleHolders, roleNamedWords, ROLE_FLOOR, ROLE_READING,
   scenarioRoleSource, type CountryRoles, type MatrixRole, type RoleCell,
 } from '../derive/network.ts';
-import { runMetaOf, scenarioCaveat, scenarioCsvFields, scenarioInfo, scenarioShockLabel } from '../derive/scenarios.ts';
+import { runMetaOf, scenarioCaveat, scenarioCsvFields, scenarioFileTag, scenarioInfo, scenarioShockLabel } from '../derive/scenarios.ts';
 import { compactHref } from '../nav.ts';
 import { AIB_EYEBROW } from './AibOverviewView.tsx';
 import { BasisTag } from './basis.tsx';
 import { csvWithRun } from './common.tsx';
-import { cellWords, ModelledNote, RoleCellView, ScenarioFileState, useBaselineDoc, useManagedDoc } from './networkParts.tsx';
+import { cellWords, ModelledNote, OperationalRoleList, RoleCellView, ScenarioFileState, useBaselineDoc, useManagedDoc } from './networkParts.tsx';
+import { StrategicRolesSection } from './strategicRoles/StrategicRolesSection.tsx';
 import { RoleChangesCard, WhoSuppliesWhomCard } from './scenarioNetwork.tsx';
 
 /** The matrix columns in the brief's order. */
@@ -50,7 +59,7 @@ const partnersOf = (c: RoleCell): number | null => (c.side ? (c.headlinePartners
 
 export default function AibRolesView() {
   useTitle('Country roles', 'aib');
-  const { doc, names, compactOf, shockLabel, title, scenario, hasScenarios, href } = useAibCtx();
+  const { doc, names, name: docName, compactOf, shockLabel, title, scenario, hasScenarios, href, strategic } = useAibCtx();
   const loc = useLocation();
   const meta = doc.meta;
   const mi = useManagedDoc(scenario === 'managed');
@@ -121,7 +130,7 @@ export default function AibRolesView() {
   const runMeta = runMetaOf(meta, scenario);
   const scnCsv = hasScenarios ? scenarioCsvFields(meta, scenario) : null;
   const csv = () => ({
-    name: `Allied Industrial Base country roles${scenario === 'managed' ? ` ${info.label}` : ''}`,
+    name: `Allied Industrial Base country roles${scenarioFileTag(scenario, meta, hasScenarios)}`,
     text: csvWithRun(
       rows.map((r) => {
         const out: Record<string, unknown> = { iso3: r.iso3, economy: r.name };
@@ -158,14 +167,79 @@ export default function AibRolesView() {
   });
 
   const pending = !src;
+
+  // the operational evidence under a strategic summary: the economy's matrix row under the scenario
+  const renderName = (iso: string | null, label: string) =>
+    iso ? (
+      <Link className="link" to={href(`/countries/${iso}#aib-role`)}>
+        {label}
+      </Link>
+    ) : (
+      <span className="text-paper">{label}</span>
+    );
+  const evidenceFor = (iso: string) => {
+    const r = rows.find((x) => x.iso3 === iso);
+    return (
+      <div className="text-sm" data-testid="operational-evidence">
+        <p className="mb-1 font-medium text-paper">Operational network roles {under}</p>
+        <p className="mb-2 text-xs leading-relaxed text-paper-mute">
+          The evidence beneath the strategic roles: what the economy does in the network of trade and investment relationships the model selects. Unlike the strategic roles, these
+          follow the scenario. The table below sets every economy side by side.
+        </p>
+        {pending ? (
+          <p className="text-paper-mute">{mi.error || mi.missing ? `Not available for ${info.label} in this view: see the note below.` : `Loading the roles ${under}…`}</p>
+        ) : r ? (
+          <>
+            <OperationalRoleList roles={r} every={every} under={under} />
+            <p className="mt-2 text-xs text-paper-mute">
+              In the coalition of {plural(r.member.length, 'workstream')}
+              {r.associate.length ? `; an associate in ${r.associate.length} more` : ''}
+              {r.member.length ? ': ' : '.'}
+              {r.member.map((id, i) => (
+                <span key={id}>
+                  {i > 0 && ', '}
+                  <Link className="link" to={compactHref(id, scenario)} title={compactWords([id])}>
+                    {id}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          </>
+        ) : (
+          <p className="text-paper-mute">No role in the network {under}, and no seat in a workstream&apos;s coalition.</p>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className={PAGE}>
       <PageHead
         eyebrow={AIB_EYEBROW}
         title="Country roles"
-        lede={`What division of labour emerges across countries? For each economy, the roles it plays in the network of trade and investment relationships the model selects ${hasScenarios ? `${under}` : 'after the shock'}, and the Sectoral Compacts it joins${hasScenarios ? ', set against trade as it is today' : ''}. Roles are read from the model's own results: they are not a ranking or a score.`}
+        lede={
+          strategic
+            ? `What does each economy contribute to the allied industrial system? First its strategic roles: the two or three major functions it performs, what it contributes and needs, its most important compacts and partners, the same in every scenario. Then the operational roles beneath them: the roles it plays in the network of trade and investment relationships the model selects ${hasScenarios ? under : 'after the shock'}${hasScenarios ? ', set against trade as it is today' : ''}. Roles are read from the model's own results: they are not a ranking or a score.`
+            : `What division of labour emerges across countries? For each economy, the roles it plays in the network of trade and investment relationships the model selects ${hasScenarios ? `${under}` : 'after the shock'}, and the Sectoral Compacts it joins${hasScenarios ? ', set against trade as it is today' : ''}. Roles are read from the model's own results: they are not a ranking or a score.`
+        }
       />
       <div className="space-y-10">
+        {strategic && (
+          <StrategicRolesSection s={strategic} nodes={doc.nodes} names={names} name={docName} scenario={scenario} renderName={renderName} evidenceFor={evidenceFor} />
+        )}
+
+        {strategic && (
+          <div className="max-w-4xl border-t hairline pt-8" data-testid="operational-intro">
+            <h2 id="operational-roles-h" className="rule-neis-sm mb-2 mt-1 text-xl font-medium text-paper lg:text-2xl">
+              Operational network roles
+            </h2>
+            <p className="text-[0.9375rem] leading-relaxed text-paper-dim">
+              The evidence beneath the strategic roles: the supplier, buyer, investor, host and bridge roles each economy plays in the network of trade and investment relationships the
+              model selects {under}, and the workstreams whose coalitions it joins. Unlike the strategic roles, they follow the scenario.
+            </p>
+          </div>
+        )}
+
         <section aria-labelledby="reading-roles-h" className="max-w-4xl">
           <BasisTag basis={hasScenarios ? 'model' : 'facts'} scenario={hasScenarios ? info.label : null} />
           <h2 id="reading-roles-h" className="rule-neis-sm mb-2 mt-1 text-xl font-medium text-paper lg:text-2xl">

@@ -8,21 +8,25 @@
 // The scenarios (2026-10-19): the figures follow the AIB toggle (URL scn, shared with the Partnerships
 // section's AIB lens): Decoupling reads the main document; Managed Interdependence the scenario file (its
 // compacts' coalitions and roles, its network: aibDocUnder()). A line names the scenario shown and switches it.
+// The strategic layer (2026-10-20; task spec s.18): with doc.strategic the section opens on the economy's
+// strategic AIB roles, its participation in the Strategic Sectoral Compacts with its role within each (a
+// compact links to its page) and its key bilateral relationships (AibStrategicCards.tsx, from
+// aibStrategicOf(); the same in every scenario); the operational roles and the network relationships
+// follow as the evidence beneath them, under the toggled scenario.
 
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { useAibScenario, useAibScenarioDoc } from '../../../aib/data/hooks.ts';
 import { compactTitle, fmtUsd, listWords, nameOf, plural } from '../../../aib/derive/format.ts';
-import { countryEdges, countryRolesOf, edgeWords, everyShock, everyShockLabel, fmtPts, MATRIX_ROLES, ROLE_FLOOR, ROLE_READING, scenarioRoleSource } from '../../../aib/derive/network.ts';
+import { countryEdges, countryRolesOf, edgeWords, everyShock, everyShockLabel, fmtPts, MATRIX_ROLES, ROLE_FLOOR, scenarioRoleSource } from '../../../aib/derive/network.ts';
 import { effectiveScenario, hasScenarios, scenarioLabel, scenarioNameOf, scenarioShockLabel } from '../../../aib/derive/scenarios.ts';
 import { compactHref, rolesHref, withScenario } from '../../../aib/nav.ts';
-import { cellWords, INVEST_COLOR, ModelledNote, TRADE_COLOR, TradeInvestBar } from '../../../aib/views/networkParts.tsx';
-import { aibCountry, aibDocUnder } from '../../derive/framing.ts';
+import { INVEST_COLOR, ModelledNote, OperationalRoleList, TRADE_COLOR, TradeInvestBar } from '../../../aib/views/networkParts.tsx';
+import { aibCountry, aibDocUnder, aibStrategicOf } from '../../derive/framing.ts';
 import { cap, poss, proseName } from '../../derive/text.ts';
+import { AibStrategicCards } from './AibStrategicCards.tsx';
 import { BasisTag, LinkRow, Section, useProfile } from './common.tsx';
 import { PartnerName } from './PartnersSection.tsx';
-
-const LEVEL_WORD = { named: 'named', minor: 'minor', none: 'not held' } as const;
 
 export function AibRoleSection() {
   const { sheet, aib } = useProfile();
@@ -37,6 +41,8 @@ export function AibRoleSection() {
   const names = useMemo(() => (aib?.names && managed.doc ? { ...managed.doc.countries, ...aib.names } : aib?.names), [aib?.names, managed.doc]);
   const label = scenarioLabel(sid, main?.meta);
   const a = useMemo(() => (doc && names ? aibCountry(doc, names, iso) : null), [doc, names, iso]);
+  // the strategic layer: structural, read from the main document whatever the scenario
+  const strat = useMemo(() => (main ? aibStrategicOf(main, aib?.names ?? {}, iso) : null), [main, aib?.names, iso]);
   // read as /aib/roles reads the scenario: Decoupling's headline network and partners, Managed Interdependence's
   // own network and compacts (scenarioRoleSource()); an older bundle without the scenarios keeps every shock
   const src = useMemo(
@@ -70,9 +76,11 @@ export function AibRoleSection() {
           The Allied Industrial Base analysis takes away supply (under Decoupling, China stops supplying the allied market; under Managed Interdependence, no supplier may hold more than
           the share comparable goods would allow), asks how much of it existing relationships, coordinated trade and new capacity can restore, and groups the supply-chain nodes that need
           coordination into Sectoral Compacts. The roles below are read from the model&apos;s results for {name}, not a ranking.
+          {strat ? ' First its strategic roles, its place in each Strategic Sectoral Compact and its key bilateral relationships, the same in every scenario; then the operational roles and network relationships beneath them, under the scenario chosen.' : ''}
         </>
       }
     >
+      {strat && <AibStrategicCards place={strat} name={name} scenario={sid} partnerName={(x) => nameOf(aib?.names ?? {}, x)} />}
       {available && main && (
         <p className="text-sm text-paper-dim" data-testid="aib-role-scenario">
           Shown under <span className="font-medium text-paper">{label}</span>, the scenario chosen for the Allied Industrial Base.{' '}
@@ -102,28 +110,19 @@ export function AibRoleSection() {
         </p>
       ) : !inAny ? (
         <p className="text-sm text-paper-dim">
-          {cap(name)} holds no role in the Allied Industrial Base network or in any Sectoral Compact{available ? ` under ${label}` : ''}.
+          {strat
+            ? `${cap(name)} holds no operational role in the Allied Industrial Base network and no seat in a workstream's coalition${available ? ` under ${label}` : ''}.`
+            : `${cap(name)} holds no role in the Allied Industrial Base network or in any Sectoral Compact${available ? ` under ${label}` : ''}.`}
         </p>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           <section className="card p-5" aria-labelledby="aib-roles-h" data-testid="aib-roles">
             <h3 id="aib-roles-h" className="rule-neis-sm text-base font-medium text-paper lg:text-lg">
-              Roles and compacts
+              {strat ? 'Operational roles and workstreams' : 'Roles and compacts'}
             </h3>
-            <ul className="mt-2 space-y-2 text-sm text-paper-dim">
-              {MATRIX_ROLES.map((k) => {
-                const c = roles.cells[k];
-                return (
-                  <li key={k} data-level={c.level}>
-                    <span className={c.level === 'named' ? 'font-medium text-paper' : 'text-paper-mute'}>{ROLE_READING[k].short}</span>
-                    <span className="text-xs text-paper-mute"> · {LEVEL_WORD[c.level]}</span>
-                    {c.level !== 'none' && <span className="block text-xs text-paper-mute">{cellWords(k, c, every, underCell)}</span>}
-                  </li>
-                );
-              })}
-            </ul>
+            <OperationalRoleList roles={roles} every={every} under={underCell} className="mt-2" />
             <p className="mt-3 border-t hairline pt-2 text-sm text-paper-dim">
-              In the coalition of {plural(roles.member.length, 'compact')}
+              In the coalition of {plural(roles.member.length, strat ? 'workstream' : 'compact')}
               {roles.associate.length ? `; an associate in ${roles.associate.length} more` : ''}.
             </p>
             {a.compacts.length > 0 && (

@@ -22,6 +22,14 @@
 // twin of every compact under the three scenarios and its CSV; the node classification groups the nodes by
 // their class under the scenario (Managed Interdependence: the unchanged nodes apart), and its table and
 // CSV carry the scenario's figures. A bundle without the scenarios shows Decoupling alone, as before.
+//
+// The Workstreams index /compacts/workstreams (2026-10-20, the strategic layer): with doc.strategic the
+// compact candidates are the Workstreams of the Strategic Sectoral Compacts, so the page is titled
+// "Workstreams" (a link back to the strategic landing above it), lists them by strategic compact first
+// (#sc-<SC id>, the target of each strategic card's "View workstreams", marked when targeted), names each
+// card's strategic compact (a link, with any other it spans), calls the card's link "View compact
+// workstream" and adds the strategic compact to the table twin and the CSV. The cards keep their order. A
+// bundle without the layer keeps the former landing's words ("Sectoral Compacts", "View compact").
 
 import { useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -30,7 +38,7 @@ import { TableView, type Col } from '../../components/TableView.tsx';
 import { Checkbox, Disclosure, EmptyState, FilterRow, PageHead, Select } from '../../components/ui.tsx';
 import { useTitle } from '../../shell/title.ts';
 import { EYEBROW, PAGE, useAibCtx } from '../AibLayout.tsx';
-import { AIB_PHYSICAL_WARNING, coalitionMembersOf, diversifyShockIdOf, inStrategicScope, type AibCompact, type AibManagedScenarioDoc, type AibNode } from '../contract.ts';
+import { AIB_PHYSICAL_WARNING, coalitionMembersOf, diversifyShockIdOf, inStrategicScope, type AibCompact, type AibManagedScenarioDoc, type AibNode, type AibStrategic } from '../contract.ts';
 import { ClassLegend, ClassSwatch, FlaggedClass, PhysicalWarning, PolicyNeeds } from '../charts/ClassChip.tsx';
 import { CoverageStrip } from '../charts/CoverageStrip.tsx';
 import { LostByClassBar } from '../charts/LostByClassBar.tsx';
@@ -46,13 +54,14 @@ import { compactNodes, nodeCsvRow, nodeRow, outOfScopeCount, scopedNodes, techno
 import {
   compactScenarioCsvRow, compactScenarioRows, compactsByScenario, compactUnchangedReasonOf, managedCompact, managedOf, nodeScenarioCsv, nodeScenarioNote, scenarioClassGroups, type CompactScenarioRow,
 } from '../derive/scenarioPages.ts';
-import { compactDetail, compactScenario, compactScenarios, compactSuppliersToday, nodeScenario, scenarioCsvFields, scenarioInfo, scenarioShockLabel, type CompactScenario } from '../derive/scenarios.ts';
+import { compactDetail, compactScenario, compactScenarios, compactSuppliersToday, nodeScenario, scenarioCsvFields, scenarioInfo, scenarioLabel, scenarioShockLabel, type CompactScenario } from '../derive/scenarios.ts';
 import { growthFlag, robustnessSummary, variantWarning } from '../derive/sensitivity.ts';
 import { candidateUniverse, coverageBase, demandScope, nodeTaxonomy, shockSemantics, strategicScope, supplyConstraint } from '../derive/settings.ts';
 import { groupedSectorWords, indexLabel, indexOfNode, nodeWhere, techOptions } from '../derive/taxonomy.ts';
 import { tierEconomies } from '../derive/tiers.ts';
 import { compactTypeInfo } from '../derive/types.ts';
-import { compactHref } from '../nav.ts';
+import { alsoTouchingOf, strategicCompactOf, workstreamHomeOf, workstreamOf, workstreamsOf } from '../derive/strategic.ts';
+import { compactHref, strategicCompactHref, strategicCompactsHref, WORKSTREAMS_LABEL } from '../nav.ts';
 import type { AibToggle } from '../scenarioUrl.ts';
 import { BasisTag } from './basis.tsx';
 import { csvWithRun, ReadingNotes, Section } from './common.tsx';
@@ -69,8 +78,135 @@ function coalitionLine(c: AibCompact, names: Readonly<Record<string, string>>): 
   }${marginal ? ` (+${marginal} marginal)` : ''}`;
 }
 
+/**
+ * The strategic compact a workstream is filed under, as a link (2026-10-20: the compact candidates are
+ * the Workstreams of the Strategic Sectoral Compacts), with the others it also spans; nothing in a bundle
+ * without the strategic layer.
+ */
+function WorkstreamHome({ id }: { id: string }) {
+  const { strategic: s, href } = useAibCtx();
+  if (!s) return null;
+  const ws = workstreamOf(s, id);
+  const home = workstreamHomeOf(s, id);
+  const also = (ws?.alsoSpans ?? []).flatMap((x) => {
+    const k = strategicCompactOf(s, x);
+    return k ? [k] : [];
+  });
+  return (
+    <p className="mt-1 text-xs text-paper-mute" data-testid="workstream-home">
+      {home ? (
+        <>
+          Workstream of{' '}
+          <Link className="link" to={href(strategicCompactHref(home.id))}>
+            {home.name}
+          </Link>
+          {also.length > 0 && (
+            <>
+              {' '}
+              (also spans{' '}
+              {also.map((k, i) => (
+                <span key={k.id}>
+                  {i > 0 ? ', ' : ''}
+                  <Link className="link" to={href(strategicCompactHref(k.id))}>
+                    {k.name}
+                  </Link>
+                </span>
+              ))}
+              )
+            </>
+          )}
+        </>
+      ) : (
+        'Not filed under a strategic compact'
+      )}
+    </p>
+  );
+}
+
+/**
+ * The Workstreams by strategic compact (2026-10-20): one item per strategic compact (#sc-<id>, the target of
+ * nav.ts workstreamsHref(_, id)) with its workstreams and those filed elsewhere that also touch it, each
+ * active or not under the toggled scenario; the item a link targets is marked. The cards below keep their
+ * order.
+ */
+function ByStrategicCompact() {
+  const { strategic: s, strategicScenario: sid, doc, href, title: titleOf } = useAibCtx();
+  const loc = useLocation();
+  if (!s || !sid) return null;
+  const target = loc.hash.startsWith('#sc-') ? decodeURIComponent(loc.hash.slice(4)).toUpperCase() : null;
+  const label = s.scenarios.find((d) => d.id === sid)?.label ?? sid;
+  const unfiled = s.workstreams.filter((w) => !w.compact);
+  const wsLink = (r: { id: string; candidate: AibCompact | null; active: boolean }) => (
+    <li key={r.id}>
+      <Link className="link" to={href(compactHref(r.id))}>
+        {r.id}
+        {r.candidate ? ` ${titleOf(r.candidate)}` : ''}
+      </Link>
+      {r.active && <span className="text-paper-mute"> · active</span>}
+    </li>
+  );
+  return (
+    <Section
+      id="by-compact"
+      title="Workstreams by strategic compact"
+      intro={
+        <p>
+          Each workstream is filed under the Strategic Sectoral Compact that holds most of its allied demand; a few that span two compacts are filed by review and say why on
+          their compact’s page.
+        </p>
+      }
+    >
+      <ul className="grid gap-3 md:grid-cols-2" aria-label="Strategic Sectoral Compacts and their workstreams">
+        {s.compacts.map((k) => {
+          const own = workstreamsOf(s, k.id, doc, sid);
+          const touching = alsoTouchingOf(s, k.id, doc, sid);
+          const current = target === k.id.toUpperCase();
+          return (
+            <li
+              key={k.id}
+              id={`sc-${k.id}`}
+              className={`panel scroll-mt-16 p-4 text-sm ${current ? 'ring-1 ring-inset ring-white/40' : ''}`}
+              aria-current={current ? 'true' : undefined}
+              data-strategic={k.id}
+            >
+              <p className="font-medium">
+                <Link className="link" to={href(strategicCompactHref(k.id))}>
+                  {k.name}
+                </Link>
+              </p>
+              <p className="mt-0.5 text-xs text-paper-mute">
+                {own.length ? `${plural(own.length, 'workstream')}, ${own.filter((r) => r.active).length} active under ${label}` : 'No workstream: none of the model’s clusters falls mainly in this compact'}
+              </p>
+              {own.length > 0 && <ul className="mt-2 space-y-1 text-xs" aria-label={`Workstreams of ${k.name}`}>{own.map(wsLink)}</ul>}
+              {touching.length > 0 && (
+                <>
+                  <p className="mt-2 text-xs text-paper-mute">Filed elsewhere, also touching it:</p>
+                  <ul className="mt-1 space-y-1 text-xs" aria-label={`Workstreams filed elsewhere that touch ${k.name}`}>
+                    {touching.map(wsLink)}
+                  </ul>
+                </>
+              )}
+            </li>
+          );
+        })}
+        {unfiled.length > 0 && (
+          <li className="panel p-4 text-sm">
+            <p className="font-medium text-paper">Not filed under a strategic compact</p>
+            <ul className="mt-2 space-y-1 text-xs">
+              {unfiled.map((w) => {
+                const cand = doc.compacts.find((x) => x.id === w.id) ?? null;
+                return wsLink({ id: w.id, candidate: cand, active: w.active.includes(sid) });
+              })}
+            </ul>
+          </li>
+        )}
+      </ul>
+    </Section>
+  );
+}
+
 function CompactCard({ c, managed, managedState }: { c: AibCompact; managed: AibManagedScenarioDoc | null; managedState: 'ready' | 'loading' | 'error' | 'missing' }) {
-  const { name, names, nodeOf, tx, title: titleOf, scenario, hasScenarios, href, doc } = useAibCtx();
+  const { name, names, nodeOf, tx, title: titleOf, scenario, hasScenarios, href, doc, strategic } = useAibCtx();
   const title = titleOf(c);
   const steps = coverageSteps(c.metrics);
   const warned = c.physicalWarnings ?? [];
@@ -125,6 +261,7 @@ function CompactCard({ c, managed, managedState }: { c: AibCompact; managed: Aib
             {title}
           </Link>
         </h3>
+        <WorkstreamHome id={c.id} />
         {tx.dictionary && c.technologies.length > 0 && (
           <p className="mt-1 text-xs text-paper-mute" data-testid="compact-taxonomy">
             {tx.Many}: {groupedSectorWords(tx, c.technologies)}
@@ -179,8 +316,8 @@ function CompactCard({ c, managed, managedState }: { c: AibCompact; managed: Aib
           )}
         </div>
         <div className="mt-auto pt-4 text-sm">
-          <Link className="link" to={href(compactHref(c.id))} aria-label={`View compact: ${title}`}>
-            View compact &rarr;
+          <Link className="link" to={href(compactHref(c.id))} aria-label={`${strategic ? 'View compact workstream' : 'View compact'}: ${title}`}>
+            {strategic ? 'View compact workstream' : 'View compact'} &rarr;
           </Link>
         </div>
       </article>
@@ -295,12 +432,12 @@ function RunLine() {
 }
 
 /** The table twin of the compact cards: every compact under the three scenarios. */
-function compactCols(titleOf: (c: AibCompact) => string, href: (to: string) => string): Col<CompactScenarioRow>[] {
+function compactCols(titleOf: (c: AibCompact) => string, href: (to: string) => string, strategic: AibStrategic | null = null): Col<CompactScenarioRow>[] {
   const share = (s: CompactScenario) => s.split?.kept ?? null;
   return [
     {
       id: 'compact',
-      header: 'Compact',
+      header: strategic ? 'Workstream' : 'Compact',
       value: (r) => `${r.compact.id} ${titleOf(r.compact)}`,
       cell: (r) => (
         <Link className="link" to={href(compactHref(r.compact.id))}>
@@ -308,6 +445,16 @@ function compactCols(titleOf: (c: AibCompact) => string, href: (to: string) => s
         </Link>
       ),
     },
+    ...(strategic
+      ? [
+          {
+            id: 'strategic',
+            header: 'Strategic compact',
+            value: (r: CompactScenarioRow) => workstreamHomeOf(strategic, r.compact.id)?.name ?? null,
+            minWidth: 180,
+          },
+        ]
+      : []),
     { id: 'title', header: 'Supply chain', value: (r) => titleOf(r.compact), minWidth: 220 },
     { id: 'nodes', header: 'Nodes', value: (r) => r.compact.nodes.length, num: true },
     { id: 'demand', header: 'Allied demand', value: (r) => r.decoupling.demandUsd, cell: (r) => fmtUsd(r.decoupling.demandUsd), num: true },
@@ -333,8 +480,10 @@ function compactCols(titleOf: (c: AibCompact) => string, href: (to: string) => s
 }
 
 export default function CompactsIndexView() {
-  useTitle('Compacts', 'aib');
-  const { doc, names, tx, nodeOf, scenario, hasScenarios, href, title: titleOf } = useAibCtx();
+  const { doc, names, tx, nodeOf, scenario, hasScenarios, href, title: titleOf, strategic } = useAibCtx();
+  // with the strategic layer (2026-10-20) the compact candidates are its Workstreams
+  const ws = strategic !== null;
+  useTitle(ws ? WORKSTREAMS_LABEL : 'Compacts', 'aib');
   const loc = useLocation();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -416,7 +565,7 @@ export default function CompactsIndexView() {
     ...(nOut ? [{ id: 'scope', header: 'Strategic scope', value: (n: AibNode) => (inStrategicScope(n) ? 'in scope' : 'outside') }] : []),
   ];
   const csv = () => ({
-    name: `Sectoral compacts node classification${tech ? ` ${tech}` : ''}${all ? ' all nodes' : ''}${mi ? ' managed interdependence' : ''}`,
+    name: `Sectoral compacts node classification${tech ? ` ${tech}` : ''}${all ? ' all nodes' : ''}${hasScenarios ? ` ${scenarioLabel(scenario, m).toLowerCase()}` : ''}`,
     text: csvWithRun(
       // the unprefixed columns are Decoupling's (aib_scenario names it); baseline_* and managed_* name their scenario
       shown.map((n) => ({ ...nodeCsvRow(nodeRow(n, names, tx)), ...(hasScenarios ? { ...scenarioCsvFields(m, 'decoupling'), ...nodeScenarioCsv(n) } : {}) })),
@@ -424,9 +573,12 @@ export default function CompactsIndexView() {
     ),
   });
   const compactsCsv = () => ({
-    name: 'Sectoral compacts under the three scenarios',
+    name: ws ? 'Workstreams under the three scenarios' : 'Sectoral compacts under the three scenarios',
     text: csvWithRun(
-      compactRows.map((r) => compactScenarioCsvRow(r, titleOf(r.compact))),
+      compactRows.map((r) => {
+        const home = strategic ? workstreamHomeOf(strategic, r.compact.id) : null;
+        return { ...compactScenarioCsvRow(r, titleOf(r.compact)), ...(strategic ? { strategic_compact_id: home?.id ?? null, strategic_compact_name: home?.name ?? null } : {}) };
+      }),
       m,
     ),
   });
@@ -442,15 +594,27 @@ export default function CompactsIndexView() {
 
   return (
     <div className={PAGE}>
+      {ws && (
+        <p className="mb-4 text-sm">
+          <Link className="link" to={href(strategicCompactsHref())}>
+            &larr; Strategic Sectoral Compacts
+          </Link>
+        </p>
+      )}
       <PageHead
         eyebrow={EYEBROW}
-        title="Sectoral Compacts"
-        lede={`A Sectoral Compact is a variable-geometry coalition that coordinates trade, investment, demand and risk-management policy across a coherent supply chain, where joint action improves resilience more than fragmented national or bilateral action would. The compacts here are derived from the model, from a supply shock on the observed trade network, not fixed in advance: nothing forces one compact per ${tx.one} or a compact on every ${tx.one}.${hasScenarios ? ' The compacts are formed under Decoupling; under Managed Interdependence the same compacts are solved again, with their own coalitions.' : ''}`}
+        title={ws ? WORKSTREAMS_LABEL : 'Sectoral Compacts'}
+        lede={
+          ws
+            ? `Workstreams are the model’s own clusters of supply-chain nodes that share partners and policy needs; each sits under one of the ${strategic.compacts.length} Strategic Sectoral Compacts, the lasting frameworks around whole supply chains, and is where a compact’s work happens in practice. Each workstream is a variable-geometry coalition that coordinates trade, investment, demand and risk-management policy across part of a supply chain, where joint action improves resilience more than fragmented national or bilateral action would. The workstreams are derived from the model, from a supply shock on the observed trade network, not fixed in advance: nothing forces one per ${tx.one} or one on every ${tx.one}.${hasScenarios ? ' They are formed under Decoupling; under Managed Interdependence the same workstreams are solved again, with their own coalitions.' : ''}`
+            : `A Sectoral Compact is a variable-geometry coalition that coordinates trade, investment, demand and risk-management policy across a coherent supply chain, where joint action improves resilience more than fragmented national or bilateral action would. The compacts here are derived from the model, from a supply shock on the observed trade network, not fixed in advance: nothing forces one compact per ${tx.one} or a compact on every ${tx.one}.${hasScenarios ? ' The compacts are formed under Decoupling; under Managed Interdependence the same compacts are solved again, with their own coalitions.' : ''}`
+        }
       >
         <RunLine />
       </PageHead>
 
       <div className="space-y-14">
+        <ByStrategicCompact />
         <Section
           id="map"
           title="Where compacts are justified"
@@ -504,12 +668,12 @@ export default function CompactsIndexView() {
 
         <Section
           id="compacts"
-          title={`The compacts (${doc.compacts.length})`}
+          title={`The ${ws ? 'workstreams' : 'compacts'} (${doc.compacts.length})`}
           intro={
             <p>
               {hasScenarios
-                ? `Ordered by the supply ${mi ? 'Managed Interdependence shifts' : 'the shock removes'}, largest first. Each card says why the compact exists under the scenario shown, its main nodes and countries, the policy it most needs and how much of its demand is served; the mini bar compares the three scenarios (kept, restored by trade, new capacity; the figure is the share served after optimized trade). A group marked “compact unnecessary” is shown too: its supply chains hang together, but a coalition would barely improve on existing relationships.`
-                : 'Ordered by the supply the shock removes, largest first. Each card says why the compact exists, its main nodes and countries, the policy it most needs and how much of its demand is served at each step: the shock alone, existing relationships, the trade compact and trade plus investment. A group marked “compact unnecessary” is shown too: its supply chains hang together, but a coalition would barely improve on existing relationships.'}
+                ? `Ordered by the supply ${mi ? 'Managed Interdependence shifts' : 'the shock removes'}, largest first. Each card says why the ${ws ? 'workstream' : 'compact'} exists under the scenario shown, ${ws ? 'the strategic compact it belongs to, ' : ''}its main nodes and countries, the policy it most needs and how much of its demand is served; the mini bar compares the three scenarios (kept, restored by trade, new capacity; the figure is the share served after optimized trade). A group marked “compact unnecessary” is shown too: its supply chains hang together, but a coalition would barely improve on existing relationships.`
+                : `Ordered by the supply the shock removes, largest first. Each card says why the ${ws ? 'workstream' : 'compact'} exists, ${ws ? 'the strategic compact it belongs to, ' : ''}its main nodes and countries, the policy it most needs and how much of its demand is served at each step: the shock alone, existing relationships, the trade compact and trade plus investment. A group marked “compact unnecessary” is shown too: its supply chains hang together, but a coalition would barely improve on existing relationships.`}
             </p>
           }
         >
@@ -517,14 +681,14 @@ export default function CompactsIndexView() {
             hasScenarios ? (
               <ChartCard
                 headingLevel={3}
-                title="Every compact under the three scenarios"
+                title={`Every ${ws ? 'workstream' : 'compact'} under the three scenarios`}
                 sub={`Cards ordered by the supply ${mi ? 'Managed Interdependence shifts' : 'Decoupling removes'}; the table compares the scenarios side by side and sorts by any column.`}
                 legend={<CoverageLegend />}
                 table={() => (
                   <TableView
                     rows={compactRows}
-                    cols={compactCols((c) => titleOf(c), href)}
-                    caption="Every compact under the three scenarios"
+                    cols={compactCols((c) => titleOf(c), href, strategic)}
+                    caption={`Every ${ws ? 'workstream' : 'compact'} under the three scenarios`}
                     rowKey={(r) => r.compact.id}
                     pageSize={50}
                     initialSort={{ id: mi ? 'mLost' : 'dLost', desc: true }}

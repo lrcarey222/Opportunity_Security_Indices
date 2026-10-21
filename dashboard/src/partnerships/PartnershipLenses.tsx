@@ -5,14 +5,16 @@
 // three clearly tagged panels, Today, OSI recommends and AIB model (the toggled scenario). The pages give
 // each panel its content and the partners it names; a lens with no data at the focus shows one line
 // instead (never a blank panel) and is left out of the comparison. HTML only: the panels stack at any width,
-// names are links where the page gives one, and every reading is text (no colour carries meaning).
+// names are links where the page gives one, and every reading is text (no colour carries meaning). With a
+// pair (2026-10-20: `pair`, the partner of the relationship thesis above), the summary adds one line on
+// where that partner sits in the compared lenses.
 
 import { useId, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Segmented } from '../components/ui.tsx';
 import { BASIS_WORDS, type Basis } from '../aib/views/basis.tsx';
 import {
-  comparedWords, crossLens, KIND_LABEL, KIND_LENS_WORDS, LENS_IDS, LENS_INFO, PARTNERSHIP_KINDS, summaryLine, type LensId, type LensNames, type PartnershipKind,
+  comparedWords, crossLens, KIND_LABEL, KIND_LENS_WORDS, LENS_IDS, LENS_INFO, PARTNERSHIP_KINDS, pairReading, summaryLine, type LensId, type LensNames, type PartnershipKind,
 } from './lenses.ts';
 
 /** The basis tag of each lens (the AIB section's tag words: views/basis.tsx). */
@@ -54,6 +56,8 @@ export interface PartnershipLensesProps {
   lenses: Readonly<Record<LensId, LensPanelSpec>>;
   /** shown after the three panels (folds, links) */
   footer?: ReactNode;
+  /** the pair's other economy (2026-10-20): the summary says where it sits in the three lenses */
+  pair?: string | null;
 }
 
 const KIND_OPTIONS = PARTNERSHIP_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }));
@@ -96,9 +100,23 @@ function Names({ keys, name, href }: { keys: readonly string[]; name: (iso3: str
   );
 }
 
+/** One line: where the pair's other economy sits in the compared lenses (nothing before a lens is compared). */
+function PairLine({ cl, pair, name, noun }: { cl: ReturnType<typeof crossLens>; pair: string; name: (iso3: string) => string; noun: { one: string; many: string } }) {
+  const reading = pairReading(cl, pair);
+  if (reading === undefined) return null;
+  return (
+    <p data-testid="cross-lens-pair">
+      <span className="font-medium text-paper">Where {name(pair)} sits:</span>{' '}
+      {reading
+        ? `${reading}.`
+        : `not among the ${noun.many} ${cl.compared.length === 1 ? LENS_INFO[cl.compared[0]].title : comparedWords(cl.compared)} ${cl.compared.length === 1 ? 'names' : 'name'} here (each names only its leading ${noun.many}).`}
+    </p>
+  );
+}
+
 /** The cross-lens summary of one kind. */
 export function CrossLensSummary({
-  id, level, kind, focus, noun, name, partnerHref, lenses,
+  id, level, kind, focus, noun, name, partnerHref, lenses, pair,
 }: {
   id: string;
   level: 2 | 3;
@@ -108,6 +126,8 @@ export function CrossLensSummary({
   name: (iso3: string) => string;
   partnerHref?: (iso3: string) => string | null;
   lenses: Readonly<Record<LensId, LensNames>>;
+  /** the pair's other economy: one line on where it sits */
+  pair?: string | null;
 }) {
   const H = level === 3 ? 'h3' : 'h2';
   const cl = crossLens(lenses);
@@ -145,6 +165,7 @@ export function CrossLensSummary({
         ) : (
           <p data-testid="cross-lens-line">{cl.pending.length ? 'The lenses are loading.' : `No lens has ${noun.many} here.`}</p>
         )}
+        {pair && <PairLine cl={cl} pair={pair} name={name} noun={noun} />}
         {cl.pending.length > 0 && cl.compared.length > 0 && <p className="text-xs text-paper-mute">Still loading: {cl.pending.map((k) => LENS_INFO[k].title).join(', ')}.</p>}
         {cl.absent.map((a) => (
           <p key={a.id} className="text-xs text-paper-mute" data-testid={`cross-lens-absent-${a.id}`}>
@@ -198,7 +219,7 @@ export function LensPanel({
 
 /** The kind control, the cross-lens summary and the three lens panels. */
 export function PartnershipLenses({
-  idPrefix, kind, onKind, kindLabel = 'Partnership type', headingLevel, focus, noun, name, partnerHref, scenarioLabel, lenses, footer,
+  idPrefix, kind, onKind, kindLabel = 'Partnership type', headingLevel, focus, noun, name, partnerHref, scenarioLabel, lenses, footer, pair,
 }: PartnershipLensesProps) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const base = `${idPrefix}-${uid}`;
@@ -206,7 +227,7 @@ export function PartnershipLenses({
   return (
     <div className="space-y-8" data-testid="partnership-lenses" data-kind={kind}>
       <Segmented label={kindLabel} value={kind} options={KIND_OPTIONS} onChange={onKind} />
-      <CrossLensSummary id={`${base}-sum`} level={headingLevel} kind={kind} focus={focus} noun={noun} name={name} partnerHref={partnerHref} lenses={names} />
+      <CrossLensSummary id={`${base}-sum`} level={headingLevel} kind={kind} focus={focus} noun={noun} name={name} partnerHref={partnerHref} lenses={names} pair={pair} />
       {LENS_IDS.map((k) => (
         <LensPanel key={k} id={`${base}-${k}`} lens={k} level={headingLevel} kind={kind} scenario={scenarioLabel} spec={lenses[k]} />
       ))}

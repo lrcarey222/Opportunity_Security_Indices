@@ -4,27 +4,31 @@
 // screen with the developer hint; a newer schema asks for a reload; other errors offer Retry. Views read
 // the data through useAibCtx().
 //
-// The scenario toggle (2026-10-19): when the bundle carries the scenarios (hasScenarios), a shared header
-// above every page (/aib/* and /compacts/* alike) holds the toggle "Decoupling | Managed Interdependence"
-// (ScenarioToggle). The choice lives in the URL (`scn`; /aib and /compacts mount separate layouts) and
-// is in the context as `scenario` (Decoupling for a bundle without scenarios), with setScenario() and
-// href() (an href with the choice carried). A stray scn (any value but "managed", or "managed" in a
-// bundle without scenarios) is dropped from the URL. The Managed Interdependence file is prefetched only
-// on a hover, focus or touch of the toggle, or when it is chosen; the landing never waits on it.
+// The scenario toggle (2026-10-19; Managed Interdependence the default since 2026-10-20): when the bundle
+// carries the scenarios (hasScenarios), a shared header above every page (/aib/* and /compacts/* alike)
+// holds the toggle "Managed Interdependence | Decoupling" (ScenarioToggle), which says that a strategic
+// compact is the persistent architecture and the scenario the stress applied to it. The choice lives in
+// the URL (`scn`: absent = Managed Interdependence, scn=decoupling; /aib and /compacts mount separate
+// layouts) and is in the context as `scenario` (Decoupling for a bundle without scenarios, whose main
+// document is Decoupling), with setScenario() and href() (an href with the choice carried; a bundle
+// without scenarios writes no scn). A stray scn (any value but "decoupling", or any scn in a bundle
+// without scenarios) is dropped from the URL. The Managed Interdependence file is prefetched when the
+// toggle is hovered, focused or touched, or chosen; the views that need it load it themselves.
 
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { Loading, Notice } from '../components/ui.tsx';
 import { useRegisterModuleNav } from '../shell/ModuleNav.tsx';
 import { useTitle } from '../shell/title.ts';
-import { countryNamesOf, type AibCompact, type AibDoc, type AibManifest, type AibNode } from './contract.ts';
+import { countryNamesOf, strategicOf, type AibCompact, type AibDoc, type AibManifest, type AibNode, type AibStrategic, type AibStrategicScenarioId } from './contract.ts';
 import { useAibManifest, useCompactsDoc } from './data/hooks.ts';
 import { aibStore, type AibLoadError } from './data/store.ts';
 import { compactTitle, nameOf } from './derive/format.ts';
 import { effectiveScenario, hasScenarios } from './derive/scenarios.ts';
+import { strategicScenarioFor } from './derive/strategic.ts';
 import { taxonomyOf, type Taxonomy } from './derive/taxonomy.ts';
 import { aibNavItems } from './nav.ts';
-import { hasStrayScenario, scenarioOfSearch, setScenarioSearch, withScenario, type AibToggle } from './scenarioUrl.ts';
+import { clearScenarioSearch, DEFAULT_TOGGLE, hasScenarioKey, hasStrayScenario, scenarioOfSearch, setScenarioSearch, withScenario, type AibToggle } from './scenarioUrl.ts';
 import { ScenarioToggle } from './ScenarioToggle.tsx';
 
 export const PAGE = 'mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8';
@@ -46,7 +50,7 @@ export interface AibCtx {
   tx: Taxonomy;
   /** a compact's display title from its sectors and node labels (compactTitle; `full`: every label) */
   title: (c: AibCompact, full?: boolean) => string;
-  /** the toggled scenario the pages show (2026-10-19): the URL's scn; always 'decoupling' when the bundle has no scenarios */
+  /** the toggled scenario the pages show (2026-10-19): the URL's scn (absent: Managed Interdependence); always 'decoupling' when the bundle has no scenarios */
   scenario: AibToggle;
   /** the bundle carries the scenarios (the toggle is shown; hasScenarios) */
   hasScenarios: boolean;
@@ -54,10 +58,14 @@ export interface AibCtx {
   setScenario: (s: AibToggle) => void;
   /** an href with the toggled scenario carried (withScenario): use it for every link inside the AIB section */
   href: (to: string) => string;
+  /** the strategic layer (2026-10-20; doc.strategic), null in a bundle without it */
+  strategic: AibStrategic | null;
+  /** the scenario a strategic view reads (strategicScenarioFor() of the toggle: 'managed' or 'decoupling'), null without the layer */
+  strategicScenario: AibStrategicScenarioId | null;
 }
 
 /** The context without the scenario state (buildCtx's part, memoized on the data). */
-type DataCtx = Omit<AibCtx, 'scenario' | 'hasScenarios' | 'setScenario' | 'href'>;
+type DataCtx = Omit<AibCtx, 'scenario' | 'hasScenarios' | 'setScenario' | 'href' | 'strategicScenario'>;
 
 const Ctx = createContext<AibCtx | null>(null);
 
@@ -90,7 +98,7 @@ function ScenarioHeader({ ctx }: { ctx: AibCtx }) {
   );
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 lg:px-8" data-testid="aib-scenario-header">
-      <ScenarioToggle value={ctx.scenario} onChange={choose} meta={ctx.doc.meta} onIntent={prefetch} />
+      <ScenarioToggle value={ctx.scenario} onChange={choose} meta={ctx.doc.meta} onIntent={prefetch} framing={ctx.strategic?.framing} />
     </div>
   );
 }
@@ -137,6 +145,7 @@ function buildCtx(manifest: AibManifest, doc: AibDoc): DataCtx {
     shockLabel: shock?.label ?? doc.meta.headlineShock,
     tx: taxonomyOf(doc.meta),
     title: (c, full = false) => compactTitle(c, find, { full }),
+    strategic: strategicOf(doc),
   };
 }
 
@@ -161,13 +170,26 @@ export default function AibLayout() {
     },
     [nav],
   );
-  // drop a stray scn: a value the app does not write, or "managed" in a bundle without scenarios
-  const stray = hasStrayScenario(loc.search) || (!!data && !available && toggle === 'managed');
+  // drop a stray scn: a value the app does not write, or any scn in a bundle without scenarios
+  const stray = hasStrayScenario(loc.search) || (!!data && !available && hasScenarioKey(loc.search));
   useEffect(() => {
-    if (stray) nav({ pathname: loc.pathname, search: setScenarioSearch(loc.search, scenario), hash: loc.hash }, { replace: true, preventScrollReset: true });
-  }, [stray, scenario, nav, loc.pathname, loc.search, loc.hash]);
+    if (!stray) return;
+    const search = data && !available ? clearScenarioSearch(loc.search) : setScenarioSearch(loc.search, toggle);
+    nav({ pathname: loc.pathname, search, hash: loc.hash }, { replace: true, preventScrollReset: true });
+  }, [stray, data, available, toggle, nav, loc.pathname, loc.search, loc.hash]);
   const ctx = useMemo<AibCtx | null>(
-    () => (data ? { ...data, scenario, hasScenarios: available, setScenario, href: (to: string) => withScenario(to, scenario) } : null),
+    // a bundle without scenarios shows Decoupling and writes no scn on its links
+    () =>
+      data
+        ? {
+            ...data,
+            scenario,
+            hasScenarios: available,
+            setScenario,
+            href: (to: string) => withScenario(to, available ? scenario : DEFAULT_TOGGLE),
+            strategicScenario: data.strategic ? strategicScenarioFor(data.strategic, scenario) : null,
+          }
+        : null,
     [data, scenario, available, setScenario],
   );
   const failed = m.status === 'error' && m.error ? { error: m.error, retry: m.retry } : d.status === 'error' && d.error ? { error: d.error, retry: d.retry } : null;

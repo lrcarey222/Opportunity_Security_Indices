@@ -5,6 +5,8 @@
 // The scenarios (2026-10-19): a cell's words name the scenario ("under Managed Interdependence") and leave
 // out the every-shock total where the network has none (`every` null); ScenarioFileState is the loading,
 // failed and missing states of a lazily loaded scenario file.
+// The strategic layer (2026-10-20): OperationalRoleList, one economy's operational roles as a list, is the
+// Country profile's role card and the operational evidence under a strategic summary on /aib/roles.
 
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -14,7 +16,7 @@ import { useAibScenarioDoc, type ScenarioLoad } from '../data/hooks.ts';
 import type { AibLoadError } from '../data/store.ts';
 import { fmtScore, fmtUsd, plural } from '../derive/format.ts';
 import { rankWords } from '../derive/investment.ts';
-import { fmtPts, ROLE_FLOOR, ROLE_READING, type CountryRoles, type MatrixRole, type RoleCell } from '../derive/network.ts';
+import { fmtPts, MATRIX_ROLES, ROLE_FLOOR, ROLE_READING, type CountryRoles, type MatrixRole, type RoleCell } from '../derive/network.ts';
 
 export const TRADE_COLOR = '#1889b0';
 export const INVEST_COLOR = '#fba36b';
@@ -160,6 +162,31 @@ export function FlowList({
 /** The line under a role in a list: its metric and partner count, or the compacts. */
 export function roleLine(r: CountryRoles, k: MatrixRole, every?: string | null, under?: string): string {
   return cellWords(k, r.cells[k], every, under);
+}
+
+/** How a cell's level reads in a list. */
+export const LEVEL_WORD = { named: 'named', minor: 'minor', none: 'not held' } as const;
+
+/**
+ * One economy's operational network roles as a list (the Country profile's role card; the evidence under
+ * a strategic summary on /aib/roles): each matrix role, its level, and the cell's words (`every`, `under`:
+ * cellWords()).
+ */
+export function OperationalRoleList({ roles, every, under, className = '' }: { roles: CountryRoles; every?: string | null; under?: string; className?: string }) {
+  return (
+    <ul className={`space-y-2 text-sm text-paper-dim ${className}`} aria-label={`Operational network roles of ${roles.name}`}>
+      {MATRIX_ROLES.map((k) => {
+        const c = roles.cells[k];
+        return (
+          <li key={k} data-level={c.level}>
+            <span className={c.level === 'named' ? 'font-medium text-paper' : 'text-paper-mute'}>{ROLE_READING[k].short}</span>
+            <span className="text-xs text-paper-mute"> · {LEVEL_WORD[c.level]}</span>
+            {c.level !== 'none' && <span className="block text-xs text-paper-mute">{cellWords(k, c, every, under)}</span>}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 /** What a scenario file's load says (useAibScenarioDoc()). */

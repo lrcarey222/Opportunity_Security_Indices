@@ -8,13 +8,78 @@
 // coalition for it) with its state and reason, the Managed Interdependence file when loaded, and href()
 // (an href with the toggle carried). `c` stays the main document's compact (Decoupling): the sections that
 // follow the toggle read `view`. ScenarioGate renders the loading, failed, missing and no-coalition states.
+//
+// The strategic layer (2026-10-20): a compact candidate is a Workstream of a Strategic Sectoral Compact;
+// WorkstreamParent says which (a link up to it), how much of its allied demand is there, the others it
+// spans, whether it is active under the toggled scenario and, when it was filed by review, why.
 
 import { createContext, useContext, type ReactNode } from 'react';
-import { Loading, Notice } from '../../../components/ui.tsx';
-import type { AibCompact, AibManagedScenarioDoc, AibMeta, AibNode } from '../../contract.ts';
+import { Link } from 'react-router';
+import { Disclosure, Loading, Notice } from '../../../components/ui.tsx';
+import type { AibCompact, AibManagedScenarioDoc, AibMeta, AibNode, AibStrategic } from '../../contract.ts';
+import { fmtShare } from '../../derive/format.ts';
 import { scenarioInfo } from '../../derive/scenarios.ts';
+import { strategicCompactOf, strategicScenarioDef, workstreamHomeOf, workstreamOf } from '../../derive/strategic.ts';
 import type { Taxonomy } from '../../derive/taxonomy.ts';
+import { strategicCompactHref } from '../../nav.ts';
 import type { AibToggle } from '../../scenarioUrl.ts';
+
+/**
+ * A workstream's place in the strategic layer: the Strategic Sectoral Compact it is filed under (a link),
+ * the share of its allied demand there, the other compacts it spans, whether it is active under the
+ * toggled scenario (`scenario`: a strategic scenario id) and, when it was filed by review, why (in a
+ * disclosure). Nothing when the bundle has no strategic layer or the layer does not list the workstream.
+ */
+export function WorkstreamParent({ s, id, scenario, href }: { s: AibStrategic | null; id: string; scenario: string | null; href: (to: string) => string }) {
+  const ws = s ? workstreamOf(s, id) : null;
+  if (!s || !ws) return null;
+  const home = workstreamHomeOf(s, id);
+  const also = ws.alsoSpans.flatMap((x) => {
+    const k = strategicCompactOf(s, x);
+    return k ? [k] : [];
+  });
+  const label = scenario ? (strategicScenarioDef(s, scenario)?.label ?? scenario) : null;
+  const active = scenario ? ws.active.includes(scenario) : null;
+  return (
+    <div className="mt-3 max-w-3xl text-sm text-paper-dim" data-testid="workstream-parent">
+      <p>
+        {home ? (
+          <>
+            A workstream of the Strategic Sectoral Compact{' '}
+            <Link className="link" to={href(strategicCompactHref(home.id))}>
+              {home.name}
+            </Link>
+            {ws.share !== null ? `, which holds ${fmtShare(ws.share, 0)} of its allied demand` : ''}
+            {also.length > 0 && (
+              <>
+                ; it also spans{' '}
+                {also.map((k, i) => (
+                  <span key={k.id}>
+                    {i > 0 ? ', ' : ''}
+                    <Link className="link" to={href(strategicCompactHref(k.id))}>
+                      {k.name}
+                    </Link>
+                  </span>
+                ))}
+              </>
+            )}
+            .
+          </>
+        ) : (
+          'A workstream filed under no strategic compact.'
+        )}
+        {label !== null && <> {active ? `Active under ${label}.` : `Not active under ${label}: none of its nodes needs intervention there.`}</>}
+      </p>
+      {ws.overrideReason && (
+        <div className="mt-1">
+          <Disclosure summary="Why it is filed under this compact">
+            <p className="text-sm text-paper-dim">{ws.overrideReason}</p>
+          </Disclosure>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** The state of the compact under the toggled scenario. */
 export interface CompactViewState {

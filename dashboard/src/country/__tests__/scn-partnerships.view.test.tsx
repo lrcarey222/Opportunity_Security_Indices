@@ -104,7 +104,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
   const miSeats = seats(managed.compacts.map((c) => ({ members: c.coalition?.members ?? null })));
 
   it('Trade under Decoupling: four kinds, the summary, then Today (fact sheet ties), OSI recommends (Partnership Opportunity) and the AIB model with its toggle', async () => {
-    renderAt('/countries/USA#partnerships');
+    renderAt('/countries/USA?scn=decoupling#partnerships');
     const part = await section();
     const kinds = within(within(part).getByRole('radiogroup', { name: 'Kind of partnership' })).getAllByRole('radio');
     expect(kinds.map((r) => r.parentElement?.textContent)).toEqual(['Trade', 'Investment', 'Development', 'Geopolitical']);
@@ -128,8 +128,8 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     expect(bareAcronyms(part)).toEqual([]);
   }, 90_000);
 
-  it('Managed Interdependence from the URL: the AIB lens and the role section read its file; the toggle in the panel writes scn and keeps the place', async () => {
-    const r = renderAt('/countries/USA?scn=managed#partnerships');
+  it('Managed Interdependence by default (no scn): the AIB lens and the role section read its file; the toggle in the panel writes scn and keeps the place', async () => {
+    const r = renderAt('/countries/USA#partnerships');
     const part = await section();
     expect(await within(part).findByRole('heading', { level: 3, name: 'AIB model: Managed Interdependence' }, T)).toBeTruthy();
     expect(tags(part)[2]).toBe('AIB model · Managed Interdependence');
@@ -143,11 +143,11 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     expect(cells.textContent).not.toMatch(/under the headline shock|diversification scenario|after the shock/);
     // links into the AIB section carry the scenario
     const c01 = await within(role).findAllByRole('link', { name: managed.compacts[0].id }, T);
-    expect(c01[0].getAttribute('href')).toBe(`/compacts/${managed.compacts[0].id}?scn=managed`);
-    expect(within(role).getByRole('link', { name: /See all country roles/ }).getAttribute('href')).toBe('/aib/roles?scn=managed#role-USA');
-    // back to Decoupling from the panel's toggle: scn dropped, the section kept
+    expect(c01[0].getAttribute('href')).toBe(`/compacts/${managed.compacts[0].id}`);
+    expect(within(role).getByRole('link', { name: /See all country roles/ }).getAttribute('href')).toBe('/aib/roles?economy=USA#role-USA');
+    // to Decoupling from the panel's toggle: scn=decoupling written, the section kept
     fireEvent.click(within(within(lens(part, 'aib')).getByRole('radiogroup', { name: 'Scenario' })).getByRole('radio', { name: 'Decoupling' }));
-    await waitFor(() => expect(search(r).get('scn')).toBeNull());
+    await waitFor(() => expect(search(r).get('scn')).toBe('decoupling'));
     expect(r.state.location.hash).toBe('#partnerships');
     expect(await within(part).findByRole('heading', { level: 3, name: 'AIB model: Decoupling' }, T)).toBeTruthy();
     expect(within(role).getByTestId('aib-role-scenario').textContent).toMatch(/^Shown under Decoupling/);
@@ -155,7 +155,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
   }, 90_000);
 
   it('Investment under Managed Interdependence: the flows of its file; Today without the ties chunk says so in one line', async () => {
-    renderAt('/countries/USA?ptab=investment&scn=managed#partnerships');
+    renderAt('/countries/USA?ptab=investment#partnerships');
     const part = await section();
     const best = managed.investmentFlows!.pairs.filter((p) => p.rank === 1 && p.investor === 'USA');
     const usd = best.reduce((s, p) => s + (p.usd ?? 0), 0);
@@ -167,7 +167,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
   }, 90_000);
 
   it('Development under Managed Interdependence: aid says in one line it is not in this build; the BUILD nodes are the scenario\'s', async () => {
-    renderAt('/countries/USA?ptab=development&scn=managed#partnerships');
+    renderAt('/countries/USA?ptab=development#partnerships');
     const part = await section();
     expect(await within(lens(part, 'today')).findByTestId('lens-empty', {}, T)).toBeTruthy();
     const card = await within(lens(part, 'aib')).findByTestId('aib-build', {}, T);
@@ -180,7 +180,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
   }, 90_000);
 
   it('Geopolitical: alignment today, the allied coalition, and the compact coalitions following the toggle', async () => {
-    const r = renderAt('/countries/USA?ptab=geopolitical#partnerships');
+    const r = renderAt('/countries/USA?ptab=geopolitical&scn=decoupling#partnerships');
     const part = await section();
     expect((within(within(part).getByRole('radiogroup', { name: 'Kind of partnership' })).getByRole('radio', { name: 'Geopolitical' }) as HTMLInputElement).checked).toBe(true);
     expect(within(lens(part, 'today')).getByTestId('geo-today').textContent).toMatch(/In the UN General Assembly it votes/);
@@ -188,7 +188,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     const co = await within(lens(part, 'aib')).findByTestId('aib-coalitions', {}, T);
     expect(co.textContent).toContain(`The United States sits in the coalition of ${decSeats} compact${decSeats === 1 ? '' : 's'} under Decoupling`);
     fireEvent.click(within(within(lens(part, 'aib')).getByRole('radiogroup', { name: 'Scenario' })).getByRole('radio', { name: 'Managed Interdependence' }));
-    await waitFor(() => expect(search(r).get('scn')).toBe('managed'));
+    await waitFor(() => expect(search(r).get('scn')).toBeNull());
     expect(search(r).get('ptab')).toBe('geopolitical');
     const mi = await waitFor(() => {
       const el = within(lens(part, 'aib')).getByTestId('aib-coalitions');

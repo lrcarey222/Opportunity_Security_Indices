@@ -173,6 +173,16 @@ export function crossLens(lenses: Readonly<Record<LensId, LensNames>>): CrossLen
   return { compared, pending, absent, groups, total: pos.size };
 }
 
+/**
+ * Where one partner (the pair's other economy) sits in the cross-lens summary: the reading of the group
+ * that names it ("A tie today that both OSI and the AIB keep"), or null when no compared lens names it
+ * (each lens names only its leading partners). Undefined when no lens is compared yet.
+ */
+export function pairReading(cl: CrossLens, key: string): string | null | undefined {
+  if (!cl.compared.length) return undefined;
+  return cl.groups.find((g) => g.keys.includes(key))?.words ?? null;
+}
+
 /** "Today and OSI recommends", "the three lenses": the compared lenses in words. */
 export function comparedWords(ids: readonly LensId[]): string {
   if (ids.length === 3) return 'the three lenses';

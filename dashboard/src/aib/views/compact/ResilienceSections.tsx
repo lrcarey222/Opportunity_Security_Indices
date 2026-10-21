@@ -27,7 +27,7 @@ import { useAibCtx } from '../../AibLayout.tsx';
 import { investmentPairs, partnerTotals } from '../../derive/investment.ts';
 import { NO_FILTER } from '../../derive/partnerships.ts';
 import { compactUnchangedReasonOf } from '../../derive/scenarioPages.ts';
-import { compactScenarios, runMetaOf, scenarioCsvFields, scenarioInvestmentFlows, scenarioNameOf, type CompactScenario } from '../../derive/scenarios.ts';
+import { compactScenarios, runMetaOf, scenarioCsvFields, scenarioInvestmentFlows, scenarioLabel, scenarioNameOf, type CompactScenario } from '../../derive/scenarios.ts';
 import { csvWithRun, Section } from '../common.tsx';
 import { ScenarioBadge } from './OverviewSections.tsx';
 import { ScenarioGate, useCompact } from './shared.tsx';
@@ -130,7 +130,7 @@ function CoverageIntro({ c }: { c: AibCompact }) {
 }
 
 function CoverageStepsCard({ c }: { c: AibCompact }) {
-  const { meta, scenario } = useCompact();
+  const { meta, scenario, hasScenarios } = useCompact();
   const steps = coverageSteps(c.metrics, scenario === 'managed');
   const optimum = globalOptimum(c.metrics);
   const rows = [
@@ -146,7 +146,7 @@ function CoverageStepsCard({ c }: { c: AibCompact }) {
     { id: 'meaning', header: 'What it assumes', value: (r) => r.meaning, minWidth: 280 },
   ];
   const csv = () => ({
-    name: `${c.id} coverage comparison${scenario === 'managed' ? ' managed interdependence' : ''}`,
+    name: `${c.id} coverage comparison${hasScenarios ? ` ${scenarioLabel(scenario, meta).toLowerCase()}` : ''}`,
     text: csvWithRun(
       rows.map((r) => ({ compact: c.id, ...scenarioCsvFields(meta, scenario), step: r.label, demand_served: r.value, change_on_step_before: r.change, assumption: r.meaning })),
       runMetaOf(meta, scenario),
@@ -230,7 +230,7 @@ export function CoalitionSection() {
 }
 
 function CoalitionSectionOf({ c }: { c: AibCompact }) {
-  const { meta, names, name, nodeLabel, scenario } = useCompact();
+  const { meta, names, name, nodeLabel, scenario, hasScenarios } = useCompact();
   const points = coalitionCurve(c, names);
   const marks = targetMarks(points, meta.targets);
   const cols: Col<CurvePoint & { reaches: string }>[] = [
@@ -250,7 +250,7 @@ function CoalitionSectionOf({ c }: { c: AibCompact }) {
   }));
   const nodeIds = [...new Set(points.flatMap((p) => Object.keys(p.nodes)))];
   const csv = () => ({
-    name: `${c.id} coalition path${scenario === 'managed' ? ' managed interdependence' : ''}`,
+    name: `${c.id} coalition path${hasScenarios ? ` ${scenarioLabel(scenario, meta).toLowerCase()}` : ''}`,
     text: csvWithRun(
       rows.map((p) => ({
         compact: c.id,

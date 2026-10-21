@@ -23,7 +23,7 @@ import { addedSuppliers, investmentFlows, tradeFlows, type TradeFlow } from '../
 import { fmtScore, fmtShare, fmtUsd, plural } from '../../derive/format.ts';
 import { decoupledEconomy } from '../../derive/network.ts';
 import {
-  compactDetail, compactSuppliersToday, nodeScenario, nodeSuppliersToday, runMetaOf, scenarioCsvFields, scenarioInfo, scenarioInvestmentFlows, scenarioNameOf,
+  compactDetail, compactSuppliersToday, nodeScenario, nodeSuppliersToday, runMetaOf, scenarioCsvFields, scenarioFileTag, scenarioInfo, scenarioInvestmentFlows, scenarioNameOf,
 } from '../../derive/scenarios.ts';
 import { useAibCtx } from '../../AibLayout.tsx';
 import { NO_FILTER } from '../../derive/partnerships.ts';
@@ -98,7 +98,7 @@ export function NetworkSection() {
     { id: 'fs', header: 'Friendshore score', value: (e) => e.friendshore, cell: (e) => fmtScore(e.friendshore), num: true },
   ];
   const tradeCsv = () => ({
-    name: `${c.id} trade relationships${sel ? ` ${scope}` : ''}${scenario === 'managed' ? ` ${info.label}` : ''}`,
+    name: `${c.id} trade relationships${sel ? ` ${scope}` : ''}${scenarioFileTag(scenario, meta, hasScenarios)}`,
     text: csvWithRun(
       tradeEdges.map((e) => ({
         compact: c.id, node_id: e.node, sub_sector: nodeLabel(e.node), exporter_iso3: e.from, exporter: name(e.from), importer_iso3: e.to, importer: name(e.to),
@@ -108,7 +108,7 @@ export function NetworkSection() {
     ),
   });
   const invCsv = () => ({
-    name: `${c.id} investment relationships${sel ? ` ${scope}` : ''}${scenario === 'managed' ? ` ${info.label}` : ''}`,
+    name: `${c.id} investment relationships${sel ? ` ${scope}` : ''}${scenarioFileTag(scenario, meta, hasScenarios)}`,
     text: csvWithRun(
       invEdges.map((e) => ({
         compact: c.id, node_id: e.node, sub_sector: nodeLabel(e.node), investor_iso3: e.investor, investor: name(e.investor), host_iso3: e.host, host: name(e.host),

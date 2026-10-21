@@ -1,11 +1,13 @@
 # Allied Industrial Base (AIB): the Sectoral Compacts dashboard bundle (dashboard/src/aib).
 #
 # Usage:
-#   Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR] [--top-edges N]
+#   Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR] [--top-edges N] [--strategic FILE]
 #
 #   --in-dir     where scripts/32 wrote aib_results.rds (default: <outputs_dir>/aib)
 #   --out-dir    bundle directory (default: dashboard/public/data/aib)
 #   --top-edges  trade and investment relationships kept per compact (default 40)
+#   --strategic  the strategic layer of scripts/33 (default: <in-dir>/aib_strategic.rds; absent: the
+#                document has no `strategic` section)
 #
 # Writes compacts.<md5_8>.json (schema osi-aib v1 with optional additions: meta, country names, compacts, nodes,
 # and since 2026-10-17 the emergent network `network` (emergent_aib_country_summary + emergent_aib_edges)
@@ -18,7 +20,9 @@
 # manifest.files.scenarios: scenario-managed.<md5_8>.json (Managed Interdependence: the compacts solved
 # under the diversification shock, its network and investment flows) and scenario-baseline.<md5_8>.json
 # (Baseline: the observed network and each node's and compact's top suppliers); stale scenario files are
-# removed. Plain JSON, every array field wrapped in I() (R/dashboard/aib/aib_export.R); the additive
+# removed. Since 2026-10-20 the main document also carries the optional `strategic` section (scripts/33's
+# Strategic Sectoral Compacts, workstreams, Strategic AIB Roles, compact-specific roles and bilateral theses;
+# aib_dash_strategic()) when aib_strategic.rds exists. Plain JSON, every array field wrapped in I() (R/dashboard/aib/aib_export.R); the additive
 # sections are checked first (R/dashboard/aib/aib_check.R, the mirror of the TypeScript contract) and the
 # script stops on a problem.
 
@@ -58,6 +62,7 @@ arg_value <- function(flag, default = NULL) {
 abs_path <- function(p) normalizePath(if (grepl("^([A-Za-z]:)?[/\\]", p)) p else file.path(repo_root, p), winslash = "/", mustWork = FALSE)
 
 source(file.path(repo_root, "R", "aib", "aib_compacts.R"))
+source(file.path(repo_root, "R", "aib", "aib_strategic.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_export.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_check.R"))
 source(file.path(repo_root, "R", "dashboard", "country", "country_util.R"))
@@ -69,8 +74,18 @@ top_edges <- as.integer(arg_value("--top-edges", "40"))
 res_path <- file.path(in_dir, "aib_results.rds")
 if (!file.exists(res_path)) stop("Run scripts/32_build_aib_partnerships.R first: ", res_path, " not found.")
 res <- readRDS(res_path)
+# The strategic layer (scripts/33), optional: absent, the document has no `strategic` section.
+strategic_path <- abs_path(arg_value("--strategic", file.path(in_dir, "aib_strategic.rds")))
+st <- if (file.exists(strategic_path)) readRDS(strategic_path) else NULL
+if (is.null(st)) {
+  message("No strategic layer (", strategic_path, "): run scripts/33_build_aib_strategic_layer.R to add the `strategic` section.")
+} else if (!identical(st$meta$results_built, res$meta$built)) {
+  warning("The strategic layer was built from another AIB run (", st$meta$results_built, " against ", res$meta$built,
+          "): rerun scripts/33_build_aib_strategic_layer.R.", call. = FALSE)
+}
+strategic <- if (is.null(st)) NULL else aib_dash_strategic(st, aib_strategic_gate_labels())
 
-bundle <- aib_dash_bundle(res, top_edges = top_edges)
+bundle <- aib_dash_bundle(res, top_edges = top_edges, strategic = strategic)
 problems <- aib_check_bundle_additions(bundle)
 if (length(problems)) stop("The AIB bundle does not match the contract:\n  ", paste(utils::head(problems, 20), collapse = "\n  "))
 # The scenario files (Managed Interdependence, Baseline), each checked against the contract, the main
@@ -110,6 +125,13 @@ gz_kb <- function(f) length(memCompress(readBin(file.path(out_dir, f), "raw", fi
 message(sprintf("AIB dashboard bundle: %s (%.0f kB, gzip %.1f kB; %d compacts, %d nodes, %d network countries, %d network edges, %d investment flows) in %s",
                 fname, file.size(file.path(out_dir, fname)) / 1024, gz_kb(fname), length(bundle$compacts), length(bundle$nodes),
                 length(bundle$network$countries), length(bundle$network$edges), length(bundle$investmentFlows$pairs), out_dir))
+if (!is.null(bundle$strategic)) {
+  sj <- country_json(bundle$strategic)
+  message(sprintf("  strategic section: %.0f kB, gzip %.1f kB; %d strategic compacts, %d workstreams, %d countries, %d compact roles, %d theses",
+                  nchar(sj, "bytes") / 1024, length(memCompress(charToRaw(as.character(sj)), "gzip")) / 1024, length(bundle$strategic$compacts),
+                  length(bundle$strategic$workstreams), length(bundle$strategic$countries), length(bundle$strategic$compactRoles),
+                  length(bundle$strategic$theses)))
+}
 for (id in names(scenario_files)) {
   d <- scenario_docs[[id]]
   message(sprintf("  scenario %s: %s (%.0f kB, gzip %.1f kB; %d compacts, %d network countries, %d network edges%s)", id, scenario_files[[id]],

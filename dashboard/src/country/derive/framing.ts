@@ -14,8 +14,12 @@
 // gives the whole document as a scenario reads it (the role section), buildNodesFor() the BUILD nodes that
 // concern the economy under a scenario; tradeTiesToday() and agreementRows() are the Partnerships section's
 // Today lens (fact sheet only).
+//
+// The strategic layer (2026-10-20): aibStrategicOf() gives the role section the economy's strategic
+// summary (Strategic AIB Roles, compact roles, partners); it does not follow the scenario.
 
-import type { AibCoalition, AibCompact, AibDoc, AibManagedScenarioDoc, AibNode, AibTradeEdge } from '../../aib/contract.ts';
+import { strategicOf, type AibCoalition, type AibCompact, type AibDoc, type AibManagedScenarioDoc, type AibNode, type AibStrategic, type AibTradeEdge } from '../../aib/contract.ts';
+import { strategicSummaryOf, type StrategicSummary } from '../../aib/views/strategicRoles/derive.ts';
 import { countryRoleRow, type CountryRoleRow } from '../../aib/derive/countryRoles.ts';
 import { compactTitle } from '../../aib/derive/format.ts';
 import type { LensNode } from '../../aib/derive/partnerships.ts';
@@ -237,6 +241,25 @@ export function aibCountry(doc: AibDoc, names: Readonly<Record<string, string>>,
     .filter((x): x is { node: AibNode; usd: number } => !!x.node)
     .sort((a, b) => b.usd - a.usd);
   return { row, roles, compacts, pairs: t.pairs, trade: t.trade, investment: { n: invN, usd: invUsd }, hostNodes, keyNodes };
+}
+
+/** The economy's place in the strategic layer: the layer and the economy's summary. */
+export interface AibStrategicPlace {
+  s: AibStrategic;
+  /** null when the layer does not assess the economy */
+  sum: StrategicSummary | null;
+}
+
+/**
+ * The economy's place in the AIB document's strategic layer (2026-10-20; task spec s.18): its Strategic
+ * AIB Roles, what it contributes and needs, its role in each strategic compact, its highest-value partners
+ * with the pair's thesis, where new capacity matters (aib/views/strategicRoles/derive.ts). Null when the
+ * document has no strategic layer. Structural: the same whatever the scenario. Pure.
+ */
+export function aibStrategicOf(doc: AibDoc | null | undefined, names: Readonly<Record<string, string>>, iso3: string): AibStrategicPlace | null {
+  const s = strategicOf(doc);
+  if (!s || !doc) return null;
+  return { s, sum: strategicSummaryOf(s, doc.nodes, names, iso3) };
 }
 
 /**

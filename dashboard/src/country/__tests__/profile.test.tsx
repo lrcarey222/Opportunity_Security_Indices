@@ -257,25 +257,25 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
     const stuck = neverReady();
     setEngineClient(stuck);
     try {
-      const r = renderAt('/countries/usa');
+      const r = renderAt('/countries/usa?scn=decoupling');
       await waitFor(() => expect(r.state.location.pathname).toBe('/countries/USA'), { timeout: 30_000 });
       await h2('Role in the Allied Industrial Base');
       const role = document.getElementById('aib-role')!;
       expect(await within(role).findByText('Demand anchor / Buyer', {}, { timeout: 20_000 })).toBeTruthy();
       expect(within(role).getByTestId('aib-relationships').textContent).toMatch(/Trade against investment/);
-      expect(within(role).getAllByRole('link', { name: 'AIB-C01' })[0].getAttribute('href')).toBe('/compacts/AIB-C01');
-      expect(within(role).getByRole('link', { name: /See all country roles/ }).getAttribute('href')).toBe('/aib/roles#role-USA');
+      expect(within(role).getAllByRole('link', { name: 'AIB-C01' })[0].getAttribute('href')).toBe('/compacts/AIB-C01?scn=decoupling');
+      expect(within(role).getByRole('link', { name: /See all country roles/ }).getAttribute('href')).toBe('/aib/roles?economy=USA&scn=decoupling#role-USA');
       // Partnerships: Trade first, then Investment and Development through the URL
       const part = document.getElementById('partnerships')!;
       expect(within(part).getByTestId('ptab-trade')).toBeTruthy();
       expect(within(part).getByText(/In the compacts' coordinated trade the United States has/)).toBeTruthy();
       fireEvent.click(within(part).getByRole('radio', { name: 'Investment' }));
-      await waitFor(() => expect(r.state.location.search).toBe('?ptab=investment'));
+      await waitFor(() => expect(r.state.location.search).toBe('?ptab=investment&scn=decoupling'));
       expect(within(part).getByRole('heading', { name: 'Investment flows in the Allied Industrial Base' })).toBeTruthy();
       expect(within(part).getByTestId('aib-as-investor').textContent).toMatch(/New capacity at 2 hosts serves [$]570 m a year/);
       expect(within(part).getByTestId('aib-as-host').textContent).toMatch(/is not the best-ranked host/);
       fireEvent.click(within(part).getByRole('radio', { name: 'Development' }));
-      await waitFor(() => expect(r.state.location.search).toBe('?ptab=development'));
+      await waitFor(() => expect(r.state.location.search).toBe('?ptab=development&scn=decoupling'));
       expect(within(part).getByRole('heading', { name: 'Capacity to build in its compacts' })).toBeTruthy();
       expect(stuck.getSnapshot().status).toBe('starting');
       // a disclosure of the model while the model loads: a loading line, the rest of the page stays

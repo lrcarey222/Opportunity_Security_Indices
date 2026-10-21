@@ -98,8 +98,9 @@ export type AibNavKey = 'overview' | 'partnerships' | 'compacts' | 'roles' | 'di
 
 /**
  * Allied Industrial Base views: the overview, the three questions, then the Managed Interdependence
- * explainer (2026-10-19: the diversification scenario; path kept). Sectoral Compacts keep their
- * paths (/compacts, /compacts/:id); /compacts/about stays (About lists it). The module registers the
+ * explainer (2026-10-19: the diversification scenario; path kept). Sectoral Compacts: /compacts (the
+ * Strategic Sectoral Compacts since 2026-10-20), /compacts/s/:sid, /compacts/workstreams and the workstreams'
+ * /compacts/:id, all under the one link; /compacts/about stays (About lists it). The module registers the
  * same list (src/aib/nav.ts) once its data load; this is the fallback before it does (the Header carries
  * the scenario toggle, `scn`, onto it).
  */

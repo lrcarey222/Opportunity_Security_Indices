@@ -33,7 +33,7 @@ import { compactTypeInfo } from '../../derive/types.ts';
 import { fmtPp, fmtShare, fmtUsd, listWords, plural } from '../../derive/format.ts';
 import { concentration } from '../../derive/nodes.ts';
 import { compactUnchangedReasonOf } from '../../derive/scenarioPages.ts';
-import { compactScenario, compactSuppliersToday, nodeScenario, runMetaOf, scenarioCsvFields, type AibScenarioId } from '../../derive/scenarios.ts';
+import { compactScenario, compactSuppliersToday, nodeScenario, runMetaOf, scenarioCsvFields, scenarioLabel, type AibScenarioId } from '../../derive/scenarios.ts';
 import { ROLE_ORDER, roleMatrix, type RoleRow } from '../../derive/roles.ts';
 import { additionsNeeded, coalitionMethod, coalitionTiers, replacementWords, tierEconomies, tierName, tierShares, type TierEconomy } from '../../derive/tiers.ts';
 import { AIB_PHYSICAL_WARNING, AIB_STAGES, coalitionMembersOf, type AibCompact, type AibMeta, type AibNode } from '../../contract.ts';
@@ -50,8 +50,8 @@ function scenarioCsv(rows: Record<string, unknown>[], meta: AibMeta, scenario: A
   return csvWithRun(scn ? rows.map((r) => ({ ...r, ...scn })) : rows, runMetaOf(meta, scenario));
 }
 
-/** " (Managed Interdependence)" in a CSV's file name under that scenario. */
-const scenarioFileTag = (scenario: AibScenarioId): string => (scenario === 'managed' ? ' (Managed Interdependence)' : '');
+/** " (Managed Interdependence)", " (Decoupling)" in a CSV's file name: every scenario named where the bundle has them (none is implied by default). */
+const scenarioFileTag = (scenario: AibScenarioId, meta: AibMeta, hasScenarios: boolean): string => (hasScenarios ? ` (${scenarioLabel(scenario, meta)})` : '');
 
 /** The toggled scenario as a tag beside a card's title (only when the bundle has the scenarios). */
 export function ScenarioBadge() {
@@ -339,7 +339,7 @@ function CoalitionCardOf({ c }: { c: AibCompact }) {
     { id: 'roles', header: 'Roles', value: (e) => e.roles.join('; ') || '–', minWidth: 220 },
   ];
   const csv = () => ({
-    name: `${c.id} coalition tiers${scenarioFileTag(scenario)}`,
+    name: `${c.id} coalition tiers${scenarioFileTag(scenario, meta, hasScenarios)}`,
     text: scenarioCsv(
       econ.map((e) => ({
         compact: c.id, iso3: e.iso3, economy: e.name, tier: e.tier, critical: e.critical, loo_critical: e.looCritical, single_substitutes: e.substitutes.join(' '),
@@ -472,7 +472,7 @@ function RolesCardOf({ c }: { c: AibCompact }) {
     { id: 'member', header: 'In the coalition', value: (r) => (r.member ? 'yes' : 'no') },
   ];
   const csv = () => ({
-    name: `${c.id} members and roles${scenarioFileTag(scenario)}`,
+    name: `${c.id} members and roles${scenarioFileTag(scenario, meta, hasScenarios)}`,
     text: scenarioCsv(
       c.roles.map((r) => ({
         compact: c.id, iso3: r.iso3, economy: name(r.iso3), role: r.role, basis: r.basis, in_coalition: r.member,
@@ -634,7 +634,7 @@ export function WhySection({ title = 'Why it exists' }: { title?: string } = {})
     },
   ];
   const csv = () => ({
-    name: `${c.id} why it exists${scenarioFileTag(scenario)}`,
+    name: `${c.id} why it exists${scenarioFileTag(scenario, meta, hasScenarios)}`,
     text: scenarioCsv(
       tiles.map((t) => ({ compact: c.id, measure: t.label, value: t.raw, meaning: t.sub })),
       meta,

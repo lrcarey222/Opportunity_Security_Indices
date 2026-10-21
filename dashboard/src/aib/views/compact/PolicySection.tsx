@@ -15,7 +15,7 @@ import { ClassChip, ClassLegend } from '../../charts/ClassChip.tsx';
 import { classInfo, classMix, parseNodePolicyNeeds, policyNeedsText } from '../../derive/classes.ts';
 import { fmtShare, plural } from '../../derive/format.ts';
 import { nodeScenarioNote, UNCHANGED } from '../../derive/scenarioPages.ts';
-import { nodeScenario, runMetaOf, scenarioCsvFields } from '../../derive/scenarios.ts';
+import { nodeScenario, runMetaOf, scenarioCsvFields, scenarioLabel } from '../../derive/scenarios.ts';
 import { csvWithRun } from '../common.tsx';
 import { NodePolicyNeeds, PolicyNeeds, ScenarioBadge } from './OverviewSections.tsx';
 import { useCompact } from './shared.tsx';
@@ -50,7 +50,7 @@ export function PolicySection() {
   const csv = () => {
     const scn = hasScenarios ? scenarioCsvFields(meta, scenario) : null;
     return {
-      name: `${c.id} node treatments${mi ? ' (Managed Interdependence)' : ''}`,
+      name: `${c.id} node treatments${hasScenarios ? ` (${scenarioLabel(scenario, meta)})` : ''}`,
       text: csvWithRun(
         nodes.map((n) => ({
           compact: c.id, node_id: n.id, sub_sector: n.label, stage: n.stage,

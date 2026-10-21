@@ -4,15 +4,18 @@
 // additive and methodology fields are optional (an older bundle, secondShock and all, validates) and
 // checked when present (the diversification scenario of 2026-10-19 too: four statuses, nulls where it did
 // not run); the store maps every failure to NO_DATA / NEWER / CONTRACT / NETWORK and can
-// retry.
+// retry. The strategic layer (2026-10-20): the synthetic section validates, a bundle without it too, the R
+// export's shapes are tolerated, a newer section asks for a reload, and broken fields are reported with the
+// paths of the R mirror (aib_check_strategic()).
 
 import { describe, expect, it } from 'vitest';
 import {
-  AIB_DIVERSIFY_SHOCK, AIB_DIVERSIFY_STATUSES, AIB_DOC_FILE_RE, checkAibManifest, checkCompactsDoc, coalitionMembersOf, countryNamesOf, diversifyMetaOf, diversifyShockIdOf, indicesOf,
-  inStrategicScope, isDictionary, nodeCoverageOf, variantsOf, variantWarningsOf, type AibDoc,
+  AIB_DIVERSIFY_SHOCK, AIB_DIVERSIFY_STATUSES, AIB_DOC_FILE_RE, AIB_RESERVED, AIB_STRATEGIC_ROLE_CODES, AIB_STRATEGIC_SCENARIO_IDS, AIB_STRATEGIC_VERSION, checkAibManifest, checkCompactsDoc,
+  coalitionMembersOf, countryNamesOf, diversifyMetaOf, diversifyShockIdOf, indicesOf, inStrategicScope, isDictionary, needsNewerApp, nodeCoverageOf, strategicOf, variantsOf, variantWarningsOf,
+  type AibDoc,
 } from '../contract.ts';
 import { AibLoadError, AibStore, httpAibSource, type AibSource } from '../data/store.ts';
-import { fixtureSource, readDoc, readManifest, stripDiversify, stripMethodology, SYNTHETIC_DIR, toMasterTaxonomy } from './fixture.ts';
+import { fixtureSource, readDoc, readManifest, stripDiversify, stripMethodology, stripScenarios, stripStrategic, SYNTHETIC_DIR, toMasterTaxonomy } from './fixture.ts';
 
 const doc = (): AibDoc => structuredClone(readDoc(SYNTHETIC_DIR));
 type Loose = Record<string, unknown>;
@@ -570,5 +573,181 @@ describe('the diversification scenario (2026-10-19)', () => {
     loose(m.meta).diversify = 'hs4';
     expect(checkCompactsDoc(m)).toEqual(['meta.diversify: not an object']);
     expect(diversifyMetaOf(m.meta)).toBeNull();
+  });
+});
+
+describe('the strategic layer (2026-10-20)', () => {
+  const strat = () => doc().strategic!;
+
+  it('the synthetic document carries it and validates; a bundle without it validates; strategicOf reads it', () => {
+    const d = doc();
+    const s = strategicOf(d)!;
+    expect(s).not.toBeNull();
+    expect(s.version).toBe(AIB_STRATEGIC_VERSION);
+    expect(s.defaultScenario).toBe('managed');
+    expect(s.scenarios.map((x) => x.id)).toEqual([...AIB_STRATEGIC_SCENARIO_IDS]);
+    expect(s.roleDefs.map((r) => r.code)).toEqual([...AIB_STRATEGIC_ROLE_CODES]);
+    expect(checkCompactsDoc(d)).toEqual([]);
+    // every node of the document on exactly one spine; every compact candidate a workstream
+    const spine = s.compacts.flatMap((c) => c.steps.flatMap((st) => st.nodes));
+    expect(new Set(spine).size).toBe(spine.length);
+    expect([...spine].sort()).toEqual(d.nodes.map((n) => n.id).sort());
+    expect(s.workstreams.map((w) => w.id)).toEqual(d.compacts.map((c) => c.id));
+    // older bundles
+    expect(strategicOf(stripStrategic(doc()))).toBeNull();
+    expect(checkCompactsDoc(stripStrategic(doc()))).toEqual([]);
+    expect(checkCompactsDoc(stripScenarios(doc()))).toEqual([]);
+    expect(stripScenarios(doc()).strategic).toBeUndefined();
+    expect(strategicOf(null)).toBeNull();
+  });
+
+  it('the reserved path segments: about, workstreams and s are never compact ids', () => {
+    expect([...AIB_RESERVED]).toEqual(['about', 'workstreams', 's']);
+    const d = stripStrategic(doc());
+    const id = d.compacts[0].id;
+    d.compacts[0].id = 'Workstreams';
+    for (const n of d.nodes) if (n.compact === id) n.compact = 'Workstreams';
+    expect(checkCompactsDoc(d)).toEqual(["compacts[0].id: 'Workstreams' is a reserved path segment"]);
+  });
+
+  it('the shapes the R export writes are tolerated: null partners without coalitions, [] metrics, null slots, no framing, gaps in the step orders', () => {
+    const d = doc();
+    const s = d.strategic!;
+    expect(s.compacts[0].scenarios.baseline!.criticalPartners).toBeNull();
+    expect(s.compacts[0].scenarios.partial!.coalition).toBeNull();
+    expect(s.compacts[0].steps.map((x) => x.order)).toEqual([2, 4]);
+    loose(s.countries.find((c) => c.iso3 === 'GGG')!).metrics = [];
+    delete loose(s.countries.find((c) => c.iso3 === 'FFF')!).metrics;
+    delete loose(s).framing;
+    loose(s.countries[0]).slots = null;
+    loose(s.countries[0]).narrative = null;
+    expect(checkCompactsDoc(d)).toEqual([]);
+  });
+
+  it('a newer section asks for a reload; a non-object is one problem', () => {
+    const d = doc();
+    d.strategic!.version = AIB_STRATEGIC_VERSION + 1;
+    const p = checkCompactsDoc(d);
+    expect(p).toEqual([`strategic: version ${AIB_STRATEGIC_VERSION + 1} needs a newer app`]);
+    expect(needsNewerApp(p)).toBe(true);
+    const x = doc();
+    loose(x).strategic = 'x';
+    expect(checkCompactsDoc(x)).toEqual(['strategic: not an object']);
+  });
+
+  it('bad values are reported with the paths of the R mirror (aib_check_strategic())', () => {
+    const d = doc();
+    const s = d.strategic!;
+    const iUsa = s.countries.findIndex((c) => c.iso3 === 'AAA');
+    const iZ = s.countries.findIndex((c) => c.iso3 === 'ZZZ');
+    loose(s).defaultScenario = 'stress';
+    s.compacts[0].steps[1].order = 2;
+    s.compacts[1].steps[0].nodes = ['bat-up-graphite', 'zinc'];
+    delete loose(s.compacts[0].scenarios).partial;
+    s.compacts[0].scenarios.decoupling!.counts.build = 9;
+    loose(s.compacts[0].scenarios.decoupling!).criticalPartners = null;
+    s.compacts[0].division[0][5] = 'x';
+    s.workstreams[0].compact = 'SC-Z';
+    s.countries[iUsa].primary = ['DMA', 'CIA', 'CBH', 'SMI'];
+    s.countries[iZ].secondary = ['DMA'];
+    s.compactRoles[0].leadNode = 'cell';
+    s.theses[0][3] = ['friendship'];
+    const p = checkCompactsDoc(d);
+    const has = (msg: string) => p.some((x) => x.startsWith(msg));
+    for (const want of [
+      "strategic.defaultScenario: 'stress' is not a listed scenario",
+      'strategic.compacts[0].steps[1].order: 2 does not follow 2',
+      "strategic.compacts[1].steps[0].nodes: 'zinc' is not a node of the document",
+      'strategic.compacts[1].steps[0].functions: expected one per node',
+      "strategic.compacts[0].scenarios: no 'partial'",
+      'strategic.compacts[0].scenarios.decoupling.counts.build: 9 where the spine has 1',
+      'strategic.compacts[0].scenarios.decoupling.criticalPartners: expected an array',
+      'strategic.compacts[0].division[0][5]: expected flags',
+      "strategic.workstreams[0].compact: 'SC-Z' is not a strategic compact",
+      `strategic.countries[${iUsa}].primary: more than 3 roles`,
+      `strategic.countries[${iZ}].secondary: 'DMA' is not a supply role`,
+      "strategic.compactRoles[0].leadNode: 'cell' is not a node of",
+      "strategic.theses[0][3]: 'friendship' is not a relationship logic",
+    ]) {
+      expect(has(want), want).toBe(true);
+    }
+    // a compact id twice, or a node in two compacts; a spine out of step order; the role lists against the tuples
+    const d2 = doc();
+    const s2 = d2.strategic!;
+    s2.compacts[1].id = s2.compacts[0].id;
+    s2.compacts[2].steps[0].nodes = ['ev-wind-mid-magnets'];
+    s2.compacts[3].scenarios.managed!.nodes = [];
+    s2.countries[0].primary = ['DMA'];
+    s2.countries[0].roles[0] = ['DMA', 'primary', 1, 2, null, null, null, null];
+    const p2 = checkCompactsDoc(d2);
+    const has2 = (msg: string) => p2.some((x) => x.startsWith(msg));
+    expect(has2(`strategic.compacts[1].id: duplicate '${s2.compacts[0].id}'`)).toBe(true);
+    expect(has2("strategic.compacts[2].steps[0].nodes: 'ev-wind-mid-magnets' is in more than one step or compact")).toBe(true);
+    expect(has2("strategic.compacts[3].scenarios.managed.nodes: not the compact's spine nodes in step order")).toBe(true);
+    expect(has2('strategic.countries[0].roles[0][3]: 2 above 1')).toBe(true);
+    // the tuples and lists keep their shape (the jsonlite auto_unbox trap)
+    const d3 = doc();
+    loose(d3.strategic!.compacts[0]).workstreams = 'AIB-C01';
+    loose(d3.strategic!.compacts[0].scenarios.managed!.nodes)[0] = { node: 'x' };
+    loose(d3.strategic!.theses)[0] = ['AAA', 'BBB'];
+    const p3 = checkCompactsDoc(d3);
+    expect(p3).toContain('strategic.compacts[0].workstreams: expected an array (a one-item array collapsed to a string?)');
+    expect(p3).toContain('strategic.compacts[0].scenarios.managed.nodes[0]: expected [node, status, coverage, host] or [node, status, coverage, host, tied hosts]');
+    expect(p3).toContain('strategic.theses[0]: expected [ISO3, ISO3, compacts, logic]');
+    // 2026-10-21: the optional fields of the review (a fifth spine element, NOT TESTED, targeted missions, the
+    // allied-only slots, the stress note) pass when well formed and are reported when not
+    const d5 = doc();
+    const k5 = d5.strategic!.compacts[0];
+    const m5 = k5.scenarios.managed!;
+    m5.nodes[0] = [m5.nodes[0][0], 'NOT TESTED', null, null, 3];
+    m5.counts = { ...m5.counts, notTested: 1 };
+    Object.assign(m5, { alliedOutsideCore: [], nonAlliedReliedOn: null, buildHostsNonAllied: [], buildHostTies: 2, stressNote: 'a note' });
+    if (m5.missions[0]) m5.missions[0].targeted = true;
+    const p5 = checkCompactsDoc(d5).filter((x) => x.includes('scenarios.managed') && !x.includes('counts.'));
+    expect(p5).toEqual([]);
+    loose(m5.nodes[0])[4] = 0;
+    Object.assign(m5, { buildHostTies: -1, stressNote: 3, alliedOutsideCore: 'DEU' });
+    const p6 = checkCompactsDoc(d5);
+    expect(p6.some((x) => x.startsWith('strategic.compacts[0].scenarios.managed.nodes[0][4]'))).toBe(true);
+    expect(p6.some((x) => x.startsWith('strategic.compacts[0].scenarios.managed.buildHostTies'))).toBe(true);
+    expect(p6.some((x) => x.startsWith('strategic.compacts[0].scenarios.managed.stressNote'))).toBe(true);
+    expect(p6.some((x) => x.startsWith('strategic.compacts[0].scenarios.managed.alliedOutsideCore'))).toBe(true);
+    // a NOT TESTED node needs its count
+    const d7 = doc();
+    const m7 = d7.strategic!.compacts[0].scenarios.managed!;
+    m7.nodes[0] = [m7.nodes[0][0], 'NOT TESTED', null, null];
+    expect(checkCompactsDoc(d7)).toContain('strategic.compacts[0].scenarios.managed.counts.notTested: absent where the spine has NOT TESTED nodes');
+    // every compact of the document is a workstream
+    const d4 = doc();
+    d4.strategic!.workstreams = d4.strategic!.workstreams.slice(1);
+    d4.strategic!.compacts[0].workstreams = [];
+    for (const sc of Object.values(d4.strategic!.compacts[0].scenarios)) sc!.activeWorkstreams = [];
+    expect(checkCompactsDoc(d4)).toEqual([`strategic.workstreams: compact '${d4.compacts[0].id}' of the document is not a workstream`]);
+    expect(strat().compacts.length).toBe(5);
+  });
+
+  it("a country's items (2026-10-21) are optional; when present they name role gates, functions, compacts, economies and nodes", () => {
+    const ok = doc();
+    const c = ok.strategic!.countries[0];
+    c.items = { firstOn: ['demand_mean_share'], contributes: [['ev-wind-mid-magnets', 0.18]], focus: ['components'], needs: [], compacts: ['SC-MAGNETS'], partners: [ok.strategic!.countries[1].iso3], capacity: [['ev-wind-mid-magnets', 0.6]], capacityUsdBn: 0.6 };
+    ok.strategic!.countries[1].items = null;
+    expect(checkCompactsDoc(ok)).toEqual([]);
+    const bad = doc();
+    loose(bad.strategic!.countries[0]).items = { firstOn: ['popularity'], contributes: [['zinc', 1.5]], focus: ['retail'], needs: [['ev-wind-mid-magnets']], compacts: ['SC-Z'], partners: ['XXX'], capacity: [['ev-wind-mid-magnets', -1]], capacityUsdBn: -2 };
+    const p = checkCompactsDoc(bad);
+    const at = 'strategic.countries[0].items';
+    for (const want of [
+      `${at}.firstOn: 'popularity' is not a role gate`,
+      `${at}.focus: 'retail' is not a node function`,
+      `${at}.compacts: 'SC-Z' is not a strategic compact`,
+      `${at}.partners: 'XXX' is not an economy of strategic.countries`,
+      `${at}.contributes[0][0]: not a node of a strategic compact`,
+      `${at}.contributes[0][1]: 1.5 above 1`,
+      `${at}.needs[0]: expected [node id, number]`,
+      `${at}.capacity[0][1]: -1 below 0`,
+      `${at}.capacityUsdBn: -2 below 0`,
+    ]) {
+      expect(p.some((x) => x.startsWith(want)), want).toBe(true);
+    }
   });
 });

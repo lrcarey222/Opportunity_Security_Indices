@@ -1,6 +1,8 @@
-// The AIB scenario toggle in the URL (2026-10-19): the key `scn`. Absent: Decoupling (the default, so it is
-// never written); `scn=managed`: Managed Interdependence. Any other value (baseline, decoupling, a typo) is
-// ignored and dropped. Baseline is never a toggle choice: it is the reference every comparison shows.
+// The AIB scenario toggle in the URL (2026-10-19; default changed 2026-10-20): the key `scn`. Absent: Managed
+// Interdependence (the default institutional lens, so it is never written); `scn=decoupling`: Decoupling (the
+// stress test). Any other value (baseline, managed, a typo, a repeat) is ignored and dropped; a link written
+// before 2026-10-20 with scn=managed therefore still opens Managed Interdependence. Baseline is never a toggle
+// choice: it is the reference every comparison shows.
 //
 // The scenario lives in the URL, not in React state: /aib and /compacts mount separate AibLayout instances.
 // Every AIB link carries it (withScenario), and the hosts that embed Strategic views keep it as a host key
@@ -12,26 +14,32 @@
 export const SCENARIO_KEY = 'scn';
 
 /** The toggle's two choices, in the order the control shows them (the default first). */
-export const SCENARIO_TOGGLES = ['decoupling', 'managed'] as const;
+export const SCENARIO_TOGGLES = ['managed', 'decoupling'] as const;
 export type AibToggle = (typeof SCENARIO_TOGGLES)[number];
-export const DEFAULT_TOGGLE: AibToggle = 'decoupling';
+/** The default choice: Managed Interdependence (never written to the URL). */
+export const DEFAULT_TOGGLE: AibToggle = 'managed';
+/** The one value the app writes: the choice that is not the default. */
+const WRITTEN: AibToggle = 'decoupling';
 
 const params = (search: string | URLSearchParams): URLSearchParams =>
   typeof search === 'string' ? new URLSearchParams(search.startsWith('?') ? search.slice(1) : search) : search;
 
-/** The toggled scenario of a query string ('decoupling' unless scn=managed). */
+/** The toggled scenario of a query string ('managed' unless scn=decoupling). */
 export function scenarioOfSearch(search: string | URLSearchParams): AibToggle {
-  return params(search).get(SCENARIO_KEY)?.trim() === 'managed' ? 'managed' : 'decoupling';
+  return params(search).get(SCENARIO_KEY)?.trim() === WRITTEN ? WRITTEN : DEFAULT_TOGGLE;
 }
 
-/** The query has an scn the app does not write (any value but "managed", or a repeat): the URL should drop it. */
+/** The query has an scn the app does not write (any value but "decoupling", or a repeat): the URL should drop it. */
 export function hasStrayScenario(search: string | URLSearchParams): boolean {
   const all = params(search).getAll(SCENARIO_KEY);
-  return all.length > 1 || (all.length === 1 && all[0] !== 'managed');
+  return all.length > 1 || (all.length === 1 && all[0] !== WRITTEN);
 }
 
+/** The query carries any scn at all (a bundle without scenarios drops it). */
+export const hasScenarioKey = (search: string | URLSearchParams): boolean => params(search).has(SCENARIO_KEY);
+
 /** The value written for a choice (null: the default, omitted). */
-export const scenarioParam = (s: AibToggle): string | null => (s === 'managed' ? 'managed' : null);
+export const scenarioParam = (s: AibToggle): string | null => (s === WRITTEN ? WRITTEN : null);
 
 /** A query string ('' or '?...') with scn set for `s` (removed for the default), the other keys in their order. */
 export function setScenarioSearch(search: string, s: AibToggle): string {
@@ -43,10 +51,13 @@ export function setScenarioSearch(search: string, s: AibToggle): string {
   return t ? `?${t}` : '';
 }
 
+/** A query string without any scn (the other keys in their order). */
+export const clearScenarioSearch = (search: string): string => setScenarioSearch(search, DEFAULT_TOGGLE);
+
 /**
  * An href ("/compacts/AIB-C01", "/aib/roles#role-USA", "/aib/partnerships?mode=investment") with the
- * scenario carried: scn=managed added (replacing any scn it had), or removed for Decoupling. The hash
- * stays last. `s` is the choice or a query string to read it from.
+ * scenario carried: scn=decoupling added (replacing any scn it had), or removed for Managed
+ * Interdependence (the default). The hash stays last. `s` is the choice or a query string to read it from.
  */
 export function withScenario(href: string, s: AibToggle | string): string {
   const choice: AibToggle = s === 'managed' || s === 'decoupling' ? s : scenarioOfSearch(s);
@@ -58,5 +69,5 @@ export function withScenario(href: string, s: AibToggle | string): string {
   return `${path}${setScenarioSearch(i < 0 ? '' : rest.slice(i), choice)}${hash}`;
 }
 
-/** The scenario part of a query string to carry to another AIB view ('?scn=managed' or ''). */
+/** The scenario part of a query string to carry to another AIB view ('?scn=decoupling' or ''). */
 export const scenarioCarry = (search: string): string => setScenarioSearch('', scenarioOfSearch(search));
