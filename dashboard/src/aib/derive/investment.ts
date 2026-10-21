@@ -1,6 +1,6 @@
 // Investor -> host flows of the marginal investment simulation (2026-10-17; doc.investmentFlows, scripts/32
 // allied_investment_pairs + the ranked hosts of allied_investment_partnerships, headline variant). Each
-// ranked host of a node is a separate simulation of the same increment of capacity: only rank 1 is the
+// ranked host of a node is a separate simulation of the increment of capacity: only rank 1 is the
 // selected host, so flows are summed across nodes for rank 1 only; alternatives (ranks 2..) are listed,
 // never added up. A modelled result: nothing here follows the Perspective. Pure.
 // The scenarios (2026-10-19): the flows follow the toggle (Decoupling doc.investmentFlows, Managed
@@ -10,6 +10,7 @@
 
 import { isNum } from '../../lib/format.ts';
 import type { AibDoc, AibInvestmentFlows, AibInvestmentHost, AibInvestmentPair, AibNode } from '../contract.ts';
+import { fmtPp } from './format.ts';
 import { nodeInScope, type PartnershipFilter } from './partnerships.ts';
 
 export type RankChoice = 'best' | 'all';
@@ -91,6 +92,20 @@ export function partnerTotals(pairs: readonly AibInvestmentPair[], iso3: string,
   return [...acc.values()].sort((a, b) => b.usd - a.usd || a.iso3.localeCompare(b.iso3));
 }
 
+/**
+ * The alignment screen of a node in words (node.screenedHost, 2026-10-20): the best host it keeps out, that
+ * host's gain and what the screen costs, e.g. "Iran (+16.7 pp of coverage) is not a host: the best eligible
+ * host adds 4.2 pp less". Costs under 0.05 pp read as none. null where no host was screened.
+ */
+export function screenedHostNote(n: Pick<AibNode, 'screenedHost'>, name: (iso3: string) => string): string | null {
+  const s = n.screenedHost;
+  if (!s) return null;
+  const who = `${name(s.host)} (${fmtPp(s.gain)} of coverage) is not a host`;
+  return isNum(s.cost) && s.cost >= 0.0005
+    ? `${who}: the best eligible host adds ${(s.cost * 100).toFixed(1)} pp less`
+    : `${who}: an eligible host adds as much`;
+}
+
 /** The ranked hosts of a node, best first. */
 export function hostsOfNode(doc: Pick<AibDoc, 'investmentFlows'>, node: string): AibInvestmentHost[] {
   return (doc.investmentFlows?.hosts ?? []).filter((h) => h.node === node).sort((a, b) => a.rank - b.rank);
@@ -121,7 +136,7 @@ export const hasInvestmentFlows = (doc: Pick<AibDoc, 'investmentFlows'>): boolea
 /** The headline variant in a short phrase, for the modelled-result note. */
 export function variantPhrase(doc: Pick<AibDoc, 'investmentFlows' | 'meta'>, shockLabel: string): string {
   const v = doc.investmentFlows?.variant;
-  const inc = v && isNum(v.increment) ? `, an increment of ${Math.round(v.increment * 100)}% of node demand at each host` : '';
+  const inc = v && isNum(v.increment) ? `, an increment of up to ${Math.round(v.increment * 100)}% of node demand at each host (at most its current output)` : '';
   return `${shockLabel}; supply assumption: ${v?.scenario ?? doc.meta.headlineScenario}${v?.supplyConstraint ? `, ${v.supplyConstraint.replace(/_/g, '-')} supply` : ''}${inc}`;
 }
 

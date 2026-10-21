@@ -139,6 +139,9 @@ aib_check_investment_flows <- function(doc, p = aib_check_problems(), node_ids =
     p$num(h$servedUsd, paste0(at, ".servedUsd"), nullable = TRUE, min = 0)
     p$num(h$capabilityTier, paste0(at, ".capabilityTier"), nullable = TRUE, min = 0, int = TRUE)
     p$str(h$capabilityBasis, paste0(at, ".capabilityBasis"), nullable = TRUE)
+    if (!is.null(h$hostIncrement)) p$num(h$hostIncrement, paste0(at, ".hostIncrement"), nullable = TRUE, min = 0, max = 1)
+    if (!is.null(h$rankBasis)) p$str(h$rankBasis, paste0(at, ".rankBasis"), nullable = TRUE)
+    if (!is.null(h$type)) p$str(h$type, paste0(at, ".type"), nullable = TRUE)
   }
   p$list
 }
@@ -251,6 +254,7 @@ aib_check_diversify <- function(doc, p = aib_check_problems()) {
       else p$str(d[[k]], paste0(at, ".", k), nullable = TRUE)
     }
     for (k in c("capped", "hosts")) p$str_arr(d[[k]], paste0(at, ".", k))
+    for (k in c("specialtyHosts", "developmentHosts")) if (!is.null(d[[k]])) p$str_arr(d[[k]], paste0(at, ".", k))
     cls <- d$cls
     if (!has("cls")) {
       p$add(sprintf("%s.cls: expected a string or null", at))
@@ -402,7 +406,7 @@ aib_check_coalition <- function(p, co, at) {
   p$bool(co$reached99, paste0(at, ".reached99"))
   p$num(co$maxCoverage, paste0(at, ".maxCoverage"), nullable = TRUE, min = 0, max = 1)
   if (!is.null(co$method)) p$str(co$method, paste0(at, ".method"), nullable = TRUE)
-  for (k in c("greedy", "criticalPartners", "criticalExternal", "criticalExternalMarginal", "external")) if (!is.null(co[[k]])) p$str_arr(co[[k]], paste0(at, ".", k))
+  for (k in c("greedy", "criticalPartners", "prospectiveHosts", "criticalExternal", "criticalExternalMarginal", "external")) if (!is.null(co[[k]])) p$str_arr(co[[k]], paste0(at, ".", k))
   for (k in c("associatesReach99", "robustTieBreakSolved")) if (!is.null(co[[k]])) p$bool(co[[k]], paste0(at, ".", k))
 }
 
@@ -561,7 +565,7 @@ aib_check_scenario_doc <- function(doc, main = NULL, expect = NULL) {
                                  paste(if (k == "type") aib_check_compact_types() else aib_check_archetypes(), collapse = ", ")))
         }
         if (!is.null(c$secondaryClass)) p$str(c$secondaryClass, paste0(at, ".secondaryClass"), nullable = TRUE)
-        for (k in c("anchors", "suppliers", "hosts", "technologyPartners", "bridges", "associates", "policyNeeds")) if (!is.null(c[[k]])) p$str_arr(c[[k]], paste0(at, ".", k))
+        for (k in c("anchors", "suppliers", "hosts", "specialtyHosts", "developmentHosts", "technologyPartners", "bridges", "associates", "policyNeeds")) if (!is.null(c[[k]])) p$str_arr(c[[k]], paste0(at, ".", k))
         if (!is.null(c$roles)) aib_check_roles(p, c$roles, paste0(at, ".roles"))
         if (!is.null(c$metrics)) aib_check_metrics(p, c$metrics, paste0(at, ".metrics"))
         if (!is.null(c$path)) aib_check_path(p, c$path, paste0(at, ".path"))
@@ -578,9 +582,29 @@ aib_check_scenario_doc <- function(doc, main = NULL, expect = NULL) {
   p$list
 }
 
-# Both additive sections, the taxonomy fields, the diversification scenario and the scenario toggle's fields.
+# The alignment screen (2026-10-20; checkNodeScreenedHost() in contract.ts): node.screenedHost absent, or an
+# object with host (a string), gain (-1..1 or null) and cost (0..1 or null).
+aib_check_screened_hosts <- function(doc, p = aib_check_problems()) {
+  for (i in seq_along(doc$nodes)) {
+    node <- doc$nodes[[i]]
+    if (!is.list(node) || !"screenedHost" %in% names(node)) next
+    s <- node$screenedHost
+    at <- sprintf("nodes[%d].screenedHost", i - 1)
+    if (!aib_check_is_obj(s)) {
+      p$add(sprintf("%s: not an object", at))
+      next
+    }
+    p$str(s$host, paste0(at, ".host"))
+    p$num(s$gain, paste0(at, ".gain"), nullable = TRUE, min = -1, max = 1)
+    p$num(s$cost, paste0(at, ".cost"), nullable = TRUE, min = 0, max = 1)
+  }
+  p$list
+}
+
+# Both additive sections, the taxonomy fields, the diversification scenario, the scenario toggle's fields,
+# the alignment screen and the strategic layer.
 aib_check_bundle_additions <- function(doc) c(aib_check_network(doc), aib_check_investment_flows(doc), aib_check_taxonomy(doc), aib_check_diversify(doc), aib_check_scenarios(doc),
-                                                aib_check_strategic(doc))
+                                                aib_check_screened_hosts(doc), aib_check_strategic(doc))
 
 # ---- The strategic layer (2026-10-20) ------------------------------------------------------------------
 # `strategic` (aib_dash_strategic(); docs/aib_methodology.md 16.9): optional, so a bundle without it passes.

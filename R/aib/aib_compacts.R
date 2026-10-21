@@ -133,13 +133,17 @@ aib_group_nodes <- function(classified, vectors, coherence, min_partner = 0.35, 
 #        exports, bounded by physical capability where known) less what it already ships to the
 #        anchors; conservative = the supply the shock frees for it, within its physical room;
 #        plus any synthetic increment at c (host_extra),
+#   h_c  the part of g_c that is that synthetic increment (simulated capacity, not current supply),
 #   x_c  every exporter's current shipments to the anchors (for the leave-one-out test).
 # Linear in the membership, so the minimum coalition is an exact integer program. A node problem with a
 # supplier-share cap on the scope's demand (aib_compact_share_cap(): the diversification scenario's) bounds
 # each g_c as its own states B and C do: no economy ships more than cap x the scope's demand, so g_c is at
 # most the cap less its fixed shipments and less its current shipments to the anchors (reallocation, which
-# may draw on its other shipments in the scope) or to the whole scope (conservative, which locks them).
-aib_anchor_terms <- function(prob, anchors, scenario, host_extra = NULL, drop = character()) {
+# may draw on its other shipments in the scope) or to the whole scope (conservative, which locks them);
+# the current supply fills that room first, so h_c is what the cap leaves of the increment.
+# `drop`: economies whose supply is lost entirely (current shipments, current supply and any increment);
+# `drop_current`: economies that lose their current shipments and supply but keep their simulated capacity.
+aib_anchor_terms <- function(prob, anchors, scenario, host_extra = NULL, drop = character(), drop_current = character()) {
   if (is.null(prob)) return(NULL)
   A <- intersect(anchors, prob$scope)
   if (!length(A)) return(NULL)
@@ -164,25 +168,35 @@ aib_anchor_terms <- function(prob, anchors, scenario, host_extra = NULL, drop = 
     g <- pmax(aib_available_supply(prob, "reallocation", cand) - xA, 0)
   }
   names(g) <- cand
+  h <- stats::setNames(rep(0, length(g)), cand)
   if (!is.null(host_extra) && length(host_extra)) {
     hx <- host_extra[names(host_extra) %in% names(g)]
-    g[names(hx)] <- g[names(hx)] + hx
+    h[names(hx)] <- as.numeric(hx)
     new <- host_extra[!names(host_extra) %in% names(g)]
-    g <- c(g, new)
+    g <- c(g, stats::setNames(rep(0, length(new)), names(new)))
+    h <- c(h, stats::setNames(as.numeric(new), names(new)))
   }
   cap <- aib_compact_share_cap(prob)
   if (cap < 1 && length(g)) {
     k <- names(g)
     held <- get0(prob$fixed_by_exporter, k) + if (identical(scenario, "conservative")) get0(prob$to_scope, k) else get0(x_c, k)
-    g <- stats::setNames(pmin(as.numeric(g), pmax(cap - held, 0)), k)
+    room <- pmax(cap - held, 0)
+    g0 <- pmin(as.numeric(g), room)
+    h <- stats::setNames(pmin(as.numeric(g) + as.numeric(h), room) - g0, k)
+    g <- stats::setNames(g0, k)
   }
   x_all <-c(stats::setNames(as.numeric(x_c), names(x_c)), stats::setNames(as.numeric(x_f), names(x_f)))
   x_all <- tapply(x_all, names(x_all), sum)
-  out <- list(dA = dA, F = sum(prob$fixed_m[A]) + sum(xA), g = g, x = stats::setNames(as.numeric(x_all), names(x_all)))
-  # `drop`: economies whose supply is lost entirely (current shipments and any addition).
+  out <- list(dA = dA, F = sum(prob$fixed_m[A]) + sum(xA), g = g + h, h = h, x = stats::setNames(as.numeric(x_all), names(x_all)))
   if (length(drop)) {
     out$F <- out$F - sum(out$x[names(out$x) %in% drop])
     out$g[names(out$g) %in% drop] <- 0
+    out$h[names(out$h) %in% drop] <- 0
+  }
+  if (length(drop_current)) {
+    out$F <- out$F - sum(out$x[names(out$x) %in% drop_current])
+    k <- names(out$g) %in% drop_current
+    out$g[k] <- out$h[k]
   }
   out
 }
@@ -221,9 +235,11 @@ aib_anchor_coverage <- function(prob, anchors, S, scenario, host_extra = NULL) {
 # what the compact protects). A binary program solved with GLPK; among minimum-size coalitions the
 # one adding the most supply is kept. Returns members, reached, per-node coverage, and, when the
 # target cannot be reached even with every candidate, the best attainable minimum coverage.
+# `drop` / `drop_current`: economies whose supply is lost entirely / whose current supply is lost
+# (aib_anchor_terms()).
 aib_coalition_exact <- function(problems, node_ids, anchors, candidates, scenario, host_extra = list(), target = 0.95,
-                                drop = character(), fixed = character(), tie_break = TRUE, time_limit = 5) {
-  terms <- lapply(node_ids, function(n) aib_anchor_terms(problems[[n]], anchors, scenario, host_extra[[n]], drop = drop))
+                                drop = character(), fixed = character(), tie_break = TRUE, time_limit = 5, drop_current = character()) {
+  terms <- lapply(node_ids, function(n) aib_anchor_terms(problems[[n]], anchors, scenario, host_extra[[n]], drop = drop, drop_current = drop_current))
   names(terms) <- node_ids
   terms <- terms[!vapply(terms, is.null, logical(1))]
   cov_of <- function(S) vapply(terms, function(t) min(t$dA, t$F + sum(t$g[names(t$g) %in% S])) / t$dA, numeric(1))
@@ -295,14 +311,20 @@ aib_coalition_exact <- function(problems, node_ids, anchors, candidates, scenari
 }
 
 # Leave-one-country-out: for each economy supplying the anchors (members and non-members), the
-# coverage of every node if that economy's supply were lost entirely.
+# coverage of every node if that economy's CURRENT supply were lost (its current shipments and the
+# current supply it adds by coordinating). Simulated capacity (host_extra) at a member host stays in:
+# the test measures dependence on supply that exists, and a host's hypothetical plant is reported
+# apart (`critical_simulated`).
 #   critical      with the coalition fixed, the loss pushes a node below `target` (where the node
 #                 is below it already, the loss lowers its coverage by `min_drop` or more). A
-#                 non-member that is critical is a critical external dependency. (In a minimum
-#                 coalition every non-anchor member is critical in this sense by construction.)
+#                 non-member that is critical is a critical external dependency.
 #   irreplaceable the loss pushes a node below `target` even if every other candidate joined
-#                 (`candidates`; members only when NULL): a member that is irreplaceable is a
-#                 critical supply partner.
+#                 (`candidates`; members only when NULL).
+#   critical_simulated  the same test with the economy's simulated capacity lost too
+#                 (`coverage_without_simulated`): TRUE and `critical` FALSE when the coalition relies on
+#                 the capacity it would host, not on what it supplies today.
+# added_share is what the economy adds by coordinating (share of the anchors' demand), of which
+# added_share_simulated is synthetic capacity.
 aib_coalition_critical <- function(problems, node_ids, anchors, members, scenario, host_extra = list(), target = 0.95,
                                    candidates = NULL, min_drop = 0.01) {
   out <- list()
@@ -317,33 +339,59 @@ aib_coalition_critical <- function(problems, node_ids, anchors, members, scenari
     for (c in who) {
       xc <- if (c %in% names(t$x)) t$x[[c]] else 0
       gc <- if (c %in% names(gm)) gm[[c]] else 0
+      hc <- if (c %in% names(gm)) t$h[[c]] else 0
       go_c <- if (c %in% names(go)) go[[c]] else 0
-      without <- min(t$dA, t$F - xc + sum(gm) - gc) / t$dA
-      without_open <- min(t$dA, t$F - xc + sum(go) - go_c) / t$dA
+      ho_c <- if (c %in% names(go)) t$h[[c]] else 0
+      without <- min(t$dA, t$F - xc + sum(gm) - (gc - hc)) / t$dA
+      without_sim <- min(t$dA, t$F - xc + sum(gm) - gc) / t$dA
+      without_open <- min(t$dA, t$F - xc + sum(go) - (go_c - ho_c)) / t$dA
+      crit <- function(w) w < target - 1e-9 & (with_all >= target - 1e-9 | with_all - w >= min_drop)
       out[[length(out) + 1]] <- tibble::tibble(node_id = n, iso3 = c, member = c %in% members,
                                                supply_share = xc / t$dA, added_share = gc / t$dA,
+                                               added_share_simulated = hc / t$dA,
                                                coverage_with = with_all, coverage_without = without,
+                                               coverage_without_simulated = without_sim,
                                                coverage_without_open = without_open,
-                                               critical = without < target - 1e-9 &
-                                                 (with_all >= target - 1e-9 | with_all - without >= min_drop),
+                                               critical = crit(without),
+                                               critical_simulated = crit(without_sim),
                                                irreplaceable = without_open < target - 1e-9)
     }
   }
   dplyr::bind_rows(out)
 }
 
-# Substitutability of each member of a minimum coalition. With that member's supply lost (an anchor
-# stays in for its demand): `needed` when the rest of the coalition no longer reaches the target;
-# `single_substitutes` the non-members any one of which, added to the rest, restores it (most
-# supply first). A member that is needed and has no single substitute is a critical supply partner;
-# `substitutes_needed` is then the smallest number of additions that restores the target (exact
-# program with the rest held in; NA when nothing can).
+# Each member's basis of membership, from the leave-one-out table (aib_coalition_critical()):
+#   "demand anchor"         an anchor (in for its demand);
+#   "simulated capacity"    a prospective host: it carries simulated capacity in some node and its current
+#                           supply is critical in none (the coalition reaches the target, or keeps a node's
+#                           coverage within `min_drop`, without it), so it is in for the capacity it would host;
+#   "current supply"        every other member.
+aib_membership_basis <- function(members, anchors, loo) {
+  members <- members[!is.na(members)]
+  if (!length(members)) return(tibble::tibble(iso3 = character(), membership_basis = character()))
+  l <- if (is.null(loo) || !nrow(loo)) NULL else loo[loo$iso3 %in% members, , drop = FALSE]
+  sim <- if (is.null(l)) character() else unique(l$iso3[dplyr::coalesce(l$added_share_simulated, 0) > 1e-9])
+  crit <- if (is.null(l)) character() else unique(l$iso3[l$critical %in% TRUE])
+  tibble::tibble(iso3 = members,
+                 membership_basis = dplyr::case_when(members %in% anchors ~ "demand anchor",
+                                                     members %in% sim & !members %in% crit ~ "simulated capacity",
+                                                     TRUE ~ "current supply"))
+}
+
+# Substitutability of each member of a minimum coalition. With that member's current supply lost
+# (its simulated capacity, if it is a host, stays in, as in aib_coalition_critical(); an anchor stays
+# in for its demand): `needed` when the rest of the coalition no longer reaches the target, so a
+# prospective host (in for its simulated capacity only) is never needed here; `single_substitutes` the
+# non-members any one of which, added to the rest, restores it (most supply first). A member that is
+# needed and has no single substitute is a critical supply partner; `substitutes_needed` is then the
+# smallest number of additions that restores the target (exact program with the rest held in; NA when
+# nothing can).
 aib_coalition_substitution <- function(problems, node_ids, anchors, members, candidates, scenario, host_extra = list(),
                                        target = 0.95) {
   if (!length(members) || all(is.na(members))) return(tibble::tibble())
   pool <- setdiff(unique(candidates), members)
   dplyr::bind_rows(lapply(members, function(c) {
-    terms <- lapply(node_ids, function(n) aib_anchor_terms(problems[[n]], anchors, scenario, host_extra[[n]], drop = c))
+    terms <- lapply(node_ids, function(n) aib_anchor_terms(problems[[n]], anchors, scenario, host_extra[[n]], drop_current = c))
     terms <- terms[!vapply(terms, is.null, logical(1))]
     reach <- function(S) all(vapply(terms, function(t) min(t$dA, t$F + sum(t$g[names(t$g) %in% S])) / t$dA >= target - 1e-9, logical(1)))
     needed <- length(terms) > 0 && !reach(members)
@@ -357,7 +405,7 @@ aib_coalition_substitution <- function(problems, node_ids, anchors, members, can
       }
     }
     n_needed <- if (!needed) 0L else if (length(subs)) 1L else {
-      r <- aib_coalition_exact(problems, node_ids, anchors, pool, scenario, host_extra, target, drop = c, fixed = setdiff(members, c),
+      r <- aib_coalition_exact(problems, node_ids, anchors, pool, scenario, host_extra, target, drop_current = c, fixed = members,
                                tie_break = FALSE)
       if (isTRUE(r$reached)) length(setdiff(r$members, members)) else NA_integer_
     }

@@ -339,36 +339,148 @@ possible.
 
 Only after optimized trade, and only for nodes whose residual gap is at least `min_residual_gap`
 (5%) under the simulated shocks and scenarios (`investment.shocks`, `investment.scenarios`: both
-scenarios, kept apart). For each eligible host a
-standardized synthetic increment (5%, 10%, 20% of the node's demand-scope demand) is added and the
+scenarios, kept apart). For each eligible host a synthetic increment of capacity is added and the
 optimizer rerun (headline shock semantics, both supply-constraint modes; hosts come from the
-candidate-partner universe):
+candidate-partner universe after the alignment screen, below). The increment is a share of the node's demand-scope demand (nominal
+`increment` 5%, 10%, 20%), **capped at the host's current scale in the node**
+(`aib_host_increment()`, `host_scale_multiple`, default 1):
+
+`host_increment = min(increment, host_scale_multiple x host_scale_usd / demand)`
+
+where `host_scale_usd` is the larger of the host's world exports of the node and its production share
+times the node's world exports. With the default a host can at most double its output; a host qualified
+only through a linked node has no scale in this node and gets no increment. Then
 
 `marginal_resilience_gain = coverage_after_added_capacity - coverage_before_added_capacity`
 
 with residual gap before/after, additional demand served, change in HHI and largest-supplier share,
-the gain under the diversified cap (40%), host RCA / export share / production share.
+the gain under the diversified cap (40%), host RCA / export share / production share, the increment
+simulated (`host_increment`, `host_scale_share`, `increment_capped`).
+
+**Why the cap.** Before 2026-10-20 every host received the same standardized increment. The resilience
+gain then tied for every host in all 49 nodes of the headline simulation (rank 1 and rank 2 within 0.5
+points everywhere) and the next criterion, the fall in HHI, decided. Adding a fixed amount to a small
+supplier always raises concentration least, so the ranking systematically chose the smallest qualified
+supplier: the rank-1 host's median world export share was 1.5% (34 of 49 nodes under 2%, median export
+rank 11), and the largest non-China exporter was ranked 19th of 20 at the median and first in one node
+(grain-oriented electrical steel: Austria, 1.2% of world exports, first and Japan, 25%, 20th; cathode
+materials: Belgium, 0.8%, first and Korea, 51%, 20th). A 10%-of-demand plant is not a credible
+expansion for an economy that exports 1% of the world's supply. Options compared on that run (gains
+for the capped increment interpolated from the 5/10/20% simulations; headline variant, 49 nodes):
+
+| Option | Rank-1 hosts changed | Rank-1 median world share | Rank-1 under 2% | Rank-1 median export rank | Largest non-China exporter: median rank / ranked 1st | Rank-1 median HHI change |
+|---|---|---|---|---|---|---|
+| Standardized increment (old) | - | 1.5% | 34 | 11 | 19 / 1 | -0.003 |
+| Capability before HHI | 48 | 12.0% | 0 | 2 | 1 / 38 | +0.030 |
+| HHI in 0.025 bins, then capability | 45 | 7.2% | 5 | 4 | 18 / 8 | +0.011 |
+| Rank 1 needs >= 5% world or production share | 43 | 5.7% | 15 | 4 | 4 / 4 | +0.007 |
+| **Host-scaled increment, multiple 1 (adopted)** | 46 | 9.2% | 1 | 3 | 2 / 19 | +0.017 |
+| Host-scaled increment, multiple 2 | 39 | 4.9% | 5 | 5 | 5 / 2 | +0.004 |
+| Tied shortlist | median 19 of 20 hosts tie on the gain: no shortlist | | | | | |
+
+The full rerun with the cap reproduces the adopted row (45 rank-1 hosts changed; the other figures
+equal); section 14 has the results.
+
+The host-scaled increment is the only option that makes the first criterion (the resilience gain)
+decide where hosts differ in what they can credibly add, keeps the diversification criterion for the
+hosts that can carry the full increment (so the largest exporter is not simply first: Korea, above the
+40% limit in cathodes, still drops), and treats the coalition test's synthetic capacity the same way.
+Putting capability first would make the largest ally the host almost everywhere and raise concentration
+most. A multiple of 2 gives more varied, mid-sized hosts; it is the main sensitivity
+(`host_scale_multiple`). Each host row also reports `gain_shortlist` (how many hosts tie with the best
+on the gain) and `rank_basis` (the first criterion separating it from the next host up), so a reader can
+see when a tie-break, not the gain, decides.
 
 **Eligibility** (`aib_eligible_hosts()`) requires revealed capability at material scale: RCA >= 1
 on exports of at least USD 50m or 1% of the node's world trade, a production share >= 1%, a world
 export share >= 0.5%, or RCA >= 1 at that scale in a node joined to it by a **material link** (in
 either direction: the feedstock or the product). Open ship registries (`exclude_hosts`) are never
-hosts. Friendshore plays no part in eligibility. Within a capability tier hosts are compared on
-capability at scale: the larger of their world export share and production share in the node (RCA is
-the gate, not the measure, because it saturates for small specialists).
+hosts, and neither are the economies the **alignment screen** keeps out (below). Friendshore plays no
+part in eligibility. Within a capability tier hosts are compared on capability at scale: the larger of
+their world export share and production share in the node (RCA is the gate, not the measure, because it
+saturates for small specialists). The `max_hosts_per_node` (20) hosts simulated in a node are the
+**largest by current scale** (`host_scale_usd`, which bounds each host's increment and so its gain;
+`aib_host_shortlist()`), across capability tiers. Until 2026-10-20 the list was cut by tier first, so in
+five nodes small RCA specialists (down to 0.2% of world exports) filled it and large exporters without
+RCA >= 1 were never simulated: Germany in power electronics (6.8% of world exports, now second) and in
+transformers, the United States in motor parts, electric motors and static converters.
 
 **Ordering** (`aib_rank_hosts()`): (1) resilience contribution, (2) diversification contribution
 (fall in HHI), (3) host specialization/capability (tier, then value), (4) Friendshore
 (investor/buyer -> host, weighted by the importers' lost supply), (5) revealed policy/climate
-compatibility. Without a supplier limit every host's increment adds the same coverage
-(`min(increment, gap)`), so the resilience contribution used for ranking is the gain with the
-diversified limit (40%) in force, where capacity at an already dominant supplier adds little; the
-unlimited gain is reported beside it. Ties are measured from the group's leader: gains within 0.5
-points of the best, HHI changes within 0.005 of the lowest. The investor -> host pairs
+compatibility. Without a supplier limit a host's increment adds `min(host_increment, gap)`, so the
+resilience contribution used for ranking is the gain with the diversified limit (40%) in force, where
+capacity at an already dominant supplier adds little; the unlimited gain is reported beside it. Every
+host that can carry the full increment therefore ties on the gain, and among them the fall in HHI
+decides; a host whose increment is capped adds less and ranks after them, by its scale. Ties are
+measured from the group's leader: gains within 0.5 points of the best, HHI changes within 0.005 of the
+lowest. The investor -> host pairs
 (which importers the new capacity serves, with their Friendshore) are worked out for the five best
-hosts at the 10% increment on top of the optimized allocation: with every other flow fixed, the
+hosts at the 10% increment (capped) on top of the optimized allocation: with every other flow fixed, the
 lexicographic optimum is greedy, filling the importers' unmet demand in descending Export
 Opportunity of the host to them, then compatibility.
+
+**Host types** (2026-10-20; `investment.host_types`, `aib_scaling_hosts()`, `aib_host_types()`). One
+ranking cannot say both who can build volume and who adds a niche or a development prospect: with one
+standardized increment the HHI tie-break silently preferred small specialists (above). Each eligible host
+therefore has at most one type, each ranked on its own:
+
+| Type | Who | Ranked by | In the compact tests |
+|---|---|---|---|
+| **Scaling host** | established producers: the host can carry the full headline increment, or holds at least 5% (`scaling_min_share`) of world exports or production in the node | the ordering above (gain under the 40% limit, HHI, capability, Friendshore, compatibility) | yes, the five best, each at most at its own scale |
+| **Specialty host** | high-income economies (`specialty_income`) below scale with RCA >= 2 on at least USD 100m of the node's exports (the floor keeps out re-export hubs and micro-exporters: Luxembourg in battery foil, Uruguay in electrolysers) | RCA, then the fall in HHI | yes, the five best, at their own (capped) scale |
+| **Development host** | lower- and upper-middle-income economies (`development_income`) below scale with revealed capability in the node or a linked node | OSI's Development Potential Index for the node's technology and stage (non-high-income partners; an economy's mean where the node has no OSI cell), then capability | never: their capacity is future capacity, a development-finance prospect |
+
+The types exclude each other in that order: a middle-income economy that is already at scale (Viet Nam in
+PV modules) is a scaling host, and a large high-income specialist (Japan in grain-oriented steel, RCA 8)
+is a scaling host, not a specialty host; `income_group` is reported for every host. Scaling hosts are
+ranked first (`host_rank`; `scaling_rank` among them), so the investment partnerships, the emergent
+network's selected investment relationship (the best scaling host) and the node tables' leading hosts
+(`priority_investment_hosts`) are the scaling hosts'; `specialty_rank`, `development_rank`,
+`development_index` and `host_type` sit beside them, and the node tables add `specialty_hosts` and
+`development_hosts`. The leading specialty and development candidates are always simulated, beside the
+20 largest hosts. Income groups are the World Bank's (`wdi_country_info.csv`; Taiwan, missing
+there, is set high income in `income_overrides`).
+
+**Alignment screen** (2026-10-20; `investment.host_screen`, `aib_host_screen()`,
+`R/aib/aib_host_screen.R`). The candidate-partner universe is global, so before the screen an economy
+voting with China could rank as the best place for allied capital: Myanmar was the first host for
+rare-earth oxides (Laos second), Russia the second for grain-oriented steel, Nigeria fourth for lithium
+minerals, and outside the headline shock Iran was first for nuclear special materials, Russia for reactor
+parts and PGMs and China itself in nine node-variants of the largest-supplier and diversification shocks.
+The default mode, `bloc`, keeps as hosts the demand scope (the economies the AIB protects: refusing their
+capacity while restoring their demand would be incoherent, so Indonesia, Oman and Viet Nam stay hosts) and
+every other partner outside the China-leaning UNGA voting bloc (`exclude_blocs`; the blocs of
+`geo_alignment_tbl.rds`, scripts/12: the US-China axis of the Bailey-Strezhnev-Voeten ideal points,
+quartile cuts; an economy without a bloc, such as Taiwan, is nonaligned and kept). 48 of the 204 candidate
+partners are screened (`aib_host_screen.csv`). The screen applies before the shortlist and the host types,
+so a screened economy is in no ranking and no host type; it stays a trade partner and can be a coalition
+member or an external dependency through its current supply.
+
+Two alternatives were tested on the run before the screen (`data/processed/an/host_screen_recommendation.md`):
+
+| Screen | Rank-1 hosts changed | Top-5 slots removed | Rank-1 gain lost | Compact coalitions changed | What it removes |
+|---|---|---|---|---|---|
+| Friendshore >= 0.50 | 1 | 4 | 0 | 0 | LAO MMR NGA RUS (but in other shocks misses CHN, IRN, KAZ) |
+| Coalition tiers only (`demand_scope`) | 4 | 18 | 2.9 pts (graphite) | 2 | also TWN (8 top-5 slots), CHE, MDG, MOZ, TZA, SVN |
+| **UNGA bloc, demand scope exempt (adopted)** | 1 | 5 | 0 | 0 | LAO MMR NGA RUS |
+
+Friendshore is not an alignment measure: the bloc is about a quarter of its weight (the rest is the
+buyer's imports from the partner, its energy-security need, the partner's economic opportunity, outbound
+investment and Chinese-parent exposure, which repeat the ranking's own criteria), its missing values sit at
+the neutral 0.5 (where many core hosts sit), and no floor separates the cases: Russia scores 0.38-0.59
+across its nodes while partner-tier hosts go down to 0.40 (Brazil). The coalition tiers were built for the
+network design with a USD 100bn GDP floor, so they leave out Taiwan (no WDI GDP), Switzerland and the EU and
+NATO members below the floor (Slovenia, Estonia, Lithuania, Latvia, Cyprus, Malta, Iceland), none of them
+China-leaning; `demand_scope` is kept as the strict sensitivity.
+
+The screened hosts are not dropped silently: the largest `screened_hosts_simulated` (5) per node are
+simulated like the others, unranked (`allied_investment_screened_hosts.csv`, with their bloc and
+`screen_reason`), and every host row and node carries the **alignment cost**
+(`aib_alignment_cost()`): the best screened host's gain minus the best eligible host's, both with the 40%
+supplier limit (the gain the ranking reads), floored at 0, with `best_screened_host` (ties: the larger host).
+The node tables report `screened_host`, `screened_host_gain` and `alignment_cost`; the dashboard shows the
+line under the node's hosts.
 
 This is a marginal capacity simulation, not a project-level investment optimization.
 
@@ -465,8 +577,10 @@ coordinate is linear in membership, `min(1, (F + sum_{c in S} g_c) / d_A)`: `F` 
 anchors with nobody coordinating (non-candidates' shipments and every candidate's current shipments),
 `g_c` what candidate `c` adds by coordinating (reallocation: its available supply, physically bounded
 where known, less what it already ships to the anchors; conservative: its freed supply within its
-physical room; plus one 10% increment at each candidate that is a leading host of a node that needs
-capacity). The minimum coalition is therefore an exact binary program, solved with GLPK: minimize the
+physical room; plus `h_c`, a 10% increment, capped at the host's scale as in section 7, at each
+candidate that is one of the five leading scaling hosts or the five leading specialty hosts of a node
+that needs capacity; development hosts never add simulated capacity). The minimum coalition
+is therefore an exact binary program, solved with GLPK: minimize the
 number of countries subject to every node reaching the target, the anchors always members; among
 coalitions of that size, the most robust one (a second program maximizes the smallest margin over the
 target across the compact's nodes, so the coalition does not sit exactly on the target where losing
@@ -477,12 +591,30 @@ shortfall, `aib_coalition_path()`) is kept as `greedy_sufficient_coalition` and 
 countries join" view. Where even every candidate cannot reach 95%, the members are the widest greedy
 set and `coalition_method` says so.
 
+**Current supply and simulated capacity are kept apart.** The coalition test counts the synthetic
+capacity `h_c` of the leading hosts, so an economy can earn membership through a hypothetical plant
+alone (before 2026-10-20 Austria was a core member and leave-one-out critical in the accumulator-parts
+compact while supplying 0.008% of the anchors' demand: its 20-point "contribution" was all simulated;
+likewise in synthetic graphite and power electronics). Criticality is therefore measured on **current
+supply** only: the leave-one-out and
+substitution tests remove an economy's current shipments and current supply (`drop_current`) and keep
+its simulated capacity, which is reported apart (`critical_simulated`, `coverage_without_simulated`,
+`added_share_simulated` in `aib_compact_leave_one_out.csv`). Each member gets a
+`membership_basis` (`aib_membership_basis()`): demand anchor; current supply; or **simulated
+capacity**, a member that carries simulated capacity and whose current supply is critical in no node.
+The latter are **prospective hosts**.
+
 **Coalition tiers and the leave-one-country-out test** (`aib_coalition_substitution()`,
 `aib_coalition_critical()`):
 
-* **core coordinating members**: the exact 95% coalition;
-* **critical supply partners**: members that are needed (with their supply removed the rest of the
-  coalition misses the target) and that **no single other candidate** can replace (each non-member is
+* **core coordinating members**: the exact 95% coalition less its prospective hosts
+  (`core_coordinating_members`; `minimum_coalition` keeps the whole solved set);
+* **prospective hosts**: members in the coalition only for the capacity the model simulates at them
+  (`prospective_hosts`, tier `prospective host`). They are not core members, never critical supply
+  partners and not leave-one-out critical; whether the coalition's target relies on their simulated
+  capacity is in `loo_critical_simulated`;
+* **critical supply partners**: members that are needed (with their current supply removed the rest of
+  the coalition misses the target) and that **no single other candidate** can replace (each non-member is
   tried alone); `substitutable_by` lists the single substitutes of the others, `substitutes_needed`
   how many additions the exact program needs when no single one suffices (NA: nothing can). In a
   minimum coalition every added member is needed by construction, so "needed" alone does not
@@ -496,7 +628,9 @@ set and `coalition_method` says so.
   demand in `critical_external_dependencies`, the rest (critical only because the coalition sits near
   the target) in `critical_external_dependencies_marginal`. `aib_compact_leave_one_out.csv` keeps
   every supplier's test;
-* **external dependencies**: other non-members supplying at least 5% of the anchors' demand in a node.
+* **external dependencies**: other non-members supplying at least 5% of the anchors' demand in a node;
+* **development hosts**: non-members whose only role is development host (below): listed with the
+  compact as development partners for its BUILD nodes, outside the coalition and its target.
 
 **Compact or not.** The anchors' coverage through their existing relationships (state B, no
 coordination) is the fragmented baseline. A group is a `candidate compact` only when its coalition
@@ -505,12 +639,15 @@ it is `compact unnecessary`; a coalition of fewer than 3 countries is a `bilater
 sufficient`.
 
 **Roles** come from the results: demand anchor; specialized supplier (RCA >= 1 and >= 5% of the
-anchors' optimized supply, Midstream) or resource supplier (the same, Upstream); capacity-building /
-investment host (a leading host of a BUILD node); technology partner (RCA >= 1 and >= 5% of world
+anchors' optimized supply, Midstream) or resource supplier (the same, Upstream); scaling host and
+specialty host (one of the five leading hosts of that type in a BUILD node, in the coalition; a
+prospective host when that is its only basis; `investment_hosts` and `specialty_hosts`); development
+host (one of the three leading development hosts of a BUILD node, member or not; `development_hosts`;
+the role was "capacity-building / investment host" before the host types); technology partner (RCA >= 1 and >= 5% of world
 exports in a BUILD or MANAGE node); bridge partner (supplies one node and is a large loser of another,
 supplies several stages, or sits in several compacts' coalitions); the tiers above. A country can
-hold several roles; `aib_compact_members.csv` carries `coalition_tier`, `critical_supplier` and
-`substitutable_by`.
+hold several roles; `aib_compact_members.csv` carries `coalition_tier`, `membership_basis`,
+`critical_supplier`, `loo_critical` (current supply), `loo_critical_simulated` and `substitutable_by`.
 
 **Archetype** from the lost-supply-weighted class mix: Trade / Coordination (COORDINATE dominant,
 >= 60%), Investment / Capacity (BUILD), Specialization (MANAGE), otherwise Integrated. The full mix
@@ -521,7 +658,7 @@ minimum coalition has fewer than 3 countries is a bilateral arrangement, not a c
 **Coverage comparison** per compact (demand-scope demand of its nodes): shock (static) -> existing
 relationships -> trade compact (every economy keeps its existing-relationship response and the
 minimum coalition's members may also open or expand relationships, so it is never below the existing
-state) -> trade + investment (the 10% increment at up to two member hosts per BUILD node). The optimum with every economy coordinating is reported apart
+state) -> trade + investment (the 10% increment, capped at each host's scale, at up to two member hosts per BUILD node). The optimum with every economy coordinating is reported apart
 (`coverage_global_optimum`).
 
 ## 11. Relationship to Gates & Fences
@@ -597,15 +734,17 @@ coverage stays at the static 76.1%.
 | `allied_trade_partnerships.csv` | node x shock x scenario x exporter x importer | optimized new / expanded relationships: baseline and optimized USD, share of the importer's loss restored, RCA, world share, Partnership Opportunity, compatibility |
 | `allied_trade_frontier.csv` | node / stage x shock x semantics x supply constraint x scenario x max supplier share | coverage, coverage loss vs unconstrained, HHI, largest and top-three shares, specialization score, instantaneous and re-optimized N-1 coverage, tightest costless share, minimum required diversification |
 | `allied_trade_growth_sensitivity.csv` | node x scenario x growth bound | existing coverage, dividend and class at 1.25x / 2x / 4x / unlimited |
-| `allied_investment_partnerships.csv` | node x shock x host x increment | marginal resilience gain, residual gap before / after, HHI and largest-share change, capability, Friendshore, rank |
+| `allied_investment_partnerships.csv` | node x shock x host x increment | marginal resilience gain, residual gap before / after, HHI and largest-share change, capability, Friendshore, the increment simulated (`host_increment`, capped at the host's scale), rank, `gain_shortlist`, `rank_basis` |
 | `allied_investment_pairs.csv` | node x shock x investor x host | supply from the new capacity, Friendshore |
+| `allied_investment_screened_hosts.csv` | node x shock x screened host x increment | the hosts the alignment screen keeps out, simulated unranked: the same columns, `bloc`, `screen_reason`, `alignment_cost` and the best screened and eligible gains |
+| `aib_host_screen.csv` | candidate partner | UNGA bloc, in the demand scope, screened or not (with the reason) |
 | `emergent_aib_edges.csv` | supplier x buyer x scenario | the emergent network: trade and investment selections, contributions, stage participation, Partnership Opportunity, Friendshore |
 | `emergent_aib_country_summary.csv` | economy x scenario | roles kept apart |
 | `aib_node_classification.csv` | node | class, multi-label policy needs, reason, physical validation and warning, continuous results, the class under every other variant |
 | `aib_compact_candidates.csv` | supply constraint x compact | the compact summary (exact and greedy coalitions, tiers, roles, coverage comparison, policy needs, physical warnings) |
 | `aib_compact_nodes.csv` | compact x node x technology | the Gates & Fences handoff table |
 | `aib_compact_members.csv`, `aib_compact_coalition_path.csv` | compact x economy / step | roles and coalition tiers; coverage as members are added (greedy path) |
-| `aib_compact_leave_one_out.csv` | compact x node x supplier | the leave-one-country-out test |
+| `aib_compact_leave_one_out.csv` | compact x node x supplier | the leave-one-country-out test (current supply; with simulated capacity apart) |
 | `aib_diversification.csv` | node x scenario | the diversification scenario: current vs benchmark HHI, cap, capped suppliers, supply to replace, coverage after existing and optimized trade, capacity gap, hosts |
 | `allied_subsector_data_quality.csv` | node | flags and category |
 | `aib_validation_cases.csv` / `.md` | supply constraint x case x step | validation chains, trade-only and production-constrained |
@@ -676,7 +815,12 @@ document also carries the optional `strategic` section (section 16.9).
 confidence, 27 usable with caution, 3 insufficient for optimization; 74 optimized; all in the
 strategic scope. Headline: allied demand scope (core and partner tiers, 57 economies), global
 candidate partners, China removed, hold, production-constrained, reallocation. The 2026-10-16 run on
-the OSI basket (70 nodes in scope, BUILD 37, 22 compacts) is in the git history.
+the OSI basket (70 nodes in scope, BUILD 37, 22 compacts) is in the git history. The headline run was
+redone on 2026-10-20 with the host-scale cap and the host types (section 7) and the prospective-host and
+development-host tiers (section 10), then with the alignment screen and the scale shortlist (section 7;
+the run before them is in `aib_before_hostscreen/`); the trade model, classes and coverage figures below
+are unchanged by it, the hosts and compacts are the 2026-10-20 ones (the last bullet on hosts gives what
+the screen changed). The global and extended sensitivity runs were not redone and keep the old host ranking.
 
 * The allied scope's traded demand in these nodes is USD 1,587bn and China's removal takes 22.9% of it
   (USD 364bn). Coverage goes from 77.1% (static) to 83.9% with existing relationships and 84.1% with
@@ -706,14 +850,86 @@ the OSI basket (70 nodes in scope, BUILD 37, 22 compacts) is in the git history.
   codes): 97 nodes, 94 optimized; BUILD 48, LOW 44, COORDINATE 2 (the same two); exposure 19.5% of
   USD 2,343bn, optimized coverage 87.1%, gap USD 302bn; silicon metal joins the BUILD + MANAGE
   SPECIALIZATION nodes; 39 compacts.
-* 33 candidate compacts: 31 Investment / Capacity and 2 Trade / Coordination (graphite electrodes;
-  hydro turbine parts). The multi-node ones: Li-ion cells with electric buses and trucks; power
-  electronics components, converters and power semiconductors; heat-pump compressors, heat pumps and
-  motors; PV cover glass with modules; non-oriented electrical steel with motor parts; wafers with
-  solar cells; magnets with wind turbine generating sets; lithium chemicals with cathode materials;
-  furnace parts with electric furnaces. The other 24 are single nodes, from electric cars to
-  piezo-electric quartz. The exact and greedy coalitions have the same size in all 33 and different
-  members in 15.
+* **Investment hosts** (49 nodes simulated under the headline shock). With each host's increment capped
+  at its current output, the rank-1 host's median world export share is 9.2% (1.5% with the old
+  standardized increment), one rank-1 host exports under 2% of the world total (34 before; the one is a
+  producer, Chile in lithium minerals, by production share), the median rank-1 host is the third-largest
+  exporter (11th) and the largest non-China exporter is first in 19 nodes (1). The resilience gain now
+  decides rank 1 in 23 nodes, the HHI change in 20 and capability in 6; the median node has 2 hosts tied
+  on the gain (19 before); the increment is capped at 12 rank-1 hosts. Before -> after (top three):
+  grain-oriented electrical steel AUT, NLD, ITA -> DEU, RUS, KOR (DEU, KOR, JPN once Russia is screened;
+  Japan, 25% of world exports, would pass the 40% limit); accumulator parts AUT, SRB, PHL -> JPN, KOR, POL; cathode materials BEL, GBR, IDN ->
+  JPN, USA, DEU (Korea, 51%, is above the 40% limit: no diversified gain, ranked 20th); Li-ion cells FIN,
+  NLD, CAN -> USA, POL, HUN; synthetic graphite IDN, CAN, MDG -> JPN, DEU, USA; power electronics
+  components MYS, CZE, AUT -> JPN, PHL, MEX; converters CZE, FIN, AUT -> DEU, THA, JPN; permanent
+  magnets TWN, MMR, AUS -> JPN, VNM, PHL; electrolysers TWN, TUR, NOR -> DEU, USA, JPN; polysilicon DNK,
+  KOR, ITA -> MYS, JPN, DEU; lithium minerals unchanged (CHL, ARG, BRA by production share; Australia,
+  53% of exports, ties on the gain and ranks 12th because adding to it raises concentration most).
+  The cost is concentration of the host role: Germany and Japan are first in
+  21 nodes, the rank-1 host's median HHI change is +0.017 (-0.003 before), and in the emergent network
+  Germany holds 297 selected investment relationships (14 before) and Japan 259 (2), while Sweden (166),
+  Czechia (56), Portugal (42), Ireland (32), Belgium (23) and Austria (20) hold none.
+  `host_scale_multiple: 2` (at most tripling) gives mid-sized hosts instead (rank-1 median share 4.9%,
+  largest non-China exporter first in 2 nodes).
+* **Host types.** Every one of the 49 nodes has a scaling host (Japan first in 11, Germany in 10; 36 of the
+  49 are high-income, 9 upper-middle-income, among them Thailand, Malaysia and Türkiye); 22 have a specialty
+  host (median RCA 5.5 on a 2.5% world share: Austria, Bulgaria, Finland, Greece and Slovakia first in two
+  each); all 49 have a development host (Viet Nam first in 16, India 11, Serbia and Türkiye 5; median
+  Development Potential Index 0.83). Top three by type: grain-oriented steel DEU, RUS, KOR (DEU, KOR, JPN
+  after the screen) / POL / TUR, IND, MYS; accumulator parts JPN, KOR / SVK, HUN, POL / SRB, VNM, TUR; Li-ion cells USA, POL, HUN / FIN /
+  VNM, MYS; static converters DEU / FIN, HUN, EST / VNM, IND, MYS; transformers TUR, KOR, MEX / HRV, AUT,
+  SVN / VNM, IND, COL; PV modules THA, VNM, IND / none / MYS, IDN, MEX; cathode materials JPN, KOR / none /
+  TUR, ZAF, IDN. Only one specialty host joins a coalition (Spain); the solver rarely needs their small
+  capacity. Development hosts hold 100 compact roles, 74 of them outside the coalition (62 with no other
+  role: tier development host): India in 18 compacts, Türkiye and Viet Nam in 13, Malaysia in 12.
+  The types change the coalitions of 6 compacts and add 11 memberships (176 -> 187): the five best hosts
+  used to include hosts of no type (high-income generalists below scale, such as the United States and
+  Italy in heat pumps) and middle-income hosts below scale (Mexico in motor parts), whose simulated capacity
+  no longer counts, so the heat-pump, magnet and motor chain needs 12 members instead of 7, synthetic
+  graphite 10 instead of 7 and lithium chemicals with cathodes 8 instead of 6. The investment response
+  adds 1 point less anchor coverage (demand-weighted 83.5% after investment, 84.4% before the types).
+* 31 compacts (33 with the old ranking; the leading hosts enter the partner vectors that group nodes):
+  29 Investment / Capacity and 2 Trade / Coordination (graphite electrodes; hydro turbine parts); 30
+  candidate compacts and 1 bilateral arrangement (gallium, germanium and indium: Korea and the United
+  States). The multi-node ones: Li-ion cells
+  with electric buses and trucks; power electronics components, converters and power semiconductors;
+  heat-pump compressors, heat pumps, permanent magnets, motor parts and motors; PV cover glass, solar
+  cells and modules; sensors with wafers; lithium chemicals with cathode materials; furnace parts with
+  electric furnaces; rare-earth metals with oxides. The other 23 are single nodes, from electric cars to
+  piezo-electric quartz. The exact and greedy coalitions have the same size in all 31 and different
+  members in 8. Coalitions total 187 memberships (196 with the old ranking). Austria leaves all three
+  coalitions it was in (power electronics, accumulator parts, synthetic graphite), Switzerland one of two
+  and the Netherlands two of seven. Seven memberships are prospective hosts, all scaling hosts: Finland
+  (cobalt), Spain and Greece (manganese dioxide), Mexico (electricity meters), Malaysia (rare earths),
+  Taiwan (piezo-electric quartz) and Viet Nam (solar). The investment response adds 14.5 points of
+  anchor coverage on average with the scale cap alone (17.9 with the old ranking): capped hosts add less.
+* **Alignment screen and scale shortlist** (the last 2026-10-20 rerun). 48 of the 204 candidate partners
+  are screened. Headline: one rank-1 host changes (rare-earth oxides: Myanmar -> United States, the same
+  10-point gain) and the top five of 9 nodes. Russia leaves grain-oriented steel, Nigeria lithium minerals,
+  Laos solar cells, Myanmar and Laos rare-earth oxides. The shortlist brings large exporters without
+  RCA >= 1 into five top fives: Germany second in power electronics (9.0 points) and fifth in transformers,
+  the United States third in motor parts and fourth in electric motors and static converters. Screened
+  hosts are simulated in 26 headline nodes and the alignment cost is 0 in all of them: an eligible host
+  adds as much (Myanmar and Laos 10.0 points in rare-earth oxides, Russia 7.0 in grain-oriented steel,
+  Nigeria, Zimbabwe and Russia 9.2 in lithium minerals). Elsewhere it is not. Under the largest-supplier
+  shock Iran would add 4.2 points more than the best eligible host in nuclear special materials (16.7
+  against 12.5), China 1.6 in nuclear reactors and enrichment machinery and 1.0 in electric cars, the UAE
+  0.9 in copper wire and rod (conservative); under the diversification scenario Russia 4.7 in reactor parts
+  (conservative). Rank 1 changes in 22 node-variants in all. The emergent network loses the 138 selected
+  investment relationships of screened hosts (1,159 -> 1,106); Germany keeps 297, Japan 270. Compacts go
+  from 31 to 28 and memberships from 187 to 167, because the hosts enter the partner vectors that group
+  nodes: the battery chain (Li-ion cells with buses, accumulator parts, battery foil and electrolyte,
+  natural and synthetic graphite) is one compact of 10 members (DEU HUN IND JPN KOR MDG MOZ POL USA VNM)
+  instead of five with 32 memberships, and electric cars join motors and motor parts (6 members) while
+  heat-pump compressors with heat pumps (6) and permanent magnets (8) stand apart (one 12-member chain and
+  electric cars, 6, before). No class changes, the same 44 intervention nodes sit in compacts, the
+  prospective hosts are the same, and the investment response gives 83.9% anchor coverage (83.4% before).
+  Russia is in one compact table only, as an external dependency of grain-oriented steel.
+* **Coalition rule, not changed.** With no simulated capacity at all, 26 of the 31 compacts still reach
+  95%, but several coalitions grow sharply (ferrite magnets 6 -> 26 members, accumulator parts 5 -> 11,
+  natural graphite 5 -> 11); Li-ion cells, the heat-pump and motor chain, lithium chemicals and
+  cathodes, synthetic graphite and piezo-electric quartz do not reach it. The rule therefore still lets
+  the leading hosts' simulated capacity count, and labels the members it brings in.
 * **Diversification scenario** (headline variant). 39 of the 74 optimized nodes are more concentrated
   than their benchmark (34 against the other lines of their heading, 5 against their sector's other
   nodes); 35 are already as diversified. In 38 a supplier is above the cap in the allied market
@@ -722,7 +938,9 @@ the OSI basket (70 nodes in scope, BUILD 37, 22 compacts) is in the git history.
   82.2% before trade, 86.8% with existing relationships, 86.9% optimized) and USD 86bn is left for new
   capacity. China is capped in 26 nodes, Germany in 6, the United States in 5, Japan in 4. The largest
   gaps: Li-ion cells and packs (HHI 0.38 against 0.09 for the other accumulators of heading 8507; a 12%
-  cap; 48% of demand, USD 52bn; hosts MYS, FIN, VNM) and PV modules (0.36 against 0.12; 32%, USD 14bn).
+  cap; 48% of demand, USD 52bn; scaling hosts USA, HUN, POL, specialty FIN, development VNM, MYS; the old
+ranking had MYS, FIN, VNM) and PV modules (0.36 against 0.12; 32%, USD 14bn; scaling hosts THA, IND,
+VNM, development MYS, IDN, MEX; were USA, DNK, PRT).
   Electric cars are only mildly over-concentrated (0.13 against 0.10 for the petrol, diesel and hybrid
   cars of heading 8703): the 18% cap binds on Germany, whose excess is 7% of allied demand; trade
   replaces two thirds of it and leaves 2.6% (USD 4.6bn). Rare-earth permanent magnets (0.43 against
@@ -745,6 +963,15 @@ the OSI basket (70 nodes in scope, BUILD 37, 22 compacts) is in the git history.
 * Partnership Opportunity and Friendshore are technology-stage indices, not sub-sector ones.
 * The coalition test pools members' supply without link restrictions (state C logic) and uses the
   headline supplier-share limit.
+* The host-scale cap measures scale by exports (or production share times world trade), so a host
+  whose output is consumed at home looks smaller than it is, and greenfield entry (a host qualified
+  only through a linked node) gets no increment at all. It favours established producers; the
+  multiple (`host_scale_multiple`) sets how far.
+* The host alignment screen reads UNGA voting with hard blocs and quartile cuts, a coarse proxy for
+  where allied capital can go: it screens Kazakhstan, the UAE and Egypt but keeps Saudi Arabia, India and
+  Brazil (nonaligned), and it says nothing about sanctions, investment screening or political risk
+  inside a bloc. Its cost is reported (`alignment_cost`), not hidden; `config/geopolitical_distance.yml`
+  `tau` > 0 gives smoothed blocs for a sensitivity.
 * The physical rule decides who can supply, not how much: listed producers keep their full trade
   response even where their production is small, and unlisted exporters with real but unrecorded
   production (lumped into "rest of world" by the proxy) are held at their current shipments. Exposure

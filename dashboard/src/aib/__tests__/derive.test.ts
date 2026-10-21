@@ -43,7 +43,7 @@ import { AIB_NAV, aibNavKeyOf as shellAibNavKeyOf, MODULES, placeOf } from '../.
 import { pageTitle } from '../../shell/title.ts';
 import { countryEdges, countryRoleMatrix, countryRolesOf, edgeWords, everyShock, fmtPts, namedRoles, roleHolders, sideLevel } from '../derive/network.ts';
 import { cellWords } from '../views/networkParts.tsx';
-import { hostRanksOf, hostsOfNode, investmentPairs, investorHostFlows, partnerTotals, rankWords } from '../derive/investment.ts';
+import { hostRanksOf, hostsOfNode, investmentPairs, investorHostFlows, partnerTotals, rankWords, screenedHostNote } from '../derive/investment.ts';
 import { readDoc, stripDiversify, stripMethodology, SYNTHETIC_DIR, toMasterTaxonomy } from './fixture.ts';
 import {
   aboveWords, basisWords, benchmarkWords, cappedWords, demandSplit, DIVERSIFY_STATUS_WORDS, diversifyClassText, diversifyCsvRow, diversifyIndices, diversifyLabel, diversifyRow, diversifyRows,
@@ -422,14 +422,14 @@ describe('coalition: exact, greedy and tiers', () => {
     expect(coalitionMembersOf(c01)).toBe(c01.coalition.members);
   });
 
-  it('the six tiers in order, each economy once, with critical and leave-one-out flags and single substitutes', () => {
+  it('the eight tiers in order, each economy once, with critical and leave-one-out flags and single substitutes', () => {
     const shares = tierShares(doc.compacts);
     expect(shares).toEqual({ criticalMin: '1%', externalMin: '5%' });
     const g = coalitionTiers(c01, names, doc.meta.targets, shares);
     expect(g.map((x) => x.label)).toEqual([
-      'Core coordinating members', 'Critical supply partners', 'Associate partners', 'Critical external dependencies', 'Critical external dependencies (marginal)', 'External dependencies',
+      'Core coordinating members', 'Critical supply partners', 'Prospective hosts', 'Associate partners', 'Critical external dependencies', 'Critical external dependencies (marginal)', 'External dependencies', 'Development hosts',
     ]);
-    expect(g.map((x) => x.economies.map((e) => e.iso3))).toEqual([['AAA', 'BBB', 'DDD', 'EEE', 'FFF'], ['CCC'], ['GGG'], ['HHH'], ['JJJ'], ['III']]);
+    expect(g.map((x) => x.economies.map((e) => e.iso3))).toEqual([['AAA', 'BBB', 'DDD', 'EEE', 'FFF'], ['CCC'], [], ['GGG'], ['HHH'], ['JJJ'], ['III'], []]);
     const ccc = g[1].economies[0];
     // a critical supply partner has no single substitute: two economies together replace it
     expect(ccc).toMatchObject({ critical: true, looCritical: true, substitutes: [], substitutesNeeded: 2, member: true });
@@ -437,19 +437,27 @@ describe('coalition: exact, greedy and tiers', () => {
     expect(ccc.roles).toEqual(['Specialized supplier', 'Technology partner']);
     expect(g[0].economies[0]).toMatchObject({ iso3: 'AAA', anchor: true, critical: false, looCritical: false, substitutesNeeded: 0 });
     expect(g[0].economies.find((e) => e.iso3 === 'EEE')).toMatchObject({ substitutes: ['GGG', 'HHH'], substituteNames: ['Genovia', 'Hyperborea'], substitutesNeeded: 1, looCritical: true });
-    expect(g[3].economies[0].critical).toBe(true);
-    expect(g[4].economies[0]).toMatchObject({ iso3: 'JJJ', critical: true, member: false, substitutesNeeded: null });
+    expect(g[4].economies[0].critical).toBe(true);
+    expect(g[5].economies[0]).toMatchObject({ iso3: 'JJJ', critical: true, member: false, substitutesNeeded: null });
     // what each tier means
-    expect(g[0].meaning).toMatch(/that are not critical supply partners: the demand anchors, and suppliers one other candidate could replace/);
+    expect(g[0].meaning).toMatch(/that are not critical supply partners or prospective hosts: the demand anchors, and suppliers one other candidate could replace/);
     expect(g[1].meaning).toMatch(/no single other candidate can replace: without one, only several other economies together restore the target, or none does/);
-    expect(g[2].meaning).toMatch(/^The fewest additions to the core coalition, held in, that reach the 99% target\. The 99% minimum coalition solved on its own need not contain the core\.$/);
-    expect(g[3].meaning).toMatch(/each supplies at least 1% of the demand anchors' demand there/);
-    expect(g[4].meaning).toMatch(/under 1% of the anchors' demand there: critical only because the coalition sits near the target/);
-    expect(g[5].meaning).toMatch(/at least 5% of the demand anchors' demand/);
-    // members = core + critical supply partners
-    expect([...g[0].economies, ...g[1].economies].map((e) => e.iso3).sort()).toEqual([...c01.coalition.members].sort());
+    expect(g[2].meaning).toMatch(/only for the new capacity the model simulates at them .* neither core members nor critical\. The capacity is hypothetical\.$/);
+    expect(g[3].meaning).toMatch(/^The fewest additions to the core coalition, held in, that reach the 99% target\. The 99% minimum coalition solved on its own need not contain the core\.$/);
+    expect(g[4].meaning).toMatch(/each supplies at least 1% of the demand anchors' demand there/);
+    expect(g[5].meaning).toMatch(/under 1% of the anchors' demand there: critical only because the coalition sits near the target/);
+    expect(g[6].meaning).toMatch(/at least 5% of the demand anchors' demand/);
+    // members = core + critical supply partners + prospective hosts
+    expect([...g[0].economies, ...g[1].economies, ...g[2].economies].map((e) => e.iso3).sort()).toEqual([...c01.coalition.members].sort());
     // associates that do not reach the top target say so; an unreached middle target qualifies the core and critical tiers
-    expect(coalitionTiers(c02, names, doc.meta.targets)[2].meaning).toMatch(/\(here no additions reach it\)/);
+    expect(coalitionTiers(c02, names, doc.meta.targets)[3].meaning).toMatch(/\(here no additions reach it\)/);
+    // a member in only for the capacity it would host: its written tier, or the coalition's list when the roles carry none
+    const withTier = { ...c01, roles: c01.roles.map((r) => (r.iso3 === 'DDD' ? { ...r, tier: 'prospective host' } : r)) };
+    expect(tierEconomies(withTier, names).find((e) => e.iso3 === 'DDD')).toMatchObject({ tier: 'prospective host', member: true });
+    const listed = { ...c01, coalition: { ...c01.coalition, prospectiveHosts: ['DDD'] }, roles: c01.roles.map((r) => (r.iso3 === 'DDD' ? { ...r, tier: null } : r)) };
+    const gp = coalitionTiers(listed, names, doc.meta.targets);
+    expect(gp[2].economies.map((e) => e.iso3)).toEqual(['DDD']);
+    expect(gp[0].economies.map((e) => e.iso3)).not.toContain('DDD');
     const g3 = coalitionTiers(c03, names, doc.meta.targets);
     expect(g3[0].meaning).toMatch(/^No coalition reaches the 95% target: the members are the widest coalition the greedy path found/);
     expect(g3[1]).toMatchObject({ economies: [] });
@@ -508,9 +516,11 @@ describe('role matrix', () => {
   it('canonical roles, the long Supplier form included; unknown roles are kept aside', () => {
     expect(canonicalRole('Supplier (coalition member)')).toBe('Supplier');
     expect(canonicalRole('demand anchor')).toBe('Demand anchor');
-    expect(canonicalRole('Capacity-building / investment host')).toBe('Capacity-building / investment host');
+    // the host role's name before the host types reads as a scaling host
+    expect(canonicalRole('Capacity-building / investment host')).toBe('Scaling host');
+    expect(canonicalRole('Development host')).toBe('Development host');
     expect(canonicalRole('Cheerleader')).toBeNull();
-    expect(ROLE_ORDER).toHaveLength(8);
+    expect(ROLE_ORDER).toHaveLength(10);
   });
 
   it('one row per economy, several roles each, with its tier; anchors first, members, associates, then external dependencies', () => {
@@ -525,7 +535,8 @@ describe('role matrix', () => {
     expect(rows.find((r) => r.iso3 === 'GGG')).toMatchObject({ member: false, tier: 'associate partner' });
     expect(rows.find((r) => r.iso3 === 'HHH')).toMatchObject({ member: false, tier: 'critical external dependency', roles: {}, other: [] });
     expect(rows.find((r) => r.iso3 === 'III')).toMatchObject({ member: false, tier: 'external dependency' });
-    expect(rolesUsed(rows)).toEqual([...ROLE_ORDER]);
+    // the fixture predates the specialty and development hosts
+    expect(rolesUsed(rows)).toEqual(ROLE_ORDER.filter((r) => r !== 'Specialty host' && r !== 'Development host'));
     const odd = roleMatrix({ ...c01, roles: [{ iso3: 'QQQ', role: 'Cheerleader', basis: 'b', member: true }] }, names);
     expect(odd[0]).toMatchObject({ name: 'QQQ', other: [{ role: 'Cheerleader', basis: 'b' }] });
   });
@@ -1104,6 +1115,18 @@ describe('emergent network roles and investment flows (2026-10-17)', () => {
     expect(hostRanksOf(doc, 'EEE').map((h) => h.rank)).toEqual([2]);
     expect([rankWords(1), rankWords(2, 5), rankWords(3), rankWords(4, 5)]).toEqual(['best host', '2nd of 5', '3rd', '4th of 5']);
     expect(investmentPairs(stripMethodology(structuredClone(doc)), NO_FILTER)).toEqual([]);
+  });
+
+  it('the alignment screen in words: the screened host, its gain and what the screen costs', () => {
+    const names: Record<string, string> = { IRN: 'Iran', MMR: 'Myanmar' };
+    const nm = (iso3: string) => names[iso3] ?? iso3;
+    expect(screenedHostNote({ screenedHost: { host: 'IRN', gain: 0.167, cost: 0.042 } }, nm)).toBe(
+      'Iran (+16.7 pp of coverage) is not a host: the best eligible host adds 4.2 pp less',
+    );
+    expect(screenedHostNote({ screenedHost: { host: 'MMR', gain: 0.1, cost: 0 } }, nm)).toBe('Myanmar (+10.0 pp of coverage) is not a host: an eligible host adds as much');
+    // a cost under 0.05 pp reads as none; no screened host, no note
+    expect(screenedHostNote({ screenedHost: { host: 'MMR', gain: 0.1, cost: 0.0004 } }, nm)).toMatch(/adds as much$/);
+    expect(screenedHostNote({}, nm)).toBeNull();
   });
 });
 

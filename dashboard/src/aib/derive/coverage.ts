@@ -31,7 +31,7 @@ export const COVERAGE_STEPS: readonly Omit<CoverageStep, 'value'>[] = [
     key: 'investment',
     label: 'Trade + investment response',
     short: '+ Investment',
-    meaning: 'the trade compact plus the standardized synthetic capacity increment at up to two member hosts in each BUILD node',
+    meaning: 'the trade compact plus the synthetic capacity increment (capped at each host’s current output) at up to two member hosts in each BUILD node',
   },
 ];
 

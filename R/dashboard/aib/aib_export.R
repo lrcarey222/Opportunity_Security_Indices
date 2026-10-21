@@ -19,6 +19,13 @@
 # (meta.supplyScenarios then holds the supply scenarios), node.baseline, the run fields of node.diversify,
 # compact.managed and compact.baseline; the Managed Interdependence and Baseline scenarios are separate
 # documents (aib_dash_scenario_managed(), aib_dash_scenario_baseline(); schema osi-aib-scenario). Added
+# 2026-10-20 (optional): coalition.prospectiveHosts (members in only for the simulated capacity they would
+# host; their roles carry the tier "prospective host") and, per ranked host, hostIncrement (the increment
+# simulated there, capped at the host's scale) and rankBasis (the criterion that placed it); the host types:
+# node / compact / node.diversify specialtyHosts and developmentHosts beside hosts (the scaling hosts), the
+# ranked hosts' type (scaling, specialty, development or none), roles "Scaling host" (was "Capacity-building /
+# investment host"), "Specialty host", "Development host" and the tier "development host"; node.screenedHost
+# (host, gain, cost), the best host the alignment screen keeps out and what the screen costs.
 # 2026-10-20 (optional): `strategic`, the strategic layer of scripts/33 (Strategic Sectoral Compacts, their
 # workstreams, Strategic AIB Roles, compact-specific country roles and bilateral theses; aib_dash_strategic()).
 
@@ -62,6 +69,9 @@ aib_dash_nodes <- function(res) {
   }
   gr <- res$growth
   if (!is.null(gr) && nrow(gr)) gr <- gr[gr$scenario == res$meta$headline_scenario, , drop = FALSE]
+  # A screened host is shown only where it would add something: a gain of at least the ranking's tie margin.
+  ti <- res$meta$config$investment$tie_resilience
+  screen_min_gain <- if (is.null(ti)) 0.005 else as.numeric(ti)
   # The observed (Baseline) supply of each optimized node (res$baseline_supply, scripts/32).
   bs <- res$baseline_supply
   # The diversification scenario (res$diversification, scripts/32): the headline scenario's row per node.
@@ -130,6 +140,8 @@ aib_dash_nodes <- function(res) {
           optimized = aib_dash_round(aib_dash_col(d, "optimized_coverage")), residual = aib_dash_round(aib_dash_col(d, "residual_gap")),
           residualUsd = aib_dash_round(aib_dash_col(d, "residual_gap_usd"), 0),
           hosts = aib_dash_split(aib_dash_col(d, "priority_investment_hosts"), "; "),
+          specialtyHosts = aib_dash_split(aib_dash_col(d, "specialty_hosts"), "; "),
+          developmentHosts = aib_dash_split(aib_dash_col(d, "development_hosts"), "; "),
           partners = aib_dash_chr(aib_dash_col(d, "key_trade_partners")),
           # A class only where the scenario ran (the node is above its benchmark).
           cls = if (identical(d$status, "diversified to the benchmark")) aib_dash_chr(aib_dash_col(d, "diversify_class")) else NA_character_,
@@ -157,8 +169,20 @@ aib_dash_nodes <- function(res) {
       largest = r$optimized_largest_supplier,
       largestShare = aib_dash_round(r$optimized_largest_share),
       hhi = aib_dash_round(r$optimized_hhi),
+      # The leading hosts by type (2026-10-20): scaling (hosts), specialty and development.
       hosts = aib_dash_split(r$priority_investment_hosts, "; "),
+      specialtyHosts = aib_dash_split(aib_dash_col(r, "specialty_hosts"), "; "),
+      developmentHosts = aib_dash_split(aib_dash_col(r, "development_hosts"), "; "),
       bestGain = aib_dash_round(r$best_marginal_gain),
+      # The best host the alignment screen keeps out, its gain and the alignment cost (the gain the
+      # eligible hosts fall short of it by, 0 when one does as well); absent where no host was screened
+      # or the screened host would add less than the tie margin (aib_node_classification.csv has them all).
+      screenedHost = {
+        sh <- aib_dash_chr(aib_dash_col(r, "screened_host"))
+        sg <- suppressWarnings(as.numeric(aib_dash_col(r, "screened_host_gain")))
+        if (is.na(sh) || is.na(sg) || sg < screen_min_gain - 1e-12) NULL else
+          list(host = sh, gain = aib_dash_round(sg, 5), cost = aib_dash_round(aib_dash_col(r, "alignment_cost"), 5))
+      },
       partners = if (nrow(t)) t$key_trade_partners[1] else NA_character_,
       treatment = if (nrow(t)) t$recommended_policy_treatment[1] else NA_character_,
       compact = if (nrow(t) && !is.na(t$compact_id[1]) && nzchar(t$compact_id[1])) t$compact_id[1] else NA_character_,
@@ -300,6 +324,8 @@ aib_dash_compact <- function(cp, res, top_edges = 40, shock = res$meta$headline_
       method = aib_dash_chr(aib_dash_col(cp, "coalition_method")),
       greedy = aib_dash_split(aib_dash_col(cp, "greedy_sufficient_coalition")),
       criticalPartners = aib_dash_split(aib_dash_col(cp, "critical_supply_partners")),
+      # Members in only for the simulated capacity they would host (their tier: "prospective host").
+      prospectiveHosts = aib_dash_split(aib_dash_col(cp, "prospective_hosts")),
       criticalExternal = aib_dash_split(aib_dash_col(cp, "critical_external_dependencies")),
       criticalExternalMarginal = aib_dash_split(aib_dash_col(cp, "critical_external_dependencies_marginal")),
       associatesReach99 = isTRUE(as.logical(aib_dash_col(cp, "associates_reach_99"))),
@@ -310,6 +336,8 @@ aib_dash_compact <- function(cp, res, top_edges = 40, shock = res$meta$headline_
     anchors = aib_dash_split(cp$demand_anchors),
     suppliers = aib_dash_split(cp$specialized_suppliers),
     hosts = aib_dash_split(cp$investment_hosts),
+    specialtyHosts = aib_dash_split(aib_dash_col(cp, "specialty_hosts")),
+    developmentHosts = aib_dash_split(aib_dash_col(cp, "development_hosts")),
     technologyPartners = aib_dash_split(cp$technology_partners),
     bridges = aib_dash_split(cp$bridge_partners),
     associates = aib_dash_split(cp$associate_partners),
@@ -460,7 +488,10 @@ aib_dash_investment_flows <- function(res, max_rank = 5L, shock = res$meta$headl
       after = aib_dash_round(hosts$coverage_after[k]), newCapacityUsed = aib_dash_round(aib_dash_col(hosts[k, ], "new_capacity_used"), 5),
       servedUsd = aib_dash_round(aib_dash_col(hosts[k, ], "additional_demand_served_usd"), 0),
       capabilityTier = suppressWarnings(as.integer(aib_dash_col(hosts[k, ], "capability_tier"))),
-      capabilityBasis = aib_dash_chr(aib_dash_col(hosts[k, ], "capability_basis"))
+      capabilityBasis = aib_dash_chr(aib_dash_col(hosts[k, ], "capability_basis")),
+      hostIncrement = aib_dash_round(aib_dash_col(hosts[k, ], "host_increment"), 5),
+      type = aib_dash_chr(aib_dash_col(hosts[k, ], "host_type")),
+      rankBasis = aib_dash_chr(aib_dash_col(hosts[k, ], "rank_basis"))
     ))
   )
 }
@@ -496,7 +527,7 @@ aib_dash_bundle <- function(res, top_edges = 40, strategic = NULL) {
                                          unlist(lapply(c$trade, function(t) c(t$from, t$to))), unlist(lapply(c$investment, function(t) c(t$investor, t$host))),
                                          aib_dash_tuple_codes(c$baseline$suppliers)))),
     unlist(lapply(nodes, function(n) c(n$baseLargest, n$largest, unlist(n$hosts), n$baseline$largest, aib_dash_tuple_codes(n$baseline$suppliers),
-                                       if (is.list(n$diversify)) n$diversify$largest))),
+                                       if (is.list(n$diversify)) n$diversify$largest, if (is.list(n$screenedHost)) n$screenedHost$host))),
     aib_dash_strategic_codes(strategic)
   ))
   names_out <- aib_dash_country_names(res, codes)

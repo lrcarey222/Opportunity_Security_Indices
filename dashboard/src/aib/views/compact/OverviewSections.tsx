@@ -624,7 +624,7 @@ export function WhySection({ title = 'Why it exists' }: { title?: string } = {})
       : []),
     { key: 'dividend', label: 'Coordination dividend', value: fmtPp(m.dividend), sub: "coverage the members' new and expanded relationships add over existing relationships alone", raw: m.dividend },
     { key: 'residual', label: 'Residual gap after trade', value: fmtShare(m.residual), sub: 'demand the trade compact still cannot serve', raw: m.residual },
-    { key: 'residualInv', label: 'Residual gap after investment', value: fmtShare(m.residualAfterInvestment), sub: 'after the standardized increment at member hosts in its BUILD nodes', raw: m.residualAfterInvestment },
+    { key: 'residualInv', label: 'Residual gap after investment', value: fmtShare(m.residualAfterInvestment), sub: 'after the synthetic increment (capped at each host’s current output) at member hosts in its BUILD nodes', raw: m.residualAfterInvestment },
     {
       key: 'concentration',
       label: 'Concentration',

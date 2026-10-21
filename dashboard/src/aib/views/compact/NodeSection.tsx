@@ -34,6 +34,7 @@ import { ACCEPTABLE_COVERAGE, COSTLESS_COLOR, FrontierChart, REQUIRED_COLOR } fr
 import { capLabel, FRONTIER_SERIES, frontierReadings, frontierRows, hasReoptimizedN1, INSTANTANEOUS_N1_LABEL, N1_REOPTIMIZED_LABEL, nodesWithFrontier, type FrontierRow } from '../../derive/frontier.ts';
 import { classInfo, classMix, policyNeedsText } from '../../derive/classes.ts';
 import { fmtPp, fmtScore, fmtShare, fmtUsd, listWords, plural } from '../../derive/format.ts';
+import { screenedHostNote } from '../../derive/investment.ts';
 import { nodeCsvRow, nodeRow } from '../../derive/nodes.ts';
 import { nodeScenarioCsv, nodeScenarioNote } from '../../derive/scenarioPages.ts';
 import { nodeScenario, nodeSuppliersToday, scenarioCsvFields } from '../../derive/scenarios.ts';
@@ -57,6 +58,9 @@ function NodeItem({ n }: { n: AibNode }) {
   const flag = growthFlag(n);
   const today = hasScenarios ? nodeSuppliersToday(n) : [];
   const coverageWords = `${n.label}: shock alone ${fmtShare(n.static)}, existing relationships ${fmtShare(n.existing)}, optimized trade ${fmtShare(n.optimized)} of demand served`;
+  // the host types (2026-10-20): an older bundle has the one ranked list only
+  const typed = n.specialtyHosts !== undefined || n.developmentHosts !== undefined;
+  const typedHosts = (xs: readonly string[] | undefined) => (xs?.length ? listWords(xs.map((h) => name(h))) : 'none');
   return (
     <li className="border-t hairline py-4 first:border-t-0 first:pt-0" data-node={n.id}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -173,10 +177,26 @@ function NodeItem({ n }: { n: AibNode }) {
               <dd className="text-paper-dim">{fmtShare(n.diversion)} of demand, served by exports pulled from markets outside the demand scope</dd>
             </>
           )}
-          <dt className="text-paper-mute">Investment hosts</dt>
+          <dt className="text-paper-mute">{typed ? 'Scaling hosts' : 'Investment hosts'}</dt>
           <dd className="text-paper-dim">
             {mi ? (r.ran ? ((n.diversify?.hosts.length ?? 0) ? listWords(n.diversify!.hosts.map((h) => name(h))) : 'none ranked') : 'none: nothing to replace') : n.hosts.length ? listWords(n.hosts.map((h) => name(h))) : 'none ranked'}
           </dd>
+          {typed && (!mi || r.ran) && (
+            <>
+              <dt className="text-paper-mute">Specialty hosts</dt>
+              <dd className="text-paper-dim">{typedHosts(mi ? n.diversify?.specialtyHosts : n.specialtyHosts)}</dd>
+              <dt className="text-paper-mute">Development hosts</dt>
+              <dd className="text-paper-dim">{typedHosts(mi ? n.diversify?.developmentHosts : n.developmentHosts)}{(mi ? n.diversify?.developmentHosts : n.developmentHosts)?.length ? ' (future capacity, not counted toward the coalition target)' : ''}</dd>
+            </>
+          )}
+          {!mi && n.screenedHost && (
+            <>
+              <dt className="text-paper-mute">Screened out</dt>
+              <dd className="text-paper-dim tabular" data-testid="node-screened-host">
+                {screenedHostNote(n, name)} (alignment screen: economies outside the demand scope that vote with the China-leaning UNGA bloc do not host)
+              </dd>
+            </>
+          )}
           {!mi && (
             <>
               <dt className="text-paper-mute">Recommended treatment</dt>
@@ -298,7 +318,9 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
     { id: 'warnedVariants', header: 'Warning under other settings', value: (r) => warnedElsewhere.get(r.id) ?? null, minWidth: 200 },
     { id: 'growth', header: 'Class depends on the growth bound', value: (r) => r.growthFlag ?? (r.coordinateSensitiveToGrowth === null ? null : 'no'), minWidth: 220 },
     { id: 'physical', header: 'Physical validation', value: (r) => r.physicalValidation, minWidth: 220 },
-    { id: 'hosts', header: 'Investment hosts', value: (r) => r.hosts || 'none ranked' },
+    { id: 'hosts', header: 'Scaling hosts', value: (r) => r.hosts || 'none ranked' },
+    { id: 'specialtyHosts', header: 'Specialty hosts', value: (r) => r.specialtyHosts || 'none' },
+    { id: 'developmentHosts', header: 'Development hosts', value: (r) => r.developmentHosts || 'none' },
     { id: 'treatment', header: 'Recommended treatment', value: (r) => r.treatment, minWidth: 220 },
     { id: 'quality', header: 'Data quality', value: (r) => r.quality },
     { id: 'flags', header: 'Flags', value: (r) => r.flags || 'none', minWidth: 200 },

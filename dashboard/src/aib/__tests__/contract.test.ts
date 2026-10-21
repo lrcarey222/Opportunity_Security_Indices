@@ -84,6 +84,20 @@ describe('checkCompactsDoc', () => {
     expect(p).toContain('compacts[0].path[1].step: 1.5 is not an integer');
   });
 
+  it('checks the alignment screen field (node.screenedHost, 2026-10-20): absent, or a host with its gain and cost', () => {
+    const d = doc();
+    d.nodes[0].screenedHost = { host: 'DDD', gain: 0.1, cost: 0 };
+    d.nodes[1].screenedHost = { host: 'DDD', gain: null, cost: null };
+    expect(checkCompactsDoc(d)).toEqual([]);
+    loose(d.nodes[0]).screenedHost = { host: 'DDD', gain: 0.1, cost: -0.2 };
+    loose(d.nodes[1]).screenedHost = 'DDD';
+    loose(d.nodes[2]).screenedHost = { gain: 0.1, cost: 0 };
+    const p = checkCompactsDoc(d);
+    expect(p).toContain('nodes[0].screenedHost.cost: -0.2 below 0');
+    expect(p).toContain('nodes[1].screenedHost: not an object');
+    expect(p).toContain('nodes[2].screenedHost.host: expected a string');
+  });
+
   it('reports a one-item array collapsed to a scalar (the jsonlite auto_unbox trap)', () => {
     const d = doc();
     loose(d.compacts[1]).anchors = 'AAA';
