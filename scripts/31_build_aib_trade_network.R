@@ -28,8 +28,10 @@
 #   <raw>/wdi_country_info.csv, <raw>/CAT_country ratings data.csv
 #   <raw>/GCIM_Investment_Capacity_aggregated.xlsx operational manufacturing capacity (optional)
 #   <processed>/partner_opportunity_tbl.rds, partner_friendshore_tbl.rds  (Export Opportunity,
-#     Friendshore), policy_outputs.rds (IEA PAMS), major_supplier_shares_tbl.rds, coalition_tbl.rds
-# Writes <out>/aib_inputs.rds: nodes, flows, metrics, data quality, dyad indices, policy inputs.
+#     Friendshore), policy_outputs.rds (IEA PAMS), major_supplier_shares_tbl.rds, coalition_tbl.rds,
+#     geo_alignment_tbl.rds (UNGA voting blocs)
+# Writes <out>/aib_inputs.rds: nodes, flows, metrics, data quality, dyad indices, policy inputs, income groups and the
+# Development Potential Index (the investment host types), and the UNGA blocs (the host alignment screen).
 
 source(local({
   resolve_bootstrap_path <- function() {
@@ -355,6 +357,11 @@ if (file.exists(coal_path)) {
   coalition <- readRDS(coal_path) %>% dplyr::select(dplyr::any_of(c("iso3", "tier", "network_node")))
 }
 
+# Income groups and the Development Potential Index, for the investment host types (scripts/32).
+host_type_data <- aib_read_host_type_data(raw_data_path, processed_dir)
+# UNGA voting blocs, for the investment-host alignment screen (scripts/32).
+host_bloc <- aib_read_host_bloc(processed_dir)
+
 names_tbl <- tibble::tibble(iso3 = country_info$iso3c, country = country_info$country) %>%
   dplyr::bind_rows(tibble::tibble(iso3 = c("TWN", "XKX"), country = c("Taiwan", "Kosovo"))) %>%
   dplyr::distinct(iso3, .keep_all = TRUE)
@@ -371,7 +378,8 @@ inputs <- list(
   quality = quality, merge_map = merge_map, production = production, total_exports = totals,
   op_index = op_index, fs_index = fs_index, pams = pams, cat_scores = cat_scores,
   coalition = coalition, country_names = names_tbl,
-  supply_chain_edges = aib_remap_edges(edges0, merge_map)
+  supply_chain_edges = aib_remap_edges(edges0, merge_map),
+  country_income = host_type_data$income, dev_index = host_type_data$dev, country_bloc = host_bloc$bloc
 )
 saveRDS(inputs, file.path(out_dir, "aib_inputs.rds"))
 step("Wrote ", file.path(out_dir, "aib_inputs.rds"), " in ", round(as.numeric(difftime(Sys.time(), t_script, units = "mins")), 1), " min")

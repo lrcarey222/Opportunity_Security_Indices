@@ -878,7 +878,7 @@ function InvestmentTab({ f, onKind }: TabProps) {
           <ChartCard
             headingLevel={3}
             title="Where new capacity buys most resilience"
-            sub={`Where a gap remains after coordinated trade, the model adds a standardized increment of capacity at each eligible host in turn and ranks the hosts by the resilience it buys. ${scope.charAt(0).toUpperCase()}${scope.slice(1)}, ${sc.label}: ${plural(nodes.length, 'sub-sector')}, largest gain first. A host must already show the capability (revealed by its exports).`}
+            sub={`Where a gap remains after coordinated trade, the model adds an increment of capacity at each eligible host in turn (a fixed share of node demand, capped at the host’s current output in the node) and ranks the hosts by the resilience it buys. ${scope.charAt(0).toUpperCase()}${scope.slice(1)}, ${sc.label}: ${plural(nodes.length, 'sub-sector')}, largest gain first. A host must already show the capability (revealed by its exports).`}
             table={() => <TableView rows={nodes} cols={nodeCols} caption={`Investment hosts by sub-sector, ${scope}`} search pageSize={20} initialSort={{ id: 'gain', desc: true }} />}
             csv={csv}
             notes={<span>The increment is a synthetic simulation, not a project or a cost estimate.</span>}

@@ -54,8 +54,9 @@
 //                     wrote [] and kept that set as the roles with member = true: read the members with
 //                     coalitionMembersOf()), robustTieBreakSolved (false: the tie-break hit its time limit),
 //                     coalition.greedy (the greedy sufficient coalition, a heuristic), criticalPartners,
-//                     criticalExternal, criticalExternalMarginal, external, associatesReach99;
-//                     nodePolicyNeeds; physicalWarnings; and per role its coalition tier (AIB_TIERS, six),
+//                     prospectiveHosts (2026-10-20), criticalExternal, criticalExternalMarginal, external,
+//                     associatesReach99; nodePolicyNeeds; physicalWarnings; and per role its coalition tier
+//                     (AIB_TIERS, seven since prospective host joined on 2026-10-20),
 //                     critical and leave-one-out (looCritical) flags, its SINGLE substitutes and
 //                     substitutesNeeded. Externals hold roles with member = false, like associates.
 //   node (later)      variantWarnings (variant -> the class under it carries the physical-capability
@@ -224,6 +225,8 @@ export type AibDiversifyStatus = (typeof AIB_DIVERSIFY_STATUSES)[number];
  *                                            partner (the demand anchors, and suppliers one other candidate
  *                                            could replace)
  *   critical supply partner                  a needed member no single other candidate can replace
+ *   prospective host                         a member in only for the simulated capacity it would host
+ *                                            (its current supply is critical nowhere; added 2026-10-20)
  *   associate partner                        the fewest additions to the core (held in) that reach the
  *                                            highest target
  *   critical external dependency             a non-member whose loss pushes a node below the middle target
@@ -232,14 +235,18 @@ export type AibDiversifyStatus = (typeof AIB_DIVERSIFY_STATUSES)[number];
  *   critical external dependency (marginal)  the same, under that share: critical only because the
  *                                            coalition sits near the target
  *   external dependency                      another non-member supplying a material share (5%)
+ *   development host                         a non-member that is a leading development host of a BUILD node:
+ *                                            future capacity, never counted toward the target (2026-10-20)
  */
 export const AIB_TIERS = [
   'core coordinating member',
   'critical supply partner',
+  'prospective host',
   'associate partner',
   'critical external dependency',
   'critical external dependency (marginal)',
   'external dependency',
+  'development host',
 ] as const;
 export type AibTier = (typeof AIB_TIERS)[number];
 
@@ -313,8 +320,11 @@ export interface AibNodeDiversify {
   /** the share of allied demand only new capacity fills */
   residual: number | null;
   residualUsd: number | null;
-  /** the leading investment hosts for that new capacity (may be []) */
+  /** the leading investment hosts for that new capacity (the scaling hosts; may be []) */
   hosts: string[];
+  /** the leading specialty and development hosts there (additive, 2026-10-20) */
+  specialtyHosts?: string[];
+  developmentHosts?: string[];
   /** the largest new or expanded relationships, "EXP->IMP; ..." (null when none) */
   partners: string | null;
   /** the class under the scenario (null where it did not run) */
@@ -458,6 +468,11 @@ export interface AibCoalition {
   /** members no single other candidate can replace at the middle target (additive) */
   criticalPartners?: string[];
   /**
+   * members in the coalition only for the simulated capacity they would host as leading investment hosts:
+   * their current supply is critical in no node (tier "prospective host"; additive, 2026-10-20)
+   */
+  prospectiveHosts?: string[];
+  /**
    * non-members whose loss pushes a node below the middle target with the coalition fixed (where a node is
    * below it already, lowers its coverage by a point or more), each supplying at least
    * critical_min_supply_share of the anchors' demand (additive)
@@ -485,8 +500,9 @@ export interface AibRole {
   /** a critical supply partner or a critical external dependency, marginal ones included (additive) */
   critical?: boolean;
   /**
-   * leave-one-out with the coalition fixed: losing its supply pushes a node below the middle target (true
-   * for nearly every non-anchor member by construction of a minimum coalition; additive)
+   * leave-one-out with the coalition fixed: losing its current supply pushes a node below the middle target
+   * (true for nearly every non-anchor member by construction of a minimum coalition, but not for a
+   * prospective host, whose simulated capacity is not current supply; additive)
    */
   looCritical?: boolean;
   /**
@@ -574,7 +590,11 @@ export interface AibCompact {
   coalition: AibCoalition;
   anchors: string[];
   suppliers: string[];
+  /** the scaling hosts the coalition takes in */
   hosts: string[];
+  /** the specialty hosts the coalition takes in and the leading development hosts of its BUILD nodes (additive, 2026-10-20) */
+  specialtyHosts?: string[];
+  developmentHosts?: string[];
   technologyPartners: string[];
   bridges: string[];
   associates: string[];
@@ -681,8 +701,18 @@ export interface AibNode {
   largest: string | null;
   largestShare: number | null;
   hhi: number | null;
+  /** the leading scaling hosts (established producers) */
   hosts: string[];
+  /** the leading specialty hosts (high-income specialists below scale) and development hosts (middle-income, below scale) (additive, 2026-10-20) */
+  specialtyHosts?: string[];
+  developmentHosts?: string[];
   bestGain: number | null;
+  /**
+   * the best host the alignment screen keeps out (an economy outside the demand scope in an excluded UNGA
+   * bloc), its resilience gain and the alignment cost: the gain the eligible hosts fall short of it by, 0
+   * when one does as well; absent where no host was screened (additive, 2026-10-20)
+   */
+  screenedHost?: AibScreenedHost;
   partners: string | null;
   treatment: string | null;
   compact: string | null;
@@ -812,8 +842,9 @@ export interface AibNetwork {
 
 /**
  * One investor -> host flow: in the simulation of `rank`-th host of a node, the supply of the new capacity
- * that serves the investor's lost demand. Each rank is a SEPARATE simulation of the same increment: only
- * rank 1 is the selected host; flows of different ranks are alternatives and must not be added up.
+ * that serves the investor's lost demand. Each rank is a SEPARATE simulation of the increment (the same
+ * nominal share of node demand, capped at the host's current scale in the node): only rank 1 is the
+ * selected host; flows of different ranks are alternatives and must not be added up.
  */
 export interface AibInvestmentPair {
   investor: string;
@@ -832,6 +863,15 @@ export interface AibInvestmentPair {
   opportunity: number | null;
 }
 
+/** A node's best screened host (allied_investment_screened_hosts.csv, the headline increment; additive, 2026-10-20). */
+export interface AibScreenedHost {
+  host: string;
+  /** its resilience gain with the diversified supplier limit (the gain the ranking reads) */
+  gain: number | null;
+  /** the alignment cost: how far the best eligible host's gain falls short of it (>= 0) */
+  cost: number | null;
+}
+
 /** A ranked host of a node (allied_investment_partnerships.csv, the headline increment). */
 export interface AibInvestmentHost {
   node: string;
@@ -848,6 +888,19 @@ export interface AibInvestmentHost {
   /** 3 = the strongest capability evidence */
   capabilityTier: number | null;
   capabilityBasis: string | null;
+  /**
+   * the increment simulated at this host, a share of node demand: the nominal increment capped at a multiple
+   * of the host's current scale in the node (additive, 2026-10-20)
+   */
+  hostIncrement?: number | null;
+  /**
+   * the ranking criterion that placed the host against the next one up (rank 1: against rank 2):
+   * "resilience gain", "diversification (HHI change)", "capability tier", "capability at scale",
+   * "Friendshore", "compatibility" or "tied" (additive, 2026-10-20)
+   */
+  rankBasis?: string | null;
+  /** the host's type: scaling, specialty, development, or '' for none (additive, 2026-10-20) */
+  type?: string | null;
 }
 
 export interface AibInvestmentFlows {
@@ -908,7 +961,11 @@ export interface AibScenarioCompact {
   secondaryClass: string | null;
   anchors: string[];
   suppliers: string[];
+  /** the scaling hosts the coalition takes in */
   hosts: string[];
+  /** the specialty hosts the coalition takes in and the leading development hosts of its BUILD nodes (additive, 2026-10-20) */
+  specialtyHosts?: string[];
+  developmentHosts?: string[];
   technologyPartners: string[];
   bridges: string[];
   associates: string[];
@@ -944,7 +1001,7 @@ interface AibScenarioDocBase {
 /**
  * scenario-managed.<h8>.json: the China compacts solved under Managed Interdependence; the network of the
  * scenario's shock alone (its headline fields are the scenario's; cum* = headline; variant.shock and
- * variant.shocks name diversify_benchmark); its investor -> host flows (same increment and ranks as the main
+ * variant.shocks name diversify_benchmark); its investor -> host flows (same increments and ranks as the main
  * document).
  */
 export interface AibManagedScenarioDoc extends AibScenarioDocBase {
@@ -1219,6 +1276,7 @@ function checkNodeDiversify(p: Problems, d: unknown, at: string, classes: readon
   p.num(d.residualUsd, `${at}.residualUsd`, { nullable: true, min: 0 });
   for (const k of ['basis', 'partners']) p.str(d[k], `${at}.${k}`, true);
   for (const k of ['capped', 'hosts']) p.strArr(d[k], `${at}.${k}`);
+  for (const k of ['specialtyHosts', 'developmentHosts']) p.optStrArr(d[k], `${at}.${k}`);
   checkCls(p, d.cls, `${at}.cls`, classes);
   // the scenario toggle (2026-10-19; each absent, or null where the scenario did not run)
   p.optNum(d.lostUsd, `${at}.lostUsd`, { min: 0 });
@@ -1226,6 +1284,15 @@ function checkNodeDiversify(p: Problems, d: unknown, at: string, classes: readon
   for (const k of ['hhi', 'largestShare', 'top3Share']) p.optNum(d[k], `${at}.${k}`, { min: 0, max: 1 });
   p.optStr(d.largest, `${at}.largest`);
   for (const k of ['newLinks', 'expandedLinks']) if (d[k] !== undefined) p.num(d[k], `${at}.${k}`, { nullable: true, min: 0, int: true });
+}
+
+/** node.screenedHost (2026-10-20): absent is fine; else the host (a string), its gain (-1..1 or null) and the cost (0..1 or null). */
+function checkNodeScreenedHost(p: Problems, s: unknown, at: string): void {
+  if (s === undefined) return;
+  if (!isObj(s)) return p.add(`${at}: not an object`);
+  p.str(s.host, `${at}.host`);
+  p.num(s.gain, `${at}.gain`, { nullable: true, min: -1, max: 1 });
+  p.num(s.cost, `${at}.cost`, { nullable: true, min: 0, max: 1 });
 }
 
 /** The index codes of meta.indices (empty when the bundle has none: index fields are then not cross-checked). */
@@ -1257,6 +1324,7 @@ function checkNode(p: Problems, n: unknown, at: string, classes: readonly string
   else if (!classes.includes(n.cls)) p.add(`${at}.cls: '${n.cls}' is not one of meta.classes`);
   for (const k of ['reason', 'quality', 'baseLargest', 'largest', 'partners', 'treatment', 'compact']) p.str(n[k], `${at}.${k}`, true);
   for (const k of ['techs', 'flags', 'hosts', 'yfCells', 'yfSubcomponents']) p.strArr(n[k], `${at}.${k}`);
+  for (const k of ['specialtyHosts', 'developmentHosts']) p.optStrArr(n[k], `${at}.${k}`);
   for (const k of ['exposure', 'static', 'existing', 'optimized', 'residual', 'baseLargestShare', 'largestShare', 'hhi']) p.num(n[k], `${at}.${k}`, SHARE);
   // the dividend and the best marginal gain are differences of shares
   for (const k of ['dividend', 'bestGain']) p.num(n[k], `${at}.${k}`, { nullable: true, min: -1, max: 1 });
@@ -1273,6 +1341,7 @@ function checkNode(p: Problems, n: unknown, at: string, classes: readonly string
   p.optNum(n.diversion, `${at}.diversion`, { min: 0 });
   checkNodeDiversify(p, n.diversify, `${at}.diversify`, classes);
   checkNodeBaseline(p, n.baseline, `${at}.baseline`);
+  checkNodeScreenedHost(p, n.screenedHost, `${at}.screenedHost`);
   const v = n.variants;
   // a named list; [] when empty (jsonlite)
   if (v !== undefined) {
@@ -1316,7 +1385,7 @@ function checkCoalition(p: Problems, co: unknown, at: string): void {
   p.bool(co.reached99, `${at}.reached99`);
   p.num(co.maxCoverage, `${at}.maxCoverage`, SHARE);
   p.optStr(co.method, `${at}.method`);
-  for (const k of ['greedy', 'criticalPartners', 'criticalExternal', 'criticalExternalMarginal', 'external']) p.optStrArr(co[k], `${at}.${k}`);
+  for (const k of ['greedy', 'criticalPartners', 'prospectiveHosts', 'criticalExternal', 'criticalExternalMarginal', 'external']) p.optStrArr(co[k], `${at}.${k}`);
   for (const k of ['associatesReach99', 'robustTieBreakSolved']) p.optBool(co[k], `${at}.${k}`);
 }
 
@@ -1413,6 +1482,7 @@ function checkCompact(p: Problems, c: unknown, at: string, nodeIds: ReadonlySet<
   p.oneOf(c.archetype, AIB_ARCHETYPES, `${at}.archetype`);
   p.oneOf(c.type, AIB_COMPACT_TYPES, `${at}.type`);
   for (const k of ['technologies', 'stages', 'anchors', 'suppliers', 'hosts', 'technologyPartners', 'bridges', 'associates', 'policyNeeds']) p.strArr(c[k], `${at}.${k}`);
+  for (const k of ['specialtyHosts', 'developmentHosts']) p.optStrArr(c[k], `${at}.${k}`);
   if (p.strArr(c.nodes, `${at}.nodes`)) {
     if (!c.nodes.length) p.add(`${at}.nodes: a compact without nodes`);
     for (const id of c.nodes) if (!nodeIds.has(id)) p.add(`${at}.nodes: '${id}' is not a node of the document`);
@@ -1565,6 +1635,9 @@ function checkInvestmentFlows(p: Problems, f: unknown, nodeIds: ReadonlySet<stri
       p.num(h.servedUsd, `${at}.servedUsd`, { nullable: true, min: 0 });
       p.num(h.capabilityTier, `${at}.capabilityTier`, { nullable: true, min: 0, int: true });
       p.str(h.capabilityBasis, `${at}.capabilityBasis`, true);
+      p.optNum(h.hostIncrement, `${at}.hostIncrement`, { min: 0, max: 1 });
+      p.optStr(h.rankBasis, `${at}.rankBasis`);
+      p.optStr(h.type, `${at}.type`);
     });
   }
 }
@@ -1588,7 +1661,7 @@ function checkScenarioCompact(p: Problems, c: unknown, at: string): void {
   p.optOneOf(c.type, AIB_COMPACT_TYPES, `${at}.type`);
   p.optOneOf(c.archetype, AIB_ARCHETYPES, `${at}.archetype`);
   p.optStr(c.secondaryClass, `${at}.secondaryClass`);
-  for (const k of ['anchors', 'suppliers', 'hosts', 'technologyPartners', 'bridges', 'associates', 'policyNeeds']) p.optStrArr(c[k], `${at}.${k}`);
+  for (const k of ['anchors', 'suppliers', 'hosts', 'specialtyHosts', 'developmentHosts', 'technologyPartners', 'bridges', 'associates', 'policyNeeds']) p.optStrArr(c[k], `${at}.${k}`);
   if (c.roles !== undefined) checkRoles(p, c.roles, `${at}.roles`);
   if (c.metrics !== undefined && c.metrics !== null) checkMetrics(p, c.metrics, `${at}.metrics`);
   if (c.path !== undefined) checkPath(p, c.path, `${at}.path`);
@@ -1677,6 +1750,8 @@ export function normalizeScenarioDoc<D extends AibScenarioDoc>(d: D): D {
       anchors: arr(x.anchors),
       suppliers: arr(x.suppliers),
       hosts: arr(x.hosts),
+      specialtyHosts: arr(x.specialtyHosts),
+      developmentHosts: arr(x.developmentHosts),
       technologyPartners: arr(x.technologyPartners),
       bridges: arr(x.bridges),
       associates: arr(x.associates),

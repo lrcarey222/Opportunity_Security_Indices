@@ -3,7 +3,7 @@
 // the best-ranked hosts (summed by investor and host over the nodes), a ranked list of node-level flows and
 // a table twin / CSV with the host rank, the new-capacity supply in USD, the share of node demand, the
 // investor's lost share, Friendshore and Partnership Opportunity. "Every ranked host" lists the alternatives
-// too (ranks 2..): each is a separate simulation of the same increment, never added to rank 1, so the
+// too (ranks 2..): each is a separate simulation of the increment, never added to rank 1, so the
 // Sankey always shows rank 1 only. Modelled result: it does not move with the Perspective dials.
 //
 // The scenarios (2026-10-19): the card follows the toggle. Decoupling reads doc.investmentFlows; Managed
@@ -151,7 +151,7 @@ export function InvestmentFlowsCard({ doc, meta, shockLabel, filter, scope, name
       notes={
         <>
           <span>
-            Each ranked host is a separate simulation of the same increment of capacity; only the best-ranked host counts, so the alternatives are listed but never added up. Friendshore and
+            Each ranked host is a separate simulation of the increment of capacity (capped at the host’s current output in the node); only the best-ranked host counts, so the alternatives are listed but never added up. Friendshore and
             Partnership Opportunity are partner scores at the NEIS defaults.{todayNote}
           </span>
           <ModelledNote className="mt-1">{variantPhrase(fdoc, noteLabel)}</ModelledNote>

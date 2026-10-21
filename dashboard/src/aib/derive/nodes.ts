@@ -122,7 +122,10 @@ export interface NodeRow {
   optimizedLargest: string | null;
   optimizedLargestShare: number | null;
   hhi: number | null;
+  /** the leading scaling hosts, then the specialty and development hosts ('' when none or not exported) */
   hosts: string;
+  specialtyHosts: string;
+  developmentHosts: string;
   treatment: string | null;
   quality: string | null;
   flags: string;
@@ -175,6 +178,8 @@ export function nodeRow(n: AibNode, names: Readonly<Record<string, string>>, tx?
     optimizedLargestShare: n.largestShare,
     hhi: n.hhi,
     hosts: n.hosts.map((h) => nameOf(names, h)).join('; '),
+    specialtyHosts: (n.specialtyHosts ?? []).map((h) => nameOf(names, h)).join('; '),
+    developmentHosts: (n.developmentHosts ?? []).map((h) => nameOf(names, h)).join('; '),
     treatment: n.treatment,
     quality: n.quality,
     flags: n.flags.join('; '),
@@ -225,6 +230,8 @@ export function nodeCsvRow(r: NodeRow): Record<string, unknown> {
     instantaneous_n1_retained_coverage: r.instantaneousN1,
     diversion_share_of_demand: r.diversion,
     investment_hosts: r.hosts,
+    specialty_hosts: r.specialtyHosts,
+    development_hosts: r.developmentHosts,
     recommended_treatment: r.treatment,
     data_quality: r.quality,
     data_quality_flags: r.flags,

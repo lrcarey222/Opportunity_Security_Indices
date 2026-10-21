@@ -199,11 +199,20 @@ investment:
   shocks: [china_100, largest_subsector, diversify_benchmark]
   scenarios: [reallocation, conservative]
   min_residual_gap: 0.05
-  # Eligible hosts simulated per node, the most capable first (capability tier, then value).
+  # Eligible hosts simulated per node: the largest by current scale in the node (host_scale_usd, which
+  # bounds each host's increment and so its gain), then capability tier and value (aib_host_shortlist()).
+  # Ordering by tier first filled the list with small RCA specialists and left large exporters without
+  # RCA >= 1 unsimulated (Germany in power electronics, the US in motor parts).
   max_hosts_per_node: 20
   # Synthetic capacity added at one host, as a share of the node's universe demand.
   increments: [0.05, 0.10, 0.20]
   headline_increment: 0.10
+  # Each host's increment is capped at this multiple of its current scale in the node (the larger of
+  # its world exports and its production share x the node's world exports): 1 = a host can at most
+  # double its output. With one standardized increment everywhere every host's resilience gain ties
+  # and the fall in HHI (which favours the smallest supplier) decides the ranking. .inf = no cap.
+  # The compact tests (coalition_increment, the investment response) use the same cap.
+  host_scale_multiple: 1.0
   # A host must show revealed capability: RCA >= host_min_rca in the node, or a world export
   # share >= host_min_world_share in the node, or RCA >= host_min_rca in a node linked to it in
   # the supply chain (same stage of the same technology, or a material link below), or a
@@ -225,6 +234,43 @@ investment:
   top_hosts: 5
   # Never hosts: open ship registries, whose vessel "exports" are flag transfers, not shipbuilding.
   exclude_hosts: [LBR, MHL, PAN, BHS]
+  # Alignment screen (docs/aib_methodology.md, 7; R/aib/aib_host_screen.R): which candidate partners may
+  # host allied capital. The partner universe is global, so without it Russia ranked 2nd for
+  # grain-oriented steel and Myanmar 1st for rare-earth oxides. Modes:
+  #   bloc          the demand scope, plus every partner outside exclude_blocs (UNGA voting blocs of
+  #                 processed geo_alignment_tbl.rds, scripts/12; an economy without a bloc is kept)
+  #   demand_scope  the demand scope only (a strict sensitivity: it also drops Taiwan, Switzerland and the
+  #                 EU members under the coalition table's GDP floor)
+  #   none          every partner
+  # Friendshore is not used: it is a composite (the bloc is about a quarter of its weight) with missing
+  # values at the neutral 0.5. The screen applies before the host shortlist and the host types, so a
+  # screened economy is in no ranking. Its largest screened_hosts_simulated hosts per node are still
+  # simulated, unranked, for the alignment cost (allied_investment_screened_hosts.csv): the best
+  # screened host's gain minus the best eligible host's.
+  host_screen:
+    mode: bloc
+    exclude_blocs: [China-leaning]
+    screened_hosts_simulated: 5
+  # Host types (docs/aib_methodology.md, 7). Scaling hosts, established producers that can carry the
+  # full headline increment or hold at least scaling_min_share of world exports or production in the
+  # node, are ranked first; they build volume. Specialty hosts: specialty_income economies with RCA >=
+  # specialty_min_rca on at least specialty_min_exports_usd of the node's exports, ranked by RCA. Both
+  # count in the compact tests (top_hosts of each), each at most at its own scale. Development hosts:
+  # development_income economies with revealed capability, ranked by the OSI Development Potential
+  # Index; their capacity is future capacity and never counts toward a coalition target. The leading
+  # specialty (top_hosts) and development (development_hosts) candidates are always simulated, beside
+  # the max_hosts_per_node largest hosts. The types exclude each other in that order (a scaling host
+  # in a middle-income economy stays a scaling host), so specialty and development hosts are below scale.
+  # Income groups: World Bank (wdi_country_info.csv).
+  host_types:
+    scaling_min_share: 0.05
+    specialty_min_rca: 2.0
+    specialty_min_exports_usd: 1.0e+8
+    specialty_income: [High income]
+    development_income: [Lower middle income, Upper middle income]
+    development_hosts: 3
+    # Economies the World Bank list leaves out.
+    income_overrides: {TWN: High income}
 
 # ---- Node classification (policy interpretations of the continuous results) ------------------
 classification:

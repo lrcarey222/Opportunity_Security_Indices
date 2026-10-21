@@ -1,7 +1,9 @@
 // The country x role matrix of a compact. The model assigns roles from its results (a country can hold
 // several): demand anchors import most of the lost supply; specialized and resource suppliers carry a
-// material share of the anchors' optimized supply with revealed specialization; capacity-building hosts
-// lead a BUILD node's investment ranking; technology partners show capability in BUILD or MANAGE nodes;
+// material share of the anchors' optimized supply with revealed specialization; scaling hosts
+// (established producers) and specialty hosts (high-income specialists below scale) lead a BUILD node's
+// investment ranking and count in its coalition test, development hosts (middle-income, below scale) are
+// its future capacity and never count; technology partners show capability in BUILD or MANAGE nodes;
 // bridge partners supply one node and depend on another (or span stages, or sit in several compacts);
 // associate partners join only for the highest target; any other member is a supplier. Each economy also
 // has a coalition tier (derive/tiers.ts); the tier-marking roles (critical supply partner, critical,
@@ -16,7 +18,9 @@ export const ROLE_ORDER = [
   'Demand anchor',
   'Specialized supplier',
   'Resource supplier',
-  'Capacity-building / investment host',
+  'Scaling host',
+  'Specialty host',
+  'Development host',
   'Technology partner',
   'Bridge partner',
   'Associate partner',
@@ -29,6 +33,8 @@ export function canonicalRole(role: string): RoleName | null {
   const r = role.trim().toLowerCase();
   const exact = ROLE_ORDER.find((x) => x.toLowerCase() === r);
   if (exact) return exact;
+  // the role's name before the host types (2026-10-20)
+  if (r === 'capacity-building / investment host') return 'Scaling host';
   // the model's long forms: "Supplier (coalition member)"
   return ROLE_ORDER.find((x) => r.startsWith(`${x.toLowerCase()} `) || r.startsWith(`${x.toLowerCase()}(`)) ?? null;
 }
@@ -51,10 +57,12 @@ export interface RoleRow {
 const GROUP: Record<string, number> = {
   'core coordinating member': 1,
   'critical supply partner': 1,
+  'prospective host': 1,
   'associate partner': 2,
   'critical external dependency': 3,
   'critical external dependency (marginal)': 4,
   'external dependency': 5,
+  'development host': 6,
 };
 
 /**

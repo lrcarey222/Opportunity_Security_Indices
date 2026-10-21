@@ -159,9 +159,17 @@ describe.skipIf(!have)('the real Sectoral Compacts bundle (public/data/aib)', ()
       for (const r of c.roles) {
         if (r.tier === undefined || r.tier === null) continue;
         expect(AIB_TIERS as readonly string[], `${c.id} ${r.iso3} tier`).toContain(r.tier);
-        // members are core coordinating members or critical supply partners
-        expect(r.member, `${c.id} ${r.iso3} member vs tier ${r.tier}`).toBe(r.tier === 'core coordinating member' || r.tier === 'critical supply partner');
+        // members are core coordinating members, critical supply partners or prospective hosts
+        expect(r.member, `${c.id} ${r.iso3} member vs tier ${r.tier}`).toBe(
+          r.tier === 'core coordinating member' || r.tier === 'critical supply partner' || r.tier === 'prospective host',
+        );
         if (r.tier === 'critical supply partner') expect(co.criticalPartners ?? [], `${c.id} ${r.iso3}`).toContain(r.iso3);
+        // a prospective host is in only for simulated capacity: listed as such, never critical on current supply
+        if (r.tier === 'prospective host') {
+          expect(co.prospectiveHosts ?? [], `${c.id} ${r.iso3}`).toContain(r.iso3);
+          expect(co.criticalPartners ?? [], `${c.id} ${r.iso3}`).not.toContain(r.iso3);
+          expect(r.looCritical, `${c.id} ${r.iso3} looCritical`).not.toBe(true);
+        }
         if (r.tier === 'critical external dependency') expect(co.criticalExternal ?? [], `${c.id} ${r.iso3}`).toContain(r.iso3);
         if (r.tier === 'critical external dependency (marginal)') expect(co.criticalExternalMarginal ?? [], `${c.id} ${r.iso3}`).toContain(r.iso3);
       }

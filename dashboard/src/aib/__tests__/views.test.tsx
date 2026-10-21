@@ -312,10 +312,10 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(screen.getByTestId('why-answer').textContent).toMatch(/^The shock removes \d+% of the compact's demand/);
     expect(within(main()).getAllByText('Observed / modelled facts').length).toBeGreaterThan(0);
     await waitFor(() => expect(within(views()).getByRole('link', { name: 'Sectoral Compacts' }).getAttribute('aria-current')).toBe('page'));
-    // the role matrix: the tier and the eight roles as columns, an economy per row, its name (never a bare code)
+    // the role matrix: the tier and the ten roles as columns, an economy per row, its name (never a bare code)
     const roles = screen.getByRole('region', { name: 'Economies and their roles' });
     const heads = within(roles).getAllByRole('columnheader').map((h) => h.textContent);
-    expect(heads).toEqual(['Economy', 'Coalition tier', 'Demand anchor', 'Specialized supplier', 'Resource supplier', 'Capacity-building / investment host', 'Technology partner', 'Bridge partner', 'Associate partner', 'Supplier']);
+    expect(heads).toEqual(['Economy', 'Coalition tier', 'Demand anchor', 'Specialized supplier', 'Resource supplier', 'Scaling host', 'Specialty host', 'Development host', 'Technology partner', 'Bridge partner', 'Associate partner', 'Supplier']);
     expect(within(roles).getAllByRole('rowheader').length).toBe(new Set(first.roles.map((x) => x.iso3)).size);
     // each economy opens its Country profile at "Role in the Allied Industrial Base"
     const iso = first.roles[0].iso3;
@@ -708,7 +708,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(screen.getByText('Trade-only (sensitivity)')).toBeTruthy();
     const nWarned = doc.nodes.filter((n) => n.warning).length;
     expect(screen.getByTestId('about-warning').textContent).toMatch(new RegExp(`marks a LOW INTERVENTION or COORDINATE class .* In this export it marks ${nWarned} node`));
-    for (const t of ['Core coordinating members', 'Critical supply partners', 'Associate partners', 'Critical external dependencies', 'Critical external dependencies (marginal)', 'External dependencies']) {
+    for (const t of ['Core coordinating members', 'Critical supply partners', 'Prospective hosts', 'Associate partners', 'Critical external dependencies', 'Critical external dependencies (marginal)', 'External dependencies']) {
       expect(screen.getByText(t)).toBeTruthy();
     }
     // the final rules in words: production-constrained decides who can supply, never a trade value; the tie-break; single substitutes

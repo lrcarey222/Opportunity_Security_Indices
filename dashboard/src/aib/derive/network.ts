@@ -39,7 +39,7 @@ export const ROLE_READING: Record<MatrixRole, { short: string; meaning: string; 
   host: {
     short: 'Investment host',
     meaning: 'is the best-ranked host for new capacity that serves other economies’ gaps',
-    named: 'named when the new capacity it hosts serves at least 1 point of node demand under the headline shock, or a compact names it a capacity-building host',
+    named: 'named when the new capacity it hosts serves at least 1 point of node demand under the headline shock, or a compact names it a scaling host',
   },
   investor: {
     short: 'Investor',
@@ -111,7 +111,7 @@ function rolesOf(
   const resource = r['Resource supplier'] ?? [];
   const other = r['Supplier'] ?? [];
   const spec = r['Specialized supplier'] ?? [];
-  const host = r['Capacity-building / investment host'] ?? [];
+  const host = r['Scaling host'] ?? [];
   const anchor = r['Demand anchor'] ?? [];
   const bridge = r['Bridge partner'] ?? [];
   const uniq = (xs: string[]) => [...new Set(xs)];

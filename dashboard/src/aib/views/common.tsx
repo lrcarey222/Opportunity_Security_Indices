@@ -65,7 +65,7 @@ export function ReadingNotes() {
           headline and under every variant shown.
         </li>
         <li>Each node has one headline class, but its policy needs can name several instruments, and its class can change under the sensitivities shown beside it (trade-only supply, release semantics, other shocks, other growth bounds).</li>
-        <li>The investment increment is a standardized synthetic simulation (a fixed share of the node&apos;s demand added at one eligible host), not a project, a cost estimate or a forecast.</li>
+        <li>The investment increment is a synthetic simulation (a fixed share of the node&apos;s demand added at one eligible host, capped at that host&apos;s current output in the node), not a project, a cost estimate or a forecast.</li>
         <li>Friendshore never makes an incapable host eligible: a host must show revealed capability in the node or a linked one; partnership scores only order eligible hosts.</li>
         <li>The labels (COORDINATE, BUILD, MANAGE SPECIALIZATION, LOW INTERVENTION, INSUFFICIENT DATA), the archetypes and the roles are policy interpretations of continuous results under set thresholds; the numbers behind them are in every table.</li>
       </ul>
