@@ -435,9 +435,12 @@ describe('home and the shell', () => {
       ]) {
         const router = renderAt(from);
         await waitFor(() => expect(pathOf(router) + router.state.location.hash).toBe(to), { timeout: 20_000 });
-        const tabs = screen.getByRole('navigation', { name: 'Modules' });
-        expect(within(tabs).getByRole('link', { name: 'Countries' }).getAttribute('aria-current')).toBe('true');
-        expect(within(screen.getByRole('navigation', { name: 'Country views' })).getByRole('link', { name: 'Country profile' }).getAttribute('aria-current')).toBe('page');
+        // the URL settles before the lazily loaded navs re-render: wait for them too (flaked under load)
+        await waitFor(() => {
+          const tabs = screen.getByRole('navigation', { name: 'Modules' });
+          expect(within(tabs).getByRole('link', { name: 'Countries' }).getAttribute('aria-current')).toBe('true');
+          expect(within(screen.getByRole('navigation', { name: 'Country views' })).getByRole('link', { name: 'Country profile' }).getAttribute('aria-current')).toBe('page');
+        }, { timeout: 20_000 });
         await settle(300);
         cleanup();
       }
