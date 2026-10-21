@@ -172,7 +172,7 @@ One reconciled exporter → importer flow matrix per (tech, stage) and year (202
 2. **mirror:** otherwise the exporter's declared exports × 1.06 (IMF DOTS CIF/FOB convention);
 3. otherwise unobserved.
 
-FS reads the import view, OP the export view. Trade index: S-curve of last-year level and growth (2:1) across trading dyads within (tech, stage), then within the reporter; observed zeros form one tie block below every trading partner; unobserved cells take the (tech, stage) mean (`trade_status`: trade / zero / imputed / no_data).
+FS reads the import view, OP the export view. Trade index: S-curve of last-year level and growth (2:1) across trading dyads within (tech, stage), then within the reporter; observed zeros form one tie block below every trading partner; unobserved cells take the (tech, stage) mean (`trade_status`: trade / zero / imputed / no_data). Growth is scored only where the first-year flow is at least USD 1m (`config/partnership.yml` `trade: growth_min_base_usd`). Other trading dyads (no first-year trade, or a smaller base) take the neutral growth score 0.5 (since 2026-10-20; before, a smaller base was scored as growth and a missing one left the dyad on its level alone). A (tech, stage) no HS6 code maps to (no_data: the Downstream stages, Green Hydrogen, and Geothermal in FS) takes the dyad's own trade index, the mean over its observed cells in the same technology, else over all its observed cells (`trade: no_data_fill: dyad`; since 2026-10-20, before a constant 0.5, under which OP ranked a reporter's markets in those cells on their energy-security need alone).
 
 ### 9.3 Outbound investment and conduits
 
