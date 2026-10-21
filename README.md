@@ -619,7 +619,7 @@ beside the indices and changes none of them; it replaces the original allied net
   institutional frameworks around one physically coherent value chain, e.g. rare-earth ore -> oxides ->
   metals -> magnets -> motors; `config/aib_strategic_compacts.yml`, curated from industrial-process
   knowledge, not discovered), identical in every scenario (Baseline, Managed Interdependence, partial
-  disruption `china_50`, Decoupling); the 33 compact candidates become their **workstreams**. Per compact
+  disruption `china_50`, Decoupling); the compact candidates of scripts/32 (28 in the 2026-10-21 run) become their **workstreams**. Per compact
   and scenario: node class counts, primary / secondary / supporting missions and a policy menu from
   transparent rules on the classes' shares of lost supply, coverage (existing, coordinated,
   post-investment), core countries and critical partners. Countries get **Strategic AIB Roles** (Resource

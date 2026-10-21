@@ -464,10 +464,14 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     }
     for (const iso of [...(first.coalition.criticalExternal ?? []), ...(first.coalition.external ?? [])]) expect(within(tiers).getAllByText(nm(iso)).length).toBeGreaterThan(0);
     if ((first.coalition.criticalExternal ?? []).length) expect(within(tiers).getByText('Critical external dependencies')).toBeTruthy();
-    if ((first.coalition.criticalExternalMarginal ?? []).length) {
+    // an economy shows in one tier only: one that is also an associate (e.g. a development host the
+    // extended coalition adds) is listed there, not among the marginal external dependencies
+    const marginal = (first.coalition.criticalExternalMarginal ?? []).filter((iso) =>
+      first.roles.filter((r) => r.iso3 === iso).every((r) => r.tier === undefined || r.tier === null || r.tier === 'critical external dependency (marginal)'));
+    if (marginal.length) {
       expect(within(tiers).getByText('Critical external dependencies (marginal)')).toBeTruthy();
       const inline = within(tiers).getByTestId('inline-tier');
-      for (const iso of first.coalition.criticalExternalMarginal!) expect(inline.textContent).toContain(nm(iso));
+      for (const iso of marginal) expect(inline.textContent).toContain(nm(iso));
     }
     // the role matrix carries each economy's tier; externals are not members and never read as associates
     const roles = screen.getByRole('region', { name: 'Economies and their roles' });

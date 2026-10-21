@@ -777,17 +777,15 @@ compact's trade coverage never passes the scenario's global optimum (`scripts/32
 anchors' own coverage can still reach 100% where their demand is within the capped supply (the coalition
 test lets members redirect supply from the scope's other buyers to the anchors, as under Decoupling). A
 compact none of whose nodes the scenario ran on has no coalition and says why. The Baseline network is
-built as in section 8. Under the 2026-10-19 run, the scenario runs on 38 nodes (USD 117.3bn of supply
-shifts away from the capped suppliers; USD 86.5bn is left for new capacity), 26 of the 44 compact
-nodes and 21 of the 33 compacts; all 21 reach the 95% and 99% targets, with smaller minimum coalitions
-than under Decoupling in 14 (mean 5.3 economies against 6.4), the same size in 6 and a larger one in 1.
-With the cap in the compact tests (the 2026-10-20 rerun) the coalitions are unchanged; AIB-C04's trade
-and investment coverage fall from 100% to its 97.4% optimum (dividend 0), and the investment coverage of
-AIB-C31 (93.0% to 84.1%) and AIB-C32 (89.9% to 89.4%) falls. Under the scenario 13 compacts are candidate
-compacts, 7 compacts are unnecessary (compact gain under 5 points) and 1 is bilateral; the type, archetype
-and policy needs of each are in `aib_compact_candidates_managed.csv` and the scenario file. Eleven compacts
-have no node above its benchmark by more than the small tolerance and one has no supplier above its cap in
-the allied market. The observed network keeps 1,126 pairs of about 5,000 (USD 1,519bn of 1,587bn).
+built as in section 8. In the run of 2026-10-21 (host types and the alignment screen, partner scores
+with the fixed trade index) the scenario runs on 38 nodes (USD 117.3bn of supply shifts away from the
+capped suppliers; USD 86.5bn is left for new capacity), 26 of the 44 compact nodes and 20 of the 28
+compacts; all 20 reach the 95% and 99% targets, with smaller minimum coalitions than under Decoupling in
+7 (mean 5.8 economies against 6.2), the same size in 11 and a larger one in 2. Under the scenario 12
+compacts are candidate compacts, 7 are unnecessary (compact gain under 5 points) and 1 is bilateral; the
+type, archetype and policy needs of each are in `aib_compact_candidates_managed.csv` and the scenario
+file. Seven compacts have no node above its benchmark by more than the small tolerance and one has no
+supplier above its cap in the allied market. The observed network keeps 1,126 pairs of about 5,000 (USD 1,519bn of 1,587bn).
 
 The dashboard bundle (`dashboard/public/data/aib/`, schema `osi-aib` v2 since 2026-10-20, when `meta.scenarios` became the scenario list (an app reading v1 asks for a reload), with optional additions:
 scope, semantics and constraint ids, multi-label needs, physical warnings, variant classes, growth
@@ -1069,19 +1067,23 @@ over its nodes; the split is recorded). A `workstream_overrides` entry takes pre
 equal the workstream's node set exactly, whatever its id; an override no workstream matches is reported
 as stale and the demand rule applies. `also_spans` names the other compacts a straddling workstream
 touches (shown as "also touching" there). Nodes outside any workstream still sit on their compact's
-spine. In the 2026-10-20 run: 33 workstreams, 3 straddling, all 3 placed by override:
+spine. Workstream ids and groupings come from scripts/32's clustering and change when the host ranking
+or the partner scores do (the 2026-10-21 alignment screen merged the battery chain: 33 workstreams became
+28), so an override is matched by its node set and reported as stale when no workstream has it. In the
+2026-10-21 run: 28 workstreams, 3 straddling, 1 placed by override:
 
-* AIB-C09 (rare-earth magnets + wind turbine sets; demand 51% Wind / 49% Magnets) -> SC-MAGNETS, also
-  SC-WIND: filing it under Wind would leave the magnets compact without the workstream holding its
-  magnets node.
-* AIB-C03 (motors, compressors, heat pumps; 58% Magnets / 42% Heat) -> SC-HEAT, also SC-MAGNETS: the
-  motor -> hermetic compressor -> heat-pump chain HVAC makers build in-house.
-* AIB-C01 (Li-ion cells + electric buses; 92% / 8%) -> SC-BATTERIES, also SC-EV.
+* AIB-C07 (sensors & controller parts + wafers; demand 71% Solar / 29% Semis) -> SC-SEMIS by override,
+  also SC-SOLAR: sensors are chips and HS 381800 wafers are mostly semiconductor-grade, and the two
+  cluster on a Japan-led semiconductor base; wafers stay on the solar spine.
+* AIB-C01 (battery materials, separators, Li-ion cells, graphite and electric buses; 93% Batteries) ->
+  SC-BATTERIES, also SC-EV, by the demand rule.
+* AIB-C02 (electric cars, motors and motor parts; 70% EV) -> SC-EV, also SC-MAGNETS, by the demand rule;
+  electric motors and motor parts stay on the magnets spine.
 
-The others fall wholly in one compact: Magnets C06 C19 C26 C30; Batteries C10 C11 C12 C15 C22 C23 C27
-C32; Semis C02 C16 C28 C33; Solar C05 C08; Wind C13 C29; Grid C18 C20 C21; EV C04 C07; Heat C14 C31;
-Industry C17 C24 C25. SC-NUCLEAR has no workstream (every nuclear node is LOW INTERVENTION or
-INSUFFICIENT DATA under Decoupling); its card and spine render with zero workstreams.
+The others fall wholly in one compact: Magnets C09 C16 C19 C22; Batteries C08 C10 C20 C27; Semis C03
+C24 C28; Solar C04; Wind C11 C12 C25; Grid C15 C17 C18; EV C06; Heat C05 C13 C26; Industry C14 C21 C23.
+SC-NUCLEAR has no workstream (every nuclear node is LOW INTERVENTION or INSUFFICIENT DATA under
+Decoupling); its card and spine render with zero workstreams.
 
 ### 16.3 Scenarios, portfolio, missions, policy menu and coverage
 
@@ -1372,7 +1374,7 @@ Every ISO3 code it uses is in the document's `countries`. On the 2026-10-21 expo
 68 kB gzip; the main document goes from 200 to 268 kB gzip (`npm run budget`: Compacts landing 500 of
 700 kB, Strategic compact view 612 of 900 kB).
 
-### 16.10 Results (scripts/32 run of 2026-10-20, strategic layer of 2026-10-21)
+### 16.10 Results (scripts/31-33 run of 2026-10-21: host types, alignment screen, fixed partner scores)
 
 Managed Interdependence (the default lens) and Decoupling (the stress test), with core countries (the
 same in both):
@@ -1392,12 +1394,12 @@ same in both):
 
 Strategic roles (upper case primary, lower case secondary; beyond the cap in brackets): Japan {CIA, STM,
 SMI, cbh}; Korea {STM, SMI, cbh, cia}; United States {DMA, CBH, CIA, smi, stm} (RPA); Australia {RPA};
-India {dsp, stm} (CBH, RPA); Germany {CBH, CIA, SMI, dma, stm} (RPA); China (supply roles only) {RPA, SMI,
-STM}; Viet Nam {cbh, dsp}; Mexico {dma, smi} (CBH). Japan, Korea and the US differ: Japan and Korea share
+India {CBH, stm, dsp} (RPA); Germany {CIA, SMI, CBH, dma, stm} (RPA); China (supply roles only) {RPA, SMI,
+STM}; Viet Nam {CBH, dsp}; Mexico {dma, cbh} (SMI). Japan, Korea and the US differ: Japan and Korea share
 the two manufacturing roles and differ on capital (primary for Japan, secondary for Korea); the US is the
 only one led by demand. No economy qualifies for all seven roles; 23 of the 59 allied economies (the demand
 scope plus Taiwan and Switzerland) hold a strategic role at these bars, the rest are described by their
-compact roles. No economy holds DSP as a primary role, and India, Mexico and Viet Nam hold no primary role.
+compact roles. No economy holds DSP as a primary role; Mexico holds no primary role.
 The capital roles need the partner inputs (`--partner-dir`, `--dip`): without them scripts/33 warns and
 does not assess the Capital & Investment Anchor.
 

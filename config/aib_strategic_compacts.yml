@@ -5,7 +5,7 @@
 # WHAT THIS IS. A strategic compact is a persistent institutional framework around one physically or
 # economically coherent value chain, whose nodes may need different partners, different policies
 # (BUILD / COORDINATE / MANAGE SPECIALIZATION / LOW INTERVENTION) and different forms of coordination.
-# The 33 compact candidates of scripts/32 (AIB-C01..., grouped by partner overlap, policy similarity and
+# The compact candidates of scripts/32 (AIB-C01..., 28 in the run of 2026-10-21, grouped by partner overlap, policy similarity and
 # chain coherence) become the WORKSTREAMS inside these compacts. Each workstream belongs to exactly one
 # compact (see WORKSTREAMS below).
 #
@@ -32,8 +32,7 @@
 #     and missions show the zero rather than dropping the class.
 #   * Some compacts have no active workstream. SC-NUCLEAR has no workstream at all in the Decoupling
 #     clustering (every nuclear node is LOW INTERVENTION or INSUFFICIENT DATA), and under Managed
-#     Interdependence neither SC-NUCLEAR nor SC-WIND has a workstream of its own with an active node
-#     (wind turbines are active only through AIB-C09, whose primary compact is SC-MAGNETS). Cards,
+#     Interdependence some compacts have no workstream with an active node. Cards,
 #     spines and matrices show these compacts with zero counts and empty workstream lists.
 #   * Demand-weighted compact figures are dominated by one large node in two compacts: integrated
 #     circuits are about 70% of SC-SEMIS demand and the conductor metals (copper ore, refined copper,
@@ -85,8 +84,10 @@
 # COVERAGE (core scope, 78 sub-sectors; 77 nodes in the 2026-10-20 run, where uranium ores and spent
 # fuel & nuclear scrap are merged into uranium-fuel-upstream--aggregated): 10 compacts holding 77
 # sub-sectors (76 run nodes), 1 unmapped (biofuels & wood pellets). Extended scope adds 20 nodes: 17
-# mapped, 3 unmapped. 3 workstreams straddle two compacts and carry overrides (AIB-C01, AIB-C03,
-# AIB-C09); the other 30 lie wholly inside one compact.
+# mapped, 3 unmapped. In the 2026-10-21 run 3 of the 28 workstreams straddle two compacts: one (sensors
+# with wafers) carries an override, the other two follow the demand rule; the other 25 lie wholly inside
+# one compact. Workstream ids and groupings come from scripts/32's clustering and can change between runs;
+# scripts/33 reports an override whose node set no longer matches as stale.
 
 taxonomy: dictionary
 
@@ -355,46 +356,35 @@ unmapped:
     reason: "A mixed basket of refined minor metals (antimony, cadmium, hafnium, platinum, silver, tantalum, tellurium, tin, vanadium) serving several compacts at once and none predominantly."
 
 # ---- Workstreams that span two compacts ------------------------------------------------------------
-# Written against the Decoupling clustering of 2026-10-20; matched by `nodes` (see WORKSTREAMS above).
+# Written against the Decoupling clustering of 2026-10-21 (after the host alignment screen: 28
+# workstreams); matched by `nodes` (see WORKSTREAMS above).
 # demand_split is the allied-demand split under Decoupling, for information; the primary compact is
 # chosen on industrial logic.
 workstream_overrides:
-  - workstream_id: AIB-C01
-    nodes: [li-ion-cells-and-packs, electric-buses-trucks-and-tractors]
-    primary_compact: SC-BATTERIES
-    also_spans: [SC-EV]
-    demand_split: "SC-BATTERIES 92%, SC-EV 8%"
-    reason: "Li-ion cells and packs are the end of the battery chain and the reason the workstream exists; electric buses and trucks are the cell-intensive vehicles that share its partners. Under Managed Interdependence the cells are its only active node."
-  - workstream_id: AIB-C03
-    nodes: [refrigeration-and-heat-pump-compressors, heat-pumps-and-ac-units, electric-motors]
-    primary_compact: SC-HEAT
-    also_spans: [SC-MAGNETS]
-    demand_split: "SC-MAGNETS 58%, SC-HEAT 42%"
-    reason: "The workstream is the motor -> hermetic compressor -> heat pump and air-conditioner chain, which the large HVAC makers integrate in-house; its partners (Japan, Thailand, Mexico, Korea) are that appliance base. Two of its three nodes are SC-HEAT's, the motor node is a generic heading of which compressor motors are a part, and under Managed Interdependence its only active node is heat pumps. Filing it under SC-MAGNETS on the demand split would leave SC-HEAT's two largest BUILD nodes outside its own workstreams; SC-MAGNETS keeps its motor-making workstream (AIB-C06, NGO steel and motor parts) and electric motors stay on its spine."
-  - workstream_id: AIB-C09
-    nodes: [rare-earth-permanent-magnets, wind-turbine-generating-sets]
-    primary_compact: SC-MAGNETS
-    also_spans: [SC-WIND]
-    demand_split: "SC-WIND 51%, SC-MAGNETS 49%"
-    reason: "Rare-earth permanent magnets are the defining node of SC-MAGNETS and the shared problem of this workstream: direct-drive and medium-speed permanent-magnet turbines are among the most magnet-intensive uses. The demand split is a tie; filing it under SC-WIND would leave the magnets compact without the workstream that holds its magnets. Wind turbine generating sets stay on the SC-WIND spine, and SC-WIND shows the workstream as also touching it."
+  - workstream_id: AIB-C07
+    nodes: [sensors-and-controller-parts, wafers]
+    primary_compact: SC-SEMIS
+    also_spans: [SC-SOLAR]
+    demand_split: "SC-SOLAR 71%, SC-SEMIS 29%"
+    reason: "Sensors and controller parts are chips, and HS 381800 wafers are mostly semiconductor-grade (Japan becomes the largest supplier once China is removed); the two cluster on that shared, Japan-led semiconductor base. Filing the workstream under SC-SOLAR on the demand split would put a chip workstream in the solar compact. Wafers stay on the SC-SOLAR spine (the solar chain needs them), and SC-SOLAR shows the workstream as also touching it."
 
 # ---- Mapping notes: the judgement calls ------------------------------------------------------------
 # "Alternative:" names the placement that was considered and rejected, so the choice can be revisited.
 mapping_notes:
   # SC-MAGNETS
-  non-oriented-electrical-steel-ngo: "Motor and generator laminations, so it sits with the drives chain, as GOES sits with transformers in SC-GRID. The data agree: NGO clusters with motor parts (AIB-C06), GOES on its own (AIB-C18). Alternative: one electrical-steel step in either compact, on the grounds that the same mills make both grades; rejected because the binding downstream bottlenecks (motor laminations, transformer cores) differ, and GOES is made by far fewer mills."
+  non-oriented-electrical-steel-ngo: "Motor and generator laminations, so it sits with the drives chain, as GOES sits with transformers in SC-GRID. The data agree: NGO and GOES each form a workstream of their own. Alternative: one electrical-steel step in either compact, on the grounds that the same mills make both grades; rejected because the binding downstream bottlenecks (motor laminations, transformer cores) differ, and GOES is made by far fewer mills."
   ferrite-and-other-magnets: "Non-rare-earth magnets, a substitute for and complement to NdFeB in motors; kept beside the rare-earth magnets."
   magnet-assemblies: "Despite the id, the code is cold isostatic presses (847983), equipment for pressing sintered magnets; placed at the magnet step."
   ac-generators: "Same HS heading family (8501) and the same manufacturers as motors, and the same magnet and NGO inputs. Most of the value is large generators for hydro, thermal and nuclear plants, which take them as inputs from this compact. Alternative: SC-WIND, rejected because wind generating sets are traded complete (850231)."
-  electric-motors: "The end of the drives chain. Its workstream (AIB-C03, motors with compressors and heat pumps) is filed under SC-HEAT by override; the node itself stays here."
-  rare-earth-permanent-magnets: "The defining node of the compact. Its workstream (AIB-C09) also holds wind generating sets and is filed here by override."
+  electric-motors: "The end of the drives chain. In the 2026-10-21 clustering it shares a workstream with electric cars and motor parts, filed under SC-EV on the demand rule; the node itself stays here."
+  rare-earth-permanent-magnets: "The defining node of the compact. It forms a workstream of its own."
   # SC-BATTERIES
   natural-graphite: "Flake and spherical graphite for anodes."
   synthetic-graphite-anode-grade: "Anode material. The same graphitisation capacity also makes arc-furnace electrodes (SC-INDUSTRY)."
   battery-materials-foil-electrolyte: "Copper foil and LiPF6 electrolyte salt; the foil takes refined copper from SC-GRID."
   manganese-dioxide-emd: "Mostly for primary (alkaline) cells, partly an LMO cathode precursor; kept with the refined battery chemicals."
   other-accumulators: "Lead-acid, NiCd, NiMH, sodium-ion and flow batteries: other cell chemistries, kept at the cell step."
-  li-ion-cells-and-packs: "The end of the battery chain. Cells feed SC-EV and stationary storage; AIB-C01 (cells with electric buses) is filed here by override."
+  li-ion-cells-and-packs: "The end of the battery chain. Cells feed SC-EV and stationary storage; Its workstream (cells with battery materials, separators, graphite and electric buses) is filed here on the demand rule."
   # SC-SEMIS
   integrated-circuits: "Logic, memory and analog chips share wafers, fab equipment and gallium/germanium with power devices, so chips and power electronics are one compact. ICs are about 70% of its allied demand, so demand-weighted SC-SEMIS figures mostly describe ICs. Alternative: a separate chips compact (materials, fab equipment, ICs, sensors) with power semiconductors, components and converters as a Power Electronics compact; rejected for now because it splits the fab chain and would take an eleventh compact unless electric vehicles went back into SC-BATTERIES."
   semiconductor-manufacturing-equipment: "Capital equipment for chip fabrication: an input to the chips step, not a product made from it."
@@ -406,13 +396,13 @@ mapping_notes:
   piezo-electric-quartz: "Quartz for frequency-control crystals in electronics."
   # SC-SOLAR
   polysilicon: "Solar-grade polysilicon dominates this code; electronic-grade polysilicon also feeds semiconductor wafers."
-  wafers: "HS 381800 covers solar and semiconductor wafers alike, and the dictionary files it under Semiconductor materials. Japan becomes the largest supplier once China is removed, so semiconductor-grade wafers are a large share of the trade. Kept in SC-SOLAR because the task's solar case is polysilicon -> wafers -> cells -> modules, the model's physical constraint for this node is solar wafer capacity (GCIM), and the data cluster wafers with solar cells (AIB-C08). Alternative: SC-SEMIS as the substrate of chips and power devices; revisit if the code is split by grade."
+  wafers: "HS 381800 covers solar and semiconductor wafers alike, and the dictionary files it under Semiconductor materials. Japan becomes the largest supplier once China is removed, so semiconductor-grade wafers are a large share of the trade. Kept in SC-SOLAR because the task's solar case is polysilicon -> wafers -> cells -> modules, the model's physical constraint for this node is solar wafer capacity (GCIM), and the solar case needs the whole chain. Since the 2026-10-21 run the data cluster wafers with sensors on a Japan-led semiconductor base; that workstream is filed under SC-SEMIS by override while the node stays on the solar spine. Alternative: SC-SEMIS as the substrate of chips and power devices; revisit if the code is split by grade."
   silver-powder: "Silver paste for cell metallisation (the largest use of silver powder); also used in electronics pastes."
   pv-cover-glass: "Tempered cover glass, the module's largest material input by mass."
   # SC-WIND
-  wind-turbine-generating-sets: "The wind turbine itself (850231), so it stays on the wind spine. Direct-drive turbines take magnets and generators from SC-MAGNETS; its workstream (AIB-C09, with rare-earth magnets) is filed under SC-MAGNETS by override. Alternative: SC-MAGNETS as the end of a magnets-to-generators chain, rejected because the node is the whole turbine, not its generator."
+  wind-turbine-generating-sets: "The wind turbine itself (850231), so it stays on the wind spine. Direct-drive turbines take magnets and generators from SC-MAGNETS; it forms a workstream of its own. Alternative: SC-MAGNETS as the end of a magnets-to-generators chain, rejected because the node is the whole turbine, not its generator."
   wind-towers: "HS 730820 covers steel towers and lattice masts generally, including transmission towers and telecom masts, not only wind towers. Kept with wind, where the dictionary puts it. Alternative: SC-GRID for the transmission-tower share."
-  hydro-turbine-parts: "Hydropower shares heavy rotating equipment, castings, forgings and several turbine makers with wind, and is too small (about $0.7bn of allied demand with hydro turbines) for a compact of its own. Alternative: a firm-power grouping with SC-NUCLEAR (shared heavy forgings), rejected because it would blur the nuclear fuel-cycle compact; leaving it unmapped is not possible because it is a workstream (AIB-C29) and every workstream needs a compact."
+  hydro-turbine-parts: "Hydropower shares heavy rotating equipment, castings, forgings and several turbine makers with wind, and is too small (about $0.7bn of allied demand with hydro turbines) for a compact of its own. Alternative: a firm-power grouping with SC-NUCLEAR (shared heavy forgings), rejected because it would blur the nuclear fuel-cycle compact; leaving it unmapped is not possible because it forms a workstream of its own, and every workstream needs a compact."
   hydro-turbines: "As for hydro turbine parts."
   # SC-NUCLEAR
   uranium-fuel-upstream--aggregated: "Data-quality aggregate of uranium ores and spent fuel & nuclear scrap (too little trade to model apart)."
@@ -429,12 +419,12 @@ mapping_notes:
   electricity-meters: "Grid-edge equipment procured by the same distribution utilities and filed under Grid by the dictionary (Digital grid sector); placed at the network-equipment step because meters are not made from cables or transformers, and its parts (extended) sit at the components step. Its process link to the rest of SC-GRID is weak: meters are electronics. Alternative: SC-SEMIS beside sensors and controllers, rejected because the buyers, standards and security concerns are the grid's."
   # SC-EV
   electric-and-plug-in-cars: "Vehicles integrate three chains (cells, motors, inverters and chips), so they are an end-use compact of their own, as heat pumps and electric furnaces are, matching the dictionary's Electrified End Uses index. Alternative: the integration step of SC-BATTERIES (the first draft), rejected because cars alone (about $180bn) would be half of that compact's allied demand, and car exporters would then dominate its country roles and coverage. The compact's spine has one core step because its upstream sits in the other compacts."
-  electric-buses-trucks-and-tractors: "With the other electric vehicles. Its workstream (AIB-C01, with Li-ion cells) is filed under SC-BATTERIES by override."
+  electric-buses-trucks-and-tractors: "With the other electric vehicles. Its workstream (with Li-ion cells and battery materials) is filed under SC-BATTERIES on the demand rule."
   electric-two-wheelers-and-works-trucks: "E-bikes, e-motorcycles and electric forklifts and works trucks, with the other electric vehicles."
   electric-rail-vehicles: "Electric locomotives, multiple units and trams. Most rail is catenary-fed, so it shares traction motors and power electronics with other vehicles more than batteries; kept with electric vehicles as electrified transport."
   # SC-HEAT
   refrigeration-and-heat-pump-compressors: "Hermetic compressors embed an electric motor (SC-MAGNETS input); the core component of heat pumps and air conditioners."
-  heat-pumps-and-ac-units: "The end of the heating and cooling chain. Its workstream (AIB-C03) is filed here by override."
+  heat-pumps-and-ac-units: "The end of the heating and cooling chain. It shares a workstream with compressors, filed here."
   solar-thermal-water-heaters: "Not photovoltaic: a building heat appliance made from collectors, absorbers and tanks, so it sits with heat pumps. Alternative: SC-SOLAR, where the dictionary's Solar sector puts it, rejected because it shares no input or process with the PV chain."
   # SC-INDUSTRY
   pgms-iridium-ruthenium: "Iridium and ruthenium catalysts for PEM electrolysers."
