@@ -264,6 +264,8 @@ sources:
   - {id: iea_etp, label: "International Energy Agency, Energy Technology Perspectives 2024: manufacturing capacity shares", licence: "International Energy Agency terms of use", url: "https://www.iea.org/"}
   # edition: the extract of nipo.vintage_label (keep the two together)
   - {id: gta_nipo, label: "Global Trade Alert, New Industrial Policy Observatory: industrial-policy interventions, strength scored by the authors", edition: "October 2026 extract (as of 5 October 2026)", licence: "subscription (titles, dates and links only)", url: "https://www.globaltradealert.org/"}
+  # 2026-10-19: the Country pages' monthly trade card (scripts/99 -> companion trade-<ISO3> files)
+  - {id: comtrade_monthly, label: "United Nations, UN Comtrade Database: monthly HS6 trade with the world as reported by each economy (not reconciled with partners' reports)", licence: "UN Comtrade terms of use", url: "https://comtradeplus.un.org/"}
 
 # Source names spelled out where the Sector dictionary abbreviates them (2026-10-14: no bare "IEA" in the
 # sheet's source list or raw-figure source lines). `label` replaces the citation, `short` the short name;
