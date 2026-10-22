@@ -923,6 +923,20 @@ the screen changed). The global and extended sensitivity runs were not redone an
   electric cars, 6, before). No class changes, the same 44 intervention nodes sit in compacts, the
   prospective hosts are the same, and the investment response gives 83.9% anchor coverage (83.4% before).
   Russia is in one compact table only, as an external dependency of grain-oriented steel.
+* **OECD CRS aid in the Development Potential Index** (2026-10-22 rerun of scripts/31-84). Development
+  Potential now scores aid per technology and stage from CRS purpose codes, plus the export-credit and
+  lender finance the CRS lacks (Oil Change International: JBIC, NEXI, US EXIM, KEXIM, ...). Aid carries
+  3 of the index's 10 weight points, so the development hosts move. By mean index across technologies and
+  stages, Malaysia rises from 22nd to 1st and Thailand from 45th to 5th, while Serbia falls from 2nd to
+  16th and Viet Nam from 3rd to 4th. 35 of the 49 nodes with a development host get a different list, 29
+  of them a different first host: Thailand is first in 12 (none before), Malaysia in 10 (3), India and
+  Viet Nam in 6 each (11 and 17), the Philippines in 4 (0), Türkiye in 3 (5) and Serbia in 2 (5). For
+  example, cathode materials go from TUR, ZAF, IDN to PHL, TUR, ZAF; grain-oriented steel from TUR, IND,
+  MYS to MEX, MYS, IND; static converters from VNM, IND, MYS to THA, VNM, IND. 52 compact roles are held
+  by a development host and nothing else (58 before). Development hosts are never counted, so the classes,
+  the scaling and specialty hosts, the coalition memberships (tied members may change order), the Managed
+  Interdependence figures of section 8 and the strategic roles of section 16.10 are unchanged. The
+  host-types bullet above gives the 2026-10-20 run.
 * **Coalition rule, not changed.** With no simulated capacity at all, 26 of the 31 compacts still reach
   95%, but several coalitions grow sharply (ferrite magnets 6 -> 26 members, accumulator parts 5 -> 11,
   natural graphite 5 -> 11); Li-ion cells, the heat-pump and motor chain, lithium chemicals and
