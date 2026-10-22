@@ -1,12 +1,12 @@
 {
   "schema": "osi-sector",
   "schema_version": 1,
-  "bundle_id": "ff858289c8aef0fd4d3d590291ca3e6a",
-  "created": "2026-10-21T21:15:54Z",
-  "git_commit": "e94cd9b",
+  "bundle_id": "33756a10c4a5da028cb05a2e9826b8f6",
+  "created": "2026-10-22T15:46:34Z",
+  "git_commit": "fcbc001",
   "generator": "scripts/87_export_sector_data.R",
   "phase": 1,
-  "strategic_bundle_id": "495b40db5fa8426437903d1d521f83ff",
+  "strategic_bundle_id": "bc2ea5983697d5ff0aaa68a8320645de",
   "processed_mtime_max": "2026-10-17T20:26:20Z",
   "pipeline_marker": "pipeline 04-25 finished 2026-10-12 09:09:32 (final: EIA fill, baskets, CM-FDI)",
   "flags": {
@@ -23,10 +23,10 @@
   "chunks": [
     {
       "name": "sector-meta",
-      "file": "sector-meta.94db321a.osb",
-      "bytes": 301208,
-      "bytes_gz": 89126,
-      "md5": "94db321a8037fa68d88f3bcbbd61a89a",
+      "file": "sector-meta.605fa983.osb",
+      "bytes": 301944,
+      "bytes_gz": 89316,
+      "md5": "605fa9837b9f6e1b3338b1491b24c8db",
       "tech": null
     },
     {
@@ -588,7 +588,7 @@
       "detail": null
     },
     {
-      "check": "parity X: CRS aid received 2013-2024 by stage, ranked as the Development Potential builder ranks it, reproduces its aid_index_supplychain identical()",
+      "check": "parity X: CRS aid received 2013-2024 by stage, ranked as the 3-digit stage builder (partnership_strength_build_oecd_supplychain()) ranks it, reproduces its aid_index_supplychain identical()",
       "status": "PASS",
       "n": 383,
       "detail": null
@@ -626,14 +626,14 @@
     {
       "check": "parity X: the builder on this export's raw inputs reproduces the stored aid_index_supplychain (data/processed partner_development_tbl) identical()",
       "status": "PASS",
-      "n": 383,
-      "detail": "4213 stored rows compared; 0 stored values without a builder value"
+      "n": 4323,
+      "detail": "4323 stored rows compared; 0 stored values without a builder value"
     },
     {
       "check": "parity X: the builder on this export's raw inputs reproduces the stored aidgdp_index_supplychain (data/processed partner_development_tbl) identical()",
       "status": "PASS",
-      "n": 366,
-      "detail": "4026 stored rows compared; 0 stored values without a builder value"
+      "n": 4224,
+      "detail": "4224 stored rows compared; 0 stored values without a builder value"
     },
     {
       "check": "parity X: IMF DIP positions (conduit positions dropped as the index drops them), ranked as Friendshore's outbound builder ranks them, reproduce its outbound_index identical()",
@@ -1521,9 +1521,9 @@
   "sources": [
     {
       "path": "config/sector_dictionary.yml",
-      "mtime": "2026-10-21T20:38:46Z",
-      "bytes": 165009,
-      "md5": "91aad7ce5636c724d3614c8e285671c8"
+      "mtime": "2026-10-22T15:29:32Z",
+      "bytes": 165849,
+      "md5": "60cad72283b6fcf49272205c87ab0687"
     },
     {
       "path": "coalition_tbl.rds",
@@ -1755,9 +1755,39 @@
     },
     {
       "path": "partner_development_tbl.rds",
-      "mtime": "2026-10-21T20:46:08Z",
-      "bytes": 157813,
-      "md5": "e18ea4c66d51fda21101ac5b557c8daa"
+      "mtime": "2026-10-22T15:34:32Z",
+      "bytes": 168646,
+      "md5": "34b8d56e2d7e77f3b899104e9ed836e9"
+    },
+    {
+      "path": "oecd_crs_purpose.csv",
+      "mtime": "2026-10-16T17:00:35Z",
+      "bytes": 3986506,
+      "md5": "d54da67b0a0a3277feb297c51eca32e0"
+    },
+    {
+      "path": "data/reference/oecd_crs_purpose_crosswalk.csv",
+      "mtime": "2026-10-22T15:29:32Z",
+      "bytes": 14141,
+      "md5": "62168385562a281366ece4f0e837c525"
+    },
+    {
+      "path": "oci_energy_finance.csv",
+      "mtime": "2026-10-16T18:20:41Z",
+      "bytes": 4553338,
+      "md5": "a5f1edaa2743ca880bee874abce7c6b5"
+    },
+    {
+      "path": "data/reference/oci_energy_finance_institutions.csv",
+      "mtime": "2026-10-22T15:29:32Z",
+      "bytes": 3956,
+      "md5": "553bc2b2f052a698aabf478820e920d0"
+    },
+    {
+      "path": "data/reference/oci_energy_finance_crosswalk.csv",
+      "mtime": "2026-10-22T15:29:32Z",
+      "bytes": 8214,
+      "md5": "6e4aea350681c4991c19d4d035e27ac9"
     },
     {
       "path": "imf_dip.csv",
@@ -1971,8 +2001,8 @@
     }
   ],
   "budget": {
-    "sector_gz": 4644523,
-    "combined_gz": 13370688,
+    "sector_gz": 4644713,
+    "combined_gz": 13370632,
     "limit_sector_gz": 9437184,
     "limit_combined_gz": 26214400
   },

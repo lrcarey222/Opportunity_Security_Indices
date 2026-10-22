@@ -1,10 +1,10 @@
 {
   "schema": "osi-dashboard",
   "schema_version": 1,
-  "bundle_id": "495b40db5fa8426437903d1d521f83ff",
-  "created": "2026-10-21T20:52:28Z",
-  "git_commit": "e94cd9b",
-  "osi_branch": "fix/partner-trade-index-data",
+  "bundle_id": "bc2ea5983697d5ff0aaa68a8320645de",
+  "created": "2026-10-22T15:39:37Z",
+  "git_commit": "fcbc001",
+  "osi_branch": "HEAD",
   "generator": "scripts/85_export_dashboard_data.R",
   "r": {
     "version": "R version 4.4.1 (2024-06-14 ucrt)",
@@ -608,25 +608,25 @@
     },
     {
       "path": "partner_friendshore_tbl.rds",
-      "mtime": "2026-10-21T20:42:35Z",
+      "mtime": "2026-10-22T15:31:28Z",
       "size": 37165766,
       "md5": "dd2f1ba6e00cb50d6ceaeb028f8192e4"
     },
     {
       "path": "config/partnership.yml",
-      "mtime": "2026-10-21T20:39:09Z",
-      "size": 9492,
-      "md5": "e0c5c234c427151afd6afc756bd4438b"
+      "mtime": "2026-10-22T15:29:32Z",
+      "size": 12489,
+      "md5": "a8669af4cf230b412b5495336e2b5e5e"
     },
     {
       "path": "partner_opportunity_tbl.rds",
-      "mtime": "2026-10-21T20:45:12Z",
+      "mtime": "2026-10-22T15:33:46Z",
       "size": 25191623,
       "md5": "a5bbc385aac556a95708e82421692bd9"
     },
     {
       "path": "partner_cm_fdi_exposure_tbl.rds",
-      "mtime": "2026-10-21T20:44:09Z",
+      "mtime": "2026-10-22T15:32:56Z",
       "size": 3179,
       "md5": "0f723cec81de6420c47ec0127b9d3694"
     },
@@ -650,33 +650,33 @@
     },
     {
       "path": "partner_friendshore_top5_tbl.rds",
-      "mtime": "2026-10-21T20:44:09Z",
+      "mtime": "2026-10-22T15:32:56Z",
       "size": 1579153,
       "md5": "a1216d99e925c851c755f61f7926d9e8"
     },
     {
       "path": "partner_opportunity_top5_tbl.rds",
-      "mtime": "2026-10-21T20:46:06Z",
+      "mtime": "2026-10-22T15:34:29Z",
       "size": 1172980,
       "md5": "9b1b20697d533cd71b5d818afac9db25"
     },
     {
       "path": "partner_development_top5_tbl.rds",
-      "mtime": "2026-10-21T20:46:09Z",
-      "size": 12987,
-      "md5": "9025d96da349a7bc5759299ec3607bb0"
+      "mtime": "2026-10-22T15:34:32Z",
+      "size": 13267,
+      "md5": "a2654c6686b2b1fb21947eaac213d355"
     },
     {
       "path": "psi_tbl.rds",
-      "mtime": "2026-10-21T20:47:58Z",
-      "size": 12575,
-      "md5": "dfb9c7865e9cabb5c563cac50b80433c"
+      "mtime": "2026-10-22T15:36:27Z",
+      "size": 12584,
+      "md5": "473cd22e1099ddd5b41f48d033fd1e3c"
     },
     {
       "path": "psi_dyad_tbl.rds",
-      "mtime": "2026-10-21T20:47:58Z",
-      "size": 1543604,
-      "md5": "648183c468e509efa394073ceace37b4"
+      "mtime": "2026-10-22T15:36:27Z",
+      "size": 1542939,
+      "md5": "bee845372ba7bd4b5e197029c1a3406f"
     },
     {
       "path": "geo_alignment_tbl.rds",
@@ -704,15 +704,15 @@
     },
     {
       "path": "partner_cm_fdi_ties_tbl.rds",
-      "mtime": "2026-10-21T20:44:09Z",
+      "mtime": "2026-10-22T15:32:56Z",
       "size": 3092,
       "md5": "ffe963f6495787a4a22a5a9e813b3ade"
     },
     {
       "path": "partner_development_tbl.rds",
-      "mtime": "2026-10-21T20:46:08Z",
-      "size": 157813,
-      "md5": "e18ea4c66d51fda21101ac5b557c8daa"
+      "mtime": "2026-10-22T15:34:32Z",
+      "size": 168646,
+      "md5": "34b8d56e2d7e77f3b899104e9ed836e9"
     },
     {
       "path": "data/reference/economic_security_agreements.csv",
@@ -722,9 +722,9 @@
     },
     {
       "path": "config/sector_dictionary.yml",
-      "mtime": "2026-10-21T20:38:46Z",
-      "size": 165009,
-      "md5": "91aad7ce5636c724d3614c8e285671c8"
+      "mtime": "2026-10-22T15:29:32Z",
+      "size": 165849,
+      "md5": "60cad72283b6fcf49272205c87ab0687"
     }
   ],
   "sources_params": {
@@ -948,10 +948,10 @@
   "chunks": [
     {
       "name": "core",
-      "file": "core.cbd5bafd.osb",
-      "bytes": 3708832,
-      "bytes_gz": 760425,
-      "md5": "cbd5bafdde11e6ebd7ae6a83c36021cb",
+      "file": "core.a80bf9a3.osb",
+      "bytes": 3708840,
+      "bytes_gz": 760424,
+      "md5": "a80bf9a3e5acd94bc8083d2334c4b642",
       "initial": true
     },
     {
@@ -964,291 +964,291 @@
     },
     {
       "name": "partner",
-      "file": "partner.6004ea3c.osb",
-      "bytes": 12291776,
-      "bytes_gz": 5610900,
-      "md5": "6004ea3c4d6432effa57af949d0654ad",
+      "file": "partner.0f516ffc.osb",
+      "bytes": 12291784,
+      "bytes_gz": 5610711,
+      "md5": "0f516ffc870776e6ec4a65469b61ed3f",
       "initial": false
     },
     {
       "name": "ties",
-      "file": "ties.f847a998.osb",
+      "file": "ties.1271de98.osb",
       "bytes": 1614144,
-      "bytes_gz": 319929,
-      "md5": "f847a9980d34f62066e71183890ab202",
+      "bytes_gz": 320089,
+      "md5": "1271de984575abc21e2e1bf6eb4d3ace",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-upstream",
-      "file": "pcell-electric-vehicles-upstream.15b20944.osb",
+      "file": "pcell-electric-vehicles-upstream.e71ccadf.osb",
       "bytes": 160992,
-      "bytes_gz": 40917,
-      "md5": "15b20944083aa687b5235790446f560c",
+      "bytes_gz": 40994,
+      "md5": "e71ccadf522a2d5a4b0b8059eacd4be7",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-midstream",
-      "file": "pcell-electric-vehicles-midstream.c527cc66.osb",
+      "file": "pcell-electric-vehicles-midstream.1b994ce6.osb",
       "bytes": 158928,
-      "bytes_gz": 45416,
-      "md5": "c527cc663baf73e272dc9936ac632f0e",
+      "bytes_gz": 45420,
+      "md5": "1b994ce65b71c44d33696fb200c47e7b",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-downstream",
-      "file": "pcell-electric-vehicles-downstream.22f62f9a.osb",
+      "file": "pcell-electric-vehicles-downstream.a708d27c.osb",
       "bytes": 158528,
-      "bytes_gz": 44779,
-      "md5": "22f62f9a1213f48fc5f3359bc8319a93",
+      "bytes_gz": 44778,
+      "md5": "a708d27ca855cd98b672a8a3cbc86af4",
       "initial": false
     },
     {
       "name": "pcell-nuclear-upstream",
-      "file": "pcell-nuclear-upstream.72ff1014.osb",
+      "file": "pcell-nuclear-upstream.1277abc4.osb",
       "bytes": 157856,
-      "bytes_gz": 39089,
-      "md5": "72ff1014658021e4a635900e908dbd2f",
+      "bytes_gz": 39072,
+      "md5": "1277abc42b2251e46fad29337231daa5",
       "initial": false
     },
     {
       "name": "pcell-nuclear-midstream",
-      "file": "pcell-nuclear-midstream.9990e8c5.osb",
+      "file": "pcell-nuclear-midstream.805f33b0.osb",
       "bytes": 156656,
-      "bytes_gz": 43889,
-      "md5": "9990e8c55191a94fd362afa351c58b43",
+      "bytes_gz": 43891,
+      "md5": "805f33b0e5e314723894203d5832df37",
       "initial": false
     },
     {
       "name": "pcell-nuclear-downstream",
-      "file": "pcell-nuclear-downstream.86d94f9b.osb",
+      "file": "pcell-nuclear-downstream.dbfa9941.osb",
       "bytes": 160320,
-      "bytes_gz": 41162,
-      "md5": "86d94f9ba91d6ba774b4c2926aec9bd7",
+      "bytes_gz": 41131,
+      "md5": "dbfa9941ac5f77a3c760680fff4e6d93",
       "initial": false
     },
     {
       "name": "pcell-coal-upstream",
-      "file": "pcell-coal-upstream.0b6582b4.osb",
+      "file": "pcell-coal-upstream.c685f4ab.osb",
       "bytes": 160168,
-      "bytes_gz": 40248,
-      "md5": "0b6582b46c7c38ce0b4486a68bc34f62",
+      "bytes_gz": 40193,
+      "md5": "c685f4ab5227e9904bd4f44f1cc5504d",
       "initial": false
     },
     {
       "name": "pcell-coal-midstream",
-      "file": "pcell-coal-midstream.1a899a4f.osb",
+      "file": "pcell-coal-midstream.7119a382.osb",
       "bytes": 156696,
-      "bytes_gz": 43837,
-      "md5": "1a899a4fb21a566e86f341090ec23abe",
+      "bytes_gz": 43819,
+      "md5": "7119a382093387f449a42be969b1948f",
       "initial": false
     },
     {
       "name": "pcell-coal-downstream",
-      "file": "pcell-coal-downstream.c0994ec2.osb",
+      "file": "pcell-coal-downstream.9ead5b2a.osb",
       "bytes": 160288,
-      "bytes_gz": 43072,
-      "md5": "c0994ec2e5f6d7ccff28bacbfa655a2a",
+      "bytes_gz": 42985,
+      "md5": "9ead5b2aa49be68dac0e3ba6c8124cfb",
       "initial": false
     },
     {
       "name": "pcell-batteries-upstream",
-      "file": "pcell-batteries-upstream.3886e77c.osb",
+      "file": "pcell-batteries-upstream.87bd756f.osb",
       "bytes": 160208,
-      "bytes_gz": 41310,
-      "md5": "3886e77c6e38c7585765c3a54824c11a",
+      "bytes_gz": 41373,
+      "md5": "87bd756fb55abfec4b9bcaad95e4ae3c",
       "initial": false
     },
     {
       "name": "pcell-batteries-midstream",
-      "file": "pcell-batteries-midstream.ef2aa100.osb",
+      "file": "pcell-batteries-midstream.0960e597.osb",
       "bytes": 156728,
-      "bytes_gz": 44390,
-      "md5": "ef2aa1001c6670cbc9aba30854bd53d5",
+      "bytes_gz": 44417,
+      "md5": "0960e597414c9d0438570c820e134c29",
       "initial": false
     },
     {
       "name": "pcell-batteries-downstream",
-      "file": "pcell-batteries-downstream.1dfd57cd.osb",
+      "file": "pcell-batteries-downstream.0e77f15b.osb",
       "bytes": 160344,
-      "bytes_gz": 43131,
-      "md5": "1dfd57cd19d488f3a232f22751d4879f",
+      "bytes_gz": 43100,
+      "md5": "0e77f15b2fc5bfd767212fdaa58cd4da",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-upstream",
-      "file": "pcell-green-hydrogen-upstream.5b0a391e.osb",
+      "file": "pcell-green-hydrogen-upstream.95703454.osb",
       "bytes": 160384,
-      "bytes_gz": 40750,
-      "md5": "5b0a391ef05d497888835b155c2ac612",
+      "bytes_gz": 40729,
+      "md5": "9570345466cf38e7c728851591fb0aac",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-midstream",
-      "file": "pcell-green-hydrogen-midstream.84116959.osb",
+      "file": "pcell-green-hydrogen-midstream.aa2f2324.osb",
       "bytes": 156360,
-      "bytes_gz": 44251,
-      "md5": "84116959d467868fa3d585434f4d0b12",
+      "bytes_gz": 44279,
+      "md5": "aa2f2324ff603edb654a73ae21a0a058",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-downstream",
-      "file": "pcell-green-hydrogen-downstream.01762614.osb",
+      "file": "pcell-green-hydrogen-downstream.44022250.osb",
       "bytes": 160360,
-      "bytes_gz": 44567,
-      "md5": "017626149fd0192c7c48d568f4e5704f",
+      "bytes_gz": 44504,
+      "md5": "44022250b32ac5866f82630f85903817",
       "initial": false
     },
     {
       "name": "pcell-wind-upstream",
-      "file": "pcell-wind-upstream.7799dcde.osb",
+      "file": "pcell-wind-upstream.5ab7d787.osb",
       "bytes": 159784,
-      "bytes_gz": 41474,
-      "md5": "7799dcdefedc5f00c7734b6b433ee2e3",
+      "bytes_gz": 41434,
+      "md5": "5ab7d787cf4c3e9abd27f2046a62da6a",
       "initial": false
     },
     {
       "name": "pcell-wind-midstream",
-      "file": "pcell-wind-midstream.85de7d94.osb",
+      "file": "pcell-wind-midstream.a64cf1e9.osb",
       "bytes": 156736,
-      "bytes_gz": 45186,
-      "md5": "85de7d94105fb2e48128c239f5acd79f",
+      "bytes_gz": 45222,
+      "md5": "a64cf1e908d18480deb2cabbffcb51d8",
       "initial": false
     },
     {
       "name": "pcell-wind-downstream",
-      "file": "pcell-wind-downstream.4026a079.osb",
+      "file": "pcell-wind-downstream.1210775d.osb",
       "bytes": 160336,
-      "bytes_gz": 43002,
-      "md5": "4026a0793e8924403cd5a2c733fbb3df",
+      "bytes_gz": 43017,
+      "md5": "1210775d33e5da95d07a161c99eb54d9",
       "initial": false
     },
     {
       "name": "pcell-oil-upstream",
-      "file": "pcell-oil-upstream.4e065699.osb",
+      "file": "pcell-oil-upstream.981c5170.osb",
       "bytes": 160320,
-      "bytes_gz": 42449,
-      "md5": "4e065699f0b08336ecff315f533a9341",
+      "bytes_gz": 42424,
+      "md5": "981c5170b0a6aab05a536c07b785e2b3",
       "initial": false
     },
     {
       "name": "pcell-oil-midstream",
-      "file": "pcell-oil-midstream.17246d3b.osb",
+      "file": "pcell-oil-midstream.d1c6725f.osb",
       "bytes": 156704,
-      "bytes_gz": 45334,
-      "md5": "17246d3b8ce9fd19e0626543e3995d74",
+      "bytes_gz": 45281,
+      "md5": "d1c6725fd12f280dbac9a0f1cca9bff6",
       "initial": false
     },
     {
       "name": "pcell-oil-downstream",
-      "file": "pcell-oil-downstream.cda9341b.osb",
+      "file": "pcell-oil-downstream.f82ab3d1.osb",
       "bytes": 160320,
-      "bytes_gz": 45270,
-      "md5": "cda9341bea2ed63781c69bfaaed4460e",
+      "bytes_gz": 45252,
+      "md5": "f82ab3d173ccc709ac3ee844cd75f95a",
       "initial": false
     },
     {
       "name": "pcell-solar-upstream",
-      "file": "pcell-solar-upstream.6eaeb701.osb",
+      "file": "pcell-solar-upstream.ff41858f.osb",
       "bytes": 160128,
-      "bytes_gz": 39088,
-      "md5": "6eaeb7011a31fee77c26414a38ebfa2f",
+      "bytes_gz": 39159,
+      "md5": "ff41858f2e82dcb6ddbc22fdfb7971e6",
       "initial": false
     },
     {
       "name": "pcell-solar-midstream",
-      "file": "pcell-solar-midstream.82b56a74.osb",
+      "file": "pcell-solar-midstream.f7f2214b.osb",
       "bytes": 156736,
-      "bytes_gz": 45269,
-      "md5": "82b56a74ea42e5d9157ddef34481e2ed",
+      "bytes_gz": 45292,
+      "md5": "f7f2214ba6a2abf55188b25ada0b79b4",
       "initial": false
     },
     {
       "name": "pcell-solar-downstream",
-      "file": "pcell-solar-downstream.a9ea718d.osb",
+      "file": "pcell-solar-downstream.432383e9.osb",
       "bytes": 160368,
       "bytes_gz": 43691,
-      "md5": "a9ea718dbf6008f28cfb82f5ee91c2fb",
+      "md5": "432383e9300b1bc152bcf2ee4711dd12",
       "initial": false
     },
     {
       "name": "pcell-gas-upstream",
-      "file": "pcell-gas-upstream.367d490c.osb",
+      "file": "pcell-gas-upstream.c74a9997.osb",
       "bytes": 160296,
-      "bytes_gz": 41590,
-      "md5": "367d490c41c3806728f6804ffc010fd0",
+      "bytes_gz": 41583,
+      "md5": "c74a9997321e6b1de74afbc3d6c24856",
       "initial": false
     },
     {
       "name": "pcell-gas-midstream",
-      "file": "pcell-gas-midstream.a42dd387.osb",
+      "file": "pcell-gas-midstream.e8ae1580.osb",
       "bytes": 156696,
-      "bytes_gz": 44873,
-      "md5": "a42dd38715dd3d1eb50a6f738f6529bc",
+      "bytes_gz": 44857,
+      "md5": "e8ae15803b5cdd963ca4b5fbc7c39e8b",
       "initial": false
     },
     {
       "name": "pcell-gas-downstream",
-      "file": "pcell-gas-downstream.08a69377.osb",
+      "file": "pcell-gas-downstream.86ee6299.osb",
       "bytes": 160312,
-      "bytes_gz": 45218,
-      "md5": "08a69377fb6467f2ba0c047ef8e8aa6d",
+      "bytes_gz": 45163,
+      "md5": "86ee629959f83c070296fde6d06f8984",
       "initial": false
     },
     {
       "name": "pcell-geothermal-upstream",
-      "file": "pcell-geothermal-upstream.05640181.osb",
+      "file": "pcell-geothermal-upstream.65df30e9.osb",
       "bytes": 70856,
-      "bytes_gz": 22400,
-      "md5": "056401811a9f5bb441815b6052fd5a5e",
+      "bytes_gz": 22387,
+      "md5": "65df30e97da072d27dbb9e42e8769681",
       "initial": false
     },
     {
       "name": "pcell-geothermal-midstream",
-      "file": "pcell-geothermal-midstream.229e7dd8.osb",
+      "file": "pcell-geothermal-midstream.ac23b02c.osb",
       "bytes": 70864,
       "bytes_gz": 22440,
-      "md5": "229e7dd81fb40a9ea70ac56c46a6f97b",
+      "md5": "ac23b02c433c62cd676b669a950e42b6",
       "initial": false
     },
     {
       "name": "pcell-geothermal-downstream",
-      "file": "pcell-geothermal-downstream.67ec1d63.osb",
+      "file": "pcell-geothermal-downstream.ad4fadf5.osb",
       "bytes": 160336,
-      "bytes_gz": 44694,
-      "md5": "67ec1d63e489026f4d88bbf5d956814f",
+      "bytes_gz": 44717,
+      "md5": "ad4fadf552703770f92964e69623188b",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-upstream",
-      "file": "pcell-electric-grid-upstream.8e84cde5.osb",
+      "file": "pcell-electric-grid-upstream.64551cb0.osb",
       "bytes": 160184,
-      "bytes_gz": 41625,
-      "md5": "8e84cde5361b9d1026ef7111a6e3e61a",
+      "bytes_gz": 41622,
+      "md5": "64551cb053773e1bbade302073e7207c",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-midstream",
-      "file": "pcell-electric-grid-midstream.716331db.osb",
+      "file": "pcell-electric-grid-midstream.5c976c60.osb",
       "bytes": 156736,
-      "bytes_gz": 45540,
-      "md5": "716331db6522d8e4118a51542212d753",
+      "bytes_gz": 45511,
+      "md5": "5c976c6069d71b95e3d16da8ca15777f",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-downstream",
-      "file": "pcell-electric-grid-downstream.4cd35fa8.osb",
+      "file": "pcell-electric-grid-downstream.3d74f172.osb",
       "bytes": 71008,
-      "bytes_gz": 22040,
-      "md5": "4cd35fa84511889fd98d44e900ca30b1",
+      "bytes_gz": 22038,
+      "md5": "3d74f17280cf74972c341864d68dc019",
       "initial": false
     }
   ],
   "budget": {
-    "initial_gz": 769910,
-    "all_gz": 8726165,
+    "initial_gz": 769909,
+    "all_gz": 8725919,
     "limit_initial_gz": 3145728,
     "limit_all_gz": 26214400,
-    "initial_files": ["manifest.json", "core.cbd5bafd.osb"],
+    "initial_files": ["manifest.json", "core.a80bf9a3.osb"],
     "note": "initial = manifest.json + the initial chunks; npm run budget adds the app's JS, CSS and fonts"
   },
   "encoding": {
