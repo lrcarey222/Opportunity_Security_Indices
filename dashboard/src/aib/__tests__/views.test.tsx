@@ -988,7 +988,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const r = renderAt('/aib/partnerships');
     expect(await h1('Partnerships')).toBeTruthy();
     await waitFor(() => expect(within(views()).getByRole('link', { name: 'Partnerships' }).getAttribute('aria-current')).toBe('page'));
-    const trade = screen.getByRole('region', { name: 'Coordinated trade relationships' });
+    const trade = await screen.findByRole('region', { name: 'Coordinated trade relationships' }, { timeout: 15_000 });
     const edge = doc.compacts.flatMap((c) => c.trade).find((e) => e.usd && e.usd > 0 && e.from !== e.to)!;
     // the Sankey draws once its width is measured: wait for it (slow under a loaded full run)
     expect(await within(trade).findByRole('img', { name: /exporter to importer/ }, { timeout: 15_000 })).toBeTruthy();

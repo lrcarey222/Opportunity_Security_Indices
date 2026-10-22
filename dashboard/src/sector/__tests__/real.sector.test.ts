@@ -510,7 +510,7 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
     it('Development & finance: raw values with their builders\' checks; aid by stage on the cells; conduit centres flagged', () => {
       for (const c of [
         'parity X: decoded development.wdi identical() to partnership_strength_build_wdi_long()$value on wb_wdi.csv',
-        'parity X: CRS aid received 2013-2024 by stage, ranked as the Development Potential builder ranks it, reproduces its aid_index_supplychain identical()',
+        'parity X: CRS aid received 2013-2024 by stage, ranked as the 3-digit stage builder (partnership_strength_build_oecd_supplychain()) ranks it, reproduces its aid_index_supplychain identical()',
       ]) expect(manifest.validation.find((x) => x.check === c)?.status).toBe('PASS');
       expect(manifest.validation.some((x) => /^parity X: IMF DIP positions .* reproduce its outbound_index identical\(\)$/.test(x.check) && x.status === 'PASS')).toBe(true);
       expect(manifest.validation.filter((x) => /^parity X: the builder on this export's raw inputs reproduces the stored /.test(x.check)).every((x) => x.status === 'PASS')).toBe(true);
