@@ -160,23 +160,28 @@ test_that("Development counts missing indicators in full and the ES / EO compone
     Series.Code = "IC.BUS.EASE.DFRN.XQ.DB1719",
     X2019 = c(84, 78, 77, 71)
   )
-  # Only India receives (Downstream) aid.
-  oecd <- tibble::tibble(DonorISO = "USA", RecipientISO = "IND", Recipient = "India", Sector = "Energy", Year = 2022, Value = 10)
+  # Only India receives aid (solar, Downstream). Its Upstream aid is then an observed zero; Viet Nam,
+  # absent from the CRS, has no aid value.
+  oecd <- tibble::tibble(
+    year = 2022L, donor_iso3 = "USA", recipient_iso3 = "IND", purpose_code = 23230L,
+    measure = "ODA", usd_commitment = 0, usd_disbursement = 10
+  )
+  crosswalk <- read.csv(file.path(ppr_root, "data", "reference", "oecd_crs_purpose_crosswalk.csv"))
   gdp_data <- tibble::tibble(iso3c = ci$iso3c, year = 2023, NY.GDP.MKTP.CD = c(27, 4, 18, 3.5, 0.4) * 1e12)
   w <- unlist(partnership_strength_development_default_weights())
 
-  idx <- partnership_strength_build_development_index(es, eo, oecd, wb_wdi, wb_db, ci, gdp_data)
+  idx <- partnership_strength_build_development_index(es, eo, oecd, crosswalk, wb_wdi, wb_db, ci, gdp_data)
   share <- function(iso, stage) idx$imputed_weight_share[idx$iso3c == iso & idx$supply_chain == stage]
   # Missing for everyone: energy_use_index (no such WDI series here). India Downstream has aid.
   missing_ind_down <- w[["energy_use_index"]]
   expect_equal(share("IND", "Downstream"), (missing_ind_down + w[["energy_security"]] * 0.2 + w[["economic_opportunity"]] * 0.3) / sum(w))
-  missing_ind_up <- w[["energy_use_index"]] + w[["aid_index_supplychain"]] + w[["aidgdp_index_supplychain"]]
-  expect_equal(share("IND", "Upstream"), (missing_ind_up + w[["energy_security"]] * 0.2 + w[["economic_opportunity"]] * 0.3) / sum(w))
-  # Viet Nam also lacks Doing Business and so the investment environment built on it.
-  missing_vnm <- missing_ind_up + w[["doingbusiness_index"]] + w[["investment_enviro_index"]]
+  expect_equal(share("IND", "Upstream"), (missing_ind_down + w[["energy_security"]] * 0.2 + w[["economic_opportunity"]] * 0.3) / sum(w))
+  # Viet Nam has no aid value and also lacks Doing Business and so the investment environment built on it.
+  missing_vnm <- w[["energy_use_index"]] + w[["aid_index_supplychain"]] + w[["aidgdp_index_supplychain"]] +
+    w[["doingbusiness_index"]] + w[["investment_enviro_index"]]
   expect_equal(share("VNM", "Upstream"), (missing_vnm + w[["energy_security"]] * 0.4 + w[["economic_opportunity"]] * 0.6) / sum(w))
 
-  dev <- stronger_development(ci, gdp_data, eo, es, wb_wdi, wb_db, oecd)
+  dev <- stronger_development(ci, gdp_data, eo, es, wb_wdi, wb_db, oecd, crosswalk)
   top <- dev$top5[dev$top5$variable == "Development Potential Index", ]
   expect_true(all(!is.na(top$imputed_weight_share)))
   expect_true(all(is.na(dev$top5$imputed_weight_share[dev$top5$variable != "Development Potential Index"])))

@@ -125,3 +125,44 @@ cm_fdi:
   # construction (one Chinese battery plant in Japan would read as full exposure). 1 keeps every
   # destination with a project (robustness).
   min_projects: 2
+
+# Official development finance received (Development Potential aid_index_supplychain and
+# aidgdp_index_supplychain; partnership_strength_build_oecd_tech() in
+# R/themes/partnership_strength/stronger_development.R). Source: data/raw/oecd_crs_purpose.csv
+# (OECD CRS bulk file, bilateral flows of country donors by purpose code; scripts/fetchers/oecd_crs.R),
+# allocated to (tech, stage) by data/reference/oecd_crs_purpose_crosswalk.csv. Before October 2026
+# the index summed ODA disbursements of 2013-2024 by 3-digit sector (oecd_crs_api.csv), one value
+# for every technology of a stage.
+development_aid:
+  # [first, last] CRS year; aid is the annual mean over the years of the window in the extract.
+  # 2020-2024 is the last five complete years of the October 2026 file (2025 holds early reports
+  # only and is left out by the fetcher). Before 2018 the extract has no OOF rows.
+  years: [2020, 2024]
+  # CRS measures counted: ODA (category 10), OOF (21, non-export-credit Other Official Flows) and
+  # PSI (60, private sector instruments). OOF and PSI carry the non-concessional lending of the
+  # official development finance institutions (JBIC, KfW, DFC, ...); in the 2026 file their energy
+  # flows move from OOF to PSI in 2023, so the two belong together. [ODA] is the aid-only
+  # sensitivity.
+  measures: [ODA, OOF, PSI]
+  # disbursement (gross, what reached the partner) or commitment (what was pledged; leads
+  # disbursement by the project's life).
+  flow: disbursement
+  # Export-credit and development-lender energy finance the CRS does not carry: OCI's Public
+  # Finance for Energy Database (data/raw/oci_energy_finance.csv; scripts/fetchers/oci_energy_finance.R;
+  # CC BY-NC 4.0). Japan reports no OOF activities to the CRS and no country reports export
+  # credits there, so JBIC, NEXI, JOGMEC, US EXIM, KEXIM, Hermes, KfW IPEX-Bank, UKEF, Bpifrance,
+  # SACE, EDC and others were missing. Only institutions data/reference/oci_energy_finance_institutions.csv
+  # marks source "oci" are taken (the CRS reporters JICA, AFD, KfW, DEG, BII, DFC, ... are not
+  # counted twice; Korea's CRS OOF, which is KEXIM's, gives way to OCI's KEXIM), by fiscal year
+  # over the same window, mapped to (tech, stage) by data/reference/oci_energy_finance_crosswalk.csv.
+  # OCI amounts are full transaction commitments in current US dollars (user decision 2026-10-16:
+  # merged into the aid components, not a separate weight).
+  energy_finance:
+    # false leaves the components CRS-only (sensitivity).
+    include: true
+    # Money the institution itself commits. Guarantees and insurance back other lenders' loans
+    # (NEXI often insures JBIC's own) and are left out (user decision 2026-10-16).
+    mechanisms: [Loan, Equity, Grant]
+    # Lender countries whose finance does not count toward a partner's development partnership
+    # (user decision 2026-10-16: China, which does not report to the CRS either).
+    exclude_lender_countries: [CHN]

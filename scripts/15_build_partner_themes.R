@@ -179,13 +179,26 @@ country_info_path <- file.path(raw_data_path, "wdi_country_info.csv")
 country_gdp_path <- file.path(raw_data_path, "wdi_gdp.csv")
 wb_doingbusiness_path <- file.path(raw_data_path, "wb_doingbusiness.csv")
 wb_wdi_path <- file.path(raw_data_path, "wb_wdi.csv")
-oecd_api_path <- file.path(raw_data_path, "oecd_crs_api.csv")
+# OECD CRS bilateral official finance by purpose code (scripts/fetchers/oecd_crs.R) and the
+# project's purpose code -> (tech, stage) crosswalk, kept in data/reference.
+oecd_crs_path <- file.path(raw_data_path, "oecd_crs_purpose.csv")
+oecd_crosswalk_path <- file.path(raw_data_path, "oecd_crs_purpose_crosswalk.csv")
+# Export-credit and development-lender energy finance the CRS lacks (JBIC, US EXIM, KEXIM, ...):
+# OCI's Public Finance for Energy Database (scripts/fetchers/oci_energy_finance.R) and the project's
+# institution and sector/stage tables, kept in data/reference.
+oci_path <- file.path(raw_data_path, "oci_energy_finance.csv")
+oci_institutions_path <- file.path(raw_data_path, "oci_energy_finance_institutions.csv")
+oci_crosswalk_path <- file.path(raw_data_path, "oci_energy_finance_crosswalk.csv")
 cm_fdi_path <- file.path(raw_data_path, "cm_fdi_projects.csv")
 
 if (!is.null(sharepoint_raw_dir) && nzchar(sharepoint_raw_dir)) {
   # sync_raw_file() is a no-op when the staged copy has not moved ahead of the local one.
-  copy_raw_file(file.path(sharepoint_raw_dir, "oecd_crs_api.csv"), oecd_api_path)
+  copy_raw_file(file.path(sharepoint_raw_dir, "oecd_crs_purpose.csv"), oecd_crs_path)
+  copy_raw_file(file.path(sharepoint_raw_dir, "oci_energy_finance.csv"), oci_path)
 }
+copy_raw_file(file.path(raw_inputs_reference_dir(repo_root), "oecd_crs_purpose_crosswalk.csv"), oecd_crosswalk_path)
+copy_raw_file(file.path(raw_inputs_reference_dir(repo_root), "oci_energy_finance_institutions.csv"), oci_institutions_path)
+copy_raw_file(file.path(raw_inputs_reference_dir(repo_root), "oci_energy_finance_crosswalk.csv"), oci_crosswalk_path)
 
 missing_files <- c(
   comtrade_dyads_path,
@@ -197,7 +210,11 @@ missing_files <- c(
   country_gdp_path,
   wb_doingbusiness_path,
   wb_wdi_path,
-  oecd_api_path,
+  oecd_crs_path,
+  oecd_crosswalk_path,
+  oci_path,
+  oci_institutions_path,
+  oci_crosswalk_path,
   if (cm_fdi_enabled) cm_fdi_path
 )
 missing_files <- missing_files[!file.exists(missing_files)]
@@ -269,7 +286,11 @@ country_info <- read.csv(country_info_path)
 country_gdp <- read.csv(country_gdp_path)
 wb_doingbusiness <- read.csv(wb_doingbusiness_path)
 wb_wdi <- read.csv(wb_wdi_path)
-oecd_api_raw <- read.csv(oecd_api_path)
+oecd_crs <- read.csv(oecd_crs_path)
+oecd_crosswalk <- read.csv(oecd_crosswalk_path)
+oci_energy_finance <- read.csv(oci_path, stringsAsFactors = FALSE)
+oci_institutions <- read.csv(oci_institutions_path, stringsAsFactors = FALSE)
+oci_crosswalk <- read.csv(oci_crosswalk_path, stringsAsFactors = FALSE)
 # Every column as text (UTF-8 with a byte-order mark); cm_fdi_clean_projects() types it and stops on
 # an unknown technology, country name or malformed number.
 cm_fdi_raw <- if (cm_fdi_enabled) {
@@ -574,9 +595,14 @@ development_outputs <- stronger_development(
   energy_security_index = energy_security_index,
   wb_wdi = wb_wdi,
   wb_doingbusiness = wb_doingbusiness,
-  oecd_api_raw = oecd_api_raw,
+  oecd_crs = oecd_crs,
+  oecd_crosswalk = oecd_crosswalk,
   component_weights = weights$partnership_development_components,
-  techs = partner_techs
+  aid_settings = partnership_strength_development_aid_settings(partnership_cfg$development_aid),
+  techs = partner_techs,
+  oci = oci_energy_finance,
+  oci_institutions = oci_institutions,
+  oci_crosswalk = oci_crosswalk
 )
 
 # Development is partner-level, so the "country" table is the variable table itself (one row per

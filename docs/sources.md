@@ -4,7 +4,7 @@
      Regenerate with: Rscript scripts/02_render_sources_doc.R
      Edit config/raw_inputs_manifest.yml instead. -->
 
-Every raw input the pipeline reads, grouped by how it arrives. There are 70 inputs in total.
+Every raw input the pipeline reads, grouped by how it arrives. There are 76 inputs in total.
 
 - **api** — fetched automatically during ingestion; no human step.
 - **manual** — staged by hand into `sharepoint_raw_dir` before a run.
@@ -23,6 +23,8 @@ Fetched programmatically; no human step. Comtrade requires `COMTRADE_API_KEY`. E
 | [IMF lending rates (MFS_IR)](https://data.imf.org/en/Data-Explorer) | `imf_lending_rates.csv`<br>fetch: fallback (staged copy wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [IMF Primary Commodity Price System (wide export, includes annual YoY series)](https://www.imf.org/en/research/commodity-prices) | `imf_commodity_prices.csv`<br>fetch: prefer (API wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [IMF producer price indices (PPI)](https://data.imf.org/en/Data-Explorer) | `imf_ppi.csv`<br>fetch: fallback (staged copy wins) | monthly | — | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
+| [OECD Creditor Reporting System, bilateral official finance by purpose code](https://webfs-dcd.oecd.org/files/dotStat/DSD_CRS/CRS-reduced.parquet) | `oecd_crs_purpose.csv`<br>fetch: prefer (API wins) | annual | — | lcarey@rmi.org | `15_build_partner_themes.R`, `87_export_sector_data.R` |
+| [Oil Change International, Public Finance for Energy Database (international transactions)](https://energyfinance.org/) | `oci_energy_finance.csv`<br>fetch: prefer (API wins) | quarterly | — | lcarey@rmi.org | `15_build_partner_themes.R`, `87_export_sector_data.R` |
 | [U.S. Energy Information Administration, International Energy Statistics (bulk file INTL.zip), fossil fuel production and consumption by country](https://www.eia.gov/opendata/bulk/INTL.zip) | `eia_intl_fossil_production.csv`<br>fetch: fallback (staged copy wins) | monthly | downloaded (accessed) 2026-10-11; INTL.txt dated 2026-10-03 (24,153,479-byte zip); oil production to 2025, gas and coal to 2024, oil consumption to 2024 (2025 for a few economies) | lcarey@rmi.org | `10_build_themes.R`, `40_build_index_vintages.R` |
 | [UN Comtrade (all-reporter energy HS6 reporter-partner dyads)](https://comtradeplus.un.org/) | `comtrade_energy_dyads_all.csv` | annual | 2020 and 2024; main pull 2026-10-07/08 (298 codes), supplements 2026-10-09 (740200 740311 760110 760120) and 2026-10-12 UTC (261210 261220 280469 811291) | lcarey@rmi.org | `15_build_partner_themes.R`, `30_build_allied_network_design.R`, `31_build_aib_trade_network.R`, `98_pull_comtrade_energy_dyads.R` |
 | [UN Comtrade (allied reporter-partner dyads)](https://comtradeplus.un.org/) | `allied_comtrade_energy_data.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R` |
@@ -84,7 +86,7 @@ Each of these must be downloaded and placed in `sharepoint_raw_dir` before a run
 | [Membership of U.S. and allied economic-security agreements (U.S. FTA partners, IPEF, Minerals Security Partnership and MSP Forum, G7, NATO)](https://ustr.gov/trade-agreements/free-trade-agreements) | `economic_security_agreements.csv` | ad-hoc | accessed 2026-10-08 | lcarey@rmi.org | `13_build_coalition.R` |
 | [OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table 1.18 historical uranium production](https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand) | `uranium_production.csv` | biennial | Uranium 2026 (NEA No. 7770) for 2022-2024, Uranium 2024 (NEA No. 7683) for 2020-2021, Uranium 2022 (NEA No. 7634) for 2019; accessed 2026-10-07 | lcarey@rmi.org | `10_build_themes.R`, `13_build_coalition.R` |
 | [OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table 1.2a identified recoverable resources](https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand) | `uranium_resources.csv` | biennial | Uranium 2026 (NEA No. 7770), resources as of 1 January 2025; accessed 2026-10-07 | lcarey@rmi.org | `10_build_themes.R`, `13_build_coalition.R` |
-| [OECD Creditor Reporting System aid flows](https://data-explorer.oecd.org/) | `oecd_crs_api.csv` | annual | — | lcarey@rmi.org | `15_build_partner_themes.R` |
+| [OECD Creditor Reporting System aid flows (3-digit sectors)](https://data-explorer.oecd.org/) | `oecd_crs_api.csv` | annual | — | lcarey@rmi.org | `87_export_sector_data.R` |
 | [USGS Mineral Commodity Summaries 2026 data release, Commodity Salient U.S. and World Statistics (world mine production and reserves)](https://doi.org/10.5066/P1WKQ63T) | `MCS2026_World_Data.csv` | annual | MCS 2026 (reserves at end-2025); ScienceBase file MCS2026_Commodities_Data.csv, 3,189,010 bytes, uploaded 2026-02-06 (MD5 36185ff3..., ScienceBase's checksum); accessed 2026-10-09 | lcarey@rmi.org | `10_build_themes.R`, `13_build_coalition.R` |
 
 ### Project-authored crosswalks (derived)
@@ -94,11 +96,14 @@ Maintained by the team rather than fetched. Entries marked `staged_from: repo` l
 | Source | File | Cadence | Vintage in use | Owner | Read by |
 | --- | --- | --- | --- | --- | --- |
 | Allied reporter list for Comtrade dyad pulls | `allies.csv` | ad-hoc | — | lcarey@rmi.org | `05_ingest_sources.R` |
+| CRS purpose code to technology and supply-chain stage crosswalk | `oecd_crs_purpose_crosswalk.csv` | ad-hoc | — | lcarey@rmi.org | `15_build_partner_themes.R`, `87_export_sector_data.R` |
 | Dual-use scoring by primary/secondary/tertiary category | `dual_use_scores_primary_secondary_tertiary.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R` |
 | HS6 to technology / supply-chain view (tech, supply_chain, sub_sector, HS6) | `consolidated_hs6_energy_tech_long.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R` |
 | HS6 to technology / supply-chain view (Technology, Value Chain, Sub.Sector, HS6) | `hts_codes_categories_bolstered_final.csv` | ad-hoc | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `40_build_index_vintages.R`, `96_pull_trade_timeseries.R`, `97_bulk_comtrade_downloads.R` |
 | HS6 view carrying the essential-goods flag (Technology, Value Chain, Sub.Sector, HS6, essential) | `hs6_categories_with_essential.csv` | ad-hoc | — | lcarey@rmi.org | `10_build_themes.R`, `96_pull_trade_timeseries.R`, `97_bulk_comtrade_downloads.R` |
 | Master energy HS6 catalogue | `energy_hs6_master.csv` | ad-hoc | — | lcarey@rmi.org | `trade_charts.R`, `04_build_hs6_views.R`, `15_build_partner_themes.R`, `30_build_allied_network_design.R`, `98_pull_comtrade_energy_dyads.R` |
+| OCI institutions counted in Development Potential (CRS overlap table) | `oci_energy_finance_institutions.csv` | ad-hoc | — | lcarey@rmi.org | `15_build_partner_themes.R`, `87_export_sector_data.R` |
+| OCI sector and stage to technology and supply-chain stage crosswalk | `oci_energy_finance_crosswalk.csv` | ad-hoc | — | lcarey@rmi.org | `15_build_partner_themes.R`, `87_export_sector_data.R` |
 
 ### Pipeline bookkeeping (generated)
 

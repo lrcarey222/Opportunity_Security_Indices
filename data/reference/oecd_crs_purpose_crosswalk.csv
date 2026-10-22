@@ -1,0 +1,147 @@
+purpose_code,purpose_name,supply_chain,tech,method,note
+23230,Solar energy for centralised grids,Downstream,Solar,direct,
+23231,Solar energy for isolated grids and standalone systems,Downstream,Solar,direct,
+23232,Solar energy - thermal applications,Downstream,Solar,direct,
+23240,Wind energy,Downstream,Wind,direct,
+23260,Geothermal energy,Downstream,Geothermal,direct,
+23510,Nuclear energy electric power plants and nuclear safety,Downstream,Nuclear,direct,
+23320,Coal-fired electric power plants,Downstream,Coal,direct,
+23330,Oil-fired electric power plants,Downstream,Oil,direct,
+23340,Natural gas-fired electric power plants,Downstream,Gas,direct,Includes feed-in infrastructure (LNG terminals and pipelines to the plant)
+23350,Fossil fuel electric power plants with carbon capture and storage (CCS),Downstream,Coal,direct,Split equally between coal and gas
+23350,Fossil fuel electric power plants with carbon capture and storage (CCS),Downstream,Gas,direct,Split equally between coal and gas
+23640,Retail gas distribution,Downstream,Gas,direct,
+23641,Retail distribution of liquid or solid fossil fuels,Downstream,Oil,direct,Split equally between oil and coal
+23641,Retail distribution of liquid or solid fossil fuels,Downstream,Coal,direct,Split equally between oil and coal
+23630,Electric power transmission and distribution (centralised grids),Downstream,Electric Grid,direct,The CRS code also covers grid-connected storage; there is no storage code to split off for Batteries
+23631,Electric power transmission and distribution (isolated mini-grids),Downstream,Electric Grid,direct,
+23642,Electric mobility infrastructures,Downstream,Electric Vehicles,direct,Charging stations; the code also covers hydrogen refuelling and cannot be split
+23110,Energy policy and administrative management,Downstream,Solar,pooled,Cross-cutting: allocated pro rata to the partner's direct Downstream aid
+23110,Energy policy and administrative management,Downstream,Wind,pooled,
+23110,Energy policy and administrative management,Downstream,Geothermal,pooled,
+23110,Energy policy and administrative management,Downstream,Nuclear,pooled,
+23110,Energy policy and administrative management,Downstream,Coal,pooled,
+23110,Energy policy and administrative management,Downstream,Oil,pooled,
+23110,Energy policy and administrative management,Downstream,Gas,pooled,
+23110,Energy policy and administrative management,Downstream,Electric Grid,pooled,
+23110,Energy policy and administrative management,Downstream,Electric Vehicles,pooled,
+23111,"Energy sector policy, planning and administration",Downstream,Solar,pooled,Cross-cutting: allocated pro rata to the partner's direct Downstream aid
+23111,"Energy sector policy, planning and administration",Downstream,Wind,pooled,
+23111,"Energy sector policy, planning and administration",Downstream,Geothermal,pooled,
+23111,"Energy sector policy, planning and administration",Downstream,Nuclear,pooled,
+23111,"Energy sector policy, planning and administration",Downstream,Coal,pooled,
+23111,"Energy sector policy, planning and administration",Downstream,Oil,pooled,
+23111,"Energy sector policy, planning and administration",Downstream,Gas,pooled,
+23111,"Energy sector policy, planning and administration",Downstream,Electric Grid,pooled,
+23111,"Energy sector policy, planning and administration",Downstream,Electric Vehicles,pooled,
+23112,Energy regulation,Downstream,Solar,pooled,Cross-cutting: allocated pro rata to the partner's direct Downstream aid
+23112,Energy regulation,Downstream,Wind,pooled,
+23112,Energy regulation,Downstream,Geothermal,pooled,
+23112,Energy regulation,Downstream,Nuclear,pooled,
+23112,Energy regulation,Downstream,Coal,pooled,
+23112,Energy regulation,Downstream,Oil,pooled,
+23112,Energy regulation,Downstream,Gas,pooled,
+23112,Energy regulation,Downstream,Electric Grid,pooled,
+23112,Energy regulation,Downstream,Electric Vehicles,pooled,
+23181,Energy education/training,Downstream,Solar,pooled,Cross-cutting: allocated pro rata to the partner's direct Downstream aid
+23181,Energy education/training,Downstream,Wind,pooled,
+23181,Energy education/training,Downstream,Geothermal,pooled,
+23181,Energy education/training,Downstream,Nuclear,pooled,
+23181,Energy education/training,Downstream,Coal,pooled,
+23181,Energy education/training,Downstream,Oil,pooled,
+23181,Energy education/training,Downstream,Gas,pooled,
+23181,Energy education/training,Downstream,Electric Grid,pooled,
+23181,Energy education/training,Downstream,Electric Vehicles,pooled,
+23182,Energy research,Downstream,Solar,pooled,Cross-cutting: allocated pro rata to the partner's direct Downstream aid
+23182,Energy research,Downstream,Wind,pooled,
+23182,Energy research,Downstream,Geothermal,pooled,
+23182,Energy research,Downstream,Nuclear,pooled,
+23182,Energy research,Downstream,Coal,pooled,
+23182,Energy research,Downstream,Oil,pooled,
+23182,Energy research,Downstream,Gas,pooled,
+23182,Energy research,Downstream,Electric Grid,pooled,
+23182,Energy research,Downstream,Electric Vehicles,pooled,
+23183,Energy conservation and demand-side efficiency,Downstream,Solar,pooled,"Cross-cutting (efficiency, smart grids, metering): allocated pro rata to the partner's direct Downstream aid"
+23183,Energy conservation and demand-side efficiency,Downstream,Wind,pooled,
+23183,Energy conservation and demand-side efficiency,Downstream,Geothermal,pooled,
+23183,Energy conservation and demand-side efficiency,Downstream,Nuclear,pooled,
+23183,Energy conservation and demand-side efficiency,Downstream,Coal,pooled,
+23183,Energy conservation and demand-side efficiency,Downstream,Oil,pooled,
+23183,Energy conservation and demand-side efficiency,Downstream,Gas,pooled,
+23183,Energy conservation and demand-side efficiency,Downstream,Electric Grid,pooled,
+23183,Energy conservation and demand-side efficiency,Downstream,Electric Vehicles,pooled,
+23210,"Energy generation, renewable sources - multiple technologies",Downstream,Solar,pooled,Allocated pro rata to the partner's direct solar / wind / geothermal aid
+23210,"Energy generation, renewable sources - multiple technologies",Downstream,Wind,pooled,
+23210,"Energy generation, renewable sources - multiple technologies",Downstream,Geothermal,pooled,
+23310,"Energy generation, non-renewable sources, unspecified",Downstream,Coal,pooled,Allocated pro rata to the partner's direct coal / oil / gas aid
+23310,"Energy generation, non-renewable sources, unspecified",Downstream,Oil,pooled,
+23310,"Energy generation, non-renewable sources, unspecified",Downstream,Gas,pooled,
+23410,Hybrid energy electric power plants,Downstream,Solar,pooled,Allocated pro rata to the partner's direct generation aid
+23410,Hybrid energy electric power plants,Downstream,Wind,pooled,
+23410,Hybrid energy electric power plants,Downstream,Geothermal,pooled,
+23410,Hybrid energy electric power plants,Downstream,Coal,pooled,
+23410,Hybrid energy electric power plants,Downstream,Oil,pooled,
+23410,Hybrid energy electric power plants,Downstream,Gas,pooled,
+32167,Energy manufacturing (fossil fuels),Midstream,Oil,direct,"Refineries, gas liquefaction, wholesale fuel distribution; split equally between oil and gas"
+32167,Energy manufacturing (fossil fuels),Midstream,Gas,direct,"Refineries, gas liquefaction, wholesale fuel distribution; split equally between oil and gas"
+32169,Basic metal industries,Midstream,Wind,direct,"Iron and steel: the towers, electrical steel and pipe of the Wind, Electric Grid, Oil and Gas Midstream baskets; split equally"
+32169,Basic metal industries,Midstream,Electric Grid,direct,"Iron and steel: the towers, electrical steel and pipe of the Wind, Electric Grid, Oil and Gas Midstream baskets; split equally"
+32169,Basic metal industries,Midstream,Oil,direct,"Iron and steel: the towers, electrical steel and pipe of the Wind, Electric Grid, Oil and Gas Midstream baskets; split equally"
+32169,Basic metal industries,Midstream,Gas,direct,"Iron and steel: the towers, electrical steel and pipe of the Wind, Electric Grid, Oil and Gas Midstream baskets; split equally"
+32170,Non-ferrous metal industries,Midstream,Batteries,direct,"Smelting and refining: Batteries Midstream (cobalt and nickel refining, foils) and Electric Grid Upstream (copper smelting, primary aluminium), as the HS6 baskets place them; split equally"
+32170,Non-ferrous metal industries,Upstream,Electric Grid,direct,"Smelting and refining: Batteries Midstream (cobalt and nickel refining, foils) and Electric Grid Upstream (copper smelting, primary aluminium), as the HS6 baskets place them; split equally"
+32171,Engineering,Midstream,Solar,direct,"Electrical and non-electrical machinery, engines and turbines: the equipment baskets of seven technologies; split equally"
+32171,Engineering,Midstream,Wind,direct,"Electrical and non-electrical machinery, engines and turbines: the equipment baskets of seven technologies; split equally"
+32171,Engineering,Midstream,Nuclear,direct,"Electrical and non-electrical machinery, engines and turbines: the equipment baskets of seven technologies; split equally"
+32171,Engineering,Midstream,Coal,direct,"Electrical and non-electrical machinery, engines and turbines: the equipment baskets of seven technologies; split equally"
+32171,Engineering,Midstream,Oil,direct,"Electrical and non-electrical machinery, engines and turbines: the equipment baskets of seven technologies; split equally"
+32171,Engineering,Midstream,Gas,direct,"Electrical and non-electrical machinery, engines and turbines: the equipment baskets of seven technologies; split equally"
+32171,Engineering,Midstream,Electric Grid,direct,"Electrical and non-electrical machinery, engines and turbines: the equipment baskets of seven technologies; split equally"
+32172,Transport equipment industry,Midstream,Electric Vehicles,direct,Motor vehicles with ships and rail equipment; the closest code to EV manufacturing
+32110,Industrial policy and administrative management,Midstream,Batteries,pooled,Cross-cutting: allocated pro rata to the partner's direct Midstream aid
+32110,Industrial policy and administrative management,Midstream,Solar,pooled,
+32110,Industrial policy and administrative management,Midstream,Wind,pooled,
+32110,Industrial policy and administrative management,Midstream,Nuclear,pooled,
+32110,Industrial policy and administrative management,Midstream,Coal,pooled,
+32110,Industrial policy and administrative management,Midstream,Oil,pooled,
+32110,Industrial policy and administrative management,Midstream,Gas,pooled,
+32110,Industrial policy and administrative management,Midstream,Electric Grid,pooled,
+32110,Industrial policy and administrative management,Midstream,Electric Vehicles,pooled,
+32120,Industrial development,Midstream,Batteries,pooled,Cross-cutting: allocated pro rata to the partner's direct Midstream aid
+32120,Industrial development,Midstream,Solar,pooled,
+32120,Industrial development,Midstream,Wind,pooled,
+32120,Industrial development,Midstream,Nuclear,pooled,
+32120,Industrial development,Midstream,Coal,pooled,
+32120,Industrial development,Midstream,Oil,pooled,
+32120,Industrial development,Midstream,Gas,pooled,
+32120,Industrial development,Midstream,Electric Grid,pooled,
+32120,Industrial development,Midstream,Electric Vehicles,pooled,
+32182,Technological research and development,Midstream,Batteries,pooled,Cross-cutting: allocated pro rata to the partner's direct Midstream aid
+32182,Technological research and development,Midstream,Solar,pooled,
+32182,Technological research and development,Midstream,Wind,pooled,
+32182,Technological research and development,Midstream,Nuclear,pooled,
+32182,Technological research and development,Midstream,Coal,pooled,
+32182,Technological research and development,Midstream,Oil,pooled,
+32182,Technological research and development,Midstream,Gas,pooled,
+32182,Technological research and development,Midstream,Electric Grid,pooled,
+32182,Technological research and development,Midstream,Electric Vehicles,pooled,
+32261,Coal,Upstream,Coal,direct,Including lignite and peat
+32262,Oil and gas (upstream),Upstream,Oil,direct,Split equally between oil and gas
+32262,Oil and gas (upstream),Upstream,Gas,direct,Split equally between oil and gas
+32264,Nonferrous metals,Upstream,Batteries,direct,"Aluminium, copper, lead, nickel, tin, zinc: the ores of the Batteries, Electric Grid and Electric Vehicles baskets; split equally"
+32264,Nonferrous metals,Upstream,Electric Grid,direct,"Aluminium, copper, lead, nickel, tin, zinc: the ores of the Batteries, Electric Grid and Electric Vehicles baskets; split equally"
+32264,Nonferrous metals,Upstream,Electric Vehicles,direct,"Aluminium, copper, lead, nickel, tin, zinc: the ores of the Batteries, Electric Grid and Electric Vehicles baskets; split equally"
+32268,Offshore minerals,Upstream,Batteries,direct,"Polymetallic nodules (nickel, cobalt, manganese); split equally"
+32268,Offshore minerals,Upstream,Electric Vehicles,direct,"Polymetallic nodules (nickel, cobalt, manganese); split equally"
+32210,Mineral/mining policy and administrative management,Upstream,Batteries,pooled,Cross-cutting: allocated pro rata to the partner's direct Upstream aid
+32210,Mineral/mining policy and administrative management,Upstream,Electric Grid,pooled,
+32210,Mineral/mining policy and administrative management,Upstream,Electric Vehicles,pooled,
+32210,Mineral/mining policy and administrative management,Upstream,Coal,pooled,
+32210,Mineral/mining policy and administrative management,Upstream,Oil,pooled,
+32210,Mineral/mining policy and administrative management,Upstream,Gas,pooled,
+32220,Mineral prospection and exploration,Upstream,Batteries,pooled,Cross-cutting: allocated pro rata to the partner's direct Upstream aid
+32220,Mineral prospection and exploration,Upstream,Electric Grid,pooled,
+32220,Mineral prospection and exploration,Upstream,Electric Vehicles,pooled,
+32220,Mineral prospection and exploration,Upstream,Coal,pooled,
+32220,Mineral prospection and exploration,Upstream,Oil,pooled,
+32220,Mineral prospection and exploration,Upstream,Gas,pooled,
