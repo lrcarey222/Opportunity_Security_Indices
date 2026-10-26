@@ -1,4 +1,4 @@
-# Supply-chain stage taxonomy (DRAFT, 2026-10-26; nothing reads this yet).
+# Supply-chain stage taxonomy (2026-10-26). R/utils/supply_chain_stages.R carries it into the pipeline.
 #
 # Six stages that roll up to the three `supply_chain` values the pipeline uses today. Scores are to
 # be computed at the six stages (user decision 2026-10-26); the roll-up is for summaries, for the
@@ -22,8 +22,10 @@
 #   * Capital goods that make or move a stage's output (drill rigs, OCTG, fab tools, liquefaction
 #     plant) are tagged `assembly` (they are finished equipment) with `enabling_equipment: TRUE`
 #     and the stage they serve in `serves_stage`, so they can be split out or excluded.
-#   * Mapping files: data/reference/energy_hs6_stage_map.csv (traded goods) and
-#     data/reference/index_variable_stage_map.csv (every index variable).
+#   * Data values are the title-case ids (Extraction, Refining, Components, Assembly,
+#     Deployment, Recovery), held in R by SUPPLY_CHAIN_STAGES (R/utils/supply_chain_stages.R).
+#   * Traded goods carry their stage in the `stage` column of data/reference/energy_hs6_master.csv;
+#     data/reference/index_variable_stage_map.csv records the rule for every index variable.
 #   * The literature columns are from the named frameworks as recalled on 2026-10-26; check the
 #     exact wording against the reports before citing them in the paper.
 

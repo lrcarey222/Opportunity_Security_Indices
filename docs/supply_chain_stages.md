@@ -7,7 +7,8 @@ these files yet.
 | File | What it holds |
 |---|---|
 | `config/supply_chain_stages.yml` | The six stages (ids, labels, definitions, roll-up, literature crosswalk) and the Strategic Index stage weights |
-| `data/reference/energy_hs6_stage_map.csv` | A stage for every in-basket row of `energy_hs6_master.csv` (415 rows, 259 codes) |
+| `data/reference/energy_hs6_master.csv` (`stage`, `enabling_equipment`, `serves_stage`) | A stage for every in-basket row (415 rows, 259 codes) |
+| `R/utils/supply_chain_stages.R` | The stage names, roll-up and Strategic Index weights in R, and helpers to replicate legacy-labelled rows |
 | `data/reference/index_variable_stage_map.csv` | A proposed stage, fit, roll-up change and rule for every index variable group (51 rows) |
 | `tests/testthat/test-supply-chain-stages.R` | Keeps the four in step with each other and with the HS6 master |
 

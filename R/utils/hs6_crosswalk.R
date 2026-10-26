@@ -51,10 +51,19 @@
 #     and concentrates (a code in two technologies counts fully in each); Solar Upstream is
 #     silicon metal (2804.69).
 
+#   * `stage` is the six-stage supply chain (R/utils/supply_chain_stages.R): what the code
+#     physically is, relative to the technology (a lithium-ion pack is Assembly for Batteries
+#     and Components for Electric Vehicles). Every in-basket row has one; excluded rows leave it
+#     blank. `supply_chain` keeps the three-stage label for the consumers not yet moved to six
+#     stages (the partner themes, NIPO, the allied network, the dashboard exports); it is NOT
+#     the roll-up of `stage` for the 55 refining rows filed Midstream before 2026-10-26.
+#     `enabling_equipment` flags capital goods that make or move a stage's output (drill rigs,
+#     fab tools); they stay in Assembly, with the stage they serve in `serves_stage`.
+
 HS6_MASTER_COLUMNS <- c("tech", "supply_chain", "sub_sector", "hs6", "essential")
 
 # Optional provenance columns; a master without them reads as all-current, in-basket codes.
-HS6_MASTER_OPTIONAL_COLUMNS <- c("legacy_hs", "excluded", "note")
+HS6_MASTER_OPTIONAL_COLUMNS <- c("legacy_hs", "excluded", "note", "stage", "enabling_equipment", "serves_stage")
 
 # Zero-pad to six characters, dropping anything that is not a usable code.
 hs6_clean_code <- function(x) {
@@ -93,16 +102,19 @@ hs6_normalize_master <- function(master) {
   master <- hs6_master_in_basket(master)
 
   legacy <- if ("legacy_hs" %in% names(master)) as.logical(master$legacy_hs) else FALSE
+  stage <- if ("stage" %in% names(master)) trimws(as.character(master$stage)) else NA_character_
 
   out <- data.frame(
     tech = trimws(as.character(master$tech)),
     supply_chain = trimws(as.character(master$supply_chain)),
+    stage = stage,
     sub_sector = trimws(as.character(master$sub_sector)),
     hs6 = hs6_clean_code(master$hs6),
     essential = as.logical(master$essential),
     legacy_hs = legacy,
     stringsAsFactors = FALSE
   )
+  out$stage[!is.na(out$stage) & !nzchar(out$stage)] <- NA_character_
 
   out <- out[!is.na(out$hs6) & nzchar(out$tech), , drop = FALSE]
   out$essential[is.na(out$essential)] <- FALSE
@@ -154,12 +166,13 @@ hs6_match_report <- function(master_long, available_codes) {
 ## Views ---------------------------------------------------------------------
 
 # Legacy name: hts_codes_categories_bolstered_final.csv
-# Read by scripts/05_ingest_sources.R (Comtrade code list) and 10_build_themes.R,
-# which renames Technology -> tech and "Value Chain" -> supply_chain.
+# Read by scripts/05_ingest_sources.R (Comtrade code list) and 10_build_themes.R. The trade
+# themes score `Stage` (six stages); "Value Chain" is the three-stage label other readers use.
 hs6_view_bolstered <- function(master_long) {
   out <- data.frame(
     Technology = master_long$tech,
     `Value Chain` = master_long$supply_chain,
+    Stage = master_long$stage,
     Sub.Sector = master_long$sub_sector,
     HS6 = master_long$hs6,
     check.names = FALSE,
@@ -174,6 +187,7 @@ hs6_view_consolidated <- function(master_long) {
   out <- data.frame(
     tech = master_long$tech,
     supply_chain = master_long$supply_chain,
+    stage = master_long$stage,
     sub_sector = master_long$sub_sector,
     HS6 = master_long$hs6,
     check.names = FALSE,
