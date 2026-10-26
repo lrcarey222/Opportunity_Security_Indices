@@ -1676,7 +1676,7 @@ vars:
     caveats: [ev_regions]
     primary_for: []
     section: production
-    feeds: ["ES: Foreign Dependency"]
+    feeds: []  # demand context for the net export ratio; not an index term since 2026-10-26
     prov: P
     prov_detail: "market_share_manufacturing_tbl, variable Domestic.sales, one value per IEA region; series from ev_Midstream_capacity.csv"
     parity: {table: market_share_manufacturing_tbl, variable: Domestic.sales}

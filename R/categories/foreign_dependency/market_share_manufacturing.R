@@ -223,7 +223,7 @@ market_share_manufacturing_build_ev_midstream <- function(ei,
     sales_index = "Percent-ranked EV sales of the region",
     net_export_index = "Percent-ranked net export ratio of the region (higher = less dependent on imported EVs)",
     market_share_index = "Percent-ranked share of world EV production",
-    ev_Midstream_index = "Mean of the percent-ranked production, sales, net export ratio and market share"
+    ev_Midstream_index = "Mean of the percent-ranked production, net export ratio and market share"
   )
 
   countries %>%
@@ -235,7 +235,9 @@ market_share_manufacturing_build_ev_midstream <- function(ei,
       market_share_index = median_scurve(market_share, gamma = gamma)
     ) %>%
     dplyr::rowwise() %>%
-    dplyr::mutate(ev_Midstream_index = mean(dplyr::c_across(production_index:market_share_index))) %>%
+    # Sales are demand, not manufacturing: they stay out of the Midstream composite and are
+    # emitted as Downstream rows (user decision 2026-10-26, docs/supply_chain_stages.md).
+    dplyr::mutate(ev_Midstream_index = mean(c(production_index, net_export_index, market_share_index))) %>%
     dplyr::ungroup() %>%
     dplyr::select(
       Country, Region,
@@ -249,7 +251,7 @@ market_share_manufacturing_build_ev_midstream <- function(ei,
     ) %>%
     dplyr::mutate(
       tech = "Electric Vehicles",
-      supply_chain = "Midstream",
+      supply_chain = dplyr::if_else(variable %in% c("Domestic.sales", "sales_index"), "Downstream", "Midstream"),
       category = "Foreign Dependency",
       data_type = dplyr::if_else(stringr::str_detect(variable, "_index$"), "index", "raw"),
       explanation = paste0(

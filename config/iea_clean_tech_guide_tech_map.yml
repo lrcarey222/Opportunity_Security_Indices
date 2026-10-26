@@ -7,19 +7,23 @@
 # item of the 2026 public dataset is classified one way or the other; an item no rule matches is
 # reported as unclassified so a new Guide release cannot drop technologies silently.
 #
-# Stage = the part of the value chain the item's technology changes, using the stage
-# definitions of the index (Upstream = extraction of the raw materials and fuels the technology
-# needs, Midstream = processing and manufacturing of the product and its components,
-# Downstream = deployment: generation, distribution, integration, end-use and end-of-life):
-#   Upstream    mining and mineral extraction, fossil fuel production sites, geothermal
-#               subsurface operations, battery recycling into secondary raw materials (the HS6
-#               crosswalk, data/reference/energy_hs6_master.csv, files battery recycling under
-#               Batteries Upstream too)
-#   Midstream   refining and fuel processing, nuclear fuel fabrication, mineral refining,
-#               cells, components and equipment, hydrogen production
-#   Downstream  power plants and generation concepts, complete vehicles and charging, grid
-#               operation, storage deployment, hydrogen transport, storage, conversion and use,
-#               spent-fuel management, battery reuse
+# Stage = the part of the value chain the item's technology changes. The three stages are the
+# roll-ups of the six-stage taxonomy in config/supply_chain_stages.yml (Upstream = extraction,
+# refining and recovery; Midstream = component manufacturing and final assembly; Downstream =
+# deployment and use). Re-staged 2026-10-26: vehicle, turbine and reactor designs are the
+# technologies' end products (Midstream, was Downstream); battery reuse, fuel reprocessing and
+# cable recycling are recovery (Upstream); geothermal subsurface operations are site
+# development (Downstream, was Upstream).
+#   Upstream    mining and mineral extraction, fossil fuel production sites, refining and
+#               mineral processing, recycling, reuse and reprocessing into secondary supply
+#               (the HS6 crosswalk files battery recycling under Batteries Upstream too)
+#   Midstream   nuclear fuel fabrication and fuel processing, cells, components and
+#               equipment, complete vehicles, wind turbines and reactor designs, electrolysers
+#   Downstream  generation concepts, charging, grid operation, storage deployment, hydrogen
+#               transport, storage, conversion and use, geothermal wells and reservoirs,
+#               radioactive waste disposal
+# Refining items still carry Midstream below: the six-stage `refining` rolls up to Upstream, so
+# they move when the pipeline scores at six stages (docs/supply_chain_stages.md).
 # A stage with no item takes the technology-wide value (technological_readiness_build_tech()).
 #
 # Matching. All conditions a rule lists must hold, except that the "any" conditions
@@ -105,7 +109,14 @@ rules:
     reason: "Fusion. The index's Nuclear technology is fission power (reactors, uranium fuel cycle, nuclear generation in every other category)."
     path: ["Nuclear", "Fusion"]
 
+  - id: nuclear_reprocessing
+    # Spent-fuel reprocessing recovers uranium and plutonium for new fuel: recovery.
+    tech: Nuclear
+    stage: Upstream
+    names: ["Fuel reprocessing (PUREX process and new advanced techniques)"]
+
   - id: nuclear_back_end
+    # Radioactive waste disposal: an operation of the deployed fleet.
     tech: Nuclear
     stage: Downstream
     path: ["Nuclear", "Fission", "Nuclear fuel cycles", "Back-end of the fuel cycle"]
@@ -117,8 +128,9 @@ rules:
     path: ["Nuclear", "Fission", "Nuclear fuel cycles"]
 
   - id: nuclear_reactors
+    # Reactor designs are the technology's end product (final assembly).
     tech: Nuclear
-    stage: Downstream
+    stage: Midstream
     path: [["Nuclear", "Fission", "Large reactors"], ["Nuclear", "Fission", "Small modular reactors"]]
 
   # ---- 4. Hydrogen ----------------------------------------------------------------------------
@@ -183,8 +195,9 @@ rules:
   # battery, materials and the Guide links them to no other index technology; generic mining,
   # refining and recycling methods serve every mineral. Both stay unmapped.
   - id: battery_reuse_and_tracking
+    # Second-life reuse and the passport that tracks a battery to its end of life: recovery.
     tech: Batteries
-    stage: Downstream
+    stage: Upstream
     names: ["EV battery reuse in BESS", "Battery passport"]
 
   - id: battery_recycling
@@ -206,6 +219,12 @@ rules:
     tech: none
     reason: "Rare-earth extraction and separation: magnet materials, tagged Energy Storage by the Guide but not used in batteries, and linked by the Guide to no other index technology."
     names: ["Ion-adsorption clays leaching", "Novel REE separation"]
+
+  - id: grid_cable_recycling
+    # Recovering copper and aluminium from scrap cable: recovery for the grid's conductors.
+    tech: Electric Grid
+    stage: Upstream
+    path: ["Critical minerals", "E-waste recycling", "Cable recycling"]
 
   - id: critical_minerals_generic
     tech: none
@@ -253,8 +272,9 @@ rules:
     names: ["Rare-earth free electric motor", "Cell-to-chassis battery technology", "Cell-to-pack battery technology"]
 
   - id: ev_vehicles
+    # Vehicle designs are the technology's end product (final assembly).
     tech: Electric Vehicles
-    stage: Downstream
+    stage: Midstream
     path: ["Transport", "Road transport", "Electric vehicle (EV)"]
 
   - id: transport_other
@@ -312,14 +332,17 @@ rules:
 
   # ---- 10. Wind -------------------------------------------------------------------------------
   - id: wind_generation
+    # Every item is a turbine or platform design (onshore, seabed-fixed, floating, airborne):
+    # the technology's end product (final assembly).
     tech: Wind
-    stage: Downstream
+    stage: Midstream
     path: ["Renewables", "Wind"]
 
   # ---- 11. Geothermal -------------------------------------------------------------------------
   - id: geothermal_subsurface
+    # Drilling and reservoir systems develop the site: deployment (user decision 2026-10-26).
     tech: Geothermal
-    stage: Upstream
+    stage: Downstream
     path: ["Renewables", "Geothermal", "Subsurface operations for geothermal energy"]
 
   - id: geothermal_surface

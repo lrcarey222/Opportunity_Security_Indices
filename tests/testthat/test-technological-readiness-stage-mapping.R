@@ -107,7 +107,8 @@ test_that("road transport splits into EVs, hydrogen vehicles and out-of-scope en
   expect_identical(mapping_of(assigned, "Fast and ultra-fast charging")$stage, "Downstream")
   expect_identical(mapping_of(assigned, "Fast charging")$status, "out_of_scope")
   expect_length(mapping_of(assigned, "Fast charging")$tech, 0)
-  expect_identical(mapping_of(assigned, "Battery electric truck")$stage, "Downstream")
+  # Vehicle designs are the end product: Midstream (final assembly) since 2026-10-26.
+  expect_identical(mapping_of(assigned, "Battery electric truck")$stage, "Midstream")
   expect_identical(mapping_of(assigned, "Rare-earth free electric motor")$stage, "Midstream")
   expect_identical(mapping_of(assigned, "Sodium-ion battery")$tech, "Batteries")
   expect_identical(mapping_of(assigned, "Sodium-ion battery")$stage, "Midstream")
@@ -248,6 +249,7 @@ test_that("nuclear keeps fission and assigns fuel cycle and reactors to their st
     ~name, ~c1, ~c2, ~c3, ~c4, ~cc, ~trl2020, ~trl2025,
     "Uranium enrichment: laser-based techniques", "Nuclear", "Fission", "Nuclear fuel cycles", "Front-end of the fuel cycle", "", 5, 6,
     "Radioactive waste disposal", "Nuclear", "Fission", "Nuclear fuel cycles", "Back-end of the fuel cycle", "", 5, 5,
+    "Fuel reprocessing (PUREX process and new advanced techniques)", "Nuclear", "Fission", "Nuclear fuel cycles", "Back-end of the fuel cycle", "", 7, 7,
     "Water-cooled SMR", "Nuclear", "Fission", "Small modular reactors", "", "Power=Generation;Heat=Generation", 6, 7,
     "Magnetic confinement fusion: tokamaks", "Nuclear", "Fusion", "Magnetic confinement fusion", "", "Power=Generation;Heat=Generation", 3, 3
   )
@@ -255,7 +257,9 @@ test_that("nuclear keeps fission and assigns fuel cycle and reactors to their st
 
   expect_identical(mapping_of(assigned, "Uranium enrichment: laser-based techniques")$stage, "Midstream")
   expect_identical(mapping_of(assigned, "Radioactive waste disposal")$stage, "Downstream")
-  expect_identical(mapping_of(assigned, "Water-cooled SMR")$stage, "Downstream")
+  # Reactor designs are the end product (Midstream); reprocessing is recovery (Upstream).
+  expect_identical(mapping_of(assigned, "Water-cooled SMR")$stage, "Midstream")
+  expect_identical(mapping_of(assigned, "Fuel reprocessing (PUREX process and new advanced techniques)")$stage, "Upstream")
   expect_identical(mapping_of(assigned, "Magnetic confinement fusion: tokamaks")$status, "out_of_scope")
 })
 
@@ -274,12 +278,30 @@ test_that("battery minerals and recycling map to Batteries; generic and rare-ear
   expect_identical(mapping_of(assigned, "Direct lithium extraction from brine")$stage, "Upstream")
   expect_identical(mapping_of(assigned, "High pressure acid leaching")$stage, "Midstream")
   expect_identical(mapping_of(assigned, "Hydrometallurgical battery recycling")$stage, "Upstream")
-  expect_identical(mapping_of(assigned, "EV battery reuse in BESS")$stage, "Downstream")
+  # Second-life reuse is recovery, which rolls up to Upstream.
+  expect_identical(mapping_of(assigned, "EV battery reuse in BESS")$stage, "Upstream")
   for (item in c("Direct lithium extraction from brine", "High pressure acid leaching", "Hydrometallurgical battery recycling")) {
     expect_identical(mapping_of(assigned, item)$tech, "Batteries", info = item)
   }
   expect_identical(mapping_of(assigned, "Bioleaching")$status, "out_of_scope")
   expect_identical(mapping_of(assigned, "Novel REE separation")$status, "out_of_scope")
+})
+
+test_that("cable recycling is grid recovery and geothermal drilling is deployment", {
+  items <- tibble::tribble(
+    ~name, ~c1, ~c2, ~c3, ~c4, ~cc, ~trl2020, ~trl2025,
+    "Chemical recycling of cables", "Critical minerals", "E-waste recycling", "Cable recycling", "", "", 4, 5,
+    "Millimeter wave drilling", "Renewables", "Geothermal", "Subsurface operations for geothermal energy", "Drilling", "", 3, 4,
+    "Enhanced geothermal systems", "Renewables", "Geothermal", "Subsurface operations for geothermal energy", "Next-generation geothermal energy systems", "Power=Generation", 6, 7
+  )
+  assigned <- assign_guide(items)
+
+  expect_identical(mapping_of(assigned, "Chemical recycling of cables")$tech, "Electric Grid")
+  expect_identical(mapping_of(assigned, "Chemical recycling of cables")$stage, "Upstream")
+  for (item in c("Millimeter wave drilling", "Enhanced geothermal systems")) {
+    expect_identical(mapping_of(assigned, item)$tech, "Geothermal", info = item)
+    expect_identical(mapping_of(assigned, item)$stage, "Downstream", info = item)
+  }
 })
 
 test_that("grid items split into equipment and operation, with stray whitespace in the taxonomy", {
@@ -376,9 +398,9 @@ test_that("a stage whose items lack a start-year TRL takes the technology-wide m
   expect_equal(coal_down$trl_momentum_index, coal_up$trl_momentum_index)
   expect_false(is.na(coal_down$trl_index))
 
-  # Wind only has Downstream items, so all three stages read the same values.
+  # Wind only has Midstream items (turbine designs), so all three stages read the same values.
   wind <- tech_tbl[tech_tbl$tech == "Wind", ]
-  expect_identical(wind$basis, c("technology", "technology", "stage"))
+  expect_identical(wind$basis[match(c("Upstream", "Midstream", "Downstream"), wind$supply_chain)], c("technology", "stage", "technology"))
   expect_equal(dplyr::n_distinct(wind$trl_index), 1L)
 })
 
@@ -404,7 +426,7 @@ test_that("a TRL 9 item's post-TRL-9 adoption stage puts its level on the 1-11 s
   cell <- function(tbl, tech, stage) tbl[tbl$tech == tech & tbl$supply_chain == stage, ]
 
   tech_tbl <- build(items)
-  wind <- cell(tech_tbl, "Wind", "Downstream")
+  wind <- cell(tech_tbl, "Wind", "Midstream")
   expect_equal(wind$trl2025, mean(c(11, 10, 9, 6)))
   expect_equal(wind$trl_level_index, mean(bell(c(11, 10, 9, 6))))
   # The change since 2020 stays on the 1-9 scale the release reports for every year.

@@ -124,6 +124,26 @@ test_that("the Foreign Dependency overall lists the EV terms the builders emit",
   index_definition <- yaml::read_yaml(file.path(repo_root, "config", "index_definition.yml"))
   components <- unlist(index_definition$overall_variables[["Overall Foreign Dependency Index"]]$components)
 
-  expect_true(all(c("production", "sales", "net_export", "market_share") %in% components))
+  expect_true(all(c("production", "net_export", "market_share") %in% components))
   expect_false("import" %in% components)
+  # EV sales are demand (Downstream, scored under Technology Demand), not a dependency term.
+  expect_false("sales" %in% components)
+})
+
+test_that("EV sales are Downstream rows and stay out of the Midstream composite", {
+  for (out in list(
+    foreign_dependency_build_ev_midstream(ev_ei_fixture(), ev_midstream_fixture(), year = 2024),
+    market_share_manufacturing_build_ev_midstream(ev_ei_fixture(), ev_midstream_fixture(), year = 2024L)
+  )) {
+    is_sales <- out$variable %in% c("Domestic.sales", "sales")
+    expect_true(all(out$supply_chain[is_sales] == "Downstream"))
+    expect_true(all(out$supply_chain[!is_sales] == "Midstream"))
+
+    composite_name <- intersect(c("ev_Midstream", "Overall Production"), out$variable)
+    idx <- function(variable) ev_value(out, "Japan", variable, "index")
+    expect_equal(
+      idx(composite_name),
+      mean(c(idx("production"), idx("net_export"), idx("market_share")))
+    )
+  }
 })
