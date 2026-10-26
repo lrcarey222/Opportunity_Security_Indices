@@ -103,6 +103,13 @@ export const routes: RouteObject[] = [
   },
 ];
 
+/** The first route of the artifact preview from its link's hash: '#countries.JPN' -> '/countries/JPN'
+ *  (the host passes only a plain token, letters, digits and . _ ~ -, so '.' stands for '/'). */
+export function artifactEntry(hash: string): string {
+  const token = hash.replace(/^#/, '');
+  return /^[A-Za-z0-9._~-]+$/.test(token) ? `/${token.split('.').join('/')}` : '/';
+}
+
 /** The router basename from Vite's base ('/' or '/explorer/'). */
 export function basename(): string {
   const b = import.meta.env.BASE_URL ?? '/';

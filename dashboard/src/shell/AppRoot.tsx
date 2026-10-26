@@ -31,6 +31,20 @@ function RouteNotice() {
   );
 }
 
+/** The beta preview hosted as a claude.ai artifact (VITE_ARTIFACT=1): what does not work inside it. */
+function PreviewNotice() {
+  const [dismissed, setDismissed] = useState(false);
+  if (import.meta.env.VITE_ARTIFACT !== '1' || dismissed) return null;
+  return (
+    <div className="mx-auto mt-4 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+      <Notice kind="info" title="Beta preview" onDismiss={() => setDismissed(true)}>
+        This is a test build for colleagues. Downloads and copied links do not work inside the preview, and the
+        address bar does not follow the page you are on. Please leave feedback as a comment on the preview.
+      </Notice>
+    </div>
+  );
+}
+
 export function AppRoot() {
   const loc = useLocation();
   useEffect(() => {
@@ -49,6 +63,7 @@ export function AppRoot() {
         )}
         <Header pathname={loc.pathname} search={loc.search} />
         <main id="main" tabIndex={-1} className="flex w-full min-w-0 flex-1 flex-col outline-none">
+          <PreviewNotice />
           <RouteNotice />
           <ViewErrorBoundary resetKey={loc.pathname}>
             <Outlet />

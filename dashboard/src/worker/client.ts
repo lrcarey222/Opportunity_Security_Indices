@@ -109,10 +109,13 @@ export class EngineClient {
   private requests = new Map<number, PendingRequest>();
   private readyWaiters: { resolve: (s: EngineState) => void; reject: (e: Error) => void }[] = [];
 
-  /** Start the module worker and load `<dataBase>manifest.json` (default `<BASE_URL>data/`). */
+  /** Start the module worker and load `<dataBase>manifest.json` (default `<BASE_URL>data/`). The base is
+   *  made absolute against the page, because the worker resolves a relative URL ('./data/' under
+   *  VITE_BASE=./) against its own script in assets/. */
   static create(dataBase?: string): EngineClient {
     const worker = new Worker(new URL('./engine.worker.ts', import.meta.url), { type: 'module', name: 'osi-engine' });
-    return new EngineClient(worker as unknown as WorkerLike, dataBase ?? `${import.meta.env.BASE_URL}data/`);
+    const base = dataBase ?? `${import.meta.env.BASE_URL}data/`;
+    return new EngineClient(worker as unknown as WorkerLike, typeof document === 'undefined' ? base : new URL(base, document.baseURI).href);
   }
 
   constructor(private worker: WorkerLike, dataBase: string) {

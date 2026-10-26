@@ -2,6 +2,7 @@
 // EngineClient.create() as a module worker. Gzip chunks are inflated with the platform's
 // DecompressionStream; fflate is loaded (as a separate chunk) only where that is missing.
 
+import '../artifactFetch.ts';
 import { gunzipStream } from '../engine/codec.ts';
 import { EngineHost, fetchBytesHttp } from './host.ts';
 import type { FromWorker, ToWorker } from './protocol.ts';
