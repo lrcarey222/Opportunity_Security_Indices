@@ -1,0 +1,113 @@
+# Supply-chain stage taxonomy (DRAFT, 2026-10-26; nothing reads this yet).
+#
+# Six stages that roll up to the three `supply_chain` values the pipeline uses today. Scores are to
+# be computed at the six stages (user decision 2026-10-26); the roll-up is for summaries, for the
+# Strategic Index stage weights and for tables that cannot be split.
+#
+# Decisions (user, 2026-10-26)
+#   * Upstream means materials, including refining: `refining` rolls up to Upstream, so Midstream is
+#     manufacturing only (components and assembly).
+#   * Score at six stages.
+#   * Strategic Index: keep the three stage weights and give each stage an equal share of its
+#     roll-up's weight (`strategic_index_weights` below).
+#   * Enabling equipment stays in `assembly`, flagged.
+#   * Geothermal subsurface-drilling technologies are `deployment` (site development).
+#
+# Conventions
+#   * `id` is the stable key for data and code; `label` is for charts and prose; `short` for tight axes.
+#   * Stage is relative to the technology: a lithium-ion pack is `assembly` for Batteries and
+#     `components` for Electric Vehicles; discrete semiconductors are the Semiconductors end product.
+#   * For a traded good, stage follows what the HS6 code physically is, not the intent of the
+#     sub-sector it sits in: a generic chemical in "Cathode Materials" is `refining`.
+#   * Capital goods that make or move a stage's output (drill rigs, OCTG, fab tools, liquefaction
+#     plant) are tagged `assembly` (they are finished equipment) with `enabling_equipment: TRUE`
+#     and the stage they serve in `serves_stage`, so they can be split out or excluded.
+#   * Mapping files: data/reference/energy_hs6_stage_map.csv (traded goods) and
+#     data/reference/index_variable_stage_map.csv (every index variable).
+#   * The literature columns are from the named frameworks as recalled on 2026-10-26; check the
+#     exact wording against the reports before citing them in the paper.
+
+version: 1
+
+stages:
+  - id: extraction
+    order: 1
+    label: "Extraction"
+    short: "Extract"
+    rollup: Upstream
+    definition: >-
+      Mining, drilling and harvesting of primary resources: ores and concentrates, crude oil, natural
+      gas, coal, uranium ore; reserves and resource endowments.
+    literature: {doe_2022: "Raw materials", iea_etp_2023: "Mining", un_bec: "Primary goods"}
+  - id: refining
+    order: 2
+    label: "Refining & Processing"
+    short: "Refine"
+    rollup: Upstream
+    definition: >-
+      Conversion of primary resources into commodity-grade metals, chemicals and fuels used by many
+      industries: refined Li/Ni/Co chemicals, rare-earth oxides and metals, alumina and primary
+      aluminium, refined copper, metallurgical and polysilicon, electrical steel, uranium conversion
+      and enrichment, refined petroleum products and NGLs.
+    literature: {doe_2022: "Processed materials", iea_etp_2023: "Materials production", un_bec: "Processed intermediate goods"}
+  - id: components
+    order: 3
+    label: "Component Manufacturing"
+    short: "Components"
+    rollup: Midstream
+    definition: >-
+      Technology-specific intermediates and parts that only function inside a finished product:
+      wafers, PV cells, battery cells for EVs, permanent magnets, power semiconductors in inverters,
+      blades, towers and nacelle parts, fuel assemblies, parts n.e.c. of finished equipment.
+    literature: {doe_2022: "Subcomponents / components", iea_etp_2023: "Component manufacturing", un_bec: "Parts and accessories"}
+  - id: assembly
+    order: 4
+    label: "Final Assembly & Equipment"
+    short: "Assembly"
+    rollup: Midstream
+    definition: >-
+      The technology's finished goods and stand-alone balance-of-system equipment, installed or sold
+      as they are: PV modules, inverters, racking, battery packs, EVs, chargers, wind generating sets,
+      transformers, switchgear, cables, reactors, boilers and turbines, pipelines and tankers.
+    literature: {doe_2022: "End products", iea_etp_2023: "Final assembly", un_bec: "Capital goods / consumption goods"}
+  - id: deployment
+    order: 5
+    label: "Deployment & Use"
+    short: "Deploy"
+    rollup: Downstream
+    definition: >-
+      Installation, operation and use: capacity additions and stock, generation and consumption,
+      demand and sales, deployment investment, and the site resource (solar, wind, geothermal
+      potential) that deployment draws on.
+    literature: {doe_2022: "Deployment", iea_etp_2023: "Installation", un_bec: "(not a traded stage)"}
+  - id: recovery
+    order: 6
+    label: "Recovery & Recycling"
+    short: "Recover"
+    rollup: Upstream
+    definition: >-
+      End-of-life collection and secondary supply: scrap, black mass, metal-bearing residues, waste
+      oils, spent nuclear fuel. Rolls up to Upstream because its output re-enters the chain as
+      feedstock for refining.
+    literature: {doe_2022: "End of life", iea_etp_2023: "Recycling (secondary supply)", un_bec: "Primary goods (waste and scrap)"}
+
+# Old stage -> new stages it now splits into.
+rollup:
+  Upstream: [extraction, refining, recovery]
+  Midstream: [components, assembly]
+  Downstream: [deployment]
+
+# Strategic Index supply-chain term (R/indices/build_indices.R STRATEGIC_SUPPLY_CHAIN_WEIGHTS, today
+# Upstream 0.50 / Midstream 0.75 / Downstream 0.25). Each stage takes an equal share of its roll-up's
+# weight. The term enters each sector's score additively (0.1 x weight), so it is an attribute of the
+# stage, not a share that sums to one across stages.
+strategic_index_weights:
+  rollup: {Upstream: 0.50, Midstream: 0.75, Downstream: 0.25}
+  split: equal_share
+  stage:
+    extraction: 0.1667
+    refining: 0.1667
+    recovery: 0.1667
+    components: 0.375
+    assembly: 0.375
+    deployment: 0.25
