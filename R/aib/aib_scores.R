@@ -18,9 +18,22 @@ aib_specialization_weight <- function(rca, world_share, rca_cap = 4, neutral = 0
   base + 1e-3 * dplyr::coalesce(world_share, 0)
 }
 
+# Stop when a partner, development or policy table is still keyed by Upstream / Midstream / Downstream
+# (built before the six-stage migration of 2026-10-26): no node stage would match it and every score
+# would silently turn neutral.
+aib_assert_six_stage_table <- function(stage, label) {
+  old <- intersect(unique(as.character(stage)), SUPPLY_CHAIN_LEGACY_STAGES)
+  if (length(old)) {
+    stop(label, " is keyed by ", paste(old, collapse = " / "), ", not the six supply-chain stages (",
+         paste(SUPPLY_CHAIN_STAGES, collapse = ", "), "): rebuild it before the AIB.", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
 # Long dyad index table (partner_opportunity_tbl / partner_friendshore_tbl rows of one index
-# variable) reduced to reporter_iso, partner_iso, tech, supply_chain, value.
-aib_dyad_index <- function(tbl, variable, stages = c("Upstream", "Midstream")) {
+# variable) reduced to reporter_iso, partner_iso, tech, supply_chain, value. `stages`: the supplying
+# stages (every stage but Deployment), where the AIB's nodes sit.
+aib_dyad_index <- function(tbl, variable, stages = SUPPLY_CHAIN_SUPPLY_STAGES) {
   require_columns(tbl, c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable", "value"), label = "partner index table")
   keep <- tbl$variable == variable & tbl$supply_chain %in% stages
   tibble::tibble(
@@ -33,10 +46,22 @@ aib_dyad_index <- function(tbl, variable, stages = c("Upstream", "Midstream")) {
     dplyr::filter(!is.na(value))
 }
 
-# A dyad index for one node: the mean over the node's technologies (one stage) per
-# (reporter, partner). Returns a lookup environment keyed "REP|PAR" for fast access.
+# The OSI cells ("tech|stage") a node is scored in: `techs` with `supply_chain` either one stage for all
+# of them or one per technology (the crosswalk's score_cells; stage is relative to the technology).
+aib_score_cell_keys <- function(techs, supply_chain) {
+  if (!length(techs)) return(character())
+  if (!length(supply_chain) || !length(supply_chain) %in% c(1L, length(techs))) {
+    stop("aib_score_cell_keys(): give one stage, or one per technology (", length(techs), ").")
+  }
+  paste(techs, rep_len(as.character(supply_chain), length(techs)), sep = "|")
+}
+
+# A dyad index for one node: the mean over the node's score cells (each technology at its own six-stage
+# stage, aib_score_cell_keys()) per (reporter, partner). Returns a lookup environment keyed "REP|PAR"
+# for fast access.
 aib_node_dyad_lookup <- function(dyad_index, techs, supply_chain) {
-  d <- dyad_index[dyad_index$tech %in% techs & dyad_index$supply_chain == supply_chain, , drop = FALSE]
+  d <- dyad_index[dyad_index$tech %in% techs, , drop = FALSE]
+  d <- d[paste(d$tech, d$supply_chain, sep = "|") %in% aib_score_cell_keys(techs, supply_chain), , drop = FALSE]
   if (!nrow(d)) return(new.env(hash = TRUE, size = 1L))
   d <- d %>%
     dplyr::group_by(reporter_iso, partner_iso) %>%
@@ -59,8 +84,9 @@ aib_lookup_pairs_raw <- function(env, reporter, partner) {
 }
 
 # IEA PAMS policy intensity per (iso3, tech, supply_chain): the rank S-curve of the log policy
-# strength within the technology stage (policy_outputs.rds$policy_agg). EU-level measures (iso3
-# EUR) are added to each member's own before ranking. Economies with no recorded policy get 0.
+# strength within the technology stage (policy_outputs.rds$policy_agg, six-stage since 2026-10-26).
+# EU-level measures (iso3 EUR) are added to each member's own before ranking. Economies with no
+# recorded policy get 0.
 aib_pams_intensity <- function(policy_agg, eu_members = EU27_ISO3, eu_code = "EUR") {
   require_columns(policy_agg, c("iso3", "tech", "supply_chain", "strength_sum"), label = "policy_agg")
   pa <- tibble::tibble(
@@ -112,9 +138,10 @@ aib_compatibility <- function(a, b, pams_node, cat_scores, components = c("pams"
   out
 }
 
-# PAMS intensity of one node (mean over its technologies, its stage).
+# PAMS intensity of one node (mean over its score cells, aib_score_cell_keys()).
 aib_pams_node <- function(pams, techs, supply_chain) {
-  p <- pams[pams$tech %in% techs & pams$supply_chain == supply_chain, , drop = FALSE]
+  p <- pams[pams$tech %in% techs, , drop = FALSE]
+  p <- p[paste(p$tech, p$supply_chain, sep = "|") %in% aib_score_cell_keys(techs, supply_chain), , drop = FALSE]
   if (!nrow(p)) return(NULL)
   p %>% dplyr::group_by(iso3) %>% dplyr::summarise(intensity = mean(intensity), .groups = "drop")
 }

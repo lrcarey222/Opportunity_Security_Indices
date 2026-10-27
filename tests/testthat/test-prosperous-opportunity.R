@@ -12,7 +12,7 @@ test_that("opportunity trade_index is scaled within each reporter country", {
     reporter_iso = c("USA", "USA", "CHN", "CHN"),
     partner_iso = c("JPN", "DEU", "JPN", "DEU"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     level_last = c(100, 200, 300, 400),
     level_first = c(80, 120, 250, 500),
     growth = c(0.25, 0.67, 0.2, -0.2)
@@ -37,7 +37,7 @@ test_that("friendshore imp_trade_index is scaled within each reporter country", 
     reporter_iso = c("USA", "USA", "CHN", "CHN"),
     partner_iso = c("JPN", "DEU", "JPN", "DEU"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     level_last = c(140, 80, 500, 250),
     level_first = c(100, 100, 300, 400),
     growth = c(0.4, -0.2, 0.67, -0.38)
@@ -62,21 +62,21 @@ test_that("opportunity assigns tech/supply-chain average trade_index when trade 
     reporter_iso = "USA",
     partner_iso = "JPN",
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     trade_index = 0.8
   )
 
   econ_opp_index <- tibble::tibble(
     Country = c("United States", "China"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     Economic_Opportunity_Index = c(0.4, 0.6)
   )
 
   energy_security_index <- tibble::tibble(
     Country = c("Japan", "Germany"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     Energy_Security_Index = c(0.3, 0.7)
   )
 
@@ -105,21 +105,21 @@ test_that("friendshore assigns tech/supply-chain average imp_trade_index when tr
     reporter_iso = "USA",
     partner_iso = "JPN",
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     imp_trade_index = 0.7
   )
 
   econ_opp_index <- tibble::tibble(
     Country = c("United States", "China", "Japan", "Germany"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     Economic_Opportunity_Index = c(0.4, 0.6, 0.5, 0.55)
   )
 
   energy_security_index <- tibble::tibble(
     Country = c("United States", "China"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     Energy_Security_Index = c(0.3, 0.7)
   )
 

@@ -71,6 +71,7 @@ arg_value <- function(flag, default = NULL) {
 abs_path <- function(p) normalizePath(if (grepl("^([A-Za-z]:)?[/\\]", p)) p else file.path(repo_root, p), winslash = "/", mustWork = FALSE)
 step <- function(...) message(format(Sys.time(), "%H:%M:%S"), "  ", ...)
 
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 for (f in sort(list.files(file.path(repo_root, "R", "aib"), pattern = "\\.R$", full.names = TRUE))) source(f)
 source(file.path(repo_root, "R", "themes", "partnership_strength", "safer_friendshore.R"))
 source(file.path(repo_root, "scripts", "utils", "aib_strategic_config.R"))
@@ -90,6 +91,8 @@ scfg <- aib_read_strategic_config(repo_root, compacts = arg_value("--compacts"),
 step("AIB strategic layer: ", paste(basename(scfg$files), collapse = ", "))
 res <- readRDS(res_path)
 inputs <- readRDS(inputs_path)
+# The node-function fallback is keyed by the six stages (config/aib_node_functions.yml fallback_by_stage).
+assert_supply_chain_stages(inputs$nodes$supply_chain, paste0(inputs_path, " nodes (rerun scripts/31)"))
 
 # ---- Capital evidence (read-only partner data) ----------------------------------------------------------
 cmfdi_path <- file.path(partner_dir, "cm_fdi_projects_tbl.rds")

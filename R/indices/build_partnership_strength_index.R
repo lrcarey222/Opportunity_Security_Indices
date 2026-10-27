@@ -7,6 +7,10 @@
 #           mean), for Development
 #           the partner's own top-5 mean (it has no reporter);
 #   PSI_j = sum_k w_k C^k_j / sum over the categories j has of w_k   (w = config/weights.yml psi).
+# The top-5 means are over (tech, stage) cells keyed by the six supply-chain stages since
+# 2026-10-27, so each draws on up to six cells per technology (66 over the 11 headline
+# technologies) instead of three (33), with k still 5 (partnership_strength_build_top_k()): a
+# technology with several strong stages can now fill more of a dyad's five cells.
 # A category a partner lacks is dropped and the weights renormalized, not scored 0: Development
 # is defined only for non-high-income partners, so high-income partners get
 # PSI = (0.4 FS + 0.4 OP) / 0.8 rather than a score capped at 0.8. Each category uses its pillar

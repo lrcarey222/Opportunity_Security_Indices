@@ -1,5 +1,5 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
-for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "categories/policy/cat_policy_index.R")) {
+for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "utils/supply_chain_stages.R", "categories/policy/cat_policy_index.R")) {
   source(file.path(repo_root, "R", f))
 }
 for (f in sort(list.files(file.path(repo_root, "R", "aib"), pattern = "\\.R$", full.names = TRUE))) source(f)
@@ -93,7 +93,7 @@ test_that("a half shock frees only half of the sales to the shocked economy", {
 })
 
 test_that("shock targets follow the level and carry re-export hubs", {
-  node_cells <- tibble::tibble(node_id = c("n1", "n2", "n3"), tech = c("T1", "T1", "T2"), supply_chain = "Midstream",
+  node_cells <- tibble::tibble(node_id = c("n1", "n2", "n3"), tech = c("T1", "T1", "T2"), supply_chain = "Components",
                                sub_sector = c("S1", "S2", "S3"))
   em <- tibble::tibble(
     node_id = c("n1", "n1", "n2", "n2", "n3", "n3"),

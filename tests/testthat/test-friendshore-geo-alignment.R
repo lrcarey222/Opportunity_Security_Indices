@@ -26,7 +26,7 @@ fsg_index_tbl <- function(value_col, values) {
   tbl <- tidyr::expand_grid(
     Country = c("United States", "Japan", "China", "India", "Viet Nam"),
     tech = "Solar",
-    supply_chain = c("Upstream", "Downstream")
+    supply_chain = c("Extraction", "Assembly")
   )
   tbl[[value_col]] <- values
   tbl
@@ -42,7 +42,7 @@ fsg_inputs <- function() {
       cmd_code = "854140",
       primary_value = c(10, 20, 5, 8)
     ),
-    subcat = tibble::tibble(tech = "Solar", supply_chain = "Downstream", code = "854140"),
+    subcat = tibble::tibble(tech = "Solar", supply_chain = "Assembly", code = "854140"),
     eo = fsg_index_tbl("Economic_Opportunity_Index", rev(seq(0.1, 1, length.out = 10))),
     es = fsg_index_tbl("Energy_Security_Index", seq(0.1, 1, length.out = 10)),
     tech_ghg = tibble::tibble(tech = "Solar", ghg_index = 0.9),
@@ -98,7 +98,7 @@ fsg_run <- function(geo_weight, geo_alignment) {
 fsg_dyads <- function(geo_weight, geo_alignment) {
   x <- fsg_inputs()
   partnership_strength_build_friendshore_dyads(
-    tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", tech = "Solar", supply_chain = "Upstream", imp_trade_index = 0.9),
+    tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", tech = "Solar", supply_chain = "Extraction", imp_trade_index = 0.9),
     x$eo, x$es,
     tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", outbound_index = 0.6),
     tibble::tibble(tech = "Solar", ghg_index = 1),
@@ -139,7 +139,7 @@ test_that("a missing alignment drops out of the weighted mean instead of countin
   geo <- fsg_alignment()
   with2 <- fsg_dyads(2, geo)
   without <- fsg_dyads(2, NULL)
-  pick <- function(tbl, r, p, s = "Upstream") tbl[tbl$reporter_iso == r & tbl$partner_iso == p & tbl$supply_chain == s, ]
+  pick <- function(tbl, r, p, s = "Extraction") tbl[tbl$reporter_iso == r & tbl$partner_iso == p & tbl$supply_chain == s, ]
 
   # USA-JPN has an alignment: it enters with weight 2 next to the four other components.
   usa_jpn <- pick(with2, "USA", "JPN")
@@ -162,7 +162,7 @@ test_that("a missing alignment drops out of the weighted mean instead of countin
   }
 
   # The component is the same for every (tech, stage) of a dyad.
-  expect_equal(pick(with2, "JPN", "IND", "Upstream")$geo_alignment, pick(with2, "JPN", "IND", "Downstream")$geo_alignment)
+  expect_equal(pick(with2, "JPN", "IND", "Extraction")$geo_alignment, pick(with2, "JPN", "IND", "Assembly")$geo_alignment)
 
   # Bad input is refused rather than joined.
   bad <- geo
@@ -184,7 +184,7 @@ test_that("geo_alignment appears in the variable, contribution and inputs tables
 
   # Contributions are weight / available weight x value and add up to fsi_raw.
   jpn <- fs$contributions %>%
-    dplyr::filter(reporter_iso == "USA", partner_iso == "JPN", supply_chain == "Downstream")
+    dplyr::filter(reporter_iso == "USA", partner_iso == "JPN", supply_chain == "Assembly")
   parts <- jpn %>% dplyr::filter(variable != "Friendshore Index")
   w <- unlist(fsg_weights(2))
   expect_equal(

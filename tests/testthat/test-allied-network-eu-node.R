@@ -7,6 +7,7 @@ source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_
 source(file.path(repo_root, "R", "indices", "allied_network_design.R"))
 
 # Six members, four network nodes: USA, CAN and MEX are their own nodes; DEU, FRA and ITA form "EUU".
+# Two of the six supply-chain stages (R/utils/supply_chain_stages.R), as the network solves them.
 eu_iso <- c("DEU", "FRA", "ITA")
 all_iso <- c("USA", "CAN", "MEX", eu_iso)
 eu_country_info <- tibble::tibble(
@@ -18,12 +19,12 @@ eu_members <- tibble::tibble(
   tier = c("core", "core", "partner", "core", "core", "core"),
   network_node = c("USA", "CAN", "MEX", "EUU", "EUU", "EUU")
 )
-stages <- c("Upstream", "Midstream")
+stages <- c("Extraction", "Assembly")
 eo_val <- c(USA = 0.9, CAN = 0.7, MEX = 0.5, DEU = 0.8, FRA = 0.6, ITA = 0.4)
 es_val <- c(USA = 0.8, CAN = 0.6, MEX = 0.4, DEU = 0.5, FRA = 0.7, ITA = 0.3)
 gdp_val <- c(USA = 3e13, CAN = 2e12, MEX = 1.8e12, DEU = 4.5e12, FRA = 3e12, ITA = 2.2e12)
 
-# Stage weights as eu_stage_weights_tbl.rds carries them; FRA weighs 0 upstream (a non-producer).
+# Stage weights as eu_stage_weights_tbl.rds carries them; FRA weighs 0 in Extraction (a non-producer).
 eu_weights <- tibble::tibble(
   network_node = "EUU",
   iso3 = rep(eu_iso, 2),
@@ -37,9 +38,9 @@ make_eu_inputs <- function() {
   grid <- tidyr::crossing(iso3c = all_iso, tech = "Solar", supply_chain = stages) %>%
     dplyr::mutate(Country = eu_country_info$country[match(iso3c, eu_country_info$iso3c)])
   eo <- grid %>% dplyr::transmute(Country, tech, supply_chain, Economic_Opportunity_Index = unname(eo_val[iso3c]))
-  # ITA has no ES upstream: its value drops out of the EU mean
+  # ITA has no ES in Extraction: its value drops out of the EU mean
   es <- grid %>%
-    dplyr::filter(!(iso3c == "ITA" & supply_chain == "Upstream")) %>%
+    dplyr::filter(!(iso3c == "ITA" & supply_chain == "Extraction")) %>%
     dplyr::transmute(Country, tech, supply_chain, Energy_Security_Index = unname(es_val[iso3c]))
   dyads <- tidyr::crossing(reporter_iso = all_iso, partner_iso = all_iso, tech = "Solar", supply_chain = stages) %>%
     dplyr::filter(reporter_iso != partner_iso) %>%
@@ -53,13 +54,13 @@ make_eu_inputs <- function() {
                   value = 0.25 + 0.1 * ((2 * r + p + s) %% 6), Year = 2024L) %>%
     dplyr::select(-r, -p, -s)
   size <- tibble::tibble(iso3c = all_iso, gdp_usd = unname(gdp_val[all_iso]), gdp_imputed = FALSE)
-  # Midstream basket trade (exporter -> importer); nothing upstream, so the stage weights apply there
+  # Assembly basket trade (exporter -> importer); nothing in Extraction, so the stage weights apply there
   trade <- tibble::tribble(
     ~exporter_iso, ~importer_iso, ~value,
     "USA", "DEU", 10, "USA", "FRA", 30, "USA", "ITA", 0,
     "DEU", "CAN", 5, "FRA", "CAN", 0, "ITA", "CAN", 15,
     "DEU", "FRA", 99, "FRA", "ITA", 99
-  ) %>% dplyr::mutate(tech = "Solar", supply_chain = "Midstream")
+  ) %>% dplyr::mutate(tech = "Solar", supply_chain = "Assembly")
   list(eo = eo, es = es, fs = fs, op = op, size = size, trade = trade)
 }
 
@@ -99,40 +100,40 @@ test_that("bundled node inputs are stage-weighted means, need is GDP-weighted an
   )
   expect_setequal(unique(nodes$iso3c), c("USA", "CAN", "MEX", "EUU"))
   expect_equal(nrow(nodes), 8)
-  eu_mid <- nodes[nodes$iso3c == "EUU" & nodes$supply_chain == "Midstream", ]
-  eu_up <- nodes[nodes$iso3c == "EUU" & nodes$supply_chain == "Upstream", ]
-  expect_equal(eu_mid$country, "European Union")
-  # Midstream: weights 0.5 / 0.3 / 0.2
-  expect_equal(eu_mid$eo_raw, 0.5 * 0.8 + 0.3 * 0.6 + 0.2 * 0.4)
-  expect_equal(eu_mid$es_raw, 0.5 * 0.5 + 0.3 * 0.7 + 0.2 * 0.3)
-  # Upstream: FRA weighs 0; ITA has no ES, so the ES mean renormalises onto DEU alone
-  expect_equal(eu_up$eo_raw, (0.6 * 0.8 + 0.4 * 0.4) / 1)
-  expect_equal(eu_up$es_raw, 0.5)
+  eu_asm <- nodes[nodes$iso3c == "EUU" & nodes$supply_chain == "Assembly", ]
+  eu_ext <- nodes[nodes$iso3c == "EUU" & nodes$supply_chain == "Extraction", ]
+  expect_equal(eu_asm$country, "European Union")
+  # Assembly: weights 0.5 / 0.3 / 0.2
+  expect_equal(eu_asm$eo_raw, 0.5 * 0.8 + 0.3 * 0.6 + 0.2 * 0.4)
+  expect_equal(eu_asm$es_raw, 0.5 * 0.5 + 0.3 * 0.7 + 0.2 * 0.3)
+  # Extraction: FRA weighs 0; ITA has no ES, so the ES mean renormalises onto DEU alone
+  expect_equal(eu_ext$eo_raw, (0.6 * 0.8 + 0.4 * 0.4) / 1)
+  expect_equal(eu_ext$es_raw, 0.5)
   # GDP: summed over all members; need from the GDP-weighted members' ES (FRA counts: its GDP is not 0)
-  expect_equal(eu_mid$gdp_usd, sum(gdp_val[eu_iso]))
-  expect_equal(eu_up$gdp_usd, sum(gdp_val[eu_iso]))
-  es_need_mid <- sum(gdp_val[eu_iso] * es_val[eu_iso]) / sum(gdp_val[eu_iso])
-  es_need_up <- sum(gdp_val[c("DEU", "FRA")] * es_val[c("DEU", "FRA")]) / sum(gdp_val[c("DEU", "FRA")])
+  expect_equal(eu_asm$gdp_usd, sum(gdp_val[eu_iso]))
+  expect_equal(eu_ext$gdp_usd, sum(gdp_val[eu_iso]))
+  es_need_asm <- sum(gdp_val[eu_iso] * es_val[eu_iso]) / sum(gdp_val[eu_iso])
+  es_need_ext <- sum(gdp_val[c("DEU", "FRA")] * es_val[c("DEU", "FRA")]) / sum(gdp_val[c("DEU", "FRA")])
   # The S-curves run over the four nodes; need = 1 - S(es_need_raw) with the EU at its GDP-weighted ES
-  mid <- nodes[nodes$supply_chain == "Midstream", ]
-  es_need_vec <- ifelse(mid$iso3c == "EUU", es_need_mid, mid$es_raw)
-  expect_equal(mid$need_idx, 1 - median_scurve(es_need_vec))
-  expect_equal(mid$es_idx, median_scurve(mid$es_raw))
-  expect_equal(mid$eo_idx, median_scurve(mid$eo_raw))
-  expect_equal(mid$size_idx, median_scurve(log1p(mid$gdp_usd)))
-  up <- nodes[nodes$supply_chain == "Upstream", ]
-  expect_equal(up$need_idx, 1 - median_scurve(ifelse(up$iso3c == "EUU", es_need_up, up$es_raw)))
+  asm <- nodes[nodes$supply_chain == "Assembly", ]
+  es_need_vec <- ifelse(asm$iso3c == "EUU", es_need_asm, asm$es_raw)
+  expect_equal(asm$need_idx, 1 - median_scurve(es_need_vec))
+  expect_equal(asm$es_idx, median_scurve(asm$es_raw))
+  expect_equal(asm$eo_idx, median_scurve(asm$eo_raw))
+  expect_equal(asm$size_idx, median_scurve(log1p(asm$gdp_usd)))
+  ext <- nodes[nodes$supply_chain == "Extraction", ]
+  expect_equal(ext$need_idx, 1 - median_scurve(ifelse(ext$iso3c == "EUU", es_need_ext, ext$es_raw)))
   # single-member nodes keep need = 1 - es_idx
   single <- nodes$iso3c != "EUU"
   expect_equal(nodes$need_idx[single], 1 - nodes$es_idx[single])
-  expect_equal(sum(mid$demand_weight), 1)
+  expect_equal(sum(asm$demand_weight), 1)
 
   # The member weights are renormalised over the node's members; a member outside network_members drops out
   mw <- allied_network_member_weights(allied_network_check_members(eu_members, all_iso), eu_weights, tidyr::crossing(tech = "Solar", supply_chain = stages))
-  expect_equal(mw$member_weight[mw$iso3c == "DEU" & mw$supply_chain == "Midstream"], 0.5)
+  expect_equal(mw$member_weight[mw$iso3c == "DEU" & mw$supply_chain == "Assembly"], 0.5)
   expect_equal(mw$member_weight[mw$iso3c == "USA"], c(1, 1))
   expect_equal(unique(mw$weight_basis[mw$iso3c == "USA"]), "own")
-  extra <- dplyr::bind_rows(eu_weights, tibble::tibble(network_node = "EUU", iso3 = "ESP", tech = "Solar", supply_chain = "Midstream", weight = 1, basis = "exports"))
+  extra <- dplyr::bind_rows(eu_weights, tibble::tibble(network_node = "EUU", iso3 = "ESP", tech = "Solar", supply_chain = "Assembly", weight = 1, basis = "exports"))
   mw2 <- allied_network_member_weights(allied_network_check_members(eu_members, all_iso), extra, tidyr::crossing(tech = "Solar", supply_chain = stages))
   expect_equal(mw2, mw)
 })
@@ -141,15 +142,25 @@ test_that("a bundled node needs member weights for every solved stage", {
   x <- make_eu_inputs()
   expect_error(run_eu_design(x, weights = NULL, method = "greedy"), "node_member_weights .* is required")
   expect_error(
-    run_eu_design(x, weights = eu_weights[eu_weights$supply_chain == "Midstream", ], method = "greedy"),
+    run_eu_design(x, weights = eu_weights[eu_weights$supply_chain == "Assembly", ], method = "greedy"),
     "no positive weight for node EUU"
   )
   # a weights table limited to the solved stages is enough
-  out <- run_eu_design(x, weights = eu_weights[eu_weights$supply_chain == "Midstream", ], method = "greedy", supply_chains = "Midstream")
-  expect_equal(unique(out$specialization$supply_chain), "Midstream")
+  out <- run_eu_design(x, weights = eu_weights[eu_weights$supply_chain == "Assembly", ], method = "greedy", supply_chains = "Assembly")
+  expect_equal(unique(out$specialization$supply_chain), "Assembly")
   bad <- eu_weights
   bad$weight[1] <- -1
   expect_error(run_eu_design(x, weights = bad, method = "greedy"), "finite and >= 0")
+})
+
+test_that("member weights and basket trade on other stage labels than the nodes stop", {
+  # A three-stage eu_stage_weights_tbl.rds or trade matrix against six-stage nodes
+  x <- make_eu_inputs()
+  legacy <- function(tbl) dplyr::mutate(tbl, supply_chain = dplyr::recode(supply_chain, Extraction = "Upstream", Assembly = "Midstream"))
+  expect_error(run_eu_design(x, weights = legacy(eu_weights), method = "greedy"),
+               "its stages are Midstream, Upstream, the solved stages Assembly, Extraction")
+  expect_error(run_eu_design(x, trade = legacy(x$trade), method = "greedy"),
+               "node_trade_tbl shares no \\(tech, supply_chain\\) stage with the nodes: trade stages Midstream")
 })
 
 test_that("edges to and from the bundled node are trade-weighted means of member edges; intra-EU edges are dropped", {
@@ -169,43 +180,43 @@ test_that("edges to and from the bundled node are trade-weighted means of member
   expect_equal(anyDuplicated(edges[c("reporter_iso", "partner_iso", "tech", "supply_chain")]), 0)
   get_edge <- function(p, c, stage) edges[edges$reporter_iso == p & edges$partner_iso == c & edges$supply_chain == stage, ]
 
-  # EU as consumer of USA (Midstream): FS(member, USA) weighted by the members' imports from USA (10, 30, 0)
-  e <- get_edge("USA", "EUU", "Midstream")
-  expect_equal(e$friendshore_index, (10 * lookup(x$fs, "DEU", "USA", "Midstream") + 30 * lookup(x$fs, "FRA", "USA", "Midstream")) / 40)
+  # EU as consumer of USA (Assembly): FS(member, USA) weighted by the members' imports from USA (10, 30, 0)
+  e <- get_edge("USA", "EUU", "Assembly")
+  expect_equal(e$friendshore_index, (10 * lookup(x$fs, "DEU", "USA", "Assembly") + 30 * lookup(x$fs, "FRA", "USA", "Assembly")) / 40)
   # ... and OP(USA, member) with the same trade weights
-  expect_equal(e$opportunity_index, (10 * lookup(x$op, "USA", "DEU", "Midstream") + 30 * lookup(x$op, "USA", "FRA", "Midstream")) / 40)
+  expect_equal(e$opportunity_index, (10 * lookup(x$op, "USA", "DEU", "Assembly") + 30 * lookup(x$op, "USA", "FRA", "Assembly")) / 40)
   expect_equal(e$edge_weight, 0.5 * e$friendshore_index + 0.5 * e$opportunity_index)
-  # EU as producer for CAN (Midstream): weighted by the members' exports to CAN (5, 0, 15)
-  e <- get_edge("EUU", "CAN", "Midstream")
-  expect_equal(e$opportunity_index, (5 * lookup(x$op, "DEU", "CAN", "Midstream") + 15 * lookup(x$op, "ITA", "CAN", "Midstream")) / 20)
-  expect_equal(e$friendshore_index, (5 * lookup(x$fs, "CAN", "DEU", "Midstream") + 15 * lookup(x$fs, "CAN", "ITA", "Midstream")) / 20)
-  # No basket trade on the edge: the stage weights (Midstream 0.5 / 0.3 / 0.2; Upstream 0.6 / 0 / 0.4)
-  e <- get_edge("EUU", "MEX", "Midstream")
-  expect_equal(e$opportunity_index, sum(c(0.5, 0.3, 0.2) * sapply(eu_iso, lookup, tbl = x$op, partner = "MEX", stage = "Midstream")))
-  e <- get_edge("EUU", "MEX", "Upstream")
-  expect_equal(e$opportunity_index, (0.6 * lookup(x$op, "DEU", "MEX", "Upstream") + 0.4 * lookup(x$op, "ITA", "MEX", "Upstream")) / 1)
+  # EU as producer for CAN (Assembly): weighted by the members' exports to CAN (5, 0, 15)
+  e <- get_edge("EUU", "CAN", "Assembly")
+  expect_equal(e$opportunity_index, (5 * lookup(x$op, "DEU", "CAN", "Assembly") + 15 * lookup(x$op, "ITA", "CAN", "Assembly")) / 20)
+  expect_equal(e$friendshore_index, (5 * lookup(x$fs, "CAN", "DEU", "Assembly") + 15 * lookup(x$fs, "CAN", "ITA", "Assembly")) / 20)
+  # No basket trade on the edge: the stage weights (Assembly 0.5 / 0.3 / 0.2; Extraction 0.6 / 0 / 0.4)
+  e <- get_edge("EUU", "MEX", "Assembly")
+  expect_equal(e$opportunity_index, sum(c(0.5, 0.3, 0.2) * sapply(eu_iso, lookup, tbl = x$op, partner = "MEX", stage = "Assembly")))
+  e <- get_edge("EUU", "MEX", "Extraction")
+  expect_equal(e$opportunity_index, (0.6 * lookup(x$op, "DEU", "MEX", "Extraction") + 0.4 * lookup(x$op, "ITA", "MEX", "Extraction")) / 1)
   # Edges between single-member nodes are unchanged
-  e <- get_edge("USA", "CAN", "Upstream")
-  expect_equal(e$friendshore_index, lookup(x$fs, "CAN", "USA", "Upstream"))
-  expect_equal(e$opportunity_index, lookup(x$op, "USA", "CAN", "Upstream"))
+  e <- get_edge("USA", "CAN", "Extraction")
+  expect_equal(e$friendshore_index, lookup(x$fs, "CAN", "USA", "Extraction"))
+  expect_equal(e$opportunity_index, lookup(x$op, "USA", "CAN", "Extraction"))
 
   agg <- attr(edges, "edge_aggregation")
   expect_equal(unique(agg$intra_node_member_edges_dropped), 3 * 2 * 2)
-  mid_fs <- agg[agg$component == "friendshore" & agg$supply_chain == "Midstream", ]
-  expect_equal(mid_fs$n_edges[mid_fs$weight_basis == "trade"], 2)  # USA -> EUU and EUU -> CAN
-  expect_equal(mid_fs$n_edges[mid_fs$weight_basis == "stage"], 4)
-  expect_equal(mid_fs$n_edges[mid_fs$weight_basis == "member"], 6)
+  asm_fs <- agg[agg$component == "friendshore" & agg$supply_chain == "Assembly", ]
+  expect_equal(asm_fs$n_edges[asm_fs$weight_basis == "trade"], 2)  # USA -> EUU and EUU -> CAN
+  expect_equal(asm_fs$n_edges[asm_fs$weight_basis == "stage"], 4)
+  expect_equal(asm_fs$n_edges[asm_fs$weight_basis == "member"], 6)
 
   # Without trade every bundled edge uses the stage weights
   plain <- allied_network_extract_edges(x$fs, x$op, iso3c_network = all_iso, network_members = members, member_weights = mw)
-  e <- plain[plain$reporter_iso == "USA" & plain$partner_iso == "EUU" & plain$supply_chain == "Midstream", ]
-  expect_equal(e$friendshore_index, sum(c(0.5, 0.3, 0.2) * sapply(eu_iso, function(m) lookup(x$fs, m, "USA", "Midstream"))))
+  e <- plain[plain$reporter_iso == "USA" & plain$partner_iso == "EUU" & plain$supply_chain == "Assembly", ]
+  expect_equal(e$friendshore_index, sum(c(0.5, 0.3, 0.2) * sapply(eu_iso, function(m) lookup(x$fs, m, "USA", "Assembly"))))
 
   # Weight fallbacks inside one component: a member without a value drops out; all-zero weights -> equal
-  comp <- tibble::tibble(reporter_iso = c("DEU", "FRA", "ITA"), partner_iso = "MEX", tech = "Solar", supply_chain = "Upstream",
+  comp <- tibble::tibble(reporter_iso = c("DEU", "FRA", "ITA"), partner_iso = "MEX", tech = "Solar", supply_chain = "Extraction",
                          value = c(NA, 0.9, 0.5))
   out <- allied_network_aggregate_edge_component(comp, members, mw)
-  expect_equal(out$value, 0.5)  # FRA weighs 0 upstream, DEU has no value: ITA alone
+  expect_equal(out$value, 0.5)  # FRA weighs 0 in Extraction, DEU has no value: ITA alone
   expect_equal(out$weight_basis, "stage")
   comp$value <- c(NA, 0.9, NA)
   out <- allied_network_aggregate_edge_component(comp, members, mw)
@@ -260,10 +271,10 @@ test_that("the design solves nodes: caps from summed GDP, member shares derived 
   expect_equal(as.numeric(tapply(ms$production_share_derived, ms$supply_chain, sum)), c(1, 1))
   expect_true(all(ms$share_is_derived[ms$network_node == "EUU"]))
   expect_false(any(ms$share_is_derived[ms$network_node != "EUU"]))
-  eu_up <- ms[ms$network_node == "EUU" & ms$supply_chain == "Upstream", ]
-  expect_equal(eu_up$member_weight[eu_up$iso3c == "FRA"], 0)
-  expect_equal(eu_up$production_share_derived[eu_up$iso3c == "DEU"], 0.6 * eu_up$node_production_share[1])
-  expect_equal(unique(eu_up$weight_basis), "production")
+  eu_ext <- ms[ms$network_node == "EUU" & ms$supply_chain == "Extraction", ]
+  expect_equal(eu_ext$member_weight[eu_ext$iso3c == "FRA"], 0)
+  expect_equal(eu_ext$production_share_derived[eu_ext$iso3c == "DEU"], 0.6 * eu_ext$node_production_share[1])
+  expect_equal(unique(eu_ext$weight_basis), "production")
   expect_equal(ms$tier[ms$iso3c == "MEX"][1], "partner")
 
   # Aggregation record
@@ -353,8 +364,8 @@ test_that("observed export HHI counts a bundled node's exports outside the node 
     "USA", "CHN", 20,
     "CAN", "USA", 40,
     "CHN", "USA", 500    # not a node
-  ) %>% dplyr::mutate(tech = "Solar", supply_chain = "Midstream")
-  cells <- dplyr::bind_rows(cells, tibble::tibble(exporter_iso = "USA", importer_iso = "CAN", value_last = 0, tech = "Wind", supply_chain = "Upstream"))
+  ) %>% dplyr::mutate(tech = "Solar", supply_chain = "Assembly")
+  cells <- dplyr::bind_rows(cells, tibble::tibble(exporter_iso = "USA", importer_iso = "CAN", value_last = 0, tech = "Wind", supply_chain = "Extraction"))
   out <- allied_network_observed_export_hhi(cells, members)
   expect_equal(nrow(out), 1)  # the stage without any positive export is left out
   x <- c(EUU = 40, USA = 40, CAN = 40)

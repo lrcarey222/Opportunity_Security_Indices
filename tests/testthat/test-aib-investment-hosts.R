@@ -1,5 +1,5 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
-for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "categories/policy/cat_policy_index.R")) {
+for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "utils/supply_chain_stages.R", "categories/policy/cat_policy_index.R")) {
   source(file.path(repo_root, "R", f))
 }
 for (f in sort(list.files(file.path(repo_root, "R", "aib"), pattern = "\\.R$", full.names = TRUE))) source(f)
@@ -179,8 +179,10 @@ test_that("specialty and development hosts are typed and ranked beside the scali
 
 test_that("a host's Development Potential Index is its node cells' mean, else its own mean", {
   dev <- tibble::tibble(partner_iso = c("VNM", "VNM", "VNM", "IND"), tech = c("Solar", "Solar", "Wind", "Wind"),
-                        supply_chain = c("Midstream", "Upstream", "Midstream", "Upstream"), value = c(0.8, 0.4, 0.6, 0.5))
-  expect_equal(aib_host_dev_index(c("VNM", "IND", "JPN"), "Solar", "Midstream", dev), c(0.8, 0.5, NA))
-  expect_equal(aib_host_dev_index("VNM", character(), "Midstream", dev), 0.6)
-  expect_equal(aib_host_dev_index("VNM", "Solar", "Midstream", NULL), NA_real_)
+                        supply_chain = c("Components", "Refining", "Components", "Refining"), value = c(0.8, 0.4, 0.6, 0.5))
+  expect_equal(aib_host_dev_index(c("VNM", "IND", "JPN"), "Solar", "Components", dev), c(0.8, 0.5, NA))
+  expect_equal(aib_host_dev_index("VNM", character(), "Components", dev), 0.6)
+  expect_equal(aib_host_dev_index("VNM", "Solar", "Components", NULL), NA_real_)
+  # One stage per technology (the crosswalk's score_cells): VNM's Solar Refining and Wind Components.
+  expect_equal(aib_host_dev_index("VNM", c("Solar", "Wind"), c("Refining", "Components"), dev), 0.5)
 })

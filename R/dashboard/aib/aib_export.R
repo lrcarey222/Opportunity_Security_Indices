@@ -34,6 +34,16 @@ AIB_DASH_SCHEMA <- "osi-aib"
 # meta.supplyScenarios; an app reading version 1 would reject the objects, so it asks for a reload instead.
 AIB_DASH_VERSION <- 2L
 
+# Stages (2026-10-27): node.stage, compact.stages and network edge stages are the six supply-chain
+# stages (SUPPLY_CHAIN_STAGES, R/utils/supply_chain_stages.R, which the caller sources) in chain order,
+# and the network's per-side partner counts are keyed by them in lower case (extraction, refining,
+# components, assembly, deployment, recovery) instead of upstream / midstream / downstream.
+aib_dash_stage_keys <- function() tolower(SUPPLY_CHAIN_STAGES)
+aib_dash_stage_order <- function(x) {
+  x <- as.character(x)
+  aib_dash_arr(x[order(match(x, SUPPLY_CHAIN_STAGES, nomatch = length(SUPPLY_CHAIN_STAGES) + 1L))])
+}
+
 aib_dash_arr <- function(x) I(if (is.null(x)) character() else as.character(x))
 aib_dash_num_arr <- function(x) I(if (is.null(x)) numeric() else as.numeric(x))
 aib_dash_split <- function(x, sep = " ") {
@@ -186,8 +196,8 @@ aib_dash_nodes <- function(res) {
       partners = if (nrow(t)) t$key_trade_partners[1] else NA_character_,
       treatment = if (nrow(t)) t$recommended_policy_treatment[1] else NA_character_,
       compact = if (nrow(t) && !is.na(t$compact_id[1]) && nzchar(t$compact_id[1])) t$compact_id[1] else NA_character_,
-      # OSI technology x stage cells (the dictionary's nodes reach the Sector and Country views
-      # through the crosswalk of scripts/31; yf_cells lists them all).
+      # OSI technology x six-stage cells ("batteries-components"; the dictionary's nodes reach the Sector
+      # and Country views through the crosswalk of scripts/31; yf_cells lists them all).
       yfCells = aib_dash_arr(unique(stats::na.omit(c(t$yf_cell, if ("yf_cells" %in% names(t) && nrow(t)) unlist(strsplit(stats::na.omit(t$yf_cells), "; ")))))),
       yfSubcomponents = if (nrow(t)) aib_dash_split(t$yf_subcomponent_id[1], "; ") else aib_dash_arr(character()),
       tightestCostless = if (nrow(f)) aib_dash_round(f$tightest_costless_max_share[1]) else NA_real_,
@@ -303,7 +313,7 @@ aib_dash_compact <- function(cp, res, top_edges = 40, shock = res$meta$headline_
     id = cp$compact_id,
     name = cp$compact_name,
     technologies = aib_dash_split(cp$technology, "; "),
-    stages = aib_dash_split(cp$stages, "; "),
+    stages = aib_dash_stage_order(aib_dash_split(cp$stages, "; ")),
     indices = {
       idx <- aib_dash_index_of(res)
       if (is.null(idx)) aib_dash_arr(character()) else
@@ -385,12 +395,11 @@ aib_dash_network <- function(res, countries = res$countries, edges = res$edges, 
   num <- function(r, k, d = 5) if (k %in% names(r)) aib_dash_round(dplyr::coalesce(as.numeric(r[[k]][1]), 0), d) else 0
   int <- function(r, k) if (k %in% names(r)) as.integer(dplyr::coalesce(as.numeric(r[[k]][1]), 0)) else 0L
   side <- function(r, p, trade) {
-    out <- list(
+    out <- c(list(
       partners = int(r, paste0(p, "_n_partners")), selected = int(r, paste0(p, "_n_selected")),
-      headline = num(r, paste0(p, "_headline_contribution")), cumulative = num(r, paste0(p, "_cumulative_contribution")),
-      upstream = int(r, paste0(p, "_n_upstream_partners")), midstream = int(r, paste0(p, "_n_midstream_partners")),
-      downstream = int(r, paste0(p, "_n_downstream_partners"))
-    )
+      headline = num(r, paste0(p, "_headline_contribution")), cumulative = num(r, paste0(p, "_cumulative_contribution"))),
+      # Partners by stage, one count per six-stage stage (extraction ... recovery; aib_network_countries()).
+      stats::setNames(lapply(aib_dash_stage_keys(), function(s) int(r, paste0(p, "_n_", s, "_partners"))), aib_dash_stage_keys()))
     if (trade) {
       out$dividend <- num(r, paste0(p, "_cumulative_coordination_dividend"))
       out$volumeUsd <- num(r, paste0(p, "_headline_volume_usd"), 0)
@@ -409,7 +418,7 @@ aib_dash_network <- function(res, countries = res$countries, edges = res$edges, 
   })
   edges <- lapply(seq_len(nrow(ed)), function(i) {
     r <- ed[i, ]
-    stg <- c(Upstream = isTRUE(r$upstream), Midstream = isTRUE(r$midstream), Downstream = isTRUE(r$downstream))
+    stg <- stats::setNames(vapply(aib_dash_stage_keys(), function(s) isTRUE(r[[s]][1]), logical(1)), SUPPLY_CHAIN_STAGES)
     list(
       from = r$supplier_iso, to = r$buyer_iso,
       nTrade = as.integer(r$n_trade_selected), nInvestment = as.integer(r$n_investment_selected), nShocks = as.integer(r$n_shocks),

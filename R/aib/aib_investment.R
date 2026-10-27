@@ -147,12 +147,14 @@ aib_type_rank <- function(flag, ...) {
 }
 
 # A host's Development Potential Index for a node: the mean over the node's OSI technology x stage cells
-# (`techs`, `stage`), else over every cell the economy is scored in; NA where it is not scored (the index
-# covers non-high-income partners). dev: partner_iso, tech, supply_chain, value.
+# (`techs`, `stage`: one six-stage stage or one per technology, aib_score_cell_keys()), else over every
+# cell the economy is scored in; NA where it is not scored (the index covers non-high-income partners).
+# dev: partner_iso, tech, supply_chain (six stages, partner_development_country_tbl.rds), value.
 aib_host_dev_index <- function(hosts, techs, stage, dev) {
   if (is.null(dev) || !nrow(dev)) return(rep(NA_real_, length(hosts)))
+  in_cells <- paste(dev$tech, dev$supply_chain, sep = "|") %in% aib_score_cell_keys(techs, stage)
   vapply(hosts, function(h) {
-    d <- dev$value[dev$partner_iso == h & dev$tech %in% techs & dev$supply_chain %in% stage]
+    d <- dev$value[dev$partner_iso == h & in_cells]
     if (!length(d)) d <- dev$value[dev$partner_iso == h]
     if (!length(d) || all(is.na(d))) NA_real_ else mean(d, na.rm = TRUE)
   }, numeric(1), USE.NAMES = FALSE)

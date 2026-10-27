@@ -1,5 +1,5 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
-for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "categories/policy/cat_policy_index.R")) {
+for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "utils/supply_chain_stages.R", "categories/policy/cat_policy_index.R")) {
   source(file.path(repo_root, "R", f))
 }
 for (f in sort(list.files(file.path(repo_root, "R", "aib"), pattern = "\\.R$", full.names = TRUE))) source(f)

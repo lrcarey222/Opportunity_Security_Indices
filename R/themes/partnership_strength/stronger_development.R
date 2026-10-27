@@ -241,15 +241,24 @@ partnership_strength_build_development_indicators <- function(wb_wdi,
     dplyr::left_join(energy_use_index, by = "iso3c")
 }
 
+# The proxy rules for a stage no crosswalk allocates to (partnership_strength_allocate_crs_purposes()).
+PARTNERSHIP_STRENGTH_EMPTY_STAGE_PROXIES <- c("rollup", "zero")
+
 # Settings of the aid components (config/partnership.yml development_aid; the code defaults are
 # used where it is silent): the window of CRS years averaged, the CRS measures counted, the flow
-# (gross disbursements or commitments) and energy_finance, the OCI export-credit and lender
-# finance merged in (include, mechanisms, exclude_lender_countries). Returns list(years = integer
-# vector, measures, flow, energy_finance).
+# (gross disbursements or commitments), empty_stage_proxy (the proxy of a stage no crosswalk
+# allocates to: "rollup" or "zero"; partnership_strength_allocate_crs_purposes()) and
+# energy_finance, the OCI export-credit and lender finance merged in (include, mechanisms,
+# exclude_lender_countries). Returns list(years = integer vector, measures, flow,
+# empty_stage_proxy, energy_finance).
 partnership_strength_development_aid_settings <- function(cfg = NULL) {
   years <- if (is.null(cfg$years)) c(2020L, 2024L) else as.integer(unlist(cfg$years))
   measures <- if (is.null(cfg$measures)) c("ODA", "OOF", "PSI") else as.character(unlist(cfg$measures))
   flow <- if (is.null(cfg$flow)) "disbursement" else as.character(cfg$flow)[1]
+  empty_stage_proxy <- if (is.null(cfg$empty_stage_proxy)) "rollup" else tolower(as.character(cfg$empty_stage_proxy))
+  if (length(empty_stage_proxy) != 1 || !empty_stage_proxy %in% PARTNERSHIP_STRENGTH_EMPTY_STAGE_PROXIES) {
+    stop("development_aid empty_stage_proxy must be rollup or zero; got ", paste(empty_stage_proxy, collapse = ", "))
+  }
   if (length(years) != 2 || anyNA(years) || years[1] > years[2]) {
     stop("development_aid years must be [first, last] with first <= last.")
   }
@@ -266,7 +275,13 @@ partnership_strength_development_aid_settings <- function(cfg = NULL) {
     mechanisms = if (is.null(ef$mechanisms)) c("Loan", "Equity", "Grant") else as.character(unlist(ef$mechanisms)),
     exclude_lender_countries = if (is.null(ef$exclude_lender_countries)) "CHN" else as.character(unlist(ef$exclude_lender_countries))
   )
-  list(years = seq.int(years[1], years[2]), measures = unique(measures), flow = flow, energy_finance = energy_finance)
+  list(
+    years = seq.int(years[1], years[2]),
+    measures = unique(measures),
+    flow = flow,
+    empty_stage_proxy = empty_stage_proxy,
+    energy_finance = energy_finance
+  )
 }
 
 # CRS amounts per recipient and purpose code -> (tech, stage), with the purpose crosswalk
@@ -275,31 +290,43 @@ partnership_strength_development_aid_settings <- function(cfg = NULL) {
 #   - pooled (cross-cutting) codes, such as energy policy or renewables "multiple technologies",
 #     are spread over the technologies they list pro rata to the recipient's direct aid to them,
 #     else pro rata to every recipient's direct aid to them, else equally;
-#   - a (tech, stage) with no direct code anywhere in the crosswalk (Batteries Downstream, Green
-#     Hydrogen, Geothermal / Nuclear / Solar / Wind Upstream, ...) takes the recipient's stage
-#     proxy: everything the stage allocates, less the codes that fund only coal, oil and gas.
-#     aid_basis says which: "purpose" or "stage".
+#   - a (tech, stage) with no direct code anywhere in the crosswalk (Batteries Components, Assembly
+#     and Deployment, Green Hydrogen, Solar Extraction and Refining, ...) takes the recipient's
+#     stage proxy: everything the stage allocates, less the codes that fund only coal, oil and gas;
+#   - a stage the crosswalks never allocate to (no row of any method: Recovery, as no CRS or OCI
+#     code funds recycling) would have a zero proxy for every recipient, so its aid components
+#     would be one tie and rank nobody. Under empty_stage_proxy "rollup" (the default) it takes the
+#     sum of the stage proxies of the other stages of its roll-up that are allocated to
+#     (PARTNERSHIP_STRENGTH_STAGE_ROLLUP: Recovery takes Extraction + Refining, the materials aid
+#     closest to recycling); "zero" keeps the zero proxy.
+#     aid_basis says which: "purpose", "stage" or "rollup".
 # `amounts`: recipient_iso3, purpose_code, amount (codes outside the crosswalk are ignored; codes
 # are compared as text, so CRS purpose codes and OCI "oci|sector|stage" keys can share a table);
 # `cells`: tibble(tech, supply_chain) to return; `recipients`: the recipients to return, every
 # cell filled (0 where the recipient has no aid there); `coded`: the (tech, supply_chain) cells that
-# take their own allocation (default: those with a direct row), the rest taking the stage proxy.
-# Returns recipient_iso3, tech,
-# supply_chain, aid, aid_basis.
+# take their own allocation (default: those with a direct row), the rest taking the stage proxy;
+# `allocated_stages`: the stages some crosswalk allocates to (default: this crosswalk's), the
+# others being the empty stages of the roll-up rule. A cell stage outside the six (a legacy
+# Upstream / Midstream / Downstream fixture) has no roll-up and keeps the stage proxy.
+# Returns recipient_iso3, tech, supply_chain, aid, aid_basis.
 partnership_strength_allocate_crs_purposes <- function(amounts,
                                                        crosswalk,
                                                        cells,
                                                        recipients = unique(amounts$recipient_iso3),
                                                        fossil_techs = c("Coal", "Oil", "Gas"),
-                                                       coded = NULL) {
+                                                       coded = NULL,
+                                                       empty_stage_proxy = "rollup",
+                                                       allocated_stages = NULL) {
   require_columns(amounts, c("recipient_iso3", "purpose_code", "amount"), label = "CRS amounts")
   # Evaluated before `amounts` is filtered below (a lazy default would see the filtered table).
   recipients <- unique(as.character(recipients))
   require_columns(crosswalk, c("purpose_code", "supply_chain", "tech", "method"), label = "CRS purpose crosswalk")
   require_columns(cells, c("tech", "supply_chain"), label = "development cells")
+  empty_stage_proxy <- match.arg(empty_stage_proxy, PARTNERSHIP_STRENGTH_EMPTY_STAGE_PROXIES)
 
   cw <- tibble::as_tibble(crosswalk[c("purpose_code", "supply_chain", "tech", "method")])
   cw$purpose_code <- as.character(cw$purpose_code)
+  allocated_stages <- unique(as.character(if (is.null(allocated_stages)) cw$supply_chain else allocated_stages))
   bad_method <- setdiff(unique(cw$method), c("direct", "pooled"))
   if (length(bad_method)) stop("CRS purpose crosswalk: unknown method(s) ", paste(bad_method, collapse = ", "))
   if (anyDuplicated(cw[c("purpose_code", "supply_chain", "tech")])) {
@@ -361,6 +388,28 @@ partnership_strength_allocate_crs_purposes <- function(amounts,
     dplyr::filter(!purpose_code %in% fossil_only) %>%
     dplyr::group_by(recipient_iso3, supply_chain) %>%
     dplyr::summarise(proxy = sum(aid), .groups = "drop")
+
+  # Empty stages (in the cells, allocated by no crosswalk) and the allocated stages of the same
+  # roll-up whose proxies they sum (the roll-up rule above).
+  rollup <- PARTNERSHIP_STRENGTH_STAGE_ROLLUP
+  empty <- setdiff(unique(as.character(cells$supply_chain)), allocated_stages)
+  empty <- empty[empty %in% names(rollup)]
+  rollup_from <- tibble::tibble(supply_chain = character(), from = character())
+  if (identical(empty_stage_proxy, "rollup") && length(empty)) {
+    rollup_from <- dplyr::bind_rows(lapply(empty, function(s) {
+      from <- setdiff(names(rollup)[rollup == rollup[[s]] & names(rollup) %in% allocated_stages], s)
+      tibble::tibble(supply_chain = rep(s, length(from)), from = from)
+    }))
+  }
+  if (nrow(rollup_from)) {
+    rollup_proxy <- stage_proxy %>%
+      dplyr::rename(from = supply_chain) %>%
+      dplyr::inner_join(rollup_from, by = "from", relationship = "many-to-many") %>%
+      dplyr::group_by(recipient_iso3, supply_chain) %>%
+      dplyr::summarise(proxy = sum(proxy), .groups = "drop")
+    stage_proxy <- dplyr::bind_rows(stage_proxy[!stage_proxy$supply_chain %in% rollup_from$supply_chain, ], rollup_proxy)
+  }
+
   coded <- if (is.null(coded)) dplyr::distinct(direct_cw, supply_chain, tech) else dplyr::distinct(tibble::as_tibble(coded[c("supply_chain", "tech")]))
   coded$coded <- TRUE
 
@@ -373,7 +422,11 @@ partnership_strength_allocate_crs_purposes <- function(amounts,
     dplyr::left_join(stage_proxy, by = c("recipient_iso3", "supply_chain")) %>%
     dplyr::mutate(
       coded = dplyr::coalesce(coded, FALSE),
-      aid_basis = dplyr::if_else(coded, "purpose", "stage"),
+      aid_basis = dplyr::case_when(
+        coded ~ "purpose",
+        supply_chain %in% rollup_from$supply_chain ~ "rollup",
+        TRUE ~ "stage"
+      ),
       aid = pmax(0, dplyr::if_else(coded, dplyr::coalesce(aid, 0), dplyr::coalesce(proxy, 0)))
     ) %>%
     dplyr::select(recipient_iso3, tech, supply_chain, aid, aid_basis)
@@ -539,14 +592,27 @@ partnership_strength_build_oecd_tech <- function(oecd_crs,
   # hydrogen deals would otherwise turn those stage-proxy cells into near-empty ones the CRS cannot
   # fill (it has no battery or hydrogen codes); OCI's amounts still enter the stage proxy.
   coded <- cw_crs[cw_crs$method == "direct", c("supply_chain", "tech")]
-  aid <- partnership_strength_allocate_crs_purposes(amounts, cw_crs, cells, recipients = recipients, coded = coded)
+  # A stage counts as allocated when either crosswalk allocates to it; one neither does (Recovery)
+  # takes its roll-up's proxy in both allocations (settings$empty_stage_proxy), so the two still
+  # add up stage by stage.
+  allocated_stages <- unique(c(cw_crs$supply_chain, if (use_oci) oci_parts$crosswalk$supply_chain))
+  empty_stage_proxy <- if (is.null(settings$empty_stage_proxy)) "rollup" else settings$empty_stage_proxy
+  aid <- partnership_strength_allocate_crs_purposes(
+    amounts, cw_crs, cells,
+    recipients = recipients, coded = coded,
+    empty_stage_proxy = empty_stage_proxy, allocated_stages = allocated_stages
+  )
   # Each source's cross-cutting amounts follow its own direct mix: the CRS's mining-policy aid is
   # spread by the CRS's mineral projects, not pulled into oil and gas by an export credit agency's
   # oil loans, and OCI's unclear-stage deals by OCI's own projects. The two allocations add up.
   if (use_oci) {
     oci_amounts <- oci_parts$amounts
     oci_amounts$amount <- oci_amounts$amount / length(years_present)
-    aid_oci <- partnership_strength_allocate_crs_purposes(oci_amounts, oci_parts$crosswalk, cells, recipients = recipients, coded = coded)
+    aid_oci <- partnership_strength_allocate_crs_purposes(
+      oci_amounts, oci_parts$crosswalk, cells,
+      recipients = recipients, coded = coded,
+      empty_stage_proxy = empty_stage_proxy, allocated_stages = allocated_stages
+    )
     k <- match(paste(aid$recipient_iso3, aid$tech, aid$supply_chain), paste(aid_oci$recipient_iso3, aid_oci$tech, aid_oci$supply_chain))
     aid$aid <- aid$aid + aid_oci$aid[k]
   }
@@ -599,6 +665,17 @@ partnership_strength_build_oecd_tech <- function(oecd_crs,
 # stays for the Development & finance chunk of the dashboard export (scripts/87,
 # R/dashboard/sector/sector_dev.R), which ships the 3-digit CRS flows of oecd_crs_api.csv and
 # checks its stage totals against it.
+#
+# Stages. Its supply_chain keeps the three old labels, read as roll-ups of the six stages
+# (PARTNERSHIP_STRENGTH_STAGE_ROLLUP), because a 3-digit sector cannot be split further and the
+# dashboard check rebuilds the same labels (sector_dev_crs_stage()). Against the six-stage purpose
+# allocation of partnership_strength_build_oecd_tech(): Energy (23x) is its Deployment stage (roll-up
+# Downstream) and mining (322x) its Extraction stage, one of the Upstream stages (this builder nets
+# coal and upstream oil and gas out of it). Industry (321x) spans Refining (32167 fossil fuels,
+# 32169 basic metals, 32170 non-ferrous metals), which rolls up to Upstream, as well as Components
+# and Assembly; its "Midstream" is the CRS sector (what the old Midstream crosswalk rows covered),
+# not the Midstream roll-up of the six-stage allocation, so the two are comparable on Energy and
+# mining only.
 partnership_strength_build_oecd_supplychain <- function(oecd_api_raw,
                                                         gdp_data,
                                                         gdp_year = 2023,
@@ -805,7 +882,8 @@ partnership_strength_build_development_index <- function(energy_security_index,
 # variable): the Development Potential Index and its components. `contributions` carries each
 # component's weighted share of the pre-ranking composite (weights renormalized over the
 # components present, so they sum to it; the index is its S-curve), as for Friendshore and
-# Opportunity. `top5` is the partner's mean of its five highest (tech, stage) values per variable.
+# Opportunity. `top5` is the partner's mean of its five highest (tech, stage) values per variable,
+# over up to six stages per technology since 2026-10-27 (three before; partnership_strength_build_top_k()).
 stronger_development <- function(country_info,
                                  gdp_data,
                                  economic_opportunity_index,

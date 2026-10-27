@@ -94,10 +94,12 @@ test_that("mining is Extraction and refining/processing is Refining", {
     iea_critical_minerals_supply_stage(labels, legacy = FALSE),
     c("Extraction", "Refining", "Extraction", "Refining", "Refining", "Refining")
   )
-  # The legacy labels R/indices/coalition.R still keys its mining and refining measures on:
-  # the old classification (refining was Midstream), not the six-stage roll-up.
+  # The six stages are the default (no caller needs the legacy labels since the coalition moved
+  # to six stages); legacy = TRUE still gives the old classification (refining was Midstream),
+  # not the six-stage roll-up.
+  expect_equal(iea_critical_minerals_supply_stage(labels), iea_critical_minerals_supply_stage(labels, legacy = FALSE))
   expect_equal(
-    iea_critical_minerals_supply_stage(labels),
+    iea_critical_minerals_supply_stage(labels, legacy = TRUE),
     c("Upstream", "Midstream", "Upstream", "Midstream", "Midstream", "Midstream")
   )
 })

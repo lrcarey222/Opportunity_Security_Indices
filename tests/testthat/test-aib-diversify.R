@@ -1,5 +1,5 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
-for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R")) source(file.path(repo_root, "R", f))
+for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "utils/supply_chain_stages.R")) source(file.path(repo_root, "R", f))
 for (f in sort(list.files(file.path(repo_root, "R", "aib"), pattern = "\\.R$", full.names = TRUE))) source(f)
 suppressPackageStartupMessages(library(dplyr))
 
@@ -54,7 +54,7 @@ test_that("diversification targets fold re-export hubs into their origin and cap
   expect_equal(unname(key["HKG"]), unname(key["CHN"]))                                 # the hub loses the same share
   expect_true(is.na(t$cap[t$node_id == "m"]))                                          # 0.5 HHI is below its 0.6 benchmark
   st <- aib_shock_targets(list(list(id = "div", type = "diversify")), tibble::tibble(node_id = c("n", "m"), tech = "T",
-                          supply_chain = "Midstream", sub_sector = c("N", "M")), em, diversify = t)
+                          supply_chain = "Components", sub_sector = c("N", "M")), em, diversify = t)
   expect_equal(st$node_id, "n")
   expect_equal(st$cap, n$cap)
 })

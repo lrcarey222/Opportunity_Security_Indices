@@ -11,7 +11,7 @@ strat_fx_inputs <- function() {
   nodes <- tibble::tibble(
     node_id = c("ore", "oxide", "magnet", "motor", "cellmat", "cell", "pellets"),
     sub_sector = c("Rare ore", "Separated oxides", "Permanent magnets", "Electric motors", "Cell materials", "Battery cells", "Wood pellets"),
-    supply_chain = c("Upstream", "Midstream", "Midstream", "Downstream", "Midstream", "Downstream", "Upstream"))
+    supply_chain = c("Extraction", "Refining", "Components", "Assembly", "Refining", "Assembly", "Assembly"))
   world <- c(ore = 100, oxide = 200, magnet = 300, motor = 1000, cellmat = 400, cell = 800, pellets = 50)
   sh <- list(
     ore = c(AUS = 0.5, CHN = 0.3, USA = 0.1, IND = 0.1),
@@ -158,9 +158,10 @@ strat_fx_compacts_yml <- function() {
                                      also_spans = list("SC-B"), reason = "test override")))
 }
 
-# config/aib_node_functions.yml (parsed): every node but `cell`, which falls back on its stage (Downstream).
+# config/aib_node_functions.yml (parsed): every node but `cell`, which falls back on its stage (Assembly).
 strat_fx_node_functions <- function() {
-  list(fallback_by_stage = list(Upstream = "resource", Midstream = "components", Downstream = "systems"),
+  list(fallback_by_stage = list(Extraction = "resource", Refining = "processing", Components = "components", Assembly = "systems",
+                                Deployment = "systems", Recovery = "resource"),
        nodes = list(ore = "resource", oxide = "processing", magnet = "components", motor = "systems", cellmat = "components"))
 }
 

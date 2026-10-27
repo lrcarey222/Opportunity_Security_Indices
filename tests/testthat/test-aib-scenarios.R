@@ -1,5 +1,5 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
-for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R")) source(file.path(repo_root, "R", f))
+for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "utils/supply_chain_stages.R")) source(file.path(repo_root, "R", f))
 for (f in sort(list.files(file.path(repo_root, "R", "aib"), pattern = "\\.R$", full.names = TRUE))) source(f)
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_export.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_check.R"))
@@ -43,7 +43,7 @@ test_that("ties in observed supply are ranked by ISO3 code", {
 })
 
 test_that("the observed network is a pseudo-shock whose fields are observed USD and shares of node demand", {
-  nodes <- tibble::tibble(node_id = c("cells", "anodes"), supply_chain = c("Midstream", "Upstream"), techs = c("Batteries", "Batteries"))
+  nodes <- tibble::tibble(node_id = c("cells", "anodes"), supply_chain = c("Assembly", "Refining"), techs = c("Batteries", "Batteries"))
   inp <- aib_observed_network_inputs(scn_flows(), c("USA", "DEU", "JPN"))
   expect_true(all(inp$trade$relationship == "existing"))
   expect_true(all(inp$trade$shock_id == "baseline" & inp$trade$scenario == "observed"))
@@ -56,6 +56,9 @@ test_that("the observed network is a pseudo-shock whose fields are observed USD 
   expect_equal(chn_usa$cumulative_trade_resilience_contribution, chn_usa$headline_trade_contribution)
   expect_equal(chn_usa$n_trade_selected, 2)
   expect_equal(chn_usa$n_high_severity, 0)
+  # One stage flag per six-stage stage: cells are Assembly, anodes Refining.
+  expect_equal(unlist(chn_usa[, tolower(SUPPLY_CHAIN_STAGES)], use.names = FALSE), c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
+  expect_false(any(c("upstream", "midstream", "downstream") %in% names(pairs)))
   expect_equal(sum(pairs$cumulative_coordination_dividend), 0)
   expect_equal(sum(pairs$headline_investment_contribution), 0)
   # Shares summed over the pairs give one per node.
@@ -67,6 +70,8 @@ test_that("the observed network is a pseudo-shock whose fields are observed USD 
   co <- aib_network_countries(kept)
   expect_equal(sort(co$iso3), c("CHN", "DEU", "JPN", "KOR", "USA"))
   expect_equal(co$roles[co$iso3 == "CHN"], "supplier")
+  expect_true(all(paste0("supplier_n_", tolower(SUPPLY_CHAIN_STAGES), "_partners") %in% names(co)))
+  expect_equal(co$supplier_n_deployment_partners[co$iso3 == "CHN"], 0)
   expect_false("headline_lost_usd" %in% names(co))
 })
 
@@ -139,11 +144,11 @@ test_that("a compact's observed suppliers are summed over its nodes, with the HH
 scn_res <- function() {
   flows <- scn_flows()
   scope <- c("USA", "DEU", "JPN")
-  nodes <- tibble::tibble(node_id = c("cells", "anodes"), supply_chain = c("Midstream", "Upstream"), techs = c("Batteries", "Batteries"))
+  nodes <- tibble::tibble(node_id = c("cells", "anodes"), supply_chain = c("Assembly", "Refining"), techs = c("Batteries", "Batteries"))
   inp <- aib_observed_network_inputs(flows, scope)
   eb <- aib_network_min_share(aib_network_pairs(inp$trade, NULL, nodes, inp$node_shock, "baseline", 0.4), 0.05)
   cp <- function(id, method, members) tibble::tibble(
-    compact_id = id, compact_name = "Batteries: cells, anodes", technology = "Batteries", stages = "Midstream; Upstream",
+    compact_id = id, compact_name = "Batteries: cells, anodes", technology = "Batteries", stages = "Assembly; Refining",
     compact_archetype = "Investment / Capacity Compact", compact_type = "candidate compact", coalition_method = method,
     minimum_coalition = members, minimum_coalition_90 = members, minimum_coalition_95 = members, minimum_coalition_99 = members,
     target_reached_99 = !is.na(members), robust_tie_break_solved = TRUE, max_anchor_coverage = 0.99,

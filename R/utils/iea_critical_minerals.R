@@ -116,11 +116,10 @@ harmonize_mineral_names <- function(x) {
 #
 # `legacy = TRUE` returns the three-stage labels in use before 2026-10-26: Upstream for mining
 # and Midstream for refining. That is the old classification, not the six-stage roll-up (where
-# Refining rolls up to Upstream). It is the default because R/indices/coalition.R, which has not
-# moved to six stages, calls this without the argument and keys its mining and refining measures
-# on Upstream / Midstream. The Energy Security and Opportunity builders pass legacy = FALSE. When
-# coalition.R migrates, it should pass legacy = FALSE and the default can flip.
-iea_critical_minerals_supply_stage <- function(stage_label, legacy = TRUE) {
+# Refining rolls up to Upstream). No caller uses it since R/indices/coalition.R moved to six
+# stages (2026-10-27), so the default is the six stages; the argument can go once the callers
+# that still pass legacy = FALSE explicitly (the mineral themes and coalition.R) drop it.
+iea_critical_minerals_supply_stage <- function(stage_label, legacy = FALSE) {
   refining <- stringr::str_detect(
     stage_label,
     stringr::regex("refin|chemical|battery.?grade|process", ignore_case = TRUE)

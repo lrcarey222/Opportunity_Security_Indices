@@ -47,7 +47,8 @@ aib_check_is_obj <- function(x) is.list(x) && length(x) > 0 && !is.null(names(x)
 
 aib_check_side <- function(p, s, at, trade) {
   if (!is.list(s)) return(p$add(sprintf("%s: not an object", at)))
-  for (k in c("partners", "selected", "upstream", "midstream", "downstream")) p$num(s[[k]], sprintf("%s.%s", at, k), min = 0, int = TRUE)
+  # partner counts by stage: the six stages in lower case (aib_dash_stage_keys())
+  for (k in c("partners", "selected", tolower(SUPPLY_CHAIN_STAGES))) p$num(s[[k]], sprintf("%s.%s", at, k), min = 0, int = TRUE)
   for (k in c("headline", "cumulative")) p$num(s[[k]], sprintf("%s.%s", at, k), min = 0)
   if (trade) {
     p$num(s$dividend, sprintf("%s.dividend", at), min = 0)
@@ -97,7 +98,7 @@ aib_check_network <- function(doc, p = aib_check_problems(), node_ids = vapply(d
     for (k in c("nTrade", "nInvestment", "nShocks", "nHighSeverity")) p$num(e[[k]], paste0(at, ".", k), min = 0, int = TRUE)
     for (k in c("nodes", "techs", "stages")) p$str_arr(e[[k]], paste0(at, ".", k))
     if (is.character(e$nodes) && !is.null(node_ids)) for (x in setdiff(e$nodes, node_ids)) p$add(sprintf("%s.nodes: '%s' is not a node of the document", at, x))
-    if (is.character(e$stages)) for (x in setdiff(e$stages, c("Upstream", "Midstream", "Downstream"))) p$add(sprintf("%s.stages: '%s' is not a stage", at, x))
+    if (is.character(e$stages)) for (x in setdiff(e$stages, SUPPLY_CHAIN_STAGES)) p$add(sprintf("%s.stages: '%s' is not a stage", at, x))
     for (k in c("tradeUsd", "trade", "investment", "cumTrade", "cumDividend", "cumInvestment")) p$num(e[[k]], paste0(at, ".", k), min = 0)
     for (k in c("opportunity", "friendshore")) p$num(e[[k]], paste0(at, ".", k), nullable = TRUE, min = 0, max = 1)
   }

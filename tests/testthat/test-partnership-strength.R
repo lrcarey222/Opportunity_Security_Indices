@@ -4,6 +4,7 @@ source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "indices", "index_builder_core.R"))
 source(file.path(repo_root, "R", "indices", "build_partnership_strength_index.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
@@ -11,7 +12,8 @@ source(file.path(repo_root, "R", "themes", "partnership_strength", "prosperous_o
 source(file.path(repo_root, "R", "themes", "partnership_strength", "safer_friendshore.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "stronger_development.R"))
 
-# Small shared fixture: five economies, one of them high income, one tech in two stages.
+# Small shared fixture: five economies, one of them high income, one tech in two of the six
+# supply-chain stages (Extraction, and Assembly, where HS 854140 sits in the master).
 ps_country_info <- function() {
   tibble::tibble(
     country = c("United States", "Japan", "China", "India", "Viet Nam"),
@@ -25,11 +27,47 @@ ps_index_tbl <- function(value_col, values) {
   tbl <- tidyr::expand_grid(
     Country = countries,
     tech = "Solar",
-    supply_chain = c("Upstream", "Downstream")
+    supply_chain = c("Extraction", "Assembly")
   )
   tbl[[value_col]] <- values
   tbl
 }
+
+test_that("the partner modules' stage roll-up is the six-stage one, and partner tables must hold stages", {
+  # Spelled out in partnership_strength_helpers.R so the dashboard exports can source it alone.
+  expect_identical(PARTNERSHIP_STRENGTH_STAGE_ROLLUP, SUPPLY_CHAIN_STAGE_ROLLUP)
+
+  six <- tibble::tibble(tech = "Solar", supply_chain = SUPPLY_CHAIN_STAGES)
+  expect_silent(partnership_strength_assert_stages(six, "six"))
+  expect_error(partnership_strength_assert_stages(dplyr::mutate(six, supply_chain = "Midstream"), "old"), "old supply_chain")
+  expect_error(partnership_strength_assert_stages(tibble::tibble(supply_chain = NA_character_), "blank"), "not supply-chain stages")
+  # "All" is the partner-level PSI rows' value, accepted only where asked for.
+  psi <- tibble::tibble(Country = "India", supply_chain = "All")
+  expect_error(partnership_strength_assert_stages(psi, "psi"), "All")
+  expect_silent(partnership_strength_assert_stages(psi, "psi", allow_all = TRUE))
+  # Tables without a stage key (the top-5 summaries) pass.
+  expect_silent(partnership_strength_assert_stages(tibble::tibble(partner_iso = "IND"), "top5"))
+
+  # scripts/15 and scripts/25 source the stage helpers and check every table they write.
+  for (s in c("15_build_partner_themes.R", "25_build_partner_indices.R")) {
+    code <- paste(readLines(file.path(repo_root, "scripts", s), warn = FALSE), collapse = "\n")
+    expect_match(code, "\"utils\", \"supply_chain_stages.R\"", fixed = TRUE, info = s)
+    expect_match(code, "partnership_strength_assert_stages(tbl, name", fixed = TRUE, info = s)
+  }
+})
+
+test_that("the top-5 summary takes the five best of up to six stages per technology", {
+  # One dyad, two technologies at all six stages: twelve cells, five averaged (k is not changed).
+  cells <- tidyr::expand_grid(tech = c("Solar", "Wind"), supply_chain = SUPPLY_CHAIN_STAGES) %>%
+    dplyr::mutate(
+      reporter_iso = "USA", partner_iso = "JPN", category = "friendshore", variable = "Friendshore Index",
+      value = c(0.9, 0.8, 0.7, 0.1, 0.1, 0.1, 0.6, 0.2, 0.2, 0.2, 0.2, 0.2), source = "test", explanation = "test"
+    )
+  top <- partnership_strength_build_top_k(cells, c("reporter_iso", "partner_iso"), k = 5L, year = 2024L)
+  # Solar Extraction, Refining, Components, Wind Extraction, then one 0.2 cell: three of the five
+  # best cells are stages of one technology.
+  expect_equal(top$value, mean(c(0.9, 0.8, 0.7, 0.6, 0.2)))
+})
 
 test_that("headline techs match the pillars' techs vector in scripts/20", {
   exprs <- parse(file.path(repo_root, "scripts", "20_build_indices.R"))
@@ -62,7 +100,7 @@ test_that("country tables collapse spelling variants to one row per ISO3", {
   es <- tibble::tibble(
     Country = c("Viet Nam", "Vietnam", "Taiwan, Province of China", "USSR", "Japan", "Japan"),
     tech = c("Solar", "Solar", "Solar", "Solar", "Solar", "Aluminium"),
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     Energy_Security_Index = c(0.2, 0.9, 0.5, 0.7, 0.4, 0.3)
   )
   out <- partnership_strength_country_iso_table(
@@ -175,7 +213,7 @@ test_that("friendshore dyads are unique, exclude self-dyads and drop a missing o
     dplyr::bind_rows(tibble::tibble(
       Country = "Vietnam",
       tech = "Solar",
-      supply_chain = "Upstream",
+      supply_chain = "Extraction",
       Energy_Security_Index = 0.99
     )) %>%
     dplyr::group_by(Country)
@@ -185,7 +223,7 @@ test_that("friendshore dyads are unique, exclude self-dyads and drop a missing o
     reporter_iso = "USA",
     partner_iso = "JPN",
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     imp_trade_index = 0.9
   )
   outbound_edges <- tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", outbound_index = 0.6)
@@ -206,10 +244,10 @@ test_that("friendshore dyads are unique, exclude self-dyads and drop a missing o
   expect_equal(dplyr::n_distinct(out$reporter_iso), 5)
 
   # With ghg_index = 1 there is no penalty, so fsi_raw is the available-case weighted mean.
-  no_dip <- out %>% dplyr::filter(reporter_iso == "USA", partner_iso == "CHN", supply_chain == "Upstream")
+  no_dip <- out %>% dplyr::filter(reporter_iso == "USA", partner_iso == "CHN", supply_chain == "Extraction")
   expect_true(is.na(no_dip$outbound_index))
   expect_equal(no_dip$fsi_raw, (2 * no_dip$imp_trade_index + 2 * no_dip$es_need + 2 * no_dip$eo_partner) / 6)
-  with_dip <- out %>% dplyr::filter(reporter_iso == "USA", partner_iso == "JPN", supply_chain == "Upstream")
+  with_dip <- out %>% dplyr::filter(reporter_iso == "USA", partner_iso == "JPN", supply_chain == "Extraction")
   expect_equal(with_dip$outbound_index, 0.6)
   expect_equal(
     with_dip$fsi_raw,
@@ -229,9 +267,11 @@ test_that("safer_friendshore and prosperous_opportunity write one row per dyad c
     cmd_code = "854140",
     primary_value = c(10, 20, 5, 8)
   )
+  # The crosswalk as scripts/15 passes it: the master's six-stage `stage` copied into supply_chain,
+  # which the trade cells key on (partnership_strength_build_trade_mapping()).
   subcat <- tibble::tibble(
     tech = c("Solar", "Solar", "Solar"),
-    supply_chain = c("Downstream", "Downstream", "Downstream"),
+    supply_chain = c("Assembly", "Assembly", "Assembly"),
     code = c("854140", "854140", "854140")
   )
   fdi_raw <- tibble::tibble(
@@ -261,6 +301,11 @@ test_that("safer_friendshore and prosperous_opportunity write one row per dyad c
   }
   expect_true("partner_es_need" %in% op$variable$variable)
   expect_false("energy_security_index" %in% op$variable$variable)
+  # The trade lands in the Assembly pillar cells; Extraction has no code (no_data).
+  for (cov in list(fs$trade_coverage, op$trade_coverage)) {
+    expect_gt(cov$n_trade[cov$supply_chain == "Assembly"], 0)
+    expect_equal(cov$n_no_data[cov$supply_chain == "Extraction"], cov$n_cells[cov$supply_chain == "Extraction"])
+  }
 
   # Component contributions are renormalized over the components a dyad has, so they add up to
   # a weighted mean on the index scale even where outbound is missing.
@@ -281,12 +326,12 @@ test_that("safer_friendshore and prosperous_opportunity write one row per dyad c
   # The partner roll-up is one row per partner cell, averaging over reporters.
   expect_false(anyDuplicated(fs$country[c("partner_iso", "tech", "supply_chain")]) > 0)
   jpn <- fs$variable %>%
-    dplyr::filter(partner_iso == "JPN", variable == "Friendshore Index", supply_chain == "Upstream")
+    dplyr::filter(partner_iso == "JPN", variable == "Friendshore Index", supply_chain == "Extraction")
   expect_equal(
-    fs$country$value[fs$country$partner_iso == "JPN" & fs$country$supply_chain == "Upstream"],
+    fs$country$value[fs$country$partner_iso == "JPN" & fs$country$supply_chain == "Extraction"],
     mean(jpn$value)
   )
-  expect_equal(fs$country$n_reporters[fs$country$partner_iso == "JPN" & fs$country$supply_chain == "Upstream"], 4)
+  expect_equal(fs$country$n_reporters[fs$country$partner_iso == "JPN" & fs$country$supply_chain == "Extraction"], 4)
 
   # top5 is one row per dyad and variable.
   expect_false(anyDuplicated(op$top5[c("reporter_iso", "partner_iso", "variable")]) > 0)
@@ -350,10 +395,12 @@ test_that("development is partner-level: no reporter, no donor fan-out, non-high
   gdp_data <- tibble::tibble(iso3c = ci$iso3c, year = 2023, NY.GDP.MKTP.CD = c(27, 4, 18, 3.5, 0.4) * 1e12)
 
   # The 3-digit stage builder (the dashboard export's) sums donors and nets the fossil sub-rows.
+  # It keeps the old three labels, read as roll-ups (a 3-digit sector cannot be split further).
   up <- partnership_strength_build_oecd_supplychain(oecd, gdp_data, 2023, valid_iso = ci$iso3c)
   expect_false(anyDuplicated(up[c("iso3c", "supply_chain")]) > 0)
   expect_false("LDC" %in% up$iso3c)
-  # Upstream aid net of fossil sub-rows: IND 20 > CHN 100 - 80 - 5 = 15.
+  expect_true(all(up$supply_chain %in% unique(PARTNERSHIP_STRENGTH_STAGE_ROLLUP)))
+  # Upstream (mining) aid net of fossil sub-rows: IND 20 > CHN 100 - 80 - 5 = 15.
   up_stage <- up %>% dplyr::filter(supply_chain == "Upstream")
   expect_gt(up_stage$aid_index_supplychain[up_stage$iso3c == "IND"], up_stage$aid_index_supplychain[up_stage$iso3c == "CHN"])
 
@@ -369,16 +416,24 @@ test_that("development is partner-level: no reporter, no donor fan-out, non-high
     usd_disbursement = c(10, 5, 15, 80, 20, 1000)
   )
   crosswalk <- read.csv(file.path(repo_root, "data", "reference", "oecd_crs_purpose_crosswalk.csv"))
-  aid <- partnership_strength_build_oecd_tech(crs, crosswalk, gdp_data, tibble::tibble(tech = "Solar", supply_chain = c("Upstream", "Downstream")), valid_iso = ci$iso3c)
+  aid <- partnership_strength_build_oecd_tech(
+    crs, crosswalk, gdp_data,
+    tibble::tibble(tech = "Solar", supply_chain = c("Extraction", "Deployment", "Recovery")),
+    valid_iso = ci$iso3c
+  )
   expect_false("LDC" %in% aid$iso3c)
-  # Solar Upstream has no purpose code: the stage proxy, without the oil and gas code: IND 20 > CHN 15.
-  sol_up <- aid[aid$supply_chain == "Upstream", ]
+  # Solar Extraction has no purpose code: the stage proxy, without the oil and gas code: IND 20 > CHN 15.
+  sol_up <- aid[aid$supply_chain == "Extraction", ]
   expect_equal(unique(sol_up$aid_basis), "stage")
   expect_gt(sol_up$aid_index_supplychain[sol_up$iso3c == "IND"], sol_up$aid_index_supplychain[sol_up$iso3c == "CHN"])
-  # India's energy policy aid follows its direct (solar) aid; China has no Downstream aid: 0.
-  sol_down <- aid[aid$supply_chain == "Downstream", ]
+  # India's energy policy aid follows its direct (solar) aid; China has no Deployment aid: 0.
+  sol_down <- aid[aid$supply_chain == "Deployment", ]
   expect_equal(sol_down$aid[sol_down$iso3c == "IND"], 15)
   expect_equal(sol_down$aid[sol_down$iso3c == "CHN"], 0)
+  # No crosswalk funds Recovery: it takes the roll-up's proxy, Extraction + Refining (none here).
+  sol_rec <- aid[aid$supply_chain == "Recovery", ]
+  expect_equal(unique(sol_rec$aid_basis), "rollup")
+  expect_equal(sol_rec$aid[match(c("IND", "CHN"), sol_rec$iso3c)], c(20, 15))
 
   dev <- stronger_development(ci, gdp_data, eo, es, wb_wdi, wb_db, crs, crosswalk)
 

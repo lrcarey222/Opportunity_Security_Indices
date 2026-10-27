@@ -20,6 +20,14 @@ SUPPLY_CHAIN_STAGE_ROLLUP <- c(
 
 SUPPLY_CHAIN_LEGACY_STAGES <- c("Upstream", "Midstream", "Downstream")
 
+# The stages that make or supply something (every stage but Deployment): the old Upstream and
+# Midstream. Coalition supplier measures, the allied network and the AIB partner scores use them.
+SUPPLY_CHAIN_SUPPLY_STAGES <- setdiff(SUPPLY_CHAIN_STAGES, "Deployment")
+
+# Manufacturing (the old Midstream): where a source reports plants or capex without a product,
+# its value is copied onto both.
+SUPPLY_CHAIN_MANUFACTURING_STAGES <- c("Components", "Assembly")
+
 # Strategic Index supply-chain term: each stage takes an equal share of its roll-up's weight
 # (Upstream 0.50, Midstream 0.75, Downstream 0.25; user decision 2026-10-26).
 SUPPLY_CHAIN_STAGE_SI_WEIGHTS <- c(

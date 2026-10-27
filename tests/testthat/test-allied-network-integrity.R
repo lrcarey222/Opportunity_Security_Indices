@@ -2,6 +2,7 @@ repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRU
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "indices", "allied_network_design.R"))
@@ -378,7 +379,8 @@ test_that("scripts/30 turns the node policy term off and solves every coalition 
       is.call(e) && identical(e[[1]], as.name("<-")) && identical(e[[2]], as.name(name))
     }, exprs)
     expect_length(hit, 1)
-    eval(hit[[1]][[3]], envir = baseenv())
+    # the global environment holds the sourced stage constants (network_supply_chains)
+    eval(hit[[1]][[3]], envir = globalenv())
   }
   expect_false(assigned("network_node_policy"))
   # 60 covers the 34 nodes of the bundled network and the 54-member coalition solved member by
@@ -391,7 +393,8 @@ test_that("scripts/30 turns the node policy term off and solves every coalition 
   expect_equal(assigned("network_node_labels"), c(EUU = "European Union"))
   # lambda from the Oct 2026 recalibration on the 34-node set (scratch_final/network study)
   expect_equal(assigned("network_diversity_lambda"), 0.78)
-  expect_equal(assigned("network_supply_chains"), c("Upstream", "Midstream"))
+  # the five supply stages (every stage but Deployment), taken from R/utils/supply_chain_stages.R
+  expect_equal(assigned("network_supply_chains"), c("Extraction", "Refining", "Components", "Assembly", "Recovery"))
 
   call <- Filter(function(e) {
     is.call(e) && identical(e[[1]], as.name("<-")) && identical(e[[2]], as.name("res"))
@@ -417,6 +420,13 @@ test_that("scripts/30 turns the node policy term off and solves every coalition 
   expect_true(any(grepl("allied_network_observed_hhi.csv", src, fixed = TRUE)))
   # the run flags inputs on which lambda no longer meets its calibration rule
   expect_true(any(grepl("no longer meets its calibration rule", src, fixed = TRUE)))
+  # six stages: the stage helpers are sourced, the basket trade takes each code's master stage, the
+  # comments say lambda was calibrated on the three-stage network and claim no 22-stage network now
+  expect_true(any(grepl("\"utils\", \"supply_chain_stages.R\"", src, fixed = TRUE)))
+  expect_true(any(grepl("hs6_master$supply_chain <- hs6_master$stage", src, fixed = TRUE)))
+  expect_true(any(grepl("WAS CALIBRATED ON THE THREE-STAGE NETWORK", src, fixed = TRUE)))
+  expect_false(any(grepl("these 22 stages|over the 22 Upstream/Midstream stages", src)))
+  expect_identical(args$supply_chains, as.name("network_supply_chains"))
 })
 
 test_that("a stage without ES ranks on the other components, and a stage without any signal is skipped", {

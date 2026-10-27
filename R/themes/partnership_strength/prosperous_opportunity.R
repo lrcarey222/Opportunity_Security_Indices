@@ -12,15 +12,19 @@
 # partnership_strength_build_trade_cells() (partnership_strength_helpers.R): the market's import
 # declaration where it reports the cell, else the reporter's own export declaration (mirror). A
 # dyad cell with no observed flow in the last theme year takes the (tech, stage) mean
-# (trade_status "imputed"); one observed with no trade is a recorded zero. A (tech, stage) the HS6
-# crosswalk maps no code to ("no_data": the Downstream stages and Green Hydrogen) takes the dyad's
-# own trade index in its observed cells, the same technology first (no_data_fill "dyad";
+# (trade_status "imputed"); one observed with no trade is a recorded zero. Cells are keyed by the
+# six supply-chain stages (the HS6 master's `stage`; partnership_strength_build_trade_mapping()). A
+# (tech, stage) the HS6 crosswalk maps no code to ("no_data": every Deployment cell, Green Hydrogen
+# and Geothermal, Solar Extraction, and most Recovery cells) takes the dyad's own trade index in its
+# observed cells, the same technology first (no_data_fill "dyad";
 # partnership_strength_fill_no_data_trade(), partnership_strength_helpers.R).
 #
 # Each dyad cell also carries imputed_weight_share, the share of its partner- and pair-specific
 # component weight (trade, partner_es_need) resting on imputed inputs
 # (partnership_strength_imputed_weight_share(), partnership_strength_helpers.R); the top-5 table
 # carries the dyad's mean over its top-5 cells on the Opportunity Index rows (PSI rankability).
+# The top-5 means draw on up to six (tech, stage) cells per technology since 2026-10-27, three
+# before (partnership_strength_build_top_k()).
 
 # Code defaults; the pipeline passes config/weights.yml partnership_opportunity_components.
 partnership_strength_opportunity_default_weights <- function() {

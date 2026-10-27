@@ -28,10 +28,13 @@
 #   <raw>/wdi_country_info.csv, <raw>/CAT_country ratings data.csv
 #   <raw>/GCIM_Investment_Capacity_aggregated.xlsx operational manufacturing capacity (optional)
 #   <processed>/partner_opportunity_tbl.rds, partner_friendshore_tbl.rds  (Export Opportunity,
-#     Friendshore), policy_outputs.rds (IEA PAMS), major_supplier_shares_tbl.rds, coalition_tbl.rds,
-#     geo_alignment_tbl.rds (UNGA voting blocs)
-# Writes <out>/aib_inputs.rds: nodes, flows, metrics, data quality, dyad indices, policy inputs, income groups and the
-# Development Potential Index (the investment host types), and the UNGA blocs (the host alignment screen).
+#     Friendshore), policy_outputs.rds (IEA PAMS), partner_development_country_tbl.rds,
+#     major_supplier_shares_tbl.rds, coalition_tbl.rds, geo_alignment_tbl.rds (UNGA voting blocs); the
+#     partner, development and policy tables must be keyed by the six supply-chain stages (it stops
+#     on an Upstream / Midstream / Downstream table)
+# Writes <out>/aib_inputs.rds: nodes (six-stage supply_chain, checked; source_stage the taxonomy's own),
+# flows, metrics, data quality, dyad indices, policy inputs, income groups and the Development Potential
+# Index (the investment host types), and the UNGA blocs (the host alignment screen).
 
 source(local({
   resolve_bootstrap_path <- function() {
@@ -70,7 +73,7 @@ arg_value <- function(flag, default = NULL) {
 abs_path <- function(p) normalizePath(if (grepl("^([A-Za-z]:)?[/\\]", p)) p else file.path(repo_root, p), winslash = "/", mustWork = FALSE)
 step <- function(...) message(format(Sys.time(), "%H:%M:%S"), "  ", ...)
 
-for (f in c("utils/scurve.R", "utils/schema.R", "utils/country.R", "utils/hs6_crosswalk.R",
+for (f in c("utils/scurve.R", "utils/schema.R", "utils/country.R", "utils/hs6_crosswalk.R", "utils/supply_chain_stages.R",
             "themes/partnership_strength/partnership_strength_helpers.R",
             "categories/trade/trade_core.R", "categories/policy/cat_policy_index.R")) {
   source(file.path(repo_root, "R", f))
@@ -90,7 +93,9 @@ step("AIB inputs: raw ", raw_data_path, "; processed ", processed_dir, "; out ",
 # ---- Nodes ------------------------------------------------------------------------------------
 # The OSI basket is read in every case: it is the master taxonomy, and with the dictionary it is the
 # crosswalk through which the partner indices and the policy compatibility (kept by OSI technology x
-# stage) reach the nodes.
+# six-stage stage) reach the nodes. Nodes are grouped by the taxonomy's own Upstream / Midstream /
+# Downstream (source_stage: node ids, splits and aggregates as in the three-stage build) and labelled
+# with a six-stage supply_chain (R/aib/aib_nodes.R), weighed by world trade once the dyads are read.
 osi_master <- utils::read.csv(file.path(raw_inputs_reference_dir(repo_root), "energy_hs6_master.csv"),
                               colClasses = c(hs6 = "character"), stringsAsFactors = FALSE)
 dictionary_scope <- NA_character_
@@ -108,9 +113,6 @@ if (identical(aib_or(cfg$nodes$source, "master"), "dictionary")) {
   taxonomy_tbl <- tibble::tibble(tech = sort(unique(stringr::str_squish(master$tech))), index_code = NA_character_, index_name = NA_character_)
 }
 cells <- aib_master_cells(master, cfg$nodes$splits)
-nd <- aib_build_nodes(cells)
-step("Nodes: ", nrow(nd$nodes), " physical nodes from ", nrow(nd$node_cells), " technology/stage/sub-sector cells (",
-     sum(nd$nodes$n_techs > 1), " shared by several technologies)")
 
 # ---- Bilateral flows at node grain ---------------------------------------------------------------
 trade_year <- as.integer(cfg$trade$year)
@@ -125,16 +127,21 @@ dyads <- data.table::fread(
 )
 dyads <- dyads[dyads$period %in% c(hist_year, trade_year), ]
 dyads$cmd_code <- hs6_clean_code(dyads$cmd_code)
-dyads <- dyads[dyads$cmd_code %in% nd$node_codes$hs6, ]
+dyads <- dyads[dyads$cmd_code %in% cells$hs6, ]
 step("Dyads: ", format(nrow(dyads), big.mark = ","), " rows in ", hist_year, " and ", trade_year, " on basket codes")
-missing_codes <- setdiff(nd$node_codes$hs6, unique(dyads$cmd_code))
+missing_codes <- setdiff(unique(cells$hs6), unique(dyads$cmd_code))
 if (length(missing_codes)) {
   warning(length(missing_codes), " taxonomy codes have no trade in ", basename(dyad_path), ": ", paste(utils::head(missing_codes, 20), collapse = ", "),
           if (length(missing_codes) > 20) " ..." else "", call. = FALSE)
 }
-# World imports per code in the reference year: the weights of the OSI crosswalk.
+# World imports per code in the reference year: the weights of the nodes' six-stage labels and of the
+# OSI crosswalk.
 code_trade <- dyads[dyads$period == trade_year & tolower(dyads$flow_direction) == "import", ]
 code_trade <- code_trade[, list(value = sum(primary_value, na.rm = TRUE)), by = list(hs6 = cmd_code)]
+
+nd <- aib_build_nodes(cells, as.data.frame(code_trade))
+step("Nodes: ", nrow(nd$nodes), " physical nodes from ", nrow(nd$node_cells), " technology/stage/sub-sector cells (",
+     sum(nd$nodes$n_techs > 1), " shared by several technologies)")
 
 build_flows <- function(node_ids) {
   xw <- aib_node_crosswalk(nd$node_codes, node_ids)
@@ -188,24 +195,32 @@ if (!is.null(merge_map) && nrow(merge_map)) {
   step("Data quality: aggregating upward ", sum(merge_map$node_id != merge_map$merged_id), " insufficient sub-sectors into ",
        dplyr::n_distinct(merge_map$merged_id), " broader nodes: ", paste(unique(merge_map$merged_label), collapse = " | "))
   members <- merge_map %>% dplyr::inner_join(nd$nodes, by = "node_id")
+  # The merged node's codes, for its six-stage label (and its cells'): world trade decides, as for any node.
+  merged_codes <- nd$code_stages %>% dplyr::inner_join(merge_map[, c("node_id", "merged_id")], by = "node_id") %>%
+    dplyr::transmute(node_id = merged_id, tech, hs6, supply_chain)
   merged_nodes <- members %>%
     dplyr::group_by(merged_id) %>%
     dplyr::summarise(
       sub_sector = dplyr::first(merged_label),
-      supply_chain = names(sort(table(supply_chain), decreasing = TRUE))[1],
+      source_stage = names(sort(table(source_stage), decreasing = TRUE))[1],
       techs = paste(sort(unique(unlist(strsplit(techs, "; ")))), collapse = "; "),
       primary_tech = if (any(node_id == merged_id)) primary_tech[node_id == merged_id][1] else dplyr::first(primary_tech),
       hs6 = paste(sort(unique(unlist(strsplit(hs6, ",")))), collapse = ","),
       stage_conflict = any(stage_conflict), .groups = "drop"
     ) %>%
     dplyr::rename(node_id = merged_id) %>%
+    dplyr::left_join(aib_stage_by_trade(merged_codes, "node_id", as.data.frame(code_trade)), by = "node_id") %>%
     dplyr::mutate(n_techs = lengths(strsplit(techs, "; ")), n_hs6 = lengths(strsplit(hs6, ",")))
-  member_cells <- nd$node_cells %>% dplyr::inner_join(merge_map, by = "node_id")
+  member_cells <- nd$node_cells %>% dplyr::inner_join(merge_map, by = "node_id") %>%
+    dplyr::distinct(node_id = merged_id, tech, source_stage, sub_sector = merged_label) %>%
+    dplyr::left_join(dplyr::select(aib_stage_by_trade(merged_codes, c("node_id", "tech"), as.data.frame(code_trade)), node_id, tech, supply_chain),
+                     by = c("node_id", "tech"))
   nd$nodes <- dplyr::bind_rows(nd$nodes[!nd$nodes$node_id %in% merge_map$node_id, ], merged_nodes)
   nd$node_cells <- dplyr::bind_rows(
     nd$node_cells[!nd$node_cells$node_id %in% merge_map$node_id, ],
-    member_cells %>% dplyr::distinct(node_id = merged_id, tech, supply_chain, sub_sector = merged_label)
+    member_cells %>% dplyr::select(node_id, tech, supply_chain, source_stage, sub_sector)
   )
+  nd$code_stages <- dplyr::bind_rows(nd$code_stages[!nd$code_stages$node_id %in% merge_map$node_id, ], merged_codes)
   nd$node_codes <- nd$node_codes %>%
     dplyr::left_join(merge_map[, c("node_id", "merged_id")], by = "node_id") %>%
     dplyr::mutate(node_id = dplyr::coalesce(merged_id, node_id)) %>%
@@ -228,18 +243,23 @@ if (!is.null(merge_map) && nrow(merge_map)) {
 }
 quality$optimize <- quality$data_quality != "Insufficient for optimization" & quality$node_id %in% nd$nodes$node_id
 
-# Crosswalk to the OSI technology x stage cells (the partner indices and the policy compatibility are
-# kept there). With the master taxonomy every node is its own cell.
+# Crosswalk to the OSI technology x six-stage cells (the partner indices, the Development Potential
+# Index and the policy compatibility are kept there). With the master taxonomy every node is its own
+# cells: each of its technologies at that cell's own six-stage label (score_cells; a shared node's cells
+# can sit in different stages).
 if (identical(aib_or(cfg$nodes$source, "master"), "dictionary")) {
   osi_xw <- aib_osi_crosswalk(nd$node_codes, osi_master, as.data.frame(code_trade), min_share = aib_or(cfg$nodes$osi_crosswalk_min_share, 0.2))
-  nd$nodes <- nd$nodes %>% dplyr::select(-dplyr::any_of(c("score_techs", "score_stage", "osi_cells", "yf_cells", "osi_subcomponents", "osi_coverage"))) %>%
+  nd$nodes <- nd$nodes %>% dplyr::select(-dplyr::any_of(c("score_techs", "score_stage", "score_cells", "osi_cells", "yf_cells", "osi_subcomponents", "osi_coverage"))) %>%
     dplyr::left_join(osi_xw, by = "node_id")
   step("OSI crosswalk: ", sum(!is.na(nd$nodes$score_techs)), " of ", nrow(nd$nodes), " nodes have basket codes (median coverage ",
        round(100 * stats::median(nd$nodes$osi_coverage, na.rm = TRUE)), "% of their trade); the rest get neutral partner scores")
 } else {
-  nd$nodes <- nd$nodes %>% dplyr::mutate(score_techs = techs, score_stage = supply_chain,
-                                         osi_cells = NA_character_, yf_cells = NA_character_, osi_subcomponents = NA_character_,
-                                         osi_coverage = 1)
+  own_cells <- nd$node_cells %>% dplyr::distinct(node_id, tech, supply_chain) %>% dplyr::group_by(node_id) %>%
+    dplyr::summarise(score_cells = paste(tech, supply_chain, sep = "|", collapse = "; "), .groups = "drop")
+  nd$nodes <- nd$nodes %>% dplyr::select(-dplyr::any_of("score_cells")) %>% dplyr::left_join(own_cells, by = "node_id") %>%
+    dplyr::mutate(score_techs = techs, score_stage = supply_chain,
+                  osi_cells = NA_character_, yf_cells = NA_character_, osi_subcomponents = NA_character_,
+                  osi_coverage = 1)
 }
 step("Data quality: ", paste(names(table(quality$data_quality)), table(quality$data_quality), sep = " ", collapse = "; "),
      "; ", sum(quality$optimize), " nodes enter the optimization")
@@ -321,7 +341,9 @@ read_index <- function(name, variable) {
     return(NULL)
   }
   t <- readRDS(path)
-  keep <- t$variable == variable & t$tech %in% techs_used & t$supply_chain %in% c("Upstream", "Midstream")
+  aib_assert_six_stage_table(t$supply_chain, paste0(name, ".rds"))
+  # The supplying stages (all but Deployment): where the nodes sit.
+  keep <- t$variable == variable & t$tech %in% techs_used & t$supply_chain %in% SUPPLY_CHAIN_SUPPLY_STAGES
   out <- aib_dyad_index(t[keep, c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable", "value")], variable)
   rm(t)
   invisible(gc())
@@ -336,7 +358,10 @@ pams <- NULL
 pol_path <- file.path(processed_dir, "policy_outputs.rds")
 if (file.exists(pol_path)) {
   pol <- readRDS(pol_path)
-  if (!is.null(pol$policy_agg)) pams <- aib_pams_intensity(pol$policy_agg)
+  if (!is.null(pol$policy_agg)) {
+    aib_assert_six_stage_table(pol$policy_agg$supply_chain, "policy_outputs.rds policy_agg")
+    pams <- aib_pams_intensity(pol$policy_agg)
+  }
   rm(pol)
 }
 country_info <- utils::read.csv(file.path(raw_data_path, "wdi_country_info.csv"), stringsAsFactors = FALSE)
@@ -362,6 +387,17 @@ host_type_data <- aib_read_host_type_data(raw_data_path, processed_dir)
 # UNGA voting blocs, for the investment-host alignment screen (scripts/32).
 host_bloc <- aib_read_host_bloc(processed_dir)
 
+# Every node and cell carries one of the six stages (scripts/32 and 33 and the dashboard read them).
+assert_supply_chain_stages(nd$nodes$supply_chain, "AIB nodes supply_chain")
+assert_supply_chain_stages(nd$node_cells$supply_chain, "AIB node_cells supply_chain")
+assert_supply_chain_stages(stats::na.omit(nd$nodes$score_stage), "AIB nodes score_stage")
+assert_supply_chain_stages(sub("^.*\\|", "", unlist(strsplit(stats::na.omit(nd$nodes$score_cells), "; ", fixed = TRUE))),
+                           "AIB nodes score_cells")
+mixed <- nd$nodes[nd$nodes$stage_mixed %in% TRUE, , drop = FALSE]
+step("Stages: ", paste(sprintf("%s %d", aib_stage_levels(), vapply(aib_stage_levels(), function(s) sum(nd$nodes$supply_chain == s), 0L)), collapse = ", "),
+     " nodes; ", nrow(mixed), " mix stages (filed under the one with the most trade)",
+     if (nrow(mixed)) paste0(": ", paste(sprintf("%s (%s)", mixed$node_id, mixed$stage_mix), collapse = "; ")) else "")
+
 names_tbl <- tibble::tibble(iso3 = country_info$iso3c, country = country_info$country) %>%
   dplyr::bind_rows(tibble::tibble(iso3 = c("TWN", "XKX"), country = c("Taiwan", "Kosovo"))) %>%
   dplyr::distinct(iso3, .keep_all = TRUE)
@@ -374,6 +410,7 @@ inputs <- list(
   ),
   taxonomy = taxonomy_tbl, benchmarks = benchmarks, product_hhi = product_hhi,
   nodes = nd$nodes, node_cells = nd$node_cells, node_cells_detail = cells_detail, node_codes = nd$node_codes,
+  node_code_stages = nd$code_stages,
   flows = flows, exporter_metrics = mt$exporter, importer_metrics = mt$importer, node_summary = mt$summary,
   quality = quality, merge_map = merge_map, production = production, total_exports = totals,
   op_index = op_index, fs_index = fs_index, pams = pams, cat_scores = cat_scores,

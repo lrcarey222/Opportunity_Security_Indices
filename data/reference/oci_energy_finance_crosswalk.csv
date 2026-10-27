@@ -1,121 +1,126 @@
 sector,stage,supply_chain,tech,method,note
-Solar,*,Downstream,Solar,direct,
-Solar,Transmission & Distribution,Downstream,Electric Grid,direct,
-Wind,*,Downstream,Wind,direct,
-Wind,Transmission & Distribution,Downstream,Electric Grid,direct,Offshore wind export cables and transmission assets
-Wind and Solar,*,Downstream,Solar,direct,Split equally between solar and wind
-Wind and Solar,*,Downstream,Wind,direct,Split equally between solar and wind
-"Solar,Batteries",*,Downstream,Solar,direct,Split equally between solar and batteries
-"Solar,Batteries",*,Downstream,Batteries,direct,Split equally between solar and batteries
-Geothermal,*,Downstream,Geothermal,direct,
-Nuclear,*,Downstream,Nuclear,direct,
-Coal,*,Downstream,Coal,direct,Power plants
-Coal,Extraction,Upstream,Coal,direct,
-Coal,Exploration/Extraction,Upstream,Coal,direct,
-Oil,Extraction,Upstream,Oil,direct,
-Oil,Exploration,Upstream,Oil,direct,
-Oil,Exploration/Extraction,Upstream,Oil,direct,
-Oil,Refining,Midstream,Oil,direct,
-Oil,Petrochemical,Midstream,Oil,direct,
-Oil,Transportation,Midstream,Oil,direct,Pipelines and tankers
-Oil,Storage,Midstream,Oil,direct,
-Oil,Transmission & Distribution,Midstream,Oil,direct,
-Oil,Electricity Production,Downstream,Oil,direct,
-Oil,*,Upstream,Oil,pooled,Stage unclear: pro rata to the partner's direct oil finance across stages
-Oil,*,Midstream,Oil,pooled,
-Oil,*,Downstream,Oil,pooled,
-Natural Gas,Extraction,Upstream,Gas,direct,
-Natural Gas,Exploration,Upstream,Gas,direct,
-Natural Gas,Exploration/Extraction,Upstream,Gas,direct,
-Natural Gas,Refining,Midstream,Gas,direct,Gas processing and liquefaction
-Natural Gas,Petrochemical,Midstream,Gas,direct,
-Natural Gas,Transportation,Midstream,Gas,direct,"Pipelines, LNG carriers and terminals"
-Natural Gas,Storage,Midstream,Gas,direct,
-Natural Gas,Transmission & Distribution,Midstream,Gas,direct,Gas transmission pipelines
-Natural Gas,Electricity Production,Downstream,Gas,direct,
-Natural Gas,CHP,Downstream,Gas,direct,
-Natural Gas,Point of Use,Downstream,Gas,direct,
-Natural Gas,Heating,Downstream,Gas,direct,
-Natural Gas,*,Upstream,Gas,pooled,Stage unclear (mostly integrated LNG projects): pro rata to the partner's direct gas finance upstream and midstream
-Natural Gas,*,Midstream,Gas,pooled,
-Oil and Gas,Extraction,Upstream,Oil,direct,Split equally between oil and gas
-Oil and Gas,Extraction,Upstream,Gas,direct,Split equally between oil and gas
-Oil and Gas,Exploration,Upstream,Oil,direct,Split equally between oil and gas
-Oil and Gas,Exploration,Upstream,Gas,direct,Split equally between oil and gas
-Oil and Gas,Exploration/Extraction,Upstream,Oil,direct,Split equally between oil and gas
-Oil and Gas,Exploration/Extraction,Upstream,Gas,direct,Split equally between oil and gas
-Oil and Gas,Refining,Midstream,Oil,direct,Split equally between oil and gas
-Oil and Gas,Refining,Midstream,Gas,direct,Split equally between oil and gas
-Oil and Gas,Petrochemical,Midstream,Oil,direct,Split equally between oil and gas
-Oil and Gas,Petrochemical,Midstream,Gas,direct,Split equally between oil and gas
-Oil and Gas,Transportation,Midstream,Oil,direct,Split equally between oil and gas
-Oil and Gas,Transportation,Midstream,Gas,direct,Split equally between oil and gas
-Oil and Gas,Storage,Midstream,Oil,direct,Split equally between oil and gas
-Oil and Gas,Storage,Midstream,Gas,direct,Split equally between oil and gas
-Oil and Gas,Transmission & Distribution,Midstream,Oil,direct,Split equally between oil and gas
-Oil and Gas,Transmission & Distribution,Midstream,Gas,direct,Split equally between oil and gas
-Oil and Gas,Electricity Production,Downstream,Oil,direct,Split equally between oil and gas
-Oil and Gas,Electricity Production,Downstream,Gas,direct,Split equally between oil and gas
-Oil and Gas,*,Upstream,Oil,pooled,Stage unclear: pro rata to the partner's direct oil and gas finance upstream and midstream
-Oil and Gas,*,Upstream,Gas,pooled,
-Oil and Gas,*,Midstream,Oil,pooled,
-Oil and Gas,*,Midstream,Gas,pooled,
-Batteries,Extraction,Upstream,Batteries,direct,Lithium and other battery minerals
-Batteries,Exploration/Extraction,Upstream,Batteries,direct,
-Batteries,Electric Vehicles,Midstream,Batteries,direct,EV battery gigafactories
-Batteries,Transmission & Distribution,Downstream,Batteries,direct,Grid-connected storage
-Batteries,*,Midstream,Batteries,pooled,Storage stage mixes gigafactories and grid storage: pro rata to the partner's direct battery finance
-Batteries,*,Downstream,Batteries,pooled,
-Hydrogen - Clean,*,Downstream,Green Hydrogen,direct,
-Fuel Cells + Hydrogen,*,Downstream,Green Hydrogen,direct,
-Critical Minerals,*,Upstream,Batteries,direct,"Split equally between the mineral baskets of batteries, grids and EVs"
-Critical Minerals,*,Upstream,Electric Grid,direct,"Split equally between the mineral baskets of batteries, grids and EVs"
-Critical Minerals,*,Upstream,Electric Vehicles,direct,"Split equally between the mineral baskets of batteries, grids and EVs"
-Mixed or unclear - Other,Transmission & Distribution,Downstream,Electric Grid,direct,Grids and interconnectors
-Mixed or unclear - Clean,Transmission & Distribution,Downstream,Electric Grid,direct,
-Efficiency - Other,Transmission & Distribution,Downstream,Electric Grid,direct,
-Efficiency - Clean,Transmission & Distribution,Downstream,Electric Grid,direct,
+Solar,*,Deployment,Solar,direct,
+Solar,Transmission & Distribution,Deployment,Electric Grid,direct,
+Wind,*,Deployment,Wind,direct,
+Wind,Transmission & Distribution,Deployment,Electric Grid,direct,Offshore wind export cables and transmission assets
+Wind and Solar,*,Deployment,Solar,direct,Split equally between solar and wind
+Wind and Solar,*,Deployment,Wind,direct,Split equally between solar and wind
+"Solar,Batteries",*,Deployment,Solar,direct,Split equally between solar and batteries
+"Solar,Batteries",*,Deployment,Batteries,direct,Split equally between solar and batteries
+Geothermal,*,Deployment,Geothermal,direct,
+Nuclear,*,Deployment,Nuclear,direct,
+Coal,*,Deployment,Coal,direct,Power plants
+Coal,Extraction,Extraction,Coal,direct,
+Coal,Exploration/Extraction,Extraction,Coal,direct,
+Oil,Extraction,Extraction,Oil,direct,
+Oil,Exploration,Extraction,Oil,direct,
+Oil,Exploration/Extraction,Extraction,Oil,direct,
+Oil,Refining,Refining,Oil,direct,
+Oil,Petrochemical,Refining,Oil,direct,
+Oil,Transportation,Deployment,Oil,direct,"Pipelines and tankers: fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Oil,Storage,Deployment,Oil,direct,"Fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Oil,Transmission & Distribution,Deployment,Oil,direct,"Fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Oil,Electricity Production,Deployment,Oil,direct,
+Oil,*,Extraction,Oil,pooled,"Stage unclear: pro rata to the partner's direct oil finance across Extraction, Refining and Deployment (Upstream, Midstream and Downstream before 2026-10-27)"
+Oil,*,Refining,Oil,pooled,
+Oil,*,Deployment,Oil,pooled,
+Natural Gas,Extraction,Extraction,Gas,direct,
+Natural Gas,Exploration,Extraction,Gas,direct,
+Natural Gas,Exploration/Extraction,Extraction,Gas,direct,
+Natural Gas,Refining,Refining,Gas,direct,Gas processing and liquefaction
+Natural Gas,Petrochemical,Refining,Gas,direct,
+Natural Gas,Transportation,Deployment,Gas,direct,"Pipelines, LNG carriers and terminals: fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Natural Gas,Storage,Deployment,Gas,direct,"Fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Natural Gas,Transmission & Distribution,Deployment,Gas,direct,"Gas transmission pipelines: fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Natural Gas,Electricity Production,Deployment,Gas,direct,
+Natural Gas,CHP,Deployment,Gas,direct,
+Natural Gas,Point of Use,Deployment,Gas,direct,
+Natural Gas,Heating,Deployment,Gas,direct,
+Natural Gas,*,Extraction,Gas,pooled,Stage unclear (mostly integrated LNG projects): pro rata to the partner's direct gas finance in Extraction and Refining (Upstream and Midstream before 2026-10-27)
+Natural Gas,*,Refining,Gas,pooled,
+Oil and Gas,Extraction,Extraction,Oil,direct,Split equally between oil and gas
+Oil and Gas,Extraction,Extraction,Gas,direct,Split equally between oil and gas
+Oil and Gas,Exploration,Extraction,Oil,direct,Split equally between oil and gas
+Oil and Gas,Exploration,Extraction,Gas,direct,Split equally between oil and gas
+Oil and Gas,Exploration/Extraction,Extraction,Oil,direct,Split equally between oil and gas
+Oil and Gas,Exploration/Extraction,Extraction,Gas,direct,Split equally between oil and gas
+Oil and Gas,Refining,Refining,Oil,direct,Split equally between oil and gas
+Oil and Gas,Refining,Refining,Gas,direct,Split equally between oil and gas
+Oil and Gas,Petrochemical,Refining,Oil,direct,Split equally between oil and gas
+Oil and Gas,Petrochemical,Refining,Gas,direct,Split equally between oil and gas
+Oil and Gas,Transportation,Deployment,Oil,direct,"Split equally between oil and gas: fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Oil and Gas,Transportation,Deployment,Gas,direct,"Split equally between oil and gas: fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Oil and Gas,Storage,Deployment,Oil,direct,"Split equally between oil and gas: fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Oil and Gas,Storage,Deployment,Gas,direct,"Split equally between oil and gas: fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Oil and Gas,Transmission & Distribution,Deployment,Oil,direct,"Split equally between oil and gas: fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Oil and Gas,Transmission & Distribution,Deployment,Gas,direct,"Split equally between oil and gas: fuel transport and storage infrastructure, filed under Deployment as hydrogen transport and storage is (config/iea_clean_tech_guide_tech_map.yml rule hydrogen_infrastructure_to_use). Was Midstream before 2026-10-27."
+Oil and Gas,Electricity Production,Deployment,Oil,direct,Split equally between oil and gas
+Oil and Gas,Electricity Production,Deployment,Gas,direct,Split equally between oil and gas
+Oil and Gas,*,Extraction,Oil,pooled,Stage unclear: pro rata to the partner's direct oil and gas finance in Extraction and Refining (Upstream and Midstream before 2026-10-27)
+Oil and Gas,*,Extraction,Gas,pooled,
+Oil and Gas,*,Refining,Oil,pooled,
+Oil and Gas,*,Refining,Gas,pooled,
+Batteries,Extraction,Extraction,Batteries,direct,Lithium and other battery minerals
+Batteries,Exploration/Extraction,Extraction,Batteries,direct,
+Batteries,Electric Vehicles,Components,Batteries,direct,EV battery gigafactories: cells (Components) and packs (Assembly) are not separated; split equally. Was Midstream before 2026-10-27.
+Batteries,Electric Vehicles,Assembly,Batteries,direct,EV battery gigafactories: cells (Components) and packs (Assembly) are not separated; split equally. Was Midstream before 2026-10-27.
+Batteries,Transmission & Distribution,Deployment,Batteries,direct,Grid-connected storage
+Batteries,*,Components,Batteries,pooled,"Storage stage mixes gigafactories and grid storage: pro rata to the partner's direct battery finance in Components, Assembly and Deployment (Midstream and Downstream before 2026-10-27)"
+Batteries,*,Assembly,Batteries,pooled,
+Batteries,*,Deployment,Batteries,pooled,
+Hydrogen - Clean,*,Deployment,Green Hydrogen,direct,
+Fuel Cells + Hydrogen,*,Deployment,Green Hydrogen,direct,
+Critical Minerals,*,Extraction,Batteries,direct,"OCI does not separate mining from processing finance: split equally between Extraction and Refining of the mineral baskets of batteries, grids and EVs. Was Upstream before 2026-10-27."
+Critical Minerals,*,Extraction,Electric Grid,direct,"OCI does not separate mining from processing finance: split equally between Extraction and Refining of the mineral baskets of batteries, grids and EVs. Was Upstream before 2026-10-27."
+Critical Minerals,*,Extraction,Electric Vehicles,direct,"OCI does not separate mining from processing finance: split equally between Extraction and Refining of the mineral baskets of batteries, grids and EVs. Was Upstream before 2026-10-27."
+Critical Minerals,*,Refining,Batteries,direct,"OCI does not separate mining from processing finance: split equally between Extraction and Refining of the mineral baskets of batteries, grids and EVs. Was Upstream before 2026-10-27."
+Critical Minerals,*,Refining,Electric Grid,direct,"OCI does not separate mining from processing finance: split equally between Extraction and Refining of the mineral baskets of batteries, grids and EVs. Was Upstream before 2026-10-27."
+Critical Minerals,*,Refining,Electric Vehicles,direct,"OCI does not separate mining from processing finance: split equally between Extraction and Refining of the mineral baskets of batteries, grids and EVs. Was Upstream before 2026-10-27."
+Mixed or unclear - Other,Transmission & Distribution,Deployment,Electric Grid,direct,Grids and interconnectors
+Mixed or unclear - Clean,Transmission & Distribution,Deployment,Electric Grid,direct,
+Efficiency - Other,Transmission & Distribution,Deployment,Electric Grid,direct,
+Efficiency - Clean,Transmission & Distribution,Deployment,Electric Grid,direct,
 Mixed or unclear - Other,Electric Vehicles,,,exclude,"Metro and rail lines (e.g. JICA's Mumbai-Ahmedabad high-speed rail), not EVs"
 Mixed or unclear - Other,Transportation,,,exclude,Transport infrastructure
 Mixed or unclear - Clean,Electric Vehicles,,,exclude,Metro and rail lines
 Mixed or unclear - Clean,Transportation,,,exclude,Transport infrastructure
 Efficiency - Clean,Transportation,,,exclude,Transport infrastructure
-Renewables - Clean,*,Downstream,Solar,pooled,Allocated pro rata to the partner's direct solar / wind / geothermal finance
-Renewables - Clean,*,Downstream,Wind,pooled,
-Renewables - Clean,*,Downstream,Geothermal,pooled,
-Mixed or unclear - Fossil,*,Downstream,Coal,pooled,Allocated pro rata to the partner's direct coal / oil / gas finance
-Mixed or unclear - Fossil,*,Downstream,Oil,pooled,
-Mixed or unclear - Fossil,*,Downstream,Gas,pooled,
-Mixed or unclear - Clean,*,Downstream,Solar,pooled,Clean energy programmes: pro rata to the partner's direct clean Downstream finance
-Mixed or unclear - Clean,*,Downstream,Wind,pooled,
-Mixed or unclear - Clean,*,Downstream,Geothermal,pooled,
-Mixed or unclear - Clean,*,Downstream,Nuclear,pooled,
-Mixed or unclear - Clean,*,Downstream,Electric Grid,pooled,
-Mixed or unclear - Clean,*,Downstream,Electric Vehicles,pooled,
-Mixed or unclear - Other,*,Downstream,Solar,pooled,Mixed energy finance: pro rata to the partner's direct Downstream finance
-Mixed or unclear - Other,*,Downstream,Wind,pooled,
-Mixed or unclear - Other,*,Downstream,Geothermal,pooled,
-Mixed or unclear - Other,*,Downstream,Nuclear,pooled,
-Mixed or unclear - Other,*,Downstream,Coal,pooled,
-Mixed or unclear - Other,*,Downstream,Oil,pooled,
-Mixed or unclear - Other,*,Downstream,Gas,pooled,
-Mixed or unclear - Other,*,Downstream,Electric Grid,pooled,
-Mixed or unclear - Other,*,Downstream,Electric Vehicles,pooled,
-Efficiency - Clean,*,Downstream,Solar,pooled,Efficiency: pro rata to the partner's direct Downstream finance (as CRS code 23183)
-Efficiency - Clean,*,Downstream,Wind,pooled,
-Efficiency - Clean,*,Downstream,Geothermal,pooled,
-Efficiency - Clean,*,Downstream,Nuclear,pooled,
-Efficiency - Clean,*,Downstream,Electric Grid,pooled,
-Efficiency - Clean,*,Downstream,Electric Vehicles,pooled,
-Efficiency - Other,*,Downstream,Solar,pooled,
-Efficiency - Other,*,Downstream,Wind,pooled,
-Efficiency - Other,*,Downstream,Geothermal,pooled,
-Efficiency - Other,*,Downstream,Nuclear,pooled,
-Efficiency - Other,*,Downstream,Coal,pooled,
-Efficiency - Other,*,Downstream,Oil,pooled,
-Efficiency - Other,*,Downstream,Gas,pooled,
-Efficiency - Other,*,Downstream,Electric Grid,pooled,
-Efficiency - Other,*,Downstream,Electric Vehicles,pooled,
-Efficiency - Fossil,*,Downstream,Coal,pooled,
-Efficiency - Fossil,*,Downstream,Oil,pooled,
-Efficiency - Fossil,*,Downstream,Gas,pooled,
+Renewables - Clean,*,Deployment,Solar,pooled,Allocated pro rata to the partner's direct solar / wind / geothermal finance
+Renewables - Clean,*,Deployment,Wind,pooled,
+Renewables - Clean,*,Deployment,Geothermal,pooled,
+Mixed or unclear - Fossil,*,Deployment,Coal,pooled,Allocated pro rata to the partner's direct coal / oil / gas finance
+Mixed or unclear - Fossil,*,Deployment,Oil,pooled,
+Mixed or unclear - Fossil,*,Deployment,Gas,pooled,
+Mixed or unclear - Clean,*,Deployment,Solar,pooled,Clean energy programmes: pro rata to the partner's direct clean Deployment finance
+Mixed or unclear - Clean,*,Deployment,Wind,pooled,
+Mixed or unclear - Clean,*,Deployment,Geothermal,pooled,
+Mixed or unclear - Clean,*,Deployment,Nuclear,pooled,
+Mixed or unclear - Clean,*,Deployment,Electric Grid,pooled,
+Mixed or unclear - Clean,*,Deployment,Electric Vehicles,pooled,
+Mixed or unclear - Other,*,Deployment,Solar,pooled,Mixed energy finance: pro rata to the partner's direct Deployment finance
+Mixed or unclear - Other,*,Deployment,Wind,pooled,
+Mixed or unclear - Other,*,Deployment,Geothermal,pooled,
+Mixed or unclear - Other,*,Deployment,Nuclear,pooled,
+Mixed or unclear - Other,*,Deployment,Coal,pooled,
+Mixed or unclear - Other,*,Deployment,Oil,pooled,
+Mixed or unclear - Other,*,Deployment,Gas,pooled,
+Mixed or unclear - Other,*,Deployment,Electric Grid,pooled,
+Mixed or unclear - Other,*,Deployment,Electric Vehicles,pooled,
+Efficiency - Clean,*,Deployment,Solar,pooled,Efficiency: pro rata to the partner's direct Deployment finance (as CRS code 23183)
+Efficiency - Clean,*,Deployment,Wind,pooled,
+Efficiency - Clean,*,Deployment,Geothermal,pooled,
+Efficiency - Clean,*,Deployment,Nuclear,pooled,
+Efficiency - Clean,*,Deployment,Electric Grid,pooled,
+Efficiency - Clean,*,Deployment,Electric Vehicles,pooled,
+Efficiency - Other,*,Deployment,Solar,pooled,
+Efficiency - Other,*,Deployment,Wind,pooled,
+Efficiency - Other,*,Deployment,Geothermal,pooled,
+Efficiency - Other,*,Deployment,Nuclear,pooled,
+Efficiency - Other,*,Deployment,Coal,pooled,
+Efficiency - Other,*,Deployment,Oil,pooled,
+Efficiency - Other,*,Deployment,Gas,pooled,
+Efficiency - Other,*,Deployment,Electric Grid,pooled,
+Efficiency - Other,*,Deployment,Electric Vehicles,pooled,
+Efficiency - Fossil,*,Deployment,Coal,pooled,
+Efficiency - Fossil,*,Deployment,Oil,pooled,
+Efficiency - Fossil,*,Deployment,Gas,pooled,

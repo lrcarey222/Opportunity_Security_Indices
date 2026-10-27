@@ -41,7 +41,13 @@
 #   optimum two producers' shares differ by (difference in marginal score) / (2 * diversity_lambda).
 #   The MILP carries the HHI as a tangent (outer) approximation; see allied_network_hhi_breakpoints.
 # - supply_chains restricts the stages solved; the portfolio caps count top-K appearances over the
-#   solved stages only.
+#   solved stages only. Nothing here fixes the stage labels or their number: a stage is whatever
+#   (tech, supply_chain) the node inputs carry. Since 2026-10-26 the index tables carry the six
+#   stages of R/utils/supply_chain_stages.R and scripts/30 solves the five supply stages
+#   (SUPPLY_CHAIN_SUPPLY_STAGES, every stage but Deployment; 22 Upstream / Midstream stages before).
+#   The edges, member weights and basket trade are matched to the nodes on the same labels, so a
+#   table on other labels (a three-stage partner table against six-stage nodes) stops rather than
+#   silently matching no stage.
 
 # Dependencies expected elsewhere in repo: dplyr, tidyr, tibble, purrr, stringr, rlang
 # Optional solver deps for MILP: ompr, ompr.roi, ROI, ROI.plugin.glpk
@@ -300,13 +306,22 @@ allied_network_member_weights <- function(network_members, node_member_weights, 
   if (nrow(bad)) {
     stop(
       "node_member_weights has no positive weight for node ", paste(unique(bad$network_node), collapse = ", "),
-      " in ", nrow(bad), " stage(s), e.g. ", bad$tech[1], " / ", bad$supply_chain[1], "."
+      " in ", nrow(bad), " stage(s), e.g. ", bad$tech[1], " / ", bad$supply_chain[1],
+      "; its stages are ", allied_network_stage_labels(w$supply_chain), ", the solved stages ",
+      allied_network_stage_labels(stages$supply_chain),
+      " (eu_stage_weights_tbl.rds must be built by scripts/13 on the stages solved here)."
     )
   }
   multi <- multi %>%
     dplyr::mutate(member_weight = .data$weight / .data$.total) %>%
     dplyr::select("network_node", "iso3c", "tech", "supply_chain", "member_weight", "weight_basis")
   dplyr::bind_rows(single, multi)
+}
+
+# The distinct stage labels of x, sorted and comma-separated, for messages about mismatched stages.
+allied_network_stage_labels <- function(x) {
+  x <- sort(unique(as.character(x)))
+  if (!length(x)) "none" else paste(x, collapse = ", ")
 }
 
 # Weighted mean of x over the elements with a finite x and a positive weight (weights renormalised);
@@ -1715,8 +1730,9 @@ allied_network_prune_small_flows <- function(f, K, row_target, col_target, min_s
 # try the next candidate. With diversity_lambda > 0 the greedy selects many producers near min_share
 # and RAS spreads each over every consumer, so nearly every flow is a sliver; dropping all of a
 # consumer's slivers at once (allied_network_prune_small_flows) then cannot be refit and the 10% rule
-# was left unmet for every consumer (Nuclear Upstream at lambda 1.5 on the 2026-10 inputs: smallest
-# active supplier 3.6% of demand; stepwise: none below 10%, in 91 refits). max_refits bounds the work.
+# was left unmet for every consumer (Nuclear Upstream of the three-stage network at lambda 1.5 on
+# the 2026-10 inputs: smallest active supplier 3.6% of demand; stepwise: none below 10%, in 91
+# refits). max_refits bounds the work.
 allied_network_prune_small_flows_stepwise <- function(f, K, row_target, col_target, min_suppliers = 2, epsilon = 0.10,
                                                       tol = 1e-6, max_refits = 2000) {
   if (!is.finite(epsilon) || epsilon <= 0) return(f)
@@ -1893,10 +1909,10 @@ allied_network_solve_stage_milp <- function(nodes_stage,
   # form, tt_i >= 2 bp_k x_i - bp_k^2 z_i: with z_i = 1 they are the plain tangents and with z_i = 0
   # (so x_i = 0) they reduce to tt_i >= 0, so the integer solutions and their objective values are
   # unchanged, but the LP relaxation no longer lets a fractional z_i hold a share below min_share at
-  # almost no penalty. On a Nuclear Upstream stage with near-tied candidates this cut GLPK's time from
-  # 875 s to 51 s with the same solution. The objective already holds the linear part, so it is
-  # replaced with the penalised version. With diversity_lambda = 0 the model is left exactly as before
-  # (no extra variables or rows).
+  # almost no penalty. On a Nuclear Upstream stage (three-stage network) with near-tied candidates
+  # this cut GLPK's time from 875 s to 51 s with the same solution. The objective already holds the
+  # linear part, so it is replaced with the penalised version. With diversity_lambda = 0 the model is
+  # left exactly as before (no extra variables or rows).
   if (diversity_lambda > 0) {
     bp <- allied_network_hhi_breakpoints(max_share, diversity_breakpoint_step)
     n_bp <- length(bp)
@@ -2374,11 +2390,13 @@ allied_network_design <- function(economic_opportunity_index,
                                   policy_missing = c("coalition_median", "none"),
                                   missing_components = c("renormalize", "require_all"),
                                   friendshore_orientation = c("reporter_is_consumer", "reporter_is_producer"),
-                                  # stages solved, matched case-insensitively (e.g. c("Upstream",
-                                  # "Midstream")); NULL solves every stage in the inputs (Upstream,
-                                  # Midstream and Downstream in the shipped data, and any other label a
-                                  # caller uses). The portfolio caps count appearances over the solved
-                                  # stages only.
+                                  # stages solved, matched case-insensitively (scripts/30:
+                                  # SUPPLY_CHAIN_SUPPLY_STAGES, the five supply stages); NULL solves
+                                  # every stage in the inputs (the six stages of
+                                  # R/utils/supply_chain_stages.R in the shipped index tables, or any
+                                  # other labels a caller uses). Labels absent from the inputs stop
+                                  # when none matches. The portfolio caps count appearances over the
+                                  # solved stages only, so their bite depends on how many there are.
                                   supply_chains = NULL,
                                   # diversification: subtract diversity_lambda * HHI per stage (score
                                   # units per unit of HHI; 0 = the linear legacy design). The MILP uses
@@ -2440,6 +2458,13 @@ allied_network_design <- function(economic_opportunity_index,
   stages_excluded <- tibble::as_tibble(raw_nodes)[0, c("tech", "supply_chain")]
   if (!is.null(supply_chains)) {
     keep_stage <- tolower(raw_nodes$supply_chain) %in% tolower(supply_chains)
+    if (nrow(raw_nodes) && !any(keep_stage)) {
+      stop(
+        "No (tech, supply_chain) stages available after filtering: supply_chains (",
+        paste(supply_chains, collapse = ", "), ") matches none of the input stages (",
+        allied_network_stage_labels(raw_nodes$supply_chain), ")."
+      )
+    }
     stages_excluded <- raw_nodes[!keep_stage, ] %>%
       dplyr::distinct(tech, supply_chain) %>%
       dplyr::arrange(tech, supply_chain)
@@ -2490,6 +2515,26 @@ allied_network_design <- function(economic_opportunity_index,
     dplyr::arrange(tech, supply_chain)
 
   if (nrow(stages) == 0) stop("No (tech, supply_chain) stages available after filtering.")
+  # The edges and the bundled nodes' basket trade are joined to the nodes on (tech, supply_chain).
+  # A table on other stage labels (three-stage partner tables against six-stage nodes) would match
+  # no solved stage and silently drop the edge term or the trade weights, so it stops.
+  stage_key <- function(tech, supply_chain) paste(tech, supply_chain, sep = "||")
+  solved_keys <- stage_key(stages$tech, stages$supply_chain)
+  if (nrow(edges) && !any(stage_key(edges$tech, edges$supply_chain) %in% solved_keys)) {
+    stop(
+      "The partner edge tables share no (tech, supply_chain) stage with the nodes: edge stages ",
+      allied_network_stage_labels(edges$supply_chain), ", node stages ", allied_network_stage_labels(stages$supply_chain),
+      ". Rebuild partner_friendshore_tbl / partner_opportunity_tbl (scripts/15) on the index tables' stages."
+    )
+  }
+  if (aggregate_nodes && !is.null(node_trade_tbl) && nrow(node_trade_tbl) &&
+      !any(stage_key(node_trade_tbl$tech, node_trade_tbl$supply_chain) %in% solved_keys)) {
+    stop(
+      "node_trade_tbl shares no (tech, supply_chain) stage with the nodes: trade stages ",
+      allied_network_stage_labels(node_trade_tbl$supply_chain), ", node stages ",
+      allied_network_stage_labels(stages$supply_chain), "."
+    )
+  }
   if (diversity_lambda > 0 && identical(scale_mode, "usd_target_match_china") && !is.null(stage_targets_tbl) && !is.null(scale_caps_tbl)) {
     stop("diversity_lambda > 0 is implemented for the share-based solvers only (scale_mode = 'shares').")
   }

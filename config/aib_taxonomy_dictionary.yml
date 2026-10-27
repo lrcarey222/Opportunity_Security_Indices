@@ -4,14 +4,19 @@
 # scripts/31 and 32 on top of config/aib.yml when `taxonomy: dictionary`; every key here replaces the same
 # key of config/aib.yml.
 
-# Nodes: tech = EIS sector, supply_chain = stage, sub_sector = the sector, refined by `splits` (a split
-# matches a sector and stage; codes no part lists go to `rest`, which also names a cell that is not split).
+# Nodes: tech = EIS sector, source stage = the dictionary's stage, sub_sector = the sector, refined by
+# `splits` (a split matches a sector and stage; codes no part lists go to `rest`, which also names a cell
+# that is not split). A split's `supply_chain` key is the dictionary's own Upstream / Midstream /
+# Downstream (the node grouping, which keeps the node ids of the three-stage build), not the six-stage
+# label: that comes from each code's item_type (R/aib/aib_nodes.R aib_dictionary_stage(): raw materials
+# Extraction, recycled feed Recovery, processed materials Refining, components Components, final products
+# and process equipment Assembly), the node taking the stage with the most world trade.
 # The splits keep the chain steps the compacts and the physical constraint need apart (rare-earth oxides
 # vs metals, lithium vs nickel vs cobalt, wafers vs gallium, GOES vs NGO steel, Li-ion vs other cells).
 # scope: core (the headline: 182 codes, dedicated or predominant (specificity 1-2) plus 12 shared codes kept as core with a justification) or extended (core + extended, 318 codes; a
 # sensitivity; --dictionary-scope overrides it). primary_only: each code in its primary sector only, so
 # nothing is counted twice. Codes not in the OSI basket get neutral Export Opportunity, Friendshore and
-# policy-compatibility scores (those indices are kept by OSI technology x stage; aib_osi_crosswalk()).
+# policy-compatibility scores (those indices are kept by OSI technology x six-stage stage; aib_osi_crosswalk()).
 nodes:
   source: dictionary
   dictionary:

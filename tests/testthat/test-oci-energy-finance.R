@@ -9,6 +9,7 @@ source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "oci_energy_finance.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "stronger_development.R"))
 
@@ -65,9 +66,36 @@ test_that("the institution and sector/stage tables are well formed", {
   expect_true(all(cw$method %in% c("direct", "pooled", "exclude")))
   keyed <- cw[cw$method != "exclude", ]
   expect_true(all(keyed$tech %in% partnership_strength_headline_techs()))
-  expect_true(all(keyed$supply_chain %in% c("Upstream", "Midstream", "Downstream")))
+  expect_true(all(keyed$supply_chain %in% SUPPLY_CHAIN_STAGES))
   methods <- unique(cw[c("sector", "stage", "method")])
   expect_equal(anyDuplicated(methods[c("sector", "stage")]), 0)
+  expect_equal(anyDuplicated(keyed[c("sector", "stage", "supply_chain", "tech")]), 0)
+
+  # Six stages (2026-10-27); `stage` stays OCI's own vocabulary. The fuel industry's transport and
+  # storage ("midstream") is Deployment infrastructure, as hydrogen transport and storage is.
+  stages_of <- function(sector, stage) sort(unique(keyed$supply_chain[keyed$sector == sector & keyed$stage == stage]))
+  for (sec in c("Oil", "Natural Gas", "Oil and Gas")) {
+    for (st in c("Exploration", "Extraction", "Exploration/Extraction")) expect_equal(stages_of(sec, st), "Extraction", info = paste(sec, st))
+    for (st in c("Refining", "Petrochemical")) expect_equal(stages_of(sec, st), "Refining", info = paste(sec, st))
+    for (st in c("Transportation", "Storage", "Transmission & Distribution", "Electricity Production")) {
+      expect_equal(stages_of(sec, st), "Deployment", info = paste(sec, st))
+    }
+  }
+  expect_equal(stages_of("Oil", "*"), c("Deployment", "Extraction", "Refining"))
+  expect_equal(stages_of("Natural Gas", "*"), c("Extraction", "Refining"))
+  expect_equal(stages_of("Oil and Gas", "*"), c("Extraction", "Refining"))
+  expect_equal(stages_of("Batteries", "Electric Vehicles"), c("Assembly", "Components"))
+  expect_equal(stages_of("Batteries", "*"), c("Assembly", "Components", "Deployment"))
+  # OCI does not separate mining from processing finance.
+  crit <- keyed[keyed$sector == "Critical Minerals", ]
+  expect_equal(nrow(crit), 6)
+  expect_equal(sort(unique(crit$supply_chain)), c("Extraction", "Refining"))
+  expect_true(all(crit$method == "direct"))
+  # Every row the old file filed Downstream is Deployment; the exclusions are untouched.
+  expect_true(all(keyed$supply_chain[keyed$stage %in% c("CHP", "Point of Use", "Heating")] == "Deployment"))
+  expect_equal(sum(cw$method == "exclude"), 5)
+  expect_true(all(is.na(cw$supply_chain[cw$method == "exclude"]) | cw$supply_chain[cw$method == "exclude"] == ""))
+  expect_false("Recovery" %in% keyed$supply_chain)
 })
 
 test_that("OCI amounts keep the counted institutions, mechanisms and stages", {
@@ -110,7 +138,7 @@ test_that("OCI finance adds to the CRS cells, replaces Korea's CRS OOF and leave
     oci_row(sector = "Batteries", stage = "Storage", recipient_iso3 = "VNM", amount_usd = 5e7)
   )
   gdp <- tibble::tibble(iso3c = c("IND", "VNM"), year = 2022L, NY.GDP.MKTP.CD = c(3e12, 4e11))
-  cells <- tibble::tibble(tech = c("Solar", "Batteries"), supply_chain = "Downstream")
+  cells <- tibble::tibble(tech = c("Solar", "Batteries"), supply_chain = "Deployment")
   s <- partnership_strength_development_aid_settings(list(years = c(2022, 2022)))
   out <- partnership_strength_build_oecd_tech(crs, read.csv(file.path(repo_root, "data", "reference", "oecd_crs_purpose_crosswalk.csv")),
                                               gdp, cells, s, oci = oci,
@@ -120,11 +148,11 @@ test_that("OCI finance adds to the CRS cells, replaces Korea's CRS OOF and leave
   # India: US ODA 10 + JBIC 60; Korea's CRS OOF (50) gives way to OCI's KEXIM.
   expect_equal(get("IND", "Solar"), 70)
   expect_equal(get("VNM", "Solar"), 4 + 20)
-  # Batteries Downstream has no CRS code: it stays a stage-proxy cell, and OCI's storage deal feeds
+  # Batteries Deployment has no CRS code: it stays a stage-proxy cell, and OCI's storage deal feeds
   # the proxy. With no direct battery finance to weight it, the deal splits equally between
-  # Batteries Midstream and Downstream (25 each).
+  # Batteries Components, Assembly and Deployment (50 / 3 each).
   expect_equal(get("VNM", "Batteries", "aid_basis"), "stage")
-  expect_equal(get("VNM", "Batteries"), 4 + 20 + 25)
+  expect_equal(get("VNM", "Batteries"), 4 + 20 + 50 / 3)
 
   s_off <- s
   s_off$energy_finance$include <- FALSE
@@ -150,7 +178,7 @@ test_that("each source's cross-cutting finance follows its own mix, and only ene
     oci_row(institution_group = "Korea", institution_abbr = "Kexim", recipient_iso3 = "VNM", amount_usd = 2e7)
   )
   gdp <- tibble::tibble(iso3c = c("BRA", "IND", "VNM"), year = 2022L, NY.GDP.MKTP.CD = c(2e12, 3e12, 4e11))
-  cells <- tibble::tibble(tech = c("Batteries", "Oil", "Solar"), supply_chain = c("Upstream", "Upstream", "Midstream"))
+  cells <- tibble::tibble(tech = c("Batteries", "Oil", "Solar"), supply_chain = c("Extraction", "Extraction", "Components"))
   out <- partnership_strength_build_oecd_tech(crs, read.csv(file.path(repo_root, "data", "reference", "oecd_crs_purpose_crosswalk.csv")),
                                               gdp, cells, partnership_strength_development_aid_settings(list(years = c(2022, 2022))),
                                               oci = oci, oci_institutions = oci_ref("oci_energy_finance_institutions.csv"),
@@ -160,8 +188,9 @@ test_that("each source's cross-cutting finance follows its own mix, and only ene
   # not JBIC's oil and gas loan.
   expect_equal(get("BRA", "Batteries"), 9 / 3 + 1)
   expect_equal(get("BRA", "Oil"), 50)
-  # KEXIM's OCI rows replace Korea's energy OOF only: its engineering (industry) OOF stays (70 / 7).
-  expect_equal(get("IND", "Solar"), 10)
+  # KEXIM's OCI rows replace Korea's energy OOF only: its engineering (industry) OOF stays, split
+  # over seven technologies at Components and at Assembly (70 / 14).
+  expect_equal(get("IND", "Solar"), 5)
 })
 
 test_that("the configured energy finance settings resolve", {

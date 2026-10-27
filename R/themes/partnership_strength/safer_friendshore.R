@@ -18,9 +18,11 @@
 # (partnership_strength_helpers.R): the reporter's own import declaration where it reports the
 # cell, else the partner's export declaration (mirror, put on a CIF basis). A dyad cell with no
 # observed flow in the last theme year takes the (tech, stage) mean (trade_status "imputed"); one
-# observed with no trade is a recorded zero and ranks below every supplier of the reporter. A
-# (tech, stage) the HS6 crosswalk maps no code to ("no_data": the Downstream stages, Geothermal and
-# Green Hydrogen) takes the dyad's own trade index in its observed cells, the same technology first
+# observed with no trade is a recorded zero and ranks below every supplier of the reporter. Cells
+# are keyed by the six supply-chain stages (the HS6 master's `stage`;
+# partnership_strength_build_trade_mapping()). A (tech, stage) the HS6 crosswalk maps no code to
+# ("no_data": every Deployment cell, Geothermal and Green Hydrogen, Solar Extraction, and most
+# Recovery cells) takes the dyad's own trade index in its observed cells, the same technology first
 # (no_data_fill "dyad"; partnership_strength_fill_no_data_trade(), partnership_strength_helpers.R).
 #
 # geo_alignment (R/geopolitical_distance/alignment.R, written by scripts/12 as
@@ -40,7 +42,9 @@
 # CM-FDI (R/themes/partnership_strength/cm_fdi.R; the Net Zero Industrial Policy Lab's
 # project-level database of cross-border solar, wind, battery and EV manufacturing investment;
 # config/partnership.yml cm_fdi) enters in the cells it covers, (Solar, Wind, Batteries, Electric
-# Vehicles) x Midstream, and nowhere else:
+# Vehicles) x (Components, Assembly), and nowhere else. The project file has no product field, so
+# each project counts in both manufacturing stages (cm_fdi_stage_rows()); Refining keeps the IMF
+# measure:
 #   - outbound_index there is the CM-FDI investment tie of reporter i to partner j in the cell
 #     (projects whose parent is headquartered in i, located in j; i = investor/home,
 #     j = destination, the same direction as the IMF position it replaces:
@@ -60,7 +64,9 @@
 # component weight (trade, eo_partner, outbound, geo_alignment, chinese_parent_exposure) resting on
 # imputed or missing inputs (partnership_strength_imputed_weight_share(),
 # partnership_strength_helpers.R); the top-5 table carries the dyad's mean over its top-5 cells on
-# the Friendshore Index rows, which the PSI rankability rule reads (scripts/25). The CM-FDI parts
+# the Friendshore Index rows, which the PSI rankability rule reads (scripts/25); the top-5 means
+# draw on up to six (tech, stage) cells per technology since 2026-10-27, three before
+# (partnership_strength_build_top_k()). The CM-FDI parts
 # count as observed where defined and are not part of the cell where undefined (a census: a
 # reporter without projects abroad, or a partner without foreign-invested plants, is not a gap in
 # the data), unlike a missing IMF position, which counts as unobserved.

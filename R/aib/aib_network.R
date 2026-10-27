@@ -4,14 +4,24 @@
 # their direction: trade edges run exporter -> importer, investment edges investor (the importer
 # whose gap the new capacity serves) -> host.
 
+# The stage-participation columns of the network tables: one logical per stage in the pairs
+# (extraction, refining, components, assembly, deployment, recovery) and one partner count per stage
+# and role in the country summary (n_<stage>_partners). Six flags rather than the Upstream / Midstream /
+# Downstream roll-up: the dictionary's final products are Assembly, which rolls up to Midstream, so the
+# roll-up would put them with components and leave Downstream empty (no node is Deployment).
+aib_network_stage_cols <- function() tolower(aib_stage_levels())
+
 # Country view of the network: each economy's roles kept apart (as trade supplier, trade buyer,
 # investment host, investor), not collapsed into one rank. Built from aib_network_pairs().
 aib_network_countries <- function(pairs, node_shock_importer = NULL) {
   if (is.null(pairs) || !nrow(pairs)) return(NULL)
+  stage_n <- paste0("n_", aib_network_stage_cols(), "_partners")
   side <- function(col, other, kind) {
     sel <- if (kind == "trade") pairs$n_trade_selected > 0 else pairs$n_investment_selected > 0
     p <- pairs[sel, , drop = FALSE]
     if (!nrow(p)) return(NULL)
+    for (s in aib_network_stage_cols()) if (!s %in% names(p)) p[[s]] <- FALSE
+    by_stage <- stats::setNames(lapply(aib_network_stage_cols(), function(s) rlang::expr(dplyr::n_distinct(.data[[!!other]][.data[[!!s]]]))), stage_n)
     p %>%
       dplyr::group_by(iso3 = .data[[col]], scenario) %>%
       dplyr::summarise(
@@ -21,9 +31,7 @@ aib_network_countries <- function(pairs, node_shock_importer = NULL) {
         cumulative_contribution = sum(if (kind == "trade") cumulative_trade_resilience_contribution else cumulative_investment_resilience_contribution),
         cumulative_coordination_dividend = if (kind == "trade") sum(cumulative_coordination_dividend) else 0,
         headline_volume_usd = if (kind == "trade") sum(headline_trade_volume_usd) else NA_real_,
-        n_upstream_partners = dplyr::n_distinct(.data[[other]][upstream]),
-        n_midstream_partners = dplyr::n_distinct(.data[[other]][midstream]),
-        n_downstream_partners = dplyr::n_distinct(.data[[other]][downstream]),
+        !!!by_stage,
         technologies = paste(sort(unique(unlist(strsplit(technologies, "; ")))), collapse = "; "),
         .groups = "drop"
       )
@@ -36,7 +44,7 @@ aib_network_countries <- function(pairs, node_shock_importer = NULL) {
   )
   long <- dplyr::bind_rows(lapply(names(parts), function(k) if (is.null(parts[[k]])) NULL else dplyr::mutate(parts[[k]], role = k)))
   value_cols <- c("n_partners", "n_selected", "headline_contribution", "cumulative_contribution", "cumulative_coordination_dividend",
-                  "headline_volume_usd", "n_upstream_partners", "n_midstream_partners", "n_downstream_partners")
+                  "headline_volume_usd", stage_n)
   wide <- long %>%
     dplyr::select(iso3, scenario, role, dplyr::all_of(value_cols)) %>%
     tidyr::pivot_wider(names_from = role, values_from = dplyr::all_of(value_cols), names_glue = "{role}_{.value}")
@@ -63,10 +71,11 @@ aib_network_countries <- function(pairs, node_shock_importer = NULL) {
 # they are (exporter -> importer) and investment edges turned round (host -> investor, the host's
 # new capacity serving the investor). Only each node's first-ranked host counts as a selected
 # investment relationship, so alternative hosts are not summed. Columns: trade and investment
-# selections, technologies, sub-sectors, stage participation, high-severity participation, the
-# optimized trade volume, resilience contributions (trade, investment), the coordination dividend,
-# Export Opportunity (supplier -> buyer) and Friendshore (buyer -> supplier, the investor rating the
-# host).
+# selections, technologies, sub-sectors, stage participation (one flag per six-stage stage of the
+# nodes' supply_chain, aib_network_stage_cols()), high-severity participation, the optimized trade
+# volume, resilience contributions (trade, investment), the coordination dividend, Export Opportunity
+# (supplier -> buyer) and Friendshore (buyer -> supplier, the investor rating the host), read in the
+# node cells' technology x six-stage stage.
 aib_network_pairs <- function(trade, invest_top, node_info, node_shock, headline_shock, high_severity = 0.4,
                               node_cells = NULL, op_index = NULL, fs_index = NULL) {
   sev <- node_shock %>% dplyr::group_by(node_id, shock_id, scenario) %>%
@@ -81,6 +90,8 @@ aib_network_pairs <- function(trade, invest_top, node_info, node_shock, headline
   if (!nrow(all)) return(NULL)
   all$stage <- node_info$supply_chain[match(all$node_id, node_info$node_id)]
   all$techs <- node_info$techs[match(all$node_id, node_info$node_id)]
+  # One flag per six-stage stage (aib_network_stage_cols()): the pair trades or invests in a node of it.
+  by_stage <- stats::setNames(lapply(aib_stage_levels(), function(s) rlang::expr(any(stage %in% !!s))), aib_network_stage_cols())
   out <- all %>%
     dplyr::group_by(supplier_iso, buyer_iso, scenario) %>%
     dplyr::summarise(
@@ -92,7 +103,7 @@ aib_network_pairs <- function(trade, invest_top, node_info, node_shock, headline
       technologies = paste(sort(unique(unlist(strsplit(techs, "; ")))), collapse = "; "),
       subsectors = paste(sort(unique(node_id)), collapse = "; "),
       n_high_severity = dplyr::n_distinct(paste(node_id, shock_id)[dplyr::coalesce(shock_exposure, 0) >= high_severity]),
-      upstream = any(stage == "Upstream"), midstream = any(stage == "Midstream"), downstream = any(stage == "Downstream"),
+      !!!by_stage,
       headline_trade_volume_usd = sum(usd[kind == "trade" & shock_id == headline_shock]),
       headline_trade_contribution = sum(contribution[kind == "trade" & shock_id == headline_shock]),
       headline_investment_contribution = sum(contribution[kind == "investment" & shock_id == headline_shock]),

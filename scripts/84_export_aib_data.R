@@ -22,7 +22,10 @@
 # (Baseline: the observed network and each node's and compact's top suppliers); stale scenario files are
 # removed. Since 2026-10-20 the main document also carries the optional `strategic` section (scripts/33's
 # Strategic Sectoral Compacts, workstreams, Strategic AIB Roles, compact-specific roles and bilateral theses;
-# aib_dash_strategic()) when aib_strategic.rds exists. Plain JSON, every array field wrapped in I() (R/dashboard/aib/aib_export.R); the additive
+# aib_dash_strategic()) when aib_strategic.rds exists. Since 2026-10-27 every stage in the bundle is one of the six
+# supply-chain stages (R/utils/supply_chain_stages.R), and the network's per-side stage counts are keyed
+# extraction ... recovery (the dashboard's TypeScript contract still reads three stages until its own
+# migration). Plain JSON, every array field wrapped in I() (R/dashboard/aib/aib_export.R); the additive
 # sections are checked first (R/dashboard/aib/aib_check.R, the mirror of the TypeScript contract) and the
 # script stops on a problem.
 
@@ -61,6 +64,7 @@ arg_value <- function(flag, default = NULL) {
 }
 abs_path <- function(p) normalizePath(if (grepl("^([A-Za-z]:)?[/\\]", p)) p else file.path(repo_root, p), winslash = "/", mustWork = FALSE)
 
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "aib", "aib_compacts.R"))
 source(file.path(repo_root, "R", "aib", "aib_strategic.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_export.R"))
@@ -74,6 +78,9 @@ top_edges <- as.integer(arg_value("--top-edges", "40"))
 res_path <- file.path(in_dir, "aib_results.rds")
 if (!file.exists(res_path)) stop("Run scripts/32_build_aib_partnerships.R first: ", res_path, " not found.")
 res <- readRDS(res_path)
+# The bundle's stages are the six supply-chain stages (node.stage, compact.stages, the network's stage
+# counts and edge stages); results from before 2026-10-27 are Upstream / Midstream / Downstream.
+assert_supply_chain_stages(res$classification$supply_chain, paste0(res_path, " classification (rerun scripts/31 and 32)"))
 # The strategic layer (scripts/33), optional: absent, the document has no `strategic` section.
 strategic_path <- abs_path(arg_value("--strategic", file.path(in_dir, "aib_strategic.rds")))
 st <- if (file.exists(strategic_path)) readRDS(strategic_path) else NULL

@@ -5,7 +5,9 @@
 # WHAT THIS IS. A role rule has to know whether a node is a raw resource, a processing step, a
 # manufactured component or an assembled system. Neither the dictionary stage nor its index says this:
 # Midstream holds both refining (lithium chemicals) and fabricated parts (wafers, magnets), and
-# "Materials & Inputs" puts wafers, electrical steel and silver paste beside refined metals.
+# "Materials & Inputs" puts wafers, electrical steel and silver paste beside refined metals. The
+# six-stage label (from the dictionary's item type) comes closer but files every processed material
+# under Refining, wafers and electrical steel included, so the curated function still decides.
 #
 # HOW IT WAS MADE. Curated from industrial-process knowledge, not discovered: each node took the
 # function of its value-chain step in config/aib_strategic_compacts.yml, with the node overrides listed
@@ -19,9 +21,9 @@
 #   systems      assembled systems and end products (large positions here count as scale)
 #
 # VALIDATION (scripts/33). Every node of the run that sits in a strategic compact must have a function;
-# a node this file does not list falls back on its dictionary stage (Upstream -> resource, Midstream ->
-# components, Downstream -> systems) and scripts/33 warns. A value outside the four stops the run.
-# Unmapped nodes (config/aib_strategic_compacts.yml `unmapped`) need no function.
+# a node this file does not list falls back on its six-stage supply-chain stage (fallback_by_stage
+# below: the node's `supply_chain` in aib_inputs.rds) and scripts/33 warns. A value outside the four
+# stops the run. Unmapped nodes (config/aib_strategic_compacts.yml `unmapped`) need no function.
 
 functions:
   resource: "Ores, mineral concentrates and recycled feed"
@@ -29,10 +31,15 @@ functions:
   components: "Manufactured materials, components and production equipment"
   systems: "Assembled systems and end products"
 
+# Keyed by the six stages (R/utils/supply_chain_stages.R): recycled feed is a resource like ore, and
+# deployment (no dictionary node is filed there) counts with assembled systems.
 fallback_by_stage:
-  Upstream: resource
-  Midstream: components
-  Downstream: systems
+  Extraction: resource
+  Refining: processing
+  Components: components
+  Assembly: systems
+  Deployment: systems
+  Recovery: resource
 
 nodes:
   # SC-MAGNETS (Permanent Magnets & Drive Systems)

@@ -29,7 +29,7 @@ ppr_index_tbl <- function(value_col, values, shares = NULL) {
   tbl <- tidyr::expand_grid(
     Country = c("United States", "Japan", "China", "India", "Viet Nam"),
     tech = "Solar",
-    supply_chain = c("Upstream", "Downstream")
+    supply_chain = c("Extraction", "Deployment")
   )
   tbl[[value_col]] <- values
   if (!is.null(shares)) tbl$imputed_weight_share <- if (length(shares) == 1) shares else rep(shares, each = 2)
@@ -57,7 +57,7 @@ test_that("the top-5 share averages the cells the top-5 value averages", {
     reporter_iso = "USA",
     partner_iso = rep(c("JPN", "IND"), c(7, 2)),
     tech = c(letters[1:7], "a", "b"),
-    supply_chain = "Midstream",
+    supply_chain = "Assembly",
     friendshore_index = c(0.9, 0.8, 0.7, 0.6, 0.5, 0.4, NA, 0.2, 0.1),
     imputed_weight_share = c(0, 0, 0, 0, 1, 1, 1, 0.5, 0.3)
   )
@@ -86,7 +86,7 @@ test_that("Friendshore cells count imputed trade, the partner's EO share, missin
   )
   w <- list(imp_trade_index = 2, econ_opp_raw = 1, es_need = 2, eo_partner = 2, outbound_index = 2, geo_alignment = 2, chinese_parent_exposure = 1)
   dyads <- partnership_strength_build_friendshore_dyads(
-    tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", tech = "Solar", supply_chain = "Upstream", imp_trade_index = 0.9),
+    tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", tech = "Solar", supply_chain = "Extraction", imp_trade_index = 0.9),
     eo, es,
     tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", outbound_index = 0.6),
     tibble::tibble(tech = "Solar", ghg_index = 1),
@@ -98,18 +98,18 @@ test_that("Friendshore cells count imputed trade, the partner's EO share, missin
   cell <- function(r, p, s) dyads[dyads$reporter_iso == r & dyads$partner_iso == p & dyads$supply_chain == s, ]
   # Observed trade, outbound and votes; Japan's EO cell is 20% imputed. The reporter's ES (90%
   # imputed) does not count.
-  expect_equal(cell("USA", "JPN", "Upstream")$imputed_weight_share, (2 * 0.2) / 8)
+  expect_equal(cell("USA", "JPN", "Extraction")$imputed_weight_share, (2 * 0.2) / 8)
   # India: trade imputed, EO 60% imputed, no outbound position, neutral bloc.
-  expect_equal(cell("USA", "IND", "Upstream")$imputed_weight_share, (2 + 2 * 0.6 + 2 + 2) / 8)
-  # Downstream has no trade data at all (no_data): the trade component is left out.
-  expect_equal(cell("USA", "IND", "Downstream")$trade_status, "no_data")
-  expect_equal(cell("USA", "IND", "Downstream")$imputed_weight_share, (2 * 0.6 + 2 + 2) / 6)
+  expect_equal(cell("USA", "IND", "Extraction")$imputed_weight_share, (2 + 2 * 0.6 + 2 + 2) / 8)
+  # Deployment has no trade data at all (no_data): the trade component is left out.
+  expect_equal(cell("USA", "IND", "Deployment")$trade_status, "no_data")
+  expect_equal(cell("USA", "IND", "Deployment")$imputed_weight_share, (2 * 0.6 + 2 + 2) / 6)
   # A dyad the alignment table does not cover counts its geo weight as missing.
-  expect_equal(cell("USA", "CHN", "Upstream")$imputed_weight_share, (2 + 2 * 0.4 + 2 + 2) / 8)
+  expect_equal(cell("USA", "CHN", "Extraction")$imputed_weight_share, (2 + 2 * 0.4 + 2 + 2) / 8)
 
   # Without pillar shares (a pillar build before the rule) the EO component counts as observed.
   plain <- partnership_strength_build_friendshore_dyads(
-    tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", tech = "Solar", supply_chain = "Upstream", imp_trade_index = 0.9),
+    tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", tech = "Solar", supply_chain = "Extraction", imp_trade_index = 0.9),
     dplyr::select(eo, -imputed_weight_share), dplyr::select(es, -imputed_weight_share),
     tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", outbound_index = 0.6),
     tibble::tibble(tech = "Solar", ghg_index = 1),
@@ -118,7 +118,7 @@ test_that("Friendshore cells count imputed trade, the partner's EO share, missin
     component_weights = w,
     geo_alignment = geo
   )
-  expect_equal(plain$imputed_weight_share[plain$partner_iso == "JPN" & plain$supply_chain == "Upstream" & plain$reporter_iso == "USA"], 0)
+  expect_equal(plain$imputed_weight_share[plain$partner_iso == "JPN" & plain$supply_chain == "Extraction" & plain$reporter_iso == "USA"], 0)
   # The share does not touch the scores.
   expect_equal(dyads$fsi_raw, plain$fsi_raw[match(paste(dyads$reporter_iso, dyads$partner_iso, dyads$supply_chain),
                                                    paste(plain$reporter_iso, plain$partner_iso, plain$supply_chain))])
@@ -129,7 +129,7 @@ test_that("Opportunity cells count imputed trade and the market's ES share, not 
   eo <- ppr_index_tbl("Economic_Opportunity_Index", rev(seq(0.1, 1, length.out = 10)), shares = 0.9)
   es <- ppr_index_tbl("Energy_Security_Index", seq(0.1, 1, length.out = 10), shares = c(0, 0.3, 0.5, 0.7, 1))
   op <- partnership_strength_build_opportunity_dyads(
-    tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", tech = "Solar", supply_chain = "Upstream", trade_index = 0.8),
+    tibble::tibble(reporter_iso = "USA", partner_iso = "JPN", tech = "Solar", supply_chain = "Extraction", trade_index = 0.8),
     eo, es,
     tibble::tibble(tech = "Solar", ghg_index = 0.9),
     tibble::tibble(Country = "Japan", climate_policy_index = 0.75),
@@ -137,9 +137,9 @@ test_that("Opportunity cells count imputed trade and the market's ES share, not 
     component_weights = list(trade_index = 2, econ_opp_index = 2, partner_es_need = 1, climate_policy_weight = 0.2)
   )
   cell <- function(r, p, s) op[op$reporter_iso == r & op$partner_iso == p & op$supply_chain == s, ]
-  expect_equal(cell("USA", "JPN", "Upstream")$imputed_weight_share, (1 * 0.3) / 3)
-  expect_equal(cell("USA", "IND", "Upstream")$imputed_weight_share, (2 + 1 * 0.7) / 3)
-  expect_equal(cell("USA", "IND", "Downstream")$imputed_weight_share, 0.7)
+  expect_equal(cell("USA", "JPN", "Extraction")$imputed_weight_share, (1 * 0.3) / 3)
+  expect_equal(cell("USA", "IND", "Extraction")$imputed_weight_share, (2 + 1 * 0.7) / 3)
+  expect_equal(cell("USA", "IND", "Deployment")$imputed_weight_share, 0.7)
 })
 
 test_that("Development counts missing indicators in full and the ES / EO components at their pillar share", {
@@ -160,7 +160,7 @@ test_that("Development counts missing indicators in full and the ES / EO compone
     Series.Code = "IC.BUS.EASE.DFRN.XQ.DB1719",
     X2019 = c(84, 78, 77, 71)
   )
-  # Only India receives aid (solar, Downstream). Its Upstream aid is then an observed zero; Viet Nam,
+  # Only India receives aid (solar, Deployment). Its Extraction aid is then an observed zero; Viet Nam,
   # absent from the CRS, has no aid value.
   oecd <- tibble::tibble(
     year = 2022L, donor_iso3 = "USA", recipient_iso3 = "IND", purpose_code = 23230L,
@@ -172,14 +172,14 @@ test_that("Development counts missing indicators in full and the ES / EO compone
 
   idx <- partnership_strength_build_development_index(es, eo, oecd, crosswalk, wb_wdi, wb_db, ci, gdp_data)
   share <- function(iso, stage) idx$imputed_weight_share[idx$iso3c == iso & idx$supply_chain == stage]
-  # Missing for everyone: energy_use_index (no such WDI series here). India Downstream has aid.
+  # Missing for everyone: energy_use_index (no such WDI series here). India Deployment has aid.
   missing_ind_down <- w[["energy_use_index"]]
-  expect_equal(share("IND", "Downstream"), (missing_ind_down + w[["energy_security"]] * 0.2 + w[["economic_opportunity"]] * 0.3) / sum(w))
-  expect_equal(share("IND", "Upstream"), (missing_ind_down + w[["energy_security"]] * 0.2 + w[["economic_opportunity"]] * 0.3) / sum(w))
+  expect_equal(share("IND", "Deployment"), (missing_ind_down + w[["energy_security"]] * 0.2 + w[["economic_opportunity"]] * 0.3) / sum(w))
+  expect_equal(share("IND", "Extraction"), (missing_ind_down + w[["energy_security"]] * 0.2 + w[["economic_opportunity"]] * 0.3) / sum(w))
   # Viet Nam has no aid value and also lacks Doing Business and so the investment environment built on it.
   missing_vnm <- w[["energy_use_index"]] + w[["aid_index_supplychain"]] + w[["aidgdp_index_supplychain"]] +
     w[["doingbusiness_index"]] + w[["investment_enviro_index"]]
-  expect_equal(share("VNM", "Upstream"), (missing_vnm + w[["energy_security"]] * 0.4 + w[["economic_opportunity"]] * 0.6) / sum(w))
+  expect_equal(share("VNM", "Extraction"), (missing_vnm + w[["energy_security"]] * 0.4 + w[["economic_opportunity"]] * 0.6) / sum(w))
 
   dev <- stronger_development(ci, gdp_data, eo, es, wb_wdi, wb_db, oecd, crosswalk)
   top <- dev$top5[dev$top5$variable == "Development Potential Index", ]

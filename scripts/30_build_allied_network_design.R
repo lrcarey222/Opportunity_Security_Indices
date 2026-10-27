@@ -98,6 +98,7 @@ milp_available <- ensure_milp_pkgs(install_if_missing = install_if_missing, requ
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "indices", "allied_network_design.R"))
@@ -192,7 +193,8 @@ message(
   ": ", paste(network_nodes, collapse = " ")
 )
 
-# Member weights of the bundled nodes per (tech, stage) (scripts/13_build_coalition.R)
+# Member weights of the bundled nodes per (tech, stage) (scripts/13_build_coalition.R, on the same
+# supply stages as network_supply_chains below; a three-stage table stops here)
 node_member_weights <- NULL
 if (length(bundled_nodes)) {
   eu_weights_path <- file.path(processed_dir, "eu_stage_weights_tbl.rds")
@@ -201,6 +203,7 @@ if (length(bundled_nodes)) {
          " is missing; run scripts/13_build_coalition.R.")
   }
   node_member_weights <- readRDS(eu_weights_path)
+  assert_supply_chain_stages(node_member_weights$supply_chain, label = "eu_stage_weights_tbl.rds supply_chain (rerun scripts/13)")
 }
 # Display names of bundled nodes
 network_node_labels <- c(EUU = "European Union")
@@ -266,7 +269,9 @@ country_size_tbl <- allied_network_country_size_tbl(
 # concentration: the reconciled exporter -> importer matrix of the partner themes (scripts/15:
 # importer's declaration, else the exporter's at the CIF/FOB factor; config/partnership.yml) from
 # the all-reporter Comtrade dyad file (scripts/98), only the latest year. Without the file the
-# bundled edges fall back to the stage weights.
+# bundled edges fall back to the stage weights. The cells are six-stage, each HS6 code in its
+# master `stage` (as the trade themes score it; scripts/04 copies the in-basket master with that
+# column to data/raw), so they match the nodes' stages.
 partnership_cfg_path <- file.path(repo_root, "config", "partnership.yml")
 partnership_cfg <- if (file.exists(partnership_cfg_path)) yaml::read_yaml(partnership_cfg_path) else list()
 comtrade_all_path <- file.path(raw_data_path, "comtrade_energy_dyads_all.csv")
@@ -302,13 +307,19 @@ if ((file.exists(comtrade_all_path) || file.exists(comtrade_allied_path)) && fil
   network_trade_year <- max(trade_years, na.rm = TRUE)
   trade_dyads <- trade_dyads[!is.na(trade_years) & trade_years == network_trade_year, , drop = FALSE]
   rm(trade_years)
+  hs6_master <- read.csv(hs6_master_path)
+  if (!"stage" %in% names(hs6_master)) {
+    stop(hs6_master_path, " has no stage column (a three-stage copy); rebuild it with scripts/04_build_hs6_views.R.")
+  }
+  assert_supply_chain_stages(hs6_master$stage, label = paste0(basename(hs6_master_path), " stage"))
+  hs6_master$supply_chain <- hs6_master$stage
   trade_cells <- partnership_strength_build_trade_cells(
     trade_dyads,
-    read.csv(hs6_master_path),
+    hs6_master,
     years = network_trade_year,
     cif_fob_factor = if (is.null(partnership_cfg$trade$cif_fob_factor)) PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR else as.numeric(partnership_cfg$trade$cif_fob_factor)
   )
-  rm(trade_dyads)
+  rm(trade_dyads, hs6_master)
   invisible(gc())
   message("Allied network: ", network_trade_year, " basket trade from ", basename(trade_path), " (", format(nrow(trade_cells), big.mark = ","), " exporter-importer cells).")
 } else if (length(bundled_nodes)) {
@@ -380,8 +391,10 @@ if (length(network_nodes) > auto_milp_max_nodes) {
 }
 # GLPK time limit per stage solve (seconds); a stage that hits it falls back to greedy and the reason
 # is written to diagnostics$fallback_reason. Raised from 120 s (Oct 2026): with 31 members per stage the
-# MILP is larger, and in probe runs at 120 s Green Hydrogen Midstream hit the limit during the
-# portfolio-cap passes (lambda >= 2), which changes the path of the caps loop.
+# MILP is larger, and in probe runs at 120 s Green Hydrogen Midstream (three-stage network) hit the
+# limit during the portfolio-cap passes (lambda >= 2), which changes the path of the caps loop. The
+# six-stage network solves 2.5 times as many stages per pass (55, below), so a full run takes about
+# 2.5 times as long at the same limit.
 network_milp_time_limit_sec <- 300
 
 # Producer (node) score without the policy term: EO and ES only (node_weights eo 0.5 and resilience
@@ -392,28 +405,51 @@ network_milp_time_limit_sec <- 300
 # three-component score for other callers; the choice is recorded in params and diagnostics.
 network_node_policy <- FALSE
 
-# Stages in the network design: Upstream and Midstream only. Downstream deployment is not part of the
-# allied division of labour; the portfolio caps count top-5 appearances over these 22 stages only.
-network_supply_chains <- c("Upstream", "Midstream")
+# Stages in the network design: the five supply stages, SUPPLY_CHAIN_SUPPLY_STAGES (Extraction,
+# Refining, Components, Assembly, Recovery: every stage of R/utils/supply_chain_stages.R but
+# Deployment, which is not part of the allied division of labour). Before 2026-10-27 the network
+# solved Upstream and Midstream, 22 stages over the 11 technologies; it now solves up to 55 (on the
+# 2026-10-26 tables every one has EO for every member; Geothermal's five, Green Hydrogen Components
+# and Coal and Gas Recovery have no ES, so they are scored on EO alone). The portfolio caps count
+# top-5 appearances over these stages only, so their bite depends on the count: the caps
+# (portfolio_min_cap 2 to portfolio_max_cap 10 per node, by log GDP) were set on 22 stages, where the
+# 110 top-5 places were half the caps' sum (218 over 37 nodes; 7 to 10 producers per stage, converged
+# in 7 passes). Over 55 stages there are up to 275 places against a sum of about 225 (40 nodes, with
+# the three partners the six-stage supplier test adds), so not every cap can hold unless stages
+# average under five producers: expect the cap loop to bar far more producers and to stop at
+# portfolio_max_iters without converging. The caps, portfolio_top_k and the pass limit need
+# recalibrating on the six-stage network (caps scaled to the stage count, say); they are left at
+# their three-stage values here.
+network_supply_chains <- SUPPLY_CHAIN_SUPPLY_STAGES
 
 # Diversification weight: each stage maximises its linear score objective minus lambda * HHI of the
 # designed production shares (score units per unit of HHI; lambda = 0 is the linear design, which
 # puts two producers at the 0.40 cap in most stages). Calibration rule: the smallest lambda on a grid
-# at which the median designed HHI over the 22 Upstream/Midstream stages is at most the median
-# observed export HHI of the network's own nodes (allied_network_observed_export_hhi(): 2024 basket
-# trade from the reconciled Comtrade matrix built above, shares within the nodes, the EU-27 as ONE
-# exporter counting only its extra-EU exports, every other node its exports to all other economies;
-# median over the network stages with an HS6 basket, 14 since Electric Grid Upstream's copper and
-# aluminium basket of 2026-10-09, 13 between the basket review and then; written to
+# at which the median designed HHI over the network stages (network_supply_chains) is at most the
+# median observed export HHI of the network's own nodes (allied_network_observed_export_hhi(): 2024
+# basket trade from the reconciled Comtrade matrix built above, shares within the nodes, the EU-27 as
+# ONE exporter counting only its extra-EU exports, every other node its exports to all other
+# economies; median over the network stages with an HS6 basket; written to
 # allied_network_observed_hhi.csv).
 # Extra-EU, because trade among the EU members is the bundled node's internal trade, as a country's
 # domestic sales are; counting it would make the EU the leading exporter of nearly every stage.
-# lambda = 0.78 is the pick of the final calibration of 2026-10-12 on the final node set (57 coalition
-# members, 31 core and 26 partners, plus the 6 other EU members: 37 nodes with the EU bundled; caps on,
+# lambda = 0.78 WAS CALIBRATED ON THE THREE-STAGE NETWORK and must be recalibrated on the six-stage
+# one before its results are reported. Both sides of the rule move: the designed median is taken over
+# up to 55 stages instead of 22, under caps that now bind far harder (which spreads shares and lowers
+# the designed HHI at any lambda), and on node scores that are within-stage S-curves of the six-stage
+# EO and ES; the observed median is taken over the six-stage basket cells, 37 instead of 18, each a
+# smaller basket and on the whole more concentrated (Wind Extraction is one code, HS 2612.20; within
+# the nodes, the median Atlas-share HHI of the cells rises from 0.235 to 0.244 on the 2023 Atlas
+# data, a rough proxy for the direction of the target only). Until the recalibration, lambda = 0.78
+# is a placeholder carried over; the warning below tests the rule on the new stages.
+# The three-stage calibration, 2026-10-12, on the final node set of then (57 coalition members, 31
+# core and 26 partners, plus the 6 other EU members: 37 nodes with the EU bundled; caps on,
 # node policy term off, Upstream and Midstream, MILP for every stage, 300 s stage limit, 30 cap passes,
 # the settings of this script; inputs of the final full rerun: EIA-filled fossil production, the
-# Upstream trade baskets of EV, Solar, Wind and Nuclear, CM-FDI in Friendshore): target 0.1556 (6.43
-# equivalent exporters, 18 basket stages); grid 0 to 1.5 with a 0.01 step from 0.70 to 1.0: 0.76 ->
+# Upstream trade baskets of EV, Solar, Wind and Nuclear, CM-FDI in Friendshore): designed median over
+# the 22 stages; target 0.1556 (6.43 equivalent exporters, 18 basket stages: 14 since Electric Grid
+# Upstream's copper and aluminium basket of 2026-10-09, 13 between the basket review and then, then
+# the four Upstream baskets); grid 0 to 1.5 with a 0.01 step from 0.70 to 1.0: 0.76 ->
 # 0.1583 and 0.77 -> 0.1558 (above), 0.78 -> 0.1520 (6.58 effective producers, max share 0.325),
 # 0.80 -> 0.1502, 1.0 -> 0.1291. Every grid run up to 0.91 solved all 22 stages by MILP; four runs
 # above 0.91 needed one greedy fallback each (time limit), none at the pick; the caps loop converged
@@ -491,7 +527,7 @@ message(
   nrow(diag_tbl), " stages (", paste(network_supply_chains, collapse = ", "), "); method per stage: ",
   paste(names(table(diag_tbl$method)), table(diag_tbl$method), sep = " = ", collapse = ", "),
   "; ", sum(!is.na(diag_tbl$fallback_reason)), " MILP fallbacks to greedy",
-  "; diversity_lambda = ", network_diversity_lambda,
+  "; diversity_lambda = ", network_diversity_lambda, " (calibrated on the three-stage network; recalibrate)",
   sprintf("; median HHI %.3f (%.1f effective producers)", stats::median(diag_tbl$hhi, na.rm = TRUE), stats::median(diag_tbl$effective_producers, na.rm = TRUE)),
   "; node policy term ", if (network_node_policy) {
     paste0("on (policy-imputed members selected in ", sum(dplyr::coalesce(diag_tbl$n_selected_policy_imputed, 0L) > 0), " stages)")
@@ -500,6 +536,14 @@ message(
   },
   if (!is.null(res$portfolio)) paste0("; portfolio converged: ", res$portfolio$converged, " after ", res$portfolio$iters, " iterations") else ""
 )
+if (!is.null(res$portfolio) && !isTRUE(res$portfolio$converged)) {
+  warning(
+    "Allied network: the portfolio caps did not converge in ", res$portfolio$iters, " passes (",
+    res$portfolio$violations_remaining, " nodes over their cap) over ", nrow(diag_tbl), " stages; the caps ",
+    "were set on the 22-stage three-stage network (see network_supply_chains) and need recalibrating.",
+    call. = FALSE
+  )
+}
 
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
   file.path(repo_root, config$outputs_dir)
@@ -534,19 +578,29 @@ if (!is.null(trade_cells)) {
   ) %>%
     dplyr::mutate(year = network_trade_year)
   utils::write.csv(observed_hhi, file.path(outputs_dir, "allied_network_observed_hhi.csv"), row.names = FALSE)
-  message(sprintf(
-    "Allied network: observed node export HHI, median over %d basket stages %.3f (%.1f equivalent exporters); designed median %.3f.",
-    nrow(observed_hhi), stats::median(observed_hhi$hhi), 1 / stats::median(observed_hhi$hhi), stats::median(diag_tbl$hhi, na.rm = TRUE)
-  ))
-  # The calibration rule (see network_diversity_lambda) must hold on these inputs
-  if (stats::median(diag_tbl$hhi, na.rm = TRUE) > stats::median(observed_hhi$hhi)) {
-    warning(sprintf(
-      paste0(
-        "Allied network: the designed median HHI %.5f exceeds the observed median %.5f, so diversity_lambda = %s ",
-        "no longer meets its calibration rule on these inputs; recalibrate network_diversity_lambda."
-      ),
-      stats::median(diag_tbl$hhi, na.rm = TRUE), stats::median(observed_hhi$hhi), format(network_diversity_lambda)
-    ), call. = FALSE)
+  if (nrow(observed_hhi) == 0) {
+    # The trade cells are matched to the solved stages by name; none matching means their stage
+    # labels are not the nodes' (allied_network_design() stops on the same mismatch for its inputs)
+    warning("Allied network: the basket trade cells share no stage with the ", nrow(diag_tbl), " solved stages (",
+            paste(network_supply_chains, collapse = ", "), "; trade stages ",
+            paste(sort(unique(trade_cells$supply_chain)), collapse = ", "),
+            "), so the calibration rule of network_diversity_lambda cannot be checked.", call. = FALSE)
+  } else {
+    message(sprintf(
+      "Allied network: observed node export HHI, median over %d basket stages %.3f (%.1f equivalent exporters); designed median %.3f over %d stages.",
+      nrow(observed_hhi), stats::median(observed_hhi$hhi), 1 / stats::median(observed_hhi$hhi), stats::median(diag_tbl$hhi, na.rm = TRUE),
+      sum(is.finite(diag_tbl$hhi))
+    ))
+    # The calibration rule (see network_diversity_lambda) must hold on these inputs
+    if (stats::median(diag_tbl$hhi, na.rm = TRUE) > stats::median(observed_hhi$hhi)) {
+      warning(sprintf(
+        paste0(
+          "Allied network: the designed median HHI %.5f exceeds the observed median %.5f, so diversity_lambda = %s ",
+          "no longer meets its calibration rule on these inputs; recalibrate network_diversity_lambda."
+        ),
+        stats::median(diag_tbl$hhi, na.rm = TRUE), stats::median(observed_hhi$hhi), format(network_diversity_lambda)
+      ), call. = FALSE)
+    }
   }
 }
 if (!is.null(res$build_candidates)) {

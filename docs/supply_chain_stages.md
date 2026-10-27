@@ -3,16 +3,17 @@
 Replaces `supply_chain` = Upstream / Midstream / Downstream with six stages across the Opportunity,
 Security and Partnership indices. Since 2026-10-26 the Energy Security and Economic Opportunity
 theme tables, the Policy index and the Strategic Index are scored at six stages (scripts/10 and
-scripts/20). The partner indices, the coalition and allied network, the AIB module, NIPO, the
-dashboard exports and the paper figures still read three stages and are the next step (see
-"Status" at the end).
+scripts/20); since 2026-10-27 so are the partner indices (scripts/15, 25), the coalition
+(scripts/13), the allied network design (scripts/30, code only: not rerun or recalibrated) and the
+AIB module (scripts/31-33). NIPO, the dashboard exports and the paper figures still read three
+stages and are the next step (see "Status" at the end).
 
 | File | What it holds |
 |---|---|
 | `config/supply_chain_stages.yml` | The six stages (ids, labels, definitions, roll-up, literature crosswalk) and the Strategic Index stage weights |
 | `data/reference/energy_hs6_master.csv` (`stage`, `enabling_equipment`, `serves_stage`) | A stage for every in-basket row (415 rows, 259 codes) |
 | `R/utils/supply_chain_stages.R` | The stage names (`SUPPLY_CHAIN_STAGES`), roll-up and Strategic Index weights in R, and helpers to replicate legacy-labelled rows |
-| `data/reference/index_variable_stage_map.csv` | A proposed stage, fit, roll-up change and rule for every index variable group (51 rows) |
+| `data/reference/index_variable_stage_map.csv` | A proposed stage, fit, roll-up change and rule for every index variable group (53 rows) |
 | `tests/testthat/test-supply-chain-stages.R` | Keeps the four in step with each other and with the HS6 master |
 
 ## Decisions (user, 2026-10-26)
@@ -215,6 +216,41 @@ made in implementing it:
   Components, Assembly and Recovery; Green Hydrogen Components and Recovery; and Coal, Gas, Solar,
   Wind and EV Recovery.
 
+Partner indices, coalition and AIB (2026-10-27):
+
+- **Partner trade cells** (Opportunity, Friendshore): each HS6 code in its master `stage`.
+  scripts/15 and scripts/30 copy the master's `stage` into `supply_chain` before they build the
+  cells; `partnership_strength_build_trade_mapping()` itself reads `supply_chain`, so readers not yet
+  moved (the Sector export, the paper figures) still get three-stage cells. 38 of the 66 tech x stage
+  cells have codes; Deployment, Green Hydrogen, Geothermal, Solar Extraction and Recovery outside
+  Batteries, Nuclear and Oil are no_data and take the dyad-own-trade fill.
+- **CM-FDI** (Friendshore investment ties and Chinese-parent exposure): the project file has no
+  product field, so each project is copied onto Components and Assembly (`config/partnership.yml`
+  `cm_fdi.stages`), as manufacturing capex is; Refining keeps the IMF DIP measure.
+- **Development aid**: the OECD CRS purpose crosswalk and the OCI export-credit crosswalk are
+  restaged (CRS 146 to 208 rows, OCI 120 to 125). Energy codes are Deployment; fossil energy
+  manufacturing and basic and non-ferrous metal industries Refining; engineering and transport
+  equipment Components and Assembly; pooled industrial policy, development and R&D are spread over
+  Refining, Components and Assembly; mining is Extraction. OCI keeps its own stage column; its oil
+  and gas transport, storage and T&D are Deployment (the fuel industry's own "midstream" is
+  infrastructure, as hydrogen transport and storage is in the readiness map). No code funds
+  Recovery, so Recovery takes its roll-up's proxy, Extraction + Refining (`aid_basis` "rollup").
+- **Coalition** (supplier route): every stage but Deployment. IEA mining and every reserves and fuel
+  production measure are Extraction, IEA refining Refining, IEA clean-tech capacity Components
+  (batteries) or Assembly (solar, wind, electrolysers), trade shares the six-stage cells. Thresholds
+  are unchanged.
+- **Allied network design** (scripts/30): the five supply stages, 55 tech x stage cells instead of 22.
+  Lambda (0.78), the portfolio caps and the time limits are the three-stage calibration and were
+  not changed.
+- **AIB**: the node set is unchanged (ids, codes, splits, aggregation and same-stage edges stay on the
+  dictionary's own Upstream / Midstream / Downstream, now `source_stage`). Each node's `supply_chain`
+  is a six-stage label from the dictionary's item type: Raw Material is Extraction (recycled feed
+  Recovery), Processed Material Refining, Component Components, Final Product and Process Equipment
+  Assembly (the dictionary's Downstream is final products, not deployment). The OSI scores are read
+  in each score technology's own cell (`score_cells`): HS 8507.60 is Batteries Assembly but EV
+  Components, so the li-ion cells node is scored in those two cells. Resource supplier = Extraction
+  or Recovery nodes (the old Upstream set).
+
 ## Results against the three-stage build (2026-10-26)
 
 Both builds were run on the same raw inputs (NIPO reused, coalition table reused). The Deployment
@@ -237,27 +273,82 @@ which checks that nothing outside the stage logic moved.
   0.39). Its margin is thin: across members it beats Batteries - Extraction by 0.013 SI points on
   average, less than the 0.021 the Assembly stage weight adds over an Upstream stage.
 
+## Results: partner indices, coalition and AIB (2026-10-27)
+
+Both builds ran scripts/04 to 33 (not 30) on the same raw inputs: the three-stage one at
+feat/aib-strategic-compacts c2a543d, the six-stage one on this branch.
+
+- **Coalition: 57 to 60 members.** Guinea, Niger and Madagascar join as partners on the supplier
+  route, each through one Extraction export basket (Open questions); nobody leaves and no tier
+  changes. Brazil stays a partner on reserves alone (its old Solar Upstream export share came from a
+  one-code silicon basket that is now part of Solar Refining). Economies at 5% or more in a flow
+  measure by stage: Extraction 32, Refining 25, Components 13, Assembly 10, Recovery 8.
+- **Strategic Index allied picks (60 members):** Batteries 46, Solar 11, Nuclear 3; Assembly 43,
+  Components 11, Extraction 6 (three-stage: Batteries 31, Nuclear 17, Electric Grid 4, Solar 3,
+  Wind 2). The Batteries - Assembly concentration of the 2026-10-26 results holds with the new members.
+- **Partner indices.** Cells double (Opportunity 30 to 57 partner-level cells, Friendshore and
+  Development 33 to 66). Deployment cells reproduce Downstream (median Spearman 0.99 to 1.00).
+  Median rank agreement with the old cell: Friendshore Assembly 1.00, Components 0.95, Extraction
+  0.93, Refining 0.85, Recovery 0.67; Opportunity Assembly 0.83, Extraction 0.81, Refining 0.67,
+  Components 0.62, Recovery 0.22 (scrap trade is not ore trade); Development Extraction 0.99,
+  Components and Assembly 0.92, Refining 0.41 (it now reads metal-industry aid, not mining aid).
+  The partner-level Partnership Strength Index barely moves: Spearman 0.997 for the headline
+  (core-coalition view, `psi_tbl`), 0.995 for the full-coalition view and 0.99 for the world view. In
+  the full-coalition view the top 13 is the same set of partners (India rises from 10th to 6th, no
+  other moves more than two places).
+  The largest movers are lower down (Nigeria 146th to 117th, DR Congo 124th to 147th).
+- **AIB.** The same 77 nodes (Extraction 6, Refining 26, Components 21, Assembly 23, Recovery 1),
+  the same node classes and policy needs, the same 28 workstreams and all 56 minimum coalitions;
+  optimized coverage moves by at most 0.7 points. 12 of 565 top-3 host lists change (EV two-wheelers,
+  overhead conductors), Madagascar becomes an allied Resource supplier in the battery compact,
+  Slovakia a Capacity-building host in the wind compact, and Germany's primary and secondary strategic
+  roles swap (Demand & Market Anchor primary). Scoring each technology in its own cell
+  (`score_cells`) changes only two nodes' trade-relationship tie-breaks (li-ion cells and packs, AC
+  generators).
+
 ## Status
 
-Not yet on six stages, and reading three-stage tables or labels:
+Not yet on six stages, or not yet rerun (2026-10-27):
 
-- **Partner indices** (`scripts/15`, `scripts/25`, `R/themes/partnership_strength/*`): they join the
-  six-stage pillar cells against three-stage partner trade cells, so they must move next. CM-FDI's
-  `stage: Midstream` and the OECD CRS aid map are the two hard-coded stage assignments.
-- **Coalition and allied network** (`R/indices/coalition.R`, `scripts/13`, `scripts/30`):
-  `coalition_shares_trade()` filters Upstream / Midstream and finds no rows in the six-stage trade
-  table. scripts/20 read the stored coalition table in the 2026-10-26 run.
-- **AIB module and the Country dashboard** read `policy_outputs.rds` (`aib_pams_node()`,
-  `country_pams_counts_all()`), now six-stage.
-- **Dashboard exports and TypeScript** (`scripts/85`-`89`, `R/dashboard/*`, `dashboard/src`), NIPO,
-  and the paper figures (`scripts/paper/*`: `fig_eo_transforms.R` asserts 33 cells,
-  `fig_strategic.R` and `fig_robustness.R` call the SI with defaults that now need
-  `R/utils/supply_chain_stages.R`).
-- **Compatibility shims to remove when they move:** `legacy_stages` in the trade themes,
-  `iea_critical_minerals_supply_stage(legacy = TRUE)` (the default, for `coalition.R`),
-  `build_policy_table(stages = "legacy")`, `STRATEGIC_SUPPLY_CHAIN_WEIGHTS` and
-  `STRATEGIC_EXCLUDED_SECTORS`, and the Upstream / Midstream defaults still accepted by
-  `select_allied_strategic_sectors()`.
+- **Allied network design** (`scripts/30`): the code solves the five supply stages but has not been
+  rerun. Its calibration is three-stage: the portfolio caps (2 to 10 top-5 places per node, about 225
+  in all) were set against 22 stages and up to 110 top-5 places; at 55 stages there are up to 275, so
+  the caps loop would bar far more producers and may stop at its 30-pass limit unconverged. The caps
+  (for example scaled to the stage count), then lambda (the grid study in
+  `osi-worktrees/scratch_final/network`, rebuilt on six-stage trade cells), need recalibrating
+  before a rerun. The network also has no counterpart of the Strategic Index rules that drop
+  unmeasured or unevidenced sectors, so EO-only stages (Geothermal, Green Hydrogen Components,
+  Coal and Gas Recovery) would be solved.
+- **Dashboard exports and TypeScript**:
+  - `scripts/85` checks the CM-FDI tie cells (now Components and Assembly) against three-stage
+    dashboard cells and exports `STRATEGIC_SUPPLY_CHAIN_WEIGHTS`; `R/dashboard/dash_bundle.R`
+    (Strategic Insights) keys partner rows on three-stage cells and drops six-stage ones.
+  - `scripts/87` (Sector): its own trade cells stay three-stage (it passes the master as it is), but
+    it reads six-stage pillar and partner tables. `R/dashboard/sector/sector_fdi.R` keeps its own
+    `stage: Midstream` default.
+  - `scripts/88` (Country) keys partner best-five cells on the 33 three-stage cells; the Yards &
+    Fences network views (`R/dashboard/yards_fences/yf_build.R`) key on scripts/30's stages.
+  - `dashboard/src/aib` (`contract.ts` AIB_STAGES and the network side fields, `derive/nodes.ts`,
+    `derive/partnerships.ts`, `derive/taxonomy.ts` OSI_STAGES and its cell-id regex,
+    `views/CompactView.tsx`, `views/compact/OverviewSections.tsx`), `dashboard/src/country/derive/framing.ts`
+    and `dashboard/src/sector/derive/chain.ts` (the AIB `yfCells` are six-stage ids now), and the
+    synthetic AIB fixtures; remove the `aib_fx_six_stage()` shim in
+    `tests/testthat/test-aib-dash-network.R` when the fixtures are regenerated.
+- **NIPO** (built three-stage, not in the composite).
+- **Paper figures** (`scripts/paper/*`): `fig_coalition.R` (Upstream / Midstream route columns),
+  `fig_aib.R` (the stage-top table, `n_china_midstream`), `fig_bilateral.R`, `fig_method.R` and
+  `fig_hs6_crosswalk.R` (trade cells from the master: three-stage unless they copy `stage` in),
+  `fig_eo_transforms.R` (asserts 33 cells), `fig_strategic.R`, `fig_robustness.R` and
+  `fig_si_fixed_inputs.R` (three-stage SI weights and exclusions).
+- **Docs**: `docs/data_dictionary.md` (the CM-FDI tables' `stages` column and per-stage ties) and the
+  README's PSI section.
+- **Compatibility shims to remove when the above move:** `legacy_stages` in the trade themes (no
+  caller passes it now), the `legacy` argument of `iea_critical_minerals_supply_stage()` (default
+  six-stage since 2026-10-27), `build_policy_table(stages = "legacy")`,
+  `STRATEGIC_SUPPLY_CHAIN_WEIGHTS` and `STRATEGIC_EXCLUDED_SECTORS` (scripts/85 and the paper), the
+  Upstream / Midstream values still accepted by `select_allied_strategic_sectors()`, and
+  `partnership_strength_build_oecd_supplychain()`, the 3-digit aid check kept at the roll-up for the
+  dashboard's parity check.
 
 Open questions from the migration:
 
@@ -271,3 +362,18 @@ Open questions from the migration:
 - The IEA PAMS keyword rules were tightened while splitting them (bare "plant" dropped,
   "processing" and "components" only in context, "refined" as a verb and vehicle "scrap" schemes
   excluded); 82.7% of policies keep their three-stage roll-up.
+- Development aid and CM-FDI carry identical values in Components and Assembly (neither source tells
+  parts from final assembly). CM-FDI's battery-materials plants are not credited to Refining; adding
+  Refining to `cm_fdi.stages` is a one-line change.
+- Coalition thin baskets: Madagascar joins on Wind Extraction, a basket of one code (HS 2612.20,
+  monazite and thorium ores, about USD 21M of exports); Guinea (Electric Grid Extraction, copper and
+  bauxite ores, 6.3%) and Niger (Nuclear Extraction, uranium ores, 13.1%) on real but single-basket
+  shares. A minimum basket size for the export-share measure would be the rule to add if these are
+  not wanted.
+- AIB: `fuel-assemblies-and-zirconium` mixes Components (90% of trade) and Refining and moves from
+  High confidence to Usable with caution through the new mixed-stage flag (reporting only). The
+  Bridge partner test ("spans stages") now counts six-stage labels, so refined material plus the
+  components made from it counts as spanning. In the emergent network, Export Opportunity and
+  Friendshore join on the node cells' technology, which for dictionary nodes is the EIS sector, so
+  they are missing for dictionary pairs (true before the migration too; joining on `score_cells`
+  would fix it).

@@ -1,4 +1,5 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "aib", "aib_compacts.R"))
 source(file.path(repo_root, "R", "aib", "aib_strategic.R"))
 suppressPackageStartupMessages(library(dplyr))
@@ -46,6 +47,25 @@ test_that("the tracked configs keep their contract: one compact and step per nod
     expect_true(o$primary_compact %in% m$strategic_compact_id)
     expect_true(all(unlist(o$nodes) %in% m$node_id))
   }
+})
+
+test_that("a node without a function falls back on its six-stage stage", {
+  nf <- yaml::read_yaml(file.path(repo_root, "config", "aib_node_functions.yml"))
+  expect_setequal(names(nf$fallback_by_stage), SUPPLY_CHAIN_STAGES)
+  ids <- paste0("n", seq_along(SUPPLY_CHAIN_STAGES))
+  fn <- aib_strategic_node_functions(list(fallback_by_stage = nf$fallback_by_stage), tibble::tibble(node_id = ids),
+                                     stats::setNames(SUPPLY_CHAIN_STAGES, ids))
+  expect_equal(fn$problems, character())
+  expect_equal(stats::setNames(fn$functions$node_function, SUPPLY_CHAIN_STAGES),
+               c(Extraction = "resource", Refining = "processing", Components = "components", Assembly = "systems",
+                 Deployment = "systems", Recovery = "resource"))
+  expect_equal(fn$functions$function_basis[1], "fallback: stage Extraction")
+  # The built-in default is the same; an old three-stage label has nothing to fall back on.
+  expect_equal(aib_strategic_node_functions(list(), tibble::tibble(node_id = ids), stats::setNames(SUPPLY_CHAIN_STAGES, ids))$functions,
+               fn$functions)
+  old <- aib_strategic_node_functions(list(), tibble::tibble(node_id = "x"), c(x = "Upstream"))
+  expect_match(old$problems, "no function and no stage to fall back on")
+  expect_equal(strat_st$map$node_function[strat_st$map$node_id == "cell"], "systems")   # the fixture's Assembly node
 })
 
 test_that("the map's validation names a node mapped twice, falling steps, an unlisted run node and unknown override compacts", {

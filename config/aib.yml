@@ -63,7 +63,8 @@ candidate_partner_universe:
 # ---- Shocks ---------------------------------------------------------------------------------
 # type country: the listed exporters lose `fraction` of their exports in every node.
 # type largest_supplier: the largest exporter of the node (level subsector), of the node's stage
-# (level stage) or of its technology (level technology) loses `fraction` of its exports.
+# (level stage: the technology's nodes at the node's six-stage supply-chain stage) or of its technology
+# (level technology) loses `fraction` of its exports.
 shocks:
   - id: china_100
     label: China supply removed
@@ -187,8 +188,9 @@ optimization:
   neutral_score: 0.5
 
 # Revealed policy/climate compatibility (objective 4 and the investment tie-break): similarity of
-# the two economies' IEA PAMS policy intensity in the node's technology and stage, and of their
-# Climate Action Tracker ratings. No geopolitical alignment score enters by default.
+# the two economies' IEA PAMS policy intensity in the node's OSI technology and six-stage stage
+# (score_techs, score_stage), and of their Climate Action Tracker ratings. No geopolitical alignment
+# score enters by default.
 compatibility:
   components: [pams, cat]
 
@@ -214,9 +216,9 @@ investment:
   # The compact tests (coalition_increment, the investment response) use the same cap.
   host_scale_multiple: 1.0
   # A host must show revealed capability: RCA >= host_min_rca in the node, or a world export
-  # share >= host_min_world_share in the node, or RCA >= host_min_rca in a node linked to it in
-  # the supply chain (same stage of the same technology, or a material link below), or a
-  # production share >= host_min_production_share. Friendshore cannot qualify a host.
+  # share >= host_min_world_share in the node, or RCA >= host_min_rca in a node linked to it by a
+  # material link (the taxonomy overlay's material_links), or a production share >=
+  # host_min_production_share. Friendshore cannot qualify a host.
   host_min_rca: 1.0
   host_min_world_share: 0.005
   host_min_production_share: 0.01
@@ -335,7 +337,7 @@ compacts:
   # Supply-chain coherence (needed, with partner and policy similarity, for two nodes to share a
   # compact): one node is upstream of the other within chain_max_hops links of supply_chain_links,
   # or (allow_co_inputs) both feed the same downstream node. A shared technology or stage is not
-  # enough: wind foundations and permanent magnets are both Wind Midstream but not one chain.
+  # enough: wind foundations and permanent magnets are both Wind Components but not one chain.
   chain_max_hops: 3
   allow_co_inputs: true
 
@@ -351,6 +353,8 @@ data_quality:
   caution_mirror_share: 0.30
   caution_missing_rca_share: 0.20
   caution_nonessential_share: 0.50
-  # Insufficient sub-sectors of one technology stage are merged into one aggregated node; an
-  # aggregate that still fails stays out of the optimization (reported, not solved).
+  # Insufficient sub-sectors of one technology stage (the taxonomy's own Upstream / Midstream /
+  # Downstream, so the ids "<tech>-<stage>--aggregated" do not move with the six-stage labels) are
+  # merged into one aggregated node; an aggregate that still fails stays out of the optimization
+  # (reported, not solved).
   aggregate_insufficient: true

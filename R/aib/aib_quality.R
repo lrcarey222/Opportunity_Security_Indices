@@ -24,7 +24,8 @@ aib_data_quality <- function(nodes, node_codes, node_summary, cfg_dq, history_ye
       .groups = "drop"
     )
   q <- nodes %>%
-    dplyr::select(node_id, sub_sector, supply_chain, techs, stage_conflict) %>%
+    dplyr::select(node_id, sub_sector, supply_chain, dplyr::any_of("source_stage"), techs, stage_conflict,
+                  dplyr::any_of(c("stage_mixed", "stage_mix"))) %>%
     dplyr::left_join(codes, by = "node_id") %>%
     dplyr::left_join(node_summary, by = "node_id")
 
@@ -91,6 +92,12 @@ aib_data_quality <- function(nodes, node_codes, node_summary, cfg_dq, history_ye
       f <- c(f, "technologies file the same codes in different stages")
       caution[i] <- TRUE
     }
+    # The same idea at six stages: the node's codes carry several stage labels and the node is filed
+    # under the one with the most world trade (aib_stage_by_trade()).
+    if (isTRUE(r$stage_mixed)) {
+      f <- c(f, sprintf("codes span several supply-chain stages (%s of trade), filed under %s", r$stage_mix, r$supply_chain))
+      caution[i] <- TRUE
+    }
     flags[[i]] <- f
   }
   q$flags <- vapply(flags, function(f) paste(f, collapse = "; "), character(1))
@@ -109,6 +116,9 @@ aib_data_quality <- function(nodes, node_codes, node_summary, cfg_dq, history_ye
 #   2. the insufficient nodes left in one (primary technology, stage) are merged together when
 #      there are at least two of them;
 #   3. a node still alone stays as it is: reported, flagged, not optimized.
+# "Stage" here is the source stage (the taxonomy's Upstream / Midstream / Downstream), so the merged
+# ids ("<tech>-<source stage>--aggregated") and labels are those of the three-stage build, which
+# config/aib_strategic_compacts.yml and config/aib_node_functions.yml are keyed by.
 # Returns node_id, merged_id, merged_label; a sibling that absorbs others maps to itself.
 aib_quality_merge_map <- function(quality, nodes, node_cells = NULL, edges = NULL) {
   empty <- tibble::tibble(node_id = character(), merged_id = character(), merged_label = character())
@@ -121,8 +131,8 @@ aib_quality_merge_map <- function(quality, nodes, node_cells = NULL, edges = NUL
   if (!is.null(node_cells) && !is.null(edges) && nrow(edges)) {
     mat <- edges[grepl("material link", edges$basis), , drop = FALSE]
     for (b in bad_ids) {
-      stages <- dplyr::distinct(node_cells[node_cells$node_id == b, c("tech", "supply_chain")])
-      sibs <- unique(node_cells$node_id[paste(node_cells$tech, node_cells$supply_chain) %in% paste(stages$tech, stages$supply_chain)])
+      stages <- dplyr::distinct(node_cells[node_cells$node_id == b, c("tech", "source_stage")])
+      sibs <- unique(node_cells$node_id[paste(node_cells$tech, node_cells$source_stage) %in% paste(stages$tech, stages$source_stage)])
       sibs <- setdiff(sibs, bad_ids)
       linked <- intersect(sibs, c(mat$node_b[mat$node_a == b], mat$node_a[mat$node_b == b]))
       if (length(linked)) {
@@ -139,13 +149,13 @@ aib_quality_merge_map <- function(quality, nodes, node_cells = NULL, edges = NUL
       dplyr::mutate(merged_label = paste(c(label_of(merged_id[1]), sort(label_of(setdiff(node_id, merged_id[1])))), collapse = " + ")) %>%
       dplyr::ungroup()
   }
-  rest <- nodes[nodes$node_id %in% left, c("node_id", "primary_tech", "supply_chain", "sub_sector"), drop = FALSE]
+  rest <- nodes[nodes$node_id %in% left, c("node_id", "primary_tech", "source_stage", "sub_sector"), drop = FALSE]
   grouped <- rest %>%
-    dplyr::group_by(primary_tech, supply_chain) %>%
+    dplyr::group_by(primary_tech, source_stage) %>%
     dplyr::filter(dplyr::n() >= 2) %>%
     dplyr::mutate(
-      merged_id = paste0(aib_slug(primary_tech), "-", aib_slug(supply_chain), "--aggregated"),
-      merged_label = paste0(primary_tech, " ", supply_chain, ": aggregated low-coverage sub-sectors (", paste(sort(sub_sector), collapse = ", "), ")")
+      merged_id = paste0(aib_slug(primary_tech), "-", aib_slug(source_stage), "--aggregated"),
+      merged_label = paste0(primary_tech, " ", source_stage, ": aggregated low-coverage sub-sectors (", paste(sort(sub_sector), collapse = ", "), ")")
     ) %>%
     dplyr::ungroup() %>%
     dplyr::select(node_id, merged_id, merged_label)

@@ -38,6 +38,9 @@ source(local({
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
+# The six supply-chain stages (assert_supply_chain_stages()): every partner table keyed by
+# supply_chain is checked against them before it is written.
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "indices", "aggregate_economic_opportunity_index.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "prosperous_opportunity.R"))
@@ -60,10 +63,16 @@ if (!dir.exists(processed_dir)) {
   dir.create(processed_dir, recursive = TRUE)
 }
 
-write_processed_tbl <- function(tbl, name, processed_dir) {
+# Every table written here that is keyed by supply_chain (the dyad, partner-level, coverage and
+# CM-FDI tables) must hold the six stages: the pillar cells and the partner trade cells are
+# six-stage, and a table with an old Upstream / Midstream / Downstream value would join nothing
+# downstream (scripts/25, scripts/30). cm_fdi_projects_tbl, one row per project, is not keyed by
+# stage: its supply_chain is the roll-up of the stages a project counts in (cm_fdi_flag_index_use()).
+write_processed_tbl <- function(tbl, name, processed_dir, stage_keyed = TRUE) {
   if (is.null(tbl)) {
     return(invisible(NULL))
   }
+  if (isTRUE(stage_keyed)) partnership_strength_assert_stages(tbl, name)
   saveRDS(tbl, file.path(processed_dir, paste0(name, ".rds")))
   invisible(tbl)
 }
@@ -166,8 +175,9 @@ outbound_conduits <- partnership_strength_conduit_rule(
   scope = if (is.null(partnership_cfg$outbound_fdi$conduit_scope)) "both" else partnership_cfg$outbound_fdi$conduit_scope
 )
 # CM-FDI (config/partnership.yml cm_fdi; R/themes/partnership_strength/cm_fdi.R): the Friendshore
-# investment ties in (Solar, Wind, Batteries, EV) x Midstream and the chinese_parent_exposure
-# component. With both switches off the file is not read and Friendshore is the IMF-only build.
+# investment ties in (Solar, Wind, Batteries, EV) x (Components, Assembly) and the
+# chinese_parent_exposure component. With both switches off the file is not read and Friendshore
+# is the IMF-only build.
 cm_fdi_settings <- cm_fdi_resolve_settings(partnership_cfg$cm_fdi)
 cm_fdi_enabled <- isTRUE(cm_fdi_settings$investment_ties) || isTRUE(cm_fdi_settings$chinese_parent_exposure)
 
@@ -279,6 +289,19 @@ read_comtrade_dyads <- function(path) {
 
 comtrade_dyads <- read_comtrade_dyads(comtrade_dyads_path)
 subcat <- read.csv(subcat_path)
+# The partner trade cells are keyed (tech, stage) by each HS6 code's six-stage `stage`, the column
+# scripts/04 stages with the master: it replaces the master's three-stage supply_chain here, which
+# partnership_strength_build_trade_mapping() reads. A copy without it (staged before 2026-10-26)
+# would key them Upstream / Midstream and join no pillar cell; a blank or unknown stage would drop
+# or misfile its code.
+if (!"stage" %in% names(subcat)) {
+  stop(subcat_path, " has no stage column (staged before the six-stage master); rerun scripts/04_build_hs6_views.R.")
+}
+subcat$supply_chain <- subcat$stage
+assert_supply_chain_stages(
+  partnership_strength_build_trade_mapping(subcat)$supply_chain,
+  label = paste0(basename(subcat_path), " stage (the partner trade cells)")
+)
 fdi_raw <- read_imf_dip(fdi_path)
 tech_ghg_raw <- read.csv(tech_ghg_path)
 cat_raw <- read.csv(cat_policy_path)
@@ -334,7 +357,9 @@ policy_tbl <- partnership_strength_clean_policy(
 # all-tech ES/EO tables also carry minerals, Aluminium, Steel, Heat pumps and NA-tech rows.
 partner_techs <- partnership_strength_headline_techs()
 
-# Table shapes written below (see the builders' headers for the direction conventions):
+# Table shapes written below (see the builders' headers for the direction conventions). supply_chain
+# is one of the six supply-chain stages (Extraction, Refining, Components, Assembly, Deployment,
+# Recovery) in every table keyed by it; write_processed_tbl() stops otherwise.
 # - partner_friendshore_* / partner_opportunity_*: one row per (reporter_iso, partner_iso, tech,
 #   supply_chain, variable), self-dyads excluded. Friendshore: reporter = importer rating the
 #   partner as a supplier. Opportunity: reporter = exporter rating the partner as a market.
@@ -343,11 +368,14 @@ partner_techs <- partnership_strength_headline_techs()
 #   variable), non-high-income partners only; there is no reporter dimension.
 # - partner_trade_coverage_tbl: by theme and (tech, stage), the dyad cells whose trade component is
 #   observed trade, a recorded zero or imputed, with the trade file used.
-# - cm_fdi_projects_tbl: every CM-FDI project (cm_fdi_clean_projects()) with index_use,
-#   index_exclusion, supply_chain, china_parent and attribution_weight (cm_fdi_flag_index_use()).
+# - cm_fdi_projects_tbl: every CM-FDI project (cm_fdi_clean_projects()), one row each, with
+#   index_use, index_exclusion, stages (the configured stages it counts in, "Components|Assembly"),
+#   supply_chain (their shared roll-up, Midstream: not a stage), china_parent and
+#   attribution_weight (cm_fdi_flag_index_use()).
 # - partner_cm_fdi_ties_tbl: one row per (investor_iso, destination_iso, tech, supply_chain) with an
-#   index project: attributed project count, count with a disclosed value, disclosed value (US$ m).
-#   Friendshore reads it with reporter = investor, partner = destination.
+#   index project, each project counted in both Components and Assembly: attributed project count,
+#   count with a disclosed value, disclosed value (US$ m). Friendshore reads it with reporter =
+#   investor, partner = destination.
 # - partner_cm_fdi_exposure_tbl: one row per (destination_iso, tech, supply_chain) with a
 #   foreign-invested index project (and China, Hong Kong, Macao at 1 under china_supplier: exposed):
 #   chinese_parent_exposure with its counts, values and exposure_basis.
@@ -355,7 +383,8 @@ partner_techs <- partnership_strength_headline_techs()
 
 # CM-FDI inputs of the Friendshore theme: the projects flagged for index use (manufacturing; status
 # and time window from config/partnership.yml cm_fdi), the investor -> destination ties and the
-# partners' Chinese-parent exposure, by (tech, Midstream).
+# partners' Chinese-parent exposure, by (tech, stage) over the configured stages (Components and
+# Assembly, each project copied onto both).
 cm_fdi_inputs <- NULL
 if (cm_fdi_enabled) {
   cm_fdi_inputs <- partnership_strength_cm_fdi_inputs(
@@ -501,7 +530,7 @@ for (nm in names(partner_cm_fdi_tbls)) {
   if (is.null(partner_cm_fdi_tbls[[nm]])) {
     unlink(file.path(processed_dir, paste0(nm, ".rds")))
   } else {
-    write_processed_tbl(partner_cm_fdi_tbls[[nm]], nm, processed_dir)
+    write_processed_tbl(partner_cm_fdi_tbls[[nm]], nm, processed_dir, stage_keyed = nm != "cm_fdi_projects_tbl")
   }
 }
 

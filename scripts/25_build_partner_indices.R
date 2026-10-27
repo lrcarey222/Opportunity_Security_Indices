@@ -38,6 +38,7 @@ source(local({
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))  # is_sovereign_economy() needs it
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))  # partnership_strength_assert_stages()
 source(file.path(repo_root, "R", "indices", "index_builder_core.R"))
 source(file.path(repo_root, "R", "indices", "aggregate_economic_opportunity_index.R"))
 source(file.path(repo_root, "R", "indices", "build_partnership_strength_index.R"))
@@ -64,10 +65,13 @@ read_processed_tbl <- function(name, processed_dir) {
   readRDS(path)
 }
 
+# The PSI tables are collapsed over technology and stage: their supply_chain is "All", which is
+# the only value besides the six stages a partner table may hold.
 write_processed_tbl <- function(tbl, name, processed_dir) {
   if (is.null(tbl)) {
     return(invisible(NULL))
   }
+  partnership_strength_assert_stages(tbl, name, allow_all = TRUE)
   saveRDS(tbl, file.path(processed_dir, paste0(name, ".rds")))
   invisible(tbl)
 }
@@ -75,7 +79,9 @@ write_processed_tbl <- function(tbl, name, processed_dir) {
 # PSI inputs are the top-5 summaries written by scripts/15: dyad-level for Friendshore and
 # Opportunity (one row per reporter, partner and variable), partner-level for Development. The
 # PSI is collapsed over technology and stage (psi_prepare_partner_top5()); see
-# R/indices/build_partnership_strength_index.R for the formula and the two viewpoints.
+# R/indices/build_partnership_strength_index.R for the formula and the two viewpoints. Each top-5
+# mean is over the five best of a unit's six-stage (tech, stage) cells since 2026-10-27: up to six
+# cells per technology, three before (partnership_strength_build_top_k()).
 partner_friendshore_top5_tbl <- read_processed_tbl("partner_friendshore_top5_tbl", processed_dir)
 partner_opportunity_top5_tbl <- read_processed_tbl("partner_opportunity_top5_tbl", processed_dir)
 partner_development_top5_tbl <- read_processed_tbl("partner_development_top5_tbl", processed_dir)

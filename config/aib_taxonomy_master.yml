@@ -2,10 +2,13 @@
 # of the AIB until 2026-10-19. Read by scripts/31 and 32 on top of config/aib.yml when
 # `taxonomy: master` (or --taxonomy master). Every key here replaces the same key of config/aib.yml.
 
-# Sub-sector nodes are the (tech, stage, sub_sector) cells of data/reference/energy_hs6_master.csv.
-# Cells with an identical HS6 set in several technologies (magnets in EV and Wind, transformers in
-# Grid and Solar, pipelines in Oil and Gas) are one physical node, counted once. `splits` refines a
-# master sub-sector into finer nodes where its HS6 codes allow it.
+# Sub-sector nodes are the (tech, supply_chain, sub_sector) cells of data/reference/energy_hs6_master.csv,
+# grouped by the master's three-value `supply_chain` (Upstream / Midstream / Downstream: the source stage,
+# so node ids and splits are those of the three-stage build) and labelled with its six-stage `stage` (the
+# stage with the most world trade among the node's codes). Cells with an identical HS6 set in several
+# technologies (magnets in EV and Wind, transformers in Grid and Solar, pipelines in Oil and Gas) are one
+# physical node, counted once. `splits` refines a master sub-sector into finer nodes where its HS6 codes
+# allow it; a split's `supply_chain` key is the source stage (Upstream / Midstream / Downstream), not a six-stage label.
 nodes:
   splits:
     - tech: Solar

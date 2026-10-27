@@ -6,6 +6,7 @@ coalition_test_root <- function() {
 
 coalition_test_load <- function() {
   root <- coalition_test_root()
+  source(file.path(root, "R", "utils", "supply_chain_stages.R"), local = FALSE)
   source(file.path(root, "R", "utils", "country.R"), local = FALSE)
   source(file.path(root, "R", "utils", "iea_critical_minerals.R"), local = FALSE)
   source(file.path(root, "R", "categories", "production", "critical_minerals_production.R"), local = FALSE)
@@ -49,7 +50,7 @@ coalition_test_suppliers <- function() {
     iso3 = c("AAA", "CCC", "DDD", "EEE", "FFF", "III", "LLL", "EUU", "MMM"),
     country = paste("Supplier", 1:9),
     tech = "Batteries",
-    supply_chain = c("Upstream", "Midstream", "Upstream", "Upstream", "Upstream", "Upstream", "Midstream", "Midstream", "Upstream"),
+    supply_chain = c("Extraction", "Components", "Extraction", "Extraction", "Extraction", "Extraction", "Components", "Components", "Extraction"),
     measure = "atlas_export_share",
     mineral = NA_character_,
     world_share = c(0.10, 0.05, 0.30, 0.049, 0.20, 0.08, 0.06, 0.40, 0.07),
@@ -124,7 +125,7 @@ test_that("China-leaning economies are excluded from the supplier route only", {
   expect_equal(f$tier, "none")
   expect_false(f$route_supplier)
   expect_true(f$supplier_excluded)
-  expect_match(f$supplier_cells, "Batteries Upstream")
+  expect_match(f$supplier_cells, "Batteries Extraction")
   # DDD: China-leaning major supplier in IPEF with GDP above the floor -> partner by agreement only.
   d <- out[out$iso3 == "DDD", ]
   expect_equal(d$tier, "partner")
@@ -187,14 +188,14 @@ test_that("EU stage weights follow the basis priority and sum to one per (tech, 
   coalition_test_load()
   eu <- c("AAA", "BBB", "CCC")
   supplier <- tibble::tibble(
-    iso3 = c("AAA", "BBB", "EUU", "XXX",   # Oil Upstream production (EI-like, with an EU total)
-             "AAA", "BBB", "CCC",          # Oil Upstream exports (lower priority)
-             "AAA", "CCC",                 # Solar Midstream exports
-             "AAA", "BBB", "EUU",          # Gas Upstream production: members cover 30% of the EU total
-             "AAA",                        # Nuclear Upstream: EU share below min_eu_world_share
-             "AAA", "BBB"),                # Wind Midstream: a measure not in basis_priority
+    iso3 = c("AAA", "BBB", "EUU", "XXX",   # Oil Extraction production (EI-like, with an EU total)
+             "AAA", "BBB", "CCC",          # Oil Extraction exports (lower priority)
+             "AAA", "CCC",                 # Solar Assembly exports
+             "AAA", "BBB", "EUU",          # Gas Extraction production: members cover 30% of the EU total
+             "AAA",                        # Nuclear Extraction: EU share below min_eu_world_share
+             "AAA", "BBB"),                # Wind Assembly: a measure not in basis_priority
     tech = c("Oil", "Oil", "Oil", "Oil", "Oil", "Oil", "Oil", "Solar", "Solar", "Gas", "Gas", "Gas", "Nuclear", "Wind", "Wind"),
-    supply_chain = c(rep("Upstream", 7), "Midstream", "Midstream", rep("Upstream", 4), "Midstream", "Midstream"),
+    supply_chain = c(rep("Extraction", 7), "Assembly", "Assembly", rep("Extraction", 4), "Assembly", "Assembly"),
     measure = c(rep("ei_production", 4), rep("atlas_export_share", 3), rep("atlas_export_share", 2),
                 rep("ei_production", 3), "uranium_mine_production", "iea_manufacturing_capacity", "iea_manufacturing_capacity"),
     mineral = NA_character_,
@@ -204,7 +205,7 @@ test_that("EU stage weights follow the basis priority and sum to one per (tech, 
   )
   gdp <- data.frame(iso3c = eu, year = 2025, `NY.GDP.MKTP.CD` = c(6e11, 3e11, 1e11), check.names = FALSE)
   techs <- c("Oil", "Solar", "Gas", "Nuclear", "Wind", "Geothermal")
-  w <- eu_stage_weights(supplier, gdp, eu_members = eu, techs = techs, stages = c("Upstream", "Midstream"),
+  w <- eu_stage_weights(supplier, gdp, eu_members = eu, techs = techs, stages = c("Extraction", "Assembly"),
                         min_coverage = 0.5, min_eu_world_share = 0.001)
 
   expect_equal(nrow(w), length(eu) * length(techs) * 2)
@@ -214,23 +215,97 @@ test_that("EU stage weights follow the basis priority and sum to one per (tech, 
 
   cell <- function(t, s) w[w$tech == t & w$supply_chain == s, ]
   get <- function(x, iso) x$weight[x$iso3 == iso]
-  oil <- cell("Oil", "Upstream")
+  oil <- cell("Oil", "Extraction")
   expect_equal(unique(oil$basis), "production") # production beats exports
   expect_equal(get(oil, "AAA"), 0.75)
   expect_equal(get(oil, "CCC"), 0) # not listed by the production source
   expect_equal(unique(oil$coverage), 0.8)
-  solar <- cell("Solar", "Midstream")
+  solar <- cell("Solar", "Assembly")
   expect_equal(unique(solar$basis), "exports")
   expect_equal(get(solar, "CCC"), 0.75)
   # Gas: members cover 30% < 50% of the EU total -> no production basis, no exports -> GDP.
-  expect_equal(unique(cell("Gas", "Upstream")$basis), "gdp")
-  expect_equal(get(cell("Gas", "Upstream"), "AAA"), 0.6)
+  expect_equal(unique(cell("Gas", "Extraction")$basis), "gdp")
+  expect_equal(get(cell("Gas", "Extraction"), "AAA"), 0.6)
   # Nuclear: the EU holds 0.02% of world output -> GDP.
-  expect_equal(unique(cell("Nuclear", "Upstream")$basis), "gdp")
+  expect_equal(unique(cell("Nuclear", "Extraction")$basis), "gdp")
   # Wind: the manufacturing measure is not a weight basis -> GDP; Geothermal has no data -> GDP.
-  expect_equal(unique(cell("Wind", "Midstream")$basis), "gdp")
-  expect_equal(unique(cell("Geothermal", "Midstream")$basis), "gdp")
-  expect_equal(unique(cell("Geothermal", "Midstream")$measures), "wdi_gdp")
+  expect_equal(unique(cell("Wind", "Assembly")$basis), "gdp")
+  expect_equal(unique(cell("Geothermal", "Assembly")$basis), "gdp")
+  expect_equal(unique(cell("Geothermal", "Assembly")$measures), "wdi_gdp")
+
+  # By default every supply stage gets weights (the stages the allied network solves); a stage
+  # without a usable measure (here Refining, Components, Recovery) falls to GDP.
+  all5 <- eu_stage_weights(supplier, gdp, eu_members = eu, techs = techs)
+  expect_setequal(unique(all5$supply_chain), SUPPLY_CHAIN_SUPPLY_STAGES)
+  expect_equal(nrow(all5), length(eu) * length(techs) * 5)
+  expect_equal(unique(all5$basis[all5$supply_chain %in% c("Refining", "Components", "Recovery")]), "gdp")
+  # Three-stage labels on either side stop instead of putting every cell on GDP.
+  expect_error(eu_stage_weights(supplier, gdp, eu_members = eu, techs = techs, stages = c("Upstream", "Midstream")),
+               "not supply-chain stages: Upstream, Midstream")
+  legacy <- supplier
+  legacy$supply_chain[legacy$supply_chain == "Extraction"] <- "Upstream"
+  expect_error(eu_stage_weights(legacy, gdp, eu_members = eu, techs = techs), "supplier_tbl\\$supply_chain")
+})
+
+test_that("every supplier measure carries the stage the themes give the same data", {
+  coalition_test_load()
+  expect_equal(unname(COALITION_CLEANTECH_STAGES[c("Batteries", "Solar", "Wind", "Green Hydrogen")]),
+               c("Components", "Assembly", "Assembly", "Assembly"))
+  expect_true(all(COALITION_CLEANTECH_STAGES %in% SUPPLY_CHAIN_MANUFACTURING_STAGES))
+  # IEA manufacturing capacity: battery cell capacity is Components, the end products Assembly.
+  cleantech <- data.frame(X = c("China", "Viet Nam", "Korea", "EU", "Other"),
+                          `Solar - Current` = c(80, 5, 0, 0, 15), `Batteries - Current` = c(75, 0, 10, 5, 10),
+                          `Wind - Current` = c(60, 0, 0, 20, 20), `Electrolyzers - Current` = c(50, 0, 0, 25, 25),
+                          check.names = FALSE)
+  ct <- coalition_shares_cleantech(cleantech)
+  stage_of <- unique(ct[c("tech", "supply_chain")])
+  expect_equal(stage_of$supply_chain[match(c("Solar", "Batteries", "Wind", "Green Hydrogen"), stage_of$tech)],
+               c("Assembly", "Components", "Assembly", "Assembly"))
+  expect_error(coalition_shares_cleantech(cleantech, tech_stages = c(Solar = "Assembly")), "no stage in tech_stages for Wind")
+
+  # IEA mineral supply: mining Extraction, refining Refining; the measure follows the stage.
+  critical <- data.frame(
+    Pillar = "2 Total supply for key minerals",
+    Mineral = c("Lithium - Mining", "Lithium - Mining", "Lithium - Chemical", "Lithium - Chemical"),
+    Sector.Country = c("Australia", "Rest of world", "Chile", "Rest of world"), Scenario = "Base case",
+    X2025 = c(40, 60, 30, 70), X2035 = c(40, 60, 30, 70), stringsAsFactors = FALSE
+  )
+  demand <- data.frame(Mineral = "Lithium", tech = "Batteries", share_24 = 0.9, stringsAsFactors = FALSE)
+  m <- coalition_shares_iea_minerals(critical, demand, techs = "Batteries")
+  expect_equal(m$supply_chain[match(c("AUS", "CHL"), m$iso3)], c("Extraction", "Refining"))
+  expect_equal(m$measure[match(c("AUS", "CHL"), m$iso3)], c("iea_mineral_mining", "iea_mineral_refining"))
+
+  # Fuel and uranium production are Extraction.
+  ei <- data.frame(Country = c("Total World", "US"), Year = 2025, ISO3166_alpha3 = c("WLD", "USA"),
+                   Var = "gasprod_ej", Value = c(100, 25), stringsAsFactors = FALSE)
+  expect_equal(unique(coalition_shares_ei_production(ei, vars = c(Gas = "gasprod_ej"))$supply_chain), "Extraction")
+  u <- data.frame(country = "Niger", iso3c = "NER", variable = "mine_production", value = 5, year = 2024)
+  expect_equal(coalition_shares_uranium(u)$supply_chain, "Extraction")
+})
+
+test_that("export shares are read in the trade table's six-stage cells, and a three-stage table stops", {
+  coalition_test_load()
+  # One technology's old Midstream basket split into Refining, Components and Assembly cells: AAA
+  # holds 6% of the Components basket though (say) under 5% of the whole.
+  trade <- data.frame(
+    Country = "A", iso3c = c("AAA", "AAA", "AAA", "BBB", "AAA"), tech = "Batteries",
+    supply_chain = c("Refining", "Components", "Assembly", "Assembly", "Deployment"), sub_sector = "All",
+    variable = "market_share", data_type = "raw", value = c(0.02, 0.06, 0.03, 0.30, 0.9), Year = 2024,
+    stringsAsFactors = FALSE
+  )
+  s <- coalition_shares_trade(trade, techs = "Batteries")
+  expect_setequal(s$supply_chain, c("Refining", "Components", "Assembly")) # Deployment is not a supply stage
+  expect_equal(s$world_share[s$iso3 == "AAA" & s$supply_chain == "Components"], 0.06)
+  t <- major_supplier_shares(trade_tbl = trade, techs = "Batteries")
+  expect_equal(t$supply_chain[t$major], c("Assembly", "Components"))
+  expect_equal(t$iso3[t$major], c("BBB", "AAA"))
+  # A three-stage trade table (legacy_stages = TRUE, or a pre-2026-10-26 build) matches no stage:
+  # it stops instead of returning no rows, and so do three-stage stages.
+  legacy <- trade
+  legacy$supply_chain <- c("Midstream", "Midstream", "Midstream", "Midstream", "Downstream")
+  expect_error(coalition_shares_trade(legacy, techs = "Batteries"), "not supply-chain stages: Midstream, Downstream")
+  expect_error(major_supplier_shares(trade_tbl = trade, techs = "Batteries", stages = c("Upstream", "Midstream")),
+               "major_supplier_shares\\(\\): stages")
 })
 
 test_that("major_supplier_shares computes world shares from each source", {
@@ -255,7 +330,7 @@ test_that("major_supplier_shares computes world shares from each source", {
                           `Solar - Current` = c(79, 5, 0, 0, 16), check.names = FALSE)
   trade <- data.frame(
     Country = c("Chile", "Chile", "Chile"), iso3c = "CHL", tech = c("Batteries", "Batteries", "Semiconductors"),
-    supply_chain = c("Upstream", "Upstream", "Midstream"), sub_sector = "All",
+    supply_chain = c("Extraction", "Extraction", "Components"), sub_sector = "All",
     variable = c("market_share", "exports", "market_share"), data_type = "raw",
     value = c(0.14, 1e9, 0.2), Year = 2024, source = "Harvard Atlas of Economic Complexity",
     explanation = "Share of world exports of the basket's HS6 codes (Atlas) [2023]", stringsAsFactors = FALSE
@@ -266,17 +341,17 @@ test_that("major_supplier_shares computes world shares from each source", {
                              ei_vars = c(Oil = "oilprod_kbd"), cleantech_tech_map = c(Solar = "Solar"))
 
   share <- function(i, t, st, m) s$world_share[s$iso3 == i & s$tech == t & s$supply_chain == st & s$measure == m]
-  expect_equal(share("CHL", "Electric Grid", "Upstream", "iea_mineral_mining"), 0.25)
-  expect_equal(share("JPN", "Electric Grid", "Midstream", "iea_mineral_refining"), 0.05)
+  expect_equal(share("CHL", "Electric Grid", "Extraction", "iea_mineral_mining"), 0.25)
+  expect_equal(share("JPN", "Electric Grid", "Refining", "iea_mineral_refining"), 0.05)
   expect_false(any(s$tech == "Green Hydrogen")) # below mineral_min_demand_share
   expect_false(any(s$tech == "Heat Pumps"))     # not a headline technology
-  expect_equal(share("USA", "Oil", "Upstream", "ei_production"), 0.2)
+  expect_equal(share("USA", "Oil", "Extraction", "ei_production"), 0.2)
   expect_true(s$is_aggregate[s$iso3 == "EUU" & s$measure == "ei_production"])
-  expect_equal(share("EUU", "Oil", "Upstream", "ei_production"), 0.01)
-  expect_equal(share("VNM", "Solar", "Midstream", "iea_manufacturing_capacity"), 0.05)
+  expect_equal(share("EUU", "Oil", "Extraction", "ei_production"), 0.01)
+  expect_equal(share("VNM", "Solar", "Assembly", "iea_manufacturing_capacity"), 0.05)
   expect_true(s$is_aggregate[s$iso3 == "EUU" & s$measure == "iea_manufacturing_capacity"])
   expect_false(any(grepl("Other|Rest", s$country)))
-  expect_equal(share("CHL", "Batteries", "Upstream", "atlas_export_share"), 0.14)
+  expect_equal(share("CHL", "Batteries", "Extraction", "atlas_export_share"), 0.14)
   expect_equal(s$year[s$measure == "atlas_export_share"], 2023L)
   expect_false(any(s$tech == "Semiconductors"))
   # The test passes at the threshold and never on an aggregate row.
@@ -322,13 +397,13 @@ test_that("EI mineral sheets test the minerals the IEA supply sheet does not cov
   e <- s[s$measure == "ei_mineral_mining", ]
   share <- function(i, t, m) e$world_share[e$iso3 == i & e$tech == t & e$mineral == m]
 
-  # Shares of the "Total World" row in the latest year; each linked technology, Upstream.
+  # Shares of the "Total World" row in the latest year; each linked technology, Extraction.
   expect_equal(share("ZAF", "Wind", "Manganese"), 0.38)
   expect_equal(share("GAB", "Batteries", "Manganese"), 0.25)
   expect_equal(share("ZAF", "Green Hydrogen", "PGMs"), 0.52)
   expect_equal(share("USA", "Green Hydrogen", "PGMs"), 0.02)
   expect_equal(unique(e$year), 2025L)
-  expect_equal(unique(e$supply_chain), "Upstream")
+  expect_equal(unique(e$supply_chain), "Extraction")
   expect_false(any(e$tech == "Heat Pumps"))
   expect_false(any(grepl("Rest|Total|Sources", e$country)))
   # The value and its share stay on the same row.
@@ -374,7 +449,7 @@ test_that("reserves rows are tested at supplier_reserves_share, every other meas
   supplier <- tibble::tibble(
     iso3 = c("RRR", "RRR", "SSS", "TTT", "TTT", "UUU", "VVV"),
     tech = c("Wind", "Oil", "Batteries", "Nuclear", "Nuclear", "Gas", "Oil"),
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     measure = c("usgs_reserves", "ei_production", "usgs_reserves", "uranium_resources", "uranium_mine_production",
                 "ei_reserves", "atlas_export_share"),
     mineral = c("Rare Earths", NA, "Graphite", NA, NA, NA, NA),
@@ -390,7 +465,7 @@ test_that("reserves rows are tested at supplier_reserves_share, every other meas
   expect_true(row("RRR")$route_supplier && row("RRR")$route_supplier_reserves)
   expect_equal(row("RRR")$max_supplier_share, 0.039) # flow measures only, read against supplier_share
   expect_equal(row("RRR")$max_reserves_share, 0.146)
-  expect_match(row("RRR")$supplier_cells, "Wind Upstream (usgs_reserves Rare Earths 14.6%)", fixed = TRUE)
+  expect_match(row("RRR")$supplier_cells, "Wind Extraction (usgs_reserves Rare Earths 14.6%)", fixed = TRUE)
   expect_match(row("RRR")$reason, "major reserves holder")
   # SSS: 8% of reserves would pass the flow bar but not the reserves bar.
   expect_equal(row("SSS")$tier, "none")
@@ -481,7 +556,7 @@ test_that("EI reserves are shares of each sheet's Total World row, mapped like t
   expect_false(any(r$tech == "Heat Pumps"))           # not a headline technology, and below the floor
   expect_false(any(r$tech %in% c("Coal", "Zinc")))   # Coal not in techs; zinc has no link
   expect_equal(unique(r$measure), "ei_reserves")
-  expect_equal(unique(r$supply_chain), "Upstream")
+  expect_equal(unique(r$supply_chain), "Extraction")
   expect_false(any(grepl("Total|Rest|Other|Union|Sands|:", r$country)))
   expect_equal(anyDuplicated(r[c("iso3", "tech", "mineral")]), 0)
 
@@ -593,7 +668,7 @@ test_that("USGS reserves are shares of the world total, mapped like the mining m
   share <- function(i, t, m) r$world_share[r$iso3 == i & r$tech == t & r$mineral == m]
 
   expect_equal(unique(r$measure), "usgs_reserves")
-  expect_equal(unique(r$supply_chain), "Upstream")
+  expect_equal(unique(r$supply_chain), "Extraction")
   expect_equal(unique(r$year), 2025L)
   # Graphite: the World total (310 Mt) holds Ukraine's unquantified reserves, so it is the world.
   expect_equal(share("BRA", "Batteries", "Graphite"), 74 / 310)
@@ -660,4 +735,7 @@ test_that("the agreements reference file is sourced and matches config/coalition
   expect_true(isTRUE(cfg$supplier_measures$reserves))
   expect_length(unique(unlist(cfg$eu_node$members)), 27)
   expect_length(unlist(cfg$headline_techs), 11)
+  # The supplier test reads the five supply stages (every stage but Deployment), in stage order.
+  source(file.path(root, "R", "utils", "supply_chain_stages.R"), local = TRUE)
+  expect_equal(unlist(cfg$stages), SUPPLY_CHAIN_SUPPLY_STAGES)
 })

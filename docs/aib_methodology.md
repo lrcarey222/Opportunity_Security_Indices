@@ -75,7 +75,7 @@ sector totals never count a code twice (the dictionary's own aggregation rule). 
 in the dictionary, so every node is in the strategic scope.
 
 **Node grain.** The hierarchy is index > sector (the AIB's "technology") > stage > node. A node is a
-sector x stage cell (`aib_dictionary_master()`), split where the cell mixes physical chains the
+sector x dictionary-stage cell (`aib_dictionary_master()`), split where the cell mixes physical chains the
 compacts and the physical constraint must keep apart (`nodes.splits`; a split names parts by HS6 code
 and sends the rest to `rest`): rare-earth ores / oxides & compounds / metals; lithium minerals,
 lithium chemicals, nickel and cobalt intermediates, manganese dioxide, battery recycling feed; wafers
@@ -87,11 +87,42 @@ conductors / power cables / insulators; electric cars / buses and trucks / rail 
 refrigerants / compressors / heat pumps; hydrogen derivatives vs biofuels. On the 2026-10 data: 78
 nodes, 74 optimized (cobalt ores, monazite and the uranium ores / spent fuel aggregate are too thin).
 
-**The OSI crosswalk.** Partnership Opportunity, Friendshore and the PAMS policy compatibility are kept by
-OSI technology x stage. `aib_osi_crosswalk()` places each node in the OSI cells its codes sit in,
-weighted by 2024 world imports: `score_techs` (OSI technologies holding at least 20% of the node's
-matched trade) and `score_stage` read the scores; `yf_cells` and `osi_subcomponents` are the Yards &
-Fences / Sector Profile ids through which the dashboard joins nodes to OSI cells. 56 of 77 nodes have
+**Six supply-chain stages (2026-10-27).** Every node carries one of the OSI's six stages
+(`config/supply_chain_stages.yml`, `docs/supply_chain_stages.md`; `R/utils/supply_chain_stages.R`) in
+`supply_chain`: Extraction, Refining, Components, Assembly, Deployment, Recovery. The stage is relative
+to the sector (a motor is a final product of the Motors sector and a component of an EV). The
+dictionary's own Upstream / Midstream / Downstream is not that vocabulary (its Downstream is final
+products and process equipment, not deployment), so the label comes from each code's `item_type`
+(`aib_dictionary_stage()`): Raw Material -> Extraction, or Recovery for recycled feed (scrap, waste,
+spent batteries or fuel, residues and black mass, e-waste, used cooking oil, matched on the code's
+description and segment: 13 primary rows, five of them core); Processed Material -> Refining;
+Component -> Components; Final Product and Process Equipment -> Assembly (capital goods stay in
+Assembly, a project decision). With the master taxonomy the label is the basket's own six-stage
+`stage`. A node whose codes carry several stages takes the one with the most 2024 world trade (code
+count without trade; `aib_stage_by_trade()`) and is flagged (`stage_mixed`, `stage_mix`; a
+data-quality caution beside the older `stage_conflict`); each cell of a shared node keeps its own
+sector's stage. On the 2026-10 data the 77 nodes are 6 Extraction, 26 Refining, 21 Components, 23
+Assembly, 1 Recovery (battery recycling feed) and none Deployment; two mix stages (fuel assemblies &
+zirconium: Components 90%, Refining 10%; the uranium ores / spent fuel aggregate: Extraction 99%,
+Recovery 1%).
+
+The **node set does not move with the labels**: the nodes are grouped by the taxonomy's own stage
+(`source_stage`: the dictionary's `stage`, the master's `supply_chain`), which also disambiguates node
+ids, keys the splits (their `supply_chain` key), names the low-coverage aggregates
+(`<tech>-<stage>--aggregated`) and draws the "same technology stage" edges, so the node ids, codes,
+aggregates and edges are those of the three-stage build (`config/aib_node_functions.yml` and
+`config/aib_strategic_compacts.yml` are keyed by node id). Checked on 2026-10-27 against the 2026-10-22
+three-stage build: the same 77 node ids in the same order, the same codes, merge map and 61 edges.
+
+**The OSI crosswalk.** Partnership Opportunity, Friendshore, the Development Potential Index and the
+PAMS policy compatibility are kept by OSI technology x six-stage stage. `aib_osi_crosswalk()` places
+each node in the OSI cells its codes sit in (the basket's six-stage `stage`), weighted by 2024 world
+imports: `score_techs` (OSI technologies holding at least 20% of the node's matched trade) and
+`score_stage` (the stage with the most matched trade) read the scores; `yf_cells` and
+`osi_subcomponents` are the Yards & Fences / Sector Profile ids (`<tech>-<stage>`, e.g.
+`batteries-components`) through which the dashboard joins nodes to OSI cells. The partner indices are
+read in the supplying stages (every stage but Deployment); `scripts/31` stops on a partner, development
+or policy table still keyed by Upstream / Midstream / Downstream. 56 of 77 nodes have
 basket codes (median coverage 100% of their trade); the rest (heat pumps, refrigerants and
 compressors, electric furnaces, electrolysers, hydrogen derivatives and biofuels, hydro turbines,
 electric rail, PGMs, silver powder, piezo quartz, balsa, aluminium wire rod, sensors) get neutral
@@ -102,8 +133,9 @@ with `scripts/98` unchanged (`osi-worktrees/scratch_eid`, combined with the live
 codes verified identical). `scripts/31 --dyads <file>` reads that combined file until it is installed
 as `data/raw/comtrade_energy_dyads_all.csv`.
 
-With the master taxonomy a node is a `(tech, supply_chain, sub_sector)` cell of the basket, cells
-with an identical HS6 set in several technologies are one physical node, and the October 2026
+With the master taxonomy a node is a `(tech, supply_chain, sub_sector)` cell of the basket (its
+three-value `supply_chain` the source stage, its six-stage `stage` the label), cells with an
+identical HS6 set in several technologies are one physical node, and the October 2026
 configuration splits Solar `Polysilicon & Wafers` into `Polysilicon` and `Wafers`.
 
 The HS6 codes are the empirical trade data, the node is the optimization unit, the stage is the
@@ -138,19 +170,25 @@ non-reporters, recorded in `total_year`); production share where a proxy exists.
   exists only as 8541.40 with LEDs (filed under cells), so no cells-vs-modules time series;
   production far more concentrated than trade (`aib_production_flags()`: e.g. China 84% of
   rare-earth refining against 16% of 2846.90 exports), where trade-based exposure understates
-  dependence.
+  dependence; technologies filing the same codes in different source stages (`stage_conflict`) or a
+  node whose codes span several of the six stages (`stage_mixed`: the label is the stage with the most
+  trade).
 
 Insufficient nodes are **aggregated upward** (`aib_quality_merge_map()`): into a sibling linked by a
 material flow in the same technology stage first (monazite into rare-earth compounds, uranium ores
 into natural uranium compounds), else together within their technology stage; a node still alone
-is reported and not optimized.
+is reported and not optimized. "Stage" here is the source stage (the taxonomy's Upstream / Midstream /
+Downstream), so the aggregates and their ids are those of the three-stage build; an aggregate's
+six-stage label is read from its codes' trade like any node's.
 
 ## 5. Stress-test engine and the Trade Partnership Network
 
 **Shocks** (`shocks`): China 100% (`china_100`), China 50% (`china_50`), and the largest supplier
 removed at sub-sector, stage or technology level (`largest_subsector`, `largest_stage`,
-`largest_technology`; the largest exporter of the trade summed over that level's nodes). Hong Kong
-and Macao re-exports follow China (`trade.reexport_hubs`).
+`largest_technology`; the largest exporter of the trade summed over that level's nodes; the stage
+level is the technology's nodes at one of the six stages, so since 2026-10-27 battery recycling feed
+(Recovery) is no longer pooled with the battery ores (Extraction), nor refined materials with
+components). Hong Kong and Macao re-exports follow China (`trade.reexport_hubs`).
 
 **The diversification scenario** (`diversify_benchmark`, a shock of type `diversify`;
 `R/aib/aib_diversify.R`) removes no supplier. It asks what trade and investment would look like if a
@@ -287,14 +325,14 @@ optimized only among solutions within the tolerance of the earlier optimum:
    production used at home), ties by world export share (`aib_specialization_weight()`);
 3. favour relationships with stronger Partnership Opportunity (exporter -> market);
 4. revealed policy/climate compatibility: mean of the available components, IEA PAMS policy intensity
-   similarity in the node's technology and stage and CAT rating similarity
-   (`aib_compatibility()`). No geopolitical alignment score enters.
+   similarity in the node's OSI technology and six-stage stage (`score_techs`, `score_stage`) and CAT
+   rating similarity (`aib_compatibility()`). No geopolitical alignment score enters.
 
 Missing tie-break scores are neutral (0.5). No objective is a weighted composite of another.
 
 Outputs per node x shock x scenario: shock exposure, static / existing / optimized coverage,
 coordination dividend, residual supply gap (share and USD), baseline / optimized HHI, largest
-supplier share and top-three share, new and expanded relationships; stage and technology aggregates
+supplier share and top-three share, new and expanded relationships; stage (six-stage) and technology aggregates
 recomputed from the summed USD (`aib_aggregate_levels()`), with their HHI and largest supplier
 recomputed from the exporters' summed supply (`aib_aggregate_concentration()`). A node shared by
 technologies whose largest supplier differs (rare-earth compounds and metals under the stage and
@@ -429,7 +467,7 @@ therefore has at most one type, each ranked on its own:
 |---|---|---|---|
 | **Scaling host** | established producers: the host can carry the full headline increment, or holds at least 5% (`scaling_min_share`) of world exports or production in the node | the ordering above (gain under the 40% limit, HHI, capability, Friendshore, compatibility) | yes, the five best, each at most at its own scale |
 | **Specialty host** | high-income economies (`specialty_income`) below scale with RCA >= 2 on at least USD 100m of the node's exports (the floor keeps out re-export hubs and micro-exporters: Luxembourg in battery foil, Uruguay in electrolysers) | RCA, then the fall in HHI | yes, the five best, at their own (capped) scale |
-| **Development host** | lower- and upper-middle-income economies (`development_income`) below scale with revealed capability in the node or a linked node | OSI's Development Potential Index for the node's technology and stage (non-high-income partners; an economy's mean where the node has no OSI cell), then capability | never: their capacity is future capacity, a development-finance prospect |
+| **Development host** | lower- and upper-middle-income economies (`development_income`) below scale with revealed capability in the node or a linked node | OSI's Development Potential Index for the node's OSI technology and six-stage stage (non-high-income partners; an economy's mean where the node has no OSI cell), then capability | never: their capacity is future capacity, a development-finance prospect |
 
 The types exclude each other in that order: a middle-income economy that is already at scale (Viet Nam in
 PV modules) is a scaling host, and a large high-income specialist (Japan in grain-oriented steel, RCA 8)
@@ -491,7 +529,10 @@ This is a marginal capacity simulation, not a project-level investment optimizat
 (host -> investor, the host's new capacity serving the investor). Only each node's first-ranked host
 counts as a selected investment relationship, so alternative hosts are not summed. Per pair:
 `n_trade_selected`, `n_investment_selected`, shocks, sub-sectors and technologies; participation in
-high-severity nodes (exposure >= 40%); Upstream / Midstream / Downstream participation; headline
+high-severity nodes (exposure >= 40%); stage participation, one flag per six-stage stage
+(`extraction` ... `recovery`; the country summary counts partners per stage, `n_<stage>_partners`;
+six flags rather than the Upstream / Midstream / Downstream roll-up, which would put the dictionary's
+final products, now Assembly, with components and leave Downstream empty); headline
 trade volume and contributions; `cumulative_trade_resilience_contribution`,
 `cumulative_coordination_dividend` (new links only), `cumulative_investment_resilience_contribution`;
 mean Partnership Opportunity (supplier -> buyer) and Friendshore (buyer rating the supplier as host).
@@ -557,7 +598,7 @@ every pair inside a compact passes) only when all three hold:
   cell; silicon metal -> polysilicon -> wafer -> cell -> module; copper -> cables / transformers; GOES
   -> transformers; ...; `Tech::Sub-sector` where a name recurs), or (`allow_co_inputs`) both feed the
   same downstream node directly (blades and nacelles into turbines). Sharing a technology or stage is
-  **not** enough: wind foundations and permanent magnets are both Wind Midstream but not one chain.
+  **not** enough: wind foundations and permanent magnets are both Wind Components but not one chain.
   After grouping, a compact must also be **one connected piece** of the chain
   (`aib_split_disconnected()`): its nodes link directly or through nodes that are in no compact (or in
   this one), so natural graphite and battery packs, linked only through anodes and cells grouped
@@ -639,13 +680,16 @@ it is `compact unnecessary`; a coalition of fewer than 3 countries is a `bilater
 sufficient`.
 
 **Roles** come from the results: demand anchor; specialized supplier (RCA >= 1 and >= 5% of the
-anchors' optimized supply, Midstream) or resource supplier (the same, Upstream); scaling host and
+anchors' optimized supply in a Refining, Components, Assembly or Deployment node) or resource supplier
+(the same in an Extraction or Recovery node: in the dictionary exactly its Raw Material rows, its old
+Upstream, so the split is unchanged); scaling host and
 specialty host (one of the five leading hosts of that type in a BUILD node, in the coalition; a
 prospective host when that is its only basis; `investment_hosts` and `specialty_hosts`); development
 host (one of the three leading development hosts of a BUILD node, member or not; `development_hosts`;
 the role was "capacity-building / investment host" before the host types); technology partner (RCA >= 1 and >= 5% of world
 exports in a BUILD or MANAGE node); bridge partner (supplies one node and is a large loser of another,
-supplies several stages, or sits in several compacts' coalitions); the tiers above. A country can
+supplies several of the six stages, so refined material and the components made from it count as two,
+or sits in several compacts' coalitions); the tiers above. A country can
 hold several roles; `aib_compact_members.csv` carries `coalition_tier`, `membership_basis`,
 `critical_supplier`, `loo_critical` (current supply), `loo_critical_simulated` and `substitutable_by`.
 
@@ -665,8 +709,10 @@ state) -> trade + investment (the 10% increment, capped at each host's scale, at
 
 Compacts work at the supply-chain level; the node table (`aib_compact_nodes.csv`) hands each node to
 node-level treatment: sub-component, strategic problem, trade solution, investment need,
-concentration risk and recommended policy treatment, with `yf_cell` (`<tech>-<stage>`) and
-`yf_subcomponent_id` (`<cell>::<sub_sector>`) matching the Yards & Fences evidence ids.
+concentration risk and recommended policy treatment, with `yf_cell` (`<tech>-<stage>`, six-stage
+since 2026-10-27: `batteries-components`; no legacy `-midstream` ids, the Yards & Fences and Sector
+dashboards move to six stages in a later phase) and `yf_subcomponent_id` (`<cell>::<sub_sector>`)
+matching the Yards & Fences evidence ids.
 
 ## 12. Validation
 
@@ -972,7 +1018,8 @@ VNM, development MYS, IDN, MEX; were USA, DNK, PRT).
 * One reference year (2024); 2020 is used only for the time-series check.
 * Shocks are applied node by node; there is no cross-node capacity coupling (a magnet shortage does
   not by itself reduce motor exports in the model).
-* Partnership Opportunity and Friendshore are technology-stage indices, not sub-sector ones.
+* Partnership Opportunity and Friendshore are technology x six-stage indices, not sub-sector ones, and a
+  dictionary node reads them at one stage (its `score_stage`), the one with most of its basket trade.
 * The coalition test pools members' supply without link restrictions (state C logic) and uses the
   headline supplier-share limit.
 * The host-scale cap measures scale by exports (or production share times world trade), so a host
@@ -1069,8 +1116,9 @@ output.
 **Node functions** (`config/aib_node_functions.yml`, keyed by node id, curated): each mapped node is
 `resource` (ores, concentrates, recycled feed), `processing` (chemical or metallurgical transformation),
 `components` (manufactured materials, components and production equipment) or `systems` (assembled
-systems and end products). A node the file does not list falls back on its dictionary stage (Upstream
--> resource, Midstream -> components, Downstream -> systems) with a note. Keying by node id means a
+systems and end products). A node the file does not list falls back on its six-stage stage
+(`fallback_by_stage`: Extraction and Recovery -> resource, Refining -> processing, Components ->
+components, Assembly and Deployment -> systems) with a note. Keying by node id means a
 revision of the compact map (moving a node, renumbering steps) never changes a node's function.
 
 ### 16.2 Workstreams

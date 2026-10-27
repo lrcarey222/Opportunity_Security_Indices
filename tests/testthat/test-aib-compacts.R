@@ -1,5 +1,5 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
-for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "categories/policy/cat_policy_index.R")) {
+for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "utils/supply_chain_stages.R", "categories/policy/cat_policy_index.R")) {
   source(file.path(repo_root, "R", f))
 }
 for (f in sort(list.files(file.path(repo_root, "R", "aib"), pattern = "\\.R$", full.names = TRUE))) source(f)
@@ -150,11 +150,13 @@ test_that("the network pairs trade and investment along the direction goods move
                           delta_usd = 10, delta_share_of_demand = 0.1, relationship = "new")
   inv <- tibble::tibble(node_id = "n", shock_id = "s", scenario = "r", investor_iso = "USA", host_iso = "JPN",
                         supply_from_new_capacity = 0.05, supply_from_new_capacity_usd = 5, relationship = "investment partnership")
-  ni <- tibble::tibble(node_id = "n", supply_chain = "Midstream", techs = "Batteries")
+  ni <- tibble::tibble(node_id = "n", supply_chain = "Components", techs = "Batteries")
   ns <- tibble::tibble(node_id = "n", shock_id = "s", scenario = "r", shock_exposure = 0.5)
   p <- aib_network_pairs(trade, inv, ni, ns, "s")
   expect_equal(nrow(p), 1)
   expect_equal(p$supplier_iso, "JPN")
+  expect_true(p$components)
+  expect_false(any(unlist(p[, c("extraction", "refining", "assembly", "deployment", "recovery")])))
   expect_equal(p$n_trade_selected, 1)
   expect_equal(p$n_investment_selected, 1)
   expect_equal(p$cumulative_coordination_dividend, 0.1)
@@ -162,6 +164,9 @@ test_that("the network pairs trade and investment along the direction goods move
   cs <- aib_network_countries(p)
   expect_equal(cs$supplier_n_selected[cs$iso3 == "JPN"], 1)
   expect_equal(cs$investor_n_selected[cs$iso3 == "USA"], 1)
+  expect_equal(cs$supplier_n_components_partners[cs$iso3 == "JPN"], 1)
+  expect_equal(cs$investment_host_n_components_partners[cs$iso3 == "JPN"], 1)
+  expect_equal(cs$supplier_n_assembly_partners[cs$iso3 == "JPN"], 0)
 })
 
 test_that("the exact coalition is smaller than the greedy one when the greedy first pick is a trap", {

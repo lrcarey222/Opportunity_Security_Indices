@@ -16,8 +16,9 @@ aib_read_config <- function(repo_root, taxonomy = NULL) {
 
 # The country data the investment host types need (docs/aib_methodology.md, 7), read from the OSI
 # pipeline's inputs: World Bank income groups (raw wdi_country_info.csv: iso3c, income) and the
-# Development Potential Index of each partner by technology and stage (processed
-# partner_development_country_tbl.rds; not reporter-specific). Returns list(income = named character
+# Development Potential Index of each partner by technology and six-stage stage (processed
+# partner_development_country_tbl.rds; not reporter-specific; a table still keyed by Upstream /
+# Midstream / Downstream stops: aib_assert_six_stage_table()). Returns list(income = named character
 # ISO3 -> income group, dev = tibble partner_iso, tech, supply_chain, value, sources); a missing file
 # gives NULL for its part and a warning.
 aib_read_host_type_data <- function(raw_dir, processed_dir) {
@@ -35,6 +36,7 @@ aib_read_host_type_data <- function(raw_dir, processed_dir) {
   if (file.exists(dev_path)) {
     d <- readRDS(dev_path)
     d <- d[d$variable == "Development Potential Index" & !is.na(d$value), c("partner_iso", "tech", "supply_chain", "value")]
+    aib_assert_six_stage_table(d$supply_chain, basename(dev_path))
     dev <- dplyr::distinct(tibble::as_tibble(d))
   } else {
     warning("No Development Potential Index (", dev_path, "): development hosts ranked by capability only.", call. = FALSE)

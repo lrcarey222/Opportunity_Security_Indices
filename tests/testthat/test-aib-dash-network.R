@@ -1,4 +1,5 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_export.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_check.R"))
 source(file.path(repo_root, "R", "dashboard", "country", "country_util.R"))
@@ -16,16 +17,20 @@ aib_net_res <- function() {
     investment_host_cumulative_contribution = c(0.2, 0, 0.2, 0), investor_cumulative_contribution = c(0, 0.2, 0, 0.2),
     supplier_cumulative_coordination_dividend = c(0.05, 0, 0, 0), buyer_cumulative_coordination_dividend = c(0, 0.05, 0, 0),
     supplier_headline_volume_usd = c(5e8, 0, 2e8, 0), buyer_headline_volume_usd = c(0, 5e8, 0, 2e8),
-    supplier_n_upstream_partners = c(1, 0, 1, 0), buyer_n_upstream_partners = 0, investment_host_n_upstream_partners = 0, investor_n_upstream_partners = 0,
-    supplier_n_midstream_partners = c(2, 0, 1, 0), buyer_n_midstream_partners = c(0, 1, 0, 1), investment_host_n_midstream_partners = c(1, 0, 1, 0), investor_n_midstream_partners = c(0, 1, 0, 1),
-    supplier_n_downstream_partners = 0, buyer_n_downstream_partners = 0, investment_host_n_downstream_partners = 0, investor_n_downstream_partners = 0,
+    supplier_n_extraction_partners = c(1, 0, 1, 0), buyer_n_extraction_partners = 0, investment_host_n_extraction_partners = 0, investor_n_extraction_partners = 0,
+    supplier_n_refining_partners = 0, buyer_n_refining_partners = 0, investment_host_n_refining_partners = 0, investor_n_refining_partners = 0,
+    supplier_n_components_partners = c(2, 0, 1, 0), buyer_n_components_partners = c(0, 1, 0, 1), investment_host_n_components_partners = c(1, 0, 1, 0), investor_n_components_partners = c(0, 1, 0, 1),
+    supplier_n_assembly_partners = 0, buyer_n_assembly_partners = 0, investment_host_n_assembly_partners = 0, investor_n_assembly_partners = 0,
+    supplier_n_deployment_partners = 0, buyer_n_deployment_partners = 0, investment_host_n_deployment_partners = 0, investor_n_deployment_partners = 0,
+    supplier_n_recovery_partners = 0, buyer_n_recovery_partners = 0, investment_host_n_recovery_partners = 0, investor_n_recovery_partners = 0,
     technologies = "Solar", n_technologies = 1, roles = c("investment_host; supplier", "buyer; investor", "investment_host; supplier", "buyer; investor"),
     headline_lost_usd = c(NA, 3e9, NA, 3e9), n_exposed_subsectors = c(NA, 2, NA, 2)
   )
   edges <- tibble::tibble(
     supplier_iso = c("DEU", "DEU"), buyer_iso = c("USA", "USA"), scenario = c("reallocation", "conservative"),
     n_trade_selected = c(9, 4), n_investment_selected = c(1, 1), n_shocks = c(2, 2), n_subsectors = 1, n_technologies = 1,
-    technologies = "Solar", subsectors = "solar-cells", n_high_severity = 1, upstream = FALSE, midstream = TRUE, downstream = FALSE,
+    technologies = "Solar", subsectors = "solar-cells", n_high_severity = 1,
+    extraction = FALSE, refining = FALSE, components = TRUE, assembly = FALSE, deployment = FALSE, recovery = FALSE,
     headline_trade_volume_usd = c(5e8, 2e8), headline_trade_contribution = c(0.25, 0.1), headline_investment_contribution = 0.1,
     cumulative_trade_resilience_contribution = c(1.2, 0.5), cumulative_coordination_dividend = c(0.05, 0),
     cumulative_investment_resilience_contribution = 0.2, export_opportunity = 0.9, friendshore = NA_real_
@@ -64,7 +69,15 @@ test_that("the network section keeps the headline scenario, four sides and the v
   expect_equal(n$countries[[2]]$lostUsd, 3e9)
   expect_length(n$edges, 1)
   expect_equal(n$edges[[1]]$trade, 0.25)
-  expect_equal(as.character(n$edges[[1]]$stages), "Midstream")
+  expect_equal(as.character(n$edges[[1]]$stages), "Components")
+  # Partner counts by stage: the six stages in lower case, no Upstream / Midstream / Downstream.
+  expect_equal(deu$supplier$components, 2L)
+  expect_equal(deu$supplier$extraction, 1L)
+  expect_true(all(tolower(SUPPLY_CHAIN_STAGES) %in% names(deu$host)))
+  expect_false(any(c("upstream", "midstream", "downstream") %in% names(deu$supplier)))
+  old <- aib_net_res()
+  old$edges$upstream <- TRUE                                                 # a three-stage flag is not a stage
+  expect_equal(as.character(aib_dash_network(old)$edges[[1]]$stages), "Components")
   expect_equal(n$variant$scenario, "reallocation")
   expect_equal(as.character(n$variant$shocks), c("china_100", "china_50"))
   j <- as.character(country_json(n$edges[[1]]))
@@ -92,6 +105,13 @@ test_that("investment flows keep only nodes of the strategic scope", {
   expect_length(f$hosts, 0)
 })
 
+test_that("stages are exported in chain order, as arrays", {
+  s <- aib_dash_stage_order(c("Recovery", "Assembly", "Refining", "Extraction"))
+  expect_equal(as.character(s), c("Extraction", "Refining", "Assembly", "Recovery"))
+  expect_s3_class(aib_dash_stage_order("Assembly"), "AsIs")
+  expect_equal(aib_dash_stage_keys(), c("extraction", "refining", "components", "assembly", "deployment", "recovery"))
+})
+
 test_that("the R mirror accepts the exported sections and names each broken field", {
   res <- aib_net_res()
   doc <- list(nodes = list(list(id = "solar-cells")), network = aib_dash_network(res), investmentFlows = aib_dash_investment_flows(res))
@@ -103,7 +123,11 @@ test_that("the R mirror accepts the exported sections and names each broken fiel
   bad$investmentFlows$pairs[[1]]$host <- "USA"
   bad$investmentFlows$pairs[[2]]$rank <- 7L
   bad$investmentFlows$hosts[[1]]$node <- "wafers"
+  bad$network$edges[[1]]$stages <- I("Midstream")                            # a three-stage label
+  bad$network$countries[[1]]$supplier$refining <- NULL
   p <- aib_check_bundle_additions(bad)
+  expect_true(any(grepl("^network.edges\\[0\\].stages: 'Midstream' is not a stage", p)))
+  expect_true(any(grepl("^network.countries\\[0\\].supplier.refining: expected a number", p)))
   expect_true(any(grepl("^network.edges\\[0\\].nodes: expected an array", p)))
   expect_true(any(grepl("^network.countries\\[1\\].iso3: duplicate 'DEU'", p)))
   expect_true(any(grepl("^investmentFlows.pairs\\[0\\]: investor and host are the same economy", p)))
@@ -285,8 +309,36 @@ aib_as_r <- function(x) {
   out
 }
 
+# The fixture is still three-stage (the dashboard's contract.ts moves to the six stages in a later phase; this
+# shim goes when its fixture is regenerated): its network stages are mapped onto the six the R export writes,
+# with the dictionary's meanings (Upstream raw materials -> Extraction, Midstream -> Components, Downstream
+# final products -> Assembly), and the other stage counts are 0.
+aib_fx_six_stage <- function(doc) {
+  map <- c(upstream = "extraction", midstream = "components", downstream = "assembly")
+  side <- function(s) {
+    if (!is.list(s)) return(s)
+    for (o in names(map)) if (!is.null(s[[o]])) {
+      s[[map[[o]]]] <- s[[o]]
+      s[[o]] <- NULL
+    }
+    for (k in tolower(SUPPLY_CHAIN_STAGES)) if (is.null(s[[k]])) s[[k]] <- 0L
+    s
+  }
+  if (!is.list(doc$network)) return(doc)
+  doc$network$countries <- lapply(doc$network$countries, function(r) {
+    for (k in c("supplier", "buyer", "host", "investor")) r[[k]] <- side(r[[k]])
+    r
+  })
+  doc$network$edges <- lapply(doc$network$edges, function(e) {
+    x <- tolower(as.character(e$stages))
+    e$stages <- I(SUPPLY_CHAIN_STAGES[match(ifelse(x %in% names(map), map[x], x), tolower(SUPPLY_CHAIN_STAGES))])
+    e
+  })
+  doc
+}
+
 aib_fixture <- function() {
-  read <- function(f) aib_as_r(jsonlite::fromJSON(file.path(aib_fixture_dir, f), simplifyVector = FALSE))
+  read <- function(f) aib_fx_six_stage(aib_as_r(jsonlite::fromJSON(file.path(aib_fixture_dir, f), simplifyVector = FALSE)))
   manifest <- jsonlite::fromJSON(file.path(aib_fixture_dir, "manifest.json"), simplifyVector = FALSE)
   list(manifest = manifest, main = read(manifest$files$compacts), managed = read(manifest$files$scenarios$managed),
        baseline = read(manifest$files$scenarios$baseline))

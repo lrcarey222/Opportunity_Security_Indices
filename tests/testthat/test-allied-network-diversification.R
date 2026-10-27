@@ -2,6 +2,7 @@ repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRU
 
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "indices", "allied_network_design.R"))
@@ -12,14 +13,15 @@ div_country_info <- tibble::tibble(
   country = c("United States", "Canada", "Mexico", "Germany", "France", "Japan", "Australia")
 )
 
-# Seven members whose raw scores differ modestly, in up to three stages, every component present.
-make_div_inputs <- function(tech = "Solar", stages = c("Upstream", "Midstream", "Downstream")) {
+# Seven members whose raw scores differ modestly, in up to three stages (stage names of
+# R/utils/supply_chain_stages.R), every component present.
+make_div_inputs <- function(tech = "Solar", stages = c("Extraction", "Assembly", "Deployment")) {
   countries <- div_country_info$country
   grid <- tidyr::crossing(Country = countries, tech = tech, supply_chain = stages)
   eo_val <- stats::setNames(c(0.72, 0.70, 0.66, 0.69, 0.64, 0.67, 0.62), countries)
   es_val <- stats::setNames(c(0.60, 0.58, 0.55, 0.61, 0.57, 0.56, 0.59), countries)
   pol_val <- stats::setNames(c(0.65, 0.63, 0.58, 0.66, 0.62, 0.60, 0.61), countries)
-  shift <- c(Upstream = 0, Midstream = 0.01, Downstream = -0.01)
+  shift <- c(Extraction = 0, Assembly = 0.01, Deployment = -0.01)
   eo <- grid %>% dplyr::mutate(Economic_Opportunity_Index = unname(eo_val[Country]) + unname(shift[supply_chain]))
   es <- grid %>% dplyr::mutate(Energy_Security_Index = unname(es_val[Country]))
   pol <- grid %>%
@@ -124,9 +126,9 @@ test_that("tangent breakpoints and the closed-form shares behave as documented",
 
 test_that("lambda = 0 reproduces the pre-diversification design exactly", {
   skip_if_not(allied_network_has_milp(), "MILP solver packages not installed")
-  x <- make_div_inputs(stages = c("Upstream", "Midstream"))
+  x <- make_div_inputs(stages = c("Extraction", "Assembly"))
   # Golden values from the code before diversity_lambda existed (same fixture, same arguments),
-  # rows ordered Midstream then Upstream, ISO3 alphabetical within a stage
+  # rows ordered Assembly then Extraction, ISO3 alphabetical within a stage
   milp_shares <- rep(c(0, 0.2, 0.4, 0, 0, 0, 0.4), 2)
   greedy_shares <- rep(c(0, 0.2889754748, 0.3465742304, 0, 0, 0, 0.3644502948), 2)
 
@@ -147,7 +149,7 @@ test_that("lambda = 0 reproduces the pre-diversification design exactly", {
 
 test_that("lambda > 0 moves the MILP and greedy designs to interior, less concentrated shares", {
   skip_if_not(allied_network_has_milp(), "MILP solver packages not installed")
-  x <- make_div_inputs(stages = c("Upstream", "Midstream"))
+  x <- make_div_inputs(stages = c("Extraction", "Assembly"))
   m0 <- run_div(x, method = "milp")
   m1 <- run_div(x, method = "milp", diversity_lambda = 1)
   expect_true(all(m1$diagnostics$method == "milp"))
@@ -184,7 +186,7 @@ test_that("lambda > 0 moves the MILP and greedy designs to interior, less concen
 test_that("a stage that falls back to greedy keeps the diversified objective and says why", {
   skip_if_not(allied_network_has_milp(), "MILP solver packages not installed")
   # Eight suppliers per consumer cannot be met with seven members, so the MILP is infeasible
-  res <- run_div(make_div_inputs(stages = "Midstream"), method = "milp", diversity_lambda = 1, min_suppliers_per_consumer = 8)
+  res <- run_div(make_div_inputs(stages = "Assembly"), method = "milp", diversity_lambda = 1, min_suppliers_per_consumer = 8)
   d <- res$diagnostics
   expect_identical(d$method, "greedy")
   expect_identical(d$method_requested, "milp")
@@ -200,7 +202,7 @@ test_that("a stage that falls back to greedy keeps the diversified objective and
 
 test_that("the tangent approximation error stays within the stated bound", {
   skip_if_not(allied_network_has_milp(), "MILP solver packages not installed")
-  x <- make_div_inputs(stages = c("Upstream", "Midstream"))
+  x <- make_div_inputs(stages = c("Extraction", "Assembly"))
   for (step in c(0.01, 0.02)) {
     res <- run_div(x, method = "milp", diversity_lambda = 1, diversity_breakpoint_step = step)
     d <- res$diagnostics
@@ -242,30 +244,32 @@ test_that("the stepwise prune meets the 10% supplier rule where the all-at-once 
 })
 
 test_that("diagnostics carry the diversification columns", {
-  res <- run_div(make_div_inputs(stages = "Midstream"), method = "greedy", diversity_lambda = 0.5)
+  res <- run_div(make_div_inputs(stages = "Assembly"), method = "greedy", diversity_lambda = 0.5)
   cols <- c("diversity_lambda", "hhi", "effective_producers", "n_at_max_share", "objective_node",
             "objective_edge", "objective_dev", "diversity_penalty", "hhi_tangent_max_error", "hhi_tangent_error_bound")
   expect_true(all(cols %in% names(res$diagnostics)))
   expect_equal(res$diagnostics$diversity_lambda, 0.5)
   expect_equal(res$diagnostics$diversity_penalty, 0.5 * res$diagnostics$hhi, tolerance = 1e-12)
   expect_identical(res$params$diversity_lambda, 0.5)
-  expect_error(run_div(make_div_inputs(stages = "Midstream"), method = "greedy", diversity_lambda = -0.1), "diversity_lambda")
+  expect_error(run_div(make_div_inputs(stages = "Assembly"), method = "greedy", diversity_lambda = -0.1), "diversity_lambda")
 })
 
-test_that("the stage filter drops Downstream and the caps count solved stages only", {
+test_that("the stage filter drops Deployment and the caps count solved stages only", {
   x <- make_div_inputs()
   # USA leads every stage; a cap of 2 binds over three stages but not over two
   caps <- tibble::tibble(iso3c = div_iso, portfolio_cap = c(2L, rep(5L, 6)))
   all3 <- run_div(x, method = "greedy", portfolio_enable = TRUE, portfolio_caps_tbl = caps, portfolio_top_k = 3)
-  upmid <- run_div(x, method = "greedy", portfolio_enable = TRUE, portfolio_caps_tbl = caps, portfolio_top_k = 3,
-                   supply_chains = c("Upstream", "Midstream"))
+  # scripts/30's filter: the five supply stages, three of which (Refining, Components, Recovery)
+  # this fixture does not carry
+  supply <- run_div(x, method = "greedy", portfolio_enable = TRUE, portfolio_caps_tbl = caps, portfolio_top_k = 3,
+                    supply_chains = SUPPLY_CHAIN_SUPPLY_STAGES)
 
-  expect_setequal(unique(all3$specialization$supply_chain), c("Upstream", "Midstream", "Downstream"))
-  expect_setequal(unique(upmid$specialization$supply_chain), c("Upstream", "Midstream"))
-  expect_false(any(upmid$diagnostics$supply_chain == "Downstream"))
-  expect_false(any(upmid$flows$supply_chain == "Downstream"))
-  expect_false(any(upmid$portfolio$topk$supply_chain == "Downstream"))
-  expect_equal(upmid$params$stages_excluded$supply_chain, "Downstream")
+  expect_setequal(unique(all3$specialization$supply_chain), c("Extraction", "Assembly", "Deployment"))
+  expect_setequal(unique(supply$specialization$supply_chain), c("Extraction", "Assembly"))
+  expect_false(any(supply$diagnostics$supply_chain == "Deployment"))
+  expect_false(any(supply$flows$supply_chain == "Deployment"))
+  expect_false(any(supply$portfolio$topk$supply_chain == "Deployment"))
+  expect_equal(supply$params$stages_excluded$supply_chain, "Deployment")
   expect_equal(nrow(all3$params$stages_excluded), 0L)
 
   usa_count <- function(res) res$portfolio$counts$topk_count[res$portfolio$counts$iso3c == "USA"]
@@ -277,28 +281,46 @@ test_that("the stage filter drops Downstream and the caps count solved stages on
   expect_equal(barred$producers_forbidden, "USA")
   usa_out <- all3$specialization %>% dplyr::filter(iso3c == "USA", !selected)
   expect_equal(paste(barred$tech, barred$supply_chain), paste(usa_out$tech, usa_out$supply_chain))
-  expect_true(all(upmid$diagnostics$producers_forbidden == ""))
-  expect_equal(usa_count(upmid), 2L)
-  expect_true(all(upmid$specialization$selected[upmid$specialization$iso3c == "USA"]))
-  expect_equal(upmid$portfolio$iters, 1)
-  expect_true(upmid$portfolio$converged)
+  expect_true(all(supply$diagnostics$producers_forbidden == ""))
+  expect_equal(usa_count(supply), 2L)
+  expect_true(all(supply$specialization$selected[supply$specialization$iso3c == "USA"]))
+  expect_equal(supply$portfolio$iters, 1)
+  expect_true(supply$portfolio$converged)
   # Counts are the top-K appearances over the solved stages
-  recount <- upmid$portfolio$topk %>% dplyr::filter(in_top_k) %>% dplyr::count(iso3c)
-  expect_equal(sum(upmid$portfolio$counts$topk_count), sum(recount$n))
-  expect_equal(sum(upmid$portfolio$counts$topk_count), 2L * 3L)
+  recount <- supply$portfolio$topk %>% dplyr::filter(in_top_k) %>% dplyr::count(iso3c)
+  expect_equal(sum(supply$portfolio$counts$topk_count), sum(recount$n))
+  expect_equal(sum(supply$portfolio$counts$topk_count), 2L * 3L)
 
   # Matching is case-insensitive; the solved stages are unchanged by the filter
-  lower <- run_div(x, method = "greedy", supply_chains = c("upstream", "MIDSTREAM"))
-  expect_setequal(unique(lower$specialization$supply_chain), c("Upstream", "Midstream"))
+  lower <- run_div(x, method = "greedy", supply_chains = c("extraction", "ASSEMBLY"))
+  expect_setequal(unique(lower$specialization$supply_chain), c("Extraction", "Assembly"))
   free_all <- run_div(x, method = "greedy")
-  same <- free_all$specialization %>% dplyr::filter(supply_chain != "Downstream") %>% dplyr::arrange(tech, supply_chain, iso3c)
+  same <- free_all$specialization %>% dplyr::filter(supply_chain != "Deployment") %>% dplyr::arrange(tech, supply_chain, iso3c)
   expect_equal(lower$specialization %>% dplyr::arrange(tech, supply_chain, iso3c), same)
   expect_error(run_div(x, method = "greedy", supply_chains = "Distribution"), "No \\(tech, supply_chain\\) stages")
+  # The three-stage filter against six-stage inputs names both label sets
+  expect_error(run_div(x, method = "greedy", supply_chains = c("Upstream", "Midstream")),
+               "matches none of the input stages \\(Assembly, Deployment, Extraction\\)")
+})
+
+test_that("partner edges on other stage labels than the nodes stop instead of dropping the edge term", {
+  x <- make_div_inputs(stages = c("Extraction", "Assembly"))
+  legacy <- function(tbl) dplyr::mutate(tbl, supply_chain = dplyr::recode(supply_chain, Extraction = "Upstream", Assembly = "Midstream"))
+  x3 <- x
+  x3$fs <- legacy(x$fs)
+  x3$op <- legacy(x$op)
+  expect_error(run_div(x3, method = "greedy"),
+               "partner edge tables share no \\(tech, supply_chain\\) stage with the nodes: edge stages Midstream, Upstream")
+  # Edges for some solved stages only are allowed (a stage without edges has no edge term)
+  part <- x
+  part$fs <- dplyr::filter(x$fs, supply_chain == "Assembly")
+  part$op <- dplyr::filter(x$op, supply_chain == "Assembly")
+  expect_setequal(unique(run_div(part, method = "greedy")$diagnostics$supply_chain), c("Extraction", "Assembly"))
 })
 
 test_that("top-K membership uses a strict rank, so tied shares count at most K per stage", {
   sp <- tibble::tibble(
-    tech = "Solar", supply_chain = "Midstream", iso3c = div_iso,
+    tech = "Solar", supply_chain = "Assembly", iso3c = div_iso,
     production_share = c(0.25, 0.15, 0.15, 0.15, 0.10, 0.10, 0.10),
     producer_score = c(0.9, 0.5, 0.7, 0.6, 0.4, 0.8, 0.3)
   )
@@ -312,7 +334,7 @@ test_that("top-K membership uses a strict rank, so tied shares count at most K p
 
 test_that("the diversified MILP holds every original constraint, with and without self-supply", {
   skip_if_not(allied_network_has_milp(), "MILP solver packages not installed")
-  x <- make_div_inputs(stages = c("Upstream", "Midstream"))
+  x <- make_div_inputs(stages = c("Extraction", "Assembly"))
   res <- run_div(x, method = "milp", diversity_lambda = 0.5, allow_self = FALSE)
   expect_true(all(res$diagnostics$method == "milp"))
   expect_false(any(res$flows$reporter_iso == res$flows$partner_iso))

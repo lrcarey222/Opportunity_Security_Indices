@@ -194,17 +194,19 @@ aib_strategic_validate_map <- function(y, run_nodes, aggregated = NULL, member_w
 }
 
 # Node functions (config/aib_node_functions.yml): node_id -> resource / processing / components / systems,
-# keyed by node id. A mapped node the file does not list falls back on its dictionary stage (with a note);
-# a value outside the four is a problem. node_stage: named character (node_id -> Upstream / Midstream / Downstream).
+# keyed by node id. A mapped node the file does not list falls back on its six-stage supply-chain stage
+# (fallback_by_stage, with a note); a value outside the four is a problem. node_stage: named character
+# (node_id -> Extraction / Refining / Components / Assembly / Deployment / Recovery).
 aib_strategic_node_functions <- function(nf, map_run, node_stage = NULL) {
   vals <- unlist(aib_st_or(nf$nodes, list()))
-  fb <- unlist(aib_st_or(nf$fallback_by_stage, list(Upstream = "resource", Midstream = "components", Downstream = "systems")))
+  fb <- unlist(aib_st_or(nf$fallback_by_stage, list(Extraction = "resource", Refining = "processing", Components = "components",
+                                                    Assembly = "systems", Deployment = "systems", Recovery = "resource")))
   problems <- character()
   notes <- character()
   bad <- names(vals)[!vals %in% aib_strategic_functions()]
   if (length(bad)) problems <- c(problems, paste("node function outside resource / processing / components / systems:", paste(bad, collapse = ", ")))
   ids <- map_run$node_id
-  fun <- unname(vals[ids])
+  fun <- if (length(vals)) unname(vals[ids]) else rep(NA_character_, length(ids))
   basis <- ifelse(is.na(fun), NA_character_, "config/aib_node_functions.yml")
   miss <- ids[is.na(fun)]
   for (n in miss) {
@@ -214,7 +216,7 @@ aib_strategic_node_functions <- function(nf, map_run, node_stage = NULL) {
       problems <- c(problems, sprintf("mapped node %s has no function and no stage to fall back on", n))
     } else {
       fun[ids == n] <- f
-      basis[ids == n] <- paste0("fallback: dictionary stage ", st)
+      basis[ids == n] <- paste0("fallback: stage ", st)
       notes <- c(notes, sprintf("%s has no function in config/aib_node_functions.yml: %s from its stage (%s)", n, f, st))
     }
   }
@@ -1662,7 +1664,7 @@ aib_strategic_layer <- function(inputs, res, compacts_yml, node_fn_yml, layer_cf
   v <- aib_strategic_validate_map(compacts_yml, inputs$nodes$node_id, agg, mw)
   if (length(v$problems)) return(list(problems = v$problems, notes = v$notes))
   map_run <- v$map
-  stage <- stats::setNames(inputs$nodes$supply_chain, inputs$nodes$node_id)
+  stage <- stats::setNames(inputs$nodes$supply_chain, inputs$nodes$node_id)   # six-stage
   fn <- aib_strategic_node_functions(node_fn_yml, map_run, stage)
   if (length(fn$problems)) return(list(problems = fn$problems, notes = c(v$notes, fn$notes)))
   map_run <- dplyr::left_join(map_run, fn$functions, by = "node_id")

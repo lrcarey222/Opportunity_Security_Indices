@@ -43,7 +43,8 @@ source(local({
 #   China-leaning) and how each economy got its position; geo_coalition_tbl.rds (scripts/12) is
 #   read, when present, only to cross-check the core tier.
 # - data/processed/trade_concentration_tbl.rds (scripts/10): Atlas export share of each tech x
-#   stage HS6 basket (variable market_share, data_type raw).
+#   stage HS6 basket (variable market_share, data_type raw), in the six-stage cells of the trade
+#   themes (each HS6 code in its master stage); a three-stage table stops (coalition_shares_trade()).
 # - data/raw: economic_security_agreements.csv (copied from data/reference by scripts/05, read from
 #   data/reference otherwise), wdi_gdp.csv, the IEA Critical Minerals Dataset (newest vintage, as
 #   scripts/10 resolves it), ei_stat_review_world_energy.csv, ei_stat_review_world_energy_wide.xlsx
@@ -68,9 +69,12 @@ source(local({
 #   basis (eu_stage_weights()).
 # - major_supplier_shares_tbl.rds: world shares per (iso3, tech, stage, measure[, mineral]) behind
 #   the supplier route, with each row's threshold and major flag (major_supplier_shares()).
+# Both stage tables carry the five supply stages of config/coalition.yml `stages` (every stage but
+# Deployment, R/utils/supply_chain_stages.R) and are checked before they are written.
 # Settings: config/coalition.yml. Functions: R/indices/coalition.R.
 
 source(file.path(repo_root, "scripts", "utils", "raw_inputs.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "iea_critical_minerals.R"))
 source(file.path(repo_root, "R", "categories", "reserves", "reserves.R"))
@@ -91,6 +95,11 @@ eu_cfg <- coalition_settings$eu_node
 weights_cfg <- coalition_settings$eu_weights
 techs <- unlist(coalition_settings$headline_techs)
 stages <- unlist(coalition_settings$stages)
+assert_supply_chain_stages(stages, label = "config/coalition.yml stages")
+if (!setequal(stages, SUPPLY_CHAIN_SUPPLY_STAGES)) {
+  warning("config/coalition.yml stages (", paste(stages, collapse = ", "), ") are not the supply stages ",
+          paste(SUPPLY_CHAIN_SUPPLY_STAGES, collapse = ", "), " that the allied network (scripts/30) solves.", call. = FALSE)
+}
 eu_members <- unlist(eu_cfg$members)
 if (length(eu_members) != 27 || anyDuplicated(eu_members)) {
   warning("config/coalition.yml eu_node$members lists ", length(unique(eu_members)), " distinct members, not 27.", call. = FALSE)
@@ -282,6 +291,10 @@ if (length(missing_inputs) > 0) {
     country_names = country_names
   )
 
+  # Six-stage labels only (scripts/20, scripts/30 and the dashboard read them by stage name).
+  assert_supply_chain_stages(major_supplier_shares_tbl$supply_chain, label = "major_supplier_shares_tbl$supply_chain")
+  assert_supply_chain_stages(eu_stage_weights_tbl$supply_chain, label = "eu_stage_weights_tbl$supply_chain")
+
   saveRDS(coalition_tbl, file.path(out_dir, "coalition_tbl.rds"))
   saveRDS(eu_stage_weights_tbl, file.path(out_dir, "eu_stage_weights_tbl.rds"))
   saveRDS(major_supplier_shares_tbl, file.path(out_dir, "major_supplier_shares_tbl.rds"))
@@ -310,6 +323,25 @@ if (length(missing_inputs) > 0) {
     "\n  EU members by own tier: ",
     paste0(names(table(eu_rows$tier)), " ", as.integer(table(eu_rows$tier)), collapse = ", "),
     "; by bloc: ", paste0(names(table(eu_rows$bloc, useNA = "ifany")), " ", as.integer(table(eu_rows$bloc, useNA = "ifany")), collapse = ", ")
+  )
+  # The flow leg by stage, and the partners it admits on export shares alone: since the trade
+  # baskets are split by stage (2026-10-27), a smaller basket can carry a country past the bar.
+  major_flow <- major_supplier_shares_tbl[major_supplier_shares_tbl$major &
+                                            !major_supplier_shares_tbl$measure %in% COALITION_RESERVES_MEASURES, ]
+  stage_counts <- vapply(stages, function(s) length(unique(major_flow$iso3[major_flow$supply_chain == s])), integer(1))
+  trade_only <- partners$iso3[partners$routes == "supplier" &
+                                partners$iso3 %in% major_flow$iso3[major_flow$measure == "atlas_export_share"] &
+                                !partners$iso3 %in% major_flow$iso3[major_flow$measure != "atlas_export_share"]]
+  trade_cells_of <- function(i) {
+    r <- major_flow[major_flow$iso3 == i, ]
+    r <- r[order(-r$world_share), ]
+    paste0(r$tech, " ", r$supply_chain, " ", formatC(100 * r$world_share, format = "f", digits = 1), "%", collapse = ", ")
+  }
+  message(
+    "  Major suppliers by stage (economies at >= ", format(100 * supplier_share), "% in a flow measure): ",
+    paste0(stages, " ", stage_counts, collapse = ", "),
+    "; partners on export shares alone: ",
+    if (length(trade_only) == 0) "none" else paste0(trade_only, " (", vapply(trade_only, trade_cells_of, character(1)), ")", collapse = ", ")
   )
   if (use_reserves) {
     # The reserves leg: the partners it alone brings in (with their holdings), the members it also
@@ -373,7 +405,8 @@ if (length(missing_inputs) > 0) {
     bloc_tbl, geo_coalition_tbl, trade_tbl, agreements_tbl, gdp_raw, ei, cleantech_midstream,
     uranium_production, uranium_resources, critical, mineral_demand, ei_minerals, ei_reserves, usgs_reserves, tier_args,
     sensitivity_args, sensitivity_tbl, core, partners, partner_routes, nodes, eu_rows, excluded, china_partners, changed,
-    basis_counts, country_names, unnamed, no_source, unknown_agreements
+    basis_counts, country_names, unnamed, no_source, unknown_agreements, major_flow, stage_counts,
+    trade_only, trade_cells_of
   )
 }
 rm(list = intersect(c(

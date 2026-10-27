@@ -1,4 +1,38 @@
 # Helper utilities for partnership strength themes.
+#
+# Stages. Since 2026-10-27 every partner table keyed by (tech, supply_chain) holds the six
+# supply-chain stages (R/utils/supply_chain_stages.R; docs/supply_chain_stages.md): the pillar
+# cells are six-stage since 2026-10-26, and the partner trade cells take each HS6 code's six-stage
+# `stage` (partnership_strength_build_trade_mapping()). The theme builders are keyed generically
+# on supply_chain; scripts/15 stops on a table that holds anything else
+# (partnership_strength_assert_stages()).
+
+# The six stages and the roll-up each belongs to, spelled out rather than taken from
+# SUPPLY_CHAIN_STAGE_ROLLUP (R/utils/supply_chain_stages.R) so these files still source on their
+# own: the dashboard exports (scripts/85, scripts/87) source the partnership builders without the
+# stage helpers. tests/testthat/test-partnership-strength.R checks the two are identical.
+PARTNERSHIP_STRENGTH_STAGE_ROLLUP <- c(
+  Extraction = "Upstream",
+  Refining = "Upstream",
+  Components = "Midstream",
+  Assembly = "Midstream",
+  Deployment = "Downstream",
+  Recovery = "Upstream"
+)
+
+# Stop unless every supply_chain value of a partner table is one of the six stages
+# (assert_supply_chain_stages(), R/utils/supply_chain_stages.R, which the caller sources).
+# allow_all = TRUE also accepts "All", the supply_chain of the partner-level PSI rows, which are
+# collapsed over technology and stage (scripts/25). A table without a supply_chain column passes.
+partnership_strength_assert_stages <- function(tbl, label, allow_all = FALSE) {
+  if (is.null(tbl) || !"supply_chain" %in% names(tbl)) {
+    return(invisible(tbl))
+  }
+  x <- as.character(tbl$supply_chain)
+  if (isTRUE(allow_all)) x <- x[!x %in% "All"]
+  assert_supply_chain_stages(x, label = paste0(label, " supply_chain"))
+  invisible(tbl)
+}
 
 partnership_strength_pick_column <- function(tbl, candidates, label) {
   match <- intersect(candidates, names(tbl))
@@ -119,6 +153,10 @@ partnership_strength_assert_unique <- function(tbl, keys, label = "partnership t
 # variable, the mean of the k largest values across its (tech, supply_chain) cells. Each
 # variable picks its own k cells, so a component's summary need not come from the cells that
 # lead the index. This is an optimistic best-sector summary, not an average relationship.
+# Since the six-stage migration (2026-10-27) a unit has up to six cells per technology instead of
+# three (66 over the 11 headline technologies, from 33), and k stays 5: the five best cells can
+# now come from two stages of one technology's chain where they used to span more technologies,
+# and a technology with several strong stages weighs more in the summary than before.
 partnership_strength_build_top_k <- function(variable_tbl, id_cols, k = 5L, year) {
   variable_tbl %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(c(id_cols, "category", "variable")))) %>%
@@ -598,11 +636,11 @@ partnership_strength_trade_view <- function(trade_cells, view = c("import", "exp
 # Growth term of the two-stage trade index (config/partnership.yml trade): growth is scored only
 # from a first-year flow of at least this many USD. A ratio from a smaller base is mostly noise in
 # the base: the two declarations of one flow can disagree by more than the base itself (2020 US ->
-# Kazakhstan, Electric Grid Midstream: USD 5k in Kazakhstan's import declaration, about USD 11m in
-# the US export declaration), and the growth S-curve then ranks such a dyad among the fastest
-# growing. Below the floor, and where the first year has no trade, a trading dyad takes the
-# neutral growth score (growth_unscored "neutral": 0.5, the median growth score) or is scored on
-# its level alone ("level_only", the rule before 2026-10-20). See
+# Kazakhstan, Electric Grid Midstream of the three-stage build: USD 5k in Kazakhstan's import
+# declaration, about USD 11m in the US export declaration), and the growth S-curve then ranks such
+# a dyad among the fastest growing. Below the floor, and where the first year has no trade, a
+# trading dyad takes the neutral growth score (growth_unscored "neutral": 0.5, the median growth
+# score) or is scored on its level alone ("level_only", the rule before 2026-10-20). See
 # partnership_strength_two_stage_trade_index().
 PARTNERSHIP_STRENGTH_GROWTH_MIN_BASE_USD <- 1e6
 
@@ -675,7 +713,9 @@ partnership_strength_with_trade_status <- function(trade_indices, index_col) {
 # ---- Cells without trade data -------------------------------------------------------------------
 #
 # A (tech, stage) the HS6 crosswalk maps no code to has no bilateral flow at all (trade_status
-# "no_data": every Downstream stage, and Green Hydrogen and Geothermal outside it). Its trade term
+# "no_data"). In the six-stage basket that is every Deployment cell (it has no basket, as Downstream
+# had none), every stage of Green Hydrogen and Geothermal, Solar Extraction, and Recovery outside
+# Batteries, Nuclear and Oil: 28 of the 66 headline cells (2026-10-27 master). Its trade term
 # used to be the constant 0.5 for every dyad. Within such a cell the other components then ranked
 # the reporter's partners on their own. In Opportunity that was the market's energy-security need
 # alone, because the reporter's EO is the same for all its markets. Small insecure economies that
@@ -911,6 +951,14 @@ partnership_strength_trade_coverage <- function(dyads, theme) {
     dplyr::relocate(theme)
 }
 
+# The HS6 crosswalk as (tech, supply_chain, sub_sector, code) rows, the cells the trade builders
+# key on, read on the crosswalk's supply_chain (or Value.Chain) column. The HS6 master
+# (data/reference/energy_hs6_master.csv, staged to data/raw by scripts/04) carries the three-stage
+# supply_chain next to the six-stage `stage`; the six-stage readers (scripts/15, scripts/30) copy
+# `stage` into supply_chain before they call this, so the partner trade cells are keyed (tech,
+# stage) like the pillar cells they are joined to, while readers not yet moved (the Sector export,
+# scripts/87; the paper figures) still get the three-stage cells. Blank values are NA (the trade
+# builders drop them; scripts/15 stops on them).
 partnership_strength_build_trade_mapping <- function(subcat, include_sub_sector = FALSE) {
   tech_col <- partnership_strength_pick_column(
     subcat,
@@ -931,7 +979,7 @@ partnership_strength_build_trade_mapping <- function(subcat, include_sub_sector 
   subcat %>%
     dplyr::transmute(
       tech = as.character(.data[[tech_col]]),
-      supply_chain = as.character(.data[[supply_chain_col]]),
+      supply_chain = dplyr::na_if(stringr::str_squish(as.character(.data[[supply_chain_col]])), ""),
       sub_sector = sub_sector_values,
       code = stringr::str_pad(as.character(.data[[code_col]]), width = 6, side = "left", pad = "0")
     ) %>%

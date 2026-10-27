@@ -98,7 +98,7 @@ arg_value <- function(flag, default = NULL) {
 abs_path <- function(p) normalizePath(if (grepl("^([A-Za-z]:)?[/\\]", p)) p else file.path(repo_root, p), winslash = "/", mustWork = FALSE)
 step <- function(...) message(format(Sys.time(), "%H:%M:%S"), "  ", ...)
 
-for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "categories/policy/cat_policy_index.R")) {
+for (f in c("utils/scurve.R", "utils/schema.R", "utils/hs6_crosswalk.R", "utils/supply_chain_stages.R", "categories/policy/cat_policy_index.R")) {
   source(file.path(repo_root, "R", f))
 }
 for (f in sort(list.files(file.path(repo_root, "R", "aib"), pattern = "\\.R$", full.names = TRUE))) source(f)
@@ -109,6 +109,8 @@ out_dir <- abs_path(arg_value("--out-dir", file.path(outputs_dir, "aib")))
 inputs_path <- file.path(out_dir, "aib_inputs.rds")
 if (!file.exists(inputs_path)) stop("Run scripts/31_build_aib_trade_network.R first: ", inputs_path, " not found.")
 inputs <- readRDS(inputs_path)
+# Six-stage inputs only (scripts/31 since 2026-10-27): an older aib_inputs.rds is Upstream / Midstream / Downstream.
+assert_supply_chain_stages(c(inputs$nodes$supply_chain, inputs$node_cells$supply_chain), paste0(inputs_path, " (rerun scripts/31)"))
 # The taxonomy is the one scripts/31 built the inputs with (config/aib_taxonomy_<taxonomy>.yml).
 source(file.path(repo_root, "scripts", "utils", "aib_config.R"))
 input_taxonomy <- aib_or(inputs$meta$taxonomy, "master")
@@ -230,11 +232,17 @@ step("Trade model: ", length(opt_nodes), " nodes, ", length(cfg$shocks), " shock
      length(semantics), " shock semantics x ", length(constraints), " supply constraints (", length(phys_nodes),
      " nodes with physical data) x ", length(scenarios), " scenarios")
 
-# The OSI technology x stage the partner indices and the policy compatibility are read for: the node's
-# own with the master taxonomy, its crosswalk (scripts/31, aib_osi_crosswalk()) with the dictionary;
-# none (neutral scores) for a node with no code in the OSI basket.
+# The OSI technology x six-stage cells the partner indices, the Development Potential Index and the
+# policy compatibility are read for: score_cells (scripts/31: each technology at its own stage, from the
+# crosswalk with the dictionary, aib_osi_crosswalk(), or the node's own cells with the master taxonomy);
+# an inputs file without it falls back to score_techs at score_stage; none (neutral scores) for a node
+# with no code in the OSI basket. `stage` is one per technology.
 score_cell <- function(nid) {
   n <- nodes[nodes$node_id == nid, ]
+  if ("score_cells" %in% names(n) && !is.na(n$score_cells) && nzchar(n$score_cells)) {
+    cells <- strsplit(strsplit(n$score_cells, "; ", fixed = TRUE)[[1]], "|", fixed = TRUE)
+    return(list(techs = vapply(cells, `[`, "", 1), stage = vapply(cells, `[`, "", 2)))
+  }
   has <- "score_techs" %in% names(n) && !is.na(n$score_techs) && nzchar(n$score_techs)
   if (has) return(list(techs = strsplit(n$score_techs, "; ")[[1]], stage = aib_or(n$score_stage, n$supply_chain)))
   if (identical(aib_or(cfg$nodes$source, "master"), "dictionary")) return(list(techs = character(), stage = n$supply_chain))
@@ -265,10 +273,12 @@ vtag <- function(t, nid, key, sem, con) {
 trade_ckpt <- file.path(out_dir, "aib_checkpoint_trade.rds")
 inv_ckpt <- file.path(out_dir, "aib_checkpoint_investment.rds")
 use_ckpt <- arg_flag("--from-checkpoint") && file.exists(trade_ckpt)
-# A checkpoint is reused only when it was built with the same sets, variants, nodes and model settings.
+# A checkpoint is reused only when it was built with the same sets, variants, nodes and model settings,
+# and at the six supply-chain stages (a three-stage checkpoint has other stage shocks and partner scores).
 fingerprint <- list(demand = sort(demand_set$iso), partners = sort(partner_set$iso), semantics = semantics, constraints = constraints,
                     phys_nodes = sort(phys_nodes), nodes = sort(opt_nodes), shocks = cfg$shocks, scenarios = scenarios,
-                    optimization = opt, trade = cfg$trade, production_proxies = cfg$production_proxies, supply_constraint = sc_cfg)
+                    optimization = opt, trade = cfg$trade, production_proxies = cfg$production_proxies, supply_constraint = sc_cfg,
+                    stages = aib_stage_levels())
 check_fingerprint <- function(ck_fp, fp, path) {
   if (is.null(ck_fp)) stop(path, " has no settings fingerprint; rerun without --from-checkpoint.")
   differ <- names(fp)[!vapply(names(fp), function(k) identical(ck_fp[[k]], fp[[k]]), logical(1))]
@@ -900,8 +910,11 @@ solve_compacts <- function(con, shk, cls_rows, group_ids, problems, il_all, flow
     add_role <- function(iso, role, basis) if (length(iso)) role_rows[[length(role_rows) + 1]] <<- tibble::tibble(iso3 = iso, role = role, basis = basis)
     add_role(intersect(anchors, members), "Demand anchor", "imports most of the compact's lost supply")
     sp <- sup_share %>% dplyr::filter(e %in% members, share >= cmp$role_min_share, dplyr::coalesce(export_rca, 0) >= 1)
-    add_role(unique(sp$e[sp$supply_chain != "Upstream"]), "Specialized supplier", "RCA >= 1 and a material share of the anchors' optimized supply")
-    add_role(unique(sp$e[sp$supply_chain == "Upstream"]), "Resource supplier", "RCA >= 1 and a material share of the anchors' optimized upstream supply")
+    # Resource nodes: Extraction and Recovery (raw materials, mined or recycled: the dictionary's old
+    # Upstream, its Raw Material rows); every other stage makes a specialized supplier.
+    resource <- sp$supply_chain %in% aib_resource_stages()
+    add_role(unique(sp$e[!resource]), "Specialized supplier", "RCA >= 1 and a material share of the anchors' optimized supply")
+    add_role(unique(sp$e[resource]), "Resource supplier", "RCA >= 1 and a material share of the anchors' optimized supply of raw materials (extraction, recovery)")
     # Host roles in the nodes that need capacity: scaling and specialty hosts the coalition takes in (their
     # simulated capacity counted), and the leading development hosts whether members or not (never counted).
     hh <- dplyr::bind_rows(lapply(build_ids, function(n) coalition_hosts(hosts_head, n)))
@@ -924,6 +937,8 @@ solve_compacts <- function(con, shk, cls_rows, group_ids, problems, il_all, flow
       dplyr::filter(share >= cmp$node_anchor_share) %>% dplyr::transmute(node_id, iso3 = importer_iso)
     vertical <- supplies %>% dplyr::inner_join(node_anchor, by = "iso3", suffix = c("_sup", "_dep"), relationship = "many-to-many") %>%
       dplyr::filter(node_id_sup != node_id_dep)
+    # Spanning stages: supplying nodes of two or more of the six stages (refined material and the
+    # components made from it count as two, as they are two steps of the chain).
     stage_span <- sup_share %>% dplyr::filter(e %in% members) %>% dplyr::group_by(e) %>% dplyr::summarise(n = dplyr::n_distinct(supply_chain), .groups = "drop")
     add_role(intersect(members, union(unique(vertical$iso3), stage_span$e[stage_span$n > 1])), "Bridge partner",
              "supplies one node of the compact and depends on another, or spans its stages")
@@ -997,7 +1012,7 @@ solve_compacts <- function(con, shk, cls_rows, group_ids, problems, il_all, flow
       compact_id = cid,
       compact_name = aib_compact_name(cn$sub_sector, cn$techs),
       technology = paste(sort(unique(unlist(strsplit(cn$techs, "; ")))), collapse = "; "),
-      stages = paste(sort(unique(cn$supply_chain)), collapse = "; "),
+      stages = paste(aib_stage_sort(cn$supply_chain), collapse = "; "),
       included_subsectors = paste(cn$sub_sector, collapse = "; "),
       n_subsectors = nrow(cn),
       compact_type = compact_type,
@@ -1197,9 +1212,9 @@ build_compact_layer <- function(con) {
     dplyr::summarise(key_trade_partners = paste(utils::head(sprintf("%s->%s (%s)", exporter_iso, importer_iso, relationship), 4), collapse = "; "), .groups = "drop")
   pct <- function(x) ifelse(is.na(x), "n/a", sprintf("%.0f%%", 100 * x))
   none_if_empty <- function(x) ifelse(is.na(x) | !nzchar(x), "none", x)
-  # Yards & Fences ids are OSI technology x stage cells: the node's own with the master taxonomy, its
-  # crosswalk cell with the dictionary (no sub-component id: the dictionary's nodes are not OSI
-  # sub-sectors).
+  # Yards & Fences ids are OSI technology x six-stage cells ("batteries-components"): the node's own with
+  # the master taxonomy, its crosswalk cell with the dictionary (no sub-component id: the dictionary's
+  # nodes are not OSI sub-sectors).
   dictionary_nodes <- identical(aib_or(cfg$nodes$source, "master"), "dictionary")
   detail <- if (dictionary_nodes) {
     nodes %>% dplyr::transmute(node_id, yf_subcomponent_id = osi_subcomponents, yf_cells,
@@ -1239,7 +1254,7 @@ build_compact_layer <- function(con) {
                   need_coordinate, need_build, need_manage, need_manage_specialization, needs_coordinate, needs_build,
                   needs_manage_specialization, in_strategic_scope, supply_constraint) %>%
     dplyr::mutate(shock_id = headline_shock, shock_semantics = headline_semantics, scenario = headline_scenario) %>%
-    dplyr::arrange(compact_id, technology, stage, sub_sector)
+    dplyr::arrange(compact_id, technology, match(stage, aib_stage_levels()), sub_sector)
   list(classified = classified, compacts = compacts, members = members_tbl, paths = paths_tbl, node_table = node_table, loo = loo_tbl,
        cnodes = cnodes)
 }

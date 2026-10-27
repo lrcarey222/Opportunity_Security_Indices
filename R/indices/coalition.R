@@ -16,12 +16,13 @@
 #       its bloc; or
 #   (b) route "supplier": not China-leaning and a major supplier, i.e. a world share of at least
 #       supplier_share (5%) of production, refining, manufacturing capacity or exports in at
-#       least one measure of an Upstream or Midstream stage of a headline technology
-#       (major_supplier_shares()). No GDP floor, so small resource suppliers qualify.
+#       least one measure of a supply stage (Extraction, Refining, Components, Assembly or
+#       Recovery: SUPPLY_CHAIN_SUPPLY_STAGES, every stage but Deployment) of a headline
+#       technology (major_supplier_shares()). No GDP floor, so small resource suppliers qualify.
 #   (b') route "supplier: reserves" (user decision, 2026-10-09): not China-leaning and holding at
-#       least supplier_reserves_share (10%) of world reserves of a headline mineral (Upstream of
-#       the technologies that use it), of oil, gas or coal (their own Upstream) or of uranium
-#       (Nuclear Upstream; Red Book identified resources < USD 260/kgU, the Reserves theme's
+#       least supplier_reserves_share (10%) of world reserves of a headline mineral (Extraction of
+#       the technologies that use it), of oil, gas or coal (their own Extraction) or of uranium
+#       (Nuclear Extraction; Red Book identified resources < USD 260/kgU, the Reserves theme's
 #       measure). Reserves are a stock, not supply (a holder supplies only once it mines), hence
 #       a bar twice that of the flow measures. It is the same partner route as (b), with its own
 #       threshold (coalition_supplier_threshold()), and is recorded separately. The sources are
@@ -30,6 +31,18 @@
 #       Book for uranium (uranium_resources).
 # - none: no route.
 #
+# Stages (since 2026-10-27; docs/supply_chain_stages.md). The supplier measures carry the six-stage
+# supply_chain of R/utils/supply_chain_stages.R, each staged as the themes stage the same data:
+# mine production (IEA mining, EI minerals, Red Book uranium), fuel production (EI oil, gas, coal)
+# and every reserves measure are Extraction; IEA refining is Refining
+# (iea_critical_minerals_supply_stage()); IEA manufacturing capacity is Components for batteries
+# (cell capacity) and Assembly for solar, wind and electrolysers (COALITION_CLEANTECH_STAGES, as the
+# Foreign Dependency theme stages it); the export shares are the trade table's own cells, each HS6
+# code in its master stage. Before, the trade test read one Upstream and one Midstream basket per
+# technology; split by stage, the baskets are smaller, and a country can now clear supplier_share
+# in one of them (an Extraction basket of one or two ore codes, say) without having cleared it in
+# the whole; the thresholds are unchanged.
+#
 # EU node. The 27 EU member states share one node of the allied network (eu_code, "EUU", the
 # World Bank / WDI code of the European Union), whatever their own tier; the node's tier is set
 # in config (core: all 27 members are U.S.-leaning on the 2026-10-09 run). eu_stage_weights()
@@ -37,7 +50,8 @@
 # Only the network layer is bundled: the national indices stay national, and coalition_tbl keeps
 # each member's own tier.
 #
-# Pure functions (no IO). They use R/utils/country.R (country_name_to_iso3,
+# Pure functions (no IO). They use R/utils/supply_chain_stages.R (SUPPLY_CHAIN_SUPPLY_STAGES,
+# assert_supply_chain_stages), R/utils/country.R (country_name_to_iso3,
 # standardize_country_names, is_aggregate_or_residual), R/utils/iea_critical_minerals.R
 # (harmonize_mineral_names, iea_critical_minerals_supply_stage, iea_critical_minerals_base_year,
 # iea_critical_minerals_year_col) and, for the EI mineral and reserves sheets and the USGS
@@ -54,6 +68,14 @@ COALITION_ROUTES <- c("core", "agreement", "supplier", "supplier: reserves")
 # Measures of major_supplier_shares() that are stocks (reserves, identified resources) rather
 # than flows. They are tested at supplier_reserves_share instead of supplier_share.
 COALITION_RESERVES_MEASURES <- c("usgs_reserves", "ei_reserves", "uranium_resources")
+# Stage of the IEA manufacturing capacity of each technology (coalition_shares_cleantech()), as
+# the Foreign Dependency theme stages the same data (foreign_dependency_cleantech_stage()): the
+# IEA measures cell capacity for batteries, a component of the pack, and the end product (modules,
+# nacelles, electrolysers) for the others. Spelled out, not taken from R/utils/supply_chain_stages.R,
+# so this file still sources on its own.
+COALITION_CLEANTECH_STAGES <- c(
+  Solar = "Assembly", Wind = "Assembly", Batteries = "Components", `Green Hydrogen` = "Assembly"
+)
 
 # Columns of a major_supplier_shares() table.
 COALITION_SUPPLIER_COLUMNS <- c(
@@ -155,9 +177,9 @@ coalition_mineral_links <- function(mineral_demand, techs, min_demand_share = 0.
 }
 
 # IEA Critical Minerals Dataset, sheet "2 Total supply for key minerals" (as flattened by
-# read_iea_critical_minerals()): each country's share of world mining (Upstream) or refining
-# (Midstream) of a mineral in the release's base year, mapped to the technologies that use the
-# mineral.
+# read_iea_critical_minerals()): each country's share of world mining (Extraction) or refining
+# (Refining; iea_critical_minerals_supply_stage(), as the mineral themes stage it) of a mineral in
+# the release's base year, mapped to the technologies that use the mineral.
 #
 # The share is the country's supply over the block's country rows plus "Rest of world" (the
 # denominator critical_minerals_processing uses); "Total" and "Top 3 share" rows are dropped.
@@ -203,7 +225,7 @@ coalition_shares_iea_minerals <- function(critical,
     iso3 = iso3,
     country = label,
     mineral = harmonize_mineral_names(mineral_raw),
-    supply_chain = iea_critical_minerals_supply_stage(stage_raw),
+    supply_chain = iea_critical_minerals_supply_stage(stage_raw, legacy = FALSE),
     block = block,
     value = value,
     world_share = ifelse(denominator > 0, value / denominator, NA_real_)
@@ -220,7 +242,7 @@ coalition_shares_iea_minerals <- function(critical,
     country = out$country,
     tech = out$tech,
     supply_chain = out$supply_chain,
-    measure = ifelse(out$supply_chain == "Upstream", "iea_mineral_mining", "iea_mineral_refining"),
+    measure = ifelse(out$supply_chain == "Extraction", "iea_mineral_mining", "iea_mineral_refining"),
     measure_label = paste0("IEA Critical Minerals Dataset: ", out$block),
     year = year,
     value = out$value,
@@ -234,7 +256,7 @@ coalition_shares_iea_minerals <- function(critical,
 
 # Energy Institute Statistical Review mine production (ei_stat_review_world_energy_wide.xlsx, the
 # "P-R" sheets of critical_minerals_production_specs()): each country's share of world mining of a
-# mineral, Upstream of the technologies that use it (coalition_mineral_links()). It covers the
+# mineral, Extraction of the technologies that use it (coalition_mineral_links()). It covers the
 # minerals the IEA supply sheet leaves out: the IEA lists copper, cobalt, lithium, nickel,
 # graphite and magnet rare earths only, while its demand sheet also maps manganese (Wind, Electric
 # Vehicles, Batteries), zinc (Wind, Solar) and PGMs (Green Hydrogen) to headline technologies.
@@ -287,7 +309,7 @@ coalition_shares_ei_minerals <- function(sheets,
         iso3 = rows$iso3,
         country = rows$country,
         tech = l$tech[k],
-        supply_chain = "Upstream",
+        supply_chain = "Extraction",
         measure = "ei_mineral_mining",
         measure_label = paste0("EI Statistical Review: ", sh$sheet, " (mine production)"),
         year = yr,
@@ -304,7 +326,7 @@ coalition_shares_ei_minerals <- function(sheets,
 }
 
 # Uranium mine production (OECD-NEA/IAEA Red Book Table 1.18, data/reference/uranium_production.csv):
-# Nuclear Upstream. The table lists every producer, so the rows of a year sum to the world total.
+# Nuclear Extraction. The table lists every producer, so the rows of a year sum to the world total.
 # `year` defaults to the latest year in the table.
 coalition_shares_uranium <- function(uranium_production, year = NULL) {
   coalition_require_columns(
@@ -325,7 +347,7 @@ coalition_shares_uranium <- function(uranium_production, year = NULL) {
     iso3 = coalition_clean_codes(prod$iso3c),
     country = prod$country,
     tech = "Nuclear",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     measure = "uranium_mine_production",
     measure_label = "Uranium mine production (Red Book Table 1.18)",
     year = year,
@@ -338,7 +360,7 @@ coalition_shares_uranium <- function(uranium_production, year = NULL) {
 
 # Energy Institute Statistical Review reserves (ei_stat_review_world_energy_wide.xlsx, the sheets
 # of reserves_specs() that the Reserves theme reads in scripts/10): each country's share of world
-# reserves, Upstream, for the reserves leg of the supplier route (tested at
+# reserves, Extraction, for the reserves leg of the supplier route (tested at
 # supplier_reserves_share). A fuel in `fuels` (proved reserves at end-2020, the last year EI
 # published them) maps to its own technology; a mineral (reserves "At end of <year>", USGS data)
 # to the technologies that use it, through the same link and floor as the mining measures
@@ -420,7 +442,7 @@ coalition_shares_ei_reserves <- function(sheets,
         iso3 = iso3,
         country = country,
         tech = l$tech[k],
-        supply_chain = "Upstream",
+        supply_chain = "Extraction",
         measure = "ei_reserves",
         # The year, not the column name: readxl names the fuel columns "2020...42" and coal's "Total".
         measure_label = paste0("EI Statistical Review: ", sh$sheet, " (reserves",
@@ -440,7 +462,7 @@ coalition_shares_ei_reserves <- function(sheets,
 
 # USGS Mineral Commodity Summaries reserves of the critical minerals (usgs_mcs_reserves() on the MCS
 # commodity table, the rows the Reserves theme reads in scripts/10): each country's share of world
-# reserves, Upstream of the technologies that use the mineral (coalition_mineral_links(), the link
+# reserves, Extraction of the technologies that use the mineral (coalition_mineral_links(), the link
 # and floor of the mining measures), measure "usgs_reserves", for the reserves leg of the supplier
 # route (tested at supplier_reserves_share).
 #
@@ -489,7 +511,7 @@ coalition_shares_usgs_reserves <- function(usgs_reserves,
     iso3 = out$iso3,
     country = out$country,
     tech = out$tech,
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     measure = "usgs_reserves",
     measure_label = paste0(
       "USGS Mineral Commodity Summaries ", out$edition, ": ", out$resource, " reserves at end-",
@@ -507,8 +529,8 @@ coalition_shares_usgs_reserves <- function(usgs_reserves,
 }
 
 # Identified recoverable uranium resources (OECD-NEA/IAEA Red Book Table 1.2a,
-# data/reference/uranium_resources.csv) in one cost category, `variable`: Nuclear Upstream, for the
-# reserves leg of the supplier route. scripts/13 passes the Reserves theme's category
+# data/reference/uranium_resources.csv) in one cost category, `variable`: Nuclear Extraction, for
+# the reserves leg of the supplier route. scripts/13 passes the Reserves theme's category
 # (uranium_resources_variable(URANIUM_DEFAULT_COST_CATEGORY): RAR plus inferred, < USD 260/kgU),
 # so the test reads the theme's "Nuclear Reserves". The table lists every country with identified
 # resources and the CSV has no world row, so the world total is the sum of the listed countries
@@ -540,7 +562,7 @@ coalition_shares_uranium_resources <- function(uranium_resources, variable, year
     iso3 = iso3,
     country = res$country,
     tech = "Nuclear",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     measure = "uranium_resources",
     measure_label = paste0("Uranium identified recoverable resources (Red Book Table 1.2a): ", variable),
     year = year,
@@ -553,7 +575,7 @@ coalition_shares_uranium_resources <- function(uranium_resources, variable, year
 
 # Energy Institute Statistical Review production (ei_stat_review_world_energy.csv, long: Country,
 # Year, ISO3166_alpha3, Var, Value), as the production themes read it: oilprod_kbd, gasprod_ej and
-# coalprod_ej, Upstream of Oil, Gas and Coal. Shares are of the "Total World" row (WLD) in each
+# coalprod_ej, Extraction of Oil, Gas and Coal. Shares are of the "Total World" row (WLD) in each
 # variable's latest year (or `year`). Regional and residual rows are dropped; the EU aggregate
 # ("Total EU", T-EU) is kept as eu_code with is_aggregate = TRUE, for eu_stage_weights()'s coverage
 # check.
@@ -591,14 +613,14 @@ coalition_shares_ei_production <- function(ei,
     label <- paste0("EI Statistical Review: ", var)
     source <- "Energy Institute, Statistical Review of World Energy"
     out[[length(out) + 1L]] <- coalition_supplier_rows(
-      iso3 = countries$iso3, country = countries$country, tech = tech, supply_chain = "Upstream",
+      iso3 = countries$iso3, country = countries$country, tech = tech, supply_chain = "Extraction",
       measure = "ei_production", measure_label = label, year = yr, value = countries$value,
       unit = unit, world_share = countries$value / world, source = source
     )
     eu_value <- unique(value[code == eu_aggregate_code])
     if (length(eu_value) == 1 && !is.na(eu_value)) {
       out[[length(out) + 1L]] <- coalition_supplier_rows(
-        iso3 = eu_code, country = "European Union", tech = tech, supply_chain = "Upstream",
+        iso3 = eu_code, country = "European Union", tech = tech, supply_chain = "Extraction",
         measure = "ei_production", measure_label = label, year = yr, value = eu_value,
         unit = unit, world_share = eu_value / world, source = source, is_aggregate = TRUE
       )
@@ -610,9 +632,10 @@ coalition_shares_ei_production <- function(ei,
 # IEA clean-technology manufacturing capacity (iea_cleantech_Midstream.csv, as
 # market_share_manufacturing reads it): one row per economy, columns "<Technology> - Current" and
 # "<Technology> - Pipeline" in percent of world capacity. `status` "Current" is the installed
-# capacity (2024 in market_share_manufacturing's reading). Midstream of the technologies in
-# `tech_map` (IEA label -> pipeline tech; electrolysers are the Green Hydrogen midstream). The
-# IEA reports the EU as one bloc: that row becomes eu_code with is_aggregate = TRUE (it is not a
+# capacity (2024 in market_share_manufacturing's reading). For the technologies in `tech_map` (IEA
+# label -> pipeline tech; electrolysers are Green Hydrogen), each in its stage of `tech_stages`
+# (pipeline tech -> stage; COALITION_CLEANTECH_STAGES: Batteries Components, the others Assembly).
+# The IEA reports the EU as one bloc: that row becomes eu_code with is_aggregate = TRUE (it is not a
 # member-level share). Shares are each row over the column total including "Other", so rounding
 # in the published percentages does not leave the total off 100.
 coalition_shares_cleantech <- function(cleantech_midstream,
@@ -621,9 +644,14 @@ coalition_shares_cleantech <- function(cleantech_midstream,
                                        status = "Current",
                                        year = 2024L,
                                        eu_code = "EUU",
-                                       eu_labels = c("EU", "European Union")) {
+                                       eu_labels = c("EU", "European Union"),
+                                       tech_stages = COALITION_CLEANTECH_STAGES) {
   if (!inherits(cleantech_midstream, "data.frame") || ncol(cleantech_midstream) < 2) {
     stop("cleantech_midstream must be a data.frame with a label column and technology columns.")
+  }
+  unstaged <- setdiff(unname(tech_map), names(tech_stages))
+  if (length(unstaged) > 0) {
+    stop("coalition_shares_cleantech: no stage in tech_stages for ", paste(unstaged, collapse = ", "), ".")
   }
   label <- trimws(as.character(cleantech_midstream[[1]]))
   # "Solar - Current" (check.names = FALSE) or "Solar...Current" (read.csv default).
@@ -652,7 +680,7 @@ coalition_shares_cleantech <- function(cleantech_midstream,
       iso3 = iso3[keep],
       country = ifelse(is_eu[keep], "European Union", label[keep]),
       tech = tech_map[[iea_tech]],
-      supply_chain = "Midstream",
+      supply_chain = tech_stages[[tech_map[[iea_tech]]]],
       measure = "iea_manufacturing_capacity",
       measure_label = paste0("IEA manufacturing capacity: ", iea_tech, " (", status, ")"),
       year = year,
@@ -671,16 +699,21 @@ coalition_shares_cleantech <- function(cleantech_midstream,
 # world exports of the basket from the Atlas of Economic Complexity (trade_core_build_aec_market_share()).
 # The whole basket (sub_sector "All") only. The data year is read from the explanation's "[YYYY]"
 # when present (the Atlas leg is a year behind the table's Comtrade Year).
-coalition_shares_trade <- function(trade_tbl, techs, stages = c("Upstream", "Midstream"),
+# The cells are the trade table's six-stage cells (each HS6 code in its master stage; Deployment
+# has no basket), so the table must carry stage names: a three-stage table (one built with
+# legacy_stages = TRUE, or before 2026-10-26) stops rather than matching none of `stages`.
+coalition_shares_trade <- function(trade_tbl, techs, stages = SUPPLY_CHAIN_SUPPLY_STAGES,
                                    variable = "market_share") {
   coalition_require_columns(
     trade_tbl, c("iso3c", "tech", "supply_chain", "variable", "data_type", "value"), "trade_tbl"
   )
-  keep <- trade_tbl$variable == variable & trade_tbl$data_type == "raw" &
-    trade_tbl$tech %in% techs & trade_tbl$supply_chain %in% stages
+  assert_supply_chain_stages(stages, label = "coalition_shares_trade(): stages")
+  keep <- trade_tbl$variable == variable & trade_tbl$data_type == "raw" & trade_tbl$tech %in% techs
   if ("sub_sector" %in% names(trade_tbl)) {
     keep <- keep & (is.na(trade_tbl$sub_sector) | trade_tbl$sub_sector == "All")
   }
+  assert_supply_chain_stages(trade_tbl$supply_chain[keep], label = paste0("trade_tbl (", variable, ") supply_chain"))
+  keep <- keep & trade_tbl$supply_chain %in% stages
   t <- trade_tbl[keep & !is.na(trade_tbl$iso3c) & !is.na(trade_tbl$value), , drop = FALSE]
   if (nrow(t) == 0) {
     return(coalition_empty_supplier_tbl())
@@ -714,24 +747,25 @@ coalition_shares_trade <- function(trade_tbl, techs, stages = c("Upstream", "Mid
 
 # World shares of production and exports per (iso3, tech, supply_chain, measure[, mineral]) for
 # the supplier test, from whichever inputs are given (NULL skips a source):
-# - critical + mineral_demand: IEA mining (Upstream) and refining (Midstream) of minerals, mapped
+# - critical + mineral_demand: IEA mining (Extraction) and refining (Refining) of minerals, mapped
 #   to technologies (coalition_shares_iea_minerals());
-# - ei_minerals + mineral_demand: EI mine production (Upstream) of the minerals the IEA supply
+# - ei_minerals + mineral_demand: EI mine production (Extraction) of the minerals the IEA supply
 #   sheet does not cover at the mining stage (manganese, zinc, PGMs; coalition_shares_ei_minerals());
-# - uranium_production: Nuclear Upstream (coalition_shares_uranium());
-# - ei: Oil, Gas and Coal Upstream production (coalition_shares_ei_production());
-# - cleantech_midstream: Solar, Wind, Batteries and Green Hydrogen Midstream manufacturing
-#   capacity, EU as a bloc (coalition_shares_cleantech());
-# - trade_tbl: export shares of every tech x stage HS6 basket (coalition_shares_trade());
+# - uranium_production: Nuclear Extraction (coalition_shares_uranium());
+# - ei: Oil, Gas and Coal Extraction (production; coalition_shares_ei_production());
+# - cleantech_midstream: Solar, Wind, Batteries and Green Hydrogen manufacturing capacity, Batteries
+#   Components and the others Assembly (cleantech_stages), EU as a bloc (coalition_shares_cleantech());
+# - trade_tbl: export shares of every six-stage tech x stage HS6 basket (coalition_shares_trade());
 # - usgs_reserves + mineral_demand: USGS MCS reserves of the critical minerals (usgs_mcs_reserves(),
-#   Upstream of the technologies that use them; coalition_shares_usgs_reserves()), measure
+#   Extraction of the technologies that use them; coalition_shares_usgs_reserves()), measure
 #   "usgs_reserves";
 # - ei_reserves + mineral_demand: EI reserves of oil, gas and coal (coalition_shares_ei_reserves();
 #   mineral sheets too, if passed), measure "ei_reserves". A mineral both reserves inputs carry
 #   stops: it would be tested twice, on two vintages;
 # - uranium_resources + uranium_resources_variable: Red Book identified uranium resources, Nuclear
-#   Upstream (coalition_shares_uranium_resources()), measure "uranium_resources".
-# Restricted to `techs` and `stages`. `threshold` is the row's bar (coalition_supplier_threshold():
+#   Extraction (coalition_shares_uranium_resources()), measure "uranium_resources".
+# Restricted to `techs` and `stages` (stage names; by default the five supply stages,
+# SUPPLY_CHAIN_SUPPLY_STAGES). `threshold` is the row's bar (coalition_supplier_threshold():
 # supplier_reserves_share for the reserves measures, supplier_share otherwise) and `major` is
 # TRUE where a country-level (not aggregate) world share reaches it. Aggregate rows (the EU in EI
 # and the IEA manufacturing data) are kept for reference and the EU weights' coverage check, never
@@ -747,7 +781,7 @@ major_supplier_shares <- function(critical = NULL,
                                   uranium_resources = NULL,
                                   usgs_reserves = NULL,
                                   techs,
-                                  stages = c("Upstream", "Midstream"),
+                                  stages = SUPPLY_CHAIN_SUPPLY_STAGES,
                                   supplier_share = 0.05,
                                   supplier_reserves_share = 0.10,
                                   mineral_min_demand_share = 0.01,
@@ -757,9 +791,11 @@ major_supplier_shares <- function(critical = NULL,
                                                          Batteries = "Batteries", Electrolyzers = "Green Hydrogen"),
                                   cleantech_status = "Current",
                                   cleantech_year = 2024L,
+                                  cleantech_stages = COALITION_CLEANTECH_STAGES,
                                   uranium_resources_variable = NULL) {
   coalition_check_share(supplier_share, "supplier_share")
   coalition_check_share(supplier_reserves_share, "supplier_reserves_share")
+  assert_supply_chain_stages(stages, label = "major_supplier_shares(): stages")
   parts <- list(coalition_empty_supplier_tbl())
   iea_mined <- character()
   if (!is.null(critical)) {
@@ -767,7 +803,7 @@ major_supplier_shares <- function(critical = NULL,
     iea <- coalition_shares_iea_minerals(
       critical, mineral_demand, techs = techs, min_demand_share = mineral_min_demand_share
     )
-    iea_mined <- unique(iea$mineral[iea$supply_chain == "Upstream"])
+    iea_mined <- unique(iea$mineral[iea$supply_chain == "Extraction"])
     parts[[length(parts) + 1L]] <- iea
   }
   if (!is.null(ei_minerals)) {
@@ -786,7 +822,7 @@ major_supplier_shares <- function(critical = NULL,
   if (!is.null(cleantech_midstream)) {
     parts[[length(parts) + 1L]] <- coalition_shares_cleantech(
       cleantech_midstream, tech_map = cleantech_tech_map, status = cleantech_status,
-      year = cleantech_year, eu_code = eu_code
+      year = cleantech_year, eu_code = eu_code, tech_stages = cleantech_stages
     )
   }
   if (!is.null(trade_tbl)) {
@@ -1097,7 +1133,9 @@ derive_coalition_tiers <- function(bloc_tbl,
 ## EU stage weights ---------------------------------------------------------
 
 # Each EU member's weight within the EU node per (tech, supply_chain), for stage-weighted
-# aggregation of the members' scores into the node. One row per (member, tech, supply_chain):
+# aggregation of the members' scores into the node (the allied network solves the five supply
+# stages, so `stages` defaults to SUPPLY_CHAIN_SUPPLY_STAGES and supplier_tbl must carry stage
+# names). One row per (member, tech, supply_chain):
 #   network_node, iso3, country, tech, supply_chain, weight (sums to 1 over the members of a
 #   stage), basis ("production", "exports" or "gdp"), measures, year, member_value (the member's
 #   world share under the basis, or its GDP in USD), eu_world_share (the EU's world share under the
@@ -1112,15 +1150,17 @@ derive_coalition_tiers <- function(bloc_tbl,
 # weight is the member's share of the members' GDP (gdp_tbl, latest year).
 #
 # Only measures that list EU members individually and completely can carry the weights: the
-# EI production series (with "Total EU" for the coverage check), the Red Book uranium table and the
-# Atlas export shares. The IEA manufacturing data report the EU as one bloc and the IEA mineral
+# EI production series (with "Total EU" for the coverage check; Oil, Gas and Coal Extraction), the
+# Red Book uranium table (Nuclear Extraction) and the Atlas export shares (every stage with an HS6
+# basket; the other stages, most Recovery cells among them, fall to GDP). The IEA manufacturing
+# data report the EU as one bloc and the IEA mineral
 # supply sheet lists only the leading producers (the rest of the EU sits in "Rest of world"), so
 # config/coalition.yml leaves them out of basis_priority.
 eu_stage_weights <- function(supplier_tbl,
                              gdp_tbl,
                              eu_members,
                              techs,
-                             stages = c("Upstream", "Midstream"),
+                             stages = SUPPLY_CHAIN_SUPPLY_STAGES,
                              basis_priority = list(
                                production = c("ei_production", "uranium_mine_production"),
                                exports = "atlas_export_share"
@@ -1133,6 +1173,10 @@ eu_stage_weights <- function(supplier_tbl,
                              gdp_year_col = "year",
                              gdp_value_col = "NY.GDP.MKTP.CD") {
   coalition_require_columns(supplier_tbl, c("iso3", "tech", "supply_chain", "measure", "world_share"), "supplier_tbl")
+  # Cells are matched on the stage name, so three-stage labels on either side would silently put
+  # every cell on GDP.
+  assert_supply_chain_stages(stages, label = "eu_stage_weights(): stages")
+  assert_supply_chain_stages(supplier_tbl$supply_chain, label = "eu_stage_weights(): supplier_tbl$supply_chain")
   eu_members <- unique(coalition_clean_codes(eu_members))
   if (length(eu_members) == 0 || anyNA(eu_members)) stop("eu_members must be a non-empty vector of ISO3 codes.")
   if (!is.list(basis_priority) || is.null(names(basis_priority)) || any(!nzchar(names(basis_priority)))) {

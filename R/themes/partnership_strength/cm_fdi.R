@@ -12,11 +12,11 @@
 # Use in the partnership themes (Friendshore only; Opportunity and Development read no investment
 # data, and Economic Opportunity does not read CM-FDI):
 #   - Investment ties (partnership_strength_cm_fdi_tie_index()). In the cells the database covers,
-#     (Solar, Wind, Batteries, Electric Vehicles) x Midstream, the Friendshore outbound_index is the
-#     reporter's project tie to the partner, built from the projects whose parent is headquartered
-#     in the reporter (investor = home = reporter i) and that are located in the partner
-#     (destination = partner j), instead of i's IMF DIP position in j. Every other cell keeps the
-#     IMF measure.
+#     (Solar, Wind, Batteries, Electric Vehicles) x (Components, Assembly), the Friendshore
+#     outbound_index is the reporter's project tie to the partner, built from the projects whose
+#     parent is headquartered in the reporter (investor = home = reporter i) and that are located
+#     in the partner (destination = partner j), instead of i's IMF DIP position in j. Every other
+#     cell, Refining included, keeps the IMF measure.
 #   - Chinese-parent ownership exposure (cm_fdi_chinese_parent_exposure()). For supplier j and
 #     technology t, the share of j's foreign-invested manufacturing in t whose parent is
 #     headquartered in China. It is a property of the partner (the same for every reporter) and
@@ -26,6 +26,13 @@
 #     the indices (section 7.4, network concentration and common-mode risk). Plants in two supplier
 #     countries owned by the same Chinese parents do not diversify supply away from China, so a
 #     supplier whose foreign-invested capacity sits with Chinese-headquartered firms scores lower.
+#
+# Stages (config/partnership.yml cm_fdi stages). The project file has no product or segment field:
+# no column tells a cell plant from a module line, a cathode plant or a vehicle plant. A project is
+# therefore counted, at its full attribution weight and value, in each configured stage (Components
+# and Assembly, the old Midstream), as manufacturing capex without a product is copied onto both in
+# the Investment theme (R/categories/investment/investment_momentum.R). Ties and exposure are the
+# same in the two cells; the Friendshore index ranks each cell separately.
 #
 # Projects used by the index measures (cm_fdi_flag_index_use()): manufacturing projects (the
 # Industry activity values in manufacturing_activities; R&D, design and logistics projects are kept
@@ -87,7 +94,9 @@ cm_fdi_default_settings <- function() {
     investment_ties = TRUE,
     chinese_parent_exposure = TRUE,
     technologies = list(Battery = "Batteries", Solar = "Solar", Wind = "Wind", EV = "Electric Vehicles"),
-    stage = "Midstream",
+    # SUPPLY_CHAIN_MANUFACTURING_STAGES (R/utils/supply_chain_stages.R), spelled out so this file
+    # sources without the stage helpers (scripts/85); the CM-FDI test checks they agree.
+    stages = c("Components", "Assembly"),
     keep_status = c("Announced", "Under Construction", "Completed", "Operational"),
     drop_operational = c("Ceased operations", "Paused"),
     manufacturing_activities = "Manufacturing",
@@ -106,6 +115,12 @@ cm_fdi_resolve_settings <- function(cfg = NULL) {
   if (!is.null(cfg)) {
     if (!is.list(cfg)) {
       stop("cm_fdi settings must be a list (config/partnership.yml cm_fdi).")
+    }
+    if ("stage" %in% names(cfg)) {
+      stop(
+        "cm_fdi stage (one of Upstream, Midstream, Downstream) was replaced on 2026-10-27 by stages, a list of ",
+        "supply-chain stages (config/partnership.yml cm_fdi: stages: [Components, Assembly])."
+      )
     }
     unknown <- setdiff(names(cfg), names(out))
     if (length(unknown) > 0) {
@@ -129,8 +144,15 @@ cm_fdi_resolve_settings <- function(cfg = NULL) {
     stop("cm_fdi technologies must map each CM-FDI Technology value to one pipeline technology.")
   }
   out$technologies <- tech
-  if (!is.character(out$stage) || length(out$stage) != 1 || !out$stage %in% c("Upstream", "Midstream", "Downstream")) {
-    stop("cm_fdi stage must be one of Upstream, Midstream, Downstream.")
+  # Every configured stage must be one of the six (PARTNERSHIP_STRENGTH_STAGE_ROLLUP,
+  # partnership_strength_helpers.R): the Friendshore cells are keyed by them.
+  out$stages <- as.character(unlist(out$stages))
+  stage_names <- names(PARTNERSHIP_STRENGTH_STAGE_ROLLUP)
+  if (length(out$stages) == 0 || anyNA(out$stages) || anyDuplicated(out$stages) || !all(out$stages %in% stage_names)) {
+    stop(
+      "cm_fdi stages must list distinct supply-chain stages (", paste(stage_names, collapse = ", "), "); got ",
+      if (length(out$stages)) paste(out$stages, collapse = ", ") else "none", "."
+    )
   }
   for (key in c("keep_status", "manufacturing_activities")) {
     out[[key]] <- as.character(unlist(out[[key]]))
@@ -279,8 +301,16 @@ cm_fdi_clean_projects <- function(raw, technologies = cm_fdi_default_settings()$
 
 # Flags which projects the index measures use, under the settings of cm_fdi_resolve_settings():
 # index_use (logical), index_exclusion (the first rule that excludes the project, NA when used),
-# supply_chain (the configured stage), china_parent (home economy in china_hq_iso3) and
-# attribution_weight (1, or jv_parent_share for a joint venture). Every project is returned.
+# stages (the configured stages the project counts in, "|"-separated: "Components|Assembly"),
+# supply_chain, china_parent (home economy in china_hq_iso3) and attribution_weight (1, or
+# jv_parent_share for a joint venture). Every project is returned, one row each.
+#
+# supply_chain holds the roll-up the configured stages share (Midstream for Components and
+# Assembly; NA if they span roll-ups), not a stage: a project cannot be placed in one stage, and
+# cm_fdi_projects_tbl (scripts/15) stays one row per project, so counting its rows counts
+# projects. Its three-stage readers (the Country dashboard export keys its cells on tech and
+# supply_chain) keep their key. The per-stage tables (cm_fdi_investment_ties(),
+# cm_fdi_chinese_parent_exposure()) expand each project onto its stages (cm_fdi_stage_rows()).
 cm_fdi_flag_index_use <- function(projects, settings = cm_fdi_resolve_settings()) {
   require_columns(
     projects,
@@ -300,29 +330,49 @@ cm_fdi_flag_index_use <- function(projects, settings = cm_fdi_resolve_settings()
   )
   projects$index_use <- is.na(exclusion)
   projects$index_exclusion <- exclusion
-  projects$supply_chain <- s$stage
+  projects$stages <- paste(s$stages, collapse = "|")
+  rollup <- unique(unname(PARTNERSHIP_STRENGTH_STAGE_ROLLUP[s$stages]))
+  projects$supply_chain <- if (length(rollup) == 1) rollup else NA_character_
   projects$china_parent <- projects$home_iso3 %in% s$china_hq_iso3
   projects$attribution_weight <- dplyr::if_else(projects$joint_venture %in% TRUE, s$jv_parent_share, 1)
   projects
 }
 
-# The (tech, supply_chain) cells the database covers under `settings`.
+# The flagged projects with one row per (project, stage) they count in (the `stages` column of
+# cm_fdi_flag_index_use()), supply_chain set to that stage. Each stage carries the project's full
+# attribution weight and capital investment: copied, not split, because the file cannot say which
+# stage a plant serves. A table without `stages` (built by hand) keeps its own supply_chain.
+cm_fdi_stage_rows <- function(flagged) {
+  if (!"stages" %in% names(flagged)) {
+    return(flagged)
+  }
+  st <- strsplit(as.character(flagged$stages), "|", fixed = TRUE)
+  out <- flagged[rep(seq_len(nrow(flagged)), lengths(st)), , drop = FALSE]
+  # as.character(): with no project, unlist() is NULL, which would delete the column the ties and
+  # exposure builders group on (they return an empty table instead).
+  out$supply_chain <- as.character(unlist(st, use.names = FALSE))
+  out
+}
+
+# The (tech, supply_chain) cells the database covers under `settings`: every mapped technology at
+# every configured stage.
 cm_fdi_cells <- function(settings = cm_fdi_resolve_settings()) {
-  tibble::tibble(tech = unique(unname(settings$technologies)), supply_chain = settings$stage)
+  tidyr::expand_grid(tech = unique(unname(settings$technologies)), supply_chain = settings$stages)
 }
 
 # Investor -> destination ties per covered cell, from the projects flagged index_use: the
 # attributed project count (sum of attribution weights), the attributed count with a disclosed
 # value, and the attributed disclosed value in US$ million (NA when no project of the tie
 # discloses one: undisclosed is not zero). investor_iso is the parent's home economy,
-# destination_iso the project's location.
+# destination_iso the project's location. One row per configured stage of the tie
+# (cm_fdi_stage_rows()): the Components and Assembly rows of a tie are the same.
 cm_fdi_investment_ties <- function(flagged) {
   require_columns(
     flagged,
     c("index_use", "home_iso3", "destination_iso3", "tech", "supply_chain", "attribution_weight", "capital_usd_m"),
     label = "CM-FDI flagged projects"
   )
-  flagged[flagged$index_use, , drop = FALSE] %>%
+  cm_fdi_stage_rows(flagged[flagged$index_use, , drop = FALSE]) %>%
     dplyr::group_by(investor_iso = home_iso3, destination_iso = destination_iso3, tech, supply_chain) %>%
     dplyr::summarise(
       n_projects = sum(attribution_weight),
@@ -356,14 +406,15 @@ cm_fdi_investment_ties <- function(flagged) {
 # "exposed" (default) every covered cell gets exposure 1 (basis "china_hq"): their capacity sits
 # with Chinese-headquartered firms by construction, and their foreign-invested plants, which are
 # non-Chinese by definition, would otherwise score them as unexposed; with "missing" they have no
-# row.
+# row. Each project counts in every configured stage (cm_fdi_stage_rows()), so a destination's
+# Components and Assembly exposures are the same.
 cm_fdi_chinese_parent_exposure <- function(flagged, settings = cm_fdi_resolve_settings()) {
   require_columns(
     flagged,
     c("index_use", "destination_iso3", "tech", "supply_chain", "attribution_weight", "capital_usd_m", "china_parent"),
     label = "CM-FDI flagged projects"
   )
-  used <- flagged[flagged$index_use & !flagged$destination_iso3 %in% settings$china_hq_iso3, , drop = FALSE]
+  used <- cm_fdi_stage_rows(flagged[flagged$index_use & !flagged$destination_iso3 %in% settings$china_hq_iso3, , drop = FALSE])
   out <- used %>%
     dplyr::mutate(
       disclosed = !is.na(capital_usd_m),
@@ -418,8 +469,8 @@ cm_fdi_chinese_parent_exposure <- function(flagged, settings = cm_fdi_resolve_se
     out <- dplyr::bind_rows(out, china_rows)
   }
   out %>%
-    dplyr::filter(tech %in% cm_fdi_cells(settings)$tech, supply_chain == settings$stage) %>%
-    dplyr::arrange(tech, destination_iso)
+    dplyr::filter(tech %in% cm_fdi_cells(settings)$tech, supply_chain %in% settings$stages) %>%
+    dplyr::arrange(tech, supply_chain, destination_iso)
 }
 
 # Everything the Friendshore builder needs from CM-FDI: the covered cells (none when both switches
