@@ -109,10 +109,10 @@ overall_variables:
       - "Market Share"
       - "Overall Market Share"
       - "production"
-      # EV "sales" is not a component: it is demand, emitted as an EV Downstream row for display
+      # EV "sales" is not a component: it is demand, emitted as an EV Deployment row for display
       # and scored under Technology Demand (IEA EV Outlook sales). Until 2026-10-26 it sat in
       # Midstream and in this list (docs/supply_chain_stages.md).
-      # EV Midstream (IEA EV Outlook regions): percent-ranked (production - sales) / sales,
+      # EV Assembly (IEA EV Outlook regions; three-stage Midstream until 2026-10-26): percent-ranked (production - sales) / sales,
       # higher = net exporter. Named "import" until Oct 2026, though it never measured imports.
       - "net_export"
       - "market_share"
@@ -178,7 +178,7 @@ overall_variables:
       - "Heat Pumps Production"
       - "Coal Production"
       # Red Book uranium mine production, latest year (Energy Security; the Economic
-      # Opportunity side scores it as Nuclear Upstream size/growth_abs/Overall Production).
+      # Opportunity side scores it as Nuclear Extraction size/growth_abs/Overall Production).
       - "Nuclear Production"
       - "Oil Production"
       - "Gas Production"
@@ -213,7 +213,7 @@ overall_variables:
     category: "Technology Demand"
     components:
       # One vote per source, each already a composite of its own size and growth terms:
-      # IEA WEO global demand, BNEF NEO regional demand (or, for EV Downstream, the IEA EV
+      # IEA WEO global demand, BNEF NEO regional demand (or, for EV Deployment, the IEA EV
       # Outlook index; both are named "Overall Demand"), BCG addressable market and BNEF
       # overcapacity. demand_size and demand_growth were listed beside the composites built
       # from them, which gave WEO half the category and overrode the 1:2 size:growth
@@ -243,7 +243,7 @@ overall_variables:
   Overall Input Cost Index:
     category: "Cost Competitiveness"
     components:
-      # One vote per distinct input: BNEF LCOE (Downstream, ~30 markets), the ILO/IMF labour
+      # One vote per distinct input: BNEF LCOE (Deployment, ~30 markets), the ILO/IMF labour
       # and capital Input Cost Index, and the IEA relative equipment cost. "LCOE Index" is
       # the mean of the theme's current-year and 2050 LCOE indices; listing those two and
       # their mean (formerly "Overall input cost index") as well gave LCOE 3 of 4 votes.

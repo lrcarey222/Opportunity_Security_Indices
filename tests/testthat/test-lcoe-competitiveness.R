@@ -50,6 +50,13 @@ test_that("the release's reference year drives the emitted variable names", {
   expect_setequal(unique(out_2025$Year), 2025L)
 })
 
+test_that("LCOE rows are the Deployment stage", {
+  out <- lcoe_competitiveness(bnef_fixture(2025L), current_year = 2025L)
+
+  # The cost of generating from an installed plant (formerly Downstream).
+  expect_setequal(unique(out$supply_chain), "Deployment")
+})
+
 test_that("the current year is taken from the reader's reference_year attribute", {
   fixture <- bnef_fixture(2025L)
   attr(fixture, "reference_year") <- 2025L

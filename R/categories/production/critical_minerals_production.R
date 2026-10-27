@@ -166,7 +166,8 @@ critical_minerals_production_build_table <- function(sheet_data,
     ) %>%
     dplyr::mutate(
       tech = tech_name,
-      supply_chain = "Upstream",
+      # The P-R sheets report mine production only.
+      supply_chain = "Extraction",
       category = "Production",
       variable = stringr::str_glue("{tech_name} Production"),
       data_type = dplyr::if_else(data_type == "raw_value", "raw", "index"),

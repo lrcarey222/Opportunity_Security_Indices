@@ -7,23 +7,32 @@
 # item of the 2026 public dataset is classified one way or the other; an item no rule matches is
 # reported as unclassified so a new Guide release cannot drop technologies silently.
 #
-# Stage = the part of the value chain the item's technology changes. The three stages are the
-# roll-ups of the six-stage taxonomy in config/supply_chain_stages.yml (Upstream = extraction,
-# refining and recovery; Midstream = component manufacturing and final assembly; Downstream =
-# deployment and use). Re-staged 2026-10-26: vehicle, turbine and reactor designs are the
-# technologies' end products (Midstream, was Downstream); battery reuse, fuel reprocessing and
-# cable recycling are recovery (Upstream); geothermal subsurface operations are site
-# development (Downstream, was Upstream).
-#   Upstream    mining and mineral extraction, fossil fuel production sites, refining and
-#               mineral processing, recycling, reuse and reprocessing into secondary supply
-#               (the HS6 crosswalk files battery recycling under Batteries Upstream too)
-#   Midstream   nuclear fuel fabrication and fuel processing, cells, components and
-#               equipment, complete vehicles, wind turbines and reactor designs, electrolysers
-#   Downstream  generation concepts, charging, grid operation, storage deployment, hydrogen
-#               transport, storage, conversion and use, geothermal wells and reservoirs,
-#               radioactive waste disposal
-# Refining items still carry Midstream below: the six-stage `refining` rolls up to Upstream, so
-# they move when the pipeline scores at six stages (docs/supply_chain_stages.md).
+# Stage = the part of the value chain the item's technology changes, judged relative to that
+# technology, as one of the six stages of config/supply_chain_stages.yml
+# (docs/supply_chain_stages.md; written as data values: Extraction, Refining, Components,
+# Assembly, Deployment, Recovery). Re-staged from Upstream / Midstream / Downstream to six
+# stages 2026-10-26; the old three survive only as roll-ups (Upstream = Extraction + Refining +
+# Recovery, Midstream = Components + Assembly, Downstream = Deployment).
+#   Extraction  mining and mineral extraction and fossil fuel production sites: methane
+#               abatement at coal mines and oil and gas facilities, direct lithium extraction,
+#               deep sea mining
+#   Refining    refining and mineral processing: oil refining, acid gas removal, small-scale
+#               gas processing (CNG / LNG / GTL), acid leaching and graphite purification,
+#               uranium conversion and enrichment, the HALEU and thorium fuel cycles
+#   Components  parts that only work inside a finished good: battery cell chemistries, EV
+#               motors and cell-to-pack / cell-to-chassis designs, PV cell technologies,
+#               nuclear fuel fabrication (fuel assemblies, TRISO, accident-tolerant fuel)
+#   Assembly    the technology's finished goods and stand-alone equipment: vehicles, chargers,
+#               turbine and reactor designs, electrolysers and direct solar water-splitting
+#               devices, PV modules, grid cables, conductors, transformers, HVDC, switchgear,
+#               meters and inverters
+#   Deployment  installation, operation and use: power generation with CCUS, CSP, floating,
+#               space and building-integrated PV, grid operation, battery storage systems,
+#               offshore hydrogen production, hydrogen transport, storage, conversion and
+#               end uses (ammonia included), geothermal drilling, wells and reservoirs (site
+#               development, user decision 2026-10-26), radioactive waste disposal
+#   Recovery    recycling, reuse and reprocessing into secondary supply: battery recycling,
+#               reuse and passport, spent-fuel reprocessing, cable recycling
 # A stage with no item takes the technology-wide value (technological_readiness_build_tech()).
 #
 # Matching. All conditions a rule lists must hold, except that the "any" conditions
@@ -55,20 +64,22 @@ rules:
     names: ["Direct electrochemical nitrogen reduction", "Plasma air-to-ammonia synthesis"]
 
   - id: offshore_renewable_hydrogen
-    # Filed under Renewables > Wind, but the technology is hydrogen production.
+    # Filed under Renewables > Wind, but the technology is hydrogen production: electrolysis
+    # sited with offshore wind, a way of deploying electrolysers rather than a device.
     tech: Green Hydrogen
-    stage: Midstream
+    stage: Deployment
     names: ["Offshore renewable hydrogen production"]
 
   # ---- 2. Fossil fuels ------------------------------------------------------------------------
   - id: coal_mine_methane
     tech: Coal
-    stage: Upstream
+    stage: Extraction
     path: ["Fossil fuels", "Coal", "Methane emissions monitoring and abatement"]
 
   - id: coal_power_ccus
+    # Capture at coal-fired plants: operation of the generating fleet.
     tech: Coal
-    stage: Downstream
+    stage: Deployment
     path: ["Fossil fuels", "Coal", "Carbon management"]
 
   # The Guide files oil and gas together, but its fourth level and its item names separate
@@ -79,28 +90,28 @@ rules:
   # which gas processing plants and refineries both run.
   - id: acid_gas_removal
     tech: [Oil, Gas]
-    stage: Midstream
+    stage: Refining
     names: ["Advanced acid gas removal"]
 
   - id: oil_refining
     tech: Oil
-    stage: Midstream
+    stage: Refining
     path: ["Fossil fuels", "Oil and gas", "Carbon management", "Refining"]
 
   - id: gas_power_ccus
     tech: Gas
-    stage: Downstream
+    stage: Deployment
     path: ["Fossil fuels", "Oil and gas", "Carbon management", "Power generation"]
 
   - id: gas_small_scale_processing
     tech: Gas
-    stage: Midstream
+    stage: Refining
     path: ["Fossil fuels", "Oil and gas", "Methane emissions monitoring and abatement"]
     any_name_regex: ["\\bCNG\\b", "\\bLNG\\b", "\\bGTL\\b"]
 
   - id: oil_gas_production_methane
     tech: [Oil, Gas]
-    stage: Upstream
+    stage: Extraction
     path: ["Fossil fuels", "Oil and gas", "Methane emissions monitoring and abatement"]
 
   # ---- 3. Nuclear -----------------------------------------------------------------------------
@@ -112,39 +123,50 @@ rules:
   - id: nuclear_reprocessing
     # Spent-fuel reprocessing recovers uranium and plutonium for new fuel: recovery.
     tech: Nuclear
-    stage: Upstream
+    stage: Recovery
     names: ["Fuel reprocessing (PUREX process and new advanced techniques)"]
 
   - id: nuclear_back_end
     # Radioactive waste disposal: an operation of the deployed fleet.
     tech: Nuclear
-    stage: Downstream
+    stage: Deployment
     path: ["Nuclear", "Fission", "Nuclear fuel cycles", "Back-end of the fuel cycle"]
 
-  - id: nuclear_fuel_cycle
-    # Conversion, enrichment, fuel fabrication, HALEU and thorium fuel cycles: fuel processing.
+  # The front end of the fuel cycle splits by item name. Fuel fabrication turns enriched
+  # material into the fuel elements a reactor is loaded with (fuel assemblies, TRISO particles,
+  # accident-tolerant fuel): parts that only work inside the reactor. Conversion, enrichment
+  # and the HALEU and thorium fuel cycles produce reactor-grade fuel material, a refined
+  # commodity. The 2026 Guide has one fabrication item (TRISO) and five refining items.
+  - id: nuclear_fuel_fabrication
     tech: Nuclear
-    stage: Midstream
+    stage: Components
+    path: ["Nuclear", "Fission", "Nuclear fuel cycles"]
+    any_name_regex: ["fuel fabrication", "fuel assembl", "\\bTRISO\\b", "accident[- ]tolerant"]
+
+  - id: nuclear_fuel_cycle
+    tech: Nuclear
+    stage: Refining
     path: ["Nuclear", "Fission", "Nuclear fuel cycles"]
 
   - id: nuclear_reactors
-    # Reactor designs are the technology's end product (final assembly).
+    # Reactor designs are the technology's finished good (final assembly).
     tech: Nuclear
-    stage: Midstream
+    stage: Assembly
     path: [["Nuclear", "Fission", "Large reactors"], ["Nuclear", "Fission", "Small modular reactors"]]
 
   # ---- 4. Hydrogen ----------------------------------------------------------------------------
-  # Green hydrogen is produced by splitting water with renewable energy: electrolysis and the
-  # direct solar routes. Transport, storage, conversion to hydrogen-based fuels and end-uses do
-  # not depend on how the hydrogen was made and count as Green Hydrogen Downstream.
+  # Green hydrogen is produced by splitting water with renewable energy: electrolysers and the
+  # direct solar water-splitting devices are the technology's equipment (Assembly). Offshore
+  # production, transport, storage, power generation, conversion to hydrogen-based fuels and
+  # end-uses do not depend on how the device was made and count as Green Hydrogen Deployment.
   - id: hydrogen_electrolysis
     tech: Green Hydrogen
-    stage: Midstream
+    stage: Assembly
     path: ["Hydrogen", "Production", "Electrolysis"]
 
   - id: hydrogen_direct_solar
     tech: Green Hydrogen
-    stage: Midstream
+    stage: Assembly
     names: ["Photon-based direct solar water splitting", "Solar thermochemical"]
 
   - id: hydrogen_production_not_green
@@ -152,9 +174,11 @@ rules:
     reason: "Hydrogen from fossil fuels with CCUS, methane pyrolysis, coal gasification, nuclear heat, geologic deposits, biomass or by-product recovery: not green hydrogen."
     path: ["Hydrogen", "Production"]
 
-  - id: hydrogen_midstream_to_use
+  - id: hydrogen_infrastructure_to_use
+    # Was hydrogen_midstream_to_use: the hydrogen industry's own "midstream" (transport and
+    # storage), not the index stage.
     tech: Green Hydrogen
-    stage: Downstream
+    stage: Deployment
     # "Sythetic" is the Guide's own spelling; the corrected spelling is listed for later releases.
     path:
       - ["Hydrogen", "H2 infrastructure"]
@@ -166,7 +190,7 @@ rules:
     # Hydrogen end-uses filed under Buildings, Industry, Transport or Bioenergy, identified by
     # the Guide's own cross-cutting hydrogen tags.
     tech: Green Hydrogen
-    stage: Downstream
+    stage: Deployment
     any_cc:
       - "Hydrogen=Direct use"
       - "Hydrogen=Distribution"
@@ -181,7 +205,7 @@ rules:
     # hydrogen-based fuel, like the ammonia turbine, co-firing and ship-engine items the Guide
     # tags Hydrogen = Hydrogen-based fuels use, but these three carry no hydrogen tag.
     tech: Green Hydrogen
-    stage: Downstream
+    stage: Deployment
     names:
       - "Ammonia (high temperature heating)"
       - "Ammonia (low temperature heating)"
@@ -197,22 +221,22 @@ rules:
   - id: battery_reuse_and_tracking
     # Second-life reuse and the passport that tracks a battery to its end of life: recovery.
     tech: Batteries
-    stage: Upstream
+    stage: Recovery
     names: ["EV battery reuse in BESS", "Battery passport"]
 
   - id: battery_recycling
     tech: Batteries
-    stage: Upstream
+    stage: Recovery
     path: ["Critical minerals", "E-waste recycling", "Battery recycling"]
 
   - id: battery_metals_extraction
     tech: Batteries
-    stage: Upstream
+    stage: Extraction
     names: ["Direct lithium extraction from brine", "Deep sea mining"]
 
   - id: battery_metals_processing
     tech: Batteries
-    stage: Midstream
+    stage: Refining
     names: ["High pressure acid leaching", "Advanced graphite purification & spheronization"]
 
   - id: rare_earths
@@ -223,7 +247,7 @@ rules:
   - id: grid_cable_recycling
     # Recovering copper and aluminium from scrap cable: recovery for the grid's conductors.
     tech: Electric Grid
-    stage: Upstream
+    stage: Recovery
     path: ["Critical minerals", "E-waste recycling", "Cable recycling"]
 
   - id: critical_minerals_generic
@@ -234,17 +258,17 @@ rules:
   # ---- 6. Batteries ---------------------------------------------------------------------------
   - id: battery_cells_vehicle
     tech: Batteries
-    stage: Midstream
+    stage: Components
     path: ["Transport", "Road transport", "Electric vehicle battery (electrical storage)"]
 
   - id: battery_cells_stationary
     tech: Batteries
-    stage: Midstream
+    stage: Components
     path: ["Energy networks and storage", "Electrochemical storage"]
 
   - id: battery_storage_deployment
     tech: Batteries
-    stage: Downstream
+    stage: Deployment
     names:
       - "Battery storage system with grid-forming inverter"
       - "Rail-to-grid battery energy storage system"
@@ -262,19 +286,21 @@ rules:
     names: ["Fast charging"]
 
   - id: ev_charging
+    # Chargers are stand-alone finished goods, as in the HS6 basket (was Downstream).
     tech: Electric Vehicles
-    stage: Downstream
+    stage: Assembly
     path: ["Transport", "Road transport", "EV charging equipment"]
 
   - id: ev_components
+    # Motors and cell-to-pack / cell-to-chassis designs are parts of the vehicle.
     tech: Electric Vehicles
-    stage: Midstream
+    stage: Components
     names: ["Rare-earth free electric motor", "Cell-to-chassis battery technology", "Cell-to-pack battery technology"]
 
   - id: ev_vehicles
-    # Vehicle designs are the technology's end product (final assembly).
+    # Vehicle designs are the technology's finished good (final assembly).
     tech: Electric Vehicles
-    stage: Midstream
+    stage: Assembly
     path: ["Transport", "Road transport", "Electric vehicle (EV)"]
 
   - id: transport_other
@@ -287,7 +313,7 @@ rules:
     # Grid hardware filed under control systems or under buildings (the meters carry the
     # Guide's Power = Transmission and distribution tag).
     tech: Electric Grid
-    stage: Midstream
+    stage: Assembly
     names:
       - "Flexible alternating current transmission systems"
       - "HVDC breaker"
@@ -296,8 +322,9 @@ rules:
       - "Interval-time of use meter"
 
   - id: grid_equipment
+    # Cables, conductors, transformers and converters: stand-alone equipment (final assembly).
     tech: Electric Grid
-    stage: Midstream
+    stage: Assembly
     path:
       - ["Energy networks and storage", "Power grids", "Cables and conductors"]
       - ["Energy networks and storage", "Power grids", "Transformation and conversion"]
@@ -305,7 +332,7 @@ rules:
   - id: grid_operation
     # Capacity management, monitoring, digital twins, DERMS, demand response.
     tech: Electric Grid
-    stage: Downstream
+    stage: Deployment
     path: ["Energy networks and storage", "Power grids"]
 
   - id: storage_non_battery
@@ -315,39 +342,50 @@ rules:
 
   # ---- 9. Solar (power) -----------------------------------------------------------------------
   - id: solar_pv_deployment
+    # Ways of siting PV (on water, in orbit, in the building envelope), not PV hardware.
     tech: Solar
-    stage: Downstream
+    stage: Deployment
     names: ["Floating solar PV", "Space solar power", "Building integrated photovoltaic systems"]
 
-  - id: solar_pv_cells_modules
+  # Photovoltaic splits by item name. Cell technologies (multi-junction cells, microcrystalline
+  # silicon cells, perovskite, chalcogenide and organic thin films) are parts that only work
+  # inside a module; crystalline silicon modules, concentrated PV modules and other PV
+  # hardware are the technology's finished goods.
+  - id: solar_pv_cells
     tech: Solar
-    stage: Midstream
+    stage: Components
+    path: ["Renewables", "Solar", "Photovoltaic"]
+    any_name_regex: ["\\bcells?\\b", "thin[- ]film"]
+
+  - id: solar_pv_modules
+    tech: Solar
+    stage: Assembly
     path: ["Renewables", "Solar", "Photovoltaic"]
 
   - id: solar_csp
     tech: Solar
-    stage: Downstream
+    stage: Deployment
     path: ["Renewables", "Solar", "Solar thermal"]
     any_cc: ["Power=Generation"]
 
   # ---- 10. Wind -------------------------------------------------------------------------------
   - id: wind_generation
     # Every item is a turbine or platform design (onshore, seabed-fixed, floating, airborne):
-    # the technology's end product (final assembly).
+    # the technology's finished good (final assembly).
     tech: Wind
-    stage: Midstream
+    stage: Assembly
     path: ["Renewables", "Wind"]
 
   # ---- 11. Geothermal -------------------------------------------------------------------------
   - id: geothermal_subsurface
     # Drilling and reservoir systems develop the site: deployment (user decision 2026-10-26).
     tech: Geothermal
-    stage: Downstream
+    stage: Deployment
     path: ["Renewables", "Geothermal", "Subsurface operations for geothermal energy"]
 
   - id: geothermal_surface
     tech: Geothermal
-    stage: Downstream
+    stage: Deployment
     path: ["Renewables", "Geothermal", "Surface operations for geothermal energy"]
 
   # ---- 12. Outside the index technologies -----------------------------------------------------
@@ -374,7 +412,7 @@ rules:
 # Rules for the superseded hand-built extract (data/raw/IEA_Clean_Tech_Guide.csv: name,
 # comma-joined `sector` path, `supplyChain`, trl2020-trl2023), kept so an older stage still
 # builds. Its taxonomy carries no stage information, so these rules set no `stage` and an item
-# counts for all three stages, as the theme did before stages were resolved.
+# counts for all six stages, as the theme did before stages were resolved.
 #
 # all_tokens / any_tokens / exclude_tokens are matched literally against the comma-delimited
 # `sector` entries; any_supplychain_tokens and any_name_regex are regexes. Rules are first

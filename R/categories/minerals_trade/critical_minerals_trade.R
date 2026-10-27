@@ -34,6 +34,13 @@
 # declarations the mirror fetcher collects; the mirror is only for economies that never report.
 # That rule also removes the clearest mirror artefact in the 2024 data: Iraq declares USD 1.2bn
 # of copper wire from Jordan, which Jordan itself declares USD 0.3m of exporting.
+#
+# Stages (docs/supply_chain_stages.md): each matched HS6 code is staged by what the good is
+# (critical_minerals_trade_stage()): ores, concentrates and natural graphite are Extraction;
+# refined chemicals, unwrought and refined metal, mattes, ferro-alloys and semi-fabricates are
+# Refining; waste, scrap, slag, ash and residues are Recovery. Every measure above is taken
+# within (mineral, stage), and the demand weights are renormalized over the minerals traded at
+# the stage, so a technology scores separately on its ores, refined metal and scrap.
 
 # ---- Build mineral regex for commodity parsing ----
 # The legacy pipeline extracts mineral names from Comtrade descriptions using a
@@ -66,6 +73,76 @@ critical_minerals_trade_filter_hs <- function(crit_hs, mineral_demand_clean) {
         stringr::regex(minerals_pattern, ignore_case = TRUE)
       )
     )
+}
+
+# ---- Supply-chain stage of an HS6 code ----
+# Waste-and-scrap and slag/ash/residue headings: recycled feed, so Recovery. Chapter 81 has no
+# scrap heading of its own; its "waste and scrap" subheadings are found by description.
+CRITMIN_TRADE_RECOVERY_HEADINGS <- c(
+  "2618", "2619", "2620", "2621", "7112", "7204", "7404", "7503", "7602", "7802", "7902", "8002"
+)
+
+# HS chapters whose goods are refined or processed material: inorganic chemicals (28), carbon
+# and artificial graphite (38), silicones (39), precious metals (71), ferro-alloys and steel
+# (72) and the base metals (74-81: unwrought and refined metal, mattes, powders, semis such as
+# wire, foil and sheet, and the "articles" headings the name match also catches).
+CRITMIN_TRADE_REFINING_CHAPTERS <- c(
+  "28", "38", "39", "71", "72", "74", "75", "76", "78", "79", "80", "81"
+)
+
+# Stage of each HS6 code, from the code and its Comtrade description (vectorized):
+#   Recovery    waste and scrap, slag, ash and residues (CRITMIN_TRADE_RECOVERY_HEADINGS, or a
+#               "waste and scrap" subheading). A combined heading that only "includes" waste
+#               and scrap (8111 manganese; "articles thereof, including waste and scrap") is
+#               mostly unwrought metal, so it stays in Refining, as does a subheading "other
+#               than waste and scrap" (811229 wrought chromium).
+#   Extraction  chapter 25 (natural graphite) and headings 2601-2617 (ores and concentrates).
+#   Refining    the rest of CRITMIN_TRADE_REFINING_CHAPTERS.
+# A code in any other chapter is NA: the caller stops on it rather than guess.
+critical_minerals_trade_stage <- function(cmd_code, cmd_desc = NA_character_) {
+  code <- stringr::str_pad(as.character(cmd_code), 6, pad = "0")
+  desc <- dplyr::coalesce(as.character(cmd_desc), "")
+  chapter <- substr(code, 1, 2)
+  heading <- substr(code, 1, 4)
+
+  scrap <- stringr::str_detect(desc, stringr::regex("waste and scrap", ignore_case = TRUE)) &
+    !stringr::str_detect(desc, stringr::regex("(including|other than) waste and scrap", ignore_case = TRUE))
+
+  dplyr::case_when(
+    heading %in% CRITMIN_TRADE_RECOVERY_HEADINGS ~ "Recovery",
+    chapter %in% CRITMIN_TRADE_REFINING_CHAPTERS & scrap ~ "Recovery",
+    chapter == "25" ~ "Extraction",
+    heading >= "2601" & heading <= "2617" ~ "Extraction",
+    chapter %in% CRITMIN_TRADE_REFINING_CHAPTERS ~ "Refining",
+    TRUE ~ NA_character_
+  )
+}
+
+# What the goods of each stage are, for the explanations.
+CRITMIN_TRADE_STAGE_GOODS <- c(
+  Extraction = "ores, concentrates and natural graphite",
+  Refining = "refined chemicals, refined and unwrought metal, ferro-alloys and semi-fabricates",
+  Recovery = "waste, scrap, slag, ash and residues"
+)
+
+# Number of distinct HS6 codes behind each (mineral, stage) in a trade table with `cmd_code`,
+# `mineral` and `supply_chain` (critical_minerals_trade_build_trade()). Rows without a mineral
+# are not in the theme and are not counted.
+critical_minerals_trade_stage_codes <- function(critmin_trade) {
+  if (!"cmd_code" %in% names(critmin_trade)) {
+    return(tibble::tibble(mineral = character(), supply_chain = character(), n_hs6 = integer()))
+  }
+  critmin_trade %>%
+    dplyr::filter(!is.na(mineral), !is.na(cmd_code), cmd_code != "TOTAL") %>%
+    dplyr::group_by(mineral, supply_chain) %>%
+    dplyr::summarize(n_hs6 = dplyr::n_distinct(cmd_code), .groups = "drop")
+}
+
+# HS6 codes behind a (technology, stage) cell: the codes of the minerals with a positive weight
+# in it. NA when the trade table carried no codes.
+critical_minerals_trade_count_codes <- function(n_hs6, weight) {
+  used <- !is.na(weight) & weight > 0
+  if (all(is.na(n_hs6[used]))) NA_integer_ else as.integer(sum(n_hs6[used], na.rm = TRUE))
 }
 
 # ---- Mirror exports for economies that do not report ----
@@ -309,9 +386,10 @@ critical_minerals_trade_build_trade <- function(critmin_import,
   }
 
   # One source per economy: a non-reporter that declares imports only keeps those imports
-  # beside its mirror exports.
+  # beside its mirror exports. Each code with a mineral takes its stage from what the good is
+  # (critical_minerals_trade_stage()).
   mirror_iso <- unique(mirrored$reporter_iso)
-  dplyr::bind_rows(reported, mirrored) %>%
+  trade <- dplyr::bind_rows(reported, mirrored) %>%
     dplyr::mutate(export_source = dplyr::if_else(reporter_iso %in% mirror_iso, "mirror", export_source)) %>%
     dplyr::group_by(reporter_iso, cmd_code, export_source) %>%
     dplyr::summarize(
@@ -327,21 +405,37 @@ critical_minerals_trade_build_trade <- function(critmin_import,
       mineral = harmonize_mineral_names(
         stringr::str_extract(cmd_desc, stringr::regex(minerals_pattern, ignore_case = TRUE))
       ),
-      supply_chain = "Upstream"
+      supply_chain = dplyr::if_else(
+        is.na(mineral), NA_character_, critical_minerals_trade_stage(cmd_code, cmd_desc)
+      )
     )
+
+  unstaged <- trade %>%
+    dplyr::filter(!is.na(mineral), is.na(supply_chain)) %>%
+    dplyr::distinct(cmd_code, cmd_desc)
+  if (nrow(unstaged) > 0) {
+    stop(
+      "critical_minerals_trade_build_trade(): no supply-chain stage for HS code(s) ",
+      paste(unique(paste0(unstaged$cmd_code, " (", unstaged$cmd_desc, ")")), collapse = "; "),
+      ". Add the chapter or heading to critical_minerals_trade_stage()."
+    )
+  }
+  trade
 }
 
 # ---- Compute market shares and HHI ----
-# Mineral-level exports, world market shares and export-market HHIs over the Comtrade
-# reporters. Every reporter is completed with zero exports for the minerals it does not
-# export, so the tech rollup below weights every mineral the technology needs instead of only
-# the ones a country happens to trade. With mirror exports in `critmin_trade` the world totals,
-# shares and HHIs run over reporters and mirrored non-reporters alike; `total_export` then needs
-# the mirror economies' total exports too, for the export-share term.
+# Exports, world market shares and export-market HHIs by mineral and stage over the Comtrade
+# reporters. Every reporter is completed with zero exports for the (mineral, stage) pairs it
+# does not export, so the tech rollup below weights every mineral the technology needs instead
+# of only the ones a country happens to trade. With mirror exports in `critmin_trade` the world
+# totals, shares and HHIs run over reporters and mirrored non-reporters alike; `total_export`
+# then needs the mirror economies' total exports too, for the export-share term. `n_hs6` is the
+# number of HS6 codes behind the (mineral, stage) pair (critical_minerals_trade_stage_codes()).
 critical_minerals_trade_build_hhi <- function(critmin_trade, total_export, gamma = 0.5) {
   if (!"export_source" %in% names(critmin_trade)) {
     critmin_trade$export_source <- "reported"
   }
+  stage_codes <- critical_minerals_trade_stage_codes(critmin_trade)
 
   critmin_trade %>%
     dplyr::filter(!is.na(mineral)) %>%
@@ -364,18 +458,22 @@ critical_minerals_trade_build_hhi <- function(critmin_trade, total_export, gamma
       market_share = exports / sum(exports, na.rm = TRUE),
       HHI = sum(market_share^2, na.rm = TRUE),
       # A reporter exporting none of a mineral scores 0, the same as a country the zero
-      # missing-data rule fills in; exporters are ranked within the mineral above it.
+      # missing-data rule fills in; exporters are ranked within the mineral and stage above it.
       market_share_index = iea_critical_minerals_share_index(market_share, gamma = gamma)
     ) %>%
-    dplyr::ungroup()
+    dplyr::ungroup() %>%
+    dplyr::left_join(stage_codes, by = c("mineral", "supply_chain"))
 }
 
-# World export concentration by mineral: one row per mineral, S-curve of -HHI across minerals
-# (lower concentration = more secure).
+# World export concentration by mineral and stage: one row per (mineral, stage), S-curve of
+# -HHI across the minerals of the stage (lower concentration = more secure), so ore markets are
+# compared with ore markets and scrap with scrap.
 critical_minerals_trade_build_mineral_hhi <- function(critmin_hhi, gamma = 0.5) {
   critmin_hhi %>%
     dplyr::distinct(mineral, supply_chain, HHI) %>%
-    dplyr::mutate(hhi_index = median_scurve(-HHI, gamma = gamma))
+    dplyr::group_by(supply_chain) %>%
+    dplyr::mutate(hhi_index = median_scurve(-HHI, gamma = gamma)) %>%
+    dplyr::ungroup()
 }
 
 # Demand weights over the minerals that have trade data, identical for every country.
@@ -394,37 +492,66 @@ critical_minerals_trade_build_weights <- function(mineral_demand_clean, traded_m
     dplyr::select(mineral, tech, weight)
 }
 
-# ---- Roll up to technology-level trade indices ----
-critical_minerals_trade_build_tech <- function(critmin_hhi, mineral_demand_clean, gamma = 0.5) {
-  weights <- critical_minerals_trade_build_weights(
-    mineral_demand_clean,
-    traded_minerals = unique(critmin_hhi$mineral)
+# Demand weights by stage: within each stage, critical_minerals_trade_build_weights() over the
+# minerals traded at that stage, so each (technology, stage) cell sums to one. One row per
+# (mineral, tech, supply_chain). A mineral with no code at a stage drops out of that stage only:
+# no lithium ore or rare-earth code matches the name regex, so Batteries Extraction weights the
+# battery minerals that are traded as ores.
+critical_minerals_trade_build_stage_weights <- function(mineral_demand_clean, critmin_hhi) {
+  traded <- critmin_hhi %>%
+    dplyr::filter(!is.na(mineral), !is.na(supply_chain)) %>%
+    dplyr::distinct(mineral, supply_chain)
+  empty <- tibble::tibble(
+    mineral = character(), tech = character(), weight = numeric(), supply_chain = character()
   )
 
+  dplyr::bind_rows(
+    empty,
+    lapply(unique(traded$supply_chain), function(stage) {
+      critical_minerals_trade_build_weights(
+        mineral_demand_clean,
+        traded_minerals = traded$mineral[traded$supply_chain == stage]
+      ) %>%
+        dplyr::mutate(supply_chain = stage)
+    })
+  )
+}
+
+# ---- Roll up to technology-level trade indices ----
+# One row per reporter, technology and stage. `n_hs6` is the number of HS6 codes behind the cell
+# (the codes of the minerals the technology uses at that stage).
+critical_minerals_trade_build_tech <- function(critmin_hhi, mineral_demand_clean, gamma = 0.5) {
+  weights <- critical_minerals_trade_build_stage_weights(mineral_demand_clean, critmin_hhi)
+  if (!"n_hs6" %in% names(critmin_hhi)) critmin_hhi$n_hs6 <- NA_integer_
+
   critmin_hhi %>%
-    dplyr::inner_join(weights, by = "mineral", relationship = "many-to-many") %>%
+    dplyr::inner_join(weights, by = c("mineral", "supply_chain"), relationship = "many-to-many") %>%
     dplyr::group_by(reporter_iso, country, export_source, tech, supply_chain) %>%
     dplyr::summarize(
       critmin_market_share = sum(weight * market_share, na.rm = TRUE),
       critmin_market_share_index = sum(weight * market_share_index, na.rm = TRUE),
       critmin_export_share = sum(weight * exp_share, na.rm = TRUE),
+      n_hs6 = critical_minerals_trade_count_codes(n_hs6, weight),
       .groups = "drop"
     )
 }
 
-# Technology-level HHI component: one value per technology.
+# Technology-level HHI component: one value per technology and stage.
 critical_minerals_trade_build_tech_hhi <- function(critmin_hhi, mineral_demand_clean, gamma = 0.5) {
-  weights <- critical_minerals_trade_build_weights(
-    mineral_demand_clean,
-    traded_minerals = unique(critmin_hhi$mineral)
-  )
+  weights <- critical_minerals_trade_build_stage_weights(mineral_demand_clean, critmin_hhi)
+  if (!"n_hs6" %in% names(critmin_hhi)) critmin_hhi$n_hs6 <- NA_integer_
 
   critical_minerals_trade_build_mineral_hhi(critmin_hhi, gamma = gamma) %>%
-    dplyr::inner_join(weights, by = "mineral", relationship = "many-to-many") %>%
+    dplyr::left_join(
+      dplyr::distinct(critmin_hhi, mineral, supply_chain, n_hs6),
+      by = c("mineral", "supply_chain")
+    ) %>%
+    dplyr::inner_join(weights, by = c("mineral", "supply_chain"), relationship = "many-to-many") %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::summarize(
       critmin_hhi = sum(weight * HHI),
       critmin_hhi_index = sum(weight * hhi_index),
+      n_hs6 = critical_minerals_trade_count_codes(n_hs6, weight),
       .groups = "drop"
     )
 }
@@ -455,14 +582,17 @@ critical_minerals_trade_build_tidy <- function(critmin_trade_tech,
     CRITMIN_TRADE_SOURCES[["reported"]]
   }
 
+  if (!"n_hs6" %in% names(critmin_trade_tech)) critmin_trade_tech$n_hs6 <- NA_integer_
+  if (!"n_hs6" %in% names(critmin_tech_hhi)) critmin_tech_hhi$n_hs6 <- NA_integer_
+
   share_tbl <- critmin_trade_tech %>%
     dplyr::filter(!is.na(country)) %>%
     dplyr::select(
-      country, tech, supply_chain,
+      country, tech, supply_chain, n_hs6,
       critmin_market_share, critmin_market_share_index, critmin_export_share
     ) %>%
     tidyr::pivot_longer(
-      cols = -c(country, tech, supply_chain),
+      cols = -c(country, tech, supply_chain, n_hs6),
       names_to = "variable",
       values_to = "value"
     )
@@ -473,6 +603,15 @@ critical_minerals_trade_build_tidy <- function(critmin_trade_tech,
       names_to = "variable",
       values_to = "value"
     )
+
+  # Each row names its stage, the goods the stage covers and how many HS6 codes are behind it.
+  stage_note <- function(stage, n_hs6) {
+    goods <- unname(CRITMIN_TRADE_STAGE_GOODS[stage])
+    codes <- dplyr::if_else(
+      is.na(n_hs6), "", paste0(" (", n_hs6, dplyr::if_else(n_hs6 == 1, " HS6 code)", " HS6 codes)"))
+    )
+    dplyr::if_else(is.na(goods), "", paste0(". ", stage, ": ", goods, codes))
+  }
 
   dplyr::bind_rows(share_tbl, hhi_tbl) %>%
     dplyr::left_join(provenance, by = "country") %>%
@@ -499,7 +638,8 @@ critical_minerals_trade_build_tidy <- function(critmin_trade_tech,
         variable == "critmin_hhi" ~
           "Demand-weighted S-curve of -HHI of world mineral exports (same for every country)",
         TRUE ~ "UN Comtrade export data"
-      )
+      ),
+      explanation = paste0(explanation, stage_note(supply_chain, n_hs6))
     ) %>%
     dplyr::rename(Country = country) %>%
     dplyr::select(
@@ -524,13 +664,15 @@ critical_minerals_trade_year <- function(critmin_import, critmin_export) {
   if (all(is.na(ref_years))) 2024L else max(ref_years, na.rm = TRUE)
 }
 
-# === Exporter x mineral flows ===
-# One row per exporter and mineral: exports (USD, FOB), the world market share, the mineral's
-# HHI, the export share and `export_source` ("reported" / "mirror"). The theme is built from
-# this table; scripts/10 also writes it out as the record of where each economy's figures come
-# from. `mirror_import` is the partner-level import pull (critmin_mirror_import.csv), whose flow
-# "X" rows add the late reporters' own exports; NULL reproduces the reporter-only construction.
-# Rows of another year are ignored.
+# === Exporter x mineral x stage flows ===
+# One row per exporter, mineral and stage (`supply_chain`: Extraction, Refining or Recovery, from
+# critical_minerals_trade_stage()): exports (USD, FOB), the world market share, the HHI of the
+# (mineral, stage) market, the export share, `n_hs6` (the HS6 codes behind the pair) and
+# `export_source` ("reported" / "mirror"). The theme is built from this table; scripts/10 also
+# writes it out as the record of where each economy's figures come from. `mirror_import` is the
+# partner-level import pull (critmin_mirror_import.csv), whose flow "X" rows add the late
+# reporters' own exports; NULL reproduces the reporter-only construction. Rows of another year
+# are ignored.
 critical_minerals_trade_flows <- function(critmin_import,
                                           critmin_export,
                                           total_export,

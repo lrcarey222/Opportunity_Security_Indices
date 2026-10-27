@@ -99,14 +99,15 @@ test_that("tech aggregation uses mean of item-level bell scores and does not imp
   )
 
   # The legacy extract carries no stage information, so its items count for every stage and
-  # the three stage rows of a technology are identical.
-  expect_equal(nrow(tech_tbl), 6L)
+  # the six stage rows of a technology are identical.
+  expect_equal(nrow(tech_tbl), 12L)
+  expect_identical(tech_tbl$supply_chain[tech_tbl$tech == "Batteries"], TECHNOLOGICAL_READINESS_STAGES)
   expect_true(all(tech_tbl$basis[tech_tbl$tech == "Batteries"] == "stage"))
   battery_rows <- tech_tbl[tech_tbl$tech == "Batteries", ]
   expect_equal(dplyr::n_distinct(battery_rows$trl_index), 1L)
 
-  battery_row <- tech_tbl[tech_tbl$tech == "Batteries" & tech_tbl$supply_chain == "Midstream", ]
-  coal_row <- tech_tbl[tech_tbl$tech == "Coal" & tech_tbl$supply_chain == "Midstream", ]
+  battery_row <- tech_tbl[tech_tbl$tech == "Batteries" & tech_tbl$supply_chain == "Components", ]
+  coal_row <- tech_tbl[tech_tbl$tech == "Coal" & tech_tbl$supply_chain == "Components", ]
 
   # Three fixture items map to Batteries: the two cells set above plus "Grid storage
   # system" at TRL 6, which the Storage taxonomy token claims. Derive the expectation
@@ -137,7 +138,10 @@ test_that("technological_readiness output schema stays stable", {
   )
 
   expect_true(all(out$Country == "Global"))
-  expect_setequal(unique(out$supply_chain), c("Upstream", "Midstream", "Downstream"))
+  expect_setequal(
+    unique(out$supply_chain),
+    c("Extraction", "Refining", "Components", "Assembly", "Deployment", "Recovery")
+  )
   # The fixture carries a single TRL year, so the momentum window collapses onto it.
   expect_true(all(c("TRL 2023", "TRL Δ 2023–2023", "TRL Level Index", "TRL Momentum Index", "TRL Index") %in% unique(out$variable)))
   expect_true(all(out$Year == 2023L))

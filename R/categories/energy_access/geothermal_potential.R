@@ -105,7 +105,8 @@ geothermal_potential_build_table <- function(geo_clean, year) {
     dplyr::transmute(
       Country,
       tech = "Geothermal",
-      supply_chain = "Downstream",
+      # Filed under Reserves but a site resource, which is Deployment (not Extraction).
+      supply_chain = "Deployment",
       category = "Reserves",
       variable,
       data_type,

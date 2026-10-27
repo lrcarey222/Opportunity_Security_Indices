@@ -1,15 +1,16 @@
 # Production depth + momentum theme builder functions.
 
-# EI fuel production variables and the theme's cell labels; EIA fills these (see below).
+# EI fuel production variables and the theme's cell labels; EIA fills these (see below). Each
+# label is "<tech> <stage>": fuel production is Extraction, electricity generation Deployment.
 PRODUCTION_EI_FUEL_VARS <- c(
-  "Oil Upstream" = "oilprod_kbd",
-  "Gas Upstream" = "gasprod_ej",
-  "Coal Upstream" = "coalprod_ej"
+  "Oil Extraction" = "oilprod_kbd",
+  "Gas Extraction" = "gasprod_ej",
+  "Coal Extraction" = "coalprod_ej"
 )
 
 # Every economy EI lists for any of `vars` in any of `years` is scored on every cell.
 #
-# Fuel production (Oil, Gas, Coal Upstream) EI does not report for one of them: with `eia` (the
+# Fuel production (Oil, Gas, Coal Extraction) EI does not report for one of them: with `eia` (the
 # staged EIA International Energy Statistics extract, R/utils/eia_intl.R) the cell takes the
 # EIA value of the same year in EI's units (gas and coal, which EIA publishes a year after oil,
 # the latest EIA year within `eia_max_lag` years), recorded in `eia_note` and `eia_used`; a cell
@@ -19,7 +20,7 @@ PRODUCTION_EI_FUEL_VARS <- c(
 # "Other <region>" residuals, so an absent row is not a zero. Without `eia` (fixtures, older
 # callers) such a cell is 0, as before 2026-10-11.
 #
-# Generation (the Downstream cells) EI does not report is still 0, with or without `eia`: EI's
+# Generation (the Deployment cells) EI does not report is still 0, with or without `eia`: EI's
 # electricity-by-fuel table lists 31 of the 99 economies, and on 2026-10-11 EIA had positive net
 # generation for 35 (coal), 60 (gas) and 63 (oil) of the other 68 (scratch notes, fixes8).
 production_depth_momentum_clean_energy_production <- function(ei,
@@ -62,15 +63,15 @@ production_depth_momentum_clean_energy_production <- function(ei,
     dplyr::distinct() %>%
     dplyr::mutate(
       Var = dplyr::case_when(
-        Var == "oilprod_kbd" ~ "Oil Upstream",
-        Var == "gasprod_ej" ~ "Gas Upstream",
-        Var == "coalprod_ej" ~ "Coal Upstream",
-        Var == "solar_twh" ~ "Solar Downstream",
-        Var == "wind_twh" ~ "Wind Downstream",
-        Var == "nuclear_twh" ~ "Nuclear Downstream",
-        Var == "electbyfuel_coal" ~ "Coal Downstream",
-        Var == "electbyfuel_gas" ~ "Gas Downstream",
-        Var == "electbyfuel_oil" ~ "Oil Downstream",
+        Var == "oilprod_kbd" ~ "Oil Extraction",
+        Var == "gasprod_ej" ~ "Gas Extraction",
+        Var == "coalprod_ej" ~ "Coal Extraction",
+        Var == "solar_twh" ~ "Solar Deployment",
+        Var == "wind_twh" ~ "Wind Deployment",
+        Var == "nuclear_twh" ~ "Nuclear Deployment",
+        Var == "electbyfuel_coal" ~ "Coal Deployment",
+        Var == "electbyfuel_gas" ~ "Gas Deployment",
+        Var == "electbyfuel_oil" ~ "Oil Deployment",
         TRUE ~ Var
       )
     ) %>%
@@ -160,7 +161,7 @@ production_depth_momentum_eia_notes <- function(filled, yr_latest) {
   }
   filled %>%
     dplyr::mutate(
-      fuel = sub(" Upstream$", "", Var),
+      fuel = sub(" Extraction$", "", Var),
       used = !is.na(value),
       not_comparable = eia_basis %in% "not_comparable",
       year_txt = dplyr::case_when(
@@ -211,7 +212,7 @@ production_depth_momentum_build_energy_indices <- function(production_clean,
     tidyr::separate(
       Var,
       into = c("tech", "supply_chain"),
-      sep = " (?=Upstream|Downstream)",
+      sep = " (?=Extraction$|Deployment$)",
       remove = TRUE
     ) %>%
     dplyr::group_by(tech, supply_chain) %>%
@@ -291,10 +292,11 @@ production_depth_momentum_build_mineral_supply <- function(critical,
     dplyr::rename(country = `Sector.Country`) %>%
     tidyr::separate(Mineral, into = c("mineral", "supply_chain_raw"), sep = " - ", extra = "merge") %>%
     # Canonical mineral names, so graphite and rare earths meet their demand shares; stage
-    # from the shared IEA stage map (battery-grade graphite is processing, i.e. Midstream).
+    # from the shared IEA stage map (mining is Extraction; refining, lithium chemicals and
+    # battery-grade graphite are Refining).
     dplyr::mutate(
       mineral = harmonize_mineral_names(mineral),
-      supply_chain = iea_critical_minerals_supply_stage(supply_chain_raw)
+      supply_chain = iea_critical_minerals_supply_stage(supply_chain_raw, legacy = FALSE)
     ) %>%
     dplyr::ungroup() %>%
     dplyr::select(
@@ -351,8 +353,8 @@ production_depth_momentum_build_mineral_supply <- function(critical,
     dplyr::arrange(dplyr::desc(security_index))
 }
 
-# One production level per country and technology from the IEA mined supply of the
-# technology's minerals.
+# One production level per country, technology and stage from the IEA supply of the
+# technology's minerals: mined supply for Extraction, refined supply for Refining.
 #
 # Tonnes of different minerals cannot be averaged or added: copper is mined in tens of
 # millions of tonnes, cobalt, lithium and magnet rare earths in tens to hundreds of thousands,
@@ -438,7 +440,8 @@ production_depth_momentum_build_combined <- function(production_growth,
   # EI energy production and IEA critical mineral production carry different latest
   # years, so the raw level is unified under one year-neutral column and the source
   # year is kept alongside it for the explanation text. Each block carries its own source
-  # and measure: the mineral rows were labelled EI although they are IEA mined supply.
+  # and measure: the mineral rows were labelled EI although they are IEA mined and refined
+  # supply.
   production_tbl <- production_growth %>%
     dplyr::transmute(
       Country,
@@ -509,8 +512,9 @@ production_depth_momentum_build_table <- function(production_combined,
     production_combined$source[from_eia], "; EIA International Energy Statistics"
   )
 
+  # The IEA refined-supply rows (Refining) are kept beside the mined ones (Extraction). Until
+  # 2026-10-26 they were built as Midstream and then dropped here.
   production_combined %>%
-    dplyr::filter(supply_chain != "Midstream") %>%
     tidyr::pivot_longer(
       cols = c(production_latest, size_index, growth_abs_index, overall_production_index),
       names_to = "metric",
@@ -518,18 +522,19 @@ production_depth_momentum_build_table <- function(production_combined,
     ) %>%
     dplyr::mutate(
       data_type = dplyr::if_else(stringr::str_ends(metric, "_index"), "index", "raw"),
-      metric_clean = stringr::str_remove(metric, "_index$")
+      metric_clean = stringr::str_remove(metric, "_index$"),
+      supply_kind = dplyr::if_else(supply_chain == "Refining", "refined", "mined")
     ) %>%
     dplyr::mutate(
       category = "Production",
       explanation = dplyr::case_when(
         block == "mineral" & metric_clean == "production_latest" ~
           glue::glue(
-            "Share of world mined supply of the minerals {tech} uses in {raw_year}, each mineral ",
+            "Share of world {supply_kind} supply of the minerals {tech} uses in {raw_year}, each mineral ",
             "weighted by {tech}'s share of its demand (0-1)"
           ),
         block == "mineral" & metric_clean == "size" ~
-          glue::glue("Percent-rank of {tech}'s demand-weighted share of world mined supply in {raw_year}"),
+          glue::glue("Percent-rank of {tech}'s demand-weighted share of world {supply_kind} supply in {raw_year}"),
         block == "mineral" & metric_clean == "growth_abs" ~
           glue::glue(
             "Percent-rank of the projected change in that supply, {raw_year}-{horizon_year} ",
@@ -570,7 +575,7 @@ production_depth_momentum_build_table <- function(production_combined,
     )
 }
 
-# Nuclear Upstream production: uranium mine output scored like oil, gas and coal.
+# Nuclear Extraction production: uranium mine output scored like oil, gas and coal.
 #
 # The Red Book series (R/categories/reserves/uranium.R) ends a year before the EI one, so it
 # is scored on its own latest year not after `year` and the 5 years before it; the raw row's
@@ -611,8 +616,8 @@ production_depth_momentum_build_uranium <- function(uranium_production,
   )
 }
 
-# `uranium_production` (data/reference/uranium_production.csv) adds Nuclear Upstream; without
-# it the theme has no Nuclear Upstream rows, as before.
+# `uranium_production` (data/reference/uranium_production.csv) adds Nuclear Extraction; without
+# it the theme has no Nuclear Extraction rows, as before.
 production_depth_momentum <- function(ei,
                                       critical,
                                       mineral_demand_clean,

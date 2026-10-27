@@ -1,4 +1,4 @@
-# Production depth and momentum, mineral Upstream cells (EO Production).
+# Production depth and momentum, mineral Extraction and Refining cells (EO Production).
 #
 # The raw level of these cells used to be the mean of a country's mined kilotonnes over the
 # technology's minerals, labelled as EI data, and the size index ranked every country-mineral
@@ -14,6 +14,7 @@ source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "utils", "iea_critical_minerals.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "categories", "reserves", "reserves.R"))
@@ -66,9 +67,9 @@ pdm_ei <- function() {
     dplyr::mutate(Value = c(1, 2, 3, 10, 12, 15))
 }
 
-pdm_value <- function(tbl, country, variable, tech = "Electric Vehicles") {
-  hit <- tbl[tbl$Country == country & tbl$tech == tech & tbl$supply_chain == "Upstream" & tbl$variable == variable, ]
-  if (nrow(hit) != 1) stop("expected one row for ", country, "/", tech, "/", variable)
+pdm_value <- function(tbl, country, variable, tech = "Electric Vehicles", stage = "Extraction") {
+  hit <- tbl[tbl$Country == country & tbl$tech == tech & tbl$supply_chain == stage & tbl$variable == variable, ]
+  if (nrow(hit) != 1) stop("expected one row for ", country, "/", tech, "/", stage, "/", variable)
   hit$value
 }
 
@@ -98,7 +99,7 @@ test_that("growth is the absolute change against base-year world supply, defined
   ms <- production_depth_momentum_build_mineral_production(
     production_depth_momentum_build_mineral_supply(critical, reserves_build_mineral_demand_clean(critical), pdm_country_info())
   )
-  ev <- ms[ms$tech == "Electric Vehicles" & ms$supply_chain == "Upstream", ]
+  ev <- ms[ms$tech == "Electric Vehicles" & ms$supply_chain == "Extraction", ]
 
   # Both years over the 2025 world totals, so a shrinking copper market is not read as a gain.
   expect_equal(ev$supply_growth[ev$Country == "Chile"], (0.25 * 4000 / 10000 + 0.75 * 60 / 200) - 0.2375)
@@ -106,7 +107,7 @@ test_that("growth is the absolute change against base-year world supply, defined
   expect_equal(ev$supply_growth[ev$Country == "Japan"], 0)
 
   # Japan mines none of the minerals: observed, not left to the missing-data rule.
-  japan <- out[out$Country == "Japan" & out$tech == "Electric Vehicles" & out$supply_chain == "Upstream", ]
+  japan <- out[out$Country == "Japan" & out$tech == "Electric Vehicles" & out$supply_chain == "Extraction", ]
   expect_setequal(japan$variable, c("production_latest", "size", "growth_abs", "Overall Production"))
   expect_false(anyNA(japan$value))
   expect_gt(pdm_value(out, "Australia", "growth_abs"), pdm_value(out, "Japan", "growth_abs"))
@@ -122,7 +123,7 @@ test_that("mineral rows are labelled as IEA mined supply and the EI rows name th
   critical <- pdm_critical()
   out <- production_depth_momentum(pdm_ei(), critical, reserves_build_mineral_demand_clean(critical), pdm_country_info())
 
-  minerals <- out[out$tech %in% c("Electric Vehicles", "Electric Grid", "Batteries") & out$supply_chain == "Upstream", ]
+  minerals <- out[out$tech %in% c("Electric Vehicles", "Electric Grid", "Batteries") & out$supply_chain == "Extraction", ]
   expect_gt(nrow(minerals), 0)
   expect_equal(unique(minerals$source), "IEA Critical Minerals Database")
   raw <- minerals$explanation[minerals$variable == "production_latest" & minerals$tech == "Electric Vehicles"]
@@ -130,8 +131,30 @@ test_that("mineral rows are labelled as IEA mined supply and the EI rows name th
   growth <- minerals$explanation[minerals$variable == "growth_abs" & minerals$tech == "Electric Vehicles"]
   expect_true(all(grepl("2025-2035", growth)))
 
-  coal <- out[out$tech == "Coal" & out$supply_chain == "Upstream", ]
+  coal <- out[out$tech == "Coal" & out$supply_chain == "Extraction", ]
   # The same edition label as the other EI themes (2025 data = the 2026 edition).
   expect_equal(unique(coal$source), "EI Statistical Review of World Energy (2026 edition)")
   expect_equal(pdm_value(out, "Australia", "production_latest", tech = "Coal"), 15)
+})
+
+test_that("refined supply is scored as Refining rows instead of being dropped", {
+  critical <- pdm_critical()
+  out <- production_depth_momentum(pdm_ei(), critical, reserves_build_mineral_demand_clean(critical), pdm_country_info())
+
+  expect_silent(assert_supply_chain_stages(out$supply_chain, "production_depth_momentum"))
+  expect_setequal(unique(out$supply_chain), c("Extraction", "Refining"))
+
+  # Only copper has refining rows, so EV Refining is copper's refined supply alone: Japan
+  # refines 15% of it and mines nothing, Chile refines 20%, Peru none.
+  expect_equal(pdm_value(out, "Japan", "production_latest", stage = "Refining"), 1500 / 10000)
+  expect_equal(pdm_value(out, "Chile", "production_latest", stage = "Refining"), 2000 / 10000)
+  expect_equal(pdm_value(out, "Peru", "production_latest", stage = "Refining"), 0)
+  expect_gt(pdm_value(out, "Japan", "size", stage = "Refining"), pdm_value(out, "Peru", "size", stage = "Refining"))
+  expect_equal(pdm_value(out, "Japan", "production_latest"), 0)
+
+  refining <- out[out$supply_chain == "Refining", ]
+  expect_setequal(refining$variable, c("production_latest", "size", "growth_abs", "Overall Production"))
+  expect_equal(unique(refining$source), "IEA Critical Minerals Database")
+  raw <- refining$explanation[refining$variable == "production_latest"]
+  expect_true(all(grepl("Share of world refined supply", raw)))
 })

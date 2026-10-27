@@ -1,4 +1,4 @@
-# Uranium (Nuclear - Upstream): Red Book resources and mine production.
+# Uranium (Nuclear - Extraction): Red Book resources and mine production.
 #
 # Nuclear - Upstream used to have no country data at all - its only input was the world
 # uranium price - so Energy Security was the same for every economy and the Strategic Index
@@ -153,7 +153,7 @@ test_that("Nuclear Reserves keeps producers the EI roster omits and scores the h
   out <- uranium_reserves_table(uranium_resources_fixture(), country_reference = ei_roster_fixture())
 
   expect_setequal(unique(out$variable), "Nuclear Reserves")
-  expect_setequal(unique(paste(out$tech, out$supply_chain, out$category)), "Nuclear Upstream Reserves")
+  expect_setequal(unique(paste(out$tech, out$supply_chain, out$category)), "Nuclear Extraction Reserves")
   expect_equal(nrow(out), 2 * dplyr::n_distinct(out$ISO3166_alpha3))
 
   idx <- out %>% dplyr::filter(data_type == "index")
@@ -216,7 +216,7 @@ test_that("reserves() adds Nuclear Reserves without touching the other reserve v
     dplyr::ungroup()
 
   expect_false(any(without$tech == "Nuclear"))
-  nuc <- with %>% dplyr::filter(tech == "Nuclear", supply_chain == "Upstream")
+  nuc <- with %>% dplyr::filter(tech == "Nuclear", supply_chain == "Extraction")
   expect_setequal(unique(nuc$variable), "Nuclear Reserves")
   expect_true("Namibia" %in% nuc$Country)
 
@@ -241,6 +241,8 @@ test_that("Nuclear Production ranks current producers and zero-fills everyone el
 
   expect_setequal(unique(out$variable), "Nuclear Production")
   expect_setequal(unique(out$category), "Production")
+  # Mine production: Extraction, as the other mined minerals.
+  expect_setequal(unique(out$supply_chain), "Extraction")
   expect_equal(unique(out$Year), 2024L)
   expect_equal(raw$value[raw$Country == "Canada"], 14327)
   expect_equal(idx$value[idx$Country == "Kazakhstan"], 1)
@@ -260,7 +262,7 @@ test_that("uranium production is scored with the fuels' depth-and-momentum indic
     countries = c("Kazakhstan", "Canada", "Japan", "Europe")
   )
   expect_true(all(c("2019", "2024", "change_5yr", "change_10yr", "change_5yr_abs") %in% names(clean)))
-  expect_setequal(unique(clean$Var), "Nuclear Upstream")
+  expect_setequal(unique(clean$Var), "Nuclear Extraction")
   # Red Book producers outside the EI roster join it; aggregates do not.
   expect_true(all(c("Namibia", "Niger", "Japan") %in% clean$Country))
   expect_false("Europe" %in% clean$Country)
@@ -278,7 +280,7 @@ test_that("uranium production is scored with the fuels' depth-and-momentum indic
     year = 2025
   )
   expect_setequal(unique(tbl$variable), c("production_latest", "size", "growth_abs", "Overall Production"))
-  expect_setequal(unique(paste(tbl$tech, tbl$supply_chain)), "Nuclear Upstream")
+  expect_setequal(unique(paste(tbl$tech, tbl$supply_chain)), "Nuclear Extraction")
   expect_true(all(grepl("2024", tbl$explanation[tbl$variable %in% c("production_latest", "size")])))
   size <- tbl %>% dplyr::filter(variable == "size")
   expect_equal(size$value[size$Country == "Kazakhstan"], 1)
@@ -302,7 +304,7 @@ test_that("uranium production is scored with the fuels' depth-and-momentum indic
   )
 })
 
-test_that("production_depth_momentum() adds Nuclear Upstream only when given uranium data", {
+test_that("production_depth_momentum() adds Nuclear Extraction only when given uranium data", {
   ei <- tidyr::expand_grid(
     Country = c("Kazakhstan", "Canada", "Australia", "China"),
     Year = c(2015L, 2020L, 2025L),
@@ -327,8 +329,10 @@ test_that("production_depth_momentum() adds Nuclear Upstream only when given ura
   without <- production_depth_momentum(ei, critical, mdc, country_info)
   with <- production_depth_momentum(ei, critical, mdc, country_info, uranium_production = uranium_production_fixture())
 
-  expect_false(any(without$tech == "Nuclear" & without$supply_chain == "Upstream"))
-  nuc <- with %>% dplyr::filter(tech == "Nuclear", supply_chain == "Upstream")
+  expect_false(any(without$tech == "Nuclear" & without$supply_chain == "Extraction"))
+  # Nuclear generation is the Deployment cell; uranium mining is Extraction.
+  expect_true(any(without$tech == "Nuclear" & without$supply_chain == "Deployment"))
+  nuc <- with %>% dplyr::filter(tech == "Nuclear", supply_chain == "Extraction")
   expect_gt(nrow(nuc), 0)
   expect_true("Namibia" %in% nuc$Country)
   expect_true(all(grepl("Uranium", nuc$source)))
@@ -342,7 +346,7 @@ test_that("production_depth_momentum() adds Nuclear Upstream only when given ura
   key <- c("Country", "tech", "supply_chain", "variable", "data_type")
   same <- dplyr::inner_join(
     without %>% dplyr::select(dplyr::all_of(key), old = value),
-    with %>% dplyr::filter(!(tech == "Nuclear" & supply_chain == "Upstream")) %>%
+    with %>% dplyr::filter(!(tech == "Nuclear" & supply_chain == "Extraction")) %>%
       dplyr::select(dplyr::all_of(key), new = value),
     by = key
   )
@@ -352,12 +356,12 @@ test_that("production_depth_momentum() adds Nuclear Upstream only when given ura
 
 test_that("uranium rows never silently merge with a variable another input already emits", {
   theme <- tibble::tibble(
-    Country = "Canada", tech = "Nuclear", supply_chain = "Upstream", category = "Reserves",
+    Country = "Canada", tech = "Nuclear", supply_chain = "Extraction", category = "Reserves",
     variable = "Nuclear Reserves", data_type = "index", value = 0.5, Year = 2025L,
     source = "IEA", explanation = "mineral rollup"
   )
   uranium <- uranium_reserves_table(uranium_resources_fixture(), ei_roster_fixture())
-  expect_error(uranium_bind_theme_rows(theme, uranium), "Nuclear Upstream Nuclear Reserves")
+  expect_error(uranium_bind_theme_rows(theme, uranium), "Nuclear Extraction Nuclear Reserves")
 
   other <- theme %>% dplyr::mutate(tech = "Wind", variable = "Wind Reserves")
   expect_equal(nrow(uranium_bind_theme_rows(other, uranium)), 1 + nrow(uranium))

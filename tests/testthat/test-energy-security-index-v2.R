@@ -13,7 +13,7 @@ test_that("normalize_year handles character and integer years", {
     energy_access_consumption = tibble::tibble(
       Country = c("A", "A"),
       tech = c("Solar", "Solar"),
-      supply_chain = c("Upstream", "Upstream"),
+      supply_chain = c("Extraction", "Extraction"),
       category = c("Energy Access", "Energy Access"),
       variable = c("Overall Energy Access Index", "Overall Energy Access Index"),
       value = c(0.2, 0.8),

@@ -52,7 +52,8 @@ energy_consumption_build_ei_indices <- function(ei_clean, year, gamma = 0.5) {
     dplyr::transmute(
       Country,
       tech = stringr::str_to_sentence(tech),
-      supply_chain = "Downstream",
+      # Consumption is use of the fuel or technology: Deployment.
+      supply_chain = "Deployment",
       category = "Energy Access",
       variable = "Energy consumption per capita",
       data_type,
@@ -95,7 +96,7 @@ energy_consumption_build_ei_growth <- function(ei_base, ei_target, base_year, ta
     dplyr::transmute(
       Country,
       tech = stringr::str_to_sentence(tech),
-      supply_chain = "Downstream",
+      supply_chain = "Deployment",
       category = "Energy Access",
       variable = paste(variable, metric),
       data_type,
@@ -199,7 +200,7 @@ energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, coun
         "Battery storage" = "Batteries",
         "Small modular nuclear" = "Nuclear",
         "Small-scale PV" = "Solar",
-        # Without these Wind never matched `techs`, so Wind Downstream had no Consumption.
+        # Without these Wind never matched `techs`, so Wind Deployment had no Consumption.
         "Onshore wind" = "Wind",
         "Offshore wind" = "Wind"
       )
@@ -269,7 +270,8 @@ energy_consumption_build_bnef_metrics <- function(bnef_neo, pop_tbl, techs, coun
     dplyr::filter(!country %in% bnef_countries) %>%
     dplyr::mutate(Country = dplyr::if_else(is.na(country), Country, country)) %>%
     dplyr::mutate(
-      supply_chain = "Downstream",
+      # Installed capacity (and hydrogen use) per capita: Deployment.
+      supply_chain = "Deployment",
       category = "Consumption",
       data_type = dplyr::if_else(variable %in% c("installed_cap_index", "elec_growth_index"), "index", "raw"),
       # The base year of the per-capita levels (growth runs 2024-35). It was NA, which the

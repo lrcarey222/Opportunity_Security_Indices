@@ -54,6 +54,11 @@ test_that("the supply sheet's side-by-side mining and refining blocks both parse
   refining_china <- supply[supply$Mineral == "Copper - Refining" & supply$Sector.Country == "China", ]
   expect_equal(refining_china$X2025, 13069)
   expect_equal(refining_china$X2035, 17221)
+
+  # The block labels map to the six stages: mining is Extraction, refining Refining.
+  stage <- iea_critical_minerals_supply_stage(sub("^.* - ", "", supply$Mineral), legacy = FALSE)
+  expect_equal(unique(stage[supply$Mineral == "Copper - Mining"]), "Extraction")
+  expect_equal(unique(stage[supply$Mineral == "Copper - Refining"]), "Refining")
 })
 
 test_that("scenario selection keeps Stated Policies and the supply base case", {

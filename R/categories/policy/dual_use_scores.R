@@ -1,7 +1,8 @@
 # Clean dual-use scores into policy component format.
 #
 # Provenance: data/raw/dual_use_scores_primary_secondary_tertiary.csv is a project-authored
-# table of 0-1 defence-relevance scores per technology x stage (33 rows), generated with an
+# table of 0-1 defence-relevance scores per technology x Upstream / Midstream / Downstream stage
+# (33 rows; copied onto the six supply-chain stages below), generated with an
 # LLM (ChatGPT, "Thinking" model) and not drawn from a statistical source. It has no country
 # dimension: the same score is copied to every country, so the component shifts sector
 # levels but cannot rank countries. The `source` and `explanation` fields say so, so the
@@ -44,6 +45,11 @@ clean_dual_use_scores <- function(raw_tbl,
     }
   }
   
+  # The table scores three stages: U / primary (Commodities) = Upstream, M / secondary
+  # (Manufacturing) = Midstream, D / tertiary (Deployment-operations) = Downstream. Each score is
+  # copied onto the six supply-chain stages its stage covers (supply_chain_expand_legacy(),
+  # R/utils/supply_chain_stages.R): Upstream to Extraction, Refining and Recovery, Midstream to
+  # Components and Assembly, Downstream to Deployment. A stage label it does not know stops.
   cleaned <- cleaned %>%
     dplyr::rename(
       tech = technology,
@@ -51,24 +57,28 @@ clean_dual_use_scores <- function(raw_tbl,
     ) %>%
     dplyr::mutate(
       tech = as.character(tech),
-      supply_chain = dplyr::case_when(
-        supply_chain %in% c("U", "Upstream", "upstream") ~ "Upstream",
-        supply_chain %in% c("M", "Midstream", "midstream") ~ "Midstream",
-        supply_chain %in% c("D", "Downstream", "downstream") ~ "Downstream",
+      source_stage = dplyr::case_when(
+        tolower(supply_chain) %in% c("u", "upstream", "primary") ~ "Upstream",
+        tolower(supply_chain) %in% c("m", "midstream", "secondary") ~ "Midstream",
+        tolower(supply_chain) %in% c("d", "downstream", "tertiary") ~ "Downstream",
         TRUE ~ as.character(supply_chain)
       ),
+      supply_chain = .data$source_stage,
       category = "Policy",
       variable = "Dual-use policy score",
       data_type = "index",
       Year = NA,
       source = "LLM-generated (ChatGPT - Thinking Model); project-authored",
-      explanation = paste(
-        "Dual-use (defence) relevance score by technology and supply chain stage;",
-        "LLM-elicited judgement, identical for every country;",
+      explanation = paste0(
+        "Dual-use (defence) relevance score by technology and supply chain stage; ",
+        "LLM-elicited judgement, identical for every country; scored for ", .data$source_stage,
+        " and copied to each stage it covers; ",
         "reference only, not a component of the composite Policy index"
       ),
       value = suppressWarnings(as.numeric(value))
-    )
-  
+    ) %>%
+    supply_chain_expand_legacy() %>%
+    dplyr::select(-"source_stage")
+
   cleaned
 }

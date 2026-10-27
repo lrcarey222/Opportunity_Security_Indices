@@ -1,6 +1,7 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "categories", "technological_readiness", "technological_readiness.R"))
 
 # read_iea_tech_map_rules() finds config/ from the repo root; without this it would
@@ -75,8 +76,10 @@ test_that("loose name patterns no longer pull unrelated Guide items into a techn
 
   expect_identical(mapping_of(assigned, "Highly insulating window")$status, "out_of_scope")
   expect_identical(mapping_of(assigned, "Solid oxide electrolyser cell")$tech, "Green Hydrogen")
-  expect_identical(mapping_of(assigned, "Solid oxide electrolyser cell")$stage, "Midstream")
+  # An electrolyser design is the technology's equipment, whatever "cell" its name carries.
+  expect_identical(mapping_of(assigned, "Solid oxide electrolyser cell")$stage, "Assembly")
   expect_identical(mapping_of(assigned, "Multi-junction cell PV")$tech, "Solar")
+  expect_identical(mapping_of(assigned, "Multi-junction cell PV")$stage, "Components")
   for (item in c(
     "Primary smelting with multipolar cell", "Primary smelting with chloride electrolysis",
     "Thermal decontamination in a vacuum reactor with integrated nitrogen flushing for PET",
@@ -104,16 +107,17 @@ test_that("road transport splits into EVs, hydrogen vehicles and out-of-scope en
   assigned <- assign_guide(items)
 
   expect_identical(mapping_of(assigned, "Fast and ultra-fast charging")$tech, "Electric Vehicles")
-  expect_identical(mapping_of(assigned, "Fast and ultra-fast charging")$stage, "Downstream")
+  # Chargers are stand-alone finished goods, as in the HS6 basket.
+  expect_identical(mapping_of(assigned, "Fast and ultra-fast charging")$stage, "Assembly")
   expect_identical(mapping_of(assigned, "Fast charging")$status, "out_of_scope")
   expect_length(mapping_of(assigned, "Fast charging")$tech, 0)
-  # Vehicle designs are the end product: Midstream (final assembly) since 2026-10-26.
-  expect_identical(mapping_of(assigned, "Battery electric truck")$stage, "Midstream")
-  expect_identical(mapping_of(assigned, "Rare-earth free electric motor")$stage, "Midstream")
+  # Vehicle designs are the finished good (Assembly); a motor is a part of the vehicle.
+  expect_identical(mapping_of(assigned, "Battery electric truck")$stage, "Assembly")
+  expect_identical(mapping_of(assigned, "Rare-earth free electric motor")$stage, "Components")
   expect_identical(mapping_of(assigned, "Sodium-ion battery")$tech, "Batteries")
-  expect_identical(mapping_of(assigned, "Sodium-ion battery")$stage, "Midstream")
+  expect_identical(mapping_of(assigned, "Sodium-ion battery")$stage, "Components")
   expect_identical(mapping_of(assigned, "Hydrogen fuel cell truck")$tech, "Green Hydrogen")
-  expect_identical(mapping_of(assigned, "Hydrogen fuel cell truck")$stage, "Downstream")
+  expect_identical(mapping_of(assigned, "Hydrogen fuel cell truck")$stage, "Deployment")
   expect_identical(mapping_of(assigned, "Hybrid fuel-cell - gas-turbine aircraft propulsion system")$tech, "Green Hydrogen")
   expect_identical(mapping_of(assigned, "Flex-fuel and hybrid flex-fuel vehicle")$status, "out_of_scope")
   expect_identical(mapping_of(assigned, "Battery-electric aircraft: regional (20+ seats)")$status, "out_of_scope")
@@ -135,13 +139,18 @@ test_that("green hydrogen production is water splitting; fossil and other routes
   )
   assigned <- assign_guide(items)
 
-  for (item in c("Alkaline electrolyser", "Photon-based direct solar water splitting", "Offshore renewable hydrogen production")) {
+  # Electrolysers and direct solar devices are the technology's equipment (Assembly);
+  # offshore production, storage and use deploy it.
+  for (item in c("Alkaline electrolyser", "Photon-based direct solar water splitting")) {
     expect_identical(mapping_of(assigned, item)$tech, "Green Hydrogen", info = item)
-    expect_identical(mapping_of(assigned, item)$stage, "Midstream", info = item)
+    expect_identical(mapping_of(assigned, item)$stage, "Assembly", info = item)
   }
-  for (item in c("Salt cavern storage", "DRI production based on 100% electrolytic hydrogen")) {
+  for (item in c(
+    "Offshore renewable hydrogen production", "Salt cavern storage",
+    "DRI production based on 100% electrolytic hydrogen"
+  )) {
     expect_identical(mapping_of(assigned, item)$tech, "Green Hydrogen", info = item)
-    expect_identical(mapping_of(assigned, item)$stage, "Downstream", info = item)
+    expect_identical(mapping_of(assigned, item)$stage, "Deployment", info = item)
   }
   for (item in c(
     "Steam reforming - high capture rates", "Catalytic decomposition (methane)",
@@ -165,26 +174,26 @@ test_that("oil and gas are separated where the Guide separates them", {
 
   refining <- mapping_of(assigned, "Post-combustion carbon capture (cracking)")
   expect_identical(refining$tech, "Oil")
-  expect_identical(refining$stage, "Midstream")
+  expect_identical(refining$stage, "Refining")
   gas_power <- mapping_of(assigned, "Post-combustion: chemical absorption (natural gas with CCUS)")
   expect_identical(gas_power$tech, "Gas")
-  expect_identical(gas_power$stage, "Downstream")
+  expect_identical(gas_power$stage, "Deployment")
   lng <- mapping_of(assigned, "Mini-LNG facilities")
   expect_identical(lng$tech, "Gas")
-  expect_identical(lng$stage, "Midstream")
+  expect_identical(lng$stage, "Refining")
   # Methane abatement at "oil and gas facilities" is genuinely shared.
   flare <- mapping_of(assigned, "Flare gas recovery")
   expect_identical(flare$tech, c("Gas", "Oil"))
-  expect_identical(flare$stage, "Upstream")
-  expect_identical(mapping_of(assigned, "Coal mine methane use for energy supply")$stage, "Upstream")
-  expect_identical(mapping_of(assigned, "Oxy-fuelling (coal)")$stage, "Downstream")
+  expect_identical(flare$stage, "Extraction")
+  expect_identical(mapping_of(assigned, "Coal mine methane use for energy supply")$stage, "Extraction")
+  expect_identical(mapping_of(assigned, "Oxy-fuelling (coal)")$stage, "Deployment")
 
   out <- technological_readiness(guide_rows(items), techs = c("Oil", "Gas", "Coal"))
   trl <- out[out$variable == "TRL Index", ]
   value_of <- function(tech, stage) trl$value[trl$tech == tech & trl$supply_chain == stage]
-  expect_equal(value_of("Oil", "Upstream"), value_of("Gas", "Upstream"))
-  expect_false(isTRUE(all.equal(value_of("Oil", "Midstream"), value_of("Gas", "Midstream"))))
-  expect_false(isTRUE(all.equal(value_of("Oil", "Downstream"), value_of("Gas", "Downstream"))))
+  expect_equal(value_of("Oil", "Extraction"), value_of("Gas", "Extraction"))
+  expect_false(isTRUE(all.equal(value_of("Oil", "Refining"), value_of("Gas", "Refining"))))
+  expect_false(isTRUE(all.equal(value_of("Oil", "Deployment"), value_of("Gas", "Deployment"))))
 })
 
 test_that("acid gas removal is shared by oil and gas although the Guide files it under refining", {
@@ -198,12 +207,12 @@ test_that("acid gas removal is shared by oil and gas although the Guide files it
 
   agr <- mapping_of(assigned, "Advanced acid gas removal")
   expect_identical(agr$tech, c("Gas", "Oil"))
-  expect_identical(agr$stage, "Midstream")
+  expect_identical(agr$stage, "Refining")
   expect_identical(agr$status, "mapped")
   expect_identical(mapping_of(assigned, "Oxy-fuelling carbon capture (cracking)")$tech, "Oil")
 
   tech_tbl <- technological_readiness_build_tech(assigned, techs = c("Oil", "Gas"))
-  mid <- tech_tbl[tech_tbl$supply_chain == "Midstream", ]
+  mid <- tech_tbl[tech_tbl$supply_chain == "Refining", ]
   # The shared item enters both cells once: Oil averages it with the refinery item, Gas with
   # the CNG plant.
   expect_equal(mid$n_items[mid$tech == "Oil"], 2L)
@@ -231,7 +240,7 @@ test_that("ammonia used as a hydrogen-based fuel counts as green hydrogen use ev
     "DRI production using ammonia as a reductant", "Hydrogen (high temperature heating)"
   )) {
     expect_identical(mapping_of(assigned, item)$tech, "Green Hydrogen", info = item)
-    expect_identical(mapping_of(assigned, item)$stage, "Downstream", info = item)
+    expect_identical(mapping_of(assigned, item)$stage, "Deployment", info = item)
   }
   expect_identical(mapping_of(assigned, "Ammonia (high temperature heating)")$status, "mapped")
   for (item in c(
@@ -255,12 +264,45 @@ test_that("nuclear keeps fission and assigns fuel cycle and reactors to their st
   )
   assigned <- assign_guide(items)
 
-  expect_identical(mapping_of(assigned, "Uranium enrichment: laser-based techniques")$stage, "Midstream")
-  expect_identical(mapping_of(assigned, "Radioactive waste disposal")$stage, "Downstream")
-  # Reactor designs are the end product (Midstream); reprocessing is recovery (Upstream).
-  expect_identical(mapping_of(assigned, "Water-cooled SMR")$stage, "Midstream")
-  expect_identical(mapping_of(assigned, "Fuel reprocessing (PUREX process and new advanced techniques)")$stage, "Upstream")
+  expect_identical(mapping_of(assigned, "Uranium enrichment: laser-based techniques")$stage, "Refining")
+  expect_identical(mapping_of(assigned, "Radioactive waste disposal")$stage, "Deployment")
+  # Reactor designs are the finished good (Assembly); reprocessing is Recovery.
+  expect_identical(mapping_of(assigned, "Water-cooled SMR")$stage, "Assembly")
+  expect_identical(mapping_of(assigned, "Fuel reprocessing (PUREX process and new advanced techniques)")$stage, "Recovery")
   expect_identical(mapping_of(assigned, "Magnetic confinement fusion: tokamaks")$status, "out_of_scope")
+})
+
+test_that("the nuclear fuel front end splits into refining and fuel fabrication by item name", {
+  items <- tibble::tribble(
+    ~name, ~c1, ~c2, ~c3, ~c4, ~cc, ~trl2020, ~trl2025,
+    "Uranium conversion", "Nuclear", "Fission", "Nuclear fuel cycles", "Front-end of the fuel cycle", "", 9, 9,
+    "Uranium enrichment: conventional techniques", "Nuclear", "Fission", "Nuclear fuel cycles", "Front-end of the fuel cycle", "", 9, 9,
+    "HALEU fuel cycle", "Nuclear", "Fission", "Nuclear fuel cycles", "", "", 9, 9,
+    "Thorium fuel cycle", "Nuclear", "Fission", "Nuclear fuel cycles", "", "", 4, 5,
+    "Fuel fabrication: TRISO fuel for high temperature reactors", "Nuclear", "Fission", "Nuclear fuel cycles", "Front-end of the fuel cycle", "", 6, 8,
+    # Not in the 2026 Guide; the rule names it so a later release lands in Components.
+    "Accident-tolerant fuel", "Nuclear", "Fission", "Nuclear fuel cycles", "Front-end of the fuel cycle", "", 5, 7,
+    "Water-cooled SMR", "Nuclear", "Fission", "Small modular reactors", "", "Power=Generation;Heat=Generation", 6, 7
+  )
+  assigned <- assign_guide(items)
+
+  for (item in c("Uranium conversion", "Uranium enrichment: conventional techniques", "HALEU fuel cycle", "Thorium fuel cycle")) {
+    expect_identical(mapping_of(assigned, item)$stage, "Refining", info = item)
+  }
+  for (item in c("Fuel fabrication: TRISO fuel for high temperature reactors", "Accident-tolerant fuel")) {
+    expect_identical(mapping_of(assigned, item)$stage, "Components", info = item)
+  }
+
+  tech_tbl <- technological_readiness_build_tech(assigned, techs = "Nuclear")
+  cell <- function(stage) tech_tbl[tech_tbl$supply_chain == stage, ]
+  expect_equal(cell("Refining")$n_items, 4L)
+  expect_equal(cell("Refining")$trl2025, mean(c(9, 9, 9, 5)))
+  expect_equal(cell("Components")$n_items, 2L)
+  expect_equal(cell("Components")$trl2025, mean(c(8, 7)))
+  expect_equal(cell("Assembly")$n_items, 1L)
+  # No extraction, deployment or recovery item: the technology-wide value over all seven.
+  expect_identical(cell("Extraction")$basis, "technology")
+  expect_equal(cell("Extraction")$trl2025, mean(c(9, 9, 9, 5, 8, 7, 7)))
 })
 
 test_that("battery minerals and recycling map to Batteries; generic and rare-earth items do not", {
@@ -275,11 +317,11 @@ test_that("battery minerals and recycling map to Batteries; generic and rare-ear
   )
   assigned <- assign_guide(items)
 
-  expect_identical(mapping_of(assigned, "Direct lithium extraction from brine")$stage, "Upstream")
-  expect_identical(mapping_of(assigned, "High pressure acid leaching")$stage, "Midstream")
-  expect_identical(mapping_of(assigned, "Hydrometallurgical battery recycling")$stage, "Upstream")
-  # Second-life reuse is recovery, which rolls up to Upstream.
-  expect_identical(mapping_of(assigned, "EV battery reuse in BESS")$stage, "Upstream")
+  expect_identical(mapping_of(assigned, "Direct lithium extraction from brine")$stage, "Extraction")
+  expect_identical(mapping_of(assigned, "High pressure acid leaching")$stage, "Refining")
+  expect_identical(mapping_of(assigned, "Hydrometallurgical battery recycling")$stage, "Recovery")
+  # Second-life reuse is recovery too.
+  expect_identical(mapping_of(assigned, "EV battery reuse in BESS")$stage, "Recovery")
   for (item in c("Direct lithium extraction from brine", "High pressure acid leaching", "Hydrometallurgical battery recycling")) {
     expect_identical(mapping_of(assigned, item)$tech, "Batteries", info = item)
   }
@@ -297,10 +339,10 @@ test_that("cable recycling is grid recovery and geothermal drilling is deploymen
   assigned <- assign_guide(items)
 
   expect_identical(mapping_of(assigned, "Chemical recycling of cables")$tech, "Electric Grid")
-  expect_identical(mapping_of(assigned, "Chemical recycling of cables")$stage, "Upstream")
+  expect_identical(mapping_of(assigned, "Chemical recycling of cables")$stage, "Recovery")
   for (item in c("Millimeter wave drilling", "Enhanced geothermal systems")) {
     expect_identical(mapping_of(assigned, item)$tech, "Geothermal", info = item)
-    expect_identical(mapping_of(assigned, item)$stage, "Downstream", info = item)
+    expect_identical(mapping_of(assigned, item)$stage, "Deployment", info = item)
   }
 })
 
@@ -317,14 +359,52 @@ test_that("grid items split into equipment and operation, with stray whitespace 
   )
   assigned <- assign_guide(items)
 
-  expect_identical(mapping_of(assigned, "HTLS conductors")$stage, "Midstream")
-  expect_identical(mapping_of(assigned, "HVDC breaker")$stage, "Midstream")
+  expect_identical(mapping_of(assigned, "HTLS conductors")$stage, "Assembly")
+  expect_identical(mapping_of(assigned, "HVDC breaker")$stage, "Assembly")
   expect_identical(mapping_of(assigned, "Virtual power plants")$tech, "Electric Grid")
-  expect_identical(mapping_of(assigned, "Virtual power plants")$stage, "Downstream")
+  expect_identical(mapping_of(assigned, "Virtual power plants")$stage, "Deployment")
   expect_identical(mapping_of(assigned, "Smart meter")$tech, "Electric Grid")
+  expect_identical(mapping_of(assigned, "Smart meter")$stage, "Assembly")
   expect_identical(mapping_of(assigned, "Lighting control system")$status, "out_of_scope")
   expect_identical(mapping_of(assigned, "Battery storage system with grid-forming inverter")$tech, "Batteries")
-  expect_identical(mapping_of(assigned, "Battery storage system with grid-forming inverter")$stage, "Downstream")
+  expect_identical(mapping_of(assigned, "Battery storage system with grid-forming inverter")$stage, "Deployment")
+})
+
+test_that("photovoltaic splits into cell technologies, modules and ways of siting PV", {
+  items <- tibble::tribble(
+    ~name, ~c1, ~c2, ~c3, ~c4, ~cc, ~trl2020, ~trl2025,
+    "Crystalline silicon PV", "Renewables", "Solar", "Photovoltaic", "", "Power=Generation", 9, 9,
+    "Concentrated PV", "Renewables", "Solar", "Photovoltaic", "", "Power=Generation", 9, 9,
+    "Multi-junction cell PV", "Renewables", "Solar", "Photovoltaic", "", "Power=Generation", 9, 9,
+    "Microcrystalline silicon PV cells", "Renewables", "Solar", "Photovoltaic", "", "Power=Generation", NA, 9,
+    "Perovskite thin film", "Renewables", "Solar", "Photovoltaic", "", "Power=Generation", 4, 6,
+    "Chalcogenide thin-film", "Renewables", "Solar", "Photovoltaic", "", "Power=Generation", NA, 9,
+    "Organic thin film", "Renewables", "Solar", "Photovoltaic", "", "Power=Generation", 5, 6,
+    "Floating solar PV", "Renewables", "Solar", "Photovoltaic", "", "Power=Generation", 8, 9,
+    "Solar tower", "Renewables", "Solar", "Solar thermal", "", "Power=Generation", 9, 9
+  )
+  assigned <- assign_guide(items)
+
+  for (item in c(
+    "Multi-junction cell PV", "Microcrystalline silicon PV cells", "Perovskite thin film",
+    "Chalcogenide thin-film", "Organic thin film"
+  )) {
+    expect_identical(mapping_of(assigned, item)$stage, "Components", info = item)
+  }
+  for (item in c("Crystalline silicon PV", "Concentrated PV")) {
+    expect_identical(mapping_of(assigned, item)$stage, "Assembly", info = item)
+  }
+  for (item in c("Floating solar PV", "Solar tower")) {
+    expect_identical(mapping_of(assigned, item)$stage, "Deployment", info = item)
+  }
+
+  tech_tbl <- technological_readiness_build_tech(assigned, techs = "Solar")
+  counts <- stats::setNames(tech_tbl$n_items, tech_tbl$supply_chain)
+  expect_equal(
+    counts[TECHNOLOGICAL_READINESS_STAGES],
+    c(Extraction = 0L, Refining = 0L, Components = 5L, Assembly = 2L, Deployment = 2L, Recovery = 0L)
+  )
+  expect_equal(tech_tbl$trl2025[tech_tbl$supply_chain == "Components"], mean(c(9, 9, 6, 9, 6)))
 })
 
 test_that("cells average their stage's items and fall back to the technology when a stage is empty", {
@@ -345,35 +425,40 @@ test_that("cells average their stage's items and fall back to the technology whe
     technological_readiness_build_tech(techs = "Coal")
   row <- function(stage) tech_tbl[tech_tbl$supply_chain == stage, ]
 
-  up <- row("Upstream")
+  expect_identical(tech_tbl$supply_chain, TECHNOLOGICAL_READINESS_STAGES)
+
+  up <- row("Extraction")
   expect_identical(up$basis, "stage")
   expect_equal(up$n_items, 2L)
   expect_equal(up$trl2025, 9)
   expect_equal(up$trl_level_index, bell(9))
   expect_equal(up$trl_momentum_index, mean(momentum(c(0, 2))))
 
-  down <- row("Downstream")
+  down <- row("Deployment")
   expect_equal(down$n_items, 2L)
   expect_equal(down$trl_level_index, mean(bell(c(7, 5))))
   # Only the item with a 2020 reading has momentum.
   expect_equal(down$trl_momentum_index, momentum(1))
   expect_equal(down$trl_delta_2020_2025, 1)
 
-  # Coal has no Midstream item: the cell carries the technology-wide means over all four items.
-  mid <- row("Midstream")
-  expect_identical(mid$basis, "technology")
-  expect_equal(mid$n_items, 0L)
-  expect_equal(mid$n_items_tech, 4L)
-  expect_equal(mid$trl_level_index, mean(bell(c(9, 9, 7, 5))))
-  expect_equal(mid$trl_momentum_index, mean(momentum(c(0, 2, 1))))
+  # Coal has no Refining, Components, Assembly or Recovery item: each of those cells carries
+  # the technology-wide means over all four items.
+  for (stage in c("Refining", "Components", "Assembly", "Recovery")) {
+    mid <- row(stage)
+    expect_identical(mid$basis, "technology", info = stage)
+    expect_equal(mid$n_items, 0L, info = stage)
+    expect_equal(mid$n_items_tech, 4L, info = stage)
+    expect_equal(mid$trl_level_index, mean(bell(c(9, 9, 7, 5))), info = stage)
+    expect_equal(mid$trl_momentum_index, mean(momentum(c(0, 2, 1))), info = stage)
+  }
 
   # Every cell's index is exactly the published blend of its components.
   expect_equal(tech_tbl$trl_index, 0.7 * tech_tbl$trl_level_index + 0.3 * tech_tbl$trl_momentum_index)
   expect_true(length(unique(round(tech_tbl$trl_index, 10))) == 3)
 
   out <- technological_readiness(guide_rows(items), techs = "Coal")
-  expect_true(all(grepl("technology-wide", out$explanation[out$supply_chain == "Midstream"], fixed = TRUE)))
-  expect_true(all(grepl("Stage-specific: 2", out$explanation[out$supply_chain == "Upstream"], fixed = TRUE)))
+  expect_true(all(grepl("technology-wide", out$explanation[out$supply_chain == "Components"], fixed = TRUE)))
+  expect_true(all(grepl("Stage-specific: 2", out$explanation[out$supply_chain == "Extraction"], fixed = TRUE)))
 })
 
 test_that("a stage whose items lack a start-year TRL takes the technology-wide momentum", {
@@ -389,8 +474,8 @@ test_that("a stage whose items lack a start-year TRL takes the technology-wide m
     technological_readiness_assign_tech() |>
     technological_readiness_build_tech(techs = c("Coal", "Wind"))
 
-  coal_down <- tech_tbl[tech_tbl$tech == "Coal" & tech_tbl$supply_chain == "Downstream", ]
-  coal_up <- tech_tbl[tech_tbl$tech == "Coal" & tech_tbl$supply_chain == "Upstream", ]
+  coal_down <- tech_tbl[tech_tbl$tech == "Coal" & tech_tbl$supply_chain == "Deployment", ]
+  coal_up <- tech_tbl[tech_tbl$tech == "Coal" & tech_tbl$supply_chain == "Extraction", ]
   expect_identical(coal_down$basis, "stage")
   expect_identical(coal_down$momentum_basis, "technology")
   expect_equal(coal_down$trl_level_index, trl_bell_hard(7))
@@ -398,9 +483,12 @@ test_that("a stage whose items lack a start-year TRL takes the technology-wide m
   expect_equal(coal_down$trl_momentum_index, coal_up$trl_momentum_index)
   expect_false(is.na(coal_down$trl_index))
 
-  # Wind only has Midstream items (turbine designs), so all three stages read the same values.
+  # Wind only has Assembly items (turbine designs), so all six stages read the same values.
   wind <- tech_tbl[tech_tbl$tech == "Wind", ]
-  expect_identical(wind$basis[match(c("Upstream", "Midstream", "Downstream"), wind$supply_chain)], c("technology", "stage", "technology"))
+  expect_identical(
+    wind$basis[match(TECHNOLOGICAL_READINESS_STAGES, wind$supply_chain)],
+    c("technology", "technology", "technology", "stage", "technology", "technology")
+  )
   expect_equal(dplyr::n_distinct(wind$trl_index), 1L)
 })
 
@@ -426,7 +514,7 @@ test_that("a TRL 9 item's post-TRL-9 adoption stage puts its level on the 1-11 s
   cell <- function(tbl, tech, stage) tbl[tbl$tech == tech & tbl$supply_chain == stage, ]
 
   tech_tbl <- build(items)
-  wind <- cell(tech_tbl, "Wind", "Midstream")
+  wind <- cell(tech_tbl, "Wind", "Assembly")
   expect_equal(wind$trl2025, mean(c(11, 10, 9, 6)))
   expect_equal(wind$trl_level_index, mean(bell(c(11, 10, 9, 6))))
   # The change since 2020 stays on the 1-9 scale the release reports for every year.
@@ -434,7 +522,7 @@ test_that("a TRL 9 item's post-TRL-9 adoption stage puts its level on the 1-11 s
   expect_equal(wind$trl_momentum_index, mean(momentum(c(0, 1, 2, 2))))
 
   # The blank-TRL item counts instead of dropping out: level TRL 11, no change since 2020.
-  battery <- cell(tech_tbl, "Batteries", "Midstream")
+  battery <- cell(tech_tbl, "Batteries", "Components")
   expect_equal(battery$n_items, 1L)
   expect_equal(battery$trl2025, 11)
   expect_equal(battery$trl_level_index, 0)
@@ -451,8 +539,8 @@ test_that("a TRL 9 item's post-TRL-9 adoption stage puts its level on the 1-11 s
 
   # Without the column (the legacy extract, earlier releases) the reported TRL stands.
   plain <- build(dplyr::select(items, -post2025))
-  expect_equal(cell(plain, "Wind", "Downstream")$trl2025, mean(c(9, 9, 9, 6)))
-  expect_equal(cell(plain, "Batteries", "Midstream")$n_items, 0L)
+  expect_equal(cell(plain, "Wind", "Deployment")$trl2025, mean(c(9, 9, 9, 6)))
+  expect_equal(cell(plain, "Batteries", "Components")$n_items, 0L)
 
   odd <- items[1, ]
   odd$post2025 <- "Mainstream"
@@ -497,6 +585,7 @@ test_that("mapping rules are validated when the config is read", {
     } else {
       expect_true(all(techs %in% index_techs), info = rule$id)
       expect_true(!is.null(rule$stage), info = rule$id)
+      expect_true(all(unlist(rule$stage) %in% SUPPLY_CHAIN_STAGES), info = rule$id)
     }
   }
 
@@ -508,6 +597,15 @@ test_that("mapping rules are validated when the config is read", {
     technological_readiness_validate_rules(list(list(id = "bad_stage", tech = "Wind", stage = "Sideways", path = "Renewables"))),
     "unknown stage"
   )
+  # The retired three-stage labels are no longer stages.
+  expect_error(
+    technological_readiness_validate_rules(list(list(id = "old_stage", tech = "Wind", stage = "Midstream", path = "Renewables"))),
+    "unknown stage: Midstream"
+  )
+})
+
+test_that("the theme's stages are the six supply-chain stages, in chain order", {
+  expect_identical(TECHNOLOGICAL_READINESS_STAGES, SUPPLY_CHAIN_STAGES)
 })
 
 test_that("the legacy extract still maps through the legacy rules to every stage", {
@@ -524,7 +622,7 @@ test_that("the legacy extract still maps through the legacy rules to every stage
 
   wind <- assigned[assigned$name == "Onshore wind turbine", ]
   expect_identical(unique(wind$tech), "Wind")
-  expect_setequal(wind$stage, c("Upstream", "Midstream", "Downstream"))
+  expect_setequal(wind$stage, SUPPLY_CHAIN_STAGES)
   vru <- assigned[assigned$name == "Vapour recovery units", ]
   expect_setequal(unique(vru$tech), c("Oil", "Gas"))
 })
@@ -538,10 +636,28 @@ test_that("the staged 2026 Guide is fully classified and separates oil from gas"
   diagnostics <- attr(out, "mapping_diagnostics")
 
   expect_equal(nrow(diagnostics$unclassified_items), 0L)
-  expect_equal(nrow(out), 11L * 3L * 5L)
+  # 11 technologies x 6 stages x 5 variables.
+  expect_equal(nrow(out), 11L * 6L * 5L)
+  expect_setequal(unique(out$supply_chain), SUPPLY_CHAIN_STAGES)
   trl <- out[out$variable == "TRL Index", ]
   expect_false(anyNA(trl$value))
   expect_true(all(trl$value >= 0 & trl$value <= 1))
+
+  # The front end of the nuclear fuel cycle splits by item: TRISO fabrication is Components,
+  # conversion, enrichment and the HALEU and thorium cycles are Refining.
+  items <- diagnostics$item_table
+  stage_of <- function(name) items$stage[items$name == name]
+  expect_identical(stage_of("Fuel fabrication: TRISO fuel for high temperature reactors"), "Components")
+  for (name in c("Uranium conversion", "Uranium enrichment: conventional techniques", "HALEU fuel cycle")) {
+    expect_identical(stage_of(name), "Refining", info = name)
+  }
+  counts <- diagnostics$counts_by_tech_stage
+  n_of <- function(tech, stage) sum(counts$n[counts$tech == tech & counts$stage == stage])
+  expect_equal(n_of("Nuclear", "Refining"), 5L)
+  expect_equal(n_of("Nuclear", "Components"), 1L)
+  # Photovoltaic splits: five cell technologies, two module items (c-Si, CPV).
+  expect_equal(n_of("Solar", "Components"), 5L)
+  expect_equal(n_of("Solar", "Assembly"), 2L)
 
   # Every mapped item has an end-year level, the blank-TRL "Lithium-ion battery" included, and
   # the adoption stage lifts some cells above the release's TRL 9 ceiling.

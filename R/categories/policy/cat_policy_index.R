@@ -84,12 +84,14 @@ cat_prepare_ratings <- function(cat_raw,
 # value = c*g + (1 - c)*(1 - g), with c the CAT rating score (0.25 critically insufficient ...
 # 1 almost sufficient) and g the technology's ghg_index (1 = cleanest). It measures how well a
 # technology fits the country's climate stance: clean technologies score high in countries
-# CAT rates as ambitious, fossil technologies score high in laggards. No stage variation.
-# If cat_policy carries rating_scope (from cat_prepare_ratings()), rows that use the EU bloc
-# rating say so in `explanation`.
+# CAT rates as ambitious, fossil technologies score high in laggards. No stage variation: the
+# one economy-wide value is copied onto every stage of supply_chain_universe (the six stages of
+# R/utils/supply_chain_stages.R, which the caller sources; scripts/paper/fig_si_fixed_inputs.R
+# passes a single stage), and `explanation` says so. If cat_policy carries rating_scope (from
+# cat_prepare_ratings()), rows that use the EU bloc rating say so too.
 cat_policy_index <- function(tech_ghg,
                              cat_policy,
-                             supply_chain_universe = c("Upstream", "Midstream", "Downstream"),
+                             supply_chain_universe = SUPPLY_CHAIN_STAGES,
                              year = 0L) {
   require_columns(tech_ghg, c("tech", "ghg_index"), label = "tech_ghg")
   require_columns(cat_policy, c("Country", "climate_policy_index"), label = "cat_policy")
@@ -102,7 +104,9 @@ cat_policy_index <- function(tech_ghg,
     cat_policy %>% dplyr::select(dplyr::any_of(c("Country", "iso3c", "climate_policy_index", "rating_scope"))),
     tech_ghg %>% dplyr::select("tech", "ghg_index")
   ) %>%
-    tidyr::crossing(supply_chain = supply_chain_universe) %>%
+    # supply_chain_expand_all() written out, so scripts/paper/fig_si_fixed_inputs.R (which passes
+    # one stage and does not source R/utils/supply_chain_stages.R) still runs
+    tidyr::crossing(supply_chain = unique(supply_chain_universe)) %>%
     dplyr::mutate(
       g = .data$ghg_index,
       c = .data$climate_policy_index,
@@ -111,7 +115,8 @@ cat_policy_index <- function(tech_ghg,
 
   explanation_base <- paste(
     "CAT alignment c*g + (1-c)*(1-g); c = CAT overall rating score,",
-    "g = technology ghg_index (IPCC AR5 lifecycle intensity, 1 = cleanest)"
+    "g = technology ghg_index (IPCC AR5 lifecycle intensity, 1 = cleanest);",
+    "one economy-wide value, the same on every supply-chain stage"
   )
 
   base_tbl %>%

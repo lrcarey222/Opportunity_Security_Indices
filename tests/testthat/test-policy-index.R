@@ -5,6 +5,7 @@ repo_root <- normalizePath(testthat::test_path("..", ".."), winslash = "/", must
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
 source(file.path(repo_root, "R", "categories", "policy", "nipo_policy_index.R"))
@@ -22,7 +23,7 @@ component_rows <- function(country, tech, supply_chain, variable, value) {
   )
 }
 
-all_three <- function(country, tech = "Solar", supply_chain = "Upstream",
+all_three <- function(country, tech = "Solar", supply_chain = "Extraction",
                       values = c(0.8, 0.6, 0.4)) {
   component_rows(
     country, tech, supply_chain,
@@ -31,13 +32,15 @@ all_three <- function(country, tech = "Solar", supply_chain = "Upstream",
   )
 }
 
-dual_use_row <- function(country, tech = "Solar", supply_chain = "Upstream", value = 0.2) {
+dual_use_row <- function(country, tech = "Solar", supply_chain = "Extraction", value = 0.2) {
   component_rows(country, tech, supply_chain, "Dual-use policy score", value)
 }
 
 # The three-component weights used until Oct 2026 (NIPO 4, IEA PAMS 3, CAT 2). NIPO is out of
 # the composite now, but these exercise the renormalisation over a component that is missing
-# from some cells (NIPO has no Downstream cells) and the eligibility rule with three components.
+# from some cells (NIPO has no Downstream, now Deployment, cells) and the eligibility rule with
+# three components. The composite tests label cells with the six stages; NIPO's own
+# Upstream / Midstream / Downstream rows are covered by their own test below.
 nipo_weights <- c("NIPO Policy Index" = 4, "IEA PAMS Policy Index" = 3, "CAT Policy Index" = 2)
 
 test_that("the IEA and NIPO weight tables no longer overwrite each other", {
@@ -49,28 +52,165 @@ test_that("the IEA and NIPO weight tables no longer overwrite each other", {
   expect_true(exists("IEA_STATUS_WEIGHTS"))
 })
 
-test_that("IEA Upstream stage words match whole words only", {
+test_that("IEA Extraction stage words match whole words only", {
   # As substrings "ore" matched "more" and "Korea", "mine" "determine", "lease" "release".
   expect_equal(assign_supply_chain("korea will do more before the release to determine"), "Cross-cutting")
-  expect_equal(assign_supply_chain("support for iron ore mining"), "Upstream")
-  expect_equal(assign_supply_chain("offshore oil and gas leases and drilling"), "Upstream")
-  expect_equal(assign_supply_chain("new coal mines and battery factory"), c("Upstream", "Midstream"))
+  expect_equal(assign_supply_chain("support for iron ore mining"), "Extraction")
+  expect_equal(assign_supply_chain("offshore oil and gas leases and drilling"), "Extraction")
+  # "factory" is a generic manufacturing word: Components and Assembly
+  expect_equal(
+    assign_supply_chain("new coal mines and battery factory"),
+    c("Extraction", "Components", "Assembly")
+  )
+  # the three-stage rules, kept for the Sector dashboard export, are unchanged
+  expect_equal(
+    assign_supply_chain("new coal mines and battery factory", stages = "legacy"),
+    c("Upstream", "Midstream")
+  )
+  expect_equal(assign_supply_chain("support for iron ore mining", stages = "legacy"), "Upstream")
+})
+
+test_that("IEA stage keywords split the old three stages into six", {
+  # Upstream splits into Extraction, Refining and Recovery
+  expect_equal(assign_supply_chain("grants for lithium refining and nickel smelting"), "Refining")
+  expect_equal(assign_supply_chain("battery recycling and end-of-life collection targets"), "Recovery")
+  expect_equal(assign_supply_chain("tariffs on scrap metal"), "Recovery")
+  expect_equal(assign_supply_chain("exploration licences for critical minerals"), "Extraction")
+  expect_equal(
+    assign_supply_chain("support for the extraction, processing and recycling of critical minerals"),
+    c("Extraction", "Refining", "Recovery")
+  )
+  expect_equal(
+    assign_supply_chain("funding for mining and processing of critical minerals"),
+    c("Extraction", "Refining")
+  )
+  # Midstream splits into Components and Assembly; a named step wins over a generic word
+  expect_equal(assign_supply_chain("tax credit for solar cell and wafer manufacturing"), "Components")
+  expect_equal(assign_supply_chain("grant for an electric vehicle assembly plant"), "Assembly")
+  expect_equal(assign_supply_chain("support for manufacturing of electric vehicles"), "Assembly")
+  expect_equal(assign_supply_chain("domestic battery manufacturing programme"), c("Components", "Assembly"))
+  expect_equal(
+    assign_supply_chain("cell manufacturing and module assembly incentives"),
+    c("Components", "Assembly")
+  )
+  # Downstream is Deployment
+  expect_equal(assign_supply_chain("rebates for rooftop solar installation"), "Deployment")
+  expect_equal(assign_supply_chain("energy consumption reporting"), "Deployment")
+  # a policy may hit several stages
+  expect_equal(
+    assign_supply_chain("ev battery recycling, cell production and charging deployment"),
+    c("Components", "Deployment", "Recovery")
+  )
+  # words that only look like stage words
+  expect_equal(assign_supply_chain("assembly bill 3 adopted by the national assembly"), "Cross-cutting")
+  expect_equal(assign_supply_chain("the programme has four key components"), "Cross-cutting")
+  expect_equal(assign_supply_chain("faster permit processing"), "Cross-cutting")
+  expect_equal(assign_supply_chain("cash for scrapping old cars"), "Cross-cutting")
+  expect_equal(assign_supply_chain("grants for individuals to scrap inefficient cars"), "Cross-cutting")
+  expect_equal(assign_supply_chain("funding for the scrap vehicle bonus"), "Cross-cutting")
+  expect_equal(assign_supply_chain("the act was refined by the 2008 act"), "Cross-cutting")
+  expect_equal(assign_supply_chain("labels for cathode ray tube televisions"), "Cross-cutting")
+  expect_equal(assign_supply_chain("embargo on refined petroleum products"), "Refining")
+  expect_equal(assign_supply_chain("tariffs on copper cathodes"), "Refining")
+  # every rule names a stage, in chain order
+  expect_equal(names(SUPPLY_CHAIN_RULES), SUPPLY_CHAIN_STAGES)
+  # the vectorised and per-text forms agree
+  texts <- c("lithium refining", "national assembly", "battery factory")
+  expect_equal(assign_supply_chains(texts), lapply(texts, assign_supply_chain))
+})
+
+# A minimal clean_pams_raw() output: one row per policy x country.
+pams_country_rows <- function(text_all, technologies, iso3 = "AAA") {
+  tibble::tibble(
+    policy_id = seq_along(text_all),
+    iso3 = iso3,
+    country = paste("Country", iso3),
+    text_all = text_all,
+    technologies_list = as.list(technologies),
+    policyType_list = list(character(0)),
+    status = "In force",
+    jurisdiction = "National"
+  )
+}
+
+test_that("IEA stages are relative to the technology", {
+  pams <- pams_country_rows(
+    c(
+      "geothermal exploration and drilling permits",
+      "hydrogen use in refineries",
+      "oil refinery standards",
+      "lithium mining royalties"
+    ),
+    c("Geothermal", "Hydrogen", "Oil", "Lithium")
+  )
+  tbl <- build_policy_table(pams, stages = "six")
+  stage_of <- function(id) tbl$supply_chain[tbl$policy_id == id]
+
+  # geothermal drilling is Deployment; refineries are where green hydrogen is used
+  expect_equal(tbl$tech[tbl$policy_id == 1], "Geothermal")
+  expect_equal(stage_of(1), "Deployment")
+  expect_equal(tbl$tech[tbl$policy_id == 2], "Green Hydrogen")
+  expect_equal(stage_of(2), "Deployment")
+  # the same words keep their stage for other technologies
+  expect_equal(stage_of(3), "Refining")
+  expect_equal(stage_of(4), "Extraction")
+  expect_true(all(tbl$w_sc == 1))
+  # a move onto a stage the policy already hits is not counted twice
+  expect_equal(apply_tech_stage_overrides(c("Extraction", "Deployment"), "Geothermal"), "Deployment")
+  expect_equal(apply_tech_stage_overrides("Cross-cutting", "Geothermal"), "Cross-cutting")
+
+  # the default (the Sector dashboard export) keeps the three stages and no moves
+  legacy <- build_policy_table(pams)
+  expect_equal(legacy$supply_chain[legacy$policy_id == 1], "Upstream")
+  expect_equal(legacy$supply_chain[legacy$policy_id == 4], "Upstream")
+  expect_true(all(legacy$supply_chain %in% c("Upstream", "Midstream", "Downstream", "Cross-cutting")))
+})
+
+test_that("IEA PAMS spreads a policy naming no stage over all six stages at the cross-cutting weight", {
+  pams <- pams_country_rows(
+    c("national solar strategy", "solar cell manufacturing grants"),
+    c("Solar", "Solar")
+  )
+  tbl <- build_policy_table(pams, stages = "six")
+  out <- build_policy_index(tbl, tech_universe = c("Solar", "Wind"))
+  clean <- out$policy_clean
+
+  strategy <- clean %>% dplyr::filter(.data$policy_id == 1)
+  expect_setequal(strategy$supply_chain, SUPPLY_CHAIN_STAGES)
+  expect_equal(unique(strategy$w_sc), 0.75)
+  expect_equal(clean$supply_chain[clean$policy_id == 2], "Components")
+  idx <- out$policy_index
+  expect_setequal(idx$supply_chain, SUPPLY_CHAIN_STAGES)
+  expect_equal(idx$n_policies[idx$supply_chain == "Components"], 2L)
+  expect_true(all(idx$n_policies[idx$supply_chain != "Components"] == 1L))
+
+  # a three-stage policy table cannot be expanded onto the six stages
+  expect_error(
+    build_policy_index(build_policy_table(pams), tech_universe = "Solar"),
+    "outside supply_chain_universe"
+  )
+  # ...but reproduces a three-stage build when asked for one
+  legacy <- build_policy_index(
+    build_policy_table(pams), tech_universe = "Solar",
+    supply_chain_universe = c("Upstream", "Midstream", "Downstream")
+  )
+  expect_setequal(legacy$policy_index$supply_chain, c("Upstream", "Midstream", "Downstream"))
 })
 
 test_that("the composite is the weighted mean renormalised over present components (4/3/2 weights)", {
   comp <- dplyr::bind_rows(
     all_three("A"),
-    # Downstream has no NIPO cell: weights renormalise to IEA 3, CAT 2.
+    # Deployment has no NIPO cell: weights renormalise to IEA 3, CAT 2.
     component_rows(
-      "A", "Solar", "Downstream",
+      "A", "Solar", "Deployment",
       c("IEA PAMS Policy Index", "CAT Policy Index"),
       c(0.6, 0.3)
     )
   )
 
   out <- build_composite_policy_index(comp, component_weights = nipo_weights)
-  up <- out$index %>% dplyr::filter(.data$supply_chain == "Upstream")
-  down <- out$index %>% dplyr::filter(.data$supply_chain == "Downstream")
+  up <- out$index %>% dplyr::filter(.data$supply_chain == "Extraction")
+  down <- out$index %>% dplyr::filter(.data$supply_chain == "Deployment")
 
   expect_equal(up$value, (4 * 0.8 + 3 * 0.6 + 2 * 0.4) / 9)
   expect_equal(down$value, (3 * 0.6 + 2 * 0.3) / 5)
@@ -78,6 +218,59 @@ test_that("the composite is the weighted mean renormalised over present componen
   expect_equal(down$n_components, 2L)
   expect_true(all(out$index$variable == "Overall Policy Index"))
   expect_match(up$explanation, "NIPO (4), IEA PAMS (3), CAT (2)", fixed = TRUE)
+})
+
+test_that("the composite stage names match R/utils/supply_chain_stages.R", {
+  expect_identical(POLICY_SUPPLY_CHAIN_STAGES, SUPPLY_CHAIN_STAGES)
+  expect_identical(POLICY_LEGACY_STAGES, SUPPLY_CHAIN_LEGACY_STAGES)
+})
+
+test_that("NIPO rows still labelled Upstream / Midstream / Downstream never become composite cells", {
+  # IEA PAMS and CAT on all six stages, NIPO (still built three-stage) on Upstream and Midstream,
+  # the dual-use score on six stages: the policy_component_tbl scripts/10 writes since 2026-10-26.
+  six <- dplyr::bind_rows(lapply(seq_along(SUPPLY_CHAIN_STAGES), function(i) {
+    component_rows(
+      "A", "Solar", SUPPLY_CHAIN_STAGES[[i]],
+      c("IEA PAMS Policy Index", "CAT Policy Index"),
+      c(i / 10, 0.5)
+    )
+  }))
+  nipo <- component_rows("A", "Solar", c("Upstream", "Midstream"), "NIPO Policy Index", c(0.9, 0.2))
+  comp <- dplyr::bind_rows(six, nipo, dual_use_row("A", supply_chain = "Assembly", value = 1))
+
+  # NIPO carries no weight: its rows are not read, the cells are the six stages
+  out <- build_composite_policy_index(comp)
+  expect_setequal(out$index$supply_chain, SUPPLY_CHAIN_STAGES)
+  expect_equal(nrow(out$index), length(SUPPLY_CHAIN_STAGES))
+  expect_equal(out$index, build_composite_policy_index(six)$index)
+  expect_false(any(grepl("copied to each stage", out$index$explanation)))
+
+  # NIPO weighted again: each legacy value is copied onto the stages its label covers
+  w <- build_composite_policy_index(comp, component_weights = nipo_weights)$index
+  value_at <- function(stage) w$value[w$supply_chain == stage]
+  iea_at <- function(stage) match(stage, SUPPLY_CHAIN_STAGES) / 10
+  expect_setequal(w$supply_chain, SUPPLY_CHAIN_STAGES)
+  for (stage in supply_chain_stages_of("Upstream")) {
+    expect_equal(value_at(stage), (4 * 0.9 + 3 * iea_at(stage) + 2 * 0.5) / 9)
+  }
+  for (stage in supply_chain_stages_of("Midstream")) {
+    expect_equal(value_at(stage), (4 * 0.2 + 3 * iea_at(stage) + 2 * 0.5) / 9)
+  }
+  # no NIPO Downstream row, so Deployment renormalises to IEA PAMS and CAT
+  expect_equal(value_at("Deployment"), (3 * iea_at("Deployment") + 2 * 0.5) / 5)
+  expect_equal(w$n_components[w$supply_chain == "Deployment"], 2L)
+  expect_match(w$explanation[[1]], "NIPO scored Upstream / Midstream / Downstream, copied to each stage covered", fixed = TRUE)
+
+  # a table built before the migration (every weighted row three-stage, as the dashboard's
+  # fixture) keeps its three-stage cells
+  legacy <- build_composite_policy_index(all_three("A", supply_chain = "Upstream"), component_weights = nipo_weights)
+  expect_equal(legacy$index$supply_chain, "Upstream")
+
+  # a stage the composite cannot place stops rather than becoming a cell the SI never joins
+  expect_error(
+    build_composite_policy_index(dplyr::bind_rows(six, component_rows("A", "Wind", "Cross-cutting", "CAT Policy Index", 0.5))),
+    "neither supply-chain stages"
+  )
 })
 
 test_that("the dual-use score is carried for reference but is not a component", {
@@ -100,9 +293,9 @@ test_that("the dual-use score is carried for reference but is not a component", 
   # the default (IEA PAMS required).
   b_only <- dplyr::bind_rows(
     all_three("A"),
-    component_rows("B", "Solar", "Upstream", c("NIPO Policy Index", "IEA PAMS Policy Index"), c(0.5, 0.5)),
+    component_rows("B", "Solar", "Extraction", c("NIPO Policy Index", "IEA PAMS Policy Index"), c(0.5, 0.5)),
     dual_use_row("B"),
-    component_rows("C", "Solar", "Upstream", "CAT Policy Index", 0.5),
+    component_rows("C", "Solar", "Extraction", "CAT Policy Index", 0.5),
     dual_use_row("C")
   )
   el <- build_composite_policy_index(b_only, required_components = names(POLICY_COMPONENT_WEIGHTS))$eligibility
@@ -121,14 +314,14 @@ test_that("with every component required, a country needs all three somewhere to
     all_three("A"),
     # B has no CAT rating anywhere.
     component_rows(
-      "B", "Solar", "Upstream",
+      "B", "Solar", "Extraction",
       c("NIPO Policy Index", "IEA PAMS Policy Index"),
       c(0.5, 0.5)
     ),
     # C has all three, but in different cells.
-    component_rows("C", "Solar", "Upstream", "NIPO Policy Index", 0.3),
-    component_rows("C", "Wind", "Midstream", "IEA PAMS Policy Index", 0.4),
-    component_rows("C", "Wind", "Downstream", "CAT Policy Index", 0.5),
+    component_rows("C", "Solar", "Extraction", "NIPO Policy Index", 0.3),
+    component_rows("C", "Wind", "Components", "IEA PAMS Policy Index", 0.4),
+    component_rows("C", "Wind", "Deployment", "CAT Policy Index", 0.5),
     # D's only NIPO value is NA, which does not count as observed.
     all_three("D", values = c(NA, 0.5, 0.5))
   )
@@ -156,7 +349,7 @@ test_that("with every component required, a country needs all three somewhere to
 test_that("duplicate component rows are averaged and techs can be restricted", {
   comp <- dplyr::bind_rows(
     all_three("A"),
-    component_rows("A", "Solar", "Upstream", "NIPO Policy Index", 0.4),
+    component_rows("A", "Solar", "Extraction", "NIPO Policy Index", 0.4),
     all_three("A", tech = "Semiconductors")
   )
 
@@ -239,15 +432,15 @@ test_that("by default a country with IEA PAMS but no CAT is scored from IEA PAMS
   w <- production_policy_weights()
   comp <- dplyr::bind_rows(
     # A has both, in two cells; its Wind cell has IEA PAMS only and is renormalised to it.
-    component_rows("A", "Solar", "Upstream", c("IEA PAMS Policy Index", "CAT Policy Index"), c(0.6, 0.4)),
-    component_rows("A", "Wind", "Midstream", "IEA PAMS Policy Index", 0.3),
+    component_rows("A", "Solar", "Extraction", c("IEA PAMS Policy Index", "CAT Policy Index"), c(0.6, 0.4)),
+    component_rows("A", "Wind", "Components", "IEA PAMS Policy Index", 0.3),
     # B has IEA PAMS but no CAT rating anywhere (the PAMS-only fallback).
-    component_rows("B", "Solar", "Upstream", "IEA PAMS Policy Index", 0.2),
-    component_rows("B", "Wind", "Midstream", c("IEA PAMS Policy Index", "NIPO Policy Index"), c(0.8, 0.9)),
+    component_rows("B", "Solar", "Extraction", "IEA PAMS Policy Index", 0.2),
+    component_rows("B", "Wind", "Components", c("IEA PAMS Policy Index", "NIPO Policy Index"), c(0.8, 0.9)),
     # C has a CAT rating but no IEA PAMS: not scored (IEA PAMS is the backbone).
-    component_rows("C", "Solar", "Upstream", "CAT Policy Index", 0.5),
+    component_rows("C", "Solar", "Extraction", "CAT Policy Index", 0.5),
     # D has only an NA IEA PAMS value, which does not count as observed.
-    component_rows("D", "Solar", "Upstream", c("IEA PAMS Policy Index", "CAT Policy Index"), c(NA, 0.5)),
+    component_rows("D", "Solar", "Extraction", c("IEA PAMS Policy Index", "CAT Policy Index"), c(NA, 0.5)),
     dual_use_row("B", value = 1)
   )
 
@@ -307,13 +500,13 @@ test_that("with both required, the composite is 3 IEA + 2 CAT and NIPO is ignore
     # A has all three: its NIPO value is ignored.
     all_three("A", values = c(0.9, 0.6, 0.4)),
     # B has IEA PAMS and CAT but no NIPO anywhere: eligible now.
-    component_rows("B", "Solar", "Upstream", c("IEA PAMS Policy Index", "CAT Policy Index"), c(0.2, 0.7)),
+    component_rows("B", "Solar", "Extraction", c("IEA PAMS Policy Index", "CAT Policy Index"), c(0.2, 0.7)),
     # C has NIPO and IEA PAMS but no CAT rating: ineligible.
-    component_rows("C", "Solar", "Upstream", c("NIPO Policy Index", "IEA PAMS Policy Index"), c(0.5, 0.5)),
+    component_rows("C", "Solar", "Extraction", c("NIPO Policy Index", "IEA PAMS Policy Index"), c(0.5, 0.5)),
     # D has CAT only: ineligible.
-    component_rows("D", "Solar", "Upstream", "CAT Policy Index", 0.5),
+    component_rows("D", "Solar", "Extraction", "CAT Policy Index", 0.5),
     # A Wind cell with IEA PAMS only is renormalised to IEA alone.
-    component_rows("A", "Wind", "Midstream", c("NIPO Policy Index", "IEA PAMS Policy Index"), c(0.1, 0.3)),
+    component_rows("A", "Wind", "Components", c("NIPO Policy Index", "IEA PAMS Policy Index"), c(0.1, 0.3)),
     dual_use_row("A", value = 1)
   )
 
@@ -369,18 +562,29 @@ test_that("cat_policy_index computes c*g + (1-c)*(1-g) and labels EU bloc rows",
     rating_scope = c("national", "EU bloc rating")
   )
 
-  out <- cat_policy_index(tech_ghg, cat_policy, supply_chain_universe = "Upstream")
+  out <- cat_policy_index(tech_ghg, cat_policy)
 
-  a_coal <- out$value[out$Country == "A" & out$tech == "Coal"]
-  b_solar <- out$value[out$Country == "B" & out$tech == "Solar"]
+  # one economy-wide value, copied onto each of the six stages
+  expect_setequal(out$supply_chain, SUPPLY_CHAIN_STAGES)
+  expect_equal(nrow(out), 2L * 2L * length(SUPPLY_CHAIN_STAGES))
+  expect_equal(nrow(dplyr::distinct(out, .data$Country, .data$tech, .data$value)), 4L)
+  expect_true(all(grepl("the same on every supply-chain stage", out$explanation, fixed = TRUE)))
+
+  a_coal <- unique(out$value[out$Country == "A" & out$tech == "Coal"])
+  b_solar <- unique(out$value[out$Country == "B" & out$tech == "Solar"])
   expect_equal(a_coal, 0.25 * 0 + 0.75 * 1)
   expect_equal(b_solar, 1 * 0.9)
   expect_true(all(grepl("EU bloc rating", out$explanation[out$Country == "B"])))
   expect_false(any(grepl("EU bloc rating", out$explanation[out$Country == "A"])))
 
+  # a single stage, as scripts/paper/fig_si_fixed_inputs.R asks for
+  one <- cat_policy_index(tech_ghg, cat_policy, supply_chain_universe = "Components")
+  expect_equal(unique(one$supply_chain), "Components")
+  expect_equal(nrow(one), 4L)
+
   # A scope lost in a join reads as national; the explanation is never blank.
   cat_policy$rating_scope[1] <- NA
-  out_na <- cat_policy_index(tech_ghg, cat_policy, supply_chain_universe = "Upstream")
+  out_na <- cat_policy_index(tech_ghg, cat_policy)
   expect_false(any(is.na(out_na$explanation)))
 })
 
@@ -393,10 +597,39 @@ test_that("dual-use scores are copied to every country and say they are LLM-gene
 
   out <- clean_dual_use_scores(raw, countries = c("A", "B"))
 
-  expect_equal(nrow(out), 4L)
+  # Upstream covers Extraction, Refining and Recovery; Midstream Components and Assembly
+  expect_equal(nrow(out), 2L * (3L + 2L))
   expect_equal(
     out$value[out$Country == "A" & out$tech == "Nuclear"],
     out$value[out$Country == "B" & out$tech == "Nuclear"]
   )
   expect_true(all(grepl("LLM-generated", out$source)))
+})
+
+test_that("dual-use scores are copied from the source's three stages onto the six", {
+  # the raw table's codes: U / M / D, described as primary / secondary / tertiary
+  raw <- tibble::tibble(
+    technology = c("Batteries", "Batteries", "Batteries", "Oil"),
+    stage = c("U", "M", "D", "tertiary"),
+    dual_use_score_0_1 = c(0.85, 0.9, 0.7, 0.9)
+  )
+
+  out <- clean_dual_use_scores(raw, countries = "A")
+  bat <- out %>% dplyr::filter(.data$tech == "Batteries")
+  value_at <- function(stage) bat$value[bat$supply_chain == stage]
+
+  assert_supply_chain_stages(out$supply_chain, "dual_use_scores_tbl")
+  expect_setequal(bat$supply_chain, SUPPLY_CHAIN_STAGES)
+  for (stage in c("Extraction", "Refining", "Recovery")) expect_equal(value_at(stage), 0.85)
+  for (stage in c("Components", "Assembly")) expect_equal(value_at(stage), 0.9)
+  expect_equal(value_at("Deployment"), 0.7)
+  expect_equal(out$supply_chain[out$tech == "Oil"], "Deployment")
+  expect_match(bat$explanation[bat$supply_chain == "Refining"], "scored for Upstream and copied to each stage it covers")
+  expect_false("source_stage" %in% names(out))
+
+  # an unknown stage code stops instead of becoming a cell no index joins
+  expect_error(
+    clean_dual_use_scores(dplyr::mutate(raw, stage = c("U", "M", "D", "X")), countries = "A"),
+    "unknown supply_chain"
+  )
 })

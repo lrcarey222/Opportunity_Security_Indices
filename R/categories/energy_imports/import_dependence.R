@@ -532,7 +532,10 @@ import_dependence_build_tidy <- function(imports_indexed, year = 2025) {
     dplyr::left_join(annotations, by = c("Country", "tech")) %>%
     dplyr::mutate(
       explanation = paste0(explanation, note),
-      supply_chain = "Upstream",
+      # A production-versus-consumption balance: one number that spans extraction and use and
+      # cannot be split. It is scored in Extraction, the stage of the fuel's own production
+      # (docs/supply_chain_stages.md, data/reference/index_variable_stage_map.csv).
+      supply_chain = "Extraction",
       category = "Energy Imports",
       Year = year,
       # An EIA value is observed data: the row says where it came from instead of being

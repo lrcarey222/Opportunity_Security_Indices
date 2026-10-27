@@ -347,6 +347,79 @@ energy_prices_unit <- function(clean) {
   dplyr::coalesce(unit, "unit to confirm")
 }
 
+# Supply-chain stage of each PCPS series the theme can match, keyed by its `clean` name
+# (docs/supply_chain_stages.md; data/reference/index_variable_stage_map.csv, Energy Prices).
+#
+# The prices are world benchmarks, so a series is staged by the product it prices (the
+# benchmark column of energy_prices_pcps_units()):
+#   * Extraction - primary fuels and ores: the crude benchmarks, the gas hub prices with LNG
+#     (natural gas, liquefied, HS 271111, is extraction in the HS6 master), coal, iron ore
+#     fines and uranium U3O8 (mine and mill output, ahead of conversion).
+#   * Refining - commodity metals, chemicals and processed fuels: the LME refined metals
+#     (copper cathode, nickel, zinc, aluminium, cobalt, lead, tin), battery-grade lithium,
+#     silicon metal, chromium metal, electrolytic manganese, vanadium pentoxide, roasted
+#     molybdenum concentrate, rare-earth carbonate, propane (an NGL, HS 271112) and the
+#     fertilisers (DAP, urea, and muriate of potash: beneficiated KCl sold to a fertiliser grade).
+# Both roll up to Upstream, where every price row sat before the six-stage split. A tech
+# priced by both kinds (Gas: hub prices and propane; Batteries, Solar, Wind and Electric Grid:
+# iron ore beside refined metals) gets an Extraction cell and a Refining cell. The optional
+# aggregate indices map to no tech and never reach the table; they are staged by what most
+# of their weight prices so the lookup covers every series the patterns can match.
+energy_prices_pcps_stages <- function() {
+  tibble::tribble(
+    ~clean, ~supply_chain,
+    "Oil_Brent", "Extraction",
+    "Oil_WTI", "Extraction",
+    "Dubai_Crude", "Extraction",
+    "Oil_APSP", "Extraction",
+    "Natural_Gas_Henry_Hub", "Extraction",
+    "Natural_Gas_EU", "Extraction",
+    "LNG", "Extraction",
+    "Natural_Gas_Index", "Extraction",
+    "Coal", "Extraction",
+    "Iron_Ore", "Extraction",
+    "Uranium", "Extraction",
+    "Energy_Index", "Extraction",
+    "Propane", "Refining",
+    "Copper", "Refining",
+    "Nickel", "Refining",
+    "Cobalt", "Refining",
+    "Lithium", "Refining",
+    "Manganese", "Refining",
+    "Zinc", "Refining",
+    "Molybdenum", "Refining",
+    "Chromium", "Refining",
+    "Silicon", "Refining",
+    "Rare_Earths", "Refining",
+    "Vanadium", "Refining",
+    "Aluminum", "Refining",
+    "Lead", "Refining",
+    "Tin", "Refining",
+    "Diammonium_Phosphate", "Refining",
+    "Urea", "Refining",
+    "Potassium_Fertilizer", "Refining",
+    "Energy_Transition_Metal_Index", "Refining",
+    "All_Metals_Index", "Refining",
+    "Base_Metals_Index", "Refining"
+  )
+}
+
+# Stage of each `clean` series name. A series with no stage stops the build rather than
+# falling out of the table.
+energy_prices_stage <- function(clean) {
+  stages <- energy_prices_pcps_stages()
+  stage <- stages$supply_chain[match(clean, stages$clean)]
+  unknown <- unique(clean[is.na(stage)])
+  if (length(unknown) > 0) {
+    stop(
+      "energy_prices_stage(): no supply-chain stage for PCPS series ",
+      paste(unknown, collapse = ", "),
+      "; add it to energy_prices_pcps_stages()."
+    )
+  }
+  stage
+}
+
 energy_prices_latest_and_yoy <- function(df) {
   x <- df %>%
     dplyr::filter(!is.na(value)) %>%
@@ -552,13 +625,16 @@ energy_prices_build_volatility <- function(imf_monthly,
         clean == "Coal" ~ "Coal",
         !is.na(tech) ~ clean,
         TRUE ~ NA_character_
-      )
+      ),
+      # Extraction (ores, crude, gas, coal, U3O8) or Refining (refined metals, chemicals,
+      # propane): energy_prices_pcps_stages().
+      supply_chain = energy_prices_stage(clean)
     ) %>%
     dplyr::select(-clean_key)
 
   volatility_by_indicator %>%
     dplyr::filter(!is.na(tech), tech %in% tech_groups) %>%
-    dplyr::group_by(tech, sub_sector, window_years) %>%
+    dplyr::group_by(tech, supply_chain, sub_sector, window_years) %>%
     dplyr::summarize(
       vol_logret_annualized = dplyr::if_else(all(is.na(vol_logret_annualized)), NA_real_, mean(vol_logret_annualized, na.rm = TRUE)),
       vol_level_sd = dplyr::if_else(all(is.na(vol_level_sd)), NA_real_, mean(vol_level_sd, na.rm = TRUE)),
@@ -575,6 +651,12 @@ energy_prices_build_table <- function(volatility_by_tech,
                                       as_of_year,
                                       country_info = NULL,
                                       gamma = 0.5) {
+  # A table built without the stage column (by hand, or before the six-stage split) takes
+  # it from the series name in sub_sector.
+  if (!"supply_chain" %in% names(volatility_by_tech)) {
+    volatility_by_tech$supply_chain <- energy_prices_stage(volatility_by_tech$sub_sector)
+  }
+
   base_tbl <- if (!is.null(country_info) && "country" %in% names(country_info)) {
     countries <- country_info %>%
       dplyr::distinct(country) %>%
@@ -596,7 +678,7 @@ energy_prices_build_table <- function(volatility_by_tech,
       Country,
       tech,
       sub_sector,
-      supply_chain = "Upstream",
+      supply_chain,
       category = "Energy Prices",
       variable = paste0("price_volatility_", window_years, "yr"),
       data_type = "raw",
@@ -607,7 +689,7 @@ energy_prices_build_table <- function(volatility_by_tech,
     )
 
   mean_vol_tbl <- base_tbl %>%
-    dplyr::group_by(Country, tech, sub_sector) %>%
+    dplyr::group_by(Country, tech, supply_chain, sub_sector) %>%
     dplyr::summarize(
       value = dplyr::if_else(all(is.na(price_volatility)), NA_real_, mean(price_volatility, na.rm = TRUE)),
       .groups = "drop"
@@ -616,7 +698,7 @@ energy_prices_build_table <- function(volatility_by_tech,
       Country,
       tech,
       sub_sector,
-      supply_chain = "Upstream",
+      supply_chain,
       category = "Energy Prices",
       variable = "mean_price_volatility",
       data_type = "raw",
@@ -627,7 +709,7 @@ energy_prices_build_table <- function(volatility_by_tech,
     )
 
   latest_yoy_tbl <- base_tbl %>%
-    dplyr::group_by(Country, tech, sub_sector) %>%
+    dplyr::group_by(Country, tech, supply_chain, sub_sector) %>%
     dplyr::summarize(
       latest_price = dplyr::if_else(all(is.na(latest_price)), NA_real_, mean(latest_price, na.rm = TRUE)),
       yoy_price_change_pct = dplyr::if_else(all(is.na(yoy_price_change_pct)), NA_real_, mean(yoy_price_change_pct, na.rm = TRUE)),
@@ -643,7 +725,7 @@ energy_prices_build_table <- function(volatility_by_tech,
       Country,
       tech,
       sub_sector,
-      supply_chain = "Upstream",
+      supply_chain,
       category = "Energy Prices",
       variable,
       data_type = "raw",
@@ -658,8 +740,10 @@ energy_prices_build_table <- function(volatility_by_tech,
       )
     )
 
+  # One index per tech and stage: a tech's ore and crude series and its refined-metal
+  # series are separate cells, so neither stage's volatility is averaged into the other's.
   overall_vol_index_tbl <- mean_vol_tbl %>%
-    dplyr::group_by(Country, tech) %>%
+    dplyr::group_by(Country, tech, supply_chain) %>%
     dplyr::summarize(
       mean_price_volatility = dplyr::if_else(all(is.na(value)), NA_real_, mean(value, na.rm = TRUE)),
       .groups = "drop"
@@ -668,14 +752,22 @@ energy_prices_build_table <- function(volatility_by_tech,
       Country,
       tech,
       sub_sector = "Overall",
-      supply_chain = "Upstream",
+      supply_chain,
       category = "Energy Prices",
       variable = "Overall Price Volatility Index",
       data_type = "index",
       value = median_scurve(-mean_price_volatility, gamma = gamma),
       Year = as_of_year,
       source = "Author calculation",
-      explanation = "Index from mean_price_volatility aggregated across sub_sectors within each tech."
+      explanation = paste0(
+        "Index from mean_price_volatility aggregated across the tech's ",
+        dplyr::case_when(
+          supply_chain == "Extraction" ~ "Extraction series (crude, gas, coal, iron ore, uranium U3O8)",
+          supply_chain == "Refining" ~ "Refining series (refined metals, chemicals, propane)",
+          TRUE ~ paste(supply_chain, "series")
+        ),
+        "."
+      )
     )
 
   dplyr::bind_rows(

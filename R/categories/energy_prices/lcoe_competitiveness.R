@@ -159,7 +159,8 @@ lcoe_competitiveness_build_table <- function(lcoe_indices,
     dplyr::transmute(
       Country = Region,
       tech = Technology,
-      supply_chain = "Downstream",
+      # The cost of generating from (or storing in) an installed plant: Deployment.
+      supply_chain = "Deployment",
       category = "Cost Competitiveness",
       variable,
       data_type,

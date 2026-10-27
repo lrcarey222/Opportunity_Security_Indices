@@ -5,7 +5,9 @@
 
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
+source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
+source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "categories", "production", "critical_minerals_production.R"))
 
 ei_workbook <- function() {
@@ -109,4 +111,21 @@ test_that("footnote markers on country names do not drop the country", {
   expect_equal(standardize_country_names("^ less than 0.05"), "^ less than 0.05")
   expect_equal(standardize_country_names("Timor-Leste"), "Timor-Leste")
   expect_equal(standardize_country_names("US"), "United States")
+})
+
+test_that("a mineral's production table is mine production, the Extraction stage", {
+  out <- critical_minerals_production_build_table(
+    sheet_data = pr_sheet_fixture(),
+    nm_col = "Thousand tonnes",
+    tech_name = "Copper",
+    unit_desc = "Thousand tonnes",
+    sheet_id = "Copper P-R",
+    country_reference = tibble::tibble(Country = c("Australia", "Chile", "China", "Peru"))
+  )
+
+  expect_setequal(unique(out$supply_chain), "Extraction")
+  expect_setequal(unique(out$variable), "Copper Production")
+  # Chile produced 5300 kt in 2025, the leftmost 2025 column; Peru is not on the sheet.
+  expect_equal(out$value[out$Country == "Chile" & out$data_type == "raw"], 5300)
+  expect_equal(out$value[out$Country == "Peru" & out$data_type == "index"], 0)
 })

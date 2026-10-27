@@ -6,7 +6,7 @@
 
 # ---- Build mineral supply inputs ----
 # Filter to total supply rows, split mineral names into mineral + supply-chain stage
-# (mining -> Upstream, refining/processing -> Midstream), and ensure the resulting table
+# (mining -> Extraction, refining/processing -> Refining), and ensure the resulting table
 # includes all countries for every (mineral, stage) block.
 #
 # `roster` (country names), when given, is completed as well: a roster country the IEA does
@@ -44,11 +44,11 @@ critical_minerals_processing_build_supply <- function(critical,
     ) %>%
     dplyr::rename(country = `Sector.Country`) %>%
     tidyr::separate(Mineral, into = c("mineral", "supply_chain_raw"), sep = " - ", extra = "merge") %>%
-    # Mining scores Upstream, refining/processing Midstream (the old recode sent both to
-    # Upstream), and minerals carry the canonical names their demand shares are keyed on.
+    # Mining scores Extraction, refining/processing Refining (the old recode sent both to one
+    # stage), and minerals carry the canonical names their demand shares are keyed on.
     dplyr::mutate(
       mineral = harmonize_mineral_names(mineral),
-      supply_chain = iea_critical_minerals_supply_stage(supply_chain_raw)
+      supply_chain = iea_critical_minerals_supply_stage(supply_chain_raw, legacy = FALSE)
     ) %>%
     dplyr::ungroup() %>%
     dplyr::select(
@@ -130,7 +130,7 @@ critical_minerals_processing_build_tidy <- function(mineral_supply,
       explanation = dplyr::case_when(
         data_type == "index" ~ stringr::str_glue(
           "Percent-rank of {tech} market share across countries, and HHI across critical minerals, ",
-          "of {dplyr::if_else(supply_chain == 'Midstream', 'refined', 'mined')} supply"
+          "of {dplyr::if_else(supply_chain == 'Refining', 'refined', 'mined')} supply"
         )
       )
     ) %>%

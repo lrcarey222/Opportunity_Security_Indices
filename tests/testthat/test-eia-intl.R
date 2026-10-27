@@ -441,29 +441,29 @@ test_that("the production theme fills absent EI fuel production from EIA and lea
   get <- function(country, var, year) out[[as.character(year)]][out$Country == country & out$Var == var]
 
   # EI values stand.
-  expect_identical(get("Norway", "Oil Upstream", 2025), 2000)
+  expect_identical(get("Norway", "Oil Extraction", 2025), 2000)
   # New Zealand oil and gas from EIA; gas 2025 from EIA 2024.
-  expect_equal(get("New Zealand", "Oil Upstream", 2015), 36)
-  expect_equal(get("New Zealand", "Oil Upstream", 2025), 12)
-  expect_equal(get("New Zealand", "Gas Upstream", 2025), 3.3 * 0.036)
-  nz_gas <- out[out$Country == "New Zealand" & out$Var == "Gas Upstream", ]
+  expect_equal(get("New Zealand", "Oil Extraction", 2015), 36)
+  expect_equal(get("New Zealand", "Oil Extraction", 2025), 12)
+  expect_equal(get("New Zealand", "Gas Extraction", 2025), 3.3 * 0.036)
+  nz_gas <- out[out$Country == "New Zealand" & out$Var == "Gas Extraction", ]
   expect_true(nz_gas$eia_used)
   expect_match(nz_gas$eia_note, "EIA International Energy Statistics for 2015, 2020, 2025 \\(EIA 2024, its latest year\\)")
   # Estonia: EIA's 0 coal is not EI's coal (oil shale), so NA; Estonia gas is a real 0.
-  expect_true(all(is.na(unlist(out[out$Country == "Estonia" & out$Var == "Coal Upstream", c("2015", "2020", "2025")]))))
-  est_coal <- out[out$Country == "Estonia" & out$Var == "Coal Upstream", ]
+  expect_true(all(is.na(unlist(out[out$Country == "Estonia" & out$Var == "Coal Extraction", c("2015", "2020", "2025")]))))
+  est_coal <- out[out$Country == "Estonia" & out$Var == "Coal Extraction", ]
   expect_false(est_coal$eia_used)
   expect_match(est_coal$eia_note, "NA in 2015, 2020, 2025: the EIA International Energy Statistics value is not used")
-  expect_identical(get("Estonia", "Gas Upstream", 2025), 0)
+  expect_identical(get("Estonia", "Gas Extraction", 2025), 0)
   # Norway has no EIA rows in the fixture, so its absent coal stays NA; generation EI does not
   # report is still 0 (EIA is not used for generation).
-  expect_true(is.na(get("Norway", "Coal Upstream", 2025)))
-  expect_identical(get("New Zealand", "Gas Downstream", 2025), 0)
-  expect_true(is.na(out$eia_note[out$Country == "Norway" & out$Var == "Oil Upstream"]))
+  expect_true(is.na(get("Norway", "Coal Extraction", 2025)))
+  expect_identical(get("New Zealand", "Gas Deployment", 2025), 0)
+  expect_true(is.na(out$eia_note[out$Country == "Norway" & out$Var == "Oil Extraction"]))
 
   # Without the extract every absent cell is 0, as before.
   plain <- production_depth_momentum_clean_energy_production(ei_production_fixture())
-  expect_identical(plain$`2025`[plain$Country == "New Zealand" & plain$Var == "Gas Upstream"], 0)
+  expect_identical(plain$`2025`[plain$Country == "New Zealand" & plain$Var == "Gas Extraction"], 0)
   expect_false("eia_note" %in% names(plain))
 })
 
@@ -475,19 +475,24 @@ test_that("production rows name EIA in their source only where EIA supplied a va
     growth_abs_index, overall_production_index, block = "energy", source = "EI", eia_note, eia_used
   )
   tbl <- production_depth_momentum_build_table(combined, year = 2025)
-  src <- function(country, tech) unique(tbl$source[tbl$Country == country & tbl$tech == tech & tbl$supply_chain == "Upstream"])
+  src <- function(country, tech) unique(tbl$source[tbl$Country == country & tbl$tech == tech & tbl$supply_chain == "Extraction"])
 
   expect_identical(src("New Zealand", "Gas"), "EI; EIA International Energy Statistics")
   expect_identical(src("Norway", "Oil"), "EI")
   expect_identical(src("Estonia", "Coal"), "EI")
-  est <- tbl[tbl$Country == "Estonia" & tbl$tech == "Coal" & tbl$supply_chain == "Upstream", ]
+  est <- tbl[tbl$Country == "Estonia" & tbl$tech == "Coal" & tbl$supply_chain == "Extraction", ]
   expect_true(all(is.na(est$value)))
   expect_false(any(is.nan(tbl$value)))
+  # Fuel production is Extraction and generation Deployment; the tech keeps no stage suffix.
+  expect_setequal(unique(paste(growth$tech, growth$supply_chain)), c(
+    "Oil Extraction", "Gas Extraction", "Coal Extraction", "Gas Deployment", "Solar Deployment", "Wind Deployment"
+  ))
 })
 
 test_that("the Sector Insights exporter ships a fuel production NA as nsr, not an NA status", {
   # Estonia coal is NA in production_depth_momentum_tbl (no EI row, EIA value not comparable);
-  # sector_obs_tables() stops on an NA status, so scripts/87 would fail on it.
+  # sector_obs_tables() stops on an NA status, so scripts/87 would fail on it. The Sector
+  # Insights builders have not moved to six stages, so their input keeps the three-stage label.
   env <- new.env(parent = globalenv())
   sys.source(file.path(repo_root, "R", "dashboard", "sector", "sector_files.R"), envir = env)
   for (f in env$sector_files()) sys.source(file.path(repo_root, f), envir = env)

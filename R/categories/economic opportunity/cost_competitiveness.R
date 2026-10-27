@@ -1,4 +1,10 @@
 # Cost competitiveness theme builder functions.
+#
+# Rows are filed under the six supply-chain stages (R/utils/supply_chain_stages.R, which the
+# caller sources first). The IEA relative costs are stage-specific per product. The labour
+# leg reads three ILO aggregates and the cost shares were set for three stages, so its values
+# are copied across stages: Extraction and Recovery carry one value, Refining, Components and
+# Assembly another. The capital leg is country level and is copied to every stage.
 
 cost_competitiveness_normalize_iso_ilo <- function(x) {
   cleaned <- stringr::str_squish(x)
@@ -46,83 +52,185 @@ cost_competitiveness_normalize_iso_ilo <- function(x) {
   iso
 }
 
-cost_competitiveness_labor_weights <- function() {
+# The six stages each three-stage cost share below is copied onto.
+#
+# The labour and capital shares are author estimates set for Upstream / Midstream /
+# Downstream, and no source gives them at six stages, so each stage takes the share of the
+# old stage that covered it. Refining takes the Midstream share, not that of its roll-up
+# (Upstream): refined materials were filed with manufacturing before the six-stage split,
+# and basic metals, chemicals and refined petroleum are ISIC C manufacturing activities,
+# which is also why the labour leg reads the Manufacturing series for them
+# (cost_competitiveness_ilo_activities()). Recovery takes the Upstream share and, with
+# Extraction, the mining-and-utilities series.
+cost_competitiveness_share_stages <- function() {
   tibble::tribble(
-    ~Technology, ~supply_chain, ~labor_share,
-    "Solar", "Upstream", 0.15,
-    "Solar", "Midstream", 0.15,
-    "Solar", "Downstream", 0.07,
-    "Wind", "Upstream", 0.15,
-    "Wind", "Midstream", 0.12,
-    "Wind", "Downstream", 0.15,
-    "Geothermal", "Upstream", 0.15,
-    "Geothermal", "Midstream", 0.12,
-    "Geothermal", "Downstream", 0.22,
-    "Nuclear", "Upstream", 0.18,
-    "Nuclear", "Midstream", 0.15,
-    "Nuclear", "Downstream", 0.18,
-    "Gas", "Upstream", 0.18,
-    "Gas", "Midstream", 0.10,
-    "Gas", "Downstream", 0.07,
-    "Coal", "Upstream", 0.40,
-    "Coal", "Midstream", 0.15,
-    "Coal", "Downstream", 0.15,
-    "Oil", "Upstream", 0.18,
-    "Oil", "Midstream", 0.10,
-    "Oil", "Downstream", 0.15,
-    # Named as the pipeline names the technology; as "Hydrogen" the shares matched nothing,
-    # so Green Hydrogen had no Input Cost Index at any stage.
-    "Green Hydrogen", "Upstream", 0.06,
-    "Green Hydrogen", "Midstream", 0.10,
-    "Green Hydrogen", "Downstream", 0.08,
-    "Electric Grid", "Upstream", 0.20,
-    "Electric Grid", "Midstream", 0.25,
-    "Electric Grid", "Downstream", 0.38,
-    "Electric Vehicles", "Upstream", 0.20,
-    "Electric Vehicles", "Midstream", 0.20,
-    "Electric Vehicles", "Downstream", 0.10,
-    "Batteries", "Upstream", 0.22,
-    "Batteries", "Midstream", 0.08,
-    "Batteries", "Downstream", 0.08
+    ~share_stage, ~supply_chain,
+    "Upstream", "Extraction",
+    "Midstream", "Refining",
+    "Midstream", "Components",
+    "Midstream", "Assembly",
+    "Downstream", "Deployment",
+    "Upstream", "Recovery"
   )
 }
 
+# Copy a Technology x Upstream / Midstream / Downstream share table onto the six stages.
+cost_competitiveness_expand_share_stages <- function(shares, label = "shares") {
+  require_columns(shares, c("Technology", "supply_chain"), label = label)
+
+  stage_map <- cost_competitiveness_share_stages()
+  unmapped <- setdiff(unique(shares$supply_chain), stage_map$share_stage)
+  if (length(unmapped) > 0) {
+    stop(label, " names stages with no six-stage mapping: ", paste(unmapped, collapse = ", "), ".")
+  }
+
+  shares %>%
+    dplyr::rename(share_stage = supply_chain) %>%
+    dplyr::inner_join(stage_map, by = "share_stage", relationship = "many-to-many") %>%
+    dplyr::arrange(
+      match(Technology, unique(shares$Technology)),
+      match(supply_chain, SUPPLY_CHAIN_STAGES)
+    ) %>%
+    dplyr::select(Technology, supply_chain, dplyr::everything(), -share_stage)
+}
+
+# The three-stage share a stage takes ("Upstream" for Extraction; NA for anything else).
+cost_competitiveness_share_stage_of <- function(stage) {
+  stage_map <- cost_competitiveness_share_stages()
+  stage_map$share_stage[match(as.character(stage), stage_map$supply_chain)]
+}
+
+# Explanation suffix naming the stages a share or labour value is copied across: the stages
+# that share an old three-stage share, which are also the stages that share an ILO series.
+# Empty for a stage that has its share to itself (Deployment).
+cost_competitiveness_stage_copy_note <- function(stage) {
+  stage_map <- cost_competitiveness_share_stages()
+  stages <- unique(as.character(stage))
+  notes <- vapply(stages, function(s) {
+    share_stage <- cost_competitiveness_share_stage_of(s)
+    siblings <- stage_map$supply_chain[stage_map$share_stage %in% share_stage]
+    siblings <- siblings[order(match(siblings, SUPPLY_CHAIN_STAGES))]
+    if (length(siblings) < 2) {
+      return("")
+    }
+    paste0(
+      "; one value copied across ",
+      paste(utils::head(siblings, -1), collapse = ", "),
+      " and ", utils::tail(siblings, 1)
+    )
+  }, character(1))
+
+  unname(notes[match(as.character(stage), stages)])
+}
+
+# Author estimates of the labour share of costs, set per technology for the three-stage
+# chain and copied onto the six stages by cost_competitiveness_expand_share_stages().
+cost_competitiveness_labor_weights <- function() {
+  cost_competitiveness_expand_share_stages(
+    tibble::tribble(
+      ~Technology, ~supply_chain, ~labor_share,
+      "Solar", "Upstream", 0.15,
+      "Solar", "Midstream", 0.15,
+      "Solar", "Downstream", 0.07,
+      "Wind", "Upstream", 0.15,
+      "Wind", "Midstream", 0.12,
+      "Wind", "Downstream", 0.15,
+      "Geothermal", "Upstream", 0.15,
+      "Geothermal", "Midstream", 0.12,
+      "Geothermal", "Downstream", 0.22,
+      "Nuclear", "Upstream", 0.18,
+      "Nuclear", "Midstream", 0.15,
+      "Nuclear", "Downstream", 0.18,
+      "Gas", "Upstream", 0.18,
+      "Gas", "Midstream", 0.10,
+      "Gas", "Downstream", 0.07,
+      "Coal", "Upstream", 0.40,
+      "Coal", "Midstream", 0.15,
+      "Coal", "Downstream", 0.15,
+      "Oil", "Upstream", 0.18,
+      "Oil", "Midstream", 0.10,
+      "Oil", "Downstream", 0.15,
+      # Named as the pipeline names the technology; as "Hydrogen" the shares matched nothing,
+      # so Green Hydrogen had no Input Cost Index at any stage.
+      "Green Hydrogen", "Upstream", 0.06,
+      "Green Hydrogen", "Midstream", 0.10,
+      "Green Hydrogen", "Downstream", 0.08,
+      "Electric Grid", "Upstream", 0.20,
+      "Electric Grid", "Midstream", 0.25,
+      "Electric Grid", "Downstream", 0.38,
+      "Electric Vehicles", "Upstream", 0.20,
+      "Electric Vehicles", "Midstream", 0.20,
+      "Electric Vehicles", "Downstream", 0.10,
+      "Batteries", "Upstream", 0.22,
+      "Batteries", "Midstream", 0.08,
+      "Batteries", "Downstream", 0.08
+    ),
+    label = "cost_competitiveness_labor_weights"
+  )
+}
+
+# Author estimates of the capital share of costs, on the same three-stage basis.
 cost_competitiveness_capital_weights <- function() {
+  cost_competitiveness_expand_share_stages(
+    tibble::tribble(
+      ~Technology, ~supply_chain, ~cap_share,
+      "Solar", "Upstream", 0.20,
+      "Solar", "Midstream", 0.80,
+      "Solar", "Downstream", 0.90,
+      "Wind", "Upstream", 0.25,
+      "Wind", "Midstream", 0.80,
+      "Wind", "Downstream", 0.85,
+      "Geothermal", "Upstream", 0.68,
+      "Geothermal", "Midstream", 0.80,
+      "Geothermal", "Downstream", 0.70,
+      "Nuclear", "Upstream", 0.50,
+      "Nuclear", "Midstream", 0.80,
+      "Nuclear", "Downstream", 0.70,
+      "Gas", "Upstream", 0.50,
+      "Gas", "Midstream", 0.60,
+      "Gas", "Downstream", 0.20,
+      "Coal", "Upstream", 0.35,
+      "Coal", "Midstream", 0.68,
+      "Coal", "Downstream", 0.30,
+      "Oil", "Upstream", 0.55,
+      "Oil", "Midstream", 0.60,
+      "Oil", "Downstream", 0.25,
+      "Green Hydrogen", "Upstream", 0.30,
+      "Green Hydrogen", "Midstream", 0.55,
+      "Green Hydrogen", "Downstream", 0.18,
+      "Electric Grid", "Upstream", 0.28,
+      "Electric Grid", "Midstream", 0.68,
+      "Electric Grid", "Downstream", 0.53,
+      "Electric Vehicles", "Upstream", 0.45,
+      "Electric Vehicles", "Midstream", 0.20,
+      "Electric Vehicles", "Downstream", 0.20,
+      "Batteries", "Upstream", 0.45,
+      "Batteries", "Midstream", 0.15,
+      "Batteries", "Downstream", 0.30
+    ),
+    label = "cost_competitiveness_capital_weights"
+  )
+}
+
+# The technology and stage each IEA ETP relative-cost product scores, relative to that
+# technology. PV modules, wind turbines and electrolysers are their technologies' finished
+# goods (Assembly); the battery figure is filed with cells (Components). Aluminium and steel
+# are commodity metals (Refining) and heat pumps finished equipment (Assembly); none of the
+# three is an index technology, so their rows reach the table but score nothing. Ammonia is
+# ranked as its own product and becomes a Green Hydrogen row in
+# cost_competitiveness_build_iea_table(): for Green Hydrogen, making ammonia is a downstream
+# conversion of the hydrogen (reviewed 2026-10-26, docs/supply_chain_stages.md).
+cost_competitiveness_iea_products <- function() {
   tibble::tribble(
-    ~Technology, ~supply_chain, ~cap_share,
-    "Solar", "Upstream", 0.20,
-    "Solar", "Midstream", 0.80,
-    "Solar", "Downstream", 0.90,
-    "Wind", "Upstream", 0.25,
-    "Wind", "Midstream", 0.80,
-    "Wind", "Downstream", 0.85,
-    "Geothermal", "Upstream", 0.68,
-    "Geothermal", "Midstream", 0.80,
-    "Geothermal", "Downstream", 0.70,
-    "Nuclear", "Upstream", 0.50,
-    "Nuclear", "Midstream", 0.80,
-    "Nuclear", "Downstream", 0.70,
-    "Gas", "Upstream", 0.50,
-    "Gas", "Midstream", 0.60,
-    "Gas", "Downstream", 0.20,
-    "Coal", "Upstream", 0.35,
-    "Coal", "Midstream", 0.68,
-    "Coal", "Downstream", 0.30,
-    "Oil", "Upstream", 0.55,
-    "Oil", "Midstream", 0.60,
-    "Oil", "Downstream", 0.25,
-    "Green Hydrogen", "Upstream", 0.30,
-    "Green Hydrogen", "Midstream", 0.55,
-    "Green Hydrogen", "Downstream", 0.18,
-    "Electric Grid", "Upstream", 0.28,
-    "Electric Grid", "Midstream", 0.68,
-    "Electric Grid", "Downstream", 0.53,
-    "Electric Vehicles", "Upstream", 0.45,
-    "Electric Vehicles", "Midstream", 0.20,
-    "Electric Vehicles", "Downstream", 0.20,
-    "Batteries", "Upstream", 0.45,
-    "Batteries", "Midstream", 0.15,
-    "Batteries", "Downstream", 0.30
+    ~Product, ~tech, ~supply_chain,
+    "Solar PV", "Solar", "Assembly",
+    "Wind turbines", "Wind", "Assembly",
+    "Electrolysers", "Green Hydrogen", "Assembly",
+    "Batteries", "Batteries", "Components",
+    "Heat pumps", "Heat pumps", "Assembly",
+    "Aluminium", "Aluminium", "Refining",
+    "Steel", "Steel", "Refining",
+    "Ammonia", "Ammonia", "Deployment"
   )
 }
 
@@ -133,28 +241,31 @@ cost_competitiveness_clean_iea <- function(iea_cost_raw) {
     label = "iea_cost_raw"
   )
 
+  products <- cost_competitiveness_iea_products()
+  # A product the IEA adds would otherwise have no stage; it is named rather than dropped.
+  unmapped <- setdiff(unique(iea_cost_raw$Product), products$Product)
+  if (length(unmapped) > 0) {
+    stop(
+      "IEA relative-cost product(s) with no stage in cost_competitiveness_iea_products(): ",
+      paste(unmapped, collapse = ", "), "."
+    )
+  }
+
   iea_cost_raw %>%
+    dplyr::inner_join(products, by = "Product", relationship = "many-to-one") %>%
     dplyr::mutate(
-      Product = dplyr::recode(
-        Product,
-        "Solar PV" = "Solar",
-        "Wind turbines" = "Wind",
-        "Electrolysers" = "Green Hydrogen"
-      ),
       Region = dplyr::if_else(Region == "Korea", "South Korea", Region),
-      supply_chain = "Midstream",
       # "Other Southeast Asia" is broadcast to the ASEAN members in
       # cost_competitiveness_build_country_maps(), not to the EI "Asia Pacific" sub-region.
       country2 = dplyr::case_when(
         Region == "European Union" ~ "EU",
         TRUE ~ Region
       ),
-      tech = Product,
       # The extract's own reference year, so the emitted rows are not stamped with the
       # build year. The staged file reports 2023 costs.
       iea_year = suppressWarnings(as.integer(Year))
     ) %>%
-    dplyr::select(Region, country2, tech, supply_chain, iea_year, Value)
+    dplyr::select(Region, country2, Product, tech, supply_chain, iea_year, Value)
 }
 
 cost_competitiveness_build_iea_indices <- function(iea_cost_clean, gamma = 0.5) {
@@ -249,21 +360,46 @@ cost_competitiveness_keep_economies <- function(tbl, economies = NULL, label = "
 }
 
 # Which ILO economic-activity aggregate stands in for each supply-chain stage, and in what
-# order of preference.
+# order of preference. The ILO aggregates are broader than the stages, so one series serves
+# several of them (the stage groups of cost_competitiveness_share_stages()).
 #
-# Upstream reads mining and utilities rather than agriculture. The upstream stages this
-# theme scores are extraction and refining, and farm wages proxy neither - agriculture was
-# a placeholder. That series is thinner than the others (133 reporting economies against
-# 172 for manufacturing, and it omits much of the EU), so Upstream falls back to the
-# economy-wide total wherever mining is not reported, which keeps stage coverage at the
-# same 165+ economies as before.
+# Extraction and Recovery read mining and utilities rather than agriculture: farm wages
+# proxy neither, and agriculture was a placeholder. The aggregate covers ISIC B, D and E,
+# and E (water supply, sewerage and waste management) includes materials recovery. Refining
+# reads Manufacturing with Components and Assembly, since basic metals, chemicals and refined
+# petroleum are ISIC C divisions. Deployment reads Construction. The mining series is thinner
+# than the others (133 reporting economies against 172 for manufacturing, and it omits much
+# of the EU), so Extraction and Recovery fall back to the economy-wide total wherever mining
+# is not reported, which keeps their coverage at the same 165+ economies as before.
 cost_competitiveness_ilo_activities <- function() {
+  mining <- "Economic activity (Aggregate): Mining and quarrying; Electricity, gas and water supply"
+  total <- "Economic activity (Aggregate): Total"
+  manufacturing <- "Economic activity (Aggregate): Manufacturing"
+  construction <- "Economic activity (Aggregate): Construction"
+
   tibble::tribble(
     ~classif1.label, ~supply_chain, ~activity_rank,
-    "Economic activity (Aggregate): Mining and quarrying; Electricity, gas and water supply", "Upstream", 1L,
-    "Economic activity (Aggregate): Total", "Upstream", 2L,
-    "Economic activity (Aggregate): Manufacturing", "Midstream", 1L,
-    "Economic activity (Aggregate): Construction", "Downstream", 1L
+    mining, "Extraction", 1L,
+    total, "Extraction", 2L,
+    manufacturing, "Refining", 1L,
+    manufacturing, "Components", 1L,
+    manufacturing, "Assembly", 1L,
+    construction, "Deployment", 1L,
+    mining, "Recovery", 1L,
+    total, "Recovery", 2L
+  )
+}
+
+# The explanation of a labour-leg row: which ILO series its stage reads.
+cost_competitiveness_labor_stage_source <- function(stage) {
+  dplyr::case_when(
+    stage %in% c("Extraction", "Recovery") ~ paste(
+      "mining, utilities, water supply and waste (ISIC B, D, E) where reported,",
+      "otherwise the economy-wide total"
+    ),
+    stage %in% c("Refining", "Components", "Assembly") ~ "manufacturing (ISIC C)",
+    stage == "Deployment" ~ "construction (ISIC F)",
+    TRUE ~ NA_character_
   )
 }
 
@@ -308,7 +444,7 @@ cost_competitiveness_build_ilo_indices <- function(ilo_raw,
     cost_competitiveness_keep_economies(economies, label = "ILO") %>%
     dplyr::slice_max(time, n = 1, with_ties = FALSE, by = c(country_std, classif1.label)) %>%
     # The floor is measured against the newest observation in the whole panel, not per
-    # activity, so all three stages share one reference year.
+    # activity, so every stage shares one reference year.
     dplyr::mutate(labor_stale = cost_competitiveness_is_stale(time, max_age = max_age)) %>%
     # Ranked within the reporting series, so each country is placed against like-for-like
     # earnings instead of a pool that mixes mining wages with economy-wide averages. Stale
@@ -330,16 +466,18 @@ cost_competitiveness_build_labor_scaffold <- function(ilo_indices) {
   )
 
   ilo_indices %>%
+    # One series serves several stages, so each observation fans out to every stage it
+    # stands in for.
     dplyr::inner_join(
       cost_competitiveness_ilo_activities(),
       by = "classif1.label",
-      relationship = "many-to-one"
+      relationship = "many-to-many"
     ) %>%
     dplyr::mutate(
-      # Best available series per stage; rank 2 is the economy-wide Upstream fallback. A
-      # series held out by the recency floor is demoted below every usable one, so a country
-      # with a stale mining wage but a current economy-wide figure reads the current one
-      # rather than falling through to imputation.
+      # Best available series per stage; rank 2 is the economy-wide Extraction and Recovery
+      # fallback. A series held out by the recency floor is demoted below every usable one,
+      # so a country with a stale mining wage but a current economy-wide figure reads the
+      # current one rather than falling through to imputation.
       series_rank = dplyr::if_else(
         is.na(labor_index),
         activity_rank + 100L,
@@ -492,16 +630,27 @@ cost_competitiveness_build_labor_table <- function(ilo_sc,
       # a 2025 survey and others off one more than a decade old.
       Year = dplyr::coalesce(labor_year, as.integer(year)),
       source = "International Labor Organization",
-      explanation = dplyr::case_when(
-        variable == "labor_share" ~ "Estimated Labor Share of Costs",
-        variable == "earnings_usd" ~ "Average monthly earnings, market-rate US dollars",
-        variable == "labor_index" ~ paste(
-          "Average monthly earnings by economic activity, market-rate US dollars,",
-          "indexed (median_scurve); Upstream reads mining and utilities where reported,",
-          "otherwise the economy-wide total"
+      # Each row names the ILO series its stage reads and the stages it is copied across.
+      explanation = paste0(
+        dplyr::case_when(
+          variable == "labor_share" ~ paste(
+            "Estimated Labor Share of Costs; the author's",
+            cost_competitiveness_share_stage_of(supply_chain),
+            "estimate from the three-stage chain"
+          ),
+          variable == "earnings_usd" ~ paste0(
+            "Average monthly earnings, market-rate US dollars; ",
+            cost_competitiveness_labor_stage_source(supply_chain)
+          ),
+          variable == "labor_index" ~ paste0(
+            "Average monthly earnings by economic activity, market-rate US dollars, ",
+            "indexed (median_scurve); ",
+            cost_competitiveness_labor_stage_source(supply_chain)
+          ),
+          variable == "labor_index_weighted" ~ "Labor index x labor share (contribution, not an index)",
+          TRUE ~ variable
         ),
-        variable == "labor_index_weighted" ~ "Labor index x labor share (contribution, not an index)",
-        TRUE ~ variable
+        cost_competitiveness_stage_copy_note(supply_chain)
       )
     )
 }
@@ -1023,18 +1172,37 @@ cost_competitiveness_build_capital_table <- function(cap_cost_base,
         as.integer(year)
       ),
       source = "International Monetary Fund",
+      # The rates and producer prices are country level and copied to every stage; only the
+      # capital share, set for three stages, differs between stage groups.
       explanation = dplyr::case_when(
-        variable == "cap_share" ~ "Estimated Capital Share of Costs",
-        variable == "ppi_index" ~ "Producer price inflation, year on year, indexed (median_scurve)",
-        variable == "cap_index_weighted" ~ "Capital cost score * capital share (contribution, not an index)",
-        variable == "nominal_rate" ~ "Lending rate, %",
-        variable == "rate_index" ~ "Lending rate, winsorized min-max index (not median_scurve)",
-        variable == "ppi_yoy" ~ "Producer price inflation, % year on year",
-        variable == "ppi" ~ paste(
-          "Producer price index level, country-specific base year;",
-          "reported for context only and not comparable across countries"
+        variable == "cap_share" ~ paste0(
+          "Estimated Capital Share of Costs; the author's ",
+          cost_competitiveness_share_stage_of(supply_chain),
+          " estimate from the three-stage chain",
+          cost_competitiveness_stage_copy_note(supply_chain)
         ),
-        TRUE ~ variable
+        variable == "cap_index_weighted" ~ paste0(
+          "Capital cost score * capital share (contribution, not an index)",
+          cost_competitiveness_stage_copy_note(supply_chain)
+        ),
+        TRUE ~ paste0(
+          dplyr::case_when(
+            variable == "cap_cost_index" ~ paste(
+              "Capital cost score, 1 minus the blend of the lending-rate and producer-price",
+              "indices; higher = cheaper capital"
+            ),
+            variable == "ppi_index" ~ "Producer price inflation, year on year, indexed (median_scurve)",
+            variable == "nominal_rate" ~ "Lending rate, %",
+            variable == "rate_index" ~ "Lending rate, winsorized min-max index (not median_scurve)",
+            variable == "ppi_yoy" ~ "Producer price inflation, % year on year",
+            variable == "ppi" ~ paste(
+              "Producer price index level, country-specific base year;",
+              "reported for context only and not comparable across countries"
+            ),
+            TRUE ~ variable
+          ),
+          "; a country-level value, copied to every stage and technology"
+        )
       )
     )
 }
@@ -1104,7 +1272,13 @@ cost_competitiveness_build_input_cost_index <- function(labor_weights,
       # A composite is only as current as its stalest leg.
       Year = dplyr::coalesce(pmin(labor_year, cap_year, na.rm = TRUE), as.integer(year)),
       source = "ILO + IMF (rates & PPI)",
-      explanation = "Composite input cost competitiveness index (wL*Labor + wK*Capital), 0-1; higher = more cost-competitive"
+      # The labour series and both shares are copied across stage groups, so the composite is
+      # too.
+      explanation = paste0(
+        "Composite input cost competitiveness index (wL*Labor + wK*Capital), 0-1; ",
+        "higher = more cost-competitive",
+        cost_competitiveness_stage_copy_note(supply_chain)
+      )
     )
 }
 
@@ -1154,7 +1328,7 @@ cost_competitiveness_build_iea_table <- function(cost_indices,
                                                  year = 2024L) {
   require_columns(
     cost_indices,
-    c("Region", "country2", "tech", "supply_chain", "iea_year", "cost_index"),
+    c("Region", "country2", "Product", "tech", "supply_chain", "iea_year", "cost_index"),
     label = "cost_indices"
   )
   require_columns(country_map, c("Country", "EU", "country2"), label = "country_map")
@@ -1171,7 +1345,9 @@ cost_competitiveness_build_iea_table <- function(cost_indices,
     dplyr::left_join(subregion_map, by = c("country2" = "SubRegion"), relationship = "many-to-many") %>%
     dplyr::mutate(
       Country = dplyr::if_else(is.na(Country.x), Country.y, Country.x),
-      supply_chain = dplyr::if_else(tech == "Ammonia", "Downstream", supply_chain),
+      # Ammonia was ranked as its own product; only now does it join Green Hydrogen, at
+      # Deployment beside the electrolysers' Assembly row.
+      supply_chain = dplyr::if_else(tech == "Ammonia", "Deployment", supply_chain),
       tech = dplyr::if_else(tech == "Ammonia", "Green Hydrogen", tech)
     ) %>%
     dplyr::transmute(
@@ -1184,9 +1360,9 @@ cost_competitiveness_build_iea_table <- function(cost_indices,
       value = cost_index,
       Year = dplyr::coalesce(iea_year, as.integer(year)),
       source = "IEA Energy Technology Perspectives 2024",
-      explanation = paste(
-        "Cost competitiveness relative to China; a regional value, so every country",
-        "mapped to an IEA region carries the same score"
+      explanation = paste0(
+        "Cost competitiveness relative to China (IEA product: ", Product, "); a regional ",
+        "value, so every country mapped to an IEA region carries the same score"
       )
     )
 }
@@ -1344,6 +1520,7 @@ cost_competitiveness <- function(iea_cost_raw,
   )
 
   output <- standardize_theme_table(output)
+  assert_supply_chain_stages(output$supply_chain, label = "cost_competitiveness supply_chain")
   cost_competitiveness_validate_data_types(output)
   validate_schema(output)
   output

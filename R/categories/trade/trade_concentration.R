@@ -30,6 +30,10 @@ resolve_trade_comtrade_year <- function(year_comtrade, comtrade_trade) {
 # `reexport_hubs` (ISO3) the reporters left out of the Comtrade measures; see
 # trade_core_build_comtrade_hhi() and trade_core_build_comtrade_trade(). NULL keeps every cell
 # in the ranking and every reporter.
+# The cells are tech x six-stage supply chain, from the crosswalk's Stage column; Deployment has
+# no HS6 basket and so no rows. `legacy_stages = TRUE` builds the old Upstream / Midstream
+# baskets instead, for readers of this table not yet moved to six stages
+# (trade_core_build_energy_codes()).
 trade_concentration <- function(subcat,
                                 aec_4_data,
                                 aec_6_data,
@@ -42,7 +46,8 @@ trade_concentration <- function(subcat,
                                 include_sub_sector = FALSE,
                                 gdp_data = NULL,
                                 hhi_rank_techs = NULL,
-                                reexport_hubs = NULL) {
+                                reexport_hubs = NULL,
+                                legacy_stages = FALSE) {
   year_comtrade <- resolve_trade_comtrade_year(year_comtrade, comtrade_trade)
 
   trade_category_build_trade(
@@ -59,6 +64,7 @@ trade_concentration <- function(subcat,
     gdp_data = gdp_data,
     theme = "trade_concentration",
     hhi_rank_techs = hhi_rank_techs,
-    reexport_hubs = reexport_hubs
+    reexport_hubs = reexport_hubs,
+    legacy_stages = legacy_stages
   )
 }

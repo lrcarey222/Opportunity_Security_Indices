@@ -6,6 +6,15 @@
 #   P_its = sum_v w_v x^v_its / sum_v w_v, over the components v observed for the cell,
 #   w = IEA PAMS 3, CAT 2 (POLICY_COMPONENT_WEIGHTS, the default since October 2026).
 #
+# Stages: since 2026-10-26 s is one of the six supply-chain stages (R/utils/supply_chain_stages.R).
+# IEA PAMS tags them from policy text and CAT copies its one value onto all six, so the composite
+# has a cell for every stage the Strategic Index joins on (Country, tech, supply_chain). NIPO is
+# still built on Upstream / Midstream / Downstream; its rows are not read while it carries no
+# weight, and if it is weighted again each legacy row is copied onto the stages its label covers
+# (supply_chain_expand_legacy()), so no composite cell keeps a legacy label. A table whose weighted
+# rows are all Upstream / Midstream / Downstream (built before the migration, or the dashboard's
+# three-stage fixture) keeps those cells as they are.
+#
 # scripts/20_build_indices.R passes the same weights explicitly and records them in
 # policy_index_provenance. NIPO (GTA; weight 4 until October 2026, when NIPO was 4, IEA
 # PAMS 3, CAT 2) is excluded from the composite for now: scripts/10 still builds it and its
@@ -33,9 +42,10 @@
 #
 # Within an eligible country the weights are renormalised over the components present in each
 # cell, so with NIPO included the effective weights differed by stage (NIPO had no Downstream
-# cells). `n_components` records how many components each cell has. The Strategic Index ranks
-# policy within a country, so a country's basis does not move its values against another
-# country's, but the two bases are not the same reading: CAT adds its technology-GHG tilt. For
+# cells, and would have no Deployment cells). `n_components` records how many components each
+# cell has. The Strategic Index ranks policy within a country, so a country's basis does not
+# move its values against another country's, but the two bases are not the same reading: CAT
+# adds its technology-GHG tilt. For
 # the 65 countries with both, ranking their cells on IEA PAMS alone agrees with the composite
 # at a median within-country Spearman of 0.48 (Oct 2026 build), and 6 of the 45 coalition
 # members with CAT would get another allied pick. Hence the flag; a cross-country comparison
@@ -60,6 +70,13 @@ POLICY_COMPONENT_WEIGHTS <- c(
 )
 
 POLICY_REQUIRED_COMPONENTS <- "IEA PAMS Policy Index"
+
+# Stage names, spelled out rather than taken from R/utils/supply_chain_stages.R so this file still
+# sources on its own (the paper scripts and the dashboard tests source it without the stage
+# helpers); tests/testthat/test-policy-index.R checks they equal SUPPLY_CHAIN_STAGES and
+# SUPPLY_CHAIN_LEGACY_STAGES.
+POLICY_SUPPLY_CHAIN_STAGES <- c("Extraction", "Refining", "Components", "Assembly", "Deployment", "Recovery")
+POLICY_LEGACY_STAGES <- c("Upstream", "Midstream", "Downstream")
 
 # Returns list(index, eligibility):
 #   index        Country, tech, supply_chain, category, variable, data_type, value, Year,
@@ -95,6 +112,24 @@ build_composite_policy_index <- function(policy_component_tbl,
     dplyr::filter(.data$variable %in% component_vars)
   if (!is.null(techs)) {
     components <- components %>% dplyr::filter(.data$tech %in% techs)
+  }
+
+  # Stages (see the header): in a six-stage table, a weighted component still labelled
+  # Upstream / Midstream / Downstream is copied onto the stages each label covers.
+  replicated_vars <- character(0)
+  if (policy_component_stage_mode(components$supply_chain) == "six") {
+    legacy_rows <- as.character(components$supply_chain) %in% POLICY_LEGACY_STAGES
+    replicated_vars <- intersect(component_vars, unique(components$variable[legacy_rows]))
+    if (length(replicated_vars) > 0) {
+      if (!exists("supply_chain_expand_legacy", mode = "function")) {
+        stop(
+          paste(replicated_vars, collapse = ", "), " carries Upstream / Midstream / Downstream ",
+          "rows in a six-stage policy table: source R/utils/supply_chain_stages.R to copy them ",
+          "onto the stages they cover."
+        )
+      }
+      components <- supply_chain_expand_legacy(components)
+    }
   }
 
   # One value per Country x tech x supply_chain x component (mean of duplicates).
@@ -144,6 +179,12 @@ build_composite_policy_index <- function(policy_component_tbl,
       " exist", if (length(required_components) == 1) "s", " somewhere"
     )
   }
+  if (length(replicated_vars) > 0) {
+    rule_text <- paste0(
+      rule_text, "; ", paste(policy_component_label(replicated_vars), collapse = " and "),
+      " scored Upstream / Midstream / Downstream, copied to each stage covered"
+    )
+  }
 
   index <- components %>%
     dplyr::inner_join(
@@ -180,6 +221,25 @@ build_composite_policy_index <- function(policy_component_tbl,
     )
 
   list(index = index, eligibility = eligibility)
+}
+
+# "six" when the weighted component rows carry any of the six supply-chain stages, "legacy" when
+# every one is Upstream / Midstream / Downstream (a table built before 2026-10-26, or the
+# dashboard's three-stage fixture). In "six" mode a label that is neither stops, so a stage name
+# the composite cannot place never becomes a cell the Strategic Index does not join.
+policy_component_stage_mode <- function(supply_chain) {
+  stages <- unique(as.character(supply_chain))
+  if (length(stages) == 0 || all(stages %in% POLICY_LEGACY_STAGES)) {
+    return("legacy")
+  }
+  unknown <- setdiff(stages, c(POLICY_SUPPLY_CHAIN_STAGES, POLICY_LEGACY_STAGES))
+  if (length(unknown) > 0) {
+    stop(
+      "policy_component_tbl: weighted components carry supply_chain values that are neither ",
+      "supply-chain stages nor Upstream / Midstream / Downstream: ", paste(unknown, collapse = ", "), "."
+    )
+  }
+  "six"
 }
 
 # "IEA PAMS Policy Index" -> "IEA PAMS"; the short names used in labels and messages.

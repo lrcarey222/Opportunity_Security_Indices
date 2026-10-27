@@ -126,18 +126,19 @@ test_that("the Foreign Dependency overall lists the EV terms the builders emit",
 
   expect_true(all(c("production", "net_export", "market_share") %in% components))
   expect_false("import" %in% components)
-  # EV sales are demand (Downstream, scored under Technology Demand), not a dependency term.
+  # EV sales are demand (Deployment, scored under Technology Demand), not a dependency term.
   expect_false("sales" %in% components)
 })
 
-test_that("EV sales are Downstream rows and stay out of the Midstream composite", {
+test_that("EV sales are Deployment rows and stay out of the Assembly composite", {
   for (out in list(
     foreign_dependency_build_ev_midstream(ev_ei_fixture(), ev_midstream_fixture(), year = 2024),
     market_share_manufacturing_build_ev_midstream(ev_ei_fixture(), ev_midstream_fixture(), year = 2024L)
   )) {
     is_sales <- out$variable %in% c("Domestic.sales", "sales")
-    expect_true(all(out$supply_chain[is_sales] == "Downstream"))
-    expect_true(all(out$supply_chain[!is_sales] == "Midstream"))
+    expect_true(all(out$supply_chain[is_sales] == "Deployment"))
+    # Production, market share, the net export ratio and the composite are vehicle assembly.
+    expect_true(all(out$supply_chain[!is_sales] == "Assembly"))
 
     composite_name <- intersect(c("ev_Midstream", "Overall Production"), out$variable)
     idx <- function(variable) ev_value(out, "Japan", variable, "index")
@@ -145,5 +146,34 @@ test_that("EV sales are Downstream rows and stay out of the Midstream composite"
       idx(composite_name),
       mean(c(idx("production"), idx("net_export"), idx("market_share")))
     )
+  }
+})
+
+test_that("manufacturing-capacity shares are Components for battery cells and Assembly otherwise", {
+  # The IEA ETP extract as read.csv() names it (data/raw/iea_cleantech_Midstream.csv).
+  cleantech <- data.frame(
+    X = c("China", "EU", "US", "Other"),
+    Solar...Current = c(79, 3, 2, 16), Solar...Pipeline = c(80, 2, 3, 15),
+    Batteries...Current = c(76, 8, 6, 10), Batteries...Pipeline = c(68, 12, 10, 10),
+    Electrolyzers...Current = c(41, 20, 10, 29), Electrolyzers...Pipeline = c(26, 30, 15, 29),
+    stringsAsFactors = FALSE
+  )
+  ei <- data.frame(Country = c("China", "Germany", "United States"), EU = c(0, 1, 0), stringsAsFactors = FALSE)
+
+  es <- foreign_dependency_build_cleantech_midstream(ei, cleantech)
+  eo <- market_share_manufacturing_build_cleantech_midstream(ei, cleantech)
+  for (out in list(es, eo)) {
+    stage <- dplyr::distinct(out, tech, supply_chain)
+    expect_equal(stage$supply_chain[stage$tech == "Batteries"], "Components")
+    expect_equal(stage$supply_chain[stage$tech == "Solar"], "Assembly")
+    # The cross-technology composite takes the stage four of its five inputs measure.
+    expect_equal(stage$supply_chain[stage$tech == "Clean Tech Midstream"], "Assembly")
+    expect_equal(nrow(stage), dplyr::n_distinct(stage$tech))
+  }
+  # Electrolysers are Green Hydrogen Assembly in both pillars, so the Security side reaches the
+  # Green Hydrogen Assembly cell the Strategic Index scores.
+  for (out in list(es, eo)) {
+    expect_equal(unique(out$supply_chain[out$tech == "Green Hydrogen"]), "Assembly")
+    expect_false("Electrolyzers" %in% out$tech)
   }
 })

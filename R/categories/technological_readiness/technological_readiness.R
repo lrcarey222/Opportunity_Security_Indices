@@ -21,11 +21,12 @@
 # onto the 1-11 scale for the end-year level; the TRL change behind the momentum term stays on
 # the scale the release reports for every year.
 #
-# Each Guide item is mapped to a technology and a supply-chain stage by the ordered rules in
-# config/iea_clean_tech_guide_tech_map.yml (or classified as outside the index technologies).
-# A technology-stage cell averages the items mapped to it; a stage no item maps to takes the
-# technology-wide value. The legacy extract has no stage information, so its items count for
-# all three stages.
+# Each Guide item is mapped to a technology and one of the six supply-chain stages
+# (Extraction, Refining, Components, Assembly, Deployment, Recovery; docs/supply_chain_stages.md)
+# by the ordered rules in config/iea_clean_tech_guide_tech_map.yml (or classified as outside
+# the index technologies). A technology-stage cell averages the items mapped to it; a stage no
+# item maps to takes the technology-wide value. The legacy extract has no stage information,
+# so its items count for all six stages.
 #
 # TRL is a property of the technology, not of a country: every index here is one value per
 # technology and stage, identical across countries. technological_readiness() copies it to
@@ -36,7 +37,10 @@
 
 IEA_CLEAN_TECH_TRL_PATTERN <- "^trl20\\d{2}$"
 
-TECHNOLOGICAL_READINESS_STAGES <- c("Upstream", "Midstream", "Downstream")
+# The six supply-chain stages, in chain order. Spelled out rather than taken from
+# SUPPLY_CHAIN_STAGES (R/utils/supply_chain_stages.R) so this file still sources on its own;
+# tests/testthat/test-technological-readiness-stage-mapping.R checks the two are identical.
+TECHNOLOGICAL_READINESS_STAGES <- c("Extraction", "Refining", "Components", "Assembly", "Deployment", "Recovery")
 
 # TRL columns present, ascending by year.
 technological_readiness_trl_columns <- function(df) {

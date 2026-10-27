@@ -21,6 +21,13 @@
 # export HHI, and with them from the world aggregates of the RCA and the HHI - because their
 # Comtrade exports are mostly goods made elsewhere, already counted in the producers' exports.
 # Their Atlas variables (market share, feasibility, deficit/GDP) stay.
+#
+# `supply_chain` is the six-stage supply chain (R/utils/supply_chain_stages.R) since 2026-10-26:
+# each HS6 code is scored in the stage the HS6 master gives it (`Stage` in the crosswalk view,
+# hs6_view_bolstered()), so the cells are tech x Extraction / Refining / Components / Assembly /
+# Recovery, split from the basket's own codes rather than copied from the old three. Deployment
+# has no HS6 basket (installation and use are not traded goods), so the trade themes emit no
+# Deployment rows, as they emitted no Downstream ones.
 
 TRADE_THEME_VARIABLES <- list(
   trade_concentration = list(
@@ -33,7 +40,14 @@ TRADE_THEME_VARIABLES <- list(
   )
 )
 
-trade_core_build_energy_codes <- function(subcat, include_sub_sector = FALSE) {
+# `supply_chain` is taken from the crosswalk's six-stage `Stage` (or `stage`) column whenever it
+# has one, ahead of every three-stage column, and every code must carry a stage name: a blank or
+# unknown stage stops rather than dropping the code from every trade variable. The three-stage
+# column ("Value Chain") is read only when the crosswalk has no stage column, with a warning,
+# or when `legacy_stages` is TRUE, for the readers of the trade tables not yet moved to six
+# stages (the allied network, the dashboard exports); with it the cells are the old
+# Upstream / Midstream baskets, as before 2026-10-26.
+trade_core_build_energy_codes <- function(subcat, include_sub_sector = FALSE, legacy_stages = FALSE) {
   pick_col <- function(tbl, candidates, label) {
     match <- intersect(candidates, names(tbl))
     if (length(match) == 0) {
@@ -43,26 +57,47 @@ trade_core_build_energy_codes <- function(subcat, include_sub_sector = FALSE) {
   }
 
   tech_col <- pick_col(subcat, c("tech", "Technology", "technology"), "tech")
-  supply_chain_col <- pick_col(
-    subcat,
-    # "Value Chain" with a space is the header the staged hts_codes_categories CSV
-    # actually carries. readr::read_csv() preserves it verbatim, so callers that hand
-    # the file over unrenamed reach here with the spaced spelling.
-    c("supply_chain", "Value.Chain", "Value Chain", "value_chain", "Supply.Chain", "supply chain"),
-    "supply_chain"
-  )
+  stage_col <- if (isTRUE(legacy_stages)) character() else intersect(c("Stage", "stage"), names(subcat))
+  supply_chain_col <- if (length(stage_col) > 0) {
+    stage_col[[1]]
+  } else {
+    pick_col(
+      subcat,
+      # "Value Chain" with a space is the header the staged hts_codes_categories CSV
+      # actually carries. readr::read_csv() preserves it verbatim, so callers that hand
+      # the file over unrenamed reach here with the spaced spelling.
+      c("supply_chain", "Value.Chain", "Value Chain", "value_chain", "Supply.Chain", "supply chain"),
+      "supply_chain"
+    )
+  }
   sub_sector_col <- pick_col(subcat, c("sub_sector", "Sub.Sector", "subsector"), "sub_sector")
   hs6_col <- pick_col(subcat, c("HS6", "hs6", "HS_6"), "HS6")
 
-  subcat %>%
+  codes <- subcat %>%
     dplyr::transmute(
       tech = as.character(.data[[tech_col]]),
-      supply_chain = as.character(.data[[supply_chain_col]]),
+      supply_chain = trimws(as.character(.data[[supply_chain_col]])),
       sub_sector = as.character(.data[[sub_sector_col]]),
       code6 = stringr::str_pad(as.character(.data[[hs6_col]]), width = 6, side = "left", pad = "0"),
       code4 = substr(code6, 1, 4)
     ) %>%
-    dplyr::filter(!is.na(code6), nzchar(code6)) %>%
+    dplyr::filter(!is.na(code6), nzchar(code6))
+
+  if (length(stage_col) > 0) {
+    assert_supply_chain_stages(
+      codes$supply_chain,
+      label = paste0("The trade crosswalk's ", stage_col[[1]], " column")
+    )
+  } else if (!isTRUE(legacy_stages) && !all(is_supply_chain_stage(codes$supply_chain))) {
+    warning(
+      "trade_core_build_energy_codes(): the trade crosswalk has no Stage column, so supply_chain ",
+      "keeps its three-stage labels (", paste(sort(unique(codes$supply_chain)), collapse = ", "),
+      "). Rebuild the HS6 views from the master (scripts/04_build_hs6_views.R) to score the six stages.",
+      call. = FALSE
+    )
+  }
+
+  codes %>%
     dplyr::mutate(
       sub_sector = if (isTRUE(include_sub_sector)) dplyr::coalesce(sub_sector, "All") else "All"
     ) %>%
@@ -102,8 +137,8 @@ trade_core_pad_atlas_codes <- function(tbl, width) {
 # global_market_share is exactly export_value over that sum). This used to be the mean of
 # the country's product-level shares weighted by its own exports, which scores dominance
 # of the few products a country ships rather than its weight in the basket: DRC's cobalt
-# gave it 0.86 in Batteries Midstream against a 0.7% basket share, and a country with
-# imports but no basket exports got NaN, later imputed to the average.
+# gave it 0.86 in the three-stage Batteries Midstream against a 0.7% basket share, and a
+# country with imports but no basket exports got NaN, later imputed to the average.
 trade_core_build_aec_market_share <- function(aec_6_data, energy_codes, year = 2023) {
   keys <- c("tech", "supply_chain", "sub_sector")
   flows <- aec_6_data %>%
@@ -297,8 +332,8 @@ trade_core_build_comtrade_rca <- function(comtrade_trade,
 # cell of any other technology (Semiconductors, which the master carries but no index scores)
 # gets the value it would take if it alone were added to them (median_scurve_ref()). An
 # unscored basket therefore cannot move a scored cell's index, which it did when every cell of
-# the file was ranked together (completing the Semiconductors basket moved Batteries Midstream
-# from 0.290 to 0.217). NULL ranks every cell together.
+# the file was ranked together (completing the Semiconductors basket moved the three-stage
+# Batteries Midstream from 0.290 to 0.217). NULL ranks every cell together.
 trade_core_build_comtrade_hhi <- function(comtrade_trade, rank_techs = NULL) {
   hhi <- comtrade_trade %>%
     dplyr::group_by(tech, supply_chain, sub_sector) %>%
@@ -372,8 +407,8 @@ trade_core_build_country_trade <- function(comtrade_trade,
 
   # Every index is ranked across countries within the technology-stage cell. Export size
   # and feasibility used to be ranked within each country across its own cells, which put
-  # Moldova and Samoa next to China in Solar Midstream because solar was their "best"
-  # basket, and mixed within-country and cross-country ranks in one category mean.
+  # Moldova and Samoa next to China in (three-stage) Solar Midstream because solar was their
+  # "best" basket, and mixed within-country and cross-country ranks in one category mean.
   country_trade %>%
     dplyr::group_by(tech, supply_chain, sub_sector) %>%
     dplyr::mutate(
@@ -572,8 +607,15 @@ trade_category_build_trade <- function(subcat,
                                        gdp_data = NULL,
                                        theme = NULL,
                                        hhi_rank_techs = NULL,
-                                       reexport_hubs = NULL) {
-  energy_codes <- trade_core_build_energy_codes(subcat, include_sub_sector = include_sub_sector)
+                                       reexport_hubs = NULL,
+                                       legacy_stages = FALSE) {
+  # Six-stage cells from the crosswalk's Stage column; `legacy_stages` builds the old
+  # three-stage baskets instead (trade_core_build_energy_codes()).
+  energy_codes <- trade_core_build_energy_codes(
+    subcat,
+    include_sub_sector = include_sub_sector,
+    legacy_stages = legacy_stages
+  )
 
   market_share <- trade_core_build_aec_market_share(
     aec_6_data,

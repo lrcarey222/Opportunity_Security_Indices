@@ -19,6 +19,7 @@ source(file.path(repo_root, "R", "categories", "consumption", "energy_consumptio
 source(file.path(repo_root, "R", "categories", "energy_imports", "import_dependence.R"))
 source(file.path(repo_root, "R", "categories", "energy_access", "solar_pv_potential.R"))
 source(file.path(repo_root, "R", "categories", "energy_access", "wind_potential.R"))
+source(file.path(repo_root, "R", "categories", "energy_access", "geothermal_potential.R"))
 source(file.path(repo_root, "R", "indices", "index_builder_core.R"))
 
 withr::local_options(list(opportunity_security.index_definition = NULL))
@@ -434,4 +435,58 @@ test_that("resource potentials rank only the economies in the roster", {
   )
   wind <- wind_potential_clean_raw(wind_raw, country_info = roster)
   expect_setequal(wind$Country, c("Cyprus", "Chile"))
+})
+
+# ---- Six-stage supply chain ----------------------------------------------------------------
+
+test_that("consumption, energy access and installed capacity are Deployment rows", {
+  index_definition <- yaml::read_yaml(file.path(repo_root, "config", "index_definition.yml"))
+  withr::local_options(list(opportunity_security.index_definition = index_definition))
+
+  access <- energy_access_consumption(ei_fixture(), base_year = 2020, target_year = 2025)
+  expect_setequal(unique(access$supply_chain), "Deployment")
+  # The category score is built in the Deployment cell, formerly Downstream.
+  expect_true(any(access$variable == "Overall Energy Access Index" & access$supply_chain == "Deployment"))
+
+  ei_level <- energy_consumption_build_ei_indices(energy_consumption_clean_ei(ei_fixture(), 2025), 2025)
+  ei_growth <- energy_consumption_build_ei_growth(
+    energy_consumption_build_ei_indices(energy_consumption_clean_ei(ei_fixture(), 2020), 2020),
+    ei_level,
+    2020,
+    2025
+  )
+  expect_setequal(unique(c(ei_level$supply_chain, ei_growth$supply_chain)), "Deployment")
+  # The growth join keys on supply_chain, so both years must carry the same stage.
+  expect_true(nrow(ei_growth) > 0)
+  expect_setequal(unique(bnef_metrics()$supply_chain), "Deployment")
+})
+
+test_that("solar, wind and geothermal potentials are site resource: Deployment, not Extraction", {
+  pv <- solar_pv_potential(
+    tibble::tibble(name_long = c("Chile", "Cyprus", "Germany"), pvout_total = c(900, 10, 300), pvout_mean = c(5.9, 4.8, 3.0)),
+    year = 2023
+  )
+  wind <- wind_potential(
+    tibble::tibble(
+      name_long = c("Chile", "Cyprus", "Germany"),
+      pd_total_MW_equiv = c(50, 1, 20),
+      pd_mean_Wm2 = c(400, 200, 300),
+      pd_share_over_threshold = c(0.5, 0.1, 0.3)
+    ),
+    year = 2023
+  )
+  geo <- geothermal_potential(
+    tibble::tibble(
+      iso3 = c("CHL", "CYP", "DEU"),
+      lcoe_for_500mw = c(60, 90, 80), lcoe_for_5gw = c(70, NA, 95), total_mw = c(9000, 100, 2000),
+      lcoe_500mw_index = c(1, 0, 0.3), lcoe_5gw_index = c(1, NA, 0), total_mw_index = c(1, 0, 0.5),
+      geothermal_index = c(1, 0, 0.4)
+    ),
+    year = 2023
+  )
+
+  for (tbl in list(pv, wind, geo)) {
+    expect_setequal(unique(tbl$supply_chain), "Deployment")
+    expect_setequal(unique(tbl$category), "Reserves")
+  }
 })

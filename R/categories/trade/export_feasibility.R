@@ -27,8 +27,8 @@ if (!exists("resolve_trade_comtrade_year")) {
 # EO Trade: the capability components of "Overall Trade Index" - market share, Balassa
 # RCA, export size, Atlas feasibility and world export concentration. The net-import term
 # belongs to the ES exposure reading (trade_concentration()), so `gdp_data` is accepted
-# for call compatibility but not used. `hhi_rank_techs` and `reexport_hubs` as in
-# trade_concentration().
+# for call compatibility but not used. `hhi_rank_techs`, `reexport_hubs` and `legacy_stages`
+# (six-stage cells unless TRUE; no Deployment rows) as in trade_concentration().
 export_feasibility <- function(aec_4_data,
                                aec_6_data,
                                subcat,
@@ -41,7 +41,8 @@ export_feasibility <- function(aec_4_data,
                                year_comtrade = NULL,
                                include_sub_sector = FALSE,
                                hhi_rank_techs = NULL,
-                               reexport_hubs = NULL) {
+                               reexport_hubs = NULL,
+                               legacy_stages = FALSE) {
   year_comtrade <- resolve_trade_comtrade_year(year_comtrade, comtrade_trade)
 
   trade_category_build_trade(
@@ -57,6 +58,7 @@ export_feasibility <- function(aec_4_data,
     include_sub_sector = include_sub_sector,
     theme = "export_feasibility",
     hhi_rank_techs = hhi_rank_techs,
-    reexport_hubs = reexport_hubs
+    reexport_hubs = reexport_hubs,
+    legacy_stages = legacy_stages
   )
 }

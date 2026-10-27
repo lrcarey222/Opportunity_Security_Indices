@@ -1,8 +1,8 @@
-# Uranium (Nuclear - Upstream) theme inputs: identified recoverable resources and mine
+# Uranium (Nuclear - Extraction) theme inputs: identified recoverable resources and mine
 # production by country, from the OECD-NEA/IAEA "Red Book" (Uranium: Resources, Production
 # and Demand).
 #
-# Until these were added, the only Nuclear - Upstream input was the world uranium price, so
+# Until these were added, the only Nuclear Upstream input was the world uranium price, so
 # Energy Security was identical for every economy in that sector and the Strategic Index had
 # to drop it. The Red Book tables are transcribed in data/reference/uranium_resources.csv and
 # data/reference/uranium_production.csv, one row per country, variable and year, each with
@@ -15,7 +15,7 @@
 #   * "Nuclear Production" (Energy Security production theme): latest-year mine production,
 #     ranked like the EI mineral production tables in
 #     critical_minerals_production_build_table();
-#   * Nuclear Upstream size / growth (production_depth_momentum, Economic Opportunity): mine
+#   * Nuclear Extraction size / growth (production_depth_momentum, Economic Opportunity): mine
 #     production run through the same depth-and-momentum indices as oil, gas and coal.
 #
 # All functions are pure; scripts/10_build_themes.R reads the CSVs.
@@ -168,7 +168,7 @@ uranium_reserves_table <- function(uranium_resources,
     ) %>%
     dplyr::mutate(
       tech = "Nuclear",
-      supply_chain = "Upstream",
+      supply_chain = "Extraction",
       category = "Reserves",
       variable = "Nuclear Reserves",
       data_type = dplyr::if_else(data_type == "raw_value", "raw", "index"),
@@ -253,7 +253,7 @@ uranium_production_table <- function(uranium_production,
     ) %>%
     dplyr::mutate(
       tech = "Nuclear",
-      supply_chain = "Upstream",
+      supply_chain = "Extraction",
       category = "Production",
       variable = "Nuclear Production",
       data_type = dplyr::if_else(data_type == "raw_value", "raw", "index"),
@@ -295,7 +295,7 @@ uranium_bind_theme_rows <- function(theme_tbl, uranium_tbl) {
 }
 
 # Uranium mine production in the shape production_depth_momentum_clean_energy_production()
-# returns: one "Nuclear Upstream" row per country with the base and latest levels and the
+# returns: one "Nuclear Extraction" row per country with the base and latest levels and the
 # 5- and 10-year changes, so production_depth_momentum_build_energy_indices() scores it the
 # way it scores oil, gas and coal.
 #
@@ -352,7 +352,7 @@ uranium_production_clean <- function(uranium_production,
   out <- out %>%
     dplyr::transmute(
       Country,
-      Var = "Nuclear Upstream",
+      Var = "Nuclear Extraction",
       base5,
       latest,
       change_5yr = (latest / base5 - 1) * 100,

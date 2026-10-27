@@ -1,4 +1,21 @@
 # Technology Demand theme (future demand).
+#
+# Stages (docs/supply_chain_stages.md). WEO and BNEF project energy demand by fuel, with no
+# stage: demand for a technology drives every stage of its chain, so each projection is copied
+# to all six stages. EV Outlook sales, stock and sales share are deployment. BCG sizes its
+# market by Upstream / Midstream / Downstream only, so each segment's value is copied to the
+# stages it covers (Upstream: extraction, refining, recovery; Midstream: components,
+# assembly; Downstream: deployment). Each copy carries the value of the projection or segment
+# it was copied from and says so in its explanation.
+
+# Copy a stage-less demand table to all six stages and note it in each explanation.
+future_demand_expand_stages <- function(tbl) {
+  supply_chain_expand_all(tbl) %>%
+    dplyr::mutate(
+      explanation = paste0(explanation, " (technology-wide: the same value at every supply-chain stage)")
+    )
+}
+
 future_demand_expand_global <- function(tbl, country_reference) {
   if (is.null(country_reference)) {
     stop("country_reference is required for future_demand global data.")
@@ -89,23 +106,12 @@ future_demand_build_weo <- function(iea_weo, country_reference, gamma = 0.5) {
     ) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(demand_index = median_scurve(demand_index, gamma = gamma)) %>%
-    dplyr::mutate(
-      Upstream = "Upstream",
-      Midstream = "Midstream",
-      Downstream = "Downstream"
-    ) %>%
-    tidyr::pivot_longer(
-      cols = c(Upstream:Downstream),
-      names_to = "supply_chain",
-      values_to = "supply_chain2"
-    ) %>%
     # The global terms are named as such. The BNEF leg emits its own growth, demand_size and
     # demand_growth for the twelve NEO countries, so with shared names each of those
     # countries carried two rows per key (756 in all) from different sources, and "growth"
     # meant an absolute EJ change in one and a relative change in the other.
     dplyr::select(
       tech,
-      supply_chain,
       `2035`,
       global_growth = growth,
       global_demand_size_index = demand_size_index,
@@ -139,10 +145,8 @@ future_demand_build_weo <- function(iea_weo, country_reference, gamma = 0.5) {
       )
     ) %>%
     dplyr::mutate(variable = dplyr::if_else(variable == "demand", "Overall Global Demand", variable)) %>%
-    dplyr::mutate(
-      Year = 2035L,
-      supply_chain = as.character(supply_chain)
-    ) %>%
+    dplyr::mutate(Year = 2035L) %>%
+    future_demand_expand_stages() %>%
     dplyr::select(
       tech,
       supply_chain,
@@ -218,17 +222,7 @@ future_demand_build_bnef <- function(bnef_neo, gamma = 0.5) {
     ) %>%
     dplyr::ungroup() %>%
     dplyr::rename(tech = Fuel.type) %>%
-    dplyr::mutate(
-      Upstream = "Upstream",
-      Midstream = "Midstream",
-      Downstream = "Downstream"
-    ) %>%
-    tidyr::pivot_longer(
-      cols = c(Upstream:Downstream),
-      names_to = "supply_chain",
-      values_to = "supply_chain2"
-    ) %>%
-    dplyr::select(Region, tech, supply_chain, X2024, X2035, growth, demand_size_index, demand_growth_index, demand_index) %>%
+    dplyr::select(Region, tech, X2024, X2035, growth, demand_size_index, demand_growth_index, demand_index) %>%
     tidyr::pivot_longer(
       cols = c(X2024:demand_index),
       names_to = "variable",
@@ -241,7 +235,6 @@ future_demand_build_bnef <- function(bnef_neo, gamma = 0.5) {
     dplyr::transmute(
       Country = Region,
       tech,
-      supply_chain,
       category = "Technology Demand",
       variable,
       data_type,
@@ -258,7 +251,9 @@ future_demand_build_bnef <- function(bnef_neo, gamma = 0.5) {
         TRUE ~ variable
       )
     ) %>%
-    dplyr::mutate(variable = dplyr::if_else(variable == "demand", "Overall Demand", variable))
+    dplyr::mutate(variable = dplyr::if_else(variable == "demand", "Overall Demand", variable)) %>%
+    future_demand_expand_stages() %>%
+    dplyr::select(Country, tech, supply_chain, category, variable, data_type, value, Year, source, explanation)
 }
 
 future_demand_build_ev <- function(iea_ev, country_info, gamma = 0.5) {
@@ -378,7 +373,8 @@ future_demand_build_ev <- function(iea_ev, country_info, gamma = 0.5) {
     dplyr::transmute(
       Country = region_country,
       tech = "Electric Vehicles",
-      supply_chain = "Downstream",
+      # Car sales, stock and sales share measure deployment.
+      supply_chain = "Deployment",
       category = "Technology Demand",
       variable,
       data_type,
@@ -407,6 +403,10 @@ future_demand_build_bcg <- function(bcg, gamma = 0.5) {
   # A non-positive SAM marks a cell the BCG table does not size, not an empty market (its
   # only zero is Batteries Downstream). Ranked as a zero it put that cell's demand at 0 for
   # every country; as NA the component drops out of the cell.
+  #
+  # BCG sizes Upstream / Midstream / Downstream segments, which cannot be split. The index is
+  # ranked across those source cells, so each segment counts once, and each value is then
+  # copied to the stages its segment covers (supply_chain_expand_legacy()).
   bcg %>%
     dplyr::rename(tech = `Energy source`) %>%
     tidyr::pivot_longer(
@@ -432,13 +432,20 @@ future_demand_build_bcg <- function(bcg, gamma = 0.5) {
       category = "Technology Demand",
       source = "BCG",
       explanation = dplyr::case_when(
-        variable == "SAM" ~ "Serviceable Addressable Market, 2020-2050, $bn (US; one value per cell)",
+        variable == "SAM" ~ "Serviceable Addressable Market, 2020-2050, $bn (US; one value per BCG segment)",
         variable == "sam" ~
-          "Serviceable Addressable Market, 2020-2050 (index, ranked across technology-stage cells)",
+          "Serviceable Addressable Market, 2020-2050 (index, ranked across BCG's technology x segment cells)",
         TRUE ~ variable
+      ),
+      explanation = paste0(
+        explanation, "; BCG reports ", supply_chain,
+        " as one segment, so the value is copied to each stage it covers (",
+        vapply(supply_chain, function(s) paste(supply_chain_stages_of(s), collapse = ", "), character(1)),
+        ")"
       )
     ) %>%
     dplyr::filter(!is.na(value)) %>%
+    supply_chain_expand_legacy() %>%
     dplyr::mutate(variable = dplyr::if_else(variable == "sam", "Overall Addressable Market", variable)) %>%
     dplyr::transmute(
       Country,
@@ -471,6 +478,7 @@ future_demand <- function(iea_weo,
 
   output <- dplyr::bind_rows(standardized)
   validate_schema(output)
+  assert_supply_chain_stages(output$supply_chain, label = "future_demand supply_chain")
   # One row per country, cell and variable: the legs overlap in countries (WEO is copied to
   # every country, BNEF and the EV Outlook cover subsets), so a variable name two legs share
   # would put two values from different sources under one key.

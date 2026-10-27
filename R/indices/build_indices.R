@@ -9,7 +9,10 @@
 #           secure, so the SI rewards sectors where the country is least secure. The column
 #           that enters the formula is `energy_security_need`; `Energy_Security_Index` keeps
 #           its security meaning in the output.
-#   lambda  supply-chain stage weight (Midstream 0.75 > Upstream 0.50 > Downstream 0.25)
+#   lambda  supply-chain stage weight, SUPPLY_CHAIN_STAGE_SI_WEIGHTS (R/utils/supply_chain_stages.R):
+#           each of the six stages takes an equal share of its roll-up's weight, so Components
+#           and Assembly 0.375 > Deployment 0.25 > Extraction, Refining and Recovery 0.167
+#           (roll-ups Midstream 0.75, Downstream 0.25, Upstream 0.50; user decision 2026-10-26)
 #   g_t     technology climate weight, ghg_index (1 = lowest lifecycle GHG intensity)
 #
 # Sample rule: a cell enters the SI only if EO, ES and the Policy index are all observed, and
@@ -21,11 +24,12 @@
 # economy whose pillar value rests at most max_imputed_weight_share
 # (config/rankability.yml) on imputed components; a pillar table without the column (built
 # before the rule) counts every scored cell as rankable. Excluded cells stay in the table
-# with strategic_index = NA and the reason in `si_exclusion`. `excluded_sectors`
-# (Geothermal - Midstream) is removed before the within-country S-curves, so the ranks are
-# taken over the sectors that are reported: pol over the scored sectors; eo and es_need
-# (chart inputs, not in the SI) over the sectors where that pillar is observed and rankable,
-# so they stay defined for countries without a Policy index.
+# with strategic_index = NA and the reason in `si_exclusion`. `excluded_sectors` (by default
+# strategic_unmeasured_sectors(): the manufacturing sectors no Energy Security theme measures,
+# Geothermal - Components and Geothermal - Assembly) is removed before the within-country
+# S-curves, so the ranks are taken over the sectors that are reported: pol over the scored
+# sectors; eo and es_need (chart inputs, not in the SI) over the sectors where that pillar is
+# observed and rankable, so they stay defined for countries without a Policy index.
 
 STRATEGIC_INDEX_WEIGHTS <- c(
   policy = 0.2,
@@ -35,9 +39,30 @@ STRATEGIC_INDEX_WEIGHTS <- c(
   technology = 0.1
 )
 
+# The three roll-up weights that SUPPLY_CHAIN_STAGE_SI_WEIGHTS shares out over the six stages
+# (each roll-up's stages sum to its weight here). build_strategic_index() weights the six stages;
+# these stay for the consumers not yet migrated to six stages, which read three-stage tables
+# (the dashboard export in scripts/85, the paper figures in scripts/paper).
 STRATEGIC_SUPPLY_CHAIN_WEIGHTS <- c(Upstream = 0.50, Midstream = 0.75, Downstream = 0.25)
 
+# Three-stage only: the sector the three-stage build left out by hand (Feb 2026). The six-stage
+# build applies the rule behind it, strategic_unmeasured_sectors(), which returns exactly this
+# sector on the three-stage tables (stages = "Midstream"). Kept for the same unmigrated
+# consumers as STRATEGIC_SUPPLY_CHAIN_WEIGHTS.
 STRATEGIC_EXCLUDED_SECTORS <- c("Geothermal - Midstream")
+
+# The manufacturing stages (the old Midstream) in which strategic_unmeasured_sectors() looks for
+# sectors no Energy Security theme measures.
+STRATEGIC_UNMEASURED_STAGES <- c("Components", "Assembly")
+
+# Economic Opportunity categories whose inputs are the same in every stage of a technology (the
+# country's labour and capital costs by broad activity; the technology's demand projection).
+# strategic_unevidenced_sectors() does not count them as evidence that a stage is measured.
+STRATEGIC_REPLICATED_EO_CATEGORIES <- c("Cost Competitiveness", "Technology Demand")
+
+# The stages the allied pick may take: every stage but Deployment (the old Upstream and
+# Midstream, the traded stages that coalition supply chains can organise across borders).
+STRATEGIC_ALLIED_STAGES <- c("Extraction", "Refining", "Components", "Assembly", "Recovery")
 
 # The allied coalition is derived, not listed by hand. Since Oct 2026 it has two tiers (core and
 # partner) and the EU members share one network node: scripts/13_build_coalition.R writes
@@ -213,6 +238,83 @@ strategic_pillar_rankability <- function(tbl, value_col, prefix) {
     )
 }
 
+# Sectors ("<tech> - <stage>") in a manufacturing stage that no Energy Security theme measures:
+# Economic Opportunity has the sector but no country has an Energy Security value in it.
+# build_strategic_index() leaves them out by default. This is the reason the three-stage build
+# left out Geothermal - Midstream by hand (Feb 2026, STRATEGIC_EXCLUDED_SECTORS): no theme
+# carries geothermal manufacturing, so the sector had no Energy Security pillar, and its
+# Economic Opportunity rested on Cost Competitiveness inputs that are the same for every
+# technology plus global readiness and demand values (the paper: "Geothermal Midstream, which has
+# no Energy Security pillar, is excluded by rule"). On the three-stage tables (stages =
+# "Midstream") the rule returns exactly that sector; at six stages it returns Geothermal -
+# Components and Geothermal - Assembly, and any other manufacturing sector in the same position.
+# Extraction and deployment sectors without an Energy Security value (Geothermal Upstream and
+# Electric Grid Downstream in the three-stage build) were never left out: they stay in the
+# table unscored, "missing energy security".
+strategic_unmeasured_sectors <- function(economic_opportunity_index,
+                                         energy_security_index,
+                                         stages = STRATEGIC_UNMEASURED_STAGES) {
+  require_columns(economic_opportunity_index, c("tech", "supply_chain"), label = "economic_opportunity_index")
+  require_columns(
+    energy_security_index,
+    c("tech", "supply_chain", "Energy_Security_Index"),
+    label = "energy_security_index"
+  )
+  measured <- energy_security_index %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(!is.na(.data$Energy_Security_Index)) %>%
+    dplyr::distinct(tech = as.character(.data$tech), supply_chain = as.character(.data$supply_chain))
+  economic_opportunity_index %>%
+    dplyr::ungroup() %>%
+    dplyr::distinct(tech = as.character(.data$tech), supply_chain = as.character(.data$supply_chain)) %>%
+    dplyr::filter(.data$supply_chain %in% stages) %>%
+    dplyr::anti_join(measured, by = c("tech", "supply_chain")) %>%
+    dplyr::mutate(sector = paste(.data$tech, .data$supply_chain, sep = " - ")) %>%
+    dplyr::pull("sector") %>%
+    sort()
+}
+
+# Sectors ("<tech> - <stage>") whose Economic Opportunity rests only on inputs copied onto every
+# stage: Cost Competitiveness and Technology Demand (STRATEGIC_REPLICATED_EO_CATEGORIES), and
+# Technological Readiness where the stage has no Guide item of its own and takes the technology-wide
+# value. `trl_stage_cells` lists the (tech, supply_chain) cells whose readiness rests on items of
+# their own. Such a sector ranks countries on wages, interest rates and global demand only, so the
+# Strategic Index would pick it for reasons that say nothing about the stage (Wind - Recovery,
+# Geothermal - Extraction once geothermal drilling became Deployment). It is the other half of the
+# reason the three-stage build left out Geothermal - Midstream; strategic_unmeasured_sectors() is
+# the Energy Security half. Applies to every stage.
+strategic_unevidenced_sectors <- function(economic_opportunity_category_scores,
+                                          trl_stage_cells,
+                                          replicated_categories = STRATEGIC_REPLICATED_EO_CATEGORIES) {
+  require_columns(
+    economic_opportunity_category_scores,
+    c("tech", "supply_chain", "category", "category_score"),
+    label = "economic_opportunity_category_scores"
+  )
+  require_columns(trl_stage_cells, c("tech", "supply_chain"), label = "trl_stage_cells")
+  trl_key <- paste(trl_stage_cells$tech, trl_stage_cells$supply_chain, sep = "\r")
+
+  economic_opportunity_category_scores %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(!is.na(.data$category_score)) %>%
+    dplyr::distinct(
+      tech = as.character(.data$tech),
+      supply_chain = as.character(.data$supply_chain),
+      category = as.character(.data$category)
+    ) %>%
+    dplyr::mutate(
+      own_trl = paste(.data$tech, .data$supply_chain, sep = "\r") %in% trl_key,
+      stage_specific = !.data$category %in% replicated_categories &
+        !(.data$category == "Technological Readiness" & !.data$own_trl)
+    ) %>%
+    dplyr::group_by(.data$tech, .data$supply_chain) %>%
+    dplyr::summarise(stage_specific = any(.data$stage_specific), .groups = "drop") %>%
+    dplyr::filter(!.data$stage_specific) %>%
+    dplyr::mutate(sector = paste(.data$tech, .data$supply_chain, sep = " - ")) %>%
+    dplyr::pull("sector") %>%
+    sort()
+}
+
 build_strategic_index <- function(economic_opportunity_index,
                                   energy_security_index,
                                   policy_index,
@@ -220,8 +322,10 @@ build_strategic_index <- function(economic_opportunity_index,
                                   technological_readiness_index = NULL,
                                   techs = NULL,
                                   weights = STRATEGIC_INDEX_WEIGHTS,
-                                  supply_chain_weights = STRATEGIC_SUPPLY_CHAIN_WEIGHTS,
-                                  excluded_sectors = STRATEGIC_EXCLUDED_SECTORS) {
+                                  supply_chain_weights = SUPPLY_CHAIN_STAGE_SI_WEIGHTS,
+                                  excluded_sectors = strategic_unmeasured_sectors(
+                                    economic_opportunity_index, energy_security_index
+                                  )) {
   require_columns(
     economic_opportunity_index,
     c("Country", "tech", "supply_chain", "Economic_Opportunity_Index"),
@@ -257,6 +361,25 @@ build_strategic_index <- function(economic_opportunity_index,
   strategic_index_key_check(eo, "economic_opportunity_index")
   strategic_index_key_check(es, "energy_security_index")
   strategic_index_key_check(pol, "policy_index")
+
+  # Every stage in the inputs must have a weight. A table still labelled with the old three
+  # stages would otherwise join to nothing and leave every cell unscored; stop instead.
+  for (input in list(
+    list(tbl = eo, label = "economic_opportunity_index"),
+    list(tbl = es, label = "energy_security_index"),
+    list(tbl = pol, label = "policy_index")
+  )) {
+    unknown_stages <- setdiff(unique(as.character(input$tbl$supply_chain)), names(supply_chain_weights))
+    if (length(unknown_stages) > 0) {
+      stop(
+        input$label, "$supply_chain has stages without a Strategic Index weight: ",
+        paste(unknown_stages, collapse = ", "), ". supply_chain_weights names ",
+        paste(names(supply_chain_weights), collapse = ", "),
+        " (SUPPLY_CHAIN_STAGE_SI_WEIGHTS, R/utils/supply_chain_stages.R); rebuild a table still ",
+        "labelled Upstream / Midstream / Downstream at six stages."
+      )
+    }
+  }
 
   ghg <- tech_ghg %>%
     dplyr::distinct(.data$tech, .keep_all = TRUE) %>%
@@ -301,8 +424,7 @@ build_strategic_index <- function(economic_opportunity_index,
           !is.na(.data$Energy_Security_Index) & !(.data$es_rankable %in% TRUE),
           paste0("energy security not rankable (", .data$es_rank_exclusion, ")"),
           NA_character_
-        ),
-        dplyr::if_else(is.na(.data$sc_weight), "unknown supply chain stage", NA_character_)
+        )
       ),
       in_sample = is.na(.data$si_exclusion)
     ) %>%
@@ -362,7 +484,7 @@ strategic_index_contributions <- function(strategic_index, weights = STRATEGIC_I
 
 # Sectors in which a pillar has no cross-country variation among the scored cells (standard
 # deviation 0 over two or more countries). There the pillar term is a sector constant, not a
-# measurement: in the Sep 2026 build ES was identically 0 in Nuclear - Upstream and
+# measurement: in the Sep 2026 (three-stage) build ES was identically 0 in Nuclear - Upstream and
 # Geothermal - Upstream (zero-filled cells), so energy_security_need = 1 for every country
 # and Nuclear - Upstream was the top pick of 8 of the 18 allies scored. scripts/20 reports
 # any sector listed here and rebuilds the index with it excluded.
@@ -400,8 +522,8 @@ strategic_index_degenerate_sectors <- function(strategic_index, tol = 1e-12) {
 # Sectors in which one energy-security value is shared by at least `min_share` of the scored
 # countries: a floor that is a measurement for some countries but the same number for many.
 # Diagnostic only (nothing is excluded): with the need reading, a country at a low ES floor
-# gets a high, sector-wide energy_security_need. With uranium in the Oct 2026 build, ES for
-# Nuclear - Upstream (Production 1/2, Reserves 1/3, a global energy-price constant 1/6) is
+# gets a high, sector-wide energy_security_need. With uranium in the Oct 2026 (three-stage)
+# build, ES for Nuclear - Upstream (Production 1/2, Reserves 1/3, a global energy-price constant 1/6) is
 # 0.117 for every economy without uranium production or resources: 32 of the 65 SI countries,
 # and Nuclear - Upstream was then the top allied pick of 20 of 45 members. scripts/20 reports
 # these sectors with the allied picks that fall in them.
@@ -430,21 +552,25 @@ strategic_index_es_floor_sectors <- function(strategic_index, min_share = 0.25, 
 }
 
 # Endowment screen for the allied picks. The need reading (energy_security_need = 1 - ES) is
-# highest where a country is least secure, and in an extraction stage a country without the
-# resource sits at the ES floor: with uranium in the Oct 2026 build, Nuclear - Upstream was the
-# top allied pick of 20 of 45 members, most with no uranium at all. The screen does not change
-# the index; it decides which cells may be picked.
+# highest where a country is least secure, and in the Extraction stage a country without the
+# resource sits at the ES floor: with uranium in the Oct 2026 (three-stage) build, Nuclear -
+# Upstream was the top allied pick of 20 of 45 members, most with no uranium at all. The screen
+# does not change the index; it decides which cells may be picked.
 #
 # strategic_resource_base() reads the reserves and production theme tables (reserves_tbl,
 # critical_minerals_production_tbl: long tables with Country, tech, supply_chain, category,
 # variable, value) and returns one row per Country x screened technology with resource_base =
 # TRUE when the technology-level "<tech> Reserves" or "<tech> Production" value is positive
 # (raw or index; both themes anchor the technology rollup at zero, so a positive index means a
-# positive reserve or output of at least one of the technology's minerals or fuels). A
-# technology is screened when any table has such a row for it; the others (none of the 11
-# headline technologies today) are left unscreened. Countries absent from every table have no
-# recorded resources.
-strategic_resource_base <- function(..., stage = "Upstream", categories = c("Reserves", "Production")) {
+# positive reserve or output of at least one of the technology's minerals or fuels). Both are
+# Extraction measures (reserves and mine or field production), so the screen covers that stage
+# only; refined output, manufacturing and recycling are not resource endowments. A technology is
+# screened when any table has such a row for it; the others (none of the 11 headline
+# technologies today) are left unscreened. Countries absent from every table have no recorded
+# resources. Tables that carry the technology-level rows only at other stages (labelled with the
+# old three stages, say) stop the screen rather than leave every cell unscreened; a three-stage
+# caller passes stage = "Upstream".
+strategic_resource_base <- function(..., stage = "Extraction", categories = c("Reserves", "Production")) {
   tbls <- Filter(Negate(is.null), list(...))
   if (length(tbls) == 0) {
     stop("strategic_resource_base() needs at least one reserves or production table.")
@@ -456,8 +582,8 @@ strategic_resource_base <- function(..., stage = "Upstream", categories = c("Res
       label = paste0("resource table ", i)
     )
   }
-  rows <- dplyr::bind_rows(lapply(tbls, function(t) {
-    tibble::as_tibble(t) %>%
+  rows <- dplyr::bind_rows(lapply(seq_along(tbls), function(i) {
+    tibble::as_tibble(tbls[[i]]) %>%
       dplyr::ungroup() %>%
       dplyr::transmute(
         Country = as.character(.data$Country),
@@ -465,15 +591,27 @@ strategic_resource_base <- function(..., stage = "Upstream", categories = c("Res
         supply_chain = as.character(.data$supply_chain),
         category = as.character(.data$category),
         variable = as.character(.data$variable),
-        value = suppressWarnings(as.numeric(.data$value))
+        value = suppressWarnings(as.numeric(.data$value)),
+        .table = i
       )
   })) %>%
     dplyr::filter(
-      .data$supply_chain %in% stage,
       .data$category %in% categories,
       .data$variable == paste(.data$tech, .data$category),
       !is.na(.data$Country)
     )
+  # Checked table by table: one table rebuilt at six stages must not hide another still at three.
+  off_stage <- setdiff(unique(rows$.table), unique(rows$.table[rows$supply_chain %in% stage]))
+  if (length(off_stage) > 0) {
+    stop(
+      "strategic_resource_base(): the technology-level reserves and production rows of resource table ",
+      paste(off_stage, collapse = ", "), " carry stage ",
+      paste(sort(unique(rows$supply_chain[rows$.table %in% off_stage])), collapse = ", "), ", none of ",
+      paste(stage, collapse = ", "), ". Rebuild the theme tables at six stages (reserves and mine ",
+      "production are Extraction), or pass the tables' own stage."
+    )
+  }
+  rows <- rows %>% dplyr::filter(.data$supply_chain %in% stage)
   rows %>%
     dplyr::group_by(.data$Country, .data$tech, .data$supply_chain) %>%
     dplyr::summarise(
@@ -488,7 +626,7 @@ strategic_resource_base <- function(..., stage = "Upstream", categories = c("Res
 }
 
 # Add resource_base to a strategic index table: TRUE/FALSE in a screened (tech, stage), NA in
-# the sectors the screen does not cover (Midstream, Downstream, unscreened technologies). A
+# the sectors the screen does not cover (every stage but Extraction, unscreened technologies). A
 # country missing from resource_base in a screened sector has no recorded resources (FALSE).
 # pick_exclusion records "no resource base" where the screen bars the cell from the allied pick;
 # strategic_index itself is unchanged.
@@ -522,20 +660,24 @@ flag_strategic_resource_base <- function(strategic_index, resource_base) {
   out
 }
 
-# Top Upstream/Midstream sector per ally (ties kept), excluding Geothermal and Green Hydrogen
-# (excluded_techs; this used to say the allied network does not model them, but since Oct 2026
-# it models the Upstream and Midstream stages of all 11 technologies, so the exclusion is a rule
-# of the selection itself). The selection is national: every coalition member is its own ally,
-# EU members included (the EU bundle is a node of the allied network only). `ally_countries` is
-# either a character vector of country names as spelled in strategic_index, or a data frame with
-# one row per ally and a `Country` column (so spelled) whose other columns (scripts/20: iso3,
-# tier, network_node from coalition_members()) are carried onto that ally's picks. With
-# require_resource_base (the default) a cell flagged resource_base == FALSE by
-# flag_strategic_resource_base() is not eligible: an Upstream extraction stage is picked only
-# where the country has recorded reserves or production of the stage's resources.
+# Top sector per ally (ties kept) in `stages`, by default every stage but Deployment
+# (STRATEGIC_ALLIED_STAGES: Extraction, Refining, Components, Assembly, Recovery, the old Upstream
+# and Midstream), excluding Geothermal and Green Hydrogen (excluded_techs; this used to say the
+# allied network does not model them, but since Oct 2026 it models the Upstream and Midstream
+# stages of all 11 technologies, so the exclusion is a rule of the selection itself). The default
+# also keeps "Upstream" and "Midstream", so a table still labelled with the three old stages (the
+# dashboard bundles, not yet migrated) picks as before; a table carries one set or the other. The
+# selection is national: every coalition member is its own ally, EU members included (the EU
+# bundle is a node of the allied network only). `ally_countries` is either a character vector of
+# country names as spelled in strategic_index, or a data frame with one row per ally and a
+# `Country` column (so spelled) whose other columns (scripts/20: iso3, tier, network_node from
+# coalition_members()) are carried onto that ally's picks. With require_resource_base (the
+# default) a cell flagged resource_base == FALSE by flag_strategic_resource_base() is not
+# eligible: an Extraction stage is picked only where the country has recorded reserves or
+# production of the stage's resources.
 select_allied_strategic_sectors <- function(strategic_index,
                                             ally_countries,
-                                            stages = c("Midstream", "Upstream"),
+                                            stages = c(STRATEGIC_ALLIED_STAGES, "Upstream", "Midstream"),
                                             excluded_techs = c("Geothermal", "Green Hydrogen"),
                                             n = 1,
                                             require_resource_base = TRUE) {
@@ -553,7 +695,7 @@ select_allied_strategic_sectors <- function(strategic_index,
     }
     ally_countries <- ally_tbl$Country
   }
-  # The endowment screen (flag_strategic_resource_base()): an extraction stage without a
+  # The endowment screen (flag_strategic_resource_base()): an Extraction stage without a
   # recorded resource base is never the pick. A table built without the flag is not screened.
   no_resource_base <- if (isTRUE(require_resource_base) && "resource_base" %in% names(strategic_index)) {
     strategic_index$resource_base %in% FALSE

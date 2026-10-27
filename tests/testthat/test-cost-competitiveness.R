@@ -6,12 +6,15 @@
 #   5. every row stamped with the build year, hiding vintages from the 1980s to 2025
 # and two technology/region mismatches: the cost-share tables naming hydrogen "Hydrogen", and
 # the IEA "Other Southeast Asia" value reaching the whole EI Asia Pacific sub-region.
+# Since 2026-10-26 it also pins the six-stage supply chain: which ILO series and which
+# three-stage cost share each stage reads, and which stage each IEA product scores.
 
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "categories", "economic opportunity", "cost_competitiveness.R"))
 
 # --- fixtures ---------------------------------------------------------------------------
@@ -191,53 +194,124 @@ test_that("labour earnings are read in market dollars, not PPP", {
   indices <- cost_competitiveness_build_ilo_indices(cc_ilo_fixture())
   scaffold <- cost_competitiveness_build_labor_scaffold(indices)
 
-  midstream <- scaffold %>% dplyr::filter(supply_chain == "Midstream")
+  assembly <- scaffold %>% dplyr::filter(supply_chain == "Assembly")
   usd <- c(DEU = 5000, IND = 220, VNM = 350, BRA = 700, CHN = 830, USA = 7000)
   expect_equal(
-    midstream$earnings_usd[match(names(usd), midstream$country_std)],
+    assembly$earnings_usd[match(names(usd), assembly$country_std)],
     unname(usd),
     tolerance = 1e-9
   )
 
   # Viet Nam is cheaper than China on market rates and dearer on PPP. Reading dollars, its
   # labour index must therefore sit below China's - the ordering the PPP series inverted.
-  vnm <- midstream$labor_index[midstream$country_std == "VNM"]
-  chn <- midstream$labor_index[midstream$country_std == "CHN"]
+  vnm <- assembly$labor_index[assembly$country_std == "VNM"]
+  chn <- assembly$labor_index[assembly$country_std == "CHN"]
   expect_lt(vnm, chn)
 
   # And the PPP series really would have inverted it, so the test above is not vacuous.
   ppp_scaffold <- cost_competitiveness_build_labor_scaffold(
     cost_competitiveness_build_ilo_indices(cc_ilo_fixture(), currency = "Currency: 2021 PPP $")
   ) %>%
-    dplyr::filter(supply_chain == "Midstream")
+    dplyr::filter(supply_chain == "Assembly")
   expect_gt(
     ppp_scaffold$labor_index[ppp_scaffold$country_std == "VNM"],
     ppp_scaffold$labor_index[ppp_scaffold$country_std == "CHN"]
   )
 })
 
-test_that("Upstream reads mining and utilities, falling back to the economy-wide total", {
+test_that("Extraction and Recovery read mining and utilities, falling back to the total", {
   scaffold <- cost_competitiveness_build_labor_scaffold(
     cost_competitiveness_build_ilo_indices(cc_ilo_fixture())
   )
-  upstream <- scaffold %>% dplyr::filter(supply_chain == "Upstream")
 
-  # India reports mining, so it must be read off mining - at 1.4x manufacturing.
-  ind <- upstream %>% dplyr::filter(country_std == "IND")
-  expect_match(ind$labor_activity, "Mining and quarrying")
-  expect_equal(ind$earnings_usd, 220 * 1.4, tolerance = 1e-9)
+  for (stage in c("Extraction", "Recovery")) {
+    rows <- scaffold %>% dplyr::filter(supply_chain == stage)
 
-  # Germany reports none, so it falls back to Total at 0.95x - never to agriculture at 0.3x.
-  deu <- upstream %>% dplyr::filter(country_std == "DEU")
-  expect_match(deu$labor_activity, "Total$")
-  expect_equal(deu$earnings_usd, 5000 * 0.95, tolerance = 1e-9)
+    # India reports mining, so it must be read off mining - at 1.4x manufacturing.
+    ind <- rows %>% dplyr::filter(country_std == "IND")
+    expect_match(ind$labor_activity, "Mining and quarrying")
+    expect_equal(ind$earnings_usd, 220 * 1.4, tolerance = 1e-9)
+
+    # Germany reports none, so it falls back to Total at 0.95x - never to agriculture at 0.3x.
+    deu <- rows %>% dplyr::filter(country_std == "DEU")
+    expect_match(deu$labor_activity, "Total$")
+    expect_equal(deu$earnings_usd, 5000 * 0.95, tolerance = 1e-9)
+
+    # Every country keeps a row despite the thinner mining series.
+    expect_setequal(unique(rows$country_std), cc_countries()$iso3c)
+  }
 
   # Agriculture must not reach any stage.
   expect_false(any(grepl("Agriculture", scaffold$labor_activity)))
+  expect_setequal(unique(scaffold$supply_chain), SUPPLY_CHAIN_STAGES)
+})
 
-  # Every country keeps a row at every stage despite the thinner mining series.
-  expect_setequal(unique(upstream$country_std), cc_countries()$iso3c)
-  expect_setequal(unique(scaffold$supply_chain), c("Upstream", "Midstream", "Downstream"))
+test_that("the old Upstream labour reading splits: Refining reads manufacturing", {
+  scaffold <- cost_competitiveness_build_labor_scaffold(
+    cost_competitiveness_build_ilo_indices(cc_ilo_fixture())
+  )
+  ind <- scaffold %>% dplyr::filter(country_std == "IND")
+  activity <- stats::setNames(ind$labor_activity, ind$supply_chain)
+  earnings <- stats::setNames(ind$earnings_usd, ind$supply_chain)
+
+  # Refining was read off mining while it sat in Upstream; it is an ISIC C activity and now
+  # shares the Manufacturing series with the two manufacturing stages.
+  expect_match(activity[["Refining"]], "Manufacturing$")
+  expect_equal(earnings[["Refining"]], 220, tolerance = 1e-9)
+  expect_equal(earnings[["Extraction"]], 220 * 1.4, tolerance = 1e-9)
+  expect_equal(unname(earnings[c("Components", "Assembly")]), c(220, 220), tolerance = 1e-9)
+  expect_match(activity[["Deployment"]], "Construction$")
+  expect_equal(earnings[["Deployment"]], 220 * 0.8, tolerance = 1e-9)
+})
+
+test_that("the ILO series and the cost shares group the stages the same way", {
+  # The explanation text says a labour value is copied across the stages that share a
+  # three-stage share; that only holds while the two groupings agree.
+  activities <- cost_competitiveness_ilo_activities() %>%
+    dplyr::filter(activity_rank == 1L)
+  share_stage <- cost_competitiveness_share_stage_of(activities$supply_chain)
+  expect_false(any(is.na(share_stage)))
+  pairs <- dplyr::distinct(tibble::tibble(series = activities$classif1.label, share_stage))
+  expect_equal(anyDuplicated(pairs$series), 0L)
+  expect_equal(anyDuplicated(pairs$share_stage), 0L)
+
+  expect_setequal(cost_competitiveness_ilo_activities()$supply_chain, SUPPLY_CHAIN_STAGES)
+  expect_false(any(is.na(cost_competitiveness_labor_stage_source(SUPPLY_CHAIN_STAGES))))
+})
+
+test_that("the three-stage cost shares are copied onto the six stages", {
+  labor <- cost_competitiveness_labor_weights()
+  capital <- cost_competitiveness_capital_weights()
+
+  for (shares in list(labor, capital)) {
+    expect_equal(nrow(shares), 11L * 6L)
+    expect_equal(nrow(dplyr::distinct(shares, Technology, supply_chain)), nrow(shares))
+    expect_setequal(unique(shares$supply_chain), SUPPLY_CHAIN_STAGES)
+    expect_false("share_stage" %in% names(shares))
+  }
+
+  share_of <- function(tbl, tech, stage, col) {
+    tbl[[col]][tbl$Technology == tech & tbl$supply_chain == stage]
+  }
+
+  # Old Upstream to Extraction and Recovery; old Midstream to Refining, Components and
+  # Assembly (refining was filed with manufacturing); old Downstream to Deployment.
+  expect_equal(share_of(labor, "Coal", "Extraction", "labor_share"), 0.40)
+  expect_equal(share_of(labor, "Coal", "Recovery", "labor_share"), 0.40)
+  expect_equal(share_of(labor, "Coal", "Refining", "labor_share"), 0.15)
+  expect_equal(share_of(labor, "Batteries", "Components", "labor_share"), 0.08)
+  expect_equal(share_of(labor, "Batteries", "Assembly", "labor_share"), 0.08)
+  expect_equal(share_of(labor, "Solar", "Deployment", "labor_share"), 0.07)
+  expect_equal(share_of(capital, "Batteries", "Recovery", "cap_share"), 0.45)
+  expect_equal(share_of(capital, "Batteries", "Refining", "cap_share"), 0.15)
+  expect_equal(share_of(capital, "Solar", "Deployment", "cap_share"), 0.90)
+
+  expect_error(
+    cost_competitiveness_expand_share_stages(
+      tibble::tibble(Technology = "Solar", supply_chain = "Sideways", labor_share = 0.1)
+    ),
+    "Sideways"
+  )
 })
 
 # --- recency floor ----------------------------------------------------------------------
@@ -296,7 +370,7 @@ test_that("a stale country keeps its row, imputed from regional peers", {
 
   bra <- imputed %>% dplyr::filter(country_std == "BRA")
   # Every stage keeps a usable index...
-  expect_equal(nrow(bra), 3L)
+  expect_equal(nrow(bra), length(SUPPLY_CHAIN_STAGES))
   expect_false(any(is.na(bra$labor_index)))
   expect_true(all(bra$labor_imputed))
   # ...while the raw observation and its real year stay visible for audit.
@@ -315,15 +389,16 @@ test_that("a fresh fallback series beats a stale preferred one", {
   # India's mining reading goes stale while its economy-wide total stays current.
   fixture$time[fixture$ref_area.label == "India" & fixture$classif1.label == mining] <- 1990L
 
-  upstream <- cost_competitiveness_build_labor_scaffold(
+  mining_stages <- cost_competitiveness_build_labor_scaffold(
     cost_competitiveness_build_ilo_indices(fixture)
   ) %>%
-    dplyr::filter(supply_chain == "Upstream", country_std == "IND")
+    dplyr::filter(supply_chain %in% c("Extraction", "Recovery"), country_std == "IND")
 
   # It must read the current total rather than falling through to imputation.
-  expect_match(upstream$labor_activity, "Total$")
-  expect_false(is.na(upstream$labor_index))
-  expect_equal(upstream$labor_year, 2025L)
+  expect_equal(nrow(mining_stages), 2L)
+  expect_true(all(grepl("Total$", mining_stages$labor_activity)))
+  expect_false(any(is.na(mining_stages$labor_index)))
+  expect_equal(unique(mining_stages$labor_year), 2025L)
 })
 
 test_that("stale rates are excluded from the winsorization and then imputed", {
@@ -548,7 +623,7 @@ test_that("the theme emits a valid table with the expected variables and data ty
   # The composite stays inside 0-1 and higher must mean more cost-competitive: India's
   # cheap labour and China's cheap capital should both beat the United States.
   composite <- out %>%
-    dplyr::filter(variable == "Input Cost Index", tech == "Solar", supply_chain == "Midstream")
+    dplyr::filter(variable == "Input Cost Index", tech == "Solar", supply_chain == "Assembly")
   expect_true(all(composite$value >= 0 & composite$value <= 1, na.rm = TRUE))
   expect_gt(
     composite$value[composite$Country == "India"],
@@ -562,8 +637,107 @@ test_that("Green Hydrogen carries an Input Cost Index at every stage", {
   # The share tables used to call it "Hydrogen", which matched no pipeline technology.
   expect_false("Hydrogen" %in% out$tech)
   h2 <- out %>% dplyr::filter(variable == "Input Cost Index", tech == "Green Hydrogen")
-  expect_setequal(unique(h2$supply_chain), c("Upstream", "Midstream", "Downstream"))
+  expect_setequal(unique(h2$supply_chain), SUPPLY_CHAIN_STAGES)
   expect_true(all(!is.na(h2$value[h2$Country == "India"])))
+  expect_equal(sum(h2$Country == "India"), length(SUPPLY_CHAIN_STAGES))
+})
+
+test_that("every row carries a six-stage name and every tech x stage has a composite", {
+  out <- cc_build()
+
+  expect_true(all(out$supply_chain %in% SUPPLY_CHAIN_STAGES))
+  expect_error(assert_supply_chain_stages(out$supply_chain), NA)
+
+  # Each country with a labour row at a stage gets an Input Cost Index for every technology
+  # with shares, at all six stages.
+  composite <- out %>% dplyr::filter(variable == "Input Cost Index")
+  techs <- unique(cost_competitiveness_labor_weights()$Technology)
+  cells <- composite %>% dplyr::distinct(Country, tech, supply_chain)
+  expect_equal(nrow(cells), nrow(cc_country_info()) * length(techs) * length(SUPPLY_CHAIN_STAGES))
+  expect_false(any(is.na(composite$value)))
+
+  # Extraction and Recovery share a labour series and a share, and so a composite; Refining
+  # does not share them with Extraction any more.
+  coal_ind <- composite %>% dplyr::filter(tech == "Coal", Country == "India")
+  value_at <- stats::setNames(coal_ind$value, coal_ind$supply_chain)
+  expect_equal(value_at[["Extraction"]], value_at[["Recovery"]], tolerance = 1e-12)
+  expect_equal(value_at[["Refining"]], value_at[["Assembly"]], tolerance = 1e-12)
+  expect_false(isTRUE(all.equal(value_at[["Extraction"]], value_at[["Refining"]])))
+  expect_match(
+    unique(composite$explanation[composite$supply_chain == "Recovery"]),
+    "copied across Extraction and Recovery"
+  )
+  expect_match(
+    unique(composite$explanation[composite$supply_chain == "Components"]),
+    "copied across Refining, Components and Assembly"
+  )
+  expect_false(grepl("copied", unique(composite$explanation[composite$supply_chain == "Deployment"])))
+})
+
+test_that("the country-level capital leg is copied to every stage", {
+  out <- cc_build()
+
+  rates <- out %>% dplyr::filter(variable == "nominal_rate", Country == "India", tech == "Solar")
+  expect_setequal(rates$supply_chain, SUPPLY_CHAIN_STAGES)
+  expect_equal(dplyr::n_distinct(rates$value), 1L)
+  expect_true(all(grepl("copied to every stage", rates$explanation)))
+
+  shares <- out %>%
+    dplyr::filter(variable == "cap_share", Country == "India", tech == "Solar") %>%
+    dplyr::arrange(match(supply_chain, SUPPLY_CHAIN_STAGES))
+  expect_equal(shares$value, c(0.20, 0.80, 0.80, 0.80, 0.90, 0.20))
+  expect_match(shares$explanation[shares$supply_chain == "Refining"], "Midstream estimate")
+})
+
+test_that("each IEA product scores its own stage of its technology", {
+  products <- c("Solar PV", "Wind turbines", "Electrolysers", "Heat pumps", "Batteries",
+                "Steel", "Ammonia", "Aluminium")
+  iea <- tidyr::expand_grid(Product = products, Region = c("China", "United States", "India")) %>%
+    dplyr::mutate(
+      Unit = "%",
+      Year = 2023L,
+      Value = dplyr::case_when(Region == "China" ~ 100, Region == "India" ~ 110, TRUE ~ 130)
+    )
+  ei <- tibble::tibble(Country = c("China", "US", "India"), EU = 0L)
+
+  maps <- cost_competitiveness_build_country_maps(ei)
+  tbl <- cost_competitiveness_build_iea_table(
+    cost_competitiveness_build_iea_indices(cost_competitiveness_clean_iea(iea)),
+    country_map = maps$country_map,
+    subregion_map = maps$subregion_map
+  )
+  stages <- tbl %>% dplyr::distinct(tech, supply_chain) %>% dplyr::arrange(tech, supply_chain)
+
+  expect_equal(
+    stages,
+    tibble::tribble(
+      ~tech, ~supply_chain,
+      "Aluminium", "Refining",
+      "Batteries", "Components",
+      "Green Hydrogen", "Assembly",
+      "Green Hydrogen", "Deployment",
+      "Heat pumps", "Assembly",
+      "Solar", "Assembly",
+      "Steel", "Refining",
+      "Wind", "Assembly"
+    )
+  )
+  expect_true(all(tbl$supply_chain %in% SUPPLY_CHAIN_STAGES))
+
+  # Ammonia is ranked as its own product, then filed under Green Hydrogen Deployment.
+  ammonia <- tbl %>% dplyr::filter(tech == "Green Hydrogen", supply_chain == "Deployment")
+  expect_equal(nrow(ammonia), 3L)
+  expect_true(all(grepl("IEA product: Ammonia", ammonia$explanation)))
+  expect_false("Ammonia" %in% tbl$tech)
+
+  # A product the IEA adds is named, not silently given a stage or dropped.
+  expect_error(
+    cost_competitiveness_clean_iea(dplyr::bind_rows(
+      iea,
+      tibble::tibble(Product = "Geothermal rigs", Region = "China", Unit = "%", Year = 2023L, Value = 100)
+    )),
+    "Geothermal rigs"
+  )
 })
 
 test_that("the IEA Southeast Asia region reaches ASEAN members only", {

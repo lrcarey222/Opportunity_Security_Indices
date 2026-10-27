@@ -109,18 +109,26 @@ harmonize_mineral_names <- function(x) {
 
 # Supply-chain stage of an IEA supply row, from the "<mineral> - <stage>" label.
 #
-# Mining is Upstream; refining and the other processing steps the workbook reports (lithium
-# chemicals, battery-grade graphite) are Midstream, so a country's refining share scores the
-# midstream stage it describes rather than being pooled with ore tonnage.
-iea_critical_minerals_supply_stage <- function(stage_label) {
-  dplyr::if_else(
-    stringr::str_detect(
-      stage_label,
-      stringr::regex("refin|chemical|battery.?grade|process", ignore_case = TRUE)
-    ),
-    "Midstream",
-    "Upstream"
+# Mining is Extraction; refining and the other processing steps the workbook reports (lithium
+# chemicals, battery-grade graphite) are Refining (docs/supply_chain_stages.md), so a country's
+# refining share scores the stage it describes rather than being pooled with ore tonnage. The
+# workbook has no recycling rows, so nothing maps to Recovery.
+#
+# `legacy = TRUE` returns the three-stage labels in use before 2026-10-26: Upstream for mining
+# and Midstream for refining. That is the old classification, not the six-stage roll-up (where
+# Refining rolls up to Upstream). It is the default because R/indices/coalition.R, which has not
+# moved to six stages, calls this without the argument and keys its mining and refining measures
+# on Upstream / Midstream. The Energy Security and Opportunity builders pass legacy = FALSE. When
+# coalition.R migrates, it should pass legacy = FALSE and the default can flip.
+iea_critical_minerals_supply_stage <- function(stage_label, legacy = TRUE) {
+  refining <- stringr::str_detect(
+    stage_label,
+    stringr::regex("refin|chemical|battery.?grade|process", ignore_case = TRUE)
   )
+  if (isTRUE(legacy)) {
+    return(dplyr::if_else(refining, "Midstream", "Upstream"))
+  }
+  dplyr::if_else(refining, "Refining", "Extraction")
 }
 
 # Rank-based index of a market share (a country's share of world supply or exports of a
@@ -130,7 +138,7 @@ iea_critical_minerals_supply_stage <- function(stage_label) {
 # positive shares are ranked among themselves above a zero anchor, so the smallest supplier
 # still scores above a non-supplier. Ranking the zeros together with the suppliers gave the
 # block of tied non-suppliers a mid-table score (Germany and Japan, which mine none of the
-# battery minerals, scored 0.44 on Batteries Upstream Mineral Supply against 0.47 for the
+# battery minerals, scored 0.44 on Batteries mining Mineral Supply against 0.47 for the
 # Democratic Republic of Congo) while an unlisted country scored 0. NA stays NA.
 iea_critical_minerals_share_index <- function(x, gamma = 0.5) {
   out <- rep(NA_real_, length(x))

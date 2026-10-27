@@ -68,10 +68,9 @@ foreign_dependency_build_mineral_supply <- function(critical,
 
   # Compute market shares, HHI, and the composite supply security index.
   #
-  # Mining rows score the Upstream stage and refining/processing rows the Midstream stage:
-  # pooling them put ore and refined-metal tonnage into one share and one HHI, and left
-  # refining dependence out of Midstream entirely. Shares and HHIs are therefore taken within
-  # (mineral, tech, stage).
+  # Mining rows score the Extraction stage and refining/processing rows the Refining stage
+  # (iea_critical_minerals_supply_stage()): pooling them put ore and refined-metal tonnage into
+  # one share and one HHI. Shares and HHIs are therefore taken within (mineral, tech, stage).
   mineral_supply <- critical %>%
     dplyr::filter(
       grepl("Total supply", Pillar),
@@ -83,7 +82,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
     tidyr::separate(Mineral, into = c("mineral", "supply_chain_raw"), sep = " - ", extra = "merge") %>%
     dplyr::mutate(
       mineral = harmonize_mineral_names(mineral),
-      supply_chain = iea_critical_minerals_supply_stage(supply_chain_raw)
+      supply_chain = iea_critical_minerals_supply_stage(supply_chain_raw, legacy = FALSE)
     ) %>%
     dplyr::ungroup() %>%
     dplyr::select(
@@ -162,7 +161,7 @@ foreign_dependency_build_mineral_supply <- function(critical,
       explanation = dplyr::case_when(
         data_type == "index" ~ stringr::str_glue(
           "Percent-rank of {tech} market share across countries, and HHI across critical minerals, ",
-          "of {dplyr::if_else(supply_chain == 'Midstream', 'refined', 'mined')} supply"
+          "of {dplyr::if_else(supply_chain == 'Refining', 'refined', 'mined')} supply"
         )
       )
     ) %>%
@@ -186,6 +185,14 @@ foreign_dependency_build_mineral_supply <- function(critical,
     dplyr::rename(Country = country)
 }
 
+# Stage of each IEA ETP manufacturing-capacity technology (docs/supply_chain_stages.md). For
+# solar (modules), wind (nacelles), electrolysers and heat pumps ETP measures the end-product
+# step, which is final assembly. For batteries it measures cell capacity, and a cell is a
+# component of the pack.
+foreign_dependency_cleantech_stage <- function(technology) {
+  dplyr::if_else(technology == "Batteries", "Components", "Assembly")
+}
+
 foreign_dependency_build_cleantech_midstream <- function(ei,
                                                          cleantech_midstream,
                                                          year = 2035,
@@ -204,7 +211,12 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
     dplyr::mutate(
       Year = dplyr::if_else(Status == "Current", "2024", "2035"),
       # "Heat.Pumps" is read.csv()'s name for the IEA header "Heat Pumps - Current".
-      Technology = csv_header_label(Technology)
+      Technology = csv_header_label(Technology),
+      # IEA reports electrolyser manufacturing capacity; in this pipeline that is Green
+      # Hydrogen Assembly, as market_share_manufacturing() already names it. Left as
+      # "Electrolyzers" it matched no index technology, so Green Hydrogen Assembly had no
+      # Energy Security reading and dropped out of the Strategic Index.
+      Technology = dplyr::if_else(Technology == "Electrolyzers", "Green Hydrogen", Technology)
     )
 
   # Map EU member countries into a shared "EU" entity to match legacy logic.
@@ -249,7 +261,7 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
     ) %>%
     dplyr::mutate(
       tech = Technology,
-      supply_chain = "Midstream",
+      supply_chain = foreign_dependency_cleantech_stage(Technology),
       category = "Foreign Dependency",
       variable = "Market Share",
       data_type = dplyr::if_else(name == "market_share", "raw", "index"),
@@ -277,7 +289,10 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
       explanation
     )
 
-  # Build the composite clean-tech midstream index across technologies.
+  # Build the composite clean-tech manufacturing index across technologies. It is one value per
+  # country, so it takes one stage: Assembly, the step four of its five inputs measure (solar,
+  # wind, electrolyser and heat-pump end-product capacity). The fifth, battery cell capacity, is
+  # already scored in Components by its own per-technology row.
   comp_ct <- ct_idx %>%
     dplyr::group_by(Country) %>%
     dplyr::summarize(
@@ -287,13 +302,17 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
     dplyr::mutate(
       composite_index = median_scurve(mean_idx, gamma = gamma),
       tech = "Clean Tech Midstream",
-      supply_chain = "Midstream",
+      supply_chain = "Assembly",
       category = "Foreign Dependency",
       variable = "Market Share",
       data_type = "index",
       Year = as.character(year),
       source = "IEA Energy Technology Perspectives 2024",
-      explanation = "Percent-rank of mean of individual clean-tech Midstream indexes(NB: All EU countries are given same market share)"
+      explanation = paste(
+        "Percent-rank of the mean of the per-technology manufacturing-capacity indexes, filed under",
+        "Assembly: solar, wind, electrolyser and heat-pump capacity is end-product capacity, battery",
+        "capacity is cells (NB: All EU countries are given same market share)"
+      )
     ) %>%
     dplyr::select(
       Country,
@@ -344,8 +363,8 @@ FOREIGN_DEPENDENCY_EV_REGIONS <- c(
 # The legacy expansion matched EI sub-regions to the IEA regions in three joins and, to keep
 # EU members out of Rest of World, sent the whole EI "Europe" sub-region to a placeholder
 # ("boop") that matched nothing. That also dropped every non-EU European economy (United
-# Kingdom, Norway, Turkiye, Ukraine, Switzerland, Iceland, Serbia, North Macedonia) from EV
-# Midstream, although the IEA counts their sales and production in Rest of World.
+# Kingdom, Norway, Turkiye, Ukraine, Switzerland, Iceland, Serbia, North Macedonia) from the EV
+# rows, although the IEA counts their sales and production in Rest of World.
 foreign_dependency_ev_region <- function(country, eu, sub_region) {
   dplyr::case_when(
     country == "China" ~ "China",
@@ -394,15 +413,16 @@ foreign_dependency_ev_regional_values <- function(ev_midstream, year) {
     stop(
       "ev_midstream import_share is not (production - sales) / sales for ",
       paste(regional$Region[off | is.na(off)], collapse = ", "),
-      "; the EV Midstream net export term assumes that definition."
+      "; the EV Assembly net export term assumes that definition."
     )
   }
 
   regional
 }
 
-# Explanations of the EV Midstream rows, keyed by the column name before the "_index" suffix
-# is stripped (the raw and index rows share the name "market_share").
+# Explanations of the EV rows, keyed by the column name before the "_index" suffix is stripped
+# (the raw and index rows share the name "market_share"). The composite keeps its variable
+# name, ev_Midstream, from the three-stage pipeline; it is scored under Assembly.
 foreign_dependency_ev_explanations <- function() {
   c(
     Domestic.sales = "EV sales in the region (million vehicles)",
@@ -445,8 +465,8 @@ foreign_dependency_build_ev_midstream <- function(ei,
       market_share_index = median_scurve(market_share, gamma = gamma)
     ) %>%
     dplyr::rowwise() %>%
-    # Sales are demand, not manufacturing: they stay out of the Midstream composite and are
-    # emitted as Downstream rows (user decision 2026-10-26, docs/supply_chain_stages.md).
+    # Sales are demand, not manufacturing: they stay out of the composite and are emitted as
+    # Deployment rows (user decision 2026-10-26, docs/supply_chain_stages.md).
     dplyr::mutate(ev_Midstream_index = mean(c(production_index, net_export_index, market_share_index))) %>%
     dplyr::ungroup() %>%
     dplyr::select(
@@ -460,10 +480,13 @@ foreign_dependency_build_ev_midstream <- function(ei,
       values_to = "value"
     ) %>%
     # Standardize variables into raw/index pairs in the canonical schema. The values are
-    # regional, copied to each economy, and the explanation names the region.
+    # regional, copied to each economy, and the explanation names the region. Production,
+    # market share, the net export ratio and the composite are the vehicle-manufacturing step,
+    # Assembly; the net export ratio compares production with sales, but it measures the
+    # production surplus, so it stays with production. Sales are Deployment.
     dplyr::mutate(
       tech = "Electric Vehicles",
-      supply_chain = dplyr::if_else(variable %in% c("Domestic.sales", "sales_index"), "Downstream", "Midstream"),
+      supply_chain = dplyr::if_else(variable %in% c("Domestic.sales", "sales_index"), "Deployment", "Assembly"),
       category = "Foreign Dependency",
       data_type = dplyr::if_else(stringr::str_detect(variable, "_index$"), "index", "raw"),
       explanation = paste0(

@@ -6,12 +6,16 @@
 #   3. an HS4 heading counted once per child HS6 code in the feasibility mean
 #   4. countries without Comtrade rows lost their observed Atlas variables and came through
 #      as rows with tech = NA
+# and pins the six-stage cells (2026-10-26): supply_chain is the crosswalk's Stage, so an old
+# Upstream or Midstream basket splits into the stages of its own codes.
 
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
+source(file.path(repo_root, "R", "utils", "hs6_crosswalk.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "categories", "trade", "trade_core.R"))
 source(file.path(repo_root, "R", "categories", "trade", "trade_concentration.R"))
@@ -19,15 +23,19 @@ source(file.path(repo_root, "R", "categories", "trade", "export_feasibility.R"))
 
 # --- fixtures ---------------------------------------------------------------------------
 
-# Solar Midstream = two HS6 codes under one HS4 heading plus one under another; Oil
-# Upstream = one code. The 8541 heading has two children, so a per-HS6 join would weigh it
-# twice.
+# Shaped like hs6_view_bolstered(): the three-stage "Value Chain" and the six-stage Stage.
+# The old Solar Midstream basket splits into Refining (polysilicon), Components (cells) and
+# Assembly (modules and two converters); the old Oil Upstream basket into Extraction (crude),
+# Refining (fuel oil) and Recovery (waste oil). Solar Assembly has two codes under the 8504
+# heading and one under 8541, so a per-HS6 join would weigh 8504 twice. Solar Assembly and Oil
+# Extraction carry the values the whole Solar Midstream and Oil Upstream cells had before.
 tr_subcat <- function() {
   data.frame(
-    Technology = c("Solar", "Solar", "Solar", "Oil"),
-    `Value Chain` = c("Midstream", "Midstream", "Midstream", "Upstream"),
+    Technology = c("Solar", "Solar", "Solar", "Solar", "Solar", "Oil", "Oil", "Oil"),
+    `Value Chain` = c(rep("Midstream", 5), rep("Upstream", 3)),
+    Stage = c("Assembly", "Assembly", "Assembly", "Components", "Refining", "Extraction", "Refining", "Recovery"),
     Sub.Sector = "x",
-    HS6 = c("854142", "854143", "850440", "270900"),
+    HS6 = c("854143", "850431", "850440", "854142", "280461", "270900", "271019", "271099"),
     check.names = FALSE,
     stringsAsFactors = FALSE
   )
@@ -35,7 +43,7 @@ tr_subcat <- function() {
 
 # CHN is the big solar exporter; SMA is a small economy whose only exports are solar goods
 # (the within-country ranking used to score it 1 on export size); USA runs a large solar
-# deficit; NOR exports oil and reports only to the Atlas, not to Comtrade.
+# deficit; NOR exports oil and polysilicon and reports only to the Atlas, not to Comtrade.
 tr_countries <- function() {
   data.frame(
     country = c("China", "Smallland", "United States", "Norway"),
@@ -45,42 +53,46 @@ tr_countries <- function() {
 }
 
 tr_atlas6 <- function() {
-  grid <- expand.grid(
-    country_iso3_code = c("CHN", "SMA", "USA", "NOR"),
-    product_hs92_code = c("854142", "854143", "850440", "270900"),
-    stringsAsFactors = FALSE
+  iso <- c("CHN", "SMA", "USA", "NOR")
+  # Exports and imports by code, in `iso` order.
+  solar <- list(exports = c(100, 2, 10, 0), imports = c(20, 1, 90, 5))
+  flows <- list(
+    "854143" = solar,
+    "850431" = solar,
+    "850440" = solar,
+    "854142" = list(exports = c(40, 0, 5, 0), imports = c(5, 0, 30, 2)),
+    "280461" = list(exports = c(50, 0, 30, 20), imports = c(60, 0, 5, 0)),
+    "270900" = list(exports = c(0, 0, 20, 80), imports = c(90, 1, 30, 0)),
+    "271019" = list(exports = c(10, 0, 60, 5), imports = c(30, 0, 10, 2)),
+    "271099" = list(exports = c(1, 0, 2, 0), imports = c(0, 0, 1, 1))
   )
-  exports <- c(
-    CHN = 100, SMA = 2, USA = 10, NOR = 0
-  )[grid$country_iso3_code]
-  imports <- c(CHN = 20, SMA = 1, USA = 90, NOR = 5)[grid$country_iso3_code]
-  oil <- grid$product_hs92_code == "270900"
-  exports[oil] <- c(CHN = 0, SMA = 0, USA = 20, NOR = 80)[grid$country_iso3_code[oil]]
-  imports[oil] <- c(CHN = 90, SMA = 1, USA = 30, NOR = 0)[grid$country_iso3_code[oil]]
-
-  world <- tapply(exports, grid$product_hs92_code, sum)
-  data.frame(
-    grid,
-    year = 2023L,
-    export_value = unname(exports),
-    import_value = unname(imports),
-    global_market_share = unname(exports / world[grid$product_hs92_code]),
-    stringsAsFactors = FALSE
-  )
+  out <- do.call(rbind, lapply(names(flows), function(code) {
+    data.frame(
+      country_iso3_code = iso,
+      product_hs92_code = code,
+      export_value = flows[[code]]$exports,
+      import_value = flows[[code]]$imports,
+      stringsAsFactors = FALSE
+    )
+  }))
+  world <- tapply(out$export_value, out$product_hs92_code, sum)
+  out$year <- 2023L
+  out$global_market_share <- unname(out$export_value / world[out$product_hs92_code])
+  out
 }
 
 # Distance by country and heading: 8541 near for CHN, far for SMA; 8504 the reverse.
 tr_atlas4 <- function() {
   grid <- expand.grid(
     country_iso3_code = c("CHN", "SMA", "USA", "NOR"),
-    product_hs92_code = c("8541", "8504", "2709"),
+    product_hs92_code = c("8541", "8504", "2804", "2709", "2710"),
     stringsAsFactors = FALSE
   )
   d <- c(
-    "CHN.8541" = 0.1, "CHN.8504" = 0.5, "CHN.2709" = 0.9,
-    "SMA.8541" = 0.9, "SMA.8504" = 0.1, "SMA.2709" = 0.9,
-    "USA.8541" = 0.5, "USA.8504" = 0.5, "USA.2709" = 0.3,
-    "NOR.8541" = 0.8, "NOR.8504" = 0.8, "NOR.2709" = 0.1
+    "CHN.8541" = 0.1, "CHN.8504" = 0.5, "CHN.2804" = 0.2, "CHN.2709" = 0.9, "CHN.2710" = 0.3,
+    "SMA.8541" = 0.9, "SMA.8504" = 0.1, "SMA.2804" = 0.9, "SMA.2709" = 0.9, "SMA.2710" = 0.9,
+    "USA.8541" = 0.5, "USA.8504" = 0.5, "USA.2804" = 0.4, "USA.2709" = 0.3, "USA.2710" = 0.2,
+    "NOR.8541" = 0.8, "NOR.8504" = 0.8, "NOR.2804" = 0.3, "NOR.2709" = 0.1, "NOR.2710" = 0.2
   )
   data.frame(
     grid,
@@ -139,8 +151,13 @@ tr_build <- function(fun) {
   }
 }
 
-tr_value <- function(tbl, iso, tech, variable, data_type = "index") {
-  v <- tbl$value[tbl$iso3c == iso & tbl$tech == tech & tbl$variable == variable & tbl$data_type == data_type]
+# One cell's value. `stage` defaults to the cell that carries the old fixture's values (Solar
+# Assembly, Oil Extraction); two matches stop, so a test cannot read another stage's row.
+TR_HOME_STAGE <- c(Solar = "Assembly", Oil = "Extraction")
+tr_value <- function(tbl, iso, tech, variable, data_type = "index", stage = TR_HOME_STAGE[[tech]]) {
+  v <- tbl$value[tbl$iso3c == iso & tbl$tech == tech & tbl$supply_chain == stage &
+    tbl$variable == variable & tbl$data_type == data_type]
+  if (length(v) > 1) stop("tr_value(): ", length(v), " rows for ", iso, " ", tech, " ", stage, " ", variable)
   if (length(v) == 0) NA_real_ else v
 }
 
@@ -201,10 +218,14 @@ test_that("each HS4 heading counts once in the feasibility mean", {
   codes <- trade_core_build_energy_codes(tr_subcat())
   feas <- trade_core_build_aec_feasibility(tr_atlas4(), codes, year = 2023)
 
-  # Smallland: 8541 distance 0.9 (two child codes), 8504 distance 0.1 (one child code).
-  # Per heading: 1 - (0.9 + 0.1) / 2 = 0.5. Per child code it was 1 - (0.9 * 2 + 0.1) / 3.
-  sma <- feas$feasibility[feas$country_iso3_code == "SMA" & feas$tech == "Solar"]
+  # Smallland, Solar Assembly: 8541 distance 0.9 (one child code), 8504 distance 0.1 (two
+  # child codes). Per heading: 1 - (0.9 + 0.1) / 2 = 0.5. Per child code it was
+  # 1 - (0.9 + 0.1 * 2) / 3.
+  sma <- feas$feasibility[feas$country_iso3_code == "SMA" & feas$tech == "Solar" & feas$supply_chain == "Assembly"]
   expect_equal(sma, 0.5)
+  # 8541 is also the Components heading (cells): it counts in both cells, once in each.
+  sma_cells <- feas$feasibility[feas$country_iso3_code == "SMA" & feas$tech == "Solar" & feas$supply_chain == "Components"]
+  expect_equal(sma_cells, 1 - 0.9)
 })
 
 test_that("Atlas-only economies keep their Atlas variables and no row has tech NA", {
@@ -223,7 +244,8 @@ test_that("Atlas-only economies keep their Atlas variables and no row has tech N
 test_that("HHI is one value per cell, the same for every country", {
   es <- tr_build("trade_concentration")
   hhi <- es[es$variable == "HHI" & es$data_type == "index", ]
-  per_cell <- tapply(hhi$value, hhi$tech, function(x) length(unique(x)))
+  per_cell <- tapply(hhi$value, paste(hhi$tech, hhi$supply_chain), function(x) length(unique(x)))
+  expect_length(per_cell, 6)
   expect_true(all(per_cell == 1))
 })
 
@@ -233,9 +255,10 @@ test_that("the RCA world aggregates use the reporters present in both extracts",
   total <- rbind(tr_total_export(), data.frame(ref_year = 2024L, reporter_iso = "XXX", primary_value = 1e6))
 
   rca <- trade_core_build_comtrade_rca(trade, total, year = 2024)
-  chn <- rca[rca$reporter_iso == "CHN" & rca$tech == "Solar", ]
+  chn <- rca[rca$reporter_iso == "CHN" & rca$tech == "Solar" & rca$supply_chain == "Assembly", ]
   # World total over CHN + SMA + USA only; XXX reports no basket flows.
-  expect_equal(chn$world_share, sum(trade$exports[trade$tech == "Solar"]) / 5007)
+  solar_assembly <- trade$tech == "Solar" & trade$supply_chain == "Assembly"
+  expect_equal(chn$world_share, sum(trade$exports[solar_assembly]) / 5007)
   expect_true("imports" %in% names(trade))
 })
 
@@ -267,15 +290,135 @@ test_that("market share is the country's share of world exports of the basket", 
   a6 <- rbind(a6[a6$product_hs92_code != "850440", ], extra)
   codes <- trade_core_build_energy_codes(tr_subcat())
   ms <- trade_core_build_aec_market_share(a6, codes, year = 2023)
-  solar <- ms[ms$tech == "Solar", ]
+  solar <- ms[ms$tech == "Solar" & ms$supply_chain == "Assembly", ]
   share <- function(iso) solar$market_share[solar$country_iso3_code == iso]
 
-  # World solar basket: 854142 and 854143 (112 each) + 850440 (50) = 274.
+  # World Solar Assembly basket: 854143 and 850431 (112 each) + 850440 (50) = 274.
   expect_equal(share("CHN"), 200 / 274)
   expect_equal(share("SMA"), (4 + 50) / 274)
   # No basket exports is a zero share, not a missing one.
   expect_equal(share("NOR"), 0)
   expect_gt(share("CHN"), share("SMA"))
+})
+
+# --- six-stage cells (2026-10-26) ----------------------------------------------------------
+
+test_that("the trade cells are the crosswalk's six stages, split from the basket's own codes", {
+  codes <- trade_core_build_energy_codes(tr_subcat())
+  expect_setequal(
+    unique(paste(codes$tech, codes$supply_chain)),
+    c("Solar Refining", "Solar Components", "Solar Assembly", "Oil Extraction", "Oil Refining", "Oil Recovery")
+  )
+
+  es <- tr_build("trade_concentration")
+  eo <- tr_build("export_feasibility")
+  for (tbl in list(es, eo)) {
+    expect_true(assert_supply_chain_stages(tbl$supply_chain, label = "trade theme"))
+    # No HS6 basket is a deployment good.
+    expect_false("Deployment" %in% tbl$supply_chain)
+  }
+
+  # Refining and Recovery are cells of their own, each against its own world market.
+  # Polysilicon (280461): world exports 100, Norway (Atlas only) 20.
+  expect_equal(tr_value(es, "NOR", "Solar", "market_share", "raw", stage = "Refining"), 0.2)
+  # Waste oil (271099): world exports 3, the United States 2.
+  expect_equal(tr_value(es, "USA", "Oil", "market_share", "raw", stage = "Recovery"), 2 / 3)
+  expect_equal(tr_value(eo, "USA", "Oil", "exports", "raw", stage = "Recovery"), 2)
+  expect_equal(tr_value(eo, "USA", "Oil", "market_share", stage = "Recovery"), 1)
+  # Smallland ships solar goods but no polysilicon: the United States outranks it there.
+  expect_gt(
+    tr_value(eo, "USA", "Solar", "market_share", stage = "Refining"),
+    tr_value(eo, "SMA", "Solar", "market_share", stage = "Refining")
+  )
+})
+
+test_that("the six stages split the old baskets without dropping or double-counting a code", {
+  build <- function(fun, legacy) {
+    do.call(fun, list(
+      subcat = tr_subcat(), aec_4_data = tr_atlas4(), aec_6_data = tr_atlas6(),
+      comtrade_trade = tr_comtrade(), comtrade_total_export = tr_total_export(),
+      country_info = tr_countries(), year_4 = 2023, year_6 = 2023, year_comtrade = 2024,
+      gdp_data = tr_gdp(), legacy_stages = legacy
+    ))
+  }
+  raw_sum <- function(tbl, variable) {
+    r <- tbl[tbl$variable == variable & tbl$data_type == "raw", ]
+    tapply(r$value, paste(r$iso3c, r$tech), sum)
+  }
+
+  eo_legacy <- build(export_feasibility, TRUE)
+  es_legacy <- build(trade_concentration, TRUE)
+  expect_setequal(unique(eo_legacy$supply_chain), c("Upstream", "Midstream"))
+
+  # Comtrade exports and imports, and the Atlas net imports, of each country's old basket are
+  # the sums over the stages it split into: Solar Midstream = Refining + Components + Assembly,
+  # Oil Upstream = Extraction + Refining + Recovery.
+  eo <- build(export_feasibility, FALSE)
+  es <- build(trade_concentration, FALSE)
+  for (v in c("exports", "imports")) {
+    expect_equal(raw_sum(eo, v), raw_sum(eo_legacy, v))
+  }
+  expect_equal(raw_sum(es, "deficit"), raw_sum(es_legacy, "deficit"))
+  expect_equal(
+    tr_value(eo_legacy, "CHN", "Solar", "exports", "raw", stage = "Midstream"),
+    3 * 100 + 40 + 50
+  )
+})
+
+test_that("Stage is read ahead of the three-stage columns, which are only a fallback", {
+  sc <- tr_subcat()
+  six <- trade_core_build_energy_codes(sc)
+  expect_setequal(unique(six$supply_chain), c("Extraction", "Refining", "Components", "Assembly", "Recovery"))
+
+  # The master's own shape: lower-case `stage` wins over its three-stage `supply_chain`.
+  master_shape <- data.frame(
+    tech = sc$Technology, supply_chain = sc$`Value Chain`, stage = sc$Stage,
+    sub_sector = sc$Sub.Sector, HS6 = sc$HS6, stringsAsFactors = FALSE
+  )
+  expect_equal(trade_core_build_energy_codes(master_shape)$supply_chain, six$supply_chain)
+
+  # legacy_stages builds the old baskets, quietly, for the readers not yet on six stages.
+  expect_silent(legacy <- trade_core_build_energy_codes(sc, legacy_stages = TRUE))
+  expect_setequal(unique(legacy$supply_chain), c("Midstream", "Upstream"))
+
+  # A crosswalk staged before the Stage column existed still builds, and says so.
+  expect_warning(
+    fallback <- trade_core_build_energy_codes(sc[setdiff(names(sc), "Stage")]),
+    "no Stage column"
+  )
+  expect_equal(fallback$supply_chain, legacy$supply_chain)
+
+  # A code without a stage, or with an old stage name, stops rather than leaving the basket.
+  blank <- sc
+  blank$Stage[2] <- NA
+  expect_error(trade_core_build_energy_codes(blank), "not supply-chain stages")
+  old_name <- sc
+  old_name$Stage[2] <- "Midstream"
+  expect_error(trade_core_build_energy_codes(old_name), "Midstream")
+})
+
+test_that("every in-basket code of the HS6 master reaches one trade cell, in its own stage", {
+  master <- utils::read.csv(
+    file.path(repo_root, "data", "reference", "energy_hs6_master.csv"),
+    colClasses = "character"
+  )
+  view <- hs6_build_views(master)[["hts_codes_categories_bolstered_final.csv"]]
+  in_basket <- hs6_normalize_master(master)
+  codes <- trade_core_build_energy_codes(view)
+
+  expect_true(all(is_supply_chain_stage(codes$supply_chain)))
+  expect_false("Deployment" %in% codes$supply_chain)
+  expect_setequal(
+    paste(codes$tech, codes$code6, codes$supply_chain),
+    paste(in_basket$tech, in_basket$hs6, in_basket$stage)
+  )
+  # One stage per code within a technology, so no code counts twice in a technology's trade.
+  expect_equal(anyDuplicated(paste(codes$tech, codes$code6)), 0L)
+  # The cells are the master's tech x stage pairs.
+  expect_setequal(
+    unique(paste(codes$tech, codes$supply_chain)),
+    unique(paste(in_basket$tech, in_basket$stage))
+  )
 })
 
 # --- HHI ranking universe and re-export hubs (user decisions 2026-10-09) ------------------
@@ -286,7 +429,7 @@ test_that("the HHI index ranks the headline cells only and other cells cannot mo
     tibble::tibble(
       reporter_iso = c("A", "B", "A", "A", "B", "C", semis_iso),
       tech = c("Solar", "Solar", "Oil", "Wind", "Wind", "Wind", rep("Semiconductors", length(semis_iso))),
-      supply_chain = c("Midstream", "Midstream", "Upstream", rep("Midstream", 3 + length(semis_iso))),
+      supply_chain = c("Assembly", "Assembly", "Extraction", rep("Assembly", 3 + length(semis_iso))),
       sub_sector = "All",
       exports = c(1, 1, 5, 1, 1, 1, rep_len(semis_x, length(semis_iso)))
     )

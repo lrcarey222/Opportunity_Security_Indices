@@ -234,6 +234,8 @@ test_that("reserves() builds the mineral variables from USGS with the same shape
                     "Batteries Reserves", "Electric Grid Reserves", "Oil Reserves") %in% out$variable))
   key <- out %>% dplyr::count(ISO3166_alpha3, tech, supply_chain, variable, data_type) %>% dplyr::filter(n > 1)
   expect_equal(nrow(key), 0)
+  # Reserves are a resource endowment: every row, USGS minerals and EI fuels alike, is Extraction.
+  expect_setequal(unique(out$supply_chain), "Extraction")
 
   # Raw values in thousand tonnes; the index is the zero-anchored S-curve of the positive holders.
   expect_equal(val("Rare Earths Reserves", "BRA", "raw"), 11000)

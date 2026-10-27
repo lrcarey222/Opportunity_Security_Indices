@@ -11,7 +11,7 @@ build_eo_theme_tbl <- function() {
   tibble::tibble(
     Country = c("A", "A", "A", "B", "B", "B"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     category = c(
       "Investment",
       "Investment",
@@ -140,7 +140,7 @@ test_that("economic opportunity v2 warns and proceeds with unexpected categories
     tibble::tibble(
       Country = c("A", "Z"),
       tech = "Solar",
-      supply_chain = "Upstream",
+      supply_chain = "Extraction",
       category = "Reserves",
       variable = "Overall Reserves Index",
       value = 0.9,

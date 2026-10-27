@@ -6,6 +6,7 @@ repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRU
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "categories", "energy_prices", "energy_prices.R"))
 source(file.path(repo_root, "tests", "testthat", "helper-fixtures.R"))
@@ -121,6 +122,8 @@ test_that("energy_prices_build_table includes latest price and yoy change withou
   expect_true(all(c("price_volatility_5yr", "mean_price_volatility", "latest_price", "yoy_price_change_pct") %in% tbl$variable))
   expect_true(any(tbl$variable == "latest_price" & stringr::str_detect(tbl$explanation, "Unit: USD per MMBtu")))
   expect_true(any(tbl$variable == "latest_price" & stringr::str_detect(tbl$explanation, "Natural_Gas_Henry_Hub")))
+  # No stage column in the input: the series name gives it (a gas hub price is Extraction).
+  expect_true(all(tbl$supply_chain == "Extraction"))
 
   overall_rows <- tbl |>
     dplyr::filter(variable == "Overall Price Volatility Index")
@@ -446,4 +449,89 @@ test_that("the theme states each price in its true unit and the yoy change in pe
   expect_match(explanation_of("Lithium", "latest_price"), "Unit: USD per metric tonne\\.$")
   expect_match(explanation_of("Cobalt", "yoy_price_change_pct"), "Unit: percent \\(price quoted in USD per metric tonne\\)\\.$")
   expect_false(any(grepl("per pound|US cents|Indicator-native", out$explanation[out$sub_sector %in% c("Cobalt", "Propane")])))
+})
+
+# --- six-stage supply chain ---------------------------------------------------------------
+
+test_that("every PCPS series the patterns can match is staged Extraction or Refining", {
+  stages <- energy_prices_pcps_stages()
+  expect_false(anyDuplicated(stages$clean) > 0)
+  expect_setequal(stages$clean, names(energy_prices_imf_patterns))
+  expect_true(assert_supply_chain_stages(stages$supply_chain, "energy_prices_pcps_stages()"))
+  expect_setequal(unique(stages$supply_chain), c("Extraction", "Refining"))
+
+  # Ores, crude, gas hubs (LNG included), coal and U3O8 are Extraction; refined metals,
+  # chemicals and the NGL are Refining.
+  expect_identical(
+    energy_prices_stage(c("Oil_Brent", "Dubai_Crude", "Natural_Gas_EU", "LNG", "Coal", "Iron_Ore", "Uranium")),
+    rep("Extraction", 7)
+  )
+  expect_identical(
+    energy_prices_stage(c("Copper", "Nickel", "Lithium", "Cobalt", "Silicon", "Rare_Earths", "Propane", "Diammonium_Phosphate")),
+    rep("Refining", 8)
+  )
+  # A series with no stage stops the build instead of leaving the table.
+  expect_error(energy_prices_stage(c("Copper", "Not_A_Commodity")), "Not_A_Commodity")
+})
+
+test_that("a tech priced by ores and refined metals gets an Extraction and a Refining cell", {
+  months <- c(sprintf("X2024.M%02d", 1:12), sprintf("X2025.M%02d", 1:12))
+  wide <- function(indicator, values) {
+    row <- tibble::tibble(INDICATOR = indicator, FREQUENCY = "Monthly", DATA_TRANSFORMATION = "US dollars")
+    for (i in seq_along(months)) row[[months[[i]]]] <- values[[i]]
+    row
+  }
+  i <- seq_along(months)
+  imf_price <- dplyr::bind_rows(
+    wide("Copper, US dollars per metric tonne, Unit prices", 9000 + 400 * sin(i)),
+    wide("Iron Ore, US dollars per metric tonne, Unit prices", 110 + 25 * cos(i)),
+    wide("Natural Gas, US Henry Hub, US dollars per MMBtu, Unit prices", 3 + sin(i / 2)),
+    wide("Propane, US cents per gallon, Unit prices", 0.8 + 0.05 * cos(i / 3))
+  )
+
+  out <- withr::with_options(
+    list(opportunity_security.index_definition = yaml::read_yaml(file.path(repo_root, "config", "index_definition.yml"))),
+    energy_prices(
+      imf_price,
+      mineral_demand_clean = tibble::tibble(Mineral = "Copper", tech = "Electric Grid"),
+      country_info = NULL,
+      years_back = c(1, 5),
+      min_months = 2
+    )
+  )
+
+  # Every row carries a stage, none the old Upstream.
+  expect_true(assert_supply_chain_stages(out$supply_chain, "energy_prices"))
+  stage_of <- function(sub) unique(out$supply_chain[out$sub_sector == sub])
+  expect_identical(stage_of("Iron_Ore"), "Extraction")
+  expect_identical(stage_of("Copper"), "Refining")
+  expect_identical(stage_of("Natural_Gas_Henry_Hub"), "Extraction")
+  expect_identical(stage_of("Propane"), "Refining")
+
+  # Electric Grid (iron ore, copper) and Gas (Henry Hub, propane) each split into two cells,
+  # and each cell has its own volatility index and category score.
+  overall <- out %>%
+    dplyr::filter(variable == "Overall Price Volatility Index") %>%
+    dplyr::select(tech, supply_chain, value)
+  for (t in c("Electric Grid", "Gas")) {
+    expect_setequal(overall$supply_chain[overall$tech == t], c("Extraction", "Refining"))
+  }
+  scored <- out %>% dplyr::filter(variable == "Overall Energy Prices Index", tech %in% c("Electric Grid", "Gas"))
+  expect_equal(nrow(dplyr::distinct(scored, tech, supply_chain)), 4)
+
+  # The index is the s-curve of the mean over that cell's series only.
+  expected <- out %>%
+    dplyr::filter(variable == "mean_price_volatility") %>%
+    dplyr::group_by(tech, supply_chain) %>%
+    dplyr::summarize(mean_vol = mean(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::mutate(expected = median_scurve(-mean_vol, gamma = 0.5))
+  joined <- dplyr::inner_join(overall, expected, by = c("tech", "supply_chain"))
+  expect_equal(nrow(joined), nrow(overall))
+  expect_equal(joined$value, joined$expected)
+  expect_true(all(grepl("Extraction series", out$explanation[out$variable == "Overall Price Volatility Index" & out$supply_chain == "Extraction"])))
+
+  # The Extraction cell's mean volatility is the iron ore series alone.
+  grid_extraction <- out$value[out$tech == "Electric Grid" & out$supply_chain == "Extraction" & out$variable == "mean_price_volatility"]
+  iron_ore <- out$value[out$sub_sector == "Iron_Ore" & out$tech == "Electric Grid" & out$variable == "mean_price_volatility"]
+  expect_equal(grid_extraction, iron_ore)
 })

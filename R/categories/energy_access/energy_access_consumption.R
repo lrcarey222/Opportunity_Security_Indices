@@ -53,7 +53,8 @@ energy_access_build_indices <- function(ec_per_capita, year, gamma = 0.5) {
     dplyr::transmute(
       Country,
       tech = stringr::str_to_sentence(tech),
-      supply_chain = "Downstream",
+      # Consumption is use of the fuel or technology: Deployment.
+      supply_chain = "Deployment",
       category = "Energy Access",
       variable = "Energy consumption per capita",
       data_type,
@@ -96,7 +97,7 @@ energy_access_build_growth <- function(ec_base, ec_target, base_year, target_yea
     dplyr::transmute(
       Country,
       tech = stringr::str_to_sentence(tech),
-      supply_chain = "Downstream",
+      supply_chain = "Deployment",
       category = "Energy Access",
       variable = paste(variable, metric),
       data_type,

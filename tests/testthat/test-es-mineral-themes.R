@@ -13,6 +13,7 @@ source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "utils", "iea_critical_minerals.R"))
 source(file.path(repo_root, "R", "categories", "shared", "overall_index.R"))
 source(file.path(repo_root, "R", "categories", "reserves", "reserves.R"))
@@ -87,11 +88,16 @@ test_that("mineral names from every source meet on one canonical name", {
   )
 })
 
-test_that("mining is Upstream and refining/processing is Midstream", {
+test_that("mining is Extraction and refining/processing is Refining", {
+  labels <- c("Mining", "Refining", "Mining (natural)", "Battery grade", "Chemical", "Processing")
   expect_equal(
-    iea_critical_minerals_supply_stage(c(
-      "Mining", "Refining", "Mining (natural)", "Battery grade", "Chemical", "Processing"
-    )),
+    iea_critical_minerals_supply_stage(labels, legacy = FALSE),
+    c("Extraction", "Refining", "Extraction", "Refining", "Refining", "Refining")
+  )
+  # The legacy labels R/indices/coalition.R still keys its mining and refining measures on:
+  # the old classification (refining was Midstream), not the six-stage roll-up.
+  expect_equal(
+    iea_critical_minerals_supply_stage(labels),
     c("Upstream", "Midstream", "Upstream", "Midstream", "Midstream", "Midstream")
   )
 })
@@ -127,20 +133,23 @@ test_that("Mineral Supply splits mining and refining and keeps graphite and rare
   ) %>%
     dplyr::ungroup()
 
-  expect_setequal(unique(out$supply_chain), c("Upstream", "Midstream"))
+  expect_setequal(unique(out$supply_chain), c("Extraction", "Refining"))
   value_of <- function(country, tech_, stage) {
     out$value[out$Country == country & out$tech == tech_ & out$supply_chain == stage]
   }
 
   # Rare earths reach Wind: Myanmar mines nothing but magnet rare earths.
-  expect_gt(value_of("Myanmar", "Wind", "Upstream"), value_of("Germany", "Wind", "Upstream"))
+  expect_gt(value_of("Myanmar", "Wind", "Extraction"), value_of("Germany", "Wind", "Extraction"))
   # Graphite reaches Batteries: Mozambique mines only natural graphite.
-  expect_gt(value_of("Mozambique", "Batteries", "Upstream"), value_of("Germany", "Batteries", "Upstream"))
-  # Refining is Midstream only: Japan refines battery-grade graphite and mines nothing.
-  expect_gt(value_of("Japan", "Batteries", "Midstream"), value_of("Germany", "Batteries", "Midstream"))
-  expect_equal(value_of("Japan", "Batteries", "Upstream"), value_of("Germany", "Batteries", "Upstream"))
-  # China refines lithium: its Midstream score comes from refining, not ore.
-  expect_gt(value_of("China", "Batteries", "Midstream"), value_of("Australia", "Batteries", "Midstream"))
+  expect_gt(value_of("Mozambique", "Batteries", "Extraction"), value_of("Germany", "Batteries", "Extraction"))
+  # Refining is Refining only: Japan refines battery-grade graphite and mines nothing.
+  expect_gt(value_of("Japan", "Batteries", "Refining"), value_of("Germany", "Batteries", "Refining"))
+  expect_equal(value_of("Japan", "Batteries", "Extraction"), value_of("Germany", "Batteries", "Extraction"))
+  # China refines lithium: its Refining score comes from refining, not ore.
+  expect_gt(value_of("China", "Batteries", "Refining"), value_of("Australia", "Batteries", "Refining"))
+  # The explanation says which supply the stage scores.
+  expect_true(all(grepl("refined supply", out$explanation[out$supply_chain == "Refining"])))
+  expect_true(all(grepl("mined supply", out$explanation[out$supply_chain == "Extraction"])))
 })
 
 test_that("non-suppliers score alike whether or not the IEA lists them, below every supplier", {
@@ -153,7 +162,7 @@ test_that("non-suppliers score alike whether or not the IEA lists them, below ev
     country_reference = roster_fixture()
   ) %>%
     dplyr::ungroup() %>%
-    dplyr::filter(tech == "Batteries", supply_chain == "Upstream")
+    dplyr::filter(tech == "Batteries", supply_chain == "Extraction")
 
   # Japan is listed (for refining) but mines nothing; Germany is not listed at all.
   japan <- out$value[out$Country == "Japan"]
@@ -175,7 +184,7 @@ test_that("a listed supplier outside the roster is completed with zero supply to
       country_reference = roster
     ) %>%
       dplyr::ungroup() %>%
-      dplyr::filter(Country == "Myanmar", supply_chain == "Upstream") %>%
+      dplyr::filter(Country == "Myanmar", supply_chain == "Extraction") %>%
       dplyr::arrange(tech) %>%
       dplyr::pull(value)
   }
@@ -184,7 +193,7 @@ test_that("a listed supplier outside the roster is completed with zero supply to
   # (no zero rows for copper), which put it above the same supplier on the roster.
   in_roster <- supply_of(roster_fixture())
   off_roster <- supply_of(dplyr::filter(roster_fixture(), Country != "Myanmar"))
-  # Scored on every Upstream tech (Batteries, Electric Grid, EV, Wind), not only the two
+  # Scored on every Extraction tech (Batteries, Electric Grid, EV, Wind), not only the two
   # that use rare earths.
   expect_length(off_roster, 4)
   expect_equal(off_roster, in_roster)
@@ -202,7 +211,7 @@ test_that("critical_minerals_processing scores the same way and completes its ro
     country_reference = roster_fixture()
   ) %>%
     dplyr::ungroup() %>%
-    dplyr::filter(tech == "Batteries", supply_chain == "Upstream")
+    dplyr::filter(tech == "Batteries", supply_chain == "Extraction")
 
   # Germany and Myanmar come from the roster only; neither mines a battery mineral.
   expect_equal(out$value[out$Country == "Germany"], out$value[out$Country == "Japan"])
@@ -287,6 +296,8 @@ test_that("reserve sub-rows and footnotes do not give a country a second row", {
   expect_false(any(out$Country == "USSR", na.rm = TRUE))
   # Fossil reserves stopped at end-2020; the explanation says so.
   expect_true(all(grepl("end-2020", oil_raw$explanation)))
+  # Reserves are a resource endowment: Extraction, for the fuels and the mineral rollups alike.
+  expect_setequal(unique(out$supply_chain), "Extraction")
 })
 
 test_that("tech reserves weight rare earths and count unlisted minerals as zero", {
@@ -346,6 +357,8 @@ test_that("rare-earth production reaches Wind and producers stay above non-produ
   expect_gt(value_of("China"), value_of("Chile"))
   expect_equal(value_of("Germany"), 0)
   expect_true(all(wind$value[wind$Country %in% c("Chile", "Peru", "China", "Myanmar")] > 0))
+  # Mine production only: every row is Extraction.
+  expect_setequal(unique(out$supply_chain), "Extraction")
 })
 
 # ---- Critical-minerals trade ---------------------------------------------------------------
@@ -391,17 +404,140 @@ test_that("minerals trade keeps export-only flows and emits market share and HHI
   expect_false(any(out$variable == "critmin_trade"))
 
   ms <- out %>% dplyr::filter(variable == "critmin_market_share", data_type == "index", tech == "Electric Vehicles")
-  # Chile's lithium and copper exports survive although it reports no lithium imports.
-  expect_gt(ms$value[ms$Country == "Chile"], 0)
+  ms_of <- function(country, stage) ms$value[ms$Country == country & ms$supply_chain == stage]
+  # Chile's lithium hydroxide (Refining) and copper ore (Extraction) exports survive although
+  # it reports no lithium imports.
+  expect_gt(ms_of("Chile", "Refining"), 0)
+  expect_gt(ms_of("Chile", "Extraction"), 0)
   # Germany imports but exports nothing: 0, the same as a country outside Comtrade.
-  expect_equal(ms$value[ms$Country == "Germany"], 0)
+  expect_equal(ms_of("Germany", "Refining"), 0)
+  expect_equal(ms_of("Germany", "Extraction"), 0)
+  expect_setequal(unique(out$supply_chain), c("Extraction", "Refining"))
 
   hhi <- out %>% dplyr::filter(variable == "critmin_hhi", data_type == "index")
-  # A world-market term: one value per tech, emitted for every country (France reports nothing).
+  # A world-market term: one value per tech and stage, emitted for every country (France
+  # reports nothing).
   expect_true("France" %in% hhi$Country)
   expect_equal(
-    hhi %>% dplyr::group_by(tech) %>% dplyr::summarize(n = dplyr::n_distinct(value)) %>% dplyr::pull(n),
-    rep(1L, dplyr::n_distinct(hhi$tech))
+    hhi %>% dplyr::group_by(tech, supply_chain) %>% dplyr::summarize(n = dplyr::n_distinct(value), .groups = "drop") %>% dplyr::pull(n),
+    rep(1L, nrow(dplyr::distinct(hhi, tech, supply_chain)))
+  )
+})
+
+test_that("each HS6 code is staged by what the good is", {
+  codes <- tibble::tribble(
+    ~cmd_code, ~cmd_desc,                                                                   ~stage,
+    "250410",  "Graphite; natural, in powder or in flakes",                                  "Extraction",
+    "260300",  "Copper ores and concentrates",                                               "Extraction",
+    "261390",  "Molybdenum ores and concentrates; other than roasted",                       "Extraction",
+    "282520",  "Lithium oxide and hydroxide",                                                "Refining",
+    "283691",  "Carbonates; lithium carbonate",                                              "Refining",
+    "380110",  "Graphite; artificial",                                                       "Refining",
+    "720260",  "Ferro-alloys; ferro-nickel",                                                 "Refining",
+    "740311",  "Copper; refined, unwrought, cathodes and sections of cathodes",              "Refining",
+    "740811",  "Copper; wire, of refined copper, of which the maximum cross-sectional dimension exceeds 6mm", "Refining",
+    "741011",  "Copper; foil, not backed, of a thickness not exceeding 0.15mm, of refined copper", "Refining",
+    "750110",  "Nickel; nickel mattes",                                                      "Refining",
+    "790500",  "Zinc; plates, sheets, strip and foil",                                       "Refining",
+    "810520",  "Cobalt; mattes and other intermediate products of cobalt metallurgy, unwrought cobalt, powders", "Refining",
+    # A combined heading that only includes scrap is mostly unwrought metal; "other than"
+    # scrap is not scrap.
+    "811100",  "Manganese; articles thereof, including waste and scrap",                     "Refining",
+    "811229",  "Chromium and articles thereof; wrought other than waste and scrap",          "Refining",
+    "262030",  "Slag, ash and residues; (not from the manufacture of iron or steel), containing mainly copper", "Recovery",
+    "740400",  "Copper; waste and scrap",                                                    "Recovery",
+    "750300",  "Nickel; waste and scrap",                                                    "Recovery",
+    "790200",  "Zinc; waste and scrap",                                                      "Recovery",
+    "810530",  "Cobalt; waste and scrap",                                                    "Recovery",
+    "811222",  "Chromium; waste and scrap",                                                  "Recovery",
+    # Outside the chapters the classifier knows: no guess.
+    "854140",  "Photosensitive semiconductor devices",                                       NA_character_
+  )
+  expect_identical(critical_minerals_trade_stage(codes$cmd_code, codes$cmd_desc), codes$stage)
+
+  # A matched code with no stage stops the theme rather than leaving its exports out.
+  fx <- trade_fixture()
+  odd <- dplyr::mutate(fx$exports[1, ], cmd_code = "854140", cmd_desc = "Copper-indium-gallium cells")
+  expect_error(
+    critical_minerals_trade_build_trade(
+      critmin_import = fx$imports, critmin_export = dplyr::bind_rows(fx$exports, odd),
+      country_info = fx$country_info,
+      minerals_pattern = critical_minerals_trade_build_minerals_pattern(reserves_build_mineral_demand_clean(critical_fixture()))
+    ),
+    "no supply-chain stage for HS code\\(s\\) 854140"
+  )
+})
+
+test_that("ores, refined copper and copper scrap are separate markets with their own weights", {
+  flows <- function(reporters, codes, descs, values) {
+    tibble::tibble(
+      reporter_iso = reporters, reporter_desc = reporters, cmd_code = codes,
+      cmd_desc = descs, primary_value = values, ref_year = 2024
+    )
+  }
+  ore <- "Copper ores and concentrates"
+  cathode <- "Copper; refined, unwrought, cathodes and sections of cathodes"
+  wire <- "Copper; wire, of refined copper, of which the maximum cross-sectional dimension exceeds 6mm"
+  scrap <- "Copper; waste and scrap"
+  li <- "Lithium oxide and hydroxide"
+  # Chile ships ore, China refined copper and wire, Germany scrap; Australia lithium hydroxide.
+  exports <- flows(
+    c("CHL", "CHL", "CHN", "CHN", "DEU", "AUS"),
+    c("260300", "740311", "740311", "740811", "740400", "282520"),
+    c(ore, cathode, cathode, wire, scrap, li),
+    c(90, 10, 60, 30, 50, 40)
+  )
+  imports <- flows("CHN", "260300", ore, 100)
+  total <- tibble::tibble(reporter_iso = c("CHL", "CHN", "AUS", "DEU"), primary_value = c(1000, 5000, 800, 3000))
+  country_info <- trade_fixture()$country_info
+  demand <- reserves_build_mineral_demand_clean(critical_fixture())
+
+  fl <- critical_minerals_trade_flows(
+    critmin_import = imports, critmin_export = exports, total_export = total,
+    mineral_demand_clean = demand, country_info = country_info
+  )
+  cu <- fl %>% dplyr::filter(mineral == "Copper")
+  share <- function(iso, stage) cu$market_share[cu$reporter_iso == iso & cu$supply_chain == stage]
+  # One row per exporter, mineral and stage; each stage is its own world market.
+  expect_equal(nrow(dplyr::count(fl, reporter_iso, mineral, supply_chain) %>% dplyr::filter(n > 1)), 0)
+  expect_setequal(unique(cu$supply_chain), c("Extraction", "Refining", "Recovery"))
+  expect_equal(share("CHL", "Extraction"), 1)
+  expect_equal(share("CHL", "Refining"), 10 / 100)
+  expect_equal(share("CHN", "Refining"), 90 / 100)
+  expect_equal(share("DEU", "Recovery"), 1)
+  expect_equal(share("DEU", "Refining"), 0)
+  expect_equal(unique(cu$HHI[cu$supply_chain == "Refining"]), 0.1^2 + 0.9^2)
+  # The HS6 codes behind each pair: cathodes and wire are two Refining codes.
+  expect_equal(unique(cu$n_hs6[cu$supply_chain == "Refining"]), 2L)
+  expect_equal(unique(cu$n_hs6[cu$supply_chain == "Extraction"]), 1L)
+
+  out <- critical_minerals_trade(
+    critmin_import = imports, critmin_export = exports, total_export = total,
+    mineral_demand_clean = demand, country_info = country_info
+  ) %>%
+    dplyr::ungroup()
+  raw <- out %>% dplyr::filter(variable == "critmin_market_share", data_type == "raw", tech == "Electric Vehicles")
+  ev <- function(country, stage) raw$value[raw$Country == country & raw$supply_chain == stage]
+  # EV demand: copper 30, lithium 80 (fixture). Only copper is traded as ore or scrap, so those
+  # stages weight copper alone; Refining weights copper and lithium by their EV demand shares.
+  w <- reserves_build_mineral_demand_clean(critical_fixture()) %>%
+    dplyr::filter(tech == "Electric Vehicles", Mineral %in% c("Copper", "Lithium"))
+  w_cu <- w$share_24[w$Mineral == "Copper"] / sum(w$share_24)
+  expect_equal(ev("Chile", "Extraction"), 1)
+  expect_equal(ev("Germany", "Recovery"), 1)
+  expect_equal(ev("China", "Refining"), w_cu * 0.9)
+  expect_equal(ev("Australia", "Refining"), (1 - w_cu) * 1)
+  expect_equal(ev("Australia", "Extraction"), 0)
+  expect_setequal(unique(out$supply_chain), c("Extraction", "Refining", "Recovery"))
+  expect_match(
+    unique(out$explanation[out$variable == "critmin_market_share" & out$data_type == "raw" &
+                             out$tech == "Electric Vehicles" & out$supply_chain == "Refining"]),
+    "Refining: refined chemicals.*\\(3 HS6 codes\\)"
+  )
+  expect_match(
+    unique(out$explanation[out$variable == "critmin_market_share" & out$data_type == "raw" &
+                             out$tech == "Electric Vehicles" & out$supply_chain == "Extraction"]),
+    "Extraction: ores.*\\(1 HS6 code\\)$"
   )
 })
 
@@ -522,7 +658,7 @@ test_that("non-reporters are scored from mirror exports and reporters keep their
   expect_equal(cod$exp_share, cod$exports / (100 + 1060 / pooled))
 
   # Reporters' exports are untouched; only the world total behind their shares grows.
-  key <- c("reporter_iso", "mineral")
+  key <- c("reporter_iso", "mineral", "supply_chain")
   both <- dplyr::inner_join(
     before %>% dplyr::select(dplyr::all_of(key), exports_before = exports, share_before = market_share),
     after %>% dplyr::select(dplyr::all_of(key), exports_after = exports, share_after = market_share, export_source),
@@ -609,7 +745,7 @@ test_that("an economy that declares imports but not exports is mirrored once", {
 
   cod <- flows %>% dplyr::filter(reporter_iso == "COD")
   expect_equal(unique(cod$export_source), "mirror")
-  expect_equal(nrow(cod), dplyr::n_distinct(flows$mineral))
+  expect_equal(nrow(cod), nrow(dplyr::distinct(flows, mineral, supply_chain)))
   expect_equal(cod$exports[cod$mineral == "Copper"], 10 + 106 / 1.10)
 })
 
@@ -683,11 +819,11 @@ test_that("an economy with known total exports but none of the minerals scores z
   cog <- flows %>% dplyr::filter(reporter_iso == "COG")
   fra <- flows %>% dplyr::filter(reporter_iso == "FRA")
   # Zero rows for every mineral, like any reporter (the Congo) or mirrored economy (France).
-  expect_equal(nrow(cog), dplyr::n_distinct(flows$mineral))
+  expect_equal(nrow(cog), nrow(dplyr::distinct(flows, mineral, supply_chain)))
   expect_equal(unique(cog$export_source), "reported")
   expect_equal(sum(cog$exports), 0)
   expect_equal(unique(cog$exp_share), 0)
-  expect_equal(nrow(fra), dplyr::n_distinct(flows$mineral))
+  expect_equal(nrow(fra), nrow(dplyr::distinct(flows, mineral, supply_chain)))
   expect_equal(unique(fra$export_source), "mirror")
   expect_equal(sum(fra$exports), 0)
   # The DR Congo's mirror and the copper market are unchanged by the zero rows.
@@ -700,6 +836,28 @@ test_that("an economy with known total exports but none of the minerals scores z
   expect_equal(prov$provenance[prov$Country == "France"], "mirror")
   ms <- out %>%
     dplyr::filter(variable == "critmin_market_share", data_type == "index", Country %in% c("Congo", "France"))
-  expect_equal(nrow(ms), 2 * dplyr::n_distinct(out$tech[out$variable == "critmin_market_share"]))
+  cells <- dplyr::distinct(out[out$variable == "critmin_market_share", ], tech, supply_chain)
+  expect_equal(nrow(ms), 2 * nrow(cells))
   expect_true(all(ms$value == 0))
+})
+
+test_that("every mineral theme emits only the six stage names", {
+  critical <- critical_fixture()
+  demand <- reserves_build_mineral_demand_clean(critical)
+  fx <- trade_fixture()
+
+  themes <- list(
+    mineral_supply = foreign_dependency_build_mineral_supply(critical, demand, roster_fixture()),
+    processing = critical_minerals_processing(
+      critical, demand, tibble::tibble(country = c("Australia", "Chile", "China")), roster_fixture()
+    ),
+    reserves = suppressWarnings(reserves(reserve_ei_fixture(), reserve_inputs_fixture(), demand)),
+    production = critical_minerals_production(production_inputs_fixture(), demand, roster_fixture()),
+    trade = critical_minerals_trade(fx$imports, fx$exports, fx$total, demand, fx$country_info)
+  )
+  for (name in names(themes)) {
+    expect_silent(assert_supply_chain_stages(themes[[name]]$supply_chain, name))
+    # Every Upstream measure here rolls up to Upstream, refining included.
+    expect_setequal(unique(supply_chain_stage_rollup(themes[[name]]$supply_chain)), "Upstream")
+  }
 })

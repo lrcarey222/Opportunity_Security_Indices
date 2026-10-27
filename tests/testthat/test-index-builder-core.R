@@ -3,6 +3,7 @@ repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRU
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "indices", "index_builder_core.R"))
 source(file.path(repo_root, "R", "indices", "build_energy_security_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index_v2.R"))
@@ -16,7 +17,7 @@ source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index_v2
 #   "Overall Decoy Index" is a second overall in the Access category that is not a score
 #   variable (like ES building EO's "Overall Trade Index"); its components must not leak into
 #   variable_contributions.
-#   Wind-Upstream has two countries with nothing observed: the whole cell is unscored.
+#   Wind-Extraction has two countries with nothing observed: the whole cell is unscored.
 core_index_definition <- function() {
   categories <- list(
     Access = list(score_variable = "Overall Access Index"),
@@ -41,7 +42,7 @@ core_theme_rows <- function(Country, tech, category, variable, value) {
   tibble::tibble(
     Country = Country,
     tech = tech,
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     category = category,
     variable = variable,
     value = value,
@@ -89,7 +90,7 @@ test_that("apply_missing_policy imputes only where the group observes at least o
   tbl <- tibble::tibble(
     Country = c("A", "B", "A", "B"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     sub_sector = "All",
     category = "Access",
     variable = c("x", "x", "y", "y"),
@@ -105,7 +106,7 @@ test_that("apply_missing_policy imputes only where the group observes at least o
   expect_true(x_b$imputed)
   expect_equal(x_b$missing_rule_applied, "zero")
 
-  # No country observed in (Solar, Upstream, Access, y, t_zero_empty): nothing to impute from.
+  # No country observed in (Solar, Extraction, Access, y, t_zero_empty): nothing to impute from.
   y_rows <- dplyr::filter(out, variable == "y")
   expect_true(all(is.na(y_rows$value)))
   expect_false(any(y_rows$imputed))
@@ -120,7 +121,7 @@ test_that("apply_missing_policy gives grid-created rows the 'All' sub_sector pla
   tbl <- tibble::tibble(
     Country = c("A", "B"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     sub_sector = "All",
     category = c("Access", "Supply"),
     variable = c("x", "s"),
@@ -153,7 +154,7 @@ test_that("compute_overall_scores builds each overall once and flags multi-row i
   tbl <- tibble::tibble(
     Country = c("A", "A", "B", "B"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     sub_sector = "All",
     category = "Access",
     variable = c("a1", "a2", "a1", "a2"),
@@ -235,7 +236,7 @@ test_that("compute_index_and_contributions applies the available-case rule to ge
   category_scores <- tibble::tibble(
     Country = c("A", "A", "A", "B", "B", "C"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     category = c("x", "y", "z", "x", "y", "x"),
     category_score = c(0.2, NaN, 0.8, NaN, 0.5, NaN)
   )
@@ -457,14 +458,14 @@ test_that("flag_rankable_cells keeps every row and value and flags by sovereignt
   index_tbl <- tibble::tibble(
     Country = c("Germany", "Japan", "France", "Puerto Rico", "Canada", "Chile", "Hong Kong"),
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     Energy_Security_Index = c(0.7, 0.4, 0.5, 0.6, NA, 0.3, 0.2)
   )
   # Japan's share is tau up to floating-point noise; France's is just above it.
   imputation <- tibble::tibble(
     Country = index_tbl$Country,
     tech = "Solar",
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     imputed_weight_share = c(0, 0.5 + 1e-12, 0.51, 0.2, NA, 1, 0.8)
   )
 
@@ -509,7 +510,7 @@ test_that("flag_rankable_cells keeps every row and value and flags by sovereignt
 test_that("the pillar builders add imputed_weight_share and rankable without moving values", {
   # The core fixture with real economy names: A (Germany) and B (Puerto Rico) are fully
   # observed, C (Japan) has its a1 filled by the global average, i.e. half of Access, which
-  # carries 3 / (3 + 2) of the weight (Stability is NA): imputed share 0.3. Wind-Upstream
+  # carries 3 / (3 + 2) of the weight (Stability is NA): imputed share 0.3. Wind-Extraction
   # (France, Hong Kong) is unscored.
   rename_countries <- function(tbl) {
     dplyr::mutate(tbl, Country = dplyr::recode(
@@ -559,10 +560,10 @@ test_that("the pillar builders add imputed_weight_share and rankable without mov
 
   diag <- strict$diagnostics$rankability
   expect_equal(diag$max_imputed_weight_share, 0.25)
-  upstream <- dplyr::filter(diag, supply_chain == "Upstream")
-  expect_equal(nrow(upstream), 1L)
+  extraction <- dplyr::filter(diag, supply_chain == "Extraction")
+  expect_equal(nrow(extraction), 1L)
   expect_equal(
-    unlist(upstream[c("n_cells", "n_scored", "n_not_sovereign", "n_over_threshold", "n_rankable")]),
+    unlist(extraction[c("n_cells", "n_scored", "n_not_sovereign", "n_over_threshold", "n_rankable")]),
     c(n_cells = 5, n_scored = 3, n_not_sovereign = 1, n_over_threshold = 1, n_rankable = 1)
   )
 
@@ -578,6 +579,59 @@ test_that("the pillar builders add imputed_weight_share and rankable without mov
   eo_index <- eo$index %>% dplyr::arrange(Country, tech)
   expect_equal(eo_index$rankable, index$rankable)
   expect_equal(eo_index$imputed_weight_share, index$imputed_weight_share)
+})
+
+test_that("six-stage rows are scored stage by stage, with no stage list in the builders", {
+  # The core fixture copied onto all six stages; in Refining, a1 is 0.1 higher for A and B.
+  # Every stage is its own cell: imputation, aggregation and the rankability summary group by
+  # supply_chain, so Refining's global-average fill for C comes from Refining's countries only.
+  theme_tables <- lapply(core_theme_tables(), function(tbl) {
+    out <- supply_chain_expand_all(tbl)
+    bump <- out$supply_chain == "Refining" & out$variable == "a1" & !is.na(out$value)
+    out$value[bump] <- out$value[bump] + 0.1
+    out
+  })
+  options(opportunity_security.index_definition = core_index_definition())
+  es <- suppressWarnings(build_energy_security_index_v2(
+    theme_tables = theme_tables,
+    weights = core_weights,
+    missing_data = core_missing_data,
+    allow_partial_categories = TRUE,
+    include_sub_sector = FALSE
+  ))
+  index <- es$index
+  expect_equal(nrow(index), 6L * 5L)
+  expect_setequal(unique(index$supply_chain), SUPPLY_CHAIN_STAGES)
+  expect_equal(sort(es$diagnostics$rankability$supply_chain), sort(SUPPLY_CHAIN_STAGES))
+  expect_true(all(es$diagnostics$rankability$n_cells == 5))
+  value <- function(country, stage) {
+    index$Energy_Security_Index[index$Country == country & index$tech == "Solar" & index$supply_chain == stage]
+  }
+  # Copied stages score alike; the split Refining stage scores on its own values.
+  for (stage in setdiff(SUPPLY_CHAIN_STAGES, "Refining")) {
+    expect_equal(value("A", stage), value("A", "Extraction"), info = stage)
+    expect_equal(value("C", stage), value("C", "Extraction"), info = stage)
+  }
+  # A: Access weight 3 of 6 (Stability observed), a1 is one of two observed Access components.
+  expect_equal(value("A", "Refining") - value("A", "Extraction"), 3 / 6 * 0.1 / 2)
+  # C: a1 filled with Refining's average (0.5, not 0.4); Access weight 3 of 5 (Stability NA).
+  expect_equal(value("C", "Refining") - value("C", "Extraction"), 3 / 5 * 0.1 / 2)
+
+  # The EO builder groups the same way.
+  eo <- suppressWarnings(build_economic_opportunity_index_v2(
+    theme_tables = theme_tables,
+    weights = core_weights,
+    missing_data = core_missing_data,
+    allow_partial_categories = TRUE,
+    include_sub_sector = FALSE,
+    index_definition = core_index_definition()
+  ))
+  key <- function(t) paste(t$Country, t$tech, t$supply_chain)
+  expect_setequal(key(eo$index), key(index))
+  expect_equal(
+    eo$index$Economic_Opportunity_Index[match(key(index), key(eo$index))],
+    index$Energy_Security_Index
+  )
 })
 
 test_that("config/rankability.yml sets a usable imputed-weight threshold", {

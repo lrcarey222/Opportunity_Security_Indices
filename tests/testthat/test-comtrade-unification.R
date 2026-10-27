@@ -41,6 +41,25 @@ test_that("trade wrappers resolve the same comtrade year via shared option", {
   expect_equal(tc$year_comtrade, 2023)
 })
 
+test_that("trade wrappers score six stages unless asked for the legacy three", {
+  source(test_path("..", "..", "R", "categories", "trade", "trade_concentration.R"), local = FALSE)
+  source(test_path("..", "..", "R", "categories", "trade", "export_feasibility.R"), local = FALSE)
+
+  # Stub the builder: report the stage scheme each wrapper hands over.
+  assign("trade_category_build_trade", function(..., legacy_stages) list(legacy_stages = legacy_stages), envir = .GlobalEnv)
+  on.exit(rm("trade_category_build_trade", envir = .GlobalEnv), add = TRUE)
+
+  tc_args <- list(
+    subcat = data.frame(), aec_4_data = data.frame(), aec_6_data = data.frame(),
+    comtrade_trade = data.frame(), comtrade_total_export = data.frame(),
+    country_info = data.frame(), year_comtrade = 2024
+  )
+  for (fun in list(trade_concentration, export_feasibility)) {
+    expect_false(do.call(fun, tc_args)$legacy_stages)
+    expect_true(do.call(fun, c(tc_args, legacy_stages = TRUE))$legacy_stages)
+  }
+})
+
 test_that("timeseries warns when requested end year is missing", {
   source(test_path("..", "..", "R", "charts", "trade_timeseries.R"), local = FALSE)
   source(test_path("..", "..", "scripts", "96_pull_trade_timeseries.R"), local = FALSE)

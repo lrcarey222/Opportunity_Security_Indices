@@ -39,6 +39,7 @@ source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "categories", "policy", "iea_policy_index.R"))
 source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
@@ -46,7 +47,6 @@ source(file.path(repo_root, "R", "indices", "build_energy_security_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "build_economic_opportunity_index_v2.R"))
 source(file.path(repo_root, "R", "indices", "build_indices.R"))
 source(file.path(repo_root, "R", "indices", "build_policy_index.R"))
-source(file.path(repo_root, "R", "indices", "couple_pillar_scores_by_hhi.R"))
 
 # Always reload runtime configs from repository YAML so this script is not
 # affected by option overrides from tests/interactive sessions.
@@ -187,6 +187,19 @@ energy_security_inputs <- list(
   investment_momentum = investment_momentum_tbl
 )
 
+# Every theme table carries the six supply-chain stages (R/utils/supply_chain_stages.R,
+# docs/supply_chain_stages.md) since 2026-10-26, and the pillars are scored at six stages. A
+# table still labelled Upstream / Midstream / Downstream (built by scripts/10 before the
+# migration) would be scored as cells of its own and fall out of the Strategic Index, whose stage
+# weights name the six stages only, so stop and name it.
+assert_theme_tables_staged <- function(theme_tables) {
+  for (nm in names(theme_tables)) {
+    assert_supply_chain_stages(theme_tables[[nm]]$supply_chain, label = paste0(nm, " theme table supply_chain"))
+  }
+  invisible(theme_tables)
+}
+assert_theme_tables_staged(energy_security_inputs)
+
 # Rankability rule (config/rankability.yml). The ES and EO tables keep every cell and value
 # and add imputed_weight_share, rankable and rank_exclusion: a cell is rankable when the
 # economy is sovereign and at most max_imputed_weight_share of its index weight is imputed.
@@ -231,6 +244,7 @@ economic_opportunity_inputs <- list(
   technological_readiness = technological_readiness_tbl,
   investment_momentum = investment_momentum_tbl
 )
+assert_theme_tables_staged(economic_opportunity_inputs)
 
 economic_opportunity_outputs <- build_economic_opportunity_index_v2(
   theme_tables = economic_opportunity_inputs,
@@ -384,18 +398,46 @@ policy_index_provenance <- list(
 # Strategic Index (R/indices/build_indices.R):
 #   0.2 * pol + 0.3 * EO + 0.3 * energy_security_need + 0.1 * sc_weight + 0.1 * tech_weight,
 # where energy_security_need = 1 - Energy_Security_Index (the pillar is oriented
-# higher = more secure, so the SI favours sectors where the country is least secure) and
-# pol is the within-country S-curve of the Policy index. Cells missing EO, ES or policy, and
-# cells whose EO or ES value is not rankable (territory, or more than
+# higher = more secure, so the SI favours sectors where the country is least secure),
+# pol is the within-country S-curve of the Policy index and sc_weight is the stage weight of
+# SUPPLY_CHAIN_STAGE_SI_WEIGHTS (R/utils/supply_chain_stages.R: each of the six stages an equal
+# share of its roll-up's weight, Upstream 0.50, Midstream 0.75, Downstream 0.25). Cells missing
+# EO, ES or policy, and cells whose EO or ES value is not rankable (territory, or more than
 # max_imputed_weight_share of its weight imputed), are left out rather than imputed;
 # si_exclusion says why.
+# Manufacturing sectors (Components, Assembly) that no Energy Security theme measures are not
+# reported (strategic_unmeasured_sectors(): Geothermal - Components and - Assembly), the rule
+# behind the three-stage build's hand-picked exclusion of Geothermal - Midstream.
+# Sectors whose Economic Opportunity rests only on inputs copied onto every stage (costs, demand,
+# technology-wide readiness) are not reported either (strategic_unevidenced_sectors()). A
+# readiness cell rests on items of its own unless the theme says it took the technology-wide value.
+strategic_unmeasured_es <- strategic_unmeasured_sectors(economic_opportunity_index, energy_security_index)
+trl_stage_cells <- technological_readiness_tbl %>%
+  dplyr::filter(
+    .data$variable == "TRL Index",
+    !grepl("technology-wide", .data$explanation, fixed = TRUE)
+  ) %>%
+  dplyr::distinct(.data$tech, .data$supply_chain)
+strategic_unevidenced <- strategic_unevidenced_sectors(economic_opportunity_category_scores, trl_stage_cells)
+strategic_unevidenced <- strategic_unevidenced[sub(" - .*$", "", strategic_unevidenced) %in% techs]
+strategic_unmeasured <- sort(unique(c(strategic_unmeasured_es, strategic_unevidenced)))
+strategic_excluded_sectors <- strategic_unmeasured
+message(
+  "Strategic index: not reporting the manufacturing sectors no Energy Security theme measures: ",
+  if (length(strategic_unmeasured_es) > 0) paste(strategic_unmeasured_es, collapse = ", ") else "none",
+  "; nor the sectors whose Economic Opportunity has no stage-specific input: ",
+  if (length(strategic_unevidenced) > 0) paste(strategic_unevidenced, collapse = ", ") else "none",
+  "."
+)
 strategic_index <- build_strategic_index(
   economic_opportunity_index = economic_opportunity_index,
   energy_security_index = energy_security_index,
   policy_index = policy_index,
   tech_ghg = tech_ghg,
   technological_readiness_index = technological_readiness_index,
-  techs = techs
+  techs = techs,
+  supply_chain_weights = SUPPLY_CHAIN_STAGE_SI_WEIGHTS,
+  excluded_sectors = strategic_unmeasured
 )
 message(
   "Strategic index: ", sum(!is.na(strategic_index$strategic_index)), " cells for ",
@@ -404,8 +446,8 @@ message(
 )
 
 # A pillar that is constant across countries within a sector is a sector constant, not a
-# measurement (ES was 0 everywhere in Nuclear - Upstream in the Sep 2026 build, which made it
-# the top pick of 8 of the 18 allies scored). Name such sectors before anything is reported.
+# measurement (ES was 0 everywhere in Nuclear - Upstream in the Sep 2026 three-stage build, which
+# made it the top pick of 8 of the 18 allies scored). Name such sectors before anything is reported.
 # Such sectors are excluded and the index rebuilt, so the within-country policy ranks are
 # taken over the sectors that remain.
 strategic_degenerate <- strategic_index_degenerate_sectors(strategic_index)
@@ -422,6 +464,7 @@ if (nrow(strategic_degenerate) > 0) {
       collapse = ", "
     )
   )
+  strategic_excluded_sectors <- unique(c(strategic_unmeasured, strategic_degenerate$sector))
   strategic_index <- build_strategic_index(
     economic_opportunity_index = economic_opportunity_index,
     energy_security_index = energy_security_index,
@@ -429,7 +472,8 @@ if (nrow(strategic_degenerate) > 0) {
     tech_ghg = tech_ghg,
     technological_readiness_index = technological_readiness_index,
     techs = techs,
-    excluded_sectors = unique(c(STRATEGIC_EXCLUDED_SECTORS, strategic_degenerate$sector))
+    supply_chain_weights = SUPPLY_CHAIN_STAGE_SI_WEIGHTS,
+    excluded_sectors = strategic_excluded_sectors
   )
   message(
     "Strategic index after exclusions: ", sum(!is.na(strategic_index$strategic_index)),
@@ -440,20 +484,23 @@ if (nrow(strategic_degenerate) > 0) {
 }
 
 # Endowment screen (strategic_resource_base() / flag_strategic_resource_base(),
-# R/indices/build_indices.R): an Upstream extraction stage is eligible for a member's allied
-# pick only where the country has recorded reserves or production of that stage's resources in
-# the reserves or production themes. The index is unchanged; screened-out cells carry
+# R/indices/build_indices.R): an Extraction stage is eligible for a member's allied pick only
+# where the country has recorded reserves or production of that stage's resources in the
+# reserves or production themes. The index is unchanged; screened-out cells carry
 # resource_base = FALSE and pick_exclusion "no resource base". Without it the need reading made
-# Nuclear - Upstream the top pick of 20 of 45 members, most of them with no uranium.
-# OPSI_SI_RESOURCE_SCREEN=0 turns the screen off (robustness runs).
+# Nuclear - Upstream (three-stage build) the top pick of 20 of 45 members, most of them with no
+# uranium. OPSI_SI_RESOURCE_SCREEN=0 turns the screen off (robustness runs).
 si_resource_screen <- !identical(Sys.getenv("OPSI_SI_RESOURCE_SCREEN"), "0")
-strategic_resource_base_tbl <- strategic_resource_base(reserves_tbl, critical_minerals_production_tbl)
+strategic_resource_base_tbl <- strategic_resource_base(
+  reserves_tbl, critical_minerals_production_tbl,
+  stage = "Extraction"
+)
 strategic_index <- flag_strategic_resource_base(strategic_index, strategic_resource_base_tbl)
 si_screened <- !is.na(strategic_index$strategic_index) & !is.na(strategic_index$resource_base)
 message(
   "Strategic index endowment screen (", if (si_resource_screen) "on" else "OFF", "): ",
   sum(si_screened & strategic_index$resource_base %in% FALSE), " of ", sum(si_screened),
-  " scored Upstream cells in ", dplyr::n_distinct(strategic_index$tech[si_screened]),
+  " scored Extraction cells in ", dplyr::n_distinct(strategic_index$tech[si_screened]),
   " screened technologies have no recorded resource base."
 )
 
@@ -463,7 +510,9 @@ message(
 # single-tier alignment coalition of geo_coalition_tbl.rds (scripts/12, member == TRUE, all
 # tier "core"; coalition_members() warns). The selection stays national: every member, EU
 # members individually, gets its own pick, and allied_strategic.csv records its iso3, tier and
-# network_node (the EU bundle is a node of the allied network only, scripts/30).
+# network_node (the EU bundle is a node of the allied network only, scripts/30). A pick is a
+# sector in any stage but Deployment (STRATEGIC_ALLIED_STAGES: Extraction, Refining, Components,
+# Assembly, Recovery, the old Upstream and Midstream).
 coalition_path <- file.path(processed_dir, "coalition_tbl.rds")
 geo_coalition_path <- file.path(processed_dir, "geo_coalition_tbl.rds")
 if (!file.exists(coalition_path) && !file.exists(geo_coalition_path)) {
@@ -503,6 +552,7 @@ if (anyDuplicated(allies$iso3)) {
 allied_index <- select_allied_strategic_sectors(
   strategic_index,
   ally_countries = allies,
+  stages = STRATEGIC_ALLIED_STAGES,
   require_resource_base = si_resource_screen
 )
 allies_policy <- allies %>%
@@ -515,7 +565,7 @@ allies_unpicked <- allies_policy %>%
   dplyr::mutate(reason = dplyr::case_when(
     is.na(.data$eligible) ~ "no policy component at all",
     !.data$eligible ~ paste0("no Policy index, lacks ", .data$missing_required),
-    TRUE ~ paste0("no in-sample Upstream/Midstream cell; Policy index ", .data$policy_basis)
+    TRUE ~ paste0("no in-sample cell outside Deployment; Policy index ", .data$policy_basis)
   )) %>%
   dplyr::arrange(.data$tier, .data$Country)
 # Members picked on a Policy index without every component (the PAMS-only fallback).
@@ -530,7 +580,7 @@ message(
   "Allied strategic selection: coalition of ", nrow(coalition), " (", coalition$source[1], "; ",
   paste(names(table(coalition$tier)), table(coalition$tier), sep = " ", collapse = ", "), "); ",
   dplyr::n_distinct(allied_index$Country),
-  " members have a scored Upstream/Midstream sector",
+  " members have a scored sector outside Deployment",
   if (nrow(allies_partial_policy) > 0) {
     partial_by_basis <- split(allies_partial_policy$Country, allies_partial_policy$policy_basis)
     paste0(
@@ -630,6 +680,9 @@ saveRDS(
     policy_eligibility = policy_eligibility,
     policy_index_provenance = policy_index_provenance,
     strategic_index = strategic_index,
+    # the sectors left out of the Strategic Index (strategic_unmeasured_sectors(), plus any
+    # sector where a pillar is constant across countries), for consumers that rebuild it
+    strategic_excluded_sectors = strategic_excluded_sectors,
     # the coalition the allied selection used (coalition_members(): iso3, country, tier,
     # network_node, source) and its ISO3 codes
     coalition_members = coalition,
@@ -704,9 +757,9 @@ library(ggplot2)
 # strategic_index_contributions() takes the weights from the same constant as the index,
 # so the plot cannot drift from the formula again.
 
+# The sectors build_strategic_index() leaves out (strategic_unmeasured) are not in the table.
 top10_by_country <- strategic_index_contributions(strategic_index) %>%
   filter(!is.na(strategic_index)) %>%
-  filter(sector != "Geothermal - Midstream") %>%
   group_by(Country) %>%
   slice_max(order_by = strategic_index, n = 10, with_ties = FALSE) %>%
   arrange(Country, strategic_index) %>%   # ascending so highest ends up at top after coord_flip()

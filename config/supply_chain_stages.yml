@@ -99,9 +99,9 @@ rollup:
   Midstream: [components, assembly]
   Downstream: [deployment]
 
-# Strategic Index supply-chain term (R/indices/build_indices.R STRATEGIC_SUPPLY_CHAIN_WEIGHTS, today
-# Upstream 0.50 / Midstream 0.75 / Downstream 0.25). Each stage takes an equal share of its roll-up's
-# weight. The term enters each sector's score additively (0.1 x weight), so it is an attribute of the
+# Strategic Index supply-chain term (SUPPLY_CHAIN_STAGE_SI_WEIGHTS in R/utils/supply_chain_stages.R;
+# the three-stage build used Upstream 0.50 / Midstream 0.75 / Downstream 0.25). Each stage takes an
+# equal share of its roll-up's weight. The term enters each sector's score additively (0.1 x weight), so it is an attribute of the
 # stage, not a share that sums to one across stages.
 strategic_index_weights:
   rollup: {Upstream: 0.50, Midstream: 0.75, Downstream: 0.25}

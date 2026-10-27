@@ -126,6 +126,14 @@ test_that("growth runs 2022-2025 and the forecast horizon is 2035", {
   expect_equal(unique(ev_tbl$source), "IEA Global EV Outlook 2026")
 })
 
+test_that("EV car sales, stock and sales share are Deployment demand", {
+  ev_tbl <- future_demand_build_ev(ev_fixture(), country_fixture())
+
+  # One of the six supply-chain stages, not the retired "Downstream".
+  expect_equal(unique(ev_tbl$supply_chain), "Deployment")
+  expect_equal(unique(ev_tbl$tech), "Electric Vehicles")
+})
+
 test_that("a release without the required years fails loudly", {
   stale <- ev_fixture()
   stale$year[stale$year == 2035L] <- 2030L

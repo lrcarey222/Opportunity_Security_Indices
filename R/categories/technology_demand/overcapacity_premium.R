@@ -31,22 +31,67 @@ overcapacity_premium_build_overcapacity_clean <- function(overcapacity_raw) {
     )
 }
 
+# Supply-chain stage of each BNEF component, relative to its technology
+# (docs/supply_chain_stages.md): polysilicon is a refined commodity; battery separators,
+# electrolytes, cathodes, anodes and cells, solar wafers and cells, and the electrolyser stack
+# are parts that only work inside the finished good; solar modules and wind nacelles are the
+# finished goods. Keys are lower case; "Cells" is a component of both batteries and solar.
+OVERCAPACITY_COMPONENT_STAGES <- c(
+  "polysilicon" = "Refining",
+  "separators" = "Components",
+  "electrolytes" = "Components",
+  "cathodes" = "Components",
+  "anodes" = "Components",
+  "cells" = "Components",
+  "wafers" = "Components",
+  "electrolyzer stack" = "Components",
+  "electrolyser stack" = "Components",
+  "modules" = "Assembly",
+  "onshore nacelles" = "Assembly",
+  "offshore nacelles" = "Assembly"
+)
+
+# Stage of each component name; a component the map does not know stops the build, since a
+# new BNEF component needs a staging decision rather than a silent drop.
+overcapacity_premium_component_stage <- function(component) {
+  key <- tolower(stringr::str_squish(as.character(component)))
+  stage <- unname(OVERCAPACITY_COMPONENT_STAGES[key])
+  unknown <- unique(as.character(component)[is.na(stage)])
+  if (length(unknown) > 0) {
+    stop(
+      "overcapacity_premium(): no supply-chain stage for BNEF component(s) ",
+      paste(unknown, collapse = ", "), ". Add them to OVERCAPACITY_COMPONENT_STAGES."
+    )
+  }
+  stage
+}
+
+# One ratio per technology and stage: the mean over the BNEF components at that stage, so
+# Solar splits into Refining (polysilicon), Components (wafers, cells) and Assembly (modules).
 overcapacity_premium_build_overcapacity_indices <- function(overcapacity_clean, year = 2025L) {
   require_columns(
     overcapacity_clean,
-    c("Sector", "Overcapacity Ratio"),
+    c("Sector", "Component", "Overcapacity Ratio"),
     label = "overcapacity_clean"
   )
 
   overcapacity_clean %>%
-    dplyr::group_by(Sector) %>%
+    # Blank sheet rows (no component, no ratio) carry nothing to stage.
+    dplyr::filter(!is.na(Component) | !is.na(`Overcapacity Ratio`)) %>%
+    dplyr::mutate(
+      Component = stringr::str_squish(as.character(Component)),
+      supply_chain = overcapacity_premium_component_stage(Component)
+    ) %>%
+    dplyr::group_by(Sector, supply_chain) %>%
     dplyr::summarize(
       Overcapacity = mean(`Overcapacity Ratio`, na.rm = TRUE),
+      components = paste(unique(Component), collapse = ", "),
       .groups = "drop"
     ) %>%
     dplyr::transmute(
       tech = Sector,
-      supply_chain = "Midstream",
+      supply_chain,
+      components,
       Overcapacity
     ) %>%
     dplyr::mutate(`Overall Overcapacity_index` = 2^(-Overcapacity)) %>%
@@ -63,7 +108,10 @@ overcapacity_premium_build_overcapacity_indices <- function(overcapacity_clean, 
       source = "BNEF Energy Transition Supply Chains 2025",
       explanation = dplyr::if_else(
         data_type == "raw",
-        "Ratio of Midstream capacity to forecast demand, mean over the sector's components",
+        paste0(
+          "Ratio of production capacity to forecast demand, mean over the sector's components at this stage (",
+          components, ")"
+        ),
         "2^(-ratio): more overcapacity scores lower; a global value copied to every country"
       )
     ) %>%
@@ -113,5 +161,6 @@ overcapacity_premium <- function(overcapacity_raw, trade_tidy, year = 2025L) {
 
   output <- standardize_theme_table(overcapacity_tidy)
   validate_schema(output)
+  assert_supply_chain_stages(output$supply_chain, label = "overcapacity_premium supply_chain")
   output
 }

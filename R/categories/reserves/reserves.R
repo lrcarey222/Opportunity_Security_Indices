@@ -246,7 +246,8 @@ reserves_build_reserve_table <- function(sheet_data,
     ) %>%
     dplyr::mutate(
       tech = tech_name,
-      supply_chain = "Upstream",
+      # Reserves are a resource endowment, the Extraction stage.
+      supply_chain = "Extraction",
       category = "Reserves",
       variable = stringr::str_glue("{tech_name} Reserves"),
       data_type = dplyr::if_else(data_type == "raw_value", "raw", "index"),
@@ -337,7 +338,7 @@ reserves_build_usgs_table <- function(usgs_rows,
     ) %>%
     dplyr::mutate(
       tech = tech_name,
-      supply_chain = "Upstream",
+      supply_chain = "Extraction",
       category = "Reserves",
       variable = paste(tech_name, "Reserves"),
       data_type = dplyr::if_else(data_type == "raw_value", "raw", "index"),

@@ -74,7 +74,8 @@ solar_pv_potential_build_table <- function(pv_indices, year) {
     dplyr::transmute(
       Country,
       tech = "Solar",
-      supply_chain = "Downstream",
+      # Filed under Reserves but a site resource, which is Deployment (not Extraction).
+      supply_chain = "Deployment",
       category = "Reserves",
       variable,
       data_type,

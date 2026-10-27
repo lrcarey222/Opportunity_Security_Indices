@@ -1,14 +1,63 @@
 # Investment theme builder functions.
+#
+# Rows carry the six supply-chain stages (R/utils/supply_chain_stages.R): GCIM Electric Power and
+# Transport investment is Deployment; manufacturing capacity is staged by its Product; the
+# critical-minerals sector is Refining; and manufacturing capex, which has no product detail, is
+# replicated onto Components and Assembly.
 
-investment_segment_to_supply_chain <- function(segment) {
-  segment_clean <- stringr::str_trim(as.character(segment))
+# GCIM manufacturing-capacity Product -> stage, relative to the technology of the row:
+# polysilicon is a refined commodity (Refining), as are the critical-minerals products (lithium
+# carbonate / hydroxide / chloride / sulfate, nickel and cobalt sulfate, and the bare Lithium /
+# Nickel / Cobalt / Graphite the monitor also lists); wafers, cells, blades and electrode active
+# materials (EAM) only work inside a finished good (Components); modules (solar modules, battery
+# packs), nacelles and ZEVs are the finished goods (Assembly). Singular and plural forms both
+# match. NA for a product not listed here.
+investment_product_to_stage <- function(product) {
+  product_clean <- stringr::str_squish(stringr::str_to_lower(as.character(product)))
 
-  mapped <- dplyr::case_when(
-    segment_clean %in% c("Manufacturing", "Industry") ~ "Midstream",
-    segment_clean %in% c("Electric Power", "Transport") ~ "Downstream",
-    is.na(segment_clean) | segment_clean == "" ~ "Downstream",
-    TRUE ~ "Downstream"
+  dplyr::case_when(
+    stringr::str_detect(product_clean, "polysilicon") ~ "Refining",
+    stringr::str_detect(product_clean, "\\b(wafers?|cells?|blades?|eam)\\b|electrode active") ~ "Components",
+    stringr::str_detect(product_clean, "\\b(modules?|nacelles?|zevs?)\\b|zero emission vehicle") ~ "Assembly",
+    # After the part and finished-good rules, so "Lithium-ion cells" stays a component.
+    stringr::str_detect(product_clean, "^(lithium|nickel|cobalt|graphite)\\b") ~ "Refining",
+    TRUE ~ NA_character_
   )
+}
+
+# GCIM Sector -> supply-chain stage.
+#
+# Electric Power and Transport (capex on generation, storage and vehicles put into service) are
+# Deployment. Manufacturing and Industry are staged by `product` (investment_product_to_stage())
+# when the source carries one, as the capacity sheet does. Annual capex has no Product column, so
+# without `product` a manufacturing row comes back as the Midstream roll-up, which the caller
+# replicates onto Components and Assembly with supply_chain_expand_legacy(); a product the map
+# does not know comes back the same way, with a warning. Unexpected Sector values default to
+# Deployment with a warning.
+investment_segment_to_supply_chain <- function(segment, product = NULL) {
+  segment_clean <- stringr::str_trim(as.character(segment))
+  manufacturing <- !is.na(segment_clean) & segment_clean %in% c("Manufacturing", "Industry")
+
+  mapped <- rep("Deployment", length(segment_clean))
+  mapped[manufacturing] <- "Midstream"
+
+  if (!is.null(product)) {
+    if (length(product) != length(segment_clean)) {
+      stop("investment_segment_to_supply_chain(): `product` must be as long as `segment`.")
+    }
+    product_stage <- investment_product_to_stage(product)
+    staged <- manufacturing & !is.na(product_stage)
+    mapped[staged] <- product_stage[staged]
+
+    unknown_products <- sort(unique(as.character(product)[manufacturing & is.na(product_stage)]), na.last = TRUE)
+    if (length(unknown_products) > 0) {
+      warning(
+        "Unexpected manufacturing Product value(s): ",
+        paste(unknown_products, collapse = ", "),
+        ". Replicating these rows onto Components and Assembly."
+      )
+    }
+  }
 
   unexpected_segments <- sort(unique(segment_clean[!segment_clean %in% c(
     "Manufacturing", "Industry", "Electric Power", "Transport", "", NA_character_
@@ -17,11 +66,22 @@ investment_segment_to_supply_chain <- function(segment) {
     warning(
       "Unexpected Segment value(s): ",
       paste(unexpected_segments, collapse = ", "),
-      ". Defaulting these rows to Downstream."
+      ". Defaulting these rows to Deployment."
     )
   }
 
   mapped
+}
+
+# Explanation suffix for the annual-investment rows of a stage, saying how the capex reached it.
+investment_annual_stage_note <- function(supply_chain) {
+  dplyr::case_when(
+    supply_chain %in% c("Components", "Assembly") ~
+      "; manufacturing capex has no product detail, so the same amount is replicated onto Components and Assembly (do not sum across stages)",
+    supply_chain == "Refining" ~
+      "; critical-minerals (refining) capex, split between Batteries and Electric Vehicles rather than counted in both",
+    TRUE ~ ""
+  )
 }
 
 investment_map_tech <- function(technology) {
@@ -70,7 +130,7 @@ investment_safe_index <- function(x, gamma = 0.5) {
 #
 # The monitor's critical-minerals products are battery materials (lithium, cobalt, nickel,
 # graphite and their chemicals), which serve both EV batteries and grid storage. Copying the
-# full amount into both Batteries and Electric Vehicles Upstream counted every dollar twice in
+# full amount into both Batteries and Electric Vehicles Refining counted every dollar twice in
 # any cross-technology total. The split is each technology's base-year IEA demand share for
 # those minerals (the shares the mineral themes weight by), renormalized over the two techs
 # and averaged across minerals with equal weight, so tonnages of different minerals are never
@@ -104,6 +164,9 @@ investment_default_critical_minerals_split <- function() {
   c("Batteries" = 0.5, "Electric Vehicles" = 0.5)
 }
 
+# Critical-minerals rows (capex and capacity) are Refining: the monitor tracks processing plants
+# whose products are refined chemicals and metals (investment_product_to_stage()), and refining
+# rolls up to Upstream.
 investment_route_critical_minerals <- function(tbl, value_col, split) {
   split <- split %||% investment_default_critical_minerals_split()
   if (is.null(names(split)) || any(!is.finite(split)) || any(split < 0) || abs(sum(split) - 1) > 1e-6) {
@@ -114,7 +177,7 @@ investment_route_critical_minerals <- function(tbl, value_col, split) {
     tidyr::crossing(tibble::tibble(tech = names(split), split_share = unname(split))) %>%
     dplyr::mutate(
       "{value_col}" := .data[[value_col]] * split_share,
-      supply_chain = "Upstream"
+      supply_chain = "Refining"
     ) %>%
     dplyr::select(-split_share)
 }
@@ -202,8 +265,10 @@ investment_momentum <- function(annual_tbl,
   )
 
   # Mapping assumptions:
-  # Segment -> supply_chain: Manufacturing/Industry=>Midstream, Electric Power/Transport=>Downstream.
-  # Unexpected Segment values default to Downstream with warning.
+  # Segment -> supply_chain: Electric Power/Transport=>Deployment. Manufacturing/Industry capex
+  # has no Product column, so it is replicated onto Components and Assembly (one number, both
+  # stages); manufacturing capacity is staged by its Product (investment_product_to_stage()).
+  # Critical Minerals => Refining. Unexpected Segment values default to Deployment with warning.
   # Technology values are mapped to the model tech universe; unsupported technologies are dropped.
 
   annual_clean <- annual_tbl %>%
@@ -218,12 +283,17 @@ investment_momentum <- function(annual_tbl,
     dplyr::filter(!is.na(Year)) %>%
     dplyr::mutate(investment_value = dplyr::coalesce(investment_value, 0))
 
+  # Manufacturing rows come back as the Midstream roll-up and are replicated onto Components and
+  # Assembly: the aggregated GCIM workbook reports manufacturing capex by Sector x Technology only
+  # (no product, on the annual, quarterly and announced sheets alike), so one plant's capex
+  # cannot be split between the parts it makes and the finished goods.
   annual_regular <- annual_clean %>%
     dplyr::filter(!is.na(tech)) %>%
-    dplyr::transmute(Country, tech, supply_chain = supply_chain_segment, Year, investment_value)
+    dplyr::transmute(Country, tech, supply_chain = supply_chain_segment, Year, investment_value) %>%
+    supply_chain_expand_legacy()
 
   # Explicit special-case mapping requested by user: raw Technology == "Critical Minerals"
-  # feeds Batteries Upstream and Electric Vehicles Upstream. It is split between them
+  # feeds Batteries Refining and Electric Vehicles Refining. It is split between them
   # (investment_critical_minerals_split(); equal split by default) rather than copied in full
   # to both, which double counted it.
   annual_critical_minerals <- annual_clean %>%
@@ -233,7 +303,7 @@ investment_momentum <- function(annual_tbl,
 
   annual_clean <- dplyr::bind_rows(annual_regular, annual_critical_minerals)
 
-  # Critical Minerals has no direct tech mapping but is routed upstream above,
+  # Critical Minerals has no direct tech mapping but is routed to Refining above,
   # so it is not a dropped technology.
   dropped_techs <- annual_tbl %>%
     dplyr::mutate(mapped_tech = investment_map_tech(Technology)) %>%
@@ -287,17 +357,20 @@ investment_momentum <- function(annual_tbl,
       value = investment_value,
       Year,
       source = "GCIM / Rhodium",
-      explanation = "Annual investment amount in 2024 USD billions, summed within Country-tech-supply_chain-year"
+      explanation = paste0(
+        "Annual investment amount in 2024 USD billions, summed within Country-tech-supply_chain-year",
+        investment_annual_stage_note(supply_chain)
+      )
     )
 
   # The monitor lists investment where it happened, so a country missing from a year, or from
   # a stage it reports elsewhere, invested nothing there. Complete each country's panel over
   # every year and over the stages the monitor covers for that technology - and only those:
-  # completing all three stages manufactured all-zero Solar/Wind Upstream, Nuclear
-  # Upstream/Midstream and Geothermal Upstream/Midstream cells that the index then scored as
-  # observed zeros. Completing the years puts every country's latest value in the same year,
-  # so the latest-year index and the momentum window compare like with like instead of a 2019
-  # value against a 2025 one.
+  # completing every stage would manufacture all-zero cells (Solar/Wind Refining, Nuclear and
+  # Geothermal everywhere but Deployment, every Extraction and Recovery cell) that the index
+  # then scored as observed zeros. Completing the years puts every country's latest value in
+  # the same year, so the latest-year index and the momentum window compare like with like
+  # instead of a 2019 value against a 2025 one.
   observed_stages <- annual_agg %>%
     dplyr::distinct(tech, supply_chain)
   panel_years <- seq.int(min(annual_agg$Year), max(annual_agg$Year))
@@ -323,7 +396,10 @@ investment_momentum <- function(annual_tbl,
       value,
       Year,
       source = "GCIM / Rhodium + author normalization",
-      explanation = "Within tech-supply-chain-year median_scurve of log1p(annual investment) among investors, above a zero anchor; zero investment = 0"
+      explanation = paste0(
+        "Within tech-supply-chain-year median_scurve of log1p(annual investment) among investors, above a zero anchor; zero investment = 0",
+        investment_annual_stage_note(supply_chain)
+      )
     )
 
   annual_latest <- annual_complete %>%
@@ -371,7 +447,10 @@ investment_momentum <- function(annual_tbl,
       value,
       Year,
       source = "GCIM / Rhodium + author normalization",
-      explanation = "Within tech-supply-chain median_scurve(log1p(latest)-log1p(baseline)) among countries investing in either year"
+      explanation = paste0(
+        "Within tech-supply-chain median_scurve(log1p(latest)-log1p(baseline)) among countries investing in either year",
+        investment_annual_stage_note(supply_chain)
+      )
     )
 
   momentum_raw_tbl <- annual_latest %>%
@@ -394,7 +473,7 @@ investment_momentum <- function(annual_tbl,
       value,
       Year,
       source = "GCIM / Rhodium + author transform",
-      explanation = "Raw momentum signal before normalization"
+      explanation = paste0("Raw momentum signal before normalization", investment_annual_stage_note(supply_chain))
     )
 
   capacity_clean <- capacity_tbl %>%
@@ -402,16 +481,29 @@ investment_momentum <- function(annual_tbl,
       Country = standardize_country_names(Country),
       Technology = as.character(Technology),
       tech = investment_map_tech(Technology),
-      supply_chain_segment = investment_segment_to_supply_chain(Segment),
+      Segment = as.character(Segment),
       Product = as.character(Product),
       capacity_stage = as.character(Category),
       Value = suppressWarnings(as.numeric(Value))
     ) %>%
     dplyr::mutate(Value = dplyr::coalesce(Value, 0))
 
+  # Capacity is staged by the source's own Product labels: Solar polysilicon => Refining,
+  # wafers/cells => Components, modules => Assembly; Wind blades => Components, nacelles =>
+  # Assembly; Batteries EAM/cells => Components, modules => Assembly; ZEVs => Assembly. Rows are
+  # staged after the tech filter so the unmapped Industry products (cement, steel, SAF) do not
+  # trip the unknown-product warning.
   capacity_regular <- capacity_clean %>%
     dplyr::filter(!is.na(tech)) %>%
-    dplyr::transmute(Country, tech, supply_chain = supply_chain_segment, Product, capacity_stage, Value)
+    dplyr::transmute(
+      Country,
+      tech,
+      supply_chain = investment_segment_to_supply_chain(Segment, Product),
+      Product,
+      capacity_stage,
+      Value
+    ) %>%
+    supply_chain_expand_legacy()
 
   capacity_critical_minerals <- capacity_clean %>%
     dplyr::filter(investment_is_critical_minerals(Technology)) %>%
@@ -482,7 +574,7 @@ investment_momentum <- function(annual_tbl,
       value,
       Year = as.integer(capacity_year),
       source = "GCIM / Rhodium",
-      explanation = "Raw summed capacity by stage group (units may differ across products)"
+      explanation = "Raw summed capacity by status group over the products in this supply-chain stage (units may differ across products, e.g. battery EAM in kilotons and cells in GWh; the capacity indices use per-product indices instead)"
     )
 
   operating_capacity <- capacity_product_stage %>%
@@ -502,7 +594,7 @@ investment_momentum <- function(annual_tbl,
       value,
       Year = as.integer(capacity_year),
       source = "GCIM / Rhodium + author normalization",
-      explanation = "Mean of product-level operating capacity indices, renormalized by tech-supply-chain"
+      explanation = "Mean of product-level operating capacity indices over the products in this supply-chain stage (each product indexed on its own because units differ), renormalized by tech-supply-chain"
     )
 
   pipeline_capacity <- capacity_product_stage %>%
@@ -527,7 +619,7 @@ investment_momentum <- function(annual_tbl,
       value,
       Year = as.integer(capacity_year),
       source = "GCIM / Rhodium + author normalization",
-      explanation = "Mean of product-level pipeline capacity indices, renormalized by tech-supply-chain"
+      explanation = "Mean of product-level pipeline capacity indices over the products in this supply-chain stage (each product indexed on its own because units differ), renormalized by tech-supply-chain"
     )
 
   out <- dplyr::bind_rows(
@@ -542,6 +634,7 @@ investment_momentum <- function(annual_tbl,
     standardize_theme_table()
 
   validate_schema(out)
+  assert_supply_chain_stages(out$supply_chain, label = "investment_momentum() supply_chain")
   out
 }
 
