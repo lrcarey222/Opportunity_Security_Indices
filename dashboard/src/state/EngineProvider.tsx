@@ -7,17 +7,17 @@
 //                     with setters that write the URL (dial drags replace the history entry; discrete
 //                     actions push).
 //   RunProvider       one debounced run with the union of what the mounted views need (core always;
-//                     partner / network / contributions on demand); results per layer keyed by the
+//                     partner / contributions on demand); results per layer keyed by the
 //                     scenario, so a view keeps its previous frame while a new result computes.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { EngineClient, type EngineFailure, type EngineState, type ProgressMessage } from '../worker/client.ts';
-import type { CorePayload, NetworkPayload, PartnerPayload } from '../worker/protocol.ts';
+import type { CorePayload, PartnerPayload } from '../worker/protocol.ts';
 import type { Advanced, Dials } from '../engine/types.ts';
 import { buildAppData, type AppData } from './appData.ts';
 import {
-  advancedChanged, cloneAdvanced, defaultScenario, navSearch, parseSearch, scenarioKey, toSpec, writeSearch,
+  advancedChanged, appendSearch, cloneAdvanced, defaultScenario, navSearch, parseSearch, scenarioKey, splitSearch, toSpec, writeSearch,
   type Scenario, type ShowMode, type ViewState,
 } from './url.ts';
 
@@ -103,30 +103,44 @@ interface ScenarioCtx {
 
 const ScenarioContext = createContext<ScenarioCtx | null>(null);
 
-export function ScenarioProvider({ children }: { children: ReactNode }) {
+/**
+ * `hostKeys` (IA refactor, 2026-10-16): when Strategic views are embedded in another module's page
+ * (shell/EngineScope.tsx), the query keys that page owns (e.g. the Country profile's cell, partner,
+ * all). The Strategic parser never sees them (no "unknown setting" problem) and every URL write keeps
+ * them, and the hash. Without it the provider behaves exactly as before.
+ */
+export function ScenarioProvider({ children, hostKeys }: { children: ReactNode; hostKeys?: readonly string[] }) {
   const app = useApp();
   const ctx = app.urlCtx;
   const loc = useLocation();
   const navigate = useNavigate();
-  const parsed = useMemo(() => parseSearch(loc.search, ctx), [loc.search, ctx]);
-  const latest = useRef({ parsed, pathname: loc.pathname });
-  latest.current = { parsed, pathname: loc.pathname };
+  const hostKey = hostKeys?.join('|') ?? '';
+  const split = useMemo(() => splitSearch(loc.search, hostKey ? hostKey.split('|') : []), [loc.search, hostKey]);
+  const parsed = useMemo(() => parseSearch(split.own, ctx), [split.own, ctx]);
+  const latest = useRef({ parsed, pathname: loc.pathname, host: split.host, hash: loc.hash });
+  latest.current = { parsed, pathname: loc.pathname, host: split.host, hash: loc.hash };
   const [problems, setProblems] = useState<string[]>([]);
+  // the location to write: the host's keys and the hash travel only when there is a host
+  const to = useCallback(
+    (search: string) =>
+      hostKey ? { pathname: latest.current.pathname, search: appendSearch(search, latest.current.host), hash: latest.current.hash } : { pathname: latest.current.pathname, search },
+    [hostKey],
+  );
 
   // invalid values: list them once and rewrite the URL in canonical form
   useEffect(() => {
     if (!parsed.problems.length) return;
     setProblems((p) => [...new Set([...p, ...parsed.problems])]);
-    navigate({ pathname: loc.pathname, search: writeSearch(parsed.scenario, parsed.view, ctx) }, { replace: true });
-  }, [parsed, ctx, navigate, loc.pathname]);
+    navigate(to(writeSearch(parsed.scenario, parsed.view, ctx)), { replace: true });
+  }, [parsed, ctx, navigate, to]);
 
   const write = useCallback(
     (scenario: Scenario, view: ViewState, replace: boolean) => {
       const search = writeSearch(scenario, view, ctx);
       if (search === writeSearch(latest.current.parsed.scenario, latest.current.parsed.view, ctx)) return;
-      navigate({ pathname: latest.current.pathname, search }, { replace });
+      navigate(to(search), { replace, preventScrollReset: true });
     },
-    [ctx, navigate],
+    [ctx, navigate, to],
   );
 
   const value = useMemo<ScenarioCtx>(() => {
@@ -172,6 +186,11 @@ export function useScenario(): ScenarioCtx {
   return v;
 }
 
+/** The scenario when a ScenarioProvider is mounted, else null (a host page that mounts the engine on demand). */
+export function useScenarioOptional(): ScenarioCtx | null {
+  return useContext(ScenarioContext);
+}
+
 export function useAdvancedChanged() {
   const { scenario } = useScenario();
   const app = useApp();
@@ -196,12 +215,11 @@ export interface RunStatus {
   ms: number | null;
 }
 
-type Need = 'partner' | 'network' | 'contrib';
+type Need = 'partner' | 'contrib';
 
 interface RunCtx {
   core: LayerResult<CorePayload> | null;
   partner: LayerResult<PartnerPayload> | null;
-  network: LayerResult<NetworkPayload> | null;
   status: RunStatus;
   wants: Record<Need, boolean>;
   register: (need: Need) => () => void;
@@ -213,13 +231,12 @@ interface RunCtx {
 const RunContext = createContext<RunCtx | null>(null);
 
 export const DEBOUNCE_MS = 150;
-export const DEBOUNCE_NETWORK_MS = 600;
 
 export function RunProvider({ children }: { children: ReactNode }) {
   const { client, state } = useEngine();
   const { scenario, key } = useScenario();
-  const [needs, setNeeds] = useState<Record<Need, number>>({ partner: 0, network: 0, contrib: 0 });
-  const [res, setRes] = useState<Pick<RunCtx, 'core' | 'partner' | 'network'>>({ core: null, partner: null, network: null });
+  const [needs, setNeeds] = useState<Record<Need, number>>({ partner: 0, contrib: 0 });
+  const [res, setRes] = useState<Pick<RunCtx, 'core' | 'partner'>>({ core: null, partner: null });
   const [status, setStatus] = useState<RunStatus>({ phase: 'idle', progress: null, error: null, ms: null });
   const [attempt, setAttempt] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -228,18 +245,16 @@ export function RunProvider({ children }: { children: ReactNode }) {
   latest.current = { scenario, key };
 
   const wp = needs.partner > 0;
-  const wn = needs.network > 0;
   const wc = needs.contrib > 0;
-  const wants = useMemo(() => ({ partner: wp, network: wn, contrib: wc }), [wp, wn, wc]);
+  const wants = useMemo(() => ({ partner: wp, contrib: wc }), [wp, wc]);
   const missing =
     !res.core ||
     res.core.key !== key ||
     (wants.contrib && !res.core.contrib) ||
-    (wants.partner && res.partner?.key !== key) ||
-    (wants.network && res.network?.key !== key);
+    (wants.partner && res.partner?.key !== key);
   // read through a ref, so a result arriving mid-run never re-schedules (and supersedes) that run
   const delayRef = useRef(0);
-  delayRef.current = res.core === null ? 0 : wants.network && res.network?.key !== key ? DEBOUNCE_NETWORK_MS : DEBOUNCE_MS;
+  delayRef.current = res.core === null ? 0 : DEBOUNCE_MS;
 
   useEffect(() => {
     if (state.status !== 'ready' || !missing) return;
@@ -253,8 +268,7 @@ export function RunProvider({ children }: { children: ReactNode }) {
         onResult: (msg) => {
           const lr = { key: runKey, payload: msg.payload, source: msg.source, ms: msg.ms, cached: msg.cached };
           if (msg.layer === 'core') setRes((r) => ({ ...r, core: { ...lr, payload: msg.payload, contrib: want.contrib } }));
-          else if (msg.layer === 'partner') setRes((r) => ({ ...r, partner: { ...lr, payload: msg.payload } }));
-          else setRes((r) => ({ ...r, network: { ...lr, payload: msg.payload } }));
+          else setRes((r) => ({ ...r, partner: { ...lr, payload: msg.payload } }));
         },
         onProgress: (p) => setStatus((s) => ({ ...s, progress: p })),
       });
@@ -332,11 +346,4 @@ export function usePartner(enabled = true): LayerView<PartnerPayload> {
   const { partner } = useRun();
   const { key } = useScenario();
   return layerView(partner, key);
-}
-
-export function useNetwork(enabled = true): LayerView<NetworkPayload> {
-  useNeed('network', enabled);
-  const { network } = useRun();
-  const { key } = useScenario();
-  return layerView(network, key);
 }

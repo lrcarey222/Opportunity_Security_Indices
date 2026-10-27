@@ -43,14 +43,7 @@ export {
 } from './engine.ts';
 export type { DashResult, PartnerResult, CompareResult, CacheLayer } from './engine.ts';
 
-// L5: the allied network (greedy solver).
-export {
-  networkStages, networkInputs, networkScore, networkSolve, networkCompare, networkConcentration, buildTopkTbl, countTopk, SHARE_RANK_DIGITS,
-  stageKey,
-} from './network/index.ts';
-export type { NetInputs, NetScored, NetworkSolution, SolveProgress, SolveOptions, Stage } from './network/index.ts';
-export type { Portfolio as NetworkPortfolio } from './network/solve.ts';
-
-// Self-check against the shipped baseline tables.
-export { selfCheckCore, selfCheckPartner, selfCheckNetwork } from './selfcheck.ts';
+// Self-check against the shipped baseline tables. (L5, the original allied network design and its
+// greedy solver, is retired: 2026-10-17.)
+export { selfCheckCore, selfCheckPartner } from './selfcheck.ts';
 export type { SelfCheck } from './selfcheck.ts';

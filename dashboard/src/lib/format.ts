@@ -78,7 +78,7 @@ export const yesNo = (x: unknown): string => (x === true ? 'yes' : x === false ?
 /** "Batteries – Midstream". */
 export const cellLabel = (tech: string, stage: string): string => `${tech} ${DASH} ${stage}`;
 
-/** URL slug of a network stage: "batteries-midstream". */
+/** URL slug of a sector (technology x stage): "batteries-midstream". */
 export const stageSlug = (tech: string, stage: string): string =>
   `${tech}-${stage}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 

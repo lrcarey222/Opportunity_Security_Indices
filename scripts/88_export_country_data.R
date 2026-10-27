@@ -11,7 +11,7 @@
 # export reads data/processed (index_outputs.rds, psi_dyad_tbl.rds, psi_tbl.rds, coalition_tbl.rds,
 # geo_*.rds, cm_fdi_projects_tbl.rds, policy_outputs.rds, the partner Friendshore / Opportunity cell
 # and top-five tables, the theme tables named in config/country_insights.yml raw_tables,
-# charts/allied_strategic.csv, outputs/allied_network_member_shares.csv, nipo_policy_all.rds),
+# charts/allied_strategic.csv, nipo_policy_all.rds),
 # data/reference/economic_security_agreements.csv, data/raw/wdi_country_info.csv, and the published
 # Strategic and Sector bundles (dashboard/public/data/manifest.json and chunks;
 # dashboard/public/data/sector/...): the Strategic core chunk names every economy (Country -> ISO3)
@@ -120,8 +120,7 @@ if (!is.null(load_ctx)) {
   # the current config and dictionary, baseline date and build time (the saved inputs stay as they were)
   ctx$cfg <- cfg
   ctx$dict <- dict
-  s_in_l <- max(file.mtime(file.path(processed_dir, c("outputs/index_outputs.rds", "psi_dyad_tbl.rds", "coalition_tbl.rds",
-                                                      "outputs/allied_network_member_shares.csv"))))
+  s_in_l <- max(file.mtime(file.path(processed_dir, c("outputs/index_outputs.rds", "psi_dyad_tbl.rds", "coalition_tbl.rds"))))
   ctx$meta$as_of <- format(as.Date(format(s_in_l, "%Y-%m-%d")))
   ctx$meta$as_of_label <- country_date_label(as.Date(ctx$meta$as_of))
   ctx$meta$created <- created
@@ -175,7 +174,7 @@ if (!is.null(load_ctx)) {
   s_created <- as.POSIXct(smf$created, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   x_created <- as.POSIXct(xmf$created, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   newest <- function(fs) max(file.mtime(fs[file.exists(fs)]))
-  s_in <- newest(file.path(processed_dir, c("outputs/index_outputs.rds", "psi_dyad_tbl.rds", "coalition_tbl.rds", "outputs/allied_network_member_shares.csv")))
+  s_in <- newest(file.path(processed_dir, c("outputs/index_outputs.rds", "psi_dyad_tbl.rds", "coalition_tbl.rds")))
   x_in <- newest(file.path(processed_dir, c("import_dependence_tbl.rds", "trade_concentration_tbl.rds", "cm_fdi_projects_tbl.rds")))
   fresh_s <- s_in <= s_created
   fresh_x <- x_in <= x_created
@@ -430,8 +429,7 @@ if (!is.null(load_ctx)) {
   ga <- as.data.frame(rds("geo_alignment_tbl.rds"))[, c("reporter_iso", "partner_iso", "geo_alignment", "bloc_partner", "basis_partner")]
   un_window <- { w <- as.integer(strsplit(ip$window_years[1], ",", fixed = TRUE)[[1]]); paste0(min(w), "-", max(w)) }
 
-  # ---- network design and allied picks -------------------------------------------------------------------
-  member_shares <- read.csv(file.path(processed_dir, "outputs", "allied_network_member_shares.csv"), stringsAsFactors = FALSE)
+  # ---- allied picks (the network design's member shares are retired, 2026-10-17) --------------------------
   allied_csv <- read.csv(file.path(processed_dir, "charts", "allied_strategic.csv"), stringsAsFactors = FALSE)
   allied <- data.frame(iso3 = allied_csv$iso3, tech = allied_csv$tech, supply_chain = allied_csv$supply_chain, strategic_index = allied_csv$strategic_index,
                        stringsAsFactors = FALSE)
@@ -555,7 +553,7 @@ if (!is.null(load_ctx)) {
     .cat_tbl = list(es = ces$cat, eo = ceo$cat), .var_tbl = list(es = ces$var, eo = ceo$var),
     raw_rows = raw_rows, raw_idx = raw_idx, flows = flows, basket_keys = basket_keys, fdi = fdi,
     psi_by = split(psi_dyad, psi_dyad$reporter_iso), best5 = best5, psi_partner = psi_partner_tbl,
-    agreements = agreements, geo_alignment = ga, member_shares = member_shares, allied = allied, nipo = nipo,
+    agreements = agreements, geo_alignment = ga, allied = allied, nipo = nipo,
     party_fn = party_fn, note_fn = note_fn,
     dup_fn = function(e, n) dup_rows[[length(dup_rows) + 1]] <<- paste(e$pillar, e$category, e$variable, n),
     pick_fn = function(iso3, pick) picks_seen[[iso3]] <<- pick
@@ -727,6 +725,59 @@ budget <- COUNTRY_BUDGET_GZ[["sheet"]]
 add_check(sprintf("sheets: gzip size <= %d bytes (WARN above 25,600)", budget), if (all(sizes <= budget)) (if (all(sizes <= 25600)) "PASS" else "WARN") else "FAIL",
           length(sizes), NA, if (length(sizes)) sprintf("max %s (%s), median %s", format(max(sizes), big.mark = ","), names(sizes)[which.max(sizes)], format(stats::median(sizes), big.mark = ",")) else NA)
 
+# Monthly trade by sub-component (2026-10-19): one companion file per core member with monthly data,
+# trade-<ISO3>.<h8>.json, from scripts/99's pull (data/raw/comtrade_monthly_core.csv and its windows file)
+# and the in-basket HS6 master. An optional input: without it the Country pages show no monthly card.
+trade_texts <- list()
+mon <- NULL
+if (synthetic) {
+  mon <- country_synthetic_monthly()
+} else {
+  m_paths <- file.path(raw_dir, c("comtrade_monthly_core.csv", "comtrade_monthly_core_windows.csv", "energy_hs6_master.csv"))
+  if (all(file.exists(m_paths))) {
+    mon <- list(
+      raw = utils::read.csv(m_paths[1], colClasses = c(period = "character", reporter_iso = "character", flow_code = "character", cmd_code = "character")),
+      windows = utils::read.csv(m_paths[2], stringsAsFactors = FALSE),
+      basket = sector_trade_basket(utils::read.csv(m_paths[3], colClasses = "character"))
+    )
+  } else {
+    add_check("trade monthly: inputs present (scripts/99 data/raw/comtrade_monthly_core.csv and windows file)", "WARN", NA, NA,
+              paste("missing:", paste(basename(m_paths[!file.exists(m_paths)]), collapse = ", ")))
+  }
+}
+if (!is.null(mon)) {
+  src_m <- Filter(function(s) identical(s$id, "comtrade_monthly"), cfg$sources)
+  if (!length(src_m)) stop("config/country_insights.yml: sources has no comtrade_monthly entry.")
+  src_m <- src_m[[1]]
+  src_ref <- list(id = src_m$id, label = src_m$label, edition = src_m$edition %||% NA_character_,
+                  licence = src_m$licence %||% NA_character_, url = src_m$url %||% NA_character_)
+  mtbl <- country_monthly_table(mon$raw, mon$basket, mon$windows)
+  core_m <- intersect(roster$iso3[roster$tier == "core"], names(sheets))
+  probs_m <- character()
+  for (iso in intersect(core_m, unique(mtbl$iso3))) {
+    doc <- country_monthly_doc(mtbl, iso, mon$windows[mon$windows$reporter_iso == iso, , drop = FALSE], mon$basket, src_ref)
+    txt <- as.character(country_json(doc))
+    pr <- country_check_monthly_doc(jsonlite::fromJSON(txt, simplifyVector = FALSE))
+    if (length(pr)) probs_m <- c(probs_m, paste0(iso, ": ", pr))
+    trade_texts[[iso]] <- txt
+  }
+  add_check("trade monthly: every doc passes country_check_monthly_doc() after a JSON round trip", if (!length(probs_m)) "PASS" else "FAIL",
+            length(trade_texts), NA, if (length(probs_m)) paste(utils::head(probs_m, 3), collapse = " | ") else NA)
+  tsz <- vapply(trade_texts, gz_size, 1)
+  tb <- COUNTRY_BUDGET_GZ[["trade_monthly"]]
+  add_check(sprintf("trade monthly: gzip size <= %d bytes", tb), if (all(tsz <= tb)) "PASS" else "FAIL", length(tsz), NA,
+            if (length(tsz)) sprintf("max %s (%s), total %s", format(max(tsz), big.mark = ","), names(tsz)[which.max(tsz)], format(sum(tsz), big.mark = ",")) else NA)
+  base_gap <- names(trade_texts)[vapply(trade_texts, function(txt) {
+    d <- jsonlite::fromJSON(txt, simplifyVector = TRUE)$window$declared
+    !isTRUE(d$imports[1]) || !isTRUE(d$exports[1])
+  }, logical(1))]
+  add_check("trade monthly: every economy reported the first month of its window (the index base)", if (!length(base_gap)) "PASS" else "WARN",
+            length(trade_texts), NA, if (length(base_gap)) paste("no base month:", paste(base_gap, collapse = " ")) else NA)
+  no_m <- setdiff(core_m, names(trade_texts))
+  add_check("trade monthly: core members with a monthly file", if (!length(no_m)) "PASS" else "WARN", length(trade_texts), NA,
+            if (length(no_m)) paste("no monthly data:", paste(no_m, collapse = " ")) else NA)
+}
+
 # =====================================================================================================
 # Manifest and files
 # =====================================================================================================
@@ -784,6 +835,7 @@ memo_rule_check <- function(iso) {
   st
 }
 memo_rule_log <- list()
+memo_revised <- character()
 
 files <- list()
 entries <- list()
@@ -802,9 +854,19 @@ for (i in seq_len(nrow(roster))) {
       dfile <- sprintf("drivers-%s.%s.json", iso, md5_8(drv_texts[[iso]]))
       files[[dfile]] <- drv_texts[[iso]]
     } else dfile <- NULL
+    if (!is.null(trade_texts[[iso]])) {
+      tfile <- sprintf("trade-%s.%s.json", iso, md5_8(trade_texts[[iso]]))
+      files[[tfile]] <- trade_texts[[iso]]
+    } else tfile <- NULL
     om <- old_memo[[iso]]
     if (!is.null(om) && identical(ro$tier, "core") && file.exists(file.path(out_dir, om$json))) {
-      if (identical(om$facts_sha256, s$checks$facts_sha256)) {
+      if (country_memo_under_revision(om, cfg$memo_revision)) {
+        # written before the revision cut-off (config memo_revision): hidden as "being revised"
+        om$stale <- TRUE
+        om["rule_note"] <- list(NULL)
+        om["rule_note_d"] <- list(NULL)
+        memo_revised <- c(memo_revised, iso)
+      } else if (identical(om$facts_sha256, s$checks$facts_sha256)) {
         om$stale <- isTRUE(om$stale)
       } else if (synthetic || (isTRUE(om$stale) && is.null(om$rule_note))) {
         om$stale <- TRUE
@@ -821,6 +883,7 @@ for (i in seq_len(nrow(roster))) {
   }
   e <- country_manifest_entry(as.list(ro), s, file, bytes, memo)
   e$drivers <- if (!is.null(s)) dfile else NULL
+  e$trade_monthly <- if (!is.null(s)) tfile else NULL
   entries[[length(entries) + 1]] <- e
 }
 
@@ -835,6 +898,11 @@ if (length(memo_rule_log)) {
   add_check("memos: claims re-resolved on the new sheets (kept with the 2026-10-15 quadrant-rule note when only quadrant-derived claims changed)",
             if (n_st[["stale"]] == 0) "PASS" else "WARN", length(memo_rule_log), NA,
             sprintf("%d current, %d kept with the rule note, %d stale", n_st[["current"]], n_st[["rule_note"]], n_st[["stale"]]))
+}
+
+if (!is.null(cfg$memo_revision$before)) {
+  add_check(paste0("memos: written before ", cfg$memo_revision$before, " are hidden as being revised (config memo_revision)"),
+            "PASS", length(memo_revised), NA, if (length(memo_revised)) paste(memo_revised, collapse = " ") else "none")
 }
 
 # the synthetic fixture: a placeholder memo for the United States (built against until the memo phase)
@@ -901,8 +969,8 @@ if (partial && !is.null(old_manifest)) {
   manifest$counts$sheets <- sum(vapply(allc, function(c) !is.null(c$file), TRUE))
   mtxt <- as.character(country_json(manifest))
 }
-listed <- unlist(lapply(manifest$countries, function(c) c(c$file, c$drivers, c$memo$json, c$memo$pdf, c$memo$docx, c$memo$md)))
-old <- list.files(out_dir, pattern = "^(facts|drivers|memo)-[A-Z0-9]{3}\\.[0-9a-f]{8}\\.(json|pdf|docx|md)$")
+listed <- unlist(lapply(manifest$countries, function(c) c(c$file, c$drivers, c$trade_monthly, c$memo$json, c$memo$pdf, c$memo$docx, c$memo$md)))
+old <- list.files(out_dir, pattern = "^(facts|drivers|trade|memo)-[A-Z0-9]{3}\\.[0-9a-f]{8}\\.(json|pdf|docx|md)$")
 stale_files <- setdiff(old, listed)
 if (length(stale_files)) unlink(file.path(out_dir, stale_files))
 write_text(mtxt, file.path(out_dir, "manifest.json"))

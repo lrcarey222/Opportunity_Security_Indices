@@ -1,5 +1,5 @@
-// Strategic Insights chrome (spec_react.md 8.4; spec_sector.md 2.5): the sticky status strip
-// (baseline / scenario badge, chips for every moved setting, the Show control, the compute status in a
+// The chrome of the legacy Strategic pages (spec_react.md 8.4; spec_sector.md 2.5; IA refactor
+// 2026-10-16: "NEIS baseline" / "Custom perspective"): the sticky status strip (baseline / perspective badge, chips for every moved setting, the Show control, the compute status in a
 // live region, data notes), the banners, the dial panel (sticky sidebar >= 1024 px, a drawer below)
 // and the Dials button. The header, the route notice and the footer moved to the shared shell
 // (src/shell/AppRoot.tsx), which also owns <main>.
@@ -13,14 +13,14 @@ import { useMediaQuery } from '../shell/useMediaQuery.ts';
 import { cloneAdvanced, type ShowMode } from '../state/url.ts';
 import { fmtBytes, fmtMs, fmtMult } from '../lib/format.ts';
 
-const CHUNK_LABEL: Record<string, string> = { vars: 'variable data', partner: 'partnership data', network: 'network data', core: 'core data' };
+const CHUNK_LABEL: Record<string, string> = { vars: 'variable data', partner: 'partnership data', core: 'core data' };
 
 function useComputeStatus(): { text: string; busy: boolean; error: string | null } {
   const { state } = useEngine();
-  const { status, core, partner, network } = useRun();
+  const { status, core, partner } = useRun();
   const { key, isBaseline } = useScenario();
   const app = useApp();
-  const loading = (['vars', 'partner', 'network'] as const).find((c) => state.chunks[c].state === 'loading');
+  const loading = (['vars', 'partner'] as const).find((c) => state.chunks[c].state === 'loading');
   if (loading) {
     const info = app.manifest.chunks.find((c) => c.name === loading);
     return { text: `Loading ${CHUNK_LABEL[loading]}${info ? `, ${fmtBytes(info.bytes_gz)}` : ''}`, busy: true, error: null };
@@ -28,17 +28,12 @@ function useComputeStatus(): { text: string; busy: boolean; error: string | null
   if (status.phase === 'error' && status.error) return { text: `Error: ${status.error.message}`, busy: false, error: status.error.message };
   if (status.phase === 'running' || status.phase === 'waiting') {
     const p = status.progress;
-    if (p?.layer === 'network') {
-      if (p.phase === 'portfolio') return { text: `Network: portfolio caps, iteration ${p.iter ?? 1}, stage ${p.current} of ${p.total}`, busy: true, error: null };
-      if (p.phase === 'inputs') return { text: 'Network: building inputs', busy: true, error: null };
-      return { text: `Network: stage ${Math.min(p.total, p.current + 1)} of ${p.total}`, busy: true, error: null };
-    }
     if (p?.layer === 'partner') return { text: `Recomputing partnerships (${p.phase})`, busy: true, error: null };
     return { text: 'Recomputing', busy: true, error: null };
   }
-  const fresh = [core, partner, network].filter((r) => r && r.key === key);
+  const fresh = [core, partner].filter((r) => r && r.key === key);
   if (!fresh.length) return { text: 'Starting', busy: true, error: null };
-  if (isBaseline) return { text: 'Paper baseline: exact values from the export', busy: false, error: null };
+  if (isBaseline) return { text: 'NEIS baseline: exact values from the export', busy: false, error: null };
   const ms = status.ms;
   return { text: `Updated${ms !== null ? ` in ${fmtMs(ms)}` : ''}`, busy: false, error: null };
 }
@@ -57,7 +52,7 @@ function StatusStrip({ onOpenDials, showDialButton }: { onOpenDials: () => void;
     if (v !== 50) chips.push({ label: `${s.label.toUpperCase()} ${v} ${fmtMult(dialMultiplier(v, grid))}`, title: `Reset ${s.label.toLowerCase()} to 50`, reset: () => setDial(s.key, 50, { replace: false }) });
   }
   const adv = (label: string, f: (a: ReturnType<typeof cloneAdvanced>) => void) =>
-    chips.push({ label, title: `Reset ${label.toLowerCase()} to the paper's setting`, reset: () => setAdvanced((a) => { f(a); return a; }) });
+    chips.push({ label, title: `Reset ${label.toLowerCase()} to the NEIS baseline`, reset: () => setAdvanced((a) => { f(a); return a; }) });
   if (ch.es) adv('Energy Security weights', (a) => (a.es_weights = { ...d.es_weights }));
   if (ch.eo) adv('Economic Opportunity weights', (a) => (a.eo_weights = { ...d.eo_weights }));
   if (ch.sample) adv(scenario.advanced.tau === null ? 'Rankable rule off' : `Rankable rule ${scenario.advanced.tau}`, (a) => (a.tau = d.tau));
@@ -65,7 +60,6 @@ function StatusStrip({ onOpenDials, showDialButton }: { onOpenDials: () => void;
   // the endowment screen of the allied picks (URL key `screen`); the chip names the moved state
   if (ch.screen) adv(scenario.advanced.require_resource_base ? 'Endowment screen on' : 'Endowment screen off', (a) => (a.require_resource_base = d.require_resource_base));
   if (ch.psi) adv(`Partnership Strength viewpoint: ${scenario.advanced.psi_view === 'world' ? 'all reporters' : 'coalition reporters'}`, (a) => (a.psi_view = d.psi_view));
-  if (ch.net) adv('Network settings', (a) => (a.network = { ...d.network }));
   const notes = app.manifest.notes ?? [];
   return (
     <div className="sticky top-0 z-30 border-b hairline bg-ink-850">
@@ -81,7 +75,7 @@ function StatusStrip({ onOpenDials, showDialButton }: { onOpenDials: () => void;
             Dials
           </button>
         )}
-        <span className={`tag ${isBaseline ? 'border-signal text-paper' : 'tag-framework'}`}>{isBaseline ? 'Paper baseline' : 'Scenario'}</span>
+        <span className={`tag ${isBaseline ? 'border-signal text-paper' : 'tag-framework'}`}>{isBaseline ? 'NEIS baseline' : 'Custom perspective'}</span>
         {chips.length > 0 && (
           <ul className="flex flex-wrap gap-1.5" aria-label="Changed settings">
             {chips.map((c) => (
@@ -100,9 +94,9 @@ function StatusStrip({ onOpenDials, showDialButton }: { onOpenDials: () => void;
             hideLabel
             value={isBaseline ? 'scenario' : view.show}
             disabled={isBaseline}
-            title={isBaseline ? 'Move a dial to compare' : 'Show the scenario, the paper baseline or the change'}
+            title={isBaseline ? 'Move a dial to compare' : 'Show your perspective, the NEIS baseline or the change'}
             options={[
-              { value: 'scenario', label: 'Scenario' },
+              { value: 'scenario', label: 'Perspective' },
               { value: 'baseline', label: 'Baseline' },
               { value: 'change', label: 'Change' },
             ]}
@@ -133,12 +127,13 @@ function StatusStrip({ onOpenDials, showDialButton }: { onOpenDials: () => void;
   );
 }
 
-function Banners() {
+/** Problems in the link, failed self-checks and chunk errors (also under the About pages' perspective line). */
+export function Banners() {
   const { state, client } = useEngine();
   const { problems, dismissProblems } = useScenario();
   const { retry } = useRun();
   const failed = Object.values(state.selfcheck).filter((s) => s && !s.ok);
-  const chunkErr = (['vars', 'partner', 'network'] as const).filter((c) => state.chunks[c].state === 'error');
+  const chunkErr = (['vars', 'partner'] as const).filter((c) => state.chunks[c].state === 'error');
   if (!problems.length && !failed.length && !chunkErr.length) return null;
   return (
     <div className="mx-auto mt-4 flex max-w-7xl flex-col gap-2 px-4 sm:px-6 lg:px-8">

@@ -1,5 +1,7 @@
-// The dial panel (spec_react.md 8.5): four NEIS sliders with readouts, presets, reset to the paper
-// baseline, and the advanced settings. Every change writes the URL (drags replace the history entry;
+// The dial panel (spec_react.md 8.5): four NEIS sliders with readouts, presets, reset to the NEIS
+// baseline (the paper's weights), and the advanced settings. `layout="wide"` (IA refactor 2026-10-16) lays
+// the four dials out in a row for the Country profile's Perspective control; the legacy Strategic
+// sidebar keeps the column. Every change writes the URL (drags replace the history entry;
 // discrete actions push); releasing a slider flushes the debounced run.
 // Copy (spec_country.md C3.5): every control names its index in full (no bare acronyms); each dial
 // has an info button with the glossary's plain-language definition.
@@ -11,14 +13,14 @@ import { DIAL_NAMES, type Advanced, type DialName, type Dials } from '../engine/
 import { useAdvancedChanged, useApp, useRun, useScenario } from '../state/EngineProvider.tsx';
 import { toSpec } from '../state/url.ts';
 import { fmtMult, TIMES } from '../lib/format.ts';
-import { ChangedDot, Disclosure, Segmented, Switch, Checkbox } from './ui.tsx';
+import { ChangedDot, Disclosure, Segmented, Switch } from './ui.tsx';
 import { InfoTip } from './InfoTip.tsx';
 
 export const DIAL_SPECS: { key: DialName; label: string; help: string }[] = [
-  { key: 'hawkishness', label: 'Hawkishness', help: 'Security first: weight on exposure, aligned partners and spreading production.' },
-  { key: 'bullishness', label: 'Bullishness', help: 'Opportunity first: weight on opportunity, export markets and market size.' },
-  { key: 'populism', label: 'Populism', help: 'Policy signals and home manufacturing.' },
-  { key: 'greenness', label: 'Greenness', help: 'Climate first: low-emission technologies; at 90 and above coal, oil and gas drop out.' },
+  { key: 'hawkishness', label: 'Hawkishness', help: 'Security first: weight on exposure and on aligned partners.' },
+  { key: 'bullishness', label: 'Bullishness', help: 'Opportunity first: weight on opportunity and export markets.' },
+  { key: 'populism', label: 'Populism', help: 'Policy signals and the manufacturing (midstream) stages.' },
+  { key: 'greenness', label: 'Climate', help: 'Climate first: low-emission technologies; at 90 and above coal, oil and gas drop out.' },
 ];
 
 interface ReadoutRow {
@@ -68,7 +70,7 @@ export function DialSlider({
 }) {
   const id = `dial-${spec.key}`;
   const moved = value !== 50;
-  const valueText = moved ? `${value} · ${fmtMult(multiplier)}` : `${value} · paper`;
+  const valueText = moved ? `${value} · ${fmtMult(multiplier)}` : `${value} · baseline`;
   return (
     <div className="py-3">
       <div className="flex items-baseline justify-between gap-2">
@@ -95,7 +97,7 @@ export function DialSlider({
         value={value}
         style={fillStyle(value, 0, 100)}
         aria-describedby={`${id}-help`}
-        aria-valuetext={moved ? `${value}, weights times ${multiplier.toFixed(2)}` : `${value}, the paper's setting`}
+        aria-valuetext={moved ? `${value}, weights times ${multiplier.toFixed(2)}` : `${value}, the NEIS baseline`}
         onChange={(e) => onChange(Number(e.target.value))}
         onKeyDown={(e) => pageKeys(e, value, (v) => {
           onChange(v);
@@ -105,7 +107,7 @@ export function DialSlider({
       />
       <div className="flex justify-between text-[0.6875rem] text-paper-mute" aria-hidden="true">
         <span>{TIMES}0.25</span>
-        <span>paper</span>
+        <span>baseline</span>
         <span>{TIMES}4</span>
       </div>
       {fossilNote && (
@@ -189,7 +191,7 @@ function CategoryWeights({
     <Disclosure summary={title} badge={changed ? <ChangedDot /> : undefined}>
       <p className="mb-1 text-xs text-paper-mute">Weights are relative: what counts is each category&rsquo;s share of the total. The score is recomputed exactly from the category scores.</p>
       {changed && !app.manifest.flags?.partner_pillar_consistent && (
-        <p className="mb-1 text-xs text-paper">Partnership and network layers keep the paper&rsquo;s pillars.</p>
+        <p className="mb-1 text-xs text-paper">The partnership measures keep the paper&rsquo;s pillars.</p>
       )}
       {cats.map((c) => (
         <WeightSlider
@@ -226,9 +228,7 @@ export function AdvancedPanel() {
   const ch = useAdvancedChanged();
   const a = scenario.advanced;
   const d = app.urlCtx.defaults;
-  const bi = app.bundleLike.baselineInputs;
   const set = (f: (a: Advanced) => Advanced, replace = false) => setAdvanced(f, { replace });
-  const lambdaDial = (bi.lambda ?? 1) * dialMultiplier(scenario.dials.hawkishness, app.manifest.dial_grid);
   return (
     <details className="disclosure mt-4 border-t hairline" open={ch.any || undefined}>
       <summary className="flex items-center gap-2 py-3">
@@ -285,7 +285,7 @@ export function AdvancedPanel() {
           ]}
           onChange={(v) => set((x) => ({ ...x, fossil: v }))}
         />
-        <p className="mt-1.5 text-xs text-paper-mute">Auto excludes them at greenness 90 and above.</p>
+        <p className="mt-1.5 text-xs text-paper-mute">Auto excludes them at a Climate setting of 90 and above.</p>
       </Disclosure>
       <Disclosure summary="Allied picks" badge={ch.screen ? <ChangedDot /> : undefined}>
         <Switch
@@ -312,101 +312,11 @@ export function AdvancedPanel() {
           A partner&rsquo;s headline Partnership Strength averages how strong a partner it is for each reporting economy. The paper averages over {d.psi_view === 'world' ? 'all reporters (world)' : 'the coalition reporters'}.
         </p>
       </Disclosure>
-      <Disclosure summary="Network design" badge={ch.net ? <ChangedDot /> : undefined}>
-        <Switch
-          label="Set the diversification weight (λ) by hand"
-          hint={`How strongly the design penalises concentrating a sector in few members. From the hawkishness dial: ${lambdaDial.toFixed(2)}`}
-          checked={a.network.lambda !== null}
-          onChange={(on) => set((x) => ({ ...x, network: { ...x.network, lambda: on ? Number(lambdaDial.toFixed(1)) : null } }))}
-        />
-        <div className="mt-2">
-          <div className="flex justify-between text-xs">
-            <label htmlFor="adv-lambda" className="text-paper-dim">
-              Diversification weight (&lambda;)
-            </label>
-            <span className="tabular text-paper-mute">{a.network.lambda ?? 'from dial'}</span>
-          </div>
-          <input
-            id="adv-lambda"
-            type="range"
-            className="slider"
-            min={0}
-            max={8}
-            step={0.1}
-            disabled={a.network.lambda === null}
-            value={a.network.lambda ?? Math.min(8, Number(lambdaDial.toFixed(1)))}
-            style={fillStyle(a.network.lambda ?? lambdaDial, 0, 8)}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              set((x) => ({ ...x, network: { ...x.network, lambda: v } }), true);
-            }}
-            onPointerUp={flush}
-            onKeyUp={flush}
-          />
-        </div>
-        <div className="mt-2">
-          <div className="flex justify-between text-xs">
-            <label htmlFor="adv-maxshare" className="text-paper-dim">
-              Largest share for one producer
-            </label>
-            <span className="tabular text-paper-mute">{a.network.max_share}</span>
-          </div>
-          <input
-            id="adv-maxshare"
-            type="range"
-            className="slider"
-            min={0.25}
-            max={0.6}
-            step={0.05}
-            value={a.network.max_share}
-            style={fillStyle(a.network.max_share, 0.25, 0.6)}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              set((x) => ({ ...x, network: { ...x.network, max_share: v } }), true);
-            }}
-            onPointerUp={flush}
-            onKeyUp={flush}
-          />
-        </div>
-        <div className="mt-3 flex items-center justify-between gap-2 text-xs">
-          <span className="text-paper-dim" id="adv-minprod-label">
-            Fewest producers per sector
-          </span>
-          <div className="flex items-center gap-1" role="group" aria-labelledby="adv-minprod-label">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm px-2"
-              aria-label="Fewer producers"
-              disabled={a.network.min_producers <= 2}
-              onClick={() => set((x) => ({ ...x, network: { ...x.network, min_producers: x.network.min_producers - 1 } }))}
-            >
-              {'−'}
-            </button>
-            <output className="w-6 text-center text-sm text-paper tabular" aria-live="polite">
-              {a.network.min_producers}
-            </output>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm px-2"
-              aria-label="More producers"
-              disabled={a.network.min_producers >= 6}
-              onClick={() => set((x) => ({ ...x, network: { ...x.network, min_producers: x.network.min_producers + 1 } }))}
-            >
-              +
-            </button>
-          </div>
-        </div>
-        <Checkbox
-          label="Portfolio caps: limit how many sectors each member leads"
-          checked={a.network.portfolio_enable}
-          onChange={(v) => set((x) => ({ ...x, network: { ...x.network, portfolio_enable: v } }))}
-        />
-      </Disclosure>
     </details>
   );
 }
 
-export function DialPanel() {
+export function DialPanel({ layout = 'sidebar' }: { layout?: 'sidebar' | 'wide' } = {}) {
   const app = useApp();
   const { scenario, isBaseline, setDial, setDials, reset } = useScenario();
   const { flush } = useRun();
@@ -417,28 +327,33 @@ export function DialPanel() {
   const bi = app.bundleLike.baselineInputs;
   const fossilOn =
     scenario.advanced.fossil === 'always' || (scenario.advanced.fossil === 'auto' && scenario.dials.greenness >= (bi.fossil_threshold ?? 90));
+  const wide = layout === 'wide';
   return (
     <div>
-      <div className="rule-neis-sm">
-        <div className="eyebrow">Your priorities</div>
-        <h2 className="mt-1 text-lg font-medium text-paper">Scenario dials</h2>
-      </div>
+      {!wide && (
+        <div className="rule-neis-sm">
+          <div className="eyebrow">Your priorities</div>
+          <h2 className="mt-1 text-lg font-medium text-paper">Scenario dials</h2>
+        </div>
+      )}
       <p className="mt-1 text-xs leading-snug text-paper-mute">
-        Each dial runs 0&ndash;100; 50 is the paper. Moving a dial 25 points halves or doubles every weight it owns.
+        Each dial runs 0&ndash;100; 50 is the NEIS baseline (the paper&rsquo;s weights). Moving a dial 25 points halves or doubles every weight it owns.
       </p>
-      {DIAL_SPECS.map((s) => (
-        <DialSlider
-          key={s.key}
-          spec={s}
-          value={scenario.dials[s.key]}
-          multiplier={dialMultiplier(scenario.dials[s.key], grid)}
-          rows={rows.filter((r) => r.dial === s.key && r.salient)}
-          onChange={(v) => setDial(s.key, v, { replace: true })}
-          onCommit={flush}
-          fossilNote={s.key === 'greenness' && fossilOn}
-        />
-      ))}
-      <div className="mt-2 flex flex-col gap-3">
+      <div className={wide ? 'grid gap-x-6 sm:grid-cols-2 xl:grid-cols-4' : undefined}>
+        {DIAL_SPECS.map((s) => (
+          <DialSlider
+            key={s.key}
+            spec={s}
+            value={scenario.dials[s.key]}
+            multiplier={dialMultiplier(scenario.dials[s.key], grid)}
+            rows={rows.filter((r) => r.dial === s.key && r.salient)}
+            onChange={(v) => setDial(s.key, v, { replace: true })}
+            onCommit={flush}
+            fossilNote={s.key === 'greenness' && fossilOn}
+          />
+        ))}
+      </div>
+      <div className={wide ? 'mt-2 flex flex-wrap items-end gap-3' : 'mt-2 flex flex-col gap-3'}>
         <div>
           <label htmlFor="preset" className="label">
             Preset
@@ -460,8 +375,8 @@ export function DialPanel() {
             ))}
           </select>
         </div>
-        <button type="button" className="btn btn-ghost w-full" disabled={isBaseline} onClick={reset}>
-          Reset to paper baseline
+        <button type="button" className={wide ? 'btn btn-ghost' : 'btn btn-ghost w-full'} disabled={isBaseline} onClick={reset}>
+          Reset to NEIS baseline
         </button>
       </div>
       <AdvancedPanel />

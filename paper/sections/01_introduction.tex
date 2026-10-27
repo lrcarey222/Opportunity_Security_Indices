@@ -3,7 +3,7 @@
 % Framing: the NEIS working paper on the Allied Industrial Base (neis2026allied; text in
 % integration/aib_concept_review.md), paraphrased and cited, not copied.
 % Numbers: final rerun of 2026-10-12, read from paper/results/*.json (method, es, eo, joint,
-% coalition, strategic, bilateral, network, network_robustness, robustness).
+% coalition, strategic, bilateral, aib, aib_robustness, robustness).
 % ---------------------------------------------------------------------------
 \section{Introduction}\label{sec:intro}
 
@@ -12,9 +12,9 @@ As solar panels, batteries, grids and power electronics absorb a growing share o
 investment, it is increasingly a matter of manufactured systems and of the minerals and components
 they are made from \citep{carey2025secure, iea2024etp}. A country can now be secure in fuels and
 exposed in transformers, battery materials or magnets. These manufacturing chains are
-concentrated. In the trade data used in this paper, China is the largest world exporter in ten of
+concentrated. In the trade data used in this paper, China is the largest world exporter in nine of
 the 18 upstream and midstream technology--stage baskets that have a product definition, with
-shares between 20 and 43 percent, and the refining of rare earths and the manufacture of magnets
+shares between 19 and 44 percent, and the refining of rare earths and the manufacture of magnets
 and battery anode material are concentrated in China at shares close to or above 90 percent
 \citep{iea2025gcmo, iea2026etp}. Concentration is not in itself a market failure; it reflects
 scale economies, learning and geology. But it determines how far a disruption travels through
@@ -70,15 +70,16 @@ member has the resource. The coalition is derived rather than chosen: from ideal
 from UN General Assembly votes \citep{bailey2017estimating}, membership of U.S. trade and security
 agreements, and shares of world supply. It has 31 core members on the U.S.-leaning side of the
 Assembly with GDP of at least USD 100 billion and 26 partners admitted through agreements or as
-major suppliers; with the European Union as one node, the network has 37 nodes. Bilateral indices
+major suppliers. Bilateral indices
 score each partner as a friendshoring opportunity, where an economy's security need in a sector
 meets the partner's economic opportunity on existing trade and investment ties, and as an export
 market, taking account of alignment and, in four manufacturing stages, of the Chinese ownership of
 the partner's foreign-invested plants. Finally,
-a mixed-integer program allocates production among the 37 nodes in each of 22 upstream and
-midstream stages. It rewards producers' opportunity and security and strong bilateral ties and
-penalises concentration, with the penalty weight calibrated so that designed concentration
-matches the concentration of the members' exports today. Figure~\ref{fig:framework_architecture}
+an Allied Industrial Base analysis stress-tests 92 sub-sector nodes of the observed 2024 trade
+network: it removes a dominant supplier, measures how much of the coalition's lost supply existing
+relationships and optimized partnerships restore, simulates standardised capacity increments where
+a gap remains, and groups the nodes that need joint action into Sectoral Compacts with exact
+minimum coalitions. Figure~\ref{fig:framework_architecture}
 sets out the architecture.
 
 The paper makes four contributions. The first is measurement at the level of the supply-chain
@@ -94,13 +95,13 @@ runner-up are reported with the results. The third is a rule-based coalition and
 Alignment is measured from Assembly votes rather than asserted, the coalition and its tiers
 follow from stated thresholds, and the bilateral indices carry both alignment and a first measure
 of the common-mode risk that arises when suppliers in different countries share Chinese parents.
-The fourth links the indices to an explicit allocation through network design in the
-facility-location tradition. A concave diversification penalty, calibrated on observed export
-concentration, sets the rate at which the design trades capability against concentration, so that
-the design spreads production among nodes rather than ranking them, a first step toward the
-working paper's aim of optimising combinations \citep{neis2026allied}; because the penalty treats
-each node as an independent source, it does not yet register that producers sharing a bloc, a
-region or a parent company diversify less. The pipeline is open and configuration-driven, and the
+The fourth is a stress test of the allied supply network at the level of the sub-sector. It
+separates the economies protected from those that may supply them, distinguishes what existing
+relationships, coordinated trade and new capacity each contribute, checks trade-based capability
+against physical production data where they exist, and forms Sectoral Compacts only where chains,
+partners and policy needs cohere, with coalitions found by an exact binary program rather than by
+ranking. It answers the working paper's question of where coordination pays \citep{neis2026allied}
+with a measured coordination dividend, and it reports no composite score. The pipeline is open and configuration-driven, and the
 corrections made during an end-to-end audit of an earlier version are documented in
 Appendix~\ref{app:corrections}.
 
@@ -119,27 +120,27 @@ The picks are fragile: the median margin over the runner-up is 0.015, 21 picks l
 and only five survive if security is read as strength rather than need. Third, alignment shapes
 the partnership rankings. Viewed from the 31 core members, the United States and Germany are the
 strongest partners and core members hold 24 of the top 25 places; giving the alignment component
-zero weight would lift China from 44th to 3rd. Fourth, the calibrated network is diversified but
-does not replicate current trade. At the calibrated diversification weight, $\lambda=0.78$, the
-median designed Herfindahl index (0.152, or 6.6 equivalent producers) matches the members'
-observed export concentration (0.156). Each stage has seven to ten producers, no share exceeds
-0.325, and 29 of the 37 nodes produce somewhere. Non-high-income
-nodes carry 47 percent of upstream and 43 percent of midstream production, and in the median
-traded stage two-thirds of production goes to nodes other than the three that export most today.
-The calibration is knife-edge ($\lambda=0.77$ misses the target by 0.0002), but the design is not:
-either neighbouring value reassigns at most about one percent of production in the mean stage.
-Fifth, rankings are more robust than allocations. Country rankings within pairs barely move under
-random category weights (median within-pair Spearman 0.997 for security and 0.988 for
-opportunity), and an empirical test of vertical complementarities finds no out-of-sample gain
-from rewarding a stage for capability at adjacent stages; removing the portfolio caps, by
-contrast, reassigns 18.5 percent of production in the mean stage.
+zero weight would lift China from 44th to 3rd. Fourth, the allies' exposure is a capacity problem.
+With China's supply removed, the 57 members lose 22.9 percent of their traded demand for
+electro-industrial goods (47.5 percent in batteries); existing relationships and optimized trade
+restore coverage only to 84.7 percent, and all of the recovery, USD 232 billion, is supply drawn
+from buyers outside the coalition. New or expanded relationships add less than one point of coverage in
+81 of the 91 nodes, and no node is classed as a case for trade coordination: 37 of the 70 electro-industrial nodes
+need new capacity, and they form 22 Sectoral Compacts, all of them investment and offtake clubs, whose
+exact minimum coalitions have three to nine countries. Fifth, rankings are more robust than
+classifications. Country rankings within pairs barely move under random category weights (median
+within-pair Spearman 0.997 for security and 0.988 for opportunity), and an empirical test of vertical
+complementarities finds no out-of-sample gain from rewarding a stage for capability at adjacent
+stages; the AIB classes, by contrast, depend on how the shock is read: if China's purchases fall with
+its sales, 24 rather than 37 electro-industrial nodes need new capacity.
 
 The results speak to some open questions of the working paper
-\citep[Section 10]{neis2026allied} but not to others. The design answers the question of how much
-duplication is enough only conditionally, by anchoring designed concentration to the
-concentration of the members' exports today; within that anchor, it gives non-high-income
-members 43 to 47 percent of production, so a diversified allied network need not be a
-rich-country club. The paper does not test the hypotheses that allied specialisation reaches a
+\citep[Section 10]{neis2026allied} but not to others. It answers the question of when coordination
+pays: against a China shock, rarely through trade alone, since the existing network already carries
+nearly all that trade can do, and chiefly through capacity at capable hosts, organised by coalitions
+of a few countries. It answers the question of how much duplication is enough only in part: a 25
+percent supplier-share limit costs less than two points of coverage against the shock in 77 of the
+91 nodes, but where capacity is missing no tested limit restores resilience to a second loss. The paper does not test the hypotheses that allied specialisation reaches a
 resilience target at lower public cost than parallel national programmes, that demand coordination matters more than subsidy coordination, or that fencing
 nodes dominates excluding sectors: these need cost, revenue and bankability data that the indices
 do not contain (Section~\ref{sec:discussion}).
@@ -151,7 +152,8 @@ Sections~\ref{sec:es} and~\ref{sec:eo} construct the Energy Security and Economi
 pillars, and Section~\ref{sec:joint} studies the joint space they define.
 Section~\ref{sec:coalition} measures geopolitical alignment and derives the coalition,
 Section~\ref{sec:strategic} builds the Policy and Strategic indices, Section~\ref{sec:bilateral}
-the bilateral indices, and Section~\ref{sec:network} the allied network design.
+the bilateral indices, and Section~\ref{sec:network} the Allied Industrial Base analysis of shocks,
+partnerships and Sectoral Compacts.
 Section~\ref{sec:robustness} reports robustness analyses, and Section~\ref{sec:discussion}
 discusses the results, next steps and limitations.
 
@@ -183,8 +185,9 @@ and reshoring, and \citet{baldwin2022risks} separate exposure from resilience. P
 a critical dependency as the combination of high disruption risk, high importance and limited
 substitutability \citep{oecd2025economic}, and finds diversification generally more effective
 than relocalisation \citep{oecd2025supply, thakurweigold2024promoting}. These results motivate
-scoring by stage, separating exposure ($\ES$) from capability ($\EO$), and imposing redundancy in
-the network design. Our indices do not model shock propagation, and the bilateral indices capture
+scoring by stage, separating exposure ($\ES$) from capability ($\EO$), and stress-testing the
+allied network node by node. The AIB analysis shocks each node separately and does not model
+propagation along the chain, and the bilateral indices capture
 direct exposure only, not the indirect dependence that \citet{freund2024us} document.
 
 \paragraph{Weaponized interdependence and allied scale.} \citet{farrell2019weaponized} show how
@@ -214,7 +217,8 @@ around a concrete objective, clear roles and benefits reciprocal enough to susta
 technologies stall when any part of the surrounding system (offtake, permitting, enabling
 infrastructure, insurance, supply chains, delivery capacity) is missing, so that a designated
 capability is not a capability until it is bankable. Our indices do not measure bankability,
-which is the main reason the network design is a benchmark rather than a plan.
+which is the main reason the investment step of the AIB analysis is a capacity simulation rather
+than a project pipeline.
 
 \paragraph{Competing schools.} The policy debate divides into three schools
 \citep{neis2026allied}. The first defends multilateral openness and stresses the costs of
@@ -242,11 +246,11 @@ paruolo2013ratings}, and our S-curve is the probability-weighting function of
 \citet{karmarkar1978subjectively}. Alignment is measured with UN-vote ideal points
 \citep{bailey2017estimating, voeten2009unga}, in the tradition of foreign-policy similarity
 measures \citep{signorino1999taub} and with the bloc definitions of \citet{gopinath2025changing}.
-The network layer belongs to capacitated facility location and supply-chain network design
-\citep{geoffrion1974multicommodity, owen1998strategic, melo2009facility, daskin2013network}, with
-disruption-aware sourcing \citep{tomlin2006value, snyder2016orms} and the portfolio logic of
-diversification \citep{markowitz1952portfolio}. It departs from that tradition by maximising an
-index-based score rather than minimising cost.
+The AIB layer draws on supply-chain network design and disruption-aware sourcing
+\citep{geoffrion1974multicommodity, melo2009facility, tomlin2006value, snyder2016orms}, solved as
+lexicographic linear programs \citep{ehrgott2005multicriteria}. It departs from that tradition by
+restoring observed traded demand under explicit shocks rather than minimising cost, and by treating
+the allied network as emergent from bilateral relationships rather than designed.
 
 \paragraph{The gap.} Read together, these literatures diagnose the problem better than they
 allocate a response \citep[Section 5]{neis2026allied}: they establish why capabilities and
@@ -257,7 +261,8 @@ performance. The indices of \citet{carey2025secure} were a
 first step. They score eleven technologies across commodities, manufacturing and deployment on
 energy-security risk and economic opportunity, read the joint space as four strategic postures,
 and rate partners as safer, stronger or more prosperous with weights 0.4, 0.2 and 0.4. This paper
-takes them from rankings to network design. It rebuilds the pillars at the level of the cell with
+takes them from rankings to a stress test of the allied network. It rebuilds the pillars at the level of the cell with
 a rankability rule, derives the coalition from observed alignment and supply, rates every
-directed partnership, and adds an optimisation layer that turns the scores into a division of
-labour whose trade-offs are explicit and whose calibration is disclosed.
+directed partnership, and adds an analysis of observed trade that shows, node by node, where
+existing relationships suffice, where coordination would help, where allies must build and which
+countries a compact needs.

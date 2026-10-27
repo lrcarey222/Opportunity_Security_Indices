@@ -341,16 +341,39 @@ function ThemeCards() {
   );
 }
 
+/** The first step of the sector path (IA refactor, brief s.5): a technology opens its chain (stage -> component -> profile). */
+function TechPicker() {
+  const { link } = useSectorUrl();
+  return (
+    <section aria-labelledby="techs-h" className="mb-10">
+      <h2 id="techs-h" className="eyebrow rule-neis-sm mb-2">
+        Pick a technology
+      </h2>
+      <p className="mb-3 max-w-3xl text-sm text-paper-mute">Each opens its supply chain: pick a stage (Upstream, Midstream, Downstream) or one of its components for the sector profile.</p>
+      <ul className="flex flex-wrap gap-2">
+        {TECH_SLUGS.map((t) => (
+          <li key={t}>
+            <Link className="tag min-h-9" to={link(`/sector/${t}`)}>
+              {TECH_LABELS[t]}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default function SectorHomeView() {
   useTitle('Sectors', 'Sector Insights');
   const manifest = useSectorManifest();
   return (
     <div>
       <PageHead
-        eyebrow="SECTOR INSIGHTS · DESCRIPTIVE DATA"
+        eyebrow="SECTORS · DESCRIPTIVE DATA"
         title="Energy supply chains, measured"
-        lede="Eleven energy technologies, each from raw materials (upstream) through manufacturing (midstream) to use (downstream): 33 sectors. Each tile shows who holds the most of that sector's main measure. Pick a tile for the full picture: trade, production, reserves, investment, prices and policy, in each source's own units and year. No indices and no weights: these are the numbers Strategic Insights starts from."
+        lede="Eleven energy technologies, each from raw materials (upstream) through manufacturing (midstream) to use (downstream): 33 sectors. Each tile shows who holds the most of that sector's main measure. Pick a tile for the full picture: trade, production, reserves, investment, prices and policy, in each source's own units and year. No indices and no weights: these are the measured numbers the country rankings start from."
       />
+      <TechPicker />
       <section aria-labelledby="questions-h" className="mb-10">
         <h2 id="questions-h" className="eyebrow rule-neis-sm mb-4">
           Start with a question

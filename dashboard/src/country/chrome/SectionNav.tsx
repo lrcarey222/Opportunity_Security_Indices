@@ -4,7 +4,7 @@
 // scrolls horizontally. Links are in-page anchors (#glance ... #notes). Country-owned (not imported from
 // sector/chrome).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
 
 export interface NavSection {
@@ -12,12 +12,15 @@ export interface NavSection {
   label: string;
 }
 
+// IA refactor 2026-10-16 (brief s.11-12): the profile's sections; old ids (space, priorities, why,
+// partners) stay as anchors inside them.
 export const PROFILE_SECTIONS: readonly NavSection[] = [
-  { id: 'glance', label: 'At a glance' },
-  { id: 'space', label: 'Security and opportunity' },
-  { id: 'priorities', label: 'Priorities and policy' },
-  { id: 'why', label: 'Why these sectors' },
-  { id: 'partners', label: 'Partners' },
+  { id: 'position', label: 'Strategic position' },
+  { id: 'opportunities', label: 'Opportunities & risks' },
+  { id: 'sectors', label: 'Sector position' },
+  { id: 'policy', label: 'Policy & climate' },
+  { id: 'partnerships', label: 'Partnerships' },
+  { id: 'aib-role', label: 'Allied Industrial Base role' },
   { id: 'memo', label: 'Memo' },
   { id: 'notes', label: 'Data notes' },
 ];
@@ -47,7 +50,8 @@ export function useSectionSpy(ids: readonly string[]): string | null {
   return active;
 }
 
-export function SectionNav({ sections = PROFILE_SECTIONS, rail }: { sections?: readonly NavSection[]; rail?: boolean }) {
+/** `footer`: shown under the rail on wide screens (the profile's Perspective tag). */
+export function SectionNav({ sections = PROFILE_SECTIONS, rail, footer }: { sections?: readonly NavSection[]; rail?: boolean; footer?: ReactNode }) {
   const xl = useMediaQuery('(min-width: 1280px)');
   const active = useSectionSpy(sections.map((s) => s.id));
   const asRail = rail ?? xl;
@@ -83,6 +87,7 @@ export function SectionNav({ sections = PROFILE_SECTIONS, rail }: { sections?: r
           </li>
         ))}
       </ul>
+      {footer}
     </nav>
   );
 }

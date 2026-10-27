@@ -372,15 +372,28 @@ test_that("the allied pick names the technologies excluded by rule and says the 
   expect_null(country_pick_rule_words(NULL))
   si_rows <- data.frame(key = c("green-hydrogen-midstream", "batteries-midstream", "wind-upstream"), tech = c("Green Hydrogen", "Batteries", "Wind"),
                         stage = c("Midstream", "Midstream", "Upstream"), si = c(0.9, 0.8, 0.7), pick_exclusion = NA_character_, stringsAsFactors = FALSE)
-  ms <- data.frame(tech = "Batteries", supply_chain = "Midstream", iso3c = "DEU", network_node = "EU", selected = TRUE,
-                   production_share_derived = 0.1, share_is_derived = FALSE, stringsAsFactors = FALSE)
   allied <- data.frame(tech = "Batteries", supply_chain = "Midstream", strategic_index = 0.8, stringsAsFactors = FALSE)
-  net <- country_network_role("DEU", "core", TRUE, "EU", ms, allied, si_rows, 0.01, rule_words = w)
-  expect_equal(net$pick$cell, "batteries-midstream")      # green hydrogen ranks higher but is excluded by rule
-  expect_equal(net$pick$runner_up, "wind-upstream")
-  expect_setequal(unlist(net$pick$excluded), COUNTRY_PICK_EXCLUDED_TECHS)
-  expect_equal(net$pick$rule_d, w)
-  expect_true(any(vapply(cfg$path_meanings, function(e) identical(e$path, "network.pick.rule_d"), TRUE)))
+  pick <- country_allied_pick("core", allied, si_rows, 0.01, rule_words = w)
+  expect_equal(pick$cell, "batteries-midstream")      # green hydrogen ranks higher but is excluded by rule
+  expect_equal(pick$runner_up, "wind-upstream")
+  expect_setequal(unlist(pick$excluded), COUNTRY_PICK_EXCLUDED_TECHS)
+  expect_equal(pick$rule_d, w)
+  expect_true(any(vapply(cfg$path_meanings, function(e) identical(e$path, "pick.rule_d"), TRUE)))
+  # outside the coalition, or a member without an allied row: no pick
+  expect_null(country_allied_pick("none", allied, si_rows))
+  expect_null(country_allied_pick("core", allied[0, ], si_rows))
+  # the retired network design leaves no path meanings, sources or caveat behind (2026-10-17)
+  expect_false(any(vapply(cfg$path_meanings, function(e) grepl("^network", e$path), TRUE)))
+  expect_null(cfg$caveats$eu_node)
+})
+
+test_that("memos written before the revision cut-off are under revision (2026-10-17)", {
+  rev <- list(before = "2026-10-17T00:00:00Z")
+  expect_true(country_memo_under_revision(list(generated_at = "2026-10-14T15:56:16Z"), rev))
+  expect_false(country_memo_under_revision(list(generated_at = "2026-10-18T09:00:00Z"), rev))
+  expect_true(country_memo_under_revision(list(), rev))
+  expect_false(country_memo_under_revision(list(generated_at = "2026-10-14T15:56:16Z"), NULL))
+  expect_identical(cfg$memo_revision$before, "2026-10-17T00:00:00Z")
 })
 
 test_that("industrial-policy measures are marked EU-wide, shared or national and counted", {

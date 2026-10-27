@@ -8,7 +8,8 @@
 // axis), its policies and its stage context.
 
 import { useMemo } from 'react';
-import { Link, Navigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
+import { Redirect } from '../../shell/Redirect.tsx';
 import { TableView } from '../../components/TableView.tsx';
 import { PageHead, StatTile } from '../../components/ui.tsx';
 import { Term } from '../../components/Term.tsx';
@@ -337,9 +338,9 @@ export default function CountryInSectorView() {
     return { v, it, y, points, med, log };
   }, [facts, cell, geo, model, state.eu]);
 
-  if (!tech) return <Navigate to="/sector" replace state={{ notice: `No sector called '${rawT}'; showing all sectors.` }} />;
-  if (!stage || !cell) return <Navigate to={`/sector/${tech}`} replace state={{ notice: `No stage called '${rawS}'; showing the whole ${TECH_LABELS[tech]} chain.` }} />;
-  if (!geo) return <Navigate to={link(`/sector/${tech}/${stage}`)} replace state={{ notice: `No economy '${rawC}' in the sector data; showing the sector.` }} />;
+  if (!tech) return <Redirect to="/sector" notice={`No sector called '${rawT}'; showing all sectors.`} />;
+  if (!stage || !cell) return <Redirect to={`/sector/${tech}`} notice={`No stage called '${rawS}'; showing the whole ${TECH_LABELS[tech]} chain.`} />;
+  if (!geo) return <Redirect to={link(`/sector/${tech}/${stage}`)} notice={`No economy '${rawC}' in the sector data; showing the sector.`} />;
 
   const top10 = pos.filter((p) => !p.signed && p.rank !== null && p.rank <= 10).map((p) => `${ordinal(p.rank as number)} in ${leadLabel(p.v, p.year)}`);
   const lede = top10.length ? `${geo.name} ranks ${listText(top10)} in ${model.cellLabel(cell)}.` : `${geo.name} does not rank in the top 10 on any country-level measure of ${model.cellLabel(cell)}.`;
@@ -347,7 +348,7 @@ export default function CountryInSectorView() {
     <ProfileProvider value={{ model, cell, tech, stage, facts, highlight: geo, eu: state.eu }}>
       <CsvRegistryProvider>
         <div className="space-y-8">
-          <PageHead eyebrow={`SECTOR INSIGHTS · ${model.cellLabel(cell).toUpperCase()}`} title={`${geo.name} in ${model.cellLabel(cell)}`} lede={lede}>
+          <PageHead eyebrow={`SECTORS · ${model.cellLabel(cell).toUpperCase()}`} title={`${geo.name} in ${model.cellLabel(cell)}`} lede={lede}>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="tag">{geo.tier === 'core' ? 'Coalition core' : geo.tier === 'partner' ? 'Coalition partner' : 'Outside the coalition'}</span>
               {geo.eu_member && <span className="tag">EU member</span>}
@@ -359,7 +360,7 @@ export default function CountryInSectorView() {
               </Link>
               {geo.kind === 'country' && (
                 <Link className="link ml-2 text-sm" to={`/countries/${geo.code}`}>
-                  {geo.name} in Country Insights →
+                  {geo.name}: Country profile →
                 </Link>
               )}
             </div>

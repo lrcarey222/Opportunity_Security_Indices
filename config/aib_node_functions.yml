@@ -1,0 +1,154 @@
+# AIB node functions: what each node is in industrial terms, for the Strategic AIB Roles and the
+# compact-specific country roles (docs/aib_methodology.md, section 16). Read by
+# scripts/33_build_aib_strategic_layer.R; the rules that use it are in R/aib/aib_strategic.R (pure).
+#
+# WHAT THIS IS. A role rule has to know whether a node is a raw resource, a processing step, a
+# manufactured component or an assembled system. Neither the dictionary stage nor its index says this:
+# Midstream holds both refining (lithium chemicals) and fabricated parts (wafers, magnets), and
+# "Materials & Inputs" puts wafers, electrical steel and silver paste beside refined metals.
+#
+# HOW IT WAS MADE. Curated from industrial-process knowledge, not discovered: each node took the
+# function of its value-chain step in config/aib_strategic_compacts.yml, with the node overrides listed
+# in `notes`. It is keyed by NODE ID, never by compact or step order, so a revision of the compact map
+# (moving a node, renumbering or relabelling steps) does not change it. Edit freely.
+#
+#   resource     ores, mineral concentrates and recycled feed
+#   processing   chemical or metallurgical transformation (refining, separation, conversion)
+#   components   manufactured materials, components and production equipment (the hard-to-replicate
+#                inputs: a "specialist position" must be in a components node)
+#   systems      assembled systems and end products (large positions here count as scale)
+#
+# VALIDATION (scripts/33). Every node of the run that sits in a strategic compact must have a function;
+# a node this file does not list falls back on its dictionary stage (Upstream -> resource, Midstream ->
+# components, Downstream -> systems) and scripts/33 warns. A value outside the four stops the run.
+# Unmapped nodes (config/aib_strategic_compacts.yml `unmapped`) need no function.
+
+functions:
+  resource: "Ores, mineral concentrates and recycled feed"
+  processing: "Chemical or metallurgical transformation"
+  components: "Manufactured materials, components and production equipment"
+  systems: "Assembled systems and end products"
+
+fallback_by_stage:
+  Upstream: resource
+  Midstream: components
+  Downstream: systems
+
+nodes:
+  # SC-MAGNETS (Permanent Magnets & Drive Systems)
+  rare-earth-ores-monazite: resource
+  rare-earth-oxides-and-compounds: processing
+  rare-earth-metals: processing
+  rare-earth-permanent-magnets: components
+  ferrite-and-other-magnets: components
+  non-oriented-electrical-steel-ngo: components
+  magnet-assemblies: components   # extended scope
+  motor-and-generator-parts: components
+  electric-motors: systems
+  ac-generators: systems
+  # SC-BATTERIES (Battery Materials & Cells)
+  lithium-minerals: resource
+  cobalt-ores: resource
+  natural-graphite: resource
+  battery-recycling-feed: resource
+  other-battery-mineral-ores: resource   # extended scope
+  lithium-chemicals: processing
+  nickel-intermediates-and-chemicals: processing
+  cobalt-intermediates-and-chemicals: processing
+  manganese-dioxide-emd: processing
+  other-battery-metal-chemicals: processing   # extended scope
+  cathode-materials-and-precursors: components
+  synthetic-graphite-anode-grade: components
+  battery-materials-foil-electrolyte: components
+  accumulator-parts-and-separators: components
+  li-ion-cells-and-packs: systems
+  other-accumulators: systems
+  # SC-SEMIS (Semiconductors & Power Electronics)
+  gallium-germanium-and-indium: processing
+  piezo-electric-quartz: components
+  other-semiconductor-materials: processing   # extended scope
+  semiconductor-manufacturing-equipment: components
+  integrated-circuits: components
+  power-semiconductors: components
+  sensors-and-controller-parts: components
+  power-electronics-components: components
+  static-converters-and-inverters: systems
+  automatic-controllers: systems
+  # SC-SOLAR (Solar Manufacturing)
+  polysilicon: processing
+  silicon-metal: processing   # extended scope
+  other-silicon-products: processing   # extended scope
+  wafers: components
+  silver-powder: components
+  solar-cells: components
+  pv-cover-glass: components
+  other-pv-materials: components   # extended scope
+  pv-modules-and-generators: systems
+  # SC-WIND (Wind & Hydropower Equipment)
+  blade-core-wood-balsa: resource
+  other-wind-components: resource   # extended scope
+  wind-blades-and-hubs: components
+  wind-towers: components
+  hydro-turbine-parts: components
+  offshore-wind-structures: components   # extended scope
+  wind-turbine-generating-sets: systems
+  hydro-turbines: systems
+  # SC-NUCLEAR (Nuclear Fuel & Reactor Systems)
+  uranium-ores: resource
+  spent-fuel-and-nuclear-scrap: resource
+  uranium-fuel-upstream--aggregated: resource
+  uranium-conversion-and-enrichment: processing
+  fuel-assemblies-and-zirconium: components
+  nuclear-special-materials: processing
+  reactor-parts: components
+  nuclear-reactors-and-enrichment-machinery: systems
+  # SC-GRID (Grid Equipment & Conductors)
+  copper-ores-and-concentrates: resource
+  bauxite-and-other-ores: resource   # extended scope
+  copper-smelting-and-refining: processing
+  other-copper-and-aluminium-products: processing   # extended scope
+  copper-wire-and-rod: components
+  aluminium-wire-rod: components
+  grain-oriented-electrical-steel-goes: components
+  insulators-and-bushings: components
+  transformer-components: components   # extended scope
+  switchgear-components: components   # extended scope
+  grid-sensors-and-parts: components   # extended scope
+  power-cables: systems
+  overhead-conductors: systems
+  transformers: systems
+  switchgear-and-protection: systems
+  electricity-meters: systems
+  other-cables-and-conductors: systems   # extended scope
+  # SC-EV (Electric Vehicles)
+  electric-and-plug-in-cars: systems
+  electric-buses-trucks-and-tractors: systems
+  electric-two-wheelers-and-works-trucks: systems
+  electric-rail-vehicles: systems
+  ev-components: components   # extended scope
+  other-electric-vehicles: systems   # extended scope
+  # SC-HEAT (Heat Pumps & Cooling)
+  refrigerants: processing
+  refrigeration-and-heat-pump-compressors: components
+  heat-pumps-and-ac-units: systems
+  solar-thermal-water-heaters: systems
+  # SC-INDUSTRY (Industrial Electrification & Hydrogen)
+  pgms-iridium-ruthenium: processing
+  electrolysers: systems
+  hydrogen-ammonia-and-methanol: processing
+  direct-reduced-iron-dri-hbi: processing
+  graphite-electrodes: components
+  furnace-parts: components
+  electric-furnaces-and-heating: systems
+  # unmapped (no function needed): biofuels-and-wood-pellets, biofuel-feedstocks,
+  # critical-mineral-ores, other-critical-minerals
+
+# Nodes whose function differs from the rest of their value-chain step.
+notes:
+  nuclear-special-materials: "processing: heavy water and enriched isotopes are chemical / isotopic processing, unlike fuel-assembly fabrication in the same step"
+  graphite-electrodes: "components: a fabricated furnace consumable, unlike direct-reduced iron in the same step"
+  furnace-parts: "components: fabricated equipment parts, unlike direct-reduced iron in the same step"
+  piezo-electric-quartz: "components: cultured quartz crystal for frequency control is a fabricated material, unlike the refined gallium / germanium / indium in the same step"
+  electrolysers: "systems: electrolysis apparatus is assembled equipment, although it sits before hydrogen in the chain"
+  grid-sensors-and-parts: "components (extended scope): meter and grid-sensor parts, now on the components step of SC-GRID"
+  ev-components: "components (extended scope): wiring harnesses and other vehicle components, unlike the assembled vehicles in the same step"

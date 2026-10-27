@@ -12,7 +12,7 @@ import { scaleLinear, scaleLog } from 'd3';
 import { PlotFigure, Tip } from '../../charts/PlotFigure.tsx';
 import { labelMargin } from '../../charts/theme.ts';
 import { Legend } from '../../charts/legends.tsx';
-import { INK, NEUTRAL_SERIES, PAPER_DIM, SIGNAL } from '../../theme/palette.ts';
+import { INK, NEUTRAL_SERIES, PAPER_DIM, SIGNAL, ZERO_RULE } from '../../theme/palette.ts';
 import { groupColor } from './color.ts';
 import type { LabelledLinesProps, LineSeries } from './types.ts';
 
@@ -21,13 +21,14 @@ export const MAX_LINES = 7;
 export const LINE_DASHES = [null, '7 3', '2 3', '9 3 2 3'] as const;
 const LABEL_GAP = 13;
 
-/** The dash pattern of each line: lines of the same group take the patterns in order. */
+/** The dash pattern of each line: lines of the same group (or the same fixed colour) take the patterns in order. */
 export function lineDashes(lines: readonly LineSeries[]): Map<string, string | null> {
   const k = new Map<string, number>();
   const out = new Map<string, string | null>();
   for (const l of lines) {
-    const i = k.get(l.group) ?? 0;
-    k.set(l.group, i + 1);
+    const key = l.color ?? l.group;
+    const i = k.get(key) ?? 0;
+    k.set(key, i + 1);
     out.set(l.id, LINE_DASHES[i % LINE_DASHES.length]);
   }
   return out;
@@ -69,7 +70,7 @@ export function indexLine(l: LineSeries): LineSeries | null {
 
 const defaultX = (v: number) => String(Math.round(v));
 
-export function LabelledLines({ lines, highlight, index, yLabel, ariaLabel, yTickFormat, valueFormat, xTickFormat = defaultX, onPickX, log, height = 280 }: LabelledLinesProps) {
+export function LabelledLines({ lines, highlight, index, indexLabel, rule, yLabel, ariaLabel, yTickFormat, valueFormat, xTickFormat = defaultX, xLabelFormat, xTickSpacing = 70, onPickX, log, height = 280 }: LabelledLinesProps) {
   const used = useMemo(() => {
     const ls = lines.slice(0, MAX_LINES);
     return index ? (ls.map(indexLine).filter(Boolean) as LineSeries[]) : ls;
@@ -89,7 +90,7 @@ export function LabelledLines({ lines, highlight, index, yLabel, ariaLabel, yTic
       if (!pts.length) return null;
       const color = (id: string) => {
         const l = used.find((x) => x.id === id);
-        return l ? groupColor(l.group) : NEUTRAL_SERIES;
+        return l ? (l.color ?? groupColor(l.group)) : NEUTRAL_SERIES;
       };
       // order: neutral context first, then groups, the highlight last
       const order = [...used].sort((a, b) => Number(a.id === highlight) - Number(b.id === highlight) || Number(b.group === 'neutral') - Number(a.group === 'neutral'));
@@ -97,6 +98,7 @@ export function LabelledLines({ lines, highlight, index, yLabel, ariaLabel, yTic
         .map((l) => [...pts].reverse().find((p) => p.id === l.id))
         .filter((p): p is Pt => !!p);
       const ys = pts.map((p) => p.y);
+      if (rule !== undefined && (!log || rule > 0)) ys.push(rule);
       const lo = log ? Math.min(...ys) : Math.min(0, ...ys);
       const hi = Math.max(...ys);
       const mt = 30;
@@ -110,6 +112,7 @@ export function LabelledLines({ lines, highlight, index, yLabel, ariaLabel, yTic
       const mr = labelMargin(endLabels.map((p) => p.label), { min: 16, max: Math.min(160, Math.floor(width * 0.3)) }) + 6;
       const dash = lineDashes(used);
       const marks: Plot.Markish[] = [];
+      if (rule !== undefined) marks.push(Plot.ruleY([rule], { stroke: ZERO_RULE, strokeWidth: 1 }));
       for (const l of order) {
         const lp = pts.filter((p) => p.id === l.id);
         // observed points; projected ones thinner, joined to the last observation
@@ -134,17 +137,17 @@ export function LabelledLines({ lines, highlight, index, yLabel, ariaLabel, yTic
         marginTop: mt,
         marginBottom: mb,
         marginRight: mr,
-        x: { label: null, tickFormat: xTickFormat, ticks: Math.max(2, Math.floor(width / 70)) },
-        y: { type: log ? 'log' : 'linear', label: index ? `${yLabel} (first year = 100)` : yLabel, grid: true, tickFormat: index ? undefined : yTickFormat, domain: dom, nice: false },
+        x: { label: null, tickFormat: xTickFormat, ticks: Math.max(2, Math.floor(width / xTickSpacing)) },
+        y: { type: log ? 'log' : 'linear', label: index ? `${yLabel} (${indexLabel ?? 'first year = 100'})` : yLabel, grid: true, tickFormat: index ? undefined : yTickFormat, domain: dom, nice: false },
         marks,
       };
     },
-    [pts, used, highlight, index, yLabel, yTickFormat, xTickFormat, log, height],
+    [pts, used, highlight, index, indexLabel, rule, yLabel, yTickFormat, xTickFormat, xTickSpacing, log, height],
   );
   const legend = useMemo(() => {
     if (used.length < 2) return null;
     const dash = lineDashes(used);
-    return used.map((l) => ({ label: l.label, color: l.id === highlight ? SIGNAL : groupColor(l.group), kind: 'line' as const, dash: dash.get(l.id) ?? null }));
+    return used.map((l) => ({ label: l.label, color: l.id === highlight ? SIGNAL : (l.color ?? groupColor(l.group)), kind: 'line' as const, dash: dash.get(l.id) ?? null }));
   }, [used, highlight]);
   return (
     <div>
@@ -157,7 +160,7 @@ export function LabelledLines({ lines, highlight, index, yLabel, ariaLabel, yTic
           <Tip
             value={index ? `${p.y.toFixed(1)} (index)` : valueFormat(p.y)}
             title={p.label}
-            lines={[xTickFormat(p.x), index ? valueFormat(p.raw) : null, p.est ? 'includes an estimate' : null, p.projection ? 'projection' : null]}
+            lines={[(xLabelFormat ?? xTickFormat)(p.x), index ? valueFormat(p.raw) : null, p.est ? 'includes an estimate' : null, p.projection ? 'projection' : null]}
           />
         )}
       />

@@ -1,9 +1,10 @@
-// The shared header (spec_sector.md 2.2).
+// The shared header (spec_sector.md 2.2; IA refactor 2026-10-16).
 //
 //   Tier 1 (every page): the NEIS logo (neiscenter.org), a hairline, the eyebrow "Allied Industrial
-//          Base Explorer" linking to Home, and the four module tabs <nav aria-label="Modules">
-//          (Sector, Strategic, Country, Sectoral Compacts; active: white, 2 px orange underline, aria-current="true";
-//          none on Home or the shared Glossary).
+//          Base Explorer" linking to Home, and the tabs <nav aria-label="Modules">: Sectors, Countries,
+//          Allied Industrial Base and, after a hairline and quieter, About (active: white, 2 px orange
+//          underline, aria-current="true"; none on Home). The legacy Strategic views show the tab that
+//          owns their content (modules.ts tabOf).
 //   Tier 2 (inside a module, >= 1024 px): <nav aria-label="{module} views"> with the links the module
 //          registered (ModuleNav.tsx), or the static fallback until it does.
 //   Below 1024 px: the logo and a Menu button; the panel pushes the content down and lists the
@@ -14,22 +15,28 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Logo } from '../components/Logo.tsx';
 import { useMediaQuery } from './useMediaQuery.ts';
-import { AIB_NAV, aibNavKeyOf, COUNTRY_NAV, countryNavKeyOf, MODULES, placeOf, SECTOR_NAV, sectorCellOfPath, sectorNavKeyOf, STRATEGIC_NAV, strategicNavOf, type ModuleId } from './modules.ts';
+import { ABOUT_NAV, aboutNavKeyOf, AIB_NAV, aibNavKeyOf, COUNTRY_NAV, countryNavKeyOf, MODULES, placeOf, SECTOR_NAV, sectorCellOfPath, sectorNavKeyOf, tabOf, type ModuleId } from './modules.ts';
 import { useModuleNav, type ModuleNavItem } from './ModuleNav.tsx';
-import { aibTabHref, countryProfileHref, countryTabHref, sectorCarry, sectorProfileHref, sectorTabHref, strategicCarry, strategicTabHref } from './lastLocation.ts';
-import { prefetchAib, prefetchCountry, prefetchStrategic } from './prefetch.ts';
+import { aibTabHref, countryProfileHref, countryTabHref, sectorCarry, sectorProfileHref, sectorTabHref, strategicCarry } from './lastLocation.ts';
+import { prefetchAib, prefetchCountry } from './prefetch.ts';
+import { scenarioCarry } from '../aib/scenarioUrl.ts';
 
 /** The tier-2 links of a module: the registered ones, else the static list; `active` filled in. */
 export function moduleItems(module: ModuleId, registered: { module: ModuleId | null; items: readonly ModuleNavItem[] }, pathname: string, search: string): ModuleNavItem[] {
   let items: ModuleNavItem[];
   if (registered.module === module && registered.items.length) items = registered.items.map((i) => ({ ...i }));
-  else if (module === 'aib') items = AIB_NAV.map((n) => ({ key: n.key, label: n.label, to: n.to }));
+  else if (module === 'aib') {
+    // the scenario toggle (scn) travels between the AIB views
+    const q = scenarioCarry(search);
+    items = AIB_NAV.map((n) => ({ key: n.key, label: n.label, to: n.to + q }));
+  }
   else if (module === 'country') {
     const profile = countryProfileHref(pathname);
     items = COUNTRY_NAV.map((n) => ({ key: n.key, label: n.label, to: n.key === 'profile' ? profile : n.to }));
-  } else if (module === 'strategic') {
-    const q = strategicCarry(search);
-    items = STRATEGIC_NAV.map((n) => ({ key: n.to, label: n.label, to: n.to + q }));
+  } else if (module === 'about') {
+    // Methods and Data are Strategic pages: between them the scenario travels
+    const q = placeOf(pathname) === 'strategic' ? strategicCarry(search) : '';
+    items = ABOUT_NAV.map((n) => ({ key: n.key, label: n.label, to: n.to + (n.key === 'methods' || n.key === 'data' ? q : '') }));
   } else {
     const q = sectorCarry(search);
     // PROFILE: the cell on screen, else the last visited one (the store updates after this render)
@@ -38,19 +45,18 @@ export function moduleItems(module: ModuleId, registered: { module: ModuleId | n
     items = SECTOR_NAV.map((n) => ({ key: n.key, label: n.label, to: (n.key === 'profile' ? profile : n.to) + q }));
   }
   const current =
-    module === 'strategic' ? strategicNavOf(pathname) : module === 'country' ? countryNavKeyOf(pathname) : module === 'aib' ? aibNavKeyOf(pathname) : sectorNavKeyOf(pathname);
+    module === 'about' ? aboutNavKeyOf(pathname) : module === 'country' ? countryNavKeyOf(pathname) : module === 'aib' ? aibNavKeyOf(pathname) : sectorNavKeyOf(pathname);
   return items.map((i) => ({ ...i, active: i.active ?? i.key === current }));
 }
 
 const VIEWS_LABEL: Record<ModuleId, string> = {
-  sector: 'Sector Insights views',
-  strategic: 'Strategic Insights views',
-  country: 'Country Insights views',
-  aib: 'Sectoral Compacts views',
+  sector: 'Sector views',
+  country: 'Country views',
+  aib: 'Allied Industrial Base views',
+  about: 'About pages',
 };
 
 function prefetchProps(id: ModuleId) {
-  if (id === 'strategic') return { onPointerEnter: prefetchStrategic, onFocus: prefetchStrategic, onTouchStart: prefetchStrategic };
   if (id === 'country') return { onPointerEnter: prefetchCountry, onFocus: prefetchCountry, onTouchStart: prefetchCountry };
   if (id === 'aib') return { onPointerEnter: prefetchAib, onFocus: prefetchAib, onTouchStart: prefetchAib };
   return {};
@@ -60,8 +66,8 @@ function prefetchProps(id: ModuleId) {
 function tabHref(id: ModuleId, pathname: string, search: string): string {
   if (id === 'sector') return sectorTabHref(pathname, search);
   if (id === 'country') return countryTabHref(pathname, search);
-  if (id === 'aib') return aibTabHref(pathname);
-  return strategicTabHref(pathname, search);
+  if (id === 'aib') return aibTabHref(pathname, search);
+  return '/about';
 }
 
 export function Header({ pathname, search }: { pathname: string; search: string }) {
@@ -69,7 +75,7 @@ export function Header({ pathname, search }: { pathname: string; search: string 
   const [open, setOpen] = useState(false);
   const registered = useModuleNav();
   const place = placeOf(pathname);
-  const module: ModuleId | null = place === 'home' ? null : place;
+  const module = tabOf(pathname);
   const items = module ? moduleItems(module, registered, pathname, search) : [];
   const tabs = MODULES.map((m) => ({
     ...m,
@@ -98,17 +104,19 @@ export function Header({ pathname, search }: { pathname: string; search: string 
           {wide ? (
             <nav aria-label="Modules" className="ml-auto flex flex-wrap items-center justify-end gap-x-4 xl:gap-x-6">
               {tabs.map((t) => (
-                <Link
-                  key={t.id}
-                  to={t.href}
-                  aria-current={t.current ? 'true' : undefined}
-                  className={`border-b-2 py-1 text-sm font-medium uppercase tracking-wider transition-colors ${
-                    t.current ? 'border-signal text-paper' : 'border-transparent text-white/80 hover:text-paper'
-                  }`}
-                  {...prefetchProps(t.id)}
-                >
-                  {t.label}
-                </Link>
+                <span key={t.id} className="flex items-center gap-x-4 xl:gap-x-6">
+                  {t.secondary && <span className="h-5 border-l hairline" aria-hidden="true" />}
+                  <Link
+                    to={t.href}
+                    aria-current={t.current ? 'true' : undefined}
+                    className={`border-b-2 py-1 font-medium uppercase tracking-wider transition-colors ${t.secondary ? 'text-xs' : 'text-sm'} ${
+                      t.current ? 'border-signal text-paper' : `border-transparent ${t.secondary ? 'text-white/60' : 'text-white/80'} hover:text-paper`
+                    }`}
+                    {...prefetchProps(t.id)}
+                  >
+                    {t.label}
+                  </Link>
+                </span>
               ))}
             </nav>
           ) : (

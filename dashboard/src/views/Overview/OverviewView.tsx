@@ -294,7 +294,7 @@ export default function OverviewView() {
   return (
     <div>
       <PageHead
-        eyebrow="Allied Industrial Base Explorer"
+        eyebrow="Countries · World map of any measure"
         title="Overview"
         lede={
           <>
@@ -414,7 +414,7 @@ export default function OverviewView() {
             legend={
               <Legend
                 items={[
-                  ...(swarm.nGhost ? [{ label: 'Paper baseline (where the scenario differs)', kind: 'hollow' as const, color: COMPARE_COLOR.baseline }] : []),
+                  ...(swarm.nGhost ? [{ label: 'NEIS baseline (where your perspective differs)', kind: 'hollow' as const, color: COMPARE_COLOR.baseline }] : []),
                   { label: `Highlighted: ${focusName}`, kind: 'outline' as const, color: '#ffffff' },
                 ]}
               />

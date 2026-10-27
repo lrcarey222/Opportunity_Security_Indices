@@ -18,7 +18,10 @@
 # (partnership_strength_helpers.R): the reporter's own import declaration where it reports the
 # cell, else the partner's export declaration (mirror, put on a CIF basis). A dyad cell with no
 # observed flow in the last theme year takes the (tech, stage) mean (trade_status "imputed"); one
-# observed with no trade is a recorded zero and ranks below every supplier of the reporter.
+# observed with no trade is a recorded zero and ranks below every supplier of the reporter. A
+# (tech, stage) the HS6 crosswalk maps no code to ("no_data": the Downstream stages, Geothermal and
+# Green Hydrogen) takes the dyad's own trade index in its observed cells, the same technology first
+# (no_data_fill "dyad"; partnership_strength_fill_no_data_trade(), partnership_strength_helpers.R).
 #
 # geo_alignment (R/geopolitical_distance/alignment.R, written by scripts/12 as
 # data/processed/geo_alignment_tbl.rds) is the same-bloc probability of i and j on the US-China
@@ -164,11 +167,12 @@ partnership_strength_prepare_geo_alignment <- function(geo_alignment) {
 }
 
 # Reporter i's imports from partner j: the two-stage trade index of
-# partnership_strength_two_stage_trade_index() (level 2 : growth 1 within (tech, stage), then
-# ranked within the reporter; recorded zeros below every supplier). Returns reporter_iso,
-# partner_iso, tech, supply_chain, imp_trade_index and trade_status.
-partnership_strength_build_import_indices <- function(ds_import) {
-  partnership_strength_two_stage_trade_index(ds_import, "imp_trade_index")
+# partnership_strength_two_stage_trade_index() (level 2 : growth 1 within (tech, stage), growth
+# scored from a minimum first-year base, `trade_growth`; then ranked within the reporter; recorded
+# zeros below every supplier). Returns reporter_iso, partner_iso, tech, supply_chain,
+# imp_trade_index and trade_status.
+partnership_strength_build_import_indices <- function(ds_import, trade_growth = partnership_strength_trade_growth_settings()) {
+  partnership_strength_two_stage_trade_index(ds_import, "imp_trade_index", trade_growth = trade_growth)
 }
 
 # Conduit financial centres for the outbound-investment component. Their direct-investment
@@ -373,7 +377,8 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
                                                          component_weights = NULL,
                                                          techs = NULL,
                                                          geo_alignment = NULL,
-                                                         cm_fdi = NULL) {
+                                                         cm_fdi = NULL,
+                                                         no_data_fill = "dyad") {
   component_weights <- partnership_strength_resolve_weights(
     component_weights,
     partnership_strength_friendshore_default_weights(),
@@ -456,8 +461,9 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
     dplyr::left_join(import_indices, by = c("reporter_iso", "partner_iso", "tech", "supply_chain")) %>%
     # A dyad cell without an observed flow (neither the importer nor, as a mirror, the exporter
     # reports the cell in the last theme year) takes the (tech, stage) mean below. A (tech, stage)
-    # with no observed flow at all (the HS6 crosswalk maps no code to it) is "no_data": every dyad
-    # gets the constant 0.5.
+    # with no observed flow at all (the HS6 crosswalk maps no code to it) is "no_data": 0.5 here,
+    # then the dyad's own trade in its other cells (no_data_fill;
+    # partnership_strength_fill_no_data_trade()).
     dplyr::mutate(trade_status = dplyr::if_else(is.na(imp_trade_index), "imputed", trade_status)) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
@@ -472,6 +478,7 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       )
     ) %>%
     dplyr::ungroup() %>%
+    partnership_strength_fill_no_data_trade("imp_trade_index", fill = no_data_fill) %>%
     dplyr::left_join(es_iso, by = c("tech", "supply_chain", "reporter_iso")) %>%
     dplyr::left_join(econ_opp_iso, by = c("reporter_iso" = "exporter_iso", "tech", "supply_chain")) %>%
     dplyr::left_join(eo_partner_iso, by = c("tech", "supply_chain", "partner_iso")) %>%
@@ -565,6 +572,7 @@ partnership_strength_build_friendshore_dyads <- function(import_indices,
       friendshore_index,
       friendshore_index_country,
       trade_status,
+      trade_fill,
       outbound_source,
       imputed_weight_share
     )
@@ -859,7 +867,9 @@ safer_friendshore <- function(comtrade_dyads,
                               cif_fob_factor = PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR,
                               conduit_iso = partnership_strength_conduit_centres()$iso3,
                               conduit_scope = "both",
-                              cm_fdi = NULL) {
+                              cm_fdi = NULL,
+                              trade_growth = partnership_strength_trade_growth_settings(),
+                              no_data_fill = "dyad") {
   component_weights <- partnership_strength_resolve_weights(
     component_weights,
     partnership_strength_friendshore_default_weights(),
@@ -883,7 +893,7 @@ safer_friendshore <- function(comtrade_dyads,
   }
   ds_import <- partnership_strength_trade_view(trade_cells, view = "import")
   rm(trade_cells)
-  import_indices <- partnership_strength_build_import_indices(ds_import)
+  import_indices <- partnership_strength_build_import_indices(ds_import, trade_growth = trade_growth)
   rm(ds_import)
 
   # DIP positions averaged over the same window as the trade data.
@@ -908,7 +918,8 @@ safer_friendshore <- function(comtrade_dyads,
     component_weights = component_weights,
     techs = techs,
     geo_alignment = geo_alignment,
-    cm_fdi = cm_fdi
+    cm_fdi = cm_fdi,
+    no_data_fill = no_data_fill
   )
   # Coverage of the CM-FDI parts by (tech, stage), for the scripts/15 log.
   cm_fdi_coverage <- partnership_strength_cm_fdi_coverage(friendshore_all)

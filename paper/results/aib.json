@@ -1,0 +1,1225 @@
+{
+  "generated": "2026-10-17 09:51",
+  "source_dir": "data/processed/outputs/aib (scripts/31-32 after the credibility pass, ba38e2b)",
+  "headline": {
+    "shock": "china_100",
+    "scenario": "reallocation",
+    "semantics": "hold",
+    "constraint": "production_constrained",
+    "increment": 0.1
+  },
+  "nodes": {
+    "n": 92,
+    "quality": {
+      "High confidence": 23,
+      "Insufficient for optimization": 1,
+      "Usable with caution": 68
+    },
+    "optimized": 91,
+    "in_strategic_scope": 70,
+    "physical_data": 11,
+    "physical_nodes": ["Anode Materials", "Battery Cells", "Cobalt & Nickel Refining", "Lithium Chemicals", "Natural Graphite", "Rare-Earth Metals", "Polysilicon", "Solar Cells", "Solar Modules", "Wafers", "Rare-Earth Compounds + Rare-Earth Ores (Monazite)"],
+    "shared_nodes": ["Transformers", "Rare-Earth Metals", "Permanent Magnets & Magnet Parts", "Pipelines", "Rare-Earth Compounds + Rare-Earth Ores (Monazite)"],
+    "candidates_per_node": {
+      "median": 43,
+      "min": 9,
+      "max": 74
+    },
+    "coalition": {
+      "core": 31,
+      "partner": 26,
+      "demand_scope": 57
+    }
+  },
+  "china_largest_exporter": {
+    "n_stages": 18,
+    "n_china": 9,
+    "n_china_midstream": 8,
+    "share_min": 0.186,
+    "share_max": 0.437,
+    "stages": ["Batteries Midstream", "Coal Midstream", "Electric Grid Midstream", "Electric Vehicles Midstream", "Gas Midstream", "Oil Midstream", "Solar Midstream", "Solar Upstream", "Wind Midstream"],
+    "others": {
+      "Batteries Upstream": "AUS",
+      "Coal Upstream": "AUS",
+      "Electric Grid Upstream": "CHL",
+      "Electric Vehicles Upstream": "AUS",
+      "Gas Upstream": "USA",
+      "Nuclear Midstream": "RUS",
+      "Nuclear Upstream": "KAZ",
+      "Oil Upstream": "USA",
+      "Wind Upstream": "MMR"
+    }
+  },
+  "scope_total": {
+    "all_nodes": {
+      "n_nodes": 91,
+      "demand_usd_bn": 5325.934,
+      "lost_usd_bn": 756.129,
+      "static": 0.858,
+      "existing": 0.909,
+      "optimized": 0.911,
+      "investment": 0.95,
+      "diversion_usd_bn": 282.558,
+      "recovery_usd_bn": 282.556,
+      "new_links": 1236,
+      "expanded_links": 2705
+    },
+    "strategic_scope": {
+      "n_nodes": 69,
+      "demand_usd_bn": 3062.697,
+      "lost_usd_bn": 701.802,
+      "static": 0.771,
+      "existing": 0.844,
+      "optimized": 0.847,
+      "investment": 0.914,
+      "diversion_usd_bn": 232.382,
+      "recovery_usd_bn": 232.382,
+      "new_links": 848,
+      "expanded_links": 2144
+    }
+  },
+  "technology": {
+    "Batteries": {
+      "in_scope": true,
+      "demand_usd_bn": 173.417,
+      "lost_usd_bn": 82.447,
+      "exposure": 0.475,
+      "static": 0.525,
+      "existing": 0.547,
+      "optimized": 0.548,
+      "dividend": 0.0005,
+      "residual_gap": 0.452,
+      "investment": 0.639,
+      "n_nodes": 11,
+      "n_nodes_simulated": 9
+    },
+    "Coal": {
+      "in_scope": false,
+      "demand_usd_bn": 141.623,
+      "lost_usd_bn": 4.776,
+      "exposure": 0.034,
+      "static": 0.966,
+      "existing": 0.984,
+      "optimized": 0.986,
+      "dividend": 0.0014,
+      "residual_gap": 0.014,
+      "investment": 0.996,
+      "n_nodes": 5,
+      "n_nodes_simulated": 2
+    },
+    "Electric Grid": {
+      "in_scope": true,
+      "demand_usd_bn": 531.41,
+      "lost_usd_bn": 88.262,
+      "exposure": 0.166,
+      "static": 0.834,
+      "existing": 0.892,
+      "optimized": 0.897,
+      "dividend": 0.0042,
+      "residual_gap": 0.103,
+      "investment": 0.956,
+      "n_nodes": 15,
+      "n_nodes_simulated": 9
+    },
+    "Electric Vehicles": {
+      "in_scope": true,
+      "demand_usd_bn": 875.052,
+      "lost_usd_bn": 215.839,
+      "exposure": 0.247,
+      "static": 0.753,
+      "existing": 0.812,
+      "optimized": 0.813,
+      "dividend": 0.0006,
+      "residual_gap": 0.187,
+      "investment": 0.87,
+      "n_nodes": 13,
+      "n_nodes_simulated": 8
+    },
+    "Gas": {
+      "in_scope": false,
+      "demand_usd_bn": 452.088,
+      "lost_usd_bn": 16.42,
+      "exposure": 0.036,
+      "static": 0.964,
+      "existing": 0.999,
+      "optimized": 1,
+      "dividend": 0.0007,
+      "residual_gap": -0,
+      "investment": 1,
+      "n_nodes": 6,
+      "n_nodes_simulated": 0
+    },
+    "Nuclear": {
+      "in_scope": true,
+      "demand_usd_bn": 26.473,
+      "lost_usd_bn": 2.284,
+      "exposure": 0.086,
+      "static": 0.914,
+      "existing": 0.966,
+      "optimized": 0.966,
+      "dividend": 0.0003,
+      "residual_gap": 0.034,
+      "investment": 0.994,
+      "n_nodes": 4,
+      "n_nodes_simulated": 1
+    },
+    "Oil": {
+      "in_scope": false,
+      "demand_usd_bn": 1687.103,
+      "lost_usd_bn": 36.104,
+      "exposure": 0.021,
+      "static": 0.979,
+      "existing": 0.999,
+      "optimized": 0.999,
+      "dividend": 0.0002,
+      "residual_gap": 0.001,
+      "investment": 0.999,
+      "n_nodes": 12,
+      "n_nodes_simulated": 2
+    },
+    "Semiconductors": {
+      "in_scope": true,
+      "demand_usd_bn": 615.902,
+      "lost_usd_bn": 111.419,
+      "exposure": 0.181,
+      "static": 0.819,
+      "existing": 0.932,
+      "optimized": 0.933,
+      "dividend": 0.0012,
+      "residual_gap": 0.067,
+      "investment": 0.992,
+      "n_nodes": 9,
+      "n_nodes_simulated": 7
+    },
+    "Solar": {
+      "in_scope": true,
+      "demand_usd_bn": 534.379,
+      "lost_usd_bn": 136.582,
+      "exposure": 0.256,
+      "static": 0.744,
+      "existing": 0.813,
+      "optimized": 0.819,
+      "dividend": 0.0052,
+      "residual_gap": 0.181,
+      "investment": 0.903,
+      "n_nodes": 11,
+      "n_nodes_simulated": 10
+    },
+    "Wind": {
+      "in_scope": true,
+      "demand_usd_bn": 339.353,
+      "lost_usd_bn": 75.183,
+      "exposure": 0.222,
+      "static": 0.778,
+      "existing": 0.872,
+      "optimized": 0.879,
+      "dividend": 0.0074,
+      "residual_gap": 0.121,
+      "investment": 0.971,
+      "n_nodes": 10,
+      "n_nodes_simulated": 9
+    }
+  },
+  "dividend": {
+    "n": 91,
+    "below_1pt": 81,
+    "at_least_5pt": 1,
+    "median_pt": 0.049,
+    "max_node": "Wind Towers",
+    "max_pt": 6.69,
+    "max_existing": 0.933
+  },
+  "high_exposure_nodes": [
+    {
+      "sub_sector": "Battery Cells",
+      "exposure": 0.611,
+      "residual_gap": 0.603,
+      "class": "BUILD"
+    },
+    {
+      "sub_sector": "Anode Materials",
+      "exposure": 0.594,
+      "residual_gap": 0.583,
+      "class": "BUILD"
+    },
+    {
+      "sub_sector": "Vehicle Batteries & Packs",
+      "exposure": 0.593,
+      "residual_gap": 0.582,
+      "class": "BUILD"
+    },
+    {
+      "sub_sector": "Solar Modules",
+      "exposure": 0.533,
+      "residual_gap": 0.528,
+      "class": "BUILD"
+    },
+    {
+      "sub_sector": "Permanent Magnets & Magnet Parts",
+      "exposure": 0.524,
+      "residual_gap": 0.5,
+      "class": "BUILD"
+    },
+    {
+      "sub_sector": "Natural Graphite",
+      "exposure": 0.516,
+      "residual_gap": 0.509,
+      "class": "BUILD"
+    },
+    {
+      "sub_sector": "Lithium Chemicals",
+      "exposure": 0.515,
+      "residual_gap": 0.511,
+      "class": "BUILD"
+    }
+  ],
+  "classes": {
+    "all": {
+      "BUILD": 40,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 50,
+      "MANAGE SPECIALIZATION": 1
+    },
+    "strategic_scope": {
+      "BUILD": 37,
+      "INSUFFICIENT DATA": 1,
+      "LOW INTERVENTION": 32
+    },
+    "multi_label": [
+      {
+        "sub_sector": "Lithium Chemicals",
+        "node_classification": "BUILD",
+        "policy_needs": "BUILD + MANAGE SPECIALIZATION"
+      },
+      {
+        "sub_sector": "Rare-Earth Metals",
+        "node_classification": "BUILD",
+        "policy_needs": "BUILD + MANAGE SPECIALIZATION"
+      },
+      {
+        "sub_sector": "Wind Towers",
+        "node_classification": "LOW INTERVENTION",
+        "policy_needs": "COORDINATE"
+      }
+    ],
+    "warnings": [
+      {
+        "sub_sector": "Cobalt & Nickel Refining",
+        "node_classification": "LOW INTERVENTION",
+        "shock_exposure": 0.086
+      },
+      {
+        "sub_sector": "Polysilicon",
+        "node_classification": "LOW INTERVENTION",
+        "shock_exposure": 0.138
+      }
+    ],
+    "warnings_trade_only": ["Cobalt & Nickel Refining", "Polysilicon", "Wafers"],
+    "build_scope_median_gap": 0.234,
+    "build_scope_median_exposure": 0.278
+  },
+  "investment": {
+    "nodes_simulated_all": 53,
+    "nodes_simulated_scope": 49,
+    "eligible_hosts": 83,
+    "hosts_per_node": {
+      "median": 20,
+      "min": 11,
+      "max": 20
+    },
+    "lead_gain_median": 0.1,
+    "lead_gain_min": 0.059,
+    "lead_gap_before_median": 0.187,
+    "lead_gap_after_median": 0.087,
+    "lead_gap_closed": 10,
+    "lead_capability_basis": {
+      "production share in the node": 5,
+      "RCA and production share in the node": 1,
+      "RCA in the node": 41,
+      "world export share in the node": 2
+    },
+    "lead_hosts": {
+      "CZE": 7,
+      "VNM": 5,
+      "PHL": 3,
+      "DNK": 2,
+      "ESP": 2,
+      "FIN": 2,
+      "IDN": 2,
+      "KOR": 2,
+      "MYS": 2,
+      "TWN": 2,
+      "USA": 2,
+      "AUS": 1,
+      "AUT": 1,
+      "CAN": 1,
+      "CHE": 1,
+      "COD": 1,
+      "GBR": 1,
+      "HUN": 1,
+      "IND": 1,
+      "ITA": 1,
+      "LUX": 1,
+      "MAR": 1,
+      "MMR": 1,
+      "PRT": 1,
+      "ROU": 1,
+      "SGP": 1,
+      "TUN": 1,
+      "TZA": 1,
+      "ZAF": 1
+    },
+    "n_lead_hosts": 29,
+    "lead_nodes": {
+      "CZE": ["Electrical Steel (GOES)", "Grid Control Panels", "Motor & Generator Parts", "Power Converters & Parts", "Steam Cycle & Balance of Plant", "Wind Foundations", "Wind Turbines & Generators"],
+      "VNM": ["Array Cables & Collection Systems", "Integrated Circuits", "Racking, Mounting & Trackers", "Solar Cabling & Connectors", "Solar Module Assembly & Inputs"],
+      "PHL": ["Electric Drive Units & Motors", "Integrated Circuit Parts", "Inverters & Power Electronics"]
+    },
+    "top_pair_nodes": [
+      "Vehicle Batteries & Packs",
+      "Charging Infrastructure",
+      ["Electric Drive Units & Motors", "Integrated Circuit Parts", "Inverters & Power Electronics"],
+      "Battery Cells",
+      "Charging Infrastructure"
+    ],
+    "flows_usd_bn": 178.228,
+    "domestic_usd_bn": 28.821,
+    "n_pairs": 618,
+    "n_investors": 57,
+    "n_hosts": 29,
+    "friendshore_usd_weighted": 0.769,
+    "host_tier_share": {
+      "core": 0.589,
+      "outside": 0.074,
+      "partner": 0.336
+    },
+    "top_hosts": [
+      {
+        "iso": "HUN",
+        "usd_bn": 29.298,
+        "nodes": 1,
+        "investors": 18,
+        "tier": "core"
+      },
+      {
+        "iso": "CZE",
+        "usd_bn": 27.762,
+        "nodes": 7,
+        "investors": 49,
+        "tier": "core"
+      },
+      {
+        "iso": "PHL",
+        "usd_bn": 27.036,
+        "nodes": 3,
+        "investors": 31,
+        "tier": "partner"
+      },
+      {
+        "iso": "VNM",
+        "usd_bn": 25.929,
+        "nodes": 5,
+        "investors": 32,
+        "tier": "partner"
+      },
+      {
+        "iso": "CAN",
+        "usd_bn": 13.018,
+        "nodes": 1,
+        "investors": 30,
+        "tier": "core"
+      },
+      {
+        "iso": "FIN",
+        "usd_bn": 12.958,
+        "nodes": 2,
+        "investors": 9,
+        "tier": "core"
+      },
+      {
+        "iso": "TWN",
+        "usd_bn": 12.335,
+        "nodes": 2,
+        "investors": 32,
+        "tier": "outside"
+      },
+      {
+        "iso": "KOR",
+        "usd_bn": 8.801,
+        "nodes": 2,
+        "investors": 38,
+        "tier": "core"
+      }
+    ],
+    "top_investors": [
+      {
+        "iso": "USA",
+        "usd_bn": 32.214,
+        "nodes": 25,
+        "hosts": 16
+      },
+      {
+        "iso": "DEU",
+        "usd_bn": 21.606,
+        "nodes": 22,
+        "hosts": 17
+      },
+      {
+        "iso": "MEX",
+        "usd_bn": 17.553,
+        "nodes": 24,
+        "hosts": 17
+      },
+      {
+        "iso": "JPN",
+        "usd_bn": 10.165,
+        "nodes": 22,
+        "hosts": 18
+      },
+      {
+        "iso": "VNM",
+        "usd_bn": 9.01,
+        "nodes": 18,
+        "hosts": 12
+      },
+      {
+        "iso": "KOR",
+        "usd_bn": 8.681,
+        "nodes": 22,
+        "hosts": 18
+      },
+      {
+        "iso": "THA",
+        "usd_bn": 8.014,
+        "nodes": 21,
+        "hosts": 15
+      },
+      {
+        "iso": "IND",
+        "usd_bn": 7.897,
+        "nodes": 27,
+        "hosts": 19
+      }
+    ],
+    "top_pairs": [
+      {
+        "investor": "DEU",
+        "host": "FIN",
+        "usd_bn": 9.913,
+        "nodes": 1,
+        "friendshore": 0.788
+      },
+      {
+        "investor": "USA",
+        "host": "HUN",
+        "usd_bn": 7.393,
+        "nodes": 1,
+        "friendshore": 0.83
+      },
+      {
+        "investor": "USA",
+        "host": "PHL",
+        "usd_bn": 5.954,
+        "nodes": 3,
+        "friendshore": 0.666
+      },
+      {
+        "investor": "USA",
+        "host": "TWN",
+        "usd_bn": 5.794,
+        "nodes": 1,
+        "friendshore": 0.697
+      },
+      {
+        "investor": "MEX",
+        "host": "HUN",
+        "usd_bn": 5.736,
+        "nodes": 1,
+        "friendshore": 0.755
+      },
+      {
+        "investor": "USA",
+        "host": "CZE",
+        "usd_bn": 4.471,
+        "nodes": 4,
+        "friendshore": 0.863
+      },
+      {
+        "investor": "MEX",
+        "host": "PHL",
+        "usd_bn": 4.175,
+        "nodes": 2,
+        "friendshore": 0.71
+      },
+      {
+        "investor": "VNM",
+        "host": "TWN",
+        "usd_bn": 4.147,
+        "nodes": 2,
+        "friendshore": 0.806
+      }
+    ],
+    "figure_share_shown": 0.731
+  },
+  "network": {
+    "n_edges": 2029,
+    "n_trade_edges": 1704,
+    "n_investment_edges": 669,
+    "n_both": 344,
+    "n_economies": 108,
+    "roles": {
+      "supplier": 105,
+      "buyer": 57,
+      "investment_host": 32,
+      "investor": 57,
+      "all_four": 25,
+      "supplier_only": 44,
+      "supplier_only_outside": 44
+    },
+    "top_suppliers": [
+      {
+        "iso": "KOR",
+        "usd_bn": 19.072,
+        "partners": 43,
+        "tier": "core"
+      },
+      {
+        "iso": "JPN",
+        "usd_bn": 16.728,
+        "partners": 55,
+        "tier": "core"
+      },
+      {
+        "iso": "USA",
+        "usd_bn": 11.188,
+        "partners": 36,
+        "tier": "core"
+      },
+      {
+        "iso": "DEU",
+        "usd_bn": 10.488,
+        "partners": 39,
+        "tier": "core"
+      },
+      {
+        "iso": "ITA",
+        "usd_bn": 9.103,
+        "partners": 31,
+        "tier": "core"
+      },
+      {
+        "iso": "FRA",
+        "usd_bn": 6.211,
+        "partners": 36,
+        "tier": "core"
+      }
+    ],
+    "top_buyers": [
+      {
+        "iso": "IND",
+        "usd_bn": 12.998,
+        "partners": 45
+      },
+      {
+        "iso": "SGP",
+        "usd_bn": 11.378,
+        "partners": 31
+      },
+      {
+        "iso": "USA",
+        "usd_bn": 11.068,
+        "partners": 38
+      },
+      {
+        "iso": "BRA",
+        "usd_bn": 8.433,
+        "partners": 42
+      },
+      {
+        "iso": "KOR",
+        "usd_bn": 7.914,
+        "partners": 40
+      },
+      {
+        "iso": "ESP",
+        "usd_bn": 7.224,
+        "partners": 19
+      }
+    ],
+    "supplier_volume_usd_bn": 158.719,
+    "supplier_volume_outside_share": 0.144,
+    "top_edges": [
+      {
+        "supplier": "KOR",
+        "buyer": "IND",
+        "usd_bn": 11.983,
+        "subsectors": 20
+      },
+      {
+        "supplier": "KOR",
+        "buyer": "SGP",
+        "usd_bn": 6.439,
+        "subsectors": 36
+      },
+      {
+        "supplier": "JPN",
+        "buyer": "BRA",
+        "usd_bn": 5.366,
+        "subsectors": 34
+      },
+      {
+        "supplier": "SGP",
+        "buyer": "KOR",
+        "usd_bn": 4.584,
+        "subsectors": 23
+      },
+      {
+        "supplier": "DEU",
+        "buyer": "USA",
+        "usd_bn": 4.307,
+        "subsectors": 30
+      }
+    ]
+  },
+  "compacts": {
+    "n": 22,
+    "types": {
+      "candidate compact": 22
+    },
+    "archetypes": {
+      "Investment / Capacity Compact": 22
+    },
+    "size": {
+      "min": 3,
+      "median": 6,
+      "max": 9
+    },
+    "sizes": {
+      "3": 3,
+      "6": 13,
+      "7": 4,
+      "8": 1,
+      "9": 1
+    },
+    "n_with_critical": 4,
+    "critical": {
+      "AIB-C01": "SGP TWN",
+      "AIB-C07": "GBR",
+      "AIB-C16": "MDG MOZ",
+      "AIB-C22": "VNM"
+    },
+    "n_with_associates": 1,
+    "n_with_crit_ext": 7,
+    "n_target_reached_95": 22,
+    "n_robust_solved": 22,
+    "n_associates_reach_99": 22,
+    "exact_equals_greedy": 13,
+    "exact_size_equals_greedy": 22,
+    "n_subsectors": 37,
+    "n_multi_node": 9,
+    "lost_usd_bn": 459.5,
+    "max_dividend_pt": 0.042,
+    "max_trade_minus_existing_pt": 0.042,
+    "anchor_gain_median": 0.326,
+    "anchor_gain_range": [0.105, 0.764],
+    "investment_step_median_pt": 19.89,
+    "after_investment_at_least_95": 12,
+    "member_freq": {
+      "VNM": 16,
+      "USA": 15,
+      "JPN": 14,
+      "DEU": 13,
+      "IND": 10,
+      "KOR": 10,
+      "MEX": 8,
+      "THA": 7,
+      "AUS": 4,
+      "SAU": 4
+    },
+    "n_member_economies": 29,
+    "key_policy_needs": {
+      "coordinated finance": 22,
+      "demand aggregation": 22,
+      "guarantees": 22,
+      "investment pipeline": 22,
+      "long-term offtake": 22,
+      "price support": 22
+    },
+    "rows": [
+      {
+        "id": "AIB-C01",
+        "nodes": "Battery Cells; Current Collectors & Foils; Electrolyte Materials; Separator Materials; Vehicle Batteries & Packs",
+        "technology": "Batteries; Electric Vehicles",
+        "members": "AUT DEU IND KOR NLD SGP TWN USA VNM",
+        "critical": "SGP TWN",
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 140.603,
+        "static": 0.42,
+        "existing": 0.435,
+        "trade_compact": 0.435,
+        "investment": 0.634,
+        "anchor_fragmented": 0.365,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C02",
+        "nodes": "Charging Infrastructure",
+        "technology": "Electric Vehicles",
+        "members": "DEU JPN MEX THA USA VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 78.399,
+        "static": 0.732,
+        "existing": 0.803,
+        "trade_compact": 0.803,
+        "investment": 1,
+        "anchor_fragmented": 0.791,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C03",
+        "nodes": "Inverters & Power Electronics",
+        "technology": "Solar",
+        "members": "DEU IND JPN MEX USA VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 50.467,
+        "static": 0.736,
+        "existing": 0.791,
+        "trade_compact": 0.791,
+        "investment": 0.991,
+        "anchor_fragmented": 0.819,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C04",
+        "nodes": "Power Converters & Parts",
+        "technology": "Electric Grid",
+        "members": "DEU IND JPN MEX USA VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": "THA",
+        "lost_usd_bn": 36.914,
+        "static": 0.659,
+        "existing": 0.703,
+        "trade_compact": 0.703,
+        "investment": 0.903,
+        "anchor_fragmented": 0.716,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C05",
+        "nodes": "Solar Module Assembly & Inputs; Solar Modules",
+        "technology": "Solar",
+        "members": "BRA DEU IND NLD SAU USA VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 33.668,
+        "static": 0.573,
+        "existing": 0.604,
+        "trade_compact": 0.604,
+        "investment": 0.804,
+        "anchor_fragmented": 0.318,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C06",
+        "nodes": "Electrical Steel (GOES); Transformers; Wind Substations",
+        "technology": "Electric Grid; Solar; Wind",
+        "members": "DEU MEX SAU THA USA VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": "KOR",
+        "lost_usd_bn": 31.728,
+        "static": 0.801,
+        "existing": 0.882,
+        "trade_compact": 0.882,
+        "investment": 0.994,
+        "anchor_fragmented": 0.895,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C07",
+        "nodes": "Electric Drive Units & Motors; Permanent Magnets & Magnet Parts",
+        "technology": "Electric Vehicles; Wind",
+        "members": "DEU GBR JPN KOR MEX USA VNM",
+        "critical": "GBR",
+        "associates": "THA",
+        "critical_external": "CHE FRA ITA MYS PHL POL THA",
+        "lost_usd_bn": 18.95,
+        "static": 0.707,
+        "existing": 0.75,
+        "trade_compact": 0.75,
+        "investment": 0.95,
+        "anchor_fragmented": 0.738,
+        "anchor_compact": 0.993
+      },
+      {
+        "id": "AIB-C08",
+        "nodes": "Motor & Generator Parts; Wind Blades; Wind Turbines & Generators",
+        "technology": "Electric Vehicles; Wind",
+        "members": "DEU IND JPN KOR USA VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 15.243,
+        "static": 0.743,
+        "existing": 0.814,
+        "trade_compact": 0.814,
+        "investment": 1,
+        "anchor_fragmented": 0.787,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C09",
+        "nodes": "Racking, Mounting & Trackers",
+        "technology": "Solar",
+        "members": "AUS JPN KOR THA USA VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 13.139,
+        "static": 0.72,
+        "existing": 0.836,
+        "trade_compact": 0.836,
+        "investment": 1,
+        "anchor_fragmented": 0.682,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C10",
+        "nodes": "Wind Foundations",
+        "technology": "Wind",
+        "members": "AUS JPN KOR THA USA VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 10.528,
+        "static": 0.722,
+        "existing": 0.838,
+        "trade_compact": 0.839,
+        "investment": 1,
+        "anchor_fragmented": 0.675,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C11",
+        "nodes": "Discrete Semiconductors; Semiconductor Device Parts",
+        "technology": "Semiconductors",
+        "members": "DEU IND KOR MEX SGP VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 8.164,
+        "static": 0.733,
+        "existing": 0.765,
+        "trade_compact": 0.765,
+        "investment": 0.964,
+        "anchor_fragmented": 0.668,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C12",
+        "nodes": "Silicon Metal; Solar Cells; Wafers",
+        "technology": "Solar",
+        "members": "IND JPN KOR THA TUR TWN",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 6.818,
+        "static": 0.668,
+        "existing": 0.684,
+        "trade_compact": 0.684,
+        "investment": 0.884,
+        "anchor_fragmented": 0.381,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C13",
+        "nodes": "Battery Packs, Parts & BMS",
+        "technology": "Batteries",
+        "members": "AUT CAN CHL GBR JPN USA VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": "KOR",
+        "lost_usd_bn": 4.596,
+        "static": 0.593,
+        "existing": 0.622,
+        "trade_compact": 0.622,
+        "investment": 0.822,
+        "anchor_fragmented": 0.53,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C14",
+        "nodes": "Cathode Materials & Battery Precursors; Lithium Chemicals",
+        "technology": "Batteries",
+        "members": "AUS FRA IDN JPN KOR ZAF",
+        "critical": null,
+        "associates": null,
+        "critical_external": "CHL",
+        "lost_usd_bn": 3.31,
+        "static": 0.718,
+        "existing": 0.748,
+        "trade_compact": 0.748,
+        "investment": 0.889,
+        "anchor_fragmented": 0.57,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C15",
+        "nodes": "Steam Cycle & Balance of Plant",
+        "technology": "Nuclear",
+        "members": "DEU IDN IND JPN SGP THA VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 1.948,
+        "static": 0.734,
+        "existing": 0.878,
+        "trade_compact": 0.878,
+        "investment": 1,
+        "anchor_fragmented": 0.606,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C16",
+        "nodes": "Anode Materials; Natural Graphite",
+        "technology": "Batteries; Electric Vehicles",
+        "members": "DEU HUN MDG MOZ MYS NOR POL USA",
+        "critical": "MDG MOZ",
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 1.827,
+        "static": 0.418,
+        "existing": 0.428,
+        "trade_compact": 0.428,
+        "investment": 0.628,
+        "anchor_fragmented": 0.236,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C17",
+        "nodes": "Grid Metering Equipment",
+        "technology": "Electric Grid",
+        "members": "DEU GBR IDN MEX SAU VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 1.391,
+        "static": 0.766,
+        "existing": 0.831,
+        "trade_compact": 0.832,
+        "investment": 1,
+        "anchor_fragmented": 0.673,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C18",
+        "nodes": "Piezoelectric Components",
+        "technology": "Semiconductors",
+        "members": "DEU IND JPN KOR MEX VNM",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 0.82,
+        "static": 0.754,
+        "existing": 0.862,
+        "trade_compact": 0.862,
+        "investment": 1,
+        "anchor_fragmented": 0.82,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C19",
+        "nodes": "Rare-Earth Compounds + Rare-Earth Ores (Monazite)",
+        "technology": "Electric Vehicles; Wind",
+        "members": "JPN MYS USA",
+        "critical": null,
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 0.36,
+        "static": 0.601,
+        "existing": 0.618,
+        "trade_compact": 0.618,
+        "investment": 0.818,
+        "anchor_fragmented": 0.25,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C20",
+        "nodes": "Power Capacitors & Fuses",
+        "technology": "Electric Grid",
+        "members": "IND MYS PHL SAU THA USA",
+        "critical": null,
+        "associates": null,
+        "critical_external": "MEX SGP",
+        "lost_usd_bn": 0.276,
+        "static": 0.77,
+        "existing": 0.848,
+        "trade_compact": 0.848,
+        "investment": 1,
+        "anchor_fragmented": 0.805,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C21",
+        "nodes": "Gallium, Germanium & Indium",
+        "technology": "Semiconductors",
+        "members": "KOR NLD USA",
+        "critical": null,
+        "associates": null,
+        "critical_external": "BRA",
+        "lost_usd_bn": 0.243,
+        "static": 0.626,
+        "existing": 0.704,
+        "trade_compact": 0.705,
+        "investment": 0.905,
+        "anchor_fragmented": 0.613,
+        "anchor_compact": 1
+      },
+      {
+        "id": "AIB-C22",
+        "nodes": "Rare-Earth Metals",
+        "technology": "Electric Vehicles; Wind",
+        "members": "AUS JPN VNM",
+        "critical": "VNM",
+        "associates": null,
+        "critical_external": null,
+        "lost_usd_bn": 0.107,
+        "static": 0.779,
+        "existing": 0.78,
+        "trade_compact": 0.78,
+        "investment": 0.98,
+        "anchor_fragmented": 0.723,
+        "anchor_compact": 1
+      }
+    ]
+  },
+  "validation": {
+    "anode-materials production_constrained": {
+      "node_id": "anode-materials",
+      "sub_sector": "Anode Materials",
+      "mode": "production_constrained",
+      "exposure": 0.594,
+      "existing": 0.417,
+      "optimized": 0.417,
+      "dividend": 0,
+      "gap": 0.583,
+      "class": "BUILD",
+      "warning": "",
+      "compact": "C16",
+      "coalition": "DEU HUN MDG MOZ MYS NOR POL USA",
+      "critical": "MDG MOZ"
+    },
+    "anode-materials trade_only": {
+      "node_id": "anode-materials",
+      "sub_sector": "Anode Materials",
+      "mode": "trade_only",
+      "exposure": 0.594,
+      "existing": 0.425,
+      "optimized": 0.426,
+      "dividend": 0.001,
+      "gap": 0.574,
+      "class": "BUILD",
+      "warning": "",
+      "compact": "C16",
+      "coalition": "BRA FRA HUN MDG MOZ MYS POL USA",
+      "critical": "MDG"
+    },
+    "permanent-magnets-and-magnet-parts production_constrained": {
+      "node_id": "permanent-magnets-and-magnet-parts",
+      "sub_sector": "Permanent Magnets & Magnet Parts",
+      "mode": "production_constrained",
+      "exposure": 0.524,
+      "existing": 0.5,
+      "optimized": 0.5,
+      "dividend": 0,
+      "gap": 0.5,
+      "class": "BUILD",
+      "warning": "",
+      "compact": "C07",
+      "coalition": "DEU GBR JPN KOR MEX USA VNM",
+      "critical": "GBR"
+    },
+    "permanent-magnets-and-magnet-parts trade_only": {
+      "node_id": "permanent-magnets-and-magnet-parts",
+      "sub_sector": "Permanent Magnets & Magnet Parts",
+      "mode": "trade_only",
+      "exposure": 0.524,
+      "existing": 0.5,
+      "optimized": 0.5,
+      "dividend": 0,
+      "gap": 0.5,
+      "class": "BUILD",
+      "warning": "",
+      "compact": "C07",
+      "coalition": "DEU GBR JPN KOR MEX USA VNM",
+      "critical": "GBR"
+    },
+    "rare-earth-compounds production_constrained": {
+      "node_id": "rare-earth-compounds",
+      "sub_sector": "Rare-Earth Compounds + Rare-Earth Ores (Monazite)",
+      "mode": "production_constrained",
+      "exposure": 0.399,
+      "existing": 0.618,
+      "optimized": 0.618,
+      "dividend": 0,
+      "gap": 0.382,
+      "class": "BUILD",
+      "warning": "",
+      "compact": "C19",
+      "coalition": "JPN MYS USA",
+      "critical": ""
+    },
+    "rare-earth-compounds trade_only": {
+      "node_id": "rare-earth-compounds",
+      "sub_sector": "Rare-Earth Compounds + Rare-Earth Ores (Monazite)",
+      "mode": "trade_only",
+      "exposure": 0.399,
+      "existing": 0.662,
+      "optimized": 0.662,
+      "dividend": 0,
+      "gap": 0.338,
+      "class": "BUILD",
+      "warning": "",
+      "compact": "C19",
+      "coalition": "JPN MYS USA",
+      "critical": ""
+    },
+    "wafers production_constrained": {
+      "node_id": "wafers",
+      "sub_sector": "Wafers",
+      "mode": "production_constrained",
+      "exposure": 0.278,
+      "existing": 0.745,
+      "optimized": 0.745,
+      "dividend": 0,
+      "gap": 0.255,
+      "class": "BUILD",
+      "warning": "",
+      "compact": "C12",
+      "coalition": "IND JPN KOR THA TUR TWN",
+      "critical": ""
+    },
+    "wafers trade_only": {
+      "node_id": "wafers",
+      "sub_sector": "Wafers",
+      "mode": "trade_only",
+      "exposure": 0.278,
+      "existing": 0.91,
+      "optimized": 0.934,
+      "dividend": 0.024,
+      "gap": 0.066,
+      "class": "LOW INTERVENTION",
+      "warning": "PHYSICAL CAPABILITY NOT VALIDATED",
+      "compact": "",
+      "coalition": "",
+      "critical": ""
+    }
+  }
+}

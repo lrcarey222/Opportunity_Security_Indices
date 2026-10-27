@@ -77,6 +77,25 @@ inputs:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
   - scripts/98_pull_comtrade_energy_dyads.R
+- id: comtrade_monthly_core
+  path: comtrade_monthly_core.csv
+  source_type: api
+  source_name: UN Comtrade (monthly HS6 trade with the world, coalition core members)
+  url: https://comtradeplus.un.org/
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: each core member's latest 12 calendar months in Comtrade's monthly availability
+    listing at pull time (first pull 2026-10-19 UTC; windows end 2025-09 to 2026-08)
+  staged_from: pipeline
+  notes: Written by scripts/99_pull_comtrade_monthly_core.R (chunked, resumable; requires
+    COMTRADE_API_KEY) with its windows file comtrade_monthly_core_windows.csv (reporter_iso,
+    first_month, last_month, n_missing, reason). Reporters are the tier-core members of
+    coalition_tbl.rds; partner World; codes are the non-legacy codes of the HS6 master plus
+    any COMTRADE_MONTHLY_EXTRA_CODES lists. Values as each economy reported them (no mirror
+    flows). Austria publishes no monthly data. Feeds the Country pages' monthly trade files.
+  required_by:
+  - scripts/88_export_country_data.R
+  - scripts/99_pull_comtrade_monthly_core.R
 - id: comtrade_total_export
   path: comtrade_total_export.csv
   source_type: api
@@ -189,6 +208,54 @@ inputs:
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
+- id: climate_trace_country_emissions
+  path: climate_trace_country_emissions.csv
+  source_type: api
+  source_name: Climate TRACE, country emissions by subsector (CO2e, 100-year GWP)
+  url: https://api.climatetrace.org/v6/country/emissions
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: API v6, accessed 2026-10-17; years 2021-2025 (2026 is partial in the API and
+    not fetched)
+  licence: CC BY 4.0 (Climate TRACE, https://climatetrace.org); cite "Climate TRACE"
+    wherever the figures are shown
+  fetch_policy: fallback
+  staged_from: sharepoint
+  notes: 'Written by scripts/fetchers/climate_trace.R (Rscript scripts/fetchers/climate_trace.R
+    country): one call per (subsector, year) for every country of /v6/definitions/countries,
+    the 14 subsectors of config/climate_trace_map.yml (fossil-fuel operations, mineral
+    extraction, aluminium, iron and steel, chemicals, other metals, cement, electricity
+    generation), plus a WLD row per call from the answer''s worldEmissions. Columns iso3,
+    sector, subsector, year, co2e_100yr, co2, ch4, n2o, co2e_20yr (tonnes), fetched_on.
+    Answered calls are cached under data/raw_cache/climate_trace/; a failed call stops the
+    fetch and is named, never filled. fetch_policy is fallback: Climate TRACE revises its
+    history with each release, so the staged copy is kept until refetched on purpose.
+    Staged only in the worktree data/raw so far: copy it to the SharePoint raw folder.'
+  required_by:
+  - scripts/16_build_climate_trace.R
+- id: climate_trace_asset_activity
+  path: climate_trace_asset_activity.csv
+  source_type: api
+  source_name: Climate TRACE, tracked assets (power plants, smelters, mines, refineries)
+    aggregated by country, subsector, asset group and year
+  url: https://api.climatetrace.org/v6/assets
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: API v6, accessed 2026-10-17; years 2021-2025
+  licence: CC BY 4.0 (Climate TRACE, https://climatetrace.org)
+  fetch_policy: fallback
+  staged_from: sharepoint
+  notes: 'Written by scripts/fetchers/climate_trace.R (Rscript scripts/fetchers/climate_trace.R
+    assets): /v6/assets per (subsector, year), paged 10,000 assets at a time, aggregated at
+    once per (iso3, asset group) - the asset rows are not kept. Groups: electricity generation
+    by primary fuel (the first fuel listed), aluminium by asset type (Smelting, Refinery),
+    otherwise all. Columns iso3, subsector, asset_group, year, n_assets, n_activity (assets
+    reporting an activity), co2e_100yr, co2e_100yr_activity (emissions of those assets),
+    activity, activity_unit (MWh, t of steel, t of copper ore, BBL, ...), capacity,
+    capacity_unit, fetched_on. Oil and gas production and transport are not fetched: their
+    asset activity is licence-restricted. Staged only in the worktree data/raw so far.'
+  required_by:
+  - scripts/16_build_climate_trace.R
 - id: ilo_earnings_by_activity
   path: ilo_earnings_by_activity.csv
   source_type: api
@@ -428,6 +495,18 @@ inputs:
   - scripts/15_build_partner_themes.R
   - scripts/30_build_allied_network_design.R
   - scripts/98_pull_comtrade_energy_dyads.R
+- id: electro_industrial_hs6_dictionary
+  path: electro_industrial_hs6_dictionary.csv
+  source_type: derived
+  source_name: Electro-industrial HS6 dictionary (RMI Electro-Industrial Stack)
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  staged_from: repo
+  notes: 370 rows, 318 HS2022 codes in 6 indices x 39 sectors, each code with one stage and one primary row;
+    built 2026-10-18 against NZIPL's Green Dictionary and the OSI basket (docs/electro_industrial_dictionary/).
+    The node taxonomy of the Allied Industrial Base (config/aib_taxonomy_dictionary.yml).
+  required_by:
+  - scripts/31_build_aib_trade_network.R
 - id: hs6_categories_with_essential
   path: hs6_categories_with_essential.csv
   source_type: derived
@@ -725,6 +804,7 @@ inputs:
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
+  - scripts/31_build_aib_trade_network.R
 - id: hs92_product_year_6
   path: hs92_product_year_6.csv
   source_type: manual
@@ -784,12 +864,17 @@ inputs:
   owner: lcarey@rmi.org
   vintage: '2026'
   staged_from: sharepoint
+  licence: CC BY 4.0 (the workbook's Notice sheet); cite the IEA Critical Minerals Dataset
+    wherever the figures are shown
   notes: Staged as the published IEA workbook from the 2026 release onward; earlier
     vintages were staged as a hand-flattened CSV. R/utils/iea_critical_minerals.R
-    reads either form.
+    reads either form. The 2026 demand sheets publish the Current Policies, Stated Policies
+    and High Demand scenarios and no Net Zero scenario (scripts/17_build_iea_pathways.R reads
+    every scenario for the Climate section).
   required_by:
   - scripts/05_ingest_sources.R
   - scripts/10_build_themes.R
+  - scripts/17_build_iea_pathways.R
   - scripts/40_build_index_vintages.R
   - scripts/87_export_sector_data.R
   - scripts/paper/fig_es.R
@@ -873,14 +958,94 @@ inputs:
 - id: oecd_crs_api
   path: oecd_crs_api.csv
   source_type: manual
-  source_name: OECD Creditor Reporting System aid flows
+  source_name: OECD Creditor Reporting System aid flows (3-digit sectors)
   url: https://data-explorer.oecd.org/
   cadence: annual
   owner: lcarey@rmi.org
   staged_from: sharepoint
-  notes: OECD publishes an SDMX API; the filename is aspirational, not automated.
+  notes: SDMX extract of DF_CRS 1.4 (ODA, gross disbursements, constant 2023 USD, 3-digit
+    sectors; 2024 holds 108 rows only). Shipped by the dashboard's Development & finance
+    chunk; since October 2026 Development Potential reads oecd_crs_purpose.csv instead.
+    Kept with retain because scripts/87 builds its input paths from a named vector, which the reference
+    scan does not read.
+  retain: yes
+  required_by:
+  - scripts/87_export_sector_data.R
+- id: oecd_crs_purpose
+  path: oecd_crs_purpose.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: OECD Creditor Reporting System, bilateral official finance by purpose code
+  url: https://webfs-dcd.oecd.org/files/dotStat/DSD_CRS/CRS-reduced.parquet
+  cadence: annual
+  owner: lcarey@rmi.org
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/oecd_crs.R from the CRS bulk file and the DAC-CRS
+    code lists (needs the arrow and readxl packages). ODA, OOF and PSI of country
+    donors to recipient countries, purpose codes 23xxx / 321xx / 322xx, summed by year,
+    donor, recipient, purpose code and measure; USD millions at constant prices of
+    price_base_year. Incomplete years are left out (2025 in the October 2026 file). The
+    SDMX data endpoint of DF_CRS returned HTTP 500 on 2026-10-16, hence the bulk file.
   required_by:
   - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
+- id: oci_energy_finance
+  path: oci_energy_finance.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Oil Change International, Public Finance for Energy Database (international
+    transactions)
+  url: https://energyfinance.org/
+  cadence: quarterly
+  owner: lcarey@rmi.org
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/oci_energy_finance.R from https://energyfinance.org/dataset.csv.
+    Energy transactions of G20 export credit agencies, development finance institutions,
+    national development banks and MDBs, one row per transaction and recipient country
+    (multi-country deals split equally), amounts in current USD as committed. Licence CC BY-NC
+    4.0 (attribution to Oil Change International). Supplies the export-credit and lender
+    finance the CRS lacks (JBIC, NEXI, JOGMEC, US EXIM, KEXIM, Hermes, KfW IPEX-Bank, UKEF, ...).
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
+- id: oci_energy_finance_institutions
+  path: oci_energy_finance_institutions.csv
+  source_type: derived
+  source_name: OCI institutions counted in Development Potential (CRS overlap table)
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  staged_from: repo
+  notes: Project-authored. One row per OCI bilateral or export-credit institution, source oci
+    (not in the CRS; counted) or crs (reports to the CRS; not counted twice), and the CRS
+    measure an institution replaces (Korea OOF for KEXIM).
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
+- id: oci_energy_finance_crosswalk
+  path: oci_energy_finance_crosswalk.csv
+  source_type: derived
+  source_name: OCI sector and stage to technology and supply-chain stage crosswalk
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  staged_from: repo
+  notes: Project-authored. Keyed by OCI sector and value-chain stage ("*" for the stages a sector
+    does not list); direct, pooled or exclude, as the CRS purpose crosswalk.
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
+- id: oecd_crs_purpose_crosswalk
+  path: oecd_crs_purpose_crosswalk.csv
+  source_type: derived
+  source_name: CRS purpose code to technology and supply-chain stage crosswalk
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  staged_from: repo
+  notes: Project-authored. Direct codes name the technologies they fund (split equally
+    when several); pooled (cross-cutting) codes are spread pro rata to the partner's
+    direct aid (partnership_strength_allocate_crs_purposes()).
+  required_by:
+  - scripts/15_build_partner_themes.R
+  - scripts/87_export_sector_data.R
 - id: solar_potential
   path: solar_potential_clean.csv
   source_type: manual
@@ -993,6 +1158,138 @@ inputs:
   cadence: annual
   owner: lcarey@rmi.org
   vintage: '2025'
+  licence: CC BY-NC-SA 4.0 (the IEA dataset page, checked 2026-10-17; earlier recorded as CC BY 4.0);
+    cite IEA (2025), World Energy Outlook 2025, wherever the figures are shown
   staged_from: sharepoint
+  notes: World (the Regions file of the same free dataset is weo_annex_a_regions, staged 2026-10-17).
+    Historical 2010, 2023, 2024 and the Stated Policies, Current Policies and Net Zero
+    Emissions by 2050 scenarios for 2035, 2040, 2050. scripts/17_build_iea_pathways.R also
+    reads the previous vintage (WEO2024_AnnexA_Free_Dataset_World.csv, the same pattern) for a
+    vintage check only; it is never shipped.
   required_by:
   - scripts/10_build_themes.R
+  - scripts/17_build_iea_pathways.R
+- id: gcp_national_fossil_co2
+  path: National_Fossil_Carbon_Emissions_2025_v1.0.xlsx
+  pattern: ^National_Fossil_Carbon_Emissions_\d{4}_v[0-9.]+\.xlsx$
+  resolve: newest
+  source_type: manual
+  source_name: Global Carbon Project, Global Carbon Budget national fossil CO2 emissions
+  url: https://globalcarbonbudget.org/carbonbudget
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: 2025 v1.0 (territorial to 2024; consumption-based and transfers to 2023)
+  licence: 'Use conditional on citing the sources (Summary sheet): Friedlingstein et al. (2025), Global
+    Carbon Budget 2025, Earth Syst. Sci. Data, https://doi.org/10.5194/essd-2025-659; consumption-based
+    emissions: Peters, Davis and Andrew (2012), Biogeosciences 9, 3247-3276'
+  staged_from: sharepoint
+  notes: Staged 2026-10-17 (user request; copy it to the SharePoint raw folder). Sheets Territorial
+    Emissions, Consumption Emissions, Emissions Transfers (MtC; x3.664 for CO2). Read by
+    scripts/18_build_climate_sources.R for the Country profile's fossil CO2 card.
+  required_by:
+  - scripts/18_build_climate_sources.R
+- id: gcp_global_carbon_budget
+  path: Global_Carbon_Budget_2025_v1.0.xlsx
+  pattern: ^Global_Carbon_Budget_\d{4}_v[0-9.]+\.xlsx$
+  resolve: newest
+  source_type: manual
+  source_name: Global Carbon Project, Global Carbon Budget (global budget and fossil emissions by category)
+  url: https://globalcarbonbudget.org/carbonbudget
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: 2025 v1.0 (to 2024)
+  licence: 'Use conditional on citing the sources (Summary sheet): Friedlingstein et al. (2025), Global
+    Carbon Budget 2025, Earth Syst. Sci. Data, https://doi.org/10.5194/essd-2025-659'
+  staged_from: sharepoint
+  notes: Staged 2026-10-17 (user request; copy it to the SharePoint raw folder). Only the Fossil
+    Emissions by Category sheet is read (World fossil CO2 by fuel, GtC; x3.664), as context for the
+    coal, oil and gas sectors' Climate sections. The budget terms (land use, sinks) are not used.
+  required_by:
+  - scripts/18_build_climate_sources.R
+- id: ei_country_transition_tracker
+  path: 2025 Country Transition Tracker Data.xlsx
+  pattern: ^\d{4} Country Transition Tracker Data\.xlsx$
+  resolve: newest
+  source_type: manual
+  source_name: Energy Institute Statistical Review of World Energy, Country Transition Tracker
+  url: https://www.energyinst.org/statistical-review
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: '2025 (1990, 2008, 2012, 2017, 2024)'
+  licence: Attribution (Energy Institute Statistical Review of World Energy 2025); the workbook states
+    no terms of its own and the Energy Institute site could not be read on 2026-10-17, so this follows
+    the explorer's other Statistical Review data. Confirm before any commercial use.
+  staged_from: sharepoint
+  notes: Staged 2026-10-17 (user request; copy it to the SharePoint raw folder). Eight indicator sheets;
+    the Carbon Intensity sheet's unit text says tonnes per megajoule, its values are tonnes per terajoule
+    (Contents sheet). Read by scripts/18_build_climate_sources.R.
+  required_by:
+  - scripts/18_build_climate_sources.R
+- id: weo_annex_a_regions
+  path: WEO2025_AnnexA_Free_Dataset_Regions.csv
+  pattern: ^WEO\d{4}_AnnexA_Free_Dataset_Regions\.csv$
+  resolve: newest
+  source_type: manual
+  source_name: IEA World Energy Outlook free dataset, Regions
+  url: https://www.iea.org/data-and-statistics/data-product/world-energy-outlook-2025-free-dataset
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: '2025'
+  licence: CC BY-NC-SA 4.0 (the IEA dataset page; non-commercial use, adapted data shared under the
+    same licence); cite IEA (2025), World Energy Outlook 2025, wherever the figures are shown
+  staged_from: sharepoint
+  notes: Staged 2026-10-17 (user request; needs an IEA account to download; copy it to the SharePoint
+    raw folder). 15 regions and the World; Historical 2010, 2023, 2024 and the Stated and Current
+    Policies scenarios for 2035 and 2050; Net Zero only for the World. Read by
+    scripts/18_build_climate_sources.R for the Country profile's regional pathway.
+  required_by:
+  - scripts/18_build_climate_sources.R
+- id: iea_nze2021_annex_a
+  path: NZE2021_AnnexA.csv
+  source_type: manual
+  source_name: IEA Net Zero by 2050 (2021), Annex A, World
+  url: https://www.iea.org/data-and-statistics/data-product/net-zero-by-2050-scenario
+  cadence: irregular
+  owner: lcarey@rmi.org
+  vintage: 2021 (2019, 2020, 2030, 2040, 2050)
+  licence: CC BY-NC-SA 3.0 IGO (the IEA dataset page; non-commercial use, adapted data shared under the
+    same licence); cite IEA (2021), Net Zero by 2050
+  staged_from: sharepoint
+  notes: Staged 2026-10-17 (user request; copy it to the SharePoint raw folder). An older edition, used
+    only for its 2030 milestones beside the WEO 2025 pathways (labelled as the 2021 roadmap). Read by
+    scripts/18_build_climate_sources.R.
+  required_by:
+  - scripts/18_build_climate_sources.R
+- id: iea_world_energy_investment
+  path: WorldEnergyInvestment2026_DataFile(1).xlsx
+  pattern: ^WorldEnergyInvestment\d{4}_DataFile.*\.xlsx$
+  resolve: newest
+  source_type: manual
+  source_name: IEA World Energy Investment data file
+  url: https://www.iea.org/data-and-statistics/data-product/world-energy-investment-2026-datafile
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: 2026 (2015-2025; 2026 IEA estimates)
+  licence: CC BY 4.0 (the IEA dataset page); cite IEA (2026), World Energy Investment 2026
+  staged_from: sharepoint
+  notes: Staged 2026-10-17 as downloaded (the "(1)" in the name is the browser's; the pattern accepts
+    a clean name too). Copy it to the SharePoint raw folder. 11 region sheets, billion USD (2025, MER).
+    Read by scripts/18_build_climate_sources.R for the Sector profile's investment card.
+  required_by:
+  - scripts/18_build_climate_sources.R
+- id: iea_energy_value_added
+  path: IEA_Energy_ValueAdded.xlsx
+  source_type: manual
+  source_name: IEA Energy and Emissions per Value Added database (interactive Excel file)
+  url: https://www.iea.org/data-and-statistics/data-product/energy-and-emissions-per-value-added-database
+  cadence: irregular
+  owner: lcarey@rmi.org
+  vintage: last updated 2023-03-24 (data to 2021)
+  licence: RESTRICTED. Its Contents sheet says external dissemination of any IEA data, including within
+    software or other tools, requires the IEA's permission and may carry a licence fee.
+  staged_from: sharepoint
+  retain: true
+  notes: Staged 2026-10-17 (user request; copy it to the SharePoint raw folder for internal use only).
+    Not read by the pipeline and never shipped to the dashboard; the Midstream Climate sections say why
+    manufacturing emissions per value added are not shown. Ask the IEA (EnergyIndicators@iea.org) for
+    permission before any published use.

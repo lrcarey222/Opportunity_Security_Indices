@@ -7,16 +7,15 @@
 #
 #   core     (initial)  dims; L1-L3 inputs (pillar category matrices, policy values and component
 #                       order, SI inputs incl. the endowment screen's resource_base table);
-#                       the exact baseline L1-L3 results; the baseline partner-level PSI and a
-#                       summary of the baseline network
+#                       the exact baseline L1-L3 results; the baseline partner-level PSI
 #   vars     (lazy)     pillar variable rows and the baseline category contributions
 #   partner  (lazy)     Friendshore / Opportunity components (lossless; Friendshore's CM-FDI parts:
 #                       outbound_source by cell, the CM-FDI investment ties outbound_cmfdi, the
 #                       Chinese-parent ownership cpe), masks, CPI / GHG, Development, PSI reporters,
 #                       alignment; baseline best-five matrices and the baseline PSI dyads
-#   network  (lazy)     members, member-level node inputs, member weights / node sizes / portfolio
-#                       caps (precomputed: not dials), basket trade of the bundled node(s), the
-#                       stored scripts/30 design (when it matches the bundle) and the greedy baseline
+#
+# The network chunk (the original allied network design and its greedy baseline) is retired
+# (2026-10-17): the Allied Industrial Base analysis (docs/aib_methodology.md) replaces it.
 #
 # JSON conventions (json nodes and manifest.json; dash_json_value()): named vectors are objects,
 # character vectors are always arrays, numbers / logicals of length 1 are scalars, NA is null,
@@ -26,8 +25,7 @@ DASH_WEB_SCHEMA <- "osi-dashboard"
 DASH_WEB_SCHEMA_VERSION <- 1L
 DASH_WEB_LIMIT_INITIAL_GZ <- 3 * 2^20
 DASH_WEB_LIMIT_ALL_GZ <- 25 * 2^20
-DASH_WEB_SHARE_RANK_DIGITS <- 9L
-DASH_WEB_CHUNKS <- c("core", "vars", "partner", "network")
+DASH_WEB_CHUNKS <- c("core", "vars", "partner")
 
 # params (a dash_params object) as the JSON structure manifest.json and the fixtures carry; the
 # TypeScript makeParams() must return a deep-equal object.
@@ -45,99 +43,13 @@ dash_dial_grid <- function(bundle) {
   list(d = d, m = m, stage_weights = sw)
 }
 
-# The network tables that do not depend on any dial, precomputed for every solvable stage (the
-# stages of dash_network_stages() without fossil exclusion): member weights, node sizes and the
-# portfolio caps (scripts/30's settings; not a dial). The engine computes the same values; the
-# browser reads them.
-dash_network_fixed_tables <- function(bundle) {
-  nb <- bundle$network
-  params <- bundle$manifest$baseline
-  if (is.null(params)) params <- dash_params(bundle = bundle)
-  params$network$exclude_techs <- character()
-  members <- dash_network_members(bundle)
-  stages <- dash_network_stages(bundle, params)
-  aggregate <- allied_network_aggregates(members)
-  member_weights <- allied_network_member_weights(members, if (aggregate) nb$node_member_weights else NULL, stages)
-  node_size <- allied_network_node_size_tbl(nb$country_size, members)
-  nodes_vec <- if (aggregate) allied_network_node_table(members)$network_node else members$iso3c
-  size_tbl <- if (aggregate) node_size else nb$country_size
-  pf <- params$network$portfolio
-  cap_by_iso <- allied_network_compute_portfolio_caps(
-    country_size_tbl = size_tbl, iso3c_network = nodes_vec,
-    min_cap = pf$min_cap, max_cap = pf$max_cap, transform = pf$transform, clamp = TRUE
-  )
-  st <- tibble::as_tibble(size_tbl)
-  caps <- tibble::tibble(
-    iso3c = nodes_vec,
-    portfolio_cap = as.integer(cap_by_iso[nodes_vec]),
-    gdp_usd = as.numeric(st$gdp_usd[match(nodes_vec, st$iso3c)]),
-    gdp_imputed = if ("gdp_imputed" %in% names(st)) st$gdp_imputed[match(nodes_vec, st$iso3c)] %in% TRUE else FALSE
-  )
-  list(member_weights = tibble::as_tibble(member_weights), node_size = tibble::as_tibble(node_size), caps = caps, stages = stages)
-}
-
-# Member basket trade restricted to the rows the edge aggregation can read: a member of a bundled
-# (multi-member) node on at least one side, the two sides in different nodes, and a solvable stage.
-# allied_network_aggregate_edge_component() reads trade only for such pairs, so the edges are
-# unchanged (scripts/85 checks it).
-dash_network_trim_trade <- function(node_trade, members, stages) {
-  if (is.null(node_trade) || !nrow(node_trade)) return(node_trade)
-  node_of <- stats::setNames(members$network_node, members$iso3c)
-  sizes <- table(members$network_node)
-  multi <- names(sizes)[sizes > 1]
-  ne <- unname(node_of[node_trade$exporter_iso])
-  ni <- unname(node_of[node_trade$importer_iso])
-  keep <- !is.na(ne) & !is.na(ni) & ne != ni & (ne %in% multi | ni %in% multi) &
-    paste(node_trade$tech, node_trade$supply_chain, sep = "\r") %in% paste(stages$tech, stages$supply_chain, sep = "\r")
-  tibble::as_tibble(node_trade[keep, , drop = FALSE])
-}
-
-# The network shown at the baseline: the stored scripts/30 design when it was solved on the bundle's
-# inputs (flags$network_consistent), else the greedy baseline.
-dash_network_baseline_design <- function(bundle) {
-  nb <- bundle$network
-  fl <- bundle$manifest$flags
-  if (isTRUE(fl$network_consistent) && !is.null(nb$stored$specialization)) {
-    method <- unique(nb$stored$diagnostics$method)
-    return(list(source = if (length(method) == 1 && identical(method, "milp")) "milp" else "stored",
-                specialization = nb$stored$specialization, diagnostics = nb$stored$diagnostics))
-  }
-  if (!is.null(nb$greedy_baseline)) {
-    return(list(source = "greedy", specialization = nb$greedy_baseline$specialization, diagnostics = nb$greedy_baseline$diagnostics))
-  }
-  NULL
-}
-
-dash_web_network_summary <- function(design) {
-  if (is.null(design)) return(NULL)
-  s <- design$specialization
-  d <- design$diagnostics
-  col <- function(x, nm, fill) if (nm %in% names(x)) x[[nm]] else rep(fill, nrow(x))
-  list(
-    source = design$source,
-    specialization = tibble::tibble(
-      tech = s$tech, supply_chain = s$supply_chain, network_node = s$iso3c,
-      selected = as.logical(col(s, "selected", NA)), production_share = as.numeric(s$production_share),
-      producer_score = as.numeric(col(s, "producer_score", NA_real_))
-    ),
-    diagnostics = tibble::tibble(
-      tech = d$tech, supply_chain = d$supply_chain, method = as.character(col(d, "method", NA_character_)),
-      n_producers = as.integer(col(d, "n_producers", NA_integer_)), hhi = as.numeric(col(d, "hhi", NA_real_)),
-      effective_producers = 1 / as.numeric(col(d, "hhi", NA_real_))
-    )
-  )
-}
-
-# The four chunks as nested lists (dash_osb_encode() input). baseline_result = dash_run() at the
-# baseline (with the partner layer); network_baseline = dash_network_baseline_design(bundle) unless
-# given.
-dash_web_chunks <- function(bundle, baseline_result, network_baseline = NULL) {
+# The three chunks as nested lists (dash_osb_encode() input). baseline_result = dash_run() at the
+# baseline (with the partner layer).
+dash_web_chunks <- function(bundle, baseline_result) {
   d <- bundle$dims
   pa <- bundle$partner
-  nb <- bundle$network
   res <- baseline_result
   if (is.null(res$partner)) stop("dash_web_chunks(): the baseline result needs the partner layer (dash_run(partner = TRUE)).")
-  if (is.null(network_baseline)) network_baseline <- dash_network_baseline_design(bundle)
   pillar_core <- function(pb) pb[c("cells", "categories", "score", "present", "imputed", "missing_rule", "cw_imp", "cw_tot",
                                    "n_var", "categories_in_data", "allow_partial_categories")]
   core <- list(
@@ -163,8 +75,7 @@ dash_web_chunks <- function(bundle, baseline_result, network_baseline = NULL) {
       ),
       psi_partner = res$partner$psi$partner,
       psi_view = res$partner$psi$view,
-      psi_reporters = res$partner$psi$reporters,
-      network_summary = dash_web_network_summary(network_baseline)
+      psi_reporters = res$partner$psi$reporters
     )
   )
   vars <- list(
@@ -187,37 +98,7 @@ dash_web_chunks <- function(bundle, baseline_result, network_baseline = NULL) {
       psi_dyad = res$partner$psi$dyad
     ))
   )
-  fixed <- if (!is.null(nb$member_weights) && !is.null(nb$node_size) && !is.null(nb$caps)) nb else dash_network_fixed_tables(bundle)
-  gb <- nb$greedy_baseline
-  greedy <- NULL
-  if (!is.null(gb)) {
-    greedy <- gb[intersect(c("specialization", "flows", "diagnostics", "member_shares", "solver_by_stage", "stages"), names(gb))]
-    if (!is.null(gb$portfolio)) greedy$portfolio <- gb$portfolio[c("caps", "counts", "topk", "converged", "iters", "violations_remaining")]
-    greedy$forbidden <- dash_osb_json(gb$forbidden)
-    greedy$share_rank_digits <- if (is.null(gb$share_rank_digits)) NA_integer_ else as.integer(gb$share_rank_digits)
-  }
-  stored <- NULL
-  if (isTRUE(bundle$manifest$flags$network_consistent) && !is.null(nb$stored)) {
-    stored <- nb$stored[intersect(c("specialization", "flows", "diagnostics", "caps", "counts", "topk", "member_shares"), names(nb$stored))]
-  }
-  network <- list(
-    network = list(
-      members = dash_network_members(bundle),
-      node_raw_member = nb$node_raw_member,
-      member_weights = fixed$member_weights,
-      node_size = fixed$node_size,
-      caps = fixed$caps,
-      country_size = nb$country_size,
-      node_trade = nb$node_trade,
-      node_labels = dash_osb_json(nb$node_labels),
-      country_info = nb$country_info,
-      country_map = nb$country_map,
-      stored = stored,
-      greedy_baseline = greedy,
-      observed_hhi = nb$observed_hhi
-    )
-  )
-  list(core = core, vars = vars, partner = partner, network = network)
+  list(core = core, vars = vars, partner = partner)
 }
 
 # Chunk file name: <name>.<first 8 hex digits of the gzip file's md5>.osb
@@ -262,7 +143,6 @@ dash_web_manifest <- function(bundle, chunk_info, budget, bundle_id, created, pa
     sources_params = m$sources_params,
     baseline_inputs = dash_json_value(m$baseline_inputs),
     baseline_params = dash_params_json(m$baseline),
-    share_rank_digits = DASH_WEB_SHARE_RANK_DIGITS,
     dial_grid = dash_dial_grid(bundle),
     chunks = rows(chunk_info),
     budget = budget,

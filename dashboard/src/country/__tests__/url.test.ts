@@ -10,19 +10,19 @@ describe('Country URL state (A3)', () => {
   });
 
   it('round-trips', () => {
-    const cases = ['', '?cell=batteries-midstream', '?partner=JPN', '?all=1', '?cell=electric-grid-midstream&partner=DEU&all=1'];
+    const cases = ['', '?cell=batteries-midstream', '?partner=JPN', '?all=1', '?ptab=development', '?cell=electric-grid-midstream&partner=DEU&all=1&ptab=investment'];
     for (const s of cases) expect(serializeCountrySearch(parseCountrySearch(s).state)).toBe(s);
   });
 
   it('drops invalid values and lists them; ignores unknown keys', () => {
     const p = parseCountrySearch('?cell=oil&partner=usa1&all=yes&h=80&tech=Oil');
-    expect(p.state).toEqual({ cell: null, partner: null, all: false });
+    expect(p.state).toEqual({ cell: null, partner: null, all: false, ptab: 'trade' });
     expect(p.problems).toHaveLength(3);
     expect(p.problems[0]).toMatch(/^cell=oil/);
   });
 
   it('normalises case and checks against the sheet', () => {
-    expect(parseCountrySearch('?cell=Oil-Upstream&partner=jpn').state).toEqual({ cell: 'oil-upstream', partner: 'JPN', all: false });
+    expect(parseCountrySearch('?cell=Oil-Upstream&partner=jpn').state).toEqual({ cell: 'oil-upstream', partner: 'JPN', all: false, ptab: 'trade' });
     const ctx = { cells: new Set(['oil-upstream']), partners: new Set(['JPN']) };
     const p = parseCountrySearch('?cell=gas-upstream&partner=DEU', ctx);
     expect(p.state.cell).toBeNull();
@@ -56,7 +56,7 @@ describe('Country nav (A2.1)', () => {
 
   it('points PROFILE at the country on screen', () => {
     const items = countryNavItems('/countries/DEU');
-    expect(items.map((i) => i.label)).toEqual(['Countries', 'Country profile', 'About & data']);
+    expect(items.map((i) => i.label)).toEqual(['All countries', 'Country profile']);
     expect(items[1]).toMatchObject({ to: '/countries/DEU', active: true });
   });
 });

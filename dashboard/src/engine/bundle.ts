@@ -2,11 +2,12 @@
 
 import { isNDArray, isTable, type OsbDecoded, type Table } from './codec.ts';
 import { EngineError } from './numeric.ts';
-import type { BaselineInputs, Bundle, Manifest, NetworkInputs, PartnerInputs, PillarInputs } from './types.ts';
+import type { BaselineInputs, Bundle, Manifest, PartnerInputs, PillarInputs } from './types.ts';
 
 export const SCHEMA = 'osi-dashboard';
 export const SCHEMA_VERSION = 1;
-export const CHUNK_NAMES = ['core', 'vars', 'partner', 'network'] as const;
+/** The engine's chunks (the network chunk of the retired allied network design is gone, 2026-10-17). */
+export const CHUNK_NAMES = ['core', 'vars', 'partner'] as const;
 export type ChunkName = (typeof CHUNK_NAMES)[number];
 
 /** A JSON value that R wrote as a character vector of length 1 (["x"]) -> "x". */
@@ -35,7 +36,7 @@ function mergeInto(target: Record<string, unknown>, source: Record<string, unkno
 
 /** bundle$manifest$baseline_inputs from manifest.json, character scalars unboxed. */
 export function parseBaselineInputs(raw: Record<string, unknown>): BaselineInputs {
-  const r = raw as Record<string, unknown> & { portfolio: Record<string, unknown> };
+  const r = raw;
   const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
   return {
     ...(r as object),
@@ -49,14 +50,6 @@ export function parseBaselineInputs(raw: Record<string, unknown>): BaselineInput
     require_resource_base: r.require_resource_base !== false,
     fossil_techs: sv(r.fossil_techs),
     psi_view: s1(r.psi_view) as 'coalition' | 'world',
-    node_policy: r.node_policy === true,
-    allow_self: r.allow_self === true,
-    portfolio: { ...(r.portfolio as object), enable: r.portfolio.enable === true, transform: s1(r.portfolio.transform) } as BaselineInputs['portfolio'],
-    supply_chains: sv(r.supply_chains),
-    policy_missing: s1(r.policy_missing),
-    missing_components: s1(r.missing_components),
-    demand_mode: s1(r.demand_mode),
-    size_transform: s1(r.size_transform),
   } as BaselineInputs;
 }
 
@@ -92,10 +85,6 @@ export function addChunk(bundle: Bundle, name: string, chunk: OsbDecoded): Bundl
       cells: bundle.dims.cells,
       psi: { coalition_reporters: sv(psi.coalition_reporters), tau: psi.tau === null || psi.tau === undefined ? null : Number(psi.tau) },
     } as PartnerInputs;
-  } else if (name === 'network') {
-    const nb = o.network as Record<string, unknown>;
-    if (!nb) throw new EngineError('BUNDLE', 'The network chunk has no network object.');
-    bundle.network = nb as unknown as NetworkInputs;
   }
   bundle.loaded.add(name);
   return bundle;

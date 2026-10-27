@@ -80,6 +80,51 @@ export function classMix(classes: readonly string[]): { cls: string; n: number }
 }
 
 /**
+ * A node's multi-label policy needs in words, in the class order: "BUILD + MANAGE SPECIALIZATION", "none"
+ * for an empty profile, null when the export has none (an older bundle).
+ */
+export function policyNeedsText(needs: readonly string[] | null | undefined): string | null {
+  if (!needs) return null;
+  if (!needs.length) return 'none';
+  return [...new Set(needs)].sort((a, b) => classOrder(a) - classOrder(b) || a.localeCompare(b)).join(' + ');
+}
+
+/** True when the needs say more than the class: several needs, or one that is not the class itself. */
+export function needsAddToClass(cls: string, needs: readonly string[] | null | undefined): boolean {
+  if (!needs || !needs.length) return false;
+  return needs.length > 1 || needs[0] !== cls;
+}
+
+/** One node's needs as the exporter writes them: class names joined with " + ", or "none". */
+const NEEDS_RE = /^(.*): ((?:[A-Z][A-Z ]*[A-Z])(?: \+ [A-Z][A-Z ]*[A-Z])*|none)$/;
+
+/**
+ * The compact's policy needs by node as the exporter writes them ("Battery Cells: BUILD; Lithium
+ * Chemicals: BUILD + MANAGE SPECIALIZATION"; "none" when a node has none) as { node, needs }. Node labels
+ * are never split: a part ends only where the needs (upper-case class names or "none") end, so a label
+ * holding "; " or ": " survives (the dictionary's labels hold ", " and "/", neither "; " nor ": ").
+ */
+export function parseNodePolicyNeeds(s: string | null | undefined): { node: string; needs: string }[] {
+  if (!s) return [];
+  const out: { node: string; needs: string }[] = [];
+  let buf = '';
+  for (const part of s.split('; ')) {
+    buf = buf ? `${buf}; ${part}` : part;
+    const m = NEEDS_RE.exec(buf);
+    if (m) {
+      if (m[1].trim()) out.push({ node: m[1].trim(), needs: m[2] });
+      buf = '';
+    }
+  }
+  // a tail without recognisable needs: kept whole, as before
+  if (buf.trim()) {
+    const i = buf.lastIndexOf(': ');
+    out.push(i < 0 ? { node: buf.trim(), needs: '' } : { node: buf.slice(0, i).trim(), needs: buf.slice(i + 2).trim() });
+  }
+  return out.filter((x) => x.node);
+}
+
+/**
  * The compact's class mix as the exporter writes it ("BUILD 78%; COORDINATE 22%": lost-supply shares of
  * the intervention classes) as { cls, share } in the written order; malformed parts are skipped.
  */

@@ -225,11 +225,7 @@ country_memo_path_vals <- function(idx, path, element = NULL) {
   v <- list(country = m$country, trade_year = m$trade_year, key = sub("^.*\\.", "", path))
   k <- country_memo_cell_of(path)
   if (is.na(k) && grepl("^summary\\.top_si", path)) k <- if (grepl("next", path)) idx$summary$top_si$`next` %||% NA else idx$summary$top_si$cell %||% NA
-  if (is.na(k) && grepl("^network\\.pick", path)) k <- if (grepl("runner_up", path)) idx$network$pick$runner_up %||% NA else idx$network$pick$cell %||% NA
-  if (is.na(k) && grepl("^network\\.producer\\.[0-9]+", path)) {
-    j <- as.integer(sub("^network\\.producer\\.([0-9]+).*$", "\\1", path)) + 1L
-    k <- idx$network$producer[[j]]$cell %||% NA
-  }
+  if (is.na(k) && grepl("^pick\\.", path)) k <- if (grepl("runner_up", path)) idx$pick$runner_up %||% NA else idx$pick$cell %||% NA
   if (is.na(k) && grepl("^policy\\.nipo\\.n_by_cell\\.", path)) k <- sub("^policy\\.nipo\\.n_by_cell\\.", "", path)
   if (is.na(k) && !is.null(element) && !is.null(idx$cells[[element]])) k <- element
   cell <- if (!is.na(k)) idx$cells[[k]] else NULL
@@ -340,9 +336,9 @@ country_memo_context <- function(idx, path, element = NULL) {
                         tie_order = pos(idx$partners$tie_order, pv$partner), reason = r$reason %||% NULL, match = r$match %||% NULL,
                         in_psi_top = isTRUE(r$in_psi_top), in_tie_top = isTRUE(r$in_tie_top))
   }
-  if (grepl("^summary\\.top_si|^network\\.pick", path)) {
-    ctx$margin <- if (grepl("^summary", path)) s$top_si$margin$v %||% NULL else idx$network$pick$margin$v %||% NULL
-    ctx$near_tie <- if (grepl("^summary", path)) isTRUE(s$top_si$near_tie) else isTRUE(idx$network$pick$near_tie)
+  if (grepl("^summary\\.top_si|^pick\\.", path)) {
+    ctx$margin <- if (grepl("^summary", path)) s$top_si$margin$v %||% NULL else idx$pick$margin$v %||% NULL
+    ctx$near_tie <- if (grepl("^summary", path)) isTRUE(s$top_si$near_tie) else isTRUE(idx$pick$near_tie)
   }
   ctx
 }
@@ -500,7 +496,6 @@ country_memo_triggers <- function(claims, sheet, cfg) {
     for (j in seq_len(max(0, length(p) - 1))) if (p[j + 1] == p[j] + 1 && isTRUE((idx$cells[[so[p[j]]]]$si$margin_next$v %||% 1) < (cfg$near_tie %||% 0.01))) adj <- TRUE
   }
   on["near_tie"] <- near_cited || adj
-  on["eu_node"] <- isTRUE(m$eu_member) && any_p("^network\\.")
   on["inherited_alignment"] <- identical(m$alignment_basis, "inherited") && any_p("alignment|^meta\\.bloc$|\\.ties\\.bloc$")
   on["assumed_zero_production"] <- any(vapply(cl, function(c) identical(c$context$variable$note, "production_assumed_zero"), TRUE))
   on["cmfdi_coverage"] <- any_p("\\.fdi(\\.|_)")
@@ -511,7 +506,7 @@ country_memo_triggers <- function(claims, sheet, cfg) {
   on["intra_eu"] <- isTRUE(m$eu_member) && any_p("^cells\\.[^.]+\\.trade\\.|\\.ties\\.(imp_mean|exp_mean|tie)$")
   hkg <- any(vapply(cl, function(c) identical(c$context$partner$iso3, "HKG") || identical(c$context$trade$party, "HKG") || identical(c$element, "HKG"), TRUE))
   on["hkg_reexport"] <- hkg
-  on["pick_stability"] <- any_p("^network\\.pick")
+  on["pick_stability"] <- any_p("^pick\\.")
   on["ownership_parent"] <- any_p("china")
   on["eu_policy_records"] <- isTRUE(m$eu_member) && !is.null(sheet$policy$pams_eu_records) && any_p("^policy\\.pams")
   on["nipo_context"] <- any_p("^policy\\.nipo")
@@ -700,7 +695,6 @@ country_memo_lint <- function(parsed, res, sents, claims, sheet, cfg, names = ch
     need(4, has(4, "^partners\\.[A-Z0-9]{3}\\.(ties\\.tie_rank|match)$"), "a partner's trade rank or match ({{partners.<ISO3>.ties.tie_rank}} or {{partners.<ISO3>.match}})")
   }
   if (!is.null(sheet$summary$as_partner$rank$v)) need(4, has(4, "^summary\\.as_partner\\.rank$"), "{{summary.as_partner.rank}}")
-  if (isTRUE(sheet$network$member)) need(4, has(4, "^network\\."), "the network role ({{network....}})")
   need(5, has(5, "^meta\\.as_of_label$"), "{{meta.as_of_label}}")
   # caveats
   trig <- country_memo_triggers(claims, sheet, cfg)

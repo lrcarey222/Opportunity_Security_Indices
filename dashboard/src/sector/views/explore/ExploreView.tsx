@@ -8,7 +8,8 @@
 // card. The default theme is trade; an unknown theme goes to /sector/explore with a notice.
 
 import { useMemo } from 'react';
-import { Navigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { Redirect } from '../../../shell/Redirect.tsx';
 import { Disclosure, FilterRow, Notice, PageHead, Segmented, Select } from '../../../components/ui.tsx';
 import { useMediaQuery } from '../../../shell/useMediaQuery.ts';
 import { useTitle } from '../../../shell/title.ts';
@@ -162,7 +163,7 @@ export default function ExploreView() {
   }, [v, item, layout, facts, series]);
   const year = v ? pickYear(v, years, state.y) : null;
 
-  if (rawTheme && !themeInfo) return <Navigate to={link('/sector/explore')} replace state={{ notice: `No theme called '${rawTheme}'; showing Trade.` }} />;
+  if (rawTheme && !themeInfo) return <Redirect to={link('/sector/explore')} notice={`No theme called '${rawTheme}'; showing Trade.`} />;
 
   const ctx: ExploreCtx | null = v
     ? {
@@ -230,7 +231,7 @@ export default function ExploreView() {
 
   return (
     <div className="space-y-6">
-      <PageHead eyebrow="SECTOR INSIGHTS · EXPLORE" title={themeInfo?.label ?? 'Explore'} lede={`One measure across every economy and every sector: a map, a ranking, the spread of values and the trend. Pick a theme and a measure.${themeInfo?.description ? ` This theme: ${themeInfo.description.charAt(0).toLowerCase()}${themeInfo.description.slice(1)}` : ''}`}>
+      <PageHead eyebrow="SECTORS · EXPLORE" title={themeInfo?.label ?? 'Explore'} lede={`One measure across every economy and every sector: a map, a ranking, the spread of values and the trend. Pick a theme and a measure.${themeInfo?.description ? ` This theme: ${themeInfo.description.charAt(0).toLowerCase()}${themeInfo.description.slice(1)}` : ''}`}>
         <div className="mt-4">
           <ThemeChips themes={model.themes.map((t) => ({ slug: t.slug, label: t.label, href: link(`/sector/explore/${t.slug}`) }))} active={theme} />
         </div>

@@ -1,11 +1,19 @@
 {
   "schema": "osi-aib",
   "version": 1,
-  "created": "2026-10-15T00:00:00Z",
-  "universe": "global",
+  "created": "2026-10-19T00:00:00Z",
+  "demandScope": "coalition",
+  "candidateUniverse": "global",
+  "shockSemantics": "hold",
+  "supplyConstraint": "production_constrained",
+  "universe": "coalition demand / global partners",
   "headlineShock": "zzz_100",
   "headlineScenario": "reallocation",
   "files": {
-    "compacts": "compacts.4f12d169.json"
+    "compacts": "compacts.2052b258.json",
+    "scenarios": {
+      "managed": "scenario-managed.5484857f.json",
+      "baseline": "scenario-baseline.b1da3ba3.json"
+    }
   }
 }

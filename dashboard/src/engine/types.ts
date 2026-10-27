@@ -38,7 +38,6 @@ export interface Manifest {
   sources_params?: unknown;
   baseline_inputs: Record<string, unknown>;
   baseline_params: Record<string, unknown>;
-  share_rank_digits?: number;
   dial_grid: DialGrid;
   chunks: ChunkInfo[];
   budget?: Record<string, unknown>;
@@ -48,15 +47,8 @@ export interface Manifest {
 }
 
 // ---- Baseline inputs (bundle$manifest$baseline_inputs, strings unboxed) ---------------------------
-
-export interface Portfolio {
-  enable: boolean;
-  top_k: number;
-  min_cap: number;
-  max_cap: number;
-  transform: string;
-  max_iters: number;
-}
+// The original allied network design is retired (2026-10-17): no network inputs, parameters,
+// advanced settings or chunk (the Allied Industrial Base analysis replaces it).
 
 export interface BaselineInputs {
   es_weights: NumRecord;
@@ -82,29 +74,6 @@ export interface BaselineInputs {
   psi_view: 'coalition' | 'world';
   psi_tau: number | null;
   top_k: number;
-  node_weights: { eo: number; policy: number; resilience: number };
-  node_policy: boolean;
-  node_policy_weight_max: number;
-  edge_weights: { friendshore: number; opportunity: number };
-  demand_weights: { need: number; size: number };
-  lambda: number;
-  max_share: number;
-  min_share: number;
-  min_producers: number;
-  min_suppliers_per_consumer: number;
-  epsilon_supplier_share: number;
-  w_node: number;
-  w_edge: number;
-  w_dev: number;
-  allow_self: boolean;
-  portfolio: Portfolio;
-  diversity_breakpoint_step: number;
-  supply_chains: string[];
-  milp_time_limit: number;
-  policy_missing: string;
-  missing_components: string;
-  demand_mode: string;
-  size_transform: string;
   [k: string]: unknown;
 }
 
@@ -117,13 +86,6 @@ export type Dials = Record<DialName, number>;
 export type Fossil = 'auto' | 'never' | 'always';
 export type PsiView = 'coalition' | 'world';
 
-export interface AdvancedNetwork {
-  lambda: number | null;
-  max_share: number;
-  min_producers: number;
-  portfolio_enable: boolean;
-}
-
 export interface Advanced {
   es_weights: NumRecord;
   eo_weights: NumRecord;
@@ -132,40 +94,12 @@ export interface Advanced {
   /** the endowment screen: an Upstream stage without recorded reserves or production is never an allied pick */
   require_resource_base: boolean;
   psi_view: PsiView;
-  network: AdvancedNetwork;
 }
 
 /** What the URL carries: dials and (possibly partial) advanced settings. */
 export interface ScenarioSpec {
   dials: Partial<Dials>;
-  advanced?: Partial<Omit<Advanced, 'network'>> & { network?: Partial<AdvancedNetwork> };
-}
-
-export interface NetworkParams {
-  node_weights: { eo: number; policy: number; resilience: number };
-  node_policy: boolean;
-  edge_weights: { friendshore: number; opportunity: number };
-  demand_weights: { need: number; size: number };
-  diversity_lambda: number;
-  self_multiplier: number;
-  max_share: number;
-  min_share: number;
-  min_producers: number;
-  min_suppliers_per_consumer: number;
-  epsilon_supplier_share: number;
-  w_node: number;
-  w_edge: number;
-  w_dev: number;
-  allow_self: boolean;
-  portfolio: Portfolio;
-  diversity_breakpoint_step: number;
-  supply_chains: string[];
-  exclude_techs: string[];
-  milp_time_limit: number;
-  policy_missing: string;
-  missing_components: string;
-  demand_mode: string;
-  size_transform: string;
+  advanced?: Partial<Advanced>;
 }
 
 export interface Params {
@@ -193,7 +127,6 @@ export interface Params {
     top_k: number;
     exclude_techs: string[];
   };
-  network: NetworkParams;
 }
 
 // ---- Bundle ---------------------------------------------------------------------------------------
@@ -265,22 +198,6 @@ export interface PartnerInputs {
   geo_dyad?: Record<string, unknown>;
 }
 
-export interface NetworkInputs {
-  members: Table; // iso3c, tier, network_node, node_tier (checked, scripts/30 order)
-  node_raw_member: Table;
-  member_weights: Table;
-  node_size: Table;
-  caps: Table;
-  country_size?: Table;
-  node_trade?: Table | null;
-  node_labels?: Record<string, string> | null;
-  country_info: Table;
-  country_map: Table;
-  stored?: Record<string, unknown> | null;
-  greedy_baseline?: Record<string, unknown> | null;
-  observed_hhi?: Table | null;
-}
-
 export interface Bundle {
   manifest: Manifest;
   baselineInputs: BaselineInputs;
@@ -293,10 +210,9 @@ export interface Bundle {
   /** resource_base: the endowment screen (Country, tech, supply_chain, resource_base, resource_evidence;
    * absent = no screen) */
   si: { tech_ghg: Table; trl: Table | null; allies: Table; resource_base?: Table | null };
-  /** baseline.* of every loaded chunk (core, vars, partner, network) */
+  /** baseline.* of every loaded chunk (core, vars, partner) */
   baseline: Record<string, unknown>;
   partner?: PartnerInputs;
-  network?: NetworkInputs;
   /** chunks loaded so far */
   loaded: Set<string>;
 }

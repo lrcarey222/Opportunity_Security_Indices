@@ -1,10 +1,10 @@
 {
   "schema": "osi-dashboard",
   "schema_version": 1,
-  "bundle_id": "89d9af9a5fe8ef79f179cff95c5ba2a9",
-  "created": "2026-10-15T21:03:17Z",
-  "git_commit": "81d1bc5",
-  "osi_branch": "fix/allied-base-paper",
+  "bundle_id": "bc2ea5983697d5ff0aaa68a8320645de",
+  "created": "2026-10-22T15:39:37Z",
+  "git_commit": "fcbc001",
+  "osi_branch": "HEAD",
   "generator": "scripts/85_export_dashboard_data.R",
   "r": {
     "version": "R version 4.4.1 (2024-06-14 ucrt)",
@@ -14,10 +14,7 @@
     "pillar_rule": true,
     "geo_alignment_in_fs": true,
     "fs_cmfdi": true,
-    "partner_pillar_consistent": false,
-    "network_aggregation": true,
-    "network_consistent": true,
-    "milp_baseline": true
+    "partner_pillar_consistent": false
   },
   "notes": [],
   "validation": [
@@ -490,7 +487,7 @@
       "layer": "partner",
       "status": "PASS",
       "n": 219,
-      "max_abs_diff": 1.1102230246251565e-16,
+      "max_abs_diff": 2.2204460492503131e-16,
       "note": "reporters: psi_dyad_tbl"
     },
     {
@@ -508,118 +505,6 @@
       "n": 47742,
       "max_abs_diff": 0,
       "note": null
-    },
-    {
-      "check": "Network inputs with the trimmed basket trade == full trade",
-      "layer": "network",
-      "status": "PASS",
-      "n": 29304,
-      "max_abs_diff": null,
-      "note": "basket trade rows 76518 -> 34396"
-    },
-    {
-      "check": "Precomputed member weights == engine (baseline stages)",
-      "layer": "network",
-      "status": "PASS",
-      "n": 1386,
-      "max_abs_diff": null,
-      "note": null
-    },
-    {
-      "check": "Precomputed node sizes == engine",
-      "layer": "network",
-      "status": "PASS",
-      "n": 37,
-      "max_abs_diff": null,
-      "note": null
-    },
-    {
-      "check": "Stored network matches the current nodes, stages and lambda",
-      "layer": "network",
-      "status": "PASS",
-      "n": 22,
-      "max_abs_diff": null,
-      "note": "data/processed/outputs: stages TRUE, nodes TRUE (stored 37, now 37), lambda TRUE (stored 0.78, now 0.78)"
-    },
-    {
-      "check": "Network node producer_score == stored",
-      "layer": "network",
-      "status": "PASS",
-      "n": 814,
-      "max_abs_diff": 4.9960036108132044e-16,
-      "note": null
-    },
-    {
-      "check": "Network node demand_weight == stored",
-      "layer": "network",
-      "status": "PASS",
-      "n": 814,
-      "max_abs_diff": 4.8572257327350599e-17,
-      "note": null
-    },
-    {
-      "check": "Network node need_idx == stored",
-      "layer": "network",
-      "status": "PASS",
-      "n": 814,
-      "max_abs_diff": 4.9960036108132044e-16,
-      "note": null
-    },
-    {
-      "check": "Network node size_idx == stored",
-      "layer": "network",
-      "status": "PASS",
-      "n": 814,
-      "max_abs_diff": 4.9960036108132044e-16,
-      "note": null
-    },
-    {
-      "check": "Network edge_weight == stored flows",
-      "layer": "network",
-      "status": "PASS",
-      "n": 1638,
-      "max_abs_diff": 5.5511151231257827e-16,
-      "note": null
-    },
-    {
-      "check": "Stored flows all on engine edges",
-      "layer": "network",
-      "status": "PASS",
-      "n": 1640,
-      "max_abs_diff": null,
-      "note": "0 stored flows between two nodes without an engine edge"
-    },
-    {
-      "check": "Greedy baseline network solved",
-      "layer": "network",
-      "status": "PASS",
-      "n": 22,
-      "max_abs_diff": null,
-      "note": "9.5 s; 184 producer slots"
-    },
-    {
-      "check": "Precomputed portfolio caps == engine",
-      "layer": "network",
-      "status": "PASS",
-      "n": 37,
-      "max_abs_diff": null,
-      "note": null
-    },
-    {
-      "check": "Greedy baseline (share_rank_digits 9) == the pipeline's greedy rule",
-      "layer": "network",
-      "status": "INFO",
-      "n": 22,
-      "max_abs_diff": 0.049999999999891923,
-      "note": "2 stages differ (the pipeline rule breaks exact share ties by RAS noise)"
-    },
-    {
-      "check": "Greedy baseline vs the stored design (solver gap)",
-      "layer": "network",
-      "status": "INFO",
-      "n": 22,
-      "max_abs_diff": 0.14499999999999999,
-      "note": "0 of 22 stages with the same producers and shares; median HHI greedy 0.1603, stored 0.152"
     },
     {
       "check": "IMF positions (raw file) -> investment tie (pipeline builder) == bundle",
@@ -680,238 +565,166 @@
   ],
   "sources": [
     {
-      "path": "data/raw/wdi_country_info.csv",
+      "path": "wdi_country_info.csv",
       "mtime": "2026-09-30T14:19:50Z",
       "size": 30739,
       "md5": "ac6fd6a11572f3e146ef553cd4046f12"
     },
     {
-      "path": "data/raw/imf_dip.csv",
+      "path": "imf_dip.csv",
       "mtime": "2026-09-30T14:19:47Z",
       "size": 1875803184,
       "md5": "db5a478f170eedcb3342ca13b6b7e9fa"
     },
     {
-      "path": "data/processed/outputs/index_outputs.rds",
+      "path": "index_outputs.rds",
       "mtime": "2026-10-12T16:04:19Z",
       "size": 27968677,
       "md5": "d2bd0251c84d6d0c8507ac38da1fd030"
     },
     {
-      "path": "data/processed/coalition_tbl.rds",
+      "path": "coalition_tbl.rds",
       "mtime": "2026-10-12T16:03:45Z",
       "size": 12738,
       "md5": "3851b9c7b3cd24f99e5a3a9649e8e041"
     },
     {
-      "path": "data/processed/geo_coalition_tbl.rds",
+      "path": "geo_coalition_tbl.rds",
       "mtime": "2026-10-12T16:03:39Z",
       "size": 8146,
       "md5": "976250af94e4f3d1a40b7936143f3763"
     },
     {
-      "path": "data/processed/reserves_tbl.rds",
+      "path": "reserves_tbl.rds",
       "mtime": "2026-10-12T16:01:15Z",
       "size": 20308,
       "md5": "d215d86a7fe1ffd03c8c8c81f31d678c"
     },
     {
-      "path": "data/processed/critical_minerals_production_tbl.rds",
+      "path": "critical_minerals_production_tbl.rds",
       "mtime": "2026-10-12T16:01:23Z",
       "size": 14892,
       "md5": "37e1332b46bab1aba099b5b3e7e08981"
     },
     {
-      "path": "data/processed/partner_friendshore_tbl.rds",
-      "mtime": "2026-10-12T16:05:45Z",
-      "size": 35190525,
-      "md5": "e919d8115dcc15413796283a8a9457bf"
+      "path": "partner_friendshore_tbl.rds",
+      "mtime": "2026-10-22T15:31:28Z",
+      "size": 37165766,
+      "md5": "dd2f1ba6e00cb50d6ceaeb028f8192e4"
     },
     {
       "path": "config/partnership.yml",
-      "mtime": "2026-10-12T03:11:56Z",
-      "size": 8005,
-      "md5": "95e486703b6421e622987fc237c838a4"
+      "mtime": "2026-10-22T15:29:32Z",
+      "size": 12489,
+      "md5": "a8669af4cf230b412b5495336e2b5e5e"
     },
     {
-      "path": "data/processed/partner_opportunity_tbl.rds",
-      "mtime": "2026-10-12T16:07:26Z",
-      "size": 23542333,
-      "md5": "1c0d498a28d919ef10228fbc28604300"
+      "path": "partner_opportunity_tbl.rds",
+      "mtime": "2026-10-22T15:33:46Z",
+      "size": 25191623,
+      "md5": "a5bbc385aac556a95708e82421692bd9"
     },
     {
-      "path": "data/processed/partner_cm_fdi_exposure_tbl.rds",
-      "mtime": "2026-10-12T16:06:49Z",
+      "path": "partner_cm_fdi_exposure_tbl.rds",
+      "mtime": "2026-10-22T15:32:56Z",
       "size": 3179,
       "md5": "0f723cec81de6420c47ec0127b9d3694"
     },
     {
-      "path": "data/raw/CAT_country ratings data.csv",
+      "path": "CAT_country ratings data.csv",
       "mtime": "2026-09-30T14:19:50Z",
       "size": 4717,
       "md5": "9b68b8eadb9eab8430cb0447a39bf81d"
     },
     {
-      "path": "data/processed/tech_ghg_tbl.rds",
+      "path": "tech_ghg_tbl.rds",
       "mtime": "2026-10-12T16:03:29Z",
       "size": 336,
       "md5": "d42bb1592457f1825246a7e8497c908e"
     },
     {
-      "path": "data/raw/ipcc_ghg_intensity.csv",
+      "path": "ipcc_ghg_intensity.csv",
       "mtime": "2026-09-30T14:19:50Z",
       "size": 855,
       "md5": "0a31d2f9b44cf107013b1995599aa057"
     },
     {
-      "path": "data/processed/partner_friendshore_top5_tbl.rds",
-      "mtime": "2026-10-12T16:06:49Z",
-      "size": 1554488,
-      "md5": "9a89d9ed3f8ac98c2972745292c1490a"
+      "path": "partner_friendshore_top5_tbl.rds",
+      "mtime": "2026-10-22T15:32:56Z",
+      "size": 1579153,
+      "md5": "a1216d99e925c851c755f61f7926d9e8"
     },
     {
-      "path": "data/processed/partner_opportunity_top5_tbl.rds",
-      "mtime": "2026-10-12T16:08:03Z",
-      "size": 1142787,
-      "md5": "a17a5258f1694416c1aa85e92af89429"
+      "path": "partner_opportunity_top5_tbl.rds",
+      "mtime": "2026-10-22T15:34:29Z",
+      "size": 1172980,
+      "md5": "9b1b20697d533cd71b5d818afac9db25"
     },
     {
-      "path": "data/processed/partner_development_top5_tbl.rds",
-      "mtime": "2026-10-12T16:08:05Z",
-      "size": 12987,
-      "md5": "9025d96da349a7bc5759299ec3607bb0"
+      "path": "partner_development_top5_tbl.rds",
+      "mtime": "2026-10-22T15:34:32Z",
+      "size": 13267,
+      "md5": "a2654c6686b2b1fb21947eaac213d355"
     },
     {
-      "path": "data/processed/psi_tbl.rds",
-      "mtime": "2026-10-12T16:09:22Z",
-      "size": 12560,
-      "md5": "46addadf8bcdc441e420cb54536244f9"
+      "path": "psi_tbl.rds",
+      "mtime": "2026-10-22T15:36:27Z",
+      "size": 12584,
+      "md5": "473cd22e1099ddd5b41f48d033fd1e3c"
     },
     {
-      "path": "data/processed/psi_dyad_tbl.rds",
-      "mtime": "2026-10-12T16:09:22Z",
-      "size": 1540103,
-      "md5": "ce8f5dd981ad49861347d89150ac6842"
+      "path": "psi_dyad_tbl.rds",
+      "mtime": "2026-10-22T15:36:27Z",
+      "size": 1542939,
+      "md5": "bee845372ba7bd4b5e197029c1a3406f"
     },
     {
-      "path": "data/processed/geo_alignment_tbl.rds",
+      "path": "geo_alignment_tbl.rds",
       "mtime": "2026-10-12T16:03:39Z",
       "size": 395955,
       "md5": "47bd50fdd43a5e97f1a23afb0d634079"
     },
     {
-      "path": "data/processed/geo_ideal_points_tbl.rds",
+      "path": "geo_ideal_points_tbl.rds",
       "mtime": "2026-10-12T16:03:39Z",
       "size": 12527,
       "md5": "30d622e1710e202630eed3d8d4934fe3"
     },
     {
-      "path": "data/processed/outputs/allied_network_diagnostics.csv",
-      "mtime": "2026-10-12T17:12:33Z",
-      "size": 5853,
-      "md5": "c6def27dfeb148a44e3d971d1379f052"
-    },
-    {
-      "path": "data/raw/wdi_gdp.csv",
+      "path": "wdi_gdp.csv",
       "mtime": "2026-09-30T14:19:48Z",
       "size": 243968,
       "md5": "51d400c1843f763fac4ba19fe794f2a4"
     },
     {
-      "path": "data/processed/partner_development_country_tbl.rds",
-      "mtime": "2026-10-12T16:08:04Z",
-      "size": 157813,
-      "md5": "e18ea4c66d51fda21101ac5b557c8daa"
-    },
-    {
-      "path": "data/processed/eu_stage_weights_tbl.rds",
-      "mtime": "2026-10-12T16:03:45Z",
-      "size": 9862,
-      "md5": "8e7b0adebff6c85ca51fbc1550cb40ef"
-    },
-    {
-      "path": "data/raw/comtrade_energy_dyads_all.csv",
-      "mtime": "2026-10-12T03:22:29Z",
-      "size": 720511674,
-      "md5": "6d633533a931b77b687f1aa6baf28832"
-    },
-    {
-      "path": "data/raw/energy_hs6_master.csv",
-      "mtime": "2026-10-12T16:00:55Z",
-      "size": 60937,
-      "md5": "b0db4ddd3c0a25bf9e63db59153410de"
-    },
-    {
-      "path": "data/processed/outputs/allied_network_specialization.csv",
-      "mtime": "2026-10-12T17:12:33Z",
-      "size": 197880,
-      "md5": "29634caa03fb7f120ef786ff30bc324d"
-    },
-    {
-      "path": "data/processed/outputs/allied_network_flows.csv",
-      "mtime": "2026-10-12T17:12:33Z",
-      "size": 175684,
-      "md5": "78d51e3a678cec4842cf2c58978dd290"
-    },
-    {
-      "path": "data/processed/outputs/allied_network_portfolio_caps.csv",
-      "mtime": "2026-10-12T17:12:33Z",
-      "size": 1225,
-      "md5": "e11c0ffff4472401b116f18be1f94cb4"
-    },
-    {
-      "path": "data/processed/outputs/allied_network_portfolio_counts.csv",
-      "mtime": "2026-10-12T17:12:33Z",
-      "size": 533,
-      "md5": "f79a75c887fb1e7cc42108e0cee72e95"
-    },
-    {
-      "path": "data/processed/outputs/allied_network_topk_by_stage.csv",
-      "mtime": "2026-10-12T17:12:33Z",
-      "size": 50245,
-      "md5": "6427902d3ce98d21dbeda2452d24b83a"
-    },
-    {
-      "path": "data/processed/outputs/allied_network_member_shares.csv",
-      "mtime": "2026-10-12T17:12:33Z",
-      "size": 131709,
-      "md5": "c2dbda9db144643ca4ffbbf46eb945de"
-    },
-    {
-      "path": "data/processed/outputs/allied_network_members.csv",
-      "mtime": "2026-10-12T17:12:33Z",
-      "size": 7434,
-      "md5": "63ea26cbcf22fa2b34a6f666121360a7"
-    },
-    {
-      "path": "data/processed/charts/allied_strategic.csv",
+      "path": "allied_strategic.csv",
       "mtime": "2026-10-12T16:04:10Z",
       "size": 19036,
       "md5": "d26ae6c2eb2f8a5f0407358a953c74d1"
     },
     {
-      "path": "data/processed/partner_cm_fdi_ties_tbl.rds",
-      "mtime": "2026-10-12T16:06:49Z",
+      "path": "partner_cm_fdi_ties_tbl.rds",
+      "mtime": "2026-10-22T15:32:56Z",
       "size": 3092,
       "md5": "ffe963f6495787a4a22a5a9e813b3ade"
     },
     {
-      "path": "data/processed/partner_development_tbl.rds",
-      "mtime": "2026-10-12T16:08:04Z",
-      "size": 157813,
-      "md5": "e18ea4c66d51fda21101ac5b557c8daa"
+      "path": "partner_development_tbl.rds",
+      "mtime": "2026-10-22T15:34:32Z",
+      "size": 168646,
+      "md5": "34b8d56e2d7e77f3b899104e9ed836e9"
     },
     {
       "path": "data/reference/economic_security_agreements.csv",
-      "mtime": "2026-10-08T17:24:24Z",
+      "mtime": "2026-10-21T20:38:47Z",
       "size": 61304,
       "md5": "a8b39da1440389561725e79f92fcf57f"
     },
     {
       "path": "config/sector_dictionary.yml",
-      "mtime": "2026-10-15T20:36:58Z",
-      "size": 146831,
-      "md5": "4fd5f453b7ec7b2f2d084856145a4c94"
+      "mtime": "2026-10-22T15:29:32Z",
+      "size": 165849,
+      "md5": "60cad72283b6fcf49272205c87ab0687"
     }
   ],
   "sources_params": {
@@ -923,11 +736,8 @@
     "fs_cmfdi": "partner_friendshore_tbl source column (CM-FDI rows) and chinese_parent_exposure rows; config/partnership.yml cm_fdi: Electric Vehicles Midstream, Batteries Midstream, Wind Midstream, Solar Midstream",
     "fs_penalty": "R/themes/partnership_strength/safer_friendshore.R (penalty_r)",
     "gh": "Friendshore: tech_ghg_tbl; Opportunity: tech_ghg_tbl (median fill for technologies without a value)",
-    "lambda": "scripts/30 network_diversity_lambda",
-    "network": "scripts/30_build_allied_network_design.R literals and allied_network_design() defaults; lambda / node_policy from the stored diagnostics when they record them",
     "tau": "config/rankability.yml",
-    "psi_reporters": "matched to the stored psi_tbl: psi_dyad_tbl",
-    "network_dir": "data/processed/outputs"
+    "psi_reporters": "matched to the stored psi_tbl: psi_dyad_tbl"
   },
   "baseline_inputs": {
     "es_weights": {
@@ -1002,47 +812,7 @@
     },
     "psi_view": ["coalition"],
     "psi_tau": 0.5,
-    "top_k": 5,
-    "node_weights": {
-      "eo": 0.5,
-      "policy": 0.29999999999999999,
-      "resilience": 0.20000000000000001
-    },
-    "node_policy": false,
-    "node_policy_weight_max": 0.29999999999999999,
-    "edge_weights": {
-      "friendshore": 0.5,
-      "opportunity": 0.5
-    },
-    "demand_weights": {
-      "need": 0.5,
-      "size": 0.5
-    },
-    "lambda": 0.78000000000000003,
-    "max_share": 0.40000000000000002,
-    "min_share": 0.050000000000000003,
-    "min_producers": 3,
-    "min_suppliers_per_consumer": 2,
-    "epsilon_supplier_share": 0.10000000000000001,
-    "w_node": 1,
-    "w_edge": 0.5,
-    "w_dev": 0,
-    "allow_self": true,
-    "portfolio": {
-      "enable": true,
-      "top_k": 5,
-      "min_cap": 2,
-      "max_cap": 10,
-      "transform": ["log"],
-      "max_iters": 30
-    },
-    "diversity_breakpoint_step": 0.01,
-    "supply_chains": ["Upstream", "Midstream"],
-    "milp_time_limit": 300,
-    "policy_missing": ["coalition_median"],
-    "missing_components": ["renormalize"],
-    "demand_mode": ["mixed"],
-    "size_transform": ["log_scurve"]
+    "top_k": 5
   },
   "baseline_params": {
     "dials": {
@@ -1085,13 +855,7 @@
       "tau": 0.5,
       "fossil": ["auto"],
       "require_resource_base": true,
-      "psi_view": ["coalition"],
-      "network": {
-        "lambda": null,
-        "max_share": 0.40000000000000002,
-        "min_producers": 3,
-        "portfolio_enable": true
-      }
+      "psi_view": ["coalition"]
     },
     "pillars": {
       "es_weights": {
@@ -1170,52 +934,8 @@
       "psi_tau": 0.5,
       "top_k": 5,
       "exclude_techs": []
-    },
-    "network": {
-      "node_weights": {
-        "eo": 0.5,
-        "policy": 0.29999999999999999,
-        "resilience": 0.20000000000000001
-      },
-      "node_policy": false,
-      "edge_weights": {
-        "friendshore": 0.5,
-        "opportunity": 0.5
-      },
-      "demand_weights": {
-        "need": 0.5,
-        "size": 0.5
-      },
-      "diversity_lambda": 0.78000000000000003,
-      "self_multiplier": 1,
-      "max_share": 0.40000000000000002,
-      "min_share": 0.050000000000000003,
-      "min_producers": 3,
-      "min_suppliers_per_consumer": 2,
-      "epsilon_supplier_share": 0.10000000000000001,
-      "w_node": 1,
-      "w_edge": 0.5,
-      "w_dev": 0,
-      "allow_self": true,
-      "portfolio": {
-        "enable": true,
-        "top_k": 5,
-        "min_cap": 2,
-        "max_cap": 10,
-        "transform": ["log"],
-        "max_iters": 30
-      },
-      "diversity_breakpoint_step": 0.01,
-      "supply_chains": ["Upstream", "Midstream"],
-      "exclude_techs": [],
-      "milp_time_limit": 300,
-      "policy_missing": ["coalition_median"],
-      "missing_components": ["renormalize"],
-      "demand_mode": ["mixed"],
-      "size_transform": ["log_scurve"]
     }
   },
-  "share_rank_digits": 9,
   "dial_grid": {
     "d": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100],
     "m": [0.25, 0.25702845666401664, 0.26425451014034512, 0.27168371563151456, 0.27932178451805495, 0.28717458874925872, 0.29524816535738257, 0.30354872109876174, 0.31208263722540297, 0.32085647439072607, 0.32987697769322355, 0.33915108186191795, 0.34868591658760134, 0.35848881200395682, 0.36856730432277529, 0.37892914162759955, 0.38958228983024989, 0.400534938794811, 0.41179550863378656, 0.42337265618126357, 0.43527528164806206, 0.44751253546398623, 0.46009382531243753, 0.47302882336279795, 0.48632747370614277, 0.5, 0.51405691332803327, 0.52850902028069013, 0.543367431263029, 0.55864356903611001, 0.57434917749851744, 0.59049633071476515, 0.60709744219752348, 0.62416527445080594, 0.64171294878145213, 0.6597539553864471, 0.67830216372383589, 0.69737183317520268, 0.71697762400791365, 0.73713460864555058, 0.75785828325519899, 0.7791645796604999, 0.80106987758962211, 0.82359101726757311, 0.84674531236252715, 0.87055056329612412, 0.89502507092797245, 0.92018765062487506, 0.94605764672559589, 0.97265494741228553, 1, 1.0281138266560665, 1.0570180405613803, 1.086734862526058, 1.11728713807222, 1.1486983549970351, 1.1809926614295303, 1.214194884395047, 1.2483305489016119, 1.2834258975629043, 1.3195079107728942, 1.3566043274476718, 1.3947436663504054, 1.4339552480158273, 1.4742692172911012, 1.515716566510398, 1.5583291593209998, 1.6021397551792442, 1.6471820345351462, 1.6934906247250543, 1.7411011265922482, 1.7900501418559449, 1.8403753012497501, 1.8921152934511918, 1.9453098948245711, 2, 2.0562276533121331, 2.114036081122761, 2.1734697250521164, 2.2345742761444396, 2.2973967099940698, 2.3619853228590606, 2.4283897687900939, 2.4966610978032238, 2.5668517951258085, 2.6390158215457884, 2.7132086548953436, 2.7894873327008107, 2.8679104960316546, 2.9485384345822023, 3.0314331330207964, 3.1166583186419992, 3.204279510358488, 3.2943640690702924, 3.3869812494501086, 3.4822022531844965, 3.5801002837118898, 3.6807506024995003, 3.7842305869023836, 3.8906197896491421, 4],
@@ -1228,10 +948,10 @@
   "chunks": [
     {
       "name": "core",
-      "file": "core.c21ac219.osb",
-      "bytes": 3729280,
-      "bytes_gz": 767863,
-      "md5": "c21ac2198678532c242b0b0b12e67b5f",
+      "file": "core.a80bf9a3.osb",
+      "bytes": 3708840,
+      "bytes_gz": 760424,
+      "md5": "a80bf9a3e5acd94bc8083d2334c4b642",
       "initial": true
     },
     {
@@ -1244,299 +964,291 @@
     },
     {
       "name": "partner",
-      "file": "partner.60828155.osb",
-      "bytes": 11462840,
-      "bytes_gz": 3557316,
-      "md5": "6082815587fc4818191fd717d57d679d",
-      "initial": false
-    },
-    {
-      "name": "network",
-      "file": "network.1a3afe15.osb",
-      "bytes": 1543264,
-      "bytes_gz": 475293,
-      "md5": "1a3afe1504efa8bfcadfbc321e77207d",
+      "file": "partner.0f516ffc.osb",
+      "bytes": 12291784,
+      "bytes_gz": 5610711,
+      "md5": "0f516ffc870776e6ec4a65469b61ed3f",
       "initial": false
     },
     {
       "name": "ties",
-      "file": "ties.a6383ce1.osb",
-      "bytes": 1614160,
-      "bytes_gz": 320011,
-      "md5": "a6383ce176242b88c05e008ecf1080d3",
+      "file": "ties.1271de98.osb",
+      "bytes": 1614144,
+      "bytes_gz": 320089,
+      "md5": "1271de984575abc21e2e1bf6eb4d3ace",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-upstream",
-      "file": "pcell-electric-vehicles-upstream.9f951509.osb",
-      "bytes": 160968,
-      "bytes_gz": 40983,
-      "md5": "9f9515095e95a3f3239070221a51e965",
+      "file": "pcell-electric-vehicles-upstream.e71ccadf.osb",
+      "bytes": 160992,
+      "bytes_gz": 40994,
+      "md5": "e71ccadf522a2d5a4b0b8059eacd4be7",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-midstream",
-      "file": "pcell-electric-vehicles-midstream.8a97d342.osb",
-      "bytes": 158944,
-      "bytes_gz": 45755,
-      "md5": "8a97d342e23c57b8e179cc183073ddc2",
+      "file": "pcell-electric-vehicles-midstream.1b994ce6.osb",
+      "bytes": 158928,
+      "bytes_gz": 45420,
+      "md5": "1b994ce65b71c44d33696fb200c47e7b",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-downstream",
-      "file": "pcell-electric-vehicles-downstream.d174fd0b.osb",
-      "bytes": 150376,
-      "bytes_gz": 31192,
-      "md5": "d174fd0b89365212aebb5e8f54741f7e",
+      "file": "pcell-electric-vehicles-downstream.a708d27c.osb",
+      "bytes": 158528,
+      "bytes_gz": 44778,
+      "md5": "a708d27ca855cd98b672a8a3cbc86af4",
       "initial": false
     },
     {
       "name": "pcell-nuclear-upstream",
-      "file": "pcell-nuclear-upstream.b45573fa.osb",
-      "bytes": 157928,
-      "bytes_gz": 39104,
-      "md5": "b45573fa44bc2d7cbe56744251e0ce70",
+      "file": "pcell-nuclear-upstream.1277abc4.osb",
+      "bytes": 157856,
+      "bytes_gz": 39072,
+      "md5": "1277abc42b2251e46fad29337231daa5",
       "initial": false
     },
     {
       "name": "pcell-nuclear-midstream",
-      "file": "pcell-nuclear-midstream.fd224136.osb",
-      "bytes": 156648,
-      "bytes_gz": 43963,
-      "md5": "fd224136edb80bb9c6470f1474e22082",
+      "file": "pcell-nuclear-midstream.805f33b0.osb",
+      "bytes": 156656,
+      "bytes_gz": 43891,
+      "md5": "805f33b0e5e314723894203d5832df37",
       "initial": false
     },
     {
       "name": "pcell-nuclear-downstream",
-      "file": "pcell-nuclear-downstream.a26a47bc.osb",
-      "bytes": 152768,
-      "bytes_gz": 32906,
-      "md5": "a26a47bcf3164bbf202dcf61f3f6db18",
+      "file": "pcell-nuclear-downstream.dbfa9941.osb",
+      "bytes": 160320,
+      "bytes_gz": 41131,
+      "md5": "dbfa9941ac5f77a3c760680fff4e6d93",
       "initial": false
     },
     {
       "name": "pcell-coal-upstream",
-      "file": "pcell-coal-upstream.ff174507.osb",
-      "bytes": 160160,
-      "bytes_gz": 40175,
-      "md5": "ff174507eb1ff8afae135f664b7429b9",
+      "file": "pcell-coal-upstream.c685f4ab.osb",
+      "bytes": 160168,
+      "bytes_gz": 40193,
+      "md5": "c685f4ab5227e9904bd4f44f1cc5504d",
       "initial": false
     },
     {
       "name": "pcell-coal-midstream",
-      "file": "pcell-coal-midstream.6c754bed.osb",
+      "file": "pcell-coal-midstream.7119a382.osb",
       "bytes": 156696,
-      "bytes_gz": 43880,
-      "md5": "6c754bed016ba20923b26cea40fb52e0",
+      "bytes_gz": 43819,
+      "md5": "7119a382093387f449a42be969b1948f",
       "initial": false
     },
     {
       "name": "pcell-coal-downstream",
-      "file": "pcell-coal-downstream.4bb8dc21.osb",
-      "bytes": 157792,
-      "bytes_gz": 38198,
-      "md5": "4bb8dc211fb3c44201b6cbab9c7bd320",
+      "file": "pcell-coal-downstream.9ead5b2a.osb",
+      "bytes": 160288,
+      "bytes_gz": 42985,
+      "md5": "9ead5b2aa49be68dac0e3ba6c8124cfb",
       "initial": false
     },
     {
       "name": "pcell-batteries-upstream",
-      "file": "pcell-batteries-upstream.bb478c32.osb",
+      "file": "pcell-batteries-upstream.87bd756f.osb",
       "bytes": 160208,
-      "bytes_gz": 41350,
-      "md5": "bb478c3249d3212bef89bd000e404202",
+      "bytes_gz": 41373,
+      "md5": "87bd756fb55abfec4b9bcaad95e4ae3c",
       "initial": false
     },
     {
       "name": "pcell-batteries-midstream",
-      "file": "pcell-batteries-midstream.d1b3126e.osb",
+      "file": "pcell-batteries-midstream.0960e597.osb",
       "bytes": 156728,
-      "bytes_gz": 44661,
-      "md5": "d1b3126e72bd081a8cc80a23c6676201",
+      "bytes_gz": 44417,
+      "md5": "0960e597414c9d0438570c820e134c29",
       "initial": false
     },
     {
       "name": "pcell-batteries-downstream",
-      "file": "pcell-batteries-downstream.18647503.osb",
-      "bytes": 146680,
-      "bytes_gz": 25529,
-      "md5": "186475033a791f1bc6ce17c905cce9a6",
+      "file": "pcell-batteries-downstream.0e77f15b.osb",
+      "bytes": 160344,
+      "bytes_gz": 43100,
+      "md5": "0e77f15b2fc5bfd767212fdaa58cd4da",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-upstream",
-      "file": "pcell-green-hydrogen-upstream.e2024036.osb",
-      "bytes": 143704,
-      "bytes_gz": 21786,
-      "md5": "e202403621175b231f901f214729d25b",
+      "file": "pcell-green-hydrogen-upstream.95703454.osb",
+      "bytes": 160384,
+      "bytes_gz": 40729,
+      "md5": "9570345466cf38e7c728851591fb0aac",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-midstream",
-      "file": "pcell-green-hydrogen-midstream.f433a12e.osb",
-      "bytes": 140240,
-      "bytes_gz": 21587,
-      "md5": "f433a12ecca5115d33f34be542d18f89",
+      "file": "pcell-green-hydrogen-midstream.aa2f2324.osb",
+      "bytes": 156360,
+      "bytes_gz": 44279,
+      "md5": "aa2f2324ff603edb654a73ae21a0a058",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-downstream",
-      "file": "pcell-green-hydrogen-downstream.f972e0e3.osb",
-      "bytes": 144256,
-      "bytes_gz": 22731,
-      "md5": "f972e0e32a0916bb42f8e81b40c6fd5e",
+      "file": "pcell-green-hydrogen-downstream.44022250.osb",
+      "bytes": 160360,
+      "bytes_gz": 44504,
+      "md5": "44022250b32ac5866f82630f85903817",
       "initial": false
     },
     {
       "name": "pcell-wind-upstream",
-      "file": "pcell-wind-upstream.b390293b.osb",
-      "bytes": 159792,
-      "bytes_gz": 41475,
-      "md5": "b390293b4f92cdbdb160ec6de6d5bbdc",
+      "file": "pcell-wind-upstream.5ab7d787.osb",
+      "bytes": 159784,
+      "bytes_gz": 41434,
+      "md5": "5ab7d787cf4c3e9abd27f2046a62da6a",
       "initial": false
     },
     {
       "name": "pcell-wind-midstream",
-      "file": "pcell-wind-midstream.fa3fa7c2.osb",
-      "bytes": 156728,
-      "bytes_gz": 45321,
-      "md5": "fa3fa7c2eb9e111c694709e54545c04a",
+      "file": "pcell-wind-midstream.a64cf1e9.osb",
+      "bytes": 156736,
+      "bytes_gz": 45222,
+      "md5": "a64cf1e908d18480deb2cabbffcb51d8",
       "initial": false
     },
     {
       "name": "pcell-wind-downstream",
-      "file": "pcell-wind-downstream.026fc13a.osb",
-      "bytes": 157968,
-      "bytes_gz": 38381,
-      "md5": "026fc13a95e5bc0a503d8ccee2c25994",
+      "file": "pcell-wind-downstream.1210775d.osb",
+      "bytes": 160336,
+      "bytes_gz": 43017,
+      "md5": "1210775d33e5da95d07a161c99eb54d9",
       "initial": false
     },
     {
       "name": "pcell-oil-upstream",
-      "file": "pcell-oil-upstream.94b06c39.osb",
-      "bytes": 160328,
-      "bytes_gz": 42617,
-      "md5": "94b06c3957247e4b0d4c12940e1f8a1c",
+      "file": "pcell-oil-upstream.981c5170.osb",
+      "bytes": 160320,
+      "bytes_gz": 42424,
+      "md5": "981c5170b0a6aab05a536c07b785e2b3",
       "initial": false
     },
     {
       "name": "pcell-oil-midstream",
-      "file": "pcell-oil-midstream.746b7801.osb",
-      "bytes": 156712,
-      "bytes_gz": 45587,
-      "md5": "746b7801e82d542a8e55d14617ad977f",
+      "file": "pcell-oil-midstream.d1c6725f.osb",
+      "bytes": 156704,
+      "bytes_gz": 45281,
+      "md5": "d1c6725fd12f280dbac9a0f1cca9bff6",
       "initial": false
     },
     {
       "name": "pcell-oil-downstream",
-      "file": "pcell-oil-downstream.251837e8.osb",
-      "bytes": 155928,
-      "bytes_gz": 36105,
-      "md5": "251837e8ebfdc67da0d2e6ec4d204fc8",
+      "file": "pcell-oil-downstream.f82ab3d1.osb",
+      "bytes": 160320,
+      "bytes_gz": 45252,
+      "md5": "f82ab3d173ccc709ac3ee844cd75f95a",
       "initial": false
     },
     {
       "name": "pcell-solar-upstream",
-      "file": "pcell-solar-upstream.2ce475dc.osb",
+      "file": "pcell-solar-upstream.ff41858f.osb",
       "bytes": 160128,
-      "bytes_gz": 38936,
-      "md5": "2ce475dc00217711e69da14ac9752e49",
+      "bytes_gz": 39159,
+      "md5": "ff41858f2e82dcb6ddbc22fdfb7971e6",
       "initial": false
     },
     {
       "name": "pcell-solar-midstream",
-      "file": "pcell-solar-midstream.37bfc146.osb",
+      "file": "pcell-solar-midstream.f7f2214b.osb",
       "bytes": 156736,
-      "bytes_gz": 45465,
-      "md5": "37bfc14640d08786640ad5305e77e562",
+      "bytes_gz": 45292,
+      "md5": "f7f2214ba6a2abf55188b25ada0b79b4",
       "initial": false
     },
     {
       "name": "pcell-solar-downstream",
-      "file": "pcell-solar-downstream.2d508289.osb",
-      "bytes": 159752,
-      "bytes_gz": 35245,
-      "md5": "2d50828952426af8d935f6a272867a15",
+      "file": "pcell-solar-downstream.432383e9.osb",
+      "bytes": 160368,
+      "bytes_gz": 43691,
+      "md5": "432383e9300b1bc152bcf2ee4711dd12",
       "initial": false
     },
     {
       "name": "pcell-gas-upstream",
-      "file": "pcell-gas-upstream.5b051c4b.osb",
+      "file": "pcell-gas-upstream.c74a9997.osb",
       "bytes": 160296,
-      "bytes_gz": 41665,
-      "md5": "5b051c4ba5642eca8f3c00b3f6e0d3d0",
+      "bytes_gz": 41583,
+      "md5": "c74a9997321e6b1de74afbc3d6c24856",
       "initial": false
     },
     {
       "name": "pcell-gas-midstream",
-      "file": "pcell-gas-midstream.8f1a92b9.osb",
-      "bytes": 156712,
-      "bytes_gz": 45173,
-      "md5": "8f1a92b9764341d2cd167a16373c6073",
+      "file": "pcell-gas-midstream.e8ae1580.osb",
+      "bytes": 156696,
+      "bytes_gz": 44857,
+      "md5": "e8ae15803b5cdd963ca4b5fbc7c39e8b",
       "initial": false
     },
     {
       "name": "pcell-gas-downstream",
-      "file": "pcell-gas-downstream.76b625d0.osb",
-      "bytes": 156896,
-      "bytes_gz": 37675,
-      "md5": "76b625d075c2a25aee7e64771bb207cd",
+      "file": "pcell-gas-downstream.86ee6299.osb",
+      "bytes": 160312,
+      "bytes_gz": 45163,
+      "md5": "86ee629959f83c070296fde6d06f8984",
       "initial": false
     },
     {
       "name": "pcell-geothermal-upstream",
-      "file": "pcell-geothermal-upstream.202c3324.osb",
-      "bytes": 62376,
-      "bytes_gz": 11542,
-      "md5": "202c332446066440aee57c91aed96fc8",
+      "file": "pcell-geothermal-upstream.65df30e9.osb",
+      "bytes": 70856,
+      "bytes_gz": 22387,
+      "md5": "65df30e97da072d27dbb9e42e8769681",
       "initial": false
     },
     {
       "name": "pcell-geothermal-midstream",
-      "file": "pcell-geothermal-midstream.ecdc25a0.osb",
-      "bytes": 62296,
-      "bytes_gz": 11455,
-      "md5": "ecdc25a065ccba9c46792ec65e046dc1",
+      "file": "pcell-geothermal-midstream.ac23b02c.osb",
+      "bytes": 70864,
+      "bytes_gz": 22440,
+      "md5": "ac23b02c433c62cd676b669a950e42b6",
       "initial": false
     },
     {
       "name": "pcell-geothermal-downstream",
-      "file": "pcell-geothermal-downstream.14a14ba0.osb",
-      "bytes": 158888,
-      "bytes_gz": 39128,
-      "md5": "14a14ba0ecb0fac154b2ef3bfe4d77c2",
+      "file": "pcell-geothermal-downstream.ad4fadf5.osb",
+      "bytes": 160336,
+      "bytes_gz": 44717,
+      "md5": "ad4fadf552703770f92964e69623188b",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-upstream",
-      "file": "pcell-electric-grid-upstream.62e135a6.osb",
+      "file": "pcell-electric-grid-upstream.64551cb0.osb",
       "bytes": 160184,
-      "bytes_gz": 41571,
-      "md5": "62e135a6feb48519d0e38987a849ba1f",
+      "bytes_gz": 41622,
+      "md5": "64551cb053773e1bbade302073e7207c",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-midstream",
-      "file": "pcell-electric-grid-midstream.a66f2ab6.osb",
-      "bytes": 156744,
-      "bytes_gz": 45759,
-      "md5": "a66f2ab6de86df42e7eb3abe448b555d",
+      "file": "pcell-electric-grid-midstream.5c976c60.osb",
+      "bytes": 156736,
+      "bytes_gz": 45511,
+      "md5": "5c976c6069d71b95e3d16da8ca15777f",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-downstream",
-      "file": "pcell-electric-grid-downstream.def4a3ae.osb",
-      "bytes": 62480,
-      "bytes_gz": 11583,
-      "md5": "def4a3aeeb9f5b45c5d3e87e65c01df2",
+      "file": "pcell-electric-grid-downstream.3d74f172.osb",
+      "bytes": 71008,
+      "bytes_gz": 22038,
+      "md5": "3d74f17280cf74972c341864d68dc019",
       "initial": false
     }
   ],
   "budget": {
-    "initial_gz": 778985,
-    "all_gz": 6981886,
+    "initial_gz": 769909,
+    "all_gz": 8725919,
     "limit_initial_gz": 3145728,
     "limit_all_gz": 26214400,
-    "initial_files": ["manifest.json", "core.c21ac219.osb"],
+    "initial_files": ["manifest.json", "core.a80bf9a3.osb"],
     "note": "initial = manifest.json + the initial chunks; npm run budget adds the app's JS, CSS and fonts"
   },
   "encoding": {

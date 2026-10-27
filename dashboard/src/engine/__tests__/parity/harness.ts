@@ -18,7 +18,7 @@ export function readOsbFile(path: string): OsbDecoded {
 }
 
 /** A deploy-format bundle directory (manifest.json + chunks) -> Bundle with every chunk loaded. */
-export function loadWebBundle(dir: string, chunks: string[] = ['core', 'vars', 'partner', 'network']): Bundle {
+export function loadWebBundle(dir: string, chunks: string[] = ['core', 'vars', 'partner']): Bundle {
   const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')) as Manifest;
   const file = (name: string) => manifest.chunks.find((c) => c.name === name)?.file;
   const core = readOsbFile(join(dir, file('core') as string));

@@ -1,7 +1,7 @@
 {
   "schema": "osi-dashboard",
   "schema_version": 1,
-  "bundle_id": "bb6ab1b52bc749b5d9b960fcc7cdc4df",
+  "bundle_id": "f25dba6d29fe5e1d586b556bafeb7d1c",
   "created": "2026-01-01T00:00:00Z",
   "git_commit": null,
   "osi_branch": null,
@@ -14,10 +14,7 @@
     "pillar_rule": true,
     "geo_alignment_in_fs": true,
     "fs_cmfdi": true,
-    "partner_pillar_consistent": false,
-    "network_aggregation": true,
-    "network_consistent": false,
-    "milp_baseline": false
+    "partner_pillar_consistent": false
   },
   "notes": ["Synthetic fixture bundle (dash_fixture_bundle()); not real data.", "Inputs rounded to 1 decimal(s) (dash_fixture_tie_bundle()): heavy ties."],
   "validation": [],
@@ -84,47 +81,7 @@
     },
     "psi_view": ["coalition"],
     "psi_tau": 0.5,
-    "top_k": 5,
-    "node_weights": {
-      "eo": 0.5,
-      "policy": 0.29999999999999999,
-      "resilience": 0.20000000000000001
-    },
-    "node_policy": false,
-    "node_policy_weight_max": 0.29999999999999999,
-    "edge_weights": {
-      "friendshore": 0.5,
-      "opportunity": 0.5
-    },
-    "demand_weights": {
-      "need": 0.5,
-      "size": 0.5
-    },
-    "lambda": 1.5,
-    "max_share": 0.40000000000000002,
-    "min_share": 0.050000000000000003,
-    "min_producers": 3,
-    "min_suppliers_per_consumer": 2,
-    "epsilon_supplier_share": 0.10000000000000001,
-    "w_node": 1,
-    "w_edge": 0.5,
-    "w_dev": 0,
-    "allow_self": true,
-    "portfolio": {
-      "enable": true,
-      "top_k": 5,
-      "min_cap": 2,
-      "max_cap": 10,
-      "transform": ["log"],
-      "max_iters": 30
-    },
-    "diversity_breakpoint_step": 0.01,
-    "supply_chains": ["Upstream", "Midstream"],
-    "milp_time_limit": 60,
-    "policy_missing": ["coalition_median"],
-    "missing_components": ["renormalize"],
-    "demand_mode": ["mixed"],
-    "size_transform": ["log_scurve"]
+    "top_k": 5
   },
   "baseline_params": {
     "dials": {
@@ -154,13 +111,7 @@
       "tau": 0.5,
       "fossil": ["auto"],
       "require_resource_base": true,
-      "psi_view": ["coalition"],
-      "network": {
-        "lambda": null,
-        "max_share": 0.40000000000000002,
-        "min_producers": 3,
-        "portfolio_enable": true
-      }
+      "psi_view": ["coalition"]
     },
     "pillars": {
       "es_weights": {
@@ -227,52 +178,8 @@
       "psi_tau": 0.5,
       "top_k": 5,
       "exclude_techs": []
-    },
-    "network": {
-      "node_weights": {
-        "eo": 0.5,
-        "policy": 0.29999999999999999,
-        "resilience": 0.20000000000000001
-      },
-      "node_policy": false,
-      "edge_weights": {
-        "friendshore": 0.5,
-        "opportunity": 0.5
-      },
-      "demand_weights": {
-        "need": 0.5,
-        "size": 0.5
-      },
-      "diversity_lambda": 1.5,
-      "self_multiplier": 1,
-      "max_share": 0.40000000000000002,
-      "min_share": 0.050000000000000003,
-      "min_producers": 3,
-      "min_suppliers_per_consumer": 2,
-      "epsilon_supplier_share": 0.10000000000000001,
-      "w_node": 1,
-      "w_edge": 0.5,
-      "w_dev": 0,
-      "allow_self": true,
-      "portfolio": {
-        "enable": true,
-        "top_k": 5,
-        "min_cap": 2,
-        "max_cap": 10,
-        "transform": ["log"],
-        "max_iters": 30
-      },
-      "diversity_breakpoint_step": 0.01,
-      "supply_chains": ["Upstream", "Midstream"],
-      "exclude_techs": [],
-      "milp_time_limit": 60,
-      "policy_missing": ["coalition_median"],
-      "missing_components": ["renormalize"],
-      "demand_mode": ["mixed"],
-      "size_transform": ["log_scurve"]
     }
   },
-  "share_rank_digits": 9,
   "dial_grid": {
     "d": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100],
     "m": [0.25, 0.25702845666401664, 0.26425451014034512, 0.27168371563151456, 0.27932178451805495, 0.28717458874925872, 0.29524816535738257, 0.30354872109876174, 0.31208263722540297, 0.32085647439072607, 0.32987697769322355, 0.33915108186191795, 0.34868591658760134, 0.35848881200395682, 0.36856730432277529, 0.37892914162759955, 0.38958228983024989, 0.400534938794811, 0.41179550863378656, 0.42337265618126357, 0.43527528164806206, 0.44751253546398623, 0.46009382531243753, 0.47302882336279795, 0.48632747370614277, 0.5, 0.51405691332803327, 0.52850902028069013, 0.543367431263029, 0.55864356903611001, 0.57434917749851744, 0.59049633071476515, 0.60709744219752348, 0.62416527445080594, 0.64171294878145213, 0.6597539553864471, 0.67830216372383589, 0.69737183317520268, 0.71697762400791365, 0.73713460864555058, 0.75785828325519899, 0.7791645796604999, 0.80106987758962211, 0.82359101726757311, 0.84674531236252715, 0.87055056329612412, 0.89502507092797245, 0.92018765062487506, 0.94605764672559589, 0.97265494741228553, 1, 1.0281138266560665, 1.0570180405613803, 1.086734862526058, 1.11728713807222, 1.1486983549970351, 1.1809926614295303, 1.214194884395047, 1.2483305489016119, 1.2834258975629043, 1.3195079107728942, 1.3566043274476718, 1.3947436663504054, 1.4339552480158273, 1.4742692172911012, 1.515716566510398, 1.5583291593209998, 1.6021397551792442, 1.6471820345351462, 1.6934906247250543, 1.7411011265922482, 1.7900501418559449, 1.8403753012497501, 1.8921152934511918, 1.9453098948245711, 2, 2.0562276533121331, 2.114036081122761, 2.1734697250521164, 2.2345742761444396, 2.2973967099940698, 2.3619853228590606, 2.4283897687900939, 2.4966610978032238, 2.5668517951258085, 2.6390158215457884, 2.7132086548953436, 2.7894873327008107, 2.8679104960316546, 2.9485384345822023, 3.0314331330207964, 3.1166583186419992, 3.204279510358488, 3.2943640690702924, 3.3869812494501086, 3.4822022531844965, 3.5801002837118898, 3.6807506024995003, 3.7842305869023836, 3.8906197896491421, 4],
@@ -285,10 +192,10 @@
   "chunks": [
     {
       "name": "core",
-      "file": "core.258fac79.osb",
-      "bytes": 49392,
-      "bytes_gz": 9745,
-      "md5": "258fac79a625e497ea68995a51a4b146",
+      "file": "core.a9aa62b7.osb",
+      "bytes": 47568,
+      "bytes_gz": 9153,
+      "md5": "a9aa62b72c3d12207c2364b8df4d921d",
       "initial": true
     },
     {
@@ -306,22 +213,14 @@
       "bytes_gz": 6082,
       "md5": "afb8cceac15fda729ed01d5eae420ff7",
       "initial": false
-    },
-    {
-      "name": "network",
-      "file": "network.d581cf5a.osb",
-      "bytes": 26968,
-      "bytes_gz": 7378,
-      "md5": "d581cf5aa98d5ae4d72be336f2527822",
-      "initial": false
     }
   ],
   "budget": {
-    "initial_gz": 14900,
-    "all_gz": 32543,
+    "initial_gz": 13850,
+    "all_gz": 24573,
     "limit_initial_gz": 3145728,
     "limit_all_gz": 26214400,
-    "initial_files": ["manifest.json", "core.258fac79.osb"],
+    "initial_files": ["manifest.json", "core.a9aa62b7.osb"],
     "note": "initial = manifest.json + the initial chunks; npm run budget adds the app's JS, CSS and fonts"
   },
   "encoding": {

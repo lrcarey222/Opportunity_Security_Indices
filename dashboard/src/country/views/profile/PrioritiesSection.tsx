@@ -1,13 +1,18 @@
-// S3 of the Country profile (spec_country.md A4.2): "Which sectors the Strategic Index puts first"
+// S3 of the Country profile (spec_country.md A4.2; IA refactor 2026-10-16: "Policy & climate", with the
+// Strategic Index table reused under "Opportunities & risks"): "Which sectors the Strategic Index puts first"
 // (the paper's ranking with its five parts as bars), "Do priorities and policy agree?" (the 3 x 3
 // matrix of the Strategic Index without its policy term against policy activity, thirds within the
 // country, with the Climate Action Tracker and IEA record tiles), "Policy records by technology and
 // stage" (IEA Policies and Measures coverage on the three-colour scale) and the user's addition of
 // 2026-10-12: the strongest active industrial-policy measures by sector from the latest completed GTA
-// New Industrial Policy Observatory run (context; not part of the Policy index).
+// New Industrial Policy Observatory run (context; not part of the Policy index). Since 2026-10-17 the
+// section also shows the economy's Climate TRACE emissions in the mapped sectors
+// (src/sector/views/climate/CountryClimate.tsx, the Sector data's sector-climate chunk) and, before them,
+// its fossil CO2 (Global Carbon Project), its transition indicators against the median economy (Energy
+// Institute) and the IEA pathway of its WEO region (src/sector/views/climate/CountryTransition.tsx, the
+// sector-climate-src chunk).
 
 import { useMemo } from 'react';
-import { Link } from 'react-router';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { TriLegend } from '../../../charts/legends.tsx';
 import { triScale } from '../../../charts/scale.ts';
@@ -17,42 +22,75 @@ import { TableView, type Col } from '../../../components/TableView.tsx';
 import { Notice, Select, StatTile, Tag } from '../../../components/ui.tsx';
 import { HeatTable } from '../../../sector/charts/HeatTable.tsx';
 import { cellOf, THIRDS, type CellFacts, type NipoPolicy } from '../../contract.ts';
-import { strategicCountryLink } from '../../derive/links.ts';
 import {
   coverageRows, matrixCaption, matrixCells, maxPart, nipoCells, nipoOfCell, POLICY_THIRD_LABEL, PRIORITY_THIRD_LABEL, priorityRows,
   SI_PART_GLOSSARY, SI_PART_KEYS, SI_PART_LABEL, SI_PART_SHORT,
 } from '../../derive/model.ts';
 import { quadrantWord, proseName, poss, cap } from '../../derive/text.ts';
-import { csvWithSource, Section, useProfile } from './common.tsx';
+import { policyBehaviour } from '../../derive/framing.ts';
+import { CountryClimateCard } from '../../../sector/views/climate/CountryClimate.tsx';
+import { CountryTransitionCards } from '../../../sector/views/climate/CountryTransition.tsx';
+import { BasisTag, csvWithSource, Fold, Section, useProfile } from './common.tsx';
 
-export function PrioritiesSection() {
-  const { sheet } = useProfile();
+/**
+ * "Policy & climate" (IA refactor 2026-10-16, brief s.12C; was "Priorities and policy"): how the economy
+ * behaves (plain sentences from existing facts), whether its policy matches the data's priority, its
+ * policy records by technology and stage, and its strongest industrial-policy measures. The Strategic
+ * Index table moved to "Opportunities & risks" (How priorities are built).
+ */
+export function PolicyClimateSection() {
+  const { sheet, reveal } = useProfile();
   const name = proseName(sheet.meta.country);
+  const lines = useMemo(() => policyBehaviour(sheet, name), [sheet, name]);
   return (
     <Section
-      id="priorities"
-      title="Priorities and policy"
+      id="policy"
+      aliases={['priorities']}
+      title="Policy & climate"
+      basis={
+        <>
+          <BasisTag kind="facts" note="policy records, measures, climate rating, emissions" />
+          {sheet.meta.has_si && <BasisTag kind="prefs" note="matrix priorities, NEIS baseline" />}
+        </>
+      }
       intro={
         <>
-          The <Term id="si" /> ranks {poss(name)} own sectors by how strongly the data point to prioritising them. This section sets that ranking beside the
-          policies {name} already has: its <Term id="pams">International Energy Agency policy records</Term>, its <Term id="cat" /> and, as context, the strongest industrial-policy measures
-          recorded by Global Trade Alert.
+          How {name} behaves: its <Term id="cat" />, its <Term id="pams">International Energy Agency policy records</Term>, its emissions in the mapped sectors (Climate TRACE) and, as
+          context, the strongest industrial-policy measures recorded by Global Trade Alert.
         </>
       }
     >
+      <div className="card p-5" data-testid="policy-behaviour">
+        <h3 className="rule-neis-sm text-base font-medium text-paper lg:text-lg">In brief</h3>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-paper-dim">
+          {lines.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+        <p className="mt-3 text-xs text-paper-mute">
+          Two perspective dials touch this: Populism weighs policy signals and home manufacturing; Climate weighs low-emission technologies (at 90 and above coal, oil and gas drop out of
+          the priorities). Neither changes the records or the rating.{' '}
+          {reveal && (
+            <button type="button" className="link" onClick={() => reveal('perspective')}>
+              Open the perspective &uarr;
+            </button>
+          )}
+        </p>
+      </div>
+      <CountryTransitionCards iso3={sheet.iso3} name={name} />
+      <CountryClimateCard iso3={sheet.iso3} name={name} />
       {sheet.meta.has_si ? (
-        <>
-          <PriorityTable />
-          <AgreementMatrix />
-        </>
+        <AgreementMatrix />
       ) : (
         <Notice kind="info" title="No Strategic Index">
           {cap(name)} has no Policy index (no International Energy Agency Policies and Measures records), so the paper computes no Strategic Index for it. Its policy records and the
           industrial-policy measures below are shown as they are.
         </Notice>
       )}
-      <PolicyCoverage />
-      <NipoCard />
+      <Fold id="policy-records" summary={`Policy records by technology and stage, and the strongest industrial-policy measures in ${poss(name)} sectors`}>
+        <PolicyCoverage />
+        <NipoCard />
+      </Fold>
     </Section>
   );
 }
@@ -70,8 +108,8 @@ function Bar({ v, max, label }: { v: number | null; max: number; label: string }
   );
 }
 
-function PriorityTable() {
-  const { sheet, state, setAll, setCell, cell } = useProfile();
+export function PriorityTable() {
+  const { sheet, state, setAll, setCell, cell, reveal } = useProfile();
   const name = proseName(sheet.meta.country);
   const all = useMemo(() => priorityRows(sheet), [sheet]);
   const rows = state.all ? all : all.slice(0, 15);
@@ -188,9 +226,11 @@ function PriorityTable() {
             {state.all ? 'Show the top 15' : `Show all ${all.length}`}
           </button>
         )}
-        <Link className="link ml-auto" to={strategicCountryLink(sheet.iso3)}>
-          Move the dials for {name}: Strategic Index &rarr;
-        </Link>
+        {reveal && (
+          <button type="button" className="link ml-auto" onClick={() => reveal('perspective')}>
+            Change the perspective (dials) for {name} &uarr;
+          </button>
+        )}
       </div>
     </ChartCard>
   );
@@ -198,7 +238,7 @@ function PriorityTable() {
 
 // ---- AgreementMatrix ------------------------------------------------------------------------------
 
-function AgreementMatrix() {
+export function AgreementMatrix() {
   const { sheet, cell, setCell } = useProfile();
   const name = proseName(sheet.meta.country);
   const ag = sheet.policy.agreement;
@@ -319,7 +359,7 @@ function AgreementMatrix() {
 
 // ---- PolicyCoverage ------------------------------------------------------------------------------
 
-function PolicyCoverage() {
+export function PolicyCoverage() {
   const { sheet, cell, setCell } = useProfile();
   const name = proseName(sheet.meta.country);
   const rows = useMemo(() => coverageRows(sheet), [sheet]);
@@ -445,7 +485,7 @@ function NipoItem({ p }: { p: NipoPolicy }) {
   );
 }
 
-function NipoCard() {
+export function NipoCard() {
   const { sheet, cell, setCell } = useProfile();
   const name = proseName(sheet.meta.country);
   const n = sheet.policy.nipo;

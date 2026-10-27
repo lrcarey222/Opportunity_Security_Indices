@@ -108,6 +108,11 @@ export interface InvestmentCardProps {
   headingLevel?: 2 | 3;
   selected?: string | null;
   onSelect?: (iso: string) => void;
+  /**
+   * what the positions card's notes tell the reader about the factory-project sectors (default "choose
+   * one of those sectors"; a page whose sector filter does not offer those sectors says something else)
+   */
+  projectsHint?: string;
 }
 
 /** IMF positions (always) and, in the four CM-FDI sectors, the factory projects of that sector. */
@@ -120,7 +125,7 @@ export function InvestmentCards(p: InvestmentCardProps) {
   );
 }
 
-function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected, onSelect }: InvestmentCardProps) {
+function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected, onSelect, projectsHint = 'choose one of those sectors' }: InvestmentCardProps) {
   const [kind, setKind] = useState<'all' | 'debt'>('all');
   const all = useMemo(() => (ties ? positionsOf(ties, iso, kind) : []), [ties, iso, kind]);
   const ranked = useMemo(() => bySize(all.filter((r) => !r.conduit)), [all]);
@@ -181,7 +186,7 @@ function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected,
           How this feeds the index: Friendshore&apos;s investment tie ranks {name}&apos;s outward debt-instrument position in each partner, averaged over {yrs}, together
           with that position relative to the partner&apos;s economy and to both economies ({m ? `GDP of ${m.dip_gdp_year}` : 'GDP'}); a larger position makes the
           partner a stronger friendshoring opportunity. Conduit centres are left out on both sides, so they neither gain nor lose. In Solar, Wind, Batteries and Electric
-          Vehicles Midstream the tie is the factory projects instead (choose one of those sectors). Positions are the stock at the end of the year, as reported to
+          Vehicles Midstream the tie is the factory projects instead ({projectsHint}). Positions are the stock at the end of the year, as reported to
           the IMF by {name}{yearsOut.length ? ` (${yearsOut.sort().join(', ')})` : ''}; where {name} reports nothing for a pair, the partner&apos;s report is used and
           marked. Source: {m?.dip_source ?? 'IMF, Direct Investment Positions'}.
         </>

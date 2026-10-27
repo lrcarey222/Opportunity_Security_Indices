@@ -17,8 +17,8 @@ n_priority_sectors: 3
 n_supplier_rows: 12
 n_trade_parties: 5
 near_tie: 0.01
-# The allied-pick rule in words (network.pick.rule_d, 2026-10-14; {excluded} = COUNTRY_PICK_EXCLUDED_TECHS of
-# R/dashboard/country/country_network.R in lower case).
+# The allied-pick rule in words (pick.rule_d, 2026-10-14; {excluded} = COUNTRY_PICK_EXCLUDED_TECHS of
+# R/dashboard/country/country_pick.R in lower case).
 pick_rule: "its top upstream or midstream sector on the Strategic Index, leaving out {excluded} (excluded from allied picks by rule) and sectors with no recorded resource base"
 few_economies: 10
 max_vars_per_category: 4
@@ -73,6 +73,13 @@ quadrants:
 # the memo page and the profile's memo panel). {country}, {written} (the memo's writing date).
 memo_rule_notes:
   quadrant_rule_2026_10_15: "Written on {written}, when the Grow, Upgrade, Secure and Watch corners split each sector at the median economy. This page now splits at {country}'s own median sector, so the memo's statements about corners may differ from the chart. Its other figures match the current data."
+
+# Memos under revision (the user's decision of 2026-10-17): the original allied network design is retired,
+# so every memo generated before `before` (ISO 8601 UTC) is hidden: the manifest marks it stale and the memo
+# page and the profile say it is being revised (country_memo_under_revision(), scripts/88). The memo files
+# stay; a memo rendered after the cut-off is shown. Remove the key to stop hiding.
+memo_revision:
+  before: "2026-10-17T00:00:00Z"
 
 # Missing-data rules (index_outputs missing_rule_applied) in words (A9.6); {country} is filled in.
 missing_rules:
@@ -233,7 +240,6 @@ caveats:
   policy_pams_only: {trigger: policy_token_pams_only, text: "The Climate Action Tracker does not rate {country}, so its policy activity rests on International Energy Agency Policies and Measures records alone; its policy levels compare only with economies on the same basis."}
   no_si: {trigger: no_si, text: "{country} has no Strategic Index because it has no International Energy Agency Policies and Measures records."}
   near_tie: {trigger: near_tie, text: "Strategic Index scores within 0.01 of each other are almost tied: small changes in the data or the weights can swap their order."}
-  eu_node: {trigger: network_token_eu, text: "In the allied network design the European Union is one producer; {country}'s shares are derived from its weight within the EU."}
   inherited_alignment: {trigger: alignment_token_inherited, text: "{country} has no UN votes of its own; its alignment is {sovereign}'s."}
   assumed_zero_production: {trigger: cited_raw_note_production_assumed_zero, text: "Where no source reports a country's production of a fuel separately, it is taken as zero, so the balance of production and consumption equals minus consumption."}
   cmfdi_coverage: {trigger: fdi_token, text: "Factory projects are cross-border solar, wind, battery and electric-vehicle manufacturing projects only, announced projects included, which may never be built; domestic investment is not covered (Cleantech Manufacturing FDI Dataset, edition {cmfdi_edition}, CC BY 4.0; counts by the authors, a joint venture counted under its listed parent)."}
@@ -255,10 +261,11 @@ sources:
   - {id: osi_indices, label: "Energy Security, Economic Opportunity, Strategic Index and Partnership Strength Index, paper baseline (Opportunity Security Indices pipeline)", licence: "CC BY 4.0 (the paper's indices)", url: null}
   - {id: agreements, label: "Economic-security agreements: G7, NATO, Indo-Pacific Economic Framework, Minerals Security Partnership (and Forum), U.S. free-trade agreements (compiled by the authors from official membership lists)", licence: null, url: null}
   - {id: wdi, label: "World Bank, World Development Indicators: country region and income group", licence: "CC BY 4.0", url: "https://datacatalog.worldbank.org/"}
-  - {id: network, label: "Allied network design (the paper's model design of coalition production shares)", licence: null, url: null}
   - {id: iea_etp, label: "International Energy Agency, Energy Technology Perspectives 2024: manufacturing capacity shares", licence: "International Energy Agency terms of use", url: "https://www.iea.org/"}
   # edition: the extract of nipo.vintage_label (keep the two together)
   - {id: gta_nipo, label: "Global Trade Alert, New Industrial Policy Observatory: industrial-policy interventions, strength scored by the authors", edition: "October 2026 extract (as of 5 October 2026)", licence: "subscription (titles, dates and links only)", url: "https://www.globaltradealert.org/"}
+  # 2026-10-19: the Country pages' monthly trade card (scripts/99 -> companion trade-<ISO3> files)
+  - {id: comtrade_monthly, label: "United Nations, UN Comtrade Database: monthly HS6 trade with the world as reported by each economy (not reconciled with partners' reports)", licence: "UN Comtrade terms of use", url: "https://comtradeplus.un.org/"}
 
 # Source names spelled out where the Sector dictionary abbreviates them (2026-10-14: no bare "IEA" in the
 # sheet's source list or raw-figure source lines). `label` replaces the citation, `short` the short name;
@@ -310,7 +317,7 @@ src_map:
   - {prefix: "partners.psi_order", src: osi_indices}
   - {prefix: "partners.tie_order", src: comtrade_matrix}
   - {prefix: "partners.n_", src: osi_indices}
-  - {prefix: "network", src: network}
+  - {prefix: "pick", src: osi_indices}
   - {prefix: "meta.agreements", src: agreements}
   - {prefix: "meta.bloc", src: un_votes}
   - {prefix: "meta.alignment", src: un_votes}
@@ -524,16 +531,12 @@ path_meanings:
   - {path: "partners.*.ties.alignment", meaning: "UN-vote alignment of {country} and {name}: 1 same bloc, 0.5 one nonaligned, 0 opposite blocs"}
   - {path: "partners.*.ties.alignment_d", meaning: "UN-vote alignment of {country} and {name} in words"}
   - {path: "partners.*.ties.bloc", meaning: "{name}'s bloc in UN General Assembly votes"}
-  - {path: "network.n_stages", meaning: "number of upstream and midstream stages in the allied network design"}
-  - {path: "network.producer.*.share", meaning: "{country}'s share of the coalition's designed production in {label} (allied network design)"}
-  - {path: "network.producer.*.cell", meaning: "a stage where {country} is a producer in the allied network design ({label})"}
-  - {path: "network.pick.si", meaning: "Strategic Index score of {country}'s allied pick"}
-  - {path: "network.pick.margin", meaning: "how much higher {country}'s allied pick scores than its runner-up (below 0.01: almost tied)"}
-  - {path: "network.pick.runner_up", meaning: "the runner-up to {country}'s allied pick"}
-  - {path: "network.pick.rule_d", meaning: "the rule that chooses {country}'s allied pick, in words: it leaves out geothermal and green hydrogen and sectors with no recorded resource base"}
-  - {path: "network.pick.excluded", meaning: "technologies left out of every allied pick by rule"}
-  - {path: "network.pick.cell", meaning: "{country}'s allied pick: its top upstream or midstream sector on the Strategic Index after the endowment screen"}
-  - {path: "network.node", meaning: "the node of the allied network {country} belongs to"}
+  - {path: "pick.si", meaning: "Strategic Index score of {country}'s allied pick"}
+  - {path: "pick.margin", meaning: "how much higher {country}'s allied pick scores than its runner-up (below 0.01: almost tied)"}
+  - {path: "pick.runner_up", meaning: "the runner-up to {country}'s allied pick"}
+  - {path: "pick.rule_d", meaning: "the rule that chooses {country}'s allied pick, in words: it leaves out geothermal and green hydrogen and sectors with no recorded resource base"}
+  - {path: "pick.excluded", meaning: "technologies left out of every allied pick by rule"}
+  - {path: "pick.cell", meaning: "{country}'s allied pick: its top upstream or midstream sector on the Strategic Index after the endowment screen"}
   - {path: "caveats.*", meaning: "a data caveat ({key})"}
 
 # Fields each memo section may use (B3); a token outside its section's list is a warning for the
@@ -543,6 +546,6 @@ section_fields:
   common: ["meta.*", "summary.n_*", "summary.quadrants.*", "cells.*.label", "cells.*.label_prose", "cells.*.tech", "cells.*.stage", "cells.*.quadrant", "priority_sectors"]
   "1": ["summary.*", "cells.*.es", "cells.*.es.*", "cells.*.drivers.es.*", "cells.*.trade.sources.*", "cells.*.trade.imports", "cells.*.fdi.*"]
   "2": ["summary.*", "cells.*.eo", "cells.*.eo.*", "cells.*.drivers.eo.*", "cells.*.trade.markets.*", "cells.*.trade.exports"]
-  "3": ["summary.top_si.*", "summary.si_order", "cells.*.si", "cells.*.si.*", "cells.*.priority.*", "cells.*.policy.*", "policy.*", "network.pick.*"]
-  "4": ["partners.*", "summary.as_partner.*", "summary.psi_1.*", "network.*"]
+  "3": ["summary.top_si.*", "summary.si_order", "cells.*.si", "cells.*.si.*", "cells.*.priority.*", "cells.*.policy.*", "policy.*", "pick.*"]
+  "4": ["partners.*", "summary.as_partner.*", "summary.psi_1.*", "pick.*"]
   "5": ["caveats.*"]

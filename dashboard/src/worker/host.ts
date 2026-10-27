@@ -7,18 +7,15 @@ import { addChunk, assembleBundle, SCHEMA_VERSION, type ChunkName as EngineChunk
 import { readOsb, type OsbDecoded } from '../engine/codec.ts';
 import { compare, compareDyads, LayerCache, layerKeys, resultNotes, run, scenarioTables, type CompareResult, type DashResult } from '../engine/engine.ts';
 import { ENGINE_VERSION } from '../engine/version.ts';
-import {
-  networkCompare, networkConcentration, networkInputs, networkScore, networkSolve, type NetworkSolution, type NetInputs, type NetScored,
-} from '../engine/network/index.ts';
-import { EngineError, NA_BOOL, NA_INT, yieldNow } from '../engine/numeric.ts';
-import { dialReadout, isBaseline, makeParams, paramsKey } from '../engine/params.ts';
+import { EngineError, yieldNow } from '../engine/numeric.ts';
+import { dialReadout, isBaseline, makeParams } from '../engine/params.ts';
 import { cellPartners, fsCells, partnerDecompose, partnerTop5, poCells, psi } from '../engine/partner.ts';
 import { variableContrib } from '../engine/pillars.ts';
-import { selfCheckCore, selfCheckNetwork, selfCheckPartner } from '../engine/selfcheck.ts';
+import { selfCheckCore, selfCheckPartner } from '../engine/selfcheck.ts';
 import type {
   Bundle, Manifest, Params, PartnerCells, PillarsResult, PolicyResult, PsiResult, ScenarioSpec, SiResult, Table, Top5Result,
 } from '../engine/types.ts';
-import type { BaselineCore, ChunkName, CorePayload, FromWorker, NetworkPayload, PartnerPayload, RunLayer, RunWant, ToWorker } from './protocol.ts';
+import type { BaselineCore, ChunkName, CorePayload, FromWorker, PartnerPayload, RunLayer, RunWant, ToWorker } from './protocol.ts';
 
 export type Post = (msg: FromWorker, transfer: Transferable[]) => void;
 export type FetchBytes = (url: string, opts: { noCache?: boolean }) => Promise<Uint8Array>;
@@ -69,7 +66,7 @@ interface PartnerState {
 }
 
 /** Worker cache limits (spec_react.md 6.8); FS / PO cell arrays are 12.7 MB each. */
-export const CACHE_LIMITS = { pillars: 8, policy: 8, si: 8, psi: 8, top5: 8, fs_cells: 4, po_cells: 4, net_inputs: 4, net_score: 4, net_solve: 4 };
+export const CACHE_LIMITS = { pillars: 8, policy: 8, si: 8, psi: 8, top5: 8, fs_cells: 4, po_cells: 4 };
 
 export class EngineHost {
   private bundle: Bundle | null = null;
@@ -240,7 +237,7 @@ export class EngineHost {
     let r;
     try {
       if (layer === 'core') r = selfCheckCore(b, 1e-9, { cache: this.cache });
-      else if (layer === 'partner') {
+      else {
         // the baseline FS and PO cells one at a time (cached and pinned), yielding to runs in between,
         // so the check never blocks a dial move for more than one cell pass
         const keys = layerKeys(b.baselineParams);
@@ -257,17 +254,6 @@ export class EngineHost {
           }
         }
         r = selfCheckPartner(b, 1e-12, { cache: this.cache });
-      } else {
-        const params = b.baselineParams;
-        const keys = layerKeys(params);
-        const cells = this.baselineCells(b);
-        const pol = this.cache.get<PolicyResult>('policy', keys.policy);
-        r = await selfCheckNetwork(b, 1e-6, { shouldAbort: () => this.busy > 0, cells, policy: pol });
-        if (r.detail === 'aborted') {
-          this.selfChecked.delete('network');
-          this.idle(() => this.runSelfCheck('network'));
-          return;
-        }
       }
     } catch (e) {
       r = { ok: false, n: 0, max_abs_diff: NaN, detail: `self-check failed to run: ${errMessage(e)}` };
@@ -281,7 +267,6 @@ export class EngineHost {
     const bc = b.baseline.core as Record<string, unknown>;
     const pol = bc.policy as Record<string, unknown>;
     const si = bc.si as Record<string, unknown>;
-    const ns = b.baseline.network_summary as Record<string, unknown> | undefined;
     const view = get(b.baseline, 'psi_view');
     return {
       params: b.baselineParams,
@@ -296,9 +281,6 @@ export class EngineHost {
       psi_partner: (b.baseline.psi_partner as Table) ?? null,
       psi_view: (Array.isArray(view) ? view[0] : view) === 'world' ? 'world' : 'coalition',
       psi_reporters: (b.baseline.psi_reporters as string[]) ?? [],
-      network_summary: ns
-        ? { source: String(Array.isArray(ns.source) ? ns.source[0] : ns.source), specialization: ns.specialization as Table, diagnostics: ns.diagnostics as Table }
-        : null,
     };
   }
 
@@ -397,101 +379,6 @@ export class EngineHost {
     return { state: { cells, top5, psi: p }, cached };
   }
 
-  private async networkSolution(
-    id: number | null,
-    b: Bundle,
-    params: Params,
-    policyRes: PolicyResult,
-    cells: PartnerCells,
-  ): Promise<{ inputs: NetInputs; scored: NetScored; sol: NetworkSolution; cached: boolean }> {
-    const kIn = paramsKey(params, 'net_inputs');
-    const kSc = paramsKey(params, 'net_score');
-    const kSo = paramsKey(params, 'net_solve');
-    let cached = true;
-    // the inputs read the cells (FS / PO weights and penalties) and, with the policy term, the Policy index
-    const inKey = `${kIn}|${params.network.node_policy ? paramsKey(params, 'policy') : ''}`;
-    let inputs = this.cache.get<NetInputs>('net_inputs', inKey);
-    if (!inputs) {
-      cached = false;
-      if (id !== null) this.send({ type: 'progress', id, layer: 'network', phase: 'inputs', current: 0, total: 1 });
-      inputs = this.cache.set('net_inputs', inKey, networkInputs(b, params, cells, policyRes));
-      await this.pause(id);
-    }
-    const scKey = `${kSc}|${inKey}`;
-    let scored = this.cache.get<NetScored>('net_score', scKey);
-    if (!scored) {
-      cached = false;
-      scored = this.cache.set('net_score', scKey, networkScore(inputs, params));
-    }
-    const soKey = `${kSo}|${scKey}`;
-    let sol = this.cache.get<NetworkSolution>('net_solve', soKey);
-    if (!sol) {
-      cached = false;
-      const s = await networkSolve(scored, params, b, {
-        onProgress: (p) => {
-          if (id !== null && p.event === 'start_stage') {
-            this.send({ type: 'progress', id, layer: 'network', phase: p.phase, current: p.current, total: p.total, tech: p.tech, supply_chain: p.supply_chain, iter: p.iter });
-          }
-        },
-        shouldAbort: () => id !== null && id < this.latestRun,
-      });
-      if (!s) throw new Superseded();
-      sol = this.cache.set('net_solve', soKey, s);
-    }
-    return { inputs, scored, sol, cached };
-  }
-
-  /** The greedy design at the paper's settings shipped in the network chunk (share_rank_digits 9). */
-  private greedyBaseline(b: Bundle): NetworkSolution | null {
-    const gb = b.network?.greedy_baseline as Record<string, unknown> | null | undefined;
-    if (!gb || !gb.specialization) return null;
-    const pf = gb.portfolio as Record<string, unknown> | undefined;
-    return {
-      specialization: gb.specialization as Table,
-      flows: gb.flows as Table,
-      diagnostics: gb.diagnostics as Table,
-      member_shares: (gb.member_shares as Table) ?? null,
-      portfolio: pf
-        ? {
-            caps: pf.caps as Table, counts: pf.counts as Table, topk: pf.topk as Table,
-            converged: (pf.converged as boolean) ?? null, iters: (pf.iters as number) ?? null, violations_remaining: (pf.violations_remaining as number) ?? null,
-          }
-        : null,
-      forbidden: (gb.forbidden as Record<string, string[]>) ?? {},
-      solver_by_stage: gb.solver_by_stage as Table,
-      stages: [],
-      elapsed_ms: 0,
-    };
-  }
-
-  /** The paper's stored (MILP) design, when the export found it consistent with the bundle. */
-  private storedDesign(b: Bundle): { sol: Pick<NetworkSolution, 'specialization' | 'flows' | 'diagnostics' | 'member_shares' | 'portfolio'>; method: 'milp' | 'stored' } | null {
-    const stored = b.network?.stored as Record<string, unknown> | null | undefined;
-    if (!b.manifest.flags?.network_consistent || !stored?.specialization) return null;
-    const diag = stored.diagnostics as Table;
-    const methods = new Set((diag?.cols.method as (string | null)[] | undefined) ?? []);
-    // the stored design's portfolio-cap tables (scripts/30 writes them with the design); the loop's
-    // state is one value per stage in the diagnostics
-    const one = (name: string, na: number): number | null => {
-      const v = diag?.cols[name] as ArrayLike<number> | undefined;
-      if (!v || !v.length) return null;
-      const u = new Set(Array.from(v));
-      const x = u.size === 1 ? v[0] : null;
-      return x === null || x === na || Number.isNaN(x) ? null : x;
-    };
-    const conv = one('portfolio_converged', NA_BOOL);
-    const portfolio = stored.caps && stored.counts && stored.topk
-      ? {
-          caps: stored.caps as Table, counts: stored.counts as Table, topk: stored.topk as Table,
-          converged: conv === null ? null : conv === 1, iters: one('portfolio_iters', NA_INT), violations_remaining: one('portfolio_violations_remaining', NA_INT),
-        }
-      : null;
-    return {
-      sol: { specialization: stored.specialization as Table, flows: stored.flows as Table, diagnostics: diag, member_shares: (stored.member_shares as Table) ?? null, portfolio },
-      method: methods.size === 1 && methods.has('milp') ? 'milp' : 'stored',
-    };
-  }
-
   async run(id: number, spec: ScenarioSpec, want: RunWant): Promise<void> {
     this.busy++;
     const tRun = now();
@@ -532,7 +419,7 @@ export class EngineHost {
       const dc = detach(corePayload);
       this.send({ type: 'result', id, layer: 'core', key: core.keys.si, source, payload: dc.value, ms: now() - t0, cached }, dc.transfer);
 
-      if (want.partner || want.network) {
+      if (want.partner) {
         await this.ensureChunk('partner');
         this.check(id);
         t0 = now();
@@ -541,7 +428,7 @@ export class EngineHost {
         let pCached = false;
         let pSource: 'baseline' | 'computed' = 'computed';
         if (baseline) {
-          // the shipped baseline tables (exact); cells only when a network solve needs them
+          // the shipped baseline tables (exact)
           part = { cells: null, top5: shipped.top5, psi: shipped.psi };
           pSource = 'baseline';
           pCached = true;
@@ -550,74 +437,15 @@ export class EngineHost {
           part = r.state;
           pCached = r.cached;
         }
-        if (want.partner) {
-          const pc = compare({ ...core, partner: { cells: emptyCells, top5: part.top5, psi: part.psi } }, { ...base, partner: { cells: emptyCells, ...shipped } });
-          const payload: PartnerPayload = {
-            is_baseline: baseline,
-            top5: { fs: part.top5.fs, po: part.top5.po, fs_exists: part.top5.fs_exists, po_exists: part.top5.po_exists },
-            psi: { partner: part.psi.partner, reporters: part.psi.reporters, view: part.psi.view },
-            compare: { psi_partner: pc.psi_partner as Table },
-          };
-          const dp = detach(payload);
-          this.send({ type: 'result', id, layer: 'partner', key: layerKeys(params).psi, source: pSource, payload: dp.value, ms: now() - t0, cached: pCached }, dp.transfer);
-        }
-
-        if (want.network) {
-          await this.ensureChunk('network');
-          this.check(id);
-          t0 = now();
-          const greedy = this.greedyBaseline(b);
-          const stored = baseline ? this.storedDesign(b) : null;
-          let payload: NetworkPayload;
-          let nSource: 'baseline' | 'computed' = 'computed';
-          let nCached = false;
-          if (stored) {
-            // the paper's exact design
-            const sol = { ...stored.sol, forbidden: {} };
-            payload = {
-              is_baseline: true, stages: [], scored: null, solution: sol, method: stored.method, reference: 'greedy',
-              compare: greedy ? networkCompare(sol, greedy) : null,
-              concentration: networkConcentration(sol, b, greedy), elapsed_ms: 0,
-            };
-            nSource = 'baseline';
-            nCached = true;
-            // the self-check re-solves the greedy design at the paper's settings and compares it with
-            // the shipped greedy baseline; it must also run when the paper's design is the exact one
-            this.idle(() => this.runSelfCheck('network'));
-          } else if (baseline && greedy) {
-            // the greedy design at the paper's settings, shipped (exact R output)
-            payload = {
-              is_baseline: true, stages: [], scored: null,
-              solution: {
-                specialization: greedy.specialization, flows: greedy.flows, diagnostics: greedy.diagnostics,
-                member_shares: greedy.member_shares, portfolio: greedy.portfolio, forbidden: greedy.forbidden,
-              },
-              method: 'greedy', reference: 'greedy', compare: networkCompare(greedy, greedy),
-              concentration: networkConcentration(greedy, b, greedy), elapsed_ms: 0,
-            };
-            nSource = 'baseline';
-            nCached = true;
-            this.idle(() => this.runSelfCheck('network'));
-          } else {
-            const cells = part.cells ?? this.baselineCells(b);
-            const r = await this.networkSolution(id, b, params, core.policy, cells);
-            nCached = r.cached;
-            payload = {
-              is_baseline: baseline, stages: r.sol.stages, scored: { nodes: r.scored.nodes },
-              solution: {
-                specialization: r.sol.specialization, flows: r.sol.flows, diagnostics: r.sol.diagnostics,
-                member_shares: r.sol.member_shares, portfolio: r.sol.portfolio, forbidden: r.sol.forbidden,
-              },
-              method: 'greedy', reference: 'greedy',
-              compare: greedy ? networkCompare(r.sol, greedy) : null,
-              concentration: networkConcentration(r.sol, b, greedy), elapsed_ms: r.sol.elapsed_ms,
-            };
-            this.idle(() => this.runSelfCheck('network'));
-          }
-          this.check(id);
-          const dn = detach(payload);
-          this.send({ type: 'result', id, layer: 'network', key: paramsKey(params, 'net_solve'), source: nSource, payload: dn.value, ms: now() - t0, cached: nCached }, dn.transfer);
-        }
+        const pc = compare({ ...core, partner: { cells: emptyCells, top5: part.top5, psi: part.psi } }, { ...base, partner: { cells: emptyCells, ...shipped } });
+        const payload: PartnerPayload = {
+          is_baseline: baseline,
+          top5: { fs: part.top5.fs, po: part.top5.po, fs_exists: part.top5.fs_exists, po_exists: part.top5.po_exists },
+          psi: { partner: part.psi.partner, reporters: part.psi.reporters, view: part.psi.view },
+          compare: { psi_partner: pc.psi_partner as Table },
+        };
+        const dp = detach(payload);
+        this.send({ type: 'result', id, layer: 'partner', key: layerKeys(params).psi, source: pSource, payload: dp.value, ms: now() - t0, cached: pCached }, dp.transfer);
       }
       this.send({ type: 'done', id, ms: now() - tRun });
     } finally {
@@ -668,27 +496,15 @@ export class EngineHost {
     const core = this.coreResult(b, params, true);
     const base = this.baselineResult(b);
     let result: DashResult = core;
-    let network: Pick<NetworkSolution, 'specialization' | 'flows' | 'diagnostics' | 'member_shares'> | null = null;
     let shipped: { top5: Top5Result; psi: PsiResult } | null = null;
-    if (include.includes('partner') || include.includes('network')) {
+    if (include.includes('partner')) {
       await this.ensureChunk('partner');
       shipped = this.shippedBaselinePartner(b);
       const part = baseline ? { cells: emptyCells, ...shipped } : (await this.partnerState(null, b, params)).state;
       result = { ...core, partner: part };
-      if (include.includes('network')) {
-        await this.ensureChunk('network');
-        const stored = baseline ? this.storedDesign(b) : null;
-        const greedy = baseline ? this.greedyBaseline(b) : null;
-        if (stored) network = stored.sol;
-        else if (greedy) network = greedy;
-        else {
-          const cells = baseline ? this.baselineCells(b) : (part.cells as PartnerCells);
-          network = (await this.networkSolution(null, b, params, core.policy, cells)).sol;
-        }
-      }
     }
     const cmp = compare(result, { ...base, partner: shipped ? { cells: emptyCells, ...shipped } : null });
-    this.reply(id, scenarioTables(result, network, cmp, b));
+    this.reply(id, scenarioTables(result, cmp, b));
   }
 }
 

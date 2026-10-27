@@ -68,7 +68,7 @@ good_src <- function(caveats = vapply(sheet$caveats, function(c) c$id, "")) past
   "The Partnership Strength Index rates {{partners.", psi_o[1], ".name}}, {{partners.", psi_o[2], ".name}} and {{partners.", psi_o[3], ".name}} {{partners.", psi_o[1], ".rank}}, {{partners.", psi_o[2], ".rank}} and {{partners.", psi_o[3], ".rank}} for {{meta.country}}. ",
   "{{partners.", psi_o[1], ".name}} is a {{partners.", psi_o[1], ".reason}} partner for {{meta.country}}. ",
   "{{partners.", p_tie, ".name}} is its {{partners.", p_tie, ".ties.tie_rank}} trade partner on average across its energy-goods baskets. ",
-  "As a partner to the coalition, {{meta.country}} ranks {{summary.as_partner.rank}}. Its allied pick is {{network.pick.cell}}.\n\n",
+  "As a partner to the coalition, {{meta.country}} ranks {{summary.as_partner.rank}}. Its allied pick is {{pick.cell}}.\n\n",
   "## Data notes and caveats\n\n",
   "All values are the paper's baseline as of {{meta.as_of_label}}. ", paste(sprintf("{{caveats.%s}}", caveats), collapse = " "), "\n"
 )

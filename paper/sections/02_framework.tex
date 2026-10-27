@@ -8,7 +8,8 @@
 %   R/indices/build_indices.R (Strategic Index, endowment screen, allied pick),
 %   R/geopolitical_distance/*.R and scripts/12 (alignment), R/indices/coalition.R and scripts/13
 %   (tiers, EU node), R/themes/partnership_strength/*.R (FS, PO, DP, PSI),
-%   R/indices/allied_network_design.R and scripts/30 (network; lambda = 0.78, node policy term off).
+%   R/aib/*.R, config/aib.yml and scripts/31-32 (Allied Industrial Base; the lambda-calibrated
+%   network design of scripts/30 is retired).
 % Figure fig:framework_architecture is drawn inline (TikZ) so that it matches the final method.
 % ===========================================================================
 \section{Conceptual framework}\label{sec:framework}
@@ -45,10 +46,12 @@ relative exposure within a node by the need term $1-\ES$ (rank-based, so it does
 severity across nodes) and, for extraction, apply the endowment screen; capability by
 $\EO$, with the Policy index recording where governments already concentrate their effort;
 complementarity, alignment and part of reciprocity by the coalition and the bilateral indices;
-and robustness only in part, by the diversification penalty and multi-sourcing constraints of the
-network design. Systemic bankability \citep{spokas2025systemic}, common-mode risk (beyond a first
-measure of the Chinese ownership of partners' foreign-invested plants), dynamic option value,
-reciprocal obligations, resilience floors and stress tests are not modelled.
+and severity across nodes, the coordination step and robustness by the stress tests of the Allied
+Industrial Base analysis, which measure for each sub-sector node the share of the coalition's traded
+demand a shock removes and what existing relationships, coordinated trade and new capacity restore.
+Systemic bankability \citep{spokas2025systemic}, common-mode risk (beyond a first measure of the
+Chinese ownership of partners' foreign-invested plants), propagation along the chain, dynamic option
+value and reciprocal obligations are not modelled.
 
 \begin{table}[tbp]
 \centering
@@ -64,24 +67,25 @@ Layer & Measured here (section) & Not measured\\
 1. Node criticality and severity &
   Country-relative exposure within each technology--stage pair, $1-\ES_{its}$ (import
   dependence, supplier concentration, reserves; \ref{sec:es}); endowment screen on extraction
-  stages (\ref{sec:strategic}) &
-  Severity compared across nodes; disruption horizons, inventories, qualification and build times, end-use criticality\\[2pt]
+  stages (\ref{sec:strategic}); shock exposure of 92 sub-sector nodes in USD of traded demand
+  (\ref{sec:network}) &
+  Disruption horizons, inventories, qualification and build times, end-use criticality\\[2pt]
 2. Country capability and opportunity &
   $\EO_{its}$ by cell (\ref{sec:eo}); Policy index and Strategic Index (\ref{sec:strategic}) &
   Plant-level cost curves, pipeline capacity, workforce, tacit know-how\\[2pt]
 3. Complementarity and reciprocity &
   Coalition rule from UN-vote alignment, agreements and supply shares (\ref{sec:coalition});
-  Friendshore, Partnership Opportunity and Development Potential (\ref{sec:bilateral}); network
-  edges (\ref{sec:network}) &
+  Friendshore, Partnership Opportunity and Development Potential (\ref{sec:bilateral}); the emergent
+  AIB network, country roles and Sectoral Compacts (\ref{sec:network}) &
   Reciprocal obligations, export-restriction risk, market-access commitments\\[2pt]
 4. Systemic bankability & --- &
   Offtake, price risk, permitting, enabling infrastructure, insurance, delivery capacity\\[2pt]
 5. Network robustness &
-  Concave penalty on the Herfindahl index of designed shares, share bounds and multi-sourcing
-  constraints, calibrated on observed concentration (\ref{sec:network}); Chinese-parent exposure in
-  four Midstream cells (\ref{sec:bilateral}) &
-  Stress tests, common-mode failure through shared inputs, logistics or equipment, stockpiles,
-  recovery time, dynamic option value\\
+  Stress tests under five shocks: existing, optimized and investment responses, a supplier-share
+  frontier and an N-1 test (\ref{sec:network}); Chinese-parent exposure in four Midstream cells
+  (\ref{sec:bilateral}) &
+  Common-mode failure through shared inputs, logistics or equipment, propagation across nodes,
+  stockpiles, recovery time, dynamic option value\\
 \bottomrule
 \end{tabularx}
 \begin{tablenotes}[flushleft]\footnotesize
@@ -94,9 +98,11 @@ parentheses refer to sections of this paper.
 Two simplifications matter. First, our cell, a technology--stage pair, is coarser than the
 working paper's node: Batteries Midstream, for example, groups mineral refining, electrode
 materials and cell manufacture. It is the finest level at which both pillars can be scored for
-most economies from public data. Second, the coordination step is assumed rather than tested: the
-22 traded Upstream and Midstream stages are all treated as candidates, while Downstream
-deployment, largely non-traded, enters the Strategic Index but not the network design.
+most economies from public data; the Allied Industrial Base analysis works at the finer
+sub-sector node where trade data allow it. Second, the coordination step is tested only for traded
+goods: the analysis measures a coordination dividend in each Upstream and Midstream node, while
+Downstream deployment, largely non-traded, enters the Strategic Index but not the Allied Industrial
+Base analysis.
 
 % ---------------------------------------------------------------------------
 \subsection{Cells, pillars and rankability}\label{subsec:framework_unit}
@@ -184,10 +190,11 @@ outside geothermal and green hydrogen. Read as need, $\ES$ gives an economy with
 its largest need at the extraction stage, so an \emph{endowment screen} admits an Upstream stage
 to the pick only if the member has recorded reserves or production of the stage's resources. The
 screen is a selection rule, not part of the index: values are unchanged, and 669 of the 998 scored
-Upstream cells lack a resource base. The network design uses neither the index nor the picks.
+Upstream cells lack a resource base. The Allied Industrial Base analysis uses neither the index
+nor the picks.
 
 % ---------------------------------------------------------------------------
-\subsection{Coalition, bilateral indices and network design}\label{subsec:framework_layers}
+\subsection{Coalition, bilateral indices and the Allied Industrial Base}\label{subsec:framework_layers}
 
 \paragraph{The coalition.} The coalition $\Coalition$ is derived by rule
 (Section~\ref{sec:coalition}). Each voting economy is placed on a U.S.--China axis
@@ -199,8 +206,7 @@ the Minerals Security Partnership, the G7 or NATO above the same GDP floor, and 
 outside the China-leaning bloc without a GDP floor: at least 5 percent of world production,
 refining, manufacturing capacity or exports in an Upstream or Midstream stage, or at least 10
 percent of world reserves of a headline mineral, fuel or uranium. With the six EU members below
-the GDP floor the coalition spans 63 economies; the network treats the EU-27 as one node with
-stage-weighted member inputs, which gives 37 nodes. The dyadic alignment $A_{ij}$
+the GDP floor the coalition spans 63 economies, or 37 units with the EU-27 taken as one. The dyadic alignment $A_{ij}$
 (equation~\eqref{eq:coalition_dyadic}), the probability that two economies fall on the same side
 of the divide, links the coalition to the bilateral layer.
 
@@ -217,27 +223,26 @@ three with weights 0.4, 0.4 and 0.2, those of the partnership score of \citet{ca
 the headline averages the views of the 31 core members. Table~\ref{tab:roles} shows how security
 and opportunity enter each index.
 
-\paragraph{Network design.} For each of the 22 Upstream and Midstream stages, a mixed-integer
-program over the 37 nodes chooses producers ($y_p\in\{0,1\}$), supplier links
-($\ell_{pc}\in\{0,1\}$) and flows $f_{pc}\ge0$, the share of the network's unit demand that $p$
-supplies to $c$, with production shares $x_p=\sum_c f_{pc}$:
-\begin{equation}\label{eq:fw_network}
-  \max_{y,\ell,f}\ \sum_{p}\sum_{c}f_{pc}\bigl(a_p+0.5\,W_{pc}\bigr)-\lambda\sum_{p}x_p^{2}
-  \quad\text{s.t.}\quad \sum_{p}f_{pc}=d_c,\quad 0.05\,y_p\le x_p\le0.40\,y_p .
+\paragraph{The Allied Industrial Base.} The AIB analysis works on the observed 2024 trade at 92
+sub-sector nodes $n$ of the ten technologies with a trade basket. The \emph{demand scope} is the 57
+coalition members, whose lost supply it seeks to restore, and the \emph{candidate partners} are all
+economies with material exports. A shock removes a supplier's exports (in the headline China's, with
+China still buying). State A is the shock, state B the response of the 2024 relationships, each
+allowed at most to double, and state C optimized partnerships, in which any candidate may serve any
+importer; B and C are lexicographic linear programs that maximise the demand served first. With
+$C_n$ the share of the scope's traded demand for node $n$ that is served,
+\begin{equation}\label{eq:fw_aib}
+  \text{coordination dividend}_n=C^{\mathrm C}_n-C^{\mathrm B}_n,\qquad
+  \text{residual gap}_n=1-C^{\mathrm C}_n .
 \end{equation}
-The producer score $a_p$ weights the S-curves of $\EO$ and $\ES$ across the nodes by $5/7$ and
-$2/7$, without a policy term; the edge weight $W_{pc}=0.5\,\FS_{cpts}+0.5\,\PO_{pcts}$ reads each
-directed index from the end of the relationship it describes; and the demand weight $d_c$ mixes
-the consumer's need and economic size. At least three nodes produce, and every consumer draws on
-at least two suppliers, each providing at least 10 percent of its demand. The penalty on the
-Herfindahl index of production shares makes the program spread production among nodes rather than
-rank them, a first step toward optimising combinations. Because the penalty treats each node as an
-independent source, it does not register that producers sharing a bloc, a region or a parent company
-diversify less; Section~\ref{sec:discussion} discusses a correlated-risk version. Its weight is calibrated:
-$\lambda=0.78$ is the smallest value at which the median designed Herfindahl index across stages
-does not exceed the median observed export concentration of the nodes, a knife-edge choice that
-Section~\ref{sec:network} discloses. An outer loop caps, by the logarithm of GDP, the number of
-stages in which a node is among the five largest producers.
+Where the gap is at least 5 percent, a standardised capacity increment is simulated at capable hosts,
+and the importers it serves are the investors of an investor--host pair. The selected trade and
+investment relationships form the emergent network, each node is classified as \textsc{build},
+\textsc{coordinate}, \textsc{manage specialization} or \textsc{low intervention} by stated
+thresholds, and intervention nodes that cohere along the physical chain, in their partners and in
+their policy needs form Sectoral Compacts, whose minimum coalitions solve an exact binary program.
+Export Opportunity and Friendshore only order allocations and hosts that are equal on coverage; no
+index enters as a weight, and there is no composite score.
 
 \begin{figure}[tbp]
   \centering
@@ -271,7 +276,7 @@ stages in which a node is among the five largest producers.
   \node[box=osiviolet, text width=3.5cm, minimum height=2.5cm] (coal)
     at ($(src.south)+(6,-0.5)$) {%
     {\footnotesize\bfseries Coalition}\\ $\Coalition$\\[1pt] UN-vote alignment,\\
-    agreements, supply shares;\\ 31 core $+$ 26 partners;\\ EU-27 as one: 37 nodes};
+    agreements, supply shares;\\ 31 core $+$ 26 partners;\\ EU-27 as one: 37 units};
   \coordinate (busy) at ($(src.south)+(0,-3.35)$);
   \draw[bus] ($(busy)+(-7.7,0)$) -- ($(busy)+(7.7,0)$);
   \foreach \n in {pol, es, eo, coal} {\draw[bus] (\n.south) -- (\n.south |- busy);}
@@ -290,13 +295,13 @@ stages in which a node is among the five largest producers.
   \draw[flow] (si.north |- busy) -- node[lab, pos=0.45] {$\POL$, $\ES$, $\EO$} (si.north);
   \draw[flow] (bil.north |- busy) -- node[lab, pos=0.45] {$\ES$, $\EO$, $A_{ij}$} (bil.north);
   \node[box=osigray, text width=15.4cm] (net) at ($(busy)+(0,-4.3)$) {%
-    {\footnotesize\bfseries Allied network design}: each of 22 Upstream and Midstream stages over
-    37 nodes,\quad $\max\ \sum_{p,c}f_{pc}\,(a_p+0.5\,W_{pc})-\lambda\sum_p x_p^2$\\[1pt]
-    $a_p$ from $\EO$ and $\ES$ (no policy term);\quad $W_{pc}=0.5\,\FS_{cp}+0.5\,\PO_{pc}$;\quad
-    $d_c$ from need and size;\quad shares in $\{0\}\cup[0.05,0.40]$;\quad $\ge2$ suppliers per
-    consumer;\\ $\lambda=0.78$ calibrated on the nodes' observed export concentration;\quad
-    GDP-log portfolio caps};
-  \draw[flow] (busy) -- node[lab, pos=0.5] {$\ES$, $\EO$,\\ nodes} (net.north);
+    {\footnotesize\bfseries Allied Industrial Base}: 92 sub-sector nodes of 2024 USD trade;\quad
+    demand scope: the 57 members;\quad candidate partners: any economy\\[1pt]
+    shock (China removed, hold) $\to$ existing relationships $\to$ optimized trade (lexicographic LP)
+    $\to$ residual gap $\to$ capacity increments at capable hosts\\
+    $\to$ emergent network and country roles $\to$ node treatment $\to$ Sectoral Compacts with exact
+    minimum coalitions};
+  \draw[flow] (busy) -- node[lab, pos=0.5] {coalition} (net.north);
   \draw[flow] (bil.south) -- node[lab, pos=0.45] {$\FS$, $\PO$} (bil.south |- net.north);
   \end{tikzpicture}%
   }
@@ -305,12 +310,13 @@ stages in which a node is among the five largest producers.
   Assembly, agreements and supply shares. The Strategic Index ranks each country's sectors and
   yields the allied picks; the bilateral indices score partners as friendshoring opportunities and
   export markets and are
-  summarised in the Partnership Strength Index. The network design allocates production among
-  the coalition's nodes. In the terms of \citet{neis2026allied}, the pillars, the Policy index and
+  summarised in the Partnership Strength Index. The Allied Industrial Base analysis stress-tests the
+  coalition's observed trade at 92 sub-sector nodes and forms Sectoral Compacts where joint action
+  pays. In the terms of \citet{neis2026allied}, the pillars, the Policy index and
   the Strategic Index address relative exposure and capability, the coalition and the bilateral indices
-  complementarity, and the network design specialisation and, in part, robustness. $\iota_{its}$
+  complementarity, and the AIB analysis severity, coordination, specialisation and robustness. $\iota_{its}$
   is the imputed share of a cell's index weight; the Strategic Index and the Partnership Strength
-  Index are not inputs to the network design.}
+  Index are not inputs to the AIB analysis.}
   \label{fig:framework_architecture}
 \end{figure}
 
@@ -337,18 +343,18 @@ Partnership Opportunity $\PO_{ijts}$ & exporter $i$, market $j$ &
   capability of the exporter, ranked across economies, weight 3 of 7\\[2pt]
 Development Potential $\DP_{jts}$ & partner $j$, not high income &
   need of the partner, weight 1 of 10 & opportunity of the partner, weight 1.5 of 10\\[2pt]
-Network producer score $a_p$ & node $p$ as producer &
-  security of the producer, S-curve across nodes, weight 2/7 &
-  capability of the producer, S-curve across nodes, weight 5/7\\[2pt]
-Network demand $d_c$ & node $c$ as consumer &
-  need of the consumer, weight 0.5 (with size, 0.5) & ---\\
+AIB trade program & exporter $e$, importer $m$ &
+  --- (exposure and coverage are measured from observed trade) &
+  through $\PO_{em}$, a tie-break among allocations of equal coverage\\[2pt]
+AIB host ranking & host $h$, investor $m$ &
+  through $\FS_{mh}$ (need of the investor), a tie-break among capable hosts &
+  through $\FS_{mh}$ (opportunity of the host); hosts are gated on trade and production\\
 \bottomrule
 \end{tabularx}
 \begin{tablenotes}[flushleft]\footnotesize
 \item \textit{Notes:} Weights are nominal, before renormalisation over the components observed.
-Security enters as need wherever it describes the party that would gain from new supply, and as
-security only in the producer score of the network design, where a node's own security in a
-stage proxies its reliability as a supplier. Sections~\ref{sec:strategic}, \ref{sec:bilateral}
+Security enters as need wherever it describes the party that would gain from new supply. The AIB
+analysis measures exposure from observed trade and uses the indices only as tie-breaks. Sections~\ref{sec:strategic}, \ref{sec:bilateral}
 and~\ref{sec:network} give the full definitions.
 \end{tablenotes}
 \end{threeparttable}
@@ -369,10 +375,10 @@ Symbol & Meaning & Defined in\\
 $\Countries$ & the 219 economies after harmonisation & Sec.~\ref{sec:data}\\
 $\Techs$, $\Stages$ & eleven headline technologies; \{Upstream, Midstream, Downstream\} &
   Sec.~\ref{subsec:framework_unit}\\
-$\Coalition$ & the 57 coalition members (31 core, 26 partners); 37 network nodes &
+$\Coalition$ & the 57 coalition members (31 core, 26 partners); 37 units with the EU-27 as one &
   Sec.~\ref{sec:coalition}\\
 $i,j$; $t,s$; $k,v$ & economy (reporter), partner; technology, stage; category, variable & \\
-$p,c$ & network node as producer; as consumer & Sec.~\ref{sec:network}\\
+$n$; $e,m$ & AIB node (sub-sector); exporter, importer & Sec.~\ref{sec:network}\\
 $\cell$, $\dyad$ & cell; directed dyad with reporter $i$ and partner $j\neq i$ &
   Secs.~\ref{subsec:framework_unit}, \ref{sec:bilateral}\\[2pt]
 \multicolumn{3}{@{}l}{\textit{Normalisation and pillars}}\\
@@ -399,19 +405,19 @@ $s_i$, $A_{ij}$ & position on the U.S.--China axis; dyadic alignment &
 $\FS_{ijts}$, $\PO_{ijts}$, $\DP_{jts}$ & Friendshore; Partnership Opportunity; Development
   Potential & Eqs.~\eqref{eq:fs_index}, \eqref{eq:po_index}, \eqref{eq:dp_index}\\
 $\PSI_j$ & Partnership Strength Index & Eq.~\eqref{eq:psi}\\[2pt]
-\multicolumn{3}{@{}l}{\textit{Network design}}\\
-$a_p$, $W_{pc}$, $d_c$ & producer score; edge weight; demand weight ($\sum_c d_c=1$) &
-  Eq.~\eqref{eq:fw_network}\\
-$y_p$, $\ell_{pc}$, $f_{pc}$, $x_p$ & producer selection; supplier link; flow share; production
-  share & Eq.~\eqref{eq:fw_network}\\
-$\lambda$, $\HHI$ & diversification weight; Herfindahl--Hirschman index & Eq.~\eqref{eq:fw_network}\\
+\multicolumn{3}{@{}l}{\textit{Allied Industrial Base}}\\
+$C^{\mathrm A}_n$, $C^{\mathrm B}_n$, $C^{\mathrm C}_n$ & coverage of the demand scope's traded demand
+  after the shock, with existing relationships, with optimized trade & Eq.~\eqref{eq:fw_aib}\\
+$f_{em}$, $a_e$, $\kappa$ & flow from exporter $e$ to importer $m$; available supply; maximum
+  supplier share & App.~\ref{app:algorithm}\\
+$\HHI$ & Herfindahl--Hirschman index of supply & Sec.~\ref{sec:network}\\
 \bottomrule
 \end{tabularx}
 \begin{tablenotes}[flushleft]\footnotesize
-\item \textit{Notes:} The stage weight $\lambda_s$ carries a subscript and the diversification
-weight $\lambda$ none; the axis position $s_i$ carries an economy subscript and the stage $s$
-none. The production share $x_p$ and the policy components $x^{v}_{its}$ of
-Section~\ref{sec:strategic} are distinct from the raw variable $x_{itsv}$. Later sections
+\item \textit{Notes:} The axis position $s_i$ carries an economy subscript and the stage $s$
+none. The policy components $x^{v}_{its}$ of Section~\ref{sec:strategic} are distinct from the raw
+variable $x_{itsv}$, and the AIB node $n$ from the count $n_g$ of equation~\eqref{eq:fw_scurve};
+Appendix~\ref{app:algorithm} defines the remaining symbols of the AIB programs locally. Later sections
 introduce further symbols where they are needed.
 \end{tablenotes}
 \end{threeparttable}

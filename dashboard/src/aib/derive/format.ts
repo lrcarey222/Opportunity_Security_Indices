@@ -40,11 +40,11 @@ export function nameOf(names: Readonly<Record<string, string>>, iso3: string | n
   return names[iso3] ?? iso3;
 }
 
-/** "Japan, Korea and Germany". */
-export function listWords(items: readonly string[]): string {
+/** "Japan, Korea and Germany" ("Japan, Korea or Germany" with `or`). */
+export function listWords(items: readonly string[], conj: 'and' | 'or' = 'and'): string {
   if (items.length <= 1) return items[0] ?? '';
-  if (items.length === 2) return `${items[0]} and ${items[1]}`;
-  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+  if (items.length === 2) return `${items[0]} ${conj} ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')} ${conj} ${items[items.length - 1]}`;
 }
 
 /** "1 node" / "3 nodes". */
@@ -53,4 +53,35 @@ export const plural = (n: number, one: string, many = `${one}s`): string => `${n
 /** "Batteries, Electric Vehicles · Midstream". */
 export function techStage(techs: readonly string[], stage: string): string {
   return `${techs.join(', ') || DASH} · ${stage}`;
+}
+
+/** At most this many node labels in a short compact title (more: "{first} and N more", "{first} (and N more)" when the first holds a comma). */
+export const TITLE_NODES = 3;
+
+/** Node labels in one line: ", " between them, "; " when a label holds a comma ("Electric buses, trucks & tractors"). */
+export const joinLabels = (labels: readonly string[]): string => labels.join(labels.some((l) => l.includes(',')) ? '; ' : ', ');
+
+/**
+ * A display title for a compact, built from its structured fields, never by parsing compact.name (node
+ * labels can contain ", " and ": ", sector names "/"): "{sectors or technologies, ' / '}: {node labels}".
+ * The labels are the compact's nodes in its own order, joined with ", " (with "; " when a label contains a
+ * comma, so "Electric buses, trucks & tractors" stays one label); more than TITLE_NODES become "{first
+ * label} and N more" unless `full` ("{first label} (and N more)" when that label holds a comma, so the count
+ * never reads as part of it: "Electric buses, trucks & tractors (and 3 more)"). Nodes the document lacks are skipped; with none found, the exported
+ * name. `nodes`: the document's nodes, or a lookup by id.
+ */
+export function compactTitle(
+  c: { name: string; nodes: readonly string[]; technologies?: readonly string[] },
+  nodes: readonly { id: string; label: string; techs?: readonly string[] }[] | ((id: string) => { label: string; techs?: readonly string[] } | null | undefined),
+  opts: { full?: boolean } = {},
+): string {
+  const find = typeof nodes === 'function' ? nodes : (id: string) => nodes.find((n) => n.id === id);
+  const own = c.nodes.map((id) => find(id)).filter((n): n is { label: string; techs?: readonly string[] } => !!n);
+  if (!own.length) return c.name;
+  const labels = [...new Set(own.map((n) => n.label))];
+  const techs = c.technologies?.length ? [...c.technologies] : [...new Set(own.flatMap((n) => n.techs ?? []))].sort((a, b) => a.localeCompare(b, 'en'));
+  const more = labels.length - 1;
+  const short = labels[0].includes(',') ? `${labels[0]} (and ${more} more)` : `${labels[0]} and ${more} more`;
+  const list = opts.full || labels.length <= TITLE_NODES ? joinLabels(labels) : short;
+  return techs.length ? `${techs.join(' / ')}: ${list}` : list;
 }

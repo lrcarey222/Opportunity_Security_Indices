@@ -62,12 +62,17 @@ function renderAt(path: string) {
 }
 
 const h1 = async (name: RegExp | string) => screen.findByRole('heading', { level: 1, name }, { timeout: 30_000 });
+/** The Sector profile's groups start folded at every width: open them all, as a reader clicking "Show". */
+const openGroups = async () => {
+  for (const b of await screen.findAllByRole('button', { name: 'Show' }, { timeout: 30_000 })) fireEvent.click(b);
+};
 const main = () => document.querySelector('main') ?? document.body;
 
 describe('Sector edits 2026-10 (C5)', () => {
   it('Batteries — Midstream: the HHI explainer, sub-components, the basket composition and export feasibility', async () => {
     const r = renderAt('/sector/batteries/midstream');
     expect(await h1('Batteries — Midstream')).toBeTruthy();
+    await openGroups();
     const explainer = await screen.findByTestId('hhi-explainer', {}, { timeout: 20_000 });
     expect(explainer.textContent).toMatch(/Ten equal exporters give 0\.10; four give 0\.25/);
     expect(explainer.textContent).toMatch(/Here the index is \d\.\d\d, which behaves like \d+\.\d equal exporters/);
@@ -93,11 +98,13 @@ describe('Sector edits 2026-10 (C5)', () => {
   it('an unknown sub-component in the link shows the whole basket; the explainer is collapsed after the first visit', async () => {
     renderAt('/sector/batteries/midstream?sub=Nope');
     expect(await h1('Batteries — Midstream')).toBeTruthy();
+    await openGroups();
     expect(await screen.findByRole('heading', { name: 'Exporters and importers' }, { timeout: 20_000 })).toBeTruthy();
     expect((screen.getByRole('radio', { name: 'Whole basket' }) as HTMLInputElement).checked).toBe(true);
     cleanup();
     renderAt('/sector/batteries/midstream');
     expect(await h1('Batteries — Midstream')).toBeTruthy();
+    await openGroups();
     const explainer = await screen.findByTestId('hhi-explainer', {}, { timeout: 20_000 });
     expect(explainer.hasAttribute('open')).toBe(false);
   });
@@ -105,6 +112,7 @@ describe('Sector edits 2026-10 (C5)', () => {
   it('Solar — Upstream: a trade basket with one group of codes and its basket note (C5.1)', async () => {
     renderAt('/sector/solar/upstream');
     expect(await h1('Solar — Upstream')).toBeTruthy();
+    await openGroups();
     expect(await screen.findByText('One group of codes: the whole basket.', {}, { timeout: 20_000 })).toBeTruthy();
     expect(screen.getByText(/Solar Upstream trade is silicon metal only/)).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Exporters and importers' })).toBeTruthy();
@@ -116,6 +124,7 @@ describe('Sector edits 2026-10 (C5)', () => {
   it('Semiconductors — Upstream renders with its trade basket', async () => {
     renderAt('/sector/semiconductors/upstream');
     expect(await h1('Semiconductors — Upstream')).toBeTruthy();
+    await openGroups();
     expect(await screen.findByRole('heading', { name: 'Exporters and importers' }, { timeout: 20_000 })).toBeTruthy();
     expect(screen.getByText(/gallium, germanium and indium/i, { selector: 'li' })).toBeTruthy();
   });
@@ -166,7 +175,7 @@ describe('Sector edits 2026-10 (C5)', () => {
   it('Country in sector links to Country Insights; the SectorBar highlight does too', async () => {
     renderAt('/sector/batteries/midstream/USA');
     expect(await h1('United States in Batteries — Midstream')).toBeTruthy();
-    const links = screen.getAllByRole('link', { name: 'United States in Country Insights →' });
+    const links = screen.getAllByRole('link', { name: 'United States: Country profile →' });
     expect(links.length).toBeGreaterThan(0);
     for (const a of links) expect(a.getAttribute('href')).toBe('/countries/USA');
   });
@@ -186,6 +195,7 @@ describe('Sector edits 2026-10 (C5)', () => {
   it.each(['/sector/batteries/midstream', '/sector/oil/upstream', '/sector/explore/trade?tech=Batteries&stage=Midstream', '/sector/explore/prices'])('every chart card on %s says how to read it (C3.6)', async (path) => {
     renderAt(path);
     await screen.findByRole('heading', { level: 1 }, { timeout: 30_000 });
+    if (/^\/sector\/[a-z-]+\/(?:up|mid|down)stream$/.test(path)) await openGroups();
     await waitFor(() => expect(document.querySelectorAll('main section.card > figure').length).toBeGreaterThan(1), { timeout: 20_000 });
     await waitFor(() => expect(main().textContent ?? '').not.toMatch(/Loading /), { timeout: 20_000 });
     // a chart card's reading line is the HowToRead span under its measure caption
@@ -198,6 +208,7 @@ describe('Sector edits 2026-10 (C5)', () => {
   it.each(['/sector', '/sector/batteries', '/sector/minerals', '/sector/explore/policy', '/sector/explore/technology', '/sector/oil/upstream'])('no bare acronym on %s (C3.4)', async (path) => {
     renderAt(path);
     await screen.findByRole('heading', { level: 1 }, { timeout: 30_000 });
+    if (/^\/sector\/[a-z-]+\/(?:up|mid|down)stream$/.test(path)) await openGroups();
     await waitFor(() => expect(document.querySelectorAll('figure, [data-testid="sector-bar"]').length).toBeGreaterThan(0), { timeout: 20_000 });
     expect(bareAcronyms(main())).toEqual([]);
   });

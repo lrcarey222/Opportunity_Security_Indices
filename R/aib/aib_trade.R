@@ -156,15 +156,16 @@ aib_production_shares <- function(proxies, node_cells, major_supplier_shares = N
     if (!length(ids)) next
     rows <- NULL
     if (identical(p$source, "major_supplier_shares") && !is.null(major_supplier_shares)) {
+      # A measure without minerals (uranium mine production) is matched on the measure alone.
       ms <- major_supplier_shares[major_supplier_shares$measure == p$measure &
-                                    tolower(major_supplier_shares$mineral) == tolower(p$mineral) &
+                                    (if (is.null(p$mineral)) TRUE else dplyr::coalesce(tolower(major_supplier_shares$mineral) == tolower(p$mineral), FALSE)) &
                                     !dplyr::coalesce(as.logical(major_supplier_shares$is_aggregate), FALSE), , drop = FALSE]
       if (nrow(ms)) {
         ms <- ms[ms$year == max(ms$year, na.rm = TRUE), , drop = FALSE]
         rows <- ms %>%
           dplyr::group_by(iso3) %>%
           dplyr::summarise(production_share = max(world_share, na.rm = TRUE), .groups = "drop") %>%
-          dplyr::mutate(production_source = paste0(p$measure, ": ", p$mineral, " (", max(ms$year), ")"))
+          dplyr::mutate(production_source = paste0(p$measure, if (is.null(p$mineral)) "" else paste0(": ", p$mineral), " (", max(ms$year), ")"))
       }
     }
     if (identical(p$source, "gcim") && !is.null(gcim)) {

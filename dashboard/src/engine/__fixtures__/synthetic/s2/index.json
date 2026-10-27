@@ -1,12 +1,11 @@
 {
   "set": "synthetic/s2",
-  "bundle_id": "bb6ab1b52bc749b5d9b960fcc7cdc4df",
+  "bundle_id": "f25dba6d29fe5e1d586b556bafeb7d1c",
   "r_version": "R version 4.4.1 (2024-06-14 ucrt)",
   "platform": "x86_64-w64-mingw32",
   "long_double": true,
-  "created": "2026-10-14T20:42:39Z",
+  "created": "2026-10-21T20:53:18Z",
   "generator": "scripts/86_export_dashboard_fixtures.R",
-  "share_rank_digits": 9,
   "scenarios": [
     {
       "id": "S00",
@@ -20,28 +19,24 @@
       },
       "advanced": [],
       "file": "S00.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.080000000000000002,
-        "L5 inputs": 0.25,
-        "L5 score": 0.059999999999999998,
-        "L5 solve": 0.40999999999999998
+        "L1-L4": 0.059999999999999998
       },
-      "total_sec": 1.4099999999999999
+      "total_sec": 0.44
     },
     {
       "id": "S01",
       "label": "Hawkishness 0",
-      "exercises": "SI need weight, PSI / edge FS shares, geo and Chinese-parent ownership weights, lambda, demand need, resilience (down)",
+      "exercises": "SI need weight, PSI FS share, geo and Chinese-parent ownership weights (down)",
       "dials": {
         "hawkishness": 0,
         "bullishness": 50,
@@ -50,28 +45,24 @@
       },
       "advanced": [],
       "file": "S01.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.059999999999999998,
-        "L5 inputs": 0.14000000000000001,
-        "L5 score": 0.040000000000000001,
-        "L5 solve": 0.29999999999999999
+        "L1-L4": 0.059999999999999998
       },
-      "total_sec": 1.1100000000000001
+      "total_sec": 0.48999999999999999
     },
     {
       "id": "S02",
       "label": "Hawkishness 100",
-      "exercises": "the same, up (lambda x4)",
+      "exercises": "the same, up",
       "dials": {
         "hawkishness": 100,
         "bullishness": 50,
@@ -80,28 +71,24 @@
       },
       "advanced": [],
       "file": "S02.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.080000000000000002,
-        "L5 inputs": 0.14999999999999999,
-        "L5 score": 0.059999999999999998,
-        "L5 solve": 0.34000000000000002
+        "L1-L4": 0.070000000000000007
       },
-      "total_sec": 1.27
+      "total_sec": 0.54000000000000004
     },
     {
       "id": "S03",
       "label": "Bullishness 0",
-      "exercises": "SI EO weight, PSI / edge PO shares, node EO, demand size (down)",
+      "exercises": "SI EO weight, PSI PO share (down)",
       "dials": {
         "hawkishness": 50,
         "bullishness": 0,
@@ -110,23 +97,19 @@
       },
       "advanced": [],
       "file": "S03.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.070000000000000007,
-        "L5 inputs": 0.13,
-        "L5 score": 0.050000000000000003,
-        "L5 solve": 0.34000000000000002
+        "L1-L4": 0.059999999999999998
       },
-      "total_sec": 1.1799999999999999
+      "total_sec": 0.40999999999999998
     },
     {
       "id": "S04",
@@ -140,28 +123,24 @@
       },
       "advanced": [],
       "file": "S04.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.059999999999999998,
-        "L5 inputs": 0.17000000000000001,
-        "L5 score": 0.040000000000000001,
-        "L5 solve": 0.40999999999999998
+        "L1-L4": 0.070000000000000007
       },
-      "total_sec": 1.6000000000000001
+      "total_sec": 0.40999999999999998
     },
     {
       "id": "S05",
       "label": "Populism 0",
-      "exercises": "SI policy weight, IEA share, stage contrast narrowed, home bias x0.25 (self edges)",
+      "exercises": "SI policy weight, IEA share, stage contrast narrowed",
       "dials": {
         "hawkishness": 50,
         "bullishness": 50,
@@ -170,28 +149,24 @@
       },
       "advanced": [],
       "file": "S05.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.089999999999999997,
-        "L5 inputs": 0.22,
-        "L5 score": 0.070000000000000007,
-        "L5 solve": 0.39000000000000001
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 1.6299999999999999
+      "total_sec": 0.38
     },
     {
       "id": "S06",
       "label": "Populism 100",
-      "exercises": "node policy term on (coalition-median imputation), home bias x4 capped, stage contrast widened",
+      "exercises": "SI policy weight and IEA share up, stage contrast widened",
       "dials": {
         "hawkishness": 50,
         "bullishness": 50,
@@ -200,23 +175,19 @@
       },
       "advanced": [],
       "file": "S06.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.059999999999999998,
-        "L5 inputs": 0.14000000000000001,
-        "L5 score": 0.070000000000000007,
-        "L5 solve": 0.34000000000000002
+        "L1-L4": 0.070000000000000007
       },
-      "total_sec": 1.25
+      "total_sec": 0.40999999999999998
     },
     {
       "id": "S07",
@@ -230,28 +201,24 @@
       },
       "advanced": [],
       "file": "S07.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.10000000000000001,
-        "L5 inputs": 0.19,
-        "L5 score": 0.050000000000000003,
-        "L5 solve": 0.33000000000000002
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 1.24
+      "total_sec": 0.38
     },
     {
       "id": "S08",
       "label": "Greenness 100",
-      "exercises": "penalties x4, fossil exclusion (auto) in the SI, best-five and network",
+      "exercises": "penalties x4, fossil exclusion (auto) in the SI and best-five",
       "dials": {
         "hawkishness": 50,
         "bullishness": 50,
@@ -260,23 +227,19 @@
       },
       "advanced": [],
       "file": "S08.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.080000000000000002,
-        "L5 inputs": 0.13,
-        "L5 score": 0.029999999999999999,
-        "L5 solve": 0.22
+        "L1-L4": 0.040000000000000001
       },
-      "total_sec": 0.96999999999999997
+      "total_sec": 0.37
     },
     {
       "id": "S09",
@@ -292,23 +255,19 @@
         "fossil": ["always"]
       },
       "file": "S09.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.070000000000000007,
-        "L5 inputs": 0.12,
-        "L5 score": 0.02,
-        "L5 solve": 0.17999999999999999
+        "L1-L4": 0.059999999999999998
       },
-      "total_sec": 0.85999999999999999
+      "total_sec": 0.37
     },
     {
       "id": "S10",
@@ -324,28 +283,24 @@
         "fossil": ["never"]
       },
       "file": "S10.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.080000000000000002,
-        "L5 inputs": 0.17000000000000001,
-        "L5 score": 0.050000000000000003,
-        "L5 solve": 0.35999999999999999
+        "L1-L4": 0.070000000000000007
       },
-      "total_sec": 1.27
+      "total_sec": 0.35999999999999999
     },
     {
       "id": "S11",
       "label": "All four dials",
-      "exercises": "all dials at once (node policy on, no exclusion)",
+      "exercises": "all dials at once (no exclusion)",
       "dials": {
         "hawkishness": 80,
         "bullishness": 30,
@@ -354,23 +309,19 @@
       },
       "advanced": [],
       "file": "S11.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.050000000000000003,
-        "L5 inputs": 0.12,
-        "L5 score": 0.059999999999999998,
-        "L5 solve": 0.28999999999999998
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 0.96999999999999997
+      "total_sec": 0.35999999999999999
     },
     {
       "id": "S12",
@@ -384,23 +335,19 @@
       },
       "advanced": [],
       "file": "S12.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.059999999999999998,
-        "L5 inputs": 0.14000000000000001,
-        "L5 score": 0.059999999999999998,
-        "L5 solve": 0.54000000000000004
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 1.55
+      "total_sec": 0.38
     },
     {
       "id": "S13",
@@ -417,23 +364,19 @@
         "tau": null
       },
       "file": "S13.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.080000000000000002,
-        "L5 inputs": 0.22,
-        "L5 score": 0.040000000000000001,
-        "L5 solve": 0.39000000000000001
+        "L1-L4": 0.029999999999999999
       },
-      "total_sec": 1.3600000000000001
+      "total_sec": 0.35999999999999999
     },
     {
       "id": "S14",
@@ -457,94 +400,45 @@
         "tau": 0.29999999999999999
       },
       "file": "S14.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.059999999999999998,
-        "L5 inputs": 0.14000000000000001,
-        "L5 score": 0.050000000000000003,
-        "L5 solve": 0.37
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 1.25
-    },
-    {
-      "id": "S15",
-      "label": "Lambda 0, max share 0.30, 4 producers",
-      "exercises": "greedy softmax path (no water-filling, no stepwise prune), constraint changes",
-      "dials": {
-        "hawkishness": 50,
-        "bullishness": 50,
-        "populism": 50,
-        "greenness": 50
-      },
-      "advanced": {
-        "network": {
-          "lambda": 0,
-          "max_share": 0.29999999999999999,
-          "min_producers": 4
-        }
-      },
-      "file": "S15.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
-      "options": {
-        "full_arrays": true,
-        "contrib": true,
-        "var": true,
-        "sample": false,
-        "network": true,
-        "n_decompose": 2
-      },
-      "refs": 0,
-      "elapsed_sec": {
-        "L1-L4": 0.059999999999999998,
-        "L5 inputs": 0.13,
-        "L5 score": 0.040000000000000001,
-        "L5 solve": 0.27000000000000002
-      },
-      "total_sec": 1
+      "total_sec": 0.34999999999999998
     },
     {
       "id": "S16",
-      "label": "Hawkishness 70, lambda 3, no caps",
-      "exercises": "high diversification, no portfolio-cap loop",
+      "label": "Hawkishness 70",
+      "exercises": "an intermediate hawkishness multiplier (x1.74)",
       "dials": {
         "hawkishness": 70,
         "bullishness": 50,
         "populism": 50,
         "greenness": 50
       },
-      "advanced": {
-        "network": {
-          "lambda": 3,
-          "portfolio_enable": false
-        }
-      },
+      "advanced": [],
       "file": "S16.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.059999999999999998,
-        "L5 inputs": 0.12,
-        "L5 score": 0.050000000000000003,
-        "L5 solve": 0.13
+        "L1-L4": 0.040000000000000001
       },
-      "total_sec": 0.87
+      "total_sec": 0.34999999999999998
     },
     {
       "id": "S17",
@@ -560,23 +454,19 @@
         "require_resource_base": false
       },
       "file": "S17.osb",
-      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "L5", "compare"],
+      "layers": ["params", "readout", "notes", "L1", "L2", "L3", "L4", "compare"],
       "options": {
         "full_arrays": true,
         "contrib": true,
         "var": true,
         "sample": false,
-        "network": true,
         "n_decompose": 2
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.059999999999999998,
-        "L5 inputs": 0.13,
-        "L5 score": 0.040000000000000001,
-        "L5 solve": 0.38
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 1.3400000000000001
+      "total_sec": 0.37
     }
   ]
 }

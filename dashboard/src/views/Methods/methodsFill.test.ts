@@ -1,5 +1,5 @@
 // The Methods page's placeholders (content/methods.md) are all filled from the data build, and the
-// build counts (coalition tiers, network nodes, Policy bases, the endowment screen) are computed from
+// build counts (coalition tiers, Policy bases, the endowment screen) are computed from
 // the shipped tables as stated.
 
 import { readFileSync } from 'node:fs';
@@ -14,29 +14,23 @@ const md = readFileSync(fileURLToPath(new URL('../../content/methods.md', import
 
 const bi = {
   policy_weights: { 'CAT Policy Index': 2, 'IEA PAMS Policy Index': 3 },
-  lambda: 0.94,
   fs_weights: { geo_alignment: 1, chinese_parent_exposure: 1 },
   fs_penalty: 0.1,
   po_penalty: 0.2,
   tau: 0.5,
   psi_view: 'coalition',
-  max_share: 0.4,
-  min_producers: 3,
-  min_share: 0.05,
-  epsilon_supplier_share: 0.1,
   require_resource_base: true,
 } as unknown as BaselineInputs;
 
 const facts = buildFacts({
   countries: [
-    { tier: 'core', network_node: 'USA' },
-    { tier: 'core', network_node: 'EUU' },
-    { tier: 'core', network_node: 'EUU' },
-    { tier: 'partner', network_node: 'BRA' },
-    { tier: 'none', network_node: 'EUU' },
-    { tier: 'none', network_node: null },
+    { tier: 'core' },
+    { tier: 'core' },
+    { tier: 'core' },
+    { tier: 'partner' },
+    { tier: 'none' },
+    { tier: 'none' },
   ],
-  nNodes: 3,
   eligibility: table({
     Country: ['A', 'B', 'C', 'D'],
     eligible: Uint8Array.from([1, 1, 1, 0]),
@@ -62,13 +56,13 @@ describe('Methods placeholders', () => {
 
   it('counts the coalition, the Policy bases, the screen and the picks from the build', () => {
     expect(facts).toMatchObject({
-      n_coalition: '4', n_core: '3', n_partners: '1', n_nodes: '3',
+      n_coalition: '4', n_core: '3', n_partners: '1',
       n_policy: '3', n_policy_both: '2', n_policy_pams_only: '1', n_policy_none: '1',
       n_si_cells: '3', n_si_countries: '2', n_screened: '2', n_screened_out: '1',
       n_picked: '2', n_picked_upstream: '1',
     });
     const v = methodsValues(bi, { flags: {} }, facts);
-    expect(v.lambda0).toBe('0.94');
+    expect(v.lambda0).toBeUndefined(); // the retired network design's lambda is gone
     expect(v.screen_default).toBe('on');
     // the ownership component's weight and its hawkishness range (x 0.25 / x 4)
     expect([v.cpe_weight, v.cpe_lo, v.cpe_hi]).toEqual(['1', '0.25', '4']);
@@ -81,7 +75,7 @@ describe('Methods placeholders', () => {
     for (const s of ['IEA PAMS is required', 'IEA PAMS + CAT', 'IEA PAMS only', 'endowment screen', 'Mineral Commodity Summaries 2026',
       'copper and aluminium', 'HS 851762', 'Hong Kong', '11 headline technologies', 'adds Brazil',
       // the final run (12 October 2026) and the CM-FDI parts of Friendshore (spec_country.md C4.4)
-      '## In plain words', '18 stages with a trade basket', '259 six-digit basket codes', 'EIA International Energy Statistics',
+      '## In plain words', 'original allied network design', '259 six-digit basket codes', 'EIA International Energy Statistics',
       'Chinese-parent ownership weight inside Friendshore', '{{cpe_weight}}', 'Semiconductors (gallium, germanium and indium']) {
       expect(md).toContain(s);
     }

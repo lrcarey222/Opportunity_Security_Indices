@@ -133,6 +133,16 @@ export async function loadTies(m?: Manifest): Promise<Ties | null> {
   return parseTies((o.ties && typeof o.ties === 'object' ? o.ties : o) as Record<string, unknown>);
 }
 
+/**
+ * The sectors (stage slugs, "solar-midstream") this data build keeps partner rankings for: its
+ * pcell-<slug> chunks, one per engine sector. Null when the build has none (not known).
+ */
+export async function loadRankedCells(m?: Manifest): Promise<Set<string> | null> {
+  const man = await strategicManifest(m);
+  const slugs = man.chunks.filter((c) => c.name.startsWith('pcell-')).map((c) => c.name.slice('pcell-'.length));
+  return slugs.length ? new Set(slugs) : null;
+}
+
 /** One sector's top partners at the baseline (null: not in this data build). */
 export async function loadSectorTop(tech: string, stage: string, m?: Manifest): Promise<SectorTop | null> {
   const o = await auxChunk(`pcell-${stageSlug(tech, stage)}`, m);

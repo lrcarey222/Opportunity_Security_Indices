@@ -1,19 +1,18 @@
 # Export the data of the Allied Industrial Base Explorer (dashboard/, a static React app).
 #
-#   Rscript scripts/85_export_dashboard_data.R [--out-dir <dir>] [--r-out <dir>] [--network-dir <dir>]
-#                                              [--skip-network-baseline] [--skip-trade] [--paper]
+#   Rscript scripts/85_export_dashboard_data.R [--out-dir <dir>] [--r-out <dir>] [--paper]
 #                                              [--allow-fail]
 #
 # The ONE place the dashboard reads the pipeline's outputs. It reads data/processed (and the few
-# raw files the partner and network layers need; the reserves and production themes for the
-# endowment screen of the allied picks), builds the R bundle with the pure builders of
-# R/dashboard/, runs the R reference engine at the paper's baseline (every dial at 50) and checks it
-# against the stored outputs, solves the greedy baseline network, then writes
+# raw files the partner layer needs; the reserves and production themes for the endowment screen
+# of the allied picks), builds the R bundle with the pure builders of R/dashboard/, runs the R
+# reference engine at the paper's baseline (every dial at 50) and checks it against the stored
+# outputs, then writes
 #
 #   <out-dir>/manifest.json          schema, vintage, flags, notes, the validation report, sources,
 #                                    the baseline inputs and parameters, the dial grid, the chunk
 #                                    list and the budget (served with no-cache)
-#   <out-dir>/<chunk>.<md5_8>.osb    core (initial), vars, partner, network: gzipped OSB1 containers
+#   <out-dir>/<chunk>.<md5_8>.osb    core (initial), vars, partner: gzipped OSB1 containers
 #                                    (R/dashboard/dash_osb.R, dash_web.R), lossless, immutable names
 #   <r-out>/bundle.rds               the R bundle (input of scripts/86_export_dashboard_fixtures.R)
 #   <r-out>/validation.rds           the stored pipeline tables the baseline checks compare with
@@ -22,15 +21,12 @@
 # <out-dir> defaults to <repo>/dashboard/public/data, <r-out> to <processed_dir>/dashboard (both
 # relative to the repository, never hard-coded). Every baseline parameter is read from the stored
 # outputs or the files that produced them (config/weights.yml, config/rankability.yml, the Policy
-# index's own record, the Strategic Index constants, scripts/30's settings), so after a pipeline
-# rerun a re-export refreshes the dashboard; nothing here fixes a vintage.
+# index's own record, the Strategic Index constants), so after a pipeline rerun a re-export
+# refreshes the dashboard; nothing here fixes a vintage.
 #
-# The stored scripts/30 design (allied_network_*.csv in --network-dir, default the outputs dir) is
-# the network baseline (exact, MILP) only when it was solved on the same nodes, stages, lambda and
-# inputs as the bundle (flags$network_consistent); otherwise the greedy baseline is shown.
-# --skip-network-baseline skips the greedy baseline (the network chunk then has no baseline design);
-# --skip-trade skips the Comtrade dyad file (the EU node's edges fall back to stage weights and the
-# observed concentration is left out); --paper copies the paper's preview PDF to
+# The original allied network design (scripts/30) is retired (2026-10-17): the bundle no longer has
+# a network chunk, its parameters or its greedy baseline (the Allied Industrial Base analysis,
+# scripts/84, replaces it). --paper copies the paper's preview PDF to
 # dashboard/public/paper/ (off by default: publishing the preview is the authors' decision). Each
 # chunk is decoded again and must be identical() to what was encoded; the export stops above the
 # budget (initial <= 3 MB gz, all chunks <= 25 MB gz).
@@ -82,8 +78,6 @@ arg_value <- function(flag, default = NULL) {
   i <- match(flag, args)
   if (is.na(i) || i == length(args)) default else args[[i + 1]]
 }
-skip_network_baseline <- arg_flag("--skip-network-baseline")
-skip_trade <- arg_flag("--skip-trade")
 allow_fail <- arg_flag("--allow-fail")
 copy_paper <- arg_flag("--paper") && !arg_flag("--no-paper")
 step <- function(...) message(format(Sys.time(), "%H:%M:%S"), "  ", ...)
@@ -123,7 +117,6 @@ rankability <- if (file.exists(rankability_path)) yaml::read_yaml(rankability_pa
 abs_path <- function(p) normalizePath(if (grepl("^([A-Za-z]:)?[/\\]", p)) p else file.path(repo_root, p), winslash = "/", mustWork = FALSE)
 out_dir <- abs_path(arg_value("--out-dir", file.path("dashboard", "public", "data")))
 r_out_dir <- abs_path(arg_value("--r-out", file.path(config$processed_dir, "dashboard")))
-network_dir <- abs_path(arg_value("--network-dir", outputs_dir))
 paper_out_dir <- file.path(dirname(out_dir), "paper")
 
 sources_used <- character()
@@ -541,22 +534,15 @@ partner_bundle <- list(
 rm(fs_comp, po_comp)
 invisible(gc())
 
-# ---- Network --------------------------------------------------------------------------------------
+# ---- Coalition members and nodes -------------------------------------------------------------------
+#
+# The original allied network design (scripts/30, its greedy baseline and the network chunk) is
+# retired (2026-10-17) and replaced by the Allied Industrial Base analysis (docs/aib_methodology.md).
+# The coalition's members and nodes (the EU as one node) still label the economies in the dims
+# (countries$network_node, nodes): the coalition helpers of R/indices/allied_network_design.R.
 
-step("Network inputs")
+step("Coalition members and nodes")
 network_members <- if (!is.null(coalition_tbl)) allied_network_add_node_members(coalition, coalition_tbl) else dplyr::mutate(coalition, node_only = FALSE)
-s30_path <- file.path(repo_root, "scripts", "30_build_allied_network_design.R")
-s30 <- readLines(s30_path, warn = FALSE)
-s30_literal <- function(name, default) {
-  hit <- grep(paste0("^\\s*", name, "\\s*(<-|=)\\s*"), s30, value = TRUE)
-  if (!length(hit)) return(default)
-  rhs <- trimws(sub("#.*$", "", sub(paste0("^\\s*", name, "\\s*(<-|=)\\s*"), "", hit[1])))
-  rhs <- sub(",\\s*$", "", rhs)
-  if (!grepl("^(-?[0-9.eE]+L?|TRUE|FALSE|\"[^\"]*\"|c\\((\\s*\"[^\"]*\"\\s*,?)+\\)|list\\(([a-z_]+ = [0-9.]+,? ?)+\\))$", rhs)) return(default)
-  eval(parse(text = rhs), envir = baseenv())
-}
-if (isTRUE(s30_literal("network_node_all_members", TRUE)) == FALSE) network_members <- dplyr::mutate(coalition, node_only = FALSE)
-iso3c_network <- network_members$iso3
 members_net <- tibble::tibble(
   iso3c = network_members$iso3,
   country = dplyr::coalesce(network_members$country, country_info$country[match(network_members$iso3, country_info$iso3c)]),
@@ -565,123 +551,9 @@ members_net <- tibble::tibble(
   node_tier = if ("node_tier" %in% names(network_members)) network_members$node_tier else network_members$tier,
   node_only = network_members$node_only %in% TRUE
 )
-# scripts/30's current settings come first; the stored diagnostics only tell whether the stored
-# design was solved with them (a stale design must not set the baseline)
-diag_path <- file.path(network_dir, "allied_network_diagnostics.csv")
-stored_diag <- maybe_src(diag_path, read.csv, stringsAsFactors = FALSE)
-lambda_stored <- if (!is.null(stored_diag) && "diversity_lambda" %in% names(stored_diag)) unique(stored_diag$diversity_lambda) else NULL
-node_policy_stored <- if (!is.null(stored_diag) && "node_policy" %in% names(stored_diag)) unique(as.logical(stored_diag$node_policy)) else NULL
-dfl <- formals(allied_network_design)
-lambda_s30 <- s30_literal("network_diversity_lambda", NULL)
-net_lambda <- if (!is.null(lambda_s30)) lambda_s30 else if (length(lambda_stored) == 1 && is.finite(lambda_stored)) lambda_stored else 1.5
-sources_params$lambda <- if (!is.null(lambda_s30)) "scripts/30 network_diversity_lambda" else if (length(lambda_stored) == 1) "allied_network_diagnostics.csv diversity_lambda" else "default 1.5"
-node_policy_s30 <- s30_literal("network_node_policy", NULL)
-net_node_policy <- if (!is.null(node_policy_s30)) node_policy_s30 else if (length(node_policy_stored) == 1 && !is.na(node_policy_stored)) node_policy_stored else FALSE
-supply_chains <- s30_literal("network_supply_chains", c("Upstream", "Midstream"))
-baseline_network <- list(
-  node_weights = eval(dfl$node_weights),
-  node_policy = isTRUE(net_node_policy),
-  node_policy_weight_max = eval(dfl$node_weights)$policy,
-  edge_weights = eval(dfl$edge_weights),
-  demand_weights = s30_literal("demand_weights", list(need = 0.5, size = 0.5)),
-  lambda = as.numeric(net_lambda),
-  max_share = s30_literal("max_share", 0.40),
-  min_share = s30_literal("min_share", 0.05),
-  min_producers = as.integer(s30_literal("min_producers", 3L)),
-  min_suppliers_per_consumer = as.integer(s30_literal("min_suppliers_per_consumer", 2L)),
-  epsilon_supplier_share = s30_literal("epsilon_supplier_share", 0.10),
-  w_node = s30_literal("w_node", 1),
-  w_edge = s30_literal("w_edge", 0.5),
-  w_dev = s30_literal("w_dev", 0),
-  allow_self = isTRUE(s30_literal("allow_self", TRUE)),
-  portfolio = list(enable = isTRUE(s30_literal("portfolio_enable", TRUE)), top_k = as.integer(s30_literal("portfolio_top_k", 5L)),
-                   min_cap = s30_literal("portfolio_min_cap", 2), max_cap = s30_literal("portfolio_max_cap", 10),
-                   transform = s30_literal("portfolio_transform", "log"),
-                   max_iters = as.integer(s30_literal("network_portfolio_max_iters", 30L))),
-  diversity_breakpoint_step = s30_literal("network_diversity_breakpoint_step", 0.01),
-  supply_chains = supply_chains,
-  milp_time_limit = s30_literal("network_milp_time_limit_sec", 300),
-  policy_missing = s30_literal("policy_missing", "coalition_median"),
-  missing_components = s30_literal("missing_components", "renormalize"),
-  demand_mode = s30_literal("demand_mode", "mixed"),
-  size_transform = "log_scurve"
-)
-sources_params$network <- "scripts/30_build_allied_network_design.R literals and allied_network_design() defaults; lambda / node_policy from the stored diagnostics when they record them"
-
+# GDP weights of a node's map position (the EU node sits at its members' GDP-weighted centre)
 gdp_raw <- read_src(file.path(raw_dir, "wdi_gdp.csv"), read.csv, stringsAsFactors = FALSE)
-country_size <- allied_network_country_size_tbl(gdp_raw, country_info, iso3c_network)
-dev_tbl <- maybe_src(file.path(processed_dir, "partner_development_country_tbl.rds"))
-node_raw_member <- allied_network_node_inputs(
-  economic_opportunity_index = stored$eo_index,
-  energy_security_index = stored$es_index,
-  policy_index = stored$policy_index,
-  country_info = country_info,
-  iso3c_network = iso3c_network,
-  partner_development_country_tbl = dev_tbl,
-  country_size_tbl = country_size,
-  node_policy = TRUE
-)
-attr(node_raw_member, "input_checks") <- NULL
-rm(dev_tbl)
-node_member_weights <- if (any(members_net$network_node != members_net$iso3c)) read_src(file.path(processed_dir, "eu_stage_weights_tbl.rds")) else NULL
-# Country spellings -> network ISO3 (allied_network_collapse_country_index()'s mapping), for the
-# producer score's policy term
-spellings <- unique(c(stored$policy_index$Country, stored$es_index$Country, stored$eo_index$Country))
-canon <- dplyr::distinct(dplyr::transmute(country_info, iso3c = as.character(.data$iso3c), canonical = as.character(.data$country)), .data$iso3c, .keep_all = TRUE)
-cm_iso <- partnership_strength_country_to_iso(partnership_strength_standardize_countries(spellings), country_info)
-country_map <- tibble::tibble(Country = spellings, iso3c = cm_iso, is_canonical = dplyr::coalesce(spellings == canon$canonical[match(cm_iso, canon$iso3c)], FALSE))
-
-trade_cells <- NULL
-node_trade <- NULL
-observed_hhi <- NULL
-if (!skip_trade) {
-  trade_path <- file.path(raw_dir, "comtrade_energy_dyads_all.csv")
-  if (!file.exists(trade_path)) trade_path <- file.path(raw_dir, "allied_comtrade_energy_data.csv")
-  hs6_path <- file.path(raw_dir, "energy_hs6_master.csv")
-  if (file.exists(trade_path) && file.exists(hs6_path) && requireNamespace("data.table", quietly = TRUE)) {
-    step("Basket trade (", basename(trade_path), ")")
-    trade_cols <- c("reporter_iso", "partner_iso", "period", "ref_year", "flow_direction", "flow_code", "cmd_code", "primary_value")
-    hdr <- names(data.table::fread(trade_path, nrows = 0))
-    td <- as.data.frame(data.table::fread(
-      trade_path, select = intersect(trade_cols, hdr),
-      colClasses = list(character = intersect(c("reporter_iso", "partner_iso", "flow_direction", "cmd_code"), hdr)),
-      na.strings = c("", "NA"), showProgress = FALSE
-    ))
-    sources_used <- unique(c(sources_used, trade_path, hs6_path))
-    ycol <- intersect(c("period", "ref_year"), names(td))[1]
-    yrs <- suppressWarnings(as.integer(td[[ycol]]))
-    trade_year <- max(yrs, na.rm = TRUE)
-    td <- td[!is.na(yrs) & yrs == trade_year, , drop = FALSE]
-    pcfg_path <- file.path(repo_root, "config", "partnership.yml")
-    pcfg <- if (file.exists(pcfg_path)) yaml::read_yaml(pcfg_path) else list()
-    trade_cells <- partnership_strength_build_trade_cells(
-      td, read.csv(hs6_path), years = trade_year,
-      cif_fob_factor = if (is.null(pcfg$trade$cif_fob_factor)) PARTNERSHIP_STRENGTH_CIF_FOB_FACTOR else as.numeric(pcfg$trade$cif_fob_factor)
-    )
-    rm(td)
-    invisible(gc())
-    node_trade <- allied_network_member_trade(trade_cells, iso3c_network)
-    net_stages <- unique(node_raw_member[tolower(node_raw_member$supply_chain) %in% tolower(supply_chains), c("tech", "supply_chain")])
-    mem_chk <- allied_network_check_members(members_net, members_net$iso3c)
-    observed_hhi <- allied_network_observed_export_hhi(trade_cells, mem_chk, stages = net_stages)
-    observed_hhi$year <- trade_year
-    rm(trade_cells)
-  } else {
-    notes <- c(notes, "No Comtrade dyad file: the EU node's edges use stage weights and the observed concentration is left out.")
-  }
-}
-
-read_csv_opt <- function(name) maybe_src(file.path(network_dir, name), read.csv, stringsAsFactors = FALSE)
-network_stored <- list(
-  specialization = read_csv_opt("allied_network_specialization.csv"),
-  flows = read_csv_opt("allied_network_flows.csv"),
-  diagnostics = stored_diag,
-  caps = read_csv_opt("allied_network_portfolio_caps.csv"),
-  counts = read_csv_opt("allied_network_portfolio_counts.csv"),
-  topk = read_csv_opt("allied_network_topk_by_stage.csv"),
-  member_shares = read_csv_opt("allied_network_member_shares.csv"),
-  members = read_csv_opt("allied_network_members.csv")
-)
+country_size <- allied_network_country_size_tbl(gdp_raw, country_info, members_net$iso3c)
 node_labels <- c(EUU = "European Union")
 
 # ---- Dims -----------------------------------------------------------------------------------------
@@ -789,8 +661,7 @@ baseline_inputs <- c(
     psi_view = "coalition",
     psi_tau = psi_tau,
     top_k = 5L
-  ),
-  baseline_network
+  )
 )
 sources_params$tau <- if (pillar_rule) "config/rankability.yml" else "NA: the stored pillars predate the rankability rule"
 if (!pillar_rule) notes <- c(notes, "The stored ES / EO pillars predate the rankability rule: every scored cell counts as rankable at the baseline (tau = rule off).")
@@ -807,10 +678,7 @@ manifest <- list(
     geo_alignment_in_fs = geo_in_fs,
     # Friendshore's CM-FDI parts (investment ties in the CM-FDI cells, Chinese-parent ownership)
     fs_cmfdi = length(cm_split$cells) > 0 || cpe_in_fs,
-    partner_pillar_consistent = FALSE,
-    network_aggregation = any(members_net$network_node != members_net$iso3c),
-    network_consistent = FALSE,
-    milp_baseline = FALSE
+    partner_pillar_consistent = FALSE
   ),
   baseline_inputs = baseline_inputs,
   validation = NULL,
@@ -819,20 +687,7 @@ manifest <- list(
 si_parts <- list(tech_ghg = if (!is.null(tg)) tibble::as_tibble(tg)[c("tech", "ghg_index")] else tibble::tibble(tech = character(), ghg_index = numeric()),
                  trl = tibble::as_tibble(trl), allies = tibble::as_tibble(allies))
 if (!is.null(resource_base_tbl)) si_parts$resource_base <- resource_base_tbl
-network_bundle <- list(
-  members = members_net,
-  node_raw_member = tibble::as_tibble(node_raw_member),
-  node_member_weights = node_member_weights,
-  node_trade = node_trade,
-  country_size = country_size,
-  node_labels = node_labels,
-  country_info = tibble::tibble(iso3c = countries_dim$iso3c, country = countries_dim$country),
-  country_map = country_map,
-  stored = network_stored,
-  greedy_baseline = NULL,
-  observed_hhi = observed_hhi
-)
-bundle <- dash_bundle_assemble(manifest, dims, pillars, policy_bundle, si_parts, partner_bundle, network_bundle)
+bundle <- dash_bundle_assemble(manifest, dims, pillars, policy_bundle, si_parts, partner_bundle)
 dash_validate_bundle(bundle)
 
 # ---- Validation: the engine at the baseline against the stored outputs ---------------------------------
@@ -989,118 +844,6 @@ if (!is.null(psi_dyad_stored)) {
   add_check("PSI dyads present", "partner", if (!anyNA(kd) && nrow(dy) == nrow(psi_dyad_stored)) "PASS" else "FAIL", nrow(psi_dyad_stored), NA, paste0("engine ", nrow(dy)))
   cmp_num("PSI dyad value", "partner", dy$psi[kd], psi_dyad_stored$Partnership_Strength_Index)
 }
-# ---- Network ---------------------------------------------------------------------------------------
-
-# Tables that no dial changes (member weights, node sizes, portfolio caps) are precomputed for every
-# solvable stage, and the basket trade is trimmed to the rows the edge aggregation reads; both are
-# checked against the engine's own computation at the baseline.
-stage_tbl <- dash_network_stages(bundle, params)
-fixed_net <- dash_network_fixed_tables(bundle)
-trade_full <- bundle$network$node_trade
-trade_trim <- dash_network_trim_trade(trade_full, dash_network_members(bundle), fixed_net$stages)
-step("Network inputs at the baseline (", nrow(stage_tbl), " stages)")
-inputs_net <- dash_network_inputs(bundle, params, res$partner$cells, policy = res$policy)
-bundle_trim <- bundle
-bundle_trim$network$node_trade <- trade_trim
-inputs_trim <- dash_network_inputs(bundle_trim, params, res$partner$cells, policy = res$policy)
-rm(bundle_trim)
-add_check("Network inputs with the trimmed basket trade == full trade", "network",
-          if (identical(inputs_trim$edges, inputs_net$edges) && identical(inputs_trim$raw_nodes, inputs_net$raw_nodes)) "PASS" else "FAIL",
-          nrow(inputs_net$edges), NA, paste0("basket trade rows ", NROW(trade_full), " -> ", NROW(trade_trim)))
-if (!is.null(inputs_net$member_weights)) {
-  mw_k <- paste(fixed_net$member_weights$tech, fixed_net$member_weights$supply_chain, sep = "\r") %in%
-    paste(stage_tbl$tech, stage_tbl$supply_chain, sep = "\r")
-  add_check("Precomputed member weights == engine (baseline stages)", "network",
-            if (identical(fixed_net$member_weights[mw_k, ], tibble::as_tibble(inputs_net$member_weights))) "PASS" else "FAIL", sum(mw_k))
-  add_check("Precomputed node sizes == engine", "network",
-            if (identical(fixed_net$node_size, tibble::as_tibble(inputs_net$node_size))) "PASS" else "FAIL", nrow(fixed_net$node_size))
-}
-bundle$network$member_weights <- fixed_net$member_weights
-bundle$network$node_size <- fixed_net$node_size
-bundle$network$caps <- fixed_net$caps
-bundle$network$node_trade <- trade_trim
-inputs_net <- inputs_trim
-scored_net <- dash_network_score(inputs_net, params)
-
-# The stored scripts/30 design is the network's baseline only when it was solved over the same
-# nodes, stages and lambda and on the same inputs (producer scores, demand, edge weights).
-net_consistent <- FALSE
-if (!is.null(network_stored$diagnostics) && !is.null(network_stored$specialization)) {
-  same_stages <- setequal(paste(network_stored$diagnostics$tech, network_stored$diagnostics$supply_chain), paste(stage_tbl$tech, stage_tbl$supply_chain))
-  st_nodes <- unique(network_stored$specialization$iso3c)
-  exp_nodes <- unique(members_net$network_node)
-  same_nodes <- setequal(st_nodes, exp_nodes)
-  same_lambda <- length(lambda_stored) == 1 && isTRUE(all.equal(lambda_stored, net_lambda))
-  structural <- same_stages && same_nodes && same_lambda
-  add_check("Stored network matches the current nodes, stages and lambda", "network", if (structural) "PASS" else "INFO",
-            nrow(network_stored$diagnostics), NA,
-            paste0(rel(network_dir), ": stages ", same_stages, ", nodes ", same_nodes, " (stored ", length(st_nodes), ", now ", length(exp_nodes),
-                   "), lambda ", same_lambda, " (stored ", if (length(lambda_stored)) paste(lambda_stored, collapse = "/") else "not recorded", ", now ", net_lambda, ")"))
-  inputs_ok <- FALSE
-  if (structural) {
-    sp_ <- network_stored$specialization
-    sk <- paste(scored_net$nodes$tech, scored_net$nodes$supply_chain, scored_net$nodes$iso3c)
-    k <- match(paste(sp_$tech, sp_$supply_chain, sp_$iso3c), sk)
-    st <- vapply(c("producer_score", "demand_weight", "need_idx", "size_idx"), function(col) {
-      if (!col %in% names(sp_)) return("PASS")
-      cmp_num(paste0("Network node ", col, " == stored"), "network", scored_net$nodes[[col]][k], sp_[[col]], 1e-9, fail = "INFO")
-    }, character(1))
-    fl <- network_stored$flows
-    ek <- paste(scored_net$edges$tech, scored_net$edges$supply_chain, scored_net$edges$reporter_iso, scored_net$edges$partner_iso)
-    k2 <- match(paste(fl$tech, fl$supply_chain, fl$reporter_iso, fl$partner_iso), ek)
-    ok2 <- !is.na(k2)
-    st_e <- cmp_num("Network edge_weight == stored flows", "network", scored_net$edges$edge_weight[k2[ok2]], fl$edge_weight[ok2], 1e-9, fail = "INFO")
-    unmatched <- sum(!ok2 & fl$reporter_iso != fl$partner_iso)
-    add_check("Stored flows all on engine edges", "network", if (unmatched == 0) "PASS" else "INFO", nrow(fl), NA,
-              paste0(unmatched, " stored flows between two nodes without an engine edge"))
-    inputs_ok <- all(c(st, st_e) == "PASS") && unmatched == 0
-  }
-  net_consistent <- structural && inputs_ok
-  if (net_consistent) {
-    bundle$manifest$flags$milp_baseline <- all(network_stored$diagnostics$method == "milp")
-  } else {
-    notes <- c(notes, paste0("The stored allied-network design (", rel(network_dir), ") was not solved on the bundle's nodes, stages, lambda and inputs: ",
-                             "the network's baseline is the engine's greedy design until scripts/30 is rerun on the current inputs."))
-  }
-} else {
-  notes <- c(notes, "No stored allied-network design: the network's baseline is the engine's greedy design.")
-}
-bundle$manifest$flags$network_consistent <- net_consistent
-sources_params$network_dir <- rel(network_dir)
-
-if (!skip_network_baseline) {
-  step("Greedy baseline network (", nrow(stage_tbl), " stages, share_rank_digits = ", DASH_WEB_SHARE_RANK_DIGITS, ")")
-  t0 <- Sys.time()
-  gb <- dash_network_solve(scored_net, params, bundle = bundle, solver = "greedy", share_rank_digits = DASH_WEB_SHARE_RANK_DIGITS)
-  el <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
-  step("  solved in ", round(el, 1), " s; portfolio converged ", gb$portfolio$converged, " after ", gb$portfolio$iters, " iterations")
-  gb$elapsed_sec <- el
-  gb$share_rank_digits <- DASH_WEB_SHARE_RANK_DIGITS
-  bundle$network$greedy_baseline <- gb
-  add_check("Greedy baseline network solved", "network", if (isTRUE(gb$portfolio$converged) || is.null(gb$portfolio)) "PASS" else "INFO",
-            nrow(gb$diagnostics), NA, paste0(round(el, 1), " s; ", sum(gb$specialization$production_share > 0, na.rm = TRUE), " producer slots"))
-  if (!is.null(bundle$network$caps) && !is.null(gb$portfolio$caps)) {
-    add_check("Precomputed portfolio caps == engine", "network",
-              if (identical(bundle$network$caps$portfolio_cap, gb$portfolio$caps$portfolio_cap) &&
-                  identical(bundle$network$caps$iso3c, gb$portfolio$caps$iso3c)) "PASS" else "FAIL", nrow(gb$portfolio$caps))
-  }
-  # The pipeline's own greedy rule (allied_network_design(method = "greedy")) ranks producers for the
-  # caps on unrounded shares; report whether the dashboard's tie rule changes anything today.
-  gr <- dash_network_solve(scored_net, params, bundle = bundle, solver = "greedy")
-  cmp_gr <- dash_network_compare(gb, gr)
-  add_check("Greedy baseline (share_rank_digits 9) == the pipeline's greedy rule", "network", if (!any(cmp_gr$stage$changed)) "PASS" else "INFO",
-            nrow(cmp_gr$stage), suppressWarnings(max(cmp_gr$stage$max_abs_share_delta, na.rm = TRUE)),
-            paste0(sum(cmp_gr$stage$changed), " stages differ (the pipeline rule breaks exact share ties by RAS noise)"))
-  rm(gr)
-  if (net_consistent) {
-    cmp_st <- dash_network_compare(gb, network_stored)
-    add_check("Greedy baseline vs the stored design (solver gap)", "network", "INFO", nrow(cmp_st$stage),
-              suppressWarnings(max(cmp_st$stage$max_abs_share_delta, na.rm = TRUE)),
-              paste0(sum(!cmp_st$stage$changed), " of ", nrow(cmp_st$stage), " stages with the same producers and shares; median HHI greedy ",
-                     signif(stats::median(cmp_st$stage$hhi, na.rm = TRUE), 4), ", stored ", signif(stats::median(cmp_st$stage$hhi_ref, na.rm = TRUE), 4)))
-  }
-}
-
 # ---- Bilateral ties (Partners view, Country partners section) ------------------------------------
 #
 # Auxiliary chunks read by the browser on demand, never by the engine (R/dashboard/dash_ties.R):
@@ -1266,9 +1009,9 @@ for (nm in names(chunks)) {
 }
 chunk_info <- dplyr::bind_rows(chunk_rows)
 id_file <- tempfile(fileext = ".txt")
-# the bundle id names the engine's data (core, vars, partner, network); the auxiliary chunks (ties,
-# pcell-*) are listed in the manifest but do not change it
-writeBin(charToRaw(paste0(paste(sort(chunk_info$file[chunk_info$name %in% c("core", "vars", "partner", "network")]), collapse = "\n"), "\n")), id_file)
+# the bundle id names the engine's data (core, vars, partner); the auxiliary chunks (ties, pcell-*)
+# are listed in the manifest but do not change it
+writeBin(charToRaw(paste0(paste(sort(chunk_info$file[chunk_info$name %in% c("core", "vars", "partner")]), collapse = "\n"), "\n")), id_file)
 bundle_id <- unname(tools::md5sum(id_file))
 unlink(id_file)
 
@@ -1356,7 +1099,6 @@ if (any(validation$status == "FAIL")) {
 message("\nWeb bundle ", substr(bundle_id, 1, 8), " in ", rel(out_dir), ":") # an 8-character prefix: never print a full 32-hex id
 print(data.frame(file = chunk_info$file, MB = round(chunk_info$bytes / 2^20, 2), MB_gz = round(chunk_info$bytes_gz / 2^20, 3),
                  initial = chunk_info$initial), row.names = FALSE)
-message(sprintf("Initial load (manifest + core) %.2f MB gz of %.0f; all chunks %.2f MB gz of %.0f. Network baseline: %s. %.0f s.",
+message(sprintf("Initial load (manifest + core) %.2f MB gz of %.0f; all chunks %.2f MB gz of %.0f. %.0f s.",
                 budget$initial_gz / 2^20, budget$limit_initial_gz / 2^20, budget$all_gz / 2^20, budget$limit_all_gz / 2^20,
-                if (net_consistent) "stored design" else if (!skip_network_baseline) "greedy (stored design not consistent)" else "none",
                 as.numeric(difftime(Sys.time(), t_script, units = "secs"))))

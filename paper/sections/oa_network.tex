@@ -1,112 +1,49 @@
-% Online Appendix to Section 10 (sec:network). Numbers: paper/results/network.json (final rerun of
-% 2026-10-12, scripts/30 at lambda = 0.78). Specification: R/indices/allied_network_design.R,
-% scripts/30_build_allied_network_design.R.
-\section{The allied network design: further results}\label{oa:network}
+% Online Appendix to Section 10 (sec:network). Numbers: paper/results/aib.json
+% (scripts/paper/fig_aib.R, AIB run of 2026-10-16 after the credibility pass). Specification:
+% R/aib/*.R, scripts/31-32, config/aib.yml, docs/aib_methodology.md. Table: tables/aib_validation.tex.
+\section{The Allied Industrial Base: further results}\label{oa:network}
 
-\paragraph{Inputs.} The design reads five collapsed inputs restricted to the 63 economies of the
-network: 2{,}079 $\EO$ and 1{,}881 $\ES$ records, 726 development-potential records, and 128{,}898
-friendshore and 116{,}622 opportunity dyads. For each, the number of rows read equals the number of
-keys kept, with no duplicated or multivalued key, so the collapse rules (one record per member,
-technology and stage; one record per ordered pair and stage; the latest year and the mean of the
-distinct finite values otherwise) act as guards only. All 37 nodes have an $\EO$ record, and hence a
-producer score, in every one of the 22 stages. In Geothermal Upstream and Midstream all 37 scores
-rest on $\EO$ alone, and in Green Hydrogen Midstream the scores of Costa Rica, the Dominican
-Republic, Ghana, Guatemala and Namibia do. Without $\ES$, demand rests on size alone, so Namibia,
-the smallest node, has zero demand in these three stages; it remains a potential producer.
+\paragraph{Nodes and data quality.} Of the 92 nodes, 23 are of high confidence, 68 usable with
+caution and one insufficient for optimization (cobalt ores and concentrates). The caution flags are
+mirror flows above 30 percent of value, comparative advantage missing for exporters with 20 percent
+or more of exports, codes kept with a caveat or shared with another node (wafers, HS 3818.00, also
+counted in Semiconductors), HS revisions without a 2020 equivalent, and production far more
+concentrated than trade. Five cells are shared physical nodes: permanent magnets, rare-earth compounds
+and rare-earth metals (Electric Vehicles and Wind), transformers (Electric Grid and Solar) and pipelines
+(Oil and Gas). Eleven nodes have credible physical data: anode materials, battery cells, cobalt and
+nickel refining, lithium chemicals, natural graphite, rare-earth metals, rare-earth compounds (with the
+monazite ores merged into them), polysilicon, solar cells, solar modules and wafers.
 
-\paragraph{Producers.} Eight nodes produce only Upstream, all of them resource economies
-(Australia, Chile, Saudi Arabia, Peru, Argentina, Oman, Namibia and the Democratic Republic of the
-Congo), while Japan takes ten of its twelve roles and Korea nine of its ten in Midstream. Canada
-(16 roles, nine of them Upstream), the EU node (15), the United States and Indonesia (13 each) and
-India and Japan (12 each) are followed by Thailand and Mexico (11 each). The largest share of a stage is at most
-0.30 in 18 of the 22 stages, and 30\% of all shares sit at the floor of 0.05. The partner tier
-carries 58\% of designed Upstream and 45\% of Midstream production. Indonesia leads Batteries, Coal,
-Electric Vehicles, Green Hydrogen, Solar and Wind Upstream with shares of 0.225 to 0.325, and Oil
-Midstream.
+\paragraph{Validation chains.} Four nodes are traced through every step under both supply constraints
+(Table~\ref{tab:aib_validation}); they report what the model produced, and nothing was tuned to them.
+Permanent magnets have no physical proxy, so the two modes agree: China's removal costs 52.4 percent of
+the allied scope's traded demand, existing relationships and optimized trade both restore half of it,
+the coordination dividend is zero and the node is \textsc{build}, in the motors-and-magnets compact
+whose critical supply partner is the United Kingdom. Rare-earth compounds are \textsc{build} in both
+modes: under hold the concentrates that Myanmar and Laos sell to China stay with China, and in the
+production-constrained mode the exporters absent from the IEA refining data cannot expand, so the gap,
+38.2 percent, is separation capacity; Japan, Malaysia and the United States form the minimum coalition.
+Anode materials lose 59.4 percent of their supply and keep a gap of 58.3 percent; with natural graphite
+they form a compact in which Madagascar and Mozambique are critical supply partners. Wafers show what the
+physical rule changes. On trade alone, semiconductor wafers from Japan, Taiwan and Korea appear to
+replace Chinese solar wafers, coverage reaches 93.4 percent and the node is \textsc{low intervention}
+with the physical-capability warning; with solar-wafer capacity deciding who can supply, coverage stops at
+74.5 percent and the node is \textsc{build}, with silicon metal and solar cells in a compact of India,
+Japan, Korea, Thailand, Turkey and Taiwan.
 
-\paragraph{The EU node.} The EU node produces in 15 of the 22 stages (six Upstream, nine
-Midstream), with shares from 0.05 to 0.215 and a median of 0.105. It is the second-largest producer
-in Green Hydrogen Midstream (0.215) and Nuclear Midstream (0.205), and its 0.205 in Coal Midstream
-equals Japan's leading share, but it is the sole largest producer in no stage. It is a top-5
-producer in ten stages, exactly its cap, and the portfolio loop bars it from Electric Grid Upstream,
-Electric Vehicles Midstream, Nuclear Upstream, Solar Midstream and Wind Upstream, so Electric
-Vehicles and Solar are the two Midstream stages without EU production. By its extra-EU exports the
-EU is the largest exporting node in nine of the 18 basket stages, all Midstream. The design sees it
-differently in two ways: its producer score averages strong and weak members, and its demand is
-rank-compressed, with a median weight of 0.035 across stages (0.029 to 0.046) against 24.6\% of the
-nodes' GDP, so that it consumes about as much as the United States (35.6\% of the nodes' GDP, median
-weight 0.033). Table~\ref{tab:network_eu_split} splits the EU's designed shares back to its members
-in proportion to the stage weights that aggregate their inputs; summed over stages, Germany (0.41),
-France (0.24), Poland (0.19) and Italy (0.16) carry the largest derived shares. These figures are
-derived, not designed: the program never sees the members separately.
+\input{tables/aib_validation}
 
-\input{tables/network_eu_split}
+\paragraph{The investment step.} In the headline, 53 nodes have a residual gap of at least 5 percent,
+49 of them in the electro-industrial scope, with up to 20 eligible hosts each (a median of 20, at least
+11). The leading hosts qualify on comparative advantage at material scale in 41 nodes, on production
+shares in five, on both in one and on world export share in two. A 10 percent increment at the leading
+host lowers the median residual gap from 18.7 to 8.7 percent and closes it in 10 nodes; the smallest gain
+of a leading host is 5.9 points, where the gap was smaller than the increment. The increments of 5 and 20
+percent are in \texttt{allied\_investment\_partnerships.csv}.
 
-\paragraph{Flows and edges.} In Batteries Midstream the United States carries 0.295 of production,
-India and Malaysia 0.135 each, Canada 0.114 and the EU 0.105, with four more nodes near the floor;
-in Solar Midstream India (0.275), the United States (0.205), Viet Nam (0.135) and Thailand (0.125)
-lead; in Wind Midstream India (0.275), the United States (0.250) and the EU (0.155). Of the 811
-consumer--stage pairs with positive demand, 793 draw on exactly two suppliers and 18 on three.
-Self-supply is positive in two stages only, 0.8\% of demand in Electric Grid Upstream and 0.2\% in
-Electric Vehicles Midstream, because a node's own edge is worth the median edge while the edges to
-its best partners lie above it. The flow-weighted mean edge weight over flows between distinct
-nodes ranges from 0.385 to 0.910 across stages. The low end is Geothermal, whose edges lack the
-opportunity component and so enter at no more than half weight (flow-weighted 0.385 to 0.387),
-against 0.73 to 0.75 in the two Green Hydrogen stages and 0.85 to 0.91 elsewhere; the flow-weighted
-mean exceeds the unweighted mean in all 22 stages. The EU node's edges are weighted by its members'
-2024 basket trade with the partner where it exists (76\% of the EU edges) and by the stage weights
-otherwise.
-
-\paragraph{Concentration and current exporters.} The design is less concentrated than the nodes'
-exports in 10 of the 18 basket stages and more in eight; the spread of concentration is compressed,
-from 0.095--0.355 in the nodes' exports to 0.126--0.209 in the design. Where the nodes' exports are
-most concentrated, in Nuclear Upstream (Canada 54\%), Coal Upstream (Australia 41\%) and Nuclear
-Midstream (the EU 48\%), the design spreads production; where they are dispersed, as in Batteries
-Midstream ($\HHI^{\mathrm{N}}=0.095$), it concentrates it on the highest-scoring producers. The
-largest designed share is below the largest node's export share in 13 of the 18 stages, and the
-designed and observed leaders coincide in four. Against world exports the design is more
-concentrated in 13 of the 18 stages, but so are the nodes' own exports in 16. China leads eight of
-the nine Midstream baskets (Nuclear Midstream, led by France, is the exception) and the Solar and
-Wind Upstream baskets (silicon metal, 38\%, and magnet rare earths, 30\%); Kazakhstan leads Nuclear
-Upstream (44\%). The number of exporters behind each index differs (34 to 139 world reporters, at
-most 37 nodes, seven to ten designed producers), so part of any difference reflects the number of
-units. All three largest exporting nodes are designed producers in eight of the 18 stages and at
-least one is in every stage. The lowest correlations between designed and observed shares, in
-Batteries and Electric Vehicles Upstream (0.27 and 0.29), illustrate the combinatorial logic: in
-Batteries Upstream Indonesia (0.235) is placed level with Australia, the largest exporter, and
-Canada and Chile receive 0.12 each, while South Africa and the Philippines, the second and third
-exporters, receive 0.05 and 0.06.
-
-\paragraph{Endowment.} Applying the endowment screen of the allied picks after the fact
-(technology-level reserves or production above zero; the EU node counts as endowed when any member
-is), the 21 roles held by nodes without a recorded resource base carry 5\% of Batteries Upstream
-(the United Kingdom), 10\% of Nuclear Upstream (Israel and Thailand at the floor), 12.5\% of Coal
-Upstream (Peru and the Philippines), 23.5\% of Wind Upstream (Japan, Israel, Korea and Singapore),
-27.5\% of Electric Grid Upstream (five nodes at or near the floor), 28\% of Green Hydrogen Upstream
-(Thailand 0.145, Israel and the United Kingdom) and 36\% of Solar Upstream (the United Kingdom,
-Norway, South Africa and Singapore), and none of Electric Vehicles, Gas and Oil Upstream. These
-nodes score on the stage through its trade basket, readiness and the other categories of $\EO$ and
-$\ES$.
-
-\paragraph{Portfolio caps.} Eleven nodes have no top-5 appearance. The final pass bars Thailand and
-the United States from nine stages each and Indonesia and Malaysia from eight. Without caps, six
-nodes would exceed their cap: the United States (17 appearances against a cap of ten), Indonesia
-(12 against seven), India (ten against eight), Thailand and Malaysia (ten against six) and Canada
-(eight against seven). The caps pass these appearances chiefly to Japan and Mexico (from three to
-six each), the Philippines (none to four), South Africa (one to four) and Israel (two to four); 17
-stages lose objective value. Four Upstream stages (Coal, Green Hydrogen, Nuclear and Solar) have a
-tie at fifth place, which the strict rank resolves by producer score.
-
-\paragraph{Build candidates.} The build priority is
-\begin{equation}\label{eq:net_build}
-  b_{p,ts}=\delta_{p,ts}\,\big(0.6\,a_{p,ts}+0.4\,\bar W_{p,ts}\big),\qquad
-  \bar W_{p,ts}=\textstyle\sum_cW_{pc}\,d_c,
-\end{equation}
-development potential times a weighted mean of the producer score and the demand-weighted
-connectivity. Restricted to the 22 nodes with an observed development potential, the ten leading
-candidates are India in Solar Midstream (0.76), Wind Midstream (0.75), Gas Midstream (0.72) and
-Nuclear Midstream (0.69); Indonesia in Electric Vehicles Upstream and Coal Upstream (0.74 each),
-Batteries Upstream (0.71), Solar Upstream (0.69) and Wind Upstream (0.68); and Viet Nam in Solar
-Midstream (0.67). All ten are already designed producers, as the construction implies: the priority
-weights the quantities on which the program itself selects producers, so the list shows where the
-design already relies on an emerging economy rather than where new capacity would add a producer.
+\paragraph{Coalitions.} The exact and greedy coalitions have the same size in all 22 compacts and the
+same members in 13. Associate partners, the additions that reach 99 percent,
+are needed in one compact (Thailand, in motors and magnets); in the other 21 the 95 percent coalition
+already reaches 99 percent. Critical external dependencies are reported in seven compacts; the full
+leave-one-country-out test, for every supplier of every node, is in
+\texttt{aib\_compact\_leave\_one\_out.csv}.

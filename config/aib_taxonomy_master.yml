@@ -1,0 +1,184 @@
+# AIB taxonomy overlay: the OSI energy basket (data/reference/energy_hs6_master.csv), the node source
+# of the AIB until 2026-10-19. Read by scripts/31 and 32 on top of config/aib.yml when
+# `taxonomy: master` (or --taxonomy master). Every key here replaces the same key of config/aib.yml.
+
+# Sub-sector nodes are the (tech, stage, sub_sector) cells of data/reference/energy_hs6_master.csv.
+# Cells with an identical HS6 set in several technologies (magnets in EV and Wind, transformers in
+# Grid and Solar, pipelines in Oil and Gas) are one physical node, counted once. `splits` refines a
+# master sub-sector into finer nodes where its HS6 codes allow it.
+nodes:
+  splits:
+    - tech: Solar
+      supply_chain: Midstream
+      sub_sector: Polysilicon & Wafers
+      into:
+        - sub_sector: Polysilicon
+          hs6: ["280461"]
+        - sub_sector: Wafers
+          hs6: ["381800"]
+
+# ---- Strategic scope ------------------------------------------------------------------------
+# Which technologies the compacts, the emergent network and the dashboard lead with. All nodes
+# are still modelled and kept in the trade and classification tables (in_strategic_scope marks
+# them); fossil-fuel nodes are not headline compacts under electro_industrial.
+strategic_scope:
+  mode: electro_industrial
+  technologies:
+    electro_industrial: [Batteries, Electric Vehicles, Solar, Wind, Electric Grid, Semiconductors, Nuclear]
+
+# Curated physical / process adjacency, upstream -> downstream (master sub-sector or split-node
+# names; "Tech::Sub-sector" where a name recurs in several technologies; quote names with
+# commas), for compact coherence. Material inputs, components into assemblies, and equipment into
+# the stage that uses it.
+supply_chain_links:
+  # Rare earths and magnets: oxide -> metal / alloy -> permanent magnet -> motor / generator
+  - [Rare-Earth Ores (Monazite), Rare-Earth Compounds]
+  - [Rare-Earth Compounds, Rare-Earth Metals]
+  - [Rare-Earth Metals, Permanent Magnets & Magnet Parts]
+  - [Permanent Magnets & Magnet Parts, Electric Drive Units & Motors]
+  - [Permanent Magnets & Magnet Parts, Wind Turbines & Generators]
+  - [Permanent Magnets & Magnet Parts, Nacelles & Drivetrains]
+  - [Motor & Generator Parts, Electric Drive Units & Motors]
+  - [Motor & Generator Parts, Wind Turbines & Generators]
+  - [Electric Drive Units & Motors, Electric Vehicle Assembly]
+  - [Nacelles & Drivetrains, Wind Turbines & Generators]
+  - [Wind Blades, Wind Turbines & Generators]
+  # Batteries: minerals -> refined chemicals -> active materials -> cells -> packs -> vehicles
+  - [Lithium Minerals (Spodumene), Lithium Chemicals]
+  - ["Batteries::Ores & Concentrates", Lithium Chemicals]
+  - ["Batteries::Ores & Concentrates", Cobalt & Nickel Refining]
+  - [Cobalt Ores & Concentrates, Cobalt & Nickel Refining]
+  - [Nickel Ores & Concentrates, Cobalt & Nickel Refining]
+  - [Battery Recycling & Urban Mining, Cobalt & Nickel Refining]
+  - [Battery Recycling & Urban Mining, Lithium Chemicals]
+  - [Lithium Chemicals, Cathode Materials & Battery Precursors]
+  - [Lithium Chemicals, Electrolyte Materials]
+  - [Cobalt & Nickel Refining, Cathode Materials & Battery Precursors]
+  - [Manganese Ores & Concentrates, Cathode Materials & Battery Precursors]
+  - [Natural Graphite, Anode Materials]
+  - [Cathode Materials & Battery Precursors, Battery Cells]
+  - [Anode Materials, Battery Cells]
+  - [Electrolyte Materials, Battery Cells]
+  - [Separator Materials, Battery Cells]
+  - [Current Collectors & Foils, Battery Cells]
+  - [Battery Cells, "Battery Packs, Parts & BMS"]
+  - [Battery Cells, Vehicle Batteries & Packs]
+  - [Vehicle Batteries & Packs, Electric Vehicle Assembly]
+  # Solar: silicon metal -> polysilicon -> wafer -> cell -> module
+  - [Silicon Metal, Polysilicon]
+  - [Polysilicon, Wafers]
+  - [Wafers, Solar Cells]
+  - [Solar Cells, Solar Modules]
+  - [Solar Module Assembly & Inputs, Solar Modules]
+  - [Solar Cell Manufacturing Equipment, Solar Cells]
+  # Grid: metals -> conductors and cores -> apparatus
+  - ["Electric Grid::Ores & Concentrates", Copper Smelting & Refining]
+  - ["Electric Grid::Ores & Concentrates", Alumina & Primary Aluminium]
+  - [Copper Smelting & Refining, Grid Cables & Accessories]
+  - [Copper Smelting & Refining, Transformers]
+  - [Copper Smelting & Refining, Array Cables & Collection Systems]
+  - [Copper Smelting & Refining, Solar Cabling & Connectors]
+  - [Copper Smelting & Refining, Vehicle Wiring Harnesses]
+  - [Alumina & Primary Aluminium, Grid Cables & Accessories]
+  - [Electrical Steel (GOES), Transformers]
+  - [Circuit Breakers, Switchgear]
+  - [Circuit Breakers, Grid Control Panels]
+  - [Transformers, Wind Substations]
+  - [Switchgear, Wind Substations]
+  # Nuclear fuel
+  - [Uranium Ores & Concentrates, Natural Uranium & Compounds]
+  - [Natural Uranium & Compounds, Nuclear Fuel Cycle]
+  # Semiconductors: materials and parts -> devices; equipment parts -> equipment -> devices
+  - ["Gallium, Germanium & Indium", Semiconductor Materials]
+  - [Semiconductor Materials, Discrete Semiconductors]
+  - [Semiconductor Materials, Integrated Circuits]
+  - [Semiconductor Equipment Parts, Semiconductor Manufacturing Equipment]
+  - [Semiconductor Manufacturing Equipment, Integrated Circuits]
+  - [Integrated Circuit Parts, Integrated Circuits]
+  - [Semiconductor Device Parts, Discrete Semiconductors]
+
+# Material links between sub-sectors used for investment-host eligibility (RCA in a linked node
+# counts as revealed capability). Narrower than supply_chain_links: shared materials, not assembly.
+material_links:
+  - [Rare-Earth Ores (Monazite), Rare-Earth Compounds]
+  - [Rare-Earth Compounds, Rare-Earth Metals]
+  - [Rare-Earth Metals, Permanent Magnets & Magnet Parts]
+  - [Rare-Earth Compounds, Permanent Magnets & Magnet Parts]
+  - [Permanent Magnets & Magnet Parts, Electric Drive Units & Motors]
+  - [Permanent Magnets & Magnet Parts, Wind Turbines & Generators]
+  - [Natural Graphite, Anode Materials]
+  - [Lithium Minerals (Spodumene), Lithium Chemicals]
+  - ["Batteries::Ores & Concentrates", Lithium Chemicals]
+  - [Cobalt Ores & Concentrates, Cobalt & Nickel Refining]
+  - [Nickel Ores & Concentrates, Cobalt & Nickel Refining]
+  - ["Batteries::Ores & Concentrates", Cobalt & Nickel Refining]
+  - [Lithium Chemicals, Cathode Materials & Battery Precursors]
+  - [Cobalt & Nickel Refining, Cathode Materials & Battery Precursors]
+  - [Battery Cells, Vehicle Batteries & Packs]
+  - [Battery Cells, "Battery Packs, Parts & BMS"]
+  - [Silicon Metal, Polysilicon]
+  - [Polysilicon, Wafers]
+  - [Wafers, Solar Cells]
+  - [Solar Cells, Solar Modules]
+  - [Copper Smelting & Refining, Grid Cables & Accessories]
+  - [Alumina & Primary Aluminium, Grid Cables & Accessories]
+  - [Electrical Steel (GOES), Transformers]
+  - [Uranium Ores & Concentrates, Natural Uranium & Compounds]
+  - [Natural Uranium & Compounds, Nuclear Fuel Cycle]
+  - ["Gallium, Germanium & Indium", Semiconductor Materials]
+
+# Production or capacity shares used as host capability (and reported beside RCA). Each entry maps
+# a node to a measure of data/processed/major_supplier_shares_tbl.rds (mineral as recorded there)
+# or to a GCIM manufacturing product (data/raw/GCIM_Investment_Capacity_aggregated.xlsx).
+production_proxies:
+  - sub_sector: Rare-Earth Compounds
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: Rare Earths
+  - sub_sector: Rare-Earth Metals
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: Rare Earths
+  - sub_sector: Anode Materials
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: Graphite
+  - sub_sector: Natural Graphite
+    source: major_supplier_shares
+    measure: iea_mineral_mining
+    mineral: Graphite
+  - sub_sector: Lithium Chemicals
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: Lithium
+  - sub_sector: Cobalt & Nickel Refining
+    source: major_supplier_shares
+    measure: iea_mineral_refining
+    mineral: Cobalt
+  - sub_sector: Polysilicon
+    source: gcim
+    technology: Solar
+    product: Polysilicon
+  - sub_sector: Wafers
+    source: gcim
+    technology: Solar
+    product: Wafers
+  - sub_sector: Solar Cells
+    source: gcim
+    technology: Solar
+    product: Cells
+  - sub_sector: Solar Modules
+    source: gcim
+    technology: Solar
+    product: Modules
+  - sub_sector: Battery Cells
+    source: gcim
+    technology: Batteries
+    product: Cells
+
+# Validation cases checked by hand before the full taxonomy (scripts/32 writes their chains).
+validation_cases:
+  - Permanent Magnets & Magnet Parts
+  - Rare-Earth Compounds
+  - Anode Materials
+  - Wafers

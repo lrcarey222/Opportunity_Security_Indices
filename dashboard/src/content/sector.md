@@ -1,12 +1,12 @@
-## What Sector Insights shows
+## What the Sector pages show
 
-Sector Insights shows the measured data that the Strategic Insights rankings start from: who produces,
+The Sector pages show the measured data that the country rankings start from: who produces,
 holds, trades, invests in and regulates each energy technology, from raw materials (Upstream) through
 manufacturing and processing (Midstream) to deployment and use (Downstream). Eleven technologies at
 three stages make 33 sectors; Semiconductors are shown as well, outside the paper's headline set.
 Every number is shown in its source's own unit and year, with the source, the coverage and the caveats
-beside it. Nothing here is an index, a weight or a score, and nothing moves with the Strategic Insights
-dials.
+beside it. Nothing here is an index, a weight or a score, and nothing moves with the Perspective dials
+of the Country profile.
 
 ## Reading the colours
 
@@ -18,7 +18,7 @@ zero (a net balance, net trade, a change), white is zero: orange below, blue abo
 is no value to colour; hover or open the table for the reason. Groups of economies keep their own
 colours everywhere: China, the coalition core, the coalition partners and the rest of the world.
 
-Strategic Insights ranks and weighs; Sector Insights shows the measured data those rankings start from.
+The Country profiles rank and weigh; the Sector pages show the measured data those rankings start from.
 
 ## Shares, world totals and concentration
 
@@ -77,7 +77,7 @@ bloc all sum this one matrix, so the cards on a page agree to the dollar.
 
 * **Technology attribution.** Each technology's trade is the trade of a basket of six-digit HS codes.
   Some codes belong to more than one technology, so trade is never added across technologies.
-* **The other basis.** Strategic Insights ranks the exporters' own reports (free on board), which leave
+* **The other basis.** The country indices rank the exporters' own reports (free on board), which leave
   out economies that do not report and Hong Kong's re-exports. The reconciliation table below compares
   the two bases for every technology. Revealed comparative advantage is the one exporter-reported
   measure shown here, and it is labelled so.
@@ -120,9 +120,108 @@ where the parent is headquartered, the destination, the status and a source link
   Macao included), the coalition core, the coalition partners and the rest of the world.
 * **Two bases.** "All" projects, or those "used by the indices": the manufacturing projects that are
   announced, under construction, completed or operational, without cancelled, paused or closed ones
-  (the projects the Strategic Insights partnership indices read). The share of a destination's projects
+  (the projects the partnership indices read). The share of a destination's projects
   with Chinese parents is shown as a raw share, not as the index component built from it.
 * **Not a country total.** Domestic investment is not in CM-FDI.
+
+## Sector emissions
+
+The Climate section of each sector and the Policy & climate section of each Country profile show
+Climate TRACE's estimates of direct emissions (tonnes of CO2-equivalent on a 100-year basis,
+2021 to the latest complete year; Climate TRACE, climatetrace.org, CC BY 4.0).
+
+* **Mapped, with a match quality.** Climate TRACE reports subsectors (coal mining, oil and gas
+  production, aluminium, electricity generation, ...), not technologies. Each sector says how well its
+  subsectors match: *direct* (the subsector is the sector's own activity, as coal mining for Coal
+  Upstream), *partial* (it also covers other activity, or only part of the sector's: oil and gas
+  production is one subsector; coal-fired power is part of coal use), *proxy* (a related activity shown
+  for scale, not the sector's own emissions) or *none*. Sectors with no match show the technology's IPCC
+  lifecycle intensity (grams of CO2e per kWh over a plant's life) instead, which is a property of the
+  technology, not the sector's emissions.
+* **Direct emissions only.** The electricity a smelter or factory buys is counted in power, not in its
+  own sector.
+* **Power by fuel** sums the plants Climate TRACE tracks, grouped by the first fuel each lists, so it is
+  below a country's total for power.
+* **Intensity** is the tracked assets' emissions over their activity (t CO2e per MWh, per tonne of
+  steel, ...), counting only the assets that report an activity.
+* **Materials as context.** Steel and aluminium are shown beside the manufacturing sectors whose products
+  are made of them, labelled as context and never counted as those sectors' emissions.
+* **Carried-forward years.** Where Climate TRACE's latest year repeats the year before (some mining
+  subsectors in 2025), the section says so: the change is not a measured change.
+
+## Climate pathways (IEA scenarios)
+
+The Climate section of each sector also shows where the International Energy Agency's scenarios lead
+for the World, and the Policy & climate section of each Country profile one line of world context. These
+are **IEA scenario projections, not observed data and not forecasts**, and every figure says so.
+
+* **Source and licence.** IEA (2025), World Energy Outlook 2025 free dataset (World), CC BY-NC-SA 4.0
+  (non-commercial use; adapted data shared under the same licence):
+  the IEA's estimates for 2010, 2023 and 2024 and three scenarios for 2035, 2040 and 2050. *Stated
+  Policies* reflects the policies in place and those announced with concrete detail; *Current Policies*
+  only those already in force; *Net Zero Emissions by 2050* is the IEA's normative pathway to net zero
+  energy-sector CO2 by 2050. The dataset has no 2030 values; lines join the published years.
+* **World in the sectors, regions in the Country profiles.** The Sector pages use the World totals. The
+  Country profiles use the same edition's Regions file (below); its regions have no Net Zero scenario.
+* **Mapped, with a match quality.** Each sector shows the WEO series for its own activity (installed
+  solar, wind, nuclear, geothermal and battery storage capacity; coal, oil and gas supply and use;
+  coal-, gas- and oil-fired electricity), the demand it serves (Midstream factories and Upstream
+  minerals: the deployment of the technology they supply) and emissions trajectories as context (the CO2
+  intensity of electricity; CO2 from iron and steel, aluminium and chemicals beside the sectors made of
+  them). *Direct*, *partial* and *proxy* mean what they mean for the emissions above. The free dataset
+  has no EV stock, electrolyser capacity or grid length, so electricity used in transport stands in for
+  the EV fleet, low-emissions hydrogen production (which also counts hydrogen from fossil fuels with
+  carbon capture) for electrolysers, and electricity generation for the grid: each is labelled a proxy.
+* **Mineral demand by scenario.** For Upstream mineral sectors, the IEA Critical Minerals Dataset 2026
+  (CC BY 4.0) gives demand from the sector's technologies in the Current Policies, Stated Policies and
+  High Demand scenarios, summed over the technologies named. That dataset has **no Net Zero scenario**,
+  so mineral demand on the Net Zero pathway is not shown.
+* **Vintage.** The pathways are checked against the previous edition (World Energy Outlook 2024) on the
+  years both publish; the check is reported in the build, and only the 2025 edition is shown.
+
+## Climate sources (fossil CO2, transition indicators, regional pathways, investment)
+
+Added 2026-10-17. Each is cited wherever its figures are shown.
+
+* **Fossil CO2 by economy.** Global Carbon Project, Global Carbon Budget 2025 (Friedlingstein et al.,
+  2025, *Earth System Science Data*, https://doi.org/10.5194/essd-2025-659); the publisher's terms make
+  use conditional on that citation. *Territorial* emissions are the fossil CO2 emitted inside the economy
+  (fossil fuels, cement, flaring; international aviation and shipping excluded). *Consumption-based*
+  emissions (after Peters, Davis and Andrew, 2012, *Biogeosciences* 9) add the CO2 emitted abroad to make
+  what it imports and subtract the CO2 in what it exports; the GCP publishes *transfers* as territorial
+  minus consumption-based, so a net importer of embodied CO2 has negative transfers. Values in tonnes of
+  carbon are converted to CO2 with the publisher's factor 3.664. From 1990; consumption-based to 2023.
+* **World fossil CO2 by fuel.** The same budget's fossil emissions by fuel (coal, oil, gas, cement,
+  flaring), shown beside the coal, oil and gas sectors as context: every use of the fuel, never the
+  sector's own emissions.
+* **Transition indicators.** Energy Institute, Statistical Review of World Energy 2025, Country
+  Transition Tracker: energy-related greenhouse gas emissions, fossil fuel consumption, renewables' share
+  of energy consumption, the power generation mix, the carbon intensity of energy and of GDP, and energy
+  per person, for 79 economies (31 for the power mix). Each is shown against the *median economy*, the
+  middle of the economies the tracker lists, not a world average. The low-carbon share of power adds the
+  wind, solar, hydro, other renewables and nuclear shares.
+* **Regional pathways.** IEA (2025), World Energy Outlook 2025 free dataset, Regions (CC BY-NC-SA 4.0):
+  the IEA's estimates for 2010, 2023 and 2024 and the Stated Policies and Current Policies scenarios for
+  2035 and 2050. Each Country profile names the region it shows: the economy's own (United States, Japan,
+  China, India, Brazil, Russia), the European Union for its members, Southeast Asia for its members, the
+  broader region whose IEA definition names the economy, or, for economies the IEA counts as "other", the
+  region of their UN sub-region. A regional pathway is the region's, not the economy's. The IEA publishes
+  its Net Zero scenario for the World only; the World line stays beside it as context. IEA scenario
+  projections, not observed data.
+* **2030 milestones.** IEA (2021), Net Zero by 2050, Annex A (CC BY-NC-SA 3.0 IGO): the 2021 roadmap's
+  World values for 2030, shown beside the 2025 pathways of the same quantity and labelled as an older
+  edition (the IEA has updated the scenario since). Where the 2021 row is narrower (unabated coal and gas
+  only, passenger cars without vans, combustion CO2 only), the table marks it.
+* **Energy investment.** IEA (2026), World Energy Investment 2026 (CC BY 4.0): investment by sector for the
+  World, Advanced economies, China, emerging market and developing economies (excluding China) and seven
+  regions, 2015-2026, in billions of 2025 US dollars at market exchange rates; 2026 values are IEA
+  estimates. Each sector shows the investment in its own activity (solar, wind, nuclear, battery storage,
+  electricity networks, coal, oil and gas supply, fossil power) or in the deployment it supplies, with
+  the match quality: geothermal sits inside "other renewables" and the IEA's end-use transport spending
+  (mostly electric vehicles) stands in for EVs, each labelled a proxy.
+* **Not shown: manufacturing emissions per value added.** The IEA Energy and Emissions per Value Added
+  database was staged, but its terms require the IEA's permission for any external dissemination, so the
+  Midstream sectors do not show it and say why.
 
 ## Money
 
@@ -150,7 +249,7 @@ note" column of every table carries the fact's own notes (an assumed-zero produc
 
 ## What this module does not show, and why
 
-* **Index, weight and score values.** Rankings and weights belong to Strategic Insights. Each measure's
+* **Index, weight and score values.** Rankings and weights belong to the Country profiles. Each measure's
   notes say which index it feeds, without showing the index.
 * **Totals across technologies.** Trade baskets overlap, so a sum would count some goods twice.
 * **Regional or world values as country values.** World prices, IEA regions and entities, and
@@ -167,4 +266,4 @@ note" column of every table carries the fact's own notes (an assumed-zero produc
 * **Unverified units.** Where a unit could not be confirmed (the geothermal cost currency, the wind
   threshold, some commodity prices), the unit is labelled "unit to confirm".
 * **Licensed data.** BNEF and BCG data are licensed and are not part of the public explorer.
-* **Dials.** The Strategic Insights dials do not apply here: measured data do not move with priorities.
+* **Perspective dials.** The Country profile's dials do not apply here: measured data do not move with priorities.

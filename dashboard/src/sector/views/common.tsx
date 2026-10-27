@@ -28,6 +28,7 @@ import { fmtShare, fmtSize, fmtValue, fmtRank, type FormatContext } from '../for
 import { chunkWords } from './data.ts';
 import type { LeagueRow, MarkGroup, ShareSplitRow, ValueState } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
+import { useCountryManifest } from '../../country/data/hooks.ts';
 
 export const PAGE = 'mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8';
 
@@ -485,3 +486,21 @@ export function measureConc(
 }
 
 const TRADE_VARS = new Set(['trade.exports', 'trade.imports', 'trade.net']);
+
+/** The economies with a Country profile (null until the country manifest loads, or when it cannot). */
+export function useProfileIsos(): ReadonlySet<string> | null {
+  const m = useCountryManifest();
+  return useMemo(() => (m.data ? new Set(m.data.countries.map((c) => c.iso3)) : null), [m.data]);
+}
+
+/** An economy's name, linked to its Country profile (IA refactor: Sector -> Country) when it has one; the EU and aggregates stay plain. */
+export function EconomyLink({ g }: { g: GeoInfo }) {
+  const isos = useProfileIsos();
+  return g.kind === 'country' && (!isos || isos.has(g.code)) ? (
+    <Link className="link" to={`/countries/${g.code}`} onClick={(e) => e.stopPropagation()}>
+      {g.name}
+    </Link>
+  ) : (
+    <span>{g.name}</span>
+  );
+}

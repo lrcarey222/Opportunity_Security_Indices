@@ -1,7 +1,7 @@
 // Helpers shared by the views: row caches, the tech / stage filters, the Show-mode wording, the
 // economy options and small derivations.
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
 import { toRows } from '../engine/table.ts';
 import type { Table } from '../engine/types.ts';
@@ -10,6 +10,14 @@ import type { AppData } from '../state/appData.ts';
 import type { ShowMode } from '../state/url.ts';
 import { Select } from '../components/ui.tsx';
 import type { CountryOption } from '../components/CountrySelect.tsx';
+import { pageTitle } from '../shell/title.ts';
+
+/** The view's document title, unless it is embedded in another page that owns the title (IA refactor 2026-10-16). */
+export function useViewTitle(view: string, embedded?: boolean): void {
+  useEffect(() => {
+    if (!embedded) document.title = pageTitle(view);
+  }, [view, embedded]);
+}
 
 export type Row = Record<string, string | number | boolean | null>;
 
@@ -77,10 +85,9 @@ export function shownValue(value: number | null, base: number | null, mode: Show
 
 /** The core payload's notes in reader-facing words. */
 export function noteText(n: string): string {
-  if (/fossil/i.test(n)) return 'Coal, oil and gas are excluded from the Strategic Index, the partnership best-five summaries and the allied network.';
+  if (/fossil/i.test(n)) return 'Coal, oil and gas are excluded from the Strategic Index and the partnership best-five summaries.';
   if (/endowment screen off/i.test(n)) return 'The endowment screen is off: an upstream sector can be a member’s allied pick without recorded reserves or production of its resources.';
-  if (/baseline pillars/i.test(n)) return "Partnerships and the allied network keep the paper's Energy Security and Economic Opportunity (category weights move those two scores and the Strategic Index only).";
-  if (/Policy index/i.test(n)) return "The allied network's producer score includes the scenario's Policy activity (populism above 50).";
+  if (/baseline pillars/i.test(n)) return "Partnerships keep the paper's Energy Security and Economic Opportunity (category weights move those two scores and the Strategic Index only).";
   return n;
 }
 
@@ -116,9 +123,9 @@ export function CountryInsightsLink({ iso3, country }: { iso3: string; country: 
   return (
     <p className="mt-3 text-sm">
       <Link className="link" to={`/countries/${iso3}`}>
-        {country} in Country Insights &rarr;
+        {country}&rsquo;s Country profile &rarr;
       </Link>
-      <span className="text-paper-mute"> (a plain-language briefing on the paper&rsquo;s baseline)</span>
+      <span className="text-paper-mute"> (a plain-language briefing on the NEIS baseline)</span>
     </p>
   );
 }

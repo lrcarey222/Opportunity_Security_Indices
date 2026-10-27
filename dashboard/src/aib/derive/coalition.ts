@@ -1,7 +1,9 @@
-// The coalition curve: the greedy minimum sufficient coalition of a compact, step by step. Step 0 is the
-// demand anchors alone; each later step adds the economy that most reduces the shortfall. The minimum
-// (and mean) coverage of the anchors' demand over the compact's nodes is read against the coverage
-// targets (90 / 95 / 99%); the first step at or above a target is that target's coalition. Pure.
+// The coalition curve: the greedy path of a compact, step by step (a heuristic; the minimum coalition of
+// each target is found exactly and exported apart, coalition.t90 / t95 / t99). Step 0 is the demand
+// anchors alone; each later step adds the economy that most reduces the shortfall. The minimum (and
+// mean) coverage of the anchors' demand over the compact's nodes is read against the coverage targets
+// (90 / 95 / 99%); the first step at or above a target is the greedy path's coalition for it, which can
+// be larger than, or differ from, the exact one. Pure.
 
 import { isNum } from '../../lib/format.ts';
 import { nodeCoverageOf, type AibCompact } from '../contract.ts';

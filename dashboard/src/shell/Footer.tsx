@@ -1,9 +1,11 @@
 // The shared footer (spec_sector.md 2.1 item 6, 2.5): citation, the data vintage of each module
 // when known (from buildInfo; never forces a load), and the links to Methods (Strategic), Sources
-// & data (Sector), About Country Insights, About Sectoral Compacts, the shared Glossary and neiscenter.org. Strategic links
+// & data (Sector), the country data notes, how compacts are derived, the shared Glossary and neiscenter.org. Methods / Data
 // carry the scenario of the last Strategic location, as the old footer carried navQuery.
+// How compacts are derived carries the AIB scenario toggle (scn) of the current page.
 
 import { Link, useLocation } from 'react-router';
+import { scenarioCarry } from '../aib/scenarioUrl.ts';
 import { fmtDate } from '../lib/format.ts';
 import { useBuildInfo } from './buildInfo.ts';
 import { lastLocations, sectorCarry, strategicCarry } from './lastLocation.ts';
@@ -50,7 +52,7 @@ export function Footer() {
               )}
             </p>
           )}
-          <p>Strategic Insights results are model outputs for exploration, not forecasts. Sector Insights shows measured values in their sources&rsquo; own units and years. Country Insights shows the paper&rsquo;s baseline beside the raw data behind it.</p>
+          <p>Sector pages show measured values in their sources&rsquo; own units and years. Priorities, partner rankings and the Allied Industrial Base results are model outputs for exploration, not forecasts; priorities and partner rankings are shown at the NEIS baseline unless you change the perspective on a country&rsquo;s profile.</p>
         </div>
         <div className="flex flex-wrap items-start gap-x-5 gap-y-2 lg:justify-end">
           <Link className="link" to={`/methods${sq}`}>
@@ -63,10 +65,10 @@ export function Footer() {
             Sources &amp; data
           </Link>
           <Link className="link" to="/countries/about">
-            About Country Insights
+            Country data notes
           </Link>
-          <Link className="link" to="/compacts/about">
-            About Sectoral Compacts
+          <Link className="link" to={`/compacts/about${scenarioCarry(loc.search)}`}>
+            How compacts are derived
           </Link>
           <Link className="link" to="/glossary">
             Glossary

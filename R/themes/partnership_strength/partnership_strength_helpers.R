@@ -595,24 +595,61 @@ partnership_strength_trade_view <- function(trade_cells, view = c("import", "exp
     )
 }
 
+# Growth term of the two-stage trade index (config/partnership.yml trade): growth is scored only
+# from a first-year flow of at least this many USD. A ratio from a smaller base is mostly noise in
+# the base: the two declarations of one flow can disagree by more than the base itself (2020 US ->
+# Kazakhstan, Electric Grid Midstream: USD 5k in Kazakhstan's import declaration, about USD 11m in
+# the US export declaration), and the growth S-curve then ranks such a dyad among the fastest
+# growing. Below the floor, and where the first year has no trade, a trading dyad takes the
+# neutral growth score (growth_unscored "neutral": 0.5, the median growth score) or is scored on
+# its level alone ("level_only", the rule before 2026-10-20). See
+# partnership_strength_two_stage_trade_index().
+PARTNERSHIP_STRENGTH_GROWTH_MIN_BASE_USD <- 1e6
+
+# The growth settings of the trade index from config/partnership.yml `trade` (growth_min_base_usd,
+# growth_unscored), with the defaults above for absent keys. Returns list(min_base_usd, unscored).
+partnership_strength_trade_growth_settings <- function(cfg = NULL) {
+  out <- list(min_base_usd = PARTNERSHIP_STRENGTH_GROWTH_MIN_BASE_USD, unscored = "neutral")
+  if (!is.null(cfg$growth_min_base_usd)) out$min_base_usd <- suppressWarnings(as.numeric(cfg$growth_min_base_usd))
+  if (!is.null(cfg$growth_unscored)) out$unscored <- tolower(as.character(cfg$growth_unscored))
+  if (length(out$min_base_usd) != 1 || is.na(out$min_base_usd) || out$min_base_usd < 0) {
+    stop("trade growth_min_base_usd must be one number >= 0.")
+  }
+  if (length(out$unscored) != 1 || !out$unscored %in% c("neutral", "level_only")) {
+    stop("trade growth_unscored must be neutral or level_only, not '", paste(out$unscored, collapse = ", "), "'.")
+  }
+  out
+}
+
 # The two-stage trade index of a dyad series (Friendshore imports, Opportunity exports).
 # Stage 1, within (tech, stage) across dyads that trade (a positive flow in either theme year):
-# S-curve of the last-year level and of growth, combined 2:1 over the measures the dyad has (a
-# dyad without growth, e.g. no first-year trade, is scored on its level). Stage 2: S-curve within
+# S-curve of the last-year level and of growth, combined 2:1. Growth is scored (S-curved) only for
+# the dyads whose first-year flow is at least trade_growth$min_base_usd; the other trading dyads
+# (no first-year trade, or a smaller base) take the neutral growth score 0.5. So a new or
+# tiny-base flow is neither ranked among the fastest growing nor scored on its level alone, which
+# put it above larger partners with ordinary growth (trade_growth$unscored "level_only" restores
+# that rule; with min_base_usd 0 it is the index before 2026-10-20). Stage 2: S-curve within
 # (reporter, tech, stage). Dyads observed with no trade in either year (observed zeros) enter
 # stage 2 as one tie block below every trading partner, so they take the block's mid-rank, the
 # convention the outbound index uses for zero positions. Returns reporter_iso, partner_iso, tech,
 # supply_chain, `index_col` and trade_status ("trade" / "zero").
-partnership_strength_two_stage_trade_index <- function(ds, index_col) {
+partnership_strength_two_stage_trade_index <- function(ds, index_col, trade_growth = partnership_strength_trade_growth_settings()) {
   require_columns(ds, c("reporter_iso", "partner_iso", "tech", "supply_chain", "level_last", "level_first", "growth"), label = "dyad series")
+  trade_growth <- partnership_strength_trade_growth_settings(
+    list(growth_min_base_usd = trade_growth$min_base_usd, growth_unscored = trade_growth$unscored)
+  )
+  neutral_growth <- if (identical(trade_growth$unscored, "neutral")) 0.5 else NA_real_
   ds %>%
     dplyr::mutate(
-      trading = (!is.na(level_last) & level_last > 0) | (!is.na(level_first) & level_first > 0)
+      trading = (!is.na(level_last) & level_last > 0) | (!is.na(level_first) & level_first > 0),
+      growth_scored = trading & !is.na(growth) & !is.na(level_first) & level_first > 0 &
+        level_first >= trade_growth$min_base_usd
     ) %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::mutate(
       level_idx = partnership_strength_safe_scurve(dplyr::if_else(trading, level_last, NA_real_)),
-      growth_idx = partnership_strength_safe_scurve(dplyr::if_else(trading, growth, NA_real_)),
+      growth_idx = partnership_strength_safe_scurve(dplyr::if_else(growth_scored, growth, NA_real_)),
+      growth_idx = dplyr::if_else(trading & !growth_scored, neutral_growth, growth_idx),
       # Available-case on both sides: the numerator used to propagate a missing growth, so a dyad
       # with last-year but no first-year trade lost its trade score and was imputed at the mean.
       combined = partnership_strength_row_weighted_mean(list(level_idx, growth_idx), c(2, 1)),
@@ -633,6 +670,87 @@ partnership_strength_with_trade_status <- function(trade_indices, index_col) {
     trade_indices$trade_status <- dplyr::if_else(is.na(trade_indices[[index_col]]), NA_character_, "trade")
   }
   trade_indices
+}
+
+# ---- Cells without trade data -------------------------------------------------------------------
+#
+# A (tech, stage) the HS6 crosswalk maps no code to has no bilateral flow at all (trade_status
+# "no_data": every Downstream stage, and Green Hydrogen and Geothermal outside it). Its trade term
+# used to be the constant 0.5 for every dyad. Within such a cell the other components then ranked
+# the reporter's partners on their own. In Opportunity that was the market's energy-security need
+# alone, because the reporter's EO is the same for all its markets. Small insecure economies that
+# the reporter barely trades with collected five such cells near the top of its list (2026-10-20:
+# Equatorial Guinea, Sao Tome and Burundi were the 9th, 11th and 12th of the US's 218 markets).
+# The fill rule (config/partnership.yml trade: no_data_fill) sets the trade term of these cells:
+#   - "dyad" (default): the dyad's own trade index, the mean over its cells with an observed flow
+#     (trade or a recorded zero) in the same technology, else over all its observed cells; a dyad
+#     without an observed cell keeps 0.5. Cells imputed at the cell mean are not used: they carry
+#     no information on the dyad.
+#   - "constant": 0.5 everywhere, the rule before 2026-10-20.
+# trade_status stays "no_data" either way: the coverage table counts the cells as before, and the
+# imputed weight share leaves their trade term out (below).
+PARTNERSHIP_STRENGTH_NO_DATA_FILLS <- c("dyad", "constant")
+
+# The no_data fill rule from config/partnership.yml `trade` (no_data_fill), "dyad" when absent.
+partnership_strength_no_data_fill_setting <- function(cfg = NULL) {
+  fill <- if (is.null(cfg$no_data_fill)) "dyad" else tolower(as.character(cfg$no_data_fill))
+  if (length(fill) != 1 || !fill %in% PARTNERSHIP_STRENGTH_NO_DATA_FILLS) {
+    stop(
+      "trade no_data_fill must be one of ", paste(PARTNERSHIP_STRENGTH_NO_DATA_FILLS, collapse = ", "),
+      ", not '", paste(fill, collapse = ", "), "'."
+    )
+  }
+  fill
+}
+
+# Fill the trade index `index_col` of the no_data cells of a dyad table (one row per reporter_iso,
+# partner_iso, tech, supply_chain, with trade_status) by the rule `fill`. Adds trade_fill, the
+# basis of each no_data cell's trade term: "same_tech" or "all_tech" (the dyad's observed cells it
+# averages) or "constant" (0.5 kept); NA in cells with trade data, which are not touched.
+partnership_strength_fill_no_data_trade <- function(tbl, index_col, fill = "dyad") {
+  require_columns(
+    tbl,
+    c("reporter_iso", "partner_iso", "tech", "supply_chain", "trade_status", index_col),
+    label = "dyad cells"
+  )
+  fill <- partnership_strength_no_data_fill_setting(list(no_data_fill = fill))
+  tbl <- dplyr::ungroup(tbl)
+  no_data <- tbl$trade_status %in% "no_data"
+  tbl$trade_fill <- dplyr::if_else(no_data, "constant", NA_character_)
+  if (identical(fill, "constant") || !any(no_data)) {
+    return(tbl)
+  }
+
+  observed <- tbl$trade_status %in% c("trade", "zero") & !is.na(tbl[[index_col]])
+  obs <- tibble::tibble(
+    reporter_iso = tbl$reporter_iso[observed],
+    partner_iso = tbl$partner_iso[observed],
+    tech = tbl$tech[observed],
+    x = tbl[[index_col]][observed]
+  )
+  same_tech <- obs %>%
+    dplyr::group_by(reporter_iso, partner_iso, tech) %>%
+    dplyr::summarise(fill_same = mean(x), .groups = "drop")
+  all_tech <- obs %>%
+    dplyr::group_by(reporter_iso, partner_iso) %>%
+    dplyr::summarise(fill_all = mean(x), .groups = "drop")
+  # One row per no_data cell, in table order (the fill tables are unique on their keys).
+  nd <- tibble::tibble(
+    reporter_iso = tbl$reporter_iso[no_data],
+    partner_iso = tbl$partner_iso[no_data],
+    tech = tbl$tech[no_data]
+  ) %>%
+    dplyr::left_join(same_tech, by = c("reporter_iso", "partner_iso", "tech")) %>%
+    dplyr::left_join(all_tech, by = c("reporter_iso", "partner_iso"))
+
+  rows <- which(no_data)
+  tbl[[index_col]][rows] <- dplyr::coalesce(nd$fill_same, nd$fill_all, tbl[[index_col]][rows])
+  tbl$trade_fill[rows] <- dplyr::case_when(
+    !is.na(nd$fill_same) ~ "same_tech",
+    !is.na(nd$fill_all) ~ "all_tech",
+    TRUE ~ "constant"
+  )
+  tbl
 }
 
 # ---- Imputed weight share (PSI rankability) -----------------------------------------------------
@@ -663,8 +781,10 @@ partnership_strength_with_trade_status <- function(trade_indices, index_col) {
 #     so they cannot make one partner's rank more or less reliable than another's, and counting
 #     them would add the reporters' pillar imputation to every partner alike;
 #   - the trade component of a (tech, stage) without trade data (trade_status "no_data": no HS6
-#     code maps to it, every dyad gets the constant 0.5). Such a cell has no trade component, as a
-#     pillar cell has no category its sources never cover;
+#     code maps to it). Such a cell has no trade component of its own, as a pillar cell has no
+#     category its sources never cover. Its trade term is the dyad's trade in its other cells
+#     (partnership_strength_fill_no_data_trade()), whose observation is counted in those cells;
+#     counting the fill as imputed would make 21% of the rankable dyads unrankable (2026-10-20);
 #   - the climate-policy penalties, which are subtracted from the composite, not weighted in it.
 # A dyad's (partner's) share is the mean over the five (tech, stage) cells its top-5 index value
 # averages (partnership_strength_top_k_share()); the PSI averages those as it averages the scores
@@ -762,9 +882,15 @@ partnership_strength_add_top5_share <- function(top5_tbl, unit_share, id_cols, i
 # Coverage of a dyad table's trade component by (tech, stage): dyad cells scored on an observed
 # flow (trade or a recorded zero), cells imputed at the cell mean, and cells of a (tech, stage)
 # without trade data (no HS6 code mapped; n_no_data = n_cells there). share_imputed is the
-# imputed share of the cells of a (tech, stage) with trade data (NA for one without).
+# imputed share of the cells of a (tech, stage) with trade data (NA for one without). The no_data
+# cells split by the basis of their trade term (trade_fill, partnership_strength_fill_no_data_trade()):
+# the dyad's observed cells in the same technology, in all technologies, or the constant 0.5 (all
+# of them when the table has no trade_fill).
 partnership_strength_trade_coverage <- function(dyads, theme) {
   require_columns(dyads, c("reporter_iso", "partner_iso", "tech", "supply_chain", "trade_status"), label = "dyads")
+  if (!"trade_fill" %in% names(dyads)) {
+    dyads$trade_fill <- dplyr::if_else(dyads$trade_status %in% "no_data", "constant", NA_character_)
+  }
   dyads %>%
     dplyr::group_by(tech, supply_chain) %>%
     dplyr::summarise(
@@ -773,6 +899,9 @@ partnership_strength_trade_coverage <- function(dyads, theme) {
       n_zero = sum(trade_status %in% "zero"),
       n_imputed = sum(trade_status %in% "imputed"),
       n_no_data = sum(trade_status %in% "no_data"),
+      n_no_data_same_tech = sum(trade_status %in% "no_data" & trade_fill %in% "same_tech"),
+      n_no_data_all_tech = sum(trade_status %in% "no_data" & trade_fill %in% "all_tech"),
+      n_no_data_constant = sum(trade_status %in% "no_data" & trade_fill %in% "constant"),
       .groups = "drop"
     ) %>%
     dplyr::mutate(

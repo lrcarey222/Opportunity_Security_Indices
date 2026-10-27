@@ -10,8 +10,6 @@
 #                               at 10% of world reserves), with the largest qualifying share
 #   coalition_alignment_matrix  dyadic alignment A_ij among the network nodes plus China and
 #                               Russia, ordered by tier and s
-#   coalition_eu_weights        the members' weights within the EU node, 22 Upstream/Midstream
-#                               cells x 27 members, grouped by the basis of the weight
 #   tables/coalition_composition.tex  composition of the coalition, exclusions, sensitivity and the
 #                               change from the hand-picked 23-member list of the previous draft
 # and writes every number the text quotes to paper/results/coalition.json.
@@ -728,43 +726,6 @@ p_mat <- ggplot(amat, aes(x = i_f, y = j_f, fill = A_f)) +
 save_paper_fig(p_mat, "coalition_alignment_matrix", width = paper_width_full, height = 6.55)
 
 # ---------------------------------------------------------------------------------------------
-# Figure 4: coalition_eu_weights
-# ---------------------------------------------------------------------------------------------
-basis_lab <- c(production = "Production", exports = "Exports", gdp = "GDP")
-ew <- euw
-ew$cell <- paste(ew$tech, stage_short[ew$supply_chain])
-ew$basis_f <- factor(basis_lab[ew$basis], levels = basis_lab)
-cell_order <- ew %>% distinct(cell, basis_f, supply_chain, tech) %>%
-  arrange(basis_f, desc(supply_chain), tech) %>% pull(cell)
-ew$cell_f <- factor(ew$cell, levels = rev(unique(cell_order)))
-mem_order <- eu_gdp_w$iso3
-ew$mem_lab <- ifelse(ew$iso3 %in% node_only, paste0(ew$iso3, "*"), ew$iso3)
-ew$mem_f <- factor(ew$mem_lab, levels = ifelse(mem_order %in% node_only, paste0(mem_order, "*"), mem_order))
-# Selective labels: weights >= 0.15 under a production or export basis (the GDP rows repeat one
-# vector of GDP shares, quoted in the caption).
-ew$txt <- ifelse(ew$weight >= 0.15 & ew$basis != "gdp", sprintf("%.2f", ew$weight), "")
-w_max <- max(0.5, ceiling(max(ew$weight) * 10) / 10)
-p_eu <- ggplot(ew, aes(x = mem_f, y = cell_f, fill = weight)) +
-  geom_tile(colour = "white", linewidth = 0.3) +
-  geom_text(aes(label = txt, colour = weight >= 0.3), size = 2.05, show.legend = FALSE) +
-  scale_colour_manual(values = c(`TRUE` = "white", `FALSE` = paper_ink$primary), guide = "none") +
-  scale_fill_gradientn(colours = c("#ffffff", paper_seq_blue), limits = c(0, w_max),
-                       breaks = seq(0, w_max, 0.1), name = "Weight within the EU node") +
-  facet_grid(basis_f ~ ., scales = "free_y", space = "free_y", switch = "y") +
-  scale_x_discrete(position = "top", expand = c(0, 0)) +
-  scale_y_discrete(expand = c(0, 0), position = "right") +
-  labs(x = NULL, y = NULL) +
-  theme_paper(grid = "none") +
-  theme(axis.text.x.top = element_text(size = 6.8, angle = 90, hjust = 0, vjust = 0.5, colour = paper_ink$primary),
-        axis.text.y.right = element_text(size = 7, colour = paper_ink$primary, hjust = 0),
-        axis.line.x = element_blank(),
-        strip.placement = "outside", strip.text.y.left = element_text(angle = 0, hjust = 1, vjust = 0.5, size = 7.5),
-        panel.spacing.y = unit(4, "pt"),
-        legend.key.width = unit(1.4, "cm"), legend.key.height = unit(0.25, "cm"),
-        legend.title = element_text(vjust = 0.9))
-save_paper_fig(p_eu, "coalition_eu_weights", width = paper_width_full, height = 4.4)
-
-# ---------------------------------------------------------------------------------------------
 # Table: coalition_composition.tex
 # ---------------------------------------------------------------------------------------------
 tex_esc <- function(x) gsub("%", "\\\\%", gsub("&", "\\\\&", x))
@@ -823,7 +784,7 @@ tab_lines <- c(
     "or manufacturing capacity) or at least 10\\% of world reserves of a headline mineral, fuel or uranium. For the ",
     "supplier route, the parentheses give the largest qualifying share: the technology--stage cell of a supply measure, ",
     "or the resource when only reserves qualify, and in brackets the number of further qualifying cells. ",
-    sprintf("The %s EU members below the GDP floor are part of the EU network node only. ", english_number(length(node_only))),
+    sprintf("The %s EU members below the GDP floor belong to the coalition only through the EU. ", english_number(length(node_only))),
     "The MSP Forum sensitivity admits Forum members by the agreement route. The previous draft's 23 members were fixed by hand."
   ),
   "\\end{tablenotes}",
@@ -1035,8 +996,8 @@ res <- list(
     joined_non_eu = sort(setdiff(new_joined, eu_members))
   ),
   robustness = alt_results,
-  figures = c("coalition_axis", "coalition_routes", "coalition_alignment_matrix", "coalition_eu_weights"),
+  figures = c("coalition_axis", "coalition_routes", "coalition_alignment_matrix"),
   tables = "coalition_composition"
 )
 write_paper_results(res, "coalition")
-message("Done: coalition.json, coalition_axis, coalition_routes, coalition_alignment_matrix, coalition_eu_weights, tables/coalition_composition.tex")
+message("Done: coalition.json, coalition_axis, coalition_routes, coalition_alignment_matrix, tables/coalition_composition.tex")

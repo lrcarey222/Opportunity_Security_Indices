@@ -1,0 +1,54 @@
+institution_group,institution_abbr,lender_iso3,source,replaces_crs_measure,note
+Australia,EFA,AUS,oci,,Export Finance Australia; no CRS activities
+Australia,EFIC,AUS,oci,,Export Finance and Insurance Corporation (former name of EFA)
+Brazil,BNDES,BRA,oci,,Brazil does not report to the CRS
+Canada,EDC,CAN,oci,,Export Development Canada; no CRS activities
+Canada,DFIC,CAN,crs,,FinDev Canada reports to the CRS (agency 22)
+China,CDB,CHN,oci,,China does not report to the CRS; dropped by development_aid energy_finance exclude_lender_countries
+China,Chexim,CHN,oci,,As CDB
+China,ICBC,CHN,oci,,As CDB
+China,Sinosure,CHN,oci,,As CDB
+China,SINOSURE,CHN,oci,,As CDB
+China,SRF,CHN,oci,,As CDB
+France,AFD,FRA,crs,,Agence Francaise de Developpement reports to the CRS (agency 3)
+France,BPI,FRA,oci,,Bpifrance export credit; no CRS activities
+France,Caisse,FRA,oci,,Caisse des Depots et Consignations; no CRS agency
+France,Proparco,FRA,crs,,Proparco reports to the CRS (agency 44)
+Germany,DEG,DEU,crs,,DEG reports to the CRS (agency 4)
+Germany,Hermes,DEU,oci,,Euler Hermes export credit cover of the German government; no CRS activities
+Germany,KfW,DEU,crs,,KfW development bank reports to the CRS (agency 2)
+Germany,KfW-IPEX,DEU,oci,,KfW IPEX-Bank export and project finance; not among the CRS reporters
+India,EXIM India,IND,oci,,India does not report to the CRS
+India,IREDA,IND,oci,,India does not report to the CRS
+Indonesia,IEB,IDN,oci,,Indonesia does not report to the CRS
+Italy,CDP,ITA,crs,,Cassa Depositi e Prestiti reports to the CRS (agency 16)
+Italy,SACE,ITA,oci,,SACE export credit; no CRS activities
+Japan,DBJ,JPN,oci,,Development Bank of Japan; no CRS activities
+Japan,JBIC,JPN,oci,,Japan Bank for International Cooperation; Japan reports no OOF activities to the CRS
+Japan,JICA,JPN,crs,,JICA reports to the CRS (agency 8)
+Japan,JOGMEC,JPN,oci,,Japan Organization for Metals and Energy Security; no CRS activities
+Japan,NEXI,JPN,oci,,Nippon Export and Investment Insurance; mostly insurance (only loans and equity count)
+Korea,IBK,KOR,oci,,Industrial Bank of Korea; no CRS activities
+Korea,K-sure,KOR,oci,,Korea Trade Insurance Corporation; no CRS activities
+Korea,"K-SURE,KEXIM",KOR,oci,OOF,Joint K-SURE and KEXIM transactions (see Kexim)
+Korea,KDB,KOR,oci,,Korea Development Bank; no CRS activities
+Korea,Kexim,KOR,oci,OOF,"Export-Import Bank of Korea. Its developmental OOF is also in the CRS (agency 2, Korea's only OOF reporter), so Korea's CRS OOF is dropped when these rows are used"
+Korea,KoFC,KOR,oci,,Korea Finance Corporation; no CRS activities
+Korea,KOICA,KOR,crs,,KOICA reports to the CRS (agency 4)
+Korea,Ksure,KOR,oci,,Korea Trade Insurance Corporation (alternative spelling)
+Mexico,Bancomext,MEX,oci,,Mexico does not report activities to the CRS
+Mexico,Nafin,MEX,oci,,Mexico does not report activities to the CRS
+Russia,EXIAR,RUS,oci,,Export Insurance Agency of Russia; Russia does not report to the CRS
+Saudi Arabia,SEDA,SAU,oci,,Saudi Export Development Authority export credit; not among the CRS reporters
+Saudi Arabia,SEDF,SAU,oci,,As SEDA
+Saudi Arabia,SFD,SAU,crs,,Saudi Fund for Development reports to the CRS
+Saudi Arabia,SIDF,SAU,oci,,Saudi Industrial Development Fund; not among the CRS reporters
+South Africa,DBSA,ZAF,oci,,South Africa does not report to the CRS
+South Africa,ECIC,ZAF,oci,,South Africa does not report to the CRS
+Turkey,TurkExImBank,TUR,oci,,Turk Eximbank export credit; Turkiye's CRS reports carry no export credits
+United Kingdom,BII,GBR,crs,,British International Investment reports to the CRS (agency 2)
+United Kingdom,CDC,GBR,crs,,CDC Group (former name of BII)
+United Kingdom,UKEF,GBR,oci,,UK Export Finance; no CRS activities
+United States,DFC,USA,crs,,DFC reports to the CRS (agency 34)
+United States,EXIM US,USA,oci,,Export-Import Bank of the United States; no CRS activities
+United States,OPIC,USA,crs,,OPIC (DFC's predecessor) reported to the CRS

@@ -4,6 +4,7 @@
 #   Rscript scripts/87_export_sector_data.R [--out-dir <dir>] [--phase 1|2] [--skip-trade]
 #                                           [--no-policy-text] [--no-series] [--synthetic <dir>]
 #                                           [--check-only] [--cmfdi <csv>] [--no-fdi] [--no-dev]
+#                                           [--no-climate] [--no-nze] [--no-climate-sources]
 #
 # IO only: every rule lives in the pure helpers of R/dashboard/sector/ (sector_files()). It reads
 # config/sector_dictionary.yml, data/processed (raw rows only; never an index, weight or contribution
@@ -14,9 +15,11 @@
 # years and comparability of the fossil production the pipeline took from EIA), IMF monthly prices,
 # the CIM workbook and the CM-FDI projects, cm_fdi_projects.csv in data/raw, or the file given with
 # --cmfdi; and, for Development & finance, the raw inputs of Development Potential and of Friendshore's
-# outbound component: wb_wdi.csv, wb_doingbusiness.csv, oecd_crs_api.csv, imf_dip.csv (selected
-# columns) and wdi_gdp.csv, parsed with the builders' own functions; partner_development_tbl is read
-# only to check that the builder on these inputs reproduces its stored components). It writes
+# outbound component: wb_wdi.csv, wb_doingbusiness.csv, oecd_crs_api.csv (the shipped 3-digit aid
+# flows), oecd_crs_purpose.csv and oci_energy_finance.csv with their data/reference tables (the aid
+# components per tech and stage), imf_dip.csv (selected columns) and wdi_gdp.csv, parsed with the builders' own
+# functions; partner_development_tbl is read only to check that the builders on these inputs
+# reproduce its stored components). It writes
 #
 #   <out-dir>/manifest.json            schema "osi-sector", headlines, coverage glyph, validation,
 #                                      sources, budget (served no-cache; written last)
@@ -24,7 +27,17 @@
 #                                      meta, facts, trade-<tech> x 10, policy, policy-text, series,
 #                                      fdi (CM-FDI; --no-fdi leaves it and its measures out),
 #                                      dev (CRS aid flows and IMF DIP positions; --no-dev leaves it and
-#                                      the Development & finance raw measures out)
+#                                      the Development & finance raw measures out),
+#                                      climate (Climate TRACE sector emissions mapped to technology x
+#                                      stage and the IPCC lifecycle intensity, from the
+#                                      climate_trace_*_tbl.rds of scripts/16; --no-climate leaves it out;
+#                                      with the IEA World pathways and mineral demand by scenario as the
+#                                      optional climate.nze_* tables, from the iea_pathways_*_tbl.rds of
+#                                      scripts/17; --no-nze leaves them out),
+#                                      climate-src (the climate sources: GCP national and fuel CO2, EI
+#                                      Country Transition Tracker, IEA WEO regions, NZE 2021 milestones,
+#                                      World Energy Investment, from the climate_src_*_tbl.rds of
+#                                      scripts/18; --no-climate-sources leaves it out)
 #   <processed_dir>/dashboard/sector_validation.csv   the full validation report (not deployed)
 #
 # <out-dir> defaults to <repo>/dashboard/public/data/sector. Every chunk is decoded again and must be
@@ -73,6 +86,9 @@ policy_text <- !arg_flag("--no-policy-text")
 with_series <- !arg_flag("--no-series")
 with_fdi <- !arg_flag("--no-fdi")
 with_dev <- !arg_flag("--no-dev")
+with_climate <- !arg_flag("--no-climate")
+with_nze <- with_climate && !arg_flag("--no-nze")
+with_csrc <- with_climate && !arg_flag("--no-climate-sources")
 cmfdi_arg <- arg_value("--cmfdi")
 phase <- as.integer(arg_value("--phase", "1"))
 if (!phase %in% 1:2) stop("--phase must be 1 or 2")
@@ -161,7 +177,7 @@ write_chunks <- function(chunks, out_dir, check_only) {
     if (nm == "sector-meta") meta_sizes <- list(geo = nrow(dec$objects$dims$geo), items = nrow(dec$objects$dims$items), vars = nrow(dec$objects$dict$vars))
     errs <- sector_check_chunk(nm, dec$objects, meta_sizes, var_ids)
     if (length(errs)) stop("Chunk ", nm, " breaks the contract:\n  ", paste(errs, collapse = "\n  "))
-    if (nm %in% c("sector-meta", "sector-facts", "sector-series", "sector-fdi", "sector-dev") || startsWith(nm, "sector-trade-")) decoded[[nm]] <- dec$objects
+    if (nm %in% c("sector-meta", "sector-facts", "sector-series", "sector-fdi", "sector-dev", "sector-climate", "sector-climate-src") || startsWith(nm, "sector-trade-")) decoded[[nm]] <- dec$objects
     rows[[nm]] <- tibble::tibble(name = nm, file = file_name, bytes = length(bytes), bytes_gz = file.size(tmp), md5 = md5, tmp = tmp)
     step(sprintf("  %-26s %8.1f kB, %7.1f kB gz; round trip identical; contract checks pass", nm, length(bytes) / 1024, file.size(tmp) / 1024))
   }
@@ -280,7 +296,8 @@ if (!is.null(synthetic_dir)) {
                 processed_mtime_max = "synthetic", pipeline_marker = NA_character_,
                 flags = list(include_restricted = FALSE, trade = length(bundle$trade) > 0, atlas = FALSE,
                              policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks),
-                             fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks)),
+                             fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks),
+                             climate = "sector-climate" %in% names(chunks), climate_src = "sector-climate-src" %in% names(chunks)),
                 post_decode = syn_post)
   message(sprintf("Synthetic fixture: %d chunks, %.1f kB gz. %.0f s.", nrow(res$chunk_info), sum(res$chunk_info$bytes_gz) / 1024,
                   as.numeric(difftime(Sys.time(), t_script, units = "secs"))))
@@ -704,7 +721,8 @@ dev_ref <- NULL
 if (with_dev) {
   step("Development & finance: WDI, Doing Business, OECD CRS, IMF DIP")
   dev_files <- c(ci = "wdi_country_info.csv", gdp = "wdi_gdp.csv", wdi = "wb_wdi.csv", db = "wb_doingbusiness.csv",
-                 crs = "oecd_crs_api.csv", dip = "imf_dip.csv")
+                 crs = "oecd_crs_api.csv", crs_purpose = "oecd_crs_purpose.csv", oci = "oci_energy_finance.csv",
+                 dip = "imf_dip.csv")
   dev_paths <- stats::setNames(file.path(raw_dir, dev_files), names(dev_files))
   miss <- dev_files[!file.exists(dev_paths)]
   if (length(miss)) stop("Development & finance input missing in data/raw: ", paste(miss, collapse = ", "), " (stage it, or export with --no-dev).")
@@ -727,9 +745,24 @@ if (with_dev) {
   pc <- sector_dev_crs_parity(dev_stage, crs_builder, dev_crs$flows)
   for (i in seq_len(nrow(pc))) add_check(pc$check[i], pc$status[i], pc$n[i], pc$detail[i])
   if (any(pc$status == "FAIL")) stop("OECD CRS parity FAIL: ", paste(pc$check[pc$status == "FAIL"], collapse = "; "))
-  # The builder on these raw inputs reproduces the Development Potential components in data/processed.
+  # The builders on these raw inputs reproduce the Development Potential components in data/processed:
+  # the aid components per (tech, stage) from the CRS purpose-code extract and crosswalk, with the
+  # settings scripts/15 reads (config/partnership.yml development_aid).
   dev_proc <- readRDS(use_src(file.path(processed_dir, "partner_development_tbl.rds")))
-  pp <- sector_dev_processed_parity(dev_proc, partnership_strength_build_development_indicators(wdi_raw, db_raw, valid_iso = dev_iso), crs_builder)
+  crs_purpose <- read.csv(use_src(dev_paths[["crs_purpose"]]))
+  crs_crosswalk <- read.csv(use_src(file.path(repo_root, "data", "reference", "oecd_crs_purpose_crosswalk.csv")))
+  oci_raw <- read.csv(use_src(dev_paths[["oci"]]), stringsAsFactors = FALSE)
+  oci_inst <- read.csv(use_src(file.path(repo_root, "data", "reference", "oci_energy_finance_institutions.csv")), stringsAsFactors = FALSE)
+  oci_cw <- read.csv(use_src(file.path(repo_root, "data", "reference", "oci_energy_finance_crosswalk.csv")), stringsAsFactors = FALSE)
+  aid_settings <- partnership_strength_development_aid_settings(
+    yaml::read_yaml(file.path(repo_root, "config", "partnership.yml"))$development_aid
+  )
+  aid_builder <- partnership_strength_build_oecd_tech(
+    crs_purpose, crs_crosswalk, dev_gdp,
+    cells = unique(dev_proc[c("tech", "supply_chain")]), settings = aid_settings, valid_iso = dev_iso,
+    oci = oci_raw, oci_institutions = oci_inst, oci_crosswalk = oci_cw
+  )
+  pp <- sector_dev_processed_parity(dev_proc, partnership_strength_build_development_indicators(wdi_raw, db_raw, valid_iso = dev_iso), aid_builder)
   for (i in seq_len(nrow(pp))) add_check(pp$check[i], pp$status[i], pp$n[i], pp$detail[i])
   if (any(pp$status == "FAIL")) stop("Development Potential: the builder on data/raw does not reproduce data/processed: ",
                                      paste(pp$check[pp$status == "FAIL"], pp$detail[pp$status == "FAIL"], collapse = "; "))
@@ -740,7 +773,7 @@ if (with_dev) {
     db = tibble::tibble(key = as.character(dbb$Country.Code), value = dbb$doingbusiness),
     stage = dev_stage
   )
-  rm(dev_proc, crs_raw, wl, dbb, crs_builder)
+  rm(dev_proc, crs_raw, wl, dbb, crs_builder, crs_purpose, crs_crosswalk, oci_raw, oci_inst, oci_cw, aid_builder)
   invisible(gc())
   # IMF DIP: the columns the outbound builder uses (as scripts/15 read_imf_dip()).
   dip_header <- names(data.table::fread(use_src(dev_paths[["dip"]]), nrows = 0))
@@ -921,6 +954,82 @@ if (!is.null(dev_part)) item_units <- dplyr::bind_rows(item_units, sector_dev_it
 item_units <- item_units[!duplicated(item_units[c("var", "item_key")]), , drop = FALSE]
 if (any(price_unit$unit == "price_tbc")) notes <- c(notes, paste("IMF price units to confirm:", paste(price_unit$sub_sector[price_unit$unit == "price_tbc"], collapse = ", ")))
 
+# ---- Climate (Climate TRACE, IPCC lifecycle) -----------------------------------------------------------
+# The processed tables of scripts/16, shipped as they are for the economies of dims.geo (WLD keeps the
+# rest); identical() after the decode (post()). A missing table stops the export (run scripts/16, or
+# export with --no-climate).
+climate_proc <- NULL
+climate_part <- NULL
+if (with_climate) {
+  step("Climate: Climate TRACE sector emissions, IPCC lifecycle intensity")
+  climate_proc <- lapply(SECTOR_CLIMATE_PROCESSED, rd)
+  climate_part <- sector_climate_part(climate_proc, geo$code)
+  out_share <- climate_part$outside[climate_part$outside$year == climate_part$year, , drop = FALSE]
+  add_check("climate: Climate TRACE sources mapped, emissions of dims.geo economies shipped (WLD = Climate TRACE's world total)", "PASS",
+            nrow(climate_part$em),
+            sprintf("%d sources, %d cells with a match (%s), %d-%d; largest share of a world total from economies outside dims.geo: %.2f%%",
+                    nrow(climate_part$src), sum(climate_part$cells$match != "none"),
+                    paste(names(table(climate_part$cells$match)), table(climate_part$cells$match), collapse = ", "),
+                    min(climate_part$em$year), climate_part$year, 100 * max(c(0, out_share$share_outside), na.rm = TRUE)))
+  rep_src <- climate_part$src$id[climate_part$src$repeated]
+  if (length(rep_src)) add_check(paste0("climate: the latest year repeats the year before (an estimate carried forward) for ", paste(rep_src, collapse = ", ")), "WARN", length(rep_src))
+} else {
+  notes <- c(notes, "Climate TRACE sector emissions were not exported in this build (--no-climate).")
+}
+# IEA pathways (scripts/17): World scenario pathways and mineral demand by scenario, the optional
+# climate.nze_* tables of sector-climate, shipped as they are; identical() after the decode (post()). A
+# missing table stops the export (run scripts/17, or export with --no-nze).
+nze_proc <- NULL
+if (with_nze) {
+  step("Climate: IEA pathways (WEO Annex A World; Critical Minerals demand by scenario)")
+  nze_proc <- lapply(SECTOR_NZE_PROCESSED, rd)
+  climate_part$nze <- sector_nze_part(nze_proc)
+  nm <- stats::setNames(nze_proc$meta$value, nze_proc$meta$key)
+  add_check("climate: IEA pathways mapped to technology x stage (World only; IEA scenario projections and historical estimates)", "PASS",
+            nrow(nze_proc$values),
+            sprintf("%s: %d series, scenarios %s, years %s; %d cells with a match (%s); %d mineral demand rows (%s, base year %s)",
+                    nm[["weo"]], nrow(nze_proc$series), paste(unique(nze_proc$values$scenario), collapse = "/"),
+                    paste(sort(unique(nze_proc$values$year)), collapse = ", "), sum(nze_proc$cells$match != "none"),
+                    paste(names(table(nze_proc$cells$match)), table(nze_proc$cells$match), collapse = ", "), nrow(nze_proc$minerals),
+                    paste(unique(nze_proc$minerals$scenario), collapse = "/"), nm[["minerals_base_year"]]))
+  vint <- rd("iea_pathways_vintage_tbl")
+  if (nrow(vint)) {
+    big <- vint[!is.na(vint$rel) & abs(vint$rel) > 0.25, , drop = FALSE]
+    add_check(paste0("climate: IEA pathways vintage check against ", nm[["weo_previous"]], " (stated and nze, shared years; not shipped)"),
+              if (nrow(big)) "WARN" else "PASS", nrow(vint),
+              sprintf("median |change| %.1f%%; %d values move by more than 25%%%s", 100 * stats::median(abs(vint$rel), na.rm = TRUE), nrow(big),
+                      if (nrow(big)) paste0(" (", paste(utils::head(sprintf("%s %s %d %+.0f%%", big$series, big$scenario, big$year, 100 * big$rel), 6), collapse = "; "), ")") else ""))
+  }
+} else if (with_climate) {
+  notes <- c(notes, "IEA pathways were not exported in this build (--no-nze).")
+}
+# Climate sources (scripts/18): GCP national fossil CO2 and World CO2 by fuel, the EI Country Transition
+# Tracker, the IEA WEO 2025 regional pathways, NZE 2021 milestones and World Energy Investment 2026, the
+# lazy sector-climate-src chunk; geo-keyed tables kept to dims.geo, identical() after the
+# decode (post()). A missing table stops the export (run scripts/18, or export with --no-climate-sources).
+csrc_proc <- NULL
+csrc_part <- NULL
+if (with_csrc) {
+  step("Climate: climate sources (GCP, EI Country Transition Tracker, IEA WEO regions, NZE 2021, WEI 2026)")
+  csrc_proc <- lapply(SECTOR_SRC_PROCESSED, rd)
+  csrc_part <- sector_src_part(csrc_proc, geo$code)
+  cs <- csrc_part
+  cm <- stats::setNames(cs$meta$value, cs$meta$key)
+  add_check("climate: climate sources shipped (GCP national fossil CO2 and World CO2 by fuel; EI Country Transition Tracker with the median economy; IEA WEO regions, NZE 2021, WEI 2026)",
+            "PASS", nrow(cs$gcp_national) + nrow(cs$ei) + nrow(cs$weo_values) + nrow(cs$wei_values),
+            sprintf("%s: %d values (%d economies, %d-%d); %s: %d values (%d economies); %s regions: %d values, %d economies mapped; %s: %d series; %s: %d values; cells %s",
+                    cm[["gcp"]], nrow(cs$gcp_national), length(unique(cs$gcp_national$iso3)), min(cs$gcp_national$year), max(cs$gcp_national$year),
+                    cm[["ei"]], nrow(cs$ei), length(unique(cs$ei$iso3)), cm[["weo_regions"]], nrow(cs$weo_values), nrow(cs$weo_geo),
+                    cm[["nze2021"]], nrow(cs$nze21_series), cm[["wei"]], nrow(cs$wei_values),
+                    paste(names(table(cs$cells$match)), table(cs$cells$match), collapse = ", ")))
+  drop_n <- length(cs$dropped$gcp) + length(cs$dropped$ei)
+  add_check("climate: GCP and EI economies outside dims.geo (not shipped)", if (drop_n) "WARN" else "PASS", drop_n,
+            paste0("GCP: ", if (length(cs$dropped$gcp)) paste(cs$dropped$gcp, collapse = ", ") else "none", "; EI: ",
+                   if (length(cs$dropped$ei)) paste(cs$dropped$ei, collapse = ", ") else "none"))
+} else if (with_climate) {
+  notes <- c(notes, "Climate sources were not exported in this build (--no-climate-sources).")
+}
+
 parts <- list(
   geo = geo, region_members = region_members, items = items, item_links = item_links, mineral_demand = mineral_demand,
   eu_outside_coalition = geo$code[geo$kind == "country" & geo$eu_member & geo$tier == "none"],
@@ -932,6 +1041,8 @@ parts <- list(
   ),
   facts = facts, fact_notes = fact_notes, world = world, series = series, trade = trade, eu_intra = eu_intra, policy = pol, fdi = fdi,
   dev = dev_part, dev_year = if (is.null(dev_part)) NA_integer_ else max(dev_part$dip$year_max),
+  climate = climate_part,
+  climate_src = csrc_part,
   reported = if (!skip_trade) reported else NULL,
   licensed = tibble::tibble(item_key = paste0("cell:", c("solar-downstream", "wind-downstream", "gas-downstream", "coal-downstream", "batteries-downstream")),
                             family = "prices", sources = "BNEF LCOE"),
@@ -1043,6 +1154,27 @@ post <- function(decoded) {
     for (i in seq_len(nrow(pd))) add_check(pd$check[i], pd$status[i], pd$n[i], pd$detail[i])
     if (any(pd$status == "FAIL")) stop("Development & finance parity FAIL:\n  ", paste(pd$check[pd$status == "FAIL"], collapse = "\n  "))
   }
+  # Climate parity: every decoded value identical() to the processed climate_trace_*_tbl.rds.
+  if (!is.null(decoded$`sector-climate`)) {
+    pc <- sector_climate_parity(decoded$`sector-climate`, meta, climate_proc)
+    for (i in seq_len(nrow(pc))) add_check(pc$check[i], pc$status[i], pc$n[i], pc$detail[i])
+    if (any(pc$status == "FAIL")) stop("Climate parity FAIL:
+  ", paste(pc$check[pc$status == "FAIL"], collapse = "
+  "))
+    if (!is.null(nze_proc)) {
+      pn <- sector_nze_parity(decoded$`sector-climate`, meta, nze_proc)
+      if (!nrow(pn)) stop("IEA pathways were built but the decoded sector-climate chunk has no climate.nze_* tables")
+      for (i in seq_len(nrow(pn))) add_check(pn$check[i], pn$status[i], pn$n[i], pn$detail[i])
+      if (any(pn$status == "FAIL")) stop("IEA pathways parity FAIL: ", paste(pn$check[pn$status == "FAIL"], collapse = "; "))
+    }
+  }
+  # Climate sources parity: every decoded value identical() to the processed climate_src_*_tbl.rds.
+  if (!is.null(csrc_proc)) {
+    if (is.null(decoded$`sector-climate-src`)) stop("Climate sources were built but there is no decoded sector-climate-src chunk")
+    ps <- sector_src_parity(decoded$`sector-climate-src`, meta, csrc_proc)
+    for (i in seq_len(nrow(ps))) add_check(ps$check[i], ps$status[i], ps$n[i], ps$detail[i])
+    if (any(ps$status == "FAIL")) stop("Climate sources parity FAIL: ", paste(ps$check[ps$status == "FAIL"], collapse = "; "))
+  }
   # CM-FDI parity: decoded projects identical() to the CSV after cleaning; aggregates recomputed.
   if (!is.null(decoded$`sector-fdi`)) {
     pf <- sector_fdi_parity(decoded$`sector-fdi`, meta, cmfdi_raw, iso3_of, fdi_settings)
@@ -1066,6 +1198,20 @@ notes <- c(notes,
                   "(converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 ",
                   "and the net balance and self-sufficiency say so (marked 'not reported separately')."),
            "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.",
+           if (!is.null(climate_part)) paste0("Sector emissions: Climate TRACE (climatetrace.org), CC BY 4.0, ", min(climate_part$em$year), "-", climate_part$year,
+                                              ", tonnes CO2e (100-year GWP), mapped to technology x stage with a match quality per sector ",
+                                              "(config/climate_trace_map.yml); sectors with no match show the IPCC lifecycle intensity of the technology."),
+           if (!is.null(nze_proc)) paste0("IEA pathways: ", nze_proc$meta$value[nze_proc$meta$key == "weo"], " free dataset (World), ",
+                                          "Historical, Stated Policies, Current Policies and Net Zero Emissions by 2050, CC BY-NC-SA 4.0; mineral demand by scenario ",
+                                          "from the IEA Critical Minerals Dataset (Current Policies, Stated Policies, High Demand; no Net Zero scenario), CC BY 4.0; ",
+                                          "IEA scenario projections, mapped to technology x stage with a match quality (config/iea_pathways_map.yml)."),
+           if (!is.null(csrc_proc)) paste0("Climate sources: Global Carbon Project, ", csrc_part$meta$value[csrc_part$meta$key == "gcp"],
+                                           " (Friedlingstein et al. 2025; consumption-based: Peters et al. 2012), national fossil CO2 from 1990 and World CO2 by fuel; ",
+                                           "Energy Institute Statistical Review, 2025 Country Transition Tracker, with the median of the economies it lists; ",
+                                           "IEA World Energy Outlook 2025 free dataset, Regions (CC BY-NC-SA 4.0; regions have no Net Zero scenario); ",
+                                           "IEA Net Zero by 2050 (2021) Annex A, 2030 milestones (CC BY-NC-SA 3.0 IGO; an older edition); ",
+                                           "IEA World Energy Investment 2026 (CC BY 4.0; 2026 values are IEA estimates); config/climate_sources_map.yml. ",
+                                           "The IEA Energy and Emissions per Value Added database is licence-restricted and not shown."),
            if (!is.null(fdi)) paste0("Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and ",
                                      "the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; ",
                                      "project counts and sums of disclosed capital computed by the OSI authors, no record altered; ",
@@ -1077,7 +1223,8 @@ res <- finish(bundle, chunks, out_dir, created = format(Sys.time(), "%Y-%m-%dT%H
               strategic_bundle_id = strategic_bundle_id, processed_mtime_max = processed_mtime_max, pipeline_marker = pipeline_marker,
               flags = list(include_restricted = FALSE, trade = length(trade) > 0, atlas = FALSE,
                            policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks),
-                           fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks)),
+                           fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks),
+                           climate = "sector-climate" %in% names(chunks), climate_src = "sector-climate-src" %in% names(chunks)),
               validation_csv = file.path(processed_dir, "dashboard", "sector_validation.csv"), post_decode = post)
 
 # Reference values for the spec's Appendix B (recomputed on this data).

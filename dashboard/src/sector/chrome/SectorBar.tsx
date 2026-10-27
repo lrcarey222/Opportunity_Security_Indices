@@ -114,7 +114,7 @@ function Controls({ picker, highlight, eu, idBase }: Pick<SectorBarProps, 'picke
         )}
         {highlight.value && highlight.value !== 'EUU' && (
           <Link className="link mb-1.5 ml-2 whitespace-nowrap text-sm" to={`/countries/${highlight.value}`}>
-            {name} in Country Insights →
+            {name}: Country profile →
           </Link>
         )}
       </div>

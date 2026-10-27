@@ -1,0 +1,118 @@
+# AIB strategic layer: the rules of scripts/33_build_aib_strategic_layer.R (Strategic Sectoral Compacts,
+# compact policy portfolios and missions, Strategic AIB Roles, compact-specific country roles and their
+# narratives; docs/aib_methodology.md, section 16). The functions are in R/aib/aib_strategic.R (pure).
+# The compact taxonomy is config/aib_strategic_compacts.yml and the node functions
+# config/aib_node_functions.yml. Nothing here is a weight: every threshold is a bar a piece of evidence
+# must clear, and no rule sums evidence across roles or compacts.
+
+# ---- Scenarios ------------------------------------------------------------------------------------------
+# The strategic compacts are identical in every scenario; a scenario only sets each node's status and the
+# compact's portfolio, missions, coverage and critical partners. Order = display order.
+#   baseline    trade as it is today: no shock, every node "NO SHOCK", coverage 1 (nothing is invented)
+#   managed     Managed Interdependence: the diversification shock (res$scenario_shock); a node the
+#               scenario did not run on is "NOT STRESSED" (coverage 1), except "NOT TESTED" (no coverage
+#               credit) for a node left alone only because its benchmark heading is concentrated too: node
+#               exporter HHI >= managed_untested.node_hhi and benchmark HHI >= managed_untested.benchmark_hhi
+#               (0.18 = "highly concentrated" in the 2023 US merger guidelines; 0.10 = "moderately
+#               concentrated"). Being as diversified as a concentrated benchmark says nothing (2026-10-21 review).
+#   partial     partial supplier disruption: `partial_shock` below, only when the run classified its nodes
+#               (classification column class_<shock>); no investment simulation, so no post-investment
+#               coverage
+#   decoupling  the headline shock (res$meta$headline_shock)
+# default_scenario: the institutional-design lens (Managed Interdependence).
+scenarios:
+  default: managed
+  partial_shock: china_50
+  managed_untested:
+    benchmark_hhi: 0.18
+    node_hhi: 0.10
+  labels:
+    baseline: "Baseline"
+    managed: "Managed Interdependence"
+    partial: "Partial supplier disruption"
+    decoupling: "Decoupling"
+
+# ---- Missions and the policy menu --------------------------------------------------------------------
+# Missions (primary, secondary, supporting) come from the scenario's node classes, ordered by their share
+# of the compact's lost supply (then node count, then the order of `classes` below); a policy need a node
+# carries beside its headline class (the multi-label needs of the node classification) fills a mission
+# slot left free, ordered by the lost supply of the nodes that carry it. {steps} = the value-chain steps
+# of those nodes, largest lost supply first (at most `max_steps`); a step whose nodes do not all share the
+# mission's class is named through the mission's own nodes ("solar water heaters (heating & cooling units)").
+# Materiality (2026-10-21 review): a mission is material when its nodes carry >= material_share of the
+# compact's lost supply (supply to shift, under Managed Interdependence) or >= material_usd. A compact whose
+# primary mission is not material is led by `monitor_lead` ({floor} = the two bars) and its missions are
+# listed as targeted actions.
+missions:
+  max_steps: 3
+  material_share: 0.25
+  material_usd: 1.0e+9
+  classes: ["BUILD", "MANAGE SPECIALIZATION", "COORDINATE"]
+  templates:
+    BUILD: "build missing capacity in {steps}"
+    MANAGE SPECIALIZATION: "preserve and second-source specialized production in {steps}"
+    COORDINATE: "coordinate trade to redirect existing supply in {steps}"
+  # when no node needs an instrument; none_partial when some nodes could not be tested ({untested})
+  none: "monitor: existing trade restores supply in every node"
+  none_partial: "monitor: existing trade restores supply in every node the model could test ({untested})"
+  # when no intervention class is material
+  monitor_lead: "monitor: no intervention class reaches the materiality floor ({floor})"
+  # the baseline (no shock)
+  no_shock: "no shock applied: the compact shows today's division of labour"
+
+# Instruments by class (task section 8). Interpretive, not an optimized prescription: a compact's menu
+# lists the instruments of every class and multi-label need present among its nodes in the scenario.
+policy_menu:
+  BUILD: ["coordinated investment", "DFI / ECA financing", "guarantees", "price stabilization", "long-term offtake", "demand aggregation"]
+  COORDINATE: ["reciprocal market access", "procurement alignment", "customs / trade facilitation", "standards", "emergency supply arrangements"]
+  MANAGE SPECIALIZATION: ["strategic inventories", "mutual supply guarantees", "contingency planning", "long-term contracts", "targeted second-source capacity", "R&D / technology cooperation"]
+
+# ---- Strategic AIB Roles and compact-specific roles --------------------------------------------------
+# docs/aib_methodology.md 16.4-16.6. A role needs BOTH of its gate metrics > 0 and at or above the bar
+# (percentile among the role's eligible economies); role_strength = the lower gate percentile, used only
+# to order a country's own roles.
+roles:
+  p_primary: 0.90          # both gates at or above the 90th percentile: primary
+  p_secondary: 0.75        # both at or above the 75th: secondary
+  max_primary: 3           # at most 3 primary roles; a 4th primary-qualifying role is demoted to secondary
+  max_secondary: 2         # at most 2 secondary; any further qualifying role is "qualifies beyond the cap"
+  lead_margin: 0.03        # a primary role leads the headline only if it beats the next by 3 points
+  position_min: 0.10       # anchor position: >= 10% of world exports (or production) of a node
+  spec_rca: 1.5            # specialist position: a components node, >= 10% of world exports and RCA >= 1.5
+  presence_min: 0.05       # presence in a manufacturing step (integration, scale functions)
+  demand_node_min: 0.10    # a node where the country is >= 10% of the allied scope's imports
+  host_scale_min: 0.02     # capable host: >= 2% of world supply of the node or a materially linked node;
+                           #   a capable host tied at the best simulated gain on a node that needs new
+                           #   capacity is credited with an equal share of the gain x the node's demand
+  momentum_gain: 0.01      # momentum: world export share up >= 1 point 2020 -> 2024,
+  momentum_floor: 0.02     #   at least 2% in 2024,
+  momentum_ratio: 1.25     #   and at least 1.25 x its 2020 share
+  major_supplier_single: 0.10   # non-allied economies assessed on the supply roles: >= 10% of one node,
+  major_supplier_multi: 0.05    #   or >= 5% of `major_supplier_n` nodes
+  major_supplier_n: 3
+
+# ---- The allied set -------------------------------------------------------------------------------------
+# The strategic layer's allied economies are the model's demand scope (the coalition tiers of
+# data/processed/coalition_tbl.rds) plus `treat_as_allied`: economies outside those tiers that the
+# institutional slots treat as allies (role eligibility, coalition members, investment hosts, critical
+# partners, core countries, theses). A judgement, reviewable here (2026-10-21 review: Taiwan, 29.5% of allied
+# integrated-circuit supply, and Switzerland read as "outside the alliance"). Their own demand stays
+# outside the scope: the stress tests do not protect it, so they hold no demand role.
+allied:
+  treat_as_allied: [TWN, CHE]
+
+# ---- Capital evidence (Capital & Investment Anchor; compact investment contribution) ---------------------
+# CM-FDI: cm_fdi_projects_tbl.rds of the partner bundle (scripts/15), rows with index_use and a foreign
+# destination, capital x attribution_weight. IMF DIP: the outward net position, reported official data,
+# the first of `dip_years` present, summed over counterparts that are not conduit centres; conduit
+# reporters are not assessed (partnership_strength_conduit_centres()). A missing input leaves the role
+# "not assessed" with a warning; the run does not fail.
+capital:
+  cmfdi_sectors:
+    Battery: SC-BATTERIES
+    EV: SC-EV
+    Solar: SC-SOLAR
+    Wind: SC-WIND
+  dip_indicator: "Outward Direct investment, Net (assets less liabilities), All financial instruments, All entities"
+  dip_dv_type: "Reported official data"
+  dip_years: [2023, 2022]

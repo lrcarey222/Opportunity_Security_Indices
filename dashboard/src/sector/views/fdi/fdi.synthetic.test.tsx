@@ -68,7 +68,7 @@ const realErrors = () => errors.filter((e) => !/Could not parse CSS stylesheet/.
 
 describe.skipIf(!haveSynthetic())('CM-FDI views on the R synthetic bundle', () => {
   it('profile: the Investment subsection of Batteries Midstream with captions, attribution, value states and source links', async () => {
-    renderAt('/sector/batteries/midstream');
+    renderAt('/sector/batteries/midstream#investment'); // the link opens the folded Competitiveness & markets group
     expect(await screen.findByRole('heading', { level: 3, name: 'Cross-border manufacturing projects (CM-FDI)' }, { timeout: 30_000 })).toBeTruthy();
     const block = await screen.findByTestId('fdi-block', {}, { timeout: 30_000 });
     expect(fdiLoaded()).toBe(true);

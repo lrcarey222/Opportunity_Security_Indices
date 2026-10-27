@@ -1,8 +1,8 @@
 % ===========================================================================
 % Section 11. Robustness and validation
 % Numbers: paper/results/robustness.json (scripts/paper/fig_robustness.R) and
-% paper/results/network_robustness.json (scripts/paper/fig_network_robustness.R); final rerun of
-% 2026-10-12. Further detail (vintages, weight draws, curvature, imputation, rankability,
+% paper/results/aib_robustness.json (scripts/paper/fig_aib_robustness.R; AIB run of 2026-10-16);
+% pillars, picks and PSI: final rerun of 2026-10-12. Further detail (vintages, weight draws, curvature, imputation, rankability,
 % leave-one-out and effective importance, data choices, vertical complementarities with the
 % appendix sensitivity table tab:robustness_vertical): Online Appendix oa:robustness
 % (sections/oa_robustness.tex).
@@ -157,7 +157,8 @@ term moves one pick and an input-security $\ES$ term moves ten, no more than a p
 scores (Online Appendix~\ref{oa:robustness}). We therefore keep the stages uncoupled and leave to
 future work plant-level co-location from the CM-FDI and BNEF project data, input shares weighted by
 input--output coefficients, a test of sourcing concentration on the 2023 export controls on graphite
-and gallium, and a co-location term in the network design.
+and gallium, and a coupling of supply across the AIB nodes of one chain
+(Section~\ref{subsec:aib_limitations}).
 
 % ---------------------------------------------------------------------------
 \subsection{The partnership index}
@@ -198,42 +199,77 @@ less through where the cuts fall.
 \end{figure}
 
 % ---------------------------------------------------------------------------
-\subsection{The network design}
+\subsection{The Allied Industrial Base}
 \label{subsec:robust_network}
 
-Figure~\ref{fig:network_robustness} and Table~\ref{tab:network_robustness} re-solve the design of
-Section~\ref{sec:network} with one setting changed, on inputs assembled as in production (the re-run
-of the production configuration reproduces it to $5\times10^{-16}$). Each variant is compared with
-the production design stage by stage through the Jaccard overlap of the producer sets and the share
-of production reassigned, $\tfrac12\sum_p|x^{\mathrm{alt}}_{p,ts}-x_{p,ts}|$. The neighbouring values
-of $\lambda$ leave the design almost unchanged: at 0.77, 21 of the 22 producer sets are identical
-and 0.5 per cent of production is reassigned in the mean stage; at 0.79, 19 and 1.1 per cent. The
-calibration is knife-edge in its number, not in what it selects. Demand matters little, since it
-enters the choice of producers only through the edges and redundancy constraints and is
-rank-compressed (size only: 3.4 per cent reassigned). The edge weight matters more ($w_E=0$ and 1
-reassign 8.4 and 10.8 per cent), and the portfolio caps most: without them 18.5 per cent of
-production is reassigned in the mean stage, 46.5 per cent in Electric Grid Upstream. Solved greedily
-with the caps, the design is more concentrated (median index 0.160, above the calibration target) and
-scores 2.5 per cent lower. These tests concern the stability of the design to its specification, not
-its robustness to shocks, which the program does not model beyond the redundancy floor.
+Every variant of the AIB analysis is computed in the same run as the headline, so the comparison
+holds the data fixed and changes one setting at a time. Figure~\ref{fig:aib_classes} counts the node
+classes of the 70 electro-industrial nodes under each variant and Table~\ref{tab:aib_variants} gives the
+residual gap by technology.
+
+\paragraph{Hold versus release.} Reading the shock as a decoupling rather than an export restriction is
+the setting that matters most. Under release, China's purchases fall with its sales and the supply
+headed to it is freed, so gaps shrink in every technology (Batteries from 45.2 to 39.4 percent, Solar
+from 18.1 to 11.1, Semiconductors from 6.7 to zero) and the \textsc{build} nodes fall from 37 to 24. Twelve
+nodes turn to \textsc{low intervention}, among them cathode materials, current collectors and foils,
+separators, inverters, solar module inputs, wind substations and four semiconductor nodes; lithium
+chemicals becomes \textsc{manage specialization}, because Chile's sales to China, freed, make it the
+dominant supplier. Hold is the headline because an export restriction is the shock the allies cannot
+choose, and release is the more optimistic reading wherever third countries supply China.
+
+\paragraph{Production-constrained versus trade-only.} The physical rule changes one class: wafers are
+\textsc{build} with GCIM solar-wafer capacity deciding who can supply and \textsc{low intervention} on
+trade alone, where semiconductor wafers from Japan, Taiwan and Korea appear to replace Chinese solar
+wafers; the trade-only class carries the physical-capability warning, as do polysilicon and cobalt and
+nickel refining in both modes. Technology gaps differ by less than one point. The compacts under the two
+modes number 22 each, and 21 have the same nodes.
+
+\paragraph{The growth bound.} The coordination dividend depends on how far existing relationships may
+grow, and \textsc{coordinate} with it. Allowing them to grow by a quarter instead of doubling, two nodes
+reach the five-point threshold (wind towers at 8.6 points); at four times their size none does, and
+unbounded the largest dividend is 0.5 points. No class changes at any bound (Figure~\ref{fig:aib_classes}):
+in the headline the dividend is below the threshold wherever it is not already masked by adequate
+existing coverage. The absence of \textsc{coordinate} nodes is therefore not an artefact of the bound.
+
+\paragraph{Supply scenario and shock size.} In the conservative scenario every surviving shipment into
+the scope stays where it is and, under hold, nothing is freed, so the gap equals the exposure in every
+technology and 47 nodes are \textsc{build}, ten more than the headline (grid cables and control panels,
+integrated circuits, nacelles and wind towers among them). Halving China's supply leaves 13
+\textsc{build} nodes, and the Batteries gap is still 21.5 percent. Removing the largest
+supplier of each sub-sector or stage instead of China produces the only \textsc{coordinate} classes of
+any variant: circuit breakers, nickel ores and reactor components under the sub-sector shock, copper
+refining and reactor components under the stage shock. Where the lost supplier is not China, the rest of
+the world can replace it, and new relationships do the replacing.
+
+\paragraph{Global scope.} Protecting every importer's demand, with every economy a candidate, removes the
+buyers outside the scope from whom the headline draws supply. Under hold nothing can then be recovered by
+trade: in every technology the gap equals the exposure (Table~\ref{tab:aib_variants}), \textsc{build} rises
+to 48 nodes, and 30 compacts form. Under release 37 nodes are \textsc{build}. The headline's recovery
+through trade is thus diversion from economies outside the coalition, as Section~\ref{subsec:aib_results}
+reports, and the global run is the right benchmark for what the world as a whole can absorb.
+
+\paragraph{Diversification and N-1.} A supplier-share limit costs little coverage against the China
+shock: the tightest limit within two points of the unconstrained optimum is 25 percent in 77 of the 91
+nodes. It buys no resilience to a second loss, however. With the largest remaining supplier removed and
+trade re-optimized (the true N-1 test), coverage falls by a median of 14.5 points, and it reaches 80
+percent in 28 nodes without any limit and in 25 at a 25 percent limit; in the other 63 nodes no tested
+limit reaches 80 percent. Diversification of existing supply does not substitute for capacity: where the
+N-1 test fails, the minimum required diversification does not exist and the node needs new supply.
 
 \begin{figure}[tbp]
   \centering
-  \includegraphics[width=\textwidth]{network_robustness}
-  \caption{Robustness of the network design, by stage and variant. Each column re-solves the 22
-  Upstream and Midstream stage programs on the 37 nodes with one setting changed: no portfolio
-  caps; the greedy heuristic instead of the MILP (caps on); edge weight $w_E=0$ or 1 instead of
-  0.5; demand from need only or size only; and $\lambda=0.77$ or 0.79 instead of 0.78.
-  Panel~(a): one minus the Jaccard overlap $|A\cap B|/|A\cup B|$ of the stage's producer sets in the
-  variant and the production design. Panel~(b): share of the stage's production assigned to
-  different nodes, $\tfrac12\sum_p|x^{\mathrm{alt}}_{p,ts}-x_{p,ts}|$. Both are 0 when the stage is
-  unchanged (dot) and 1 when the producer sets are disjoint. Source:
-  \texttt{scripts/paper/fig\_network\_robustness.R}, on the inputs of the final rerun of 12 October
-  2026.}
-  \label{fig:network_robustness}
+  \includegraphics[width=\textwidth]{aib_classes}
+  \caption{Node classes under each variant of the AIB analysis. Each bar counts the 70 nodes of the
+  electro-industrial scope by class (one node, cobalt ores, has insufficient data in every variant and
+  is not drawn). One setting changes at a time from the headline: the release reading of the shock; the
+  trade-only supply constraint; the conservative scenario; the size and target of the shock; the bound
+  on how far existing relationships may grow (the headline lets them double); and global demand with
+  global partners. Source: \texttt{aib\_node\_classification.csv} (\texttt{outputs/aib} and
+  \texttt{outputs/aib\_global}); \texttt{scripts/paper/fig\_aib\_robustness.R}.}
+  \label{fig:aib_classes}
 \end{figure}
 
-\input{tables/network_robustness}
+\input{tables/aib_variants}
 
 % ---------------------------------------------------------------------------
 \subsection{What the analysis does and does not establish}
@@ -250,7 +286,7 @@ are not varied: the exclusion of electricity from the grid basket and of Hong Ko
 the export measures, the treatment of non-reporting economies through mirror declarations, the rank
 compression of the EU's demand weight, the regional IEA 2035 manufacturing shares that every EU
 member inherits in the foreign-dependency and market-share variables, and the zero counted for
-unquantified USGS holdings. In the network design, the self-edge weight (the median observed edge),
-the dual-sourcing rule (at least two suppliers, each at least 10 percent of demand) and the share
-bound of 0.40 are not varied, and they shape the designed flows: self-supply is rare and most
-consumer--stage pairs draw on exactly two suppliers by construction.
+unquantified USGS holdings. In the AIB analysis, the reference year (2024), the candidate thresholds,
+the classification thresholds, the curated chain links and the coalition target are not varied; the
+increment of the investment step is reported at 5, 10 and 20 percent but the text uses 10 percent
+throughout, and the classes rest on thresholds that are stated rather than estimated.

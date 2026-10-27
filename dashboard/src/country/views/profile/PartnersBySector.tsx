@@ -37,7 +37,12 @@ function useTies(): { ties: Ties | null; error: string | null } {
 
 type TopItem = TopRow & { name: string; projects: string | null; agreements: string[]; un: number | null; share: number | null };
 
-export function PartnersBySector() {
+/**
+ * `part` (IA refactor 2026-10-16, the Partnerships tabs): 'po' = export markets only (Trade), 'fs' =
+ * friendshoring opportunities only (Investment), 'investment' = the direct-investment cards only; none =
+ * the original card pair.
+ */
+export function PartnersBySector({ part }: { part?: 'po' | 'fs' | 'investment' } = {}) {
   const { sheet, cell, partner, setPartner } = useProfile();
   const name = proseName(sheet.meta.country);
   const iso = sheet.iso3;
@@ -116,11 +121,27 @@ export function PartnersBySector() {
     </div>
   );
   const err = error ?? (c && top?.key === c.key ? top.error : null);
+  const invCards = (
+    <InvestmentCards
+      iso={iso}
+      name={name}
+      ties={ties}
+      error={error}
+      sector={c ? { tech: c.tech, stage: c.stage } : null}
+      nameOf={(x) => tiesName(ties, x)}
+      headingLevel={3}
+      selected={partner}
+      onSelect={setPartner}
+    />
+  );
+  if (part === 'investment') return invCards;
+  const sides: ('fs' | 'po')[] = part ? [part] : ['fs', 'po'];
+  const cardTitle = part === 'po' ? 'Top export markets' : part === 'fs' ? 'Friendshoring opportunities' : 'Friendshoring opportunities and export markets';
   return (
     <>
       <ChartCard
         headingLevel={3}
-        title={`Friendshoring opportunities and export markets: ${c ? c.label : 'all sectors'}`}
+        title={`${cardTitle}: ${c ? c.label : 'all sectors'}`}
         sub={`The partners the index rates highest for ${name} in ${label}, at the paper baseline: as friendshoring opportunities (Friendshore, 0 to 1: partners where ${poss(name)} security need meets the partner's economic opportunity, on existing trade and investment ties) and as markets for its exports (Partnership Opportunity, 0 to 1), with the ties each pair has today where they exist. Within one sector ${poss(name)} own need is the same for every partner, so the Friendshore ranking there turns on the partner's opportunity, the ties, UN-vote alignment and ownership; the import shares show who supplies it today. The sector starts on the one selected above; choose another here. Click a partner to select it.`}
         summary={`${cap(name)}, ${label}: top ${side('fs').length} friendshoring opportunities and top ${side('po').length} export markets.`}
         tools={<Select label="Sector" value={c ? c.key : ''} options={options} onChange={(v) => setPick(v || null)} className="min-w-[14rem]" />}
@@ -160,33 +181,22 @@ export function PartnersBySector() {
         ) : !rows || !ties ? (
           <p className="text-sm text-paper-mute">Loading partners…</p>
         ) : items.length ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            {list('fs')}
-            {list('po')}
-          </div>
+          <div className={sides.length > 1 ? 'grid gap-6 md:grid-cols-2' : undefined}>{sides.map((sd) => <div key={sd}>{list(sd)}</div>)}</div>
         ) : (
           <p className="text-sm text-paper-mute">No partner scores for {name} in {label}.</p>
         )}
         <LinkRow>
-          <Link className="link" to={partnersLink(iso, c ? { tech: c.tech, stage: c.stage } : null)}>
-            Change the weighting for {poss(name)} partners in {c ? c.label : 'all sectors'} &rarr;
-          </Link>
+          {!part && (
+            <Link className="link" to={partnersLink(iso, c ? { tech: c.tech, stage: c.stage } : null)}>
+              Change the weighting for {poss(name)} partners in {c ? c.label : 'all sectors'} &rarr;
+            </Link>
+          )}
           <Link className="link" to={devDataLink(partner ?? null, c && partner ? { tech: c.tech, stage: c.stage } : null)}>
             The development data behind this &rarr;
           </Link>
         </LinkRow>
       </ChartCard>
-      <InvestmentCards
-        iso={iso}
-        name={name}
-        ties={ties}
-        error={error}
-        sector={c ? { tech: c.tech, stage: c.stage } : null}
-        nameOf={(x) => tiesName(ties, x)}
-        headingLevel={3}
-        selected={partner}
-        onSelect={setPartner}
-      />
+      {!part && invCards}
     </>
   );
 }

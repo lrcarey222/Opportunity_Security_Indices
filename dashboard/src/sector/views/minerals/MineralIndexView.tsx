@@ -186,7 +186,7 @@ export default function MineralIndexView() {
     : 'No mineral data in this build.';
   return (
     <div className="space-y-8">
-      <PageHead eyebrow="SECTOR INSIGHTS · MINERALS" title="Minerals" lede={lede}>
+      <PageHead eyebrow="SECTORS · MINERALS" title="Minerals" lede={lede}>
         <p className="mt-2 text-sm text-paper-mute">
           Uranium is measured on the{' '}
           <Link className="link" to={link('/sector/nuclear/upstream')}>

@@ -1,13 +1,24 @@
-// Node rows: the classification overview of every node, a compact's nodes in order, their table and
-// CSV rows, and the compact's concentration (the largest optimized supplier share across its nodes).
-// Pure.
+// Node rows: the classification overview of every node (by default only the nodes in the strategic
+// scope), a compact's nodes in order, their table and CSV rows (with the physical-capability flag of every
+// class they carry and the growth-bound flag), and the compact's concentration (the largest optimized
+// supplier share across its nodes). Pure.
 
 import { isNum } from '../../lib/format.ts';
-import { AIB_CLASSES, type AibClass, type AibCompact, type AibNode } from '../contract.ts';
-import { classInfo, classOrder, type ClassInfo } from './classes.ts';
+import { AIB_CLASSES, inStrategicScope, type AibClass, type AibCompact, type AibNode } from '../contract.ts';
+import { classInfo, classOrder, policyNeedsText, type ClassInfo } from './classes.ts';
 import { nameOf } from './format.ts';
+import { constraintClasses, growthFlag, warnedGrowthBounds, warnedVariants } from './sensitivity.ts';
+import { nodeIndexFields, type Taxonomy } from './taxonomy.ts';
 
-/** Every technology named by the nodes, alphabetical. */
+/** The nodes of the strategic scope, or every node with `all`. */
+export function scopedNodes(nodes: readonly AibNode[], all = false): AibNode[] {
+  return all ? [...nodes] : nodes.filter(inStrategicScope);
+}
+
+/** How many nodes lie outside the strategic scope. */
+export const outOfScopeCount = (nodes: readonly AibNode[]): number => nodes.filter((n) => !inStrategicScope(n)).length;
+
+/** Every technology (dictionary: sector) named by the nodes, alphabetical. */
 export function technologiesOf(nodes: readonly AibNode[]): string[] {
   return [...new Set(nodes.flatMap((n) => n.techs))].sort((a, b) => a.localeCompare(b, 'en'));
 }
@@ -65,10 +76,39 @@ export const mixedTreatments = (nodes: readonly AibNode[]): boolean => new Set(n
 export interface NodeRow {
   id: string;
   node: string;
+  /** the node's techs, "; "-joined: OSI technologies (master) or EIS sectors (dictionary) */
   technologies: string;
+  /** the node comes from the electro-industrial dictionary: the CSV names its sectors and index */
+  dictionary: boolean;
+  /** its EIS index (dictionary; null otherwise) */
+  indexCode: string | null;
+  indexName: string | null;
+  /** the OSI cells its codes sit in ("; "-joined crosswalk ids; "" when none) */
+  osiCells: string;
   stage: string;
   cls: string;
   reason: string | null;
+  /** the multi-label policy needs in words ("BUILD + MANAGE SPECIALIZATION", "none"; null in an older bundle) */
+  policyNeeds: string | null;
+  warning: string | null;
+  physicalValidation: string | null;
+  physicalData: string | null;
+  inStrategicScope: boolean;
+  /** the class under production-constrained and trade-only supply, and whether each carries the warning */
+  productionConstrainedCls: string | null;
+  tradeOnlyCls: string | null;
+  productionConstrainedWarning: boolean | null;
+  tradeOnlyWarning: boolean | null;
+  /** the variants / growth bounds whose class carries the warning, "; "-joined ("" when none; null in an older bundle) */
+  warnedVariants: string | null;
+  warnedGrowthBounds: string | null;
+  /** COORDINATE under some existing-relationship growth bounds only (null in an older bundle) */
+  coordinateSensitiveToGrowth: boolean | null;
+  /** that flag in words, from the headline class (null when not flagged) */
+  growthFlag: string | null;
+  n1Reoptimized: number | null;
+  instantaneousN1: number | null;
+  diversion: number | null;
   exposure: number | null;
   static: number | null;
   existing: number | null;
@@ -82,21 +122,48 @@ export interface NodeRow {
   optimizedLargest: string | null;
   optimizedLargestShare: number | null;
   hhi: number | null;
+  /** the leading scaling hosts, then the specialty and development hosts ('' when none or not exported) */
   hosts: string;
+  specialtyHosts: string;
+  developmentHosts: string;
   treatment: string | null;
   quality: string | null;
   flags: string;
   compact: string | null;
 }
 
-export function nodeRow(n: AibNode, names: Readonly<Record<string, string>>): NodeRow {
+/** A node's table and CSV row; `tx` (the bundle's taxonomy) adds the EIS index of a dictionary node. */
+export function nodeRow(n: AibNode, names: Readonly<Record<string, string>>, tx?: Taxonomy): NodeRow {
+  const modes = constraintClasses(n);
+  const num = (x: number | null | undefined) => (isNum(x) ? x : null);
+  const ix = tx ? nodeIndexFields(tx, n) : { indexCode: null, indexName: null };
   return {
     id: n.id,
     node: n.label,
     technologies: n.techs.join('; '),
+    dictionary: !!tx?.dictionary,
+    indexCode: ix.indexCode,
+    indexName: ix.indexName,
+    osiCells: n.yfCells.join('; '),
     stage: n.stage,
     cls: n.cls,
     reason: n.reason,
+    policyNeeds: policyNeedsText(n.policyNeeds),
+    warning: n.warning ?? null,
+    physicalValidation: n.physicalValidation ?? null,
+    physicalData: n.physicalData ?? null,
+    inStrategicScope: inStrategicScope(n),
+    productionConstrainedCls: modes?.productionConstrained ?? null,
+    tradeOnlyCls: modes?.tradeOnly ?? null,
+    productionConstrainedWarning: modes?.productionConstrainedWarning ?? null,
+    tradeOnlyWarning: modes?.tradeOnlyWarning ?? null,
+    warnedVariants: warnedVariants(n)?.join('; ') ?? null,
+    warnedGrowthBounds: warnedGrowthBounds(n)?.join('; ') ?? null,
+    coordinateSensitiveToGrowth: typeof n.coordinateSensitiveToGrowth === 'boolean' ? n.coordinateSensitiveToGrowth : null,
+    growthFlag: growthFlag(n),
+    n1Reoptimized: num(n.n1Reoptimized),
+    instantaneousN1: num(n.instantaneousN1),
+    diversion: num(n.diversion),
     exposure: n.exposure,
     static: n.static,
     existing: n.existing,
@@ -111,6 +178,8 @@ export function nodeRow(n: AibNode, names: Readonly<Record<string, string>>): No
     optimizedLargestShare: n.largestShare,
     hhi: n.hhi,
     hosts: n.hosts.map((h) => nameOf(names, h)).join('; '),
+    specialtyHosts: (n.specialtyHosts ?? []).map((h) => nameOf(names, h)).join('; '),
+    developmentHosts: (n.developmentHosts ?? []).map((h) => nameOf(names, h)).join('; '),
     treatment: n.treatment,
     quality: n.quality,
     flags: n.flags.join('; '),
@@ -118,15 +187,32 @@ export function nodeRow(n: AibNode, names: Readonly<Record<string, string>>): No
   };
 }
 
-/** The CSV columns of a node row, in plain words. */
+/**
+ * The CSV columns of a node row, in plain words. A dictionary node: its sectors (never called
+ * technologies), its EIS index and the OSI cells its codes sit in; a master node: its technologies.
+ */
 export function nodeCsvRow(r: NodeRow): Record<string, unknown> {
+  const place = r.dictionary ? { sectors: r.technologies, index_code: r.indexCode, index_name: r.indexName, osi_cells: r.osiCells } : { technologies: r.technologies };
   return {
     node_id: r.id,
     sub_sector: r.node,
-    technologies: r.technologies,
+    ...place,
     stage: r.stage,
     classification: r.cls,
     classification_reason: r.reason,
+    policy_needs: r.policyNeeds,
+    classification_warning: r.warning,
+    physical_validation: r.physicalValidation,
+    physical_data: r.physicalData,
+    in_strategic_scope: r.inStrategicScope,
+    class_production_constrained: r.productionConstrainedCls,
+    class_production_constrained_warning: r.productionConstrainedWarning,
+    class_trade_only: r.tradeOnlyCls,
+    class_trade_only_warning: r.tradeOnlyWarning,
+    warning_under_variants: r.warnedVariants,
+    warning_under_growth_bounds: r.warnedGrowthBounds,
+    coordinate_sensitive_to_growth: r.coordinateSensitiveToGrowth,
+    growth_bound_flag: r.growthFlag,
     shock_exposure: r.exposure,
     static_coverage: r.static,
     existing_coverage: r.existing,
@@ -140,7 +226,12 @@ export function nodeCsvRow(r: NodeRow): Record<string, unknown> {
     optimized_largest_supplier: r.optimizedLargest,
     optimized_largest_share: r.optimizedLargestShare,
     optimized_hhi: r.hhi,
+    n1_reoptimized_coverage: r.n1Reoptimized,
+    instantaneous_n1_retained_coverage: r.instantaneousN1,
+    diversion_share_of_demand: r.diversion,
     investment_hosts: r.hosts,
+    specialty_hosts: r.specialtyHosts,
+    development_hosts: r.developmentHosts,
     recommended_treatment: r.treatment,
     data_quality: r.quality,
     data_quality_flags: r.flags,

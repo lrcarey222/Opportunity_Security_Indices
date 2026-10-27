@@ -47,20 +47,27 @@ aib_master_cells <- function(master, splits = list()) {
       .groups = "drop"
     )
 
+  # A split matches its technology and stage, and its sub-sector when one is given. Codes no part
+  # lists go to `rest` (a split with only `rest` renames the cell); without `rest` they are an error.
   for (sp in splits) {
-    hit <- cells$tech == sp$tech & cells$supply_chain == sp$supply_chain & cells$sub_sector == sp$sub_sector
+    hit <- cells$tech == sp$tech & cells$supply_chain == sp$supply_chain &
+      (if (is.null(sp$sub_sector)) TRUE else cells$sub_sector == sp$sub_sector)
+    label <- if (is.null(sp$sub_sector)) paste(sp$tech, sp$supply_chain, sep = " / ") else sp$sub_sector
     if (!any(hit)) {
-      warning("aib_master_cells(): split target not in the master: ", sp$tech, " / ", sp$supply_chain, " / ", sp$sub_sector, call. = FALSE)
+      # `optional`: a split for a cell that only some scopes contain (the dictionary's extended rows).
+      if (!isTRUE(sp$optional)) warning("aib_master_cells(): split target not in the master: ", sp$tech, " / ", sp$supply_chain, " / ", label, call. = FALSE)
       next
     }
     parts <- dplyr::bind_rows(lapply(sp$into, function(p) {
       tibble::tibble(part = as.character(p$sub_sector), hs6 = hs6_clean_code(unlist(p$hs6)))
     }))
-    if (anyDuplicated(parts$hs6)) stop("aib_master_cells(): a code is assigned to two parts of the split of ", sp$sub_sector)
+    if (!nrow(parts)) parts <- tibble::tibble(part = character(), hs6 = character())
+    if (anyDuplicated(parts$hs6)) stop("aib_master_cells(): a code is assigned to two parts of the split of ", label)
     codes <- cells$hs6[hit]
     missing <- setdiff(codes, parts$hs6)
     if (length(missing)) {
-      stop("aib_master_cells(): split of ", sp$sub_sector, " leaves codes unassigned: ", paste(missing, collapse = ", "))
+      if (is.null(sp$rest)) stop("aib_master_cells(): split of ", label, " leaves codes unassigned: ", paste(missing, collapse = ", "))
+      parts <- dplyr::bind_rows(parts, tibble::tibble(part = as.character(sp$rest), hs6 = missing))
     }
     cells$sub_sector[hit] <- parts$part[match(codes, parts$hs6)]
   }
@@ -71,6 +78,84 @@ aib_master_cells <- function(master, splits = list()) {
          dup$tech[1], " ", dup$supply_chain[1], " ", dup$hs6[1], ").")
   }
   cells
+}
+
+# The electro-industrial HS6 dictionary (data/reference/electro_industrial_hs6_dictionary.csv) in the
+# master's shape, so aib_master_cells() can build nodes from it: tech = EIS sector, supply_chain =
+# stage, sub_sector = sector (refined by the taxonomy's splits). scope "core" keeps the core rows (the
+# headline), "extended" every row; primary_only keeps each code's primary row, so every code sits in
+# one node and sector totals do not double count (the dictionary's own aggregation rule). essential =
+# specificity 1-2 (the core scope also keeps a few specificity-3 codes, justified in the dictionary). index_code / index_name carry the EIS index (6) above the sector (39).
+aib_dictionary_master <- function(dict, scope = c("core", "extended"), primary_only = TRUE) {
+  scope <- match.arg(scope)
+  require_columns(dict, c("hs6", "index_code", "index_name", "sector", "stage", "specificity", "scope", "primary"),
+                  label = "HS6 dictionary")
+  d <- tibble::as_tibble(dict)
+  flag <- function(x) toupper(as.character(x)) %in% c("TRUE", "T", "1", "YES")
+  if (isTRUE(primary_only)) d <- d[flag(d$primary), , drop = FALSE]
+  if (identical(scope, "core")) d <- d[d$scope == "core", , drop = FALSE]
+  spec <- suppressWarnings(as.integer(d$specificity))
+  tibble::tibble(
+    tech = stringr::str_squish(as.character(d$sector)),
+    supply_chain = stringr::str_squish(as.character(d$stage)),
+    sub_sector = stringr::str_squish(as.character(d$sector)),
+    hs6 = hs6_clean_code(d$hs6),
+    essential = !is.na(spec) & spec <= 2,
+    legacy_hs = FALSE,
+    note = if ("notes" %in% names(d)) dplyr::coalesce(as.character(d$notes), "") else "",
+    index_code = as.character(d$index_code),
+    index_name = as.character(d$index_name),
+    segment = if ("segment" %in% names(d)) as.character(d$segment) else NA_character_,
+    scope = as.character(d$scope)
+  )
+}
+
+# Each node's place in the OSI basket (data/reference/energy_hs6_master.csv, excluded rows dropped):
+# the OSI technology x stage cells its codes sit in, weighted by the codes' world trade (code_trade:
+# hs6, value; a code in several OSI technologies counts in each). The partner indices (Export
+# Opportunity, Friendshore) and the policy compatibility are kept by OSI cell, so a node built on
+# another taxonomy reads them through this. Returns node_id, score_techs (OSI technologies holding at
+# least `min_share` of the node's matched trade, largest first, "; "-joined; NA when no code is in the
+# basket: neutral scores), score_stage (the OSI stage with the most matched trade), osi_cells
+# ("tech|stage" pairs, largest first), yf_cells and osi_subcomponents (the same cells and their OSI
+# sub-sectors as Yards & Fences / Sector Profile ids, "<tech>-<stage>" and "<tech>-<stage>::<sub-sector>",
+# largest first) and osi_coverage (share of the node's trade in basket codes).
+aib_osi_crosswalk <- function(node_codes, osi_master, code_trade = NULL, min_share = 0.2) {
+  om <- tibble::as_tibble(osi_master)
+  if ("excluded" %in% names(om)) om <- om[!(toupper(as.character(om$excluded)) %in% c("TRUE", "T", "1", "YES")), , drop = FALSE]
+  om_sub <- om %>% dplyr::transmute(hs6 = hs6_clean_code(hs6), tech = stringr::str_squish(tech), supply_chain = stringr::str_squish(supply_chain),
+                                     sub_sector = stringr::str_squish(sub_sector)) %>% dplyr::distinct()
+  om <- om_sub %>% dplyr::distinct(hs6, tech, supply_chain)
+  ct <- if (is.null(code_trade) || !nrow(code_trade)) tibble::tibble(hs6 = character(), value = numeric()) else
+    code_trade %>% dplyr::transmute(hs6 = hs6_clean_code(hs6), value = as.numeric(value)) %>% dplyr::group_by(hs6) %>%
+      dplyr::summarise(value = sum(value, na.rm = TRUE), .groups = "drop")
+  # Every code weighs at least 1 USD, so a node without trade falls back to counting codes.
+  nc <- node_codes %>% dplyr::distinct(node_id, hs6) %>% dplyr::left_join(ct, by = "hs6") %>%
+    dplyr::mutate(value = pmax(dplyr::coalesce(value, 0), 1))
+  tot <- nc %>% dplyr::group_by(node_id) %>% dplyr::summarise(total = sum(value), .groups = "drop")
+  m <- nc %>% dplyr::inner_join(om, by = "hs6", relationship = "many-to-many")
+  matched <- m %>% dplyr::distinct(node_id, hs6, value) %>% dplyr::group_by(node_id) %>% dplyr::summarise(mv = sum(value), .groups = "drop")
+  by_tech <- m %>% dplyr::distinct(node_id, hs6, tech, value) %>% dplyr::group_by(node_id, tech) %>%
+    dplyr::summarise(v = sum(value), .groups = "drop") %>% dplyr::left_join(matched, by = "node_id") %>%
+    dplyr::mutate(share = v / mv) %>% dplyr::arrange(node_id, dplyr::desc(v))
+  by_stage <- m %>% dplyr::distinct(node_id, hs6, supply_chain, value) %>% dplyr::group_by(node_id, supply_chain) %>%
+    dplyr::summarise(v = sum(value), .groups = "drop") %>% dplyr::arrange(node_id, dplyr::desc(v))
+  by_cell <- m %>% dplyr::group_by(node_id, tech, supply_chain) %>% dplyr::summarise(v = sum(value), .groups = "drop") %>%
+    dplyr::arrange(node_id, dplyr::desc(v))
+  techs <- by_tech %>% dplyr::group_by(node_id) %>%
+    dplyr::summarise(score_techs = paste(tech[share >= min_share | dplyr::row_number() == 1], collapse = "; "), .groups = "drop")
+  stage <- by_stage %>% dplyr::group_by(node_id) %>% dplyr::summarise(score_stage = dplyr::first(supply_chain), .groups = "drop")
+  cells <- by_cell %>% dplyr::group_by(node_id) %>%
+    dplyr::summarise(osi_cells = paste(tech, supply_chain, sep = "|", collapse = "; "),
+                     yf_cells = paste(unique(paste0(aib_slug(tech), "-", aib_slug(supply_chain))), collapse = "; "), .groups = "drop")
+  subs <- nc %>% dplyr::inner_join(om_sub, by = "hs6", relationship = "many-to-many") %>%
+    dplyr::group_by(node_id, tech, supply_chain, sub_sector) %>% dplyr::summarise(v = sum(value), .groups = "drop") %>%
+    dplyr::arrange(node_id, dplyr::desc(v)) %>% dplyr::group_by(node_id) %>%
+    dplyr::summarise(osi_subcomponents = paste(unique(paste0(aib_slug(tech), "-", aib_slug(supply_chain), "::", sub_sector)), collapse = "; "),
+                     .groups = "drop")
+  tot %>% dplyr::left_join(matched, by = "node_id") %>% dplyr::left_join(techs, by = "node_id") %>%
+    dplyr::left_join(stage, by = "node_id") %>% dplyr::left_join(cells, by = "node_id") %>% dplyr::left_join(subs, by = "node_id") %>%
+    dplyr::transmute(node_id, score_techs, score_stage, osi_cells, yf_cells, osi_subcomponents, osi_coverage = dplyr::coalesce(mv, 0) / total)
 }
 
 # Physical nodes from the master cells. Returns a list:
@@ -146,6 +231,14 @@ aib_hs2022_codes <- function() {
     "854911", "854912", "854913", "854914", "854919", "854921", "854929", "854931", "854939", "854991", "854999")
 }
 
+# Node ids carrying a sub-sector name from a config link. "Tech::Sub-sector" restricts the name to
+# one technology (several share names such as "Ores & Concentrates").
+aib_link_nodes <- function(cells, name) {
+  parts <- strsplit(name, "::", fixed = TRUE)[[1]]
+  hit <- if (length(parts) == 2) cells$tech == parts[1] & cells$sub_sector == parts[2] else cells$sub_sector == name
+  unique(cells$node_id[hit])
+}
+
 # The supply-chain coherence graph: nodes in the same stage of one technology are adjacent, and
 # config/aib.yml material_links adds the links that cross stages or technologies (sub-sector
 # names, matched to every node carrying that name). Returns an edge list node_a, node_b, basis.
@@ -159,11 +252,10 @@ aib_supply_chain_edges <- function(node_cells, material_links = list()) {
     dplyr::filter(node_id < node_b) %>%
     dplyr::distinct(node_a = node_id, node_b) %>%
     dplyr::mutate(basis = "same technology stage")
-  by_name <- split(node_cells$node_id, node_cells$sub_sector)
   mat <- dplyr::bind_rows(lapply(material_links, function(l) {
     l <- unlist(l)
-    a <- unique(unlist(by_name[l[1]]))
-    b <- unique(unlist(by_name[l[2]]))
+    a <- aib_link_nodes(node_cells, l[1])
+    b <- aib_link_nodes(node_cells, l[2])
     if (!length(a) || !length(b)) return(NULL)
     tidyr::expand_grid(node_a = a, node_b = b)
   }))

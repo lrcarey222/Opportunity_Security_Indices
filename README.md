@@ -7,9 +7,9 @@ This repository holds the **Opportunity Security Indices** pipeline. It produces
 - **Policy index**: industrial and climate policy support (IEA Policies and Measures + Climate Action Tracker).
 - **Strategic Index (SI)**: where a country should build, from EO, its energy-security *need*, policy support, the supply-chain stage and the technology's climate weight.
 - **Geopolitical alignment**: bloc membership on the US-China axis of UN General Assembly voting.
-- **Allied coalition**: a two-tier coalition (core and partners) derived from alignment, economic-security agreements and major-supplier (or reserve-holder) status, with the EU as one network node.
+- **Allied coalition**: a two-tier coalition (core and partners) derived from alignment, economic-security agreements and major-supplier (or reserve-holder) status, with the EU-27 as one coalition node.
 - **Partnership Strength Index (PSI)**: a partner-level score from bilateral Friendshore (friendshoring opportunities: where a reporter's security need in a sector meets a partner's economic opportunity there, on existing trade and investment ties), Opportunity (export markets) and Development components, from the coalition's point of view.
-- **Allied network design**: a coalition-wide division of labour per technology and stage (a MILP with a diversification term).
+- **Allied Industrial Base**: how the coalition absorbs a supply shock with the trade it has, where new investment would close the rest, the emergent network of trade and investment relationships, country roles and the Sectoral Compacts. It replaces the original allied network design (a MILP with a diversification term), retired on 2026-10-17.
 
 > **Unit of analysis:** **Country × Technology × Supply-chain stage**
 > Stages are `Upstream`, `Midstream`, `Downstream`. The 11 headline technologies are Electric Vehicles, Nuclear, Coal, Batteries, Green Hydrogen, Wind, Oil, Solar, Gas, Geothermal and Electric Grid.
@@ -38,7 +38,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
   - [Geopolitical alignment](#geopolitical-alignment)
   - [Allied coalition: two tiers and the EU node](#allied-coalition-two-tiers-and-the-eu-node)
   - [Partnership Strength Index (PSI)](#partnership-strength-index-psi)
-  - [Allied network design](#allied-network-design)
+  - [Allied network design (retired)](#allied-network-design-retired)
   - [Allied Industrial Base and Sectoral Compacts](#allied-industrial-base-and-sectoral-compacts)
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
@@ -66,17 +66,20 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Step | Script | Main outputs (`data/processed/`) |
 | --- | --- | --- |
 | Themes | `scripts/10_build_themes.R` | one tidy table per theme (`*_tbl.rds`), policy components, technology GHG weights |
+| Climate emissions | `scripts/16_build_climate_trace.R` | `climate_trace_{country,assets,sources,map,cells,emissions,intensity,lifecycle}_tbl.rds` (Climate TRACE sector emissions mapped to technology x stage, `config/climate_trace_map.yml`) |
+| Climate sources | `scripts/18_build_climate_sources.R` | `climate_src_{gcp_national,gcp_fuel,ei,ei_ind,ei_median,weo_series,weo_values,weo_regions,weo_geo,nze21_series,nze21_values,wei_rows,wei_values,wei_regions,map,cells,meta}_tbl.rds` (Global Carbon Project national fossil CO2 and World CO2 by fuel; Energy Institute Country Transition Tracker with the median economy; IEA WEO 2025 regional pathways and the economy -> region map; IEA Net Zero by 2050 (2021) milestones; IEA World Energy Investment 2026; `config/climate_sources_map.yml`; the IEA Energy and Emissions per Value Added database is licence-restricted and not read) |
+| Climate pathways | `scripts/17_build_iea_pathways.R` | `iea_pathways_{series,values,map,cells,minerals,meta,vintage}_tbl.rds` (IEA World Energy Outlook 2025 Annex A World pathways: Historical, Stated Policies, Current Policies, Net Zero; IEA Critical Minerals demand by scenario; mapped to technology x stage, `config/iea_pathways_map.yml`) |
 | Alignment | `scripts/12_build_geopolitical_alignment.R` | `geo_ideal_points_tbl.rds`, `geo_alignment_tbl.rds`, `geo_coalition_tbl.rds` |
 | Coalition | `scripts/13_build_coalition.R` | `coalition_tbl.rds`, `eu_stage_weights_tbl.rds`, `major_supplier_shares_tbl.rds` |
 | Pillars, Policy, SI | `scripts/20_build_indices.R` | `outputs/index_outputs.rds` (ES, EO, contributions, diagnostics, Policy index, Strategic Index, coalition), `charts/allied_strategic.csv` |
 | Partner themes | `scripts/15_build_partner_themes.R` | `partner_{friendshore,opportunity,development}_*_tbl.rds`, `partner_trade_coverage_tbl.rds`, `cm_fdi_projects_tbl.rds`, `partner_cm_fdi_{ties,exposure,coverage}_tbl.rds` |
 | PSI | `scripts/25_build_partner_indices.R` | `psi_tbl.rds` (core-coalition view, headline), `psi_full_coalition_tbl.rds`, `psi_world_tbl.rds`, `psi_dyad_tbl.rds` and category contributions |
-| Allied network | `scripts/30_build_allied_network_design.R` | `outputs/allied_network_*.csv` |
-| Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path}.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}` |
+| Allied network (retired 2026-10-17) | `scripts/30_build_allied_network_design.R`: dormant, not run by `run_pipeline.R` | `outputs/allied_network_*.csv` (last copies kept on disk; only the paper scripts `scripts/paper/fig_coalition.R` and `fig_reconcile.R` still read them) |
+| Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R`, `scripts/33_build_aib_strategic_layer.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path,leave_one_out}.csv`, `aib_diversification.csv`, `allied_trade_growth_sensitivity.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}`; the dashboard scenarios' `aib_observed_supply.csv`, `emergent_aib_{edges,country_summary}_{baseline,managed}.csv`, `aib_compact_{candidates,members,coalition_path,leave_one_out}_managed.csv`; the strategic layer's `aib_strategic_{compacts,spine}.csv`, `aib_compact_{workstreams,country_roles,division_of_labour}.csv`, `aib_country_strategic_role{s,_metrics}.csv`, `aib_country_role_narratives.csv`, `aib_relationship_theses.csv`, `aib_strategic.rds` |
 | Vintages | `scripts/40_build_index_vintages.R` | `vintages/*` (ES and EO at several years) |
 | Dashboard: Strategic Insights | `scripts/85_export_dashboard_data.R`, `scripts/86_export_dashboard_fixtures.R` | `dashboard/validation_report.csv`; the app's bundle goes to the repo's `dashboard/public/data/` and the engine's parity fixtures to `dashboard/src/engine/__fixtures__/` |
-| Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them) |
-| Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v1) |
+| Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them, plus the optional `sector-climate` chunk: `flags.climate`, with the optional IEA pathway tables `climate.nze_*` from scripts/17; `--no-nze` leaves them out; and the optional `sector-climate-src` chunk: `flags.climate_src`, the climate sources of scripts/18; `--no-climate-sources` leaves it out) |
+| Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v2, the Decoupling scenario; plus the lazily loaded `scenario-managed.<hash>.json` and `scenario-baseline.<hash>.json`, schema `osi-aib-scenario` v1, named in `manifest.files.scenarios`; since 2026-10-20 the main document's optional `strategic` section, from `scripts/33`) |
 | Dashboard: Country Insights | `scripts/88_export_country_data.R` | the app's Country data go to the repo's `dashboard/public/data/country/` (manifest, a fact sheet per economy, drivers files; `--render-memos` publishes the verified policy memos of the 31 core members as JSON, PDF, Word and Markdown) |
 
 Every index keeps its decomposition (category and variable contributions reconcile to the index value), and every country-cell carries how much of its weight rests on imputed inputs.
@@ -486,7 +489,21 @@ Each component is a weighted mean of the parts present (a missing part drops out
 **Bilateral trade (scripts/15, `config/partnership.yml`):**
 - **Source:** the all-reporter Comtrade dyad pull (`comtrade_energy_dyads_all.csv`, 2020 and 2024, imports and exports, the HS6 basket; [below](#the-all-reporter-comtrade-dyad-pull)); the 22-reporter allied file is a fallback with a warning.
 - **Importer-first / mirror rule:** per (importer, cell, year) the importer's declarations are used when it reports the cell (0 where it records nothing); otherwise the exporter's declared exports × **1.06** (IMF DOTS CIF/FOB convention; median 1.05 in the pull); otherwise unobserved. FS reads the import view and OP the export view of the same reconciled matrix.
-- **Two-stage trade index:** S-curve of last-year level and growth (2:1) across trading dyads within (tech, stage), then within the reporter. Observed zeros form one tie block below every trading partner; unobserved cells take the (tech, stage) mean (`trade_status` `trade` / `zero` / `imputed`; `no_data` where no HS6 code maps to the cell). Coverage per cell is in `partner_trade_coverage_tbl.rds`.
+- **Two-stage trade index:** S-curve of last-year level and growth (2:1) across trading dyads within (tech, stage), then within the reporter. Observed zeros form one tie block below every trading partner; unobserved cells take the (tech, stage) mean (`trade_status` `trade` / `zero` / `imputed`; `no_data` where no HS6 code maps to the cell, with the dyad's own trade as its trade term, [below](#no-data-fill)). Coverage per cell is in `partner_trade_coverage_tbl.rds`.
+- **Growth from a minimum base (since 2026-10-20):** growth (2024 / 2020 − 1) is scored only where the 2020 flow is at least **USD 1m** (`trade: growth_min_base_usd`). A trading dyad with no 2020 trade or a smaller base takes the **neutral growth score 0.5** (`growth_unscored: neutral`), so it ranks on its level against partners with ordinary growth. 22.7% of the trading dyad cells have their growth scored, and they carry 78% to over 99% of each cell's 2024 trade value. Before this rule, a small base was scored as growth and a missing one dropped the term. The dyad was then scored on its level alone, which can rank above a larger partner whose level is averaged with ordinary growth. Kazakhstan was the United States' first Opportunity market (0.983, ahead of Mexico at 0.982) on four Midstream cells. Electric Grid went from USD 5k to USD 42m (8,606×; Kazakhstan's 2020 import declaration, against about USD 11m in the US export declaration). Solar went from USD 7k to USD 39m, and Wind from USD 0.44m to USD 62m. Oil had no 2020 trade and USD 96m in 2024, against USD 1.6–2.1bn for Mexico and Canada. `growth_min_base_usd: 0` with `growth_unscored: level_only` restores the earlier index.
+- **Effect of the growth floor** (function level on the 2026-10-12 build inputs, 2026-10-20). In that build, a partner without a growth base (no 2020 trade, or under USD 1m) is the reporter's first in 2,440 of the 3,406 export and 2,210 of the 3,836 import (reporter, tech, stage) rankings. Most are legitimate, because all of a small reporter's partners are small. The floor takes the first place from 921 export and 1,022 import rankings, in 195 and 203 of the 208 reporters. A first partner outside the reporter's top 5 by 2024 flow falls from 283 to 162 export rankings and from 263 to 178 import rankings.
+  - *Partner rankings.* The Opportunity top 10 changes for 164 of 219 reporters (1.3 partners on average; the first for 49), Friendshore for 75 (0.4; 4) and the dyad PSI for 115 (0.65; 22). The median within-reporter Spearman is 0.996 (OP), 0.9997 (FS) and 0.999 (dyad PSI).
+  - *United States.* In Opportunity, Kazakhstan falls from 1 to 211 of 218: its four cells now rank 54th to 75th among US markets, and the top-5 mean then rests on cells without trade data. Guyana leads, then the Netherlands, Taiwan, Korea, Malaysia and Mexico (2 → 6); Spearman is 0.944. Guyana's lead is real growth from real bases: US exports grew from USD 9–85m to USD 96–422m in five Midstream cells. Morocco falls 19 → 73 (USD 10k to 6.2m in Batteries and EV Upstream) and Cameroon rises 51 → 10 (USD 2.7m to 29m in Solar). Friendshore Spearman is 0.9996 (Ireland and the Netherlands swap 4th and 5th) and the dyad PSI 0.9991.
+  - *Coalition headline PSI.* Spearman is 0.99976. 88 of the 192 ranks move, by at most 10 (Kazakhstan 108 → 118, −0.014). The top 10 is the same set, with Belgium and Poland swapping 8th and 9th.
+  - *Alternatives tested.* A neutral score for a missing base alone leaves Kazakhstan first in Grid Midstream. Winsorising growth at the 5th/95th percentiles does not fix it, because the S-curve is rank-based and the clipped values stay at the top (Kazakhstan is 4th in Grid and 6th in Solar). A USD 100k–250k floor makes Kazakhstan's 139× Wind growth from USD 0.44m the first. A relative floor (2020 at least 5% of 2024) fixes Kazakhstan but leaves 278 first partners outside the reporter's top 5 by flow. The exporter's mirror where the importer's 2020 declaration is under a tenth of it fixes Kazakhstan (the US export declarations give USD 11–22m in each of Kazakhstan's Midstream cells in 2020). However, it rewrites over 10,000 top-5 slots and treats the two years differently. A USD 500k floor gives nearly the same results as USD 1m.
+- <a id="no-data-fill"></a>**Cells without trade data take the dyad's own trade (since 2026-10-20):** no HS6 code maps to 12 of the 30 Opportunity (tech, stage) cells: the 10 Downstream stages, plus Green Hydrogen Upstream and Midstream. In Friendshore it is 15 of 33: the 11 Downstream stages, plus Geothermal and Green Hydrogen Upstream and Midstream. The trade term of such a `no_data` cell is the dyad's own trade index: the mean over its observed cells (trade or a recorded zero, not cells imputed at the cell mean) in the same technology, else over all its observed cells (`trade: no_data_fill: dyad`). A dyad with no observed cell keeps 0.5. In the 2026-10-12 build the Opportunity `no_data` cells take the same technology for 55.9% of the dyads, other technologies for 27.1% and 0.5 for 17.1% (8,817 of 47,742 dyads have no observed cell); Friendshore 49.3%, 33.9% and 16.8%. `trade_status` stays `no_data`, and the imputed weight share still leaves these cells' trade term out (counting it as imputed would make 21% of the rankable dyads unrankable). `no_data_fill: constant` restores the earlier rule.
+  - *Why.* Before, every dyad's trade term in these cells was the constant 0.5. Each cell is S-curved by rank, and the reporter's EO is the same for all its markets, so Opportunity ranked a reporter's markets in a `no_data` cell on their energy-security need alone. Small insecure economies that a high-EO reporter barely trades with collected five such cells near 0.97–1.0. The dyad's top-5 mean is compressed at the top (0.970–0.985 across the US top 15), so these markets ranked with real ones. In the US Opportunity list, Equatorial Guinea was 9th (USD 45m of 2024 basket exports, 127th market by flow), Sao Tome 11th (USD 1.0m, 178th), Burundi 12th (USD 0.05m, 195th), Uganda 14th (USD 89m, 109th) and Guinea-Bissau 15th (USD 0.3m, 189th). Five of each one's top-5 cells had no trade data (four for Uganda). In 47% of all dyads' top-5 cells the trade term was this constant (Friendshore 52%). In 34 reporters a top-10 Opportunity market had four or five such cells in its top 5 (106 markets); in Friendshore, 120 reporters (351 partners).
+  - *Effect* (function level on the 2026-10-12 build inputs with the growth floor, 2026-10-20). Count the reporters with at least 10 partners they trade with. Their top-10 partners with no positive trade cell fall from 92 to 25 in Opportunity and from 238 to 148 in Friendshore. Top-10 partners outside the reporter's top 50 by 2024 flow fall from 186 to 151 (OP), 441 to 340 (FS) and 181 to 105 (dyad PSI). The median within-reporter Spearman between the score and log 2024 flow rises from 0.49 to 0.61 (OP), 0.47 to 0.51 (FS) and 0.59 to 0.65 (dyad PSI).
+  - *Partner rankings.* The Opportunity top 10 changes for 194 of 219 reporters (1.8 partners on average; the first for 82, e.g. Mexico's first market Saudi Arabia → the US), Friendshore for 183 (1.4; 18) and the dyad PSI for 181 (1.3; 45). The median within-reporter Spearman is 0.955 (OP; 5th percentile 0.73), 0.994 (FS) and 0.989 (dyad PSI). Below their first places, most reporters' Opportunity lists were ordered by need, so they move more than the top.
+  - *United States.* Opportunity: Mexico, Singapore, the UK, Taiwan, the Netherlands, Korea, Malaysia, Guyana, France, Germany, Brazil, Ireland, Canada, India, Thailand. Equatorial Guinea falls 9 → 102, Sao Tome 11 → 186, Burundi 12 → 188, Uganda 14 → 79 and Guinea-Bissau 15 → 185; Spearman 0.47. Friendshore Spearman is 0.989 (Malta 14 → 22, Luxembourg 15 → 25; Japan 13 → 10). The dyad PSI Spearman is 0.972, with the same top 10.
+  - *Coalition headline PSI.* Spearman is 0.9935 on ranks (0.9905 on values). 172 of the 192 ranks move, 27 by 10 or more, at most by 23 (Nauru 98 → 121). Egypt rises 130 → 108, the UAE 89 → 71 and Russia 105 → 91, while San Marino falls 45 → 61. The top 10 and top 20 are the same sets. Germany passes the United States for first place (0.9442 against 0.9435; before 0.9309 and 0.9366). With the fill in Opportunity only, the United States stays first (Spearman 0.997). Values fall by 0.01 on average, and rise for the top 20.
+  - *Allied network and AIB.* scripts/30 and scripts/31 read the cell index of the Upstream and Midstream stages. Under the fill those cells change only in Green Hydrogen (Opportunity; within-cell Spearman 0.94) and in Geothermal and Green Hydrogen (Friendshore; 0.97–0.98). Rerun both after scripts/15.
+  - *Alternatives tested.* Dropping the constant so that the weights renormalise changes nothing: within a cell a term every dyad shares moves no rank (US Opportunity Spearman 0.9997; Sao Tome, Burundi and Equatorial Guinea stay 11th, 12th and 8th). Taking a dyad's top 5 only over cells with trade data drops Downstream, Green Hydrogen and Friendshore's Geothermal from every score. It moves the lists most (OP median Spearman 0.78, US 0.37), leaves 66 no-trade top-10 markets, and leaves 11 reporters without a rankable dyad-PSI partner. Allowing at most one such cell in the top 5 leaves 56. Capping a `no_data` cell at the dyad's best cell with trade data is the mildest (coalition Spearman 0.996, the United States still first), but leaves Uganda 11th, Côte d'Ivoire 10th and Cameroon 9th for the US and 55 no-trade top-10 markets. Filling from the same technology only leaves the three Green Hydrogen Opportunity cells at 0.5 (Uganda 35th, 38 no-trade top-10 markets). Filling from all observed cells gives nearly the same result as the rule chosen (21 no-trade top-10 markets, coalition Spearman 0.993), but it ignores the technology.
 
 **Outbound investment and conduits:** `outbound_index` is from IMF Direct Investment Positions (outward debt-instrument positions). Positions with a **conduit financial centre** are unobserved and the component renormalises away, on both sides of the dyad (`conduit_scope: both`): the ten pass-through economies of Damgaard, Elkjaer and Johannesen (NLD, LUX, HKG, VGB, BMU, SGP, CYM, CHE, IRL, MUS) plus the six offshore centres excluded before (BHS, BRB, TCA, IMN, GGY, CYP). `conduit_rule: legacy` reproduces the earlier rule.
 
@@ -520,30 +537,23 @@ A high-income partner (no Development) gets (0.4 FS + 0.4 OP) / 0.8, not a score
 
 ---
 
-### Allied network design
+### Allied network design (retired)
 
-**What it captures:** a coalition-wide division of labour: for each technology × stage, which nodes produce, with what share, and which producer → consumer flows serve each consumer.
-
-**Scope and inputs (`scripts/30_build_allied_network_design.R`, `R/indices/allied_network_design.R`):**
-- **Nodes:** the coalition members, with the EU-27 bundled as one node `EUU` (37 nodes on the inputs of 2026-10-09: 31 core and 26 partner members plus the 6 other EU members). A bundled node's inputs are aggregated from its members **before** any ranking: EO, ES and development are stage-weighted means over members with a value; demand size is the summed GDP and need the GDP-weighted mean member need; an edge to or from the node is the members' edge mean weighted by their 2024 basket trade on that edge (else stage weights, else equal); edges inside the node are dropped. `allied_network_member_shares.csv` splits a node's designed share back to its members by stage weight (derived, not designed).
-- **Stages:** **Upstream and Midstream only** (22 stage problems). Downstream deployment is not part of the allied division of labour.
-- **Producer score:** EO and ES only (`node_policy = FALSE`; weights 0.5 and 0.2 renormalised to 5/7 and 2/7). The policy term is off (decided while the Policy index required CAT and covered fewer members, whose gaps had to be filled with the stage median; every member now has one, 11 on IEA PAMS alone).
-- **Demand:** `demand_mode = "mixed"`, need 0.5 and size 0.5.
-- **Edges:** edge(p → c) = 0.5 FS(reporter = c, partner = p) + 0.5 OP(reporter = p, partner = c): Friendshore is rated by the importer and Opportunity by the exporter, so both halves rate the producer → consumer link. A missing component counts as 0 on the edge; a node's self-supply edge takes the stage's median edge weight.
-
-**Objective per stage (maximised):**
-
-```
-w_node * sum_p a_p x_p + w_edge * sum_pc W_pc f_pc + w_dev * sum_p dev_p z_p - lambda * sum_p x_p^2
-```
-
-with x_p the production share, w_node = 1, w_edge = 0.5, w_dev = 0. **Diversification:** `lambda` (score units per unit of HHI) turns the bang-bang linear design (λ = 0: producers at the 0.40 cap) into interior shares. The MILP carries Σx² as perspective tangent cuts on a 0.01 share grid (error ≤ 2.5e-5 per producer).
-
-**Calibration rule for lambda:** the smallest λ on a grid at which the **median designed HHI over the 22 stages ≤ the median observed export HHI of the network's own nodes** (2024 basket trade from the reconciled Comtrade matrix, shares within the nodes, the EU-27 as one exporter counting only extra-EU exports; median over the 18 stages with an HS6 basket; written to `allied_network_observed_hhi.csv`). On the 37-node set of the final rerun (2026-10-12: EIA-filled production, the EV, Solar, Wind and Nuclear Upstream baskets, CM-FDI in Friendshore) the target was 0.1556 (6.4 equivalent exporters, 18 basket stages) and the pick **λ = 0.78** (median designed HHI 0.152, all 22 stages solved by MILP; 0.77 gives 0.1558). The pick is knife-edge with respect to the inputs, so it must be re-derived on each full rerun; `scripts/30` warns when the designed median exceeds the observed one.
-
-**Constraints and solver settings:** `method = "auto"` (MILP for stages with ≤ 60 nodes, greedy fallback recorded in diagnostics), GLPK time limit 300 s per stage; `min_producers = 3`, `max_share = 0.40`, `min_share = 0.05`, `min_suppliers_per_consumer = 2`, `epsilon_supplier_share = 0.10`, `allow_self = TRUE`. **Portfolio caps (headline):** each node may appear in the stage top-5 at most `cap` times over the 22 stages, `cap` from log GDP between 2 and 10 (the EU node's cap uses the summed EU GDP), enforced iteratively (up to 30 passes; top-5 membership by strict rank). The no-caps design is the robustness variant.
-
-**Outputs:** `allied_network_specialization.csv`, `_flows.csv`, `_diagnostics.csv` (method, fallback reason, HHI, effective producers, objective terms, tangent error), `_members.csv`, `_member_shares.csv`, `_nodes.csv`, `_node_edges.csv`, `_observed_hhi.csv`, `_portfolio_caps.csv`, `_portfolio_counts.csv`, `_topk_by_stage.csv`, `_build_candidates.csv`, `_input_checks.csv`.
+**Retired on 2026-10-17 and replaced by the Allied Industrial Base analysis** (next section; method in
+[`docs/aib_methodology.md`](docs/aib_methodology.md)). The original design, a lambda-calibrated MILP that
+spread each Upstream and Midstream stage's production across the coalition's nodes, is no longer part
+of the pipeline (`run_pipeline.R` does not run `scripts/30`), the dashboard (no network chunk, no
+`/network` page: it redirects to the Allied Industrial Base overview) or the paper. Its code is kept,
+dormant, with its tests: `scripts/30_build_allied_network_design.R`, `R/indices/allied_network_design.R`
+and the standalone runner `scripts/build_allied_network.R`. The pipeline and the dashboard no longer
+read `outputs/allied_network_*.csv`; the last copies stay on disk for two paper scripts
+(`scripts/paper/fig_coalition.R`, the coalition figures, and `scripts/paper/fig_reconcile.R`).
+**Not yet updated:** the separate Yards & Fences site (`dashboard/src/fence/**`, built by
+`scripts/89_export_yards_fences_data.R`) still reads `allied_network_{member_shares,diagnostics,observed_hhi}.csv`
+and still shows the retired design (the network card on its supply view, the "Allied network build" row on
+its methodology page and the build date in its footer). It is developed in its own worktree
+(`feat/yards-fences`) and will drop them there. The method as it stood is in the git history (this section and `docs/methodology.md`
+section 10 before 2026-10-17).
 
 ---
 
@@ -551,19 +561,38 @@ with x_p the production share, w_node = 1, w_edge = 0.5, w_dev = 0. **Diversific
 
 **What it captures:** the Allied Industrial Base as an emergent network of bilateral trade and
 investment relationships, and the Sectoral Compacts that would coordinate groups of them. It sits
-beside the indices and the allied network design and changes neither. Full method:
+beside the indices and changes none of them; it replaces the original allied network design (retired
+2026-10-17). Full method:
 [`docs/aib_methodology.md`](docs/aib_methodology.md); settings: `config/aib.yml`; code: `R/aib/`.
 
-- **Grain:** sub-sector nodes of the HS6 master (Technology > stage > sub-sector > HS6; 91 nodes are
-  optimized on the 2026-10 data), with every metric recomputed from flows summed to the node.
+- **Grain:** the nodes of the electro-industrial HS6 dictionary
+  (`data/reference/electro_industrial_hs6_dictionary.csv`; index > sector > stage, refined by product
+  splits: 77 nodes from its 182 core codes, 74 optimized on the 2026-10 data), with every metric
+  recomputed from flows summed to the node (`config/aib_taxonomy_dictionary.yml`). The earlier grain,
+  the sub-sectors of the OSI HS6 basket, is kept as `--taxonomy master`. Partnership Opportunity,
+  Friendshore and the compatibility indices reach a dictionary node through a trade-weighted crosswalk
+  to the OSI technology x stage cells its codes belong to; nodes with no basket code score neutral.
+- **Scope:** the importers protected (the demand scope: by default the allied core and partner tiers)
+  and the exporters that may supply them (the candidate-partner universe: by default every economy)
+  are separate settings; global demand with global partners is a sensitivity. Compacts are formed
+  only in the strategic scope (every dictionary node; under `master`, the electro-industrial subset,
+  with fossil nodes kept in the tables).
 - **Stress tests:** China removed, China halved, and the largest supplier removed at sub-sector,
-  stage or technology level, on the observed 2024 bilateral flows (importer's declaration first).
+  stage or technology level, on the observed 2024 bilateral flows (importer's declaration first),
+  as an export shock (`hold`, headline) and as a two-way cut (`release`: the shocked economy's purchases
+  also fall by the same share), each with suppliers bounded by
+  physical production capacity where credible data exist (`production_constrained`, headline) and by
+  trade alone (`trade_only`).
+  A diversification scenario removes no supplier: it caps each node's suppliers at the share that
+  would bring the node's exporter concentration (HHI) down to that of the other HS6 lines of its HS4
+  heading (electric cars against petrol, diesel and hybrid cars), or of its sector's other nodes, and
+  asks how much trade and new capacity replace the excess (`aib_diversification.csv`).
   Two supply scenarios (conservative: only supply the shock frees moves; reallocation: exporters can
   redirect their observed global exports) and three states (static; existing relationships;
   optimized partnerships). `coordination_dividend = optimized - existing coverage`. Observed exports
   are revealed tradable capability, not spare capacity.
 - **Trade optimization:** lexicographic (demand served; then the smallest cut to surviving trade;
-  then revealed specialization by RCA; then Export Opportunity; then revealed policy/climate
+  then revealed specialization by RCA; then Partnership Opportunity; then revealed policy/climate
   compatibility), with a maximum supplier share run at 25/40/60/100% as a
   specialization-resilience frontier. No composite score.
 - **Investment partnership prioritization:** a marginal capacity simulation on nodes with a residual
@@ -572,16 +601,47 @@ beside the indices and the allied network design and changes neither. Full metho
 - **Emergent network and compacts:** directed trade and investment edges aggregated over nodes and
   shocks; nodes classified COORDINATE / BUILD / MANAGE SPECIALIZATION / LOW INTERVENTION and grouped
   into compacts only when they are supply-chain coherent, share or complement partners and need
-  similar instruments; each compact gets a greedy minimum sufficient coalition at 90/95/99% of its
-  anchors' demand, model-derived roles, an archetype and a node table for Gates & Fences.
+  similar instruments, coherence meaning a curated physical / process chain, not a shared stage;
+  each compact gets an exact minimum coalition (binary program) at 90/95/99% of its anchors' demand,
+  coalition tiers from a leave-one-country-out test (core members, critical supply partners,
+  associates, critical external dependencies), model-derived roles, an archetype and a node table for
+  Gates & Fences. Nodes keep multi-label policy needs beside the headline class, and a LOW / COORDINATE
+  class is flagged PHYSICAL CAPABILITY NOT VALIDATED where physical and trade evidence disagree.
+- **Three scenarios in the dashboard** (counterfactual market structures, not forecasts):
+  **Baseline** (trade as it is in 2024, before any shock: `aib_observed_supply.csv` and the observed
+  network `emergent_aib_*_baseline.csv`), **Managed Interdependence** (the diversification scenario:
+  its own network `emergent_aib_*_managed.csv`, and the headline compacts, same ids and nodes, solved
+  again under it: `aib_compact_*_managed.csv`) and **Decoupling** (the headline China shock under
+  `hold`: every other output). `scripts/84` writes Decoupling as the main document and the other two as
+  lazily loaded `scenario-managed.<hash>.json` / `scenario-baseline.<hash>.json` files.
+- **Strategic layer** (`scripts/33`, `R/aib/aib_strategic.R`; method section 16): an interpretive layer
+  above the outputs, which it never changes. Ten **Strategic Sectoral Compacts** (persistent
+  institutional frameworks around one physically coherent value chain, e.g. rare-earth ore -> oxides ->
+  metals -> magnets -> motors; `config/aib_strategic_compacts.yml`, curated from industrial-process
+  knowledge, not discovered), identical in every scenario (Baseline, Managed Interdependence, partial
+  disruption `china_50`, Decoupling); the compact candidates of scripts/32 (28 in the 2026-10-21 run) become their **workstreams**. Per compact
+  and scenario: node class counts, primary / secondary / supporting missions and a policy menu from
+  transparent rules on the classes' shares of lost supply, coverage (existing, coordinated,
+  post-investment), core countries and critical partners. Countries get **Strategic AIB Roles** (Resource
+  & Processing, Specialized Technology & Manufacturing, Scale Manufacturing & Integration, Demand &
+  Market, Capital & Investment, Development & Scale-Up, Coordination / Bridge), each from two percentile
+  gates over named evidence (at most 3 primary and 2 secondary; no composite score; capital evidence
+  from the CM-FDI projects and the IMF DIP outward positions), a **compact-specific role** in each
+  compact from node-level evidence, template narratives and bilateral relationship theses.
 
 ```
 Rscript scripts/31_build_aib_trade_network.R [--raw-dir DIR] [--processed-dir DIR] [--out-dir DIR]
-Rscript scripts/32_build_aib_partnerships.R [--out-dir DIR] [--nodes id1,id2] [--skip-investment]
-Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR]
+  [--taxonomy dictionary|master] [--dictionary-scope core|extended] [--dyads FILE]
+Rscript scripts/32_build_aib_partnerships.R [--out-dir DIR] [--nodes id1,id2] [--skip-investment] [--taxonomy ...]
+  [--demand-scope global|coalition|ISO3,...] [--partner-universe ...] [--scope all|electro_industrial] [--from-checkpoint]
+Rscript scripts/33_build_aib_strategic_layer.R [--in-dir DIR] [--out-dir DIR] [--partner-dir DIR] [--dip FILE]
+  [--compacts FILE] [--node-functions FILE] [--layer FILE]
+Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR] [--strategic FILE]
 ```
 
-`run_pipeline.R` runs 31 and 32 after the allied network (`OPSI_RUN_AIB=false` skips them).
+`run_pipeline.R` runs 31, 32 and 33 after the partner indices (`OPSI_RUN_AIB=false` skips them).
+`scripts/33` reads `cm_fdi_projects_tbl.rds` from the processed directory (`scripts/15`) and the raw
+`imf_dip.csv`; without either it runs and leaves the Capital & Investment Anchor role "not assessed".
 
 ---
 
@@ -591,7 +651,7 @@ Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR]
 R/                    # Pure functions (no IO)
   utils/              # Helpers: schema, theme standardization, country harmonisation, HS6 crosswalk
   categories/         # Theme builders by category
-  indices/            # ES/EO builders, Policy index, Strategic Index, coalition, PSI, allied network
+  indices/            # ES/EO builders, Policy index, Strategic Index, coalition, PSI (allied network: retired, dormant)
   aib/                # Allied Industrial Base: trade network, shocks, LP, investment, network, compacts
   geopolitical_distance/  # UNGA ideal points and alignment
   themes/             # Bilateral partnership themes (Friendshore, Opportunity, Development)
@@ -655,22 +715,27 @@ Rscript scripts/00_setup.R
 Rscript scripts/04_build_hs6_views.R
 Rscript scripts/05_ingest_sources.R
 Rscript scripts/10_build_themes.R
+Rscript scripts/16_build_climate_trace.R
+Rscript scripts/17_build_iea_pathways.R
+Rscript scripts/18_build_climate_sources.R
 Rscript scripts/12_build_geopolitical_alignment.R
 Rscript scripts/13_build_coalition.R
 Rscript scripts/20_build_indices.R
 Rscript scripts/15_build_partner_themes.R
 Rscript scripts/25_build_partner_indices.R
-Rscript scripts/30_build_allied_network_design.R
+Rscript scripts/31_build_aib_trade_network.R
+Rscript scripts/32_build_aib_partnerships.R
+Rscript scripts/33_build_aib_strategic_layer.R
 Rscript scripts/80_write_outputs.R
 ```
 
-For an end-to-end run (`00, 05, 07, 10, 12, 13, 20, 15, 25, 30, 80`; 30 unless `OPSI_RUN_ALLIED_NETWORK=false`):
+For an end-to-end run (`00, 05, 07, 10, 16, 12, 13, 20, 15, 25, 31, 32, 33, 80`; 31, 32 and 33 unless `OPSI_RUN_AIB=false`):
 
 ```bash
 Rscript run_pipeline.R
 ```
 
-Run the allied network only:
+The retired allied network design still runs by hand (dormant; the pipeline and the dashboard do not read its outputs):
 
 ```bash
 Rscript scripts/build_allied_network.R
@@ -680,7 +745,7 @@ Optional environment variables:
 
 - `OPSI_INSTALL_MILP_PKGS=true|false`, `OPSI_REQUIRE_MILP=true|false` — MILP solver stack (ompr, ROI, GLPK)
 - `OPSI_AUTO_PREREQS=true|false`
-- `OPSI_RUN_ALLIED_NETWORK=true|false`
+- `OPSI_RUN_AIB=true|false` — the Allied Industrial Base steps (31, 32, 33)
 - `OPSI_SKIP_NIPO=true|false` — reuse the stored NIPO rows of `policy_component_tbl.rds` instead of rescoring the GTA extract (4–5 GB of memory); NIPO is not in the Policy index composite
 - `OPSI_NIPO_SCOPE` — NIPO country scope (`allies` keeps the legacy ally list)
 - `OPSI_CONFIG`, `OPSI_WEIGHTS`, `OPSI_MISSING_DATA`, `OPSI_INDEX_DEFINITION`, `OPSI_RANKABILITY` — alternative config files (scratch runs)
@@ -698,9 +763,9 @@ When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under `data/raw/com
 
 ## Interactive explorer
 
-`dashboard/` holds the Allied Industrial Base Explorer, a static React app (Vite, TypeScript, NEIS design) with a Home page and three modules:
+`dashboard/` holds the Allied Industrial Base Explorer, a static React app (Vite, TypeScript, NEIS design). Since the October 2026 navigation refactor readers move between three questions, each a tab: **Sectors** (what matters about a sector: a Sector profile led by Economic Opportunity, Energy Security, Policy and Climate), **Countries** (a country's strategic position: one Country profile, where the four preference dials sit behind "Perspective: NEIS baseline" and change priorities but never the observed or modelled facts) and **Allied Industrial Base** (partnerships, Sectoral Compacts and country roles), with **About** (methods, data and sources, glossary) secondary; `dashboard/README.md` has the routes. The pages are composed from the data bundles below, named by the modules they first fed:
 
-* **Strategic Insights** (normative) recomputes the indices, partnership scores and the allied network in the browser when a reader moves the four preference dials. Its data bundle (`dashboard/public/data/`) is exported from the pipeline outputs by `scripts/85_export_dashboard_data.R` (builders in `R/dashboard/`), which also checks the dashboard engine at its baseline against the stored outputs; rerun it after a pipeline rerun, then `scripts/86_export_dashboard_fixtures.R` for the engine's parity fixtures. The TypeScript engine in `dashboard/src/engine/` is a port of `R/dashboard/` and is parity-tested against it.
+* **Strategic Insights** (normative) recomputes the indices and partnership scores in the browser when a reader moves the four preference dials. Its data bundle (`dashboard/public/data/`) is exported from the pipeline outputs by `scripts/85_export_dashboard_data.R` (builders in `R/dashboard/`), which also checks the dashboard engine at its baseline against the stored outputs; rerun it after a pipeline rerun, then `scripts/86_export_dashboard_fixtures.R` for the engine's parity fixtures. The TypeScript engine in `dashboard/src/engine/` is a port of `R/dashboard/` and is parity-tested against it.
 * **Sector Insights** (descriptive) shows the measured data behind the indices, by technology and supply-chain stage, in each source's own units and years: trade (the reconciled Comtrade dyad matrix), investment, cross-border manufacturing projects (CM-FDI, announced 1996-2026, in Solar, Wind, Batteries and EV Midstream: home → destination flows, the parent-HQ group split - China, coalition core, partners, rest - announcements by year and the project table with status and CM-FDI's source links; project counts and disclosed US$ m only, an undisclosed value never read as 0, the CC BY attribution on every card), reserves, production, consumption, prices, policy (IEA PAMS records and CAT ratings), time series (EI 1965-2025, IMF monthly prices, CIM investment and capacity, IEA EV regions) and, under Development & finance, the raw data behind Development Potential and Friendshore's investment tie (since 2026-10-15): the World Bank WDI series and Doing Business score the builder ranks, OECD CRS official development assistance received and given by aid sector (energy, industry, mining: the stage the builder maps each to) with the donor -> recipient flows, and the IMF bilateral direct-investment positions (who invests where; conduit financial centres shown and flagged), each read with the builders' own functions and checked against them (`--no-dev` leaves them out). No index, weight or dial value appears in it. Its data (`dashboard/public/data/sector/`) are exported by `scripts/87_export_sector_data.R` (pure helpers in `R/dashboard/sector/`, captions and units from `config/sector_dictionary.yml`): every value with a `data/processed` source is checked `identical()` to it after the encode/decode round trip, and the run writes `data/processed/dashboard/sector_validation.csv`. Rerun it after a pipeline rerun (`--check-only` runs every check without writing; `--synthetic <dir>` writes the small test fixture). Restricted sources (BNEF, BCG) never ship.
 * **Country Insights** (a hybrid of the two) puts one economy's index results and the data behind them on one page, on the paper baseline (with a link to the same country in Strategic Insights): its sectors on the Economic Opportunity x Energy Security plane (each axis the share of other economies it beats in that sector) with the Grow / Upgrade / Secure / Watch quadrants split at the country's own median sector, so they show its relatively strong and weak sectors, the drivers of its high-priority sectors in raw data, its sector priorities (the Strategic Index without its policy term) against its policy activity, the strongest active industrial-policy measures per sector from the latest GTA NIPO run (context only, not part of the Policy index), and partner priorities - friendshoring opportunities (Friendshore: partners where its security need meets the partner's economic opportunity, on existing trade and investment ties) and export markets (Partnership Opportunity) - against today's trade, factory projects, agreements and UN-vote alignment. The 31 core members have an AI-written policy memo (on screen, PDF and Word) in which every number is a token filled from the country's fact sheet, checked by a linter and an independent AI verifier. Data and memos are exported by `scripts/88_export_country_data.R` (pure helpers in `R/dashboard/country/`, settings in `config/country_insights.yml`, memo sources in `dashboard/country-memos/`).
 
@@ -716,7 +781,7 @@ Outputs are written under the configured outputs directory (default `data/proces
 * `energy_security_category_contributions.csv`, `energy_security_variable_contributions.csv`
 * `charts/allied_strategic.csv` and `strategic_index_selected_countries.xlsx`
 * coalition, alignment, partner and PSI tables (`*.rds` in `data/processed`)
-* allied network CSVs (`allied_network_*.csv`)
+* the Allied Industrial Base tables (`outputs/aib/`; the retired allied network design's `allied_network_*.csv` are no longer written by the pipeline)
 
 `docs/data_dictionary.md` lists the columns.
 
@@ -767,7 +832,7 @@ The `testthat` suite under `tests/testthat/` covers, among others:
 * Geopolitical alignment, the ideal-point fetchers and the territory map
 * Coalition tiers and EU stage weights
 * Partnership themes: trade flows (importer-first / mirror rule), conduits, PSI viewpoints and rankability, Comtrade dyad helpers
-* Allied network: integrity, diversification, EU node, demand modes, portfolio constraints
+* Allied network (retired design, dormant code): integrity, diversification, EU node, demand modes, portfolio constraints
 * Raw-input manifest drift and sync, fetchers
 * Dashboard bundle container (OSB) round trips and the engine's parity fixtures (the app's own tests run with `npm test` in `dashboard/`)
 * Sector Insights export helpers: the dictionary validator, facts and value states, the trade matrix and zero rebuild, concentration summaries, chunk round trips and the parity ledger (`test-sector-*.R`, synthetic inputs only)
@@ -839,6 +904,10 @@ Inputs with a public API are fetched by `scripts/fetchers/*.R` and written in th
 | `un_ga_ideal_points.csv` | Harvard Dataverse | Final-passage ideal points (sensitivity; to 2025) |
 | `critmin_mirror_import.csv` | UN Comtrade public preview API (keyless) | Partner-level critical-mineral imports from non-reporters, plus late reporters' own exports (optional) |
 | `eia_intl_fossil_production.csv` | EIA International Energy Statistics bulk file `INTL.zip` (keyless, public domain) | Oil, gas and coal production and consumption by country, 2000 on; fills the fuel production EI does not report. Staged copy kept (`fallback`; EIA revises monthly); refetch with `Rscript scripts/fetchers/eia_intl.R` |
+| `climate_trace_country_emissions.csv` | Climate TRACE API v6 (keyless, CC BY 4.0) | Country x subsector emissions 2021-2025; refetch `Rscript scripts/fetchers/climate_trace.R country` |
+| `climate_trace_asset_activity.csv` | Climate TRACE API v6 (keyless, CC BY 4.0) | Tracked assets by country and asset group; refetch `Rscript scripts/fetchers/climate_trace.R assets` |
+| `oecd_crs_purpose.csv` | OECD CRS bulk file `CRS-reduced.parquet` and the DAC-CRS code lists (keyless, CC BY 4.0) | Bilateral ODA, OOF and PSI of country donors by recipient, purpose code and year (2013 on, complete years only); Development Potential's aid per technology and stage. Needs `arrow` and `readxl`; refetch with `Rscript scripts/fetchers/oecd_crs.R` |
+| `oci_energy_finance.csv` | Oil Change International, Public Finance for Energy Database (`energyfinance.org/dataset.csv`, keyless, CC BY-NC 4.0) | International energy transactions of G20 export credit agencies and development lenders; adds the finance the CRS lacks (JBIC, NEXI, JOGMEC, US EXIM, KEXIM, Hermes, KfW IPEX-Bank, UKEF, ...) to Development Potential's aid. Refetch with `Rscript scripts/fetchers/oci_energy_finance.R` |
 
 Three properties matter:
 
@@ -957,7 +1026,7 @@ Reports, without writing anything, which inputs are blocking, which are absent b
 * **Supply-chain coupling** (`couple_pillar_scores_by_hhi.R`) is unused; delete it or wire it in deliberately.
 * **Raw-input completeness is environment dependent.** Use the manifest workflow and `scripts/03_check_raw_inputs.R` to reconcile gaps before full builds.
 * **`allies.csv` remains staged from SharePoint.** It only feeds the 22-reporter allied Comtrade file, which is now a fallback behind the all-reporter pull.
-* **Remaining automation candidates**: `imf_dip.csv` (a full pull is ~6.5 MB per reporter, so it needs dimension filtering), `oecd_crs_api.csv` (the CRS dataflow is not exposed under the agency the staged file names), and the Atlas extracts via Harvard Dataverse.
+* **Remaining automation candidates**: `imf_dip.csv` (a full pull is ~6.5 MB per reporter, so it needs dimension filtering), `oecd_crs_api.csv` (the 3-digit CRS extract the dashboard's Development & finance chunk ships; the index reads the fetched `oecd_crs_purpose.csv`), and the Atlas extracts via Harvard Dataverse.
 * **IMF fetchers are `fallback`, not `prefer`.** The live PPI and MFS_IR flows have dropped countries the staged extracts still carry; switching would change index coverage.
 * **EIA fill of EI production (since 2026-10-11): open ends.** (1) Generation EI does not report (Production Downstream, 68 of 99 economies) is still 0 although EIA has positive net generation for most of them; the same fill would apply to `electbyfuel_*`, `solar_twh`, `wind_twh` (EIA series `INTL.<product>-12-<iso3>-BKWH.A`). (2) 2025 gas and coal fills use EIA's 2024 value until EIA publishes 2025. (3) EI's coal consumption is 1.5-2.2 times EIA's for Finland, Ireland and Belarus (probably peat, which they mine), so their EIA zero coal production may understate a domestic share; only Estonia's oil shale is far enough apart to fail the comparability check. (4) The 20 producers EI lists without a consumption row (Angola, Nigeria, Libya, Guyana, ...) take EIA consumption (`eia_fill_consumption = TRUE`, adopted 2026-10-11). (5) The Sector Insights exporter (`sector_facts_production()`, `sector_facts_balance()`) still classifies by EI row presence: it ships EIA-filled balances as "not reported separately" and EIA-filled production as plain observations, with EI provenance. (The NA Estonia coal production fact ships as `nsr`, NaN.) (6) Ratio years, fixed 2026-10-11 for production: a 2025 gas or coal fill divided EIA's 2024 production by EI's 2025 consumption (Slovenia coal 121% self-sufficient and a net exporter, because EI's consumption fell 39% in 2025; New Zealand gas 122%). Energy Imports now sets that production against EI's 2024 consumption and carries the 2024 self-sufficiency to 2025 consumption (Slovenia coal 73.5%, New Zealand gas 109.5%; ES "2) Energy Imports"). What remains is the lag itself: those 2025 cells are 2024 self-sufficiencies, which assumes production followed consumption in 2025 (apt for mine-mouth lignite and a closed gas market such as New Zealand's; for an importer with a small domestic output it scales that output with imports-driven demand, e.g. Bangladesh coal 4.3% → 5.6%). Open, for a user decision: the producers of (4) keep EI's 2025 production over EIA's 2024 consumption (Guyana oil 2,675%); pairing them on 2024 as well (one condition in `import_dependence_pair_years()`) would replace their observed 2025 production with 2024's (Yemen oil 22% → 51%, South Sudan 1,116% → 728%, Bolivia gas 181% → 213%; ES up to 0.016, picks unchanged). In Production (EO) a 2025 gas or coal cell from EIA (29 gas, 12 coal with positive production) has EIA's 2024 level, so its `size` is 2024's and its 5-year change runs 2020-2024; the theme has no production-to-consumption ratio and is unchanged. EIA's calorific basis also differs from EI's by country (EI/EIA coal production: Germany 0.64, Turkiye 1.12).
 
@@ -990,6 +1059,8 @@ Corrections:
   - *No index effect*: clean-tech manufacturing shares over the IEA world total including "Other" (China's 2035 solar share 0.90 → 0.80); WEO demand terms renamed `global_*` (756 duplicate keys); IMF price units from the series metadata (cobalt, propane, lithium, vanadium, chromium, rare earths, gas and uranium were mislabelled or unlabelled); `Heat.Pumps` → `Heat Pumps`; EI source labels name the edition read ("(2026 edition)"; they read "(2025)", the data year).
 - **EI fuel production not reported separately comes from the EIA** (user decisions 2026-10-11; measured at function level against the 2026-10-10 build): Energy Imports and Production read an absent EI production row (an economy EI counts in an "Other <region>" residual) as 0 production. Those cells now take the EIA International Energy Statistics value of the same year in EI's units (gas and coal: EIA's 2024, its latest), as observed data with EIA named in `source`; an EIA zero is a real zero; EI stays the source where it reports. Estonia coal is the one exception (EI counts oil shale as coal; EIA's series do not) and is NA. *Energy Imports*: of the 128 gap cells (43 oil, 37 gas, 48 coal), 58 get a positive value, 69 an EIA zero, Estonia coal none. ES: 605 Oil, Gas and Coal Upstream cells move, no other cell. Cells with a positive EIA value rise (coal +0.034, gas +0.010, oil +0.009 on average; Peru Coal +0.084, Slovenia Coal +0.071, New Zealand Gas +0.064, Turkiye Oil +0.018); EIA zeros fall slightly (−0.002 to −0.021: they now rank below the small producers they tied with); reporting economies move 0 to −0.009 and off-roster economies by at most 0.0011. Rankable headline cells 4,126 → 4,125 (Estonia Coal Upstream is now imputed); 140 ranks move, the Upstream top 10s do not. *Production (EO only)*: of the 2025 gap cells (49 oil, 50 gas, 65 coal) 72 get a positive value (Bahrain and Turkiye oil, Angola gas, Philippines coal, ...), 91 a zero, Estonia coal NA; earlier years likewise. EO: 632 Oil, Gas and Coal Upstream cells move (−0.040 to +0.042; Production category: Peru Coal +0.25, Slovak Republic Coal −0.24 and South Korea Gas −0.22 from production that ended after 2020), rankability unchanged (4,307). EO Upstream top 10s: Philippines enters Coal at 5 (Thailand leaves); Kuwait/UAE and India/Malaysia swap. *Strategic Index*: 3,109 → 3,108 cells (Estonia Coal Upstream leaves), 192 countries; 264 cells move by at most 0.026; all 57 allied picks unchanged. An intermediate version of the same day read the absent rows as NA (global-average fill, imputed), which made 122 of these cells unrankable (ES 4,004 rankable; SI 2,987 cells) and moved Morocco's allied pick; the EIA fill restores all but Estonia coal. Generation EI does not report (Downstream) is still 0.
 - **Energy Imports sets EIA production of an earlier year against consumption of that year** (2026-10-11; measured at function level against the EIA fill as scripts/10 calls it, consumption fill included, on the 2026-10-10 inputs): where production is an EIA value of an earlier year than consumption (2025 gas and coal: EIA 2024), self-sufficiency is that year's and the balance applies it to the cell's consumption (ES "2) Energy Imports"). The two years used to be divided as they were. Theme: 32 cells pair (22 gas, 10 coal; Slovenia coal 121% → 73.5%, a net exporter → importer; New Zealand gas 122% → 109.5%; Ecuador gas 57% → 45%); 29 Fossil self-sufficiencies move; 254 of 1,584 rows change value; 2020 (scripts/40) is unchanged. Oil, and the producers EI lists without consumption (EI 2025 production over EIA 2024 consumption), are unchanged (README EIA open end (6)). ES: 179 Coal and Gas Upstream cells move: 10 paired cells, 50 re-ranked (by at most 0.0026) and 119 coal cells off the roster through the pillar's global-average fill (by at most 0.00013); largest: Slovenia Coal −0.044 (rank 37 → 51 of 96), New Zealand Gas −0.003. Rankable cells unchanged (4,161); Oil, Gas and Coal Upstream top 10s unchanged. Strategic Index: 3,144 cells, 192 countries; 59 cells move by at most 0.013 (Slovenia Coal Upstream 0.358 → 0.371); all 57 allied picks unchanged. EO is unchanged (the production theme has no production-to-consumption ratio).
+- **Trade-index growth from a minimum base** (2026-10-20; measured at function level on the 2026-10-12 build inputs; processed outputs and dashboard bundles not yet rebuilt). Growth in the Friendshore and Opportunity trade index is scored only from a 2020 flow of at least USD 1m (`config/partnership.yml` `trade: growth_min_base_usd`). The other trading dyads take the neutral growth score 0.5. Kazakhstan had been the United States' first Opportunity market for two reasons: a USD 5k base scored as 8,606× growth, and a missing base scored on its level alone. Under the new rule the coalition PSI Spearman is 0.99976 (largest rank move 10, top 10 the same set), and the Opportunity top-10 lists change for 164 of 219 reporters. See [Partnership Strength Index](#partnership-strength-index-psi).
+- **Cells without trade data take the dyad's own trade** (2026-10-20; measured at function level on the 2026-10-12 build inputs with the growth floor; processed outputs and dashboard bundles not yet rebuilt). No HS6 code maps to the Downstream stages, Green Hydrogen, and Geothermal in Friendshore. In those cells every dyad's trade term was the constant 0.5, which ranked a reporter's Opportunity markets there on their energy-security need alone. Equatorial Guinea, Sao Tome, Burundi, Uganda and Guinea-Bissau were 9th to 15th among US markets. The trade term is now the dyad's own trade index in its observed cells, the same technology first (`config/partnership.yml` `trade: no_data_fill: dyad`; `constant` restores the earlier rule). Top-10 partners with no positive trade cell fall from 92 to 25 (Opportunity) and 238 to 148 (Friendshore). The coalition PSI Spearman is 0.9935 (largest rank move 23, top 20 the same set), and Germany passes the United States for first place (0.9442 against 0.9435). See [Cells without trade data](#no-data-fill).
 
 Extensions:
 

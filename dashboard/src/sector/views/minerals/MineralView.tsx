@@ -7,7 +7,8 @@
 // redirects to Nuclear — Upstream; an unknown mineral goes to the index with a notice.
 
 import { useCallback, useMemo, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { Redirect } from '../../../shell/Redirect.tsx';
 import * as Plot from '@observablehq/plot';
 import { PlotFigure, Tip } from '../../../charts/PlotFigure.tsx';
 import { TableView } from '../../../components/TableView.tsx';
@@ -405,14 +406,14 @@ export default function MineralView() {
   useTitle(item ? item.label : 'Minerals', 'Sector Insights');
   const { facts, h } = useFacts();
   const highlight = useHighlight(model);
-  if (MINERAL_REDIRECTS[slug]) return <Navigate to={link(MINERAL_REDIRECTS[slug])} replace state={{ notice: `${slug[0].toUpperCase()}${slug.slice(1)} is measured on the Nuclear — Upstream page.` }} />;
-  if (!item) return <Navigate to={link('/sector/minerals')} replace state={{ notice: `No mineral called '${raw}'; showing all minerals.` }} />;
+  if (MINERAL_REDIRECTS[slug]) return <Redirect to={link(MINERAL_REDIRECTS[slug])} notice={`${slug[0].toUpperCase()}${slug.slice(1)} is measured on the Nuclear — Upstream page.`} />;
+  if (!item) return <Redirect to={link('/sector/minerals')} notice={`No mineral called '${raw}'; showing all minerals.`} />;
   const techs = techsOfMineral(model, item);
   const ctx: Ctx = { model, item, facts, highlight, eu: state.eu };
   return (
     <div className="space-y-8">
       <PageHead
-        eyebrow="SECTOR INSIGHTS · MINERALS"
+        eyebrow="SECTORS · MINERALS"
         title={item.label}
         lede={`Who mines, refines, holds and exports ${lc(item.label)}${techs.length ? `, and how much ${listText(techs.slice(0, 4).map((t) => t.label))} use${techs.length === 1 ? 's' : ''}` : ''}. Measured values in each source's own units and years.`}
       >

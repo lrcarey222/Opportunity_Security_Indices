@@ -1,6 +1,5 @@
-# The dashboard's web bundle: the OSB1 container (R/dashboard/dash_osb.R), the chunks and manifest
-# (R/dashboard/dash_web.R) and the greedy network's tie rule (share_rank_digits). Fixture-based:
-# runs on the synthetic bundle, no data needed.
+# The dashboard's web bundle: the OSB1 container (R/dashboard/dash_osb.R) and the chunks and
+# manifest (R/dashboard/dash_web.R). Fixture-based: runs on the synthetic bundle, no data needed.
 
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 source(file.path(repo_root, "R", "dashboard", "dash_files.R"))
@@ -98,18 +97,12 @@ test_that("the synthetic bundle's chunks round-trip and carry the contract paths
   b <- dash_fixture_bundle(1)
   p <- b$manifest$baseline
   res <- dash_run(b, p)
-  inp <- dash_network_inputs(b, p, res$partner$cells, policy = res$policy)
-  gb <- dash_network_solve(dash_network_score(inp, p), p, bundle = b, share_rank_digits = 9)
-  gb$share_rank_digits <- 9L
-  b$network$greedy_baseline <- gb
-  fixed <- dash_network_fixed_tables(b)
-  b$network[c("member_weights", "node_size", "caps")] <- fixed[c("member_weights", "node_size", "caps")]
-  expect_identical(fixed$caps$portfolio_cap, gb$portfolio$caps$portfolio_cap)
-  k <- paste(fixed$member_weights$tech, fixed$member_weights$supply_chain) %in% paste(inp$stages$tech, inp$stages$supply_chain)
-  expect_identical(fixed$member_weights[k, ], tibble::as_tibble(inp$member_weights))
 
   chunks <- dash_web_chunks(b, res)
   expect_identical(names(chunks), DASH_WEB_CHUNKS)
+  expect_identical(DASH_WEB_CHUNKS, c("core", "vars", "partner"))  # the network chunk is retired (2026-10-17)
+  expect_null(b$network)
+  expect_null(p$network)
   for (nm in names(chunks)) {
     dec <- dash_osb_decode(dash_osb_encode(chunks[[nm]], nm))
     expect_identical(dec$objects, dash_osb_normalize(chunks[[nm]]), info = nm)
@@ -118,24 +111,11 @@ test_that("the synthetic bundle's chunks round-trip and carry the contract paths
   expect_identical(core$dims$U, b$partner$U)
   expect_identical(dim(core$pillars$es$score), dim(b$pillars$es$score))
   expect_identical(core$baseline$core$si$cells$strategic_index, res$si$cells$strategic_index)
-  expect_identical(core$baseline$network_summary$source, "greedy")
+  expect_null(core$baseline$network_summary)
   expect_null(core$pillars$es$var)
   part <- dash_osb_normalize(chunks$partner)
   expect_identical(dim(part$partner$fs$imp_trade), c(length(b$partner$U), length(b$partner$U), nrow(b$partner$cells)))
   expect_identical(part$baseline$partner$psi_dyad$psi, res$partner$psi$dyad$psi)
-  net <- dash_osb_normalize(chunks$network)
-  expect_identical(net$network$greedy_baseline$forbidden, gb$forbidden)
-  expect_identical(net$network$greedy_baseline$share_rank_digits, 9L)
-  expect_null(net$network$stored)   # flags$network_consistent is FALSE in the fixture
-
-  # A stored (MILP) design solved on the bundle's inputs becomes the baseline network
-  b2 <- b
-  b2$manifest$flags$network_consistent <- TRUE
-  b2$network$stored <- gb[c("specialization", "flows", "diagnostics")]
-  b2$network$stored$diagnostics$method <- "milp"
-  ch2 <- dash_web_chunks(b2, res)
-  expect_identical(dash_osb_normalize(ch2$core)$baseline$network_summary$source, "milp")
-  expect_identical(dash_osb_normalize(ch2$network)$network$stored$specialization$production_share, gb$specialization$production_share)
 
   info <- tibble::tibble(name = names(chunks), file = paste0(names(chunks), ".00000000.osb"), bytes = 1, bytes_gz = 1,
                          md5 = "0", initial = names(chunks) == "core")
@@ -147,23 +127,20 @@ test_that("the synthetic bundle's chunks round-trip and carry the contract paths
   expect_identical(js$dial_grid$m[[51]], 1L)
   expect_identical(js$baseline_params$m$H, 1L)
   expect_identical(js$baseline_params$advanced$fossil, list("auto"))
+  expect_null(js$baseline_params$network)
+  expect_null(js$baseline_params$advanced$network)
+  expect_null(js$baseline_inputs$lambda)
+  expect_null(js$share_rank_digits)
   expect_equal(js$budget$initial_gz, 101)
   sw <- js$dial_grid$stage_weights
   expect_identical(unlist(sw$Upstream)[[91]], dash_stage_weights(b$manifest$baseline_inputs$stage_weights, dash_dial_multiplier(90))[["Upstream"]])
 })
 
-test_that("share_rank_digits ranks tied target shares by score, then ISO3, not by RAS noise", {
-  spec <- tibble::tibble(
-    tech = "Solar", supply_chain = "Upstream",
-    iso3c = c("AAA", "BBB", "CCC", "DDD"),
-    production_share = c(0.4 - 1e-13, 0.4 + 1e-13, 0.15, 0.05),
-    producer_score = c(0.9, 0.5, 0.7, 0.6)
-  )
-  noisy <- dash_build_topk_tbl(spec, portfolio_top_k = 1)
-  expect_identical(noisy$iso3c[noisy$in_top_k], "BBB")              # the pipeline rule: noise decides
-  rounded <- dash_build_topk_tbl(spec, portfolio_top_k = 1, share_rank_digits = 9)
-  expect_identical(rounded$iso3c[rounded$in_top_k], "AAA")          # equal shares: higher score first
-  expect_identical(rounded$rank_in_stage, c(1L, 1L, 2L, 3L))
-  expect_identical(rounded$production_share, spec$production_share)  # shares are not changed
-  expect_identical(dash_build_topk_tbl(spec, 5), allied_network_build_topk_tbl(spec, 5))
+test_that("the dial readout has no network-design rows (retired 2026-10-17)", {
+  b <- dash_fixture_bundle(1)
+  ro <- dash_dial_readout(dash_params(dials = list(hawkishness = 80, populism = 80), bundle = b), b)
+  expect_false(any(c("lambda", "edge_fs_share", "edge_po_share", "demand_need_share", "demand_size_share",
+                     "node_resilience", "node_eo", "node_policy", "home_bias") %in% ro$parameter))
+  expect_false(any(grepl("network|producer score", ro$label)))
+  expect_error(dash_params(advanced = list(network = list(lambda = 2)), bundle = b), "Unknown advanced setting")
 })

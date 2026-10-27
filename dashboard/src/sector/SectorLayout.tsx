@@ -23,7 +23,7 @@ import { CaptionProvider, PageNotesProvider, SectorBar, SvgDefs, type SectorBarP
 import { SectorUrlProvider, useSectorUrl } from './views/state.tsx';
 
 /** Notes always in "Data notes" (spec 9: the dials apply to Strategic Insights only). */
-const ALWAYS_NOTES = ['Scenario dials apply to Strategic Insights only; Sector Insights shows measured values with no weights and no scores.'];
+const ALWAYS_NOTES = ['The Perspective dials of the Country profile never change these pages: they show measured values with no weights and no scores.'];
 
 /** The module title while no view is mounted (loading, no data, errors); views set their own. */
 function ModuleTitle() {
@@ -38,7 +38,7 @@ function NoSectorData({ message }: { message: string }) {
       <Notice kind="info" title="No sector data">
         <p>{message}</p>
         <p className="mt-2 text-paper-mute">
-          Developers: run <code>Rscript scripts/87_export_sector_data.R</code> from the repository root (or <code>npm run dev:fixture</code> for the synthetic bundle). Strategic Insights is unaffected.
+          Developers: run <code>Rscript scripts/87_export_sector_data.R</code> from the repository root (or <code>npm run dev:fixture</code> for the synthetic bundle). The Country and Allied Industrial Base pages are unaffected.
         </p>
       </Notice>
     </div>
